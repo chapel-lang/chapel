@@ -1500,6 +1500,9 @@ static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*,
 static int       post_fma_ct(c_nodeid_t*, gni_post_descriptor_t*);
 static void      post_fma_ct_and_wait(c_nodeid_t*, gni_post_descriptor_t*);
 #endif
+static int       post_rdma(c_nodeid_t, gni_post_descriptor_t*);
+static void      post_rdma_and_wait(c_nodeid_t, gni_post_descriptor_t*,
+                                    chpl_bool);
 static chpl_bool can_task_yield(void);
 static void      local_yield(void);
 
@@ -7551,6 +7554,62 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
 }
 
 #endif
+
+
+static
+inline
+int post_rdma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
+{
+  int cdi;
+  gni_return_t gni_rc;
+
+  if (post_desc->type == GNI_POST_FMA_PUT)
+    PERFSTATS_ADD(sent_bytes, post_desc->length);
+  else
+    PERFSTATS_ADD(rcvd_bytes, post_desc->length);
+
+  if (cd == NULL)
+    acquire_comm_dom();
+  cdi = cd_idx;
+
+  CQ_CNT_INC(cd);
+
+  if ((gni_rc = GNI_PostFma(cd->remote_eps[locale], post_desc))
+      != GNI_RC_SUCCESS)
+    GNI_POST_FAIL(gni_rc, "PostFMA() failed");
+
+  release_comm_dom();
+
+  return cdi;
+}
+
+
+static
+void post_rdma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
+                        chpl_bool do_yield)
+{
+  int cdi;
+  atomic_bool post_done;
+
+  atomic_init_bool(&post_done, false);
+  post_desc->post_id = (uint64_t) (intptr_t) &post_done;
+
+  cdi = post_fma(locale, post_desc);
+
+  //
+  // Wait for the transaction to complete.  Yield initially; the
+  // minimum round-trip time on the network isn't small and maybe
+  // we can find something else to do in the meantime.
+  //
+  do {
+    if (do_yield) {
+      local_yield();
+    }
+    consume_all_outstanding_cq_events(cdi);
+  } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
+
+  CQ_CNT_DEC(&comm_doms[cdi]);
+}
 
 
 static inline
