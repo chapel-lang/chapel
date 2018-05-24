@@ -713,6 +713,8 @@ static __thread int cd_idx = -1;
 // gets must be 4 byte aligned. This just follows gasnet-aries and
 // uses the nearest 4MB aligned value
 #define MAX_RDMA_TRANS_SZ ((size_t) 0xFFC00000)
+// TODO tune and make env var (1024 based on cray-mpich, GN uses 4096)
+#define RDMA_THRESHOLD 1024
 
 #define ALIGN_32_DN(x)    ALIGN_DN((x), sizeof(int32_t))
 #define ALIGN_32_UP(x)    ALIGN_UP((x), sizeof(int32_t))
@@ -4929,13 +4931,17 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
                    drpg_may_proxy_t may_proxy)
 {
   gni_post_descriptor_t post_desc;
+  mem_region_t* local_mr;
+  chpl_bool do_rdma = false;
+  size_t max_trans_sz = MAX_FMA_TRANS_SZ;
+
 
   DBG_P_LP(DBGF_GETPUT, "DoRemPut %p -> %d:%p (%#zx), proxy %c",
            src_addr, (int) locale, tgt_addr, size,
            may_proxy ? 'y' : 'n');
 
   //
-  // The source address for a PUT doesn't have to be registered with
+  // The source address for a FMA PUT doesn't have to be registered with
   // the local NIC, but the target address does have to be registered
   // with the remote NIC.  If it isn't, then instead of our doing a
   // PUT we arrange for the remote side do a GET from us, dealing with
@@ -4947,7 +4953,6 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
     remote_mr = mreg_for_remote_addr(tgt_addr, locale);
 
   if (remote_mr == NULL) {
-    mem_region_t* local_mr;
 
     if (!may_proxy) {
       CHPL_INTERNAL_ERROR("do_remote_put(): "
@@ -5016,13 +5021,27 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   post_desc.src_cq_hndl     = 0;
 
   //
+  // If the PUT size merits RDMA and the source addr is registered,
+  // then do an RDMA put instead of FMA
+  //
+ if (size >= RDMA_THRESHOLD &&
+     (local_mr = mreg_for_local_addr(src_addr)) != NULL) {
+    do_rdma = true;
+    max_trans_sz = MAX_RDMA_TRANS_SZ;
+
+    post_desc.type = GNI_POST_RDMA_PUT;
+    post_desc.local_mem_hndl = local_mr->mdh;
+  }
+
+
+  //
   // If the transfer is larger than the maximum transaction length,
   // then we have to break it into smaller pieces.
   //
   while (size > 0) {
     size_t tsz;
 
-    tsz = (size <= MAX_FMA_TRANS_SZ) ? size : MAX_FMA_TRANS_SZ;
+    tsz = (size <= max_trans_sz) ? size : max_trans_sz;
 
     post_desc.local_addr      = (uint64_t) (intptr_t) src_addr;
     post_desc.remote_addr     = (uint64_t) (intptr_t) tgt_addr;
@@ -5039,8 +5058,11 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
     PERFSTATS_INC(put_cnt);
     PERFSTATS_ADD(put_byte_cnt, tsz);
 
-    // TODO convert
-    post_fma_and_wait(locale, &post_desc, true);
+    if (do_rdma) {
+      post_rdma_and_wait(locale, &post_desc, true);
+    } else {
+      post_fma_and_wait(locale, &post_desc, true);
+    }
   }
 }
 
