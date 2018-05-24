@@ -5833,6 +5833,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   nb_desc_idx_t          nbdi;
   nb_desc_t*             nbdp;
   gni_post_descriptor_t* post_desc;
+  chpl_bool              do_rdma = false;
 
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5877,7 +5878,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
       || !IS_ALIGNED_32((size_t) (intptr_t) raddr)
       || !IS_ALIGNED_32(size)
       || (remote_mr = mreg_for_remote_addr(raddr, locale)) == NULL
-      || size > MAX_FMA_TRANS_SZ) {
+      || size > MAX_RDMA_TRANS_SZ) {
     PERFSTATS_INC(get_nb_b_cnt);
     do_remote_get(addr, locale, raddr, size, may_proxy_true);
     return NULL;
@@ -5916,13 +5917,24 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   post_desc->length          = size;
 
   //
+  // If the GET size merits RDMA do an RDMA get instead of FMA
+  //
+  if (size >= RDMA_THRESHOLD) {
+    do_rdma = true;
+    post_desc->type = GNI_POST_RDMA_GET;
+  }
+
+  //
   // Initiate the transaction.  Don't wait for it to complete.
   //
   PERFSTATS_INC(get_nb_cnt);
   PERFSTATS_ADD(get_byte_cnt, size);
 
-  // TODO convert
-  nbdp->cdi = post_fma(locale, post_desc);
+  if (do_rdma) {
+    nbdp->cdi = post_rdma(locale, post_desc);
+  } else {
+    nbdp->cdi = post_fma(locale, post_desc);
+  }
 
   return nb_desc_idx_2_handle(nbdi);
 }
