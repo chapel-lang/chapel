@@ -5666,12 +5666,6 @@ GenRet NamedExpr::codegen() {
   return ret;
 }
 
-GenRet IfExpr::codegen() {
-  GenRet ret;
-  INT_FATAL(this, "IfExpr::codegen not implemented");
-  return ret;
-}
-
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *

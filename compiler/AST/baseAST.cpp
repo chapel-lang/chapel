@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "IfExpr.h"
 #include "log.h"
 #include "UnmanagedClassType.h"
 #include "ModuleSymbol.h"

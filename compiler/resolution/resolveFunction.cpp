@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "ForallStmt.h"
+#include "IfExpr.h"
 #include "iterator.h"
 #include "LoopStmt.h"
 #include "UnmanagedClassType.h"

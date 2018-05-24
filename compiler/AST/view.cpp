@@ -30,6 +30,7 @@
 #include "DeferStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "IfExpr.h"
 #include "iterator.h"
 #include "log.h"
 #include "UnmanagedClassType.h"
