@@ -326,7 +326,7 @@ static bool isUse(SymExpr* se)
     ArgSymbol* arg = actual_to_formal(se);
 
     if (arg->intent == INTENT_OUT ||
-        arg->intent == INTENT_REF)
+        (arg->intent & INTENT_FLAG_REF))
     {
       return false;
     } else if (arg->intent == INTENT_CONST_REF &&

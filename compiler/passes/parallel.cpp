@@ -204,8 +204,8 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     // If we needed to auto-copy it, it should be stored by value
     else if (autoCopy)
       field->qual = QUAL_VAL; // this is a no-op
-    // If the actual is a reference, store a reference
-    else if (var->isRef())
+    // If the actual or the formal is a reference, store a reference
+    else if (var->isRef() || formal->isRef())
       field->qual = QUAL_REF;
     // BHARSH TODO: This really belongs in RVF. Note the sync/single comment
     // in 'needsAutoCopyAutoDestroyForArg'
