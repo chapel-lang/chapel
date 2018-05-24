@@ -706,7 +706,13 @@ static __thread int cd_idx = -1;
 // Declarations having to do with individual remote references.
 //
 
-#define MAX_UGNI_TRANS_SZ ((size_t) 1 << 30)
+// FMA supports up to 1GB transfers (this is the total size that can
+// be transferred for chained transactions)
+#define MAX_FMA_TRANS_SZ ((size_t) 1 << 30)
+// BTE RDMA supports up to ~4GB transfers (2^31 - 1), but the size of
+// gets must be 4 byte aligned. This just follows gasnet-aries and
+// uses the nearest 4MB aligned value
+#define MAX_RDMA_TRANS_SZ ((size_t) 0xFFC00000)
 
 #define ALIGN_32_DN(x)    ALIGN_DN((x), sizeof(int32_t))
 #define ALIGN_32_UP(x)    ALIGN_UP((x), sizeof(int32_t))
@@ -5016,7 +5022,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   while (size > 0) {
     size_t tsz;
 
-    tsz = (size <= MAX_UGNI_TRANS_SZ) ? size : MAX_UGNI_TRANS_SZ;
+    tsz = (size <= MAX_FMA_TRANS_SZ) ? size : MAX_FMA_TRANS_SZ;
 
     post_desc.local_addr      = (uint64_t) (intptr_t) src_addr;
     post_desc.remote_addr     = (uint64_t) (intptr_t) tgt_addr;
@@ -5033,6 +5039,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
     PERFSTATS_INC(put_cnt);
     PERFSTATS_ADD(put_byte_cnt, tsz);
 
+    // TODO convert
     post_fma_and_wait(locale, &post_desc, true);
   }
 }
@@ -5377,7 +5384,7 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
   while (size > 0) {
     size_t tsz;
 
-    tsz = (size <= MAX_UGNI_TRANS_SZ) ? size : MAX_UGNI_TRANS_SZ;
+    tsz = (size <= MAX_FMA_TRANS_SZ) ? size : MAX_FMA_TRANS_SZ;
 
     post_desc.local_addr      = (uint64_t) (intptr_t) tgt_addr;
     post_desc.local_mem_hndl  = local_mr->mdh;
@@ -5395,6 +5402,7 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
     PERFSTATS_INC(get_cnt);
     PERFSTATS_ADD(get_byte_cnt, tsz);
 
+    // TODO convert
     post_fma_and_wait(locale, &post_desc, true);
   }
 }
@@ -5832,7 +5840,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
       || !IS_ALIGNED_32((size_t) (intptr_t) raddr)
       || !IS_ALIGNED_32(size)
       || (remote_mr = mreg_for_remote_addr(raddr, locale)) == NULL
-      || size > MAX_UGNI_TRANS_SZ) {
+      || size > MAX_FMA_TRANS_SZ) {
     PERFSTATS_INC(get_nb_b_cnt);
     do_remote_get(addr, locale, raddr, size, may_proxy_true);
     return NULL;
@@ -5876,6 +5884,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   PERFSTATS_INC(get_nb_cnt);
   PERFSTATS_ADD(get_byte_cnt, size);
 
+  // TODO convert
   nbdp->cdi = post_fma(locale, post_desc);
 
   return nb_desc_idx_2_handle(nbdi);
