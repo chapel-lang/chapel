@@ -16,10 +16,10 @@ class C {
   }
 }
 
-var c = new C(2, 3);
+var c = new unmanaged C(2, 3);
 writeln(c);
 delete c;
 
-c = new C(true);
+c = new unmanaged C(true);
 writeln(c);
 delete c;

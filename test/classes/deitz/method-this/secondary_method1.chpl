@@ -9,7 +9,7 @@ proc foo.secondary() {
   writeln("secondary method call");
 }
 
-var f : foo = new foo();
+var f : unmanaged foo = new unmanaged foo();
 
 f.primary();
 f.secondary();

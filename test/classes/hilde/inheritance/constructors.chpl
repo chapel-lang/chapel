@@ -21,8 +21,8 @@ class sub : base {
 }
 
 proc main() {
-  var p = new sub(3,4);
-  var q = new base(2);
+  var p = new unmanaged sub(3,4);
+  var q = new unmanaged base(2);
 
   writeln(p._i, p._j);
   writeln(q._i);

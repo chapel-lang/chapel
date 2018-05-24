@@ -19,13 +19,13 @@ class blockIndices {
 
 config const numLocs = 50;
 var numLocsDone : sync int = 0;
-var task : sync blockIndices;
+var task : sync unmanaged blockIndices;
  
 proc buildjk() {
   cobegin {
     for loc in 1..numLocs do
       begin {	      	
-          var bI, copyofbI : blockIndices;
+          var bI, copyofbI : unmanaged blockIndices;
           bI = task;
           while (bI.ilo != 0) {
             copyofbI = bI;
@@ -70,12 +70,12 @@ iter gen() {
       for kat in 1..iat { // sjd: changed forall to for because of yield
         const lattop = if (kat==iat) then jat else kat;
         for lat in 1..lattop { // sjd: changed forall to for because of yield
-          yield new blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
+          yield new unmanaged blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
         }
       }
     }
   }
-  yield new blockIndices(0,0,0,0,0,0,0,0);
+  yield new unmanaged blockIndices(0,0,0,0,0,0,0,0);
 }
 
 proc buildjk_atom4(bI) {

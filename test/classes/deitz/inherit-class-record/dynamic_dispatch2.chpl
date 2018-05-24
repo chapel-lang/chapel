@@ -13,11 +13,11 @@ class D: C {
   }
 }
 
-proc bar(c: C) {
+proc bar(c: unmanaged C) {
   c.foo();
   delete c;
 }
 
-bar(new C(x=3));
-bar(new D(t=int, x=1, y=4));
-bar(new D(t=real, x=2, y=4.0));
+bar(new unmanaged C(x=3));
+bar(new unmanaged D(t=int, x=1, y=4));
+bar(new unmanaged D(t=real, x=2, y=4.0));

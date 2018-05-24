@@ -7,7 +7,7 @@ class C {
 var s: single C;
 var t: C;
 
-s = new C();
+s = new borrowed C();
 s = t;
 
 

@@ -97,7 +97,7 @@ module analyze_torus_graphs {
     const dense_stencil = {-1..1};
     const torus_stencil : sparse subdomain (dense_stencil) = ( -1, 1 );
 
-    var G = new torus_explicit_stencil_graph ( vertex_domain, 
+    var G = new unmanaged torus_explicit_stencil_graph ( vertex_domain, 
 					       torus_stencil );
 
     const exact_between_centrality = 0.25 * (d - 2) * d  -  d/2 + 1;
@@ -183,7 +183,7 @@ module analyze_torus_graphs {
     const torus_stencil : sparse subdomain (dense_stencil) = 
                                         ( (-1,0), (1,0), (0,-1), (0,1) );
 
-    var G = new torus_explicit_stencil_graph ( vertex_domain, torus_stencil );
+    var G = new unmanaged torus_explicit_stencil_graph ( vertex_domain, torus_stencil );
 	  
     var exact_between_centrality : real;
 
@@ -284,7 +284,7 @@ module analyze_torus_graphs {
     const torus_stencil : sparse subdomain (dense_stencil) = 
       ( (-1, 0, 0 ), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1) );
 
-    var G = new torus_explicit_stencil_graph ( vertex_domain, torus_stencil );
+    var G = new unmanaged torus_explicit_stencil_graph ( vertex_domain, torus_stencil );
 	  
     writeln ( "--------------------------------" );
     writeln ( "Three D Torus with ", d1, " x ", d2, " x ", d3, 
@@ -378,7 +378,7 @@ module analyze_torus_graphs {
       ( (-1, 0, 0, 0), (1, 0, 0, 0), (0, -1, 0, 0), (0, 1, 0, 0), 
 	(0, 0, -1, 0), (0, 0, 1, 0), (0, 0, 0, -1), (0, 0, 0, 1) );
 
-    var G = new torus_explicit_stencil_graph ( vertex_domain, torus_stencil );
+    var G = new unmanaged torus_explicit_stencil_graph ( vertex_domain, torus_stencil );
 	  
 	  
     writeln ( "--------------------------------" );

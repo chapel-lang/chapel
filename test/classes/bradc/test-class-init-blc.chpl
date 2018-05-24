@@ -9,7 +9,7 @@ class Params {
   }
 }
 
-var ListOfParams = new Params();
+var ListOfParams = new unmanaged Params();
 
 writeln(ListOfParams);
 

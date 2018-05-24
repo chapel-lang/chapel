@@ -18,13 +18,10 @@ proc bar(e) {
   foo(e);
 }
 
-var c : C = new C(), d : D = new D();
+var c : C = new borrowed C(), d : D = new borrowed D();
 
 foo(c);
 foo(d);
 
 bar(c);
 bar(d);
-
-delete c;
-delete d;

@@ -13,6 +13,5 @@ proc getType(type t) type {
 }
 
 var myC: getType(int);
-myC = new (getType(int))(int);
+myC = new borrowed (getType(int))(int);
 writeln(myC);
-delete myC;

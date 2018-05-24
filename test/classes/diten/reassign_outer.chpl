@@ -7,7 +7,7 @@ class Outer {
     }
   }
   proc makeAnInner(i: int) {
-    return new Inner(i);
+    return new unmanaged Inner(i);
   }
   proc get_my_s() { return s; }
 }
@@ -18,10 +18,10 @@ class ExtendOuter: Outer {
 }
 
 proc main {
-  var outer = new Outer();
+  var outer = new unmanaged Outer();
   var inner = outer.makeAnInner(1);
 
-  inner.outer = new ExtendOuter();
+  inner.outer = new unmanaged ExtendOuter();
   writeln(inner.get_s());
 
   delete inner.outer;

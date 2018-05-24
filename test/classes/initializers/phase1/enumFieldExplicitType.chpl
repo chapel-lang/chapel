@@ -24,6 +24,5 @@ class Foo {
   }
 }
 
-var foo = new Foo(Color.blue);
+var foo = new borrowed Foo(Color.blue);
 writeln(foo);
-delete foo;

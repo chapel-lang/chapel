@@ -9,7 +9,7 @@ proc f(x : ?t) where x.bar == int {
   writeln("x = ", x.x);
 }
 
-var c = new C(bar=int, x=1);
+var c = new unmanaged C(bar=int, x=1);
 
 f(c);
 

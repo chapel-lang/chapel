@@ -4,10 +4,10 @@ module LibraryX1 {
     var x:int;
   }
 
-  var global:MyClass;
+  var global:owned MyClass;
   proc setup() {
     writeln("In LibraryX1.setup");
-    global = new MyClass(10);
+    global = new owned MyClass(10);
   }
   proc run() {
     setup();
@@ -23,10 +23,10 @@ module LibraryY1 {
   }
 
 
-  var global:MyClass;
+  var global:owned MyClass;
   proc setup() {
     writeln("In LibraryY1.setup");
-    global = new MyClass(1,2);
+    global = new owned MyClass(1,2);
   }
   proc run() {
     setup();

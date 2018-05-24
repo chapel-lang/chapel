@@ -3,7 +3,7 @@ class foo {
   var f : real;
 }
 
-var x : foo = new foo(2, 3.2);
+var x : foo = new borrowed foo(2, 3.2);
 
 x.i = -1;
 x.f = 3.1415;
@@ -17,5 +17,3 @@ writeln("y: (", y.i, ", ", y.f, ")");
 y.i = -2;
 
 writeln("x: (", x.i, ", ", x.f, ")");
-
-delete x;

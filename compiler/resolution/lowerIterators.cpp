@@ -826,15 +826,23 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   loopBodyFnWrapper->insertFormalAtTail(wrapperArgsArg);
   CallExpr* loopBodyFnWrapperCall = new CallExpr(loopBodyFn, wrapperIndexArg);
 
-
   int i = 1;
   Expr* lastActual = NULL;
   while (loopBodyFnCall->numActuals() >= 2) {
     // Skip the index arg.
     Expr* actual = loopBodyFnCall->get(2)->remove();
+    ArgSymbol* formal = loopBodyFn->getFormal(i+1);
+    // The formal's ref-ness must transfer to 'field' below.
+    // Todo: replace ref type with QUAL_REF.
+    Type* fieldType = formal->isRef() ? formal->type->getRefType() : formal->type;
+
     // Create a field for this arg.
-    VarSymbol* field = new VarSymbol(astr("_arg", istr(i++)), actual->typeInfo());
+    VarSymbol* field = new VarSymbol(astr("_arg", istr(i++)), fieldType);
     ct->fields.insertAtTail(new DefExpr(field));
+    if (fieldType->isRef())
+      if (SymExpr* actualSE = toSymExpr(actual))
+        if (actualSE->symbol()->isConstValWillNotChange())
+          field->addFlag(FLAG_REF_TO_IMMUTABLE);
 
     if (field->type->symbol->hasFlag(FLAG_REF) &&
         field->getValType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {

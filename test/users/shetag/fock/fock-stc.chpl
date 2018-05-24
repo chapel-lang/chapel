@@ -37,8 +37,8 @@ iter genBlocks() {
     for (jat, kat) in {1..iat, 1..iat} {
       const lattop = if (kat==iat) then jat else kat;
       for lat in 1..lattop {
-        //on Locales(loc) do yield new blockIndices(iat, jat, kat, lat);
-        yield (loc, new blockIndices(iat, jat, kat, lat));
+        //on Locales(loc) do yield new unmanaged blockIndices(iat, jat, kat, lat);
+        yield (loc, new unmanaged blockIndices(iat, jat, kat, lat));
         loc = (loc+1)%numLocales;
       }
     }

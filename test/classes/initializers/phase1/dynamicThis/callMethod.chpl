@@ -71,21 +71,21 @@ class Child : Parent {
 
 proc main() {
   writeln("----- implicit super.init -----");
-  var implicit = new Child();
+  var implicit = new unmanaged Child();
   writeln("implicit = ", implicit);
   delete implicit;
 
   writeln();
 
   writeln("----- explicit super.init -----");
-  var explicit = new Child(1, 10.0, 100, 1000.0);
+  var explicit = new unmanaged Child(1, 10.0, 100, 1000.0);
   writeln("explicit = ", explicit);
   delete explicit;
 
   writeln();
 
   writeln("----- this.init -----");
-  var thisInit = new Child(1);
+  var thisInit = new unmanaged Child(1);
   writeln("thisInit = ", thisInit);
   delete thisInit;
 }

@@ -5,8 +5,7 @@ class C {
   }
 }
 
-var c = new C();
+var c = new borrowed C();
 var i = 2;
 var j = 3;
 c.foo(i, j);
-delete c;

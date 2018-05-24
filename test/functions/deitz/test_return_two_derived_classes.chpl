@@ -12,9 +12,9 @@ class E: C {
 
 proc f(b: bool) {
   if b then
-    return new D();
+    return new unmanaged D();
   else
-    return new E();
+    return new unmanaged E();
 }
 
 writeln(f(false), f(true));

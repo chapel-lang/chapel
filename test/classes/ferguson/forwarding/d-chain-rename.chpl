@@ -19,7 +19,7 @@ record WrapperTwo {
 }
 
 
-var r = new WrapperTwo(new WrapperOne(new C()));
+var r = new WrapperTwo(new WrapperOne(new unmanaged C()));
 
 r.baz(); // should call C.foo (baz->bar->foo)
 

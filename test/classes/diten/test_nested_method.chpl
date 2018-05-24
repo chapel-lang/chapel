@@ -13,7 +13,7 @@ module M {
     proc C.foo() {
       writeln(w, x, y, z);
     }
-    var c = new C();
+    var c = new unmanaged C();
     c.foo();
     delete c;
   }

@@ -42,14 +42,13 @@ record WeightedParticle3D {
 
 proc generateRandom(pp : []WeightedParticle3D) {
   var x,y,z : real;
-  var rng = new RandomStream(eltType=real);
+  var rng = new borrowed RandomStream(eltType=real);
   for ip in pp {
     x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z=rng.getNext()*1000.0;
     ip.x = (x,y,z);
     ip.w = 1.0;
     ip.r2 = x**2 + y**2 + z**2;
   }
-  delete rng;
 }
 
 
@@ -142,7 +141,7 @@ class KDNode {
   var dom : domain(1);
   var xcen : NDIM*real;
   var rcell : real;
-  var left, right : KDNode;
+  var left, right : unmanaged KDNode;
 
   proc isLeaf() : bool {
     return (left==nil) && (right==nil);
@@ -156,9 +155,9 @@ class KDNode {
 }
 
 
-proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) : KDNode{
+proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) : unmanaged KDNode {
   gtime1.start();
-  var me = new KDNode();
+  var me = new unmanaged KDNode();
   var dom = pp.domain;
   me.lo = dom.low;
   me.hi = dom.high;
@@ -207,7 +206,7 @@ proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) 
   return me;
 }
 
-proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node2 : KDNode) {
+proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node2 : unmanaged KDNode) {
   // Compute the distance between node1 and node2
   var rr = sqrt (+ reduce(node1.xcen - node2.xcen)**2);
   var rmin = rr - (node1.rcell+node2.rcell);

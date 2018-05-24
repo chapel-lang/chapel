@@ -10,6 +10,6 @@ class C {
   }
 }
 
-var c = new C(true);
+var c = new unmanaged C(true);
 writeln(c);
 delete c;

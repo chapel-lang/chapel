@@ -18,11 +18,11 @@ class C {
   proc postinit() {
     for (loc, locid) in zip(targetLocs, 0..) do
       on loc do
-        A(loc) = new LocC(idxType);
+        A(loc) = new unmanaged LocC(idxType);
   }
 }
 
-var myC = new C(targetLocs=Locales);
+var myC = new unmanaged C(targetLocs=Locales);
 
 writeln("myC = ", myC);
 

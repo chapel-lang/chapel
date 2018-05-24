@@ -4,7 +4,7 @@ class FTree {
 }
 
 class Function1d {
-  var s = new FTree();
+  var s = new unmanaged FTree();
 }
 
 proc main() {

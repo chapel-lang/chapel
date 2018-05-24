@@ -5,7 +5,7 @@ class C {
   }
 }
 
-var c = new C(1,2,3);
+var c = new unmanaged C(1,2,3);
 var i: int;
 
 c.foo(i);

@@ -32,37 +32,37 @@ class A {
                   }
                 }
                 proc method() {
-                  var x = new I(); x.method();
+                  var x = new borrowed I(); x.method();
                 } 
               }
               proc method() {
-                var x = new H(); x.method();
+                var x = new borrowed H(); x.method();
               } 
             }
             proc method() {
-              var x = new G(); x.method();
+              var x = new borrowed G(); x.method();
             } 
           }
           proc method() {
-            var x = new F(); x.method();
+            var x = new borrowed F(); x.method();
           } 
         }
         proc method() {
-          var x = new E(); x.method();
+          var x = new borrowed E(); x.method();
         } 
       }
       proc method() {
-        var x = new D(); x.method();
+        var x = new borrowed D(); x.method();
       } 
     }
     proc method() {
-      var x = new C(); x.method();
+      var x = new borrowed C(); x.method();
     } 
   }
   proc method() {
-    var x = new B(); x.method();
+    var x = new borrowed B(); x.method();
   } 
 }
 
-var a = new A();
+var a = new borrowed A();
 a.method();

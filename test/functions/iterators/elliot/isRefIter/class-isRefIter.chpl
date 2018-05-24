@@ -30,7 +30,7 @@ class C {
 //
 // ensure ref iterators are correctly identified
 //
-var c = new C();
+var c = new borrowed C();
 writeln(isRefIter(c.myValIter()));
 writeln(isRefIter(c.myRefIter()));
 
@@ -86,5 +86,3 @@ for i in printIterRefnessWrapper(c.myRefIter(tag=iterKind.leader)) do
 
 for i in printIterRefnessWrapper(c.myValIter(tag=iterKind.follower, 0)) do;
 for i in printIterRefnessWrapper(c.myRefIter(tag=iterKind.follower, 0)) do;
-
-delete c;

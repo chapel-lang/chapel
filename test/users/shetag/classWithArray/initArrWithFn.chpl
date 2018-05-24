@@ -10,7 +10,5 @@ class C {
   }
 }
 
-var c = new C(4);
+var c = new borrowed C(4);
 writeln(c);
-delete c;
-

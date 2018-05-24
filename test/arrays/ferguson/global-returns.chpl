@@ -5,7 +5,7 @@ class C {
   var field: [1..10] int;
 }
 
-var globalC = new C();
+var globalC = new unmanaged C();
 
 proc returnRefGlobal() ref {
   return i;

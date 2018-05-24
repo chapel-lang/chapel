@@ -240,26 +240,31 @@ proc ReplicatedDom.dsiMyDist() return dist;
 
 proc ReplicatedDom.dsiSupportsPrivatization() param return true;
 
+pragma "use default init"
+record ReplicatedDomPrvData {
+  var distpid;
+  var domRep;
+  var localDoms;
+}
+
 proc ReplicatedDom.dsiGetPrivatizeData() {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiGetPrivatizeData");
 
-  // TODO: perhaps return 'domRep' and 'localDoms' by value,
-  // to reduce communication needed in dsiPrivatize().
-  return (dist.pid, domRep, localDoms);
+  return new ReplicatedDomPrvData(dist.pid, domRep, localDoms);
 }
 
 proc ReplicatedDom.dsiPrivatize(privatizeData) {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiPrivatize on ", here);
 
-  var privdist = chpl_getPrivatizedCopy(this.dist.type, privatizeData(1));
+  var privdist = chpl_getPrivatizedCopy(this.dist.type, privatizeData.distpid);
   return new unmanaged ReplicatedDom(rank=rank, idxType=idxType, stridable=stridable,
                            dist = privdist,
-                           domRep = privatizeData(2),
-                           localDoms = privatizeData(3));
+                           domRep = privatizeData.domRep,
+                           localDoms = privatizeData.localDoms);
 }
 
 proc ReplicatedDom.dsiGetReprivatizeData() {
-  return (domRep,);
+  return domRep;
 }
 
 proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
@@ -267,7 +272,7 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
          this.idxType == other.idxType &&
          this.stridable == other.stridable);
 
-  this.domRep = reprivatizeData(1);
+  this.domRep = reprivatizeData;
 }
 
 
@@ -487,20 +492,24 @@ proc ReplicatedArr.dsiGetBaseDom() return dom;
 
 proc ReplicatedArr.dsiSupportsPrivatization() param return true;
 
+pragma "use default init"
+record ReplicatedArrPrvData {
+  var dompid;
+  var localArrs;
+}
+
 proc ReplicatedArr.dsiGetPrivatizeData() {
   if traceReplicatedDist then writeln("ReplicatedArr.dsiGetPrivatizeData");
 
-  // TODO: perhaps return 'localArrs' by value,
-  // to reduce communication needed in dsiPrivatize().
-  return (dom.pid, localArrs);
+  return new ReplicatedArrPrvData(dom.pid, localArrs);
 }
 
 proc ReplicatedArr.dsiPrivatize(privatizeData) {
   if traceReplicatedDist then writeln("ReplicatedArr.dsiPrivatize on ", here);
 
-  var privdom = chpl_getPrivatizedCopy(this.dom.type, privatizeData(1));
+  var privdom = chpl_getPrivatizedCopy(this.dom.type, privatizeData.dompid);
   var result = new unmanaged ReplicatedArr(eltType, privdom);
-  result.localArrs = privatizeData(2);
+  result.localArrs = privatizeData.localArrs;
   return result;
 }
 

@@ -12,7 +12,7 @@ class Foo {
   var d: Bar;
 }
 
-var foo = new Foo(42, 13.0, "hello", new Bar(29, "goodbye"));
+var foo = new borrowed Foo(42, 13.0, "hello", new borrowed Bar(29, "goodbye"));
 
 var context = new ZMQ.Context();
 var socket = context.socket(ZMQ.PUSH);

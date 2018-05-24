@@ -17,7 +17,7 @@ config const listSize = 10;  // Used when populating the list
 //
 class List {
   type eltType;
-  var head: Node(eltType);
+  var head: unmanaged Node(eltType);
 
   //
   // The Node class contains the list's values and references to the
@@ -27,14 +27,14 @@ class List {
   class Node {
     type eltType;
     var value: eltType;
-    var next: Node(eltType);
+    var next: unmanaged Node(eltType);
   }
 
   //
   // Insert value into the front of the list
   //
   proc insert(value: eltType) {
-    head = new Node(eltType, value, head);
+    head = new unmanaged Node(eltType, value, head);
   }
  
   
@@ -150,10 +150,10 @@ class List {
 proc main() {
   use Random;
 
-  var lst = new List(int);
+  var lst = new owned List(int);
   var rnd = if useClockSeed 
-              then new NPBRandomStream(real)
-              else new NPBRandomStream(real, seed = randomSeed);
+              then new owned NPBRandomStream(real)
+              else new owned NPBRandomStream(real, seed = randomSeed);
   const maxValue = 100;
 
   //
@@ -199,6 +199,4 @@ writeln("delete element at pos 1 :", lst);
     lst.remove(i);
 
   writeln("The list contains: ", lst);
-
-  delete rnd;
 }

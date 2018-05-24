@@ -35,8 +35,8 @@ class Replicate : Base {
 }
 
 proc main() {
-  var low = new Lower();
-  var repl = new Replicate(low);
+  var low = new unmanaged Lower();
+  var repl = new unmanaged Replicate(low);
 
   var r = new R();
   repl.replicate(r);

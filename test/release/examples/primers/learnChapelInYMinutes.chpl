@@ -904,7 +904,7 @@ class GenericClass {
 
 // We can assign to the member array of the object using the bracket
 // notation that we defined.
-var realList = new GenericClass(real, 10);
+var realList = new borrowed GenericClass(real, 10);
 for i in realList.classDomain do realList[i] = i + 1.0;
 
 // We can iterate over the values in our list with the iterator
@@ -913,12 +913,12 @@ for value in realList do write(value, ", ");
 writeln();
 
 // Make a copy of realList using the copy initializer.
-var copyList = new GenericClass(realList);
+var copyList = new borrowed GenericClass(realList);
 for value in copyList do write(value, ", ");
 writeln();
 
 // Make a copy of realList and change the type, also using the copy initializer.
-var copyNewTypeList = new GenericClass(realList, int);
+var copyNewTypeList = new borrowed GenericClass(realList, int);
 for value in copyNewTypeList do write(value, ", ");
 writeln();
 

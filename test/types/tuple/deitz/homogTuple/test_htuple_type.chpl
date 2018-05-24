@@ -4,6 +4,6 @@ class C {
   type t;
   var x: t;
 }
-var c = new C(2*int);
+var c = new unmanaged C(2*int);
 writeln(c);
 delete c;

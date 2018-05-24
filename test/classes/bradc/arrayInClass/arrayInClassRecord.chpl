@@ -12,7 +12,7 @@ class C {
 
 
 var myR = new R();
-var myC = new C();
+var myC = new owned C();
 
 writeln("A is: ", A);
 foo(A, 17);
@@ -23,7 +23,6 @@ writeln("A is: ", A);
 writeln("myR is: ", myR);
 baz(myC, 20);
 writeln("myC is: ", myC);
-delete myC;
 
 proc foo(x,y) {
   x(1) = y;

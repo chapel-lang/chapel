@@ -110,9 +110,9 @@ proc Gen_RMAT_graph ( a : real,
     // Random Numbers return in the range [0.0, 1.0)
 
     var Rand_Gen = if REPRODUCIBLE_PROBLEMS then
-                     new NPBRandomStream (real, seed = 0556707007)
+                     new owned NPBRandomStream (real, seed = 0556707007)
                    else
-                     new NPBRandomStream (real);
+                     new owned NPBRandomStream (real);
 
     var   Noisy_a     : [edge_range] real,
           Noisy_b     : [edge_range] real,

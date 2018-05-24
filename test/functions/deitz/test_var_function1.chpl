@@ -6,11 +6,11 @@ proc bar(x : foo) ref {
   return x;
 }
 
-var f : foo = new foo(a = 12);
+var f : foo = new unmanaged foo(a = 12);
 
 writeln(f);
 
-bar(f) = new foo(a = 13);
+bar(f) = new unmanaged foo(a = 13);
 
 writeln(f);
 

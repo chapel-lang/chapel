@@ -2,9 +2,9 @@ class C {
   var x: int;
 }
 
-var c1 = new C(1);
-var c2 = new C(2);
-var c3 = new C(3);
+var c1 = new unmanaged C(1);
+var c2 = new unmanaged C(2);
+var c3 = new unmanaged C(3);
 
 iter foo() {
   yield c1;

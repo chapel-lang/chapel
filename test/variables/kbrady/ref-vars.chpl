@@ -70,7 +70,7 @@ class Foo {
   }
 }
 
-var myFoo = new Foo();
+var myFoo = new borrowed Foo();
 ref myrefFoo = myFoo;
 writeln('\n', "myFoo     myrefFoo");
 writeln(myFoo, ' ', myrefFoo);
@@ -79,7 +79,7 @@ writeln(myFoo, ' ', myrefFoo);
 myrefFoo.doubleMe();
 writeln(myFoo, ' ', myrefFoo);
 
-delete myFoo;
+
 
 // Ref Functions ////////////////////////
 proc testRefReturn(ref x: int) ref {

@@ -16,12 +16,9 @@ class Foo {
   }
 }
 
-var foo1 = new Foo(int, int);
-var foo2 = new Foo(int, int);
+var foo1 = new borrowed Foo(int, int);
+var foo2 = new borrowed Foo(int, int);
 
 writeln(foo1.type == foo2.type);
 writeln(foo1);
 writeln(foo2);
-
-delete foo1;
-delete foo2;

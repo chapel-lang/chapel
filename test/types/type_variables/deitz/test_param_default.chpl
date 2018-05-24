@@ -3,10 +3,10 @@ class C {
   var x: p*int;
 }
 
-var c = new C(p=5);
+var c = new unmanaged C(p=5);
 writeln(c);
 
-var c2 = new C();
+var c2 = new unmanaged C();
 writeln(c2);
 
 delete c;

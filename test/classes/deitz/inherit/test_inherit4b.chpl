@@ -18,9 +18,7 @@ proc foo(c : C) {
 
 var c : C;
 
-c = new C();
+c = new borrowed C();
 foo(c);
-delete c;
-c = new D();
+c = new borrowed D();
 foo(c);
-delete c;

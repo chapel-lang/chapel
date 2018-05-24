@@ -14,9 +14,9 @@ class D : C {
   }
 }
 
-var c1: C = new C();
-var c2: C = new D();
-var d : D = new D();
+var c1: C = new borrowed C();
+var c2: C = new borrowed D();
+var d : D = new borrowed D();
 
 test(c1);
 test(c2);
@@ -28,7 +28,3 @@ proc test(x: C) {
   }
   writeln();
 }
-
-delete c1;
-delete c2;
-delete d;

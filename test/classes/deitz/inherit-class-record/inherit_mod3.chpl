@@ -13,7 +13,7 @@ proc foo(c : C) {
 }
 
 var c : C;
-c = new D1();
+c = new borrowed D1();
 foo(c);
-c = new D2();
+c = new borrowed D2();
 foo(c);

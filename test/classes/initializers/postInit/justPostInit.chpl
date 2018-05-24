@@ -11,7 +11,6 @@ class C {
   }
 }
 
-var c = new C();
+var c = new borrowed C();
 writeln("has initializer: ", canResolveMethod(c, "init"));
 writeln("c = ", c);
-delete c;

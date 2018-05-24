@@ -13,7 +13,7 @@ class B : A
    var a = "New value";
 }
 
-var b = new B();
+var b = new unmanaged B();
 
 b.usea(); //uses value from A, not B
 

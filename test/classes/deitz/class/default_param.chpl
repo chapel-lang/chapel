@@ -4,7 +4,7 @@ class C {
 
 var c: C;
 
-c = new C();
+c = new unmanaged C();
 
 writeln("{p = ", c.p, "}");
 

@@ -12,9 +12,8 @@ class Child : Parent {
 }
 proc run() {
   sync {
-    var obj:Parent = new Child();
+    var obj:Parent = new borrowed Child();
     obj.runTask();
-    delete obj;
   }
 }
 run();

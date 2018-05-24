@@ -12,9 +12,9 @@ class Grandchild : Child {
 }
 
 config param n = 10;
-var A:[1..n] Parent;
+var A:[1..n] unmanaged Parent;
 for param i in 1..n {
-  A[i] = new Grandchild(p=i, x=i, y=i, z=i);
+  A[i] = new unmanaged Grandchild(p=i, x=i, y=i, z=i);
 }
 
 var first:Parent = A[1];

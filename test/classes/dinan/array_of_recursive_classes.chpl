@@ -9,9 +9,9 @@ class B {
 }
 
 
-var b = new B();
+var b = new unmanaged B();
 
-b.a = new A(10);
+b.a = new unmanaged A(10);
 
 writeln(b.a.x);
 

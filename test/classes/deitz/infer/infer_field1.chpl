@@ -13,7 +13,7 @@ proc bar(c : C) {
   c.y = "world";
 }
 
-var c = new C(0, 0), d = new C("", "");
+var c = new unmanaged C(0, 0), d = new unmanaged C("", "");
 foo(c);
 bar(d);
 writeln(c);

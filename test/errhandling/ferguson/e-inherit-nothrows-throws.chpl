@@ -6,9 +6,9 @@ class D : C {
   proc foo() throws { writeln("D.foo()"); }
 }
 
-var c = new C();
-var d = new D();
-var dc:C = new D();
+var c = new unmanaged C();
+var d = new unmanaged D();
+var dc: unmanaged C = new unmanaged D();
 
 try { c.foo(); } catch { writeln("c.foo threw"); }
 try { d.foo(); } catch { writeln("d.foo threw"); }

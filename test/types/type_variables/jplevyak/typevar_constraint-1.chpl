@@ -22,8 +22,8 @@ class D : C {
   var y : real;
 }
 
-var b = new B(x = 1, y = 2);
-var d = new D(x = 3.0, y = 4.0);
+var b = new unmanaged B(x = 1, y = 2);
+var d = new unmanaged D(x = 3.0, y = 4.0);
 
 foo(B, b);
 foo(D, d);

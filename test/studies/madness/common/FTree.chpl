@@ -146,7 +146,7 @@ class FTree {
     /** Return a copy of this FTree
      */
     proc copy() {
-        var t = new FTree(order);
+        var t = new unmanaged FTree(order);
         t.indices = indices;
         // get around restriction of matching domains for assoc arrays
         forall i in t.nodes.domain do t.nodes(i) = nodes(i);

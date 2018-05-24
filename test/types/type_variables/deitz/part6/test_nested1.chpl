@@ -14,7 +14,6 @@ class C {
   }
 }
 
-var c = new C(int);
+var c = new borrowed C(int);
 c.foo();
 writeln(c);
-delete c;

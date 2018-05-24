@@ -61,7 +61,7 @@ iter genBlocks() {
       const lattop = if (kat==iat) then jat 
                                    else kat;
       for lat in 1..lattop do // sjd: changed forall to for because of yield
-        yield new blockIndices(iat, jat, kat, lat);
+        yield new unmanaged blockIndices(iat, jat, kat, lat);
     }
   for loc in 1..numConsumers do // sjd: changed forall to for because of yield
     yield nil;

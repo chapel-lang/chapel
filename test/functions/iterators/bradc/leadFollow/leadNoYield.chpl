@@ -8,7 +8,7 @@ class C {
   }
 }
 
-var myC = new C();
+var myC = new unmanaged C();
 
 for i in myC do
   writeln("i is: ", i);

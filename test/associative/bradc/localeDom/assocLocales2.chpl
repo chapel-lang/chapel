@@ -7,8 +7,6 @@ class C {
   var D: domain(locale) = targetLocs;
 }
 
-var myC = new C(targetLocs=Locales);
+var myC = new owned C(targetLocs=Locales);
 
 writeln("myC = ", myC);
-
-delete myC;

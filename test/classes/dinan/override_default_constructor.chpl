@@ -6,7 +6,7 @@ class Foo {
   }
 }
 
-var bar = new Foo(5);
+var bar = new unmanaged Foo(5);
 
 writeln(bar.x);
 

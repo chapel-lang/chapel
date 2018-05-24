@@ -12,6 +12,5 @@ proc bar(val) {
   return !val;
 }
 
-var foo = new Foo(true);
+var foo = new borrowed Foo(true);
 writeln(foo);
-delete foo;
