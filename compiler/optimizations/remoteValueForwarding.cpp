@@ -104,7 +104,8 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     if (ct->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
       for_fields(field, ct) {
-        if (field->isRef()) {
+        if (field->hasFlag(FLAG_REF_TO_IMMUTABLE)) {
+          INT_ASSERT(field->isRef());
           if (isSafeToDerefField(defMap, useMap, field) == true) {
             Type* vt = field->getValType();
 
