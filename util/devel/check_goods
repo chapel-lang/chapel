@@ -27,6 +27,18 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
       base=${base%.default}
    fi
 
+   # These dirs stick the .good files in subdirs, and copy them in via precomp.
+   # Pretend these .good files are one directory up.
+   if [ $d == "test/release/examples/benchmarks/isx/goods-1" -o \
+	$d == "test/release/examples/benchmarks/isx/goods-4" -o \
+	$d == "test/studies/isx/goods-1" -o \
+	$d == "test/studies/isx/goods-4" ]; then
+       base=${base/\/goods-1/}
+       base=${base/\/goods-4/}
+       d=${d/\/goods-1/}
+       d=${d/\/goods-4/}
+   fi
+
    # This dir has foo-alt.good files that are included by the
    # using-chpl .rst files.
    if [ $d == "test/release/examples/users-guide/taskpar" ]; then
