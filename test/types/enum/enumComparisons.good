@@ -1,0 +1,21 @@
+yellow <  yellow: false
+yellow <= yellow: true
+yellow >= yellow: true
+yellow >  yellow: false
+yellow == yellow: true
+yellow != yellow: false
+
+yellow <  green: true
+yellow <= green: true
+yellow >= green: false
+yellow >  green: false
+yellow == green: false
+yellow != green: true
+
+yellow <  red: false
+yellow <= red: false
+yellow >= red: true
+yellow >  red: true
+yellow == red: false
+yellow != red: true
+

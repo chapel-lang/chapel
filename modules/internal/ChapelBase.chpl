@@ -167,9 +167,12 @@ module ChapelBase {
   inline proc <=(a: uint(?w), b: uint(w)) return __primitive("<=", a, b);
   inline proc <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
   inline proc <=(a: imag(?w), b: imag(w)) return __primitive("<=", a, b);
+  proc <=(a: enumerated, b: enumerated) where (a.type == b.type) {
+    return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  }
   pragma "last resort"
-  proc <=(a: enumerated, b: enumerated) {
-    compilerError("Ordered comparisons not supported for enumerated types by default");
+  inline proc <=(a: enumerated, b: enumerated) where (a.type != b.type) {
+    compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
   }
 
@@ -177,9 +180,12 @@ module ChapelBase {
   inline proc >=(a: uint(?w), b: uint(w)) return __primitive(">=", a, b);
   inline proc >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
   inline proc >=(a: imag(?w), b: imag(w)) return __primitive(">=", a, b);
+  proc >=(a: enumerated, b: enumerated) where (a.type == b.type) {
+    return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  }
   pragma "last resort"
-  proc >=(a: enumerated, b: enumerated) {
-    compilerError("Ordered comparisons not supported for enumerated types by default");
+  inline proc >=(a: enumerated, b: enumerated) where (a.type != b.type) {
+    compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
   }
 
@@ -187,9 +193,12 @@ module ChapelBase {
   inline proc <(a: uint(?w), b: uint(w)) return __primitive("<", a, b);
   inline proc <(a: real(?w), b: real(w)) return __primitive("<", a, b);
   inline proc <(a: imag(?w), b: imag(w)) return __primitive("<", a, b);
+  proc <(a: enumerated, b: enumerated) where (a.type == b.type) {
+    return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  }
   pragma "last resort"
-  proc <(a: enumerated, b: enumerated) {
-    compilerError("Ordered comparisons not supported for enumerated types by default");
+  inline proc <(a: enumerated, b: enumerated) where (a.type != b.type) {
+    compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
   }
 
@@ -197,9 +206,12 @@ module ChapelBase {
   inline proc >(a: uint(?w), b: uint(w)) return __primitive(">", a, b);
   inline proc >(a: real(?w), b: real(w)) return __primitive(">", a, b);
   inline proc >(a: imag(?w), b: imag(w)) return __primitive(">", a, b);
+  proc >(a: enumerated, b: enumerated) where (a.type == b.type) {
+    return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  }
   pragma "last resort"
-  proc >(a: enumerated, b: enumerated) {
-    compilerError("Ordered comparisons not supported for enumerated types by default");
+  inline proc >(a: enumerated, b: enumerated) where (a.type != b.type) {
+    compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
   }
 
