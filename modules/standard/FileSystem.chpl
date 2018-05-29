@@ -400,10 +400,12 @@ proc copyFile(src: string, dest: string) throws {
   }
 
   // read in, write out.
-  var line: [0..1023] uint(8);
+  var buf: string;
   var numRead: int = 0;
-  while (try srcChnl.readline(line, numRead=numRead)) {
-    try destChnl.write(line[0..#numRead]);
+  // If increasing the read size, make sure there's a test in
+  // test/library/standard/FileSystem that copies a file larger than one buffer.
+  while (try srcChnl.readstring(buf, len=4096)) {
+    try destChnl.write(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
     // the bytes read into memory between the two channels). To do that you'd

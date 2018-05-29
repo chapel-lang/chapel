@@ -210,6 +210,7 @@ tags
 /test/memory/shannon/configVarFile.log
 
 /test/library/packages/HDF5/ex_lite3.h5
+/test/library/standard/FileSystem/copyFile/*.out
 /test/library/standard/FileSystem/fsouza/chdir/destination
 /test/library/standard/FileSystem/fsouza/chown/file.txt
 /test/library/standard/FileSystem/fsouza/isdir/my_dir
