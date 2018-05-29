@@ -27,6 +27,7 @@
 #include "driver.h"
 #include "externCResolve.h"
 #include "ForallStmt.h"
+#include "IfExpr.h"
 #include "initializerRules.h"
 #include "LoopStmt.h"
 #include "passes.h"
@@ -434,6 +435,21 @@ static void scopeResolve(TypeSymbol*         typeSym,
   }
 }
 
+static void scopeResolve(IfExpr* ife, ResolveScope* scope) {
+  scopeResolve(ife->getThenStmt(), scope);
+  scopeResolve(ife->getElseStmt(), scope);
+}
+
+static void scopeResolve(CallExpr* call, ResolveScope* scope) {
+  for_actuals(actual, call) {
+    if (CallExpr* ca = toCallExpr(actual)) {
+      scopeResolve(ca, scope);
+    } else if (IfExpr* ife = toIfExpr(actual)) {
+      scopeResolve(ife, scope);
+    }
+  }
+}
+
 static void scopeResolve(const AList& alist, ResolveScope* scope) {
   // Add the local definitions to the scope
   for_alist(stmt, alist) {
@@ -464,6 +480,15 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
 
         } else if (TypeSymbol* typeSym = toTypeSymbol(sym))   {
           scopeResolve(typeSym, scope);
+        }
+      }
+
+      // Look for IfExprs
+      if (def->init != NULL) {
+        if (CallExpr* call = toCallExpr(def->init)) {
+          scopeResolve(call, scope);
+        } else if (IfExpr* ife = toIfExpr(def->init)) {
+          scopeResolve(ife, scope);
         }
       }
 
@@ -499,10 +524,14 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
 
     } else if (DeferStmt* deferStmt = toDeferStmt(stmt)) {
       scopeResolve(deferStmt->body(), scope);
+    } else if (CallExpr* call = toCallExpr(stmt)) {
+      scopeResolve(call, scope);
+    } else if (IfExpr* ife = toIfExpr(stmt)) {
+      scopeResolve(ife, scope);
 
     } else if (isUseStmt(stmt)           == true ||
-               isCallExpr(stmt)          == true ||
                isUnresolvedSymExpr(stmt) == true ||
+               isSymExpr(stmt)           == true ||
                isGotoStmt(stmt)          == true) {
 
     // May occur in --llvm runs
