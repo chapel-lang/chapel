@@ -5205,6 +5205,8 @@ static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 static bool  moveSupportsUnresolvedFunctionReturn(CallExpr* call);
 
+static bool  isIfExprResult(CallExpr* call);
+
 static Type* moveDetermineRhsType(CallExpr* call);
 
 static Type* moveDetermineLhsType(CallExpr* call);
@@ -5246,6 +5248,8 @@ static void resolveMove(CallExpr* call) {
   // Ignore moves to RVV unless this is a constructor
   } else if (moveSupportsUnresolvedFunctionReturn(call) == true) {
 
+  } else if (isIfExprResult(call)) {
+
 
   } else {
     // These calls might modify the fields in call
@@ -5278,8 +5282,10 @@ static bool moveIsAcceptable(CallExpr* call) {
   Expr*   rhs    = call->get(2);
   bool    retval = true;
 
+  // Handle IfExpr results in 'resolveIfExprType' for better error message
   if (isTypeExpr(rhs) == false) {
-    if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == true &&
+        lhsSym->hasFlag(FLAG_IF_EXPR_RESULT) == false) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
 
       if (fn->getReturnSymbol()                  != lhsSym ||
@@ -5290,7 +5296,8 @@ static bool moveIsAcceptable(CallExpr* call) {
 
   } else {
     if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-        lhsSym->hasFlag(FLAG_MAYBE_TYPE)    == false) {
+        lhsSym->hasFlag(FLAG_MAYBE_TYPE)    == false &&
+        lhsSym->hasFlag(FLAG_IF_EXPR_RESULT) == false) {
       retval = false;
     }
   }
@@ -5354,6 +5361,12 @@ static bool moveSupportsUnresolvedFunctionReturn(CallExpr* call) {
   }
 
   return retval;
+}
+
+static bool isIfExprResult(CallExpr* call) {
+  Symbol* LHS = toSymExpr(call->get(1))->symbol();
+
+  return LHS->hasFlag(FLAG_IF_EXPR_RESULT);
 }
 
 //
@@ -6910,6 +6923,18 @@ Expr* resolveExpr(Expr* expr) {
 
   } else if (CallExpr* call = toCallExpr(expr)) {
     retval = resolveExprPhase2(expr, fn, preFold(call));
+  } else if (CondStmt* stmt = toCondStmt(expr)) {
+    BlockStmt* then = stmt->thenStmt;
+    // TODO: Should we just store a boolean field in CondStmt instead?
+    if (CallExpr* call = toCallExpr(then->body.tail)) {
+      if (call->isPrimitive(PRIM_MOVE)) {
+        Symbol* LHS = toSymExpr(call->get(1))->symbol();
+        if (LHS->hasFlag(FLAG_IF_EXPR_RESULT)) {
+          resolveIfExprType(stmt);
+        }
+      }
+    }
+    retval = foldTryCond(postFold(expr));
 
   } else {
     retval = foldTryCond(postFold(expr));
