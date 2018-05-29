@@ -236,6 +236,18 @@ void AstDump::exitNamedExpr(NamedExpr* node) {
 
 
 //
+// IfExpr
+//
+
+bool AstDump::enterIfExpr(IfExpr* node) {
+  return false;
+}
+
+void AstDump::exitIfExpr(IfExpr* node) {
+}
+
+
+//
 // SymExpr
 //
 void AstDump::visitSymExpr(SymExpr* node) {

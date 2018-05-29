@@ -119,6 +119,13 @@ bool AstLogger::enterNamedExpr(NamedExpr* node) {
 void AstLogger::exitNamedExpr(NamedExpr* node) {
 }
 
+bool AstLogger::enterIfExpr(IfExpr* node) {
+  return true;
+}
+
+void AstLogger::exitIfExpr(IfExpr* node) {
+}
+
 void AstLogger::visitSymExpr(SymExpr* node) {
 }
 

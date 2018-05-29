@@ -30,6 +30,7 @@
 #include "DeferStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "IfExpr.h"
 #include "iterator.h"
 #include "log.h"
 #include "UnmanagedClassType.h"
@@ -178,6 +179,8 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       printf("%s{%s\n", block_explain, block_kind);
     } else if (toCondStmt(ast)) {
       printf("if ");
+    } else if (toIfExpr(ast)) {
+      printf("IfExpr ");
     } else if (toForallStmt(ast)) {
       printf("forall\n");
     } else if (CallExpr* e = toCallExpr(expr)) {

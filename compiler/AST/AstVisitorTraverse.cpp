@@ -158,6 +158,16 @@ void AstVisitorTraverse::exitNamedExpr(NamedExpr* node)
 
 }
 
+bool AstVisitorTraverse::enterIfExpr(IfExpr* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitIfExpr(IfExpr* node)
+{
+
+}
+
 void AstVisitorTraverse::visitSymExpr(SymExpr* node)
 {
 
