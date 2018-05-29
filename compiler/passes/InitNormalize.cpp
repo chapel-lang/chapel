@@ -20,6 +20,7 @@
 #include "InitNormalize.h"
 
 #include "ForallStmt.h"
+#include "IfExpr.h"
 #include "initializerRules.h"
 #include "stmt.h"
 #include "astutil.h"
@@ -666,6 +667,28 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
     CallExpr* fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, initExpr);
 
     insertBefore->insertBefore(fieldSet);
+  } else if (isIfExpr(initExpr)) {
+    VarSymbol* tmp      = newTemp("tmp");
+    DefExpr*   tmpDefn  = new DefExpr(tmp);
+    CallExpr*  tmpInit  = new CallExpr(PRIM_INIT_VAR, tmp, initExpr);
+
+    Symbol*    _this    = mFn->_this;
+    Symbol*    name     = new_CStringSymbol(field->sym->name);
+    CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
+
+    if (isParam == true) {
+      tmp->addFlag(FLAG_PARAM);
+    }
+
+    if (isFieldAccessible(initExpr) == false) {
+      INT_ASSERT(false);
+    }
+
+    insertBefore->insertBefore(tmpDefn);
+    insertBefore->insertBefore(tmpInit);
+    insertBefore->insertBefore(fieldSet);
+
+    updateFieldsMember(initExpr);
 
   } else {
     INT_ASSERT(false);
@@ -1006,6 +1029,25 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
 
     updateFieldsMember(initExpr);
 
+  } else if (isIfExpr(initExpr)) {
+    VarSymbol* tmp      = newTemp("tmp");
+    DefExpr*   tmpDefn  = new DefExpr(tmp);
+    CallExpr*  tmpInit  = new CallExpr(PRIM_INIT_VAR, tmp, initExpr);
+
+    Symbol*    _this    = mFn->_this;
+    Symbol*    name     = new_CStringSymbol(field->sym->name);
+    CallExpr*  fieldSet = new CallExpr(PRIM_SET_MEMBER, _this, name, tmp);
+
+    if (isFieldAccessible(initExpr) == false) {
+      INT_ASSERT(false);
+    }
+
+    insertBefore->insertBefore(tmpDefn);
+    insertBefore->insertBefore(tmpInit);
+    insertBefore->insertBefore(fieldSet);
+
+    updateFieldsMember(initExpr);
+
   } else {
     INT_ASSERT(false);
   }
@@ -1079,6 +1121,14 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
         }
       }
     }
+  } else if (IfExpr* ie = toIfExpr(expr)) {
+    isFieldAccessible(ie->getCondition());
+    isFieldAccessible(ie->getThenStmt());
+    isFieldAccessible(ie->getElseStmt());
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    for_alist(stmt, block->body) {
+      isFieldAccessible(stmt);
+    }
 
   } else if (isNamedExpr(expr) == true) {
     retval = true;
@@ -1143,6 +1193,15 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
       for_actuals(actual, callExpr) {
         updateFieldsMember(actual);
       }
+    }
+  } else if (IfExpr* ie = toIfExpr(expr)) {
+    updateFieldsMember(ie->getCondition());
+    updateFieldsMember(ie->getThenStmt());
+    updateFieldsMember(ie->getElseStmt());
+
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    for_alist(stmt, block->body) {
+      updateFieldsMember(stmt);
     }
 
   } else if (NamedExpr* named = toNamedExpr(expr)) {
@@ -1556,6 +1615,14 @@ static void collectThisUses(Expr* expr, std::vector<CallExpr*>& uses) {
       if (passesThis == true) {
         uses.push_back(call);
       }
+    }
+  } else if (IfExpr* ife = toIfExpr(expr)) {
+    collectThisUses(ife->getCondition(), uses);
+    collectThisUses(ife->getThenStmt(), uses);
+    collectThisUses(ife->getElseStmt(), uses);
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    for_alist(stmt, block->body) {
+      collectThisUses(stmt, uses);
     }
   }
 }
