@@ -460,7 +460,8 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
                      "or union",
                      name);
     } else {
-      ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", this);
+      ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", dtUnknown,
+                                     new UnresolvedSymExpr(this->symbol->name));
 
       fn->_this = arg;
 
