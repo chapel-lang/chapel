@@ -434,7 +434,8 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
     }
 
   } else if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
-    methods.add(fn);
+    // Note, like secondary methods, this function will be
+    // added to _this->type->methods when resolving this type.
 
     if (fn->_this) {
       // get the name used in the type binding clause
@@ -462,6 +463,8 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
     } else {
       ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", dtUnknown,
                                      new UnresolvedSymExpr(this->symbol->name));
+      // Note: using UnresolvedSymExpr above allows scope resolve to treat
+      // primary and secondary methods more uniformly.
 
       fn->_this = arg;
 
