@@ -46,6 +46,18 @@ config param debugSparseBlockDistBulkTransfer = false;
 // There is no SparseBlock distribution class. Instead, we
 // just use Block.
 
+// Helper type for sorting locales
+record TargetLocaleComparator {
+  param rank;
+  type idxType;
+  type sparseLayoutType;
+  var dist: unmanaged Block(rank, idxType, sparseLayoutType);
+  proc key(a: index(rank, idxType)) {
+    return (dist.targetLocsIdx(a), a);
+  }
+}
+
+
 //
 // SparseBlock Domain Class
 //
@@ -125,21 +137,15 @@ class SparseBlockDom: BaseSparseDomImpl {
     return max reduce ([l in locDoms] l.mySparseBlock.last);
   }
 
-  // Tried to put this record in the function and the if statement, but got a
-  // segfault from the compiler.
-  record TargetLocaleComparator {
-    proc key(a: index(rank, idxType)) { 
-      return (dist.targetLocsIdx(a), a);
-    }
-  }
-
   proc bulkAdd_help(inds: [] index(rank,idxType),
       dataSorted=false, isUnique=false) {
     use Sort;
     use Search;
 
     // without _new_, record functions throw null deref
-    var comp = new TargetLocaleComparator();
+    var comp = new TargetLocaleComparator(rank=rank, idxType=idxType,
+                                          sparseLayoutType=sparseLayoutType,
+                                          dist=dist);
 
     if !dataSorted then sort(inds, comparator=comp);
 
