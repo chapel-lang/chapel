@@ -124,7 +124,7 @@ module ChapelBase {
   inline proc ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
   inline proc ==(a: imag(?w), b: imag(w)) return __primitive("==", a, b);
   inline proc ==(a: complex(?w), b: complex(w)) return a.re == b.re && a.im == b.im;
-  inline proc ==(a: object, b: object) return __primitive("ptr_eq", a, b);
+  inline proc ==(a: borrowed object, b: borrowed object) return __primitive("ptr_eq", a, b);
   inline proc ==(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive("==", a, b);
   }
@@ -140,7 +140,7 @@ module ChapelBase {
   inline proc !=(a: real(?w), b: real(w)) return __primitive("!=", a, b);
   inline proc !=(a: imag(?w), b: imag(w)) return __primitive("!=", a, b);
   inline proc !=(a: complex(?w), b: complex(w)) return a.re != b.re || a.im != b.im;
-  inline proc !=(a: object, b: object) return __primitive("ptr_neq", a, b);
+  inline proc !=(a: borrowed object, b: borrowed object) return __primitive("ptr_neq", a, b);
   inline proc !=(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive("!=", a, b);
   }
@@ -566,7 +566,7 @@ module ChapelBase {
   //   incorrectness; it is used to give better error messages for
   //   promotion of && and ||
   //
-  inline proc _cond_test(x: object) return x != nil;
+  inline proc _cond_test(x: borrowed object) return x != nil;
   inline proc _cond_test(x: bool) return x;
   inline proc _cond_test(x: integral) return x != 0:x.type;
 
@@ -581,7 +581,7 @@ module ChapelBase {
     compilerError("iterator or promoted expression ", x.type:string, " used in if or while condition");
   }
 
-  proc _cond_invalid(x: object) param return false;
+  proc _cond_invalid(x: borrowed object) param return false;
   proc _cond_invalid(x: bool) param return false;
   proc _cond_invalid(x: integral) param return false;
   proc _cond_invalid(x) param return true;
@@ -873,7 +873,7 @@ module ChapelBase {
   pragma "no default functions"
   pragma "use default init"
   class _EndCountBase {
-    var errors: chpl_TaskErrors;
+    var errors: unmanaged chpl_TaskErrors;
     var taskList: c_void_ptr = _defaultOf(c_void_ptr);
   }
 
@@ -964,7 +964,7 @@ module ChapelBase {
   // fork (on) if needed.
   pragma "dont disable remote value forwarding"
   pragma "down end count fn"
-  proc _downEndCount(e: _EndCount, err: Error) {
+  proc _downEndCount(e: _EndCount, err: unmanaged Error) {
     // save the task error
     chpl_save_task_error(e, err);
     // inform anybody waiting that we're done
@@ -999,7 +999,7 @@ module ChapelBase {
 
     // Throw any error raised by a task this is waiting for
     if ! e.errors.empty() then
-      throw new TaskErrors(e.errors);
+      throw new unmanaged TaskErrors(e.errors);
   }
 
   // called for bounded coforalls and cobegins
@@ -1020,7 +1020,7 @@ module ChapelBase {
 
     // Throw any error raised by a task this is waiting for
     if ! e.errors.empty() then
-      throw new TaskErrors(e.errors);
+      throw new unmanaged TaskErrors(e.errors);
   }
 
   proc _upDynamicEndCount(param countRunningTasks=true) {
@@ -1030,7 +1030,7 @@ module ChapelBase {
 
   pragma "dont disable remote value forwarding"
   pragma "down end count fn"
-  proc _downDynamicEndCount(err: Error) {
+  proc _downDynamicEndCount(err: unmanaged Error) {
     var e = __primitive("get dynamic end count");
     _downEndCount(e, err);
   }
@@ -1043,7 +1043,7 @@ module ChapelBase {
 
     // Throw any error raised by a task this sync statement is waiting for
     if ! e.errors.empty() then
-      throw new TaskErrors(e.errors);
+      throw new unmanaged TaskErrors(e.errors);
   }
 
   pragma "command line setting"
@@ -1899,10 +1899,10 @@ module ChapelBase {
   class chpl_ModuleDeinit {
     const moduleName: c_string;          // for debugging; non-null, not owned
     const deinitFun:  c_fn_ptr;          // module deinit function
-    const prevModule: chpl_ModuleDeinit; // singly-linked list / LIFO queue
+    const prevModule: unmanaged chpl_ModuleDeinit; // singly-linked list / LIFO queue
     proc writeThis(ch) {ch.writef("chpl_ModuleDeinit(%s)",moduleName:string);}
   }
-  var chpl_moduleDeinitFuns = nil: chpl_ModuleDeinit;
+  var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit;
 
   // What follows are the type _defaultOf methods, used to initialize types
   // Booleans

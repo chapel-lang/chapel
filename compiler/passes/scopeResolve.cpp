@@ -35,6 +35,7 @@
 #include "stringutil.h"
 #include "TryStmt.h"
 #include "visibleFunctions.h"
+#include "wellknown.h"
 
 #include <algorithm>
 #include <map>
@@ -77,6 +78,8 @@ static void          scopeResolve(ModuleSymbol*       module,
 static void          processImportExprs();
 
 static void          resolveGotoLabels();
+
+static Expr*         handleUnstableClassType(SymExpr* se);
 
 static void          resolveUnresolvedSymExprs();
 
@@ -139,9 +142,14 @@ void scopeResolve() {
         SET_LINENO(fn->_this);
 
         if (TypeSymbol* ts = toTypeSymbol(lookup(sym->unresolved, sym))) {
-          sym->replace(new SymExpr(ts));
+          SymExpr* newSe = new SymExpr(ts);
+          sym->replace(newSe);
 
-          fn->_this->type = ts->type;
+          Expr* result = newSe;
+          if (fWarnUnstable || fDefaultUnmanaged)
+            result = handleUnstableClassType(newSe);
+
+          fn->_this->type = result->typeInfo();
           fn->_this->type->methods.add(fn);
 
           AggregateType::setCreationStyle(ts, fn);
@@ -695,6 +703,103 @@ void resolveUnresolvedSymExprs(BaseAST* inAst) {
    }
 }
 
+// Returns the expr resulting, either se or a call containing it
+static Expr* handleUnstableClassType(SymExpr* se) {
+  if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+    if (isClass(ts->type)) {
+      if (se->getModule()->modTag == MOD_USER) {
+        CallExpr* inCall = toCallExpr(se->parentExpr);
+        DefExpr* inDef = toDefExpr(se->parentExpr);
+        FnSymbol* inFn = se->getFunction();
+        bool ok = false;
+        if (inCall) {
+          if (inCall->isNamed("_to_borrowed") ||
+              inCall->isNamed("_to_unmanaged") ||
+              inCall->isNamed("_owned") ||
+              inCall->isNamed("_shared") ||
+              inCall->isNamed("Owned") ||
+              inCall->isNamed("Shared")) {
+            // It's OK, it's decorated
+            ok = true;
+          }
+          CallExpr* maybeNew = toCallExpr(inCall->parentExpr);
+          if (maybeNew && maybeNew->isPrimitive(PRIM_NEW) &&
+              inCall == maybeNew->get(1)) {
+            // 'new SomeClass()'
+            ok = false;
+          } else if (inCall->baseExpr == se) {
+            // It's OK as the base of a call of a type method
+            // (excluding the new case above)
+            ok = true;
+          }
+          if (inCall->isNamed(".") &&
+              inCall->get(1) == se) {
+            // Another pattern for the above case
+            ok = true;
+          }
+        }
+        // Always consider locale type unmanaged
+        if (ts->type == dtLocale)
+          ok = true;
+        // Always consider ddata type unmanaged
+        if (ts->hasFlag(FLAG_DATA_CLASS))
+          ok = true;
+        // Something with "no object" flag isn't really an object anyway
+        if (ts->hasFlag(FLAG_NO_OBJECT))
+          ok = true;
+
+        // Types in catch block specifications are OK
+        {
+          Expr* cur = se;
+          while (cur) {
+            if (CatchStmt* c = toCatchStmt(cur)) {
+              if (c->expr() == inDef) {
+                ok = true;
+                break;
+              }
+            }
+            cur = cur->parentExpr;
+          }
+        }
+
+        // Types in extern function procs are assumed to
+        // be unmanaged, so OK
+        if (inFn && inFn->hasFlag(FLAG_EXTERN))
+          ok = true;
+
+        if (!ok) {
+          if (fDefaultUnmanaged) {
+            // Change the se to _to_unmanaged(se)
+            // but take care to leave the original se in the tree
+            // (for the sake of the calling code in resolveUnresolvedSymExpr)
+            CallExpr* call = new CallExpr(PRIM_TO_UNMANAGED_CLASS);
+            se->replace(call);
+            call->insertAtTail(se);
+            return call;
+          } else if (fWarnUnstable) {
+            // error
+            USR_WARN(se, "undecorated class type %s is unstable", ts->name);
+            if (inDef && se == inDef->exprType)
+                USR_PRINT(inDef, "in declared type for %s",
+                                     inDef->sym->name);
+
+            USR_PRINT(se, "use 'unmanaged %s' "
+                          "'owned %s', "
+                          "'borrowed %s', or "
+                          "'shared %s'",
+                          ts->name, ts->name, ts->name, ts->name);
+
+            if (developer)
+              USR_PRINT(se, "undecorated symexpr has id %i", se->id);
+          }
+        }
+      }
+    }
+  }
+
+  return se;
+}
+
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
   SET_LINENO(usymExpr);
 
@@ -709,6 +814,9 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
       SymExpr* symExpr = new SymExpr(sym);
 
       usymExpr->replace(symExpr);
+
+      if (fWarnUnstable || fDefaultUnmanaged)
+        handleUnstableClassType(symExpr);
 
       updateMethod(usymExpr, sym, symExpr);
 

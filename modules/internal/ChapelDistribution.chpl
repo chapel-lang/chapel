@@ -43,7 +43,7 @@ module ChapelDistribution {
 
     // Returns a distribution that should be freed or nil.
     pragma "dont disable remote value forwarding"
-    proc remove(): BaseDist {
+    proc remove(): unmanaged BaseDist {
       var free_dist = false;
       if dsiTrackDomains() {
         on this {
@@ -65,7 +65,7 @@ module ChapelDistribution {
         free_dist = true;
       }
       if free_dist then
-        return this;
+        return _to_unmanaged(this);
       else
         return nil;
     }
@@ -903,7 +903,7 @@ module ChapelDistribution {
   // param privatized here is a workaround for the fact that
   // we can't include the privatized freeing for DefaultRectangular
   // because of resolution order issues
-  proc _delete_dist(dist:BaseDist, param privatized:bool) {
+  proc _delete_dist(dist:unmanaged BaseDist, param privatized:bool) {
     dist.dsiDestroyDist();
 
     if privatized {
