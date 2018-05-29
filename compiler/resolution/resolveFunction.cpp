@@ -608,7 +608,6 @@ static bool doNotUnaliasArray(FnSymbol* fn) {
           fn->hasFlag(FLAG_INIT_COPY_FN) ||
           fn->hasFlag(FLAG_AUTO_COPY_FN) ||
           fn->hasFlag(FLAG_UNREF_FN) ||
-          fn->hasFlag(FLAG_IF_EXPR_FN) ||
           fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) ||
           fn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
 }
