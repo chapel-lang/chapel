@@ -79,6 +79,8 @@ static void          processImportExprs();
 
 static void          resolveGotoLabels();
 
+static Expr*         handleUnstableClassType(SymExpr* se);
+
 static void          resolveUnresolvedSymExprs();
 
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
@@ -140,9 +142,14 @@ void scopeResolve() {
         SET_LINENO(fn->_this);
 
         if (TypeSymbol* ts = toTypeSymbol(lookup(sym->unresolved, sym))) {
-          sym->replace(new SymExpr(ts));
+          SymExpr* newSe = new SymExpr(ts);
+          sym->replace(newSe);
 
-          fn->_this->type = ts->type;
+          Expr* result = newSe;
+          if (fWarnUnstable || fDefaultUnmanaged)
+            result = handleUnstableClassType(newSe);
+
+          fn->_this->type = result->typeInfo();
           fn->_this->type->methods.add(fn);
 
           AggregateType::setCreationStyle(ts, fn);
@@ -696,7 +703,8 @@ void resolveUnresolvedSymExprs(BaseAST* inAst) {
    }
 }
 
-static void warnUnstableClassType(SymExpr* se) {
+// Returns the expr resulting, either se or a call containing it
+static Expr* handleUnstableClassType(SymExpr* se) {
   if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
     if (isClass(ts->type)) {
       if (se->getModule()->modTag == MOD_USER) {
@@ -714,8 +722,14 @@ static void warnUnstableClassType(SymExpr* se) {
             // It's OK, it's decorated
             ok = true;
           }
-          if (inCall->baseExpr == se) {
+          CallExpr* maybeNew = toCallExpr(inCall->parentExpr);
+          if (maybeNew && maybeNew->isPrimitive(PRIM_NEW) &&
+              inCall == maybeNew->get(1)) {
+            // 'new SomeClass()'
+            ok = false;
+          } else if (inCall->baseExpr == se) {
             // It's OK as the base of a call of a type method
+            // (excluding the new case above)
             ok = true;
           }
           if (inCall->isNamed(".") &&
@@ -754,25 +768,36 @@ static void warnUnstableClassType(SymExpr* se) {
           ok = true;
 
         if (!ok) {
-          // error
-          USR_WARN(se, "undecorated class type %s is unstable", ts->name);
-          if (inDef && se == inDef->exprType)
-              USR_PRINT(inDef, "in declared type for %s",
-                                   inDef->sym->name);
+          if (fDefaultUnmanaged) {
+            // Change the se to _to_unmanaged(se)
+            // but take care to leave the original se in the tree
+            // (for the sake of the calling code in resolveUnresolvedSymExpr)
+            CallExpr* call = new CallExpr(PRIM_TO_UNMANAGED_CLASS);
+            se->replace(call);
+            call->insertAtTail(se);
+            return call;
+          } else if (fWarnUnstable) {
+            // error
+            USR_WARN(se, "undecorated class type %s is unstable", ts->name);
+            if (inDef && se == inDef->exprType)
+                USR_PRINT(inDef, "in declared type for %s",
+                                     inDef->sym->name);
 
-          USR_PRINT(se, "use 'unmanaged %s' "
-                        "'owned %s', "
-                        "'borrowed %s', or "
-                        "'shared %s'",
-                        ts->name, ts->name, ts->name, ts->name);
+            USR_PRINT(se, "use 'unmanaged %s' "
+                          "'owned %s', "
+                          "'borrowed %s', or "
+                          "'shared %s'",
+                          ts->name, ts->name, ts->name, ts->name);
 
-          if (developer)
-            USR_PRINT(se, "undecorated symexpr has id %i", se->id);
-
+            if (developer)
+              USR_PRINT(se, "undecorated symexpr has id %i", se->id);
+          }
         }
       }
     }
   }
+
+  return se;
 }
 
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
@@ -790,7 +815,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
 
       usymExpr->replace(symExpr);
 
-      if (fWarnUnstable) warnUnstableClassType(symExpr);
+      if (fWarnUnstable || fDefaultUnmanaged)
+        handleUnstableClassType(symExpr);
 
       updateMethod(usymExpr, sym, symExpr);
 
