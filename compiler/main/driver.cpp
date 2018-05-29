@@ -143,6 +143,7 @@ bool fLLVMWideOpt = false;
 
 bool fWarnConstLoops = true;
 bool fWarnUnstable = false;
+bool fDefaultUnmanaged = false;
 
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
@@ -959,6 +960,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
  {"warn-unstable", ' ', NULL, "Enable [disable] warnings code that is about to change or recently changed behavior", "N", &fWarnUnstable, "CHPL_WARN_UNSTABLE", NULL},
+ {"default-unmanaged", ' ', NULL, "Enable [disable] class type defaulting to unmanaged", "N", &fDefaultUnmanaged, "CHPL_DEFAULT_UNMANAGED", NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
  {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL},
