@@ -670,7 +670,13 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
   } else if (isIfExpr(initExpr)) {
     VarSymbol* tmp      = newTemp("tmp");
     DefExpr*   tmpDefn  = new DefExpr(tmp);
-    CallExpr*  tmpInit  = new CallExpr(PRIM_INIT_VAR, tmp, initExpr);
+    CallExpr*  tmpInit  = NULL;
+    if (isTypeVar) {
+      tmpInit = new CallExpr(PRIM_MOVE, tmp, initExpr);
+      tmp->addFlag(FLAG_TYPE_VARIABLE);
+    } else {
+      tmpInit = new CallExpr(PRIM_INIT_VAR, tmp, initExpr);
+    }
 
     Symbol*    _this    = mFn->_this;
     Symbol*    name     = new_CStringSymbol(field->sym->name);
