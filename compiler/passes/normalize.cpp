@@ -29,6 +29,7 @@
 #include "driver.h"
 #include "errorHandling.h"
 #include "ForallStmt.h"
+#include "IfExpr.h"
 #include "initializerRules.h"
 #include "stlUtil.h"
 #include "stringutil.h"
@@ -62,6 +63,8 @@ static void        updateInitMethod (FnSymbol* fn);
 static void        checkUseBeforeDefs();
 static void        moveGlobalDeclarationsToModuleScope();
 static void        insertUseForExplicitModuleCalls(void);
+
+static void        lowerIfExprs(BaseAST* base);
 
 static void        hack_resolve_types(ArgSymbol* arg);
 
@@ -403,10 +406,12 @@ static void transformLogicalShortCircuit() {
   // transform.
   //
   for (iter = stmts.begin(); iter != stmts.end(); iter++) {
-    Expr*                        stmt = *iter;
-    TransformLogicalShortCircuit transform(stmt);
+    Expr* stmt = *iter;
+    TransformLogicalShortCircuit transform;
 
-    stmt->accept(&transform);
+    if (isAlive(stmt)) {
+      stmt->accept(&transform);
+    }
   }
 }
 
@@ -544,6 +549,8 @@ static void normalizeBase(BaseAST* base) {
       }
     }
   }
+
+  lowerIfExprs(base);
 
 
   //
@@ -855,6 +862,111 @@ static void insertUseForExplicitModuleCalls() {
       block->useListAdd(mod);
     }
   }
+}
+
+//
+// Inserts a temporary for the result if the last statement is a call.
+//
+// Inserts PRIM_LOGICAL_FOLDER from the local branch result into the argument
+// 'result' based on the argument 'cond'.
+//
+static void normalizeIfExprBranch(VarSymbol* cond, VarSymbol* result, BlockStmt* stmt) {
+  Expr* last = stmt->body.tail->remove();
+  Symbol* localResult = NULL;
+
+  if (isCallExpr(last) || isIfExpr(last)) {
+    localResult = newTemp();
+    localResult->addFlag(FLAG_MAYBE_TYPE);
+    localResult->addFlag(FLAG_MAYBE_PARAM);
+    localResult->addFlag(FLAG_EXPR_TEMP);
+    localResult->addFlag(FLAG_NO_AUTO_DESTROY);
+
+    stmt->body.insertAtTail(new DefExpr(localResult));
+    stmt->body.insertAtTail(new CallExpr(PRIM_MOVE, localResult, last));
+  } else if (SymExpr* se = toSymExpr(last)) {
+    localResult = se->symbol();
+  } else {
+    INT_FATAL("Unexpected AST node at the end of IfExpr branch");
+  }
+
+  stmt->body.insertAtTail(new CallExpr(PRIM_MOVE, result, new CallExpr(PRIM_LOGICAL_FOLDER, cond, localResult)));
+}
+
+//
+// Transforms an IfExpr into a CondStmt.
+//
+// The expression at the end of each branch is moved into a temporary. This
+// temporary will take the place of the IfExpr, and the CondStmt will be
+// inserted before the IfExpr's parent statement.
+//
+class LowerIfExprVisitor : public AstVisitorTraverse
+{
+  public:
+    LowerIfExprVisitor() { }
+    virtual ~LowerIfExprVisitor() { }
+
+    virtual bool enterIfExpr(IfExpr* node);
+};
+
+bool LowerIfExprVisitor::enterIfExpr(IfExpr* ife) {
+  if (isAlive(ife) == false) return false;
+  if (isDefExpr(ife->parentExpr)) return false;
+
+  SET_LINENO(ife);
+
+  VarSymbol* result = newTemp();
+  result->addFlag(FLAG_MAYBE_TYPE);
+  result->addFlag(FLAG_EXPR_TEMP);
+  result->addFlag(FLAG_IF_EXPR_RESULT);
+
+  // Don't auto-destroy local result if returning from a branch of a parent
+  // if-expression.
+  bool isNestedIfExpr = false;
+  if (CallExpr* call = toCallExpr(ife->getStmtExpr()->next)) {
+    if (call->isPrimitive(PRIM_MOVE)) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        isNestedIfExpr = se->symbol()->hasFlag(FLAG_IF_EXPR_RESULT);
+      }
+    }
+  }
+  if (isNestedIfExpr == false) {
+    result->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  }
+
+  VarSymbol* cond = newTemp();
+  cond->addFlag(FLAG_MAYBE_PARAM);
+
+  Expr* anchor = ife->getStmtExpr();
+  anchor->insertBefore(new DefExpr(result));
+  anchor->insertBefore(new DefExpr(cond));
+
+  CallExpr* condTest = new CallExpr("_cond_test", ife->getCondition()->remove());
+  anchor->insertBefore(new CallExpr(PRIM_MOVE, cond, condTest));
+
+  normalizeIfExprBranch(cond, result, ife->getThenStmt());
+  normalizeIfExprBranch(cond, result, ife->getElseStmt());
+
+  CondStmt* cs = new CondStmt(new SymExpr(cond),
+                              ife->getThenStmt()->remove(),
+                              ife->getElseStmt()->remove());
+
+  // Remove nested BlockStmts
+  toBlockStmt(cs->thenStmt->body.tail)->flattenAndRemove();
+  toBlockStmt(cs->elseStmt->body.tail)->flattenAndRemove();
+
+  anchor->insertBefore(cs);
+
+  ife->replace(new SymExpr(result));
+
+  condTest->accept(this);
+  cs->accept(this);
+
+  return false;
+}
+
+static void lowerIfExprs(BaseAST* base) {
+  LowerIfExprVisitor vis;
+  base->accept(&vis);
 }
 
 /************************************* | **************************************
@@ -1633,7 +1745,9 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
   INT_ASSERT(type == NULL);
   INT_ASSERT(init != NULL);
 
-  defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init->copy()));
+  Expr* initCopy = init->copy();
+
+  defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initCopy));
 }
 
 /************************************* | **************************************
@@ -1772,8 +1886,10 @@ static void init_untyped_var(VarSymbol* var,
                              Expr*      init,
                              Expr*      insert,
                              VarSymbol* constTemp) {
+  init = init->remove();
+
   if (var->hasFlag(FLAG_NO_COPY)) {
-    insert->insertAfter(new CallExpr(PRIM_MOVE, var, init->remove()));
+    insert->insertAfter(new CallExpr(PRIM_MOVE, var, init));
 
   } else {
     // See Note 4.
@@ -1794,9 +1910,9 @@ static void init_untyped_var(VarSymbol* var,
     Expr*     rhs      = NULL;
 
     if (initCall && initCall->isPrimitive(PRIM_NEW)) {
-      rhs = init->remove();
+      rhs = init;
     } else {
-      rhs = new CallExpr("chpl__initCopy", init->remove());
+      rhs = new CallExpr("chpl__initCopy", init);
     }
 
     insert->insertAfter(new CallExpr(PRIM_MOVE, constTemp, rhs));
@@ -2088,6 +2204,8 @@ static void normVarTypeInference(DefExpr* defExpr) {
     } else {
       defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
     }
+  } else if (IfExpr* ife = toIfExpr(initExpr)) {
+    defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, ife));
 
   } else {
     INT_ASSERT(false);
