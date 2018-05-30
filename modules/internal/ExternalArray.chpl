@@ -25,6 +25,56 @@
 module ExternalArray {
   use ChapelStandard;
 
+  pragma "use default init"
+  class ArrayViewExternDom: BaseDom {
+    const size: uint; // We don't need a lower bound, it will always be zero
+
+    const distInst;
+
+    proc dsiBuildArray(type eltType) {
+      pragma "no auto destroy"
+        // Create c_ptr to an array of the same size
+      var arr = new unmanaged ArrayViewExternArr(eltType,
+                                                 _to_unmanaged(this),
+                                                 // UMMMMM
+                                                 true);
+    }
+
+    proc dsiGetIndices() return 0..#size;
+
+    proc dsiSetIndices(x) {
+      halt("Can't change the indices of an external array");
+    }
+
+    iter these() {
+      for i in dsiGetIndices() do
+        yield i;
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.standalone {
+      forall i in dsiGetIndices() do
+        yield i;
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.leader {
+      for followThis in dsiGetIndices() {
+        yield followThis;
+      }
+    }
+
+    iter these(param tag: iterKind, followThis)
+      where tag == iterKind.follower {
+      for i in dsiGetIndices() do
+        yield i;
+    }
+
+    // Do I want dsiAssignDomain defined? (see ArrayViewReindex.chpl:262-264)
+    // What about _getActualDom?  dsiDestroyDom?
+
+    // Prolly want the privatization stuff eventually, but I don't need it right
+    // now.
+  }
+
   class ArrayViewExternArr: BaseArr {
     type eltType;
 
@@ -119,7 +169,7 @@ module ExternalArray {
     }
     // Maybe want checkBounds (see ArrayViewSlice.chpl:214-218)
 
-    // privDom, arr inline procs?
+    // arr inline proc?
     // dsiGetBaseDom (see ArrayViewSlice.chpl:299-301)
 
     // _getActualArray - useful for returning the array?  Or a dangerous insight
