@@ -1,0 +1,8 @@
+unstable-class.chpl:18: warning: undecorated class type MyClass is unstable
+unstable-class.chpl:18: note: use 'unmanaged MyClass' 'owned MyClass', 'borrowed MyClass', or 'shared MyClass'
+unstable-class.chpl:21: In function 'errors':
+unstable-class.chpl:22: warning: undecorated class type MyClass is unstable
+unstable-class.chpl:22: note: in declared type for x
+unstable-class.chpl:22: note: use 'unmanaged MyClass' 'owned MyClass', 'borrowed MyClass', or 'shared MyClass'
+unstable-class.chpl:18: warning: undecorated class type MyClass is unstable
+unstable-class.chpl:18: note: use 'unmanaged MyClass' 'owned MyClass', 'borrowed MyClass', or 'shared MyClass'
