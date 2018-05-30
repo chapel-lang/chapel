@@ -156,9 +156,11 @@ module ChapelBase {
   //
   inline proc ==(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("==", a, b);
   //
-  // NOTE: Only '==' is implemented in the compiler on param enums
-  // (and only only on param enums of the same type), so all other
-  // param enum routines need to be defined as module code.
+  // NOTE: For param enums, Only '==' is implemented in the compiler
+  // as a primitive. It assumes that the two param enums are of the
+  // same type, as guaranteed by the where clause above.  All other
+  // param enum routines are defined as module code to avoid having to
+  // teach the compiler how to implement all enum comparisons.
 
   inline proc !=(param a: bool, param b: bool) param return __primitive("!=", a, b);
   inline proc !=(param a: int(?w), param b: int(w)) param return __primitive("!=", a, b);
