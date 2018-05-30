@@ -8,9 +8,9 @@ proc main() {
   param result4 = testneq(nums.two, nums.four);       // true
   param result8 = testgte(color.yellow, color.blue);  // false
   param result10 = testgte(color.green, color.indigo);// false
-  param result13 = testgte(color.blue, color.yellow); // true
+  param result13 = testlt(color.blue, color.yellow);  // false
 
-  param result = !result1  && !result2  && result3 && result4 && !result8 && !result10 && result13;
+  param result = !result1  && !result2  && result3 && result4 && !result8 && !result10 && !result13;
 
   if (!result) {
     writeln(!result1);
@@ -19,7 +19,7 @@ proc main() {
     writeln(result4);
     writeln(!result8);
     writeln(!result10);
-    writeln(result13);
+    writeln(!result13);
   }
 }
 
