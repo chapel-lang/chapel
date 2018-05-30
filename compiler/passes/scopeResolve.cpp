@@ -80,6 +80,7 @@ static void          processImportExprs();
 
 static void          resolveGotoLabels();
 
+static bool          isStableClassType(Type* t);
 static Expr*         handleUnstableClassType(SymExpr* se);
 
 static void          resolveUnresolvedSymExprs();
@@ -732,15 +733,35 @@ void resolveUnresolvedSymExprs(BaseAST* inAst) {
    }
 }
 
+static bool isStableClassType(Type* t) {
+  bool ok = false;
+
+  TypeSymbol* ts = t->symbol;
+
+  if (isClass(t)) {
+    // Always consider locale type unmanaged
+    if (ts->type == dtLocale)
+      ok = true;
+    // Always consider ddata type unmanaged
+    if (ts->hasFlag(FLAG_DATA_CLASS))
+      ok = true;
+    // Something with "no object" flag isn't really an object anyway
+    if (ts->hasFlag(FLAG_NO_OBJECT))
+      ok = true;
+  }
+
+  return ok;
+}
+
 // Returns the expr resulting, either se or a call containing it
 static Expr* handleUnstableClassType(SymExpr* se) {
-  if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-    if (isClass(ts->type)) {
-      if (se->getModule()->modTag == MOD_USER) {
+  if (se->getModule()->modTag == MOD_USER) {
+    if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+      if (isClass(ts->type)) {
+        bool ok = false;
         CallExpr* inCall = toCallExpr(se->parentExpr);
         DefExpr* inDef = toDefExpr(se->parentExpr);
         FnSymbol* inFn = se->getFunction();
-        bool ok = false;
         if (inCall) {
           if (inCall->isNamed("_to_borrowed") ||
               inCall->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
@@ -769,15 +790,6 @@ static Expr* handleUnstableClassType(SymExpr* se) {
             ok = true;
           }
         }
-        // Always consider locale type unmanaged
-        if (ts->type == dtLocale)
-          ok = true;
-        // Always consider ddata type unmanaged
-        if (ts->hasFlag(FLAG_DATA_CLASS))
-          ok = true;
-        // Something with "no object" flag isn't really an object anyway
-        if (ts->hasFlag(FLAG_NO_OBJECT))
-          ok = true;
 
         // Types in catch block specifications are OK
         {
@@ -796,6 +808,9 @@ static Expr* handleUnstableClassType(SymExpr* se) {
         // Types in extern function procs are assumed to
         // be unmanaged, so OK
         if (inFn && inFn->hasFlag(FLAG_EXTERN))
+          ok = true;
+
+        if (isStableClassType(ts->type))
           ok = true;
 
         if (!ok) {
