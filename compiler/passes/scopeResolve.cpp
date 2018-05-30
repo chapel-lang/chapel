@@ -144,14 +144,9 @@ void scopeResolve() {
         SET_LINENO(fn->_this);
 
         if (TypeSymbol* ts = toTypeSymbol(lookup(sym->unresolved, sym))) {
-          SymExpr* newSe = new SymExpr(ts);
-          sym->replace(newSe);
+          sym->replace(new SymExpr(ts));
 
-          Expr* result = newSe;
-          if (fWarnUnstable || fDefaultUnmanaged)
-            result = handleUnstableClassType(newSe);
-
-          fn->_this->type = result->typeInfo();
+          fn->_this->type = ts->type;
           fn->_this->type->methods.add(fn);
 
           AggregateType::setCreationStyle(ts, fn);
@@ -169,6 +164,36 @@ void scopeResolve() {
 
     } else if (fn->_this) {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
+    }
+
+    // Adjust class type methods for unmanaged/borrowed
+    if (fn->_this && isClass(fn->_this->type) && fDefaultUnmanaged) {
+
+      ArgSymbol* _this = toArgSymbol(fn->_this);
+      Type* t = _this->type;
+      bool ok = isStableClassType(t);
+
+      if (fn->getModule()->modTag == MOD_USER && !ok) {
+        SET_LINENO(fn->_this);
+
+        // Make sure fn->_this->typeExpr exists
+        if (!_this->typeExpr) {
+          _this->typeExpr = new BlockStmt(new SymExpr(t->symbol));
+          parent_insert_help(_this, _this->typeExpr);
+        }
+        // Now adjust _this->typeExpr (whether we just created it or not)
+        Expr* stmt = toArgSymbol(fn->_this)->typeExpr->body.only();
+
+        if (SymExpr* se = toSymExpr(stmt)) {
+          Expr* result = se;
+          if (fWarnUnstable || fDefaultUnmanaged)
+            result = handleUnstableClassType(se);
+          // Amend _this->type
+          fn->_this->type = result->typeInfo();
+        } else {
+          INT_ASSERT(0);
+        }
+      }
     }
   }
 
