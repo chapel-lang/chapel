@@ -713,8 +713,11 @@ static __thread int cd_idx = -1;
 // gets must be 4 byte aligned. This just follows gasnet-aries and
 // uses the nearest 4MB aligned value
 #define MAX_RDMA_TRANS_SZ ((size_t) 0xFFC00000)
-// TODO tune and make env var (1024 based on cray-mpich, GN uses 4096)
-#define RDMA_THRESHOLD 1024
+
+// BTE RDMA is profitable around 1-4K. It's neck-and-neck under 4K, so
+// for now follow gasnet-aries and use the higher default of 4K
+#define DEFAULT_RDMA_THRESHOLD 4096
+static size_t RDMA_THRESHOLD = DEFAULT_RDMA_THRESHOLD;
 
 #define ALIGN_32_DN(x)    ALIGN_DN((x), sizeof(int32_t))
 #define ALIGN_32_UP(x)    ALIGN_UP((x), sizeof(int32_t))
@@ -1862,6 +1865,12 @@ void chpl_comm_post_task_init(void)
   // Figure out how many comm domains we need.
   //
   compute_comm_dom_cnt();
+
+  //
+  // Get FMA/BTE threshold
+  //
+  RDMA_THRESHOLD = chpl_env_rt_get_size("UGNI_RDMA_THRESHOLD",
+                                        DEFAULT_RDMA_THRESHOLD);
 
   //
   // Get our NIC address and share it around the job.
