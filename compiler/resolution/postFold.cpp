@@ -71,10 +71,7 @@ static Expr* postFoldSymExpr(SymExpr* symExpr);
           INT_FATAL("Trying to do a mixed enum non-enum primitive");    \
         }                                                               \
         Immediate enumcomp;                                             \
-        enumcomp = false;                                               \
-        if (lhsSym == rhsSym) {                                         \
-          enumcomp = true;                                              \
-        }                                                               \
+        enumcomp = (lhsSym == rhsSym);                                  \
         retval = new SymExpr(new_ImmediateSymbol(&enumcomp));           \
         call->replace(retval);                                          \
       } else {                                                          \
