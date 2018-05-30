@@ -987,6 +987,45 @@ static void build_enum_order_functions(EnumType* et) {
   }
 
   {
+    // param enum to order (0, 1, 2, 3, ...) conversion:
+    //
+    // Create a function 'chpl_enumToOrder(param e: enumerated) param : int' 
+    // that converts an enum symbol to an integer 0, 1, 2, 3, ...
+    //
+    FnSymbol* fn = new FnSymbol(astr("chpl__enumToOrder"));
+    fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_LAST_RESORT);
+    ArgSymbol* arg1 = new ArgSymbol(INTENT_PARAM, "e", et);
+    arg1->addFlag(FLAG_PARAM);
+    fn->insertFormalAtTail(arg1);
+    fn->retTag=RET_PARAM;
+
+    // Generate a select statement with when clauses for each of the
+    // enumeration constants, and an otherwise clause that calls halt.
+    int64_t count = 0;
+    BlockStmt* whenstmts = buildChapelStmt();
+    for_enums(constant, et) {
+      CondStmt* when =
+        new CondStmt(new CallExpr(PRIM_WHEN,
+                                  new SymExpr(constant->sym)),
+                     new CallExpr(PRIM_RETURN, new SymExpr(new_IntSymbol(count))));;
+      whenstmts->insertAtTail(when);
+      count++;
+    }
+    const char * errorString = "enumerated type out of bounds";
+    CondStmt* otherwise =
+      new CondStmt(new CallExpr(PRIM_WHEN),
+                   new BlockStmt(new CallExpr("halt",
+                                              new_StringSymbol(errorString))));
+    whenstmts->insertAtTail(otherwise);
+    fn->insertAtTail(buildSelectStmt(new SymExpr(arg1), whenstmts));
+    DefExpr* def = new DefExpr(fn);
+    baseModule->block->insertAtTail(def);
+    reset_ast_loc(def, et->symbol);
+    normalize(fn);
+  }
+
+  {
     // order (0, 1, 2, 3, ...) to enum conversion:
     //
     // Create a function 'chpl_orderToEnum(i: integral, type et:

@@ -64,22 +64,30 @@ static Expr* postFoldSymExpr(SymExpr* symExpr);
       Symbol* rhsSym = rhsSe->symbol();                                 \
                                                                         \
       if (isEnumSymbol(lhsSym)) {                                       \
-        ensureEnumTypeResolved(toEnumType(lhsSym->type));               \
-      }                                                                 \
+        if (prim != P_prim_equal) {                                     \
+          INT_FATAL("Trying to do a primitive other than '==' on enums"); \
+        }                                                               \
+        if (!isEnumSymbol(rhsSym)) {                                    \
+          INT_FATAL("Trying to do a mixed enum non-enum primitive");    \
+        }                                                               \
+        Immediate enumcomp;                                             \
+        enumcomp = false;                                               \
+        if (lhsSym == rhsSym) {                                         \
+          enumcomp = true;                                              \
+        }                                                               \
+        retval = new SymExpr(new_ImmediateSymbol(&enumcomp));           \
+        call->replace(retval);                                          \
+      } else {                                                          \
+        if (Immediate* lhs = getSymbolImmediate(lhsSym)) {              \
+          if (Immediate* rhs = getSymbolImmediate(rhsSym)) {            \
+            Immediate i3;                                               \
                                                                         \
-      if (isEnumSymbol(rhsSym)) {                                       \
-        ensureEnumTypeResolved(toEnumType(rhsSym->type));               \
-      }                                                                 \
+            fold_constant(prim, lhs, rhs, &i3);                         \
                                                                         \
-      if (Immediate* lhs = getSymbolImmediate(lhsSym)) {                \
-        if (Immediate* rhs = getSymbolImmediate(rhsSym)) {              \
-          Immediate i3;                                                 \
+            retval = new SymExpr(new_ImmediateSymbol(&i3));             \
                                                                         \
-          fold_constant(prim, lhs, rhs, &i3);                           \
-                                                                        \
-          retval = new SymExpr(new_ImmediateSymbol(&i3));               \
-                                                                        \
-          call->replace(retval);                                        \
+            call->replace(retval);                                      \
+          }                                                             \
         }                                                               \
       }                                                                 \
     }                                                                   \
