@@ -778,6 +778,17 @@ static bool isStableClassType(Type* t) {
   return ok;
 }
 
+static bool callSpecifiesClassKind(CallExpr* call) {
+  return (call->isNamed("_to_borrowed") ||
+          call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+          call->isNamed("_to_unmanaged") ||
+          call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+          call->isNamed("_owned") ||
+          call->isNamed("_shared") ||
+          call->isNamed("Owned") ||
+          call->isNamed("Shared"));
+}
+
 // Returns the expr resulting, either se or a call containing it
 static Expr* handleUnstableClassType(SymExpr* se) {
   if (se->getModule()->modTag == MOD_USER) {
@@ -788,26 +799,32 @@ static Expr* handleUnstableClassType(SymExpr* se) {
         DefExpr* inDef = toDefExpr(se->parentExpr);
         FnSymbol* inFn = se->getFunction();
         if (inCall) {
-          if (inCall->isNamed("_to_borrowed") ||
-              inCall->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-              inCall->isNamed("_to_unmanaged") ||
-              inCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-              inCall->isNamed("_owned") ||
-              inCall->isNamed("_shared") ||
-              inCall->isNamed("Owned") ||
-              inCall->isNamed("Shared")) {
+          if (callSpecifiesClassKind(inCall)) {
             // It's OK, it's decorated
             ok = true;
           }
-          CallExpr* maybeNew = toCallExpr(inCall->parentExpr);
-          if (maybeNew && maybeNew->isPrimitive(PRIM_NEW) &&
-              inCall == maybeNew->get(1)) {
+          CallExpr* outerCall = toCallExpr(inCall->parentExpr);
+          CallExpr* outerOuterCall = NULL;
+          if (outerCall) outerOuterCall = toCallExpr(outerCall->parentExpr);
+
+          if (outerOuterCall && outerCall &&
+              callSpecifiesClassKind(outerOuterCall) &&
+              outerCall == outerOuterCall->get(1) &&
+              outerCall->isPrimitive(PRIM_NEW) &&
+              inCall == outerCall->get(1)) {
+            // 'new Owned(SomeClass(int))'
+            ok = true;
+          } else if (outerCall && outerCall->isPrimitive(PRIM_NEW) &&
+              inCall == outerCall->get(1)) {
             // 'new SomeClass()'
             ok = false;
-          } else if (inCall->baseExpr == se) {
-            // It's OK as the base of a call of a type method
-            // (excluding the new case above)
+          } else if (outerCall && callSpecifiesClassKind(outerCall) &&
+                     inCall->baseExpr == se) {
+            // ':borrowed MyGenericClass(int)'
             ok = true;
+          } else if (inCall->baseExpr == se) {
+            // ':MyGenericClass(int)'
+            ok = false;
           }
           if (inCall->isNamed(".") &&
               inCall->get(1) == se) {
