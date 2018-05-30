@@ -1,12 +1,20 @@
 enum color { red=42, green, blue};
 
-writeln(color.red);
+proc test(c: color) {
+  const order = chpl__enumToOrder(c);
+  writeln(c, " = ", order, " = ", chpl__orderToEnum(order, color));
+}
 
-writeln(chpl__enumToOrder(color.red));
-writeln(chpl__enumToOrder(color.green));
-writeln(chpl__enumToOrder(color.blue));
+proc test(param c: color, param val: int) {
+  if (chpl__enumToOrder(c) != val) then
+    compilerError("Shouldn't get here");
+  writeln("Param test passed");
+  test(c);
+}
 
-writeln(chpl__orderToEnum(0, color));
-writeln(chpl__orderToEnum(1, color));
-writeln(chpl__orderToEnum(2, color));
-writeln(chpl__orderToEnum(3, color));
+test(color.red, 0);
+test(color.green, 1);
+test(color.blue, 2);
+
+// try an illegal case:
+writeln(chpl__orderToEnum(4, color));
