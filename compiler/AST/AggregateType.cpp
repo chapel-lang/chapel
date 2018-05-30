@@ -2647,7 +2647,7 @@ void AggregateType::generateUnmanagedClassTypes() {
     // The unmanaged type isn't really an object, shouldn't have its own fields
     tsUnmanaged->addFlag(FLAG_NO_OBJECT);
     // Propagate generic-ness to the unmanaged type
-    if (at->symbol->hasFlag(FLAG_GENERIC))
+    if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
       tsUnmanaged->addFlag(FLAG_GENERIC);
     // The generated code should just use the canonical class name
     tsUnmanaged->cname = at->symbol->cname;
