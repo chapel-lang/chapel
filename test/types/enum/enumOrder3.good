@@ -1,8 +1,0 @@
-red
-0
-1
-2
-red
-green
-blue
-enumOrder3.chpl:12: error: halt reached - enumerated type out of bounds in chpl__orderToEnum()

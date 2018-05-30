@@ -153,12 +153,17 @@ module ChapelBase {
   inline proc ==(param a: bool, param b: bool) param return __primitive("==", a, b);
   inline proc ==(param a: int(?w), param b: int(w)) param return __primitive("==", a, b);
   inline proc ==(param a: uint(?w), param b: uint(w)) param return __primitive("==", a, b);
+  //
   inline proc ==(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("==", a, b);
+  //
+  // NOTE: Only '==' is implemented in the compiler on param enums
+  // (and only only on param enums of the same type), so all other
+  // param enum routines need to be defined as module code.
 
   inline proc !=(param a: bool, param b: bool) param return __primitive("!=", a, b);
   inline proc !=(param a: int(?w), param b: int(w)) param return __primitive("!=", a, b);
   inline proc !=(param a: uint(?w), param b: uint(w)) param return __primitive("!=", a, b);
-  inline proc !=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("!=", a, b);
+  inline proc !=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("!=", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
   //
   // ordered comparison on primitive types
@@ -217,15 +222,19 @@ module ChapelBase {
 
   inline proc <=(param a: int(?w), param b: int(w)) param return __primitive("<=", a, b);
   inline proc <=(param a: uint(?w), param b: uint(w)) param return __primitive("<=", a, b);
+  inline proc <=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
   inline proc >=(param a: int(?w), param b: int(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: uint(?w), param b: uint(w)) param return __primitive(">=", a, b);
+  inline proc >=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
   inline proc <(param a: int(?w), param b: int(w)) param return __primitive("<", a, b);
   inline proc <(param a: uint(?w), param b: uint(w)) param return __primitive("<", a, b);
+  inline proc <(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
   inline proc >(param a: int(?w), param b: int(w)) param return __primitive(">", a, b);
   inline proc >(param a: uint(?w), param b: uint(w)) param return __primitive(">", a, b);
+  inline proc >(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
   //
   // unary + and - on primitive types
