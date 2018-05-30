@@ -43,15 +43,81 @@ module ExternalArray {
     }
 
     proc idxType type return dom.idxType;
-    //proc rank param return arr.rank; // Should I hardcode this for now?
+    proc rank param return 1; // Should I hardcode this for now?
 
     // do I want a "isExternArrayView" method on BaseArr?
 
-    // Probably want some these() iterators? (see ArrayViewSlice.chpl:116-138)
+    //
+    // standard iterators
+    //
+
+    iter these() ref {
+      for elem in chpl__serialViewIter(this, privDom) do
+        yield elem;
+    }
+
+    iter these(param tag: iterKind) ref
+      where tag == iterKind.standalone && !localeModelHasSublocales &&
+           __primitive("method call resolves", privDom, "these", tag) {
+      forall i in privDom do yield dsiAccess(i);
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.leader {
+      for followThis in privDom.these(tag) do {
+        yield followThis;
+      }
+    }
+
+    iter these(param tag: iterKind, followThis) ref
+      where tag == iterKind.follower {
+      for i in privDom.these(tag, followThis) {
+        yield dsiAccess[i];
+      }
+    }
+
     // Probably want some dsiSerialRead/Write? (see ArrayViewSlice.chpl:145-151)
     // Probably want dsiDisplayRepresentation? (see ArrayViewSlice.chpl:153-161)
-    // Probably want dsiAccess? (see ArrayViewSlice.chpl:168-212)
-    // Probably want checkBounds? (see ArrayViewSlice.chpl:214-218)
+
+    inline proc dsiAccess(i: idxType ...rank) ref {
+      return dsiAccess(i);
+    }
+
+    inline proc dsiAccess(i: idxType ...rank)
+      where shouldReturnRvalueByValue(eltType) {
+      return dsiAccess(i);
+    }
+
+    inline proc dsiAccess(i: idxType ...rank) const ref
+      where shouldReturnRvalueByConstRef(eltType) {
+      return dsiAccess(i);
+    }
+
+    inline proc dsiAccess(i) ref {
+      if boundsChecking then
+        if !dom.dsiMember(i) {
+          halt("array index out of bounds: " + _stringify_tuple(i));
+        }
+      return _ArrInstance(i(1));
+    }
+
+    inline proc dsiAccess(i)
+      where shouldReturnRvalueByValue(eltType) {
+      if boundsChecking then
+        if !dom.dsiMember(i) {
+          halt("array index out of bounds: " + _stringify_tuple(i));
+        }
+      return _ArrInstance(i(1));
+    }
+
+    inline proc dsiAccess(i) const ref
+      where shouldReturnRvalueByConstRef(eltType)  {
+      if boundsChecking then
+        if !dom.dsiMember(i) {
+          halt("array index out of bounds: " + _stringify_tuple(i));
+        }
+      return _ArrInstance(i(1));
+    }
+    // Maybe want checkBounds (see ArrayViewSlice.chpl:214-218)
 
     // privDom, arr inline procs?
     // dsiGetBaseDom (see ArrayViewSlice.chpl:299-301)
@@ -68,6 +134,14 @@ module ExternalArray {
 
     proc dsiDestroyArr() {
       // Do something special on clean up if array is owned or not
+    }
+
+    inline proc privDom {
+      /*if _isPrivatized(dom) {
+        return chpl_getPrivatizedCopy(dom.type, _DomPid);
+        } else {*/
+        return dom;
+        //}
     }
 
     // proc dsiReallocate(d: domain) is not supported, so don't override.
