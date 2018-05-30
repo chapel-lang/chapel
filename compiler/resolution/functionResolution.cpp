@@ -648,6 +648,12 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   if (formalType == dtUnmanaged && isUnmanagedClassType(actualType))
     return true;
 
+  // handle unmanaged GenericClass(int) -> unmanaged GenericClass
+  if (isUnmanagedClassType(formalType) && isUnmanagedClassType(actualType) &&
+      canInstantiate(canonicalClassType(actualType),
+                     canonicalClassType(formalType)))
+    return true;
+
   if (formalType == dtBorrowed && isClass(actualType))
     return true;
 

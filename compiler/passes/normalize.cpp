@@ -998,7 +998,7 @@ static void processSyntacticDistributions(CallExpr* call) {
         if (TypeSymbol* ts = expandTypeAlias(distClass)) {
           if (isDistClass(ts->type) == true) {
             CallExpr* newExpr = new CallExpr(PRIM_NEW,
-                new CallExpr("_to_unmanaged", distCall->remove()));
+                new CallExpr(PRIM_TO_UNMANAGED_CLASS, distCall->remove()));
 
             call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
 
@@ -1034,8 +1034,10 @@ static void processManagedNew(CallExpr* newCall) {
         if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
           if (!callClass->isPrimitive() &&
               !isUnresolvedSymExpr(callClass->baseExpr)) {
-            bool isunmanaged = callManager->isNamed("_to_unmanaged");
-            bool isborrowed = callManager->isNamed("_to_borrowed");
+            bool isunmanaged = callManager->isNamed("_to_unmanaged") ||
+                               callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS);
+            bool isborrowed = callManager->isNamed("_to_borrowed") ||
+                              callManager->isPrimitive(PRIM_TO_BORROWED_CLASS);
             bool isowned = callManager->isNamed("_owned");
             bool isshared = callManager->isNamed("_shared");
 
@@ -3059,6 +3061,9 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   std::vector<SymExpr*> symExprs;
 
   collectSymExprs(fn, symExprs);
+
+  // I think this code is responsible for the failure with
+  // generic arguments with queried subtypes.
 
   if (call->isNamed("_build_tuple") == true) {
     Expr*     actual = new SymExpr(new_IntSymbol(call->numActuals()));
