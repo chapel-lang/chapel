@@ -6,12 +6,9 @@ proc main() {
   var result5 = color.blue > nums.six;
   var result6 = color.red > nums.three;
   var result7 = color.blue > nums.five;
-  var result8 = color.yellow >= color.blue;
   var result9 = color.indigo >= nums.four;
-  var result10 = color.green >= color.indigo;
   var result11 = nums.one < color.red;
   var result12 = nums.one < color.indigo;
-  var result13 = color.blue < color.yellow;
   var result14 = color.orange <= nums.six;
   var result15 = color.violet <= nums.two;
   var result16 = color.orange <= nums.one;
