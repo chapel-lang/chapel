@@ -1135,7 +1135,10 @@ static bool hasUserDefinedConstructor(AggregateType* at);
 static void build_record_copy_function(AggregateType* at) {
   if (function_exists("chpl__initCopy", at) == NULL) {
     if (isRecordWithInitializers(at) == true) {
-      if (function_exists("init", dtMethodToken, at, at) != NULL) {
+
+      // Compiler-generated copy-initializers should not disable POD
+      FnSymbol* fn = function_exists("init", dtMethodToken, at, at);
+      if (fn != NULL && fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
         at->symbol->addFlag(FLAG_NOT_POD);
       }
 
