@@ -1,4 +1,4 @@
-enum color {red, orange, yellow, green, blue, indigo, violet};
+enum color {red=7, orange=6, yellow=5, green=4, blue=3, indigo=2, violet=1};
 
 // test non-param overloads
 proc test(c1: color, c2: color) {
