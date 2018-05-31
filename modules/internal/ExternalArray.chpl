@@ -56,12 +56,12 @@ module ExternalArray {
   class ArrayViewExternDom: BaseRectangularDom {
     const size: uint; // We don't need a lower bound, it will always be zero
 
-    const distInst;
+    const dist;
 
     proc init(type idxType, size, dist) {
       super.init(1, idxType, false);
       this.size = size: uint;
-      this.distInst = dist;
+      this.dist = dist;
     }
 
     proc dsiBuildArray(type eltType) {
@@ -72,31 +72,38 @@ module ExternalArray {
       return arr;
     }
 
-    proc dsiGetIndices() return 0..#size;
+    /*
+    proc dsiBuildArrayWith(type eltType, data:c_ptr(eltType), allocSize: int) {
+      
+    }
+    */
+    proc domRange return 0..#size;
+
+    proc dsiGetIndices() return (domRange,);
 
     proc dsiSetIndices(x) {
       halt("Can't change the indices of an external array");
     }
 
     iter these() {
-      for i in dsiGetIndices() do
+      for i in domRange do
         yield i;
     }
 
     iter these(param tag: iterKind) where tag == iterKind.standalone {
-      forall i in dsiGetIndices() do
+      forall i in domRange do
         yield i;
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
-      for followThis in dsiGetIndices() {
+      for followThis in domRange {
         yield followThis;
       }
     }
 
     iter these(param tag: iterKind, followThis)
       where tag == iterKind.follower {
-      for i in dsiGetIndices() do
+      for i in domRange do
         yield i;
     }
 
@@ -108,7 +115,25 @@ module ExternalArray {
       }
     }
 
-    // Do I want dsiAssignDomain defined? (see ArrayViewReindex.chpl:262-264)
+    proc dsiDim(d: int) {
+      if (d != rank) {
+        halt("domains over external arrays have only one dimension");
+      }
+      return domRange;
+    }
+
+    // Necessary?
+    proc dsiDim(param d: int) {
+      if (d != rank) {
+        halt("domains over external arrays have only one dimension");
+      }
+      return dsiGetIndices();
+    }
+
+    proc dsiAssignDomain(rhs: domain, lhsPrivate: bool) {
+      chpl_assignDomainWithGetSetIndices(this, rhs);
+    }
+
     // What about _getActualDom?  dsiDestroyDom?
 
     // Prolly want the privatization stuff eventually, but I don't need it right
@@ -166,6 +191,14 @@ module ExternalArray {
     }
 
     // Probably want some dsiSerialRead/Write? (see ArrayViewSlice.chpl:145-151)
+    proc dsiSerialWrite(f) {
+      chpl_serialReadWriteRectangular(f, this, privDom);
+    }
+
+    proc dsiSerialRead(f) {
+      chpl_serialReadWriteRectangular(f, this, privDom);
+    }
+
     // Probably want dsiDisplayRepresentation? (see ArrayViewSlice.chpl:153-161)
 
     inline proc dsiAccess(i: idxType ...rank) ref {
