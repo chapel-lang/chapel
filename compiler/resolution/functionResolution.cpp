@@ -5205,7 +5205,7 @@ static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 static bool  moveSupportsUnresolvedFunctionReturn(CallExpr* call);
 
-static bool  isIfExprResult(CallExpr* call);
+static bool  isIfExprResult(Expr* LHS);
 
 static Type* moveDetermineRhsType(CallExpr* call);
 
@@ -5248,7 +5248,9 @@ static void resolveMove(CallExpr* call) {
   // Ignore moves to RVV unless this is a constructor
   } else if (moveSupportsUnresolvedFunctionReturn(call) == true) {
 
-  } else if (isIfExprResult(call)) {
+  // Ignore moves to if-expr result, the type will be determined later by
+  // 'resolveIfExprType'
+  } else if (isIfExprResult(call->get(1))) {
 
 
   } else {
@@ -5363,10 +5365,14 @@ static bool moveSupportsUnresolvedFunctionReturn(CallExpr* call) {
   return retval;
 }
 
-static bool isIfExprResult(CallExpr* call) {
-  Symbol* LHS = toSymExpr(call->get(1))->symbol();
+static bool isIfExprResult(Expr* LHS) {
+  bool ret = false;
 
-  return LHS->hasFlag(FLAG_IF_EXPR_RESULT);
+  if (SymExpr* se = toSymExpr(LHS)) {
+    ret = se->symbol()->hasFlag(FLAG_IF_EXPR_RESULT);
+  }
+
+  return ret;
 }
 
 //
