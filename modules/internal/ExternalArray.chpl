@@ -111,6 +111,10 @@ module ExternalArray {
         yield i;
     }
 
+    proc dsiMyDist() {
+      return dist;
+    }
+
     proc dsiMember(ind: rank*idxType) {
       if (ind(1) < size && ind(1) >= 0) {
         return true;
@@ -247,7 +251,10 @@ module ExternalArray {
     // Maybe want checkBounds (see ArrayViewSlice.chpl:214-218)
 
     // arr inline proc?
-    // dsiGetBaseDom (see ArrayViewSlice.chpl:299-301)
+
+    inline proc dsiGetBaseDom() {
+      return dom;
+    }
 
     // _getActualArray - useful for returning the array?  Or a dangerous insight
     // into the implementation?
