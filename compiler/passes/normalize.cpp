@@ -1748,9 +1748,7 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
   INT_ASSERT(type == NULL);
   INT_ASSERT(init != NULL);
 
-  Expr* initCopy = init->copy();
-
-  defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initCopy));
+  defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init->copy()));
 }
 
 /************************************* | **************************************
