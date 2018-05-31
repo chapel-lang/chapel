@@ -732,10 +732,6 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
         if (type == dtVoid) {
           retval = var;
 
-        // The primitive scalars are treated as defined
-        } else if (isPrimitiveScalar(type) == true) {
-          retval = var;
-
         // records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
           if (isRecordWithInitializers(at) == true) {
