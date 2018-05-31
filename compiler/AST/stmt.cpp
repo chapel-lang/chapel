@@ -614,6 +614,18 @@ CallExpr* CondStmt::foldConstantCondition() {
 
         insertBefore(result);
 
+        // A squashed IfExpr's result does not need FLAG_IF_EXPR_RESULT, which
+        // is only used when there are multiple paths that could return a
+        // different type.
+        if (CallExpr* call = toCallExpr(thenStmt->body.tail)) {
+          if (call->isPrimitive(PRIM_MOVE)) {
+            Symbol* LHS = toSymExpr(call->get(1))->symbol();
+            if (LHS->hasFlag(FLAG_IF_EXPR_RESULT)) {
+              LHS->removeFlag(FLAG_IF_EXPR_RESULT);
+            }
+          }
+        }
+
         if (var->immediate->bool_value() == gTrue->immediate->bool_value()) {
           Expr* then_stmt = thenStmt;
 
