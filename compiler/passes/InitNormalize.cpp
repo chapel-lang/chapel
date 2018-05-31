@@ -959,6 +959,9 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
                                            Expr*    initExpr) const {
   SET_LINENO(insertBefore);
 
+  // BHARSH INIT TODO: Many of these conditions result in the same AST and
+  // should be merged together.
+  //
   // e.g.
   //   var x = <immediate>;
   //   var y = <identifier>;

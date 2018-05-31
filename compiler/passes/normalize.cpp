@@ -868,7 +868,10 @@ static void insertUseForExplicitModuleCalls() {
 // Inserts a temporary for the result if the last statement is a call.
 //
 // Inserts PRIM_LOGICAL_FOLDER from the local branch result into the argument
-// 'result' based on the argument 'cond'.
+// 'result' based on the argument 'cond'. PRIM_LOGICAL_FOLDER will either turn
+// into an addr-of during resolution or be replaced by its second actual.
+//
+// BHARSH INIT TODO: Do we really need PRIM_LOGICAL_FOLDER anymore?
 //
 static void normalizeIfExprBranch(VarSymbol* cond, VarSymbol* result, BlockStmt* stmt) {
   Expr* last = stmt->body.tail->remove();
@@ -2120,6 +2123,8 @@ static void normVarTypeInference(DefExpr* defExpr) {
   Symbol* var      = defExpr->sym;
   Expr*   initExpr = defExpr->init->remove();
 
+  // BHARSH INIT TODO: Many of these branches can and should be merged.
+  //
   // Do not complain here.  Put this stub in to the AST and let
   // checkUseBeforeDefs() generate a consistent error message.
   if (isUnresolvedSymExpr(initExpr) == true) {
