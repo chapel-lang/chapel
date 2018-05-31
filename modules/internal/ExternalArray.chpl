@@ -51,6 +51,10 @@ module ExternalArray {
                                                     _to_unmanaged(this));
       return newdom;
     }
+
+    proc dsiClone() {
+      return new unmanaged ArrayViewExternDist();
+    }
   }
 
   class ArrayViewExternDom: BaseRectangularDom {
