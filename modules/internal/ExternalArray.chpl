@@ -26,18 +26,50 @@ module ExternalArray {
   use ChapelStandard;
 
   pragma "use default init"
-  class ArrayViewExternDom: BaseDom {
+  class ArrayViewExternDist: BaseDist {
+
+    proc dsiNewRectangularDom(param rank: int = 1, type idxType = int,
+                              param stridable: bool = false, inds) {
+      if (rank != 1) {
+        halt("external arrays are only allowed a rank of 1 right now");
+      }
+      if (stridable) {
+        halt("external arrays are not allowed to be stridable right now");
+      }
+      if (!isIntegralType(idxType)) {
+        halt("external arrays only allow integral indices");
+      }
+      if (inds.size != 1) {
+        halt("there should only be one set of indices, not multiple dimensions");
+      }
+      var r = inds(1);
+      if (r.low != 0) {
+        halt("external arrays always have a lower bound of 0");
+      }
+      var newdom = new unmanaged ArrayViewExternDom(idxType,
+                                                    r.size,
+                                                    _to_unmanaged(this));
+      return newdom;
+    }
+  }
+
+  class ArrayViewExternDom: BaseRectangularDom {
     const size: uint; // We don't need a lower bound, it will always be zero
 
     const distInst;
 
+    proc init(type idxType, size, dist) {
+      super.init(1, idxType, false);
+      this.size = size: uint;
+      this.distInst = dist;
+    }
+
     proc dsiBuildArray(type eltType) {
-      pragma "no auto destroy"
-        // Create c_ptr to an array of the same size
       var arr = new unmanaged ArrayViewExternArr(eltType,
                                                  _to_unmanaged(this),
-                                                 // UMMMMM
+                                                 c_malloc(eltType, this.size),
                                                  true);
+      return arr;
     }
 
     proc dsiGetIndices() return 0..#size;
@@ -66,6 +98,14 @@ module ExternalArray {
       where tag == iterKind.follower {
       for i in dsiGetIndices() do
         yield i;
+    }
+
+    proc dsiMember(ind: rank*idxType) {
+      if (ind(1) < size && ind(1) >= 0) {
+        return true;
+      } else {
+        return false;
+      }
     }
 
     // Do I want dsiAssignDomain defined? (see ArrayViewReindex.chpl:262-264)

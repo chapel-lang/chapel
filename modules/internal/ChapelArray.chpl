@@ -350,14 +350,15 @@ module ChapelArray {
   }
 
   pragma "no copy return"
-  proc _getArray(value: c_ptr, size: int) {
-    var dom = {0..#size}; // needs to be my new domain type
-    dom._value._free_when_no_arrs = true;
+  proc _getArray(value: c_ptr, size: uint) {
+    var dist = new unmanaged ArrayViewExternDist();
+    var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#size,));
+    dom._free_when_no_arrs = true;
     var arr = new unmanaged ArrayViewExternArr(value.eltType,
-                                               dom._instance, // update
+                                               dom,
                                                value,
                                                false);
-    dom._value.add_arr(arr, locking = false);
+    dom.add_arr(arr, locking = false);
     return _newArray(arr);
   }
 
