@@ -717,7 +717,7 @@ static __thread int cd_idx = -1;
 // BTE RDMA is profitable around 1-4K. It's neck-and-neck under 4K, so
 // for now follow gasnet-aries and use the higher default of 4K
 #define DEFAULT_RDMA_THRESHOLD 4096
-static size_t RDMA_THRESHOLD = DEFAULT_RDMA_THRESHOLD;
+static size_t rdma_threshold = DEFAULT_RDMA_THRESHOLD;
 
 #define ALIGN_32_DN(x)    ALIGN_DN((x), sizeof(int32_t))
 #define ALIGN_32_UP(x)    ALIGN_UP((x), sizeof(int32_t))
@@ -1869,7 +1869,7 @@ void chpl_comm_post_task_init(void)
   //
   // Get FMA/BTE threshold
   //
-  RDMA_THRESHOLD = chpl_env_rt_get_size("UGNI_RDMA_THRESHOLD",
+  rdma_threshold = chpl_env_rt_get_size("UGNI_RDMA_THRESHOLD",
                                         DEFAULT_RDMA_THRESHOLD);
 
   //
@@ -5033,7 +5033,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   // If the PUT size merits RDMA and the source addr is registered,
   // then do an RDMA put instead of FMA
   //
- if (size >= RDMA_THRESHOLD &&
+ if (size >= rdma_threshold &&
      (local_mr = mreg_for_local_addr(src_addr)) != NULL) {
     do_rdma = true;
     max_trans_sz = MAX_RDMA_TRANS_SZ;
@@ -5413,7 +5413,7 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
   //
   // If the GET size merits RDMA do an RDMA get instead of FMA
   //
- if (size >= RDMA_THRESHOLD) {
+ if (size >= rdma_threshold) {
     do_rdma = true;
     max_trans_sz = MAX_RDMA_TRANS_SZ;
     post_desc.type = GNI_POST_RDMA_GET;
@@ -5928,7 +5928,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   //
   // If the GET size merits RDMA do an RDMA get instead of FMA
   //
-  if (size >= RDMA_THRESHOLD) {
+  if (size >= rdma_threshold) {
     do_rdma = true;
     post_desc->type = GNI_POST_RDMA_GET;
   }
