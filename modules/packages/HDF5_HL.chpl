@@ -3296,6 +3296,174 @@ module HDF5_HL {
       H5open();
       return H5T_NATIVE_HBOOL_g;
     }
+
+    /*
+     * The IEEE floating point types in various byte orders.
+     */
+    proc H5T_IEEE_F32BE {
+      H5open();
+      return H5T_IEEE_F32BE_g;
+    }
+    proc H5T_IEEE_F32LE {
+      H5open();
+      return H5T_IEEE_F32LE_g;
+    }
+    proc H5T_IEEE_F64BE {
+      H5open();
+      return H5T_IEEE_F64BE_g;
+    }
+    proc H5T_IEEE_F64LE {
+      H5open();
+      return H5T_IEEE_F64LE_g;
+    }
+    /*
+     * These are "standard" types.  For instance, signed (2's complement) and
+     * unsigned integers of various sizes and byte orders.
+     */
+    proc H5T_STD_I8BE {
+      H5open();
+      return H5T_STD_I8BE_g;
+    }
+    proc H5T_STD_I8LE {
+      H5open();
+      return H5T_STD_I8LE_g;
+    }
+    proc H5T_STD_I16BE {
+      H5open();
+      return H5T_STD_I16BE_g;
+    }
+    proc H5T_STD_I16LE {
+      H5open();
+      return H5T_STD_I16LE_g;
+    }
+    proc H5T_STD_I32BE {
+      H5open();
+      return H5T_STD_I32BE_g;
+    }
+    proc H5T_STD_I32LE {
+      H5open();
+      return H5T_STD_I32LE_g;
+    }
+    proc H5T_STD_I64BE {
+      H5open();
+      return H5T_STD_I64BE_g;
+    }
+    proc H5T_STD_I64LE {
+      H5open();
+      return H5T_STD_I64LE_g;
+    }
+    proc H5T_STD_U8BE {
+      H5open();
+      return H5T_STD_U8BE_g;
+    }
+    proc H5T_STD_U8LE {
+      H5open();
+      return H5T_STD_U8LE_g;
+    }
+    proc H5T_STD_U16BE {
+      H5open();
+      return H5T_STD_U16BE_g;
+    }
+    proc H5T_STD_U16LE {
+      H5open();
+      return H5T_STD_U16LE_g;
+    }
+    proc H5T_STD_U32BE {
+      H5open();
+      return H5T_STD_U32BE_g;
+    }
+    proc H5T_STD_U32LE {
+      H5open();
+      return H5T_STD_U32LE_g;
+    }
+    proc H5T_STD_U64BE {
+      H5open();
+      return H5T_STD_U64BE_g;
+    }
+    proc H5T_STD_U64LE {
+      H5open();
+      return H5T_STD_U64LE_g;
+    }
+    proc H5T_STD_B8BE {
+      H5open();
+      return H5T_STD_B8BE_g;
+    }
+    proc H5T_STD_B8LE {
+      H5open();
+      return H5T_STD_B8LE_g;
+    }
+    proc H5T_STD_B16BE {
+      H5open();
+      return H5T_STD_B16BE_g;
+    }
+    proc H5T_STD_B16LE {
+      H5open();
+      return H5T_STD_B16LE_g;
+    }
+    proc H5T_STD_B32BE {
+      H5open();
+      return H5T_STD_B32BE_g;
+    }
+    proc H5T_STD_B32LE {
+      H5open();
+      return H5T_STD_B32LE_g;
+    }
+    proc H5T_STD_B64BE {
+      H5open();
+      return H5T_STD_B64BE_g;
+    }
+    proc H5T_STD_B64LE {
+      H5open();
+      return H5T_STD_B64LE_g;
+    }
+    proc H5T_STD_REF_OBJ {
+      H5open();
+      return H5T_STD_REF_OBJ_g;
+    }
+    proc H5T_STD_REF_DSETREG {
+      H5open();
+      return H5T_STD_REF_DSETREG_g;
+    }
+
+    /*
+     * Types which are particular to Unix.
+     */
+    proc H5T_UNIX_D32BE {
+      H5open();
+      return H5T_UNIX_D32BE_g;
+    }
+    proc H5T_UNIX_D32LE {
+      H5open();
+      return H5T_UNIX_D32LE_g;
+    }
+    proc H5T_UNIX_D64BE {
+      H5open();
+      return H5T_UNIX_D64BE_g;
+    }
+    proc H5T_UNIX_D64LE {
+      H5open();
+      return H5T_UNIX_D64LE_g;
+    }
+
+    /*
+     * Types particular to the C language.  String types use `bytes' instead
+     * of `bits' as their size.
+     */
+    proc H5T_C_S1 {
+      H5open();
+      return H5T_C_S1_g;
+    }
+    proc H5T_VARIABLE {
+      return (-1):size_t;
+    }
+
+    /*
+     * Types particular to Fortran.
+     */
+    proc H5T_FORTRAN_S1 {
+      H5open();
+      return H5T_FORTRAN_S1_g;
+    }
   }
 
   /* This module defines some wrappers for HDF5 functions that issue #9324
