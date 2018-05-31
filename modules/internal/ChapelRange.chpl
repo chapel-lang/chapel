@@ -152,6 +152,10 @@ module ChapelRange {
     var _alignment : typeHelper(stridable, idxType); // alignment
     var _aligned   : typeHelper(stridable, bool);
 
+    proc repType type {
+      if isEnumType(idxType) then return int; else return idxType;
+    }
+
     proc strType type  return chpl__rangeStrideType(idxType);
 
     proc chpl__promotionType() type {
@@ -241,7 +245,6 @@ module ChapelRange {
   proc chpl_build_bounded_range(low: enumerated, high: enumerated) {
     if (low.type != high.type) then
       compilerError("ranges of enums must use a single enum type");
-    compilerError("ranges of enum type are not currently supported");
     return new range(low.type, _low=low, _high=high);
   }
   proc chpl_build_bounded_range(low, high) {
@@ -352,9 +355,13 @@ module ChapelRange {
      bound the behavior is undefined. */
   inline proc range.low  return _low;
 
+  inline proc range.lowAsInt return if isEnumType(idxType) then chpl__enumToOrder(_low) else _low;
+
   /* Return the range's high bound. If the range does not have a high
      bound the behavior is undefined. */
   inline proc range.high return _high;
+
+  inline proc range.highAsInt return if isEnumType(idxType) then chpl__enumToOrder(_high) else _high;
 
   /* Returns the range's aligned low bound. If the aligned low bound is
      undefined (does not exist), the behavior is undefined.
@@ -365,6 +372,13 @@ module ChapelRange {
     else
       // Adjust _low upward by the difference between _alignment and _low.
       return _low + chpl__diffMod(_alignment, _low, stride);
+  }
+
+  inline proc range.alignedLowAsInt {
+    if isEnumType(idxType) then
+      return chpl__enumToOrder(alignedLow);
+    else
+      return alignedLow;
   }
 
   /* Returns the range's aligned high bound. If the aligned high bound is
@@ -378,6 +392,14 @@ module ChapelRange {
       // Adjust _high downward by the difference between _high and _alignment.
       return _high - chpl__diffMod(_high, _alignment, stride);
   }
+
+    inline proc range.alignedHighAsInt {
+    if isEnumType(idxType) then
+      return chpl__enumToOrder(alignedHigh);
+    else
+      return alignedHigh;
+  }
+
 
   /* If the sequence represented by the range is empty, return true.  An
      error is reported if the range is ambiguous.
@@ -400,7 +422,7 @@ module ChapelRange {
   }
 
   /* Returns :proc:`range.size`.  */
-  proc range.length: idxType
+  proc range.length: repType
   {
     if ! isBoundedRange(this) then
       compilerError("length is not defined on unbounded ranges");
@@ -408,17 +430,17 @@ module ChapelRange {
     if isUintType(idxType)
     {
       // assumes alignedHigh/alignLow always work, even for an empty range
-      const ah = this.alignedHigh,
-            al = this.alignedLow;
+      const ah = this.alignedHighAsInt,
+            al = this.alignedLowAsInt;
       if al > ah then return 0: idxType;
       const s = abs(this.stride): idxType;
       return (ah - al) / s + 1:idxType;
     }
     else // idxType is signed
     {
-      if _low > _high then return 0:idxType;
-      const s = abs(this.stride): idxType;
-      return (this.alignedHigh - this.alignedLow) / s + 1:idxType;
+      if _low > _high then return 0:repType;
+      const s = abs(this.stride): repType;
+      return (this.alignedHighAsInt - this.alignedLowAsInt) / s + 1:repType;
     }
   }
 
@@ -1483,6 +1505,17 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     return willOverFlow;
   }
 
+  proc chpl_checkIfRangeIterWillOverflow(type idxType: enumerated, low, high,
+                                         stride, first=low,
+                                         last=high, shouldHalt=true) {
+    return chpl_checkIfRangeIterWillOverflow(int, chpl__enumToOrder(low),
+                                             chpl__enumToOrder(high),
+                                             stride, chpl__enumToOrder(first),
+                                             chpl__enumToOrder(last),
+                                             shouldHalt);
+  }
+
+
   pragma "no doc"
   proc range.checkIfIterWillOverflow(shouldHalt=true) {
     return chpl_checkIfRangeIterWillOverflow(this.idxType, this.low, this.high,
@@ -1763,15 +1796,18 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       // don't need to check if isAmbiguous since stride is one
 
       // can use low/high instead of first/last since stride is one
-      var i: idxType;
-      const start = this.low;
-      const end = this.high;
+      var i: repType;
+      const start = this.lowAsInt;
+      const end = this.highAsInt;
 
       while __primitive("C for loop",
                         __primitive( "=", i, start),
                         __primitive("<=", i, end),
-                        __primitive("+=", i, stride: idxType)) {
-        yield i;
+                        __primitive("+=", i, stride: repType)) {
+        if (idxType == repType) then
+          yield i;
+        else
+          yield chpl__orderToEnum(i, idxType);
       }
     } else {
       for i in this.generalIterator() do yield i;
@@ -1806,7 +1842,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     while __primitive("C for loop",
                       __primitive( "=", i, start),
                       __primitive(">=", high, low),  // execute at least once?
-                      __primitive("+=", i, stride: idxType)) {
+                      __primitive("+=", i, stride: repType)) {
       yield i;
       if i == end then break;
     }
@@ -1857,7 +1893,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
             yield i;
           }
         } else {
-          const (lo, hi) = _computeBlock(len, numChunks, chunk, this.high, this.low, this.low);
+          const (lo, hi) = _computeBlock(len, numChunks, chunk, this.highAsInt, this.lowAsInt, this.lowAsInt);
           for i in lo..hi {
             yield i;
           }
