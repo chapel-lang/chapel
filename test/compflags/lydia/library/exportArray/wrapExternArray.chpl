@@ -5,7 +5,15 @@ proc foo() {
   var externArr = getExternArray(10);
   var wrapper = _getArray(externArr, 10);
   writeln(wrapper);
-  writeln(externArr); // Need different strategy to write it out
+
+  wrapper[2] = 4;
+  writeln(wrapper);
+  var first = true;
+  for i in 0..#10 {
+    if first then first = false; else write(" ");
+    write(externArr[i]);
+  }
+  writeln();
   freeArr(externArr); // Is this the right strategy?
 }
 
