@@ -908,12 +908,12 @@ class LowerIfExprVisitor : public AstVisitorTraverse
     LowerIfExprVisitor() { }
     virtual ~LowerIfExprVisitor() { }
 
-    virtual bool enterIfExpr(IfExpr* node);
+    virtual void exitIfExpr(IfExpr* node);
 };
 
-bool LowerIfExprVisitor::enterIfExpr(IfExpr* ife) {
-  if (isAlive(ife) == false) return false;
-  if (isDefExpr(ife->parentExpr)) return false;
+void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
+  if (isAlive(ife) == false) return;
+  if (isDefExpr(ife->parentExpr)) return;
 
   SET_LINENO(ife);
 
@@ -924,15 +924,9 @@ bool LowerIfExprVisitor::enterIfExpr(IfExpr* ife) {
 
   // Don't auto-destroy local result if returning from a branch of a parent
   // if-expression.
-  bool isNestedIfExpr = false;
-  if (CallExpr* call = toCallExpr(ife->getStmtExpr()->next)) {
-    if (call->isPrimitive(PRIM_MOVE)) {
-      if (SymExpr* se = toSymExpr(call->get(1))) {
-        isNestedIfExpr = se->symbol()->hasFlag(FLAG_IF_EXPR_RESULT);
-      }
-    }
-  }
-  if (isNestedIfExpr == false) {
+  const bool parentIsIfExpr = isBlockStmt(ife->parentExpr) &&
+                              isIfExpr(ife->parentExpr->parentExpr);
+  if (parentIsIfExpr == false) {
     result->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 
@@ -960,11 +954,6 @@ bool LowerIfExprVisitor::enterIfExpr(IfExpr* ife) {
   anchor->insertBefore(cs);
 
   ife->replace(new SymExpr(result));
-
-  condTest->accept(this);
-  cs->accept(this);
-
-  return false;
 }
 
 static void lowerIfExprs(BaseAST* base) {
