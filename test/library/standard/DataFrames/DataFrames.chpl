@@ -49,6 +49,11 @@ module DataFrames {
     proc writeThis(f, s: TypedSeries(?) = nil) {
       halt("cannot writeThis on generic Index");
     }
+
+    pragma "no doc"
+    proc writeThis(f, d: DataFrame = nil) {
+      halt("cannot writeThis on generic Index");
+    }
   }
 
   class TypedIndex : Index {
@@ -168,10 +173,24 @@ module DataFrames {
                              filter_valid_bits[1..curr_ord]);
     }
 
+    proc writeIdxWidth() {
+      var idxWidth = 0;
+      for idx in this {
+        var idxStr = new string(idx: string);
+        if idxStr.length > idxWidth then
+          idxWidth = idxStr.length;
+      }
+      return idxWidth;
+    }
+
     proc writeThis(f, s: TypedSeries(?) = nil) {
-      for (i, (v, d)) in zip(this, s._these()) {
-        f <~> i;
-        f <~> "\t";
+      var idxWidth = writeIdxWidth() + 4;
+      for (idx, (v, d)) in zip(this, s._these()) {
+        var idxStr = new string(idx: string);
+        f <~> idx;
+        for space in 1..idxWidth-idxStr.length do
+          f <~> " ";
+
         if v then
           f <~> d;
         else
@@ -181,13 +200,24 @@ module DataFrames {
     }
 
     proc writeThis(f, d: DataFrame = nil) {
-      for (i, (v, d)) in zip(this, s._these()) {
-        f <~> i;
-        f <~> "\t";
-        if v then
-          f <~> d;
-        else
-          f <~> "None";
+      var idxWidth = writeIdxWidth() + 1;
+      for space in 1..idxWidth do
+        f <~> " ";
+      for lab in d.labels {
+        f <~> lab + "   ";
+      }
+      f <~> "\n";
+
+      for idx in this {
+        var idxStr = new string(idx: string);
+        f <~> idxStr;
+        for space in 1..idxWidth-idxStr.length do
+          f <~> " ";
+
+        for (ser, lab) in zip(d, d.labels) {
+          ser.writeElem(f, idx, lab.length);
+          f <~> "   ";
+        }
         f <~> "\n";
       }
     }
@@ -280,6 +310,11 @@ module DataFrames {
     proc gteq_scalar(n) {
       halt("generic Series cannot be compared");
       return this;
+    }
+
+    pragma "no doc"
+    proc writeElem(f, idx, len: int) {
+      halt("generic Series cannot be indexed");
     }
   }
 
@@ -568,6 +603,16 @@ module DataFrames {
       }
       f <~> "dtype: " + eltType:string;
     }
+
+    proc writeElem(f, idx, len: int) {
+      var output = if this.valid(idx)
+                   then new string(this[idx]: string)
+                   else "None";
+
+      for space in 1..len-output.length do
+        f <~> " ";
+      f <~> output;
+    }
   }
 
   class DataFrame {
@@ -595,11 +640,10 @@ module DataFrames {
         s.reindex(idx);
     }
 
-    // TODO: iterates over the axes
-    /*
     iter these() {
+      for s in columns do
+        yield s;
     }
-     */
 
     // TODO: need new data structures for this, or flexible-len tups
     /*
@@ -613,18 +657,33 @@ module DataFrames {
       iter tuples_fast() {
      */
 
+    proc this(lab: string) {
+      return columns[lab];
+    }
+
     proc writeThis(f) {
       if idx {
         idx.writeThis(f, this);
-      } else {
-        for l in labels do
-          f <~> l + ":\t\t";
-        for s in this.columns {
-          f <~> l + ":\n";
-          s.writeThis(f);
-          f <~> "\n\n";
-        }
       }
+      /*
+      else {
+        for l in labels do
+          f <~> "\t\t" + l + ":";
+        }
+        f <~> "\n";
+        // TODO: get longest size of all series
+        // for i in this {
+          f <~> i;
+          f <~> "\t";
+          for s in this {
+            f <~> s[i];
+            f <~> "\t\t";
+          }
+          f <~> "\n";
+        }
+
+      }
+       */
     }
   }
 
