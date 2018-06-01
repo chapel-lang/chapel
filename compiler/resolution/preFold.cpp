@@ -31,6 +31,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "typeSpecifier.h"
+#include "UnmanagedClassType.h"
 #include "visibleFunctions.h"
 
 #ifndef __STDC_FORMAT_MACROS
@@ -1447,7 +1448,8 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 // determine field associated with query expression
 //
 static Symbol* determineQueriedField(CallExpr* call) {
-  AggregateType* at     = toAggregateType(call->get(1)->getValType());
+  AggregateType* at     =
+    toAggregateType(canonicalClassType(call->get(1)->getValType()));
   SymExpr*       last   = toSymExpr(call->get(call->numActuals()));
   VarSymbol*     var    = toVarSymbol(last->symbol());
   Symbol*        retval = NULL;

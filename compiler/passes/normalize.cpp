@@ -35,6 +35,7 @@
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
+#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 #include <cctype>
@@ -3074,6 +3075,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                                                CallExpr* call,
                                                BaseAST* queried);
 
+static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call);
 
 // The type-expr is known to be a CallExpr with a query definition
 static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
@@ -3102,10 +3104,32 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   //  we'd like arg to have type dtTuple
 
   // Remove the queries from the formal argument type
-  formal->typeExpr->replace(new BlockStmt(call->baseExpr->remove()));
+  Expr* usetype = NULL;
+  if (TypeSymbol* ts = getTypeForSpecialConstructor(call)) {
+    usetype = new SymExpr(ts);
+  } else if (call->baseExpr) {
+    usetype = call->baseExpr->remove();
+  } else {
+    usetype = call->remove();
+    INT_ASSERT(!doesCallContainDefActual(call));
+  }
+
+  formal->typeExpr->replace(new BlockStmt(usetype));
 
   formal->addFlag(FLAG_MARKED_GENERIC);
 }
+
+static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call) {
+  if (call->isNamed("_build_tuple")) {
+    return dtTuple->symbol;
+  } else if (call->isNamed("_to_unmanaged")) {
+    return dtUnmanaged->symbol;
+  } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+    return dtUnmanaged->symbol;
+  }
+  return NULL;
+}
+
 
 // Constructs a PRIM_QUERY with arguments a, b
 // Copies an expr argument but not a symbol argument
@@ -3149,10 +3173,14 @@ static void expandQueryForActual(FnSymbol*  fn,
     replaceQueryUses(formal, def, query, symExprs);
   } else if (subcall && doesCallContainDefActual(subcall)) {
     Expr* subtype = NULL;
-    if (subcall->isNamed("_build_tuple"))
-      subtype = new SymExpr(dtTuple->symbol);
-    else
+    if (TypeSymbol* ts = getTypeForSpecialConstructor(subcall)) {
+      subtype = new SymExpr(ts);
+    } else if (subcall->baseExpr) {
       subtype = subcall->baseExpr->copy();
+    } else {
+      subtype = subcall->copy();
+      INT_ASSERT(!doesCallContainDefActual(subcall));
+    }
     // Add check that actual type satisfies
     addToWhereClause(fn, formal,
                      new CallExpr(PRIM_IS_SUBTYPE, subtype, query->copy()));
@@ -3176,7 +3204,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   int position = 1;
 
-  if (call->isNamed("_build_tuple") == true) {
+  if (call->isNamed("_build_tuple")) {
     Expr*     actual = new SymExpr(new_IntSymbol(call->numActuals()));
     CallExpr* query  = makePrimQuery(queried, new_CStringSymbol("size"));
 
@@ -3186,6 +3214,25 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     call->baseExpr->replace(new SymExpr(dtTuple->symbol));
 
     position = position + 1; // tuple size is technically 1st param/type
+  } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+    if (CallExpr* subCall = toCallExpr(call->get(1))) {
+      if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {
+        if (AggregateType* at = toAggregateType(subBase->symbol()->type)) {
+          if (isClass(at)) {
+            // TODO -- should this move to scope resolve?
+
+            // Replace PRIM_TO_UNMANAGED( MyClass( Def ?t ) )
+            // with
+            // unmanaged MyClass ( )
+
+            Type* unm = at->getUnmanagedClass();
+            subCall->baseExpr->replace(new SymExpr(unm->symbol));
+            call->replace(subCall->remove());
+            call = subCall;
+          }
+        }
+      }
+    }
   }
 
   CallExpr* gatheringNamedArgs = makePrimQuery(queried);
