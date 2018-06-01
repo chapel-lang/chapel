@@ -7,4 +7,4 @@ proc foo(type t, x: t ...?k) {
 }
 
 foo(int, 1..5, 1..5);
-foo(int, 1..5 by 2, 1..5);
+foo(int, 1..5 by 2, 1..5 by 2);
