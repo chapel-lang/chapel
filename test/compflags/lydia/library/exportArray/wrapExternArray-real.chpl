@@ -1,10 +1,12 @@
 extern proc getExternArray(size: int): c_ptr(real);
 extern proc freeArr(arr: c_ptr(real));
 
+use ExternalArray;
+
 proc foo() {
   var size = 10;
   var externArr = getExternArray(size);
-  var wrapper = _getArray(externArr, size:uint);
+  var wrapper = makeArrayFromPtr(externArr, size:uint);
 
   wrapper[2] = 4.0;
   var matches = true;

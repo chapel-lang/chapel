@@ -166,7 +166,6 @@ module ChapelArray {
   use ArrayViewSlice;
   use ArrayViewRankChange;
   use ArrayViewReindex;
-  use ExternalArray;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
@@ -347,19 +346,6 @@ module ChapelArray {
       return new _array(_newPrivatizedClass(value), value, _unowned=true);
     else
       return new _array(nullPid, value, _unowned=true);
-  }
-
-  pragma "no copy return"
-  proc _getArray(value: c_ptr, size: uint) {
-    var dist = new unmanaged ArrayViewExternDist();
-    var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#size,));
-    dom._free_when_no_arrs = true;
-    var arr = new unmanaged ArrayViewExternArr(value.eltType,
-                                               dom,
-                                               value,
-                                               false);
-    dom.add_arr(arr, locking = false);
-    return _newArray(arr);
   }
 
   pragma "unsafe"

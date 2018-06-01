@@ -1,9 +1,11 @@
 extern proc getExternArray(size: int): c_ptr(int);
 extern proc freeArr(arr: c_ptr(int));
 
+use ExternalArray;
+
 proc foo() {
   var externArr = getExternArray(10);
-  var wrapper = _getArray(externArr, 10);
+  var wrapper = makeArrayFromPtr(externArr, 10);
   writeln(wrapper);
 
   wrapper[2] = 4;

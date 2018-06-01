@@ -53,7 +53,7 @@ module ExternalArray {
     }
 
     proc dsiClone() {
-      return new unmanaged ArrayViewExternDist();
+      return this;
     }
   }
 
@@ -280,5 +280,19 @@ module ExternalArray {
 
     // proc dsiReallocate(d: domain) is not supported, so don't override.
     // proc _resize(length: int, old_map) is not supported, don't override.
+  }
+
+  // Creates an instance of our new array type
+  pragma "no copy return"
+  proc makeArrayFromPtr(value: c_ptr, size: uint) {
+    var dist = new unmanaged ArrayViewExternDist();
+    var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#size,));
+    dom._free_when_no_arrs = true;
+    var arr = new unmanaged ArrayViewExternArr(value.eltType,
+                                               dom,
+                                               value,
+                                               false);
+    dom.add_arr(arr, locking = false);
+    return _newArray(arr);
   }
 }
