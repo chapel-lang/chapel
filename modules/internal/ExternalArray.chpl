@@ -169,7 +169,7 @@ module ExternalArray {
     }
 
     proc idxType type return dom.idxType;
-    proc rank param return 1; // Should I hardcode this for now?
+    proc rank param return dom.rank;
 
     // do I want a "isExternArrayView" method on BaseArr?
 
@@ -201,7 +201,6 @@ module ExternalArray {
       }
     }
 
-    // Probably want some dsiSerialRead/Write? (see ArrayViewSlice.chpl:145-151)
     proc dsiSerialWrite(f) {
       chpl_serialReadWriteRectangular(f, this, privDom);
     }
@@ -227,32 +226,28 @@ module ExternalArray {
     }
 
     inline proc dsiAccess(i) ref {
-      if boundsChecking then
-        if !dom.dsiMember(i) {
-          halt("array index out of bounds: " + _stringify_tuple(i));
-        }
+      checkBounds(i);
       return _ArrInstance(i(1));
     }
 
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
-      if boundsChecking then
-        if !dom.dsiMember(i) {
-          halt("array index out of bounds: " + _stringify_tuple(i));
-        }
+      checkBounds(i);
       return _ArrInstance(i(1));
     }
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType)  {
+      checkBounds(i);
+      return _ArrInstance(i(1));
+    }
+
+    inline proc checkBounds(i) {
       if boundsChecking then
         if !dom.dsiMember(i) {
           halt("array index out of bounds: " + _stringify_tuple(i));
         }
-      return _ArrInstance(i(1));
     }
-    // Maybe want checkBounds (see ArrayViewSlice.chpl:214-218)
-
     // arr inline proc?
 
     inline proc dsiGetBaseDom() {
