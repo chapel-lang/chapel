@@ -73,7 +73,6 @@ proc testRange(r) {
     writeln(i);
   writeln("---");
 
-  /*
   // standalone parallel loop over domain
   forall i in A.domain do
     A[i] = chpl__enumToOrder(i)+1;
@@ -83,7 +82,7 @@ proc testRange(r) {
   
   // range as leader, array as follower
   forall (c,a) in zip(r, A) do
-    a = -(chpl__enumToOrder(i)+1);
+    a = -(chpl__enumToOrder(c)+1);
   for c in r do
     writeln("A[", c, "] = ", A[c]);
   writeln("---");
@@ -94,16 +93,27 @@ proc testRange(r) {
   for c in r do
     writeln("A[", c, "] = ", A[c]);
   writeln("---");
-  */
   
-  /*
-  // standalone array
+  // domain as leader, array as follower
+  forall (c,a) in zip(A.domain, A) do
+    a = -(chpl__enumToOrder(c)+1);
+  for c in r do
+    writeln("A[", c, "] = ", A[c]);
+  writeln("---");
+
+  // array as leader, domain as follower
+  forall (a,c) in zip(A, A.domain) do
+    a = chpl__enumToOrder(c)+1;
+  for c in r do
+    writeln("A[", c, "] = ", A[c]);
+  writeln("---");
+  
+// standalone array
   forall a in A do
     a = -a;
   for c in r do
     writeln("A[", c, "] = ", A[c]);
   writeln("---");
-  */
 }
 
 
@@ -113,8 +123,8 @@ proc main() {
     writeln(c);
   writeln();
 
-testRange(color.yellow..color.indigo);
-for c in color.yellow..color.indigo do
-  writeln(c);
-writeln();
+  testRange(color.yellow..color.indigo);
+  for c in color.yellow..color.indigo do
+    writeln(c);
+  writeln();
 }

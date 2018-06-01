@@ -838,7 +838,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
              " that is larger than the range's number of indices ", this.length);
     }
 
-    return chpl__intToInd(chpl__addRangeStrides(this.firstAsInt, this.stride, ord),
+    return chpl__intToIdx(chpl__addRangeStrides(this.firstAsInt, this.stride, ord),
                           idxType);
   }
 
@@ -1353,8 +1353,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     var result = new range(idxType,
                            computeBoundedType(this, other),
                            this.stridable | other.stridable,
-                           chpl__intToInd(newlo, idxType),
-                           chpl__intToInd(newhi, idxType),
+                           chpl__intToIdx(newlo, idxType),
+                           chpl__intToIdx(newhi, idxType),
                            newStride,
                            0,
                            !ambig && (this.aligned || other.aligned));
@@ -2052,7 +2052,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if debugChapelRange then
       chpl_debug_writeln("In range follower code: Following ", followThis);
 
-    //    var myFollowThis = chpl__intToInd(followThis(1).low,idxType)..chpl__intToInd(followThis(1).high,idxType) /* FIX: by followThis(1).stride */;
+    //    var myFollowThis = chpl__intToIdx(followThis(1).low,idxType)..chpl__intToIdx(followThis(1).high,idxType) /* FIX: by followThis(1).stride */;
     var myFollowThis = followThis(1);
 
     //    compilerWarning(myFollowThis.type:string);
@@ -2091,7 +2091,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         if flwlen != 0 {
           const stride = this.stride * myFollowThis.stride;
           var low = myFollowThis.first;
-          var high = chpl__intToInd(chpl__indToInt(low) + stride * (flwlen - 1):strType, idxType);
+          var high = chpl__intToIdx(chpl__idxToInt(low) + stride * (flwlen - 1):strType, idxType);
           assert(high == this.orderToIndex(myFollowThis.last), "high isn't as expected");
 
           if stride < 0 then low <=> high;
@@ -2106,12 +2106,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           yield i;
 
       } else {
-        var r = chpl__intToInd(1,idxType)..chpl__intToInd(0,idxType);
+        var r = chpl__intToIdx(1,idxType)..chpl__intToIdx(0,idxType);
 
         if flwlen != 0 {
           const low = this.orderToIndex(myFollowThis.first);
-          const high = chpl__intToInd(chpl__indToInt(low) + (flwlen - 1):strType, idxType);
-          assert(high == this.orderToIndex(chpl__indToInt(myFollowThis.last)), "high isn't as expected (2)");
+          const high = chpl__intToIdx(chpl__idxToInt(low) + (flwlen - 1):strType, idxType);
+          assert(high == this.orderToIndex(chpl__idxToInt(myFollowThis.last)), "high isn't as expected (2)");
 
           r = low .. high;
         }
@@ -2464,19 +2464,19 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     }
   }
 
-  inline proc chpl__intToInd(i: integral, type idxType: integral) {
+  inline proc chpl__intToIdx(i: integral, type idxType: integral) {
     return i;
   }
 
-  inline proc chpl__intToInd(i: integral, type idxType: enumerated) {
+  inline proc chpl__intToIdx(i: integral, type idxType: enumerated) {
     return chpl__orderToEnum(i, idxType);
   }
 
-  inline proc chpl__indToInt(i: integral) {
+  inline proc chpl__idxToInt(i: integral) {
     return i;
   }
 
-  inline proc chpl__indToInt(i: enumerated) {
+  inline proc chpl__idxToInt(i: enumerated) {
     return chpl__enumToOrder(i);
   }
 }
