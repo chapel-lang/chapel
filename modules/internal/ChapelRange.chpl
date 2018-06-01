@@ -838,7 +838,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
              " that is larger than the range's number of indices ", this.length);
     }
 
-    return chpl__addRangeStrides(this.first, this.stride, ord);
+    return chpl__intToInd(chpl__addRangeStrides(this.firstAsInt, this.stride, ord),
+                          idxType);
   }
 
   //////////////////////////////////////////////////////////////////////////////////
@@ -1349,19 +1350,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       newhi = 0;
     }
 
-    proc intToInd(i: integral, type idxType: integral) {
-      return i;
-    }
-
-    proc intToInd(i: integral, type idxType: enumerated) {
-      return chpl__orderToEnum(i, idxType);
-    }
-    
     var result = new range(idxType,
                            computeBoundedType(this, other),
                            this.stridable | other.stridable,
-                           intToInd(newlo, idxType),
-                           intToInd(newhi, idxType),
+                           chpl__intToInd(newlo, idxType),
+                           chpl__intToInd(newhi, idxType),
                            newStride,
                            0,
                            !ambig && (this.aligned || other.aligned));
@@ -2059,7 +2052,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if debugChapelRange then
       chpl_debug_writeln("In range follower code: Following ", followThis);
 
+    //    var myFollowThis = chpl__intToInd(followThis(1).low,idxType)..chpl__intToInd(followThis(1).high,idxType) /* FIX: by followThis(1).stride */;
     var myFollowThis = followThis(1);
+
+    //    compilerWarning(myFollowThis.type:string);
 
     if debugChapelRange then
       chpl_debug_writeln("Range = ", myFollowThis);
@@ -2090,13 +2086,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
       }
       if this.stridable || myFollowThis.stridable {
-        var r = 1:repType .. 0:repType by 1:chpl__rangeStrideType(repType);
+        var r = chpl__intToIdx(1)..chpl__intToIdx(0) by 1:chpl__rangeStrideType(repType);
 
         if flwlen != 0 {
           const stride = this.stride * myFollowThis.stride;
-          var low: repType  = this.orderToIndex(myFollowThis.first);
-          var high: repType = ( low: strType + stride * (flwlen - 1):strType ):repType;
-          assert(high == this.orderToIndex(myFollowThis.last));
+          var low = myFollowThis.first;
+          var high = chpl__intToInd(chpl__indToInt(low) + stride * (flwlen - 1):strType, idxType);
+          assert(high == this.orderToIndex(myFollowThis.last), "high isn't as expected");
 
           if stride < 0 then low <=> high;
           r = low .. high by stride:strType;
@@ -2105,22 +2101,25 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         if debugChapelRange then
           chpl_debug_writeln("Expanded range = ",r);
 
+        //        compilerWarning("A: " + r.type:string);
         for i in r do
           yield i;
 
       } else {
-        var r = 1:repType .. 0:repType;
+        var r = chpl__intToInd(1,idxType)..chpl__intToInd(0,idxType);
 
         if flwlen != 0 {
-          const low: repType  = this.orderToIndex(myFollowThis.first);
-          const high: repType = ( low: strType + (flwlen - 1):strType ):repType;
-          assert(high == this.orderToIndex(myFollowThis.last));
+          const low = this.orderToIndex(myFollowThis.first);
+          const high = chpl__intToInd(chpl__indToInt(low) + (flwlen - 1):strType, idxType);
+          assert(high == this.orderToIndex(chpl__indToInt(myFollowThis.last)), "high isn't as expected (2)");
 
           r = low .. high;
         }
 
         if debugChapelRange then
           chpl_debug_writeln("Expanded range = ",r);
+
+        //        compilerWarning("B: " + r.type:string);
 
         for i in r do
           yield i;
@@ -2141,6 +2140,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         if debugChapelRange then
           chpl_debug_writeln("Expanded range = ",r);
 
+        compilerWarning("C: " + r.type:string);
+
         for i in r do
           yield i;
       }
@@ -2149,6 +2150,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         const r = .. first by stride:strType;
         if debugChapelRange then
           chpl_debug_writeln("Expanded range = ",r);
+
+        compilerWarning("D: " + r.type:string);
 
         for i in r do
           yield i;
@@ -2459,5 +2462,21 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     } else {
       chpl__rangeTypeError(idxType);
     }
+  }
+
+  inline proc chpl__intToInd(i: integral, type idxType: integral) {
+    return i;
+  }
+
+  inline proc chpl__intToInd(i: integral, type idxType: enumerated) {
+    return chpl__orderToEnum(i, idxType);
+  }
+
+  inline proc chpl__indToInt(i: integral) {
+    return i;
+  }
+
+  inline proc chpl__indToInt(i: enumerated) {
+    return chpl__enumToOrder(i);
   }
 }

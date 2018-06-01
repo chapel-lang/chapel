@@ -9,15 +9,25 @@ blue
 indigo
 violet
 
-7
-7
-A[red] = 0.0
-A[orange] = 1.0
-A[yellow] = 2.0
-A[green] = 3.0
-A[blue] = 4.0
-A[indigo] = 5.0
-A[violet] = 6.0
+length = 7
+size = 7
+
+A[red] = 1.0
+A[orange] = 2.0
+A[yellow] = 3.0
+A[green] = 4.0
+A[blue] = 5.0
+A[indigo] = 6.0
+A[violet] = 7.0
+---
+A[red] = 10.0
+A[orange] = 11.0
+A[yellow] = 12.0
+A[green] = 13.0
+A[blue] = 14.0
+A[indigo] = 15.0
+A[violet] = 16.0
+---
 red
 orange
 yellow
@@ -34,12 +44,19 @@ green
 blue
 indigo
 
-4
-4
-A[yellow] = 2.0
-A[green] = 3.0
-A[blue] = 4.0
-A[indigo] = 5.0
+length = 4
+size = 4
+
+A[yellow] = 3.0
+A[green] = 4.0
+A[blue] = 5.0
+A[indigo] = 6.0
+---
+A[yellow] = 10.0
+A[green] = 11.0
+A[blue] = 12.0
+A[indigo] = 13.0
+---
 yellow
 green
 blue
