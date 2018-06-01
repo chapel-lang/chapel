@@ -156,7 +156,7 @@ module ExternalArray {
 
     const dom;
     
-    const _ArrInstance;
+    const _ArrInstance: _ddata;
 
     const _owned: bool;
 
@@ -164,7 +164,7 @@ module ExternalArray {
       super.init(_decEltRefCounts = false);
       this.eltType = eltType;
       this.dom = dom;
-      this._ArrInstance = _ArrInstance;
+      this._ArrInstance = _ArrInstance: _ddata(eltType);
       this._owned = _owned;
     }
 
@@ -266,7 +266,7 @@ module ExternalArray {
 
     proc dsiDestroyArr() {
       if (_owned) {
-        c_free(_ArrInstance);
+        _ddata_free(_ArrInstance, dom.size);
       }
     }
 
