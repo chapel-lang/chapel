@@ -198,6 +198,7 @@
   #include "flex-chapel.h"
   #include "ForallStmt.h"
   #include "ForLoop.h"
+  #include "IfExpr.h"
   #include "misc.h"
   #include "parser.h"
   #include "stmt.h"
@@ -1590,7 +1591,7 @@ for_expr:
 
 cond_expr:
   TIF expr TTHEN expr TELSE expr
-    { $$ = new CallExpr(new DefExpr(buildIfExpr($2, $4, $6))); }
+    { $$ = new IfExpr($2, $4, $6); }
 /* MPF: it would be nice to match TIF expr TTHEN expr but
    the attempt below leads to reduce-reduce conflicts:
       TIF expr TTHEN expr %prec TNOELSE

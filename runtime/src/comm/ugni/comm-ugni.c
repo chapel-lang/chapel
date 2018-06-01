@@ -5819,7 +5819,8 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   //
   // For now, if the local address isn't in a memory region known to the
   // NIC, or if they give us an unaligned address or length, or if the
-  // remote address isn't in NIC-registered memory, do a blocking GET.
+  // remote address isn't in NIC-registered memory, or if the size is
+  // larger than the maximum transaction size, do a blocking GET.
   // Eventually it might be worthwhile to do a nonblocking solution if
   // we can.
   //
@@ -5827,7 +5828,8 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
       || !IS_ALIGNED_32((size_t) (intptr_t) addr)
       || !IS_ALIGNED_32((size_t) (intptr_t) raddr)
       || !IS_ALIGNED_32(size)
-      || (remote_mr = mreg_for_remote_addr(raddr, locale)) == NULL) {
+      || (remote_mr = mreg_for_remote_addr(raddr, locale)) == NULL
+      || size > MAX_UGNI_TRANS_SZ) {
     PERFSTATS_INC(get_nb_b_cnt);
     do_remote_get(addr, locale, raddr, size, may_proxy_true);
     return NULL;

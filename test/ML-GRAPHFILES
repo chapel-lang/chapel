@@ -108,3 +108,5 @@ performance/comm/low-level/remote-fetchAmos.ml-perf.graph
 performance/comm/low-level/remote-amos.ml-perf.graph
 performance/comm/low-level/remote-ons.ml-perf.graph
 performance/comm/low-level/remote-fastOns.ml-perf.graph
+performance/comm/low-level/array-gets.ml-perf.graph
+performance/comm/low-level/array-puts.ml-perf.graph

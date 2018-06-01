@@ -47,6 +47,7 @@ static void build_enum_cast_function(EnumType* et);
 static void build_enum_first_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
 static void build_enum_size_function(EnumType* et);
+static void build_enum_order_functions(EnumType* et);
 
 static void build_extern_init_function(Type* type);
 static void build_extern_assignment_function(Type* type);
@@ -728,6 +729,7 @@ void buildEnumFunctions(EnumType* et) {
   build_enum_enumerate_function(et);
   build_enum_first_function(et);
   build_enum_size_function(et);
+  build_enum_order_functions(et);
 }
 
 
@@ -939,6 +941,102 @@ static void build_enum_cast_function(EnumType* et) {
   reset_ast_loc(def, et->symbol);
   normalize(fn);
   fn->tagIfGeneric();
+}
+
+
+//
+// Create a function that converts an enum symbol to an integer 0, 1, 2, ...:
+//
+//   'proc chpl_enumToOrder([param] e: enumerated) [param] : int'
+//
+static void build_enum_to_order_function(EnumType* et, bool paramVersion) {
+  FnSymbol* fn = new FnSymbol(astr("chpl__enumToOrder"));
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  ArgSymbol* arg1 = new ArgSymbol(paramVersion ? INTENT_PARAM: INTENT_BLANK, 
+                                  "e", et);
+  fn->insertFormalAtTail(arg1);
+  if (paramVersion)
+    fn->retTag = RET_PARAM;
+
+  // Generate a select statement with when clauses for each of the
+  // enumeration constants, and an otherwise clause that calls halt.
+  int64_t count = 0;
+  BlockStmt* whenstmts = buildChapelStmt();
+  for_enums(constant, et) {
+    CondStmt* when =
+      new CondStmt(new CallExpr(PRIM_WHEN, new SymExpr(constant->sym)),
+                   new CallExpr(PRIM_RETURN, new SymExpr(new_IntSymbol(count)))
+                   );
+    whenstmts->insertAtTail(when);
+    count++;
+  }
+  const char * errorString = "enumerated type out of bounds";
+  CondStmt* otherwise =
+    new CondStmt(new CallExpr(PRIM_WHEN),
+                 new BlockStmt(new CallExpr("halt",
+                                            new_StringSymbol(errorString))));
+  whenstmts->insertAtTail(otherwise);
+  fn->insertAtTail(buildSelectStmt(new SymExpr(arg1), whenstmts));
+  DefExpr* def = new DefExpr(fn);
+  baseModule->block->insertAtTail(def);
+  reset_ast_loc(def, et->symbol);
+  normalize(fn);
+}
+
+//
+// Create a function that converts an integer 0, 1, 2, ... into a
+// value from the given enumerated type 'et':
+//
+//   'proc chpl_enumToOrder(i: integral, type et: et): et'
+//
+static void build_order_to_enum_function(EnumType* et) {
+  FnSymbol* fn = new FnSymbol(astr("chpl__orderToEnum"));
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "i", dtIntegral);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "et", et);
+  arg2->addFlag(FLAG_TYPE_VARIABLE);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
+
+  // Generate a select statement with when clauses for each of the
+  // enumeration constants, and an otherwise clause that calls halt.
+  int64_t count = 0;
+  BlockStmt* whenstmts = buildChapelStmt();
+  for_enums(constant, et) {
+    CondStmt* when =
+      new CondStmt(new CallExpr(PRIM_WHEN, new SymExpr(new_IntSymbol(count))),
+                   new CallExpr(PRIM_RETURN, new SymExpr(constant->sym)));;
+    whenstmts->insertAtTail(when);
+    count++;
+  }
+  const char * errorString = "enumerated type out of bounds in chpl__orderToEnum()";
+  CondStmt* otherwise =
+    new CondStmt(new CallExpr(PRIM_WHEN),
+                 new BlockStmt(new CallExpr("halt",
+                                            new_StringSymbol(errorString))));
+  whenstmts->insertAtTail(otherwise);
+  fn->insertAtTail(buildSelectStmt(new SymExpr(arg1), whenstmts));
+  DefExpr* def = new DefExpr(fn);
+  baseModule->block->insertAtTail(def);
+  reset_ast_loc(def, et->symbol);
+  normalize(fn);
+  fn->tagIfGeneric();
+}
+
+//
+// Build functions for converting enums to 0-based ordinal values and
+// back again
+//
+static void build_enum_order_functions(EnumType* et) {
+  //
+  // TODO: optimize case when enums are adjacent by using math rather
+  // than select statements
+  //
+  build_enum_to_order_function(et, true);
+  build_enum_to_order_function(et, false);
+  build_order_to_enum_function(et);
 }
 
 

@@ -274,4 +274,6 @@ void fixTypeNames(AggregateType* at);
 
 Type* getInstantiationType(Type* actualType, Type* formalType);
 
+void resolveIfExprType(CondStmt* stmt);
+
 #endif

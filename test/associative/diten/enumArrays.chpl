@@ -47,7 +47,3 @@ for (a, d) in zip(A2, D2) {
   if a != A2(d) then
     writeln("Error A2(", d, ") = ", A2(d), " a = ", a);
 }
-
-proc <(x: F, y: F) {
-  return x:int < y:int;
-}

@@ -324,48 +324,6 @@ Expr* buildDotExpr(const char* base, const char* member) {
 }
 
 
-static Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
-  VarSymbol* lvar = newTemp();
-
-  lvar->addFlag(FLAG_MAYBE_PARAM);
-
-  FnSymbol*  ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
-                                new CallExpr("isTrue", right),
-                                new SymExpr(gFalse));
-
-  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
-
-  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
-                                  new CallExpr("compilerError", eMsg)));
-
-  ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
-  ifFn->insertAtHead(new DefExpr(lvar));
-
-  return new CallExpr(new DefExpr(ifFn));
-}
-
-
-static Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
-  VarSymbol* lvar = newTemp();
-
-  lvar->addFlag(FLAG_MAYBE_PARAM);
-
-  FnSymbol*  ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
-                               new SymExpr(gTrue),
-                               new CallExpr("isTrue", right));
-
-  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
-
-  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
-                                  new CallExpr("compilerError", eMsg)));
-
-  ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
-  ifFn->insertAtHead(new DefExpr(lvar));
-
-  return new CallExpr(new DefExpr(ifFn));
-}
-
-
 BlockStmt* buildChapelStmt(Expr* expr) {
   return new BlockStmt(expr, BLOCK_SCOPELESS);
 }
@@ -721,41 +679,6 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
     INT_FATAL(expr, "primitive with non-literal string name");
   }
   return NULL;
-}
-
-
-FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
-  static int uid = 1;
-
-  // MPF: as of 2017-03 this error is never reached because
-  // it's a syntax error in the parser to not have an else clause
-  // on an if-expr.
-  if (!e2)
-    USR_FATAL("if-then expressions currently require an else-clause");
-
-  FnSymbol* ifFn = new FnSymbol(astr("_if_fn", istr(uid++)));
-  ifFn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
-  ifFn->addFlag(FLAG_IF_EXPR_FN);
-  ifFn->addFlag(FLAG_INLINE);
-  VarSymbol* tmp1 = newTemp();
-  tmp1->addFlag(FLAG_MAYBE_PARAM);
-
-  ifFn->addFlag(FLAG_MAYBE_PARAM);
-  ifFn->addFlag(FLAG_MAYBE_TYPE);
-  ifFn->addFlag(FLAG_MAYBE_REF);
-  ifFn->insertAtHead(new DefExpr(tmp1));
-  ifFn->insertAtTail(new CallExpr(PRIM_MOVE, new SymExpr(tmp1), new CallExpr("_cond_test", e)));
-  ifFn->insertAtTail(new CondStmt(
-    new SymExpr(tmp1),
-    new CallExpr(PRIM_RETURN,
-                 new CallExpr(PRIM_LOGICAL_FOLDER,
-                              new SymExpr(tmp1),
-                              e1)),
-    new CallExpr(PRIM_RETURN,
-                 new CallExpr(PRIM_LOGICAL_FOLDER,
-                              new SymExpr(tmp1),
-                              e2))));
-  return ifFn;
 }
 
 
@@ -1738,7 +1661,7 @@ BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs) {
 
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
-  stmt->insertAtTail(new CallExpr("=",       ltmp, buildLogicalAndExpr(ltmp, rhs)));
+  stmt->insertAtTail(new CallExpr("=",       ltmp, new CallExpr("&&", ltmp, rhs)));
 
   return stmt;
 }
@@ -1750,7 +1673,7 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
 
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
-  stmt->insertAtTail(new CallExpr("=",       ltmp, buildLogicalOrExpr(ltmp, rhs)));
+  stmt->insertAtTail(new CallExpr("=",       ltmp, new CallExpr("||", ltmp, rhs)));
 
   return stmt;
 }
@@ -1789,7 +1712,7 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
         if (!expr)
           expr = new CallExpr("==", tmp, whenCond);
         else
-          expr = buildLogicalOrExpr(expr, new CallExpr("==",
+          expr = new CallExpr("||", expr, new CallExpr("==",
                                                    tmp,
                                                    whenCond));
       }
@@ -2444,13 +2367,13 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
   }
 
   Expr* where =
-    buildLogicalAndExpr(
+    new CallExpr("&&",
       new CallExpr("isTuple", base->copy()),
       new CallExpr("==", new_IntSymbol(i),
         new CallExpr(".", base->copy(), new_CStringSymbol("size"))));
 
   if (fn->where) {
-    where = buildLogicalAndExpr(fn->where->body.head->remove(), where);
+    where = new CallExpr("&&", fn->where->body.head->remove(), where);
     fn->where->body.insertAtHead(where);
   } else {
     fn->where = new BlockStmt(where);
