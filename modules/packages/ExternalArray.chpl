@@ -76,14 +76,6 @@ module ExternalArray {
       return arr;
     }
 
-    proc dsiBuildArrayWith(type eltType, data:c_ptr(eltType), allocSize: int) {
-      var arr = new unmanaged ExternArr(eltType,
-                                        _to_unmanaged(this),
-                                        data,
-                                        false);
-      return arr;
-    }
-
     proc domRange return 0..#size;
 
     proc dsiGetIndices() return (domRange,);
