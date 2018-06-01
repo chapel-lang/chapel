@@ -19,7 +19,7 @@ proc testRange(r) {
   // array
   var A: [r] real;
 
-  // standalone parallel loop
+  // standalone parallel loop over range
   forall c in r do
     A[c] = chpl__enumToOrder(c)+1;
   for c in r do
@@ -108,11 +108,16 @@ proc testRange(r) {
     writeln("A[", c, "] = ", A[c]);
   writeln("---");
   
-// standalone array
+  // standalone array
   forall a in A do
     a = -a;
   for c in r do
     writeln("A[", c, "] = ", A[c]);
+  writeln("---");
+
+  // serial loop over array
+  for a in A do
+    writeln(a);
   writeln("---");
 }
 

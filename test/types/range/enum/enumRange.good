@@ -124,6 +124,14 @@ A[blue] = -5.0
 A[indigo] = -6.0
 A[violet] = -7.0
 ---
+-1.0
+-2.0
+-3.0
+-4.0
+-5.0
+-6.0
+-7.0
+---
 red
 orange
 yellow
@@ -212,6 +220,11 @@ A[yellow] = -3.0
 A[green] = -4.0
 A[blue] = -5.0
 A[indigo] = -6.0
+---
+-3.0
+-4.0
+-5.0
+-6.0
 ---
 yellow
 green
