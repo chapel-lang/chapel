@@ -1,0 +1,2 @@
+error-type-val.chpl:6: error: if-expression returns mixture of types and values
+note: 'then' branch returns a type, but 'else' branch returns a value

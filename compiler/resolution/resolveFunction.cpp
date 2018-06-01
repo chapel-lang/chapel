@@ -27,11 +27,13 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "ForallStmt.h"
+#include "IfExpr.h"
 #include "iterator.h"
 #include "LoopStmt.h"
 #include "UnmanagedClassType.h"
 #include "ParamForLoop.h"
 #include "passes.h"
+#include "postFold.h"
 #include "resolution.h"
 #include "resolveIntents.h"
 #include "stmt.h"
@@ -606,7 +608,6 @@ static bool doNotUnaliasArray(FnSymbol* fn) {
           fn->hasFlag(FLAG_INIT_COPY_FN) ||
           fn->hasFlag(FLAG_AUTO_COPY_FN) ||
           fn->hasFlag(FLAG_UNREF_FN) ||
-          fn->hasFlag(FLAG_IF_EXPR_FN) ||
           fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) ||
           fn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
 }
@@ -982,6 +983,109 @@ static void computeReturnTypeParamVectors(BaseAST*      ast,
                                           Symbol*       retSymbol,
                                           Vec<Type*>&   retTypes,
                                           Vec<Symbol*>& retSymbols);
+
+void resolveIfExprType(CondStmt* stmt) {
+  Vec<Type*> retTypes;
+  Vec<Symbol*> retSymbols;
+
+  CallExpr* last = toCallExpr(stmt->thenStmt->body.tail);
+  INT_ASSERT(last->isPrimitive(PRIM_MOVE));
+  Symbol* ret = toSymExpr(last->get(1))->symbol();
+  FnSymbol* fn = toFnSymbol(stmt->parentSymbol); // dummy to use for canDispatch
+
+  computeReturnTypeParamVectors(stmt, ret, retTypes, retSymbols);
+
+  if (retTypes.n == 1) {
+    ret->type = retTypes.head();
+  } else {
+    INT_ASSERT(retTypes.n == 2 && retSymbols.n == 2);
+
+    // NB: Assumes '0' and '1' correspond to 'then' and 'else', respectively.
+    Type* thenType = retTypes.v[0];
+    Type* elseType = retTypes.v[1];
+    Type* retType  = NULL;
+
+    Symbol* thenSym = retSymbols.v[0];
+    Symbol* elseSym = retSymbols.v[1];
+
+    bool thenTypeVar = thenSym->hasFlag(FLAG_TYPE_VARIABLE);
+    bool elseTypeVar = elseSym->hasFlag(FLAG_TYPE_VARIABLE);
+
+    // If only one branch returns a reference, that branch needs to copy the
+    // result so that we can always free the result.
+    if (isReferenceType(thenType) != isReferenceType(elseType)) {
+      BlockStmt* refBranch = isReferenceType(thenType) ? stmt->thenStmt : stmt->elseStmt;
+      CallExpr* call = toCallExpr(refBranch->body.tail);
+      SymExpr* rhs = toSymExpr(call->get(2));
+      if (isUserDefinedRecord(rhs->getValType())) {
+        CallExpr* copy = new CallExpr("chpl__autoCopy", rhs->remove());
+        call->insertAtTail(copy);
+        resolveCallAndCallee(copy);
+        if (isReferenceType(thenType)) {
+          thenType = copy->resolvedFunction()->retType;
+        } else {
+          elseType = copy->resolvedFunction()->retType;
+        }
+      }
+
+      thenType = thenType->getValType();
+      elseType = elseType->getValType();
+    }
+
+    if (thenType == elseType) {
+      retType = thenType;
+    } else {
+      bool promote = false;
+
+      if (canDispatch(elseType, elseSym, thenType, fn, &promote) &&
+          promote == false) {
+        retType = thenType;
+      } else if (canDispatch(thenType, thenSym, elseType, fn, &promote) &&
+                 promote == false) {
+        retType = elseType;
+      }
+    }
+
+    // For tuples, generally do not allow a tuple to contain a reference
+    // when it is returned
+    if (retType != NULL && retType->symbol->hasFlag(FLAG_TUPLE) == true) {
+      // Compute the tuple type without any refs
+      // Set the function return type to that type.
+      AggregateType* tupleType = toAggregateType(retType);
+
+      INT_ASSERT(tupleType);
+
+      retType = getReturnedTupleType(fn, tupleType);
+    }
+
+
+    if (thenTypeVar != elseTypeVar) {
+      USR_FATAL_CONT(stmt, "if-expression returns mixture of types and values");
+      const char* thenKind = thenTypeVar ? "type" : "value";
+      const char* elseKind = elseTypeVar ? "type" : "value";
+      USR_PRINT("'then' branch returns a %s, but 'else' branch returns a %s", thenKind, elseKind);
+      USR_STOP();
+    } else if (retType == NULL || (thenTypeVar && thenType != elseType)) {
+      USR_FATAL_CONT(stmt, "Unable to resolve type of if-expression");
+      if (thenTypeVar || elseTypeVar) {
+        USR_PRINT("if-expression returns type variables, did you mean to use a param conditional?");
+      }
+      USR_PRINT("'then' branch returns type \"%s\"", thenType->symbol->name);
+      USR_PRINT("'else' branch returns type \"%s\"", elseType->symbol->name);
+      USR_STOP();
+    } else {
+      ret->type = retType;
+    }
+  }
+
+  // Now that we know the type, we can fully post-fold the final MOVEs. This is
+  // important in the case in which an if-expr returns a slice. postFold will
+  // remove FLAG_EXPR_TEMP and allow that slice to be modified.
+  postFold(stmt->thenStmt->body.tail);
+  postFold(stmt->elseStmt->body.tail);
+
+  // resolveFunction() will insert casts later
+}
 
 // Resolves an inferred return type.
 // resolveSpecifiedReturnType handles the case that the type is

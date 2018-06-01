@@ -12,6 +12,9 @@
     "LICENSE",
     "LICENSE.devel"
   ],
+  "07648a72-5b7a-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/AST/AggregateType.cpp"
+  ],
   "02edde22-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/AstDumpToHtml.cpp"
   ],
@@ -169,6 +172,9 @@
   ],
   "0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/scopeResolve.cpp"
+  ],
+  "0b4871a8-5b7a-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/resolution/AutoDestroyScope.cpp"
   ],
   "a4c82866-83ce-11e7-ad1f-10ddb1d4c3d5": [
     "compiler/resolution/ResolutionCandidate.cpp"
@@ -480,6 +486,12 @@
   ],
   "fbc85e3e-1f2e-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/FileSystem.chpl"
+  ],
+  "23858b0c-5b7a-11e8-af7e-10ddb1d4c3d5": [
+    "modules/standard/GMP.chpl"
+  ],
+  "1ad5560e-5b7a-11e8-af7e-10ddb1d4c3d5": [
+    "modules/standard/GMPHelper/chplgmp.h"
   ],
   "55301aa8-1f2e-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/IO.chpl"

@@ -24,6 +24,7 @@
 #include "AstDump.h"
 
 #include "expr.h"
+#include "IfExpr.h"
 #include "log.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -232,6 +233,31 @@ bool AstDump::enterNamedExpr(NamedExpr* node) {
 
 void AstDump::exitNamedExpr(NamedExpr* node) {
   write(false, ")", true);
+}
+
+
+//
+// IfExpr
+//
+
+bool AstDump::enterIfExpr(IfExpr* node) {
+  if (fLogIds) {
+    fprintf(mFP, "(%d ", node->id);
+    mNeedSpace = false;
+  } else {
+    write(true, "(", false);
+  }
+  write("IfExpr ");
+  node->getCondition()->accept(this);
+  write("then");
+  node->getThenStmt()->accept(this);
+  write("else");
+  node->getElseStmt()->accept(this);
+  write(")");
+  return false;
+}
+
+void AstDump::exitIfExpr(IfExpr* node) {
 }
 
 

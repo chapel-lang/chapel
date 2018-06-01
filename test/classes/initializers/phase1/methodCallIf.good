@@ -1,2 +1,5 @@
 methodCallIf.chpl:4: In initializer:
-methodCallIf.chpl:5: error: cannot call a method during phase 1 of initialization
+methodCallIf.chpl:5: error: cannot call method "option1" on type "Foo" in phase one
+methodCallIf.chpl:5: note: "this" in phase one treated as parent type "object" for method calls
+methodCallIf.chpl:5: error: cannot call method "option2" on type "Foo" in phase one
+methodCallIf.chpl:5: note: "this" in phase one treated as parent type "object" for method calls
