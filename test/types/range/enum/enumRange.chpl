@@ -10,10 +10,14 @@ proc testRange(r) {
     writeln(c);
   writeln();
 
-  //  var A: [r] real;
-  //  [c in r] A[c] = c:int:real;
-  //  for c in r do
-  //    writeln("A[", c, "] = ", A[c]);
+  writeln(r.length);
+  writeln(r.size);
+
+  var A: [r] real;
+  forall c in r do
+    A[c] = chpl__enumToOrder(c);
+  for c in r do
+    writeln("A[", c, "] = ", A[c]);
 }
 
 

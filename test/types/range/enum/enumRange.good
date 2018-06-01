@@ -9,6 +9,15 @@ blue
 indigo
 violet
 
+7
+7
+A[red] = 0.0
+A[orange] = 1.0
+A[yellow] = 2.0
+A[green] = 3.0
+A[blue] = 4.0
+A[indigo] = 5.0
+A[violet] = 6.0
 red
 orange
 yellow
@@ -25,6 +34,12 @@ green
 blue
 indigo
 
+4
+4
+A[yellow] = 2.0
+A[green] = 3.0
+A[blue] = 4.0
+A[indigo] = 5.0
 yellow
 green
 blue

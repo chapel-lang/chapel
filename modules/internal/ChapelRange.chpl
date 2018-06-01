@@ -548,13 +548,23 @@ module ChapelRange {
   {
     if this.isAmbiguous() then return false;
 
+    const iInt = idxToInt(i);
+
+    inline proc idxToInt(i: integral) {
+      return i;
+    }
+
+    inline proc idxToInt(i: enumerated) {
+      return chpl__enumToOrder(i);
+    }
+    
     if hasHighBound()
     {
-      if i > _high then return false;
+      if iInt > _high then return false;
     }
     if hasLowBound()
     {
-      if i < _low then return false;
+      if iInt < _low then return false;
     }
     if stridable
     {
@@ -1241,12 +1251,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     // If this range is unbounded below, we use low from the other range,
     // so that max(lo1, lo2) == lo2.  etc.
-    var lo1 = if hasLowBound() then this.low else other.low;
-    var hi1 = if hasHighBound() then this.high else other.high;
+    var lo1 = if hasLowBound() then this._low else other._low;
+    var hi1 = if hasHighBound() then this._high else other._high;
     var st1 = abs(this.stride);
 
-    var lo2 = if other.hasLowBound() then other.low else this.low;
-    var hi2 = if other.hasHighBound() then other.high else this.high;
+    var lo2 = if other.hasLowBound() then other._low else this._low;
+    var hi2 = if other.hasHighBound() then other._high else this._high;
     var st2 = abs(other.stride);
 
     // If the result type is unsigned, don't let the low bound go negative.
@@ -1332,18 +1342,26 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     }
 
     emptyIntersection = false;
-    var newlo = max(lo1, lo2):repType;
-    var newhi = min(hi1, hi2):repType;
+    var newlo = max(lo1, lo2);
+    var newhi = min(hi1, hi2);
     if (emptyIntersection) {
       newlo = 1;
       newhi = 0;
     }
 
+    proc intToInd(i: integral, type idxType: integral) {
+      return i;
+    }
+
+    proc intToInd(i: integral, type idxType: enumerated) {
+      return chpl__orderToEnum(i, idxType);
+    }
+    
     var result = new range(idxType,
                            computeBoundedType(this, other),
                            this.stridable | other.stridable,
-                           newlo,
-                           newhi,
+                           intToInd(newlo, idxType),
+                           intToInd(newhi, idxType),
                            newStride,
                            0,
                            !ambig && (this.aligned || other.aligned));
@@ -1908,8 +1926,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           }
         } else {
           const (lo, hi) = _computeBlock(len, numChunks, chunk, this._high, this._low, this._low);
-          for i in lo..hi {
-            yield i;
+          if (!isEnumType(idxType)) {
+            for i in lo..hi {
+              yield i;
+            }
+          } else {
+            for i in lo..hi {
+              yield chpl__orderToEnum(i, idxType);
+            }
           }
         }
       }
