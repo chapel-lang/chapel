@@ -350,14 +350,26 @@ module ChapelRange {
 
   /* Return the first element in the sequence the range represents */
   inline proc range.first {
-    if ! stridable then return _low;
+    if ! stridable then return low;
     else return if _stride > 0 then this.alignedLow else this.alignedHigh;
+  }
+
+  /* Return the first element in the sequence the range represents */
+  inline proc range.firstAsInt {
+    if ! stridable then return _low;
+    else return if _stride > 0 then this.alignedLowAsInt else this.alignedHighAsInt;
   }
 
   /* Return the last element in the sequence the range represents */
   inline proc range.last {
-    if ! stridable then return _high;
+    if ! stridable then return high;
     else return if stride > 0 then this.alignedHigh else this.alignedLow;
+  }
+
+  /* Return the last element in the sequence the range represents */
+  inline proc range.lastAsInt {
+    if ! stridable then return _high;
+    else return if stride > 0 then this.alignedHighAsInt else this.alignedLowAsInt;
   }
 
   /* Return the range's low bound. If the range does not have a low
@@ -377,10 +389,12 @@ module ChapelRange {
    */
   inline proc range.alignedLow : idxType {
     if !stridable then
-      return _low;
-    else
+      return low;
+    else {
       // Adjust _low upward by the difference between _alignment and _low.
-      return _low + chpl__diffMod(_alignment, _low, stride);
+      const val = _low + chpl__diffMod(_alignment, _low, stride);
+      return if isEnumType(idxType) then chpl__orderToEnum(val, idxType) else val;
+    }
   }
 
   inline proc range.alignedLowAsInt {
@@ -396,10 +410,12 @@ module ChapelRange {
   // TODO: Add back example?
   inline proc range.alignedHigh : idxType {
     if ! stridable then
-      return _high;
-    else
+      return high;
+    else {
       // Adjust _high downward by the difference between _high and _alignment.
-      return _high - chpl__diffMod(_high, _alignment, stride);
+      const val = _high - chpl__diffMod(_high, _alignment, stride);
+      return if isEnumType(idxType) then chpl__orderToEnum(val, idxType) else val;
+    }
   }
 
     inline proc range.alignedHighAsInt {
@@ -664,8 +680,8 @@ proc range.safeCast(type t) where isRangeType(t) {
     halt("illegal safeCast from non-unit stride range to unstridable range");
   }
 
-  tmp._low = this.low.safeCast(tmp.repType);
-  tmp._high = this.high.safeCast(tmp.repType);
+  tmp._low = this._low.safeCast(tmp.repType);
+  tmp._high = this._high.safeCast(tmp.repType);
 
   return tmp;
 }
@@ -1517,7 +1533,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   pragma "no doc"
   proc range.checkIfIterWillOverflow(shouldHalt=true) {
     return chpl_checkIfRangeIterWillOverflow(this.repType, this._low, this._high,
-        this.stride, this.first, this.last, shouldHalt);
+        this.stride, this.firstAsInt, this.lastAsInt, shouldHalt);
   }
 
 
