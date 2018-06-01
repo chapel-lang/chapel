@@ -26,7 +26,7 @@ module ExternalArray {
   use ChapelStandard;
 
   pragma "use default init"
-  class ArrayViewExternDist: BaseDist {
+  class ExternDist: BaseDist {
 
     proc dsiNewRectangularDom(param rank: int = 1, type idxType = int,
                               param stridable: bool = false, inds) {
@@ -46,9 +46,9 @@ module ExternalArray {
       if (r.low != 0) {
         halt("external arrays always have a lower bound of 0");
       }
-      var newdom = new unmanaged ArrayViewExternDom(idxType,
-                                                    r.size,
-                                                    _to_unmanaged(this));
+      var newdom = new unmanaged ExternDom(idxType,
+                                           r.size,
+                                           _to_unmanaged(this));
       return newdom;
     }
 
@@ -57,7 +57,7 @@ module ExternalArray {
     }
   }
 
-  class ArrayViewExternDom: BaseRectangularDom {
+  class ExternDom: BaseRectangularDom {
     const size: uint; // We don't need a lower bound, it will always be zero
 
     const dist;
@@ -69,18 +69,18 @@ module ExternalArray {
     }
 
     proc dsiBuildArray(type eltType) {
-      var arr = new unmanaged ArrayViewExternArr(eltType,
-                                                 _to_unmanaged(this),
-                                                 c_malloc(eltType, this.size),
-                                                 true);
+      var arr = new unmanaged ExternArr(eltType,
+                                        _to_unmanaged(this),
+                                        c_malloc(eltType, this.size),
+                                        true);
       return arr;
     }
 
     proc dsiBuildArrayWith(type eltType, data:c_ptr(eltType), allocSize: int) {
-      var arr = new unmanaged ArrayViewExternArr(eltType,
-                                                 _to_unmanaged(this),
-                                                 data,
-                                                 false);
+      var arr = new unmanaged ExternArr(eltType,
+                                        _to_unmanaged(this),
+                                        data,
+                                        false);
       return arr;
     }
 
@@ -151,7 +151,7 @@ module ExternalArray {
     // now.
   }
 
-  class ArrayViewExternArr: BaseArr {
+  class ExternArr: BaseArr {
     type eltType;
 
     const dom;
@@ -171,7 +171,7 @@ module ExternalArray {
     proc idxType type return dom.idxType;
     proc rank param return dom.rank;
 
-    // do I want a "isExternArrayView" method on BaseArr?
+    // do I want a "isExtern" method on BaseArr?
 
     //
     // standard iterators
@@ -285,13 +285,13 @@ module ExternalArray {
   // Creates an instance of our new array type
   pragma "no copy return"
   proc makeArrayFromPtr(value: c_ptr, size: uint) {
-    var dist = new unmanaged ArrayViewExternDist();
+    var dist = new unmanaged ExternDist();
     var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#size,));
     dom._free_when_no_arrs = true;
-    var arr = new unmanaged ArrayViewExternArr(value.eltType,
-                                               dom,
-                                               value,
-                                               false);
+    var arr = new unmanaged ExternArr(value.eltType,
+                                      dom,
+                                      value,
+                                      false);
     dom.add_arr(arr, locking = false);
     return _newArray(arr);
   }

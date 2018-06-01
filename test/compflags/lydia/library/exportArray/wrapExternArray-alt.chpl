@@ -7,7 +7,7 @@ proc foo() {
   var size = 10;
   var externArr = getExternArray(size);
 
-  var dist = new unmanaged ArrayViewExternDist();
+  var dist = new unmanaged ExternDist();
   var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#size,));
   var domWrapper = _newDomain(dom);
 

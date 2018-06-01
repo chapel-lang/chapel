@@ -7,11 +7,7 @@ proc foo() {
   var size = 10;
   var externArr = getExternArray(size);
 
-  var dist = new unmanaged ArrayViewExternDist();
-  var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#size,));
-  var domWrapper = _newDomain(dom);
-
-  var wrapper = domWrapper.buildArrayWith(externArr.eltType, externArr, size);
+  var wrapper = makeArrayFromPtr(externArr, size: uint);
 
   var copy = wrapper;
 
