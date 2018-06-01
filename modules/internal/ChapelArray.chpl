@@ -1392,6 +1392,24 @@ module ChapelArray {
       return _newArray(x);
     }
 
+    pragma "no doc"
+    pragma "no copy return"
+    proc buildArrayWith(type eltType, data: c_ptr(eltType), allocSize) {
+      if eltType == void {
+        compilerError("array element type cannot be void");
+      }
+      var x = _value.dsiBuildArrayWith(eltType, data, allocSize);
+
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+
+      return _newArray(x);
+    }
     /* Remove all indices from this domain, leaving it empty */
 
     // For rectangular domains, create an empty domain and assign it to this

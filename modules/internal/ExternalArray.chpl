@@ -76,11 +76,14 @@ module ExternalArray {
       return arr;
     }
 
-    /*
     proc dsiBuildArrayWith(type eltType, data:c_ptr(eltType), allocSize: int) {
-      
+      var arr = new unmanaged ArrayViewExternArr(eltType,
+                                                 _to_unmanaged(this),
+                                                 data,
+                                                 false);
+      return arr;
     }
-    */
+
     proc domRange return 0..#size;
 
     proc dsiGetIndices() return (domRange,);
@@ -267,7 +270,9 @@ module ExternalArray {
     // doiBulkTransferToKnown?
 
     proc dsiDestroyArr() {
-      // Do something special on clean up if array is owned or not
+      if (_owned) {
+        c_free(_ArrInstance);
+      }
     }
 
     inline proc privDom {
