@@ -46,6 +46,12 @@ module DataFrames {
     }
 
     pragma "no doc"
+    proc nrows(): int {
+      halt("generic Index cannot be countd");
+      return 0;
+    }
+
+    pragma "no doc"
     proc writeThis(f, s: TypedSeries(?) = nil) {
       halt("cannot writeThis on generic Index");
     }
@@ -173,6 +179,11 @@ module DataFrames {
                              filter_valid_bits[1..curr_ord]);
     }
 
+    proc nrows() {
+      return ords.size;
+    }
+
+    pragma "no doc"
     proc writeIdxWidth() {
       var idxWidth = 0;
       for idx in this {
@@ -313,8 +324,19 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc writeElem(f, idx, len: int) {
+    proc nrows(): int {
+      halt("generic Series cannot be counted");
+      return 0;
+    }
+
+    pragma "no doc"
+    proc writeElem(f, i, len: int) {
       halt("generic Series cannot be indexed");
+    }
+
+    pragma "no doc"
+    proc writeElemNoIndex(f, i: int, len: int) {
+      halt("generic Series cannot be accessed");
     }
   }
 
@@ -594,19 +616,38 @@ module DataFrames {
       return || reduce this.these();
     }
 
+    proc nrows(): int {
+      if idx then
+        return idx.nrows();
+      else
+        return ords.size;
+    }
+
     proc writeThis(f) {
       if idx {
         idx.writeThis(f, this);
       } else {
         for (i, d) in this.items() do
-          f <~> i + "\t" + d + "\n";
+          f <~> i + "    " + d + "\n";
       }
       f <~> "dtype: " + eltType:string;
     }
 
-    proc writeElem(f, idx, len: int) {
-      var output = if this.valid(idx)
-                   then new string(this[idx]: string)
+    pragma "no doc"
+    proc writeElem(f, i, len: int) {
+      var output = if this.valid(i)
+                   then new string(this[i]: string)
+                   else "None";
+
+      for space in 1..len-output.length do
+        f <~> " ";
+      f <~> output;
+    }
+
+    pragma "no doc"
+    proc writeElemNoIndex(f, i: int, len: int) {
+      var output = if this.valid_at(i)
+                   then new string(this.at(i): string)
                    else "None";
 
       for space in 1..len-output.length do
@@ -622,13 +663,11 @@ module DataFrames {
 
     // TODO: init with labels arg
 
-    /* TODO: init with no idx arg
     proc init(columns: [?D] Series) {
-      this.idx = nil;
       this.labels = D;
       this.columns = columns;
+      this.idx = nil;
     }
-     */
 
     proc init(columns: [?D], idx: Index) {
       this.labels = D;
@@ -645,45 +684,47 @@ module DataFrames {
         yield s;
     }
 
-    // TODO: need new data structures for this, or flexible-len tups
-    /*
-    iter tuples(type idxType) {
-      if idx {
-        for i in idx:TypedIndex(idxType) {
-     */
-
-    // TODO: no idx
-    /*
-      iter tuples_fast() {
-     */
-
     proc this(lab: string) {
       return columns[lab];
+    }
+
+    proc nrows() {
+      var nMax = 0;
+      for s in this {
+        var n = s.nrows();
+        if n > nMax then nMax = n;
+      }
+      return nMax;
     }
 
     proc writeThis(f) {
       if idx {
         idx.writeThis(f, this);
-      }
-      /*
-      else {
-        for l in labels do
-          f <~> "\t\t" + l + ":";
+      } else {
+        var n = nrows();
+        var nStr = new string(n: string);
+        var idxWidth = nStr.length + 1;
+
+        for space in 1..idxWidth do
+          f <~> " ";
+        for lab in labels {
+          f <~> lab + "   ";
         }
         f <~> "\n";
-        // TODO: get longest size of all series
-        // for i in this {
-          f <~> i;
-          f <~> "\t";
-          for s in this {
-            f <~> s[i];
-            f <~> "\t\t";
+
+        for i in 1..n {
+          var iStr = new string(i: string);
+          f <~> iStr;
+          for space in 1..idxWidth-iStr.length do
+            f <~> " ";
+
+          for (ser, lab) in zip(this, labels) {
+            ser.writeElemNoIndex(f, i, lab.length);
+            f <~> "   ";
           }
           f <~> "\n";
         }
-
       }
-       */
     }
   }
 

@@ -9,5 +9,7 @@ var columns = ["columnOne" => columnOne, "columnTwo" => columnTwo, "columnThree"
 var idx = new TypedIndex(["rowOne", "rowTwo", "rowThree", "rowFour", "rowFive"]);
 
 var dataFrame = new DataFrame(columns, idx);
+var noIndex = new DataFrame(columns);
 writeln(dataFrame);
 writeln(dataFrame["columnThree"]);
+writeln(noIndex);
