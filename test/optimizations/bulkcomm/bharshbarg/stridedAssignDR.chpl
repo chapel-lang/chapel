@@ -110,6 +110,35 @@ proc test(param rank : int, Dom) {
   if printCount then writeln("Performed ", count, " assignments");
 }
 
+proc testReindex(param rank : int, Dom) {
+
+  var A : [Dom] int;
+  var B : [Dom] int;
+
+  var slices = buildSlices(rank, Dom);
+
+  A = 1;
+
+  // If the value '3' appears anywhere in 'A', then we've read incorrectly
+  B = 3;
+
+  ref refA = A.reindex(Dom);
+  ref refB = B.reindex(Dom);
+
+  var count = 0;
+  for i in 1..slices.size {
+    for j in i..slices.size {
+      var sa = slices[i];
+      var sb = slices[j];
+
+      const ret = stridedAssign(refA, sa, refB, sb, debug);
+      if ret == 1 then count += 1;
+    }
+  }
+
+  if printCount then writeln("Performed ", count, " assignments");
+}
+
 proc makeDom(param rank : int, low : int, str = 1) {
   var r : rank*range(stridable=true);
   for param i in 1..rank do r(i) = low.. by str # n;
@@ -133,4 +162,7 @@ proc main() {
 
   var four : domain(4, stridable=true) = makeDom(4, 1);
   test(4, four);
+
+  testReindex(1, {1..10} by 1);
+  testReindex(2, {1..5, 1..5} by 1);
 }

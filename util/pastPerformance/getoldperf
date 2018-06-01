@@ -63,7 +63,8 @@ $somethingfailed = 0;
 
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
-$num_procs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`;
+$here = dirname(__FILE__);
+$num_procs = `$here/../buildRelease/chpl-make-cpu_count`;
 chomp($num_procs);
 
 #

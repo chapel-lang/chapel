@@ -9,7 +9,7 @@ class C {
 
 type t = [1..3] int;
 
-var c = new C(t);
+var c = new unmanaged C(t);
 writeln(c);
 c.foo();
 

@@ -11,7 +11,7 @@ module M2 {
     delete c;
   }
   proc bar() {
-    return new C();
+    return new unmanaged C();
   }
   proc baz(obj) {
     return obj.foo();

@@ -1,7 +1,7 @@
 class Tree {
   var data: int;
-  var left: Tree;
-  var right: Tree;
+  var left: unmanaged Tree;
+  var right: unmanaged Tree;
   
   iter these(): int {
     if left then
@@ -12,8 +12,7 @@ class Tree {
   }
 }
 
-var tree = new Tree(40, new Tree(20, new Tree(10), new Tree(30)), new
-                    Tree(60, new Tree(50), new Tree(70)));
+var tree = new unmanaged Tree(40, new unmanaged Tree(20, new unmanaged Tree(10), new unmanaged Tree(30)), new unmanaged Tree(60, new unmanaged Tree(50), new unmanaged Tree(70)));
 
 for e in tree do
   writeln(e);

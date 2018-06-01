@@ -53,7 +53,16 @@ static void chpl_launch_sanity_checks(const char* argv0) {
   // chpl_compute_real_binary_name() )
   if (stat(chpl_get_real_binary_name(), &statBuf) != 0) {
     char errorMsg[256];
-    sprintf(errorMsg, "unable to locate file: %s", chpl_get_real_binary_name());
+    int wanted_to_write = snprintf(errorMsg, sizeof(errorMsg),
+                                   "unable to locate file: %s",
+                                   chpl_get_real_binary_name());
+    if (wanted_to_write < 0) {
+      const char fallbackMsg[] =
+        "character encoding error in name of executable to be launched";
+      strcpy(errorMsg, fallbackMsg);
+    } else if ((size_t)wanted_to_write >= sizeof(errorMsg)) {
+      strcpy(&errorMsg[sizeof(errorMsg) - 4], "...");
+    }
     chpl_error(errorMsg, 0, 0);
   }
 }

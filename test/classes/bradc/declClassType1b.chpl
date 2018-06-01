@@ -2,7 +2,7 @@ class C {
   var x = 10;
 }
 
-var globc: C = new C();
+var globc: unmanaged C = new unmanaged C();
 
 class D {
   var y = 20;
@@ -14,7 +14,7 @@ class D {
 }
 
 proc main() {
-  var d: D = new D();
+  var d: unmanaged D = new unmanaged D();
   delete globc;
   globc = nil;
   d.doit;

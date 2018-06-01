@@ -9,7 +9,7 @@ class C {
 }
 
 proc getType(type t) type {
-  return C(t);
+  return unmanaged C(t);
 }
 
 var myC = new (getType(int))(int);

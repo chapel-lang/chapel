@@ -1,7 +1,7 @@
 enum numbers {
   one = 1,
   two = 2,
-  three = one + two
+  three = one:int + two:int
 };
 
 for n in numbers do

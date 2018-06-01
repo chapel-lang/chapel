@@ -5,7 +5,7 @@ class C {
 }
 
 proc jam() {
-  var c = new C();
+  var c = new unmanaged C();
   c.x = 7;
   writeln( c);
 

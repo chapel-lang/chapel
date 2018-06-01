@@ -5,9 +5,9 @@ class C {
 
 var myC: C;
 
-myC = new C();
+myC = new unmanaged C();
 
-var myC2: C = new C();
+var myC2: C = new unmanaged C();
 
 writeln(myC);
 writeln(myC2);

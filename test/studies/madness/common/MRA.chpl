@@ -33,8 +33,8 @@ class Function {
     var   compressed    = false;// keep track of what basis we are in
 
     // Sum and Difference coefficients
-    var   sumC = new FTree(order=k);
-    var   diffC = new FTree(order=k);
+    var   sumC = new unmanaged FTree(order=k);
+    var   diffC = new unmanaged FTree(order=k);
 
     // FIXME: Ideally all of these matrices should be const as well but they
     //        can't be presently since they must be assigned in postinit()
@@ -131,7 +131,7 @@ class Function {
     /** Return a deep copy of this Function
      */
     proc copy() {
-        return new Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
+        return new unmanaged Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine, compressed=compressed,
                 sumC=sumC.copy(), diffC=diffC.copy());
     }
@@ -141,7 +141,7 @@ class Function {
      */
     proc skeletonCopy() {
         // Omit: f, compressed, sumC, diffC
-        return new Function(k=k, thresh=thresh, initial_level=initial_level,
+        return new unmanaged Function(k=k, thresh=thresh, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine);
     }
 

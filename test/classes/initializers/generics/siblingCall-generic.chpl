@@ -12,7 +12,6 @@ class Foo {
   }
 }
 
-var foo = new Foo(2);
+var foo = new borrowed Foo(2);
 writeln(foo.type: string);
 writeln(foo);
-delete foo;

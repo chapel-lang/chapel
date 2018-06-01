@@ -1,2 +1,2 @@
-d-only-as-error.chpl:16: error: unresolved call 'Wrapper(C).foo()'
+d-only-as-error.chpl:16: error: unresolved call 'Wrapper(unmanaged C).foo()'
 d-only-as-error.chpl:11: note: candidates are: C.foo()

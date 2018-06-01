@@ -1,2 +1,0 @@
-bug: returning ref to arg for if expressions containing range field accessors
-#8464

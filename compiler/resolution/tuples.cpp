@@ -54,6 +54,9 @@ struct TupleInfo {
 static std::map< std::vector<TypeSymbol*>, TupleInfo > tupleMap;
 
 static
+AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly, const char* copyName, BlockStmt* testBlock);
+
+static
 void makeTupleName(std::vector<TypeSymbol*>& args,
                    bool isStarTuple,
                    std::string & name,
@@ -260,6 +263,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
   ctor->addFlag(FLAG_INLINE);
   ctor->addFlag(FLAG_INVISIBLE_FN);
   ctor->addFlag(FLAG_INIT_TUPLE);
+  ctor->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
 
   ctor->addFlag(FLAG_PARTIAL_TUPLE);
 
@@ -583,6 +587,148 @@ static void instantiate_tuple_init(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+// Returns the variable storing the read tuple field
+static VarSymbol* generateReadTupleField(Symbol* fromSym, Symbol* fromField,
+                                         Expr* insertBefore)
+{
+  VarSymbol* readF = NULL;
+  const char* name  = fromField->name;
+  Symbol*  fromName = new_CStringSymbol(name);
+  CallExpr* get = NULL;
+
+  if (isReferenceType(fromField->type)) {
+    // Use PRIM_GET_MEMBER_VALUE if the element is already a reference
+    readF = new VarSymbol(astr("read_", name), fromField->type);
+    insertBefore->insertBefore(new DefExpr(readF));
+    get = new CallExpr(PRIM_GET_MEMBER_VALUE, fromSym, fromName);
+  } else {
+    // Otherwise, use PRIM_GET_MEMBER
+    readF = new VarSymbol(astr("read_", name),
+                          fromField->type->getRefType());
+
+    insertBefore->insertBefore(new DefExpr(readF));
+
+    get   = new CallExpr(PRIM_GET_MEMBER, fromSym, fromName);
+  }
+
+  CallExpr* setReadF = new CallExpr(PRIM_MOVE, readF, get);
+  insertBefore->insertBefore(setReadF);
+  resolveCall(setReadF);
+
+  return readF;
+}
+
+static VarSymbol* generateCoerce(Symbol* fromField, Symbol* toField,
+                                 VarSymbol* readF,
+                                 Expr* insertBefore)
+{
+  const char* name  = toField->name;
+  VarSymbol* element = NULL;
+
+  // now readF is some kind of reference
+  // the code below needs to handle the following 5 cases:
+  //
+  // fromField : t1     toField : t2       (value types differ)
+  // fromField: ref(t)  toField : ref(t)   (preserve field ref)
+  // fromField: t       toField : ref(t)   (create field ref to element)
+  // fromField : ref(t)      toField : t   (copy field)
+  // fromField : t           toField : t   (copy field)
+
+  if (fromField->type->getValType() == toField->getValType()) {
+    if (isReferenceType(toField->type)) {
+      // fromField: ref(t)  toField : ref(t)
+      // fromField: t       toField : ref(t)
+      // we are converting to a reference
+      // since 'readF' is already a reference, just use it.
+      element = readF;
+    } else {
+      // fromField : ref(t)      toField : t
+      // fromField : t           toField : t
+
+      element = new VarSymbol(astr("elt_", name), toField->type);
+      insertBefore->insertBefore(new DefExpr(element));
+
+      // otherwise copy construct it
+      CallExpr* copy = new CallExpr("chpl__autoCopy", readF);
+      insertBefore->insertBefore(new CallExpr(PRIM_MOVE, element, copy));
+
+      resolveCallAndCallee(copy, true);
+    }
+
+  } else if (fromField->type->getValType() != toField->getValType()) {
+    // fromField : t1     toField : t2
+    // even with ref level adjustment, types do not match.
+    // create a _cast call.
+
+    element = new VarSymbol(astr("elt_", name), toField->type);
+    insertBefore->insertBefore(new DefExpr(element));
+
+    VarSymbol* valueElement = element;
+    if (isReferenceType(toField->type)) {
+      valueElement = new VarSymbol(astr("velt_", name), toField->getValType());
+      insertBefore->insertBefore(new DefExpr(valueElement));
+    }
+
+    if (fromField->type->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+        toField->type->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
+      // fromField : t1     toField : t2  but t1, t2 both tuple types
+      // Recursively create tuple coercion
+      addTupleCoercion(toAggregateType(fromField->type->getValType()),
+                       toAggregateType(toField->type->getValType()),
+                       readF,
+                       valueElement,
+                       insertBefore);
+    } else {
+      CallExpr* cast = createCast(readF, toField->type->symbol);
+      CallExpr* castMove = new CallExpr(PRIM_MOVE, valueElement, cast);
+      insertBefore->insertBefore(castMove);
+      resolveCallAndCallee(cast);
+      resolveCall(castMove);
+    }
+
+    if (valueElement != element) {
+      CallExpr* move = new CallExpr(PRIM_MOVE, element,
+                                    new CallExpr(PRIM_ADDR_OF, valueElement));
+      insertBefore->insertBefore(move);
+      resolveCall(move);
+    }
+  }
+  // Expecting insertCasts to fix any type mismatch in the last MOVE added
+
+  return element;
+}
+
+void addTupleCoercion(AggregateType* fromT, AggregateType* toT,
+                      Symbol* fromSym, Symbol* toSym,
+                      Expr* insertBefore) {
+
+  if (fromT->numFields() != toT->numFields()) {
+    USR_FATAL_CONT(insertBefore, "tuple size mismatch (expected %d, got %d)",
+                   toT->numFields()   - 1, fromT->numFields() - 1);
+    return;
+  }
+
+  // Starting at field 2 to skip the size field
+  for (int i=2; i<=toT->fields.length; i++) {
+    Symbol* fromField = toDefExpr(fromT->fields.get(i))->sym;
+    Symbol*   toField = toDefExpr(  toT->fields.get(i))->sym;
+    Symbol*    toName = new_CStringSymbol(  toField->name);
+
+    VarSymbol* readF = NULL;
+    VarSymbol* element = NULL;
+
+
+    readF = generateReadTupleField(fromSym, fromField, insertBefore);
+
+    element = generateCoerce(fromField, toField, readF, insertBefore);
+
+    CallExpr* setMember = new CallExpr(PRIM_SET_MEMBER, toSym, toName, element);
+    insertBefore->insertBefore(setMember);
+    resolveCall(setMember);
+  }
+}
+
+
 static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
   // Adjust any formals for blank-intent tuple behavior now
   resolveSignature(fn);
@@ -687,11 +833,18 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
 static void
 instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
                                        const char* build_tuple_fun,
-                                       const char* copy_fun)
+                                       const char* copy_fun,
+                                       bool valueOnly)
 {
   ArgSymbol* arg;
-  AggregateType* ct;
-  getTupleArgAndType(fn, arg, ct);
+  AggregateType* origCt;
+  getTupleArgAndType(fn, arg, origCt);
+
+  AggregateType* ct = origCt;
+
+  if (valueOnly) {
+    ct = computeCopyTuple(origCt, valueOnly, copy_fun, fn->body);
+  }
 
   BlockStmt* block = new BlockStmt();
 
@@ -700,7 +853,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
 
   // Starting at field 2 to skip the size field
   for (int i=2; i<=ct->fields.length; i++) {
-    Symbol* fromField = toDefExpr(ct->fields.get(i))->sym;
+    Symbol* fromField = toDefExpr(origCt->fields.get(i))->sym;
     Symbol*   toField = toDefExpr(ct->fields.get(i))->sym;
     Symbol*  fromName = new_CStringSymbol(fromField->name);
     Symbol*    toName = new_CStringSymbol(  toField->name);
@@ -713,7 +866,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
     CallExpr* get = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fromName);
     block->insertAtTail(new CallExpr(PRIM_MOVE, read, get));
 
-    if (isReferenceType(fromField->type)) {
+    if (isReferenceType(fromField->type) && isReferenceType(toField->type)) {
       // If it is a reference, pass it through
       element = read;
     } else {
@@ -735,14 +888,19 @@ static void
 instantiate_tuple_initCopy(FnSymbol* fn) {
   instantiate_tuple_initCopy_or_autoCopy(fn,
                                          "_build_tuple",
-                                         "chpl__initCopy");
+                                         "chpl__initCopy",
+                                         true);
 }
 
 static void
 instantiate_tuple_autoCopy(FnSymbol* fn) {
+  // Auto-copy for tuples allows refs in order to support
+  // the way that forall intents create tuples that are yielded
+  // with refs.
   instantiate_tuple_initCopy_or_autoCopy(fn,
                                          "_build_tuple_always_allow_ref",
-                                         "chpl__autoCopy");
+                                         "chpl__autoCopy",
+                                         false);
 }
 
 /* Tuple unref takes in a tuple potentially containing reference
@@ -757,7 +915,8 @@ instantiate_tuple_unref(FnSymbol* fn)
   AggregateType* ct;
   getTupleArgAndType(fn, arg, origCt);
 
-  ct = computeNonRefTuple(origCt);
+  const char* useCopy = "chpl__initCopy";
+  ct = computeCopyTuple(origCt, true, useCopy, fn->body);
 
   BlockStmt* block = new BlockStmt();
 
@@ -787,7 +946,7 @@ instantiate_tuple_unref(FnSymbol* fn)
         // If it is a reference, copy construct it
         element = new VarSymbol(astr("elt_", name), toField->type);
         block->insertAtTail(new DefExpr(element));
-        CallExpr* copy = new CallExpr("chpl__autoCopy", read);
+        CallExpr* copy = new CallExpr(useCopy, read);
         block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
       } else {
         // Otherwise, bit copy it
@@ -813,6 +972,9 @@ instantiate_tuple_unref(FnSymbol* fn)
 static bool
 shouldChangeTupleType(Type* elementType)
 {
+  // MPF -- I believe that both of these workarounds are
+  // no longer necessary (2018-05).
+  //
   // Hint: unless iterator records are reworked,
   // this function should return false for iterator records...
   return !elementType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
@@ -825,7 +987,9 @@ shouldChangeTupleType(Type* elementType)
 
 static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
                                                 IntentTag      intent,
-                                                AggregateType* at) {
+                                                AggregateType* at,
+                                                const char*    copyWith,
+                                                BlockStmt*     testBlock) {
   INT_ASSERT(at->symbol->hasFlag(FLAG_TUPLE));
 
   // Construct tuple that would be used for a particular argument intent.
@@ -840,12 +1004,35 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
     if (i != 0) { // skip size field
       Type* useType = field->type->getValType();
 
+      // Compute the result type of copying
+      // (but don't apply this to references if !valueOnly)
+      if (copyWith && isUserDefinedRecord(useType) &&
+          (valueOnly || !isReferenceType(field->type))) {
+        VarSymbol* var = newTemp("test_copy", useType);
+        CallExpr* copy = new CallExpr(copyWith, var);
+        testBlock->insertAtTail(copy);
+        resolveCallAndCallee(copy);
+
+        FnSymbol* resolved = copy->resolvedFunction();
+        useType = resolved->retType;
+      }
       if (useType->symbol->hasFlag(FLAG_TUPLE) == true) {
         AggregateType* useAt = toAggregateType(useType);
 
         INT_ASSERT(useAt);
 
-        useType = do_computeTupleWithIntent(valueOnly, intent, useAt);
+        useType = do_computeTupleWithIntent(valueOnly, intent, useAt,
+                                            copyWith, testBlock);
+
+        if (valueOnly == false) {
+          if (intent == INTENT_BLANK || intent == INTENT_CONST) {
+            IntentTag concrete = concreteIntent(intent, useType);
+            if ((concrete & INTENT_FLAG_REF) != 0) {
+              makeRefType(useType);
+              useType = useType->getRefType();
+            }
+          }
+        }
 
       } else if (shouldChangeTupleType(useType) == true) {
         if (valueOnly == false) {
@@ -858,6 +1045,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
             IntentTag concrete = concreteIntent(intent, useType);
 
             if ((concrete & INTENT_FLAG_REF) != 0) {
+              makeRefType(useType);
               useType = useType->getRefType();
             }
           }
@@ -889,13 +1077,19 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
 
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t)
 {
-  return do_computeTupleWithIntent(false, intent, t);
+  return do_computeTupleWithIntent(false, intent, t, NULL, NULL);
 }
 
 AggregateType* computeNonRefTuple(AggregateType* t)
 {
-  return do_computeTupleWithIntent(true, INTENT_BLANK, t);
+  return do_computeTupleWithIntent(true, INTENT_BLANK, t, NULL, NULL);
 }
+
+AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly, const char* copyName, BlockStmt* testBlock)
+{
+  return do_computeTupleWithIntent(valueOnly, INTENT_BLANK, t, copyName, testBlock);
+}
+
 
 
 bool

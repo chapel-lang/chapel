@@ -1053,7 +1053,13 @@ static void printStuff(const char* argv0) {
     printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL);
     printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY);
     printf("\n");
-    snprintf(buf, FILENAME_MAX, "%s/util/printchplenv --all", CHPL_HOME);
+    int wanted_to_write = snprintf(buf, sizeof(buf),
+                                   "%s/util/printchplenv --all", CHPL_HOME);
+    if (wanted_to_write < 0) {
+      USR_FATAL("character encoding error in CHPL_HOME path name");
+    } else if ((size_t)wanted_to_write >= sizeof(buf)) {
+      USR_FATAL("CHPL_HOME path name is too long");
+    }
     int status = mysystem(buf, "running printchplenv", false);
     clean_exit(status);
   }

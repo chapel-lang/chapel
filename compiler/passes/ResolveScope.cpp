@@ -43,10 +43,8 @@
 
 #include "ResolveScope.h"
 
+#include "ForallStmt.h"
 #include "scopeResolve.h"
-#include "stmt.h"
-#include "symbol.h"
-#include "type.h"
 
 static std::map<BaseAST*, ResolveScope*> sScopeMap;
 
@@ -149,6 +147,16 @@ ResolveScope::ResolveScope(TypeSymbol*         typeSymbol,
   INT_ASSERT(getScopeFor(typeSymbol) == NULL);
 
   sScopeMap[typeSymbol] = this;
+}
+
+ResolveScope::ResolveScope(ForallStmt*         forallStmt,
+                           const ResolveScope* parent) {
+  mAstRef = forallStmt;
+  mParent = parent;
+
+  INT_ASSERT(getScopeFor(forallStmt) == NULL);
+
+  sScopeMap[forallStmt] = this;
 }
 
 ResolveScope::ResolveScope(BlockStmt*          blockStmt,

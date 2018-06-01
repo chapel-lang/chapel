@@ -27,11 +27,13 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "ForallStmt.h"
+#include "IfExpr.h"
 #include "iterator.h"
 #include "LoopStmt.h"
 #include "UnmanagedClassType.h"
 #include "ParamForLoop.h"
 #include "passes.h"
+#include "postFold.h"
 #include "resolution.h"
 #include "resolveIntents.h"
 #include "stmt.h"
@@ -47,7 +49,9 @@ static void resolveFormals(FnSymbol* fn);
 
 static void markIterator(FnSymbol* fn);
 
-static void insertUnrefForArrayReturn(FnSymbol* fn);
+static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn);
+
+static bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet);
 
 static void protoIteratorClass(FnSymbol* fn, Type* yieldedType);
 
@@ -118,6 +122,19 @@ static void resolveFormals(FnSymbol* fn) {
         updateIfRefFormal(fn, formal);
       }
     }
+
+    if ((formal->intent == INTENT_BLANK || formal->intent == INTENT_CONST) &&
+        !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+        formal->type->symbol->hasFlag(FLAG_MANAGED_POINTER) &&
+        // This is a workaround for problems with owned/shared auto-destroy
+        // (since blank intent for these types == in intent)
+        !fn->hasFlag(FLAG_AUTO_DESTROY_FN) &&
+        !fn->hasFlag(FLAG_INIT_COPY_FN) &&
+        !fn->hasFlag(FLAG_AUTO_COPY_FN)) {
+      IntentTag useIntent = concreteIntentForArg(formal);
+      if ((useIntent & INTENT_FLAG_IN))
+        formal->intent = useIntent;
+    }
   }
 }
 
@@ -168,6 +185,7 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
       if (intent == INTENT_IN) {
         intent = INTENT_BLANK;
       }
+
       formal->type = computeTupleWithIntent(intent, tupleType);
     }
   }
@@ -383,7 +401,7 @@ void resolveFunction(FnSymbol* fn) {
       resolveBlockStmt(fn->body);
 
       if (tryFailure == false) {
-        insertUnrefForArrayReturn(fn);
+        insertUnrefForArrayOrTupleReturn(fn);
 
         Type* yieldedType = NULL;
         resolveReturnTypeAndYieldedType(fn, &yieldedType);
@@ -513,76 +531,118 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void insertUnrefForArrayReturn(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_CONSTRUCTOR)            == false &&
-      fn->hasFlag(FLAG_NO_COPY_RETURN)         == false &&
-      fn->hasFlag(FLAG_UNALIAS_FN)             == false &&
-      fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN)   == false &&
-      fn->hasFlag(FLAG_INIT_COPY_FN)           == false &&
-      fn->hasFlag(FLAG_AUTO_COPY_FN)           == false &&
-      fn->hasFlag(FLAG_IF_EXPR_FN)             == false &&
-      fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) == false &&
-      fn->hasFlag(FLAG_FN_RETURNS_ITERATOR) == false) {
-    Symbol* ret = fn->getReturnSymbol();
+static bool doNotUnaliasArray(FnSymbol* fn);
 
-    for_SymbolSymExprs(se, ret) {
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
-        if (call->isPrimitive(PRIM_MOVE) == true &&
-            call->get(1)                 == se) {
-          Type* rhsType = call->get(2)->typeInfo();
+static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
+  bool skipArray = doNotUnaliasArray(fn);
+  bool skipTuple = doNotChangeTupleTypeRefLevel(fn, true);
 
-          // TODO: Should we check if the RHS is a symbol with
-          // 'no auto destroy' on it? If it is, then we'd be copying
-          // the RHS and it would never be destroyed...
-          if ((rhsType->symbol->hasFlag(FLAG_ARRAY) == true ||
-               rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) &&
-              isTypeExpr(call->get(2))             == false) {
-            Expr*      rhs       = call->get(2)->remove();
-            VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
-            CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
-            CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
-            FnSymbol*  unrefFn   = NULL;
+  if (skipArray && skipTuple)
+    // neither tuple nor array unref is necessary, so return
+    return;
 
-            if (rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              if (fWarnUnstable) {
-                // This warning can go away after 1.17 if it gets annoying.
-                // In the meantime, it helps to identify cases that have
-                // different behavior between 1.16 and 1.17.
-                USR_WARN(call, "proc returns an iterator that will be "
-                               "immediately converted to an array");
-              }
-            }
+  Symbol* ret = fn->getReturnSymbol();
 
-            // Used by callDestructors to catch assignment from
-            // a ref to 'tmp' when we know we don't want to copy.
-            tmp->addFlag(FLAG_NO_COPY);
+  for_SymbolSymExprs(se, ret) {
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      if (call->isPrimitive(PRIM_MOVE) == true &&
+          call->get(1)                 == se) {
+        Type* rhsType = call->get(2)->typeInfo();
 
-            call->insertBefore(new DefExpr(tmp));
-            call->insertBefore(initTmp);
+        bool arrayIsh = (rhsType->symbol->hasFlag(FLAG_ARRAY) ||
+                         rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
 
-            call->insertAtTail(unrefCall);
+        bool handleArray = skipArray == false && arrayIsh;
+        bool handleTuple = skipTuple == false &&
+                           isTupleContainingAnyReferences(rhsType);
 
-            unrefFn = resolveNormalCall(unrefCall);
+        // TODO: Should we check if the RHS is a symbol with
+        // 'no auto destroy' on it? If it is, then we'd be copying
+        // the RHS and it would never be destroyed...
+        if ((handleArray || handleTuple) && !isTypeExpr(call->get(2))) {
 
-            resolveFunction(unrefFn);
+          SET_LINENO(call);
+          Expr*      rhs       = call->get(2)->remove();
+          VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
+          CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
+          CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
+          FnSymbol*  unrefFn   = NULL;
 
-            // Relies on the ArrayView variant having
-            // the 'unref fn' flag in ChapelArray.
-            if (unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
-              // If the function does not have this flag, this must
-              // be a non-view array. Remove the unref call.
-              unrefCall->replace(rhs->copy());
+          // Used by callDestructors to catch assignment from
+          // a ref to 'tmp' when we know we don't want to copy.
+          tmp->addFlag(FLAG_NO_COPY);
 
-              tmp->defPoint->remove();
+          call->insertBefore(new DefExpr(tmp));
+          call->insertBefore(initTmp);
 
-              initTmp->remove();
+          call->insertAtTail(unrefCall);
 
-              INT_ASSERT(unrefCall->inTree() == false);
-            }
+          unrefFn = resolveNormalCall(unrefCall);
+
+          resolveFunction(unrefFn);
+
+          // Relies on the ArrayView variant having
+          // the 'unref fn' flag in ChapelArray.
+          if (arrayIsh && unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
+            // If the function does not have this flag, this must
+            // be a non-view array. Remove the unref call.
+            unrefCall->replace(rhs->copy());
+
+            tmp->defPoint->remove();
+
+            initTmp->remove();
+
+            INT_ASSERT(unrefCall->inTree() == false);
           }
         }
-      }
+              }
     }
+  }
+}
+
+static bool doNotUnaliasArray(FnSymbol* fn) {
+  return (fn->hasFlag(FLAG_CONSTRUCTOR) ||
+          fn->hasFlag(FLAG_NO_COPY_RETURN) ||
+          fn->hasFlag(FLAG_UNALIAS_FN) ||
+          fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
+          fn->hasFlag(FLAG_INIT_COPY_FN) ||
+          fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+          fn->hasFlag(FLAG_UNREF_FN) ||
+          fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) ||
+          fn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
+}
+
+// Generally speaking, tuples containing refs should be converted
+// to tuples without refs before returning.
+// This function returns true for exceptional FnSymbols
+// where tuples containing refs can be returned.
+//
+// The 'FLAG_CONSTRUCTOR' case can prevent additional copies/leaks in the case
+// that a class/field has a tuple field. See the following test:
+//     types/records/ferguson/tuples/class-tuple-record
+//
+static
+bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
+  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
+      fn->hasFlag(FLAG_CONSTRUCTOR)              || // any constructor
+      fn->hasFlag(FLAG_INIT_TUPLE)               || // chpl__init_tuple
+      fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
+      fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type
+      fn->hasFlag(FLAG_TUPLE_CAST_FN)            || // _cast for tuples
+      fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES)|| // iteratorIndex
+      fn->hasFlag(FLAG_INIT_COPY_FN)             || // tuple chpl__initCopy
+      fn->hasFlag(FLAG_AUTO_COPY_FN)             || // tuple chpl__autoCopy
+      fn->hasFlag(FLAG_AUTO_DESTROY_FN)          || // tuple chpl__autoDestroy
+      fn->hasFlag(FLAG_UNALIAS_FN)               || // tuple chpl__unalias
+      fn->hasFlag(FLAG_ALLOW_REF)                || // iteratorIndex
+      (forRet && fn->hasFlag(FLAG_ITERATOR_FN)) // not iterators b/c
+                                    //  * they might return by ref
+                                    //  * might need to return a ref even
+                                    //    when not indicated return by ref.
+     ) {
+    return true;
+  } else {
+    return false;
   }
 }
 
@@ -924,6 +984,109 @@ static void computeReturnTypeParamVectors(BaseAST*      ast,
                                           Vec<Type*>&   retTypes,
                                           Vec<Symbol*>& retSymbols);
 
+void resolveIfExprType(CondStmt* stmt) {
+  Vec<Type*> retTypes;
+  Vec<Symbol*> retSymbols;
+
+  CallExpr* last = toCallExpr(stmt->thenStmt->body.tail);
+  INT_ASSERT(last->isPrimitive(PRIM_MOVE));
+  Symbol* ret = toSymExpr(last->get(1))->symbol();
+  FnSymbol* fn = toFnSymbol(stmt->parentSymbol); // dummy to use for canDispatch
+
+  computeReturnTypeParamVectors(stmt, ret, retTypes, retSymbols);
+
+  if (retTypes.n == 1) {
+    ret->type = retTypes.head();
+  } else {
+    INT_ASSERT(retTypes.n == 2 && retSymbols.n == 2);
+
+    // NB: Assumes '0' and '1' correspond to 'then' and 'else', respectively.
+    Type* thenType = retTypes.v[0];
+    Type* elseType = retTypes.v[1];
+    Type* retType  = NULL;
+
+    Symbol* thenSym = retSymbols.v[0];
+    Symbol* elseSym = retSymbols.v[1];
+
+    bool thenTypeVar = thenSym->hasFlag(FLAG_TYPE_VARIABLE);
+    bool elseTypeVar = elseSym->hasFlag(FLAG_TYPE_VARIABLE);
+
+    // If only one branch returns a reference, that branch needs to copy the
+    // result so that we can always free the result.
+    if (isReferenceType(thenType) != isReferenceType(elseType)) {
+      BlockStmt* refBranch = isReferenceType(thenType) ? stmt->thenStmt : stmt->elseStmt;
+      CallExpr* call = toCallExpr(refBranch->body.tail);
+      SymExpr* rhs = toSymExpr(call->get(2));
+      if (isUserDefinedRecord(rhs->getValType())) {
+        CallExpr* copy = new CallExpr("chpl__autoCopy", rhs->remove());
+        call->insertAtTail(copy);
+        resolveCallAndCallee(copy);
+        if (isReferenceType(thenType)) {
+          thenType = copy->resolvedFunction()->retType;
+        } else {
+          elseType = copy->resolvedFunction()->retType;
+        }
+      }
+
+      thenType = thenType->getValType();
+      elseType = elseType->getValType();
+    }
+
+    if (thenType == elseType) {
+      retType = thenType;
+    } else {
+      bool promote = false;
+
+      if (canDispatch(elseType, elseSym, thenType, fn, &promote) &&
+          promote == false) {
+        retType = thenType;
+      } else if (canDispatch(thenType, thenSym, elseType, fn, &promote) &&
+                 promote == false) {
+        retType = elseType;
+      }
+    }
+
+    // For tuples, generally do not allow a tuple to contain a reference
+    // when it is returned
+    if (retType != NULL && retType->symbol->hasFlag(FLAG_TUPLE) == true) {
+      // Compute the tuple type without any refs
+      // Set the function return type to that type.
+      AggregateType* tupleType = toAggregateType(retType);
+
+      INT_ASSERT(tupleType);
+
+      retType = getReturnedTupleType(fn, tupleType);
+    }
+
+
+    if (thenTypeVar != elseTypeVar) {
+      USR_FATAL_CONT(stmt, "if-expression returns mixture of types and values");
+      const char* thenKind = thenTypeVar ? "type" : "value";
+      const char* elseKind = elseTypeVar ? "type" : "value";
+      USR_PRINT("'then' branch returns a %s, but 'else' branch returns a %s", thenKind, elseKind);
+      USR_STOP();
+    } else if (retType == NULL || (thenTypeVar && thenType != elseType)) {
+      USR_FATAL_CONT(stmt, "Unable to resolve type of if-expression");
+      if (thenTypeVar || elseTypeVar) {
+        USR_PRINT("if-expression returns type variables, did you mean to use a param conditional?");
+      }
+      USR_PRINT("'then' branch returns type \"%s\"", thenType->symbol->name);
+      USR_PRINT("'else' branch returns type \"%s\"", elseType->symbol->name);
+      USR_STOP();
+    } else {
+      ret->type = retType;
+    }
+  }
+
+  // Now that we know the type, we can fully post-fold the final MOVEs. This is
+  // important in the case in which an if-expr returns a slice. postFold will
+  // remove FLAG_EXPR_TEMP and allow that slice to be modified.
+  postFold(stmt->thenStmt->body.tail);
+  postFold(stmt->elseStmt->body.tail);
+
+  // resolveFunction() will insert casts later
+}
+
 // Resolves an inferred return type.
 // resolveSpecifiedReturnType handles the case that the type is
 // specified explicitly.
@@ -1007,19 +1170,6 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
       }
     }
 
-  }
-
-  // For tuples, generally do not allow a tuple to contain a reference
-  // when it is returned
-  if (retType->symbol->hasFlag(FLAG_TUPLE)   ==  true &&
-      doNotChangeTupleTypeRefLevel(fn, true) == false) {
-    // Compute the tuple type without any refs
-    // Set the function return type to that type.
-    AggregateType* tupleType = toAggregateType(retType);
-
-    INT_ASSERT(tupleType);
-
-    retType = getReturnedTupleType(fn, tupleType);
   }
 
   if (isIterator == false) {
@@ -1191,11 +1341,7 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
 bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
   if (isRecord(formal->getValType())) {
     // For now, rule out default ctor/init/_new
-    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
-        (fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-         fn->hasFlag(FLAG_LAST_RESORT) &&
-         (0 == strcmp(fn->name, "init") ||
-          0 == strcmp(fn->name, "_new"))))
+    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       return false; // old strategy for old-path in wrapAndCleanUpActuals
     else {
       if (formal->intent == INTENT_IN ||
@@ -1338,7 +1484,16 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
         //  typical pattern for follow-on passes)
         tmp->addFlag(FLAG_NO_COPY);
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
-        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+        // Default-initializers and '_new' wrappers take ownership
+        // Note: FLAG_INSERT_AUTO_DESTROY is blindly applied to any formal
+        // with const-in intent at the start of this function, so we need
+        // to apply FLAG_NO_AUTO_DESTROY to avoid double-frees.
+        if (fn->hasFlag(FLAG_NEW_WRAPPER) || fn->isDefaultInit()) {
+          tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+        } else {
+          tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        }
       }
       break;
 
@@ -1549,8 +1704,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
               // Use assign since no cast is available for
               // sync / single and their value type.
-              if (typesDiffer &&
-                  (isSyncType(from->getValType()) ||
+              if ((isSyncType(from->getValType()) ||
                    isSingleType(from->getValType()))) {
                 useAssign = true;
               }
@@ -1637,6 +1791,9 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   call->insertBefore(new DefExpr(tmp));
                   call->insertBefore(new CallExpr(PRIM_MOVE, tmp, fromExpr));
                 }
+
+                // see comment about this above in assignment case
+                from->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
                 CallExpr* cast = createCast(tmp, lhsType->symbol);
 

@@ -49,7 +49,10 @@ ifdef CHPL_PIP
   PIP = $(CHPL_PIP)
 else
   PIP=$(CHPL_VENV_INSTALL_DIR)/bin/pip
+  # This must be separate from global CHPL_PIP_INSTALL_PARAMS
+  LOCAL_PIP_FLAGS=--no-warn-conflicts --no-warn-script-location
 endif
+
 
 # If using python 2.6, get an older version of pip
 ifeq ($(PYTHON_VERSION), 2.6)

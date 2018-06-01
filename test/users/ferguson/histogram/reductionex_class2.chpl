@@ -9,6 +9,7 @@ class Test {
   var   max;
   var   min;
 
+  pragma "use default init"
   class myhisto: ReduceScanOp {
     type  eltType;
     const per = (max - min)/NBUCKETS;
@@ -41,11 +42,7 @@ var tuple = (     0:uint(64),
 
 var array:[1..tuple.size] uint(64) = tuple;
 
-var test   = new Test(16, 16000:uint(64), 0:uint(64));
+var test   = new borrowed Test(16, 16000:uint(64), 0:uint(64));
 var counts = test.reduceit(array);
 
 writeln(counts);
-
-delete test;
-
-

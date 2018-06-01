@@ -10,9 +10,9 @@ class Sub: Base {
 }
 
 proc main() {
-  var sub   = new Sub();
+  var sub   = new unmanaged Sub();
   var base  = sub;
-  var base2 = new Base();
+  var base2 = new unmanaged Base();
 
   writeln(sub.get_s());
   writeln(base.get_s());

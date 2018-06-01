@@ -11,7 +11,7 @@ proc foo(c: C(?t, ?tt)) {
   writeln((y, yy));
 }
 
-var c = new C(int, real);
+var c = new unmanaged C(int, real);
 writeln(c);
 foo(c);
 delete c;

@@ -9,7 +9,7 @@ proc main() {
 
   // New Table
   var tblD: domain(string);
-  var tbl: [tblD] Toml;
+  var tbl: [tblD] unmanaged Toml;
 
   // Table indexed into and new table added
   tomlData["A.B"]["C"] = tbl;
@@ -34,11 +34,11 @@ proc main() {
   // Test of the copy constructor
   // New Toml
   var tbl2D: domain(string);
-  var tbl2: [tbl2D] Toml;
-  var tomlData2: Toml = tbl2;
+  var tbl2: [tbl2D] unmanaged Toml;
+  var tomlData2: unmanaged Toml = tbl2;
 
   // copy Toml A.B in tomlData to Toml A in TomlData2
-  tomlData2["A"] = new Toml(tomlData["A"]);
+  tomlData2["A"] = new unmanaged Toml(tomlData["A"]);
   writeln(tomlData["A"]);
   writeln("Should be the same as");
   writeln(tomlData2["A"]);

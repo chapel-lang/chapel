@@ -25,6 +25,7 @@
 #include "DeferStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "IfExpr.h"
 #include "expr.h"
 #include "UnmanagedClassType.h"
 #include "passes.h"

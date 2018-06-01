@@ -148,6 +148,7 @@ public:
 
   bool                       isInitializer()                             const;
   bool                       isPostInitializer()                         const;
+  bool                       isDefaultInit()                             const;
 
   AggregateType*             getReceiver()                               const;
 

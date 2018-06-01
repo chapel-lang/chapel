@@ -6,7 +6,7 @@ class C {
   var i: int;
 }
 
-var c = new C();
+var c = new borrowed C();
 
 forall i in D {
   writeln(c.i);
@@ -17,5 +17,3 @@ var A: [D] int;
 forall e in A {
   writeln(c.i);
 }
-
-delete c;

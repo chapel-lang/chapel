@@ -3,7 +3,7 @@ class C {
   proc foo() return 314;
 }
 
-var c = new C();
+var c = new unmanaged C();
 
 writeln(c);
 

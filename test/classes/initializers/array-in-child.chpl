@@ -22,7 +22,7 @@ class Child : Parent {
 
 
 
-var c = new Child({1..9});
+var c = new unmanaged Child({1..9});
 
 writeln(c);
 

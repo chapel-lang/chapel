@@ -50,11 +50,11 @@ proc foo(C) {
   var assocDom: domain(string);
   type assocArr = [assocDom] real;
 
-  var myArithC = new ArithC(assocArr);
-  var myAssocC = new AssocC(assocArr);
-  var myOpaqueC = new OpaqueC(assocArr);
-  var mySparseC = new SparseC(assocArr);
-  var myEnumC = new EnumC(assocArr);
+  var myArithC = new unmanaged ArithC(assocArr);
+  var myAssocC = new unmanaged AssocC(assocArr);
+  var myOpaqueC = new unmanaged OpaqueC(assocArr);
+  var mySparseC = new unmanaged SparseC(assocArr);
+  var myEnumC = new unmanaged EnumC(assocArr);
 
   assocDom += "two";
 

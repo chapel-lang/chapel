@@ -1,0 +1,2 @@
+bug: writing record with generic field outputs extra field=
+#9568

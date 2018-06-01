@@ -29,6 +29,7 @@
 #include "driver.h"
 #include "errorHandling.h"
 #include "ForallStmt.h"
+#include "IfExpr.h"
 #include "initializerRules.h"
 #include "stlUtil.h"
 #include "stringutil.h"
@@ -62,6 +63,8 @@ static void        updateInitMethod (FnSymbol* fn);
 static void        checkUseBeforeDefs();
 static void        moveGlobalDeclarationsToModuleScope();
 static void        insertUseForExplicitModuleCalls(void);
+
+static void        lowerIfExprs(BaseAST* base);
 
 static void        hack_resolve_types(ArgSymbol* arg);
 
@@ -313,7 +316,8 @@ static void insertModuleInit() {
     // If the module has the EXPORT_INIT flag then
     // propagate it to the module's init function
     //
-    if (mod->hasFlag(FLAG_EXPORT_INIT) == true) {
+    if (mod->hasFlag(FLAG_EXPORT_INIT) == true ||
+        (fLibraryCompile == true && mod->modTag == MOD_USER)) {
       mod->initFn->addFlag(FLAG_EXPORT);
       mod->initFn->addFlag(FLAG_LOCAL_ARGS);
     }
@@ -402,10 +406,12 @@ static void transformLogicalShortCircuit() {
   // transform.
   //
   for (iter = stmts.begin(); iter != stmts.end(); iter++) {
-    Expr*                        stmt = *iter;
-    TransformLogicalShortCircuit transform(stmt);
+    Expr* stmt = *iter;
+    TransformLogicalShortCircuit transform;
 
-    stmt->accept(&transform);
+    if (isAlive(stmt)) {
+      stmt->accept(&transform);
+    }
   }
 }
 
@@ -544,6 +550,8 @@ static void normalizeBase(BaseAST* base) {
     }
   }
 
+  lowerIfExprs(base);
+
 
   //
   // Phase 4
@@ -615,9 +623,6 @@ static void checkUseBeforeDefs() {
               USR_FATAL_CONT(se, "illegal use of module '%s'", sym->name);
             }
 
-          } else if (isShadowVarSymbol(sym)) {
-            // ShadowVarSymbols are always defined.
-
           } else if (isLcnSymbol(sym) == true) {
             if (sym->defPoint->parentExpr != rootModule->block) {
               Symbol* parent = sym->defPoint->parentSymbol;
@@ -678,6 +683,13 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
   //
   // The caller performs a post-order traversal and so we find the
   // symExpr before we see the callExpr
+  //
+  // TODO reacting to SymExprs, like it is done here, allows things like
+  //   "var a: int = a" to sneak in.
+  // Instead, we should react to CallExprs that are PRIM_MOVE, init, etc.
+  // Reacting to CallExprs is also more economical, as there are fewer
+  // CallExprs than there are SymExprs.
+  //
   if (SymExpr* se = toSymExpr(ast)) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE)     == true  ||
@@ -687,13 +699,24 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
           retval = se->symbol();
         }
       }
+      // Allow for init() for a task-private variable, which occurs in
+      // ShadowVarSymbol::initBlock(), which does not include its DefExpr.
+      else if (ShadowVarSymbol* svar = toShadowVarSymbol(se->symbol())) {
+        if (svar->isTaskPrivate()  &&
+            call->isNamed("init")  &&
+            // the first argument is gMethodToken
+            call->get(2) == se)
+          retval = svar;
+      }
     }
 
   } else if (DefExpr* def = toDefExpr(ast)) {
     Symbol* sym = def->sym;
 
     // All arg symbols and loop induction variables are defined.
+    // All shadow variables are defined.
     if (isArgSymbol(sym) ||
+        isShadowVarSymbol(sym) ||
         sym->hasFlag(FLAG_INDEX_VAR)
     ) {
       retval = sym;
@@ -707,10 +730,6 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 
         // All variables of type 'void' are treated as defined.
         if (type == dtVoid) {
-          retval = var;
-
-        // The primitive scalars are treated as defined
-        } else if (isPrimitiveScalar(type) == true) {
           retval = var;
 
         // records with initializers are defined
@@ -839,6 +858,103 @@ static void insertUseForExplicitModuleCalls() {
       block->useListAdd(mod);
     }
   }
+}
+
+//
+// Inserts a temporary for the result if the last statement is a call.
+//
+// Inserts PRIM_LOGICAL_FOLDER from the local branch result into the argument
+// 'result' based on the argument 'cond'. PRIM_LOGICAL_FOLDER will either turn
+// into an addr-of during resolution or be replaced by its second actual.
+//
+// BHARSH INIT TODO: Do we really need PRIM_LOGICAL_FOLDER anymore?
+//
+static void normalizeIfExprBranch(VarSymbol* cond, VarSymbol* result, BlockStmt* stmt) {
+  Expr* last = stmt->body.tail->remove();
+  Symbol* localResult = NULL;
+
+  if (isCallExpr(last) || isIfExpr(last)) {
+    localResult = newTemp();
+    localResult->addFlag(FLAG_MAYBE_TYPE);
+    localResult->addFlag(FLAG_MAYBE_PARAM);
+    localResult->addFlag(FLAG_EXPR_TEMP);
+    localResult->addFlag(FLAG_NO_AUTO_DESTROY);
+
+    stmt->body.insertAtTail(new DefExpr(localResult));
+    stmt->body.insertAtTail(new CallExpr(PRIM_MOVE, localResult, last));
+  } else if (SymExpr* se = toSymExpr(last)) {
+    localResult = se->symbol();
+  } else {
+    INT_FATAL("Unexpected AST node at the end of IfExpr branch");
+  }
+
+  stmt->body.insertAtTail(new CallExpr(PRIM_MOVE, result, new CallExpr(PRIM_LOGICAL_FOLDER, cond, localResult)));
+}
+
+//
+// Transforms an IfExpr into a CondStmt.
+//
+// The expression at the end of each branch is moved into a temporary. This
+// temporary will take the place of the IfExpr, and the CondStmt will be
+// inserted before the IfExpr's parent statement.
+//
+class LowerIfExprVisitor : public AstVisitorTraverse
+{
+  public:
+    LowerIfExprVisitor() { }
+    virtual ~LowerIfExprVisitor() { }
+
+    virtual void exitIfExpr(IfExpr* node);
+};
+
+void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
+  if (isAlive(ife) == false) return;
+  if (isDefExpr(ife->parentExpr)) return;
+
+  SET_LINENO(ife);
+
+  VarSymbol* result = newTemp();
+  result->addFlag(FLAG_MAYBE_TYPE);
+  result->addFlag(FLAG_EXPR_TEMP);
+  result->addFlag(FLAG_IF_EXPR_RESULT);
+
+  // Don't auto-destroy local result if returning from a branch of a parent
+  // if-expression.
+  const bool parentIsIfExpr = isBlockStmt(ife->parentExpr) &&
+                              isIfExpr(ife->parentExpr->parentExpr);
+  if (parentIsIfExpr == false) {
+    result->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  }
+
+  VarSymbol* cond = newTemp();
+  cond->addFlag(FLAG_MAYBE_PARAM);
+
+  Expr* anchor = ife->getStmtExpr();
+  anchor->insertBefore(new DefExpr(result));
+  anchor->insertBefore(new DefExpr(cond));
+
+  CallExpr* condTest = new CallExpr("_cond_test", ife->getCondition()->remove());
+  anchor->insertBefore(new CallExpr(PRIM_MOVE, cond, condTest));
+
+  normalizeIfExprBranch(cond, result, ife->getThenStmt());
+  normalizeIfExprBranch(cond, result, ife->getElseStmt());
+
+  CondStmt* cs = new CondStmt(new SymExpr(cond),
+                              ife->getThenStmt()->remove(),
+                              ife->getElseStmt()->remove());
+
+  // Remove nested BlockStmts
+  toBlockStmt(cs->thenStmt->body.tail)->flattenAndRemove();
+  toBlockStmt(cs->elseStmt->body.tail)->flattenAndRemove();
+
+  anchor->insertBefore(cs);
+
+  ife->replace(new SymExpr(result));
+}
+
+static void lowerIfExprs(BaseAST* base) {
+  LowerIfExprVisitor vis;
+  base->accept(&vis);
 }
 
 /************************************* | **************************************
@@ -1234,21 +1350,21 @@ static void fixPrimNew(CallExpr* primNewToFix) {
 }
 
 static void fixStringLiteralInit(FnSymbol* fn) {
-  std::vector<CallExpr*> calls;
-  collectCallExprs(fn, calls);
-
-  for_vector(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_NEW)) {
-      Expr* newFirst = call->get(1);
-      if (SymExpr* se = toSymExpr(newFirst)) {
-        INT_ASSERT(se->symbol() == dtString->symbol);
-      } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(newFirst)) {
-        INT_ASSERT(strcmp(use->unresolved, "string") == 0);
-        use->replace(new SymExpr(dtString->symbol));
-      } else {
-        INT_ASSERT(false);
+  // BHARSH 2018-05-10: Using something like 'collectCallExprs' here resulted
+  // in nontrivial compilation slowdown. We know we're looking for MOVEs from
+  // a NEW, so we can just walk the statements.
+  Expr* first = fn->body->body.head;
+  while (first != NULL) {
+    CallExpr* call = toCallExpr(first);
+    if (call != NULL && call->isPrimitive(PRIM_MOVE)) {
+      CallExpr* rhs = toCallExpr(call->get(2));
+      if (rhs != NULL && rhs->isPrimitive(PRIM_NEW)) {
+        if (UnresolvedSymExpr* use = toUnresolvedSymExpr(rhs->get(1))) {
+          use->replace(new SymExpr(dtString->symbol));
+        }
       }
     }
+    first = first->next;
   }
 }
 
@@ -1756,8 +1872,10 @@ static void init_untyped_var(VarSymbol* var,
                              Expr*      init,
                              Expr*      insert,
                              VarSymbol* constTemp) {
+  init = init->remove();
+
   if (var->hasFlag(FLAG_NO_COPY)) {
-    insert->insertAfter(new CallExpr(PRIM_MOVE, var, init->remove()));
+    insert->insertAfter(new CallExpr(PRIM_MOVE, var, init));
 
   } else {
     // See Note 4.
@@ -1778,9 +1896,9 @@ static void init_untyped_var(VarSymbol* var,
     Expr*     rhs      = NULL;
 
     if (initCall && initCall->isPrimitive(PRIM_NEW)) {
-      rhs = init->remove();
+      rhs = init;
     } else {
-      rhs = new CallExpr("chpl__initCopy", init->remove());
+      rhs = new CallExpr("chpl__initCopy", init);
     }
 
     insert->insertAfter(new CallExpr(PRIM_MOVE, constTemp, rhs));
@@ -1880,12 +1998,16 @@ static void           normVarNoinit(DefExpr* defExpr);
 static bool           isNewExpr(Expr* expr);
 static AggregateType* typeForNewExpr(CallExpr* expr);
 
+static Expr* prepareShadowVarForNormalize(DefExpr* def, VarSymbol* var);
+static void  restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark);
+
 static void normalizeVariableDefinition(DefExpr* defExpr) {
   SET_LINENO(defExpr);
 
   VarSymbol* var  = toVarSymbol(defExpr->sym);
   Expr*      type = defExpr->exprType;
   Expr*      init = defExpr->init;
+  Expr*  svarMark = prepareShadowVarForNormalize(defExpr, var);
 
   // handle ref variables
   if (var->hasFlag(FLAG_REF_VAR)) {
@@ -1913,6 +2035,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   } else {
     INT_ASSERT(false);
   }
+  restoreShadowVarForNormalize(defExpr, svarMark);
 }
 
 static void normRefVar(DefExpr* defExpr) {
@@ -1983,6 +2106,8 @@ static void normVarTypeInference(DefExpr* defExpr) {
   Symbol* var      = defExpr->sym;
   Expr*   initExpr = defExpr->init->remove();
 
+  // BHARSH INIT TODO: Many of these branches can and should be merged.
+  //
   // Do not complain here.  Put this stub in to the AST and let
   // checkUseBeforeDefs() generate a consistent error message.
   if (isUnresolvedSymExpr(initExpr) == true) {
@@ -2067,6 +2192,8 @@ static void normVarTypeInference(DefExpr* defExpr) {
     } else {
       defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
     }
+  } else if (IfExpr* ife = toIfExpr(initExpr)) {
+    defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, ife));
 
   } else {
     INT_ASSERT(false);
@@ -2310,6 +2437,48 @@ static void normVarNoinit(DefExpr* defExpr) {
   }
 }
 
+//
+// We want the initialization code for a task-private variable to be
+// in that variable's initBlock(). This is not where its DefExpr is,
+// however. So, in order to use existing normalization code as-is, we
+// move the DefExpr into a temporary BlockStmt. This BlockStmt also
+// preserves the DefExpr's position in the ForallStmt::shadowVariables()
+// list, which is where it lives. Once normalization completes, we
+// move the resulting ASTs into the initBlock(), and the DefExpr back
+// to its home list.
+
+static Expr* prepareShadowVarForNormalize(DefExpr* def, VarSymbol* var) {
+  ShadowVarSymbol* svar = toShadowVarSymbol(var);
+  if (svar == NULL || !svar->isTaskPrivate())
+    // Not a task-private variable, nothing to do.
+    return NULL;
+
+  BlockStmt* normBlock = new BlockStmt();
+  def->replace(normBlock);
+  normBlock->insertAtTail(def);
+
+  return normBlock;
+}
+
+static void  restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark) {
+  if (!svarMark)
+    return;
+
+  BlockStmt* normBlock = toBlockStmt(svarMark);
+  BlockStmt* initBlock = toShadowVarSymbol(def->sym)->initBlock();
+  AList&     initList  = initBlock->body;
+  // If there is stuff in initBlock(), we need to be careful about
+  // where we place 'def'.
+  INT_ASSERT(initList.empty());
+
+  normBlock->insertAfter(def->remove());
+
+  for_alist(stmt, normBlock->body)
+    initList.insertAtTail(stmt->remove());
+
+  normBlock->remove();
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -2482,6 +2651,22 @@ static void fixupArrayFormals(FnSymbol* fn) {
   }
 }
 
+static bool skipFixup(ArgSymbol* formal, Expr* domExpr, Expr* eltExpr) {
+  if (formal->intent & INTENT_FLAG_IN) {
+    if (isDefExpr(domExpr) || isDefExpr(eltExpr)) {
+      return false;
+    } else if (SymExpr* se = toSymExpr(domExpr)) {
+      if (se->symbol() == gNil) {
+        return false;
+      }
+    } else {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // Preliminary validation is performed within the caller
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   BlockStmt*            typeExpr = formal->typeExpr;
@@ -2492,6 +2677,17 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
 
   std::vector<SymExpr*> symExprs;
+
+  //
+  // Only fix array formals with 'in' intent if there was:
+  // - a type query, or
+  // - a domain query, or
+  // - no domain expression
+  //
+  // This 'fixing' makes it difficult to find runtime type information later
+  // when we need it.
+  //
+  if (skipFixup(formal, domExpr, eltExpr)) return;
 
   // Replace the type expression with "_array" to make it generic.
   typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_TYPE));

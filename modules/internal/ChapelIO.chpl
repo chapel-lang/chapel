@@ -379,12 +379,16 @@ module ChapelIO {
           }
 
           // Skip an unknown JSON field.
-          var e:syserr;
-          reader.skipField(error=e);
-          if !e {
+          var err:syserr = ENOERR;
+          try {
+            reader.skipField();
             needsComma = true;
+          } catch e: SystemError {
+            err = e.err;
+          } catch {
+            err = EINVAL;
           }
-          reader.setError(e);
+          reader.setError(err);
         }
       }
     }
@@ -500,12 +504,17 @@ module ChapelIO {
               if skip_unk != 0 && st == QIO_AGGREGATE_FORMAT_JSON {
 
                 // Skip an unknown JSON field.
-                var e:syserr;
-                reader.skipField(error=e);
-                if !e {
+                var err:syserr = ENOERR;
+                try {
+                  reader.skipField();
                   needsComma = true;
+                } catch e: SystemError {
+                  err = e.err;
+                } catch {
+                  err = EINVAL;
                 }
-                reader.setError(e);
+                reader.setError(err);
+
               } else {
                 reader.setError(EFORMAT:syserr);
                 break;

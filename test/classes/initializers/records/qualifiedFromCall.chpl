@@ -26,8 +26,7 @@ class C {
 // We should see a matching number of calls to R.init and R.deinit, with one
 // of the R.init calls being a copy init.
 
-var c = new C();
+var c = new unmanaged C();
 const x : R = c.x;
 writeln("temp = ", x);
 delete c;
-

@@ -29,7 +29,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 GITHUB_USER=vasslitvinov
 GITHUB_BRANCH=r
 SHORT_NAME=noreftemps
-START_DATE=04/23/18
+START_DATE=05/24/18
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

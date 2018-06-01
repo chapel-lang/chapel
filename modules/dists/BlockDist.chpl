@@ -353,6 +353,7 @@ class BlockDom: BaseRectangularDom {
 // stridable: generic domain stridable parameter
 // myBlock: a non-distributed domain that defines the local indices
 //
+pragma "use default init"
 class LocBlockDom {
   param rank: int;
   type idxType;
@@ -392,6 +393,7 @@ class BlockArr: BaseRectangularArr {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
+pragma "use default init"
 class LocBlockArr {
   type eltType;
   param rank: int;
@@ -626,11 +628,13 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
   return if rank == 1 then result(1) else result;
 }
 
-proc LocBlock.LocBlock(param rank: int,
-                      type idxType, 
-                      locid, // the locale index from the target domain
-                      boundingBox: rank*range(idxType),
-                      targetLocBox: rank*range) {
+proc LocBlock.init(param rank: int,
+                   type idxType,
+                   locid, // the locale index from the target domain
+                   boundingBox: rank*range(idxType),
+                   targetLocBox: rank*range) {
+  this.rank = rank;
+  this.idxType = idxType;
   if rank == 1 {
     const lo = boundingBox(1).low;
     const hi = boundingBox(1).high;
@@ -1249,16 +1253,24 @@ proc Block.dsiReprivatize(other, reprivatizeData) {
 
 proc BlockDom.dsiSupportsPrivatization() param return true;
 
-proc BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
+pragma "use default init"
+record BlockDomPrvData {
+  var distpid;
+  var dims;
+}
+
+proc BlockDom.dsiGetPrivatizeData() {
+  return new BlockDomPrvData(dist.pid, whole.dims());
+}
 
 proc BlockDom.dsiPrivatize(privatizeData) {
-  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
+  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData.distpid);
   // in initializer we have to pass sparseLayoutType as it has no default value
   var c = new unmanaged BlockDom(rank=rank, idxType=idxType, stridable=stridable,
       sparseLayoutType=privdist.sparseLayoutType, dist=privdist);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
-  c.whole = {(...privatizeData(2))};
+  c.whole = {(...privatizeData.dims)};
   return c;
 }
 

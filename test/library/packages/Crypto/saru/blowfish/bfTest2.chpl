@@ -3,22 +3,22 @@
 proc main(){
   use Crypto;
 
-  var a = new Blowfish("cbc");
+  var a = new unmanaged Blowfish(CryptoChainMode.cbc);
 
   /* Key Generation phase starts */
-  var salt = new CryptoBuffer("random_salt");
-  var hash = new Hash("SHA256");
-  var k = new KDF(16, 1000, hash);
+  var salt = new unmanaged CryptoBuffer("random_salt");
+  var hash = new unmanaged Hash(Digest.SHA256);
+  var k = new unmanaged KDF(16, 1000, hash);
   var key = k.passKDF("random_key", salt);
   writeln("Generated Key: ", key.toHex());
   /* Key Generation phase ends */
 
   /* IV is manipulated to return the same encryption on every run (for testing purposes) */
-  var iv = new CryptoBuffer("iv123456");
+  var iv = new unmanaged CryptoBuffer("iv123456");
   writeln("Generated IV: ", iv.toHex());
 
   /* The message to be encrypted */
-  var msg = new CryptoBuffer("test string");
+  var msg = new unmanaged CryptoBuffer("test string");
   writeln("Original Message: ", msg.toHex());
 
   /* Encrypt the message using the key and IV */

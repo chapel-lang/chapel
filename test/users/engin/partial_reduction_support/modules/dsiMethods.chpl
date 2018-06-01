@@ -419,7 +419,7 @@ iter CSArr.dsiPartialThese(param onlyDim, otherIdx,
 // Block Distribution support
 //
 proc LocBlockArr.clone() {
-  return new LocBlockArr(eltType,rank,idxType,stridable,locDom,
+  return new unmanaged LocBlockArr(eltType,rank,idxType,stridable,locDom,
       locRAD, myElems, locRADLock);
 }
 
@@ -574,7 +574,7 @@ iter LocCyclicDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
 proc LocCyclicArr.dsiGetBaseDom() { return locDom; }
 
 proc LocCyclicArr.clone() {
-  return new LocCyclicArr(eltType,rank,idxType,stridable,
+  return new unmanaged LocCyclicArr(eltType,rank,idxType,stridable,
       locDom,locRAD,locCyclicRAD,myElems,locRADLock);
 }
 

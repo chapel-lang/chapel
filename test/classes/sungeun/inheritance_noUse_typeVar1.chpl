@@ -6,13 +6,13 @@ class B: A {
   var x: int;
 }
 
-var a = new A();
+var a = new unmanaged A();
 var b: B;
 var c: B;
 
 writeln(a);
 
-b = new B();
+b = new unmanaged B();
 
 delete b;
 delete a;

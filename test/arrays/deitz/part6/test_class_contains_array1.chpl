@@ -5,7 +5,7 @@ class C {
 
 var D = {1..4};
 
-var c = new C(D);
+var c = new unmanaged C(D);
 writeln(c);
 c.D = {1..8};
 writeln(c);

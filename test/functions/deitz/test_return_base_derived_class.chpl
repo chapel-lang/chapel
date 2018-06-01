@@ -8,9 +8,9 @@ class D: C {
 
 proc f(b: bool) {
   if b then
-    return new C();
+    return new unmanaged C();
   else
-    return new D();
+    return new unmanaged D();
 }
 
 var t1 = f(false);

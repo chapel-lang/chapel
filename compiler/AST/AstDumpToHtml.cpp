@@ -341,6 +341,17 @@ void AstDumpToHtml::exitNamedExpr(NamedExpr* node) {
 
 
 //
+// IfExpr
+//
+bool AstDumpToHtml::enterIfExpr(IfExpr* node) {
+  return false;
+}
+
+void AstDumpToHtml::exitIfExpr(IfExpr* node) {
+}
+
+
+//
 // SymExpr
 //
 void AstDumpToHtml::visitSymExpr(SymExpr* node) {

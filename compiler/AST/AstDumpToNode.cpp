@@ -410,6 +410,12 @@ bool AstDumpToNode::enterForallStmt(ForallStmt* node)
   writeField("shadowVariables:     ", node->shadowVariables());
 
   newline();
+  if (node->fRecIterIRdef) {
+    writeField("fRecIterIRdef:        ", 20, node->fRecIterIRdef);
+    writeField("fRecIterICdef:        ", 20, node->fRecIterICdef);
+    writeField("fRecIterGetIterator:  ", 20, node->fRecIterGetIterator);
+    writeField("fRecIterFreeIterator: ", 20, node->fRecIterFreeIterator);
+  }
   writeField("loopBody: ", 10, node->loopBody());
 
   mOffset = mOffset - 2;
@@ -1048,6 +1054,17 @@ void AstDumpToNode::exitNamedExpr(NamedExpr* node)
   if (!compact)
     write(")");
   exitNode(node);
+}
+
+//
+//
+//
+
+bool AstDumpToNode::enterIfExpr(IfExpr* node) {
+  return false;
+}
+
+void AstDumpToNode::exitIfExpr(IfExpr* node) {
 }
 
 //

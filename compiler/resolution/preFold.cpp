@@ -771,6 +771,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     for_formals(formal, iterator) {
+      if (formal->name  == astrTag && formal->type == gFollowerTag->type) {
+        INT_ASSERT("tag already present in PRIM_TO_FOLLOWER");
+        // Could remove it, but would have to figure out what's
+        // happening with followThis and fast too.
+      }
       // Note: this can add a use formal outside of its function
       // This is cleaned up in cleanupLeaderFollowerIteratorCalls
       followerCall->insertAtTail(new NamedExpr(formal->name,
@@ -808,8 +813,12 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function
       // This is cleaned up in cleanupLeaderFollowerIteratorCalls
-      leaderCall->insertAtTail(new NamedExpr(formal->name,
-                                             symOrParamExpr(formal)));
+      if (formal->name  == astrTag && formal->type == gLeaderTag->type) {
+        // Leave out the tag since we add it in again below
+      } else {
+        leaderCall->insertAtTail(new NamedExpr(formal->name,
+                                               symOrParamExpr(formal)));
+      }
     }
 
     // "tag" should be placed at the end of the formals in the source code as
@@ -827,8 +836,12 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function
       // This is cleaned up in cleanupLeaderFollowerIteratorCalls
-      standaloneCall->insertAtTail(new NamedExpr(formal->name,
-                                                 symOrParamExpr(formal)));
+      if (formal->name  == astrTag && formal->type == gStandaloneTag->type) {
+        // Leave out the tag since we add it in again below
+      } else {
+        standaloneCall->insertAtTail(new NamedExpr(formal->name,
+                                                   symOrParamExpr(formal)));
+      }
     }
 
     // "tag" should be placed at the end of the formals in the source code as
@@ -879,6 +892,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       if (blk) {
         (unsigned&)(blk->blockTag) &= ~(unsigned)BLOCK_TYPE_ONLY;
       }
+    } else if (type->symbol->hasFlag(FLAG_TUPLE)) {
+      Type* newt = computeNonRefTuple(toAggregateType(type));
+      retval = new SymExpr(newt->symbol);
+      call->replace(retval);
     }
 
   } else if (call->isPrimitive(PRIM_STATIC_TYPEOF) ||
@@ -1747,25 +1764,30 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   if (!call->isCast())
     INT_FATAL("dropUnnecessaryCasts called on non cast call");
 
-  if (SymExpr* sym = toSymExpr(call->castFrom())) {
-    if (LcnSymbol* var = toLcnSymbol(sym->symbol())) {
+  if (SymExpr* fromSe = toSymExpr(call->castFrom())) {
+    if (LcnSymbol* var = toLcnSymbol(fromSe->symbol())) {
       // Casts of type variables are always required
       // eg. foo.type:string
       if (!var->hasFlag(FLAG_TYPE_VARIABLE)) {
-        if (SymExpr* sym = toSymExpr(call->castTo())) {
+        if (SymExpr* toSe = toSymExpr(call->castTo())) {
           Type* oldType = var->type->getValType();
-          Type* newType = sym->symbol()->type->getValType();
+          Type* newType = toSe->symbol()->type->getValType();
 
           if (newType == oldType) {
-            result = new SymExpr(var);
-            call->replace(result);
+            if (isUserDefinedRecord(newType) && !getSymbolImmediate(var)) {
+              result = new CallExpr("chpl__initCopy", var);
+              call->replace(result);
+            } else {
+              result = new SymExpr(var);
+              call->replace(result);
+            }
           }
         }
       }
-    } else if (EnumSymbol* e = toEnumSymbol(sym->symbol())) {
-      if (SymExpr* sym = toSymExpr(call->castTo())) {
+    } else if (EnumSymbol* e = toEnumSymbol(fromSe->symbol())) {
+      if (SymExpr* toSe = toSymExpr(call->castTo())) {
         EnumType* oldType = toEnumType(e->type);
-        EnumType* newType = toEnumType(sym->symbol()->type);
+        EnumType* newType = toEnumType(toSe->symbol()->type);
         if (newType && oldType == newType) {
           result = new SymExpr(e);
           call->replace(result);

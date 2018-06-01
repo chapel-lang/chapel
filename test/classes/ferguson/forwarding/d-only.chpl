@@ -12,5 +12,5 @@ class C {
   proc bar() { writeln("in C.bar()"); }
 }
 
-var r = new Wrapper(new C());
+var r = new Wrapper(new unmanaged C());
 r.bar(); // in only list

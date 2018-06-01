@@ -187,7 +187,7 @@ class FTree {
         this.complete();
 
         coforall loc in Locales do
-            on loc do tree[loc.id] = new LocTree(coeffDom);
+            on loc do tree[loc.id] = new unmanaged LocTree(coeffDom);
     }
 
     proc deinit() {
@@ -253,7 +253,7 @@ class FTree {
     /** Return a copy of this FTree
      */
     proc copy() {
-        const f = new FTree(order);
+        const f = new unmanaged FTree(order);
         for loc in LocaleSpace do
             f.tree[loc].copy(tree[loc]);
         return f;

@@ -3,7 +3,7 @@ class C {
 }
 
 class D {
-  var y: C;
+  var y: unmanaged C;
 }
 
 proc foo(c: C) {
@@ -15,9 +15,9 @@ proc foo(d: D) {
 }
 
 proc main() {
-  var myC = new C(x=1);
+  var myC = new unmanaged C(x=1);
   foo(myC);
-  var myD = new D(new C(2));
+  var myD = new unmanaged D(new unmanaged C(2));
   foo(myD);
   delete myC;
   delete myD.y;

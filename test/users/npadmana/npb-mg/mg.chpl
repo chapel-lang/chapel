@@ -11,12 +11,13 @@ use StencilDist;
 
 // Definitions of NPB parameters etc
 enum NPB {S,A,B,C}; // TODO : Make complete.
-const ProblemSizes : [NPB.S:int..NPB.C:int] int = [32, 256, 256, 512],
-      ProblemIters : [NPB.S:int..NPB.C:int] int = [4, 4, 20, 20],
-      ExpectedResids : [NPB.S:int..NPB.C:int] real = [0.5307707005735e-04,
-                                              0.2433365309069e-05,
-                                              0.1800564401355e-05,
-                                              0.5706732285705e-06],
+const Class: domain(NPB);
+const ProblemSizes : [Class] int = [32, 256, 256, 512],
+      ProblemIters : [Class] int = [4, 4, 20, 20],
+      ExpectedResids : [Class] real = [0.5307707005735e-04,
+                                       0.2433365309069e-05,
+                                       0.1800564401355e-05,
+                                       0.5706732285705e-06],
       fracGoal = 1.0e-8;
 
 config const NPBClass : NPB = NPB.S;
@@ -49,8 +50,8 @@ var fluffTime : Timer;
 
 proc main() {
   // Allocate the levels
-  var Levels : [LevelDom] MGLevel;
-  for ilevel in LevelDom do Levels[ilevel] = new MGLevel(2**ilevel);
+  var Levels : [LevelDom] unmanaged MGLevel;
+  for ilevel in LevelDom do Levels[ilevel] = new unmanaged MGLevel(2**ilevel);
 
   var U,V,R : [Levels[numlevels].dom] real;
 
@@ -391,7 +392,7 @@ inline proc debugPrint(x...) {
 }
 
 inline proc smoothingCoeff(c : NPB) {
-  if c <= NPB.A {
+  if c:int <= NPB.A:int {
     return (-3.0/8.0, 1.0/32.0, -1.0/64.0, 0.0);
   } else {
     return (-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);

@@ -97,16 +97,18 @@ module LocaleModel {
   // In that case, subloc is adjusted to the new memory kind.
   //
   private inline
-  proc packSublocID(nNumaDomains:int, subloc:int, memoryKind:int)
+  proc packSublocID(nNumaDomains:int,
+                    subloc:int,
+                    memoryKind:int):chpl_sublocID_t
   {
     var whichNuma = subloc;
     if whichNuma == c_sublocid_none || whichNuma == c_sublocid_all then
-      return whichNuma;
+      return whichNuma:chpl_sublocID_t;
 
     if whichNuma == c_sublocid_any ||
       whichNuma == numaDomainForAny(nNumaDomains) {
       if memoryKind == memoryKindMCDRAM() then
-        return numaDomainForAny(nNumaDomains);
+        return (numaDomainForAny(nNumaDomains)):chpl_sublocID_t;
       else
         return c_sublocid_any;
     }

@@ -3,7 +3,7 @@ class C {
   const y: int = 2;
 }
 
-var c = new C();
+var c = new unmanaged C();
 c.x = 3;
 writeln(c);
 delete c;

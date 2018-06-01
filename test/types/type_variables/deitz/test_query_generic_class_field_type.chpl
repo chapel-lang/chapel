@@ -2,7 +2,7 @@ class C {
   var x;
 }
 
-var c: C(int) = new C(2);
+var c: unmanaged C(int) = new unmanaged C(2);
 
 proc f(c: C(?t)) {
   var x: t;

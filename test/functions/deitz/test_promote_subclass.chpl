@@ -7,7 +7,7 @@ class D: C {
   var z: int;
 }
 
-var A: [1..3] D = [i in 1..3] new D(x=i);
+var A: [1..3] unmanaged D = [i in 1..3] new unmanaged D(x=i);
 
 proc foo(c: C) { writeln(c); }
 

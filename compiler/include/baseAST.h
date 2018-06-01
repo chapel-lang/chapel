@@ -67,6 +67,7 @@
   macro(ContextCallExpr) sep                       \
   macro(ForallExpr) sep                            \
   macro(NamedExpr) sep                             \
+  macro(IfExpr) sep                                \
                                                    \
   macro(UseStmt) sep                               \
   macro(BlockStmt) sep                             \
@@ -168,6 +169,8 @@ enum AstTag {
   E_ForallExpr,
   E_ForwardingStmt,
   E_NamedExpr,
+  E_IfExpr,
+
   E_UseStmt,
   E_DeferStmt,
   E_TryStmt,
@@ -363,6 +366,7 @@ def_is_ast(DefExpr)
 def_is_ast(ContextCallExpr)
 def_is_ast(ForallExpr)
 def_is_ast(NamedExpr)
+def_is_ast(IfExpr)
 def_is_ast(UseStmt)
 def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
@@ -410,6 +414,7 @@ def_to_ast(DefExpr)
 def_to_ast(ContextCallExpr)
 def_to_ast(ForallExpr)
 def_to_ast(NamedExpr)
+def_to_ast(IfExpr)
 def_to_ast(UseStmt)
 def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
@@ -464,6 +469,7 @@ def_less_ast(DefExpr)
 def_less_ast(ContextCallExpr)
 def_less_ast(ForallExpr)
 def_less_ast(NamedExpr)
+def_less_ast(IfExpr)
 def_less_ast(UseStmt)
 def_less_ast(BlockStmt)
 def_less_ast(CondStmt)
@@ -570,6 +576,11 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     break;                                                              \
   case E_NamedExpr:                                                     \
     AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \
+    break;                                                              \
+  case E_IfExpr:                                                        \
+    AST_CALL_CHILD(_a, IfExpr, getCondition(), call, __VA_ARGS__);      \
+    AST_CALL_CHILD(_a, IfExpr, getThenStmt(), call, __VA_ARGS__);       \
+    AST_CALL_CHILD(_a, IfExpr, getElseStmt(), call, __VA_ARGS__);       \
     break;                                                              \
   case E_DefExpr:                                                       \
     AST_CALL_CHILD(_a, DefExpr, init, call, __VA_ARGS__);               \

@@ -4,14 +4,16 @@ class C {
 
 proc test() {
 
-  var c:C;
+  var c:unmanaged C;
   
   on Locales[numLocales-1] {
-    c = new C(1);
+    c = new unmanaged C(1);
   }
 
-  var loc = __primitive("_wide_get_locale", c);
-  var adr = __primitive("_wide_get_addr", c);
+  var cc:C = c;
+
+  var loc = __primitive("_wide_get_locale", cc);
+  var adr = __primitive("_wide_get_addr", cc);
 
   var b = __primitive("_wide_make", C, loc, adr);
 
@@ -27,8 +29,10 @@ proc test2() {
     c = new C(1);
   }
 
-  var loc = __primitive("_wide_get_locale", c);
-  var adr = __primitive("_wide_get_addr", c);
+  var cc:C = c;
+
+  var loc = __primitive("_wide_get_locale", cc);
+  var adr = __primitive("_wide_get_addr", cc);
 
   var b = __primitive("_wide_make", C, loc, adr);
   var loc2 = __primitive("_wide_get_locale", b);

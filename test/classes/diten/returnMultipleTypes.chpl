@@ -21,9 +21,9 @@ class C:B {
 
 proc foo(i: int) {
   if i > 0 then
-    return new B();
+    return new owned B();
   else
-    return new C();
+    return new owned C();
 }
 
 proc main {
@@ -34,7 +34,4 @@ proc main {
   writeln(a.name);
   b.sayTypeName();
   writeln(b.name);
-
-  delete a;
-  delete b;
 }

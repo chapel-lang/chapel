@@ -1,13 +1,13 @@
 proc main() {
   use Crypto;
 
-  var bf = new Blowfish("cbc");
+  var bf = new unmanaged Blowfish(CryptoChainMode.cbc);
 
-  var msg = new CryptoBuffer("hello world");
+  var msg = new unmanaged CryptoBuffer("hello world");
 
   // static values assumed for testing purposes
-  var iv = new CryptoBuffer("12345678"); // should be exactly 8 bytes
-  var key = new CryptoBuffer("long keys are the best");
+  var iv = new unmanaged CryptoBuffer("12345678"); // should be exactly 8 bytes
+  var key = new unmanaged CryptoBuffer("long keys are the best");
 
   writeln("MSG: ", msg.toHex());
 

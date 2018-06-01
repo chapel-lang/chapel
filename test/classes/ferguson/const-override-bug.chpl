@@ -22,6 +22,6 @@ class myNumaDomain : myAbstractLocaleModel {
 }
 
 
-var c = new myNumaDomain();
+var c = new unmanaged myNumaDomain();
 writeln(c.name);
 delete c;

@@ -51,7 +51,7 @@ class Block1DDist {
   // DOWN: an array of local distribution class descriptors -- set up
   // in the class initializer
   //
-  var locDist: [targetLocDom] LocBlock1DDist(idxType);
+  var locDist: [targetLocDom] unmanaged LocBlock1DDist(idxType);
 
 
   // INITIALIZERS:
@@ -74,7 +74,8 @@ class Block1DDist {
 
     for locid in targetLocDom do
       on targetLocs(locid) do
-        locDist(locid) = new LocBlock1DDist(idxType, locid, this);
+        locDist(locid) = new unmanaged LocBlock1DDist(idxType, locid,
+            _to_unmanaged(this));
   }
 
   proc deinit() {
@@ -93,7 +94,7 @@ class Block1DDist {
   // TODO: What should we do if domIdxType did not match idxType?
   //
   proc newDomain(inds, type domIdxType = idxType) where domIdxType == idxType {
-    return new Block1DDom(idxType, this, whole=inds);
+    return new unmanaged Block1DDom(idxType, _to_unmanaged(this), whole=inds);
   }
 
 
@@ -192,7 +193,7 @@ class LocBlock1DDist {
   //
   proc init(type idxType,
             _localeIdx: int, // the locale index from the target domain
-            dist: Block1DDist(idxType) // reference to glob dist
+            dist: unmanaged Block1DDist(idxType) // reference to glob dist
             ) {
     this.idxType = idxType;
 
@@ -256,7 +257,7 @@ class Block1DDom {
   //
   // LEFT: a pointer to the parent distribution
   //
-  const dist: Block1DDist(idxType);
+  const dist: unmanaged Block1DDist(idxType);
 
   //
   // DOWN: an array of local domain class descriptors -- set up in
@@ -268,7 +269,7 @@ class Block1DDom {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locDoms: [dist.targetLocDom] LocBlock1DDom(idxType);
+  var locDoms: [dist.targetLocDom] unmanaged LocBlock1DDom(idxType);
 
 
   // STATE:
@@ -284,8 +285,9 @@ class Block1DDom {
   proc postinit() {
     for localeIdx in dist.targetLocDom do
       on dist.targetLocs(localeIdx) do
-        locDoms(localeIdx) = new LocBlock1DDom(idxType, this, 
-                                           dist.getChunk(whole, localeIdx));
+        locDoms(localeIdx) = new unmanaged LocBlock1DDom(idxType,
+                                            _to_unmanaged(this), 
+                                            dist.getChunk(whole, localeIdx));
     if debugBradsBlock1D then
       [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
   }
@@ -394,7 +396,7 @@ class Block1DDom {
   // how to allocate a new array over this domain
   //
   proc newArray(type elemType) {
-    return new Block1DArr(idxType, elemType, this);
+    return new unmanaged Block1DArr(idxType, elemType, _to_unmanaged(this));
   }
 
   //
@@ -432,7 +434,7 @@ class LocBlock1DDom {
   //
   // UP: a reference to the parent global domain class
   //
-  const wholeDom: Block1DDom(idxType);
+  const wholeDom: unmanaged Block1DDom(idxType);
 
 
   // STATE:
@@ -528,7 +530,7 @@ class Block1DArr {
   //
   // LEFT: the global domain descriptor for this array
   //
-  var dom: Block1DDom(idxType);
+  var dom: unmanaged Block1DDom(idxType);
 
   //
   // DOWN: an array of local array classes
@@ -539,7 +541,7 @@ class Block1DArr {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, elemType);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocBlock1DArr(idxType, elemType);
 
 
   // INITIALIZERS:
@@ -547,7 +549,7 @@ class Block1DArr {
   proc postinit() {
     for localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
-        locArr(localeIdx) = new LocBlock1DArr(idxType, elemType, dom.locDoms(localeIdx));
+        locArr(localeIdx) = new unmanaged LocBlock1DArr(idxType, elemType, dom.locDoms(localeIdx));
   }
 
   proc deinit() {
@@ -653,7 +655,7 @@ class LocBlock1DArr {
   //
   // LEFT: a reference to the local domain class for this array and locale
   //
-  const locDom: LocBlock1DDom(idxType);
+  const locDom: unmanaged LocBlock1DDom(idxType);
 
 
   // STATE:

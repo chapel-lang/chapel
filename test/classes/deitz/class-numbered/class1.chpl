@@ -3,7 +3,7 @@ class foo {
   var f : real;
 }
 
-var x : foo = new foo();
+var x : foo = new borrowed foo();
 
 writeln("x: (", x.i, ", ", x.f, ")");
 
@@ -23,13 +23,7 @@ y.i = -2;
 
 writeln("x: (", x.i, ", ", x.f, ")");
 
-delete x;
 
-
-
-
-var z : foo = new foo(i=12,f=18.2);
+var z : foo = new borrowed foo(i=12,f=18.2);
 
 writeln("z: (", z.i, ", ", z.f, ")");
-
-delete z;

@@ -15,13 +15,13 @@ config const branch = true;
 proc MyStencilDom.setup() {
   ref elem = A[1];
   if branch then
-    elem = new MyLocDom(1);
+    elem = new unmanaged MyLocDom(1);
   else
     elem.x += 1;
 }
 
 proc test() {
-  var dom = new MyStencilDom();
+  var dom = new unmanaged MyStencilDom();
   dom.setup();
   writeln(dom);
 }

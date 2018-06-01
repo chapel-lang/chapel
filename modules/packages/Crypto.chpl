@@ -382,6 +382,14 @@ module Crypto {
     return hash;
   }
 
+  /* The `Digest` enum represents all the hashing functions provided by the
+     OpenSSL primitives. Value from this enum is passed to the `Hash` class
+     initializer in order to select the type of hashing function to be used.
+
+  */
+  enum Digest {
+    MD5, SHA1, SHA224, SHA256, SHA384, SHA512, RIPEMD160
+  }
   /* The `Hash` class represents all the hashing functions provided by the
      OpenSSL primitives. It supports all the prominent and most commonly used
      deterministic hashing functions.
@@ -402,28 +410,34 @@ module Crypto {
        respective hash and allocates a domain for memory allocation
        for hashing. It currently supports the following hashing functions -
        ``MD5``, ``SHA1``, ``SHA224``, ``SHA256``, ``SHA384``, ``SHA512`` and
-       ``RIPEMD160``.
+       ``RIPEMD160`` consumed via an enum, `Digest`.
 
-       :arg digestName: Name of the hashing function to be used.
-       :type digestName: `string`
+       :arg digestName: Hashing function to be used.
+       :type digestName: `Digest`
 
        :return: An object of class `Hash`.
        :rtype: `Hash`
 
+       Initialization example,
+
+       .. code-block:: chapel
+
+          var h = new Hash(Digest.SHA256);
+
     */
-    proc init(digestName: string) {
+    proc init(digestName: Digest) {
       this.complete();
       select digestName {
-        when "MD5"        do this.hashLen = 16;
-        when "SHA1"       do this.hashLen = 20;
-        when "SHA224"     do this.hashLen = 28;
-        when "SHA256"     do this.hashLen = 32;
-        when "SHA384"     do this.hashLen = 48;
-        when "SHA512"     do this.hashLen = 64;
-        when "RIPEMD160"  do this.hashLen = 20;
-        otherwise do halt("A digest with the name \'" + digestName + "\' doesn't exist.");
+        when Digest.MD5        do this.hashLen = 16;
+        when Digest.SHA1       do this.hashLen = 20;
+        when Digest.SHA224     do this.hashLen = 28;
+        when Digest.SHA256     do this.hashLen = 32;
+        when Digest.SHA384     do this.hashLen = 48;
+        when Digest.SHA512     do this.hashLen = 64;
+        when Digest.RIPEMD160  do this.hashLen = 20;
+        otherwise do halt("A digest with the name \'" + digestName: string + "\' doesn't exist.");
       }
-      this.digestName = digestName;
+      this.digestName = digestName: string;
       this.hashDomain = {0..#this.hashLen};
     }
 
@@ -525,6 +539,14 @@ module Crypto {
    return plaintext;
   }
 
+  /* The `CryptoChainMode` enum represents all cipher chaining modes
+     that can be used by a symmetric cipher. It is used by the `AES` and
+     `Blowfish` class initializers to select a chaining mode.
+
+  */
+  enum CryptoChainMode {
+    cbc, ecb, cfb, ofb
+  }
   /* The `AES` class represents the symmetric encryption algorithm, AES.
      The Advanced Encryption Standard (AES), also known by its original name Rijndael
      is a specification for the encryption of electronic data established by the
@@ -553,20 +575,26 @@ module Crypto {
                   key-size. (128, 192 or 256)
        :type bits: `int`
 
-       :arg mode: Name of the chaining mode to be used.
-       :type mode: `string`
+       :arg mode: Chaining mode to be used.
+       :type mode: `CryptoChainMode`
 
        :return: An object of class `AES`.
        :rtype: `AES`
 
+       Initialization example,
+
+       .. code-block:: chapel
+
+          var aes = new AES(256, CryptoChainMode.cbc);
+
     */
-    proc init(bits: int, mode: string) {
+    proc init(bits: int, mode: CryptoChainMode) {
       var tmpCipher: CONST_EVP_CIPHER_PTR;
-      if (bits == 128 && mode == "cbc") {
+      if (bits == 128 && mode == CryptoChainMode.cbc) {
         tmpCipher = EVP_aes_128_cbc();
-      } else if (bits == 192 && mode == "cbc") {
+      } else if (bits == 192 && mode == CryptoChainMode.cbc) {
         tmpCipher = EVP_aes_192_cbc();
-      } else if (bits == 256 && mode == "cbc") {
+      } else if (bits == 256 && mode == CryptoChainMode.cbc) {
         tmpCipher = EVP_aes_256_cbc();
       } else {
         halt("The desired variant of AES does not exist.");
@@ -746,19 +774,25 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        algorithm with the right key length and chaining mode.
 
        :arg mode: Name of the chaining mode to be used.
-       :type mode: `string`
+       :type mode: `CryptoChainMode`
 
        :return: An object of class `Blowfish`.
        :rtype: `Blowfish`
 
+       Initialization example,
+
+       .. code-block:: chapel
+
+          var bf = new Blowfish(CryptoChainMode.cbc);
+
     */
-    proc init(mode: string) {
+    proc init(mode: CryptoChainMode) {
       var tmpCipher: CONST_EVP_CIPHER_PTR;
       select mode {
-        when "cbc"  do tmpCipher = EVP_bf_cbc();
-        when "ecb"  do tmpCipher = EVP_bf_ecb();
-        when "cfb"  do tmpCipher = EVP_bf_cfb();
-        when "ofb"  do tmpCipher = EVP_bf_ofb();
+        when CryptoChainMode.cbc  do tmpCipher = EVP_bf_cbc();
+        when CryptoChainMode.ecb  do tmpCipher = EVP_bf_ecb();
+        when CryptoChainMode.cfb  do tmpCipher = EVP_bf_cfb();
+        when CryptoChainMode.ofb  do tmpCipher = EVP_bf_ofb();
         otherwise do halt("The desired variant of Blowfish cipher does not exist.");
       }
       this.cipher = tmpCipher;
@@ -854,7 +888,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
        .. code-block:: chapel
 
-          var a = (new CryptoRandom()).createRandomBuffer(5)
+          var a = (new CryptoRandom()).getRandomBuffer(5)
 
        would give us a `CryptoBuffer` of size `5` and pre-initialized with values.
 
@@ -865,7 +899,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc createRandomBuffer(buffLen: int): CryptoBuffer throws {
+    proc getRandomBuffer(buffLen: int): CryptoBuffer throws {
       if (buffLen < 1) {
         throw new IllegalArgumentError("buffLen", "Invalid random buffer length specified.");
       }
@@ -1167,7 +1201,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern type CONST_EVP_MD_PTR;
     extern type CONST_EVP_CIPHER_PTR;
 
-    extern proc EVP_CIPHER_iv_length(const e: EVP_CIPHER_PTR): c_int;
+    extern proc EVP_CIPHER_iv_length(e: CONST_EVP_CIPHER_PTR): c_int;
     extern proc EVP_PKEY_size(pkey: EVP_PKEY_PTR): c_int;
     extern proc EVP_PKEY_CTX_new_id(id: c_int, e: ENGINE_PTR): EVP_PKEY_CTX_PTR;
     extern proc EVP_PKEY_keygen_init(ctx: EVP_PKEY_CTX_PTR): c_int;

@@ -2716,6 +2716,8 @@ yret
 
 FILEID: 0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5
 ppne
+sdef
+urse
 
 FILEID: 7e73d6b2-1d84-11e6-a3a6-10ddb1d4c3d5
 adfb
@@ -2757,6 +2759,7 @@ FILEID: fe909ee2-1d85-11e6-a3a6-10ddb1d4c3d5
 casttype
 ffast
 fsyntax
+imodules
 infs
 inparens
 ipra
@@ -4404,6 +4407,7 @@ rtmp
 FILEID: ad56c506-780b-11e7-88ba-10ddb1d4c3d5
 constup
 svdef
+tpvs
 wmikanik
 
 FILEID: 3b5ef8a0-780c-11e7-88ba-10ddb1d4c3d5
@@ -4593,6 +4597,20 @@ ectories
 
 FILEID: d635d1bc-4aae-11e8-af7e-10ddb1d4c3d5
 stonea
+
+FILEID: 07648a72-5b7a-11e8-af7e-10ddb1d4c3d5
+urse
+
+FILEID: 0b4871a8-5b7a-11e8-af7e-10ddb1d4c3d5
+einitialized
+
+FILEID: 1ad5560e-5b7a-11e8-af7e-10ddb1d4c3d5
+algdata
+nalloc
+
+FILEID: 23858b0c-5b7a-11e8-af7e-10ddb1d4c3d5
+chplgmp
+nalloc
 
 NATURAL:
 abcd
@@ -5594,6 +5612,7 @@ irwxo
 irwxu
 isaac
 isalias
+isborrowed
 isclosed
 isdirect
 isfinite

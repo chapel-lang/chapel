@@ -107,6 +107,16 @@ for the TFI_REDUCE shadow var, which is the accumulation state.
 ArgSymbol* tiMarkForIntent(IntentTag intent);
 ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent);
 
+// parser support
+enum ShadowVarPrefix {
+  SVP_CONST,
+  SVP_IN,
+  SVP_CONST_IN,
+  SVP_REF,
+  SVP_CONST_REF,
+  SVP_VAR,
+};
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -400,9 +410,11 @@ public:
   virtual bool    isConstValWillNotChange();
 
   const char* intentDescrString() const;
-  bool        isReduce()          const { return intent == TFI_REDUCE;  }
+  bool        isReduce()          const { return intent == TFI_REDUCE;       }
+  bool        isTaskPrivate()     const { return intent == TFI_TASK_PRIVATE; }
 
-  static ShadowVarSymbol* buildFromArgIntent(IntentTag intent, Expr* ovar);
+  static ShadowVarSymbol* buildForPrefix(ShadowVarPrefix prefix,
+                                         Expr* name, Expr* type, Expr* init);
   static ShadowVarSymbol* buildFromReduceIntent(Expr* ovar, Expr* riExpr);
 
   // The outer variable or NULL if not applicable.

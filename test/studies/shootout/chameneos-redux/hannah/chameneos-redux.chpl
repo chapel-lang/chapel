@@ -48,7 +48,7 @@ proc getComplement(myColor : Color, otherColor : Color) {
   if (myColor == otherColor) {
     return myColor;
   }
-  return (3 - myColor - otherColor) : Color;
+  return (3 - myColor:int - otherColor:int) : Color;
 }
 
 class Chameneos {
@@ -129,11 +129,11 @@ proc populate (size : int) {
 
   if (size == 10) {
     for i in D {
-      population(i) = new Chameneos(i, colorsDefault10(i));
+      population(i) = new unmanaged Chameneos(i, colorsDefault10(i));
     }
   } else {
     for i in D {
-      population(i) = new Chameneos(i, ((i-1) % 3):Color);
+      population(i) = new unmanaged Chameneos(i, ((i-1) % 3):Color);
     }
   }
   return population;
@@ -211,7 +211,7 @@ proc main() {
 
     printColorChanges();
 
-    const forest : MeetingPlace = new MeetingPlace();
+    const forest : unmanaged MeetingPlace = new unmanaged MeetingPlace();
     const population1           = populate(numChameneos1);
     const population2           = populate(numChameneos2);
 

@@ -3,7 +3,7 @@ class countVal: ReduceScanOp {
   const val: eltType;
   var count: atomic int;
 
-  proc countVal(eltType, val) { count.write(0); }
+  proc init(eltType, val) { this.eltType = eltType; this.complete(); count.write(0); }
 
   proc accumulate(x) {
     if x == val then count.add(1);

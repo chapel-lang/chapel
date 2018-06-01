@@ -11,7 +11,7 @@ class R {
 }
 
 
-var r = new R(int, 7);
+var r = new unmanaged R(int, 7);
 
 r.test();
 

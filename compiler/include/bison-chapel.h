@@ -121,13 +121,14 @@ extern int yydebug;
     ProcIter                  procIter;
     FlagSet*                  flagSet;
     ShadowVarSymbol*          pShadowVar;
+    ShadowVarPrefix           pShadowVarPref;
     std::vector<OnlyRename*>* ponlylist;
   };
 
   #endif
 
 /* Line 2058 of yacc.c  */
-#line 130 "chapel.ypp"
+#line 131 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
   #define _BISON_CHAPEL_DEFINES_2_
@@ -146,7 +147,7 @@ extern int yydebug;
   #endif
 
 /* Line 2058 of yacc.c  */
-#line 152 "chapel.ypp"
+#line 153 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
   #define _BISON_CHAPEL_DEFINES_3_
@@ -176,7 +177,7 @@ extern int yydebug;
 
 
 /* Line 2058 of yacc.c  */
-#line 180 "../include/bison-chapel.h"
+#line 181 "../include/bison-chapel.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -381,7 +382,7 @@ void yypstate_delete ();
 #endif
 /* "%code provides" blocks.  */
 /* Line 2058 of yacc.c  */
-#line 183 "chapel.ypp"
+#line 184 "chapel.ypp"
 
   extern int yydebug;
 
@@ -391,6 +392,6 @@ void yypstate_delete ();
 
 
 /* Line 2058 of yacc.c  */
-#line 395 "../include/bison-chapel.h"
+#line 396 "../include/bison-chapel.h"
 
 #endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */

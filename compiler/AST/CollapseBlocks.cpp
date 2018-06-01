@@ -332,6 +332,16 @@ void CollapseBlocks::exitNamedExpr(NamedExpr* node)
 
 }
 
+bool CollapseBlocks::enterIfExpr(IfExpr* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitIfExpr(IfExpr* node)
+{
+
+}
+
 void CollapseBlocks::visitSymExpr(SymExpr* node)
 {
 

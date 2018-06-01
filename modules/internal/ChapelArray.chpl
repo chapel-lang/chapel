@@ -853,6 +853,7 @@ module ChapelArray {
   //
   pragma "no doc"
   pragma "syntactic distribution"
+  pragma "use default init"
   record dmap { }
 
   proc chpl__buildDistType(type t) type where _to_borrowed(t): BaseDist {
@@ -879,6 +880,7 @@ module ChapelArray {
   pragma "distribution"
   pragma "ignore noinit"
   pragma "no doc"
+  pragma "use default init"
   record _distribution {
     var _pid:int;  // only used when privatized
     pragma "owned"
@@ -1036,6 +1038,7 @@ module ChapelArray {
   pragma "domain"
   pragma "has runtime type"
   pragma "ignore noinit"
+  pragma "use default init"
   record _domain {
     var _pid:int; // only used when privatized
     pragma "owned"
@@ -2098,6 +2101,7 @@ module ChapelArray {
   pragma "array"
   pragma "has runtime type"
   pragma "ignore noinit"
+  pragma "use default init"
   pragma "default intent is ref if modified"
   record _array {
     var _pid:int;  // only used when privatized

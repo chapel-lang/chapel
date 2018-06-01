@@ -27,6 +27,7 @@
 #include "driver.h"
 #include "externCResolve.h"
 #include "ForallStmt.h"
+#include "IfExpr.h"
 #include "initializerRules.h"
 #include "LoopStmt.h"
 #include "passes.h"
@@ -71,8 +72,6 @@ static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedFo
 
 static void          addToSymbolTable();
 
-static void          addToSymbolTable(DefExpr* def);
-
 static void          scopeResolve(ModuleSymbol*       module,
                                   const ResolveScope* root);
 
@@ -82,7 +81,9 @@ static void          resolveGotoLabels();
 
 static void          resolveUnresolvedSymExprs();
 
-static void          setupOuterVarsOfShadowVars();
+static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
+
+static void          setupShadowVars();
 
 static void          resolveEnumeratedTypes();
 
@@ -164,10 +165,13 @@ void scopeResolve() {
 
   //
   // build constructors (type and value versions)
+  // (initializers are built during normalize)
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     ct->createOuterWhenRelevant();
-    ct->buildConstructors();
+    if (ct->needsConstructor()) {
+      ct->buildConstructors();
+    }
   }
 
   resolveGotoLabels();
@@ -176,7 +180,38 @@ void scopeResolve() {
 
   resolveEnumeratedTypes();
 
-  setupOuterVarsOfShadowVars();
+  setupShadowVars();
+
+  // Figure out which types are generic, in a transitive closure manner
+  {
+    bool changed;
+    do {
+      changed = false;
+      forv_Vec(AggregateType, at, gAggregateTypes) {
+        // Ignore aggregate types with old-style constructors
+        // since the old constructor code removes the
+        // init expr and the type expr.
+        if (!at->needsConstructor() &&
+            // And don't try to mark generic again
+            !at->isGeneric()) {
+          for_fields(field, at) {
+            if (at->fieldIsGeneric(field)) {
+              at->markAsGeneric();
+              changed = true;
+            }
+          }
+        }
+      }
+    } while (changed);
+  }
+
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
+    // Build the type constructor now that we know which fields are generic
+    // We do it here only for types with initializers
+    if (!ct->needsConstructor()) {
+      ct->buildConstructors();
+    }
+  }
 
   ResolveScope::destroyAstMap();
 
@@ -244,7 +279,7 @@ void addToSymbolTable(FnSymbol* fn) {
   }
 }
 
-static void addToSymbolTable(DefExpr* def) {
+void addToSymbolTable(DefExpr* def) {
   Symbol* newSym = def->sym;
 
   if (newSym->hasFlag(FLAG_TEMP) == false &&
@@ -287,32 +322,37 @@ static void scopeResolve(BlockStmt*          block,
   scopeResolve(block->body,         scope);
 }
 
-static void scopeResolve(ForallStmt*         forallStmt,
+static void scopeResolve(ForallStmt*         forall,
                          const ResolveScope* parent)
 {
-  // Nothing to scopeResolve in fRecIter*
-  INT_ASSERT(forallStmt->fRecIterIRdef == NULL);
+  INT_ASSERT(forall->fRecIterIRdef == NULL); //nothing to resolve in fRecIter*
 
-  BlockStmt* fBody = forallStmt->loopBody();
+  BlockStmt*    loopBody     = forall->loopBody();
+  ResolveScope* stmtScope = new ResolveScope(forall, parent);
+  ResolveScope* bodyScope = new ResolveScope(loopBody, stmtScope);
 
-  // Or, we could construct ResolveScope specifically for forallStmt.
-  ResolveScope* bodyScope = new ResolveScope(fBody, parent);
+  // 'stmtScope' contains loop induction variables + shadow variables
+  //             incl. task-private variables.
+  // 'bodyScope' is for the loop body.
 
   // cf. scopeResolve(FnSymbol*,parent)
-  for_alist(ivdef, forallStmt->inductionVariables()) {
+  for_alist(ivdef, forall->inductionVariables()) {
     Symbol* sym = toDefExpr(ivdef)->sym;
     // "chpl__tuple_blank" indicates the underscore placeholder for
     // the induction variable. Do not add it. Because if there are two
     // (legally) ex. "forall (_,_) in ...", we get an error.
     if (strcmp(sym->name, "chpl__tuple_blank"))
-      bodyScope->extend(sym);
+      stmtScope->extend(sym);
   }
 
-  for_shadow_var_defs(svd, temp, forallStmt) {
-    bodyScope->extend(svd->sym);
+  for_shadow_vars_and_defs(svar, sdef, temp, forall) {
+    stmtScope->extend(svar);
+    INT_ASSERT(!isBlockStmt(sdef->init));
+    // If the above assert does not hold, need to do something like
+    //   scopeResolve(toBlockStmt(sdef->init, stmtScope)
   }
 
-  scopeResolve(fBody->body, bodyScope);
+  scopeResolve(loopBody->body, bodyScope);
 }
 
 static void scopeResolve(FnSymbol*           fn,
@@ -395,6 +435,21 @@ static void scopeResolve(TypeSymbol*         typeSym,
   }
 }
 
+static void scopeResolve(IfExpr* ife, ResolveScope* scope) {
+  scopeResolve(ife->getThenStmt(), scope);
+  scopeResolve(ife->getElseStmt(), scope);
+}
+
+static void scopeResolve(CallExpr* call, ResolveScope* scope) {
+  for_actuals(actual, call) {
+    if (CallExpr* ca = toCallExpr(actual)) {
+      scopeResolve(ca, scope);
+    } else if (IfExpr* ife = toIfExpr(actual)) {
+      scopeResolve(ife, scope);
+    }
+  }
+}
+
 static void scopeResolve(const AList& alist, ResolveScope* scope) {
   // Add the local definitions to the scope
   for_alist(stmt, alist) {
@@ -425,6 +480,15 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
 
         } else if (TypeSymbol* typeSym = toTypeSymbol(sym))   {
           scopeResolve(typeSym, scope);
+        }
+      }
+
+      // Look for IfExprs
+      if (def->init != NULL) {
+        if (CallExpr* call = toCallExpr(def->init)) {
+          scopeResolve(call, scope);
+        } else if (IfExpr* ife = toIfExpr(def->init)) {
+          scopeResolve(ife, scope);
         }
       }
 
@@ -460,10 +524,14 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
 
     } else if (DeferStmt* deferStmt = toDeferStmt(stmt)) {
       scopeResolve(deferStmt->body(), scope);
+    } else if (CallExpr* call = toCallExpr(stmt)) {
+      scopeResolve(call, scope);
+    } else if (IfExpr* ife = toIfExpr(stmt)) {
+      scopeResolve(ife, scope);
 
     } else if (isUseStmt(stmt)           == true ||
-               isCallExpr(stmt)          == true ||
                isUnresolvedSymExpr(stmt) == true ||
+               isSymExpr(stmt)           == true ||
                isGotoStmt(stmt)          == true) {
 
     // May occur in --llvm runs
@@ -574,8 +642,6 @@ static void resolveGotoLabels() {
 
 /************************************* | *************************************/
 
-static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
-
 static void updateMethod(UnresolvedSymExpr* usymExpr);
 
 static void updateMethod(UnresolvedSymExpr* usymExpr,
@@ -646,6 +712,16 @@ static void resolveUnresolvedSymExprs() {
 
     i++;
   }
+}
+
+void resolveUnresolvedSymExprs(BaseAST* inAst) {
+   std::vector<BaseAST*> asts;
+   collect_asts(inAst, asts);
+
+   for_vector(BaseAST, ast, asts) {
+     if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(ast))
+       resolveUnresolvedSymExpr(urse);
+   }
 }
 
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
@@ -963,6 +1039,26 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
   }
 }
 
+static bool hasOuterVariable(ShadowVarSymbol* svar) {
+  switch (svar->intent) {
+    case TFI_DEFAULT:
+    case TFI_CONST:
+    case TFI_IN:
+    case TFI_CONST_IN:
+    case TFI_REF:
+    case TFI_CONST_REF:
+    case TFI_REDUCE:        return true;
+
+    case TFI_TASK_PRIVATE:  return false;
+
+    case TFI_IN_OUTERVAR:
+    case TFI_REDUCE_OP:     INT_ASSERT(false); // should not happen
+                            return false;      // dummy
+  }
+  INT_FATAL(svar, "garbage intent");
+  return false;  //dummy
+}
+
 static bool isField(Symbol* sym) {
   // Copied from insertWideReferences.cpp.
   // Alas Symbol::isField is private.
@@ -976,7 +1072,7 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
 
   SET_LINENO(svar);
 
-  if (Symbol* ovar = lookup(svar->name, fs)) {
+  if (Symbol* ovar = lookup(svar->name, fs->parentExpr)) {
     if (isFnSymbol(ovar) || isField(ovar)) {
       // Create a stand-in to use pre-existing code.
       UnresolvedSymExpr* standIn = new UnresolvedSymExpr(svar->name);
@@ -993,10 +1089,34 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
   }
 }
 
-static void setupOuterVarsOfShadowVars() {
+// Issue an error if 'tpv' is one of fs's induction variables.
+static void checkRefsToIdxVars(ForallStmt* fs, DefExpr* def,
+                               ShadowVarSymbol* tpv)
+{
+  std::vector<SymExpr*> symExprs;
+  if (def->init)     collectSymExprs(def->init, symExprs);
+  if (def->exprType) collectSymExprs(def->exprType, symExprs);
+
+  // Ensure we do not need to check IB/DB.
+  INT_ASSERT(tpv->initBlock()->body.empty());
+  INT_ASSERT(tpv->deinitBlock()->body.empty());
+
+  for_vector(SymExpr, se, symExprs)
+    if (se->symbol()->defPoint->list == &fs->inductionVariables())
+      USR_FATAL_CONT(se, "the initialization or type expression"
+                     " of the task-private variable '%s'"
+                     " references the forall loop induction variable '%s'",
+                     tpv->name, se->symbol()->name);
+}
+
+static void setupShadowVars() {
   forv_Vec(ForallStmt, fs, gForallStmts)
-    for_shadow_vars(svar, temp, fs)
-      setupOuterVar(fs, svar);
+    for_shadow_vars_and_defs(svar, def, temp, fs) {
+       if (hasOuterVariable(svar))
+        setupOuterVar(fs, svar);
+      if (svar->isTaskPrivate())
+        checkRefsToIdxVars(fs, def, svar);
+    }
 
   // Instead of the two nested loops above, we could march through
   // gShadowVarSymbols and invoke setupOuterVar(svar->parentExpr, svar).
@@ -1005,7 +1125,6 @@ static void setupOuterVarsOfShadowVars() {
 
   USR_STOP();
 }
-    
 
 /************************************* | **************************************
 *                                                                             *
@@ -1802,6 +1921,14 @@ BaseAST* getScope(BaseAST* ast) {
     // SCOPELESS and TYPE blocks do not define scopes
     if (block && block->blockTag == BLOCK_NORMAL) {
       return block;
+
+    } else if (ForallStmt* forall = toForallStmt(parent)) {
+      if (expr->list == &(forall->iteratedExpressions()))
+        // Iterable expressions can rely only on symbols that are outside the
+        // forall. I.e. outside bodyScope in scopeResolve(ForallStmt*,...).
+        return getScope(forall);
+      else
+        return forall;
 
     } else if (parent) {
       return getScope(parent);

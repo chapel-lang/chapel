@@ -118,13 +118,15 @@ public:
   DefExpr*                    toLocalField(SymExpr*    expr)             const;
   DefExpr*                    toLocalField(CallExpr*   expr)             const;
 
-  DefExpr*                    toSuperField(SymExpr*  expr);
-  DefExpr*                    toSuperField(CallExpr* expr);
+  DefExpr*                    toSuperField(const char* name)             const;
+  DefExpr*                    toSuperField(SymExpr*  expr)               const;
+  DefExpr*                    toSuperField(CallExpr* expr)               const;
 
   int                         getMemberGEP(const char* name);
 
   void                        createOuterWhenRelevant();
 
+  // intended to be called during scope resolve
   void                        buildConstructors();
 
   void                        addRootType();
@@ -144,6 +146,11 @@ public:
   UnmanagedClassType*         getUnmanagedClass();
 
   void                        generateUnmanagedClassTypes();
+
+  // Returns true if a field is considered generic
+  // (i.e. it needs a type constructor argument)
+  bool                        fieldIsGeneric(Symbol* field)              const;
+
 
   //
   // Public fields
@@ -192,15 +199,13 @@ public:
 private:
   static ArgSymbol*           createGenericArg(VarSymbol* field);
 
-  static void                 insertImplicitThis(FnSymbol*         fn,
-                                                 Vec<const char*>& names);
+  void                        insertImplicitThis(FnSymbol*         fn,
+                                                 Vec<const char*>& names) const;
 
 private:
   virtual std::string         docsDirective();
 
   std::string                 docsSuperClass();
-
-  bool                        fieldIsGeneric(Symbol* field)              const;
 
   void                        addDeclaration(DefExpr* defExpr);
 
@@ -220,7 +225,7 @@ private:
 
   FnSymbol*                   buildTypeConstructor();
 
-  CallExpr*                   typeConstrSuperCall(FnSymbol* fn)          const;
+  CallExpr*                   typeConstrSuperCall(FnSymbol* fn)  const;
 
   bool                        isFieldInThisClass(const char* name)       const;
 
@@ -234,11 +239,13 @@ private:
                                                  Expr*      expr)        const;
 
   ArgSymbol*                  insertGenericArg(FnSymbol*  fn,
-                                               VarSymbol* field)         const;
+                                               VarSymbol* field)  const;
 
   void                        buildConstructor();
 
-  bool                        needsConstructor();
+public:
+  bool                        needsConstructor() const;
+private:
 
   ArgSymbol*                  moveConstructorToOuter(FnSymbol* fn);
 

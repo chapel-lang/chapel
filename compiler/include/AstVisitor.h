@@ -37,6 +37,7 @@ class CallExpr;
 class ContextCallExpr;
 class DefExpr;
 class NamedExpr;
+class IfExpr;
 class SymExpr;
 class UnresolvedSymExpr;
 
@@ -121,6 +122,9 @@ public:
 
   virtual bool   enterNamedExpr      (NamedExpr*         node) = 0;
   virtual void   exitNamedExpr       (NamedExpr*         node) = 0;
+
+  virtual bool   enterIfExpr         (IfExpr*            node) = 0;
+  virtual void   exitIfExpr          (IfExpr*            node) = 0;
 
   virtual void   visitSymExpr        (SymExpr*           node) = 0;
 

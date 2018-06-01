@@ -98,7 +98,10 @@ typedef std::map<int, SymbolMap*> CapturedValueMap;
 //#
 //# Global Variables
 //#
+
+// TODO -- can we remove this global now? at least it shouldn't be array.
 char                               arrayUnrefName[] = "array_unref_ret_tmp";
+
 char                               primCoerceTmpName[] = "init_coerce_tmp";
 
 bool                               resolved                  = false;
@@ -379,39 +382,6 @@ FnSymbol* getUnalias(Type* t) {
 *                                                                             *
 ************************************** | *************************************/
 
-// Generally speaking, tuples containing refs should be converted
-// to tuples without refs before returning.
-// This function returns true for exceptional FnSymbols
-// where tuples containing refs can be returned.
-//
-// The 'FLAG_CONSTRUCTOR' case can prevent additional copies/leaks in the case
-// that a class/field has a tuple field. See the following test:
-//     types/records/ferguson/tuples/class-tuple-record
-//
-bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
-      fn->hasFlag(FLAG_CONSTRUCTOR)              || // any constructor
-      fn->hasFlag(FLAG_INIT_TUPLE)               || // chpl__init_tuple
-      fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
-      fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type
-      fn->hasFlag(FLAG_TUPLE_CAST_FN)            || // _cast for tuples
-      fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES)|| // iteratorIndex
-      (!forRet && fn->hasFlag(FLAG_INIT_COPY_FN))|| // tuple chpl__initCopy
-      fn->hasFlag(FLAG_AUTO_COPY_FN)             || // tuple chpl__autoCopy
-      fn->hasFlag(FLAG_AUTO_DESTROY_FN)          || // tuple chpl__autoDestroy
-      fn->hasFlag(FLAG_UNALIAS_FN)               || // tuple chpl__unalias
-      fn->hasFlag(FLAG_ALLOW_REF)                || // iteratorIndex
-      (forRet && fn->hasFlag(FLAG_ITERATOR_FN)) // not iterators b/c
-                                    //  * they might return by ref
-                                    //  * might need to return a ref even
-                                    //    when not indicated return by ref.
-     ) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
 bool isTupleContainingOnlyReferences(Type* t)
 {
   if(t->symbol->hasFlag(FLAG_TUPLE)) {
@@ -431,8 +401,7 @@ bool isTupleContainingOnlyReferences(Type* t)
   return false;
 }
 
-static bool
-isTupleContainingAnyReferences(Type* t)
+bool isTupleContainingAnyReferences(Type* t)
 {
   if(t->symbol->hasFlag(FLAG_TUPLE)) {
     bool anyRef = false;
@@ -728,27 +697,6 @@ static bool canParamCoerce(Type*   actualType,
     }
 
     //
-    // If the actual is an enum, check to see if *all* its values
-    // are small enough that they fit into this integer width
-    //
-    if (EnumType* etype = toEnumType(actualType)) {
-      ensureEnumTypeResolved(etype);
-
-      // TODO: aren't these redundant with the last check?
-      Type* enumIntType = etype->getIntegerType();
-
-      if (enumIntType == formalType)
-        return true;
-
-      if (get_width(enumIntType) < get_width(formalType))
-        return true;
-
-      if (fits_in_int(get_width(formalType), etype->getMinConstant()) &&
-          fits_in_int(get_width(formalType), etype->getMaxConstant()))
-        return true;
-    }
-
-    //
     // For smaller integer types, if the argument is a param, does it
     // store a value that's small enough that it could dispatch to
     // this argument?
@@ -759,19 +707,6 @@ static bool canParamCoerce(Type*   actualType,
           if (fits_in_int(get_width(formalType), var->immediate)) {
             *paramNarrows = true;
             return true;
-          }
-        }
-      }
-
-      if (EnumType* etype = toEnumType(actualType)) {
-        ensureEnumTypeResolved(etype);
-
-        if (EnumSymbol* enumsym = toEnumSymbol(actualSym)) {
-          if (Immediate* enumval = enumsym->getImmediate()) {
-            if (fits_in_int(get_width(formalType), enumval)) {
-              *paramNarrows = true;
-              return true;
-            }
           }
         }
       }
@@ -798,26 +733,6 @@ static bool canParamCoerce(Type*   actualType,
     }
 
     //
-    // If the actual is an enum, check to see if *all* its values
-    // are small enough that they fit into this integer width
-    //
-    if (EnumType* etype = toEnumType(actualType)) {
-      ensureEnumTypeResolved(etype);
-
-      Type* enumIntType = etype->getIntegerType();
-
-      if (enumIntType == formalType)
-        return true;
-
-      if (get_width(enumIntType) < get_width(formalType))
-        return true;
-
-      if (fits_in_uint(get_width(formalType), etype->getMinConstant()) &&
-          fits_in_uint(get_width(formalType), etype->getMaxConstant()))
-        return true;
-    }
-
-    //
     // For smaller integer types, if the argument is a param, does it
     // store a value that's small enough that it could dispatch to
     // this argument?
@@ -828,19 +743,6 @@ static bool canParamCoerce(Type*   actualType,
           if (fits_in_uint(get_width(formalType), var->immediate)) {
             *paramNarrows = true;
             return true;
-          }
-        }
-      }
-
-      if (EnumType* etype = toEnumType(actualType)) {
-        ensureEnumTypeResolved(etype);
-
-        if (EnumSymbol* enumsym = toEnumSymbol(actualSym)) {
-          if (Immediate* enumval = enumsym->getImmediate()) {
-            if (fits_in_uint(get_width(formalType), enumval)) {
-              *paramNarrows = true;
-              return true;
-            }
           }
         }
       }
@@ -983,6 +885,9 @@ bool canCoerceTuples(Type*     actualType,
                      Symbol*   actualSym,
                      Type*     formalType,
                      FnSymbol* fn) {
+
+  actualType = actualType->getValType();
+  formalType = formalType->getValType();
 
   if (actualType->symbol->hasFlag(FLAG_TUPLE) &&
       formalType->symbol->hasFlag(FLAG_TUPLE)) {
@@ -1925,6 +1830,10 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
   AggregateType* at     = toAggregateType(type);
   Expr*          retval = NULL;
 
+  // BHARSH TODO: Why not use at->symbol->instantiationPoint ?
+  // Some tests failed at the time:
+  //   - library/standard/DateTime/*
+  //   - mason/*
   if (at == NULL) {
     // Not an AggregateType
     retval = chpl_gen_main->body;
@@ -1994,11 +1903,19 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
 }
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
+  if (at->symbol->instantiationPoint == NULL &&
+      fn->instantiationPoint != NULL) {
+    at->symbol->instantiationPoint = fn->instantiationPoint;
+  }
   if (at->scalarPromotionType == NULL) {
     resolvePromotionType(at);
   }
-  if (at->symbol->instantiationPoint == NULL) {
-    at->symbol->instantiationPoint = fn->instantiationPoint;
+  if (at->defaultInitializer == NULL) {
+    if (fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+        fn->hasFlag(FLAG_LAST_RESORT) &&
+        fn->hasFlag(FLAG_DEFAULT_COPY_INIT) == false) {
+      at->defaultInitializer = fn;
+    }
   }
   if (developer == false) {
     fixTypeNames(at);
@@ -2015,6 +1932,7 @@ void resolvePromotionType(AggregateType* at) {
   FnSymbol* promoFn = resolveUninsertedCall(at, promoCall, false);
 
   if (promoFn != NULL) {
+    promoFn->instantiationPoint = at->symbol->instantiationPoint;
     resolveFunction(promoFn);
 
     INT_ASSERT(promoFn->retType != dtUnknown);
@@ -3343,7 +3261,6 @@ static ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     const DisambiguationContext& DC,
                     bool                         ignoreWhere,
-                    bool                         forGenericInit,
                     Vec<ResolutionCandidate*>&   ambiguous);
 
 static int  compareSpecificity(ResolutionCandidate*         candidate1,
@@ -3369,7 +3286,7 @@ disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
   DisambiguationContext     DC(info);
   Vec<ResolutionCandidate*> ambiguous;
 
-  return disambiguateByMatch(candidates, DC, false, true, ambiguous);
+  return disambiguateByMatch(candidates, DC, false, ambiguous);
 }
 
 static int disambiguateByMatch(CallInfo&                  info,
@@ -3525,20 +3442,11 @@ static int disambiguateByMatch(CallInfo&                  info,
   return retval;
 }
 
-static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous) {
-  return disambiguateByMatch(candidates, DC, ignoreWhere, false, ambiguous);
-}
-
 
 static ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     const DisambiguationContext& DC,
                     bool                         ignoreWhere,
-                    bool                         forGenericInit,
                     Vec<ResolutionCandidate*>&   ambiguous) {
   // MPF note: A more straightforwardly O(n) version of this
   // function did not appear to be faster. See history of this comment.
@@ -3554,6 +3462,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
 
     ResolutionCandidate* candidate1         = candidates.v[i];
     bool                 singleMostSpecific = true;
+
+    bool forGenericInit = candidate1->fn->isInitializer();
 
     EXPLAIN("%s\n\n", toString(candidate1->fn));
 
@@ -4581,6 +4491,11 @@ static void handleSetMemberTypeMismatch(Type*     t,
                                         SymExpr*  rhs);
 
 static void resolveSetMember(CallExpr* call) {
+
+  if (call->id == breakOnResolveID) {
+    gdbShouldBreakHere();
+  }
+
   // Get the field name.
   SymExpr* sym = toSymExpr(call->get(2));
 
@@ -4635,6 +4550,13 @@ static void resolveSetMember(CallExpr* call) {
   INT_ASSERT(isFnSymbol(call->parentSymbol));
   if (isGenericInstantiation(fs->type, t, toFnSymbol(call->parentSymbol))) {
     fs->type = t;
+  }
+  if (fs->type->symbol->hasFlag(FLAG_GENERIC)) {
+    if (canInstantiate(t, fs->type))
+      fs->type = t;
+    else
+      USR_FATAL(call->parentSymbol,
+                "unable to determine type of generic field");
   }
 
   if (fs->type == dtUnknown) {
@@ -4697,7 +4619,18 @@ static bool isFieldAccess(CallExpr* callExpr);
 *                                                                             *
 * If this is not the case, then we will expand the call into the normal field *
 * initialization.                                                             *
-*                                                                             *
+*
+* The concern for default initializers with sync fields is
+* that the compiler will generate this pattern:
+*
+*   - create a default-initialized (empty) sync value
+*   - call = to initialize the field from it
+*   -> deadlock because the RHS of = is empty
+*
+* TODO: revisit and decide if PRIM_INIT_MAYBE_SYNC_SINGLE_FIELD
+* is still necessary, now that default initializers should not
+* call = (and instead use in intent at the call site).
+*
 ************************************** | *************************************/
 static void resolveMaybeSyncSingleField(CallExpr* call) {
   if (call->id == breakOnResolveID) {
@@ -4755,13 +4688,10 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     VarSymbol* tmp       = newTemp("tmp", t->getValType());
     DefExpr*   tmpDefn   = new DefExpr(tmp);
 
-    // Applies a type to TMP
-    Expr*      typeExpr  = fieldDef->exprType->copy();
-    CallExpr*  tmpExpr   = new CallExpr(PRIM_INIT, typeExpr);
-    CallExpr*  tmpMove   = new CallExpr(PRIM_MOVE, tmp,  tmpExpr);
-
-    // Set the value for TMP
-    CallExpr*  tmpAssign = new CallExpr("=",       tmp,  rhs->remove());
+    // Applies a type to TMP and sets its value
+    CallExpr*  tmpInit   = new CallExpr(PRIM_INIT_VAR,
+                                        tmp, rhs->remove(),
+                                        fieldDef->exprType->copy());
 
     call->primitive = primitives[PRIM_SET_MEMBER];
     call->insertAtTail(new SymExpr(tmp));
@@ -4774,22 +4704,15 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     INT_ASSERT(at);
 
     BlockStmt* resolveBlock = new BlockStmt(tmpDefn, BLOCK_SCOPELESS);
-    resolveBlock->insertAtTail(tmpMove);
-    resolveBlock->insertAtTail(tmpAssign);
+    resolveBlock->insertAtTail(tmpInit);
     call->replace(resolveBlock);
     resolveBlock->insertAtTail(call);
 
-    if (isFieldAccessible(tmpExpr, at, fieldDef) == false) {
+    if (!isFieldAccessible(tmpInit, at, fieldDef)) {
       INT_ASSERT(false);
     }
 
-    updateFieldsMember(tmpExpr, parentFn, fieldDef);
-
-    if (isFieldAccessible(rhs, at, fieldDef) == false) {
-      INT_ASSERT(false);
-    }
-
-    updateFieldsMember(rhs, parentFn, fieldDef);
+    updateFieldsMember(tmpInit, parentFn, fieldDef);
 
     normalize(resolveBlock);
     resolveBlockStmt(resolveBlock);
@@ -4974,10 +4897,11 @@ static void resolveInitField(CallExpr* call) {
   }
 
   INT_ASSERT(call->argList.length == 3);
+
   // PRIM_INIT_FIELD contains three args:
   // fn->_this, the name of the field, and the value/type it is to be given
 
-  SymExpr* rhs = toSymExpr(call->get(3)); // the value/type to give the field
+  SymExpr* srcExpr = toSymExpr(call->get(3)); // the value/type to give field
 
   // Get the field name.
   SymExpr* sym = toSymExpr(call->get(2));
@@ -5005,38 +4929,44 @@ static void resolveInitField(CallExpr* call) {
   if (!fs)
     INT_FATAL(call, "bad initializer set field primitive");
 
-  Type* t = rhs->typeInfo();
-  // I think this never happens, so can be turned into an assert. <hilde>
-  if (t == dtUnknown)
+  Type* srcType = srcExpr->symbol()->type;
+  if (srcType == dtUnknown)
     INT_FATAL(call, "Unable to resolve field type");
 
   if (fs->hasFlag(FLAG_PARAM)) {
-    if (isLegalParamType(t) == false) {
+    if (isLegalParamType(srcType) == false) {
       USR_FATAL_CONT(fs, "'%s' is not of a supported param type", fs->name);
     }
-    if (rhs->symbol()->isParameter() == false) {
+    if (srcExpr->symbol()->isParameter() == false) {
       USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", fs->name);
     }
   }
 
-  if (t == dtNil && fs->type == dtUnknown) {
+  if (srcType == dtNil && fs->type == dtUnknown) {
     USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
   }
 
   bool wasGeneric = ct->symbol->hasFlag(FLAG_GENERIC);
 
+  FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+  INT_ASSERT(parentFn);
+
+  if (fs->type->symbol->hasFlag(FLAG_GENERIC))
+    fs->type = dtUnknown;
+
   if (fs->type == dtUnknown) {
     // Update the type of the field.  If necessary, update to a new
     // instantiation of the overarching type (and replaces references to the
     // fields from the old instantiation
-    if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) ||
+
+    if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(srcExpr)) ||
         fs->hasFlag(FLAG_PARAM) ||
-        (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL)) {
-      AggregateType* instantiate = ct->getInstantiation(rhs->symbol(), index);
+        (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) ||
+        (fs->defPoint->init == NULL && fs->defPoint->exprType != NULL &&
+         ct->fieldIsGeneric(fs))) {
+      AggregateType* instantiate = ct->getInstantiation(srcExpr->symbol(), index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
-        FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(parentFn);
         INT_ASSERT(parentFn->_this);
         parentFn->_this->type = instantiate;
 
@@ -5051,10 +4981,15 @@ static void resolveInitField(CallExpr* call) {
       }
     } else {
       // The field is not generic.
+
       if (fs->defPoint->exprType == NULL) {
-        fs->type = t;
+        fs->type = srcType;
       } else if (fs->defPoint->exprType) {
-        fs->type = fs->defPoint->exprType->typeInfo();
+        Type* exprType = fs->defPoint->exprType->typeInfo();
+        if (exprType == dtUnknown)
+          fs->type = srcType;
+        else
+          fs->type = exprType;
       }
     }
   }
@@ -5063,44 +4998,25 @@ static void resolveInitField(CallExpr* call) {
   if (wasGeneric                        == true &&
       ct->symbol->hasFlag(FLAG_GENERIC) == false) {
 
-    FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
     resolveTypeWithInitializer(ct, parentFn);
     // BHARSH INIT TODO: Would like to resolve destructor here, but field
     // types are not fully resolved. E.g., "var foo : t"
-  }
-
-  if (t != fs->type && t != dtNil && t != dtObject) {
-    Symbol*   actual = rhs->symbol();
-    FnSymbol* fn     = toFnSymbol(call->parentSymbol);
-
-    if (canCoerceTuples(t, actual, fs->type, fn)) {
-      // Add a PRIM_MOVE so that insertCasts will take care of it later.
-      VarSymbol* tmp = newTemp("coerce_elt", fs->type);
-
-      call->insertBefore(new DefExpr(tmp));
-      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
-
-      call->insertAtTail(tmp);
-
-    } else {
-      USR_FATAL_CONT(userCall(call),
-                     "cannot assign expression of type %s to field '%s' of "
-                     "type %s",
-                     toString(t),
-                     fs->name,
-                     toString(fs->type));
-      generateCopyInitErrorMsg();
-      USR_STOP();
-    }
+  } else if (developer == false &&
+             ct->symbol->hasFlag(FLAG_BASE_ARRAY) == false &&
+             isArrayClass(ct) &&
+             strcmp(fs->name, "dom") == 0) {
+    fixTypeNames(ct);
   }
 
   call->primitive = primitives[PRIM_SET_MEMBER];
+
+  resolveSetMember(call); // Can we remove some of the above with this?
 }
 
 /************************************* | **************************************
 *                                                                             *
 * This handles expressions of the form                                        *
-*      CallExpr(PRIM_INIT_VAR, dst, src)                                      *
+*      CallExpr(PRIM_INIT_VAR, dst, src, [optional type to coerce to])        *
 *                                                                             *
 * 2017/03/06: This initial, trivial, implementation converts this to either   *
 *                                                                             *
@@ -5128,13 +5044,18 @@ static void resolveInitVar(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
+  // Clear FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW
+  // since the result of the 'new' will "move" into
+  // the variable we are initializing.
+  src->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+
   Type* targetType = srcType;
   SymExpr* targetTypeExpr = NULL;
   if (call->numActuals() >= 3) {
     targetTypeExpr = toSymExpr(call->get(3));
     targetType = targetTypeExpr->symbol()->type;
     INT_ASSERT(targetType);
-    targetTypeExpr->remove(); // Take it out of the move
+    targetTypeExpr->remove(); // Take it out of the PRIM_INIT_VAR
 
     // If the target type is generic, compute the appropriate
     // instantiation type (just as we would when instantiating
@@ -5151,9 +5072,12 @@ static void resolveInitVar(CallExpr* call) {
       targetType = useType;
     }
 
-    // Ignore the target type if it's the same & not a runtime type.
+    // Ignore the target type if it's the same & not a runtime type
+    // and not sync/single (since sync/single initCopy returns a different type)
     if (targetType == srcType &&
-        !targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        !targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
+        !isSyncType(srcType) &&
+        !isSingleType(srcType)) {
       targetType = srcType;
       targetTypeExpr = NULL;
     }
@@ -5195,7 +5119,8 @@ static void resolveInitVar(CallExpr* call) {
   } else if (isRecordWithInitializers(srcType) == true &&
              isParamString == false &&
              isSyncType(srcType) == false &&
-             isSingleType(srcType) == false)  {
+             isSingleType(srcType) == false &&
+             isRecordWrappedType(srcType) == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
@@ -5280,6 +5205,8 @@ static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 static bool  moveSupportsUnresolvedFunctionReturn(CallExpr* call);
 
+static bool  isIfExprResult(Expr* LHS);
+
 static Type* moveDetermineRhsType(CallExpr* call);
 
 static Type* moveDetermineLhsType(CallExpr* call);
@@ -5321,6 +5248,10 @@ static void resolveMove(CallExpr* call) {
   // Ignore moves to RVV unless this is a constructor
   } else if (moveSupportsUnresolvedFunctionReturn(call) == true) {
 
+  // Ignore moves to if-expr result, the type will be determined later by
+  // 'resolveIfExprType'
+  } else if (isIfExprResult(call->get(1))) {
+
 
   } else {
     // These calls might modify the fields in call
@@ -5353,8 +5284,10 @@ static bool moveIsAcceptable(CallExpr* call) {
   Expr*   rhs    = call->get(2);
   bool    retval = true;
 
+  // Handle IfExpr results in 'resolveIfExprType' for better error message
   if (isTypeExpr(rhs) == false) {
-    if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == true &&
+        lhsSym->hasFlag(FLAG_IF_EXPR_RESULT) == false) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
 
       if (fn->getReturnSymbol()                  != lhsSym ||
@@ -5365,7 +5298,8 @@ static bool moveIsAcceptable(CallExpr* call) {
 
   } else {
     if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-        lhsSym->hasFlag(FLAG_MAYBE_TYPE)    == false) {
+        lhsSym->hasFlag(FLAG_MAYBE_TYPE)    == false &&
+        lhsSym->hasFlag(FLAG_IF_EXPR_RESULT) == false) {
       retval = false;
     }
   }
@@ -5429,6 +5363,16 @@ static bool moveSupportsUnresolvedFunctionReturn(CallExpr* call) {
   }
 
   return retval;
+}
+
+static bool isIfExprResult(Expr* LHS) {
+  bool ret = false;
+
+  if (SymExpr* se = toSymExpr(LHS)) {
+    ret = se->symbol()->hasFlag(FLAG_IF_EXPR_RESULT);
+  }
+
+  return ret;
 }
 
 //
@@ -5635,7 +5579,8 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
     if (SymExpr* se = toSymExpr(rhs->get(1))) {
       Type* seType = se->symbol()->getValType();
 
-      if (isNonGenericRecordWithInitializers(seType) == true) {
+      if (isNonGenericRecordWithInitializers(seType) == true &&
+          isRecordWrappedType(seType) == false) {
         Expr*     callLhs  = call->get(1)->remove();
         CallExpr* callInit = new CallExpr("init", gMethodToken, callLhs);
 
@@ -6463,7 +6408,7 @@ static void resolveNewGenericInit(CallExpr*      newExpr,
   initFn = resolveInitializer(newExpr);
 
   if (at->instantiatedFrom == NULL) {
-    initTmp->type = initFn->_this->type;
+    initTmp->type = initFn->_this->getValType();
 
   } else {
     if (initFn->_this->type == at) {
@@ -6614,24 +6559,6 @@ static bool isRefWrapperForNonGenericRecord(AggregateType* at) {
 
 static void resolveCoerce(CallExpr* call) {
   resolveGenericActuals(call);
-
-  FnSymbol* fn = toFnSymbol(call->parentSymbol);
-  Type* toType = call->get(2)->typeInfo();
-
-  INT_ASSERT(fn);
-
-  // Adjust tuple reference-level for return if necessary
-  if (toType->symbol->hasFlag(FLAG_TUPLE) &&
-      !doNotChangeTupleTypeRefLevel(fn, true)) {
-    AggregateType* tupleType = toAggregateType(toType);
-    INT_ASSERT(tupleType);
-
-    Type* retType = getReturnedTupleType(fn, tupleType);
-    if (retType != toType) {
-      // Also adjust any PRIM_COERCE calls
-      call->get(2)->replace(new SymExpr(retType->symbol));
-    }
-  }
 }
 
 /************************************* | **************************************
@@ -6693,7 +6620,7 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->symbol->hasFlag(FLAG_GENERIC) == true) {
+    if (at->symbol->hasFlag(FLAG_GENERIC) && at->hasGenericDefaults) {
       CallExpr*   cc    = new CallExpr(at->typeConstructor->name);
       TypeSymbol* retTS = NULL;
 
@@ -7002,6 +6929,18 @@ Expr* resolveExpr(Expr* expr) {
 
   } else if (CallExpr* call = toCallExpr(expr)) {
     retval = resolveExprPhase2(expr, fn, preFold(call));
+  } else if (CondStmt* stmt = toCondStmt(expr)) {
+    BlockStmt* then = stmt->thenStmt;
+    // TODO: Should we just store a boolean field in CondStmt instead?
+    if (CallExpr* call = toCallExpr(then->body.tail)) {
+      if (call->isPrimitive(PRIM_MOVE)) {
+        Symbol* LHS = toSymExpr(call->get(1))->symbol();
+        if (LHS->hasFlag(FLAG_IF_EXPR_RESULT)) {
+          resolveIfExprType(stmt);
+        }
+      }
+    }
+    retval = foldTryCond(postFold(expr));
 
   } else {
     retval = foldTryCond(postFold(expr));
@@ -7277,9 +7216,27 @@ static void resolveExprExpandGenerics(CallExpr* call) {
   }
 }
 
+static
+void resolveTypeConstructor(AggregateType* at) {
+  // Resolve the parents
+  forv_Vec(AggregateType, pt, at->dispatchParents) {
+    if (pt->typeConstructor)
+      resolveTypeConstructor(pt);
+  }
+
+  // Resolve the current one
+  if (FnSymbol* fn = at->typeConstructor) {
+    if (hasPartialCopyData(fn) == true) {
+      instantiateBody(fn);
+    }
+
+    resolveSignatureAndFunction(fn);
+  }
+}
+
 static void resolveExprTypeConstructor(SymExpr* symExpr) {
   if (AggregateType* at = toAggregateType(symExpr->typeInfo())) {
-    if (FnSymbol* fn = at->typeConstructor) {
+    if (at->typeConstructor) {
       if (at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
           at->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
           at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
@@ -7290,11 +7247,10 @@ static void resolveExprTypeConstructor(SymExpr* symExpr) {
             parent->isPrimitive(PRIM_IS_SUBTYPE) == false ||
             sym->hasFlag(FLAG_TYPE_VARIABLE)     == false) {
           if (isStringLiteral(sym) == false) {
-            if (hasPartialCopyData(fn) == true) {
-              instantiateBody(fn);
-            }
 
-            resolveSignatureAndFunction(fn);
+            // Resolve type constructors for this type
+            // as well as any parent types it has.
+            resolveTypeConstructor(at);
           }
         }
       }
@@ -9589,8 +9545,8 @@ static void replaceValuesWithRuntimeTypes()
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       for_formals(formal, fn) {
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-            formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          if (FnSymbol* fn = valueToRuntimeTypeMap.get(formal->type)) {
+            formal->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+          if (FnSymbol* fn = valueToRuntimeTypeMap.get(formal->getValType())) {
             Type* rt = (fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
                         fn->retType : runtimeTypeMap.get(fn->retType);
             INT_ASSERT(rt);
@@ -9809,6 +9765,8 @@ static Symbol* resolvePrimInitGetField(CallExpr* call) {
 }
 
 static Expr* resolvePrimInit(CallExpr* call, Type* type) {
+  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+
   AggregateType* at     = toAggregateType(type);
   Expr*          retval = NULL;
 
@@ -9871,7 +9829,12 @@ static bool primInitIsIteratorRecord(Type* type) {
 static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   bool retval = type->symbol->hasFlag(FLAG_GENERIC);
 
+  // Not generic? OK.
+  if (!type->symbol->hasFlag(FLAG_GENERIC))
+    return false;
+
   // If it is generic then try to resolve the default type constructor
+  // for better error reporting.
   if (retval == true) {
     if (AggregateType* at = toAggregateType(type)) {
       if (FnSymbol* typeCons = at->typeConstructor) {

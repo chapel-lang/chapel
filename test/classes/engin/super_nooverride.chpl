@@ -13,12 +13,9 @@ class B:A {
   }
 }
 
-var a = new A();
-var b = new B();
+var a = new owned A();
+var b = new owned B();
 
 a.foo();
 b.bar();
 b.super.foo();
-
-delete b;
-delete a;

@@ -14,6 +14,6 @@ class B {
   proc bar() { writeln("in B.bar()"); }
 }
 
-var r = new Wrapper(new A(), new B());
+var r = new Wrapper(new unmanaged A(), new unmanaged B());
 r.foo();
 r.bar();

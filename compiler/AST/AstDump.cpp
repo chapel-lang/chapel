@@ -24,6 +24,7 @@
 #include "AstDump.h"
 
 #include "expr.h"
+#include "IfExpr.h"
 #include "log.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -236,6 +237,31 @@ void AstDump::exitNamedExpr(NamedExpr* node) {
 
 
 //
+// IfExpr
+//
+
+bool AstDump::enterIfExpr(IfExpr* node) {
+  if (fLogIds) {
+    fprintf(mFP, "(%d ", node->id);
+    mNeedSpace = false;
+  } else {
+    write(true, "(", false);
+  }
+  write("IfExpr ");
+  node->getCondition()->accept(this);
+  write("then");
+  node->getThenStmt()->accept(this);
+  write("else");
+  node->getElseStmt()->accept(this);
+  write(")");
+  return false;
+}
+
+void AstDump::exitIfExpr(IfExpr* node) {
+}
+
+
+//
 // SymExpr
 //
 void AstDump::visitSymExpr(SymExpr* node) {
@@ -249,7 +275,7 @@ void AstDump::visitSymExpr(SymExpr* node) {
   if (var != 0 && var->immediate != 0) {
     const size_t bufSize = 128;
     char         imm[bufSize];
-    char         buff[bufSize];
+    char         buff[bufSize + 1];
 
     snprint_imm(imm, bufSize, *var->immediate);
     sprintf(buff, "%s%s", imm, is_imag_type(var->type) ? "i" : "");

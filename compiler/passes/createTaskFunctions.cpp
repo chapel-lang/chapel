@@ -338,7 +338,8 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   AggregateType* reduceAt = toAggregateType(reduceType->type);
   INT_ASSERT(reduceAt);
 
-  CallExpr* newOp = new CallExpr(reduceAt->defaultInitializer->name,
+  CallExpr* newOp = new CallExpr(PRIM_NEW,
+                                 reduceAt->symbol,
                                  new NamedExpr("eltType", new SymExpr(eltType)));
   headAnchor->insertBefore(new CallExpr(PRIM_MOVE, globalOp, newOp));
 

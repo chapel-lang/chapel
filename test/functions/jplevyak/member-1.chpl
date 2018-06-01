@@ -8,7 +8,7 @@ proc f(x : foo) {
   return 20 + x.i;
 }
 
-var a = new foo();
+var a = new unmanaged foo();
 
 a.i = 1;
 

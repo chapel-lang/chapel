@@ -1,0 +1,13 @@
+feature request: ability to param-index tuple types
+
+It seems like it would be natural to permit param indexing into tuple
+types such that:
+
+type t = (int, real);
+
+would support:
+
+t(1) // evaluates to 'int'
+t(2) // evaluates to 'real'
+
+but this does not work today.
