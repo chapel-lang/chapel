@@ -257,7 +257,7 @@ module ChapelIO {
       var isBinary = writer.binary();
 
       if (isClassType(t)) {
-        if t != borrowed object {
+        if _to_borrowed(t) != borrowed object {
           // only write parent fields for subclasses of object
           // since object has no .super field.
           writeThisFieldsDefaultImpl(writer, x.super, first);
@@ -401,7 +401,7 @@ module ChapelIO {
       var superclass_error : syserr = ENOERR;
 
       if (isClassType(t)) {
-        if t != borrowed object {
+        if _to_borrowed(t) != borrowed object {
           // only write parent fields for subclasses of object
           // since object has no .super field.
           type superType = x.super.type;

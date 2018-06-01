@@ -1,3 +1,5 @@
+config const debug = false;
+
 class MyClass {
   var x:int;
 }
@@ -18,9 +20,13 @@ class ClassWithError {
   var next: MyClass;
 }
 
+proc errorsInArgs( x: MyClass, y: MyGenericClass, z: MyGenericClass(int) ) {
+}
+
 proc errors() {
   var x: MyClass;
   var y: MyGenericClass(int);
+  errorsInArgs(x, y, y);
 }
 
 proc ok() {
@@ -39,6 +45,9 @@ proc ok() {
   var fg:shared MyGenericClass(int);
   var gg:Owned(MyGenericClass(int));
   var hg:Shared(MyGenericClass(int));
+
+  extern proc printf(fmt:c_string, arg:MyClass);
+  if debug then printf("%p\n", d);
 }
 
 
