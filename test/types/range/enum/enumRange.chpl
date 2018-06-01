@@ -33,26 +33,24 @@ proc testRange(r) {
     writeln("A[", c, "] = ", A[c]);
   writeln("---");
 
-  /*
   // zip int range and enum range
   forall (i,c) in zip(5..#r.size, r) do
     A[c] = i;
   for c in r do
     writeln("A[", c, "] = ", A[c]);
   writeln("---");
-  */
 
   /*
   // range as leader, array as follower
   forall (c,a) in zip(r, A) do
-    a = -(c:int - color.red:int + 1): real;
+    a = -(chpl__enumToOrder(c)+1);
   for c in r do
     writeln("A[", c, "] = ", A[c]);
   writeln("---");
 
   // array as leader, range as follower
   forall (a,c) in zip(A, r) do
-    a = (c:int - color.red:int): real;
+    a = chpl__enumToOrder(c)+1;
   for c in r do
     writeln("A[", c, "] = ", A[c]);
   writeln("---");
