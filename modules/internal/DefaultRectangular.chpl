@@ -257,7 +257,7 @@ module DefaultRectangular {
             }
           } else {
             for  param i in 1..rank do
-              block(i) = ranges(i).low+followMe(i).low:repType..ranges(i).low+followMe(i).high:repType;
+              block(i) = ranges(i)._low+followMe(i).low:repType..ranges(i)._low+followMe(i).high:repType;
           }
           for i in these_help(1, block) {
             yield i;
