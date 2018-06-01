@@ -593,83 +593,87 @@ static void normalizeBase(BaseAST* base) {
 
 static Symbol* theDefinedSymbol(BaseAST* ast);
 
-static void checkUseBeforeDefs() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint->parentSymbol) {
-      ModuleSymbol*         mod = fn->getModule();
+void checkUseBeforeDefs(FnSymbol* fn) {
+  if (fn->defPoint->parentSymbol) {
+    ModuleSymbol*         mod = fn->getModule();
 
-      std::set<Symbol*>     defined;
+    std::set<Symbol*>     defined;
 
-      std::set<Symbol*>     undefined;
-      std::set<const char*> undeclared;
+    std::set<Symbol*>     undefined;
+    std::set<const char*> undeclared;
 
-      std::vector<BaseAST*> asts;
+    std::vector<BaseAST*> asts;
 
-      collect_asts_postorder(fn, asts);
+    collect_asts_postorder(fn, asts);
 
-      for_vector(BaseAST, ast, asts) {
-        if (Symbol* sym = theDefinedSymbol(ast)) {
-          defined.insert(sym);
+    for_vector(BaseAST, ast, asts) {
+      if (Symbol* sym = theDefinedSymbol(ast)) {
+        defined.insert(sym);
 
-        } else if (SymExpr* se = toSymExpr(ast)) {
-          Symbol* sym = se->symbol();
+      } else if (SymExpr* se = toSymExpr(ast)) {
+        Symbol* sym = se->symbol();
 
-          if (isModuleSymbol(sym)                    == true  &&
-              isFnSymbol(fn->defPoint->parentSymbol) == false &&
-              isUseStmt(se->parentExpr)              == false) {
-            SymExpr* prev = toSymExpr(se->prev);
+        if (isModuleSymbol(sym)                    == true  &&
+            isFnSymbol(fn->defPoint->parentSymbol) == false &&
+            isUseStmt(se->parentExpr)              == false) {
+          SymExpr* prev = toSymExpr(se->prev);
 
-            if (prev == NULL || prev->symbol() != gModuleToken) {
-              USR_FATAL_CONT(se, "illegal use of module '%s'", sym->name);
-            }
+          if (prev == NULL || prev->symbol() != gModuleToken) {
+            USR_FATAL_CONT(se, "illegal use of module '%s'", sym->name);
+          }
 
-          } else if (isLcnSymbol(sym) == true) {
-            if (sym->defPoint->parentExpr != rootModule->block) {
-              Symbol* parent = sym->defPoint->parentSymbol;
+        } else if (isLcnSymbol(sym) == true) {
+          if (sym->defPoint->parentExpr != rootModule->block) {
+            Symbol* parent = sym->defPoint->parentSymbol;
 
-              if (parent == fn || (parent == mod && mod->initFn == fn)) {
-                if (defined.find(sym)           == defined.end() &&
+            if (parent == fn || (parent == mod && mod->initFn == fn)) {
+              if (defined.find(sym)           == defined.end() &&
 
-                    sym->hasFlag(FLAG_ARG_THIS) == false         &&
-                    sym->hasFlag(FLAG_EXTERN)   == false         &&
-                    sym->hasFlag(FLAG_TEMP)     == false) {
+                  sym->hasFlag(FLAG_ARG_THIS) == false         &&
+                  sym->hasFlag(FLAG_EXTERN)   == false         &&
+                  sym->hasFlag(FLAG_TEMP)     == false) {
 
-                  // Only complain one time
-                  if (undefined.find(sym) == undefined.end()) {
-                    USR_FATAL_CONT(se,
-                                   "'%s' used before defined (first used here)",
-                                   sym->name);
+                // Only complain one time
+                if (undefined.find(sym) == undefined.end()) {
+                  USR_FATAL_CONT(se,
+                                 "'%s' used before defined (first used here)",
+                                 sym->name);
 
-                    undefined.insert(sym);
-                  }
+                  undefined.insert(sym);
                 }
               }
             }
           }
+        }
 
-        } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(ast)) {
-          CallExpr* call = toCallExpr(use->parentExpr);
+      } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(ast)) {
+        CallExpr* call = toCallExpr(use->parentExpr);
 
-          if (call == NULL ||
-              (call->baseExpr                              != use   &&
-               call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) == false &&
-               call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)    == false)) {
-            if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
-              const char* name = use->unresolved;
+        if (call == NULL ||
+            (call->baseExpr                              != use   &&
+             call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) == false &&
+             call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)    == false)) {
+          if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
+            const char* name = use->unresolved;
 
-              // Only complain one time
-              if (undeclared.find(name) == undeclared.end()) {
-                USR_FATAL_CONT(use,
-                               "'%s' undeclared (first use this function)",
-                               name);
+            // Only complain one time
+            if (undeclared.find(name) == undeclared.end()) {
+              USR_FATAL_CONT(use,
+                             "'%s' undeclared (first use this function)",
+                             name);
 
-                undeclared.insert(name);
-              }
+              undeclared.insert(name);
             }
           }
         }
       }
     }
+  }
+}
+
+static void checkUseBeforeDefs() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    checkUseBeforeDefs(fn);
   }
   USR_STOP();
 }
