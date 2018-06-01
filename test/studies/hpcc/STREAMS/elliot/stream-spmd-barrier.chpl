@@ -2,8 +2,10 @@ use Time;
 use Types;
 use Random;
 
-use HPCCProblemSize;
+use Barriers;
+use RangeChunk;
 
+use HPCCProblemSize;
 
 param numVectors = 3;
 type elemType = real(64);
@@ -21,20 +23,28 @@ config const printParams = true,
              printArrays = false,
              printStats = true;
 
+config const numTasks = min(here.maxTaskPar, m);
+config const barrierType = BarrierType.Atomic;
 
 proc main() {
   printConfiguration();
 
-  const ProblemSpace: domain(1, int(64)) = {1..m};
-  var A, B, C: [ProblemSpace] elemType;
+  var A, B, C: [1..m] elemType;
 
   initVectors(B, C);
 
   var execTime: [1..numTrials] real;
 
   for trial in 1..numTrials {
+    var barrier = new Barrier(numTasks, barrierType);
+
     const startTime = getCurrentTime();
-    [i in ProblemSpace] A(i) = B(i) + alpha * C(i);
+    coforall tid in 0..#numTasks {
+      barrier.barrier();
+      for i in chunk(1..m, numTasks, tid) {
+        A[i] = B[i] + alpha * C[i];
+      }
+    }
     execTime(trial) = getCurrentTime() - startTime;
   }
 
