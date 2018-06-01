@@ -7,7 +7,6 @@ proc foo() {
 
   var dist = new unmanaged ArrayViewExternDist();
   var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#size,));
-  dom._free_when_no_arrs = true;
   var domWrapper = _newDomain(dom);
 
   var wrapper = domWrapper.buildArrayWith(externArr.eltType, externArr, size);
