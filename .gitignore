@@ -209,6 +209,7 @@ tags
 /test/memory/shannon/jacobi.log
 /test/memory/shannon/configVarFile.log
 
+/test/library/packages/HDF5/ex_lite1.h5
 /test/library/packages/HDF5/ex_lite3.h5
 /test/library/standard/FileSystem/copyFile/*.out
 /test/library/standard/FileSystem/fsouza/chdir/destination
