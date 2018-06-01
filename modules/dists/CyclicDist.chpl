@@ -274,7 +274,7 @@ class Cyclic: BaseDist {
                       dataParMinGranularity);
   }
 
-  proc dsiDestroyDist() {
+  override proc dsiDestroyDist() {
     coforall ld in locDist do {
       on ld do
         delete ld;
@@ -509,7 +509,7 @@ proc CyclicDom.dsiDim(d: int) return whole.dim(d);
 
 proc CyclicDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
-proc CyclicDom.dsiMyDist() return dist;
+override proc CyclicDom.dsiMyDist() return dist;
 
 
 
