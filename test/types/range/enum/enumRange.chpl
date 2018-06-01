@@ -40,7 +40,6 @@ proc testRange(r) {
     writeln("A[", c, "] = ", A[c]);
   writeln("---");
 
-  /*
   // range as leader, array as follower
   forall (c,a) in zip(r, A) do
     a = -(chpl__enumToOrder(c)+1);
@@ -48,6 +47,7 @@ proc testRange(r) {
     writeln("A[", c, "] = ", A[c]);
   writeln("---");
 
+  /*
   // array as leader, range as follower
   forall (a,c) in zip(A, r) do
     a = chpl__enumToOrder(c)+1;

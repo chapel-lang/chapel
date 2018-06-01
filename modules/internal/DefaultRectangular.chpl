@@ -458,7 +458,7 @@ module DefaultRectangular {
         }
       } else {
         for  param i in 1..rank do
-          block(i) = ranges(i).low+followThis(i).low:repType..ranges(i).low+followThis(i).high:repType;
+          block(i) = ranges(i)._low+followThis(i).low:repType..ranges(i)._low+followThis(i).high:repType;
       }
 
       if rank == 1 {

@@ -36,6 +36,14 @@ A[blue] = 9.0
 A[indigo] = 10.0
 A[violet] = 11.0
 ---
+A[red] = -1.0
+A[orange] = -2.0
+A[yellow] = -3.0
+A[green] = -4.0
+A[blue] = -5.0
+A[indigo] = -6.0
+A[violet] = -7.0
+---
 red
 orange
 yellow
@@ -69,6 +77,11 @@ A[yellow] = 5.0
 A[green] = 6.0
 A[blue] = 7.0
 A[indigo] = 8.0
+---
+A[yellow] = -3.0
+A[green] = -4.0
+A[blue] = -5.0
+A[indigo] = -6.0
 ---
 yellow
 green
