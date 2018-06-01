@@ -9,7 +9,13 @@ dataFrame = pd.DataFrame({ "columnOne": columnOne,
                            "columnTwo": columnTwo,
                            "columnThree": columnThree },
                           idx)
+noIndex = pd.DataFrame({ "columnOne": columnOne,
+                         "columnTwo": columnTwo,
+                         "columnThree": columnThree })
+
 
 print dataFrame
 print
 print dataFrame["columnThree"]
+print
+print noIndex
