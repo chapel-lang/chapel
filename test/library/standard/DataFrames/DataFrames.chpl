@@ -187,6 +187,7 @@ module DataFrames {
     proc writeIdxWidth() {
       var idxWidth = 0;
       for idx in this {
+        // TODO: clean up to simple cast after bugfix
         var idxStr = new string(idx: string);
         if idxStr.length > idxWidth then
           idxWidth = idxStr.length;
@@ -197,6 +198,7 @@ module DataFrames {
     proc writeThis(f, s: TypedSeries(?) = nil) {
       var idxWidth = writeIdxWidth() + 4;
       for (idx, (v, d)) in zip(this, s._these()) {
+        // TODO: clean up to simple cast after bugfix
         var idxStr = new string(idx: string);
         f <~> idx;
         for space in 1..idxWidth-idxStr.length do
@@ -220,6 +222,7 @@ module DataFrames {
       f <~> "\n";
 
       for idx in this {
+        // TODO: clean up to simple cast after bugfix
         var idxStr = new string(idx: string);
         f <~> idxStr;
         for space in 1..idxWidth-idxStr.length do
@@ -240,6 +243,11 @@ module DataFrames {
   }
 
   class Series {
+    pragma "no doc"
+    proc copy() {
+      return this;
+    }
+
     pragma "no doc"
     proc reindex(idx) {
       halt("generic Series cannot be reindexed");
@@ -390,6 +398,10 @@ module DataFrames {
       this.ords = 1..data.size;
       this.data = data;
       this.valid_bits = valid_bits;
+    }
+
+    proc copy() {
+      return new TypedSeries(this.data, this.idx, this.valid_bits);
     }
 
     /*
@@ -635,6 +647,7 @@ module DataFrames {
 
     pragma "no doc"
     proc writeElem(f, i, len: int) {
+      // TODO: clean up to simple cast after bugfix
       var output = if this.valid(i)
                    then new string(this[i]: string)
                    else "None";
@@ -646,6 +659,7 @@ module DataFrames {
 
     pragma "no doc"
     proc writeElemNoIndex(f, i: int, len: int) {
+      // TODO: clean up to simple cast after bugfix
       var output = if this.valid_at(i)
                    then new string(this.at(i): string)
                    else "None";
@@ -665,18 +679,23 @@ module DataFrames {
 
     proc init(columns: [?D] Series) {
       this.labels = D;
-      this.columns = columns;
       this.idx = nil;
+      this.complete();
+
+      for (lab, s) in zip(labels, columns) do
+        this.columns[lab] = s.copy();
     }
 
     proc init(columns: [?D], idx: Index) {
       this.labels = D;
-      this.columns = columns;
       this.idx = idx;
-
       this.complete();
-      for s in this.columns do
-        s.reindex(idx);
+
+      for (lab, s) in zip(labels, columns) {
+        var sCopy = s.copy();
+        sCopy.reindex(idx);
+        this.columns[lab] = sCopy;
+      }
     }
 
     iter these() {
