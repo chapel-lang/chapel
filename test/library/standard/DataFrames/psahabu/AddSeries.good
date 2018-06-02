@@ -40,20 +40,20 @@ E    0
 dtype: int(64)
 
 addends:
-1	hello 
-2	my 
-3	name
-4	is
-5	brad
+1    hello 
+2    my 
+3    name
+4    is
+5    brad
 dtype: string
-1	world
-2	real
+1    world
+2    real
 dtype: string
 
 sum:
-1	hello world
-2	my real
-3	name
-4	is
-5	brad
+1    hello world
+2    my real
+3    name
+4    is
+5    brad
 dtype: string

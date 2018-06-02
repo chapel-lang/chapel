@@ -638,8 +638,14 @@ module DataFrames {
       if idx {
         idx.writeThis(f, this);
       } else {
-        for (i, d) in this.items() do
-          f <~> i + "    " + d + "\n";
+        for (v, (i, d)) in this._items() {
+          f <~> i + "    ";
+          if v then
+            f <~> d;
+          else
+            f <~> "None";
+          f <~> "\n";
+        }
       }
       f <~> "dtype: " + eltType:string;
     }

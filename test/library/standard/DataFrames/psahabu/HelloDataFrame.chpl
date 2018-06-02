@@ -12,5 +12,7 @@ var idx = new TypedIndex(["rowOne", "rowTwo", "rowThree", "rowFour", "rowFive"])
 var dataFrame = new DataFrame(columns, idx);
 var noIndex = new DataFrame(columns);
 writeln(dataFrame);
+writeln();
 writeln(dataFrame["columnThree"]);
+writeln();
 writeln(noIndex);
