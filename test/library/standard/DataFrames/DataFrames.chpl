@@ -219,9 +219,9 @@ module DataFrames {
       for lab in d.labels {
         f <~> lab + "   ";
       }
-      f <~> "\n";
 
       for idx in this {
+        f <~> "\n";
         // TODO: clean up to simple cast after bugfix
         var idxStr = new string(idx: string);
         f <~> idxStr;
@@ -232,7 +232,6 @@ module DataFrames {
           ser.writeElem(f, idx, lab.length);
           f <~> "   ";
         }
-        f <~> "\n";
       }
     }
 
@@ -677,6 +676,10 @@ module DataFrames {
 
     // TODO: init with labels arg
 
+    proc init() {
+      this.complete();
+    }
+
     proc init(columns: [?D] Series) {
       this.labels = D;
       this.idx = nil;
@@ -707,6 +710,16 @@ module DataFrames {
       return columns[lab];
     }
 
+    proc this(lab: string) ref {
+      return columns[lab];
+    }
+
+    proc reindex(idx: Index) {
+      this.idx = idx;
+      for s in columns do
+        s.reindex(idx);
+    }
+
     proc nrows() {
       var nMax = 0;
       for s in this {
@@ -729,9 +742,9 @@ module DataFrames {
         for lab in labels {
           f <~> lab + "   ";
         }
-        f <~> "\n";
 
         for i in 1..n {
+          f <~> "\n";
           var iStr = new string(i: string);
           f <~> iStr;
           for space in 1..idxWidth-iStr.length do
@@ -741,7 +754,6 @@ module DataFrames {
             ser.writeElemNoIndex(f, i, lab.length);
             f <~> "   ";
           }
-          f <~> "\n";
         }
       }
     }
