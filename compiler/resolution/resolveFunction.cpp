@@ -902,22 +902,10 @@ static void resolveTypeConstructor(FnSymbol* fn) {
 }
 
 void fixTypeNames(AggregateType* at) {
-  const char* drDomName = "DefaultRectangularDom";
-  const int   drDomNameLen = strlen(drDomName);
+  const char* typeName = toString(at);
 
-  if (at->symbol->hasFlag(FLAG_BASE_ARRAY) == false &&
-      isArrayClass(at)                     ==  true) {
-    const char* domainType = canonicalClassType(at->getField("dom")->type)->symbol->name;
-    const char* eltType    = at->getField("eltType")->type->symbol->name;
-
-    at->symbol->name = astr("[", domainType, "] ", eltType);
-
-  } else if (strncmp(at->symbol->name, drDomName, drDomNameLen) == 0) {
-    at->symbol->name = astr("domain", at->symbol->name + drDomNameLen);
-
-  } else if (isRecordWrappedType(at) == true) {
-    at->symbol->name = canonicalClassType(at->getField("_instance")->type)->symbol->name;
-  }
+  if (at->symbol->name != typeName)
+    at->symbol->name = typeName;
 }
 
 static void resolveDefaultTypeConstructor(AggregateType* at) {
