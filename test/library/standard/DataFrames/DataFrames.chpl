@@ -700,11 +700,8 @@ module DataFrames {
       this.idx = idx;
       this.complete();
 
-      for (lab, s) in zip(labels, columns) {
-        var sCopy = s.copy();
-        sCopy.reindex(idx);
-        this.columns[lab] = sCopy;
-      }
+      for (lab, s) in zip(labels, columns) do
+        this.insert(lab, s);
     }
 
     iter these() {
@@ -716,8 +713,10 @@ module DataFrames {
       return columns[lab];
     }
 
-    proc this(lab: string) ref {
-      return columns[lab];
+    proc insert(lab: string, s: Series) {
+      var sCopy = s.copy();
+      sCopy.reindex(idx);
+      columns[lab] = sCopy;
     }
 
     proc reindex(idx: Index) {

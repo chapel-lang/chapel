@@ -14,9 +14,9 @@ writeln();
 writeln(columnThree);
 writeln();
 
-df["columnOne"] = columnOne;
-df["columnTwo"] = columnTwo;
-df["columnThree"] = columnThree;
+df.insert("columnOne", columnOne);
+df.insert("columnTwo", columnTwo);
+df.insert("columnThree", columnThree);
 
 var idx = new TypedIndex(["rowOne", "rowTwo", "rowThree", "rowFour", "rowFive"]);
 df.reindex(idx);
