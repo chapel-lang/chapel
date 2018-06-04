@@ -574,11 +574,13 @@ static bool isCandidateFn(ResolutionCandidate* res, CallInfo& info) {
   // signature.
   //
   // TODO: Expand this check for all methods
-  if (res->fn->isInitializer() && isCandidateInit(res, info) == false) {
-    return false;
-  } else if (strcmp(res->fn->name, "_new") == 0 &&
-             isCandidateNew(res, info) == false) {
-    return false;
+  if (info.call->numActuals() >= 2) {
+    if (res->fn->isInitializer() && isCandidateInit(res, info) == false) {
+      return false;
+    } else if (strcmp(res->fn->name, "_new") == 0 &&
+               isCandidateNew(res, info) == false) {
+      return false;
+    }
   }
 
   return true;
