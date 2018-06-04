@@ -31,14 +31,17 @@ proc testRange(r) {
   writeln("ident(color.yellow..color.indigo) = ", ident(r, color.yellow..color.indigo));
   writeln("indexOrder(color.yellow) = ", r.indexOrder(color.yellow));
   writeln("indexOrder(color.green) = ", r.indexOrder(color.green));
-  writeln("orderToIndex(1) = ", r.orderToIndex(1));
+  if (r.size > 1) then
+    writeln("orderToIndex(1) = ", r.orderToIndex(1));
   if (r.last != color.violet) then
     writeln("r.translate(1) = ", r.translate(1));
-  writeln("interior(1) = ", r.interior(1));
-  writeln("interior(-1) = ", r.interior(-1));
-  if (r.last != color.violet) {
+  if (r.size > 1) {
+    writeln("interior(1) = ", r.interior(1));
+    writeln("interior(-1) = ", r.interior(-1));
+  }
+  if (r.size > 1 && r.last != color.violet) {
     writeln("r.exterior(1) = ", r.exterior(1));
-    writeln("r.exterior(-11) = ", r.exterior(-1));
+    writeln("r.exterior(-1) = ", r.exterior(-1));
     writeln("r.expand(1) = ", r.expand(1));
     writeln("r.offset(1) = ", r.offset(1));
   }
@@ -160,6 +163,16 @@ proc main() {
 
   testRange(color.yellow..color.indigo);
   for c in color.yellow..color.indigo do
+    writeln(c);
+  writeln();
+
+  testRange(color.green..color.green);
+  for c in color.green..color.green do
+    writeln(c);
+  writeln();
+
+  testRange(color.blue..color.green);
+  for c in color.blue..color.green do
     writeln(c);
   writeln();
 }
