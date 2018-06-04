@@ -20,4 +20,3 @@ proc foo() {
 }
 
 foo();
-  
