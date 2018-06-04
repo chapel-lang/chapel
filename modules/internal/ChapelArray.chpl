@@ -1229,7 +1229,8 @@ module ChapelArray {
 
     // domain slicing by tuple of ranges
     pragma "no doc"
-    proc this(ranges: range(?) ...rank) {
+    proc this(ranges...rank)
+    where chpl__isTupleOfRanges(ranges) {
       param stridable = _value.stridable || chpl__anyStridable(ranges);
       var r: rank*range(_value.idxType,
                         BoundedRangeType.bounded,
