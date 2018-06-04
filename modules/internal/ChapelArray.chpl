@@ -593,7 +593,17 @@ module ChapelArray {
   // Support for domain expressions, e.g., {1..3, 1..3}
   //
 
-  proc chpl__buildDomainExpr(ranges: range(?) ...?rank) {
+  proc chpl__isTupleOfRanges(tup) param {
+    for param i in 1..tup.size {
+      if !isRangeType(tup(i).type) then
+        return false;
+    }
+    return true;
+  }
+
+  proc chpl__buildDomainExpr(ranges...)
+  where chpl__isTupleOfRanges(ranges) {
+    param rank = ranges.size;
     for param i in 2..rank do
       if ranges(1).idxType != ranges(i).idxType then
         compilerError("idxType varies among domain's dimensions");
@@ -605,7 +615,8 @@ module ChapelArray {
     return d;
   }
 
-  proc chpl__buildDomainExpr(keys: ?t ...?count) {
+  proc chpl__buildDomainExpr(keys...) {
+    param count = keys.size;
     // keyType of string literals is assumed to be type string
     type keyType = _getLiteralType(keys(1).type);
     for param i in 2..count do
@@ -654,7 +665,8 @@ module ChapelArray {
     }
   }
 
-  proc chpl__distributed(d: _distribution, ranges: range(?) ...?rank) {
+  proc chpl__distributed(d: _distribution, ranges...)
+  where chpl__isTupleOfRanges(ranges) {
     return chpl__distributed(d, chpl__buildDomainExpr((...ranges)));
   }
 
@@ -1709,7 +1721,7 @@ module ChapelArray {
     // index type.  This is handled in the range.translate().
     //
     pragma "no doc"
-    proc translate(off: ?t ...rank) return translate(off);
+    proc translate(off...rank) return translate(off);
 
     /* Return a new domain that is the current domain translated by
        ``off(d)`` in each dimension ``d``. */
@@ -1770,7 +1782,9 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc localSlice(r: range(?)... rank) where _to_borrowed(_value.type): DefaultRectangularDom {
+    proc localSlice(r... rank)
+    where _to_borrowed(_value.type): DefaultRectangularDom &&
+          chpl__isTupleOfRanges(r) {
       if (_value.locale != here) then
         halt("Attempting to take a local slice of a domain on locale ",
              _value.locale.id, " from locale ", here.id);
@@ -1784,7 +1798,7 @@ module ChapelArray {
        Indexing into this local view is cheaper, because the indices are known
        to be local.
     */
-    proc localSlice(r: range(?)... rank) {
+    proc localSlice(r... rank) where chpl__isTupleOfRanges(r) {
       return _value.dsiLocalSlice(chpl__anyStridable(r), r);
     }
 
@@ -2284,7 +2298,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc checkSlice(ranges: range(?) ...rank) {
+    proc checkSlice(ranges...rank) where chpl__isTupleOfRanges(ranges) {
       for param i in 1.._value.dom.rank do
         if !_value.dom.dsiDim(i).boundsCheck(ranges(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
@@ -2294,7 +2308,7 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc this(ranges: range(?) ...rank) {
+    proc this(ranges...rank) where chpl__isTupleOfRanges(ranges) {
       if boundsChecking then
         checkSlice((... ranges));
 
@@ -2362,7 +2376,9 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc localSlice(r: range(?)... rank) where _to_borrowed(_value.type): DefaultRectangularArr {
+    proc localSlice(r... rank)
+    where _to_borrowed(_value.type): DefaultRectangularArr &&
+          chpl__isTupleOfRanges(r) {
       if boundsChecking then
         checkSlice((...r));
       var dom = _dom((...r));
@@ -2372,7 +2388,8 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc localSlice(d: domain) where _to_borrowed(_value.type): DefaultRectangularArr {
+    proc localSlice(d: domain)
+    where _to_borrowed(_value.type): DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...d.getIndices()));
 
@@ -2389,7 +2406,7 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc localSlice(r: range(?)... rank) {
+    proc localSlice(r... rank) where chpl__isTupleOfRanges(r) {
       if boundsChecking then
         checkSlice((...r));
       return _value.dsiLocalSlice(r);
