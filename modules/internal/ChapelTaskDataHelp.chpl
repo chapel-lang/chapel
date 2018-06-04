@@ -36,9 +36,10 @@ module ChapelTaskDataHelp {
   }
 
   // Propagate an error from a task to its caller / sync point.
+  // TODO: should be accepting an unmanaged / owned error
   proc chpl_save_task_error(e: _EndCountBase, err: Error) {
     if err != nil {
-      e.errors.append(err);
+      e.errors.append(_to_unmanaged(err));
     }
   }
 }

@@ -5495,7 +5495,7 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
     USR_FATAL(call, "unable to resolve type");
 
   } else if (rhsType == dtNil) {
-    if (lhsType != dtNil && isClass(lhsType) == false) {
+    if (lhsType != dtNil && isClassLike(lhsType) == false) {
       USR_FATAL(userCall(call),
                 "type mismatch in assignment from nil to %s",
                 toString(lhsType));
