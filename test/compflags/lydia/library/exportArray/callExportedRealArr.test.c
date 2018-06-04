@@ -1,6 +1,7 @@
+#include <stdbool.h>
 #include <stdio.h>
 
-#include "exportFuncWithArrayArg.h"
+#include "exportFuncWithRealArr.h"
 
 extern void chpl_library_init(int argc, char* argv[]);
 extern void chpl_library_finalize(void);
@@ -11,10 +12,11 @@ int main(int argc, char* argv[]) {
   chpl_library_init(argc, argv);
 
   // Call the function
-  int64_t x[5] = {1, 2, 3, 4, 5};
+  double x[5] = {1.0, 2.0, 3.0, 4.0, 5.0};
   foo(x, 5);
   for (int i = 0; i < 5; i++) {
-    printf("Element[%d] = %lld\n", i, x[i]);
+    bool worked = (x[i] <= i + 3) && (x[i] > i + 1);
+    printf("Element[%d] %s\n", i, worked ? "worked" : "did not work");
   }
 
   // Shutdown the Chapel runtime and standard modules
