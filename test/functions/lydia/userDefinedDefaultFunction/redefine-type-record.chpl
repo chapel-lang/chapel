@@ -1,3 +1,4 @@
+pragma "use default init"
 record bar {
   type t;
   var aField: t;

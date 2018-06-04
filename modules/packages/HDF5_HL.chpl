@@ -24,6 +24,7 @@ module HDF5_HL {
   require "-lhdf5", "-lhdf5_hl";
 
   use HDF5_HL_Macros;
+  use HDF5_WAR;
 
   extern proc H5open() : herr_t;
 
@@ -3294,6 +3295,225 @@ module HDF5_HL {
     proc H5T_NATIVE_HBOOL {
       H5open();
       return H5T_NATIVE_HBOOL_g;
+    }
+
+    /*
+     * The IEEE floating point types in various byte orders.
+     */
+    proc H5T_IEEE_F32BE {
+      H5open();
+      return H5T_IEEE_F32BE_g;
+    }
+    proc H5T_IEEE_F32LE {
+      H5open();
+      return H5T_IEEE_F32LE_g;
+    }
+    proc H5T_IEEE_F64BE {
+      H5open();
+      return H5T_IEEE_F64BE_g;
+    }
+    proc H5T_IEEE_F64LE {
+      H5open();
+      return H5T_IEEE_F64LE_g;
+    }
+    /*
+     * These are "standard" types.  For instance, signed (2's complement) and
+     * unsigned integers of various sizes and byte orders.
+     */
+    proc H5T_STD_I8BE {
+      H5open();
+      return H5T_STD_I8BE_g;
+    }
+    proc H5T_STD_I8LE {
+      H5open();
+      return H5T_STD_I8LE_g;
+    }
+    proc H5T_STD_I16BE {
+      H5open();
+      return H5T_STD_I16BE_g;
+    }
+    proc H5T_STD_I16LE {
+      H5open();
+      return H5T_STD_I16LE_g;
+    }
+    proc H5T_STD_I32BE {
+      H5open();
+      return H5T_STD_I32BE_g;
+    }
+    proc H5T_STD_I32LE {
+      H5open();
+      return H5T_STD_I32LE_g;
+    }
+    proc H5T_STD_I64BE {
+      H5open();
+      return H5T_STD_I64BE_g;
+    }
+    proc H5T_STD_I64LE {
+      H5open();
+      return H5T_STD_I64LE_g;
+    }
+    proc H5T_STD_U8BE {
+      H5open();
+      return H5T_STD_U8BE_g;
+    }
+    proc H5T_STD_U8LE {
+      H5open();
+      return H5T_STD_U8LE_g;
+    }
+    proc H5T_STD_U16BE {
+      H5open();
+      return H5T_STD_U16BE_g;
+    }
+    proc H5T_STD_U16LE {
+      H5open();
+      return H5T_STD_U16LE_g;
+    }
+    proc H5T_STD_U32BE {
+      H5open();
+      return H5T_STD_U32BE_g;
+    }
+    proc H5T_STD_U32LE {
+      H5open();
+      return H5T_STD_U32LE_g;
+    }
+    proc H5T_STD_U64BE {
+      H5open();
+      return H5T_STD_U64BE_g;
+    }
+    proc H5T_STD_U64LE {
+      H5open();
+      return H5T_STD_U64LE_g;
+    }
+    proc H5T_STD_B8BE {
+      H5open();
+      return H5T_STD_B8BE_g;
+    }
+    proc H5T_STD_B8LE {
+      H5open();
+      return H5T_STD_B8LE_g;
+    }
+    proc H5T_STD_B16BE {
+      H5open();
+      return H5T_STD_B16BE_g;
+    }
+    proc H5T_STD_B16LE {
+      H5open();
+      return H5T_STD_B16LE_g;
+    }
+    proc H5T_STD_B32BE {
+      H5open();
+      return H5T_STD_B32BE_g;
+    }
+    proc H5T_STD_B32LE {
+      H5open();
+      return H5T_STD_B32LE_g;
+    }
+    proc H5T_STD_B64BE {
+      H5open();
+      return H5T_STD_B64BE_g;
+    }
+    proc H5T_STD_B64LE {
+      H5open();
+      return H5T_STD_B64LE_g;
+    }
+    proc H5T_STD_REF_OBJ {
+      H5open();
+      return H5T_STD_REF_OBJ_g;
+    }
+    proc H5T_STD_REF_DSETREG {
+      H5open();
+      return H5T_STD_REF_DSETREG_g;
+    }
+
+    /*
+     * Types which are particular to Unix.
+     */
+    proc H5T_UNIX_D32BE {
+      H5open();
+      return H5T_UNIX_D32BE_g;
+    }
+    proc H5T_UNIX_D32LE {
+      H5open();
+      return H5T_UNIX_D32LE_g;
+    }
+    proc H5T_UNIX_D64BE {
+      H5open();
+      return H5T_UNIX_D64BE_g;
+    }
+    proc H5T_UNIX_D64LE {
+      H5open();
+      return H5T_UNIX_D64LE_g;
+    }
+
+    /*
+     * Types particular to the C language.  String types use `bytes' instead
+     * of `bits' as their size.
+     */
+    proc H5T_C_S1 {
+      H5open();
+      return H5T_C_S1_g;
+    }
+    proc H5T_VARIABLE {
+      return (-1):size_t;
+    }
+
+    /*
+     * Types particular to Fortran.
+     */
+    proc H5T_FORTRAN_S1 {
+      H5open();
+      return H5T_FORTRAN_S1_g;
+    }
+  }
+
+  /* This module defines some wrappers for HDF5 functions that issue #9324
+     makes difficult/impossible to use otherwise. The workaround wrappers are
+     named the same thing as the original HDF5 name, but with a `_WAR` suffix.
+     Since this uses an `extern` block, LLVM is required. */
+  module HDF5_WAR {
+    extern {
+      #include "hdf5_hl.h"
+
+      /* Forward declarations for workaround wrappers */
+      herr_t H5LTget_dataset_info_WAR(hid_t loc_id,
+                                      const char* dset_name,
+                                      const void* dims,
+                                      H5T_class_t* type_class,
+                                      size_t* type_size);
+
+      herr_t H5LTmake_dataset_WAR(hid_t loc_id,
+                                  const char* dset_name,
+                                  int rank,
+                                  const void* dims,
+                                  hid_t type_id,
+                                  void* buffer);
+
+      /* Wrappers for workarounds */
+      herr_t H5LTget_dataset_info_WAR(hid_t loc_id,
+                                      const char* dset_name,
+                                      const void* dims,
+                                      H5T_class_t* type_class,
+                                      size_t* type_size) {
+        return H5LTget_dataset_info(loc_id,
+                                    dset_name,
+                                    (unsigned long long*)dims,
+                                    type_class,
+                                    type_size);
+      }
+
+      herr_t H5LTmake_dataset_WAR(hid_t loc_id,
+                                  const char* dset_name,
+                                  int rank,
+                                  const void* dims,
+                                  hid_t type_id,
+                                  void* buffer) {
+        return H5LTmake_dataset(loc_id,
+                                dset_name,
+                                rank,
+                                (unsigned long long*)dims,
+                                type_id,
+                                buffer);
+      }
     }
   }
 }
