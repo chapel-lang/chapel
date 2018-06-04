@@ -2406,7 +2406,9 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc localSlice(r... rank) where chpl__isTupleOfRanges(r) {
+    proc localSlice(r... rank)
+    where chpl__isTupleOfRanges(r) &&
+          !(_to_borrowed(_value.type): DefaultRectangularArr) {
       if boundsChecking then
         checkSlice((...r));
       return _value.dsiLocalSlice(r);
