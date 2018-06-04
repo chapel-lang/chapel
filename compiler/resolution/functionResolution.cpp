@@ -199,6 +199,7 @@ static void insertReturnTemps();
 static void initializeClass(Expr* stmt, Symbol* sym);
 static void ensureAndResolveInitStringLiterals();
 static void handleRuntimeTypes();
+//static void fixTypeNames();
 static void pruneResolvedTree();
 static void removeUnusedFunctions();
 static void removeUnusedTypes();
@@ -7599,6 +7600,11 @@ void resolve() {
 
   handleRuntimeTypes();
 
+  // fix array type names so that later passes can create
+  // reasonable errors even though the eltType field will
+  // not generally be present anymore.
+  //fixTypeNames();
+
   if (fPrintCallGraph) {
     // This needs to go after resolution is complete, but before
     // pruneResolvedTree() removes unused functions (like the uninstantiated
@@ -8440,6 +8446,18 @@ static void handleRuntimeTypes()
   replaceReturnedValuesWithRuntimeTypes();
   insertRuntimeInitTemps();
 }
+
+/*
+static void fixTypeNames() {
+  if (developer == false) {
+    forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+      const char* typeName = toString(ts->type);
+      if (ts->name != typeName)
+        ts->name = typeName;
+    }
+  }
+}
+*/
 
 //
 // A few internal pointers may point to nodes not in tree.
