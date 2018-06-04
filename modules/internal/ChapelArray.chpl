@@ -1784,8 +1784,9 @@ module ChapelArray {
 
     pragma "no doc"
     proc localSlice(r... rank)
-    where _to_borrowed(_value.type): DefaultRectangularDom &&
-          chpl__isTupleOfRanges(r) {
+    where chpl__isTupleOfRanges(r) &&
+          _to_borrowed(_value.type): DefaultRectangularDom
+    {
       if (_value.locale != here) then
         halt("Attempting to take a local slice of a domain on locale ",
              _value.locale.id, " from locale ", here.id);
@@ -1799,7 +1800,10 @@ module ChapelArray {
        Indexing into this local view is cheaper, because the indices are known
        to be local.
     */
-    proc localSlice(r... rank) where chpl__isTupleOfRanges(r) {
+    proc localSlice(r... rank)
+    where chpl__isTupleOfRanges(r) &&
+          !(_to_borrowed(_value.type): DefaultRectangularDom)
+    {
       return _value.dsiLocalSlice(chpl__anyStridable(r), r);
     }
 
