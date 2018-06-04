@@ -182,7 +182,7 @@ module ChapelRange {
                   _low = chpl__defaultLowBound(idxType),
                   _high = chpl__defaultHighBound(idxType),
                   _stride : chpl__rangeStrideType(idxType) = 1,
-                  _alignment : chpl__rangeAlignType(idxType) = 0,
+                  _alignment = chpl__intToIdx(0, idxType),
                   _aligned : bool = false) {
     this.idxType     = idxType;
     this.boundedType = boundedType;
@@ -197,7 +197,7 @@ module ChapelRange {
     this.complete();
     if stridable {
       this._stride    = _stride;
-      this._alignment = _alignment;
+      this._alignment = chpl__idxToInt(_alignment);
       this._aligned   = _aligned;
     }
 
@@ -226,8 +226,8 @@ module ChapelRange {
     this.idxType     = idxType;
     this.boundedType = boundedType;
     this.stridable   = stridable;
-    this._low        = _low;
-    this._high       = _high;
+    this._low        = chpl__idxToInt(_low);
+    this._high       = chpl__idxToInt(_high);
     this.complete();
     if stridable then
       compilerError("non-stridable range initializer called with stridable=true");
@@ -330,11 +330,11 @@ module ChapelRange {
   proc range.stride param where !stridable return 1 : strType;
 
   /* Returns the alignment of the range */
-  inline proc range.alignment where stridable return _alignment;
+  inline proc range.alignment where stridable return chpl__intToIdx(_alignment, idxType);
   pragma "no doc"
   proc range.alignment where !stridable && hasLowBound() return low;
   pragma "no doc"
-  proc range.alignment param return 0;
+  proc range.alignment param return chpl__intToIdx(0, idxType);
 
   /* Returns true if the range is aligned */
   inline proc range.aligned where stridable return _aligned;
@@ -656,9 +656,15 @@ module ChapelRange {
   {
     if r1._low != r2._low then return false;
     if r1._high != r2._high then return false;
-    if r1.stride != r2.stride then return false;
-    if r1._alignment != r2._alignment then return false;
-    if r1._aligned != r2._aligned then return false;
+    if (r1.stridable) {
+      if (r2.stridable) {
+        if r1.stride != r2.stride then return false;
+        if r1._alignment != r2._alignment then return false;
+        if r1._aligned != r2._aligned then return false;
+      } else {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -806,7 +812,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       __primitive("chpl_error", c"indexOrder -- Undefined on a range with ambiguous alignment.");
 
     if ! member(i) then return (-1):repType;
-    if ! stridable then return i - _low;
+    if ! stridable then return chpl__idxToInt(i) - _low;
     else return ((i:strType - this.first:strType) / _stride):repType;
   }
 
@@ -877,10 +883,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // Compute the alignment of the range returned by this.interior()
   // and this.exterior(). Keep it private.
   pragma "no doc"
-  inline proc range._effAlmt()       where stridable return _alignment;
+  inline proc range._effAlmt()       where stridable return alignment;
 
   pragma "no doc"
-  proc range._effAlmt() param where !stridable return 0;
+  proc range._effAlmt() where !stridable return chpl__intToIdx(0, idxType);
 
   // Return an interior portion of this range.
   pragma "no doc"
@@ -909,13 +915,15 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   {
     if i < 0 then
       return new range(idxType, boundedType, stridable,
-                       _low, _low - 1 - i, stride, _effAlmt(), aligned);
+                       low, chpl__intToIdx(_low - 1 - i, idxType), stride,
+                       _effAlmt(), aligned);
     if i > 0 then
       return new range(idxType, boundedType, stridable,
-                       _high + 1 - i, _high, stride, _effAlmt(), aligned);
+                       chpl__intToIdx(_high + 1 - i, idxType), high, stride,
+                       _effAlmt(), aligned);
     // if i == 0 then
     return new range(idxType, boundedType, stridable,
-                     _low, _high, stride, _effAlmt(), aligned);
+                     low, high, stride, _effAlmt(), aligned);
   }
 
   pragma "no doc"
@@ -942,13 +950,17 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   {
     if i < 0 then
       return new range(idxType, boundedType, stridable,
-                       _low + i, _low - 1, stride, _effAlmt(), aligned);
+                       chpl__intToIdx(_low + i, idxType),
+                       chpl__intToIdx(_low - 1, idxType),
+                       stride, _effAlmt(), aligned);
     if i > 0 then
       return new range(idxType, boundedType, stridable,
-                       _high + 1, _high + i, stride, _effAlmt(), aligned);
+                       chpl__intToIdx(_high + 1, idxType),
+                       chpl__intToIdx(_high + i, idxType),
+                       stride, _effAlmt(), aligned);
     // if i == 0 then
     return new range(idxType, boundedType, stridable,
-                     _low, _high, stride, _effAlmt(), aligned);
+                     low, high, stride, _effAlmt(), aligned);
   }
 
   // Returns an expanded range, or a contracted range if i < 0.
@@ -974,7 +986,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   proc range.expand(i: repType)
   {
     return new range(idxType, boundedType, stridable,
-                     _low-i, _high+i, stride, _alignment, _aligned);
+                     chpl__intToIdx(_low-i, idxType),
+                     chpl__intToIdx(_high+i, idxType),
+                     stride, alignment, _aligned);
   }
 
 
@@ -1036,12 +1050,19 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //
   inline proc +(r: range(?e, ?b, ?s), i: integral)
   {
-    type resultType = (r._low+i).type;
+    type intResType = (r._low+i).type;
+    type resultType = chpl__intToIdx((r._low+i), e).type;
     type strType = chpl__rangeStrideType(resultType);
 
-    return new range(resultType, b, s,
-                     r._low + i, r._high + i,
-           r.stride : strType, r.alignment + i : resultType, r.aligned);
+    if (s) then
+      return new range(resultType, b, s,
+                       chpl__intToIdx(r._low + i, resultType),
+                       chpl__intToIdx(r._high + i, resultType),
+                       r.stride : strType, r._alignment + i : intResType, r.aligned);
+    else
+      return new range(resultType, b, s, 
+                       chpl__intToIdx(r._low + i, resultType),
+                       chpl__intToIdx(r._high + i, resultType));
   }
 
   inline proc +(i:integral, r: range(?e,?b,?s))
@@ -1207,7 +1228,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     return new range(idxType, boundedType, stridable, low, high, stride,
                      // here's the new alignment
-                     this.first + offs, true);
+                     chpl__intToIdx(this.firstAsInt + offs, idxType), true);
   }
 
 
@@ -1356,7 +1377,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                            chpl__intToIdx(newlo, idxType),
                            chpl__intToIdx(newhi, idxType),
                            newStride,
-                           0,
+                           chpl__intToIdx(0, idxType),
                            !ambig && (this.aligned || other.aligned));
 
     if result.stridable {

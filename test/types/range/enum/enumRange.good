@@ -11,6 +11,26 @@ violet
 
 length = 7
 size = 7
+first = red
+last = violet
+low = red
+high = violet
+alignedLow = red
+alignedHigh = violet
+isEmpty = false
+hasFirst = true
+hasLast = true
+isNaturallyAligned = true
+isAmbiguous = false
+member(blue) = true
+member(red) = true
+ident(color.red..color.violet) = true
+ident(color.yellow..color.indigo) = false
+indexOrder(color.yellow) = 2
+indexOrder(color.green) = 3
+orderToIndex(1) = orange
+interior(1) = violet..violet
+interior(-1) = red..red
 
 A[red] = 1.0
 A[orange] = 2.0
@@ -150,6 +170,31 @@ indigo
 
 length = 4
 size = 4
+first = yellow
+last = indigo
+low = yellow
+high = indigo
+alignedLow = yellow
+alignedHigh = indigo
+isEmpty = false
+hasFirst = true
+hasLast = true
+isNaturallyAligned = true
+isAmbiguous = false
+member(blue) = true
+member(red) = false
+ident(color.red..color.violet) = false
+ident(color.yellow..color.indigo) = true
+indexOrder(color.yellow) = 0
+indexOrder(color.green) = 1
+orderToIndex(1) = green
+r.translate(1) = green..violet
+interior(1) = indigo..indigo
+interior(-1) = yellow..yellow
+r.exterior(1) = violet..violet
+r.exterior(-11) = orange..orange
+r.expand(1) = orange..violet
+r.offset(1) = yellow..indigo
 
 A[yellow] = 3.0
 A[green] = 4.0

@@ -14,6 +14,36 @@ proc testRange(r) {
 
   writeln("length = ", r.length);
   writeln("size = ", r.size);
+  writeln("first = ", r.first);
+  writeln("last = ", r.last);
+  writeln("low = ", r.low);
+  writeln("high = ", r.high);
+  writeln("alignedLow = ", r.alignedLow);
+  writeln("alignedHigh = ", r.alignedHigh);
+  writeln("isEmpty = ", r.isEmpty());
+  writeln("hasFirst = ", r.hasFirst());
+  writeln("hasLast = ", r.hasLast());
+  writeln("isNaturallyAligned = ", r.isNaturallyAligned());
+  writeln("isAmbiguous = ", r.isAmbiguous());
+  writeln("member(blue) = ", r.member(color.blue));
+  writeln("member(red) = ", r.member(color.red));
+  writeln("ident(color.red..color.violet) = ", ident(r, color.red..color.violet));
+  writeln("ident(color.yellow..color.indigo) = ", ident(r, color.yellow..color.indigo));
+  writeln("indexOrder(color.yellow) = ", r.indexOrder(color.yellow));
+  writeln("indexOrder(color.green) = ", r.indexOrder(color.green));
+  writeln("orderToIndex(1) = ", r.orderToIndex(1));
+  if (r.last != color.violet) then
+    writeln("r.translate(1) = ", r.translate(1));
+  writeln("interior(1) = ", r.interior(1));
+  writeln("interior(-1) = ", r.interior(-1));
+  if (r.last != color.violet) {
+    writeln("r.exterior(1) = ", r.exterior(1));
+    writeln("r.exterior(-11) = ", r.exterior(-1));
+    writeln("r.expand(1) = ", r.expand(1));
+    writeln("r.offset(1) = ", r.offset(1));
+  }
+
+
   writeln();
 
   // array
