@@ -46,7 +46,18 @@ module DataFrames {
     }
 
     pragma "no doc"
+    proc nrows(): int {
+      halt("generic Index cannot be countd");
+      return 0;
+    }
+
+    pragma "no doc"
     proc writeThis(f, s: TypedSeries(?) = nil) {
+      halt("cannot writeThis on generic Index");
+    }
+
+    pragma "no doc"
+    proc writeThis(f, d: DataFrame = nil) {
       halt("cannot writeThis on generic Index");
     }
   }
@@ -168,16 +179,59 @@ module DataFrames {
                              filter_valid_bits[1..curr_ord]);
     }
 
+    proc nrows() {
+      return ords.size;
+    }
+
+    pragma "no doc"
+    proc writeIdxWidth() {
+      var idxWidth = 0;
+      for idx in this {
+        // TODO: clean up to simple cast after bugfix
+        var idxStr = new string(idx: string);
+        if idxStr.length > idxWidth then
+          idxWidth = idxStr.length;
+      }
+      return idxWidth;
+    }
 
     proc writeThis(f, s: TypedSeries(?) = nil) {
-      for (i, (v, d)) in zip(this, s._these()) {
-        f <~> i;
-        f <~> "\t";
+      var idxWidth = writeIdxWidth() + 4;
+      for (idx, (v, d)) in zip(this, s._these()) {
+        // TODO: clean up to simple cast after bugfix
+        var idxStr = new string(idx: string);
+        f <~> idx;
+        for space in 1..idxWidth-idxStr.length do
+          f <~> " ";
+
         if v then
           f <~> d;
         else
           f <~> "None";
         f <~> "\n";
+      }
+    }
+
+    proc writeThis(f, d: DataFrame = nil) {
+      var idxWidth = writeIdxWidth() + 1;
+      for space in 1..idxWidth do
+        f <~> " ";
+      for lab in d.labels {
+        f <~> lab + "   ";
+      }
+
+      for idx in this {
+        f <~> "\n";
+        // TODO: clean up to simple cast after bugfix
+        var idxStr = new string(idx: string);
+        f <~> idxStr;
+        for space in 1..idxWidth-idxStr.length do
+          f <~> " ";
+
+        for (ser, lab) in zip(d, d.labels) {
+          ser.writeElem(f, idx, lab.length);
+          f <~> "   ";
+        }
       }
     }
 
@@ -188,6 +242,16 @@ module DataFrames {
   }
 
   class Series {
+    pragma "no doc"
+    proc copy() {
+      return this;
+    }
+
+    pragma "no doc"
+    proc reindex(idx) {
+      halt("generic Series cannot be reindexed");
+    }
+
     pragma "no doc"
     proc uni(lhs: TypedSeries, unifier: SeriesUnifier) {
       halt("generic Series cannot be unioned");
@@ -265,6 +329,22 @@ module DataFrames {
       halt("generic Series cannot be compared");
       return this;
     }
+
+    pragma "no doc"
+    proc nrows(): int {
+      halt("generic Series cannot be counted");
+      return 0;
+    }
+
+    pragma "no doc"
+    proc writeElem(f, i, len: int) {
+      halt("generic Series cannot be indexed");
+    }
+
+    pragma "no doc"
+    proc writeElemNoIndex(f, i: int, len: int) {
+      halt("generic Series cannot be accessed");
+    }
   }
 
   class TypedSeries : Series {
@@ -317,6 +397,10 @@ module DataFrames {
       this.ords = 1..data.size;
       this.data = data;
       this.valid_bits = valid_bits;
+    }
+
+    proc copy() {
+      return new TypedSeries(this.data, this.idx, this.valid_bits);
     }
 
     /*
@@ -419,6 +503,10 @@ module DataFrames {
 
     proc valid_at(ord: int) {
       return valid_bits[ord];
+    }
+
+    proc reindex(idx: Index) {
+      this.idx = idx;
     }
 
     /*
@@ -539,14 +627,140 @@ module DataFrames {
       return || reduce this.these();
     }
 
+    proc nrows(): int {
+      if idx then
+        return idx.nrows();
+      else
+        return ords.size;
+    }
+
     proc writeThis(f) {
       if idx {
         idx.writeThis(f, this);
       } else {
-        for (i, d) in this.items() do
-          f <~> i + "\t" + d + "\n";
+        for (v, (i, d)) in this._items() {
+          f <~> i + "    ";
+          if v then
+            f <~> d;
+          else
+            f <~> "None";
+          f <~> "\n";
+        }
       }
       f <~> "dtype: " + eltType:string;
+    }
+
+    pragma "no doc"
+    proc writeElem(f, i, len: int) {
+      // TODO: clean up to simple cast after bugfix
+      var output = if this.valid(i)
+                   then new string(this[i]: string)
+                   else "None";
+
+      for space in 1..len-output.length do
+        f <~> " ";
+      f <~> output;
+    }
+
+    pragma "no doc"
+    proc writeElemNoIndex(f, i: int, len: int) {
+      // TODO: clean up to simple cast after bugfix
+      var output = if this.valid_at(i)
+                   then new string(this.at(i): string)
+                   else "None";
+
+      for space in 1..len-output.length do
+        f <~> " ";
+      f <~> output;
+    }
+  }
+
+  class DataFrame {
+    var labels: domain(string);
+    var columns: [labels] Series;
+    var idx: Index;
+
+    // TODO: init with labels arg
+
+    proc init() {
+      this.complete();
+    }
+
+    proc init(columns: [?D] Series) {
+      this.labels = D;
+      this.idx = nil;
+      this.complete();
+
+      for (lab, s) in zip(labels, columns) do
+        this.columns[lab] = s.copy();
+    }
+
+    proc init(columns: [?D], idx: Index) {
+      this.labels = D;
+      this.idx = idx;
+      this.complete();
+
+      for (lab, s) in zip(labels, columns) do
+        this.insert(lab, s);
+    }
+
+    iter these() {
+      for s in columns do
+        yield s;
+    }
+
+    proc this(lab: string) {
+      return columns[lab];
+    }
+
+    proc insert(lab: string, s: Series) {
+      var sCopy = s.copy();
+      sCopy.reindex(idx);
+      columns[lab] = sCopy;
+    }
+
+    proc reindex(idx: Index) {
+      this.idx = idx;
+      for s in columns do
+        s.reindex(idx);
+    }
+
+    proc nrows() {
+      var nMax = 0;
+      for s in this {
+        var n = s.nrows();
+        if n > nMax then nMax = n;
+      }
+      return nMax;
+    }
+
+    proc writeThis(f) {
+      if idx {
+        idx.writeThis(f, this);
+      } else {
+        var n = nrows();
+        var nStr = new string(n: string);
+        var idxWidth = nStr.length + 1;
+
+        for space in 1..idxWidth do
+          f <~> " ";
+        for lab in labels {
+          f <~> lab + "   ";
+        }
+
+        for i in 1..n {
+          f <~> "\n";
+          var iStr = new string(i: string);
+          f <~> iStr;
+          for space in 1..idxWidth-iStr.length do
+            f <~> " ";
+
+          for (ser, lab) in zip(this, labels) {
+            ser.writeElemNoIndex(f, i, lab.length);
+            f <~> "   ";
+          }
+        }
+      }
     }
   }
 
