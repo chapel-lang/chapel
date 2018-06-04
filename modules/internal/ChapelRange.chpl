@@ -1133,17 +1133,27 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           hh: i = r.high,
           st: r.strType = r.stride * step:r.strType;
 
+    /*
+    compilerWarning(r.idxType:string);
+    compilerWarning(i:string);
+    compilerWarning(r.alignedLow.type:string);
+    compilerWarning(r.alignedHigh.type:string);
+    compilerWarning(r.aligned.type:string);
+    compilerWarning(r.alignment.type:string);
+    compilerWarning(chpl__intToIdx(0,i).type:string);
+*/
+
     const (ald, alt): (bool, i) =
       if r.isAmbiguous() then
         if r.stridable then (false, r.alignment)
-                       else (false, 0:r.repType)
+                       else (false, chpl__intToIdx(0, i))
       else
         // we could talk about aligned bounds
         if      r.hasLowBound()  && st > 0 then (true, r.alignedLow)
         else if r.hasHighBound() && st < 0 then (true, r.alignedHigh)
         else
           if r.stridable then (r.aligned, r.alignment)
-                         else (false, 0:r.repType);
+                         else (false, chpl__intToIdx(0, i));
 
     return new range(i, b, true,  lw, hh, st, alt, ald);
   }
@@ -1819,13 +1829,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       // must check if low > high (something like 10..1) because of the !=
       // relational operator. Such ranges are supposed to iterate 0 times
       var i: repType;
-      const start = this.first;
-      const end: repType = if this.low > this.high then start else this.last + stride: repType;
+      const start = this.firstAsInt;
+      const end: repType = if this.low > this.high then start else this.lastAsInt + stride: repType;
       while __primitive("C for loop",
                         __primitive( "=", i, start),
                         __primitive("!=", i, end),
                         __primitive("+=", i, stride: repType)) {
-        yield i;
+        yield chpl__intToIdx(i, idxType);
       }
     } else {
       for i in this.generalIterator() do yield i;
@@ -2486,7 +2496,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   inline proc chpl__intToIdx(i: integral, type idxType: integral) {
-    return i;
+    return i:idxType;
   }
 
   inline proc chpl__intToIdx(i: integral, type idxType: enumerated) {
