@@ -2495,6 +2495,18 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     }
   }
 
+  inline proc chpl__intToIdx(type idxType, i: idxType, j ...) {
+    return (chpl__intToIdx(i, idxType), chpl__intToIdx(idxType, (...j)));
+  }
+
+  inline proc chpl__intToIdx(type idxType, i: idxType) {
+    return chpl__intToIdx(i, idxType);
+  }
+
+  inline proc chpl__intToIdx(i: _tuple, type idxType) {
+    return chpl__intToIdx(idxType, (...i));
+  }
+
   inline proc chpl__intToIdx(i: integral, type idxType: integral) {
     return i:idxType;
   }
