@@ -35,9 +35,8 @@ proc main() {
 
   var execTime: [1..numTrials] real;
 
+  var barrier = new Barrier(numTasks, barrierType);
   for trial in 1..numTrials {
-    var barrier = new Barrier(numTasks, barrierType);
-
     const startTime = getCurrentTime();
     coforall tid in 0..#numTasks {
       barrier.barrier();
