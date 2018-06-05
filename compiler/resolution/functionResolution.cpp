@@ -8902,6 +8902,11 @@ static void removeUnusedTypes() {
             // If the value type is unused, its ref type can also be removed.
             type->defPoint->remove();
           }
+        } else if(UnmanagedClassType* mt =
+                  toUnmanagedClassType(type->getValType())) {
+          if (isUnusedClass(mt->getCanonicalClass())) {
+            type->defPoint->remove();
+          }
         }
 
         // If the default type constructor for this ref type is in the tree,
