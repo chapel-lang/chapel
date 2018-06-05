@@ -7517,6 +7517,15 @@ computeStandardModuleSet() {
   }
 }
 
+// If the function is exported and takes in an array argument, we need a special
+// translation so that we can treat it as an array in Chapel but not clean up
+// the memory when we shouldn't.
+void makeExportWrapper(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_EXPORT)) {
+    
+  }
+}
+
 
 void resolve() {
   bool changed = true;
@@ -7529,6 +7538,10 @@ void resolve() {
 
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    makeExportWrapper(fn);
+  }
 
   // Iterate until all generic functions have been tagged with FLAG_GENERIC
   while (changed == true) {
