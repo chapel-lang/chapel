@@ -298,7 +298,7 @@
 %token TFOR TFORALL TFORWARDING
 %token TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
-%token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT TOWNED
+%token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
 %token TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSUBDOMAIN
@@ -1007,6 +1007,13 @@ linkage_spec:
                   $$ = new FnSymbol($2);
                   $$->addFlag(FLAG_EXTERN);
                   $$->addFlag(FLAG_LOCAL_ARGS);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
+| TOVERRIDE     {
+                  $$ = new FnSymbol("");
+                  $$->addFlag(FLAG_OVERRIDE);
 
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;

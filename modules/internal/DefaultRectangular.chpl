@@ -66,7 +66,7 @@ module DefaultRectangular {
     proc dsiEqualDMaps(d) param return false;
 
     proc trackDomains() param return false;
-    proc dsiTrackDomains()    return false;
+    override proc dsiTrackDomains()    return false;
 
     proc singleton() param return true;
   }
@@ -97,7 +97,7 @@ module DefaultRectangular {
     var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
     proc linksDistribution() param return false;
-    proc dsiLinksDistribution()     return false;
+    override proc dsiLinksDistribution()     return false;
 
     proc isDefaultRectangular() param return true;
 
@@ -106,7 +106,7 @@ module DefaultRectangular {
       this.dist = dist;
     }
 
-    proc dsiMyDist() {
+    override proc dsiMyDist() {
       return dist;
     }
 
@@ -925,7 +925,7 @@ module DefaultRectangular {
     }
 
     // can the compiler create this automatically?
-    proc dsiGetBaseDom() return dom;
+    override proc dsiGetBaseDom() return dom;
 
     proc dsiDestroyDataHelper(dd, ddiNumIndices) {
       pragma "no copy" pragma "no auto destroy" var dr = dd;
@@ -1200,7 +1200,7 @@ module DefaultRectangular {
     }
 
     // TODO
-    proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+    override proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
       //if (d._value.type == dom.type) {
 
       on this {
@@ -1242,7 +1242,7 @@ module DefaultRectangular {
       //  halt("illegal reallocation");
       //}
     }
-    proc dsiPostReallocate() {
+    override proc dsiPostReallocate() {
       // No action necessary here
     }
 

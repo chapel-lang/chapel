@@ -68,7 +68,7 @@ module ChapelError {
   pragma "use default init"
   class NilThrownError : Error {
     pragma "no doc"
-    proc message() {
+    override proc message() {
       return "thrown error was nil";
     }
   }
@@ -89,7 +89,7 @@ module ChapelError {
       this.info   = info;
     }
 
-    proc message() {
+    override proc message() {
       if formal.isEmptyString() then
         return info;
       else
@@ -248,7 +248,7 @@ module ChapelError {
        grow arbitrarily long if the :class:`TaskErrors` contains many errors.
 
      */
-    proc message() : string {
+    override proc message() : string {
       var n = 0;
 
       var minMsg:string;

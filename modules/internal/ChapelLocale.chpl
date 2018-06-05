@@ -334,22 +334,22 @@ module ChapelLocale {
   class DummyLocale : locale {
     proc init() { }
 
-    proc chpl_id() : int {
+    override proc chpl_id() : int {
       return -1;
     }
-    proc chpl_localeid() : chpl_localeID_t {
+    override proc chpl_localeid() : chpl_localeID_t {
       return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
     }
-    proc chpl_name() : string {
+    override proc chpl_name() : string {
       return "dummy-locale";
     }
-    proc getChildCount() : int {
+    override proc getChildCount() : int {
       return 0;
     }
-    proc getChild(idx:int) : locale {
+    override proc getChild(idx:int) : locale {
       return this;
     }
-    proc addChild(loc:locale)
+    override proc addChild(loc:locale)
     {
       halt("addChild on DummyLocale");
     }
