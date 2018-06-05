@@ -38,6 +38,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "UnmanagedClassType.h"
 #include "vec.h"
 
 static bool isDerivedType(Type* type, Flag flag);
@@ -128,7 +129,41 @@ const char* toString(Type* type) {
   const char* retval = NULL;
 
   if (type != NULL) {
-    retval = type->getValType()->symbol->name;
+    Type* vt = type->getValType();
+
+    if (AggregateType* at = toAggregateType(vt)) {
+      const char* drDomName = "DefaultRectangularDom";
+      const int   drDomNameLen = strlen(drDomName);
+
+      if (isArrayClass(at) && !at->symbol->hasFlag(FLAG_BASE_ARRAY)) {
+        Symbol* domField = at->getField("dom", false);
+        Symbol* eltTypeField = at->getField("eltType", false);
+
+        if (domField && eltTypeField) {
+          Type* domainType = canonicalClassType(domField->type);
+          Type* eltType    = eltTypeField->type;
+
+          if (domainType != dtUnknown && eltType != dtUnknown)
+            retval = astr("[", toString(domainType), "] ", toString(eltType));
+        }
+
+      } else if (strncmp(at->symbol->name, drDomName, drDomNameLen) == 0) {
+        retval = astr("domain", at->symbol->name + drDomNameLen);
+
+      } else if (isRecordWrappedType(at) == true) {
+        Symbol* instanceField = at->getField("_instance", false);
+
+        if (instanceField) {
+          Type* implType = canonicalClassType(instanceField->type);
+
+          if (implType != dtUnknown)
+            retval = toString(implType);
+        }
+      }
+    }
+
+    if (retval == NULL)
+      retval = vt->symbol->name;
 
   } else {
     retval = "null type";
