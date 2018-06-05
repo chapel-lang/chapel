@@ -77,6 +77,7 @@
   m(TASK_POOL_DESC,       "task pool descriptor",                     false), \
   m(TASK_ARG_AND_POOL_DESC, "task body argument and pool descriptor", false), \
   m(TASK_LIST_DESC,       "task list descriptor",                     false), \
+  m(TASK_LAYER_UNSPEC,    "tasking layer unspecified data",           false), \
   m(THREAD_PRV_DATA,      "thread private data",                      false), \
   m(THREAD_LIST_DESC,     "thread list descriptor",                   false), \
   m(THREAD_STACK_DESC,    "thread stack descriptor",                  false), \
