@@ -31,6 +31,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "typeSpecifier.h"
+#include "UnmanagedClassType.h"
 #include "visibleFunctions.h"
 
 #ifndef __STDC_FORMAT_MACROS
@@ -924,8 +925,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
       call->getStmtExpr()->insertBefore(new DefExpr(tmp));
 
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_TUPLE) == true &&
-          field->name[0]                                        == 'x') {
+      if (call->get(1)->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+          field->name[0] == 'x') {
         retval = new CallExpr(PRIM_GET_MEMBER_VALUE,
                               call->get(1)->remove(),
                               new_CStringSymbol(field->name));
@@ -937,7 +938,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
       call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, retval));
 
-      call->replace(new CallExpr(PRIM_TYPEOF, tmp));
+      // Wrap it in PRIM_TYPEOF unless it's just used in another
+      // PRIM_QUERY.
+      bool wrapInTypeOf = true;
+      if (CallExpr* parentCall = toCallExpr(call->parentExpr))
+        if (parentCall->isPrimitive(PRIM_MOVE))
+          if (SymExpr* lhsSe = toSymExpr(parentCall->get(1)))
+            if (SymExpr* useSe = lhsSe->symbol()->getSingleUse())
+              if (CallExpr* useParent = toCallExpr(useSe->parentExpr))
+                if (useParent->isPrimitive(PRIM_QUERY))
+                  wrapInTypeOf = false;
+
+      if (wrapInTypeOf)
+        call->replace(new CallExpr(PRIM_TYPEOF, tmp));
+      else
+        call->replace(new SymExpr(tmp));
 
     } else {
       // Possibly indicated by 'determineQueriedField' returning NULL
@@ -1109,6 +1124,10 @@ static Expr* preFoldNamed(CallExpr* call) {
       }
 
       if (!get_int(call->get(3), &index)) {
+        USR_FATAL(call, "illegal type index expression");
+      }
+
+      if (!isAggregateType(sym->type)) {
         USR_FATAL(call, "illegal type index expression");
       }
 
@@ -1429,7 +1448,8 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 // determine field associated with query expression
 //
 static Symbol* determineQueriedField(CallExpr* call) {
-  AggregateType* at     = toAggregateType(call->get(1)->getValType());
+  AggregateType* at     =
+    toAggregateType(canonicalClassType(call->get(1)->getValType()));
   SymExpr*       last   = toSymExpr(call->get(call->numActuals()));
   VarSymbol*     var    = toVarSymbol(last->symbol());
   Symbol*        retval = NULL;

@@ -7709,7 +7709,7 @@ yyreduce:
   case 376:
 /* Line 1792 of yacc.c  */
 #line 1532 "chapel.ypp"
-    { (yyval.pexpr) = new CallExpr( "_to_borrowed", (yyvsp[(2) - (2)].pexpr)); }
+    { (yyval.pexpr) = new CallExpr( PRIM_TO_BORROWED_CLASS, (yyvsp[(2) - (2)].pexpr)); }
     break;
 
   case 377:
@@ -7721,7 +7721,7 @@ yyreduce:
   case 378:
 /* Line 1792 of yacc.c  */
 #line 1536 "chapel.ypp"
-    { (yyval.pexpr) = new CallExpr( "_to_unmanaged", (yyvsp[(2) - (2)].pexpr)); }
+    { (yyval.pexpr) = new CallExpr( PRIM_TO_UNMANAGED_CLASS, (yyvsp[(2) - (2)].pexpr)); }
     break;
 
   case 379:

@@ -1,6 +1,6 @@
 proc foo(x: ?t ...?k) {
   writeln(x);
-  var y: t(1);
+  var y: t;
   writeln(y);
 }
 
