@@ -330,34 +330,13 @@ proc R.deinit() {
   if debug then writeln("  delete ", getNum(c));
 }
 
-pragma "donor fn"
-pragma "auto copy fn"
-proc chpl__autoCopy(arg: R) {
-  if debug then writeln("  auto copy from ", getNum(arg.c));
-  // Note -- this auto copy could be the same as
-  // init copy and it wouldn't affect the test.
-
-  // TODO - is no auto destroy necessary here?
-  pragma "no auto destroy"
-  var ret: R;
-
-  //ret.c = arg.c;
-  ret.c = new C(arg.c.x);
-
-  return ret;
+proc R.init(c:C = nil) {
+  this.c = c;
 }
 
-// I'd like this to be ref, but that breaks
-//    var outerX: R; begin { var x = outerX; }
-pragma "init copy fn"
-proc chpl__initCopy(arg: R) {
-  if debug then writeln("  init copy from ", getNum(arg.c));
-
-  var ret: R;
-
-  ret.c = new C(arg.c.x);
-
-  return ret;
+proc R.init(other:R) {
+  if debug then writeln("  R.init(R) from ", getNum(other.c));
+  this.c = new C(other.c.x);
 }
 
 proc =(ref lhs: R, rhs: R) {

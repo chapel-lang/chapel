@@ -858,7 +858,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     INT_ASSERT(se && se->symbol()->hasFlag(FLAG_TYPE_VARIABLE));
 
-    retval = new SymExpr(new_StringSymbol(se->symbol()->type->symbol->name));
+    Type* t = se->symbol()->type;
+    const char* typeName = toString(t);
+
+    retval = new SymExpr(new_StringSymbol(typeName));
 
     call->replace(retval);
 

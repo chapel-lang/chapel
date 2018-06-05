@@ -28,6 +28,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
+#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 #include <stack>
@@ -397,8 +398,12 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     SymExpr*   thrownExpr  = toSymExpr(node->get(1)->remove());
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
+    Type* thrownType = thrownError->typeInfo();
+    if (UnmanagedClassType* ut = toUnmanagedClassType(thrownType))
+      thrownType = ut->getCanonicalClass();
+
     // normalizeThrows should give us this invariant earlier
-    INT_ASSERT(thrownError->typeInfo() == dtError);
+    INT_ASSERT(thrownType == dtError);
 
     VarSymbol* fixedError = thrownError;
 
@@ -958,7 +963,7 @@ void ErrorCheckingVisitor::exitDeferStmt(DeferStmt* node) {
 static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons)
 {
   // Currently, only task functions and if-exprs can be implicitly throws.
-  if (!(isTaskFun(fn) || fn->hasFlag(FLAG_IF_EXPR_FN)))
+  if (!isTaskFun(fn))
     return;
 
   // If we already visited this function, don't visit it again.

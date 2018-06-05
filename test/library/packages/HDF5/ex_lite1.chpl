@@ -15,8 +15,8 @@ proc main {
   file_id = H5Fcreate(c"ex_lite1.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
   /* create and write an integer type dataset named "dset" */
-  H5LTmake_dataset(file_id, c"dset", RANK,
-                   dims[0], H5T_NATIVE_INT, c_ptrTo(data));
+  H5LTmake_dataset_WAR(file_id, c"dset", RANK,
+                       c_ptrTo(dims), H5T_NATIVE_INT, c_ptrTo(data));
 
   H5Fclose(file_id);
 }

@@ -107,7 +107,7 @@ void IfExpr::accept(AstVisitor* visitor) {
 }
 
 QualifiedType IfExpr::qualType() {
-  return thenStmt->body.tail->qualType();
+  return QualifiedType(QUAL_VAL, dtUnknown);
 }
 
 void IfExpr::prettyPrint(std::ostream* o) {

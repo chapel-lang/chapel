@@ -62,7 +62,7 @@ module DefaultRectangular {
 
     proc dsiAssign(other: unmanaged this.type) { }
 
-    proc dsiEqualDMaps(d:DefaultDist) param return true;
+    proc dsiEqualDMaps(d:unmanaged DefaultDist) param return true;
     proc dsiEqualDMaps(d) param return false;
 
     proc trackDomains() param return false;
@@ -1185,8 +1185,8 @@ module DefaultRectangular {
     where shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(i);
 
-    proc adjustBlkOffStrForNewDomain(d: DefaultRectangularDom,
-                                     alias: DefaultRectangularArr)
+    proc adjustBlkOffStrForNewDomain(d: unmanaged DefaultRectangularDom,
+                                     alias: unmanaged DefaultRectangularArr)
     {
       for param i in 1..rank {
         var s: idxType;
@@ -1204,8 +1204,8 @@ module DefaultRectangular {
       }
     }
 
-    proc adjustBlkOffStrForNewDomain(d: DefaultRectangularDom,
-                                     alias: DefaultRectangularArr)
+    proc adjustBlkOffStrForNewDomain(d: unmanaged DefaultRectangularDom,
+                                     alias: unmanaged DefaultRectangularArr)
       where dom.stridable == false && this.stridable == false
     {
       for param i in 1..rank {

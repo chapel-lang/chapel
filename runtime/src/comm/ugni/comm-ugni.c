@@ -706,7 +706,18 @@ static __thread int cd_idx = -1;
 // Declarations having to do with individual remote references.
 //
 
-#define MAX_UGNI_TRANS_SZ ((size_t) 1 << 30)
+// FMA supports up to 1GB transfers (this is the total size that can
+// be transferred for chained transactions)
+#define MAX_FMA_TRANS_SZ ((size_t) 1 << 30)
+// BTE RDMA supports up to ~4GB transfers (2^31 - 1), but the size of
+// gets must be 4 byte aligned. This just follows gasnet-aries and
+// uses the nearest 4MB aligned value
+#define MAX_RDMA_TRANS_SZ ((size_t) 0xFFC00000)
+
+// BTE RDMA is profitable around 1-4K. It's neck-and-neck under 4K, so
+// for now follow gasnet-aries and use the higher default of 4K
+#define DEFAULT_RDMA_THRESHOLD 4096
+static size_t rdma_threshold = DEFAULT_RDMA_THRESHOLD;
 
 #define ALIGN_32_DN(x)    ALIGN_DN((x), sizeof(int32_t))
 #define ALIGN_32_UP(x)    ALIGN_UP((x), sizeof(int32_t))
@@ -1500,6 +1511,9 @@ static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*,
 static int       post_fma_ct(c_nodeid_t*, gni_post_descriptor_t*);
 static void      post_fma_ct_and_wait(c_nodeid_t*, gni_post_descriptor_t*);
 #endif
+static int       post_rdma(c_nodeid_t, gni_post_descriptor_t*);
+static void      post_rdma_and_wait(c_nodeid_t, gni_post_descriptor_t*,
+                                    chpl_bool);
 static chpl_bool can_task_yield(void);
 static void      local_yield(void);
 
@@ -1851,6 +1865,12 @@ void chpl_comm_post_task_init(void)
   // Figure out how many comm domains we need.
   //
   compute_comm_dom_cnt();
+
+  //
+  // Get FMA/BTE threshold
+  //
+  rdma_threshold = chpl_env_rt_get_size("UGNI_RDMA_THRESHOLD",
+                                        DEFAULT_RDMA_THRESHOLD);
 
   //
   // Get our NIC address and share it around the job.
@@ -4920,13 +4940,17 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
                    drpg_may_proxy_t may_proxy)
 {
   gni_post_descriptor_t post_desc;
+  mem_region_t* local_mr;
+  chpl_bool do_rdma = false;
+  size_t max_trans_sz = MAX_FMA_TRANS_SZ;
+
 
   DBG_P_LP(DBGF_GETPUT, "DoRemPut %p -> %d:%p (%#zx), proxy %c",
            src_addr, (int) locale, tgt_addr, size,
            may_proxy ? 'y' : 'n');
 
   //
-  // The source address for a PUT doesn't have to be registered with
+  // The source address for a FMA PUT doesn't have to be registered with
   // the local NIC, but the target address does have to be registered
   // with the remote NIC.  If it isn't, then instead of our doing a
   // PUT we arrange for the remote side do a GET from us, dealing with
@@ -4938,7 +4962,6 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
     remote_mr = mreg_for_remote_addr(tgt_addr, locale);
 
   if (remote_mr == NULL) {
-    mem_region_t* local_mr;
 
     if (!may_proxy) {
       CHPL_INTERNAL_ERROR("do_remote_put(): "
@@ -5007,13 +5030,27 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   post_desc.src_cq_hndl     = 0;
 
   //
+  // If the PUT size merits RDMA and the source addr is registered,
+  // then do an RDMA put instead of FMA
+  //
+ if (size >= rdma_threshold &&
+     (local_mr = mreg_for_local_addr(src_addr)) != NULL) {
+    do_rdma = true;
+    max_trans_sz = MAX_RDMA_TRANS_SZ;
+
+    post_desc.type = GNI_POST_RDMA_PUT;
+    post_desc.local_mem_hndl = local_mr->mdh;
+  }
+
+
+  //
   // If the transfer is larger than the maximum transaction length,
   // then we have to break it into smaller pieces.
   //
   while (size > 0) {
     size_t tsz;
 
-    tsz = (size <= MAX_UGNI_TRANS_SZ) ? size : MAX_UGNI_TRANS_SZ;
+    tsz = (size <= max_trans_sz) ? size : max_trans_sz;
 
     post_desc.local_addr      = (uint64_t) (intptr_t) src_addr;
     post_desc.remote_addr     = (uint64_t) (intptr_t) tgt_addr;
@@ -5030,7 +5067,11 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
     PERFSTATS_INC(put_cnt);
     PERFSTATS_ADD(put_byte_cnt, tsz);
 
-    post_fma_and_wait(locale, &post_desc, true);
+    if (do_rdma) {
+      post_rdma_and_wait(locale, &post_desc, true);
+    } else {
+      post_fma_and_wait(locale, &post_desc, true);
+    }
   }
 }
 
@@ -5352,6 +5393,8 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
                 void* src_addr, size_t size, mem_region_t* local_mr)
 {
   gni_post_descriptor_t post_desc;
+  chpl_bool do_rdma = false;
+  size_t max_trans_sz = MAX_FMA_TRANS_SZ;
 
   //
   // Assumes remote and local addresses are both registered and aligned,
@@ -5368,13 +5411,22 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
   post_desc.src_cq_hndl     = 0;
 
   //
+  // If the GET size merits RDMA do an RDMA get instead of FMA
+  //
+ if (size >= rdma_threshold) {
+    do_rdma = true;
+    max_trans_sz = MAX_RDMA_TRANS_SZ;
+    post_desc.type = GNI_POST_RDMA_GET;
+  }
+
+  //
   // If the transfer is larger than the maximum transaction length,
   // then we have to break it into smaller pieces.
   //
   while (size > 0) {
     size_t tsz;
 
-    tsz = (size <= MAX_UGNI_TRANS_SZ) ? size : MAX_UGNI_TRANS_SZ;
+    tsz = (size <= max_trans_sz) ? size : max_trans_sz;
 
     post_desc.local_addr      = (uint64_t) (intptr_t) tgt_addr;
     post_desc.local_mem_hndl  = local_mr->mdh;
@@ -5392,7 +5444,12 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
     PERFSTATS_INC(get_cnt);
     PERFSTATS_ADD(get_byte_cnt, tsz);
 
-    post_fma_and_wait(locale, &post_desc, true);
+    if (do_rdma) {
+      post_rdma_and_wait(locale, &post_desc, true);
+    } else {
+      post_fma_and_wait(locale, &post_desc, true);
+    }
+
   }
 }
 
@@ -5785,6 +5842,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   nb_desc_idx_t          nbdi;
   nb_desc_t*             nbdp;
   gni_post_descriptor_t* post_desc;
+  chpl_bool              do_rdma = false;
 
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5829,7 +5887,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
       || !IS_ALIGNED_32((size_t) (intptr_t) raddr)
       || !IS_ALIGNED_32(size)
       || (remote_mr = mreg_for_remote_addr(raddr, locale)) == NULL
-      || size > MAX_UGNI_TRANS_SZ) {
+      || size > MAX_RDMA_TRANS_SZ) {
     PERFSTATS_INC(get_nb_b_cnt);
     do_remote_get(addr, locale, raddr, size, may_proxy_true);
     return NULL;
@@ -5868,12 +5926,24 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   post_desc->length          = size;
 
   //
+  // If the GET size merits RDMA do an RDMA get instead of FMA
+  //
+  if (size >= rdma_threshold) {
+    do_rdma = true;
+    post_desc->type = GNI_POST_RDMA_GET;
+  }
+
+  //
   // Initiate the transaction.  Don't wait for it to complete.
   //
   PERFSTATS_INC(get_nb_cnt);
   PERFSTATS_ADD(get_byte_cnt, size);
 
-  nbdp->cdi = post_fma(locale, post_desc);
+  if (do_rdma) {
+    nbdp->cdi = post_rdma(locale, post_desc);
+  } else {
+    nbdp->cdi = post_fma(locale, post_desc);
+  }
 
   return nb_desc_idx_2_handle(nbdi);
 }
@@ -7551,6 +7621,63 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
 }
 
 #endif
+
+
+static
+inline
+int post_rdma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
+{
+  int cdi;
+  gni_return_t gni_rc;
+
+  if (post_desc->type == GNI_POST_RDMA_PUT)
+    PERFSTATS_ADD(sent_bytes, post_desc->length);
+  else
+    PERFSTATS_ADD(rcvd_bytes, post_desc->length);
+
+  if (cd == NULL)
+    acquire_comm_dom();
+  cdi = cd_idx;
+
+  post_desc->src_cq_hndl = cd->cqh;
+
+  CQ_CNT_INC(cd);
+  if ((gni_rc = GNI_PostRdma(cd->remote_eps[locale], post_desc))
+      != GNI_RC_SUCCESS)
+    GNI_POST_FAIL(gni_rc, "PostRDMA() failed");
+
+  release_comm_dom();
+
+  return cdi;
+}
+
+
+static
+void post_rdma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
+                        chpl_bool do_yield)
+{
+  int cdi;
+  atomic_bool post_done;
+
+  atomic_init_bool(&post_done, false);
+  post_desc->post_id = (uint64_t) (intptr_t) &post_done;
+
+  cdi = post_rdma(locale, post_desc);
+
+  //
+  // Wait for the transaction to complete.  Yield initially; the
+  // minimum round-trip time on the network isn't small and maybe
+  // we can find something else to do in the meantime.
+  //
+  do {
+    if (do_yield) {
+      local_yield();
+    }
+    consume_all_outstanding_cq_events(cdi);
+  } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
+
+  CQ_CNT_DEC(&comm_doms[cdi]);
+}
 
 
 static inline

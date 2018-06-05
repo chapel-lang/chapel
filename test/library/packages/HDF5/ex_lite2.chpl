@@ -9,13 +9,13 @@ proc main {
       i, j, nrow, n_values: size_t;
 
   /* open file from ex_lite1.chpl */
-  file_id = H5Fopen(c"ex_lite1.h5", H5F_ACC_RDONLY, H5P_DEFAULT);
+  file_id = H5Fopen(c"ex_lite2_input.h5", H5F_ACC_RDONLY, H5P_DEFAULT);
 
   /* read the dataset */
   H5LTread_dataset_int(file_id, c"/dset", data[0]);
 
   /* get the dimensions of the dataset */
-  H5LTget_dataset_info(file_id, c"/dset", dims[0], nil, nil);
+  H5LTget_dataset_info_WAR(file_id, c"/dset", c_ptrTo(dims), nil, nil);
 
   /* print it by rows */
   n_values = (dims[0]*dims[1]): size_t;
