@@ -1282,6 +1282,13 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
 * Transform   new (call (call (partial) C _mt this) args...)) args2...        *
 *      into   new (call       (partial) C _mt this) args...   args2...        *
 *                                                                             *
+* Do not transform calls that are nested within a DefExpr (if stmt-expr is    *
+* NULL). Calls within DefExprs do not have call-temps inserted, which if      *
+* transformed would lead to incorrect AST like:                               *
+*   (new C (call foo))                                                        *
+* The expectation is that the expressions will be normalized later once the   *
+* DefExpr's init/type expressions are copied into a BlockStmt.                *
+*                                                                             *
 ************************************** | *************************************/
 
 static void fixPrimNew(CallExpr* primNewToFix);
@@ -1291,16 +1298,18 @@ static bool isCallToConstructor(CallExpr* call) {
 }
 
 static void normalizeCallToConstructor(CallExpr* call) {
-  if (CallExpr* arg1 = toCallExpr(call->get(1))) {
-    if (isSymExpr(arg1->baseExpr) == true) {
-      if (arg1->partialTag == false) {
-        fixPrimNew(call);
-      }
-
-    } else if (CallExpr* subCall = toCallExpr(arg1->baseExpr)) {
-      if (isSymExpr(subCall->baseExpr) == true) {
-        if (subCall->partialTag == true) {
+  if (call->getStmtExpr() != NULL) {
+    if (CallExpr* arg1 = toCallExpr(call->get(1))) {
+      if (isSymExpr(arg1->baseExpr) == true) {
+        if (arg1->partialTag == false) {
           fixPrimNew(call);
+        }
+
+      } else if (CallExpr* subCall = toCallExpr(arg1->baseExpr)) {
+        if (isSymExpr(subCall->baseExpr) == true) {
+          if (subCall->partialTag == true) {
+            fixPrimNew(call);
+          }
         }
       }
     }
