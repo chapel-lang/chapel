@@ -1,33 +1,21 @@
 class Parent {
-  proc f() {
-    writeln("Parent.f()");
-  }
+  proc f() { }
 
-  proc f_generic(x) {
-    writeln("Parent.f_generic()");
-  }
+  proc f_generic(x) { }
 }
 
-// TODO -- test names differ, types the same
-//         test types differ, arg names the same
-//         test generic vs concrete
-
 class Child : Parent {
-  override proc g() {
-    writeln("Child.g()");
-  }
+  // not an override, no parent method with that name
+  override proc g() { }
 
-  /*override*/ proc f() {
-    writeln("Child.f()");
-  }
+  // overrides no-args parent f
+  proc f() { }
 
-  override proc g_generic(x) {
-    writeln("Child.g_generic()");
-  }
+  // not an override, no parent method with that name 
+  override proc g_generic(x) { }
 
-  /*override*/ proc f_generic(x) {
-    writeln("Child.f_generic()");
-  }
+  // overrides generic parent f_generic
+  proc f_generic(x) { }
 }
 
 proc test() {
