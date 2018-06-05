@@ -2121,8 +2121,16 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
         if flwlen != 0 {
           const stride = this.stride * myFollowThis.stride;
-          var low = myFollowThis.first;
+          var low = this.orderToindex(myFollowThis.first);
           var high = chpl__intToIdx(chpl__idxToInt(low) + stride * (flwlen - 1):strType, idxType);
+          /*
+          if (high != this.orderToIndex(myFollowThis.last)) {
+            writeln("stride = ", stride);
+            writeln("myFollowThis = ", myFollowThis);
+            writeln("low = ", low);
+            writeln("high = ", high);
+          }
+          */
           assert(high == this.orderToIndex(myFollowThis.last), "high isn't as expected");
 
           if stride < 0 then low <=> high;
@@ -2140,10 +2148,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         var r = chpl__intToIdx(1,idxType)..chpl__intToIdx(0,idxType);
 
         if flwlen != 0 {
+          // BRADC: TODO: Is it appropriate to call orderToIndex on a .first
           const low = this.orderToIndex(myFollowThis.first);
-          const high = chpl__intToIdx(_low: strType + (flwlen - 1):strType, idxType);
-          assert(high == this.orderToIndex(chpl__idxToInt(myFollowThis.last)), "high isn't as expected (2)");
-
+          const high = chpl__intToIdx(chpl__idxToInt(low): strType + (flwlen - 1):strType, idxType);
+          //          assert(high == this.orderToIndex(chpl__idxToInt(myFollowThis.last)), "high isn't as expected (2)");
+          assert(high == this.orderToIndex(myFollowThis.last), "high isn't as expected (2)");
           r = low .. high;
         }
 
