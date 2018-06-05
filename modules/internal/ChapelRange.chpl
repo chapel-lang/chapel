@@ -2505,11 +2505,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   inline proc chpl__intToIdx(type idxType, i: idxType, j ...) {
-    return (chpl__intToIdx(i, idxType), chpl__intToIdx(idxType, (...j)));
+    const first = chpl__intToIdx(i, idxType);
+    const rest = chpl__intToIdx(idxType, (...j));
+    return (first, (...rest));
   }
 
   inline proc chpl__intToIdx(type idxType, i: idxType) {
-    return chpl__intToIdx(i, idxType);
+    return (chpl__intToIdx(i, idxType),);
   }
 
   inline proc chpl__intToIdx(i: _tuple, type idxType) {
