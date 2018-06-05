@@ -2141,7 +2141,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
         if flwlen != 0 {
           const low = this.orderToIndex(myFollowThis.first);
-          const high = chpl__intToIdx(chpl__idxToInt(low) + (flwlen - 1):strType, idxType);
+          const high = chpl__intToIdx(_low: strType + (flwlen - 1):strType, idxType);
           assert(high == this.orderToIndex(chpl__idxToInt(myFollowThis.last)), "high isn't as expected (2)");
 
           r = low .. high;
