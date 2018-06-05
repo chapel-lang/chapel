@@ -735,7 +735,9 @@ static void warnUnstableClassType(SymExpr* se) {
         bool ok = false;
         if (inCall) {
           if (inCall->isNamed("_to_borrowed") ||
+              inCall->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
               inCall->isNamed("_to_unmanaged") ||
+              inCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
               inCall->isNamed("_owned") ||
               inCall->isNamed("_shared") ||
               inCall->isNamed("Owned") ||
