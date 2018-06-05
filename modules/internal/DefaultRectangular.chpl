@@ -702,28 +702,28 @@ module DefaultRectangular {
     if stridable {
       var sum = origin;
       for param i in 1..rank do
-        sum += (indToInt(ind(i)) - off(i)) * blk(i) / abs(str(i)):idxType;
+        sum += (chpl__idxToInt(ind(i)) - off(i)) * blk(i) / abs(str(i)):idxType;
       return sum;
     } else {
       // optimize common case to get cleaner generated code
       if (rank == 1 && earlyShiftData) {
         if blkChanged {
-          return indToInt(ind(1)) * blk(1);
+          return chpl__idxToInt(ind(1)) * blk(1);
         } else {
-          return indToInt(ind(1));
+          return chpl__idxToInt(ind(1));
         }
       } else {
         var sum = if earlyShiftData then 0:chpl__idxTypeToRepType(idxType) else origin;
 
         if blkChanged {
           for param i in 1..rank {
-            sum += indToInt(ind(i)) * blk(i);
+            sum += chpl__idxToInt(ind(i)) * blk(i);
           }
         } else {
           for param i in 1..rank-1 {
-            sum += indToInt(ind(i)) * blk(i);
+            sum += chpl__idxToInt(ind(i)) * blk(i);
           }
-          sum += indToInt(ind(rank));
+          sum += chpl__idxToInt(ind(rank));
         }
 
         if !earlyShiftData then sum -= factoredOffs;
@@ -1099,34 +1099,26 @@ module DefaultRectangular {
       where rank == 1
       return getDataIndex(ind, getShifted=getShifted);
 
-    inline proc indToInt(ind: enumerated) {
-      return chpl__enumToOrder(ind);
-    }
-
-    inline proc indToInt(ind: integral) {
-      return ind;
-    }
-
     inline proc getDataIndex(ind: rank*idxType,
                              param getShifted = true) {
       if stridable {
         var sum = origin;
         for param i in 1..rank do
-          sum += (indToInt(ind(i)) - off(i)) * blk(i) / abs(str(i)):idxType;
+          sum += (chpl__idxToInt(ind(i)) - off(i)) * blk(i) / abs(str(i)):idxType;
         return sum;
       } else {
         param wantShiftedIndex = getShifted && earlyShiftData;
 
         // optimize common case to get cleaner generated code
         if (rank == 1 && wantShiftedIndex) {
-          return indToInt(ind(1));
+          return chpl__idxToInt(ind(1));
         } else {
           var sum = if wantShiftedIndex then 0:repType else origin;
 
           for param i in 1..rank-1 {
-            sum += indToInt(ind(i)) * blk(i);
+            sum += chpl__idxToInt(ind(i)) * blk(i);
           }
-          sum += indToInt(ind(rank));
+          sum += chpl__idxToInt(ind(rank));
 
           if !wantShiftedIndex then sum -= factoredOffs;
           return sum;
