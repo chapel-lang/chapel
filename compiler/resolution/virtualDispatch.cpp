@@ -105,7 +105,8 @@ void resolveDynamicDispatches() {
 
   filterVirtualChildren();
 
-  checkMethodsOverride();
+  if (fOverrideChecking)
+    checkMethodsOverride();
 
   if (fPrintDispatch == true) {
     printDispatchInfo();
@@ -324,7 +325,7 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
   if (signatureMatch(pfn, cfn) == true && evaluateWhereClause(cfn) == true) {
     resolveFunction(cfn);
 
-    if (cfn->hasFlag(FLAG_OVERRIDE) == false &&
+    if (fOverrideChecking && !cfn->hasFlag(FLAG_OVERRIDE) &&
         // ignore errors with deinit
         0 != strcmp("deinit", cfn->name)) {
       const char* ptype = pfn->_this->type->symbol->name;
@@ -807,6 +808,8 @@ static void findFunctionsProbablyMatching(TypeToNameToFns & map,
   }
 }
 
+// This function checks that the override keyword is used appropriately
+// checkOverrides would also be a reasonable name for it.
 static void checkMethodsOverride() {
 
   TypeToNameToFns map;
