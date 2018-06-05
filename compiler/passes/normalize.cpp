@@ -3100,9 +3100,6 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   expandQueryForGenericTypeSpecifier(fn, symExprs, formal, call, queried);
 
-  // TODO -- if it's proc f( arg:(?t, ?u) )
-  //  we'd like arg to have type dtTuple
-
   // Remove the queries from the formal argument type
   Expr* usetype = NULL;
   if (TypeSymbol* ts = getTypeForSpecialConstructor(call)) {
@@ -3223,7 +3220,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
             // Replace PRIM_TO_UNMANAGED( MyClass( Def ?t ) )
             // with
-            // unmanaged MyClass ( )
+            // unmanaged MyClass ( Def ?t )
 
             Type* unm = at->getUnmanagedClass();
             subCall->baseExpr->replace(new SymExpr(unm->symbol));
