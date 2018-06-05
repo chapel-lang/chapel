@@ -205,7 +205,10 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     else if (autoCopy)
       field->qual = QUAL_VAL; // this is a no-op
     // If the actual or the formal is a reference, store a reference
-    else if (var->isRef() || formal->isRef())
+    else if (var->isRef() ||
+             // except for a coforall index variable, pass by ref only if
+             // it is a ref iterator, as indicated by ref-ness of 'var'.
+             (formal->isRef() && !var->hasFlag(FLAG_COFORALL_INDEX_VAR)))
       field->qual = QUAL_REF;
     // BHARSH TODO: This really belongs in RVF. Note the sync/single comment
     // in 'needsAutoCopyAutoDestroyForArg'
