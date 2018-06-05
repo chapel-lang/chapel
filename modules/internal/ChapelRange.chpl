@@ -334,7 +334,7 @@ module ChapelRange {
   pragma "no doc"
   proc range.alignment where !stridable && hasLowBound() return low;
   pragma "no doc"
-  proc range.alignment param return chpl__intToIdx(0, idxType);
+  proc range.alignment return chpl__intToIdx(0, idxType);
 
   /* Returns true if the range is aligned */
   inline proc range.aligned where stridable return _aligned;
