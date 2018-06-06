@@ -25,6 +25,17 @@
 module ExternalArray {
   use ChapelStandard;
 
+  extern proc callFree(x: external_array);
+  extern type free_func;
+  private extern const FREE_FUNC_NIL: free_func;
+
+  extern record external_array {
+    var elts: c_void_ptr;
+    var size: uint;
+
+    var free: free_func;
+  }
+
   pragma "use default init"
   class ExternDist: BaseDist {
 
@@ -69,9 +80,12 @@ module ExternalArray {
     }
 
     proc dsiBuildArray(type eltType) {
+      var data = new external_array(c_malloc(eltType, this.size),
+                                    this.size,
+                                    __primitive("cast", free_func, c_free));
       var arr = new unmanaged ExternArr(eltType,
                                         _to_unmanaged(this),
-                                        c_malloc(eltType, this.size),
+                                        data,
                                         true);
       return arr;
     }
@@ -148,7 +162,7 @@ module ExternalArray {
 
     const dom;
     
-    const _ArrInstance: _ddata;
+    const _ArrInstance: external_array;
 
     const _owned: bool;
 
@@ -156,7 +170,7 @@ module ExternalArray {
       super.init(_decEltRefCounts = false);
       this.eltType = eltType;
       this.dom = dom;
-      this._ArrInstance = _ArrInstance: _ddata(eltType);
+      this._ArrInstance = _ArrInstance;
       this._owned = _owned;
     }
 
@@ -219,19 +233,19 @@ module ExternalArray {
 
     inline proc dsiAccess(i) ref {
       checkBounds(i);
-      return _ArrInstance(i(1));
+      return (_ArrInstance.elts: c_ptr(eltType))(i(1));
     }
 
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
       checkBounds(i);
-      return _ArrInstance(i(1));
+      return (_ArrInstance.elts: c_ptr(eltType))(i(1));
     }
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType)  {
       checkBounds(i);
-      return _ArrInstance(i(1));
+      return (_ArrInstance.elts: c_ptr(eltType))(i(1));
     }
 
     inline proc checkBounds(i) {
@@ -258,7 +272,7 @@ module ExternalArray {
 
     proc dsiDestroyArr() {
       if (_owned) {
-        _ddata_free(_ArrInstance, dom.size);
+        callFree(_ArrInstance);
       }
     }
 
@@ -277,10 +291,16 @@ module ExternalArray {
   // Creates an instance of our new array type
   pragma "no copy return"
   proc makeArrayFromPtr(value: c_ptr, size: uint) {
+    var data = new external_array(value, size, FREE_FUNC_NIL);
+    return makeArrayFromExternArray(data, value.eltType);
+  }
+
+  pragma "no copy return"
+    proc makeArrayFromExternArray(value: external_array, type eltType) {
     var dist = new unmanaged ExternDist();
-    var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#size,));
+    var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,));
     dom._free_when_no_arrs = true;
-    var arr = new unmanaged ExternArr(value.eltType,
+    var arr = new unmanaged ExternArr(eltType,
                                       dom,
                                       value,
                                       false);
