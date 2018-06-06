@@ -870,7 +870,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
        0..9.translate(-2) == -2..7
    */
   inline proc range.translate(i: integral)
-    return this + i:repType;
+    return this + i.safeCast(repType);
 
   pragma "no doc"
   inline proc range.translate(i)
@@ -888,7 +888,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // Return an interior portion of this range.
   pragma "no doc"
-  proc range.interior(i: repType)
+  proc range.interior(off: integral)
     where boundedType != BoundedRangeType.bounded
   {
     compilerError("interior is not supported on unbounded ranges");
@@ -896,9 +896,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // TODO: hilde
   // Set _aligned to true only if stridable.
-  /* Return a range with ``i`` elements from the interior portion of this
-     range. If ``i`` is positive, take elements from the high end, and if
-     ``i`` is negative, take elements from the low end.
+  /* Return a range with ``off`` elements from the interior portion of this
+     range. If ``off`` is positive, take elements from the high end, and if
+     ``off`` is negative, take elements from the low end.
 
      Example:
 
@@ -909,8 +909,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
        0..9.interior(-1) == 0..0
        0..9.interior(-2) == 0..1
    */
-  proc range.interior(i: repType)
+  proc range.interior(off: integral)
   {
+    const i = off.safeCast(repType);
     if i < 0 then
       return new range(idxType, boundedType, stridable,
                        low, chpl__intToIdx(_low - 1 - i, idxType), stride,
@@ -925,15 +926,15 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   pragma "no doc"
-  proc range.exterior(i: repType)
+  proc range.exterior(off: integral)
     where boundedType != BoundedRangeType.bounded
   {
     compilerError("exterior is not supported on unbounded ranges");
   }
 
-  /* Return a range with ``i`` elements from the exterior portion of this
-     range. If ``i`` is positive, take elements from the high end, and if
-     ``i`` is negative, take elements from the low end.
+  /* Return a range with ``off`` elements from the exterior portion of this
+     range. If ``off`` is positive, take elements from the high end, and if
+     ``off`` is negative, take elements from the low end.
 
      Example:
 
@@ -944,8 +945,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
        0..9.exterior(-1) = -1..-1
        0..9.exterior(-2) = -2..-1
    */
-  proc range.exterior(i: repType)
+  proc range.exterior(off: integral)
   {
+    const i = off.safeCast(repType);
     if i < 0 then
       return new range(idxType, boundedType, stridable,
                        chpl__intToIdx(_low + i, idxType),
@@ -961,15 +963,15 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                      low, high, stride, _effAlmt(), aligned);
   }
 
-  // Returns an expanded range, or a contracted range if i < 0.
+  // Returns an expanded range, or a contracted range if off < 0.
   // The existing absolute alignment is preserved.
   pragma "no doc"
-  proc range.expand(i: repType)
+  proc range.expand(off: integral)
     where boundedType != BoundedRangeType.bounded
   {
     compilerError("expand() is not supported on unbounded ranges");
   }
-  /* Return a range expanded by ``i`` elements from each end.  If ``i`` is
+  /* Return a range expanded by ``off`` elements from each end.  If ``off`` is
      negative, the range will be contracted.
 
      Example:
@@ -981,8 +983,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
        0..9.expand(-1) == 1..8
        0..9.expand(-2) == 2..7
    */
-  proc range.expand(i: repType)
+  proc range.expand(off: integral)
   {
+    const i = off.safeCast(repType);
     return new range(idxType, boundedType, stridable,
                      chpl__intToIdx(_low-i, idxType),
                      chpl__intToIdx(_high+i, idxType),
