@@ -46,33 +46,8 @@ void qt_internal_alignment_init(void) {
 
 void *qt_internal_aligned_alloc(size_t        alloc_size,
                                      uint_fast16_t alignment) {
-  void *ret;
-
-  assert(alloc_size > 0);
-  switch (alignment) {
-    case 0:
-      ret = chpl_mem_alloc(alloc_size, CHPL_RT_MD_TASK_LAYER_UNSPEC,
+  return chpl_mem_memalign(alignment, alloc_size, CHPL_RT_MD_TASK_LAYER_UNSPEC,
                            0, CHPL_FILE_IDX_INTERNAL);
-      break;
-#if defined(HAVE_16ALIGNED_MALLOC)
-    case 16:
-    case 8:
-    case 4:
-    case 2:
-      ret = chpl_mem_alloc(alloc_size, CHPL_RT_MD_TASK_LAYER_UNSPEC,
-                           0, CHPL_FILE_IDX_INTERNAL);
-      break;
-#endif
-    default:
-      ret = chpl_mem_memalign(alignment, alloc_size,
-                              CHPL_RT_MD_TASK_LAYER_UNSPEC,
-                              0, CHPL_FILE_IDX_INTERNAL);
-      break;
-  }
-
-  assert(ret);
-  assert(((uintptr_t)ret & (alignment - 1)) == 0);
-  return ret;
 }
 
 void qt_internal_aligned_free(void         *ptr,
