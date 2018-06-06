@@ -264,7 +264,6 @@ module ChapelRange {
   proc chpl_build_low_bounded_range(low: integral)
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
   proc chpl_build_low_bounded_range(low: enumerated) {
-    compilerError("ranges of enum type are not currently supported");
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
   }
   proc chpl_build_low_bounded_range(low) {
@@ -275,7 +274,6 @@ module ChapelRange {
   proc chpl_build_high_bounded_range(high: integral)
     return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
   proc chpl_build_high_bounded_range(high: enumerated) {
-    compilerError("ranges of enum type are not currently supported");
     return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
   }
   proc chpl_build_high_bounded_range(high) {
@@ -510,14 +508,14 @@ module ChapelRange {
   inline proc range.isNaturallyAligned()
     where !stridable && this.boundedType == BoundedRangeType.boundedLow
   {
-    return this.alignedLow == _low;
+    return this.alignedLowAsInt == _low;
   }
 
   pragma "no doc"
   inline proc range.isNaturallyAligned()
     where stridable && this.boundedType == BoundedRangeType.boundedLow
   {
-    return stride > 0 && this.alignedLow == _low;
+    return stride > 0 && this.alignedLowAsInt == _low;
   }
 
   pragma "no doc"
@@ -532,7 +530,7 @@ module ChapelRange {
   inline proc range.isNaturallyAligned()
     where stridable && this.boundedType == BoundedRangeType.boundedHigh
   {
-    return stride < 0 && this.alignedHigh == _high;
+    return stride < 0 && this.alignedHighAsInt == _high;
   }
 
   /* Returns true if the range is ambiguously aligned, false otherwise */
@@ -1451,10 +1449,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       return new range(idxType = r.idxType,
                        boundedType = BoundedRangeType.bounded,
                        stridable = r.stridable,
-                       _low = 1,
-                       _high = 0,
+                       _low = chpl__intToIdx(1, r.idxType),
+                       _high = chpl__intToIdx(0, r.idxType),
                        _stride = r.stride,
-                       _alignment = 0,
+                       _alignment = chpl__intToIdx(0, r.idxType),
                        _aligned = false);
 
     if !r.hasFirst() && count > 0 then
@@ -1474,7 +1472,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     //
     proc chpl__computeTypeForCountMath(type t1, type t2) type {
       if (t1 == t2) then {
-        return t1;
+        if (isEnumType(t1)) then
+          return int;
+        else
+          return t1;
       } else if (numBits(t1) == 64 || numBits(t2) == 64) then {
         return int(64);
       } else {
@@ -1490,22 +1491,22 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     var diff = count : signedComputeType * r.stride : signedComputeType;
 
     var lo : resultType =
-      if diff > 0 then r.low
-      else chpl__add(r.high : computeType, (diff + 1): computeType, resultType);
+      if diff > 0 then r._low
+      else chpl__add(r._high : computeType, (diff + 1): computeType, resultType);
     var hi : resultType =
-      if diff < 0 then r.high
-      else chpl__add(r.low : computeType, diff : computeType - 1, resultType);
+      if diff < 0 then r._high
+      else chpl__add(r._low : computeType, diff : computeType - 1, resultType);
 
     if r.stridable {
       if r.hasLowBound() && lo < r._low then lo = r._low;
       if r.hasHighBound() && hi > r._high then hi = r._high;
     }
 
-    return new range(idxType = resultType,
+    return new range(idxType = r.idxType,
                      boundedType = BoundedRangeType.bounded,
                      stridable = r.stridable,
-                     _low = lo,
-                     _high = hi,
+                     _low = chpl__intToIdx(lo, r.idxType),
+                     _high = chpl__intToIdx(hi, r.idxType),
                      _stride = if r.stridable then (r.stride: strType)
                                             else _void,
                      _alignment = if r.stridable then r.alignment else _void,
@@ -2265,7 +2266,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
     if ! alignCheckRange.isNaturallyAligned() && aligned then
-      f <~> new ioLiteral(" align ") <~> chpl__mod(alignment, stride);
+      f <~> new ioLiteral(" align ") <~> chpl__intToIdx(chpl__mod(chpl__idxToInt(alignment), stride), idxType);
   }
   pragma "no doc"
   proc ref range.readThis(f)
