@@ -100,6 +100,18 @@ static size_t totalFreed = 0;     /* total memory freed */
 static size_t totalEntries = 0;     /* number of entries in hash table */
 
 
+// We can't use a sync var for concurrency control here.  The Qthreads
+// internal memory allocator shim references this memory tracking code
+// via the Chapel runtime public memory layer interface.  Referring to a
+// sync var here when exiting (to report memTrack results, say), after
+// the tasking layer is shut down, ends up trying to create a qthread in
+// the terminated Qthreads library.  Chaos results.  We also cannot use
+// an atomic var, because with CHPL_ATOMICS=locks those are implemented
+// by means of sync vars.  So, we use a pthread mutex.  Note that this
+// is only safe if we cannot switch tasks on a pthread while holding the
+// mutex and then try to lock it recursively.  Currently that is the
+// case, since we do not yield while holding the mutex.
+// 
 static pthread_mutex_t memTrack_lockVar = PTHREAD_MUTEX_INITIALIZER;
 
 static inline
