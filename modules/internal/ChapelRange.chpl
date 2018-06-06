@@ -1227,8 +1227,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   /* Returns a range whose alignment is this range's first index plus ``n``.
      If the range has no first index, a runtime error is generated.
    */
-  proc range.offset(in offs : repType)
+  proc range.offset(in off: integral)
   {
+    var offs = off.safeCast(repType);
     if !stridable {
       compilerWarning("invoking 'offset' on an unstrided range has no effect.");
       offs = 0;
