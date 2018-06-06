@@ -1,1 +1,1 @@
-inconsistentYieldType.chpl:1: error: Can't determine type yielded by iterator
+inconsistentYieldType.chpl:1: error: unable to resolve yielded type
