@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-#include "chplrt.h"
-
 #ifndef _chplexternarray_H_
 #define _chplexternarray_H_
 
@@ -32,13 +30,8 @@ typedef struct {
 
   free_func free;
 } external_array;
+const free_func FREE_FUNC_NIL;
 
-const free_func FREE_FUNC_NIL = NULL;
-void callFree(external_array x);
+void call_free(external_array x);
 
-void callFree(external_array x) {
-  if (x.free != FREE_FUNC_NIL) {
-    x.free(x.elts);
-  }
-}
 #endif

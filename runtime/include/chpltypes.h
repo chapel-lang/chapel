@@ -21,7 +21,6 @@
 #define _chpltypes_H_
 
 #include "sys_basic.h"
-#include "chpl-external-array.h"
 
 #include <stdint.h>
 #include <stdio.h>

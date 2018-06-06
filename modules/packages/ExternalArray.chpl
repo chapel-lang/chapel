@@ -25,7 +25,6 @@
 module ExternalArray {
   use ChapelStandard;
 
-  extern proc callFree(x: external_array);
   extern type free_func;
   private extern const FREE_FUNC_NIL: free_func;
 
@@ -35,6 +34,7 @@ module ExternalArray {
 
     var free: free_func;
   }
+  extern proc call_free(x: external_array);
 
   pragma "use default init"
   class ExternDist: BaseDist {
@@ -272,7 +272,7 @@ module ExternalArray {
 
     proc dsiDestroyArr() {
       if (_owned) {
-        callFree(_ArrInstance);
+        call_free(_ArrInstance);
       }
     }
 
