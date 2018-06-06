@@ -468,7 +468,7 @@ def generate_graphs(test=False):
         if len(graph_files) == 0 or os.environ.get("CHPL_TEST_PERF_DIR"):
             return
 
-    logger.write("[Executing genGraphs for graph_files in {0} in {1}"
+    logger.write("[Executing genGraphs for graph_files in {0} in {1}]"
             .format(basedir, perf_html_dir))
 
     cmd = [create_graphs]
@@ -480,10 +480,10 @@ def generate_graphs(test=False):
     status = run_and_log(cmd)
 
     if status == 0:
-        logger.write("[Success generating graphs for graph_files in {0} in {1}"
+        logger.write("[Success generating graphs for graph_files in {0} in {1}]"
                 .format(basedir, perf_html_dir))
     else:
-        logger.write("[Error generating graphs for graph_files in {0} in {1}"
+        logger.write("[Error generating graphs for graph_files in {0} in {1}]"
                 .format(basedir, perf_html_dir))
 
 
@@ -534,7 +534,7 @@ def generate_graph_files_graphs():
 
     exec_graph_list = os.path.join(test_dir, "{0}GRAPHFILES".format(graphfiles_prefix))
 
-    logger.write("[Executing genGraphs for {0} in {1}"
+    logger.write("[Executing genGraphs for {0} in {1}]"
             .format(exec_graph_list, perf_html_dir))
 
     cmd = [create_graphs]
@@ -547,10 +547,10 @@ def generate_graph_files_graphs():
     status = run_and_log(cmd)
 
     if status == 0:
-        logger.write("[Success generating graphs from {0} in {1}"
+        logger.write("[Success generating graphs from {0} in {1}]"
                 .format(exec_graph_list, perf_html_dir))
     else:
-        logger.write("[Error generating graphs from {0} in {1}"
+        logger.write("[Error generating graphs from {0} in {1}]"
                 .format(exec_graph_list, perf_html_dir))
 
 

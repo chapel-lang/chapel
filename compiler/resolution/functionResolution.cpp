@@ -168,7 +168,6 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
 static CallExpr* userCall(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset);
 
-static void resolveTupleAndExpand(CallExpr* call);
 static void resolveTupleExpand(CallExpr* call);
 static void resolveSetMember(CallExpr* call);
 static void resolveMaybeSyncSingleField(CallExpr* call);
@@ -646,6 +645,12 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   }
 
   if (formalType == dtUnmanaged && isUnmanagedClassType(actualType))
+    return true;
+
+  // handle unmanaged GenericClass(int) -> unmanaged GenericClass
+  if (isUnmanagedClassType(formalType) && isUnmanagedClassType(actualType) &&
+      canInstantiate(canonicalClassType(actualType),
+                     canonicalClassType(formalType)))
     return true;
 
   if (formalType == dtBorrowed && isClass(actualType))
@@ -1965,9 +1970,6 @@ void resolveDestructor(AggregateType* at) {
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
     switch (call->primitive->tag) {
-    case PRIM_TUPLE_AND_EXPAND:
-      resolveTupleAndExpand(call);
-      break;
 
     case PRIM_TUPLE_EXPAND:
       resolveTupleExpand(call);
@@ -4333,78 +4335,6 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
               "in this loop",
               varname);
   }
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void resolveTupleAndExpand(CallExpr* call) {
-  Expr*      stmt = call->getStmtExpr();
-  SymExpr*   se   = toSymExpr(call->get(1));
-  int        size = 0;
-  CallExpr*  noop = new CallExpr(PRIM_NOOP);
-  VarSymbol* tmp  = gTrue;
-
-  for (int i = 0; i < se->symbol()->type->substitutions.n && size == 0; i++) {
-    SymbolMapElem& elem = se->symbol()->type->substitutions.v[i];
-
-    if (elem.key != NULL && strcmp("size", elem.key->name) == 0) {
-      size = toVarSymbol(elem.value)->immediate->int_value();
-    }
-  }
-
-  INT_ASSERT(size > 0);
-
-  stmt->insertBefore(noop);
-
-  for (int i = 1; i <= size; i++) {
-    VarSymbol* tmp1 = newTemp("_tuple_and_expand_tmp_");
-    VarSymbol* tmp2 = newTemp("_tuple_and_expand_tmp_");
-    VarSymbol* tmp3 = newTemp("_tuple_and_expand_tmp_");
-    VarSymbol* tmp4 = newTemp("_tuple_and_expand_tmp_");
-
-    tmp1->addFlag(FLAG_MAYBE_PARAM);
-    tmp1->addFlag(FLAG_MAYBE_TYPE);
-
-    tmp2->addFlag(FLAG_MAYBE_PARAM);
-    tmp2->addFlag(FLAG_MAYBE_TYPE);
-
-    tmp3->addFlag(FLAG_MAYBE_PARAM);
-    tmp3->addFlag(FLAG_MAYBE_TYPE);
-
-    tmp4->addFlag(FLAG_MAYBE_PARAM);
-    tmp4->addFlag(FLAG_MAYBE_TYPE);
-
-    stmt->insertBefore(new DefExpr(tmp1));
-    stmt->insertBefore(new DefExpr(tmp2));
-    stmt->insertBefore(new DefExpr(tmp3));
-    stmt->insertBefore(new DefExpr(tmp4));
-
-    CallExpr* index  = new CallExpr(se->copy(), new_IntSymbol(i));
-    CallExpr* query  = new CallExpr(PRIM_QUERY, tmp1);
-    CallExpr* test   = new CallExpr("==",       tmp2, call->get(3)->copy());
-    CallExpr* bitAnd = new CallExpr("&",        tmp3, tmp);
-
-    for (int j = 2; j < call->numActuals(); j++) {
-      query->insertAtTail(call->get(j)->copy());
-    }
-
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp1, index));
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp2, query));
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp3, test));
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp4, bitAnd));
-
-    tmp = tmp4;
-  }
-
-  call->replace(new SymExpr(tmp));
-
-  noop->replace(call); // put call back in ast for function resolution
-
-  call->convertToNoop();
 }
 
 /************************************* | **************************************
@@ -8970,6 +8900,11 @@ static void removeUnusedTypes() {
         if (AggregateType* at1 = toAggregateType(type->getValType())) {
           if (isUnusedClass(at1) == true) {
             // If the value type is unused, its ref type can also be removed.
+            type->defPoint->remove();
+          }
+        } else if(UnmanagedClassType* mt =
+                  toUnmanagedClassType(type->getValType())) {
+          if (isUnusedClass(mt->getCanonicalClass())) {
             type->defPoint->remove();
           }
         }

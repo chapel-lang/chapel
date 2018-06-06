@@ -55,7 +55,7 @@ class SystemError : Error {
      Provides a formatted string output for :class:`SystemError`, generated
      from the internal ``err`` and the ``details`` string.
   */
-  proc message() {
+  override proc message() {
     var strerror_err: err_t = ENOERR;
     var errstr              = sys_strerror_syserr_str(err, strerror_err);
     var err_msg             = new string(errstr, isowned=true, needToCopy=false);

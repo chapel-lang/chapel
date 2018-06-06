@@ -1,5 +1,5 @@
 proc norm(x:?t...?n) {
-  var sum:t(1);
+  var sum:t;
 
   for i in 1..n {
     sum += x(i)*x(i);

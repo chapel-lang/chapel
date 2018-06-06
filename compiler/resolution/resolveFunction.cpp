@@ -673,7 +673,9 @@ static FnSymbol*      makeIteratorMethod(IteratorInfo* ii,
 
 static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
   INT_ASSERT(yieldedType != NULL);
-  INT_ASSERT(yieldedType != dtUnknown);
+  if (yieldedType == dtUnknown) {
+    USR_FATAL(fn, "unable to resolve yielded type");
+  }
 
   SET_LINENO(fn);
 
