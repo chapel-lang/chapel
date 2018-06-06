@@ -342,6 +342,12 @@ module ChapelError {
 
   pragma "no doc"
   pragma "insert line file info"
+  proc chpl_fix_thrown_error(type Error) {
+    compilerError("Cannot throw a type: '", Error:string, "'. Did you forget the keyword 'new'?");
+  }
+
+  pragma "no doc"
+  pragma "insert line file info"
   proc chpl_fix_thrown_error(err: unmanaged Error): unmanaged Error {
     var fixErr: unmanaged Error = err;
     if fixErr == nil then
