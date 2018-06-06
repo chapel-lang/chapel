@@ -80,6 +80,8 @@ static void          processImportExprs();
 
 static void          resolveGotoLabels();
 
+static void          adjustMethodThisForDefaultUnmanaged(FnSymbol* fn);
+
 static bool          isStableClassType(Type* t);
 static Expr*         handleUnstableClassType(SymExpr* se);
 
@@ -167,34 +169,7 @@ void scopeResolve() {
     }
 
     // Adjust class type methods for unmanaged/borrowed
-    if (fn->_this && isClass(fn->_this->type) && fDefaultUnmanaged) {
-
-      ArgSymbol* _this = toArgSymbol(fn->_this);
-      Type* t = _this->type;
-      bool ok = isStableClassType(t);
-
-      if (fn->getModule()->modTag == MOD_USER && !ok) {
-        SET_LINENO(fn->_this);
-
-        // Make sure fn->_this->typeExpr exists
-        if (!_this->typeExpr) {
-          _this->typeExpr = new BlockStmt(new SymExpr(t->symbol));
-          parent_insert_help(_this, _this->typeExpr);
-        }
-        // Now adjust _this->typeExpr (whether we just created it or not)
-        Expr* stmt = toArgSymbol(fn->_this)->typeExpr->body.only();
-
-        if (SymExpr* se = toSymExpr(stmt)) {
-          Expr* result = se;
-          if (fWarnUnstable || fDefaultUnmanaged)
-            result = handleUnstableClassType(se);
-          // Amend _this->type
-          fn->_this->type = result->typeInfo();
-        } else {
-          INT_ASSERT(0);
-        }
-      }
-    }
+    adjustMethodThisForDefaultUnmanaged(fn);
   }
 
   //
@@ -674,6 +649,38 @@ static void resolveGotoLabels() {
   }
 }
 
+static void adjustMethodThisForDefaultUnmanaged(FnSymbol* fn) {
+
+  if (fDefaultUnmanaged && fn->_this && isClass(fn->_this->type)) {
+    ArgSymbol* _this = toArgSymbol(fn->_this);
+    Type* t = _this->type;
+    bool ok = isStableClassType(t);
+
+    if (fn->getModule()->modTag == MOD_USER && !ok) {
+      SET_LINENO(fn->_this);
+
+      // Make sure fn->_this->typeExpr exists
+      if (!_this->typeExpr) {
+        _this->typeExpr = new BlockStmt(new SymExpr(t->symbol));
+        parent_insert_help(_this, _this->typeExpr);
+      }
+      // Now adjust _this->typeExpr (whether we just created it or not)
+      Expr* stmt = toArgSymbol(fn->_this)->typeExpr->body.only();
+
+      if (SymExpr* se = toSymExpr(stmt)) {
+        Expr* result = se;
+        if (fWarnUnstable || fDefaultUnmanaged)
+          result = handleUnstableClassType(se);
+        // Amend _this->type
+        fn->_this->type = result->typeInfo();
+      } else {
+        INT_ASSERT(0);
+      }
+    }
+  }
+}
+
+
 /************************************* | *************************************/
 
 static void updateMethod(UnresolvedSymExpr* usymExpr);
@@ -790,6 +797,10 @@ static bool callSpecifiesClassKind(CallExpr* call) {
 }
 
 // Returns the expr resulting, either se or a call containing it
+// Handle the case where se->symbol() is "unstable" i.e. an undecorated
+// class type. With --warn-unstable, issue a warning. With --default-unmanaged,
+// wrap it in a (call PRIM_TO_UNMANAGED se). Return either se or the
+// new call just created.
 static Expr* handleUnstableClassType(SymExpr* se) {
   if (se->getModule()->modTag == MOD_USER) {
     if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
