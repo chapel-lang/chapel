@@ -9,3 +9,17 @@ convenience and was obtained from:
 
 Any Chapel issues that seem to be related to Qthreads should be
 directed to the Chapel team at https://chapel-lang.org/bugs.html.
+
+
+Chapel modifications to Qthreads
+================================
+
+The modifications that we have made to the official Qthreads release are
+as follows:
+
+* In the Chapel memory allocator shim (src/alloc/chapel.c), use the
+  Chapel runtime's public memory interface instead of the internal
+  interface provided by the memory layer implementations.  This gives
+  us automatic "out of memory" messages and halts when an allocation
+  fails, and should also allow us to track Qthreads memory use should
+  we decide we want to do so.
