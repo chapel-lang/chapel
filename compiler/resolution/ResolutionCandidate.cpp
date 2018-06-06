@@ -32,6 +32,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+static bool isCandidateFn(ResolutionCandidate* res, CallInfo& info);
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -69,7 +71,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
 
   fn = expandIfVarArgs(fn, info);
 
-  if (fn != NULL) {
+  if (fn != NULL && isCandidateFn(this, info)) {
     resolveTypedefedArgTypes();
 
     if (computeAlignment(info) == true) {
@@ -567,6 +569,23 @@ static bool isCandidateNew(ResolutionCandidate* res, CallInfo& info) {
   return retval;
 }
 
+static bool isCandidateFn(ResolutionCandidate* res, CallInfo& info) {
+  // Exclude initializers on other types before we attempt to resolve the
+  // signature.
+  //
+  // TODO: Expand this check for all methods
+  if (info.call->numActuals() >= 2) {
+    if (res->fn->isInitializer() && isCandidateInit(res, info) == false) {
+      return false;
+    } else if (strcmp(res->fn->name, "_new") == 0 &&
+               isCandidateNew(res, info) == false) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -575,17 +594,6 @@ static bool isCandidateNew(ResolutionCandidate* res, CallInfo& info) {
 
 bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
   int coindex = -1;
-
-  // Exclude initializers on other types before we attempt to resolve the
-  // signature.
-  //
-  // TODO: Expand this check for all methods
-  if (fn->isInitializer() && isCandidateInit(this, info) == false) {
-    return false;
-  } else if (strcmp(fn->name, "_new") == 0 &&
-             isCandidateNew(this, info) == false) {
-    return false;
-  }
 
   /*
    * A derived generic type will use the type of its parent,
