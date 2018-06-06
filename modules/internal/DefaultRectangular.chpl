@@ -211,7 +211,7 @@ module DefaultRectangular {
 
       if numChunks <= 1 {
         for i in these_help(1) {
-          yield chpl__intToIdx(i, idxType);
+          yield i;
         }
       } else {
         var locBlock: rank*range(repType);
