@@ -937,7 +937,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiDestroyArr() {
+    override proc dsiDestroyArr() {
       if dom.dsiNumIndices > 0 {
         pragma "no copy" pragma "no auto destroy" var dr = data;
         pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);

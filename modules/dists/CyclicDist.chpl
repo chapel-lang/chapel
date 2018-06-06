@@ -689,7 +689,7 @@ proc CyclicArr.dsiDisplayRepresentation() {
   dom.dsiDisplayRepresentation();
 }
 
-proc CyclicArr.dsiGetBaseDom() return dom;
+override proc CyclicArr.dsiGetBaseDom() return dom;
 
 //
 // NOTE: Each locale's myElems array be initialized prior to setting up
@@ -729,7 +729,7 @@ proc CyclicArr.setup() {
   if doRADOpt && disableCyclicLazyRAD then setupRADOpt();
 }
 
-proc CyclicArr.dsiDestroyArr() {
+override proc CyclicArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {
       delete locArr(localeIdx);
@@ -922,12 +922,12 @@ proc CyclicArr.dsiSerialWrite(f) {
   }
 }
 
-proc CyclicArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+override proc CyclicArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
   // The reallocation happens when the LocCyclicDom.myBlock field is changed
   // in CyclicDom.setup(). Nothing more needs to happen here.
 }
 
-proc CyclicArr.dsiPostReallocate() {
+override proc CyclicArr.dsiPostReallocate() {
   // Call this *after* the domain has been reallocated
   if doRADOpt then setupRADOpt();
 }
