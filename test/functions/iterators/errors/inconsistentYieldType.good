@@ -1,0 +1,1 @@
+inconsistentYieldType.chpl:1: error: Can't determine type yielded by iterator
