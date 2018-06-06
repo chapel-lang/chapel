@@ -1816,6 +1816,11 @@ void AggregateType::buildDefaultInitializer() {
       preNormalizeInitMethod(fn);
       normalize(fn);
 
+      // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did that
+      // we would emit two use-before-def errors for classes because of the
+      // generated _new function.
+      checkUseBeforeDefs(fn);
+
       methods.add(fn);
     } else {
       fieldToArg(fn, names, fieldArgMap);
