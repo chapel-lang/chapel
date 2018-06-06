@@ -1988,7 +1988,7 @@ module ChapelBase {
   // constructor for a record) but that is more challenging because
   // _unmanaged is a built-in non-record type.
   proc _to_unmanaged(type t) type {
-    type rt = __primitive("to unmanaged class", t).type;
+    type rt = __primitive("to unmanaged class", t);
     return rt;
   }
   inline proc _to_unmanaged(arg) {
@@ -1997,7 +1997,7 @@ module ChapelBase {
   }
   // type constructor for converting to a borrow
   proc _to_borrowed(type t) type {
-    type rt = __primitive("to borrowed class", t).type;
+    type rt = __primitive("to borrowed class", t);
     return rt;
   }
   inline proc _to_borrowed(arg) {
