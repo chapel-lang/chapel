@@ -2117,11 +2117,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
       }
       if this.stridable || myFollowThis.stridable {
-        var r = chpl__intToIdx(1)..chpl__intToIdx(0) by 1:chpl__rangeStrideType(repType);
+        var r = chpl__intToIdx(1, idxType)..chpl__intToIdx(0, idxType) by 1:chpl__rangeStrideType(repType);
 
         if flwlen != 0 {
           const stride = this.stride * myFollowThis.stride;
-          var low = this.orderToindex(myFollowThis.first);
+          var low = this.orderToIndex(myFollowThis.first);
           var high = chpl__intToIdx(chpl__idxToInt(low) + stride * (flwlen - 1):strType, idxType);
           /*
           if (high != this.orderToIndex(myFollowThis.last)) {
@@ -2180,7 +2180,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         if debugChapelRange then
           chpl_debug_writeln("Expanded range = ",r);
 
-        compilerWarning("C: " + r.type:string);
+        //        compilerWarning("C: " + r.type:string);
 
         for i in r do
           yield i;
@@ -2191,7 +2191,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         if debugChapelRange then
           chpl_debug_writeln("Expanded range = ",r);
 
-        compilerWarning("D: " + r.type:string);
+        //        compilerWarning("D: " + r.type:string);
 
         for i in r do
           yield i;

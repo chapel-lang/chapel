@@ -178,6 +178,7 @@ module DefaultRectangular {
                minIndicesPerTask = dataParMinGranularity,
                offset=createTuple(rank, repType, 0:repType))
       where tag == iterKind.standalone {
+      //      compilerWarning("entering standalone");
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain standalone invoked on ", ranges);
       if debugDefaultDist then
@@ -210,7 +211,7 @@ module DefaultRectangular {
 
       if numChunks <= 1 {
         for i in these_help(1) {
-          yield i;
+          yield chpl__intToIdx(i, idxType);
         }
       } else {
         var locBlock: rank*range(repType);
@@ -264,6 +265,7 @@ module DefaultRectangular {
           }
         }
       }
+      //      compilerWarning("exiting standalone");
     }
 
     iter these(param tag: iterKind,
@@ -763,6 +765,8 @@ module DefaultRectangular {
   // Based on the old 'dsiSlice' method
   //
   proc _remoteAccessData.toSlice(newDom) {
+    if (this.rank != newDom.rank) then
+      compilerError("ToSlice assertion error");
     compilerAssert(this.rank == newDom.rank);
 
     // NB: Sets 'blkChanged' if the new domain is stridable.
