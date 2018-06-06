@@ -23,7 +23,7 @@ proc main() {
   t.start();
   select barrierMode {
     when LocalAtomic do LocalBarrierBarrier();
-    when LocalSync do LocalBarrierBarrier();
+    when LocalSync do LocalSyncBarrierBarrier();
     when GlobalAllLocales do GlobalAllLocalesBarrierBarrier();
   }
   t.stop();
