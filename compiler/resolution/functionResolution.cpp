@@ -5459,7 +5459,8 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
       // todo: not all const if it is zippered and one of iterators is var
       if (isReferenceType(rhsType)                == false &&
           isTupleContainingAnyReferences(rhsType) == false &&
-          rhsType->symbol->hasFlag(FLAG_ARRAY)    == false) {
+          rhsType->symbol->hasFlag(FLAG_ARRAY)    == false &&
+          rhsType->symbol->hasFlag(FLAG_COPY_MUTATES) == false) {
         // ... then mark LHS constant.
         lhsSym->addFlag(FLAG_CONST);
       }
