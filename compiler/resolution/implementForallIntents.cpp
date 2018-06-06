@@ -1889,6 +1889,14 @@ static ForallIntentTag forallIntentForArgIntent(IntentTag intent) {
 }
 
 static void resolveSVarIntent(ShadowVarSymbol* svar) {
+  // Special case for owned -- don't want ownership transfer on
+  // forall intent by default
+  if (svar->getValType()->symbol->hasFlag(FLAG_MANAGED_POINTER) &&
+      (svar->intent == TFI_DEFAULT || svar->intent == TFI_CONST)) {
+    svar->intent = TFI_CONST_REF;
+    return;
+  }
+
   switch (svar->intent) {
     case TFI_DEFAULT:
       svar->intent = forallIntentForArgIntent(

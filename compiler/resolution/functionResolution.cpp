@@ -4226,7 +4226,8 @@ void lvalueCheck(CallExpr* call) {
     }
 
     if (errorMsg == true) {
-      if (nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+      if (nonTaskFnParent &&
+          nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
         // we are asked to ignore errors here
         return;
       }
