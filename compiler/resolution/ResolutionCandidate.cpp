@@ -421,6 +421,15 @@ Type* getInstantiationType(Type* actualType, Type* formalType) {
     }
   }
 
+  // If we still don't have an instantiation type, try it again
+  // with the promotion type.
+  if (ret == NULL) {
+    if (Type* st = actualType->getValType()->scalarPromotionType) {
+      ret = getBasicInstantiationType(st, formalType);
+    }
+  }
+
+
   // Now, if formalType is a generic parent type to actualType,
   // we should instantiate the parent actual type
   if (AggregateType* at = toAggregateType(ret)) {
@@ -438,11 +447,6 @@ Type* getInstantiationType(Type* actualType, Type* formalType) {
 static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
   if (canInstantiate(actualType, formalType)) {
     return actualType;
-  }
-
-  if (Type* st = actualType->scalarPromotionType) {
-    if (canInstantiate(st, formalType))
-      return st;
   }
 
   if (UnmanagedClassType* actualMt = toUnmanagedClassType(actualType)) {
