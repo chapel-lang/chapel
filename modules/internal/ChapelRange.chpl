@@ -831,7 +831,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
        0..9.translate(-2) == -2..7
    */
   inline proc range.translate(i: integral)
-    return this + i.safeCast(repType);
+    return this + i:repType;
 
   pragma "no doc"
   inline proc range.translate(i)
