@@ -16,7 +16,8 @@ proc main {
     type inType = inputTypes(i);
     param typeName = inType:string;
     t.start();
-    var files = readAllHDF5Files(Locales, inputDir, "/dset", inType, rank=2);
+    var files = readAllHDF5Files(Locales, inputDir, "/dset",
+                                 inType:string, inType, rank=2);
     t.stop();
 
     for (f, i) in zip (files, 1..) {

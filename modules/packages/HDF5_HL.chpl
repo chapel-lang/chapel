@@ -3537,12 +3537,19 @@ module HDF5_HL {
     }
     */
 
-    proc readAllHDF5Files(locs: [] locale, dirname: string, dsetName: string, type eltType, param rank) {
+    /* Read the dataset named `dsetName` out of all HDF5 files in the
+       directory `dirname` with filenames that begin with `filenameStart`.
+       This will read the files in parallel with one task per locale in the
+       `locs` array.
+     */
+    proc readAllHDF5Files(locs: [] locale, dirname: string, dsetName: string,
+                          filenameStart: string, type eltType, param rank) {
       use BlockDist, HDF5_WAR;
 
       var filenames: [1..0] string;
       for f in findfiles(dirname) {
-        if f.startsWith(dirname + '/' + eltType:string) && f.endsWith(".h5") {
+        if f.startsWith(dirname + '/' + filenameStart:string) &&
+           f.endsWith(".h5") {
           filenames.push_back(f);
         }
       }
@@ -3571,6 +3578,11 @@ module HDF5_HL {
       return files;
     }
 
+    /* Read the dataset named `dsetName` out of the open file that `file_id`
+       refers to.  Store the input into the array `data`.
+       Can read data of type int/uint (size 8, 16, 32, 64), real (size 32, 64),
+       and c_string.
+     */
     proc readHDF5Dataset(file_id, dsetName: string, data) {
       type eltType = data.eltType;
 
