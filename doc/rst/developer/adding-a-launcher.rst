@@ -27,6 +27,7 @@ Interface
 A launcher has 3 entrypoints that are accessed from ``main_launcher.c``:
 
 .. code-block:: C
+
     /* Launches the program */
     int chpl_launch(int argc, char* argv[], int32_t numLocales) {
         ...
