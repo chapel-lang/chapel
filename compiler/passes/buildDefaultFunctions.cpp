@@ -1777,7 +1777,6 @@ void buildDefaultDestructor(AggregateType* ct) {
 
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_DESTRUCTOR);
     fn->addFlag(FLAG_INLINE);
 

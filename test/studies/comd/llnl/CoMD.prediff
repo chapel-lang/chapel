@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 
-import sys, os, shutil
+import sys, os, shutil, re
 
 test_name = sys.argv[1]
 out_file  = sys.argv[2]
 tmp_file  = out_file + ".prediff.tmp"
+
+# Do not modify the output if it looks like there was a compiler error
+with open(out_file) as outf:
+    for line in outf:
+        if re.search(r"\.chpl:\d+:( internal)? error:", line) != None:
+            sys.exit(0)
 
 EPSILON = 1e-6
 vals = {}

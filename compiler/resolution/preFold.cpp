@@ -31,6 +31,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "typeSpecifier.h"
+#include "UnmanagedClassType.h"
 #include "visibleFunctions.h"
 
 #ifndef __STDC_FORMAT_MACROS
@@ -924,8 +925,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
       call->getStmtExpr()->insertBefore(new DefExpr(tmp));
 
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_TUPLE) == true &&
-          field->name[0]                                        == 'x') {
+      if (call->get(1)->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+          field->name[0] == 'x') {
         retval = new CallExpr(PRIM_GET_MEMBER_VALUE,
                               call->get(1)->remove(),
                               new_CStringSymbol(field->name));
@@ -937,7 +938,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
       call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, retval));
 
-      call->replace(new CallExpr(PRIM_TYPEOF, tmp));
+      // Wrap it in PRIM_TYPEOF unless it's just used in another
+      // PRIM_QUERY.
+      bool wrapInTypeOf = true;
+      if (CallExpr* parentCall = toCallExpr(call->parentExpr))
+        if (parentCall->isPrimitive(PRIM_MOVE))
+          if (SymExpr* lhsSe = toSymExpr(parentCall->get(1)))
+            if (SymExpr* useSe = lhsSe->symbol()->getSingleUse())
+              if (CallExpr* useParent = toCallExpr(useSe->parentExpr))
+                if (useParent->isPrimitive(PRIM_QUERY))
+                  wrapInTypeOf = false;
+
+      if (wrapInTypeOf)
+        call->replace(new CallExpr(PRIM_TYPEOF, tmp));
+      else
+        call->replace(new SymExpr(tmp));
 
     } else {
       // Possibly indicated by 'determineQueriedField' returning NULL
@@ -1108,8 +1123,22 @@ static Expr* preFoldNamed(CallExpr* call) {
         USR_FATAL(call, "illegal call of type");
       }
 
+      if (call->numActuals() > 3) {
+        USR_FATAL(call, "too many arguments to type index expression");
+      }
+
       if (!get_int(call->get(3), &index)) {
         USR_FATAL(call, "illegal type index expression");
+      }
+
+      AggregateType* at = toAggregateType(sym->type);
+
+      if (!at) {
+        USR_FATAL(call, "illegal type index expression");
+      }
+
+      if (index <= 0 || index > at->fields.length-1) {
+        USR_FATAL(call, "type index expression '%i' out of bounds", index);
       }
 
       sprintf(field, "x%" PRId64, index);
@@ -1397,7 +1426,8 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
         // and the current component are non-references.
         // And it's not an array (arrays are always yielded by reference)
         // - see boundaries() in release/examples/benchmarks/miniMD/miniMD.
-        if (!fieldType->symbol->hasFlag(FLAG_ARRAY)) {
+        if (!fieldType->symbol->hasFlag(FLAG_ARRAY) &&
+            !fieldType->symbol->hasFlag(FLAG_COPY_MUTATES)) {
           destSE->symbol()->addFlag(FLAG_CONST);
         }
       } else {
@@ -1429,7 +1459,8 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 // determine field associated with query expression
 //
 static Symbol* determineQueriedField(CallExpr* call) {
-  AggregateType* at     = toAggregateType(call->get(1)->getValType());
+  AggregateType* at     =
+    toAggregateType(canonicalClassType(call->get(1)->getValType()));
   SymExpr*       last   = toSymExpr(call->get(call->numActuals()));
   VarSymbol*     var    = toVarSymbol(last->symbol());
   Symbol*        retval = NULL;
@@ -1580,6 +1611,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   fcf_name << "_chpl_fcf_" << unique_fcf_id++ << "_" << flname;
 
   TypeSymbol *ts = new TypeSymbol(astr(fcf_name.str().c_str()), ct);
+  ts->addFlag(FLAG_USE_DEFAULT_INIT);
 
   // Allow a use of a FCF to appear at the statement level i.e.
   //    nameOfFunc;
@@ -1605,11 +1637,10 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   ct->fields.insertAtHead(new DefExpr(super));
 
+  // Builds type constructor
   ct->buildConstructors();
 
-  if (ct->wantsDefaultInitializer()) {
-    ct->buildDefaultInitializer();
-  }
+  ct->buildDefaultInitializer();
 
   buildDefaultDestructor(ct);
 
@@ -1891,6 +1922,7 @@ static AggregateType* createAndInsertFunParentClass(CallExpr*   call,
   TypeSymbol*    parentTs = new TypeSymbol(name, parent);
 
   parentTs->addFlag(FLAG_FUNCTION_CLASS);
+  parentTs->addFlag(FLAG_USE_DEFAULT_INIT);
 
   // Because this function type needs to be globally visible (because
   // we don't know the modules it will be passed to), we put it at the
@@ -1907,7 +1939,10 @@ static AggregateType* createAndInsertFunParentClass(CallExpr*   call,
 
   parent->fields.insertAtHead(new DefExpr(parentSuper));
 
+  // Builds type constructor
   parent->buildConstructors();
+
+  parent->buildDefaultInitializer();
 
   buildDefaultDestructor(parent);
 

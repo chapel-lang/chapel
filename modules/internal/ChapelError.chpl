@@ -68,7 +68,7 @@ module ChapelError {
   pragma "use default init"
   class NilThrownError : Error {
     pragma "no doc"
-    proc message() {
+    override proc message() {
       return "thrown error was nil";
     }
   }
@@ -89,7 +89,7 @@ module ChapelError {
       this.info   = info;
     }
 
-    proc message() {
+    override proc message() {
       if formal.isEmptyString() then
         return info;
       else
@@ -248,7 +248,7 @@ module ChapelError {
        grow arbitrarily long if the :class:`TaskErrors` contains many errors.
 
      */
-    proc message() : string {
+    override proc message() : string {
       var n = 0;
 
       var minMsg:string;
@@ -338,6 +338,12 @@ module ChapelError {
   // TODO -- deprecate this version
   proc chpl_fix_thrown_error(err: borrowed Error): unmanaged Error {
     return chpl_fix_thrown_error(_to_unmanaged(err));
+  }
+
+  pragma "no doc"
+  pragma "insert line file info"
+  proc chpl_fix_thrown_error(type errType) {
+    compilerError("Cannot throw a type: '", errType:string, "'. Did you forget the keyword 'new'?");
   }
 
   pragma "no doc"

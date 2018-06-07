@@ -668,7 +668,6 @@ initPrimitive() {
   prim_def(PRIM_SCALAR_PROMOTION_TYPE, "scalar promotion type", returnInfoScalarPromotionType);
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
-  prim_def(PRIM_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);
 
   prim_def(PRIM_CHPL_COMM_GET, "chpl_comm_get", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT, "chpl_comm_put", returnInfoVoid, true, true);

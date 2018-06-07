@@ -315,7 +315,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc chpl__readXX(x : _syncvar(?)) return x.readXX();
+  proc chpl__readXX(const ref x : _syncvar(?)) return x.readXX();
 
   proc <=>(lhs : _syncvar, ref rhs) {
     const tmp = lhs;
@@ -748,7 +748,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc chpl__readXX(x : _singlevar(?)) return x.readXX();
+  proc chpl__readXX(const ref x : _singlevar(?)) return x.readXX();
 
   /************************************ | *************************************
   *                                                                           *
