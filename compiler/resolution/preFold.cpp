@@ -1123,6 +1123,10 @@ static Expr* preFoldNamed(CallExpr* call) {
         USR_FATAL(call, "illegal call of type");
       }
 
+      if (call->numActuals() > 3) {
+        USR_FATAL(call, "too many arguments to type index expression");
+      }
+
       if (!get_int(call->get(3), &index)) {
         USR_FATAL(call, "illegal type index expression");
       }
