@@ -27,7 +27,6 @@ module ExternalArray {
 
   extern type chpl_free_func;
   private extern const CHPL_FREE_FUNC_NIL: chpl_free_func;
-  private extern const CHPL_FREE_FUNC_CHAPEL_WRAP: chpl_free_func;
 
   extern record chpl_external_array {
     var elts: c_void_ptr;
@@ -35,6 +34,8 @@ module ExternalArray {
 
     var freer: chpl_free_func;
   }
+  extern proc chpl_make_external_array(elt_size: uint, num_elts: uint):
+    chpl_external_array;
   extern proc chpl_call_free(x: chpl_external_array);
 
   pragma "use default init"
@@ -81,9 +82,7 @@ module ExternalArray {
     }
 
     proc dsiBuildArray(type eltType) {
-      var data = new chpl_external_array(c_malloc(eltType, this.size),
-                                    this.size,
-                                    CHPL_FREE_FUNC_CHAPEL_WRAP);
+      var data = chpl_make_external_array(c_sizeof(eltType), this.size);
       var arr = new unmanaged ExternArr(eltType,
                                         _to_unmanaged(this),
                                         data,
@@ -297,7 +296,7 @@ module ExternalArray {
   }
 
   pragma "no copy return"
-    proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
+  proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
     var dist = new unmanaged ExternDist();
     var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,));
     dom._free_when_no_arrs = true;

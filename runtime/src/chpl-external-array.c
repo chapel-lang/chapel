@@ -22,7 +22,19 @@
 #include "chpl-mem.h"
 
 const chpl_free_func CHPL_FREE_FUNC_NIL = NULL;
-const chpl_free_func CHPL_FREE_FUNC_CHAPEL_WRAP = chpl_wrap_chapel_free_call;
+
+chpl_external_array chpl_make_external_array(uint64_t elt_size,
+                                             uint64_t num_elts) {
+  void* my_mem = chpl_mem_alloc(elt_size*num_elts,
+                                CHPL_RT_MD_ARRAY_ELEMENTS,
+                                0,
+                                0);
+  chpl_external_array ret;
+  ret.elts = my_mem;
+  ret.size = num_elts;
+  ret.freer = chpl_wrap_chapel_free_call;
+  return ret;
+}
 
 void chpl_call_free(chpl_external_array x) {
   if (x.freer != CHPL_FREE_FUNC_NIL) {
