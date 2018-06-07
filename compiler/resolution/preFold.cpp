@@ -1127,8 +1127,17 @@ static Expr* preFoldNamed(CallExpr* call) {
         USR_FATAL(call, "illegal type index expression");
       }
 
-      if (!isAggregateType(sym->type)) {
+      AggregateType* at = toAggregateType(sym->type);
+
+      if (!at) {
         USR_FATAL(call, "illegal type index expression");
+      }
+
+      if (index <= 0 || index > at->fields.length-1) {
+        char msg[60];
+        snprintf(msg, 60,
+                 "type index expression '%" PRId64 "' out of bounds", index);
+        USR_FATAL(call, msg);
       }
 
       sprintf(field, "x%" PRId64, index);
