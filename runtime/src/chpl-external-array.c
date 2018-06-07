@@ -16,25 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "chplrt.h"
 
-#ifndef _chplexternarray_H_
-#define _chplexternarray_H_
+#include "chpl-external-array.h"
+#include "chpl-mem.h"
 
-#include <stdint.h>
+const free_func FREE_FUNC_NIL = NULL;
+const free_func FREE_FUNC_CHAPEL_WRAP = wrap_chapel_free_call;
 
-typedef void (*free_func)(void*);
+void call_free(external_array x) {
+  if (x.free != FREE_FUNC_NIL) {
+    x.free(x.elts);
+  }
+}
 
-typedef struct {
-  void* elts;
-  uint64_t size;
-
-  free_func free;
-} external_array;
-
-const free_func FREE_FUNC_NIL;
-const free_func FREE_FUNC_CHAPEL_WRAP;
-
-void call_free(external_array x);
-void wrap_chapel_free_call(void* mem);
-
-#endif
+void wrap_chapel_free_call(void* mem) {
+  chpl_mem_free(mem, 0, 0);
+}

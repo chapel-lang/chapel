@@ -27,6 +27,7 @@ module ExternalArray {
 
   extern type free_func;
   private extern const FREE_FUNC_NIL: free_func;
+  private extern const FREE_FUNC_CHAPEL_WRAP: free_func;
 
   extern record external_array {
     var elts: c_void_ptr;
@@ -82,7 +83,7 @@ module ExternalArray {
     proc dsiBuildArray(type eltType) {
       var data = new external_array(c_malloc(eltType, this.size),
                                     this.size,
-                                    __primitive("cast", free_func, c_free));
+                                    FREE_FUNC_CHAPEL_WRAP);
       var arr = new unmanaged ExternArr(eltType,
                                         _to_unmanaged(this),
                                         data,
