@@ -35,19 +35,15 @@ endif
 # Have qthreads use Chapel's allocator, unless directed not to
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
 CHPL_QTHREAD_CFG_OPTIONS += --with-alloc=chapel
-# When building the Chapel allocator file we need all the Chapel runtime
-# defs and include directories, plus the third-party include dirs other
-# than that for Qthreads itself (since we're building it).  Notably, we
-# do not want -DNDEBUG; if we have that set when building Qthreads it
-# seems to cause Chapel programs built with the result to hang during
-# exit when shutting down Qthreads.
-CFLAGS += \
-  $(shell $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
-          | tr ' ' '\n' \
-          | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install' \
-          | grep -v '/third-party/qthread/install' \
-          | tr '\n' ' ' \
-          | sed 's/ $$//')
+CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include/localeModels/$(CHPL_MAKE_LOCALE_MODEL)
+CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include/mem/$(CHPL_MAKE_MEM)
+CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include
+ifeq ($(CHPL_MAKE_MEM),jemalloc)
+CFLAGS += -I$(JEMALLOC_INCLUDE_DIR)
+RUNTIME_LFLAGS += -L$(JEMALLOC_LIB_DIR)
+RUNTIME_LFLAGS += -ljemalloc
+RUNTIME_LFLAGS += $(shell $(JEMALLOC_BIN_DIR)/jemalloc-config --libs)
+endif
 endif
 
 # enable oversubscription for testing
