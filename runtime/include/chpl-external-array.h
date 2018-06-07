@@ -28,7 +28,7 @@ typedef struct {
   void* elts;
   uint64_t size;
 
-  free_func free;
+  free_func freer;
 } external_array;
 
 const free_func FREE_FUNC_NIL;

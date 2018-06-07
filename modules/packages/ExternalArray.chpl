@@ -33,7 +33,7 @@ module ExternalArray {
     var elts: c_void_ptr;
     var size: uint;
 
-    var free: free_func;
+    var freer: free_func;
   }
   extern proc call_free(x: external_array);
 

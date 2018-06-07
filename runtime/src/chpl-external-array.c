@@ -25,8 +25,8 @@ const free_func FREE_FUNC_NIL = NULL;
 const free_func FREE_FUNC_CHAPEL_WRAP = wrap_chapel_free_call;
 
 void call_free(external_array x) {
-  if (x.free != FREE_FUNC_NIL) {
-    x.free(x.elts);
+  if (x.freer != FREE_FUNC_NIL) {
+    x.freer(x.elts);
   }
 }
 
