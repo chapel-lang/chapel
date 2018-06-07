@@ -15,22 +15,26 @@ static QINLINE int getpagesize()
 
 #include <qthread/qthread-int.h> /* for uint_fast16_t */
 
-#include "chpl-mem-impl.h"
+#include "chpl-mem.h"
+#include "chpl-linefile-support.h"
 
 void *qt_malloc(size_t size){
-  return chpl_malloc(size);
+  return chpl_mem_alloc(size, CHPL_RT_MD_TASK_LAYER_UNSPEC,
+                        0, CHPL_FILE_IDX_INTERNAL);
 }
 
 void qt_free(void *ptr){
-  chpl_free(ptr);
+  chpl_mem_free(ptr, 0, CHPL_FILE_IDX_INTERNAL);
 }
 
 void *qt_calloc(size_t nmemb, size_t size) {
-  return chpl_calloc(nmemb, size);
+  return chpl_mem_calloc(nmemb, size, CHPL_RT_MD_TASK_LAYER_UNSPEC,
+                         0, CHPL_FILE_IDX_INTERNAL);
 }
 
 void *qt_realloc(void *ptr, size_t size) {
-  return chpl_realloc(ptr, size);
+  return chpl_mem_realloc(ptr, size, CHPL_RT_MD_TASK_LAYER_UNSPEC,
+                          0, CHPL_FILE_IDX_INTERNAL);
 }
 
 /* local constants */
@@ -42,10 +46,11 @@ void qt_internal_alignment_init(void) {
 
 void *qt_internal_aligned_alloc(size_t        alloc_size,
                                      uint_fast16_t alignment) {
-    return chpl_memalign(alignment, alloc_size);
+  return chpl_mem_memalign(alignment, alloc_size, CHPL_RT_MD_TASK_LAYER_UNSPEC,
+                           0, CHPL_FILE_IDX_INTERNAL);
 }
 
 void qt_internal_aligned_free(void         *ptr,
                                    uint_fast16_t alignment) {
-    chpl_free(ptr);
+  chpl_mem_free(ptr, 0, CHPL_FILE_IDX_INTERNAL);
 }

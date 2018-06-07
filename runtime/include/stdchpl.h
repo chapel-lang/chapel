@@ -52,6 +52,7 @@
 #include "chpl-init.h"
 #include "chpl-linefile-support.h"
 #include "chpl-mem.h"
+#include "chpl-mem-array.h"
 #include "chplmemtrack.h"
 #include "chpl-prefetch.h"
 #include "chpl-privatization.h"

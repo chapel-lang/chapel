@@ -20,6 +20,8 @@
 #ifndef _QIO_H_
 #define _QIO_H_
 
+#include "chpl-tasks.h"
+
 #include "sys_basic.h"
 #include "bswap.h"
 #include "qbuffer.h"
