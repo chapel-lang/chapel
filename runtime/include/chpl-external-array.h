@@ -22,19 +22,19 @@
 
 #include <stdint.h>
 
-typedef void (*free_func)(void*);
+typedef void (*chpl_free_func)(void*);
 
 typedef struct {
   void* elts;
   uint64_t size;
 
-  free_func freer;
-} external_array;
+  chpl_free_func freer;
+} chpl_external_array;
 
-const free_func FREE_FUNC_NIL;
-const free_func FREE_FUNC_CHAPEL_WRAP;
+const chpl_free_func CHPL_FREE_FUNC_NIL;
+const chpl_free_func CHPL_FREE_FUNC_CHAPEL_WRAP;
 
-void call_free(external_array x);
-void wrap_chapel_free_call(void* mem);
+void chpl_call_free(chpl_external_array x);
+void chpl_wrap_chapel_free_call(void* mem);
 
 #endif

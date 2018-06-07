@@ -21,15 +21,15 @@
 #include "chpl-external-array.h"
 #include "chpl-mem.h"
 
-const free_func FREE_FUNC_NIL = NULL;
-const free_func FREE_FUNC_CHAPEL_WRAP = wrap_chapel_free_call;
+const chpl_free_func CHPL_FREE_FUNC_NIL = NULL;
+const chpl_free_func CHPL_FREE_FUNC_CHAPEL_WRAP = chpl_wrap_chapel_free_call;
 
-void call_free(external_array x) {
-  if (x.freer != FREE_FUNC_NIL) {
+void chpl_call_free(chpl_external_array x) {
+  if (x.freer != CHPL_FREE_FUNC_NIL) {
     x.freer(x.elts);
   }
 }
 
-void wrap_chapel_free_call(void* mem) {
+void chpl_wrap_chapel_free_call(void* mem) {
   chpl_mem_free(mem, 0, 0);
 }

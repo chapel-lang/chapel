@@ -25,17 +25,17 @@
 module ExternalArray {
   use ChapelStandard;
 
-  extern type free_func;
-  private extern const FREE_FUNC_NIL: free_func;
-  private extern const FREE_FUNC_CHAPEL_WRAP: free_func;
+  extern type chpl_free_func;
+  private extern const CHPL_FREE_FUNC_NIL: chpl_free_func;
+  private extern const CHPL_FREE_FUNC_CHAPEL_WRAP: chpl_free_func;
 
-  extern record external_array {
+  extern record chpl_external_array {
     var elts: c_void_ptr;
     var size: uint;
 
-    var freer: free_func;
+    var freer: chpl_free_func;
   }
-  extern proc call_free(x: external_array);
+  extern proc chpl_call_free(x: chpl_external_array);
 
   pragma "use default init"
   class ExternDist: BaseDist {
@@ -81,9 +81,9 @@ module ExternalArray {
     }
 
     proc dsiBuildArray(type eltType) {
-      var data = new external_array(c_malloc(eltType, this.size),
+      var data = new chpl_external_array(c_malloc(eltType, this.size),
                                     this.size,
-                                    FREE_FUNC_CHAPEL_WRAP);
+                                    CHPL_FREE_FUNC_CHAPEL_WRAP);
       var arr = new unmanaged ExternArr(eltType,
                                         _to_unmanaged(this),
                                         data,
@@ -163,7 +163,7 @@ module ExternalArray {
 
     const dom;
     
-    const _ArrInstance: external_array;
+    const _ArrInstance: chpl_external_array;
 
     const _owned: bool;
 
@@ -273,7 +273,7 @@ module ExternalArray {
 
     proc dsiDestroyArr() {
       if (_owned) {
-        call_free(_ArrInstance);
+        chpl_call_free(_ArrInstance);
       }
     }
 
@@ -292,12 +292,12 @@ module ExternalArray {
   // Creates an instance of our new array type
   pragma "no copy return"
   proc makeArrayFromPtr(value: c_ptr, size: uint) {
-    var data = new external_array(value, size, FREE_FUNC_NIL);
+    var data = new chpl_external_array(value, size, CHPL_FREE_FUNC_NIL);
     return makeArrayFromExternArray(data, value.eltType);
   }
 
   pragma "no copy return"
-    proc makeArrayFromExternArray(value: external_array, type eltType) {
+    proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
     var dist = new unmanaged ExternDist();
     var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,));
     dom._free_when_no_arrs = true;
