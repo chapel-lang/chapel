@@ -128,17 +128,6 @@ module ChapelRange {
   // The _aligned bit can also be set through the application of an explicit alignment.
   //
 
-  // BHARSH TODO, 2018-02-20:
-  // A (hopefully) temporary workaround until if-exprs are fixed.
-  private proc typeHelper(param cond : bool, type t) type {
-    if cond then return t;
-    else return void;
-  }
-
-  proc chpl__idxTypeToRepType(type idxType) type {
-    if isEnumType(idxType) then return int; else return idxType;
-  }
-
   // I think the record itself should not be documented, but the above comment
   // should be moved to the top-level module documentation.
   pragma "no doc"
@@ -152,9 +141,9 @@ module ChapelRange {
 
     var _low       : chpl__idxTypeToRepType(idxType);  // lower bound
     var _high      : chpl__idxTypeToRepType(idxType);  // upper bound
-    var _stride    : typeHelper(stridable, chpl__rangeStrideType(idxType)); // signed stride
-    var _alignment : typeHelper(stridable, chpl__idxTypeToRepType(idxType)); // alignment
-    var _aligned   : typeHelper(stridable, bool);
+    var _stride    : if stridable then chpl__rangeStrideType(idxType) else void; // signed stride
+    var _alignment : if stridable then chpl__idxTypeToRepType(idxType) else void; // alignment
+    var _aligned   : if stridable then bool else void;
 
     proc repType type {
       return chpl__idxTypeToRepType(idxType);
@@ -179,21 +168,16 @@ module ChapelRange {
   proc range.init(type idxType = int,
                   param boundedType : BoundedRangeType = BoundedRangeType.bounded,
                   param stridable : bool = false,
-                  _low = chpl__defaultLowBound(idxType),
-                  _high = chpl__defaultHighBound(idxType),
+                  _low : idxType = chpl__defaultLowBound(idxType),
+                  _high : idxType = chpl__defaultHighBound(idxType),
                   _stride : chpl__rangeStrideType(idxType) = 1,
-                  _alignment = chpl__intToIdx(0, idxType),
+                  _alignment : idxType = chpl__intToIdx(0, idxType),
                   _aligned : bool = false) {
     this.idxType     = idxType;
     this.boundedType = boundedType;
     this.stridable   = stridable;
-    if (!isEnumType(idxType)) {
-      this._low        = _low;
-      this._high       = _high;
-    } else {
-      this._low        = chpl__enumToOrder(_low);
-      this._high       = chpl__enumToOrder(_high);
-    }
+    this._low = chpl__idxToInt(_low);
+    this._high = chpl__idxToInt(_high);
     this.complete();
     if stridable {
       this._stride    = _stride;
@@ -216,8 +200,8 @@ module ChapelRange {
   proc range.init(type idxType = int,
                   param boundedType : BoundedRangeType = BoundedRangeType.bounded,
                   param stridable : bool = false,
-                  _low = chpl__defaultLowBound(idxType),
-                  _high = chpl__defaultHighBound(idxType),
+                  _low : idxType = chpl__defaultLowBound(idxType),
+                  _high : idxType = chpl__defaultHighBound(idxType),
                   _stride,
                   _alignment,
                   _aligned)
@@ -348,11 +332,10 @@ module ChapelRange {
 
   /* Return the first element in the sequence the range represents */
   inline proc range.first {
-    if ! stridable then return low;
-    else return if _stride > 0 then this.alignedLow else this.alignedHigh;
+    return chpl__intToIdx(this.firstAsInt, idxType);
   }
 
-  /* Return the first element in the sequence the range represents */
+  pragma "no doc"
   inline proc range.firstAsInt {
     if ! stridable then return _low;
     else return if _stride > 0 then this.alignedLowAsInt else this.alignedHighAsInt;
@@ -360,11 +343,10 @@ module ChapelRange {
 
   /* Return the last element in the sequence the range represents */
   inline proc range.last {
-    if ! stridable then return high;
-    else return if stride > 0 then this.alignedHigh else this.alignedLow;
+    return chpl__intToIdx(this.lastAsInt, idxType);
   }
 
-  /* Return the last element in the sequence the range represents */
+  pragma "no doc"
   inline proc range.lastAsInt {
     if ! stridable then return _high;
     else return if stride > 0 then this.alignedHighAsInt else this.alignedLowAsInt;
@@ -372,34 +354,28 @@ module ChapelRange {
 
   /* Return the range's low bound. If the range does not have a low
      bound the behavior is undefined. */
-  inline proc range.low return if isEnumType(idxType) then chpl__orderToEnum(_low, idxType) else _low;
+  inline proc range.low  return chpl__intToIdx(_low, idxType);
 
-  //  inline proc range.lowAsInt return if isEnumType(idxType) then chpl__enumToOrder(_low) else _low;
 
   /* Return the range's high bound. If the range does not have a high
      bound the behavior is undefined. */
-  inline proc range.high return if isEnumType(idxType) then chpl__orderToEnum(_high, idxType) else _high;
+  inline proc range.high return chpl__intToIdx(_high, idxType);
 
-  //  inline proc range.highAsInt return if isEnumType(idxType) then chpl__enumToOrder(_high) else _high;
 
   /* Returns the range's aligned low bound. If the aligned low bound is
      undefined (does not exist), the behavior is undefined.
    */
   inline proc range.alignedLow : idxType {
-    if !stridable then
-      return low;
-    else {
-      // Adjust _low upward by the difference between _alignment and _low.
-      const val = _low + chpl__diffMod(_alignment, _low, stride);
-      return if isEnumType(idxType) then chpl__orderToEnum(val, idxType) else val;
-    }
+    return chpl__intToIdx(this.alignedLowAsInt, idxType);
   }
 
+  pragma "no doc"
   inline proc range.alignedLowAsInt {
-    if isEnumType(idxType) then
-      return chpl__enumToOrder(alignedLow);
+    if !stridable then
+      return _low;
     else
-      return alignedLow;
+      // Adjust _low upward by the difference between _alignment and _low.
+      return _low + chpl__diffMod(_alignment, _low, stride);
   }
 
   /* Returns the range's aligned high bound. If the aligned high bound is
@@ -407,22 +383,17 @@ module ChapelRange {
    */
   // TODO: Add back example?
   inline proc range.alignedHigh : idxType {
+    return chpl__intToIdx(this.alignedHighAsInt, idxType);
+  }
+
+  pragma "no doc"
+  inline proc range.alignedHighAsInt {
     if ! stridable then
-      return high;
-    else {
-      // Adjust _high downward by the difference between _high and _alignment.
-      const val = _high - chpl__diffMod(_high, _alignment, stride);
-      return if isEnumType(idxType) then chpl__orderToEnum(val, idxType) else val;
-    }
-  }
-
-    inline proc range.alignedHighAsInt {
-    if isEnumType(idxType) then
-      return chpl__enumToOrder(alignedHigh);
+      return _high;
     else
-      return alignedHigh;
+      // Adjust _high downward by the difference between _high and _alignment.
+      return _high - chpl__diffMod(_high, _alignment, stride);
   }
-
 
   /* If the sequence represented by the range is empty, return true.  An
      error is reported if the range is ambiguous.
@@ -445,26 +416,16 @@ module ChapelRange {
   }
 
   /* Returns :proc:`range.size`.  */
-  proc range.length: repType
-  {
+  proc range.length: repType {
     if ! isBoundedRange(this) then
       compilerError("length is not defined on unbounded ranges");
 
-    if isUintType(repType)
-    {
-      // assumes alignedHigh/alignLow always work, even for an empty range
-      const ah = this.alignedHighAsInt,
-            al = this.alignedLowAsInt;
-      if al > ah then return 0: repType;
-      const s = abs(this.stride): repType;
-      return (ah - al) / s + 1:repType;
-    }
-    else // repType is signed
-    {
-      if _low > _high then return 0:repType;
-      const s = abs(this.stride): repType;
-      return (this.alignedHighAsInt - this.alignedLowAsInt) / s + 1:repType;
-    }
+    // assumes alignedHigh/alignLow always work, even for an empty range
+    const ah = this.alignedHighAsInt,
+          al = this.alignedLowAsInt;
+    if al > ah then return 0: repType;
+    const s = abs(this.stride): repType;
+    return (ah - al) / s + 1:repType;
   }
 
   /* Return true if the range has a first index, false otherwise */
@@ -2462,6 +2423,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     compilerError("ranges don't support '", idxType:string, "' as their idxType");
   }
 
+  // TODO: What would it take to make this private?  Currently DefaultRectangular
+  // relies on it, but could perhaps refer to range.repType instead?
+  pragma "no doc"
+  proc chpl__idxTypeToRepType(type idxType) type {
+    if isEnumType(idxType) then return int; else return idxType;
+  }
+
   private proc chpl__rangeStrideType(type idxType) type {
     if isIntegralType(idxType) {
       return chpl__signedType(idxType);
@@ -2472,24 +2440,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     }
   }
 
-  private proc chpl__rangeAlignType(type idxType) type {
-    if isIntegralType(idxType) {
-      return idxType;
-    } else if isEnumType(idxType) {
-      // TODO: ultimately, this should be an int of the same width as the enum
-      return int;
-    } else {
-      chpl__rangeIdxTypeError(idxType);
-    }
-  }
-
   private proc chpl__defaultLowBound(type idxType) {
     if isIntegralType(idxType) {
       return 1:idxType;
     } else if isEnumType(idxType) {
-      // TODO: This is only correct for default-numbered enums; need
-      // to generalize
-      return chpl__orderToEnum(2, idxType);
+      return chpl__orderToEnum(1, idxType);
     } else {
       chpl__rangeTypeError(idxType);
     }
@@ -2499,11 +2454,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if isIntegralType(idxType) {
       return 0:idxType;
     } else if isEnumType(idxType) {
-      // TODO: This is only correct for default-numbered enums; need
-      // to generalize
-      // TODO: Note that I've already set it up to use 1-based indexing...
-      // though I set up order<->enum to use 0-based.  How to unify?
-      return chpl__orderToEnum(1, idxType);
+      return chpl__orderToEnum(0, idxType);
     } else {
       chpl__rangeTypeError(idxType);
     }
