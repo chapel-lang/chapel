@@ -1,0 +1,4 @@
+bug: Indexing a tuple of types accepts extra arguments
+
+Indexing a tuple of types can have any number of arguments as long as the first
+is an integral param.  The rest are ignored.
