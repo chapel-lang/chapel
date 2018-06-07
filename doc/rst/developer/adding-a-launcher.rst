@@ -7,14 +7,14 @@ An Overview
 Minimum files modified/added in writing a new launcher:
 
 - Implementation
-  * ``runtime/src/launch/<name>/launch-<name>.c``
+    * ``runtime/src/launch/<name>/launch-<name>.c``
 - Boiler plate build code
-  * ``runtime/src/launch/<name>/Makefile``
-  * ``runtime/src/launch/<name>/Makefile.include``
-  * ``runtime/src/launch/<name>/Makefile.share``
+    * ``runtime/src/launch/<name>/Makefile``
+    * ``runtime/src/launch/<name>/Makefile.include``
+    * ``runtime/src/launch/<name>/Makefile.share``
 - Documentation
-  * ``doc/rst/usingchapel/launcher.rst``
-  * ``doc/rst/usingchapel/multilocale.rst``
+    * ``doc/rst/usingchapel/launcher.rst``
+    * ``doc/rst/usingchapel/multilocale.rst``
 
 There may be other files that require modification depending on the situation.
 For example, ``util/chplenv/chpl_launcher.py`` would require modification if
