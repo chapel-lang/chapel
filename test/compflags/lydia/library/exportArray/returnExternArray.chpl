@@ -3,7 +3,7 @@ use ExternalArray;
 export proc foo(): chpl_external_array {
   var x = getArray();
   writeln(x);
-  var retval = makeReturnableArr(x);
+  var retval = convertToExternalArray(x);
   return retval;
 }
 

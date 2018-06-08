@@ -307,15 +307,16 @@ module ExternalArray {
     return _newArray(arr);
   }
 
-  proc makeReturnableArr(arr: []) {
+  proc convertToExternalArray(arr: []) {
     if (arr.domain.stridable) {
-      halt("cannot return a strided array at this time");
+      compilerError("cannot return a strided array");
     }
     if (arr.domain.rank != 1) {
-      halt("cannot return an array with rank != 1");
+      compilerError("cannot return an array with rank != 1");
     }
     if (!isIntegralType(arr.domain.idxType)) {
-      halt("cannot return an array with indices that are not integrals");
+      compilerError("cannot return an array with indices that are not " +
+                    "integrals");
     }
     if (arr.domain.low != 0) {
       halt("cannot return an array when the lower bounds is not 0");
