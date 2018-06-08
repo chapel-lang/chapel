@@ -6165,6 +6165,7 @@ static void resolveNewHandleConstructor(CallExpr* newExpr, Type* manager) {
 
     parent_insert_help(newExpr, baseExpr);
 
+    preFold(newExpr);
     resolveCall(newExpr);
 
     FnSymbol* ctor = newExpr->resolvedFunction();
