@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdint.h>
 
 #include "returnExternArray.h"
 
@@ -13,6 +12,7 @@ extern void chpl_call_free(chpl_external_array x);
 int main(int argc, char* argv[]) {
   // Initialize the Chapel runtime and standard modules
   chpl_library_init(argc, argv);
+  chpl__init_returnExternArray(1, 2);
 
   // Call the function to get the array
   chpl_external_array arr = foo();
