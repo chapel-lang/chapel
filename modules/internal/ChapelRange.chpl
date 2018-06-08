@@ -503,27 +503,19 @@ module ChapelRange {
     return !aligned && (stride > 1 || stride < -1);
 
   /* Returns true if ``i`` is in this range, false otherwise */
-  inline proc range.member(i: idxType)
+  inline proc range.member(ind: idxType)
   {
     if this.isAmbiguous() then return false;
 
-    const iInt = idxToInt(i);
+    const i = chpl__idxToInt(ind);
 
-    inline proc idxToInt(i: integral) {
-      return i;
-    }
-
-    inline proc idxToInt(i: enumerated) {
-      return chpl__enumToOrder(i);
-    }
-    
     if hasHighBound()
     {
-      if iInt > _high then return false;
+      if i > _high then return false;
     }
     if hasLowBound()
     {
-      if iInt < _low then return false;
+      if i < _low then return false;
     }
     if stridable
     {
@@ -617,7 +609,7 @@ module ChapelRange {
     if r1._high != r2._high then return false;
     if (r1.stridable) {
       if (r2.stridable) {
-        if r1.stride != r2.stride then return false;
+        if r1._stride != r2._stride then return false;
         if r1._alignment != r2._alignment then return false;
         if r1._aligned != r2._aligned then return false;
       } else {
