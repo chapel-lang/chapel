@@ -285,28 +285,28 @@ module Random {
 
     /*
       Advances/rewinds the stream to the `n`-th value in the sequence.
-      The first value is with n=1.
+      The first value is with n=1.  n must be > 0, otherwise an
+      IllegalArgumentError is thrown.
 
       :arg n: The position in the stream to skip to.  Must be > 0.
       :type n: `integral`
      */
-
-    proc skipToNth(n: integral) {
+    proc skipToNth(n: integral) throws {
       compilerError("RandomStreamInterface.skipToNth called");
     }
 
     /*
       Advance/rewind the stream to the `n`-th value and return it
-      (advancing the stream by one).  This is equivalent to
+      (advancing the stream by one).  n must be > 0, otherwise an
+      IllegalArgumentError is thrown.  This is equivalent to
       :proc:`skipToNth()` followed by :proc:`getNext()`.
 
       :arg n: The position in the stream to skip to.  Must be > 0.
       :type n: `integral`
 
       :returns: The `n`-th value in the random stream as type :type:`eltType`.
-    */
-
-    proc getNth(n: integral): eltType {
+     */
+    proc getNth(n: integral): eltType throws {
       compilerError("RandomStreamInterface.getNth called");
     }
 
@@ -319,7 +319,7 @@ module Random {
 
       :arg arr: The array to be filled
       :type arr: [] :type:`eltType`
-    */
+     */
     proc fillRandom(arr: [] eltType) {
       compilerError("RandomStreamInterface.fillRandom called");
     }
@@ -652,19 +652,17 @@ module Random {
         return result;
       }
 
-
       /*
         Advances/rewinds the stream to the `n`-th value in the sequence.
-        The first corresponds to n=1. It is an error to call this
-        routine with n <= 0.
+        The first value is with n=1.  n must be > 0, otherwise an
+        IllegalArgumentError is thrown.
 
         :arg n: The position in the stream to skip to.  Must be > 0.
         :type n: `integral`
        */
-
-      proc skipToNth(n: integral) {
+      proc skipToNth(n: integral) throws {
         if n <= 0 then
-          halt("PCGRandomStream.skipToNth(n) called with non-positive 'n' value", n);
+          throw new IllegalArgumentError("PCGRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
         PCGRandomStreamPrivate_skipToNth_noLock(n);
@@ -674,18 +672,18 @@ module Random {
 
       /*
         Advance/rewind the stream to the `n`-th value and return it
-        (advancing the stream by one).  This is equivalent to
+        (advancing the stream by one).  n must be > 0, otherwise an
+        IllegalArgumentError is thrown.  This is equivalent to
         :proc:`skipToNth()` followed by :proc:`getNext()`.
 
         :arg n: The position in the stream to skip to.  Must be > 0.
         :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
-      */
-
-      proc getNth(n: integral): eltType {
+       */
+      proc getNth(n: integral): eltType throws {
         if (n <= 0) then
-          halt("PCGRandomStream.getNth(n) called with non-positive 'n' value", n);
+          throw new IllegalArgumentError("PCGRandomStream.getNth(n) called with non-positive 'n' value " + n);
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
         PCGRandomStreamPrivate_skipToNth_noLock(n);
@@ -2067,6 +2065,8 @@ module Random {
       proc init(type eltType = real(64),
                 seed: int(64) = SeedGenerator.oddCurrentTime,
                 param parSafe: bool = true) {
+        use ChapelHaltWrappers;
+
         this.eltType = eltType;
 
         // The mod operation is written in these steps in order
@@ -2078,7 +2078,7 @@ module Random {
         var useed = seed:uint(64);
         var mod:uint(64);
         if useed % 2 == 0 then
-          halt("NPBRandomStream seed must be an odd integer");
+          initHalt("NPBRandomStream seed must be an odd integer");
         // Adjust seed to be between 0 and 2**46.
         mod = useed & two_46_mask;
         this.seed = mod:int(64);
@@ -2086,7 +2086,7 @@ module Random {
         this.complete();
 
         if this.seed % 2 == 0 || this.seed < 1 || this.seed > two_46:int(64) then
-          halt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
+          initHalt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
 
         NPBRandomStreamPrivate_cursor = seed;
         NPBRandomStreamPrivate_count = 1;
@@ -2133,14 +2133,15 @@ module Random {
 
       /*
         Advances/rewinds the stream to the `n`-th value in the sequence.
+        The first value is with n=1.  n must be > 0, otherwise an
+        IllegalArgumentError is thrown.
 
         :arg n: The position in the stream to skip to.  Must be > 0.
         :type n: `integral`
        */
-
-      proc skipToNth(n: integral) {
+      proc skipToNth(n: integral) throws {
         if n <= 0 then
-          halt("NPBRandomStream.skipToNth(n) called with non-positive 'n' value", n);
+          throw new IllegalArgumentError("NPBRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
         if parSafe then
           NPBRandomStreamPrivate_lock$ = true;
         NPBRandomStreamPrivate_skipToNth_noLock(n);
@@ -2150,18 +2151,18 @@ module Random {
 
       /*
         Advance/rewind the stream to the `n`-th value and return it
-        (advancing the stream by one).  This is equivalent to
+        (advancing the stream by one).  n must be > 0, otherwise an
+        IllegalArgumentError is thrown.  This is equivalent to
         :proc:`skipToNth()` followed by :proc:`getNext()`.
 
         :arg n: The position in the stream to skip to.  Must be > 0.
         :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
-      */
-
-      proc getNth(n: integral): eltType {
+       */
+      proc getNth(n: integral): eltType throws {
         if (n <= 0) then
-          halt("NPBRandomStream.getNth(n) called with non-positive 'n' value", n);
+          throw new IllegalArgumentError("NPBRandomStream.getNth(n) called with non-positive 'n' value " + n);
         if parSafe then
           NPBRandomStreamPrivate_lock$ = true;
         NPBRandomStreamPrivate_skipToNth_noLock(n);
