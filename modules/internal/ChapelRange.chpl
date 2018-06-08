@@ -502,7 +502,7 @@ module ChapelRange {
   proc range.isAmbiguous()       where stridable
     return !aligned && (stride > 1 || stride < -1);
 
-  /* Returns true if ``i`` is in this range, false otherwise */
+  /* Returns true if ``ind`` is in this range, false otherwise */
   inline proc range.member(ind: idxType)
   {
     if this.isAmbiguous() then return false;
@@ -666,9 +666,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   if tmp.stridable {
-    tmp._stride = r.stride;
-    tmp._alignment = r.alignment: tmp.repType;
-    tmp._aligned = r.aligned;
+    tmp._stride = r._stride;
+    tmp._alignment = r._alignment: tmp.repType;
+    tmp._aligned = r._aligned;
   }
 
   tmp._low = r.low: tmp.repType;
@@ -811,7 +811,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // we need to handle more generally in the future, so for
   // consistency, we are not handling it here at all :-P
   //
-  /* Return a range with elements shifted from this range by ``i``.
+  /* Return a range with elements shifted from this range by ``off``.
 
      Example:
 
@@ -822,8 +822,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
        0..9.translate(-1) == -1..8
        0..9.translate(-2) == -2..7
    */
-  inline proc range.translate(i: integral)
-    return this + i:repType;
+  inline proc range.translate(off: integral)
+    return this + off;
 
   pragma "no doc"
   inline proc range.translate(i)
@@ -1005,7 +1005,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   inline proc +(r: range(?e, ?b, ?s), i: integral)
   {
     type intResType = (r._low+i).type;
-    type resultType = chpl__intToIdx((r._low+i), e).type;
+    type resultType = e;
     type strType = chpl__rangeStrideType(resultType);
 
     if (s) then
@@ -1086,16 +1086,6 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     const lw: i = r.low,
           hh: i = r.high,
           st: r.strType = r.stride * step:r.strType;
-
-    /*
-    compilerWarning(r.idxType:string);
-    compilerWarning(i:string);
-    compilerWarning(r.alignedLow.type:string);
-    compilerWarning(r.alignedHigh.type:string);
-    compilerWarning(r.aligned.type:string);
-    compilerWarning(r.alignment.type:string);
-    compilerWarning(chpl__intToIdx(0,i).type:string);
-*/
 
     const (ald, alt): (bool, i) =
       if r.isAmbiguous() then
@@ -1429,10 +1419,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     //
     proc chpl__computeTypeForCountMath(type t1, type t2) type {
       if (t1 == t2) then {
-        if (isEnumType(t1)) then
-          return int;
-        else
-          return t1;
+        return chpl__idxTypeToRepType(t1);
       } else if (numBits(t1) == 64 || numBits(t2) == 64) then {
         return int(64);
       } else {
@@ -1489,7 +1476,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // signed/unsigned overflow checking for the last index + stride. Either
   // returns whether overflow will occur or not, or halts with an error
   // message.
-  proc chpl_checkIfRangeIterWillOverflow(type repType, low, high, stride, first=low,
+  proc chpl_checkIfRangeIterWillOverflow(type idxType, low, high, stride, first=low,
       last=high, shouldHalt=true) {
     // iterator won't execute at all so it can't overflow
     if (low > high) {
@@ -1497,24 +1484,24 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     }
 
     var willOverFlow = false;
-    if (isIntType(repType)) {
+    if (isIntType(idxType)) {
       if (last > 0 && stride > 0) {
-        if (stride > (max(repType) - last)) {
+        if (stride > (max(idxType) - last)) {
           willOverFlow = true;
         }
       } else if (last < 0 && stride < 0) {
-        if (stride < (min(repType) - last)) {
+        if (stride < (min(idxType) - last)) {
           willOverFlow = true;
         }
       }
     }
-    else if (isUintType(repType)) {
+    else if (isUintType(idxType)) {
       if (stride > 0) {
-          if (last + stride:repType < last) {
+          if (last + stride:idxType < last) {
             willOverFlow = true;
           }
         } else if (stride < 0) {
-          if (last + stride:repType > last) {
+          if (last + stride:idxType > last) {
             willOverFlow = true;
           }
         }
@@ -1818,10 +1805,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                         __primitive( "=", i, start),
                         __primitive("<=", i, end),
                         __primitive("+=", i, stride: repType)) {
-        if (idxType == repType) then
-          yield i;
-        else
-          yield chpl__orderToEnum(i, idxType);
+        yield chpl__intToIdx(i, idxType);
       }
     } else {
       for i in this.generalIterator() do yield i;
@@ -1908,14 +1892,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           }
         } else {
           const (lo, hi) = _computeBlock(len, numChunks, chunk, this._high, this._low, this._low);
-          if (!isEnumType(idxType)) {
-            for i in lo..hi {
-              yield i;
-            }
-          } else {
-            for i in lo..hi {
-              yield chpl__orderToEnum(i, idxType);
-            }
+          for i in lo..hi {
+            yield chpl__intToIdx(i, idxType);
           }
         }
       }
@@ -2041,10 +2019,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if debugChapelRange then
       chpl_debug_writeln("In range follower code: Following ", followThis);
 
-    //    var myFollowThis = chpl__intToIdx(followThis(1).low,idxType)..chpl__intToIdx(followThis(1).high,idxType) /* FIX: by followThis(1).stride */;
     var myFollowThis = followThis(1);
-
-    //    compilerWarning(myFollowThis.type:string);
 
     if debugChapelRange then
       chpl_debug_writeln("Range = ", myFollowThis);
@@ -2081,15 +2056,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           const stride = this.stride * myFollowThis.stride;
           var low = this.orderToIndex(myFollowThis.first);
           var high = chpl__intToIdx(chpl__idxToInt(low) + stride * (flwlen - 1):strType, idxType);
-          /*
-          if (high != this.orderToIndex(myFollowThis.last)) {
-            writeln("stride = ", stride);
-            writeln("myFollowThis = ", myFollowThis);
-            writeln("low = ", low);
-            writeln("high = ", high);
-          }
-          */
-          assert(high == this.orderToIndex(myFollowThis.last), "high isn't as expected");
+          assert(high == this.orderToIndex(myFollowThis.last));
 
           if stride < 0 then low <=> high;
           r = low .. high by stride:strType;
@@ -2098,7 +2065,6 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         if debugChapelRange then
           chpl_debug_writeln("Expanded range = ",r);
 
-        //        compilerWarning("A: " + r.type:string);
         for i in r do
           yield i;
 
@@ -2106,18 +2072,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         var r = chpl__intToIdx(1,idxType)..chpl__intToIdx(0,idxType);
 
         if flwlen != 0 {
-          // BRADC: TODO: Is it appropriate to call orderToIndex on a .first
           const low = this.orderToIndex(myFollowThis.first);
           const high = chpl__intToIdx(chpl__idxToInt(low): strType + (flwlen - 1):strType, idxType);
-          //          assert(high == this.orderToIndex(chpl__idxToInt(myFollowThis.last)), "high isn't as expected (2)");
-          assert(high == this.orderToIndex(myFollowThis.last), "high isn't as expected (2)");
+          assert(high == this.orderToIndex(myFollowThis.last));
           r = low .. high;
         }
 
         if debugChapelRange then
           chpl_debug_writeln("Expanded range = ",r);
-
-        //        compilerWarning("B: " + r.type:string);
 
         for i in r do
           yield i;
@@ -2138,8 +2100,6 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         if debugChapelRange then
           chpl_debug_writeln("Expanded range = ",r);
 
-        //        compilerWarning("C: " + r.type:string);
-
         for i in r do
           yield i;
       }
@@ -2148,8 +2108,6 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         const r = .. first by stride:strType;
         if debugChapelRange then
           chpl_debug_writeln("Expanded range = ",r);
-
-        //        compilerWarning("D: " + r.type:string);
 
         for i in r do
           yield i;
@@ -2415,13 +2373,6 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     compilerError("ranges don't support '", idxType:string, "' as their idxType");
   }
 
-  // TODO: What would it take to make this private?  Currently DefaultRectangular
-  // relies on it, but could perhaps refer to range.repType instead?
-  pragma "no doc"
-  proc chpl__idxTypeToRepType(type idxType) type {
-    if isEnumType(idxType) then return int; else return idxType;
-  }
-
   private proc chpl__rangeStrideType(type idxType) type {
     if isIntegralType(idxType) {
       return chpl__signedType(idxType);
@@ -2430,6 +2381,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     } else {
       chpl__rangeIdxTypeError(idxType);
     }
+  }
+
+  // TODO: What would it take to make this private?  Currently DefaultRectangular
+  // relies on it, but could perhaps refer to range.repType instead?
+  pragma "no doc"
+  proc chpl__idxTypeToRepType(type idxType) type {
+    if isEnumType(idxType) then return int; else return idxType;
   }
 
   private proc chpl__defaultLowBound(type idxType) {
