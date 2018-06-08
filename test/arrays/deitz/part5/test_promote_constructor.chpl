@@ -1,4 +1,3 @@
-pragma "use default init"
 class C {
   var a: int;
 }
