@@ -689,6 +689,34 @@ module ChapelIO {
     __primitive("chpl_error", tmpstring.c_str());
   }
 
+
+  //
+  // Halt wrappers for cases where we want error-handling, but error-handling
+  // isn't supported yet
+  //
+
+  /*
+     Halt wrapper for cases where we want error-handling in initializers. For
+     more info see: https://github.com/chapel-lang/chapel/issues/8793
+   */
+  pragma "no doc"
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc initHalt(s:string) {
+    halt(s);
+  }
+  /*
+     Halt wrapper for cases where we want error-handling in iterators. For more
+     info see: https://github.com/chapel-lang/chapel/issues/7134
+   */
+  pragma "no doc"
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc iterHalt(s:string) {
+    halt(s);
+  }
+
+
   /*
     Prints a warning to stderr giving the location of the call to ``warning``
     in the Chapel source, followed by the argument(s) to the call.
