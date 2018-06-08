@@ -306,4 +306,25 @@ module ExternalArray {
     dom.add_arr(arr, locking = false);
     return _newArray(arr);
   }
+
+  proc makeReturnableArr(arr: []) {
+    if (arr.domain.stridable) {
+      halt("cannot return a strided array at this time");
+    }
+    if (arr.domain.rank != 1) {
+      halt("cannot return an array with rank != 1");
+    }
+    if (!isIntegralType(arr.domain.idxType)) {
+      halt("cannot return an array with indices that are not integrals");
+    }
+    if (arr.domain.low != 0) {
+      halt("cannot return an array when the lower bounds is not 0");
+    }
+    var externalArr = chpl_make_external_array(c_sizeof(arr.eltType),
+                                               arr.size: uint);
+    chpl__uncheckedArrayTransfer(makeArrayFromExternArray(externalArr,
+                                                          arr.eltType),
+                                 arr);
+    return externalArr;
+  }
 }
