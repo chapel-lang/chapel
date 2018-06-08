@@ -465,19 +465,11 @@ module DefaultRectangular {
 
       if rank == 1 {
         for i in zip((...block)) {
-          if (isEnumType(idxType)) {
-            yield chpl__orderToEnum(i, idxType);
-          } else {
-            yield i;
-          }
+          yield chpl__intToIdx(idxType, i);
         }
       } else {
         for i in these_help(1, block) {
-          if (isEnumType(idxType)) {
-            yield chpl__orderToEnum(i, idxType);
-          } else {
-            yield i;
-          }
+          yield chpl__intToIdx(idxType, i);
         }
       }
     }
@@ -514,7 +506,7 @@ module DefaultRectangular {
       return ranges(d);
 
     proc dsiNumIndices {
-      var sum = 1:ranges(1).intIdxType;
+      var sum = 1:intIdxType;
       for param i in 1..rank do
         sum *= ranges(i).length;
       return sum;
@@ -765,8 +757,6 @@ module DefaultRectangular {
   // Based on the old 'dsiSlice' method
   //
   proc _remoteAccessData.toSlice(newDom) {
-    if (this.rank != newDom.rank) then
-      compilerError("ToSlice assertion error");
     compilerAssert(this.rank == newDom.rank);
 
     // NB: Sets 'blkChanged' if the new domain is stridable.
@@ -1322,16 +1312,8 @@ module DefaultRectangular {
         // optimized iteration method if users are concerned about range
         // overflow.
 
-        inline proc nextIndex(i: integral) {
-          return i+1;
-        }
-
-        inline proc nextIndex(i: enumerated) {
-          return chpl__orderToEnum(chpl__enumToOrder(viewDom.dsiLow)+1, i.type);
-        }
-        
         const first  = info.getDataIndex(viewDom.dsiLow);
-        const second = info.getDataIndex(nextIndex(viewDom.dsiLow));
+        const second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, chpl__idxToInt(viewDom.dsiLow)+1));
         const step   = (second-first);
         const last   = first + (viewDom.dsiNumIndices-1) * step;
         for i in chpl_direct_pos_stride_range_iter(first, last, step) {
