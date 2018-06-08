@@ -1073,8 +1073,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // Absolute alignment is not preserved
   // (That is, the alignment shifts along with the range.)
   //
-  inline proc +(r: range(?e, ?b, ?s), i: integral)
+  inline proc +(r: range(?e, ?b, ?s), offset: integral)
   {
+    const i = offset: r.intIdxType;
     type intResType = (r._low+i).type;
     type resultType = e;
     type strType = chpl__rangeStrideType(resultType);
@@ -2121,7 +2122,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
       }
       if this.stridable || myFollowThis.stridable {
-        var r = chpl__intToIdx(idxType, 1)..chpl__intToIdx(0, idxType) by 1:chpl__rangeStrideType(intIdxType);
+        var r = chpl__intToIdx(idxType, 1)..chpl__intToIdx(idxType, 0) by 1:chpl__rangeStrideType(intIdxType);
 
         if flwlen != 0 {
           const stride = this.stride * myFollowThis.stride;
@@ -2495,8 +2496,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     return chpl__intToIdx(idxType, (...i));
   }
 
-  inline proc chpl__intToIdx(type idxType: integral, i: idxType) {
-    return i: idxType;
+  inline proc chpl__intToIdx(type idxType: integral, i: integral) {
+    if (i.type == idxType) then
+      return i;
+    else
+      return i: idxType;
   }
 
   inline proc chpl__intToIdx(type idxType: enumerated, i: integral) {
