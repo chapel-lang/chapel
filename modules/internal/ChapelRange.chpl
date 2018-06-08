@@ -18,52 +18,86 @@
  */
 /*
   A ``range`` is a first-class, constant-space representation of a
-  regular sequence of integer indices. Ranges support iteration over the
-  sequences they represent as well as operations such as slicing, shifting,
-  comparisons, striding, counting and aligning.
+  regular sequence of values.  These values are typically integers,
+  though ranges over enumerated types are also supported.  Ranges
+  support iteration over the sequences they represent as well as
+  operations such as counting, striding, intersection, shifting, and
+  comparisons.
 
-  Range Construction Operations:
-  New ranges can be constructed using the striding, counting, and alignment
-  operators, ``by``, ``#`` and ``align``
+  Range Values
+  ------------
+  In their simplest form, ranges are represented by their low and high
+  bounds:
 
-  .. code-block:: chapel
-
-    0..#10 // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-    0..10 by 2 // 0, 2, 4, 6, 8, 10
-    0..10 by 2 align 1 // 1, 3, 5, 7, 9
-
-  Range Slicing:
-  A range can be sliced with another range to form a new range that is the intersection of the two ranges.
 
   .. code-block:: chapel
 
-    (1..10)(3..8) // 3..8
-    (0..20)(1..20 by 2) // 1..20 by 2
-    (1..10)(5..) // 5..10
-    (1..10)(..5) // 1..5
+    1..3    // 1, 2, 3
+    0..n    // 0, 1, 2, 3, ..., n
+    lo..hi  // lo, lo+1, lo+2, ..., hi
 
-  Range Shifting:
-  A range can be shifted by an integer using the ``+`` and ``-`` operators.
-
-  .. code-block:: chapel
-
-    (1..10) + 5 // 6..15
-    (1..10) - 3 // -2..7
-    (1..) + 1 // 2..
-    (..10) + 1 // ..11
-
-  Range Comparisons:
-  Ranges can be compared for equality using the ``==`` and ``!=`` operators
+  Ranges may also be `unbounded`, in which case, the lower and/or upper
+  bounds may be omitted:
 
   .. code-block:: chapel
 
-    1..10 == 1..10 // true
-    1.. == 1.. // true
-    1..10 != (1..10 by 2) // true
+    1..   // 1, 2, 3, ...
+    ..10  // .., 8, 9, 10
+    ..    // ..., -2, -1, 0, 1, 2, ...
 
-  Iteration over ranges:
-  Ranges can be used as the iterable expression in for, forall, and coforall
-  loops.
+  Ranges over enumerated types respect the declaration order of its values:
+
+  .. code-block:: chapel
+
+    enum color {red, orange, yellow, green, blue, indigo, violet};
+    color.orange..color.green;   // orange, yellow, green
+
+  Range Types
+  -----------
+  Range types are generic with respect to three fields:
+
+  * ``idxType``: The type of the range's values—must an integral or enumerated type (defaults to ``int``)
+  * ``boundedType``: A :enum:`BoundedRangeType` value indicating which bounds the range stores (defaults to ``bounded``)
+  * ``stridable``: A boolean indicating whether or not the range can be strided (defaults to ``false``)
+
+  The following code shows range variables declared with specified
+  type signatures:
+
+  .. code-block:: chapel
+
+    var r1: range = 1..10;
+    var r2: range(int(8)) = 1..myInt8;
+    var r3: range(color) = color.green..color.blue;
+    var r4: range(stridable=true) = 1..10 by 2;
+    var r5: range(boundedType=BoundedRangeType.boundedNone) = ..;
+
+  Like other variables, these types can be inferred by the compiler
+  from the initializing expressions for simplicity:
+
+  .. code-block:: chapel
+
+    var r1 = 1..10;
+    var r2 = 1..myInt8;
+    var r3 = color.green..color.blue;
+    var r4 = 1..10 by 2;
+    var r5 = ..;
+
+
+
+  Range Operators
+  ---------------
+  New ranges can be constructed from existing ones using the counting,
+  striding, and/or alignment operators, ``#``, ``by``, and ``align``:
+
+  .. code-block:: chapel
+
+    0..#10              // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    0..10 by 2          // 0, 2, 4, 6, 8, 10
+    0..10 by 2 align 1  // 1, 3, 5, 7, 9
+
+  Iteration over ranges
+  ---------------------
+  Ranges can be used as the iterable expression in ``for``, ``forall``, and ``coforall`` loops.
 
   .. code-block:: chapel
 
@@ -81,6 +115,38 @@
 
     // (i, j) will take the values: (1, 10), (2, 9), (3, 8), (4, 7)
     for (i,j) in zip(1..4, ..10 by -1) { ... }
+
+  Range Intersection
+  ------------------
+  A range can be intersected with another range to form a new range representing the intersection of the two ranges by `slicing` one range with the other.
+
+  .. code-block:: chapel
+
+    (1..10)[3..8] // 3..8
+    (0..20)[1..20 by 2] // 1..20 by 2
+    (1..10)[5..] // 5..10
+    (1..10)[..5] // 1..5
+
+  Range Shifting
+  --------------
+  A range can be shifted by an integer using the ``+`` and ``-`` operators.
+
+  .. code-block:: chapel
+
+    (1..10) + 5 // 6..15
+    (1..10) - 3 // -2..7
+    (1..) + 1 // 2..
+    (..10) + 1 // ..11
+
+  Range Comparisons
+  -----------------
+  Ranges can be compared for equality using the ``==`` and ``!=`` operators.
+
+  .. code-block:: chapel
+
+    1..10 == 1..10 // true
+    1.. == 1.. // true
+    1..10 != (1..10 by 2) // true
 
  */
 module ChapelRange {
@@ -152,7 +218,9 @@ module ChapelRange {
     }
   }
 
-  /* TODO */
+  /* The ``idxType`` as represented by an integer type.  When
+     ``idxType`` is an enumerated type, this evaluates to ``int``.
+     Otherwise, it evaluates to ``idxType``. */
   proc range.intIdxType type {
     return chpl__idxTypeToIntIdxType(idxType);
   }
@@ -411,7 +479,7 @@ module ChapelRange {
   /* Returns the number of elements in this range, cast to the index type.
 
      Note: The result is undefined if the index is signed
-     and the low and high bounds differ by more than ``max(intIdxType)``.
+     and the low and high bounds differ by more than ``max(``:proc:`range.intIdxType` ``)``.
    */
   inline proc range.size: intIdxType {
     return this.length;
@@ -743,11 +811,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   /*
-     If ``i`` is a member of the range's represented sequence, returns an
-     integer giving the ordinal index of i within the sequence using
-     zero-based indexing. Otherwise, returns ``(-1):intIdxType``. It is an error
-     to invoke ``indexOrder`` if the represented sequence is not defined or
-     the range does not have a first index.
+     If ``i`` is a member of the range's represented sequence, returns
+     an integer giving the ordinal index of i within the sequence
+     using zero-based indexing. Otherwise, returns
+     ``(-1):``:proc:`range.intIdxType`. It is an error to invoke
+     ``indexOrder`` if the represented sequence is not defined or the
+     range does not have a first index.
 
      The following calls show the order of index 4 in each of the given ranges:
 
@@ -2427,7 +2496,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   inline proc chpl__intToIdx(type idxType: integral, i: idxType) {
-    return i;
+    return i: idxType;
   }
 
   inline proc chpl__intToIdx(type idxType: enumerated, i: integral) {
