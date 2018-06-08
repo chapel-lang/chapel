@@ -261,7 +261,7 @@ module DefaultRectangular {
               block(i) = ranges(i)._low+followMe(i).low:intIdxType..ranges(i)._low+followMe(i).high:intIdxType;
           }
           for i in these_help(1, block) {
-            yield chpl__intToIdx(i, idxType);
+            yield chpl__intToIdx(idxType, i);
           }
         }
       }

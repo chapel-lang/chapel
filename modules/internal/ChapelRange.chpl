@@ -173,7 +173,7 @@ module ChapelRange {
                   _low : idxType = chpl__defaultLowBound(idxType),
                   _high : idxType = chpl__defaultHighBound(idxType),
                   _stride : chpl__rangeStrideType(idxType) = 1,
-                  _alignment : idxType = chpl__intToIdx(0, idxType),
+                  _alignment : idxType = chpl__intToIdx(idxType, 0),
                   _aligned : bool = false) {
     this.idxType     = idxType;
     this.boundedType = boundedType;
@@ -314,11 +314,11 @@ module ChapelRange {
   proc range.stride param where !stridable return 1 : strType;
 
   /* Returns the alignment of the range */
-  inline proc range.alignment where stridable return chpl__intToIdx(_alignment, idxType);
+  inline proc range.alignment where stridable return chpl__intToIdx(idxType, _alignment);
   pragma "no doc"
   proc range.alignment where !stridable && hasLowBound() return low;
   pragma "no doc"
-  proc range.alignment return chpl__intToIdx(0, idxType);
+  proc range.alignment return chpl__intToIdx(idxType, 0);
 
   /* Returns true if the range is aligned */
   inline proc range.aligned where stridable return _aligned;
@@ -334,7 +334,7 @@ module ChapelRange {
 
   /* Return the first element in the sequence the range represents */
   inline proc range.first {
-    return chpl__intToIdx(this.firstAsInt, idxType);
+    return chpl__intToIdx(idxType, this.firstAsInt);
   }
 
   pragma "no doc"
@@ -345,7 +345,7 @@ module ChapelRange {
 
   /* Return the last element in the sequence the range represents */
   inline proc range.last {
-    return chpl__intToIdx(this.lastAsInt, idxType);
+    return chpl__intToIdx(idxType, this.lastAsInt);
   }
 
   pragma "no doc"
@@ -356,19 +356,19 @@ module ChapelRange {
 
   /* Return the range's low bound. If the range does not have a low
      bound the behavior is undefined. */
-  inline proc range.low  return chpl__intToIdx(_low, idxType);
+  inline proc range.low  return chpl__intToIdx(idxType, _low);
 
 
   /* Return the range's high bound. If the range does not have a high
      bound the behavior is undefined. */
-  inline proc range.high return chpl__intToIdx(_high, idxType);
+  inline proc range.high return chpl__intToIdx(idxType, _high);
 
 
   /* Returns the range's aligned low bound. If the aligned low bound is
      undefined (does not exist), the behavior is undefined.
    */
   inline proc range.alignedLow : idxType {
-    return chpl__intToIdx(this.alignedLowAsInt, idxType);
+    return chpl__intToIdx(idxType, this.alignedLowAsInt);
   }
 
   pragma "no doc"
@@ -385,7 +385,7 @@ module ChapelRange {
    */
   // TODO: Add back example?
   inline proc range.alignedHigh : idxType {
-    return chpl__intToIdx(this.alignedHighAsInt, idxType);
+    return chpl__intToIdx(idxType, this.alignedHighAsInt);
   }
 
   pragma "no doc"
@@ -797,8 +797,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
              " that is larger than the range's number of indices ", this.length);
     }
 
-    return chpl__intToIdx(chpl__addRangeStrides(this.firstAsInt, this.stride, ord),
-                          idxType);
+    return chpl__intToIdx(idxType,
+                          chpl__addRangeStrides(this.firstAsInt, this.stride, ord));
   }
 
   //////////////////////////////////////////////////////////////////////////////////
@@ -839,7 +839,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   inline proc range._effAlmt()       where stridable return alignment;
 
   pragma "no doc"
-  proc range._effAlmt() where !stridable return chpl__intToIdx(0, idxType);
+  proc range._effAlmt() where !stridable return chpl__intToIdx(idxType, 0);
 
   // Return an interior portion of this range.
   pragma "no doc"
@@ -869,11 +869,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     const i = offset.safeCast(intIdxType);
     if i < 0 then
       return new range(idxType, boundedType, stridable,
-                       low, chpl__intToIdx(_low - 1 - i, idxType), stride,
+                       low, chpl__intToIdx(idxType, _low - 1 - i), stride,
                        _effAlmt(), aligned);
     if i > 0 then
       return new range(idxType, boundedType, stridable,
-                       chpl__intToIdx(_high + 1 - i, idxType), high, stride,
+                       chpl__intToIdx(idxType, _high + 1 - i), high, stride,
                        _effAlmt(), aligned);
     // if i == 0 then
     return new range(idxType, boundedType, stridable,
@@ -905,13 +905,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     const i = offset.safeCast(intIdxType);
     if i < 0 then
       return new range(idxType, boundedType, stridable,
-                       chpl__intToIdx(_low + i, idxType),
-                       chpl__intToIdx(_low - 1, idxType),
+                       chpl__intToIdx(idxType, _low + i),
+                       chpl__intToIdx(idxType, _low - 1),
                        stride, _effAlmt(), aligned);
     if i > 0 then
       return new range(idxType, boundedType, stridable,
-                       chpl__intToIdx(_high + 1, idxType),
-                       chpl__intToIdx(_high + i, idxType),
+                       chpl__intToIdx(idxType, _high + 1),
+                       chpl__intToIdx(idxType, _high + i),
                        stride, _effAlmt(), aligned);
     // if i == 0 then
     return new range(idxType, boundedType, stridable,
@@ -942,8 +942,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   {
     const i = offset.safeCast(intIdxType);
     return new range(idxType, boundedType, stridable,
-                     chpl__intToIdx(_low-i, idxType),
-                     chpl__intToIdx(_high+i, idxType),
+                     chpl__intToIdx(idxType, _low-i),
+                     chpl__intToIdx(idxType, _high+i),
                      stride, alignment, _aligned);
   }
 
@@ -1012,13 +1012,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     if (s) then
       return new range(resultType, b, s,
-                       chpl__intToIdx(r._low + i, resultType),
-                       chpl__intToIdx(r._high + i, resultType),
+                       chpl__intToIdx(resultType, r._low + i),
+                       chpl__intToIdx(resultType, r._high + i),
                        r.stride : strType, r._alignment + i : intResType, r.aligned);
     else
       return new range(resultType, b, s, 
-                       chpl__intToIdx(r._low + i, resultType),
-                       chpl__intToIdx(r._high + i, resultType));
+                       chpl__intToIdx(resultType, r._low + i),
+                       chpl__intToIdx(resultType, r._high + i));
   }
 
   inline proc +(i:integral, r: range(?e,?b,?s))
@@ -1092,14 +1092,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     const (ald, alt): (bool, i) =
       if r.isAmbiguous() then
         if r.stridable then (false, r.alignment)
-                       else (false, chpl__intToIdx(0, i))
+                       else (false, chpl__intToIdx(i, 0))
       else
         // we could talk about aligned bounds
         if      r.hasLowBound()  && st > 0 then (true, r.alignedLow)
         else if r.hasHighBound() && st < 0 then (true, r.alignedHigh)
         else
           if r.stridable then (r.aligned, r.alignment)
-                         else (false, chpl__intToIdx(0, i));
+                         else (false, chpl__intToIdx(i, 0));
 
     return new range(i, b, true,  lw, hh, st, alt, ald);
   }
@@ -1185,7 +1185,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     return new range(idxType, boundedType, stridable, low, high, stride,
                      // here's the new alignment
-                     chpl__intToIdx(this.firstAsInt + offs, idxType), true);
+                     chpl__intToIdx(idxType, this.firstAsInt + offs), true);
   }
 
 
@@ -1331,10 +1331,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     var result = new range(idxType,
                            computeBoundedType(this, other),
                            this.stridable | other.stridable,
-                           chpl__intToIdx(newlo, idxType),
-                           chpl__intToIdx(newhi, idxType),
+                           chpl__intToIdx(idxType, newlo),
+                           chpl__intToIdx(idxType, newhi),
                            newStride,
-                           chpl__intToIdx(0, idxType),
+                           chpl__intToIdx(idxType, 0),
                            !ambig && (this.aligned || other.aligned));
 
     if result.stridable {
@@ -1398,10 +1398,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       return new range(idxType = r.idxType,
                        boundedType = BoundedRangeType.bounded,
                        stridable = r.stridable,
-                       _low = chpl__intToIdx(1, r.idxType),
-                       _high = chpl__intToIdx(0, r.idxType),
+                       _low = chpl__intToIdx(r.idxType, 1),
+                       _high = chpl__intToIdx(r.idxType, 0),
                        _stride = r.stride,
-                       _alignment = chpl__intToIdx(0, r.idxType),
+                       _alignment = chpl__intToIdx(r.idxType, 0),
                        _aligned = false);
 
     if !r.hasFirst() && count > 0 then
@@ -1451,8 +1451,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     return new range(idxType = r.idxType,
                      boundedType = BoundedRangeType.bounded,
                      stridable = r.stridable,
-                     _low = chpl__intToIdx(lo, r.idxType),
-                     _high = chpl__intToIdx(hi, r.idxType),
+                     _low = chpl__intToIdx(r.idxType, lo),
+                     _high = chpl__intToIdx(r.idxType, hi),
                      _stride = if r.stridable then (r.stride: strType)
                                             else _void,
                      _alignment = if r.stridable then r.alignment else _void,
@@ -1782,7 +1782,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                         __primitive( "=", i, start),
                         __primitive("!=", i, end),
                         __primitive("+=", i, stride: intIdxType)) {
-        yield chpl__intToIdx(i, idxType);
+        yield chpl__intToIdx(idxType, i);
       }
     } else {
       for i in this.generalIterator() do yield i;
@@ -1807,7 +1807,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                         __primitive( "=", i, start),
                         __primitive("<=", i, end),
                         __primitive("+=", i, stride: intIdxType)) {
-        yield chpl__intToIdx(i, idxType);
+        yield chpl__intToIdx(idxType, i);
       }
     } else {
       for i in this.generalIterator() do yield i;
@@ -1895,7 +1895,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         } else {
           const (lo, hi) = _computeBlock(len, numChunks, chunk, this._high, this._low, this._low);
           for i in lo..hi {
-            yield chpl__intToIdx(i, idxType);
+            yield chpl__intToIdx(idxType, i);
           }
         }
       }
@@ -2052,12 +2052,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
       }
       if this.stridable || myFollowThis.stridable {
-        var r = chpl__intToIdx(1, idxType)..chpl__intToIdx(0, idxType) by 1:chpl__rangeStrideType(intIdxType);
+        var r = chpl__intToIdx(idxType, 1)..chpl__intToIdx(0, idxType) by 1:chpl__rangeStrideType(intIdxType);
 
         if flwlen != 0 {
           const stride = this.stride * myFollowThis.stride;
           var low = this.orderToIndex(myFollowThis.first);
-          var high = chpl__intToIdx(chpl__idxToInt(low) + stride * (flwlen - 1):strType, idxType);
+          var high = chpl__intToIdx(idxType, chpl__idxToInt(low) + stride * (flwlen - 1):strType);
           assert(high == this.orderToIndex(myFollowThis.last));
 
           if stride < 0 then low <=> high;
@@ -2071,11 +2071,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           yield i;
 
       } else {
-        var r = chpl__intToIdx(1,idxType)..chpl__intToIdx(0,idxType);
+        var r = chpl__intToIdx(idxType,1)..chpl__intToIdx(idxType,0);
 
         if flwlen != 0 {
           const low = this.orderToIndex(myFollowThis.first);
-          const high = chpl__intToIdx(chpl__idxToInt(low): strType + (flwlen - 1):strType, idxType);
+          const high = chpl__intToIdx(idxType, chpl__idxToInt(low): strType + (flwlen - 1):strType);
           assert(high == this.orderToIndex(myFollowThis.last));
           r = low .. high;
         }
@@ -2183,7 +2183,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
     if ! alignCheckRange.isNaturallyAligned() && aligned then
-      f <~> new ioLiteral(" align ") <~> chpl__intToIdx(chpl__mod(chpl__idxToInt(alignment), stride), idxType);
+      f <~> new ioLiteral(" align ") <~> chpl__intToIdx(idxType, chpl__mod(chpl__idxToInt(alignment), stride));
   }
   pragma "no doc"
   proc ref range.readThis(f)
@@ -2413,24 +2413,20 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   inline proc chpl__intToIdx(type idxType, i: idxType, j ...) {
-    const first = chpl__intToIdx(i, idxType);
+    const first = (chpl__intToIdx(i, idxType),);
     const rest = chpl__intToIdx(idxType, (...j));
     return (first, (...rest));
   }
 
-  inline proc chpl__intToIdx(type idxType, i: idxType) {
-    return (chpl__intToIdx(i, idxType),);
-  }
-
-  inline proc chpl__intToIdx(i: _tuple, type idxType) {
+  inline proc chpl__intToIdx(type idxType, i: _tuple) {
     return chpl__intToIdx(idxType, (...i));
   }
 
-  inline proc chpl__intToIdx(i: integral, type idxType: integral) {
-    return i:idxType;
+  inline proc chpl__intToIdx(type idxType: integral, i: idxType) {
+    return i;
   }
 
-  inline proc chpl__intToIdx(i: integral, type idxType: enumerated) {
+  inline proc chpl__intToIdx(type idxType: enumerated, i: integral) {
     return chpl__orderToEnum(i, idxType);
   }
 
