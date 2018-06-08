@@ -5918,12 +5918,21 @@ static void resolveNewManaged(CallExpr* move, CallExpr* newExpr, Expr* last,
     newExpr = fixThisNew;
     move = NULL;
     last = fixThisNew;
-    FnSymbol* fn = fixThisNew->resolvedFunction();
+    at = NULL;
+  }
+
+  // Try to get the constructed type, in case the caller did not
+  // provide it.
+  if (at == NULL) {
+    FnSymbol* fn = newExpr->resolvedFunction();
     INT_ASSERT(fn);
     // Make sure that the called function is resolved
     if (!fn->isResolved())
       resolveFunction(fn);
-    at = toAggregateType(fn->retType);
+    if (fn->retType == dtVoid)
+      at = toAggregateType(fn->_this->type);
+    else
+      at = toAggregateType(fn->retType);
     INT_ASSERT(at);
   }
 
