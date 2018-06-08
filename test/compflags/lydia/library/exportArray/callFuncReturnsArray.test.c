@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Call the cleanup function
-  chpl_call_free(arr);
+  chpl_free_external_array(arr);
 
   // Shutdown the Chapel runtime and standard modules
   chpl_library_finalize();
