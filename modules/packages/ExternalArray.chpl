@@ -25,18 +25,15 @@
 module ExternalArray {
   use ChapelStandard;
 
-  extern type chpl_free_func;
-  private extern const CHPL_FREE_FUNC_NIL: chpl_free_func;
-
   extern record chpl_external_array {
     var elts: c_void_ptr;
     var size: uint;
 
-    var freer: chpl_free_func;
+    var freer: c_void_ptr;
   }
   extern proc chpl_make_external_array(elt_size: uint, num_elts: uint):
     chpl_external_array;
-  extern proc chpl_call_free(x: chpl_external_array);
+  extern proc chpl_free_external_array(x: chpl_external_array);
 
   pragma "use default init"
   class ExternDist: BaseDist {
@@ -272,7 +269,7 @@ module ExternalArray {
 
     proc dsiDestroyArr() {
       if (_owned) {
-        chpl_call_free(_ArrInstance);
+        chpl_free_external_array(_ArrInstance);
       }
     }
 
@@ -291,7 +288,7 @@ module ExternalArray {
   // Creates an instance of our new array type
   pragma "no copy return"
   proc makeArrayFromPtr(value: c_ptr, size: uint) {
-    var data = new chpl_external_array(value, size, CHPL_FREE_FUNC_NIL);
+    var data = new chpl_external_array(value, size, c_nil);
     return makeArrayFromExternArray(data, value.eltType);
   }
 

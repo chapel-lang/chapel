@@ -23,6 +23,10 @@
 
 const chpl_free_func CHPL_FREE_FUNC_NIL = NULL;
 
+static void chpl_wrap_chapel_free_call(void* mem) {
+  chpl_mem_free(mem, 0, 0);
+}
+
 chpl_external_array chpl_make_external_array(uint64_t elt_size,
                                              uint64_t num_elts) {
   void* my_mem = chpl_mem_alloc(elt_size*num_elts,
@@ -36,12 +40,8 @@ chpl_external_array chpl_make_external_array(uint64_t elt_size,
   return ret;
 }
 
-void chpl_call_free(chpl_external_array x) {
+void chpl_free_external_array(chpl_external_array x) {
   if (x.freer != CHPL_FREE_FUNC_NIL) {
     x.freer(x.elts);
   }
-}
-
-void chpl_wrap_chapel_free_call(void* mem) {
-  chpl_mem_free(mem, 0, 0);
 }
