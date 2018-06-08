@@ -123,4 +123,6 @@ void chpl_msg(int verbose_level, const char* fmt, ...)
 void chpl_error_init(void);
 #endif
 
+const char* chpl_stack_unwind(void);
+
 #endif

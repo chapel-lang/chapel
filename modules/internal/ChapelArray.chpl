@@ -937,6 +937,7 @@ module ChapelArray {
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
                            ranges: rank*range(idxType, BoundedRangeType.bounded,stridable)) {
       var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges);
+      chpl_debug_writeln("newRectangularDom ", __primitive("_wide_get_addr", x):uint);
       if x.linksDistribution() {
         _value.add_dom(x);
       }
@@ -1117,7 +1118,9 @@ module ChapelArray {
 
     proc _do_destroy () {
       if ! _unowned {
-        on _instance {
+        chpl_debug_writeln("_domain._do_destroy ", __primitive("_wide_get_addr", _instance):uint);
+        /*on _instance*/ {
+
           // Count the number of arrays that refer to this domain,
           // and mark the domain to be freed when that number reaches 0.
           // Additionally, if the number is 0, remove the domain from
@@ -1128,10 +1131,16 @@ module ChapelArray {
           if distToRemove != nil {
             distToFree = distToRemove.remove();
           }
-          if domToFree != nil then
+          if domToFree != nil {
+             chpl_debug_writeln("_delete_dom ", __primitive("_wide_get_addr", inst):uint);
+
             _delete_dom(inst, _isPrivatized(inst));
-          if distToFree != nil then
+          }
+          if distToFree != nil {
+             chpl_debug_writeln("_delete_dist ", __primitive("_wide_get_addr", distToFree):uint);
+
             _delete_dist(distToFree, _isPrivatized(inst.dist));
+          }
         }
       }
     }
