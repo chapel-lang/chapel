@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _chplexternarray_H_
-#define _chplexternarray_H_
+#ifndef _chpl_external_array_H_
+#define _chpl_external_array_H_
 
 #include <stdint.h>
 
@@ -30,8 +30,6 @@ typedef struct {
 
   chpl_free_func freer;
 } chpl_external_array;
-
-const chpl_free_func CHPL_FREE_FUNC_NIL;
 
 chpl_external_array chpl_make_external_array(uint64_t elt_size,
                                              uint64_t num_elts);

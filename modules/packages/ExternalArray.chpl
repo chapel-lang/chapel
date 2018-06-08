@@ -31,8 +31,10 @@ module ExternalArray {
 
     var freer: c_void_ptr;
   }
-  extern proc chpl_make_external_array(elt_size: uint, num_elts: uint):
-    chpl_external_array;
+
+  extern proc
+  chpl_make_external_array(elt_size: uint, num_elts: uint): chpl_external_array;
+
   extern proc chpl_free_external_array(x: chpl_external_array);
 
   pragma "use default init"

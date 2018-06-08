@@ -21,8 +21,6 @@
 #include "chpl-external-array.h"
 #include "chpl-mem.h"
 
-const chpl_free_func CHPL_FREE_FUNC_NIL = NULL;
-
 static void chpl_wrap_chapel_free_call(void* mem) {
   chpl_mem_free(mem, 0, 0);
 }
@@ -41,7 +39,7 @@ chpl_external_array chpl_make_external_array(uint64_t elt_size,
 }
 
 void chpl_free_external_array(chpl_external_array x) {
-  if (x.freer != CHPL_FREE_FUNC_NIL) {
+  if (x.freer != NULL) {
     x.freer(x.elts);
   }
 }
