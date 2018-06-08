@@ -302,7 +302,7 @@ module ExternalArray {
     var arr = new unmanaged ExternArr(eltType,
                                       dom,
                                       value,
-                                      false);
+                                      _owned=false);
     dom.add_arr(arr, locking = false);
     return _newArray(arr);
   }
