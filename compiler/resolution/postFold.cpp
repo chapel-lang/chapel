@@ -712,7 +712,7 @@ bool requiresImplicitDestroy(CallExpr* call) {
   bool retval = false;
 
   if (FnSymbol* fn = call->resolvedFunction()) {
-    FnSymbol* parent = call->getFunction();
+    //FnSymbol* parent = call->getFunction();
 
     if (//parent->hasFlag(FLAG_DONOR_FN)                        == false &&
         isRecord(fn->retType)                                 == true  &&
