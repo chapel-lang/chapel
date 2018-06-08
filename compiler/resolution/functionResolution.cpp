@@ -2826,16 +2826,82 @@ static void findVisibleCandidates(CallInfo&                  info,
   if (candidates.n == 0) {
     gatherCandidates(info, visibleFns, true, candidates);
   }
+
+}
+
+static void checkGenericOrParam(FnSymbol* fn,
+			        bool* generic,
+			        bool* param) {
+
+  if (fn->hasFlag(FLAG_GENERIC))
+   *generic = true;
+
+  if (fn->instantiatedFrom)
+   *generic = true; // Should never be reached?
+
+  for_formals(formal, fn) {
+    if (formal->type != dtUnknown) {
+      if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+        *generic = true;
+
+      if (formal->type->symbol->hasFlag(FLAG_GENERIC))
+        *generic = true;
+
+      bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+			   formal->intent == INTENT_PARAM;
+
+      if (formalIsParam) {
+// THIS ONLY SHOULD HAPPEN WHEN THE TYPE MATCHES!
+        *generic = true;
+        *param = true;
+      }
+    }
+  }
 }
 
 static void gatherCandidates(CallInfo&                  info,
                              Vec<FnSymbol*>&            visibleFns,
                              bool                       lastResort,
                              Vec<ResolutionCandidate*>& candidates) {
+  
+  // If there are a mix of generic functions and non-generic
+  // functions, as an optimization, remove any generic functions
+  // from the mix.
+  // This needs to also consider promotion. If
+  // the generic function doesn't promote, but the concrete
+  // function does, we'd choose the generic one.
+  //bool anyPromotes = false;
+  //bool anyNotPromotes = false;
+  bool anyParam = false;
+  bool anyNotParam = false;
+  bool anyGeneric = false;
+  bool anyNotGeneric = false;
+
   forv_Vec(FnSymbol, fn, visibleFns) {
+    bool generic = false;
+    bool param = false;
+    checkGenericOrPromotes(fn, &generic, &promotes);
+
+    anyParam |= param;
+    anyNotParam |= !param;
+    anyGeneric |= generic;
+    anyNotGeneric |= !generic;
+  }
+
+  forv_Vec(FnSymbol, fn, visibleFns) {
+
+    bool generic = false;
+    bool param = false;
+    checkGenericOrPromotes(fn, &generic, &promotes);
+
+    if (anyParam && considerOnlyConcrete && generic) {
+      // don't consider this generic function
+
+      printf("Pruning function id %i\n", fn->id);
+
     // Only consider functions marked with/without FLAG_LAST_RESORT
     // (where existence of the flag matches the lastResort argument)
-    if (fn->hasFlag(FLAG_LAST_RESORT) == lastResort) {
+    } else if (fn->hasFlag(FLAG_LAST_RESORT) == lastResort) {
 
       // Consider
       //

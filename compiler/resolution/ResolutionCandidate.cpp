@@ -37,6 +37,7 @@
 
 ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
   fn = function;
+  promotes = false;
 }
 
 /************************************* | **************************************
@@ -638,17 +639,23 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
       bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
                                formal->intent == INTENT_PARAM;
 
-      if (actualIsTypeAlias != formalIsTypeAlias) {
+      bool dispatchPromotes = false;
+      bool dispatches = false;
+
+      if (actualIsTypeAlias != formalIsTypeAlias)
+        return false;
+      
+      dispatches = canDispatch(actual->type,
+                               actual,
+                               formal->type,
+                               fn,
+                               &dispatchPromotes,
+                               formalIsParam);
+      
+      if (dispatches == false)
         return false;
 
-      } else if (canDispatch(actual->type,
-                             actual,
-                             formal->type,
-                             fn,
-                             NULL,
-                             formalIsParam) == false) {
-        return false;
-      }
+      this->promotes |= dispatchPromotes;
     }
   }
 

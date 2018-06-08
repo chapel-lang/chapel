@@ -43,6 +43,8 @@ public:
   std::vector<Symbol*>      formalIdxToActual;
   std::vector<ArgSymbol*>   actualIdxToFormal;
 
+  bool promotes;
+
 private:
                             ResolutionCandidate();
 
