@@ -7,14 +7,14 @@ class C {
 
 proc foo(c: C(int, ?tt) ...?k) {
   var y: int;
-  var yy: tt(1);
+  var yy: tt;
   writeln((y, yy));
   writeln(c);
 }
 
 proc foo(c: C(real, ?tt) ...?k) {
   var y: real;
-  var yy: tt(1);
+  var yy: tt;
   writeln((y, yy));
   writeln(c);
 }

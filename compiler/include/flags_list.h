@@ -249,6 +249,8 @@ symbolFlag( FLAG_OBJECT_CLASS , npr, "object class" , ncm )
 symbolFlag( FLAG_ON , npr, "on" , ncm )
 symbolFlag( FLAG_ON_BLOCK , npr, "on block" , ncm )
 
+symbolFlag( FLAG_OVERRIDE , npr, "method overrides" , ncm )
+
 symbolFlag( FLAG_OWNED , ypr, "owned", "owned class instance for lifetime checking" )
 
 symbolFlag( FLAG_PARAM , npr, "param" , "parameter (compile-time constant)" )

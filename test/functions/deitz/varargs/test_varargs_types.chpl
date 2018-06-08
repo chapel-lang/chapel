@@ -1,4 +1,4 @@
-proc writeDefaultValues(args:?t ...?n) where n*t(1) == t {
+proc writeDefaultValues(args:?t ...?n) {
   writeln(args.type:string);
   for param i in 1..n {
     var x: args(i).type;
@@ -6,7 +6,7 @@ proc writeDefaultValues(args:?t ...?n) where n*t(1) == t {
   }
 }
 
-proc writeDefaultValues(args:?t ...?n) where n*t(1) != t {
+proc writeDefaultValues(args...?n) {
   writeln("arguments have different types");
 }
 

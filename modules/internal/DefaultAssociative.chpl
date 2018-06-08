@@ -81,7 +81,7 @@ module DefaultAssociative {
     var postponeResize = false;
   
     proc linksDistribution() param return false;
-    proc dsiLinksDistribution()     return false;
+    override proc dsiLinksDistribution() return false;
   
     proc init(type idxType,
               param parSafe: bool,
@@ -269,7 +269,7 @@ module DefaultAssociative {
     //
     // Associative Domain Interface
     //
-    proc dsiMyDist() : unmanaged BaseDist {
+    override proc dsiMyDist() : unmanaged BaseDist {
       return dist;
     }
 
@@ -575,9 +575,9 @@ module DefaultAssociative {
     // Standard internal array interface
     // 
   
-    proc dsiGetBaseDom() return dom;
+    override proc dsiGetBaseDom() return dom;
   
-    proc clearEntry(idx: idxType) {
+    override proc clearEntry(idx: idxType) {
       const initval: eltType;
       dsiAccess(idx) = initval;
     }
@@ -742,16 +742,16 @@ module DefaultAssociative {
     // Internal associative array interface
     //
   
-    proc _backupArray() {
+    override proc _backupArray() {
       tmpDom = dom.tableDom;
       tmpTable = data;
     }
   
-    proc _removeArrayBackup() {
+    override proc _removeArrayBackup() {
       tmpDom = {0..(-1:chpl_table_index_type)};
     }
   
-    proc _preserveArrayElement(oldslot, newslot) {
+    override proc _preserveArrayElement(oldslot, newslot) {
       data(newslot) = tmpTable[oldslot];
     }
 
@@ -765,7 +765,7 @@ module DefaultAssociative {
       return _newDomain(dom);
     }
 
-    proc dsiDestroyArr() {
+    override proc dsiDestroyArr() {
       //
       // BHARSH 2017-09-08: Workaround to avoid recursive iterator generation.
       //

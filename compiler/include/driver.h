@@ -139,6 +139,7 @@ extern bool fLocal;
 extern bool fIgnoreLocalClasses;
 extern bool fUserDefaultInitializers;
 extern bool fLifetimeChecking;
+extern bool fOverrideChecking;
 extern bool fHeterogeneous;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
@@ -179,6 +180,7 @@ extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 extern bool fWarnUnstable;
+extern bool fDefaultUnmanaged;
 
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportInlinedIterators;

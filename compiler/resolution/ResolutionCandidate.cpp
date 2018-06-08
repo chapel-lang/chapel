@@ -32,6 +32,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+static bool isCandidateFn(ResolutionCandidate* res, CallInfo& info);
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -69,7 +71,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
 
   fn = expandIfVarArgs(fn, info);
 
-  if (fn != NULL) {
+  if (fn != NULL && isCandidateFn(this, info)) {
     resolveTypedefedArgTypes();
 
     if (computeAlignment(info) == true) {
@@ -419,6 +421,15 @@ Type* getInstantiationType(Type* actualType, Type* formalType) {
     }
   }
 
+  // If we still don't have an instantiation type, try it again
+  // with the promotion type.
+  if (ret == NULL) {
+    if (Type* st = actualType->getValType()->scalarPromotionType) {
+      ret = getBasicInstantiationType(st, formalType);
+    }
+  }
+
+
   // Now, if formalType is a generic parent type to actualType,
   // we should instantiate the parent actual type
   if (AggregateType* at = toAggregateType(ret)) {
@@ -436,11 +447,6 @@ Type* getInstantiationType(Type* actualType, Type* formalType) {
 static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
   if (canInstantiate(actualType, formalType)) {
     return actualType;
-  }
-
-  if (Type* st = actualType->scalarPromotionType) {
-    if (canInstantiate(st, formalType))
-      return st;
   }
 
   if (UnmanagedClassType* actualMt = toUnmanagedClassType(actualType)) {
@@ -567,6 +573,24 @@ static bool isCandidateNew(ResolutionCandidate* res, CallInfo& info) {
   return retval;
 }
 
+static bool isCandidateFn(ResolutionCandidate* res, CallInfo& info) {
+  // Exclude initializers on other types before we attempt to resolve the
+  // signature.
+  //
+  // TODO: Expand this check for all methods
+  if (info.call->numActuals() >= 2 &&
+      res->fn->isInitializer() &&
+      isCandidateInit(res, info) == false) {
+    return false;
+  } else if (info.call->numActuals() >= 1 &&
+             res->fn->hasFlag(FLAG_NEW_WRAPPER) &&
+             isCandidateNew(res, info) == false) {
+    return false;
+  }
+
+  return true;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -575,17 +599,6 @@ static bool isCandidateNew(ResolutionCandidate* res, CallInfo& info) {
 
 bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
   int coindex = -1;
-
-  // Exclude initializers on other types before we attempt to resolve the
-  // signature.
-  //
-  // TODO: Expand this check for all methods
-  if (fn->isInitializer() && isCandidateInit(this, info) == false) {
-    return false;
-  } else if (strcmp(fn->name, "_new") == 0 &&
-             isCandidateNew(this, info) == false) {
-    return false;
-  }
 
   /*
    * A derived generic type will use the type of its parent,

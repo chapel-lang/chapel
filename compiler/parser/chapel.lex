@@ -159,6 +159,7 @@ on               return processToken(yyscanner, TON);
 only             return processToken(yyscanner, TONLY);
 otherwise        return processToken(yyscanner, TOTHERWISE);
 out              return processToken(yyscanner, TOUT);
+override         return processToken(yyscanner, TOVERRIDE);
 owned            return processToken(yyscanner, TOWNED);
 param            return processToken(yyscanner, TPARAM);
 pragma           return processToken(yyscanner, TPRAGMA);

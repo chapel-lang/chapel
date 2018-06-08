@@ -298,7 +298,7 @@
 %token TFOR TFORALL TFORWARDING
 %token TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
-%token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT TOWNED
+%token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
 %token TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSUBDOMAIN
@@ -1011,6 +1011,13 @@ linkage_spec:
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
+| TOVERRIDE     {
+                  $$ = new FnSymbol("");
+                  $$->addFlag(FLAG_OVERRIDE);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
 ;
 
 fn_decl_stmt:
@@ -1522,11 +1529,11 @@ type_level_expr:
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
 | TBORROWED expr
-    { $$ = new CallExpr( "_to_borrowed", $2); }
+    { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS, $2); }
 | TOWNED expr
     { $$ = new CallExpr( "_owned", $2); }
 | TUNMANAGED expr
-    { $$ = new CallExpr( "_to_unmanaged", $2); }
+    { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS, $2); }
 | TSHARED expr
     { $$ = new CallExpr( "_shared", $2); }
 ;
