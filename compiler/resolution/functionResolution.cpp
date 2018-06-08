@@ -6329,11 +6329,6 @@ static void resolveNewHandleGenericClass(CallExpr* newExpr, Type* manager) {
 
   resolveNewGenericInit(initCall, at, initTemp);
 
-  if (FnSymbol* fn = initCall->resolvedFunction())
-    if (fn->hasFlag(FLAG_PROMOTION_WRAPPER))
-      USR_FATAL(initCall,
-                "Promoted initialization of generic classes not implemented");
-
   SymExpr*   moveDst  = toSymExpr(moveStmt->get(1));
 
   DefExpr*   initDef  = toDefExpr(moveStmt->next);
