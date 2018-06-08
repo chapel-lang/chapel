@@ -1,4 +1,4 @@
-use OwnedObject;
+
 use utilities;
 use LayoutCS;
 
@@ -14,7 +14,7 @@ proc plusPR(DIMS,ARR) throws {
 
 // At the moment, this is an exact copy of DefaultDist.dsiPartialReduce()
 // except for the receiver class.
-proc CS.dsiPartialReduce(const reduceOp, const resDimSpec,
+proc CS.dsiPartialReduce(const perElemOp, const resDimSpec,
                          const srcArr)
   throws
 {
@@ -25,14 +25,15 @@ proc CS.dsiPartialReduce(const reduceOp, const resDimSpec,
   const (resDom, resDims) =
     partRedCheckAndCreateResultDimensions(this, resDimSpec, srcArr, srcDims);
 
-  var resArr: [resDom] srcArr.eltType = reduceOp.identity;
-  const resReduceOp = new (reduceOp.type)(eltType=resArr.type);
+  var resArr: [resDom] srcArr.eltType = perElemOp.identity;
+  const resReduceOp = new unmanaged PartRedOp(eltType=resArr.type,
+                                              perElemOp = perElemOp);
 
   forall (srcIdx, srcElm) in zip(srcDom, srcArr)
     with (resReduceOp reduce resArr)
   {
     const resIdx = fullIdxToReducedIdx(resDims, srcDims, srcIdx);
-    reduceOp.accumulateOntoState(resArr[resIdx], srcElm);
+    resArr reduce= (resIdx, srcElm);
   }
 
   delete resReduceOp;
