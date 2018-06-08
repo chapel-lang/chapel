@@ -65,8 +65,20 @@ module ExternalArray {
     }
 
     proc dsiClone() {
-      return this;
+      return _to_unmanaged(this);
     }
+
+    proc trackDomains() param return false;
+    override proc dsiTrackDomains() return false;
+
+    proc singleton() param return true;
+  }
+
+  var defaultExternDist = new unmanaged ExternDist();
+
+  // Module deinit
+  proc deinit() {
+    delete defaultExternDist;
   }
 
   class ExternDom: BaseRectangularDom {
@@ -122,6 +134,9 @@ module ExternalArray {
     proc dsiMyDist() {
       return dist;
     }
+
+    proc linksDistribution() param return false;
+    override proc dsiLinksDistribution()     return false;
 
     proc dsiMember(ind: rank*idxType) {
       if (ind(1) < size && ind(1) >= 0) {
@@ -296,8 +311,7 @@ module ExternalArray {
 
   pragma "no copy return"
   proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
-    var dist = new unmanaged ExternDist();
-    var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,));
+    var dom = defaultExternDist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,));
     dom._free_when_no_arrs = true;
     var arr = new unmanaged ExternArr(eltType,
                                       dom,
