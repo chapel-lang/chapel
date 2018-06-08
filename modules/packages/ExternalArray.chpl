@@ -65,8 +65,20 @@ module ExternalArray {
     }
 
     proc dsiClone() {
-      return this;
+      return _to_unmanaged(this);
     }
+
+    proc trackDomains() param return false;
+    override proc dsiTrackDomains() return false;
+
+    proc singleton() param return true;
+  }
+
+  var defaultExternDist = new unmanaged ExternDist();
+
+  // Module deinit
+  proc deinit() {
+    delete defaultExternDist;
   }
 
   class ExternDom: BaseRectangularDom {
@@ -122,6 +134,9 @@ module ExternalArray {
     proc dsiMyDist() {
       return dist;
     }
+
+    proc linksDistribution() param return false;
+    override proc dsiLinksDistribution()     return false;
 
     proc dsiMember(ind: rank*idxType) {
       if (ind(1) < size && ind(1) >= 0) {
@@ -296,14 +311,35 @@ module ExternalArray {
 
   pragma "no copy return"
   proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
-    var dist = new unmanaged ExternDist();
-    var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,));
+    var dom = defaultExternDist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,));
     dom._free_when_no_arrs = true;
     var arr = new unmanaged ExternArr(eltType,
                                       dom,
                                       value,
-                                      false);
+                                      _owned=false);
     dom.add_arr(arr, locking = false);
     return _newArray(arr);
+  }
+
+  proc convertToExternalArray(arr: []) {
+    if (arr.domain.stridable) {
+      compilerError("cannot return a strided array");
+    }
+    if (arr.domain.rank != 1) {
+      compilerError("cannot return an array with rank != 1");
+    }
+    if (!isIntegralType(arr.domain.idxType)) {
+      compilerError("cannot return an array with indices that are not " +
+                    "integrals");
+    }
+    if (arr.domain.low != 0) {
+      halt("cannot return an array when the lower bounds is not 0");
+    }
+    var externalArr = chpl_make_external_array(c_sizeof(arr.eltType),
+                                               arr.size: uint);
+    chpl__uncheckedArrayTransfer(makeArrayFromExternArray(externalArr,
+                                                          arr.eltType),
+                                 arr);
+    return externalArr;
   }
 }

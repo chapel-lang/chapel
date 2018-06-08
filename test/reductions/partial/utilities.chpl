@@ -6,6 +6,11 @@ proc partRedEnsureArray(srcArr) {
     compilerError("partial reductions are currently available only for arrays");
 }
 
+proc partRedForallExprElmType(srcDom, fExpr) type {
+  var idx: srcDom.rank * srcDom.idxType;
+  return fExpr(idx).type;
+}
+
 // TODO if resDimSpec is a tuple of singletons and unbounded ranges (..),
 // then we can determine the preserved vs. reduced dimensions at compile
 // time and use fewer conditionals in the generated code.
