@@ -1887,6 +1887,7 @@ const char* astrInit = NULL;
 const char* astrDeinit = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
+const char* astr_chpl_manager = NULL;
 
 void initAstrConsts() {
   astrSdot    = astr(".");
@@ -1896,6 +1897,7 @@ void initAstrConsts() {
   astrDeinit  = astr("deinit");
   astrTag     = astr("tag");
   astrThis    = astr("this");
+  astr_chpl_manager = astr("_chpl_manager");
 }
 
 /************************************* | **************************************
