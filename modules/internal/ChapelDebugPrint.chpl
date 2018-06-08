@@ -48,9 +48,13 @@ module ChapelDebugPrint {
   // debug output without using stdout/writeln. It is a
   // work around for module ordering issues in resolution.
   proc chpl_debug_writeln(args...) {
-    extern proc printf(fmt:c_string, f:c_string);
+    /*
+    extern proc chpl_task_getId():int;
+    extern proc printf(fmt:c_string, i:c_int, f:c_string, t:c_string);
+    extern proc chpl_stack_unwind():c_string;
+    var trace = chpl_stack_unwind();
     var str = chpl_debug_stringify((...args));
-    printf("%s\n", str.c_str());
+    printf("%i %s %s\n", chpl_task_getId():c_int, str.c_str(), trace);*/
   }
 
   //

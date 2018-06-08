@@ -77,13 +77,19 @@ static int chpl_unwind_getLineNum(char *process_name, void *addr){
 }
 #endif
 
-static void chpl_stack_unwind(void){
+const char* chpl_stack_unwind(void){
   // This is just a prototype using libunwind
   unw_cursor_t cursor;
   unw_context_t uc;
   unw_word_t wordValue;
   char buffer[128];
   unsigned int line;
+  char* output = NULL;
+  int output_i = 0;
+  int output_n = 1024;
+  int got;
+
+  output = malloc(output_n);
 
 #ifdef __linux__
   unw_proc_info_t info;
@@ -100,15 +106,18 @@ static void chpl_stack_unwind(void){
 
   // Check if we need to print the stack trace (default = yes)
   if(! chpl_env_rt_get_bool("UNWIND", true)) {
-    return;
+    return "";
   }
 
   line = 0;
   unw_getcontext(&uc);
   unw_init_local(&cursor, &uc);
 
-  if(chpl_sizeSymTable > 0)
-    fprintf(stderr,"Stacktrace\n\n");
+  if(chpl_sizeSymTable > 0) {
+    got = snprintf(output + output_i, output_n - output_i, "%i Stacktrace  ", (int) chpl_task_getId());
+    if (got > 0)
+      output_i += got;
+  }
 
   // This loop does the effective stack unwind, see libunwind documentation
   while (unw_step(&cursor) > 0) {
@@ -135,14 +144,22 @@ static void chpl_stack_unwind(void){
 #else
         line = chpl_filenumSymTable[t+1];
 #endif
-        fprintf(stderr,"%s() at %s:%d\n",
+        if (output_i >= output_n)
+          break;
+
+        got = snprintf(output + output_i, output_n - output_i,
+                 "%s() at %s:%d  ",
                   chpl_funSymTable[t+1],
                   chpl_lookupFilename(chpl_filenumSymTable[t]),
                   line);
+        if (got > 0)
+          output_i += got;
+
         break;
       }
     }
   }
+  return output; 
 }
 #endif
 
@@ -205,7 +222,8 @@ void chpl_error_explicit(const char *message, int32_t lineno,
   fprintf(stderr, "\n");
 
 #ifdef CHPL_UNWIND_NOT_LAUNCHER
-  chpl_stack_unwind();
+  const char* trace = chpl_stack_unwind();
+  fprintf(stderr, "%s\n", trace);
 #endif
 
   chpl_exit_any(1);
