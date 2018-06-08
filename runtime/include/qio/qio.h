@@ -20,8 +20,6 @@
 #ifndef _QIO_H_
 #define _QIO_H_
 
-#include "chpl-tasks.h"
-
 #include "sys_basic.h"
 #include "bswap.h"
 #include "qbuffer.h"
@@ -197,6 +195,8 @@ typedef qio_file_functions_t* qio_file_functions_ptr_t;
 #endif
 
 #ifdef _chplrt_H_
+#include "chpl-tasks.h"
+
 // also export iohint_t and fdflag_t
 typedef qio_hint_t iohints;
 typedef qio_fdflag_t fdflag_t;
