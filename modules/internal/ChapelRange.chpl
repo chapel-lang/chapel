@@ -139,15 +139,11 @@ module ChapelRange {
     param boundedType: BoundedRangeType = BoundedRangeType.bounded; // bounded or not
     param stridable: bool = false;                 // range can be strided
 
-    var _low       : chpl__idxTypeToRepType(idxType);  // lower bound
-    var _high      : chpl__idxTypeToRepType(idxType);  // upper bound
+    var _low       : chpl__idxTypeToIntIdxType(idxType);  // lower bound
+    var _high      : chpl__idxTypeToIntIdxType(idxType);  // upper bound
     var _stride    : if stridable then chpl__rangeStrideType(idxType) else void; // signed stride
-    var _alignment : if stridable then chpl__idxTypeToRepType(idxType) else void; // alignment
+    var _alignment : if stridable then chpl__idxTypeToIntIdxType(idxType) else void; // alignment
     var _aligned   : if stridable then bool else void;
-
-    proc repType type {
-      return chpl__idxTypeToRepType(idxType);
-    }
 
     proc strType type  return chpl__rangeStrideType(idxType);
 
@@ -155,6 +151,12 @@ module ChapelRange {
       return idxType;
     }
   }
+
+  /* TODO */
+  proc range.intIdxType type {
+    return chpl__idxTypeToIntIdxType(idxType);
+  }
+
 
   //################################################################################
   //# Initializers
@@ -409,23 +411,23 @@ module ChapelRange {
   /* Returns the number of elements in this range, cast to the index type.
 
      Note: The result is undefined if the index is signed
-     and the low and high bounds differ by more than ``max(repType)``.
+     and the low and high bounds differ by more than ``max(intIdxType)``.
    */
-  inline proc range.size: repType {
+  inline proc range.size: intIdxType {
     return this.length;
   }
 
   /* Returns :proc:`range.size`.  */
-  proc range.length: repType {
+  proc range.length: intIdxType {
     if ! isBoundedRange(this) then
       compilerError("length is not defined on unbounded ranges");
 
     // assumes alignedHigh/alignLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
           al = this.alignedLowAsInt;
-    if al > ah then return 0: repType;
-    const s = abs(this.stride): repType;
-    return (ah - al) / s + 1:repType;
+    if al > ah then return 0: intIdxType;
+    const s = abs(this.stride): intIdxType;
+    return (ah - al) / s + 1:intIdxType;
   }
 
   /* Return true if the range has a first index, false otherwise */
@@ -519,7 +521,7 @@ module ChapelRange {
     }
     if stridable
     {
-      var s = abs(_stride):repType;
+      var s = abs(_stride):intIdxType;
       if chpl__diffMod(i, _alignment, s) != 0
         then return false;
     }
@@ -641,14 +643,14 @@ proc range.safeCast(type t) where isRangeType(t) {
 
   if tmp.stridable {
     tmp._stride = this.stride;
-    tmp._alignment = this.alignment.safeCast(tmp.repType);
+    tmp._alignment = this.alignment.safeCast(tmp.intIdxType);
     tmp._aligned = this.aligned;
   } else if this.stride != 1 {
     halt("illegal safeCast from non-unit stride range to unstridable range");
   }
 
-  tmp._low = this._low.safeCast(tmp.repType);
-  tmp._high = this._high.safeCast(tmp.repType);
+  tmp._low = this._low.safeCast(tmp.intIdxType);
+  tmp._high = this._high.safeCast(tmp.intIdxType);
 
   return tmp;
 }
@@ -667,12 +669,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   if tmp.stridable {
     tmp._stride = r._stride;
-    tmp._alignment = r._alignment: tmp.repType;
+    tmp._alignment = r._alignment: tmp.intIdxType;
     tmp._aligned = r._aligned;
   }
 
-  tmp._low = r.low: tmp.repType;
-  tmp._high = r.high: tmp.repType;
+  tmp._low = r.low: tmp.intIdxType;
+  tmp._high = r.high: tmp.intIdxType;
   return tmp;
 }
 
@@ -743,7 +745,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   /*
      If ``i`` is a member of the range's represented sequence, returns an
      integer giving the ordinal index of i within the sequence using
-     zero-based indexing. Otherwise, returns ``(-1):repType``. It is an error
+     zero-based indexing. Otherwise, returns ``(-1):intIdxType``. It is an error
      to invoke ``indexOrder`` if the represented sequence is not defined or
      the range does not have a first index.
 
@@ -762,9 +764,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"indexOrder -- Undefined on a range with ambiguous alignment.");
 
-    if ! member(i) then return (-1):repType;
+    if ! member(i) then return (-1):intIdxType;
     if ! stridable then return chpl__idxToInt(i) - _low;
-    else return ((i:strType - this.first:strType) / _stride):repType;
+    else return ((i:strType - this.first:strType) / _stride):intIdxType;
   }
 
   /* Returns the zero-based ``ord``-th element of this range's represented
@@ -811,7 +813,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // we need to handle more generally in the future, so for
   // consistency, we are not handling it here at all :-P
   //
-  /* Return a range with elements shifted from this range by ``off``.
+  /* Return a range with elements shifted from this range by ``offset``.
 
      Example:
 
@@ -822,8 +824,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
        0..9.translate(-1) == -1..8
        0..9.translate(-2) == -2..7
    */
-  inline proc range.translate(off: integral)
-    return this + off;
+  inline proc range.translate(offset: integral)
+    return this + offset;
 
   pragma "no doc"
   inline proc range.translate(i)
@@ -841,7 +843,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // Return an interior portion of this range.
   pragma "no doc"
-  proc range.interior(off: integral)
+  proc range.interior(offset: integral)
     where boundedType != BoundedRangeType.bounded
   {
     compilerError("interior is not supported on unbounded ranges");
@@ -849,9 +851,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // TODO: hilde
   // Set _aligned to true only if stridable.
-  /* Return a range with ``off`` elements from the interior portion of this
-     range. If ``off`` is positive, take elements from the high end, and if
-     ``off`` is negative, take elements from the low end.
+  /* Return a range with ``offset`` elements from the interior portion of this
+     range. If ``offset`` is positive, take elements from the high end, and if
+     ``offset`` is negative, take elements from the low end.
 
      Example:
 
@@ -862,9 +864,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
        0..9.interior(-1) == 0..0
        0..9.interior(-2) == 0..1
    */
-  proc range.interior(off: integral)
+  proc range.interior(offset: integral)
   {
-    const i = off.safeCast(repType);
+    const i = offset.safeCast(intIdxType);
     if i < 0 then
       return new range(idxType, boundedType, stridable,
                        low, chpl__intToIdx(_low - 1 - i, idxType), stride,
@@ -879,15 +881,15 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   pragma "no doc"
-  proc range.exterior(off: integral)
+  proc range.exterior(offset: integral)
     where boundedType != BoundedRangeType.bounded
   {
     compilerError("exterior is not supported on unbounded ranges");
   }
 
-  /* Return a range with ``off`` elements from the exterior portion of this
-     range. If ``off`` is positive, take elements from the high end, and if
-     ``off`` is negative, take elements from the low end.
+  /* Return a range with ``offset`` elements from the exterior portion of this
+     range. If ``offset`` is positive, take elements from the high end, and if
+     ``offset`` is negative, take elements from the low end.
 
      Example:
 
@@ -898,9 +900,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
        0..9.exterior(-1) = -1..-1
        0..9.exterior(-2) = -2..-1
    */
-  proc range.exterior(off: integral)
+  proc range.exterior(offset: integral)
   {
-    const i = off.safeCast(repType);
+    const i = offset.safeCast(intIdxType);
     if i < 0 then
       return new range(idxType, boundedType, stridable,
                        chpl__intToIdx(_low + i, idxType),
@@ -916,15 +918,15 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                      low, high, stride, _effAlmt(), aligned);
   }
 
-  // Returns an expanded range, or a contracted range if off < 0.
+  // Returns an expanded range, or a contracted range if offset < 0.
   // The existing absolute alignment is preserved.
   pragma "no doc"
-  proc range.expand(off: integral)
+  proc range.expand(offset: integral)
     where boundedType != BoundedRangeType.bounded
   {
     compilerError("expand() is not supported on unbounded ranges");
   }
-  /* Return a range expanded by ``off`` elements from each end.  If ``off`` is
+  /* Return a range expanded by ``offset`` elements from each end.  If ``offset`` is
      negative, the range will be contracted.
 
      Example:
@@ -936,9 +938,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
        0..9.expand(-1) == 1..8
        0..9.expand(-2) == 2..7
    */
-  proc range.expand(off: integral)
+  proc range.expand(offset: integral)
   {
-    const i = off.safeCast(repType);
+    const i = offset.safeCast(intIdxType);
     return new range(idxType, boundedType, stridable,
                      chpl__intToIdx(_low-i, idxType),
                      chpl__intToIdx(_high+i, idxType),
@@ -1051,7 +1053,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     chpl_check_step_integral(step);
     type strType = chpl__rangeStrideType(idxType);
 
-    // At present, step must coerce to range's repType or strType.
+    // At present, step must coerce to range's intIdxType or strType.
     if numBits(step.type) > numBits(strType) then
       compilerError("can't apply 'by' to a range with idxType ",
                     idxType:string, " using a step of type ",
@@ -1170,9 +1172,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   /* Returns a range whose alignment is this range's first index plus ``n``.
      If the range has no first index, a runtime error is generated.
    */
-  proc range.offset(in off: integral)
+  proc range.offset(in offset: integral)
   {
-    var offs = off.safeCast(repType);
+    var offs = offset.safeCast(intIdxType);
     if !stridable {
       compilerWarning("invoking 'offset' on an unstrided range has no effect.");
       offs = 0;
@@ -1238,7 +1240,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     // If the result type is unsigned, don't let the low bound go negative.
     // This is a kludge.  We should really obey type coercion rules. (hilde)
-    if (isUintType(repType)) { if (lo1 < 0) then lo1 = 0; }
+    if (isUintType(intIdxType)) { if (lo1 < 0) then lo1 = 0; }
 
     // We inherit the sign of the stride from this.stride.
     var newStride: strType = this.stride;
@@ -1336,17 +1338,17 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                            !ambig && (this.aligned || other.aligned));
 
     if result.stridable {
-      var al1 = (this.alignment % st1:repType):int;
-      var al2 = (other.alignment % st2:other.repType):int;
+      var al1 = (this.alignment % st1:intIdxType):int;
+      var al2 = (other.alignment % st2:other.intIdxType):int;
 
       if (al2 - al1) % g != 0 then
       {
         // empty intersection, return degenerate result
         if !isBoundedRange(result) then
           halt("could not represent range slice - it needs to be empty, but the slice type is not bounded");
-        result._low = 1:repType;
-        result._high = 0:repType;
-        result._alignment = if this.stride > 0 then 1:repType else 0:repType;
+        result._low = 1:intIdxType;
+        result._high = 0:intIdxType;
+        result._alignment = if this.stride > 0 then 1:intIdxType else 0:intIdxType;
         // _alignment == _low, so it won't print.
       }
       else
@@ -1357,8 +1359,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         // offset is in the range [-(lcm-1), lcm-1]
         if offset < 0 then offset += lcm;
 
-        // Now offset can be safely cast to repType.
-        result._alignment = al1:repType + offset:repType * st1:repType / g:repType;
+        // Now offset can be safely cast to intIdxType.
+        result._alignment = al1:intIdxType + offset:intIdxType * st1:intIdxType / g:intIdxType;
       }
     }
 
@@ -1388,7 +1390,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if r.isAmbiguous() then
       __primitive("chpl_error", c"count -- Cannot count off elements from a range which is ambiguously aligned.");
 
-    type resultType = r.repType;
+    type resultType = r.intIdxType;
     type strType = chpl__rangeStrideType(resultType);
 
     if (count == 0) then
@@ -1419,7 +1421,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     //
     proc chpl__computeTypeForCountMath(type t1, type t2) type {
       if (t1 == t2) then {
-        return chpl__idxTypeToRepType(t1);
+        return chpl__idxTypeToIntIdxType(t1);
       } else if (numBits(t1) == 64 || numBits(t2) == 64) then {
         return int(64);
       } else {
@@ -1519,7 +1521,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   pragma "no doc"
   proc range.checkIfIterWillOverflow(shouldHalt=true) {
-    return chpl_checkIfRangeIterWillOverflow(this.repType, this._low, this._high,
+    return chpl_checkIfRangeIterWillOverflow(this.intIdxType, this._low, this._high,
         this.stride, this.firstAsInt, this.lastAsInt, shouldHalt);
   }
 
@@ -1750,12 +1752,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // ability to use low/alignedLow over first. The additional code isn't
     // worth it just for that. In the other cases it allowed us to specialize
     // the test relational operator, which is important
-    var i: repType;
+    var i: intIdxType;
     const start = this.first;
     while __primitive("C for loop",
                       __primitive( "=", i, start),
                       true,
-                      __primitive("+=", i, stride: repType)) {
+                      __primitive("+=", i, stride: intIdxType)) {
       yield i;
     }
   }
@@ -1773,13 +1775,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       // must use first/last since we have no knowledge of stride
       // must check if low > high (something like 10..1) because of the !=
       // relational operator. Such ranges are supposed to iterate 0 times
-      var i: repType;
+      var i: intIdxType;
       const start = this.firstAsInt;
-      const end: repType = if this.low > this.high then start else this.lastAsInt + stride: repType;
+      const end: intIdxType = if this.low > this.high then start else this.lastAsInt + stride: intIdxType;
       while __primitive("C for loop",
                         __primitive( "=", i, start),
                         __primitive("!=", i, end),
-                        __primitive("+=", i, stride: repType)) {
+                        __primitive("+=", i, stride: intIdxType)) {
         yield chpl__intToIdx(i, idxType);
       }
     } else {
@@ -1797,14 +1799,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       // don't need to check if isAmbiguous since stride is one
 
       // can use low/high instead of first/last since stride is one
-      var i: repType;
+      var i: intIdxType;
       const start = this._low;
       const end = this._high;
 
       while __primitive("C for loop",
                         __primitive( "=", i, start),
                         __primitive("<=", i, end),
-                        __primitive("+=", i, stride: repType)) {
+                        __primitive("+=", i, stride: intIdxType)) {
         yield chpl__intToIdx(i, idxType);
       }
     } else {
@@ -1833,14 +1835,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
 
-    var i: repType;
+    var i: intIdxType;
     const start = this.first;
     const end = if this.low > this.high then start else this.last;
 
     while __primitive("C for loop",
                       __primitive( "=", i, start),
                       __primitive(">=", high, low),  // execute at least once?
-                      __primitive("+=", i, stride: repType)) {
+                      __primitive("+=", i, stride: intIdxType)) {
       yield i;
       if i == end then break;
     }
@@ -1885,7 +1887,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           const (lo, hi) = _computeBlock(len, numChunks, chunk, len-1);
           const mylen = hi - (lo-1);
           var low = orderToIndex(lo);
-          var high = (low:strType + stride * (mylen - 1):strType):repType;
+          var high = (low:strType + stride * (mylen - 1):strType):intIdxType;
           if stride < 0 then low <=> high;
           for i in low..high by stride {
             yield i;
@@ -2050,7 +2052,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
       }
       if this.stridable || myFollowThis.stridable {
-        var r = chpl__intToIdx(1, idxType)..chpl__intToIdx(0, idxType) by 1:chpl__rangeStrideType(repType);
+        var r = chpl__intToIdx(1, idxType)..chpl__intToIdx(0, idxType) by 1:chpl__rangeStrideType(intIdxType);
 
         if flwlen != 0 {
           const stride = this.stride * myFollowThis.stride;
@@ -2203,7 +2205,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       } else {
         if stridable {
           // un-naturally aligned - read the un-natural alignment
-          var a: repType;
+          var a: intIdxType;
           f <~> a;
           _alignment = a;
         } else {
@@ -2218,7 +2220,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //# Internal helper functions.
   //#
   pragma "no doc"
-  inline proc range.chpl__unTranslate(i: repType)
+  inline proc range.chpl__unTranslate(i: intIdxType)
     return this - i;
 
   pragma "no doc"
@@ -2324,7 +2326,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   // Get the simple expression 'start + stride*count' to typecheck.
-  // Use example: low + i:repType * stride.
+  // Use example: low + i:intIdxType * stride.
   // Use explicit conversions, no other additional runtime work.
   proc chpl__addRangeStrides(start, stride, count): start.type {
     proc convert(a,b) param
@@ -2384,9 +2386,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   // TODO: What would it take to make this private?  Currently DefaultRectangular
-  // relies on it, but could perhaps refer to range.repType instead?
+  // relies on it, but could perhaps refer to range.intIdxType instead?
   pragma "no doc"
-  proc chpl__idxTypeToRepType(type idxType) type {
+  proc chpl__idxTypeToIntIdxType(type idxType) type {
     if isEnumType(idxType) then return int; else return idxType;
   }
 
