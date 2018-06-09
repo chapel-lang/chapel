@@ -160,7 +160,7 @@ class CSDom: BaseSparseDomImpl {
 
   iter these() {
     // TODO: Is it faster to start at _private_findStart(1) ?
-    var cursor = if this.compressRows then rowRange.low else colRange.low;
+    /* var cursor = if this.compressRows then rowRange.low else colRange.low;
     for i in 1..nnz {
       while (startIdx(cursor+1) <= i) {
         cursor+= 1;
@@ -170,6 +170,14 @@ class CSDom: BaseSparseDomImpl {
       else
         yield (idx(i), cursor);
 
+    } */
+    for i in if this.compressRows then this.rowRange else this.colRange {
+      for k in startIdx(i)..startIdx(i+1)-1 {
+        if this.compressRows then
+          yield (i, idx(i));
+        else
+          yield (idx(i),i);
+      }
     }
   }
 
@@ -258,16 +266,25 @@ class CSDom: BaseSparseDomImpl {
     const (row, col) = ind;
 
     var ret: (bool, idxType);
-    if this.compressRows then
-      if this.dist.sorted then
+    // TODO is Search.search parameterized (or parameterizable) on the sorted key?
+    // if not, then this is the best way, otherwise, use Search.search as it is cleaner.
+    if this.compressRows {
+      writeln( "find(", ind, ") in [", idx, "] on ", idx.domain, " between ", startIdx(row), "..", stopIdx(row) );
+      if this.sorted then
         ret = binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
-      else
+      else {
         ret = linearSearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
-    else
+        if !ret[1] then ret[2] = startIdx(row);
+      }
+    } else {
+      writeln( "find(", ind, ") in [", idx, "] on ", idx.domain, " between ", startIdx(col), "..", stopIdx(col) );
       if this.sorted then
         ret = binarySearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
-      else
+      else {
         ret = linearSearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
+        if !ret[1] then ret[2] = startIdx(col);
+      }
+    }
 
     return ret;
   }
@@ -310,10 +327,14 @@ class CSDom: BaseSparseDomImpl {
   }
 
   proc dsiAdd(ind: rank*idxType) {
+    writeln("========================");
+    writeln("CSDom.dsiAdd(", ind, ")");
     boundsCheck(ind);
+    writeln("startIdx: ", this.startIdx );
 
     // find position in nnzDom to insert new index
     const (found, insertPt) = find(ind);
+    writeln("find -> ", (found,insertPt));
 
     // if the index already existed, then return
     if found then return 0;
@@ -323,7 +344,9 @@ class CSDom: BaseSparseDomImpl {
 
     // double nnzDom if we've outgrown it; grab current size otherwise
     var oldNNZDomSize = nnzDom.size;
+    writeln( "nnz ", nnz, "; idx: ", idx );
     _grow(nnz);
+    writeln( "nnz ", nnz, "; idx: ", idx );
 
     const (row,col) = ind;
 
@@ -334,11 +357,13 @@ class CSDom: BaseSparseDomImpl {
     for i in insertPt..nnz-1 by -1 {
       idx(i+1) = idx(i);
     }
-
+    writeln( "idx: ", idx );
+    writeln("going to insert");
     if this.compressRows then
       idx(insertPt) = col;
     else
       idx(insertPt) = row;
+    writeln("inserted: ", idx );
 
     // bump the startIdx counts
     var start = if this.compressRows then row else col;
@@ -357,6 +382,8 @@ class CSDom: BaseSparseDomImpl {
     for a in _arrs {
       a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDom.size);
     }
+    writeln("========================");
+    writeln( "startIdx: [", startIdx, "] on ", startIdx.domain, ", idx: [", idx, "] on ", idx.domain );
     return 1;
   }
 
@@ -542,13 +569,14 @@ class CSDom: BaseSparseDomImpl {
     for a in _arrs {
       a.sparseShiftArrayBack(insertPt..nnz-1);
     }
-
+    writeln( "startIdx: [", startIdx, "] on ", startIdx.domain, ", idx: [", idx, "] on ", idx.domain );
     return 1;
   }
 
   proc dsiClear() {
     nnz = 0;
     startIdx = 1;
+    writeln( "startIdx: [", startIdx, "] on ", startIdx.domain, ", idx: [", idx, "] on ", idx.domain );
   }
 
   iter dimIter(param d, ind) {
