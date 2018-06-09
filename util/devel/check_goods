@@ -25,6 +25,11 @@
 
 # .perfkeys filenames can be generated like .good.
 
+
+# Use a variable just to keep the line testing it (much later on)
+# under 80 columns.  Sigh.
+DRAPM="$CHPL_HOME/test/distributions/robust/arithmetic/performance/multilocale"
+
 for g in $(find $CHPL_HOME/test                                               \
            -name \*.good       -o -name \*.bad      -o -name \*.future -o     \
            -name \*.prediff    -o -name \*.precomp  -o -name \*.preexec -o    \
@@ -92,19 +97,21 @@ for g in $(find $CHPL_HOME/test                                               \
       # This dir uses a PREDIFF file to pick a specific .good file.  But
       # it just invokes "../../PREDIFF $0", so the later PREDIFF section
       # won't catch it.
-      if [ $d == "$CHPL_HOME/test/distributions/robust/arithmetic/performance/multilocale" ]; then
+      # The full path string plus the indentation, if, and test,
+      # doesn't fit in 80 columns, so it's defined above
+      if [ $d == $DRAPM ]; then
 	  base=${base%.cyclic}
 	  base=${base%.replicated}
 	  base=${base%.block}
 	  base=${base%.default}
       fi
 
-      # These dirs stick the .good files in subdirs, and copy them in via precomp.
-      # Pretend these .good files are one directory up.
+      # These dirs stick the .good files in subdirs, and copy them in
+      # via precomp.  Pretend these .good files are one directory up.
       if [ $d == "$CHPL_HOME/test/release/examples/benchmarks/isx/goods-1" -o \
-	      $d == "$CHPL_HOME/test/release/examples/benchmarks/isx/goods-4" -o \
-	      $d == "$CHPL_HOME/test/studies/isx/goods-1" -o \
-	      $d == "$CHPL_HOME/test/studies/isx/goods-4" ]; then
+	   $d == "$CHPL_HOME/test/release/examples/benchmarks/isx/goods-4" -o \
+	   $d == "$CHPL_HOME/test/studies/isx/goods-1" -o \
+	   $d == "$CHPL_HOME/test/studies/isx/goods-4" ]; then
 	  base=${base/\/goods-1/}
 	  base=${base/\/goods-4/}
 	  d=${d/\/goods-1/}
