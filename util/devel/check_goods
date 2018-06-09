@@ -26,6 +26,13 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
    base=${base%.comm-gasnet}
    base=${base%.comm-none}
 
+   GOODFILE=0
+   BADFILE=0
+   FUTUREFILE=0
+   [ ${g%.good} == ${g}   ] || GOODFILE=1
+   [ ${g%.bad} == ${g}    ] || BADFILE=1
+   [ ${g%.future} == ${g} ] || FUTUREFILE=1
+
    # deprecated/potential future chpldoc mode #1369 e9a18221a
    base=${base/%.logical.doc/.doc}
 
@@ -37,6 +44,16 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
    if [ -f $d/NOTEST ]; then
        continue
    fi
+
+   # Note .bad files lacking a .future.  This is much simpler than all
+   # the ways .good files can be named.
+   if [ $BADFILE == 1 ]; then
+       if [ ! -f ${base}.future ]; then
+	   echo $g
+	   continue
+       fi
+   fi
+
 
    # This dir uses a PREDIFF file to pick a specific .good file.  But
    # it just invokes "../../PREDIFF $0", so the later PREDIFF section
