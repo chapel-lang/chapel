@@ -17,29 +17,47 @@
 # limitations under the License.
 
 # This script checks the test/ directory for the .good the .bad and
-# the .future files that are stale.  .good and .future files are stale
-# if there's no test that refers to them.  .bad files are also stale
-# if there's no matching .future file.
+# the .future files that are stale.  (And others.)  .good and .future
+# files are stale if there's no test that refers to them.  .bad files
+# are also stale if there's no matching .future file.
 
 # usage: check_goods
 
+# .perfkeys filenames can be generated like .good.
 
-for g in $(find $CHPL_HOME/test -name \*.good -o -name \*.bad -o -name \*.future); do
-   base=${g%.good}
-   base=${base%.bad}
-   base=${base%.future}
-   base=${base%.no-local}
-   base=${base%.lm-flat}
-   base=${base%.lm-numa}
-   base=${base%.comm-gasnet}
-   base=${base%.comm-none}
+for g in $(find $CHPL_HOME/test                                               \
+           -name \*.good       -o -name \*.bad      -o -name \*.future -o     \
+           -name \*.prediff    -o -name \*.precomp  -o -name \*.preexec -o    \
+           -name \*.compopts   -o -name \*.execopts -o -name \*.numlocales -o \
+           -name \*.catfiles   -o -name \*.notest   -o -name \*.noexec -o     \
+           -name \*.cleanfiles -o -name \*.skipif   -o -name \*.suppressif -o \
+           -name \*.timeout    -o -name \*.perfnumtrials -o                   \
+           -name \*.perfcompopts -o -name \*.perfexecopts                     \
+          ); do
+
+   # Get the base name by stripping off the extensions we're looking
+   # for, and extensions the test system will automatically look for
+   # ("no-local" and following).
+   base=$g
+   for ext in good bad future prediff precomp preexec compopts execopts      \
+              numlocales catfiles notest noexec cleanfiles skipif suppressif \
+              timeout perfnumtrials perfcompopts perfexecopts                \
+              no-local lm-flat lm-numa comm-gasnet comm-none; do
+       base=${base%.${ext}}
+   done
 
    GOODFILE=0
    BADFILE=0
    FUTUREFILE=0
+   NOTESTFILE=0
+   SKIPIFFILE=0
+   SUPPRESSIFFILE=0
    [ ${g%.good} == ${g}   ] || GOODFILE=1
    [ ${g%.bad} == ${g}    ] || BADFILE=1
    [ ${g%.future} == ${g} ] || FUTUREFILE=1
+   [ ${g%.notest} == ${g} ] || NOTESTFILE=1
+   [ ${g%.skipif} == ${g} ] || SKIPIFFILE=1
+   [ ${g%.suppressif} == ${g} ] || SUPPRESSIFFILE=1
 
    # deprecated/potential future chpldoc mode #1369 e9a18221a
    base=${base/%.logical.doc/.doc}
@@ -58,6 +76,13 @@ for g in $(find $CHPL_HOME/test -name \*.good -o -name \*.bad -o -name \*.future
    if [ $BADFILE == 1 ]; then
        if [ ! -f ${base}.future ]; then
 	   echo ${g#${CHPL_HOME}/}
+	   continue
+       fi
+   fi
+
+   # A .notest, .skipif, or .suppressif file can apply to a subdirectory
+   if [ $NOTESTFILE == 1 -o $SKIPIFFILE == 1 -o $SUPPRESSIFFILE == 1 ]; then
+       if [ -d ${base} ]; then
 	   continue
        fi
    fi
