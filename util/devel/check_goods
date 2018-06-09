@@ -24,7 +24,7 @@
 # usage: check_goods
 
 
-for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
+for g in $(find $CHPL_HOME/test -name \*.good -o -name \*.bad -o -name \*.future); do
    base=${g%.good}
    base=${base%.bad}
    base=${base%.future}
@@ -57,7 +57,7 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
    # the ways .good files can be named.
    if [ $BADFILE == 1 ]; then
        if [ ! -f ${base}.future ]; then
-	   echo $g
+	   echo ${g#${CHPL_HOME}/}
 	   continue
        fi
    fi
@@ -67,7 +67,7 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
       # This dir uses a PREDIFF file to pick a specific .good file.  But
       # it just invokes "../../PREDIFF $0", so the later PREDIFF section
       # won't catch it.
-      if [ $d == "test/distributions/robust/arithmetic/performance/multilocale" ]; then
+      if [ $d == "$CHPL_HOME/test/distributions/robust/arithmetic/performance/multilocale" ]; then
 	  base=${base%.cyclic}
 	  base=${base%.replicated}
 	  base=${base%.block}
@@ -76,10 +76,10 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
 
       # These dirs stick the .good files in subdirs, and copy them in via precomp.
       # Pretend these .good files are one directory up.
-      if [ $d == "test/release/examples/benchmarks/isx/goods-1" -o \
-	      $d == "test/release/examples/benchmarks/isx/goods-4" -o \
-	      $d == "test/studies/isx/goods-1" -o \
-	      $d == "test/studies/isx/goods-4" ]; then
+      if [ $d == "$CHPL_HOME/test/release/examples/benchmarks/isx/goods-1" -o \
+	      $d == "$CHPL_HOME/test/release/examples/benchmarks/isx/goods-4" -o \
+	      $d == "$CHPL_HOME/test/studies/isx/goods-1" -o \
+	      $d == "$CHPL_HOME/test/studies/isx/goods-4" ]; then
 	  base=${base/\/goods-1/}
 	  base=${base/\/goods-4/}
 	  d=${d/\/goods-1/}
@@ -88,7 +88,7 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
 
       # This dir has foo-alt.good files that are included by the
       # using-chpl .rst files.
-      if [ $d == "test/release/examples/users-guide/taskpar" ]; then
+      if [ $d == "$CHPL_HOME/test/release/examples/users-guide/taskpar" ]; then
 	  if [ ${base%-alt} != $base ]; then
 	      continue
 	  fi
@@ -143,5 +143,5 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
        fi
    fi
 
-   echo $g
+   echo ${g#${CHPL_HOME}/}
 done
