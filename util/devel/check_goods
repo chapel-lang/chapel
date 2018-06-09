@@ -16,6 +16,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This script checks the test/ directory for the .good the .bad and
+# the .future files that are stale.  .good and .future files are stale
+# if there's no test that refers to them.  .bad files are also stale
+# if there's no matching .future file.
+
+# usage: check_goods
+
+
 for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
    base=${g%.good}
    base=${base%.bad}
