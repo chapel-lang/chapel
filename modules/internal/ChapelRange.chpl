@@ -212,7 +212,7 @@ module ChapelRange {
     var _aligned   : if stridable then bool else void;
 
     proc strType type  return chpl__rangeStrideType(idxType);
-
+ 
     proc chpl__promotionType() type {
       return idxType;
     }
@@ -238,8 +238,8 @@ module ChapelRange {
   proc range.init(type idxType = int,
                   param boundedType : BoundedRangeType = BoundedRangeType.bounded,
                   param stridable : bool = false,
-                  _low : idxType = chpl__defaultLowBound(idxType),
-                  _high : idxType = chpl__defaultHighBound(idxType),
+                  _low : idxType = chpl__intToIdx(idxType, 1),
+                  _high : idxType = chpl__intToIdx(idxType, 0),
                   _stride : chpl__rangeStrideType(idxType) = 1,
                   _alignment : idxType = chpl__intToIdx(idxType, 0),
                   _aligned : bool = false) {
@@ -270,8 +270,8 @@ module ChapelRange {
   proc range.init(type idxType = int,
                   param boundedType : BoundedRangeType = BoundedRangeType.bounded,
                   param stridable : bool = false,
-                  _low : idxType = chpl__defaultLowBound(idxType),
-                  _high : idxType = chpl__defaultHighBound(idxType),
+                  _low : idxType = chpl__intToIdx(idxType, 1),
+                  _high : idxType = chpl__intToIdx(idxType, 0),
                   _stride,
                   _alignment,
                   _aligned)
@@ -828,14 +828,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
        (0..10 by 2).indexOrder(4) == 2
        (3..5 by 2).indexOrder(4) == -1
    */
-  proc range.indexOrder(i: idxType)
+  proc range.indexOrder(ind: idxType)
   {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"indexOrder -- Undefined on a range with ambiguous alignment.");
 
-    if ! member(i) then return (-1):intIdxType;
-    if ! stridable then return chpl__idxToInt(i) - _low;
-    else return ((i:strType - this.first:strType) / _stride):intIdxType;
+    if ! member(ind) then return (-1):intIdxType;
+    if ! stridable then return chpl__idxToInt(ind) - _low;
+    else return ((ind:strType - this.first:strType) / _stride):intIdxType;
   }
 
   /* Returns the zero-based ``ord``-th element of this range's represented
@@ -2460,26 +2460,6 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   pragma "no doc"
   proc chpl__idxTypeToIntIdxType(type idxType) type {
     if isEnumType(idxType) then return int; else return idxType;
-  }
-
-  private proc chpl__defaultLowBound(type idxType) {
-    if isIntegralType(idxType) {
-      return 1:idxType;
-    } else if isEnumType(idxType) {
-      return chpl__orderToEnum(1, idxType);
-    } else {
-      chpl__rangeTypeError(idxType);
-    }
-  }
-
-  private proc chpl__defaultHighBound(type idxType) {
-    if isIntegralType(idxType) {
-      return 0:idxType;
-    } else if isEnumType(idxType) {
-      return chpl__orderToEnum(0, idxType);
-    } else {
-      chpl__rangeTypeError(idxType);
-    }
   }
 
   inline proc chpl__intToIdx(type idxType, i: idxType, j ...) {
