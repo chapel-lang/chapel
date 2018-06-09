@@ -54,35 +54,37 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
        fi
    fi
 
+   # Handle some special cases that apply only to .good files.
+   if [ $GOODFILE == 1 ]; then
+      # This dir uses a PREDIFF file to pick a specific .good file.  But
+      # it just invokes "../../PREDIFF $0", so the later PREDIFF section
+      # won't catch it.
+      if [ $d == "test/distributions/robust/arithmetic/performance/multilocale" ]; then
+	  base=${base%.cyclic}
+	  base=${base%.replicated}
+	  base=${base%.block}
+	  base=${base%.default}
+      fi
 
-   # This dir uses a PREDIFF file to pick a specific .good file.  But
-   # it just invokes "../../PREDIFF $0", so the later PREDIFF section
-   # won't catch it.
-   if [ $d == "test/distributions/robust/arithmetic/performance/multilocale" ]; then
-      base=${base%.cyclic}
-      base=${base%.replicated}
-      base=${base%.block}
-      base=${base%.default}
-   fi
+      # These dirs stick the .good files in subdirs, and copy them in via precomp.
+      # Pretend these .good files are one directory up.
+      if [ $d == "test/release/examples/benchmarks/isx/goods-1" -o \
+	      $d == "test/release/examples/benchmarks/isx/goods-4" -o \
+	      $d == "test/studies/isx/goods-1" -o \
+	      $d == "test/studies/isx/goods-4" ]; then
+	  base=${base/\/goods-1/}
+	  base=${base/\/goods-4/}
+	  d=${d/\/goods-1/}
+	  d=${d/\/goods-4/}
+      fi
 
-   # These dirs stick the .good files in subdirs, and copy them in via precomp.
-   # Pretend these .good files are one directory up.
-   if [ $d == "test/release/examples/benchmarks/isx/goods-1" -o \
-	$d == "test/release/examples/benchmarks/isx/goods-4" -o \
-	$d == "test/studies/isx/goods-1" -o \
-	$d == "test/studies/isx/goods-4" ]; then
-       base=${base/\/goods-1/}
-       base=${base/\/goods-4/}
-       d=${d/\/goods-1/}
-       d=${d/\/goods-4/}
-   fi
-
-   # This dir has foo-alt.good files that are included by the
-   # using-chpl .rst files.
-   if [ $d == "test/release/examples/users-guide/taskpar" ]; then
-       if [ ${base%-alt} != $base ]; then
-	   continue
-       fi
+      # This dir has foo-alt.good files that are included by the
+      # using-chpl .rst files.
+      if [ $d == "test/release/examples/users-guide/taskpar" ]; then
+	  if [ ${base%-alt} != $base ]; then
+	      continue
+	  fi
+      fi
    fi
 
    chpl=${base}.chpl
@@ -103,33 +105,35 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
    eo=$(compgen -G $d/'*.execopts')
    cdo=$(compgen -G $d/'*.chpldocopts')
 
-   # Some opts files have "# goodname.good", others just "# goodname".
+   # Some opts files have "# goodname.good", others just "# goodname",
+   # so check $base instead of $g.
    # The grep includes /dev/null in case $co $eo and $cdo are all empty.
    if grep $(basename $base) $co $eo $cdo /dev/null > /dev/null 2>&1; then
       continue
    fi
 
-   # If a .prediff, PREDIFF, or sub_test mentions .good files at all,
-   # assume it's doing something sneaky.
-   pd=$(compgen -G $d/'*.prediff')
-   pd1=$(compgen -G $d/'PREDIFF')
-   st=$(compgen -G $d/'sub_test')
-   if grep \\.good $pd $pd1 $st /dev/null > /dev/null 2>&1; then
-      continue
+   if [ $GOODFILE == 1 ]; then
+       # If a .prediff, PREDIFF, or sub_test mentions .good files at all,
+       # assume it's doing something sneaky.
+       pd=$(compgen -G $d/'*.prediff')
+       pd1=$(compgen -G $d/'PREDIFF')
+       st=$(compgen -G $d/'sub_test')
+       if grep \\.good $pd $pd1 $st /dev/null > /dev/null 2>&1; then
+	   continue
+       fi
+
+       # compopts and execopts with more than one line but no explicit
+       # filenames cause foo.chpl to have good files foo.x-y.chpl for x
+       # and y in 0 or 1..#lines in file.
+       if [ -n "$co" -o -n "$eo" -o -f $d/COMPOPTS -o -f $d/EXECOPTS ]; then
+	   base=${base%.[0-9]*-[0-9]*}
+	   chpl=$base.chpl
+	   c=$base.test.c
+	   if [ -f $chpl -o -f $c ]; then
+               continue
+	   fi
+       fi
    fi
-
-
-   # compopts and execopts with more than one line but no explicit
-   # filenames cause foo.chpl to have good files foo.x-y.chpl for x
-   # and y in 0 or 1..#lines in file.
-   if [ -n "$co" -o -n "$eo" -o -f $d/COMPOPTS -o -f $d/EXECOPTS ]; then
-      base=${base%.[0-9]*-[0-9]*}
-      chpl=$base.chpl
-      c=$base.test.c
-      if [ -f $chpl -o -f $c ]; then
-         continue
-      fi
-    fi
 
    echo $g
 done
