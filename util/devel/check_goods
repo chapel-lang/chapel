@@ -54,6 +54,12 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
       continue
    fi
 
+
+   # See if this file is symlinked to
+   if ls -lR "$d" | grep ^l | grep " -> $(basename $g)" > /dev/null 2>&1; then
+     continue
+   fi
+
    # See if this file is named in a compopts or execopts file
    co=$(compgen -G $d/'*.compopts')
    eo=$(compgen -G $d/'*.execopts')
