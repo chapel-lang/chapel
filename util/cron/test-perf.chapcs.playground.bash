@@ -27,7 +27,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
 # Test performance of enum ranges
 GITHUB_USER=bradcray
-GITHUB_BRANCH=enumRanges
+GITHUB_BRANCH=enumRange2
 SHORT_NAME=enumRanges
 START_DATE=06/05/18
 
