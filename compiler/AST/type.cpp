@@ -395,6 +395,8 @@ void EnumType::sizeAndNormalize() {
   Immediate* minImm = NULL;
   Immediate* maxImm = NULL;
 
+  return;
+
   // First, look for negative numbers in the enum.
   // If there are any, we have to store all
   // the values in negative numbers.

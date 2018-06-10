@@ -1066,7 +1066,7 @@ static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
     if (haveString)
       extendedName = astr(typeEnum->symbol->name, ".", constant->sym->name);
 
-    INT_ASSERT(gotInt || gotUint);
+    //    INT_ASSERT(gotInt || gotUint);
 
     bool match = false;
     // string matches name
@@ -1240,16 +1240,17 @@ static Expr* preFoldNamed(CallExpr* call) {
             call->replace(retval);
 
           // Handle casting to enum
-          } else if (toEnum && fromString) {
+          } else if (toEnum && (fromString || fromIntUint)) {
 
             EnumType* typeEnum = toEnumType(newType);
             Symbol* constant = findMatchingEnumSymbol(imm, typeEnum);
 
-            if (constant == NULL)
-              USR_FATAL(call->castFrom(), "enum cast out of bounds");
-
-            retval = new SymExpr(constant);
-            call->replace(retval);
+            if (constant == NULL) {
+              retval = call;
+            } else {
+              retval = new SymExpr(constant);
+              call->replace(retval);
+            }
 
           // Handle enumsym:string casts
           } else if (fromEnum && toString) {
