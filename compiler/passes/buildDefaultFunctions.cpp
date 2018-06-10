@@ -838,6 +838,18 @@ static void build_enum_enumerate_function(EnumType* et) {
 }
 
 static void build_enum_cast_function(EnumType* et) {
+  bool initsExist = false;
+  for_enums(constant, et) {
+    if (constant->init) {
+      initsExist = true;
+      break;
+    }
+  }
+  if (!initsExist) {
+    return;
+  }
+  //  printf("inits exist for %s\n", et->symbol->name);
+
   // integral value to enumerated type cast function
   FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
@@ -1005,6 +1017,7 @@ static void build_order_to_enum_function(EnumType* et) {
   int64_t count = 0;
   BlockStmt* whenstmts = buildChapelStmt();
   for_enums(constant, et) {
+    //    printf("Adding a case for %s and %lld\n", constant->sym->name, count);
     CondStmt* when =
       new CondStmt(new CallExpr(PRIM_WHEN, new SymExpr(new_IntSymbol(count))),
                    new CallExpr(PRIM_RETURN, new SymExpr(constant->sym)));;

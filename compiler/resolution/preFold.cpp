@@ -1240,7 +1240,7 @@ static Expr* preFoldNamed(CallExpr* call) {
             call->replace(retval);
 
           // Handle casting to enum
-          } else if (toEnum && (fromString || fromIntUint)) {
+          } else if (toEnum && fromString) {
 
             EnumType* typeEnum = toEnumType(newType);
             Symbol* constant = findMatchingEnumSymbol(imm, typeEnum);
