@@ -845,18 +845,19 @@ static void build_enum_cast_function(EnumType* et) {
       break;
     }
   }
-  if (!initsExist) {
-    return;
-  }
-  //  printf("inits exist for %s\n", et->symbol->name);
 
+  FnSymbol* fn;
+  ArgSymbol* arg1, *arg2;
+  DefExpr* def;
+  // only build the int->enum cast function if some enums were given values
+  if (initsExist) {
   // integral value to enumerated type cast function
-  FnSymbol* fn = new FnSymbol(astr_cast);
+  fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
+  arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
@@ -892,7 +893,7 @@ static void build_enum_cast_function(EnumType* et) {
     whenstmts->insertAtTail(otherwise);
     fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
   }
-  DefExpr* def = new DefExpr(fn);
+  def = new DefExpr(fn);
   //
   // these cast functions need to go in the base module because they
   // are automatically inserted to handle implicit coercions
@@ -902,6 +903,7 @@ static void build_enum_cast_function(EnumType* et) {
   normalize(fn);
 
   fn->tagIfGeneric();
+  }
 
   // string to enumerated type cast function
   fn = new FnSymbol(astr_cast);
