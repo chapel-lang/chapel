@@ -793,7 +793,28 @@ static bool callSpecifiesClassKind(CallExpr* call) {
           call->isNamed("_owned") ||
           call->isNamed("_shared") ||
           call->isNamed("Owned") ||
-          call->isNamed("Shared"));
+          call->isNamed("Shared") ||
+          call->isNamed("chpl__distributed"));
+}
+
+static bool hasChplManagerArgument(CallExpr* call) {
+  if (call == NULL)
+    return false;
+
+  for_actuals(actual, call) {
+    if (NamedExpr* ne = toNamedExpr(actual))
+      if (ne->name == astr_chpl_manager)
+        return true;
+  }
+
+  return false;
+}
+
+static bool callMakesDmap(CallExpr* call) {
+  if (SymExpr* se = toSymExpr(call->baseExpr))
+    if (se->symbol()->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
+      return true;
+  return false;
 }
 
 // Returns the expr resulting, either se or a call containing it
@@ -818,15 +839,21 @@ static Expr* handleUnstableClassType(SymExpr* se) {
           CallExpr* outerOuterCall = NULL;
           if (outerCall) outerOuterCall = toCallExpr(outerCall->parentExpr);
 
-          if (outerOuterCall && outerCall &&
+          if (hasChplManagerArgument(inCall) ||
+              hasChplManagerArgument(outerCall)) {
+            ok = true;
+          } else if (outerOuterCall && outerCall &&
               callSpecifiesClassKind(outerOuterCall) &&
               outerCall == outerOuterCall->get(1) &&
               outerCall->isPrimitive(PRIM_NEW) &&
               inCall == outerCall->get(1)) {
             // 'new Owned(SomeClass(int))'
             ok = true;
+          } else if (outerOuterCall && callMakesDmap(outerOuterCall)) {
+            // new dmap( new Block( ) )
+            ok = true;
           } else if (outerCall && outerCall->isPrimitive(PRIM_NEW) &&
-              inCall == outerCall->get(1)) {
+                     inCall == outerCall->get(1)) {
             // 'new SomeClass()'
             ok = false;
           } else if (outerCall && callSpecifiesClassKind(outerCall) &&

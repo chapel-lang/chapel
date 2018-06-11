@@ -1061,7 +1061,7 @@ static void processManagedNew(CallExpr* newCall) {
                 manager = callManager->baseExpr->copy();
               }
 
-              callClass->insertAtTail(new NamedExpr("_chpl_manager", manager));
+              callClass->insertAtTail(new NamedExpr(astr_chpl_manager, manager));
 
               newCall->replace(replace);
             }
