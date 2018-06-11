@@ -28,6 +28,8 @@ proc test() {
     writeln(y2);
     writeln(z2);
   }
+
+  delete x;
 }
 
 test();
