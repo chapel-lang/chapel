@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "returnExternArray.h"
 
@@ -20,7 +21,7 @@ int main(int argc, char* argv[]) {
 
   // Write its elements
   for (int i = 0; i < 4; i++) {
-    printf("Element[%d] = %lld\n", i, actual[i]);
+    printf("Element[%d] = %" PRId64 "\n", i, actual[i]);
   }
 
   // Call the cleanup function

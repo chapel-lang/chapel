@@ -28,12 +28,13 @@ module ExternalArray {
   extern record chpl_external_array {
     var elts: c_void_ptr;
     var size: uint;
-
-    var freer: c_void_ptr;
   }
 
   extern proc
   chpl_make_external_array(elt_size: uint, num_elts: uint): chpl_external_array;
+
+  extern proc chpl_make_external_array_ptr(elts: c_void_ptr,
+                                           size: uint): chpl_external_array;
 
   extern proc chpl_free_external_array(x: chpl_external_array);
 
@@ -305,7 +306,7 @@ module ExternalArray {
   // Creates an instance of our new array type
   pragma "no copy return"
   proc makeArrayFromPtr(value: c_ptr, size: uint) {
-    var data = new chpl_external_array(value, size, c_nil);
+    var data = chpl_make_external_array_ptr(value : c_void_ptr, size);
     return makeArrayFromExternArray(data, value.eltType);
   }
 

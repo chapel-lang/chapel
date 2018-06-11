@@ -1146,7 +1146,7 @@ buildFollowLoop(VarSymbol* iter,
 static CallExpr* makeUnmanagedNew(Expr* typeArg, Expr* arg) {
   return new CallExpr(PRIM_NEW,
                       new CallExpr(typeArg, arg,
-                        new NamedExpr("_chpl_manager",
+                        new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtUnmanaged->symbol))));
 }
 

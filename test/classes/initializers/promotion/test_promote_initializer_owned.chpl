@@ -5,11 +5,8 @@ class C {
 }
 
 var A: [1..5] int;
-var B: [1..5] C;
+var B: [1..5] owned C;
 
-B = new C(A);
+B = new owned C(A);
 
 writeln(B);
-
-for b in B do
-  delete b;
