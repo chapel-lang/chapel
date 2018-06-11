@@ -18,7 +18,7 @@
  */
 
 //
-// Compute node topology support
+// Compute node topology support: hwloc-based implementation
 //
 #include "chplrt.h"
 
@@ -38,15 +38,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#if defined(CHPL_HWLOC_HWLOC) || defined(CHPL_HWLOC_SYSTEM)
-#define CHPL_HAS_HWLOC
-#endif
-
-#ifdef CHPL_HAS_HWLOC
-//
-// We have hwloc, so provide a real implementation of the topology
-// interface.
-//
 #include "hwloc.h"
 
 #ifdef DEBUG
@@ -489,25 +480,3 @@ void report_error(const char* what, int errnum) {
   snprintf(buf, sizeof(buf), "%s: %s", what, strerror(errnum));
   chpl_internal_error(buf);
 }
-
-#else
-//
-// We do not have hwloc, so provide a vacuous implementation of the
-// topology interface.
-//
-
-void chpl_topo_init(void) { }
-void chpl_topo_exit(void) { }
-int chpl_topo_getNumNumaDomains(void) { return 1; }
-void chpl_topo_setThreadLocality(c_sublocid_t subloc) { }
-c_sublocid_t chpl_topo_getThreadLocality(void) { return c_sublocid_any; }
-void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
-                              c_sublocid_t subloc) { }
-void chpl_topo_setMemSubchunkLocality(void* p, size_t size,
-                                      chpl_bool onlyInside,
-                                      size_t* subchunkSizes) { }
-void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
-                                  c_sublocid_t subloc) { }
-c_sublocid_t chpl_topo_getMemLocality(void* p) { return c_sublocid_any; }
-
-#endif // if defined(CHPL_HAS_HWLOC)
