@@ -521,9 +521,9 @@ module ChapelRange {
     where stridable && this.boundedType == BoundedRangeType.bounded
   {
     // If the stride is positive, we must be aligned on the low bound.
-    if stride > 0 then return this.alignedLow == _low;
+    if stride > 0 then return this.alignedLowAsInt == _low;
     // If the stride is negative, we must be aligned on the high bound.
-    if stride < 0 then return this.alignedHigh == _high;
+    if stride < 0 then return this.alignedHighAsInt == _high;
     // stride == 0: ???
     return false;
   }
@@ -2219,7 +2219,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if stridable && !aligned {
       _alignment =
         if isBoundedRange(this) then
-          (if stride > 0 then low else high)
+          (if stride > 0 then _low else _high)
         else if this.boundedType == BoundedRangeType.boundedLow then
           _low
         else if this.boundedType == BoundedRangeType.boundedHigh then
