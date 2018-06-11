@@ -243,15 +243,15 @@ module DefaultRectangular {
                 // Since stride is positive, the following line results
                 // in a positive number, so casting it to e.g. uint is OK
                 const riStride = rStride:intIdxType;
-                const low = ranges(i).alignedLow + followMe(i).low*riStride,
-                      high = ranges(i).alignedLow + followMe(i).high*riStride,
+                const low = ranges(i).alignedLowAsInt + followMe(i).low*riStride,
+                      high = ranges(i).alignedLowAsInt + followMe(i).high*riStride,
                       stride = rSignedStride;
                 block(i) = low..high by stride;
               } else {
                 // Stride is negative, so the following number is positive.
                 const riStride = (-rStride):intIdxType;
-                const low = ranges(i).alignedHigh - followMe(i).high*riStride,
-                      high = ranges(i).alignedHigh - followMe(i).low*riStride,
+                const low = ranges(i).alignedHighAsInt - followMe(i).high*riStride,
+                      high = ranges(i).alignedHighAsInt - followMe(i).low*riStride,
                       stride = rSignedStride;
                 block(i) = low..high by stride;
               }
@@ -1098,7 +1098,7 @@ module DefaultRectangular {
       if stridable {
         var sum = origin;
         for param i in 1..rank do
-          sum += (chpl__idxToInt(ind(i)) - off(i)) * blk(i) / abs(str(i)):idxType;
+          sum += (chpl__idxToInt(ind(i)) - off(i)) * blk(i) / abs(str(i)):intIdxType;
         return sum;
       } else {
         param wantShiftedIndex = getShifted && earlyShiftData;
@@ -1321,13 +1321,13 @@ module DefaultRectangular {
         }
       } else {
         const viewDomDim = viewDom.dsiDim(1),
-              stride = viewDomDim.stride: viewDom.idxType,
+              stride = viewDomDim.stride: viewDom.intIdxType,
               start  = viewDomDim.first,
-              second = info.getDataIndex(start + stride);
+              second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, viewDomDim.firstAsInt + stride));
 
         var   first  = info.getDataIndex(start);
         const step   = (second-first):chpl__signedType(viewDom.idxType);
-        var   last   = first + (viewDomDim.length-1) * step:viewDom.idxType;
+        var   last   = first + (viewDomDim.length-1) * step:viewDom.intIdxType;
 
         if step < 0 then
           last <=> first;

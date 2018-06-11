@@ -711,7 +711,7 @@ proc range.safeCast(type t) where isRangeType(t) {
 
   if tmp.stridable {
     tmp._stride = this.stride;
-    tmp._alignment = this.alignment.safeCast(tmp.intIdxType);
+    tmp._alignment = chpl__idxToInt(this.alignment).safeCast(tmp.intIdxType);
     tmp._aligned = this.aligned;
   } else if this.stride != 1 {
     halt("illegal safeCast from non-unit stride range to unstridable range");
@@ -1061,7 +1061,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     r1._high = r2._high;
 
     if s1 {
-      r1._alignment = r2.alignment;
+      r1._alignment = chpl__idxToInt(r2.alignment);
       r1._aligned = r2.aligned;
     }
   }
@@ -1408,8 +1408,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                            !ambig && (this.aligned || other.aligned));
 
     if result.stridable {
-      var al1 = (this.alignment % st1:intIdxType):int;
-      var al2 = (other.alignment % st2:other.intIdxType):int;
+      var al1 = (chpl__idxToInt(this.alignment) % st1:intIdxType):int;
+      var al2 = (chpl__idxToInt(other.alignment) % st2:other.intIdxType):int;
 
       if (al2 - al1) % g != 0 then
       {
@@ -1957,7 +1957,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           const (lo, hi) = _computeBlock(len, numChunks, chunk, len-1);
           const mylen = hi - (lo-1);
           var low = orderToIndex(lo);
-          var high = (low:strType + stride * (mylen - 1):strType):intIdxType;
+          var high = orderToIndex(low:strType + stride * (mylen - 1):strType);
           if stride < 0 then low <=> high;
           for i in low..high by stride {
             yield i;
