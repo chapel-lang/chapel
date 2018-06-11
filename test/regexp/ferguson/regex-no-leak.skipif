@@ -1,0 +1,2 @@
+# Relies upon pthread destructor called before mem leak report
+CHPL_TASKS != fifo
