@@ -754,8 +754,6 @@ module DateTime {
       //return (t1.replace(tzinfo=nilTZ) - t1.utcoffset()) <
       //       (t2.replace(tzinfo=nilTZ) - t2.utcoffset());
     }
-    halt("unreachable");
-    return false;
   }
 
   pragma "no doc"
@@ -779,8 +777,6 @@ module DateTime {
       const dt2 = datetime.combine(new date(1900, 1, 1), t2);
       return dt1 <= dt2;
     }
-    halt("unreachable");
-    return false;
   }
 
   pragma "no doc"
@@ -804,8 +800,6 @@ module DateTime {
       const dt2 = datetime.combine(new date(1900, 1, 1), t2);
       return dt1 > dt2;
     }
-    halt("unreachable");
-    return false;
   }
 
   pragma "no doc"
@@ -829,8 +823,6 @@ module DateTime {
       const dt2 = datetime.combine(new date(1900, 1, 1), t2);
       return dt1 >= dt2;
     }
-    halt("unreachable");
-    return false;
   }
 
   /* A record representing a combined `date` and `time` */
@@ -1324,8 +1316,6 @@ module DateTime {
                                 dt2.replace(tzinfo=nilTZ) +
                                 dt2.utcoffset() - dt1.utcoffset();
     }
-    halt("this should be unreachable");
-    return new timedelta();
   }
 
   pragma "no doc"
@@ -1370,8 +1360,6 @@ module DateTime {
       return (dt1.replace(tzinfo=nilTZ) - dt1.utcoffset()) <
              (dt2.replace(tzinfo=nilTZ) - dt2.utcoffset());
     }
-    halt("this should be unreachable");
-    return false;
   }
 
   pragma "no doc"
@@ -1389,8 +1377,6 @@ module DateTime {
       return (dt1.replace(tzinfo=nilTZ) - dt1.utcoffset()) <=
              (dt2.replace(tzinfo=nilTZ) - dt2.utcoffset());
     }
-    halt("this should be unreachable");
-    return false;
   }
 
   pragma "no doc"
@@ -1408,8 +1394,6 @@ module DateTime {
       return (dt1.replace(tzinfo=nilTZ) - dt1.utcoffset()) >
              (dt2.replace(tzinfo=nilTZ) - dt2.utcoffset());
     }
-    halt("this should be unreachable");
-    return false;
   }
 
   pragma "no doc"
@@ -1427,8 +1411,6 @@ module DateTime {
       return (dt1.replace(tzinfo=nilTZ) - dt1.utcoffset()) >=
              (dt2.replace(tzinfo=nilTZ) - dt2.utcoffset());
     }
-    halt("this should be unreachable");
-    return false;
   }
 
 
