@@ -446,14 +446,14 @@ module DefaultRectangular {
                 fSignedStride = followThis(i).stride:strType;
           if rStride > 0 {
             const riStride = rStride:intIdxType;
-            const low = ranges(i).alignedLow + followThis(i).low*riStride,
-                  high = ranges(i).alignedLow + followThis(i).high*riStride,
+            const low = ranges(i).alignedLowAsInt + followThis(i).low*riStride,
+                  high = ranges(i).alignedLowAsInt + followThis(i).high*riStride,
                   stride = (rSignedStride * fSignedStride):strType;
             block(i) = low..high by stride;
           } else {
             const irStride = (-rStride):intIdxType;
-            const low = ranges(i).alignedHigh - followThis(i).high*irStride,
-                  high = ranges(i).alignedHigh - followThis(i).low*irStride,
+            const low = ranges(i).alignedHighAsInt - followThis(i).high*irStride,
+                  high = ranges(i).alignedHighAsInt - followThis(i).low*irStride,
                   stride = (rSignedStride * fSignedStride):strType;
             block(i) = low..high by stride;
           }

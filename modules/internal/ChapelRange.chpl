@@ -1076,15 +1076,15 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   inline proc +(r: range(?e, ?b, ?s), offset: integral)
   {
     const i = offset: r.intIdxType;
-    type intResType = (r._low+i).type;
     type resultType = e;
     type strType = chpl__rangeStrideType(resultType);
 
+    // TODO: Can I merge these now?
     if (s) then
       return new range(resultType, b, s,
                        chpl__intToIdx(resultType, r._low + i),
                        chpl__intToIdx(resultType, r._high + i),
-                       r.stride : strType, r._alignment + i : intResType, r.aligned);
+                       r.stride : strType, chpl__intToIdx(resultType, r._alignment + i), r.aligned);
     else
       return new range(resultType, b, s, 
                        chpl__intToIdx(resultType, r._low + i),
@@ -1957,7 +1957,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           const (lo, hi) = _computeBlock(len, numChunks, chunk, len-1);
           const mylen = hi - (lo-1);
           var low = orderToIndex(lo);
-          var high = orderToIndex(low:strType + stride * (mylen - 1):strType);
+          var high = chpl__intToIdx(idxType, chpl__idxToInt(low):strType + stride * (mylen - 1):strType);
           if stride < 0 then low <=> high;
           for i in low..high by stride {
             yield i;
