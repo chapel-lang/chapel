@@ -822,7 +822,7 @@ module Random {
       // Forward the leader iterator as well.
       pragma "no doc"
       pragma "fn returns iterator"
-      proc iterate(D: domain, type resultType=real, param tag)
+      proc iterate(D: domain, type resultType=eltType, param tag)
         where tag == iterKind.leader
       {
         // Note that proc iterate() for the serial case (i.e. the one above)
