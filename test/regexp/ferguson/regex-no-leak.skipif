@@ -1,2 +1,3 @@
 # Relies upon pthread destructor called before mem leak report
+# see issue #9819
 CHPL_TASKS != fifo
