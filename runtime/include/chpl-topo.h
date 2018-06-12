@@ -39,6 +39,11 @@ void chpl_topo_init(void);
 void chpl_topo_exit(void);
 
 //
+// retrieve the hwloc topology (if any) for other packages to use
+//
+void* chpl_topo_getHwlocTopology(void);
+
+//
 // how many NUMA domains are there?
 //
 int chpl_topo_getNumNumaDomains(void);

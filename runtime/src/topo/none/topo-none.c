@@ -36,6 +36,11 @@ void chpl_topo_init(void) { }
 void chpl_topo_exit(void) { }
 
 
+void* chpl_topo_getHwlocTopology(void) {
+  return NULL;
+}
+
+
 int chpl_topo_getNumNumaDomains(void) {
   return 1;
 }
