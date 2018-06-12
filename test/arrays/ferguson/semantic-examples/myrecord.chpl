@@ -4,7 +4,6 @@ record R {
 
 var printcopies = true;
 
-pragma "donor fn"
 pragma "auto copy fn"
 proc chpl__autoCopy(arg: R) {
 
