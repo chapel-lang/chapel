@@ -4975,11 +4975,6 @@ static void resolveInitVar(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
-  // Clear FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW
-  // since the result of the 'new' will "move" into
-  // the variable we are initializing.
-  src->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
-
   Type* targetType = srcType;
   SymExpr* targetTypeExpr = NULL;
   if (call->numActuals() >= 3) {
@@ -5054,6 +5049,11 @@ static void resolveInitVar(CallExpr* call) {
              isRecordWrappedType(srcType) == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
+
+    // Clear FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW
+    // since the result of the 'new' will "move" into
+    // the variable we are initializing.
+    src->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
 
     // The LHS will "own" the record
     if (rhs->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) == false &&

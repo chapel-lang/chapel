@@ -229,7 +229,6 @@ module OwnedObject {
   // (if we decided it was OK, we'd need to do const-checking
   //  on the argument to this autoCopy call).
   pragma "no doc"
-  pragma "donor fn"
   pragma "auto copy fn"
   pragma "unsafe"
   proc chpl__autoCopy(ref src: _owned) {

@@ -69,11 +69,22 @@ struct re_cache {
 static pthread_key_t key;
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 
+static void local_cache_destroy_elts(re_cache* c);
+
+static
+void destroy_key(void* ptr)
+{
+  re_cache* c = (re_cache*) ptr;
+  local_cache_destroy_elts(c);
+  qio_free(c);
+}
+
 static
 void make_key(void)
 {
-  (void) pthread_key_create(&key, NULL);
+  (void) pthread_key_create(&key, &destroy_key);
 }
+
 
 static inline
 re_cache* local_cache(void)
@@ -182,6 +193,20 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regexp_options
   DO_RETAIN(re);
   return re;
 }
+
+static
+void local_cache_destroy_elts(re_cache* c) {
+  if (c) {
+    // Destroy all of the elements in the local cache.
+    for( int i = 0; i < REGEXP_CACHE_SIZE; i++ ) {
+      re_t* re = c->elems[i].re;
+      if (re) {
+        DO_RELEASE(re, re_free);
+      }
+    }
+  }
+}
+
 
 
 
