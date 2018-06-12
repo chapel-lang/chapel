@@ -1,10 +1,10 @@
 GenericClassUnmanaged(unmanaged ClassA) {f = {a = 1}}
 GenericClassUnmanaged(unmanaged ClassA) {f = {a = 2}}
 GenericClassUnmanaged(unmanaged ClassA) {f = {a = 3}}
-GenericClassUnmanaged(unmanaged ClassB) {f = {b = 1.0}}
+_owned(GenericClassUnmanaged(unmanaged ClassB)) {f = {b = 1.0}}
 GenericClassUnmanaged(unmanaged ClassB) {f = {b = 2.0}}
 GenericClassUnmanaged(unmanaged ClassB) {f = {b = 3.0}}
-GenericClassBorrowed(ClassA) {f = {a = 1}}
+unmanaged GenericClassBorrowed(ClassA) {f = {a = 1}}
 GenericClassBorrowed(ClassA) {f = {a = 2}}
 GenericClassBorrowed(ClassA) {f = {a = 3}}
 GenericClassBorrowed(ClassB) {f = {b = 1.0}}

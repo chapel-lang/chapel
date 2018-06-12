@@ -16,6 +16,7 @@ proc f(arg:borrowed MyClass) {
 proc call_f(type t) {
   var something = new t();
   f(something);
+  // Note: this leaks
 }
 
 proc MyClass.secondaryMethod() {
@@ -64,10 +65,16 @@ proc test3() {
 }
 test3();
 
+proc f_then_free(x) {
+  f(x);
+  delete x;
+}
+
 proc test4() {
   var def = new MyClass();
   writeln("Calling f(new MyClass())");
   f(def);
-  f(new MyClass());
+  delete def;
+  f_then_free(new MyClass());
 }
 test4();
