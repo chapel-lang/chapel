@@ -6435,7 +6435,7 @@ static void temporaryInitializerFixup(CallExpr* call) {
             ct->initializerStyle                == DEFINES_NONE_USE_DEFAULT) {
           // Transitioning to a default initializer world.
           // Lydia note 03/14/17)
-          if (strcmp(ct->defaultInitializer->name, "init") != 0) {
+          if (ct->hasInitializers() == false) {
             // This code should be removed when the compiler generates
             // initializers as the default method of construction and
             // initialization for a type (Lydia note, 08/19/16)
