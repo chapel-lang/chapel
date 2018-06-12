@@ -7559,6 +7559,7 @@ void makeExportWrapper(FnSymbol* fn) {
     }
 
     if (argsToReplace.size() > 0) {
+      SET_LINENO(fn);
       // We have at least one array argument.  Need to make a version of this
       // function that can be exported
       FnSymbol* newFn = new FnSymbol(fn->name);
