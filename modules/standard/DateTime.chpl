@@ -1656,25 +1656,29 @@ module DateTime {
   class TZInfo {
     /* The offset from UTC this class represents */
     proc utcoffset(dt: datetime): timedelta {
-      halt("Abstract base method called");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
       return new timedelta();
     }
 
     /* The `timedelta` for daylight saving time */
     proc dst(dt: datetime): timedelta {
-      halt("Abstract base method called");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
       return new timedelta();
     }
 
     /* The name of this time zone */
     proc tzname(dt: datetime): string {
-      halt("Abstract base method called");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
       return "";
     }
 
     /* Convert a `time` in UTC to this time zone */
     proc fromutc(in dt: datetime): datetime {
-      halt("Abstract base method called");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
       return new datetime(0,0,0);
     }
   }
