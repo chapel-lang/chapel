@@ -4,6 +4,8 @@
 
 #include <hwloc.h>
 
+#include "chpl-topo.h"
+
 #include "qt_subsystems.h"
 #include "qt_alloc.h"
 #include "qt_asserts.h" /* for qassert() */
@@ -94,8 +96,10 @@ static void qt_affinity_internal_hwloc_teardown(void)
     DEBUG_ONLY(hwloc_topology_check(topology));
     hwloc_set_cpubind(topology, mccoy_thread_bindings, HWLOC_CPUBIND_THREAD);
     FREEBMAP(mccoy_thread_bindings);
-    qthread_debug(AFFINITY_DETAILS, "destroy hwloc topology handle\n");
-    hwloc_topology_destroy(topology);
+    if (chpl_topo_getHwlocTopology() == NULL) {
+        qthread_debug(AFFINITY_DETAILS, "destroy hwloc topology handle\n");
+        hwloc_topology_destroy(topology);
+    }
     initialized = 0;
 } /*}}}*/
 
@@ -105,8 +109,10 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
 {                                      /*{{{ */
     qthread_debug(AFFINITY_CALLS, "nbshepherds:%p:%u nbworkers:%p:%u\n", nbshepherds, *nbshepherds, nbworkers, *nbworkers);
     if (qthread_cas(&initialized, 0, 1) == 0) {
-        qassert(hwloc_topology_init(&topology), 0);
-        qassert(hwloc_topology_load(topology), 0);
+        if ((topology = (hwloc_topology_t) chpl_topo_getHwlocTopology()) == NULL) {
+            qassert(hwloc_topology_init(&topology), 0);
+            qassert(hwloc_topology_load(topology), 0);
+        }
         MACHINE_FENCE;
         initialized = 2;
     } else {
