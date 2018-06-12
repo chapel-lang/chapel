@@ -86,8 +86,8 @@ module DateTime {
     extern proc gettimeofday(ref tv: timeval, tz): int;
 
     var tv: timeval;
-    if gettimeofday(tv, nil) != 0 then
-      halt("error in call to gettimeofday()");
+    var ret = gettimeofday(tv, c_nil);
+    assert(ret == 0);
     return (tv.tv_sec, tv.tv_usec);
   }
 
