@@ -6,6 +6,11 @@ proc partRedEnsureArray(srcArr) {
     compilerError("partial reductions are currently available only for arrays");
 }
 
+proc partRedForallExprElmType(srcDom, fExpr) type {
+  var idx: srcDom.rank * srcDom.idxType;
+  return fExpr(idx).type;
+}
+
 // TODO if resDimSpec is a tuple of singletons and unbounded ranges (..),
 // then we can determine the preserved vs. reduced dimensions at compile
 // time and use fewer conditionals in the generated code.
@@ -99,4 +104,47 @@ proc partRedHelpCheckDimensions(resDims, srcDims) throws {
     then ; // OK
     else throw new IllegalArgumentError("the preserved dimension " + dim + " in the shape of the partial reduction differs from that in the array being reduced");
   }
+}
+
+/* This class implements the reduction of partial results. */
+pragma "use default init"
+class PartRedOp: ReduceScanOp {
+  type eltType;
+  const perElemOp;
+  var value: eltType = perElemOp.identity;
+
+  // User-accessible AS will contain no data, i.e. void.
+  proc identity() { return _void; }
+  proc initialAccumulate(x) {
+/* We just created the array that's the outer var.
+   So no need to do anything like:
+    value += x;
+   Verify that instead:
+*/
+    if boundsChecking then
+      forall initElm in x do
+        assert(initElm == perElemOp.identity);
+  }
+  proc accumulate(x) {
+    // This should be invoked just before deleting the AS.
+    // Nothing to do.
+    compilerAssert(x.type == void);
+  }
+  proc accumulateOntoState(ref state, x) {
+    compilerAssert(state.type == void);
+    compilerAssert(isTuple(x) && x.size == 2);
+    // Accumulate onto the built-in AS instead.
+    perElemOp.accumulateOntoState(value[x(1)], x(2));
+  }
+  proc combine(x) {
+    forall (parent, child) in zip(value, x.value) {
+      // TODO replace with perElemOp.combine()
+      perElemOp.accumulateOntoState(parent, child);
+    }
+  }
+  // TODO (a): avoid this when not needed.
+  // TODO (b): invoke perElemOp.generate() when needed.
+  proc generate() ref return value;
+  proc clone() return new unmanaged PartRedOp(eltType=eltType,
+                                              perElemOp = perElemOp);
 }

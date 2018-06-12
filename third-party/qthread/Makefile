@@ -35,8 +35,9 @@ endif
 # Have qthreads use Chapel's allocator, unless directed not to
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
 CHPL_QTHREAD_CFG_OPTIONS += --with-alloc=chapel
-CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include/mem/$(CHPL_MAKE_MEM)/
-CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include/
+CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include/localeModels/$(CHPL_MAKE_LOCALE_MODEL)
+CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include/mem/$(CHPL_MAKE_MEM)
+CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include
 ifeq ($(CHPL_MAKE_MEM),jemalloc)
 CFLAGS += -I$(JEMALLOC_INCLUDE_DIR)
 RUNTIME_LFLAGS += -L$(JEMALLOC_LIB_DIR)

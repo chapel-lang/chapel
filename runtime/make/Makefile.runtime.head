@@ -46,6 +46,12 @@ LAUNCHER_INCLS = \
         -I$(RUNTIME_ROOT)/include/comm \
         -I$(RUNTIME_ROOT)/include
 
+ifeq ($(CHPL_MAKE_HWLOC),none)
+  CHPL_MAKE_TOPO = none
+else
+  CHPL_MAKE_TOPO = hwloc
+endif
+
 ifneq ($(MAKE_LAUNCHER),1)
   ifeq ($(CHPL_MAKE_TARGET_MEM),jemalloc)
     LAUNCHER_CFLAGS += -DCHPL_TARGET_MEM_JEMALLOC

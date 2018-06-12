@@ -17,12 +17,24 @@
  * limitations under the License.
  */
 
-// This file is used when CHPL_HWLOC=none.  If CHPL_HWLOC=hwloc, we
-// use the one from the third-party hwloc installation.
+#ifndef _chpl_external_array_H_
+#define _chpl_external_array_H_
 
-#ifndef _HWLOC_H_
-#define _HWLOC_H_
+#include <stdint.h>
 
-// Nothing to do (yet)
+typedef void (*chpl_free_func)(void*);
 
-#endif // _HWLOC_H_
+typedef struct {
+  void* elts;
+  uint64_t size;
+
+  chpl_free_func freer;
+} chpl_external_array;
+
+chpl_external_array chpl_make_external_array(uint64_t elt_size,
+                                             uint64_t num_elts);
+chpl_external_array chpl_make_external_array_ptr(void* elts,
+                                                 uint64_t size);
+void chpl_free_external_array(chpl_external_array x);
+
+#endif

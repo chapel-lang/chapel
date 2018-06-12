@@ -25,6 +25,19 @@
 module ExternalArray {
   use ChapelStandard;
 
+  extern record chpl_external_array {
+    var elts: c_void_ptr;
+    var size: uint;
+  }
+
+  extern proc
+  chpl_make_external_array(elt_size: uint, num_elts: uint): chpl_external_array;
+
+  extern proc chpl_make_external_array_ptr(elts: c_void_ptr,
+                                           size: uint): chpl_external_array;
+
+  extern proc chpl_free_external_array(x: chpl_external_array);
+
   pragma "use default init"
   class ExternDist: BaseDist {
 
@@ -53,8 +66,20 @@ module ExternalArray {
     }
 
     proc dsiClone() {
-      return this;
+      return _to_unmanaged(this);
     }
+
+    proc trackDomains() param return false;
+    override proc dsiTrackDomains() return false;
+
+    proc singleton() param return true;
+  }
+
+  var defaultExternDist = new unmanaged ExternDist();
+
+  // Module deinit
+  proc deinit() {
+    delete defaultExternDist;
   }
 
   class ExternDom: BaseRectangularDom {
@@ -69,9 +94,10 @@ module ExternalArray {
     }
 
     proc dsiBuildArray(type eltType) {
+      var data = chpl_make_external_array(c_sizeof(eltType), this.size);
       var arr = new unmanaged ExternArr(eltType,
                                         _to_unmanaged(this),
-                                        c_malloc(eltType, this.size),
+                                        data,
                                         true);
       return arr;
     }
@@ -109,6 +135,9 @@ module ExternalArray {
     proc dsiMyDist() {
       return dist;
     }
+
+    proc linksDistribution() param return false;
+    override proc dsiLinksDistribution()     return false;
 
     proc dsiMember(ind: rank*idxType) {
       if (ind(1) < size && ind(1) >= 0) {
@@ -148,7 +177,7 @@ module ExternalArray {
 
     const dom;
     
-    const _ArrInstance: _ddata;
+    const _ArrInstance: chpl_external_array;
 
     const _owned: bool;
 
@@ -156,7 +185,7 @@ module ExternalArray {
       super.init(_decEltRefCounts = false);
       this.eltType = eltType;
       this.dom = dom;
-      this._ArrInstance = _ArrInstance: _ddata(eltType);
+      this._ArrInstance = _ArrInstance;
       this._owned = _owned;
     }
 
@@ -219,19 +248,19 @@ module ExternalArray {
 
     inline proc dsiAccess(i) ref {
       checkBounds(i);
-      return _ArrInstance(i(1));
+      return (_ArrInstance.elts: c_ptr(eltType))(i(1));
     }
 
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
       checkBounds(i);
-      return _ArrInstance(i(1));
+      return (_ArrInstance.elts: c_ptr(eltType))(i(1));
     }
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType)  {
       checkBounds(i);
-      return _ArrInstance(i(1));
+      return (_ArrInstance.elts: c_ptr(eltType))(i(1));
     }
 
     inline proc checkBounds(i) {
@@ -258,7 +287,7 @@ module ExternalArray {
 
     proc dsiDestroyArr() {
       if (_owned) {
-        _ddata_free(_ArrInstance, dom.size);
+        chpl_free_external_array(_ArrInstance);
       }
     }
 
@@ -277,14 +306,41 @@ module ExternalArray {
   // Creates an instance of our new array type
   pragma "no copy return"
   proc makeArrayFromPtr(value: c_ptr, size: uint) {
-    var dist = new unmanaged ExternDist();
-    var dom = dist.dsiNewRectangularDom(idxType=int, inds=(0..#size,));
+    var data = chpl_make_external_array_ptr(value : c_void_ptr, size);
+    return makeArrayFromExternArray(data, value.eltType);
+  }
+
+  pragma "no copy return"
+  proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
+    var dom = defaultExternDist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,));
     dom._free_when_no_arrs = true;
-    var arr = new unmanaged ExternArr(value.eltType,
+    var arr = new unmanaged ExternArr(eltType,
                                       dom,
                                       value,
-                                      false);
+                                      _owned=false);
     dom.add_arr(arr, locking = false);
     return _newArray(arr);
+  }
+
+  proc convertToExternalArray(arr: []) {
+    if (arr.domain.stridable) {
+      compilerError("cannot return a strided array");
+    }
+    if (arr.domain.rank != 1) {
+      compilerError("cannot return an array with rank != 1");
+    }
+    if (!isIntegralType(arr.domain.idxType)) {
+      compilerError("cannot return an array with indices that are not " +
+                    "integrals");
+    }
+    if (arr.domain.low != 0) {
+      halt("cannot return an array when the lower bounds is not 0");
+    }
+    var externalArr = chpl_make_external_array(c_sizeof(arr.eltType),
+                                               arr.size: uint);
+    chpl__uncheckedArrayTransfer(makeArrayFromExternArray(externalArr,
+                                                          arr.eltType),
+                                 arr);
+    return externalArr;
   }
 }

@@ -47,6 +47,7 @@ SUBDIRS = \
 	tasks \
 	threads \
 	timers \
+	topo \
 	qio \
 
 else

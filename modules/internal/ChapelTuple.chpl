@@ -77,6 +77,8 @@ module ChapelTuple {
   // tuple value allowing refs (ref actuals)
   pragma "allow ref"
   pragma "build tuple"
+  pragma "suppress lvalue error"
+  // suppressing lvalue errors -- workaround forall exprs yielding owned
   inline proc _build_tuple_always_allow_ref(x...)
     return x;
 

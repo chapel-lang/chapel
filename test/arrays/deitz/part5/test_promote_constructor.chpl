@@ -3,9 +3,9 @@ class C {
 }
 
 var A: [1..5] int;
-var B: [1..5] C;
+var B: [1..5] unmanaged C;
 
-B = new C(A);
+B = new unmanaged C(A);
 
 writeln(B);
 
