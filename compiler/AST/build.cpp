@@ -2558,6 +2558,7 @@ DefExpr* buildForwardingExprFnDef(Expr* expr) {
 
   fn->addFlag(FLAG_INLINE);
   fn->addFlag(FLAG_MAYBE_REF);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
 
   fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
 
