@@ -25,7 +25,7 @@ CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gn
 endif
 
 ifeq ($(CHPL_MAKE_HWLOC),hwloc)
-CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc --with-hwloc=$(HWLOC_INSTALL_DIR)
+CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc_via_chapel --with-hwloc=$(HWLOC_INSTALL_DIR)
 endif
 ifeq ($(CHPL_MAKE_HWLOC),system)
 CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc
