@@ -3538,41 +3538,51 @@ module HDF5_HL {
     */
 
     /* Read the dataset named `dsetName` out of all HDF5 files in the
-       directory `dirname` with filenames that begin with `filenameStart`.
+       directory `dirName` with filenames that begin with `filenameStart`.
        This will read the files in parallel with one task per locale in the
-       `locs` array.
+       `locs` array.  Specifying the same locale multiple times in the `locs`
+       array will cause undefined behavior.
+
+       Returns a distributed array of :record:`ArrayWrapper` records
+       containing the arrays that are read. Each instance will reside on
+       the locale where the corresponding data was read.
      */
-    proc readAllHDF5Files(locs: [] locale, dirname: string, dsetName: string,
+    proc readAllHDF5Files(locs: [] locale, dirName: string, dsetName: string,
                           filenameStart: string, type eltType, param rank) {
-      use BlockDist, HDF5_WAR;
+      use BlockDist, HDF5_WAR, FileSystem;
 
       var filenames: [1..0] string;
-      for f in findfiles(dirname) {
-        if f.startsWith(dirname + '/' + filenameStart:string) &&
+      for f in findfiles(dirName) {
+        if f.startsWith(dirName + '/' + filenameStart:string) &&
            f.endsWith(".h5") {
           filenames.push_back(f);
         }
       }
       const Space = {1..filenames.size};
-      const BlockSpace = Space dmapped Block(Space, locs, 1);
-      var files: [BlockSpace] ArrRec(eltType, rank);
+      const BlockSpace = Space dmapped Block(Space, locs,
+                                             dataParTasksPerLocale=1);
+      var files: [BlockSpace] ArrayWrapper(eltType, rank);
       forall (f, name) in zip(files, filenames) {
         var locName = name; // copy this string to be local
         var file_id = H5Fopen(locName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
         var dims: [0..#rank] hsize_t;
+        var dsetRank: c_int;
+
+        H5LTget_dataset_ndims(file_id, dsetName.c_str(), dsetRank);
+        if rank != dsetRank {
+          halt("rank mismatch in file: " + name + " dataset: " + dsetName +
+               rank + " != " + dsetRank);
+        }
         H5LTget_dataset_info_WAR(file_id, dsetName.c_str(), c_ptrTo(dims), nil, nil);
         var data: [0..# (* reduce dims)] eltType;
         readHDF5Dataset(file_id, dsetName, data);
 
         var rngTup: rank*range;
-
-        for i in 0..#rank {
-          rngTup[i+1] = 1..dims[i]:int;
-        }
+        for param i in 0..rank-1 do rngTup[i+1] = 1..dims[i]:int;
 
         const D = {(...rngTup)};
 
-        f = new ArrRec(data.eltType, rank, D, reshape(data, D));
+        f = new ArrayWrapper(data.eltType, rank, D, reshape(data, D));
         H5Fclose(file_id);
       }
       return files;
@@ -3584,45 +3594,29 @@ module HDF5_HL {
        and c_string.
      */
     proc readHDF5Dataset(file_id, dsetName: string, data) {
+      if !isArray(data) then compilerError("'data' must be an array");
+
       type eltType = data.eltType;
 
       proc getHDF5Type(type eltType) {
         var hdf5Type: hid_t;
         select eltType {
-          when int(8) {
-            hdf5Type = H5T_STD_I8LE;
-          }
-          when int(16) {
-            hdf5Type = H5T_STD_I16LE;
-          }
-          when int(32) {
-            hdf5Type = H5T_STD_I32LE;
-          }
-          when int(64) {
-            hdf5Type = H5T_STD_I64LE;
-          }
-          when uint(8) {
-            hdf5Type = H5T_STD_U8LE;
-          }
-          when uint(16) {
-            hdf5Type = H5T_STD_U16LE;
-          }
-          when uint(32) {
-            hdf5Type = H5T_STD_U32LE;
-          }
-          when uint(64) {
-            hdf5Type = H5T_STD_U64LE;
-          }
-          when real(32) {
-            hdf5Type = H5T_IEEE_F32LE;
-          }
-          when real(64) {
-            hdf5Type = H5T_IEEE_F64LE;
-          }
+          when int(8)   do hdf5Type = H5T_STD_I8LE;
+          when int(16)  do hdf5Type = H5T_STD_I16LE;
+          when int(32)  do hdf5Type = H5T_STD_I32LE;
+          when int(64)  do hdf5Type = H5T_STD_I64LE;
+          when uint(8)  do hdf5Type = H5T_STD_U8LE;
+          when uint(16) do hdf5Type = H5T_STD_U16LE;
+          when uint(32) do hdf5Type = H5T_STD_U32LE;
+          when uint(64) do hdf5Type = H5T_STD_U64LE;
+          when real(32) do hdf5Type = H5T_IEEE_F32LE;
+          when real(64) do hdf5Type = H5T_IEEE_F64LE;
+
           when c_string {
             hdf5Type = H5Tcopy(H5T_C_S1);
             H5Tset_size(hdf5Type, H5T_VARIABLE);
           }
+
           otherwise {
             halt("Unhandled type in getHDF5Type: ", eltType:string);
           }
@@ -3634,7 +3628,10 @@ module HDF5_HL {
       H5LTread_dataset(file_id, dsetName.c_str(), hdf5Type, c_ptrTo(data));
     }
 
-    record ArrRec {
+    /* A record that stores a rectangular array.  An array of `ArrayWrapper`
+       records can store multiple differently sized arrays.
+     */
+    record ArrayWrapper {
       type eltType;
       param rank: int;
       var D: domain(rank);
