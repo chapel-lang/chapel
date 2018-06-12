@@ -2813,10 +2813,6 @@ static FnSymbol* buildEmptyWrapper(FnSymbol* fn) {
     wrapper->addFlag(FLAG_AUTO_DESTROY_FN);
   }
 
-  if (fn->hasFlag(FLAG_DONOR_FN)) {
-    wrapper->addFlag(FLAG_DONOR_FN);
-  }
-
   if (fn->hasFlag(FLAG_NO_PARENS)) {
     wrapper->addFlag(FLAG_NO_PARENS);
   }
