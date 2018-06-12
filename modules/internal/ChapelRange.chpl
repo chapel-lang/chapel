@@ -835,7 +835,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     if ! member(ind) then return (-1):intIdxType;
     if ! stridable then return chpl__idxToInt(ind) - _low;
-    else return ((ind:strType - this.first:strType) / _stride):intIdxType;
+    else return ((chpl__idxToInt(ind):strType - chpl__idxToInt(this.first):strType) / _stride):intIdxType;
   }
 
   /* Returns the zero-based ``ord``-th element of this range's represented
