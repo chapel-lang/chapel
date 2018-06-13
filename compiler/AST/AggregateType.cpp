@@ -2184,7 +2184,7 @@ bool AggregateType::needsConstructor() const {
     // Defining an initializer means we don't need a default constructor
     return false;
   } else {
-    // The above two branches are only relevant in the recursive version
+    // The above three branches are only relevant in the recursive version
     // of this call, as the outside call site for this function has
     // already ensured that the type which is the entry point has defined
     // neither an initializer nor a constructor.
