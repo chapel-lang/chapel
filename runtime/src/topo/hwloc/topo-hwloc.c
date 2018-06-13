@@ -68,7 +68,19 @@ static void alignAddrSize(void*, size_t, chpl_bool,
                           size_t*, unsigned char**, size_t*);
 static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
                                             hwloc_obj_t);
-static void report_error(const char*, int);
+
+
+//
+// Error reporting.
+//
+static void chk_err_fn(const char*, int, const char*);
+static void chk_err_errno_fn(const char*, int, const char*);
+
+#define CHK_ERR(expr) \
+  do { if (!(expr)) chk_err_fn(__FILE__, __LINE__, #expr); } while (0)
+
+#define CHK_ERR_ERRNO(expr) \
+  do { if (!(expr)) chk_err_errno_fn(__FILE__, __LINE__, #expr); } while (0)
 
 
 void chpl_topo_init(void) {
@@ -94,28 +106,19 @@ void chpl_topo_init(void) {
 
 #if HWLOC_API_VERSION < REQUIRE_HWLOC_VERSION
 #error hwloc version 1.11.5 or newer is required
-#else
-  {
-    unsigned version = hwloc_get_api_version();
-    // check that the version is at least REQUIRE_HWLOC_VERSION
-    if (version < REQUIRE_HWLOC_VERSION)
-      chpl_internal_error("hwloc version 1.11.5 or newer is required");
-  }
 #endif
+
+  CHK_ERR(hwloc_get_api_version() >= REQUIRE_HWLOC_VERSION);
 
   //
   // Allocate and initialize topology object.
   //
-  if (hwloc_topology_init(&topology)) {
-    report_error("hwloc_topology_init()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_topology_init(&topology) == 0);
 
   //
   // Perform the topology detection.
   //
-  if (hwloc_topology_load(topology)) {
-    report_error("hwloc_topology_load()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_topology_load(topology) == 0);
 
   //
   // What is supported?
@@ -216,17 +219,13 @@ void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
   if (!topoSupport->cpubind->set_thread_cpubind)
     return;
 
-  if ((cpuset = hwloc_bitmap_alloc()) == NULL) {
-    report_error("hwloc_bitmap_alloc()", errno);
-  }
+  CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
 
   hwloc_cpuset_from_nodeset(topology, cpuset,
                             getNumaObj(subloc)->allowed_nodeset);
 
   flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
-  if (hwloc_set_cpubind(topology, cpuset, flags)) {
-    report_error("hwloc_set_cpubind()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
 
   hwloc_bitmap_free(cpuset);
 }
@@ -246,18 +245,11 @@ c_sublocid_t chpl_topo_getThreadLocality(void) {
     return c_sublocid_any;
   }
 
-  if ((cpuset = hwloc_bitmap_alloc()) == NULL) {
-    report_error("hwloc_bitmap_alloc()", errno);
-  }
-
-  if ((nodeset = hwloc_bitmap_alloc()) == NULL) {
-    report_error("hwloc_bitmap_alloc()", errno);
-  }
+  CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
+  CHK_ERR_ERRNO((nodeset = hwloc_bitmap_alloc()) != NULL);
 
   flags = HWLOC_CPUBIND_THREAD;
-  if (hwloc_get_cpubind(topology, cpuset, flags)) {
-    report_error("hwloc_get_cpubind()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
 
   hwloc_cpuset_to_nodeset(topology, cpuset, nodeset);
 
@@ -359,14 +351,10 @@ void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
   if (nPages == 0)
     return;
 
-  if ((cpuset = hwloc_bitmap_alloc()) == NULL) {
-    report_error("hwloc_bitmap_alloc()", errno);
-  }
+  CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
 
   flags = HWLOC_CPUBIND_THREAD;
-  if (hwloc_get_cpubind(topology, cpuset, flags)) {
-    report_error("hwloc_get_cpubind()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
 
   chpl_topo_setThreadLocality(subloc);
 
@@ -378,9 +366,7 @@ void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
   }
 
   flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
-  if (hwloc_set_cpubind(topology, cpuset, flags)) {
-    report_error("hwloc_set_cpubind()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
 
   hwloc_bitmap_free(cpuset);
 }
@@ -444,11 +430,10 @@ void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
          (int) hwloc_bitmap_first(numaObj->allowed_nodeset));
 
   flags = HWLOC_MEMBIND_MIGRATE | HWLOC_MEMBIND_STRICT;
-  if (hwloc_set_area_membind_nodeset(topology, p, size,
-                                     numaObj->allowed_nodeset,
-                                     HWLOC_MEMBIND_BIND, flags)) {
-    report_error("hwloc_set_area_membind_nodeset()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_set_area_membind_nodeset(topology, p, size,
+                                               numaObj->allowed_nodeset,
+                                               HWLOC_MEMBIND_BIND, flags)
+                == 0);
 }
 
 
@@ -469,14 +454,11 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
     return c_sublocid_any;
   }
 
-  if ((nodeset = hwloc_bitmap_alloc()) == NULL) {
-    report_error("hwloc_bitmap_alloc()", errno);
-  }
+  CHK_ERR_ERRNO((nodeset = hwloc_bitmap_alloc()) != NULL);
 
   flags = HWLOC_MEMBIND_BYNODESET;
-  if (hwloc_get_area_memlocation(topology, p, 1, nodeset, flags)) {
-    report_error("hwloc_get_area_memlocation()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_get_area_memlocation(topology, p, 1, nodeset, flags)
+                == 0);
 
   node = hwloc_bitmap_first(nodeset);
   if (!isActualSublocID(node)) {
@@ -490,9 +472,13 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
 
 
 static
-void report_error(const char* what, int errnum) {
-  char buf[100];
+void chk_err_fn(const char* file, int lineno, const char* what) {
+  chpl_internal_error_v("%s: %d: !(%s)", file, lineno, what);
+}
 
-  snprintf(buf, sizeof(buf), "%s: %s", what, strerror(errnum));
-  chpl_internal_error(buf);
+
+static
+void chk_err_errno_fn(const char* file, int lineno, const char* what) {
+  chpl_internal_error_v("%s: %d: !(%s): %s", file, lineno, what,
+                        strerror(errno));
 }
