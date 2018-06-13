@@ -50,7 +50,7 @@
 #define _DBG_P(f, ...)
 #endif
 
-static chpl_bool haveTopology;
+static chpl_bool haveTopology = false;
 
 static hwloc_topology_t topology;
 
@@ -73,15 +73,16 @@ static void report_error(const char*, int);
 
 void chpl_topo_init(void) {
   //
-  // For now we don't load topology information for locModel=flat, since
-  // we won't use it in that case and loading it is somewhat expensive.
-  // Eventually we will probably load it even for locModel=flat and use
-  // it as the information source for what's currently in chplsys, and
-  // also pass it to Qthreads when we use that (so it doesn't load it
-  // again), but that's work for the future.
+  // We only load hwloc topology information in configurations where
+  // the locale model is other than "flat" or the tasking is based on
+  // Qthreads (which will use the topology we load).  We don't use
+  // it otherwise (so far) because loading it is somewhat expensive.
   //
-  haveTopology = (strcmp(CHPL_LOCALE_MODEL, "flat") != 0) ? true : false;
-  if (!haveTopology) {
+  if (strcmp(CHPL_LOCALE_MODEL, "flat") != 0
+      || strcmp(CHPL_TASKS, "qthreads") == 0) {
+    haveTopology = true;
+  } else {
+    haveTopology = false;
     return;
   }
 
@@ -179,6 +180,11 @@ void chpl_topo_exit(void) {
   }
 
   hwloc_topology_destroy(topology);
+}
+
+
+void* chpl_topo_getHwlocTopology(void) {
+  return (haveTopology) ? topology : NULL;
 }
 
 
