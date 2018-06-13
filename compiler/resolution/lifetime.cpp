@@ -146,6 +146,7 @@ namespace {
     Lifetime reachabilityForSymbol(Symbol* sym);
     bool setLifetimeForSymbolToMin(Symbol* sym, LifetimePair lt);
     LifetimePair lifetimeForSymbol(Symbol* sym);
+    LifetimePair finalLifetimeForSymbol(Symbol* sym);
     LifetimePair lifetimeForActual(Symbol* sym);
     LifetimePair lifetimeForCallReturn(CallExpr* call);
     LifetimePair lifetimeForPrimitiveReturn(CallExpr* call);
@@ -195,9 +196,9 @@ static LifetimePair minimumLifetimePair(LifetimePair a, LifetimePair b);
 static Lifetime reachabilityLifetimeForSymbol(Symbol* sym);
 //static LifetimePair reachabilityLifetimePairForSymbol(Symbol* sym);
 static Lifetime infiniteLifetime();
-//static Lifetime unknownLifetime();
+static Lifetime unknownLifetime();
 static LifetimePair infiniteLifetimePair();
-//static LifetimePair unknownLifetimePair();
+static LifetimePair unknownLifetimePair();
 static bool debuggingLifetimesForFn(FnSymbol* fn);
 void printLifetime(Lifetime lt);
 void printLifetimePair(LifetimePair lt);
@@ -495,19 +496,17 @@ LifetimePair LifetimeState::lifetimeForSymbol(Symbol* sym) {
   // Ignore reference temporaries
   sym = getCanonicalSymbol(sym);
 
-  LifetimePair ret = infiniteLifetimePair();
+  LifetimePair ret = unknownLifetimePair();
 
   if (lifetimes.count(sym) > 0) {
     ret = lifetimes[sym];
   } else if (typeHasInfiniteLifetime(sym->type)) {
-    // leave it infinite
+    ret = infiniteLifetimePair();
   } else {
-    // Otherwise, create a basic lifetime for this variable.
-    //ret = reachabilityLifetimePairForSymbol(sym);
-    // ret = infiniteLifetimePair();
-    // Leave it infinite for non-args
-    // inference will sort it out based on assignments.
+    // Record variable lifetime will be set on init call
+    // borrowed class variable lifetime is minimum of what it is set to.
 
+    // For arguments, create a starting lifetime.
     // Adjust the returnScope field of these lifetimes.
     if (ArgSymbol* arg = toArgSymbol(sym)) {
       Lifetime lt = reachabilityForSymbol(sym);
@@ -528,6 +527,23 @@ LifetimePair LifetimeState::lifetimeForSymbol(Symbol* sym) {
 
   return ret;
 }
+
+/*
+LifetimePair LifetimeState::finalLifetimeForSymbol(Symbol* sym) {
+
+  // Ignore reference temporaries
+  sym = getCanonicalSymbol(sym);
+
+  LifetimePair ret = lifetimeForSymbol(sym);
+
+  if (ret.referent.unknown)
+    ret.referent = reachabilityForSymbol(sym);
+  if (ret.borrowed.unknown)
+    ret.borrowed = reachabilityForSymbol(sym);
+
+  return ret;
+}
+*/
 
 // Normalizes the lifetime to the reachability as appropriate
 // for cases such as getting the lifetime of a local variable.
@@ -983,8 +999,9 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
       if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
         rhsSym = rhsSe->symbol();
         if (isSubjectToRefLifetimeAnalysis(rhsSym) ||
-            isSubjectToBorrowLifetimeAnalysis(rhsSym))
+            isSubjectToBorrowLifetimeAnalysis(rhsSym)) {
           rhsLt = lifetimes->lifetimeForSymbol(rhsSym);
+        }
 
       } else if (CallExpr* subCall = toCallExpr(call->get(2))) {
         if (FnSymbol* fn = subCall->resolvedOrVirtualFunction()) {
@@ -1005,9 +1022,9 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
       }
 
       if (lhs->hasEitherFlag(FLAG_RVV,FLAG_RETARG)) {
-        if (lhs->isRef()) {
+        if (lhs->isRef() && call->isPrimitive(PRIM_MOVE)) {
           // check returning a reference
-          if (!rhsLt.referent.infinite) {
+          if (!(rhsLt.referent.infinite || rhsLt.referent.unknown)) {
             if (!rhsLt.referent.returnScope) {
               emitError(call,
                         "Reference to scoped variable",
@@ -1027,7 +1044,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
         if (isSubjectToBorrowLifetimeAnalysis(lhs)) {
           // check returning a borrow
-          if (!rhsLt.borrowed.infinite) {
+          if (!(rhsLt.borrowed.infinite || rhsLt.borrowed.unknown)) {
             if (!rhsLt.borrowed.returnScope) {
               emitError(call,
                         "Scoped variable",
@@ -1049,11 +1066,15 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
         // than the reachability lifetime for that symbol.
         Lifetime lhsReachability = lifetimes->reachabilityForSymbol(lhs);
         Lifetime lhsReachableRefLifetime = lhsLt.referent;
-        if (lhsReachableRefLifetime.infinite)
+        if (lhsReachableRefLifetime.infinite) // TODO remove
+          lhsReachableRefLifetime = lhsReachability;
+        if (lhsReachableRefLifetime.unknown)
           lhsReachableRefLifetime = lhsReachability;
 
         Lifetime lhsReachableBorrowLifetime = lhsLt.borrowed;
-        if (lhsReachableBorrowLifetime.infinite)
+        if (lhsReachableBorrowLifetime.infinite) // TODO remove
+          lhsReachableBorrowLifetime = lhsReachability;
+        if (lhsReachableBorrowLifetime.unknown)
           lhsReachableBorrowLifetime = lhsReachability;
 
         // Raise errors for init/assigning from a value with shorter lifetime
@@ -1441,7 +1462,6 @@ static Lifetime reachabilityLifetimeForSymbol(Symbol* sym) {
   return lt;
 }
 
-/*
 static Lifetime unknownLifetime() {
   Lifetime lt;
   lt.fromSymbolReachability = NULL;
@@ -1451,7 +1471,6 @@ static Lifetime unknownLifetime() {
   lt.returnScope = false;
   return lt;
 }
-*/
 
 static Lifetime infiniteLifetime() {
   Lifetime lt;
@@ -1463,13 +1482,13 @@ static Lifetime infiniteLifetime() {
   return lt;
 }
 
-/*static LifetimePair unknownLifetimePair() {
+static LifetimePair unknownLifetimePair() {
   Lifetime lt = unknownLifetime();
   LifetimePair ret;
   ret.referent = lt;
   ret.borrowed = lt;
   return ret;
-}*/
+}
 
 static LifetimePair infiniteLifetimePair() {
   Lifetime lt = infiniteLifetime();
