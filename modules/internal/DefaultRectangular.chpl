@@ -482,12 +482,12 @@ module DefaultRectangular {
     }
 
     proc dsiIndexOrder(ind: rank*idxType) {
-      var totOrder: idxType;
-      var blk: idxType = 1;
+      var totOrder: intIdxType;
+      var blk: intIdxType = 1;
       for param d in 1..rank by -1 {
         const orderD = ranges(d).indexOrder(ind(d));
         // NOTE: This follows from the implementation of indexOrder()
-        if (orderD == (-1):idxType) then return orderD;
+        if (orderD == (-1):intIdxType) then return orderD;
         totOrder += orderD * blk;
         blk *= ranges(d).length;
       }
@@ -561,7 +561,7 @@ module DefaultRectangular {
       if rank == 1 {
         return ranges(1).stride;
       } else {
-        var result: rank*chpl__signedType(idxType);
+        var result: rank*chpl__signedType(intIdxType);
         for param i in 1..rank do
           result(i) = ranges(i).stride;
         return result;

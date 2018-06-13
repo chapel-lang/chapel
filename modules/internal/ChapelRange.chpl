@@ -1823,12 +1823,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // worth it just for that. In the other cases it allowed us to specialize
     // the test relational operator, which is important
     var i: intIdxType;
-    const start = this.first;
+    const start = chpl__idxToInt(this.first);
     while __primitive("C for loop",
                       __primitive( "=", i, start),
                       true,
                       __primitive("+=", i, stride: intIdxType)) {
-      yield i;
+      yield chpl__intToIdx(idxType, i);
     }
   }
 
