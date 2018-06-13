@@ -70,6 +70,8 @@
 
 
    TODO:
+     - **** Separate infinite lifetime from unknown lifetime
+
      - investigate if this can do escape checking for begins
      - decide on how to declare an owning vs borrowed class instance ptr
        - vs a raw one
@@ -507,6 +509,7 @@ ScopeLifetime LifetimeState::lifetimeForSymbol(Symbol* sym) {
       Lifetime lt = reachabilityForSymbol(sym);
       ret.referent = lt;
       ret.borrowed = lt;
+
       if (arg->hasFlag(FLAG_RETURN_SCOPE)) {
         if (sym->isRef() &&
             !intentIsLocalVariable(arg->intent) &&
@@ -843,6 +846,11 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
           // Propagate lifetime for refs across moves
           // lifetime for classes across any of the options
           lt = lifetimes->lifetimeForSymbol(se->symbol());
+
+          if (lhs->isRef()) {
+            // refs to borrows don't propagate
+            lt.borrowed = infiniteLifetime();
+          }
         }
       }
 
@@ -1036,9 +1044,13 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
         // For the purposes of this check, lhsLt should be no more
         // than the reachability lifetime for that symbol.
         Lifetime lhsReachability = lifetimes->reachabilityForSymbol(lhs);
-        Lifetime lhsReachableRefLifetime = minimumLifetime(lhsReachability,
-            lhsLt.referent);
-        Lifetime lhsReachableBorrowLifetime = minimumLifetime(lhsReachability, lhsLt.borrowed);
+        Lifetime lhsReachableRefLifetime = lhsLt.referent;
+        if (lhsReachableRefLifetime.infinite)
+          lhsReachableRefLifetime = lhsReachability;
+
+        Lifetime lhsReachableBorrowLifetime = lhsLt.borrowed;
+        if (lhsReachableBorrowLifetime.infinite)
+          lhsReachableBorrowLifetime = lhsReachability;
 
         // Raise errors for init/assigning from a value with shorter lifetime
         // I.e. insist RHS lifetime is longer than LHS lifetime.
