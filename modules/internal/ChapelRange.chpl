@@ -795,7 +795,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"alignLow -- Cannot be applied to a range with ambiguous alignment.");
 
-    if stridable then _low = this.alignedLow;
+    if stridable then _low = this.alignedLowAsInt;
     return this;
   }
 
@@ -806,7 +806,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"alignHigh -- Cannot be applied to a range with ambiguous alignment.");
 
-    if stridable then _high = this.alignedHigh;
+    if stridable then _high = this.alignedHighAsInt;
     return this;
   }
 
@@ -1096,12 +1096,15 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   inline proc -(r: range(?e,?b,?s), i: integral)
   {
-    type resultType = (r._low+i).type;
+    type resultType = e;
     type strType = chpl__rangeStrideType(resultType);
 
     return new range(resultType, b, s,
-                     r._low - i, r._high - i,
-           r.stride : strType, r.alignment - i : resultType, r.aligned);
+                     chpl__intToIdx(resultType, r._low - i),
+                     chpl__intToIdx(resultType, r._high - i),
+                     r.stride : strType,
+                     chpl__intToIdx(resultType, chpl__idxToInt(r.alignment) - i),
+                     r.aligned);
   }
 
   inline proc chpl_check_step_integral(step) {
