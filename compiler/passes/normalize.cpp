@@ -50,6 +50,8 @@ static void        handleModuleDeinitFn(ModuleSymbol* mod);
 static void        transformLogicalShortCircuit();
 static void        handleReduceAssign();
 
+static void        makeExportWrapper(FnSymbol* fn);
+
 static void        fixupArrayFormals(FnSymbol* fn);
 
 static bool        includesParameterizedPrimitive(FnSymbol* fn);
@@ -148,6 +150,11 @@ void normalize() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
+
+    if (fn->hasFlag(FLAG_EXPORT) &&
+        fn->hasFlag(FLAG_COMPILER_GENERATED)  == false) {
+      makeExportWrapper(fn);
+    }
 
     if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == false &&
         fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == false) {
@@ -2613,6 +2620,71 @@ static void hack_resolve_types(ArgSymbol* arg) {
         }
       }
     }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* We cannot export a function with an array argument directly, due to the     *
+* type being considered generic and due to other languages not understanding  *
+* our array structure, as well as our normal array structure assuming it has  *
+* control over the memory involved.  Instead, build a wrapper for the         *
+* function.  This wrapper will be modified to take in a c_ptr of the right    *
+* type and the size of the array, in addition to its other arguments.         *
+*                                                                             *
+************************************** | *************************************/
+static void makeExportWrapper(FnSymbol* fn) {
+  std::vector<ArgSymbol*> argsToReplace;
+  for_formals(formal, fn) {
+    if (formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
+        formal->type->symbol->hasFlag(FLAG_ARRAY)) {
+      argsToReplace.push_back(formal);
+    }
+  }
+
+  if (argsToReplace.size() > 0) {
+    // We have at least one array argument.  Need to make a version of this
+    // function that can be exported
+    FnSymbol* newFn = new FnSymbol(fn->name);
+    newFn->addFlag(FLAG_EXPORT);
+    CallExpr* callOld = new CallExpr(fn->name);
+
+    SymbolMap argToNewArgMap;
+
+    std::vector<ArgSymbol*>::iterator nextArgToReplace =
+      argsToReplace.begin();
+
+    for_formals(formal, fn) {
+      if (formal == *nextArgToReplace) {
+        // Make a new argument of our alternative type.
+        // Things I need:
+        // - the size (either specified, or as an argument)
+        //   - error if specified domain does not start with 0
+        // - the type of the array elements (error if not explicitly provided)
+        // If we have a specified distribution that isn't flat, error for now
+
+        nextArgToReplace++;
+      } else {
+        // Make a copy of the argument to put in our new function, and pass it
+        // along to the old version when we call it.
+        ArgSymbol* copy = formal->copy();
+        argToNewArgMap.put(formal, copy);
+        newFn->insertFormalAtTail(copy);
+        callOld->insertAtTail(new SymExpr(copy));
+      }
+    }
+    update_symbols(newFn, &argToNewArgMap);
+
+    newFn->insertAtTail(new CallExpr(PRIM_RETURN, callOld));
+    newFn->retType = fn->retType;
+
+    // TODO: Also check if return type is an array.  Don't make two wrappers,
+    // pls.
+
+    fn->defPoint->insertBefore(new DefExpr(newFn));
+    normalize(newFn);
+
+    fn->removeFlag(FLAG_EXPORT);
   }
 }
 

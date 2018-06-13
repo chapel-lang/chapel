@@ -7545,68 +7545,6 @@ computeStandardModuleSet() {
   }
 }
 
-// If the function is exported and takes in an array argument, we need a special
-// translation so that we can treat it as an array in Chapel but not clean up
-// the memory when we shouldn't.
-void makeExportWrapper(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_EXPORT)) {
-    std::vector<ArgSymbol*> argsToReplace;
-    for_formals(formal, fn) {
-      if (formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
-          formal->type->symbol->hasFlag(FLAG_ARRAY)) {
-        argsToReplace.push_back(formal);
-      }
-    }
-
-    if (argsToReplace.size() > 0) {
-      SET_LINENO(fn);
-      // We have at least one array argument.  Need to make a version of this
-      // function that can be exported
-      FnSymbol* newFn = new FnSymbol(fn->name);
-      newFn->addFlag(FLAG_EXPORT);
-      CallExpr* callOld = new CallExpr(fn->name);
-
-      SymbolMap argToNewArgMap;
-
-      std::vector<ArgSymbol*>::iterator nextArgToReplace =
-        argsToReplace.begin();
-
-      for_formals(formal, fn) {
-        if (formal == *nextArgToReplace) {
-          // Make a new argument of our alternative type.
-          // Things I need:
-          // - the size (either specified, or as an argument)
-          //   - error if specified domain does not start with 0
-          // - the type of the array elements (error if not explicitly provided)
-          // If we have a specified distribution that isn't flat, error for now
-
-          nextArgToReplace++;
-        } else {
-          // Make a copy of the argument to put in our new function, and pass it
-          // along to the old version when we call it.
-          ArgSymbol* copy = formal->copy();
-          argToNewArgMap.put(formal, copy);
-          newFn->insertFormalAtTail(copy);
-          callOld->insertAtTail(new SymExpr(copy));
-        }
-      }
-      update_symbols(newFn, &argToNewArgMap);
-
-      newFn->insertAtTail(new CallExpr(PRIM_RETURN, callOld));
-      newFn->retType = fn->retType;
-
-      // TODO: Also check if return type is an array.  Don't make two wrappers,
-      // pls.
-
-      fn->defPoint->insertBefore(new DefExpr(newFn));
-      normalize(newFn);
-
-      fn->removeFlag(FLAG_EXPORT);
-    }
-  }
-}
-
-
 void resolve() {
   bool changed = true;
 
@@ -7618,10 +7556,6 @@ void resolve() {
 
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
-
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    makeExportWrapper(fn);
-  }
 
   // Iterate until all generic functions have been tagged with FLAG_GENERIC
   while (changed == true) {
