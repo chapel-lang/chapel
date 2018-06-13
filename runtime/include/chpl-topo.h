@@ -44,6 +44,12 @@ void chpl_topo_exit(void);
 void* chpl_topo_getHwlocTopology(void);
 
 //
+// How many CPUs are there?
+//
+int chpl_topo_getNumCPUsPhysical(chpl_bool /*accessible_only*/);
+int chpl_topo_getNumCPUsLogical(chpl_bool /*accessible_only*/);
+
+//
 // how many NUMA domains are there?
 //
 int chpl_topo_getNumNumaDomains(void);
