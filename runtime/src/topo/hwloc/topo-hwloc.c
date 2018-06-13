@@ -73,6 +73,8 @@ static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
 //
 // Error reporting.
 //
+// CHK_ERR*() must evaluate 'expr' precisely once!
+//
 static void chk_err_fn(const char*, int, const char*);
 static void chk_err_errno_fn(const char*, int, const char*);
 
