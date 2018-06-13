@@ -2209,7 +2209,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
     if !(alignCheckRange.isNaturallyAligned()) then
-        ret += " align " + chpl__mod(x.alignment, x.stride);
+      ret += " align " + chpl__mod(chpl__idxToInt(x.alignment), x.stride);
     return ret;
   }
 
@@ -2462,13 +2462,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if isEnumType(idxType) then return int; else return idxType;
   }
 
-  inline proc chpl__intToIdx(type idxType, i: idxType, j ...) {
+  inline proc chpl__intToIdx(type idxType, i: integral, j ...) {
     const first = chpl__intToIdx(idxType, i);
     const rest = chpl__intToIdx(idxType, (...j));
     return (first, (...rest));
   }
 
-  inline proc chpl__intToIdx(type idxType, i: idxType, j: idxType) {
+  inline proc chpl__intToIdx(type idxType, i: integral, j: integral) {
     return (chpl__intToIdx(idxType, i), chpl__intToIdx(idxType, j));
   }
 

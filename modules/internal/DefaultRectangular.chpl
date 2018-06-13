@@ -652,10 +652,10 @@ module DefaultRectangular {
     param blkChanged : bool = false;
 
     var off: rank*idxType;
-    var blk: rank*idxType;
-    var str: rank*chpl__signedType(idxType);
-    var origin: idxType;
-    var factoredOffs: idxType;
+    var blk: rank*chpl__idxTypeToIntIdxType(idxType);
+    var str: rank*chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
+    var origin: chpl__idxTypeToIntIdxType(idxType);
+    var factoredOffs: chpl__idxTypeToIntIdxType(idxType);
 
     var data: _ddata(eltType);
     var shiftedData: _ddata(eltType);
@@ -696,7 +696,7 @@ module DefaultRectangular {
     if stridable {
       var sum = origin;
       for param i in 1..rank do
-        sum += (chpl__idxToInt(ind(i)) - off(i)) * blk(i) / abs(str(i)):idxType;
+        sum += (chpl__idxToInt(ind(i)) - chpl__idxToInt(off(i))) * blk(i) / abs(str(i)):chpl__idxTypeToIntIdxType(idxType);
       return sum;
     } else {
       // optimize common case to get cleaner generated code
@@ -729,7 +729,7 @@ module DefaultRectangular {
   proc _remoteAccessData.computeFactoredOffs() {
     factoredOffs = 0;
     for param i in 1..rank do {
-      factoredOffs = factoredOffs + blk(i) * off(i);
+      factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i));
     }
   }
 
@@ -770,7 +770,7 @@ module DefaultRectangular {
     rad.str         = chpl__tuplify(newDom.dsiStride);
 
     for param i in 1..rank {
-      const shift = this.blk(i) * (newDom.dsiDim(i).low - this.off(i)) / abs(this.str(i)) : rad.idxType;
+      const shift = this.blk(i) * (chpl__idxToInt(newDom.dsiDim(i).low) - chpl__idxToInt(this.off(i))) / abs(this.str(i)) : rad.idxType;
       if this.str(i) > 0 {
         rad.origin += shift;
       } else {
@@ -799,7 +799,7 @@ module DefaultRectangular {
     rad.initDataFrom(this);
 
     rad.shiftedData  = if newDom.stridable then this.data else this.shiftedData;
-    rad.origin       = this.origin:newDom.idxType;
+    rad.origin       = this.origin:newDom.intIdxType;
     rad.blk          = this.blk;
     rad.off          = chpl__tuplify(newDom.dsiLow);
     rad.str          = chpl__tuplify(newDom.dsiStride);
@@ -816,7 +816,8 @@ module DefaultRectangular {
   //
   proc _remoteAccessData.toRankChange(newDom, cd, idx) {
     compilerAssert(this.rank == idx.size && this.rank != newDom.rank);
-    type idxSignedType = chpl__signedType(idxType);
+    type intIdxType = newDom.intIdxType;
+    type idxSignedType = chpl__signedType(intIdxType);
 
     // Unconditionally sets 'blkChanged'
     //
@@ -827,21 +828,21 @@ module DefaultRectangular {
     rad.initDataFrom(this);
 
     rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
-    rad.origin      = this.origin:newDom.idxType;
+    rad.origin      = this.origin:newDom.intIdxType;
 
     var curDim      = 1;
     for param j in 1..idx.size {
       if !collapsedDims(j) {
         rad.off(curDim) = newDom.dsiDim(curDim).low;
-        const off       = (rad.off(curDim) - this.off(j)):idxSignedType;
-        rad.origin     += ((this.blk(j):idxSignedType) * off / this.str(j)):idxType;
+        const off       = (chpl__idxToInt(rad.off(curDim)) - chpl__idxToInt(this.off(j))):idxSignedType;
+        rad.origin     += ((this.blk(j):idxSignedType) * off / this.str(j)):intIdxType;
         rad.blk(curDim) = this.blk(j);
         rad.str(curDim) = this.str(j);
 
         curDim += 1;
       } else {
-        const off   = (idx(j) - this.off(j)):idxSignedType;
-        rad.origin += (this.blk(j):idxSignedType *  off / this.str(j)):idxType;
+        const off   = (chpl__idxToInt(idx(j)) - chpl__idxToInt(this.off(j))):idxSignedType;
+        rad.origin += (this.blk(j):idxSignedType *  off / this.str(j)):intIdxType;
       }
     }
 
@@ -896,7 +897,7 @@ module DefaultRectangular {
 
     var dom : unmanaged DefaultRectangularDom(rank=rank, idxType=idxType,
                                            stridable=stridable);
-    var off: rank*chpl__idxTypeToIntIdxType(idxType);
+    var off: rank*idxType;
     var blk: rank*chpl__idxTypeToIntIdxType(idxType);
     var str: rank*idxSignedType;
     var origin: chpl__idxTypeToIntIdxType(idxType);
@@ -1037,7 +1038,7 @@ module DefaultRectangular {
     proc computeFactoredOffs() {
       factoredOffs = 0:intIdxType;
       for param i in 1..rank do {
-        factoredOffs = factoredOffs + blk(i) * off(i);
+        factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i));
       }
     }
 
@@ -1062,7 +1063,7 @@ module DefaultRectangular {
     proc postinit() {
       if noinit_data == true then return;
       for param dim in 1..rank {
-        off(dim) = dom.dsiDim(dim).alignedLowAsInt;
+        off(dim) = dom.dsiDim(dim).alignedLow;
         str(dim) = dom.dsiDim(dim).stride;
       }
       blk(rank) = 1:intIdxType;
@@ -1098,7 +1099,7 @@ module DefaultRectangular {
       if stridable {
         var sum = origin;
         for param i in 1..rank do
-          sum += (chpl__idxToInt(ind(i)) - off(i)) * blk(i) / abs(str(i)):intIdxType;
+          sum += (chpl__idxToInt(ind(i)) - chpl__idxToInt(off(i))) * blk(i) / abs(str(i)):intIdxType;
         return sum;
       } else {
         param wantShiftedIndex = getShifted && earlyShiftData;

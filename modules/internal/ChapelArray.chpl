@@ -1332,10 +1332,10 @@ module ChapelArray {
       for i in _value.dimIter(d, ind) do yield i;
     }
 
-   /* Return a tuple of ``idxType`` describing the size of each dimension.
+   /* Return a tuple of ``intIdxType`` describing the size of each dimension.
       For a sparse domain, return the shape of the parent domain.*/
     proc shape where isRectangularDom(this) || isSparseDom(this) {
-      var s: rank*(dim(1).idxType);
+      var s: rank*(dim(1).intIdxType);
       for (i, r) in zip(1..s.size, dims()) do
         s(i) = r.size;
       return s;
