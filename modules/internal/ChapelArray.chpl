@@ -1572,14 +1572,14 @@ module ChapelArray {
 
     pragma "no doc"
     proc position(i) {
-      var ind = _makeIndexTuple(rank, i), pos: rank*_value.intIdxType;
+      var ind = _makeIndexTuple(rank, i), pos: rank*chpl__idxTypeToIntIdxType(_value.idxType);
       for d in 1..rank do
         pos(d) = _value.dsiDim(d).indexOrder(ind(d));
       return pos;
     }
 
     pragma "no doc"
-    proc expand(off: rank*_value.intIdxType) where !isRectangularDom(this) {
+    proc expand(off: rank*chpl__idxTypeToIntIdxType(_value.idxType)) where !isRectangularDom(this) {
       if isAssociativeDom(this) then
         compilerError("expand not supported on associative domains");
       else if isOpaqueDom(this) then
@@ -1597,7 +1597,7 @@ module ChapelArray {
        ``off(d)`` in dimension ``d`` if ``off(d)`` is positive or
        contracted by ``off(d)`` in dimension ``d`` if ``off(d)``
        is negative. */
-    proc expand(off: rank*_value.intIdxType) {
+    proc expand(off: rank*chpl__idxTypeToIntIdxType(_value.idxType)) {
       var ranges = dims();
       for i in 1..rank do {
         ranges(i) = ranges(i).expand(off(i));
@@ -1620,7 +1620,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc exterior(off: rank*_value.intIdxType) where !isRectangularDom(this) {
+    proc exterior(off: rank*chpl__idxTypeToIntIdxType(_value.idxType)) where !isRectangularDom(this) {
       if isAssociativeDom(this) then
         compilerError("exterior not supported on associative domains");
       else if isOpaqueDom(this) then
@@ -1639,7 +1639,7 @@ module ChapelArray {
        If ``off(d)`` is negative, compute the exterior from the low
        bound of the dimension; if positive, compute the exterior
        from the high bound. */
-    proc exterior(off: rank*_value.intIdxType) {
+    proc exterior(off: rank*chpl__idxTypeToIntIdxType(_value.idxType)) {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).exterior(off(i));
@@ -1652,14 +1652,14 @@ module ChapelArray {
        bound of the dimension; if positive, compute the exterior
        from the high bound. */
     proc exterior(off:integral) where rank != 1 {
-      var offTup: rank*_value.intIdxType;
+      var offTup: rank*chpl__idxTypeToIntIdxType(_value.idxType);
       for i in 1..rank do
         offTup(i) = off;
       return exterior(offTup);
     }
 
     pragma "no doc"
-    proc interior(off: rank*_value.intIdxType) where !isRectangularDom(this) {
+    proc interior(off: rank*chpl__idxTypeToIntIdxType(_value.idxType)) where !isRectangularDom(this) {
       if isAssociativeDom(this) then
         compilerError("interior not supported on associative domains");
       else if isOpaqueDom(this) then
@@ -1678,7 +1678,7 @@ module ChapelArray {
        ``d``. If ``off(d)`` is negative, compute the interior from
        the low bound of the dimension; if positive, compute the
        interior from the high bound. */
-    proc interior(off: rank*_value.intIdxType) {
+    proc interior(off: rank*chpl__idxTypeToIntIdxType(_value.idxType)) {
       var ranges = dims();
       for i in 1..rank do {
         if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
@@ -1696,7 +1696,7 @@ module ChapelArray {
        bound of the dimension; if positive, compute the interior
        from the high bound. */
     proc interior(off: integral) where rank != 1 {
-      var offTup: rank*_value.intIdxType;
+      var offTup: rank*chpl__idxTypeToIntIdxType(_value.idxType);
       for i in 1..rank do
         offTup(i) = off;
       return interior(offTup);
@@ -1753,7 +1753,7 @@ module ChapelArray {
     // intended for internal use only:
     //
     proc chpl__unTranslate(off: integral ...rank) return chpl__unTranslate(off);
-    proc chpl__unTranslate(off: rank*_value.intIdxType) {
+    proc chpl__unTranslate(off: rank*chpl__idxTypeToIntIdxType(_value.idxType)) {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).chpl__unTranslate(off(i));
