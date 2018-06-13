@@ -1536,7 +1536,6 @@ static bool isInstantiatedField(Symbol* field) {
     for_formals(formal, at->typeConstructor) {
       if (strcmp(field->name, formal->name) == 0) {
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-          gdbShouldBreakHere();
           retval = true;
           break;
         }
