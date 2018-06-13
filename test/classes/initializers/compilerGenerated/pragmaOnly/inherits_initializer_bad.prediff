@@ -1,6 +1,0 @@
-#!/bin/bash
-
-output=$2
-cat $output | sed '/^\$CHPL_HOME\/modules\// d' > $output.tmp
-echo "deleted module lines" >> $output.tmp
-mv $output.tmp $output
