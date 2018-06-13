@@ -1,0 +1,2 @@
+bug: lifetime checking does misses invalid borrows saved in collection
+#9853
