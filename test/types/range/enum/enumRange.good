@@ -1,3 +1,4 @@
+---
 red..violet
 range(color,bounded,false)
 
@@ -32,126 +33,6 @@ orderToIndex(1) = orange
 interior(1) = violet..violet
 interior(-1) = red..red
 
-A[red] = 1.0
-A[orange] = 2.0
-A[yellow] = 3.0
-A[green] = 4.0
-A[blue] = 5.0
-A[indigo] = 6.0
-A[violet] = 7.0
----
-A[red] = 10.0
-A[orange] = 11.0
-A[yellow] = 12.0
-A[green] = 13.0
-A[blue] = 14.0
-A[indigo] = 15.0
-A[violet] = 16.0
----
-A[red] = 5.0
-A[orange] = 6.0
-A[yellow] = 7.0
-A[green] = 8.0
-A[blue] = 9.0
-A[indigo] = 10.0
-A[violet] = 11.0
----
-A[red] = -1.0
-A[orange] = -2.0
-A[yellow] = -3.0
-A[green] = -4.0
-A[blue] = -5.0
-A[indigo] = -6.0
-A[violet] = -7.0
----
-A[red] = 1.0
-A[orange] = 2.0
-A[yellow] = 3.0
-A[green] = 4.0
-A[blue] = 5.0
-A[indigo] = 6.0
-A[violet] = 7.0
----
-A[red] = 10.0
-A[orange] = 11.0
-A[yellow] = 12.0
-A[green] = 13.0
-A[blue] = 14.0
-A[indigo] = 15.0
-A[violet] = 16.0
----
-A[red] = 5.0
-A[orange] = 6.0
-A[yellow] = 7.0
-A[green] = 8.0
-A[blue] = 9.0
-A[indigo] = 10.0
-A[violet] = 11.0
----
-red
-orange
-yellow
-green
-blue
-indigo
-violet
----
-A[red] = 1.0
-A[orange] = 2.0
-A[yellow] = 3.0
-A[green] = 4.0
-A[blue] = 5.0
-A[indigo] = 6.0
-A[violet] = 7.0
----
-A[red] = -1.0
-A[orange] = -2.0
-A[yellow] = -3.0
-A[green] = -4.0
-A[blue] = -5.0
-A[indigo] = -6.0
-A[violet] = -7.0
----
-A[red] = 1.0
-A[orange] = 2.0
-A[yellow] = 3.0
-A[green] = 4.0
-A[blue] = 5.0
-A[indigo] = 6.0
-A[violet] = 7.0
----
-A[red] = -1.0
-A[orange] = -2.0
-A[yellow] = -3.0
-A[green] = -4.0
-A[blue] = -5.0
-A[indigo] = -6.0
-A[violet] = -7.0
----
-A[red] = 1.0
-A[orange] = 2.0
-A[yellow] = 3.0
-A[green] = 4.0
-A[blue] = 5.0
-A[indigo] = 6.0
-A[violet] = 7.0
----
-A[red] = -1.0
-A[orange] = -2.0
-A[yellow] = -3.0
-A[green] = -4.0
-A[blue] = -5.0
-A[indigo] = -6.0
-A[violet] = -7.0
----
--1.0
--2.0
--3.0
--4.0
--5.0
--6.0
--7.0
----
 red
 orange
 yellow
@@ -160,6 +41,7 @@ blue
 indigo
 violet
 
+---
 yellow..indigo
 range(color,bounded,false)
 
@@ -196,86 +78,12 @@ r.exterior(-1) = orange..orange
 r.expand(1) = orange..violet
 r.offset(1) = yellow..indigo
 
-A[yellow] = 3.0
-A[green] = 4.0
-A[blue] = 5.0
-A[indigo] = 6.0
----
-A[yellow] = 10.0
-A[green] = 11.0
-A[blue] = 12.0
-A[indigo] = 13.0
----
-A[yellow] = 5.0
-A[green] = 6.0
-A[blue] = 7.0
-A[indigo] = 8.0
----
-A[yellow] = -3.0
-A[green] = -4.0
-A[blue] = -5.0
-A[indigo] = -6.0
----
-A[yellow] = 3.0
-A[green] = 4.0
-A[blue] = 5.0
-A[indigo] = 6.0
----
-A[yellow] = 10.0
-A[green] = 11.0
-A[blue] = 12.0
-A[indigo] = 13.0
----
-A[yellow] = 5.0
-A[green] = 6.0
-A[blue] = 7.0
-A[indigo] = 8.0
----
-yellow
-green
-blue
-indigo
----
-A[yellow] = 3.0
-A[green] = 4.0
-A[blue] = 5.0
-A[indigo] = 6.0
----
-A[yellow] = -3.0
-A[green] = -4.0
-A[blue] = -5.0
-A[indigo] = -6.0
----
-A[yellow] = 3.0
-A[green] = 4.0
-A[blue] = 5.0
-A[indigo] = 6.0
----
-A[yellow] = -3.0
-A[green] = -4.0
-A[blue] = -5.0
-A[indigo] = -6.0
----
-A[yellow] = 3.0
-A[green] = 4.0
-A[blue] = 5.0
-A[indigo] = 6.0
----
-A[yellow] = -3.0
-A[green] = -4.0
-A[blue] = -5.0
-A[indigo] = -6.0
----
--3.0
--4.0
--5.0
--6.0
----
 yellow
 green
 blue
 indigo
 
+---
 green..green
 range(color,bounded,false)
 
@@ -302,38 +110,9 @@ indexOrder(color.yellow) = -1
 indexOrder(color.green) = 0
 r.translate(1) = blue..blue
 
-A[green] = 4.0
----
-A[green] = 10.0
----
-A[green] = 5.0
----
-A[green] = -4.0
----
-A[green] = 4.0
----
-A[green] = 10.0
----
-A[green] = 5.0
----
-green
----
-A[green] = 4.0
----
-A[green] = -4.0
----
-A[green] = 4.0
----
-A[green] = -4.0
----
-A[green] = 4.0
----
-A[green] = -4.0
----
--4.0
----
 green
 
+---
 blue..green
 range(color,bounded,false)
 
@@ -359,19 +138,4 @@ indexOrder(color.yellow) = -1
 indexOrder(color.green) = -1
 r.translate(1) = indigo..blue
 
----
----
----
----
----
----
----
----
----
----
----
----
----
----
----
 
