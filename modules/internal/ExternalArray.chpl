@@ -104,6 +104,8 @@ module ExternalArray {
 
     proc domRange return 0..#size;
 
+    proc dsiNumIndices return size;
+
     proc dsiGetIndices() return (domRange,);
 
     proc dsiSetIndices(x) {
