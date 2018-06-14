@@ -84,6 +84,9 @@ static void chk_err_errno_fn(const char*, int, const char*);
 #define CHK_ERR_ERRNO(expr) \
   do { if (!(expr)) chk_err_errno_fn(__FILE__, __LINE__, #expr); } while (0)
 
+#define REPORT_ERR_ERRNO(expr) \
+  chk_err_errno_fn(__FILE__, __LINE__, #expr)
+
 
 void chpl_topo_init(void) {
   //
@@ -233,7 +236,19 @@ void getNumCPUs(void) {
   //
   hwloc_cpuset_t logAccSet;
   CHK_ERR_ERRNO((logAccSet = hwloc_bitmap_alloc()) != NULL);
-  CHK_ERR_ERRNO(hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0) == 0);
+  if (hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0) != 0) {
+#ifdef __APPLE__
+    const int errRecoverable = (errno == ENOSYS); // no cpubind on macOS
+#else
+    const int errRecoverable = 0;
+#endif
+    if (errRecoverable) {
+      hwloc_bitmap_fill(logAccSet);
+    } else {
+      REPORT_ERR_ERRNO(hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0)
+                       == 0);
+    }
+  }
   hwloc_bitmap_and(logAccSet, logAccSet,
                    hwloc_topology_get_online_cpuset(topology));
 
