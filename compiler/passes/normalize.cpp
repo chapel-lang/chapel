@@ -1422,23 +1422,50 @@ static bool isCallToTypeConstructor(CallExpr* call) {
 }
 
 static void normalizeCallToTypeConstructor(CallExpr* call) {
-  if (SymExpr* se = toSymExpr(call->baseExpr)) {
-    if (TypeSymbol* ts = expandTypeAlias(se)) {
-      if (AggregateType* at = toAggregateType(ts->type)) {
-        SET_LINENO(call);
+  if (call->getStmtExpr() != NULL) {
+    if (SymExpr* se = toSymExpr(call->baseExpr)) {
+      if (TypeSymbol* ts = expandTypeAlias(se)) {
+        if (AggregateType* at = toAggregateType(ts->type)) {
+          SET_LINENO(call);
 
-        if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
-          // Call chpl__buildDistType for syntactic distributions.
-          se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
+          if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
+            // Call chpl__buildDistType for syntactic distributions.
+            se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
 
-        } else if (SymExpr* riSpec = callUsedInRiSpec(call)) {
-          restoreReduceIntentSpecCall(riSpec, call);
+          } else if (SymExpr* riSpec = callUsedInRiSpec(call)) {
+            restoreReduceIntentSpecCall(riSpec, call);
 
-        } else {
-          // Transform C ( ... ) into _type_construct_C ( ... )
-          const char* name = at->typeConstructor->name;
+          } else {
+            // Transform C ( ... ) into _type_construct_C ( ... )
 
-          se->replace(new UnresolvedSymExpr(name));
+            // The old constructor-based implementation of nested types made
+            // the type constructor a method on the enclosing type. Using a
+            // method would not be allowed within an initializer because 'this'
+            // may not yet be initialized/instantiated.
+            //
+            // Instead the initializer-based implementation of nested types
+            // hoists the nested type constructor outside of the enclosing type
+            // as a standalone function, like other type constructors.
+            //
+            // This could lead to problems with resolution if a type at the
+            // same scope as the enclosing type had the same name as the nested
+            // type. E.g.:
+            //
+            //   class Node {}
+            //   class List {
+            //     var n : Node; // which _type_construct_Node ?
+            //     class Node {}
+            //   }
+            //
+            // To work around this, use a SymExpr pointing to the type
+            // constructor we know to be correct.
+            if (at->hasInitializers()) {
+              se->replace(new SymExpr(at->typeConstructor));
+            } else {
+              const char* name = at->typeConstructor->name;
+              se->replace(new UnresolvedSymExpr(name));
+            }
+          }
         }
       }
     }
@@ -2605,7 +2632,23 @@ static void hack_resolve_types(ArgSymbol* arg) {
       // dtUnknown or dtAny, then replace the type expression with that type.
       // hilde sez: don't we lose information here?
       if (arg->typeExpr->body.length == 1) {
-        Type* type = arg->typeExpr->body.only()->typeInfo();
+        Expr* only = arg->typeExpr->body.only();
+        Type* type = only->typeInfo();
+
+        // The type constructor might be known, but we don't want to remove
+        // the call to it just yet. See 'normalizeCallToTypeConstructor' for
+        // more information on how a SymExpr could be the baseExpr at this
+        // stage.
+        if (CallExpr* call = toCallExpr(only)) {
+          if (SymExpr* se = toSymExpr(call->baseExpr)) {
+            if (FnSymbol* fn = toFnSymbol(se->symbol())) {
+              if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+                // Set dtUnknown, causing the upcoming conditional to fail
+                type = dtUnknown;
+              }
+            }
+          }
+        }
         if (type != dtUnknown && type != dtAny) {
           // This test ensures that we are making progress.
           arg->type = type;
