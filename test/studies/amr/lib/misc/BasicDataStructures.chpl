@@ -46,13 +46,14 @@ class List
 {
   
   type data_type;
-  var head: Node;
+  var head: Node(data_type);
   
   
   class Node 
   {
-    var data: outer.data_type;
-    var next: Node;
+    type data_type;
+    var data: data_type;
+    var next: Node(data_type);
   }
   
   
@@ -70,13 +71,13 @@ class List
   {
     // This should work even if head==nil.
     
-    head = new Node( data, head );
+    head = new Node(data_type, data, head );
   }
   
   
   proc clear ()
   {
-    var next_node: Node;
+    var next_node: Node(data_type);
     
     while head {
       next_node = head.next;
@@ -108,12 +109,13 @@ class Stack
 {
 
   type data_type;
-  var top:  Node;
+  var top:  Node(data_type);
 
   
   class Node {
-    var data: outer.data_type;
-    var next: Node;
+    type data_type;
+    var data: data_type;
+    var next: Node(data_type);
   }
 
 
@@ -125,7 +127,7 @@ class Stack
   
   proc push ( data: data_type )
   {
-    top = new Node(data, top);
+    top = new Node(data_type, data, top);
   }
 
   
@@ -164,13 +166,14 @@ class Queue
 {
   
   type data_type;
-  var head: Node;
-  var tail: Node;
+  var head: Node(data_type);
+  var tail: Node(data_type);
 
   class Node {
-    var data: outer.data_type;
-    var prev: Node;
-    var next: Node;
+    type data_type;
+    var data: data_type;
+    var prev: Node(data_type);
+    var next: Node(data_type);
   }
 
 
@@ -186,12 +189,12 @@ class Queue
   {
     if tail {
       var old_tail = tail;
-      tail = new Node(data);
+      tail = new Node(data_type, data);
       old_tail.next = tail;
       tail.prev     = old_tail;
     }
     else {
-      head = new Node(data);
+      head = new Node(data_type, data);
       tail = head;
     }
   }
