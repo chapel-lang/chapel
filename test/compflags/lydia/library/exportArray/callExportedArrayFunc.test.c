@@ -9,6 +9,7 @@ extern void chpl_library_finalize(void);
 int main(int argc, char* argv[]) {
   // Initialize the Chapel runtime and standard modules
   chpl_library_init(argc, argv);
+  chpl__init_exportFuncWithArrayArg(0, 0);
 
   // Call the function
   int64_t x[5] = {1, 2, 3, 4, 5};

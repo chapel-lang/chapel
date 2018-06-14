@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
   // Call the function
   int64_t x[5] = {1, 2, 3, 4, 5};
   int64_t otherVal = 17;
-  foo(x, 5, &otherVal);
+  foo(x, &otherVal, 5);
   for (int i = 0; i < 5; i++) {
     printf("Element[%d] = %lld\n", i, x[i]);
   }
