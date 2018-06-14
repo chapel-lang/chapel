@@ -131,9 +131,6 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
   if !isDir(projectHome + '/target') {
     mkdir(projectHome + '/target');
   }
-  if !isDir(projectHome + '/test') {
-    mkdir(projectHome + '/test');
-  }
   if !isDir(projectHome + '/target/' + binLoc) {
     mkdir(projectHome + '/target/' + binLoc);
     mkdir(projectHome + '/target/test');
