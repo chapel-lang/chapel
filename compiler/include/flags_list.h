@@ -106,7 +106,6 @@ symbolFlag( FLAG_DEFAULT_COPY_INIT, npr, "default copy initializer", ncm )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , "applied to functions that are destructors" )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )
-symbolFlag( FLAG_DONOR_FN, ypr, "donor fn" , "function donates ownership of the returned object to the calling function" )
 symbolFlag( FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING , ypr, "dont disable remote value forwarding" , ncm )
 symbolFlag( FLAG_DOWN_END_COUNT_FN , ypr, "down end count fn" , ncm )
 symbolFlag( FLAG_END_COUNT , ypr, "end count" , ncm )
@@ -248,6 +247,8 @@ symbolFlag( FLAG_OBJECT_CLASS , npr, "object class" , ncm )
 //
 symbolFlag( FLAG_ON , npr, "on" , ncm )
 symbolFlag( FLAG_ON_BLOCK , npr, "on block" , ncm )
+
+symbolFlag( FLAG_OVERRIDE , npr, "method overrides" , ncm )
 
 symbolFlag( FLAG_OWNED , ypr, "owned", "owned class instance for lifetime checking" )
 

@@ -1,10 +1,10 @@
 proc foo(x: ?t ...?k) {
   writeln(x);
-  var y: t(1);
+  var y: t;
   writeln(y);
-  var yy: t(2);
+  var yy: t;
   writeln(yy);
-  var yyy: t(3);
+  var yyy: t;
   writeln(yyy);
 }
 

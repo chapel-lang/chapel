@@ -7,9 +7,9 @@ class GenericClass {
 
 
 proc test() {
-  var x = new GenericClass(1);
-  var y:GenericClass = new GenericClass(2);
-  var z:GenericClass(int) = new GenericClass(2);
+  var x = new borrowed GenericClass(1);
+  var y:GenericClass = new borrowed GenericClass(2);
+  var z:GenericClass(int) = new borrowed GenericClass(2);
 
   writeln(x.type:string, " ", x);
   writeln(y.type:string, " ", y);

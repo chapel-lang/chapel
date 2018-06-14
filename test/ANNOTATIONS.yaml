@@ -330,6 +330,12 @@ all:
   05/17/18:
     - text: ubuntu update to 18.04 (gcc upgraded to 7.3)
       config: shootout
+  06/01/18:
+    - Represent if-expressions with IfExpr node instead of if-function (#9649)
+  06/04/18:
+    - text:  Use the block transfer engine for large transfers under ugni (#9683)
+      config: 16 node XC
+
 
 AllCompTime:
   11/09/14:
@@ -388,7 +394,7 @@ bfs:
   10/29/15:
     - Difficult to consistently replicate
 
-binary-trees:
+binary-trees: &binary-trees-base
   12/05/14:
     - introduce "library mode"
   01/26/16:
@@ -411,16 +417,8 @@ binary-trees:
     - upgrade jemalloc to 4.4.0 (#5278)
   04/03/17:
     - Updated to n=21 problem size and new rules (#5907)
-
 binarytrees-submitted:
-  09/21/16:
-    - switch from type method factory to init()-based implementation (#4598)
-  09/22/16:
-    - simplify init()-based implementation (#4609)
-  10/10/16:
-    - Brad's fix of off-by-one error in checksum (#4734)
-  04/03/17:
-    - Updated to n=21 problem size and new rules (#5907)
+  <<: *binary-trees-base
 
 blackscholes:
   10/21/16:
@@ -443,6 +441,10 @@ chameneos-redux:
 CoMD:
   07/26/17:
     - Update PR 5296 (#6722)
+
+CoMD-elegant-aos:
+  06/12/18:
+    - Convert blocking calls in Spawn module to yielding non-blocking loops (#9507)
 
 compSampler-timecomp: &timecomp-base
   09/09/16:
@@ -860,6 +862,13 @@ memleaksfull:
     - Enable fields with generic declared type (#9489)
   05/24/18:
     - Migrate tests to use decorated new(#9499)
+  06/05/18:
+    - Create an array/domain/distribution class for external arrays (#9694)
+    - DataFrame ADT (#9696)
+  06/13/18:
+    - Fix several memory leaks (#9796)
+    - Fix regexp leak (#9799)
+    - Close some memory leaks in these tests (#9802)
 
 meteor:
   12/18/13:
@@ -1043,13 +1052,10 @@ regexdna: &regexdna-base
     - Update RE2 (#6024)
   06/22/17:
     - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
-
 regexdna-redux:
   <<: *regexdna-base
-
 regexdna-submitted:
   <<: *regexdna-base
-
 regexdnaredux-submitted:
   <<: *regexdna-base
 
@@ -1084,6 +1090,12 @@ revcomp:
 sad:
   05/03/16:
     - inconclusive due to noise
+
+search:
+  04/20/17:
+    - Update RE2 (#6024)
+  05/26/18:
+    - Update tuples to use special function instead of constructors (#9317)
 
 spectralnorm:
   01/21/15:
@@ -1148,6 +1160,10 @@ stream:
     - text: Improve inferConstRefs' canRHSBeConstRef helper function (#5710)
       config: 16 node XC
 
+stream-spmd-barrier:
+  06/07/18:
+    - Prevent serialization from qthread sync vars (#9737)
+
 taskSpawn:
   07/24/16:
     - Stopped performing remote value forwarding on task functions (#4240)
@@ -1164,17 +1180,11 @@ twopt-paircount:
   06/22/17:
     - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
 
-search:
-  04/20/17:
-    - Update RE2 (#6024)
-  05/26/18:
-    - Update tuples to use special function instead of constructors (#9317)
-
 testSerialReductions:
   08/16/14:
     - result of Greg's commit to let the tasking layer determine parallelism
 
-thread-ring:
+thread-ring: &thread-ring-base
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
       config: chap03
@@ -1182,6 +1192,10 @@ thread-ring:
     - Limit the maximum size of qthreads memory pools to 65MB (#5748)
   12/05/17:
     - Enforce qualified refs after inlining (#7906)
+  06/07/18:
+    - Prevent serialization from qthread sync vars (#9737)
+threadring-submitted:
+  <<: *thread-ring-base
 
 time_array_vs_ddata:
   05/31/14:

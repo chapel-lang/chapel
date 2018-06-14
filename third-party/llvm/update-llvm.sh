@@ -56,6 +56,7 @@ git clone $CLONEARGS https://git.llvm.org/git/clang.git llvm/tools/clang
 echo Checking out POLLY $BRANCH
 git clone $CLONEARGS https://git.llvm.org/git/polly.git llvm/tools/polly
 if [ "$ENABLE_RV" -ne 0 ]
+then
 echo Checking out RV $BRANCH
 git clone $CLONEARGS https://github.com/cdl-saarland/rv llvm/tools/rv
 fi

@@ -1251,7 +1251,6 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "last resort"
-  pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: _tuple) {
     // body inserted during generic instantiation
@@ -1259,7 +1258,6 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "last resort"
-  pragma "donor fn"
   pragma "unref fn"
   inline proc chpl__unref(x: _tuple) {
     // body inserted during generic instantiation
@@ -1267,7 +1265,6 @@ module ChapelBase {
 
 
   pragma "compiler generated"
-  pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(ir: _iteratorRecord) {
     // body modified during call destructors pass
@@ -1276,7 +1273,6 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "last resort"
-  pragma "donor fn"
   pragma "auto copy fn"
   pragma "suppress lvalue error"
   inline proc chpl__autoCopy(const x) return chpl__initCopy(x);
@@ -1988,7 +1984,7 @@ module ChapelBase {
   // constructor for a record) but that is more challenging because
   // _unmanaged is a built-in non-record type.
   proc _to_unmanaged(type t) type {
-    type rt = __primitive("to unmanaged class", t).type;
+    type rt = __primitive("to unmanaged class", t);
     return rt;
   }
   inline proc _to_unmanaged(arg) {
@@ -1997,7 +1993,7 @@ module ChapelBase {
   }
   // type constructor for converting to a borrow
   proc _to_borrowed(type t) type {
-    type rt = __primitive("to borrowed class", t).type;
+    type rt = __primitive("to borrowed class", t);
     return rt;
   }
   inline proc _to_borrowed(arg) {

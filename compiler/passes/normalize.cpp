@@ -35,6 +35,7 @@
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
+#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 #include <cctype>
@@ -593,83 +594,87 @@ static void normalizeBase(BaseAST* base) {
 
 static Symbol* theDefinedSymbol(BaseAST* ast);
 
-static void checkUseBeforeDefs() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint->parentSymbol) {
-      ModuleSymbol*         mod = fn->getModule();
+void checkUseBeforeDefs(FnSymbol* fn) {
+  if (fn->defPoint->parentSymbol) {
+    ModuleSymbol*         mod = fn->getModule();
 
-      std::set<Symbol*>     defined;
+    std::set<Symbol*>     defined;
 
-      std::set<Symbol*>     undefined;
-      std::set<const char*> undeclared;
+    std::set<Symbol*>     undefined;
+    std::set<const char*> undeclared;
 
-      std::vector<BaseAST*> asts;
+    std::vector<BaseAST*> asts;
 
-      collect_asts_postorder(fn, asts);
+    collect_asts_postorder(fn, asts);
 
-      for_vector(BaseAST, ast, asts) {
-        if (Symbol* sym = theDefinedSymbol(ast)) {
-          defined.insert(sym);
+    for_vector(BaseAST, ast, asts) {
+      if (Symbol* sym = theDefinedSymbol(ast)) {
+        defined.insert(sym);
 
-        } else if (SymExpr* se = toSymExpr(ast)) {
-          Symbol* sym = se->symbol();
+      } else if (SymExpr* se = toSymExpr(ast)) {
+        Symbol* sym = se->symbol();
 
-          if (isModuleSymbol(sym)                    == true  &&
-              isFnSymbol(fn->defPoint->parentSymbol) == false &&
-              isUseStmt(se->parentExpr)              == false) {
-            SymExpr* prev = toSymExpr(se->prev);
+        if (isModuleSymbol(sym)                    == true  &&
+            isFnSymbol(fn->defPoint->parentSymbol) == false &&
+            isUseStmt(se->parentExpr)              == false) {
+          SymExpr* prev = toSymExpr(se->prev);
 
-            if (prev == NULL || prev->symbol() != gModuleToken) {
-              USR_FATAL_CONT(se, "illegal use of module '%s'", sym->name);
-            }
+          if (prev == NULL || prev->symbol() != gModuleToken) {
+            USR_FATAL_CONT(se, "illegal use of module '%s'", sym->name);
+          }
 
-          } else if (isLcnSymbol(sym) == true) {
-            if (sym->defPoint->parentExpr != rootModule->block) {
-              Symbol* parent = sym->defPoint->parentSymbol;
+        } else if (isLcnSymbol(sym) == true) {
+          if (sym->defPoint->parentExpr != rootModule->block) {
+            Symbol* parent = sym->defPoint->parentSymbol;
 
-              if (parent == fn || (parent == mod && mod->initFn == fn)) {
-                if (defined.find(sym)           == defined.end() &&
+            if (parent == fn || (parent == mod && mod->initFn == fn)) {
+              if (defined.find(sym)           == defined.end() &&
 
-                    sym->hasFlag(FLAG_ARG_THIS) == false         &&
-                    sym->hasFlag(FLAG_EXTERN)   == false         &&
-                    sym->hasFlag(FLAG_TEMP)     == false) {
+                  sym->hasFlag(FLAG_ARG_THIS) == false         &&
+                  sym->hasFlag(FLAG_EXTERN)   == false         &&
+                  sym->hasFlag(FLAG_TEMP)     == false) {
 
-                  // Only complain one time
-                  if (undefined.find(sym) == undefined.end()) {
-                    USR_FATAL_CONT(se,
-                                   "'%s' used before defined (first used here)",
-                                   sym->name);
+                // Only complain one time
+                if (undefined.find(sym) == undefined.end()) {
+                  USR_FATAL_CONT(se,
+                                 "'%s' used before defined (first used here)",
+                                 sym->name);
 
-                    undefined.insert(sym);
-                  }
+                  undefined.insert(sym);
                 }
               }
             }
           }
+        }
 
-        } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(ast)) {
-          CallExpr* call = toCallExpr(use->parentExpr);
+      } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(ast)) {
+        CallExpr* call = toCallExpr(use->parentExpr);
 
-          if (call == NULL ||
-              (call->baseExpr                              != use   &&
-               call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) == false &&
-               call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)    == false)) {
-            if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
-              const char* name = use->unresolved;
+        if (call == NULL ||
+            (call->baseExpr                              != use   &&
+             call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) == false &&
+             call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)    == false)) {
+          if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
+            const char* name = use->unresolved;
 
-              // Only complain one time
-              if (undeclared.find(name) == undeclared.end()) {
-                USR_FATAL_CONT(use,
-                               "'%s' undeclared (first use this function)",
-                               name);
+            // Only complain one time
+            if (undeclared.find(name) == undeclared.end()) {
+              USR_FATAL_CONT(use,
+                             "'%s' undeclared (first use this function)",
+                             name);
 
-                undeclared.insert(name);
-              }
+              undeclared.insert(name);
             }
           }
         }
       }
     }
+  }
+}
+
+static void checkUseBeforeDefs() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    checkUseBeforeDefs(fn);
   }
   USR_STOP();
 }
@@ -998,7 +1003,7 @@ static void processSyntacticDistributions(CallExpr* call) {
         if (TypeSymbol* ts = expandTypeAlias(distClass)) {
           if (isDistClass(ts->type) == true) {
             CallExpr* newExpr = new CallExpr(PRIM_NEW,
-                new CallExpr("_to_unmanaged", distCall->remove()));
+                new CallExpr(PRIM_TO_UNMANAGED_CLASS, distCall->remove()));
 
             call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
 
@@ -1034,8 +1039,10 @@ static void processManagedNew(CallExpr* newCall) {
         if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
           if (!callClass->isPrimitive() &&
               !isUnresolvedSymExpr(callClass->baseExpr)) {
-            bool isunmanaged = callManager->isNamed("_to_unmanaged");
-            bool isborrowed = callManager->isNamed("_to_borrowed");
+            bool isunmanaged = callManager->isNamed("_to_unmanaged") ||
+                               callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS);
+            bool isborrowed = callManager->isNamed("_to_borrowed") ||
+                              callManager->isPrimitive(PRIM_TO_BORROWED_CLASS);
             bool isowned = callManager->isNamed("_owned");
             bool isshared = callManager->isNamed("_shared");
 
@@ -1054,7 +1061,7 @@ static void processManagedNew(CallExpr* newCall) {
                 manager = callManager->baseExpr->copy();
               }
 
-              callClass->insertAtTail(new NamedExpr("_chpl_manager", manager));
+              callClass->insertAtTail(new NamedExpr(astr_chpl_manager, manager));
 
               newCall->replace(replace);
             }
@@ -1282,6 +1289,13 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
 * Transform   new (call (call (partial) C _mt this) args...)) args2...        *
 *      into   new (call       (partial) C _mt this) args...   args2...        *
 *                                                                             *
+* Do not transform calls that are nested within a DefExpr (if stmt-expr is    *
+* NULL). Calls within DefExprs do not have call-temps inserted, which if      *
+* transformed would lead to incorrect AST like:                               *
+*   (new C (call foo))                                                        *
+* The expectation is that the expressions will be normalized later once the   *
+* DefExpr's init/type expressions are copied into a BlockStmt.                *
+*                                                                             *
 ************************************** | *************************************/
 
 static void fixPrimNew(CallExpr* primNewToFix);
@@ -1291,16 +1305,18 @@ static bool isCallToConstructor(CallExpr* call) {
 }
 
 static void normalizeCallToConstructor(CallExpr* call) {
-  if (CallExpr* arg1 = toCallExpr(call->get(1))) {
-    if (isSymExpr(arg1->baseExpr) == true) {
-      if (arg1->partialTag == false) {
-        fixPrimNew(call);
-      }
-
-    } else if (CallExpr* subCall = toCallExpr(arg1->baseExpr)) {
-      if (isSymExpr(subCall->baseExpr) == true) {
-        if (subCall->partialTag == true) {
+  if (call->getStmtExpr() != NULL) {
+    if (CallExpr* arg1 = toCallExpr(call->get(1))) {
+      if (isSymExpr(arg1->baseExpr) == true) {
+        if (arg1->partialTag == false) {
           fixPrimNew(call);
+        }
+
+      } else if (CallExpr* subCall = toCallExpr(arg1->baseExpr)) {
+        if (isSymExpr(subCall->baseExpr) == true) {
+          if (subCall->partialTag == true) {
+            fixPrimNew(call);
+          }
         }
       }
     }
@@ -2980,9 +2996,9 @@ static void replaceQueryUses(ArgSymbol*             formal,
                              CallExpr*              query,
                              std::vector<SymExpr*>& symExprs);
 
-static void addToWhereClause(ArgSymbol* formal,
-                             Expr*      expr,
-                             CallExpr*  query);
+static void addToWhereClause(FnSymbol*  fn,
+                             ArgSymbol* formal,
+                             Expr*      test);
 
 static void fixupQueryFormals(FnSymbol* fn) {
   for_formals(formal, fn) {
@@ -3007,9 +3023,18 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
 
   collectSymExprs(fn, symExprs);
 
+  if (formal->variableExpr) // varargs argument e.g. proc f(x...)
+    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, formal));
+
   for_vector(SymExpr, se, symExprs) {
     if (se->symbol() == def->sym) {
-      se->replace(new CallExpr(PRIM_TYPEOF, formal));
+      if (formal->variableExpr)
+        // e.g. proc foo(arg:?t ...)
+        // formal is a tuple but the query should be of the tuple elements
+        // 1 is the size field, 2 is the index of the first tuple field
+        se->replace(new CallExpr(PRIM_QUERY, formal, new_IntSymbol(2)));
+      else
+        se->replace(new CallExpr(PRIM_TYPEOF, formal));
     }
   }
 
@@ -3018,26 +3043,43 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
   formal->type = dtAny;
 }
 
-static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal) {
-  bool retval = false;
+static bool doesCallContainDefActual(CallExpr* call) {
+  for_actuals(actual, call) {
+    if (isDefExpr(actual)) {
+      return true;
 
-  if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
-    for_actuals(actual, call) {
-      if (isDefExpr(actual) == true) {
-        retval = true;
-        break;
+    } else if (NamedExpr* named = toNamedExpr(actual)) {
+      if (isDefExpr(named->actual)) {
+        return true;
+      }
 
-      } else if (NamedExpr* named = toNamedExpr(actual)) {
-        if (isDefExpr(named->actual) == true) {
-          retval = true;
-          break;
-        }
+    } else if (CallExpr* subcall = toCallExpr(actual)) {
+      if (doesCallContainDefActual(subcall)) {
+        return true;
       }
     }
   }
 
+  return false;
+}
+
+static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal) {
+  bool retval = false;
+
+  if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
+    retval = doesCallContainDefActual(call);
+  }
+
   return retval;
 }
+
+static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
+                                               std::vector<SymExpr*>& symExprs,
+                                               ArgSymbol* formal,
+                                               CallExpr* call,
+                                               BaseAST* queried);
+
+static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call);
 
 // The type-expr is known to be a CallExpr with a query definition
 static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
@@ -3045,58 +3087,180 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   BlockStmt*            typeExpr  = formal->typeExpr;
   Expr*                 tail      = typeExpr->body.tail;
   CallExpr*             call      = toCallExpr(tail);
-  int                   position  = 1;
-  CallExpr*             queryCall = new CallExpr(PRIM_QUERY);
+
   std::vector<SymExpr*> symExprs;
 
   collectSymExprs(fn, symExprs);
 
-  if (call->isNamed("_build_tuple") == true) {
-    Expr*     actual = new SymExpr(new_IntSymbol(call->numActuals()));
-    CallExpr* query  = new CallExpr(PRIM_QUERY, new_CStringSymbol("size"));
+  BaseAST* queried = formal;
 
-    addToWhereClause(formal, actual, query);
+  // Queries access the 1st tuple element for varargs functions
+  if (formal->variableExpr) {
+    // 1 is the size field, 2 is the index of the first tuple field
+    queried = new CallExpr(PRIM_QUERY, formal, new_IntSymbol(2));
+    // Add check that passed tuple is homogeneous
+    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, formal));
+  }
+
+  expandQueryForGenericTypeSpecifier(fn, symExprs, formal, call, queried);
+
+  // Remove the queries from the formal argument type
+  Expr* usetype = NULL;
+  if (TypeSymbol* ts = getTypeForSpecialConstructor(call)) {
+    usetype = new SymExpr(ts);
+  } else if (call->baseExpr) {
+    usetype = call->baseExpr->remove();
+  } else {
+    usetype = call->remove();
+    INT_ASSERT(!doesCallContainDefActual(call));
+  }
+
+  formal->typeExpr->replace(new BlockStmt(usetype));
+
+  formal->addFlag(FLAG_MARKED_GENERIC);
+}
+
+static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call) {
+  if (call->isNamed("_build_tuple")) {
+    return dtTuple->symbol;
+  } else if (call->isNamed("_to_unmanaged")) {
+    return dtUnmanaged->symbol;
+  } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+    return dtUnmanaged->symbol;
+  }
+  return NULL;
+}
+
+
+// Constructs a PRIM_QUERY with arguments a, b
+// Copies an expr argument but not a symbol argument
+static CallExpr* makePrimQuery(BaseAST* a, BaseAST* b=NULL) {
+  Expr* aExpr = NULL;
+  Expr* bExpr = toExpr(b);
+  if (Symbol* sym = toSymbol(a))
+    aExpr = new SymExpr(sym);
+  else if (Expr* expr = toExpr(a))
+    aExpr = expr->copy();
+
+  INT_ASSERT(aExpr);
+
+  if (b) {
+    if (Symbol* symB = toSymbol(b))
+      bExpr = new SymExpr(symB);
+    else if (Expr* expr = toExpr(b))
+      bExpr = expr->copy();
+
+    INT_ASSERT(bExpr);
+  }
+
+  if (bExpr == NULL)
+    return new CallExpr(PRIM_QUERY, aExpr);
+  else
+    return new CallExpr(PRIM_QUERY, aExpr, bExpr);
+}
+
+// query - the just-created PRIM_QUERY to add to the ast somewhere
+// actual - the actual argument to the nested type constructor
+static void expandQueryForActual(FnSymbol*  fn,
+                                 std::vector<SymExpr*>& symExprs,
+                                 ArgSymbol* formal,
+                                 CallExpr* call,
+                                 CallExpr* query,
+                                 Expr* actual) {
+  DefExpr* def = toDefExpr(actual);
+  CallExpr* subcall = toCallExpr(actual);
+
+  if (def) {
+    replaceQueryUses(formal, def, query, symExprs);
+  } else if (subcall && doesCallContainDefActual(subcall)) {
+    Expr* subtype = NULL;
+    if (TypeSymbol* ts = getTypeForSpecialConstructor(subcall)) {
+      subtype = new SymExpr(ts);
+    } else if (subcall->baseExpr) {
+      subtype = subcall->baseExpr->copy();
+    } else {
+      subtype = subcall->copy();
+      INT_ASSERT(!doesCallContainDefActual(subcall));
+    }
+    // Add check that actual type satisfies
+    addToWhereClause(fn, formal,
+                     new CallExpr(PRIM_IS_SUBTYPE, subtype, query->copy()));
+    // Recurse to handle any nested DefExprs
+    expandQueryForGenericTypeSpecifier(fn, symExprs, formal,
+                                       subcall, query);
+  } else {
+    // Add check that formal type/param matches actual
+    addToWhereClause(fn, formal,
+                     new CallExpr("==", actual->copy(), query));
+  }
+}
+
+// call - the type constructor or build tuple call currently being considered
+// queryToCopy - a PRIM_QUERY formal, ... recording the path to the current call
+static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
+                                               std::vector<SymExpr*>& symExprs,
+                                               ArgSymbol* formal,
+                                               CallExpr* call,
+                                               BaseAST* queried) {
+
+  int position = 1;
+
+  if (call->isNamed("_build_tuple")) {
+    Expr*     actual = new SymExpr(new_IntSymbol(call->numActuals()));
+    CallExpr* query  = makePrimQuery(queried, new_CStringSymbol("size"));
+
+    // Add check that actual tuple size == formal tuple size
+    addToWhereClause(fn, formal, new CallExpr("==", actual, query));
 
     call->baseExpr->replace(new SymExpr(dtTuple->symbol));
 
-    position = position + 1;
+    position = position + 1; // tuple size is technically 1st param/type
+  } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+    if (CallExpr* subCall = toCallExpr(call->get(1))) {
+      if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {
+        if (AggregateType* at = toAggregateType(subBase->symbol()->type)) {
+          if (isClass(at)) {
+            // TODO -- should this move to scope resolve?
+
+            // Replace PRIM_TO_UNMANAGED( MyClass( Def ?t ) )
+            // with
+            // unmanaged MyClass ( Def ?t )
+
+            Type* unm = at->getUnmanagedClass();
+            subCall->baseExpr->replace(new SymExpr(unm->symbol));
+            call->replace(subCall->remove());
+            call = subCall;
+          }
+        }
+      }
+    }
   }
+
+  CallExpr* gatheringNamedArgs = makePrimQuery(queried);
 
   for_actuals(actual, call) {
     if (NamedExpr* named = toNamedExpr(actual)) {
-      Symbol*   name1 = new_CStringSymbol(named->name);
-      Symbol*   name2 = new_CStringSymbol(named->name);
-      CallExpr* query = new CallExpr(PRIM_QUERY, name1);
+      Symbol*   name = new_CStringSymbol(named->name);
+      CallExpr* query = makePrimQuery(queried, name);
 
-      queryCall->insertAtTail(name2);
+      gatheringNamedArgs->insertAtTail(new SymExpr(name));
 
-      if (DefExpr* def = toDefExpr(named->actual)) {
-        replaceQueryUses(formal, def, query, symExprs);
-      } else {
-        addToWhereClause(formal, named->actual, query);
-      }
+      expandQueryForActual(fn, symExprs, formal, call, query, named->actual);
     }
+
+    // not a NamedExpr? handled in next loop.
   }
 
   for_actuals(actual, call) {
     if (isNamedExpr(actual) == false) {
-      CallExpr* query = queryCall->copy();
+      CallExpr* query = gatheringNamedArgs->copy();
+      query->insertAtTail(new SymExpr(new_IntSymbol(position)));
 
-      query->insertAtTail(new_IntSymbol(position));
-
-      if (DefExpr* def = toDefExpr(actual)) {
-        replaceQueryUses(formal, def, query, symExprs);
-      } else {
-        addToWhereClause(formal, actual, query);
-      }
+      expandQueryForActual(fn, symExprs, formal, call, query, actual);
 
       position = position + 1;
     }
   }
-
-  formal->typeExpr->replace(new BlockStmt(call->baseExpr->remove()));
-
-  formal->addFlag(FLAG_MARKED_GENERIC);
 }
 
 static void replaceQueryUses(ArgSymbol*             formal,
@@ -3105,39 +3269,16 @@ static void replaceQueryUses(ArgSymbol*             formal,
                              std::vector<SymExpr*>& symExprs) {
   for_vector(SymExpr, se, symExprs) {
     if (se->symbol() == def->sym) {
-      if (formal->variableExpr != NULL) {
-        CallExpr* parent  = toCallExpr(se->parentExpr);
-        CallExpr* myQuery = query->copy();
-
-        if (parent == NULL || parent->numActuals() != 1) {
-          USR_FATAL(se, "illegal access to query type or parameter");
-        }
-
-        se->replace(new SymExpr(formal));
-
-        parent->replace(se);
-
-        myQuery->insertAtHead(parent);
-
-        se->replace(myQuery);
-
-      } else {
-        CallExpr* myQuery = query->copy();
-
-        myQuery->insertAtHead(formal);
-
-        se->replace(myQuery);
-      }
+      CallExpr* myQuery = query->copy();
+      se->replace(myQuery);
     }
   }
 }
 
-static void addToWhereClause(ArgSymbol* formal,
-                             Expr*      expr,
-                             CallExpr*  query) {
-  FnSymbol* fn     = formal->defPoint->getFunction();
+static void addToWhereClause(FnSymbol*  fn,
+                             ArgSymbol* formal,
+                             Expr*      test) {
   Expr*     where  = NULL;
-  CallExpr* clause = NULL;
 
   if (fn->where == NULL) {
     where = new SymExpr(gTrue);
@@ -3154,22 +3295,11 @@ static void addToWhereClause(ArgSymbol* formal,
 
   formal->addFlag(FLAG_NOT_FULLY_GENERIC);
 
-  query->insertAtHead(formal);
-
-  if (formal->variableExpr != NULL) {
-    clause = new CallExpr(PRIM_TUPLE_AND_EXPAND);
-
-    while (query->numActuals() > 0) {
-      clause->insertAtTail(query->get(1)->remove());
-    }
-
-    clause->insertAtTail(expr->copy());
-
-  } else {
-    clause = new CallExpr("==", expr->copy(), query);
-  }
-
-  where->replace(new CallExpr("&", where->copy(), clause));
+  // Replace where with (where & test)
+  CallExpr* combine = new CallExpr("&");
+  where->replace(combine);
+  combine->insertAtTail(where);
+  combine->insertAtTail(test);
 }
 
 /************************************* | **************************************

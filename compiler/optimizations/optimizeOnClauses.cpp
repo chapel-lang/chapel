@@ -274,7 +274,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_IS_SUBTYPE:
   case PRIM_IS_WIDE_PTR:
   case PRIM_TUPLE_EXPAND:
-  case PRIM_TUPLE_AND_EXPAND:
   case PRIM_QUERY:
   case PRIM_QUERY_PARAM_FIELD:
   case PRIM_QUERY_TYPE_FIELD:

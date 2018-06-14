@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of removing ref temps
-GITHUB_USER=vasslitvinov
-GITHUB_BRANCH=r
-SHORT_NAME=noreftemps
-START_DATE=05/24/18
+# Test performance of enum ranges
+GITHUB_USER=bradcray
+GITHUB_BRANCH=enumRanges
+SHORT_NAME=enumRanges
+START_DATE=06/05/18
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

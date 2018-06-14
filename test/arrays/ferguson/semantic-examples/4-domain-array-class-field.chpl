@@ -11,10 +11,9 @@ class ClassStoringArray{
 }
 
 proc run() {
-  var c = new ClassStoringArray();
+  var c = new owned ClassStoringArray();
   c.setup();
   writeln(c);
-  delete c;
 }
 
 run();

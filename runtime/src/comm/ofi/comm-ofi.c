@@ -165,7 +165,7 @@ static int get_comm_concurrency() {
     }
   }
 
-  if ((lcpus = chpl_getNumLogicalCpus(true)) > 0) {
+  if ((lcpus = chpl_topo_getNumCPUsLogical(true)) > 0) {
     return lcpus;
   }
 

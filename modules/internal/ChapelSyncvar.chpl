@@ -298,7 +298,6 @@ module ChapelSyncvar {
     return sv.readFE();
   }
 
-  pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"
   proc chpl__autoCopy(const ref rhs : _syncvar) {
@@ -315,7 +314,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc chpl__readXX(x : _syncvar(?)) return x.readXX();
+  proc chpl__readXX(const ref x : _syncvar(?)) return x.readXX();
 
   proc <=>(lhs : _syncvar, ref rhs) {
     const tmp = lhs;
@@ -731,7 +730,6 @@ module ChapelSyncvar {
     return sv.readFF();
   }
 
-  pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"
   proc chpl__autoCopy(const ref rhs : _singlevar) {
@@ -748,7 +746,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc chpl__readXX(x : _singlevar(?)) return x.readXX();
+  proc chpl__readXX(const ref x : _singlevar(?)) return x.readXX();
 
   /************************************ | *************************************
   *                                                                           *

@@ -80,6 +80,11 @@ static void          processImportExprs();
 
 static void          resolveGotoLabels();
 
+static void          adjustMethodThisForDefaultUnmanaged(FnSymbol* fn);
+
+static bool          isStableClassType(Type* t);
+static Expr*         handleUnstableClassType(SymExpr* se);
+
 static void          resolveUnresolvedSymExprs();
 
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
@@ -162,6 +167,9 @@ void scopeResolve() {
     } else if (fn->_this) {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
+
+    // Adjust class type methods for unmanaged/borrowed
+    adjustMethodThisForDefaultUnmanaged(fn);
   }
 
   //
@@ -641,6 +649,38 @@ static void resolveGotoLabels() {
   }
 }
 
+static void adjustMethodThisForDefaultUnmanaged(FnSymbol* fn) {
+
+  if (fDefaultUnmanaged && fn->_this && isClass(fn->_this->type)) {
+    ArgSymbol* _this = toArgSymbol(fn->_this);
+    Type* t = _this->type;
+    bool ok = isStableClassType(t);
+
+    if (fn->getModule()->modTag == MOD_USER && !ok) {
+      SET_LINENO(fn->_this);
+
+      // Make sure fn->_this->typeExpr exists
+      if (!_this->typeExpr) {
+        _this->typeExpr = new BlockStmt(new SymExpr(t->symbol));
+        parent_insert_help(_this, _this->typeExpr);
+      }
+      // Now adjust _this->typeExpr (whether we just created it or not)
+      Expr* stmt = toArgSymbol(fn->_this)->typeExpr->body.only();
+
+      if (SymExpr* se = toSymExpr(stmt)) {
+        Expr* result = se;
+        if (fWarnUnstable || fDefaultUnmanaged)
+          result = handleUnstableClassType(se);
+        // Amend _this->type
+        fn->_this->type = result->typeInfo();
+      } else {
+        INT_ASSERT(0);
+      }
+    }
+  }
+}
+
+
 /************************************* | *************************************/
 
 static void updateMethod(UnresolvedSymExpr* usymExpr);
@@ -725,27 +765,104 @@ void resolveUnresolvedSymExprs(BaseAST* inAst) {
    }
 }
 
-static void warnUnstableClassType(SymExpr* se) {
-  if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-    if (isClass(ts->type)) {
-      if (se->getModule()->modTag == MOD_USER) {
+static bool isStableClassType(Type* t) {
+  bool ok = false;
+
+  TypeSymbol* ts = t->symbol;
+
+  if (isClass(t)) {
+    // Always consider locale type unmanaged
+    if (ts->type == dtLocale)
+      ok = true;
+    // Always consider ddata type unmanaged
+    if (ts->hasFlag(FLAG_DATA_CLASS))
+      ok = true;
+    // Something with "no object" flag isn't really an object anyway
+    if (ts->hasFlag(FLAG_NO_OBJECT))
+      ok = true;
+  }
+
+  return ok;
+}
+
+static bool callSpecifiesClassKind(CallExpr* call) {
+  return (call->isNamed("_to_borrowed") ||
+          call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+          call->isNamed("_to_unmanaged") ||
+          call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+          call->isNamed("_owned") ||
+          call->isNamed("_shared") ||
+          call->isNamed("Owned") ||
+          call->isNamed("Shared") ||
+          call->isNamed("chpl__distributed"));
+}
+
+static bool hasChplManagerArgument(CallExpr* call) {
+  if (call == NULL)
+    return false;
+
+  for_actuals(actual, call) {
+    if (NamedExpr* ne = toNamedExpr(actual))
+      if (ne->name == astr_chpl_manager)
+        return true;
+  }
+
+  return false;
+}
+
+static bool callMakesDmap(CallExpr* call) {
+  if (SymExpr* se = toSymExpr(call->baseExpr))
+    if (se->symbol()->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
+      return true;
+  return false;
+}
+
+// Returns the expr resulting, either se or a call containing it
+// Handle the case where se->symbol() is "unstable" i.e. an undecorated
+// class type. With --warn-unstable, issue a warning. With --default-unmanaged,
+// wrap it in a (call PRIM_TO_UNMANAGED se). Return either se or the
+// new call just created.
+static Expr* handleUnstableClassType(SymExpr* se) {
+  if (se->getModule()->modTag == MOD_USER) {
+    if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+      if (isClass(ts->type)) {
+        bool ok = false;
         CallExpr* inCall = toCallExpr(se->parentExpr);
         DefExpr* inDef = toDefExpr(se->parentExpr);
         FnSymbol* inFn = se->getFunction();
-        bool ok = false;
         if (inCall) {
-          if (inCall->isNamed("_to_borrowed") ||
-              inCall->isNamed("_to_unmanaged") ||
-              inCall->isNamed("_owned") ||
-              inCall->isNamed("_shared") ||
-              inCall->isNamed("Owned") ||
-              inCall->isNamed("Shared")) {
+          if (callSpecifiesClassKind(inCall)) {
             // It's OK, it's decorated
             ok = true;
           }
-          if (inCall->baseExpr == se) {
-            // It's OK as the base of a call of a type method
+          CallExpr* outerCall = toCallExpr(inCall->parentExpr);
+          CallExpr* outerOuterCall = NULL;
+          if (outerCall) outerOuterCall = toCallExpr(outerCall->parentExpr);
+
+          if (hasChplManagerArgument(inCall) ||
+              hasChplManagerArgument(outerCall)) {
             ok = true;
+          } else if (outerOuterCall && outerCall &&
+              callSpecifiesClassKind(outerOuterCall) &&
+              outerCall == outerOuterCall->get(1) &&
+              outerCall->isPrimitive(PRIM_NEW) &&
+              inCall == outerCall->get(1)) {
+            // 'new Owned(SomeClass(int))'
+            ok = true;
+          } else if (outerOuterCall && callMakesDmap(outerOuterCall)) {
+            // new dmap( new Block( ) )
+            ok = true;
+          } else if (outerCall && outerCall->isPrimitive(PRIM_NEW) &&
+                     inCall == outerCall->get(1)) {
+            // 'new SomeClass()'
+            ok = false;
+          } else if (outerCall && callSpecifiesClassKind(outerCall) &&
+                     inCall->baseExpr == se) {
+            // ':borrowed MyGenericClass(int)'
+            ok = true;
+          } else if (inCall->baseExpr == se) {
+            // ':MyGenericClass(int)'
+            ok = false;
           }
           if (inCall->isNamed(".") &&
               inCall->get(1) == se) {
@@ -753,15 +870,6 @@ static void warnUnstableClassType(SymExpr* se) {
             ok = true;
           }
         }
-        // Always consider locale type unmanaged
-        if (ts->type == dtLocale)
-          ok = true;
-        // Always consider ddata type unmanaged
-        if (ts->hasFlag(FLAG_DATA_CLASS))
-          ok = true;
-        // Something with "no object" flag isn't really an object anyway
-        if (ts->hasFlag(FLAG_NO_OBJECT))
-          ok = true;
 
         // Types in catch block specifications are OK
         {
@@ -782,26 +890,40 @@ static void warnUnstableClassType(SymExpr* se) {
         if (inFn && inFn->hasFlag(FLAG_EXTERN))
           ok = true;
 
+        if (isStableClassType(ts->type))
+          ok = true;
+
         if (!ok) {
-          // error
-          USR_WARN(se, "undecorated class type %s is unstable", ts->name);
-          if (inDef && se == inDef->exprType)
-              USR_PRINT(inDef, "in declared type for %s",
-                                   inDef->sym->name);
+          if (fDefaultUnmanaged) {
+            // Change the se to _to_unmanaged(se)
+            // but take care to leave the original se in the tree
+            // (for the sake of the calling code in resolveUnresolvedSymExpr)
+            CallExpr* call = new CallExpr(PRIM_TO_UNMANAGED_CLASS);
+            se->replace(call);
+            call->insertAtTail(se);
+            return call;
+          } else if (fWarnUnstable) {
+            // error
+            USR_WARN(se, "undecorated class type %s is unstable", ts->name);
+            if (inDef && se == inDef->exprType)
+                USR_PRINT(inDef, "in declared type for %s",
+                                     inDef->sym->name);
 
-          USR_PRINT(se, "use 'unmanaged %s' "
-                        "'owned %s', "
-                        "'borrowed %s', or "
-                        "'shared %s'",
-                        ts->name, ts->name, ts->name, ts->name);
+            USR_PRINT(se, "use 'unmanaged %s' "
+                          "'owned %s', "
+                          "'borrowed %s', or "
+                          "'shared %s'",
+                          ts->name, ts->name, ts->name, ts->name);
 
-          if (developer)
-            USR_PRINT(se, "undecorated symexpr has id %i", se->id);
-
+            if (developer)
+              USR_PRINT(se, "undecorated symexpr has id %i", se->id);
+          }
         }
       }
     }
   }
+
+  return se;
 }
 
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
@@ -819,7 +941,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
 
       usymExpr->replace(symExpr);
 
-      if (fWarnUnstable) warnUnstableClassType(symExpr);
+      if (fWarnUnstable || fDefaultUnmanaged)
+        handleUnstableClassType(symExpr);
 
       updateMethod(usymExpr, sym, symExpr);
 

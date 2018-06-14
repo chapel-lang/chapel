@@ -132,7 +132,6 @@ enum PrimitiveTag {
   PRIM_SCALAR_PROMOTION_TYPE,
   PRIM_USED_MODULES_LIST,       // used modules in BlockStmt::modUses
   PRIM_TUPLE_EXPAND,
-  PRIM_TUPLE_AND_EXPAND,
 
   PRIM_CHPL_COMM_GET,           // Direct calls to the Chapel comm layer
   PRIM_CHPL_COMM_PUT,           // may eventually add others (e.g., non-blocking)

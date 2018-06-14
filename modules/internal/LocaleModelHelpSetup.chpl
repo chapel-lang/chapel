@@ -137,13 +137,13 @@ module LocaleModelHelpSetup {
     extern proc chpl_task_getCallStackSize(): size_t;
     dst.callStackSize = chpl_task_getCallStackSize();
 
-    extern proc chpl_getNumPhysicalCpus(accessible_only: bool): c_int;
-    dst.nPUsPhysAcc = chpl_getNumPhysicalCpus(true);
-    dst.nPUsPhysAll = chpl_getNumPhysicalCpus(false);
+    extern proc chpl_topo_getNumCPUsPhysical(accessible_only: bool): c_int;
+    dst.nPUsPhysAcc = chpl_topo_getNumCPUsPhysical(true);
+    dst.nPUsPhysAll = chpl_topo_getNumCPUsPhysical(false);
 
-    extern proc chpl_getNumLogicalCpus(accessible_only: bool): c_int;
-    dst.nPUsLogAcc = chpl_getNumLogicalCpus(true);
-    dst.nPUsLogAll = chpl_getNumLogicalCpus(false);
+    extern proc chpl_topo_getNumCPUsLogical(accessible_only: bool): c_int;
+    dst.nPUsLogAcc = chpl_topo_getNumCPUsLogical(true);
+    dst.nPUsLogAll = chpl_topo_getNumCPUsLogical(false);
 
     extern proc chpl_task_getMaxPar(): uint(32);
     dst.maxTaskPar = chpl_task_getMaxPar();

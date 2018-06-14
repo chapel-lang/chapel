@@ -1816,9 +1816,14 @@ void AggregateType::buildDefaultInitializer() {
       preNormalizeInitMethod(fn);
       normalize(fn);
 
+      // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did that
+      // we would emit two use-before-def errors for classes because of the
+      // generated _new function.
+      checkUseBeforeDefs(fn);
+
       methods.add(fn);
     } else {
-      fieldToArg(fn, names, fieldArgMap);
+      USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
     }
 
   }
@@ -2168,6 +2173,8 @@ bool AggregateType::needsConstructor() const {
   // and library modules
   if (mod && (mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD))
     return true;
+  else if (initializerStyle == DEFINES_CONSTRUCTOR)
+    return true;
   else if (fUserDefaultInitializers)
     // Don't generate a default constructor when --force-initializers is true,
     // we want to generate a default initializer or fail.
@@ -2176,11 +2183,8 @@ bool AggregateType::needsConstructor() const {
   if (initializerStyle == DEFINES_INITIALIZER) {
     // Defining an initializer means we don't need a default constructor
     return false;
-  } else if (initializerStyle == DEFINES_CONSTRUCTOR) {
-    // Defining a constructor means we need a default constructor
-    return true;
   } else {
-    // The above two branches are only relevant in the recursive version
+    // The above three branches are only relevant in the recursive version
     // of this call, as the outside call site for this function has
     // already ensured that the type which is the entry point has defined
     // neither an initializer nor a constructor.
@@ -2646,6 +2650,9 @@ void AggregateType::generateUnmanagedClassTypes() {
     TypeSymbol* tsUnmanaged = new TypeSymbol(astr("unmanaged ", at->symbol->name), unmanaged);
     // The unmanaged type isn't really an object, shouldn't have its own fields
     tsUnmanaged->addFlag(FLAG_NO_OBJECT);
+    // Propagate generic-ness to the unmanaged type
+    if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
+      tsUnmanaged->addFlag(FLAG_GENERIC);
     // The generated code should just use the canonical class name
     tsUnmanaged->cname = at->symbol->cname;
     DefExpr* defUnmanaged = new DefExpr(tsUnmanaged);

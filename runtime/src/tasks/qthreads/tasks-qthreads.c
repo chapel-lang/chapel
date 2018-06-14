@@ -46,6 +46,7 @@
 #include "chpl-linefile-support.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks-internal.h"
+#include "chpl-topo.h"
 #include "tasks-qthreads.h"
 
 #include "qthread.h"
@@ -541,7 +542,7 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
 
         hwpar = numThreadsPerLocale;
 
-        numPUsPerLocale = chpl_getNumLogicalCpus(true);
+        numPUsPerLocale = chpl_topo_getNumCPUsLogical(true);
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
             if (verbosity > 0) {
                 printf("QTHREADS: Reduced numThreadsPerLocale=%d to %d "
@@ -560,7 +561,7 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
     }
     // User did not set chapel or qthreads vars -- our default
     else {
-        hwpar = chpl_getNumPhysicalCpus(true);
+        hwpar = chpl_topo_getNumCPUsPhysical(true);
     }
 
     // hwpar will only be <= 0 if the user set QT_NUM_SHEPHERDS and/or
@@ -574,7 +575,7 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
 
         // If there is more parallelism requested than the number of cores, set the
         // worker unit to pu, otherwise core.
-        if (hwpar > chpl_getNumPhysicalCpus(true)) {
+        if (hwpar > chpl_topo_getNumCPUsPhysical(true)) {
           chpl_qt_setenv("WORKER_UNIT", "pu", 0);
         } else {
           chpl_qt_setenv("WORKER_UNIT", "core", 0);
