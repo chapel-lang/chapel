@@ -7545,6 +7545,7 @@ computeStandardModuleSet() {
   }
 }
 
+
 void resolve() {
   bool changed = true;
 
