@@ -2486,11 +2486,22 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       return i: idxType;
   }
 
+  inline proc chpl__intToIdx(type idxType: integral, param i: integral) {
+    if (i.type == idxType) then
+      return i;
+    else
+      return i: idxType;
+  }
+
   inline proc chpl__intToIdx(type idxType: enumerated, i: integral) {
     return chpl__orderToEnum(i, idxType);
   }
 
   inline proc chpl__idxToInt(i: integral) {
+    return i;
+  }
+
+  inline proc chpl__idxToInt(param i: integral) param {
     return i;
   }
 
