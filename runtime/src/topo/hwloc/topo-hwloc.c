@@ -250,7 +250,7 @@ void getNumCPUs(void) {
                                                          HWLOC_OBJ_CORE,
                                                          pu))
                   != NULL);
-    hwloc_bitmap_set(physAccSet, core->os_index);
+    hwloc_bitmap_set(physAccSet, core->logical_index);
   }
 
 #undef NEXT_PU
