@@ -50,6 +50,8 @@ static void        handleModuleDeinitFn(ModuleSymbol* mod);
 static void        transformLogicalShortCircuit();
 static void        handleReduceAssign();
 
+static bool        isArrayFormal(ArgSymbol* arg);
+
 static void        makeExportWrapper(FnSymbol* fn);
 
 static void        fixupArrayFormals(FnSymbol* fn);
@@ -2633,61 +2635,51 @@ static void hack_resolve_types(ArgSymbol* arg) {
 * type and the size of the array, in addition to its other arguments.         *
 *                                                                             *
 ************************************** | *************************************/
+static bool hasNonVoidReturnStmt(FnSymbol* fn);
+
 static void makeExportWrapper(FnSymbol* fn) {
-  std::vector<ArgSymbol*> argsToReplace;
+  bool argsToReplace = false;
   for_formals(formal, fn) {
-    if (formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
-        formal->type->symbol->hasFlag(FLAG_ARRAY)) {
-      argsToReplace.push_back(formal);
+    if (isArrayFormal(formal)) {
+      argsToReplace = true;
     }
   }
 
-  if (argsToReplace.size() > 0) {
+  // TODO: Also check if return type is an array.  Don't make two wrappers,
+  // pls.
+  if (argsToReplace) {
     // We have at least one array argument.  Need to make a version of this
     // function that can be exported
-    FnSymbol* newFn = new FnSymbol(fn->name);
-    newFn->addFlag(FLAG_EXPORT);
-    CallExpr* callOld = new CallExpr(fn->name);
-
-    SymbolMap argToNewArgMap;
-
-    std::vector<ArgSymbol*>::iterator nextArgToReplace =
-      argsToReplace.begin();
-
-    for_formals(formal, fn) {
-      if (formal == *nextArgToReplace) {
-        // Make a new argument of our alternative type.
-        // Things I need:
-        // - the size (either specified, or as an argument)
-        //   - error if specified domain does not start with 0
-        // - the type of the array elements (error if not explicitly provided)
-        // If we have a specified distribution that isn't flat, error for now
-
-        nextArgToReplace++;
-      } else {
-        // Make a copy of the argument to put in our new function, and pass it
-        // along to the old version when we call it.
-        ArgSymbol* copy = formal->copy();
-        argToNewArgMap.put(formal, copy);
-        newFn->insertFormalAtTail(copy);
-        callOld->insertAtTail(new SymExpr(copy));
-      }
-    }
-    update_symbols(newFn, &argToNewArgMap);
-
-    newFn->insertAtTail(new CallExpr(PRIM_RETURN, callOld));
-    newFn->retType = fn->retType;
-
-    // TODO: Also check if return type is an array.  Don't make two wrappers,
-    // pls.
+    FnSymbol* newFn = fn->copy();
+    newFn->addFlag(FLAG_COMPILER_GENERATED);
 
     fn->defPoint->insertBefore(new DefExpr(newFn));
-    normalize(newFn);
 
+    if ((fn->retExprType != NULL &&
+         fn->retExprType->body.tail->typeInfo() != dtVoid) ||
+        hasNonVoidReturnStmt(fn)) {
+      newFn->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN,
+                                                      new CallExpr(fn->name))));
+    } else {
+      newFn->body->replace(new BlockStmt(new CallExpr(fn->name)));
+    }
     fn->removeFlag(FLAG_EXPORT);
   }
 }
 
+static bool hasNonVoidReturnStmt(FnSymbol* fn) {
+  std::vector<CallExpr*> calls;
+
+  collectMyCallExprs(fn, calls, fn);
+  for_vector(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIM_RETURN) == true) {
+      if (isVoidReturn(call) == false) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 /************************************* | **************************************
 *                                                                             *
 * The parser represents formals with an array type specifier as a formal with *
@@ -2707,6 +2699,8 @@ static void makeExportWrapper(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void fixupExportedArrayFormals(FnSymbol* fn);
+
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal);
 
 static void fixupArrayDomainExpr(FnSymbol*                    fn,
@@ -2720,20 +2714,14 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
                                   const std::vector<SymExpr*>& symExprs);
 
 static void fixupArrayFormals(FnSymbol* fn) {
-  for_formals(formal, fn) {
-    if (BlockStmt* typeExpr = formal->typeExpr) {
-      //
-      // The body is usually a single callExpr.  However there are rare
-      // cases in which normalization generates one or more call_temps
-      // i.e. a sequence of defExpr/primMove pairs.
-      //
-      // In either case the desired callExpr is the tail of the body.
-      //
+  if (fn->hasFlag(FLAG_EXPORT) && fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+      fn->hasFlag(FLAG_MODULE_INIT) == false) {
+    fixupExportedArrayFormals(fn);
 
-      if (CallExpr* call = toCallExpr(typeExpr->body.tail)) {
-        if (call->isNamed("chpl__buildArrayRuntimeType") == true) {
-          fixupArrayFormal(fn, formal);
-        }
+  } else {
+    for_formals(formal, fn) {
+      if (isArrayFormal(formal)) {
+        fixupArrayFormal(fn, formal);
       }
     }
   }
@@ -2755,6 +2743,80 @@ static bool skipFixup(ArgSymbol* formal, Expr* domExpr, Expr* eltExpr) {
   return false;
 }
 
+static bool isArrayFormal(ArgSymbol* arg) {
+  if (BlockStmt* typeExpr = arg->typeExpr) {
+    //
+    // The body is usually a single callExpr.  However there are rare
+    // cases in which normalization generates one or more call_temps
+    // i.e. a sequence of defExpr/primMove pairs.
+    //
+    // In either case the desired callExpr is the tail of the body.
+    //
+
+    if (CallExpr* call = toCallExpr(typeExpr->body.tail)) {
+      if (call->isNamed("chpl__buildArrayRuntimeType")) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static void fixupExportedArrayFormals(FnSymbol* fn) {
+  CallExpr* retCall = toCallExpr(fn->body->body.tail);
+  INT_ASSERT(retCall);
+  CallExpr* callOrigFn = retCall;
+  if (retCall->isPrimitive(PRIM_RETURN)) {
+    INT_ASSERT(retCall->numActuals() == 1);
+    callOrigFn = toCallExpr(retCall->get(1));
+  }
+
+  INT_ASSERT(callOrigFn);
+
+  for_formals(formal, fn) {
+    if (isArrayFormal(formal)) {
+      BlockStmt*            typeExpr = formal->typeExpr;
+
+      CallExpr*             call     = toCallExpr(typeExpr->body.tail);
+      int                   nArgs    = call->numActuals();
+      Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
+
+      if (eltExpr == NULL) {
+        USR_FATAL_CONT(formal, "array argument '%s' in exported function '%s'"
+                       " must specify its type", formal->name, fn->name);
+        continue;
+      }
+
+      // Create a representation of the array argument that is accessible
+      // outside of Chapel (in the form of a pointer and a corresponding size)
+      ArgSymbol* newDataArg = new ArgSymbol(formal->intent, formal->name,
+                                            dtUnknown);
+      newDataArg->typeExpr = new BlockStmt(new CallExpr("_type_construct_c_ptr",
+                                                        eltExpr->copy()));
+      const char* sizeName = astr("chpl_", formal->name, "_size");
+      ArgSymbol* newSizeArg = new ArgSymbol(INTENT_BLANK,
+                                            sizeName,
+                                            dtUInt[INT_SIZE_64]);
+
+      formal->defPoint->replace(new DefExpr(newDataArg));
+      fn->insertFormalAtTail(new DefExpr(newSizeArg));
+
+      // Transform the outside representation into a Chapel array, and send that
+      // in the call to the original function.
+      CallExpr* makeChplArray = new CallExpr("makeArrayFromPtr",
+                                             new SymExpr(newDataArg),
+                                             new SymExpr(newSizeArg));
+      VarSymbol* chplArr = new VarSymbol(astr(formal->name, "_arr"));
+      retCall->insertBefore(new DefExpr(chplArr));
+      retCall->insertBefore(new CallExpr(PRIM_MOVE, chplArr, makeChplArray));
+
+      callOrigFn->insertAtTail(new SymExpr(chplArr));
+
+    } else {
+      callOrigFn->insertAtTail(new SymExpr(formal));
+    }
+  }
+}
 // Preliminary validation is performed within the caller
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   BlockStmt*            typeExpr = formal->typeExpr;
