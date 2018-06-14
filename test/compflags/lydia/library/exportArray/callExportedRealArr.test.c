@@ -13,7 +13,8 @@ int main(int argc, char* argv[]) {
 
   // Call the function
   double x[5] = {1.0, 2.0, 3.0, 4.0, 5.0};
-  foo(x, 5);
+  chpl_external_array arrX = chpl_make_external_array_ptr(x, 5);
+  foo(arrX);
   for (int i = 0; i < 5; i++) {
     bool worked = (x[i] <= i + 3) && (x[i] > i + 1);
     printf("Element[%d] %s\n", i, worked ? "worked" : "did not work");

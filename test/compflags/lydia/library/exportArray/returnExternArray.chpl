@@ -1,5 +1,3 @@
-use ExternalArray;
-
 export proc foo(): chpl_external_array {
   var x = getArray();
   writeln(x);

@@ -13,7 +13,9 @@ int main(int argc, char* argv[]) {
   // Call the function
   int64_t x[5] = {1, 2, 3, 4, 5};
   int64_t y[5] = {2, 3, 4, 5, 6};
-  foo(x, y, 5, 5);
+  chpl_external_array arrX = chpl_make_external_array_ptr(x, 5);
+  chpl_external_array arrY = chpl_make_external_array_ptr(y, 5);
+  foo(arrX, arrY);
   for (int i = 0; i < 5; i++) {
     printf("Element[%d] = %lld\n", i, x[i]);
   }

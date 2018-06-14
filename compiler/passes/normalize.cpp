@@ -2667,6 +2667,8 @@ static void makeExportWrapper(FnSymbol* fn) {
   }
 }
 
+// If we run into issues due to this computation, just require explicitly
+// declared return types for exported functions
 static bool hasNonVoidReturnStmt(FnSymbol* fn) {
   std::vector<CallExpr*> calls;
 
@@ -2791,21 +2793,16 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
       // outside of Chapel (in the form of a pointer and a corresponding size)
       ArgSymbol* newDataArg = new ArgSymbol(formal->intent, formal->name,
                                             dtUnknown);
-      newDataArg->typeExpr = new BlockStmt(new CallExpr("_type_construct_c_ptr",
-                                                        eltExpr->copy()));
-      const char* sizeName = astr("chpl_", formal->name, "_size");
-      ArgSymbol* newSizeArg = new ArgSymbol(INTENT_BLANK,
-                                            sizeName,
-                                            dtUInt[INT_SIZE_64]);
+      newDataArg->typeExpr =
+        new BlockStmt(new CallExpr("_type_construct_chpl_external_array"));
 
       formal->defPoint->replace(new DefExpr(newDataArg));
-      fn->insertFormalAtTail(new DefExpr(newSizeArg));
 
       // Transform the outside representation into a Chapel array, and send that
       // in the call to the original function.
-      CallExpr* makeChplArray = new CallExpr("makeArrayFromPtr",
+      CallExpr* makeChplArray = new CallExpr("makeArrayFromExternArray",
                                              new SymExpr(newDataArg),
-                                             new SymExpr(newSizeArg));
+                                             eltExpr->copy());
       VarSymbol* chplArr = new VarSymbol(astr(formal->name, "_arr"));
       retCall->insertBefore(new DefExpr(chplArr));
       retCall->insertBefore(new CallExpr(PRIM_MOVE, chplArr, makeChplArray));
