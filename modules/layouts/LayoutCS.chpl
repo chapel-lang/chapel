@@ -260,20 +260,18 @@ class CSDom: BaseSparseDomImpl {
     // TODO is Search.search parameterized (or parameterizable) on the sorted key?
     // if not, then this is the best way, otherwise, use Search.search as it is cleaner.
     if this.compressRows {
-      if debugCS then writeln( "find(", ind, ") in [", idx, "] on ", idx.domain, " between ", startIdx(row), "..", stopIdx(row) );
       if this.sorted then
         ret = binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
       else {
         ret = linearSearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
-        if !ret[1] then ret[2] = startIdx(row);
+        if !ret[1] then ret[2] = stopIdx(row)+1;
       }
     } else {
-      if debugCS then writeln( "find(", ind, ") in [", idx, "] on ", idx.domain, " between ", startIdx(col), "..", stopIdx(col) );
       if this.sorted then
         ret = binarySearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
       else {
         ret = linearSearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
-        if !ret[1] then ret[2] = startIdx(col);
+        if !ret[1] then ret[2] = stopIdx(col)+1;
       }
     }
 
@@ -318,14 +316,10 @@ class CSDom: BaseSparseDomImpl {
   }
 
   proc dsiAdd(ind: rank*idxType) {
-    if debugCS then writeln("========================");
-    if debugCS then writeln("CSDom.dsiAdd(", ind, ")");
     boundsCheck(ind);
-    if debugCS then writeln("startIdx: ", this.startIdx );
 
     // find position in nnzDom to insert new index
     const (found, insertPt) = find(ind);
-    if debugCS then writeln("find -> ", (found,insertPt));
 
     // if the index already existed, then return
     if found then return 0;
@@ -335,26 +329,18 @@ class CSDom: BaseSparseDomImpl {
 
     // double nnzDom if we've outgrown it; grab current size otherwise
     var oldNNZDomSize = nnzDom.size;
-    if debugCS then writeln( "nnz ", nnz, "; idx: ", idx );
     _grow(nnz);
-    if debugCS then writeln( "nnz ", nnz, "; idx: ", idx );
 
     const (row,col) = ind;
 
     // shift row|column indices up
-    // TODO guard with if sorted? insertPt is *always* at the end of the array,
-    // so no shifting is required.
-    // What else does this apply to below?
     for i in insertPt..nnz-1 by -1 {
       idx(i+1) = idx(i);
     }
-    if debugCS then writeln( "idx: ", idx );
-    if debugCS then writeln("going to insert");
     if this.compressRows then
       idx(insertPt) = col;
     else
       idx(insertPt) = row;
-    if debugCS then writeln("inserted: ", idx );
 
     // bump the startIdx counts
     var start = if this.compressRows then row else col;
@@ -373,7 +359,6 @@ class CSDom: BaseSparseDomImpl {
     for a in _arrs {
       a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDom.size);
     }
-    if debugCS then writeln("========================");
     if debugCS then writeln( "startIdx: [", startIdx, "] on ", startIdx.domain, ", idx: [", idx, "] on ", idx.domain );
     return 1;
   }
@@ -570,7 +555,6 @@ class CSDom: BaseSparseDomImpl {
     if debugCS then writeln( "startIdx: [", startIdx, "] on ", startIdx.domain, ", idx: [", idx, "] on ", idx.domain );
   }
 
-  // TODO What is this?
   iter dimIter(param d, ind) {
     if (d != 2 && this.compressRows) {
       compilerError("dimIter(1, ..) not supported on CS(compressRows=true) domains");
