@@ -30,7 +30,7 @@
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks-internal.h"
-#include "chplsys.h"
+#include "chpl-topo.h"
 #include "chpl-linefile-support.h"
 #include "error.h"
 #include <stdio.h>
@@ -703,7 +703,7 @@ int chpl_task_supportsRemoteCache(void) {
 uint32_t chpl_task_getMaxPar(void) {
   uint32_t n;
   enter_();
-  n = (uint32_t) chpl_getNumPhysicalCpus(true);
+  n = (uint32_t) chpl_topo_getNumCPUsPhysical(true);
   return_from_();
   return n;
 }

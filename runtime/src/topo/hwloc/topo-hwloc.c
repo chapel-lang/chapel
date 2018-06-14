@@ -68,7 +68,21 @@ static void alignAddrSize(void*, size_t, chpl_bool,
                           size_t*, unsigned char**, size_t*);
 static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
                                             hwloc_obj_t);
-static void report_error(const char*, int);
+
+
+//
+// Error reporting.
+//
+// CHK_ERR*() must evaluate 'expr' precisely once!
+//
+static void chk_err_fn(const char*, int, const char*);
+static void chk_err_errno_fn(const char*, int, const char*);
+
+#define CHK_ERR(expr) \
+  do { if (!(expr)) chk_err_fn(__FILE__, __LINE__, #expr); } while (0)
+
+#define CHK_ERR_ERRNO(expr) \
+  do { if (!(expr)) chk_err_errno_fn(__FILE__, __LINE__, #expr); } while (0)
 
 
 void chpl_topo_init(void) {
@@ -94,28 +108,19 @@ void chpl_topo_init(void) {
 
 #if HWLOC_API_VERSION < REQUIRE_HWLOC_VERSION
 #error hwloc version 1.11.5 or newer is required
-#else
-  {
-    unsigned version = hwloc_get_api_version();
-    // check that the version is at least REQUIRE_HWLOC_VERSION
-    if (version < REQUIRE_HWLOC_VERSION)
-      chpl_internal_error("hwloc version 1.11.5 or newer is required");
-  }
 #endif
+
+  CHK_ERR(hwloc_get_api_version() >= REQUIRE_HWLOC_VERSION);
 
   //
   // Allocate and initialize topology object.
   //
-  if (hwloc_topology_init(&topology)) {
-    report_error("hwloc_topology_init()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_topology_init(&topology) == 0);
 
   //
   // Perform the topology detection.
   //
-  if (hwloc_topology_load(topology)) {
-    report_error("hwloc_topology_load()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_topology_load(topology) == 0);
 
   //
   // What is supported?
@@ -188,6 +193,95 @@ void* chpl_topo_getHwlocTopology(void) {
 }
 
 
+//
+// How many CPUs (cores or PUs) are there?
+//
+static pthread_once_t numCPUs_ctrl = PTHREAD_ONCE_INIT;
+static void getNumCPUs(void);
+static int numCPUsPhysAcc = -1;
+static int numCPUsPhysAll = -1;
+static int numCPUsLogAcc  = -1;
+static int numCPUsLogAll  = -1;
+
+int chpl_topo_getNumCPUsPhysical(chpl_bool accessible_only) {
+  CHK_ERR(pthread_once(&numCPUs_ctrl, getNumCPUs) == 0);
+  return (accessible_only) ? numCPUsPhysAcc : numCPUsPhysAll;
+}
+
+
+int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
+  CHK_ERR(pthread_once(&numCPUs_ctrl, getNumCPUs) == 0);
+  return (accessible_only) ? numCPUsLogAcc : numCPUsLogAll;
+}
+
+
+static
+void getNumCPUs(void) {
+  //
+  // accessible cores
+  //
+
+  //
+  // Hwloc can't tell us the number of accessible cores directly, so
+  // get that by counting the parent cores of the accessible PUs.
+  //
+
+  //
+  // We could seemingly use hwloc_topology_get_allowed_cpuset() to get
+  // the set of accessible PUs here.  But that seems not to reflect the
+  // schedaffinity settings, so use hwloc_get_proc_cpubind() instead.
+  //
+  hwloc_cpuset_t logAccSet;
+  CHK_ERR_ERRNO((logAccSet = hwloc_bitmap_alloc()) != NULL);
+  CHK_ERR_ERRNO(hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0) == 0);
+  hwloc_bitmap_and(logAccSet, logAccSet,
+                   hwloc_topology_get_online_cpuset(topology));
+
+  hwloc_cpuset_t physAccSet;
+  CHK_ERR_ERRNO((physAccSet = hwloc_bitmap_alloc()) != NULL);
+
+#define NEXT_PU(pu)                                                     \
+  hwloc_get_next_obj_inside_cpuset_by_type(topology, logAccSet,         \
+                                           HWLOC_OBJ_PU, pu)
+
+  for (hwloc_obj_t pu = NEXT_PU(NULL); pu != NULL; pu = NEXT_PU(pu)) {
+    hwloc_obj_t core;
+    CHK_ERR_ERRNO((core = hwloc_get_ancestor_obj_by_type(topology,
+                                                         HWLOC_OBJ_CORE,
+                                                         pu))
+                  != NULL);
+    hwloc_bitmap_set(physAccSet, core->logical_index);
+  }
+
+#undef NEXT_PU
+
+  numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
+  hwloc_bitmap_free(physAccSet);
+
+  CHK_ERR(numCPUsPhysAcc > 0);
+
+  //
+  // all cores
+  //
+  numCPUsPhysAll = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
+  CHK_ERR(numCPUsPhysAll > 0);
+
+  //
+  // accessible PUs
+  //
+  numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
+  CHK_ERR(numCPUsLogAcc > 0);
+
+  hwloc_bitmap_free(logAccSet);
+
+  //
+  // all PUs
+  //
+  numCPUsLogAll = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU);
+  CHK_ERR(numCPUsLogAll > 0);
+}
+
+
 int chpl_topo_getNumNumaDomains(void) {
   return numNumaDomains;
 }
@@ -206,17 +300,13 @@ void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
   if (!topoSupport->cpubind->set_thread_cpubind)
     return;
 
-  if ((cpuset = hwloc_bitmap_alloc()) == NULL) {
-    report_error("hwloc_bitmap_alloc()", errno);
-  }
+  CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
 
   hwloc_cpuset_from_nodeset(topology, cpuset,
                             getNumaObj(subloc)->allowed_nodeset);
 
   flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
-  if (hwloc_set_cpubind(topology, cpuset, flags)) {
-    report_error("hwloc_set_cpubind()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
 
   hwloc_bitmap_free(cpuset);
 }
@@ -236,18 +326,11 @@ c_sublocid_t chpl_topo_getThreadLocality(void) {
     return c_sublocid_any;
   }
 
-  if ((cpuset = hwloc_bitmap_alloc()) == NULL) {
-    report_error("hwloc_bitmap_alloc()", errno);
-  }
-
-  if ((nodeset = hwloc_bitmap_alloc()) == NULL) {
-    report_error("hwloc_bitmap_alloc()", errno);
-  }
+  CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
+  CHK_ERR_ERRNO((nodeset = hwloc_bitmap_alloc()) != NULL);
 
   flags = HWLOC_CPUBIND_THREAD;
-  if (hwloc_get_cpubind(topology, cpuset, flags)) {
-    report_error("hwloc_get_cpubind()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
 
   hwloc_cpuset_to_nodeset(topology, cpuset, nodeset);
 
@@ -349,14 +432,10 @@ void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
   if (nPages == 0)
     return;
 
-  if ((cpuset = hwloc_bitmap_alloc()) == NULL) {
-    report_error("hwloc_bitmap_alloc()", errno);
-  }
+  CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
 
   flags = HWLOC_CPUBIND_THREAD;
-  if (hwloc_get_cpubind(topology, cpuset, flags)) {
-    report_error("hwloc_get_cpubind()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
 
   chpl_topo_setThreadLocality(subloc);
 
@@ -368,9 +447,7 @@ void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
   }
 
   flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
-  if (hwloc_set_cpubind(topology, cpuset, flags)) {
-    report_error("hwloc_set_cpubind()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
 
   hwloc_bitmap_free(cpuset);
 }
@@ -434,11 +511,10 @@ void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
          (int) hwloc_bitmap_first(numaObj->allowed_nodeset));
 
   flags = HWLOC_MEMBIND_MIGRATE | HWLOC_MEMBIND_STRICT;
-  if (hwloc_set_area_membind_nodeset(topology, p, size,
-                                     numaObj->allowed_nodeset,
-                                     HWLOC_MEMBIND_BIND, flags)) {
-    report_error("hwloc_set_area_membind_nodeset()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_set_area_membind_nodeset(topology, p, size,
+                                               numaObj->allowed_nodeset,
+                                               HWLOC_MEMBIND_BIND, flags)
+                == 0);
 }
 
 
@@ -459,14 +535,11 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
     return c_sublocid_any;
   }
 
-  if ((nodeset = hwloc_bitmap_alloc()) == NULL) {
-    report_error("hwloc_bitmap_alloc()", errno);
-  }
+  CHK_ERR_ERRNO((nodeset = hwloc_bitmap_alloc()) != NULL);
 
   flags = HWLOC_MEMBIND_BYNODESET;
-  if (hwloc_get_area_memlocation(topology, p, 1, nodeset, flags)) {
-    report_error("hwloc_get_area_memlocation()", errno);
-  }
+  CHK_ERR_ERRNO(hwloc_get_area_memlocation(topology, p, 1, nodeset, flags)
+                == 0);
 
   node = hwloc_bitmap_first(nodeset);
   if (!isActualSublocID(node)) {
@@ -480,9 +553,13 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
 
 
 static
-void report_error(const char* what, int errnum) {
-  char buf[100];
+void chk_err_fn(const char* file, int lineno, const char* what) {
+  chpl_internal_error_v("%s: %d: !(%s)", file, lineno, what);
+}
 
-  snprintf(buf, sizeof(buf), "%s: %s", what, strerror(errnum));
-  chpl_internal_error(buf);
+
+static
+void chk_err_errno_fn(const char* file, int lineno, const char* what) {
+  chpl_internal_error_v("%s: %d: !(%s): %s", file, lineno, what,
+                        strerror(errno));
 }
