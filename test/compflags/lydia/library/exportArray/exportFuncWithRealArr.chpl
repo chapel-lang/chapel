@@ -1,5 +1,10 @@
 export proc foo(x: [] real) {
-  writeln(x); // Note: this assumes x will have initial contents
+  for i in x.domain {
+    // Note: this assumes x will have initial contents
+    if ((x[i] <= i+2) && (x[i] > i)) {
+      writeln("x[" + i + "] in expected range");
+    }
+  }
   for i in x.domain {
     x[i] = x[i] + 1;
   }
