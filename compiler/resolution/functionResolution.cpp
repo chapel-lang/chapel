@@ -6197,7 +6197,7 @@ static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
   AggregateType* at = resolveNewFindType(newExpr);
 
   //
-  // Normalize the allocation for a nested type
+  // Normalize the allocation for a nested type (constructors only)
   //
   //    primNew(Inner(_mt, this), ...) => primNew(Inner, this, ...)
   //
@@ -6207,7 +6207,10 @@ static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
 
     partial->remove();
 
-    newExpr->insertAtHead(thisExpr->remove());
+    if (at->hasInitializers() == false) {
+      newExpr->insertAtHead(thisExpr->remove());
+    }
+
     newExpr->insertAtHead(typeExpr);
   }
 
@@ -8361,7 +8364,7 @@ static void insertReturnTemps() {
       if (call->list == NULL && isForallRecIterHelper(call))
         continue;
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
-        if (fn->retType != dtVoid) {
+        if (fn->retType != dtVoid && fn->retTag != RET_TYPE) {
           ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
           Expr*            contextCallOrCall; // insert before, remove it
 
