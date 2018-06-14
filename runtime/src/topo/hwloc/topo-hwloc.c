@@ -194,121 +194,91 @@ void* chpl_topo_getHwlocTopology(void) {
 
 
 //
-// How many physical CPUs (cores) are there?
+// How many CPUs (cores or PUs) are there?
 //
-static pthread_once_t numCPUsPhysAcc_ctrl = PTHREAD_ONCE_INIT;
-static void getNumCPUsPhysAcc(void);
+static pthread_once_t numCPUs_ctrl = PTHREAD_ONCE_INIT;
+static void getNumCPUs(void);
 static int numCPUsPhysAcc = -1;
-
-static pthread_once_t numCPUsPhys_ctrl = PTHREAD_ONCE_INIT;
-static void getNumCPUsPhys(void);
-static int numCPUsPhys = -1;
+static int numCPUsPhysAll = -1;
+static int numCPUsLogAcc  = -1;
+static int numCPUsLogAll  = -1;
 
 int chpl_topo_getNumCPUsPhysical(chpl_bool accessible_only) {
-  if (accessible_only) {
-    CHK_ERR(pthread_once(&numCPUsPhysAcc_ctrl, getNumCPUsPhysAcc) == 0);
-    return numCPUsPhysAcc;
-  } else {
-    CHK_ERR(pthread_once(&numCPUsPhys_ctrl, getNumCPUsPhys) == 0);
-    return numCPUsPhys;
-  }
+  CHK_ERR(pthread_once(&numCPUs_ctrl, getNumCPUs) == 0);
+  return (accessible_only) ? numCPUsPhysAcc : numCPUsPhysAll;
+}
+
+
+int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
+  CHK_ERR(pthread_once(&numCPUs_ctrl, getNumCPUs) == 0);
+  return (accessible_only) ? numCPUsLogAcc : numCPUsLogAll;
 }
 
 
 static
-void getNumCPUsPhysAcc(void) {
+void getNumCPUs(void) {
   //
-  // Hwloc can't tell us the number of accessible cores directly.  So
-  // instead, get the accessible PUs, and mark and count their parent
-  // cores.
+  // accessible cores
   //
 
   //
-  // We could seemingly use hwloc_topology_get_allowed_cpuset() here,
-  // but it seems not to reflect the schedaffinity settings.
+  // Hwloc can't tell us the number of accessible cores directly, so
+  // get that by counting the parent cores of the accessible PUs.
   //
-  hwloc_cpuset_t cpuset;
-  CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
-  CHK_ERR_ERRNO(hwloc_get_proc_cpubind(topology, getpid(), cpuset, 0) == 0);
-  hwloc_bitmap_and(cpuset, cpuset, hwloc_topology_get_online_cpuset(topology));
 
-  const int nCores = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
-  CHK_ERR(nCores > 0);
-  int coreSeen[nCores];
+  //
+  // We could seemingly use hwloc_topology_get_allowed_cpuset() to get
+  // the set of accessible PUs here.  But that seems not to reflect the
+  // schedaffinity settings, so use hwloc_get_proc_cpubind() instead.
+  //
+  hwloc_cpuset_t logAccSet;
+  CHK_ERR_ERRNO((logAccSet = hwloc_bitmap_alloc()) != NULL);
+  CHK_ERR_ERRNO(hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0) == 0);
+  hwloc_bitmap_and(logAccSet, logAccSet,
+                   hwloc_topology_get_online_cpuset(topology));
 
-  numCPUsPhysAcc = 0;
-  memset(coreSeen, 0, sizeof(coreSeen));
+  hwloc_cpuset_t physAccSet;
+  CHK_ERR_ERRNO((physAccSet = hwloc_bitmap_alloc()) != NULL);
 
-#define NEXT_PU(pu) \
-  hwloc_get_next_obj_inside_cpuset_by_type(topology, cpuset, HWLOC_OBJ_PU, pu)
+#define NEXT_PU(pu)                                                     \
+  hwloc_get_next_obj_inside_cpuset_by_type(topology, logAccSet,         \
+                                           HWLOC_OBJ_PU, pu)
 
   for (hwloc_obj_t pu = NEXT_PU(NULL); pu != NULL; pu = NEXT_PU(pu)) {
-    const hwloc_obj_t core = hwloc_get_ancestor_obj_by_type(topology,
-                                                            HWLOC_OBJ_CORE,
-                                                            pu);
-    CHK_ERR(core != NULL);
-    if (!coreSeen[core->logical_index]) {
-      coreSeen[core->logical_index] = 1;
-      numCPUsPhysAcc++;
-    }
+    hwloc_obj_t core;
+    CHK_ERR_ERRNO((core = hwloc_get_ancestor_obj_by_type(topology,
+                                                         HWLOC_OBJ_CORE,
+                                                         pu))
+                  != NULL);
+    hwloc_bitmap_set(physAccSet, core->os_index);
   }
-
-  CHK_ERR(numCPUsPhysAcc > 0);
 
 #undef NEXT_PU
 
-  hwloc_bitmap_free(cpuset);
-}
+  numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
+  hwloc_bitmap_free(physAccSet);
 
+  CHK_ERR(numCPUsPhysAcc > 0);
 
-static
-void getNumCPUsPhys(void) {
-  numCPUsPhys = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
-  CHK_ERR(numCPUsPhys > 0);
-}
-
-
-//
-// How many logical CPUs (PUs) are there?
-//
-static pthread_once_t numCPUsLogAcc_ctrl = PTHREAD_ONCE_INIT;
-static void getNumCPUsLogAcc(void);
-static int numCPUsLogAcc = -1;
-
-static pthread_once_t numCPUsLog_ctrl = PTHREAD_ONCE_INIT;
-static void getNumCPUsLog(void);
-static int numCPUsLog = -1;
-
-int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
-  if (accessible_only) {
-    CHK_ERR(pthread_once(&numCPUsLogAcc_ctrl, getNumCPUsLogAcc) == 0);
-    return numCPUsLogAcc;
-  } else {
-    CHK_ERR(pthread_once(&numCPUsLog_ctrl, getNumCPUsLog) == 0);
-    return numCPUsLog;
-  }
-}
-
-
-static
-void getNumCPUsLogAcc(void) {
   //
-  // We could seemingly use hwloc_topology_get_allowed_cpuset() here,
-  // but it seems not to reflect the schedaffinity settings.
+  // all cores
   //
-  hwloc_cpuset_t cpuset;
-  CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
-  CHK_ERR_ERRNO(hwloc_get_proc_cpubind(topology, getpid(), cpuset, 0) == 0);
-  hwloc_bitmap_and(cpuset, cpuset, hwloc_topology_get_online_cpuset(topology));
-  CHK_ERR_ERRNO((numCPUsLogAcc = hwloc_bitmap_weight(cpuset)) > 0);
-  hwloc_bitmap_free(cpuset);
-}
+  numCPUsPhysAll = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
+  CHK_ERR(numCPUsPhysAll > 0);
 
+  //
+  // accessible PUs
+  //
+  numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
+  CHK_ERR(numCPUsLogAcc > 0);
 
-static
-void getNumCPUsLog(void) {
-  numCPUsLog = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU);
-  CHK_ERR(numCPUsLog > 0);
+  hwloc_bitmap_free(logAccSet);
+
+  //
+  // all PUs
+  //
+  numCPUsLogAll = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU);
+  CHK_ERR(numCPUsLogAll > 0);
 }
 
 
