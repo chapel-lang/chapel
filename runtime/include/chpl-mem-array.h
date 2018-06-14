@@ -27,6 +27,8 @@
 #include <string.h>
 #include "chpl-comm.h"
 #include "chpl-mem.h"
+#include "chpl-mem-desc.h"
+#include "chpl-mem-hook.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
 #include "error.h"
@@ -64,9 +66,10 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize, c_sublocid_t subloc,
   //
   if (repeat_p == NULL) {
     //
-    // Allocate and maybe localize.
+    // Allocate.
     //
-    chpl_bool do_localize;
+    chpl_memhook_malloc_pre(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                            lineno, filename);
 
     p = NULL;
     *callAgain = false;
@@ -75,21 +78,15 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize, c_sublocid_t subloc,
                                 lineno, filename);
       if (p != NULL) {
         *callAgain = true;
-        do_localize = (subloc == c_sublocid_all) ? true : false;
       }
     }
 
     if (p == NULL) {
-      p = chpl_mem_allocMany(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
-                             lineno, filename);
-      do_localize = (subloc == c_sublocid_all) ? true : false;
+      p = chpl_malloc(nmemb * eltSize);
     }
 
-    if (do_localize) {
-      if (isActualSublocID(subloc)) {
-        chpl_topo_setMemLocality(p, size, true, subloc);
-      }
-    }
+    chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                             lineno, filename);
   } else {
     //
     // do comm layer post-allocation, if we got the memory from there.
@@ -118,20 +115,21 @@ static inline
 void chpl_mem_array_free(void* p,
                          size_t nmemb, size_t eltSize,
                          int32_t lineno, int32_t filename) {
-  const size_t size = nmemb * eltSize;
-
   //
   // If the size indicates we might have gotten this memory from the
   // comm layer then try to free it there.  If not, or if so but the
   // comm layer says it didn't come from there, free it in the memory
   // layer.
   //
+  chpl_memhook_free_pre(p, lineno, filename);
+
+  const size_t size = nmemb * eltSize;
   if (chpl_mem_size_justifies_comm_alloc(size)
       && chpl_comm_regMemFree(p, size)) {
     return;
   }
 
-  chpl_mem_free(p, lineno, filename);
+  chpl_free(p);
 }
 
 
