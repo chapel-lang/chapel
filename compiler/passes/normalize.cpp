@@ -2784,8 +2784,8 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
       Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
 
       if (eltExpr == NULL) {
-        USR_FATAL_CONT(formal, "array argument '%s' in exported function '%s'"
-                       " must specify its type", formal->name, fn->name);
+        USR_FATAL(formal, "array argument '%s' in exported function '%s'"
+                  " must specify its type", formal->name, fn->name);
         continue;
       }
 
