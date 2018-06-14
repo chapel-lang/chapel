@@ -1,18 +1,18 @@
 enum classVals { S, W, A, B, C, D, O };
 
-var DClass: domain(1) = {classVals.S:int..classVals.O:int};
+var DClass: domain(1, classVals) = {classVals.S..classVals.O};
 
 var probSize: [DClass] int;
 
-probSize(classVals.S:int) = 123;
-probSize(classVals.W:int) = 456;
-probSize(classVals.A:int) = 789;
-probSize(classVals.B:int) = 012;
-probSize(classVals.C:int) = 345;
-probSize(classVals.D:int) = 678;
-probSize(classVals.O:int) = 901;
+probSize(classVals.S) = 123;
+probSize(classVals.W) = 456;
+probSize(classVals.A) = 789;
+probSize(classVals.B) = 012;
+probSize(classVals.C) = 345;
+probSize(classVals.D) = 678;
+probSize(classVals.O) = 901;
 
-writeln("probSize(S) = ", probSize(classVals.S:int));
+writeln("probSize(S) = ", probSize(classVals.S));
 for i in DClass {
   writeln("probSize(", i:classVals, ") = ", probSize(i));
 }

@@ -1669,7 +1669,7 @@ module DefaultRectangular {
       Alo(i) = Adims(i).first;
 
     const Bdims = bView.dims();
-    var Blo: rank*idxType;
+    var Blo: rank*B.idxType;
     for param i in 1..rank do
       Blo(i) = Bdims(i).first;
 
@@ -1896,7 +1896,7 @@ module DefaultRectangular {
     strideDom = {1..stridelevels};
 
     proc getFirstIdx(dims) {
-      var ret : dims.size * idxType;
+      var ret : dims.size * dims(1).idxType;
       for param i in 1..dims.size do
         ret(i) = if dims(i).stride < 0 then dims(i).last else dims(i).first;
       return ret;
