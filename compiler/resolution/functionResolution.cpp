@@ -2113,7 +2113,7 @@ static bool isGenericRecordInit(CallExpr* call) {
 }
 
 static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
-  Vec<FnSymbol*>            visibleFns;
+  Vec<FnSymbol*>            mostApplicable;
   Vec<ResolutionCandidate*> candidates;
 
   ResolutionCandidate*      bestRef    = NULL;
@@ -2124,7 +2124,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 
   FnSymbol*                 retval     = NULL;
 
-  findVisibleFunctionsAndCandidates(info, visibleFns, candidates);
+  findVisibleFunctionsAndCandidates(info, mostApplicable, candidates);
 
   numMatches = disambiguateByMatch(info,
                                    candidates,
@@ -2140,7 +2140,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
           tryFailure = true;
 
         } else if (candidates.n == 0) {
-          printResolutionErrorUnresolved(info, visibleFns);
+          printResolutionErrorUnresolved(info, mostApplicable);
 
         } else {
           printResolutionErrorAmbiguous (info, candidates);
@@ -2719,12 +2719,60 @@ static bool typeUsesForwarding(Type* t);
 
 static bool populateForwardingMethods(CallInfo& info);
 
+void trimVisibleCandidates(CallInfo&       info,
+                           Vec<FnSymbol*>& mostApplicable,
+                           Vec<FnSymbol*>& visibleFns) {
+  CallExpr* call = info.call;
+
+  bool isInit = false;
+  if (call->numActuals() >= 2 && call->isNamedAstr(astrInit)) {
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      isInit = se->symbol() == gMethodToken;
+    }
+  }
+
+  bool isNew = call->numActuals() >= 1 && call->isNamedAstr(astrNew);
+
+  if (isInit == false && isNew == false) {
+    mostApplicable = visibleFns;
+  } else {
+    forv_Vec(FnSymbol, fn, visibleFns) {
+      bool shouldKeep = true;
+      BaseAST* actual = NULL;
+      BaseAST* formal = NULL;
+
+      if (isInit && fn->isInitializer()) {
+        actual = call->get(2);
+        formal = fn->_this;
+      } else if (isNew && (fn->hasFlag(FLAG_NEW_WRAPPER) || fn->isInitializer())) {
+        actual = call->get(1);
+        formal = toDefExpr(fn->formals.head)->sym;
+      }
+
+      if (actual != NULL && formal != NULL) {
+        AggregateType* actualType = toAggregateType(actual->getValType())->getRootInstantiation();
+        AggregateType* formalType = toAggregateType(formal->getValType())->getRootInstantiation();
+        if (actualType != formalType) {
+          shouldKeep = false;
+        }
+      } else {
+        shouldKeep = false;
+      }
+
+      if (shouldKeep) {
+        mostApplicable.add(fn);
+      }
+    }
+  }
+}
+
 static void findVisibleFunctionsAndCandidates(
                                 CallInfo&                  info,
-                                Vec<FnSymbol*>&            visibleFns,
+                                Vec<FnSymbol*>&            mostApplicable,
                                 Vec<ResolutionCandidate*>& candidates) {
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
+  Vec<FnSymbol*> visibleFns;
 
   // First, try finding candidates without forwarding
   if (fn != NULL) {
@@ -2736,7 +2784,9 @@ static void findVisibleFunctionsAndCandidates(
     findVisibleFunctions(info, visibleFns);
   }
 
-  findVisibleCandidates(info, visibleFns, candidates);
+  trimVisibleCandidates(info, mostApplicable, visibleFns);
+
+  findVisibleCandidates(info, mostApplicable, candidates);
 
   // If no candidates were found and it's a method, try forwarding
   if (candidates.n             == 0 &&
@@ -2748,6 +2798,7 @@ static void findVisibleFunctionsAndCandidates(
     if (typeUsesForwarding(receiverType) == true &&
         populateForwardingMethods(info)  == true) {
       visibleFns.clear();
+      mostApplicable.clear();
 
       forv_Vec(ResolutionCandidate*, candidate, candidates) {
         delete candidate;
@@ -2763,6 +2814,8 @@ static void findVisibleFunctionsAndCandidates(
       } else {
         findVisibleFunctions(info, visibleFns);
       }
+
+      trimVisibleCandidates(info, mostApplicable, visibleFns);
 
       findVisibleCandidates(info, visibleFns, candidates);
     }

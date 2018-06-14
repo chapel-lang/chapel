@@ -1823,7 +1823,7 @@ void AggregateType::buildDefaultInitializer() {
 
       methods.add(fn);
     } else {
-      fieldToArg(fn, names, fieldArgMap);
+      USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
     }
 
   }
