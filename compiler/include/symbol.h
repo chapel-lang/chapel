@@ -656,6 +656,7 @@ extern const char* astrSdot;
 extern const char* astrSequals;
 extern const char* astr_cast;
 extern const char* astrInit;
+extern const char* astrNew;
 extern const char* astrDeinit;
 extern const char* astrTag;
 extern const char* astrThis;

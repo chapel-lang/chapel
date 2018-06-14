@@ -2725,13 +2725,13 @@ void trimVisibleCandidates(CallInfo&       info,
   CallExpr* call = info.call;
 
   bool isInit = false;
-  if (call->numActuals() >= 2 && call->isNamed("init")) {
+  if (call->numActuals() >= 2 && call->isNamedAstr(astrInit)) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       isInit = se->symbol() == gMethodToken;
     }
   }
 
-  bool isNew = call->numActuals() >= 1 && call->isNamed("_new");
+  bool isNew = call->numActuals() >= 1 && call->isNamedAstr(astrNew);
 
   if (isInit == false && isNew == false) {
     mostApplicable = visibleFns;
