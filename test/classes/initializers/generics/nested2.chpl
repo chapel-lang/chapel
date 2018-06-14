@@ -2,6 +2,7 @@ class C {
   param rank: int;
   var x: D;
 
+  pragma "use default init"
   class D {
   }
 

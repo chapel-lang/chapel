@@ -1,6 +1,7 @@
 class C {
   var x: D(int);
 
+  pragma "use default init"
   class D {
     var y;
   }
