@@ -257,8 +257,6 @@ class CSDom: BaseSparseDomImpl {
     const (row, col) = ind;
 
     var ret: (bool, idxType);
-    // TODO is Search.search parameterized (or parameterizable) on the sorted key?
-    // if not, then this is the best way, otherwise, use Search.search as it is cleaner.
     if this.compressRows {
       if this.sorted then
         ret = binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
@@ -337,6 +335,7 @@ class CSDom: BaseSparseDomImpl {
     for i in insertPt..nnz-1 by -1 {
       idx(i+1) = idx(i);
     }
+
     if this.compressRows then
       idx(insertPt) = col;
     else
@@ -359,7 +358,6 @@ class CSDom: BaseSparseDomImpl {
     for a in _arrs {
       a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDom.size);
     }
-    if debugCS then writeln( "startIdx: [", startIdx, "] on ", startIdx.domain, ", idx: [", idx, "] on ", idx.domain );
     return 1;
   }
 
@@ -545,14 +543,13 @@ class CSDom: BaseSparseDomImpl {
     for a in _arrs {
       a.sparseShiftArrayBack(insertPt..nnz-1);
     }
-    if debugCS then writeln( "startIdx: [", startIdx, "] on ", startIdx.domain, ", idx: [", idx, "] on ", idx.domain );
+
     return 1;
   }
 
   proc dsiClear() {
     nnz = 0;
     startIdx = 1;
-    if debugCS then writeln( "startIdx: [", startIdx, "] on ", startIdx.domain, ", idx: [", idx, "] on ", idx.domain );
   }
 
   iter dimIter(param d, ind) {
@@ -562,7 +559,6 @@ class CSDom: BaseSparseDomImpl {
       compilerError("dimIter(2, ..) not supported on CS(compressRows=false) domains");
     }
 
-    // TODO shouldnt this be startIdx[ind]..stopIdx[ind]-1
     for i in startIdx[ind]..stopIdx[ind] do
       yield idx[i];
   }
