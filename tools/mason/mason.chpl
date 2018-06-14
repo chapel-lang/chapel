@@ -96,27 +96,40 @@ proc main(args: [] string) {
 
 
 proc masonClean() {
-  runCommand('rm -rf target');
+  try! {
+    const cwd = getEnv("PWD");
+    const projectHome = getTopLvlDirPath(cwd);
+    runCommand('rm -rf ' + projectHome + '/target');
+  }
+  catch e: MasonError {
+    writeln(e.message());
+  }
 }
 
 
 proc masonDoc(args) {
-  var toDoc = basename(getEnv('PWD'));
-  var project = toDoc + '.chpl';
-  if isDir('src/') {
-    if isFile('src/' + project) {
-      var command = 'chpldoc src/' + project;
-      writeln(command);
-      runCommand(command);
+  try! {
+    const cwd = getEnv("PWD");
+    const projectHome = getTopLvlDirPath(cwd);
+    const toDoc = basename(projectHome);
+    const project = toDoc + '.chpl';
+    if isDir(projectHome + '/src/') {
+      if isFile(projectHome + '/src/' + project) {
+        const command = 'chpldoc ' + projectHome + '/src/' + project + ' -o ' + projectHome + '/doc/';
+        writeln(command);
+        runCommand(command);
+      }
+    }
+    else {
+      writeln('Mason could not find the project to document!');
+      runCommand('chpldoc');
     }
   }
-  else {
-    writeln('Mason could not find the project to document!');
-    runCommand('chpldoc');
+  catch e: MasonError {
+    writeln(e.message());
   }
 }
 
 proc printVersion() {
   writeln('mason 0.1.0');
 }
-
