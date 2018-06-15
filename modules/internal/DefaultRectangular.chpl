@@ -178,7 +178,6 @@ module DefaultRectangular {
                minIndicesPerTask = dataParMinGranularity,
                offset=createTuple(rank, intIdxType, 0:intIdxType))
       where tag == iterKind.standalone {
-      //      compilerWarning("entering standalone");
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain standalone invoked on ", ranges);
       if debugDefaultDist then
@@ -265,7 +264,6 @@ module DefaultRectangular {
           }
         }
       }
-      //      compilerWarning("exiting standalone");
     }
 
     iter these(param tag: iterKind,

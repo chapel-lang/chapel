@@ -212,7 +212,7 @@ module ChapelRange {
     var _aligned   : if stridable then bool else void;
 
     proc strType type  return chpl__rangeStrideType(idxType);
- 
+
     proc chpl__promotionType() type {
       return idxType;
     }
@@ -811,8 +811,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   /*
-     If ``i`` is a member of the range's represented sequence, returns
-     an integer giving the ordinal index of i within the sequence
+     If ``ind`` is a member of the range's represented sequence, returns
+     an integer giving the ordinal index of ind within the sequence
      using zero-based indexing. Otherwise, returns
      ``(-1):``:proc:`range.intIdxType`. It is an error to invoke
      ``indexOrder`` if the represented sequence is not defined or the
@@ -1238,7 +1238,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     return r;
   }
 
-  /* Returns a range whose alignment is this range's first index plus ``n``.
+  /* Returns a range whose alignment is this range's first index plus ``offset``.
      If the range has no first index, a runtime error is generated.
    */
   proc range.offset(in offset: integral)
@@ -1390,8 +1390,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     }
 
     emptyIntersection = false;
-    var newlo = max(lo1, lo2);
-    var newhi = min(hi1, hi2);
+    var newlo = max(lo1, lo2):intIdxType;
+    var newhi = min(hi1, hi2):intIdxType;
     if (emptyIntersection) {
       newlo = 1;
       newhi = 0;
