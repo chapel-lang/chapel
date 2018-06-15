@@ -21,6 +21,12 @@ lifetimeChecking.doc
 
    .. attribute:: var c: owned Foo
 
+   .. attribute:: var d: borrowed Foo
+
+   .. attribute:: var w: borrowed Foo
+
+      Validates when there is documentation 
+
    .. attribute:: var x: unmanaged Foo
 
       Validates when there is documentation 
@@ -39,11 +45,15 @@ lifetimeChecking.doc
 
    .. method:: proc takesUnmanaged(x: unmanaged Foo)
 
+   .. method:: proc takesBorrowed(x: borrowed Foo)
+
    .. method:: proc returnsOwned(): owned Foo
 
    .. method:: proc returnsShared(): shared Foo
 
    .. method:: proc returnsUnmanaged(): unmanaged Foo
+
+   .. method:: proc returnsBorrowed(): borrowed Foo
 
    .. method:: proc mixNMatch(x: shared Foo): unmanaged Foo
 
@@ -59,6 +69,10 @@ lifetimeChecking.doc
 
       Validates when there is documentation 
 
+   .. method:: proc takesBorrowedDoc(x: borrowed Foo)
+
+      Validates when there is documentation 
+
    .. method:: proc returnsOwnedDoc(): owned Foo
 
       Validates when there is documentation 
@@ -68,6 +82,10 @@ lifetimeChecking.doc
       Validates when there is documentation 
 
    .. method:: proc returnsUnmanagedDoc(): unmanaged Foo
+
+      Validates when there is documentation 
+
+   .. method:: proc returnsBorrowedDoc(): borrowed Foo
 
       Validates when there is documentation 
 
@@ -81,11 +99,15 @@ lifetimeChecking.doc
 
 .. function:: proc takesUnmanaged(x: unmanaged Foo)
 
+.. function:: proc takesBorrowed(x: borrowed Foo)
+
 .. function:: proc returnsOwned(): owned Foo
 
 .. function:: proc returnsShared(): shared Foo
 
 .. function:: proc returnsUnmanaged(): unmanaged Foo
+
+.. function:: proc returnsBorrowed(): borrowed Foo
 
 .. function:: proc mixNMatch(x: shared Foo): unmanaged Foo
 
@@ -101,6 +123,10 @@ lifetimeChecking.doc
 
    Validates when there is documentation 
 
+.. function:: proc takesBorrowedDoc(x: borrowed Foo)
+
+   Validates when there is documentation 
+
 .. function:: proc returnsOwnedDoc(): owned Foo
 
    Validates when there is documentation 
@@ -110,6 +136,10 @@ lifetimeChecking.doc
    Validates when there is documentation 
 
 .. function:: proc returnsUnmanagedDoc(): unmanaged Foo
+
+   Validates when there is documentation 
+
+.. function:: proc returnsBorrowedDoc(): borrowed Foo
 
    Validates when there is documentation 
 

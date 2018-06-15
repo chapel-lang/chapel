@@ -1209,6 +1209,11 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       mText += "unmanaged ";
       appendExpr(expr->get(1), printingType);
     }
+    else if (expr->isPrimitive(PRIM_TO_BORROWED_CLASS))
+    {
+      mText += "borrowed ";
+      appendExpr(expr->get(1), printingType);
+    }
     else
     {
       // NOAKES 2015/02/05  Debugging support.
