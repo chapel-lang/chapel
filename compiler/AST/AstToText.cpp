@@ -1031,6 +1031,18 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         mText += "..";
       }
 
+      else if (strcmp(fnName, "_owned") == 0)
+      {
+        mText += "owned ";
+        appendExpr(expr->get(1), printingType);
+      }
+
+      else if (strcmp(fnName, "_shared") == 0)
+      {
+        mText += "shared ";
+        appendExpr(expr->get(1), printingType);
+      }
+
       else if ((fnName != astrSdot)                          == 0)
       {
         SymExpr* symExpr1 = toSymExpr(expr->get(1));
@@ -1190,6 +1202,11 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
     else if (expr->isPrimitive(PRIM_NEW))
     {
       mText += "new ";
+      appendExpr(expr->get(1), printingType);
+    }
+    else if (expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
+    {
+      mText += "unmanaged ";
       appendExpr(expr->get(1), printingType);
     }
     else
