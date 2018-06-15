@@ -21,6 +21,21 @@
 Chapel's Library for `Tom's Obvious, Minimal Language (TOML)
 <https://github.com/toml-lang/toml>`_.
 This module provides support for parsing and writing toml files.
+
+
+  .. note::
+
+    The TOML library for chapel is a work in progress. Many of the types listed in the TOML spec are not supported by this library. A core group of the spec is followed, but the library currently does not support the following types:
+      - Array of tables
+      - Exponent reals
+      - Underscore notation for integers and reals
+      - Date
+      - Time
+      - Datetime with offset
+
+    Other known issues with the library can be found in the `Improve Toml issue <https://github.com/chapel-lang/chapel/issues/7104>`_.
+
+
 */
 pragma "error mode fatal"
 module TOML {
@@ -31,7 +46,38 @@ use TomlReader;
 
 
 /* Receives a TOML file as a parameter and outputs an associative
-array */
+array
+
+.. code-block:: chapel
+
+     use TOML;
+
+     const tomlFile = open("example.toml", iomode.r);
+     const toml = parseToml(tomlFile);
+   
+To read tables of a TOML file, use the same syntax as accessing associative arrays. For example,
+to access to the following TOML file's project name,
+
+.. code-block:: yaml
+ 
+     [root]
+     name = "example"
+     version = "1.0.0"
+     author = "Sam Partee"
+
+Use the following code in chapel.
+
+.. code-block:: chapel
+
+     use TOML;
+
+     const tomlFile = open("example.toml", iomode.r);
+     const toml = parseToml(tomlFile);
+     const projectName = ["root"]["name"] // returns a TOML object
+     writeln(projectName.toString());     // to turn TOML object into string representation
+
+
+*/
 proc parseToml(input: file) : unmanaged Toml {
   var tomlStr: string;
   var tomlFile = input.reader();
@@ -41,7 +87,8 @@ proc parseToml(input: file) : unmanaged Toml {
 }
 
 /* Receives a channel to a TOML file as a parameter and outputs an associative
-array. */
+array.
+*/
 proc parseToml(input: channel) : unmanaged Toml {
   var tomlStr: string;
   input.readstring(tomlStr);
@@ -436,7 +483,7 @@ pragma "no doc"
 
 /*
 Class to hold various types parsed from input
-Used to recursively hold tables and respective values
+used to recursively hold tables and respective values
 */
   class Toml {
 
