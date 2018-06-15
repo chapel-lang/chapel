@@ -1,3 +1,5 @@
+// This is a mock up of what returning an array from an exported function looks
+// like under the covers
 export proc foo(): chpl_external_array {
   var x = getArray();
   writeln(x);

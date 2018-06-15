@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "exportFuncWith2Arrays.h"
 
@@ -17,7 +18,7 @@ int main(int argc, char* argv[]) {
   chpl_external_array arrY = chpl_make_external_array_ptr(y, 5);
   foo(&arrX, &arrY);
   for (int i = 0; i < 5; i++) {
-    printf("Element[%d] = %lld\n", i, x[i]);
+    printf("Element[%d] = %" PRId64 "\n", i, x[i]);
   }
 
   // Shutdown the Chapel runtime and standard modules

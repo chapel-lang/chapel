@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "exportFuncWithPtr.h"
 
@@ -16,7 +17,7 @@ int main(int argc, char* argv[]) {
   int64_t otherVal = 17;
   foo(&arrX, &otherVal);
   for (int i = 0; i < 5; i++) {
-    printf("Element[%d] = %lld\n", i, x[i]);
+    printf("Element[%d] = %" PRId64 "\n", i, x[i]);
   }
 
   // Shutdown the Chapel runtime and standard modules

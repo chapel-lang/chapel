@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "exportFuncWithExplicitVoidRet.h"
 
@@ -16,7 +17,7 @@ int main(int argc, char* argv[]) {
   chpl_external_array arrX = chpl_make_external_array_ptr(x, 5);
   foo(&arrX);
   for (int i = 0; i < 5; i++) {
-    printf("Element[%d] = %lld\n", i, x[i]);
+    printf("Element[%d] = %" PRId64 "\n", i, x[i]);
   }
 
   // Shutdown the Chapel runtime and standard modules
