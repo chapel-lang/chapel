@@ -740,7 +740,17 @@ void AstToText::appendExpr(Expr* expr, bool printingType)
 
 void AstToText::appendExpr(UnresolvedSymExpr* expr)
 {
-  appendExpr(expr->unresolved);
+  if (strcmp(expr->unresolved, "_shared") == 0) {
+    mText += "shared";
+  } else if (strcmp(expr->unresolved, "_owned") == 0) {
+    mText += "owned";
+  } else if (strcmp(expr->unresolved, "_borrowed") == 0) {
+    mText += "borrowed";
+  } else if (strcmp(expr->unresolved, "_unmanaged") == 0) {
+    mText += "unmanaged";
+  } else {
+    appendExpr(expr->unresolved);
+  }
 }
 
 void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
