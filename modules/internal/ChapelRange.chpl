@@ -1079,16 +1079,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     type resultType = e;
     type strType = chpl__rangeStrideType(resultType);
 
-    // TODO: Can I merge these now?
-    if (s) then
-      return new range(resultType, b, s,
-                       chpl__intToIdx(resultType, r._low + i),
-                       chpl__intToIdx(resultType, r._high + i),
-                       r.stride : strType, chpl__intToIdx(resultType, r._alignment + i), r.aligned);
-    else
-      return new range(resultType, b, s, 
-                       chpl__intToIdx(resultType, r._low + i),
-                       chpl__intToIdx(resultType, r._high + i));
+    return new range(resultType, b, s,
+                     chpl__intToIdx(resultType, r._low + i),
+                     chpl__intToIdx(resultType, r._high + i),
+                     r.stride : strType,
+                     chpl__intToIdx(resultType, chpl__idxToInt(r.alignment)+i),
+                     r.aligned);
   }
 
   inline proc +(i:integral, r: range(?e,?b,?s))
