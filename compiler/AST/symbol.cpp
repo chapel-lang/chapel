@@ -1885,6 +1885,7 @@ const char* astrSdot = NULL;
 const char* astrSequals = NULL;
 const char* astr_cast = NULL;
 const char* astrInit = NULL;
+const char* astrNew = NULL;
 const char* astrDeinit = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
@@ -1895,6 +1896,7 @@ void initAstrConsts() {
   astrSequals = astr("=");
   astr_cast   = astr("_cast");
   astrInit    = astr("init");
+  astrNew     = astr("_new");
   astrDeinit  = astr("deinit");
   astrTag     = astr("tag");
   astrThis    = astr("this");

@@ -41,6 +41,10 @@ void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unu
 #define DRIVER_ARG_COPYRIGHT \
   {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
 
+#define DRIVER_ARG_BREAKFLAGS_COMMON \
+  {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL}, \
+  {"break-on-delete-id", ' ', NULL, "Break when AST id is deleted", "I", &breakOnDeleteID, "CHPL_BREAK_ON_DELETE_ID", NULL}
+
 #define DRIVER_ARG_DEBUGGERS                                            \
   {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL}, \
   {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL}

@@ -27,3 +27,9 @@ as follows:
   us automatic "out of memory" messages and halts when an allocation
   fails, and should also allow us to track Qthreads memory use should
   we decide we want to do so.
+* Use the Chapel affinity shim (src/affinity/hwloc_via_chapel.c) by
+  default.  This first tries to get the hwloc topology from the Chapel
+  runtime, and only drops back to getting it directly from hwloc if that
+  fails.  Doing so ensures that when the Chapel runtime and Qthreads
+  both use hwloc topologies, they use the same one.  This has both
+  functional and performance benefits.
