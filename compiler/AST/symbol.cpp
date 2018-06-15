@@ -255,7 +255,8 @@ bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
 // Don't generate documentation for this symbol, either because it is private,
 // or because the symbol should not be documented independent of privacy
 bool Symbol::noDocGen() const {
-  return hasFlag(FLAG_NO_DOC) || hasFlag(FLAG_PRIVATE);
+  return hasFlag(FLAG_NO_DOC) || hasFlag(FLAG_PRIVATE) ||
+    hasFlag(FLAG_COMPILER_GENERATED);
 }
 
 
@@ -1884,6 +1885,7 @@ const char* astrSdot = NULL;
 const char* astrSequals = NULL;
 const char* astr_cast = NULL;
 const char* astrInit = NULL;
+const char* astrNew = NULL;
 const char* astrDeinit = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
@@ -1894,6 +1896,7 @@ void initAstrConsts() {
   astrSequals = astr("=");
   astr_cast   = astr("_cast");
   astrInit    = astr("init");
+  astrNew     = astr("_new");
   astrDeinit  = astr("deinit");
   astrTag     = astr("tag");
   astrThis    = astr("this");

@@ -36,7 +36,6 @@ module CString {
     return x;
   }
 
-  pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: c_string) : c_string {
     return x;

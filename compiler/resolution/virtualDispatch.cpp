@@ -828,7 +828,11 @@ static void checkMethodsOverride() {
         // ignore internal module errors for now
         fn->getModule()->modTag == MOD_USER &&
         // ignore errors with deinit
-        0 != strcmp("deinit", fn->name)) {
+        0 != strcmp("deinit", fn->name) &&
+        // ignore errors for init()
+        !fn->isInitializer() &&
+        // ignore errors for postinit()
+        !fn->isPostInitializer()) {
       if (AggregateType* ct = toAggregateType(fn->_this->getValType())) {
         if (isClass(ct)) {
           std::vector<FnSymbol*> matches;

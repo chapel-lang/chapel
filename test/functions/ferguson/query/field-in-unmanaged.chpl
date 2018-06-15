@@ -7,3 +7,4 @@ proc f(arg: unmanaged MyClass(?t)) {
 
 var unm = new unmanaged MyClass(1);
 f(unm);
+delete unm;

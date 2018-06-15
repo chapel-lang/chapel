@@ -50,4 +50,20 @@ module ChapelHaltWrappers {
   proc iterHalt(s:string) {
     halt(s);
   }
+
+
+  //
+  // Halt wrappers for misc cases where a language, compiler, or library
+  // feature is missing.
+  //
+
+  /*
+     Halt wrapper for pure virtual methods. For more info see
+     https://github.com/chapel-lang/chapel/issues/8566
+   */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc pureVirtualMethodHalt() {
+    halt("pure virtual method called");
+  }
 }
