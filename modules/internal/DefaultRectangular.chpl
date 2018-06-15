@@ -1210,8 +1210,7 @@ module DefaultRectangular {
                                             stridable=d._value.stridable,
                                             dom=d._value);
 
-        // MPF: could this be parallel?
-        for i in d((...dom.ranges)) do
+        forall i in d((...dom.ranges)) do
           copy.dsiAccess(i) = dsiAccess(i);
         off = copy.off;
         blk = copy.blk;
