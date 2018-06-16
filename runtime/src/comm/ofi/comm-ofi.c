@@ -27,6 +27,7 @@
 #include "chpl-mem-sys.h"
 // #include "chpl-cache.h"
 #include "chpl-tasks.h"
+#include "chpl-topo.h"
 #include "chpl-gen-includes.h"
 #include "chplsys.h"
 #include "chplexit.h"
