@@ -210,8 +210,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
               // ... except for a coforall index variable, pass by ref only
               // if it is a ref iterator, as indicated by ref-ness of 'var'.
               && !var->hasFlag(FLAG_COFORALL_INDEX_VAR)
-              // ... and do not do that for a begin fn (todo: why?)
-              && !fn->hasFlag(FLAG_BEGIN)))
+            ))
       field->qual = QUAL_REF;
     // BHARSH TODO: This really belongs in RVF. Note the sync/single comment
     // in 'needsAutoCopyAutoDestroyForArg'
