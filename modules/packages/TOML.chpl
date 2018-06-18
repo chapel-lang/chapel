@@ -25,7 +25,7 @@ This module provides support for parsing and writing toml files.
 
   .. note::
 
-    The TOML library for chapel is a work in progress. Many of the types listed in the TOML spec are not supported by this library. A core group of the spec is followed, but the library currently does not support the following types:
+    The TOML library for chapel is a work in progress. Many of the types listed in the `TOML specification <https://github.com/toml-lang/toml>`_ are not supported by this library. A core group of the spec is followed, but the library currently does not support the following types:
       - Array of tables
       - Exponent reals
       - Underscore notation for integers and reals
@@ -45,9 +45,9 @@ use TomlParser;
 use TomlReader;
 
 
-/* Receives a TOML file as a parameter and outputs an associative
-array
+/* Receives a TOML file as a parameter and outputs a Toml object.
 
+ 
 .. code-block:: chapel
 
      use TOML;
@@ -86,8 +86,7 @@ proc parseToml(input: file) : unmanaged Toml {
   return parseToml(tomlStr);
 }
 
-/* Receives a channel to a TOML file as a parameter and outputs an associative
-array.
+/* Receives a channel to a TOML file as a parameter and outputs a Toml object.
 */
 proc parseToml(input: channel) : unmanaged Toml {
   var tomlStr: string;
@@ -95,8 +94,7 @@ proc parseToml(input: channel) : unmanaged Toml {
   return parseToml(tomlStr);
 }
 
- /* Receives a string of TOML format as a parameter and outputs an associative
-array. */
+ /* Receives a string of TOML format as a parameter and outputs a Toml object */
 proc parseToml(input: string) : unmanaged Toml {
   var D: domain(string);
   var table: [D] unmanaged Toml;
