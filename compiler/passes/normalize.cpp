@@ -50,6 +50,10 @@ static void        handleModuleDeinitFn(ModuleSymbol* mod);
 static void        transformLogicalShortCircuit();
 static void        handleReduceAssign();
 
+static bool        isArrayFormal(ArgSymbol* arg);
+
+static void        makeExportWrapper(FnSymbol* fn);
+
 static void        fixupArrayFormals(FnSymbol* fn);
 
 static bool        includesParameterizedPrimitive(FnSymbol* fn);
@@ -148,6 +152,11 @@ void normalize() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
+
+    if (fn->hasFlag(FLAG_EXPORT) &&
+        fn->hasFlag(FLAG_COMPILER_GENERATED)  == false) {
+      makeExportWrapper(fn);
+    }
 
     if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == false &&
         fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == false) {
@@ -1422,23 +1431,50 @@ static bool isCallToTypeConstructor(CallExpr* call) {
 }
 
 static void normalizeCallToTypeConstructor(CallExpr* call) {
-  if (SymExpr* se = toSymExpr(call->baseExpr)) {
-    if (TypeSymbol* ts = expandTypeAlias(se)) {
-      if (AggregateType* at = toAggregateType(ts->type)) {
-        SET_LINENO(call);
+  if (call->getStmtExpr() != NULL) {
+    if (SymExpr* se = toSymExpr(call->baseExpr)) {
+      if (TypeSymbol* ts = expandTypeAlias(se)) {
+        if (AggregateType* at = toAggregateType(ts->type)) {
+          SET_LINENO(call);
 
-        if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
-          // Call chpl__buildDistType for syntactic distributions.
-          se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
+          if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
+            // Call chpl__buildDistType for syntactic distributions.
+            se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
 
-        } else if (SymExpr* riSpec = callUsedInRiSpec(call)) {
-          restoreReduceIntentSpecCall(riSpec, call);
+          } else if (SymExpr* riSpec = callUsedInRiSpec(call)) {
+            restoreReduceIntentSpecCall(riSpec, call);
 
-        } else {
-          // Transform C ( ... ) into _type_construct_C ( ... )
-          const char* name = at->typeConstructor->name;
+          } else {
+            // Transform C ( ... ) into _type_construct_C ( ... )
 
-          se->replace(new UnresolvedSymExpr(name));
+            // The old constructor-based implementation of nested types made
+            // the type constructor a method on the enclosing type. Using a
+            // method would not be allowed within an initializer because 'this'
+            // may not yet be initialized/instantiated.
+            //
+            // Instead the initializer-based implementation of nested types
+            // hoists the nested type constructor outside of the enclosing type
+            // as a standalone function, like other type constructors.
+            //
+            // This could lead to problems with resolution if a type at the
+            // same scope as the enclosing type had the same name as the nested
+            // type. E.g.:
+            //
+            //   class Node {}
+            //   class List {
+            //     var n : Node; // which _type_construct_Node ?
+            //     class Node {}
+            //   }
+            //
+            // To work around this, use a SymExpr pointing to the type
+            // constructor we know to be correct.
+            if (at->hasInitializers()) {
+              se->replace(new SymExpr(at->typeConstructor));
+            } else {
+              const char* name = at->typeConstructor->name;
+              se->replace(new UnresolvedSymExpr(name));
+            }
+          }
         }
       }
     }
@@ -2605,7 +2641,27 @@ static void hack_resolve_types(ArgSymbol* arg) {
       // dtUnknown or dtAny, then replace the type expression with that type.
       // hilde sez: don't we lose information here?
       if (arg->typeExpr->body.length == 1) {
-        Type* type = arg->typeExpr->body.only()->typeInfo();
+        Expr* only = arg->typeExpr->body.only();
+        Type* type = only->typeInfo();
+
+        // Works around an issue with generic types:
+        //
+        // The function 'normalizeCallToTypeConstructor' may create a SymExpr
+        // to a type constructor, in which case the return type will likely
+        // not be 'dtUnknown' or 'dtAny' and may be generic. If the return
+        // type is generic we do not want to remove the type constructor call
+        // because resolution will not be able to handle the resulting AST.
+        if (CallExpr* call = toCallExpr(only)) {
+          if (SymExpr* se = toSymExpr(call->baseExpr)) {
+            if (FnSymbol* fn = toFnSymbol(se->symbol())) {
+              if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+                // Set dtUnknown, causing the upcoming conditional to fail
+                type = dtUnknown;
+              }
+            }
+          }
+        }
+
         if (type != dtUnknown && type != dtAny) {
           // This test ensures that we are making progress.
           arg->type = type;
@@ -2616,6 +2672,64 @@ static void hack_resolve_types(ArgSymbol* arg) {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+* We cannot export a function with an array argument directly, due to the     *
+* type being considered generic and due to other languages not understanding  *
+* our array structure, as well as our normal array structure assuming it has  *
+* control over the memory involved.  Instead, build a wrapper for the         *
+* function.  This wrapper will be modified to take in an instance of our      *
+* runtime-defined array wrapper type instead of the original array type, in   *
+* addition to its other arguments.                                            *
+*                                                                             *
+************************************** | *************************************/
+static bool hasNonVoidReturnStmt(FnSymbol* fn);
+
+static void makeExportWrapper(FnSymbol* fn) {
+  bool argsToReplace = false;
+  for_formals(formal, fn) {
+    if (isArrayFormal(formal)) {
+      argsToReplace = true;
+    }
+  }
+
+  // TODO: Also check if return type is an array.  Don't make two wrappers,
+  // pls.
+  if (argsToReplace) {
+    // We have at least one array argument.  Need to make a version of this
+    // function that can be exported
+    FnSymbol* newFn = fn->copy();
+    newFn->addFlag(FLAG_COMPILER_GENERATED);
+
+    fn->defPoint->insertBefore(new DefExpr(newFn));
+
+    if ((fn->retExprType != NULL &&
+         fn->retExprType->body.tail->typeInfo() != dtVoid) ||
+        hasNonVoidReturnStmt(fn)) {
+      newFn->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN,
+                                                      new CallExpr(fn->name))));
+    } else {
+      newFn->body->replace(new BlockStmt(new CallExpr(fn->name)));
+    }
+    fn->removeFlag(FLAG_EXPORT);
+  }
+}
+
+// If we run into issues due to this computation, just require explicitly
+// declared return types for exported functions
+static bool hasNonVoidReturnStmt(FnSymbol* fn) {
+  std::vector<CallExpr*> calls;
+
+  collectMyCallExprs(fn, calls, fn);
+  for_vector(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIM_RETURN) == true) {
+      if (isVoidReturn(call) == false) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 /************************************* | **************************************
 *                                                                             *
 * The parser represents formals with an array type specifier as a formal with *
@@ -2635,6 +2749,8 @@ static void hack_resolve_types(ArgSymbol* arg) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void fixupExportedArrayFormals(FnSymbol* fn);
+
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal);
 
 static void fixupArrayDomainExpr(FnSymbol*                    fn,
@@ -2648,20 +2764,14 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
                                   const std::vector<SymExpr*>& symExprs);
 
 static void fixupArrayFormals(FnSymbol* fn) {
-  for_formals(formal, fn) {
-    if (BlockStmt* typeExpr = formal->typeExpr) {
-      //
-      // The body is usually a single callExpr.  However there are rare
-      // cases in which normalization generates one or more call_temps
-      // i.e. a sequence of defExpr/primMove pairs.
-      //
-      // In either case the desired callExpr is the tail of the body.
-      //
+  if (fn->hasFlag(FLAG_EXPORT) && fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+      fn->hasFlag(FLAG_MODULE_INIT) == false) {
+    fixupExportedArrayFormals(fn);
 
-      if (CallExpr* call = toCallExpr(typeExpr->body.tail)) {
-        if (call->isNamed("chpl__buildArrayRuntimeType") == true) {
-          fixupArrayFormal(fn, formal);
-        }
+  } else {
+    for_formals(formal, fn) {
+      if (isArrayFormal(formal)) {
+        fixupArrayFormal(fn, formal);
       }
     }
   }
@@ -2683,6 +2793,74 @@ static bool skipFixup(ArgSymbol* formal, Expr* domExpr, Expr* eltExpr) {
   return false;
 }
 
+static bool isArrayFormal(ArgSymbol* arg) {
+  if (BlockStmt* typeExpr = arg->typeExpr) {
+    //
+    // The body is usually a single callExpr.  However there are rare
+    // cases in which normalization generates one or more call_temps
+    // i.e. a sequence of defExpr/primMove pairs.
+    //
+    // In either case the desired callExpr is the tail of the body.
+    //
+
+    if (CallExpr* call = toCallExpr(typeExpr->body.tail)) {
+      if (call->isNamed("chpl__buildArrayRuntimeType")) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static void fixupExportedArrayFormals(FnSymbol* fn) {
+  CallExpr* retCall = toCallExpr(fn->body->body.tail);
+  INT_ASSERT(retCall);
+  CallExpr* callOrigFn = retCall;
+  if (retCall->isPrimitive(PRIM_RETURN)) {
+    INT_ASSERT(retCall->numActuals() == 1);
+    callOrigFn = toCallExpr(retCall->get(1));
+  }
+
+  INT_ASSERT(callOrigFn);
+
+  for_formals(formal, fn) {
+    if (isArrayFormal(formal)) {
+      BlockStmt*            typeExpr = formal->typeExpr;
+
+      // call is chpl__buildArrayRuntimeType, which takes in a domain and
+      // optionally a type expression.  The domain information will get
+      // validated during resolution, but we need the type expression to
+      // correctly create our Chapel array wrapper.
+      CallExpr*             call     = toCallExpr(typeExpr->body.tail);
+      int                   nArgs    = call->numActuals();
+      Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
+
+      if (eltExpr == NULL) {
+        USR_FATAL(formal, "array argument '%s' in exported function '%s'"
+                  " must specify its type", formal->name, fn->name);
+        continue;
+      }
+
+      // Create a representation of the array argument that is accessible
+      // outside of Chapel (in the form of a pointer and a corresponding size)
+      formal->typeExpr->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+
+      // Transform the outside representation into a Chapel array, and send that
+      // in the call to the original function.
+      CallExpr* makeChplArray = new CallExpr("makeArrayFromExternArray",
+                                             new SymExpr(formal),
+                                             eltExpr->copy());
+      VarSymbol* chplArr = new VarSymbol(astr(formal->name, "_arr"));
+      retCall->insertBefore(new DefExpr(chplArr));
+      retCall->insertBefore(new CallExpr(PRIM_MOVE, chplArr, makeChplArray));
+
+      callOrigFn->insertAtTail(new SymExpr(chplArr));
+
+    } else {
+      callOrigFn->insertAtTail(new SymExpr(formal));
+    }
+  }
+}
 // Preliminary validation is performed within the caller
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   BlockStmt*            typeExpr = formal->typeExpr;
