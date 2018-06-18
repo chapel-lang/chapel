@@ -2796,7 +2796,7 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
 
       // Create a representation of the array argument that is accessible
       // outside of Chapel (in the form of a pointer and a corresponding size)
-      formal->typeExpr->replace(new BlockStmt(new CallExpr("_type_construct_chpl_external_array")));
+      formal->typeExpr->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
 
       // Transform the outside representation into a Chapel array, and send that
       // in the call to the original function.
