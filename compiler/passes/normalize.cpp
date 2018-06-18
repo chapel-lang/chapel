@@ -2631,8 +2631,9 @@ static void hack_resolve_types(ArgSymbol* arg) {
 * type being considered generic and due to other languages not understanding  *
 * our array structure, as well as our normal array structure assuming it has  *
 * control over the memory involved.  Instead, build a wrapper for the         *
-* function.  This wrapper will be modified to take in a c_ptr of the right    *
-* type and the size of the array, in addition to its other arguments.         *
+* function.  This wrapper will be modified to take in an instance of our      *
+* runtime-defined array wrapper type instead of the original array type, in   *
+* addition to its other arguments.                                            *
 *                                                                             *
 ************************************** | *************************************/
 static bool hasNonVoidReturnStmt(FnSymbol* fn);
@@ -2779,6 +2780,10 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
     if (isArrayFormal(formal)) {
       BlockStmt*            typeExpr = formal->typeExpr;
 
+      // call is chpl__buildArrayRuntimeType, which takes in a domain and
+      // optionally a type expression.  The domain information will get
+      // validated during resolution, but we need the type expression to
+      // correctly create our Chapel array wrapper.
       CallExpr*             call     = toCallExpr(typeExpr->body.tail);
       int                   nArgs    = call->numActuals();
       Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
