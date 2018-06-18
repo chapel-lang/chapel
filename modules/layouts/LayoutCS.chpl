@@ -23,6 +23,9 @@ pragma "no doc"
 /* Debug flag */
 config param debugCS = false;
 
+/* Default sorting mode for LayoutCS. Set true for sorted, false for unsorted */
+config param LayoutCSDefaultToSorted = true;
+
 pragma "no doc"
 /* Comparator used for sorting by columns */
 record _ColumnComparator {
@@ -72,7 +75,7 @@ on the locale where the array variable is declared.
 pragma "use default init"
 class CS: BaseDist {
   param compressRows: bool = true;
-  param sorted: bool = true;
+  param sorted: bool = LayoutCSDefaultToSorted;
 
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
     return new unmanaged CSDom(rank, idxType, this.compressRows, this.sorted, dom.stridable, _to_unmanaged(this), dom);

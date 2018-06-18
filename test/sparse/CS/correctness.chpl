@@ -87,7 +87,11 @@ proc main() {
   }
 
   // dsiEqualsDmap && default value
-  assert(csDmap == csrsDmap);
+  if LayoutCSDefaultToSorted {
+    assert(csDmap == csrsDmap);
+  } else {
+    assert(csDmap == csruDmap);
+  }
 
   // dsiBulkAdd with domain
   csrsDom += D;
