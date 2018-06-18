@@ -260,7 +260,7 @@ module DefaultRectangular {
               block(i) = ranges(i)._low+followMe(i).low:intIdxType..ranges(i)._low+followMe(i).high:intIdxType;
           }
           for i in these_help(1, block) {
-            yield chpl__intToIdx(idxType, i);
+            yield chpl_intToIdx(i);
           }
         }
       }
@@ -463,11 +463,11 @@ module DefaultRectangular {
 
       if rank == 1 {
         for i in zip((...block)) {
-          yield chpl__intToIdx(idxType, i);
+          yield chpl_intToIdx(i);
         }
       } else {
         for i in these_help(1, block) {
-          yield chpl__intToIdx(idxType, i);
+          yield chpl_intToIdx(i);
         }
       }
     }
@@ -639,6 +639,27 @@ module DefaultRectangular {
     iter dsiLocalSubdomains() {
       yield dsiLocalSubdomain();
     }
+
+    // convenience routine for turning an int (tuple) into an index (tuple)
+    inline proc chpl_intToIdx(i) {
+      return chpl__intToIdx(this.idxType, i);
+    }
+  }
+
+  // helper routines for converting tuples of integers into tuple indices
+  
+  inline proc chpl__intToIdx(type idxType, i: integral, j ...) {
+    const first = chpl__intToIdx(idxType, i);
+    const rest = chpl__intToIdx(idxType, (...j));
+    return (first, (...rest));
+  }
+
+  inline proc chpl__intToIdx(type idxType, i: integral, j: integral) {
+    return (chpl__intToIdx(idxType, i), chpl__intToIdx(idxType, j));
+  }
+
+  inline proc chpl__intToIdx(type idxType, i: _tuple) {
+    return chpl__intToIdx(idxType, (...i));
   }
 
   // TODO: should this include the ranges that represent the domain?
@@ -1309,7 +1330,7 @@ module DefaultRectangular {
         // overflow.
 
         const first  = info.getDataIndex(viewDom.dsiLow);
-        const second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, chpl__idxToInt(viewDom.dsiLow)+1));
+        const second = info.getDataIndex(viewDom.chpl_intToIdx(chpl__idxToInt(viewDom.dsiLow)+1));
         const step   = (second-first);
         const last   = first + (viewDom.dsiNumIndices-1) * step;
         for i in chpl_direct_pos_stride_range_iter(first, last, step) {
@@ -1319,7 +1340,7 @@ module DefaultRectangular {
         const viewDomDim = viewDom.dsiDim(1),
               stride = viewDomDim.stride: viewDom.intIdxType,
               start  = viewDomDim.first,
-              second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, viewDomDim.firstAsInt + stride));
+              second = info.getDataIndex(viewDom.chpl_intToIdx(viewDomDim.firstAsInt + stride));
 
         var   first  = info.getDataIndex(start);
         const step   = (second-first):chpl__signedType(viewDom.idxType);

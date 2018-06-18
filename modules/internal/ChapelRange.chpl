@@ -2458,24 +2458,16 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if isEnumType(idxType) then return int; else return idxType;
   }
 
+  // convenience method for converting integers to index types in
+  // order to make use of range.idxType.  Note that this method uses
+  // a single underscore where the standalone versions use double
+  // underscores.  Reason: otherwise, the calls in range.init() try
+  // to call the method version, which isn't currently legal.
   inline proc range.chpl_intToIdx(i) {
     return chpl__intToIdx(this.idxType, i);
   }
 
-  inline proc chpl__intToIdx(type idxType, i: integral, j ...) {
-    const first = chpl__intToIdx(idxType, i);
-    const rest = chpl__intToIdx(idxType, (...j));
-    return (first, (...rest));
-  }
-
-  inline proc chpl__intToIdx(type idxType, i: integral, j: integral) {
-    return (chpl__intToIdx(idxType, i), chpl__intToIdx(idxType, j));
-  }
-
-  inline proc chpl__intToIdx(type idxType, i: _tuple) {
-    return chpl__intToIdx(idxType, (...i));
-  }
-
+  // helper routines for converting integers to indices and back again
   inline proc chpl__intToIdx(type idxType: integral, i: integral) {
     if (i.type == idxType) then
       return i;
