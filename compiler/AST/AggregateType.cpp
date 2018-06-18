@@ -1166,28 +1166,20 @@ std::string AggregateType::docsDirective() {
 }
 
 void AggregateType::createOuterWhenRelevant() {
-  SET_LINENO(this);
-  Symbol* parSym = symbol->defPoint->parentSymbol;
+  if (hasInitializers() == false) {
+    SET_LINENO(this);
+    Symbol* parSym = symbol->defPoint->parentSymbol;
 
-  if (AggregateType* outerType = toAggregateType(parSym->type)) {
+    if (AggregateType* outerType = toAggregateType(parSym->type)) {
 
-    // Lydia NOTE 09/12/17: (Temporary) error case
-    if (outerType->initializerStyle == DEFINES_INITIALIZER ||
-        initializerStyle            == DEFINES_INITIALIZER) {
-      if (outerType->isGeneric() || isGeneric()) {
-        USR_FATAL(this,
-                  "initializers not supported on nested types "
-                  "when either type is generic");
-      }
+      // Create an "outer" pointer to the outer class in the inner class
+      VarSymbol* tmpOuter = new VarSymbol("outer", outerType);
+
+      // Save the pointer to the outer class
+      fields.insertAtTail(new DefExpr(tmpOuter));
+
+      outer = tmpOuter;
     }
-
-    // Create an "outer" pointer to the outer class in the inner class
-    VarSymbol* tmpOuter = new VarSymbol("outer", outerType);
-
-    // Save the pointer to the outer class
-    fields.insertAtTail(new DefExpr(tmpOuter));
-
-    outer = tmpOuter;
   }
 }
 
@@ -1308,6 +1300,12 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
                                         CallExpr* superCall) const {
   Vec<const char*> fieldNamesSet;
 
+  Symbol* _outer = NULL;
+  if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
+    AggregateType* outerType = toAggregateType(ts->type);
+    _outer    = outerType->moveConstructorToOuter(fn);
+  }
+
   for_fields(tmp, this) {
     SET_LINENO(tmp);
 
@@ -1322,8 +1320,6 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
       } else if (field == this->outer) {
         Symbol*        _this     = fn->_this;
         Symbol*        name      = new_CStringSymbol("outer");
-        AggregateType* outerType = toAggregateType(outer->type);
-        Symbol*        _outer    = outerType->moveConstructorToOuter(fn);
 
         fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER, _this, name, _outer));
 
@@ -2312,28 +2308,19 @@ void AggregateType::insertImplicitThis(FnSymbol*         fn,
         se->replace(buildDotExpr(fn->_this, se->unresolved));
       }
     } else if (SymExpr* se = toSymExpr(ast)) {
-      if (this->toLocalField(se) || this->toSuperField(se))
+      DefExpr* def = this->toLocalField(se);
+      if (def == NULL) {
+        def = this->toSuperField(se);
+      }
+      if (def != NULL && isTypeSymbol(def->sym) == false) {
         se->replace(buildDotExpr(fn->_this, se->symbol()->name));
+      }
     }
   }
 }
 
 ArgSymbol* AggregateType::moveConstructorToOuter(FnSymbol* fn) {
   Expr*      insertPoint = symbol->defPoint;
-  ArgSymbol* _mt         = new ArgSymbol(INTENT_BLANK, "_mt",   dtMethodToken);
-  ArgSymbol* retval      = new ArgSymbol(INTENT_BLANK, "outer", this);
-
-  methods.add(fn);
-
-  retval->addFlag(FLAG_GENERIC);
-
-  fn->_outer = retval;
-
-  fn->insertFormalAtHead(new DefExpr(retval));
-  fn->insertFormalAtHead(new DefExpr(_mt));
-
-  fn->setMethod(true);
-  fn->addFlag(FLAG_METHOD_PRIMARY);
 
   while (isTypeSymbol(insertPoint->parentSymbol) == true) {
     insertPoint = insertPoint->parentSymbol->defPoint;
@@ -2341,7 +2328,28 @@ ArgSymbol* AggregateType::moveConstructorToOuter(FnSymbol* fn) {
 
   insertPoint->insertBefore(fn->defPoint->remove());
 
-  return retval;
+  AggregateType* nestedType = toAggregateType(fn->_this->type);
+
+  if (nestedType->hasInitializers() == false) {
+    methods.add(fn);
+
+    fn->setMethod(true);
+    fn->addFlag(FLAG_METHOD_PRIMARY);
+
+    ArgSymbol* _mt         = new ArgSymbol(INTENT_BLANK, "_mt",   dtMethodToken);
+    ArgSymbol* retval      = new ArgSymbol(INTENT_BLANK, "outer", this);
+
+    retval->addFlag(FLAG_GENERIC);
+
+    fn->insertFormalAtHead(new DefExpr(retval));
+    fn->insertFormalAtHead(new DefExpr(_mt));
+
+    fn->_outer = retval;
+
+    return retval;
+  }
+
+  return NULL;
 }
 
 /************************************* | **************************************
