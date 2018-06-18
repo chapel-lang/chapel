@@ -7,7 +7,7 @@ proc =(a:[],b:[]): in chpl__bulkTransferArray
 proc =(a:[],b:[]): attempting doiBulkTransferToKnown
 proc =(a:[],b:[]): in chpl__bulkTransferArray
 proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
-isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
+isDataContiguous(): off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 Performing complex DefaultRectangular transfer
 Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
@@ -32,7 +32,7 @@ proc =(a:[],b:[]): in chpl__bulkTransferArray
 proc =(a:[],b:[]): attempting doiBulkTransferToKnown
 proc =(a:[],b:[]): in chpl__bulkTransferArray
 proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
-isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
+isDataContiguous(): off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 Performing complex DefaultRectangular transfer
 Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
@@ -61,7 +61,7 @@ proc =(a:[],b:[]): in chpl__bulkTransferArray
 proc =(a:[],b:[]): attempting doiBulkTransferToKnown
 proc =(a:[],b:[]): in chpl__bulkTransferArray
 proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
-isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
+isDataContiguous(): off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 Performing complex DefaultRectangular transfer
 Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
@@ -86,7 +86,7 @@ proc =(a:[],b:[]): in chpl__bulkTransferArray
 proc =(a:[],b:[]): attempting doiBulkTransferToKnown
 proc =(a:[],b:[]): in chpl__bulkTransferArray
 proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
-isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
+isDataContiguous(): off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 Performing complex DefaultRectangular transfer
 Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
@@ -115,7 +115,7 @@ proc =(a:[],b:[]): in chpl__bulkTransferArray
 proc =(a:[],b:[]): attempting doiBulkTransferToKnown
 proc =(a:[],b:[]): in chpl__bulkTransferArray
 proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
-isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
+isDataContiguous(): off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 Performing complex DefaultRectangular transfer
 BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE0
@@ -141,7 +141,7 @@ proc =(a:[],b:[]): in chpl__bulkTransferArray
 proc =(a:[],b:[]): attempting doiBulkTransferToKnown
 proc =(a:[],b:[]): in chpl__bulkTransferArray
 proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
-isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
+isDataContiguous(): off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 Performing complex DefaultRectangular transfer
 BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE1

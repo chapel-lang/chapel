@@ -29,6 +29,7 @@
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
+#include "chpl-topo.h"
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chpl-atomics.h"

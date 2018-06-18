@@ -893,7 +893,6 @@ module DefaultRectangular {
     var off: rank*idxType;
     var blk: rank*idxType;
     var str: rank*idxSignedType;
-    var origin: idxType;
     var factoredOffs: idxType;
 
     pragma "local field"
@@ -919,7 +918,6 @@ module DefaultRectangular {
       writeln("off=", off);
       writeln("blk=", blk);
       writeln("str=", str);
-      writeln("origin=", origin);
       writeln("factoredOffs=", factoredOffs);
       writeln("noinit_data=", noinit_data);
     }
@@ -1040,10 +1038,10 @@ module DefaultRectangular {
         // work for something with no immediate reward.
         if dom.dsiNumIndices > 0 {
           const shiftDist = if isIntType(idxType) then
-                              origin - factoredOffs
+                              0:idxType - factoredOffs
                             else
                               // Not bothering to check for over/underflow
-                              origin:idxSignedType - factoredOffs:idxSignedType;
+                              0:idxSignedType - factoredOffs:idxSignedType;
           shiftedData = _ddata_shift(eltType, data, shiftDist);
         }
       }
@@ -1086,7 +1084,7 @@ module DefaultRectangular {
     inline proc getDataIndex(ind: rank*idxType,
                              param getShifted = true) {
       if stridable {
-        var sum = origin;
+        var sum = 0:idxType;
         for param i in 1..rank do
           sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
         return sum;
@@ -1097,7 +1095,7 @@ module DefaultRectangular {
         if (rank == 1 && wantShiftedIndex) {
           return ind(1);
         } else {
-          var sum = if wantShiftedIndex then 0:idxType else origin;
+          var sum = 0:idxType;
 
           for param i in 1..rank-1 {
             sum += ind(i) * blk(i);
@@ -1216,7 +1214,6 @@ module DefaultRectangular {
         off = copy.off;
         blk = copy.blk;
         str = copy.str;
-        origin = copy.origin;
         factoredOffs = copy.factoredOffs;
         dsiDestroyArr();
         data = copy.data;
@@ -1255,7 +1252,7 @@ module DefaultRectangular {
       rad.off = off;
       rad.blk = blk;
       rad.str = str;
-      rad.origin = origin;
+      rad.origin = 0;
       rad.factoredOffs = factoredOffs;
       rad.data = data;
       rad.shiftedData = shiftedData;
@@ -1590,7 +1587,7 @@ module DefaultRectangular {
   // This is very conservative.
   proc DefaultRectangularArr.isDataContiguous(dom) {
     if debugDefaultDistBulkTransfer then
-      chpl_debug_writeln("isDataContiguous(): origin=", origin, " off=", off, " blk=", blk);
+      chpl_debug_writeln("isDataContiguous(): off=", off, " blk=", blk);
 
     if blk(rank) != 1 then return false;
 
