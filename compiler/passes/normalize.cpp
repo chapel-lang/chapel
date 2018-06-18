@@ -2635,10 +2635,13 @@ static void hack_resolve_types(ArgSymbol* arg) {
         Expr* only = arg->typeExpr->body.only();
         Type* type = only->typeInfo();
 
-        // The type constructor might be known, but we don't want to remove
-        // the call to it just yet. See 'normalizeCallToTypeConstructor' for
-        // more information on how a SymExpr could be the baseExpr at this
-        // stage.
+        // Works around an issue with generic types:
+        //
+        // The function 'normalizeCallToTypeConstructor' may create a SymExpr
+        // to a type constructor, in which case the return type will likely
+        // not be 'dtUnknown' or 'dtAny' and may be generic. If the return
+        // type is generic we do not want to remove the type constructor call
+        // because resolution will not be able to handle the resulting AST.
         if (CallExpr* call = toCallExpr(only)) {
           if (SymExpr* se = toSymExpr(call->baseExpr)) {
             if (FnSymbol* fn = toFnSymbol(se->symbol())) {
@@ -2649,6 +2652,7 @@ static void hack_resolve_types(ArgSymbol* arg) {
             }
           }
         }
+
         if (type != dtUnknown && type != dtAny) {
           // This test ensures that we are making progress.
           arg->type = type;
