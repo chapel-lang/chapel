@@ -6,9 +6,6 @@
 extern void chpl_library_init(int argc, char* argv[]);
 extern void chpl_library_finalize(void);
 
-
-extern void chpl_call_free(chpl_external_array x);
-
 // Test of calling an exported function that returns an array
 int main(int argc, char* argv[]) {
   // Initialize the Chapel runtime and standard modules

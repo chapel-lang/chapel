@@ -26,6 +26,7 @@ uv2a.deinit
 UM4explicitDeinit.deinit user
 uv4ae.deinit UC
   MemTracking
+  ExternalArray
   LocaleTree
   IO
   ChapelDistribution

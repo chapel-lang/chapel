@@ -1,6 +1,3 @@
-export proc queryDomain(v: [?D] int) {
-}
-
 export proc typeArg(x: int, type t) {
 }
 

@@ -1,8 +1,6 @@
 extern proc getExternArray(size: int): c_ptr(real);
 extern proc freeArr(arr: c_ptr(real));
 
-use ExternalArray;
-
 proc foo() {
   var size = 10;
   var externArr = getExternArray(size);
