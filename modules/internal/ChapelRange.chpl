@@ -49,7 +49,7 @@
 
   .. code-block:: chapel
 
-    enum color {red, orange, yellow, green, blue, indigo, violet};
+    enum color {red=4, orange=2, yellow=1, green=3, blue=6, indigo=7, violet=5};
     color.orange..color.green;   // orange, yellow, green
 
   Range Types
