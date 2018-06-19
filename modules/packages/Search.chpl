@@ -84,7 +84,7 @@ proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=
    Searches through the array `Data` looking for the value `val` using
    a sequential linear search.  Returns a tuple indicating (1) whether or not
    the value was found and (2) the location of the first occurrence of the
-   value if it was found, or ``Data.domain.high+1`` if it was not found.
+   value if it was found, or ``hi+abs(Dom.stride)`` if it was not found.
 
    :arg Data: The array to search
    :type Data: [] `eltType`
