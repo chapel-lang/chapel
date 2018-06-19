@@ -206,11 +206,17 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
       field->qual = QUAL_VAL; // this is a no-op
     // If the actual or the formal is a reference, store a reference
     else if (var->isRef() ||
-             (formal->isRef()
-              // ... except for a coforall index variable, pass by ref only
+/////////////////////////////////////////////////////////////////////////////
+             // 2018-06: for a record or tuple, if the default intent is used,
+             // the formal's type is non-ref and we have been using QUAL_VAL.
+             // Whereas with a const ref intent, the formal's type is ref and
+             // and we have been setting field->qual = QUAL_REF.
+             // TODO: make the behavior consistent in both cases.
+             (formal->isRef() && formal->type->isRef()
+              // For a coforall index variable, pass by ref only
               // if it is a ref iterator, as indicated by ref-ness of 'var'.
-              && !var->hasFlag(FLAG_COFORALL_INDEX_VAR)
-            ))
+              && !var->hasFlag(FLAG_COFORALL_INDEX_VAR))
+            )
       field->qual = QUAL_REF;
     // BHARSH TODO: This really belongs in RVF. Note the sync/single comment
     // in 'needsAutoCopyAutoDestroyForArg'
