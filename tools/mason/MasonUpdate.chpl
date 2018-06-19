@@ -47,12 +47,12 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock", isTest=false)
 
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd, tf);
-    const toml = projectHome + "/" + tf;
-    const lock = projectHome + "/" + lf;
+    const tomlPath = projectHome + "/" + tf;
+    const lockPath = projectHome + "/" + lf;
     
 
-    updateRegistry(toml, args);
-    const openFile = openreader(toml);
+    updateRegistry(tf, args);
+    const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
     const lockFile = createDepTree(TomlFile);
 
@@ -70,7 +70,7 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock", isTest=false)
       genLock(lockFile, lf);
     }
     else {
-      genLock(lockFile, lock);
+      genLock(lockFile, lockPath);
     }
     openFile.close();
     delete TomlFile;
@@ -90,6 +90,7 @@ proc genLock(lock: Toml, lf: string) {
   const tomlWriter = lockFile.writer();
   tomlWriter.writeln(lock);
   tomlWriter.close();
+  lockFile.close();
 }
 
 proc checkRegistryChanged() {
