@@ -110,12 +110,12 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
  const stride = if Dom.stridable then abs(Dom.stride) else 1;
  if Dom.stridable {
    for i in lo..hi by stride {
-     if chpl_compare( Data[i], val, comparator=comparator ) == 0 then
+     if chpl_compare(Data[i], val, comparator=comparator) == 0 then
        return (true, i);
    }
  } else {
    for i in lo..hi {
-     if chpl_compare( Data[i], val, comparator=comparator ) == 0 then
+     if chpl_compare(Data[i], val, comparator=comparator) == 0 then
        return (true, i);
    }
  }
@@ -157,7 +157,7 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
    :rtype: (`bool`, `Dom.idxType`)
 
  */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.alignedHigh ) {
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.alignedHigh) {
   chpl_check_comparator(comparator, Data.eltType);
 
   const stride = if Dom.stridable then abs(Dom.stride) else 1;
