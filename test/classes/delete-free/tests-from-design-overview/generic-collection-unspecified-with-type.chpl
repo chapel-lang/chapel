@@ -7,6 +7,7 @@ record Collection {
   var element: elementType;
 }
 
+pragma "unsafe" // TODO
 proc Collection.addElement(arg: elementType) {
   element = arg;
 }
