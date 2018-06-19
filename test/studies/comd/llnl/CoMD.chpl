@@ -847,8 +847,8 @@ tArray[timerEnum.TOTAL].stop();
     writeln("_____________________________________________________________________");
 
     var loopTime : real = tArray(timerEnum.LOOP).duration;
-    for i in 1..timerEnum.ATOMHALO:int do if(tArray(i:timerEnum).times > 0) then tArray(i:timerEnum).print(loopTime);
-    for i in timerEnum.SORT:int..timers do if(tArray(i:timerEnum).times > 0) then tArray(i:timerEnum).print(loopTime);
+    for i in timerEnum.TOTAL..timerEnum.ATOMHALO do if(tArray(i).times > 0) then tArray(i).print(loopTime);
+    for i in timerEnum.SORT..timerEnum.COMMREDUCE do if(tArray(i).times > 0) then tArray(i).print(loopTime);
   }
 
   writeln(); 
