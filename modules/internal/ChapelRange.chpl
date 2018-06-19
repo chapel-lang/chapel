@@ -1076,7 +1076,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //
   inline proc +(r: range(?e, ?b, ?s), offset: integral)
   {
-    const i = offset.safeCast(r.intIdxType);
+    const i = offset:r.intIdxType;
     type strType = chpl__rangeStrideType(e);
 
     return new range(e, b, s,
