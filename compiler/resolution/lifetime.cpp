@@ -653,7 +653,7 @@ static bool formalArgumentDoesNotImpactReturnLifetime(ArgSymbol* formal)
   // of a returned variable, since only return scope returns are allowed.
   if (formal->hasFlag(FLAG_SCOPE))
     return true;
- 
+
   return false;
 }
 
@@ -919,7 +919,7 @@ bool GatherRefTempsVisitor::enterCallExpr(CallExpr* call) {
         }
       }
     }
-    
+
     if (a && b) {
       addPairToDetempMap(a, b, lifetimes->detemp);
       lifetimes->callsToIgnore.insert(call);
@@ -998,11 +998,11 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
 
     if (arg->hasFlag(FLAG_RETURN_SCOPE)) {
       if (sym->isRef() &&
-	  !intentIsLocalVariable(arg->intent) &&
-	  !intentIsLocalVariable(arg->originalIntent))
-	lp.referent.returnScope = true;
+          !intentIsLocalVariable(arg->intent) &&
+          !intentIsLocalVariable(arg->originalIntent))
+        lp.referent.returnScope = true;
       if (isSubjectToBorrowLifetimeAnalysis(sym->type))
-	lp.borrowed.returnScope = true;
+        lp.borrowed.returnScope = true;
     }
   } else if (VarSymbol* var = toVarSymbol(sym)) {
     // Don't bother getting intrinsic lifetime for RVV
@@ -1034,7 +1034,7 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
     // Handle types that should have infinite borrow lifetime
     if (sym->type && typeHasInfiniteBorrowLifetime(sym->type))
       lp.borrowed = infiniteLifetime();
-   
+
     if (sym->id == debugLifetimesForId)
       gdbShouldBreakHere();
 
@@ -1045,13 +1045,13 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
 }
 
 static bool isCallToFunctionReturningNotOwned(CallExpr* call) {
-  
+
   FnSymbol* calledFn = call->resolvedOrVirtualFunction();
   if (calledFn &&
       calledFn->hasEitherFlag(FLAG_RETURN_NOT_OWNED,
                               FLAG_RETURNS_ALIASING_ARRAY))
     return true;
-  
+
   return false;
 }
 
@@ -1075,7 +1075,7 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
     AggregateType* at = toAggregateType(initSym->getValType());
     INT_ASSERT(at && isRecord(at));
- 
+
     // Start with a lifetime already determined, in case we
     // visit the same one more than once due to canonicalizing temps
     if (lifetimes->intrinsicLifetime.count(initSym))
@@ -1083,10 +1083,10 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
     if (recordContainsOwnedClassFields(at)) {
       if (isCallToFunctionReturningNotOwned(initCall)) {
-	// leave it unknown. 
+        // leave it unknown.
       } else {
-	// set it to this variable's reachability, under the assumption that
-	// it will be destroyed when it goes out of scope.
+        // set it to this variable's reachability, under the assumption that
+        // it will be destroyed when it goes out of scope.
         lt = reachabilityLifetimeForSymbol(initSym);
       }
     }
@@ -1099,7 +1099,7 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
     Symbol* lhs = lhsSe->symbol();
     CallExpr* rhsCall = toCallExpr(rhsExpr);
     initSym = lifetimes->getCanonicalSymbol(lhs);
-    
+
     if (initSym->hasFlag(FLAG_TEMP) &&
         rhsCall &&
         shouldPropagateLifetimeTo(rhsCall, initSym)) {
@@ -1135,10 +1135,10 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
     lifetimes->intrinsicLifetime[initSym].borrowed = lt;
   }
 
-  return false; 
+  return false;
 }
 
- 
+
 bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
   if (call->id == debugLifetimesForId)
@@ -1171,16 +1171,16 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
     if (shouldPropagateLifetimeTo(call, lhs)) {
 
       Expr* rhsExpr = call->get(2);
-      
+
       bool usedAsRef = lhs->isRef() && rhsExpr->isRef();
       bool usedAsBorrow = isOrContainsBorrowedClass(lhs->type);
 
       LifetimePair lp = lifetimes->inferredLifetimeForExpr(rhsExpr,
                                                            usedAsRef,
                                                            usedAsBorrow);
- 
+
       if (lhs->isRef() && rhsExpr->isRef()) {
-        // When setting the reference, set its intrinsic lifetime. 
+        // When setting the reference, set its intrinsic lifetime.
         if (!lp.referent.unknown || !lp.borrowed.unknown) {
           if (lhs->id == debugLifetimesForId)
             gdbShouldBreakHere();
@@ -1189,14 +1189,14 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
           intrinsic = minimumLifetimePair(intrinsic, lp);
         }
       }
-      
+
       if (!(lhs->isRef() && rhsExpr->isRef()))
-	// lhs can't have ref lifetime if it isn't a ref
-	lp.referent = unknownLifetime();
+        // lhs can't have ref lifetime if it isn't a ref
+        lp.referent = unknownLifetime();
 
       if (!isOrContainsBorrowedClass(lhs->type))
         // lhs can't have borrow lifetime if it can't borrow
-	lp.borrowed = unknownLifetime();
+        lp.borrowed = unknownLifetime();
 
       lp.referent.relevantExpr = call;
       lp.borrowed.relevantExpr = call;
@@ -1261,7 +1261,7 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
       lp = infiniteLifetimePair();
     }
 
-    // Set intrinsic lifetime for index here at it's definition point 
+    // Set intrinsic lifetime for index here at it's definition point
     if (index->isRef()) {
       if (!lp.referent.unknown || !lp.borrowed.unknown) {
         if (index->id == debugLifetimesForId)
