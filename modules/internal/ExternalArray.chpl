@@ -164,6 +164,13 @@ module ExternalArray {
       return dsiGetIndices();
     }
 
+    proc dsiDims()
+      return dsiGetIndices();
+
+    proc dsiLow {
+      return 0;
+    }
+
     proc dsiAssignDomain(rhs: domain, lhsPrivate: bool) {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
