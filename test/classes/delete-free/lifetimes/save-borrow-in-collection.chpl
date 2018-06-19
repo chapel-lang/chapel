@@ -51,11 +51,6 @@ proc error6(arg: borrowed MyClass) {
   globalA[1] = arg;
 }
 
-proc error7(arg: borrowed MyClass) {
-  globalA.push_back(arg);
-}
-
-
 proc test() {
   var x = new owned MyClass(1);
   var b = x.borrow();
@@ -65,7 +60,6 @@ proc test() {
   error4(b);
   call_error5(b);
   error6(b);
-  error7(b);
 }
 test();
 
