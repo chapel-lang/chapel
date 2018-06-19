@@ -6,7 +6,4 @@ class Matrix {
   var data: [dom] element_t = initVal;
 }
 
-var m = new Matrix(real, {1..10, 1..10}, 1.0);
-
-delete m;
-
+var m = new owned Matrix(real, {1..10, 1..10}, 1.0);

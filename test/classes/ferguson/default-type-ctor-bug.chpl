@@ -10,7 +10,7 @@ class MyClass {
 }
 
 proc test() {
-  var c:MyClass(int);
+  var c:borrowed MyClass(int);
 }
 
 test();

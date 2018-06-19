@@ -3,7 +3,7 @@ class C {
   var x: t;
 }
 
-proc foo(c: C) {
+proc foo(c: borrowed C) {
   return c.x;
 }
 

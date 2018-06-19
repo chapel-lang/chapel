@@ -10,7 +10,7 @@ class MyClass : ParentClass {
 
 proc test() {
   var x = new unmanaged MyClass(1);
-  var y = x:ParentClass;
+  var y = x:borrowed ParentClass;
   var z = x:c_void_ptr;
 
   if debug {
@@ -20,7 +20,7 @@ proc test() {
   }
 
   var x2 = x:unmanaged ParentClass;
-  var y2 = x2:MyClass;
+  var y2 = x2:borrowed MyClass;
   var z2 = x2:c_void_ptr;
 
   if debug {
