@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include "returnArrayTakesArg.h"
+#include "returnArrayTakesArrayArg.h"
 
 extern void chpl_library_init(int argc, char* argv[]);
 extern void chpl_library_finalize(void);
@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
   int64_t x[4] = {1, 2, 3, 4};
   chpl_external_array arg = chpl_make_external_array_ptr(x, 4);
   // Call the function to get the array
-  chpl_external_array arr = foo(arg);
+  chpl_external_array arr = foo(&arg);
   int64_t* actual = (int64_t*)arr.elts;
 
   if (arr.size != arg.size) {

@@ -1,5 +1,5 @@
+#include <stdbool.h>
 #include <stdio.h>
-#include <inttypes.h>
 
 #include "returnArrayOfReals.h"
 
@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
 
   // Write its elements
   for (int i = 0; i < 4; i++) {
-    bool worked = (x[i] <= i + 2) && (x[i] > i);
+    bool worked = (actual[i] <= i + 2) && (actual[i] > i);
     printf("Element[%d] %s\n", i, worked ? "worked" : "did not work");
   }
 
