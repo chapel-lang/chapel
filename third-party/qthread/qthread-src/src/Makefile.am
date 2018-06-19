@@ -110,6 +110,7 @@ EXTRA_DIST += \
 			 alloc/chapel.c \
 			 affinity/common.c \
 			 affinity/hwloc.c \
+			 affinity/hwloc_via_chapel.c \
 			 affinity/binders.c \
 			 affinity/hwloc_v2.c \
 			 affinity/sys.c \

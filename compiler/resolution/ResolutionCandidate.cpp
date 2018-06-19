@@ -93,7 +93,9 @@ void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
   // Ignore tuple constructors; they were generated
   // with their type constructors.
   if (fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
-    CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
+    AggregateType* at = toAggregateType(fn->_this->type);
+    INT_ASSERT(at->typeConstructor != NULL);
+    CallExpr* typeConstructorCall = new CallExpr(at->typeConstructor);
 
     for_formals(formal, fn) {
       if (formal->hasFlag(FLAG_IS_MEME) == false) {
@@ -578,13 +580,14 @@ static bool isCandidateFn(ResolutionCandidate* res, CallInfo& info) {
   // signature.
   //
   // TODO: Expand this check for all methods
-  if (info.call->numActuals() >= 2) {
-    if (res->fn->isInitializer() && isCandidateInit(res, info) == false) {
-      return false;
-    } else if (strcmp(res->fn->name, "_new") == 0 &&
-               isCandidateNew(res, info) == false) {
-      return false;
-    }
+  if (info.call->numActuals() >= 2 &&
+      res->fn->isInitializer() &&
+      isCandidateInit(res, info) == false) {
+    return false;
+  } else if (info.call->numActuals() >= 1 &&
+             res->fn->hasFlag(FLAG_NEW_WRAPPER) &&
+             isCandidateNew(res, info) == false) {
+    return false;
   }
 
   return true;

@@ -94,15 +94,14 @@ proc conjGrad(A: [?MatDom], X: [?VectDom]) {
       P = R;
   var rho = + reduce R**2;
 
-  var AtimesRow: [MatDom]    elemType;  // helper matrix
-  var W:         [1..n,1..1] elemType;  // helper dense column
+  var W: [1..n,1..1] elemType;  // helper dense column
  
   for cgit in 1..cgitmax {
     // WANT (a partial reduction):
     //    const Q = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * P(j));
     //
-    matrixTimesRow(AtimesRow, A, P);
-    W = plusPR(W.domain, AtimesRow);
+    inline proc ForallExpr1.this((i,j)) return A(i,j) * P(1,j);
+    plusPRinto(W, MatDom, new ForallExpr1());
     transpose(Q, W);
 
     const alpha = rho / + reduce (P*Q);
@@ -118,8 +117,8 @@ proc conjGrad(A: [?MatDom], X: [?VectDom]) {
   // WANT (a partial reduction):
   //      R = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * Z(j));
   //
-  matrixTimesRow(AtimesRow, A, Z);
-  W = plusPR(W.domain, AtimesRow);
+  inline proc ForallExpr2.this((i,j)) return A(i,j) * Z(1,j);
+  plusPRinto(W, MatDom, new ForallExpr2());
   transpose(R, W);
 
   const rnorm = sqrt(+ reduce ((X-R)**2));
@@ -127,11 +126,12 @@ proc conjGrad(A: [?MatDom], X: [?VectDom]) {
   return (Z, rnorm);
 }
 
-// compute AtimesRow(i,j) = A(i,j)*Row(j)
-proc matrixTimesRow(AtimesRow, A, Row) {
-  forall ((i,j), av, a) in zip(A.domain, AtimesRow, A) do
-    av = a * Row(1,j);
-}
+// This is a workaround for the current limitations, see #9773.
+// We may want to define the record type in the nested scope -
+// where its 'this' method is currently defined - and not have to
+// provide the 'init' method.
+record ForallExpr1 { proc init(){} }
+record ForallExpr2 { proc init(){} }
 
 proc transpose(DestRow, SrcCol) {
   // a shared-memory version for now

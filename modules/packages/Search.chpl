@@ -84,7 +84,7 @@ proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=
    Searches through the array `Data` looking for the value `val` using
    a sequential linear search.  Returns a tuple indicating (1) whether or not
    the value was found and (2) the location of the first occurrence of the
-   value if it was found, or ``Data.domain.high+1`` if it was not found.
+   value if it was found, or ``hi+abs(Dom.stride)`` if it was not found.
 
    :arg Data: The array to search
    :type Data: [] `eltType`
@@ -98,31 +98,29 @@ proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=
    :type hi: `Dom.idxType`
 
    :returns: A tuple indicating (1) if the value was found and (2) the location
-      of the value if it was found or ``Data.domain.high+1`` if it was not
+      of the value if it was found or ``hi+abs(Dom.stride)`` if it was not
       found.
    :rtype: (`bool`, `Dom.idxType`)
 
  */
 proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) {
 
-  chpl_check_comparator(comparator, Data.eltType);
+ chpl_check_comparator(comparator, Data.eltType);
 
-  const stride = if Dom.stridable then abs(Dom.stride) else 1;
-  // Domain slicing is cheap, but avoiding it when possible helps performance
-  if lo == Dom.low && hi == Dom.high {
-    for i in Dom {
-      if chpl_compare(Data[i], val, comparator=comparator) == 0 then
-        return (true, i);
-    }
-  } else {
-    const r = if Dom.stridable then lo..hi by stride else lo..hi;
-    for i in Dom[r] {
-      if chpl_compare(Data[i], val, comparator=comparator) == 0 then
-        return (true, i);
-    }
-  }
+ const stride = if Dom.stridable then abs(Dom.stride) else 1;
+ if Dom.stridable {
+   for i in lo..hi by stride {
+     if chpl_compare(Data[i], val, comparator=comparator) == 0 then
+       return (true, i);
+   }
+ } else {
+   for i in lo..hi {
+     if chpl_compare(Data[i], val, comparator=comparator) == 0 then
+       return (true, i);
+   }
+ }
 
-  return (false, Dom.high+stride);
+ return (false, hi+stride);
 }
 
 
@@ -159,7 +157,7 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
    :rtype: (`bool`, `Dom.idxType`)
 
  */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.alignedHigh) {
   chpl_check_comparator(comparator, Data.eltType);
 
   const stride = if Dom.stridable then abs(Dom.stride) else 1;

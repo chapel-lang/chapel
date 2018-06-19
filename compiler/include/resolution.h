@@ -276,4 +276,8 @@ Type* getInstantiationType(Type* actualType, Type* formalType);
 
 void resolveIfExprType(CondStmt* stmt);
 
+void trimVisibleCandidates(CallInfo& call,
+                           Vec<FnSymbol*>& mostApplicable,
+                           Vec<FnSymbol*>& visibleFns);
+
 #endif

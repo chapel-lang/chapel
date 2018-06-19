@@ -29,6 +29,7 @@
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
+#include "chpl-topo.h"
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chpl-atomics.h"
@@ -798,7 +799,7 @@ static void set_num_comm_domains() {
   char num_cpus_val[22]; // big enough for an unsigned 64-bit quantity
   int num_cpus;
 
-  num_cpus = chpl_getNumPhysicalCpus(true) + 1;
+  num_cpus = chpl_topo_getNumCPUsPhysical(true) + 1;
 
   snprintf(num_cpus_val, sizeof(num_cpus_val), "%d", num_cpus);
   if (setenv("GASNET_DOMAIN_COUNT", num_cpus_val, 0) != 0) {

@@ -34,6 +34,7 @@
 #include "chpl-comm-compiler-macros.h"
 
 #include <assert.h>
+#include <pthread.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -98,7 +99,31 @@ static size_t totalAllocated = 0; /* total memory allocated */
 static size_t totalFreed = 0;     /* total memory freed */
 static size_t totalEntries = 0;     /* number of entries in hash table */
 
-static chpl_sync_aux_t memTrack_sync;
+
+// We can't use a sync var for concurrency control here.  The Qthreads
+// internal memory allocator shim references this memory tracking code
+// via the Chapel runtime public memory layer interface.  Referring to a
+// sync var here when exiting (to report memTrack results, say), after
+// the tasking layer is shut down, ends up trying to create a qthread in
+// the terminated Qthreads library.  Chaos results.  We also cannot use
+// an atomic var, because with CHPL_ATOMICS=locks those are implemented
+// by means of sync vars.  So, we use a pthread mutex.  Note that this
+// is only safe if we cannot switch tasks on a pthread while holding the
+// mutex and then try to lock it recursively.  Currently that is the
+// case, since we do not yield while holding the mutex.
+// 
+static pthread_mutex_t memTrack_lockVar = PTHREAD_MUTEX_INITIALIZER;
+
+static inline
+void memTrack_lock(void) {
+  (void) pthread_mutex_lock(&memTrack_lockVar);
+}
+
+static inline
+void memTrack_unlock(void) {
+  (void) pthread_mutex_unlock(&memTrack_lockVar);
+}
+
 
 
 void chpl_setMemFlags(void) {
@@ -153,7 +178,6 @@ void chpl_setMemFlags(void) {
   }
 
   if (chpl_memTrack) {
-    chpl_sync_initAux(&memTrack_sync);
     hashSizeIndex = 0;
     hashSize = hashSizes[hashSizeIndex];
     memTable = sys_calloc(hashSize, sizeof(memTableEntry*));
@@ -298,7 +322,7 @@ void chpl_printMemAllocStats(int32_t lineno, int32_t filename) {
     return;
   }
 
-  chpl_sync_lock(&memTrack_sync);
+  memTrack_lock();
   fprintf(memLogFile, "=================\n");
   fprintf(memLogFile, "Memory Statistics\n");
   if (chpl_numNodes == 1) {
@@ -327,7 +351,7 @@ void chpl_printMemAllocStats(int32_t lineno, int32_t filename) {
     }
     fprintf(memLogFile, "==============================================================\n");
   }
-  chpl_sync_unlock(&memTrack_sync);
+  memTrack_unlock();
 }
 
 
@@ -585,9 +609,9 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        int32_t lineno, int32_t filename) {
   if (number * size > memThreshold) {
     if (chpl_memTrack && chpl_mem_descTrack(description)) {
-      chpl_sync_lock(&memTrack_sync);
+      memTrack_lock();
       addMemTableEntry(memAlloc, number, size, description, lineno, filename);
-      chpl_sync_unlock(&memTrack_sync);
+      memTrack_unlock();
     }
     if (chpl_verbose_mem) {
       fprintf(memLogFile, "%" FORMAT_c_nodeid_t ": %s:%" PRId32
@@ -603,7 +627,7 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
 void chpl_track_free(void* memAlloc, int32_t lineno, int32_t filename) {
   memTableEntry* memEntry = NULL;
   if (chpl_memTrack) {
-    chpl_sync_lock(&memTrack_sync);
+    memTrack_lock();
     memEntry = removeMemTableEntry(memAlloc);
     if (memEntry) {
       if (chpl_verbose_mem) {
@@ -615,7 +639,7 @@ void chpl_track_free(void* memAlloc, int32_t lineno, int32_t filename) {
       }
       sys_free(memEntry);
     }
-    chpl_sync_unlock(&memTrack_sync);
+    memTrack_unlock();
   } else if (chpl_verbose_mem && !memEntry) {
     fprintf(memLogFile, "%" FORMAT_c_nodeid_t ": %s:%" PRId32 ": free at %p\n",
             chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
@@ -630,13 +654,13 @@ void chpl_track_realloc_pre(void* memAlloc, size_t size,
   memTableEntry* memEntry = NULL;
 
   if (chpl_memTrack && size > memThreshold) {
-    chpl_sync_lock(&memTrack_sync);
+    memTrack_lock();
     if (memAlloc) {
       memEntry = removeMemTableEntry(memAlloc);
       if (memEntry)
         sys_free(memEntry);
     }
-    chpl_sync_unlock(&memTrack_sync);
+    memTrack_unlock();
   }
 }
 
@@ -647,9 +671,9 @@ void chpl_track_realloc_post(void* moreMemAlloc,
                          int32_t lineno, int32_t filename) {
   if (size > memThreshold) {
     if (chpl_memTrack && chpl_mem_descTrack(description)) {
-      chpl_sync_lock(&memTrack_sync);
+      memTrack_lock();
       addMemTableEntry(moreMemAlloc, 1, size, description, lineno, filename);
-      chpl_sync_unlock(&memTrack_sync);
+      memTrack_unlock();
     }
     if (chpl_verbose_mem) {
       fprintf(memLogFile, "%" FORMAT_c_nodeid_t ": %s:%" PRId32

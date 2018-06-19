@@ -25,6 +25,7 @@ module HDF5_HL {
 
   use HDF5_HL_Macros;
   use HDF5_WAR;
+  use HDF5_Chapel;
 
   extern proc H5open() : herr_t;
 
@@ -3514,6 +3515,181 @@ module HDF5_HL {
                                 type_id,
                                 buffer);
       }
+    }
+  }
+
+  module HDF5_Chapel {
+    /*
+    // This record could be used to open and close an HDF5 file based on
+    // simple scoping rules.  It is currently not used.
+    record HDF5_file {
+      const filename: string;
+      const file_id: hid_t;
+
+      proc init(name: string, access: c_uint = H5F_ACC_RDONLY) {
+        filename = name;
+        file_id = H5Fopen(name.c_str(), access, H5P_DEFAULT);
+      }
+
+      proc deinit() {
+        H5Fclose(file_id);
+      }
+    }
+    */
+
+    /* Read the dataset named `dsetName` out of all HDF5 files in the
+       directory `dirName` with filenames that begin with `filenameStart`.
+       This will read the files in parallel with one task per locale in the
+       `locs` array.  Specifying the same locale multiple times in the `locs`
+       array will cause undefined behavior.
+
+       Returns a distributed array of :record:`ArrayWrapper` records
+       containing the arrays that are read. Each instance will reside on
+       the locale where the corresponding data was read.
+     */
+    proc readAllHDF5Files(locs: [] locale, dirName: string, dsetName: string,
+                          filenameStart: string, type eltType, param rank) {
+      use BlockDist, HDF5_WAR, FileSystem;
+
+      var filenames: [1..0] string;
+      for f in findfiles(dirName) {
+        if f.startsWith(dirName + '/' + filenameStart:string) &&
+           f.endsWith(".h5") {
+          filenames.push_back(f);
+        }
+      }
+      const Space = {1..filenames.size};
+      const BlockSpace = Space dmapped Block(Space, locs,
+                                             dataParTasksPerLocale=1);
+      var files: [BlockSpace] ArrayWrapper(eltType, rank);
+      forall (f, name) in zip(files, filenames) {
+        var locName = name; // copy this string to be local
+        var file_id = H5Fopen(locName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+        var dims: [0..#rank] hsize_t;
+        var dsetRank: c_int;
+
+        H5LTget_dataset_ndims(file_id, dsetName.c_str(), dsetRank);
+        if rank != dsetRank {
+          halt("rank mismatch in file: " + name + " dataset: " + dsetName +
+               rank + " != " + dsetRank);
+        }
+        H5LTget_dataset_info_WAR(file_id, dsetName.c_str(), c_ptrTo(dims), nil, nil);
+        var data: [0..# (* reduce dims)] eltType;
+        readHDF5Dataset(file_id, dsetName, data);
+
+        var rngTup: rank*range;
+        for param i in 0..rank-1 do rngTup[i+1] = 1..dims[i]:int;
+
+        const D = {(...rngTup)};
+
+        f = new ArrayWrapper(data.eltType, rank, D, reshape(data, D));
+        H5Fclose(file_id);
+      }
+      return files;
+    }
+
+    /* Read the dataset named `dsetName` out of the open file that `file_id`
+       refers to.  Store the input into the array `data`.
+       Can read data of type int/uint (size 8, 16, 32, 64), real (size 32, 64),
+       and c_string.
+     */
+    proc readHDF5Dataset(file_id, dsetName: string, data) {
+      if !isArray(data) then compilerError("'data' must be an array");
+
+      type eltType = data.eltType;
+
+      const hdf5Type = getHDF5Type(eltType);
+      H5LTread_dataset(file_id, dsetName.c_str(), hdf5Type, c_ptrTo(data));
+    }
+
+    /* Return the HDF5 type equivalent to the Chapel type `eltType` */
+    proc getHDF5Type(type eltType) {
+      var hdf5Type: hid_t;
+      select eltType {
+        when int(8)   do hdf5Type = H5T_STD_I8LE;
+        when int(16)  do hdf5Type = H5T_STD_I16LE;
+        when int(32)  do hdf5Type = H5T_STD_I32LE;
+        when int(64)  do hdf5Type = H5T_STD_I64LE;
+        when uint(8)  do hdf5Type = H5T_STD_U8LE;
+        when uint(16) do hdf5Type = H5T_STD_U16LE;
+        when uint(32) do hdf5Type = H5T_STD_U32LE;
+        when uint(64) do hdf5Type = H5T_STD_U64LE;
+        when real(32) do hdf5Type = H5T_IEEE_F32LE;
+        when real(64) do hdf5Type = H5T_IEEE_F64LE;
+
+        when c_string {
+          hdf5Type = H5Tcopy(H5T_C_S1);
+          H5Tset_size(hdf5Type, H5T_VARIABLE);
+        }
+
+        otherwise {
+          halt("Unhandled type in getHDF5Type: ", eltType:string);
+        }
+      }
+      return hdf5Type;
+    }
+
+    /* Enum indicating the way to open a file for writing.  `Truncate` will
+       clear the contents of an existing file.  `Append` will add to a file
+       that already exists.  Both will open a new empty file.
+     */
+    enum Hdf5OpenMode { Truncate, Append };
+
+    /* Write the arrays from the :record:`ArrayWrapper` records stored in
+       the `data` argument to the corresponding filename in the
+       `filenames` array. The dataset name is taken from the corresponding
+       position in the `dsetNames` array.
+
+       The `data` argument should be a Block distributed array with
+       `dataParTasksPerLocale==1`.
+
+       Either truncate or append to the file depending on the `mode` argument.
+
+       It would be preferable to find the `eltType` and `rank` values
+       directly from the `data` argument instead of needing explicit
+       arguments for them, but it isn't obvious how to do that currently.
+       If the generic fields in the `ArrayWrapper` could be queried that
+       would be a nice replacement for these arguments.  e.g.
+       `data: [] ArrayWrapper(?eltType, ?rank)`.
+     */
+    proc writeArraysToHDF5Files(dirName: string, dsetNames: [] string,
+                                filenames: [] string, type eltType,
+                                param rank: int,
+                                data: [] ArrayWrapper(eltType, rank),
+                                mode: Hdf5OpenMode) throws {
+      use BlockDist, HDF5_WAR, FileSystem;
+
+      // assert(isBlockDistributed(data) &&
+      //        data.<dist>.dataParTasksPerLocale==1);
+
+      forall (arr, dsetName, fname) in zip(data, dsetNames, filenames) {
+        var file_id: hid_t;
+        const filename = dirName + "/" + fname;
+        var fileExists: bool;
+
+        if mode == Hdf5OpenMode.Truncate || !exists(filename) {
+          file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+        } else {
+          file_id = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+        }
+        var dims: [0..#rank] hsize_t;
+        for param i in 0..rank-1 {
+          dims[i] = arr.D.dim(i+1).size: hsize_t;
+        }
+        H5LTmake_dataset_WAR(file_id, dsetName.c_str(), rank, c_ptrTo(dims), getHDF5Type(eltType), c_ptrTo(arr.A));
+        H5Fclose(file_id);
+      }
+    }
+
+
+    /* A record that stores a rectangular array.  An array of `ArrayWrapper`
+       records can store multiple differently sized arrays.
+     */
+    record ArrayWrapper {
+      type eltType;
+      param rank: int;
+      var D: domain(rank);
+      var A: [D] eltType;
     }
   }
 }

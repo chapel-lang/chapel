@@ -2,4 +2,4 @@ class A {
   var v;
 }
 
-var x = new A();
+var x = new borrowed A();

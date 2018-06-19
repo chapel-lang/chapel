@@ -4,7 +4,7 @@ class pair {
 }
 
 proc main() {
-  var a: pair;
+  var a: unmanaged pair;
 
   a   = new unmanaged pair();
   a.x = 10;

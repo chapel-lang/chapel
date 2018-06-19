@@ -3,13 +3,13 @@ class C {
 }
 
 proc newC() {
-  var c = new C();
+  var c = new owned C();
   c.x = 2.3;
   return c;
 }
 
 class D {
-  var y: C;
+  var y: owned C;
 
   proc start {
     y = newC();
@@ -21,7 +21,7 @@ class D {
 }
 
 proc main() {
-  var myD = new D();
+  var myD = new borrowed D();
   D.start;  // BUG if I call this on D!!
   D.testit;
 }

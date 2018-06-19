@@ -682,7 +682,7 @@ module ArrayViewReindex {
     // indices/domains back into the original index set.
     //
 
-  inline proc chpl_reindexConvertIdxDim(i: integral, updom, downdom, dim: int) {
+  inline proc chpl_reindexConvertIdxDim(i, updom, downdom, dim: int) {
     return downdom.dsiDim(dim).orderToIndex(updom.dsiDim(dim).indexOrder(i));
   }
 

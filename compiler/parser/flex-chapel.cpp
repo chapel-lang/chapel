@@ -3225,7 +3225,11 @@ static int processToken(yyscan_t scanner, int t) {
         t == TREF    ||
         t == TCOLON  ||
         t == TASSIGN ||
-        t == TRSBR) {
+        t == TRSBR ||
+        t == TBORROWED ||
+        t == TUNMANAGED ||
+        t == TOWNED ||
+        t == TSHARED) {
       captureString.push_back(' ');
     }
   }

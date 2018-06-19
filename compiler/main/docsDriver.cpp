@@ -106,6 +106,7 @@ ArgumentDescription docs_arg_desc[] = {
 
  {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
  DRIVER_ARG_DEVELOPER,
+ DRIVER_ARG_BREAKFLAGS_COMMON,
  DRIVER_ARG_DEBUGGERS,
  DRIVER_ARG_PRINT_CHPL_HOME,
 

@@ -1,40 +1,41 @@
-use OwnedObject;
+
 use utilities;
 use LayoutCS;
 
-// + reduce (shape=DIMS) ARR
+// RES = + reduce (shape=RES.domain) [idx in DOM] FEXPR(idx)
 
-proc plusPR(DIMS,ARR) throws {
-  const OP = new unmanaged SumReduceScanOp(eltType=ARR.eltType);
+proc plusPRinto(ref RES,DOM,FEXPR) throws {
+  if !isDomain(DOM) then
+    compilerError("partial reductions over forall-expressions are currently available only for forall-expressions over domains");
+  type eltType = partRedForallExprElmType(DOM, FEXPR);
+  const OP = new unmanaged SumReduceScanOp(eltType=eltType);
   defer {
     delete OP;
   }
-  return ARR.domain.dist.dsiPartialReduce(OP, DIMS, ARR);
+  DOM.dist.dsiPartialReduceInto(RES, OP, DOM, FEXPR);
 }
 
 // At the moment, this is an exact copy of DefaultDist.dsiPartialReduce()
 // except for the receiver class.
-proc CS.dsiPartialReduce(const reduceOp, const resDimSpec,
-                         const srcArr)
+proc CS.dsiPartialReduceInto(ref resArr, const perElemOp,
+                             const srcDom, const fExpr)
   throws
 {
-  partRedEnsureArray(srcArr);
-  const ref srcDom  = srcArr.domain;
-  const     srcDims = srcDom.dims();
+//  const ref srcDom  = srcArr.domain;
+  const srcDims = srcDom.dims();
 
-  const (resDom, resDims) =
-    partRedCheckAndCreateResultDimensions(this, resDimSpec, srcArr, srcDims);
+  const ref resDom = resArr.domain;
+  const resDims = resDom.dims();
+  resArr = perElemOp.identity;
+  const resReduceOp = new unmanaged PartRedOp(eltType=resArr.type,
+                                              perElemOp = perElemOp);
 
-  var resArr: [resDom] srcArr.eltType = reduceOp.identity;
-  const resReduceOp = new (reduceOp.type)(eltType=resArr.type);
-
-  forall (srcIdx, srcElm) in zip(srcDom, srcArr)
+  forall srcIdx in srcDom
     with (resReduceOp reduce resArr)
   {
     const resIdx = fullIdxToReducedIdx(resDims, srcDims, srcIdx);
-    reduceOp.accumulateOntoState(resArr[resIdx], srcElm);
+    resArr reduce= (resIdx, fExpr(srcIdx));
   }
 
   delete resReduceOp;
-  return  resArr;
 }

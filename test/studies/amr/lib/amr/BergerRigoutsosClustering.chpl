@@ -105,6 +105,7 @@ class CandidateDomain {
   var   signatures: rank*ArrayWrapper;
 
   
+  pragma "use default init"
   class ArrayWrapper
   {
     var Domain: domain(1,stridable=true);
@@ -131,13 +132,15 @@ class CandidateDomain {
   // comment can/should be reverted (the introduction of the
   // CandidateDomain() constructor below).
   //
-  proc CandidateDomain(param rank: int,
+  proc init(param rank: int,
                        initD,
                        initFlags,
                        initMin_width) {
+    this.rank = rank;
     D = initD;
     flags = initFlags;
     min_width = initMin_width;
+    this.complete();
     //---- Calculate signatures ----
     for d in 1..rank do
       signatures(d) = new ArrayWrapper( {D.dim(d)} );

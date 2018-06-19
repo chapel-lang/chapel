@@ -1146,7 +1146,7 @@ buildFollowLoop(VarSymbol* iter,
 static CallExpr* makeUnmanagedNew(Expr* typeArg, Expr* arg) {
   return new CallExpr(PRIM_NEW,
                       new CallExpr(typeArg, arg,
-                        new NamedExpr("_chpl_manager",
+                        new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtUnmanaged->symbol))));
 }
 
@@ -2558,6 +2558,7 @@ DefExpr* buildForwardingExprFnDef(Expr* expr) {
 
   fn->addFlag(FLAG_INLINE);
   fn->addFlag(FLAG_MAYBE_REF);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
 
   fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
 

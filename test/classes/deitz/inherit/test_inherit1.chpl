@@ -6,7 +6,7 @@ class D : C {
   var y : real = 2.0;
 }
 
-var c : C = new borrowed C(), d : D = new borrowed D();
+var c : borrowed C = new borrowed C(), d : borrowed D = new borrowed D();
 
 writeln(c);
 writeln(d);

@@ -12,7 +12,7 @@ rng.fillRandom(R1D);
 rng.fillRandom(R2D);
 rng.fillRandom(R2D32);
 
-var saved: [1..3][normType.norm1:int..normType.normFrob:int] int;
+var saved: [1..3][normType.norm1..normType.normFrob] int;
 
 proc iNorm(val, sigfigs=10) {
   return (val*(10**sigfigs):val.type):int;
@@ -21,10 +21,10 @@ proc iNorm(val, sigfigs=10) {
 proc doNorm(A, loc, save=false) {
   if save then {
     var val = norm(A,normType.norm1);
-    saved[loc][normType.norm1:int] = iNorm(val);
+    saved[loc][normType.norm1] = iNorm(val);
     writeln("\t1-norm: ", val);
   }
-  else if iNorm(norm(A,normType.norm1)) != saved[loc][normType.norm1:int] then
+  else if iNorm(norm(A,normType.norm1)) != saved[loc][normType.norm1] then
     writeln("\t1-norm INCORRECT");
   else
     writeln("\t1-norm OK");
@@ -35,10 +35,10 @@ proc doNorm(A, loc, save=false) {
   else {
     if save {
       var val = norm(A,normType.norm2);
-      saved[loc][normType.norm2:int] = iNorm(val);
+      saved[loc][normType.norm2] = iNorm(val);
       writeln("\t2-norm: ", val);
     }
-    else if iNorm(norm(A,normType.norm2)) != saved[loc][normType.norm2:int] then
+    else if iNorm(norm(A,normType.norm2)) != saved[loc][normType.norm2] then
       writeln("\t2-norm INCORRECT");
     else
       writeln("\t2-norm OK");
@@ -46,20 +46,20 @@ proc doNorm(A, loc, save=false) {
 
   if save {
     var val = norm(A,normType.normInf);
-    saved[loc][normType.normInf:int] = iNorm(val);
+    saved[loc][normType.normInf] = iNorm(val);
     writeln("\tinfinity norm: ", val);
   }
-  else if iNorm(norm(A,normType.normInf)) != saved[loc][normType.normInf:int] then
+  else if iNorm(norm(A,normType.normInf)) != saved[loc][normType.normInf] then
     writeln("\tinfinity norm INCORRECT");
   else
     writeln("\tinfinity norm OK");
 
   if save {
     var val = norm(A,normType.normFrob);
-    saved[loc][normType.normFrob:int] = iNorm(val);
+    saved[loc][normType.normFrob] = iNorm(val);
     writeln("\tfrobenius norm: ", val);
   }
-  else if iNorm(norm(A,normType.normFrob)) != saved[loc][normType.normFrob:int] then
+  else if iNorm(norm(A,normType.normFrob)) != saved[loc][normType.normFrob] then
     writeln("\tfrobenius norm INCORRECT");
   else
     writeln("\tfrobenius norm OK");

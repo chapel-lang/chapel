@@ -1251,7 +1251,6 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "last resort"
-  pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: _tuple) {
     // body inserted during generic instantiation
@@ -1259,7 +1258,6 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "last resort"
-  pragma "donor fn"
   pragma "unref fn"
   inline proc chpl__unref(x: _tuple) {
     // body inserted during generic instantiation
@@ -1267,7 +1265,6 @@ module ChapelBase {
 
 
   pragma "compiler generated"
-  pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(ir: _iteratorRecord) {
     // body modified during call destructors pass
@@ -1276,7 +1273,6 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "last resort"
-  pragma "donor fn"
   pragma "auto copy fn"
   pragma "suppress lvalue error"
   inline proc chpl__autoCopy(const x) return chpl__initCopy(x);

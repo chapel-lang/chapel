@@ -1123,12 +1123,22 @@ static Expr* preFoldNamed(CallExpr* call) {
         USR_FATAL(call, "illegal call of type");
       }
 
+      if (call->numActuals() > 3) {
+        USR_FATAL(call, "too many arguments to type index expression");
+      }
+
       if (!get_int(call->get(3), &index)) {
         USR_FATAL(call, "illegal type index expression");
       }
 
-      if (!isAggregateType(sym->type)) {
+      AggregateType* at = toAggregateType(sym->type);
+
+      if (!at) {
         USR_FATAL(call, "illegal type index expression");
+      }
+
+      if (index <= 0 || index > at->fields.length-1) {
+        USR_FATAL(call, "type index expression '%i' out of bounds", index);
       }
 
       sprintf(field, "x%" PRId64, index);
@@ -1510,11 +1520,25 @@ static bool isInstantiatedField(Symbol* field) {
   AggregateType* at     = toAggregateType(ts->type);
   bool           retval = false;
 
-  for_formals(formal, at->typeConstructor) {
-    if (strcmp(field->name, formal->name) == 0) {
-      if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-        retval = true;
-        break;
+  // BHARSH INIT TODO: Sometimes the type constructor is not resolved when
+  // initializers are used. Why?
+  if (at->hasInitializers()) {
+    Symbol* origField = at->getRootInstantiation()->getField(field->name);
+    DefExpr* def = origField->defPoint;
+
+    if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
+      retval = true;
+    } else if (def->exprType == NULL && def->init == NULL) {
+      // Fully-generic types are apparently OK?
+      retval = true;
+    }
+  } else {
+    for_formals(formal, at->typeConstructor) {
+      if (strcmp(field->name, formal->name) == 0) {
+        if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+          retval = true;
+          break;
+        }
       }
     }
   }

@@ -8,11 +8,11 @@ class D2 : C {
   var x : real;
 }
 
-proc foo(c : C) {
+proc foo(c : borrowed C) {
   writeln(c.x);
 }
 
-var c : C;
+var c : borrowed C;
 c = new borrowed D1();
 foo(c);
 c = new borrowed D2();

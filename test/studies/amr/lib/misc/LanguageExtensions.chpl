@@ -131,7 +131,7 @@ proc **(R: range(stridable=?s), param n: int) {
   var ranges: n*R.type;
   for i in {1..n} do ranges(i) = R;
 
-  var D: domain(n,stridable=s) = ranges;
+  var D: domain(n,idxType=R.idxType,stridable=s) = ranges;
   return D;
 }
 
