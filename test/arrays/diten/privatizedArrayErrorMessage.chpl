@@ -1,6 +1,6 @@
 class C {}
 
-proc foo(A: C) {
+proc foo(A: borrowed C) {
 
 }
 

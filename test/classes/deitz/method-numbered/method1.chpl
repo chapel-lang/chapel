@@ -12,7 +12,7 @@ class dog {
   }
 }
 
-var d : dog = new borrowed dog();
+var d : borrowed dog = new borrowed dog();
 
 d.weight = 38.5;
 d.paws   = 4;

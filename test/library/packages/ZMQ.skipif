@@ -18,11 +18,8 @@ import os
 # Is ZMQ available?
 zmq_found = find_library('zmq') is not None
 
-# Are we configured for non-multilocale?
-is_local = os.getenv('CHPL_COMM', 'none') == 'none'
-
 # OK contains the conditions that must be met to run the test
-OK = is_local and zmq_found
+OK = zmq_found
 
 # Skip if not OK
 print(not OK)

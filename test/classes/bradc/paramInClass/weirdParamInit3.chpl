@@ -3,7 +3,7 @@ class C {
 }
 
 class D {
-  var c: C = new borrowed C();
+  var c: borrowed C = new borrowed C();
   param y: int = c.x;
 }
 

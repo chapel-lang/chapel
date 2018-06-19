@@ -27,6 +27,7 @@
 #include "chpl-mem-sys.h"
 // #include "chpl-cache.h"
 #include "chpl-tasks.h"
+#include "chpl-topo.h"
 #include "chpl-gen-includes.h"
 #include "chplsys.h"
 #include "chplexit.h"
@@ -165,7 +166,7 @@ static int get_comm_concurrency() {
     }
   }
 
-  if ((lcpus = chpl_getNumLogicalCpus(true)) > 0) {
+  if ((lcpus = chpl_topo_getNumCPUsLogical(true)) > 0) {
     return lcpus;
   }
 

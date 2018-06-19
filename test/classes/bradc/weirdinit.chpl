@@ -4,6 +4,6 @@ class pair {
 }
 
 proc main() {
-  var a: pair = a();
+  var a: borrowed pair = a();
   writeln("Shouldn't that line have generated an error?");
 }

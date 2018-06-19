@@ -105,17 +105,17 @@ class Grid {
     //==== Sanity check ====
     sanityChecks();
 
-    var inner_location: dimension*int;
-    for d in dimensions do inner_location(d) = loc1d.inner: int;
+    var inner_location: dimension*loc1d;
+    for d in dimensions do inner_location(d) = loc1d.inner;
 
     var ghost_domain: domain(dimension, stridable=true);
-    for loc in (loc1d.below:int .. loc1d.above:int by 2)**dimension {
+    for loc in (loc1d.below .. loc1d.above by 2)**dimension {
       if loc != inner_location {
         for d in dimensions {
-          if loc(d) == loc1d.below:int {
+          if loc(d) == loc1d.below {
             var tmp = ((extended_cells.low(d).. by 2) #n_ghost_cells(d));
             ranges(d) = tmp.alignHigh();
-          } else if loc(d) == loc1d.inner:int {
+          } else if loc(d) == loc1d.inner {
             ranges(d) = cells.dim(d);
           } else {
             // ((..extended_cells.high(d) by 2) #-n_ghost_cells(d)).alignLow();

@@ -117,13 +117,15 @@ static void resolveInitCall(CallExpr* call) {
   }
 
   if (info.isWellFormed(call) == true) {
-    Vec<FnSymbol*>            visibleFns;
+    Vec<FnSymbol*>            visibleFns, mostApplicable;
     Vec<ResolutionCandidate*> candidates;
     ResolutionCandidate*      best        = NULL;
 
     findVisibleFunctions(info, visibleFns);
 
-    gatherInitCandidates(info, visibleFns, candidates);
+    trimVisibleCandidates(info, mostApplicable, visibleFns);
+
+    gatherInitCandidates(info, mostApplicable, candidates);
 
     explainGatherCandidate(info, candidates);
 
@@ -132,7 +134,7 @@ static void resolveInitCall(CallExpr* call) {
     if (best == NULL) {
       if (call->partialTag == false) {
         if (candidates.n == 0) {
-          printResolutionErrorUnresolved(info, visibleFns);
+          printResolutionErrorUnresolved(info, mostApplicable);
         } else {
           printResolutionErrorAmbiguous (info, candidates);
         }

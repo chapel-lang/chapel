@@ -939,6 +939,10 @@ void FnSymbol::printDocs(std::ostream* file, unsigned int tabs) {
       *file << "export ";
     }
 
+    if (this->hasFlag(FLAG_OVERRIDE)) {
+      *file << "override ";
+    }
+
     // Print iter/proc.
     if (this->isIterator()) {
       *file << "iter ";

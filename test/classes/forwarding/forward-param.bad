@@ -1,0 +1,3 @@
+forward-param.chpl:14: error: ambiguous call 'C.x'
+forward-param.chpl:10: note: candidates are: C.x
+forward-param.chpl:10: note:                 C.x

@@ -403,8 +403,11 @@ bool ResolveScope::extend(Symbol* newSym) {
                 newSym->stringLoc());
     }
 
-    // If oldSym is a constructor and newSym is a type, update with the type
-    if (newFn == NULL || newFn->_this == NULL) {
+    // Prefer storage of non-functions over functions,
+    //                   functions over methods,
+    //                   public functions over private functions
+    if (newFn == NULL || (newFn->_this == NULL &&
+                          newFn->hasFlag(FLAG_PRIVATE) == false)) {
       mBindings[name] = newSym;
     }
 

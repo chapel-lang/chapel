@@ -128,7 +128,7 @@ class ListDestroy: Runner {
 }
 
 
-proc timeRun(r: Runner, A) {
+proc timeRun(r: borrowed Runner, A) {
   var t = new Timer();
   t.start();
   r.run(A);
@@ -136,7 +136,7 @@ proc timeRun(r: Runner, A) {
   return t.elapsed();
 }
 
-proc timeRunList(r: Runner, ref L: list(int)) {
+proc timeRunList(r: borrowed Runner, ref L: list(int)) {
   var t = new Timer();
   t.start();
   r.runList(L);

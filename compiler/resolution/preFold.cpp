@@ -1521,11 +1521,25 @@ static bool isInstantiatedField(Symbol* field) {
   AggregateType* at     = toAggregateType(ts->type);
   bool           retval = false;
 
-  for_formals(formal, at->typeConstructor) {
-    if (strcmp(field->name, formal->name) == 0) {
-      if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-        retval = true;
-        break;
+  // BHARSH INIT TODO: Sometimes the type constructor is not resolved when
+  // initializers are used. Why?
+  if (at->hasInitializers()) {
+    Symbol* origField = at->getRootInstantiation()->getField(field->name);
+    DefExpr* def = origField->defPoint;
+
+    if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
+      retval = true;
+    } else if (def->exprType == NULL && def->init == NULL) {
+      // Fully-generic types are apparently OK?
+      retval = true;
+    }
+  } else {
+    for_formals(formal, at->typeConstructor) {
+      if (strcmp(field->name, formal->name) == 0) {
+        if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+          retval = true;
+          break;
+        }
       }
     }
   }

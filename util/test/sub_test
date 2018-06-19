@@ -1904,6 +1904,8 @@ for testname in testsrc:
                             launcher_error = 'Jira 329 -- Fatal MPP reservation error for'
                         elif re.search('Fatal MPP reservation error on create', output, re.IGNORECASE) != None:
                             launcher_error = 'Jira 329 -- Fatal MPP reservation error for'
+                        elif re.search('Text file busy', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 333 -- Text file busy for'
                         elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
                               re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
                             exectimeout = True

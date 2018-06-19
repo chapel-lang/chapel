@@ -1889,6 +1889,14 @@ static ForallIntentTag forallIntentForArgIntent(IntentTag intent) {
 }
 
 static void resolveSVarIntent(ShadowVarSymbol* svar) {
+  // Special case for owned -- don't want ownership transfer on
+  // forall intent by default
+  if (svar->getValType()->symbol->hasFlag(FLAG_MANAGED_POINTER) &&
+      (svar->intent == TFI_DEFAULT || svar->intent == TFI_CONST)) {
+    svar->intent = TFI_CONST_REF;
+    return;
+  }
+
   switch (svar->intent) {
     case TFI_DEFAULT:
       svar->intent = forallIntentForArgIntent(
@@ -2107,7 +2115,7 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
   {
     NamedExpr* newArg = new NamedExpr("eltType", eltTypeArg);
     CallExpr* newCall = new CallExpr(PRIM_NEW, new SymExpr(riTypeSym), newArg,
-                                     new NamedExpr("_chpl_manager",
+                                     new NamedExpr(astr_chpl_manager,
                                          new SymExpr(dtUnmanaged->symbol)));
     hld->insertAtTail(new CallExpr(PRIM_MOVE, globalOp, newCall));
   }

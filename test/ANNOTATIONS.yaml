@@ -442,6 +442,10 @@ CoMD:
   07/26/17:
     - Update PR 5296 (#6722)
 
+CoMD-elegant-aos:
+  06/12/18:
+    - Convert blocking calls in Spawn module to yielding non-blocking loops (#9507)
+
 compSampler-timecomp: &timecomp-base
   09/09/16:
     - disable function resolution optimization (#4476)
@@ -861,6 +865,10 @@ memleaksfull:
   06/05/18:
     - Create an array/domain/distribution class for external arrays (#9694)
     - DataFrame ADT (#9696)
+  06/13/18:
+    - Fix several memory leaks (#9796)
+    - Fix regexp leak (#9799)
+    - Close some memory leaks in these tests (#9802)
 
 meteor:
   12/18/13:

@@ -11,13 +11,12 @@ use StencilDist;
 
 // Definitions of NPB parameters etc
 enum NPB {S,A,B,C}; // TODO : Make complete.
-const Class: domain(NPB);
-const ProblemSizes : [Class] int = [32, 256, 256, 512],
-      ProblemIters : [Class] int = [4, 4, 20, 20],
-      ExpectedResids : [Class] real = [0.5307707005735e-04,
-                                       0.2433365309069e-05,
-                                       0.1800564401355e-05,
-                                       0.5706732285705e-06],
+const ProblemSizes : [NPB.S..NPB.C] int = [32, 256, 256, 512],
+      ProblemIters : [NPB.S..NPB.C] int = [4, 4, 20, 20],
+      ExpectedResids : [NPB.S..NPB.C] real = [0.5307707005735e-04,
+                                      0.2433365309069e-05,
+                                      0.1800564401355e-05,
+                                      0.5706732285705e-06],
       fracGoal = 1.0e-8;
 
 config const NPBClass : NPB = NPB.S;

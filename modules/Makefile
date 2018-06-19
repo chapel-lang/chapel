@@ -117,7 +117,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Collection.chpl \
 	packages/DistributedBag.chpl \
 	packages/DistributedDeque.chpl \
-	packages/DistributedIters.chpl
+	packages/DistributedIters.chpl \
+	packages/TOML.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \

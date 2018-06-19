@@ -2113,7 +2113,7 @@ static bool isGenericRecordInit(CallExpr* call) {
 }
 
 static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
-  Vec<FnSymbol*>            visibleFns;
+  Vec<FnSymbol*>            mostApplicable;
   Vec<ResolutionCandidate*> candidates;
 
   ResolutionCandidate*      bestRef    = NULL;
@@ -2124,7 +2124,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 
   FnSymbol*                 retval     = NULL;
 
-  findVisibleFunctionsAndCandidates(info, visibleFns, candidates);
+  findVisibleFunctionsAndCandidates(info, mostApplicable, candidates);
 
   numMatches = disambiguateByMatch(info,
                                    candidates,
@@ -2140,7 +2140,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
           tryFailure = true;
 
         } else if (candidates.n == 0) {
-          printResolutionErrorUnresolved(info, visibleFns);
+          printResolutionErrorUnresolved(info, mostApplicable);
 
         } else {
           printResolutionErrorAmbiguous (info, candidates);
@@ -2719,12 +2719,60 @@ static bool typeUsesForwarding(Type* t);
 
 static bool populateForwardingMethods(CallInfo& info);
 
+void trimVisibleCandidates(CallInfo&       info,
+                           Vec<FnSymbol*>& mostApplicable,
+                           Vec<FnSymbol*>& visibleFns) {
+  CallExpr* call = info.call;
+
+  bool isInit = false;
+  if (call->numActuals() >= 2 && call->isNamedAstr(astrInit)) {
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      isInit = se->symbol() == gMethodToken;
+    }
+  }
+
+  bool isNew = call->numActuals() >= 1 && call->isNamedAstr(astrNew);
+
+  if (isInit == false && isNew == false) {
+    mostApplicable = visibleFns;
+  } else {
+    forv_Vec(FnSymbol, fn, visibleFns) {
+      bool shouldKeep = true;
+      BaseAST* actual = NULL;
+      BaseAST* formal = NULL;
+
+      if (isInit && fn->isInitializer()) {
+        actual = call->get(2);
+        formal = fn->_this;
+      } else if (isNew && (fn->hasFlag(FLAG_NEW_WRAPPER) || fn->isInitializer())) {
+        actual = call->get(1);
+        formal = toDefExpr(fn->formals.head)->sym;
+      }
+
+      if (actual != NULL && formal != NULL) {
+        AggregateType* actualType = toAggregateType(actual->getValType())->getRootInstantiation();
+        AggregateType* formalType = toAggregateType(formal->getValType())->getRootInstantiation();
+        if (actualType != formalType) {
+          shouldKeep = false;
+        }
+      } else {
+        shouldKeep = false;
+      }
+
+      if (shouldKeep) {
+        mostApplicable.add(fn);
+      }
+    }
+  }
+}
+
 static void findVisibleFunctionsAndCandidates(
                                 CallInfo&                  info,
-                                Vec<FnSymbol*>&            visibleFns,
+                                Vec<FnSymbol*>&            mostApplicable,
                                 Vec<ResolutionCandidate*>& candidates) {
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
+  Vec<FnSymbol*> visibleFns;
 
   // First, try finding candidates without forwarding
   if (fn != NULL) {
@@ -2736,7 +2784,9 @@ static void findVisibleFunctionsAndCandidates(
     findVisibleFunctions(info, visibleFns);
   }
 
-  findVisibleCandidates(info, visibleFns, candidates);
+  trimVisibleCandidates(info, mostApplicable, visibleFns);
+
+  findVisibleCandidates(info, mostApplicable, candidates);
 
   // If no candidates were found and it's a method, try forwarding
   if (candidates.n             == 0 &&
@@ -2748,6 +2798,7 @@ static void findVisibleFunctionsAndCandidates(
     if (typeUsesForwarding(receiverType) == true &&
         populateForwardingMethods(info)  == true) {
       visibleFns.clear();
+      mostApplicable.clear();
 
       forv_Vec(ResolutionCandidate*, candidate, candidates) {
         delete candidate;
@@ -2763,6 +2814,8 @@ static void findVisibleFunctionsAndCandidates(
       } else {
         findVisibleFunctions(info, visibleFns);
       }
+
+      trimVisibleCandidates(info, mostApplicable, visibleFns);
 
       findVisibleCandidates(info, visibleFns, candidates);
     }
@@ -4226,7 +4279,8 @@ void lvalueCheck(CallExpr* call) {
     }
 
     if (errorMsg == true) {
-      if (nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+      if (nonTaskFnParent &&
+          nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
         // we are asked to ignore errors here
         return;
       }
@@ -4974,11 +5028,6 @@ static void resolveInitVar(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
-  // Clear FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW
-  // since the result of the 'new' will "move" into
-  // the variable we are initializing.
-  src->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
-
   Type* targetType = srcType;
   SymExpr* targetTypeExpr = NULL;
   if (call->numActuals() >= 3) {
@@ -5053,6 +5102,11 @@ static void resolveInitVar(CallExpr* call) {
              isRecordWrappedType(srcType) == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
+
+    // Clear FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW
+    // since the result of the 'new' will "move" into
+    // the variable we are initializing.
+    src->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
 
     // The LHS will "own" the record
     if (rhs->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) == false &&
@@ -5726,15 +5780,19 @@ bool isDispatchParent(Type* t, Type* pt) {
 
 static bool           resolveNewHasInitializer(AggregateType* at);
 
-static void           resolveNewHandleConstructor(CallExpr* newExpr);
+static void           resolveNewHandleConstructor(CallExpr* newExpr,
+                                                  Type* manager);
 
-static void           resolveNewWithInitializer(CallExpr* newExpr);
+static void           resolveNewWithInitializer(CallExpr* newExpr,
+                                                Type* manager);
 
-static void           resolveNewHandleNonGenericClass(CallExpr* newExpr);
+static void           resolveNewHandleNonGenericClass(CallExpr* newExpr,
+                                                      Type* manager);
 
 static void           resolveNewHandleNonGenericRecord(CallExpr* newExpr);
 
-static void           resolveNewHandleGenericClass(CallExpr* newExpr);
+static void           resolveNewHandleGenericClass(CallExpr* newExpr,
+                                                   Type* manager);
 
 static void           resolveNewHandleGenericRecord(CallExpr* newExpr);
 
@@ -5753,9 +5811,9 @@ static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
 
 static bool isManagedPointerInit(SymExpr* typeExpr);
 
-static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*& managedMoveToFix);
+static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager);
 
-static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* managedMoveToFix);
+static void resolveNewManaged(CallExpr* move, CallExpr* newExpr, Expr* last, AggregateType* at, Type* manager);
 
 static void handleUnstableNewError(CallExpr* newExpr);
 
@@ -5774,19 +5832,18 @@ static void resolveNew(CallExpr* newExpr) {
   //  owned record for 'new owned'
   //  shared record for 'new shared'
   Type* manager = NULL;
-  CallExpr* managedMoveToFix = NULL;
 
-  resolveNewSetupManaged(newExpr, manager, managedMoveToFix);
+  resolveNewSetupManaged(newExpr, manager);
 
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
       if (AggregateType* at = toAggregateType(type)) {
 
         if (resolveNewHasInitializer(at) == false) {
-          resolveNewHandleConstructor(newExpr);
+          resolveNewHandleConstructor(newExpr, manager);
 
         } else {
-          resolveNewWithInitializer(newExpr);
+          resolveNewWithInitializer(newExpr, manager);
         }
 
       } else if (PrimitiveType* pt = toPrimitiveType(type)) {
@@ -5825,16 +5882,13 @@ static void resolveNew(CallExpr* newExpr) {
       USR_FATAL(newExpr, "invalid use of 'new' on %s", name);
     }
   }
-
-  if (manager)
-    resolveNewManaged(newExpr, manager, managedMoveToFix);
 }
 
-static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*& managedMoveToFix) {
+static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
 
   for_actuals(expr, newExpr) {
     if (NamedExpr* ne = toNamedExpr(expr)) {
-      if (0 == strcmp("_chpl_manager", ne->name)) {
+      if (ne->name == astr_chpl_manager) {
         manager = ne->actual->typeInfo();
         expr->remove();
       }
@@ -5885,31 +5939,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*&
           if (at != type)
             // Set the type to initialize
             typeExpr->setSymbol(at->symbol);
-
-          // Introduce a temporary to initialize instead of the requested var
-          if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr)) {
-            if (moveStmt->isPrimitive(PRIM_MOVE) ||
-                moveStmt->isPrimitive(PRIM_ASSIGN)) {
-              SymExpr* dstSe = toSymExpr(moveStmt->get(1));
-              Symbol* finalResult = dstSe->symbol();
-
-              // Store the pointer we built into new_cast_temp
-              VarSymbol* initedClass = newTemp("new_cast_tmp");
-              moveStmt->insertBefore(new DefExpr(initedClass));
-              dstSe->setSymbol(initedClass);
-              // This PRIM_MOVE setting finalResult is added here
-              // but it's really just a placeholder for where
-              // the casting or owned/etc construction should take place.
-              managedMoveToFix = new CallExpr(PRIM_MOVE,
-                                              finalResult, initedClass);
-              moveStmt->insertAfter(managedMoveToFix);
-
-              // Un-set the type for the LHS
-              // This is set during normalization in many cases,
-              // but it is wrong for managed inits.
-              finalResult->type = dtUnknown;
-            }
-          }
         }
       }
       if (manager == NULL && fWarnUnstable)
@@ -5917,28 +5946,94 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*&
         handleUnstableNewError(newExpr);
     }
   }
-
 }
 
-static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* managedMoveToFix) {
+static void resolveNewManaged(CallExpr* move, CallExpr* newExpr, Expr* last,
+                              AggregateType* at, Type* manager) {
 
-  // Resolve the move enclosing newExpr because we'll need the
-  // type information. This appears to be necessary only for
-  // types with constructors.
-  if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr))
-    resolveCall(moveStmt);
+  INT_ASSERT(manager); // or don't call this function!
+
+  // In the event that newExpr is calling a promotion wrapper,
+  // we should apply the cast to the wrapper, rather than to this call.
+  FnSymbol* fn = newExpr->resolvedFunction();
+  if (fn && fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    // Find the _new / construction call in the promotion wrapper
+    CallExpr* fixThisNew = NULL;
+    std::vector<CallExpr*> wrapperCalls;
+    collectCallExprs(fn, wrapperCalls);
+    for_vector(CallExpr, call, wrapperCalls) {
+      if (call->isNamed(fn->name)) {
+        fixThisNew = call;
+      }
+    }
+    INT_ASSERT(fixThisNew);
+    // Set newExpr, move, at, and last
+    newExpr = fixThisNew;
+    move = NULL;
+    last = fixThisNew;
+    at = NULL;
+  }
+
+  // Try to get the constructed type, in case the caller did not
+  // provide it.
+  if (at == NULL) {
+    FnSymbol* fn = newExpr->resolvedFunction();
+    INT_ASSERT(fn);
+    // Make sure that the called function is resolved
+    if (!fn->isResolved())
+      resolveFunction(fn);
+    if (fn->retType == dtVoid)
+      at = toAggregateType(fn->_this->type);
+    else
+      at = toAggregateType(fn->retType);
+    INT_ASSERT(at);
+  }
+
+  // Identify the symbol created by the new expression.
+  CallExpr* moveStmt = move;
+  if (moveStmt == NULL) {
+    if (CallExpr* call = toCallExpr(newExpr->parentExpr)) {
+      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+        moveStmt = call;
+      else
+        INT_FATAL("un-normalized AST");
+    }
+  }
+
+  if (moveStmt == NULL)
+    // Nothing to do, the result of new is not saved
+    return;
+
+  SymExpr* dstSe = toSymExpr(moveStmt->get(1));
+  INT_ASSERT(dstSe);
+  if (isRecord(at)) {
+    // Nothing to do, managed new on a record
+    // Could return, harmlessly, but we shouldn't reach it currently.
+    INT_FATAL("case should not be reached");
+  }
 
   // convert 'new MyClass(1,2,3)' to 'new manager( new MyClass(1,2,3) )'
 
   INT_ASSERT(manager);
-  INT_ASSERT(managedMoveToFix && managedMoveToFix->isPrimitive(PRIM_MOVE));
-  SymExpr* srcSe = toSymExpr(managedMoveToFix->get(2));
-  Symbol* initedClass = srcSe->symbol();
-
-  AggregateType* classT = toAggregateType(initedClass->typeInfo());
-  INT_ASSERT(classT && isClass(classT));
-  UnmanagedClassType* unmanagedT = classT->getUnmanagedClass();
+  UnmanagedClassType* unmanagedT = at->getUnmanagedClass();
   INT_ASSERT(unmanagedT);
+
+  Symbol* finalResult = dstSe->symbol();
+  // Introduce a temporary to initialize instead of the requested var
+  // Store the pointer we built into new_cast_temp
+  VarSymbol* initedClass = newTemp("new_cast_tmp");
+  moveStmt->insertBefore(new DefExpr(initedClass));
+  dstSe->setSymbol(initedClass);
+
+  CallExpr* moveToFix = new CallExpr(PRIM_MOVE, finalResult);
+                        // 2nd arg added below
+
+  moveStmt->insertAfter(moveToFix);
+
+  // Un-set the type for the LHS
+  // This is set during normalization in many cases,
+  // but it is wrong for managed inits.
+  finalResult->type = dtUnknown;
 
   bool getBorrow = false;
   if (manager == dtBorrowed) {
@@ -5948,7 +6043,8 @@ static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* manage
 
   if (!isManagedPtrType(manager)) {
     // it is constructing a unmanaged ptr
-    srcSe->replace(new CallExpr(PRIM_CAST, unmanagedT->symbol, initedClass));
+    CallExpr* cast = new CallExpr(PRIM_CAST, unmanagedT->symbol, initedClass);
+    moveToFix->insertAtTail(cast);
     INT_ASSERT(!getBorrow);
   } else {
     // it is constructing an owned/shared/etc
@@ -5958,30 +6054,30 @@ static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* manage
     // a unmanaged pointer rather than a borrow.
     VarSymbol* tmpUnmanaged = newTemp("new_cast_unmanaged", unmanagedT);
     DefExpr* defUnmanaged = new DefExpr(tmpUnmanaged);
-    managedMoveToFix->insertBefore(defUnmanaged);
+    moveToFix->insertBefore(defUnmanaged);
     CallExpr* moveUnmanaged = new CallExpr(PRIM_MOVE, tmpUnmanaged,
                           new CallExpr(PRIM_CAST, unmanagedT->symbol, initedClass));
-    managedMoveToFix->insertBefore(moveUnmanaged);
+    moveToFix->insertBefore(moveUnmanaged);
 
     CallExpr* newM = new CallExpr(PRIM_NEW, manager->symbol, tmpUnmanaged);
-    Expr* replacement = newM;
+    Expr* cast = newM;
 
     if (getBorrow) {
       VarSymbol* tmpM = newTemp("new_tmp_m");
       tmpM->addFlag(FLAG_INSERT_AUTO_DESTROY);
       DefExpr* defTmpM = new DefExpr(tmpM);
-      managedMoveToFix->insertBefore(defTmpM);
+      moveToFix->insertBefore(defTmpM);
       CallExpr* moveM = new CallExpr(PRIM_MOVE, tmpM, newM);
-      managedMoveToFix->insertBefore(moveM);
+      moveToFix->insertBefore(moveM);
 
       resolveExpr(moveUnmanaged);
 
-      replacement = new CallExpr("borrow", gMethodToken, tmpM);
+      cast = new CallExpr("borrow", gMethodToken, tmpM);
     }
 
     // Now adjust the original move dst, src
     // to be move dst, new manager tmpUnmanaged
-    srcSe->replace(replacement);
+    moveToFix->insertAtTail(cast);
   }
 }
 
@@ -6089,7 +6185,7 @@ static bool resolveNewHasInitializer(AggregateType* at) {
 //
 // respectively
 
-static void resolveNewHandleConstructor(CallExpr* newExpr) {
+static void resolveNewHandleConstructor(CallExpr* newExpr, Type* manager) {
   SET_LINENO(newExpr);
 
   SymExpr*       typeExpr = resolveNewFindTypeExpr(newExpr);
@@ -6122,7 +6218,23 @@ static void resolveNewHandleConstructor(CallExpr* newExpr) {
 
     parent_insert_help(newExpr, baseExpr);
 
-    resolveExpr(newExpr);
+    preFold(newExpr);
+    resolveCall(newExpr);
+
+    FnSymbol* ctor = newExpr->resolvedFunction();
+    INT_ASSERT(ctor);
+
+    // Adjust ctor before resolving it, in case we need to change
+    // yielded type of promotion wrapper.
+    if (manager) {
+      // Gather some details
+      AggregateType* constructedType = toAggregateType(ctor->retType);
+      CallExpr* move = toCallExpr(newExpr->parentExpr);
+      Expr* last = newExpr;
+      resolveNewManaged(move, newExpr, last, constructedType, manager);
+    }
+
+    resolveFunction(ctor);
 
   } else {
     USR_FATAL(newExpr,
@@ -6132,13 +6244,13 @@ static void resolveNewHandleConstructor(CallExpr* newExpr) {
   }
 }
 
-static void resolveNewWithInitializer(CallExpr* newExpr) {
+static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
   SET_LINENO(newExpr);
 
   AggregateType* at = resolveNewFindType(newExpr);
 
   //
-  // Normalize the allocation for a nested type
+  // Normalize the allocation for a nested type (constructors only)
   //
   //    primNew(Inner(_mt, this), ...) => primNew(Inner, this, ...)
   //
@@ -6148,7 +6260,10 @@ static void resolveNewWithInitializer(CallExpr* newExpr) {
 
     partial->remove();
 
-    newExpr->insertAtHead(thisExpr->remove());
+    if (at->hasInitializers() == false) {
+      newExpr->insertAtHead(thisExpr->remove());
+    }
+
     newExpr->insertAtHead(typeExpr);
   }
 
@@ -6178,13 +6293,15 @@ static void resolveNewWithInitializer(CallExpr* newExpr) {
     }
 
     if (resolveNewIsNonGeneric(newExpr) == true) {
-      resolveNewHandleNonGenericClass(newExpr);
+      resolveNewHandleNonGenericClass(newExpr, manager);
 
     } else {
-      resolveNewHandleGenericClass(newExpr);
+      resolveNewHandleGenericClass(newExpr, manager);
     }
 
   } else {
+    // For record case, manager is ignored.
+
     if (resolveNewIsNonGeneric(newExpr) == true) {
       resolveNewHandleNonGenericRecord(newExpr);
 
@@ -6194,18 +6311,29 @@ static void resolveNewWithInitializer(CallExpr* newExpr) {
   }
 }
 
-static void resolveNewHandleNonGenericClass(CallExpr* newExpr) {
+static void resolveNewHandleNonGenericClass(CallExpr* newExpr, Type* manager) {
   AggregateType* at = resolveNewFindType(newExpr);
+  CallExpr* moveStmt = toCallExpr(newExpr->parentExpr);
 
+  Expr* last = newExpr;
   newExpr->setUnresolvedFunction("_new");
 
   resolveCall(newExpr);
 
   if (at->hasPostInitializer() == true) {
-    CallExpr* moveStmt = toCallExpr(newExpr->parentExpr);
     Symbol*   moveDest = toSymExpr(moveStmt->get(1))->symbol();
 
-    moveStmt->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
+    CallExpr* postinit = new CallExpr("postinit", gMethodToken, moveDest);
+    moveStmt->insertAfter(postinit);
+    last = postinit;
+  }
+
+  if (manager) {
+    FnSymbol* _new = newExpr->resolvedFunction();
+    INT_ASSERT(_new);
+    AggregateType* resultingType = toAggregateType(_new->retType);
+
+    resolveNewManaged(moveStmt, newExpr, last, resultingType, manager);
   }
 }
 
@@ -6228,15 +6356,27 @@ static void resolveNewHandleNonGenericRecord(CallExpr* newExpr) {
   }
 }
 
-static void resolveNewHandleGenericClass(CallExpr* newExpr) {
+static void resolveNewHandleGenericClass(CallExpr* newExpr, Type* manager) {
   AggregateType* at       = resolveNewFindType(newExpr);
 
   CallExpr*      moveStmt = toCallExpr(newExpr->parentExpr);
   AggregateType* rootType = at->getRootInstantiation();
+
   VarSymbol*     initTemp = newTemp("initTemp", rootType);
 
   CallExpr*      initCall = new CallExpr("init");
 
+  // change moveStmt to initialize finalTmp
+  // and then add a move to set the original value
+  VarSymbol* finalTmp = newTemp("class_init_temp");
+  CallExpr*  finalMove = new CallExpr(PRIM_MOVE,
+                                      moveStmt->get(1)->copy(), finalTmp);
+
+  moveStmt->insertBefore(new DefExpr(finalTmp));
+  moveStmt->get(1)->replace(new SymExpr(finalTmp));
+  moveStmt->insertAfter(finalMove);
+
+  // Now produce sizeof / alloc / init
   moveStmt->insertAfter(initCall);
   moveStmt->insertAfter(new DefExpr(initTemp));
 
@@ -6276,12 +6416,25 @@ static void resolveNewHandleGenericClass(CallExpr* newExpr) {
 
   moveStmt->insertAfter(allocMove);
 
-  resolveFunction(initCall->resolvedFunction());
+  FnSymbol* fn = initCall->resolvedFunction();
+  resolveFunction(fn);
+
+  Expr* last = initCall;
 
   if (at->hasPostInitializer() == true) {
     Symbol* moveDest = moveDst->symbol();
 
-    initCall->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
+    CallExpr* postinit = new CallExpr("postinit", gMethodToken, moveDest);
+    initCall->insertAfter(postinit);
+    last = postinit;
+  }
+
+  if (manager) {
+    FnSymbol* init = initCall->resolvedFunction();
+    INT_ASSERT(init);
+    AggregateType* initType = toAggregateType(init->_this->type);
+ 
+    resolveNewManaged(finalMove, initCall, last, initType, manager);
   }
 }
 
@@ -6435,7 +6588,7 @@ static void temporaryInitializerFixup(CallExpr* call) {
             ct->initializerStyle                == DEFINES_NONE_USE_DEFAULT) {
           // Transitioning to a default initializer world.
           // Lydia note 03/14/17)
-          if (strcmp(ct->defaultInitializer->name, "init") != 0) {
+          if (ct->hasInitializers() == false) {
             // This code should be removed when the compiler generates
             // initializers as the default method of construction and
             // initialization for a type (Lydia note, 08/19/16)
@@ -8270,7 +8423,7 @@ static void insertReturnTemps() {
       if (call->list == NULL && isForallRecIterHelper(call))
         continue;
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
-        if (fn->retType != dtVoid) {
+        if (fn->retType != dtVoid && fn->retTag != RET_TYPE) {
           ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
           Expr*            contextCallOrCall; // insert before, remove it
 

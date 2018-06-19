@@ -36,6 +36,7 @@ Initializing Modules:
        Regexp
     LocaleTree
     DefaultAssociative
+    ExternalArray
     ChapelTaskTable
     MemTracking
     ChapelUtil
