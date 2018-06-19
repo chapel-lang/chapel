@@ -5,7 +5,7 @@ class foo {
   }
 }
 
-var f : foo = new unmanaged foo();
+var f : unmanaged foo = new unmanaged foo();
 
 f.x = 12;
 f.bar(13);

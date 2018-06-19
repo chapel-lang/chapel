@@ -50,9 +50,9 @@ class Assoc: Abstract {
   }
 }
 
-var d = new Wrap(_value = new Dense());
-var s = new Wrap(_value = new Sparse());
-var a = new Wrap(_value = new Assoc());
+var d = new Wrap(_value = new unmanaged Dense());
+var s = new Wrap(_value = new unmanaged Sparse());
+var a = new Wrap(_value = new unmanaged Assoc());
 
 if doDense {
   d = 1;

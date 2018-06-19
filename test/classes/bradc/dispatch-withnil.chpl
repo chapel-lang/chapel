@@ -3,14 +3,14 @@ class C {
 }
 
 class D {
-  var y: C;
+  var y: borrowed C;
 }
 
-proc foo(c: C) {
+proc foo(c: borrowed C) {
   writeln("x is: ", c.x);
 }
 
-proc foo(d: D) {
+proc foo(d: borrowed D) {
   foo(d.y);
 }
 

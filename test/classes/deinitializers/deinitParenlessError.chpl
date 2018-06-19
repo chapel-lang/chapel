@@ -4,5 +4,5 @@ class C {
   proc deinit { writeln("C.deinit"); }
 }
 
-var c = new C();
+var c = new unmanaged C();
 delete c;

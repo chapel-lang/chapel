@@ -6,7 +6,7 @@ class D : C {
   var y : real = 2.0;
 }
 
-proc foo(c : C) {
+proc foo(c : unmanaged C) {
   writeln(c.x);
 }
 
