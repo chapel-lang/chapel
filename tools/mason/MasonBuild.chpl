@@ -48,8 +48,10 @@ proc masonBuild(args) {
       }
     }
   }
-  UpdateLock(args);
-  buildProgram(release, show, compopts);
+  const configNames = UpdateLock(args);
+  const tomlName = configNames[1];
+  const lockName = configNames[2];
+  buildProgram(release, show, compopts, tomlName, lockName);
 }
 
 private proc checkChplVersion(lockFile : Toml) {
@@ -62,22 +64,14 @@ private proc checkChplVersion(lockFile : Toml) {
   }
 }
 
-proc buildProgram(release: bool, show: bool, compopts: [?d] string) {
+proc buildProgram(release: bool, show: bool, compopts: [?d] string, tomlName: string, lockName: string) {
 
   try! {
 
     const cwd = getEnv("PWD");
-    var projectHome: string;
+    const projectHome = getProjectHome(cwd, tomlName);
 
-    // workaround for testing purposes
-    if isFile("Mason.lock") {
-      projectHome = cwd;
-    }
-    else {
-      projectHome = getTopLvlDirPath(cwd);
-    }
-
-    if isFile(projectHome + "/Mason.lock") {
+    if isFile(projectHome + "/" + lockName) {
 
       // --fast
       var binLoc = 'debug';
@@ -88,7 +82,7 @@ proc buildProgram(release: bool, show: bool, compopts: [?d] string) {
       makeTargetFiles(binLoc, projectHome);
 
       // Install dependencies into $MASON_HOME/src
-      var toParse = open(projectHome + "/Mason.lock", iomode.r);
+      var toParse = open(projectHome + "/" + lockName, iomode.r);
       var lockFile = parseToml(toParse);
       checkChplVersion(lockFile);
 
@@ -203,6 +197,7 @@ proc genSourceList(lockFile: Toml) {
   }
   return sourceList;
 }
+
 
 /* Checks to see if dependency has already been
    downloaded previously */

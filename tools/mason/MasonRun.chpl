@@ -28,7 +28,7 @@ proc masonRun(args) {
   try! {
 
     const cwd = getEnv("PWD");
-    const projectHome = getTopLvlDirPath(cwd);
+    const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
     const tomlFile = parseToml(toParse);
     const project = tomlFile["brick"]["name"].s;

@@ -23,7 +23,7 @@ proc main() {
   }
 
   var args : [1..0] string;
-  UpdateLock(args, tf, temp.tryGetPath());
+  var configs = UpdateLock(args, tf, temp.tryGetPath(), isTest=true);
   var lock = open(temp.tryGetPath(), iomode.r);
   var lockFile =  parseToml(lock);
   writeln(lockFile);

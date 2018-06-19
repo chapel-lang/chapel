@@ -98,7 +98,7 @@ proc main(args: [] string) {
 proc masonClean() {
   try! {
     const cwd = getEnv("PWD");
-    const projectHome = getTopLvlDirPath(cwd);
+    const projectHome = getProjectHome(cwd);
     runCommand('rm -rf ' + projectHome + '/target');
   }
   catch e: MasonError {
@@ -110,7 +110,7 @@ proc masonClean() {
 proc masonDoc(args) {
   try! {
     const cwd = getEnv("PWD");
-    const projectHome = getTopLvlDirPath(cwd);
+    const projectHome = getProjectHome(cwd);
     const toDoc = basename(projectHome);
     const project = toDoc + '.chpl';
     if isDir(projectHome + '/src/') {

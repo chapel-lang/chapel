@@ -222,14 +222,14 @@ proc developerMode: bool {
 }
 
 
-proc getTopLvlDirPath(cwd: string) : string throws {
+proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
   const (dirname, basename) = splitPath(cwd);
   if dirname == '/' {
-    throw new MasonError("Mason could not find your Mason.toml");
+    throw new MasonError("Mason could not find your configuration file (Mason.toml)");
   }
-  const tomlFile = joinPath(cwd, "Mason.toml");
+  const tomlFile = joinPath(cwd, tomlName);
   if exists(tomlFile) {
     return cwd;
   }
-  return getTopLvlDirPath(dirname);
+  return getProjectHome(dirname, tomlName);
 }

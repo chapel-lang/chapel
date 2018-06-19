@@ -41,24 +41,15 @@ private var failedChapelVersion : [1..0] string;
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
+proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock", isTest=false) {
 
   try! {
 
-    var toml: string;
-    var lock: string;
-
-    // Workaround for testing purposes
-    if tf != "Mason.toml" {
-      toml = tf;
-      lock = lf;
-    }
-    else {
-      const cwd = getEnv("PWD");
-      const projectHome = getTopLvlDirPath(cwd);
-      toml = projectHome + "/" + tf;
-      lock = projectHome + "/" + lf;
-    }
+    const cwd = getEnv("PWD");
+    const projectHome = getProjectHome(cwd, tf);
+    const toml = projectHome + "/" + tf;
+    const lock = projectHome + "/" + lf;
+    
 
     updateRegistry(toml, args);
     const openFile = openreader(toml);
@@ -75,7 +66,12 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
       exit(1);
     }
 
-    genLock(lockFile, lock);
+    if isTest {
+      genLock(lockFile, lf);
+    }
+    else {
+      genLock(lockFile, lock);
+    }
     openFile.close();
     delete TomlFile;
     delete lockFile;
@@ -84,11 +80,12 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
   catch e: MasonError {
     writeln(e.message());
   }
+  return (tf, lf);
 }
 
 
 /* Writes out the lock file */
-proc genLock(lock: Toml, lf) {
+proc genLock(lock: Toml, lf: string) {
   const lockFile = open(lf, iomode.cw);
   const tomlWriter = lockFile.writer();
   tomlWriter.writeln(lock);
