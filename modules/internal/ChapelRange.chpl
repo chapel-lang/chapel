@@ -311,6 +311,8 @@ module ChapelRange {
       compilerError("ranges of enums must use a single enum type");
     return new range(low.type, _low=low, _high=high);
   }
+  proc chpl_build_bounded_range(low: bool, high: bool)
+    return new range(bool, _low=low, _high=high);
   proc chpl_build_bounded_range(low, high) {
     compilerError("Bounds of 'low..high' must be integers of compatible types.");
   }
@@ -318,9 +320,10 @@ module ChapelRange {
   // Range builders for low bounded ranges
   proc chpl_build_low_bounded_range(low: integral)
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
-  proc chpl_build_low_bounded_range(low: enumerated) {
+  proc chpl_build_low_bounded_range(low: enumerated)
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
-  }
+  proc chpl_build_low_bounded_range(low: bool)
+    return new range(low.type, BoundedRangeType.boundedLow, _low=low);
   proc chpl_build_low_bounded_range(low) {
     compilerError("Bound of 'low..' must be an integer");
   }
@@ -328,9 +331,10 @@ module ChapelRange {
   // Range builders for high bounded ranges
   proc chpl_build_high_bounded_range(high: integral)
     return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
-  proc chpl_build_high_bounded_range(high: enumerated) {
+  proc chpl_build_high_bounded_range(high: enumerated)
     return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
-  }
+  proc chpl_build_high_bounded_range(high: bool)
+    return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
   proc chpl_build_high_bounded_range(high) {
     compilerError("Bound of '..high' must be an integer.");
   }
@@ -1219,7 +1223,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // Note that aligning an unstrided range will set the field value,
     // but has no effect on the index set produced (a mod 1 == 0).
     return new range(i, b, true,
-                     r._low, r._high, r.stride, algn, true);
+                     r.chpl_intToIdx(r._low), r.chpl_intToIdx(r._high), r.stride, algn, true);
   }
 
 
@@ -1531,7 +1535,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     return chpl_count_help(r, count);
   }
 
-  proc #(r:range(?i), count:chpl__unsignedType(i)) {
+  proc #(r:range(?i), count:chpl__rangeUnsignedType(i)) {
     return chpl_count_help(r, count);
   }
 
@@ -1631,6 +1635,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     for i in r do yield i;
   }
 
+  iter chpl_direct_range_iter(low: bool, high: bool, stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  
+
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride.) Not needed, but allows us to us "<, <=, >, >=" instead of "!="
@@ -1644,6 +1654,22 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   iter chpl_direct_range_iter(low: enumerated, high: enumerated,
                               param stride: integral) {
+    if (stride == 1) {
+        // Optimize for the stride == 1 case because I anticipate it'll be
+        // better supported for enum ranges than the strided case (if we
+        // ever support the latter)
+      const r = low..high;
+      for i in r do yield i;
+    } else {
+      // I'm guessing we won't be able to optimize the param stride case
+      // for (general) enums in the short-term, so call to the non-param
+      // stride case
+      const r = low..high by stride;
+      for i in r do yield i;
+    }
+  }
+
+  iter chpl_direct_range_iter(low: bool, high: bool, param stride: integral) {
     if (stride == 1) {
         // Optimize for the stride == 1 case because I anticipate it'll be
         // better supported for enum ranges than the strided case (if we
@@ -1714,6 +1740,16 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   iter chpl_direct_counted_range_iter(low: enumerated, count:uint(?w)) {
+    const r = low..;
+    for i in r#count do yield i;
+  }
+
+  iter chpl_direct_counted_range_iter(low: bool, count: int(?w)) {
+    const r = low..;
+    for i in r#count do yield i;
+  }
+
+  iter chpl_direct_counted_range_iter(low: bool, count: uint(?w)) {
     const r = low..;
     for i in r#count do yield i;
   }
@@ -2446,8 +2482,18 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   private proc chpl__rangeStrideType(type idxType) type {
     if isIntegralType(idxType) {
       return chpl__signedType(idxType);
-    } else if isEnumType(idxType) {
+    } else if isEnumType(idxType) || isBoolType(idxType) {
       return int;
+    } else {
+      chpl__rangeIdxTypeError(idxType);
+    }
+  }
+
+  private proc chpl__rangeUnsignedType(type idxType) type {
+    if isIntegralType(idxType) {
+      return chpl__unsignedType(idxType);
+    } else if isEnumType(idxType) || isBoolType(idxType) {
+      return uint;
     } else {
       chpl__rangeIdxTypeError(idxType);
     }
@@ -2455,7 +2501,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   pragma "no doc"
   proc chpl__idxTypeToIntIdxType(type idxType) type {
-    if isEnumType(idxType) then return int; else return idxType;
+    if isEnumType(idxType) || isBoolType(idxType) then return int; else return idxType;
   }
 
   // convenience method for converting integers to index types in
@@ -2486,6 +2532,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     return chpl__orderToEnum(i, idxType);
   }
 
+  inline proc chpl__intToIdx(type idxType, i: integral) where isBoolType(idxType) {
+    return i: bool;
+  }
+
+  inline proc chpl__intToIdx(type idxType, param i: integral) param where isBoolType(idxType) {
+    return i: bool;
+  }
+
   inline proc chpl__idxToInt(i: integral) {
     return i;
   }
@@ -2496,5 +2550,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   inline proc chpl__idxToInt(i: enumerated) {
     return chpl__enumToOrder(i);
+  }
+
+  inline proc chpl__idxToInt(i: bool) {
+    return i: int;
+  }
+
+  inline proc chpl__idxToInt(param i: bool) param {
+    return i: int;
   }
 }
