@@ -1484,10 +1484,6 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
       bool usedAsRef = lhs->isRef() && rhsExpr->isRef();
       bool usedAsBorrow = isOrContainsBorrowedClass(lhs->type);
 
-      LifetimePair rhsLt = lifetimes->inferredLifetimeForExpr(rhsExpr,
-                                                              usedAsRef,
-                                                              usedAsBorrow);
-
       // track rhs symbol for error messages
       Symbol* rhsSym = NULL;
       if (SymExpr* rhsSe = toSymExpr(rhsExpr)) {
@@ -1495,6 +1491,10 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
       }
 
       if (lhs->hasEitherFlag(FLAG_RVV,FLAG_RETARG)) {
+        LifetimePair rhsLt = lifetimes->inferredLifetimeForExpr(rhsExpr,
+                                                                usedAsRef,
+                                                                false);
+
         // Check returns
         if (lhs->isRef() && call->isPrimitive(PRIM_MOVE)) {
           // check returning a reference
@@ -1525,7 +1525,8 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           // (vs own).
 
           // check returning a borrow
-          if (rhsLt.borrowed.infinite || rhsLt.borrowed.unknown) {
+          if (rhsLt.borrowed.infinite || rhsLt.borrowed.unknown /*||
+              rhsLt.borrowed.fromSymbolScope == rhsSym*/) {
             // OK, not an error
           } else {
             if (calledFn &&
@@ -1545,6 +1546,10 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           }
         }
       } else {
+        LifetimePair rhsLt = lifetimes->inferredLifetimeForExpr(rhsExpr,
+                                                                usedAsRef,
+                                                                usedAsBorrow);
+
         // Raise errors for init/assigning from a value with shorter lifetime
         // I.e. insist RHS lifetime is longer than LHS lifetime.
         // I.e. error if RHS lifetime is shorter than LHS lifetime.
