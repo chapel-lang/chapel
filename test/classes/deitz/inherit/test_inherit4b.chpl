@@ -12,11 +12,11 @@ class D : C {
   }
 }
 
-proc foo(c : C) {
+proc foo(c : borrowed C) {
   c.print();
 }
 
-var c : C;
+var c : borrowed C;
 
 c = new borrowed C();
 foo(c);

@@ -14,7 +14,7 @@ class D : C {
 
 
 class E : C {
-  var myC: C;
+  var myC: borrowed C;
   var myCType = myC.printType();
 }
 

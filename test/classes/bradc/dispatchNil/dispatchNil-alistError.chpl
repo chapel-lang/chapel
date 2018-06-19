@@ -11,7 +11,7 @@ class C {
 }
 
 class D : C {
-  var DsC: C;
+  var DsC: unmanaged C;
   var y = DsC.baz();
 
   proc foo() {

@@ -5,7 +5,7 @@ class foo {
   }
 }
 
-proc bar(f : foo) {
+proc bar(f : borrowed foo) {
   writeln("function bar ", f.x);
 }
 
