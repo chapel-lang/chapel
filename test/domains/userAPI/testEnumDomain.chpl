@@ -1,6 +1,6 @@
 use domainAPItest;
 
-enum color {red=-1, orange, yellow, green, blue, indigo, violet};
+enum color {red=42, orange=33, yellow=31, green=22, blue=8, indigo=5, violet=3};
 use color;
 
 testDomainAPI2D("2D enum domain", {orange..green, yellow..blue}, (yellow, green), (red, green), (yellow, violet), {red..violet, green..violet});

@@ -1,6 +1,6 @@
 use arrayAPItest;
 
-enum color {red, orange, yellow, green, blue, indigo, violet};
+enum color {red=42, orange=33, yellow=31, green=22, blue=8, indigo=5, violet=3};
 
 var A: [color.red..color.blue, color.yellow..color.violet] real;
 
