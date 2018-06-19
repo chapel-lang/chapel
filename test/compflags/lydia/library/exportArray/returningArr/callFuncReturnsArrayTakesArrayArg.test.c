@@ -10,7 +10,7 @@ extern void chpl_library_finalize(void);
 int main(int argc, char* argv[]) {
   // Initialize the Chapel runtime and standard modules
   chpl_library_init(argc, argv);
-  chpl__init_returnArrayTakesArg(1, 2);
+  chpl__init_returnArrayTakesArrayArg(1, 2);
 
   int64_t x[4] = {1, 2, 3, 4};
   chpl_external_array arg = chpl_make_external_array_ptr(x, 4);
