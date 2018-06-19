@@ -66,4 +66,25 @@ module ChapelHaltWrappers {
   proc pureVirtualMethodHalt() {
     halt("pure virtual method called");
   }
+
+
+  //
+  // Halt wrappers for misc runtime time checks (where we expect these checks
+  // to halt even in an error-handling world.)
+  //
+
+  /* Halt wrapper for zippered iteration of unequal lengths */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc zipLengthHalt(s:string) {
+    halt(s);
+  }
+
+  /* Halt wrapper for out of memory that mimics the runtime error */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc outOfMemoryHalt(s:string) {
+    const err = "Out of memory allocating \"" + s + "\"";
+    __primitive("chpl_error", err.localize().c_str());
+  }
 }
