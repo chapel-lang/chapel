@@ -1,0 +1,5 @@
+perfkeys: MB/s per node: 
+files: bale-hist-atomic.dat
+graphkeys: MB/s per node
+graphtitle: Bale: Histogram Perf (MB/s per node)
+ylabel: Performance (MB/s per node)
