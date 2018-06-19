@@ -1082,13 +1082,22 @@ static void insertFieldAccess(FnSymbol*          method,
   checkIdInsideWithClause(expr, usymExpr);
 
   if (nestDepth > 0) {
-    for (int i = 0; i < nestDepth; i++) {
-      dot = new CallExpr(".", dot, new_CStringSymbol("outer"));
+    if (toAggregateType(method->_this->getValType())->hasInitializers()) {
+      USR_FATAL_CONT("Illegal use of identifier '%s' from enclosing type", name);
+    } else {
+      for (int i = 0; i < nestDepth; i++) {
+        dot = new CallExpr(".", dot, new_CStringSymbol("outer"));
+      }
     }
   }
 
   if (isTypeSymbol(sym) == true) {
-    dot = new CallExpr(".", dot, sym);
+    AggregateType* at = toAggregateType(sym->type);
+    if (at != NULL && at->hasInitializers()) {
+      dot = new SymExpr(sym);
+    } else {
+      dot = new CallExpr(".", dot, sym);
+    }
   } else {
     dot = new CallExpr(".", dot, new_CStringSymbol(name));
   }

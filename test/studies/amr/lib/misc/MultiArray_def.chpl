@@ -52,7 +52,8 @@ class MultiArray
   param stridable: bool;
   type  eltType;
   
-  var array_wrappers: List( ArrayWrapper );
+  var array_wrappers: List( ArrayWrapper(rank, stridable, eltType) ) =
+                  new List( ArrayWrapper(rank, stridable, eltType) );
 
 
 
@@ -64,12 +65,12 @@ class MultiArray
   
   class ArrayWrapper
   {
-    var Domain: domain(outer.rank, stridable=outer.stridable);
-    var array: [Domain] outer.eltType;
+    param rank: int;
+    param stridable: bool;
+    type  eltType;
+    var Domain: domain(rank, stridable=stridable);
+    var array: [Domain] eltType;
   }
-
-
-  proc initialize () { array_wrappers = new List(ArrayWrapper); }
 
 
   proc deinit ()
@@ -106,7 +107,7 @@ class MultiArray
   
   proc allocate ( mD: MultiDomain(rank,stridable) )
   {
-    for D in mD do array_wrappers.add( new ArrayWrapper(D) ); 
+    for D in mD do array_wrappers.add( new ArrayWrapper(rank, stridable, eltType, D) );
   }
   // /|'''''''''''''''''''''''''/|
   //< |    method: allocate    < |

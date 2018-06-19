@@ -57,6 +57,7 @@ module ChapelStandard {
   use DefaultAssociative;
   use DefaultSparse;
   use DefaultOpaque;
+  use ExternalArray;
   use ChapelTaskID;
   use ChapelTaskTable;
   use MemTracking;

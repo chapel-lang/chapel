@@ -1,0 +1,9 @@
+libexportFuncWith1Arr1Not.a
+libexportFuncWith1Not1Arr.a
+libexportFuncWith2Arrays.a
+libexportFuncWithArrayArg.a
+libexportFuncWithExplicitVoidRet.a
+libexportFuncWithExternType.a
+libexportFuncWithPtr.a
+libexportFuncWithRealArr.a
+libreturnExternArray.a
