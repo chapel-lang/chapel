@@ -12,9 +12,7 @@ class MyClass {
 }
 
 proc main() {
-  var c : MyClass = new MyClass(50);
+  var c : borrowed MyClass = new borrowed MyClass(50);
 
   writeln(c);
-
-  delete c;
 }

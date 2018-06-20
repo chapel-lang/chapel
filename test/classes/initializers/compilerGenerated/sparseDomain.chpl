@@ -5,9 +5,8 @@ class C {
 }
 var d = {1..10};
 var s : sparse subdomain(d) = (1,5);
-var c = new C(d,s);
+var c = new owned C(d,s);
 writeln("c = ", c);
 c.sps += (7,);
 c.sps += (9);
 writeln("c = ", c);
-delete c;

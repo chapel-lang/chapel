@@ -22,10 +22,9 @@ class Child : Parent {
 }
 
 proc main() {
-  var child = new Child(4);
+  var child = new owned Child(4);
   // TODO: I would like a better error message, this current one is confusing
   // (but reasonable when you know why it is complaining)
 
   writeln(child);
-  delete child;
 }

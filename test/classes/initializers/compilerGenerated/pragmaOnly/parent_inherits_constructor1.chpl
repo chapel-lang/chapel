@@ -21,8 +21,7 @@ class Child : Parent {
 }
 
 proc main() {
-  var child = new Child(4);
+  var child = new owned Child(4);
 
   writeln(child);
-  delete child;
 }

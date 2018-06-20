@@ -17,6 +17,5 @@ class Child : Parent {
   var indices : index(rank, idxType);
 }
 
-var c = new Child(1, int);
+var c = new borrowed Child(1, int);
 writeln("c = ", c);
-delete c;

@@ -17,11 +17,11 @@ class EitherOr {
 }
 
 proc main() {
-  var c1: EitherOr = new unmanaged EitherOr(true);
+  var c1: unmanaged EitherOr = new unmanaged EitherOr(true);
   writeln(c1);
   delete c1;
 
-  var c2: EitherOr = new unmanaged EitherOr(false);
+  var c2: unmanaged EitherOr = new unmanaged EitherOr(false);
   writeln(c2);
   delete c2;
 }
