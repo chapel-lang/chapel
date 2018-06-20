@@ -41,7 +41,7 @@ private var failedChapelVersion : [1..0] string;
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock", isTest=false) {
+proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
 
   try! {
 
@@ -66,12 +66,9 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock", isTest=false)
       exit(1);
     }
 
-    if isTest {
-      genLock(lockFile, lf);
-    }
-    else {
-      genLock(lockFile, lockPath);
-    }
+    // Generate Lock File
+    genLock(lockFile, lockPath);
+
     openFile.close();
     delete TomlFile;
     delete lockFile;
