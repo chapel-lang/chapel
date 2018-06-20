@@ -13,3 +13,4 @@ record R {
 var r : R(int, false);
 
 writeln(r);
+writeln(r.type:string);
