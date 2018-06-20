@@ -14,7 +14,7 @@ class Extension : Base {
 
 proc main() {
   var ext       = new unmanaged Extension();
-  var base:Base = ext;
+  var base:borrowed Base = ext;
 
   writeln(ext.total);  // expect the total field from Extension
   ext.printTotal();    // expect the method from Extension

@@ -11,6 +11,6 @@ class C {
 }
 
 proc main {
-  var c = new C(1,2,3);
+  var c = new unmanaged C(1,2,3);
   delete c;
 }

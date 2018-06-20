@@ -28,7 +28,7 @@ class B: A {
 }
 
 proc main {
-  var a: A = new unmanaged B(1, 2.0);
+  var a: unmanaged A = new unmanaged B(1, 2.0);
   var ic_b = a.foo();
 
   ic_b.bar();

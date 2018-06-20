@@ -7,6 +7,6 @@ class Foo {
   }
 }
 
-var bar = new Foo(int, 5, 10);
+var bar = new owned Foo(int, 5, 10);
 
 writeln(bar.x);

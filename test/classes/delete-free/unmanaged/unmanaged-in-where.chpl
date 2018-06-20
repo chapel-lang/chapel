@@ -17,8 +17,8 @@ proc foo(type t)
 
 proc test() {
   foo(unmanaged MyDomain(int));
-  foo(MyDomain(int));
+  foo(borrowed MyDomain(int));
   foo(unmanaged Domain);
-  foo(Domain);
+  foo(borrowed Domain);
 }
 test();

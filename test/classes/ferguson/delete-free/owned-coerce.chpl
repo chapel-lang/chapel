@@ -7,7 +7,7 @@ class C {
   }
 }
 
-proc myLegacyFunction(arg:C) {
+proc myLegacyFunction(arg:borrowed C) {
   writeln(arg.x);
 }
 
