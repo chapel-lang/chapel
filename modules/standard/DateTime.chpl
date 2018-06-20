@@ -113,6 +113,10 @@ module DateTime {
     var tm_zone:   tm_zoneType; // Timezone abbreviation
   }
 
+  private proc assertInRange(val, low, high) {
+    assert(val >= low && val <= high);
+  }
+
   private proc getLocalTime(t: 2*int) {
     extern type time_t;
 
@@ -138,9 +142,9 @@ module DateTime {
     return y*365 + y/4 - y/100 + y/400;
   }
 
+  // assumes callee has checked for valid month range
   private proc daysBeforeMonth(year: int, month: int) {
-    if month < 1 || month > 12 then
-      halt("month must be between 1 and 12");
+    assertInRange(month, 1, 12);
     return DAYS_BEFORE_MONTH(month) + if (month > 2 && isLeapYear(year)) then 1 else 0;
   }
 
