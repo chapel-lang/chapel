@@ -690,7 +690,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   normalize(block);
   resolveBlockStmt(block);
 
-  if (temp->isRef() && formal->isRef() == false) {
+  if (temp->isRef() && (formalIntent & INTENT_FLAG_REF) == 0) {
     CallExpr* copy = new CallExpr("chpl__initCopy", temp);
     block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, copy));
     resolveCallAndCallee(copy);
