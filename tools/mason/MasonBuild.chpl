@@ -64,7 +64,8 @@ private proc checkChplVersion(lockFile : Toml) {
   }
 }
 
-proc buildProgram(release: bool, show: bool, compopts: [?d] string, tomlName: string, lockName: string) {
+proc buildProgram(release: bool, show: bool, compopts: [?d] string,
+                  tomlName="Mason.toml", lockName="Mason.lock") {
 
   try! {
 
