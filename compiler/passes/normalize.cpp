@@ -1222,8 +1222,13 @@ static void normalizeReturns(FnSymbol* fn) {
   }
 }
 
+// Expected to run after we make the wrapper, since the wrapper is generated
+// prior to any normalization occurring on the function, and this gets called
+// during normalize called on a specific AST node.
 static void fixupExportedArrayReturns(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_EXPORT) && returnsArray(fn)) {
+  if (fn->hasFlag(FLAG_EXPORT) &&
+      fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+      returnsArray(fn)) {
     fn->retExprType->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
 
     CallExpr* retCall = toCallExpr(fn->body->body.tail);
@@ -2717,6 +2722,8 @@ static void makeExportWrapper(FnSymbol* fn) {
     // Need to make a version of this function that can be exported
     FnSymbol* newFn = fn->copy();
     newFn->addFlag(FLAG_COMPILER_GENERATED);
+    // Avoid resolution conflicts when the arguments remain unchanged (but we
+    // needed to make a wrapper due to the return type)
     newFn->addFlag(FLAG_LAST_RESORT);
 
     fn->defPoint->insertBefore(new DefExpr(newFn));
