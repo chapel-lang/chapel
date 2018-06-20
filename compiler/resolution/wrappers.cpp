@@ -690,7 +690,13 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   normalize(block);
   resolveBlockStmt(block);
 
-  block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, temp));
+  if (temp->isRef() && formal->isRef() == false) {
+    CallExpr* copy = new CallExpr("chpl__initCopy", temp);
+    block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, copy));
+    resolveCallAndCallee(copy);
+  } else {
+    block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, temp));
+  }
   block->flattenAndRemove();
 
   // Now we know if 'temp' is a param or a type.
