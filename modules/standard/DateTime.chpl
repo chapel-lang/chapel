@@ -151,7 +151,7 @@ module DateTime {
   // assumes callee has checked for valid month/day ranges
   private proc ymdToOrd(year: int, month: int, day: int) {
     assertInRange(month, 1, 12);
-    const dim = daysInMonth(year, month);
+    const dim = try! daysInMonth(year, month);
     assertInRange(day, 1, dim);
     return daysBeforeYear(year) + daysBeforeMonth(year, month) + day;
   }
@@ -189,10 +189,12 @@ module DateTime {
         month = 12;
         year -= 1;
       }
-      preceding -= daysInMonth(year, month);
+      const dim = try! daysInMonth(year, month);
+      preceding -= dim;
     }
     n -= preceding;
-    assert(0 <= n && n < daysInMonth(year, month));
+    const dim = try! daysInMonth(year, month);
+    assertInRange(n+1, 1, dim);
     return (year, month, n+1);
   }
 
@@ -202,10 +204,11 @@ module DateTime {
   }
 
   /* Return the number of days in month `month` during the year `year`.
-     The number for a month can change from year to year due to leap years. */
-  proc daysInMonth(year: int, month: int) {
+     The number for a month can change from year to year due to leap years.
+     Throws an IllegalArgumentError month is out of range. */
+  proc daysInMonth(year: int, month: int) throws {
     if month < 1 || month > 12 then
-      halt("month must be between 1 and 12");
+      throw new IllegalArgumentError("month must be between 1 and 12");
     if month == 2 && isLeapYear(year) then
       return 29;
     else
@@ -270,7 +273,8 @@ module DateTime {
       halt("year is out of the valid range");
     if month < 1 || month > 12 then
       halt("month is out of the valid range");
-    if day < 1 || day > daysInMonth(year, month) then
+    const dim = try! daysInMonth(year, month);
+    if day < 1 || day > dim then
       halt("day is out of the valid range");
 
     this.chpl_year = year;
