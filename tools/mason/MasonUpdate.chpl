@@ -42,37 +42,53 @@ private var failedChapelVersion : [1..0] string;
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
 proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
-  if isFile(tf) {
+
+  try! {
+
+    const cwd = getEnv("PWD");
+    const projectHome = getProjectHome(cwd, tf);
+    const tomlPath = projectHome + "/" + tf;
+    const lockPath = projectHome + "/" + lf;
+    
+
     updateRegistry(tf, args);
-    var openFile = openreader(tf);
-    var TomlFile = parseToml(openFile);
-    var lockFile = createDepTree(TomlFile);
+    const openFile = openreader(tomlPath);
+    const TomlFile = parseToml(openFile);
+    const lockFile = createDepTree(TomlFile);
 
     if failedChapelVersion.size > 0 {
       const prefix = if failedChapelVersion.size == 1
-                     then "The following package is"
-                     else "The following packages are";
+        then "The following package is"
+        else "The following packages are";
       stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
       for msg in failedChapelVersion do
         stderr.writeln("  ", msg);
       exit(1);
     }
 
-    genLock(lockFile, lf);
+    // Generate Lock File
+    genLock(lockFile, lockPath);
+
+    // Close Memory
     openFile.close();
     delete TomlFile;
     delete lockFile;
+
   }
-  else writeln("Cannot update: no Mason.toml found");
+  catch e: MasonError {
+    writeln(e.message());
+  }
+  return (tf, lf);
 }
 
 
 /* Writes out the lock file */
-proc genLock(lock: Toml, lf) {
-  var lockFile = open(lf, iomode.cw);
-  var tomlWriter = lockFile.writer();
+proc genLock(lock: Toml, lf: string) {
+  const lockFile = open(lf, iomode.cw);
+  const tomlWriter = lockFile.writer();
   tomlWriter.writeln(lock);
   tomlWriter.close();
+  lockFile.close();
 }
 
 proc checkRegistryChanged() {

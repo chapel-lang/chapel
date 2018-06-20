@@ -22,7 +22,7 @@
 /* A helper file of utilities for Mason */
 use Spawn;
 use FileSystem;
-
+use TOML;
 
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
@@ -219,4 +219,17 @@ proc gitC(newDir, command, quiet=false) {
 proc developerMode: bool {
   const env = getEnv("CHPL_DEVELOPER");
   return env != "";
+}
+
+
+proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
+  const (dirname, basename) = splitPath(cwd);
+  if dirname == '/' {
+    throw new MasonError("Mason could not find your configuration file (Mason.toml)");
+  }
+  const tomlFile = joinPath(cwd, tomlName);
+  if exists(tomlFile) {
+    return cwd;
+  }
+  return getProjectHome(dirname, tomlName);
 }
