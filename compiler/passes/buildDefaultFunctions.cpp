@@ -812,6 +812,8 @@ static void build_enum_first_function(EnumType* et) {
   fn->tagIfGeneric();
 }
 
+#include "view.h"
+
 static void build_enum_enumerate_function(EnumType* et) {
   // Build a function that returns a tuple of the enum's values
   // Each enum type has its own chpl_enum_enumerate function.
@@ -849,33 +851,37 @@ static void build_enum_cast_function(EnumType* et) {
   FnSymbol* fn;
   ArgSymbol* arg1, *arg2;
   DefExpr* def;
-  // only build the int->enum cast function if some enums were given values
+  // only build the int<->enum cast functions if some enums were given values
   if (initsExist) {
   // integral value to enumerated type cast function
   fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  arg1 = new ArgSymbol(INTENT_BLANK, "t", et);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
   arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
-  fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
+  //  fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
+  /*
   if (fNoBoundsChecks) {
     fn->addFlag(FLAG_INLINE);
     fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, et->symbol, arg2)));
   } else {
+  */
     // Generate a select statement with when clauses for each of the
     // enumeration constants, and an otherwise clause that calls halt.
     int64_t count = 0;
     BlockStmt* whenstmts = buildChapelStmt();
-    Expr* lastInit = new SymExpr(new_IntSymbol(count));
+    Expr* lastInit = NULL;
     for_enums(constant, et) {
       if (constant->init) {
         lastInit = constant->init;
         count = 0;
       } else {
-        count++;
+        if (lastInit) {
+          count++;
+        }
       }
       CondStmt* when =
         new CondStmt(new CallExpr(PRIM_WHEN,
@@ -892,7 +898,69 @@ static void build_enum_cast_function(EnumType* et) {
                                  new_StringSymbol(errorString))));
     whenstmts->insertAtTail(otherwise);
     fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
-  }
+
+    def = new DefExpr(fn);
+  baseModule->block->insertAtTail(def);
+  reset_ast_loc(def, et->symbol);
+  normalize(fn);
+
+  fn->tagIfGeneric();
+
+
+  // enumerated to integer cast
+  fn = new FnSymbol(astr_cast);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  arg1 = new ArgSymbol(INTENT_BLANK, "t", dtIntegral);
+  arg1->addFlag(FLAG_TYPE_VARIABLE);
+  arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
+  /*
+  if (fNoBoundsChecks) {
+    fn->addFlag(FLAG_INLINE);
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, et->symbol, arg2)));
+    } else {*/
+    // Generate a select statement with when clauses for each of the
+    // enumeration constants, and an otherwise clause that calls halt.
+    count = 0;
+    whenstmts = buildChapelStmt();
+    lastInit = NULL;
+    for_enums(constant, et) {
+      if (constant->init) {
+        lastInit = constant->init;
+        count = 0;
+      } else {
+        if (lastInit != NULL) {
+          count++;
+        }
+      }
+      CallExpr* result;
+      if (lastInit) {
+        result = new CallExpr(PRIM_RETURN,
+                              new CallExpr(PRIM_CAST, arg1,
+                                           new CallExpr("+", lastInit->copy(),
+                                                        new SymExpr(new_IntSymbol(count)))));
+      } else {
+        const char *errorString = astr("illegal cast: ", et->symbol->name, 
+                                       ".", constant->sym->name,
+                                       " has no integer value");
+        result = new CallExpr("halt", new_StringSymbol(errorString));
+      }
+      CondStmt* when =
+        new CondStmt(new CallExpr(PRIM_WHEN, new SymExpr(constant->sym)),
+                     result);
+                                  
+      whenstmts->insertAtTail(when);
+    }
+    //    const char *errorString = "enumerated type out of bounds";
+    otherwise =
+      new CondStmt(new CallExpr(PRIM_WHEN),
+                   new BlockStmt(new CallExpr("halt",
+                                              new_StringSymbol(errorString))));
+    whenstmts->insertAtTail(otherwise);
+    fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
+
   def = new DefExpr(fn);
   //
   // these cast functions need to go in the base module because they
