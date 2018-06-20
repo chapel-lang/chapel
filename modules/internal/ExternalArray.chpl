@@ -180,6 +180,7 @@ module ExternalArray {
     const dom;
     
     const _ArrInstance: chpl_external_array;
+    const elts = _ArrInstance.elts: _ddata(eltType);
 
     const _owned: bool;
 
@@ -250,19 +251,19 @@ module ExternalArray {
 
     inline proc dsiAccess(i) ref {
       checkBounds(i);
-      return (_ArrInstance.elts: c_ptr(eltType))(i(1));
+      return elts(i(1));
     }
 
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
       checkBounds(i);
-      return (_ArrInstance.elts: c_ptr(eltType))(i(1));
+      return elts(i(1));
     }
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType)  {
       checkBounds(i);
-      return (_ArrInstance.elts: c_ptr(eltType))(i(1));
+      return elts(i(1));
     }
 
     inline proc checkBounds(i) {
