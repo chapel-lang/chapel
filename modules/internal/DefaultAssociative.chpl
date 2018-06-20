@@ -147,17 +147,8 @@ module DefaultAssociative {
     }
 
     iter these() {
-      if !isEnumType(idxType) {
-        for slot in _fullSlots() {
-          yield table[slot].idx;
-        }
-      } else {
-        for val in chpl_enumerate(idxType) {
-          var (match, slot) = _findFilledSlot(val);
-          if match then
-            yield table[slot].idx;
-        }
-      }
+      for slot in _fullSlots() do
+        yield table[slot].idx;
     }
  
     iter these(param tag: iterKind) where tag == iterKind.standalone {
@@ -828,10 +819,7 @@ module DefaultAssociative {
   }
 
   inline proc chpl__defaultHash(e) where isEnum(e) {
-    // this cast to int is a little suspicious for large enums that might
-    // fit in a uint but not an int, but _gen_key coerces to uint anyway
-    // so it isn't actually distinguishing between these types.
-    return _gen_key(e:int);
+    return _gen_key(chpl__enumToOrder(e));
   }
   
   inline proc chpl__defaultHash(f: real): uint {
