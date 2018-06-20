@@ -596,9 +596,14 @@ iter type enumerated.these(){
     yield i;
 }
 
-// TODO add chpl_ to these functions' names - they are not intended for user.
-private proc enum_minbits(type t: enumerated) param {
-  return __primitive( "enum min bits", t);
+private proc chpl_enum_minbits(type t: enumerated) param {
+  if t.size <= max(uint(8)) then
+    return 8;
+  if t.size <= max(uint(16)) then
+    return 16;
+  if t.size <= max(uint(32)) then
+    return 32;
+  return 64;
 }
 private proc enum_issigned(type t: enumerated) param {
   return __primitive( "enum is signed", t);
@@ -606,19 +611,14 @@ private proc enum_issigned(type t: enumerated) param {
 // TODO - maybe this function can be useful for the user, for C interop?
 // If so, give it a different name.
 pragma "no doc"
-proc enum_mintype(type t: enumerated) type {
-  param minbits = enum_minbits(t);
-  param signed = enum_issigned(t);
-  if signed {
-    return int(minbits);
-  } else {
-    return uint(minbits);
-  }
+proc chpl_enum_mintype(type t: enumerated) type {
+  return uint(chpl_enum_minbits(t));
 }
 
 pragma "no doc" // documented with the other numBits() above
+// TODO: Not convinced this is correct / appropriate
 proc numBits(type t: enumerated) param {
-  return numBits(enum_mintype(t));
+  return numBits(chpl_enum_mintype(t));
 }
 
 /*

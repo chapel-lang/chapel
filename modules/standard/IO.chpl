@@ -2975,7 +2975,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     x = new string(tx, length=len, needToCopy=false);
     return ret;
   } else if isEnumType(t) {
-    var i:enum_mintype(t);
+    var i:chpl_enum_mintype(t);
     var err:syserr = ENOERR;
     // call the integer version
     err = _read_binary_internal(_channel_internal, byteorder, i);
@@ -3040,7 +3040,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     var local_x = x.localize();
     return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.length: ssize_t);
   } else if isEnumType(t) {
-    var i:enum_mintype(t) = chpl__enumToOrder(x):enum_mintype(t);
+    var i = chpl__enumToOrder(x):chpl_enum_mintype(t);
     // call the integer version
     return _write_binary_internal(_channel_internal, byteorder, i);
   } else {
