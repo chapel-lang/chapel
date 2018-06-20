@@ -269,13 +269,14 @@ module DateTime {
      1 <= `day` <= the number of days in the given month and year
   */
   proc date.init(year, month, day) {
+    use ChapelHaltWrappers;
     if year < MINYEAR-1 || year > MAXYEAR+1 then
-      halt("year is out of the valid range");
+      initHalt("year is out of the valid range");
     if month < 1 || month > 12 then
-      halt("month is out of the valid range");
+      initHalt("month is out of the valid range");
     const dim = try! daysInMonth(year, month);
     if day < 1 || day > dim then
-      halt("day is out of the valid range");
+      initHalt("day is out of the valid range");
 
     this.chpl_year = year;
     this.chpl_month = month;
@@ -562,14 +563,15 @@ module DateTime {
    */
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
                  tzinfo: Shared(TZInfo)=nilTZ) {
+    use ChapelHaltWrappers;
     if hour < 0 || hour >= 24 then
-      halt("hour out of range");
+      initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
-      halt("minute out of range");
+      initHalt("minute out of range");
     if second < 0 || second >= 60 then
-      halt("second out of range");
+      initHalt("second out of range");
     if microsecond < 0 || microsecond >= 1000000 then
-      halt("microsecond out of range");
+      initHalt("microsecond out of range");
     this.chpl_hour = hour;
     this.chpl_minute = minute;
     this.chpl_second = second;
@@ -1486,6 +1488,7 @@ module DateTime {
      and microseconds. */
   proc timedelta.init(days=0, seconds=0, microseconds=0,
                       milliseconds=0, minutes=0, hours=0, weeks=0) {
+    use ChapelHaltWrappers;
     param usps = 1000000,  // microseconds per second
           uspms = 1000,    // microseconds per millisecond
           spd = 24*60*60; // seconds per day
@@ -1514,10 +1517,10 @@ module DateTime {
     this.chpl_microseconds = us;
 
     if this.days < -999999999 then
-      halt("Overflow: days < -999999999");
+      initHalt("Overflow: days < -999999999");
 
     if this.days > 999999999 then
-      halt("Overflow: days > 999999999");
+      initHalt("Overflow: days > 999999999");
   }
 
   /* Create a `timedelta` from a given number of seconds */
