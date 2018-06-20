@@ -818,19 +818,51 @@ proc getUID(out error: syserr, name: string): int {
 }
 
 //
-// This is a helper module used by the various glob() overloads
-// to access the C-level routines, types, and values
+// This is a helper module used by the various glob() overloads.
+// It provides wrappers over the C-level routines that take care
+// of casting and error checking.
 //
-private module chpl_glob_c_interface {
+private module GlobWrappers {
   extern type glob_t;
 
-  extern const GLOB_NOMATCH: c_int;
+  private extern const GLOB_NOMATCH: c_int;
+  private extern const GLOB_NOSPACE: c_int;
 
-  extern proc chpl_glob(pattern:c_string, flags: c_int,
-                        ref ret_glob:glob_t):c_int;
-  extern proc chpl_glob_num(x:glob_t): size_t;
-  extern proc chpl_glob_index(x:glob_t, idx:size_t): c_string;
-  extern proc globfree(ref glb:glob_t);
+  // glob wrapper that takes care of casting and error checking
+  inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
+    use ChapelHaltWrappers;
+    extern proc chpl_glob(pattern: c_string, flags: c_int,
+                          ref ret_glob: glob_t): c_int;
+
+    const GLOB_NOFLAGS = 0: c_int;
+    const err = chpl_glob(pattern.localize().c_str(), GLOB_NOFLAGS, ret_glob);
+
+    // When no flags are being passed, glob can only fail with GLOB_NOMATCH or
+    // GLOB_NOSPACE. GLOB_NOMATCH is fine and will just result in a 0 length
+    // glob_num. GLOB_NOSPACE occurs if the `malloc()` in glob failed, so just
+    // convert that into an out of memory error.
+    assert (err == 0 || err == GLOB_NOMATCH || err == GLOB_NOSPACE);
+    if err == GLOB_NOSPACE then
+      outOfMemoryHalt("glob()");
+  }
+
+  // glob_num wrapper that takes care of casting
+  inline proc glob_num_w(glb: glob_t): int {
+    extern proc chpl_glob_num(glb: glob_t): size_t;
+    return chpl_glob_num(glb).safeCast(int);
+  }
+
+  // glob_index wrapper that takes care of casting
+  inline proc glob_index_w(glb: glob_t, idx: int): string {
+    extern proc chpl_glob_index(glb: glob_t, idx: size_t): c_string;
+    return chpl_glob_index(glb, idx.safeCast(size_t)): string;
+  }
+
+  // globfree wrapper that exists only for symmetry in the routine names
+  inline proc globfree_w(ref glb: glob_t): void {
+    extern proc globfree(ref glb: glob_t): void;
+    globfree(glb);
+  }
 }
 
 
@@ -843,40 +875,32 @@ private module chpl_glob_c_interface {
    :yield: The matching filenames as strings
 */
 iter glob(pattern: string = "*"): string {
-  use chpl_glob_c_interface;
+  use GlobWrappers;
   var glb : glob_t;
 
-  const err = chpl_glob(pattern.localize().c_str(), 0, glb);
-  if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", c"unhandled error in glob()");
-  //
-  // Use safeCast here, and then back again, in order to avoid conditional
-  // in iterator in order to get better generated code, and to support
-  // 'num-1' without risk of overflow
-  //
-  const num = chpl_glob_num(glb).safeCast(int);
-  for i in 0..num-1 do
-    yield chpl_glob_index(glb, i.safeCast(size_t)): string;
+  glob_w(pattern, glb);
+  const num = glob_num_w(glb);
 
-  globfree(glb);
+  for i in 0..num-1 do
+    yield glob_index_w(glb, i);
+
+  globfree_w(glb);
 }
 
 
 pragma "no doc"
 iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
-  use chpl_glob_c_interface;
+  use GlobWrappers;
   var glb : glob_t;
 
-  const err = chpl_glob(pattern.localize().c_str(), 0, glb);
-  // TODO: Handle error cases better
-  if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", c"unhandled error in glob()");
-  const num = chpl_glob_num(glb).safeCast(int);
-  forall i in 0..num-1 do
-    yield chpl_glob_index(glb, i.safeCast(size_t)): string;
+  glob_w(pattern, glb);
+  const num = glob_num_w(glb);
 
-  globfree(glb);
+  forall i in 0..num-1 do
+    yield glob_index_w(glb, i);
+
+  globfree_w(glb);
 }
 
 //
@@ -891,17 +915,12 @@ iter glob(pattern: string = "*", param tag: iterKind): string
 pragma "no doc"
 iter glob(pattern: string = "*", param tag: iterKind)
        where tag == iterKind.leader {
-  use chpl_glob_c_interface;
+  use GlobWrappers;
   var glb : glob_t;
 
-  const err = chpl_glob(pattern.localize().c_str(), 0, glb);
-  if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", c"unhandled error in glob()");
-  //
-  // cast is used here to ensure we create an int-based leader
-  //
-  const num = chpl_glob_num(glb).safeCast(int);
-  globfree(glb);
+  glob_w(pattern, glb);
+  const num = glob_num_w(glb);
+  globfree_w(glb);
 
   //
   // Forward to the range type's leader
@@ -913,25 +932,22 @@ iter glob(pattern: string = "*", param tag: iterKind)
 pragma "no doc"
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
-  use chpl_glob_c_interface;
+  use ChapelHaltWrappers;
+  use GlobWrappers;
   var glb : glob_t;
   if (followThis.size != 1) then
     compilerError("glob() iterator can only be zipped with 1D iterators");
   var r = followThis(1);
 
-  const err = chpl_glob(pattern.localize().c_str(), 0, glb);
-  if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", c"unhandled error in glob()");
-  const num = chpl_glob_num(glb);
-  if (r.high >= num.safeCast(int)) then
-    halt("glob() is being zipped with something too big; it only has ", num, " matches");
-  for i in r do
-    //
-    // safe cast is used here to turn an int into a size_t
-    //
-    yield chpl_glob_index(glb, i.safeCast(size_t)): string;
+  glob_w(pattern, glb);
+  const num = glob_num_w(glb);
+  if (r.high >= num) then
+    zipLengthHalt("glob() is being zipped with something too big; it only has " + num + " matches");
 
-  globfree(glb);
+  for i in r do
+    yield glob_index_w(glb, i);
+
+  globfree_w(glb);
 }
 
 /* Determine if the provided path `name` corresponds to a directory and return
