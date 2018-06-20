@@ -148,12 +148,11 @@ module DateTime {
     return DAYS_BEFORE_MONTH(month) + if (month > 2 && isLeapYear(year)) then 1 else 0;
   }
 
+  // assumes callee has checked for valid month/day ranges
   private proc ymdToOrd(year: int, month: int, day: int) {
+    assertInRange(month, 1, 12);
     const dim = daysInMonth(year, month);
-    if month < 1 || month > 12 then
-      halt("month must be between 1 and 12");
-    if day < 1 || day > dim then
-      halt("day must be between 1 and ", dim);
+    assertInRange(day, 1, dim);
     return daysBeforeYear(year) + daysBeforeMonth(year, month) + day;
   }
 
