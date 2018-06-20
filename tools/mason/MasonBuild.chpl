@@ -114,7 +114,7 @@ proc buildProgram(release: bool, show: bool, compopts: [?d] string, tomlName: st
     else writeln("Cannot build: no Mason.lock found");
   }
   catch e: MasonError {
-    writeln(e.message());
+    exit(1);  
   }
 }
 
