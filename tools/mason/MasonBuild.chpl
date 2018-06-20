@@ -83,11 +83,11 @@ proc buildProgram(release: bool, show: bool, compopts: [?d] string, tomlName: st
 
       // Install dependencies into $MASON_HOME/src
       var toParse = open(projectHome + "/" + lockName, iomode.r);
-      var lockFile = parseToml(toParse);
+      var lockFile = new Owned(parseToml(toParse));
       checkChplVersion(lockFile);
 
       if isDir(MASON_HOME) == false {
-                                     mkdir(MASON_HOME, parents=true);
+        mkdir(MASON_HOME, parents=true);
       }
 
       var sourceList = genSourceList(lockFile);
@@ -108,7 +108,6 @@ proc buildProgram(release: bool, show: bool, compopts: [?d] string, tomlName: st
         exit(1);
       }
       // Close memory
-      delete lockFile;
       toParse.close();
     }
     else writeln("Cannot build: no Mason.lock found");

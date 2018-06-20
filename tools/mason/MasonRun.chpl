@@ -30,7 +30,7 @@ proc masonRun(args) {
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
-    const tomlFile = parseToml(toParse);
+    const tomlFile = new Owned(parseToml(toParse));
     const project = tomlFile["brick"]["name"].s;
     var show = false;
     var execopts: [1..0] string;
@@ -74,7 +74,6 @@ proc masonRun(args) {
       else writeln("Mason could not find your Mason.lock file");
 
       // Close memory
-      delete tomlFile;
       toParse.close();
     }
     else {

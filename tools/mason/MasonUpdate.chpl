@@ -59,7 +59,7 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
     if failedChapelVersion.size > 0 {
       const prefix = if failedChapelVersion.size == 1
         then "The following package is"
-          else "The following packages are";
+        else "The following packages are";
       stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
       for msg in failedChapelVersion do
         stderr.writeln("  ", msg);
@@ -69,6 +69,7 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
     // Generate Lock File
     genLock(lockFile, lockPath);
 
+    // Close Memory
     openFile.close();
     delete TomlFile;
     delete lockFile;
