@@ -3,6 +3,6 @@ class C {
   var x: t;
 }
 
-var myC: C;
-myC = new C();
+var myC: borrowed C;
+myC = new borrowed C();
 writeln(myC);
