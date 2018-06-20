@@ -1102,10 +1102,10 @@ module ChapelBase {
   inline proc _cast(type t, x: real(?w)) where chpl_typeSupportsPrimitiveCast(t)
     return __primitive("cast", t, x);
 
-  /*
-  inline proc _cast(type t, x: enumerated) where chpl_typeSupportsPrimitiveCast(t)
-    return __primitive("cast", t, x);
-  */
+
+  inline proc _cast(type t, x: enumerated) where isRealType(t)
+    return x: int: real;
+
   inline proc _cast(type t, x) where t:object && x:t
     return __primitive("cast", t, x);
 
