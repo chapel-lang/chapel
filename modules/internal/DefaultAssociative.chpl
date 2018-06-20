@@ -831,7 +831,7 @@ module DefaultAssociative {
     // this cast to int is a little suspicious for large enums that might
     // fit in a uint but not an int, but _gen_key coerces to uint anyway
     // so it isn't actually distinguishing between these types.
-    return _gen_key(e:int);
+    return _gen_key(chpl__enumToOrder(e));
   }
   
   inline proc chpl__defaultHash(f: real): uint {
