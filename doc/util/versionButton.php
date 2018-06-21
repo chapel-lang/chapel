@@ -81,18 +81,6 @@ function toggleDropDown() {
 
 var chplTitle = "<?php echo "$chplTitle";?>";
 
-// Note: assumes second element is most-recent release
-var chplVersions = [
-  "1.18 (pre-release)",
-  "1.17",
-  "1.16",
-  "1.15",
-  "1.14",
-  "1.13",
-  "1.12",
-  "1.11"
-];
-
 var pagePath = "<?php echo "$pagename";?>";
 if (pagePath == "") {
   // If no path is given, default to root of other docs
@@ -101,7 +89,8 @@ if (pagePath == "") {
 function dropSetup() {
   var button = document.getElementById("versionButton");
   // Uses unicode down-pointing triangle
-  button.innerHTML = chplTitle + " &#9660;";
+  var arrow = " &#9660;";
+  button.innerHTML = chplTitle + arrow;
 
   // Choose button color
   if (chplTitle.includes("pre-release")) {
@@ -109,8 +98,8 @@ function dropSetup() {
   } else if (chplTitle == "1.17") {
     button.classList.add("currentVersion");
   } else {
+    button.innerHTML = chplTitle + " (old version)" + arrow;
     button.classList.add("oldVersion");
-    button.innerHTML = chplTitle + " (old version) &#9660;";
   }
 
   // Clear old links (if any)
@@ -118,23 +107,17 @@ function dropSetup() {
     dropDiv.removeChild(dropDiv.firstChild);
   }
 
-  // Add links to chapel-lang.org/docs/###/
-  for (var i = 0; i < 2; i++) {
-    var ver = chplVersions[i];
-    if (ver != chplTitle) {
-      var link = document.createElement("a");
-      link.innerHTML = ver;
-      if (ver.includes("pre-release")) {
-        ver = "master/";
-      } else if (ver = "1.17") {
-        ver = "";
-      } else {
-        ver = ver + "/";
-      }
-      link.href = "http://chapel-lang.org/docs/" + ver + pagePath + ".html";
-      dropDiv.append(link);
-    }
-  }
+  // Add links to current version of docs
+  var link = document.createElement("a");
+  link.innerHTML = "version 1.17";
+  link.href = "http://chapel-lang.org/docs/" + pagePath + ".html";
+  dropDiv.append(link);
+
+  // Add links to master version of docs
+  var link = document.createElement("a");
+  link.innerHTML = "version 1.18<br>(pre-release)";
+  link.href = "http://chapel-lang.org/docs/master/" + pagePath + ".html";
+  dropDiv.append(link);
 }
 dropSetup();
 
