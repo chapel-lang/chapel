@@ -9,5 +9,8 @@
 
 from __future__ import print_function
 from ctypes.util import find_library
+import os
 
-print(find_library('hdf5') is None)
+llvm=os.getenv('CHPL_LLVM')
+
+print((find_library('hdf5') is None) | (llvm is None) | (llvm == 'none'))
