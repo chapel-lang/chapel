@@ -1301,6 +1301,7 @@ void TypeSymbol::renameInstantiatedIndividual(Symbol* sym) {
       }
 
     } else {
+      // Not an immediate
       this->name = astr(this->name, sym->cname);
       this->cname = astr(this->cname, sym->cname);
     }

@@ -7,8 +7,6 @@ proc test(param name, type t, param p) {
   var g = new G(q);
   writef("%-8s param type: %-8s g type: %s\n",
          name, t:string, g.type:string);
-
-  //writeln(name + " param type: " + t:string + " g type: " + g.type:string);
 }
 
 proc main() {
