@@ -1335,7 +1335,6 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
     SymExpr* lhsSe = toSymExpr(call->get(1));
     Symbol* lhs = lhsSe->symbol();
-    Expr* rhsExpr = call->get(2);
 
     if (isSubjectToRefLifetimeAnalysis(lhs) ||
         isSubjectToBorrowLifetimeAnalysis(lhs)) {
@@ -1427,8 +1426,6 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
   SymExpr* lhsSe = toSymExpr(call->get(1));
   Symbol* lhs = lhsSe->symbol();
   Expr* rhsExpr = call->get(2);
-
-  FnSymbol* inFn = call->getFunction();
 
   LifetimePair lhsInferred = lifetimes->inferredLifetimeForSymbol(lhs);
   LifetimePair lhsIntrinsic = lifetimes->intrinsicLifetimeForSymbol(lhs);
