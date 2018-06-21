@@ -1355,11 +1355,12 @@ static numeric_type_t classifyNumericType(Type* t)
 // Returns 'true' for types that are the type of numeric literals.
 // e.g. 1 is an 'int', so this function returns 'true' for 'int'.
 // e.g. 0.0 is a 'real', so this function returns 'true' for 'real'.
-static bool isNumericParamDefaultType(Type* t)
+bool isNumericParamDefaultType(Type* t)
 {
   if (t == dtInt[INT_SIZE_DEFAULT] ||
       t == dtReal[FLOAT_SIZE_DEFAULT] ||
-      t == dtImag[FLOAT_SIZE_DEFAULT])
+      t == dtImag[FLOAT_SIZE_DEFAULT] ||
+      t == dtBools[BOOL_SIZE_DEFAULT])
     return true;
 
   return false;

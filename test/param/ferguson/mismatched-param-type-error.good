@@ -1,0 +1,2 @@
+mismatched-param-type-error.chpl:6: In function 'main':
+mismatched-param-type-error.chpl:10: error: type mismatch in assignment from G1(1:uint(64)) to G1(1)
