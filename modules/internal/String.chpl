@@ -121,6 +121,10 @@ module String {
   pragma "no doc"
   extern proc chpl__getInPlaceBufferData(const ref data : chpl__inPlaceBuffer) : c_ptr(uint(8));
 
+  // Signal to the Chapel compiler that the actual argument may be modified.
+  pragma "no doc"
+  extern proc chpl__getInPlaceBufferDataForWrite(ref data : chpl__inPlaceBuffer) : c_ptr(uint(8));
+
   private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
                                            src_addr: bufferType, len: integral) {
     __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
@@ -259,7 +263,7 @@ module String {
     proc chpl__serialize() {
       var data : chpl__inPlaceBuffer;
       if len <= CHPL_SHORT_STRING_SIZE {
-        chpl_string_comm_get(chpl__getInPlaceBufferData(data), locale_id, buff, len);
+        chpl_string_comm_get(chpl__getInPlaceBufferDataForWrite(data), locale_id, buff, len);
       }
       return new __serializeHelper(len, buff, _size, locale_id, data);
     }
