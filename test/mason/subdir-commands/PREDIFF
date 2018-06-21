@@ -3,6 +3,6 @@
 outfile=$2
 temp=$outfile.temp
 
-cat $outfile | sed "s@${PWD}@\$PWD@" | sed 's/Initializing mason-registry for registry/Updating mason-registry for registry/' > $temp
+cat $outfile | sed "s@${PWD}@\$PWD@" | sed 's/Initializing mason-registry for mason-registry/Updating mason-registry for mason-registry/' > $temp
 
 mv $temp $outfile
