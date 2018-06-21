@@ -48,7 +48,6 @@
   overflow: auto;
   box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
   z-index: 1;
-  height: 150px;
   right: 0;
 }
 
@@ -84,7 +83,7 @@ var chplTitle = "<?php echo "$chplTitle";?>";
 
 // Note: assumes second element is most-recent release
 var chplVersions = [
-  "1.18 pre-release",
+  "1.18 (pre-release)",
   "1.17",
   "1.16",
   "1.15",
@@ -107,10 +106,11 @@ function dropSetup() {
   // Choose button color
   if (chplTitle.includes("pre-release")) {
     button.classList.add("preRelease");
-  } else if (chplTitle != "1.17") {
-    button.classList.add("oldVersion");
-  } else {
+  } else if (chplTitle == "1.17") {
     button.classList.add("currentVersion");
+  } else {
+    button.classList.add("oldVersion");
+    button.innerHTML = chplTitle + " (old version) &#9660;";
   }
 
   // Clear old links (if any)
@@ -119,15 +119,19 @@ function dropSetup() {
   }
 
   // Add links to chapel-lang.org/docs/###/
-  for (var i = 0; i < chplVersions.length; i++) {
+  for (var i = 0; i < 2; i++) {
     var ver = chplVersions[i];
     if (ver != chplTitle) {
       var link = document.createElement("a");
       link.innerHTML = ver;
       if (ver.includes("pre-release")) {
-        ver = "master";
+        ver = "master/";
+      } else if (ver = "1.17") {
+        ver = "";
+      } else {
+        ver = ver + "/";
       }
-      link.href = "http://chapel-lang.org/docs/" + ver + "/" + pagePath + ".html";
+      link.href = "http://chapel-lang.org/docs/" + ver + pagePath + ".html";
       dropDiv.append(link);
     }
   }
