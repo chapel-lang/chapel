@@ -271,7 +271,7 @@ class SparseBlockDom: BaseSparseDomImpl {
         locDom.dsiClear();
   }
 
-  proc dsiMyDist() return dist;
+  override proc dsiMyDist() return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     if !lhsPrivate then
@@ -369,7 +369,7 @@ class SparseBlockArr: BaseSparseArr {
     }
   }
 
-  proc dsiDestroyArr() {
+  override proc dsiDestroyArr() {
     coforall localeIdx in dom.dist.targetLocDom {
       on locArr(localeIdx) {
         delete locArr(localeIdx);

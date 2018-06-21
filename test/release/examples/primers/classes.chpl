@@ -53,7 +53,7 @@ writeln(foo.sum_a_b_b(3));
 //
 class D: C {
   var c = 1.2, d = 3.4;
-  proc printFields() {
+  override proc printFields() {
     writeln("a = ", a, " b = ", b, " c = ", c, " d = ", d);
   }
 }

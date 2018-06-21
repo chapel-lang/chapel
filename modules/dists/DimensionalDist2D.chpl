@@ -751,7 +751,7 @@ proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
 
 //== miscellanea
 
-proc DimensionalDom.dsiMyDist() return dist;
+override proc DimensionalDom.dsiMyDist() return dist;
 
 proc DimensionalDom.dsiDims()             return whole.dims();
 proc DimensionalDom.dsiDim(d)             return whole.dim(d);
@@ -778,7 +778,7 @@ proc DimensionalDom.dsiSerialWrite(f): void {
 //== creation, SetIndices
 
 // create a new domain mapped with this distribution
-proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
+override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
                                             type idxType,
                                             param stridable: bool,
                                             inds)
@@ -931,7 +931,7 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
 
 proc DimensionalArr.idxType type return dom.idxType; // (could be a field)
 
-proc DimensionalArr.dsiGetBaseDom() return dom;
+override proc DimensionalArr.dsiGetBaseDom() return dom;
 
 proc DimensionalArr.dimSpecifier(param dim: int) {
   return dom.dimSpecifier(dim);
@@ -1076,11 +1076,11 @@ proc DimensionalArr.dsiReallocate(d: domain) {
   // TODO: handle block-cyclic 1d when the stride changes
 }
 
-proc DimensionalArr.dsiPostReallocate() {
+override proc DimensionalArr.dsiPostReallocate() {
   // nothing for now
 }
 
-proc DimensionalArr.dsiDestroyArr() {
+override proc DimensionalArr.dsiDestroyArr() {
   coforall desc in localAdescs do
     on desc do
       delete desc;
