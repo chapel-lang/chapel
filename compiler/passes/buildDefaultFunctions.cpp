@@ -883,13 +883,15 @@ static void build_enum_cast_function(EnumType* et) {
           count++;
         }
       }
-      CondStmt* when =
-        new CondStmt(new CallExpr(PRIM_WHEN,
-                                  new CallExpr("+", lastInit->copy(), new SymExpr(new_IntSymbol(count)))),
-                     new CallExpr(PRIM_RETURN,
-                                  new CallExpr(PRIM_CAST,
-                                               et->symbol, arg2)));
-      whenstmts->insertAtTail(when);
+      if (lastInit != NULL) {
+        CondStmt* when =
+          new CondStmt(new CallExpr(PRIM_WHEN,
+                                    new CallExpr("+", lastInit->copy(), new SymExpr(new_IntSymbol(count)))),
+                       new CallExpr(PRIM_RETURN,
+                                    new CallExpr(PRIM_CAST,
+                                                 et->symbol, arg2)));
+        whenstmts->insertAtTail(when);
+      }
     }
     const char * errorString = "enumerated type out of bounds";
     CondStmt* otherwise =
