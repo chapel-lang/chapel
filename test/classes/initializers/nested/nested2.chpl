@@ -1,6 +1,6 @@
 class C {
   param rank: int;
-  var x: D;
+  var x: owned D;
 
   pragma "use default init"
   class D {
@@ -8,9 +8,9 @@ class C {
 
   proc init() {
     rank = 2;
-    x = new D();
+    x = new owned D();
   }
 }
 
-var myC = new C();
+var myC = new owned C();
 writeln(myC);
