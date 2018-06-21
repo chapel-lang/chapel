@@ -111,6 +111,8 @@ static bool mustUseRuntimeTypeDefault(ArgSymbol* formal);
 
 static bool typeExprReturnsType(ArgSymbol* formal);
 
+static IntentTag getIntent(ArgSymbol* formal);
+
 typedef struct DefaultExprFnEntry_s {
   FnSymbol* defaultExprFn;
   std::vector<std::pair<ArgSymbol*,ArgSymbol*> > usedFormals;
@@ -647,7 +649,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   if (formal->type   != dtTypeDefaultToken &&
       formal->type   != dtMethodToken      &&
       formal->intent == INTENT_BLANK) {
-    formalIntent = blankIntentForType(formal->type);
+    formalIntent = getIntent(formal);
   }
 
   if ((formalIntent & INTENT_FLAG_REF) != 0)
@@ -1343,7 +1345,6 @@ static bool      needToAddCoercion(Type*      actualType,
                                    ArgSymbol* formal,
                                    FnSymbol*  fn);
 
-static IntentTag getIntent(ArgSymbol* formal);
 
 static void      addArgCoercion(FnSymbol*  fn,
                                 CallExpr*  call,
