@@ -2724,16 +2724,18 @@ void trimVisibleCandidates(CallInfo&       info,
                            Vec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
 
-  bool isInit = false;
-  if (call->numActuals() >= 2 && call->isNamedAstr(astrInit)) {
+  bool isMethod = false;
+  if (call->numActuals() >= 2) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
-      isInit = se->symbol() == gMethodToken;
+      isMethod = se->symbol() == gMethodToken;
     }
   }
 
-  bool isNew = call->numActuals() >= 1 && call->isNamedAstr(astrNew);
+  bool isInit   = isMethod && call->isNamedAstr(astrInit);
+  bool isNew    = call->numActuals() >= 1 && call->isNamedAstr(astrNew);
+  bool isDeinit = isMethod && call->isNamedAstr(astrDeinit);
 
-  if (isInit == false && isNew == false) {
+  if (!(isInit || isNew || isDeinit)) {
     mostApplicable = visibleFns;
   } else {
     forv_Vec(FnSymbol, fn, visibleFns) {
@@ -2741,7 +2743,7 @@ void trimVisibleCandidates(CallInfo&       info,
       BaseAST* actual = NULL;
       BaseAST* formal = NULL;
 
-      if (isInit && fn->isInitializer()) {
+      if ((isInit && fn->isInitializer()) || (isDeinit && fn->isMethod())) {
         actual = call->get(2);
         formal = fn->_this;
       } else if (isNew && (fn->hasFlag(FLAG_NEW_WRAPPER) || fn->isInitializer())) {
@@ -2750,8 +2752,12 @@ void trimVisibleCandidates(CallInfo&       info,
       }
 
       if (actual != NULL && formal != NULL) {
-        AggregateType* actualType = toAggregateType(actual->getValType())->getRootInstantiation();
-        AggregateType* formalType = toAggregateType(formal->getValType())->getRootInstantiation();
+        Type* at = canonicalClassType(actual->getValType());
+        Type* ft = canonicalClassType(formal->getValType());
+
+        AggregateType* actualType = toAggregateType(at)->getRootInstantiation();
+        AggregateType* formalType = toAggregateType(ft)->getRootInstantiation();
+
         if (actualType != formalType) {
           shouldKeep = false;
         }
