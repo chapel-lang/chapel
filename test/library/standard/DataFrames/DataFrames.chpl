@@ -18,8 +18,6 @@
  */
 
 module DataFrames {
-  use Sort;
-
   class Index {
     pragma "no doc"
     proc contains(lab) {
@@ -695,6 +693,11 @@ module DataFrames {
         this.columns[lab] = s.copy();
     }
 
+    proc init(idx: Index) {
+      this.idx = idx;
+      this.complete();
+    }
+
     proc init(columns: [?D], idx: Index) {
       this.labels = D;
       this.idx = idx;
@@ -713,6 +716,7 @@ module DataFrames {
       return columns[lab];
     }
 
+    // TODO: have this function take an owned Series
     proc insert(lab: string, s: Series) {
       var sCopy = s.copy();
       sCopy.reindex(idx);
