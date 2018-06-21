@@ -7,11 +7,11 @@ config const probClass = classVals.S;
 config const seed = 314159265;
 config const printTime = false;
 
-const Class: domain(classVals);
+const Class = {classVals.S..classVals.C};
 
-const probSizes: [Class] int = ( 2**16, 2**20, 2**23, 2**25, 2**27 ),
-      Bmaxs:     [Class] int = ( 2**11, 2**16, 2**19, 2**21, 2**23 ),
-      Imaxs:     [Class] int = ( 10, 10, 10, 10, 10 );
+const probSizes: [Class] int = [ 2**16, 2**20, 2**23, 2**25, 2**27 ],
+      Bmaxs:     [Class] int = [ 2**11, 2**16, 2**19, 2**21, 2**23 ],
+      Imaxs:     [Class] int = [ 10, 10, 10, 10, 10 ];
 
 config const probSize = probSizes(probClass);
 config const Bmax = Bmaxs(probClass);

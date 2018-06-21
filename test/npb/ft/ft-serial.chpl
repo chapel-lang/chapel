@@ -58,14 +58,14 @@ proc randlc(n : int) : real {
 
 enum classes {S = 1, W, A, B, C, D};
 
-const Class: domain(classes);
+const Class = {classes.S..classes.D};
 
 /* Values associate with the problem class type in order specified 
    by classes */
-const class_nx: [Class] int = (64, 32, 128, 256, 512, 1024);
-var class_ny: [Class] int = (64, 128, 256, 256, 512, 1024);
-var class_nz: [Class] int  = (64, 128, 256, 512, 512, 2048);
-var class_niter: [Class] int = (6, 6, 6, 20, 20, 25);
+const class_nx: [Class] int = [64, 32, 128, 256, 512, 1024];
+var class_ny: [Class] int = [64, 128, 256, 256, 512, 1024];
+var class_nz: [Class] int  = [64, 128, 256, 512, 512, 2048];
+var class_niter: [Class] int = [6, 6, 6, 20, 20, 25];
 
 
 /* More readable format

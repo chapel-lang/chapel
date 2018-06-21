@@ -26,9 +26,9 @@
 
 // Problem size parameters
 enum  classVals {S=0, W=1, A=2, B=3, C=4};
-const Classes: domain(classVals);
-const ClassNkeys:  [Classes] int = ( 16, 20, 23, 25, 27 ),
-      ClassRanges: [Classes] int = ( 11, 16, 19, 21, 23 );
+const Classes = {classVals.S..classVals.C};
+const ClassNkeys:  [Classes] int = [ 16, 20, 23, 25, 27 ],
+      ClassRanges: [Classes] int = [ 11, 16, 19, 21, 23 ];
 
 // Set of config constants that control size of problem and output options
 config const probClass = classVals.S;	 // default to Sample class
