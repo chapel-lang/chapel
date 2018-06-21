@@ -95,6 +95,31 @@ class Block1DDist {
 }
 
 //
+// Compute what chunk of index(1) is owned by the current locale
+//
+proc computeMyChunk(type glbIdxType, locid, dist) {
+
+  //
+  // a helper function for mapping processors to indices
+  //
+  proc procToData(x, lo)
+    return (lo + (x: lo.type) + (x:real != x:int:real));
+
+  const lo = dist.bbox.low;
+  const hi = dist.bbox.high;
+  const numelems = hi - lo + 1;
+  const numlocs = dist.targetLocs.numElements;
+  const blo = if (locid == 0) then min(glbIdxType)
+              else procToData((numelems: real * locid) / numlocs, lo);
+  const bhi = if (locid == numlocs - 1) then max(glbIdxType)
+              else procToData((numelems: real * (locid+1)) / numlocs, lo) - 1;
+  const retval = {blo..bhi};
+  if debugBradsBlock1D then
+    writeln("locale ", locid, " owns ", retval);
+  return retval;
+}
+
+//
 // A per-locale local distribution class
 //
 class LocBlock1DDist {
@@ -121,31 +146,7 @@ class LocBlock1DDist {
   // to use lclIdxType here is wrong since we're talking about
   // the section of the global index space owned by the locale.
   //
-  const myChunk: domain(1, glbIdxType) = computeMyChunk();
-
-  //
-  // a helper function for mapping processors to indices
-  //
-  proc procToData(x, lo)
-    return (lo + (x: lo.type) + (x:real != x:int:real));
-
-  //
-  // Compute what chunk of index(1) is owned by the current locale
-  //
-  proc computeMyChunk() {
-    const lo = dist.bbox.low;
-    const hi = dist.bbox.high;
-    const numelems = hi - lo + 1;
-    const numlocs = dist.targetLocs.numElements;
-    const blo = if (locid == 0) then min(glbIdxType)
-                else procToData((numelems: real * locid) / numlocs, lo);
-    const bhi = if (locid == numlocs - 1) then max(glbIdxType)
-                else procToData((numelems: real * (locid+1)) / numlocs, lo) - 1;
-    const retval = {blo..bhi};
-    if debugBradsBlock1D then
-      writeln("locale ", locid, " owns ", retval);
-    return retval;
-  }
+  const myChunk: domain(1, glbIdxType) = computeMyChunk(glbIdxType, locid, dist);
 }
 
 
