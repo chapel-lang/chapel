@@ -218,8 +218,8 @@ module LocaleModel {
         yield loc;
     }
 
-    proc getDefaultLocaleSpace() const ref return this.myLocaleSpace;
-    proc getDefaultLocaleArray() const ref return myLocales;
+    override proc getDefaultLocaleSpace() const ref return this.myLocaleSpace;
+    override proc getDefaultLocaleArray() const ref return myLocales;
 
     override proc localeIDtoLocale(id : chpl_localeID_t) {
       // In the default architecture, there are only nodes and no sublocales.

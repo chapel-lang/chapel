@@ -1636,7 +1636,10 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_INLINE);
+    if (ct->isClass() && ct != dtObject)
+      fn->addFlag(FLAG_OVERRIDE);
+    else
+      fn->addFlag(FLAG_INLINE);
 
     fn->cname = astr("_auto_", ct->symbol->name, "_write");
     fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
@@ -1685,7 +1688,10 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_INLINE);
+    if (ct->isClass() && ct != dtObject)
+      fn->addFlag(FLAG_OVERRIDE);
+    else
+      fn->addFlag(FLAG_INLINE);
 
     fn->cname = astr("_auto_", ct->symbol->name, "_read");
 

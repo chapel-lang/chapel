@@ -132,7 +132,7 @@ class CSDom: BaseSparseDomImpl {
     dsiClear();
   }
 
-  proc dsiMyDist() return dist;
+  override proc dsiMyDist() return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
