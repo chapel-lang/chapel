@@ -14,7 +14,7 @@ class Child : Parent {
 proc test() {
   var x = new owned Child();
   var y = x.borrow();
-  var z = y:Parent;
+  var z = y:borrowed Parent;
   //y.f(1); // leads to ambiguity error currently
   z.f(1);
 }

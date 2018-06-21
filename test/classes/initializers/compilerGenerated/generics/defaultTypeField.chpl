@@ -15,5 +15,5 @@ class Child : Parent {
   var x : foo;
 }
 
-var c : Child(int);
+var c : borrowed Child(int);
 writeln("c.type = ", c.type:string);

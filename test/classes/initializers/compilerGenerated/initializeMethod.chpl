@@ -14,11 +14,8 @@ class Foo {
   }
 }
 
-var foo1 = new Foo(3, true);
-var foo2 = new Foo(5, false);
+var foo1 = new shared Foo(3, true);
+var foo2 = new shared Foo(5, false);
 
 writeln(foo1);
 writeln(foo2);
-
-delete foo1;
-delete foo2;

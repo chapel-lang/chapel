@@ -9,11 +9,12 @@ class SubClass : MyClass {
 }
 
 proc test1() {
-  var instance = new MyClass(1);
+  var instance = new unmanaged MyClass(1);
+  delete instance;
 }
 
 proc test2() {
-  var instance:MyClass = new Shared(new MyClass(1));
+  var instance:borrowed MyClass = new Shared(new MyClass(1));
 }
 
 proc acceptMyClass(c:MyClass) {

@@ -8,6 +8,6 @@ class Function1d {
 }
 
 proc main() {
-  var f: Function1d;
+  var f: unmanaged Function1d;
   //var ff = new Function1d();
 }

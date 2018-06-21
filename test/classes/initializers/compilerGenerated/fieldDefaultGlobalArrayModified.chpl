@@ -7,12 +7,9 @@ class C {
   var a = A(2) + 2;
 }
 
-var c = new C();
+var c = new borrowed C();
 A(2) = 2;
-var d = new C();
+var d = new borrowed C();
 
 writeln(c);
 writeln(d);
-
-delete c;
-delete d;

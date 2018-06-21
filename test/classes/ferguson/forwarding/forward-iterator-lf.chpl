@@ -21,11 +21,11 @@ class Impl {
 }
 
 record R {
-  forwarding var impl:Impl;
+  forwarding var impl:unmanaged Impl;
 }
 
 proc test() {
-  var r = new R(new Impl());
+  var r = new R(new unmanaged Impl());
   forall i in r {
     writeln(i);
   }

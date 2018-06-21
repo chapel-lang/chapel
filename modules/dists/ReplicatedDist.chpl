@@ -382,6 +382,15 @@ proc ReplicatedDom.dsiHigh
 proc ReplicatedDom.dsiStride
   return redirectee().stride;
 
+proc ReplicatedDom.dsiAlignedLow
+  return redirectee().alignedLow;
+
+proc ReplicatedDom.dsiAlignedHigh
+  return redirectee().alignedHigh;
+
+proc ReplicatedDom.dsiAlignment
+  return redirectee().alignment;
+
 // here replication is visible
 proc ReplicatedDom.dsiNumIndices
   return redirectee().numIndices;

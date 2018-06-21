@@ -1,5 +1,5 @@
 record Wrapper {
-  forwarding var instance:C;
+  forwarding var instance:unmanaged C;
   proc foo() { writeln("in Wrapper.foo()"); }
   proc deinit() {
     delete instance;

@@ -12,7 +12,7 @@ class B: A {
 
 var a  = new borrowed A();
 var b  = new borrowed B();
-var ba = b:A;
+var ba = b:borrowed A;
 
 writeln("a   says: ", a.fcn());
 writeln("b   says: ", b.fcn());

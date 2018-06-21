@@ -10,6 +10,6 @@ class Holder {
   var h: Held;
 }
 
-var holder = new Holder();
+var holder = new unmanaged Holder();
 writeln(holder);
 delete holder;

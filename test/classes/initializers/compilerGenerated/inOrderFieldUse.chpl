@@ -6,6 +6,5 @@ class Foo {
   var y = x + 1;
 }
 
-var foo = new Foo();
+var foo = new shared Foo();
 writeln(foo);
-delete foo;

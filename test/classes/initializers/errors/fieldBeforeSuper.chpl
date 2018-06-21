@@ -8,5 +8,4 @@ class C {
   }
 }
 
-var c = new C();
-delete c;
+var c = new borrowed C();
