@@ -1443,18 +1443,20 @@ static void buildInitializerCall(AggregateType* ct,
   call->insertAtTail(new SymExpr(gMethodToken));
   call->insertAtTail(new NamedExpr("this", new SymExpr(_this)));
 
+  bool named = ct->wantsDefaultInitializer();
+
   for_fields(field, ct) {
     if (field->isParameter() == true) {
       Flag         flag = FLAG_PARAM;
       PrimitiveTag tag  = PRIM_QUERY_PARAM_FIELD;
 
-      buildRecordQuery(fn, arg, call, field, flag, tag, false);
+      buildRecordQuery(fn, arg, call, field, flag, tag, named);
 
     } else if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       Flag         flag = FLAG_TYPE_VARIABLE;
       PrimitiveTag tag  = PRIM_QUERY_TYPE_FIELD;
 
-      buildRecordQuery(fn, arg, call, field, flag, tag, false);
+      buildRecordQuery(fn, arg, call, field, flag, tag, named);
 
     } else if (field->defPoint->exprType == NULL &&
                field->defPoint->init     == NULL) {
@@ -1464,7 +1466,7 @@ static void buildInitializerCall(AggregateType* ct,
       //
       // BHARSH INIT TODO: Try to write a test that fails because we cannot
       // correctly generate a _defaultOf for something with an explicit init.
-      buildRecordQueryVarField(fn, arg, call, field, ct->wantsDefaultInitializer());
+      buildRecordQueryVarField(fn, arg, call, field, named);
 
     }
   }

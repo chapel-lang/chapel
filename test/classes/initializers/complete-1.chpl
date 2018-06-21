@@ -14,9 +14,7 @@ class MyClass {
 }
 
 proc main() {
-  var c : MyClass = new MyClass(50);
+  var c : owned MyClass = new owned MyClass(50);
 
   writeln(c);
-
-  delete c;
 }

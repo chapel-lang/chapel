@@ -16,6 +16,5 @@ class Child: Parent {
   }
 }
 
-var child = new Child(4);
+var child = new borrowed Child(4);
 writeln(child);
-delete child;

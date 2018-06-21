@@ -1,2 +1,2 @@
 class C{}
-proc C.C():C {}
+proc C.C():unmanaged C {}

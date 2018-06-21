@@ -13,7 +13,7 @@ var c: unmanaged C = new unmanaged D(x=3,y=4);
 c.foo(12);
 c.foo(true);
 
-var d: D = c:D;
+var d: unmanaged D = c:unmanaged D;
 d.foo(true);
 
 delete c;

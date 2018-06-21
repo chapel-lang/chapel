@@ -4,7 +4,7 @@ class C {
   var x: t;
 }
 
-var c: C(int);
+var c: borrowed C(int);
 
 c = new borrowed C(int);
 

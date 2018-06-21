@@ -13,10 +13,10 @@ class Parent {
 }
 
 class Child : Parent {
-  var y : Dummy(stridable);
+  var y : unmanaged Dummy(stridable);
 }
 
-var c = new Child(false, 5);
+var c = new unmanaged Child(false, 5);
 writeln('c = ', c);
 delete c;
 
@@ -32,10 +32,10 @@ class A {
 }
 
 class Z : A {
-  var x : Dummy(stridable);
+  var x : unmanaged Dummy(stridable);
 }
 
-var z = new Z(1, int, false);
+var z = new unmanaged Z(1, int, false);
 writeln("z = ", z);
 
 //
@@ -51,15 +51,16 @@ class DummyBaseDom {
 }
 
 class DummyMyDom : DummyBaseDom {
-  var locs : [1..4] DummyLocMyDom(rank, idxType, stridable);
+  var locs : [1..4] unmanaged DummyLocMyDom(rank, idxType, stridable);
 }
 
 class DummyLocMyDom {
   param rank : int;
   type idxType;
   param stridable : bool;
-  var parent : DummyMyDom(rank, idxType, stridable);
+  var parent : unmanaged DummyMyDom(rank, idxType, stridable);
 }
 
-var dmd = new DummyMyDom(1, int, false);
+var dmd = new unmanaged DummyMyDom(1, int, false);
 writeln("dmd = ", dmd);
+delete dmd;

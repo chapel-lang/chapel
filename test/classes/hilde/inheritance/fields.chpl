@@ -23,8 +23,8 @@ class Derived : Base {
   proc dbName() return "dynamic Derived";
 }
 
-var b:Base;
-var d:Derived;
+var b:borrowed Base;
+var d:borrowed Derived;
 
 b = new borrowed Base();
 writeln(b.field);		// Expect "Base"

@@ -4,7 +4,7 @@ class myclass {
 }
 
 record myrecord {
-  var c: myclass;
+  var c: borrowed myclass;
 }
 
 proc main() {

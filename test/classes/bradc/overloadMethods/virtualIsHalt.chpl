@@ -20,7 +20,7 @@ class D : C {
 }
 
 class E : C {
-  var parentDom: C;
+  var parentDom: owned C;
 
   var rowRange = parentDom.bbox(1);
 }

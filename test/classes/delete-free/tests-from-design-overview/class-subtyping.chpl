@@ -27,7 +27,7 @@ proc test1() {
 }
 test1();
 
-proc borrowParent(arg: ParentClass) {
+proc borrowParent(arg: borrowed ParentClass) {
   writeln("in borrowParent");
 }
 

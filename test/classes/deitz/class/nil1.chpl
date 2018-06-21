@@ -2,7 +2,7 @@ class C {
   var x : int = 10;
 }
 
-var c : C;
+var c : borrowed C;
 
 if c != nil then
   writeln(c.x);

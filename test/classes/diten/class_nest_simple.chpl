@@ -20,7 +20,7 @@ class myouter {
 }
 
 proc main() {
-  var outside: myouter = new unmanaged myouter();
+  var outside: unmanaged myouter = new unmanaged myouter();
 
   outside.foo();
 

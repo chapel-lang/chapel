@@ -7,7 +7,7 @@ class C
   proc deinit() { writeln("Called ~C()."); }
 }
 
-var c = new C();
+var c = new unmanaged C();
 delete c;
 
 writeln("Done.");

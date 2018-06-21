@@ -3,12 +3,12 @@ class C {
   var y;
 }
 
-proc foo(c : C) {
+proc foo(c : borrowed C) {
   c.x = 2;
   c.y = 3;
 }
 
-proc bar(c : C) {
+proc bar(c : borrowed C) {
   c.x = "hello";
   c.y = "world";
 }

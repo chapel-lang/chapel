@@ -11,14 +11,14 @@ class cpoint : point {
   var color : int;
 }
 
-var p : point = new borrowed point();
+var p : borrowed point = new borrowed point();
 
 p.x = 3.0;
 p.y = 4.5;
 
 writeln("p { ", p.x, ", ", p.y, " }");
 
-var cp : cpoint = new borrowed cpoint();
+var cp : borrowed cpoint = new borrowed cpoint();
 
 cp.color = 5;
 cp.x = 2.2;

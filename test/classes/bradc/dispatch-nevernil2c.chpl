@@ -6,11 +6,11 @@ class D {
   var y: unmanaged C;
 }
 
-proc foo(c: C) {
+proc foo(c: unmanaged C) {
   writeln("x is: ", c.x);
 }
 
-proc foo(d: D) {
+proc foo(d: unmanaged D) {
   foo(d.y);
 }
 
