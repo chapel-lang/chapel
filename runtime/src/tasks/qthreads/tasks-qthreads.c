@@ -126,7 +126,6 @@ static void profile_print(void)
 //
 volatile int chpl_qthread_done_initializing;
 static aligned_t canexit = 0;
-static volatile int done_finalizing;
 static pthread_mutex_t done_init_final_mux = PTHREAD_MUTEX_INITIALIZER;
 
 // Make qt env sizes uniform. Same as qt, but they use the literal everywhere
@@ -142,6 +141,8 @@ struct chpl_task_list {
 };
 
 static aligned_t next_task_id = 1;
+
+static pthread_t initer;
 
 pthread_t chpl_qthread_process_pthread;
 pthread_t chpl_qthread_comm_pthread;
@@ -327,9 +328,6 @@ static void *initializer(void *junk)
     qthread_readFF(NULL, &canexit);
 
     qthread_finalize();
-    (void) pthread_mutex_lock(&done_init_final_mux);  // implicit memory fence
-    done_finalizing = 1;
-    (void) pthread_mutex_unlock(&done_init_final_mux);
 
     return NULL;
 }
@@ -626,8 +624,6 @@ void chpl_task_init(void)
 {
     int32_t   commMaxThreads;
     int32_t   hwpar;
-    pthread_t initer;
-    pthread_attr_t pAttr;
 
     chpl_qthread_process_pthread = pthread_self();
     chpl_qthread_process_bundle.id = qthread_incr(&next_task_id, 1);
@@ -645,9 +641,7 @@ void chpl_task_init(void)
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 
     // Initialize qthreads
-    pthread_attr_init(&pAttr);
-    pthread_attr_setdetachstate(&pAttr, PTHREAD_CREATE_DETACHED);
-    pthread_create(&initer, &pAttr, initializer, NULL);
+    pthread_create(&initer, NULL, initializer, NULL);
     while (chpl_qthread_done_initializing == 0)
         sched_yield();
 
@@ -676,8 +670,7 @@ void chpl_task_exit(void)
          * told to start yet */
         if (chpl_qthread_done_initializing == 1) {
             qthread_fill(&canexit);
-            while (done_finalizing == 0)
-                sched_yield();
+            pthread_join(initer, NULL);
         }
     } else {
         qthread_fill(&exit_ret);
