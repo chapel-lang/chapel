@@ -266,14 +266,12 @@ class CSDom: BaseSparseDomImpl {
         ret = binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
       else {
         ret = linearSearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
-        if !ret[1] then ret[2] = stopIdx(row)+1;
       }
     } else {
       if this.sortedIndices then
         ret = binarySearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
       else {
         ret = linearSearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
-        if !ret[1] then ret[2] = stopIdx(col)+1;
       }
     }
 
