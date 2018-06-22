@@ -852,6 +852,10 @@ static Expr* handleUnstableClassType(SymExpr* se) {
           } else if (outerOuterCall && callMakesDmap(outerOuterCall)) {
             // new dmap( new Block( ) )
             ok = true;
+          } else if (outerOuterCall &&
+                     outerOuterCall->isPrimitive(PRIM_THROW)) {
+            // throw new Error()
+            ok = true;
           } else if (outerCall && outerCall->isPrimitive(PRIM_NEW) &&
                      inCall == outerCall->get(1)) {
             // 'new SomeClass()'
