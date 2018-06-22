@@ -87,6 +87,7 @@ if (pagePath == "") {
   pagePath = "index.html";
 }
 function dropSetup() {
+  var currentRelease = "1.17";
   var button = document.getElementById("versionButton");
   // Uses unicode down-pointing triangle
   var arrow = " &#9660;";
@@ -95,7 +96,7 @@ function dropSetup() {
   // Choose button color
   if (chplTitle.includes("pre-release")) {
     button.classList.add("preRelease");
-  } else if (chplTitle == "1.17") {
+  } else if (chplTitle == currentRelease) {
     button.classList.add("currentVersion");
   } else {
     button.innerHTML = chplTitle + " (old version)" + arrow;
@@ -107,17 +108,21 @@ function dropSetup() {
     dropDiv.removeChild(dropDiv.firstChild);
   }
 
-  // Add links to current version of docs
-  var link = document.createElement("a");
-  link.innerHTML = "version 1.17";
-  link.href = "http://chapel-lang.org/docs/" + pagePath + ".html";
-  dropDiv.append(link);
+  if (chplTitle != currentRelease) {
+    // Add links to current version of docs
+    var link = document.createElement("a");
+    link.innerHTML = "version "+currentRelease+"<br>(current version)";
+    link.href = "http://chapel-lang.org/docs/" + pagePath + ".html";
+    dropDiv.append(link);
+  }
 
-  // Add links to master version of docs
-  var link = document.createElement("a");
-  link.innerHTML = "version 1.18<br>(pre-release)";
-  link.href = "http://chapel-lang.org/docs/master/" + pagePath + ".html";
-  dropDiv.append(link);
+  if (!chplTitle.includes("pre-release")) {
+    // Add links to master version of docs
+    var link = document.createElement("a");
+    link.innerHTML = "version 1.18<br>(pre-release)";
+    link.href = "http://chapel-lang.org/docs/master/" + pagePath + ".html";
+    dropDiv.append(link);
+  }
 }
 dropSetup();
 
