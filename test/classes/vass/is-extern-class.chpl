@@ -27,7 +27,7 @@ testme();
 proc testme() {
 
   compilerWarning("should be false:");
-  compilerWarning(isExternClassType(CC):string);
+  compilerWarning(isExternClassType(borrowed CC):string);
   compilerWarning(isExternClassType(RR):string);
   compilerWarning(isExternClassType(string):string);
   compilerWarning(isExternClassType(int):string);

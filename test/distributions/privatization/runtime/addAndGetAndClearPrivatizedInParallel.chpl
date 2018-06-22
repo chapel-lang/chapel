@@ -5,7 +5,7 @@ var classSizes = [0, 10, 100, 1000, 10000, 100000];
 
 // add some initial values
 forall i in classSizes[1]..classSizes[3]-1 {
-  var newValue = new C(i);
+  var newValue = new unmanaged C(i);
   insertPrivatized(newValue, i);
 }
 
@@ -16,7 +16,7 @@ for classNum in 3..classSizes.size-1 {
 
     {
       for i in classSizes[classNum]..classSizes[classNum+1]-1 {
-        var newValue = new C(i);
+        var newValue = new unmanaged C(i);
         insertPrivatized(newValue, i);
       }
     }

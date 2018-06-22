@@ -12,9 +12,6 @@ class D: C {
   }
 }
 
-var c: C = new D();
+var c: owned C = new owned D();
 
 writeln(c.a(3));
-
-delete c;
-
