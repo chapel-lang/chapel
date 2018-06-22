@@ -30,8 +30,8 @@ class D {
   }
 }
 
-var myC = new C();
-var myD = new D();
+var myC = new borrowed C();
+var myD = new borrowed D();
 
 forall (i,j) in zip(myC, myC) do
   writeln("(i,j) = ", (i,j));
@@ -48,6 +48,3 @@ writeln();
 forall (i,j) in zip(myD,myC) do
   writeln("(i,j) = ", (i,j));
 writeln();
-
-delete myC;
-delete myD;

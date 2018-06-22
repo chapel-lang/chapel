@@ -13,7 +13,7 @@ class Child /*: Parent*/ {
   var z: int;
 }
 
-var a: Child = new borrowed Child(x = 1, y = 2, z = 3);
+var a: borrowed Child = new borrowed Child(x = 1, y = 2, z = 3);
 
 writeln("a is ", a);
 

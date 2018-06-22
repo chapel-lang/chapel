@@ -5,10 +5,10 @@
 class C    { }
 class D: C { }
 
-proc test(ref lhs: C) {}
+proc test(ref lhs: unmanaged C) {}
 
-var c: C;
-var d: D;
+var c: unmanaged C;
+var d: unmanaged D;
 
 test(c);
 test(d); // must be an error

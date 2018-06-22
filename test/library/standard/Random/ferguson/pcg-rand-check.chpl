@@ -215,7 +215,7 @@ writeln("Checking real(64)");
 
   fillRandom(expect, seed=seed, algorithm=RNG.PCG);
 
-  var rs = new RandomStream(seed = seed, eltType = real(64));
+  var rs = new owned RandomStream(seed = seed, eltType = real(64));
 
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
@@ -241,8 +241,6 @@ writeln("Checking real(64)");
     if verbose then writef("%n\n", got);
     assert( got == expect[i] );
   }
-
-  delete rs;
 }
 
 writeln("Checking random shuffle and permutation");
