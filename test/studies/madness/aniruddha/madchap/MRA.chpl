@@ -28,7 +28,7 @@ config const debug   = false;
 class Function {
     const k            : int;  // use first k Legendre polynomials as the basis in each box
     const thresh       : real; // truncation threshold for small wavelet coefficients
-    var   f            : AFcn; // analytic f(x) to project into the numerical represntation
+    var   f            : unmanaged AFcn; // analytic f(x) to project into the numerical represntation
     const initial_level: int;  // initial level of refinement
     const max_level    : int;  // maximum level of refinement mostly as a sanity check
     const autorefine   : bool; // automatically refine during multiplication
@@ -59,7 +59,7 @@ class Function {
     const r0   : [dcDom] real;
     const rp   : [dcDom] real;
 
-    proc init(k:int=5, thresh:real=1e-5, f:AFcn=nil, initial_level:int=2,
+    proc init(k:int=5, thresh:real=1e-5, f:unmanaged AFcn=nil, initial_level:int=2,
               max_level:int=30, autorefine:bool=true, compressed:bool=false,
               sumC:unmanaged FTree=new unmanaged FTree(order=k),
               diffC:unmanaged FTree=new unmanaged FTree(order=k)) {
@@ -149,7 +149,7 @@ class Function {
      */
     proc skeletonCopy() {
         // Omit: f, compressed, sumC, diffC
-        return new Function(k=k, thresh=thresh, initial_level=initial_level,
+        return new unmanaged Function(k=k, thresh=thresh, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine);
     }
 
@@ -458,7 +458,7 @@ class Function {
         }
 
         // return this so operations can be chained
-        return this;
+        return _to_unmanaged(this);
     }
 
 
@@ -613,14 +613,14 @@ class Function {
 /*************************************************************************/
 
 
-proc +(F: Function, G: Function): Function {
+proc +(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
     return F.add(G);
 }
 
-proc -(F: Function, G: Function): Function {
+proc -(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
     return F.subtract(G);
 }
     
-proc *(F: Function, G: Function): Function {
+proc *(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
     return F.multiply(G);
 }

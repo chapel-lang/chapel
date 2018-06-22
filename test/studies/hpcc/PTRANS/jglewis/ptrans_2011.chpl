@@ -34,10 +34,10 @@ module HPCC_PTRANS {
     // declare distribution rules for matrix and transpose
 
     const Matrix_Block_Dist 
-      = new Block ( boundingBox = { 1..n_rows, 1..n_cols } );
+      = new unmanaged Block ( boundingBox = { 1..n_rows, 1..n_cols } );
 
     const Transpose_Block_Dist 
-      = new Block ( boundingBox = { 1..n_cols, 1..n_rows } );
+      = new unmanaged Block ( boundingBox = { 1..n_cols, 1..n_rows } );
 
     // declare domains (index sets) for matrix and transpose
 

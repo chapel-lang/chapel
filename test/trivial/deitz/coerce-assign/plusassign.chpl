@@ -8,7 +8,7 @@ class C : D {
     proc bar(_x) {
       writeln("default bar");
     }
-    proc bar(_x : D) {
+    proc bar(_x : borrowed D) {
       writeln("bar of D");
     }
     bar(x);
@@ -17,11 +17,9 @@ class C : D {
   }
 }
 
-var d = new D();
+var d = new borrowed D();
 writeln(d);
-delete d;
 
-var c = new C();
+var c = new borrowed C();
 c.foo();
 writeln(c);
-delete c;

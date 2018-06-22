@@ -7,20 +7,21 @@ use DynamicIters;
 config const n = 10;
 
 class Tree {
-  const left, right: Tree;
+  const left, right: owned Tree;
 }
 
 proc main() {
   const minDepth = 4, maxDepth = max(minDepth + 2, n);
-  const stretchDepth = maxDepth + 1;
-  const stretchTree = bottomUpTree(stretchDepth);
-  const check = itemCheck(stretchTree);
-  free(stretchTree);
-
-  writeln("stretch tree of depth ",stretchDepth,"\t check: ",check);
+  {
+    const stretchDepth = maxDepth + 1;
+    const stretchTree = bottomUpTree(stretchDepth);
+    const check = itemCheck(stretchTree);
+    // stretchTree is destroyed here
+    writeln("stretch tree of depth ",stretchDepth,"\t check: ",check);
+  }
 
   var results: [1..maxDepth, 1..2] int;
-  const longLivedTree : Tree = bottomUpTree(maxDepth);
+  const longLivedTree : owned Tree = bottomUpTree(maxDepth);
 
   forall depth in dynamic(minDepth..maxDepth by 2, 1) {
     const iterations: int = 1 << (maxDepth - depth + minDepth);
@@ -29,7 +30,6 @@ proc main() {
     for i in 1..iterations {
       const t = bottomUpTree(depth);
       check += itemCheck(t);
-      free(t);
     }
     results[depth,1] = iterations;
     results[depth,2] = check;
@@ -40,24 +40,14 @@ proc main() {
   }
 
   writeln("long lived tree of depth ",maxDepth,"\t check: ",itemCheck(longLivedTree));
-
-  free(longLivedTree);
 }
 
-proc bottomUpTree(const depth: int): Tree {
-  if depth <= 0 then return new Tree();
-  else return new Tree(bottomUpTree(depth-1), bottomUpTree(depth-1));
+proc bottomUpTree(const depth: int): owned Tree {
+  if depth <= 0 then return new owned Tree();
+  else return new owned Tree(bottomUpTree(depth-1), bottomUpTree(depth-1));
 }
 
-proc itemCheck(const T: Tree): int {
+proc itemCheck(const T: borrowed Tree): int {
   if (T.left==nil) then return 1; 
   else return (1 + itemCheck(T.left) + itemCheck(T.right));
-}
-
-proc free(const T: Tree) {
-  if (T.left!=nil) {
-    free(T.left);
-    free(T.right);
-  }
-  delete T;
 }

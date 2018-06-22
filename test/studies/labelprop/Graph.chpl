@@ -215,10 +215,10 @@ module Graph {
 
       // atomic version, tidier
       var r: triples.eltType;
-      var G = new Graph(nodeIdType = r.to.type,
-                        edgeWeightType = r.weight.type,
-                        vertices = vertices,
-                        initialLastAvail=0);
+      var G = new unmanaged Graph(nodeIdType = r.to.type,
+                                  edgeWeightType = r.weight.type,
+                                  vertices = vertices,
+                                  initialLastAvail=0);
       var next$: [vertices] atomic int;
 
       forall x in next$ {

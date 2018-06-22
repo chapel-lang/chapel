@@ -24,7 +24,7 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const ProblemDist = new Block1DDist(bbox={1..m}, targetLocs=Locales);
+  const ProblemDist = new unmanaged Block1DDist(bbox={1..m}, targetLocs=Locales);
 
   const ProblemSpace = ProblemDist.newDomain({1..m}, int(64));
 
@@ -69,13 +69,12 @@ proc initVectors(B, C) {
   // TODO: should write a fillRandom() implementation that does this
   coforall loc in B.dom.dist.targetLocs {
     on loc {
-      var randlist = new NPBRandomStream(eltType=real, seed=seed);
+      var randlist = new owned NPBRandomStream(eltType=real, seed=seed);
       // TODO: Need to clean this up to use more normal method names
       randlist.skipToNth(B.locArr(loc).locDom.low);
       randlist.fillRandom(B.locArr(loc).myElems);
       randlist.skipToNth(B.numElements + C.locArr(loc).locDom.low);
       randlist.fillRandom(C.locArr(loc).myElems);
-      delete randlist;
     }
   }
 
