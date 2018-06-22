@@ -2125,7 +2125,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         if flwlen != 0 {
           const stride = this.stride * myFollowThis.stride;
           var low = this.orderToIndex(myFollowThis.first);
-          var high = chpl_intToIdx(chpl__idxToInt(low) + stride * (flwlen - 1):strType);
+          var high = chpl_intToIdx(chpl__idxToInt(low):strType + stride * (flwlen - 1):strType);
           assert(high == this.orderToIndex(myFollowThis.last));
 
           if stride < 0 then low <=> high;
