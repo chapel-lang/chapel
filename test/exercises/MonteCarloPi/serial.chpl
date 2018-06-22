@@ -29,7 +29,7 @@ writeln("Random number seed  = ", seed);
 // accesses to this object by distinct tasks, parSafe can be set to
 // false to avoid thread safety overheads.
 // 
-var rs = new NPBRandomStream(real, seed, parSafe=false);
+var rs = new owned NPBRandomStream(real, seed, parSafe=false);
 
 //
 // Run the Monte Carlo simulation.  'count' is the number of random
@@ -43,8 +43,3 @@ for i in 1..n do
 // Output the approximation of pi.
 //
 writef("Approximation of pi = %{#.#######}\n", count * 4.0 / n);
-
-//
-// Delete the Random Stream object.
-//
-delete rs;
