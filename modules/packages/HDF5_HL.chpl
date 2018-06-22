@@ -3687,11 +3687,14 @@ module HDF5_HL {
        arrays of that size until the end of the dataset is reached.
 
        Currently, the `chunkShape` domain describing the output arrays and
-       the shape of the data in the file must both be 1-dimensional.  It is
-       expected that this restriction can be relaxed in the future.
+       the shape of the data in the file must both be the same rank.
+       It is expected that this restriction can be relaxed in the future.
      */
-    iter hdf5ReadChunks(filename: string, dset: string, param outRank:int,
-                        chunkShape: domain(outRank), type eltType) {
+    iter hdf5ReadChunks(filename: string, dset: string,
+                        chunkShape: domain, type eltType)
+      where isRectangularDom(chunkShape) {
+
+      param outRank = chunkShape.rank;
       var file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
       var dataset = H5Dopen(file_id, dset.c_str(), H5P_DEFAULT);
       var dataspace = H5Dget_space(dataset);
@@ -3750,11 +3753,66 @@ module HDF5_HL {
                "-D file not implemented");
         }
       } else if outRank == dsetRank {
-        // read blocks matching the rank of the datafile
-        halt("multidimensional chunked reads not yet supported");
+        // Read N-D blocks matching the N-D rank of the datafile.  This
+        // could replace the 1D/1D case above.
+
+        // This iterator yeilds 2-tuples containing rank-tuples.
+        // The first tuple contains a rank-D start index for a block
+        // and the second tuple contains a count of elements in each
+        // dimension.  The block is represented by the domain:
+        // {T(1)(1)..#T(2)(1), T(1)(2)..#T(2)(2), ..., T(1)(n)..#T(2)(n)}
+        //
+        // The set of all of these blocks make the full space
+        // representing the data set in the file to be read.
+        iter blockStartsCounts(param dim=1) {
+          if dim == outRank {
+            for inOffset in 0..#dims[dim] by chunkShape.dim[dim].size {
+              const readCount = min(dims[dim]:int - inOffset, chunkShape.dim[dim].size);
+              yield ((inOffset,), (readCount,));
+            }
+          } else {
+            for inOffset in 0..#dims[dim] by chunkShape.dim[dim].size {
+              const readCount = min(dims[dim]:int - inOffset, chunkShape.dim[dim].size);
+              for inOffset2 in blockStartsCounts(dim+1) {
+                yield ((inOffset, (...inOffset2(1))), (readCount, (...inOffset2(2))));
+              }
+            }
+          }
+        }
+
+        for (starts, counts) in blockStartsCounts() {
+          //var rngTup: outRank * range,
+          var outputTup: outRank * range;
+
+          var inOffsetArr, inCountArr,
+              outOffsetArr, outCountArr: [1..outRank] hsize_t;
+
+          for param i in 1..outRank {
+            inOffsetArr[i] = starts(i): hsize_t;
+            inCountArr[i] = counts(i): hsize_t;
+            outOffsetArr[i] = 0: hsize_t;
+            outCountArr[i] = counts(i): hsize_t;
+            //rngTup(i) = starts(i)..#counts(i);
+            outputTup(i) = 1..#counts(i);
+          }
+          var A: [(...outputTup)] eltType;
+          H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
+                              c_ptrTo(inOffsetArr), nil,
+                              c_ptrTo(inCountArr), nil);
+
+          var memspace = H5Screate_simple(outRank, c_ptrTo(outCountArr), nil);
+          H5Sselect_hyperslab(memspace, H5S_SELECT_SET, c_ptrTo(outOffsetArr), nil, c_ptrTo(outCountArr), nil);
+
+          H5Dread(dataset, getHDF5Type(eltType), memspace,
+                  dataspace, H5P_DEFAULT, c_ptrTo(A));
+
+          H5Sclose(memspace);
+
+          yield A;
+        }
       } else if outRank < dsetRank {
         // read a slice of the data set
-        halt("multidimensional chunked reads not yet supported");
+        halt("slicing reads not supported");
       } else { // outRank > dsetRank
         halt("cannot read ", outRank, "-dimension slices from ",
              dsetRank, "D data");
