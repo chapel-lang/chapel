@@ -972,7 +972,7 @@ module DefaultRectangular {
         pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, 0);
         pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
         if (chpl__maybeAutoDestroyed(ev)) {
-          var numElts:idxType = 0;
+          var numElts:intIdxType = 0;
           // dataAllocRange may be empty or contain a meaningful value
           if rank == 1 && !stridable then
             numElts = dataAllocRange.length;
