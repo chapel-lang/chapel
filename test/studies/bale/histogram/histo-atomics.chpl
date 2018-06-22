@@ -11,21 +11,24 @@ config const N = 2000000; // number of updates per task
 config const M = 1000; // number of entries in the table perf task
 
 
+const numUpdates = N * numTasks;
+const tableSize = M * numTasks;
+
 // The intuitive implementation of histogram that uses global atomics
 
 proc main() {
-  const Mspace = {0..M*numTasks-1};
+  const Mspace = {0..tableSize-1};
   const D = Mspace dmapped Cyclic(startIdx=Mspace.low);
   var A: [D] atomic int;
 
-  const Nspace = {0..N*numTasks-1};
+  const Nspace = {0..numUpdates-1};
   const D2 = Nspace dmapped Block(Nspace);
   var rindex: [D2] int;
 
   /* set up loop */
   fillRandom(rindex, seed=208);
   forall r in rindex {
-    r = mod(r, M);
+    r = mod(r, tableSize);
   }
 
   var t: Timer;
