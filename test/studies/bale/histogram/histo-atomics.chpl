@@ -3,13 +3,16 @@ use BlockDist;
 use Random;
 use Time;
 
-config const printStats = true;
+config const printStats = true,
+             printArrays = false;
+
+config const useRandomSeed = true,
+             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 
 config const numTasksPerLocale = here.maxTaskPar;
 const numTasks = numLocales * numTasksPerLocale;
 config const N = 2000000; // number of updates per task
 config const M = 1000; // number of entries in the table perf task
-
 
 const numUpdates = N * numTasks;
 const tableSize = M * numTasks;
@@ -26,7 +29,7 @@ proc main() {
   var rindex: [D2] int;
 
   /* set up loop */
-  fillRandom(rindex, seed=208);
+  fillRandom(rindex, seed);
   forall r in rindex {
     r = mod(r, tableSize);
   }
@@ -47,5 +50,9 @@ proc main() {
     const mbPerTask = bytesPerTask:real / (1<<20):real;
     writeln("MB/s per task: " + mbPerTask / t.elapsed());
     writeln("MB/s per node: " + mbPerTask * numTasksPerLocale / t.elapsed());
+  }
+
+  if printArrays {
+    writeln(A);
   }
 }
