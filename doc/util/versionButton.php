@@ -91,7 +91,7 @@ function dropSetup() {
   var button = document.getElementById("versionButton");
   // Uses unicode down-pointing triangle
   var arrow = " &#9660;";
-  button.innerHTML = chplTitle + arrow;
+  button.innerHTML = "version " + chplTitle + arrow;
 
   // Choose button color
   if (chplTitle.includes("pre-release")) {
@@ -99,7 +99,7 @@ function dropSetup() {
   } else if (chplTitle == currentRelease) {
     button.classList.add("currentVersion");
   } else {
-    button.innerHTML = chplTitle + " (old version)" + arrow;
+    button.innerHTML = "version " + chplTitle + " (old release)" + arrow;
     button.classList.add("oldVersion");
   }
 
@@ -111,7 +111,7 @@ function dropSetup() {
   if (chplTitle != currentRelease) {
     // Add links to current version of docs
     var link = document.createElement("a");
-    link.innerHTML = "version "+currentRelease+"<br>(current version)";
+    link.innerHTML = "version "+currentRelease+"<br>(latest release)";
     link.href = "http://chapel-lang.org/docs/" + pagePath + ".html";
     dropDiv.append(link);
   }
