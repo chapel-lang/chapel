@@ -108,7 +108,7 @@ record camera {
 //
 // variables used to store the scene
 //
-var objects: [1..0] sphere,  // the scene's spheres; start with an empty array
+var objects: [1..0] unmanaged sphere,  // the scene's spheres; start with an empty array
     lights: [1..0] vec3,     // the scene's lights;  "
     cam: camera;             // camera (there will be only one)
 
@@ -232,7 +232,7 @@ proc trace(ray, depth=0): vec3 {
     return (0.0, 0.0, 0.0);
 
   // find the nearest intersection...
-  var nearestObj: sphere,
+  var nearestObj: unmanaged sphere,
       nearestSp: spoint;
 
   for obj in objects {

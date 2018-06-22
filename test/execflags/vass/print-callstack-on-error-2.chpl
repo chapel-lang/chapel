@@ -7,5 +7,5 @@ class myiter1 {
   }
 }
 
-var mi1 = new myiter1();
+var mi1 = new borrowed myiter1();
 for i in mi1 do writeln(i);

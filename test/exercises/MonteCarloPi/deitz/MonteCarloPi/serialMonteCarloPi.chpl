@@ -26,7 +26,7 @@ writeln("Random number seed  = ", seed);
 // accesses to this object, set parSafe to false to avoid locking
 // overhead.
 //
-var rs = new NPBRandomStream(real, seed, parSafe=false);
+var rs = new owned NPBRandomStream(real, seed, parSafe=false);
 
 //
 // Run the Monte Carlo simulation.
@@ -34,11 +34,6 @@ var rs = new NPBRandomStream(real, seed, parSafe=false);
 var count = 0;
 for i in 1..n do
   count += rs.getNext()**2 + rs.getNext()**2 <= 1.0;
-
-//
-// Delete the Random Stream object.
-//
-delete rs;
 
 //
 // Output the approximation of PI.
