@@ -19,16 +19,12 @@ class D : C {
   }
 }
 
-var c = new C();
-var d = new D();
-var dc:C = new D();
+var c = new owned C();
+var d = new owned D();
+var dc:owned C = new owned D();
 
 try { c.foo(); } catch { writeln("c.foo threw"); }
 try { d.foo(); } catch { writeln("d.foo threw"); }
 try {dc.foo(); } catch { writeln("dc.foo threw"); }
-
-delete c;
-delete d;
-delete dc;
 
 writeln("Fini");

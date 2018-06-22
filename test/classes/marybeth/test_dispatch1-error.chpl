@@ -19,14 +19,14 @@ class boots : pumps {
   }
 }
 
-proc displayshoe (item:shoe) {
+proc displayshoe (item:borrowed shoe) {
   item.display();
 }
 
-var shoe1:shoe = new shoe(9.5,"brown");
-var shoe2:pumps = new shoe(8.0,"navy");
+var shoe1:borrowed shoe = new borrowed shoe(9.5,"brown");
+var shoe2:borrowed pumps = new borrowed shoe(8.0,"navy");
 shoe2.heel = 1.0;
-var shoe3:boots = new pumps(7.0,"white",3.0);
+var shoe3:borrowed boots = new borrowed pumps(7.0,"white",3.0);
 displayshoe(shoe1);
 displayshoe(shoe2);
 displayshoe(shoe3);

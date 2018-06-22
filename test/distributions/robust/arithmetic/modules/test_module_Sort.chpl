@@ -4,7 +4,7 @@ use driver_real_arrays;
 use Random;
 use Sort;
 
-var rng = new RandomStream(real, 314159265);
+var rng = new owned RandomStream(real, 314159265);
 
 enum SortType { BUBBLE=0, INSERTION, MERGE, SELECTION, QUICK, HEAP };
 
@@ -183,5 +183,3 @@ if !isSorted(rc4DR1D) then writeln('quickSort failed');
 rng.fillRandom(rc4DR1D);
 heapSort(rc4DR1D);
 if !isSorted(rc4DR1D) then writeln('heapSort failed');
-
-delete rng;

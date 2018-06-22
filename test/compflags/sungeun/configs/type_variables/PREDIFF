@@ -12,7 +12,11 @@ compopts=sys.argv[4]
 l = string.rfind(compopts, 'myType')
 
 if l != -1:
-    myType=compopts[l+7:].split()[0]
+    words=compopts[l+7:].split()
+    if words[0] == "'unmanaged":
+      myType = words[1].split("'")[0]
+    else:
+      myType = words[0]
 else:
     myType=None
 
