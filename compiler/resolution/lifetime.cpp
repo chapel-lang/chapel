@@ -1261,14 +1261,21 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     // Gather lifetime for iterable
     LifetimePair lp = unknownLifetimePair();
     if (iterableSe) {
-      lp = lifetimes->lifetimeForActual(iterableSe->symbol(),
+      Symbol* iterableSym = iterableSe->symbol();
+
+      lp = lifetimes->lifetimeForActual(iterableSym,
                                         usedAsRef, usedAsBorrow, inFn);
+
+      if (!isSubjectToRefLifetimeAnalysis(iterableSym))
+        lp.referent = unknownLifetime();
+      if (!isSubjectToBorrowLifetimeAnalysis(iterableSym))
+        lp.borrowed = unknownLifetime();
+
     } else if (CallExpr* iterableCall = toCallExpr(iterable)) {
       if (iterableCall->resolvedOrVirtualFunction())
         lp = lifetimes->inferredLifetimeForCall(iterableCall);
       else
         lp = lifetimes->inferredLifetimeForPrimitive(iterableCall);
-
 
     } else {
       // Assume infinite lifetime, as iterable takes no arguments
@@ -1441,7 +1448,9 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
   // Raise errors for init/assigning from a value with shorter lifetime
   // I.e. insist RHS lifetime is longer than LHS lifetime.
   // I.e. error if RHS lifetime is shorter than LHS lifetime.
-  if (call->isPrimitive(PRIM_MOVE) && lhs->isRef()) {
+  if (call->isPrimitive(PRIM_MOVE) && lhs->isRef() &&
+      !lhs->hasFlag(FLAG_INDEX_VAR) // workaround for forall loop AST
+     ) {
     // Setting a reference so check ref lifetimes
     if (lhsIntrinsic.referent.unknown) {
       // OK, not an error
