@@ -3681,6 +3681,91 @@ module HDF5_HL {
       }
     }
 
+    /* Read the dataset named `dset` from the HDF5 file named `filename`.
+       The dataset consists of elements of type `eltType`.  The file will
+       be read in chunks matching the `chunkShape` domain, and yielded as
+       arrays of that size until the end of the dataset is reached.
+
+       Currently, the `chunkShape` domain describing the output arrays and
+       the shape of the data in the file must both be 1-dimensional.  It is
+       expected that this restriction can be relaxed in the future.
+     */
+    iter hdf5ReadChunks(filename: string, dset: string, param outRank:int,
+                        chunkShape: domain(outRank), type eltType) {
+      var file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+      var dataset = H5Dopen(file_id, dset.c_str(), H5P_DEFAULT);
+      var dataspace = H5Dget_space(dataset);
+
+      var dsetRank: c_int;
+
+      H5LTget_dataset_ndims(file_id, dset.c_str(), dsetRank);
+
+      var dims: [1..dsetRank] hsize_t;
+      H5LTget_dataset_info_WAR(file_id, dset.c_str(), c_ptrTo(dims),
+                               nil, nil);
+
+      // Can't build a tuple with dsetRank because it isn't a param.
+      // Otherwise we could do this to get a domain describing the data:
+      // var dimTup: dsetRank * range;
+      // for i in 1..dsetRank do dimTup(i) = 1..dims[i];
+      // const dataDom = {(...dimTup)};
+
+      if outRank == 1 {
+        if dsetRank == 1 {
+          for inOffset in 0..#dims[1] by chunkShape.size {
+            const readCount = min(dims[1]:int-inOffset, chunkShape.size);
+            var A: [1..readCount] eltType;
+
+            var inOffsetArr: [1..1] hsize_t,
+                inCountArr: [1..1] hsize_t;
+
+            inOffsetArr[1] = inOffset:hsize_t;
+            inCountArr[1] = readCount:hsize_t;
+
+            H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
+                                c_ptrTo(inOffsetArr), nil,
+                                c_ptrTo(inCountArr), nil);
+
+            var outDims: [1..1] hsize_t,
+                outOffset: [1..1] hsize_t,
+                outCount: [1..1] hsize_t;
+
+            outDims[1] = readCount:hsize_t;
+            outOffset[1] = 0;
+            outCount[1] = readCount:hsize_t;
+
+            var memspace = H5Screate_simple(1, c_ptrTo(outDims), nil);
+
+            H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
+                                c_ptrTo(outOffset), nil,
+                                c_ptrTo(outCount), nil);
+            H5Dread(dataset, getHDF5Type(eltType), memspace,
+                    dataspace, H5P_DEFAULT, c_ptrTo(A));
+
+            H5Sclose(memspace);
+            yield A;
+          }
+        } else {
+          halt("reading in 1-D from ", outRank,
+               "-D file not implemented");
+        }
+      } else if outRank == dsetRank {
+        // read blocks matching the rank of the datafile
+        halt("multidimensional chunked reads not yet supported");
+      } else if outRank < dsetRank {
+        // read a slice of the data set
+        halt("multidimensional chunked reads not yet supported");
+      } else { // outRank > dsetRank
+        halt("cannot read ", outRank, "-dimension slices from ",
+             dsetRank, "D data");
+      }
+
+      H5Dclose(dataset);
+      H5Sclose(dataspace);
+      H5Fclose(file_id);
+    }
+
+
 
     /* A record that stores a rectangular array.  An array of `ArrayWrapper`
        records can store multiple differently sized arrays.
