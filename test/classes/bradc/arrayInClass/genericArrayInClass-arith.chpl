@@ -32,7 +32,7 @@ enum probClass {S, W, A, B, C};
 class EnumC {
   type t;
   
-  var enumDom: domain(probClass);
+  var enumDom: domain(probClass) = probClass.S..probClass.C;
   var x: [enumDom] t;
 }
 

@@ -914,7 +914,7 @@ This function provides a way to produce an empty associative domain.
 When run, the code
 \begin{chapel}
 enum Counter { one, two, three };
-var D : domain ( Counter ) = {Counter.one, Counter,two};
+var D : domain ( Counter ) = {Counter.one, Counter.two};
 writeln("D has ", D.numIndices, " indices.");
 D.clear();
 writeln("D has ", D.numIndices, " indices.");

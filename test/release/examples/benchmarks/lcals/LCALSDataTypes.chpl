@@ -22,10 +22,10 @@ module LCALSDataTypes {
   class LoopSuiteRunInfo {
     var host_name: string;
 
-    const loop_kernel_dom: domain(LoopKernelID);
-    const loop_length_dom: domain(LoopLength);
-    const loop_variant_dom: domain(LoopVariantID);
-    const weight_group_dom: domain(WeightGroup);
+    const loop_kernel_dom = {LoopKernelID.REF_LOOP..LoopKernelID.FIND_FIRST_MIN};
+    const loop_length_dom = {LoopLength.LONG..LoopLength.SHORT};
+    const loop_variant_dom = {LoopVariantID.RAW..LoopVariantID.FORALL_HYBRID_LAMBDA_TYPEFIX};
+    const weight_group_dom = {WeightGroup.DATA_PARALLEL..WeightGroup.NUM_WEIGHT_GROUPS};;
 
     var loop_names: [loop_kernel_dom] string;
 
@@ -63,7 +63,7 @@ module LCALSDataTypes {
   class LoopStat {
     var loop_is_run: bool;
     var loop_weight: real;
-    var loop_length_dom: domain(LoopLength);
+    var loop_length_dom = {LoopLength.LONG..LoopLength.SHORT};
 
     var loop_run_time: [loop_length_dom] vector(real);
     var loop_run_count: [loop_length_dom] int;

@@ -13,7 +13,10 @@ probSize(classVals.D) = 678;
 probSize(classVals.O) = 901;
 
 writeln("probSize(S) = ", probSize(classVals.S));
-for i in DClass {
+for i in classVals {
   writeln("probSize(", i, ") = ", probSize(i));
 }
-writeln("probSize = ", probSize);
+write("probSize =");
+for i in classVals do write(" ", probSize(i));
+writeln();
+

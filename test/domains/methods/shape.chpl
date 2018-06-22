@@ -44,7 +44,7 @@ assertEqual(associativeArray.shape, (10,), msg='associateArray:');
 
 // EnumDom (a flavor of AssociateDom)
 enum digits {zero, one, two, three, four, five, six, seven, eight, nine};
-var enumDom: domain(digits);
+var enumDom: domain(digits) = digits.zero..digits.nine;
 assertEqual(enumDom.shape, (10,), msg='enumDom:');
 
 var enumArray: [enumDom] int;
