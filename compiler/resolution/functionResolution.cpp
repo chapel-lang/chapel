@@ -1546,7 +1546,13 @@ userCall(CallExpr* call) {
     i -= 1;
   }
 
-  return cur;
+  // If we could not find a suitable call in the callStack, return the original
+  // call.
+  if (shouldSkip(cur)) {
+    return call;
+  } else {
+    return cur;
+  }
 }
 
 static void reissueCompilerWarning(const char* str, int offset) {
