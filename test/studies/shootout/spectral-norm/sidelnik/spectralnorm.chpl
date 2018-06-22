@@ -9,7 +9,7 @@
 config const n = 500;
 
 use barrierWF;
-var b: BarrierWF;
+var b: unmanaged BarrierWF;
 
 /* Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1; */
 proc eval_A(i,j : int) : real
@@ -49,7 +49,7 @@ proc main() {
   var chunk = n / numThreads;
 
   u = 1.0;
-  b = new BarrierWF(numThreads);
+  b = new unmanaged BarrierWF(numThreads);
 
   coforall i in 0..#numThreads do {
     var r_begin = i * chunk;

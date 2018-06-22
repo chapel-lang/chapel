@@ -100,7 +100,7 @@ proc makeLookup(a) {
 }
 
 // Add a line of random sequence
-var random = new Random();
+var random = new unmanaged Random();
 var line_buff: [0..LINE_LENGTH] int(8);
 proc addLine(bytes: int) {
   for (i, r) in random.get(bytes) {

@@ -25,7 +25,7 @@ config const verbose = false;
 
 class MeetingPlace {
   var spotsLeft$ : sync int;
-  var partner : Chameneos;
+  var partner : unmanaged Chameneos;
 
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
@@ -62,8 +62,8 @@ class Chameneos {
      with another Chameneos.  If it does, it will get the complement of the
      color of the Chameneos it met with, and change to the complement of that
      color. */
-  proc start(place : MeetingPlace) {
-    var meetingPlace : MeetingPlace = place;
+  proc start(place : unmanaged MeetingPlace) {
+    var meetingPlace : unmanaged MeetingPlace = place;
     var stop : bool = false;
     while (!stop) {
       stop = this.meet(place);
@@ -73,8 +73,8 @@ class Chameneos {
   /* meet, if called on by the chameneos who arrives 1st,
      returns the color of the chameneos who arrives 2nd,
      otherwise returns the color of the chameneos who arrives 1st */
-  proc meet(place : MeetingPlace) {
-    var partner : Chameneos;
+  proc meet(place : unmanaged MeetingPlace) {
+    var partner : unmanaged Chameneos;
     var spotsLeft = place.spotsLeft$;
 
     if (spotsLeft == 0) {
@@ -83,7 +83,7 @@ class Chameneos {
     }
 
     if (spotsLeft % 2 == 0) {
-      place.partner = this;
+      place.partner = _to_unmanaged(this);
       place.spotsLeft$ = spotsLeft - 1;
       meetingCompleted$;
     } else if (spotsLeft % 2 == 1) {
@@ -125,7 +125,7 @@ proc populate (size : int) {
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
   const D : domain(1) = {1..size};
-  var population : [D] Chameneos;
+  var population : [D] unmanaged Chameneos;
 
   if (size == 10) {
     for i in D {
@@ -144,7 +144,7 @@ proc populate (size : int) {
    another Chameneos, spells out the number of times it met with itself, then
    spells out the total number of times all the Chameneos met another
    Chameneos. */
-proc run(population : [] Chameneos, meetingPlace : MeetingPlace) {
+proc run(population : [] unmanaged Chameneos, meetingPlace : unmanaged MeetingPlace) {
   for i in population {
     write(" ", i.color);
   }
@@ -156,7 +156,7 @@ proc run(population : [] Chameneos, meetingPlace : MeetingPlace) {
   meetingPlace.reset();
 }
 
-proc runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
+proc runQuiet(population : [] unmanaged Chameneos, meetingPlace : unmanaged MeetingPlace) {
   coforall i in population {
     i.start(meetingPlace);
   }
@@ -167,7 +167,7 @@ proc runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
   printInfoQuiet(totalMeetings, totalMeetingsWithSelf);
 }
 
-proc printInfo(population : [] Chameneos) {
+proc printInfo(population : [] unmanaged Chameneos) {
   for i in population {
     write(i.meetings);
     spellInt(i.meetingsWithSelf);

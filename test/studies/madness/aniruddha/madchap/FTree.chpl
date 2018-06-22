@@ -166,7 +166,7 @@ class LocTree {
     }
 
     //AGS: Provide constructor that can copy a tree instead of create-then-copy
-    proc copy(t: LocTree) {
+    proc copy(t: unmanaged LocTree) {
         nodes = t.nodes;
         // get around restriction of matching domains for assoc arrays
         forall i in coeffs.domain do coeffs(i) = t.coeffs(i);
@@ -176,7 +176,7 @@ class LocTree {
 class FTree {
     const order   : int;
     const coeffDom: domain(1);
-    const tree    : [LocaleSpace] LocTree;
+    const tree    : [LocaleSpace] unmanaged LocTree;
 
     proc init(order: int) {
         if order == 0 then
@@ -273,10 +273,10 @@ class FTree {
 }
 
 proc main() {
-    var f = new FTree(2);
+    var f = new unmanaged FTree(2);
 
     for (i, j) in {1..3, 2..4} {
-        const node = new Node(i, j); 
+        const node = new unmanaged Node(i, j); 
         f[node] = (i, j);
     }
 
@@ -286,7 +286,7 @@ proc main() {
             writeln(coeffs);
     }
     
-    var node = new Node(4, 5);
+    var node = new unmanaged Node(4, 5);
     writeln("\n\nf.has_coeffs((4, 5)) = ", f.has_coeffs(node));
     writeln("f.peek((4, 5)) = ", f.peek(node));
     writeln("f[(4, 5)] = ", f[node]);
@@ -294,7 +294,7 @@ proc main() {
     f.remove(node);
     delete node;
 
-    node = new Node(1, 2);
+    node = new unmanaged Node(1, 2);
     writeln("\n\nf.has_coeffs((1, 2)) = ", f.has_coeffs(node));
     writeln("f.peek((1, 2)) = ", f.peek(node));
     writeln("f[(1, 2)] = ", f[node]);

@@ -122,7 +122,7 @@ class kmeans: ReduceScanOp {
   // the combine function takes two kmeans classes and combines
   // them
   //
-  proc combine(other: kmeans) {
+  proc combine(other: borrowed kmeans) {
     error += other.error;
     clusterSize += other.clusterSize;
     offset += other.offset;
