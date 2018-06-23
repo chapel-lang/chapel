@@ -23,6 +23,8 @@ use Spawn;
 use MasonUtils;
 use MasonHelp;
 use MasonUpdate;
+use MasonBuild;
+
 
 /* Runs the .chpl files found within the /tests directory */
 proc masonTest(args) {
@@ -37,21 +39,17 @@ proc masonTest(args) {
       }
       else if arg == '--show' {
         show = true;
-        runTests(show);
       }
       else {
         masonTestHelp();
         exit();
       }
     }
-   }
-   else {
-     const args = [""];
-     UpdateLock(args);
-     runTests(show);
-    }
+  }
+  const uargs = [""];
+  UpdateLock(uargs);
+  runTests(show);
 }
-
 
 private proc runTests(show: bool) {
 
@@ -64,6 +62,13 @@ private proc runTests(show: bool) {
     const toParse = open(projectHome + "/Mason.lock", iomode.r);
     const lockFile = new Owned(parseToml(toParse));
 
+    // Get project source code and dependencies
+    const sourceList = genSourceList(lockFile);
+    getSrcCode(sourceList, show); 
+    const project = lockFile["root"]["name"].s;
+    const projectPath = "".join(projectHome, "/src/", project, ".chpl");
+
+    // Check for tests to run
     if lockFile.pathExists("root.tests") {
       var tests = lockFile["root"]["tests"].toString();
       const testNames = tests.split(',').strip("[]");
@@ -71,19 +76,23 @@ private proc runTests(show: bool) {
       for t in testNames {
 
         const test = t.strip().strip('"');
-        if show then writeln("test: ", test);
+        const testPath = "".join(projectHome, '/test/', test);
+        const testName = test.strip(".chpl");
 
-        const pathToProject = projectHome + '/test/' + test;
-        const binary = test.strip(".chpl");
-        const moveTo = "-o " + projectHome + "/target/test/" + binary;
-        const compCommand = "chpl " + pathToProject + " " + moveTo;
+        // get the string of dependencies for compilation
+        const compopts = getDependencyString(sourceList, testName);
+
+        const moveTo = "-o " + projectHome + "/target/test/" + testName;
+        const compCommand = " ".join("chpl",testPath, projectPath, moveTo, compopts);
         const compilation = runWithStatus(compCommand);
+
+        if show then writeln(compCommand);
         if compilation != 0 {
           writeln("compilation failed for " + test);
         }
         else {
           if show then writeln("compiled ", test, " successfully");
-          const binCommand = projectHome + '/target/test/' + binary;
+          const binCommand = "".join(projectHome,'/target/test/', testName);
           runCommand(binCommand);
         }
       }
@@ -97,3 +106,24 @@ private proc runTests(show: bool) {
     writeln(e.message());
   }
 }
+
+private proc getDependencyString(sourceList: [?d] (string, string, string), testName) {
+
+  // Declare test to run as the main module
+  var compopts = " ".join(" --main-module", testName, " ");
+  
+  if sourceList.numElements > 0 {
+    const depPath = MASON_HOME + "/src/";
+
+    // Add dependencies to project
+    for (_, name, version) in sourceList {
+      var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
+      compopts += depSrc;
+    }
+  }
+  return compopts;
+}
+
+
+
+

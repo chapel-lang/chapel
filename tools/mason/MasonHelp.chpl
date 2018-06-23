@@ -143,7 +143,7 @@ proc masonEnvHelp() {
 }
 
 proc masonTestHelp() {
-  writeln("Run test files located within target/debug/tests");
+  writeln("Run test files located within target/debug/test");
   writeln();
   writeln("Usage:");
   writeln("    mason test [options]");
