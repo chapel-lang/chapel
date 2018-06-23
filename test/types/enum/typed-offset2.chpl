@@ -1,5 +1,5 @@
 type t = int;
-enum Numbers {one, two=2: t, three, four, five, six = two:int*3, seven};
+enum Numbers {one=1, two=2: t, three, four, five, six = two:int*3, seven};
 
 var x = 2;
 var y = x:Numbers;

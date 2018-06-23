@@ -18,7 +18,7 @@ config const numMeetings : int = 6000000; // number of meetings to take place
 config const numChameneos1 : int = 3;     // size of population 1
 config const numChameneos2 : int = 10;    // size of population 2
 enum Color {blue=0, red=1, yellow=2};
-enum Digit {zero, one, two, three, four,
+enum Digit {zero=0, one, two, three, four,
             five, six, seven, eight, nine};
 config const verbose = false;
 // if verbose is true, prints out non-det output, otherwise prints det output
@@ -198,7 +198,7 @@ proc printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 proc spellInt(n : int) {
   var s : string = n:string;
   for i in 1..s.length {
-    write(" ", (s[i]:int + 1):Digit);
+    write(" ", (s[i]:int):Digit);
   }
   writeln();
 }

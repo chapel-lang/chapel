@@ -391,7 +391,7 @@ inline proc debugPrint(x...) {
 }
 
 inline proc smoothingCoeff(c : NPB) {
-  if c:int <= NPB.A:int {
+  if c <= NPB.A {
     return (-3.0/8.0, 1.0/32.0, -1.0/64.0, 0.0);
   } else {
     return (-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);
