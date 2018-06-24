@@ -199,10 +199,10 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
 
     ArgSymbol* arg = actual_to_formal(se);
 
-    if (arg->intent == INTENT_OUT   ||  // TODO: Try removing this
-        arg->intent == INTENT_INOUT ||  // and this
-        arg->intent == INTENT_REF   ||  // and this.
-        arg->hasFlag(FLAG_ARG_THIS))    // We need this case.
+    if (arg->intent == INTENT_OUT   ||
+        arg->intent == INTENT_INOUT ||
+        arg->intent == INTENT_REF   ||
+        arg->hasFlag(FLAG_ARG_THIS)) // Todo: replace with arg intent check?
     {
       liveRefs.insert(se->symbol());
       return true;
