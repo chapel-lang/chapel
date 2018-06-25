@@ -30,6 +30,7 @@ use MasonBuild;
 proc masonTest(args) {
 
   var show = false;
+  var run = true;
 
   if args.size > 2 {
     for arg in args[2..] {
@@ -40,6 +41,9 @@ proc masonTest(args) {
       else if arg == '--show' {
         show = true;
       }
+      else if arg == '--no-run' {
+        run = false;
+      }
       else {
         masonTestHelp();
         exit();
@@ -48,10 +52,10 @@ proc masonTest(args) {
   }
   const uargs = [""];
   UpdateLock(uargs);
-  runTests(show);
+  runTests(show, run);
 }
 
-private proc runTests(show: bool) {
+private proc runTests(show: bool, run: bool) {
 
   try! {
 
@@ -64,9 +68,12 @@ private proc runTests(show: bool) {
 
     // Get project source code and dependencies
     const sourceList = genSourceList(lockFile);
-    getSrcCode(sourceList, show); 
+    getSrcCode(sourceList, show);
     const project = lockFile["root"]["name"].s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
+
+    // Make target files if they dont exist from a build
+    makeTargetFiles("debug", projectHome);
 
     // Check for tests to run
     if lockFile.pathExists("root.tests") {
@@ -91,9 +98,11 @@ private proc runTests(show: bool) {
           writeln("compilation failed for " + test);
         }
         else {
-          if show then writeln("compiled ", test, " successfully");
-          const binCommand = "".join(projectHome,'/target/test/', testName);
-          runCommand(binCommand);
+          if show || !run then writeln("compiled ", test, " successfully");
+          if run {
+            const binCommand = "".join(projectHome,'/target/test/', testName);
+            runCommand(binCommand);
+          }
         }
       }
     }
@@ -101,9 +110,9 @@ private proc runTests(show: bool) {
       writeln("No tests were found in /test");
     }
     toParse.close();
-  } 
+  }
   catch e: MasonError {
-    writeln(e.message());
+    exit(1);
   }
 }
 
@@ -111,7 +120,7 @@ private proc getDependencyString(sourceList: [?d] (string, string, string), test
 
   // Declare test to run as the main module
   var compopts = " ".join(" --main-module", testName, " ");
-  
+
   if sourceList.numElements > 0 {
     const depPath = MASON_HOME + "/src/";
 
@@ -123,7 +132,3 @@ private proc getDependencyString(sourceList: [?d] (string, string, string), test
   }
   return compopts;
 }
-
-
-
-
