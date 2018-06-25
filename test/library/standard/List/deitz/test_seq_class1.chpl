@@ -6,7 +6,7 @@ class C {
 }
 
 var c : unmanaged C = new unmanaged C(1, 2.3);
-var s : list(C) = makeList(c);
+var s : list(unmanaged C) = makeList(c);
 
 writeln(s);
 

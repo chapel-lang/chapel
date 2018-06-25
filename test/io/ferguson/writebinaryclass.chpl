@@ -4,7 +4,7 @@ class R {
   var c:int;
   var d:int;
   var e:int;
-  proc equals(x:R) {
+  proc equals(x:borrowed R) {
     return a == x.a && b == x.b && c == x.c && d == x.d && e == x.e;
   }
 }

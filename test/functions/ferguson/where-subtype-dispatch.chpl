@@ -42,23 +42,23 @@ proc bar(type t) where t:int {
 proc bar(type t) where (t:integral && !t:int) {
   writeln("integral");
 }
-proc bar(type t) where !(t:int || t:integral || t:R || t:Parent ||
-                         t:GenericParent || t:object) {
+proc bar(type t) where !(t:int || t:integral || t:R || t:borrowed Parent ||
+                         t:borrowed GenericParent || t:borrowed object) {
   writeln("any type");
 }
 proc bar(type t) where t:R {
   writeln("R");
 }
-proc bar(type t) where t:Parent {
+proc bar(type t) where t:borrowed Parent {
   writeln("Parent");
 }
-proc bar(type t) where (t:GenericParent && !t:GenericChild(int)) {
+proc bar(type t) where (t:borrowed GenericParent && !t:borrowed GenericChild(int)) {
   writeln("GenericParent");
 }
-proc bar(type t) where t:GenericChild(int) {
+proc bar(type t) where t:borrowed GenericChild(int) {
   writeln("GenericChild(int)");
 }
-proc bar(type t) where (t:object && !t:Parent && !t:GenericParent) {
+proc bar(type t) where (t:borrowed object && !t:borrowed Parent && !t:borrowed GenericParent) {
   writeln("object");
 }
 
@@ -67,25 +67,25 @@ bar(int);
 bar(int(8));
 bar(real);
 bar(R(complex));
-bar(Parent);
-bar(Child);
-bar(MyClass);
-bar(GenericParent(int));
-bar(GenericChild(int));
-bar(GenericChild(real));
+bar(borrowed Parent);
+bar(borrowed Child);
+bar(borrowed MyClass);
+bar(borrowed GenericParent(int));
+bar(borrowed GenericChild(int));
+bar(borrowed GenericChild(real));
 writeln();
 
-proc test1() where GenericParent(int):GenericChild { writeln("BAD"); }
+proc test1() where borrowed GenericParent(int):borrowed GenericChild { writeln("BAD"); }
 proc test1() { writeln("test1"); }
-proc test2() where GenericChild(real):GenericParent { writeln("test2"); }
+proc test2() where borrowed GenericChild(real):borrowed GenericParent { writeln("test2"); }
 proc test2() { writeln("BAD"); }
-proc test3() where GenericChild(int):GenericParent { writeln("test3"); }
+proc test3() where borrowed GenericChild(int):borrowed GenericParent { writeln("test3"); }
 proc test3() { writeln("BAD"); }
-proc test4() where GenericChild(int):GenericParent(int) { writeln("test4"); }
+proc test4() where borrowed GenericChild(int):borrowed GenericParent(int) { writeln("test4"); }
 proc test4() { writeln("BAD"); }
-proc test5() where GenericChild(real):GenericParent(int) { writeln("BAD"); }
+proc test5() where borrowed GenericChild(real):borrowed GenericParent(int) { writeln("BAD"); }
 proc test5() { writeln("test5"); }
-proc test6() where GenericChild(int(8)):GenericParent(int) { writeln("BAD"); }
+proc test6() where borrowed GenericChild(int(8)):borrowed GenericParent(int) { writeln("BAD"); }
 proc test6() { writeln("test6"); }
 
 proc test7() where int:integral { writeln("test7"); }

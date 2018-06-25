@@ -4,7 +4,7 @@ class C {
   var x: int;
 }
 
-var s: list(C);
+var s: list(unmanaged C);
 
 writeln(s);
 

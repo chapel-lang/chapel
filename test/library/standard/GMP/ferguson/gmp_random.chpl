@@ -2,7 +2,7 @@ use GMP;
 
 config const printrandom = false;
 
-var r = new GMPRandom();
+var r = new owned GMPRandom();
 var b = new bigint();
 var n = new bigint(10);
 var x:uint = 0;
