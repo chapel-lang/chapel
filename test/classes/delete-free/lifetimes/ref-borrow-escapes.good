@@ -7,3 +7,5 @@ ref-borrow-escapes.chpl:32: note: consider scope of arg
 ref-borrow-escapes.chpl:45: In function 'bad':
 ref-borrow-escapes.chpl:47: error: Reference to scoped variable cannot be returned
 ref-borrow-escapes.chpl:46: note: consider scope of b
+ref-borrow-escapes.chpl:47: error: Scoped variable cannot be returned
+ref-borrow-escapes.chpl:46: note: consider scope of b

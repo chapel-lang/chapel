@@ -21,6 +21,6 @@ class R {
 }
 
 
-var r = new unmanaged R(int, 7);
+var r = new owned R(int, 7);
 
 r.test();

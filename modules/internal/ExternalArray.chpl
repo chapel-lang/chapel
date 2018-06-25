@@ -134,7 +134,7 @@ module ExternalArray {
         yield i;
     }
 
-    proc dsiMyDist() {
+    override proc dsiMyDist() {
       return dist;
     }
 
@@ -279,9 +279,8 @@ module ExternalArray {
           halt("array index out of bounds: " + _stringify_tuple(i));
         }
     }
-    // arr inline proc?
 
-    inline proc dsiGetBaseDom() {
+    override proc dsiGetBaseDom() {
       return dom;
     }
 
@@ -295,7 +294,7 @@ module ExternalArray {
     // doiCanBulkTransferRankChange? doiBulkTransferFromKnown?
     // doiBulkTransferToKnown?
 
-    proc dsiDestroyArr() {
+    override proc dsiDestroyArr() {
       if (_owned) {
         chpl_free_external_array(_ArrInstance);
       }

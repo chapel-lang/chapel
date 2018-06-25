@@ -1,0 +1,14 @@
+----- testRefGlobal() -----
+(x = 0) (x = 0) (x = 0) (x = 0)
+
+----- testRefGlobal(RefGlobal) -----
+(x = 0) (x = 0) (x = 0) (x = 0)
+
+----- testHelper() -----
+(x = 0) (x = 0) (x = 0) (x = 0)
+
+----- testHelper(helper()) -----
+(x = 0) (x = 0) (x = 0) (x = 0)
+
+----- Final Global -----
+(x = 0) (x = 0) (x = 0) (x = 0)

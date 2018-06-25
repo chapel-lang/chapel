@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo "PWD=$(PWD)/src"
+set -e
 
-
-
-
+cd $PWD/src

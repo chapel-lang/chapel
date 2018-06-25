@@ -3,10 +3,10 @@ class pair {
   var b: real;
 }
 
-proc callin(in x: pair) {
+proc callin(in x: unmanaged pair) {
   writeln("in callin, x is: ", x.a, " ", x.b);
 
-  x   = new pair();
+  x   = new unmanaged pair();
   x.a = 11;
   x.b = 3.4;
 
@@ -16,10 +16,10 @@ proc callin(in x: pair) {
 }
 
 
-proc callout(out x: pair) {
+proc callout(out x: unmanaged pair) {
   writeln("in callout, x ought to be nil");
 
-  x   = new pair();
+  x   = new unmanaged pair();
   x.a = 12;
   x.b = 4.5;
 
@@ -27,12 +27,12 @@ proc callout(out x: pair) {
 }
 
 
-proc callinout(inout x: pair) {
+proc callinout(inout x: unmanaged pair) {
   writeln("in callinout, x is: ", x.a, " ", x.b);
 
   delete x;
 
-  x   = new pair();
+  x   = new unmanaged pair();
   x.a = 13;
   x.b = 5.6;
 
@@ -40,7 +40,7 @@ proc callinout(inout x: pair) {
 }
 
 
-proc callblank(x: pair) {
+proc callblank(x: unmanaged pair) {
   writeln("in callblank, x is: ", x.a, " ", x.b);
 
   x.a = 14;
@@ -51,7 +51,7 @@ proc callblank(x: pair) {
 
 
 proc main() {
-  var a: pair = new pair();
+  var a: unmanaged pair = new unmanaged pair();
 
   a.a = 10;
   a.b = 2.3;

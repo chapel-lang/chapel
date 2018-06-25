@@ -1,5 +1,5 @@
 class C {
-  var x: D(int);
+  var x: owned D(int);
 
   pragma "use default init"
   class D {
@@ -7,9 +7,9 @@ class C {
   }
 
   proc init() {
-    x = new D(2);
+    x = new owned D(2);
   }
 }
 
-var myC = new C();
+var myC = new owned C();
 writeln(myC);

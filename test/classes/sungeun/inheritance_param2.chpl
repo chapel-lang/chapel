@@ -9,8 +9,5 @@ class B: A {
   }
 }
 
-var a = new A();
-var b: B;
-
-delete a;
-
+var a = new shared A();
+var b: shared B;

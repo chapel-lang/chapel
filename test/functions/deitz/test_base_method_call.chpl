@@ -12,6 +12,6 @@ class D: C {
   }
 }
 
-var d: D = new borrowed D();
+var d: borrowed D = new borrowed D();
 
-(d:C).foo();
+(d:borrowed C).foo();

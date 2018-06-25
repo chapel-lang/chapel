@@ -288,7 +288,7 @@ module DefaultAssociative {
       return _findFilledSlot(idx)(1);
     }
   
-    proc dsiAdd(idx) {
+    override proc dsiAdd(idx) {
       // add helpers will return a tuple like (slotNum, numIndicesAdded);
 
       // these two seemingly redundant lines were necessary to work around a
@@ -333,6 +333,9 @@ module DefaultAssociative {
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
+
+    // TODO - once we can annotate idx argument should outlive 'this'
+    pragma "unsafe"
     proc _add(idx: idxType, in slotNum : index(tableDom) = -1) {
       var foundSlot : bool = (slotNum != -1);
       if !foundSlot then

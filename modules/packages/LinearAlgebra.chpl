@@ -1427,8 +1427,10 @@ module Sparse {
 
     var C = CSRMatrix((M, N), data, indices, indPtr);
 
-    // TODO: Check if array is not using sorted indices, when that's possible
-    sortIndices(C);
+    // TODO remove _value when issue #9926 gets fixed
+    if C.domain._value.sortedIndices {
+      sortIndices(C);
+    }
 
     return C;
   }

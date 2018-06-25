@@ -31,7 +31,7 @@ class Board {
 // NB could not do this by writing our own constructor.
 //
 proc createBoard(boardSize:int) {
-  return new Board(boardSize = boardSize);
+  return new unmanaged Board(boardSize = boardSize);
 }
 
 //
@@ -152,7 +152,7 @@ config var showEachSolution: bool = true;
 // If the column succeeds, we proceed to the next row
 // (or show the result if we have filled all rows).
 //
-proc tryQueenInNextRow(board: Board): void {
+proc tryQueenInNextRow(board: unmanaged Board): void {
   // the row we will be placing in
   var nextRow = board.lastfilled + 1;
 

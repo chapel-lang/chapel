@@ -9,7 +9,7 @@ class MyMapper {
 }
 
 proc doit() {
-  var newDist = new dmap(new UserMapAssoc(idxType=real, mapper=new MyMapper()));
+  var newDist = new dmap(new unmanaged UserMapAssoc(idxType=real, mapper=new unmanaged MyMapper()));
 
   var D: domain(real) dmapped newDist;
 

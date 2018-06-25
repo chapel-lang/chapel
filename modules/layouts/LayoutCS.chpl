@@ -23,6 +23,10 @@ pragma "no doc"
 /* Debug flag */
 config param debugCS = false;
 
+/* Default sparse dimension index sorting mode for LayoutCS.
+Sparse dimension indices will default to sorted order if true, inserted order if false */
+config param LayoutCSDefaultToSorted = true;
+
 pragma "no doc"
 /* Comparator used for sorting by columns */
 record _ColumnComparator {
@@ -72,16 +76,17 @@ on the locale where the array variable is declared.
 pragma "use default init"
 class CS: BaseDist {
   param compressRows: bool = true;
+  param sortedIndices: bool = LayoutCSDefaultToSorted;
 
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-    return new unmanaged CSDom(rank, idxType, this.compressRows, dom.stridable, _to_unmanaged(this), dom);
+    return new unmanaged CSDom(rank, idxType, this.compressRows, this.sortedIndices, dom.stridable, _to_unmanaged(this), dom);
   }
 
   proc dsiClone() {
-    return new unmanaged CS(compressRows=this.compressRows);
+    return new unmanaged CS(compressRows=this.compressRows,sortedIndices=this.sortedIndices);
   }
 
-  proc dsiEqualDMaps(that: CS(this.compressRows)) param {
+  proc dsiEqualDMaps(that: CS(this.compressRows,this.sortedIndices)) param {
     return true;
   }
 
@@ -93,8 +98,9 @@ class CS: BaseDist {
 
 class CSDom: BaseSparseDomImpl {
   param compressRows;
+  param sortedIndices;
   param stridable;
-  var dist: unmanaged CS(compressRows);
+  var dist: unmanaged CS(compressRows,sortedIndices);
 
   var rowRange: range(idxType, stridable=stridable);
   var colRange: range(idxType, stridable=stridable);
@@ -110,7 +116,7 @@ class CSDom: BaseSparseDomImpl {
   var idx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
   /* Initializer */
-  proc init(param rank, type idxType, param compressRows, param stridable, dist: unmanaged CS(compressRows), parentDom: domain) {
+  proc init(param rank, type idxType, param compressRows, param sortedIndices, param stridable, dist: unmanaged CS(compressRows,sortedIndices), parentDom: domain) {
     if (rank != 2 || parentDom.rank != 2) then
       compilerError("Only 2D sparse domains are supported by the CS distribution");
     if parentDom.idxType != idxType then
@@ -119,6 +125,7 @@ class CSDom: BaseSparseDomImpl {
     super.init(rank, idxType, parentDom);
 
     this.compressRows = compressRows;
+    this.sortedIndices = sortedIndices;
     this.stridable = stridable;
 
     this.dist = dist;
@@ -132,7 +139,7 @@ class CSDom: BaseSparseDomImpl {
     dsiClear();
   }
 
-  proc dsiMyDist() return dist;
+  override proc dsiMyDist() return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
@@ -166,7 +173,6 @@ class CSDom: BaseSparseDomImpl {
         yield (cursor, idx(i));
       else
         yield (idx(i), cursor);
-
     }
   }
 
@@ -255,10 +261,19 @@ class CSDom: BaseSparseDomImpl {
     const (row, col) = ind;
 
     var ret: (bool, idxType);
-    if this.compressRows then
-      ret = binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
-    else
-      ret = binarySearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
+    if this.compressRows {
+      if this.sortedIndices then
+        ret = binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
+      else {
+        ret = linearSearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
+      }
+    } else {
+      if this.sortedIndices then
+        ret = binarySearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
+      else {
+        ret = linearSearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
+      }
+    }
 
     return ret;
   }

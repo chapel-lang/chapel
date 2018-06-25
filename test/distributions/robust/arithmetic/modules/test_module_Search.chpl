@@ -5,7 +5,7 @@ use Random;
 use Sort;
 use Search;
 
-var rng = new RandomStream(real, 314159265);
+var rng = new owned RandomStream(real, 314159265);
 
 var found: bool;
 var foundIdx: int;
@@ -88,5 +88,3 @@ checkSearch(found, foundIdx, rc4DR1D, "linearSearch");
 reset(rc4DR1D);
 (found, foundIdx) = binarySearch(rc4DR1D, elem);
 checkSearch(found, foundIdx, rc4DR1D, "binarySearch");
-
-delete rng;

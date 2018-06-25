@@ -21,10 +21,10 @@ record R {
   }
 }
 
-var d: C;
+var d: unmanaged C;
 writeln("start");
 {
-var c = new C(44);
+var c = new unmanaged C(44);
 var r = new R(55);
 d = c;
 }

@@ -8,7 +8,5 @@ class B: A {
   }
 }
 
-var a = new A();
-var b: B;
-
-delete a;
+var a = new borrowed A();
+var b: borrowed B;

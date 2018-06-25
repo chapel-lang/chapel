@@ -21,7 +21,7 @@ var a = new unmanaged A();
 a(1) = 1.0;
 writeln(a(1));
 
-var c = new C();
+var c = new unmanaged C();
 
 c.a(1) = 1.0;
 c.f();

@@ -12,10 +12,10 @@ module N {
   }
   proc q {
     class C2 {}
-    return new C2();
+    return new unmanaged C2();
   }
   proc r() {
     class C3 {}
-    return new C3();
+    return new unmanaged C3();
   }
 }

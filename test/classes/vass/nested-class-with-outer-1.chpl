@@ -8,11 +8,9 @@ record R {
   }
 
   proc pr {
-    var q:Q = new Q();
+    var q:owned Q = new owned Q();
 
     q.pq;
-
-    delete q;
   }
 }
 
@@ -29,15 +27,13 @@ class C {
   }
 
   proc pc {
-    var d:D = new D();
+    var d:borrowed D = new borrowed D();
 
     d.pd;
-
-    delete d;
   }
 }
 
-var c:C = new C();
+var c:unmanaged C = new unmanaged C();
 
 c.pc;
 

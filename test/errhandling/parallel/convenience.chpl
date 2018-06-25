@@ -24,15 +24,15 @@ proc test() {
     }
     writeln("after coforall block");
   } catch errors: TaskErrors {
-    var hasMyError = errors.contains(MyError);
+    var hasMyError = errors.contains(borrowed MyError);
     writeln("contains MyError? ", hasMyError);
     writeln("iterating MyError:");
-    for error in errors.filter(MyError) {
+    for error in errors.filter(borrowed MyError) {
       writeln(error.x);
     }
     writeln("iterating everything else:");
     for error in errors {
-      var e = error:MyError;
+      var e = error:borrowed MyError;
       if e == nil then
         writeln(error);
     }

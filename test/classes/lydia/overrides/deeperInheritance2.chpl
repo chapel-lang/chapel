@@ -19,12 +19,12 @@ class C: B {
   }
 }
 
-var a = new A();
-var b = new B();
-var c = new C();
+var a = new shared A();
+var b = new shared B();
+var c = new shared C();
 
-var c2: A = new C();
-var c3: B = new C();
+var c2: shared A = new shared C();
+var c3: shared B = new shared C();
 
 a.foo();
 b.foo();
@@ -32,10 +32,3 @@ c.foo();
 
 c2.foo();
 c3.foo();
-
-delete c3;
-delete c2;
-
-delete c;
-delete b;
-delete a;

@@ -67,7 +67,7 @@ module DefaultOpaque {
     var adomain: unmanaged DefaultAssociativeDom(idxType=_OpaqueIndex, parSafe=parSafe);
   
     proc linksDistribution() param return false;
-    proc dsiLinksDistribution()     return false;
+    override proc dsiLinksDistribution() return false;
   
     proc init(dist: unmanaged DefaultDist, param parSafe: bool) {
       this.parSafe = parSafe;
@@ -85,7 +85,7 @@ module DefaultOpaque {
       return i;
     }
 
-    proc dsiMyDist() {
+    override proc dsiMyDist() {
       return dist;
     }
 
@@ -167,7 +167,7 @@ module DefaultOpaque {
       delete anarray;
     }
   
-    proc dsiGetBaseDom() return dom;
+    override proc dsiGetBaseDom() return dom;
   
     proc dsiAccess(ind : idxType) ref : eltType
       return anarray.dsiAccess(ind);

@@ -4,7 +4,7 @@ class foo {
   proc f() { return 10 + i; }
 }
 
-proc f(x : foo) {
+proc f(x : borrowed foo) {
   return 20 + x.i;
 }
 

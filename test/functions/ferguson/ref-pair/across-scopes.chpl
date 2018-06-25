@@ -42,7 +42,7 @@ writeln(c.name5);
 writeln(c.name6);
 
 writeln("Calling parent name functions");
-var d = c:Parent;
+var d = c:borrowed Parent;
 writeln(d.name);
 writeln(d.name2);
 writeln(d.name3);

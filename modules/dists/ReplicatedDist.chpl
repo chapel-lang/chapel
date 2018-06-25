@@ -139,7 +139,7 @@ proc Replicated.dsiEqualDMaps(that) param {
   return false;
 }
 
-proc Replicated.dsiDestroyDist() {
+override proc Replicated.dsiDestroyDist() {
   // no action necessary here
 }
 
@@ -233,7 +233,7 @@ proc ReplicatedDom.redirectee(): domain(rank, idxType, stridable)
   return domRep;
 
 // The same across all domain maps
-proc ReplicatedDom.dsiMyDist() return dist;
+override proc ReplicatedDom.dsiMyDist() return dist;
 
 
 // privatization
@@ -282,7 +282,7 @@ proc Replicated.dsiClone(): _to_unmanaged(this.type) {
 }
 
 // create a new domain mapped with this distribution
-proc Replicated.dsiNewRectangularDom(param rank: int,
+override proc Replicated.dsiNewRectangularDom(param rank: int,
                                          type idxType,
                                          param stridable: bool,
                                          inds)
@@ -494,7 +494,7 @@ proc ReplicatedArr.rank param {
 }
 
 // The same across all domain maps
-proc ReplicatedArr.dsiGetBaseDom() return dom;
+override proc ReplicatedArr.dsiGetBaseDom() return dom;
 
 
 // privatization
@@ -558,7 +558,7 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where _to_borrowed(chpl__getAc
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
 }
 
-proc ReplicatedArr.dsiDestroyArr() {
+override proc ReplicatedArr.dsiDestroyArr() {
   coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
     on loc do
       delete locArr;

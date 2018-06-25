@@ -78,7 +78,7 @@ class subthing : mything {
   var r = f.reader();
 
   var b = new borrowed subthing(5,6);
-  var c:mything = b;
+  var c:borrowed mything = b;
 
   r.read(c);
   r.close();

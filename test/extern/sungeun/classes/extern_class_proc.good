@@ -1,2 +1,3 @@
+extern_class_proc.chpl:1: warning: Extern classes have been deprecated
 (x = 5)
 (x = 3)

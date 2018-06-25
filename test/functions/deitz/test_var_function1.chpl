@@ -2,11 +2,11 @@ class foo {
   var a : int;
 }
 
-proc bar(x : foo) ref {
+proc bar(x : unmanaged foo) ref {
   return x;
 }
 
-var f : foo = new unmanaged foo(a = 12);
+var f : unmanaged foo = new unmanaged foo(a = 12);
 
 writeln(f);
 

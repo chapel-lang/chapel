@@ -18,10 +18,8 @@ class C {
   }
 }
 
-var myC = new C();
+var myC = new borrowed C();
 
 forall i in myC {
   writeln("i is: ", i);
 }
-
-delete myC;
