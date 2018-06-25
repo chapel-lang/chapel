@@ -206,7 +206,6 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
       field->qual = QUAL_VAL; // this is a no-op
     // If the actual or the formal is a reference, store a reference
     else if (var->isRef() ||
-/////////////////////////////////////////////////////////////////////////////
              // 2018-06: for a record or tuple, if the default intent is used,
              // the formal's type is non-ref and we have been using QUAL_VAL.
              // Whereas with a const ref intent, the formal's type is ref and
