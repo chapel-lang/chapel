@@ -4157,6 +4157,16 @@ module ChapelArray {
     // adding better shape information would allow it to be parallel and
     // thus enable better performance.
 
+if chpl_iteratorHasShape(ir) {
+    // todo: more from buildArray() ?
+    var x = ir._shape_.dsiBuildArray(iteratorToArrayElementType(ir.type));
+    ir._shape_.add_arr(x);
+    var result = _newArray(x);
+    forall (r, src) in zip(result, ir) do
+      r = src;
+    return result;
+} else {
+
     var i  = 0;
     var size:size_t = 0;
     var data:_ddata(iteratorToArrayElementType(ir.type)) = nil;
@@ -4245,6 +4255,7 @@ module ChapelArray {
       return A;
 
     }
+}
   }
 
   /* ================================================

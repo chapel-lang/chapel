@@ -35,8 +35,6 @@
 static bool mainReturnsInt;
 
 static void build_chpl_entry_points();
-static void build_accessor(AggregateType* ct, Symbol* field,
-                           bool setter, bool typeMethod);
 static void build_accessors(AggregateType* ct, Symbol* field);
 
 static void buildDefaultOfFunction(AggregateType* ct);
@@ -294,7 +292,7 @@ static void fixup_accessor(AggregateType* ct, Symbol *field,
 
 // This function builds the getter or the setter, depending on the
 // 'setter' argument.
-static void build_accessor(AggregateType* ct, Symbol* field,
+void build_accessor(AggregateType* ct, Symbol* field,
                            bool setter, bool typeMethod) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike   = ct->isRecord() || ct->isUnion();

@@ -9221,17 +9221,23 @@ static void removeRandomPrimitive(CallExpr* call) {
     case PRIM_GET_MEMBER:
     case PRIM_GET_MEMBER_VALUE:
     {
+// TODO the changes here are already in #9989
       // Remove member accesses of types
       // Replace string literals with field symbols in member primitives
       Type* baseType = call->get(1)->typeInfo();
-      if (baseType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
-        break;
 
       if (!call->parentSymbol->hasFlag(FLAG_REF) &&
           baseType->symbol->hasFlag(FLAG_REF))
         baseType = baseType->getValType();
 
-      const char* memberName = get_string(call->get(2));
+      SymExpr* memberSE = toSymExpr(call->get(2));
+      const char* memberName = NULL;
+
+      if (!get_string(memberSE, &memberName)) {
+        // This is already a field Symbol. Ensure the field is correct.
+        INT_ASSERT(memberSE->symbol()->defPoint->parentSymbol == baseType->symbol);
+        break;
+      }
 
       Symbol* sym = baseType->getField(memberName);
       if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||

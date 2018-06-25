@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "driver.h"
 #include "ForallStmt.h"
+#include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
 #include "resolution.h"
@@ -853,6 +854,12 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     call->replace(standaloneCall);
 
     retval = standaloneCall;
+
+  } else if (call->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE)) {
+    Symbol* ir = toSymExpr(call->get(1))->symbol();
+    Symbol* shapeSpec = toSymExpr(call->get(2))->symbol();
+    retval = setIteratorRecordShape(call, ir, shapeSpec);
+    call->replace(retval);
 
   } else if (call->isPrimitive(PRIM_TYPE_TO_STRING)) {
     SymExpr* se = toSymExpr(call->get(1));

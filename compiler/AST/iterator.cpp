@@ -28,6 +28,8 @@
 #include "ForLoop.h"
 #include "oldCollectors.h"
 #include "optimizations.h"
+#include "passes.h"
+#include "resolution.h" // maybe resolve* belong in passes.h?
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -106,6 +108,47 @@ removeRetSymbolAndUses(FnSymbol* fn) {
   Type* yieldedType = fn->iteratorInfo->yieldedType;
 
   return yieldedType;
+}
+
+//
+// Handle the shape of the yielded values.
+//
+
+//
+// Insert before 'ref':
+//   temp = chpl_computeIteratorShape(shapeSpec);
+//   ir._shape_ = temp;
+//
+// Add _shape_ field to ir.type and figure out its type,
+// if the field did not exist.
+//
+CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec) {
+  // We could skip this if the field already exists and is void.
+  // It might be better to insert these anyway for uniformity.
+  VarSymbol* value  = newTemp("shapeTemp");
+  CallExpr* compute = new CallExpr("chpl_computeIteratorShape", shapeSpec);
+  CallExpr* set     = new CallExpr(PRIM_MOVE, value, compute);
+  ref->insertBefore(new DefExpr(value));
+  ref->insertBefore(set);
+  resolveExpr(compute);
+  resolveExpr(set);
+
+  AggregateType* iRecord = toAggregateType(ir->type);
+  INT_ASSERT(iRecord->symbol->hasFlag(FLAG_ITERATOR_RECORD));
+  Symbol* field = iRecord->getField("_shape_", false);
+  if (field == NULL) {
+    field = new VarSymbol("_shape_", value->type);
+    iRecord->fields.insertAtTail(new DefExpr(field));
+    build_accessor(iRecord, field, false, false);
+    // build_accessor() gives it RET_REF. Seems not ideal.
+  } else {
+    INT_ASSERT(field->type == value->type);
+  }
+
+  // Avoid resolving this PRIM_SET_MEMBER,
+  // as that expects a field name, not a field symbol.
+  ref->insertBefore(new CallExpr(PRIM_SET_MEMBER, ir, field, value));
+  return new CallExpr(PRIM_NOOP);
 }
 
 //
@@ -1290,6 +1333,7 @@ rebuildGetIterator(IteratorInfo* ii) {
 
   // Enumerate the fields in the iterator record (argument).
   for_fields(field, ii->irecord) {
+    if (!strcmp(field->name, "_shape_")) continue;
     // Load the record field into a temp,
     // and then use that to set the corresponding class field.
     VarSymbol* fieldReadTmp  = newTemp(field->qualType());

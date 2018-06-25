@@ -1,3 +1,0 @@
-bug: array shape is not preserved in promotion
-
-Promoting '+' over two 2D arrays results in a 1D array
