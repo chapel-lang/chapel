@@ -91,12 +91,6 @@ bool requireOutlinedOn() {
 }
 
 const char* cleanFilename(const char* name) {
-  if (::getenv("CHPL_VASS_module_filenames")) {
-    const char* slash = (const char*) rindex(name, '/');
-    if (slash)
-      return astr(slash + 1);
-  }
-
   static int  chplHomeLen = strlen(CHPL_HOME);
   const char* retval      = NULL;
 
@@ -400,14 +394,6 @@ void printCallStack() {
 
 // another one
 void printCallStackCalls() {
-  extern void nprint_view(BaseAST* ast);
-  extern const char* debugLoc(BaseAST* ast);
-
-  printf("\n" "callStack %d elms\n", callStack.n);
-  for (int i = 0; i < callStack.n; i++)
-    nprint_view(callStack.v[i]);
-
-  // once again, a summary
   printf("\n" "callStack %d elms\n\n", callStack.n);
 
   for (int i = 0; i < callStack.n; i++) {
@@ -417,7 +403,7 @@ void printCallStackCalls() {
     printf("%d  %d %s  <-  %d %s\n",
            i,
            cfn  ? cfn->id  : 0, cfn  ? cfn->name         : "<no callee>",
-           call ? call->id : 0, call ? debugLoc(call) : "<no call>");
+           call ? call->id : 0, call ? call->stringLoc() : "<no call>");
   }
 
   printf("\n");
