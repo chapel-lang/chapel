@@ -151,6 +151,7 @@ proc masonTestHelp() {
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
   writeln("        --show                  Increase verbosity");
+  writeln("        --no-run                Compile tests without running them");
   writeln();
   writeln("Test configuration is up to the user");
   writeln("Test output is piped to stdout");
