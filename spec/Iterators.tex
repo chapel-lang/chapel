@@ -108,11 +108,12 @@ iter squares(n: int): int {
   for i in 1..n do
     yield i * i;
 }
+var A = squares(5);
 \end{chapel}
 \begin{chapelpost}
-writeln(squares(5));
+writeln(A);
 \end{chapelpost}
-the expression \chpl{squares(5)} evaluates to
+then the variable A will be an array storing:
 \begin{chapelprintoutput}{}
 1 4 9 16 25
 \end{chapelprintoutput}
