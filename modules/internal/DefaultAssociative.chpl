@@ -90,7 +90,7 @@ module DefaultAssociative {
         compilerError("Default Associative domains with idxType=",
                       idxType:string, " are not allowed", 2);
       if chpl_warnUnstable && isEnumType(idxType) then
-        compilerWarning("As of Chapel 1.18, associative domains of enums are empty by default rather than full, and they no longer maintain order");
+        compilerWarning("As of Chapel 1.18, associative domains of enums are empty by default rather than full, and associative domains and arrays of enums no longer maintain order");
 
       this.idxType = idxType;
       this.parSafe = parSafe;
