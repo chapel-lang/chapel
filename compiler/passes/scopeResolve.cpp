@@ -906,6 +906,12 @@ static Expr* handleUnstableClassType(SymExpr* se) {
         if (isStableClassType(ts->type))
           ok = true;
 
+        if (isShadowVarSymbol(se->parentSymbol)) {
+          // Compiler generates reduce intents with e.g. SumReduceScanOp
+          // and might get confused if it's unmanaged.
+          ok = true;
+        }
+
         if (!ok) {
           if (fDefaultUnmanaged) {
             // Change the se to _to_unmanaged(se)
