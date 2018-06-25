@@ -443,7 +443,11 @@ CallExpr* ParamForLoop::foldForResolve()
       {
         SymbolMap map;
 
-        map.put(idxSym, new_UIntSymbol(i, idxSize));
+        if (is_bool_type(idxType)) {
+          map.put(idxSym, new_BoolSymbol(i, BOOL_SIZE_SYS));
+        } else {
+          map.put(idxSym, new_UIntSymbol(i, idxSize));
+        }
 
         copyBodyHelper(noop, i, &map, this, continueSym);
       }
@@ -454,7 +458,11 @@ CallExpr* ParamForLoop::foldForResolve()
       {
         SymbolMap map;
 
-        map.put(idxSym, new_UIntSymbol(i, idxSize));
+        if (is_bool_type(idxType)) {
+          map.put(idxSym, new_BoolSymbol(i, BOOL_SIZE_SYS));
+        } else {
+          map.put(idxSym, new_UIntSymbol(i, idxSize));
+        }
 
         copyBodyHelper(noop, i, &map, this, continueSym);
       }
