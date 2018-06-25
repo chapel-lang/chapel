@@ -176,7 +176,13 @@ void scopeResolve() {
   // build constructors (type and value versions)
   // (initializers are built during normalize)
   //
+  bool warnExternClass = true;
   forv_Vec(AggregateType, ct, gAggregateTypes) {
+    if (isClass(ct) && ct->symbol->hasFlag(FLAG_EXTERN) && warnExternClass) {
+      warnExternClass = false;
+      USR_WARN(ct, "Extern classes have been deprecated");
+    }
+
     ct->createOuterWhenRelevant();
     if (ct->needsConstructor()) {
       ct->buildConstructors();
@@ -218,6 +224,9 @@ void scopeResolve() {
     // Build the type constructor now that we know which fields are generic
     // We do it here only for types with initializers
     if (!ct->needsConstructor()) {
+      if (isClass(ct) && ct->symbol->hasFlag(FLAG_EXTERN)) {
+        USR_FATAL_CONT(ct, "Extern classes are not supported by initializers");
+      }
       ct->buildConstructors();
     }
   }
