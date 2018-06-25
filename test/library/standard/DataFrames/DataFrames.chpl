@@ -246,6 +246,12 @@ module DataFrames {
     }
 
     pragma "no doc"
+    proc _data() {
+      halt("generic Series cannot be accessed");
+      return [1..0];
+    }
+
+    pragma "no doc"
     proc reindex(idx) {
       halt("generic Series cannot be reindexed");
     }
@@ -399,6 +405,10 @@ module DataFrames {
 
     proc copy() {
       return new TypedSeries(this.data, this.idx, this.valid_bits);
+    }
+
+    proc _data() {
+      return this.data;
     }
 
     /*
@@ -707,6 +717,10 @@ module DataFrames {
         this.insert(lab, s);
     }
 
+    proc copy() {
+      return new DataFrame(this.columns, this.idx);
+    }
+
     iter these() {
       for s in columns do
         yield s;
@@ -727,6 +741,17 @@ module DataFrames {
       this.idx = idx;
       for s in columns do
         s.reindex(idx);
+    }
+
+    proc set_index(lab: string) {
+      var df = this.copy();
+      df.labels.remove(lab);
+
+      var ser = this[lab];
+      var idx = new TypedIndex(ser._data());
+      df.reindex(idx);
+
+      return df;
     }
 
     proc nrows() {
