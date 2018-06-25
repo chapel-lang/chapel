@@ -1,0 +1,8 @@
+#!/bin/sh
+
+outfile=$2
+temp=$outfile.temp
+
+cat $outfile | sed "s@${PWD}@\$PWD@" | sed 's/Initializing mason-registry for registry/Updating mason-registry for registry/' > $temp
+
+mv $temp $outfile

@@ -98,7 +98,7 @@ private proc runTests(show: bool) {
       }
     }
     else {
-      writeln("No tests were found your Mason.lock");
+      writeln("No tests were found in /test");
     }
     toParse.close();
   } 
