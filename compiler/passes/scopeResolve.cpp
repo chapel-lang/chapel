@@ -912,6 +912,14 @@ static Expr* handleUnstableClassType(SymExpr* se) {
           ok = true;
         }
 
+        if (ArgSymbol* arg = toArgSymbol(se->parentSymbol)) {
+          if (arg->hasFlag(FLAG_ARG_THIS)) {
+            // this default intent is currently 'borrowed' always
+            // and there's not yet a way to adjust it.
+            ok = true;
+          }
+        }
+
         if (!ok) {
           if (fDefaultUnmanaged) {
             // Change the se to _to_unmanaged(se)
