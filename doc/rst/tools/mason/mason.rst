@@ -162,7 +162,7 @@ To try out different values at runtime, pass the values for ``number`` to ``maso
 Testing your Project
 ====================
 
-Testing a Mason project is easy! Start by adding test files to the /test directory and specifing
+Testing a Mason project is easy! Start by adding test files to the ``test/`` directory and specifying
 them in your Mason.toml as follows:
 
 .. code-block:: text
@@ -178,9 +178,9 @@ them in your Mason.toml as follows:
     curl = '1.0.0'
 
 
-When the ``mason test [options]`` command is invoked, mason will find and download the nessescary dependencies
+When the ``mason test [options]`` command is invoked, mason will find and download the necessary dependencies
 for your project that you listed in your Mason.toml and compile them with your main module found in
-``/src``. For example, after listing ``sampleTest.chpl`` as a test, the project structure would be
+``src/``. For example, after listing ``sampleTest.chpl`` as a test, the project structure would be
 as follows::
 
     MyPackage/

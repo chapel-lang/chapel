@@ -3,7 +3,7 @@
 name = "sampleModule"
 version = "0.1.0"
 chplVersion = "1.18.0..1.18.0"
-tests = ["sampletest.chpl", "sampletest2.chpl", "dependencytest.chpl", "nomodule.chpl"]
+tests = ["sampletest.chpl", "sampletest2.chpl", "dependencytest.chpl", "nomodule.chpl", "testdir/subdirectorytest.chpl"]
 dependencies = ["_MasonTest1 0.1.0 https://github.com/Spartee/_MasonTest1"]
 
 [_MasonTest1]
