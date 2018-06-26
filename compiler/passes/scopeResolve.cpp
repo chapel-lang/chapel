@@ -868,14 +868,14 @@ static Expr* handleUnstableClassType(SymExpr* se) {
           } else if (outerCall && outerCall->isPrimitive(PRIM_NEW) &&
                      inCall == outerCall->get(1)) {
             // 'new SomeClass()'
-            ok = false;
+            // let ok be set as it was above
           } else if (outerCall && callSpecifiesClassKind(outerCall) &&
                      inCall->baseExpr == se) {
             // ':borrowed MyGenericClass(int)'
             ok = true;
           } else if (inCall->baseExpr == se) {
             // ':MyGenericClass(int)'
-            ok = false;
+            // let ok be set as it was above
           }
           if (inCall->isNamed(".") &&
               inCall->get(1) == se) {
