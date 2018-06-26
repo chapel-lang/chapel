@@ -905,7 +905,6 @@ static void build_enum_cast_function(EnumType* et) {
   baseModule->block->insertAtTail(def);
   reset_ast_loc(def, et->symbol);
   normalize(fn);
-
   fn->tagIfGeneric();
 
 
@@ -971,7 +970,6 @@ static void build_enum_cast_function(EnumType* et) {
   baseModule->block->insertAtTail(def);
   reset_ast_loc(def, et->symbol);
   normalize(fn);
-
   fn->tagIfGeneric();
   }
 
@@ -1066,6 +1064,7 @@ static void build_enum_to_order_function(EnumType* et, bool paramVersion) {
   baseModule->block->insertAtTail(def);
   reset_ast_loc(def, et->symbol);
   normalize(fn);
+  fn->tagIfGeneric();
 }
 
 //
