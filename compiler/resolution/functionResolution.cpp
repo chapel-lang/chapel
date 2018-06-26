@@ -1539,20 +1539,14 @@ userCall(CallExpr* call) {
   // modules, back up the stack until a call is encountered whose target
   // function is neither.
 
-  CallExpr* cur = call;
-  int i = callStack.n-1;
-  while (cur != NULL && i >= 0 && shouldSkip(cur)) {
-    cur = callStack.v[i];
-    i -= 1;
+  if (shouldSkip(call)) {
+    for (int i = callStack.n-1; i >= 0; i--) {
+      CallExpr* cur = callStack.v[i];
+      if (!shouldSkip(cur))
+        return cur;
+    }
   }
-
-  // If we could not find a suitable call in the callStack, return the original
-  // call.
-  if (shouldSkip(cur)) {
-    return call;
-  } else {
-    return cur;
-  }
+  return call;
 }
 
 static void reissueCompilerWarning(const char* str, int offset) {
