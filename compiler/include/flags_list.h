@@ -172,6 +172,8 @@ symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which co
 // a pattern enabling user-supplied replacement of default behavior.
 symbolFlag( FLAG_LAST_RESORT , ypr, "last resort" , "overload of last resort in resolution" )
 
+// Tells resolution to use this function's line number even if that function
+// has FLAG_COMPILER_GENERATED.
 symbolFlag( FLAG_LINE_NUMBER_OK, npr, "lineno ok", ncm )
 
 symbolFlag( FLAG_LOCALE_MODEL_ALLOC , ypr, "locale model alloc" , "locale model specific alloc" )
