@@ -37,7 +37,7 @@ module SSCA2_execution_config_consts
 		    Torus_1D,   Torus_2D,
 		    Torus_3D,   Torus_4D };
 
-  const graph_type_domain : domain ( graph_type );
+  const graph_type_domain = {graph_type.RMAT_associative..graph_type.Torus_4D};
 
   var testing_type : [graph_type_domain] bool = false;
 

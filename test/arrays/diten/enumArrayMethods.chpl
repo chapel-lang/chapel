@@ -1,6 +1,6 @@
 enum E {a=1, b=0, c=2};
 
-var D: domain(E);
+var D: domain(E) = E.a..E.c;
 
 writeln(D.sorted());
 

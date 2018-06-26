@@ -50,9 +50,9 @@ proc allocateLoopData() {
 
 
 proc main {
-  const LoopKernelDom: domain(LoopKernelID);
-  const LoopLengthDom: domain(LoopLength);
-  const LoopVariantIDDom: domain(LoopVariantID);
+  const LoopKernelDom = {LoopKernelID.REF_LOOP..LoopKernelID.FIND_FIRST_MIN};
+  const LoopLengthDom = {LoopLength.LONG..LoopLength.SHORT};
+  const LoopVariantIDDom = {LoopVariantID.RAW..LoopVariantID.FORALL_HYBRID_LAMBDA_TYPEFIX};
 
   const sample_frac = 1.0;
   const loop_length_factor = 1.0;
