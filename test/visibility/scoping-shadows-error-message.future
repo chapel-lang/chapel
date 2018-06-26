@@ -1,0 +1,2 @@
+error message: use before def errors should note where used variable is defined
+#10034
