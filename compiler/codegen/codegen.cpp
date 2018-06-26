@@ -1090,11 +1090,7 @@ static void codegen_library_header(std::vector<FnSymbol*> functions) {
     // instead?
     // Name the generated header file after the executable (and assume any
     // modifications to it have already happened)
-    if (strncmp(executableFilename, "lib", 3) == 0) {
-      openCFile(&libhdrfile, executableFilename + 3, "h");
-    } else {
-      openCFile(&libhdrfile, executableFilename, "h");
-    }
+    openCFile(&libhdrfile, libmodeHeadername, "h");
     // SIMPLIFYING ASSUMPTION: not handling LLVM just yet.  If were to, would
     // probably put assignment to gChplCompilationConfig here
 
@@ -2198,6 +2194,17 @@ void codegen(void) {
                 executableFilename);
     }
     *lastDot = '\0';
+
+  }
+
+  if (fLibraryCompile && libmodeHeadername[0] == '\0') {
+    if (strncmp(executableFilename, "lib", 3) == 0) {
+      strncpy(libmodeHeadername, executableFilename + 3,
+              sizeof(executableFilename) - 3);
+    } else {
+      strncpy(libmodeHeadername, executableFilename,
+              sizeof(executableFilename));
+    }
   }
 
   if( llvmCodegen ) {
