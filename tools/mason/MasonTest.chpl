@@ -24,7 +24,7 @@ use MasonUtils;
 use MasonHelp;
 use MasonUpdate;
 use MasonBuild;
-
+use Path;
 
 /* Runs the .chpl files found within the /tests directory */
 proc masonTest(args) {
@@ -84,7 +84,7 @@ private proc runTests(show: bool, run: bool) {
 
         const test = t.strip().strip('"');
         const testPath = "".join(projectHome, '/test/', test);
-        const testName = test.strip(".chpl");
+        const testName = basename(test.strip(".chpl"));
 
         // get the string of dependencies for compilation
         const compopts = getDependencyString(sourceList, testName);
