@@ -1077,6 +1077,46 @@ static void codegen_aggregate_def(AggregateType* ct) {
   ct->symbol->codegenDef();
 }
 
+//
+// Generates a .h file to compliment the library file created using --library
+// This .h file will contain necessary #includes, any explicitly exported
+// functions, and the module initialization function declarations.
+//
+static void codegen_library_header(std::vector<FnSymbol*> functions) {
+  if (fLibraryCompile) {
+    fileinfo libhdrfile = { NULL, NULL, NULL };
+
+    // Q1: openCFile opens in the generated code directory.  Where should I open
+    // instead?
+    // Name the generated header file after the executable (and assume any
+    // modifications to it have already happened)
+    openCFile(&libhdrfile, executableFilename, "h");
+    // SIMPLIFYING ASSUMPTION: not handling LLVM just yet.  If were to, would
+    // probably put assignment to gChplCompilationConfig here
+
+    // follow convention of just not writing to the file if we can't open it
+    if (libhdrfile.fptr != NULL) {
+      FILE* save_cfile = gGenInfo->cfile;
+
+      gGenInfo->cfile = cfgfile.fptr;
+
+      //genComment("Generated header file for use with %s library", )
+
+      fprintf(libhdrfile.fptr, "#include \"stdchpl.h\"\n");
+
+      // Maybe need LLVM "extern C header file" stuff?
+
+      // Print out the module initialization function headers and the exported
+      // functions
+      for_vector(FnSymbol, fn, functions) {
+        if (fn->hasFlag(FLAG_EXPORT)) {
+          fnSymbol->codegenPrototype();
+        }
+      }
+    }
+    // TODO: close C file
+  }
+}
 
 //
 // Produce compilation-time configuration info into a .c file and
