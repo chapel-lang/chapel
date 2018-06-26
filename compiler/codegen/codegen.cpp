@@ -1090,7 +1090,11 @@ static void codegen_library_header(std::vector<FnSymbol*> functions) {
     // instead?
     // Name the generated header file after the executable (and assume any
     // modifications to it have already happened)
-    openCFile(&libhdrfile, executableFilename, "h");
+    if (strncmp(executableFilename, "lib", 3) == 0) {
+      openCFile(&libhdrfile, executableFilename + 3, "h");
+    } else {
+      openCFile(&libhdrfile, executableFilename, "h");
+    }
     // SIMPLIFYING ASSUMPTION: not handling LLVM just yet.  If were to, would
     // probably put assignment to gChplCompilationConfig here
 
@@ -1098,9 +1102,10 @@ static void codegen_library_header(std::vector<FnSymbol*> functions) {
     if (libhdrfile.fptr != NULL) {
       FILE* save_cfile = gGenInfo->cfile;
 
-      gGenInfo->cfile = cfgfile.fptr;
+      gGenInfo->cfile = libhdrfile.fptr;
 
-      //genComment("Generated header file for use with %s library", )
+      //genComment("Generated header file for use with %s",
+      //           executableFilename);
 
       fprintf(libhdrfile.fptr, "#include \"stdchpl.h\"\n");
 
@@ -1110,11 +1115,13 @@ static void codegen_library_header(std::vector<FnSymbol*> functions) {
       // functions
       for_vector(FnSymbol, fn, functions) {
         if (fn->hasFlag(FLAG_EXPORT)) {
-          fnSymbol->codegenPrototype();
+          fn->codegenPrototype();
         }
       }
+
+      gGenInfo->cfile = save_cfile;
     }
-    // TODO: close C file
+    closeCFile(&libhdrfile);
   }
 }
 
@@ -1623,6 +1630,10 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   }
 
   codegen_header_compilation_config();
+
+  if (fLibraryCompile) {
+    codegen_library_header(functions);
+  }
 
   FILE* hdrfile = info->cfile;
 
