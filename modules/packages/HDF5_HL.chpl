@@ -3686,9 +3686,15 @@ module HDF5_HL {
        be read in chunks matching the `chunkShape` domain, and yielded as
        arrays of that size until the end of the dataset is reached.
 
+       This allows operating on a very large dataset in smaller sections,
+       for example when it is too big to fit into the system memory, or
+       to allow each section to fit within cache.
+
        Currently, the `chunkShape` domain describing the output arrays and
        the shape of the data in the file must both be the same rank.
-       It is expected that this restriction can be relaxed in the future.
+       For example, if the data in the file is 2D, `chunkShape` must be
+       two-dimensional as well.  It is expected that this restriction can
+       be relaxed in the future.
      */
     iter hdf5ReadChunks(filename: string, dset: string,
                         chunkShape: domain, type eltType)
@@ -3719,23 +3725,16 @@ module HDF5_HL {
             const readCount = min(dims[1]:int-inOffset, chunkShape.size);
             var A: [1..readCount] eltType;
 
-            var inOffsetArr: [1..1] hsize_t,
-                inCountArr: [1..1] hsize_t;
-
-            inOffsetArr[1] = inOffset:hsize_t;
-            inCountArr[1] = readCount:hsize_t;
+            var inOffsetArr = [inOffset: hsize_t],
+                inCountArr  = [readCount: hsize_t];
 
             H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
                                 c_ptrTo(inOffsetArr), nil,
                                 c_ptrTo(inCountArr), nil);
 
-            var outDims: [1..1] hsize_t,
-                outOffset: [1..1] hsize_t,
-                outCount: [1..1] hsize_t;
-
-            outDims[1] = readCount:hsize_t;
-            outOffset[1] = 0;
-            outCount[1] = readCount:hsize_t;
+            var outDims   = [readCount: hsize_t],
+                outOffset = [0: hsize_t],
+                outCount  = [readCount: hsize_t];
 
             var memspace = H5Screate_simple(1, c_ptrTo(outDims), nil);
 
@@ -3749,39 +3748,44 @@ module HDF5_HL {
             yield A;
           }
         } else {
-          halt("reading in 1-D from ", outRank,
+          halt("reading in 1-D from ", dsetRank,
                "-D file not implemented");
         }
       } else if outRank == dsetRank {
         // Read N-D blocks matching the N-D rank of the datafile.  This
         // could replace the 1D/1D case above.
 
-        // This iterator yeilds 2-tuples containing rank-tuples.
-        // The first tuple contains a rank-D start index for a block
-        // and the second tuple contains a count of elements in each
-        // dimension.  The block is represented by the domain:
-        // {T(1)(1)..#T(2)(1), T(1)(2)..#T(2)(2), ..., T(1)(n)..#T(2)(n)}
+        // This iterator yields pairs (starts, counts) for each block to
+        // be read. 'starts' is a rank-D start index for each block.
+        // 'counts' contains a count of elements in each dimension.  The
+        // block is then represented by the domain:
+        //
+        // { starts(1)..#counts(1), starts(2)..#counts(2),
+        //           ...,           starts(n)..#counts(n) }
         //
         // The set of all of these blocks make the full space
         // representing the data set in the file to be read.
         iter blockStartsCounts(param dim=1) {
-          if dim == outRank {
-            for inOffset in 0..#dims[dim] by chunkShape.dim[dim].size {
-              const readCount = min(dims[dim]:int - inOffset, chunkShape.dim[dim].size);
+          for inOffset in 0..#dims[dim] by chunkShape.dim[dim].size {
+            const readCount = min(dims[dim]:int - inOffset, chunkShape.dim[dim].size);
+            if dim == outRank {
               yield ((inOffset,), (readCount,));
-            }
-          } else {
-            for inOffset in 0..#dims[dim] by chunkShape.dim[dim].size {
-              const readCount = min(dims[dim]:int - inOffset, chunkShape.dim[dim].size);
+            } else {
               for inOffset2 in blockStartsCounts(dim+1) {
-                yield ((inOffset, (...inOffset2(1))), (readCount, (...inOffset2(2))));
+                yield ((inOffset, (...inOffset2(1))),
+                       (readCount, (...inOffset2(2))));
               }
             }
           }
         }
 
         for (starts, counts) in blockStartsCounts() {
-          //var rngTup: outRank * range,
+          // If `positionalOutputTup` were used instead of `outputTup` below,
+          // the output array's domain would reflect the position of the data
+          // within the input data set.  Instead, we are currently just using
+          // 1-based domains for the yielded arrays.
+          //
+          //var positionalOutputTup: outRank * range,
           var outputTup: outRank * range;
 
           var inOffsetArr, inCountArr,
@@ -3792,16 +3796,20 @@ module HDF5_HL {
             inCountArr[i] = counts(i): hsize_t;
             outOffsetArr[i] = 0: hsize_t;
             outCountArr[i] = counts(i): hsize_t;
-            //rngTup(i) = starts(i)..#counts(i);
+            //positionalOutputTup(i) = starts(i)..#counts(i);
             outputTup(i) = 1..#counts(i);
           }
           var A: [(...outputTup)] eltType;
+
           H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
                               c_ptrTo(inOffsetArr), nil,
                               c_ptrTo(inCountArr), nil);
 
           var memspace = H5Screate_simple(outRank, c_ptrTo(outCountArr), nil);
-          H5Sselect_hyperslab(memspace, H5S_SELECT_SET, c_ptrTo(outOffsetArr), nil, c_ptrTo(outCountArr), nil);
+
+          H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
+                              c_ptrTo(outOffsetArr), nil,
+                              c_ptrTo(outCountArr), nil);
 
           H5Dread(dataset, getHDF5Type(eltType), memspace,
                   dataspace, H5P_DEFAULT, c_ptrTo(A));
