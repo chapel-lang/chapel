@@ -1246,6 +1246,7 @@ static Expr* preFoldNamed(CallExpr* call) {
             Symbol* constant = findMatchingEnumSymbol(imm, typeEnum);
 
             if (constant == NULL) {
+              USR_FATAL_CONT(call->castFrom(), "enum cast out of bounds");
               retval = call;
             } else {
               retval = new SymExpr(constant);
