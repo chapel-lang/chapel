@@ -24,13 +24,13 @@ proc clusterFlags (
 
   //---- Create stack of unprocessed domains ----
   
-  var unprocessed_domain_stack = new Stack( domain(rank,stridable=true) );
+  var unprocessed_domain_stack = new unmanaged Stack( domain(rank,stridable=true) );
   unprocessed_domain_stack.push(full_domain);
   
   
   //---- List of finished domains ----
   
-  var finished_domain_list = new List( domain(rank, stridable=true) );
+  var finished_domain_list = new unmanaged List( domain(rank, stridable=true) );
   
   
   while !unprocessed_domain_stack.isEmpty()
@@ -39,7 +39,7 @@ proc clusterFlags (
     //---- Make the top domain a candidate ----
     
     var D = unprocessed_domain_stack.pop();
-    var candidate = new CandidateDomain(rank,D,flags(D),min_width);
+    var candidate = new unmanaged CandidateDomain(rank,D,flags(D),min_width);
     
     
     //===> If candidate is inefficient, then split ===>
@@ -102,7 +102,7 @@ class CandidateDomain {
   const D:          domain(rank,stridable=true);
   const flags:      [D] bool;
   const min_width:  rank*int;
-  var   signatures: rank*ArrayWrapper;
+  var   signatures: rank*unmanaged ArrayWrapper;
 
   
   pragma "use default init"
@@ -143,7 +143,7 @@ class CandidateDomain {
     this.complete();
     //---- Calculate signatures ----
     for d in 1..rank do
-      signatures(d) = new ArrayWrapper( {D.dim(d)} );
+      signatures(d) = new unmanaged ArrayWrapper( {D.dim(d)} );
       
     for idx in D 
     {

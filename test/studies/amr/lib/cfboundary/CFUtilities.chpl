@@ -13,9 +13,9 @@ use Level_def;
 //----------------------------------------------------------
 
 proc refinementRatio( coarse_object, fine_object )
-  where (coarse_object.type == Grid || coarse_object.type == Level)
-     && (fine_object.type == Grid || fine_object.type == Level)
-     && (coarse_object.type == Grid || fine_object.type == Grid)
+  where (coarse_object.type == unmanaged Grid || coarse_object.type == unmanaged Level)
+     && (fine_object.type == unmanaged Grid || fine_object.type == unmanaged Level)
+     && (coarse_object.type == unmanaged Grid || fine_object.type == unmanaged Grid)
 {
   var ref_ratio: dimension*int;
   
@@ -25,7 +25,7 @@ proc refinementRatio( coarse_object, fine_object )
   return ref_ratio;
 }
 
-proc refinementRatio ( coarse_level: Level, fine_level: Level )
+proc refinementRatio ( coarse_level: unmanaged Level, fine_level: unmanaged Level )
 {
   const ref_ratio = fine_level.n_cells / coarse_level.n_cells;
   return ref_ratio;
