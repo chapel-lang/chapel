@@ -786,6 +786,18 @@ static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
   return useType;
 }
 
+static std::string
+transformTypeForPointer(std::string typeName, bool exported) {
+  if (exported) {
+    if (!typeName.compare(0, 5, "_ref_")) {
+      return typeName.substr(5, std::string::npos) + " *";
+    } else if (!typeName.compare(0, 6, "c_ptr_")) {
+      return typeName.substr(6, std::string::npos) + " *";
+    }
+  }
+    return typeName;
+}
+
 GenRet ArgSymbol::codegenType() {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
@@ -794,18 +806,9 @@ GenRet ArgSymbol::codegenType() {
   Type* useType = getArgSymbolCodegenType(this);
 
   if( outfile ) {
-    std::string argType = useType->codegen().c;
-    if (this->defPoint->parentSymbol->hasFlag(FLAG_EXPORT) &&
-        !argType.compare(0, 5, "_ref_")) {
-      std::string newType = argType.substr(5, std::string::npos);
-      ret.c = newType + " *";
-    } else if (this->defPoint->parentSymbol->hasFlag(FLAG_EXPORT) &&
-               !argType.compare(0, 6, "c_ptr_")) {
-      std::string newType = argType.substr(6, std::string::npos);
-      ret.c = newType + " *";
-    } else {
-      ret.c = argType;
-    }
+    std::string argType = transformTypeForPointer(useType->codegen().c,
+                                                  this->defPoint->parentSymbol->hasFlag(FLAG_EXPORT));
+    ret.c = argType;
   } else {
 #ifdef HAVE_LLVM
     llvm::Type *argType = useType->codegen().type;
@@ -1266,18 +1269,9 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
     // Cast to right function type.
     std::string str;
 
-    std::string retString = retType->codegen().c;
-    if (hasFlag(FLAG_EXPORT) &&
-        !retString.compare(0, 5, "_ref_")) {
-      std::string newType = retString.substr(5, std::string::npos);
-      str += newType.c_str();
-    } else if (hasFlag(FLAG_EXPORT) &&
-               !retString.compare(0, 6, "c_ptr_")) {
-      std::string newType = retString.substr(6, std::string::npos);
-      str += newType.c_str();
-    } else {
-      str += retString.c_str();
-    }
+    std::string retString = transformTypeForPointer(retType->codegen().c,
+                                                    hasFlag(FLAG_EXPORT));
+    str += retString.c_str();
     if( forHeader ) {
       str += " ";
       str += cname;
