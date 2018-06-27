@@ -1,19 +1,19 @@
 proc main() {
-  var a   = new A(10);
+  var a   = new unmanaged A(10);
 
   writeln();
 
-  var m1a = new M1.A(20);
-  var m2a = new M2.A(30);
+  var m1a = new unmanaged M1.A(20);
+  var m2a = new unmanaged M2.A(30);
 
   writeln();
 
   var m3a = new M3.A(40);
   var m4a = new M4.A(50);
 
-  // Would delete m2a, m1a, a
-  // but these might be borrows
-  // at some point
+  delete m2a;
+  delete m1a;
+  delete a;
 }
 
 class A {
