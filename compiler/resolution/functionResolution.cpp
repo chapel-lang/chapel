@@ -2759,7 +2759,15 @@ void trimVisibleCandidates(CallInfo&       info,
         AggregateType* actualType = toAggregateType(at)->getRootInstantiation();
         AggregateType* formalType = toAggregateType(ft)->getRootInstantiation();
 
-        if (actualType != formalType) {
+        // Allow deinit to match dtObject's deinit so that it will at least
+        // dispatch at some point. Without this check, the compiler would
+        // fail to resolve a 'deinit' call for a concrete class declared in
+        // another module. See the following for examples:
+        //   - modules/diten/returnClassDiffModule*.chpl
+        //   - classes/moduleScope/mod-init.chpl
+        if (isDeinit && formalType == dtObject) {
+          shouldKeep = true;
+        } else if (actualType != formalType) {
           shouldKeep = false;
         }
       } else {
