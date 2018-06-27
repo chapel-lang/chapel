@@ -477,6 +477,8 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
 
   wrapper->addFlag(FLAG_INLINE);
 
+  wrapper->addFlag(FLAG_LINE_NUMBER_OK);
+
   wrapper->retTag = RET_VALUE;
 
   if (fn->hasFlag(FLAG_METHOD)) {
