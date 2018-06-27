@@ -17,11 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef _tasks_fifo_h_
-#define _tasks_fifo_h_
+#ifndef _chpl_tasks_impl_h_
+#define _chpl_tasks_impl_h_
 
 #include <stdint.h>
 
+#include "chpl-tasks-prvdata.h"
 #include "chpl-threads.h"
 
 #ifdef __cplusplus

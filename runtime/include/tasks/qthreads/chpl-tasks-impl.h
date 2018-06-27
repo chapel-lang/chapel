@@ -24,8 +24,8 @@
  * limitations under the License.
  */
 
-#ifndef _tasks_qthreads_h_
-#define _tasks_qthreads_h_
+#ifndef _chpl_tasks_impl_h_
+#define _chpl_tasks_impl_h_
 
 #include "chpl-locale-model.h"
 #include "chpl-tasks-prvdata.h"
@@ -253,5 +253,5 @@ int chpl_task_supportsRemoteCache(void) {
 } // end extern "C"
 #endif
 
-#endif // ifndef _tasks_qthreads_h_
+#endif // ifndef _chpl_tasks_impl_h_
 /* vim:set expandtab: */

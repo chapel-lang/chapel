@@ -46,8 +46,8 @@
 #include "chpl-linefile-support.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks-internal.h"
+#include "chpl-tasks-impl.h"
 #include "chpl-topo.h"
-#include "tasks-qthreads.h"
 
 #include "qthread.h"
 #include "qthread/qtimer.h"
@@ -177,7 +177,7 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
                                .lock_lineno = 0 };
 
 //
-// chpl_qthread_get_tasklocal() is in tasks-qthreads.h
+// chpl_qthread_get_tasklocal() is in chpl-tasks-impl.h
 //
 
 static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
@@ -966,15 +966,15 @@ void chpl_task_startMovedTask(chpl_fn_int_t       fid,
 }
 
 //
-// chpl_task_getSubloc() is in tasks-qthreads.h
+// chpl_task_getSubloc() is in chpl-tasks-impl.h
 //
 
 //
-// chpl_task_setSubloc() is in tasks-qthreads.h
+// chpl_task_setSubloc() is in chpl-tasks-impl.h
 //
 
 //
-// chpl_task_getRequestedSubloc() is in tasks-qthreads.h
+// chpl_task_getRequestedSubloc() is in chpl-tasks-impl.h
 //
 
 
