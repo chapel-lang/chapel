@@ -22,7 +22,7 @@ use GridVariable_def;
 //----------------------------------------------------------------
 
 proc GridVariable.storeCTUOperator(
-  q_in:     GridVariable,
+  q_in:     unmanaged GridVariable,
   velocity: dimension*real,
   dt:       real)
 {

@@ -26,7 +26,7 @@ class GradientFlagger: Flagger {
   //----------------------------------------------------------------------
   
   proc setFlags (
-    level_solution: LevelSolution, 
+    level_solution: unmanaged LevelSolution, 
     flags:          [level_solution.level.possible_cells] bool )
   {
     
@@ -138,8 +138,8 @@ proc main {
     else return 0.0;
   }
   
-  const flagger = new GradientFlagger(tolerance = 0.1);
-  const hierarchy = new AMRHierarchy(hierarchy_file_name,
+  const flagger = new unmanaged GradientFlagger(tolerance = 0.1);
+  const hierarchy = new unmanaged AMRHierarchy(hierarchy_file_name,
                                      flagger,
                                      elevatedCircle);
 
@@ -163,7 +163,7 @@ proc main {
 
 
   //---- Set boundary conditions ----
-  var bc = new ZeroInflowBC(hierarchy = hierarchy);
+  var bc = new unmanaged ZeroInflowBC(hierarchy = hierarchy);
 
 
 

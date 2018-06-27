@@ -71,8 +71,10 @@ following hierarchy::
 
 	MyPackage/
   	  Mason.toml
+  	  test/
   	  src/
     	    MyPackage.chpl
+
 
 Mason will ensure that the main file be named after the package to enforce namespacing.
 While it is common practice for package names to be PascalCase and chpl files to be lowercase,
@@ -101,13 +103,14 @@ For example, after ``mason build && mason run [ options ]``, the project directo
       Mason.toml
       Mason.lock
       src/
-	MyPackage.chpl
+        MyPackage.chpl
+      test/
       target/
-	debug/
-       (release/)
-	  MyPackage
+        debug/
+        (release/)
+           MyPackage
 
-	
+
 For projects that span multiple files, the main module is designated by the module that 
 shares the name with the package directory and the name field in the ``Mason.toml``.
 
@@ -121,13 +124,15 @@ MyPackage's structure is as follows::
       Mason.toml
       Mason.lock
       src/
-	MyPackage.chpl
-	MySubPackage.chpl
-        util/
-	  MyPackageUtils.chpl
+        MyPackage.chpl
+        MySubPackage.chpl
+      util/
+        MyPackageUtils.chpl
+      test/
       target/
-	debug/
-	  MyPackage
+        debug/
+          MyPackage
+
 
 
 If MyPackage needs multiple files in different directories like the example above,
@@ -152,6 +157,61 @@ To try out different values at runtime, pass the values for ``number`` to ``maso
    ``mason build`` or ``mason run``, respectively, the flag can be thrown after ``--`` 
    to override this conflict. For example, ``mason run -- -nl 4``. Instead of mason recognizing
    this argument, this command will run the executable over 4 locales.
+
+
+Testing your Project
+====================
+
+Testing a Mason project is easy! Start by adding test files to the ``test/`` directory and specifying
+them in your Mason.toml as follows:
+
+.. code-block:: text
+
+    [brick]
+    name = "MyPackage"
+    version = "0.1.0"
+    chplVersion = "1.16.0"
+    authors = ["Sam Partee <Sam@Partee.com>"]
+    tests = ["sampleTest.chpl"]
+
+    [dependencies]
+    curl = '1.0.0'
+
+
+When the ``mason test [options]`` command is invoked, mason will find and download the necessary dependencies
+for your project that you listed in your Mason.toml and compile them with your main module found in
+``src/``. For example, after listing ``sampleTest.chpl`` as a test, the project structure would be
+as follows::
+
+    MyPackage/
+      Mason.toml
+      Mason.lock
+      src/
+        MyPackage.chpl
+      test/
+        sampleTest.chpl
+      target/
+        debug/
+        (release/)
+           MyPackage
+
+To test the project, run ``mason test [options]``, which will update the lock file, compile the tests,
+and produce the binary within ``target/test/`` as follows::
+
+    MyPackage/
+      Mason.toml
+      Mason.lock
+      src/
+        MyPackage.chpl
+      test/
+        sampleTest.chpl
+      target/
+        test/
+          sampleTest
+        debug/
+        (release/)
+          MyPackage
+
 
 
 The Manifest File

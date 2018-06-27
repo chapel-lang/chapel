@@ -9,7 +9,7 @@ use GridVariable_def;
 // As with FluxDivergence, ghost cells must be filled beforehand.
 //----------------------------------------------------------------
 proc GridVariable.storeBEOperator(
-  q:           GridVariable,
+  q:           unmanaged GridVariable,
   diffusivity: real,
   dt:          real
 ){
@@ -31,7 +31,7 @@ proc GridVariable.storeBEOperator(
 // cells of q must be filled beforehand
 //-----------------------------------------------------------
 proc GridVariable.storeFluxDivergence(
-  q:               GridVariable,
+  q:               unmanaged GridVariable,
   diffusivity:     real)
 {
 

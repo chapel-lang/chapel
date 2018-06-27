@@ -1,0 +1,1 @@
+scoping-shadows-error-message.chpl:11: error: 'a' used before defined (first used here, defined at line 12)

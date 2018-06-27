@@ -868,14 +868,16 @@ static Expr* handleUnstableClassType(SymExpr* se) {
           } else if (outerCall && outerCall->isPrimitive(PRIM_NEW) &&
                      inCall == outerCall->get(1)) {
             // 'new SomeClass()'
-            ok = false;
+            // let ok be set as it was above unless changing default
+            if (fDefaultUnmanaged) ok = false;
           } else if (outerCall && callSpecifiesClassKind(outerCall) &&
                      inCall->baseExpr == se) {
             // ':borrowed MyGenericClass(int)'
             ok = true;
           } else if (inCall->baseExpr == se) {
             // ':MyGenericClass(int)'
-            ok = false;
+            // let ok be set as it was above unless changing default
+            if (fDefaultUnmanaged) ok = false;
           }
           if (inCall->isNamed(".") &&
               inCall->get(1) == se) {
@@ -905,6 +907,24 @@ static Expr* handleUnstableClassType(SymExpr* se) {
 
         if (isStableClassType(ts->type))
           ok = true;
+
+        if (isShadowVarSymbol(se->parentSymbol)) {
+          // Compiler generates reduce intents with e.g. SumReduceScanOp
+          // and might get confused if it's unmanaged.
+          ok = true;
+        }
+
+        // Don't worry about this arguments if we're only warning
+        // (do worry about it if we're changing the default)
+        if (!fDefaultUnmanaged) {
+          if (ArgSymbol* arg = toArgSymbol(se->parentSymbol)) {
+            if (arg->hasFlag(FLAG_ARG_THIS)) {
+              // this default intent is currently 'borrowed' always
+              // and there's not yet a way to adjust it.
+              ok = true;
+            }
+          }
+        }
 
         if (!ok) {
           if (fDefaultUnmanaged) {

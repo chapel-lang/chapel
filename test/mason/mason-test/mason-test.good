@@ -1,0 +1,7 @@
+Updating mason-registry for registry
+Downloading dependency: _MasonTest1-0.1.0
+Test Passed!
+Test 2 Passed!
+Test with dependency Passed!
+Test with dependency outside module Passed!
+Test with dependency within subdirectory Passed!
