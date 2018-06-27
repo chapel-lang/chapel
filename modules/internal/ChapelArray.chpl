@@ -2801,6 +2801,8 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
+    pragma "unsafe"
+    // TODO - once we can annotate, val argument should outlive 'this'
     proc push_back(in val: this.eltType) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
@@ -2823,6 +2825,8 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
+    pragma "unsafe"
+    // TODO - once we can annotate, vals argument should outlive 'this'
     proc push_back(vals) where isArray(vals) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
@@ -2881,6 +2885,7 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
+    pragma "unsafe"
     proc push_front(in val: this.eltType) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
@@ -2898,6 +2903,7 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
+    pragma "unsafe"
     proc push_front(vals) where isArray(vals) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
