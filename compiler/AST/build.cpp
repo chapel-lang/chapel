@@ -156,6 +156,12 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
   }
 }
 
+DefExpr* buildPragmaDefExpr(Vec<const char*>* pragmas, DefExpr* def) {
+  addPragmaFlags(def->sym, pragmas);
+  delete pragmas;
+  return def;
+}
+
 BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
                            BlockStmt* stmt) {
   bool error = false;

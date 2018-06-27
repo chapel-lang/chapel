@@ -38,6 +38,7 @@ class ModuleSymbol;
 class Type;
 
 BlockStmt* buildPragmaStmt(Vec<const char*>*, BlockStmt*);
+DefExpr* buildPragmaDefExpr(Vec<const char*>*, DefExpr*);
 
 CallExpr* buildOneTuple(Expr* elem);
 CallExpr* buildTuple(CallExpr* call);
