@@ -1086,8 +1086,6 @@ static void codegen_library_header(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile) {
     fileinfo libhdrfile = { NULL, NULL, NULL };
 
-    // Q1: openCFile opens in the generated code directory.  Where should I open
-    // instead?
     // Name the generated header file after the executable (and assume any
     // modifications to it have already happened)
     openCFile(&libhdrfile, libmodeHeadername, "h");
