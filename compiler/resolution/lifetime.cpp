@@ -375,6 +375,11 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
     return true;
   if (fn->hasFlag(FLAG_COMPILER_GENERATED))
     return false;
+  // This pass has trouble following certain compiler-generated
+  // patterns in constructors. Since they're being deprecated anyway,
+  // don't check lifetimes in constructors.
+  if (fn->hasFlag(FLAG_CONSTRUCTOR))
+    return false;
 
   // this is a workaround for problems with init functions
   // where temporaries are used to store results that are
