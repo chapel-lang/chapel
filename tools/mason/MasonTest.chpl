@@ -64,7 +64,7 @@ private proc runTests(show: bool, run: bool) {
 
     // parse lockfile
     const toParse = open(projectHome + "/Mason.lock", iomode.r);
-    const lockFile = new Owned(parseToml(toParse));
+    const lockFile = parseToml(toParse);
 
     // Get project source code and dependencies
     const sourceList = genSourceList(lockFile);
@@ -75,12 +75,13 @@ private proc runTests(show: bool, run: bool) {
     // Make target files if they dont exist from a build
     makeTargetFiles("debug", projectHome);
 
-    // Check for tests to run
-    if lockFile.pathExists("root.tests") {
-      var tests = lockFile["root"]["tests"].toString();
-      const testNames = tests.split(',').strip("[]");
+    // get the test names from lockfile or from test directory
+    const testNames = getTests(lockFile, projectHome);
 
-      for t in testNames {
+    // Check for tests to run
+    if testNames.domain.size > 0 {
+
+      forall t in testNames {
 
         const test = t.strip().strip('"');
         const testPath = "".join(projectHome, '/test/', test);
@@ -132,3 +133,30 @@ private proc getDependencyString(sourceList: [?d] (string, string, string), test
   }
   return compopts;
 }
+
+private proc getTests(lock: Toml, projectHome: string) {
+  var testNames: [1..0] string;
+  const testPath = joinPath(projectHome, "test");
+
+  if lock.pathExists("root.tests") {
+    var tests = lock["root"]["tests"].toString();
+    var strippedTests = tests.split(',').strip('[]');
+    for test in strippedTests {
+      testNames.push_back(test);
+    }
+    return testNames;
+  }
+  else if isDir(testPath) {
+    var tests = findfiles(startdir=testPath, recursive=false, hidden=false);
+    for test in tests {
+      if test.endsWith(".chpl") {
+        testNames.push_back(basename(test));
+      }
+    }
+    return testNames;
+  }
+  return testNames;
+}
+
+
+    
