@@ -1265,7 +1265,19 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
   if( info->cfile ) {
     // Cast to right function type.
     std::string str;
-    str += retType->codegen().c.c_str();
+
+    std::string retString = retType->codegen().c;
+    if (hasFlag(FLAG_EXPORT) &&
+        !retString.compare(0, 5, "_ref_")) {
+      std::string newType = retString.substr(5, std::string::npos);
+      str += newType.c_str();
+    } else if (hasFlag(FLAG_EXPORT) &&
+               !retString.compare(0, 6, "c_ptr_")) {
+      std::string newType = retString.substr(6, std::string::npos);
+      str += newType.c_str();
+    } else {
+      str += retString.c_str();
+    }
     if( forHeader ) {
       str += " ";
       str += cname;
