@@ -1,0 +1,9 @@
+
+[brick]
+name = "sampleModule"
+version = "0.1.0"
+chplVersion = "1.17.0"
+tests = ["sampletest.chpl", "sampletest2.chpl", "dependencytest.chpl", "nomodule.chpl", "testdir/subdirectorytest.chpl"]
+
+[dependencies]
+_MasonTest1 = "0.1.0"

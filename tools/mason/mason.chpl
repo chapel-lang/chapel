@@ -28,6 +28,7 @@ use MasonNew;
 use MasonBuild;
 use MasonUpdate;
 use MasonSearch;
+use MasonTest;
 use MasonRun;
 use FileSystem;
 
@@ -76,6 +77,7 @@ proc main(args: [] string) {
     when 'update' do UpdateLock(args);
     when 'run' do masonRun(args);
     when 'search' do masonSearch(args);
+    when 'test' do masonTest(args);
     when 'env' do masonEnv(args);
     when 'doc' do masonDoc(args);
     when 'clean' do masonClean();
@@ -98,6 +100,7 @@ proc main(args: [] string) {
 proc masonClean() {
   try! {
     const cwd = getEnv("PWD");
+
     const projectHome = getProjectHome(cwd);
     runCommand('rm -rf ' + projectHome + '/target');
   }

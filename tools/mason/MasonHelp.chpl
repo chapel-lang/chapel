@@ -45,6 +45,7 @@ proc masonHelp() {
   writeln('    env         Print environment variables recognized by mason');
   writeln('    clean       Remove the target directory');
   writeln('    doc         Build this project\'s documentation');
+  writeln('    test        Compile and run tests found in /test');
 }
 
 proc masonList() {
@@ -53,6 +54,7 @@ proc masonList() {
   writeln('      update             ');
   writeln('      build              ');
   writeln('      run                ');
+  writeln('      test                ');
   writeln('      search             ');
   writeln('      env                ');
   writeln('      clean              ');
@@ -139,3 +141,19 @@ proc masonEnvHelp() {
   writeln("Environment variables set by the user will be printed with an");
   writeln("asterisk at the end of the line.");
 }
+
+proc masonTestHelp() {
+  writeln("Run test files located within target/debug/test");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason test [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln("        --show                  Increase verbosity");
+  writeln("        --no-run                Compile tests without running them");
+  writeln();
+  writeln("Test configuration is up to the user");
+  writeln("Test output is piped to stdout");
+}
+
