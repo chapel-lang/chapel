@@ -794,7 +794,14 @@ GenRet ArgSymbol::codegenType() {
   Type* useType = getArgSymbolCodegenType(this);
 
   if( outfile ) {
-    ret.c = useType->codegen().c;
+    std::string argType = useType->codegen().c;
+    if (this->defPoint->parentSymbol->hasFlag(FLAG_EXPORT) &&
+        !argType.compare(0, 5, "_ref_")) {
+      std::string newType = argType.substr(5, std::string::npos);
+      ret.c = newType + " *";
+    } else {
+      ret.c = useType->codegen().c;
+    }
   } else {
 #ifdef HAVE_LLVM
     llvm::Type *argType = useType->codegen().type;
