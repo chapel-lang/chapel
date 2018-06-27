@@ -14,3 +14,4 @@ exportFuncWith1Not1Arr.h
 exportFuncWith2Arrays.h
 exportFuncWithExplicitVoidRet.h
 exportFuncWithExternType.h
+exportFuncWithPtr.h
