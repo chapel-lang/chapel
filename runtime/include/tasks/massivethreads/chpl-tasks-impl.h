@@ -17,11 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef _tasks_myth_h_
-#define _tasks_myth_h_
+#ifndef _chpl_tasks_impl_h_
+#define _chpl_tasks_impl_h_
 
 #define CHPL_COMM_YIELD_TASK_WHILE_POLLING
 
+#include "chpl-tasks-prvdata.h"
 #include "chpl-threads.h"
 
 #define MYTH_IS_PTHREAD 0

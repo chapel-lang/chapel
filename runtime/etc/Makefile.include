@@ -71,7 +71,7 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.auxFilesys
 # sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
 include $(CHPL_MAKE_HOME)/runtime/make/Makefile.runtime.include
 
-# RUNTIME_CFLAGS e.g. -DCHPL_TASKS_MODEL_H=... -DCHPL_THREADS_MODEL_H=...
+# RUNTIME_CFLAGS e.g. -DCHPL_DEBUG
 #
 # TODO (bradc): Note that the following results in all of our
 # compiler-specific warning flags getting listed as part of GEN_FLAGS
