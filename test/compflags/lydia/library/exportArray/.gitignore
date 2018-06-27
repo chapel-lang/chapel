@@ -8,3 +8,4 @@ libexportFuncWithPtr.a
 libexportFuncWithRealArr.a
 libreturnExternArray.a
 exportFuncWithArrayArg.h
+exportFuncWithRealArr.h
