@@ -1,10 +1,4 @@
-
-22
-=================
-==============================================================
-==============================================================
-Current Allocated Memory               0
-Maximum Simultaneous Allocated Memory  3gb
-Memory Statistics
-Total Allocated Memory                 3gb
-Total Freed Memory                     3gb
+memStats: Allocated Now:                       0
+memStats: Allocation High Water Mark: 3gb
+memStats: Sum of Allocations:         3gb
+memStats: Sum of Frees:               3gb
