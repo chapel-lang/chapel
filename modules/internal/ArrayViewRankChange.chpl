@@ -131,7 +131,7 @@ module ArrayViewRankChange {
  pragma "use default init"
  class ArrayViewRankChangeDom: BaseRectangularDom {
     // the lower-dimensional index set that we represent upwards
-    var upDom: DefaultRectangularDom(rank, idxType, stridable);
+    var upDom: unmanaged DefaultRectangularDom(rank, idxType, stridable);
     forwarding upDom except these;
 
     // the collapsed dimensions and indices in those dimensions
