@@ -71,47 +71,55 @@ proc buildProgram(release: bool, show: bool, compopts: [?d] string,
 
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd, tomlName);
+    const toParse = open(projectHome + "/" + lockName, iomode.r);
+    var lockFile = new Owned(parseToml(toParse));
+    const projectName = lockFile["root"]["name"].s;
+    
+    // --fast
+    var binLoc = 'debug';
+    if release then
+      binLoc = 'release';
 
-    if isFile(projectHome + "/" + lockName) {
 
-      // --fast
-      var binLoc = 'debug';
-      if release then
-        binLoc = 'release';
+    // build on last modification
+    if projectModified(projectHome, projectName, binLoc) {
 
-      // Make Binary Directory
-      makeTargetFiles(binLoc, projectHome);
+      if isFile(projectHome + "/" + lockName) {
 
-      // Install dependencies into $MASON_HOME/src
-      var toParse = open(projectHome + "/" + lockName, iomode.r);
-      var lockFile = new Owned(parseToml(toParse));
-      checkChplVersion(lockFile);
+        // Make build files and check chapel version
+        makeTargetFiles(binLoc, projectHome);
+        checkChplVersion(lockFile);
 
-      if isDir(MASON_HOME) == false {
-        mkdir(MASON_HOME, parents=true);
+        if isDir(MASON_HOME) == false {
+          mkdir(MASON_HOME, parents=true);
+        }
+
+        // generate list of dependencies and get src code
+        var sourceList = genSourceList(lockFile);
+        getSrcCode(sourceList, show);
+
+        // Checks for compilation options are present in Mason.toml
+        if lockFile.pathExists('root.compopts') {
+          const cmpFlags = lockFile["root"]["compopts"].s;
+          compopts.push_back(cmpFlags);
+        }
+
+        // Compile Program
+        if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
+          writeln("Build Successful\n");
+        }
+        else {
+          writeln("Build Failed");
+          exit(1);
+        }
+        // Close memory
+        toParse.close();
       }
-
-      var sourceList = genSourceList(lockFile);
-      getSrcCode(sourceList, show);
-
-      // Checks if dependencies exist and retrieves them for compilation
-      if lockFile.pathExists('root.compopts') {
-        const cmpFlags = lockFile["root"]["compopts"].s;
-        compopts.push_back(cmpFlags);
-      }
-
-      // Compile Program
-      if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
-        writeln("Build Successful\n");
-      }
-      else {
-        writeln("Build Failed");
-        exit(1);
-      }
-      // Close memory
-      toParse.close();
+      else writeln("Cannot build: no Mason.lock found");
     }
-    else writeln("Cannot build: no Mason.lock found");
+    else {
+      writeln("Build stopped: No changes to project");
+    }
   }
   catch e: MasonError {
     exit(1);  
