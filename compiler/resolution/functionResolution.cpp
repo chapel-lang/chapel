@@ -1956,6 +1956,7 @@ void resolveDestructor(AggregateType* at) {
   FnSymbol* deinitFn = resolveUninsertedCall(at, call, false);
 
   if (deinitFn != NULL) {
+    deinitFn->instantiationPoint = at->symbol->instantiationPoint;
     resolveFunction(deinitFn);
     at->setDestructor(deinitFn);
   }
@@ -8114,9 +8115,15 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 
       FnSymbol* fn = resolveUninsertedCall(at, call);
       INT_ASSERT(fn);
+
+      if (at->hasInitializers()) {
+        fn->instantiationPoint = at->symbol->instantiationPoint;
+      }
+
       resolveFunction(fn);
 
       at->setDestructor(fn);
+
     }
   }
 
