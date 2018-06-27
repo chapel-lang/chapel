@@ -7,3 +7,4 @@ libexportFuncWithExternType.a
 libexportFuncWithPtr.a
 libexportFuncWithRealArr.a
 libreturnExternArray.a
+exportFuncWithArrayArg.h
