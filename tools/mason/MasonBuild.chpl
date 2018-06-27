@@ -30,6 +30,7 @@ use MasonUpdate;
 proc masonBuild(args) {
   var show = false;
   var release = false;
+  var force = false;
   var compopts: [1..0] string;
   if args.size > 2 {
     for arg in args[2..] {
@@ -39,6 +40,9 @@ proc masonBuild(args) {
       }
       else if arg == '--release' {
         release = true;
+      }
+      else if arg == '--force' {
+        force = true;
       }
       else if arg == '--show' {
         show = true;
@@ -51,7 +55,7 @@ proc masonBuild(args) {
   const configNames = UpdateLock(args);
   const tomlName = configNames[1];
   const lockName = configNames[2];
-  buildProgram(release, show, compopts, tomlName, lockName);
+  buildProgram(release, show, force, compopts, tomlName, lockName);
 }
 
 private proc checkChplVersion(lockFile : Toml) {
@@ -64,7 +68,7 @@ private proc checkChplVersion(lockFile : Toml) {
   }
 }
 
-proc buildProgram(release: bool, show: bool, compopts: [?d] string,
+proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
                   tomlName="Mason.toml", lockName="Mason.lock") {
 
   try! {
@@ -82,7 +86,7 @@ proc buildProgram(release: bool, show: bool, compopts: [?d] string,
 
 
     // build on last modification
-    if projectModified(projectHome, projectName, binLoc) {
+    if projectModified(projectHome, projectName, binLoc) || force {
 
       if isFile(projectHome + "/" + lockName) {
 
