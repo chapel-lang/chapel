@@ -799,8 +799,12 @@ GenRet ArgSymbol::codegenType() {
         !argType.compare(0, 5, "_ref_")) {
       std::string newType = argType.substr(5, std::string::npos);
       ret.c = newType + " *";
+    } else if (this->defPoint->parentSymbol->hasFlag(FLAG_EXPORT) &&
+               !argType.compare(0, 6, "c_ptr_")) {
+      std::string newType = argType.substr(6, std::string::npos);
+      ret.c = newType + " *";
     } else {
-      ret.c = useType->codegen().c;
+      ret.c = argType;
     }
   } else {
 #ifdef HAVE_LLVM
