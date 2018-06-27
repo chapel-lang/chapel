@@ -5,7 +5,7 @@ use BasicDataStructures;
 proc main {
   
       
-  const mD = new MultiDomain( 2, false );
+  const mD = new unmanaged MultiDomain( 2, false );
   
   mD.add( {1..10,1..10} );
   
@@ -59,14 +59,14 @@ class MultiDomain
   param rank:      int;
   param stridable: bool;
       
-  var root: MDNode(rank,stridable);
+  var root: unmanaged MDNode(rank,stridable);
 
 
   proc init (param rank=0, param stridable=false)
   {
     this.rank = rank;
     this.stridable = stridable;
-    root = new MDNode( rank, stridable );
+    root = new unmanaged MDNode( rank, stridable );
   }
 
 
@@ -75,7 +75,7 @@ class MultiDomain
 
   proc copy ()
   {
-    const new_mD = new MultiDomain(rank,stridable);
+    const new_mD = new unmanaged MultiDomain(rank,stridable);
     root.copy(new_mD.root);  // the initializer has already allocated 'root', so pass it in for re-use
     return new_mD;
   }
@@ -139,8 +139,8 @@ class MultiDomain
   iter these ()
   {
     
-    const q = new Queue( MDNode(rank,stridable) );
-    var node: MDNode(rank,stridable);
+    const q = new unmanaged Queue( unmanaged MDNode(rank,stridable) );
+    var node: unmanaged MDNode(rank,stridable);
 
     q.enqueue( root );
     
@@ -161,11 +161,11 @@ class MultiDomain
   
   
   
-  iter nodes () : MDNode(rank,stridable)
+  iter nodes () : unmanaged MDNode(rank,stridable)
   {
     
-    const q = new Queue( MDNode(rank,stridable) );
-    var node: MDNode(rank,stridable);
+    const q = new unmanaged Queue( unmanaged MDNode(rank,stridable) );
+    var node: unmanaged MDNode(rank,stridable);
   
     if root then q.enqueue( root );
     
@@ -229,7 +229,7 @@ class MDNode
   var bisect_dim: int = -1;  // Indicates temporary, unfilled status
   var right_low:  int = 0;
 
-  var left, right:  MDNode(rank,stridable);
+  var left, right:  unmanaged MDNode(rank,stridable);
 
 
 
@@ -243,10 +243,10 @@ class MDNode
   }
 
 
-  proc copy (in new_node: MDNode(rank, stridable) = nil) : MDNode(rank,stridable)
+  proc copy (in new_node: unmanaged MDNode(rank, stridable) = nil) : unmanaged MDNode(rank,stridable)
   {
     if new_node == nil then
-      new_node = new MDNode(rank, stridable);
+      new_node = new unmanaged MDNode(rank, stridable);
 
     new_node.Domain     = Domain;
     new_node.bisect_dim = bisect_dim;
@@ -583,8 +583,8 @@ class MDNode
     
     var child_domain: domain(rank, stridable=stridable) = subranges;
     
-    if filled then left = new MDNode( rank, stridable, child_domain, 0 );
-    else           left = new MDNode( rank, stridable, child_domain, -1 );
+    if filled then left = new unmanaged MDNode( rank, stridable, child_domain, 0 );
+    else           left = new unmanaged MDNode( rank, stridable, child_domain, -1 );
     
   }
 
@@ -602,8 +602,8 @@ class MDNode
     
     var child_domain: domain(rank, stridable=stridable) = subranges;
     
-    if filled then right = new MDNode( rank, stridable, child_domain, 0 );
-    else           right = new MDNode( rank, stridable, child_domain, -1 );
+    if filled then right = new unmanaged MDNode( rank, stridable, child_domain, 0 );
+    else           right = new unmanaged MDNode( rank, stridable, child_domain, -1 );
   }
 
 
@@ -631,13 +631,13 @@ class MDNode
 // to the new root of the structure.
 //---------------------------------------------------------------
 
-proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : MDNode(rank,stridable)
+proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged MDNode(rank,stridable)
 {
   
   // writeln("Beginning MDNode.extendToContain on node with ", Domain, " ", left!=nil, " ", filled);
   // writeln("  Input domain is ", D);
   
-  var new_root: MDNode(rank,stridable);
+  var new_root: unmanaged MDNode(rank,stridable);
   
   
   //===> Select the shortest dimension to extend ===>
@@ -664,7 +664,7 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : MDNode(rank
   
   //---- If ext_d==0, that means D is contained in this.Domain, and this is the new root ----
   
-  if ext_d == 0 then new_root = this;
+  if ext_d == 0 then new_root = _to_unmanaged(this);
   
   
   //---- Otherwise, we split along dimension ext_d ----
@@ -676,7 +676,7 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : MDNode(rank
     var s = Domain.stride(ext_d);
     var ext_index: int;
     
-    var parent:  MDNode(rank,stridable);
+    var parent:  unmanaged MDNode(rank,stridable);
     // var sibling: MDNode(rank,stridable);
     
     var subranges: rank*range(stridable=stridable);
@@ -704,12 +704,12 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : MDNode(rank
       
       subranges(ext_d) = D.low(ext_d) .. Domain.high(ext_d) by s;
       D_temp           = subranges;
-      parent            = new MDNode( rank, stridable, D_temp );
+      parent            = new unmanaged MDNode( rank, stridable, D_temp );
       parent.bisect_dim = ext_d;
       parent.right_low  = ext_index;
       
       // parent.left  = sibling;
-      parent.right = this;
+      parent.right = _to_unmanaged(this);
        
     }
     
@@ -727,11 +727,11 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : MDNode(rank
       
       subranges(ext_d)  = Domain.low(ext_d) .. D.high(ext_d) by s;
       D_temp            = subranges;
-      parent            = new MDNode( rank, stridable, D_temp );
+      parent            = new unmanaged MDNode( rank, stridable, D_temp );
       parent.bisect_dim = ext_d;
       parent.right_low  = ext_index;
       
-      parent.left  = this;
+      parent.left  = _to_unmanaged(this);
       // parent.right = sibling;
     }
     
@@ -772,7 +772,7 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : MDNode(rank
 // the data of the argument, and then the argument is deleted.
 //-------------------------------------------------------------
 
-proc MDNode.merge( node: MDNode )
+proc MDNode.merge( node: unmanaged MDNode )
 {
   
   this.Domain     = node.Domain;

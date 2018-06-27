@@ -18,7 +18,7 @@ use LevelBC_def;
 //-----------------------------------------------------------
 
 proc LevelSolution.advance_AdvectionCTU(
-  bc:             LevelBC,
+  bc:             unmanaged LevelBC,
   velocity:       dimension*real,
   time_requested: real)
 {

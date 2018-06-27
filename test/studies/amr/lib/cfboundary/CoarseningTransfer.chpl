@@ -20,7 +20,7 @@ class GridInvalidRegion {
   //| >    fields    | >
   //|/...............|/
   
-  const fine_neighbors: domain(Grid);
+  const fine_neighbors: domain(unmanaged Grid);
   const domains:        [fine_neighbors] domain(dimension,stridable=true);
   
   // /|'''''''''''''''/|
@@ -34,9 +34,9 @@ class GridInvalidRegion {
   //|/....................|/
   
   proc init (
-    grid:         Grid,
-    parent_level: Level,
-    fine_level:   Level )
+    grid:         unmanaged Grid,
+    parent_level: unmanaged Level,
+    fine_level:   unmanaged Level )
   {
     this.complete();
     //==== Calculate refinement ratio ====
@@ -104,10 +104,10 @@ class LevelInvalidRegion {
   //| >    fields    | >
   //|/...............|/
   
-  const level:      Level;
-  const fine_level: Level;
+  const level:      unmanaged Level;
+  const fine_level: unmanaged Level;
   
-  var grid_invalid_regions: [level.grids] GridInvalidRegion;
+  var grid_invalid_regions: [level.grids] unmanaged GridInvalidRegion;
 
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -129,7 +129,7 @@ class LevelInvalidRegion {
   proc initialize ()
   {
     for grid in level.grids do
-      grid_invalid_regions(grid) = new GridInvalidRegion(grid, level, fine_level);
+      grid_invalid_regions(grid) = new unmanaged GridInvalidRegion(grid, level, fine_level);
   }
   // /|'''''''''''''''''''''''''''''''''''/|
   //< |    special method: initialize    < |
@@ -155,7 +155,7 @@ class LevelInvalidRegion {
   //| >    special method: this    | >
   //|/.............................|/
   
-  proc this (grid: Grid) 
+  proc this (grid: unmanaged Grid) 
   {
     return grid_invalid_regions(grid);
   }
@@ -184,8 +184,8 @@ class LevelInvalidRegion {
 //----------------------------------------------------------------------
 
 proc LevelSolution.correctInvalidRegion (
-  level_invalid_region: LevelInvalidRegion,
-  fine_level_solution:  LevelSolution )
+  level_invalid_region: unmanaged LevelInvalidRegion,
+  fine_level_solution:  unmanaged LevelSolution )
 {
   //==== Safety checks ====
   assert(this.level == level_invalid_region.level);
@@ -214,8 +214,8 @@ proc LevelSolution.correctInvalidRegion (
 //------------------------------------------------------------
 
 proc LevelVariable.fillInvalidRegion (
-  level_invalid_region: LevelInvalidRegion,
-  fine_level_variable:  LevelVariable )
+  level_invalid_region: unmanaged LevelInvalidRegion,
+  fine_level_variable:  unmanaged LevelVariable )
 {
 
   //---- Safety check ----

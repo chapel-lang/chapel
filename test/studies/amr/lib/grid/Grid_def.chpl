@@ -44,7 +44,7 @@ class Grid {
   const extended_cells: domain(dimension, stridable=true);
   
   // const ghost_domains: MultiDomain(dimension, stridable=true);
-  const ghost_domains: List( domain(dimension, stridable=true) );
+  const ghost_domains: unmanaged List( domain(dimension, stridable=true) );
 
 
 
@@ -99,7 +99,7 @@ class Grid {
     // the grid and stored in a linked list.
     //-------------------------------------------------------------
 
-    ghost_domains = new List( domain(dimension,stridable=true) );
+    ghost_domains = new unmanaged List( domain(dimension,stridable=true) );
     this.complete();
 
     //==== Sanity check ====
@@ -311,7 +311,7 @@ proc readGrid(file_name: string) {
   var i_low: dimension*int;
 
 
-  return new Grid(x_low, x_high, i_low, n_cells, n_ghost_cells);
+  return new unmanaged Grid(x_low, x_high, i_low, n_cells, n_ghost_cells);
 
 }
 // /|"""""""""""""""""""""""""/|

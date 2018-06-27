@@ -32,7 +32,7 @@ proc main {
     return f;
   }
 
-  var solution = new LevelSolution(level = level);
+  var solution = new unmanaged LevelSolution(level = level);
   solution.setToFunction(initial_condition, output_times(0));
   write("done.\n");
   //<=== Initialize  solution <===
@@ -54,7 +54,7 @@ proc main {
 
   //==== Set boundary conditions ====
   write("Setting boundary conditions...");
-  var bc = new ZeroInflowBC(level = level);
+  var bc = new unmanaged ZeroInflowBC(level = level);
   write("done.\n");
 
 
