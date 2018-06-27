@@ -98,6 +98,10 @@ ifneq (, $(findstring pgi,$(CHPL_MAKE_TARGET_COMPILER)))
 CHPL_QTHREAD_CFG_OPTIONS += --disable-internal-spinlock
 endif
 
+ifeq ($(CHPL_LIBMODE),shared)
+CFLAGS += $(SHARED_LIB_CFLAGS)
+endif
+
 CHPL_QTHREAD_CFG_OPTIONS += $(CHPL_QTHREAD_MORE_CFG_OPTIONS)
 
 default: all
