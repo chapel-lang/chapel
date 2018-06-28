@@ -199,6 +199,19 @@ static const char* toImmediateString(Expr* expr) {
 }
 
 
+//
+// This is a simple utility function that converts new-style
+// PRIM_ZIP() expressions to old-style _build_tuple() expressions for
+// code that is not ready for the new style yet.
+//
+static void zipToTuple(Expr* zipPrim) {
+  CallExpr* zipExpr = toCallExpr(zipPrim);
+  assert(zipExpr->isPrimitive(PRIM_ZIP));
+  zipExpr->primitive = NULL;
+  zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
+}
+
+
 CallExpr* buildOneTuple(Expr* elem) {
   return new CallExpr("_build_tuple", elem);
 }
@@ -870,6 +883,7 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
     INT_ASSERT(!cond);
     block = handleArrayTypeCase(fn, indices, iteratorExprArg, expr);
   }
+  if (zippered) zipToTuple(iteratorExpr);
 
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
@@ -974,21 +988,9 @@ static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn, const char* iteratorName,
 }
 
 
-//
-// This is a simple utility function that converts new-style
-// PRIM_ZIP() expressions to old-style _build_tuple() expressions for
-// code that is not ready for the new style yet.
-//
-CallExpr* zipToTuple(CallExpr* zipExpr) {
-  assert(zipExpr->isPrimitive(PRIM_ZIP));
-  zipExpr->primitive = NULL;
-  zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
-  return zipExpr;
-}
-
-
 ForallExpr*
 buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
+  if (zippered) zipToTuple(iteratorExpr);
   return new ForallExpr(indices, iteratorExpr, expr, cond, maybeArrayType, zippered);
 }
 
@@ -1609,6 +1611,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   if (!indices)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndices(indices);
+  if (zippered) zipToTuple(iterator);
 
   SET_LINENO(body);
 
@@ -2025,6 +2028,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   ArgSymbol* data = new ArgSymbol(INTENT_BLANK, "chpl_toReduce", dtAny);
   fn->insertFormalAtTail(data);
 
+  if (zippered) zipToTuple(dataExpr);
   VarSymbol* eltType = newTemp("chpl_eltType");
   buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
 
@@ -2128,6 +2132,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   ArgSymbol* data = new ArgSymbol(INTENT_BLANK, "chpl_toScan", dtAny);
   fn->insertFormalAtTail(data);
 
+  if (zippered) zipToTuple(dataExpr);
   VarSymbol* eltType = newTemp("chpl_eltType");
   VarSymbol* globalOp = newTempConst();
 

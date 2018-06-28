@@ -42,5 +42,6 @@ typedef struct chpl__inPlaceBuffer_t {
 } chpl__inPlaceBuffer;
 
 uint8_t* chpl__getInPlaceBufferData(chpl__inPlaceBuffer* buf);
+uint8_t* chpl__getInPlaceBufferDataForWrite(chpl__inPlaceBuffer* buf);
 
 #endif
