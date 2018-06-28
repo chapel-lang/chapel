@@ -28,6 +28,7 @@
 #include "chpl-comm-impl.h"
 #include "chpl-comm-heap-macros.h"
 #include "chpl-tasks.h"
+#include "chpl-atomics.h"
 #include "chpl-comm-task-decls.h"
 #include "chpl-comm-locales.h"
 #include "chpl-mem-desc.h"
@@ -495,6 +496,9 @@ void chpl_comm_make_progress(void);
 //
 // Comm diagnostics stuff
 //
+// We have a struct of non-atomic counters to simplify interfacing with module
+// code, and a struct of atomic counters for use in communication layers
+//
 typedef struct _chpl_commDiagnostics {
   uint64_t get;
   uint64_t get_nb;
@@ -507,6 +511,67 @@ typedef struct _chpl_commDiagnostics {
   uint64_t execute_on_fast;
   uint64_t execute_on_nb;
 } chpl_commDiagnostics;
+
+typedef struct _chpl_atomic_commDiagnostics {
+  atomic_uint_least64_t get;
+  atomic_uint_least64_t get_nb;
+  atomic_uint_least64_t put;
+  atomic_uint_least64_t put_nb;
+  atomic_uint_least64_t test_nb;
+  atomic_uint_least64_t wait_nb;
+  atomic_uint_least64_t try_nb;
+  atomic_uint_least64_t execute_on;
+  atomic_uint_least64_t execute_on_fast;
+  atomic_uint_least64_t execute_on_nb;
+} chpl_atomic_commDiagnostics;
+
+static inline
+void chpl_comm_diags_incr(atomic_uint_least64_t* op) {
+  (void) atomic_fetch_add_uint_least64_t(op, 1);
+}
+
+static inline
+void chpl_comm_diags_init(chpl_atomic_commDiagnostics* acd) {
+  atomic_init_uint_least64_t(&acd->get, 0);
+  atomic_init_uint_least64_t(&acd->get_nb, 0);
+  atomic_init_uint_least64_t(&acd->put, 0);
+  atomic_init_uint_least64_t(&acd->put_nb, 0);
+  atomic_init_uint_least64_t(&acd->test_nb, 0);
+  atomic_init_uint_least64_t(&acd->wait_nb, 0);
+  atomic_init_uint_least64_t(&acd->try_nb, 0);
+  atomic_init_uint_least64_t(&acd->execute_on, 0);
+  atomic_init_uint_least64_t(&acd->execute_on_fast, 0);
+  atomic_init_uint_least64_t(&acd->execute_on_nb, 0);
+}
+
+static inline
+void chpl_comm_diags_reset(chpl_atomic_commDiagnostics* acd) {
+  atomic_store_uint_least64_t(&acd->get, 0);
+  atomic_store_uint_least64_t(&acd->get_nb, 0);
+  atomic_store_uint_least64_t(&acd->put, 0);
+  atomic_store_uint_least64_t(&acd->put_nb, 0);
+  atomic_store_uint_least64_t(&acd->test_nb, 0);
+  atomic_store_uint_least64_t(&acd->wait_nb, 0);
+  atomic_store_uint_least64_t(&acd->try_nb, 0);
+  atomic_store_uint_least64_t(&acd->execute_on, 0);
+  atomic_store_uint_least64_t(&acd->execute_on_fast, 0);
+  atomic_store_uint_least64_t(&acd->execute_on_nb, 0);
+}
+
+static inline
+void chpl_comm_diags_copy(chpl_commDiagnostics* cd,
+                          chpl_atomic_commDiagnostics* acd) {
+  cd->get             = atomic_load_uint_least64_t(&acd->get);
+  cd->get_nb          = atomic_load_uint_least64_t(&acd->get_nb);
+  cd->put             = atomic_load_uint_least64_t(&acd->put);
+  cd->put_nb          = atomic_load_uint_least64_t(&acd->put_nb);
+  cd->test_nb         = atomic_load_uint_least64_t(&acd->test_nb);
+  cd->wait_nb         = atomic_load_uint_least64_t(&acd->wait_nb);
+  cd->try_nb          = atomic_load_uint_least64_t(&acd->try_nb);
+  cd->execute_on      = atomic_load_uint_least64_t(&acd->execute_on);
+  cd->execute_on_fast = atomic_load_uint_least64_t(&acd->execute_on_fast);
+  cd->execute_on_nb   = atomic_load_uint_least64_t(&acd->execute_on_nb);
+}
 
 void chpl_startVerboseComm(void);
 void chpl_stopVerboseComm(void);

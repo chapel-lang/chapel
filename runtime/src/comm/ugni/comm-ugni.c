@@ -1377,30 +1377,7 @@ static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
 
 
-//
-// Comm diagnostic information.  The local_commDiagnostics_t type must
-// be kept in sync with the public chpl_commDiagnostics type defined
-// in chpl-comm.h.  We need our own diagnostic counter type because we
-// want to use atomic operations, and doing so requires specific types
-// for the individual counters.  Strictly speaking it is not necessary
-// that we put the individual counters in a struct type, but it seems
-// best to maintain similarity with how things are done elsewhere.
-//
-typedef struct {
-  atomic_uint_least64_t get;
-  atomic_uint_least64_t get_nb;
-  atomic_uint_least64_t put;
-  atomic_uint_least64_t put_nb;
-  atomic_uint_least64_t test_nb;
-  atomic_uint_least64_t wait_nb;
-  atomic_uint_least64_t try_nb;
-  atomic_uint_least64_t execute_on;
-  atomic_uint_least64_t execute_on_fast;
-  atomic_uint_least64_t execute_on_nb;
-} local_commDiagnostics_t;
-
-static local_commDiagnostics_t comm_diagnostics;
-
+static chpl_atomic_commDiagnostics comm_diagnostics;
 static chpl_bool comm_diags_disabled_temporarily = false;
 
 
@@ -2824,16 +2801,8 @@ void set_up_for_polling(void)
 
 void chpl_comm_rollcall(void)
 {
-  atomic_init_uint_least64_t(&comm_diagnostics.get, 0);
-  atomic_init_uint_least64_t(&comm_diagnostics.get_nb, 0);
-  atomic_init_uint_least64_t(&comm_diagnostics.put, 0);
-  atomic_init_uint_least64_t(&comm_diagnostics.put_nb, 0);
-  atomic_init_uint_least64_t(&comm_diagnostics.test_nb, 0);
-  atomic_init_uint_least64_t(&comm_diagnostics.wait_nb, 0);
-  atomic_init_uint_least64_t(&comm_diagnostics.try_nb, 0);
-  atomic_init_uint_least64_t(&comm_diagnostics.execute_on, 0);
-  atomic_init_uint_least64_t(&comm_diagnostics.execute_on_fast, 0);
-  atomic_init_uint_least64_t(&comm_diagnostics.execute_on_nb, 0);
+  // Initialize diags
+  chpl_comm_diags_init(&comm_diagnostics);
 
   chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID,
            chpl_numNodes, chpl_nodeName());
@@ -4933,7 +4902,7 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
     printf("%d: %s:%d: remote put to %d\n", chpl_nodeID,
            chpl_lookupFilename(fn), ln, locale);
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    (void) atomic_fetch_add_uint_least64_t(&comm_diagnostics.put, 1);
+    chpl_comm_diags_incr(&comm_diagnostics.put);
 
   do_remote_put(addr, locale, raddr, size, NULL, may_proxy_true);
 }
@@ -5217,7 +5186,7 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
     printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
            chpl_lookupFilename(fn), ln, locale);
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    (void) atomic_fetch_add_uint_least64_t(&comm_diagnostics.get, 1);
+    chpl_comm_diags_incr(&comm_diagnostics.get);
 
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
 }
@@ -5877,7 +5846,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
     printf("%d: %s:%d: remote non-blocking get from %d\n",
            chpl_nodeID, chpl_lookupFilename(fn), ln, locale);
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    (void) atomic_fetch_add_uint_least64_t(&comm_diagnostics.get_nb, 1);
+    chpl_comm_diags_incr(&comm_diagnostics.get_nb);
 
   //
   // For now, if the local address isn't in a memory region known to the
@@ -5995,7 +5964,7 @@ int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
     printf("%d: test nb complete (%d, %d)\n", chpl_nodeID, i, j);
   }
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    (void) atomic_fetch_add_uint_least64_t(&comm_diagnostics.test_nb, 1);
+    chpl_comm_diags_incr(&comm_diagnostics.test_nb);
 
   PERFSTATS_INC(test_nb_cnt);
 
@@ -6015,7 +5984,7 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
       printf("%d: wait nb (%zd handles)\n", chpl_nodeID, nhandles);
   }
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    (void) atomic_fetch_add_uint_least64_t(&comm_diagnostics.wait_nb, 1);
+    chpl_comm_diags_incr(&comm_diagnostics.wait_nb);
 
   PERFSTATS_INC(wait_nb_cnt);
 
@@ -6066,7 +6035,7 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
       printf("%d: try nb (%zd handles)\n", chpl_nodeID, nhandles);
   }
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    (void) atomic_fetch_add_uint_least64_t(&comm_diagnostics.try_nb, 1);
+    chpl_comm_diags_incr(&comm_diagnostics.try_nb);
 
   PERFSTATS_INC(try_nb_cnt);
 
@@ -6911,7 +6880,7 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
   if (chpl_verbose_comm && !comm_diags_disabled_temporarily)
     printf("%d: remote task created on %d\n", chpl_nodeID, locale);
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    (void) atomic_fetch_add_uint_least64_t(&comm_diagnostics.execute_on, 1);
+    chpl_comm_diags_incr(&comm_diagnostics.execute_on);
 
   PERFSTATS_INC(fork_call_cnt);
   fork_call_common(locale, subloc, fid, arg, arg_size, false, true);
@@ -6940,7 +6909,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
     printf("%d: remote non-blocking task created on %d\n", chpl_nodeID,
            locale);
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    (void) atomic_fetch_add_uint_least64_t(&comm_diagnostics.execute_on_nb, 1);
+    chpl_comm_diags_incr(&comm_diagnostics.execute_on_nb);
 
   PERFSTATS_INC(fork_call_nb_cnt);
   fork_call_common(locale, subloc, fid, arg, arg_size, false, false);
@@ -6969,7 +6938,7 @@ void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
     printf("%d: remote (no-fork) task created on %d\n",
            chpl_nodeID, locale);
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    (void) atomic_fetch_add_uint_least64_t(&comm_diagnostics.execute_on_fast, 1);
+    chpl_comm_diags_incr(&comm_diagnostics.execute_on_fast);
 
   //
   // Note: the rf_handler() logic assumes that fast implies blocking.
@@ -7889,16 +7858,7 @@ void chpl_stopCommDiagnosticsHere()
 
 void chpl_resetCommDiagnosticsHere()
 {
-  atomic_store_uint_least64_t(&comm_diagnostics.get, 0);
-  atomic_store_uint_least64_t(&comm_diagnostics.get_nb, 0);
-  atomic_store_uint_least64_t(&comm_diagnostics.put, 0);
-  atomic_store_uint_least64_t(&comm_diagnostics.put_nb, 0);
-  atomic_store_uint_least64_t(&comm_diagnostics.test_nb, 0);
-  atomic_store_uint_least64_t(&comm_diagnostics.wait_nb, 0);
-  atomic_store_uint_least64_t(&comm_diagnostics.try_nb, 0);
-  atomic_store_uint_least64_t(&comm_diagnostics.execute_on, 0);
-  atomic_store_uint_least64_t(&comm_diagnostics.execute_on_fast, 0);
-  atomic_store_uint_least64_t(&comm_diagnostics.execute_on_nb, 0);
+  chpl_comm_diags_reset(&comm_diagnostics);
 
 #define _PSZM(psv) PERFSTATS_STZ(psv);
   PERFSTATS_DO_ALL(_PSZM);
@@ -7908,16 +7868,7 @@ void chpl_resetCommDiagnosticsHere()
 
 void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd)
 {
-  cd->get             = atomic_load_uint_least64_t(&comm_diagnostics.get);
-  cd->get_nb          = atomic_load_uint_least64_t(&comm_diagnostics.get_nb);
-  cd->put             = atomic_load_uint_least64_t(&comm_diagnostics.put);
-  cd->put_nb          = atomic_load_uint_least64_t(&comm_diagnostics.put_nb);
-  cd->test_nb         = atomic_load_uint_least64_t(&comm_diagnostics.test_nb);
-  cd->wait_nb         = atomic_load_uint_least64_t(&comm_diagnostics.wait_nb);
-  cd->try_nb          = atomic_load_uint_least64_t(&comm_diagnostics.try_nb);
-  cd->execute_on      = atomic_load_uint_least64_t(&comm_diagnostics.execute_on);
-  cd->execute_on_fast = atomic_load_uint_least64_t(&comm_diagnostics.execute_on_fast);
-  cd->execute_on_nb   = atomic_load_uint_least64_t(&comm_diagnostics.execute_on_nb);
+  chpl_comm_diags_copy(cd, &comm_diagnostics);
 }
 
 void chpl_comm_ugni_help_register_global_var(int i, wide_ptr_t wide)
