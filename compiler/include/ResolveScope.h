@@ -31,6 +31,7 @@ class CallExpr;
 class DefExpr;
 class Expr;
 class FnSymbol;
+class LoopExpr;
 class ForallStmt;
 class ModuleSymbol;
 class Symbol;
@@ -64,6 +65,9 @@ public:
                                      const ResolveScope* parent);
 
                         ResolveScope(BlockStmt*          blockStmt,
+                                     const ResolveScope* parent);
+
+                        ResolveScope(LoopExpr*         forallExpr,
                                      const ResolveScope* parent);
 
   std::string           name()                                           const;
