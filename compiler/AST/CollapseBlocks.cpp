@@ -352,6 +352,16 @@ void CollapseBlocks::visitUsymExpr(UnresolvedSymExpr* node)
 
 }
 
+bool CollapseBlocks::enterLoopExpr(LoopExpr* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitLoopExpr(LoopExpr* node)
+{
+
+}
+
 void CollapseBlocks::visitUseStmt(UseStmt* node)
 {
 

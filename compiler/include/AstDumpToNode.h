@@ -118,6 +118,9 @@ public:
 
   virtual void     visitUsymExpr       (UnresolvedSymExpr* node);
 
+  virtual bool     enterLoopExpr  (LoopExpr*        node);
+  virtual void     exitLoopExpr   (LoopExpr*        node);
+
   virtual void     visitUseStmt        (UseStmt*           node);
 
   virtual bool     enterBlockStmt      (BlockStmt*         node);

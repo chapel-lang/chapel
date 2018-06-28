@@ -1103,6 +1103,18 @@ void AstDumpToNode::visitUsymExpr(UnresolvedSymExpr* node)
 }
 
 
+//
+//
+//
+
+bool AstDumpToNode::enterLoopExpr(LoopExpr* node) {
+  return false;
+}
+
+void AstDumpToNode::exitLoopExpr(LoopExpr* node) {
+}
+
+
 void AstDumpToNode::visitUseStmt(UseStmt* node)
 {
   enterNode(node);

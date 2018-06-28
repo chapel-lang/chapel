@@ -33,6 +33,7 @@
 #include "IfExpr.h"
 #include "iterator.h"
 #include "log.h"
+#include "LoopExpr.h"
 #include "UnmanagedClassType.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"
@@ -98,7 +99,7 @@ block_explanation(BaseAST* ast, BaseAST* parentAst) {
 
 static const char*
 forall_explanation_start(BaseAST* ast, BaseAST* parentAst) {
-  if (ForallExpr* fe = toForallExpr(parentAst)) {
+  if (LoopExpr* fe = toLoopExpr(parentAst)) {
     if (ast == fe->iteratorExpr)
       return ") in( ";
     if (ast == fe->expr)
@@ -190,7 +191,7 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
         printf("%s( ", e->primitive->name);
       else
         printf("call( ");
-    } else if (ForallExpr* e = toForallExpr(expr)) {
+    } else if (LoopExpr* e = toLoopExpr(expr)) {
       if (e->zippered) printf("zip ");
       printf("forall( ");
     } else if (NamedExpr* e = toNamedExpr(expr)) {
@@ -249,7 +250,7 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
         print_indent(indent);
         printf("        end forall %d", parentAst->id);
       }
-    } else if (ForallExpr* e = toForallExpr(expr)) {
+    } else if (LoopExpr* e = toLoopExpr(expr)) {
       if (e->cond) printf(") ");
       else         printf("} ");
     } else if (UseStmt* use = toUseStmt(expr)) {

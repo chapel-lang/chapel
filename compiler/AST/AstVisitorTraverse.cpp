@@ -183,6 +183,16 @@ void AstVisitorTraverse::visitUseStmt(UseStmt* node)
 
 }
 
+bool AstVisitorTraverse::enterLoopExpr(LoopExpr* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitLoopExpr(LoopExpr* node)
+{
+
+}
+
 bool AstVisitorTraverse::enterBlockStmt(BlockStmt* node)
 {
   return true;

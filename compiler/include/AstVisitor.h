@@ -40,6 +40,7 @@ class NamedExpr;
 class IfExpr;
 class SymExpr;
 class UnresolvedSymExpr;
+class LoopExpr;
 
 class UseStmt;
 class BlockStmt;
@@ -129,6 +130,9 @@ public:
   virtual void   visitSymExpr        (SymExpr*           node) = 0;
 
   virtual void   visitUsymExpr       (UnresolvedSymExpr* node) = 0;
+
+  virtual bool   enterLoopExpr     (LoopExpr*        node) = 0;
+  virtual void   exitLoopExpr      (LoopExpr*        node) = 0;
 
   //
   // The sub-classes of Stmt

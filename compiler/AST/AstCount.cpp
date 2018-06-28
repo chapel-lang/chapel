@@ -181,6 +181,14 @@ void AstCount::visitUsymExpr(UnresolvedSymExpr* node) {
   numUnresolvedSymExpr++;
 }
 
+bool AstCount::enterLoopExpr(LoopExpr* node) {
+  numLoopExpr++;
+  return true;
+}
+
+void AstCount::exitLoopExpr(LoopExpr* node) {
+}
+
 void AstCount::visitUseStmt(UseStmt* node) {
   numUseStmt++;
 }
