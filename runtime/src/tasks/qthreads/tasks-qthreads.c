@@ -125,7 +125,7 @@ static void profile_print(void)
 // effect of its (very portable) memory fence.
 //
 volatile int chpl_qthread_done_initializing;
-static syncvar_t canexit = SYNCVAR_STATIC_EMPTY_INITIALIZER;
+static aligned_t canexit = 0;
 static volatile int done_finalizing;
 static pthread_mutex_t done_init_final_mux = PTHREAD_MUTEX_INITIALIZER;
 
@@ -319,11 +319,12 @@ static void SIGINT_handler(int sig)
 static void *initializer(void *junk)
 {
     qthread_initialize();
+    qthread_purge(&canexit);
     (void) pthread_mutex_lock(&done_init_final_mux);  // implicit memory fence
     chpl_qthread_done_initializing = 1;
     (void) pthread_mutex_unlock(&done_init_final_mux);
 
-    qthread_syncvar_readFF(NULL, &canexit);
+    qthread_readFF(NULL, &canexit);
 
     qthread_finalize();
     (void) pthread_mutex_lock(&done_init_final_mux);  // implicit memory fence
@@ -674,7 +675,7 @@ void chpl_task_exit(void)
         /* sometimes, tasking is told to shutdown even though it hasn't been
          * told to start yet */
         if (chpl_qthread_done_initializing == 1) {
-            qthread_syncvar_fill(&canexit);
+            qthread_fill(&canexit);
             while (done_finalizing == 0)
                 sched_yield();
         }
