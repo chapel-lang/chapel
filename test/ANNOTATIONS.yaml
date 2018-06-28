@@ -507,19 +507,15 @@ ep-b:
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
 
-ep.ml-perf:
+ep.ml-perf: &ep-ml-base
   07/26/17:
     - Update PR 5296 (#6722)
   05/23/18:
     - Fix problems with tuples (#9572)
   06/26/18:
     - Make associative domains of enums more standard (#9978)
-
 ep.ml-time:
-  07/26/17:
-    - Update PR 5296 (#6722)
-  06/26/18:
-    - Make associative domains of enums more standard (#9978)
+  <<: *ep-ml-base
 
 fannkuch-redux:
   07/22/14:
