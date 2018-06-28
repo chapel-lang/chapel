@@ -5,11 +5,11 @@ class C {
   var a,b : int;
 }
 
-var l : sync C = new C(1,2);
-var m : C = l; //compiles without any error
+var l : sync unmanaged C = new unmanaged C(1,2);
+var m : unmanaged C = l; //compiles without any error
 
-var n : [1..5] sync C;
-n[1] = new C(3,4);
+var n : [1..5] sync unmanaged C;
+n[1] = new unmanaged C(3,4);
 var o : C = n[1];
 writeln(o);
 
