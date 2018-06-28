@@ -139,14 +139,16 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
     return getNewSubType(fn, key, actualTS->getValType()->symbol);
   } else {
     if (isManagedPtrType(actualTS->getValType()))
-      if (ArgSymbol* arg = toArgSymbol(key))
-	if ((arg->intent == INTENT_IN ||
-	     arg->intent == INTENT_CONST ||
-	     arg->intent == INTENT_CONST_IN ||
-	     arg->intent == INTENT_CONST_REF ||
-	     arg->intent == INTENT_BLANK) &&
-	    arg->getValType() == dtAny)
-          return getManagedPtrBorrowType(actualTS->getValType())->symbol;
+      if (!fn->hasFlag(FLAG_INIT_COPY_FN) && !fn->hasFlag(FLAG_AUTO_COPY_FN))
+        if (ArgSymbol* arg = toArgSymbol(key))
+          if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
+            if (arg->intent == INTENT_IN ||
+                arg->intent == INTENT_CONST ||
+                arg->intent == INTENT_CONST_IN ||
+                arg->intent == INTENT_CONST_REF ||
+                arg->intent == INTENT_BLANK)
+              if (arg->getValType() == dtAny)
+                return getManagedPtrBorrowType(actualTS->getValType())->symbol;
 
     return actualTS;
   }
