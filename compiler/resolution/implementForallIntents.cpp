@@ -886,13 +886,10 @@ void stashPristineCopyOfLeaderIter(FnSymbol* origLeader,
 }
 
 //
-// When PRIM_TO_LEADER resolves to a call to _iterator_for_loopexprNN(),
+// When PRIM_TO_LEADER resolves to a call to astr_loopexpr_iterNN(),
 // aka 'origIter', all it does is invoke _toLeader on its argument.
 // If so, do not do extendLeader() on it. Simply thread the extra args
 // from origToLeaderCall into that _toLeader call.
-//
-// BTW _iterator_for_loopexprNN is created in buildLeaderIteratorFn()
-// invoked from buildForallLoopExpr().
 //
 static void propagateExtraArgsForLoopIter(CallExpr* call,
                                           CallExpr* origToLeaderCall,
@@ -1710,7 +1707,7 @@ void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall) {
       stashPristineCopyOfLeaderIter(origLeader, /*ignore_isResolved:*/ false);
     }
   } else {
-    if (strncmp(origLeader->name, "_iterator_for_loopexpr", 22) == 0) {
+    if (strncmp(origLeader->name, astr_loopexpr_iter, strlen(astr_loopexpr_iter)) == 0) {
       propagateExtraArgsForLoopIter(call, origToLeaderCall, origLeader);
     } else {
       extendLeader(call, origToLeaderCall, origLeader);
