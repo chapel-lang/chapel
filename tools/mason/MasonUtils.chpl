@@ -23,7 +23,6 @@
 use Spawn;
 use FileSystem;
 use TOML;
-use DateTime;
 
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
@@ -247,7 +246,6 @@ proc getLastModified(filename: string) : int {
   var file_path = filename.c_str();
 
   if (stat(file_path, file_buf) == 0) {
-    // writeln("file: " + datetime.fromtimestamp(file_buf.st_mtime).ctime());
     return file_buf.st_mtime;
     }
   return -1;
