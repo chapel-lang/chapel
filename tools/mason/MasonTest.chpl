@@ -81,7 +81,11 @@ private proc runTests(show: bool, run: bool) {
     // Check for tests to run
     if testNames.domain.size > 0 {
 
-      forall t in testNames {
+      var resultDomain: domain(string);
+      var testResults: [resultDomain] string;
+      var numTests = testNames.domain.size;
+      var numPassed: atomic int;
+      forall t in testNames with (ref numPassed) {
 
         const test = t.strip().strip('"');
         const testPath = "".join(projectHome, '/test/', test);
@@ -102,10 +106,23 @@ private proc runTests(show: bool, run: bool) {
           if show || !run then writeln("compiled ", test, " successfully");
           if run {
             const binCommand = "".join(projectHome,'/target/test/', testName);
-            runCommand(binCommand);
+            const result = runWithStatus(binCommand, show);
+            if result != 0 {
+              testResults[test] = "Failed";
+            }
+            else {
+              testResults[test] = "Passed";
+              numPassed.add(1);
+            }
           }
         }
       }
+      for test in testResults.domain {
+        writeln(" ".join("Test:",test, testResults[test]));
+      }
+      writeln("--- Summary: ", numTests, " tests run ---");
+      writeln("-----> ", numPassed, " Passed.");
+      writeln("-----> ", (numTests - numPassed.read()), " Failed.");
     }
     else {
       writeln("No tests were found in /test");

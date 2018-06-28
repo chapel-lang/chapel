@@ -64,12 +64,14 @@ proc runCommand(cmd, quiet=false) : string {
 
 /* Same as runCommand but for situations where an
    exit status is needed */
-proc runWithStatus(command): int {
+proc runWithStatus(command, show=true): int {
   var cmd = command.split();
   var sub = spawn(cmd, stdout=PIPE);
 
   var line:string;
-  while sub.stdout.readline(line) do write(line);
+  if show {
+    while sub.stdout.readline(line) do write(line);
+  }
   sub.wait();
   return sub.exit_status;
 }
