@@ -2,7 +2,10 @@ class Foo {
   type eltType;
   var args;
   var val: eltType;
-  proc Foo(args..., type eltType = args.type) {
+  proc init(args..., type eltType = args.type) {
+    this.eltType = eltType;
+    this.args = args;
+    this.complete();
     writeln(eltType:string);
     writeln(val);
   }

@@ -1,7 +1,7 @@
 
 record R {
   var x : int;
-  proc R() { }
+  proc init() { }
 }
 
 class Base {
