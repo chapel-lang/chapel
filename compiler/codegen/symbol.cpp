@@ -791,19 +791,17 @@ static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
 // _ref_int64_t, just int64_t *).  But only for exported symbols like the
 // return type of exported functions, or arguments of those functions.
 static std::string
-transformTypeForPointer(Type* type, bool exported) {
+transformTypeForPointer(Type* type) {
   std::string typeName = type->codegen().c;
-  if (exported) {
-    if (type->symbol->hasFlag(FLAG_REF)) {
-      Type* referenced = type->getValType();
-      return referenced->codegen().c + " *";
+  if (type->symbol->hasFlag(FLAG_REF)) {
+    Type* referenced = type->getValType();
+    return referenced->codegen().c + " *";
 
-    } else if (type->symbol->hasFlag(FLAG_DATA_CLASS)) {
-      // Remove the c_ptr_ prefix
-      return typeName.substr(6, std::string::npos) + " *";
-    }
+  } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+    // Remove the c_ptr_ prefix
+    return typeName.substr(6, std::string::npos) + " *";
   }
-    return typeName;
+  return typeName;
 }
 
 GenRet ArgSymbol::codegenType() {
@@ -814,8 +812,7 @@ GenRet ArgSymbol::codegenType() {
   Type* useType = getArgSymbolCodegenType(this);
 
   if( outfile ) {
-    std::string argType = transformTypeForPointer(useType,
-                                                  this->defPoint->parentSymbol->hasFlag(FLAG_EXPORT));
+    std::string argType = transformTypeForPointer(useType);
     ret.c = argType;
   } else {
 #ifdef HAVE_LLVM
@@ -1277,8 +1274,7 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
     // Cast to right function type.
     std::string str;
 
-    std::string retString = transformTypeForPointer(retType,
-                                                    hasFlag(FLAG_EXPORT));
+    std::string retString = transformTypeForPointer(retType);
     str += retString.c_str();
     if( forHeader ) {
       str += " ";
