@@ -138,7 +138,6 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
     // instantiation of a formal of ref type loses ref
     return getNewSubType(fn, key, actualTS->getValType()->symbol);
   } else {
-    /*
     if (isManagedPtrType(actualTS->getValType()))
       if (ArgSymbol* arg = toArgSymbol(key))
 	if ((arg->intent == INTENT_IN ||
@@ -147,7 +146,7 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
 	     arg->intent == INTENT_CONST_REF ||
 	     arg->intent == INTENT_BLANK) &&
 	    arg->getValType() == dtAny)
-          return getManagedPtrBorrowType(actualTS->getValType())->symbol;*/
+          return getManagedPtrBorrowType(actualTS->getValType())->symbol;
 
     return actualTS;
   }
