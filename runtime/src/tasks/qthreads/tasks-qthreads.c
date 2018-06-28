@@ -174,7 +174,7 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
 // chpl_qthread_get_tasklocal() is in chpl-tasks-impl.h
 //
 
-static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
+static aligned_t exit_ret = 0;
 
 void chpl_task_yield(void)
 {
@@ -236,7 +236,7 @@ void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
     chpl_sync_lock(s);
     while (s->is_full == 0) {
         chpl_sync_unlock(s);
-        qthread_syncvar_readFE(NULL, &(s->signal_full));
+        qthread_readFE(NULL, &(s->signal_full));
         chpl_sync_lock(s);
     }
 }
@@ -250,7 +250,7 @@ void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
     chpl_sync_lock(s);
     while (s->is_full != 0) {
         chpl_sync_unlock(s);
-        qthread_syncvar_readFE(NULL, &(s->signal_empty));
+        qthread_readFE(NULL, &(s->signal_empty));
         chpl_sync_lock(s);
     }
 }
@@ -259,7 +259,7 @@ void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s)         // and unlock
 {
     PROFILE_INCR(profile_sync_markAndSignalFull, 1);
 
-    qthread_syncvar_fill(&(s->signal_full));
+    qthread_fill(&(s->signal_full));
     s->is_full = 1;
     chpl_sync_unlock(s);
 }
@@ -268,7 +268,7 @@ void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s)         // and unlock
 {
     PROFILE_INCR(profile_sync_markAndSignalEmpty, 1);
 
-    qthread_syncvar_fill(&(s->signal_empty));
+    qthread_fill(&(s->signal_empty));
     s->is_full = 0;
     chpl_sync_unlock(s);
 }
@@ -288,8 +288,8 @@ void chpl_sync_initAux(chpl_sync_aux_t *s)
     s->lockers_in   = 0;
     s->lockers_out  = 0;
     s->is_full      = 0;
-    s->signal_empty = SYNCVAR_EMPTY_INITIALIZER;
-    s->signal_full  = SYNCVAR_EMPTY_INITIALIZER;
+    s->signal_empty = 0;
+    s->signal_full  = 0;
 }
 
 void chpl_sync_destroyAux(chpl_sync_aux_t *s)
@@ -680,7 +680,7 @@ void chpl_task_exit(void)
                 sched_yield();
         }
     } else {
-        qthread_syncvar_fill(&exit_ret);
+        qthread_fill(&exit_ret);
     }
 }
 
@@ -776,8 +776,8 @@ void chpl_task_callMain(void (*chpl_main)(void))
 
     wrap_callbacks(chpl_task_cb_event_kind_create, &arg.arg);
 
-    qthread_fork_syncvar_copyargs(main_wrapper, &arg, sizeof(arg), &exit_ret);
-    qthread_syncvar_readFF(NULL, &exit_ret);
+    qthread_fork_copyargs(main_wrapper, &arg, sizeof(arg), &exit_ret);
+    qthread_readFF(NULL, &exit_ret);
 }
 
 void chpl_task_stdModulesInitialized(void)

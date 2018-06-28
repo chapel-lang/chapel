@@ -64,8 +64,8 @@ typedef struct {
     aligned_t lockers_out;
     uint_fast32_t uncontested_locks;
     int       is_full;
-    syncvar_t signal_full;
-    syncvar_t signal_empty;
+    aligned_t signal_full;
+    aligned_t signal_empty;
 } chpl_sync_aux_t;
 
 //
