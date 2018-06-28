@@ -3558,7 +3558,15 @@ module HDF5_HL {
           filenames.push_back(f);
         }
       }
-      const Space = {1..filenames.size};
+
+      return readAllNamedHDF5Files(locs, filenames, dsetName, eltType, rank);
+    }
+
+    /* Read all HDF5 files named in the filenames array into arrays */
+    proc readAllNamedHDF5Files(locs: [] locale, filenames: [] string,
+                               dsetName: string, type eltType, param rank) {
+      use BlockDist, HDF5_WAR;
+      const Space = filenames.domain;
       const BlockSpace = Space dmapped Block(Space, locs,
                                              dataParTasksPerLocale=1);
       var files: [BlockSpace] ArrayWrapper(eltType, rank);
@@ -3587,6 +3595,40 @@ module HDF5_HL {
       }
       return files;
     }
+
+
+    /* Read the datasets named `dsetName` from the files named in
+       `filenames` into a 1D array.  This function assumes the data
+       elements are all int(64)s.
+       `fnCols` and `fnRows` refer to the columns and rows that `filenames`
+       should have when converting it back to 2-D.
+     */
+    proc readNamedHDF5FilesInto1DArrayInt(filenames: [] string,
+                                          fnCols: int, fnRows: int,
+                                          dsetName: string) {
+      use BlockDist;
+
+     var filenames2D = reshape(filenames, {1..fnCols, 1..fnRows});
+
+      var data = readAllNamedHDF5Files(Locales, filenames2D, dsetName,
+                                       int, rank=2);
+      const rows = + reduce [subset in data[.., 1]] subset.D.dim(1).length;
+      const cols = + reduce [subset in data[1, ..]] subset.D.dim(2).length;
+
+      var A: [1..rows, 1..cols] int;
+
+      const rowsPerFile = data(1,1).D.dim(1).length,
+            colsPerFile = data(1,1).D.dim(2).length;
+      for (row, col) in data.domain {
+        const startRow = (row-1)*rowsPerFile+1, endRow = row*rowsPerFile,
+              startCol = (col-1)*colsPerFile+1, endCol = col*colsPerFile;
+        A[startRow..endRow, startCol..endCol] = data(row, col).A;
+      }
+
+      return reshape(A, {1..rows*cols});
+    }
+
+
 
     /* Read the dataset named `dsetName` out of the open file that `file_id`
        refers to.  Store the input into the array `data`.
