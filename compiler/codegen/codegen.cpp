@@ -1078,7 +1078,7 @@ static void codegen_aggregate_def(AggregateType* ct) {
 }
 
 //
-// Generates a .h file to compliment the library file created using --library
+// Generates a .h file to complement the library file created using --library
 // This .h file will contain necessary #includes, any explicitly exported
 // functions, and the module initialization function declarations.
 //

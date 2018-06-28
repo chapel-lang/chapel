@@ -789,7 +789,7 @@ static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
 // Alter the C code type to avoid _ref_, c_ptr_ prefixes and instead use a
 // type that C understands without additional information (e.g. instead of
 // _ref_int64_t, just int64_t *).  But only for exported symbols like the
-// the return type of exported functions, or arguments of those functions.
+// return type of exported functions, or arguments of those functions.
 static std::string
 transformTypeForPointer(Type* type, bool exported) {
   std::string typeName = type->codegen().c;
