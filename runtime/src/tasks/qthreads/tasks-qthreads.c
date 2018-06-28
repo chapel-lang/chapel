@@ -66,8 +66,6 @@
 #include <math.h>
 
 
-//#define SUPPORT_BLOCKREPORT
-//#define SUPPORT_TASKREPORT
 
 #ifdef CHAPEL_PROFILE
 # define PROFILE_INCR(counter,count) do { (void)qthread_incr(&counter,count); } while (0)
@@ -167,14 +165,10 @@ chpl_task_bundle_t chpl_qthread_comm_task_bundle = {
                                    .id = chpl_nullTaskID };
 
 chpl_qthread_tls_t chpl_qthread_process_tls = {
-                               .bundle = &chpl_qthread_process_bundle,
-                               .lock_filename = 0,
-                               .lock_lineno = 0 };
+                               .bundle = &chpl_qthread_process_bundle };
 
 chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
-                               .bundle = &chpl_qthread_comm_task_bundle,
-                               .lock_filename = 0,
-                               .lock_lineno = 0 };
+                               .bundle = &chpl_qthread_comm_task_bundle };
 
 //
 // chpl_qthread_get_tasklocal() is in chpl-tasks-impl.h
@@ -233,23 +227,12 @@ void chpl_sync_unlock(chpl_sync_aux_t *s)
     qthread_incr(&s->lockers_out, 1);
 }
 
-static inline void about_to_block(int32_t  lineno,
-                                  int32_t filename)
-{
-    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
-    assert(data);
-
-    data->lock_lineno   = lineno;
-    data->lock_filename = filename;
-}
-
 void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
                                int32_t          lineno,
                                int32_t         filename)
 {
     PROFILE_INCR(profile_sync_waitFullAndLock, 1);
 
-    if (blockreport) { about_to_block(lineno, filename); }
     chpl_sync_lock(s);
     while (s->is_full == 0) {
         chpl_sync_unlock(s);
@@ -264,7 +247,6 @@ void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
 {
     PROFILE_INCR(profile_sync_waitEmptyAndLock, 1);
 
-    if (blockreport) { about_to_block(lineno, filename); }
     chpl_sync_lock(s);
     while (s->is_full != 0) {
         chpl_sync_unlock(s);
@@ -315,66 +297,18 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s)
     PROFILE_INCR(profile_sync_destroyAux, 1);
 }
 
-#ifdef SUPPORT_BLOCKREPORT
-static void chapel_display_thread(qt_key_t     addr,
-                                  qthread_f    f,
-                                  void        *arg,
-                                  void        *retloc,
-                                  unsigned int thread_id,
-                                  void        *tls,
-                                  void        *callarg)
-{
-    chpl_qthread_tls_t *rep = (chpl_qthread_tls_t *)tls;
-
-    if (rep) {
-        if ((rep->lock_lineno > 0) && rep->lock_filename) {
-          fprintf(stderr, "Waiting at: %s:%zu (task %s:%zu)\n",
-                  chpl_lookupFilename(rep->lock_filename), rep->lock_lineno,
-                  chpl_lookupFilename(rep->chpl_data.task_filename),
-                  rep->chpl_data.task_lineno);
-        } else if (rep->lock_lineno == 0 && rep->lock_filename) {
-          fprintf(stderr,
-                  "Waiting for more work (line 0? file:%s) (task %s:%zu)\n",
-                  chpl_lookupFilename(rep->lock_filename),
-                  chpl_lookupFilename(rep->chpl_data.task_filename),
-                  rep->chpl_data.task_lineno);
-        } else if (rep->lock_lineno == 0) {
-          fprintf(stderr,
-                  "Waiting for dependencies (uninitialized task %s:%zu)\n",
-                  chpl_lookupFilename(rep->chpl_data.task_filename),
-                  rep->chpl_data.task_lineno);
-        }
-        fflush(stderr);
-    }
-}
-
-static void report_locked_threads(void)
-{
-    qthread_feb_callback(chapel_display_thread, NULL);
-    qthread_syncvar_callback(chapel_display_thread, NULL);
-}
-#endif  // SUPPORT_BLOCKREPORT
-
 static void SIGINT_handler(int sig)
 {
     signal(sig, SIG_IGN);
 
     if (blockreport) {
-#ifdef SUPPORT_BLOCKREPORT
-        report_locked_threads();
-#else
         fprintf(stderr,
                 "Blockreport is currently unsupported by the qthreads "
                 "tasking layer.\n");
-#endif
     }
 
     if (taskreport) {
-#ifdef SUPPORT_TASKREPORT
-        report_all_tasks();
-#else
         fprintf(stderr, "Taskreport is currently unsupported by the qthreads tasking layer.\n");
-#endif
     }
 
     chpl_exit_any(1);

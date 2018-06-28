@@ -100,9 +100,6 @@ typedef struct chpl_qthread_tls_s {
   // That would reduce the size of the task local storage,
   // but increase the size of executeOn bundles.
   chpl_task_prvData_t prvdata;
-  /* Reports */
-  int     lock_filename;
-  int     lock_lineno;
 } chpl_qthread_tls_t;
 
 extern pthread_t chpl_qthread_process_pthread;
