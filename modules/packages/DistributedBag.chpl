@@ -630,7 +630,7 @@ module DistributedBag {
 
     // Contiguous memory containing all elements
     var elems :  c_ptr(eltType);
-    var next : BagSegmentBlock(eltType);
+    var next : unmanaged BagSegmentBlock(eltType);
 
     // The capacity of this block.
     var cap : int;
