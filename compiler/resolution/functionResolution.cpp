@@ -581,7 +581,7 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
         // Handle e.g. Owned(GenericClass) passed to a formal : GenericClass
         // TODO: Why is this here and not in getBasicInstantiationType?
         if (isManagedPtrType(at)) {
-          Type* classType = actualType->getField("t")->type;
+          Type* classType = getManagedPtrBorrowType(actualType);
           if (canInstantiate(classType, formalType)) {
             retval = classType;
           }
@@ -979,7 +979,7 @@ bool canCoerce(Type*     actualType,
   }
 
   if (isManagedPtrType(actualType)) {
-    Type* actualBaseType = actualType->getField("t")->type;
+    Type* actualBaseType = getManagedPtrBorrowType(actualType);
     AggregateType* actualOwnedShared = toAggregateType(actualType);
     while (actualOwnedShared && actualOwnedShared->instantiatedFrom != NULL)
       actualOwnedShared = actualOwnedShared->instantiatedFrom;
@@ -988,7 +988,7 @@ bool canCoerce(Type*     actualType,
     AggregateType* formalOwnedShared = toAggregateType(formalType);
     bool formalIsClass = false;
     if (isManagedPtrType(formalType)) {
-      formalBaseType = formalType->getField("t")->type;
+      formalBaseType = getManagedPtrBorrowType(formalType);
       while (formalOwnedShared && formalOwnedShared->instantiatedFrom != NULL)
         formalOwnedShared = formalOwnedShared->instantiatedFrom;
     } else if (AggregateType* formalAt = toAggregateType(formalType)) {
@@ -5932,7 +5932,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself
         if (isManagedPtrType(at) && !isManagedPointerInit(typeExpr)) {
-          Type* subtype = at->getField("t")->type;
+          Type* subtype = getManagedPtrBorrowType(at);
           if (isAggregateType(subtype)) // in particular, not dtUnknown
             at = toAggregateType(subtype);
         }
