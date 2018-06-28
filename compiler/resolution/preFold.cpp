@@ -1204,7 +1204,7 @@ static Expr* preFoldNamed(CallExpr* call) {
 
         Immediate* imm = getSymbolImmediate(sym);
 
-        if (imm != NULL && toSE != NULL) {
+        if (toSE != NULL) {
           Type* oldType = sym->type;
           Type* newType = toSE->symbol()->type;
 
@@ -1222,7 +1222,7 @@ static Expr* preFoldNamed(CallExpr* call) {
 
 
           // Handle casting between numeric types
-          if ((fromEnum || fromIntEtc) && toIntEtc) {
+          if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
             VarSymbol* typeVar  = toVarSymbol(newType->defaultValue);
 
             // handle numeric casts
@@ -1240,7 +1240,7 @@ static Expr* preFoldNamed(CallExpr* call) {
             call->replace(retval);
 
           // Handle casting to enum
-          } else if (toEnum && (fromString || fromIntUint)) {
+          } else if (imm != NULL && toEnum && (fromString || fromIntUint)) {
 
             EnumType* typeEnum = toEnumType(newType);
             Symbol* constant = findMatchingEnumSymbol(imm, typeEnum);
@@ -1265,7 +1265,7 @@ static Expr* preFoldNamed(CallExpr* call) {
             call->replace(retval);
 
           // Handle string:c_string and c_string:string casts
-          } else if (fromString && toString) {
+          } else if (imm != NULL && fromString && toString) {
 
             if (newType == dtStringC)
               retval = new SymExpr(new_CStringSymbol(imm->v_string));
@@ -1275,7 +1275,7 @@ static Expr* preFoldNamed(CallExpr* call) {
             call->replace(retval);
 
           // Handle other casts to string
-          } else if (fromIntEtc && toString) {
+          } else if (imm != NULL && fromIntEtc && toString) {
             // special case because newType->defaultValue will
             // be null for dtString
 
