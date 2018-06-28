@@ -9,7 +9,7 @@
 #
 grep '^memStats:' < $2 | \
   sed -e 's/\(High Water Mark[^0-9]*\)[0-9]\{7,\}/\1>=1mb/' \
-      -e 's/[0-9]\+$/N/' \
-      -e 's/ \+/ /g' | \
+      -e 's/[0-9]\{1,\}$/N/' \
+      -e 's/ \{1,\}/ /g' | \
   LC_ALL=C sort > $2.prediff.tmp \
 && mv $2.prediff.tmp $2
