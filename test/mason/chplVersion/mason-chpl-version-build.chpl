@@ -31,5 +31,5 @@ proc main() {
   lock.close();
 
   var compopts = ["",];
-  buildProgram(false, false, compopts, "Mason.toml", "Mason.lock");
+  buildProgram(false, false, false, compopts, "Mason.toml", "Mason.lock");
 }
