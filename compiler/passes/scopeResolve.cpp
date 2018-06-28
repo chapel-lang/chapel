@@ -1379,7 +1379,7 @@ static void setupShadowVars() {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool resolveModuleIsNewExpr(CallExpr* call, Symbol* sym);
+static CallExpr* resolveModuleGetNewExpr(CallExpr* call, Symbol* sym);
 
 static void resolveModuleCall(CallExpr* call) {
   if (call->isNamedAstr(astrSdot) == true) {
@@ -1408,13 +1408,11 @@ static void resolveModuleCall(CallExpr* call) {
                 parent->insertAtHead(gModuleToken);
               }
 
-            } else if (resolveModuleIsNewExpr(call, sym) == true) {
-              CallExpr* parent = toCallExpr(call->parentExpr);
-
+            } else if (CallExpr* c = resolveModuleGetNewExpr(call, sym)) {
               call->replace(new SymExpr(sym));
 
-              parent->insertAtHead(mod);
-              parent->insertAtHead(gModuleToken);
+              c->insertAtHead(mod);
+              c->insertAtHead(gModuleToken);
 
             } else {
               call->replace(new SymExpr(sym));
@@ -1444,21 +1442,27 @@ static void resolveModuleCall(CallExpr* call) {
   }
 }
 
-static bool resolveModuleIsNewExpr(CallExpr* call, Symbol* sym) {
-  bool retval = false;
-
+// Returns the CallExpr that should get a module= argument
+// for new SomeModule.SomeType.
+static CallExpr* resolveModuleGetNewExpr(CallExpr* call, Symbol* sym) {
   if (TypeSymbol* ts = toTypeSymbol(sym)) {
-    if (isAggregateType(ts->type) == true) {
+    if (isAggregateType(ts->type)) {
       if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
         if (CallExpr* grandParentCall = toCallExpr(parentCall->parentExpr)) {
-
-          retval = grandParentCall->isPrimitive(PRIM_NEW);
+          if (grandParentCall->isPrimitive(PRIM_NEW)) {
+            return parentCall;
+          } else if(callSpecifiesClassKind(grandParentCall)) {
+            if (CallExpr* outerCall = toCallExpr(grandParentCall->parentExpr)) {
+              if (outerCall->isPrimitive(PRIM_NEW))
+                return parentCall;
+            }
+          }
         }
       }
     }
   }
 
-  return retval;
+  return NULL;
 }
 
 #ifdef HAVE_LLVM
