@@ -794,10 +794,12 @@ static std::string
 transformTypeForPointer(Type* type, bool exported) {
   std::string typeName = type->codegen().c;
   if (exported) {
-    if (!typeName.compare(0, 5, "_ref_")) {
+    if (type->symbol->hasFlag(FLAG_REF)) {
       Type* referenced = type->getValType();
       return referenced->codegen().c + " *";
-    } else if (!typeName.compare(0, 6, "c_ptr_")) {
+
+    } else if (type->symbol->hasFlag(FLAG_DATA_CLASS)) {
+      // Remove the c_ptr_ prefix
       return typeName.substr(6, std::string::npos) + " *";
     }
   }
