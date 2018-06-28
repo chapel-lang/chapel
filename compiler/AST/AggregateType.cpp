@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "initializerRules.h"
 #include "iterator.h"
+#include "LoopExpr.h"
 #include "UnmanagedClassType.h"
 #include "passes.h"
 #include "scopeResolve.h"
@@ -1667,14 +1668,14 @@ void AggregateType::buildConstructor() {
 
     if (exprType != NULL) {
       if (isBlockStmt(exprType) == false)
-        arg->typeExpr = new BlockStmt(exprType, BLOCK_TYPE);
+        arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_TYPE);
       else
-        arg->typeExpr = toBlockStmt(exprType);
+        arg->typeExpr = toBlockStmt(exprType->copy());
     }
 
     if (init != NULL) {
       if (hadInit == true)
-        arg->defaultExpr = new BlockStmt(init, BLOCK_SCOPELESS);
+        arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
       else {
         Expr* initVal = new SymExpr(gTypeDefaultToken);
 
@@ -1852,6 +1853,14 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         if (field->isType() == true) {
           arg->intent = INTENT_BLANK;
           arg->addFlag(FLAG_TYPE_VARIABLE);
+        }
+
+        if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
+          if (field->isType() == false) {
+            CallExpr* copy = new CallExpr("chpl__initCopy");
+            defPoint->init->replace(copy);
+            copy->insertAtTail(fe);
+          }
         }
 
         //
