@@ -1,3 +1,6 @@
 #!/bin/bash
 echo Compiling receiveExternRecord.chpl
 $3 --library --static receiveExternRecord.chpl defineRecord.h -o libreceiveExternRecord
+echo "#include \"defineRecord.h\"" > receiveExternRecord.h.tmp
+cat receiveExternRecord.h >> receiveExternRecord.h.tmp
+mv receiveExternRecord.h.tmp receiveExternRecord.h
