@@ -791,10 +791,12 @@ static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
 // _ref_int64_t, just int64_t *).  But only for exported symbols like the
 // the return type of exported functions, or arguments of those functions.
 static std::string
-transformTypeForPointer(std::string typeName, bool exported) {
+transformTypeForPointer(Type* type, bool exported) {
+  std::string typeName = type->codegen().c;
   if (exported) {
     if (!typeName.compare(0, 5, "_ref_")) {
-      return typeName.substr(5, std::string::npos) + " *";
+      Type* referenced = type->getValType();
+      return referenced->codegen().c + " *";
     } else if (!typeName.compare(0, 6, "c_ptr_")) {
       return typeName.substr(6, std::string::npos) + " *";
     }
@@ -810,7 +812,7 @@ GenRet ArgSymbol::codegenType() {
   Type* useType = getArgSymbolCodegenType(this);
 
   if( outfile ) {
-    std::string argType = transformTypeForPointer(useType->codegen().c,
+    std::string argType = transformTypeForPointer(useType,
                                                   this->defPoint->parentSymbol->hasFlag(FLAG_EXPORT));
     ret.c = argType;
   } else {
@@ -1273,7 +1275,7 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
     // Cast to right function type.
     std::string str;
 
-    std::string retString = transformTypeForPointer(retType->codegen().c,
+    std::string retString = transformTypeForPointer(retType,
                                                     hasFlag(FLAG_EXPORT));
     str += retString.c_str();
     if( forHeader ) {
