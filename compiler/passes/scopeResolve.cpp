@@ -93,8 +93,6 @@ static void          setupShadowVars();
 
 static void          resolveEnumeratedTypes();
 
-static void          destroyModuleUsesCaches();
-
 static void          renameDefaultTypesToReflectWidths();
 
 static bool          lookupThisScopeAndUses(const char*           name,
@@ -1588,7 +1586,7 @@ static void resolveEnumeratedTypes() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void destroyModuleUsesCaches() {
+void destroyModuleUsesCaches() {
   std::map<BlockStmt*, Vec<UseStmt*>*>::iterator use;
 
   for (use = moduleUsesCache.begin(); use != moduleUsesCache.end(); use++) {
