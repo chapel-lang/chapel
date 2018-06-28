@@ -2,8 +2,9 @@
 use MasonUpdate;
 use MasonUtils;
 use TOML;
+use FileSystem;
 
-config const lf: string;
+config const goodLock: string;
 config const tf: string;
 
 proc main() {
@@ -14,19 +15,23 @@ proc main() {
 
   const currentVersion = getChapelVersionStr();
 
-  var temp = opentmp();
+  // file.good -> file.lock
+  const lf = goodLock.replace('good', 'lock');
+  var temp = open(lf, iomode.cw);
   {
     var w = temp.writer();
-    for line in open(lf, iomode.r).lines() do
+    for line in open(goodLock, iomode.r).lines() do
       w.write(line.replace('CHPL_CUR_FULL', currentVersion));
     w.close();
   }
 
   var args : [1..0] string;
-  UpdateLock(args, tf, temp.tryGetPath());
+  var configs = UpdateLock(args, tf, temp.tryGetPath());
   var lock = open(temp.tryGetPath(), iomode.r);
-  var lockFile =  parseToml(lock);
+  var lockFile = parseToml(lock);
   writeln(lockFile);
+  remove(lf);
+  temp.close();
   lock.close();
   delete lockFile;
 }

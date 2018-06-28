@@ -33,7 +33,7 @@ c.overridden_method();
 c.child_method();
 
 writeln("Dynamic Child(int)");
-var pc:Parent = c;
+var pc:borrowed Parent = c;
 pc.parent_method();
 pc.overridden_method();
 delete pc;

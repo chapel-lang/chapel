@@ -7,7 +7,7 @@ class Child : Parent {
 }
 
 record wrapper {
-  var c:Child;
+  var c:unmanaged Child;
   forwarding c;
 }
 

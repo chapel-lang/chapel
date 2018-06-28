@@ -6,10 +6,10 @@ config const printrandom = false;
 var a  = new bigint( 10);
 var b  = new bigint(128);
 
-var r1 = new GMPRandom();
-var r2 = new GMPRandom(true);
-var r3 = new GMPRandom(a, 10, 10);
-var r4 = new GMPRandom(8);
+var r1 = new owned GMPRandom();
+var r2 = new owned GMPRandom(true);
+var r3 = new owned GMPRandom(a, 10, 10);
+var r4 = new owned GMPRandom(8);
 
 r1.seed(a);
 r2.seed(10);
@@ -29,8 +29,3 @@ if printrandom then writeln(a);
 r4.urandomm(a, b);
 
 if printrandom then writeln(a);
-
-delete r1;
-delete r2;
-delete r3;
-delete r4;

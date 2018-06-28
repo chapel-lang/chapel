@@ -273,7 +273,7 @@ class BlockCyclic : BaseDist {
     return new unmanaged BlockCyclic(lowIdx, blocksize, targetLocales, dataParTasksPerLocale);
   }
 
-  proc dsiDestroyDist() {
+  override proc dsiDestroyDist() {
     coforall ld in locDist do {
       on ld do
         delete ld;
@@ -312,7 +312,7 @@ proc BlockCyclic._locsize {
 //
 // create a new rectangular domain over this distribution
 //
-proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
+override proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
                                       param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("BlockCyclic domain index type does not match distribution's");
@@ -631,7 +631,7 @@ proc BlockCyclicDom.dsiGetIndices() {
   return whole.getIndices();
 }
 
-proc BlockCyclicDom.dsiMyDist() return dist;
+override proc BlockCyclicDom.dsiMyDist() return dist;
 
 proc BlockCyclicDom.setup() {
   coforall localeIdx in dist.targetLocDom do
@@ -816,7 +816,7 @@ class BlockCyclicArr: BaseRectangularArr {
   var myLocArr: unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable);
 }
 
-proc BlockCyclicArr.dsiGetBaseDom() return dom;
+override proc BlockCyclicArr.dsiGetBaseDom() return dom;
 
 proc BlockCyclicArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
@@ -828,7 +828,7 @@ proc BlockCyclicArr.setup() {
   }
 }
 
-proc BlockCyclicArr.dsiDestroyArr() {
+override proc BlockCyclicArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       delete locArr(localeIdx);
@@ -991,7 +991,7 @@ iter BlockCyclicArr.dsiLocalSubdomains() {
 iter BlockCyclicDom.dsiLocalSubdomains() {
   // TODO -- could be replaced by a privatized myLocDom in BlockCyclicDom
   // as it is with BlockCyclicArr
-  var myLocDom:LocBlockCyclicDom(rank, idxType, stridable) = nil;
+  var myLocDom:unmanaged LocBlockCyclicDom(rank, idxType, stridable) = nil;
   for (loc, locDom) in zip(dist.targetLocales, locDoms) {
     if loc == here then
       myLocDom = locDom;

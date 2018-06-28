@@ -535,8 +535,8 @@ module SSCA2_kernels
   class Level_Set {
     type Sparse_Vertex_List;
     var Members  : Sparse_Vertex_List;
-    var previous : Level_Set (Sparse_Vertex_List);
-    var next : Level_Set (Sparse_Vertex_List);
+    var previous : unmanaged Level_Set (Sparse_Vertex_List);
+    var next : unmanaged Level_Set (Sparse_Vertex_List);
   }
 
   //
@@ -572,7 +572,7 @@ module SSCA2_kernels
     const vertex_domain;
     var used  : atomic bool;
     var BCaux : [vertex_domain] taskPrivateArrayData(index(vertex_domain));
-    var Active_Level : [PrivateSpace] Level_Set (Sparse_Vertex_List);
+    var Active_Level : [PrivateSpace] unmanaged Level_Set (Sparse_Vertex_List);
   }
 
   // This is a simple class that hands out task private variables from the

@@ -75,7 +75,7 @@ class DomArr {
 // an array of everyone's chunks of the global problem space that they own
 // in a sense it's the distributed A array in a local view
 //
-var LocalDomArrs: [LocaleGridDom] DomArr;
+var LocalDomArrs: [LocaleGridDom] unmanaged DomArr;
 
 var numIters: atomic int;
 
@@ -96,7 +96,7 @@ coforall (lr,lc) in LocaleGridDom {
     // Store my domain, with fluff, into the global directory so that
     // other locales can refer to it.
     //
-    var MyDomArr = new DomArr(Dom=WithFluff);
+    var MyDomArr = new unmanaged DomArr(Dom=WithFluff);
     LocalDomArrs[lr,lc] = MyDomArr;
 
     //

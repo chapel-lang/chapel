@@ -1,0 +1,3 @@
+mutate-ref-borrow.chpl:12: In function 'bad1':
+mutate-ref-borrow.chpl:15: error: Scoped variable r would outlive the value it is set to
+mutate-ref-borrow.chpl:14: note: consider scope of owny

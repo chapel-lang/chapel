@@ -8,15 +8,6 @@ class MyClass {
 }
 
 
-/*(The question is, if you mutated a ref to a borrow, would  the other borrow
-  checking rules catch an error, or would it cause a gap in the checking?)
- */
-proc bad1(ref r:MyClass) {
-
-  var owny = new Owned(new MyClass(1));
-  r = owny.borrow();
-}
-
 /* 
    Another question: What if a method on a global variable of record or class
    type sets a field from a borrow?
@@ -37,7 +28,6 @@ proc test() {
   var myowned = new Owned(new MyClass(1));
 
   var borrow = myowned.borrow();
-  bad1(borrow);
   bad2(borrow);
 }
 

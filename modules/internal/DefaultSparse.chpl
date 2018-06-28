@@ -32,7 +32,7 @@ module DefaultSparse {
     var indices: [nnzDom] index(rank, idxType);
 
     proc linksDistribution() param return false;
-    proc dsiLinksDistribution()     return false;
+    override proc dsiLinksDistribution() return false;
 
     proc init(param rank, type idxType, dist: unmanaged DefaultDist,
         parentDom: domain) {
@@ -322,11 +322,11 @@ module DefaultSparse {
       return actualAddCnt;
     }
 
-    proc dsiMyDist() : unmanaged BaseDist {
+    override proc dsiMyDist() : unmanaged BaseDist {
       return dist;
     }
 
-    proc dsiClear() {
+    override proc dsiClear() {
       nnz = 0;
       // should we empty the domain too ?
       // nnzDom = {1..0};

@@ -11,7 +11,7 @@ class MyClass {
 }
 
 proc main() {
-  var cls : MyClass = new borrowed MyClass();
+  var cls : borrowed MyClass = new borrowed MyClass();
 
   writeln('cls: ', cls);
 }

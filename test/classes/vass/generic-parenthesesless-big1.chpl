@@ -24,7 +24,7 @@ proc C.h1(): int return f1;
 proc C.h2(): int return f2;
 proc C.h3(): int return f3();
 
-var c = new C(1);
+var c = new borrowed C(1);
 
 writeln((
          c.g1,
@@ -34,5 +34,3 @@ writeln((
          c.h2(),
          c.h3()
          ));
-
-delete c;

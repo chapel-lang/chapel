@@ -18,8 +18,8 @@ record R1 {
 }
 
 record R2 {
-  var fo:Owned(MyClass) = new Owned(nil:MyClass);
-  var fs:Shared(MyClass) = new Shared(nil:MyClass);
+  var fo:Owned(MyClass) = new Owned(nil:unmanaged MyClass);
+  var fs:Shared(MyClass) = new Shared(nil:unmanaged MyClass);
   proc init() {
   }
 }
@@ -51,8 +51,8 @@ class C1 {
 }
 
 class C2 {
-  var fo:Owned(MyClass) = new Owned(nil:MyClass);
-  var fs:Shared(MyClass) = new Shared(nil:MyClass);
+  var fo:Owned(MyClass) = new Owned(nil:unmanaged MyClass);
+  var fs:Shared(MyClass) = new Shared(nil:unmanaged MyClass);
   proc init() {
   }
 }
@@ -60,7 +60,7 @@ class C2 {
 class C3 {
   var fo:Owned(MyClass);
   var fs:Shared(MyClass);
-  proc init(a:MyClass, b:MyClass) {
+  proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
     fo = new Owned(a);
     fs = new Shared(b);
   }
@@ -69,7 +69,7 @@ class C3 {
 class C4 {
   var fo:Owned(MyClass);
   var fs:Shared(MyClass);
-  proc init(a:MyClass, b:MyClass) {
+  proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
     super.init();
     fo = new Owned(a);
     fs = new Shared(b);

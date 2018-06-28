@@ -49,7 +49,7 @@ module ArrayViewReindex {
         return downDistInst;
     }
 
-    proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
+    override proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
       var newdom = new unmanaged ArrayViewReindexDom(rank=rank,
                                            idxType=idxType,
                                            //                                           stridable=true,
@@ -87,7 +87,7 @@ module ArrayViewReindex {
                                       downdomInst = privatizeData(5));
     }
 
-    proc dsiDestroyDist() {
+    override proc dsiDestroyDist() {
       _delete_dom(updom, false);
       //      _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
@@ -243,7 +243,7 @@ module ArrayViewReindex {
       return ind;
     }
 
-    proc dsiMyDist() {
+    override proc dsiMyDist() {
       return dist;
     }
 
@@ -627,7 +627,7 @@ module ArrayViewReindex {
     }
 
     // not sure what this is, but everyone seems to have one...
-    inline proc dsiGetBaseDom() {
+    override proc dsiGetBaseDom() {
       return privDom;
     }
 
@@ -656,7 +656,7 @@ module ArrayViewReindex {
       return this;
     }
 
-    proc dsiDestroyArr() {
+    override proc dsiDestroyArr() {
       if ownsArrInstance {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }

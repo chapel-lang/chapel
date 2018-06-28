@@ -22,7 +22,7 @@ var x: [1..M] int;
 for xx in x do xx = 1;
 
 var pre  = memoryUsed() - prepre;
-var y    = new Doppelganger(x);
+var y    = new unmanaged Doppelganger(x);
 var post = memoryUsed() - prepre;
 
 if post >= 2*pre then

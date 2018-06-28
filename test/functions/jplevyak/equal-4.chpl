@@ -1,6 +1,6 @@
 class foo { var a : int;  }
 
-var x : foo = new unmanaged foo();
+var x : unmanaged foo = new unmanaged foo();
 
 delete x;
 

@@ -12,7 +12,7 @@ class Child : Parent {
 
 proc test() {
   var x = new owned Child();
-  var y = x.borrow():Parent;
+  var y = x.borrow():borrowed Parent;
   y.f();
 }
 test();

@@ -47,7 +47,7 @@ class BoundedBuffer {
   }
 }
 
-var buffer: BoundedBuffer = new BoundedBuffer();
+var buffer: unmanaged BoundedBuffer = new unmanaged BoundedBuffer();
 
 // Given a value, do some work on it to create the next value. In this
 // case, the work is sleeping for a second and leaving the value unchanged.

@@ -8,7 +8,7 @@ class Sub: Base {
 
 proc main() {
   var sub         = new unmanaged Sub();
-  var base:Base() = sub;
+  var base:unmanaged Base() = sub;
   var base2       = new unmanaged Base();
 
   base.s = "Base";

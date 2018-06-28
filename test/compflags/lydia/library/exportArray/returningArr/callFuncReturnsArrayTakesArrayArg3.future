@@ -1,0 +1,2 @@
+bug: arrays made with ExternDom don't get initial contents
+#9934

@@ -3,7 +3,7 @@ use OwnedObject;
 
 class Foo {
   proc foobar() throws {
-    throw new Error();
+    throw new unmanaged Error();
   }
 }
 

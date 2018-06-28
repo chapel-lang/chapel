@@ -3,9 +3,9 @@ class pair {
   var b: real;
 }
 
-var a: pair = new pair();
+var a: unmanaged pair = new unmanaged pair();
 
-proc callin(in x: pair) {
+proc callin(in x: unmanaged pair) {
   writeln("in callin, x is: ", x.a, " ", x.b);
 
   if (x == a) {
@@ -14,7 +14,7 @@ proc callin(in x: pair) {
     writeln("a and x differ on the way in");
   }
 
-  x   = new pair();
+  x   = new unmanaged pair();
   x.a = 11;
   x.b = 3.4;
 
@@ -30,7 +30,7 @@ proc callin(in x: pair) {
 }
 
 
-proc callout(out x: pair) {
+proc callout(out x: unmanaged pair) {
   if (x == nil) {
     writeln("x is nil on the way in as it should be");
   } else {
@@ -43,7 +43,7 @@ proc callout(out x: pair) {
     writeln("a and x differ on the way in");
   }
 
-  x   = new pair();
+  x   = new unmanaged pair();
   x.a = 12;
   x.b = 4.5;
 
@@ -57,7 +57,7 @@ proc callout(out x: pair) {
 }
 
 
-proc callinout(inout x: pair) {
+proc callinout(inout x: unmanaged pair) {
   writeln("in callinout, x is: ", x.a, " ", x.b);
 
   if (x == a) {
@@ -66,7 +66,7 @@ proc callinout(inout x: pair) {
     writeln("a and x differ on the way in");
   }
 
-  x   = new pair();
+  x   = new unmanaged pair();
   x.a = 13;
   x.b = 5.6;
 
@@ -80,7 +80,7 @@ proc callinout(inout x: pair) {
 }
 
 
-proc callblank(x: pair) {
+proc callblank(x: unmanaged pair) {
   writeln("in callblank, x is: ", x.a, " ", x.b);
 
   if (x == a) {

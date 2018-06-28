@@ -1,13 +1,13 @@
 enum probClass {S, W, A, B, C};
 
-var PD: domain(probClass);
+var PD: domain(probClass) = probClass.S..probClass.C;
 
 var A: [PD] real;
 
-for i in PD {
-  A(i) = i:real;
+for (i, a) in zip(PD, A) {
+  a = i:real;
 }
 
-for a in A {
-  writeln("a is: ", a);
+for e in probClass {
+  writeln("a is: ", A[e]);
 }

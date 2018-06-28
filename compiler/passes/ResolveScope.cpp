@@ -283,6 +283,7 @@ void ResolveScope::addBuiltIns() {
   extend(gDivZeroChecking);
   extend(gPrivatization);
   extend(gLocal);
+  extend(gWarnUnstable);
   extend(gNodeID);
 }
 

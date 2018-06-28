@@ -6,6 +6,5 @@ class Foo {
   var y = 3;
 }
 
-var foo = new Foo();
+var foo = new owned Foo();
 writeln(foo);
-delete foo;

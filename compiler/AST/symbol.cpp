@@ -65,6 +65,7 @@ VarSymbol *gCastChecking = NULL;
 VarSymbol *gDivZeroChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
+VarSymbol* gWarnUnstable = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 
@@ -1266,6 +1267,23 @@ void TypeSymbol::renameInstantiatedIndividual(Symbol* sym) {
   } else {
     VarSymbol* var = toVarSymbol(sym);
     if (var && var->immediate) {
+      // Add cast suffix if it's a non-default-sized immediate
+      const char* castSuffix = "";
+      const char* castSuffixC = "";
+      Type* immType = var->type;
+      if (is_int_type(immType) || is_uint_type(immType) ||
+          is_bool_type(immType) ||
+          is_real_type(immType) || is_imag_type(immType) ||
+          is_complex_type(immType)) {
+        if (!isNumericParamDefaultType(immType)) {
+          castSuffix = astr(":", toString(immType));
+          char width_buf[16];
+          snprintf(width_buf, sizeof(width_buf), "%i", get_width(immType));
+          castSuffixC = astr(width_buf);
+        }
+      }
+
+      // Compute a string representation of the immediate
       Immediate* immediate = var->immediate;
       if (var->type == dtString || var->type == dtStringC)
         renameInstantiatedTypeString(this, var);
@@ -1273,16 +1291,18 @@ void TypeSymbol::renameInstantiatedIndividual(Symbol* sym) {
         // Handle boolean types specially.
         const char* name4bool = immediate->bool_value() ? "true" : "false";
         const char* cname4bool = immediate->bool_value() ? "T" : "F";
-        this->name = astr(this->name, name4bool);
-        this->cname = astr(this->cname, cname4bool);
+        this->name = astr(this->name, name4bool, castSuffix);
+        this->cname = astr(this->cname, cname4bool, castSuffixC);
       } else {
         const size_t bufSize = 128;
         char imm[bufSize];
         snprint_imm(imm, bufSize, *var->immediate);
-        this->name = astr(this->name, imm);
-        this->cname = astr(this->cname, imm);
+        this->name = astr(this->name, imm, castSuffix);
+        this->cname = astr(this->cname, imm, castSuffixC);
       }
+
     } else {
+      // Not an immediate
       this->name = astr(this->name, sym->cname);
       this->cname = astr(this->cname, sym->cname);
     }

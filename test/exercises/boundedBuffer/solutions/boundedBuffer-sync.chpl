@@ -81,7 +81,7 @@ proc main() {
 // produce 1/numProducers of the requested 'numItems' items using an
 // aligned strided range.  Return the number of items we produced.
 //
-proc producer(b: BoundedBuffer, pid: int) {
+proc producer(b: borrowed BoundedBuffer, pid: int) {
   var myItems = 0..#numItems by numProducers align pid-1;
 
   for i in myItems {
@@ -96,7 +96,7 @@ proc producer(b: BoundedBuffer, pid: int) {
 // consume items greedily until a sentinel value is found.  Return
 // the number of items we successfully consumed.
 //
-proc consumer(b: BoundedBuffer, cid: int) {
+proc consumer(b: borrowed BoundedBuffer, cid: int) {
   var count = 0;
   do {
     const (data, more) = b.consume();

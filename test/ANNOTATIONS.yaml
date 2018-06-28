@@ -333,7 +333,10 @@ all:
   06/01/18:
     - Represent if-expressions with IfExpr node instead of if-function (#9649)
   06/04/18:
-    - text:  Use the block transfer engine for large transfers under ugni (#9683)
+    - text: Use the block transfer engine for large transfers under ugni (#9683)
+      config: 16 node XC
+  06/20/18:
+    - text: Optimize non-fetching network atomics (#9876)
       config: 16 node XC
 
 
@@ -869,6 +872,9 @@ memleaksfull:
     - Fix several memory leaks (#9796)
     - Fix regexp leak (#9799)
     - Close some memory leaks in these tests (#9802)
+  06/19/18:
+    - Remove origin field from DefaultRectangular (#9863)
+    - Allow basic usage of nested types with initializers (#9886)
 
 meteor:
   12/18/13:

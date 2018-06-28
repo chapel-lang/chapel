@@ -89,11 +89,14 @@ def approximateDiff(file_name_1, file_name_2, tolerance):
 #----------------------------------------------------------
 output_file_name = sys.argv[1]
 
-output_file = open(output_file_name, 'w')
 if output_file_name.endswith(".comp.out.tmp"):
+    output_file = open(output_file_name, 'w')
     output_file.write("Compilation failed!\n");
+    output_file.write("See the errors in the file "+output_file_name+".save\n")
     output_file.close()
     exit(0)
+
+output_file = open(output_file_name, 'w')
 
 #==== Tolerance for approximate diff-ing ====
 tolerance = 1e-4

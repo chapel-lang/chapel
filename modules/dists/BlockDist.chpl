@@ -520,7 +520,7 @@ proc Block.dsiClone() {
                    sparseLayoutType);
 }
 
-proc Block.dsiDestroyDist() {
+override proc Block.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
@@ -538,8 +538,8 @@ proc Block.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
-proc Block.dsiNewRectangularDom(param rank: int, type idxType,
-                                param stridable: bool, inds) {
+override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
+                                         param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
   if rank != this.rank then
@@ -555,7 +555,8 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   return dom;
 }
 
-proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
+override proc Block.dsiNewSparseDom(param rank: int, type idxType,
+                                    dom: domain) {
   return new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                             sparseLayoutType=sparseLayoutType,
                             stridable=dom.stridable,
@@ -659,7 +660,7 @@ proc LocBlock.init(param rank: int,
 }
 
 
-proc BlockDom.dsiMyDist() return dist;
+override proc BlockDom.dsiMyDist() return dist;
 
 proc BlockDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
@@ -898,7 +899,7 @@ proc BlockArr.dsiDisplayRepresentation() {
   }
 }
 
-proc BlockArr.dsiGetBaseDom() return dom;
+override proc BlockArr.dsiGetBaseDom() return dom;
 
 //
 // NOTE: Each locale's myElems array must be initialized prior to
@@ -938,7 +939,7 @@ proc BlockArr.setup() {
   if doRADOpt && disableBlockLazyRAD then setupRADOpt();
 }
 
-proc BlockArr.dsiDestroyArr() {
+override proc BlockArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       delete locArr(localeIdx);
@@ -1170,7 +1171,7 @@ proc _extendTuple(type t, idx, args) {
   return tup;
 }
 
-proc BlockArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
+override proc BlockArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
 {
   //
   // For the default rectangular array, this function changes the data
@@ -1185,7 +1186,7 @@ proc BlockArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,s
   //
 }
 
-proc BlockArr.dsiPostReallocate() {
+override proc BlockArr.dsiPostReallocate() {
   // Call this *after* the domain has been reallocated
   if doRADOpt then setupRADOpt();
 }
@@ -1429,7 +1430,7 @@ proc BlockArr.dsiLocalSubdomain() {
 proc BlockDom.dsiLocalSubdomain() {
   // TODO -- could be replaced by a privatized myLocDom in BlockDom
   // as it is with BlockArr
-  var myLocDom:LocBlockDom(rank, idxType, stridable) = nil;
+  var myLocDom:unmanaged LocBlockDom(rank, idxType, stridable) = nil;
   for (loc, locDom) in zip(dist.targetLocales, locDoms) {
     if loc == here then
       myLocDom = locDom;

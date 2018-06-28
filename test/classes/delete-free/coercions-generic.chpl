@@ -9,10 +9,10 @@ proc test1() {
 }
 
 proc test2() {
-  var instance:MyClass(int) = new Owned(new MyClass(1));
+  var instance:borrowed MyClass(int) = new Owned(new MyClass(1));
 }
 
-proc acceptMyClass(c:MyClass) {
+proc acceptMyClass(c:borrowed MyClass) {
   writeln(c);
 }
 

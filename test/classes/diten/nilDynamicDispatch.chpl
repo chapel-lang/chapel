@@ -10,7 +10,7 @@ class D:C {
   }
 }
 
-var c: C;
-var d: D;
+var c: borrowed C;
+var d: borrowed D;
 
 c.foo();

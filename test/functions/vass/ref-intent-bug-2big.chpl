@@ -98,7 +98,7 @@ class LocalData {
 // A class for all node-local data.
 class GlobalData {
   const name: string;
-  var datas: [gridDist] LocalData;
+  var datas: [gridDist] unmanaged LocalData;
 }
 
 // constructor for GlobalData
@@ -106,7 +106,7 @@ proc GlobalData.init(nameArg: string) {
   name=nameArg;
   this.complete();
   coforall (inf, dat, loc) in zip(WI.infos, datas, gridLocales) do on loc {
-    dat = new LocalData(inf);
+    dat = new unmanaged LocalData(inf);
     // sanity checks
     assert(dat.locale == loc);
     assert(dat.linfo.locale == loc);
@@ -144,8 +144,8 @@ proc GlobalData.deinit() {
 }
 
 // Our two global arrays, to switch between.
-const WA = new GlobalData("WA"),
-      WB = new GlobalData("WB");
+const WA = new unmanaged GlobalData("WA"),
+      WB = new unmanaged GlobalData("WB");
 
 proc deinit() {
   delete WA;

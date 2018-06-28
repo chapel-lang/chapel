@@ -177,7 +177,7 @@ module SharedObject {
        If this record was the last :record:`Shared` managing a
        non-nil instance, that instance will be deleted.
      */
-    proc ref retain(newPtr:p.type) {
+    proc ref retain(newPtr:unmanaged p.type) {
       clear();
       this.p = newPtr;
       if newPtr != nil {

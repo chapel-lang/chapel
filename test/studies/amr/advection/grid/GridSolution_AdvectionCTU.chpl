@@ -17,7 +17,7 @@ use GridVariable_AdvectionCTU;
 //------------------------------------------------------------------
 
 proc GridSolution.advance_AdvectionCTU(
-  bc:             GridBC,
+  bc:             unmanaged GridBC,
   velocity:       dimension*real,
   time_requested: real)
 {
@@ -72,7 +72,7 @@ proc GridSolution.advance_AdvectionCTU(
 //-------------------------------------------------------------
 
 proc GridSolution.step_AdvectionCTU(
-  bc:       GridBC,
+  bc:       unmanaged GridBC,
   velocity: dimension*real,
   dt:       real)
 {

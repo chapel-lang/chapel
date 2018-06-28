@@ -9,7 +9,7 @@ class Impl {
 }
 
 record R {
-  forwarding var impl:Impl;
+  forwarding var impl:unmanaged Impl;
 }
 
 proc test() {

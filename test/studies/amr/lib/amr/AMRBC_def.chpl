@@ -6,10 +6,10 @@ use AMRHierarchy_def;
 //|___________________/
 class AMRBC {
 
-  const hierarchy: AMRHierarchy;
+  const hierarchy: unmanaged AMRHierarchy;
 
-  proc apply(level_idx: int, q: LevelVariable, t: real) {}
-  proc apply_Homogeneous(level_idx: int, q: LevelVariable) {}
+  proc apply(level_idx: int, q: unmanaged LevelVariable, t: real) {}
+  proc apply_Homogeneous(level_idx: int, q: unmanaged LevelVariable) {}
 
 }
 // /"""""""""""""""""""|

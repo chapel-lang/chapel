@@ -13,10 +13,10 @@ class C {
   }
 }
 
-var c = new C(2,int);
+var c = new unmanaged C(2,int);
 c.foo();
 
-var c2 = new C(3,real);
+var c2 = new unmanaged C(3,real);
 c2.foo();
 
 delete c;

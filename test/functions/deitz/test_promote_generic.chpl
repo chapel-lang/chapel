@@ -3,11 +3,11 @@ class C {
   var x: t;
 }
 
-proc foo(c: C) {
+proc foo(c: unmanaged C) {
   return c.x;
 }
 
-var A: [1..4] C(int) = [i in 1..4] new C(int, i);
+var A: [1..4] unmanaged C(int) = [i in 1..4] new unmanaged C(int, i);
 
 writeln(A);
 

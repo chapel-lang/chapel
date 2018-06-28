@@ -340,7 +340,7 @@ proc Cyclic.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+override proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != this.rank then
@@ -496,6 +496,12 @@ proc CyclicDom.dsiDisplayRepresentation() {
 proc CyclicDom.dsiLow return whole.low;
 
 proc CyclicDom.dsiHigh return whole.high;
+
+proc CyclicDom.dsiAlignedLow return whole.alignedLow;
+
+proc CyclicDom.dsiAlignedHigh return whole.alignedHigh;
+
+proc CyclicDom.dsiAlignment return whole.alignment;
 
 proc CyclicDom.dsiStride return whole.stride;
 
@@ -1158,7 +1164,7 @@ proc CyclicArr.dsiLocalSubdomain() {
 proc CyclicDom.dsiLocalSubdomain() {
   // TODO -- could be replaced by a privatized myLocDom in CyclicDom
   // as it is with CyclicArr
-  var myLocDom:LocCyclicDom(rank, idxType, stridable) = nil;
+  var myLocDom:unmanaged LocCyclicDom(rank, idxType, stridable) = nil;
   for (loc, locDom) in zip(dist.targetLocs, locDoms) {
     if loc == here then
       myLocDom = locDom;

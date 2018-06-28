@@ -89,6 +89,9 @@ module DefaultAssociative {
       if !chpl__validDefaultAssocDomIdxType(idxType) then
         compilerError("Default Associative domains with idxType=",
                       idxType:string, " are not allowed", 2);
+      if chpl_warnUnstable && isEnumType(idxType) then
+        compilerWarning("As of Chapel 1.18, associative domains of enums are empty by default rather than full, and associative domains and arrays of enums no longer maintain order");
+
       this.idxType = idxType;
       this.parSafe = parSafe;
       this.dist = dist;
@@ -147,17 +150,8 @@ module DefaultAssociative {
     }
 
     iter these() {
-      if !isEnumType(idxType) {
-        for slot in _fullSlots() {
-          yield table[slot].idx;
-        }
-      } else {
-        for val in chpl_enumerate(idxType) {
-          var (match, slot) = _findFilledSlot(val);
-          if match then
-            yield table[slot].idx;
-        }
-      }
+      for slot in _fullSlots() do
+        yield table[slot].idx;
     }
  
     iter these(param tag: iterKind) where tag == iterKind.standalone {
@@ -288,7 +282,7 @@ module DefaultAssociative {
       return _findFilledSlot(idx)(1);
     }
   
-    proc dsiAdd(idx) {
+    override proc dsiAdd(idx) {
       // add helpers will return a tuple like (slotNum, numIndicesAdded);
 
       // these two seemingly redundant lines were necessary to work around a
@@ -333,6 +327,9 @@ module DefaultAssociative {
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
+
+    // TODO - once we can annotate idx argument should outlive 'this'
+    pragma "unsafe"
     proc _add(idx: idxType, in slotNum : index(tableDom) = -1) {
       var foundSlot : bool = (slotNum != -1);
       if !foundSlot then
@@ -828,9 +825,6 @@ module DefaultAssociative {
   }
 
   inline proc chpl__defaultHash(e) where isEnum(e) {
-    // this cast to int is a little suspicious for large enums that might
-    // fit in a uint but not an int, but _gen_key coerces to uint anyway
-    // so it isn't actually distinguishing between these types.
     return _gen_key(chpl__enumToOrder(e));
   }
   

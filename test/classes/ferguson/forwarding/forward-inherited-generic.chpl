@@ -14,7 +14,7 @@ class Deque : Collection {
 
 record wrapper {
     type t;
-    var instance : Deque(t);
+    var instance : unmanaged Deque(t);
 
     inline proc _value { 
         if instance == nil then

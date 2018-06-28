@@ -7,9 +7,9 @@ class setConst {
 
 
 
-const const_testSix     : setConst = new borrowed setConst(thisShouldBeSix     =  6);
-const const_testEleven  : setConst = new borrowed setConst(thisShouldBeEleven  = 11);
-const const_testSixteen : setConst = new borrowed setConst(thisShouldBeSixteen = 16);
+const const_testSix     : borrowed setConst = new borrowed setConst(thisShouldBeSix     =  6);
+const const_testEleven  : borrowed setConst = new borrowed setConst(thisShouldBeEleven  = 11);
+const const_testSixteen : borrowed setConst = new borrowed setConst(thisShouldBeSixteen = 16);
 
 writeln("const_testSix.thisShouldBeSix         = ",
          const_testSix.thisShouldBeSix);
@@ -24,9 +24,9 @@ writeln();
 
 
 
-var var_testSix     : setConst = new borrowed setConst(thisShouldBeSix     =  6);
-var var_testEleven  : setConst = new borrowed setConst(thisShouldBeEleven  = 11);
-var var_testSixteen : setConst = new borrowed setConst(thisShouldBeSixteen = 16);
+var var_testSix     : borrowed setConst = new borrowed setConst(thisShouldBeSix     =  6);
+var var_testEleven  : borrowed setConst = new borrowed setConst(thisShouldBeEleven  = 11);
+var var_testSixteen : borrowed setConst = new borrowed setConst(thisShouldBeSixteen = 16);
 
 writeln("var_testSix.thisShouldBeSix         = ",
          var_testSix.thisShouldBeSix);

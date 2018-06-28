@@ -111,6 +111,8 @@ static bool mustUseRuntimeTypeDefault(ArgSymbol* formal);
 
 static bool typeExprReturnsType(ArgSymbol* formal);
 
+static IntentTag getIntent(ArgSymbol* formal);
+
 typedef struct DefaultExprFnEntry_s {
   FnSymbol* defaultExprFn;
   std::vector<std::pair<ArgSymbol*,ArgSymbol*> > usedFormals;
@@ -475,6 +477,8 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
 
   wrapper->addFlag(FLAG_INLINE);
 
+  wrapper->addFlag(FLAG_LINE_NUMBER_OK);
+
   wrapper->retTag = RET_VALUE;
 
   if (fn->hasFlag(FLAG_METHOD)) {
@@ -647,7 +651,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   if (formal->type   != dtTypeDefaultToken &&
       formal->type   != dtMethodToken      &&
       formal->intent == INTENT_BLANK) {
-    formalIntent = blankIntentForType(formal->type);
+    formalIntent = getIntent(formal);
   }
 
   if ((formalIntent & INTENT_FLAG_REF) != 0)
@@ -690,7 +694,13 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   normalize(block);
   resolveBlockStmt(block);
 
-  block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, temp));
+  if (temp->isRef() && (formalIntent & INTENT_FLAG_REF) == 0) {
+    CallExpr* copy = new CallExpr("chpl__initCopy", temp);
+    block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, copy));
+    resolveCallAndCallee(copy);
+  } else {
+    block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, temp));
+  }
   block->flattenAndRemove();
 
   // Now we know if 'temp' is a param or a type.
@@ -1337,7 +1347,6 @@ static bool      needToAddCoercion(Type*      actualType,
                                    ArgSymbol* formal,
                                    FnSymbol*  fn);
 
-static IntentTag getIntent(ArgSymbol* formal);
 
 static void      addArgCoercion(FnSymbol*  fn,
                                 CallExpr*  call,

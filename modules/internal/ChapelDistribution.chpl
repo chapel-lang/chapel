@@ -788,7 +788,7 @@ module ChapelDistribution {
       halt("reallocating not supported for this array type");
     }
 
-    proc dsiPostReallocate() {
+    override proc dsiPostReallocate() {
     }
 
     proc deinit() {
@@ -827,7 +827,7 @@ module ChapelDistribution {
     pragma "local field"
     var data: [dom.nnzDom] eltType;
 
-    proc dsiGetBaseDom() return dom;
+    override proc dsiGetBaseDom() return dom;
 
     proc deinit() {
       // this is a bug workaround
@@ -881,7 +881,7 @@ module ChapelDistribution {
     }
 
     // shift data array after single index addition. Fills the new index with irv
-    proc sparseShiftArray(shiftrange, initrange) {
+    override proc sparseShiftArray(shiftrange, initrange) {
       for i in initrange {
         data(i) = irv;
       }
@@ -891,7 +891,7 @@ module ChapelDistribution {
       data(shiftrange.low) = irv;
     }
 
-    proc sparseShiftArrayBack(shiftrange) {
+    override proc sparseShiftArrayBack(shiftrange) {
       for i in shiftrange {
         data(i) = data(i+1);
       }

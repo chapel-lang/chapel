@@ -14,4 +14,4 @@ class C {
   }
 }
 
-var myC = new C(new R2(1.2));
+var myC = new shared C(new R2(1.2));

@@ -32,7 +32,7 @@ enum probClass {S=1, W, A, B, C};
 class EnumC {
   type t;
   
-  var enumDom: domain(probClass);
+  var enumDom: domain(probClass) = probClass.S..probClass.C;
   var x: [enumDom] t;
 }
 
@@ -183,7 +183,7 @@ proc foo(C) {
 {
   // declare associative class instances
 
-  var enumDom: domain(probClass);
+  var enumDom: domain(probClass) = probClass.S..probClass.C;
   type enumArr = [enumDom] real;
 
   var myArithC = new unmanaged ArithC(enumArr);

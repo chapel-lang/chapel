@@ -1,1 +1,1 @@
-override-spurious2.chpl:7: warning: Child.g override keyword present but no superclass method matches signature to override
+override-spurious2.chpl:7: error: Child.g override keyword present but no superclass method matches signature to override

@@ -8,14 +8,12 @@ class C {
 
 }
 
-var myC = new C();
+var myC = new borrowed C();
 
-proc foo(c: C = myC, fmt: string = "foo", x: int) {
+proc foo(c: borrowed C = myC, fmt: string = "foo", x: int) {
   writeln("and got the int foo.");
 
 }
 
 writeln("Calling the overloaded foo function with an int argument,");
 foo(3);
-
-delete myC;

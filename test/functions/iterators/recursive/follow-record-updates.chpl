@@ -7,7 +7,7 @@ class Tree {
   var left: owned Tree;
 }
 
-iter postorder(tree: Tree): Tree {
+iter postorder(tree: borrowed Tree): borrowed Tree {
   if tree != nil {
 
     for child in postorder(tree.left) do

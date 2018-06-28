@@ -1,7 +1,7 @@
 
 record B {
   proc foo() throws {
-    throw new Error();
+    throw new unmanaged Error();
   }
 }
 

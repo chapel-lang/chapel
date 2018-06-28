@@ -2,7 +2,7 @@ class MaxHeap {
 
   const maxSize: int;
   var size: int = 0;
-  var heap: [0..#maxSize] HeapNode;
+  var heap: [0..#maxSize] unmanaged HeapNode;
   var IndexToHeapNode: [0..#maxSize] int;
 
   class HeapNode {
@@ -53,7 +53,7 @@ class MaxHeap {
   }
 
   proc extractMax() {
-    var node: HeapNode;
+    var node: unmanaged HeapNode;
     var parent, child, ind, key: int;
     node = heap(0);
     ind = node.ind;
@@ -86,7 +86,7 @@ class MaxHeap {
   proc insert(ind: int, key: int) {
     var node: int = size;
     var par: int = parent(node);
-    var newNode = new HeapNode(ind, key);
+    var newNode = new unmanaged HeapNode(ind, key);
     size += 1;
     while node != 0 && key > heap(par).key {
       heap(node) = heap(par);

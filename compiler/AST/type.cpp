@@ -1070,6 +1070,10 @@ void initCompilerGlobals() {
   gLocal->addFlag(FLAG_PARAM);
   setupBoolGlobal(gLocal, fLocal);
 
+  gWarnUnstable = new VarSymbol("chpl_warnUnstable", dtBool);
+  gWarnUnstable->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gWarnUnstable, fWarnUnstable);
+
   // defined and maintained by the runtime
   gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
   gNodeID->addFlag(FLAG_EXTERN);

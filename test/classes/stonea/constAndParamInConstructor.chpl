@@ -14,10 +14,8 @@ class Bar {
     }
 }
 
-var objA = new Foo();
-var objB = new Bar();
+var objA = new borrowed Foo();
+var objB = new borrowed Bar();
 
 writeln(objA.value);
 writeln(objB.value);
-
-

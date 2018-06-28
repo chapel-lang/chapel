@@ -84,8 +84,8 @@ proc nearestMutualParentClass(type car, type cdr...?k) type where k != 1 {
 }
 
 proc main {
-  var c: nearestMutualParentClass(E, D, C, C2, F) = new borrowed E();
-  var d: nearestMutualParentClass(E, D, C) = new borrowed E();
+  var c: borrowed nearestMutualParentClass(borrowed E, borrowed D, borrowed C, borrowed C2, borrowed F) = new borrowed E();
+  var d: borrowed nearestMutualParentClass(borrowed E, borrowed D, borrowed C) = new borrowed E();
   writeln(c.name);
   writeln(c.ddName());
   writeln(d.name);

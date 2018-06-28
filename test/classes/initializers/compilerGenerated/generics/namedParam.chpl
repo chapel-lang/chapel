@@ -19,6 +19,5 @@ class Z : A {
   var d : Dummy(int, stridable=stridable);
 }
 
-var z = new Z(int, false);
+var z = new owned Z(int, false);
 writeln("z = ", z);
-delete z;

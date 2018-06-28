@@ -2,16 +2,16 @@ use MRA;
 use MadAnalytics;
 
 class Sum: AFcn {
-    var f: AFcn;
-    var g: AFcn;
+    var f: unmanaged AFcn;
+    var g: unmanaged AFcn;
     proc this(x) {
         return f(x)+g(x);
     }
 }
 
 class Product: AFcn {
-    var f: AFcn;
-    var g: AFcn;
+    var f: unmanaged AFcn;
+    var g: unmanaged AFcn;
     proc this(x) {
         return f(x)*g(x);
     }

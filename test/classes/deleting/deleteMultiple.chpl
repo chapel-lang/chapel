@@ -6,7 +6,7 @@ class C {
   }
 }
 
-var x = new C(1),
-    y = new C(2);
+var x = new unmanaged C(1),
+    y = new unmanaged C(2);
 
 delete x, y;

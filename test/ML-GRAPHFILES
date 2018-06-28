@@ -28,6 +28,7 @@ release/examples/benchmarks/hpcc/stream.ml-perf.graph
 release/examples/benchmarks/hpcc/variants/stream-promoted.ml-perf.graph
 release/examples/benchmarks/ssca2/SSCA2_main.ml-perf.graph
 studies/prk/Stencil/prk-stencil.ml-perf.graph
+studies/bale/histogram/histo-atomics.ml-perf.graph
 
 # suite: - NAS Parallel Benchmarks (perf)
 npb/ep/mcahir/ep.ml-perf.graph
@@ -44,6 +45,8 @@ release/examples/benchmarks/hpcc/variants/stream-promoted.ml-perf.graph
 release/examples/benchmarks/ssca2/SSCA2_main.ml-perf.graph
 # suite: - PRK (perf)
 studies/prk/Stencil/prk-stencil.ml-perf.graph
+# suite: - Bale (perf)
+studies/bale/histogram/histo-atomics.ml-perf.graph
 
 # suite: <empty>
 # suite: All (time)
@@ -67,6 +70,8 @@ studies/isx/isx-hand-optimized.ml-time.graph
 release/examples/benchmarks/isx/isx-release.ml-time.graph
 studies/prk/Stencil/optimized/prk-stencil-opt.ml-time.graph
 studies/prk/Stencil/prk-stencil.ml-time.graph
+studies/bale/histogram/histo-atomics.ml-time.graph
+
 # suite: - NAS Parallel Benchmarks (time)
 npb/ep/mcahir/ep.ml-time.graph
 users/npadmana/npb-mg/mg.ml-time.graph
@@ -93,7 +98,8 @@ release/examples/benchmarks/isx/isx-release.ml-time.graph
 # suite: - PRK (time)
 studies/prk/Stencil/optimized/prk-stencil-opt.ml-time.graph
 studies/prk/Stencil/prk-stencil.ml-time.graph
-
+# suite: - Bale (time)
+studies/bale/histogram/histo-atomics.ml-time.graph
 
 # suite: <empty>
 # suite: Studies (time)

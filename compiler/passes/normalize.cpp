@@ -52,6 +52,7 @@ static void        handleReduceAssign();
 
 static bool        isArrayFormal(ArgSymbol* arg);
 
+static bool        returnsArray(FnSymbol* fn);
 static void        makeExportWrapper(FnSymbol* fn);
 
 static void        fixupArrayFormals(FnSymbol* fn);
@@ -1094,11 +1095,14 @@ static void processManagedNew(CallExpr* newCall) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void fixupExportedArrayReturns(FnSymbol* fn);
 static bool isVoidReturn(CallExpr* call);
 static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret);
 
 static void normalizeReturns(FnSymbol* fn) {
   SET_LINENO(fn);
+
+  fixupExportedArrayReturns(fn);
 
   std::vector<CallExpr*> rets;
   std::vector<CallExpr*> calls;
@@ -1215,6 +1219,26 @@ static void normalizeReturns(FnSymbol* fn) {
 
   if (labelIsUsed == false) {
     label->defPoint->remove();
+  }
+}
+
+// Expected to run after we make the wrapper, since the wrapper is generated
+// prior to any normalization occurring on the function, and this gets called
+// during normalize called on a specific AST node.
+static void fixupExportedArrayReturns(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_EXPORT) &&
+      fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+      returnsArray(fn)) {
+    fn->retExprType->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+
+    CallExpr* retCall = toCallExpr(fn->body->body.tail);
+    INT_ASSERT(retCall && retCall->isPrimitive(PRIM_RETURN));
+
+    // This appears to be prior to any insertion of call temps, etc, so it seems
+    // okay for now to just insert the conversion call around the function call.
+    CallExpr* transformRet = new CallExpr("convertToExternalArray",
+                                          retCall->get(1)->remove());
+    retCall->insertAtTail(transformRet);
   }
 }
 
@@ -2693,13 +2717,14 @@ static void makeExportWrapper(FnSymbol* fn) {
     }
   }
 
-  // TODO: Also check if return type is an array.  Don't make two wrappers,
-  // pls.
-  if (argsToReplace) {
-    // We have at least one array argument.  Need to make a version of this
-    // function that can be exported
+  if (argsToReplace || returnsArray(fn)) {
+    // Either we have at least one array argument, or we return an array.
+    // Need to make a version of this function that can be exported
     FnSymbol* newFn = fn->copy();
     newFn->addFlag(FLAG_COMPILER_GENERATED);
+    // Avoid resolution conflicts when the arguments remain unchanged (but we
+    // needed to make a wrapper due to the return type)
+    newFn->addFlag(FLAG_LAST_RESORT);
 
     fn->defPoint->insertBefore(new DefExpr(newFn));
 
@@ -2730,6 +2755,25 @@ static bool hasNonVoidReturnStmt(FnSymbol* fn) {
   }
   return false;
 }
+
+// Determines if we explicitly declare an exported function as returning an
+// array.  In that case, we should make a wrapper (if we aren't already), and
+// transform that array into a form that a caller from another programming
+// language would understand.
+static bool returnsArray(FnSymbol* fn) {
+  if (fn->retExprType != NULL) {
+    if (CallExpr* call = toCallExpr(fn->retExprType->body.tail)) {
+      if (call->isNamed("chpl__buildArrayRuntimeType")) {
+        return true;
+      }
+    }
+  }
+  // SIMPLIFYING ASSUMPTION:
+  // If we don't have a declared return type, assume we don't return an array
+  return false;
+}
+
+
 /************************************* | **************************************
 *                                                                             *
 * The parser represents formals with an array type specifier as a formal with *

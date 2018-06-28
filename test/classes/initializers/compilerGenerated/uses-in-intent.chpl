@@ -13,20 +13,18 @@ class Simple {
 
 writeln("\nSimple zero actuals");
 {
-  var s = new Simple();
+  var s = new unmanaged Simple();
   writeln("s = ", s);
   delete s;
 }
 writeln("\nSimple var actual");
 {
   var r = new R();
-  var s = new Simple(r);
+  var s = new borrowed Simple(r);
   writeln("s = ", s);
-  delete s;
 }
 writeln("\nSimple new actual");
 {
-  var s = new Simple(new R());
+  var s = new owned Simple(new R());
   writeln("s = ", s);
-  delete s;
 }

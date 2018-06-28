@@ -845,6 +845,7 @@ class PbsProJob(AbstractJob):
         if self.hostlist is not None:
             # This relies on the caller to use the correct select syntax.
             select_stmt = select_pattern.format(self.hostlist)
+            select_stmt = select_stmt.replace('<num_locales>', str(num_locales))
         elif num_locales > 0:
             select_stmt = select_pattern.format(num_locales)
 

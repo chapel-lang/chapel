@@ -4,7 +4,7 @@ class MyClass {
   var x:int;
 }
 
-proc acceptRef(ref arg:MyClass) {
+proc acceptRef(ref arg:borrowed MyClass) {
   var other = new Owned(new MyClass(2));
   arg = other;
 }

@@ -225,7 +225,7 @@ module ChapelError {
     iter these() {
       var e = _head;
       while e != nil {
-        yield e;
+        yield _to_unmanaged(e);
         e = e._next;
       }
     }
@@ -299,7 +299,7 @@ module ChapelError {
      */
     iter filter(type t) where _to_borrowed(t):borrowed Error {
       for e in these() {
-        var tmp = e:_to_borrowed(t);
+        var tmp = _to_unmanaged(e):_to_unmanaged(t);
         if tmp then
           yield tmp;
       }

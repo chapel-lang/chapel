@@ -2,7 +2,7 @@ use MRA;
 use MadAnalytics;
 
 class Square: AFcn {
-    var f: AFcn;
+    var f: unmanaged AFcn;
     proc this(x: real): real {
         return f(x)**2;
     }
@@ -31,7 +31,7 @@ proc main() {
 
         writeln("\nMultiplying F",i,"*F",i," ...");
         var H2 = F1 * F1;
-        H2.f = new Square(fcn[i]):AFcn;
+        H2.f = new unmanaged Square(fcn[i]):unmanaged AFcn;
         delete H2.f;
         H2.f = fcn[i];
         if verbose then H2.summarize();

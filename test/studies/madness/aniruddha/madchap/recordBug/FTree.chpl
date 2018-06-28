@@ -187,7 +187,7 @@ class FTree {
     /** Return a copy of this FTree
      */
     proc copy() {
-        var t = new FTree(order);
+        var t = new unmanaged FTree(order);
         forall i in t.nodes.domain do t.nodes(i) = nodes(i);
         return t;
     }
@@ -253,7 +253,7 @@ proc main() {
             writeln(i, ": ", n);
     */
 
-    var f = new FTree(2);
+    var f = new unmanaged FTree(2);
     
     for (i, j) in {1..3, 2..4} do f[(i, j)] = (i, j);
   

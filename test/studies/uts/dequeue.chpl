@@ -5,19 +5,19 @@ module dequeue {
     class MyNode {
       type itemType;              // type of item
       var item: itemType;         // item in node
-      var prev: MyNode(itemType); // reference to prev node (same type)
-      var next: MyNode(itemType); // reference to next node (same type)
+      var prev: unmanaged MyNode(itemType); // reference to prev node (same type)
+      var next: unmanaged MyNode(itemType); // reference to next node (same type)
     }
 
     type itemType;             // type of items
     var size: int;             // Length of the DeQueue
-    var top: MyNode(itemType); // top node on DeQueue linked list
-    var bottom: MyNode(itemType);
+    var top: unmanaged MyNode(itemType); // top node on DeQueue linked list
+    var bottom: unmanaged MyNode(itemType);
     var id: int;
 
     // pushTop: add an item to the top of the DeQueue
     proc pushTop(item: itemType) {
-      var newTop = new MyNode(itemType, item, nil, top);
+      var newTop = new unmanaged MyNode(itemType, item, nil, top);
       if top == nil {
         bottom = newTop;
       } else {
@@ -29,7 +29,7 @@ module dequeue {
 
     // pushBottom: add an item to the bottom of the DeQueue
     proc pushBottom(item: itemType) {
-      var newBottom = new MyNode(itemType, item, bottom, nil);
+      var newBottom = new unmanaged MyNode(itemType, item, bottom, nil);
       if bottom == nil {
         top = newBottom;
       } else {

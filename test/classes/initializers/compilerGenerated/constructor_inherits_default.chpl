@@ -10,6 +10,6 @@ class Child: Parent {
   }
 }
 
-var c = new Child(3);
+var c = new unmanaged Child(3);
 writeln(c);
 delete c;

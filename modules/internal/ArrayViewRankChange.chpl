@@ -72,7 +72,7 @@ module ArrayViewRankChange {
         return downDistInst;
     }
 
-    proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
+    override proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
       var newdom = new unmanaged ArrayViewRankChangeDom(rank=rank,
                                               idxType=idxType,
                                               stridable=stridable,
@@ -107,7 +107,7 @@ module ArrayViewRankChange {
                                          idx = privatizeData(4));
     }
 
-    proc dsiDestroyDist() {
+    override proc dsiDestroyDist() {
     }
   }
 
@@ -131,7 +131,7 @@ module ArrayViewRankChange {
  pragma "use default init"
  class ArrayViewRankChangeDom: BaseRectangularDom {
     // the lower-dimensional index set that we represent upwards
-    var upDom: DefaultRectangularDom(rank, idxType, stridable);
+    var upDom: unmanaged DefaultRectangularDom(rank, idxType, stridable);
     forwarding upDom except these;
 
     // the collapsed dimensions and indices in those dimensions
@@ -315,7 +315,7 @@ module ArrayViewRankChange {
       f <~> "}";
     }
 
-    proc dsiMyDist() {
+    override proc dsiMyDist() {
       return dist;
     }
 
@@ -741,7 +741,7 @@ module ArrayViewRankChange {
     }
 
     // not sure what this is, but everyone seems to have one...
-    inline proc dsiGetBaseDom() {
+    override proc dsiGetBaseDom() {
       return dom;
     }
 
@@ -767,7 +767,7 @@ module ArrayViewRankChange {
       return this;
     }
 
-    proc dsiDestroyArr() {
+    override proc dsiDestroyArr() {
       if ownsArrInstance {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }

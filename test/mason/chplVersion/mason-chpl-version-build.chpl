@@ -2,6 +2,21 @@
 use MasonBuild;
 
 proc main() {
+
+  
+  const toml = open("Mason.toml", iomode.cw);
+  var s      = toml.writer();
+
+  s.writeln();
+  s.writeln("[brick]");
+  s.writeln('name = "foobar"');
+  s.writeln('version = "0.1.0"');
+  s.writeln('chplVersion = "1.0.0..1.0.0"');
+  s.writeln();
+  s.close();
+
+  toml.close();
+
   const lock = open("Mason.lock", iomode.cw);
   var w      = lock.writer();
 
@@ -16,5 +31,5 @@ proc main() {
   lock.close();
 
   var compopts = ["",];
-  buildProgram(false, false, compopts);
+  buildProgram(false, false, compopts, "Mason.toml", "Mason.lock");
 }

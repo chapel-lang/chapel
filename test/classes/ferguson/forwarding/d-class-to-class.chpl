@@ -15,7 +15,7 @@ class C {
   proc baz() { field = 1; }
 }
 
-var r = new Wrapper(new unmanaged C());
+var r = new unmanaged Wrapper(new unmanaged C());
 r.foo(); // direct method shadows forwarding method
 r.bar(); // same as r.instance.bar(), prints "in C.foo()"
 

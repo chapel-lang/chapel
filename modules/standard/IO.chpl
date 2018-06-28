@@ -2557,7 +2557,7 @@ Throws a SystemError if a writing channel could not be returned.
           enabled, this function supports ``url=`` starting with
           ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
           ``smtps://``, ``imap://``, or ``imaps://``
-:returns: an open reading channel to the requested resource.
+:returns: an open writing channel to the requested resource.
 */
 proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,

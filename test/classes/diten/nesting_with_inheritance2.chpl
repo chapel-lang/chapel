@@ -1,12 +1,12 @@
 class intList {
-  var head: Node;
+  var head: unmanaged Node;
   class Node {
     var value: int;
-    var next: Node;
+    var next: unmanaged Node;
   }
 
   proc insert(value: int) {
-    head = new Node(value, head);
+    head = new unmanaged Node(value, head);
   }
 
   iter these() {
@@ -21,18 +21,18 @@ class intList {
 class intSortedList: intList {
   proc insert(value: int) {
     if head == nil || head.value >= value {
-      head = new Node(value, head);
+      head = new unmanaged Node(value, head);
       return;
     }
     var current = head;
     while current.next != nil && current.next.value < value do
       current = current.next;
-    current.next = new Node(value, current.next);
+    current.next = new unmanaged Node(value, current.next);
   }
 }
 
 proc main() {
-  var lst = new intSortedList();
+  var lst = new unmanaged intSortedList();
 
   delete lst;
 }

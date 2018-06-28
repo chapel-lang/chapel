@@ -134,7 +134,7 @@ module ExternalArray {
         yield i;
     }
 
-    proc dsiMyDist() {
+    override proc dsiMyDist() {
       return dist;
     }
 
@@ -164,6 +164,13 @@ module ExternalArray {
       return dsiGetIndices();
     }
 
+    proc dsiDims()
+      return dsiGetIndices();
+
+    proc dsiLow {
+      return 0;
+    }
+
     proc dsiAssignDomain(rhs: domain, lhsPrivate: bool) {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
@@ -180,6 +187,7 @@ module ExternalArray {
     const dom;
     
     const _ArrInstance: chpl_external_array;
+    const elts = _ArrInstance.elts: _ddata(eltType);
 
     const _owned: bool;
 
@@ -250,19 +258,19 @@ module ExternalArray {
 
     inline proc dsiAccess(i) ref {
       checkBounds(i);
-      return (_ArrInstance.elts: c_ptr(eltType))(i(1));
+      return elts(i(1));
     }
 
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
       checkBounds(i);
-      return (_ArrInstance.elts: c_ptr(eltType))(i(1));
+      return elts(i(1));
     }
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType)  {
       checkBounds(i);
-      return (_ArrInstance.elts: c_ptr(eltType))(i(1));
+      return elts(i(1));
     }
 
     inline proc checkBounds(i) {
@@ -271,9 +279,8 @@ module ExternalArray {
           halt("array index out of bounds: " + _stringify_tuple(i));
         }
     }
-    // arr inline proc?
 
-    inline proc dsiGetBaseDom() {
+    override proc dsiGetBaseDom() {
       return dom;
     }
 
@@ -287,7 +294,7 @@ module ExternalArray {
     // doiCanBulkTransferRankChange? doiBulkTransferFromKnown?
     // doiBulkTransferToKnown?
 
-    proc dsiDestroyArr() {
+    override proc dsiDestroyArr() {
       if (_owned) {
         chpl_free_external_array(_ArrInstance);
       }

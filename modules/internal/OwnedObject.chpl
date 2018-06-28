@@ -172,7 +172,7 @@ module OwnedObject {
        If this record was already managing a non-nil instance,
        that instance will be deleted.
      */
-    proc ref retain(newPtr:p.type) {
+    proc ref retain(newPtr:unmanaged p.type) {
       var oldPtr = p;
       p = newPtr;
       if oldPtr then
@@ -183,10 +183,10 @@ module OwnedObject {
        Empty this :record:`Owned` so that it manages `nil`.
        Returns the instance previously managed by this :record:`Owned`.
      */
-    proc ref release():p.type {
+    proc ref release():unmanaged p.type {
       var oldPtr = p;
       p = nil;
-      return oldPtr;
+      return _to_unmanaged(oldPtr);
     }
 
     /*

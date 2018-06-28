@@ -9,7 +9,7 @@ use BlockDist;
 const dummyBB: domain(1) = {1..1}; // or whatever bounding box type you want eventually
 
 // Create a distribution without knowing its bounding box dimensions.
-const dist = new Block(dummyBB);
+const dist = new unmanaged Block(dummyBB);
 
 // Any computations here, should not involve 'dist'. //
 
@@ -46,7 +46,7 @@ and destroys the original. We have a .future on this.
 For now, do this instead:
 */
 
-const distTemp = new Block(dummyBB);
+const distTemp = new unmanaged Block(dummyBB);
 const DM = new dmap(distTemp);
 
 DM.changeBoundingBox(1..4);
