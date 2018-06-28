@@ -62,7 +62,9 @@ checkResolved() {
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->isIterator()) {
       IteratorInfo* ii = toAggregateType(fn->retType)->iteratorInfo;
-      if (ii && ii->iterator && ii->iterator->defPoint->parentSymbol == fn) {
+      if (ii && ii->iterator &&
+          ii->iterator->defPoint->parentSymbol == fn &&
+          fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
         // This error isn't really possible in regular code anymore,
         // since you have to have FLAG_FN_RETURNS_ITERATOR / that pragma
         // to generate it. (Otherwise the iterator expression is turned
