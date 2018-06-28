@@ -1,7 +1,12 @@
 Updating mason-registry for registry
 Downloading dependency: _MasonTest1-0.1.0
-Test Passed!
-Test 2 Passed!
-Test with dependency Passed!
-Test with dependency outside module Passed!
-Test with dependency within subdirectory Passed!
+--- Results ---
+Test: nomodule Passed
+Test: subdirectorytest Passed
+Test: sampletest2 Passed
+Test: dependencytest Passed
+Test: sampletest Passed
+
+--- Summary:  5 tests run ---
+-----> 5 Passed
+-----> 0 Failed
