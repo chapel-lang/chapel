@@ -1257,12 +1257,16 @@ static Expr* preFoldNamed(CallExpr* call) {
           } else if (fromEnum && toString) {
             EnumSymbol* enumSym = toEnumSymbol(sym);
 
-            if (newType == dtStringC)
-              retval = new SymExpr(new_CStringSymbol(enumSym->name));
-            else
-              retval = new SymExpr(new_StringSymbol(enumSym->name));
+            if (enumSym) {
+              if (newType == dtStringC)
+                retval = new SymExpr(new_CStringSymbol(enumSym->name));
+              else
+                retval = new SymExpr(new_StringSymbol(enumSym->name));
 
-            call->replace(retval);
+              call->replace(retval);
+            } else {
+              retval = call;
+            }
 
           // Handle string:c_string and c_string:string casts
           } else if (imm != NULL && fromString && toString) {
