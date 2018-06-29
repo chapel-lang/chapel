@@ -1387,7 +1387,8 @@ for testname in testsrc:
             #       will use COMPOPTS/.compopts or some other filename.
             #       (thomasvandoren, 2015-04-08)
             pass
-        elif os.environ['CHPL_TEST_NO_USE_O'] != "true":
+        elif 'CHPL_TEST_NO_USE_O' not in os.environ or \
+             os.environ.get('CHPL_TEST_NO_USE_O') != "true":
             args += ['-o', execname] + envCompopts + shlex.split(compopts)
         else:
             args += envCompopts + shlex.split(compopts)
