@@ -60,9 +60,7 @@ typedef unsigned int chpl_taskID_t;
 // Sync variables
 //
 typedef struct {
-    aligned_t lockers_in;
-    aligned_t lockers_out;
-    uint_fast32_t uncontested_locks;
+    aligned_t lock;
     int       is_full;
     aligned_t signal_full;
     aligned_t signal_empty;
