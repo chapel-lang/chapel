@@ -135,7 +135,7 @@ CLEAN_TARGS += $(CLANG_SETTINGS_FILE)
 
 $(BUILD_VERSION_FILE): FORCE
 	@({ test -e $(CHPL_MAKE_HOME)/.git ; } && \
-	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@) || \
+	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@ $(CHPL_MAKE_HOME)) || \
 	test -r $(BUILD_VERSION_FILE) || (echo '"0"' > $@);
 
 $(CHPL_MAKE_HOME)/configured-prefix:

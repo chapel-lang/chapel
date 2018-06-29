@@ -268,6 +268,10 @@ myinstalldir  util/chplenv            "$DEST_CHPL_HOME"/util/chplenv/
 # (needed for LLVM builds)
 myinstallfile util/config/compileline "$DEST_CHPL_HOME"/util/config/
 
+# copy util/config/fixpath.py
+# (needed by setchplenv*)
+myinstallfile util/config/fixpath.py  "$DEST_CHPL_HOME"/util/config/
+
 
 if [ ! -z "$DEST_DIR" ]
 then
