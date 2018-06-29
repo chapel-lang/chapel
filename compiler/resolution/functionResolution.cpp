@@ -6770,6 +6770,7 @@ void ensureEnumTypeResolved(EnumType* etype) {
     int64_t v;
     uint64_t uv;
     bool foundInit = false;
+    bool foundNegs = false;
 
     for_enums(def, etype) {
       if (def->init != NULL) {
@@ -6797,6 +6798,9 @@ void ensureEnumTypeResolved(EnumType* etype) {
         if( get_int( def->init, &v ) ) {
           if( v >= 0 ) uv = v;
           else uv = 1;
+          if (v < 0) {
+            foundNegs = true;
+          }
         } else if( get_uint( def->init, &uv ) ) {
           v = uv;
         }
@@ -6816,6 +6820,10 @@ void ensureEnumTypeResolved(EnumType* etype) {
       if (uv > INT64_MAX) {
         // Switch to uint(64) as the current enum type.
         etype->integerType = dtUInt[INT_SIZE_DEFAULT];
+        if (foundNegs) {
+          USR_FATAL(etype,
+                    "this enum cannot be represented with a single integer type");
+        }
       }
       if (foundInit) {
         v++;
