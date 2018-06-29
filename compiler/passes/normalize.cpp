@@ -646,9 +646,8 @@ void checkUseBeforeDefs(FnSymbol* fn) {
 
                 // Only complain one time
                 if (undefined.find(sym) == undefined.end()) {
-                  USR_FATAL_CONT(se, "'%s' is used before defined",
-                                 sym->name);
-                  USR_PRINT(sym->defPoint, "it is defined here");
+                  USR_FATAL_CONT(se, "'%s' used before defined", sym->name);
+                  USR_PRINT(sym->defPoint, "defined here");
                   undefined.insert(sym);
                 }
               }
