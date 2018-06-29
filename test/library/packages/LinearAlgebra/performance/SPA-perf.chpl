@@ -116,7 +116,7 @@ proc memberCheck(A) {
 proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
 
   const D = {Adom.dim(1), Bdom.dim(2)};
-  var Cdom: sparse subdomain(D) dmapped CS();
+  var Cdom: sparse subdomain(D) dmapped CS(sortedIndices=false);
   var C: [Cdom] A.eltType;
 
   // pre-allocate nnz(A) + nnz(B) -- TODO: shrink later
@@ -200,4 +200,3 @@ record _SPA {
     return nzi;
   }
 }
-
