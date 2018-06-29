@@ -169,7 +169,7 @@ module BigInteger {
       if mpz_init_set_str(this.mpz, str_, base_) != 0 {
         mpz_clear(this.mpz);
 
-        halt("Error initializing big integer: bad format");
+        HaltWrappers.initHalt("Error initializing big integer: bad format");
       }
 
       this.localeId = chpl_nodeID;
