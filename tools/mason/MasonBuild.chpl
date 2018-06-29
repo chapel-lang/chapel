@@ -123,7 +123,7 @@ proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
       exit(1);
     }
     else {
-      writeln("Build stopped: No changes to project");
+      writeln("Skipping Build... No changes to project");
     }
   }
   catch e: MasonError {
