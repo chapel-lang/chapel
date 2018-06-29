@@ -119,23 +119,6 @@ proc buildProgram(release: bool, show: bool, compopts: [?d] string,
 }
 
 
-/* Creates the rest of the project structure */
-proc makeTargetFiles(binLoc: string, projectHome: string) {
-
-  if !isDir(projectHome + '/target') {
-    mkdir(projectHome + '/target');
-  }
-  if !isDir(projectHome + '/target/' + binLoc) {
-    mkdir(projectHome + '/target/' + binLoc);
-    mkdir(projectHome + '/target/test');
-
-    // TODO:
-    //mkdir(projectHome + '/target/'+ binLoc + '/examples');
-    //mkdir(projectHome + '/target/' + binLoc + '/bench');
-  }
-}
-
-
 /* Compiles the program into the main project src
    folder. Requires that the main library file be
    named after the project folder in which it is
