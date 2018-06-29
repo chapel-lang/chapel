@@ -46,6 +46,7 @@ static char* debug = NULL;
 static char* walltime = NULL;
 static char* partition = NULL;
 static char* exclude = NULL;
+
 char slurmFilename[FILENAME_MAX];
 char expectFilename[FILENAME_MAX];
 char sysFilename[FILENAME_MAX];
@@ -54,6 +55,13 @@ char sysFilename[FILENAME_MAX];
 #define procsPerNode 1  
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
+
+typedef enum {
+  ALLOCATE_DEFAULT = 0,
+  ALLOCATE_EXCLUSIVE = 1,
+  ALLOCATE_SHARED = 2
+} allocation_t;
+static allocation_t oversubscribe;
 
 typedef enum {
   slurmpro,
@@ -122,6 +130,18 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
 
+  if (oversubscribe == ALLOCATE_DEFAULT) {
+    char* got = getenv("CHPL_LAUNCHER_SHARED");
+    if (got &&
+        (got[0] == '1' || got[0] == 'y' || got[0] == 'Y'))
+      oversubscribe = ALLOCATE_SHARED;
+  }
+
+  if (!exclude) {
+    exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
+  }
+
+
   /*
   if (queue)
     fprintf(slurmFile, "#SBATCH -q %s\n", queue);
@@ -150,7 +170,10 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     if (constraint) {
       fprintf(slurmFile, "#SBATCH --constraint=%s\n", constraint);
     }
-    fprintf(slurmFile, "#SBATCH --exclusive\n");
+    if (oversubscribe == ALLOCATE_SHARED)
+      fprintf(slurmFile, "#SBATCH --oversubscribe\n");
+    else
+      fprintf(slurmFile, "#SBATCH --exclusive\n");
 
     break;
   default:
@@ -240,7 +263,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "-J %.10s ",basenamePtr); // pass 
   fprintf(expectFile, "-N %d ",numLocales); 
   fprintf(expectFile, "--ntasks-per-node=1 ");
-  fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
+
+  if (oversubscribe == ALLOCATE_SHARED)
+    fprintf(expectFile, "--oversubscribe "); // share
+  else
+    fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
+
   fprintf(expectFile, "--time=%s ",walltime); 
   if(partition)
     fprintf(expectFile, "--partition=%s ",partition);
