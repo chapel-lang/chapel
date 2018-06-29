@@ -4,6 +4,16 @@ class MyClass {
 
 record GenericCollection {
   var field;
+  proc init(type t) {
+    var default:t;
+    field = default;
+  }
+  proc init(arg:owned) {
+    field = arg;
+  }
+  proc init(arg:borrowed) {
+    field = arg;
+  }
 }
 
 {
