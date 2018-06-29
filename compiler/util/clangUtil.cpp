@@ -1413,7 +1413,12 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
 
   PMBuilder.DisableUnrollLoops = !opts.UnrollLoops;
   PMBuilder.MergeFunctions = opts.MergeFunctions;
+#if HAVE_LLVM_VER > 60
+  PMBuilder.PrepareForThinLTO = opts.PrepareForThinLTO;
+#else
   PMBuilder.PrepareForThinLTO = opts.EmitSummaryIndex;
+#endif
+
   PMBuilder.PrepareForLTO = opts.PrepareForLTO;
   PMBuilder.RerollLoops = opts.RerollLoops;
 
@@ -2662,9 +2667,16 @@ void makeBinaryLLVM(void) {
     llvm::TargetMachine::CodeGenFileType FileType =
       llvm::TargetMachine::CGFT_ObjectFile;
     bool disableVerify = ! developer;
+#if HAVE_LLVM_VER > 60
+    info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
+                                             nullptr,
+                                             FileType,
+                                             disableVerify);
+#else
     info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
                                              FileType,
                                              disableVerify);
+#endif
 
     // Run the passes to emit the .o file now!
     emitPM.run(*info->module);
