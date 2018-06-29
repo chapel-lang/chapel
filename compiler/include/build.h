@@ -103,18 +103,18 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
                                BlockStmt* body,
                                bool zippered = false,
                                VarSymbol* useThisGlobalOp = NULL);
-LoopExpr* buildForLoopExpr(Expr* indices,
-                           Expr* iterator,
-                           Expr* expr,
-                           Expr* cond = NULL,
-                           bool maybeArrayType = false,
-                           bool zippered = false);
-LoopExpr* buildForallLoopExpr(Expr* indices,
-                              Expr* iterator,
-                              Expr* expr,
-                              Expr* cond = NULL,
-                              bool maybeArrayType = false,
-                              bool zippered = false);
+Expr* buildForLoopExpr(Expr* indices,
+                       Expr* iterator,
+                       Expr* expr,
+                       Expr* cond = NULL,
+                       bool maybeArrayType = false,
+                       bool zippered = false);
+Expr* buildForallLoopExpr(Expr* indices,
+                          Expr* iterator,
+                          Expr* expr,
+                          Expr* cond = NULL,
+                          bool maybeArrayType = false,
+                          bool zippered = false);
 Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
                                            bool recursiveCall = false);
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);

@@ -768,7 +768,7 @@ destructureIndices(BlockStmt* block,
 }
 
 // builds body of for expression iterator
-LoopExpr*
+Expr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   return new LoopExpr(indices, iteratorExpr, expr, cond, maybeArrayType, zippered, /*forall=*/ false);
 }
@@ -786,7 +786,7 @@ CallExpr* zipToTuple(CallExpr* zipExpr) {
 }
 
 
-LoopExpr*
+Expr*
 buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   // turn indices into an alist of DefExprs
   return new LoopExpr(indices, iteratorExpr, expr, cond, maybeArrayType, zippered, /*forall=*/true);
