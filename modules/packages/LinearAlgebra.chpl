@@ -1206,7 +1206,7 @@ module Sparse {
     nonzeros as ``Dom``
   */
   proc CSRDomain(Dom: domain) where Dom.rank == 2 && isCSDom(Dom) {
-    var csrDom: sparse subdomain(Dom._value.parentDom) dmapped CS();
+    var csrDom: sparse subdomain(Dom._value.parentDom) dmapped CS(sortedIndices=false);
     csrDom += Dom;
     return csrDom;
   }
@@ -1214,7 +1214,7 @@ module Sparse {
   pragma "no doc"
   /* Return a CSR domain based on domain: ``Dom`` - Dense case */
   proc CSRDomain(Dom: domain(2)) where Dom.rank == 2 {
-    var csrDom: sparse subdomain(Dom) dmapped CS();
+    var csrDom: sparse subdomain(Dom) dmapped CS(sortedIndices=false);
     return csrDom;
   }
 
@@ -1292,7 +1292,7 @@ module Sparse {
     where indDom.rank == 1 && nnzDom.rank == 1 {
     const (M, N) = shape;
     const D = {1..M, 1..N};
-    var ADom: sparse subdomain(D) dmapped CS();
+    var ADom: sparse subdomain(D) dmapped CS(sortedIndices=false);
 
     ADom.startIdxDom = {1..indptr.size};
     ADom.startIdx = indptr;
@@ -1580,7 +1580,7 @@ module Sparse {
     }
 
     const parentDT = transpose(D._value.parentDom);
-    var Dom: sparse subdomain(parentDT) dmapped CS();
+    var Dom: sparse subdomain(parentDT) dmapped CS(sortedIndices=false);
     Dom += indices;
     return Dom;
   }
