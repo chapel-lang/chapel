@@ -2261,6 +2261,12 @@ static void normVarTypeInference(DefExpr* defExpr) {
         // Add a call to postinit() if present
         insertPostInit(var, argExpr);
 
+        if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
+          if (strcmp(ne->name, astr_chpl_manager) == 0) {
+            ne->remove();
+          }
+        }
+
       } else {
         defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
       }
@@ -2400,6 +2406,12 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
       // Add a call to postinit() if present
       insertPostInit(var, argExpr);
+
+      if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
+        if (strcmp(ne->name, astr_chpl_manager) == 0) {
+          ne->remove();
+        }
+      }
     }
 
   } else if (isNewExpr(initExpr) == true) {
@@ -2428,6 +2440,12 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
       // Add a call to postinit() if present
       insertPostInit(initExprTemp, argExpr);
+
+      if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
+        if (strcmp(ne->name, astr_chpl_manager) == 0) {
+          ne->remove();
+        }
+      }
 
       initExprTemp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
