@@ -1143,6 +1143,8 @@ formal_ls:
 formal:
   opt_intent_tag ident opt_formal_type opt_init_expr
     { $$ = buildArgDefExpr($1, $2, $3, $4, NULL); }
+| pragma_ls opt_intent_tag ident opt_formal_type opt_init_expr
+    { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, $5, NULL)); }
 | opt_intent_tag ident opt_formal_type var_arg_expr
     { $$ = buildArgDefExpr($1, $2, $3, NULL, $4); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
