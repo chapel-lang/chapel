@@ -790,6 +790,8 @@ static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
 // type that C understands without additional information (e.g. instead of
 // _ref_int64_t, just int64_t *).  But only for exported symbols like the
 // return type of exported functions, or arguments of those functions.
+//
+// TODO: apply to _ddata as well?
 static std::string
 transformTypeForPointer(Type* type) {
   std::string typeName = type->codegen().c;
@@ -798,8 +800,8 @@ transformTypeForPointer(Type* type) {
     return referenced->codegen().c + " *";
 
   } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
-    // Remove the c_ptr_ prefix
-    return typeName.substr(6, std::string::npos) + " *";
+    Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
+    return pointedTo->codegen().c + " *";
   }
   return typeName;
 }

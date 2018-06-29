@@ -1103,7 +1103,7 @@ static void codegen_library_header(std::vector<FnSymbol*> functions) {
 
       fprintf(libhdrfile.fptr, "#include \"stdchpl.h\"\n");
 
-      // Maybe need LLVM "extern C header file" stuff?
+      // Maybe need something here to support LLVM extern blocks?
 
       // Print out the module initialization function headers and the exported
       // functions
@@ -2151,20 +2151,10 @@ static const char* getClangBuiltinWrappedName(const char* name)
 }
 #endif
 
-
-void codegen(void) {
-  if (no_codegen)
-    return;
-
-  if( fLLVMWideOpt ) {
-    // --llvm-wide-opt is picky about other settings.
-    // Check them here.
-    if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
-  }
-
-  // Set the executable name to the name of the file containing the
-  // main module (minus its path and extension) if it isn't set
-  // already.
+// Set the executable name to the name of the file containing the
+// main module (minus its path and extension) if it isn't set
+// already.  If in library mode, set the name of the header file as well.
+static void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
     const char* mainModFilename = mainMod->astloc.filename;
@@ -2230,6 +2220,20 @@ void codegen(void) {
   if (fLibraryCompile && libmodeHeadername[0] == '\0') {
     strncpy(libmodeHeadername, executableFilename, sizeof(executableFilename));
   }
+}
+
+
+void codegen(void) {
+  if (no_codegen)
+    return;
+
+  if( fLLVMWideOpt ) {
+    // --llvm-wide-opt is picky about other settings.
+    // Check them here.
+    if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
+  }
+
+  setupDefaultFilenames();
 
   if( llvmCodegen ) {
 #ifndef HAVE_LLVM
