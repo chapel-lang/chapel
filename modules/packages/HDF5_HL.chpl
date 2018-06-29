@@ -3608,7 +3608,7 @@ module HDF5_HL {
                                           dsetName: string) {
       use BlockDist;
 
-     var filenames2D = reshape(filenames, {1..fnCols, 1..fnRows});
+      var filenames2D = reshape(filenames, {1..fnCols, 1..fnRows});
 
       var data = readAllNamedHDF5Files(Locales, filenames2D, dsetName,
                                        int, rank=2);
