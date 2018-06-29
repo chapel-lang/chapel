@@ -69,7 +69,7 @@ private proc runTests(show: bool, run: bool, parallel: bool) {
 
     // parse lockfile
     const toParse = open(projectHome + "/Mason.lock", iomode.r);
-    const lockFile = parseToml(toParse);
+    const lockFile = new Owned(parseToml(toParse));
 
     // Get project source code and dependencies
     const sourceList = genSourceList(lockFile);
@@ -84,16 +84,20 @@ private proc runTests(show: bool, run: bool, parallel: bool) {
     makeTargetFiles("debug", projectHome);
 
     // get the test names from lockfile or from test directory
-    const testNames = getTests(lockFile, projectHome);
+    const testNames = getTests(lockFile.borrow(), projectHome);
     var numTests = testNames.domain.size;
 
     // Check for tests to run
     if numTests > 0 {
 
-      coforall test in testNames {
+      var resultDomain: domain(string);
+      var testResults: [resultDomain] string;
+      var numPassed = 0;
+
+      forall test in testNames with (+ reduce numPassed) {
 
         const testPath = "".join(projectHome, '/test/', test);
-        const testName = basename(test.strip(".chpl"));
+        const testName = basename(stripExt(test, ".chpl"));
 
         // get the string of dependencies for compilation
         const compopts = getDependencyString(sourceList, testName);
@@ -102,17 +106,30 @@ private proc runTests(show: bool, run: bool, parallel: bool) {
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, compopts);
         const compilation = runWithStatus(compCommand);
 
-        if show then writeln(compCommand);
         if compilation != 0 {
           writeln("compilation failed for " + test);
         }
         else {
           if show || !run then writeln("compiled ", test, " successfully");
+          if parallel {
+            var result = runTestBinary(projectHome, testName, show);
+            if result != 0 {
+              testResults[testName] = "Failed";
+            }
+            else {
+              testResults[testName] = "Passed";
+              numPassed += 1;
+            }
+          }
         }
       }
-      if run {
-        runTestBinaries(projectHome, testNames, numTests, show, parallel);
+      if run && !parallel {
+        var testBinResults = runTestBinaries(projectHome, testNames, numTests, show);
+        resultDomain = testBinResults[1].domain;
+        testResults = testBinResults[1];
+        numPassed = testBinResults[2];
       }
+      if run then printTestResults(testResults, numTests, numPassed, show);
     }
     else {
       writeln("No tests were found in /test");
@@ -124,55 +141,52 @@ private proc runTests(show: bool, run: bool, parallel: bool) {
   }
 }
 
-private proc runTestBinaries(projectHome: string, testNames: [?D] string, numTests: int,
-                             show: bool, parallel: bool) {
+
+private proc runTestBinary(projectHome: string, testName: string, show: bool) {
+  const command = "".join(projectHome,'/target/test/', testName);
+  const testResult = runWithStatus(command, show);
+  return testResult;
+}  
+
+
+private proc runTestBinaries(projectHome: string, testNames: [?D] string,
+                             numTests: int, show: bool) {
 
   var resultDomain: domain(string);
   var testResults: [resultDomain] string;
-  var numPassed: atomic int;
+  var numPassed: int;
 
-  if show then writeln("\n--- Test Output ---\n");
-
-  if parallel {
-    forall test in testNames {
-      const testName = basename(test.strip(".chpl"));
-      const command = "".join(projectHome,'/target/test/', testName);
-      const result = runWithStatus(command, show);
-      if result != 0 {
-        testResults[basename(command)] = "Failed";
-      }
-      else {
-        testResults[basename(command)] = "Passed";
-        numPassed.add(1);
-      }
+  for test in testNames {
+    const testName = basename(stripExt(test, ".chpl"));
+    const result = runTestBinary(projectHome, testName, show);
+    if result != 0 {
+      testResults[testName] = "Failed";
+    }
+    else {
+      testResults[testName] = "Passed";
+      numPassed +=1;
     }
   }
-  else { 
-    for test in testNames {
-      const testName = basename(test.strip(".chpl"));
-      const command = "".join(projectHome,'/target/test/', testName);
-      const result = runWithStatus(command, show);
-      if result != 0 {
-        testResults[basename(command)] = "Failed";
-      }
-      else {
-        testResults[basename(command)] = "Passed";
-        numPassed.add(1);
-      }
-    }
-  }
-  if show then writeln("\n-------------------\n");
+  return (testResults, numPassed);
+}
+
+
+private proc printTestResults(testResults: [?d] string, numTests: int,
+                              numPassed: int, show: bool) {
+
+  if show then writeln("\n--------------------\n");
   writeln("--- Results ---");
   for test in testResults.domain {
     writeln(" ".join("Test:",test, testResults[test]));
   }
   writeln("\n--- Summary:  ",numTests, " tests run ---");
   writeln("-----> ", numPassed, " Passed");
-  writeln("-----> ", (numTests - numPassed.read()), " Failed");
- }
+  writeln("-----> ", (numTests - numPassed), " Failed");
+}
 
 
-private proc getDependencyString(sourceList: [?d] (string, string, string), testName) {
+private proc getDependencyString(sourceList: [?d] (string, string, string),
+                                 testName: string) {
 
   // Declare test to run as the main module
   var compopts = " ".join(" --main-module", testName, " ");
@@ -230,7 +244,3 @@ proc getTestPath(fullPath: string, testPath = "") : string {
     }
   }
 }
-
-
-
-

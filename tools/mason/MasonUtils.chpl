@@ -64,6 +64,15 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 }
 
 
+proc stripExt(toStrip: string, ext: string) : string {
+  if toStrip.endsWith(ext) {
+    var stripped = toStrip[..toStrip.size - ext.length];
+    return stripped;
+  }
+  else {
+    return toStrip;
+  }
+}
 
 
 /* Uses the Spawn module to create a subprocess */
