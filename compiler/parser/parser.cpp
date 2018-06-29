@@ -92,8 +92,6 @@ void parse() {
 
   checkConfigs();
 
-  convertForallExpressions();
-
   finishCountingTokens();
 
   parsed = true;
