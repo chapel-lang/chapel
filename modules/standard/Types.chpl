@@ -618,6 +618,7 @@ proc chpl_enum_mintype(type t: enumerated) type {
 pragma "no doc" // documented with the other numBits() above
 // TODO: Not convinced this is correct / appropriate
 proc numBits(type t: enumerated) param {
+  compilerWarning("Calling numBits() on an enum");
   return numBits(chpl_enum_mintype(t));
 }
 
