@@ -455,8 +455,7 @@ private proc chpl__commonType(type s, type t) type
 // joint documentation, for user convenience
 /*
 Returns the number of bits used to store the values of type `t`.
-This is available for all numeric types, fixed-width `bool` types,
-and ``enum`` types.
+This is available for all numeric types and fixed-width `bool` types.
 It is not available for default-width `bool`.
 */
 proc numBits(type t) param where t == bool {
@@ -508,8 +507,7 @@ param bitsPerByte = 8;
 
 /*
 Returns the number of bytes used to store the values of type `t`.
-This is available for all numeric types, fixed-width `bool` types,
-and ``enum`` types.
+This is available for all numeric types and fixed-width `bool` types.
 It is not available for default-width `bool`.
 */
 proc numBytes(type t) param return numBits(t)/8;
@@ -615,12 +613,6 @@ proc chpl_enum_mintype(type t: enumerated) type {
   return uint(chpl_enum_minbits(t));
 }
 
-pragma "no doc" // documented with the other numBits() above
-// TODO: Not convinced this is correct / appropriate
-proc numBits(type t: enumerated) param {
-  compilerWarning("Calling numBits() on an enum");
-  return numBits(chpl_enum_mintype(t));
-}
 
 /*
 Returns `this`, cast to the type `T`.

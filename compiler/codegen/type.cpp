@@ -94,7 +94,7 @@ void EnumType::codegenDef() {
       fprintf(outfile, "%s", constant->sym->codegen().c.c_str());
       if (constant->init) {
         fprintf(outfile, " = %s", constant->init->codegen().c.c_str());
-      }// else INT_FATAL("enum init not defined");
+      }
       first = false;
     }
     fprintf(outfile, "} ");

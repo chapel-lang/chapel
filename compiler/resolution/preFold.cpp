@@ -1066,8 +1066,6 @@ static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
     if (haveString)
       extendedName = astr(typeEnum->symbol->name, ".", constant->sym->name);
 
-    //    INT_ASSERT(gotInt || gotUint);
-
     bool match = false;
     // string matches name
     if (haveString &&

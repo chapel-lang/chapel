@@ -6843,9 +6843,6 @@ void ensureEnumTypeResolved(EnumType* etype) {
         uv++;
       }
     }
-
-    // Now try computing the enum size...
-    etype->sizeAndNormalize();
   }
 
   INT_ASSERT(etype->integerType != NULL);
