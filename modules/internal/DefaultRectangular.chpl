@@ -754,7 +754,7 @@ module DefaultRectangular {
 
   proc _remoteAccessData.initShiftedData() {
     if earlyShiftData && !stridable {
-      type idxSignedType = chpl__signedType(idxType);
+      type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
       const shiftDist = if isIntType(idxType) then origin - factoredOffs
                         else origin:idxSignedType - factoredOffs:idxSignedType;
       shiftedData = _ddata_shift(eltType, data, shiftDist);
@@ -1342,7 +1342,7 @@ module DefaultRectangular {
               second = info.getDataIndex(viewDom.chpl_intToIdx(viewDomDim.firstAsInt + stride));
 
         var   first  = info.getDataIndex(start);
-        const step   = (second-first):chpl__signedType(viewDom.idxType);
+        const step   = (second-first):chpl__signedType(viewDom.intIdxType);
         var   last   = first + (viewDomDim.length-1) * step:viewDom.intIdxType;
 
         if step < 0 then
@@ -1407,7 +1407,7 @@ module DefaultRectangular {
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) {
     param rank = arr.rank;
     type idxType = arr.idxType;
-    type idxSignedType = chpl__signedType(idxType);
+    type idxSignedType = chpl__signedType(dom.intIdxType);
 
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
