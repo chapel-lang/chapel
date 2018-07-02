@@ -1205,6 +1205,7 @@ module ChapelBase {
 
   pragma "dont disable remote value forwarding"
   pragma "no copy return"
+  pragma "no borrow convert"
   pragma "suppress lvalue error"
   inline proc _createFieldDefault(type t, init) {
     pragma "no auto destroy" var x: t;
@@ -1213,6 +1214,7 @@ module ChapelBase {
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "no borrow convert"
   pragma "no copy return"
   inline proc _createFieldDefault(type t, param init) {
     pragma "no auto destroy" var x: t;
@@ -1221,6 +1223,7 @@ module ChapelBase {
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "no borrow convert"
   pragma "no copy return"
   inline proc _createFieldDefault(type t, init: _nilType) {
     pragma "no auto destroy" var x: t;
@@ -1299,12 +1302,13 @@ module ChapelBase {
     return ret;
   }
 
-  inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
-  inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
+  proc chpl__maybeAutoDestroyed(x: numeric) param return false;
+  proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
   // Uses this spelling to be a peer to the below version
   // (otherwise the below version won't be used if t coerces to object)
-  inline proc chpl__maybeAutoDestroyed(x: ?t) param where t:object return false;
-  inline proc chpl__maybeAutoDestroyed(x) param return true;
+  proc chpl__maybeAutoDestroyed(x: ?t) param where t:object return false;
+  pragma "no borrow convert"
+  proc chpl__maybeAutoDestroyed(x) param return true;
 
   pragma "compiler generated"
   pragma "last resort"
