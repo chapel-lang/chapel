@@ -119,8 +119,10 @@ proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
         // Close memory
         toParse.close();
       }
-      else writeln("Cannot build: no Mason.lock found");
-      exit(1);
+      else {
+        writeln("Cannot build: no Mason.lock found");
+        exit(1);
+      }
     }
     else {
       writeln("Skipping Build... No changes to project");
