@@ -688,14 +688,11 @@ bool FnSymbol::tagIfGeneric() {
       if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
         if (AggregateType* at = toAggregateType(retType)) {
           at->markAsGeneric();
+          if (result == 2)
+            at->markAsGenericWithDefaults();
         }
 
         retType->symbol->addFlag(FLAG_GENERIC);
-
-        if (result == 2) {
-          retType->hasGenericDefaults = true;
-          INT_ASSERT(isAggregateType(retType));
-        }
       }
 
       retval = true;
@@ -737,7 +734,11 @@ int FnSymbol::hasGenericFormals() const {
       isGeneric = true;
 
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-      if (formal->type->hasGenericDefaults     == false ||
+      bool typeHasGenericDefaults = false;
+      if (AggregateType* at = toAggregateType(formal->type))
+        typeHasGenericDefaults = at->isGenericWithDefaults();
+
+      if (typeHasGenericDefaults               == false ||
           formal->hasFlag(FLAG_MARKED_GENERIC) == true ||
           formal                               == _this ||
           formal->hasFlag(FLAG_IS_MEME)        == true) {

@@ -60,6 +60,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
 
   genericField        = 0;
   mIsGeneric          = false;
+  mIsGenericWithDefaults = false;
 
   classId             = 0;
 
@@ -131,6 +132,14 @@ bool AggregateType::isGeneric() const {
 
 void AggregateType::markAsGeneric() {
   mIsGeneric = true;
+}
+
+bool AggregateType::isGenericWithDefaults() const {
+  return mIsGenericWithDefaults;
+}
+
+void AggregateType::markAsGenericWithDefaults() {
+  mIsGenericWithDefaults = true;
 }
 
 void AggregateType::verify() {

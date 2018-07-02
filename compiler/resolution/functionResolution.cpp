@@ -6732,7 +6732,7 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->symbol->hasFlag(FLAG_GENERIC) && at->hasGenericDefaults) {
+    if (at->symbol->hasFlag(FLAG_GENERIC) && at->isGenericWithDefaults()) {
       CallExpr*   cc    = new CallExpr(at->typeConstructor->name);
       TypeSymbol* retTS = NULL;
 
@@ -7761,13 +7761,17 @@ static void unmarkDefaultedGenerics() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->inTree() == true) {
       for_formals(formal, fn) {
+        AggregateType* formalAt   = toAggregateType(formal->type);
+        bool typeHasGenericDefaults = false;
+        if (formalAt && formalAt->isGenericWithDefaults())
+          typeHasGenericDefaults = true;
+
         if (formal                               != fn->_this &&
-            formal->type->hasGenericDefaults     == true      &&
+            typeHasGenericDefaults                            &&
             formal->hasFlag(FLAG_MARKED_GENERIC) == false     &&
             formal->hasFlag(FLAG_IS_MEME)        == false) {
           SET_LINENO(formal);
 
-          AggregateType* formalAt   = toAggregateType(formal->type);
           FnSymbol*      typeConstr = formalAt->typeConstructor;
 
           formal->type     = dtUnknown;

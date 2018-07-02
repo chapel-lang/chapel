@@ -46,7 +46,6 @@ static bool isDerivedType(Type* type, Flag flag);
 Type::Type(AstTag astTag, Symbol* iDefaultVal) : BaseAST(astTag) {
   symbol              = NULL;
   refType             = NULL;
-  hasGenericDefaults  = false;
   defaultValue        = iDefaultVal;
   destructor          = NULL;
   isInternalType      = false;

@@ -3278,7 +3278,7 @@ static bool isGenericActual(Expr* expr) {
   if (SymExpr* se = toSymExpr(expr))
     if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
       if (AggregateType* at = toAggregateType(ts->type))
-        if (at->isGeneric() && !at->hasGenericDefaults)
+        if (at->isGeneric() && !at->isGenericWithDefaults())
           return true;
 
   return false;
