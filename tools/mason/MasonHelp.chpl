@@ -91,6 +91,7 @@ proc masonBuildHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --release                Compile to target/release with optimizations (--fast)');
+  writeln('        --force                  Force Mason to build the project');
   writeln();
   writeln('When no options are provided, the following will take place:');
   writeln('   - Build from mason project if Mason.lock present');

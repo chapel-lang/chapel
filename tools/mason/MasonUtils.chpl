@@ -233,3 +233,35 @@ proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
   }
   return getProjectHome(dirname, tomlName);
 }
+
+
+extern "struct stat" record chpl_stat {
+  var st_mtime: off_t;
+}
+
+proc getLastModified(filename: string) : int {
+  extern proc stat(filename: c_string, ref chpl_stat): c_int;
+
+  var file_buf: chpl_stat;
+  var file_path = filename.c_str();
+
+  if (stat(file_path, file_buf) == 0) {
+    return file_buf.st_mtime;
+    }
+  return -1;
+}
+
+proc projectModified(projectHome, projectName, binLocation) : bool {
+  const binaryPath = joinPath(projectHome, "target", binLocation, projectName);
+
+  if isFile(binaryPath) {
+    for file in listdir(joinPath(projectHome, "src")) {
+      var srcPath = joinPath(projectHome, "src", file);
+      if getLastModified(srcPath) > getLastModified(binaryPath) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return true;
+}
