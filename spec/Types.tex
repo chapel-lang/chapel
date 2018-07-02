@@ -264,15 +264,15 @@ an enumerated type, the enumerated values are \emph{abstract} and do
 not have associated integer values.  Any constant that has an
 \sntx{init-part} will be associated with that integer value.  Such
 constants must be parameter values of integral type.  Any constant
-following one with an \sntx{init-part} will be associated with an
-integer value one higher than its predecessor.  An enumerated type
-whose first constan has an \sntx{init-part} is called \emph{concrete},
-since all constants in the enum will have an associated integer value,
-whether explicit or implicit.  An enumerated type that specifies an
-\sntx{init-part} for some constants, but not the first is called
-\emph{semi-concrete}.  The numeric conversions which are
-automatically supported for an enumerated type vary depending on
-whether it is abstract, concrete, or semi-concrete
+that does not have an \sntx{init-part}, yet which follows one that
+does, will be associated with an integer value one greater than its
+predecessor.  An enumerated type whose first constant has
+an \sntx{init-part} is called \emph{concrete}, since all constants in
+the enum will have an associated integer value, whether explicit or
+implicit.  An enumerated type that specifies an \sntx{init-part} for
+some constants, but not the first is called \emph{semi-concrete}.
+Numeric conversions are automatically supported for enumerated types
+which are concrete or semi-concrete
 (see~\rsec{Explicit_Enumeration_Conversions}).
 
 \begin{chapelexample}{enum.chpl}
