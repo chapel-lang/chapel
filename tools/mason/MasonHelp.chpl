@@ -151,10 +151,11 @@ proc masonTestHelp() {
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
-  writeln("        --show                  Increase verbosity");
+  writeln("        --show                  Direct output of tests to stdout");
   writeln("        --no-run                Compile tests without running them");
+  writeln("        --parallel              Run tests in parallel(sequential by default");
   writeln();
   writeln("Test configuration is up to the user");
-  writeln("Test output is piped to stdout");
+  writeln("Tests pass if they exit with status code 0");
 }
 

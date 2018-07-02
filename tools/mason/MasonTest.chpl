@@ -25,12 +25,14 @@ use MasonHelp;
 use MasonUpdate;
 use MasonBuild;
 use Path;
+use FileSystem;
 
 /* Runs the .chpl files found within the /tests directory */
 proc masonTest(args) {
 
   var show = false;
   var run = true;
+  var parallel = false;
 
   if args.size > 2 {
     for arg in args[2..] {
@@ -44,6 +46,9 @@ proc masonTest(args) {
       else if arg == '--no-run' {
         run = false;
       }
+      else if arg == '--parallel' {
+        parallel = true;
+      }
       else {
         masonTestHelp();
         exit();
@@ -52,10 +57,10 @@ proc masonTest(args) {
   }
   const uargs = [""];
   UpdateLock(uargs);
-  runTests(show, run);
+  runTests(show, run, parallel);
 }
 
-private proc runTests(show: bool, run: bool) {
+private proc runTests(show: bool, run: bool, parallel: bool) {
 
   try! {
 
@@ -72,19 +77,26 @@ private proc runTests(show: bool, run: bool) {
     const project = lockFile["root"]["name"].s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
+    if isDir(joinPath(projectHome, "target/test/")) {
+      rmTree(joinPath(projectHome, "target/test/"));
+    }
     // Make target files if they dont exist from a build
     makeTargetFiles("debug", projectHome);
 
+    // get the test names from lockfile or from test directory
+    const testNames = getTests(lockFile.borrow(), projectHome);
+    var numTests = testNames.domain.size;
+
     // Check for tests to run
-    if lockFile.pathExists("root.tests") {
-      var tests = lockFile["root"]["tests"].toString();
-      const testNames = tests.split(',').strip("[]");
+    if numTests > 0 {
 
-      for t in testNames {
+      var resultDomain: domain(string);
+      var testResults: [resultDomain] string;
 
-        const test = t.strip().strip('"');
+      forall test in testNames {
+
         const testPath = "".join(projectHome, '/test/', test);
-        const testName = basename(test.strip(".chpl"));
+        const testName = basename(stripExt(test, ".chpl"));
 
         // get the string of dependencies for compilation
         const compopts = getDependencyString(sourceList, testName);
@@ -93,17 +105,30 @@ private proc runTests(show: bool, run: bool) {
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, compopts);
         const compilation = runWithStatus(compCommand);
 
-        if show then writeln(compCommand);
         if compilation != 0 {
           writeln("compilation failed for " + test);
         }
         else {
           if show || !run then writeln("compiled ", test, " successfully");
-          if run {
-            const binCommand = "".join(projectHome,'/target/test/', testName);
-            runCommand(binCommand);
+          if parallel {
+            var result = runTestBinary(projectHome, testName, show);
+            if result != 0 {
+              testResults[testName] = "Failed";
+            }
+            else {
+              testResults[testName] = "Passed";
+            }
           }
         }
+      }
+      if run && !parallel {
+        var testBinResults = runTestBinaries(projectHome, testNames, numTests, show);
+        resultDomain = testBinResults.domain;
+        testResults = testBinResults;
+      }
+      if run {
+        const numPassed = testResults.count("Passed");
+        printTestResults(testResults, numTests, numPassed, show);
       }
     }
     else {
@@ -116,7 +141,50 @@ private proc runTests(show: bool, run: bool) {
   }
 }
 
-private proc getDependencyString(sourceList: [?d] (string, string, string), testName) {
+
+private proc runTestBinary(projectHome: string, testName: string, show: bool) {
+  const command = "".join(projectHome,'/target/test/', testName);
+  const testResult = runWithStatus(command, show);
+  return testResult;
+}  
+
+
+private proc runTestBinaries(projectHome: string, testNames: [?D] string,
+                             numTests: int, show: bool) {
+
+  var resultDomain: domain(string);
+  var testResults: [resultDomain] string;
+  
+  for test in testNames {
+    const testName = basename(stripExt(test, ".chpl"));
+    const result = runTestBinary(projectHome, testName, show);
+    if result != 0 {
+      testResults[testName] = "Failed";
+    }
+    else {
+      testResults[testName] = "Passed";
+    }
+  }
+  return testResults;
+}
+
+
+private proc printTestResults(testResults: [?d] string, numTests: int,
+                              numPassed: int, show: bool) {
+
+  if show then writeln("\n--------------------\n");
+  writeln("--- Results ---");
+  for test in testResults.domain {
+    writeln(" ".join("Test:",test, testResults[test]));
+  }
+  writeln("\n--- Summary:  ",numTests, " tests run ---");
+  writeln("-----> ", numPassed, " Passed");
+  writeln("-----> ", (numTests - numPassed), " Failed");
+}
+
+
+private proc getDependencyString(sourceList: [?d] (string, string, string),
+                                 testName: string) {
 
   // Declare test to run as the main module
   var compopts = " ".join(" --main-module", testName, " ");
@@ -131,4 +199,46 @@ private proc getDependencyString(sourceList: [?d] (string, string, string), test
     }
   }
   return compopts;
+}
+
+private proc getTests(lock: Toml, projectHome: string) {
+  var testNames: [1..0] string;
+  const testPath = joinPath(projectHome, "test");
+
+  if lock.pathExists("root.tests") {
+    var tests = lock["root"]["tests"].toString();
+    var strippedTests = tests.split(',').strip('[]');
+    for test in strippedTests {
+      const t = test.strip().strip('"');
+      testNames.push_back(t);
+    }
+    return testNames;
+  }
+  else if isDir(testPath) {
+    var tests = findfiles(startdir=testPath, recursive=true, hidden=false);
+    for test in tests {
+      if test.endsWith(".chpl") {
+        testNames.push_back(getTestPath(test));
+      }
+    }
+    return testNames;
+  }
+  return testNames;
+}
+
+/* Gets the path of the test following the test dir */
+proc getTestPath(fullPath: string, testPath = "") : string {
+  var split = splitPath(fullPath);
+  if split[2] == "test" {
+    return testPath;
+  }
+  else {
+    if testPath == "" {
+      return getTestPath(split[1], split[2]);
+    }
+    else {
+      var appendedPath = joinPath(split[2], testPath);
+      return getTestPath(split[1], appendedPath);
+    }
+  }
 }

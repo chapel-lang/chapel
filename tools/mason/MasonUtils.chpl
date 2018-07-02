@@ -23,6 +23,7 @@
 use Spawn;
 use FileSystem;
 use TOML;
+use Path;
 
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
@@ -42,6 +43,37 @@ class MasonError : Error {
     return msg;
   }
 }
+
+
+/* Creates the rest of the project structure */
+proc makeTargetFiles(binLoc: string, projectHome: string) {
+
+  const target = joinPath(projectHome, 'target');
+  const srcBin = joinPath(target, binLoc);
+  const test = joinPath(target, 'test');
+
+  if !isDir(target) {
+    mkdir(target);
+  }
+  if !isDir(srcBin) {
+    mkdir(srcBin);
+  }
+  if !isDir(test) {
+    mkdir(test);
+  }
+}
+
+
+proc stripExt(toStrip: string, ext: string) : string {
+  if toStrip.endsWith(ext) {
+    var stripped = toStrip[..toStrip.size - ext.length];
+    return stripped;
+  }
+  else {
+    return toStrip;
+  }
+}
+
 
 /* Uses the Spawn module to create a subprocess */
 proc runCommand(cmd, quiet=false) : string {
@@ -64,14 +96,22 @@ proc runCommand(cmd, quiet=false) : string {
 
 /* Same as runCommand but for situations where an
    exit status is needed */
-proc runWithStatus(command): int {
-  var cmd = command.split();
-  var sub = spawn(cmd, stdout=PIPE);
+proc runWithStatus(command, show=true): int {
 
-  var line:string;
-  while sub.stdout.readline(line) do write(line);
-  sub.wait();
-  return sub.exit_status;
+  try {
+    var cmd = command.split();
+    var sub = spawn(cmd, stdout=PIPE);
+
+    var line:string;
+    if show {
+      while sub.stdout.readline(line) do write(line);
+    }
+    sub.wait();
+    return sub.exit_status;
+  }
+  catch {
+    return -1;
+  }
 }
 
 proc hasOptions(args : [] string, const opts : string ...) {
