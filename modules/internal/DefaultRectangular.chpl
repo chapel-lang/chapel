@@ -1407,7 +1407,7 @@ module DefaultRectangular {
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) {
     param rank = arr.rank;
     type idxType = arr.idxType;
-    type idxSignedType = chpl__signedType(dom.intIdxType);
+    type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
 
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
