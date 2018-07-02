@@ -3272,18 +3272,36 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
   formal->type = dtAny;
 }
 
-static bool doesCallContainDefActual(CallExpr* call) {
+static bool isGenericActual(Expr* expr) {
+  if (isDefExpr(expr))
+    return true;
+  if (SymExpr* se = toSymExpr(expr))
+    if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
+      if (AggregateType* at = toAggregateType(ts->type))
+        if (at->isGeneric() && !at->hasGenericDefaults)
+          return true;
+
+  return false;
+}
+
+// 2 types of generic actuals:
+//  1. Generic type symbol as a leaf, where that type does not have
+//     defaults for every field)
+//       e.g. Owned(MyGenericClass)
+//  2. Call to a generic type with a type query expression within
+//       e.g. MyGenericClass(?) / MyGenericClass(?t) / MyGenericClass(t=?t)
+static bool doesCallContainGenericActual(CallExpr* call) {
   for_actuals(actual, call) {
-    if (isDefExpr(actual)) {
+    if (isGenericActual(actual)) {
       return true;
 
     } else if (NamedExpr* named = toNamedExpr(actual)) {
-      if (isDefExpr(named->actual)) {
+      if (isGenericActual(named->actual)) {
         return true;
       }
 
     } else if (CallExpr* subcall = toCallExpr(actual)) {
-      if (doesCallContainDefActual(subcall)) {
+      if (doesCallContainGenericActual(subcall)) {
         return true;
       }
     }
@@ -3296,7 +3314,7 @@ static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal) {
   bool retval = false;
 
   if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
-    retval = doesCallContainDefActual(call);
+    retval = doesCallContainGenericActual(call);
   }
 
   return retval;
@@ -3341,7 +3359,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     usetype = call->baseExpr->remove();
   } else {
     usetype = call->remove();
-    INT_ASSERT(!doesCallContainDefActual(call));
+    INT_ASSERT(!doesCallContainGenericActual(call));
   }
 
   formal->typeExpr->replace(new BlockStmt(usetype));
@@ -3396,12 +3414,21 @@ static void expandQueryForActual(FnSymbol*  fn,
                                  CallExpr* call,
                                  CallExpr* query,
                                  Expr* actual) {
-  DefExpr* def = toDefExpr(actual);
   CallExpr* subcall = toCallExpr(actual);
 
-  if (def) {
-    replaceQueryUses(formal, def, query, symExprs);
-  } else if (subcall && doesCallContainDefActual(subcall)) {
+  if (isGenericActual(actual)) {
+    if (DefExpr* def = toDefExpr(actual)) {
+      replaceQueryUses(formal, def, query, symExprs);
+    } else if (SymExpr* se = toSymExpr(actual)) {
+      TypeSymbol* ts = toTypeSymbol(se->symbol());
+      INT_ASSERT(ts);
+      Expr* subtype = new SymExpr(ts);
+      addToWhereClause(fn, formal,
+                       new CallExpr(PRIM_IS_SUBTYPE, subtype, query->copy()));
+    } else {
+      INT_ASSERT("case not handled");
+    }
+  } else if (subcall && doesCallContainGenericActual(subcall)) {
     Expr* subtype = NULL;
     if (TypeSymbol* ts = getTypeForSpecialConstructor(subcall)) {
       subtype = new SymExpr(ts);
@@ -3409,7 +3436,7 @@ static void expandQueryForActual(FnSymbol*  fn,
       subtype = subcall->baseExpr->copy();
     } else {
       subtype = subcall->copy();
-      INT_ASSERT(!doesCallContainDefActual(subcall));
+      INT_ASSERT(!doesCallContainGenericActual(subcall));
     }
     // Add check that actual type satisfies
     addToWhereClause(fn, formal,

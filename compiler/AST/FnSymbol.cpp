@@ -694,6 +694,7 @@ bool FnSymbol::tagIfGeneric() {
 
         if (result == 2) {
           retType->hasGenericDefaults = true;
+          INT_ASSERT(isAggregateType(retType));
         }
       }
 
