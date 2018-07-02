@@ -57,6 +57,7 @@ extern bool fNoRemoteSerialization;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoTupleCopyOpt;
+extern bool fNoOptimizeRangeIteration;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoVectorize;
 extern bool fNoPrivatization;
