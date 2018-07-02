@@ -3373,10 +3373,12 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call) {
   if (call->isNamed("_build_tuple") || call->isNamed("*")) {
     return dtTuple->symbol;
-  } else if (call->isNamed("_to_unmanaged")) {
+  } else if (call->isNamed("_to_unmanaged") ||
+             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
     return dtUnmanaged->symbol;
-  } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
-    return dtUnmanaged->symbol;
+  } else if (call->isNamed("_to_borrowed") ||
+             call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+    return dtBorrowed->symbol;
   }
   return NULL;
 }
