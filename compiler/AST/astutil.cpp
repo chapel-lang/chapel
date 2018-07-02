@@ -27,6 +27,7 @@
 #include "ForLoop.h"
 #include "IfExpr.h"
 #include "expr.h"
+#include "LoopExpr.h"
 #include "UnmanagedClassType.h"
 #include "passes.h"
 #include "ParamForLoop.h"

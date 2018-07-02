@@ -26,6 +26,7 @@
 #include "expr.h"
 #include "IfExpr.h"
 #include "log.h"
+#include "LoopExpr.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -297,6 +298,55 @@ void AstDump::visitUsymExpr(UnresolvedSymExpr* node) {
   }
 
   write(node->unresolved);
+}
+
+//
+// LoopExpr
+//
+bool AstDump::enterLoopExpr(LoopExpr* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    newline();
+  }
+
+  if (fLogIds) {
+    fprintf(mFP, "(%d ", node->id);
+    mNeedSpace = false;
+  } else {
+    write(true, "(", false);
+  }
+
+  if (node->forall) {
+    if (node->maybeArrayType) write("[ ");
+    else write("forall ");
+  } else {
+    write("for ");
+  }
+
+  if (node->indices) {
+    node->indices->accept(this);
+    write(" in ");
+  }
+
+  if (node->zippered) write("zip");
+  node->iteratorExpr->accept(this);
+
+  if (node->maybeArrayType) write("]");
+  else write("do");
+
+  if (node->cond) {
+    write(" if ");
+    node->cond->accept(this);
+    write(" then ");
+  }
+
+  node->expr->accept(this);
+
+  write(")");
+
+  return false;
+}
+
+void AstDump::exitLoopExpr(LoopExpr* node) {
 }
 
 

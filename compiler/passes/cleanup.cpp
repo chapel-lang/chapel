@@ -38,8 +38,6 @@ static void cleanup(ModuleSymbol* module);
 
 static void normalizeNestedFunctionExpressions(FnSymbol* fn);
 
-static void normalizeLoopIterExpressions(FnSymbol* fn);
-
 static void destructureTupleAssignment(CallExpr* call);
 
 static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
@@ -79,8 +77,6 @@ static void cleanup(ModuleSymbol* module) {
         if (fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) == true) {
           normalizeNestedFunctionExpressions(fn);
 
-        } else if (strncmp("_iterator_for_loopexpr", fn->name, 22) == 0) {
-          normalizeLoopIterExpressions(fn);
         }
       }
     }
@@ -149,41 +145,6 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
   }
 }
 
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void normalizeLoopIterExpressions(FnSymbol* fn) {
-  DefExpr*  def    = fn->defPoint;
-  FnSymbol* parent = toFnSymbol(def->parentSymbol);
-  Symbol*   parSym = parent->defPoint->parentSymbol;
-
-  INT_ASSERT(strncmp("_parloopexpr", parent->name, 12) == 0 ||
-             strncmp("_seqloopexpr", parent->name, 12) == 0);
-
-  // Walk up through nested loop expressions
-  while (strncmp("_parloopexpr", parSym->name, 12) == 0  ||
-         strncmp("_seqloopexpr", parSym->name, 12) == 0) {
-    parent = toFnSymbol(parSym);
-    parSym = parent->defPoint->parentSymbol;
-  }
-
-  def->remove();
-
-  // Move the parent
-  if (TypeSymbol* ts = toTypeSymbol(parSym)) {
-    AggregateType* ct = toAggregateType(ts->type);
-
-    INT_ASSERT(ct);
-
-    ct->addDeclarations(def);
-
-  } else {
-    parent->defPoint->insertBefore(def);
-  }
-}
 
 /************************************* | **************************************
 *                                                                             *

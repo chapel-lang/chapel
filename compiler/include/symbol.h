@@ -661,6 +661,9 @@ extern const char* astrDeinit;
 extern const char* astrTag;
 extern const char* astrThis;
 extern const char* astr_chpl_manager;
+extern const char* astr_forallexpr;
+extern const char* astr_forexpr;
+extern const char* astr_loopexpr_iter;
 void initAstrConsts();
 
 // Return true if the arg must use a C pointer whether or not

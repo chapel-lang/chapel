@@ -29,6 +29,7 @@
 #include "ForallStmt.h"
 #include "IfExpr.h"
 #include "initializerRules.h"
+#include "LoopExpr.h"
 #include "LoopStmt.h"
 #include "passes.h"
 #include "ResolveScope.h"
@@ -76,6 +77,8 @@ static void          addToSymbolTable();
 static void          scopeResolve(ModuleSymbol*       module,
                                   const ResolveScope* root);
 
+static void          scopeResolveExpr(Expr* expr, ResolveScope* scope);
+
 static void          processImportExprs();
 
 static void          resolveGotoLabels();
@@ -92,8 +95,6 @@ static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
 static void          setupShadowVars();
 
 static void          resolveEnumeratedTypes();
-
-static void          destroyModuleUsesCaches();
 
 static void          renameDefaultTypesToReflectWidths();
 
@@ -458,13 +459,34 @@ static void scopeResolve(IfExpr* ife, ResolveScope* scope) {
   scopeResolve(ife->getElseStmt(), scope);
 }
 
+static void scopeResolve(LoopExpr* fe, ResolveScope* parent) {
+  scopeResolveExpr(fe->iteratorExpr, parent);
+
+  ResolveScope* scope = new ResolveScope(fe, parent);
+  for_alist(ind, fe->defIndices) {
+    DefExpr* def = toDefExpr(ind);
+    scope->extend(def->sym);
+  }
+
+  if (fe->indices) scopeResolveExpr(fe->indices, scope);
+  if (fe->cond) scopeResolveExpr(fe->cond, scope);
+
+  scopeResolveExpr(fe->expr, scope);
+}
+
 static void scopeResolve(CallExpr* call, ResolveScope* scope) {
   for_actuals(actual, call) {
-    if (CallExpr* ca = toCallExpr(actual)) {
-      scopeResolve(ca, scope);
-    } else if (IfExpr* ife = toIfExpr(actual)) {
-      scopeResolve(ife, scope);
-    }
+    scopeResolveExpr(actual, scope);
+  }
+}
+
+static void scopeResolveExpr(Expr* expr, ResolveScope* scope) {
+  if (CallExpr* call = toCallExpr(expr)) {
+    scopeResolve(call, scope);
+  } else if (IfExpr* ife = toIfExpr(expr)) {
+    scopeResolve(ife, scope);
+  } else if (LoopExpr* fe = toLoopExpr(expr)) {
+    scopeResolve(fe, scope);
   }
 }
 
@@ -503,11 +525,7 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
 
       // Look for IfExprs
       if (def->init != NULL) {
-        if (CallExpr* call = toCallExpr(def->init)) {
-          scopeResolve(call, scope);
-        } else if (IfExpr* ife = toIfExpr(def->init)) {
-          scopeResolve(ife, scope);
-        }
+        scopeResolveExpr(def->init, scope);
       }
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
@@ -542,10 +560,6 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
 
     } else if (DeferStmt* deferStmt = toDeferStmt(stmt)) {
       scopeResolve(deferStmt->body(), scope);
-    } else if (CallExpr* call = toCallExpr(stmt)) {
-      scopeResolve(call, scope);
-    } else if (IfExpr* ife = toIfExpr(stmt)) {
-      scopeResolve(ife, scope);
 
     } else if (isUseStmt(stmt)           == true ||
                isUnresolvedSymExpr(stmt) == true ||
@@ -556,7 +570,7 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
     } else if (isExternBlockStmt(stmt)   == true) {
 
     } else {
-      INT_ASSERT(false);
+      scopeResolveExpr(stmt, scope);
     }
   }
 }
@@ -769,8 +783,9 @@ void resolveUnresolvedSymExprs(BaseAST* inAst) {
    collect_asts(inAst, asts);
 
    for_vector(BaseAST, ast, asts) {
-     if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(ast))
+     if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(ast)) {
        resolveUnresolvedSymExpr(urse);
+     }
    }
 }
 
@@ -1588,7 +1603,7 @@ static void resolveEnumeratedTypes() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void destroyModuleUsesCaches() {
+void destroyModuleUsesCaches() {
   std::map<BlockStmt*, Vec<UseStmt*>*>::iterator use;
 
   for (use = moduleUsesCache.begin(); use != moduleUsesCache.end(); use++) {
@@ -2180,6 +2195,14 @@ BaseAST* getScope(BaseAST* ast) {
         return getScope(forall);
       else
         return forall;
+
+    } else if (LoopExpr* fe = toLoopExpr(parent)) {
+      if (fe->iteratorExpr == expr ||
+          fe->iteratorExpr->contains(expr)) {
+        return getScope(fe);
+      } else {
+        return fe;
+      }
 
     } else if (parent) {
       return getScope(parent);

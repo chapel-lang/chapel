@@ -31,6 +31,7 @@
 #include "ForallStmt.h"
 #include "IfExpr.h"
 #include "initializerRules.h"
+#include "LoopExpr.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
@@ -563,6 +564,8 @@ static void normalizeBase(BaseAST* base) {
 
   lowerIfExprs(base);
 
+  lowerLoopExprs(base);
+
 
   //
   // Phase 4
@@ -925,6 +928,7 @@ class LowerIfExprVisitor : public AstVisitorTraverse
 void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
   if (isAlive(ife) == false) return;
   if (isDefExpr(ife->parentExpr)) return;
+  if (isLoopExpr(ife->parentExpr)) return;
 
   SET_LINENO(ife);
 
@@ -1745,7 +1749,7 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
   //   types/typedefs/bradc/arrayTypedef
   //
   // I'm sure that there is a better way to handle this either in the
-  // module init function or in a sequence of parloopexpr functions
+  // module init function or in a sequence of forall-expr functions
   // computing an array type that are in a module init fn
 
   while (fn->hasFlag(FLAG_MAYBE_ARRAY_TYPE) == true) {
@@ -2270,6 +2274,9 @@ static void normVarTypeInference(DefExpr* defExpr) {
     }
   } else if (IfExpr* ife = toIfExpr(initExpr)) {
     defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, ife));
+
+  } else if (LoopExpr* fe = toLoopExpr(initExpr)) {
+    defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, fe));
 
   } else {
     INT_ASSERT(false);

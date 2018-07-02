@@ -624,10 +624,12 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE)
     INT_ASSERT(origTarget);
 
     const char* targetName = origTarget->name;
-    if (!strncmp(targetName, "_parloopexpr", 12))
+    const int forallExprNameLen = strlen(astr_forallexpr);
+    if (!strncmp(targetName, astr_forallexpr, forallExprNameLen)) {
       // a forall loop over a (possibly zippered) forall expression, ex.:
       //  test/reductions/deitz/test_maxloc_reduce_wmikanik_bug2.chpl
-      targetName = astr("_iterator_for_loopexpr", targetName + 12);
+      targetName = astr(astr_loopexpr_iter, targetName + forallExprNameLen);
+    }
 
     if (pfs->fFromResolvedForLoop) {
       iterCall = origIterCall;
@@ -1066,7 +1068,7 @@ void resolveForallStmts1() {
 ///////////////////////////////
 
 //
-// Handle the case where the leader iterator is _iterator_for_loopexpr.
+// Handle the case where the leader iterator is astr_loopexpr_iter.
 // Not doing so confuses ReturnByRef and lowering of ForallStmts.
 //
 // Tests:
@@ -1078,7 +1080,7 @@ static void convertIteratorForLoopexpr(ForallStmt* fs) {
   if (CallExpr* iterCall = toCallExpr(fs->iteratedExpressions().head))
     if (SymExpr* calleeSE = toSymExpr(iterCall->baseExpr))
       if (FnSymbol* calleeFn = toFnSymbol(calleeSE->symbol()))
-        if (!strncmp(calleeFn->name, "_iterator_for_loopexpr", 22)) {
+        if (!strncmp(calleeFn->name, astr_loopexpr_iter, strlen(astr_loopexpr_iter))) {
           // In this case, we have a _toLeader call and no side effects.
           // Just use the iterator corresponding to the iterator record.
           FnSymbol* iterator = getTheIteratorFnFromIteratorRec(calleeFn->retType);

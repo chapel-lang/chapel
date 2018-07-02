@@ -44,6 +44,7 @@
 #include "ResolveScope.h"
 
 #include "ForallStmt.h"
+#include "LoopExpr.h"
 #include "scopeResolve.h"
 
 static std::map<BaseAST*, ResolveScope*> sScopeMap;
@@ -75,6 +76,9 @@ ResolveScope* ResolveScope::findOrCreateScopeFor(DefExpr* def) {
 
     } else if (TypeSymbol* typeSymbol = toTypeSymbol(ast)) {
       retval = new ResolveScope(typeSymbol, NULL);
+
+    } else if (LoopExpr* fe = toLoopExpr(ast)) {
+      retval = new ResolveScope(fe, NULL);
 
     } else {
       INT_ASSERT(false);
@@ -167,6 +171,16 @@ ResolveScope::ResolveScope(BlockStmt*          blockStmt,
   INT_ASSERT(getScopeFor(blockStmt) == NULL);
 
   sScopeMap[blockStmt] = this;
+}
+
+ResolveScope::ResolveScope(LoopExpr*         forallExpr,
+                           const ResolveScope* parent) {
+  mAstRef = forallExpr;
+  mParent = parent;
+
+  INT_ASSERT(getScopeFor(forallExpr) == NULL);
+
+  sScopeMap[forallExpr] = this;
 }
 
 /************************************* | **************************************
