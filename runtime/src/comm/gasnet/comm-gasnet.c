@@ -24,6 +24,7 @@
 #include "gasnet_coll.h"
 #include "gasnet_tools.h"
 #include "chpl-comm.h"
+#include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-mem.h"

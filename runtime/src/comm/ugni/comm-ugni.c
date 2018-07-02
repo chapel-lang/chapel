@@ -53,6 +53,7 @@
 #include "chplrt.h"
 #include "chpl-cache.h"
 #include "chpl-comm.h"
+#include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-env.h"
