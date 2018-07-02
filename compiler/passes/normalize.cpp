@@ -3371,7 +3371,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 }
 
 static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call) {
-  if (call->isNamed("_build_tuple")) {
+  if (call->isNamed("_build_tuple") || call->isNamed("*")) {
     return dtTuple->symbol;
   } else if (call->isNamed("_to_unmanaged")) {
     return dtUnmanaged->symbol;
@@ -3474,6 +3474,10 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     call->baseExpr->replace(new SymExpr(dtTuple->symbol));
 
     position = position + 1; // tuple size is technically 1st param/type
+
+  } else if (call->isNamed("*")) {
+    // it happens to be that 1st actual == size so that will be checked below
+    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried));
   } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
     if (CallExpr* subCall = toCallExpr(call->get(1))) {
       if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {
