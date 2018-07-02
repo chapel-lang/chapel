@@ -180,27 +180,32 @@ module Barriers {
   class BarrierBaseType {
     pragma "no doc"
     proc barrier() {
-      halt("barrier() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc notify() {
-      halt("notify() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc wait() {
-      halt("wait() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc check(): bool {
-      halt("check() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc reset(nTasks: int) {
-      halt("reset() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
   }
 
