@@ -4971,11 +4971,13 @@ static void resolveInitField(CallExpr* call) {
     // instantiation of the overarching type (and replaces references to the
     // fields from the old instantiation
 
+    bool ignoredHasDefault = false;
+
     if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(srcExpr)) ||
         fs->hasFlag(FLAG_PARAM) ||
         (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) ||
         (fs->defPoint->init == NULL && fs->defPoint->exprType != NULL &&
-         ct->fieldIsGeneric(fs))) {
+         ct->fieldIsGeneric(fs, ignoredHasDefault))) {
       AggregateType* instantiate = ct->getInstantiation(srcExpr->symbol(), index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call

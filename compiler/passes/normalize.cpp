@@ -3278,8 +3278,11 @@ static bool isGenericActual(Expr* expr) {
   if (SymExpr* se = toSymExpr(expr))
     if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
       if (AggregateType* at = toAggregateType(ts->type))
-        if (at->isGeneric() && !at->isGenericWithDefaults())
-          return true;
+        if (!at->needsConstructor())
+          // Ignore aggregate types with old-style constructors since
+          // it computes genericity in resolution (vs in scope resolve)
+          if (at->isGeneric() && !at->isGenericWithDefaults())
+            return true;
 
   return false;
 }

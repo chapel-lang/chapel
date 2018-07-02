@@ -164,7 +164,8 @@ public:
 
   // Returns true if a field is considered generic
   // (i.e. it needs a type constructor argument)
-  bool                        fieldIsGeneric(Symbol* field)              const;
+  bool                        fieldIsGeneric(Symbol* field,
+                                             bool &hasDefault)           const;
 
 
   //
