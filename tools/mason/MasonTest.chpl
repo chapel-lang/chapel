@@ -92,9 +92,8 @@ private proc runTests(show: bool, run: bool, parallel: bool) {
 
       var resultDomain: domain(string);
       var testResults: [resultDomain] string;
-      var numPassed = 0;
 
-      forall test in testNames with (+ reduce numPassed) {
+      forall test in testNames {
 
         const testPath = "".join(projectHome, '/test/', test);
         const testName = basename(stripExt(test, ".chpl"));
@@ -118,18 +117,19 @@ private proc runTests(show: bool, run: bool, parallel: bool) {
             }
             else {
               testResults[testName] = "Passed";
-              numPassed += 1;
             }
           }
         }
       }
       if run && !parallel {
         var testBinResults = runTestBinaries(projectHome, testNames, numTests, show);
-        resultDomain = testBinResults[1].domain;
-        testResults = testBinResults[1];
-        numPassed = testBinResults[2];
+        resultDomain = testBinResults.domain;
+        testResults = testBinResults;
       }
-      if run then printTestResults(testResults, numTests, numPassed, show);
+      if run {
+        const numPassed = testResults.count("Passed");
+        printTestResults(testResults, numTests, numPassed, show);
+      }
     }
     else {
       writeln("No tests were found in /test");
@@ -154,8 +154,7 @@ private proc runTestBinaries(projectHome: string, testNames: [?D] string,
 
   var resultDomain: domain(string);
   var testResults: [resultDomain] string;
-  var numPassed: int;
-
+  
   for test in testNames {
     const testName = basename(stripExt(test, ".chpl"));
     const result = runTestBinary(projectHome, testName, show);
@@ -164,10 +163,9 @@ private proc runTestBinaries(projectHome: string, testNames: [?D] string,
     }
     else {
       testResults[testName] = "Passed";
-      numPassed +=1;
     }
   }
-  return (testResults, numPassed);
+  return testResults;
 }
 
 
