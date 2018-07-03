@@ -3372,6 +3372,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
 static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call) {
   if (call->isNamed("_build_tuple") || call->isNamed("*")) {
+    INT_ASSERT(!call->isPrimitive(PRIM_MULT));
     return dtTuple->symbol;
   } else if (call->isNamed("_to_unmanaged") ||
              call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
