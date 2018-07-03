@@ -965,6 +965,10 @@ private module AlignedTSupport {
   //
   // TODO add support for casting to/from any primitive type that's no bigger
   // than 64-bits. This will require doing a memcpy for most of them though.
+  proc castableToAlignedT(type t) param {
+    return isIntegralType(t) || isBoolType(t);
+  }
+
   inline proc _cast(type t:aligned_t, x : integral) {
     return __primitive("cast", t, x);
   }
