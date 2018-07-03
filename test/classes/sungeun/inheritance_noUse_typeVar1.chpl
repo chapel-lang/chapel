@@ -7,8 +7,8 @@ class B: A {
 }
 
 var a = new unmanaged A();
-var b: B;
-var c: B;
+var b: unmanaged B;
+var c: unmanaged B;
 
 writeln(a);
 

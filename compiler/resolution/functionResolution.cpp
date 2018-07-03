@@ -6733,20 +6733,31 @@ static Type* resolveGenericActual(SymExpr* se) {
 static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
+  bool unmanaged = false;
+  if (UnmanagedClassType* ut = toUnmanagedClassType(type)) {
+    type = ut->getCanonicalClass();
+    unmanaged = true;
+  }
+
   if (AggregateType* at = toAggregateType(type)) {
     if (at->symbol->hasFlag(FLAG_GENERIC) && at->isGenericWithDefaults()) {
       CallExpr*   cc    = new CallExpr(at->typeConstructor->name);
-      TypeSymbol* retTS = NULL;
 
       se->replace(cc);
 
       resolveCall(cc);
 
-      retTS = cc->typeInfo()->symbol;
+      Type* retType = cc->typeInfo();
 
-      cc->replace(new SymExpr(retTS));
+      if (unmanaged) {
+        AggregateType* gotAt = toAggregateType(retType);
+        INT_ASSERT(gotAt);
+        retType = gotAt->getUnmanagedClass();
+      }
 
-      retval = retTS->type;
+      cc->replace(new SymExpr(retType->symbol));
+
+      retval = retType;
     }
   }
 
@@ -9962,29 +9973,28 @@ static bool primInitIsIteratorRecord(Type* type) {
 
 // Return true if this type is generic *and* resolution will fail
 static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
-  bool retval = type->symbol->hasFlag(FLAG_GENERIC);
 
   // Not generic? OK.
   if (!type->symbol->hasFlag(FLAG_GENERIC))
     return false;
 
+  bool retval = true;
+
   // If it is generic then try to resolve the default type constructor
   // for better error reporting.
-  if (retval == true) {
-    if (AggregateType* at = toAggregateType(type)) {
-      if (FnSymbol* typeCons = at->typeConstructor) {
-        SET_LINENO(call);
+  if (AggregateType* at = toAggregateType(canonicalClassType(type))) {
+    if (FnSymbol* typeCons = at->typeConstructor) {
+      SET_LINENO(call);
 
-        // Swap in a call to the default type constructor and try to resolve it
-        CallExpr* typeConsCall = new CallExpr(typeCons->name);
+      // Swap in a call to the default type constructor and try to resolve it
+      CallExpr* typeConsCall = new CallExpr(typeCons->name);
 
-        call->replace(typeConsCall);
+      call->replace(typeConsCall);
 
-        retval = (tryResolveCall(typeConsCall) == NULL) ? true : false;
+      retval = (tryResolveCall(typeConsCall) == NULL) ? true : false;
 
-        // Put things back the way they were.
-        typeConsCall->replace(call);
-      }
+      // Put things back the way they were.
+      typeConsCall->replace(call);
     }
   }
 
