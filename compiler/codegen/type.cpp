@@ -110,12 +110,16 @@ void EnumType::codegenDef() {
       type = ty->codegen().type;
       info->lvt->addGlobalType(symbol->cname, type);
 
+      int order = 0;
       for_enums(constant, this) {
         //llvm::Constant *initConstant;
 
-        if(constant->init == NULL) INT_FATAL(this, "no constant->init");
-
-        VarSymbol* s = toVarSymbol(toSymExpr(constant->init)->symbol());
+        VarSymbol* s;
+        if (constant->init) {
+          s = toVarSymbol(toSymExpr(constant->init)->symbol());
+        } else {
+          s = new_IntSymbol(order, INT_SIZE_64);
+        }
         INT_ASSERT(s);
         INT_ASSERT(s->immediate);
 
@@ -123,6 +127,7 @@ void EnumType::codegenDef() {
 
         info->lvt->addGlobalValue(constant->sym->cname,
                                   sizedImmediate->codegen());
+        order++;
       }
     }
 #endif
