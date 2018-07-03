@@ -952,8 +952,9 @@ static void build_enum_cast_function(EnumType* et) {
 
     def = new DefExpr(fn);
     //
-    // these cast functions need to go in the base module because they
-    // are automatically inserted to handle implicit coercions
+    // Like other enum functions, these cast functions have
+    // traditionally needed to go in the base module in order to be
+    // available in the event of local enums.
     //
     baseModule->block->insertAtTail(def);
     reset_ast_loc(def, et->symbol);
