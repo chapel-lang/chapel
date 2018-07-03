@@ -219,7 +219,9 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
 
 bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) const {
   bool retval = false;
-  bool retHasDefault = false;
+
+  DefExpr* def = field->defPoint;
+  INT_ASSERT(def);
 
   if (VarSymbol* var = toVarSymbol(field)) {
     if (var->hasFlag(FLAG_TYPE_VARIABLE) == true) {
@@ -232,7 +234,6 @@ bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) const {
                /* check for FLAG_SUPER_CLASS avoids infinite loop  */
                || (!var->hasFlag(FLAG_SUPER_CLASS) &&
                    var->type->symbol->hasFlag(FLAG_GENERIC))) {
-      DefExpr* def = var->defPoint;
 
       if (def->init == NULL && def->exprType == NULL) {
         // if we end up in this case.. the compiler infinite loops
@@ -245,11 +246,10 @@ bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) const {
         retval = true;
       }
 
-      retHasDefault = (def->init == NULL);
     }
   }
 
-  hasDefault = retHasDefault;
+  hasDefault = (def->init != NULL);
 
   return retval;
 }
