@@ -99,6 +99,8 @@ module ExternalArray {
                                         _to_unmanaged(this),
                                         data,
                                         true);
+      // Only give the pointer initial contents if we created it ourselves.
+      init_elts(data.elts:c_ptr(eltType), this.size, eltType);
       return arr;
     }
 
