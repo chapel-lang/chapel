@@ -172,10 +172,10 @@ module CPtr {
   inline proc _cast(type t:c_uintptr, x:c_void_ptr)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline proc _cast(type t:int(64), x:c_void_ptr)
+  inline proc _cast(type t:int(64), x:c_void_ptr) where c_uintptr != int(64)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline proc _cast(type t:uint(64), x:c_void_ptr)
+  inline proc _cast(type t:uint(64), x:c_void_ptr) where c_uintptr != uint(64)
     return __primitive("cast", t, x);
 
   pragma "no doc"
@@ -185,10 +185,10 @@ module CPtr {
   inline proc _cast(type t:c_uintptr, x:c_ptr)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline proc _cast(type t:int(64), x:c_ptr)
+  inline proc _cast(type t:int(64), x:c_ptr) where c_intptr != int(64)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline proc _cast(type t:uint(64), x:c_ptr)
+  inline proc _cast(type t:uint(64), x:c_ptr) where c_uintptr != int(64)
     return __primitive("cast", t, x);
 
 
