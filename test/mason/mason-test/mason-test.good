@@ -1,5 +1,5 @@
 Updating mason-registry for registry
-Downloading dependency: _MasonTest1-0.1.0
+Downloading dependency: _MasonTest1-0.2.0
 --- Results ---
 Test: nomodule Passed
 Test: shallnotpass Failed
