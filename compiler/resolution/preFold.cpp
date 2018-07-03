@@ -523,6 +523,22 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
+  } else if (call->isPrimitive(PRIM_NEEDS_AUTO_DESTROY)) {
+    Type* t = call->get(1)->typeInfo();
+
+    // call propagateNotPOD to set FLAG_POD/FLAG_NOT_POD
+    propagateNotPOD(t);
+
+    bool needsDestroy = isUserDefinedRecord(t) && !isPOD(t);
+
+    if (needsDestroy) {
+      retval = new SymExpr(gTrue);
+    } else {
+      retval = new SymExpr(gFalse);
+    }
+
+    call->replace(retval);
+
   } else if (call->isPrimitive(PRIM_IS_REF_ITER_TYPE)) {
     if (isRefIterType(call->get(1)->typeInfo())) {
       retval = new SymExpr(gTrue);
