@@ -2845,6 +2845,8 @@ module ChapelArray {
     /* Remove the last element from the array, reducing the size of the
        domain by one. If the domain was ``{1..5}`` it will become ``{1..4}``
 
+       Returns the removed element.
+
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
@@ -2860,6 +2862,8 @@ module ChapelArray {
       const lo = this.domain.low,
             hi = this.domain.high-1;
       const newRange = lo..hi;
+      const ret = this(this.domain.high);
+
       on this._value {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
@@ -2877,6 +2881,7 @@ module ChapelArray {
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
+      return ret;
     }
 
     /* Add element ``val`` to the front of the array, extending the array's
@@ -2923,6 +2928,8 @@ module ChapelArray {
     /* Remove the first element of the array reducing the size of the
        domain by one.  If the domain was ``{1..5}`` it will become ``{2..5}``.
 
+       Returns the removed element.
+
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
@@ -2937,6 +2944,8 @@ module ChapelArray {
       const lo = this.domain.low+1,
             hi = this.domain.high;
       const newRange = lo..hi;
+      const ret = this(this.domain.low);
+
       on this._value {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
@@ -2954,6 +2963,7 @@ module ChapelArray {
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
+      return ret;
     }
 
     /* Insert element ``val`` into the array at index ``pos``. Shift the array
