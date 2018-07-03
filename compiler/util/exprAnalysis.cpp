@@ -209,7 +209,6 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
     case PRIM_COERCE:
     case PRIM_CALL_RESOLVES:
     case PRIM_METHOD_CALL_RESOLVES:
-    case PRIM_ENUM_MIN_BITS:
     case PRIM_ENUM_IS_SIGNED:
     case PRIM_GET_COMPILER_VAR:
 */

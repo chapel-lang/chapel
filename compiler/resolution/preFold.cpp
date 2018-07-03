@@ -297,15 +297,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_ENUM_MIN_BITS)) {
-    EnumType* et = toEnumType(toSymExpr(call->get(1))->symbol()->type);
-
-    ensureEnumTypeResolved(et);
-
-    retval = new SymExpr(new_IntSymbol(get_width(et->integerType)));
-
-    call->replace(retval);
-
   } else if (call->isPrimitive(PRIM_FIELD_BY_NUM)) {
     // if call->get(1) is a reference type, dereference it
     AggregateType* classType  = toAggregateType(call->get(1)->typeInfo());
