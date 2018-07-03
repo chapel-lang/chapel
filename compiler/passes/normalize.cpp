@@ -690,7 +690,15 @@ static void checkUseBeforeDefs() {
   USR_STOP();
 }
 
-// If the AST node defines a symbol, then extract that symbol
+// guard against "var a:int = a;"
+static void checkSelfDef(CallExpr* call, Symbol* sym) {
+  if (SymExpr* se2 = toSymExpr(call->get(2)))
+    if (se2->symbol() == sym)
+      USR_FATAL_CONT(se2, "'%s' is used to define itself", sym->name);
+}
+
+// If the AST node defines a symbol, then return that symbol.
+// Otheriwse return NULL. Also check for self-defs.
 static Symbol* theDefinedSymbol(BaseAST* ast) {
   Symbol* retval = NULL;
 
@@ -698,21 +706,19 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
   // or a variable initialization.
   //
   // The caller performs a post-order traversal and so we find the
-  // symExpr before we see the callExpr
-  //
-  // TODO reacting to SymExprs, like it is done here, allows things like
-  //   "var a: int = a" to sneak in.
-  // Instead, we should react to CallExprs that are PRIM_MOVE, init, etc.
-  // Reacting to CallExprs is also more economical, as there are fewer
-  // CallExprs than there are SymExprs.
-  //
+  // symExpr before we see the callExpr.
+  // In particular, given a move(symexpr1,symexpr2), if we consider
+  // the move itself as defining the symbol, symexpr1 will raise
+  // the "use before defined" error.
+
   if (SymExpr* se = toSymExpr(ast)) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call->isPrimitive(PRIM_MOVE)     == true  ||
-          call->isPrimitive(PRIM_ASSIGN)   == true  ||
-          call->isPrimitive(PRIM_INIT_VAR) == true)  {
+      if (call->isPrimitive(PRIM_MOVE)      ||
+          call->isPrimitive(PRIM_ASSIGN)    ||
+          call->isPrimitive(PRIM_INIT_VAR) ) {
         if (call->get(1) == se) {
           retval = se->symbol();
+          checkSelfDef(call, se->symbol());
         }
       }
       // Allow for init() for a task-private variable, which occurs in
@@ -1691,40 +1697,19 @@ static bool shouldInsertCallTemps(CallExpr* call) {
   Expr*     parentExpr = call->parentExpr;
   CallExpr* parentCall = toCallExpr(parentExpr);
   Expr*     stmt       = call->getStmtExpr();
-  bool      retval     = false;
 
-  if        (parentExpr                               == NULL) {
-    retval = false;
+  if (parentExpr == NULL                                 ||
+      isDefExpr(parentExpr)                              ||
+      isContextCallExpr(parentExpr)                      ||
+      stmt == NULL                                       ||
+      call == stmt                                       ||
+      call->partialTag                                   ||
+      call->isPrimitive(PRIM_TUPLE_EXPAND)               ||
+      (parentCall && parentCall->isPrimitive(PRIM_MOVE)) ||
+      (parentCall && parentCall->isPrimitive(PRIM_NEW)) )
+    return false;
 
-  } else if (isDefExpr(parentExpr)                    == true) {
-    retval = false;
-
-  } else if (isContextCallExpr(parentExpr)            == true) {
-    retval = false;
-
-  } else if (stmt                                     == NULL) {
-    retval = false;
-
-  } else if (call                                     == stmt) {
-    retval = false;
-
-  } else if (call->partialTag                         == true) {
-    retval = false;
-
-  } else if (call->isPrimitive(PRIM_TUPLE_EXPAND)     == true) {
-    retval = false;
-
-  } else if (parentCall && parentCall->isPrimitive(PRIM_MOVE)) {
-    retval = false;
-
-  } else if (parentCall && parentCall->isPrimitive(PRIM_NEW))  {
-    retval = false;
-
-  } else {
-    retval =  true;
-  }
-
-  return retval;
+  return true;
 }
 
 static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
