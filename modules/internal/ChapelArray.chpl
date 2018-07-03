@@ -426,20 +426,20 @@ module ChapelArray {
     return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where _to_borrowed(dom._value.type):BaseRectangularDom
+   where isSubtype(_to_borrowed(dom._value.type),BaseRectangularDom)
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
                               dom._value.idxType, dom._value.stridable);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where _to_borrowed(dom._value.type):BaseAssociativeDom
+   where isSubtype(_to_borrowed(dom._value.type),BaseAssociativeDom)
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where _to_borrowed(dom._value.type):BaseOpaqueDom
+   where isSubtype(_to_borrowed(dom._value.type),BaseOpaqueDom)
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where _to_borrowed(dom._value.type):BaseSparseDom
+   where isSubtype(_to_borrowed(dom._value.type),BaseSparseDom)
     return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type {
@@ -702,7 +702,7 @@ module ChapelArray {
   // BaseArr
   //
   proc chpl__isDROrDRView(arr) param
-    where isArray(arr) || _to_borrowed(arr.type) : BaseArr {
+    where isArray(arr) || isSubtype(_to_borrowed(arr.type), BaseArr) {
 
     const value = if isArray(arr) then arr._value else arr;
     param isDR = value.isDefaultRectangular();
@@ -733,7 +733,7 @@ module ChapelArray {
   }
 
   proc chpl__isDROrDRView(dom) param
-    where isDomain(dom) || _to_borrowed(dom.type) : BaseDom {
+    where isDomain(dom) || isSubtype(_to_borrowed(dom.type), BaseDom) {
 
     const value = if isDomain(dom) then dom._value else dom;
     param isDR  = value.isDefaultRectangular();
@@ -802,9 +802,7 @@ module ChapelArray {
   /* Return true if the argument ``d`` is a rectangular domain.
      Otherwise return false.  */
   proc isRectangularDom(d: domain) param {
-    proc isRectangularDomClass(dc: BaseRectangularDom) param return true;
-    proc isRectangularDomClass(dc) param return false;
-    return isRectangularDomClass(_to_borrowed(d._value));
+    return isSubtype(_to_borrowed(d._value.type), BaseRectangularDom);
   }
 
   /* Return true if the argument ``a`` is an array with a rectangular
@@ -858,7 +856,7 @@ module ChapelArray {
   pragma "use default init"
   record dmap { }
 
-  proc chpl__buildDistType(type t) type where _to_borrowed(t): BaseDist {
+  proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
     var x: t;
     var y = _newDistribution(_to_unmanaged(x));
     return y.type;
@@ -868,7 +866,7 @@ module ChapelArray {
     compilerError("illegal domain map type specifier - must be a subclass of BaseDist");
   }
 
-  proc chpl__buildDistValue(x) where _to_borrowed(x.type): BaseDist {
+  proc chpl__buildDistValue(x) where isSubtype(_to_borrowed(x.type), BaseDist) {
     return _newDistribution(_to_unmanaged(x));
   }
 
@@ -1053,7 +1051,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc chpl__serialize()
-      where _to_borrowed(this._value.type) : DefaultRectangularDom {
+      where isSubtype(_to_borrowed(this._value.type), DefaultRectangularDom) {
 
       return new _serialized_domain(rank, idxType, stridable, dims(), true);
     }
@@ -1765,7 +1763,7 @@ module ChapelArray {
     pragma "no doc"
     proc localSlice(r... rank)
     where chpl__isTupleOfRanges(r) &&
-          _to_borrowed(_value.type): DefaultRectangularDom
+          isSubtype(_to_borrowed(_value.type), DefaultRectangularDom)
     {
       if (_value.locale != here) then
         halt("Attempting to take a local slice of a domain on locale ",
@@ -1782,7 +1780,7 @@ module ChapelArray {
     */
     proc localSlice(r... rank)
     where chpl__isTupleOfRanges(r) &&
-          !(_to_borrowed(_value.type): DefaultRectangularDom)
+          !isSubtype(_to_borrowed(_value.type), DefaultRectangularDom)
     {
       return _value.dsiLocalSlice(chpl__anyStridable(r), r);
     }
@@ -1951,7 +1949,7 @@ module ChapelArray {
       compilerError("Cannot add indices to this domain type");
   }
 
-  proc +(i, d: domain) where i: index(d) {
+  proc +(i, d: domain) where isSubtype(i.type, index(d)) {
     if isRectangularDom(d) then
       compilerError("Cannot add indices to a rectangular domain");
     else
@@ -1963,7 +1961,7 @@ module ChapelArray {
     return d;
   }
 
-  proc +(i, d: domain) where i:index(d) && isIrregularDom(d) {
+  proc +(i, d: domain) where isSubtype(i,index(d)) && isIrregularDom(d) {
     d.add(i);
     return d;
   }
@@ -2362,7 +2360,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc localSlice(r... rank)
-    where _to_borrowed(_value.type): DefaultRectangularArr &&
+    where isSubtype(_to_borrowed(_value.type), DefaultRectangularArr) &&
           chpl__isTupleOfRanges(r) {
       if boundsChecking then
         checkSlice((...r));
@@ -2374,7 +2372,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc localSlice(d: domain)
-    where _to_borrowed(_value.type): DefaultRectangularArr {
+    where isSubtype(_to_borrowed(_value.type), DefaultRectangularArr) {
       if boundsChecking then
         checkSlice((...d.getIndices()));
 
@@ -2393,7 +2391,7 @@ module ChapelArray {
     pragma "fn returns aliasing array"
     proc localSlice(r... rank)
     where chpl__isTupleOfRanges(r) &&
-          !(_to_borrowed(_value.type): DefaultRectangularArr) {
+          !isSubtype(_to_borrowed(_value.type), DefaultRectangularArr) {
       if boundsChecking then
         checkSlice((...r));
       return _value.dsiLocalSlice(r);
@@ -3213,7 +3211,7 @@ module ChapelArray {
 
   // The same as the built-in _cast, except accepts a param arg.
   pragma "no doc"
-  proc _cast(type t, param arg) where t: _array {
+  proc _cast(type t:_array, param arg) {
     var result: t;
     // The would-be param version of proc =, inlined.
     chpl__transferArray(result, arg);
@@ -3222,7 +3220,7 @@ module ChapelArray {
 
   // How to cast arrays to strings
   pragma "no doc"
-  proc _cast(type t, x: []) where t == string {
+  proc _cast(type t:string, x: []) {
     return stringify(x);
   }
 
@@ -3688,7 +3686,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isComplexType(t) return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isRecordType(t) || isTupleType(t) {
     // TODO: The current implementations of isPODType and
     //       supportedDataTypeForBulkTransfer do not completely align. I'm
@@ -3702,6 +3700,7 @@ module ChapelArray {
     return isPODType(t);
   }
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isUnionType(t) return false;
+  // TODO -- why is the below line here?
   proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
 

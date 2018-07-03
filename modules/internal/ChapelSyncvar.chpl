@@ -158,7 +158,7 @@ module ChapelSyncvar {
   */
 
   pragma "no doc"
-  proc isSyncType(type t) param where t : _syncvar {
+  proc isSyncType(type t:_syncvar) param {
     return true;
   }
 
@@ -683,7 +683,7 @@ module ChapelSyncvar {
   */
 
   pragma "no doc"
-  proc isSingleType(type t) param where t : _singlevar {
+  proc isSingleType(type t:_singlevar) param {
     return true;
   }
 
@@ -965,16 +965,16 @@ private module AlignedTSupport {
   //
   // TODO add support for casting to/from any primitive type that's no bigger
   // than 64-bits. This will require doing a memcpy for most of them though.
-  proc castableToAlignedT(type t) param {
-    return isIntegralType(t) || isBoolType(t);
-  }
-  inline proc _cast(type t, x : integral) where t : aligned_t {
+  inline proc _cast(type t:aligned_t, x : integral) {
     return __primitive("cast", t, x);
   }
-  inline proc _cast(type t, x : bool) where t : aligned_t {
+  inline proc _cast(type t:aligned_t, x : bool) {
     return __primitive("cast", t, x);
   }
-  inline proc _cast(type t, x : aligned_t) where castableToAlignedT(t) {
+  inline proc _cast(type t:chpl_anybool, x : aligned_t) {
+    return __primitive("cast", t, x);
+  }
+  inline proc _cast(type t:integral, x : aligned_t) {
     return __primitive("cast", t, x);
   }
 

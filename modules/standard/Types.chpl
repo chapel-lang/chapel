@@ -392,10 +392,8 @@ proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
 
 
 // Is 'sub' a subtype (or equal to) 'super'?
-/* Returns `true` if the type `sub` is a subtype of the type `super`. */
-proc isSubtype(type sub, type super) param where   sub: super  return true;
-pragma "no doc"
-proc isSubtype(type sub, type super) param where !(sub: super) return false;
+/* isSubtype Returns `true` if the type `sub` is a subtype of the type `super`. */
+// TODO -- fix documentation
 
 // Is 'sub' a proper subtype of 'super'?
 /* Returns `true` if the type `sub` is a subtype of the type `super`
