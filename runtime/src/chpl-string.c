@@ -123,3 +123,6 @@ uint8_t* chpl__getInPlaceBufferData(chpl__inPlaceBuffer* buf) {
   return buf->data;
 }
 
+uint8_t* chpl__getInPlaceBufferDataForWrite(chpl__inPlaceBuffer* buf) {
+  return chpl__getInPlaceBufferData(buf);
+}

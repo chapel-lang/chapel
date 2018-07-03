@@ -96,7 +96,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
 BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
 BlockStmt* buildDeleteStmt(CallExpr* exprlist);
-CallExpr* zipToTuple(CallExpr* zipExpr);
 BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
                                ForallIntents* forall_intents,
