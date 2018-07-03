@@ -379,6 +379,16 @@ void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
+bool EnumType::isAbstract() {
+  for_enums(constant, this) {
+    if (constant->init) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
 PrimitiveType* EnumType::getIntegerType() {
   INT_ASSERT(integerType);
   return integerType;

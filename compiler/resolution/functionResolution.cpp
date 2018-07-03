@@ -2464,10 +2464,26 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       if (info.actuals.head()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
         USR_FATAL_CONT(call, "illegal cast to non-type");
       } else {
-        USR_FATAL_CONT(call,
-                       "illegal cast from %s to %s",
-                       toString(info.actuals.v[1]->type),
-                       toString(info.actuals.v[0]->type));
+        Type* dstType = info.actuals.v[0]->type;
+        Type* srcType = info.actuals.v[1]->type;
+        EnumType* dstEnumType = toEnumType(dstType);
+        EnumType* srcEnumType = toEnumType(srcType);
+        if (srcEnumType && srcEnumType->isAbstract()) {
+          USR_FATAL_CONT(call,
+                         "can't cast from an abstract enum ('%s') to %s",
+                         toString(srcType),
+                         toString(dstType));
+        } else if (dstEnumType && dstEnumType->isAbstract()) {
+          USR_FATAL_CONT(call,
+                         "can't cast from %s to an abstract enum type ('%s')",
+                         toString(srcType),
+                         toString(dstType));
+        } else {
+          USR_FATAL_CONT(call,
+                         "illegal cast from %s to %s",
+                         toString(srcType),
+                         toString(dstType));
+        }
       }
 
     } else if (strcmp("these", info.name) == 0) {
