@@ -5932,7 +5932,7 @@ yyreduce:
   case 107:
 /* Line 1792 of yacc.c  */
 #line 696 "chapel.ypp"
-    { (yyval.pblockstmt) = buildCoforallLoopStmt((yyvsp[(2) - (6)].pexpr), zipToTuple((yyvsp[(4) - (6)].pcallexpr)), (yyvsp[(5) - (6)].pcallexpr), (yyvsp[(6) - (6)].pblockstmt), true); }
+    { (yyval.pblockstmt) = buildCoforallLoopStmt((yyvsp[(2) - (6)].pexpr), (yyvsp[(4) - (6)].pcallexpr), (yyvsp[(5) - (6)].pcallexpr), (yyvsp[(6) - (6)].pblockstmt), true); }
     break;
 
   case 108:
@@ -7769,7 +7769,7 @@ yyreduce:
   case 382:
 /* Line 1792 of yacc.c  */
 #line 1547 "chapel.ypp"
-    { (yyval.pexpr) = buildForLoopExpr((yyvsp[(2) - (6)].pexpr), zipToTuple((yyvsp[(4) - (6)].pcallexpr)), (yyvsp[(6) - (6)].pexpr), NULL, false, true); }
+    { (yyval.pexpr) = buildForLoopExpr((yyvsp[(2) - (6)].pexpr), (yyvsp[(4) - (6)].pcallexpr), (yyvsp[(6) - (6)].pexpr), NULL, false, true); }
     break;
 
   case 383:
@@ -7787,7 +7787,7 @@ yyreduce:
   case 385:
 /* Line 1792 of yacc.c  */
 #line 1553 "chapel.ypp"
-    { (yyval.pexpr) = buildForLoopExpr((yyvsp[(2) - (9)].pexpr), zipToTuple((yyvsp[(4) - (9)].pcallexpr)), (yyvsp[(9) - (9)].pexpr), (yyvsp[(7) - (9)].pexpr), false, true); }
+    { (yyval.pexpr) = buildForLoopExpr((yyvsp[(2) - (9)].pexpr), (yyvsp[(4) - (9)].pcallexpr), (yyvsp[(9) - (9)].pexpr), (yyvsp[(7) - (9)].pexpr), false, true); }
     break;
 
   case 386:
@@ -7805,7 +7805,7 @@ yyreduce:
   case 388:
 /* Line 1792 of yacc.c  */
 #line 1559 "chapel.ypp"
-    { (yyval.pexpr) = buildForallLoopExpr((yyvsp[(2) - (6)].pexpr), zipToTuple((yyvsp[(4) - (6)].pcallexpr)), (yyvsp[(6) - (6)].pexpr), NULL, false, true); }
+    { (yyval.pexpr) = buildForallLoopExpr((yyvsp[(2) - (6)].pexpr), (yyvsp[(4) - (6)].pcallexpr), (yyvsp[(6) - (6)].pexpr), NULL, false, true); }
     break;
 
   case 389:
@@ -7823,7 +7823,7 @@ yyreduce:
   case 391:
 /* Line 1792 of yacc.c  */
 #line 1565 "chapel.ypp"
-    { (yyval.pexpr) = buildForallLoopExpr((yyvsp[(2) - (9)].pexpr), zipToTuple((yyvsp[(4) - (9)].pcallexpr)), (yyvsp[(9) - (9)].pexpr), (yyvsp[(7) - (9)].pexpr), false, true); }
+    { (yyval.pexpr) = buildForallLoopExpr((yyvsp[(2) - (9)].pexpr), (yyvsp[(4) - (9)].pcallexpr), (yyvsp[(9) - (9)].pexpr), (yyvsp[(7) - (9)].pexpr), false, true); }
     break;
 
   case 392:
@@ -7859,7 +7859,7 @@ yyreduce:
     {
       if ((yyvsp[(2) - (6)].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[(4) - (6)].pcallexpr), "invalid index expression");
-      (yyval.pexpr) = buildForallLoopExpr((yyvsp[(2) - (6)].pcallexpr)->get(1)->remove(), zipToTuple((yyvsp[(4) - (6)].pcallexpr)), (yyvsp[(6) - (6)].pexpr), NULL, false, true);
+      (yyval.pexpr) = buildForallLoopExpr((yyvsp[(2) - (6)].pcallexpr)->get(1)->remove(), (yyvsp[(4) - (6)].pcallexpr), (yyvsp[(6) - (6)].pexpr), NULL, false, true);
     }
     break;
 
@@ -7879,7 +7879,7 @@ yyreduce:
     {
       if ((yyvsp[(2) - (9)].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[(4) - (9)].pcallexpr), "invalid index expression");
-      (yyval.pexpr) = buildForallLoopExpr((yyvsp[(2) - (9)].pcallexpr)->get(1)->remove(), zipToTuple((yyvsp[(4) - (9)].pcallexpr)), (yyvsp[(9) - (9)].pexpr), (yyvsp[(7) - (9)].pexpr), false, true);
+      (yyval.pexpr) = buildForallLoopExpr((yyvsp[(2) - (9)].pcallexpr)->get(1)->remove(), (yyvsp[(4) - (9)].pcallexpr), (yyvsp[(9) - (9)].pexpr), (yyvsp[(7) - (9)].pexpr), false, true);
     }
     break;
 
@@ -8400,7 +8400,7 @@ yyreduce:
   case 505:
 /* Line 1792 of yacc.c  */
 #line 1830 "chapel.ypp"
-    { (yyval.pexpr) = buildReduceExpr((yyvsp[(1) - (3)].pexpr), zipToTuple((yyvsp[(3) - (3)].pcallexpr)), true); }
+    { (yyval.pexpr) = buildReduceExpr((yyvsp[(1) - (3)].pexpr), (yyvsp[(3) - (3)].pcallexpr), true); }
     break;
 
   case 506:
@@ -8412,7 +8412,7 @@ yyreduce:
   case 507:
 /* Line 1792 of yacc.c  */
 #line 1832 "chapel.ypp"
-    { (yyval.pexpr) = buildReduceExpr((yyvsp[(1) - (3)].pexpr), zipToTuple((yyvsp[(3) - (3)].pcallexpr)), true); }
+    { (yyval.pexpr) = buildReduceExpr((yyvsp[(1) - (3)].pexpr), (yyvsp[(3) - (3)].pcallexpr), true); }
     break;
 
   case 508:
@@ -8424,7 +8424,7 @@ yyreduce:
   case 509:
 /* Line 1792 of yacc.c  */
 #line 1837 "chapel.ypp"
-    { (yyval.pexpr) = buildScanExpr((yyvsp[(1) - (3)].pexpr), zipToTuple((yyvsp[(3) - (3)].pcallexpr)), true); }
+    { (yyval.pexpr) = buildScanExpr((yyvsp[(1) - (3)].pexpr), (yyvsp[(3) - (3)].pcallexpr), true); }
     break;
 
   case 510:
@@ -8436,7 +8436,7 @@ yyreduce:
   case 511:
 /* Line 1792 of yacc.c  */
 #line 1839 "chapel.ypp"
-    { (yyval.pexpr) = buildScanExpr((yyvsp[(1) - (3)].pexpr), zipToTuple((yyvsp[(3) - (3)].pcallexpr)), true); }
+    { (yyval.pexpr) = buildScanExpr((yyvsp[(1) - (3)].pexpr), (yyvsp[(3) - (3)].pcallexpr), true); }
     break;
 
   case 512:
