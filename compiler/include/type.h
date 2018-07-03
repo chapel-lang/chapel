@@ -379,9 +379,12 @@ TYPE_EXTERN Type*             dtAny;
 TYPE_EXTERN Type*             dtIteratorRecord;
 TYPE_EXTERN Type*             dtIteratorClass;
 TYPE_EXTERN Type*             dtIntegral;
-TYPE_EXTERN Type*             dtAnyComplex;
 TYPE_EXTERN Type*             dtNumeric;
 TYPE_EXTERN Type*             dtAnyEnumerated;
+TYPE_EXTERN Type*             dtAnyBool;
+TYPE_EXTERN Type*             dtAnyComplex;
+TYPE_EXTERN Type*             dtAnyImag;
+TYPE_EXTERN Type*             dtAnyReal;
 
 TYPE_EXTERN PrimitiveType*    dtNil;
 TYPE_EXTERN PrimitiveType*    dtUnknown;

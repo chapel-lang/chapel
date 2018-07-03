@@ -625,11 +625,21 @@ void initPrimitiveTypes() {
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
 
+  dtAnyBool = createInternalType("chpl_anybool", "bool");
+  dtAnyBool->symbol->addFlag(FLAG_GENERIC);
+
+  // could also be called dtAnyIntegral
   dtIntegral = createInternalType ("integral", "integral");
   dtIntegral->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyReal = createInternalType("chpl_anyreal", "real");
+  dtAnyReal->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyImag = createInternalType("chpl_anyimag", "imag");
+  dtAnyImag->symbol->addFlag(FLAG_GENERIC);
 
   dtNumeric = createInternalType ("numeric", "numeric");
   dtNumeric->symbol->addFlag(FLAG_GENERIC);
