@@ -1144,7 +1144,7 @@ module ChapelBase {
 
   // this version handles unmanaged -> borrow
   pragma "unsafe"
-  inline proc _cast(type t:borrowed, x:_unmanaged) where isSubtype(t,_to_borrowed(x.type)) && (x.type != t) {
+  inline proc _cast(type t:borrowed, x:_unmanaged) where isSubtype(t,_to_borrowed(x.type)) && (_to_borrowed(x.type) != t) {
     // first convert to borrow
     var casttmp = __primitive("to borrowed class", x);
     // then cast the borrow
