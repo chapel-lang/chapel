@@ -17,18 +17,23 @@
 # limitations under the License.
 
 # This script checks the test/ directory for the .good the .bad and
-# the .future files that are stale.  (And others.)  .good and .future
-# files are stale if there's no test that refers to them.  .bad files
-# are also stale if there's no matching .future file.
+# the .future files (and assorted other start_test control files) that
+# are stale.  Most of the files are stale if there's no .chpl file
+# that refers to them.
+# Exceptions:
+# - .bad files are also stale if there's no matching .future file.
+# - .notest files are stale only if there's also no matching directory.
+# - .good files are complicated as they may be referenced without a
+#   matching .chpl due to .compopts and .execopts files.  start_test
+#   may add locale-model or comm-layer (etc) labels to the names.
+#   (comm-none, lm-flat, etc.)  Some .prediff and PREDIFF files make
+#   use of .good files that don't naturally match any tests.
+# - .perfkeys can also be generated from .compopts and .execopts.
 
-# usage: check_goods
-
-# .perfkeys filenames can be generated like .good.
-
-
-# Use a variable just to keep the line testing it (much later on)
-# under 80 columns.  Sigh.
-DRAPM="$CHPL_HOME/test/distributions/robust/arithmetic/performance/multilocale"
+# usage: findUnusedTestFiles
+#
+# The script reports to stdout the name of any test file it thinks is
+# unused.
 
 for g in $(find $CHPL_HOME/test                                               \
            -name \*.good       -o -name \*.bad      -o -name \*.future -o     \
@@ -42,7 +47,7 @@ for g in $(find $CHPL_HOME/test                                               \
 
    # Get the base name by stripping off the extensions we're looking
    # for, and extensions the test system will automatically look for
-   # ("no-local" and following).
+   # ("no-local" and following (order matters)).
    base=$g
    for ext in good bad future prediff precomp preexec compopts execopts      \
               numlocales catfiles notest noexec cleanfiles skipif suppressif \
@@ -97,8 +102,10 @@ for g in $(find $CHPL_HOME/test                                               \
       # This dir uses a PREDIFF file to pick a specific .good file.  But
       # it just invokes "../../PREDIFF $0", so the later PREDIFF section
       # won't catch it.
-      # The full path string plus the indentation, if, and test,
-      # doesn't fit in 80 columns, so it's defined above
+
+      # Keep the line testing it under 80 columns.  Sigh.
+      DRAPM="$CHPL_HOME/test/distributions/robust/"
+      DRAPM="${DRAPM}arithmetic/performance/multilocale"
       if [ $d == $DRAPM ]; then
 	  base=${base%.cyclic}
 	  base=${base%.replicated}
@@ -133,7 +140,6 @@ for g in $(find $CHPL_HOME/test                                               \
    if [ -f $chpl -o -f $c -o -f $toml ]; then
       continue
    fi
-
 
    # See if this file is symlinked to
    if ls -lR "$d" | grep ^l | grep " -> $(basename $g)" > /dev/null 2>&1; then
