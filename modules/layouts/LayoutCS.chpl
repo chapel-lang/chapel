@@ -41,7 +41,9 @@ const _columnComparator: _ColumnComparator;
 // Necessary since `t == CS` does not support classes with param fields
 //
 pragma "no doc"
-proc isCSType(type t) param where _to_borrowed(t):CS return true;
+proc isCSType(type t:borrowed CS) param return true;
+pragma "no doc"
+proc isCSType(type t:unmanaged CS) param return true;
 pragma "no doc"
 proc isCSType(type t) param return false;
 
