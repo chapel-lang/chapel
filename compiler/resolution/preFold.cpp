@@ -284,19 +284,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       call->replace(retval);
     }
 
-  } else if (call->isPrimitive(PRIM_ENUM_IS_SIGNED)) {
-    EnumType* et = toEnumType(toSymExpr(call->get(1))->symbol()->type);
-
-    ensureEnumTypeResolved(et);
-
-    if (is_int_type(et->integerType)) {
-      retval = new SymExpr(gTrue);
-    } else {
-      retval = new SymExpr(gFalse);
-    }
-
-    call->replace(retval);
-
   } else if (call->isPrimitive(PRIM_FIELD_BY_NUM)) {
     // if call->get(1) is a reference type, dereference it
     AggregateType* classType  = toAggregateType(call->get(1)->typeInfo());
