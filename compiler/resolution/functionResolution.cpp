@@ -6795,11 +6795,14 @@ void ensureEnumTypeResolved(EnumType* etype) {
     // below.
     etype->integerType = dtInt[INT_SIZE_DEFAULT];
 
-    int64_t v = 1;
-    uint64_t uv = 1;
+    int64_t v;
+    uint64_t uv;
+    bool foundInit = false;
+    bool foundNegs = false;
 
     for_enums(def, etype) {
       if (def->init != NULL) {
+        foundInit = true;
         Expr* enumTypeExpr = resolveTypeOrParamExpr(def->init);
 
         Type* t = enumTypeExpr->typeInfo();
@@ -6823,30 +6826,38 @@ void ensureEnumTypeResolved(EnumType* etype) {
         if( get_int( def->init, &v ) ) {
           if( v >= 0 ) uv = v;
           else uv = 1;
+          if (v < 0) {
+            foundNegs = true;
+          }
         } else if( get_uint( def->init, &uv ) ) {
           v = uv;
         }
       } else {
-        // Use the u/v value we had from adding 1 to the previous one
-        if( v >= INT32_MIN && v <= INT32_MAX )
-          def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_32));
-        else if (uv <= UINT32_MAX)
-          def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_64));
-        else
-          def->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
+        if (foundInit) {
+          // Use the u/v value we had from adding 1 to the previous one
+          if( v >= INT32_MIN && v <= INT32_MAX )
+            def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_32));
+          else if (uv <= UINT32_MAX)
+            def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_64));
+          else
+            def->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
 
-        parent_insert_help(def, def->init);
+          parent_insert_help(def, def->init);
+        }
       }
       if (uv > INT64_MAX) {
         // Switch to uint(64) as the current enum type.
         etype->integerType = dtUInt[INT_SIZE_DEFAULT];
+        if (foundNegs) {
+          USR_FATAL(etype,
+                    "this enum cannot be represented with a single integer type");
+        }
       }
-      v++;
-      uv++;
+      if (foundInit) {
+        v++;
+        uv++;
+      }
     }
-
-    // Now try computing the enum size...
-    etype->sizeAndNormalize();
   }
 
   INT_ASSERT(etype->integerType != NULL);

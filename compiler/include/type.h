@@ -313,9 +313,6 @@ class EnumType : public Type {
   // what integer type contains all of this enum values?
   // if this is NULL it will just be recomputed when needed.
   PrimitiveType* integerType;
- private:
-  Immediate minConstant;
-  Immediate maxConstant;
 
  public:
   const char* doc;
@@ -330,9 +327,6 @@ class EnumType : public Type {
   void codegenDef();
   int codegenStructure(FILE* outfile, const char* baseoffset);
 
-  // computes integerType and does the next=last+1 assignments.
-  // This will only really work after the function resolution.
-  void sizeAndNormalize();
   PrimitiveType* getIntegerType();
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);

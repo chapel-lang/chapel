@@ -21,71 +21,71 @@ proc myTypeToString(type t)
     a = 1
   };
 
-  writeln("A ", myTypeToString(enum_mintype(A)));
+  writeln("A ", myTypeToString(chpl_enum_mintype(A)));
 
   enum B {
     a = -1
   };
 
-  writeln("B ", myTypeToString(enum_mintype(B)));
+  writeln("B ", myTypeToString(chpl_enum_mintype(B)));
 
   enum C {
     a = 0xff
   };
 
-  writeln("C ", myTypeToString(enum_mintype(C)));
+  writeln("C ", myTypeToString(chpl_enum_mintype(C)));
 
   enum D {
     a = -0x80
   };
 
-  writeln("D ", myTypeToString(enum_mintype(D)));
+  writeln("D ", myTypeToString(chpl_enum_mintype(D)));
 
   enum E {
     a = 0xff,
     b
   };
 
-  writeln("E ", myTypeToString(enum_mintype(E)));
+  writeln("E ", myTypeToString(chpl_enum_mintype(E)));
 
 
   enum F {
     a = -0x81
   };
 
-  writeln("F ", myTypeToString(enum_mintype(F)));
+  writeln("F ", myTypeToString(chpl_enum_mintype(F)));
 
   enum G {
     a = 0xff,
     b = -0x80
   };
 
-  writeln("G ", myTypeToString(enum_mintype(G)));
+  writeln("G ", myTypeToString(chpl_enum_mintype(G)));
 }
 {
   enum A {
     a = 0x100
   };
 
-  writeln("A ", myTypeToString(enum_mintype(A)));
+  writeln("A ", myTypeToString(chpl_enum_mintype(A)));
 
   enum B {
     a = -0x100
   };
 
-  writeln("B ", myTypeToString(enum_mintype(B)));
+  writeln("B ", myTypeToString(chpl_enum_mintype(B)));
 
   enum C {
     a = 0xffff
   };
 
-  writeln("C ", myTypeToString(enum_mintype(C)));
+  writeln("C ", myTypeToString(chpl_enum_mintype(C)));
 
   enum D {
     a = -0x8000
   };
 
-  writeln("D ", myTypeToString(enum_mintype(D)));
+  writeln("D ", myTypeToString(chpl_enum_mintype(D)));
 
 
   enum E {
@@ -93,89 +93,89 @@ proc myTypeToString(type t)
     b
   };
 
-  writeln("E ", myTypeToString(enum_mintype(E)));
+  writeln("E ", myTypeToString(chpl_enum_mintype(E)));
 
   enum F {
     a = -0x8001
   };
 
-  writeln("F ", myTypeToString(enum_mintype(F)));
+  writeln("F ", myTypeToString(chpl_enum_mintype(F)));
 
   enum G {
     a = 0xffff,
     b = -0x8000
   };
 
-  writeln("G ", myTypeToString(enum_mintype(G)));
+  writeln("G ", myTypeToString(chpl_enum_mintype(G)));
 }
 {
   enum A {
     a = 0x10000
   };
 
-  writeln("A ", myTypeToString(enum_mintype(A)));
+  writeln("A ", myTypeToString(chpl_enum_mintype(A)));
 
   enum B {
     a = -0x10000
   };
 
-  writeln("B ", myTypeToString(enum_mintype(B)));
+  writeln("B ", myTypeToString(chpl_enum_mintype(B)));
 
   enum C {
     a = 0xffffffff
   };
 
-  writeln("C ", myTypeToString(enum_mintype(C)));
+  writeln("C ", myTypeToString(chpl_enum_mintype(C)));
 
   enum D {
     a = -0x80000000
   };
 
-  writeln("D ", myTypeToString(enum_mintype(D)));
+  writeln("D ", myTypeToString(chpl_enum_mintype(D)));
 
   enum E {
     a = 0xffffffff,
     b
   };
 
-  writeln("E ", myTypeToString(enum_mintype(E)));
+  writeln("E ", myTypeToString(chpl_enum_mintype(E)));
 
 
   enum F {
     a = -0x80000001
   };
 
-  writeln("F ", myTypeToString(enum_mintype(F)));
+  writeln("F ", myTypeToString(chpl_enum_mintype(F)));
 
   enum G {
     a = 0xffffffff,
     b = -0x80000000
   };
 
-  writeln("G ", myTypeToString(enum_mintype(G)));
+  writeln("G ", myTypeToString(chpl_enum_mintype(G)));
 }
 {
   enum A {
     a = 0x100000000
   };
 
-  writeln("A ", myTypeToString(enum_mintype(A)));
+  writeln("A ", myTypeToString(chpl_enum_mintype(A)));
 
   enum B {
     a = -0x100000000
   };
 
-  writeln("B ", myTypeToString(enum_mintype(B)));
+  writeln("B ", myTypeToString(chpl_enum_mintype(B)));
 
   enum C {
     a = 0xffffffffffffffff
   };
 
-  writeln("C ", myTypeToString(enum_mintype(C)));
+  writeln("C ", myTypeToString(chpl_enum_mintype(C)));
 
   enum E {
     a = -0x7fffffffffffffff
   };
 
-  writeln("E ", myTypeToString(enum_mintype(E)));
+  writeln("E ", myTypeToString(chpl_enum_mintype(E)));
 }

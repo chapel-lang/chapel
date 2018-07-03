@@ -6,7 +6,7 @@ enum Color {
 }
 
 enum Season {
-  Autumn,
+  Autumn = 1,
   Winter,
   Spring,
   Summer = 10

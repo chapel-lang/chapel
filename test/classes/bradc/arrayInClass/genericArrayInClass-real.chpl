@@ -27,7 +27,7 @@ class SparseC {
   var x: [sparseDom] t;
 }
 
-enum probClass {S, W, A, B, C};
+enum probClass {S=1, W, A, B, C};
 
 class EnumC {
   type t;

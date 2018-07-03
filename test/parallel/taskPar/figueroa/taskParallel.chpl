@@ -39,7 +39,7 @@ begin {
 // of rock, paper, scissors.
 writeln ("Want to play rock, paper, scissors?");
 
-enum choices {rock, paper, scissors};
+enum choices {rock=1, paper, scissors};
 
 // Sync variables are useful for synchronizing between various threads of
 // execution.  Besides containing a value, they also can oscillate between an

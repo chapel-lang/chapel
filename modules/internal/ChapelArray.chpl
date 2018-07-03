@@ -3847,19 +3847,19 @@ module ChapelArray {
   proc =(ref a: [], b: _tuple) where isRectangularArr(a) {
     proc chpl__tupleInit(j, param rank: int, b: _tuple) {
       type idxType = a.domain.idxType,
-           strType = chpl__signedType(idxType);
+           strType = chpl__signedType(a.domain.intIdxType);
 
       const stride = a.domain.dim(a.rank-rank+1).stride,
-            start = a.domain.dim(a.rank-rank+1).first;
+      start = a.domain.dim(a.rank-rank+1).firstAsInt;
 
       if rank == 1 {
         for param i in 1..b.size {
-          j(a.rank-rank+1) = (start:strType + ((i-1)*stride)): idxType;
+          j(a.rank-rank+1) = chpl__intToIdx(idxType, start:strType + ((i-1)*stride));
           a(j) = b(i);
         }
       } else {
         for param i in 1..b.size {
-          j(a.rank-rank+1) = (start:strType + ((i-1)*stride)): idxType;
+          j(a.rank-rank+1) = chpl__intToIdx(idxType, start:strType + ((i-1)*stride));
           chpl__tupleInit(j, rank-1, b(i));
         }
       }
