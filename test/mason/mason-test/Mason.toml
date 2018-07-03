@@ -11,4 +11,4 @@ tests = ["sampletest.chpl",
          "shallnotpass.chpl"]
 
 [dependencies]
-_MasonTest1 = "0.1.0"
+_MasonTest1 = "0.2.0"

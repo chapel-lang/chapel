@@ -93,7 +93,7 @@ private proc runTests(show: bool, run: bool, parallel: bool) {
       var resultDomain: domain(string);
       var testResults: [resultDomain] string;
 
-      forall test in testNames {
+      for test in testNames {
 
         const testPath = "".join(projectHome, '/test/', test);
         const testName = basename(stripExt(test, ".chpl"));
