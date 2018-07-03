@@ -194,6 +194,8 @@ module ChapelSyncvar {
     :returns: The value of the sync variable.
   */
   proc _syncvar.readXX() {
+    // Yield to allow readXX in a loop to make progress
+    chpl_task_yield();
     return wrapped.readXX();
   }
 
@@ -549,9 +551,6 @@ module ChapelSyncvar {
         var alignedLocalRet : aligned_t;
 
         chpl_rmem_consist_release();
-        // currently have to yield to allow readXX in a loop to make progress
-        // TODO only yield every X accesses?
-        chpl_task_yield();
         qthread_readXX(alignedLocalRet, alignedValue);
         chpl_rmem_consist_acquire();
 
@@ -710,6 +709,8 @@ module ChapelSyncvar {
     :returns: The value of the single variable.
   */
   proc _singlevar.readXX() {
+    // Yield to allow readXX in a loop to make progress
+    chpl_task_yield();
     return wrapped.readXX();
   }
 

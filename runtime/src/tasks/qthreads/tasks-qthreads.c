@@ -190,42 +190,16 @@ void chpl_task_yield(void)
 // Sync variables
 void chpl_sync_lock(chpl_sync_aux_t *s)
 {
-    aligned_t l;
-    chpl_bool uncontested_lock = true;
-
     PROFILE_INCR(profile_sync_lock, 1);
 
-    //
-    // To prevent starvation due to never switching away from a task that is
-    // spinning while doing readXX() on a sync variable, yield if this sync var
-    // has a "lot" of uncontested locks. Note that the uncontested locks do not
-    // have to be consecutive. Also note that the number of uncontested locks
-    // is a lossy counter. Currently a "lot" is defined as ~100 uncontested
-    // locks, with care taken to not yield on the first uncontested lock.
-    //
-    // If real qthreads sync vars were used, it's possible this wouldn't be
-    // needed.
-    //
-
-    l = qthread_incr(&s->lockers_in, 1);
-
-    while (l != s->lockers_out) {
-        uncontested_lock = false;
-        qthread_yield();
-    }
-
-    if (uncontested_lock) {
-        if ((++s->uncontested_locks & 0x5F) == 0) {
-            qthread_yield();
-        }
-    }
+    qthread_lock(&s->lock);
 }
 
 void chpl_sync_unlock(chpl_sync_aux_t *s)
 {
     PROFILE_INCR(profile_sync_unlock, 1);
 
-    qthread_incr(&s->lockers_out, 1);
+    qthread_unlock(&s->lock);
 }
 
 void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
@@ -286,8 +260,7 @@ void chpl_sync_initAux(chpl_sync_aux_t *s)
 {
     PROFILE_INCR(profile_sync_initAux, 1);
 
-    s->lockers_in   = 0;
-    s->lockers_out  = 0;
+    s->lock         = 0;
     s->is_full      = 0;
     s->signal_empty = 0;
     s->signal_full  = 0;
