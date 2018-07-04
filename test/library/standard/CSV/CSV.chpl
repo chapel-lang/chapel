@@ -52,23 +52,19 @@ module CSV {
   }
 
   // Imports the first row as the Series headers.
-  // TODO: Series as Index
   proc csvDataFrame(path: string, type serTypes) throws {
     var csvTable = try openCSV(path);
-    var csvShape = csvTable.shape;
-    var csvRows = csvShape(1);
-    var csvCols = csvShape(2);
+    var csvRows = csvTable.shape(1);
     var serDom = {1..csvRows-1};
 
     var df = new DataFrame();
-    for param serTypeCol in 1..serTypes.size {
-      param csvCol = serTypeCol+1;
-      type serType = serTypes(serTypeCol);
+    for param serTypeIdx in 1..serTypes.size {
+      type serType = serTypes(serTypeIdx);
       var serData: [serDom] serType;
       var serValid: [serDom] bool;
       for (serRow, csvRow) in zip(serDom, 2..csvRows) {
         try {
-          serData[serRow] = csvTable[csvRow, csvCol]: serType;
+          serData[serRow] = csvTable[csvRow, serTypeIdx]: serType;
           serValid[serRow] = true;
         } catch {
           serValid[serRow] = false;
@@ -76,7 +72,7 @@ module CSV {
       }
 
       var ser = new TypedSeries(serData, serValid);
-      var serLab = csvTable[1, csvCol];
+      var serLab = csvTable[1, serTypeIdx];
       df.insert(serLab, ser);
       // TODO: have df.insert() take an owned Series
       delete ser;

@@ -9,3 +9,8 @@ writeln();
 
 var df = csvDataFrame("fremont_bike_counts.csv", fremontTypes);
 writeln(df);
+
+writeln();
+
+var df_idx = df.set_index(string, "Date");
+writeln(df_idx);
