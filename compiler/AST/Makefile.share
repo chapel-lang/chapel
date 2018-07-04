@@ -32,7 +32,7 @@ AST_SRCS =                                          \
            flags.cpp                                \
            FnSymbol.cpp                             \
            ForallStmt.cpp                           \
-           IfExpr.cpp			            \
+           IfExpr.cpp                               \
            iterator.cpp                             \
            LoopExpr.cpp                             \
            ModuleSymbol.cpp                         \

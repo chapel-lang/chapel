@@ -102,7 +102,7 @@ forall_explanation_start(BaseAST* ast, BaseAST* parentAst) {
   if (LoopExpr* fe = toLoopExpr(parentAst)) {
     if (ast == fe->iteratorExpr)
       return ") in( ";
-    if (ast == fe->expr)
+    if (ast == fe->loopBody)
       return ") { ";
     if (ast == fe->cond)
       return "} if( ";

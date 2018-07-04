@@ -339,7 +339,7 @@ bool AstDump::enterLoopExpr(LoopExpr* node) {
     write(" then ");
   }
 
-  node->expr->accept(this);
+  node->loopBody->accept(this);
 
   write(")");
 

@@ -56,19 +56,20 @@ static void findLoopExprDefs(LoopExpr* fe, Expr* indices, AList& defIndices) {
 }
 
 LoopExpr::LoopExpr(Expr* indices,
-                       Expr* iteratorExpr,
-                       Expr* expr,
-                       Expr* cond,
-                       bool maybeArrayType,
-                       bool zippered,
-                       bool forall) :
+                   Expr* iteratorExpr,
+                   Expr* cond,
+                   Expr* loopBody,
+                   bool forall,
+                   bool zippered,
+                   bool maybeArrayType) :
   Expr(E_LoopExpr),
   indices(indices),
   iteratorExpr(iteratorExpr),
   cond(cond),
-  maybeArrayType(maybeArrayType),
+  loopBody(NULL),
+  forall(forall),
   zippered(zippered),
-  forall(forall)
+  maybeArrayType(maybeArrayType)
 {
 
   if (forall == false && maybeArrayType) {
@@ -77,39 +78,44 @@ LoopExpr::LoopExpr(Expr* indices,
 
   // 'expr' should be a BlockStmt so that any nested functions remain within
   // the LoopExpr (e.g. a reduction).
-  if (BlockStmt* block = toBlockStmt(expr)) {
-    this->expr = block;
+  if (BlockStmt* block = toBlockStmt(loopBody)) {
+    this->loopBody = block;
   } else {
-    this->expr = new BlockStmt(expr);
+    this->loopBody = new BlockStmt(loopBody);
   }
-
-  defIndices.parent = this;
 
   if (indices != NULL) {
     findLoopExprDefs(this, indices, defIndices);
   }
 
+  defIndices.parent = this;
   gLoopExprs.add(this);
 }
 
-LoopExpr::LoopExpr(bool maybeArrayType, bool zippered, bool forall) :
+LoopExpr::LoopExpr(bool forall, bool zippered, bool maybeArrayType) :
   Expr(E_LoopExpr),
-  maybeArrayType(maybeArrayType),
+  indices(NULL),
+  iteratorExpr(NULL),
+  cond(NULL),
+  loopBody(NULL),
+  forall(forall),
   zippered(zippered),
-  forall(forall)
+  maybeArrayType(maybeArrayType)
 {
+  defIndices.parent = this;
+  gLoopExprs.add(this);
 }
 
 LoopExpr* LoopExpr::copyInner(SymbolMap* map) {
-  LoopExpr* ret = new LoopExpr(maybeArrayType, zippered, forall);
+  LoopExpr* ret = new LoopExpr(forall, zippered, maybeArrayType);
 
   for_alist(ind, defIndices) {
     ret->defIndices.insertAtTail(COPY_INT(ind));
   }
   ret->indices        = COPY_INT(indices);
   ret->iteratorExpr   = COPY_INT(iteratorExpr);
-  ret->expr           = COPY_INT(expr);
   ret->cond           = COPY_INT(cond);
+  ret->loopBody       = COPY_INT(loopBody);
 
   return ret;
 }
@@ -119,10 +125,10 @@ void LoopExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
     indices = new_ast;
   else if (old_ast == iteratorExpr)
     iteratorExpr = new_ast;
-  else if (old_ast == expr)
-    expr = toBlockStmt(new_ast);
   else if (old_ast == cond)
     cond = new_ast;
+  else if (old_ast == loopBody)
+    loopBody = toBlockStmt(new_ast);
   else
     INT_FATAL(this, "unexpected case in LoopExpr::replaceChild");
 }
@@ -131,15 +137,10 @@ void
 LoopExpr::verify() {
   Expr::verify(E_LoopExpr);
 
-  if (indices)      verifyParent(indices);
-  if (iteratorExpr) verifyParent(iteratorExpr);
-  if (cond)         verifyParent(cond);
-  if (expr)         verifyParent(expr);
-
-  if (indices)      verifyNotOnList(indices);
-  if (iteratorExpr) verifyNotOnList(iteratorExpr);
-  if (cond)         verifyNotOnList(cond);
-  if (expr)         verifyNotOnList(expr);
+  verifyParent(indices);       verifyNotOnList(indices);
+  verifyParent(iteratorExpr);  verifyNotOnList(iteratorExpr);
+  verifyParent(cond);          verifyNotOnList(cond);
+  verifyParent(loopBody);      verifyNotOnList(loopBody);
 }
 
 void LoopExpr::accept(AstVisitor* visitor) {
@@ -150,7 +151,7 @@ void LoopExpr::accept(AstVisitor* visitor) {
     if (indices)      indices->accept(visitor);
     if (iteratorExpr) iteratorExpr->accept(visitor);
     if (cond)         cond->accept(visitor);
-    if (expr)         expr->accept(visitor);
+    if (loopBody)     loopBody->accept(visitor);
 
     visitor->exitLoopExpr(this);
   }
@@ -191,7 +192,7 @@ class LowerLoopExprVisitor : public AstVisitorTraverse
 bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
   // Don't touch LoopExprs in DefExprs, they should be copied later into
   // BlockStmts.
-  if (isAlive(node) && node->getStmtExpr() != NULL) {
+  if (node->inTree() && node->getStmtExpr() != NULL) {
     SET_LINENO(node);
 
     CallExpr* replacement = buildLoopExprFunctions(node);
@@ -427,9 +428,9 @@ static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn,
 //
 // TODO: build a more general flattening or outer-finding set of functions
 //
-static bool isOuterVar(Symbol* sym, FnSymbol* faParent) {
+static bool isOuterVar(Symbol* sym, FnSymbol* parentFn) {
   Symbol* symParent = sym->defPoint->parentSymbol;
-  Symbol* parent = faParent;
+  Symbol* parent = parentFn;
 
   while (true) {
     if (!isFnSymbol(parent) && !isModuleSymbol(parent))
@@ -451,19 +452,19 @@ static bool isOuterVar(Symbol* sym, FnSymbol* faParent) {
 static void findOuterVars(LoopExpr* loopExpr, std::set<Symbol*>& outerVars) {
   std::vector<SymExpr*> uses;
 
-  collectSymExprs(loopExpr->expr, uses);
+  collectSymExprs(loopExpr->loopBody, uses);
   if (loopExpr->cond) collectSymExprs(loopExpr->cond, uses);
 
-  FnSymbol* faParent = loopExpr->getFunction();
+  FnSymbol* parentFn = loopExpr->getFunction();
   for_vector(SymExpr, se, uses) {
     Symbol* sym = se->symbol();
     if (VarSymbol* var = toVarSymbol(sym)) {
-      if (isOuterVar(var, faParent) == true && isGlobal(var) == false) {
+      if (isOuterVar(var, parentFn) == true && isGlobal(var) == false) {
         outerVars.insert(var);
       }
     } else if (ArgSymbol* arg = toArgSymbol(sym)) {
       // There might be nested functions within the loopExpr, so we need to
-      // check for those functions' defPoints instead of the arg's defPoitn.
+      // check for those functions' defPoints instead of the arg's defPoint.
       FnSymbol* parentFn = toFnSymbol(arg->defPoint->parentSymbol);
       if (loopExpr->contains(parentFn->defPoint) == false) {
         outerVars.insert(arg);
@@ -555,7 +556,7 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   // in the tree - that way we know where to put the replacement.
   Expr* indices        = removeOrNull(loopExpr->indices);
   Expr* iteratorExpr   = removeOrNull(loopExpr->iteratorExpr);
-  BlockStmt* expr      = toBlockStmt(removeOrNull(loopExpr->expr));
+  BlockStmt* expr      = toBlockStmt(removeOrNull(loopExpr->loopBody));
   Expr* cond           = removeOrNull(loopExpr->cond);
   bool  maybeArrayType = loopExpr->maybeArrayType;
   bool  zippered       = loopExpr->zippered;
