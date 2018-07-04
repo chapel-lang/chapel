@@ -806,7 +806,7 @@ module ZMQ {
     // send, enumerated types
     pragma "no doc"
     proc send(data: ?T, flags: int = 0) throws where isEnumType(T) {
-      try send(data:int, flags);
+      try send(chpl__enumToOrder(data), flags);
     }
 
     // send, records (of other supported things)
@@ -900,7 +900,7 @@ module ZMQ {
     // recv, enumerated types
     pragma "no doc"
     proc recv(type T, flags: int = 0) throws where isEnumType(T) {
-      return try recv(int, flags):T;
+      return try chpl__orderToEnum(recv(int, flags), T);
     }
 
     // recv, records (of other supported things)
