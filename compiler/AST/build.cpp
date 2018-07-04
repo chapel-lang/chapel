@@ -785,13 +785,13 @@ destructureIndices(BlockStmt* block,
 Expr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   if (zippered) zipToTuple(iteratorExpr);
-  return new LoopExpr(indices, iteratorExpr, expr, cond, maybeArrayType, zippered, /*forall=*/ false);
+  return new LoopExpr(indices, iteratorExpr, cond, expr, /*forall=*/ false, zippered, maybeArrayType);
 }
 
 Expr*
 buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   if (zippered) zipToTuple(iteratorExpr);
-  return new LoopExpr(indices, iteratorExpr, expr, cond, maybeArrayType, zippered, /*forall=*/true);
+  return new LoopExpr(indices, iteratorExpr, cond, expr, /*forall=*/ true, zippered, maybeArrayType);
 }
 
 //
@@ -1515,10 +1515,10 @@ static void adjustEltTypeFE(FnSymbol* fn, Symbol* eltType, LoopExpr* fe)
   FnSymbol* typef = new FnSymbol(astr(fn->name, "_eltype"));
   typef->retTag = RET_TYPE;
   destructureIndices(typef->body, fe->indices, iterIndex, false);
-  BlockStmt* expr = fe->expr;
-  Expr* lastExpr = expr->body.tail->remove();
-  expr->insertAtTail(new_Expr("'return'('typeof'(%E))", lastExpr));
-  typef->insertAtTail(expr);
+  BlockStmt* loopBody = fe->loopBody;
+  Expr* lastExpr = loopBody->body.tail->remove();
+  loopBody->insertAtTail(new_Expr("'return'('typeof'(%E))", lastExpr));
+  typef->insertAtTail(loopBody);
 
   // Do not delete the enclosing block in removeTypeBlocks().
   typeBlock->blockTag = BLOCK_SCOPELESS;
@@ -1686,7 +1686,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
     data->name = astr("chpl_FE_iter");
     dataExpr = dataFE->iteratorExpr;
     index = dataFE->indices;
-    elementToReduce = dataFE->expr;
+    elementToReduce = dataFE->loopBody ;
     // NB do not look at dataFE->indices, dataFE->expr, etc. from here on.
   } else {
     index  = new UnresolvedSymExpr("chpl_reduceIndexVar");
