@@ -55,19 +55,7 @@ public:
                         ResolveScope(ModuleSymbol*       modSym,
                                      const ResolveScope* parent);
 
-                        ResolveScope(FnSymbol*           fnSym,
-                                     const ResolveScope* parent);
-
-                        ResolveScope(TypeSymbol*         typeSym,
-                                     const ResolveScope* parent);
-
-                        ResolveScope(ForallStmt*         forallStmt,
-                                     const ResolveScope* parent);
-
-                        ResolveScope(BlockStmt*          blockStmt,
-                                     const ResolveScope* parent);
-
-                        ResolveScope(LoopExpr*         forallExpr,
+                        ResolveScope(BaseAST*            ast,
                                      const ResolveScope* parent);
 
   std::string           name()                                           const;

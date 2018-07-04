@@ -26,8 +26,14 @@ public:
 
   Expr* indices;       // Optional: [Unresolved]SymExpr or CallExpr to _build_tuple
   Expr* iteratorExpr;  // Expr or CallExpr to _build_tuple in zippered case
-  BlockStmt* expr;     // Loop body
-  Expr* cond;          // Optional: conditional expression (NB: not an IfExpr)
+  Expr* cond;          // filtering condition or NULL if none
+  BlockStmt* loopBody;
+
+  // Indicates whether this loop-expression is a forall-expr or for-expr
+  bool forall;
+
+  // 'true' if the iteratorExpr is zippered
+  bool zippered;
 
   // 'true' for forall-exprs with square brackets, like:
   //     [i in 1..10] i;
@@ -36,20 +42,14 @@ public:
   //     for    i in 1..10 do i;
   bool maybeArrayType;
 
-  // 'true' if the iteratorExpr is zippered
-  bool zippered;
-
-  // Indicates whether this loop-expression is a forall-expr or for-expr
-  bool forall;
-
   LoopExpr(Expr* indices,
            Expr* iteratorExpr,
-           Expr* expr,
            Expr* cond,
-           bool maybeArrayType,
+           Expr* loopBody,
+           bool forall,
            bool zippered,
-           bool forall);
-  LoopExpr(bool maybeArrayType, bool zippered, bool forall);
+           bool maybeArrayType);
+  LoopExpr(bool forall, bool zippered, bool maybeArrayType);
 
   DECLARE_COPY(LoopExpr);
 

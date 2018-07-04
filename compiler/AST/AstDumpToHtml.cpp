@@ -432,7 +432,7 @@ bool AstDumpToHtml::enterLoopExpr(LoopExpr* node) {
     fprintf(mFP, " <B>then</B> ");
   }
 
-  node->expr->accept(this);
+  node->loopBody->accept(this);
 
   fprintf(mFP, ")");
 

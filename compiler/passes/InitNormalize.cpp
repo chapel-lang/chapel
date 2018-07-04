@@ -1138,7 +1138,7 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
   } else if (LoopExpr* fe = toLoopExpr(expr)) {
     isFieldAccessible(fe->iteratorExpr);
     if (fe->cond) isFieldAccessible(fe->cond);
-    isFieldAccessible(fe->expr);
+    isFieldAccessible(fe->loopBody);
   } else if (BlockStmt* block = toBlockStmt(expr)) {
     for_alist(stmt, block->body) {
       isFieldAccessible(stmt);
@@ -1215,7 +1215,7 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
   } else if (LoopExpr* fe = toLoopExpr(expr)) {
     updateFieldsMember(fe->iteratorExpr);
     if (fe->cond) updateFieldsMember(fe->cond);
-    updateFieldsMember(fe->expr);
+    updateFieldsMember(fe->loopBody);
 
   } else if (BlockStmt* block = toBlockStmt(expr)) {
     for_alist(stmt, block->body) {
@@ -1641,7 +1641,7 @@ static void collectThisUses(Expr* expr, std::vector<CallExpr*>& uses) {
   } else if (LoopExpr* fe = toLoopExpr(expr)) {
     collectThisUses(fe->iteratorExpr, uses);
     if (fe->cond) collectThisUses(fe->cond, uses);
-    collectThisUses(fe->expr, uses);
+    collectThisUses(fe->loopBody, uses);
   } else if (BlockStmt* block = toBlockStmt(expr)) {
     for_alist(stmt, block->body) {
       collectThisUses(stmt, uses);

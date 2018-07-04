@@ -471,7 +471,7 @@ static void scopeResolve(LoopExpr* fe, ResolveScope* parent) {
   if (fe->indices) scopeResolveExpr(fe->indices, scope);
   if (fe->cond) scopeResolveExpr(fe->cond, scope);
 
-  scopeResolveExpr(fe->expr, scope);
+  scopeResolveExpr(fe->loopBody, scope);
 }
 
 static void scopeResolve(CallExpr* call, ResolveScope* scope) {
