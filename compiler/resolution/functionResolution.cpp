@@ -6791,12 +6791,10 @@ void ensureEnumTypeResolved(EnumType* etype) {
     // referring to previous enum constants.
     // This might be temporarily incorrect, but it's good enough
     // for resolving the enum constant initializers.
-    // We'll set finally and correctly in the call to sizeAndNormalize()
-    // below.
     etype->integerType = dtInt[INT_SIZE_DEFAULT];
 
-    int64_t v;
-    uint64_t uv;
+    int64_t v=0;
+    uint64_t uv=0;
     bool foundInit = false;
     bool foundNegs = false;
 
