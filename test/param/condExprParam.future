@@ -1,0 +1,9 @@
+feature request: conditional expressions should preserve param-ness
+
+This test shows that while I can initialize uints with ints 3 and 5, I
+can't initialize them with a conditional expression that returns 3 on
+one branch and 5 on another.  This seems frustrating and like it ought
+to be fixable.
+
+(Motivation for this: trying to get isx to work with a uint key type
+with only a modest number of casts).
