@@ -11,4 +11,4 @@ please refer to $CHPL_HOME/doc/rst/technotes/llvm.rst.  For more
 information about LLVM itself, please refer to the website above or to
 the README in the llvm/ subdirectory of this directory.
 
-The version of LLVM used here is 4.0 with two patches.
+The version of LLVM used here is 6.0 with two patches.
