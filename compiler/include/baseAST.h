@@ -65,7 +65,7 @@
   macro(DefExpr) sep                               \
   macro(CallExpr) sep                              \
   macro(ContextCallExpr) sep                       \
-  macro(ForallExpr) sep                            \
+  macro(LoopExpr) sep                            \
   macro(NamedExpr) sep                             \
   macro(IfExpr) sep                                \
                                                    \
@@ -166,7 +166,7 @@ enum AstTag {
   E_DefExpr,
   E_CallExpr,
   E_ContextCallExpr,
-  E_ForallExpr,
+  E_LoopExpr,
   E_ForwardingStmt,
   E_NamedExpr,
   E_IfExpr,
@@ -364,7 +364,7 @@ def_is_ast(SymExpr)
 def_is_ast(UnresolvedSymExpr)
 def_is_ast(DefExpr)
 def_is_ast(ContextCallExpr)
-def_is_ast(ForallExpr)
+def_is_ast(LoopExpr)
 def_is_ast(NamedExpr)
 def_is_ast(IfExpr)
 def_is_ast(UseStmt)
@@ -412,7 +412,7 @@ def_to_ast(SymExpr)
 def_to_ast(UnresolvedSymExpr)
 def_to_ast(DefExpr)
 def_to_ast(ContextCallExpr)
-def_to_ast(ForallExpr)
+def_to_ast(LoopExpr)
 def_to_ast(NamedExpr)
 def_to_ast(IfExpr)
 def_to_ast(UseStmt)
@@ -467,7 +467,7 @@ def_less_ast(SymExpr)
 def_less_ast(UnresolvedSymExpr)
 def_less_ast(DefExpr)
 def_less_ast(ContextCallExpr)
-def_less_ast(ForallExpr)
+def_less_ast(LoopExpr)
 def_less_ast(NamedExpr)
 def_less_ast(IfExpr)
 def_less_ast(UseStmt)
@@ -568,11 +568,12 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_ContextCallExpr:                                               \
     AST_CALL_LIST(_a, ContextCallExpr, options, call, __VA_ARGS__);     \
     break;                                                              \
-  case E_ForallExpr:                                                    \
-    AST_CALL_CHILD(_a, ForallExpr, indices,      call, __VA_ARGS__);    \
-    AST_CALL_CHILD(_a, ForallExpr, iteratorExpr, call, __VA_ARGS__);    \
-    AST_CALL_CHILD(_a, ForallExpr, expr,         call, __VA_ARGS__);    \
-    AST_CALL_CHILD(_a, ForallExpr, cond,         call, __VA_ARGS__);    \
+  case E_LoopExpr:                                                      \
+    AST_CALL_LIST(_a,  LoopExpr, defIndices,   call, __VA_ARGS__);      \
+    AST_CALL_CHILD(_a, LoopExpr, indices,      call, __VA_ARGS__);      \
+    AST_CALL_CHILD(_a, LoopExpr, iteratorExpr, call, __VA_ARGS__);      \
+    AST_CALL_CHILD(_a, LoopExpr, cond,         call, __VA_ARGS__);      \
+    AST_CALL_CHILD(_a, LoopExpr, loopBody,     call, __VA_ARGS__);      \
     break;                                                              \
   case E_NamedExpr:                                                     \
     AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \

@@ -581,7 +581,7 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
         // Handle e.g. Owned(GenericClass) passed to a formal : GenericClass
         // TODO: Why is this here and not in getBasicInstantiationType?
         if (isManagedPtrType(at)) {
-          Type* classType = actualType->getField("t")->type;
+          Type* classType = getManagedPtrBorrowType(actualType);
           if (canInstantiate(classType, formalType)) {
             retval = classType;
           }
@@ -979,7 +979,7 @@ bool canCoerce(Type*     actualType,
   }
 
   if (isManagedPtrType(actualType)) {
-    Type* actualBaseType = actualType->getField("t")->type;
+    Type* actualBaseType = getManagedPtrBorrowType(actualType);
     AggregateType* actualOwnedShared = toAggregateType(actualType);
     while (actualOwnedShared && actualOwnedShared->instantiatedFrom != NULL)
       actualOwnedShared = actualOwnedShared->instantiatedFrom;
@@ -988,7 +988,7 @@ bool canCoerce(Type*     actualType,
     AggregateType* formalOwnedShared = toAggregateType(formalType);
     bool formalIsClass = false;
     if (isManagedPtrType(formalType)) {
-      formalBaseType = formalType->getField("t")->type;
+      formalBaseType = getManagedPtrBorrowType(formalType);
       while (formalOwnedShared && formalOwnedShared->instantiatedFrom != NULL)
         formalOwnedShared = formalOwnedShared->instantiatedFrom;
     } else if (AggregateType* formalAt = toAggregateType(formalType)) {
@@ -1518,6 +1518,19 @@ explainCallMatch(CallExpr* call) {
   return true;
 }
 
+static bool shouldSkip(CallExpr* call) {
+  FnSymbol* fn = call->getFunction();
+  ModuleSymbol* mod = call->getModule();
+
+  if (mod->modTag == MOD_INTERNAL) {
+    return true;
+  } else if (fn->hasFlag(FLAG_LINE_NUMBER_OK) == false &&
+             fn->hasFlag(FLAG_COMPILER_GENERATED)) {
+    return true;
+  }
+
+  return false;
+}
 
 static CallExpr*
 userCall(CallExpr* call) {
@@ -1526,13 +1539,12 @@ userCall(CallExpr* call) {
   // If the called function is compiler-generated or is in one of the internal
   // modules, back up the stack until a call is encountered whose target
   // function is neither.
-  // TODO: This function should be rewritten so each test appears only once.
-  if (call->getFunction()->hasFlag(FLAG_COMPILER_GENERATED) ||
-      call->getModule()->modTag == MOD_INTERNAL) {
+
+  if (shouldSkip(call)) {
     for (int i = callStack.n-1; i >= 0; i--) {
-      if (!callStack.v[i]->getFunction()->hasFlag(FLAG_COMPILER_GENERATED) &&
-          callStack.v[i]->getModule()->modTag != MOD_INTERNAL)
-        return callStack.v[i];
+      CallExpr* cur = callStack.v[i];
+      if (!shouldSkip(cur))
+        return cur;
     }
   }
   return call;
@@ -1957,6 +1969,7 @@ void resolveDestructor(AggregateType* at) {
   FnSymbol* deinitFn = resolveUninsertedCall(at, call, false);
 
   if (deinitFn != NULL) {
+    deinitFn->instantiationPoint = at->symbol->instantiationPoint;
     resolveFunction(deinitFn);
     at->setDestructor(deinitFn);
   }
@@ -2725,16 +2738,18 @@ void trimVisibleCandidates(CallInfo&       info,
                            Vec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
 
-  bool isInit = false;
-  if (call->numActuals() >= 2 && call->isNamedAstr(astrInit)) {
+  bool isMethod = false;
+  if (call->numActuals() >= 2) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
-      isInit = se->symbol() == gMethodToken;
+      isMethod = se->symbol() == gMethodToken;
     }
   }
 
-  bool isNew = call->numActuals() >= 1 && call->isNamedAstr(astrNew);
+  bool isInit   = isMethod && call->isNamedAstr(astrInit);
+  bool isNew    = call->numActuals() >= 1 && call->isNamedAstr(astrNew);
+  bool isDeinit = isMethod && call->isNamedAstr(astrDeinit);
 
-  if (isInit == false && isNew == false) {
+  if (!(isInit || isNew || isDeinit)) {
     mostApplicable = visibleFns;
   } else {
     forv_Vec(FnSymbol, fn, visibleFns) {
@@ -2742,7 +2757,7 @@ void trimVisibleCandidates(CallInfo&       info,
       BaseAST* actual = NULL;
       BaseAST* formal = NULL;
 
-      if (isInit && fn->isInitializer()) {
+      if ((isInit && fn->isInitializer()) || (isDeinit && fn->isMethod())) {
         actual = call->get(2);
         formal = fn->_this;
       } else if (isNew && (fn->hasFlag(FLAG_NEW_WRAPPER) || fn->isInitializer())) {
@@ -2751,9 +2766,21 @@ void trimVisibleCandidates(CallInfo&       info,
       }
 
       if (actual != NULL && formal != NULL) {
-        AggregateType* actualType = toAggregateType(actual->getValType())->getRootInstantiation();
-        AggregateType* formalType = toAggregateType(formal->getValType())->getRootInstantiation();
-        if (actualType != formalType) {
+        Type* at = canonicalClassType(actual->getValType());
+        Type* ft = canonicalClassType(formal->getValType());
+
+        AggregateType* actualType = toAggregateType(at)->getRootInstantiation();
+        AggregateType* formalType = toAggregateType(ft)->getRootInstantiation();
+
+        // Allow deinit to match dtObject's deinit so that it will at least
+        // dispatch at some point. Without this check, the compiler would
+        // fail to resolve a 'deinit' call for a concrete class declared in
+        // another module. See the following for examples:
+        //   - modules/diten/returnClassDiffModule*.chpl
+        //   - classes/moduleScope/mod-init.chpl
+        if (isDeinit && formalType == dtObject) {
+          shouldKeep = true;
+        } else if (actualType != formalType) {
           shouldKeep = false;
         }
       } else {
@@ -4944,11 +4971,13 @@ static void resolveInitField(CallExpr* call) {
     // instantiation of the overarching type (and replaces references to the
     // fields from the old instantiation
 
+    bool ignoredHasDefault = false;
+
     if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(srcExpr)) ||
         fs->hasFlag(FLAG_PARAM) ||
         (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) ||
         (fs->defPoint->init == NULL && fs->defPoint->exprType != NULL &&
-         ct->fieldIsGeneric(fs))) {
+         ct->fieldIsGeneric(fs, ignoredHasDefault))) {
       AggregateType* instantiate = ct->getInstantiation(srcExpr->symbol(), index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
@@ -5920,7 +5949,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself
         if (isManagedPtrType(at) && !isManagedPointerInit(typeExpr)) {
-          Type* subtype = at->getField("t")->type;
+          Type* subtype = getManagedPtrBorrowType(at);
           if (isAggregateType(subtype)) // in particular, not dtUnknown
             at = toAggregateType(subtype);
         }
@@ -6704,20 +6733,31 @@ static Type* resolveGenericActual(SymExpr* se) {
 static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
+  bool unmanaged = false;
+  if (UnmanagedClassType* ut = toUnmanagedClassType(type)) {
+    type = ut->getCanonicalClass();
+    unmanaged = true;
+  }
+
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->symbol->hasFlag(FLAG_GENERIC) && at->hasGenericDefaults) {
+    if (at->symbol->hasFlag(FLAG_GENERIC) && at->isGenericWithDefaults()) {
       CallExpr*   cc    = new CallExpr(at->typeConstructor->name);
-      TypeSymbol* retTS = NULL;
 
       se->replace(cc);
 
       resolveCall(cc);
 
-      retTS = cc->typeInfo()->symbol;
+      Type* retType = cc->typeInfo();
 
-      cc->replace(new SymExpr(retTS));
+      if (unmanaged) {
+        AggregateType* gotAt = toAggregateType(retType);
+        INT_ASSERT(gotAt);
+        retType = gotAt->getUnmanagedClass();
+      }
 
-      retval = retTS->type;
+      cc->replace(new SymExpr(retType->symbol));
+
+      retval = retType;
     }
   }
 
@@ -6764,15 +6804,16 @@ void ensureEnumTypeResolved(EnumType* etype) {
     // referring to previous enum constants.
     // This might be temporarily incorrect, but it's good enough
     // for resolving the enum constant initializers.
-    // We'll set finally and correctly in the call to sizeAndNormalize()
-    // below.
     etype->integerType = dtInt[INT_SIZE_DEFAULT];
 
-    int64_t v = 1;
-    uint64_t uv = 1;
+    int64_t v=0;
+    uint64_t uv=0;
+    bool foundInit = false;
+    bool foundNegs = false;
 
     for_enums(def, etype) {
       if (def->init != NULL) {
+        foundInit = true;
         Expr* enumTypeExpr = resolveTypeOrParamExpr(def->init);
 
         Type* t = enumTypeExpr->typeInfo();
@@ -6796,30 +6837,38 @@ void ensureEnumTypeResolved(EnumType* etype) {
         if( get_int( def->init, &v ) ) {
           if( v >= 0 ) uv = v;
           else uv = 1;
+          if (v < 0) {
+            foundNegs = true;
+          }
         } else if( get_uint( def->init, &uv ) ) {
           v = uv;
         }
       } else {
-        // Use the u/v value we had from adding 1 to the previous one
-        if( v >= INT32_MIN && v <= INT32_MAX )
-          def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_32));
-        else if (uv <= UINT32_MAX)
-          def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_64));
-        else
-          def->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
+        if (foundInit) {
+          // Use the u/v value we had from adding 1 to the previous one
+          if( v >= INT32_MIN && v <= INT32_MAX )
+            def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_32));
+          else if (uv <= UINT32_MAX)
+            def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_64));
+          else
+            def->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
 
-        parent_insert_help(def, def->init);
+          parent_insert_help(def, def->init);
+        }
       }
       if (uv > INT64_MAX) {
         // Switch to uint(64) as the current enum type.
         etype->integerType = dtUInt[INT_SIZE_DEFAULT];
+        if (foundNegs) {
+          USR_FATAL(etype,
+                    "this enum cannot be represented with a single integer type");
+        }
       }
-      v++;
-      uv++;
+      if (foundInit) {
+        v++;
+        uv++;
+      }
     }
-
-    // Now try computing the enum size...
-    etype->sizeAndNormalize();
   }
 
   INT_ASSERT(etype->integerType != NULL);
@@ -7734,13 +7783,17 @@ static void unmarkDefaultedGenerics() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->inTree() == true) {
       for_formals(formal, fn) {
+        AggregateType* formalAt   = toAggregateType(formal->type);
+        bool typeHasGenericDefaults = false;
+        if (formalAt && formalAt->isGenericWithDefaults())
+          typeHasGenericDefaults = true;
+
         if (formal                               != fn->_this &&
-            formal->type->hasGenericDefaults     == true      &&
+            typeHasGenericDefaults                            &&
             formal->hasFlag(FLAG_MARKED_GENERIC) == false     &&
             formal->hasFlag(FLAG_IS_MEME)        == false) {
           SET_LINENO(formal);
 
-          AggregateType* formalAt   = toAggregateType(formal->type);
           FnSymbol*      typeConstr = formalAt->typeConstructor;
 
           formal->type     = dtUnknown;
@@ -8109,9 +8162,15 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 
       FnSymbol* fn = resolveUninsertedCall(at, call);
       INT_ASSERT(fn);
+
+      if (at->hasInitializers()) {
+        fn->instantiationPoint = at->symbol->instantiationPoint;
+      }
+
       resolveFunction(fn);
 
       at->setDestructor(fn);
+
     }
   }
 
@@ -9221,7 +9280,6 @@ static void removeRandomPrimitive(CallExpr* call) {
     case PRIM_GET_MEMBER:
     case PRIM_GET_MEMBER_VALUE:
     {
-// TODO the changes here are already in #9989
       // Remove member accesses of types
       // Replace string literals with field symbols in member primitives
       Type* baseType = call->get(1)->typeInfo();
@@ -9234,8 +9292,9 @@ static void removeRandomPrimitive(CallExpr* call) {
       const char* memberName = NULL;
 
       if (!get_string(memberSE, &memberName)) {
-        // This is already a field Symbol. Ensure the field is correct.
-        INT_ASSERT(memberSE->symbol()->defPoint->parentSymbol == baseType->symbol);
+        // Confirm that this is already a correct field Symbol.
+        INT_ASSERT(memberSE->symbol()->defPoint->parentSymbol
+                   == baseType->symbol);
         break;
       }
 
@@ -9923,29 +9982,28 @@ static bool primInitIsIteratorRecord(Type* type) {
 
 // Return true if this type is generic *and* resolution will fail
 static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
-  bool retval = type->symbol->hasFlag(FLAG_GENERIC);
 
   // Not generic? OK.
   if (!type->symbol->hasFlag(FLAG_GENERIC))
     return false;
 
+  bool retval = true;
+
   // If it is generic then try to resolve the default type constructor
   // for better error reporting.
-  if (retval == true) {
-    if (AggregateType* at = toAggregateType(type)) {
-      if (FnSymbol* typeCons = at->typeConstructor) {
-        SET_LINENO(call);
+  if (AggregateType* at = toAggregateType(canonicalClassType(type))) {
+    if (FnSymbol* typeCons = at->typeConstructor) {
+      SET_LINENO(call);
 
-        // Swap in a call to the default type constructor and try to resolve it
-        CallExpr* typeConsCall = new CallExpr(typeCons->name);
+      // Swap in a call to the default type constructor and try to resolve it
+      CallExpr* typeConsCall = new CallExpr(typeCons->name);
 
-        call->replace(typeConsCall);
+      call->replace(typeConsCall);
 
-        retval = (tryResolveCall(typeConsCall) == NULL) ? true : false;
+      retval = (tryResolveCall(typeConsCall) == NULL) ? true : false;
 
-        // Put things back the way they were.
-        typeConsCall->replace(call);
-      }
+      // Put things back the way they were.
+      typeConsCall->replace(call);
     }
   }
 
@@ -10054,7 +10112,7 @@ static void removeReturnTypeBlocks() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->retExprType && fn->retExprType->parentSymbol) {
       // First, move any defs in the return type block out
-      // (e.g. an array return type creates parloopexpr fns)
+      // (e.g. an array return type creates forall-expr fns)
       for_alist(expr, fn->retExprType->body) {
         if (DefExpr* def = toDefExpr(expr)) {
           if (isFnSymbol(def->sym)) {

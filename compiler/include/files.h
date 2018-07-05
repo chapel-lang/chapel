@@ -27,6 +27,7 @@
 #include "vec.h"
 
 extern char executableFilename[FILENAME_MAX+1];
+extern char libmodeHeadername[FILENAME_MAX+1];
 extern char saveCDir[FILENAME_MAX+1];
 extern std::string ccflags;
 extern std::string ldflags;

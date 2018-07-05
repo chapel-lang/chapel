@@ -266,6 +266,8 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn);
 static void markArgumentsReturnScope(FnSymbol* fn);
 static void checkLifetimesInFunction(FnSymbol* fn);
 
+static bool isCallToFunctionReturningNotOwned(CallExpr* call);
+
 void checkLifetimes(void) {
   // Mark all arguments with FLAG_SCOPE or FLAG_RETURN_SCOPE.
   // This needs to be done for all functions before the next
@@ -374,6 +376,11 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_SAFE))
     return true;
   if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+    return false;
+  // This pass has trouble following certain compiler-generated
+  // patterns in constructors. Since they're being deprecated anyway,
+  // don't check lifetimes in constructors.
+  if (fn->hasFlag(FLAG_CONSTRUCTOR))
     return false;
 
   // this is a workaround for problems with init functions
@@ -730,9 +737,23 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
     }
 
     if (returnsBorrow && isSubjectToBorrowLifetimeAnalysis(actualSym)) {
-      // Use the borrowed part of the actual's lifetime
-      LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow, inFn);
-      argLifetime.borrowed = temp.borrowed;
+      bool infer = true;
+
+      if (isCallToFunctionReturningNotOwned(call)) {
+        // yep, infer; behave as a borrow even if record contains only owned.
+      } else if (!returnsRef && !isOrContainsBorrowedClass(returnType)) {
+        // If the call returns a record by value, and that record
+        // does not contain borrows (but presumably does contain owned),
+        // do not infer the borrow lifetime.
+        infer = false;
+      }
+
+      if (infer) {
+        // Use the borrowed part of the actual's lifetime
+        LifetimePair temp = lifetimeForActual(actualSym, returnsRef,
+                                              returnsBorrow, inFn);
+        argLifetime.borrowed = temp.borrowed;
+      }
     }
 
     minLifetime = minimumLifetimePair(minLifetime, argLifetime);

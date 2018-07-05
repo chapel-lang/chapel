@@ -655,12 +655,16 @@ const char* intentDescrString(IntentTag intent);
 extern const char* astrSdot;
 extern const char* astrSequals;
 extern const char* astr_cast;
+extern const char* astr_defaultOf;
 extern const char* astrInit;
 extern const char* astrNew;
 extern const char* astrDeinit;
 extern const char* astrTag;
 extern const char* astrThis;
 extern const char* astr_chpl_manager;
+extern const char* astr_forallexpr;
+extern const char* astr_forexpr;
+extern const char* astr_loopexpr_iter;
 void initAstrConsts();
 
 // Return true if the arg must use a C pointer whether or not
@@ -705,6 +709,7 @@ extern VarSymbol *gCastChecking;
 extern VarSymbol *gDivZeroChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
+extern VarSymbol* gWarnUnstable;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 

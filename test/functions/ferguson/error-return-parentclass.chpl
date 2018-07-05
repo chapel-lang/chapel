@@ -11,7 +11,7 @@ var got = f();
 writeln(got);
 
 
-proc f() : Child {
+proc f() : borrowed Child {
   return globalParent;
 }
 

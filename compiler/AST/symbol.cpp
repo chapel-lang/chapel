@@ -65,6 +65,7 @@ VarSymbol *gCastChecking = NULL;
 VarSymbol *gDivZeroChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
+VarSymbol* gWarnUnstable = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 
@@ -1903,23 +1904,32 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
 const char* astrSdot = NULL;
 const char* astrSequals = NULL;
 const char* astr_cast = NULL;
+const char* astr_defaultOf = NULL;
 const char* astrInit = NULL;
 const char* astrNew = NULL;
 const char* astrDeinit = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
 const char* astr_chpl_manager = NULL;
+const char* astr_forallexpr = NULL;
+const char* astr_forexpr = NULL;
+const char* astr_loopexpr_iter = NULL;
 
 void initAstrConsts() {
   astrSdot    = astr(".");
   astrSequals = astr("=");
   astr_cast   = astr("_cast");
+  astr_defaultOf = astr("_defaultOf");
   astrInit    = astr("init");
   astrNew     = astr("_new");
   astrDeinit  = astr("deinit");
   astrTag     = astr("tag");
   astrThis    = astr("this");
   astr_chpl_manager = astr("_chpl_manager");
+
+  astr_forallexpr    = astr("chpl__forallexpr");
+  astr_forexpr       = astr("chpl__forexpr");
+  astr_loopexpr_iter = astr("chpl__loopexpr_iter");
 }
 
 /************************************* | **************************************

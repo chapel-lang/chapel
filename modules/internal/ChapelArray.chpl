@@ -832,16 +832,6 @@ module ChapelArray {
      return false. */
   proc isAssociativeArr(a: []) param return isAssociativeDom(a.domain);
 
-  /* Return true if ``d`` is an associative domain defined over an enumerated
-     type. Otherwise return false. */
-  proc isEnumDom(d: domain) param {
-    return isAssociativeDom(d) && isEnumType(d._value.idxType);
-  }
-
-  /* Return true if ``a`` is an array with an enumerated domain. Otherwise
-     return false. */
-  proc isEnumArr(a: []) param return isEnumDom(a.domain);
-
   /* Return true if ``d`` is an opaque domain. Otherwise return false. */
   proc isOpaqueDom(d: domain) param {
     proc isOpaqueDomClass(dc: BaseOpaqueDom) param return true;
@@ -953,18 +943,6 @@ module ChapelArray {
       if x.linksDistribution() {
         _value.add_dom(x);
       }
-      return x;
-    }
-
-    proc newAssociativeDom(type idxType, param parSafe: bool=true)
-    where isEnumType(idxType) {
-      var x = _value.dsiNewAssociativeDom(idxType, parSafe);
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      const enumTuple = chpl_enum_enumerate(idxType);
-      for param i in 1..enumTuple.size do
-        x.dsiAdd(enumTuple(i));
       return x;
     }
 
@@ -1178,11 +1156,6 @@ module ChapelArray {
     pragma "no doc"
     proc stridable param where isOpaqueDom(this) {
       compilerError("opaque domains do not support .stridable");
-    }
-
-    pragma "no doc"
-    proc stridable param where isEnumDom(this) {
-      compilerError("enumerated domains do not support .stridable");
     }
 
     pragma "no doc"
@@ -2828,6 +2801,8 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
+    pragma "unsafe"
+    // TODO - once we can annotate, val argument should outlive 'this'
     proc push_back(in val: this.eltType) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
@@ -2850,6 +2825,8 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
+    pragma "unsafe"
+    // TODO - once we can annotate, vals argument should outlive 'this'
     proc push_back(vals) where isArray(vals) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
@@ -2908,6 +2885,7 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
+    pragma "unsafe"
     proc push_front(in val: this.eltType) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
@@ -2925,6 +2903,7 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
+    pragma "unsafe"
     proc push_front(vals) where isArray(vals) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
@@ -3865,30 +3844,22 @@ module ChapelArray {
   }
 */
 
-  inline proc =(ref a: [], b: _tuple) where isEnumArr(a) {
-    if b.size != a.numElements then
-      halt("tuple array initializer size mismatch");
-    for (i,j) in zip(chpl_enumerate(index(a.domain)), 1..) {
-      a(i) = b(j);
-    }
-  }
-
   proc =(ref a: [], b: _tuple) where isRectangularArr(a) {
     proc chpl__tupleInit(j, param rank: int, b: _tuple) {
       type idxType = a.domain.idxType,
-           strType = chpl__signedType(idxType);
+           strType = chpl__signedType(a.domain.intIdxType);
 
       const stride = a.domain.dim(a.rank-rank+1).stride,
-            start = a.domain.dim(a.rank-rank+1).first;
+      start = a.domain.dim(a.rank-rank+1).firstAsInt;
 
       if rank == 1 {
         for param i in 1..b.size {
-          j(a.rank-rank+1) = (start:strType + ((i-1)*stride)): idxType;
+          j(a.rank-rank+1) = chpl__intToIdx(idxType, start:strType + ((i-1)*stride));
           a(j) = b(i);
         }
       } else {
         for param i in 1..b.size {
-          j(a.rank-rank+1) = (start:strType + ((i-1)*stride)): idxType;
+          j(a.rank-rank+1) = chpl__intToIdx(idxType, start:strType + ((i-1)*stride));
           chpl__tupleInit(j, rank-1, b(i));
         }
       }

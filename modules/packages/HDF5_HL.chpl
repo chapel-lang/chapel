@@ -3558,7 +3558,15 @@ module HDF5_HL {
           filenames.push_back(f);
         }
       }
-      const Space = {1..filenames.size};
+
+      return readAllNamedHDF5Files(locs, filenames, dsetName, eltType, rank);
+    }
+
+    /* Read all HDF5 files named in the filenames array into arrays */
+    proc readAllNamedHDF5Files(locs: [] locale, filenames: [] string,
+                               dsetName: string, type eltType, param rank) {
+      use BlockDist, HDF5_WAR;
+      const Space = filenames.domain;
       const BlockSpace = Space dmapped Block(Space, locs,
                                              dataParTasksPerLocale=1);
       var files: [BlockSpace] ArrayWrapper(eltType, rank);
@@ -3587,6 +3595,40 @@ module HDF5_HL {
       }
       return files;
     }
+
+
+    /* Read the datasets named `dsetName` from the files named in
+       `filenames` into a 1D array.  This function assumes the data
+       elements are all int(64)s.
+       `fnCols` and `fnRows` refer to the columns and rows that `filenames`
+       should have when converting it back to 2-D.
+     */
+    proc readNamedHDF5FilesInto1DArrayInt(filenames: [] string,
+                                          fnCols: int, fnRows: int,
+                                          dsetName: string) {
+      use BlockDist;
+
+      var filenames2D = reshape(filenames, {1..fnCols, 1..fnRows});
+
+      var data = readAllNamedHDF5Files(Locales, filenames2D, dsetName,
+                                       int, rank=2);
+      const rows = + reduce [subset in data[.., 1]] subset.D.dim(1).length;
+      const cols = + reduce [subset in data[1, ..]] subset.D.dim(2).length;
+
+      var A: [1..rows, 1..cols] int;
+
+      const rowsPerFile = data(1,1).D.dim(1).length,
+            colsPerFile = data(1,1).D.dim(2).length;
+      for (row, col) in data.domain {
+        const startRow = (row-1)*rowsPerFile+1, endRow = row*rowsPerFile,
+              startCol = (col-1)*colsPerFile+1, endCol = col*colsPerFile;
+        A[startRow..endRow, startCol..endCol] = data(row, col).A;
+      }
+
+      return reshape(A, {1..rows*cols});
+    }
+
+
 
     /* Read the dataset named `dsetName` out of the open file that `file_id`
        refers to.  Store the input into the array `data`.
@@ -3680,6 +3722,157 @@ module HDF5_HL {
         H5Fclose(file_id);
       }
     }
+
+    /* Read the dataset named `dset` from the HDF5 file named `filename`.
+       The dataset consists of elements of type `eltType`.  The file will
+       be read in chunks matching the `chunkShape` domain, and yielded as
+       arrays of that size until the end of the dataset is reached.
+
+       This allows operating on a very large dataset in smaller sections,
+       for example when it is too big to fit into the system memory, or
+       to allow each section to fit within cache.
+
+       Currently, the `chunkShape` domain describing the output arrays and
+       the shape of the data in the file must both be the same rank.
+       For example, if the data in the file is 2D, `chunkShape` must be
+       two-dimensional as well.  It is expected that this restriction can
+       be relaxed in the future.
+     */
+    iter hdf5ReadChunks(filename: string, dset: string,
+                        chunkShape: domain, type eltType)
+      where isRectangularDom(chunkShape) {
+
+      param outRank = chunkShape.rank;
+      var file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+      var dataset = H5Dopen(file_id, dset.c_str(), H5P_DEFAULT);
+      var dataspace = H5Dget_space(dataset);
+
+      var dsetRank: c_int;
+
+      H5LTget_dataset_ndims(file_id, dset.c_str(), dsetRank);
+
+      var dims: [1..dsetRank] hsize_t;
+      H5LTget_dataset_info_WAR(file_id, dset.c_str(), c_ptrTo(dims),
+                               nil, nil);
+
+      // Can't build a tuple with dsetRank because it isn't a param.
+      // Otherwise we could do this to get a domain describing the data:
+      // var dimTup: dsetRank * range;
+      // for i in 1..dsetRank do dimTup(i) = 1..dims[i];
+      // const dataDom = {(...dimTup)};
+
+      if outRank == 1 {
+        if dsetRank == 1 {
+          for inOffset in 0..#dims[1] by chunkShape.size {
+            const readCount = min(dims[1]:int-inOffset, chunkShape.size);
+            var A: [1..readCount] eltType;
+
+            var inOffsetArr = [inOffset: hsize_t],
+                inCountArr  = [readCount: hsize_t];
+
+            H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
+                                c_ptrTo(inOffsetArr), nil,
+                                c_ptrTo(inCountArr), nil);
+
+            var outDims   = [readCount: hsize_t],
+                outOffset = [0: hsize_t],
+                outCount  = [readCount: hsize_t];
+
+            var memspace = H5Screate_simple(1, c_ptrTo(outDims), nil);
+
+            H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
+                                c_ptrTo(outOffset), nil,
+                                c_ptrTo(outCount), nil);
+            H5Dread(dataset, getHDF5Type(eltType), memspace,
+                    dataspace, H5P_DEFAULT, c_ptrTo(A));
+
+            H5Sclose(memspace);
+            yield A;
+          }
+        } else {
+          halt("reading in 1-D from ", dsetRank,
+               "-D file not implemented");
+        }
+      } else if outRank == dsetRank {
+        // Read N-D blocks matching the N-D rank of the datafile.  This
+        // could replace the 1D/1D case above.
+
+        // This iterator yields pairs (starts, counts) for each block to
+        // be read. 'starts' is a rank-D start index for each block.
+        // 'counts' contains a count of elements in each dimension.  The
+        // block is then represented by the domain:
+        //
+        // { starts(1)..#counts(1), starts(2)..#counts(2),
+        //           ...,           starts(n)..#counts(n) }
+        //
+        // The set of all of these blocks make the full space
+        // representing the data set in the file to be read.
+        iter blockStartsCounts(param dim=1) {
+          for inOffset in 0..#dims[dim] by chunkShape.dim[dim].size {
+            const readCount = min(dims[dim]:int - inOffset, chunkShape.dim[dim].size);
+            if dim == outRank {
+              yield ((inOffset,), (readCount,));
+            } else {
+              for inOffset2 in blockStartsCounts(dim+1) {
+                yield ((inOffset, (...inOffset2(1))),
+                       (readCount, (...inOffset2(2))));
+              }
+            }
+          }
+        }
+
+        for (starts, counts) in blockStartsCounts() {
+          // If `positionalOutputTup` were used instead of `outputTup` below,
+          // the output array's domain would reflect the position of the data
+          // within the input data set.  Instead, we are currently just using
+          // 1-based domains for the yielded arrays.
+          //
+          //var positionalOutputTup: outRank * range,
+          var outputTup: outRank * range;
+
+          var inOffsetArr, inCountArr,
+              outOffsetArr, outCountArr: [1..outRank] hsize_t;
+
+          for param i in 1..outRank {
+            inOffsetArr[i] = starts(i): hsize_t;
+            inCountArr[i] = counts(i): hsize_t;
+            outOffsetArr[i] = 0: hsize_t;
+            outCountArr[i] = counts(i): hsize_t;
+            //positionalOutputTup(i) = starts(i)..#counts(i);
+            outputTup(i) = 1..#counts(i);
+          }
+          var A: [(...outputTup)] eltType;
+
+          H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
+                              c_ptrTo(inOffsetArr), nil,
+                              c_ptrTo(inCountArr), nil);
+
+          var memspace = H5Screate_simple(outRank, c_ptrTo(outCountArr), nil);
+
+          H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
+                              c_ptrTo(outOffsetArr), nil,
+                              c_ptrTo(outCountArr), nil);
+
+          H5Dread(dataset, getHDF5Type(eltType), memspace,
+                  dataspace, H5P_DEFAULT, c_ptrTo(A));
+
+          H5Sclose(memspace);
+
+          yield A;
+        }
+      } else if outRank < dsetRank {
+        // read a slice of the data set
+        halt("slicing reads not supported");
+      } else { // outRank > dsetRank
+        halt("cannot read ", outRank, "-dimension slices from ",
+             dsetRank, "D data");
+      }
+
+      H5Dclose(dataset);
+      H5Sclose(dataspace);
+      H5Fclose(file_id);
+    }
+
 
 
     /* A record that stores a rectangular array.  An array of `ArrayWrapper`

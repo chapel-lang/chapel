@@ -1,0 +1,1 @@
+test_enum4b.chpl:6: error: halt reached - illegal cast: ExprTypes.ADD has no integer value

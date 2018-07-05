@@ -2,11 +2,11 @@ class foo {
   var a : int;
 }
 
-proc bar(x : foo) ref {
+proc bar(x : borrowed foo) ref {
   return x;
 }
 
-var f : foo = new borrowed foo(a = 12);
+var f : borrowed foo = new borrowed foo(a = 12);
 
 writeln(f);
 

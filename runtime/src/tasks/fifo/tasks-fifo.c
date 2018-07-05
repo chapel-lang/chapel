@@ -748,17 +748,17 @@ void chpl_task_startMovedTask(chpl_fn_int_t  fid, chpl_fn_p fp,
 
 
 //
-// chpl_task_getSubloc() is in tasks-fifo.h.
+// chpl_task_getSubloc() is in chpl-tasks-impl.h.
 //
 
 
 //
-// chpl_task_setSubloc() is in tasks-fifo.h.
+// chpl_task_setSubloc() is in chpl-tasks-impl.h.
 //
 
 
 //
-// chpl_task_getRequestedSubloc() is in tasks-fifo.h.
+// chpl_task_getRequestedSubloc() is in chpl-tasks-impl.h.
 //
 
 

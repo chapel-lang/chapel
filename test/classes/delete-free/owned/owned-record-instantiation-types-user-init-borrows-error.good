@@ -1,0 +1,1 @@
+owned-record-instantiation-types-user-init-borrows-error.chpl:17: error: type mismatch in assignment from GenericCollection(MyClass) to GenericCollection(_owned(MyClass))

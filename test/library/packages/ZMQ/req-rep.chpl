@@ -21,7 +21,7 @@ record Foo {
 }
 
 enum Baz {
-  A, B, C, D, E
+  A=1, B, C, D, E
 }
 
 config const mode = ExecMode.Launcher;

@@ -1,3 +1,4 @@
+is-extern-class.chpl:3: warning: Extern classes have been deprecated
 is-extern-class.chpl:23: warning: should be false:
 is-extern-class.chpl:23: warning: false
 is-extern-class.chpl:23: warning: false

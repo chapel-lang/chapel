@@ -1,4 +1,4 @@
-enum month {jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec};
+enum month {jan=1, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec};
 
 proc foo(m : month) {
   writeln("It's a month");

@@ -30,6 +30,7 @@ use MasonUpdate;
 proc masonBuild(args) {
   var show = false;
   var release = false;
+  var force = false;
   var compopts: [1..0] string;
   if args.size > 2 {
     for arg in args[2..] {
@@ -39,6 +40,9 @@ proc masonBuild(args) {
       }
       else if arg == '--release' {
         release = true;
+      }
+      else if arg == '--force' {
+        force = true;
       }
       else if arg == '--show' {
         show = true;
@@ -51,7 +55,7 @@ proc masonBuild(args) {
   const configNames = UpdateLock(args);
   const tomlName = configNames[1];
   const lockName = configNames[2];
-  buildProgram(release, show, compopts, tomlName, lockName);
+  buildProgram(release, show, force, compopts, tomlName, lockName);
 }
 
 private proc checkChplVersion(lockFile : Toml) {
@@ -64,74 +68,68 @@ private proc checkChplVersion(lockFile : Toml) {
   }
 }
 
-proc buildProgram(release: bool, show: bool, compopts: [?d] string,
+proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
                   tomlName="Mason.toml", lockName="Mason.lock") {
 
   try! {
 
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd, tomlName);
+    const toParse = open(projectHome + "/" + lockName, iomode.r);
+    var lockFile = new Owned(parseToml(toParse));
+    const projectName = lockFile["root"]["name"].s;
+    
+    // --fast
+    var binLoc = 'debug';
+    if release then
+      binLoc = 'release';
 
-    if isFile(projectHome + "/" + lockName) {
 
-      // --fast
-      var binLoc = 'debug';
-      if release then
-        binLoc = 'release';
+    // build on last modification
+    if projectModified(projectHome, projectName, binLoc) || force {
 
-      // Make Binary Directory
-      makeTargetFiles(binLoc, projectHome);
+      if isFile(projectHome + "/" + lockName) {
 
-      // Install dependencies into $MASON_HOME/src
-      var toParse = open(projectHome + "/" + lockName, iomode.r);
-      var lockFile = new Owned(parseToml(toParse));
-      checkChplVersion(lockFile);
+        // Make build files and check chapel version
+        makeTargetFiles(binLoc, projectHome);
+        checkChplVersion(lockFile);
 
-      if isDir(MASON_HOME) == false {
-        mkdir(MASON_HOME, parents=true);
-      }
+        if isDir(MASON_HOME) == false {
+          mkdir(MASON_HOME, parents=true);
+        }
 
-      var sourceList = genSourceList(lockFile);
-      getSrcCode(sourceList, show);
+        // generate list of dependencies and get src code
+        var sourceList = genSourceList(lockFile);
+        getSrcCode(sourceList, show);
 
-      // Checks if dependencies exist and retrieves them for compilation
-      if lockFile.pathExists('root.compopts') {
-        const cmpFlags = lockFile["root"]["compopts"].s;
-        compopts.push_back(cmpFlags);
-      }
+        // Checks for compilation options are present in Mason.toml
+        if lockFile.pathExists('root.compopts') {
+          const cmpFlags = lockFile["root"]["compopts"].s;
+          compopts.push_back(cmpFlags);
+        }
 
-      // Compile Program
-      if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
-        writeln("Build Successful\n");
+        // Compile Program
+        if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
+          writeln("Build Successful\n");
+        }
+        else {
+          writeln("Build Failed");
+          exit(1);
+        }
+        // Close memory
+        toParse.close();
       }
       else {
-        writeln("Build Failed");
+        writeln("Cannot build: no Mason.lock found");
         exit(1);
       }
-      // Close memory
-      toParse.close();
     }
-    else writeln("Cannot build: no Mason.lock found");
+    else {
+      writeln("Skipping Build... No changes to project");
+    }
   }
   catch e: MasonError {
     exit(1);  
-  }
-}
-
-
-/* Creates the rest of the project structure */
-proc makeTargetFiles(binLoc: string, projectHome: string) {
-
-  if !isDir(projectHome + '/target') {
-    mkdir(projectHome + '/target');
-  }
-  if !isDir(projectHome + '/target/' + binLoc) {
-    mkdir(projectHome + '/target/' + binLoc);
-    mkdir(projectHome + '/target/test');
-
-    // TODO:
-    //mkdir(projectHome + '/target/'+ binLoc + '/examples');
-    //mkdir(projectHome + '/target/' + binLoc + '/bench');
   }
 }
 

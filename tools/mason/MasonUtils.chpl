@@ -23,6 +23,7 @@
 use Spawn;
 use FileSystem;
 use TOML;
+use Path;
 
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
@@ -42,6 +43,37 @@ class MasonError : Error {
     return msg;
   }
 }
+
+
+/* Creates the rest of the project structure */
+proc makeTargetFiles(binLoc: string, projectHome: string) {
+
+  const target = joinPath(projectHome, 'target');
+  const srcBin = joinPath(target, binLoc);
+  const test = joinPath(target, 'test');
+
+  if !isDir(target) {
+    mkdir(target);
+  }
+  if !isDir(srcBin) {
+    mkdir(srcBin);
+  }
+  if !isDir(test) {
+    mkdir(test);
+  }
+}
+
+
+proc stripExt(toStrip: string, ext: string) : string {
+  if toStrip.endsWith(ext) {
+    var stripped = toStrip[..toStrip.size - ext.length];
+    return stripped;
+  }
+  else {
+    return toStrip;
+  }
+}
+
 
 /* Uses the Spawn module to create a subprocess */
 proc runCommand(cmd, quiet=false) : string {
@@ -64,14 +96,22 @@ proc runCommand(cmd, quiet=false) : string {
 
 /* Same as runCommand but for situations where an
    exit status is needed */
-proc runWithStatus(command): int {
-  var cmd = command.split();
-  var sub = spawn(cmd, stdout=PIPE);
+proc runWithStatus(command, show=true): int {
 
-  var line:string;
-  while sub.stdout.readline(line) do write(line);
-  sub.wait();
-  return sub.exit_status;
+  try {
+    var cmd = command.split();
+    var sub = spawn(cmd, stdout=PIPE);
+
+    var line:string;
+    if show {
+      while sub.stdout.readline(line) do write(line);
+    }
+    sub.wait();
+    return sub.exit_status;
+  }
+  catch {
+    return -1;
+  }
 }
 
 proc hasOptions(args : [] string, const opts : string ...) {
@@ -232,4 +272,36 @@ proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
     return cwd;
   }
   return getProjectHome(dirname, tomlName);
+}
+
+
+extern "struct stat" record chpl_stat {
+  var st_mtime: off_t;
+}
+
+proc getLastModified(filename: string) : int {
+  extern proc stat(filename: c_string, ref chpl_stat): c_int;
+
+  var file_buf: chpl_stat;
+  var file_path = filename.c_str();
+
+  if (stat(file_path, file_buf) == 0) {
+    return file_buf.st_mtime;
+    }
+  return -1;
+}
+
+proc projectModified(projectHome, projectName, binLocation) : bool {
+  const binaryPath = joinPath(projectHome, "target", binLocation, projectName);
+
+  if isFile(binaryPath) {
+    for file in listdir(joinPath(projectHome, "src")) {
+      var srcPath = joinPath(projectHome, "src", file);
+      if getLastModified(srcPath) > getLastModified(binaryPath) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return true;
 }

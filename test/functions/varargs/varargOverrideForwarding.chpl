@@ -1,5 +1,5 @@
 class A {
-  forwarding var driver: B;
+  forwarding var driver: borrowed B;
 }
 
 class B {

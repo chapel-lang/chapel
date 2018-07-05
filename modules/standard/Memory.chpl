@@ -56,7 +56,12 @@
   ``memStats``: `bool`:
     Enable memory tracking and produce summary memory statistics by
     invoking :proc:`printMemAllocStats` implicitly at normal program
-    termination.
+    termination.  Note that for a multi-locale run, each top-level
+    locale reports its own memory statistics and these reports may
+    appear in any order in the program output (and possibly even
+    interleaved, though we have gone to some effort to avoid that).
+    These statistics can be put in order by sorting the output lines
+    that begin with the string ``memStats:``.
 
   ``memMax``: `uint`:
     If the value is greater than 0 (zero), enable memory tracking

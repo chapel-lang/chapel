@@ -804,8 +804,8 @@ module DistributedDeque {
     var headIdx : int = 1;
     var tailIdx : int = 1;
     var size : int;
-    var next : LocalDequeNode(eltType);
-    var prev : LocalDequeNode(eltType);
+    var next : unmanaged LocalDequeNode(eltType);
+    var prev : unmanaged LocalDequeNode(eltType);
 
     inline proc isFull {
       return size == distributedDequeBlockSize;
@@ -870,11 +870,11 @@ module DistributedDeque {
 
     var lock$ : sync bool;
 
-    var head : LocalDequeNode(eltType);
-    var tail : LocalDequeNode(eltType);
+    var head : unmanaged LocalDequeNode(eltType);
+    var tail : unmanaged LocalDequeNode(eltType);
 
     // We cache the last deleted node to handle cases where we have rapid mixed push/pop
-    var cached : LocalDequeNode(eltType);
+    var cached : unmanaged LocalDequeNode(eltType);
 
     // The size of a segment. This is used as both a means of knowing when an element
     // gets added, as well as a barrier to prevent the head and tail from being cached.
@@ -900,7 +900,7 @@ module DistributedDeque {
       return new unmanaged LocalDequeNode(eltType);
     }
 
-    inline proc retireNode(node) {
+    inline proc retireNode(node:unmanaged) {
       if cached != nil {
         delete cached;
       }

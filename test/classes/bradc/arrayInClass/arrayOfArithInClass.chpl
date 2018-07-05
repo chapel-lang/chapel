@@ -19,10 +19,10 @@ class SparseC {
   var x: [sparseDom] [1..3] real;
 }
 
-enum probClass {S, W, A, B, C};
+enum probClass {S=1, W, A, B, C};
 
 class EnumC {
-  var enumDom: domain(probClass);
+  var enumDom: domain(probClass) = probClass.S..probClass.C;
   var x: [enumDom] [1..3] real;
 }
 

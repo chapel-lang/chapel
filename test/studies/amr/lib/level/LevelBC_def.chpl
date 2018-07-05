@@ -6,10 +6,10 @@ use LevelVariable_def;
 //======================>
 class LevelBC {
   
-  const level: Level;
+  const level: unmanaged Level;
 
-  proc apply(q: LevelVariable, t: real) {}
-  proc apply_Homogeneous(q: LevelVariable) {}
+  proc apply(q: unmanaged LevelVariable, t: real) {}
+  proc apply_Homogeneous(q: unmanaged LevelVariable) {}
 
 }
 //<=== LevelBC class <===

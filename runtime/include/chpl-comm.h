@@ -495,17 +495,23 @@ void chpl_comm_make_progress(void);
 //
 // Comm diagnostics stuff
 //
+
+#define CHPL_COMM_DIAGS_VARS_ALL(MACRO) \
+  MACRO(get) \
+  MACRO(get_nb) \
+  MACRO(put) \
+  MACRO(put_nb) \
+  MACRO(test_nb) \
+  MACRO(wait_nb) \
+  MACRO(try_nb) \
+  MACRO(execute_on) \
+  MACRO(execute_on_fast) \
+  MACRO(execute_on_nb)
+
 typedef struct _chpl_commDiagnostics {
-  uint64_t get;
-  uint64_t get_nb;
-  uint64_t put;
-  uint64_t put_nb;
-  uint64_t test_nb;
-  uint64_t wait_nb;
-  uint64_t try_nb;
-  uint64_t execute_on;
-  uint64_t execute_on_fast;
-  uint64_t execute_on_nb;
+#define _COMM_DIAGS_DECL(cdv) uint64_t cdv;
+  CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_DECL)
+#undef _COMM_DIAGS_DECL
 } chpl_commDiagnostics;
 
 void chpl_startVerboseComm(void);

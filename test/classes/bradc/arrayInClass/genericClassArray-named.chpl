@@ -40,8 +40,8 @@ sparseC.x(2) = 2.2;
 sparseC.foo();
 delete sparseC;
 
-enum probClass {S, W, A, B, C};
-const enumDom: domain(probClass);
+enum probClass {S=1, W, A, B, C};
+const enumDom: domain(probClass) = probClass.S..probClass.C;
 type enumArr = [enumDom] real;
 var enumC = new unmanaged C(enumArr);
 [i in enumDom] enumC.x(i) = i:int + i:real/10.0;

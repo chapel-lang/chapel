@@ -111,6 +111,8 @@ static bool mustUseRuntimeTypeDefault(ArgSymbol* formal);
 
 static bool typeExprReturnsType(ArgSymbol* formal);
 
+static IntentTag getIntent(ArgSymbol* formal);
+
 typedef struct DefaultExprFnEntry_s {
   FnSymbol* defaultExprFn;
   std::vector<std::pair<ArgSymbol*,ArgSymbol*> > usedFormals;
@@ -475,6 +477,8 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
 
   wrapper->addFlag(FLAG_INLINE);
 
+  wrapper->addFlag(FLAG_LINE_NUMBER_OK);
+
   wrapper->retTag = RET_VALUE;
 
   if (fn->hasFlag(FLAG_METHOD)) {
@@ -647,7 +651,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   if (formal->type   != dtTypeDefaultToken &&
       formal->type   != dtMethodToken      &&
       formal->intent == INTENT_BLANK) {
-    formalIntent = blankIntentForType(formal->type);
+    formalIntent = getIntent(formal);
   }
 
   if ((formalIntent & INTENT_FLAG_REF) != 0)
@@ -690,7 +694,13 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   normalize(block);
   resolveBlockStmt(block);
 
-  block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, temp));
+  if (temp->isRef() && (formalIntent & INTENT_FLAG_REF) == 0) {
+    CallExpr* copy = new CallExpr("chpl__initCopy", temp);
+    block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, copy));
+    resolveCallAndCallee(copy);
+  } else {
+    block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, temp));
+  }
   block->flattenAndRemove();
 
   // Now we know if 'temp' is a param or a type.
@@ -1337,7 +1347,6 @@ static bool      needToAddCoercion(Type*      actualType,
                                    ArgSymbol* formal,
                                    FnSymbol*  fn);
 
-static IntentTag getIntent(ArgSymbol* formal);
 
 static void      addArgCoercion(FnSymbol*  fn,
                                 CallExpr*  call,
@@ -1956,6 +1965,7 @@ namespace {
   struct PromotionInfo {
     FnSymbol* fn;
     FnSymbol* wrapperFn;
+    bool      zippered;
     // The following vectors are indexed by the i'th formal to fn (0-based).
 
     // The TypeSymbol representing the type that is promoted (e.g. array)
@@ -1992,7 +2002,8 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
 static void       buildLeaderIterator(FnSymbol* wrapFn,
                                       BlockStmt* visibilityBlock,
-                                      Expr*     iterator);
+                                      Expr*     iterator,
+                                      bool      zippered);
 
 static void       buildFollowerIterator(PromotionInfo& promotion,
                                         BlockStmt* visibilityBlock,
@@ -2130,11 +2141,12 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
  */
 PromotionInfo::PromotionInfo(FnSymbol* fn,
                              CallInfo& info,
-                             std::vector<ArgSymbol*>& actualFormals) {
-
-  this->fn = fn;
-  this->wrapperFn = NULL; // established later along with wrapperFormals
-
+                             std::vector<ArgSymbol*>& actualFormals) :
+  fn(fn),
+  // these are established later along with wrapperFormals
+  wrapperFn(NULL),
+  zippered(false)
+{
   int numActuals = actualFormals.size();
 
   for (int j = 0; j < numActuals; j++) {
@@ -2202,7 +2214,7 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
     Expr*      iterator = getIterator(promotion);
     CallExpr*  wrapCall = createPromotedCallForWrapper(promotion);
     BlockStmt* block    = new BlockStmt(wrapCall);
-    bool       zippered = isCallExpr(iterator) ? true : false;
+    bool       zippered = promotion.zippered;
 
     loop = buildForallLoopStmt(indices, iterator, NULL, block, zippered);
 
@@ -2234,7 +2246,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
   Expr*      indices    = getIndices(promotion);
   Expr*      iterator   = getIterator(promotion);
   CallExpr*  wrapCall   = createPromotedCallForWrapper(promotion);
-  bool       zippered   = isCallExpr(iterator) ? true : false;
+  bool       zippered   = promotion.zippered;
   BlockStmt* yieldBlock = new BlockStmt();
   VarSymbol* yieldTmp   = newTemp("p_yield");
 
@@ -2243,7 +2255,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
   yieldTmp->addFlag(FLAG_EXPR_TEMP);
 
-  buildLeaderIterator(wrapFn, visibilityBlock, iterator);
+  buildLeaderIterator(wrapFn, visibilityBlock, iterator, zippered);
 
   buildFollowerIterator(promotion, visibilityBlock, indices, iterator, wrapCall);
 
@@ -2273,7 +2285,8 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
 static void buildLeaderIterator(FnSymbol* wrapFn,
                                 BlockStmt* visibilityBlock,
-                                Expr*     iterator) {
+                                Expr*     iterator,
+                                bool      zippered) {
   SymbolMap   leaderMap;
   FnSymbol*   liFn       = wrapFn->copy(&leaderMap);
 
@@ -2283,7 +2296,6 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
   VarSymbol*  liIndex    = newTemp("p_leaderIndex");
   VarSymbol*  liIterator = newTemp("p_leaderIterator");
 
-  bool        zippered   = isCallExpr(iterator) ? true : false;
   const char* leaderName = zippered ? "_toLeaderZip" : "_toLeader";
 
   BlockStmt*  loop       = NULL;
@@ -2562,8 +2574,10 @@ static Expr* getIterator(PromotionInfo& promotion) {
   // If there was only one promoted argument, don't call _build_tuple after all
   if (iteratorCall->numActuals() == 1) {
     retval = iteratorCall->get(1)->remove();
+    promotion.zippered = false;
   } else {
     retval = iteratorCall;
+    promotion.zippered = true;
   }
 
   return retval;

@@ -1,2 +1,4 @@
-/usr/bin/ld: cannot find -lreturnArrayTakesArrayArg
-collect2: error: ld returned 1 exit status
+callFuncReturnsArrayTakesArrayArg.test.c:4:38: fatal error: returnArrayTakesArrayArg.h: No such file or directory
+ #include "returnArrayTakesArrayArg.h"
+                                      ^
+compilation terminated.

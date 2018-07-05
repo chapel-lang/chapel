@@ -18,7 +18,7 @@ class Lower : Base {
 }
 
 class Replicate : Base {
-  var low : Lower;
+  var low : unmanaged Lower;
 
   proc replicate(valToReplicate) {
     coforall i in low do on Locales[i] {

@@ -3,9 +3,9 @@
 \index{ranges}
 
 A \emph{range} is a first-class, constant-space representation of a
-regular sequence of indices of either integer or enumerated type.
-Ranges support iteration over the sequences they represent
-and are the basis for defining domains (\rsec{Domains}).
+regular sequence of indices of either integer, boolean, or enumerated
+type.  Ranges support iteration over the sequences they represent and
+are the basis for defining domains (\rsec{Domains}).
 
 Ranges are presented as follows:
 \begin{itemize}
@@ -196,12 +196,12 @@ The type of a range is characterized by three parameters:
   bound is $\infty$, the represented sequence also contains indices
   that are not representable by \chpl{idxType}.
 
-  \chpl{idxType} must be an integral or enumerated type and is \chpl{int} by default.
+  \chpl{idxType} must be an integral, boolean, or enumerated type and is \chpl{int} by default.
 %
   The range's low bound and high bound (when they are not $\infty$)
   and alignment are of the type \chpl{idxType}. The range's stride
   is of the signed integer type that has the same bit size as \chpl{idxType}
-  for integral ranges; for enumerated ranges, it is simply `\chpl{int}.
+  for integral ranges; for boolean and enumerated ranges, it is simply \chpl{int}.
 
 \index{ranges!boundedType}
 \item \chpl{boundedType} indicates which of the range's bounds are not $\infty$.
@@ -350,7 +350,7 @@ The type of a range literal is a range with the following parameters:
         and an implicit conversion is allowed from one expression's type
         to the other's, then \chpl{idxType} is that type.
 
-  \item If only one bound expression is given and it has an integral or
+  \item If only one bound expression is given and it has an integral, boolean, or
         enumerated type, then \chpl{idxType} is that type.
 
   \item If neither bound expression is given, then \chpl{idxType} is

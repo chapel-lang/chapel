@@ -1,3 +1,0 @@
-# baseline memory leak, see JIRA issue 76
-
-COMPOPTS <= --baseline

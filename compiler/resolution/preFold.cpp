@@ -1073,8 +1073,6 @@ static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
     if (haveString)
       extendedName = astr(typeEnum->symbol->name, ".", constant->sym->name);
 
-    INT_ASSERT(gotInt || gotUint);
-
     bool match = false;
     // string matches name
     if (haveString &&
@@ -1211,7 +1209,7 @@ static Expr* preFoldNamed(CallExpr* call) {
 
         Immediate* imm = getSymbolImmediate(sym);
 
-        if (imm != NULL && toSE != NULL) {
+        if (toSE != NULL) {
           Type* oldType = sym->type;
           Type* newType = toSE->symbol()->type;
 
@@ -1229,7 +1227,7 @@ static Expr* preFoldNamed(CallExpr* call) {
 
 
           // Handle casting between numeric types
-          if ((fromEnum || fromIntEtc) && toIntEtc) {
+          if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
             VarSymbol* typeVar  = toVarSymbol(newType->defaultValue);
 
             // handle numeric casts
@@ -1247,30 +1245,36 @@ static Expr* preFoldNamed(CallExpr* call) {
             call->replace(retval);
 
           // Handle casting to enum
-          } else if (toEnum && (fromString || fromIntUint)) {
+          } else if (imm != NULL && toEnum && (fromString || fromIntUint)) {
 
             EnumType* typeEnum = toEnumType(newType);
             Symbol* constant = findMatchingEnumSymbol(imm, typeEnum);
 
-            if (constant == NULL)
-              USR_FATAL(call->castFrom(), "enum cast out of bounds");
-
-            retval = new SymExpr(constant);
-            call->replace(retval);
+            if (constant == NULL) {
+              USR_FATAL_CONT(call->castFrom(), "enum cast out of bounds");
+              retval = call;
+            } else {
+              retval = new SymExpr(constant);
+              call->replace(retval);
+            }
 
           // Handle enumsym:string casts
           } else if (fromEnum && toString) {
             EnumSymbol* enumSym = toEnumSymbol(sym);
 
-            if (newType == dtStringC)
-              retval = new SymExpr(new_CStringSymbol(enumSym->name));
-            else
-              retval = new SymExpr(new_StringSymbol(enumSym->name));
+            if (enumSym) {
+              if (newType == dtStringC)
+                retval = new SymExpr(new_CStringSymbol(enumSym->name));
+              else
+                retval = new SymExpr(new_StringSymbol(enumSym->name));
 
-            call->replace(retval);
+              call->replace(retval);
+            } else {
+              retval = call;
+            }
 
           // Handle string:c_string and c_string:string casts
-          } else if (fromString && toString) {
+          } else if (imm != NULL && fromString && toString) {
 
             if (newType == dtStringC)
               retval = new SymExpr(new_CStringSymbol(imm->v_string));
@@ -1280,7 +1284,7 @@ static Expr* preFoldNamed(CallExpr* call) {
             call->replace(retval);
 
           // Handle other casts to string
-          } else if (fromIntEtc && toString) {
+          } else if (imm != NULL && fromIntEtc && toString) {
             // special case because newType->defaultValue will
             // be null for dtString
 

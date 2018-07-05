@@ -63,8 +63,23 @@ public:
   bool                        isRecord()                                 const;
   bool                        isUnion()                                  const;
 
+  // is it a generic type (e.g. contains a type field with or without default)
+  // e.g. this would return true for
+  //    class C { type t = int; }
+  //    class C { type t; }
+  //    class C { param p; }
+  //    class C { var x; }
   bool                        isGeneric()                                const;
   void                        markAsGeneric();
+
+  // is it a generic type with defaults for all type/param fields?
+  // these don't behave the same as fully generic types.
+  // For example, returns true for
+  //    class C { type t = int; }
+  // and false for
+  //    class C { type t; }
+  bool                        isGenericWithDefaults()                    const;
+  void                        markAsGenericWithDefaults();
 
   const char*                 classStructName(bool standalone);
 
@@ -149,7 +164,8 @@ public:
 
   // Returns true if a field is considered generic
   // (i.e. it needs a type constructor argument)
-  bool                        fieldIsGeneric(Symbol* field)              const;
+  bool                        fieldIsGeneric(Symbol* field,
+                                             bool &hasDefault)           const;
 
 
   //
@@ -272,6 +288,7 @@ private:
   int                         genericField;
 
   bool                        mIsGeneric;
+  bool                        mIsGenericWithDefaults;
 };
 
 extern AggregateType* dtObject;

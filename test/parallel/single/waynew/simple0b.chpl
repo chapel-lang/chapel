@@ -4,8 +4,8 @@ class C {
   var x: int;
 }
 
-var s: single C;
-var t: C;
+var s: single borrowed C;
+var t: borrowed C;
 
 s = new borrowed C();
 s = t;

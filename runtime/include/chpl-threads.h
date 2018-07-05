@@ -22,9 +22,7 @@
 
 #include <stdint.h>
 
-#ifdef CHPL_THREADS_MODEL_H
-#include CHPL_THREADS_MODEL_H
-#endif
+#include "chpl-threads-impl.h"
 
 //
 // Threads are the execution vehicles for tasks.  This file declares the

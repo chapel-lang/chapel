@@ -139,20 +139,6 @@ atomic & base default value \\
 \end{tabular}
 \end{center}
 
-\begin{openissue}
-In the case that the first enumerator in an enumeration type is offset
-from zero, as in
-\begin{example}
-enum foo \{ red = 0xff0000, green = 0xff00, blue = 0xff \} ;
-\end{example}
-the compiler has to look up the first named type to see what to use as
-the default.  
-
-An alternative would be to specify that the default
-value is the enumerator whose underlying value is zero.  But that approach also
-has issues, since the default value does not conform to any named enumerator.
-\end{openissue}
-
 \subsection{Deferred Initialization}
 \label{Noinit_Capability}
 \index{noinit}

@@ -15,7 +15,7 @@ Jama is public domain and developed by MathWorks and NIST
 **/
    proc main () {
 
-      var A,B,C,Z,O,I,R,S,X,SUB,M,T,SQ,DEF,SOL : Matrix;
+      var A,B,C,Z,O,I,R,S,X,SUB,M,T,SQ,DEF,SOL : unmanaged Matrix;
       var errorCount=0;
       var warningCount=0;
       var tmp, s : real;
@@ -35,7 +35,7 @@ Jama is public domain and developed by MathWorks and NIST
 
       var subavals : [1..2,1..3] real;
       for (ij, val) in zip(subavals.domain, [5.0,8.0,11.0, 6.0, 9.0, 12.0]) { subavals(ij) = val; }
-      SUB = new Matrix(subavals);
+      SUB = new unmanaged Matrix(subavals);
 
       var rvals : [1..3,1..4] real;
       for (ij, val) in zip(rvals.domain, rowwise) { rvals(ij) = val; }
@@ -89,7 +89,7 @@ Jama is public domain and developed by MathWorks and NIST
          random(int,int)
          identity(int)
 **/
-      A = new Matrix(columnwise,4); // ERROR WORKS!
+      A = new unmanaged Matrix(columnwise,4); // ERROR WORKS!
 
 /** 
       Array-like methods:
@@ -108,7 +108,7 @@ Jama is public domain and developed by MathWorks and NIST
 
       writeln("\nTesting array-like methods...\n");
 
-      S = new Matrix(columnwise,nonconformld);
+      S = new unmanaged Matrix(columnwise,nonconformld);
       R = S.random(A.getRowDimension(),A.getColumnDimension());
       A = R;
 
@@ -120,7 +120,7 @@ Jama is public domain and developed by MathWorks and NIST
 
       A = R.copy();
       A.minusEquals(R);
-      Z = new Matrix(A.getRowDimension(),A.getColumnDimension());
+      Z = new unmanaged Matrix(A.getRowDimension(),A.getColumnDimension());
 
       {
         A.minusEquals(S);
@@ -153,7 +153,7 @@ Jama is public domain and developed by MathWorks and NIST
       writeln("uminus... ","(-A + A != zeros)");
 
       A = R.copy();
-      O = new Matrix(A.getRowDimension(),A.getColumnDimension(),1.0);
+      O = new unmanaged Matrix(A.getRowDimension(),A.getColumnDimension(),1.0);
       C = A.arrayLeftDivide(R);
       S = A.arrayLeftDivide(S);
       writeln("arrayLeftDivide conformance check... ","nonconformance not raised");
@@ -232,8 +232,8 @@ Jama is public domain and developed by MathWorks and NIST
 **/
 
       writeln("\nTesting linear algebra methods...\n");
-      A = new Matrix(columnwise,3);
-      T = new Matrix(tvals);
+      A = new unmanaged Matrix(columnwise,3);
+      T = new unmanaged Matrix(tvals);
       writeln("transpose...","");
       T = A.transpose();
       writeln(A.transpose(),T);
@@ -251,13 +251,13 @@ Jama is public domain and developed by MathWorks and NIST
       check(A.trace(),sumofdiagonals);
       writeln("det()...","");
       check(A.getMatrix(1,A.getRowDimension(),1,A.getRowDimension()).det(),0.0);
-      SQ = new Matrix(square);
+      SQ = new unmanaged Matrix(square);
       writeln("times(double)...","");
       check(A.times(A.transpose()),SQ);
       writeln("times(double)...","");
       check(A.times(0.0),Z);
 
-      A = new Matrix(columnwise,4);
+      A = new unmanaged Matrix(columnwise,4);
       var QR = A.qr();
       R = QR.getR();
       writeln("QRDecomposition...","");
@@ -265,10 +265,10 @@ Jama is public domain and developed by MathWorks and NIST
       var SVD = A.svd();
       writeln("SingularValueDecomposition...","");
       check(A,SVD.getU().times(SVD.getS().times(SVD.getV().transpose())));
-      DEF = new Matrix(rankdef);
+      DEF = new unmanaged Matrix(rankdef);
       check(DEF.rank(),min(DEF.getRowDimension(),DEF.getColumnDimension())-1);
       writeln("rank()...","");
-      B = new Matrix(condmat);
+      B = new unmanaged Matrix(condmat);
       SVD = B.svd(); 
       var singularvalues = SVD.getSingularValues();
       check(B.cond(),singularvalues[1]/singularvalues[min(B.getRowDimension(),B.getColumnDimension())]);
@@ -283,13 +283,13 @@ Jama is public domain and developed by MathWorks and NIST
       check(A.times(X),identity(3,3));
       writeln("inverse()...","");
 
-      O = new Matrix(SUB.getRowDimension(),1,1.0);
-      SOL = new Matrix(sqSolution);
+      O = new unmanaged Matrix(SUB.getRowDimension(),1,1.0);
+      SOL = new unmanaged Matrix(sqSolution);
       SQ = SUB.getMatrix(1,SUB.getRowDimension(),1,SUB.getRowDimension());
 
       check(SQ.solve(SOL),O); 
       writeln("solve()...","");
-      A = new Matrix(pvals);
+      A = new unmanaged Matrix(pvals);
       var Chol = A.chol(); 
       var L = Chol.getL();
       check(A,L.times(L.transpose()));
@@ -299,7 +299,7 @@ Jama is public domain and developed by MathWorks and NIST
       var V = Eig.getV();
       check(A.times(V),V.times(D));
       writeln("EigenvalueDecomposition (symmetric)...","");
-      A = new Matrix(evals);
+      A = new unmanaged Matrix(evals);
       Eig = A.eig();
       D = Eig.getD();
       V = Eig.getV();
@@ -307,7 +307,7 @@ Jama is public domain and developed by MathWorks and NIST
       writeln("EigenvalueDecomposition (nonsymmetric)...","");
 
       writeln("\nTesting Eigenvalue; If this hangs, we've failed\n");
-      var bA = new Matrix(badeigs);
+      var bA = new unmanaged Matrix(badeigs);
       var bEig = bA.eig();
       writeln("EigenvalueDecomposition (hang)...","");
 
@@ -342,14 +342,14 @@ Jama is public domain and developed by MathWorks and NIST
    /** Check norm of difference of arrays. **/
 
    proc check(x:[?xDom] real, y:[?yDom] real) where xDom.rank == 2 {
-      var A = new Matrix(x);
-      var B = new Matrix(y);
+      var A = new unmanaged Matrix(x);
+      var B = new unmanaged Matrix(y);
       check(A,B);
    }
 
    /** Check norm of difference of Matrices. **/
 
-   proc check(X:Matrix, Y:Matrix) {
+   proc check(X:unmanaged Matrix, Y:unmanaged Matrix) {
       var eps = 2.0 ** -52.0;
       if ( (X.norm1() == 0.0) & (Y.norm1() < 10.0*eps)) { writeln("X is good"); return; }
       if ((Y.norm1() == 0.0) & (X.norm1() < 10.0*eps)) { writeln("Y is good"); return; }

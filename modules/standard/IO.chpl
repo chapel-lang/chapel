@@ -2557,7 +2557,7 @@ Throws a SystemError if a writing channel could not be returned.
           enabled, this function supports ``url=`` starting with
           ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
           ``smtps://``, ``imap://``, or ``imaps://``
-:returns: an open reading channel to the requested resource.
+:returns: an open writing channel to the requested resource.
 */
 proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
@@ -2975,11 +2975,11 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     x = new string(tx, length=len, needToCopy=false);
     return ret;
   } else if isEnumType(t) {
-    var i:enum_mintype(t);
+    var i:chpl_enum_mintype(t);
     var err:syserr = ENOERR;
     // call the integer version
     err = _read_binary_internal(_channel_internal, byteorder, i);
-    x = i:t;
+    x = chpl__orderToEnum(i, t);
     return err;
   } else {
     compilerError("Unknown primitive type in _read_binary_internal ", t:string);
@@ -3040,7 +3040,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     var local_x = x.localize();
     return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.length: ssize_t);
   } else if isEnumType(t) {
-    var i:enum_mintype(t) = x:enum_mintype(t);
+    var i = chpl__enumToOrder(x):chpl_enum_mintype(t);
     // call the integer version
     return _write_binary_internal(_channel_internal, byteorder, i);
   } else {

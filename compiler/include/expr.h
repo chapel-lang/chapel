@@ -242,37 +242,6 @@ private:
   bool                   hasRef;
 };
 
-//
-//
-//
-//
-
-class ForallExpr : public Expr {
-public:
-  Expr* indices;
-  Expr* iteratorExpr;
-  Expr* expr;
-  Expr* cond;
-  bool maybeArrayType;
-  bool zippered;
-
-  ForallExpr(Expr* indices,
-             Expr* iteratorExpr,
-             Expr* expr,
-             Expr* cond,
-             bool maybeArrayType,
-             bool zippered);
-
-  DECLARE_COPY(ForallExpr);
-
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void    verify();
-  virtual void    accept(AstVisitor* visitor);
-  virtual GenRet  codegen();
-
-  virtual Expr*   getFirstExpr();
-};
-
 
 class NamedExpr : public Expr {
  public:
