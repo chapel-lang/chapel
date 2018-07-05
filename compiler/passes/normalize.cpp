@@ -2457,21 +2457,32 @@ static bool isNewExpr(Expr* expr) {
 }
 
 static AggregateType* typeForNewExpr(CallExpr* newExpr) {
-  AggregateType* retval = NULL;
 
   if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
+
+    // Avoid normalize-time type inference for managed new
+    for_actuals(actual, constructor) {
+      if (NamedExpr* ne = toNamedExpr(actual))
+        if (ne->name == astr_chpl_manager)
+          if (SymExpr* se = toSymExpr(ne->actual))
+            if (isTypeSymbol(se->symbol()))
+              return NULL;
+            //if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
+              //return toAggregateType(ts->type);
+    }
+
     if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
       if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
         if (AggregateType* type = toAggregateType(sym->type)) {
           if (isClass(type) == true || isRecord(type) == true) {
-            retval = type;
+            return type;
           }
         }
       }
     }
   }
 
-  return retval;
+  return NULL;
 }
 
 // Internal and Standard modules always honor no-init
