@@ -1009,6 +1009,18 @@ bool isManagedPtrType(const Type* t) {
   return t && t->symbol->hasFlag(FLAG_MANAGED_POINTER);
 }
 
+Type* getManagedPtrBorrowType(const Type* t) {
+  INT_ASSERT(isManagedPtrType(t));
+
+  const AggregateType* at = toConstAggregateType(t);
+
+  INT_ASSERT(at);
+
+  Type* ret = at->getField("t")->type;
+  Type* borrow = canonicalClassType(ret);
+  return borrow;
+}
+
 bool isSyncType(const Type* t) {
   return t->symbol->hasFlag(FLAG_SYNC);
 }

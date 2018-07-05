@@ -720,8 +720,8 @@ bool requiresImplicitDestroy(CallExpr* call) {
         fn->hasFlag(FLAG_AUTO_II)                             == false &&
         fn->hasFlag(FLAG_CONSTRUCTOR)                         == false &&
         fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)                    == false &&
-        strcmp(fn->name, "=")                                 !=     0 &&
-        strcmp(fn->name, "_defaultOf")                        !=     0) {
+        fn->name != astrSequals                                        &&
+        fn->name != astr_defaultOf) {
       retval = true;
     }
   }

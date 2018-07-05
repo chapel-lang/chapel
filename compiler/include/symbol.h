@@ -655,6 +655,7 @@ const char* intentDescrString(IntentTag intent);
 extern const char* astrSdot;
 extern const char* astrSequals;
 extern const char* astr_cast;
+extern const char* astr_defaultOf;
 extern const char* astrInit;
 extern const char* astrNew;
 extern const char* astrDeinit;
