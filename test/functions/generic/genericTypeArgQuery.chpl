@@ -1,4 +1,4 @@
-proc foo(type t: C(?et)) {
+proc foo(type t: borrowed C(?et)) {
   writeln(" t is: ", t:string);
   writeln("et is: ", et: string);
 }
@@ -8,5 +8,5 @@ class C {
   var x: eltType;
 }
 
-foo(C(int));
-foo(C(real));
+foo(borrowed C(int));
+foo(borrowed C(real));
