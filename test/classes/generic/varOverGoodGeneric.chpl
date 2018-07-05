@@ -3,11 +3,11 @@ class C {
   var x: t;
 }
 
-var myC: C;
+var myC: unmanaged C;
 
 myC = new unmanaged C();
 
-var myC2: C = new unmanaged C();
+var myC2: unmanaged C = new unmanaged C();
 
 writeln(myC);
 writeln(myC2);

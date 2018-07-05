@@ -96,9 +96,6 @@ public:
 
   Vec<FnSymbol*>         methods;
 
-  // all generic fields have defaults
-  bool                   hasGenericDefaults;
-
   Symbol*                defaultValue;
 
   // Used only in PrimitiveType; replace with flag?
