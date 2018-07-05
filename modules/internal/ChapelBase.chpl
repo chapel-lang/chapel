@@ -827,7 +827,6 @@ module ChapelBase {
     return __primitive("cast", t, x);
   }
 
-  pragma "no doc"
   inline proc _defaultOf(type t:_ddata)
     return __primitive("cast", t, nil);
 
@@ -1939,26 +1938,19 @@ module ChapelBase {
 
   // What follows are the type _defaultOf methods, used to initialize types
   // Booleans
-  pragma "no doc"
   inline proc _defaultOf(type t:chpl_anybool) param return false:t;
 
   // ints, reals, imags, complexes
-  pragma "no doc"
   inline proc _defaultOf(type t:integral) param return 0:t;
   // TODO: In order to make _defaultOf param for reals and imags we had to split
   // the cases into their default size and a non-param case.  It is hoped that
   // in the future, floating point numbers may be castable whilst param.  In that
   // world, we can again shrink these calls into the size-ignorant case.
-  pragma "no doc"
   inline proc _defaultOf(type t:real) param return 0.0;
-  pragma "no doc"
   inline proc _defaultOf(type t:chpl_anyreal) return 0.0:t;
-  pragma "no doc"
   inline proc _defaultOf(type t:imag) param return 0.0i;
-  pragma "no doc"
   inline proc _defaultOf(type t:chpl_anyimag) return 0.0i:t;
   // Also, complexes cannot yet be parameterized
-  pragma "no doc"
   inline proc _defaultOf(type t:chpl_anycomplex):t {
     var ret:t = noinit;
     param floatwidth = numBits(t)/2;
@@ -1968,26 +1960,19 @@ module ChapelBase {
   }
 
   // Enums
-  pragma "no doc"
   inline proc _defaultOf(type t:enumerated) param
     return chpl_enum_first(t);
 
   // Classes
-  pragma "no doc"
   inline proc _defaultOf(type t:borrowed)
     return __primitive("cast", t, nil);
-  pragma "no doc"
   inline proc _defaultOf(type t:unmanaged)
     return __primitive("cast", t, nil);
 
   // Various types whose default value is known
-  pragma "no doc"
   inline proc _defaultOf(type t:void) param return _void;
-  pragma "no doc"
   inline proc _defaultOf(type t:opaque) return _nullOpaque;
-  pragma "no doc"
   inline proc _defaultOf(type t:chpl_taskID_t) return chpl_nullTaskID;
-  pragma "no doc"
   inline proc _defaultOf(type t:_sync_aux_t) return _nullSyncVarAuxFields;
 
   // There used to be a catch-all _defaultOf that return nil:t, but that
