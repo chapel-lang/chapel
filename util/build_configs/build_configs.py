@@ -27,7 +27,7 @@ import sys
 import time
 
 # Add the chplenv dir to the python path.
-chplenv_dir = os.path.join(os.path.dirname(__file__), 'chplenv')
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 # Import chplenv modules here.
@@ -466,7 +466,7 @@ comm=gasnet either of these will work:
         # Default to CHPL_HOME from environ or current chapel source tree.
         'chpl_home': (os.environ.get('CHPL_HOME') or
                       os.path.abspath(
-                          os.path.join(os.path.dirname(__file__), '..'))),
+                          os.path.join(os.path.dirname(__file__), '../..'))),
     })
 
 
