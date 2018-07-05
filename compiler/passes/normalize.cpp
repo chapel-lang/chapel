@@ -3489,6 +3489,17 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   } else if (call->isNamed("*")) {
     // it happens to be that 1st actual == size so that will be checked below
     addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried));
+  } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+    // Check that whatever it is is a borrow
+    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_SUBTYPE,
+                                              dtBorrowed->symbol, queried));
+    // And then proceed as if the PRIM_TO_BORROWED_CLASS wasn't there
+    // that's because the borrowed class is the 'canonical' class representation
+    // used in the compiler.
+    call = toCallExpr(call->get(1));
+    // And don't try to do anything else if it wasn't a call
+    if (call == NULL)
+      return;
   } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
     if (CallExpr* subCall = toCallExpr(call->get(1))) {
       if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {
