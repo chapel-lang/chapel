@@ -411,7 +411,8 @@
 %type <pblockstmt> when_stmt_ls
 
 %type <pcallexpr> array_type
-%type <pexpr> opt_type opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
+%type <pexpr> opt_type opt_ret_type ret_array_type
+%type <pexpr> opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
 %type <penumtype> enum_header
 %type <pvecOfDefs> enum_ls
 
@@ -1034,7 +1035,7 @@ fn_decl_stmt:
 
       $4->userString = astr(captureString);
     }
-  opt_ret_tag opt_type opt_throws_error opt_where_part opt_function_body_stmt
+  opt_ret_tag opt_ret_type opt_throws_error opt_where_part opt_function_body_stmt
     {
       FnSymbol* fn = $4;
 
@@ -1366,6 +1367,56 @@ opt_init_expr:
 | TASSIGN TNOINIT       { $$ = new SymExpr(gNoInit); }
 | TASSIGN opt_try_expr  { $$ = $2; }
 ;
+
+
+ret_array_type:
+  TLSBR TRSBR type_level_expr
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $3); }
+| TLSBR TRSBR
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, NULL); }
+| TLSBR expr_ls TRSBR type_level_expr
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType",
+             new CallExpr("chpl__ensureDomainExpr", $2), $4);
+    }
+| TLSBR expr_ls TRSBR
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType",
+             new CallExpr("chpl__ensureDomainExpr", $2), NULL);
+    }
+| TLSBR TRSBR ret_array_type
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $3); }
+| TLSBR expr_ls TRSBR ret_array_type
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType",
+             new CallExpr("chpl__ensureDomainExpr", $2), $4);
+    }
+| TLSBR expr_ls TIN expr TRSBR type_level_expr
+    {
+      if ($2->argList.length != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = new CallExpr("chpl__buildArrayRuntimeType",
+             new CallExpr("chpl__ensureDomainExpr", $4), $6, $2->get(1)->remove(),
+             new CallExpr("chpl__ensureDomainExpr", $4->copy()));
+    }
+| TLSBR error TRSBR
+    {
+      $$ = new CallExpr(PRIM_ERROR);
+    }
+
+;
+
+opt_ret_type:
+                          { $$ = NULL; }
+| TCOLON type_level_expr  { $$ = $2; }
+| TCOLON ret_array_type   { $$ = $2; }
+| TCOLON TDOMAIN          { $$ = new UnresolvedSymExpr("_domain"); }
+| TCOLON TSINGLE          { $$ = new UnresolvedSymExpr( "_singlevar"); }
+| TCOLON TSYNC            { $$ = new UnresolvedSymExpr( "_syncvar"); }
+| TCOLON TBORROWED        { $$ = new UnresolvedSymExpr( "_borrowed"); }
+| TCOLON TOWNED           { $$ = new UnresolvedSymExpr( "_owned"); }
+| TCOLON TUNMANAGED       { $$ = new UnresolvedSymExpr( "_unmanaged"); }
+| TCOLON TSHARED          { $$ = new UnresolvedSymExpr( "_shared"); }
+| error                   { $$ = NULL; }
+;
+
 
 opt_type:
                           { $$ = NULL; }
