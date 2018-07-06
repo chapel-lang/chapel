@@ -67,6 +67,16 @@ module ChapelHaltWrappers {
     halt("pure virtual method called");
   }
 
+  /*
+     Halt wrapper for an exhaustive select stmt. For more info see
+     https://github.com/chapel-lang/chapel/issues/10192
+   */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc exhaustiveSelectHalt(s:string) {
+    halt(s);
+  }
+
 
   //
   // Halt wrappers for misc runtime time checks (where we expect these checks
