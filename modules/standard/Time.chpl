@@ -230,9 +230,7 @@ private proc _convert_to_seconds(unit: TimeUnits, us: real) {
     when TimeUnits.hours        do return us * 3600.0;
   }
 
-  halt("internal error in module Time");
-
-  // will never get here, but to avoid warnings:
+  HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
   return -1.0;
 }
 
@@ -246,9 +244,7 @@ private proc _convert_microseconds(unit: TimeUnits, us: real) {
     when TimeUnits.hours        do return us / 3600.0e+6;
   }
 
-  halt("internal error in module Time");
-
-  // will never get here, but to avoid warnings:
+  HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
   return -1.0;
 }
 
