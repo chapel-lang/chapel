@@ -100,7 +100,8 @@ module Barriers {
           }
         }
         otherwise {
-          halt("unknown barrier type");
+          use ChapelHaltWrappers;
+          exhaustiveSelectHalt("unknown barrier type");
         }
       }
       isowned = true;
