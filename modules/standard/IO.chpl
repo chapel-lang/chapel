@@ -3698,12 +3698,13 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
     const maxIdx = start + amount - 1;
     while i <= maxIdx {
       got = qio_channel_read_byte(false, this._channel_internal);
+      if got < 0 then break;
       arg[i] = got:uint(8);
       i += 1;
-      if got < 0 || got == newLineChar then break;
+      if got == newLineChar then break;
     }
     numRead = i - start;
-    if got < 0 then err = (-got):syserr;
+    if i == start && got < 0 then err = (-got):syserr;
     got_copy = got;
     this.unlock();
   }
