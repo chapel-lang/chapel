@@ -913,3 +913,13 @@ bool getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src)
 
   return false;
 }
+
+void registerPrimitiveCodegen(PrimitiveTag tag, void (*fn)(CallExpr*, GenRet&)) {
+  for (int i = 0; i < NUM_KNOWN_PRIMS; i++ ) {
+    if (primitives[i] && primitives[i]->tag == tag) {
+      primitives[i]->codegenFn = fn;
+      return;
+    }
+  }
+  INT_FATAL("failed to find primitive");
+}
