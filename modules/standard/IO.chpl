@@ -3689,7 +3689,6 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
      amount <= 0 || (start + amount - 1 > arg.domain.high) then return false;
 
   var err:syserr = ENOERR;
-  var got_copy: int;
   on this.home {
     try! this.lock();
     param newLineChar = 0x0A;
@@ -3705,13 +3704,12 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
     }
     numRead = i - start;
     if i == start && got < 0 then err = (-got):syserr;
-    got_copy = got;
     this.unlock();
   }
 
-  if !err && got_copy != 0 {
+  if !err {
     return true;
-  } else if err == EEOF || got_copy == 0 {
+  } else if err == EEOF {
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readline(arg : [] uint(8))");
