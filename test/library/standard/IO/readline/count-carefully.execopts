@@ -1,0 +1,2 @@
+< count-carefully-newline.txt # count-carefully-newline.good
+< count-carefully-nonewline.txt # count-carefully-nonewline.good
