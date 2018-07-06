@@ -138,8 +138,7 @@ mysystem("$chplhome/util/buildRelease/gen_release test", "creating release", 1, 
 mysystem("cp $chplhome/tar/chapel-test.tar.gz $tmpdir", "copying release", 1, 1);
 mysystem("cd $tmpdir && gunzip chapel-test.tar.gz", "unzipping release", 1, 1);
 mysystem("cd $tmpdir && tar xf chapel-test.tar", "untarring release", 1, 1);
-mysystem("cp $chplhome/util/buildRelease/testReleaseHelp $tmpdir/chapel-test/", "copying testReleaseHelp script", 1, 1);
-$teststatus = mysystem("cd $tmpdir/chapel-test && ./testReleaseHelp `$chplhome/util/chplenv/chpl_make.py`", "running testReleaseHelp script", 1, 1);
+$teststatus = mysystem("cd $tmpdir/chapel-test && $chplhome/util/buildRelease/testReleaseHelp `$chplhome/util/chplenv/chpl_make.py`", "running testReleaseHelp script", 1, 1);
 
 
 #
