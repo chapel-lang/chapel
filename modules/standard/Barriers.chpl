@@ -270,8 +270,10 @@ module Barriers {
             extern proc chpl_comm_barrier(msg: c_string);
             chpl_comm_barrier("local barrier call".localize().c_str());
           }
-          if done.testAndSet() then
-            halt("Too many callers to barrier()");
+          if boundsChecking && done.testAndSet() {
+            use ChapelHaltWrappers;
+            boundsCheckHalt("Too many callers to barrier()");
+          }
           if reusable {
             count.waitFor(n-1);
             count.add(1);
@@ -292,8 +294,10 @@ module Barriers {
       on this {
         const myc = count.fetchSub(1);
         if myc<=1 {
-          if done.testAndSet() then
-            halt("Too many callers to notify()");
+          if boundsChecking && done.testAndSet() {
+            use ChapelHaltWrappers;
+            boundsCheckHalt("Too many callers to notify()");
+          }
         }
       }
     }
@@ -360,8 +364,10 @@ module Barriers {
      */
     inline proc barrier() {
       on this {
-        if blockers.read() >= maxBlockers then
-          halt("Too many callers to barrier()");
+        if boundsChecking && blockers.read() >= maxBlockers {
+          use ChapelHaltWrappers;
+          boundsCheckHalt("Too many callers to barrier()");
+        }
         inGate.readFF();
         var waiters = blockers.fetchAdd(1) + 1;
 
@@ -385,8 +391,10 @@ module Barriers {
     /* Notify the barrier that this task has reached this point. */
     inline proc notify() {
       on this {
-        if blockers.read() >= maxBlockers then
-          halt("Too many callers to notify()");
+        if boundsChecking && blockers.read() >= maxBlockers {
+          use ChapelHaltWrappers;
+          boundsCheckHalt("Too many callers to notify()");
+        }
 
         inGate.readFF();
         var waiters = blockers.fetchAdd(1) + 1;
