@@ -3813,7 +3813,6 @@ DEFINE_PRIM(PRIM_EQUAL) {
       ret = codegenEquals(call->get(1), call->get(2));
     }
 }
-
 DEFINE_PRIM(PRIM_PTR_NOTEQUAL) {
     FORWARD_PRIM(PRIM_NOTEQUAL);
 }
@@ -3843,7 +3842,6 @@ DEFINE_PRIM(PRIM_NOTEQUAL) {
       ret = codegenNotEquals(call->get(1), call->get(2));
     }
 }
-
 DEFINE_PRIM(PRIM_LESSOREQUAL) {
     GenRet a = call->get(1);
     GenRet b = call->get(2);
@@ -3876,7 +3874,6 @@ DEFINE_PRIM(PRIM_LESSOREQUAL) {
 #endif
     }
 }
-
 DEFINE_PRIM(PRIM_GREATEROREQUAL) {
     GenRet a = call->get(1);
     GenRet b = call->get(2);
@@ -3908,10 +3905,7 @@ DEFINE_PRIM(PRIM_GREATEROREQUAL) {
       }
 #endif
     }
-
-
 }
-
 DEFINE_PRIM(PRIM_LESS) {
     GenRet a = call->get(1);
     GenRet b = call->get(2);
@@ -3943,10 +3937,7 @@ DEFINE_PRIM(PRIM_LESS) {
       }
 #endif
     }
-
-
 }
-
 DEFINE_PRIM(PRIM_GREATER) {
     GenRet a = call->get(1);
     GenRet b = call->get(2);
@@ -3989,6 +3980,7 @@ DEFINE_PRIM(PRIM_OR) {
 DEFINE_PRIM(PRIM_XOR) {
     ret = codegenXor(call->get(1), call->get(2));
 }
+
 DEFINE_PRIM(PRIM_ASSIGN) {
     Expr*       lhs        = call->get(1);
     Expr*       rhs        = call->get(2);
@@ -4062,6 +4054,7 @@ DEFINE_PRIM(PRIM_XOR_ASSIGN) {
 DEFINE_PRIM(PRIM_POW) {
     ret = codegenCallExpr("pow", call->get(1), call->get(2));
 }
+
 DEFINE_PRIM(PRIM_MIN) {
     Type* t = call->get(1)->typeInfo();
 
@@ -4137,6 +4130,7 @@ DEFINE_PRIM(PRIM_MAX) {
       INT_FATAL( t, "not arithmetic type");
     }
 }
+
 DEFINE_PRIM(PRIM_SETCID) {
     // get(1) is the object
     // (type=chpl__class_id,
@@ -4217,7 +4211,6 @@ DEFINE_PRIM(PRIM_SET_SVEC_MEMBER) {
 
     codegenAssign(ptr, val);
 }
-
 DEFINE_PRIM(PRIM_GET_MEMBER) {
     // base=get(1), field symbol=get(2)
 
@@ -4267,10 +4260,7 @@ DEFINE_PRIM(PRIM_CHECK_NIL) {
                 ptr,
                 gGenInfo->lineno,
                 gFilenameLookupCache[gGenInfo->filename]);
-
-
 }
-
 DEFINE_PRIM(PRIM_LOCAL_CHECK) {
     // arguments are (wide ptr, line, function/file, error string)
     GenRet lhs = call->get(1);
@@ -4306,16 +4296,13 @@ DEFINE_PRIM(PRIM_LOCAL_CHECK) {
 DEFINE_PRIM(PRIM_GET_SERIAL) {
     ret = codegenCallExpr("chpl_task_getSerial");
 }
-
 DEFINE_PRIM(PRIM_SET_SERIAL) {
     codegenCall("chpl_task_setSerial", codegenValue(call->get(1)));
 }
-
 DEFINE_PRIM(PRIM_GET_DYNAMIC_END_COUNT) {
       CallExpr* rcall = new CallExpr(gGetDynamicEndCount);
       ret = rcall->codegen();
 }
-
 DEFINE_PRIM(PRIM_SET_DYNAMIC_END_COUNT) {
       CallExpr* rcall = new CallExpr(gSetDynamicEndCount, call->get(1)->copy());
       ret = rcall->codegen();
@@ -4441,7 +4428,6 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
       }
     }
 }
-
 DEFINE_PRIM(PRIM_CHPL_COMM_GET) {
   codegenPutGet(call, ret);
 }
@@ -4454,7 +4440,6 @@ DEFINE_PRIM(PRIM_CHPL_COMM_ARRAY_GET) {
 DEFINE_PRIM(PRIM_CHPL_COMM_ARRAY_PUT) {
   codegenPutGet(call, ret);
 }
-
 DEFINE_PRIM(PRIM_CHPL_COMM_REMOTE_PREFETCH) {
     // args are:
     //   locale, remote addr, get(3)==size, line, file
@@ -4612,10 +4597,7 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
                 genCommID(gGenInfo),
                 call->get(8),
                 call->get(9));
-
-
 }
-
 DEFINE_PRIM(PRIM_CHPL_COMM_PUT_STRD) {
   codegenPutGetStrd(call, ret);
 }
@@ -4703,10 +4685,7 @@ DEFINE_PRIM(PRIM_CAST) {
         ret = codegenCast(call->typeInfo(), v);
       }
     }
-
-
 }
-
 DEFINE_PRIM(PRIM_DYNAMIC_CAST) {
     if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
       INT_FATAL(call, "wide class dynamic cast is not normal");
@@ -4758,21 +4737,17 @@ DEFINE_PRIM(PRIM_HEAP_REGISTER_GLOBAL_VAR) {
     codegenCall("chpl_heap_register_global_var",
                 idx,
                 codegenCast("ptr_wide_ptr_t", ptr_wide_ptr));
-
-
 }
-
 DEFINE_PRIM(PRIM_HEAP_BROADCAST_GLOBAL_VARS) {
     codegenCall("chpl_gen_comm_broadcast_global_vars", call->get(1));
 }
-
 DEFINE_PRIM(PRIM_PRIVATE_BROADCAST) {
     codegenCall("chpl_comm_broadcast_private",
                 call->get(1),
                 codegenSizeof(call->get(2)->typeInfo()),
                 genTypeStructureIndex(call->get(2)->typeInfo()->symbol));
-
 }
+
 DEFINE_PRIM(PRIM_INT_ERROR) {
     codegenCall("chpl_internal_error",
                 new_CStringSymbol("compiler generated error"));
@@ -4810,8 +4785,6 @@ DEFINE_PRIM(PRIM_CAST_TO_VOID_STAR) {
       ptr = codegenValue(call->get(1));
 
     ret = codegenCastToVoidStar(ptr);
-
-
 }
 
 DEFINE_PRIM(PRIM_RT_ERROR) {
@@ -4820,12 +4793,14 @@ DEFINE_PRIM(PRIM_RT_ERROR) {
 DEFINE_PRIM(PRIM_RT_WARNING) {
     ret = call->codegenBasicPrimitiveExpr();
 }
+
 DEFINE_PRIM(PRIM_START_RMEM_FENCE) {
     ret = call->codegenBasicPrimitiveExpr();
 }
 DEFINE_PRIM(PRIM_FINISH_RMEM_FENCE) {
     ret = call->codegenBasicPrimitiveExpr();
 }
+
 DEFINE_PRIM(PRIM_NEW_PRIV_CLASS) {
     GenRet arg = call->get(1);
     GenRet pid = codegenValue(call->get(2));
@@ -4925,10 +4900,7 @@ DEFINE_PRIM(PRIM_FTABLE_CALL) {
     args.push_back(arg);
 
     ret = codegenCallExpr(fngen, args, NULL, true);
-
-
 }
-
 DEFINE_PRIM(PRIM_VIRTUAL_METHOD_CALL) {
     GenRet    fnPtr;
     GenRet    index;
@@ -4978,8 +4950,6 @@ DEFINE_PRIM(PRIM_VIRTUAL_METHOD_CALL) {
     }
 
     ret = codegenCallExpr(fngen, args, fn, true);
-
-
 }
 
 DEFINE_PRIM(PRIM_LOOKUP_FILENAME) {
@@ -4992,16 +4962,16 @@ GenRet CallExpr::codegenPrimitive() {
 
   static bool codegenPrimitivesRegistered = false;
   if (!codegenPrimitivesRegistered) {
-/*
+
 #define PRIMITIVE_G(NAME) \
-  registerPrimitiveCodegen(NAME, codegen ## NAME );
+  if (NAME!=PRIM_UNKNOWN) registerPrimitiveCodegen(NAME, codegen ## NAME );
 #define PRIMITIVE_R(NAME)
 #include "primitive_list.h"
 
 #undef PRIMITIVE_G
 #undef PRIMITIVE_R
-*/
 
+    /*
 #define PRIMITIVE_G(NAME) \
   registerPrimitiveCodegen(NAME, codegen ## NAME );
 
@@ -5109,42 +5079,37 @@ GenRet CallExpr::codegenPrimitive() {
     PRIMITIVE_G( PRIM_LOOKUP_FILENAME);
 
 #undef PRIMITIVE_G
+    */
   }
 
   GenRet ret;
-
-  if (primitive->codegenFn != NULL) {
-    INT_ASSERT(primitive->tag != PRIM_UNKNOWN);
-
-    /*bool handled =*/ primitive->codegenFn(this, ret);
-  } else {
 
   switch (primitive->tag) {
   case PRIM_UNKNOWN:
     ret = codegenBasicPrimitiveExpr();
     break;
-
   case PRIM_WARNING:
-    // warning issued, continue codegen
     INT_ASSERT(0);
     break;
   case NUM_KNOWN_PRIMS:
     INT_FATAL(this, "impossible");
     break;
-
   default:
-    INT_FATAL(this, "primitive codegen fail; should it still be in the AST?");
+    if (primitive->codegenFn != NULL) {
+      primitive->codegenFn(this, ret);
+    } else {
+      INT_FATAL(this, "primitive codegen fail; should it still be in the AST?");
 
-    if (gGenInfo->cfile) {
-      std::string stmt;
+      if (gGenInfo->cfile) {
+        std::string stmt;
 
-      stmt += "/* ERR ";
-      stmt += primitive->name;
-      stmt += "*/";
+        stmt += "/* ERR ";
+        stmt += primitive->name;
+        stmt += "*/";
 
-      gGenInfo->cStatements.push_back(stmt);
+        gGenInfo->cStatements.push_back(stmt);
+      }
     }
-  }
   }
 
   if (gGenInfo->cfile       &&
