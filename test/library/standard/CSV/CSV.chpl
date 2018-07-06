@@ -21,29 +21,34 @@ module CSV {
   use IO;
   use DataFrames;
 
-  // TODO: dependent on #9790 or #7134
+  // TODO: depends on #9790, #7134
   /*
   iter linesCSV(path: string) {
     var f = try! open(path, iomode.r);
-    var lines = try! f.lines().these();
-    for line in lines do
-      yield line.split(",").strip();
+    try! {
+      for line in f.lines() {
+        var tokens = line.split(",");
+        for i in tokens.domain do
+          tokens[i] = tokens[i].strip();
+        yield tokens;
+      }
+    }
   }
    */
 
   proc openCSV(path: string) throws {
     var f = try open(path, iomode.r);
-    var lines = try f.lines().these();
+    var lines = try f.lines();
 
     var longestRow = 0;
     for line in lines {
-      var tokens = line.split(",");
-      if tokens.size > longestRow then
-        longestRow = tokens.size;
+      var ntokens = line.count(",") + 1;
+      if ntokens > longestRow then
+        longestRow = ntokens;
     }
 
     var csvTable: [1..lines.size, 1..longestRow] string;
-    for (row, line) in zip(1..lines.size, lines) {
+    forall (row, line) in zip(1..lines.size, lines) {
       var tokens = line.split(",");
       for (col, token) in zip(1..tokens.size, tokens) do
         csvTable[row, col] = token.strip();
