@@ -1,3 +1,20 @@
+#! /usr/bin/env bash
+
+skip=0
+
+# lulesh does not work well on current Cray-XC ARM platforms
+
+if [ "$CHPL_TARGET_PLATFORM" = cray-xc -a "$CPU" = aarch64 ]; then
+    case "$CHPL_TARGET_COMPILER" in
+    ( cray-prgenv-cray | cray-prgenv-gnu )
+        skip=1
+        ;;
+    esac
+fi
+
 # For valgrind, instead of this test
 # use its clone in test/studies/lulesh/release-valgrind/
-CHPL_TEST_VGRND_EXE == on
+
+if [ "$CHPL_TEST_VGRND_EXE" = on ]; then skip=1; fi
+
+echo $skip
