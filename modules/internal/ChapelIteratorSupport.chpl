@@ -100,6 +100,13 @@ module ChapelIteratorSupport {
     return arg._instance;
   }
   pragma "no doc"
+  inline proc chpl_computeIteratorShape(arg: _iteratorRecord) {
+    if chpl_iteratorHasShape(arg) then
+      return arg._shape_;
+    else
+      return _void;
+  }
+  pragma "no doc"
   inline proc chpl_computeIteratorShape(arg) {
     // none of the above cases
     return _void;

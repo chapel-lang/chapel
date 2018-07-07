@@ -857,6 +857,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE)) {
     Symbol* ir = toSymExpr(call->get(1))->symbol();
+    INT_ASSERT(ir->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
     Symbol* shapeSpec = toSymExpr(call->get(2))->symbol();
     retval = setIteratorRecordShape(call, ir, shapeSpec);
     call->replace(retval);

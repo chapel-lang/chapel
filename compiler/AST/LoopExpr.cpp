@@ -172,6 +172,7 @@ GenRet LoopExpr::codegen() {
 static int loopexpr_uid = 1;
 
 static CallExpr* buildLoopExprFunctions(LoopExpr* faExpr);
+static void addIterRecShape(CallExpr* feRep, bool zippered);
 
 class LowerLoopExprVisitor : public AstVisitorTraverse
 {
@@ -190,9 +191,13 @@ class LowerLoopExprVisitor : public AstVisitorTraverse
 // table.
 //
 bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
-  // Don't touch LoopExprs in DefExprs, they should be copied later into
-  // BlockStmts.
-  if (node->inTree() && node->getStmtExpr() != NULL) {
+  if (! node->inTree()) {
+    // nothing to do
+  } else if (node->getStmtExpr() == NULL) {
+    // Don't touch LoopExprs in DefExprs, they should be copied later into
+    // BlockStmts.
+    INT_ASSERT(isDefExpr(node->parentExpr));
+  } else {
     SET_LINENO(node);
 
     CallExpr* replacement = buildLoopExprFunctions(node);
@@ -204,6 +209,11 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
     // The iterator expr might be a loop-expr itself, make sure it gets
     // lowered.
     iterExpr->accept(this);
+
+    if (node->forall) {
+      normalize(replacement); // for addIterRecShape()
+      addIterRecShape(replacement, node->zippered);
+    }
   }
 
   return false;
@@ -212,6 +222,20 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
 void lowerLoopExprs(BaseAST* ast) {
   LowerLoopExprVisitor vis;
   ast->accept(&vis);
+}
+
+// 'feRep', during resolution, is an iterator record for the
+// forall expression. Ensure it will get a shape.
+static void addIterRecShape(CallExpr* feRep, bool zippered) {
+  INT_ASSERT(!zippered); // TBD
+  if (CallExpr* move = toCallExpr(feRep->parentExpr)) {
+    if (move->isPrimitive(PRIM_MOVE)) {
+      Expr* dest = move->get(1)->copy();
+      Expr* shape = feRep->get(1)->copy();
+      move->getStmtExpr()->insertAfter(
+        new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE, dest, shape));
+    }
+  }
 }
 
 static Expr* removeOrNull(Expr* arg) { return arg ? arg->remove() : NULL; }
