@@ -1,12 +1,25 @@
+#! /usr/bin/env bash
+
+skip=0
+
 # This test takes too long for no-local configurations, so skip it for
 # comm != none and --no-local. Same for valgrind and --baseline.
-CHPL_COMM != none
-COMPOPTS <= --no-local
-CHPL_TEST_VGRND_EXE == on
-COMPOPTS <= --baseline
+
+if [ "$CHPL_COMM" != none ]; then skip=1; fi
+if [ "$CHPL_TEST_VGRND_EXE" = on ]; then skip=1; fi
+case "$COMPOPTS" in
+( *-no-local* | *-baseline* ) skip=1;;
+esac
+
 # Some checksums differ from expected values on the following configurations.
 # I think it is caused by sizeof(long double) being less than 16.
-CHPL_TARGET_PLATFORM == cygwin32
-CHPL_TARGET_PLATFORM == cygwin64
-CHPL_TARGET_PLATFORM == linux32
-CHPL_TARGET_COMPILER == cray-prgenv-cray
+
+case "$CHPL_TARGET_PLATFORM" in
+( cygwin32 | cygwin64 | linux32 ) skip=1;;
+esac
+if [ "$CHPL_TARGET_COMPILER" = cray-prgenv-cray ]; then skip=1; fi
+
+# Cray-XC ARM platforms w GNU target compiler
+if [ "$CHPL_TARGET_PLATFORM" = cray-xc -a "$CPU" = aarch64 -a "$CHPL_TARGET_COMPILER" = cray-prgenv-gnu ]; then skip=1; fi
+
+echo $skip
