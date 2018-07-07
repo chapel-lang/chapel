@@ -145,10 +145,7 @@ CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec) {
     INT_ASSERT(field->type == value->type);
   }
 
-  // Avoid resolving this PRIM_SET_MEMBER,
-  // as that expects a field name, not a field symbol.
-  ref->insertBefore(new CallExpr(PRIM_SET_MEMBER, ir, field, value));
-  return new CallExpr(PRIM_NOOP);
+  return new CallExpr(PRIM_SET_MEMBER, ir, field, value);
 }
 
 //
