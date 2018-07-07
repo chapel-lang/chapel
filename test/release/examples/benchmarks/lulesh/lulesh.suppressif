@@ -1,0 +1,11 @@
+#! /usr/bin/env bash
+#
+# This lulesh test does not work well on current aarch64 Cray, so suppress this
+#
+eval `$CHPL_HOME/util/printchplenv --make`
+
+suppress=0
+if [ "$CHPL_MAKE_TARGET_PLATFORM" = cray-xc -a "$CPU" = aarch64 ]; then
+    suppress=1
+fi
+echo $suppress
