@@ -4502,25 +4502,24 @@ static void handleSetMemberTypeMismatch(Type*     t,
                                         CallExpr* call,
                                         SymExpr*  rhs);
 
-static void resolveSetMember(CallExpr* call) {
+// Returns the field Symbol for 'fieldExpr'.
+// It must be a field in 'base' type.
+static Symbol* resolveFieldSymbol(Type* base, Expr* fieldExpr) {
+  AggregateType* ct = toAggregateType(base);
+  INT_ASSERT(ct); // required for PRIM_SET_MEMBER
 
-  if (call->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+  // fieldExpr must be either a literal or a field.
+  // In any case it is a VarSymbol.
+  SymExpr* sym = toSymExpr(fieldExpr);
+  VarSymbol* var = toVarSymbol(sym->symbol());
+
+  if (var->immediate == NULL) {
+    // Confirm that this is already a correct field Symbol.
+    INT_ASSERT(var->defPoint->parentSymbol == ct->symbol);
+    return var;
   }
 
   // Get the field name.
-  SymExpr* sym = toSymExpr(call->get(2));
-
-  if (sym == NULL) {
-    INT_FATAL(call, "bad set member primitive");
-  }
-
-  VarSymbol* var = toVarSymbol(sym->symbol());
-
-  if (var == NULL || var->immediate == NULL) {
-    INT_FATAL(call, "bad set member primitive");
-  }
-
   const char* name = var->immediate->v_string;
 
   // Special case: An integer field name is actually a tuple member index.
@@ -4529,29 +4528,28 @@ static void resolveSetMember(CallExpr* call) {
 
     if (get_int(sym, &i) == true) {
       name = astr("x", istr(i));
-
-      call->get(2)->replace(new SymExpr(new_CStringSymbol(name)));
     }
   }
-
-  AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
-
-  if (ct == NULL) {
-    INT_FATAL(call, "bad set member primitive");
-  }
-
-  Symbol* fs = NULL;
 
   for_fields(field, ct) {
-    if (strcmp(field->name, name) == 0) {
-      fs = field;
-      break;
+    if (!strcmp(field->name, name)) {
+      fieldExpr->replace(new SymExpr(field));
+      return field;
     }
   }
 
-  if (fs == NULL) {
-    INT_FATAL(call, "bad set member primitive");
+  INT_ASSERT(false); // did not find field - bad set member primitive
+  return NULL;
+}
+
+static void resolveSetMember(CallExpr* call) {
+
+  if (call->id == breakOnResolveID) {
+    gdbShouldBreakHere();
   }
+
+  Symbol* fs = resolveFieldSymbol(call->get(1)->typeInfo()->getValType(),
+                                  call->get(2));
 
   Type* t = call->get(3)->typeInfo();
 
@@ -9290,22 +9288,21 @@ static void removeRandomPrimitive(CallExpr* call) {
 
       SymExpr* memberSE = toSymExpr(call->get(2));
       const char* memberName = NULL;
+      Symbol* sym = NULL;  // the member symbol
 
-      if (!get_string(memberSE, &memberName)) {
+      if (get_string(memberSE, &memberName)) {
+        sym = baseType->getField(memberName);
+        SET_LINENO(memberSE);
+        memberSE->replace(new SymExpr(sym));
+      } else {
         // Confirm that this is already a correct field Symbol.
-        INT_ASSERT(memberSE->symbol()->defPoint->parentSymbol
-                   == baseType->symbol);
-        break;
+        sym = memberSE->symbol();
+        INT_ASSERT(sym->defPoint->parentSymbol == baseType->symbol);
       }
 
-      Symbol* sym = baseType->getField(memberName);
       if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
           sym->isParameter())
         call->getStmtExpr()->remove();
-      else {
-        SET_LINENO(call->get(2));
-        call->get(2)->replace(new SymExpr(sym));
-      }
     }
     break;
 
