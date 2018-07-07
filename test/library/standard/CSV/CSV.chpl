@@ -38,7 +38,7 @@ module CSV {
 
   proc openCSV(path: string) throws {
     var f = try open(path, iomode.r);
-    var lines = try f.lines();
+    var lines = try f.lines().these();
 
     var longestRow = 0;
     for line in lines {

@@ -735,6 +735,7 @@ module DataFrames {
 
     proc set_index(type eltType, lab: string) {
       var df = this.copy();
+      delete df[lab];
       df.labels.remove(lab);
 
       var ser = this[lab];

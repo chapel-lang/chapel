@@ -11,10 +11,19 @@ var idx = new TypedIndex(["rowOne", "rowTwo", "rowThree", "rowFour", "rowFive"])
 
 var dataFrame = new DataFrame(columns, idx);
 var noIndex = new DataFrame(columns);
+var dataFrameSet = dataFrame.set_index(real, "columnThree");
+var noIndexSet = noIndex.set_index(real, "columnThree");
+
 writeln(dataFrame);
 writeln();
-writeln(dataFrame.set_index(real, "columnThree"));
+writeln(dataFrameSet);
 writeln();
 writeln(noIndex);
 writeln();
-writeln(noIndex.set_index(real, "columnThree"));
+writeln(noIndexSet);
+
+delete columns, idx;
+delete dataFrame.idx, dataFrame.columns, dataFrame;
+delete noIndex.idx, noIndex.columns, noIndex;
+delete dataFrameSet.idx, dataFrameSet.columns, dataFrameSet;
+delete noIndexSet.idx, noIndexSet.columns, noIndexSet;

@@ -14,3 +14,9 @@ writeln();
 
 var df_idx = df.set_index(string, "Date");
 writeln(df_idx);
+
+delete df.columns;
+delete df;
+delete df_idx.idx;
+delete df_idx.columns;
+delete df_idx;
