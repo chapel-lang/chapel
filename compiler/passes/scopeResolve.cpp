@@ -1386,7 +1386,7 @@ static void checkRefsToIdxVars(ForallStmt* fs, DefExpr* def,
 static void setupShadowVars() {
   forv_Vec(ForallStmt, fs, gForallStmts)
     for_shadow_vars_and_defs(svar, def, temp, fs) {
-       if (hasOuterVariable(svar))
+      if (hasOuterVariable(svar))
         setupOuterVar(fs, svar);
       if (svar->isTaskPrivate())
         checkRefsToIdxVars(fs, def, svar);
