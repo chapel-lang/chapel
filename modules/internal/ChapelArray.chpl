@@ -2795,6 +2795,19 @@ module ChapelArray {
       }
     }
 
+    /* Return the last element in the array. The array must be a
+       rectangular 1-D array.
+     */
+    proc back() {
+      if !isRectangularArr(this) || this.rank != 1 then
+        compilerError("back() is only supported on 1D rectangular arrays");
+
+      if boundsChecking && isEmpty() then
+        halt("back called on an empty array");
+
+      return this(this.domain.high);
+    }
+
     /* Add element ``val`` to the back of the array, extending the array's
        domain by one. If the domain was ``{1..5}`` it will become ``{1..6}``.
 
@@ -2877,6 +2890,19 @@ module ChapelArray {
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
+    }
+
+    /* Return the first element in the array. The array must be a
+       rectangular 1-D array.
+     */
+    proc front() {
+      if !isRectangularArr(this) || this.rank != 1 then
+        compilerError("front() is only supported on 1D rectangular arrays");
+
+      if boundsChecking && isEmpty() then
+        halt("front called on an empty array");
+
+      return this(this.domain.low);
     }
 
     /* Add element ``val`` to the front of the array, extending the array's
