@@ -4,15 +4,19 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_compiler, chpl_llvm, chpl_locale_model, third_party_utils
+import chpl_compiler, chpl_hwloc, chpl_llvm, chpl_locale_model, chpl_mem
+import third_party_utils
 from compiler_utils import compiler_is_prgenv
 from utils import memoize
 
 
 @memoize
 def get_uniq_cfg_path():
-    return '{0}-{1}'.format(third_party_utils.default_uniq_cfg_path(),
-                            chpl_locale_model.get())
+    def_uniq_cfg = third_party_utils.default_uniq_cfg_path()
+    lm = chpl_locale_model.get();
+    target_mem = chpl_mem.get('target')
+    hwloc = chpl_hwloc.get()
+    return '{0}-{1}-{2}-{3}'.format(def_uniq_cfg, lm, target_mem, hwloc)
 
 @memoize
 def get_link_args():
