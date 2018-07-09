@@ -445,8 +445,6 @@ module String {
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
-        if maxbytes > 4 then
-          maxbytes = 4;
         qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
         yield codepoint;
         i += nbytes;
@@ -456,8 +454,8 @@ module String {
     /*
       Index into a string
 
-      :returns: A string with the multibyte character at the specified index
-                from `1..string.length`
+      :returns: A string with the complete multibyte character starting at the
+                specified byte index from `1..string.length`
      */
     proc this(i: int) : string {
       if boundsChecking && (i <= 0 || i > this.len)
@@ -465,8 +463,8 @@ module String {
 
       var ret: string;
       var maxbytes = (this.len - (i - 1)): ssize_t;
-      if maxbytes < 0 || maxbytes > 4 then
-        maxbytes = 4;
+      if maxbytes < 0 then
+        maxbytes = 0;
       const newSize = chpl_here_good_alloc_size(maxbytes + 1);
       ret._size = max(chpl_string_min_alloc_size, newSize);
       ret.buff = chpl_here_alloc(ret._size,
@@ -1095,22 +1093,13 @@ module String {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         var locale_result = false;
-        var i = 0;
-        while i < this.len {
-          var codepoint: int(32);
-          var nbytes: c_int;
-          var multibytes = (this.buff + i): c_string;
-          var maxbytes = (this.len - i): ssize_t;
-          if maxbytes > 4 then
-            maxbytes = 4;
-          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        for codepoint in this.uchars() {
           if codepoint_isLower(codepoint) {
             locale_result = false;
             break;
           } else if !locale_result && codepoint_isUpper(codepoint) {
             locale_result = true;
           }
-          i += nbytes;
         }
         result = locale_result;
       }
@@ -1131,22 +1120,13 @@ module String {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         var locale_result = false;
-        var i = 0;
-        while i < this.len {
-          var codepoint: int(32);
-          var nbytes: c_int;
-          var multibytes = (this.buff + i): c_string;
-          var maxbytes = (this.len - i): ssize_t;
-          if maxbytes > 4 then
-            maxbytes = 4;
-          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        for codepoint in this.uchars() {
           if codepoint_isUpper(codepoint) {
             locale_result = false;
             break;
           } else if !locale_result && codepoint_isLower(codepoint) {
             locale_result = true;
           }
-          i += nbytes;
         }
         result = locale_result;
       }
@@ -1166,20 +1146,11 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        var i = 0;
-        while i < this.len {
-          var codepoint: int(32);
-          var nbytes: c_int;
-          var multibytes = (this.buff + i): c_string;
-          var maxbytes = (this.len - i): ssize_t;
-          if maxbytes > 4 then
-            maxbytes = 4;
-          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        for codepoint in this.uchars() {
           if !(codepoint_isWhitespace(codepoint)) {
             result = false;
             break;
           }
-          i += nbytes;
         }
       }
       return result;
@@ -1197,20 +1168,11 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        var i = 0;
-        while i < this.len {
-          var codepoint: int(32);
-          var nbytes: c_int;
-          var multibytes = (this.buff + i): c_string;
-          var maxbytes = (this.len - i): ssize_t;
-          if maxbytes > 4 then
-            maxbytes = 4;
-          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        for codepoint in this.uchars() {
           if !codepoint_isAlpha(codepoint) {
             result = false;
             break;
           }
-          i += nbytes;
         }
       }
       return result;
@@ -1228,20 +1190,11 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        var i = 0;
-        while i < this.len {
-          var codepoint: int(32);
-          var nbytes: c_int;
-          var multibytes = (this.buff + i): c_string;
-          var maxbytes = (this.len - i): ssize_t;
-          if maxbytes > 4 then
-            maxbytes = 4;
-          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        for codepoint in this.uchars() {
           if !codepoint_isDigit(codepoint) {
             result = false;
             break;
           }
-          i += nbytes;
         }
       }
       return result;
@@ -1259,20 +1212,11 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        var i = 0;
-        while i < this.len {
-          var codepoint: int(32);
-          var nbytes: c_int;
-          var multibytes = (this.buff + i): c_string;
-          var maxbytes = (this.len - i): ssize_t;
-          if maxbytes > 4 then
-            maxbytes = 4;
-          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        for codepoint in this.uchars() {
           if !(codepoint_isAlpha(codepoint) || codepoint_isDigit(codepoint)) {
             result = false;
             break;
           }
-          i += nbytes;
         }
       }
       return result;
@@ -1290,20 +1234,11 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        var i = 0;
-        while i < this.len {
-          var codepoint: int(32);
-          var nbytes: c_int;
-          var multibytes = (this.buff + i): c_string;
-          var maxbytes = (this.len - i): ssize_t;
-          if maxbytes > 4 then
-            maxbytes = 4;
-          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        for codepoint in this.uchars() {
           if !codepoint_isPrintable(codepoint) {
             result = false;
             break;
           }
-          i += nbytes;
         }
       }
       return result;
@@ -1324,15 +1259,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         param UN = 0, UPPER = 1, LOWER = 2;
         var last = UN;
-        var i = 0;
-        while i < this.len {
-          var codepoint: int(32);
-          var nbytes: c_int;
-          var multibytes = (this.buff + i): c_string;
-          var maxbytes = (this.len - i): ssize_t;
-          if maxbytes > 4 then
-            maxbytes = 4;
-          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        for codepoint in this.uchars() {
           if codepoint_isLower(codepoint) {
             if last == UPPER || last == LOWER {
               last = LOWER;
@@ -1352,7 +1279,6 @@ module String {
             // Uncased elements
             last = UN;
           }
-          i += nbytes;
         }
       }
       return result;
@@ -1361,6 +1287,13 @@ module String {
     /*
       :returns: A new string with all uppercase characters replaced with their
                 lowercase counterpart.
+
+      Note: At present, this performs a one-to-one character mapping,
+      which is all that the underlying C library supports.  In the future,
+      it may be desirable to explore supporting special-case one-to-many
+      Unicode mappings that may change the length of the string.
+      Since Unicode changes and we would rather not track all the changes
+      ourselves, this would involve adopting an external library.
     */
     proc toLower() : string {
       var result: string = this;
@@ -1372,8 +1305,6 @@ module String {
         var nbytes: c_int;
         var multibytes = (result.buff + i): c_string;
         var maxbytes = (result.len - i): ssize_t;
-        if maxbytes > 4 then
-          maxbytes = 4;
         qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
         var lowCodepoint = codepoint_toLower(codepoint);
         if lowCodepoint != codepoint {
@@ -1389,6 +1320,13 @@ module String {
     /*
       :returns: A new string with all lowercase characters replaced with their
                 uppercase counterpart.
+
+      Note: At present, this performs a one-to-one character mapping,
+      which is all that the underlying C library supports.  In the future,
+      it may be desirable to explore supporting special-case one-to-many
+      Unicode mappings that may change the length of the string.
+      Since Unicode changes and we would rather not track all the changes
+      ourselves, this would involve adopting an external library.
     */
     proc toUpper() : string {
       var result: string = this;
@@ -1400,8 +1338,6 @@ module String {
         var nbytes: c_int;
         var multibytes = (result.buff + i): c_string;
         var maxbytes = (result.len - i): ssize_t;
-        if maxbytes > 4 then
-          maxbytes = 4;
         qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
         var upCodepoint = codepoint_toUpper(codepoint);
         if upCodepoint != codepoint {
@@ -1418,6 +1354,13 @@ module String {
       :returns: A new string with all cased characters following an uncased
                 character converted to uppercase, and all cased characters
                 following another cased character converted to lowercase.
+
+      Note: At present, this performs a one-to-one character mapping,
+      which is all that the underlying C library supports.  In the future,
+      it may be desirable to explore supporting special-case one-to-many
+      Unicode mappings that may change the length of the string.
+      Since Unicode changes and we would rather not track all the changes
+      ourselves, this would involve adopting an external library.
      */
     proc toTitle() : string {
       var result: string = this;
@@ -1431,8 +1374,6 @@ module String {
         var nbytes: c_int;
         var multibytes = (result.buff + i): c_string;
         var maxbytes = (result.len - i): ssize_t;
-        if maxbytes > 4 then
-          maxbytes = 4;
         qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
         if codepoint_isAlpha(codepoint) {
           if last == UN {
@@ -1474,8 +1415,6 @@ module String {
       var nbytes: c_int;
       var multibytes = result.buff: c_string;
       var maxbytes = result.len: ssize_t;
-      if maxbytes > 4 then
-        maxbytes = 4;
       qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
       var upCodepoint = codepoint_toUpper(codepoint);
       if upCodepoint != codepoint {
