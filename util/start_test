@@ -624,8 +624,8 @@ def check_environment_with_args():
     host_platform = chpl_platform.get("host")
     tgt_platform = chpl_platform.get("target")
     if not tgt_platform == "sunos":
-        os.environ["LC_ALL"] = "C"
-        os.environ["LANG"] = "en_US"
+        os.environ["LC_COLLATE"] = "C"
+        os.environ["LANG"] = "en_US.UTF-8"
 
     global log_file
     log_file = os.path.join(logs_dir, "{0}.{1}.log"
