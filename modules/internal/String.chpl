@@ -112,6 +112,9 @@ module String {
   pragma "no doc"
   type bufferType = c_ptr(uint(8));
 
+  private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
+  private extern proc qio_encode_char_buf(dst:bufferType, chr:int(32)):syserr;
+
   pragma "no doc"
   extern const CHPL_SHORT_STRING_SIZE : c_int;
 
@@ -431,30 +434,61 @@ module String {
     }
 
     /*
+      Iterates over the string Unicode character by Unicode character.
+    */
+    iter uchars(): int(32) {
+      var localThis: string = this.localize();
+
+      var i = 0;
+      while i < localThis.len {
+        var codepoint: int(32);
+        var nbytes: c_int;
+        var multibytes = (localThis.buff + i): c_string;
+        var maxbytes = (localThis.len - i): ssize_t;
+        if maxbytes > 4 then
+          maxbytes = 4;
+        qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        yield codepoint;
+        i += nbytes;
+      }
+    }
+
+    /*
       Index into a string
 
-      :returns: A string with the character at the specified index from
-                `1..string.length`
+      :returns: A string with the multibyte character at the specified index
+                from `1..string.length`
      */
     proc this(i: int) : string {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of string: ", i);
 
       var ret: string;
-      const newSize = chpl_here_good_alloc_size(2);
+      var maxbytes = (this.len - (i - 1)): ssize_t;
+      if maxbytes > 4 then
+        maxbytes = 4;
+      const newSize = chpl_here_good_alloc_size(maxbytes + 1);
       ret._size = max(chpl_string_min_alloc_size, newSize);
-      ret.len = 1;
       ret.buff = chpl_here_alloc(ret._size,
                                 offset_STR_COPY_DATA): bufferType;
       ret.isowned = true;
 
       const remoteThis = this.locale_id != chpl_nodeID;
+      var multibytes: bufferType;
       if remoteThis {
-        chpl_string_comm_get(ret.buff, this.locale_id, this.buff + i - 1, 1);
+        chpl_string_comm_get(ret.buff, this.locale_id, this.buff + i - 1, maxbytes);
+        multibytes = ret.buff;
       } else {
-        ret.buff[0] = this.buff[i-1];
+        multibytes = this.buff + i - 1;
       }
-      ret.buff[1] = 0;
+      var codepoint: int(32);
+      var nbytes: c_int;
+      qio_decode_char_buf(codepoint, nbytes, multibytes:c_string, maxbytes);
+      if !remoteThis {
+        c_memcpy(ret.buff, multibytes, nbytes);
+      }
+      ret.buff[nbytes] = 0;
+      ret.len = nbytes;
 
       return ret;
     }
@@ -1061,16 +1095,24 @@ module String {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         var locale_result = false;
-        for i in 0..#this.len {
-          const b = buff[i];
-          if byte_isLower(b) {
+        var i = 0;
+        while i < this.len {
+          var codepoint: int(32);
+          var nbytes: c_int;
+          var multibytes = (this.buff + i): c_string;
+          var maxbytes = (this.len - i): ssize_t;
+          if maxbytes > 4 then
+            maxbytes = 4;
+          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+          if codepoint_isLower(codepoint) {
             locale_result = false;
             break;
-          } else if !locale_result && byte_isUpper(b) {
+          } else if !locale_result && codepoint_isUpper(codepoint) {
             locale_result = true;
           }
-          result = locale_result;
+          i += nbytes;
         }
+        result = locale_result;
       }
       return result;
     }
@@ -1084,19 +1126,29 @@ module String {
      */
     proc isLower() : bool {
       if this.isEmptyString() then return false;
-      var result: bool = false;
 
+      var result: bool;
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for i in 0..#this.len {
-          const b = buff[i];
-          if byte_isUpper(b) {
-            result = false;
+        var locale_result = false;
+        var i = 0;
+        while i < this.len {
+          var codepoint: int(32);
+          var nbytes: c_int;
+          var multibytes = (this.buff + i): c_string;
+          var maxbytes = (this.len - i): ssize_t;
+          if maxbytes > 4 then
+            maxbytes = 4;
+          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+          if codepoint_isUpper(codepoint) {
+            locale_result = false;
             break;
-          } else if !result && byte_isLower(b) {
-            result = true;
+          } else if !locale_result && codepoint_isLower(codepoint) {
+            locale_result = true;
           }
+          i += nbytes;
         }
+        result = locale_result;
       }
       return result;
     }
@@ -1114,12 +1166,20 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for i in 0..#this.len {
-          const b = buff[i];
-          if !(byte_isWhitespace(b)) {
+        var i = 0;
+        while i < this.len {
+          var codepoint: int(32);
+          var nbytes: c_int;
+          var multibytes = (this.buff + i): c_string;
+          var maxbytes = (this.len - i): ssize_t;
+          if maxbytes > 4 then
+            maxbytes = 4;
+          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+          if !(codepoint_isWhitespace(codepoint)) {
             result = false;
             break;
           }
+          i += nbytes;
         }
       }
       return result;
@@ -1137,12 +1197,20 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for i in 0..#this.len {
-          const b = buff[i];
-          if !byte_isAlpha(b) {
+        var i = 0;
+        while i < this.len {
+          var codepoint: int(32);
+          var nbytes: c_int;
+          var multibytes = (this.buff + i): c_string;
+          var maxbytes = (this.len - i): ssize_t;
+          if maxbytes > 4 then
+            maxbytes = 4;
+          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+          if !codepoint_isAlpha(codepoint) {
             result = false;
             break;
           }
+          i += nbytes;
         }
       }
       return result;
@@ -1160,12 +1228,20 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for i in 0..#this.len {
-          const b = buff[i];
-          if !byte_isDigit(b) {
+        var i = 0;
+        while i < this.len {
+          var codepoint: int(32);
+          var nbytes: c_int;
+          var multibytes = (this.buff + i): c_string;
+          var maxbytes = (this.len - i): ssize_t;
+          if maxbytes > 4 then
+            maxbytes = 4;
+          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+          if !codepoint_isDigit(codepoint) {
             result = false;
             break;
           }
+          i += nbytes;
         }
       }
       return result;
@@ -1183,21 +1259,27 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for i in 0..#this.len {
-          const b = buff[i];
-          if !(byte_isAlpha(b) || byte_isDigit(b)) {
+        var i = 0;
+        while i < this.len {
+          var codepoint: int(32);
+          var nbytes: c_int;
+          var multibytes = (this.buff + i): c_string;
+          var maxbytes = (this.len - i): ssize_t;
+          if maxbytes > 4 then
+            maxbytes = 4;
+          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+          if !(codepoint_isAlpha(codepoint) || codepoint_isDigit(codepoint)) {
             result = false;
             break;
           }
+          i += nbytes;
         }
       }
       return result;
     }
 
     /*
-     Checks if all the characters in the string are printable. Characters are
-     defined as being printable if they are within the range of `0x20 - 0x7e`
-     including the bounds.
+     Checks if all the characters in the string are printable.
 
       :returns: * `true`  -- when the characters are printable.
                 * `false` -- otherwise
@@ -1208,12 +1290,20 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for i in 0..#this.len {
-          const char = buff[i];
-          if char <= 0x1f  || char == 0x7f {
+        var i = 0;
+        while i < this.len {
+          var codepoint: int(32);
+          var nbytes: c_int;
+          var multibytes = (this.buff + i): c_string;
+          var maxbytes = (this.len - i): ssize_t;
+          if maxbytes > 4 then
+            maxbytes = 4;
+          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+          if !codepoint_isPrintable(codepoint) {
             result = false;
             break;
           }
+          i += nbytes;
         }
       }
       return result;
@@ -1234,9 +1324,16 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         param UN = 0, UPPER = 1, LOWER = 2;
         var last = UN;
-        for i in 0..#this.len {
-          const b = buff[i];
-          if byte_isLower(b) {
+        var i = 0;
+        while i < this.len {
+          var codepoint: int(32);
+          var nbytes: c_int;
+          var multibytes = (this.buff + i): c_string;
+          var maxbytes = (this.len - i): ssize_t;
+          if maxbytes > 4 then
+            maxbytes = 4;
+          qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+          if codepoint_isLower(codepoint) {
             if last == UPPER || last == LOWER {
               last = LOWER;
             } else { // last == UN
@@ -1244,7 +1341,7 @@ module String {
               break;
             }
           }
-          else if byte_isUpper(b) {
+          else if codepoint_isUpper(codepoint) {
             if last == UN {
               last = UPPER;
             } else { // last == UPPER || last == LOWER
@@ -1255,6 +1352,7 @@ module String {
             // Uncased elements
             last = UN;
           }
+          i += nbytes;
         }
       }
       return result;
@@ -1268,12 +1366,22 @@ module String {
       var result: string = this;
       if result.isEmptyString() then return result;
 
-      for i in 0..#result.len {
-        const b = result.buff[i];
-        if byte_isUpper(b) {
-          // We can just add or subtract 0x20 to change between upper and lower
-          result.buff[i] = b + 0x20;
+      var i = 0;
+      while i < result.len {
+        var codepoint: int(32);
+        var nbytes: c_int;
+        var multibytes = (result.buff + i): c_string;
+        var maxbytes = (result.len - i): ssize_t;
+        if maxbytes > 4 then
+          maxbytes = 4;
+        qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        var lowCodepoint = codepoint_toLower(codepoint);
+        if lowCodepoint != codepoint {
+          // This assumes that the upper and lower case version of a
+          // character take the same number of bytes.
+          qio_encode_char_buf(result.buff + i, lowCodepoint);
         }
+        i += nbytes;
       }
       return result;
     }
@@ -1286,11 +1394,22 @@ module String {
       var result: string = this;
       if result.isEmptyString() then return result;
 
-      for i in 0..#result.len {
-        const b = result.buff[i];
-        if byte_isLower(b) {
-          result.buff[i] = b - 0x20;
+      var i = 0;
+      while i < result.len {
+        var codepoint: int(32);
+        var nbytes: c_int;
+        var multibytes = (result.buff + i): c_string;
+        var maxbytes = (result.len - i): ssize_t;
+        if maxbytes > 4 then
+          maxbytes = 4;
+        qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        var upCodepoint = codepoint_toUpper(codepoint);
+        if upCodepoint != codepoint {
+          // This assumes that the upper and lower case version of a
+          // character take the same number of bytes.
+          qio_encode_char_buf(result.buff + i, upCodepoint);
         }
+        i += nbytes;
       }
       return result;
     }
@@ -1306,23 +1425,37 @@ module String {
 
       param UN = 0, LETTER = 1;
       var last = UN;
-      for i in 0..#result.len {
-        const b = result.buff[i];
-        if byte_isAlpha(b) {
+      var i = 0;
+      while i < result.len {
+        var codepoint: int(32);
+        var nbytes: c_int;
+        var multibytes = (result.buff + i): c_string;
+        var maxbytes = (result.len - i): ssize_t;
+        if maxbytes > 4 then
+          maxbytes = 4;
+        qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        if codepoint_isAlpha(codepoint) {
           if last == UN {
             last = LETTER;
-            if byte_isLower(b) {
-              result.buff[i] = b - 0x20;
+            var upCodepoint = codepoint_toUpper(codepoint);
+            if upCodepoint != codepoint {
+              // This assumes that the upper and lower case version of a
+              // character take the same number of bytes.
+              qio_encode_char_buf(result.buff + i, upCodepoint);
             }
           } else { // last == LETTER
-            if byte_isUpper(b) {
-              result.buff[i] = b + 0x20;
+            var lowCodepoint = codepoint_toLower(codepoint);
+            if lowCodepoint != codepoint {
+              // This assumes that the upper and lower case version of a
+              // character take the same number of bytes.
+              qio_encode_char_buf(result.buff + i, lowCodepoint);
             }
           }
         } else {
           // Uncased elements
           last = UN;
         }
+        i += nbytes;
       }
       return result;
     }
@@ -1337,9 +1470,18 @@ module String {
       var result: string = this.toLower();
       if result.isEmptyString() then return result;
 
-      var b = result.buff[0];
-      if byte_isLower(b) {
-        result.buff[0] = b - 0x20;
+      var codepoint: int(32);
+      var nbytes: c_int;
+      var multibytes = result.buff: c_string;
+      var maxbytes = result.len: ssize_t;
+      if maxbytes > 4 then
+        maxbytes = 4;
+      qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+      var upCodepoint = codepoint_toUpper(codepoint);
+      if upCodepoint != codepoint {
+        // This assumes that the upper and lower case version of a
+        // character take the same number of bytes.
+        qio_encode_char_buf(result.buff, upCodepoint);
       }
       return result;
     }
@@ -1751,6 +1893,51 @@ module String {
     return b == uint_space
         || b == uint_tab
         || (b >= uint_newline && b <= uint_return);
+  }
+
+  // Portability Note:
+  // wint_t will normally be a 32-bit int.
+  // There may be systems where it is not.
+  extern type wint_t = int(32);
+
+  private inline proc codepoint_isUpper(c: int(32)) : bool {
+    extern proc iswupper(wc: wint_t): c_int;
+    return iswupper(c: wint_t) != 0;
+  }
+
+  private inline proc codepoint_isLower(c: int(32)) : bool {
+    extern proc iswlower(wc: wint_t): c_int;
+    return iswlower(c: wint_t) != 0;
+  }
+
+  private inline proc codepoint_isAlpha(c: int(32)) : bool {
+    extern proc iswalpha(wc: wint_t): c_int;
+    return iswalpha(c: wint_t) != 0;
+  }
+
+  private inline proc codepoint_isDigit(c: int(32)) : bool {
+    extern proc iswdigit(wc: wint_t): c_int;
+    return iswdigit(c) != 0;
+  }
+
+  private inline proc codepoint_isWhitespace(c: int(32)) : bool {
+    extern proc iswspace(wc: wint_t): c_int;
+    return iswspace(c) != 0;
+  }
+
+  private inline proc codepoint_isPrintable(c: int(32)) : bool {
+    extern proc iswprint(wc: wint_t): c_int;
+    return iswprint(c) != 0;
+  }
+
+  private inline proc codepoint_toLower(c: int(32)) : int(32) {
+    extern proc towlower(wc: wint_t): wint_t;
+    return towlower(c: wint_t): int(32);
+  }
+
+  private inline proc codepoint_toUpper(c: int(32)) : int(32) {
+    extern proc towupper(wc: wint_t): wint_t;
+    return towupper(c: wint_t): int(32);
   }
 
   //
