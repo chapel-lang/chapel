@@ -2467,8 +2467,6 @@ static AggregateType* typeForNewExpr(CallExpr* newExpr) {
           if (SymExpr* se = toSymExpr(ne->actual))
             if (isTypeSymbol(se->symbol()))
               return NULL;
-            //if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
-              //return toAggregateType(ts->type);
     }
 
     if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
@@ -3493,13 +3491,15 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     // Check that whatever it is is a borrow
     addToWhereClause(fn, formal, new CallExpr(PRIM_IS_SUBTYPE,
                                               dtBorrowed->symbol, queried));
-    // And then proceed as if the PRIM_TO_BORROWED_CLASS wasn't there
+    // don't try to do anything else if there isn't a nested call
+    if (!isCallExpr(call->get(1)))
+        return;
+
+    // For nested calls, proceed as if the PRIM_TO_BORROWED_CLASS wasn't there
     // that's because the borrowed class is the 'canonical' class representation
     // used in the compiler.
     call = toCallExpr(call->get(1));
-    // And don't try to do anything else if it wasn't a call
-    if (call == NULL)
-      return;
+
   } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
     if (CallExpr* subCall = toCallExpr(call->get(1))) {
       if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {
