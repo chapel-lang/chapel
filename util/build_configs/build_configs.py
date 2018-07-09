@@ -228,7 +228,8 @@ def main():
                 build_env,
                 parallel=opts.parallel,
                 verbose=opts.verbose,
-                dry_run=opts.dry_run
+                dry_run=opts.dry_run,
+                make_targets=opts.make_targets
             )
             statuses.append((build_config, result))
 
@@ -276,7 +277,7 @@ def get_configs(opts):
     return configs
 
 
-def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False, dry_run=False):
+def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False, dry_run=False, make_targets=None):
     """Build Chapel with the provided environment.
 
     :type chpl_home: str
@@ -314,6 +315,10 @@ def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False, dry_
                 pass
             return cpus
         make_cmd += ' --jobs={0}'.format(_cpu_count())
+
+    if make_targets:
+        make_cmd += ' {0}'.format(make_targets)
+
     logging.debug('Using make command: {0}'.format(make_cmd))
 
     if dry_run:
@@ -469,7 +474,6 @@ comm=gasnet either of these will work:
                           os.path.join(os.path.dirname(__file__), '../..'))),
     })
 
-
     parser.add_option(
         '-v', '--verbose',
         action='store_true',
@@ -493,6 +497,10 @@ comm=gasnet either of these will work:
         '-p', '--parallel',
         action='store_true',
         help='Enable parallel execution for build.'
+    )
+    parser.add_option(
+        '-T', '--make-targets',
+        help='Arguments to be appended to the "make" commands (default: None).',
     )
 
     config_group = optparse.OptionGroup(
