@@ -192,9 +192,6 @@ module CPtr {
     return __primitive("cast", t, x);
 
 
-
-
-
   pragma "compiler generated"
   pragma "last resort"
   pragma "no doc"
