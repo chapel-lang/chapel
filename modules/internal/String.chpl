@@ -463,8 +463,8 @@ module String {
 
       var ret: string;
       var maxbytes = (this.len - (i - 1)): ssize_t;
-      if maxbytes < 0 then
-        maxbytes = 0;
+      if maxbytes < 0 || maxbytes > 4 then
+        maxbytes = 4;
       const newSize = chpl_here_good_alloc_size(maxbytes + 1);
       ret._size = max(chpl_string_min_alloc_size, newSize);
       ret.buff = chpl_here_alloc(ret._size,
