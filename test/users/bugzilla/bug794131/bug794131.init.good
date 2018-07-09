@@ -1,0 +1,2 @@
+bug794131.chpl:8: warning: Extern classes have been deprecated
+bug794131.chpl:8: error: Extern classes are not supported by initializers
