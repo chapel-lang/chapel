@@ -13,7 +13,7 @@ class Foo {
 
 }
 
-proc _defaultOf(type t) where t == imag {
+proc _defaultOf(type t:imag) {
   return 1.0i;
 }
 
