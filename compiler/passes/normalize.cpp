@@ -1343,6 +1343,8 @@ static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
     // Add checks against the declared element type
   }
 
+  // Do something about coercion
+
   ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
 }
 
