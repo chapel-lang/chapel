@@ -76,7 +76,17 @@ XTRA_POST_BUILD_COMMAND=cd $(GASNET_BUILD_DIR)/other/amudp && $(MAKE) amudprun-h
 endif
 
 
-CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)'
+ifeq (, $(MPI_CC))
+MPI_CC=mpicc
+endif
+
+ifeq ($(CHPL_LIBMODE),shared)
+GASNET_CFLAGS += $(SHARED_LIB_CFLAGS)
+# MPI_CFLAGS overides autodetection, which we don't want so add to MPI_CC
+MPI_CC += $(SHARED_LIB_CFLAGS)
+endif
+
+CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)' MPI_CC='$(MPI_CC)' CFLAGS='$(GASNET_CFLAGS)' CXXFLAGS='$(GASNET_CFLAGS)'
 
 CHPL_GASNET_CFG_OPTIONS += $(CHPL_GASNET_MORE_CFG_OPTIONS)
 
