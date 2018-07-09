@@ -41,11 +41,7 @@ const _columnComparator: _ColumnComparator;
 // Necessary since `t == CS` does not support classes with param fields
 //
 pragma "no doc"
-proc isCSType(type t:borrowed CS) param return true;
-pragma "no doc"
-proc isCSType(type t:unmanaged CS) param return true;
-pragma "no doc"
-proc isCSType(type t) param return false;
+proc isCSType(type t) param return isSubtype(_to_borrowed(t), CS);
 
 /*
 This CS layout provides a Compressed Sparse Row (CSR) and Compressed Sparse
