@@ -991,7 +991,7 @@ iter BlockCyclicArr.dsiLocalSubdomains() {
 iter BlockCyclicDom.dsiLocalSubdomains() {
   // TODO -- could be replaced by a privatized myLocDom in BlockCyclicDom
   // as it is with BlockCyclicArr
-  var myLocDom:LocBlockCyclicDom(rank, idxType, stridable) = nil;
+  var myLocDom:unmanaged LocBlockCyclicDom(rank, idxType, stridable) = nil;
   for (loc, locDom) in zip(dist.targetLocales, locDoms) {
     if loc == here then
       myLocDom = locDom;

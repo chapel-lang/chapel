@@ -1,4 +1,4 @@
-enum ExprTypes { ADD, MUL, DIV, NEG=8 };
+enum ExprTypes { ADD=1, MUL, DIV, NEG=8 };
 
 var E : ExprTypes = ExprTypes.ADD;
 var i : int;

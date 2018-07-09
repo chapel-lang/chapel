@@ -7,3 +7,12 @@ libexportFuncWithExternType.a
 libexportFuncWithPtr.a
 libexportFuncWithRealArr.a
 libreturnExternArray.a
+exportFuncWithArrayArg.h
+exportFuncWithRealArr.h
+exportFuncWith1Arr1Not.h
+exportFuncWith1Not1Arr.h
+exportFuncWith2Arrays.h
+exportFuncWithExplicitVoidRet.h
+exportFuncWithExternType.h
+exportFuncWithPtr.h
+returnExternArray.h

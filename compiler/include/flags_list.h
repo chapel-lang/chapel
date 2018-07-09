@@ -171,6 +171,11 @@ symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which co
 // no functions without that flag are found. This usually is used to create
 // a pattern enabling user-supplied replacement of default behavior.
 symbolFlag( FLAG_LAST_RESORT , ypr, "last resort" , "overload of last resort in resolution" )
+
+// Tells resolution to use this function's line number even if that function
+// has FLAG_COMPILER_GENERATED.
+symbolFlag( FLAG_LINE_NUMBER_OK, npr, "lineno ok", ncm )
+
 symbolFlag( FLAG_LOCALE_MODEL_ALLOC , ypr, "locale model alloc" , "locale model specific alloc" )
 symbolFlag( FLAG_LOCALE_MODEL_FREE , ypr, "locale model free" , "locale model specific free" )
 symbolFlag( FLAG_INC_RUNNING_TASK , ypr, "inc running task" , "running task incrementer" )
@@ -205,6 +210,7 @@ symbolFlag( FLAG_NEW_WRAPPER, npr, "_new wrapper", ncm)
 symbolFlag( FLAG_IGNORE_NOINIT, ypr, "ignore noinit", "this type must be initialized" )
 symbolFlag( FLAG_NON_BLOCKING , npr, "non blocking" , "with FLAG_ON/FLAG_ON_BLOCK, non-blocking on functions" )
 symbolFlag( FLAG_NO_AUTO_DESTROY , ypr, "no auto destroy" , ncm )
+symbolFlag( FLAG_NO_BORROW_CONVERT , ypr, "no borrow convert", "arguments that are instantiated as owned/shared/etc do not need to convert to borrow" )
 symbolFlag( FLAG_NO_CAPTURE_FOR_TASKING , npr, "no capture for tasking", "does not need to be captured before spawning tasks" )
 symbolFlag( FLAG_NO_CODEGEN , ypr, "no codegen" , "do not generate e.g. C code defining this symbol" )
 symbolFlag( FLAG_NO_COPY , ypr, "no copy" , "do not apply chpl__initCopy to initialization of a variable" )

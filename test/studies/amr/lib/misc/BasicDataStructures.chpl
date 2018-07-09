@@ -1,7 +1,7 @@
 proc main {
   
   writeln("List test:");
-  var l = new List(int);
+  var l = new unmanaged List(int);
   l.add(1);
   l.add(2);
   l.add(3);
@@ -17,7 +17,7 @@ proc main {
   
   writeln("");
   writeln("Stack test:");
-  var s = new Stack(int);
+  var s = new unmanaged Stack(int);
   s.push(1);
   s.push(2);
   s.push(3);
@@ -25,7 +25,7 @@ proc main {
   
   
   writeln("\nQueue test:");
-  var q = new Queue(string);
+  var q = new unmanaged Queue(string);
   q.enqueue("a");
   q.enqueue("b");
   q.enqueue("c");
@@ -46,14 +46,14 @@ class List
 {
   
   type data_type;
-  var head: Node(data_type);
+  var head: unmanaged Node(data_type);
   
   
   class Node 
   {
     type data_type;
     var data: data_type;
-    var next: Node(data_type);
+    var next: unmanaged Node(data_type);
   }
   
   
@@ -71,13 +71,13 @@ class List
   {
     // This should work even if head==nil.
     
-    head = new Node(data_type, data, head );
+    head = new unmanaged Node(data_type, data, head );
   }
   
   
   proc clear ()
   {
-    var next_node: Node(data_type);
+    var next_node: unmanaged Node(data_type);
     
     while head {
       next_node = head.next;
@@ -109,13 +109,13 @@ class Stack
 {
 
   type data_type;
-  var top:  Node(data_type);
+  var top:  unmanaged Node(data_type);
 
   
   class Node {
     type data_type;
     var data: data_type;
-    var next: Node(data_type);
+    var next: unmanaged Node(data_type);
   }
 
 
@@ -127,7 +127,7 @@ class Stack
   
   proc push ( data: data_type )
   {
-    top = new Node(data_type, data, top);
+    top = new unmanaged Node(data_type, data, top);
   }
 
   
@@ -166,14 +166,14 @@ class Queue
 {
   
   type data_type;
-  var head: Node(data_type);
-  var tail: Node(data_type);
+  var head: unmanaged Node(data_type);
+  var tail: unmanaged Node(data_type);
 
   class Node {
     type data_type;
     var data: data_type;
-    var prev: Node(data_type);
-    var next: Node(data_type);
+    var prev: unmanaged Node(data_type);
+    var next: unmanaged Node(data_type);
   }
 
 
@@ -189,12 +189,12 @@ class Queue
   {
     if tail {
       var old_tail = tail;
-      tail = new Node(data_type, data);
+      tail = new unmanaged Node(data_type, data);
       old_tail.next = tail;
       tail.prev     = old_tail;
     }
     else {
-      head = new Node(data_type, data);
+      head = new unmanaged Node(data_type, data);
       tail = head;
     }
   }

@@ -1,0 +1,2 @@
+feature request: allow declared generic return types (if instantiated)
+#10184

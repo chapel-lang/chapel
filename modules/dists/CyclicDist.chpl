@@ -1164,7 +1164,7 @@ proc CyclicArr.dsiLocalSubdomain() {
 proc CyclicDom.dsiLocalSubdomain() {
   // TODO -- could be replaced by a privatized myLocDom in CyclicDom
   // as it is with CyclicArr
-  var myLocDom:LocCyclicDom(rank, idxType, stridable) = nil;
+  var myLocDom:unmanaged LocCyclicDom(rank, idxType, stridable) = nil;
   for (loc, locDom) in zip(dist.targetLocs, locDoms) {
     if loc == here then
       myLocDom = locDom;

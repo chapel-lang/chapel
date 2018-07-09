@@ -133,15 +133,30 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
     // With FLAG_REF on the function, that means it's a constructor
     // for the ref type, so re-instantiate it with whatever actualTS is.
     return actualTS;
+  } else if (actualTS->hasFlag(FLAG_REF)) {
+    // the value is a ref and
+    // instantiation of a formal of ref type loses ref
+    return getNewSubType(fn, key, actualTS->getValType()->symbol);
   } else {
-    bool actualRef = actualTS->hasFlag(FLAG_REF);
+    if (isManagedPtrType(actualTS->getValType()))
+      if (!(fn->hasFlag(FLAG_INIT_COPY_FN) ||
+            fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+            fn->hasFlag(FLAG_BUILD_TUPLE) ||
+            fn->hasFlag(FLAG_NO_BORROW_CONVERT) ||
+            fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
+            fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
+            (fn->name == astrInit && fn->hasFlag(FLAG_COMPILER_GENERATED)) ||
+            fn->name == astr_cast))
+        if (ArgSymbol* arg = toArgSymbol(key))
+          if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
+            if (arg->intent == INTENT_IN ||
+                arg->intent == INTENT_CONST ||
+                arg->intent == INTENT_CONST_IN ||
+                arg->intent == INTENT_BLANK)
+              if (arg->getValType() == dtAny)
+                return getManagedPtrBorrowType(actualTS->getValType())->symbol;
 
-    if(actualRef)
-      // the value is a ref and
-      // instantiation of a formal of ref type loses ref
-      return getNewSubType(fn, key, actualTS->getValType()->symbol);
-    else
-      return actualTS;
+    return actualTS;
   }
 }
 

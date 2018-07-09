@@ -38,6 +38,7 @@ class ModuleSymbol;
 class Type;
 
 BlockStmt* buildPragmaStmt(Vec<const char*>*, BlockStmt*);
+DefExpr* buildPragmaDefExpr(Vec<const char*>*, DefExpr*);
 
 CallExpr* buildOneTuple(Expr* elem);
 CallExpr* buildTuple(CallExpr* call);
@@ -95,26 +96,24 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
 BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
 BlockStmt* buildDeleteStmt(CallExpr* exprlist);
-CallExpr* zipToTuple(CallExpr* zipExpr);
 BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
                                ForallIntents* forall_intents,
                                BlockStmt* body,
                                bool zippered = false,
                                VarSymbol* useThisGlobalOp = NULL);
-CallExpr* buildForLoopExpr(Expr* indices,
-                           Expr* iterator,
-                           Expr* expr,
-                           Expr* cond = NULL,
-                           bool maybeArrayType = false,
-                           bool zippered = false);
-ForallExpr* buildForallLoopExpr(Expr* indices,
-                              Expr* iterator,
-                              Expr* expr,
-                              Expr* cond = NULL,
-                              bool maybeArrayType = false,
-                              bool zippered = false);
-void convertForallExpressions();
+Expr* buildForLoopExpr(Expr* indices,
+                       Expr* iterator,
+                       Expr* expr,
+                       Expr* cond = NULL,
+                       bool maybeArrayType = false,
+                       bool zippered = false);
+Expr* buildForallLoopExpr(Expr* indices,
+                          Expr* iterator,
+                          Expr* expr,
+                          Expr* cond = NULL,
+                          bool maybeArrayType = false,
+                          bool zippered = false);
 Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
                                            bool recursiveCall = false);
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);

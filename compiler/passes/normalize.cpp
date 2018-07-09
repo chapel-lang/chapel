@@ -31,6 +31,7 @@
 #include "ForallStmt.h"
 #include "IfExpr.h"
 #include "initializerRules.h"
+#include "LoopExpr.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
@@ -563,6 +564,8 @@ static void normalizeBase(BaseAST* base) {
 
   lowerIfExprs(base);
 
+  lowerLoopExprs(base);
+
 
   //
   // Phase 4
@@ -646,10 +649,8 @@ void checkUseBeforeDefs(FnSymbol* fn) {
 
                 // Only complain one time
                 if (undefined.find(sym) == undefined.end()) {
-                  USR_FATAL_CONT(se,
-                                 "'%s' used before defined (first used here)",
-                                 sym->name);
-
+                  USR_FATAL_CONT(se, "'%s' used before defined", sym->name);
+                  USR_PRINT(sym->defPoint, "defined here");
                   undefined.insert(sym);
                 }
               }
@@ -689,7 +690,15 @@ static void checkUseBeforeDefs() {
   USR_STOP();
 }
 
-// If the AST node defines a symbol, then extract that symbol
+// guard against "var a:int = a;"
+static void checkSelfDef(CallExpr* call, Symbol* sym) {
+  if (SymExpr* se2 = toSymExpr(call->get(2)))
+    if (se2->symbol() == sym)
+      USR_FATAL_CONT(se2, "'%s' is used to define itself", sym->name);
+}
+
+// If the AST node defines a symbol, then return that symbol.
+// Otheriwse return NULL. Also check for self-defs.
 static Symbol* theDefinedSymbol(BaseAST* ast) {
   Symbol* retval = NULL;
 
@@ -697,21 +706,19 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
   // or a variable initialization.
   //
   // The caller performs a post-order traversal and so we find the
-  // symExpr before we see the callExpr
-  //
-  // TODO reacting to SymExprs, like it is done here, allows things like
-  //   "var a: int = a" to sneak in.
-  // Instead, we should react to CallExprs that are PRIM_MOVE, init, etc.
-  // Reacting to CallExprs is also more economical, as there are fewer
-  // CallExprs than there are SymExprs.
-  //
+  // symExpr before we see the callExpr.
+  // In particular, given a move(symexpr1,symexpr2), if we consider
+  // the move itself as defining the symbol, symexpr1 will raise
+  // the "use before defined" error.
+
   if (SymExpr* se = toSymExpr(ast)) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call->isPrimitive(PRIM_MOVE)     == true  ||
-          call->isPrimitive(PRIM_ASSIGN)   == true  ||
-          call->isPrimitive(PRIM_INIT_VAR) == true)  {
+      if (call->isPrimitive(PRIM_MOVE)      ||
+          call->isPrimitive(PRIM_ASSIGN)    ||
+          call->isPrimitive(PRIM_INIT_VAR) ) {
         if (call->get(1) == se) {
           retval = se->symbol();
+          checkSelfDef(call, se->symbol());
         }
       }
       // Allow for init() for a task-private variable, which occurs in
@@ -925,6 +932,7 @@ class LowerIfExprVisitor : public AstVisitorTraverse
 void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
   if (isAlive(ife) == false) return;
   if (isDefExpr(ife->parentExpr)) return;
+  if (isLoopExpr(ife->parentExpr)) return;
 
   SET_LINENO(ife);
 
@@ -1689,40 +1697,19 @@ static bool shouldInsertCallTemps(CallExpr* call) {
   Expr*     parentExpr = call->parentExpr;
   CallExpr* parentCall = toCallExpr(parentExpr);
   Expr*     stmt       = call->getStmtExpr();
-  bool      retval     = false;
 
-  if        (parentExpr                               == NULL) {
-    retval = false;
+  if (parentExpr == NULL                                 ||
+      isDefExpr(parentExpr)                              ||
+      isContextCallExpr(parentExpr)                      ||
+      stmt == NULL                                       ||
+      call == stmt                                       ||
+      call->partialTag                                   ||
+      call->isPrimitive(PRIM_TUPLE_EXPAND)               ||
+      (parentCall && parentCall->isPrimitive(PRIM_MOVE)) ||
+      (parentCall && parentCall->isPrimitive(PRIM_NEW)) )
+    return false;
 
-  } else if (isDefExpr(parentExpr)                    == true) {
-    retval = false;
-
-  } else if (isContextCallExpr(parentExpr)            == true) {
-    retval = false;
-
-  } else if (stmt                                     == NULL) {
-    retval = false;
-
-  } else if (call                                     == stmt) {
-    retval = false;
-
-  } else if (call->partialTag                         == true) {
-    retval = false;
-
-  } else if (call->isPrimitive(PRIM_TUPLE_EXPAND)     == true) {
-    retval = false;
-
-  } else if (parentCall && parentCall->isPrimitive(PRIM_MOVE)) {
-    retval = false;
-
-  } else if (parentCall && parentCall->isPrimitive(PRIM_NEW))  {
-    retval = false;
-
-  } else {
-    retval =  true;
-  }
-
-  return retval;
+  return true;
 }
 
 static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
@@ -1745,7 +1732,7 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
   //   types/typedefs/bradc/arrayTypedef
   //
   // I'm sure that there is a better way to handle this either in the
-  // module init function or in a sequence of parloopexpr functions
+  // module init function or in a sequence of forall-expr functions
   // computing an array type that are in a module init fn
 
   while (fn->hasFlag(FLAG_MAYBE_ARRAY_TYPE) == true) {
@@ -2270,6 +2257,9 @@ static void normVarTypeInference(DefExpr* defExpr) {
     }
   } else if (IfExpr* ife = toIfExpr(initExpr)) {
     defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, ife));
+
+  } else if (LoopExpr* fe = toLoopExpr(initExpr)) {
+    defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, fe));
 
   } else {
     INT_ASSERT(false);
@@ -3265,18 +3255,39 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
   formal->type = dtAny;
 }
 
-static bool doesCallContainDefActual(CallExpr* call) {
+static bool isGenericActual(Expr* expr) {
+  if (isDefExpr(expr))
+    return true;
+  if (SymExpr* se = toSymExpr(expr))
+    if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
+      if (AggregateType* at = toAggregateType(ts->type))
+        if (!at->needsConstructor())
+          // Ignore aggregate types with old-style constructors since
+          // it computes genericity in resolution (vs in scope resolve)
+          if (at->isGeneric() && !at->isGenericWithDefaults())
+            return true;
+
+  return false;
+}
+
+// 2 types of generic actuals:
+//  1. Generic type symbol as a leaf, where that type does not have
+//     defaults for every field)
+//       e.g. Owned(MyGenericClass)
+//  2. Call to a generic type with a type query expression within
+//       e.g. MyGenericClass(?) / MyGenericClass(?t) / MyGenericClass(t=?t)
+static bool doesCallContainGenericActual(CallExpr* call) {
   for_actuals(actual, call) {
-    if (isDefExpr(actual)) {
+    if (isGenericActual(actual)) {
       return true;
 
     } else if (NamedExpr* named = toNamedExpr(actual)) {
-      if (isDefExpr(named->actual)) {
+      if (isGenericActual(named->actual)) {
         return true;
       }
 
     } else if (CallExpr* subcall = toCallExpr(actual)) {
-      if (doesCallContainDefActual(subcall)) {
+      if (doesCallContainGenericActual(subcall)) {
         return true;
       }
     }
@@ -3289,7 +3300,7 @@ static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal) {
   bool retval = false;
 
   if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
-    retval = doesCallContainDefActual(call);
+    retval = doesCallContainGenericActual(call);
   }
 
   return retval;
@@ -3334,7 +3345,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     usetype = call->baseExpr->remove();
   } else {
     usetype = call->remove();
-    INT_ASSERT(!doesCallContainDefActual(call));
+    INT_ASSERT(!doesCallContainGenericActual(call));
   }
 
   formal->typeExpr->replace(new BlockStmt(usetype));
@@ -3343,12 +3354,15 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 }
 
 static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call) {
-  if (call->isNamed("_build_tuple")) {
+  if (call->isNamed("_build_tuple") || call->isNamed("*")) {
+    INT_ASSERT(!call->isPrimitive(PRIM_MULT));
     return dtTuple->symbol;
-  } else if (call->isNamed("_to_unmanaged")) {
+  } else if (call->isNamed("_to_unmanaged") ||
+             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
     return dtUnmanaged->symbol;
-  } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
-    return dtUnmanaged->symbol;
+  } else if (call->isNamed("_to_borrowed") ||
+             call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+    return dtBorrowed->symbol;
   }
   return NULL;
 }
@@ -3389,12 +3403,21 @@ static void expandQueryForActual(FnSymbol*  fn,
                                  CallExpr* call,
                                  CallExpr* query,
                                  Expr* actual) {
-  DefExpr* def = toDefExpr(actual);
   CallExpr* subcall = toCallExpr(actual);
 
-  if (def) {
-    replaceQueryUses(formal, def, query, symExprs);
-  } else if (subcall && doesCallContainDefActual(subcall)) {
+  if (isGenericActual(actual)) {
+    if (DefExpr* def = toDefExpr(actual)) {
+      replaceQueryUses(formal, def, query, symExprs);
+    } else if (SymExpr* se = toSymExpr(actual)) {
+      TypeSymbol* ts = toTypeSymbol(se->symbol());
+      INT_ASSERT(ts);
+      Expr* subtype = new SymExpr(ts);
+      addToWhereClause(fn, formal,
+                       new CallExpr(PRIM_IS_SUBTYPE, subtype, query->copy()));
+    } else {
+      INT_ASSERT("case not handled");
+    }
+  } else if (subcall && doesCallContainGenericActual(subcall)) {
     Expr* subtype = NULL;
     if (TypeSymbol* ts = getTypeForSpecialConstructor(subcall)) {
       subtype = new SymExpr(ts);
@@ -3402,7 +3425,7 @@ static void expandQueryForActual(FnSymbol*  fn,
       subtype = subcall->baseExpr->copy();
     } else {
       subtype = subcall->copy();
-      INT_ASSERT(!doesCallContainDefActual(subcall));
+      INT_ASSERT(!doesCallContainGenericActual(subcall));
     }
     // Add check that actual type satisfies
     addToWhereClause(fn, formal,
@@ -3437,6 +3460,10 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     call->baseExpr->replace(new SymExpr(dtTuple->symbol));
 
     position = position + 1; // tuple size is technically 1st param/type
+
+  } else if (call->isNamed("*")) {
+    // it happens to be that 1st actual == size so that will be checked below
+    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried));
   } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
     if (CallExpr* subCall = toCallExpr(call->get(1))) {
       if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {

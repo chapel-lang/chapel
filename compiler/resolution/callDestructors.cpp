@@ -278,8 +278,8 @@ Such a for-loop is converted into a forall during resolution using
 replaceEflopiWithForall() - only if the loop body contains a yield statement.
 Otherwise it remains a for-loop. (Todo: convert in this case as well?)
 
-Another double-use scenario is in an _iterator_for_loopexprNN via _toLeader.
-Todo: replace _iterator_for_loopexprNN with a ForallStmt.
+Another double-use scenario is in an astr_loopexpr_iterNN via _toLeader.
+Todo: replace astr_loopexpr_iterNN with a ForallStmt.
 
 When the same parallel iterator is used both ways,
 we need to split the uses into two so that each category

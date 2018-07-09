@@ -34,6 +34,7 @@
 #include "chpl-comm-compiler-macros.h"
 
 #include <assert.h>
+#include <math.h>
 #include <pthread.h>
 #include <string.h>
 #include <stdint.h>
@@ -322,36 +323,77 @@ void chpl_printMemAllocStats(int32_t lineno, int32_t filename) {
     return;
   }
 
-  memTrack_lock();
-  fprintf(memLogFile, "=================\n");
-  fprintf(memLogFile, "Memory Statistics\n");
+  //
+  // To reduce the likelihood of corrupted output in multilocale runs,
+  // print everything into an internal buffer just large enough to hold
+  // it all, then send that to the memory log file in a single call.
+  // Also in multi-locale runs, prefix each line with a node-specific
+  // string to allow sorting the output by node ID for easier reading.
+  //
+
+  //
+  // First, construct the line prefix.
+  //
+  const int nodeWidth = (int) lrint(ceil(log10((double) chpl_numNodes)));
+  char prefixBuf[15 + nodeWidth + 1]; // room for "memStats: node N"
   if (chpl_numNodes == 1) {
-    fprintf(memLogFile, "==============================================================\n");
-    fprintf(memLogFile, "Current Allocated Memory               %zd\n", totalMem);
-    fprintf(memLogFile, "Maximum Simultaneous Allocated Memory  %zd\n", maxMem);
-    fprintf(memLogFile, "Total Allocated Memory                 %zd\n", totalAllocated);
-    fprintf(memLogFile, "Total Freed Memory                     %zd\n", totalFreed);
-    fprintf(memLogFile, "==============================================================\n");
+    snprintf(prefixBuf, sizeof(prefixBuf), "memStats:");
   } else {
-    int i;
-    fprintf(memLogFile, "==============================================================\n");
-    fprintf(memLogFile, "Locale\n");
-    fprintf(memLogFile, "           Current Allocated Memory\n");
-    fprintf(memLogFile, "                      Maximum Simultaneous Allocated Memory\n");
-    fprintf(memLogFile, "                                 Total Allocated Memory\n");
-    fprintf(memLogFile, "                                            Total Freed Memory\n");
-    fprintf(memLogFile, "==============================================================\n");
-    for (i = 0; i < chpl_numNodes; i++) {
-      static size_t m1, m2, m3, m4;
-      chpl_gen_comm_get(&m1, i, &totalMem,       sizeof(size_t), -1 /* broke for hetero */, CHPL_COMM_UNKNOWN_ID, lineno, filename);
-      chpl_gen_comm_get(&m2, i, &maxMem,         sizeof(size_t), -1 /* broke for hetero */, CHPL_COMM_UNKNOWN_ID, lineno, filename);
-      chpl_gen_comm_get(&m3, i, &totalAllocated, sizeof(size_t), -1 /* broke for hetero */, CHPL_COMM_UNKNOWN_ID, lineno, filename);
-      chpl_gen_comm_get(&m4, i, &totalFreed,     sizeof(size_t), -1 /* broke for hetero */, CHPL_COMM_UNKNOWN_ID, lineno, filename);
-      fprintf(memLogFile, "%-9d  %-9zu  %-9zu  %-9zu  %-9zu\n", i, m1, m2, m3, m4);
-    }
-    fprintf(memLogFile, "==============================================================\n");
+    snprintf(prefixBuf, sizeof(prefixBuf), "memStats: node %*d",
+             nodeWidth, chpl_nodeID);
   }
+
+  //
+  // Take a pre-run through the descriptions and values to figure
+  // out how long each line will need to be.
+  //
+  static const struct {
+    const char* desc;
+    size_t* val;
+  } descsVals[] = {
+    { "Allocated Now:", &totalMem },
+    { "Allocation High Water Mark:", &maxMem },
+    { "Sum of Allocations:", &totalAllocated },
+    { "Sum of Frees:", &totalFreed },
+  };
+  const int nDescsVals = sizeof(descsVals) / sizeof(descsVals[0]);
+
+  int descWidth = 0;
+  int memWidth = 0;
+
+  for (int i = 0; i < nDescsVals; i++) {
+    const int thisDescWidth = strlen(descsVals[i].desc);
+    if (thisDescWidth > descWidth)
+      descWidth = thisDescWidth;
+    const int thisMemWidth =
+                (*descsVals[i].val == 0)
+                ? 1
+                : (int) lrint(ceil(log10((double) *descsVals[i].val)));
+    if (thisMemWidth > memWidth)
+      memWidth = thisMemWidth;
+  }
+
+  //
+  // Now finally, size the buffer, print the information, and send it
+  // to the memory log file.
+  //
+  char buf[4 * (strlen(prefixBuf) + 1 + descWidth + 1 + memWidth + 1) + 1];
+  size_t len;
+
+  memTrack_lock();
+
+  len = 0;
+  for (int i = 0; i < nDescsVals; i++) {
+    len += snprintf(buf + len, sizeof(buf) - len,
+                    "%s %-*s %*zd\n",
+                    prefixBuf,
+                    descWidth, descsVals[i].desc,
+                    memWidth, *descsVals[i].val);
+  }
+
   memTrack_unlock();
+
+  fputs(buf, memLogFile);
 }
 
 

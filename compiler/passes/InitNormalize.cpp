@@ -22,6 +22,7 @@
 #include "ForallStmt.h"
 #include "IfExpr.h"
 #include "initializerRules.h"
+#include "LoopExpr.h"
 #include "stmt.h"
 #include "astutil.h"
 
@@ -667,7 +668,7 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
     CallExpr* fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, initExpr);
 
     insertBefore->insertBefore(fieldSet);
-  } else if (isIfExpr(initExpr)) {
+  } else if (isIfExpr(initExpr) || isLoopExpr(initExpr)) {
     VarSymbol* tmp      = newTemp("tmp");
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     CallExpr*  tmpInit  = NULL;
@@ -1038,7 +1039,7 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
 
     updateFieldsMember(initExpr);
 
-  } else if (isIfExpr(initExpr)) {
+  } else if (isIfExpr(initExpr) || isLoopExpr(initExpr)) {
     VarSymbol* tmp      = newTemp("tmp");
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     CallExpr*  tmpInit  = new CallExpr(PRIM_INIT_VAR, tmp, initExpr);
@@ -1134,6 +1135,10 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
     isFieldAccessible(ie->getCondition());
     isFieldAccessible(ie->getThenStmt());
     isFieldAccessible(ie->getElseStmt());
+  } else if (LoopExpr* fe = toLoopExpr(expr)) {
+    isFieldAccessible(fe->iteratorExpr);
+    if (fe->cond) isFieldAccessible(fe->cond);
+    isFieldAccessible(fe->loopBody);
   } else if (BlockStmt* block = toBlockStmt(expr)) {
     for_alist(stmt, block->body) {
       isFieldAccessible(stmt);
@@ -1207,6 +1212,10 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
     updateFieldsMember(ie->getCondition());
     updateFieldsMember(ie->getThenStmt());
     updateFieldsMember(ie->getElseStmt());
+  } else if (LoopExpr* fe = toLoopExpr(expr)) {
+    updateFieldsMember(fe->iteratorExpr);
+    if (fe->cond) updateFieldsMember(fe->cond);
+    updateFieldsMember(fe->loopBody);
 
   } else if (BlockStmt* block = toBlockStmt(expr)) {
     for_alist(stmt, block->body) {
@@ -1629,6 +1638,10 @@ static void collectThisUses(Expr* expr, std::vector<CallExpr*>& uses) {
     collectThisUses(ife->getCondition(), uses);
     collectThisUses(ife->getThenStmt(), uses);
     collectThisUses(ife->getElseStmt(), uses);
+  } else if (LoopExpr* fe = toLoopExpr(expr)) {
+    collectThisUses(fe->iteratorExpr, uses);
+    if (fe->cond) collectThisUses(fe->cond, uses);
+    collectThisUses(fe->loopBody, uses);
   } else if (BlockStmt* block = toBlockStmt(expr)) {
     for_alist(stmt, block->body) {
       collectThisUses(stmt, uses);
@@ -1636,21 +1649,12 @@ static void collectThisUses(Expr* expr, std::vector<CallExpr*>& uses) {
   }
 }
 
-// TODO: split into 'isMethodCall' and 'isMethodException'.
-// TODO: Handle 'c = new C()' where 'C' is a nested type
 static bool isMethodCall(CallExpr* call) {
   bool retval = false;
 
   if (CallExpr* parent = toCallExpr(call->parentExpr)) {
     if (parent->baseExpr == call) {
       retval = true;
-      if (UnresolvedSymExpr* se = toUnresolvedSymExpr(call->get(2))) {
-        if (strstr(se->unresolved, "_if_fn") != NULL ||
-            strstr(se->unresolved, "_parloopexpr") != NULL) {
-          // Don't consider compiler-inserted loop/conditional functions
-          retval = false;
-        }
-      }
     }
   }
 

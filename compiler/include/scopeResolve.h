@@ -41,4 +41,6 @@ BaseAST* getScope(BaseAST* ast);
 
 void resolveUnresolvedSymExprs(BaseAST* ast);
 
+void destroyModuleUsesCaches();
+
 #endif

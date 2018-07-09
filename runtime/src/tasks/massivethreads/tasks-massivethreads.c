@@ -44,7 +44,7 @@
 #include <unistd.h>
 #include <math.h>
 
-/* MYTH_IS_PTHREAD defined in tasks-massivethreads.h */
+/* MYTH_IS_PTHREAD defined in chpl-tasks-impl.h */
 
 #include <sys/syscall.h>
 #if MYTH_IS_PTHREAD
@@ -58,11 +58,8 @@
 #include <stdint.h>
 #include "chplcgfns.h"
 #include "chpltypes.h"
+#include "chpl-tasks-impl.h"
 #include "chpl-tasks-prvdata.h"
-
-#ifdef CHPL_TASKS_MODEL_H
-#include CHPL_TASKS_MODEL_H
-#endif
 
 
 //

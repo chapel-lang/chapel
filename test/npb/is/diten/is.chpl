@@ -8,12 +8,12 @@ config param useBuckets = true;
 config param seed = 314159265;
 config const printTime = false;
 
-const Class: domain(classVals);
+const Class = {classVals.S..classVals.C};
 
-const TotalKeys:  [Class] int = ( 2**16, 2**20, 2**23, 2**25, 2**27 ),
-      MaxKey:     [Class] int = ( 2**11, 2**16, 2**19, 2**21, 2**23 ),
-      TotalIters: [Class] int = ( 10, 10, 10, 10, 10 ),
-      NumBuckets: [Class] int = ( 2**9, 2**10, 2**10, 2**10, 2**10 );
+const TotalKeys:  [Class] int = [ 2**16, 2**20, 2**23, 2**25, 2**27 ],
+      MaxKey:     [Class] int = [ 2**11, 2**16, 2**19, 2**21, 2**23 ],
+      TotalIters: [Class] int = [ 10, 10, 10, 10, 10 ],
+      NumBuckets: [Class] int = [ 2**9, 2**10, 2**10, 2**10, 2**10 ];
 
 config const totalKeys = TotalKeys(probClass);
 config const maxKey = MaxKey(probClass);

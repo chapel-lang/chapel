@@ -104,6 +104,9 @@ foreach_ast(decl_members);
 
   virtual void   visitUsymExpr       (UnresolvedSymExpr* node);
 
+  virtual bool   enterLoopExpr     (LoopExpr*        node);
+  virtual void   exitLoopExpr      (LoopExpr*        node);
+
   //
   // The sub-classes of Stmt
   //

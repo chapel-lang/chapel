@@ -420,6 +420,8 @@ binary-trees: &binary-trees-base
     - upgrade jemalloc to 4.4.0 (#5278)
   04/03/17:
     - Updated to n=21 problem size and new rules (#5907)
+  06/23/18:
+    - Update more tests to compile with --warn-unstable (#9986)
 binarytrees-submitted:
   <<: *binary-trees-base
 
@@ -505,15 +507,15 @@ ep-b:
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
 
-ep.ml-perf:
+ep.ml-perf: &ep-ml-base
   07/26/17:
     - Update PR 5296 (#6722)
   05/23/18:
     - Fix problems with tuples (#9572)
-
+  06/26/18:
+    - Make associative domains of enums more standard (#9978)
 ep.ml-time:
-  07/26/17:
-    - Update PR 5296 (#6722)
+  <<: *ep-ml-base
 
 fannkuch-redux:
   07/22/14:
@@ -889,6 +891,8 @@ mg-b:
     - Optimize updateFluff (#6418)
   06/22/17:
     - Only perform packed updateFluff when there are multiple locales (#6512)
+  06/22/18:
+    - Make 'for' loop in dsiReallocate parallel (#9895)
 
 mg.ml-time:
   05/11/17:
@@ -1256,6 +1260,8 @@ timeVectorArray:
     - Resolve push_back / pop_front regressions w/ inline (#7397)
   12/05/17:
     - Enforce qualified refs after inlining (#7906)
+  06/22/18:
+    - Make 'for' loop in dsiReallocate parallel (#9895)
 
 views-forall-iter:
   10/12/17:

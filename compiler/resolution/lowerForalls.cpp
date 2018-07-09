@@ -1186,7 +1186,7 @@ static void handleIteratorForwarders(ForallStmt* fs,
                                      CallExpr*& iterCall, FnSymbol*& iterFn)
 {
   // These should have been replaced away in convertIteratorForLoopexpr().
-  INT_ASSERT(strncmp(iterFn->name, "_iterator_for_loopexpr", 22));
+  INT_ASSERT(strncmp(iterFn->name, astr_loopexpr_iter, strlen(astr_loopexpr_iter)));
 
   // Inline the forwarder, i.e. 'iterFn', like so:
   //

@@ -73,17 +73,10 @@ tags
 
 # Modules ignores.
 /modules/docs
-/modules/internal/tasks/muxed
-/modules/internal/threads/soft-threads
 /modules/webdocs
 
 # Runtime ignores.
-/runtime/etc/Makefile.threads-soft-threads
 /runtime/include/chpl_rt_utils.h
-/runtime/include/tasks/muxed
-/runtime/include/threads/soft-threads
-/runtime/src/tasks/muxed
-/runtime/src/threads/soft-threads
 /runtime/src/timers/
 
 # Spec ignores.

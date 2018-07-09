@@ -44,7 +44,7 @@ static IntentTag constIntentForType(Type* t) {
       t == dtCFnPtr ||
       t == dtVoid ||
       t->symbol->hasFlag(FLAG_RANGE) ||
-      t->symbol->hasFlag(FLAG_MANAGED_POINTER) ||
+      isManagedPtrType(t) ||
       // MPF: This rule seems odd to me
       (t->symbol->hasFlag(FLAG_EXTERN) && !isRecord(t))) {
     return INTENT_CONST_IN;
@@ -94,7 +94,7 @@ IntentTag blankIntentForType(Type* t) {
             || isTupleContainingRefMaybeConst(t)) {
     retval = INTENT_REF_MAYBE_CONST;
 
-  } else if (t->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
+  } else if (isManagedPtrType(t)) {
     // allow blank intent owned to be transferred out of
     retval = INTENT_IN;
 
@@ -221,7 +221,7 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
     // to correctly mark const / not const / maybe const.
     return INTENT_REF;
 
-  else if (arg->type->symbol->hasFlag(FLAG_MANAGED_POINTER) &&
+  else if (isManagedPtrType(arg->type) &&
            (arg->intent == INTENT_BLANK || arg->intent == INTENT_CONST) &&
            arg->hasFlag(FLAG_INSTANTIATED_FROM_ANY))
 

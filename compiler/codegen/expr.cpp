@@ -5663,17 +5663,6 @@ GenRet ContextCallExpr::codegen() {
 *                                                                           *
 ************************************* | ************************************/
 
-GenRet ForallExpr::codegen() {
-  GenRet ret;
-  INT_FATAL(this, "ForallExpr::codegen called");
-  return ret;
-}
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-
 GenRet NamedExpr::codegen() {
   GenRet ret;
   INT_FATAL(this, "NamedExpr::codegen not implemented");

@@ -45,6 +45,7 @@ proc masonHelp() {
   writeln('    env         Print environment variables recognized by mason');
   writeln('    clean       Remove the target directory');
   writeln('    doc         Build this project\'s documentation');
+  writeln('    test        Compile and run tests found in /test');
 }
 
 proc masonList() {
@@ -53,6 +54,7 @@ proc masonList() {
   writeln('      update             ');
   writeln('      build              ');
   writeln('      run                ');
+  writeln('      test                ');
   writeln('      search             ');
   writeln('      env                ');
   writeln('      clean              ');
@@ -89,6 +91,7 @@ proc masonBuildHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --release                Compile to target/release with optimizations (--fast)');
+  writeln('        --force                  Force Mason to build the project');
   writeln();
   writeln('When no options are provided, the following will take place:');
   writeln('   - Build from mason project if Mason.lock present');
@@ -139,3 +142,20 @@ proc masonEnvHelp() {
   writeln("Environment variables set by the user will be printed with an");
   writeln("asterisk at the end of the line.");
 }
+
+proc masonTestHelp() {
+  writeln("Run test files located within target/debug/test");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason test [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln("        --show                  Direct output of tests to stdout");
+  writeln("        --no-run                Compile tests without running them");
+  writeln("        --parallel              Run tests in parallel(sequential by default");
+  writeln();
+  writeln("Test configuration is up to the user");
+  writeln("Tests pass if they exit with status code 0");
+}
+

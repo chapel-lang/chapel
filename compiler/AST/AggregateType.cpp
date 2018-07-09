@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "initializerRules.h"
 #include "iterator.h"
+#include "LoopExpr.h"
 #include "UnmanagedClassType.h"
 #include "passes.h"
 #include "scopeResolve.h"
@@ -59,6 +60,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
 
   genericField        = 0;
   mIsGeneric          = false;
+  mIsGenericWithDefaults = false;
 
   classId             = 0;
 
@@ -132,6 +134,14 @@ void AggregateType::markAsGeneric() {
   mIsGeneric = true;
 }
 
+bool AggregateType::isGenericWithDefaults() const {
+  return mIsGenericWithDefaults;
+}
+
+void AggregateType::markAsGenericWithDefaults() {
+  mIsGenericWithDefaults = true;
+}
+
 void AggregateType::verify() {
   Type::verify();
 
@@ -192,12 +202,10 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
         // make this type generic.
         bool foundGenericWithoutInit = false;
         for_fields(field, at) {
-          if (VarSymbol* var = toVarSymbol(field)) {
-            DefExpr* def = var->defPoint;
-            if (def->init == NULL && at->fieldIsGeneric(field)) {
-              foundGenericWithoutInit = true;
-            }
-          }
+          bool hasDefault = false;
+          bool fieldGeneric = at->fieldIsGeneric(field, hasDefault);
+          if (fieldGeneric && !hasDefault)
+            foundGenericWithoutInit = true;
         }
         return foundGenericWithoutInit;
       }
@@ -209,8 +217,11 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
   return false;
 }
 
-bool AggregateType::fieldIsGeneric(Symbol* field) const {
+bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) const {
   bool retval = false;
+
+  DefExpr* def = field->defPoint;
+  INT_ASSERT(def);
 
   if (VarSymbol* var = toVarSymbol(field)) {
     if (var->hasFlag(FLAG_TYPE_VARIABLE) == true) {
@@ -223,7 +234,6 @@ bool AggregateType::fieldIsGeneric(Symbol* field) const {
                /* check for FLAG_SUPER_CLASS avoids infinite loop  */
                || (!var->hasFlag(FLAG_SUPER_CLASS) &&
                    var->type->symbol->hasFlag(FLAG_GENERIC))) {
-      DefExpr* def = var->defPoint;
 
       if (def->init == NULL && def->exprType == NULL) {
         // if we end up in this case.. the compiler infinite loops
@@ -235,8 +245,11 @@ bool AggregateType::fieldIsGeneric(Symbol* field) const {
                  isFieldTypeExprGeneric(def->exprType)) {
         retval = true;
       }
+
     }
   }
+
+  hasDefault = (def->init != NULL);
 
   return retval;
 }
@@ -587,7 +600,8 @@ bool AggregateType::setNextGenericField() {
   int index;
 
   for (index = genericField + 1; index <= fields.length; index++) {
-    if (fieldIsGeneric(getField(index)) == true) {
+    bool ignoredHasDefault = false;
+    if (fieldIsGeneric(getField(index), ignoredHasDefault) == true) {
       break;
     }
   }
@@ -656,7 +670,8 @@ AggregateType* AggregateType::generateType(SymbolMap& subs) {
   for (int index = 1; index <= numFields(); index = index + 1) {
     Symbol* field = getField(index);
 
-    if (fieldIsGeneric(field) == true) {
+    bool ignoredHasDefault = false;
+    if (fieldIsGeneric(field, ignoredHasDefault)) {
       if (Symbol* val = substitutionForField(field, subs)) {
         retval->genericField = index;
 
@@ -1667,14 +1682,14 @@ void AggregateType::buildConstructor() {
 
     if (exprType != NULL) {
       if (isBlockStmt(exprType) == false)
-        arg->typeExpr = new BlockStmt(exprType, BLOCK_TYPE);
+        arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_TYPE);
       else
-        arg->typeExpr = toBlockStmt(exprType);
+        arg->typeExpr = toBlockStmt(exprType->copy());
     }
 
     if (init != NULL) {
       if (hadInit == true)
-        arg->defaultExpr = new BlockStmt(init, BLOCK_SCOPELESS);
+        arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
       else {
         Expr* initVal = new SymExpr(gTypeDefaultToken);
 
@@ -1852,6 +1867,14 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         if (field->isType() == true) {
           arg->intent = INTENT_BLANK;
           arg->addFlag(FLAG_TYPE_VARIABLE);
+        }
+
+        if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
+          if (field->isType() == false) {
+            CallExpr* copy = new CallExpr("chpl__initCopy");
+            defPoint->init->replace(copy);
+            copy->insertAtTail(fe);
+          }
         }
 
         //

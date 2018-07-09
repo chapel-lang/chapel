@@ -19,7 +19,7 @@ config const numChameneos1 = 3;  // size of population 1
 config const numChameneos2 = 10; // size of population 2
 param numColors = 3;
 enum Color {blue=0, red=1, yellow=2};
-enum Digit {zero, one, two, three, four,
+enum Digit {zero=0, one, two, three, four,
             five, six, seven, eight, nine};
 config param CHAMENEOS_IDX_MASK = 0xFF;
 config param MEET_COUNT_SHIFT = 8;
@@ -225,7 +225,7 @@ proc printInfo(population : [] unmanaged Chameneos) {
 proc spellInt(n : int) {
   var s : string = n:string;
   for i in 1..s.length {
-    write(" ", (s[i]:int + 1):Digit);
+    write(" ", (s[i]:int):Digit);
   }
   writeln();
 }

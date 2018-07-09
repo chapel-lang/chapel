@@ -14,7 +14,7 @@ unset CHPL_NIGHTLY_TEST_DIRS
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.llvm.no-local"
 
 perf_args="-performance-description llvm-no-local -performance-configs no-local:v,llvm-no-local:v -sync-dir-suffix llvm-no-local"
-perf_args="${perf_args} -performance -numtrials 3 -startdate 12/15/17"
+perf_args="${perf_args} -performance -numtrials 1 -startdate 12/15/17"
 
 nightly_args="${nightly_args} -no-local"
 

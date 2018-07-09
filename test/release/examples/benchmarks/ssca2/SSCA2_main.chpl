@@ -94,7 +94,7 @@ module SSCA2_main
     var stopwatch : Timer;
     if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
-    var graph_types : domain (graph_type);
+    var graph_types = {graph_type.RMAT_associative..graph_type.Torus_4D};
 
     for this_graph_type in graph_types do {
 

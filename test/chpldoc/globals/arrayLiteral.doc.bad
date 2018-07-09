@@ -10,9 +10,9 @@ arrayLiteral.doc
 
    use arrayLiteral.doc;
 
-.. function:: proc _parloopexpr1(iterExpr)
+.. data:: var i
 
-.. data:: var x = AppendExpr.Call08
+.. data:: var x = AppendExpr.01
 
    This is an array created using the forall loop initialization 
 

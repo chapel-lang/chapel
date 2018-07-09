@@ -497,7 +497,7 @@ module ZMQ {
    */
   record Context {
     pragma "no doc"
-    var classRef: ContextClass;
+    var classRef: unmanaged ContextClass;
 
     /*
       Create a ZMQ context.
@@ -519,7 +519,7 @@ module ZMQ {
     }
 
     pragma "no doc"
-    proc acquire(newRef: ContextClass) {
+    proc acquire(newRef: unmanaged ContextClass) {
       classRef = newRef;
       classRef.incRefCount();
     }
@@ -592,7 +592,7 @@ module ZMQ {
    */
   record Socket {
     pragma "no doc"
-    var classRef: SocketClass;
+    var classRef: unmanaged SocketClass;
 
     pragma "no doc"
     var context: Context;
@@ -622,7 +622,7 @@ module ZMQ {
     }
 
     pragma "no doc"
-    proc acquire(newRef: SocketClass) {
+    proc acquire(newRef: unmanaged SocketClass) {
       classRef = newRef;
       classRef.incRefCount();
     }
@@ -806,7 +806,7 @@ module ZMQ {
     // send, enumerated types
     pragma "no doc"
     proc send(data: ?T, flags: int = 0) throws where isEnumType(T) {
-      try send(data:int, flags);
+      try send(chpl__enumToOrder(data), flags);
     }
 
     // send, records (of other supported things)
@@ -900,7 +900,7 @@ module ZMQ {
     // recv, enumerated types
     pragma "no doc"
     proc recv(type T, flags: int = 0) throws where isEnumType(T) {
-      return try recv(int, flags):T;
+      return try chpl__orderToEnum(recv(int, flags), T);
     }
 
     // recv, records (of other supported things)

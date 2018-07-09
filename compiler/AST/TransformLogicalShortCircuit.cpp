@@ -41,7 +41,8 @@ TransformLogicalShortCircuit::~TransformLogicalShortCircuit()
 
 bool TransformLogicalShortCircuit::enterCallExpr(CallExpr* call)
 {
-  if (call->primitive == 0)
+  // Lowering of LoopExprs will handle short-circuits itself
+  if (call->primitive == 0 && isLoopExpr(call->parentExpr) == false)
   {
     if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr))
     {

@@ -7,10 +7,10 @@ use LevelVariable_def;
 //| >    LevelSolution class    | >
 //|/____________________________|/
 class LevelSolution {
-  const level:    Level;
+  const level:    unmanaged Level;
 
-  var old_data:     LevelVariable;
-  var current_data: LevelVariable;
+  var old_data:     unmanaged LevelVariable;
+  var current_data: unmanaged LevelVariable;
   var old_time:     real;
   var current_time: real;
 
@@ -19,10 +19,10 @@ class LevelSolution {
   //|\''''''''''''''''''''|\
   //| >    initializer    | >
   //|/....................|/
-  proc init(level: Level) {
+  proc init(level: unmanaged Level) {
     this.level  = level;
-    old_data     = new LevelVariable(level = level);
-    current_data = new LevelVariable(level = level);
+    old_data     = new unmanaged LevelVariable(level = level);
+    current_data = new unmanaged LevelVariable(level = level);
   }
   // /|''''''''''''''''''''/|
   //< |    initializer    < |

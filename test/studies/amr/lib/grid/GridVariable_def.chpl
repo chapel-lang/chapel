@@ -23,7 +23,7 @@ use Grid_def;
 
 class GridVariable {
 
-  const grid: Grid;
+  const grid: unmanaged Grid;
   var  value: [grid.extended_cells] real;
 
 

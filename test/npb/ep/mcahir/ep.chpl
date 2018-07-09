@@ -28,22 +28,22 @@ use Random, Time, BlockDist, ReplicatedDist;
 
 enum classVals {S, W, A, B, C, D};
 
-const Class: domain(classVals);
+const Class = {classVals.S..classVals.D};
 
-const probSizes: [Class] int  = ( 24, 25, 28, 30, 32, 36 );
-const refSx:     [Class] real =				(-3.247834652034740e+03,
+const probSizes: [Class] int  = [ 24, 25, 28, 30, 32, 36 ];
+const refSx:     [Class] real =				[-3.247834652034740e+03,
 							 -2.863319731645753e+03,
 							 -4.295875165629892e+03,
 							  4.033815542441498e+04,
 							  4.764367927995374e+04,
-							  1.982481200946593e+05),
+							  1.982481200946593e+05],
 
-      refSy:     [Class] real =				(-6.958407078382297e+03,
+      refSy:     [Class] real =				[-6.958407078382297e+03,
 							 -6.320053679109499e+03,
 							 -1.580732573678431e+04,
 							 -2.660669192809235e+04,
 							 -8.084072988043731e+04,
-							 -1.020596636361769e+05);
+							 -1.020596636361769e+05];
 config const probClass    = classVals.S;
 config const printTimings = false;
 

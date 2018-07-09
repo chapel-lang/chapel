@@ -1077,6 +1077,47 @@ static void codegen_aggregate_def(AggregateType* ct) {
   ct->symbol->codegenDef();
 }
 
+//
+// Generates a .h file to complement the library file created using --library
+// This .h file will contain necessary #includes, any explicitly exported
+// functions, and the module initialization function declarations.
+//
+static void codegen_library_header(std::vector<FnSymbol*> functions) {
+  if (fLibraryCompile) {
+    fileinfo libhdrfile = { NULL, NULL, NULL };
+
+    // Name the generated header file after the executable (and assume any
+    // modifications to it have already happened)
+    openCFile(&libhdrfile, libmodeHeadername, "h");
+    // SIMPLIFYING ASSUMPTION: not handling LLVM just yet.  If were to, would
+    // probably put assignment to gChplCompilationConfig here
+
+    // follow convention of just not writing to the file if we can't open it
+    if (libhdrfile.fptr != NULL) {
+      FILE* save_cfile = gGenInfo->cfile;
+
+      gGenInfo->cfile = libhdrfile.fptr;
+
+      //genComment("Generated header file for use with %s",
+      //           executableFilename);
+
+      fprintf(libhdrfile.fptr, "#include \"stdchpl.h\"\n");
+
+      // Maybe need something here to support LLVM extern blocks?
+
+      // Print out the module initialization function headers and the exported
+      // functions
+      for_vector(FnSymbol, fn, functions) {
+        if (fn->hasFlag(FLAG_EXPORT)) {
+          fn->codegenPrototype();
+        }
+      }
+
+      gGenInfo->cfile = save_cfile;
+    }
+    closeCFile(&libhdrfile);
+  }
+}
 
 //
 // Produce compilation-time configuration info into a .c file and
@@ -1583,6 +1624,10 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   }
 
   codegen_header_compilation_config();
+
+  if (fLibraryCompile) {
+    codegen_library_header(functions);
+  }
 
   FILE* hdrfile = info->cfile;
 
@@ -2106,20 +2151,10 @@ static const char* getClangBuiltinWrappedName(const char* name)
 }
 #endif
 
-
-void codegen(void) {
-  if (no_codegen)
-    return;
-
-  if( fLLVMWideOpt ) {
-    // --llvm-wide-opt is picky about other settings.
-    // Check them here.
-    if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
-  }
-
-  // Set the executable name to the name of the file containing the
-  // main module (minus its path and extension) if it isn't set
-  // already.
+// Set the executable name to the name of the file containing the
+// main module (minus its path and extension) if it isn't set
+// already.  If in library mode, set the name of the header file as well.
+static void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
     const char* mainModFilename = mainMod->astloc.filename;
@@ -2132,22 +2167,73 @@ void codegen(void) {
       lastSlash++;
     }
 
-    // copy from that slash onwards into the executableFilename,
-    // saving space for a `\0` terminator
-    if (strlen(lastSlash) >= sizeof(executableFilename)) {
-      INT_FATAL("input filename exceeds executable filename buffer size");
-    }
-    strncpy(executableFilename, lastSlash, sizeof(executableFilename)-1);
-    executableFilename[sizeof(executableFilename)-1] = '\0';
+    // "Executable" name should be given a "lib" prefix in library compilation,
+    // and just the main module name in normal compilation.
+    if (fLibraryCompile) {
+      // If the header name isn't set either, don't use the prefix version
+      if (libmodeHeadername[0] == '\0') {
+        // copy from that slash onwards into the libmodeHeadername,
+        // saving space for a `\0` terminator
+        if (strlen(lastSlash) >= sizeof(libmodeHeadername)) {
+          INT_FATAL("input filename exceeds header filename buffer size");
+        }
+        strncpy(libmodeHeadername, lastSlash, sizeof(libmodeHeadername)-1);
+        libmodeHeadername[sizeof(libmodeHeadername)-1] = '\0';
+        // remove the filename extension from the library header name.
+        char* lastDot = strrchr(libmodeHeadername, '.');
+        if (lastDot == NULL) {
+          INT_FATAL(mainMod,
+                    "main module filename is missing its extension: %s\n",
+                    libmodeHeadername);
+        }
+        *lastDot = '\0';
+      }
+      if (strlen(lastSlash) >= sizeof(executableFilename) - 3) {
+        INT_FATAL("input filename exceeds executable filename buffer size");
+      }
+      strncpy(executableFilename, "lib", 3);
+      strncat(executableFilename, lastSlash, sizeof(executableFilename)-4);
+      executableFilename[sizeof(executableFilename)-1] = '\0';
 
-    // remove the filename extension
+    } else {
+      // copy from that slash onwards into the executableFilename,
+      // saving space for a `\0` terminator
+      if (strlen(lastSlash) >= sizeof(executableFilename)) {
+        INT_FATAL("input filename exceeds executable filename buffer size");
+      }
+      strncpy(executableFilename, lastSlash, sizeof(executableFilename)-1);
+      executableFilename[sizeof(executableFilename)-1] = '\0';
+    }
+
+    // remove the filename extension from the executable filename
     char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {
       INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
                 executableFilename);
     }
     *lastDot = '\0';
+
   }
+
+  // If we're in library mode and the executable name was set but the header
+  // name wasn't, use the executable name for the header name as well
+  if (fLibraryCompile && libmodeHeadername[0] == '\0') {
+    strncpy(libmodeHeadername, executableFilename, sizeof(executableFilename));
+  }
+}
+
+
+void codegen(void) {
+  if (no_codegen)
+    return;
+
+  if( fLLVMWideOpt ) {
+    // --llvm-wide-opt is picky about other settings.
+    // Check them here.
+    if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
+  }
+
+  setupDefaultFilenames();
 
   if( llvmCodegen ) {
 #ifndef HAVE_LLVM

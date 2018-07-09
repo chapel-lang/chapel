@@ -25,6 +25,7 @@
 
 #include "expr.h"
 #include "log.h"
+#include "LoopExpr.h"
 #include "runpasses.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -395,6 +396,50 @@ void AstDumpToHtml::visitUsymExpr(UnresolvedSymExpr* node) {
   if (isBlockStmt(node->parentExpr)) {
     fprintf(mFP, "%s\n", HTML_DL_close_tag);
   }
+}
+
+//
+// LoopExpr
+//
+bool AstDumpToHtml::enterLoopExpr(LoopExpr* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "%s\n", HTML_DL_open_tag);
+  }
+
+  fprintf(mFP, "(%d ", node->id);
+
+  if (node->forall) {
+    if (node->maybeArrayType) fprintf(mFP, "[ ");
+    else fprintf(mFP, "<B>forall</B> ");
+  } else {
+    fprintf(mFP, "<B>for</B> ");
+  }
+
+  if (node->indices) {
+    node->indices->accept(this);
+    fprintf(mFP, " <B>in</B> ");
+  }
+
+  if (node->zippered) fprintf(mFP, "<B>zip</B>");
+  node->iteratorExpr->accept(this);
+
+  if (node->maybeArrayType) fprintf(mFP, " <B>]</B>");
+  else fprintf(mFP, " <B>do</B>");
+
+  if (node->cond) {
+    fprintf(mFP, " <B>if</B> ");
+    node->cond->accept(this);
+    fprintf(mFP, " <B>then</B> ");
+  }
+
+  node->loopBody->accept(this);
+
+  fprintf(mFP, ")");
+
+  return false;
+}
+
+void AstDumpToHtml::exitLoopExpr(LoopExpr* node) {
 }
 
 

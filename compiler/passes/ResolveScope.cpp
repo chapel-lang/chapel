@@ -44,6 +44,7 @@
 #include "ResolveScope.h"
 
 #include "ForallStmt.h"
+#include "LoopExpr.h"
 #include "scopeResolve.h"
 
 static std::map<BaseAST*, ResolveScope*> sScopeMap;
@@ -75,6 +76,9 @@ ResolveScope* ResolveScope::findOrCreateScopeFor(DefExpr* def) {
 
     } else if (TypeSymbol* typeSymbol = toTypeSymbol(ast)) {
       retval = new ResolveScope(typeSymbol, NULL);
+
+    } else if (LoopExpr* fe = toLoopExpr(ast)) {
+      retval = new ResolveScope(fe, NULL);
 
     } else {
       INT_ASSERT(false);
@@ -120,53 +124,18 @@ ResolveScope::ResolveScope(ModuleSymbol*       modSymbol,
   mAstRef = modSymbol;
   mParent = parent;
 
+  // Use modSymbol->block for sScopeMap
   INT_ASSERT(getScopeFor(modSymbol->block) == NULL);
-
   sScopeMap[modSymbol->block] = this;
 }
 
-ResolveScope::ResolveScope(FnSymbol*           fnSymbol,
+ResolveScope::ResolveScope(BaseAST*            ast,
                            const ResolveScope* parent) {
-  mAstRef = fnSymbol;
+  mAstRef = ast;
   mParent = parent;
 
-  INT_ASSERT(getScopeFor(fnSymbol) == NULL);
-
-  sScopeMap[fnSymbol] = this;
-}
-
-ResolveScope::ResolveScope(TypeSymbol*         typeSymbol,
-                           const ResolveScope* parent) {
-  Type* type = typeSymbol->type;
-
-  INT_ASSERT(isEnumType(type) || isAggregateType(type));
-
-  mAstRef = typeSymbol;
-  mParent = parent;
-
-  INT_ASSERT(getScopeFor(typeSymbol) == NULL);
-
-  sScopeMap[typeSymbol] = this;
-}
-
-ResolveScope::ResolveScope(ForallStmt*         forallStmt,
-                           const ResolveScope* parent) {
-  mAstRef = forallStmt;
-  mParent = parent;
-
-  INT_ASSERT(getScopeFor(forallStmt) == NULL);
-
-  sScopeMap[forallStmt] = this;
-}
-
-ResolveScope::ResolveScope(BlockStmt*          blockStmt,
-                           const ResolveScope* parent) {
-  mAstRef = blockStmt;
-  mParent = parent;
-
-  INT_ASSERT(getScopeFor(blockStmt) == NULL);
-
-  sScopeMap[blockStmt] = this;
+  INT_ASSERT(getScopeFor(ast) == NULL);
+  sScopeMap[ast] = this;
 }
 
 /************************************* | **************************************
@@ -283,6 +252,7 @@ void ResolveScope::addBuiltIns() {
   extend(gDivZeroChecking);
   extend(gPrivatization);
   extend(gLocal);
+  extend(gWarnUnstable);
   extend(gNodeID);
 }
 

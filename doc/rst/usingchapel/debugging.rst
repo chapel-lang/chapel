@@ -66,8 +66,7 @@ flags are as follows:
                      variable.  Running with this flag will also cause
                      the executable to attempt to automatically detect
                      deadlock for single-locale executions.  This is
-                     only supported with ``CHPL_TASKS=qthreads`` or
-                     ``CHPL_TASKS=fifo``.
+                     only supported with ``CHPL_TASKS=fifo``.
 
   -t, --taskreport   When ``<CTRL-C>`` is entered during a program
                      executing under this flag, a list of pending and
