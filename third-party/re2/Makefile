@@ -78,6 +78,9 @@ $(RE2_H_FILE): $(RE2_BUILD_SUBDIR)
 	mkdir -p ../build/$(RE2_UNIQUE_SUBDIR) && \
 	rm -rf ../build/$(RE2_UNIQUE_SUBDIR) && \
 	mv obj ../build/$(RE2_UNIQUE_SUBDIR)
+ifneq (, $(CHPL_RE2_VALGRIND_SUPPORT))
+	touch $(RE2_INSTALL_DIR)/CHPL_RE2_VALGRIND_SUPPORT
+endif
 
 re2: $(RE2_H_FILE)
 
