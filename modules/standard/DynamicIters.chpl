@@ -106,7 +106,6 @@ where tag == iterKind.leader
   const remain:rType=densify(c,c);
 
   // If the number of tasks is insufficient, yield in serial
-  if c.length == 0 then halt("The range is empty");
   if nTasks == 1 then {
     if debugDynamicIters then
       writeln("Dynamic Iterator: serial execution because there is not enough work");
@@ -282,7 +281,6 @@ where tag == iterKind.leader
   type rType=c.type;
   var remain:rType = densify(c,c);
   // If the number of tasks is insufficient, yield in serial
-  if c.length == 0 then halt("The range is empty");
   if nTasks == 1 then {
     if debugDynamicIters then
       writeln("Guided Iterator: serial execution because there is not enough work");
@@ -488,7 +486,6 @@ where tag == iterKind.leader
   type rType=c.type;
 
   // If the number of tasks is insufficient, yield in serial
-  if c.length == 0 then halt("The range is empty");
   if nTasks == 1 then {
     if debugDynamicIters then
       writeln("Adaptive work-stealing Iterator: serial execution because there is not enough work");
