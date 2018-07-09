@@ -1105,7 +1105,9 @@ static void processManagedNew(CallExpr* newCall) {
 
 static void fixupExportedArrayReturns(FnSymbol* fn);
 static bool isVoidReturn(CallExpr* call);
-static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret);
+static bool hasGenericArrayReturn(FnSymbol* fn);
+static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
+                          bool genericArrayRet);
 
 static void normalizeReturns(FnSymbol* fn) {
   SET_LINENO(fn);
@@ -1206,13 +1208,15 @@ static void normalizeReturns(FnSymbol* fn) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, retval));
   }
 
+  bool genericArrayRet = hasGenericArrayReturn(fn);
+
   // Now, for each return statement appearing in the function body,
   // move the value of its body into the declared return value.
   for_vector(CallExpr, ret, rets) {
     SET_LINENO(ret);
 
     if (isIterator == false && retval != NULL) {
-      insertRetMove(fn, retval, ret);
+      insertRetMove(fn, retval, ret, genericArrayRet);
     }
 
     // replace with GOTO(label)
@@ -1223,6 +1227,10 @@ static void normalizeReturns(FnSymbol* fn) {
     } else {
       ret->remove();
     }
+  }
+
+  if (genericArrayRet) {
+    fn->retExprType->remove();
   }
 
   if (labelIsUsed == false) {
@@ -1274,7 +1282,7 @@ static void normalizeYields(FnSymbol* fn) {
       retval->addFlag(FLAG_YVV);
 
       yield->insertBefore(new DefExpr(retval));
-      insertRetMove(fn, retval, yield);
+      insertRetMove(fn, retval, yield, false);
       yield->insertBefore(new CallExpr(PRIM_YIELD, retval));
       yield->remove();
     }
@@ -1293,13 +1301,62 @@ static bool isVoidReturn(CallExpr* call) {
   return retval;
 }
 
-static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
+static bool hasGenericArrayReturn(FnSymbol* fn) {
+  if (returnsArray(fn)) {
+    BlockStmt* typeExpr = fn->retExprType;
+
+    CallExpr* call = toCallExpr(typeExpr->body.tail);
+    int nArgs = call->numActuals();
+    Expr* domExpr = call->get(1);
+    Expr* eltExpr = nArgs == 2 ? call->get(2) : NULL;
+    bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
+
+    if (noDom || eltExpr == NULL) {
+      // Either the domain is not provided explicitly as part of the return
+      // type, or the element type is not provided, or both
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
+                                              VarSymbol* retval,
+                                              CallExpr* ret,
+                                              Expr* retExpr) {
+  BlockStmt* typeExpr = fn->retExprType;
+
+  CallExpr* call = toCallExpr(typeExpr->body.tail);
+  int nArgs = call->numActuals();
+  Expr* domExpr = call->get(1);
+  Expr* eltExpr = nArgs == 2 ? call->get(2) : NULL;
+  bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
+
+  if (!noDom) {
+    // Add checks against the declared domain
+
+  }
+
+  if (eltExpr != NULL) {
+    // Add checks against the declared element type
+  }
+
+  ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
+}
+
+static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
+                          bool genericArrayRet) {
   Expr* retExpr = ret->get(1)->remove();
 
   if (fn->returnsRefOrConstRef() == true) {
     CallExpr* addrOf = new CallExpr(PRIM_ADDR_OF, retExpr);
 
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, addrOf));
+
+  } else if (genericArrayRet) {
+    modifyPartiallyGenericArrayReturn(fn, retval, ret, retExpr);
 
   } else if (fn->retExprType != NULL) {
     Expr*     tail   = fn->retExprType->body.tail;
