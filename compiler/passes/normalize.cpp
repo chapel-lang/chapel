@@ -1358,6 +1358,20 @@ static void normalizeCallToConstructor(CallExpr* call) {
           if (subCall->partialTag == true) {
             fixPrimNew(call);
           }
+        } else if (subCall->partialTag == true && subCall->methodTag == true) {
+          // This pattern can happen for an aggregate like:
+          //   class C {
+          //     type t = A;
+          //     var x : t;
+          //     proc init(i:int) {
+          //       x = new t(i); // relevant 'new'
+          //     }
+          //   }
+          //
+          // Transforms "new (call ( call ('t' _mt this) args ) )" into:
+          //   new ( call ('t' _mt this) args )
+          //
+          fixPrimNew(call);
         }
       }
     }
