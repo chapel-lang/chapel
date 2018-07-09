@@ -2457,21 +2457,30 @@ static bool isNewExpr(Expr* expr) {
 }
 
 static AggregateType* typeForNewExpr(CallExpr* newExpr) {
-  AggregateType* retval = NULL;
 
   if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
+
+    // Avoid normalize-time type inference for managed new
+    for_actuals(actual, constructor) {
+      if (NamedExpr* ne = toNamedExpr(actual))
+        if (ne->name == astr_chpl_manager)
+          if (SymExpr* se = toSymExpr(ne->actual))
+            if (isTypeSymbol(se->symbol()))
+              return NULL;
+    }
+
     if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
       if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
         if (AggregateType* type = toAggregateType(sym->type)) {
           if (isClass(type) == true || isRecord(type) == true) {
-            retval = type;
+            return type;
           }
         }
       }
     }
   }
 
-  return retval;
+  return NULL;
 }
 
 // Internal and Standard modules always honor no-init
@@ -3478,6 +3487,19 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   } else if (call->isNamed("*")) {
     // it happens to be that 1st actual == size so that will be checked below
     addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried));
+  } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+    // Check that whatever it is is a borrow
+    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_SUBTYPE,
+                                              dtBorrowed->symbol, queried));
+    // don't try to do anything else if there isn't a nested call
+    if (!isCallExpr(call->get(1)))
+        return;
+
+    // For nested calls, proceed as if the PRIM_TO_BORROWED_CLASS wasn't there
+    // that's because the borrowed class is the 'canonical' class representation
+    // used in the compiler.
+    call = toCallExpr(call->get(1));
+
   } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
     if (CallExpr* subCall = toCallExpr(call->get(1))) {
       if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {
