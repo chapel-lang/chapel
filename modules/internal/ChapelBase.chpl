@@ -1113,8 +1113,8 @@ module ChapelBase {
 
   inline proc _cast(type t:chpl_anybool, x:enumerated)
     return x: int: bool;
-  inline proc _cast(type t:integral, x:enumerated)
-    return __primitive("cast", t, x);
+  // _cast(type t:integral, x:enumerated)
+  // is generated for each enum in buildDefaultFunctions
   inline proc _cast(type t:chpl_anyreal, x:enumerated)
     return x: int: real;
 
