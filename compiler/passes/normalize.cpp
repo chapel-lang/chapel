@@ -2262,7 +2262,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
         insertPostInit(var, argExpr);
 
         if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
-          if (strcmp(ne->name, astr_chpl_manager) == 0) {
+          if (ne->name == astr_chpl_manager) {
             ne->remove();
           }
         }
@@ -2408,7 +2408,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       insertPostInit(var, argExpr);
 
       if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
-        if (strcmp(ne->name, astr_chpl_manager) == 0) {
+        if (ne->name == astr_chpl_manager) {
           ne->remove();
         }
       }
@@ -2442,7 +2442,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       insertPostInit(initExprTemp, argExpr);
 
       if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
-        if (strcmp(ne->name, astr_chpl_manager) == 0) {
+        if (ne->name == astr_chpl_manager) {
           ne->remove();
         }
       }
