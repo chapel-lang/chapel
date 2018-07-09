@@ -1162,45 +1162,6 @@ static void insertCopiesForYields()
   }
 }
 
-/************************************* | **************************************
-*                                                                             *
-* Insert reference temps for function arguments that expect them.             *
-*                                                                             *
-************************************** | *************************************/
-
-static void insertReferenceTemps() {
-  forv_Vec(CallExpr, call, gCallExprs) {
-    // Is call in the tree?
-    if (call->inTree()) {
-      if (call->isResolved() || call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-        insertReferenceTemps(call);
-      }
-    }
-  }
-}
-
-void insertReferenceTemps(CallExpr* call) {
-  for_formals_actuals(formal, actual, call) {
-    if (formal->type == actual->typeInfo()->refType &&
-        // spare ref formals
-        !(formal->intent & INTENT_FLAG_REF))
-    {
-      SET_LINENO(call);
-
-      VarSymbol* tmp    = newTemp("_ref_tmp_", formal->qualType());
-
-      tmp->addFlag(FLAG_REF_TEMP);
-      actual->replace(new SymExpr(tmp));
-
-      Expr*      stmt   = call->getStmtExpr();
-      CallExpr*  addrOf = new CallExpr(PRIM_ADDR_OF, actual);
-
-      stmt->insertBefore(new DefExpr(tmp));
-      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, addrOf));
-    }
-  }
-}
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -1385,7 +1346,6 @@ void callDestructors() {
   lateConstCheck(NULL);
 
   insertGlobalAutoDestroyCalls();
-  insertReferenceTemps();
 
   checkForErroneousInitCopies();
 

@@ -95,9 +95,6 @@ void checkReturnTypesHaveRefTypes();
 void buildDefaultDestructor(AggregateType* ct);
 void buildEnumFunctions(EnumType* et);
 
-// callDestructors.cpp
-void insertReferenceTemps(CallExpr* call);
-
 // createTaskFunctions.cpp -> implementForallIntents.cpp
 extern Symbol* markPruned;
 extern Symbol* markUnspecified;

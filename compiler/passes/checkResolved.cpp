@@ -164,7 +164,10 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 
           if (refs.find(se->symbol()) != refs.end() &&
               arg->intent == INTENT_REF)
+{
+  printf("insertReferenceTemps may be needed?\n"); //vass
             return 1;
+ }
         }
       }
     }

@@ -358,7 +358,6 @@ static Symbol* insertAutoCopyForTaskArg
     fcall->insertBefore(new DefExpr(valTmp));
     CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var);
     fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
-    insertReferenceTemps(autoCopyCall);
     var = valTmp;
   }
 
@@ -386,7 +385,6 @@ static void insertAutoDestroyForVar(Symbol *arg, FnSymbol* wrap_fn)
 
   CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn, arg);
   wrap_fn->insertAtTail(autoDestroyCall);
-  insertReferenceTemps(autoDestroyCall);
 }
 
 static void
