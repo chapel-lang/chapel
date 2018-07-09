@@ -30,7 +30,7 @@ proc main() {
 
   // In #10085, this call to Map's initializer would result in a segfault
   // because the compiler used the static type of 'domain_type' instead of its
-  // runtime type. This lead to use of uninitialized memory when creating the
+  // runtime type. This led to use of uninitialized memory when creating the
   // 'parent_domain' field.
   var M2 = new owned Map( sD );
 
