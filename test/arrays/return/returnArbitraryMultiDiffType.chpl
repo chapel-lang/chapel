@@ -1,4 +1,4 @@
-proc foo(type t, fiveInts: bool): [] {
+proc foo(type t, param fiveInts: bool): [] {
   if (fiveInts) {
     var x: [1..5] int;
     return x;
