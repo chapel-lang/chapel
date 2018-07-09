@@ -113,6 +113,7 @@ EXTRA_DIST += \
 			 affinity/hwloc_via_chapel.c \
 			 affinity/binders.c \
 			 affinity/hwloc_v2.c \
+			 affinity/no.c \
 			 affinity/sys.c \
 			 affinity/libnuma.c \
 			 affinity/libnumaV2.c \

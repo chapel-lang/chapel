@@ -33,3 +33,5 @@ as follows:
   fails.  Doing so ensures that when the Chapel runtime and Qthreads
   both use hwloc topologies, they use the same one.  This has both
   functional and performance benefits.
+* Added missing `no` affinity shim (src/affinity/no.c) that was omitted
+  from the official qthreads release. Only used when CHPL_HWLOC=none
