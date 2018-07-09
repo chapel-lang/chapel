@@ -460,9 +460,9 @@ static bool inferConstRef(Symbol* sym) {
   return isConstRef;
 }
 
-static bool passedToInitOrRetarg(SymExpr* use, FnSymbol* calledFn) {
-  ArgSymbol* form = actual_to_formal(use);
-
+static bool passedToInitOrRetarg(SymExpr* use,
+                                 ArgSymbol* form, FnSymbol* calledFn)
+{
   if (form->hasFlag(FLAG_RETARG))
     return true;
 
@@ -507,7 +507,8 @@ static bool onlyUsedForInitOrRetarg(Symbol* ref, CallExpr* defCall) {
     CallExpr* call = toCallExpr(use->parentExpr);
 
     if (FnSymbol*  fn = call->resolvedFunction()) {
-      if (passedToInitOrRetarg(use, fn)) {
+      ArgSymbol* form = actual_to_formal(use);
+      if (passedToInitOrRetarg(use, form, fn)) {
         INT_ASSERT(!seenInitOrRetarg); // init/retarg happens just once
         seenInitOrRetarg = true;
       } else {
@@ -550,18 +551,13 @@ static bool inferConst(Symbol* sym) {
 
     CallExpr* parent = toCallExpr(call->parentExpr);
 
-    if (call->isResolved()) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
       ArgSymbol* form = actual_to_formal(use);
 
-      //
-      // If 'sym' is constructed through a _retArg, we can consider that to
-      // be a single 'def'.
-      //
-      if (form->hasFlag(FLAG_RETARG)) {
-        numDefs += 1;
-      }
-      else if (form->isRef()) {
-        if (!inferConstRef(form)) {
+      if (form->isRef()) {
+        if (passedToInitOrRetarg(use, form, fn)) {
+          numDefs += 1;
+        } else if (!inferConstRef(form)) {
           isConstVal = false;
         }
       }
