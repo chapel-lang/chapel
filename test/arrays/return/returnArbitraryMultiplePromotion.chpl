@@ -1,10 +1,8 @@
 proc inc(X: [] real, two: bool): [] real {
   if (two) {
-    var ret = X + 2;
-    return ret;
+    return X + 2;
   } else {
-    var ret = X + 1;
-    return ret;
+    return X + 1;
   }
 }
 
