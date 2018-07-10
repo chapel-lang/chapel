@@ -1,6 +1,11 @@
 
 extern "struct sys_stat_s" record chpl_stat {
-  var st_mtimespec: off_t;
+  var st_mtim: chpl_timespec;
+}
+
+extern "struct timespec" record chpl_timespec {
+  var tv_nsec: int;
+  var tv_sec: int;
 }
 
 proc getLastModified(filename: string) : int {
@@ -10,9 +15,11 @@ proc getLastModified(filename: string) : int {
   var file_path = filename.c_str();
 
   if (sys_stat(file_path, file_buf) == 0) {
-    return file_buf.st_mtimespec;
+    return file_buf.st_mtim.tv_sec;
     }
   return -1;
 }
 
-writeln(getLastModified("sys-stat-extern.chpl"));
+getLastModified("sys-stat-extern.chpl");
+writeln();
+

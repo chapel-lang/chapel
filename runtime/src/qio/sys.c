@@ -551,19 +551,19 @@ err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out)
 void stat_to_sys_stat(const char* path, sys_stat_t* out_buf, struct stat* in_buf)
 {
   stat(path, in_buf);
-  out_buf -> st_dev = in_buf -> st_dev;
-  out_buf -> st_ino = in_buf -> st_ino;
-  out_buf -> st_mode = in_buf -> st_mode;
-  out_buf -> st_nlink = in_buf -> st_nlink;
-  out_buf -> st_uid = in_buf -> st_uid;
-  out_buf -> st_gid = in_buf -> st_gid;
-  out_buf -> st_rdev = in_buf -> st_rdev;
-  out_buf -> st_size = in_buf -> st_size;
-  out_buf -> st_blksize = in_buf -> st_blksize;
-  out_buf -> st_blocks = in_buf -> st_blocks;
-  out_buf -> st_mtimespec = in_buf -> st_mtime;
-  out_buf -> st_atimespec = in_buf -> st_atime;
-  out_buf -> st_ctimespec = in_buf -> st_ctime;
+  out_buf->st_dev = in_buf->st_dev;
+  out_buf->st_ino = in_buf->st_ino;
+  out_buf->st_mode = in_buf->st_mode;
+  out_buf->st_nlink = in_buf->st_nlink;
+  out_buf->st_uid = in_buf->st_uid;
+  out_buf->st_gid = in_buf->st_gid;
+  out_buf->st_rdev = in_buf->st_rdev;
+  out_buf->st_size = in_buf->st_size;
+  out_buf->st_blksize = in_buf->st_blksize;
+  out_buf->st_blocks = in_buf->st_blocks;
+  out_buf->st_mtim = in_buf->st_mtimespec;
+  out_buf->st_atim = in_buf->st_atimespec;
+  out_buf->st_ctim = in_buf->st_ctimespec;
 }
 
 

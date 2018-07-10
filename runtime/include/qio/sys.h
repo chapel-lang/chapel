@@ -66,19 +66,19 @@ typedef struct sys_statfs_s {
 } sys_statfs_t;
 
 typedef struct sys_stat_s {
-  dev_t       st_dev;       /* Device ID of device containing file */
-  ino_t       st_ino;       /* File serial number. */
-  mode_t      st_mode;      /* Mode of file (see below). */
-  nlink_t     st_nlink;     /* Number of hard links to the file. */
-  uid_t       st_uid;       /* User ID of file. */
-  gid_t       st_gid;       /* Group ID of file.  */
-  dev_t       st_rdev;      /* Device ID (if file is character or block special). */
-  off_t       st_size;      /* File Size in bytes */
-  off_t       st_atimespec; /* Last data access timestamp.  */
-  off_t       st_mtimespec; /* Last data modification timestamp. */
-  off_t       st_ctimespec; /* Last file status change timestamp. */
-  blksize_t   st_blksize;   /* A file system-specific preferred I/O block size for this object. */
-  blkcnt_t    st_blocks;    /* Number of blocks allocated for this object. */
+  dev_t       st_dev;         /* Device ID of device containing file */
+  ino_t       st_ino;         /* File serial number. */
+  mode_t      st_mode;        /* Mode of file (see below). */
+  nlink_t     st_nlink;       /* Number of hard links to the file. */
+  uid_t       st_uid;         /* User ID of file. */
+  gid_t       st_gid;         /* Group ID of file.  */
+  dev_t       st_rdev;        /* Device ID (if file is character or block special). */
+  off_t       st_size;        /* File Size in bytes */
+  struct timespec    st_atim; /* Last data access timestamp.  */
+  struct timespec    st_mtim; /* Last data modification timestamp. */
+  struct timespec    st_ctim; /* Last file status change timestamp. */
+  blksize_t   st_blksize;     /* A file system-specific preferred I/O block size for this object. */
+  blkcnt_t    st_blocks;      /* Number of blocks allocated for this object. */
 } sys_stat_t;
 
 void stat_to_sys_stat(const char* path, sys_stat_t* out_buf, struct stat* in_buf);
