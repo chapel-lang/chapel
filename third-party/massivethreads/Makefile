@@ -19,6 +19,10 @@ CHPL_MASSIVETHREADS_CFG_OPTIONS += --enable-myth-ld=no \
                                    --enable-eco-mode=no \
                                    --enable-bind-workers=no
 
+ifeq ($(CHPL_LIBMODE),shared)
+CFLAGS += $(SHARED_LIB_CFLAGS)
+endif
+
 CHPL_MASSIVETHREADS_CFG_OPTIONS += $(CHPL_MASSIVETHREADS_MORE_CFG_OPTIONS)
 
 default: all

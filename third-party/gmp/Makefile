@@ -42,6 +42,11 @@ ifneq (, $(filter %32,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_GMP_ABI_ARG = ABI=32
 endif
 
+ifeq ($(CHPL_LIBMODE),shared)
+CFLAGS += $(SHARED_LIB_CFLAGS)
+CXXFLAGS += $(SHARED_LIB_CFLAGS)
+endif
+
 CHPL_GMP_CFG_OPTIONS += $(CHPL_GMP_MORE_CFG_OPTIONS)
 
 default: all

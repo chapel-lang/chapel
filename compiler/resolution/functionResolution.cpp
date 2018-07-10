@@ -622,7 +622,19 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType == dtAnyBool && is_bool_type(actualType)) {
+    return true;
+  }
+
   if (formalType == dtAnyComplex && is_complex_type(actualType)) {
+    return true;
+  }
+
+  if (formalType == dtAnyImag && is_imag_type(actualType)) {
+    return true;
+  }
+
+  if (formalType == dtAnyReal && is_real_type(actualType)) {
     return true;
   }
 
@@ -653,7 +665,8 @@ bool canInstantiate(Type* actualType, Type* formalType) {
                      canonicalClassType(formalType)))
     return true;
 
-  if (formalType == dtBorrowed && isClass(actualType))
+  if (formalType == dtBorrowed && isClass(actualType) &&
+     (actualType == dtObject || !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
     return true;
 
   if (AggregateType* atActual = toAggregateType(actualType)) {

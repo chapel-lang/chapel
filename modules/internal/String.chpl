@@ -385,7 +385,7 @@ module String {
           on the same locale as the string.
      */
     inline proc c_str(): c_string {
-      inline proc _cast(type t, x) where t:c_string && x.type:bufferType {
+      inline proc _cast(type t:c_string, x:bufferType) {
         return __primitive("cast", t, x);
       }
 
@@ -397,7 +397,7 @@ module String {
 
     pragma "no doc"
     inline proc param c_str() param : c_string {
-      inline proc _cast(type t, x) where t:c_string && x.type:string {
+      inline proc _cast(type t:c_string, x:string) {
         return __primitive("cast", t, x);
       }
       return this:c_string; // folded out in resolution

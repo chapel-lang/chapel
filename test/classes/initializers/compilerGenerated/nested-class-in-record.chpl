@@ -6,7 +6,7 @@ record enclosing {
   }
 
   proc checkInner() {
-    var myInner = new inner(true);
+    var myInner = new unmanaged inner(true);
     writeln(myInner);
     delete myInner;
   }

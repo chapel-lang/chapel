@@ -297,7 +297,7 @@ module ChapelError {
        Iterate over those errors contained that are the passed type
        or a subclass of that type.
      */
-    iter filter(type t) where _to_borrowed(t):borrowed Error {
+    iter filter(type t) where isSubtype(_to_borrowed(t),borrowed Error) {
       for e in these() {
         var tmp = _to_unmanaged(e):_to_unmanaged(t);
         if tmp then

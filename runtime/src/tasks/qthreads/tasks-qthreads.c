@@ -126,7 +126,7 @@ static void profile_print(void)
 //
 volatile int chpl_qthread_done_initializing;
 static aligned_t canexit = 0;
-static pthread_mutex_t done_init_final_mux = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Make qt env sizes uniform. Same as qt, but they use the literal everywhere
 #define QT_ENV_S 100
@@ -288,15 +288,24 @@ static void SIGINT_handler(int sig)
     chpl_exit_any(1);
 }
 
-// Tasks
-
+// We call this routine in a separate pthread for 2 main reasons:
+// 1) qthread_initialize() converts the current thread into a shephered (the
+//    "real mccoy" shepherd) and creates a qthread on top of that. If we called
+//    this from the main process we'd have to be very careful about using
+//    pthread mutexes, sched_yield, and other similar constructs that don't
+//    play well with qthreads in the rest of the runtime. That's a lot of
+//    effort and easy to forget about, so we want to avoid that.
+//
+// 2) qthread_finalize() only does anything when called from the original
+//    context that called qthread_initialize, so this is an easy way to ensure
+//    that.
 static void *initializer(void *junk)
 {
     qthread_initialize();
     qthread_purge(&canexit);
-    (void) pthread_mutex_lock(&done_init_final_mux);  // implicit memory fence
+    (void) pthread_mutex_lock(&init_mutex);
     chpl_qthread_done_initializing = 1;
-    (void) pthread_mutex_unlock(&done_init_final_mux);
+    (void) pthread_mutex_unlock(&init_mutex);
 
     qthread_readFF(NULL, &canexit);
 

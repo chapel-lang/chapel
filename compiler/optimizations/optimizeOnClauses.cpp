@@ -323,6 +323,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_CHECK_ERROR:
   case PRIM_TO_UNMANAGED_CLASS:
   case PRIM_TO_BORROWED_CLASS:
+  case PRIM_NEEDS_AUTO_DESTROY:
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
