@@ -1,7 +1,0 @@
-feature request: support instantiating a class through a type
-variable. This would improve (and perhaps complete) Chapel's support
-for resolving function calls within generic functions at the point of
-instantiation.
-
-After PR #3728 this test should work but instead it reveals
-a different bug.

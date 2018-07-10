@@ -3548,7 +3548,8 @@ module HDF5_HL {
        the locale where the corresponding data was read.
      */
     proc readAllHDF5Files(locs: [] locale, dirName: string, dsetName: string,
-                          filenameStart: string, type eltType, param rank) {
+                          filenameStart: string, type eltType, param rank,
+                          preprocessor: HDF5Preprocessor = nil) {
       use BlockDist, HDF5_WAR, FileSystem;
 
       var filenames: [1..0] string;
@@ -3559,12 +3560,14 @@ module HDF5_HL {
         }
       }
 
-      return readAllNamedHDF5Files(locs, filenames, dsetName, eltType, rank);
+      return readAllNamedHDF5Files(locs, filenames, dsetName,
+                                   eltType, rank, preprocessor=preprocessor);
     }
 
     /* Read all HDF5 files named in the filenames array into arrays */
     proc readAllNamedHDF5Files(locs: [] locale, filenames: [] string,
-                               dsetName: string, type eltType, param rank) {
+                               dsetName: string, type eltType, param rank,
+                               preprocessor: HDF5Preprocessor = nil) {
       use BlockDist, HDF5_WAR;
       const Space = filenames.domain;
       const BlockSpace = Space dmapped Block(Space, locs,
@@ -3590,6 +3593,7 @@ module HDF5_HL {
 
         const D = {(...rngTup)};
 
+        if preprocessor then preprocessor.preprocess(data);
         f = new ArrayWrapper(data.eltType, rank, D, reshape(data, D));
         H5Fclose(file_id);
       }
@@ -3606,6 +3610,10 @@ module HDF5_HL {
     proc readNamedHDF5FilesInto1DArrayInt(filenames: [] string,
                                           fnCols: int, fnRows: int,
                                           dsetName: string) {
+      // Would like to add an argument:
+      // `preprocessor: HDF5Preprocessor=nil`
+      // and forward it along to the `readAllNamedHDF5Files` call, but the
+      // Python->Chapel interface is not currently able to handle Chapel types
       use BlockDist;
 
       var filenames2D = reshape(filenames, {1..fnCols, 1..fnRows});
@@ -3739,7 +3747,8 @@ module HDF5_HL {
        be relaxed in the future.
      */
     iter hdf5ReadChunks(filename: string, dset: string,
-                        chunkShape: domain, type eltType)
+                        chunkShape: domain, type eltType,
+                        preprocessor: HDF5Preprocessor=nil)
       where isRectangularDom(chunkShape) {
 
       param outRank = chunkShape.rank;
@@ -3787,6 +3796,8 @@ module HDF5_HL {
                     dataspace, H5P_DEFAULT, c_ptrTo(A));
 
             H5Sclose(memspace);
+
+            if preprocessor then preprocessor.preprocess(A);
             yield A;
           }
         } else {
@@ -3858,6 +3869,7 @@ module HDF5_HL {
 
           H5Sclose(memspace);
 
+          if preprocessor then preprocessor.preprocess(A);
           yield A;
         }
       } else if outRank < dsetRank {
@@ -3874,6 +3886,23 @@ module HDF5_HL {
     }
 
 
+    /* A class to preprocess arrays returned by HDF5 file reading procedures.
+       Procedures in this module that take an `HDF5Preprocessor` argument can
+       accept a subclass of this class with the `preprocess` method overridden
+       to do preprocessing as desired before returning the data read.
+     */
+    class HDF5Preprocessor {
+      proc preprocess(A: []) {
+        use ChapelHaltWrappers;
+        pureVirtualMethodHalt();
+      }
+    }
+
+    // There is an internal error involving function arguments of this type
+    // being passed as shadow variables to forall loops if this type is not
+    // used in any other way.  As a workaround, declare an instance so that
+    // it is used.
+    private const unusedInternalErrorWorkaround: HDF5Preprocessor;
 
     /* A record that stores a rectangular array.  An array of `ArrayWrapper`
        records can store multiple differently sized arrays.

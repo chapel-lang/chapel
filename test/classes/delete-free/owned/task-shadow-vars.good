@@ -1,0 +1,47 @@
+blank owned
+ coforall
+  MyClass
+  MyClass
+  MyClass
+  MyClass
+ cobegin
+  MyClass
+  MyClass
+blank shared
+ coforall
+  MyClass
+  MyClass
+  MyClass
+  MyClass
+ cobegin
+  MyClass
+  MyClass
+const ref owned
+ coforall
+  _owned(MyClass)
+  _owned(MyClass)
+  _owned(MyClass)
+  _owned(MyClass)
+ref owned
+ coforall
+  _owned(MyClass)
+  _owned(MyClass)
+  _owned(MyClass)
+  _owned(MyClass)
+blank begin
+  MyClass
+  MyClass
+const ref begin
+  _owned(MyClass)
+  _shared(MyClass)
+ref begin
+  _owned(MyClass)
+  _shared(MyClass)
+in begin
+  _owned(MyClass)
+  _shared(MyClass)
+nil
+const in begin
+  _owned(MyClass)
+  _shared(MyClass)
+nil

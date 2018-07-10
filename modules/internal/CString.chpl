@@ -141,7 +141,7 @@ module CString {
   //
   // casts from complex
   //
-  inline proc _cast(type t:c_string, x: complex(?w)) {
+  inline proc _cast(type t:c_string, x: chpl_anycomplex) {
     if isnan(x.re) || isnan(x.im) then
       return __primitive("string_copy", "nan");
     var re = (x.re):c_string;
@@ -186,6 +186,26 @@ module CString {
     var r = __primitive("cast", real(64), x);
     return real_to_c_string(r, true);
   }
+
+  //
+  // casts from integral
+  //
+  proc _cast(type t:c_string, x: integral) {
+    extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
+
+    var isErr: bool;
+    var csc = integral_to_c_string(x:int(64), numBytes(x.type), isIntType(x.type), isErr);
+
+    // this should only happen if the runtime is broken
+    if isErr {
+      try! {
+        throw new unmanaged IllegalArgumentError("Unexpected case in integral_to_c_string");
+      }
+    }
+
+    return csc;
+  }
+
 
   //
   // primitive c_string functions and methods
