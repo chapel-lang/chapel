@@ -1331,7 +1331,7 @@ static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
   CallExpr* call = toCallExpr(typeExpr->body.tail);
   int nArgs = call->numActuals();
   Expr* domExpr = call->get(1);
-  Expr* eltExpr = nArgs == 2 ? call->get(2) : NULL;
+  Expr* retEltExpr = nArgs == 2 ? call->get(2) : NULL;
   bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
 
   if (!noDom) {
@@ -1339,8 +1339,70 @@ static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
 
   }
 
-  if (eltExpr != NULL) {
-    // Add checks against the declared element type
+  if (retEltExpr != NULL) {
+    // Validates the declared element type, if it exists
+
+    VarSymbol* unrefTemp = newTemp();
+    ret->insertBefore(new DefExpr(unrefTemp));
+    CallExpr* makeArray = new CallExpr(PRIM_MOVE, unrefTemp,
+                                       new CallExpr("chpl__unref",
+                                                    retExpr->copy()));
+    ret->insertBefore(makeArray);
+
+    VarSymbol* eltType = newTemp();
+    eltType->addFlag(FLAG_MAYBE_TYPE);
+    eltType->addFlag(FLAG_MAYBE_PARAM);
+    ret->insertBefore(new DefExpr(eltType));
+    CallExpr* exprEltType = new CallExpr("eltType",
+                                         gMethodToken,
+                                         unrefTemp);
+    ret->insertBefore(new CallExpr(PRIM_MOVE, eltType, exprEltType));
+
+    CallExpr* checkEltType = new CallExpr("==",
+                                          eltType,
+                                          retEltExpr->copy());
+
+    VarSymbol* cond = newTemp();
+    cond->addFlag(FLAG_MAYBE_PARAM);
+
+    ret->insertBefore(new DefExpr(cond));
+
+    VarSymbol* checkVar = newTemp();
+    checkVar->addFlag(FLAG_MAYBE_PARAM);
+    ret->insertBefore(new DefExpr(checkVar));
+    ret->insertBefore(new CallExpr(PRIM_MOVE, checkVar, checkEltType));
+    ret->insertBefore(new CallExpr(PRIM_MOVE, cond,
+                                   new CallExpr("_cond_test", checkVar)));
+
+    VarSymbol* stringVar = newTemp();
+    stringVar->addFlag(FLAG_MAYBE_PARAM);
+    BlockStmt* failureMode = new BlockStmt(new DefExpr(stringVar));
+    CallExpr* eltTypeString = new CallExpr(PRIM_MOVE,
+                                           stringVar,
+                                           new CallExpr("_cast",
+                                                        dtString->symbol,
+                                                        eltType));
+    failureMode->insertAtTail(eltTypeString);
+    VarSymbol* retStringVar = newTemp();
+    retStringVar->addFlag(FLAG_MAYBE_PARAM);
+    failureMode->insertAtTail(new DefExpr(retStringVar));
+    CallExpr* retEltTypeString = new CallExpr(PRIM_MOVE,
+                                              retStringVar,
+                                              new CallExpr("_cast",
+                                                           dtString->symbol,
+                                                           retEltExpr->copy()));
+    failureMode->insertAtTail(retEltTypeString);
+    CallExpr* compError = new CallExpr("compilerError",
+                                       new_StringSymbol("type mismatch in assignment from "),
+                                       stringVar,
+                                       new_StringSymbol(" to "),
+                                       retStringVar,
+                                       new_IntSymbol(0, INT_SIZE_64));
+    failureMode->insertAtTail(compError);
+
+    ret->insertBefore(new CondStmt(new SymExpr(cond),
+                                   new BlockStmt(new CallExpr(PRIM_NOOP)),
+                                   failureMode));
   }
 
   // Do something about coercion
