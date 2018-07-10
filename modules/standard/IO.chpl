@@ -2169,6 +2169,10 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
  */
 inline proc channel.lock() throws {
   var err:syserr = ENOERR;
+
+  if is_c_nil(_channel_internal) then
+    throw SystemError.fromSyserr(EINVAL, "Operation attempted on an invalid channel");
+
   if locking {
     on this.home {
       err = qio_channel_lock(_channel_internal);
@@ -4313,6 +4317,10 @@ proc channel.atEOF(): bool throws {
 */
 proc channel.close() throws {
   var err:syserr = ENOERR;
+
+  if is_c_nil(_channel_internal) then
+    throw SystemError.fromSyserr(EINVAL, "cannot close invalid channel");
+
   on this.home {
     err = qio_channel_close(locking, _channel_internal);
   }
