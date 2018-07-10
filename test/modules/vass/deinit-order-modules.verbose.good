@@ -28,8 +28,8 @@ uv4ae.deinit UC
   MemTracking
   ExternalArray
   LocaleTree
-  IO
   ChapelDistribution
+  IO
   LocalesArray
   LocaleModel
   DefaultRectangular
