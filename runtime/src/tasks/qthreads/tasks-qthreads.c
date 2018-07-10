@@ -547,13 +547,17 @@ static chpl_bool setupGuardPages(void) {
 
 static void setupCallStacks(void) {
     size_t stackSize;
+    size_t actualStackSize;
     size_t envStackSize;
     char newenv_stack[QT_ENV_S];
+
+    chpl_bool guardPagesEnabled;
+    size_t reservedPages = 1;
 
     size_t maxPoolAllocSize;
     char newenv_alloc[QT_ENV_S];
 
-    (void) setupGuardPages();
+    guardPagesEnabled = setupGuardPages();
 
     // Setup the base call stack size (Precedence high-to-low):
     // 1) Chapel environment (CHPL_RT_CALL_STACK_SIZE)
@@ -567,17 +571,29 @@ static void setupCallStacks(void) {
         stackSize = chpl_task_getDefaultCallStackSize();
     }
 
-    snprintf(newenv_stack, sizeof(newenv_stack), "%zu", stackSize);
+    // We want the entire "stack" including some qthreads runtime data
+    // structures and guard pages (if they're enabled) to fit within the stack
+    // size envelope. The main motivation for this is for systems with
+    // hugepages, we don't want to waste an entire hugepage just for the
+    // runtime structure.
+    if (guardPagesEnabled) {
+        reservedPages += 2;
+    }
+    actualStackSize = stackSize - (reservedPages * chpl_getSysPageSize());
+
+    snprintf(newenv_stack, sizeof(newenv_stack), "%zu", actualStackSize);
     chpl_qt_setenv("STACK_SIZE", newenv_stack, 1);
 
     // Setup memory pooling. Qthreads expects the item_size of memory pools to
     // be small so they try to pool many objects. Stacks are allocated with
     // pools too, but our default stack size is huge, so we limit the max size
     // of a pool so pools don't use an absurd amount of memory.  We choose
-    // enough space for 2 stacks plus 1MB for runtime data structures and
-    // possibly guard pages and so that we don't limit the pool size too much
-    // if the user has lowered the stack size.
-    maxPoolAllocSize = 2 * stackSize + (1<<20);
+    // enough space for 2 "stacks", with a minimum of 1MB so we don't make the
+    // pool size too small if the user has lowered the stack size.
+    maxPoolAllocSize = 2 * stackSize;
+    if (maxPoolAllocSize < (1<<20)) {
+        maxPoolAllocSize = (1<<20);
+    }
     snprintf(newenv_alloc, sizeof(newenv_alloc), "%zu", maxPoolAllocSize);
     chpl_qt_setenv("MAX_POOL_ALLOC_SIZE", newenv_alloc, 0);
 }
