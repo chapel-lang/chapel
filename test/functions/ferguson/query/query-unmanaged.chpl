@@ -13,42 +13,47 @@ class Concrete {
   var z:int;
 }
 
-proc g(arg:borrowed MyClass(?t)) {
+proc g(arg:unmanaged MyClass(?t)) {
   writeln(t:string);
 }
-proc h(arg:borrowed MyClass(borrowed OtherClass(?t))) {
+proc h(arg:unmanaged MyClass(unmanaged OtherClass(?t))) {
   writeln(t:string);
 }
 
-proc i(arg:borrowed) {
+proc i(arg:unmanaged) {
   writeln(arg.type:string);
 }
-proc j(arg:borrowed MyClass) {
+proc j(arg:unmanaged MyClass) {
   writeln(arg.type:string);
 }
-proc k(arg:borrowed MyClass(borrowed OtherClass)) {
+proc k(arg:unmanaged MyClass(unmanaged OtherClass)) {
   writeln(arg.type:string);
 }
 
 proc ll(arg:unmanaged MyClass) {
   writeln(arg.type:string);
 }
+proc ll(arg:borrowed MyClass) {
+  writeln(arg.type:string);
+}
 proc ll(arg) {
   writeln(arg.type:string);
 }
 
-
-
 proc test() {
-  var a = new borrowed MyClass(new borrowed OtherClass(1));
-  var b = new borrowed Concrete();
+  var a = new unmanaged MyClass(new unmanaged OtherClass(1));
+  var b = new unmanaged Concrete();
   g(a);
   h(a);
   i(a);
   j(a);
   k(a);
   ll(a);
+  ll(_to_borowed(a));
   ll(b);
+  delete b;
+  delete a.x;
+  delete a;
 }
 
 test();

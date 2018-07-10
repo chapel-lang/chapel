@@ -3535,11 +3535,12 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
       if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {
         if (AggregateType* at = toAggregateType(subBase->symbol()->type)) {
           if (isClass(at)) {
-            // TODO -- should this move to scope resolve?
-
             // Replace PRIM_TO_UNMANAGED( MyClass( Def ?t ) )
             // with
             // unmanaged MyClass ( Def ?t )
+
+            // This can't be applied generally in scopeResolve b/c
+            // of the way type constructors are currently normalized.
 
             Type* unm = at->getUnmanagedClass();
             subCall->baseExpr->replace(new SymExpr(unm->symbol));
