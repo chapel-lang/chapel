@@ -1834,6 +1834,8 @@ module String {
         || (b >= uint_newline && b <= uint_return);
   }
 
+  require "wctype.h";
+
   // Portability Note:
   // wint_t will normally be a 32-bit int.
   // There may be systems where it is not.
