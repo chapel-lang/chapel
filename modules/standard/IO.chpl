@@ -2031,7 +2031,7 @@ record ioChar {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioChar) where t == string {
+inline proc _cast(type t:string, x: ioChar) {
   var csc: c_string =  qio_encode_to_string(x.ch);
   // The caller has responsibility for freeing the returned string.
   return new string(csc, needToCopy=false);
@@ -2067,7 +2067,7 @@ record ioNewline {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioNewline) where t == string {
+inline proc _cast(type t:string, x: ioNewline) {
   return "\n";
 }
 
@@ -2097,7 +2097,7 @@ record ioLiteral {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioLiteral) where t == string {
+inline proc _cast(type t:string, x: ioLiteral) {
   return x.val;
 }
 
@@ -2121,7 +2121,7 @@ record ioBits {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioBits) where t == string {
+inline proc _cast(type t:string, x: ioBits) {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
   return ret;
 }
