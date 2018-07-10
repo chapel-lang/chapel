@@ -39,6 +39,7 @@
 #include "error.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
+#include "chpl-env.h"
 #include "chplexit.h"
 #include "chpl-locale-model.h"
 #include "chpl-mem.h"
@@ -331,6 +332,18 @@ static char* chpl_qt_getenv_str(const char* var) {
     return ev;
 }
 
+static chpl_bool chpl_qt_getenv_bool(const char* var,
+                                     chpl_bool default_val) {
+    char* ev;
+    chpl_bool ret_val = default_val;
+
+    if ((ev = chpl_qt_getenv_str(var)) != NULL) {
+        ret_val = chpl_env_str_to_bool(ev, default_val);
+    }
+
+    return ret_val;
+}
+
 static unsigned long int chpl_qt_getenv_num(const char* var,
                                             unsigned long int default_val) {
     char* ev;
@@ -512,25 +525,33 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
     return hwpar;
 }
 
+static chpl_bool setupGuardPages(void) {
+    chpl_bool guardPagesEnabled = true;
+    // default value set by compiler (--[no-]stack-checks)
+    chpl_bool defaultVal = (CHPL_STACK_CHECKS == 1);
+
+    // Default to enabling guard pages, only disabling them under the following
+    // conditions (Precedence high-to-low):
+    // 1) Guard pages disabled at configure time
+    // 2) Guard pages not supported because of huge pages
+    // 3) QT_GUARD_PAGES set to a 'false' value
+    // 4) CHPL_STACK_CHECKS set (--no-stack-checks thrown at compilation time)
+    if (!CHPL_QTHREAD_HAVE_GUARD_PAGES) {
+        guardPagesEnabled = false;
+    } else if (chpl_getHeapPageSize() != chpl_getSysPageSize()) {
+        guardPagesEnabled = false;
+    } else {
+        guardPagesEnabled = chpl_qt_getenv_bool("GUARD_PAGES", defaultVal);
+    }
+
+    chpl_qt_setenv("GUARD_PAGES", guardPagesEnabled ? "true" : "false", 1);
+    return guardPagesEnabled;
+}
+
 static void setupCallStacks(int32_t hwpar) {
     size_t callStackSize;
 
-    // If the user compiled with no stack checks (either explicitly or
-    // implicitly) turn off qthread guard pages. TODO there should also be a
-    // chpl level env var backing this at runtime (can be the same var.)
-    // Also turn off guard pages if the heap page size isn't the same as
-    // the system page size, because when that's the case we can reliably
-    // make the guard pages un-referenceable.  (This typically arises when
-    // the heap is on hugepages, as is often the case on Cray systems.)
-    //
-    // Note that we won't override an explicit setting of QT_GUARD_PAGES
-    // in the former case, but we do in the latter case.
-    if (CHPL_STACK_CHECKS == 0) {
-        chpl_qt_setenv("GUARD_PAGES", "false", 0);
-    }
-    else if (chpl_getHeapPageSize() != chpl_getSysPageSize()) {
-        chpl_qt_setenv("GUARD_PAGES", "false", 1);
-    }
+    (void) setupGuardPages();
 
     // Precedence (high-to-low):
     // 1) Chapel environment (CHPL_RT_CALL_STACK_SIZE)
