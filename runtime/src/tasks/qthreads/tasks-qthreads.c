@@ -446,10 +446,8 @@ static int32_t chpl_qt_getenv_num_workers(void) {
 }
 
 
-// Sets up and returns the amount of hardware parallelism to use, limited to
-// maxThreads. Returns -1 if we did not setup parallelism because a user
-// explicitly requested a specific layout from qthreads.
-static int32_t setupAvailableParallelism(int32_t maxThreads) {
+// Setup the amount of hardware parallelism, limited to maxThreads.
+static void setupAvailableParallelism(int32_t maxThreads) {
     int32_t   numThreadsPerLocale;
     int32_t   qtEnvThreads;
     int32_t   hwpar;
@@ -522,7 +520,6 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
             chpl_qt_setenv("HWPAR", newenv_workers, 1);
         }
     }
-    return hwpar;
 }
 
 static chpl_bool setupGuardPages(void) {
@@ -530,8 +527,8 @@ static chpl_bool setupGuardPages(void) {
     // default value set by compiler (--[no-]stack-checks)
     chpl_bool defaultVal = (CHPL_STACK_CHECKS == 1);
 
-    // Default to enabling guard pages, only disabling them under the following
-    // conditions (Precedence high-to-low):
+    // Setup guard pages. Default to enabling guard pages, only disabling them
+    // under the following conditions (Precedence high-to-low):
     // 1) Guard pages disabled at configure time
     // 2) Guard pages not supported because of huge pages
     // 3) QT_GUARD_PAGES set to a 'false' value
@@ -548,50 +545,41 @@ static chpl_bool setupGuardPages(void) {
     return guardPagesEnabled;
 }
 
-static void setupCallStacks(int32_t hwpar) {
-    size_t callStackSize;
+static void setupCallStacks(void) {
+    size_t stackSize;
+    size_t envStackSize;
+    char newenv_stack[QT_ENV_S];
+
+    size_t maxPoolAllocSize;
+    char newenv_alloc[QT_ENV_S];
 
     (void) setupGuardPages();
 
-    // Precedence (high-to-low):
+    // Setup the base call stack size (Precedence high-to-low):
     // 1) Chapel environment (CHPL_RT_CALL_STACK_SIZE)
-    // 2) QTHREAD_STACK_SIZE
+    // 2) QT_STACK_SIZE
     // 3) Chapel default
-    if ((callStackSize = chpl_task_getEnvCallStackSize()) > 0 ||
-        (chpl_qt_getenv_num("STACK_SIZE", 0) == 0 &&
-         (callStackSize = chpl_task_getDefaultCallStackSize()) > 0)) {
-        char newenv_stack[QT_ENV_S];
-        snprintf(newenv_stack, sizeof(newenv_stack), "%zu", callStackSize);
-        chpl_qt_setenv("STACK_SIZE", newenv_stack, 1);
-
-        // Qthreads sets up memory pools expecting the item_size to be small.
-        // Stacks are allocated in this manner too, but our default stack size
-        // is quite large, so we limit the max memory allocated for a pool. We
-        // default to a multiple of callStackSize and hwpar, with the thought
-        // that available memory is generally proportional to the amount of
-        // parallelism. For some architectures, this isn't true so we set a max
-        // upper bound. And if the callStackSize is small, we don't want to
-        // limit all qthreads pool allocations to a small value, so we have a
-        // lower bound as well. Note that qthread stacks are slightly larger
-        // than specified to store a book keeping structure and possibly guard
-        // pages, so we thrown an extra MB.
-        if (hwpar > 0) {
-            const size_t oneMB = 1024 * 1024;
-            const size_t allocSizeLowerBound = 33 * oneMB;
-            const size_t allocSizeUpperBound = 65 * oneMB;
-            size_t maxPoolAllocSize;
-            char newenv_alloc[QT_ENV_S];
-
-            maxPoolAllocSize = 2 * hwpar * callStackSize + oneMB;
-            if (maxPoolAllocSize < allocSizeLowerBound) {
-                maxPoolAllocSize = allocSizeLowerBound;
-            } else if (maxPoolAllocSize > allocSizeUpperBound) {
-                maxPoolAllocSize = allocSizeUpperBound;
-            }
-            snprintf(newenv_alloc, sizeof(newenv_alloc), "%zu", maxPoolAllocSize);
-            chpl_qt_setenv("MAX_POOL_ALLOC_SIZE", newenv_alloc, 0);
-        }
+    if ((envStackSize = chpl_task_getEnvCallStackSize()) > 0) {
+        stackSize = envStackSize;
+    } else if ((envStackSize = (size_t)chpl_qt_getenv_num("STACK_SIZE", 0)) > 0) {
+        stackSize = envStackSize;
+    } else {
+        stackSize = chpl_task_getDefaultCallStackSize();
     }
+
+    snprintf(newenv_stack, sizeof(newenv_stack), "%zu", stackSize);
+    chpl_qt_setenv("STACK_SIZE", newenv_stack, 1);
+
+    // Setup memory pooling. Qthreads expects the item_size of memory pools to
+    // be small so they try to pool many objects. Stacks are allocated with
+    // pools too, but our default stack size is huge, so we limit the max size
+    // of a pool so pools don't use an absurd amount of memory.  We choose
+    // enough space for 2 stacks plus 1MB for runtime data structures and
+    // possibly guard pages and so that we don't limit the pool size too much
+    // if the user has lowered the stack size.
+    maxPoolAllocSize = 2 * stackSize + (1<<20);
+    snprintf(newenv_alloc, sizeof(newenv_alloc), "%zu", maxPoolAllocSize);
+    chpl_qt_setenv("MAX_POOL_ALLOC_SIZE", newenv_alloc, 0);
 }
 
 static void setupTasklocalStorage(void) {
@@ -626,7 +614,6 @@ static void setupSpinWaiting(void) {
 void chpl_task_init(void)
 {
     int32_t   commMaxThreads;
-    int32_t   hwpar;
 
     chpl_qthread_process_pthread = pthread_self();
     chpl_qthread_process_bundle.id = qthread_incr(&next_task_id, 1);
@@ -635,8 +622,8 @@ void chpl_task_init(void)
 
     // Set up hardware parallelism, the stack size and stack guards,
     // tasklocal storage, and work stealing
-    hwpar = setupAvailableParallelism(commMaxThreads);
-    setupCallStacks(hwpar);
+    setupAvailableParallelism(commMaxThreads);
+    setupCallStacks();
     setupTasklocalStorage();
     setupWorkStealing();
     setupSpinWaiting();
