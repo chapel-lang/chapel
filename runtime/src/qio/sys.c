@@ -559,10 +559,10 @@ void stat_to_sys_stat(const char* path, sys_stat_t* out_buf, struct stat* in_buf
   out_buf->st_gid = in_buf->st_gid;
   out_buf->st_rdev = in_buf->st_rdev;
   out_buf->st_size = in_buf->st_size;
-  out_buf->st_blksize = in_buf->st_blksize;
-  out_buf->st_blocks = in_buf->st_blocks;
+  //out_buf->st_blksize = in_buf->st_blksize;
+  //out_buf->st_blocks = in_buf->st_blocks;
 
-#if (_POSIX_C_SOURCE > 200112L)
+#if (_POSIX_C_SOURCE == 200809L)
   out_buf->st_atim = in_buf->st_atim;
   out_buf->st_mtim = in_buf->st_mtim;
   out_buf->st_ctim = in_buf->st_ctim;

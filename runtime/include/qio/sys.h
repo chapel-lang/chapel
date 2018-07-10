@@ -77,8 +77,8 @@ typedef struct sys_stat_s {
   struct timespec    st_atim; /* Last data access timestamp.  */
   struct timespec    st_mtim; /* Last data modification timestamp. */
   struct timespec    st_ctim; /* Last file status change timestamp. */
-  blksize_t   st_blksize;     /* A file system-specific preferred I/O block size for this object. */
-  blkcnt_t    st_blocks;      /* Number of blocks allocated for this object. */
+  // blksize_t   st_blksize;     /* A file system-specific preferred I/O block size for this object. */
+  // blkcnt_t    st_blocks;      /* Number of blocks allocated for this object. */
 } sys_stat_t;
 
 void stat_to_sys_stat(const char* path, sys_stat_t* out_buf, struct stat* in_buf);
