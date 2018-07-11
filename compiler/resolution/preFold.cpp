@@ -284,28 +284,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       call->replace(retval);
     }
 
-  } else if (call->isPrimitive(PRIM_ENUM_IS_SIGNED)) {
-    EnumType* et = toEnumType(toSymExpr(call->get(1))->symbol()->type);
-
-    ensureEnumTypeResolved(et);
-
-    if (is_int_type(et->integerType)) {
-      retval = new SymExpr(gTrue);
-    } else {
-      retval = new SymExpr(gFalse);
-    }
-
-    call->replace(retval);
-
-  } else if (call->isPrimitive(PRIM_ENUM_MIN_BITS)) {
-    EnumType* et = toEnumType(toSymExpr(call->get(1))->symbol()->type);
-
-    ensureEnumTypeResolved(et);
-
-    retval = new SymExpr(new_IntSymbol(get_width(et->integerType)));
-
-    call->replace(retval);
-
   } else if (call->isPrimitive(PRIM_FIELD_BY_NUM)) {
     // if call->get(1) is a reference type, dereference it
     AggregateType* classType  = toAggregateType(call->get(1)->typeInfo());
@@ -1260,7 +1238,12 @@ static Expr* preFoldNamed(CallExpr* call) {
             Symbol* constant = findMatchingEnumSymbol(imm, typeEnum);
 
             if (constant == NULL) {
-              USR_FATAL_CONT(call->castFrom(), "enum cast out of bounds");
+              if (typeEnum->isAbstract()) {
+                // skip this case, as functionResolution.cpp will print a
+                // better error message.
+              } else {
+                USR_FATAL_CONT(call->castFrom(), "enum cast out of bounds");
+              }
               retval = call;
             } else {
               retval = new SymExpr(constant);

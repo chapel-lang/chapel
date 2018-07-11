@@ -601,9 +601,6 @@ private proc chpl_enum_minbits(type t: enumerated) param {
     return 32;
   return 64;
 }
-private proc enum_issigned(type t: enumerated) param {
-  return __primitive( "enum is signed", t);
-}
 // TODO - maybe this function can be useful for the user, for C interop?
 // If so, give it a different name.
 pragma "no doc"
