@@ -224,11 +224,9 @@ where D.rank == 2
       }
     }
     if count == 1 {
-      /* result.timers["init_queue"].start(); */
       shared_lock.lock();
       work_queue.push_back( row );
       shared_lock.unlock();
-      /* result.timers["init_stop"].stop(); */
     }
 
     row_count[row].write( count);
@@ -307,8 +305,6 @@ where D.rank == 2
       // if queue_size is < 1, someone stole our work. unlock and rewait
       if queue_size < 1 {
         if debugTopoTasking then writeln( task_id, " queue size is ", queue_size);
-        /* continue_working = false;
-        work_signal.writeXF(TaskSignal.fail); */
         shared_lock.unlock();
         continue;
       }
@@ -362,7 +358,7 @@ where D.rank == 2
           if D.member((row, swap_column)) {
             var previous_row_count = row_count[row].fetchAdd( -1 );
             row_sum[row].add( -swap_column );
-            // if previous_row_count = 2 (ie row_count[row] == 1)
+            // if row_count[row] == 1
             if previous_row_count == 2 {
               shared_lock.lock();
               if debugTopo then writeln( "Queueing ", row);
@@ -533,7 +529,7 @@ proc create_sparse_upper_triangluar_domain( D : domain(2), density : real, seed 
   if number_non_zeros_added_in_strictly_UT > 0 {
 
     var sD_random_dom : domain(1) = {1..#number_non_zeros_in_full_UT_domain-N};
-    var sD_random : [sD_random_dom] D.rank*D.idxType; //[1..#if number_non_zeros_added_in_strictly_UT > 0 then number_non_zeros_in_full_UT_domain-N else 0] D.rank*D.idxType;
+    var sD_random : [sD_random_dom] D.rank*D.idxType;
 
     // TODO figure out effecient way to add small number of non-zeros
 
@@ -638,7 +634,6 @@ proc main(){
   if !silentMode then writeln("Creating sparse upper triangluar domain");
   const sparse_D = create_sparse_upper_triangluar_domain( D, density, seed );
   var M : [sparse_D] eltType;
-  /* compilerError("M.dom: " + M.domain.type : string ); */
 
   if printMatrices {
     if !silentMode then writeln("Filling matrix with values");
