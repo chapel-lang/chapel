@@ -32,7 +32,6 @@ This file provides parts of the implementation of forall loops
 and forall intents, specifically:
 
 * Setting up shadow variables and other things - during resolution.
-This part 
 
 * Lowering forall loops by inlining the corresponding parallel
 iterators - during lowerIterators.
@@ -315,6 +314,9 @@ from such a shadow variable - because it is a "ref".
 
 static ShadowVarSymbol* create_IN_OUTERVAR(ForallStmt* fs, ShadowVarSymbol* SI)
 {
+  Symbol* realOuterVar = SI->outerVarSym();
+  INT_ASSERT(realOuterVar);
+
   ShadowVarSymbol* SO = new ShadowVarSymbol(TFI_IN_OUTERVAR,
                                             astr("SO_", SI->name), NULL);
   SO->addFlag(FLAG_CONST);  // make it be like 'const in'
@@ -324,6 +326,13 @@ static ShadowVarSymbol* create_IN_OUTERVAR(ForallStmt* fs, ShadowVarSymbol* SI)
   // It goes on the shadow variable list right before SI.
   SI->defPoint->insertBefore(new DefExpr(SO));
   INT_ASSERT(SI->OutervarForIN() == SO);  // ensure OutervarForIN() works
+
+  // initialize the new outer var from the real outer var
+  if (realOuterVar->getValType() != SO->getValType()) {
+    BlockStmt* IB = SO->initBlock();
+    CallExpr* cast = createCast(realOuterVar, SO->getValType()->symbol);
+    IB->insertAtTail(new CallExpr(PRIM_MOVE, SO, cast));
+  }
 
   return SO;
 }
@@ -438,7 +447,7 @@ void setupShadowVariables(ForallStmt* fs)
     Symbol* ovar = svar->outerVarSym();
     BlockStmt* IB = svar->initBlock();
     BlockStmt* DB = svar->deinitBlock();
-    
+
     switch (svar->intent)
     {
       case TFI_IN:
@@ -562,7 +571,7 @@ static Symbol* removeParIterReturn(BlockStmt* cloneBody, bool moreRefs) {
   INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
   Symbol* retsym = toSymExpr(retexpr->get(1))->symbol();
   INT_ASSERT(retsym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
-  
+
   retexpr->remove();
   if (!moreRefs) retsym->defPoint->remove();
   // There should not be any references left to 'ret', unless moreRefs.
@@ -891,8 +900,20 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
   switch (svar->intent)
   {
     case TFI_IN_OUTERVAR:
-      // The outer var for IB of the corresponding in-intent svar.
-      map.put(svar, svar->INforOutervar()->outerVarSym());
+      {
+        Symbol* realOuterSym = svar->INforOutervar()->outerVarSym();
+
+        // If the outer var has a diffirent type from the real var,
+        // there should be a non-trivial init block that we need to use.
+        if (svar->getValType() != realOuterSym->getValType()) {
+          addDefAndMap(aInit, map, svar, createCurrIN(svar));
+          addCloneOfInitBlock(aInit, map, svar);
+          addCloneOfDeinitBlock(aFini, map, svar);
+        } else {
+          // The outer var for IB of the corresponding in-intent svar.
+          map.put(svar, svar->INforOutervar()->outerVarSym());
+        }
+      }
       break;
 
     case TFI_IN:
