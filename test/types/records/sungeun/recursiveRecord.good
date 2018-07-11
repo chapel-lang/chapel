@@ -1,1 +1,1 @@
-recursiveRecord.chpl:2: error: recursive record definition
+recursiveRecord.chpl:3: error: Record has infinite size (field 'r' has same type as enclosing record)
