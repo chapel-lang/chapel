@@ -470,14 +470,18 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     view_sym(sym, number, mark);
   }
 
-  AST_CHILDREN_CALL(ast, view_ast, number, mark, indent+2);
-
   if (DefExpr* def = toDefExpr(ast)) {
     printf(" ");
     if (ArgSymbol* arg = toArgSymbol(def->sym))
       printf("intent-%s ", arg->intentDescrString());
+    if (ShadowVarSymbol* sv = toShadowVarSymbol(def->sym)) {
+      printf("shadow-%s ", sv->intentDescrString());
+    }
+
     writeFlags(stdout, def->sym);
   }
+
+  AST_CHILDREN_CALL(ast, view_ast, number, mark, indent+2);
 
   if (toExpr(ast))
     printf(")");

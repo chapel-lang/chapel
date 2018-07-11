@@ -34,6 +34,7 @@
 #include "WhileDoStmt.h"
 #include "DoWhileStmt.h"
 #include "CForLoop.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
 #include "TryStmt.h"
@@ -176,7 +177,8 @@ bool AstDump::enterDefExpr(DefExpr* node) {
     retval = false;
 
   } else {
-    if (isBlockStmt(node->parentExpr)) {
+    if (isBlockStmt(node->parentExpr) ||
+        isForallStmt(node->parentExpr)) {
       newline();
     }
 
@@ -421,6 +423,67 @@ void AstDump::visitForallIntents(ForallIntents* clause) {
   write(false, ")", true);
 }
 
+
+bool AstDump::enterForallStmt(ForallStmt* node) {
+  newline();
+  write("Forall");
+  write("{");
+  ++mIndent;
+  newline();
+  write("induction variables:");
+  ++mIndent;
+  for_alist(expr, node->inductionVariables()) {
+    newline();
+    expr->accept(this);
+  }
+  --mIndent;
+  newline();
+  write("iterated expressions:");
+  ++mIndent;
+  for_alist(expr, node->iteratedExpressions()) {
+    newline();
+    expr->accept(this);
+  }
+  --mIndent;
+  newline();
+  write("shadow variables:");
+  ++mIndent;
+  for_alist(expr, node->shadowVariables()) {
+    if (DefExpr* def = toDefExpr(expr)) {
+      if (ShadowVarSymbol* sv = toShadowVarSymbol(def->sym)) {
+        newline();
+        writeSymbol(sv, true);
+        write(sv->intentDescrString());
+        if (sv->outerVarSym()) {
+          write("outer var");
+          writeSymbol(sv->outerVarSym(), false);
+        }
+        ++mIndent;
+        if (sv->initBlock()) {
+          newline();
+          write("init block");
+          sv->initBlock()->accept(this);
+        }
+        if (sv->deinitBlock()) {
+          newline();
+          write("deinit block");
+          sv->deinitBlock()->accept(this);
+        }
+        --mIndent;
+      }
+    }
+  }
+  --mIndent;
+  newline();
+  write("forall body");
+  node->loopBody()->accept(this);
+  --mIndent;
+  newline();
+  write("}");
+  return false;
+}
+void AstDump::exitForallStmt(ForallStmt* node) {
+}
 
 //
 // WhileDoStmt

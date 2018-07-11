@@ -96,6 +96,7 @@ module CString {
 
   extern proc chpl_bool_to_c_string(x:bool) : c_string;
   inline proc _cast(type t:c_string, x: chpl_anybool) {
+    compilerWarning("cast from bool to c_string is deprecated");
     return chpl_bool_to_c_string(x:bool);
   }
 
@@ -138,42 +139,12 @@ module CString {
   inline proc _cast(type t:chpl_anycomplex, x:c_string) throws
     return try ((x:string).strip()): t;
 
-  //
-  // casts from complex
-  //
-  inline proc _cast(type t:c_string, x: chpl_anycomplex) {
-    if isnan(x.re) || isnan(x.im) then
-      return __primitive("string_copy", "nan");
-    var re = (x.re):c_string;
-    var im: c_string;
-    var op: c_string;
-    if x.im < 0 {
-      im = (-x.im):c_string;
-      op = " - ";
-    } else if im == "-0.0" {
-      im = "0.0":c_string;
-      op = " - ";
-    } else {
-      im = (x.im):c_string;
-      op = " + ";
-    }
-    // TODO: Add versions of the concatenation operator that consume their
-    // c_string arg or args.
-    const ts0 = re + op;
-    chpl_free_c_string(re);
-    const ts1 = ts0 + im;
-    chpl_free_c_string(ts0);
-    chpl_free_c_string(im);
-    const ret = ts1 + "i";
-    chpl_free_c_string(ts1);
-    return ret;
-  }
-
   extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
   //
   // casts from real
   //
   inline proc _cast(type t:c_string, x:chpl_anyreal) {
+    compilerWarning("cast from real to c_string is deprecated");
     return real_to_c_string(x:real(64), false);
   }
 
@@ -181,6 +152,7 @@ module CString {
   // casts from imag
   //
   inline proc _cast(type t:c_string, x:chpl_anyimag) {
+    compilerWarning("cast from imag to c_string is deprecated");
     // The Chapel version of the imag --> real cast smashes it flat rather than
     // just stripping off the "i".  See ChapelBase:965.
     var r = __primitive("cast", real(64), x);
@@ -191,6 +163,7 @@ module CString {
   // casts from integral
   //
   proc _cast(type t:c_string, x: integral) {
+    compilerWarning("cast from integral to c_string is deprecated");
     extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
 
     var isErr: bool;

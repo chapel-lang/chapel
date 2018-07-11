@@ -29,7 +29,6 @@ class VarSymbol;
 class QualifiedType;
 class GenRet;
 
-
 #define PRIMITIVE_G(NAME) NAME,
 #define PRIMITIVE_R(NAME) NAME,
 enum PrimitiveTag {

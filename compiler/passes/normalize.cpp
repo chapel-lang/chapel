@@ -2262,6 +2262,16 @@ static void normVarTypeInference(DefExpr* defExpr) {
         // Add a call to postinit() if present
         insertPostInit(var, argExpr);
 
+        // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
+        // test for --force-initializers, but PR #10171 was merged first and
+        // somehow fixed that test. The test in question was:
+        //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+        if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
+          if (ne->name == astr_chpl_manager) {
+            ne->remove();
+          }
+        }
+
       } else {
         defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
       }
@@ -2404,6 +2414,16 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
       // Add a call to postinit() if present
       insertPostInit(var, argExpr);
+
+      // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
+      // test for --force-initializers, but PR #10171 was merged first and
+      // somehow fixed that test. The test in question was:
+      //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+      if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
+        if (ne->name == astr_chpl_manager) {
+          ne->remove();
+        }
+      }
     }
 
   } else if (isNewExpr(initExpr) == true) {
@@ -2432,6 +2452,16 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
       // Add a call to postinit() if present
       insertPostInit(initExprTemp, argExpr);
+
+      // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
+      // test for --force-initializers, but PR #10171 was merged first and
+      // somehow fixed that test. The test in question was:
+      //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+      if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
+        if (ne->name == astr_chpl_manager) {
+          ne->remove();
+        }
+      }
 
       initExprTemp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 

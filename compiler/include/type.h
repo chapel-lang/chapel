@@ -324,6 +324,7 @@ class EnumType : public Type {
   void codegenDef();
   int codegenStructure(FILE* outfile, const char* baseoffset);
 
+  bool isAbstract();  // is the enum abstract?  (has no associated values)
   PrimitiveType* getIntegerType();
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);

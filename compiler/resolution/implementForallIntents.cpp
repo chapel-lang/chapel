@@ -2255,6 +2255,10 @@ static void processShadowVarsNew(ForallStmt* fs, int& numShadowVars)
 
   for_shadow_vars(svar, temp, fs) {
     Symbol* ovar = svar->outerVarSym();
+
+    if (svar->id == breakOnResolveID)
+      gdbShouldBreakHere();
+
     if (svar->isReduce())
     {
       if (ovar && ovar->hasFlag(FLAG_CONST))
@@ -2272,7 +2276,17 @@ static void processShadowVarsNew(ForallStmt* fs, int& numShadowVars)
     }
     else
     {
-      svar->type = ovar->type->getRefType();
+      Type* useOvarType = NULL;
+      // For managed pointers, don't do ownership transfer
+      // by default; instead use the borrow type for the shadow variable.
+      if (isManagedPtrType(ovar->getValType()) &&
+          (svar->intent == TFI_DEFAULT ||
+           svar->intent == TFI_CONST)) {
+        useOvarType = getManagedPtrBorrowType(ovar->getValType());
+      } else {
+        useOvarType = ovar->type->getRefType();
+      }
+      svar->type = useOvarType;
       resolveSVarIntent(svar);
 
       // If ovar is a reference, e.g. an index variable of

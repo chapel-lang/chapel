@@ -5,4 +5,4 @@ paramEnumCast.chpl:6: In function 'testEnum':
 paramEnumCast.chpl:23: error: Initializing parameter 'e3' to value not known at compile time
 paramEnumCast.chpl:41: warning: int->enum cast was a surprise for decline
 paramEnumCast.chpl:6: In function 'testEnum':
-paramEnumCast.chpl:19: error: illegal cast from color to int(64)
+paramEnumCast.chpl:19: error: can't cast from an abstract enum ('color') to int(64)
