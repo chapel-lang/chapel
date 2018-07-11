@@ -2,7 +2,7 @@ class C {
   param p: int = 1;
 }
 
-var c: C;
+var c: unmanaged C;
 
 c = new unmanaged C();
 

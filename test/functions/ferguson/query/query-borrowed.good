@@ -1,0 +1,5 @@
+OtherClass(int(64))
+int(64)
+MyClass(OtherClass(int(64)))
+MyClass(OtherClass(int(64)))
+MyClass(OtherClass(int(64)))

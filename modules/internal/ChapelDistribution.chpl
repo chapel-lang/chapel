@@ -969,7 +969,7 @@ module ChapelDistribution {
   // that does something else.
   // lhs is a subclass of BaseRectangularDom
   proc chpl_assignDomainWithGetSetIndices(lhs:?t, rhs: domain)
-    where _to_borrowed(t):BaseRectangularDom
+    where isSubtype(_to_borrowed(t),BaseRectangularDom)
   {
     type arrType = lhs.getBaseArrType();
     param rank = lhs.rank;
@@ -1009,9 +1009,9 @@ module ChapelDistribution {
 
 
   proc chpl_assignDomainWithIndsIterSafeForRemoving(lhs:?t, rhs: domain)
-    where _to_borrowed(t):BaseSparseDom ||
-          _to_borrowed(t):BaseAssociativeDom ||
-          _to_borrowed(t):BaseOpaqueDom
+    where isSubtype(_to_borrowed(t),BaseSparseDom) ||
+          isSubtype(_to_borrowed(t),BaseAssociativeDom) ||
+          isSubtype(_to_borrowed(t),BaseOpaqueDom)
   {
     //
     // BLC: It's tempting to do a clear + add here, but because

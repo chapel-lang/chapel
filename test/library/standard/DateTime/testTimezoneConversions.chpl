@@ -125,7 +125,7 @@ var utc_fake = new shared FixedOffset(-12*60, "UTCfake", 0);
 var dston = new datetime(2002, 4, 7, 2);
 var dstoff = new datetime(2002, 10, 27, 1);
 
-proc checkinside(dt, tz, utc, dston, dstoff) {
+proc checkinside(dt, tz:shared, utc:shared, dston, dstoff) {
   assert(dt.dst() == HOUR);
 
   // Conversion to our own timezone is always an identity.
@@ -178,7 +178,7 @@ proc checkinside(dt, tz, utc, dston, dstoff) {
   }
 }
 
-proc checkoutside(dt, tz, utc) {
+proc checkoutside(dt, tz:shared, utc:shared) {
   assert(dt.dst() == ZERO);
 
   // Conversion to our own timezone is always an identity.
@@ -190,7 +190,7 @@ proc checkoutside(dt, tz, utc) {
   assert(dt == there_and_back);
 }
 
-proc convert_between_tz_and_utc(tz, utc) {
+proc convert_between_tz_and_utc(tz:shared, utc:shared) {
   var mydston = dston.replace(tzinfo=tz);
   // Because 1:MM on the day DST ends is taken as being standard time,
   // there is no spelling in tz for the last hour of daylight time.

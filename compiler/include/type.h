@@ -96,9 +96,6 @@ public:
 
   Vec<FnSymbol*>         methods;
 
-  // all generic fields have defaults
-  bool                   hasGenericDefaults;
-
   Symbol*                defaultValue;
 
   // Used only in PrimitiveType; replace with flag?
@@ -380,12 +377,16 @@ private:
 
 // internal types
 TYPE_EXTERN Type*             dtAny;
+TYPE_EXTERN Type*             dtAnyBool;
+TYPE_EXTERN Type*             dtAnyComplex;
+TYPE_EXTERN Type*             dtAnyEnumerated;
+TYPE_EXTERN Type*             dtAnyImag;
+TYPE_EXTERN Type*             dtAnyReal;
+
 TYPE_EXTERN Type*             dtIteratorRecord;
 TYPE_EXTERN Type*             dtIteratorClass;
 TYPE_EXTERN Type*             dtIntegral;
-TYPE_EXTERN Type*             dtAnyComplex;
 TYPE_EXTERN Type*             dtNumeric;
-TYPE_EXTERN Type*             dtAnyEnumerated;
 
 TYPE_EXTERN PrimitiveType*    dtNil;
 TYPE_EXTERN PrimitiveType*    dtUnknown;
@@ -454,6 +455,7 @@ bool isDomImplType(Type* t);
 bool isArrayImplType(Type* t);
 bool isDistImplType(Type* t);
 bool isManagedPtrType(const Type* t);
+Type* getManagedPtrBorrowType(const Type* t);
 bool isSyncType(const Type* t);
 bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);

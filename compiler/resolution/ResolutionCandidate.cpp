@@ -458,7 +458,7 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
   }
 
   if (isManagedPtrType(actualType)) {
-    Type* actualBaseType = actualType->getField("t")->type;
+    Type* actualBaseType = getManagedPtrBorrowType(actualType);
     if (canInstantiate(actualBaseType, formalType))
       return actualBaseType;
   }

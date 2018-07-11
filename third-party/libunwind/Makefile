@@ -7,6 +7,10 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 CHPL_LIBUNWIND_CFG_OPTIONS = --prefix=$(LIBUNWIND_INSTALL_DIR) --disable-shared --disable-coredump --disable-cxx-exceptions
 
+ifeq ($(CHPL_LIBMODE),shared)
+CFLAGS += $(SHARED_LIB_CFLAGS)
+endif
+
 default: all
 
 all: libunwind
@@ -27,7 +31,7 @@ $(LIBUNWIND_SRC_DIR):
 
 configure-libunwind: FORCE
 	mkdir -p $(LIBUNWIND_BUILD_DIR)
-	cd $(LIBUNWIND_BUILD_DIR) && $(LIBUNWIND_SUBDIR)/configure CC='$(CC)' $(CHPL_LIBUNWIND_CFG_OPTIONS)
+	cd $(LIBUNWIND_BUILD_DIR) && $(LIBUNWIND_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CFLAGS)' $(CHPL_LIBUNWIND_CFG_OPTIONS)
 
 build-libunwind: FORCE
 	cd $(LIBUNWIND_BUILD_DIR) && $(MAKE)

@@ -127,4 +127,9 @@ module UtilMisc_forDocs {
   inline proc exit(status: int) {
     __primitive("chpl_exit_any", status);
   }
+
+  /* Returns `true` if the type `sub` is a subtype of the type `super`. */
+  proc isSubtype(type sub, type super) param {
+    __primitive("is_subtype", super, sub);
+  }
 }

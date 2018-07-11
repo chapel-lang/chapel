@@ -210,11 +210,23 @@ void scopeResolve() {
         if (!at->needsConstructor() &&
             // And don't try to mark generic again
             !at->isGeneric()) {
+
+          bool anyGeneric = false;
+          bool anyNonDefaultedGeneric = false;
           for_fields(field, at) {
-            if (at->fieldIsGeneric(field)) {
-              at->markAsGeneric();
-              changed = true;
+            bool hasDefault = false;
+            if (at->fieldIsGeneric(field, hasDefault)) {
+              anyGeneric = true;
+              if (hasDefault == false)
+                anyNonDefaultedGeneric = true;
             }
+          }
+
+          if (anyGeneric) {
+            at->markAsGeneric();
+            if (anyNonDefaultedGeneric == false)
+              at->markAsGenericWithDefaults();
+            changed = true;
           }
         }
       }
@@ -1374,7 +1386,7 @@ static void checkRefsToIdxVars(ForallStmt* fs, DefExpr* def,
 static void setupShadowVars() {
   forv_Vec(ForallStmt, fs, gForallStmts)
     for_shadow_vars_and_defs(svar, def, temp, fs) {
-       if (hasOuterVariable(svar))
+      if (hasOuterVariable(svar))
         setupOuterVar(fs, svar);
       if (svar->isTaskPrivate())
         checkRefsToIdxVars(fs, def, svar);

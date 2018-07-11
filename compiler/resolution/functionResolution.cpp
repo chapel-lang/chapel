@@ -581,7 +581,7 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
         // Handle e.g. Owned(GenericClass) passed to a formal : GenericClass
         // TODO: Why is this here and not in getBasicInstantiationType?
         if (isManagedPtrType(at)) {
-          Type* classType = actualType->getField("t")->type;
+          Type* classType = getManagedPtrBorrowType(actualType);
           if (canInstantiate(classType, formalType)) {
             retval = classType;
           }
@@ -622,7 +622,19 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType == dtAnyBool && is_bool_type(actualType)) {
+    return true;
+  }
+
   if (formalType == dtAnyComplex && is_complex_type(actualType)) {
+    return true;
+  }
+
+  if (formalType == dtAnyImag && is_imag_type(actualType)) {
+    return true;
+  }
+
+  if (formalType == dtAnyReal && is_real_type(actualType)) {
     return true;
   }
 
@@ -653,7 +665,8 @@ bool canInstantiate(Type* actualType, Type* formalType) {
                      canonicalClassType(formalType)))
     return true;
 
-  if (formalType == dtBorrowed && isClass(actualType))
+  if (formalType == dtBorrowed && isClass(actualType) &&
+     (actualType == dtObject || !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
     return true;
 
   if (AggregateType* atActual = toAggregateType(actualType)) {
@@ -979,7 +992,7 @@ bool canCoerce(Type*     actualType,
   }
 
   if (isManagedPtrType(actualType)) {
-    Type* actualBaseType = actualType->getField("t")->type;
+    Type* actualBaseType = getManagedPtrBorrowType(actualType);
     AggregateType* actualOwnedShared = toAggregateType(actualType);
     while (actualOwnedShared && actualOwnedShared->instantiatedFrom != NULL)
       actualOwnedShared = actualOwnedShared->instantiatedFrom;
@@ -988,7 +1001,7 @@ bool canCoerce(Type*     actualType,
     AggregateType* formalOwnedShared = toAggregateType(formalType);
     bool formalIsClass = false;
     if (isManagedPtrType(formalType)) {
-      formalBaseType = formalType->getField("t")->type;
+      formalBaseType = getManagedPtrBorrowType(formalType);
       while (formalOwnedShared && formalOwnedShared->instantiatedFrom != NULL)
         formalOwnedShared = formalOwnedShared->instantiatedFrom;
     } else if (AggregateType* formalAt = toAggregateType(formalType)) {
@@ -4074,6 +4087,11 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
       // now. Otherwise our task function has to remain generic.
       INT_ASSERT(varActual->type->symbol->hasFlag(FLAG_GENERIC) == false);
 
+      if (formal->id == breakOnResolveID)
+        gdbShouldBreakHere();
+
+      IntentTag origFormalIntent = formal->intent;
+
       // Need to copy varActual->type even for type variables.
       // BTW some formals' types may have been set in createTaskFunctions().
       formal->type = varActual->type;
@@ -4112,19 +4130,38 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
       // by blank or const intent. As of this writing (6'2015)
       // records and strings are (incorrectly) captured at the point
       // when the task function/arg bundle is created.
+      bool shouldCapture = false;
       if (taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) == true &&
           varActual->isConstValWillNotChange()      == false &&
           (concreteIntent(formal->intent, formal->type->getValType())
            & INTENT_FLAG_IN)) {
         // skip dummy_locale_arg: chpl_localeID_t
         if (argNum != 0 || taskFn->hasFlag(FLAG_ON) == false) {
-          captureTaskIntentValues(argNum,
-                                  formal,
-                                  actual,
-                                  varActual,
-                                  info,
-                                  taskFn);
+          shouldCapture = true;
         }
+      }
+
+      // Also always capture when getting a borrow from an owned/shared.
+      if (isManagedPtrType(varActual->getValType()) &&
+          (taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
+           taskFn->hasFlag(FLAG_BEGIN)) &&
+          (//origFormalIntent == INTENT_IN ||
+           origFormalIntent == INTENT_CONST ||
+           //origFormalIntent == INTENT_CONST_IN ||
+           origFormalIntent == INTENT_BLANK)) {
+        if (taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL))
+          shouldCapture = true;
+        formal->type = getManagedPtrBorrowType(varActual->getValType());
+        formal->intent = INTENT_CONST_IN;
+      }
+
+      if (shouldCapture) {
+        captureTaskIntentValues(argNum,
+                                formal,
+                                actual,
+                                varActual,
+                                info,
+                                taskFn);
       }
 
       argNum = argNum + 1;
@@ -4518,25 +4555,24 @@ static void handleSetMemberTypeMismatch(Type*     t,
                                         CallExpr* call,
                                         SymExpr*  rhs);
 
-static void resolveSetMember(CallExpr* call) {
+// Returns the field Symbol for 'fieldExpr'.
+// It must be a field in 'base' type.
+static Symbol* resolveFieldSymbol(Type* base, Expr* fieldExpr) {
+  AggregateType* ct = toAggregateType(base);
+  INT_ASSERT(ct); // required for PRIM_SET_MEMBER
 
-  if (call->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+  // fieldExpr must be either a literal or a field.
+  // In any case it is a VarSymbol.
+  SymExpr* sym = toSymExpr(fieldExpr);
+  VarSymbol* var = toVarSymbol(sym->symbol());
+
+  if (var->immediate == NULL) {
+    // Confirm that this is already a correct field Symbol.
+    INT_ASSERT(var->defPoint->parentSymbol == ct->symbol);
+    return var;
   }
 
   // Get the field name.
-  SymExpr* sym = toSymExpr(call->get(2));
-
-  if (sym == NULL) {
-    INT_FATAL(call, "bad set member primitive");
-  }
-
-  VarSymbol* var = toVarSymbol(sym->symbol());
-
-  if (var == NULL || var->immediate == NULL) {
-    INT_FATAL(call, "bad set member primitive");
-  }
-
   const char* name = var->immediate->v_string;
 
   // Special case: An integer field name is actually a tuple member index.
@@ -4545,29 +4581,28 @@ static void resolveSetMember(CallExpr* call) {
 
     if (get_int(sym, &i) == true) {
       name = astr("x", istr(i));
-
-      call->get(2)->replace(new SymExpr(new_CStringSymbol(name)));
     }
   }
-
-  AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
-
-  if (ct == NULL) {
-    INT_FATAL(call, "bad set member primitive");
-  }
-
-  Symbol* fs = NULL;
 
   for_fields(field, ct) {
-    if (strcmp(field->name, name) == 0) {
-      fs = field;
-      break;
+    if (!strcmp(field->name, name)) {
+      fieldExpr->replace(new SymExpr(field));
+      return field;
     }
   }
 
-  if (fs == NULL) {
-    INT_FATAL(call, "bad set member primitive");
+  INT_ASSERT(false); // did not find field - bad set member primitive
+  return NULL;
+}
+
+static void resolveSetMember(CallExpr* call) {
+
+  if (call->id == breakOnResolveID) {
+    gdbShouldBreakHere();
   }
+
+  Symbol* fs = resolveFieldSymbol(call->get(1)->typeInfo()->getValType(),
+                                  call->get(2));
 
   Type* t = call->get(3)->typeInfo();
 
@@ -4987,11 +5022,13 @@ static void resolveInitField(CallExpr* call) {
     // instantiation of the overarching type (and replaces references to the
     // fields from the old instantiation
 
+    bool ignoredHasDefault = false;
+
     if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(srcExpr)) ||
         fs->hasFlag(FLAG_PARAM) ||
         (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) ||
         (fs->defPoint->init == NULL && fs->defPoint->exprType != NULL &&
-         ct->fieldIsGeneric(fs))) {
+         ct->fieldIsGeneric(fs, ignoredHasDefault))) {
       AggregateType* instantiate = ct->getInstantiation(srcExpr->symbol(), index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
@@ -5963,7 +6000,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself
         if (isManagedPtrType(at) && !isManagedPointerInit(typeExpr)) {
-          Type* subtype = at->getField("t")->type;
+          Type* subtype = getManagedPtrBorrowType(at);
           if (isAggregateType(subtype)) // in particular, not dtUnknown
             at = toAggregateType(subtype);
         }
@@ -6747,20 +6784,31 @@ static Type* resolveGenericActual(SymExpr* se) {
 static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
+  bool unmanaged = false;
+  if (UnmanagedClassType* ut = toUnmanagedClassType(type)) {
+    type = ut->getCanonicalClass();
+    unmanaged = true;
+  }
+
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->symbol->hasFlag(FLAG_GENERIC) && at->hasGenericDefaults) {
+    if (at->symbol->hasFlag(FLAG_GENERIC) && at->isGenericWithDefaults()) {
       CallExpr*   cc    = new CallExpr(at->typeConstructor->name);
-      TypeSymbol* retTS = NULL;
 
       se->replace(cc);
 
       resolveCall(cc);
 
-      retTS = cc->typeInfo()->symbol;
+      Type* retType = cc->typeInfo();
 
-      cc->replace(new SymExpr(retTS));
+      if (unmanaged) {
+        AggregateType* gotAt = toAggregateType(retType);
+        INT_ASSERT(gotAt);
+        retType = gotAt->getUnmanagedClass();
+      }
 
-      retval = retTS->type;
+      cc->replace(new SymExpr(retType->symbol));
+
+      retval = retType;
     }
   }
 
@@ -6807,12 +6855,10 @@ void ensureEnumTypeResolved(EnumType* etype) {
     // referring to previous enum constants.
     // This might be temporarily incorrect, but it's good enough
     // for resolving the enum constant initializers.
-    // We'll set finally and correctly in the call to sizeAndNormalize()
-    // below.
     etype->integerType = dtInt[INT_SIZE_DEFAULT];
 
-    int64_t v;
-    uint64_t uv;
+    int64_t v=0;
+    uint64_t uv=0;
     bool foundInit = false;
     bool foundNegs = false;
 
@@ -7788,13 +7834,17 @@ static void unmarkDefaultedGenerics() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->inTree() == true) {
       for_formals(formal, fn) {
+        AggregateType* formalAt   = toAggregateType(formal->type);
+        bool typeHasGenericDefaults = false;
+        if (formalAt && formalAt->isGenericWithDefaults())
+          typeHasGenericDefaults = true;
+
         if (formal                               != fn->_this &&
-            formal->type->hasGenericDefaults     == true      &&
+            typeHasGenericDefaults                            &&
             formal->hasFlag(FLAG_MARKED_GENERIC) == false     &&
             formal->hasFlag(FLAG_IS_MEME)        == false) {
           SET_LINENO(formal);
 
-          AggregateType* formalAt   = toAggregateType(formal->type);
           FnSymbol*      typeConstr = formalAt->typeConstructor;
 
           formal->type     = dtUnknown;
@@ -9291,22 +9341,21 @@ static void removeRandomPrimitive(CallExpr* call) {
 
       SymExpr* memberSE = toSymExpr(call->get(2));
       const char* memberName = NULL;
+      Symbol* sym = NULL;  // the member symbol
 
-      if (!get_string(memberSE, &memberName)) {
+      if (get_string(memberSE, &memberName)) {
+        sym = baseType->getField(memberName);
+        SET_LINENO(memberSE);
+        memberSE->replace(new SymExpr(sym));
+      } else {
         // Confirm that this is already a correct field Symbol.
-        INT_ASSERT(memberSE->symbol()->defPoint->parentSymbol
-                   == baseType->symbol);
-        break;
+        sym = memberSE->symbol();
+        INT_ASSERT(sym->defPoint->parentSymbol == baseType->symbol);
       }
 
-      Symbol* sym = baseType->getField(memberName);
       if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
           sym->isParameter())
         call->getStmtExpr()->remove();
-      else {
-        SET_LINENO(call->get(2));
-        call->get(2)->replace(new SymExpr(sym));
-      }
     }
     break;
 
@@ -9983,29 +10032,28 @@ static bool primInitIsIteratorRecord(Type* type) {
 
 // Return true if this type is generic *and* resolution will fail
 static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
-  bool retval = type->symbol->hasFlag(FLAG_GENERIC);
 
   // Not generic? OK.
   if (!type->symbol->hasFlag(FLAG_GENERIC))
     return false;
 
+  bool retval = true;
+
   // If it is generic then try to resolve the default type constructor
   // for better error reporting.
-  if (retval == true) {
-    if (AggregateType* at = toAggregateType(type)) {
-      if (FnSymbol* typeCons = at->typeConstructor) {
-        SET_LINENO(call);
+  if (AggregateType* at = toAggregateType(canonicalClassType(type))) {
+    if (FnSymbol* typeCons = at->typeConstructor) {
+      SET_LINENO(call);
 
-        // Swap in a call to the default type constructor and try to resolve it
-        CallExpr* typeConsCall = new CallExpr(typeCons->name);
+      // Swap in a call to the default type constructor and try to resolve it
+      CallExpr* typeConsCall = new CallExpr(typeCons->name);
 
-        call->replace(typeConsCall);
+      call->replace(typeConsCall);
 
-        retval = (tryResolveCall(typeConsCall) == NULL) ? true : false;
+      retval = (tryResolveCall(typeConsCall) == NULL) ? true : false;
 
-        // Put things back the way they were.
-        typeConsCall->replace(call);
-      }
+      // Put things back the way they were.
+      typeConsCall->replace(call);
     }
   }
 
