@@ -1,5 +1,11 @@
-OtherClass(int(64))
-int(64)
-MyClass(OtherClass(int(64)))
-MyClass(OtherClass(int(64)))
-MyClass(OtherClass(int(64)))
+g OtherClass(int(64))
+h int(64)
+i MyClass(OtherClass(int(64)))
+j MyClass(OtherClass(int(64)))
+k MyClass(OtherClass(int(64)))
+ll borrowed MyClass MyClass(OtherClass(int(64)))
+ll generic Concrete
+m borrowed MyClass
+m object
+n borrowed MyClass
+n object

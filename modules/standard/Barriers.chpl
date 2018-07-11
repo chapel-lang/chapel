@@ -270,7 +270,8 @@ module Barriers {
             extern proc chpl_comm_barrier(msg: c_string);
             chpl_comm_barrier("local barrier call".localize().c_str());
           }
-          if boundsChecking && done.testAndSet() {
+          const alreadySet = done.testAndSet();
+          if boundsChecking && alreadySet {
             use ChapelHaltWrappers;
             boundsCheckHalt("Too many callers to barrier()");
           }
@@ -294,7 +295,8 @@ module Barriers {
       on this {
         const myc = count.fetchSub(1);
         if myc<=1 {
-          if boundsChecking && done.testAndSet() {
+          const alreadySet = done.testAndSet();
+          if boundsChecking && alreadySet {
             use ChapelHaltWrappers;
             boundsCheckHalt("Too many callers to notify()");
           }

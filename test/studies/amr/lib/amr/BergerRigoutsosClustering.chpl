@@ -96,6 +96,14 @@ proc clusterFlags (
 //| >    CandidateDomain class    | >
 //|/______________________________|/
 
+// helper class
+pragma "use default init"
+class ArrayWrapper
+{
+  var Domain: domain(1,stridable=true);
+  var array: [Domain] int;
+}
+
 class CandidateDomain {
   
   param rank:       int;
@@ -104,15 +112,6 @@ class CandidateDomain {
   const min_width:  rank*int;
   var   signatures: rank*unmanaged ArrayWrapper;
 
-  
-  pragma "use default init"
-  class ArrayWrapper
-  {
-    var Domain: domain(1,stridable=true);
-    var array: [Domain] int;
-  }
-  
-  
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/

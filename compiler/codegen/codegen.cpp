@@ -57,7 +57,7 @@
 #include <vector>
 
 // function prototypes
-static bool compareSymbol(void* v1, void* v2);
+static bool compareSymbol(const void* v1, const void* v2);
 
 // Global so that we don't have to pass around
 // to all of the codegen() routines
@@ -272,7 +272,7 @@ genClassIDs(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
 
 struct compareSymbolFunctor {
   // This is really operator less-than
-  bool operator() (Symbol* a, Symbol* b) {
+  bool operator() (const Symbol* a, const Symbol* b) const {
     return compareSymbol(a, b);
   }
 };
@@ -892,7 +892,7 @@ genClassNames(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
 
 
 static bool
-compareSymbol(void* v1, void* v2) {
+compareSymbol(const void* v1, const void* v2) {
   Symbol* s1 = (Symbol*)v1;
   Symbol* s2 = (Symbol*)v2;
   ModuleSymbol* m1 = s1->getModule();
