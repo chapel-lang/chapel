@@ -14,31 +14,55 @@ class Concrete {
 }
 
 proc g(arg:unmanaged MyClass(?t)) {
-  writeln(t:string);
+  writeln("g ", t:string);
 }
 proc h(arg:unmanaged MyClass(unmanaged OtherClass(?t))) {
-  writeln(t:string);
+  writeln("h ", t:string);
 }
 
 proc i(arg:unmanaged) {
-  writeln(arg.type:string);
+  writeln("i ", arg.type:string);
 }
 proc j(arg:unmanaged MyClass) {
-  writeln(arg.type:string);
+  writeln("j ", arg.type:string);
 }
 proc k(arg:unmanaged MyClass(unmanaged OtherClass)) {
-  writeln(arg.type:string);
+  writeln("k ", arg.type:string);
 }
 
 proc ll(arg:unmanaged MyClass) {
-  writeln(arg.type:string);
+  writeln("ll unmanaged MyClass");
 }
 proc ll(arg:borrowed MyClass) {
-  writeln(arg.type:string);
+  writeln("ll borrowed MyClass");
 }
 proc ll(arg) {
-  writeln(arg.type:string);
+  writeln("ll generic");
 }
+
+proc m(type t : unmanaged MyClass) {
+  writeln("m unmanaged MyClass");
+}
+proc m(type t : borrowed MyClass) {
+  writeln("m borrowed MyClass");
+}
+proc m(type t : unmanaged object) {
+  writeln("m unmanaged object");
+}
+proc m(type t : borrowed object) {
+  writeln("m borrowed object");
+}
+
+proc n(arg : unmanaged MyClass) {
+  writeln("n unmanaged MyClass");
+}
+proc n(arg : unmanaged object) {
+  writeln("n unmanaged object");
+}
+proc n(arg : borrowed MyClass) {
+  writeln("n borrowed MyClass");
+}
+
 
 proc test() {
   var a = new unmanaged MyClass(new unmanaged OtherClass(1));
@@ -49,8 +73,15 @@ proc test() {
   j(a);
   k(a);
   ll(a);
-  ll(_to_borowed(a));
+  ll(_to_borrowed(a));
   ll(b);
+  m(unmanaged MyClass(int));
+  m(unmanaged Concrete);
+  m(borrowed MyClass(int));
+  m(borrowed Concrete);
+  n(a);
+  n(_to_borrowed(a));
+  n(b);
   delete b;
   delete a.x;
   delete a;
