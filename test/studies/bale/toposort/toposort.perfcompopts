@@ -1,1 +1,1 @@
---fast --set use_dimIterCol=true --set eltType="uint(8)"
+--set use_dimIterCol=true --set eltType="uint(8)"
