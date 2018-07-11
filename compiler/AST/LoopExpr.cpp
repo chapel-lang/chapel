@@ -200,6 +200,8 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
   } else {
     SET_LINENO(node);
 
+    bool noFilter = node->cond == NULL;
+
     CallExpr* replacement = buildLoopExprFunctions(node);
 
     node->replace(replacement);
@@ -210,7 +212,8 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
     // lowered.
     iterExpr->accept(this);
 
-    if (node->forall) {
+    // Do not preserve the shape if there is a filtering predicate.
+    if (node->forall && noFilter) {
       normalize(replacement); // for addIterRecShape()
       addIterRecShape(replacement, node->zippered);
     }
