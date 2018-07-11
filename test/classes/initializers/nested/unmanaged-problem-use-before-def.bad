@@ -1,0 +1,2 @@
+unmanaged-problem-use-before-def.chpl:10: In initializer:
+unmanaged-problem-use-before-def.chpl:3: error: 'unmanaged Inner' used before defined (first used here)
