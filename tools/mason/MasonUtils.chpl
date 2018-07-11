@@ -280,8 +280,8 @@ extern "struct sys_stat_s" record chpl_stat {
 }
 
 extern "struct timespec" record chpl_timespec {
-  var tv_nsec: int;
   var tv_sec: int;
+  var tv_nsec: int;
 }
 
 proc getLastModified(filename: string) : int {
