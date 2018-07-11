@@ -224,19 +224,32 @@ void lowerLoopExprs(BaseAST* ast) {
   ast->accept(&vis);
 }
 
+
+static Expr* getShapeForZippered(Expr* tupleRef) {
+  Symbol* tupleSym = toSymExpr(tupleRef)->symbol();
+  SymExpr* tupleDef = tupleSym->getSingleDef();
+  CallExpr* move = toCallExpr(tupleDef->parentExpr);
+  INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+  CallExpr* buildTup = toCallExpr(move->get(2));
+  INT_ASSERT(buildTup->isNamed("_build_tuple"));
+  // The shape comes from the first tuple component.
+  return buildTup->get(1);
+}
+
 // 'feRep', during resolution, is an iterator record for the
 // forall expression. Ensure it will get a shape.
 static void addIterRecShape(CallExpr* feRep, bool zippered) {
-  INT_ASSERT(!zippered); // TBD
   if (CallExpr* move = toCallExpr(feRep->parentExpr)) {
     if (move->isPrimitive(PRIM_MOVE)) {
       Expr* dest = move->get(1)->copy();
-      Expr* shape = feRep->get(1)->copy();
+      Expr* shape = feRep->get(1);
+      if (zippered) shape = getShapeForZippered(shape);
       move->getStmtExpr()->insertAfter(
-        new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE, dest, shape));
+        new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE, dest, shape->copy()));
     }
   }
 }
+
 
 static Expr* removeOrNull(Expr* arg) { return arg ? arg->remove() : NULL; }
 
@@ -350,6 +363,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, ArgSymbol* iteratorExprArg, Blo
 
   return block;
 }
+
 
 static FnSymbol* buildSerialIteratorFn(FnSymbol* fn,
                                        const char* iteratorName,
