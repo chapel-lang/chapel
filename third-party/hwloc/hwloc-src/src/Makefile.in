@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Copyright © 2009-2016 Inria.  All rights reserved.
+# Copyright © 2009-2018 Inria.  All rights reserved.
 # Copyright © 2009-2012 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 # Copyright © 2011-2012 Oracle and/or its affiliates.  All rights reserved.
@@ -466,6 +466,8 @@ HWLOC_LINUX_LIBNUMA_LIBS = @HWLOC_LINUX_LIBNUMA_LIBS@
 HWLOC_MS_LIB = @HWLOC_MS_LIB@
 HWLOC_MS_LIB_ARCH = @HWLOC_MS_LIB_ARCH@
 HWLOC_NVML_LIBS = @HWLOC_NVML_LIBS@
+HWLOC_OPENCL_CFLAGS = @HWLOC_OPENCL_CFLAGS@
+HWLOC_OPENCL_LDFLAGS = @HWLOC_OPENCL_LDFLAGS@
 HWLOC_OPENCL_LIBS = @HWLOC_OPENCL_LIBS@
 HWLOC_PCIACCESS_CFLAGS = @HWLOC_PCIACCESS_CFLAGS@
 HWLOC_PCIACCESS_LIBS = @HWLOC_PCIACCESS_LIBS@
@@ -625,7 +627,7 @@ ldflags = $(am__append_17) $(am__append_19) $(am__append_21) \
 @HWLOC_HAVE_PCI_TRUE@@HWLOC_PCI_BUILD_STATIC_FALSE@hwloc_pci_la_LDFLAGS = $(plugins_ldflags) $(HWLOC_PCIACCESS_LIBS)
 @HWLOC_HAVE_OPENCL_TRUE@@HWLOC_OPENCL_BUILD_STATIC_FALSE@hwloc_opencl_la_SOURCES = topology-opencl.c
 @HWLOC_HAVE_OPENCL_TRUE@@HWLOC_OPENCL_BUILD_STATIC_FALSE@hwloc_opencl_la_CFLAGS = $(AM_CFLAGS) $(HWLOC_OPENCL_CFLAGS) -DHWLOC_INSIDE_PLUGIN
-@HWLOC_HAVE_OPENCL_TRUE@@HWLOC_OPENCL_BUILD_STATIC_FALSE@hwloc_opencl_la_LDFLAGS = $(plugins_ldflags) $(HWLOC_OPENCL_LIBS)
+@HWLOC_HAVE_OPENCL_TRUE@@HWLOC_OPENCL_BUILD_STATIC_FALSE@hwloc_opencl_la_LDFLAGS = $(plugins_ldflags) $(HWLOC_OPENCL_LIBS) $(HWLOC_OPENCL_LDFLAGS)
 @HWLOC_CUDA_BUILD_STATIC_FALSE@@HWLOC_HAVE_CUDART_TRUE@hwloc_cuda_la_SOURCES = topology-cuda.c
 @HWLOC_CUDA_BUILD_STATIC_FALSE@@HWLOC_HAVE_CUDART_TRUE@hwloc_cuda_la_CFLAGS = $(AM_CFLAGS) $(HWLOC_CUDA_CFLAGS) -DHWLOC_INSIDE_PLUGIN
 @HWLOC_CUDA_BUILD_STATIC_FALSE@@HWLOC_HAVE_CUDART_TRUE@hwloc_cuda_la_LDFLAGS = $(plugins_ldflags) $(HWLOC_CUDA_LIBS)
@@ -644,7 +646,7 @@ ldflags = $(am__append_17) $(am__append_19) $(am__append_21) \
 # Installable library
 libhwloc_la_SOURCES = $(sources)
 libhwloc_la_LDFLAGS = $(ldflags) -version-info $(libhwloc_so_version) \
-	$(HWLOC_LIBS) $(am__append_31)
+	$(HWLOC_LIBS) $(HWLOC_LDFLAGS) $(am__append_31)
 @HWLOC_HAVE_PLUGINS_TRUE@libhwloc_la_LIBADD = $(LIBLTDL)
 
 # Embedded library (note the lack of a .so version number -- that

@@ -1,0 +1,6 @@
+feature request: generic initializers if statement support improvement
+
+A generic field is set in two different places in this initializer.  This is
+okay, because it is in separate branches of an if statement.  However, the way
+we build the generic instantiation doesn't take the if statement into account,
+meaning that we encounter both statements.  This should be fixed.

@@ -27,12 +27,16 @@
 #include "expr.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "IfExpr.h"
 #include "log.h"
+#include "LoopExpr.h"
+#include "UnmanagedClassType.h"
 #include "ModuleSymbol.h"
 #include "ParamForLoop.h"
 #include "parser.h"
 #include "passes.h"
 #include "runpasses.h"
+#include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -101,13 +105,13 @@ void printStatistics(const char* pass) {
   int nStmt = nBlockStmt + nCondStmt + nDeferStmt + nGotoStmt + nUseStmt + nExternBlockStmt + nForallStmt + nTryStmt + nForwardingStmt + nCatchStmt;
   int kStmt = kBlockStmt + kCondStmt + kDeferStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt + kCatchStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
-    nContextCallExpr + nForallExpr + nNamedExpr;
+    nContextCallExpr + nLoopExpr + nNamedExpr + nIfExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
-    kContextCallExpr + kForallExpr + kNamedExpr;
+    kContextCallExpr + kLoopExpr + kNamedExpr + kIfExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
-  int nType = nPrimitiveType+nEnumType+nAggregateType;
-  int kType = kPrimitiveType+kEnumType+kAggregateType;
+  int nType = nPrimitiveType+nEnumType+nAggregateType+nUnmanagedClassType;
+  int kType = kPrimitiveType+kEnumType+kAggregateType+kUnmanagedClassType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -128,14 +132,14 @@ void printStatistics(const char* pass) {
             kStmt, kCondStmt, kBlockStmt, kGotoStmt);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9d  Unre %9d  Sym  %9d  Def   %9d  Call  %9d  Forall %9d  Named %9d\n",
-            nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nForallExpr, nNamedExpr);
+    fprintf(stderr, "    Expr %9d  Unre %9d  Sym  %9d  Def   %9d  Call  %9d  Forall %9d  Named %9d  If %9d\n",
+            nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nLoopExpr, nNamedExpr, nIfExpr);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9dK Unre %9dK Sym  %9dK Def   %9dK Call  %9dK Forall %9dk Named %9dK\n",
-            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kForallExpr, kNamedExpr);
+    fprintf(stderr, "    Expr %9dK Unre %9dK Sym  %9dK Def   %9dK Call  %9dK Forall %9dk Named %9dK If %9dK\n",
+            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %6dK Unre %6dK Sym  %6dK Def   %6dK Call  %6dK Forall %6dk Named %6dK\n",
-            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kForallExpr, kNamedExpr);
+    fprintf(stderr, "    Expr %6dK Unre %6dK Sym  %6dK Def   %6dK Call  %6dK Forall %6dk Named %6dK If %6dK\n",
+            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr);
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Shd   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
@@ -203,6 +207,13 @@ static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
 }
 
 void cleanAst() {
+  // Important: Sometimes scopeResolve will create dummy UseStmts that are
+  // never inserted into the tree, and will be deleted inbetween passes.
+  //
+  // If we do not destroy the caches, they may contain pointers back to these
+  // dummy uses.
+  destroyModuleUsesCaches();
+
   //
   // clear back pointers to dead ast instances
   //
@@ -457,12 +468,16 @@ const char* BaseAST::astTagAsString() const {
       retval = "ContextCallExpr";
       break;
 
-    case E_ForallExpr:
-      retval = "ForallExpr";
+    case E_LoopExpr:
+      retval = "LoopExpr";
       break;
 
     case E_NamedExpr:
       retval = "NamedExpr";
+      break;
+
+    case E_IfExpr:
+      retval = "IfExpr";
       break;
 
     case E_UseStmt:
@@ -558,6 +573,10 @@ const char* BaseAST::astTagAsString() const {
     case E_AggregateType:
       retval = "AggregateType";
       break;
+    
+    case E_UnmanagedClassType:
+      retval = "UnmanagedClassType";
+      break;
   }
 
   return retval;
@@ -649,9 +668,13 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
     }
 
   } else if (ForallStmt* forall = toForallStmt(ast)) {
-    if (forall->fContinueLabel)
+    if (forall->fContinueLabel) {
       if (LabelSymbol* y = toLabelSymbol(map->get(forall->fContinueLabel)))
           forall->fContinueLabel = y;
+    } else if (forall->fErrorHandlerLabel) {
+      if (LabelSymbol* y = toLabelSymbol(map->get(forall->fErrorHandlerLabel)))
+          forall->fErrorHandlerLabel = y;
+    }
 
   } else if (VarSymbol* ps = toVarSymbol(ast)) {
     SUB_TYPE(ps->type);

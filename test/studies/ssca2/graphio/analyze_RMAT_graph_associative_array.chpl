@@ -101,7 +101,7 @@ proc  generate_and_analyze_associative_array_RMAT_graph_representation {
     {return Row (v).Row_Neighbors.numIndices;}
   }
 
-  var G = new Associative_Graph (vertex_domain);
+  var G = new unmanaged Associative_Graph (vertex_domain);
 
   // ------------------------------------------------------------------
   // generate RMAT graph of the specified size, based on input config
@@ -122,7 +122,7 @@ if gFilename != "-" {
 
   // Let's also read a graph and write it back out.
   if refFilenameIn != "-" {
-    const Ref = new Associative_Graph (vertex_domain);
+    const Ref = new unmanaged Associative_Graph (vertex_domain);
     Readin_RMAT_graph ( Ref, refFilenameIn, refDstyleIn );
     if !checkOnlyOnRead && refFilenameOut != "-" then
       Writeout_RMAT_graph ( Ref, refFilenameOut, refDstyleOut );

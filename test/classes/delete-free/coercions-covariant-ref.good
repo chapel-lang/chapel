@@ -1,0 +1,3 @@
+coercions-covariant-ref.chpl:16: In function 'testB':
+coercions-covariant-ref.chpl:18: error: unresolved call 'acceptOwnedMyClassB(_owned(SubClass))'
+coercions-covariant-ref.chpl:12: note: candidates are: acceptOwnedMyClassB(ref own: Owned(MyClass))

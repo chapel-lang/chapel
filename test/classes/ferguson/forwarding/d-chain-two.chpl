@@ -41,7 +41,7 @@ record WrapperOuter {
 
 
 {
-  var a = new WrapperOuter(new WrapperOne(new C(1)));
+  var a = new WrapperOuter(new WrapperOne(new unmanaged C(1)));
 
   a.foo(); // should call WrapperOuter.foo
   a.bar(); // should call WrapperOne.bar
@@ -52,7 +52,7 @@ record WrapperOuter {
 }
 
 {
-  var b = new WrapperOuter(new WrapperTwo(new D(2)));
+  var b = new WrapperOuter(new WrapperTwo(new unmanaged D(2)));
 
   b.dfoo(); // should call WrapperOuter.dfoo
   b.dbar(); // should call WrapperTwo.dbar
@@ -62,7 +62,7 @@ record WrapperOuter {
 }
 
 {
-  var c = new WrapperOuter(new WrapperOne(new D(3)));
+  var c = new WrapperOuter(new WrapperOne(new unmanaged D(3)));
 
   c.dfoo(); // should call WrapperOuter.dfoo
   c.dbar(); // should call WrapperOne.dbar
@@ -72,7 +72,7 @@ record WrapperOuter {
 }
 
 {
-  var d = new WrapperOuter(new WrapperTwo(new C(4)));
+  var d = new WrapperOuter(new WrapperTwo(new unmanaged C(4)));
 
   d.foo(); // should call WrapperOuter.foo
   d.bar(); // should call WrapperTwo.bar

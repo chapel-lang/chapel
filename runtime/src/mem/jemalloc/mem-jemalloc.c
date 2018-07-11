@@ -26,7 +26,9 @@
 #include <string.h>
 
 #include "chpl-comm.h"
+#include "chpl-linefile-support.h"
 #include "chpl-mem.h"
+#include "chpl-mem-desc.h"
 #include "chplmemtrack.h"
 #include "chpltypes.h"
 #include "error.h"
@@ -119,7 +121,8 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
     //
     // Get a dynamic extension chunk.
     //
-    cur_chunk_base = chpl_comm_regMemAlloc(size);
+    cur_chunk_base = chpl_comm_regMemAlloc(size, CHPL_RT_MD_MEM_HEAP_SPACE,
+                                           0, CHPL_FILE_IDX_INTERNAL);
 
     if (cur_chunk_base == NULL) {
       return NULL;

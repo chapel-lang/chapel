@@ -17,17 +17,10 @@ class ForceLJ : Force {
   var epsilon4 : real;
 
   proc init() {
-    sigma = 2.315;
-    epsilon  = 0.167;
-    var locCutoff = 2.5*sigma;
+    const sigma = 2.315;
+    const locCutoff = 2.5*sigma;
 
     var locCutoff2 = locCutoff * locCutoff;
-    sigma2 = sigma * sigma;
-    s6 = sigma2*sigma2*sigma2;
-    rCut6 = s6 / (locCutoff2*locCutoff2*locCutoff2);
-    eShift = POT_SHIFT * rCut6 * (rCut6 - 1.0);
-    epsilon2 = 2.0 * epsilon;
-    epsilon4 = 4.0 * epsilon;
     super.init(cutoff = locCutoff,
                mass = 63.55 * amuToInternalMass,
                lat = 3.615,
@@ -36,6 +29,14 @@ class ForceLJ : Force {
                atomicNumber = 29,
                potName = "Lennard-Jones",
                cutoff2 = locCutoff2);
+    this.sigma = sigma;
+    epsilon  = 0.167;
+    sigma2 = sigma * sigma;
+    s6 = sigma2*sigma2*sigma2;
+    rCut6 = s6 / (locCutoff2*locCutoff2*locCutoff2);
+    eShift = POT_SHIFT * rCut6 * (rCut6 - 1.0);
+    epsilon2 = 2.0 * epsilon;
+    epsilon4 = 4.0 * epsilon;
   }
 
   inline proc compute(a : real3, b : real3, inout fij, inout pij) {

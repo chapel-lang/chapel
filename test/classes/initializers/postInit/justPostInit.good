@@ -1,0 +1,3 @@
+C.postinit
+has initializer: true
+c = {x = 10, A = 5 5 5 5, s = hello world}

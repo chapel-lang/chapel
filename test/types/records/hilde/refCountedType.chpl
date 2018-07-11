@@ -26,11 +26,12 @@ class Impl
 // When the reference count goes to zero, the implementation is deleted.
 record Handle
 {
-  var _impl : Impl;
+  pragma "unsafe"
+  var _impl : unmanaged Impl;
 
   proc init() { _impl = nil; }
 
-  proc init(val: real) { _impl = new Impl(1, val); }
+  proc init(val: real) { _impl = new unmanaged Impl(1, val); }
 
   proc init(other: Handle) {
     if other._impl == nil then halt("Illegal copy of uninitialized Handle.");

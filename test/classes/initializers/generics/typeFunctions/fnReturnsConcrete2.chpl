@@ -3,7 +3,7 @@ class C {
   var x: t;
   proc init(type t) {
     this.t = t;
-    super.init();
+    this.complete();
     writeln("In C.init()");
   }
 }
@@ -13,6 +13,5 @@ proc getType(type t) type {
 }
 
 var myC: getType(int);
-myC = new (getType(int))(int);
+myC = new borrowed (getType(int))(int);
 writeln(myC);
-delete myC;

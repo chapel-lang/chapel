@@ -1,2 +1,2 @@
-checkParamTypes.chpl:16: error: Initializing parameter 'p' to value not known at compile time
-checkParamTypes.chpl:18: error: Passed!
+checkParamTypes.chpl:18: error: Initializing parameter 'p' to value not known at compile time
+checkParamTypes.chpl:20: error: Passed!

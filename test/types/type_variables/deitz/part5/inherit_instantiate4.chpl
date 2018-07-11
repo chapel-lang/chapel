@@ -7,7 +7,7 @@ class D : C {
   var y : int;
 }
 
-var d = new D(p=2);
+var d = new unmanaged D(p=2);
 
 writeln(d);
 writeln("p=", d.p);

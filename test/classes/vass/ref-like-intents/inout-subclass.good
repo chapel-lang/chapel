@@ -1,2 +1,1 @@
-inout-subclass.chpl:14: error: unresolved call 'procInoutC(D)'
-inout-subclass.chpl:6: note: candidates are: procInoutC(inout arg: C)
+inout-subclass.chpl:14: error: value from coercion passed to ref formal 'arg'

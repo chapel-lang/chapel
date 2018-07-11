@@ -26,7 +26,9 @@ DOX_TAG = $(DOX_DIR)/$(PACKAGE).tag
 #
 
 # images already available in repository
-PREBUILT_IMAGES = images/dudley.png images/emmett.png images/hagrid.png
+PREBUILT_IMAGES = images/dudley.png images/emmett.png images/hagrid.png \
+        images/ppc64-with-smt.png images/ppc64-without-smt.png images/ppc64-full-with-smt.png \
+        images/devel09-pci.png
 # images built from repository before inclusion in make dist
 BUILT_IMAGES = images/diagram.png images/diagram.eps
 
@@ -36,14 +38,6 @@ EXTRA_DIST = \
         doxygen.css \
         doxygen.cfg \
         images/diagram.fig \
-        images/devel09-pci.png \
-        images/devel09-pci.pdf \
-        images/ppc64-with-smt.png \
-        images/ppc64-with-smt.pdf \
-        images/ppc64-without-smt.png \
-        images/ppc64-without-smt.pdf \
-        images/ppc64-full-with-smt.png \
-        images/ppc64-full-with-smt.pdf \
         www.open-mpi.org.cfg \
         www.open-mpi.org-css.inc \
         www.open-mpi.org-footer.inc \
@@ -99,7 +93,7 @@ images/diagram.png: $(srcdir)/images/diagram.fig
 	    echo "ERROR: Cannot find the 'fig2dev' executable -- cannot make $@"; \
 	    exit 1; \
 	fi
-	$(FIG2DEV) -L png $< $@
+	$(FIG2DEV) -m 1.5 -L png $< $@
 
 images/diagram.eps: $(srcdir)/images/diagram.fig
 	$(MKDIR_P) images

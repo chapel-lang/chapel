@@ -7,7 +7,7 @@ record R {
     this.x = 5;
     this.y = 1.0;
     this.x *= 2;
-    this.initDone();
+    this.complete();
   }
 }
 

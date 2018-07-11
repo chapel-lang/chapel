@@ -1,0 +1,3 @@
+inherits_default1.chpl:12: In function 'main':
+inherits_default1.chpl:13: error: unresolved call 'Parent.init(Parent, int(64))'
+inherits_default1.chpl:3: note: candidates are: Parent.init(a: int(64))

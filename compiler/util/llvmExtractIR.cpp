@@ -31,6 +31,8 @@
 #include "llvm/Transforms/Utils/ValueMapper.h"
 #include "llvm/IR/Verifier.h"
 
+#include "llvmUtil.h"
+
 using namespace llvm;
 
 void extractAndPrintFunctionLLVM(Function *func) {
@@ -39,8 +41,13 @@ void extractAndPrintFunctionLLVM(Function *func) {
   ValueToValueMapTy VMap;
   // Create a new module containing only the definition of the function
   // and using external declarations for everything else
+#if HAVE_LLVM_VER < 70
   auto ownedM = CloneModule(funcModule, VMap,
                             [=](const GlobalValue *GV) { return GV == func; });
+#else
+  auto ownedM = CloneModule(*funcModule, VMap,
+                            [=](const GlobalValue *GV) { return GV == func; });
+#endif
   Module& M = *ownedM.get();
 
   // Make sure the function in the module is externally visible
@@ -60,7 +67,7 @@ void extractAndPrintFunctionLLVM(Function *func) {
 
   std::error_code EC;
   // note: could output to a file if we replace "-" with a filename
-  tool_output_file Out("-", EC, sys::fs::F_None);
+  TOOL_OUTPUT_FILE Out("-", EC, sys::fs::F_None);
   if (EC) {    
     errs() << EC.message() << '\n';
     return;

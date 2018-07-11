@@ -1,7 +1,7 @@
 use BlockDist;
 
 proc main() {
-  var f = new Foo(3, 4);
+  var f = new unmanaged Foo(3, 4);
 
   writeln(f);
 
@@ -16,6 +16,5 @@ class Foo {
   proc init(n1 : int, n2 : int) {
     dom = { 1 .. n1, 1 .. n2 };
 
-    super.init();
   }
 }

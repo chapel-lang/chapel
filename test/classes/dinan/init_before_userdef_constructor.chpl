@@ -12,7 +12,7 @@ class C {
   }
 }
 
-var c: C = new C(true);
+var c: unmanaged C = new unmanaged C(true);
 
 writeln("Got back: x=", c.x, " y=", c.y);
 

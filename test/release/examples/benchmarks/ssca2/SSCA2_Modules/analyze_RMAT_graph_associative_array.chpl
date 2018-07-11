@@ -294,7 +294,7 @@ module analyze_RMAT_graph_associative_array {
     } // class Associative_Graph
 
     writeln("allocating Associative_Graph");
-    var G = new Associative_Graph (vertex_domain);
+    var G = new unmanaged Associative_Graph (vertex_domain);
 
     // ------------------------------------------------------------------
     // generate RMAT graph of the specified size, based on input config

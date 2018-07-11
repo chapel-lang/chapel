@@ -122,7 +122,7 @@ AC_DEFUN([HWLOC_SETUP_DOCS],[
 EOF
 
     AC_MSG_CHECKING([if this is a developer build])
-    AS_IF([test ! -d "$srcdir/.hg" -a ! -d "$srcdir/.git"],
+    AS_IF([test ! -e "$srcdir/.git"],
           [AC_MSG_RESULT([no (doxygen generation is optional)])
 	   test "x$enable_doxygen" = x && enable_doxygen=no],
           [AC_MSG_RESULT([yes])

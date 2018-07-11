@@ -23,5 +23,6 @@
 # start_test ...
 
 outfile=$2
-sed < $outfile > $outfile.tmp -e '/Transient MPP reservation error on create/d'
+sed < $outfile > $outfile.tmp -e '/Transient MPP reservation error on create/d' \
+                              -e '/Transient MPP reservation error on confirm/d'
 mv -f $outfile.tmp $outfile

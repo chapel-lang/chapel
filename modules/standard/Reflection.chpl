@@ -88,6 +88,7 @@ proc getField(const ref x:?t, param i: int) type
    :arg i: which field to get
    :returns: an rvalue referring to that field.
  */
+pragma "unsafe"
 inline
 proc getField(const ref x:?t, param i:int) const ref
   return __primitive("field by num", x, i);
@@ -145,6 +146,7 @@ proc getField(const ref x:?t, param s:string) const ref {
    :arg i: which field to get
    :returns: an rvalue referring to that field.
  */
+pragma "unsafe"
 inline
 proc getFieldRef(ref x:?t, param i:int) ref
   return __primitive("field by num", x, i);

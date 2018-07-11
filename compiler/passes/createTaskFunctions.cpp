@@ -186,7 +186,10 @@ ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent) {
       retval = tiMarkConstRef;
       break;
 
+    case TFI_IN_OUTERVAR:
     case TFI_REDUCE:
+    case TFI_REDUCE_OP:
+    case TFI_TASK_PRIVATE:
       INT_FATAL("unexpected intent in tiMarkForForallIntent()");
       break;
   }
@@ -335,7 +338,8 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   AggregateType* reduceAt = toAggregateType(reduceType->type);
   INT_ASSERT(reduceAt);
 
-  CallExpr* newOp = new CallExpr(reduceAt->defaultInitializer->name,
+  CallExpr* newOp = new CallExpr(PRIM_NEW,
+                                 reduceAt->symbol,
                                  new NamedExpr("eltType", new SymExpr(eltType)));
   headAnchor->insertBefore(new CallExpr(PRIM_MOVE, globalOp, newOp));
 

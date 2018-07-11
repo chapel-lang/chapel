@@ -6,7 +6,7 @@ class ManyFields {
     // f4's implicit reliance on f5 is bad, but the field declaration will tell
     // us this.
     f5 = val;
-    super.init();
+    this.complete();
     // The proper way to write this is in Phase 2, or by relying on the val
     // argument.  You may also choose to initialize these fields with noinit
     // during Phase 1

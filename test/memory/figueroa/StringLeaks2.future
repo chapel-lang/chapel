@@ -1,7 +1,0 @@
-memory: string leaks
-
-Was:
-
-Bug: Memory is leaked when a (string) variable is assigned to more than once
-s should be freed after the writeln, but only if it was assigned to a second
-time.

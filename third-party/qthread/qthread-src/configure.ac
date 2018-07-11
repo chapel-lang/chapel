@@ -300,7 +300,7 @@ AC_ARG_WITH([topology],
             [AS_IF([test "x$with_topology" = xyes],
                    [with_topology=none_specified])
              case "$with_topology" in
-                 hwloc|binders|hwloc_v2|lgrp|libnuma|libnumaV2|mach|no|plpa|sys|tilera) ;;
+                 hwloc|hwloc_via_chapel|binders|hwloc_v2|lgrp|libnuma|libnumaV2|mach|no|plpa|sys|tilera) ;;
                  none_specified) ;;
                  *)
                  AC_MSG_ERROR([Unsupported topology library ($with_topology)])
@@ -1017,8 +1017,8 @@ AS_IF([test "x$qthread_topo" != xno],
       [AS_IF([test "x$qthread_topo" = "xnone_specified"],
              [qthread_topo=no])
        # First, check for hwloc, since it gives me the most portable/flexible/reliable/detailed information.
-       AS_IF([test "x$qthread_topo" = xno -o "x$qthread_topo" = xbinders -o "x$qthread_topo" = xhwloc -o "x$qthread_topo" = xhwloc_v2],
-             [QTHREAD_CHECK_HWLOC([AS_IF([test "x$qthread_topo" != xhwloc -a "x$qthread_topo" != xhwloc_v2 -a "x$qthread_topo" != xbinders],
+       AS_IF([test "x$qthread_topo" = xno -o "x$qthread_topo" = xbinders -o "x$qthread_topo" = xhwloc -o "x$qthread_topo" = xhwloc_via_chapel -o "x$qthread_topo" = xhwloc_v2],
+             [QTHREAD_CHECK_HWLOC([AS_IF([test "x$qthread_topo" != xhwloc -a "x$qthread_topo" != xhwloc_via_chapel -a "x$qthread_topo" != xhwloc_v2 -a "x$qthread_topo" != xbinders],
                                          [qthread_topo=hwloc])],
                                   [AS_IF([test "x$qthread_topo" != xno],
                                          [AC_MSG_ERROR([Specified topology library ($qthread_topo) does not work.])])])])

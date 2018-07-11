@@ -11,7 +11,7 @@ class C {
   var field:int;
 }
 
-var r = new Wrapper(new C());
+var r = new Wrapper(new unmanaged C());
 r.field = 11;
 writeln(r.field);
 

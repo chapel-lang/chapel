@@ -5,11 +5,11 @@ class C {
   var y : real;
 }
 
-var c1 : C       = new C(1, 2.3);
-var c2 : C       = new C(2, 3.4);
+var c1 : unmanaged C = new unmanaged C(1, 2.3);
+var c2 : unmanaged C = new unmanaged C(2, 3.4);
 
-var l1 : list(C) = makeList(c1, c2);
-var l2 : list(C) = makeList(c1, c2);
+var l1 : list(unmanaged C) = makeList(c1, c2);
+var l2 : list(unmanaged C) = makeList(c1, c2);
 
 writeln(l1);
 

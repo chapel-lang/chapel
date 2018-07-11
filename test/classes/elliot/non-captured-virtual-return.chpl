@@ -6,6 +6,5 @@ class Child: Parent {
   proc foo() { return (1,1); }
 }
 
-var child: Parent = new Child();
+var child: borrowed Parent = new borrowed Child();
 child.foo();
-delete child;

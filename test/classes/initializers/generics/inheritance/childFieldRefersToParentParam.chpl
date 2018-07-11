@@ -3,7 +3,6 @@ class BaseArr {
 
   proc init(param rank: int) {
     this.rank = rank;
-    super.init();
   }
 }
 
@@ -14,7 +13,6 @@ class ZeroBasedArr: BaseArr {
      from parent type during phase 1 of initialization:
   proc init(param rank: int) {
     this.rank = rank;
-    super.init();
   }
   */
 
@@ -26,6 +24,6 @@ class ZeroBasedArr: BaseArr {
   }
 }
 
-var myArr = new ZeroBasedArr(3);
+var myArr = new unmanaged ZeroBasedArr(3);
 writeln(myArr);
 delete myArr;

@@ -78,6 +78,8 @@ void checkArgsAndLocals()
 // resolution).
 void checkNoUnresolveds()
 {
+  // BHARSH INIT TODO: Can this be '0' now that the tuple constructor is gone?
+  //
   // TODO: This value should really be cranked down to 0.
   // But in some cases _construct__tuple remains unresolved after
   // resolution ... .
@@ -247,7 +249,6 @@ void checkPrimitives()
      case PRIM_TYPEOF:
      case PRIM_USED_MODULES_LIST:       // used modules in BlockStmt::modUses
      case PRIM_TUPLE_EXPAND:
-     case PRIM_TUPLE_AND_EXPAND:
      case PRIM_CHPL_COMM_GET:           // Direct calls to the Chapel comm layer
      case PRIM_CHPL_COMM_PUT:           // may eventually add others (e.g.: non-blocking)
      case PRIM_CHPL_COMM_ARRAY_GET:

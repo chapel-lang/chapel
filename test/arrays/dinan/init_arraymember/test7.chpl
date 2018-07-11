@@ -7,7 +7,7 @@ class C {
   var x: f().type = f();
 }
 
-var c = new C();
+var c = new unmanaged C();
 
 writeln(c.x);
 

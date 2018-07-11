@@ -13,14 +13,14 @@ module A {
       writeln("In primary initializer of class Foo");
       x = 3;
       y = yVal;
-      super.init();
+
     }
   }
 
   proc main() {
-    var f = new Foo(true);
+    var f = new borrowed Foo(true);
     writeln(f); // expect 3, true
-    delete f;
+
   }
 }
 
@@ -31,6 +31,5 @@ module B {
     writeln("In secondary initializer of class Foo");
     x = xVal;
     y = xVal > 5;
-    super.init();
   }
 }

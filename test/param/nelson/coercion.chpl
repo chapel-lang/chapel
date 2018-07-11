@@ -1,7 +1,7 @@
 class C {
   param i : uint;
 
-  proc initialize() {
+  proc postinit() {
     writeln("hello from id ", i, "!");
   }
 }

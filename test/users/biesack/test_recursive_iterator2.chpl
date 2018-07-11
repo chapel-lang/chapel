@@ -10,16 +10,16 @@ class ValueNode : Node {
 }
 
 class Branch : Node {
-  const left, right: Node;
+  const left, right: unmanaged Node;
   proc nodeType() : NodeType { return NodeType.branch; }
 }
 
-proc node(a:int, b:int) : Branch {
-  return new Branch(new ValueNode(a), new ValueNode(b));
+proc node(a:int, b:int) : unmanaged Branch {
+  return new unmanaged Branch(new unmanaged ValueNode(a), new unmanaged ValueNode(b));
 }
 
-proc node(a, b:Node) : Branch {
-  return new Branch(a, b);
+proc node(a, b:unmanaged Node) : unmanaged Branch {
+  return new unmanaged Branch(a, b);
 }
 
 iter leaves(tree : Node) : int {

@@ -10,8 +10,8 @@ class MyMapper {
   }
 }
 
-var myMapper = new MyMapper();
-var newDist = new dmap(new UserMapAssoc(idxType=real, mapper=myMapper));
+var myMapper = new unmanaged MyMapper();
+var newDist = new dmap(new unmanaged UserMapAssoc(idxType=real, mapper=myMapper));
 
 var D: domain(real) dmapped newDist;
 

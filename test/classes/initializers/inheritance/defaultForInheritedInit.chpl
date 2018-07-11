@@ -7,10 +7,11 @@ class C {
     this.x = x;
     this.y = y;
     this.z = z;
-    super.init();
+
   }
 }
 
+pragma "use default init"
 class D : C {
 }
 

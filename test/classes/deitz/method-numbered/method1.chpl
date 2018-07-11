@@ -12,7 +12,7 @@ class dog {
   }
 }
 
-var d : dog = new dog();
+var d : borrowed dog = new borrowed dog();
 
 d.weight = 38.5;
 d.paws   = 4;
@@ -26,5 +26,3 @@ writeln("d: (weight = ", d.weight, ", paws = ", d.paws, ")");
 writeln("Grow");
 d.grow();
 writeln("d: (weight = ", d.weight, ", paws = ", d.paws, ")");
-
-delete d;

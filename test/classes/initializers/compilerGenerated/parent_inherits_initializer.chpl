@@ -9,7 +9,6 @@ class Grandparent {
   // generated parent initializer.
   proc init() {
     a = 11;
-    super.init();
   }
 }
 
@@ -22,8 +21,7 @@ class Child : Parent {
 }
 
 proc main() {
-  var child = new Child(4, 2);
+  var child = new shared Child(2, 4);
 
   writeln(child);
-  delete child;
 }

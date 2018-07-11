@@ -118,7 +118,7 @@ module Futures {
 
     proc init(type retType) {
       this.retType = retType;
-      this.initDone();
+      this.complete();
       refcnt.write(0);
       state.clear();
     }
@@ -141,13 +141,13 @@ module Futures {
     type retType;
 
     pragma "no doc"
-    var classRef: FutureClass(retType) = nil;
+    var classRef: unmanaged FutureClass(retType) = nil;
 
     pragma "no doc"
     proc init(type retType) {
       this.retType = retType;
-      this.initDone();
-      acquire(new FutureClass(retType));
+      this.complete();
+      acquire(new unmanaged FutureClass(retType));
     }
 
     pragma "no doc"
@@ -219,7 +219,7 @@ module Futures {
     }
 
     pragma "no doc"
-    proc acquire(newRef: FutureClass) {
+    proc acquire(newRef: unmanaged FutureClass) {
       if isValid() then halt("acquire(newRef) called on valid future!");
       classRef = newRef;
       classRef.incRefCount();

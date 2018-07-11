@@ -50,7 +50,7 @@ class TreeNode {
   // By default, children will be empty since it has range [1..0]
   var nChildren: int = 0;
   var childDom = {1..nChildren};
-  var children:  [childDom] TreeNode;
+  var children:  [childDom] unmanaged TreeNode;
 
 
   // Generate this node's children
@@ -72,7 +72,7 @@ class TreeNode {
 
     forall i in childDom {
       if debug then writeln("  + (", depth, ", ", i, ")");
-      children[i]    = new TreeNode(depth+1);
+      children[i]    = new unmanaged TreeNode(depth+1);
       rng_spawn(hash[1], children[i].hash[1], (i-1):sha_int);
     }
 
@@ -214,7 +214,7 @@ proc requestThreads(n:int): int {
 /*
 **  Parallel DFS
 */
-proc dfs_count(n: TreeNode, wasParallel: bool = false):int {
+proc dfs_count(n: unmanaged TreeNode, wasParallel: bool = false):int {
   if n != nil {
     if (parallel) {
       var threads_granted = requestThreads(n.nChildren);
@@ -248,7 +248,7 @@ proc dfs_count(n: TreeNode, wasParallel: bool = false):int {
 /*
 **  Parallel Tree Creation
 */
-proc create_tree(parent: TreeNode, wasParallel: bool = false): int {
+proc create_tree(parent: unmanaged TreeNode, wasParallel: bool = false): int {
   if parent == nil {
     writeln("create_tree(): Warning, called with nil");
     return 0;
@@ -281,7 +281,7 @@ proc create_tree(parent: TreeNode, wasParallel: bool = false): int {
 } 
 
 
-proc destroyTree(tn: TreeNode) {
+proc destroyTree(tn: unmanaged TreeNode) {
   for child in tn.children do
     destroyTree(child);
   delete tn;
@@ -292,9 +292,9 @@ proc main {
   var t_create: Timer();
   var t_dfs   : Timer();
   var counted, created: int;
-  var root: TreeNode;
+  var root: unmanaged TreeNode;
   
-  root = new TreeNode(0);
+  root = new unmanaged TreeNode(0);
   rng_init(root.hash[1], SEED:sha_int);
 
   uts_showSearchParams();

@@ -3,5 +3,5 @@ class C {
   var x: t;
 }
 
-var c = C(int);
+var c = unmanaged C(int);
 writeln(c);

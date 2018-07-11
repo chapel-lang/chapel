@@ -3,7 +3,7 @@ class Foo {
 
   proc init(xVal) {
     x = xVal;
-    super.init();
+    this.complete();
     select xVal.type {
       when int(16) do
         writeln("It was small");
@@ -17,6 +17,5 @@ class Foo {
   }
 }
 
-var foo = new Foo(4:int(16));
+var foo = new owned Foo(4:int(16));
 writeln(foo);
-delete foo;

@@ -1,79 +1,86 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
-
    contributed by Ben Harshbarger and Brad Chamberlain
-   derived from the GNU C version by Mr Ledrug
+   derived from the Rust #2 version by Matt Brubeck
 */
-
-config param columns = 61;
 
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
 proc main(args: [] string) {
-  const consoleIn = openfd(0),
-        stdinNoLock = consoleIn.reader(locking=false);
+  const stdin = openfd(0),
+        input = stdin.reader(iokind.native, locking=false),
+        len = stdin.length();
+  var data: [0..#len] uint(8);
 
-  var data: [1..consoleIn.length()] uint(8),
-      idx = 1,
-      start = 0;
+  // if the file isn't empty, wait for all tasks to complete before continuing
+  if len then sync {
+    do {
+      // capture the starting offset
+      const descOffset = input.offset();
 
-  sync {     // wait for all process() tasks to complete before continuing
-    var numRead: int;
+      // Mark where we start scanning (keep bytes in I/O buffer in input)
+      input.mark();
 
-    while stdinNoLock.readline(data, numRead, idx) {
-      if data[idx] == ascii(">") {       // is this the start of a section?
+      // Scan forward until we get to '\n' (end of description)
+      input.advancePastByte(ascii("\n"));
+      const seqOffset = input.offset();
 
-        // spawn a task to process the previous sequence, if there was one
-        if start then
-          begin process(data, start, idx-2);     // -2 == rewind past "\n>"
+      // Scan forward until we get to '>' (end of sequence) or EOF
+      const (eof, nextDescOffset) = findNextDesc();
 
-        // capture the start of this sequence
-        start = idx + numRead;
+      // look for the next description, returning '(eof, its offset)'
+      proc findNextDesc() throws {
+        try {
+          input.advancePastByte(ascii(">"));
+        } catch (e:EOFError) {
+          return (true, len-1);
+        }
+        return (false, input.offset()-1);
       }
 
-      idx += numRead; 
-    }
+      // Go back to the point we marked
+      input.revert();
 
-    // process the final sequence
-    if start then
-      process(data, start, idx-2);
+      // Read up to the nextDescOffset into the data array.
+      input.read(data[descOffset..nextDescOffset]);
+
+      // chars to rewind past: 1 for '\n' and 1 for '>' if we're not yet at eof
+      const rewind = if eof then 1 else 2;
+
+      // fire off a task to process the data for this sequence
+      begin process(data, seqOffset, nextDescOffset-rewind);
+    } while !eof;
   }
 
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
+  // write the data out to stdout once all tasks have completed
+  const stdoutBin = openfd(1).writer(iokind.native, locking=false,
                                      hints=QIO_CH_ALWAYS_UNBUFFERED);
   stdoutBin.write(data);
 }
 
-
-proc process(data, start, end) {
-  const extra = (end - start) % columns,
-        off = columns - extra - 1;
-
-  // shift the data
-  if off then
-    for m in (start+extra)..(end-1) by columns {
-      for i in 1..off-1 by -1 do
-        data[m+i+1] = data[m+i];
-      data[m+1] = ascii("\n");
-    }
-
-  // replace the data items with their table entries
-  for i in 0..(end-start)/2 {
-    ref d1 = data[start+i],
-        d2 = data[end-i];
+// process a sequence from both ends, replacing each extreme element
+// with the table lookup of the opposite one
+proc process(seq, in start, in end) {
+  while start <= end {
+    ref d1 = seq[start], d2 = seq[end];
     (d1, d2) = (table[d2], table[d1]);
+    advance(start, 1);
+    advance(end, -1);
+  }
+
+  proc advance(ref cursor, dir) {
+    do { cursor += dir; } while seq[cursor] == ascii("\n");
   }
 }
 
-proc initTable(param pairs) {
+proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for param i in 1..pairs.length do
-    if i%2 {
-      table[ascii(pairs[i])] = ascii(pairs[i+1]);
-      if pairs[i] != "\n" then
-        table[ascii(pairs[i].toLower())] = ascii(pairs[i+1]);
-    }
+  for i in 1..pairs.length by 2 {
+    table[ascii(pairs[i])] = ascii(pairs[i+1]);
+    if pairs[i] != "\n" then
+      table[ascii(pairs[i].toLower())] = ascii(pairs[i+1]);
+  }
 
   return table;
 }

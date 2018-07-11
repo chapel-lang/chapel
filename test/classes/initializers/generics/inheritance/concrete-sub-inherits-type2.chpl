@@ -7,7 +7,6 @@ class Parent {
   proc init(xVal) {
     t = xVal.type;
     x = xVal;
-    super.init();
   }
 }
 
@@ -15,8 +14,8 @@ class Child : Parent {
   var y: int;
 
   proc init(yVal: int, xVal) {
-    y = yVal;
     super.init(xVal);
+    y = yVal;
   }
 }
 

@@ -6,7 +6,7 @@ class Derived : Base {
 
     z = _z;
 
-    initDone();
+    complete();
   }
 }
 
@@ -23,15 +23,13 @@ class Base {
     x = _x;
     y = _y;
 
-    initDone();
+    complete();
   }
 }
 
 
 proc main() {
-  var c = new Derived(10, 20, 30);
+  var c = new borrowed Derived(10, 20, 30);
 
   writeln(c);
-
-  delete c;
 }

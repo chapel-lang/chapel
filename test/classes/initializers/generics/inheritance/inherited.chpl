@@ -1,6 +1,6 @@
 class Base {
   proc init() {
-    initDone();
+    complete();
   }
 }
 
@@ -12,7 +12,7 @@ class Child1 {
     t1 = _t1;
     p1 = _p1;
 
-    initDone();
+    complete();
   }
 }
 
@@ -24,7 +24,7 @@ class Child2 : Child1 {
 
     t2 = _t2;
 
-    initDone();
+    complete();
   }
 }
 
@@ -51,11 +51,9 @@ proc testLevel1() {
   writeln('Are the types the same? ', c11.type == c12.type);
   writeln();
 
-  c11 = new Child1(int, 10);
+  c11 = new borrowed Child1(int, 10);
 
   writeln(c11);
-
-  delete c11;
 }
 
 
@@ -70,12 +68,7 @@ proc testLevel2() {
   writeln('Are the types the same? ', c21.type == c22.type);
   writeln();
 
-  c21 = new Child2(real, 20, int);
+  c21 = new borrowed Child2(real, 20, int);
 
   writeln(c21);
-
-  delete c21;
 }
-
-
-

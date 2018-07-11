@@ -10,7 +10,7 @@ class C {
   }
 }
 
-var arithC = new C([1..3] real);
+var arithC = new unmanaged C([1..3] real);
 [i in 1..3] arithC.x(i) = i + i/10.0;
 arithC.foo();
 delete arithC;

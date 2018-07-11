@@ -55,7 +55,9 @@ venv:
 ifneq ($(wildcard $(VIRTUAL_ENV)),)
 	$(info Using system virtualenv)
 else ifneq ($(wildcard $(THIRD_PARTY_VENV)),)
-	$(eval VIRTUAL_ENV=$(THIRD_PARTY_VENV))
+	$(eval VIRTUAL_ENV=PYTHONPATH=$(PIPLIBS) && $(THIRD_PARTY_VENV))
+	# Add warning suppression flags
+	$(eval VENV_PIP_FLAGS=--no-warn-conflicts --no-warn-script-location)
 	$(info Using chpl-venv virtualenv ($(VIRTUAL_ENV)))
 else
 	$(error Unable to find virtualenv. Either install virtualenv yourself \
@@ -73,9 +75,10 @@ c2chapel: venv
 	./utils/fixFakes.sh $(FAKES) $(PWD)/utils/custom.h
 
 	$(VIRTUAL_ENV) $(VENV_DIR)
+
 	. $(VENV_DIR)/bin/activate && \
-	  pip install $(INSTALL)/$(TAR) && \
-	  pip install argparse
+	  python $(VENV_DIR)/bin/pip install $(VENV_PIP_FLAGS) $(INSTALL)/$(TAR) && \
+	  python $(VENV_DIR)/bin/pip install $(VENV_PIP_FLAGS) $(CHPL_PIP_INSTALL_PARAMS) argparse
 
 check:
 	cd test && ./tester.sh

@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2010, 2014, 2017 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -10,25 +10,24 @@
 
 #include <cairo.h>
 
-#if CAIRO_HAS_PDF_SURFACE
+#ifdef CAIRO_HAS_PDF_SURFACE
 #include <cairo-pdf.h>
 #endif /* CAIRO_HAS_PDF_SURFACE */
 
-#if CAIRO_HAS_PS_SURFACE
+#ifdef CAIRO_HAS_PS_SURFACE
 #include <cairo-ps.h>
 #endif /* CAIRO_HAS_PS_SURFACE */
 
-#if CAIRO_HAS_SVG_SURFACE
+#ifdef CAIRO_HAS_SVG_SURFACE
 #include <cairo-svg.h>
 #endif /* CAIRO_HAS_SVG_SURFACE */
 
 #ifndef HWLOC_HAVE_X11_KEYSYM
 /* In case X11 headers aren't availble, forcefully disable Cairo/Xlib.  */
 # undef CAIRO_HAS_XLIB_SURFACE
-# define CAIRO_HAS_XLIB_SURFACE 0
 #endif
 
-#if CAIRO_HAS_XLIB_SURFACE
+#ifdef CAIRO_HAS_XLIB_SURFACE
 #include <cairo-xlib.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -46,7 +45,7 @@
 
 #include "lstopo.h"
 
-#if (CAIRO_HAS_XLIB_SURFACE + CAIRO_HAS_PNG_FUNCTIONS + CAIRO_HAS_PDF_SURFACE + CAIRO_HAS_PS_SURFACE + CAIRO_HAS_SVG_SURFACE)
+#if (defined CAIRO_HAS_XLIB_SURFACE) + (defined CAIRO_HAS_PNG_FUNCTIONS) + (defined CAIRO_HAS_PDF_SURFACE) + (defined CAIRO_HAS_PS_SURFACE) + (defined CAIRO_HAS_SVG_SURFACE)
 struct lstopo_cairo_output {
   struct lstopo_output loutput; /* must be at the beginning */
   cairo_surface_t *surface;
@@ -135,7 +134,7 @@ topo_cairo_textsize(void *_output, const char *text, unsigned textlength __hwloc
 }
 
 
-#if (CAIRO_HAS_PNG_FUNCTIONS + CAIRO_HAS_PDF_SURFACE + CAIRO_HAS_PS_SURFACE + CAIRO_HAS_SVG_SURFACE)
+#if (defined CAIRO_HAS_PNG_FUNCTIONS) + (defined CAIRO_HAS_PDF_SURFACE) + (defined CAIRO_HAS_PS_SURFACE) + (defined CAIRO_HAS_SVG_SURFACE)
 static cairo_status_t
 topo_cairo_write(void *closure, const unsigned char *data, unsigned int length)
 {
@@ -162,7 +161,7 @@ static void null_declare_color (void *output __hwloc_attribute_unused, int r __h
 #endif /* (CAIRO_HAS_XLIB_SURFACE + CAIRO_HAS_PNG_FUNCTIONS + CAIRO_HAS_PDF_SURFACE + CAIRO_HAS_PS_SURFACE + CAIRO_HAS_SVG_SURFACE) */
 
 
-#if CAIRO_HAS_XLIB_SURFACE
+#ifdef CAIRO_HAS_XLIB_SURFACE
 /* X11 back-end */
 static struct draw_methods x11_draw_methods;
 
@@ -512,7 +511,7 @@ output_x11(struct lstopo_output *loutput, const char *filename __hwloc_attribute
 #endif /* CAIRO_HAS_XLIB_SURFACE */
 
 
-#if CAIRO_HAS_PNG_FUNCTIONS
+#ifdef CAIRO_HAS_PNG_FUNCTIONS
 /* PNG back-end */
 static struct draw_methods png_draw_methods;
 
@@ -575,7 +574,7 @@ output_png(struct lstopo_output *loutput, const char *filename)
 #endif /* CAIRO_HAS_PNG_FUNCTIONS */
 
 
-#if CAIRO_HAS_PDF_SURFACE
+#ifdef CAIRO_HAS_PDF_SURFACE
 /* PDF back-end */
 static struct draw_methods pdf_draw_methods;
 
@@ -638,7 +637,7 @@ output_pdf(struct lstopo_output *loutput, const char *filename)
 #endif /* CAIRO_HAS_PDF_SURFACE */
 
 
-#if CAIRO_HAS_PS_SURFACE
+#ifdef CAIRO_HAS_PS_SURFACE
 /* PS back-end */
 static struct draw_methods ps_draw_methods;
 
@@ -701,7 +700,7 @@ output_ps(struct lstopo_output *loutput, const char *filename)
 #endif /* CAIRO_HAS_PS_SURFACE */
 
 
-#if CAIRO_HAS_SVG_SURFACE
+#ifdef CAIRO_HAS_SVG_SURFACE
 /* SVG back-end */
 static struct draw_methods svg_draw_methods;
 

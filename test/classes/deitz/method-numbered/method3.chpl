@@ -14,7 +14,7 @@ class foo {
   }
 }
 
-var f : foo = new foo();
+var f : borrowed foo = new borrowed foo();
 
 writeln(f.x);
 writeln(f.getx());
@@ -30,5 +30,3 @@ writeln(f.getx());
 f.x = 5;
 writeln(f.x);
 writeln(f.getx());
-
-delete f;

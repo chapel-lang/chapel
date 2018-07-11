@@ -38,10 +38,12 @@ extern AggregateType* dtBaseArr;
 extern AggregateType* dtBaseDom;
 extern AggregateType* dtDist;
 extern AggregateType* dtError;
+extern AggregateType* dtExternalArray;
 extern AggregateType* dtLocale;
 extern AggregateType* dtLocaleID;
 extern AggregateType* dtMainArgument;
 extern AggregateType* dtOnBundleRecord;
+extern AggregateType* dtOwned;
 extern AggregateType* dtTaskBundleRecord;
 extern AggregateType* dtTuple;
 

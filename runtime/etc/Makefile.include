@@ -71,7 +71,7 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.auxFilesys
 # sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
 include $(CHPL_MAKE_HOME)/runtime/make/Makefile.runtime.include
 
-# RUNTIME_CFLAGS e.g. -DCHPL_TASKS_MODEL_H=... -DCHPL_THREADS_MODEL_H=...
+# RUNTIME_CFLAGS e.g. -DCHPL_DEBUG
 #
 # TODO (bradc): Note that the following results in all of our
 # compiler-specific warning flags getting listed as part of GEN_FLAGS
@@ -83,6 +83,8 @@ include $(CHPL_MAKE_HOME)/runtime/make/Makefile.runtime.include
 # try and wedge in in the name of shorter compiler lines.
 #
 HEADER_CFLAGS = $(RUNTIME_CFLAGS)
+HEADER_CFLAGS += -I$(CHPL_MAKE_HOME)/modules/standard
+HEADER_CFLAGS += -I$(CHPL_MAKE_HOME)/modules/packages
 
 GEN_CFLAGS += $(HEADER_CFLAGS)
 
@@ -122,6 +124,8 @@ printlinkline:
 	@echo $(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
 	      -lchpl $(LIBS) -lm $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
 
+printoverrideld:
+	@echo $(LD)
 
 printmaino:
 	@echo $(CHPL_RT_LIB_DIR)/main.o

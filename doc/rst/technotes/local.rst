@@ -36,10 +36,8 @@ the performance of a program, as communication usually slows down
 execution.
 
 The ``local`` construct does not necessarily indicate the cause of
-communication when present. See the `Module\: CommDiagnostics`_ for ways to
+communication when present. See the :chpl:mod:`CommDiagnostics` module for ways to
 diagnose communication.
-
-.. _Module\: CommDiagnostics:    https://chapel-lang.org/docs/latest/modules/standard/CommDiagnostics.html
 
 
 

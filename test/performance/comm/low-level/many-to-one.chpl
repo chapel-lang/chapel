@@ -1,5 +1,7 @@
 use Time;
 use CommDiagnostics;
+use AllLocalesBarriers;
+use BlockDist;
 
 enum op_t {
   opNone,
@@ -16,8 +18,8 @@ use op_t;
 config param op = opNone;
 config param opNeedsTask = (op == opOn);
 
-const numWorkerNodes = numLocales - 1;
-config const numTasksPerNode = min reduce ([i in 1..numWorkerNodes]
+const numWorkerNodes = numLocales - 2;
+config const numTasksPerNode = min reduce ([i in 0..#numLocales]
                                            Locales(i).maxTaskPar);
 
 config const runSecs = 5.0;
@@ -27,10 +29,14 @@ config const printConfig = false;
 config const printTimings = false;
 config const printCommDiags = false;
 
-var x0: int;
-var x0Atomic: atomic int;
+const remoteVarSpace = LocaleSpace dmapped Block(LocaleSpace);
+var remoteVar: [remoteVarSpace] int;
+var remoteVarAtomic: [remoteVarSpace] atomic int;
 
 proc main() {
+  if numWorkerNodes < 1 then
+    halt('This program needs at least 3 nodes.');
+
   if printConfig {
     writeln(numWorkerNodes, ' worker nodes, ',
             numTasksPerNode, ' worker tasks per node, ',
@@ -42,68 +48,80 @@ proc main() {
     startCommDiagnostics();
   }
 
-  var numOpsPerNode: [1..numWorkerNodes] int;
-  var timePerNode: [1..numWorkerNodes] real;
+  var numOpsOnNodes: [0..#numLocales] int;
+  var timeOnNodes: [0..#numLocales] real;
 
-  var timer: Timer;
-  if printTimings then
-    timer.start();
+  allLocalesBarrier.reset(numTasksPerNode);
 
-  coforall locIdx in 1..numWorkerNodes with ( ref x0 ) {
+  coforall locIdx in 0..#numLocales {
     on Locales(locIdx) {
-      var barTaskCnt: chpl__processorAtomicType(int); // for barrier()
+      if locIdx == 0 || locIdx == 1 {
+        //
+        // Locales 0 and 1 must participate in the barrier but otherwise
+        // are not involved.  Locale 0 is waiting for the coforall-stmt
+        // to complete, and locale 1 is the many-to-one target node.
+        //
+        coforall 1..numTasksPerNode do allLocalesBarrier.barrier() ;
+      } else {
+        //
+        // Locales 2..numLocales-1 generate the many-to-one ops, which
+        // target locale 1.
+        //
+        ref x = remoteVar(1);
+        ref xAtomic = remoteVarAtomic(1);
 
-      var numOpsPerTask: [1..numTasksPerNode] int;
-      var timePerTask: [1..numTasksPerNode] real;
+        var numOpsOnTasks: [1..numTasksPerNode] int;
+        var timeOnTasks: [1..numTasksPerNode] real;
 
-      coforall taskIdx in 1..numTasksPerNode with ( ref x0 ) {
-        var nopsAtCheck = minOpsPerTimerCheck;
-        var nops: int;
+        coforall taskIdx in 1..numTasksPerNode with (ref x, ref xAtomic) {
+          var nopsAtCheck = minOpsPerTimerCheck;
+          var nops: int;
 
-        var t: Timer;
-        var tElapsed: real;
+          var t: Timer;
+          var tElapsed: real;
 
-        barrier(barTaskCnt);
+          allLocalesBarrier.barrier();
 
-        t.start();
+          t.start();
 
-        while true {
-          //
-          // We do comms until runSecs has passed in this task, using
-          // nopsAtCheck to limit how much overhead we spend checking
-          // for that.
-          //
-          if nops == nopsAtCheck {
-            tElapsed = t.elapsed();
-            if tElapsed >= runSecs then break;
-            nopsAtCheck = (nops * (0.75 * runSecs / tElapsed)):int;
-            if nopsAtCheck - nops < minOpsPerTimerCheck then
-              nopsAtCheck = nops + minOpsPerTimerCheck;
+          while true {
+            //
+            // We do comms until runSecs has passed in this task, using
+            // nopsAtCheck to limit how much overhead we spend checking
+            // for that.
+            //
+            if nops == nopsAtCheck {
+              tElapsed = t.elapsed();
+              if tElapsed >= runSecs then break;
+              nopsAtCheck = (nops * (0.75 * runSecs / tElapsed)):int;
+              if nopsAtCheck - nops < minOpsPerTimerCheck then
+                nopsAtCheck = nops + minOpsPerTimerCheck;
+            }
+            doOneOp(nops, x, xAtomic);
+            nops += 1;
           }
-          doOneOp(nops);
-          nops += 1;
+
+          numOpsOnTasks(taskIdx) = nops;
+          timeOnTasks(taskIdx) = tElapsed;
         }
 
-        numOpsPerTask(taskIdx) = nops;
-        timePerTask(taskIdx) = tElapsed;
+        numOpsOnNodes(locIdx) = + reduce numOpsOnTasks;
+        timeOnNodes(locIdx) = + reduce timeOnTasks;
       }
-
-      numOpsPerNode(locIdx) = + reduce numOpsPerTask;
-      timePerNode(locIdx) = + reduce timePerTask;
     }
   }
 
   if printTimings {
-    const numOpsTotal = + reduce numOpsPerNode;
-    const timeTotal = + reduce timePerNode;
-    const timeAvg = timeTotal / (numTasksPerNode * numWorkerNodes);
-    const mOpsPerSecAvg = (numOpsTotal / timeAvg) * 1e-6;
-    const mOpsPerSecPerTask = (numOpsTotal / timeTotal) * 1e-6;
+    const numOpsTotal = + reduce numOpsOnNodes;
+    const timeTotal = + reduce timeOnNodes;
+    const opRatePerSource = (numOpsTotal / timeTotal) / 1e6;
+    const numSources = numTasksPerNode * numWorkerNodes;
+    const opRateToTarget = opRatePerSource * numSources;
 
     writeln('numOps = ', numOpsTotal);
-    writeln('Execution time = ', timeAvg);
-    writeln('Performance (mOps/sec) = ', mOpsPerSecAvg);
-    writeln('Performance (mOps/sec/Task) = ', mOpsPerSecPerTask);
+    writeln('Execution time = ', timeTotal / numSources);
+    writeln('Performance (mOps/sec/source) = ', opRatePerSource);
+    writeln('Performance (mOps/sec) = ', opRateToTarget);
   }
 
   if printCommDiags {
@@ -113,45 +131,29 @@ proc main() {
 }
 
 
-inline proc doOneOp(nops) {
+inline proc doOneOp(nops, ref x, ref xAtomic) {
   if op == opNone {
   }
   else if op == opGet {
-    if nops == 0 then x0 = 0; // prevent compiler loop-hoisting GET
-    infiniteSink(x0);
+    if nops == 0 then x = 0; // prevent compiler loop-hoisting GET
+    infiniteSink(x);
   }
   else if op == opPut {
-    x0 = infiniteSource();
+    x = infiniteSource();
   }
   else if op == opFetchAMO {
-    infiniteSink(x0Atomic.fetchAdd(1));
+    infiniteSink(xAtomic.fetchAdd(1));
   }
   else if op == opAMO {
-    x0Atomic.add(1);
+    xAtomic.add(1);
   }
   else if op == opFastOn {
-    on Locales(0) do ;
+    on Locales(1) do ;
   }
   else if op == opOn {
-    on Locales(0) do emptyFn();
+    on Locales(1) do emptyFn();
   }
 }
-
-
-//
-// This is a simple nonreusable barrier.  If desired, we could replace
-// it with something better when the Barriers module is improved.
-//
-var barNodeCnt: atomic int;
-
-proc barrier(barTaskCnt) {
-  if barTaskCnt.fetchAdd(1) == 0 {
-    barNodeCnt.add(1);
-    barNodeCnt.waitFor(numWorkerNodes);
-  }
-  barTaskCnt.waitFor(numTasksPerNode);
-}
-
 
 extern proc emptyFn();
 extern proc infiniteSink(x: int);

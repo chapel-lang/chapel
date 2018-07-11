@@ -7,10 +7,8 @@ class Foo {
       // we may allow this later.  But it is better to go from more restrictive
       // to less than vice versa.
     }
-    super.init();
   }
 }
 
-var foo = new Foo(3);
+var foo = new borrowed Foo(3);
 writeln(foo);
-delete foo;

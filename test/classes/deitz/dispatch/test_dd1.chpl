@@ -8,12 +8,12 @@ class D : C {
   proc foo(z: bool) { writeln("D.foo bool (z, this) = ", (z, this)); }
 }
 
-var c: C = new D(x=3,y=4);
+var c: unmanaged C = new unmanaged D(x=3,y=4);
 
 c.foo(12);
 c.foo(true);
 
-var d: D = c:D;
+var d: unmanaged D = c:unmanaged D;
 d.foo(true);
 
 delete c;

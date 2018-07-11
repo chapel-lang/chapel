@@ -66,7 +66,6 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 MODULES_TO_DOCUMENT = \
 	standard/Assert.chpl \
-	standard/Barrier.chpl \
 	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
@@ -108,19 +107,18 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LinearAlgebra.chpl \
 	packages/MPI.chpl \
 	packages/Norm.chpl \
-	packages/OwnedObject.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
-	packages/SharedObject.chpl \
 	packages/Sort.chpl \
 	packages/VisualDebug.chpl \
 	packages/ZMQ.chpl \
 	packages/Collection.chpl \
 	packages/DistributedBag.chpl \
 	packages/DistributedDeque.chpl \
-	packages/DistributedIters.chpl
+	packages/DistributedIters.chpl \
+	packages/TOML.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
@@ -134,7 +132,6 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/BlockDim.chpl \
 	dists/dims/ReplicatedDim.chpl \
 	layouts/LayoutCS.chpl \
-	layouts/LayoutCSR.chpl \
 
 INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/Atomics.chpl                 \
@@ -150,7 +147,9 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
 	internal/ChapelEnv.chpl               \
-	internal/CPtr.chpl
+	internal/CPtr.chpl                    \
+	internal/OwnedObject.chpl             \
+	internal/SharedObject.chpl
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)

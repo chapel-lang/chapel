@@ -5,7 +5,6 @@ class hasInit {
 
   proc init(xVal) {
     x = xVal;
-    super.init();
   }
 }
 
@@ -17,6 +16,6 @@ class hasConstruct {
   }
 }
 
-var hi: hasConstruct = new hasInit(10);
+
+var hi: borrowed hasConstruct = new borrowed hasInit(10);
 writeln(hi);
-delete hi;

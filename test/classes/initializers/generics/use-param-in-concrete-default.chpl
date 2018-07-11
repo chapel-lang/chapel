@@ -8,11 +8,10 @@ class Foo {
 
   proc init(param pVal) {
     p = pVal;
-    super.init();
   }
 }
 
-var foo1 = new Foo(2);
+var foo1 = new unmanaged Foo(2);
 
 writeln(foo1);
 

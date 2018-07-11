@@ -8,7 +8,7 @@ class foo {
   }
 }
 
-var f : foo = new foo();
+var f : unmanaged foo = new unmanaged foo();
 
 f.setx();
 f.primary();

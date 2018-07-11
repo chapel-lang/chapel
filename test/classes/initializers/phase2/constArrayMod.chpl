@@ -4,7 +4,7 @@ class Foo {
 
   proc init(val: int) {
     arrDom = {1..val};
-    this.initDone();
+    this.complete();
     for i in arrDom do
       arr[i] = i;
   }

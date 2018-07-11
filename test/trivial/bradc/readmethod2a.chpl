@@ -5,7 +5,7 @@ class G {
 }
 
 proc main() {
-  var goo       = new G();
+  var goo       = new unmanaged G();
   var gooResult = goo.readit();
 
   writeln("gooResult = ", gooResult);

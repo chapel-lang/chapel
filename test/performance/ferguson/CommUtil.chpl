@@ -57,14 +57,14 @@ proc totalCounts(D:[LocaleSpace] commDiagnostics) : commDiagnostics {
  */
 proc totalGets(D:[LocaleSpace] commDiagnostics) : int {
   var t = totalCounts(D);
-  return t.get + t.get_nb;
+  return (t.get + t.get_nb):int;
 }
 /*
   Get the total number of PUT or non-blocking PUT operations on any locale.
  */
 proc totalPuts(D:[LocaleSpace] commDiagnostics) : int {
   var t = totalCounts(D);
-  return t.put + t.put_nb;
+  return (t.put + t.put_nb):int;
 }
 /*
   Get the total number of execute_on, execute_on_fast, or execute_on_nb
@@ -72,7 +72,7 @@ proc totalPuts(D:[LocaleSpace] commDiagnostics) : int {
  */
 proc totalOns(D:[LocaleSpace] commDiagnostics) : int {
   var t = totalCounts(D);
-  return t.execute_on + t.execute_on_fast + t.execute_on_nb;
+  return (t.execute_on + t.execute_on_fast + t.execute_on_nb):int;
 }
 
 

@@ -44,6 +44,7 @@
 #include "chpl-comm.h"
 #include "chpldirent.h"
 #include "chplexit.h"
+#include "chpl-external-array.h"
 #include "chpl-file-utils.h"
 #include <chplfp.h>
 #include "chplglob.h"
@@ -52,6 +53,7 @@
 #include "chpl-init.h"
 #include "chpl-linefile-support.h"
 #include "chpl-mem.h"
+#include "chpl-mem-array.h"
 #include "chplmemtrack.h"
 #include "chpl-prefetch.h"
 #include "chpl-privatization.h"
@@ -64,8 +66,6 @@
 #include "chpl-vector-macros.h"
 #include "chpl-visual-debug.h"
 #include "error.h"
-
-#include "chplgmp.h"
 
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-wide-ptr-fns.h"

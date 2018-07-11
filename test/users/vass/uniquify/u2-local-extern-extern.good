@@ -1,0 +1,2 @@
+u2-local-extern-extern.chpl:8: error: the type of extern sublocid_local does not match the previous declaration
+u2-local-extern-extern.chpl:4: note: the previous declaration is here

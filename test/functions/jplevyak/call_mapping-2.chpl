@@ -7,7 +7,7 @@ class A {
 }
 
 class C {
-  var a : A = new A();
+  var a : unmanaged A = new unmanaged A();
   var bb : int;
   proc f() {
     a(1) *= 2.0;
@@ -17,11 +17,11 @@ class C {
   }
 }
 
-var a = new A();
+var a = new unmanaged A();
 a(1) = 1.0;
 writeln(a(1));
 
-var c = new C();
+var c = new unmanaged C();
 
 c.a(1) = 1.0;
 c.f();

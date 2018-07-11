@@ -9,7 +9,7 @@ proc examples() {
 
   writeln("declaring shared1 storing C(1)"); 
   // 'shared1' points to a new C instance
-  var shared1 = new Shared(new C(1));
+  var shared1 = new Shared(new unmanaged C(1));
   writeln("shared1 = ", shared1.borrow());
 
   writeln("declaring shared2 storing nil");
@@ -41,7 +41,7 @@ proc examples() {
   // for a Shared to point to.
   // After this line:
   //  shared1 will contain C(100)
-  shared1.retain(new C(100));
+  shared1.retain(new unmanaged C(100));
   writeln("after shared1.retain C(100)");
   writeln("shared1 = ", shared1.borrow());
 

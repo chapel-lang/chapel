@@ -971,66 +971,6 @@ CallExpr* ContextCallExpr::getRefCall() const {
   return retval;
 }
 
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-ForallExpr::ForallExpr(Expr* indices,
-                       Expr* iteratorExpr,
-                       Expr* expr,
-                       Expr* cond,
-                       bool maybeArrayType,
-                       bool zippered) :
-  Expr(E_ForallExpr),
-  indices(indices),
-  iteratorExpr(iteratorExpr),
-  expr(expr),
-  cond(cond),
-  maybeArrayType(maybeArrayType),
-  zippered(zippered)
-{
-  gForallExprs.add(this);
-}
-
-ForallExpr* ForallExpr::copyInner(SymbolMap* map) {
-  return new ForallExpr(
-    COPY_INT(indices),
-    COPY_INT(iteratorExpr),
-    COPY_INT(expr),
-    COPY_INT(cond),
-    maybeArrayType,
-    zippered);
-}
-
-void ForallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
-  if (old_ast == indices)
-    indices = new_ast;
-  else if (old_ast == iteratorExpr)
-    iteratorExpr = new_ast;
-  else if (old_ast == expr)
-    expr = new_ast;
-  else if (old_ast == cond)
-    cond = new_ast;
-  else
-    INT_FATAL(this, "unexpected case in ForallExpr::replaceChild");
-}
-
-void
-ForallExpr::verify() {
-  Expr::verify(E_ForallExpr);
-  INT_FATAL(this, "ForallExpr::verify() is not implemented");
-}
-
-void ForallExpr::accept(AstVisitor* visitor) {
-  INT_FATAL(this, "ForallExpr::accept() is not implemented");
-}
-
-Expr* ForallExpr::getFirstExpr() {
-  INT_FATAL(this, "ForallExpr::getFirstExpr() is not implemented");
-  return NULL;
-}
-
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -1090,6 +1030,7 @@ void NamedExpr::accept(AstVisitor* visitor) {
     visitor->exitNamedExpr(this);
   }
 }
+
 
 /************************************ | *************************************
 *                                                                           *

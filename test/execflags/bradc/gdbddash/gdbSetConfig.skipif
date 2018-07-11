@@ -9,7 +9,7 @@ import os, os.path
 # installation and thus nothing to worry about.  To squash the noise, we will
 # avoid running it there.
 if os.getenv('CHPL_TARGET_PLATFORM') == 'cray-xc':
-    if not os.path.exists('/etc/opt/cray/release') or not os.path.exists('/etc/opt/cray/release/CLEinfo'):
+    if not (os.path.exists('/etc/opt/cray/release/CLEinfo') or os.path.exists('/etc/opt/cray/release/cle-release')):
         print(True)
     else:
         print(False)

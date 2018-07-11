@@ -6,7 +6,7 @@ class D {
   var s: single real;
 }
 
-var d: D = new D();
+var d: unmanaged D = new unmanaged D();
 
 // Do not delete d until every begin has executed
 sync {

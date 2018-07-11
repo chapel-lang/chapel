@@ -14,13 +14,13 @@ use GridVariable_def;
 
 class LevelVariable {
   
-  const level:        Level;
-  var grid_variables: [level.grids] GridVariable;
+  const level:        unmanaged Level;
+  var grid_variables: [level.grids] unmanaged GridVariable;
 
 
 
   //|\''''''''''''''''''''''''''''|\
-  //| >    initialize() method    | >
+  //| >    postinit() method    | >
   //|/............................|/
   
   //-----------------------------------------------------------
@@ -30,12 +30,12 @@ class LevelVariable {
   //   LevelVariable(level: Level)
   //-----------------------------------------------------------
 
-  proc initialize() {
+  proc postinit() {
     for grid in level.grids do
-      grid_variables(grid) = new GridVariable(grid = grid);                          
+      grid_variables(grid) = new unmanaged GridVariable(grid = grid);                          
   }
   // /|''''''''''''''''''''''''''''/|
-  //< |    initialize() method    < |
+  //< |    postinit() method    < |
   // \|............................\|
 
 
@@ -71,13 +71,13 @@ class LevelVariable {
   // the GridVariable's 'value' field.
   //---------------------------------------------------------------
   
-  proc this(grid: Grid) ref {
+  proc this(grid: unmanaged Grid) ref {
     return grid_variables(grid);
   }
 
   pragma "no copy return"
   proc this(
-    grid: Grid, 
+    grid: unmanaged Grid, 
     D: domain(dimension, stridable=true)) 
   {
     return grid_variables(grid).value(D);

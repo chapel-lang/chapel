@@ -8,6 +8,6 @@ class C {
   proc init() {}
 }
 
-var c = new C();
+var c = new unmanaged C();
 writeln("c = ", c);
 delete c;

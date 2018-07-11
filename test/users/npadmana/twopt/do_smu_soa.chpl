@@ -51,12 +51,12 @@ class Particle3D {
   var _n1, _ndx : [Dpart] int;
 
   proc init(npart1 : int, random : bool = false) {
-    this.initDone();
+    this.complete();
     npart = npart1;
     Darr = {ParticleAttrib, 0.. #npart};
     Dpart = {0.. #npart};
     if random {
-      var rng = new RandomStream(eltType=real);
+      var rng = new borrowed RandomStream(eltType=real);
       var x, y, z : real;
       for ii in Dpart {
         x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z = rng.getNext()*1000.0;
@@ -64,7 +64,7 @@ class Particle3D {
         arr[3,ii] = 1.0;
         arr[4,ii] = x**2 + y**2 + z**2;
       }
-      delete rng;
+
     }
   }
 
@@ -97,13 +97,13 @@ class Particle3D {
     }
 
     // Set the random number generator
-    var rng = new RandomStream(eltType=real, seed=41);
+    var rng = new borrowed RandomStream(eltType=real, seed=41);
     var jj : int;
     for ii in 0..(npart-2) {
       jj = (rng.getNext()*(npart-ii)):int + ii;
       _ndx[jj] <=> _ndx[ii];
     }
-    delete rng;
+
 
     reorder(Dpart);
   }
@@ -171,7 +171,7 @@ class KDNode {
   var dom : domain(1);
   var xcen : [DimSpace]real;
   var rcell : real;
-  var left, right : KDNode;
+  var left, right : unmanaged KDNode;
 
   proc isLeaf() : bool {
     return (left==nil) && (right==nil);
@@ -185,8 +185,8 @@ class KDNode {
 }
 
 
-proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : KDNode  {
-  var me : KDNode = new KDNode();
+proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : unmanaged KDNode  {
+  var me : unmanaged KDNode = new unmanaged KDNode();
   me.lo = lo;
   me.hi = hi;
   me.dom = {lo..hi};
@@ -229,7 +229,7 @@ proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : KDNode  {
   return me;
 }
 
-proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 : KDNode) {
+proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 : unmanaged KDNode) {
   // Compute the distance between node1 and node2
   var rr = sqrt (+ reduce(node1.xcen - node2.xcen)**2);
   var rmin = rr - (node1.rcell+node2.rcell);

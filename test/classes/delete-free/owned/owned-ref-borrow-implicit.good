@@ -1,0 +1,2 @@
+owned-ref-borrow-implicit.chpl:12: In function 'test':
+owned-ref-borrow-implicit.chpl:15: error: value from coercion passed to ref formal 'arg'

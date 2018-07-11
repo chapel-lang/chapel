@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -222,7 +222,7 @@ hwloc__nolibxml_import_get_content(hwloc__xml_import_state_t state,
   if (nstate->closed) {
     if (expected_length)
       return -1;
-    *beginp = "";
+    *beginp = (char *) "";
     return 0;
   }
 

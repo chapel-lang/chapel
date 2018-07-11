@@ -184,13 +184,13 @@ When run on 6 locales, the output is:
     3 3 4 4 5 5 3 3
 
 
-**Constructor Arguments**
+**Initializer Arguments**
 
-The ``DimensionalDist2D`` class constructor is defined as follows:
+The ``DimensionalDist2D`` class initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc DimensionalDist2D.DimensionalDist2D(
+    proc DimensionalDist2D.init(
       targetLocales: [] locale,
       di1,
       di2,
@@ -223,7 +223,7 @@ and arrays.
 **Dimension Specifiers**
 
 Presently, the following dimension specifiers are available
-(shown here with their constructor arguments):
+(shown here with their initializer arguments):
 
 * :class:`ReplicatedDim(numLocales) <ReplicatedDim>`
 * :class:`BlockDim(numLocales, boundingBox, idxType=boundingBox.idxType) <BlockDim>`
@@ -270,6 +270,21 @@ class DimensionalDist2D : BaseDist {
 
 // class LocDimensionalDist - no local distribution descriptor - for now
 
+private proc locDescTypeHelper(param rank : int, type idxType, dom1, dom2) type {
+  type d1type = dom1.dsiNewLocalDom1d(idxType, 0).type;
+  type d2type = dom2.dsiNewLocalDom1d(idxType, 0).type;
+
+  proc strideHelper(dom1d) param {
+    const dummy = dom1d.dsiNewLocalDom1d(idxType, 0).dsiSetLocalIndices1d(dom1d, 0);
+    return dummy.stridable;
+  }
+
+  param str = strideHelper(dom1) || strideHelper(dom2);
+
+  return unmanaged LocDimensionalDom(domain(rank, idxType, str), d1type, d2type);
+}
+
+pragma "use default init"
 class DimensionalDom : BaseRectangularDom {
   // required
   const dist; // not reprivatized
@@ -285,7 +300,7 @@ class DimensionalDom : BaseRectangularDom {
 
   // This is our index set; we store it here so we can get to it easily.
   // Although strictly speaking it is not necessary.
-  var whole: domainT;
+  var whole: domain(rank, idxType, stridable);
 
   // This is the idxType of the "storage index ranges" to be produced
   // by dsiSetLocalIndices1d(). It needs to be uniform across dimensions,
@@ -307,14 +322,17 @@ class DimensionalDom : BaseRectangularDom {
   proc stoDomainT type  return domain(rank, stoIndexT, stoStridable);
 
   // convenience - our instantiation of LocDimensionalDom
-  proc locDdescType type  return LocDimensionalDom(stoDomainT,
+  proc locDdescType type  return unmanaged LocDimensionalDom(stoDomainT,
                                          dom1.dsiNewLocalDom1d(stoIndexT, 0:locIdT).type,
                                          dom2.dsiNewLocalDom1d(stoIndexT, 0:locIdT).type);
 
-  // local domain descriptors
-  var localDdescs: [dist.targetIds] locDdescType; // not reprivatized
+  // local domain descriptors, not reprivatized
+  // INIT TODO: Used to use 'locDdescType' instead of 'locDescTypeHelper'. Can
+  // we clean this up?
+  var localDdescs: [dist.targetIds] unmanaged locDescTypeHelper(rank, idxType, dom1, dom2); // locDdescType
 }
 
+pragma "use default init"
 class LocDimensionalDom {
   type myStorageDomT;
 
@@ -337,6 +355,7 @@ class LocDimensionalDom {
   }
 }
 
+pragma "use default init"
 class DimensionalArr : BaseRectangularArr {
   // required
   const dom; // must be a DimensionalDom
@@ -352,9 +371,10 @@ class DimensionalArr : BaseRectangularArr {
   // local array descriptors (from the original array, if this is an alias)
   // NOTE: 'dom' must be initialized prior to initializing 'localAdescs'
   var localAdescs: [dom.targetIds]
-                      LocDimensionalArr(eltType, allocDom.locDdescType);
+                      unmanaged LocDimensionalArr(eltType, allocDom.locDdescType);
 }
 
+pragma "use default init"
 class LocDimensionalArr {
   type eltType;
   const locDom;  // a LocDimensionalDom
@@ -365,11 +385,11 @@ class LocDimensionalArr {
 /// distribution ////////////////////////////////////////////////////////////
 
 
-//== construction, cloning
+//== initialization, cloning
 
-// constructor
+// initializer
 // gotta list all the things we let the user set
-proc DimensionalDist2D.DimensionalDist2D(
+proc DimensionalDist2D.init(
   targetLocales: [] locale,
   di1,
   di2,
@@ -379,12 +399,19 @@ proc DimensionalDist2D.DimensionalDist2D(
   dataParIgnoreRunningTasks: bool = getDataParIgnoreRunningTasks(),
   dataParMinGranularity: int      = getDataParMinGranularity()
 ) {
+  this.targetLocales = targetLocales;
+  this.di1 = di1;
+  this.di2 = di2;
   this.name = name;
+  this.idxType = idxType;
   this.dataParTasksPerLocale = if dataParTasksPerLocale==0
                                then here.maxTaskPar
                                else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
+
+  this.complete();
+
   checkInvariants();
 
   _passLocalLocIDsDist(di1, true, di2, true,
@@ -393,7 +420,7 @@ proc DimensionalDist2D.DimensionalDist2D(
 
 //
 // Having targetLocales be a constant means we have to reshape Locales
-// before invoking the constructor. This method does that.
+// before invoking the initializer. This method does that.
 // It also offers the convenience of passing just di1 and di2 and
 // using 'Locales' for targetLocales by default.
 // Recall that di1 and di2 determine the number of locales in each dimension.
@@ -412,13 +439,13 @@ proc newDimensionalDist2D(
   const (nl1, nl2) = (di1.numLocales, di2.numLocales);
   ref reshapedLocales = reshape(targetLocales[0..#nl1*nl2],{0..#nl1,0..#nl2});
 
-  return new DimensionalDist2D(reshapedLocales, di1, di2, name, idxType,
+  return new unmanaged DimensionalDist2D(reshapedLocales, di1, di2, name, idxType,
    dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
 }
 
 
 // Check all restrictions/assumptions that must be satisfied by the user
-// when constructing a DimensionalDist2D.
+// when initializing a DimensionalDist2D.
 proc DimensionalDist2D.checkInvariants(): void {
   proc ensure(param cond:bool, param msg:string) {
     if !cond then compilerError(msg, 3);
@@ -435,12 +462,12 @@ proc DimensionalDist2D.checkInvariants(): void {
   assert(dataParMinGranularity > 0, "DimensionalDist2D-dataParMinGranularity");
 }
 
-proc DimensionalDist2D.dsiClone(): this.type {
+proc DimensionalDist2D.dsiClone(): _to_unmanaged(this.type) {
   _traceddd("DimensionalDist2D.dsiClone");
   checkInvariants();
 
   // do this simple thing, until we find out that we need something else
-  return this;
+  return _to_unmanaged(this);
 }
 
 
@@ -490,7 +517,7 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
                        di2new, di2.dsiSupportsPrivatization1d(),
                        privTargetLocales, false, plliddDummy);
 
-  return new DimensionalDist2D(targetLocales = privTargetLocales,
+  return new unmanaged DimensionalDist2D(targetLocales = privTargetLocales,
                              name          = privatizeData(2),
                              idxType       = this.idxType,
                              di1           = di1new,
@@ -501,9 +528,9 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
                              dummy = 0);
 }
 
-// constructor of a privatized copy
-// ('dummy' distinguishes it from the user constructor)
-proc DimensionalDist2D.DimensionalDist2D(param dummy: int,
+// initializer of a privatized copy
+// ('dummy' distinguishes it from the user initializer)
+proc DimensionalDist2D.init(param dummy: int,
   targetLocales: [] locale,
   name,
   type idxType,
@@ -513,10 +540,17 @@ proc DimensionalDist2D.DimensionalDist2D(param dummy: int,
   dataParIgnoreRunningTasks,
   dataParMinGranularity
 ) {
+  this.targetLocales = targetLocales;
+  this.di1 = di1;
+  this.di2 = di2;
   this.name = name;
+  this.idxType = idxType;
   this.dataParTasksPerLocale     = dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity     = dataParMinGranularity;
+
+  this.complete();
+
   // should not need it, but run it for now just in case
   checkInvariants();
 }
@@ -656,7 +690,7 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
   if dom2orig.dsiSupportsPrivatization1d() then
     _passLocalLocIDsDom1d(dom2new, privdist.di2);
 
-  const result = new DimensionalDom(rank      = this.rank,
+  const result = new unmanaged DimensionalDom(rank      = this.rank,
                                     idxType   = this.idxType,
                                     stridable = this.stridable,
                                     dist = privdist,
@@ -717,7 +751,7 @@ proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
 
 //== miscellanea
 
-proc DimensionalDom.dsiMyDist() return dist;
+override proc DimensionalDom.dsiMyDist() return dist;
 
 proc DimensionalDom.dsiDims()             return whole.dims();
 proc DimensionalDom.dsiDim(d)             return whole.dim(d);
@@ -744,7 +778,7 @@ proc DimensionalDom.dsiSerialWrite(f): void {
 //== creation, SetIndices
 
 // create a new domain mapped with this distribution
-proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
+override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
                                             type idxType,
                                             param stridable: bool,
                                             inds)
@@ -776,8 +810,8 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   const dom2 = di2.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
   _passLocalLocIDsDom1d(dom2, di2);
 
-  const result = new DimensionalDom(rank=rank, idxType=idxType,
-                                    stridable=stridable, dist=this,
+  const result = new unmanaged DimensionalDom(rank=rank, idxType=idxType,
+                                    stridable=stridable, dist=_to_unmanaged(this),
                                     dom1 = dom1, dom2 = dom2);
   // result.whole is initialized to the default value (empty domain)
 
@@ -787,7 +821,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   coforall (loc, locIds, locDdesc)
    in zip(targetLocales, targetIds, result.localDdescs) do
     on loc do
-      locDdesc = new LocDimensionalDom(result.stoDomainT,
+      locDdesc = new unmanaged LocDimensionalDom(result.stoDomainT,
                        doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
                        doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
   result.dsiSetIndices(inds);
@@ -879,7 +913,7 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
     else chpl_getPrivatizedCopy(objectType = this.allocDom.type,
                                 objectPid  = idAllocDom);
 
-  const result = new DimensionalArr(rank     = this.rank,
+  const result = new unmanaged DimensionalArr(rank     = this.rank,
                                     idxType  = this.idxType,
                                     stridable= this.stridable,
                                     eltType  = this.eltType,
@@ -897,7 +931,7 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
 
 proc DimensionalArr.idxType type return dom.idxType; // (could be a field)
 
-proc DimensionalArr.dsiGetBaseDom() return dom;
+override proc DimensionalArr.dsiGetBaseDom() return dom;
 
 proc DimensionalArr.dimSpecifier(param dim: int) {
   return dom.dimSpecifier(dim);
@@ -920,16 +954,16 @@ proc DimensionalDom.dsiBuildArray(type eltType)
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank, " dimensions");
 
-  const result = new DimensionalArr(rank = rank,
+  const result = new unmanaged DimensionalArr(rank = rank,
                                     idxType = idxType,
                                     stridable = stridable,
                                     eltType  = eltType,
-                                    dom      = this,
-                                    allocDom = this);
+                                    dom      = _to_unmanaged(this),
+                                    allocDom = _to_unmanaged(this));
   coforall (loc, locDdesc, locAdesc)
    in zip(dist.targetLocales, localDdescs, result.localAdescs) do
     on loc do
-      locAdesc = new LocDimensionalArr(eltType, locDdesc);
+      locAdesc = new unmanaged LocDimensionalArr(eltType, locDdesc);
 
   assert(!result.isAlias);
   return result;
@@ -1042,11 +1076,11 @@ proc DimensionalArr.dsiReallocate(d: domain) {
   // TODO: handle block-cyclic 1d when the stride changes
 }
 
-proc DimensionalArr.dsiPostReallocate() {
+override proc DimensionalArr.dsiPostReallocate() {
   // nothing for now
 }
 
-proc DimensionalArr.dsiDestroyArr() {
+override proc DimensionalArr.dsiDestroyArr() {
   coforall desc in localAdescs do
     on desc do
       delete desc;

@@ -27,7 +27,7 @@ module Structure {
 
 
   class ListerGrandParent {
-    var lst: list(GrandParent);
+    var lst: unmanaged list(unmanaged GrandParent);
   }
 
   class ListerParent : ListerGrandParent {
@@ -36,14 +36,14 @@ module Structure {
     param stridable: bool;
 
     proc getListedType() type {
-      return Parent(rank=rank, idxType=idxType, stridable=stridable);
+      return unmanaged Parent(rank=rank, idxType=idxType, stridable=stridable);
     }
   }
 
-  proc test(lhs:?t) where t:ListerParent {
+  proc test(lhs:?t) where unmanaged t:unmanaged ListerParent {
     type subType = lhs.getListedType();
     for e in lhs.lst {
-      var eCast = e:subType;
+      var eCast = e:unmanaged subType;
       if eCast == nil then
         halt("X");
 
@@ -79,16 +79,16 @@ module Impl {
 
 
   proc main() {
-    var aa = new Child(rank=1, idxType=int, stridable=false, eltType=real);
+    var aa = new unmanaged Child(rank=1, idxType=int, stridable=false, eltType=real);
     writeln(aa);
 
-    var a = new Child(rank=1, idxType=int, stridable=false, eltType=int);
-    var d = new ListerParent(rank=1, idxType=int, stridable=false);
+    var a = new unmanaged Child(rank=1, idxType=int, stridable=false, eltType=int);
+    var d = new borrowed ListerParent(rank=1, idxType=int, stridable=false);
     d.lst.append(a);
 
     test(d);
 
-    delete d, a, aa;
+    delete a, aa;
   }
 }
 

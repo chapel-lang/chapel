@@ -27,12 +27,12 @@ class SparseC {
   var x: [sparseDom] t;
 }
 
-enum probClass {S, W, A, B, C};
+enum probClass {S=1, W, A, B, C};
 
 class EnumC {
   type t;
   
-  var enumDom: domain(probClass);
+  var enumDom: domain(probClass) = probClass.S..probClass.C;
   var x: [enumDom] t;
 }
 
@@ -50,11 +50,11 @@ proc foo(C) {
   var assocDom: domain(string);
   type assocArr = [assocDom] real;
 
-  var myArithC = new ArithC(assocArr);
-  var myAssocC = new AssocC(assocArr);
-  var myOpaqueC = new OpaqueC(assocArr);
-  var mySparseC = new SparseC(assocArr);
-  var myEnumC = new EnumC(assocArr);
+  var myArithC = new unmanaged ArithC(assocArr);
+  var myAssocC = new unmanaged AssocC(assocArr);
+  var myOpaqueC = new unmanaged OpaqueC(assocArr);
+  var mySparseC = new unmanaged SparseC(assocArr);
+  var myEnumC = new unmanaged EnumC(assocArr);
 
   assocDom += "two";
 
@@ -95,11 +95,11 @@ proc foo(C) {
   var opaqueDom: domain(opaque);
   type opaqueArr = [opaqueDom] real;
 
-  var myArithC = new ArithC(opaqueArr);
-  var myAssocC = new AssocC(opaqueArr);
-  var myOpaqueC = new OpaqueC(opaqueArr);
-  var mySparseC = new SparseC(opaqueArr);
-  var myEnumC = new EnumC(opaqueArr);
+  var myArithC = new unmanaged ArithC(opaqueArr);
+  var myAssocC = new unmanaged AssocC(opaqueArr);
+  var myOpaqueC = new unmanaged OpaqueC(opaqueArr);
+  var mySparseC = new unmanaged SparseC(opaqueArr);
+  var myEnumC = new unmanaged EnumC(opaqueArr);
 
   opaqueDom.create();
 
@@ -140,11 +140,11 @@ proc foo(C) {
   var sparseDom: sparse subdomain({1..3});
   type sparseArr = [sparseDom] real;
 
-  var myArithC = new ArithC(sparseArr);
-  var myAssocC = new AssocC(sparseArr);
-  var myOpaqueC = new OpaqueC(sparseArr);
-  var mySparseC = new SparseC(sparseArr);
-  var myEnumC = new EnumC(sparseArr);
+  var myArithC = new unmanaged ArithC(sparseArr);
+  var myAssocC = new unmanaged AssocC(sparseArr);
+  var myOpaqueC = new unmanaged OpaqueC(sparseArr);
+  var mySparseC = new unmanaged SparseC(sparseArr);
+  var myEnumC = new unmanaged EnumC(sparseArr);
 
   sparseDom += 2;
 
@@ -183,14 +183,14 @@ proc foo(C) {
 {
   // declare associative class instances
 
-  var enumDom: domain(probClass);
+  var enumDom: domain(probClass) = probClass.S..probClass.C;
   type enumArr = [enumDom] real;
 
-  var myArithC = new ArithC(enumArr);
-  var myAssocC = new AssocC(enumArr);
-  var myOpaqueC = new OpaqueC(enumArr);
-  var mySparseC = new SparseC(enumArr);
-  var myEnumC = new EnumC(enumArr);
+  var myArithC = new unmanaged ArithC(enumArr);
+  var myAssocC = new unmanaged AssocC(enumArr);
+  var myOpaqueC = new unmanaged OpaqueC(enumArr);
+  var mySparseC = new unmanaged SparseC(enumArr);
+  var myEnumC = new unmanaged EnumC(enumArr);
 
   // initialize class instances
 

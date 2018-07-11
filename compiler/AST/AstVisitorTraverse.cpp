@@ -39,6 +39,16 @@ void AstVisitorTraverse::exitAggrType(AggregateType* node)
 
 }
 
+bool AstVisitorTraverse::enterUnmanagedClassType(UnmanagedClassType* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitUnmanagedClassType(UnmanagedClassType* node)
+{
+
+}
+
 bool AstVisitorTraverse::enterEnumType(EnumType* node)
 {
   return true;
@@ -148,6 +158,16 @@ void AstVisitorTraverse::exitNamedExpr(NamedExpr* node)
 
 }
 
+bool AstVisitorTraverse::enterIfExpr(IfExpr* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitIfExpr(IfExpr* node)
+{
+
+}
+
 void AstVisitorTraverse::visitSymExpr(SymExpr* node)
 {
 
@@ -159,6 +179,16 @@ void AstVisitorTraverse::visitUsymExpr(UnresolvedSymExpr* node)
 }
 
 void AstVisitorTraverse::visitUseStmt(UseStmt* node)
+{
+
+}
+
+bool AstVisitorTraverse::enterLoopExpr(LoopExpr* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitLoopExpr(LoopExpr* node)
 {
 
 }

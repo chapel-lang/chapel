@@ -5,7 +5,6 @@ class Params {
   proc init() {
     numProbSizes = 3;
     for n in N do n = 10;
-    super.init();
   }
 }
 

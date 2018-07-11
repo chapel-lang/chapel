@@ -4,7 +4,7 @@ class EitherOr {
 
   proc init(param useField: bool) {
     if (useField) {
-      this.initDone();
+      this.complete();
     } else {
       this.init(false, 17);
     }
@@ -13,16 +13,15 @@ class EitherOr {
   proc init(useField: bool, otherVal: int) {
     fieldInit = useField;
     infer = otherVal;
-    super.init();
   }
 }
 
 proc main() {
-  var c1: EitherOr = new EitherOr(true);
+  var c1: unmanaged EitherOr = new unmanaged EitherOr(true);
   writeln(c1);
   delete c1;
 
-  var c2: EitherOr = new EitherOr(false);
+  var c2: unmanaged EitherOr = new unmanaged EitherOr(false);
   writeln(c2);
   delete c2;
 }

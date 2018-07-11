@@ -16,7 +16,6 @@ class InLoop {
     // in a loop could result in out of order initialization, or multiple
     // initialization, which would interfere with our ability to implicitly
     // initialize omitted fields.
-    super.init();
   }
 }
 

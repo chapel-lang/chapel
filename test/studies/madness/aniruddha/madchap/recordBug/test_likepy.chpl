@@ -2,16 +2,16 @@ use MRA;
 use MadAnalytics;
 
 class Sum: AFcn {
-    var f: AFcn;
-    var g: AFcn;
+    var f: unmanaged AFcn;
+    var g: unmanaged AFcn;
     proc this(x) {
         return f(x)+g(x);
     }
 }
 
 class Product: AFcn {
-    var f: AFcn;
-    var g: AFcn;
+    var f: unmanaged AFcn;
+    var g: unmanaged AFcn;
     proc this(x) {
         return f(x)*g(x);
     }
@@ -30,14 +30,14 @@ proc main() {
     var k   = 5;       // order of wavelet
     var thresh = 1e-5; // truncation threshold
 
-    var tests  : [1..3] AFcn = (new Fn_Test1():AFcn,  new Fn_Test2():AFcn,  new Fn_Test3():AFcn);
-    var dtests : [1..3] AFcn = (new Fn_dTest1():AFcn, new Fn_dTest2():AFcn, new Fn_dTest3():AFcn);
+    var tests  : [1..3] unmanaged AFcn = (new unmanaged Fn_Test1():unmanaged AFcn,  new unmanaged Fn_Test2():unmanaged AFcn,  new unmanaged Fn_Test3():unmanaged AFcn);
+    var dtests : [1..3] unmanaged AFcn = (new unmanaged Fn_dTest1():unmanaged AFcn, new unmanaged Fn_dTest2():unmanaged AFcn, new unmanaged Fn_dTest3():unmanaged AFcn);
 
     var buf = "                           ";
 
     for (test, dtest) in zip(tests, dtests) {
         writeln("\n\n");
-        var f = new Function(k, thresh, test);
+        var f = new unmanaged Function(k, thresh, test);
         writeln("norm of function is ", f.norm2());
         delete f;
     }

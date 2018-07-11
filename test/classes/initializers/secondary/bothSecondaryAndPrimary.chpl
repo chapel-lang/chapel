@@ -9,7 +9,6 @@ class Foo {
     writeln("In primary initializer of class Foo");
     x = 3;
     y = yVal;
-    super.init();
   }
 }
 
@@ -17,14 +16,13 @@ proc Foo.init(xVal: int) {
   writeln("In secondary initializer of class Foo");
   x = xVal;
   y = xVal > 5;
-  super.init();
 }
 
 proc main() {
-  var f = new Foo(10);
+  var f = new unmanaged Foo(10);
   // Should use the secondary initializer defined in this module
   writeln(f); // expect 10, true
-  var f2 = new Foo(false);
+  var f2 = new unmanaged Foo(false);
   writeln(f2); // expect 3, false
 
   delete f;

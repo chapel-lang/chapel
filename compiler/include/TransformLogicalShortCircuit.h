@@ -31,10 +31,6 @@
 * transformation must be applied before function resolution.  In the        *
 * current implementation this Visitor is leveraged early in normalize().    *
 *                                                                           *
-* This transform inserts Chapel if-expressions that must be in the same     *
-* scope as the boolean operators.  Hence the transformer requires that a    *
-* suitable insertion point be provided to the constructor.                  *
-*                                                                           *
 ************************************* | ************************************/
 
 #include "AstVisitorTraverse.h"
@@ -44,16 +40,11 @@ class Expr;
 class TransformLogicalShortCircuit : public AstVisitorTraverse
 {
 public:
-                 TransformLogicalShortCircuit(Expr* insertionPoint);
+                 TransformLogicalShortCircuit();
   virtual       ~TransformLogicalShortCircuit();
 
-  // Transform performed post-order
-  virtual void   exitCallExpr (CallExpr* node);
-
-private:
-                 TransformLogicalShortCircuit();
-
-  Expr*          mInsertionPoint;
+  // Transform performed pre-order
+  virtual bool   enterCallExpr (CallExpr* node);
 };
 
 #endif

@@ -8,7 +8,6 @@ class Foo {
     sync {
       x = xVal;
     }
-    super.init();
   }
 }
 

@@ -3,10 +3,8 @@ class C {
   proc init() {
     var notaparam = 77;
     p = notaparam;
-    super.init();
   }
 }
 
-var c = new C();
+var c = new borrowed C();
 writeln(c);
-delete c;

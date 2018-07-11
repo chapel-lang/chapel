@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -673,7 +673,7 @@ hwloc__xml_import_userdata(hwloc_topology_t topology __hwloc_attribute_unused, h
       }
 
   } else { /* always handle length==0 in the non-encoded case */
-      char *buffer = "";
+    char *buffer = (char *) "";
       if (length) {
 	ret = state->global->get_content(state, &buffer, length);
 	if (ret < 0)

@@ -16,7 +16,6 @@ class MyClass0 {
     a0 = a;
     b0 = b;
 
-    super.init();
   }
 }
 
@@ -25,10 +24,10 @@ class MyClass1 : MyClass0 {
   var b1;
 
   proc init(a0, b0, a, b) {
+    super.init(a0, b0);
+
     a1 = a;
     b1 = b;
-
-    super.init(a0, b0);
   }
 }
 

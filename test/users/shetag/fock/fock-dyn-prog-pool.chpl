@@ -12,7 +12,7 @@ const dmat : [matD] elemType = [(i,j) in matD] 1.0/(i+j);
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 
 const poolSize = numLocales;
-const t = new taskpool(poolSize);
+const t = new unmanaged taskpool(poolSize);
 
 proc buildjk() {
   cobegin {
@@ -58,7 +58,7 @@ iter genBlocks() {
     for (jat, kat) in {1..iat, 1..iat} {
       const lattop = if (kat==iat) then jat else kat;
       for lat in 1..lattop do
-        yield new blockIndices(iat, jat, kat, lat);
+        yield new unmanaged blockIndices(iat, jat, kat, lat);
     }
   for loc in LocaleSpace do
     yield nil;

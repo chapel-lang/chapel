@@ -3,11 +3,10 @@ class C {
 
   proc init(v1: int) {
     irng = v1..v1;
-    super.init();
   }
 }
 
-var arr: [1..3] sync C;
+var arr: [1..3] sync borrowed C;
 
 writeln("made it past declaration of arr");
   

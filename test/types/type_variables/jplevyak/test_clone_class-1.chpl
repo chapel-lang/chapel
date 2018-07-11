@@ -8,7 +8,7 @@ class foo {
 
 
 
-var f1 = new foo(x = 2);
+var f1 = new unmanaged foo(x = 2);
 
 f1.print();
 
@@ -17,8 +17,6 @@ delete f1;
 
 
 
-var f2 = new foo(x = 3.0);
+var f2 = new borrowed foo(x = 3.0);
 
 f2.print();
-
-delete f2;

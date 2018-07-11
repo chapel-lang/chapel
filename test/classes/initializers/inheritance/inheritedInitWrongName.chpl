@@ -7,7 +7,7 @@ class C {
     this.x = x;
     this.y = y;
     this.z = z;
-    super.init();
+
   }
 }
 
@@ -17,6 +17,5 @@ class D : C {
   }
 }
 
-var myD = new D(x=3, "hi", 4.6);
+var myD = new owned D(x=3, "hi", 4.6);
 writeln(myD);
-delete myD;

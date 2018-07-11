@@ -1,0 +1,1 @@
+exportArrNoEltType.chpl:1: error: array argument 'x' in exported function 'anyElt' must specify its type

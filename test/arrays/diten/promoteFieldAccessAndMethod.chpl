@@ -6,8 +6,8 @@ class C {
 }
 
 proc main {
-  var array: [0..1] C;
-  [i in 0..1] array(i) = new C(i);
+  var array: [0..1] unmanaged C;
+  [i in 0..1] array(i) = new unmanaged C(i);
   writeln(array);
   array.classField = array.classField + 1;
   writeln(array);

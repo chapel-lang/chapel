@@ -19,6 +19,7 @@ record Routput {
   var outField: chpl__sumType(eltType);
 }
 
+pragma "use default init"
 class MyOp: ReduceScanOp {
   type eltType;
 
@@ -30,7 +31,7 @@ class MyOp: ReduceScanOp {
   proc initialAccumulate(outerVar)   { accumulateOntoState(value, outerVar.outField); }
   proc combine(other)     { value.stField += other.value.stField; }
   proc generate()         return new Routput(eltType, value.stField);
-  proc clone()            return new MyOp(eltType=eltType);
+  proc clone()            return new unmanaged MyOp(eltType=eltType);
 }
 
 ///////////

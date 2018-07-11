@@ -1,3 +1,2 @@
 dflt-ctor-generic-uninit-field-var-err-1.chpl:7: error: unresolved call 'A.init()'
 dflt-ctor-generic-uninit-field-var-err-1.chpl:3: note: candidates are: A.init(v)
-deleted module lines

@@ -1,0 +1,1 @@
+returnBadArray-multiRank2.chpl:3: error: cannot return an array with rank != 1

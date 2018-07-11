@@ -28,18 +28,18 @@ config const debug   = false;
 class Function {
     const k             = 5;    // use first k Legendre polynomials as the basis in each box
     const thresh        = 1e-5; // truncation threshold for small wavelet coefficients
-    const f: AFcn       = nil;  // analytic f(x) to project into the numerical represntation
+    const f: unmanaged AFcn       = nil;  // analytic f(x) to project into the numerical represntation
     const initial_level = 2;    // initial level of refinement
     const max_level     = 30;   // maximum level of refinement mostly as a sanity check
     var   autorefine    = true; // automatically refine during multiplication
     var   compressed    = false;// keep track of what basis we are in
 
     // Sum and Difference coefficients
-    var   sumC = new FTree(order=k);
-    var   diffC = new FTree(order=k);
+    var   sumC = new unmanaged FTree(order=k);
+    var   diffC = new unmanaged FTree(order=k);
 
     // FIXME: Ideally all of these matrices should be const as well but they
-    //        can't be presently since they must be assigned in initialize()
+    //        can't be presently since they must be assigned in postinit()
 
     // Two-Scale relationship matrices
     const hgDom = {0..2*k-1, 0..2*k-1};
@@ -69,7 +69,7 @@ class Function {
     }
 
 
-    proc initialize() {
+    proc postinit() {
         if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
 
         if debug then writeln("  initializing two-scale relation coefficients");
@@ -137,7 +137,7 @@ class Function {
     /** Return a deep copy of this Function
      */
     proc copy() {
-        return new Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
+        return new unmanaged Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine, compressed=compressed,
                 sumC=sumC.copy(), diffC=diffC.copy());
     }
@@ -147,7 +147,7 @@ class Function {
      */
     proc skeletonCopy() {
         // Omit: f, compressed, sumC, diffC
-        return new Function(k=k, thresh=thresh, initial_level=initial_level,
+        return new unmanaged Function(k=k, thresh=thresh, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine);
     }
 
@@ -618,14 +618,14 @@ class Function {
 /*************************************************************************/
 
 
-proc +(F: Function, G: Function): Function {
+proc +(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
     return F.add(G);
 }
 
-proc -(F: Function, G: Function): Function {
+proc -(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
     return F.subtract(G);
 }
     
-proc *(F: Function, G: Function): Function {
+proc *(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
     return F.multiply(G);
 }

@@ -20,18 +20,36 @@ _chpl ()
   cur=${COMP_WORDS[COMP_CWORD]}
   case "$cur" in
     -*)
-      # The following lists were generated with the commands preceding them.
+      # developer options
+      local devel_opts="OPTS_DEVEL"
 
-      # single letter options
-      local single="SINGLE_OPTS"
+      # non-developer options
+      local nodevel_opts="OPTS_NODEVEL"
 
-      # positive options + negative-only options
-      local positive="POSITIVE_OPTS"
+      # Look for --devel or --no-devel on the command line.
+      # It overrides the CHPL_DEVELOPER environment variable.
+      wordnum=$[$COMP_CWORD-1]
+      developt=""
+      while [ $wordnum -gt 0 ] ; do
+        if [ "${COMP_WORDS[$wordnum]}" == "--devel" ] ; then
+          developt="true"
+          break
+        elif [ "${COMP_WORDS[$wordnum]}" == "--no-devel" ] ; then
+          developt="false"
+          break
+        fi
+        wordnum=$[$wordnum-1]
+      done
 
-      # --no- versions of optionally negative options
-      local negative="NEGATIVE_OPTS"
-
-      COMPREPLY=( $( compgen -W '$single $positive $negative' -- $cur ))
+      if [ "$developt" == "true" ] ; then
+        COMPREPLY=( $( compgen -W '$devel_opts' -- $cur ))
+      elif [ "$developt" == "false" ] ; then
+        COMPREPLY=( $( compgen -W '$nodevel_opts' -- $cur ))
+      elif [ -z $CHPL_DEVELOPER ] ; then
+        COMPREPLY=( $( compgen -W '$nodevel_opts' -- $cur ))
+      else
+        COMPREPLY=( $( compgen -W '$devel_opts' -- $cur ))
+      fi
 
       if [ ${#COMPREPLY[@]} = 1 ]; then
         # Add a space after a fully matching argument
@@ -45,13 +63,15 @@ _chpl ()
       COMPREPLY=( $( compgen -o plusdirs -f -X '!*.chpl' -- "${COMP_WORDS[COMP_CWORD]}" ) )
 
       if [ ${#COMPREPLY[@]} = 1 ]; then
-        if [ -d "$COMPREPLY" ]; then
+        local expanded=$(expandPath $COMPREPLY)
+        if [ -d $expanded ]; then
           LASTCHAR='/'
         fi
-        COMPREPLY=$(printf %q%s "$COMPREPLY" "$LASTCHAR")
+        COMPREPLY=$(printf %s%s "$COMPREPLY" "$LASTCHAR")
       else
         for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
-          if [ -d "${COMPREPLY[$i]}" ]; then
+          local expanded=$(expandPath ${COMPREPLY[$i]})
+          if [ -d $expanded ]; then
             COMPREPLY[$i]=${COMPREPLY[$i]}/
           fi
         done
@@ -59,6 +79,26 @@ _chpl ()
     ;;
   esac
   return 0
+}
+
+expandPath() {
+  case $1 in
+    ~[+-]*)
+      local content content_q
+      printf -v content_q '%q' "${1:2}"
+      eval "content=${1:0:2}${content_q}"
+      printf '%s\n' "$content"
+      ;;
+    ~*)
+      local content content_q
+      printf -v content_q '%q' "${1:1}"
+      eval "content=~${content_q}"
+      printf '%s\n' "$content"
+      ;;
+    *)
+      printf '%s\n' "$1"
+      ;;
+  esac
 }
 
 complete -o nospace -F _chpl chpl

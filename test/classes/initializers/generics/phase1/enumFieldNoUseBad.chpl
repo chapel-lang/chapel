@@ -7,7 +7,6 @@ class Foo {
 
   proc init() {
     a = blue;
-    super.init();
   }
 }
 

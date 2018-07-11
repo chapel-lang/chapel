@@ -3,9 +3,9 @@ class Parent {
 
   proc init() {
     x = 10;
-    super.init();
   }
 }
+
 
 class Child: Parent {
   var y: int;
@@ -16,6 +16,5 @@ class Child: Parent {
   }
 }
 
-var child = new Child(4);
+var child = new borrowed Child(4);
 writeln(child);
-delete child;

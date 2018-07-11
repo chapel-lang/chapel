@@ -16,6 +16,8 @@ from os import environ
 
 if environ['CHPL_LLVM'] == 'none':
   print (True) # Skip if we don't have extern block support
+elif '--baseline' in environ['COMPOPTS']:
+  print (True) # Skip for --baseline
 else:
   # OK, we have extern block support.
   if 'GSL_DIR' in environ:

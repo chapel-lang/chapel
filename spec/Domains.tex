@@ -57,8 +57,8 @@ and their subdomains (including sparse subdomains) are irregular.  Sparse
 subdomains of regular domains are also irregular.
 
 An index set can be either \emph{ordered} or \emph{unordered} depending on
-whether its members have a well-defined order relationship.  All regular and
-enumerated domains are ordered.  All other associative domains are
+whether its members have a well-defined order relationship.  All regular
+domains are ordered.  All associative domains are
 unordered.
 
 The type of a domain describes how a domain is represented and the operations
@@ -281,16 +281,12 @@ type of the indices that it stores.  The syntax is as follows:
 \begin{syntax}
 associative-domain-type:
   `domain' ( associative-index-type )
-  `domain' ( enum-type )
   `domain' ( `opaque' )
 
 associative-index-type:
   type-specifier
 \end{syntax}
 
-\index{types!enumerated domains}
-\index{enumerated domains!types}
-\index{domains!enumerated}
 \index{types!opaque domains}
 \index{opaque domains!types}
 \index{domains!opaque}
@@ -299,10 +295,6 @@ kinds of associative domain listed below.
 \begin{enumerate} 
 \item In general, \sntx{associative-index-type} determines \chpl{idxType}
 of the associative domain type.
-\item Enumerated domains are a special case, in which \chpl{idxType}
-is an enumerated type.  Enumerated domains are
-handled specially during initialization and have a defined iteration
-order, as described below.
 \item Opaque domains are a special case, indicated by the type \chpl{opaque}.
 Anonymous values of the type \chpl{opaque} are used as index values
 in this case.
@@ -322,9 +314,7 @@ pointer-based data structures in conventional languages.
 
 An associative domain's value is simply the set of all index values
 that the domain describes.  The iteration order over the indices of
-an associative domain is undefined, except for enumerated domains.
-The iteration order over the indices of an enumerated domain
-is the declaration order of the corresponding enumeration constants.
+an associative domain is undefined.
 
 \index{domains!associative!literals}
 \index{domains!associative!initialization}
@@ -384,28 +374,8 @@ produces the output
 
 \index{domains!associative!default values}
 
-If unspecified the default value of an associative domain type is the empty 
-index set, except for enumerated domains.
-The default value of an enumerated domain type is the set of all constants
-of the corresponding enumerated type.
-
-\begin{rationale}
-The decision to have enumerated domains start fully populated was
-based on the observation that enumerations have a finite, typically
-small number of values and that it would be common to declare arrays
-with elements corresponding to each identifier in the enumeration.
-Further, in terms of usability it is simpler to clear a fully-populated
-domain than to fully populate an empty one.
-
-In addition, fully-populated constant enumerated
-domains are an important case for compiler optimizations, particularly
-if the numeric values of the enumeration are consecutive.
-\end{rationale}
-
-\begin{future}
-We may generally support a \chpl{startPopulated} parameter on associative
-domains, to unify this capability with other values.
-\end{future}
+If uninitialized, the default value of an associative domain is the
+empty index set.
 
 Indices can be added to or removed from an associative domain
 as described in \rsec{Adding_and_Removing_Domain_Indices}.
@@ -544,8 +514,7 @@ of the parent domain's index type.
 
 \index{sparse domains!default value}
 \index{domains!sparse!default value}
-The default value for a sparse subdomain value is the empty set.  This is true
-even if the parent domain is an enumerated domain.
+The default value for a sparse subdomain value is the empty set.
 
 \begin{example}
 The following code declares a two-dimensional dense domain \chpl{D},
@@ -939,22 +908,50 @@ proc $Domain$.clear()
 Resets this domain's index set to the empty set.
 \end{protobody}
 
-\begin{chapelexample}{emptyEnumeratedDomain}
-In the case of an enumerated domain, this function provides a way to produce an
-empty index set.
+\begin{chapelexample}{clearAssociativeDomain}
+This function provides a way to produce an empty associative domain.
 
 When run, the code
 \begin{chapel}
 enum Counter { one, two, three };
-var D : domain ( Counter );
+var D : domain ( Counter ) = {Counter.one, Counter.two};
 writeln("D has ", D.numIndices, " indices.");
 D.clear();
 writeln("D has ", D.numIndices, " indices.");
 \end{chapel}
 prints out
 \begin{chapelprintoutput}{}
-D has 3 indices.
+D has 2 indices.
 D has 0 indices.
+\end{chapelprintoutput}
+\end{chapelexample}
+
+\index{domains!dist@\chpl{dist}}
+\index{predefined functions!dist@\chpl{dist}}
+\begin{protohead}
+proc $Domain$.dist : dmap
+\end{protohead}
+\begin{protobody}
+Returns the domain map that implements this domain
+\end{protobody}
+
+\begin{chapelexample}{getDomainMap}
+In the code
+\begin{chapel}
+use BlockDist;
+proc foo(d : domain) where d.dist : Block {
+  writeln("Block-distributed domain");
+}
+proc foo(d : domain) {
+  writeln("Unknown distribution");
+}
+var D = {1..10} dmapped Block({1..10});
+foo(D);
+\end{chapel}
+\chpl{dist} is used in a where-clause to determine the type of the argument's
+distribution. The output is:
+\begin{chapelprintoutput}{}
+Block-distributed domain
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -979,15 +976,6 @@ domains, this ordering will be based on a row-major ordering of the
 indices; for other domains, the ordering may be
 implementation-defined and unstable as indices are added and
 removed from the domain.
-\end{protobody}
-
-\index{domains!isEnumDom@\chpl{isEnumDom}}
-\index{predefined functions!isEnumDom@\chpl{isEnumDom}}
-\begin{protohead}
-proc isEnumDom(d: domain) param
-\end{protohead}
-\begin{protobody}
-Returns a param \chpl{true} if the given domain is enumerated, false otherwise.
 \end{protobody}
 
 \index{domains!isIrregularDom@\chpl{isIrregularDom}}

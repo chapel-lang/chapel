@@ -22,8 +22,7 @@
     }
 
     proc main() {
-      var instance = new Widget();
+      var instance = new borrowed Widget();
       instance.setup(); // calls Base.setup() and that runs Widget.helpSetup
-      delete instance;
     }
   }

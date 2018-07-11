@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Command-Line Tools</title>
+<title>Hardware Locality (hwloc): Embedding hwloc in Other Software</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -39,67 +39,73 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="headertitle">
-<div class="title">Command-Line Tools </div>  </div>
+<div class="title">Embedding hwloc in Other Software </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>hwloc comes with an extensive C programming interface and several command line utilities. Each of them is fully documented in its own manual page; the following is a summary of the available command line tools.</p>
-<h1><a class="anchor" id="cli_lstopo"></a>
-lstopo and lstopo-no-graphics</h1>
-<p>lstopo (also known as hwloc-ls) displays the hierarchical topology map of the current system. The output may be graphical, ascii-art or textual, and can also be exported to numerous file formats such as PDF, PNG, XML, and others. Advanced graphical outputs require the "Cairo" development package (usually <code>cairo-devel</code> or <code>libcairo2-dev</code>).</p>
-<p>lstopo and lstopo-no-graphics accept the same command-line options. However graphical outputs are only available in lstopo. Textual outputs (those that do not depend on heavy external libraries such as Cairo) are supported in both lstopo and lstopo-no-graphics.</p>
-<p>This command can also display the processes currently bound to a part of the machine (via the <code>--ps</code> option).</p>
-<p>Note that lstopo can read XML files and/or alternate chroot filesystems and display topological maps representing those systems (e.g., use lstopo to output an XML file on one system, and then use lstopo to read in that XML file and display it on a different system).</p>
-<h1><a class="anchor" id="cli_hwloc_bind"></a>
-hwloc-bind</h1>
-<p>hwloc-bind binds processes to specific hardware objects through a flexible syntax. A simple example is binding an executable to specific cores (or packages or bitmaps or ...). The hwloc-bind(1) man page provides much more detail on what is possible.</p>
-<p>hwloc-bind can also be used to retrieve the current process' binding, or retrieve the last CPU(s) where a process ran, or operate on memory binding.</p>
-<p>Just like hwloc-calc, the input locations given to hwloc-bind may be either objects or cpusets (bitmaps as reported by hwloc-calc or hwloc-distrib).</p>
-<h1><a class="anchor" id="cli_hwloc_calc"></a>
-hwloc-calc</h1>
-<p>hwloc-calc is hwloc's Swiss Army Knife command-line tool for converting things. The input may be either objects or cpusets (bitmaps as reported by another hwloc-calc instance or by hwloc-distrib), that may be combined by addition, intersection or subtraction. The output kinds include: </p><ul>
-<li>
-a cpuset bitmap: This compact opaque representation of objects is useful for shell scripts etc. It may passed to hwloc command-line tools such as hwloc-calc or hwloc-bind, or to hwloc command-line options such as <code>lstopo --restrict</code>. </li>
-<li>
-the amount of the equivalent hwloc objects from a specific type, or the list of their indexes. This is useful for iterating over all similar objects (for instance all cores) within a given part of a platform. </li>
-<li>
-a hierarchical description of objects, for instance a thread index within a core within a package. This gives a better view of the actual location of an object. </li>
+<div class="textblock"><p> 
+<div class="section">
+</p>
+<p>It can be desirable to include hwloc in a larger software package (be sure to check out the LICENSE file) so that users don't have to separately download and install it before installing your software. This can be advantageous to ensure that your software uses a known-tested/good version of hwloc, or for use on systems that do not have hwloc pre-installed.</p>
+<p>When used in "embedded" mode, hwloc will:</p>
+<ul>
+<li>not install any header files</li>
+<li>not build any documentation files</li>
+<li>not build or install any executables or tests</li>
+<li>not build <code>libhwloc.*</code> &ndash; instead, it will build <code>libhwloc_embedded.*</code></li>
 </ul>
-<p>Moreover, input and/or output may be use either physical/OS object indexes or as hwloc's logical object indexes. It eases cooperation with external tools such as taskset or numactl by exporting hwloc specifications into list of processor or NUMA node physical indexes. See also <a class="el" href="a00335.html#faq_indexes">Should I use logical or physical/OS indexes? and how?</a>.</p>
-<h1><a class="anchor" id="cli_hwloc_info"></a>
-hwloc-info</h1>
-<p>hwloc-info dumps information about the given objects, as well as all its specific attributes. It is intended to be used with tools such as grep for filtering certain attribute lines. When no object is specified, or when <code>--topology</code> is passed, hwloc-info prints a summary of the topology. When <code>--support</code> is passed, hwloc-info lists the supported features for the topology.</p>
-<h1><a class="anchor" id="cli_hwloc_distrib"></a>
-hwloc-distrib</h1>
-<p>hwloc-distrib generates a set of cpuset bitmaps that are uniformly distributed across the machine for the given number of processes. These strings may be used with hwloc-bind to run processes to maximize their memory bandwidth by properly distributing them across the machine.</p>
-<h1><a class="anchor" id="cli_hwloc_ps"></a>
-hwloc-ps</h1>
-<p>hwloc-ps is a tool to display the bindings of processes that are currently running on the local machine. By default, hwloc-ps only lists processes that are bound; unbound process (and Linux kernel threads) are not displayed.</p>
-<h1><a class="anchor" id="cli_hwloc_distances"></a>
-hwloc-distances</h1>
-<p>hwloc-distances displays all distance matrices attached to the topology. Note that lstopo may also display distance matrices in its verbose textual output. However lstopo only prints matrices that cover the entire topology while hwloc-distances also displays matrices that ignore part of the topology.</p>
-<h1><a class="anchor" id="cli_hwloc_annotate"></a>
-hwloc-annotate</h1>
-<p>hwloc-annotate may add object attributes such as string information (see <a class="el" href="a00328.html#attributes_info">Custom string infos</a> for details) or Misc children objects. It reads an input topology from a XML file and outputs the annotated topology as another XML file.</p>
-<h1><a class="anchor" id="cli_hwloc_diffpatchcompress"></a>
-hwloc-diff, hwloc-patch and hwloc-compress-dir</h1>
-<p>hwloc-diff computes the difference between two topologies and outputs it to another XML file.</p>
-<p>hwloc-patch reads such a difference file and applies to another topology.</p>
-<p>hwloc-compress-dir compresses an entire directory of XML files by using hwloc-diff to save the differences between topologies instead of entire topologies.</p>
-<h1><a class="anchor" id="cli_hwloc_assembler"></a>
-hwloc-assembler</h1>
-<p>hwloc-assembler combines several XML topology files into a single multi-node XML topology. It may then be used later as input with <a class="el" href="a00166.html#ga879439b7ee99407ee911b3ac64e9a25e" title="Enable XML-file based topology. ">hwloc_topology_set_xml()</a> or with the HWLOC_XMLFILE environment variable. See <a class="el" href="a00327.html">Multi-node Topologies</a> for details.</p>
-<h1><a class="anchor" id="cli_hwloc_assembler_remote"></a>
-hwloc-assembler-remote</h1>
-<p>hwloc-assembler-remote is a frontend to hwloc-assembler. It takes care of contacting the given list of remote hosts (through ssh) and retrieving their topologies as XML before assembling them with hwloc-assembler.</p>
-<h1><a class="anchor" id="cli_hwloc_dump_hwdata"></a>
-hwloc-dump-hwdata</h1>
-<p>hwloc-dump-hwdata is a Linux and x86-specific tool that dumps (during boot, privileged) some topology and locality information from raw hardware files (SMBIOS and ACPI tables) to human-readable and world-accessible files that the hwloc library will later reuse.</p>
-<p>Currently only used on Intel Knights Landing Xeon Phi platforms. See <a class="el" href="a00335.html#faq_knl_dump">Why do I need hwloc-dump-hwdata for memory on Intel Knights Landing Xeon Phi?</a>.</p>
-<p>See <code>HWLOC_DUMPED_HWDATA_DIR</code> in <a class="el" href="a00323.html">Environment Variables</a> for details about the location of dumped files.</p>
-<h1><a class="anchor" id="cli_hwloc_gather"></a>
-hwloc-gather-topology</h1>
-<p>hwloc-gather-topology is a Linux-specific tool that saves the relevant topology files of the current machine into a tarball (and the corresponding lstopo outputs).</p>
-<p>These files may be used later (possibly offline) for simulating or debugging a machine without actually running on it. </p>
+<p>There are two ways to put hwloc into "embedded" mode. The first is directly from the configure command line:</p>
+<pre class="fragment">shell$ ./configure --enable-embedded-mode ...
+</pre><p>The second requires that your software project uses the GNU Autoconf / Automake / Libtool tool chain to build your software. If you do this, you can directly integrate hwloc's m4 configure macro into your configure script. You can then invoke hwloc's configuration tests and build setup by calling an m4 macro (see below).</p>
+<p>Although hwloc dynamic shared object plugins may be used in embedded mode, the embedder project will have to manually setup libltdl in its build system so that hwloc can load its plugins at run time. Also, embedders should be aware of complications that can arise due to public and private linker namespaces (e.g., if the embedder project is loaded into a private namespace and then hwloc tries to dynamically load its plugins, such loading may fail since the hwloc plugins can't find the hwloc symbols they need). The embedder project is <b>strongly</b> advised not to use hwloc's dynamically loading plugins / libltdl capability.</p>
+<p> 
+</div><div class="section" id="embedding_m4">
+ </p>
+<h1><a class="anchor" id="embedding_m4"></a>
+Using hwloc's M4 Embedding Capabilities</h1>
+<p>Every project is different, and there are many different ways of integrating hwloc into yours. What follows is <em>one</em> example of how to do it.</p>
+<p>If your project uses recent versions Autoconf, Automake, and Libtool to build, you can use hwloc's embedded m4 capabilities. We have tested the embedded m4 with projects that use Autoconf 2.65, Automake 1.11.1, and Libtool 2.2.6b. Slightly earlier versions of may also work but are untested. Autoconf versions prior to 2.65 are almost certain to not work.</p>
+<p>You can either copy all the config/hwloc*m4 files from the hwloc source tree to the directory where your project's m4 files reside, or you can tell aclocal to find more m4 files in the embedded hwloc's "config" subdirectory (e.g., add "-Ipath/to/embedded/hwloc/config" to your Makefile.am's ACLOCAL_AMFLAGS).</p>
+<p>The following macros can then be used from your configure script (only HWLOC_SETUP_CORE <em>must</em> be invoked if using the m4 macros):</p>
+<ul>
+<li><p class="startli">HWLOC_SETUP_CORE(config-dir-prefix, action-upon-success, action-upon-failure, print_banner_or_not): Invoke the hwloc configuration tests and setup the hwloc tree to build. The first argument is the prefix to use for AC_OUTPUT files &ndash; it's where the hwloc tree is located relative to <code>$top_srcdir</code>. Hence, if your embedded hwloc is located in the source tree at contrib/hwloc, you should pass <code>[contrib/hwloc]</code> as the first argument. If HWLOC_SETUP_CORE and the rest of <code>configure</code> completes successfully, then "make" traversals of the hwloc tree with standard Automake targets (all, clean, install, etc.) should behave as expected. For example, it is safe to list the hwloc directory in the SUBDIRS of a higher-level Makefile.am. The last argument, if not empty, will cause the macro to display an announcement banner that it is starting the hwloc core configuration tests.</p>
+<p class="startli">HWLOC_SETUP_CORE will set the following environment variables and AC_SUBST them: HWLOC_EMBEDDED_CFLAGS, HWLOC_EMBEDDED_CPPFLAGS, and HWLOC_EMBEDDED_LIBS. These flags are filled with the values discovered in the hwloc-specific m4 tests, and can be used in your build process as relevant. The _CFLAGS, _CPPFLAGS, and _LIBS variables are necessary to build libhwloc (or libhwloc_embedded) itself.</p>
+<p class="startli">HWLOC_SETUP_CORE also sets HWLOC_EMBEDDED_LDADD environment variable (and AC_SUBSTs it) to contain the location of the libhwloc_embedded.la convenience Libtool archive. It can be used in your build process to link an application or other library against the embedded hwloc library.</p>
+<p class="startli"><b>NOTE: If the HWLOC_SET_SYMBOL_PREFIX macro is used, it must be invoked <em>before</em> HWLOC_SETUP_CORE.</b></p>
+</li>
+<li>HWLOC_BUILD_STANDALONE: HWLOC_SETUP_CORE defaults to building hwloc in an "embedded" mode (described above). If HWLOC_BUILD_STANDALONE is invoked *before* HWLOC_SETUP_CORE, the embedded definitions will not apply (e.g., libhwloc.la will be built, not libhwloc_embedded.la).</li>
+<li>HWLOC_SET_SYMBOL_PREFIX(foo_): Tells the hwloc to prefix all of hwloc's types and public symbols with "foo_"; meaning that function hwloc_init() becomes foo_hwloc_init(). Enum values are prefixed with an upper-case translation if the prefix supplied; HWLOC_OBJ_SYSTEM becomes FOO_HWLOC_OBJ_SYSTEM. This is recommended behavior if you are including hwloc in middleware &ndash; it is possible that your software will be combined with other software that links to another copy of hwloc. If both uses of hwloc utilize different symbol prefixes, there will be no type/symbol clashes, and everything will compile, link, and run successfully. If you both embed hwloc without changing the symbol prefix and also link against an external hwloc, you may get multiple symbol definitions when linking your final library or application.</li>
+<li>HWLOC_SETUP_DOCS, HWLOC_SETUP_UTILS, HWLOC_SETUP_TESTS: These three macros only apply when hwloc is built in "standalone" mode (i.e., they should NOT be invoked unless HWLOC_BUILD_STANDALONE has already been invoked).</li>
+<li>HWLOC_DO_AM_CONDITIONALS: If you embed hwloc in a larger project and build it conditionally with Automake (e.g., if HWLOC_SETUP_CORE is invoked conditionally), you must unconditionally invoke HWLOC_DO_AM_CONDITIONALS to avoid warnings from Automake (for the cases where hwloc is not selected to be built). This macro is necessary because hwloc uses some AM_CONDITIONALs to build itself, and AM_CONDITIONALs cannot be defined conditionally. Note that it is safe (but unnecessary) to call HWLOC_DO_AM_CONDITIONALS even if HWLOC_SETUP_CORE is invoked unconditionally. If you are not using Automake to build hwloc, this macro is unnecessary (and will actually cause errors because it invoked AM_* macros that will be undefined).</li>
+</ul>
+<p><b>NOTE:</b> When using the HWLOC_SETUP_CORE m4 macro, it may be necessary to explicitly invoke AC_CANONICAL_TARGET (which requires config.sub and config.guess) and/or AC_USE_SYSTEM_EXTENSIONS macros early in the configure script (e.g., after AC_INIT but before AM_INIT_AUTOMAKE). See the Autoconf documentation for further information.</p>
+<p>Also note that hwloc's top-level configure.ac script uses exactly the macros described above to build hwloc in a standalone mode (by default). You may want to examine it for one example of how these macros are used.</p>
+<p> 
+</div><div class="section" id="embedding_example">
+ </p>
+<h1><a class="anchor" id="embedding_example"></a>
+Example Embedding hwloc</h1>
+<p>Here's an example of integrating with a larger project named sandbox that already uses Autoconf, Automake, and Libtool to build itself:</p>
+<pre class="fragment"># First, cd into the sandbox project source tree
+shell$ cd sandbox
+shell$ cp -r /somewhere/else/hwloc-&lt;version&gt; my-embedded-hwloc
+shell$ edit Makefile.am
+  1. Add "-Imy-embedded-hwloc/config" to ACLOCAL_AMFLAGS
+  2. Add "my-embedded-hwloc" to SUBDIRS
+  3. Add "$(HWLOC_EMBEDDED_LDADD)" and "$(HWLOC_EMBEDDED_LIBS)" to 
+     sandbox's executable's LDADD line.  The former is the name of the 
+     Libtool convenience library that hwloc will generate.  The latter 
+     is any dependent support libraries that may be needed by 
+     $(HWLOC_EMBEDDED_LDADD).
+  4. Add "$(HWLOC_EMBEDDED_CFLAGS)" to AM_CFLAGS
+  5. Add "$(HWLOC_EMBEDDED_CPPFLAGS)" to AM_CPPFLAGS
+shell$ edit configure.ac
+  1. Add "HWLOC_SET_SYMBOL_PREFIX(sandbox_hwloc_)" line
+  2. Add "HWLOC_SETUP_CORE([my-embedded-hwloc], [happy=yes], [happy=no])" line
+  3. Add error checking for happy=no case
+shell$ edit sandbox.c
+  1. Add #include &lt;hwloc.h&gt;
+  2. Add calls to sandbox_hwloc_init() and other hwloc API functions
+</pre><p>Now you can bootstrap, configure, build, and run the sandbox as normal &ndash; all calls to "sandbox_hwloc_*" will use the embedded hwloc rather than any system-provided copy of hwloc. </p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

@@ -7,10 +7,8 @@ class Foo {
       remoteVal = xVal;
     }
     x = remoteVal;
-    super.init();
   }
 }
 
-var foo = new Foo(3);
+var foo = new owned Foo(3);
 writeln(foo);
-delete foo;

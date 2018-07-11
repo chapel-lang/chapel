@@ -10,9 +10,7 @@ arrayTypeAlias.doc
 
    use arrayTypeAlias.doc;
 
-.. function:: proc _parloopexpr1(iterExpr)
-
-.. type:: type t = AppendExpr.Call08
+.. type:: type t = AppendExpr.01
 
    This is a type alias for an array type 
 

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): hwloc_topology_discovery_support Struct Reference</title>
+<title>Hardware Locality (hwloc): hwloc_topology_support Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -41,38 +41,69 @@ $(function() {
   <div class="summary">
 <a href="#pub-attribs">Data Fields</a>  </div>
   <div class="headertitle">
-<div class="title">hwloc_topology_discovery_support Struct Reference<div class="ingroups"><a class="el" href="a00166.html">Topology Detection Configuration and Query</a></div></div>  </div>
+<div class="title">hwloc_topology_support Struct Reference<div class="ingroups"><a class="el" href="a00154.html">Topology Detection Configuration and Query</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p><code>#include &lt;<a class="el" href="a00113_source.html">hwloc.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="a00101_source.html">hwloc.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:ad7bb4ecf7a82f5a04fc632e9592ad3ab"><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00264.html#ad7bb4ecf7a82f5a04fc632e9592ad3ab">pu</a></td></tr>
-<tr class="separator:ad7bb4ecf7a82f5a04fc632e9592ad3ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea3fbd7653d987d81f848636c420504d"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00252.html">hwloc_topology_discovery_support</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00264.html#aea3fbd7653d987d81f848636c420504d">discovery</a></td></tr>
+<tr class="separator:aea3fbd7653d987d81f848636c420504d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adef2bb91f74c3e70a2a071393caf5f56"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00256.html">hwloc_topology_cpubind_support</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00264.html#adef2bb91f74c3e70a2a071393caf5f56">cpubind</a></td></tr>
+<tr class="separator:adef2bb91f74c3e70a2a071393caf5f56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6eb62ae8bc0a68dce679a7107a36194"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00260.html">hwloc_topology_membind_support</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00264.html#ac6eb62ae8bc0a68dce679a7107a36194">membind</a></td></tr>
+<tr class="separator:ac6eb62ae8bc0a68dce679a7107a36194"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Flags describing actual discovery support for this topology. </p>
+<div class="textblock"><p>Set of flags describing actual support for this topology. </p>
+<p>This is retrieved with <a class="el" href="a00154.html#gab8c76173c4a8ce1a9a9366012b1388e6" title="Retrieve the topology support. ">hwloc_topology_get_support()</a> and will be valid until the topology object is destroyed. Note: the values are correct only after discovery. </p>
 </div><h2 class="groupheader">Field Documentation</h2>
-<a id="ad7bb4ecf7a82f5a04fc632e9592ad3ab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad7bb4ecf7a82f5a04fc632e9592ad3ab">&#9670;&nbsp;</a></span>pu</h2>
+<a id="adef2bb91f74c3e70a2a071393caf5f56"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adef2bb91f74c3e70a2a071393caf5f56">&#9670;&nbsp;</a></span>cpubind</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">unsigned char hwloc_topology_discovery_support::pu</td>
+          <td class="memname">struct <a class="el" href="a00256.html">hwloc_topology_cpubind_support</a>* hwloc_topology_support::cpubind</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Detecting the number of PU objects is supported. </p>
+</div>
+</div>
+<a id="aea3fbd7653d987d81f848636c420504d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea3fbd7653d987d81f848636c420504d">&#9670;&nbsp;</a></span>discovery</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct <a class="el" href="a00252.html">hwloc_topology_discovery_support</a>* hwloc_topology_support::discovery</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac6eb62ae8bc0a68dce679a7107a36194"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6eb62ae8bc0a68dce679a7107a36194">&#9670;&nbsp;</a></span>membind</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct <a class="el" href="a00260.html">hwloc_topology_membind_support</a>* hwloc_topology_support::membind</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li><a class="el" href="a00113_source.html">hwloc.h</a></li>
+<li><a class="el" href="a00101_source.html">hwloc.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

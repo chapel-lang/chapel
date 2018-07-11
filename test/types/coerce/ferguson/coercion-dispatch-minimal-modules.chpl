@@ -12,6 +12,7 @@ inline proc _cast(type t, x: uint(?w))
 
 proc chpl__autoCopy(x:uint(?w)) return x;
 proc chpl__initCopy(x:uint(?w)) return x;
+proc chpl__initCopy(x:R) { return x; }
 proc chpl__autoDestroy(r:R) { }
 
 

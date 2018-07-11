@@ -27,11 +27,12 @@ module ChapelDistribution {
   // Abstract distribution class
   //
   pragma "base dist"
+  pragma "use default init"
   class BaseDist {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _doms: list(BaseDom);     // domains declared over this distribution
+    var _doms: list(unmanaged BaseDom);     // domains declared over this distribution
     var _domsLock: atomicbool;    //   and lock for concurrent access
     var _free_when_no_doms: bool; // true when the original _distribution
                                   // has been destroyed
@@ -42,7 +43,7 @@ module ChapelDistribution {
 
     // Returns a distribution that should be freed or nil.
     pragma "dont disable remote value forwarding"
-    proc remove(): BaseDist {
+    proc remove(): unmanaged BaseDist {
       var free_dist = false;
       if dsiTrackDomains() {
         on this {
@@ -64,13 +65,13 @@ module ChapelDistribution {
         free_dist = true;
       }
       if free_dist then
-        return this;
+        return _to_unmanaged(this);
       else
         return nil;
     }
 
     // Returns true if the distribution should be removed.
-    inline proc remove_dom(x:BaseDom): bool {
+    inline proc remove_dom(x:unmanaged BaseDom): bool {
       var count = -1;
       on this {
         var cnt = -1;
@@ -102,7 +103,7 @@ module ChapelDistribution {
     // due to the creation of distribution and domain objects) than
     // rank-preserving slicing.
     //
-    inline proc add_dom(x:BaseDom) {
+    inline proc add_dom(x:unmanaged BaseDom) {
       on this {
         _lock_doms();
         _doms.append(x);
@@ -171,7 +172,7 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _arrs: list(BaseArr);  // arrays declared over this domain
+    var _arrs: list(unmanaged BaseArr);  // arrays declared over this domain
     var _arrs_containing_dom: int; // number of arrays using this domain
                                    // as var A: [D] [1..2] real
                                    // is using {1..2}
@@ -179,10 +180,13 @@ module ChapelDistribution {
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
 
+    proc init() {
+    }
+
     proc deinit() {
     }
 
-    proc dsiMyDist(): BaseDist {
+    proc dsiMyDist(): unmanaged BaseDist {
       halt("internal error: dsiMyDist is not implemented");
       return nil;
     }
@@ -191,13 +195,13 @@ module ChapelDistribution {
     // if this domain should be deleted, dom=this; otherwise it is nil.
     // dist is nil or a distribution that should be removed.
     pragma "dont disable remote value forwarding"
-    proc remove() : (BaseDom, BaseDist) {
+    proc remove() : (unmanaged BaseDom, unmanaged BaseDist) {
 
       // TODO -- remove dsiLinksDistribution
       assert( dsiMyDist().dsiTrackDomains() == dsiLinksDistribution() );
 
-      var ret_dom:BaseDom = nil;
-      var ret_dist:BaseDist = nil;
+      var ret_dom:unmanaged BaseDom = nil;
+      var ret_dist:unmanaged BaseDist = nil;
       var dist = dsiMyDist();
       var free_dom = false;
       var remove_dist = false;
@@ -219,19 +223,19 @@ module ChapelDistribution {
           if dsiLinksDistribution() {
             // Remove the domain from the distribution
             // and find out if the distribution should be removed.
-            remove_dist = dist.remove_dom(this);
+            remove_dist = dist.remove_dom(_to_unmanaged(this));
           }
         }
       }
       if free_dom then
-        ret_dom = this; // caller will delete this
+        ret_dom = _to_unmanaged(this); // caller will delete this
       if remove_dist then
         ret_dist = dist; // caller will remove dist
       return (ret_dom, ret_dist);
     }
 
     // returns true if the domain should be removed
-    inline proc remove_arr(x:BaseArr): bool {
+    inline proc remove_arr(x:unmanaged BaseArr): bool {
       var count = -1;
       on this {
         var cnt = -1;
@@ -250,7 +254,7 @@ module ChapelDistribution {
       return (count==0);
     }
 
-    inline proc add_arr(x:BaseArr, param locking=true) {
+    inline proc add_arr(x:unmanaged BaseArr, param locking=true) {
       on this {
         if locking then
           _lock_arrs();
@@ -260,7 +264,7 @@ module ChapelDistribution {
       }
     }
 
-    inline proc remove_containing_arr(x:BaseArr): int {
+    inline proc remove_containing_arr(x:unmanaged BaseArr): int {
       var count = -1;
       on this {
         _lock_arrs();
@@ -272,7 +276,7 @@ module ChapelDistribution {
       return count;
     }
 
-    inline proc add_containing_arr(x:BaseArr) {
+    inline proc add_containing_arr(x:unmanaged BaseArr) {
       on this {
         _lock_arrs();
         _arrs_containing_dom += 1;
@@ -362,13 +366,14 @@ module ChapelDistribution {
     //   }
   }
 
+  pragma "use default init"
   class BaseRectangularDom : BaseDom {
     param rank : int;
     type idxType;
     param stridable: bool;
 
     proc getBaseArrType() type {
-      var tmp = new BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
+      var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
       return tmp.type;
     }
 
@@ -387,6 +392,7 @@ module ChapelDistribution {
     }
   }
 
+  pragma "use default init"
   class BaseSparseDomImpl : BaseSparseDom {
 
     var nnzDom = {1..nnz};
@@ -547,6 +553,7 @@ module ChapelDistribution {
 
   }
 
+  pragma "use default init"
   class BaseSparseDom : BaseDom {
     // rank and idxType will be moved to BaseDom
     param rank: int;
@@ -605,6 +612,7 @@ module ChapelDistribution {
   } // end BaseSparseDom
 
 
+  pragma "use default init"
   class BaseAssociativeDom : BaseDom {
     proc deinit() {
       // this is a bug workaround
@@ -621,6 +629,7 @@ module ChapelDistribution {
 
   }
 
+  pragma "use default init"
   class BaseOpaqueDom : BaseDom {
     proc deinit() {
       // this is a bug workaround
@@ -636,6 +645,7 @@ module ChapelDistribution {
   // Abstract array class
   //
   pragma "base array"
+  pragma "use default init"
   class BaseArr {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
@@ -660,7 +670,7 @@ module ChapelDistribution {
 
     proc dsiStaticFastFollowCheck(type leadType) param return false;
 
-    proc dsiGetBaseDom(): BaseDom {
+    proc dsiGetBaseDom(): unmanaged BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
       return nil;
     }
@@ -671,13 +681,13 @@ module ChapelDistribution {
     pragma "dont disable remote value forwarding"
     proc remove() {
       var ret_arr = this; // this array is always deleted
-      var ret_dom:BaseDom = nil;
+      var ret_dom:unmanaged BaseDom = nil;
       var rm_dom = false;
 
       var dom = dsiGetBaseDom();
       // Remove the array from the domain
       // and find out if the domain should be removed.
-      rm_dom = dom.remove_arr(this);
+      rm_dom = dom.remove_arr(_to_unmanaged(this));
 
       if rm_dom then
         ret_dom = dom;
@@ -764,6 +774,7 @@ module ChapelDistribution {
      another base class.
    */
   pragma "base array"
+  pragma "use default init"
   class BaseArrOverRectangularDom: BaseArr {
     param rank : int;
     type idxType;
@@ -777,10 +788,10 @@ module ChapelDistribution {
       halt("reallocating not supported for this array type");
     }
 
-    proc dsiPostReallocate() {
+    override proc dsiPostReallocate() {
     }
 
-    proc ~BaseArrOverRectangularDom() {
+    proc deinit() {
       // this is a bug workaround
     }
 
@@ -788,11 +799,12 @@ module ChapelDistribution {
   }
 
   pragma "base array"
+  pragma "use default init"
   class BaseRectangularArr: BaseArrOverRectangularDom {
     /* rank, idxType, stridable are from BaseArrOverRectangularDom */
     type eltType;
 
-    proc ~BaseRectangularArr() {
+    proc deinit() {
       // this is a bug workaround
     }
   }
@@ -802,6 +814,7 @@ module ChapelDistribution {
    * implementing sparse array classes.
    */
   pragma "base array"
+  pragma "use default init"
   class BaseSparseArr: BaseArr {
     type eltType;
     param rank : int;
@@ -814,7 +827,7 @@ module ChapelDistribution {
     pragma "local field"
     var data: [dom.nnzDom] eltType;
 
-    proc dsiGetBaseDom() return dom;
+    override proc dsiGetBaseDom() return dom;
 
     proc deinit() {
       // this is a bug workaround
@@ -826,6 +839,7 @@ module ChapelDistribution {
    * go here.
    */
   pragma "base array"
+  pragma "use default init"
   class BaseSparseArrImpl: BaseSparseArr {
 
     proc deinit() {
@@ -867,7 +881,7 @@ module ChapelDistribution {
     }
 
     // shift data array after single index addition. Fills the new index with irv
-    proc sparseShiftArray(shiftrange, initrange) {
+    override proc sparseShiftArray(shiftrange, initrange) {
       for i in initrange {
         data(i) = irv;
       }
@@ -877,7 +891,7 @@ module ChapelDistribution {
       data(shiftrange.low) = irv;
     }
 
-    proc sparseShiftArrayBack(shiftrange) {
+    override proc sparseShiftArrayBack(shiftrange) {
       for i in shiftrange {
         data(i) = data(i+1);
       }
@@ -889,7 +903,7 @@ module ChapelDistribution {
   // param privatized here is a workaround for the fact that
   // we can't include the privatized freeing for DefaultRectangular
   // because of resolution order issues
-  proc _delete_dist(dist:BaseDist, param privatized:bool) {
+  proc _delete_dist(dist:unmanaged BaseDist, param privatized:bool) {
     dist.dsiDestroyDist();
 
     if privatized {
@@ -955,7 +969,7 @@ module ChapelDistribution {
   // that does something else.
   // lhs is a subclass of BaseRectangularDom
   proc chpl_assignDomainWithGetSetIndices(lhs:?t, rhs: domain)
-    where t:BaseRectangularDom
+    where isSubtype(_to_borrowed(t),BaseRectangularDom)
   {
     type arrType = lhs.getBaseArrType();
     param rank = lhs.rank;
@@ -995,7 +1009,9 @@ module ChapelDistribution {
 
 
   proc chpl_assignDomainWithIndsIterSafeForRemoving(lhs:?t, rhs: domain)
-    where t:BaseSparseDom || t:BaseAssociativeDom || t:BaseOpaqueDom
+    where isSubtype(_to_borrowed(t),BaseSparseDom) ||
+          isSubtype(_to_borrowed(t),BaseAssociativeDom) ||
+          isSubtype(_to_borrowed(t),BaseOpaqueDom)
   {
     //
     // BLC: It's tempting to do a clear + add here, but because

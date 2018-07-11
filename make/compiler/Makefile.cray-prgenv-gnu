@@ -27,3 +27,8 @@ include $(CHPL_MAKE_HOME)/make/compiler/Makefile.gnu
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-prgenv
 
+# Makefile.cray-prgenv overrides OPT_CLFAGS set in Makefile.gnu
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 7; echo "$$?"),0)
+OPT_CFLAGS += -fno-ipa-cp-clone
+endif
+

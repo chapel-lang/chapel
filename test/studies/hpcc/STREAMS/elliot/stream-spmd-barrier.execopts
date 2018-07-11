@@ -1,0 +1,2 @@
+--m=8 --printArrays=true --printStats=false --useRandomSeed=false --barrierType=BarrierType.Atomic
+--m=8 --printArrays=true --printStats=false --useRandomSeed=false --barrierType=BarrierType.Sync

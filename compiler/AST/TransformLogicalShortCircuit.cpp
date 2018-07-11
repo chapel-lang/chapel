@@ -27,11 +27,11 @@
 
 #include "build.h"
 #include "expr.h"
+#include "IfExpr.h"
 #include "stmt.h"
 
-TransformLogicalShortCircuit::TransformLogicalShortCircuit(Expr* insertionPoint)
+TransformLogicalShortCircuit::TransformLogicalShortCircuit()
 {
-  mInsertionPoint = insertionPoint;
 }
 
 TransformLogicalShortCircuit::~TransformLogicalShortCircuit()
@@ -39,9 +39,10 @@ TransformLogicalShortCircuit::~TransformLogicalShortCircuit()
 
 }
 
-void TransformLogicalShortCircuit::exitCallExpr(CallExpr* call)
+bool TransformLogicalShortCircuit::enterCallExpr(CallExpr* call)
 {
-  if (call->primitive == 0)
+  // Lowering of LoopExprs will handle short-circuits itself
+  if (call->primitive == 0 && isLoopExpr(call->parentExpr) == false)
   {
     if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr))
     {
@@ -52,45 +53,52 @@ void TransformLogicalShortCircuit::exitCallExpr(CallExpr* call)
       {
         SET_LINENO(call);
 
-        if (call->getStmtExpr() == mInsertionPoint)
+        Expr*      left  = call->get(1);
+        Expr*      right = call->get(2);
+        VarSymbol* lvar  = newTemp();
+
+        VarSymbol* eMsg  = NULL;
+        IfExpr*    ife   = NULL;
+
+        left->remove();
+        right->remove();
+
+        lvar->addFlag(FLAG_MAYBE_PARAM);
+
+        if (isLogicalAnd)
         {
-          Expr*      left  = call->get(1);
-          Expr*      right = call->get(2);
-          VarSymbol* lvar  = newTemp();
-
-          VarSymbol* eMsg  = NULL;
-          FnSymbol*  ifFn  = NULL;
-
-          left->remove();
-          right->remove();
-
-          lvar->addFlag(FLAG_MAYBE_PARAM);
-
-          if (isLogicalAnd)
-          {
-            eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
-            ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
-                               new CallExpr("isTrue", right),
-                               new SymExpr(gFalse));
-          }
-          else
-          {
-            eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
-            ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
-                               new SymExpr(gTrue),
-                               new CallExpr("isTrue", right));
-          }
-
-          ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
-                                          new CallExpr("compilerError", eMsg)));
-          ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
-          ifFn->insertAtHead(new DefExpr(lvar));
-
-          call->baseExpr->replace(new UnresolvedSymExpr(ifFn->name));
-
-          mInsertionPoint->insertBefore(new DefExpr(ifFn));
+          eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
+          ife = new IfExpr(new CallExpr("isTrue", lvar),
+                           new CallExpr("isTrue", right),
+                           new SymExpr(gFalse));
         }
+        else
+        {
+          eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
+          ife = new IfExpr(new CallExpr("isTrue", lvar),
+                           new SymExpr(gTrue),
+                           new CallExpr("isTrue", right));
+        }
+
+        //
+        // By handling conditionals in pre-order, we do not need to store an
+        // insertion point. The top-level conditional will be inserted before
+        // the original statement, and any nested conditionals will be stored
+        // within the IfExprs blocks which are still before the original
+        // statement.
+        //
+        Expr* stmt = call->getStmtExpr();
+        stmt->insertBefore(new DefExpr(lvar));
+        stmt->insertBefore(new CallExpr(PRIM_MOVE, lvar, left));
+        stmt->insertBefore(new CondStmt(new CallExpr("_cond_invalid", lvar),
+                                        new CallExpr("compilerError", eMsg)));
+
+        call->replace(ife);
+
+        left->accept(this);
+        ife->accept(this);
       }
     }
   }
+  return true;
 }

@@ -34,13 +34,16 @@
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
-    case TFI_DEFAULT:   return "default";
-    case TFI_CONST:     return "const";
-    case TFI_IN:        return "in";
-    case TFI_CONST_IN:  return "const in";
-    case TFI_REF:       return "ref";
-    case TFI_CONST_REF: return "const ref";
-    case TFI_REDUCE:    return "reduce";
+    case TFI_DEFAULT:       return "default";
+    case TFI_CONST:         return "const";
+    case TFI_IN_OUTERVAR:   return "in-outervar";
+    case TFI_IN:            return "in";
+    case TFI_CONST_IN:      return "const in";
+    case TFI_REF:           return "ref";
+    case TFI_CONST_REF:     return "const ref";
+    case TFI_REDUCE:        return "reduce";
+    case TFI_REDUCE_OP:     return "reduceOp";
+    case TFI_TASK_PRIVATE:  return "task-private";
   }
   INT_ASSERT(false);
   return "";
@@ -188,41 +191,141 @@ void ForallIntents::acceptFI(AstVisitor* visitor) {
 
 static ForallIntentTag argIntentToForallIntent(Expr* ref, IntentTag intent) {
   switch (intent) {
-  case INTENT_IN:        return TFI_IN;
-  case INTENT_CONST:     return TFI_CONST;
-  case INTENT_CONST_IN:  return TFI_CONST_IN;
-  case INTENT_REF:       return TFI_REF;
-  case INTENT_CONST_REF: return TFI_CONST_REF;
-  case INTENT_BLANK:     return TFI_DEFAULT;
+    case INTENT_IN:        return TFI_IN;
+    case INTENT_CONST:     return TFI_CONST;
+    case INTENT_CONST_IN:  return TFI_CONST_IN;
+    case INTENT_REF:       return TFI_REF;
+    case INTENT_CONST_REF: return TFI_CONST_REF;
+    case INTENT_BLANK:     return TFI_DEFAULT;
 
-  case INTENT_OUT:
-  case INTENT_INOUT:
-  case INTENT_PARAM:
-  case INTENT_TYPE:
-  case INTENT_REF_MAYBE_CONST:
-    USR_FATAL_CONT(ref, "%s is not supported in a 'with' clause", intentDescrString(intent));
-    return TFI_DEFAULT;
+    case INTENT_OUT:
+    case INTENT_INOUT:
+    case INTENT_PARAM:
+    case INTENT_TYPE:
+    case INTENT_REF_MAYBE_CONST:
+      USR_FATAL_CONT(ref, "%s is not supported in a 'with' clause",
+                          intentDescrString(intent));
+      return TFI_DEFAULT;
   }
   INT_ASSERT(false); // unexpected IntentTag; 'intent' contains garbage?
   return TFI_DEFAULT; // dummy
 }
 
-ShadowVarSymbol* ShadowVarSymbol::buildFromArgIntent(IntentTag intent,
-                                                     Expr* ovar)
+static ShadowVarSymbol* buildShadowVariable(ShadowVarPrefix prefix,
+                                            const char* name, Expr* ovar)
 {
-  ForallIntentTag  fi = argIntentToForallIntent(ovar, intent);
-  const char*    name = toUnresolvedSymExpr(ovar)->unresolved;
-  return new ShadowVarSymbol(fi, name, ovar);
+  ForallIntentTag intent = TFI_DEFAULT; // dummy
+  switch (prefix)
+  {
+    case SVP_CONST:     intent = TFI_CONST;     break;
+    case SVP_IN:        intent = TFI_IN;        break;
+    case SVP_CONST_IN:  intent = TFI_CONST_IN;  break;
+    case SVP_REF:       intent = TFI_REF;       break;
+    case SVP_CONST_REF: intent = TFI_CONST_REF; break;
+    case SVP_VAR:
+      // This keyword is for a TPV.
+      // Whereas the user provided neither a type nor an init.
+      USR_FATAL_CONT(ovar, "a task private variable '%s'"
+                     "requires a type and/or initializing expression", name);
+      break;
+  }
+
+  ShadowVarSymbol* result = new ShadowVarSymbol(intent, name, NULL);
+  new DefExpr(result); // set result->defPoint
+  return result;
 }
+
+static ShadowVarSymbol* buildTaskPrivateVariable(ShadowVarPrefix prefix,
+            const char* nameString, Expr* nameExpr, Expr* type, Expr* init)
+{
+
+  // TPV - task-private variable, as we have a type and/or an initializer.
+  ShadowVarSymbol* result = new ShadowVarSymbol(TFI_TASK_PRIVATE,
+                                                nameString, NULL);
+
+  switch (prefix)
+  {
+    case SVP_VAR:        result->qual = QUAL_VAL;       break;
+
+    case SVP_CONST:      result->qual = QUAL_CONST_VAL;
+                         result->addFlag(FLAG_CONST);   break;
+
+    case SVP_REF:        result->qual = QUAL_REF;
+                         result->addFlag(FLAG_REF_VAR); break;
+
+    case SVP_CONST_REF:  result->qual = QUAL_CONST_REF;
+                         result->addFlag(FLAG_CONST);
+                         result->addFlag(FLAG_REF_VAR); break;
+
+    case SVP_IN:
+    case SVP_CONST_IN:                                  break; // error below
+  }
+
+  // Check for type or init in a wrong place.
+  switch (prefix)
+  {
+    // One or both are fine.
+    case SVP_CONST:
+    case SVP_VAR:
+      break;
+
+    // Ref tpvs must have init and not type.
+    case SVP_CONST_REF:
+    case SVP_REF:
+      if (init == NULL)
+        USR_FATAL_CONT(nameExpr, "a 'ref' or 'const ref' task-private variable"
+                     " '%s' must have an initializing expression", nameString);
+      if (type != NULL)
+        USR_FATAL_CONT(nameExpr, "a 'ref' or 'const ref' task-private variable"
+                       " '%s' cannot have a type", nameString);
+      break;
+
+    // This keyword combination is not for a TPV.
+    case SVP_IN:
+    case SVP_CONST_IN:
+      USR_FATAL_CONT(nameExpr, "an 'in' or 'const in' intent for '%s' "
+                     "does not allow a type or an initializing expression",
+                     nameString);
+      USR_PRINT(nameExpr, "if you mean to declare a task-private variable,"
+                " use 'var' or 'const'");
+      break;
+  }
+
+  // We will call autoDestroy from deinitBlock() explicitly.
+  result->addFlag(FLAG_NO_AUTO_DESTROY);
+
+  new DefExpr(result, init, type); // set result->defPoint
+
+  return result;
+}
+
+//
+// The returned ShadowVarSymbol comes with a DefExpr in its defPoint.
+//
+ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
+                                    Expr* nameExp, Expr* type, Expr* init)
+{
+  const char* nameString = toUnresolvedSymExpr(nameExp)->unresolved;
+
+  if (type == NULL && init == NULL)
+    // non-TPV forall intent
+    return buildShadowVariable(prefix, nameString, nameExp);
+  else
+    return buildTaskPrivateVariable(prefix, nameString, nameExp, type, init);
+}
+
 
 ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
                                                         Expr* riExpr)
 {
   INT_ASSERT(riExpr != NULL);
   const char* name = toUnresolvedSymExpr(ovar)->unresolved;
-  return new ShadowVarSymbol(TFI_REDUCE, name, ovar, riExpr);
+  ShadowVarSymbol* result = new ShadowVarSymbol(TFI_REDUCE, name, NULL, riExpr);
+  new DefExpr(result); // set result->defPoint
+  return result;
 }
 
+// old style
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
   ForallIntentTag tfi = ri ? TFI_REDUCE : argIntentToForallIntent(var, intent);
   fi->fiVars.push_back(var);
@@ -230,8 +333,9 @@ void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
   fi->riSpecs.push_back(ri);
 }
 
+// new style
 void addForallIntent(CallExpr* call, ShadowVarSymbol* svar) {
-  call->insertAtTail(new DefExpr(svar));
+  call->insertAtTail(svar->defPoint);
 }
 
 //
@@ -257,11 +361,12 @@ bool astUnderFI(const Expr* ast, ForallIntents* fi) {
   return false;
 }  
 
-/////////////////////////////////
-//                             //
-//    ForallStmt resolution    //
-//                             //
-/////////////////////////////////
+
+/////////////////////////////////////////////////////
+//                                                 //
+// ForallStmt pre-lowering: resolveForallHeader()  //
+//                                                 //
+/////////////////////////////////////////////////////
 
 // resolveForallHeader() resolves key parts of ForallStmt:
 //
@@ -335,6 +440,7 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymb
     switch (svar->intent) {
       case TFI_DEFAULT:
       case TFI_CONST:
+      case TFI_IN_OUTERVAR:
       case TFI_IN:
       case TFI_CONST_IN:
       case TFI_REF:
@@ -342,9 +448,19 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymb
         ovar = svar->outerVarSym();
         break;
 
-      case TFI_REDUCE:
+      case TFI_REDUCE:     // _OP probably gets here first
+      case TFI_REDUCE_OP:
         // ... except for reduce intents - they are TODO.
         USR_FATAL_CONT(svar, "Reduce intents are currently not implemented"
+          " for forall- or for-loops over recursive parallel iterators");
+        USR_PRINT(iterFn, "the parallel iterator is here");
+        USR_STOP();
+        break;
+
+      case TFI_TASK_PRIVATE:
+        // task-private variables are TODO too.
+        USR_FATAL_CONT(svar,
+          "Task-private variables are currently not implemented"
           " for forall- or for-loops over recursive parallel iterators");
         USR_PRINT(iterFn, "the parallel iterator is here");
         USR_STOP();
@@ -397,23 +513,6 @@ static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
   }
 }
 
-// Return true if 'inner' is inside 'outer' following up the 'parent' chain.
-// Return 'false' when 'stop' is reached.
-// Caller responsibility: either 'outer' or 'stop' is always reached.
-// (The stop prevents traversing long up-chains when the ForallStmt
-// is deeply nested.)
-static bool isContainedInWithStop(Expr* inner, Expr* outer, Expr* stop) {
-  Expr* cur = inner->parentExpr;
-  do {
-    if (cur == outer) return true;
-    if (cur == stop) return false;
-    cur = cur->parentExpr;
-  } while (cur);
-
-  INT_ASSERT(false); // reached neither 'outer' nor 'stop'
-  return false; // dummy
-}
-
 // Like in build.cpp, here for ForallStmt.
 static BlockStmt*
 buildFollowLoop(VarSymbol* iter,
@@ -453,7 +552,13 @@ buildFollowLoop(VarSymbol* iter,
   normalize(followBlock);
   followBlock->remove();
 
-  followBlock->insertAtTail(new DefExpr(followIdx));
+  // followIdx has a defPoint in the non-fast case
+  // and no defPoint in the fast case i.e. for fastFollowIdx.
+  if (followIdx->defPoint == NULL) {
+    followBlock->insertAtTail(new DefExpr(followIdx));
+  } else {
+    followBlock->insertAtTail(followIdx->defPoint);
+  }
 
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
 
@@ -519,13 +624,20 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE)
     INT_ASSERT(origTarget);
 
     const char* targetName = origTarget->name;
-    if (!strncmp(targetName, "_parloopexpr", 12))
+    const int forallExprNameLen = strlen(astr_forallexpr);
+    if (!strncmp(targetName, astr_forallexpr, forallExprNameLen)) {
       // a forall loop over a (possibly zippered) forall expression, ex.:
       //  test/reductions/deitz/test_maxloc_reduce_wmikanik_bug2.chpl
-      targetName = astr("_iterator_for_loopexpr", targetName + 12);
+      targetName = astr(astr_loopexpr_iter, targetName + forallExprNameLen);
+    }
 
-    iterCall = origIterCall->copy();
-    iterCall->baseExpr = new UnresolvedSymExpr(targetName);
+    if (pfs->fFromResolvedForLoop) {
+      iterCall = origIterCall;
+      iterCall->remove();
+    } else {
+      iterCall = origIterCall->copy();
+      iterCall->baseExpr = new UnresolvedSymExpr(targetName);
+    }
 
   } else {
     // Not an iterator call, so add a call to these().
@@ -594,55 +706,53 @@ static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall)
 }
 
 static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
-  // First, save away the user loop as its own BlockStmt.
+  if (gotSA) {
+    // No need to restructure anything. Leaving it as-is for simplicity.
+
+    VarSymbol* parIdx = parIdxVar(fs);
+
+    // FLAG_INDEX_OF_INTEREST is needed in setConstFlagsAndCheckUponMove():
+    parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+    parIdx->addFlag(FLAG_INDEX_VAR);
+
+    return;
+  }
+
+  // Keep the user loop as its own BlockStmt.
   // Make it the last thing in the new fs->loopBody().
   BlockStmt* userLoopBody = fs->loopBody();
   BlockStmt* newLoopBody = new BlockStmt();
   userLoopBody->replace(newLoopBody);
   newLoopBody->insertAtTail(userLoopBody);
 
-  // Now, add parIdx*.
-  //
-  // These are the original buildForallLoopStmt(), with "lead" -> "par".
-  // We could retain the original names i.e. gotSA ? saIdx : leadIdx.
-  VarSymbol* parIdx     = newTemp("chpl__parIdx");
-  VarSymbol* parIdxCopy = newTemp("chpl__parIdxCopy");
+  // The induction variable of the parallel loop.
+  VarSymbol* parIdx = newTemp("chpl_followThis");
 
-  // This is how these flags have been set historically.
-  // Todo make them the same regardless of gotSA.
-  if (gotSA) {
-    // This is needed in setConstFlagsAndCheckUponMove():
-    parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  // If there is only one follower, we are tempted to use
+  // the original forall's induction variable as the
+  // the induction variable of the follower loop.
+  // Alas, this results in the autoDestroy for that variable
+  // to be inserted outside the loop, and more trouble from that.
+  // Ex. test/functions/ferguson/ref-pair/iterating-over-arrays.chpl
 
-    parIdxCopy->addFlag(FLAG_INDEX_VAR);
+  // The induction variable of the follower loop.
+  VarSymbol* followIdx = newTemp("chpl__followIdx");
+  userLoopBody->insertBefore(new DefExpr(followIdx));
 
-    // If we add FLAG_INSERT_AUTO_DESTROY, 'filename' gets double-delete'd in:
-    //   test/library/standard/FileSystem/filerator/bradc/findfiles-par.chpl
-    //parIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
-  } else {
-    //?? parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-    parIdxCopy->addFlag(FLAG_INDEX_VAR);
-    parIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  }
-
-  Expr* mark = userLoopBody;
-  mark->insertBefore(new DefExpr(parIdx));
-  mark->insertBefore(new DefExpr(parIdxCopy));
-
-  // detuple into induction variables
-  // Todo: do it outside userLoopBody instead? NB these need to be placed
-  // after detuple parIdx->parIdxCopy and after the DefExprs for ind vars.
-  //
   AList& indvars = fs->inductionVariables();
   int idx = indvars.length;
+
   if (idx == 1) {
-    userLoopBody->insertAtHead("'move'(%S,%S)", toDefExpr(indvars.head)->sym,
-                               parIdxCopy);
-  } else {
+    // If only one induction var, treat as non-zippered.
+    fs->setNotZippered();
+    userLoopBody->insertAtHead("'move'(%S,%S)",
+                               toDefExpr(indvars.head)->sym, followIdx);
+
+  }
+  else {
     for_alist_backward(def, indvars)
       userLoopBody->insertAtHead("'move'(%S,%S(%S))", toDefExpr(def)->sym,
-                                 parIdxCopy, new_IntSymbol(idx--));
+                                 followIdx, new_IntSymbol(idx--));
   }
 
   // Move induction variables' DefExprs to the loop body.
@@ -652,6 +762,20 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
   //
   for_alist_backward(def, indvars)
     userLoopBody->insertAtHead(def->remove());
+
+  // parIdx to be the index variable of the parallel loop.
+  // Cf. if gotSA, the original forall's induction variable remains that.
+  indvars.insertAtHead(new DefExpr(parIdx));
+
+  // FLAG_INDEX_OF_INTEREST is needed in setConstFlagsAndCheckUponMove():
+  parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  parIdx->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  followIdx->addFlag(FLAG_INDEX_VAR);
+  //followIdx->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+  INT_ASSERT(fs->numInductionVars() == 1);
 }
 
 static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
@@ -668,9 +792,10 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
   // Set QualifiedType of the index variable.
   QualifiedType iType = fsIterYieldType(pfs, parIter,
                                         origIterator, alreadyResolved);
-  VarSymbol* idxVar = parIdxVar(pfs);
 
+  VarSymbol* idxVar = parIdxVar(pfs);
   if (idxVar->id == breakOnResolveID) gdbShouldBreakHere();
+
   idxVar->type = iType.type();
   idxVar->qual = iType.getQual();
 }
@@ -681,13 +806,13 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
 {
   INT_ASSERT(iterCall == pfs->firstIteratedExpr()); // still here?
 
-  if (!pfs->zippered()) {
-    INT_ASSERT(!iterCall->next);
+  int origLength = pfs->iteratedExpressions().length;
+  if (origLength == 1) {
+    INT_ASSERT(!pfs->zippered());
     // no tuple building here
     return origExprFlw;
   }
 
-  int origLength = pfs->iteratedExpressions().length;
   CallExpr* result = new CallExpr("_build_tuple", origExprFlw);
   while (Expr* curr = iterCall->next)
     result->insertAtTail(curr->remove());
@@ -698,20 +823,24 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
 }
 
 static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
-  bool zippered = pfs->zippered();
+  VarSymbol* leadIdxCopy = parIdxVar(pfs);
+  bool       zippered    = false;
+  if (CallExpr* buildTup = toCallExpr(iterExpr)) {
+    INT_ASSERT(buildTup->isNamed("_build_tuple"));
+    if (buildTup->numActuals() > 1)
+      zippered = true;
+  }
 
-  // Set up the follower call etc.
+  DefExpr*  followIdxDef = toDefExpr(pfs->loopBody()->body.head->remove());
+  VarSymbol*   followIdx = toVarSymbol(followIdxDef->sym);
+  BlockStmt*    userBody = toBlockStmt(pfs->loopBody()->body.tail->remove());
+  INT_ASSERT(pfs->loopBody()->body.empty());
 
-  // Extract leadIdxCopy and its type.
-  VarSymbol* leadIdxCopy     = parIdxCopyVar(pfs);
-
-  BlockStmt* resultBlock     = new BlockStmt();
+  BlockStmt* preFS           = new BlockStmt();
   // cf in build.cpp: new ForLoop(leadIdx, leadIter, NULL, zippered)
-  BlockStmt* leadForLoop     = new BlockStmt();
+  BlockStmt* leadForLoop     = pfs->loopBody();
 
   VarSymbol* iterRec         = newTemp("chpl__iterLF"); // serial iter, LF case
-
-  VarSymbol* followIdx       = newTemp("chpl__followIdx");
   VarSymbol* followIter      = newTemp("chpl__followIter");
   BlockStmt* followBlock     = NULL;
 
@@ -720,27 +849,15 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   iterRec->addFlag(FLAG_CHPL__ITER);
   iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
 
-  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-
-  resultBlock->insertAtTail(new DefExpr(iterRec));
-  resultBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
-  Expr* toNormalize = resultBlock->body.tail;
-
-  // todo rename loopBody to userBody
-  BlockStmt* loopBody = userLoop(pfs);
-
-  // user loop body to refer to followIdx instead of leadIdxCopy
-  for_SymbolSymExprs(se, leadIdxCopy)
-    if (isContainedInWithStop(se, loopBody, pfs->loopBody()))
-      se->replace(new SymExpr(followIdx));
-
-  loopBody->remove();
+  preFS->insertAtTail(new DefExpr(iterRec));
+  preFS->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
+  Expr* toNormalize = preFS->body.tail;
 
   followBlock = buildFollowLoop(iterRec,
                                 leadIdxCopy,
                                 followIter,
                                 followIdx,
-                                loopBody,
+                                userBody,
                                 pfs,
                                 false,
                                 zippered);
@@ -778,13 +895,13 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 
     SymbolMap map;
     map.put(followIdx, fastFollowIdx);
-    BlockStmt* loopBodyForFast = loopBody->copy(&map);
+    BlockStmt* userBodyForFast = userBody->copy(&map);
 
     fastFollowBlock = buildFollowLoop(iterRec,
                                       leadIdxCopy,
                                       fastFollowIter,
                                       fastFollowIdx,
-                                      loopBodyForFast,
+                                      userBodyForFast,
                                       pfs,
                                       true,
                                       zippered);
@@ -794,15 +911,10 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
     leadForLoop->insertAtTail(followBlock);
   }
 
-  // Must happen before any resolving ex. resolveBlockStmt below.
-  // Otherwise functions defined within the forall body are not visible.
-  // Ex. functions/vass/ref-intent-bug-2big.chpl
-  pfs->loopBody()->insertAtTail(leadForLoop);
-
-  pfs->insertBefore(resultBlock);
+  pfs->insertBefore(preFS);
   normalize(toNormalize); // requires inTree()
-  resolveBlockStmt(resultBlock);
-  resultBlock->flattenAndRemove();
+  resolveBlockStmt(preFS);
+  preFS->flattenAndRemove();
 }
 
 // see also comments above
@@ -829,12 +941,15 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   FnSymbol* origIterFn = iterCall->resolvedFunction();
 
   // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
-  if (tryFailure == false) {
+  if (tryFailure == false)
+  {
     addParIdxVarsAndRestruct(pfs, gotSA);
 
     implementForallIntentsNew(pfs, iterCall);
 
     resolveParallelIteratorAndIdxVar(pfs, iterCall, origIterFn, gotSA);
+
+    setupShadowVariables(pfs);
 
     if (gotSA) {
       if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
@@ -853,19 +968,131 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   return retval;
 }
 
+
 ///////////////////////////////
 //                           //
-//    ForallStmt lowering    //
+//   ForallStmt lowering 1   //
 //                           //
 ///////////////////////////////
 
-// lowerForallStmts() removes each ForallStmt from AST,
-// replacing it with explicit loop(s) etc.
-// Currently this is done towards the end of resolution.
-// Our goal is to push it to a later pass, ideally all the way
-// to lowerIterators.
+// The fRecIter* fields:
+//   fRecIterIRdef, fRecIterICdef, fRecIterGetIterator, fRecIterFreeIterator
+// are used to fall back to the "old" lowering of ForallStmts
+// based on the iterator record/iterator class.
+// We set them up here so that calls like _getIterator can be resolved.
+//
+// This fallback is used only when the parallel iterator is recursive.
+// Otherwise the iterator is simply inlined by
+//   lowerForallStmtsInline() / lowerOneForallStmt()
+//
+// Recursive-ness is detected later by
+//   computeRecursiveIteratorSet() / find_recursive_caller().
+// Since we do not know it here, we do the work
+// even in the (common) case where it will not be needed.
+//
+void static setupRecIterFields(ForallStmt* fs)
+{
+  CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
+  INT_ASSERT(parIterCall && !parIterCall->next); // expected
+  SET_LINENO(parIterCall);
 
-void lowerForallStmts() {
+  // From the original buildStandaloneForallLoopStmt(), with "sa" -> "par".
+  VarSymbol* iterRec = newTemp("chpl__iterPAR"); // serial iter, PAR case
+  VarSymbol* parIter = newTemp("chpl__parIter");
+  VarSymbol* parIdx  = parIdxVar(fs);
+
+  iterRec->addFlag(FLAG_NO_COPY);
+  iterRec->addFlag(FLAG_CHPL__ITER);
+  iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
+  iterRec->addFlag(FLAG_MAYBE_REF);
+  iterRec->addFlag(FLAG_EXPR_TEMP);
+
+  parIter->addFlag(FLAG_EXPR_TEMP);
+  // Too late to do it here - it's needed in setConstFlagsAndCheckUponMove().
+  //parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  parIdx->addFlag(FLAG_INDEX_VAR);
+
+  BlockStmt* holder = new BlockStmt();
+  fs->insertBefore(holder);  // so we can resolve it
+
+  DefExpr*   recIterIRdef = new DefExpr(iterRec);
+  DefExpr*   recIterICdef = new DefExpr(parIter);
+  CallExpr*  recIterGetIterator  = new CallExpr("_getIterator", iterRec);
+  CallExpr*  recIterFreeIterator = new CallExpr("_freeIterator", parIter);
+  
+  CallExpr* initIterRec = new CallExpr(PRIM_MOVE, iterRec, parIterCall->copy());
+  CallExpr* initParIter = new CallExpr(PRIM_MOVE, parIter, recIterGetIterator);
+
+  holder->insertAtTail(recIterIRdef);
+  holder->insertAtTail(recIterICdef);
+  holder->insertAtTail(initIterRec);
+  holder->insertAtTail(initParIter);
+  holder->insertAtTail(recIterFreeIterator);
+
+  // This may not resolve if postponed until lowerIterators.
+  resolveBlockStmt(holder);
+
+  fs->fRecIterIRdef        = recIterIRdef;
+  fs->fRecIterICdef        = recIterICdef;
+  fs->fRecIterGetIterator  = recIterGetIterator;
+  fs->fRecIterFreeIterator = recIterFreeIterator;
+
+  Symbol* PS = fs->parentSymbol;
+  recIterIRdef       ->remove();  insert_help(recIterIRdef,        fs, PS);
+  recIterICdef       ->remove();  insert_help(recIterICdef,        fs, PS);
+  recIterGetIterator ->remove();  insert_help(recIterGetIterator,  fs, PS);
+  recIterFreeIterator->remove();  insert_help(recIterFreeIterator, fs, PS);
+
+  initParIter->remove();
+  // This call messes up doNotTransformForForall() in callDestructors.
+  // Remove it until we need it, if at all.
+  initIterRec->remove();
+
+  INT_ASSERT(holder->body.empty());
+  holder->remove();
+}
+
+void resolveForallStmts1() {
+  forv_Vec(ForallStmt, fs, gForallStmts) {
+    if (!fs->inTree() || !fs->getFunction()->isResolved())
+      continue;
+    setupRecIterFields(fs);
+  }
+}
+
+
+///////////////////////////////
+//                           //
+//   ForallStmt lowering 2   //
+//                           //
+///////////////////////////////
+
+//
+// Handle the case where the leader iterator is astr_loopexpr_iter.
+// Not doing so confuses ReturnByRef and lowering of ForallStmts.
+//
+// Tests:
+//   library/packages/Collection/CollectionCounter.chpl
+//   library/standard/Random/deitz/test1D2D.chpl
+//   reductions/deitz/test_maxloc_reduce_wmikanik_bug2.chpl
+//
+static void convertIteratorForLoopexpr(ForallStmt* fs) {
+  if (CallExpr* iterCall = toCallExpr(fs->iteratedExpressions().head))
+    if (SymExpr* calleeSE = toSymExpr(iterCall->baseExpr))
+      if (FnSymbol* calleeFn = toFnSymbol(calleeSE->symbol()))
+        if (!strncmp(calleeFn->name, astr_loopexpr_iter, strlen(astr_loopexpr_iter))) {
+          // In this case, we have a _toLeader call and no side effects.
+          // Just use the iterator corresponding to the iterator record.
+          FnSymbol* iterator = getTheIteratorFnFromIteratorRec(calleeFn->retType);
+          SET_LINENO(calleeSE);
+          calleeSE->replace(new SymExpr(iterator));
+          if (calleeFn->firstSymExpr() == NULL)
+            calleeFn->defPoint->remove(); // not needed any more
+        }
+}
+
+// Todo: can we merge this with resolveForallStmts1() ?
+void resolveForallStmts2() {
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;
@@ -875,61 +1102,7 @@ void lowerForallStmts() {
     // If isTaskFun(parent), error is still reported in nonLeaderParCheckInt.
     if (parent->isIterator() && !parent->hasFlag(FLAG_INLINE_ITERATOR))
       USR_FATAL_CONT(fs, "invalid use of parallel construct in serial iterator");
-
-    CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
-    INT_ASSERT(parIterCall && !parIterCall->next); // expected
-    SET_LINENO(parIterCall);
-    BlockStmt* PARBlock = new BlockStmt();
-    fs->replace(PARBlock); // so we can resolve PARBlock below
-    // Maybe move this ->replace() down to resolveBlockStmt(PARBlock) ?
-    // If so, add ->remove() to fs->iterExprs() and perhaps others.
-
-    // From the original buildStandaloneForallLoopStmt(), with "sa" -> "par".
-    VarSymbol* iterRec = newTemp("chpl__iterPAR"); // serial iter, PAR case
-    VarSymbol* parIter = newTemp("chpl__parIter");
-    VarSymbol* parIdx  = parIdxVar(fs);
-
-    iterRec->addFlag(FLAG_NO_COPY);
-    iterRec->addFlag(FLAG_CHPL__ITER);
-    iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
-    iterRec->addFlag(FLAG_MAYBE_REF);
-    iterRec->addFlag(FLAG_EXPR_TEMP);
-
-    parIter->addFlag(FLAG_EXPR_TEMP);
-    // Too late to do it here - it's needed in setConstFlagsAndCheckUponMove().
-    //parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-    parIdx->addFlag(FLAG_INDEX_VAR);
-
-    PARBlock->insertAtTail(new DefExpr(iterRec));
-    PARBlock->insertAtTail(new DefExpr(parIter));
-    DefExpr* parIdxDef = parIdx->defPoint;
-    INT_ASSERT(parIdxDef == fs->loopBody()->body.head);
-    PARBlock->insertAtTail(parIdxDef->remove());
-
-    PARBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, parIterCall));
-    PARBlock->insertAtTail("'move'(%S, _getIterator(%S))", parIter, iterRec);
-    PARBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", parIter)));
-    PARBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", parIdx, parIter);
-
-   { // shadow the above SET_LINENO
-    SET_LINENO(fs->loopBody());
-
-    ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
-
-    PARBlock->insertAtTail(PARBody);
-    resolveBlockStmt(PARBlock);
-    PARBlock->flattenAndRemove(); // into where 'fs' used to be
-
-    BlockStmt* userBody = userLoop(fs);
-    while (Expr* def = fs->inductionVariables().tail)
-      userBody->insertAtHead(def->remove());
-
-    while (Expr* svdef = fs->shadowVariables().tail)
-      fs->loopBody()->insertAtHead(svdef->remove());
-
-    userBody->flattenAndRemove();          // into fs->loopBody()
-    PARBody->insertAtTail(fs->loopBody()); // loopBody is already resolved
-    fs->loopBody()->flattenAndRemove();    // into PARBody
-   }
+    
+    convertIteratorForLoopexpr(fs);
   }
 }

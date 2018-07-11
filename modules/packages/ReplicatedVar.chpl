@@ -112,7 +112,7 @@ const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
 private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped Replicated(an array of locales)'";
 
 private proc _rcTargetLocalesHelper(replicatedVar: [?D])
-  where replicatedVar._value.type: ReplicatedArr
+  where _to_borrowed(replicatedVar._value.type): ReplicatedArr
 {
   return replicatedVar.targetLocales();
 }
@@ -124,7 +124,7 @@ proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
 /* Assign a value `valToReplicate` to copies of the replicated variable
    `replicatedVar` on all locales. */
 proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
-  where replicatedVar._value.type: ReplicatedArr
+  where _to_borrowed(replicatedVar._value.type): ReplicatedArr
 {
   assert(replicatedVar.domain == rcDomainBase);
   coforall loc in _rcTargetLocalesHelper(replicatedVar) do
@@ -134,13 +134,13 @@ proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
 
 pragma "no doc" // documented with the following entry
 proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
-  where ! replicatedVar._value.type: ReplicatedArr
+  where ! _to_borrowed(replicatedVar._value.type): ReplicatedArr
 { compilerError("the domain of first argument to rcCollect()", _rcErr1); }
 
 /* Copy the value of the replicated variable `replicatedVar` on each locale
    into the element of the array `collected` that corresponds to that locale.*/
 proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
-  where replicatedVar._value.type: ReplicatedArr
+  where _to_borrowed(replicatedVar._value.type): ReplicatedArr
 {
   var targetLocales = _rcTargetLocalesHelper(replicatedVar);
   assert(replicatedVar.domain == rcDomainBase);

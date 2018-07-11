@@ -1,5 +1,5 @@
 class C {}
-var c = new C();
+var c = new borrowed C();
 proc foo(ref obj: object) {
   writeln("called foo(obj)");
 }

@@ -153,7 +153,7 @@ reverse the default sorting order.
 
 
 To reverse the sort order of a user-defined comparator, pass the user-defined
-comparator to the constructor of the module-defined
+comparator to the initializer of the module-defined
 :record:`ReverseComparator` record, which can be passed to the sort function.
 
 .. code-block:: chapel
@@ -809,6 +809,7 @@ proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 /* Comparators */
 
 /* Default comparator used in sort functions.*/
+pragma "use default init"
 record DefaultComparator {
 
   /*
@@ -833,7 +834,7 @@ record DefaultComparator {
 /* Reverse comparator built from another comparator.*/
 record ReverseComparator {
 
-  /* Generic comparator defined in constructor.*/
+  /* Generic comparator defined in initializer.*/
   var comparator;
 
   /*

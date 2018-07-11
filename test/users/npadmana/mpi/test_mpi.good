@@ -3,12 +3,12 @@
 000 : This is Chapel locale 2 saying Hello, MPI!
 000 : This is Chapel locale 3 saying Hello, MPI!
 ALLGATHER : Rank 0 : 0 1 2 3
-ALLGATHER : Rank = 0, new rank = 0, sum = 1
 ALLGATHER : Rank 1 : 0 1 2 3
-ALLGATHER : Rank = 1, new rank = 1, sum = 1
 ALLGATHER : Rank 2 : 0 1 2 3
-ALLGATHER : Rank = 2, new rank = 0, sum = 5
 ALLGATHER : Rank 3 : 0 1 2 3
+ALLGATHER : Rank = 0, new rank = 0, sum = 1
+ALLGATHER : Rank = 1, new rank = 1, sum = 1
+ALLGATHER : Rank = 2, new rank = 0, sum = 5
 ALLGATHER : Rank = 3, new rank = 1, sum = 5
 HELLO : 0 : This is rank 0 of 4 processes saying Hello, Chapel!
 HELLO : 1 : This is rank 1 of 4 processes saying Hello, Chapel!
@@ -37,9 +37,9 @@ SCATTER4 : Rank 0 :6.000000e+00 7.000000e+00 1.300000e+01 1.400000e+01
 SCATTER4 : Rank 1 :6.000000e+00 7.000000e+00 1.300000e+01 1.400000e+01
 SCATTER4 : Rank 2 :6.000000e+00 7.000000e+00 1.300000e+01 1.400000e+01
 SCATTER4 : Rank 3 :6.000000e+00 7.000000e+00 1.300000e+01 1.400000e+01
-This is the main Chapel program....
 TYPE : Rank : 0 : (x = 3.0, y = -3.0, z = 3.0, vel = 0.25, n = 3, typ = 1)
 TYPE : Rank : 1 : (x = 3.0, y = -3.0, z = 3.0, vel = 0.25, n = 3, typ = 1)
 TYPE : Rank : 2 : (x = 3.0, y = -3.0, z = 3.0, vel = 0.25, n = 3, typ = 1)
 TYPE : Rank : 3 : (x = 3.0, y = -3.0, z = 3.0, vel = 0.25, n = 3, typ = 1)
+This is the main Chapel program....
 We're back in the main Chapel program now.....

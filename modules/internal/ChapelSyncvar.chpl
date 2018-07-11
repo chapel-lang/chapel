@@ -114,7 +114,7 @@ module ChapelSyncvar {
     proc init(type valType) {
       ensureFEType(valType);
       this.valType = valType;
-      this.wrapped = new (getSyncClassType(valType))(valType);
+      this.wrapped = new unmanaged (getSyncClassType(valType))(valType);
     }
 
     //
@@ -158,7 +158,7 @@ module ChapelSyncvar {
   */
 
   pragma "no doc"
-  proc isSyncType(type t) param where t : _syncvar {
+  proc isSyncType(type t:_syncvar) param {
     return true;
   }
 
@@ -194,6 +194,8 @@ module ChapelSyncvar {
     :returns: The value of the sync variable.
   */
   proc _syncvar.readXX() {
+    // Yield to allow readXX in a loop to make progress
+    chpl_task_yield();
     return wrapped.readXX();
   }
 
@@ -298,7 +300,6 @@ module ChapelSyncvar {
     return sv.readFE();
   }
 
-  pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"
   proc chpl__autoCopy(const ref rhs : _syncvar) {
@@ -315,7 +316,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc chpl__readXX(x : _syncvar(?)) return x.readXX();
+  proc chpl__readXX(const ref x : _syncvar(?)) return x.readXX();
 
   proc <=>(lhs : _syncvar, ref rhs) {
     const tmp = lhs;
@@ -356,7 +357,7 @@ module ChapelSyncvar {
 
     proc init(type valType) {
       this.valType = valType;
-      this.initDone();
+      this.complete();
       chpl_sync_initAux(syncAux);
     }
 
@@ -424,6 +425,8 @@ module ChapelSyncvar {
       return ret;
     }
 
+    pragma "unsafe"
+    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeEF(val : valType) {
       on this {
         chpl_rmem_consist_release();
@@ -436,6 +439,8 @@ module ChapelSyncvar {
       }
     }
 
+    pragma "unsafe"
+    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeFF(val : valType) {
       on this {
         chpl_rmem_consist_release();
@@ -448,6 +453,8 @@ module ChapelSyncvar {
       }
     }
 
+    pragma "unsafe"
+    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeXF(val : valType) {
       on this {
         chpl_rmem_consist_release();
@@ -495,7 +502,7 @@ module ChapelSyncvar {
 
     proc init(type valType) {
       this.valType = valType;
-      this.initDone();
+      this.complete();
       qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
     }
 
@@ -544,9 +551,6 @@ module ChapelSyncvar {
         var alignedLocalRet : aligned_t;
 
         chpl_rmem_consist_release();
-        // currently have to yield to allow readXX in a loop to make progress
-        // TODO only yield every X accesses?
-        chpl_task_yield();
         qthread_readXX(alignedLocalRet, alignedValue);
         chpl_rmem_consist_acquire();
 
@@ -556,6 +560,8 @@ module ChapelSyncvar {
       return ret;
     }
 
+    pragma "unsafe"
+    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeEF(val : valType) {
       on this {
         chpl_rmem_consist_release();
@@ -564,6 +570,8 @@ module ChapelSyncvar {
       }
     }
 
+    pragma "unsafe"
+    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeFF(val : valType) {
       on this {
         chpl_rmem_consist_release();
@@ -572,6 +580,8 @@ module ChapelSyncvar {
       }
     }
 
+    pragma "unsafe"
+    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeXF(val : valType) {
       on this {
         chpl_rmem_consist_release();
@@ -629,7 +639,7 @@ module ChapelSyncvar {
     proc init(type valType) {
       ensureFEType(valType);
       this.valType = valType;
-      wrapped = new _singlecls(valType);
+      wrapped = new unmanaged _singlecls(valType);
     }
 
     //
@@ -673,7 +683,7 @@ module ChapelSyncvar {
   */
 
   pragma "no doc"
-  proc isSingleType(type t) param where t : _singlevar {
+  proc isSingleType(type t:_singlevar) param {
     return true;
   }
 
@@ -699,6 +709,8 @@ module ChapelSyncvar {
     :returns: The value of the single variable.
   */
   proc _singlevar.readXX() {
+    // Yield to allow readXX in a loop to make progress
+    chpl_task_yield();
     return wrapped.readXX();
   }
 
@@ -731,7 +743,6 @@ module ChapelSyncvar {
     return sv.readFF();
   }
 
-  pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"
   proc chpl__autoCopy(const ref rhs : _singlevar) {
@@ -748,7 +759,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc chpl__readXX(x : _singlevar(?)) return x.readXX();
+  proc chpl__readXX(const ref x : _singlevar(?)) return x.readXX();
 
   /************************************ | *************************************
   *                                                                           *
@@ -770,7 +781,7 @@ module ChapelSyncvar {
 
     proc init(type valType) {
       this.valType = valType;
-      this.initDone();
+      this.complete();
       chpl_single_initAux(singleAux);
     }
 
@@ -825,6 +836,8 @@ module ChapelSyncvar {
       return ret;
     }
 
+    pragma "unsafe"
+    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeEF(val : valType) {
       on this {
         chpl_rmem_consist_release();
@@ -955,13 +968,17 @@ private module AlignedTSupport {
   proc castableToAlignedT(type t) param {
     return isIntegralType(t) || isBoolType(t);
   }
-  inline proc _cast(type t, x : integral) where t : aligned_t {
+
+  inline proc _cast(type t:aligned_t, x : integral) {
     return __primitive("cast", t, x);
   }
-  inline proc _cast(type t, x : bool) where t : aligned_t {
+  inline proc _cast(type t:aligned_t, x : bool) {
     return __primitive("cast", t, x);
   }
-  inline proc _cast(type t, x : aligned_t) where castableToAlignedT(t) {
+  inline proc _cast(type t:chpl_anybool, x : aligned_t) {
+    return __primitive("cast", t, x);
+  }
+  inline proc _cast(type t:integral, x : aligned_t) {
     return __primitive("cast", t, x);
   }
 

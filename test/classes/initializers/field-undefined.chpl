@@ -8,7 +8,6 @@ class Foo {
     b = _b;
     c = _c;
 
-    super.init();
   }
 }
 

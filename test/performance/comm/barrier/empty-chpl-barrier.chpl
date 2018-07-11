@@ -10,6 +10,7 @@ const numTasks = numLocales * numTasksPerLocale;
 
 enum BarrierMode {
   LocalAtomic,
+  LocalSync,
   GlobalAllLocales
 };
 use BarrierMode;
@@ -22,6 +23,7 @@ proc main() {
   t.start();
   select barrierMode {
     when LocalAtomic do LocalBarrierBarrier();
+    when LocalSync do LocalSyncBarrierBarrier();
     when GlobalAllLocales do GlobalAllLocalesBarrierBarrier();
   }
   t.stop();
@@ -33,6 +35,14 @@ proc main() {
 
 proc LocalBarrierBarrier() {
   var barrier = new Barrier(numTasks, BarrierType.Atomic);
+  coforall loc in Locales do on loc do
+    coforall 1..numTasksPerLocale do
+      for 1..numTrials do
+        barrier.barrier();
+}
+
+proc LocalSyncBarrierBarrier() {
+  var barrier = new Barrier(numTasks, BarrierType.Sync);
   coforall loc in Locales do on loc do
     coforall 1..numTasksPerLocale do
       for 1..numTrials do

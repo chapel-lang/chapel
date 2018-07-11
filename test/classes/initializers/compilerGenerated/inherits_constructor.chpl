@@ -7,16 +7,16 @@ class Parent {
   // child is invalid
   proc Parent() {
     a = 11;
-    super.init();
   }
 }
+
 
 class Child : Parent {
   var b: int;
 }
 
 proc main() {
-  var c = new Child(4);
+  var c = new unmanaged Child(4);
 
   writeln(c);
   delete c;

@@ -7,8 +7,8 @@ proc myclass.writeThis(f) {
   f.write(x, " ", y);
 }
 
-var a: myclass = new myclass();
-var b: myclass = new myclass();
+var a: borrowed myclass = new borrowed myclass();
+var b: borrowed myclass = new borrowed myclass();
 
 writeln("a is: ", a, ", b is: ", b);
 
@@ -20,13 +20,9 @@ b.y = 5.6;
 
 writeln("a is: ", a, ", b is: ", b);
 
-delete a;
-
 a = b;
 
 a.x = 7;
 b.y = 8.9;
 
 writeln("a is: ", a, ", b is: ", b);
-
-delete a;

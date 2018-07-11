@@ -13,7 +13,7 @@ class C {
   proc foo(x:uint) { writeln("in C.foo uint (", x, ")"); }
 }
 
-var r = new Wrapper(new C());
+var r = new Wrapper(new unmanaged C());
 
 writeln("int");
 r.foo(1:int);

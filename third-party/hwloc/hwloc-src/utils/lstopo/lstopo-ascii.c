@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -490,6 +490,11 @@ void output_ascii(struct lstopo_output *loutput, const char *filename)
   output = open_output(filename, loutput->overwrite);
   if (!output) {
     fprintf(stderr, "Failed to open %s for writing (%s)\n", filename, strerror(errno));
+    return;
+  }
+
+  if (gridsize <= 1) { /* we divide by gridsize or gridsize/2 in the code */
+    fprintf(stderr, "ASCII backend requires gridsize > 1\n");
     return;
   }
 

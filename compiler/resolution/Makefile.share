@@ -23,12 +23,15 @@ RESOLUTION_SRCS =                                              \
                   callInfo.cpp                                 \
                   cullOverReferences.cpp                       \
                   expandVarArgs.cpp                            \
+                  functionResolution.cpp                       \
+                  generics.cpp                                 \
                   implementForallIntents.cpp                   \
                   implementForallIntents2.cpp                  \
-                  generics.cpp                                 \
-                  functionResolution.cpp                       \
                   initializerResolution.cpp                    \
+                  lateConstCheck.cpp                           \
+                  lifetime.cpp                                 \
                   loopDetails.cpp                              \
+                  lowerForalls.cpp                             \
                   lowerIterators.cpp                           \
                   postFold.cpp                                 \
                   preFold.cpp                                  \

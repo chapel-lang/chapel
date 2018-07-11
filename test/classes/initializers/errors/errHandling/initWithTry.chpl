@@ -7,14 +7,13 @@ class Foo {
   proc init() {
     x = 10;
     try outerFunc();
-    super.init();
   }
 }
 
 proc outerFunc() throws {
-  throw new Error();
+  throw new unmanaged Error();
 }
 
-var foo = new Foo();
+var foo = new unmanaged Foo();
 writeln(foo);
 delete foo;

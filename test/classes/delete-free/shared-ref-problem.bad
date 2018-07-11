@@ -1,3 +1,0 @@
-shared-ref-problem.chpl:7: In function 'foo':
-shared-ref-problem.chpl:8: error: const actual is passed to 'ref' formal 'this' of done()
-note: to formal of type Shared(State)

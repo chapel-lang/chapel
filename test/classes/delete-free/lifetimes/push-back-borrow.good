@@ -1,0 +1,3 @@
+push-back-borrow.chpl:18: In function 'error7':
+push-back-borrow.chpl:19: error: Scoped variable would outlive the value it is set to
+push-back-borrow.chpl:18: note: consider scope of arg

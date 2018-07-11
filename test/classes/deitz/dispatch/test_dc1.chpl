@@ -10,27 +10,24 @@ class E: D {
   var z: int;
 }
 
-var c: C;
-var d: D;
-var e: E;
+var c: borrowed C;
+var d: borrowed D;
+var e: borrowed E;
 
-c = new C();
-d = c:D;
+c = new borrowed C();
+d = c:borrowed D;
 if d then writeln(d); else writeln("nil value");
-e = c:E;
+e = c:borrowed E;
 if e then writeln(e); else writeln("nil value");
-delete c;
 
-c = new D();
-d = c:D;
+c = new borrowed D();
+d = c:borrowed D;
 if d then writeln(d); else writeln("nil value");
-e = c:E;
+e = c:borrowed E;
 if e then writeln(e); else writeln("nil value");
-delete c;
 
-c = new E();
-d = c:D;
+c = new borrowed E();
+d = c:borrowed D;
 if d then writeln(d); else writeln("nil value");
-e = c:E;
+e = c:borrowed E;
 if e then writeln(e); else writeln("nil value");
-delete c;

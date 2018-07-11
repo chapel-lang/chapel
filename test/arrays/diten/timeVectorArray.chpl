@@ -128,7 +128,7 @@ class ListDestroy: Runner {
 }
 
 
-proc timeRun(r: Runner, A) {
+proc timeRun(r: borrowed Runner, A) {
   var t = new Timer();
   t.start();
   r.run(A);
@@ -136,7 +136,7 @@ proc timeRun(r: Runner, A) {
   return t.elapsed();
 }
 
-proc timeRunList(r: Runner, ref L: list(int)) {
+proc timeRunList(r: borrowed Runner, ref L: list(int)) {
   var t = new Timer();
   t.start();
   r.runList(L);
@@ -163,33 +163,33 @@ proc output(name: string, time: real) {
 
 proc main {
   var A: [1..0] int;
-  var r: Runner;
+  var r: owned Runner;
 
-  r = new PushBack(n); output("PushBack", timeRun(r, A)); delete r;
-  r = new SumElements(n); output("SumElements", timeRun(r, A)); delete r;
-  r = new PopBack(); output("PopBack", timeRun(r, A)); delete r;
+  r = new owned PushBack(n); output("PushBack", timeRun(r, A));
+  r = new owned SumElements(n); output("SumElements", timeRun(r, A));
+  r = new owned PopBack(); output("PopBack", timeRun(r, A));
 
-  r = new PushFront(n); output("PushFront", timeRun(r, A)); delete r;
-  r = new PopFront(); output("PopFront", timeRun(r, A)); delete r;
+  r = new owned PushFront(n); output("PushFront", timeRun(r, A));
+  r = new owned PopFront(); output("PopFront", timeRun(r, A));
 
-  r = new InsertRandom(n); output("InsertR", timeRun(r, A)); delete r;
+  r = new owned InsertRandom(n); output("InsertR", timeRun(r, A));
 
-  r = new PopBack(); r.run(A); delete r; // clean up
-  r = new InsertSorted(n); output("InsertSB", timeRun(r, A)); delete r;
+  r = new owned PopBack(); r.run(A); // clean up
+  r = new owned InsertSorted(n); output("InsertSB", timeRun(r, A));
 
   assert(isSorted(A,linearN));
 
-  r = new PopBack(); r.run(A); delete r; // clean up
-  r = new InsertSorted(n); output("InsertSL", timeRun(r,A)); delete r;
+  r = new owned PopBack(); r.run(A); // clean up
+  r = new owned InsertSorted(n); output("InsertSL", timeRun(r,A));
   assert(isSorted(A,linearN));
 
-  r = new Remove(n, true); output("RemoveFront", timeRun(r, A)); delete r;
-  r = new PushBack(n); r.run(A); delete r;
-  r = new Remove(n, false); output("RemoveBack", timeRun(r, A)); delete r;
+  r = new owned Remove(n, true); output("RemoveFront", timeRun(r, A));
+  r = new owned PushBack(n); r.run(A);
+  r = new owned Remove(n, false); output("RemoveBack", timeRun(r, A));
 
   var l = new list(int);
-  r = new ListAppend(n); output("ListAppend", timeRunList(r,l)); delete r;
+  r = new owned ListAppend(n); output("ListAppend", timeRunList(r,l));
   assert(l.length == n);
-  r = new SumReduceList(n); output("ListReduce", timeRunList(r, l)); delete r;
-  r = new ListDestroy(); output("ListDest", timeRunList(r,l)); delete r;
+  r = new owned SumReduceList(n); output("ListReduce", timeRunList(r, l));
+  r = new owned ListDestroy(); output("ListDest", timeRunList(r,l));
 }

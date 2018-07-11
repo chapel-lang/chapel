@@ -4,7 +4,7 @@ class Derived : Base {
   proc init(param _x) {
     super.init(_x);
 
-    initDone();
+    complete();
   }
 }
 
@@ -15,15 +15,13 @@ class Base {
   proc init(param _x) {
     x = _x;
 
-    initDone();
+    complete();
   }
 }
 
 
 proc main() {
-  var c = new Derived(20);
+  var c = new owned Derived(20);
 
   writeln(c);
-
-  delete c;
 }

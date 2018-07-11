@@ -19,16 +19,20 @@
 
 #include "ResolutionCandidate.h"
 
+#include "astutil.h"
 #include "caches.h"
 #include "callInfo.h"
 #include "driver.h"
 #include "expandVarArgs.h"
 #include "expr.h"
+#include "UnmanagedClassType.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+
+static bool isCandidateFn(ResolutionCandidate* res, CallInfo& info);
 
 /************************************* | **************************************
 *                                                                             *
@@ -55,6 +59,10 @@ bool ResolutionCandidate::isApplicable(CallInfo& info) {
     retval = isApplicableGeneric (info);
   }
 
+  if (retval && fn->retExprType != NULL && fn->retType == dtUnknown) {
+    resolveSpecifiedReturnType(fn);
+  }
+
   return retval;
 }
 
@@ -63,7 +71,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
 
   fn = expandIfVarArgs(fn, info);
 
-  if (fn != NULL) {
+  if (fn != NULL && isCandidateFn(this, info)) {
     resolveTypedefedArgTypes();
 
     if (computeAlignment(info) == true) {
@@ -72,7 +80,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
         resolveTypeConstructor(info);
       }
 
-      retval = checkResolveFormalsWhereClauses();
+      retval = checkResolveFormalsWhereClauses(info);
     }
   }
 
@@ -85,13 +93,16 @@ void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
   // Ignore tuple constructors; they were generated
   // with their type constructors.
   if (fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
-    CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
+    AggregateType* at = toAggregateType(fn->_this->type);
+    INT_ASSERT(at->typeConstructor != NULL);
+    CallExpr* typeConstructorCall = new CallExpr(at->typeConstructor);
 
     for_formals(formal, fn) {
       if (formal->hasFlag(FLAG_IS_MEME) == false) {
         if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
-          if (formal->instantiatedFrom) {
+          if (formal->instantiatedFrom != NULL) {
             typeConstructorCall->insertAtTail(formal->type->symbol);
+
           } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
             typeConstructorCall->insertAtTail(paramMap.get(formal));
           }
@@ -101,7 +112,7 @@ void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
               formal->type                  == dtMethodToken) {
             typeConstructorCall->insertAtTail(formal);
 
-          } else if (formal->instantiatedFrom) {
+          } else if (formal->instantiatedFrom != NULL) {
             SymExpr*   se = new SymExpr(formal->type->symbol);
             NamedExpr* ne = new NamedExpr(formal->name, se);
 
@@ -231,10 +242,13 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
       }
 
       // Fail if there are too many unnamed actuals.
-      if (match == false &&
-          (fn->hasFlag(FLAG_GENERIC) == false ||
-           fn->hasFlag(FLAG_TUPLE)   == false)) {
-        return false;
+      if (match == false) {
+        if (fn->hasFlag(FLAG_GENERIC) == false) {
+          return false;
+        } else if (fn->hasFlag(FLAG_INIT_TUPLE) == false &&
+                   isTupleTypeConstructor(fn)   == false) {
+          return false;
+        }
       }
     }
   }
@@ -259,8 +273,6 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* getInstantiationType(Type* actualType, Type* formalType);
-
 static Type* getBasicInstantiationType(Type* actualType, Type* formalType);
 
 int ResolutionCandidate::computeSubstitutions() {
@@ -273,10 +285,8 @@ int ResolutionCandidate::computeSubstitutions() {
 
     if (formal->intent                              == INTENT_PARAM ||
         formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-      if (verifyGenericFormal(formal) == false) {
-        USR_FATAL(formal, "invalid generic type specification on class field");
 
-      } else if (Symbol* actual = formalIdxToActual[i - 1]) {
+      if (Symbol* actual = formalIdxToActual[i - 1]) {
         computeSubstitution(formal, actual);
 
       } else if (formal->defaultExpr != NULL) {
@@ -403,8 +413,24 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal) {
   }
 }
 
-static Type* getInstantiationType(Type* actualType, Type* formalType) {
+Type* getInstantiationType(Type* actualType, Type* formalType) {
   Type* ret = getBasicInstantiationType(actualType, formalType);
+
+  // If that didn't work, try it again with the value type.
+  if (ret == NULL) {
+    if (Type* vt = actualType->getValType()) {
+      ret = getBasicInstantiationType(vt, formalType);
+    }
+  }
+
+  // If we still don't have an instantiation type, try it again
+  // with the promotion type.
+  if (ret == NULL) {
+    if (Type* st = actualType->getValType()->scalarPromotionType) {
+      ret = getBasicInstantiationType(st, formalType);
+    }
+  }
+
 
   // Now, if formalType is a generic parent type to actualType,
   // we should instantiate the parent actual type
@@ -425,17 +451,22 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     return actualType;
   }
 
-  if (Type* st = actualType->scalarPromotionType) {
-    if (canInstantiate(st, formalType))
-      return st;
+  if (UnmanagedClassType* actualMt = toUnmanagedClassType(actualType)) {
+    AggregateType* actualC = actualMt->getCanonicalClass();
+    if (canInstantiate(actualC, formalType))
+      return actualC;
   }
 
-  if (Type* vt = actualType->getValType()) {
-    if (canInstantiate(vt, formalType))
-      return vt;
-    else if (Type* st = vt->scalarPromotionType)
-      if (canInstantiate(st, formalType))
-        return st;
+  if (isManagedPtrType(actualType)) {
+    Type* actualBaseType = getManagedPtrBorrowType(actualType);
+    if (canInstantiate(actualBaseType, formalType))
+      return actualBaseType;
+  }
+
+  if (isSyncType(actualType) || isSingleType(actualType)) {
+    Type* baseType = actualType->getField("valType")->type;
+    if (canInstantiate(baseType, formalType))
+      return baseType;
   }
 
   return NULL;
@@ -467,25 +498,10 @@ void ResolutionCandidate::resolveTypedefedArgTypes() {
   }
 }
 
-static AggregateType* getRootInstantiation(AggregateType* at) {
-  AggregateType* ret = at;
-
-  while (ret != NULL && ret->instantiatedFrom != NULL) {
-    ret = ret->instantiatedFrom;
-  }
-
-  return ret;
-}
-
 static AggregateType* getActualType(ResolutionCandidate* rc, int idx) {
-  AggregateType* ret = NULL;
-  Symbol* sym        = rc->formalIdxToActual[idx];
+  Symbol* sym = rc->formalIdxToActual[idx];
 
-  if (sym != NULL) {
-    ret = toAggregateType(sym->getValType());
-  }
-
-  return ret;
+  return (sym != NULL) ? toAggregateType(sym->getValType()) : NULL;
 }
 
 //
@@ -506,22 +522,75 @@ static AggregateType* getActualType(ResolutionCandidate* rc, int idx) {
 // See GitHub Issue #6019.
 //
 static bool looksLikeCopyInit(ResolutionCandidate* rc) {
-  bool ret = false;
+  bool retval = false;
 
   if (rc->fn->isInitializer() && rc->formalIdxToActual.size() == 3) {
     // First formal/actual is gMethodToken
     AggregateType* base  = getActualType(rc, 1);
     AggregateType* other = getActualType(rc, 2);
+
     if (base != NULL && other != NULL) {
       if (base == other) {
-        ret = true;
-      } else if (getRootInstantiation(base) == getRootInstantiation(other)) {
-        ret = true;
+        retval = true;
+
+      } else {
+        AggregateType* baseRoot  = base->getRootInstantiation();
+        AggregateType* otherRoot = other->getRootInstantiation();
+
+        retval = (baseRoot == otherRoot) ? true : false;
       }
     }
   }
 
-  return ret;
+  return retval;
+}
+
+static bool isCandidateInit(ResolutionCandidate* res, CallInfo& info) {
+  bool retval = false;
+
+  AggregateType* ft = toAggregateType(res->fn->_this->getValType());
+  AggregateType* at = toAggregateType(info.call->get(2)->getValType());
+
+  if (ft == at) {
+    retval = true;
+  } else if (ft->getRootInstantiation() == at->getRootInstantiation()) {
+    retval = true;
+  }
+
+  return retval;
+}
+
+static bool isCandidateNew(ResolutionCandidate* res, CallInfo& info) {
+  bool retval = false;
+
+  AggregateType* ft = toAggregateType(res->fn->getFormal(1)->getValType());
+  AggregateType* at = toAggregateType(info.call->get(1)->getValType());
+
+  if (ft == at) {
+    retval = true;
+  } else if (ft->getRootInstantiation() == at->getRootInstantiation()) {
+    retval = true;
+  }
+
+  return retval;
+}
+
+static bool isCandidateFn(ResolutionCandidate* res, CallInfo& info) {
+  // Exclude initializers on other types before we attempt to resolve the
+  // signature.
+  //
+  // TODO: Expand this check for all methods
+  if (info.call->numActuals() >= 2 &&
+      res->fn->isInitializer() &&
+      isCandidateInit(res, info) == false) {
+    return false;
+  } else if (info.call->numActuals() >= 1 &&
+             res->fn->hasFlag(FLAG_NEW_WRAPPER) &&
+             isCandidateNew(res, info) == false) {
+    return false;
+  }
+
+  return true;
 }
 
 /************************************* | **************************************
@@ -530,7 +599,7 @@ static bool looksLikeCopyInit(ResolutionCandidate* rc) {
 *                                                                             *
 ************************************** | *************************************/
 
-bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
+bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
   int coindex = -1;
 
   /*
@@ -540,6 +609,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
   resolveSignature(fn);
 
   bool isCopyInit = looksLikeCopyInit(this);
+  bool isInitCopy = fn->hasFlag(FLAG_INIT_COPY_FN);
 
   for_formals(formal, fn) {
     if (Symbol* actual = formalIdxToActual[++coindex]) {
@@ -555,7 +625,11 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
 
       bool promotes          = false;
 
-      if (actualIsTypeAlias != formalIsTypeAlias) {
+      if (isInitCopy && isString(actual) && formal->getValType() == dtStringC) {
+        // Do not allow an initCopy of a string to find the c_string initCopy,
+        // which is considered first because it is not compiler generated.
+        return false;
+      } else if (actualIsTypeAlias != formalIsTypeAlias) {
         return false;
 
       } else if (formalIsTypeAlias &&
@@ -612,18 +686,9 @@ bool ResolutionCandidate::checkGenericFormals() {
           return false;
 
         } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
-          Type* vt  = actual->getValType();
-          Type* st  = actual->type->scalarPromotionType;
-          Type* svt = (vt) ? vt->scalarPromotionType : NULL;
-
-          if (canInstantiate(actual->type, formal->type) == false &&
-
-              (vt  == NULL || canInstantiate(vt,  formal->type) == false)  &&
-              (st  == NULL || canInstantiate(st,  formal->type) == false)  &&
-              (svt == NULL || canInstantiate(svt, formal->type) == false)) {
-
+          Type* t = getInstantiationType(actual->type, formal->type);
+          if (t == NULL)
             return false;
-          }
 
         } else {
           bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||

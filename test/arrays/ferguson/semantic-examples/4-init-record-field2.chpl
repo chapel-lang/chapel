@@ -1,4 +1,5 @@
 use myrecord; 
+pragma "use default init"
 record RecordStoringArray{
   var field:[1..2] R;
 }

@@ -100,6 +100,7 @@ proc dist(x: coord, y:coord) {
 //
 // User-defined reduction class for computing updated center locations
 //
+pragma "use default init"
 class kmeans: ReduceScanOp {
   type eltType;                        // required field
   var error: real;                     // accumulated error
@@ -121,7 +122,7 @@ class kmeans: ReduceScanOp {
   // the combine function takes two kmeans classes and combines
   // them
   //
-  proc combine(other: kmeans) {
+  proc combine(other: borrowed kmeans) {
     error += other.error;
     clusterSize += other.clusterSize;
     offset += other.offset;

@@ -20,7 +20,7 @@ class D : C {
 }
 
 class E : C {
-  var parentDom: C;
+  var parentDom: owned C;
 
   var rowRange = parentDom.bbox(1);
 }
@@ -28,7 +28,7 @@ class E : C {
 
 
 
-var myD = new D(2, int, false);
+var myD = new owned D(2, int, false);
 
 myD.ranges(1) = 1..10;
 myD.ranges(2) = 1..20;
@@ -43,10 +43,6 @@ writeln("r2 = ", r2);
 
 
 
-var myE = new E(myD);
+var myE = new owned E(myD);
 
 writeln(myE.rowRange);
-
-
-delete myD;
-delete myE;

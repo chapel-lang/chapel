@@ -7,7 +7,7 @@ class bar {
 class foo {
   type t;
 
-  var  x : bar(t) = new bar(t);
+  var  x : unmanaged bar(t) = new unmanaged bar(t);
 
   proc deinit() {
     delete x;
@@ -18,7 +18,7 @@ class foo {
   }
 }
 
-var f : foo(t=int) = new foo(t = int);
+var f : unmanaged foo(t=int) = new unmanaged foo(t = int);
 
 f.x.y = 12;
 

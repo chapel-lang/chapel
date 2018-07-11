@@ -148,7 +148,7 @@ class Graph {
     EdgeDom = ed;
     nodes = ns;
     edges = es;
-    this.initDone();
+    this.complete();
     writeln("Graph constructor");
     preprocess();
   }

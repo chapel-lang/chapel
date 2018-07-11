@@ -1,2 +1,2 @@
-p={x = 197.0, y = 197} q={x = 1.0}
-p={x = 262144.0, y = 524286} q={x = 1.0}
+class-ref-one.chpl:25: In function 'doit':
+class-ref-one.chpl:32: error: value from coercion passed to ref formal 'q'

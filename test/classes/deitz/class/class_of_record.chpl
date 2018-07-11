@@ -6,7 +6,7 @@ class C {
   var r : R;
 }
 
-var x = new C();
+var x = new unmanaged C();
 
 writeln(x);
 

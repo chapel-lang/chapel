@@ -1,4 +1,4 @@
-# Copyright © 2009-2016 Inria.  All rights reserved.
+# Copyright © 2009-2018 Inria.  All rights reserved.
 # Copyright © 2009-2012 Université Bordeaux
 # Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -102,7 +102,7 @@ LDADD += $(HWLOC_top_builddir)/src/$(hwloc_lib)
 linux_libnuma_LDADD = $(LDADD) -lnuma
 openfabrics_verbs_LDADD = $(LDADD) -libverbs
 myriexpress_LDADD = $(LDADD) -lmyriexpress
-opencl_LDADD = $(LDADD) -lOpenCL
+opencl_LDADD = $(LDADD) $(HWLOC_OPENCL_LIBS) $(HWLOC_OPENCL_LDFLAGS)
 cuda_LDADD = $(LDADD) -lcuda
 cudart_LDADD = $(LDADD) -lcuda -lcudart
 nvml_LDADD = $(LDADD) -lnvidia-ml

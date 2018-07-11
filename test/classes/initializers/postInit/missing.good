@@ -1,0 +1,13 @@
+Y.init
+Z.init
+Z.postinit
+
+A.init
+B.init
+C.init
+A.postinit
+C.postinit
+
+Parent.init
+Child.init
+Parent.postinit

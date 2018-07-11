@@ -8,7 +8,7 @@ record SubTimer {
   var A : [D] Timer;
 
   proc init(names : string...) {
-    this.initDone();
+    this.complete();
     for n in names do D.add(n);
   }
 

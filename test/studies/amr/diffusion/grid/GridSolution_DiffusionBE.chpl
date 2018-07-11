@@ -10,7 +10,7 @@ use GridBC_def;
 // diffusion via Backward Euler.
 //----------------------------------------------------------------------
 proc GridSolution.advance_DiffusionBE(
-  bc:             GridBC,
+  bc:             unmanaged GridBC,
   diffusivity:    real,
   time_requested: real,
   dt_max:         real)
@@ -55,7 +55,7 @@ proc GridSolution.advance_DiffusionBE(
 //===> GridSolution.step_DiffusionBE method ===>
 //====================================>
 proc GridSolution.step_DiffusionBE(
-  bc:          GridBC,
+  bc:          unmanaged GridBC,
   diffusivity: real,
   dt:          real, 
   tolerance:   real
@@ -84,7 +84,7 @@ proc GridSolution.step_DiffusionBE(
   // a clean decoupling of the "ghostFill" and "homogeneousGhostFill"
   // methods.
   //----------------------------------------------------------------------
-  var rhs = new GridVariable(grid);
+  var rhs = new unmanaged GridVariable(grid);
   bc.apply(current_data, t_new);
   rhs.storeFluxDivergence(current_data, diffusivity);
   rhs(grid.cells) *= -dt;
@@ -97,7 +97,7 @@ proc GridSolution.step_DiffusionBE(
   //------------------------------------------------------------
   // residual = rhs - (dq + dt*flux_divergence(dq))
   //------------------------------------------------------------
-  var residual = new GridVariable(grid);
+  var residual = new unmanaged GridVariable(grid);
   bc.apply_Homogeneous(dq);
   residual.storeBEOperator(dq, diffusivity, dt);
   residual(grid.cells) = rhs(grid.cells) - residual(grid.cells);
@@ -105,7 +105,7 @@ proc GridSolution.step_DiffusionBE(
 
 
   //==== Initialize search direction ====
-  var search_dir = new GridVariable(grid);
+  var search_dir = new unmanaged GridVariable(grid);
   search_dir(grid.cells) = residual(grid.cells);
   
 
@@ -113,7 +113,7 @@ proc GridSolution.step_DiffusionBE(
   //--------------------------------------------------
   // Initializes to homogeneousBEOperator(search_dir)
   //--------------------------------------------------
-  var residual_update = new GridVariable(grid);
+  var residual_update = new unmanaged GridVariable(grid);
   bc.apply_Homogeneous(search_dir);
   residual_update.storeBEOperator(search_dir, diffusivity, dt);
   

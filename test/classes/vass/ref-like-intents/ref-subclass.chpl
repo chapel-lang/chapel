@@ -3,12 +3,12 @@ class D:C {
   proc procInD() { writeln("got a D"); }
 }
 
-proc procRefC(ref arg: C) {
-  arg = new C();
+proc procRefC(ref arg: unmanaged C) {
+  arg = new unmanaged C();
 }
 
-var c:C;
-var d:D;
+var c:unmanaged C;
+var d:unmanaged D;
 
 procRefC(c); // OK
 procRefC(d); // error

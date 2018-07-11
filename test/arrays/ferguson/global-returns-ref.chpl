@@ -5,7 +5,7 @@ class C {
   var field: [1..10] int;
 }
 
-var globalC = new C();
+var globalC = new owned C();
 
 proc returnRefGlobal() ref {
   return i;
@@ -47,5 +47,3 @@ var e = returnAliasField();
 writeln(e);
 var f = returnAliasSliceField();
 writeln(f);
-
-delete globalC;

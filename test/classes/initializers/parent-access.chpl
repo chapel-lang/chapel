@@ -19,14 +19,12 @@ class Derived : Base {
   proc init() {
     x = a;
 
-    this.initDone();
+    this.complete();
   }
 }
 
 proc main() {
-  var c = new Derived();
+  var c = new owned Derived();
 
   writeln(c);
-
-  delete c;
 }

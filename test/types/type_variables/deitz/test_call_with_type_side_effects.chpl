@@ -1,7 +1,7 @@
 class C {
   type t;
   var x: t;
-  proc initialize() {
+  proc postinit() {
     writeln("side effect ", x);
   }
 }

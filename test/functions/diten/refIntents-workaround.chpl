@@ -9,11 +9,10 @@ proc main {
       var a: int;
       var b: int;
     }
-    var c = new C(1,2);
+    var c = new borrowed C(1,2);
     writeln(c);
     swap(c.a, c.b);
     writeln(c);
-    delete c;
   }
   { writeln("Tuple components");
     var t = (1,2,3);
@@ -53,13 +52,11 @@ proc main {
     class C {
       var a, b: int;
     }
-    var c1 = new C(1,2);
-    var c2 = new C(3,4);
+    var c1 = new borrowed C(1,2);
+    var c2 = new borrowed C(3,4);
     writeln(c1, c2);
     swap(c1, c2);
     writeln(c1, c2);
-    delete c2;
-    delete c1;
   }
   { writeln("Domains");
     var D1 = {1..10};

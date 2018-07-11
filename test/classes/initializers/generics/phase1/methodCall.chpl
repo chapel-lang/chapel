@@ -5,9 +5,10 @@ class MethodTooEarly {
     myMethod();   // *** Invalid.  Still in phase1
     myMethod(20); // *** Invalid.  Still in phase1
 
+    super.init();
+
     i = iVal;
 
-    super.init();
   }
 
   // This method demonstrates why it would be bad to access a method

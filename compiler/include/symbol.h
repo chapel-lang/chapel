@@ -22,6 +22,7 @@
 
 #include "baseAST.h"
 
+#include "astutil.h"
 #include "flags.h"
 #include "type.h"
 
@@ -79,20 +80,42 @@ typedef std::bitset<NUM_FLAGS> FlagSet;
 // ForallIntentTag: a task- or forall-intent tag
 //
 enum ForallIntentTag {
-  TFI_DEFAULT, // aka TFI_BLANK
+  TFI_DEFAULT,        // aka TFI_BLANK
   TFI_CONST,
+  TFI_IN_OUTERVAR,    // see below
   TFI_IN,
   TFI_CONST_IN,
   TFI_REF,
   TFI_CONST_REF,
   TFI_REDUCE,
+  TFI_REDUCE_OP,      // see below
+  TFI_TASK_PRIVATE,   // a task-private variable, TPV
 };
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
+/* ForallIntentTag enum:
+
+TFI_IN_OUTERVAR shadow var is added by compiler as a placeholder
+for the TFI_IN/TFI_CONST_IN shadow var's outer variable.
+
+TFI_REDUCE_OP shadow var is added by compiler. It is the reduce op
+for the TFI_REDUCE shadow var, which is the accumulation state.
+*/
+
 // for task intents and forall intents
 ArgSymbol* tiMarkForIntent(IntentTag intent);
 ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent);
+
+// parser support
+enum ShadowVarPrefix {
+  SVP_CONST,
+  SVP_IN,
+  SVP_CONST_IN,
+  SVP_REF,
+  SVP_CONST_REF,
+  SVP_VAR,
+};
 
 /************************************* | **************************************
 *                                                                             *
@@ -375,7 +398,7 @@ class ShadowVarSymbol : public VarSymbol {
 public:
   ShadowVarSymbol(ForallIntentTag iIntent,
                   const char* iName,
-                  Expr* outerVar,
+                  SymExpr* outerVar,
                   Expr* iSpec = NULL);
 
   virtual void    verify();
@@ -387,31 +410,45 @@ public:
   virtual bool    isConstValWillNotChange();
 
   const char* intentDescrString() const;
-  bool        isReduce()          const { return intent == TFI_REDUCE;  }
+  bool        isReduce()          const { return intent == TFI_REDUCE;       }
+  bool        isTaskPrivate()     const { return intent == TFI_TASK_PRIVATE; }
 
-  static ShadowVarSymbol* buildFromArgIntent(IntentTag intent, Expr* ovar);
+  static ShadowVarSymbol* buildForPrefix(ShadowVarPrefix prefix,
+                                         Expr* name, Expr* type, Expr* init);
   static ShadowVarSymbol* buildFromReduceIntent(Expr* ovar, Expr* riExpr);
 
-  // The corresponding outer var or NULL if not applicable.
-  SymExpr* outerVarSE()   const;
-  Symbol*  outerVarSym()  const;
+  // The outer variable or NULL if not applicable.
+  Symbol* outerVarSym()    const;
+
   // Returns the EXPR in "with (EXPR reduce x)".
-  Expr*    reduceOpExpr() const;
+  Expr*  reduceOpExpr()    const;
+
+  BlockStmt* initBlock()   const { return svInitBlock; }
+  BlockStmt* deinitBlock() const { return svDeinitBlock; }
+
+  // Convert between TFI_[CONST]_IN and TFI_IN_OUTERVAR svars.
+  ShadowVarSymbol* OutervarForIN() const;
+  ShadowVarSymbol* INforOutervar() const;
+  // Convert between TFI_REDUCE and TFI_REDUCE_OP svars.
+  ShadowVarSymbol* ReduceOpForAccumState() const;
+  ShadowVarSymbol* AccumStateForReduceOp() const;
+
   // Remove no-longer-needed references to outside symbols when lowering.
   void     removeSupportingReferences();
 
   // The intent for this variable.
   ForallIntentTag intent;
 
-  // Either a SymExpr* (after scopeResolve) or a UnresolvedSymExpr*.
-  // This would be just a SymExpr*, if not for checkIdInsideWithClause().
-  // See also: sv->outerVarSE() and sv->outerVarSym().
-  Expr* outerVarRep;
+  // Reference to the outer variable. NULL for task-private variables.
+  SymExpr* outerVarSE;
 
-  // For a reduce intent, the reduce expression.
-  // For a task-private variable, the initialization expression.
-  // Either way, wrapped in a block.  Otherwise it is NULL.
+  // For a reduce intent, the reduce expression, wrapped in a block.
+  // Otherwise NULL.
   BlockStmt* specBlock;
+
+  // Corresponding actions to be performed at task startup and teardown.
+  BlockStmt* svInitBlock;      // always present
+  BlockStmt* svDeinitBlock;    //  "
 
   // A reduction class instance aka "Operator".
   Symbol* reduceGlobalOp;
@@ -478,6 +515,8 @@ class TypeSymbol : public Symbol {
   void codegenAggMetadata();
 
   const char* doc;
+
+  BlockStmt* instantiationPoint;
 
  private:
   void renameInstantiatedStart();
@@ -616,10 +655,16 @@ const char* intentDescrString(IntentTag intent);
 extern const char* astrSdot;
 extern const char* astrSequals;
 extern const char* astr_cast;
+extern const char* astr_defaultOf;
 extern const char* astrInit;
+extern const char* astrNew;
 extern const char* astrDeinit;
 extern const char* astrTag;
 extern const char* astrThis;
+extern const char* astr_chpl_manager;
+extern const char* astr_forallexpr;
+extern const char* astr_forexpr;
+extern const char* astr_loopexpr_iter;
 void initAstrConsts();
 
 // Return true if the arg must use a C pointer whether or not
@@ -664,6 +709,7 @@ extern VarSymbol *gCastChecking;
 extern VarSymbol *gDivZeroChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
+extern VarSymbol* gWarnUnstable;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 

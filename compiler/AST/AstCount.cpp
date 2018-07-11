@@ -60,6 +60,15 @@ foreach_ast(count_members);
   return sum;
 }
 
+bool AstCount::enterUnmanagedClassType(UnmanagedClassType* node) {
+  numUnmanagedClassType++;
+  return true;
+}
+
+void AstCount::exitUnmanagedClassType(UnmanagedClassType* node) {
+}
+
+
 bool AstCount::enterAggrType(AggregateType* node) {
   numAggregateType++;
   return true;
@@ -156,12 +165,28 @@ bool AstCount::enterNamedExpr(NamedExpr* node) {
 void AstCount::exitNamedExpr(NamedExpr* node) {
 }
 
+bool AstCount::enterIfExpr(IfExpr* node) {
+  numIfExpr++;
+  return true;
+}
+
+void AstCount::exitIfExpr(IfExpr* node) {
+}
+
 void AstCount::visitSymExpr(SymExpr* node) {
   numSymExpr++;
 }
 
 void AstCount::visitUsymExpr(UnresolvedSymExpr* node) {
   numUnresolvedSymExpr++;
+}
+
+bool AstCount::enterLoopExpr(LoopExpr* node) {
+  numLoopExpr++;
+  return true;
+}
+
+void AstCount::exitLoopExpr(LoopExpr* node) {
 }
 
 void AstCount::visitUseStmt(UseStmt* node) {

@@ -86,8 +86,8 @@ module DateTime {
     extern proc gettimeofday(ref tv: timeval, tz): int;
 
     var tv: timeval;
-    if gettimeofday(tv, nil) != 0 then
-      halt("error in call to gettimeofday()");
+    var ret = gettimeofday(tv, c_nil);
+    assert(ret == 0);
     return (tv.tv_sec, tv.tv_usec);
   }
 
@@ -111,6 +111,10 @@ module DateTime {
     var tm_isdst:  c_int;         // daylight savings flag
     var tm_gmtoff: c_long;        // Seconds east of UTC
     var tm_zone:   tm_zoneType; // Timezone abbreviation
+  }
+
+  private proc assertInRange(val, low, high) {
+    assert(val >= low && val <= high);
   }
 
   private proc getLocalTime(t: 2*int) {
@@ -138,18 +142,17 @@ module DateTime {
     return y*365 + y/4 - y/100 + y/400;
   }
 
+  // assumes callee has checked for valid month range
   private proc daysBeforeMonth(year: int, month: int) {
-    if month < 1 || month > 12 then
-      halt("month must be between 1 and 12");
+    assertInRange(month, 1, 12);
     return DAYS_BEFORE_MONTH(month) + if (month > 2 && isLeapYear(year)) then 1 else 0;
   }
 
+  // assumes callee has checked for valid month/day ranges
   private proc ymdToOrd(year: int, month: int, day: int) {
-    const dim = daysInMonth(year, month);
-    if month < 1 || month > 12 then
-      halt("month must be between 1 and 12");
-    if day < 1 || day > dim then
-      halt("day must be between 1 and ", dim);
+    assertInRange(month, 1, 12);
+    const dim = try! daysInMonth(year, month);
+    assertInRange(day, 1, dim);
     return daysBeforeYear(year) + daysBeforeMonth(year, month) + day;
   }
 
@@ -186,10 +189,12 @@ module DateTime {
         month = 12;
         year -= 1;
       }
-      preceding -= daysInMonth(year, month);
+      const dim = try! daysInMonth(year, month);
+      preceding -= dim;
     }
     n -= preceding;
-    assert(0 <= n && n < daysInMonth(year, month));
+    const dim = try! daysInMonth(year, month);
+    assertInRange(n+1, 1, dim);
     return (year, month, n+1);
   }
 
@@ -199,10 +204,11 @@ module DateTime {
   }
 
   /* Return the number of days in month `month` during the year `year`.
-     The number for a month can change from year to year due to leap years. */
-  proc daysInMonth(year: int, month: int) {
+     The number for a month can change from year to year due to leap years.
+     Throws an IllegalArgumentError month is out of range. */
+  proc daysInMonth(year: int, month: int) throws {
     if month < 1 || month > 12 then
-      halt("month must be between 1 and 12");
+      throw new IllegalArgumentError("month must be between 1 and 12");
     if month == 2 && isLeapYear(year) then
       return 29;
     else
@@ -246,13 +252,13 @@ module DateTime {
   }
 
 
-  /* constructors/factories for date values */
+  /* initializers/factories for date values */
 
   pragma "no doc"
   proc date.init() {
   }
 
-  /* Construct a new `date` value from a `year`, `month`, and `day`. All
+  /* Initialize a new `date` value from a `year`, `month`, and `day`. All
      three arguments are required and must be in valid ranges.  The
      valid ranges are:
 
@@ -263,12 +269,14 @@ module DateTime {
      1 <= `day` <= the number of days in the given month and year
   */
   proc date.init(year, month, day) {
+    use ChapelHaltWrappers;
     if year < MINYEAR-1 || year > MAXYEAR+1 then
-      halt("year is out of the valid range");
+      initHalt("year is out of the valid range");
     if month < 1 || month > 12 then
-      halt("month is out of the valid range");
-    if day < 1 || day > daysInMonth(year, month) then
-      halt("day is out of the valid range");
+      initHalt("month is out of the valid range");
+    const dim = try! daysInMonth(year, month);
+    if day < 1 || day > dim then
+      initHalt("day is out of the valid range");
 
     this.chpl_year = year;
     this.chpl_month = month;
@@ -354,7 +362,7 @@ module DateTime {
   proc date.isocalendar() {
     proc findThursday(d: date) {
       var wd = d.weekday();
-      return d + new timedelta(days = (DayOfWeek.Thursday - wd): int);
+      return d + new timedelta(days = (DayOfWeek.Thursday:int - wd:int));
     }
 
     proc findyear(d: date) {
@@ -432,6 +440,29 @@ module DateTime {
     var str = __primitive("cast", c_string, c_ptrTo(buf)): string;
 
     return str;
+  }
+
+  /* Read or write a date value from channel `f` */
+  proc date.readWriteThis(f) {
+    const dash = new ioLiteral("-");
+
+    if f.writing {
+      try! {
+        f.write(isoformat());
+      }
+    } else {
+      const binary = f.binary(),
+            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+
+      f <~> chpl_year <~> dash <~> chpl_month <~> dash <~> chpl_day;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+    }
   }
 
 
@@ -525,21 +556,22 @@ module DateTime {
     }
   }
 
-  /* constructors/factories for time values */
+  /* initializers/factories for time values */
 
-  /* Construct a new `time` value from the given `hour`, `minute`, `second`,
+  /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
      `microsecond`, and `timezone`.  All arguments are optional
    */
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
                  tzinfo: Shared(TZInfo)=nilTZ) {
+    use ChapelHaltWrappers;
     if hour < 0 || hour >= 24 then
-      halt("hour out of range");
+      initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
-      halt("minute out of range");
+      initHalt("minute out of range");
     if second < 0 || second >= 60 then
-      halt("second out of range");
+      initHalt("second out of range");
     if microsecond < 0 || microsecond >= 1000000 then
-      halt("microsecond out of range");
+      initHalt("microsecond out of range");
     this.chpl_hour = hour;
     this.chpl_minute = minute;
     this.chpl_second = second;
@@ -549,7 +581,6 @@ module DateTime {
 
   pragma "no doc"
   proc time.deinit() {
-    // delete tzinfo if needed
   }
 
   /* Methods on time values */
@@ -658,6 +689,30 @@ module DateTime {
     return str;
   }
 
+  /* Read or write a time value from channel `f` */
+  proc time.readWriteThis(f) {
+    const colon = new ioLiteral(":");
+    if f.writing {
+      try! {
+        f.write(isoformat());
+      }
+    } else {
+      const binary = f.binary(),
+            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+
+      f <~> chpl_hour <~> colon <~> chpl_minute <~> colon <~> chpl_second
+        <~> new ioLiteral(".") <~> chpl_microsecond;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+    }
+  }
+
+
   /* Operators on time values */
 
   pragma "no doc"
@@ -708,8 +763,6 @@ module DateTime {
       //return (t1.replace(tzinfo=nilTZ) - t1.utcoffset()) <
       //       (t2.replace(tzinfo=nilTZ) - t2.utcoffset());
     }
-    halt("unreachable");
-    return false;
   }
 
   pragma "no doc"
@@ -733,8 +786,6 @@ module DateTime {
       const dt2 = datetime.combine(new date(1900, 1, 1), t2);
       return dt1 <= dt2;
     }
-    halt("unreachable");
-    return false;
   }
 
   pragma "no doc"
@@ -758,8 +809,6 @@ module DateTime {
       const dt2 = datetime.combine(new date(1900, 1, 1), t2);
       return dt1 > dt2;
     }
-    halt("unreachable");
-    return false;
   }
 
   pragma "no doc"
@@ -783,8 +832,6 @@ module DateTime {
       const dt2 = datetime.combine(new date(1900, 1, 1), t2);
       return dt1 >= dt2;
     }
-    halt("unreachable");
-    return false;
   }
 
   /* A record representing a combined `date` and `time` */
@@ -850,13 +897,13 @@ module DateTime {
     }
   }
 
-  /* Constructors/factories for datetime values */
+  /* initializers/factories for datetime values */
 
   pragma "no doc"
   proc datetime.init() {
   }
 
-  /* Construct a new `datetime` value from the given `year`, `month`, `day`,
+  /* Initialize a new `datetime` value from the given `year`, `month`, `day`,
      `hour`, `minute`, `second`, `microsecond` and timezone.  The `year`,
      `month`, and `day` arguments are required, the rest are optional.
    */
@@ -1160,6 +1207,34 @@ module DateTime {
     return this.strftime("%a %b %e %T %Y");
   }
 
+  /* Read or write a datetime value from channel `f` */
+  proc datetime.readWriteThis(f) {
+    const dash  = new ioLiteral("-"),
+          colon = new ioLiteral(":");
+
+    if f.writing {
+      try! {
+        f.write(isoformat());
+      }
+    } else {
+      const binary = f.binary(),
+            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+
+      f <~> chpl_date.chpl_year <~> dash <~> chpl_date.chpl_month <~> dash
+        <~> chpl_date.chpl_day <~> new ioLiteral("T") <~> chpl_time.chpl_hour
+        <~> colon <~> chpl_time.chpl_minute <~> colon <~> chpl_time.chpl_second
+        <~> new ioLiteral(".") <~> chpl_time.chpl_microsecond;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+    }
+  }
+
+
   // TODO: Add a datetime.timestamp() method
 
   /* Operators on datetime values */
@@ -1250,8 +1325,6 @@ module DateTime {
                                 dt2.replace(tzinfo=nilTZ) +
                                 dt2.utcoffset() - dt1.utcoffset();
     }
-    halt("this should be unreachable");
-    return new timedelta();
   }
 
   pragma "no doc"
@@ -1296,8 +1369,6 @@ module DateTime {
       return (dt1.replace(tzinfo=nilTZ) - dt1.utcoffset()) <
              (dt2.replace(tzinfo=nilTZ) - dt2.utcoffset());
     }
-    halt("this should be unreachable");
-    return false;
   }
 
   pragma "no doc"
@@ -1315,8 +1386,6 @@ module DateTime {
       return (dt1.replace(tzinfo=nilTZ) - dt1.utcoffset()) <=
              (dt2.replace(tzinfo=nilTZ) - dt2.utcoffset());
     }
-    halt("this should be unreachable");
-    return false;
   }
 
   pragma "no doc"
@@ -1334,8 +1403,6 @@ module DateTime {
       return (dt1.replace(tzinfo=nilTZ) - dt1.utcoffset()) >
              (dt2.replace(tzinfo=nilTZ) - dt2.utcoffset());
     }
-    halt("this should be unreachable");
-    return false;
   }
 
   pragma "no doc"
@@ -1353,8 +1420,6 @@ module DateTime {
       return (dt1.replace(tzinfo=nilTZ) - dt1.utcoffset()) >=
              (dt2.replace(tzinfo=nilTZ) - dt2.utcoffset());
     }
-    halt("this should be unreachable");
-    return false;
   }
 
 
@@ -1415,14 +1480,15 @@ module DateTime {
     }
   }
 
-  /* Constructors/factories for timedelta values */
+  /* initializers/factories for timedelta values */
 
-  /* Construct a `timedelta` object.  All arguments are optional and
+  /* Initialize a `timedelta` object.  All arguments are optional and
      default to 0. Since only `days`, `seconds` and `microseconds` are
      stored, the other arguments are converted to days, seconds
      and microseconds. */
   proc timedelta.init(days=0, seconds=0, microseconds=0,
                       milliseconds=0, minutes=0, hours=0, weeks=0) {
+    use ChapelHaltWrappers;
     param usps = 1000000,  // microseconds per second
           uspms = 1000,    // microseconds per millisecond
           spd = 24*60*60; // seconds per day
@@ -1451,10 +1517,10 @@ module DateTime {
     this.chpl_microseconds = us;
 
     if this.days < -999999999 then
-      halt("Overflow: days < -999999999");
+      initHalt("Overflow: days < -999999999");
 
     if this.days > 999999999 then
-      halt("Overflow: days > 999999999");
+      initHalt("Overflow: days > 999999999");
   }
 
   /* Create a `timedelta` from a given number of seconds */
@@ -1596,28 +1662,33 @@ module DateTime {
   /* Abstract base class for time zones. This class should not be used
      directly, but concrete implementations of time zones should be
      derived from it. */
+  pragma "use default init"
   class TZInfo {
     /* The offset from UTC this class represents */
     proc utcoffset(dt: datetime): timedelta {
-      halt("Abstract base method called");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
       return new timedelta();
     }
 
     /* The `timedelta` for daylight saving time */
     proc dst(dt: datetime): timedelta {
-      halt("Abstract base method called");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
       return new timedelta();
     }
 
     /* The name of this time zone */
     proc tzname(dt: datetime): string {
-      halt("Abstract base method called");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
       return "";
     }
 
     /* Convert a `time` in UTC to this time zone */
     proc fromutc(in dt: datetime): datetime {
-      halt("Abstract base method called");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
       return new datetime(0,0,0);
     }
   }

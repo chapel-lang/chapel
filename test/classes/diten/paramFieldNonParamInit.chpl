@@ -6,5 +6,5 @@ class Foo {
   param field = notParam(1);
 }
 
-var f = new Foo();
+var f = new unmanaged Foo();
 delete f;

@@ -1,22 +1,22 @@
 class myseq_node {
   type elementType;
   var element : elementType;
-  var next : myseq_node(elementType);
+  var next : unmanaged myseq_node(elementType);
 }
 
 class myseq {
   type elementType;
 
   var  length : int;
-  var  first  : myseq_node(elementType);
-  var  last   : myseq_node(elementType);
+  var  first  : unmanaged myseq_node(elementType);
+  var  last   : unmanaged myseq_node(elementType);
 
   proc deinit() {
     if first != nil then delete first;
   }
 
   proc append(e : elementType) {
-    var copy : myseq_node(elementType) = new myseq_node(elementType = elementType);
+    var copy : unmanaged myseq_node(elementType) = new unmanaged myseq_node(elementType = elementType);
     copy.element = e;
 
     if first != nil then delete first;

@@ -25,7 +25,10 @@
 #include "DeferStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "IfExpr.h"
 #include "expr.h"
+#include "LoopExpr.h"
+#include "UnmanagedClassType.h"
 #include "passes.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"
@@ -173,7 +176,56 @@ void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
   AST_CHILDREN_CALL(destNode, reset_ast_loc, astlocArg);
 }
 
+void compute_fn_call_sites(FnSymbol* fn) {
+/* If present, fn->calledBy needs to be set up in advance.
+   See the comment in compute_call_sites() */
+
+  if (fn->calledBy == NULL) {
+    fn->calledBy = new Vec<CallExpr*>();
+  }
+
+  for_SymbolSymExprs(se, fn) {
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      if (call->isEmpty()) {
+        assert(0); // not possible
+
+      } else if (!isAlive(call)) {
+        assert(0); // not possible
+
+      } else if (fn == call->resolvedFunction()) {
+        fn->calledBy->add(call);
+
+      } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
+        // sjd: do we have to do anything special here?
+        //      should this call be added to some function's calledBy list?
+
+      } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+        FnSymbol* vFn = toFnSymbol(toSymExpr(call->get(1))->symbol());
+        if (vFn == fn) {
+          Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
+
+          fn->calledBy->add(call);
+
+          forv_Vec(FnSymbol, child, *children) {
+            if (!child->calledBy)
+              child->calledBy = new Vec<CallExpr*>();
+
+            child->calledBy->add(call);
+          }
+        }
+      }
+    }
+  }
+}
+
 void compute_call_sites() {
+  /* Set up and clear the calledBy vector for all functions.  This cannot
+     be done one function at a time in compute_fn_call_sites(fn) because
+     compute_fn_call_sites(fn) can add calls to the calledBy vector of
+     other functions besides its argument. In particular a virtual method
+     call is considered to be calledBy all of the virtual methods in the
+     inheritance chain.
+   */
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->calledBy)
       fn->calledBy->clear();
@@ -182,34 +234,7 @@ void compute_call_sites() {
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    for_SymbolSymExprs(se, fn) {
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
-        if (call->isEmpty() == true) {
-          assert(0); // not possible
-
-        } else if (isAlive(call) == false) {
-          assert(0); // not possible
-
-        } else if (fn == call->resolvedFunction()) {
-          fn->calledBy->add(call);
-
-        } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
-          // sjd: do we have to do anything special here?
-          //      should this call be added to some function's calledBy list?
-
-        } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-          FnSymbol*      vFn       = toFnSymbol(toSymExpr(call->get(1))->symbol());
-          if (vFn == fn) {
-            Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
-
-            fn->calledBy->add(call);
-
-            forv_Vec(FnSymbol, child, *children)
-              child->calledBy->add(call);
-          }
-        }
-      }
-    }
+    compute_fn_call_sites(fn);
   }
 }
 
@@ -1057,4 +1082,8 @@ void convertToQualifiedRefs() {
     }
   }
 #undef fixRefSymbols
+}
+
+bool isTupleTypeConstructor(FnSymbol* fn) {
+  return fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) && fn->hasFlag(FLAG_TUPLE);
 }

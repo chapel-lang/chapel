@@ -6,9 +6,9 @@ class D : C {
   proc foo() { writeln("isa D"); }
 }
 
-var c = new C();
+var c = new unmanaged C();
 c.foo();
 delete c;
-c = new D();
+c = new unmanaged D();
 c.foo();
 delete c;

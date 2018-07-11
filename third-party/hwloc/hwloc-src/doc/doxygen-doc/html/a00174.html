@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Exporting Topologies to XML</title>
+<title>Hardware Locality (hwloc): The bitmap API</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -39,72 +39,233 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#define-members">Macros</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
-<div class="title">Exporting Topologies to XML</div>  </div>
+<div class="title">The bitmap API</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:ga3f6861045a8029ade373510ffa727d2a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga3f6861045a8029ade373510ffa727d2a">hwloc_bitmap_foreach_begin</a>(id,  bitmap)</td></tr>
+<tr class="separator:ga3f6861045a8029ade373510ffa727d2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafcf3246db406218d4e155735b3fa6528"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gafcf3246db406218d4e155735b3fa6528">hwloc_bitmap_foreach_end</a>()</td></tr>
+<tr class="separator:gafcf3246db406218d4e155735b3fa6528"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:gaa3c2bf4c776d603dcebbb61b0c923d84"><td class="memItemLeft" align="right" valign="top">typedef struct hwloc_bitmap_s *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a></td></tr>
+<tr class="separator:gaa3c2bf4c776d603dcebbb61b0c923d84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae991a108af01d408be2776c5b2c467b2"><td class="memItemLeft" align="right" valign="top">typedef const struct hwloc_bitmap_s *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a></td></tr>
+<tr class="separator:gae991a108af01d408be2776c5b2c467b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga2bf166eda4d3605362ac86f77684002a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga2bf166eda4d3605362ac86f77684002a">hwloc_topology_export_xml</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, const char *xmlpath)</td></tr>
-<tr class="separator:ga2bf166eda4d3605362ac86f77684002a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7cbf8a2d8579d192911007650366fc8a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga7cbf8a2d8579d192911007650366fc8a">hwloc_topology_export_xmlbuffer</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, char **xmlbuffer, int *buflen)</td></tr>
-<tr class="separator:ga7cbf8a2d8579d192911007650366fc8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga293e4a6489f15fd16ad22a5734561cf1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga293e4a6489f15fd16ad22a5734561cf1">hwloc_free_xmlbuffer</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, char *xmlbuffer)</td></tr>
-<tr class="separator:ga293e4a6489f15fd16ad22a5734561cf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9d6ff0f7a8dd45be9aa8575ef31978cc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga9d6ff0f7a8dd45be9aa8575ef31978cc">hwloc_topology_set_userdata_export_callback</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, void(*export_cb)(void *reserved, <a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj))</td></tr>
-<tr class="separator:ga9d6ff0f7a8dd45be9aa8575ef31978cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa541bdd628416dbbe97d0df69d3de958"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gaa541bdd628416dbbe97d0df69d3de958">hwloc_export_obj_userdata</a> (void *reserved, <a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj, const char *name, const void *buffer, size_t length)</td></tr>
-<tr class="separator:gaa541bdd628416dbbe97d0df69d3de958"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1b7358137cec27bd073f58a606ecbaba"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga1b7358137cec27bd073f58a606ecbaba">hwloc_export_obj_userdata_base64</a> (void *reserved, <a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj, const char *name, const void *buffer, size_t length)</td></tr>
-<tr class="separator:ga1b7358137cec27bd073f58a606ecbaba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5ac6917ea7289955fb1ffda4353af9b0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga5ac6917ea7289955fb1ffda4353af9b0">hwloc_topology_set_userdata_import_callback</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, void(*import_cb)(<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj, const char *name, const void *buffer, size_t length))</td></tr>
-<tr class="separator:ga5ac6917ea7289955fb1ffda4353af9b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadece3d1eb5199fc2fb99bc7dcf1ccc05"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gadece3d1eb5199fc2fb99bc7dcf1ccc05">hwloc_bitmap_alloc</a> (void)</td></tr>
+<tr class="separator:gadece3d1eb5199fc2fb99bc7dcf1ccc05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga02853b4a224970587b9d7a0e20d857c0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga02853b4a224970587b9d7a0e20d857c0">hwloc_bitmap_alloc_full</a> (void)</td></tr>
+<tr class="separator:ga02853b4a224970587b9d7a0e20d857c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga156130d85b3a0674d6e0e6770fe68fbe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga156130d85b3a0674d6e0e6770fe68fbe">hwloc_bitmap_free</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga156130d85b3a0674d6e0e6770fe68fbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae679434c1a5f41d3560a8a7e2c1b0dee"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gae679434c1a5f41d3560a8a7e2c1b0dee">hwloc_bitmap_dup</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:gae679434c1a5f41d3560a8a7e2c1b0dee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga036068a22d1aa5cb9ff1df348b525ff3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga036068a22d1aa5cb9ff1df348b525ff3">hwloc_bitmap_copy</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> dst, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> src)</td></tr>
+<tr class="separator:ga036068a22d1aa5cb9ff1df348b525ff3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9511644657030a021dce9941e3cda583"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga9511644657030a021dce9941e3cda583">hwloc_bitmap_snprintf</a> (char *restrict buf, size_t buflen, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga9511644657030a021dce9941e3cda583"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0fece972134fdecf2da9bc7a11dd827e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga0fece972134fdecf2da9bc7a11dd827e">hwloc_bitmap_asprintf</a> (char **strp, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga0fece972134fdecf2da9bc7a11dd827e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga064a85c643a364b60acbfa0f3663fc18"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga064a85c643a364b60acbfa0f3663fc18">hwloc_bitmap_sscanf</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap, const char *restrict string)</td></tr>
+<tr class="separator:ga064a85c643a364b60acbfa0f3663fc18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3d06e6447edeb61e56a9ad83f31f0a37"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga3d06e6447edeb61e56a9ad83f31f0a37">hwloc_bitmap_list_snprintf</a> (char *restrict buf, size_t buflen, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga3d06e6447edeb61e56a9ad83f31f0a37"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga39c0f1b02053de66d205c9f8260b3665"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga39c0f1b02053de66d205c9f8260b3665">hwloc_bitmap_list_asprintf</a> (char **strp, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga39c0f1b02053de66d205c9f8260b3665"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf9314311d482c621e17c6a53a9fe993e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gaf9314311d482c621e17c6a53a9fe993e">hwloc_bitmap_list_sscanf</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap, const char *restrict string)</td></tr>
+<tr class="separator:gaf9314311d482c621e17c6a53a9fe993e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5beb68a987fe48e5c5edef06ab260e14"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga5beb68a987fe48e5c5edef06ab260e14">hwloc_bitmap_taskset_snprintf</a> (char *restrict buf, size_t buflen, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga5beb68a987fe48e5c5edef06ab260e14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga391312513f17c985d871f18367c59512"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga391312513f17c985d871f18367c59512">hwloc_bitmap_taskset_asprintf</a> (char **strp, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga391312513f17c985d871f18367c59512"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4f23db5041240e03e348752f8bd6ec2d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga4f23db5041240e03e348752f8bd6ec2d">hwloc_bitmap_taskset_sscanf</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap, const char *restrict string)</td></tr>
+<tr class="separator:ga4f23db5041240e03e348752f8bd6ec2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa97c5217613c8cae9862287170ea2132"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gaa97c5217613c8cae9862287170ea2132">hwloc_bitmap_zero</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:gaa97c5217613c8cae9862287170ea2132"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga07b2de8786b3cdb22f21d9dd42588275"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga07b2de8786b3cdb22f21d9dd42588275">hwloc_bitmap_fill</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga07b2de8786b3cdb22f21d9dd42588275"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga037032ba6aaf49c2e6836e2dbb7855c4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga037032ba6aaf49c2e6836e2dbb7855c4">hwloc_bitmap_only</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap, unsigned id)</td></tr>
+<tr class="separator:ga037032ba6aaf49c2e6836e2dbb7855c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3b944660dcfcb8d655883742b3ea86a7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga3b944660dcfcb8d655883742b3ea86a7">hwloc_bitmap_allbut</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap, unsigned id)</td></tr>
+<tr class="separator:ga3b944660dcfcb8d655883742b3ea86a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaba53aebd49962acea4e3e0ff160172e3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gaba53aebd49962acea4e3e0ff160172e3">hwloc_bitmap_from_ulong</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap, unsigned long mask)</td></tr>
+<tr class="separator:gaba53aebd49962acea4e3e0ff160172e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6066e095e6f23302f0a1ca7284d0b651"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga6066e095e6f23302f0a1ca7284d0b651">hwloc_bitmap_from_ith_ulong</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap, unsigned i, unsigned long mask)</td></tr>
+<tr class="separator:ga6066e095e6f23302f0a1ca7284d0b651"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga55480e96ab47941bfebb9aed676526a2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga55480e96ab47941bfebb9aed676526a2">hwloc_bitmap_set</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap, unsigned id)</td></tr>
+<tr class="separator:ga55480e96ab47941bfebb9aed676526a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7a1d8530b282397f56b0d82b17e6d13d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga7a1d8530b282397f56b0d82b17e6d13d">hwloc_bitmap_set_range</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap, unsigned begin, int end)</td></tr>
+<tr class="separator:ga7a1d8530b282397f56b0d82b17e6d13d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab16b6f6383b51f9c314abe15478ff6ff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gab16b6f6383b51f9c314abe15478ff6ff">hwloc_bitmap_set_ith_ulong</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap, unsigned i, unsigned long mask)</td></tr>
+<tr class="separator:gab16b6f6383b51f9c314abe15478ff6ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabddf36d47882c0a4f1e2b3c76cac877c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gabddf36d47882c0a4f1e2b3c76cac877c">hwloc_bitmap_clr</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap, unsigned id)</td></tr>
+<tr class="separator:gabddf36d47882c0a4f1e2b3c76cac877c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga207ae23381d7b37fb97fd1f906c9c5ba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga207ae23381d7b37fb97fd1f906c9c5ba">hwloc_bitmap_clr_range</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap, unsigned begin, int end)</td></tr>
+<tr class="separator:ga207ae23381d7b37fb97fd1f906c9c5ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga36d802130aa5d96bc1b5a90d2f0f3765"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga36d802130aa5d96bc1b5a90d2f0f3765">hwloc_bitmap_singlify</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga36d802130aa5d96bc1b5a90d2f0f3765"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab6a6bae22a33ec6adfc169a953c13e6c"><td class="memItemLeft" align="right" valign="top">unsigned long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gab6a6bae22a33ec6adfc169a953c13e6c">hwloc_bitmap_to_ulong</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:gab6a6bae22a33ec6adfc169a953c13e6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac92e6404f648d6b99d2c626b05b2ffa4"><td class="memItemLeft" align="right" valign="top">unsigned long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gac92e6404f648d6b99d2c626b05b2ffa4">hwloc_bitmap_to_ith_ulong</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap, unsigned i)</td></tr>
+<tr class="separator:gac92e6404f648d6b99d2c626b05b2ffa4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga11340dd487f110bb84f0a6e4ae90bd06"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga11340dd487f110bb84f0a6e4ae90bd06">hwloc_bitmap_isset</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap, unsigned id)</td></tr>
+<tr class="separator:ga11340dd487f110bb84f0a6e4ae90bd06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5b64be28f5a7176ed8ad0d6a90bdf108"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga5b64be28f5a7176ed8ad0d6a90bdf108">hwloc_bitmap_iszero</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga5b64be28f5a7176ed8ad0d6a90bdf108"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5fdcb8c19c336511c37076d649e74af4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga5fdcb8c19c336511c37076d649e74af4">hwloc_bitmap_isfull</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga5fdcb8c19c336511c37076d649e74af4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3ec1ced43afadf8c0a7197320bc016ed"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga3ec1ced43afadf8c0a7197320bc016ed">hwloc_bitmap_first</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga3ec1ced43afadf8c0a7197320bc016ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaab7240b4b644693b775dad17b44ffd68"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gaab7240b4b644693b775dad17b44ffd68">hwloc_bitmap_next</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap, int prev)</td></tr>
+<tr class="separator:gaab7240b4b644693b775dad17b44ffd68"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3d9b08b060a59bbab5a4ea6d0a1ed7a6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga3d9b08b060a59bbab5a4ea6d0a1ed7a6">hwloc_bitmap_last</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga3d9b08b060a59bbab5a4ea6d0a1ed7a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0200466842c0e1f5da75e84dde460b10"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga0200466842c0e1f5da75e84dde460b10">hwloc_bitmap_weight</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga0200466842c0e1f5da75e84dde460b10"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1281994d6cc3b5079224190ca820ad93"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga1281994d6cc3b5079224190ca820ad93">hwloc_bitmap_or</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> res, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap1, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap2)</td></tr>
+<tr class="separator:ga1281994d6cc3b5079224190ca820ad93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4a3e12ab9e20cfec66a3dc2db16806be"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga4a3e12ab9e20cfec66a3dc2db16806be">hwloc_bitmap_and</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> res, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap1, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap2)</td></tr>
+<tr class="separator:ga4a3e12ab9e20cfec66a3dc2db16806be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga091e9039ce7b6fe927260cd1b08d25c4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga091e9039ce7b6fe927260cd1b08d25c4">hwloc_bitmap_andnot</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> res, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap1, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap2)</td></tr>
+<tr class="separator:ga091e9039ce7b6fe927260cd1b08d25c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf462ead487d1891e37f4443a397d3c42"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gaf462ead487d1891e37f4443a397d3c42">hwloc_bitmap_xor</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> res, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap1, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap2)</td></tr>
+<tr class="separator:gaf462ead487d1891e37f4443a397d3c42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8cd2c26d71510138b22a12db41419742"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga8cd2c26d71510138b22a12db41419742">hwloc_bitmap_not</a> (<a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> res, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap)</td></tr>
+<tr class="separator:ga8cd2c26d71510138b22a12db41419742"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaefa070f9232857ba5a57297ea9a08ea2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gaefa070f9232857ba5a57297ea9a08ea2">hwloc_bitmap_intersects</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap1, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap2)</td></tr>
+<tr class="separator:gaefa070f9232857ba5a57297ea9a08ea2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0526e03db81956fb02acc8260b66d6a4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga0526e03db81956fb02acc8260b66d6a4">hwloc_bitmap_isincluded</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> sub_bitmap, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> super_bitmap)</td></tr>
+<tr class="separator:ga0526e03db81956fb02acc8260b66d6a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga32376b1405e57472b73c3aa53bb39663"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga32376b1405e57472b73c3aa53bb39663">hwloc_bitmap_isequal</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap1, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap2)</td></tr>
+<tr class="separator:ga32376b1405e57472b73c3aa53bb39663"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa39cda1510ab721b5c012c76ead72365"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#gaa39cda1510ab721b5c012c76ead72365">hwloc_bitmap_compare_first</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap1, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap2)</td></tr>
+<tr class="separator:gaa39cda1510ab721b5c012c76ead72365"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga14cdbc0ef0a705e84999bd48a2e649f3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00174.html#ga14cdbc0ef0a705e84999bd48a2e649f3">hwloc_bitmap_compare</a> (<a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap1, <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> bitmap2)</td></tr>
+<tr class="separator:ga14cdbc0ef0a705e84999bd48a2e649f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<p>The <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a> type represents a set of objects, typically OS processors &ndash; which may actually be hardware threads (represented by <a class="el" href="a00150.html#ga4bbf39b68b6f568fb92739e7c0ea7801" title="A CPU set is a bitmap whose bits are set according to CPU physical OS indexes. ">hwloc_cpuset_t</a>, which is a typedef for <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a>) &ndash; or memory nodes (represented by <a class="el" href="a00150.html#ga37e35730fa7e775b5bb0afe893d6d508" title="A node set is a bitmap whose bits are set according to NUMA memory node physical OS indexes...">hwloc_nodeset_t</a>, which is also a typedef for <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a>).</p>
+<p><em>Both CPU and node sets are always indexed by OS physical number.</em></p>
+<dl class="section note"><dt>Note</dt><dd>CPU sets and nodesets are described in <a class="el" href="a00150.html">Object Sets (hwloc_cpuset_t and hwloc_nodeset_t)</a>.</dd></dl>
+<p>A bitmap may be of infinite size (all bits are set after some point). A bitmap may even be full if all bits are set.</p>
+<dl class="section note"><dt>Note</dt><dd>Several examples of using the bitmap API are available under the doc/examples/ directory in the source tree. Regression tests such as tests/hwloc/hwloc_bitmap*.c also make intensive use of this API. </dd></dl>
+<h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="ga3f6861045a8029ade373510ffa727d2a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3f6861045a8029ade373510ffa727d2a">&#9670;&nbsp;</a></span>hwloc_bitmap_foreach_begin</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define hwloc_bitmap_foreach_begin</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">id, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">bitmap&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Loop macro iterating on bitmap <code>bitmap</code>. </p>
+<p>The loop must start with <a class="el" href="a00174.html#ga3f6861045a8029ade373510ffa727d2a" title="Loop macro iterating on bitmap bitmap. ">hwloc_bitmap_foreach_begin()</a> and end with <a class="el" href="a00174.html#gafcf3246db406218d4e155735b3fa6528" title="End of loop macro iterating on a bitmap. ">hwloc_bitmap_foreach_end()</a> followed by a terminating ';'.</p>
+<p><code>index</code> is the loop variable; it should be an unsigned int. The first iteration will set <code>index</code> to the lowest index in the bitmap. Successive iterations will iterate through, in order, all remaining indexes set in the bitmap. To be specific: each iteration will return a value for <code>index</code> such that hwloc_bitmap_isset(bitmap, index) is true.</p>
+<p>The assert prevents the loop from being infinite if the bitmap is infinitely set. </p>
+
+</div>
+</div>
+<a id="gafcf3246db406218d4e155735b3fa6528"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gafcf3246db406218d4e155735b3fa6528">&#9670;&nbsp;</a></span>hwloc_bitmap_foreach_end</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define hwloc_bitmap_foreach_end</td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>End of loop macro iterating on a bitmap. </p>
+<p>Needs a terminating ';'.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="a00174.html#ga3f6861045a8029ade373510ffa727d2a" title="Loop macro iterating on bitmap bitmap. ">hwloc_bitmap_foreach_begin()</a> </dd></dl>
+
+</div>
+</div>
+<h2 class="groupheader">Typedef Documentation</h2>
+<a id="gaa3c2bf4c776d603dcebbb61b0c923d84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa3c2bf4c776d603dcebbb61b0c923d84">&#9670;&nbsp;</a></span>hwloc_bitmap_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct hwloc_bitmap_s* <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set of bits represented as an opaque pointer to an internal bitmap. </p>
+
+</div>
+</div>
+<a id="gae991a108af01d408be2776c5b2c467b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae991a108af01d408be2776c5b2c467b2">&#9670;&nbsp;</a></span>hwloc_const_bitmap_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef const struct hwloc_bitmap_s* <a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>a non-modifiable <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a> </p>
+
+</div>
+</div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="gaa541bdd628416dbbe97d0df69d3de958"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa541bdd628416dbbe97d0df69d3de958">&#9670;&nbsp;</a></span>hwloc_export_obj_userdata()</h2>
+<a id="ga3b944660dcfcb8d655883742b3ea86a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3b944660dcfcb8d655883742b3ea86a7">&#9670;&nbsp;</a></span>hwloc_bitmap_allbut()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int hwloc_export_obj_userdata </td>
+          <td class="memname">void hwloc_bitmap_allbut </td>
           <td>(</td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>reserved</em>, </td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>buffer</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>length</em>&#160;</td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>id</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -114,56 +275,75 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Export some object userdata to XML. </p>
-<p>This function may only be called from within the export() callback passed to <a class="el" href="a00174.html#ga9d6ff0f7a8dd45be9aa8575ef31978cc" title="Set the application-specific callback for exporting object userdata. ">hwloc_topology_set_userdata_export_callback()</a>. It may be invoked one of multiple times to export some userdata to XML. The <code>buffer</code> content of length <code>length</code> is stored with optional name <code>name</code>.</p>
-<p>When importing this XML file, the import() callback (if set) will be called exactly as many times as <a class="el" href="a00174.html#gaa541bdd628416dbbe97d0df69d3de958" title="Export some object userdata to XML. ">hwloc_export_obj_userdata()</a> was called during export(). It will receive the corresponding <code>name</code>, <code>buffer</code> and <code>length</code> arguments.</p>
-<p><code>reserved</code>, <code>topology</code> and <code>obj</code> must be the first three parameters that were given to the export callback.</p>
-<p>Only printable characters may be exported to XML string attributes. If a non-printable character is passed in <code>name</code> or <code>buffer</code>, the function returns -1 with errno set to EINVAL.</p>
-<p>If exporting binary data, the application should first encode into printable characters only (or use <a class="el" href="a00174.html#ga1b7358137cec27bd073f58a606ecbaba" title="Encode and export some object userdata to XML. ">hwloc_export_obj_userdata_base64()</a>). It should also take care of portability issues if the export may be reimported on a different architecture. </p>
+<p>Fill the bitmap <code>and</code> clear the index <code>id</code>. </p>
 
 </div>
 </div>
-<a id="ga1b7358137cec27bd073f58a606ecbaba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga1b7358137cec27bd073f58a606ecbaba">&#9670;&nbsp;</a></span>hwloc_export_obj_userdata_base64()</h2>
+<a id="gadece3d1eb5199fc2fb99bc7dcf1ccc05"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadece3d1eb5199fc2fb99bc7dcf1ccc05">&#9670;&nbsp;</a></span>hwloc_bitmap_alloc()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int hwloc_export_obj_userdata_base64 </td>
+          <td class="memname"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> hwloc_bitmap_alloc </td>
           <td>(</td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>reserved</em>, </td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Allocate a new empty bitmap. </p>
+<dl class="section return"><dt>Returns</dt><dd>A valid bitmap or <code>NULL</code>.</dd></dl>
+<p>The bitmap should be freed by a corresponding call to <a class="el" href="a00174.html#ga156130d85b3a0674d6e0e6770fe68fbe" title="Free bitmap bitmap. ">hwloc_bitmap_free()</a>. </p>
+
+</div>
+</div>
+<a id="ga02853b4a224970587b9d7a0e20d857c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga02853b4a224970587b9d7a0e20d857c0">&#9670;&nbsp;</a></span>hwloc_bitmap_alloc_full()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> hwloc_bitmap_alloc_full </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Allocate a new full bitmap. </p>
+
+</div>
+</div>
+<a id="ga4a3e12ab9e20cfec66a3dc2db16806be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4a3e12ab9e20cfec66a3dc2db16806be">&#9670;&nbsp;</a></span>hwloc_bitmap_and()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_and </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>res</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap1</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>buffer</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>length</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap2</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -173,30 +353,34 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Encode and export some object userdata to XML. </p>
-<p>This function is similar to <a class="el" href="a00174.html#gaa541bdd628416dbbe97d0df69d3de958" title="Export some object userdata to XML. ">hwloc_export_obj_userdata()</a> but it encodes the input buffer into printable characters before exporting. On import, decoding is automatically performed before the data is given to the import() callback if any.</p>
-<p>This function may only be called from within the export() callback passed to <a class="el" href="a00174.html#ga9d6ff0f7a8dd45be9aa8575ef31978cc" title="Set the application-specific callback for exporting object userdata. ">hwloc_topology_set_userdata_export_callback()</a>.</p>
-<p>The function does not take care of portability issues if the export may be reimported on a different architecture. </p>
+<p>And bitmaps <code>bitmap1</code> and <code>bitmap2</code> and store the result in bitmap <code>res</code>. </p>
+<p><code>res</code> can be the same as <code>bitmap1</code> or <code>bitmap2</code> </p>
 
 </div>
 </div>
-<a id="ga293e4a6489f15fd16ad22a5734561cf1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga293e4a6489f15fd16ad22a5734561cf1">&#9670;&nbsp;</a></span>hwloc_free_xmlbuffer()</h2>
+<a id="ga091e9039ce7b6fe927260cd1b08d25c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga091e9039ce7b6fe927260cd1b08d25c4">&#9670;&nbsp;</a></span>hwloc_bitmap_andnot()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void hwloc_free_xmlbuffer </td>
+          <td class="memname">void hwloc_bitmap_andnot </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>res</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">char *&#160;</td>
-          <td class="paramname"><em>xmlbuffer</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap2</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -206,72 +390,28 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Free a buffer allocated by <a class="el" href="a00174.html#ga7cbf8a2d8579d192911007650366fc8a" title="Export the topology into a newly-allocated XML memory buffer. ">hwloc_topology_export_xmlbuffer()</a> </p>
+<p>And bitmap <code>bitmap1</code> and the negation of <code>bitmap2</code> and store the result in bitmap <code>res</code>. </p>
+<p><code>res</code> can be the same as <code>bitmap1</code> or <code>bitmap2</code> </p>
 
 </div>
 </div>
-<a id="ga2bf166eda4d3605362ac86f77684002a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga2bf166eda4d3605362ac86f77684002a">&#9670;&nbsp;</a></span>hwloc_topology_export_xml()</h2>
+<a id="ga0fece972134fdecf2da9bc7a11dd827e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0fece972134fdecf2da9bc7a11dd827e">&#9670;&nbsp;</a></span>hwloc_bitmap_asprintf()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int hwloc_topology_export_xml </td>
+          <td class="memname">int hwloc_bitmap_asprintf </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>xmlpath</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Export the topology into an XML file. </p>
-<p>This file may be loaded later through <a class="el" href="a00166.html#ga879439b7ee99407ee911b3ac64e9a25e" title="Enable XML-file based topology. ">hwloc_topology_set_xml()</a>.</p>
-<dl class="section return"><dt>Returns</dt><dd>-1 if a failure occured.</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>See also <a class="el" href="a00174.html#ga9d6ff0f7a8dd45be9aa8575ef31978cc" title="Set the application-specific callback for exporting object userdata. ">hwloc_topology_set_userdata_export_callback()</a> for exporting application-specific object userdata.</dd>
-<dd>
-The topology-specific userdata pointer is ignored when exporting to XML.</dd>
-<dd>
-Only printable characters may be exported to XML string attributes. Any other character, especially any non-ASCII character, will be silently dropped.</dd>
-<dd>
-If <code>name</code> is "-", the XML output is sent to the standard output. </dd></dl>
-
-</div>
-</div>
-<a id="ga7cbf8a2d8579d192911007650366fc8a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7cbf8a2d8579d192911007650366fc8a">&#9670;&nbsp;</a></span>hwloc_topology_export_xmlbuffer()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int hwloc_topology_export_xmlbuffer </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">char **&#160;</td>
-          <td class="paramname"><em>xmlbuffer</em>, </td>
+          <td class="paramname"><em>strp</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>buflen</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -281,35 +421,28 @@ If <code>name</code> is "-", the XML output is sent to the standard output. </dd
       </table>
 </div><div class="memdoc">
 
-<p>Export the topology into a newly-allocated XML memory buffer. </p>
-<p><code>xmlbuffer</code> is allocated by the callee and should be freed with <a class="el" href="a00174.html#ga293e4a6489f15fd16ad22a5734561cf1" title="Free a buffer allocated by hwloc_topology_export_xmlbuffer() ">hwloc_free_xmlbuffer()</a> later in the caller.</p>
-<p>This memory buffer may be loaded later through <a class="el" href="a00166.html#ga2745616b65595e1c1e579ecc7e461fa8" title="Enable XML based topology using a memory buffer (instead of a file, as with hwloc_topology_set_xml())...">hwloc_topology_set_xmlbuffer()</a>.</p>
-<dl class="section return"><dt>Returns</dt><dd>-1 if a failure occured.</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>See also <a class="el" href="a00174.html#ga9d6ff0f7a8dd45be9aa8575ef31978cc" title="Set the application-specific callback for exporting object userdata. ">hwloc_topology_set_userdata_export_callback()</a> for exporting application-specific object userdata.</dd>
-<dd>
-The topology-specific userdata pointer is ignored when exporting to XML.</dd>
-<dd>
-Only printable characters may be exported to XML string attributes. Any other character, especially any non-ASCII character, will be silently dropped. </dd></dl>
+<p>Stringify a bitmap into a newly allocated string. </p>
+<dl class="section return"><dt>Returns</dt><dd>-1 on error. </dd></dl>
 
 </div>
 </div>
-<a id="ga9d6ff0f7a8dd45be9aa8575ef31978cc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga9d6ff0f7a8dd45be9aa8575ef31978cc">&#9670;&nbsp;</a></span>hwloc_topology_set_userdata_export_callback()</h2>
+<a id="gabddf36d47882c0a4f1e2b3c76cac877c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gabddf36d47882c0a4f1e2b3c76cac877c">&#9670;&nbsp;</a></span>hwloc_bitmap_clr()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void hwloc_topology_set_userdata_export_callback </td>
+          <td class="memname">void hwloc_bitmap_clr </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">void(*)(void *reserved, <a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj)&#160;</td>
-          <td class="paramname"><em>export_cb</em>&#160;</td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>id</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -319,32 +452,33 @@ Only printable characters may be exported to XML string attributes. Any other ch
       </table>
 </div><div class="memdoc">
 
-<p>Set the application-specific callback for exporting object userdata. </p>
-<p>The object userdata pointer is not exported to XML by default because hwloc does not know what it contains.</p>
-<p>This function lets applications set <code>export_cb</code> to a callback function that converts this opaque userdata into an exportable string.</p>
-<p><code>export_cb</code> is invoked during XML export for each object whose <code>userdata</code> pointer is not <code>NULL</code>. The callback should use <a class="el" href="a00174.html#gaa541bdd628416dbbe97d0df69d3de958" title="Export some object userdata to XML. ">hwloc_export_obj_userdata()</a> or <a class="el" href="a00174.html#ga1b7358137cec27bd073f58a606ecbaba" title="Encode and export some object userdata to XML. ">hwloc_export_obj_userdata_base64()</a> to actually export something to XML (possibly multiple times per object).</p>
-<p><code>export_cb</code> may be set to <code>NULL</code> if userdata should not be exported to XML.</p>
-<dl class="section note"><dt>Note</dt><dd>The topology-specific userdata pointer is ignored when exporting to XML. </dd></dl>
+<p>Remove index <code>id</code> from bitmap <code>bitmap</code>. </p>
 
 </div>
 </div>
-<a id="ga5ac6917ea7289955fb1ffda4353af9b0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5ac6917ea7289955fb1ffda4353af9b0">&#9670;&nbsp;</a></span>hwloc_topology_set_userdata_import_callback()</h2>
+<a id="ga207ae23381d7b37fb97fd1f906c9c5ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga207ae23381d7b37fb97fd1f906c9c5ba">&#9670;&nbsp;</a></span>hwloc_bitmap_clr_range()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void hwloc_topology_set_userdata_import_callback </td>
+          <td class="memname">void hwloc_bitmap_clr_range </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">void(*)(<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj, const char *name, const void *buffer, size_t length)&#160;</td>
-          <td class="paramname"><em>import_cb</em>&#160;</td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>begin</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>end</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -354,16 +488,1088 @@ Only printable characters may be exported to XML string attributes. Any other ch
       </table>
 </div><div class="memdoc">
 
-<p>Set the application-specific callback for importing userdata. </p>
-<p>On XML import, userdata is ignored by default because hwloc does not know how to store it in memory.</p>
-<p>This function lets applications set <code>import_cb</code> to a callback function that will get the XML-stored userdata and store it in the object as expected by the application.</p>
-<p><code>import_cb</code> is called during <a class="el" href="a00165.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology. ">hwloc_topology_load()</a> as many times as <a class="el" href="a00174.html#gaa541bdd628416dbbe97d0df69d3de958" title="Export some object userdata to XML. ">hwloc_export_obj_userdata()</a> was called during export. The topology is not entirely setup yet. Object attributes are ready to consult, but links between objects are not.</p>
-<p><code>import_cb</code> may be <code>NULL</code> if userdata should be ignored during import.</p>
-<dl class="section note"><dt>Note</dt><dd><code>buffer</code> contains <code>length</code> characters followed by a null byte ('\0').</dd>
+<p>Remove indexes from <code>begin</code> to <code>end</code> in bitmap <code>bitmap</code>. </p>
+<p>If <code>end</code> is <code>-1</code>, the range is infinite. </p>
+
+</div>
+</div>
+<a id="ga14cdbc0ef0a705e84999bd48a2e649f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga14cdbc0ef0a705e84999bd48a2e649f3">&#9670;&nbsp;</a></span>hwloc_bitmap_compare()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_compare </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Compare bitmaps <code>bitmap1</code> and <code>bitmap2</code> in lexicographic order. </p>
+<p>Lexicographic comparison of bitmaps, starting for their highest indexes. Compare last indexes first, then second, etc. The empty bitmap is considered lower than anything.</p>
+<dl class="section note"><dt>Note</dt><dd>This is different from the non-existing hwloc_bitmap_compare_last() which would only compare the highest index of each bitmap. </dd></dl>
+
+</div>
+</div>
+<a id="gaa39cda1510ab721b5c012c76ead72365"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa39cda1510ab721b5c012c76ead72365">&#9670;&nbsp;</a></span>hwloc_bitmap_compare_first()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_compare_first </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Compare bitmaps <code>bitmap1</code> and <code>bitmap2</code> using their lowest index. </p>
+<p>Smaller least significant bit is smaller. The empty bitmap is considered higher than anything. </p>
+
+</div>
+</div>
+<a id="ga036068a22d1aa5cb9ff1df348b525ff3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga036068a22d1aa5cb9ff1df348b525ff3">&#9670;&nbsp;</a></span>hwloc_bitmap_copy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_copy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>dst</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>src</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Copy the contents of bitmap <code>src</code> into the already allocated bitmap <code>dst</code>. </p>
+
+</div>
+</div>
+<a id="gae679434c1a5f41d3560a8a7e2c1b0dee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae679434c1a5f41d3560a8a7e2c1b0dee">&#9670;&nbsp;</a></span>hwloc_bitmap_dup()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> hwloc_bitmap_dup </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Duplicate bitmap <code>bitmap</code> by allocating a new bitmap and copying <code>bitmap</code> contents. </p>
+<p>If <code>bitmap</code> is <code>NULL</code>, <code>NULL</code> is returned. </p>
+
+</div>
+</div>
+<a id="ga07b2de8786b3cdb22f21d9dd42588275"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga07b2de8786b3cdb22f21d9dd42588275">&#9670;&nbsp;</a></span>hwloc_bitmap_fill()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_fill </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Fill bitmap <code>bitmap</code> with all possible indexes (even if those objects don't exist or are otherwise unavailable) </p>
+
+</div>
+</div>
+<a id="ga3ec1ced43afadf8c0a7197320bc016ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3ec1ced43afadf8c0a7197320bc016ed">&#9670;&nbsp;</a></span>hwloc_bitmap_first()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_first </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Compute the first index (least significant bit) in bitmap <code>bitmap</code>. </p>
+<dl class="section return"><dt>Returns</dt><dd>-1 if no index is set in <code>bitmap</code>. </dd></dl>
+
+</div>
+</div>
+<a id="ga156130d85b3a0674d6e0e6770fe68fbe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga156130d85b3a0674d6e0e6770fe68fbe">&#9670;&nbsp;</a></span>hwloc_bitmap_free()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_free </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Free bitmap <code>bitmap</code>. </p>
+<p>If <code>bitmap</code> is <code>NULL</code>, no operation is performed. </p>
+
+</div>
+</div>
+<a id="ga6066e095e6f23302f0a1ca7284d0b651"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6066e095e6f23302f0a1ca7284d0b651">&#9670;&nbsp;</a></span>hwloc_bitmap_from_ith_ulong()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_from_ith_ulong </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>i</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Setup bitmap <code>bitmap</code> from unsigned long <code>mask</code> used as <code>i</code> -th subset. </p>
+
+</div>
+</div>
+<a id="gaba53aebd49962acea4e3e0ff160172e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaba53aebd49962acea4e3e0ff160172e3">&#9670;&nbsp;</a></span>hwloc_bitmap_from_ulong()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_from_ulong </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Setup bitmap <code>bitmap</code> from unsigned long <code>mask</code>. </p>
+
+</div>
+</div>
+<a id="gaefa070f9232857ba5a57297ea9a08ea2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaefa070f9232857ba5a57297ea9a08ea2">&#9670;&nbsp;</a></span>hwloc_bitmap_intersects()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_intersects </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Test whether bitmaps <code>bitmap1</code> and <code>bitmap2</code> intersects. </p>
+
+</div>
+</div>
+<a id="ga32376b1405e57472b73c3aa53bb39663"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga32376b1405e57472b73c3aa53bb39663">&#9670;&nbsp;</a></span>hwloc_bitmap_isequal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_isequal </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Test whether bitmap <code>bitmap1</code> is equal to bitmap <code>bitmap2</code>. </p>
+
+</div>
+</div>
+<a id="ga5fdcb8c19c336511c37076d649e74af4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5fdcb8c19c336511c37076d649e74af4">&#9670;&nbsp;</a></span>hwloc_bitmap_isfull()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_isfull </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Test whether bitmap <code>bitmap</code> is completely full. </p>
+<dl class="section note"><dt>Note</dt><dd>A full bitmap is always infinitely set. </dd></dl>
+
+</div>
+</div>
+<a id="ga0526e03db81956fb02acc8260b66d6a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0526e03db81956fb02acc8260b66d6a4">&#9670;&nbsp;</a></span>hwloc_bitmap_isincluded()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_isincluded </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>sub_bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>super_bitmap</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Test whether bitmap <code>sub_bitmap</code> is part of bitmap <code>super_bitmap</code>. </p>
+<dl class="section note"><dt>Note</dt><dd>The empty bitmap is considered included in any other bitmap. </dd></dl>
+
+</div>
+</div>
+<a id="ga11340dd487f110bb84f0a6e4ae90bd06"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga11340dd487f110bb84f0a6e4ae90bd06">&#9670;&nbsp;</a></span>hwloc_bitmap_isset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_isset </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Test whether index <code>id</code> is part of bitmap <code>bitmap</code>. </p>
+
+</div>
+</div>
+<a id="ga5b64be28f5a7176ed8ad0d6a90bdf108"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5b64be28f5a7176ed8ad0d6a90bdf108">&#9670;&nbsp;</a></span>hwloc_bitmap_iszero()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_iszero </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Test whether bitmap <code>bitmap</code> is empty. </p>
+
+</div>
+</div>
+<a id="ga3d9b08b060a59bbab5a4ea6d0a1ed7a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3d9b08b060a59bbab5a4ea6d0a1ed7a6">&#9670;&nbsp;</a></span>hwloc_bitmap_last()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_last </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Compute the last index (most significant bit) in bitmap <code>bitmap</code>. </p>
+<dl class="section return"><dt>Returns</dt><dd>-1 if no index is set in <code>bitmap</code>, or if <code>bitmap</code> is infinitely set. </dd></dl>
+
+</div>
+</div>
+<a id="ga39c0f1b02053de66d205c9f8260b3665"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga39c0f1b02053de66d205c9f8260b3665">&#9670;&nbsp;</a></span>hwloc_bitmap_list_asprintf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_list_asprintf </td>
+          <td>(</td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>strp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Stringify a bitmap into a newly allocated list string. </p>
+<dl class="section return"><dt>Returns</dt><dd>-1 on error. </dd></dl>
+
+</div>
+</div>
+<a id="ga3d06e6447edeb61e56a9ad83f31f0a37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3d06e6447edeb61e56a9ad83f31f0a37">&#9670;&nbsp;</a></span>hwloc_bitmap_list_snprintf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_list_snprintf </td>
+          <td>(</td>
+          <td class="paramtype">char *restrict&#160;</td>
+          <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>buflen</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Stringify a bitmap in the list format. </p>
+<p>Lists are comma-separated indexes or ranges. Ranges are dash separated indexes. The last range may not have an ending indexes if the bitmap is infinitely set.</p>
+<p>Up to <code>buflen</code> characters may be written in buffer <code>buf</code>.</p>
+<p>If <code>buflen</code> is 0, <code>buf</code> may safely be <code>NULL</code>.</p>
+<dl class="section return"><dt>Returns</dt><dd>the number of character that were actually written if not truncating, or that would have been written (not including the ending \0). </dd></dl>
+
+</div>
+</div>
+<a id="gaf9314311d482c621e17c6a53a9fe993e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf9314311d482c621e17c6a53a9fe993e">&#9670;&nbsp;</a></span>hwloc_bitmap_list_sscanf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_list_sscanf </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *restrict&#160;</td>
+          <td class="paramname"><em>string</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Parse a list string and stores it in bitmap <code>bitmap</code>. </p>
+
+</div>
+</div>
+<a id="gaab7240b4b644693b775dad17b44ffd68"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaab7240b4b644693b775dad17b44ffd68">&#9670;&nbsp;</a></span>hwloc_bitmap_next()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_next </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>prev</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Compute the next index in bitmap <code>bitmap</code> which is after index <code>prev</code>. </p>
+<p>If <code>prev</code> is -1, the first index is returned.</p>
+<dl class="section return"><dt>Returns</dt><dd>-1 if no index with higher index is set in <code>bitmap</code>. </dd></dl>
+
+</div>
+</div>
+<a id="ga8cd2c26d71510138b22a12db41419742"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8cd2c26d71510138b22a12db41419742">&#9670;&nbsp;</a></span>hwloc_bitmap_not()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_not </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>res</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Negate bitmap <code>bitmap</code> and store the result in bitmap <code>res</code>. </p>
+<p><code>res</code> can be the same as <code>bitmap</code> </p>
+
+</div>
+</div>
+<a id="ga037032ba6aaf49c2e6836e2dbb7855c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga037032ba6aaf49c2e6836e2dbb7855c4">&#9670;&nbsp;</a></span>hwloc_bitmap_only()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_only </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Empty the bitmap <code>bitmap</code> and add bit <code>id</code>. </p>
+
+</div>
+</div>
+<a id="ga1281994d6cc3b5079224190ca820ad93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1281994d6cc3b5079224190ca820ad93">&#9670;&nbsp;</a></span>hwloc_bitmap_or()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_or </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>res</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Or bitmaps <code>bitmap1</code> and <code>bitmap2</code> and store the result in bitmap <code>res</code>. </p>
+<p><code>res</code> can be the same as <code>bitmap1</code> or <code>bitmap2</code> </p>
+
+</div>
+</div>
+<a id="ga55480e96ab47941bfebb9aed676526a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga55480e96ab47941bfebb9aed676526a2">&#9670;&nbsp;</a></span>hwloc_bitmap_set()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_set </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Add index <code>id</code> in bitmap <code>bitmap</code>. </p>
+
+</div>
+</div>
+<a id="gab16b6f6383b51f9c314abe15478ff6ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab16b6f6383b51f9c314abe15478ff6ff">&#9670;&nbsp;</a></span>hwloc_bitmap_set_ith_ulong()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_set_ith_ulong </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>i</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Replace <code>i</code> -th subset of bitmap <code>bitmap</code> with unsigned long <code>mask</code>. </p>
+
+</div>
+</div>
+<a id="ga7a1d8530b282397f56b0d82b17e6d13d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7a1d8530b282397f56b0d82b17e6d13d">&#9670;&nbsp;</a></span>hwloc_bitmap_set_range()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_set_range </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>begin</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>end</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Add indexes from <code>begin</code> to <code>end</code> in bitmap <code>bitmap</code>. </p>
+<p>If <code>end</code> is <code>-1</code>, the range is infinite. </p>
+
+</div>
+</div>
+<a id="ga36d802130aa5d96bc1b5a90d2f0f3765"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga36d802130aa5d96bc1b5a90d2f0f3765">&#9670;&nbsp;</a></span>hwloc_bitmap_singlify()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_singlify </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Keep a single index among those set in bitmap <code>bitmap</code>. </p>
+<p>May be useful before binding so that the process does not have a chance of migrating between multiple logical CPUs in the original mask. </p>
+
+</div>
+</div>
+<a id="ga9511644657030a021dce9941e3cda583"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9511644657030a021dce9941e3cda583">&#9670;&nbsp;</a></span>hwloc_bitmap_snprintf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_snprintf </td>
+          <td>(</td>
+          <td class="paramtype">char *restrict&#160;</td>
+          <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>buflen</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Stringify a bitmap. </p>
+<p>Up to <code>buflen</code> characters may be written in buffer <code>buf</code>.</p>
+<p>If <code>buflen</code> is 0, <code>buf</code> may safely be <code>NULL</code>.</p>
+<dl class="section return"><dt>Returns</dt><dd>the number of character that were actually written if not truncating, or that would have been written (not including the ending \0). </dd></dl>
+
+</div>
+</div>
+<a id="ga064a85c643a364b60acbfa0f3663fc18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga064a85c643a364b60acbfa0f3663fc18">&#9670;&nbsp;</a></span>hwloc_bitmap_sscanf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_sscanf </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *restrict&#160;</td>
+          <td class="paramname"><em>string</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Parse a bitmap string and stores it in bitmap <code>bitmap</code>. </p>
+
+</div>
+</div>
+<a id="ga391312513f17c985d871f18367c59512"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga391312513f17c985d871f18367c59512">&#9670;&nbsp;</a></span>hwloc_bitmap_taskset_asprintf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_taskset_asprintf </td>
+          <td>(</td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>strp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Stringify a bitmap into a newly allocated taskset-specific string. </p>
+<dl class="section return"><dt>Returns</dt><dd>-1 on error. </dd></dl>
+
+</div>
+</div>
+<a id="ga5beb68a987fe48e5c5edef06ab260e14"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5beb68a987fe48e5c5edef06ab260e14">&#9670;&nbsp;</a></span>hwloc_bitmap_taskset_snprintf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_taskset_snprintf </td>
+          <td>(</td>
+          <td class="paramtype">char *restrict&#160;</td>
+          <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>buflen</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Stringify a bitmap in the taskset-specific format. </p>
+<p>The taskset command manipulates bitmap strings that contain a single (possible very long) hexadecimal number starting with 0x.</p>
+<p>Up to <code>buflen</code> characters may be written in buffer <code>buf</code>.</p>
+<p>If <code>buflen</code> is 0, <code>buf</code> may safely be <code>NULL</code>.</p>
+<dl class="section return"><dt>Returns</dt><dd>the number of character that were actually written if not truncating, or that would have been written (not including the ending \0). </dd></dl>
+
+</div>
+</div>
+<a id="ga4f23db5041240e03e348752f8bd6ec2d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4f23db5041240e03e348752f8bd6ec2d">&#9670;&nbsp;</a></span>hwloc_bitmap_taskset_sscanf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_taskset_sscanf </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *restrict&#160;</td>
+          <td class="paramname"><em>string</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Parse a taskset-specific bitmap string and stores it in bitmap <code>bitmap</code>. </p>
+
+</div>
+</div>
+<a id="gac92e6404f648d6b99d2c626b05b2ffa4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac92e6404f648d6b99d2c626b05b2ffa4">&#9670;&nbsp;</a></span>hwloc_bitmap_to_ith_ulong()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned long hwloc_bitmap_to_ith_ulong </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>i</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Convert the <code>i</code> -th subset of bitmap <code>bitmap</code> into unsigned long mask. </p>
+
+</div>
+</div>
+<a id="gab6a6bae22a33ec6adfc169a953c13e6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab6a6bae22a33ec6adfc169a953c13e6c">&#9670;&nbsp;</a></span>hwloc_bitmap_to_ulong()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned long hwloc_bitmap_to_ulong </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Convert the beginning part of bitmap <code>bitmap</code> into unsigned long <code>mask</code>. </p>
+
+</div>
+</div>
+<a id="ga0200466842c0e1f5da75e84dde460b10"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0200466842c0e1f5da75e84dde460b10">&#9670;&nbsp;</a></span>hwloc_bitmap_weight()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_bitmap_weight </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Compute the "weight" of bitmap <code>bitmap</code> (i.e., number of indexes that are in the bitmap). </p>
+<dl class="section return"><dt>Returns</dt><dd>the number of indexes that are in the bitmap.</dd>
 <dd>
-This function should be called before <a class="el" href="a00165.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology. ">hwloc_topology_load()</a>.</dd>
-<dd>
-The topology-specific userdata pointer is ignored when importing from XML. </dd></dl>
+-1 if <code>bitmap</code> is infinitely set. </dd></dl>
+
+</div>
+</div>
+<a id="gaf462ead487d1891e37f4443a397d3c42"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf462ead487d1891e37f4443a397d3c42">&#9670;&nbsp;</a></span>hwloc_bitmap_xor()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_xor </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>res</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00174.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Xor bitmaps <code>bitmap1</code> and <code>bitmap2</code> and store the result in bitmap <code>res</code>. </p>
+<p><code>res</code> can be the same as <code>bitmap1</code> or <code>bitmap2</code> </p>
+
+</div>
+</div>
+<a id="gaa97c5217613c8cae9862287170ea2132"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa97c5217613c8cae9862287170ea2132">&#9670;&nbsp;</a></span>hwloc_bitmap_zero()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void hwloc_bitmap_zero </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td>
+          <td class="paramname"><em>bitmap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Empty the bitmap <code>bitmap</code>. </p>
 
 </div>
 </div>

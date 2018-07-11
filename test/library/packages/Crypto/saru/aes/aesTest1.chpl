@@ -2,22 +2,22 @@ proc main(){
   use Crypto;
 
   /* Create AES instance with the version required */
-  var a = new AES(256, "cbc");
+  var a = new unmanaged AES(256, CryptoChainMode.cbc);
 
   /* Key Generation phase starts */
-  var salt = new CryptoBuffer("random_salt");
-  var hash = new Hash("SHA256");
-  var k = new KDF(a.getByteSize(), 1000, hash);
+  var salt = new unmanaged CryptoBuffer("random_salt");
+  var hash = new unmanaged Hash(Digest.SHA256);
+  var k = new unmanaged KDF(a.getByteSize(), 1000, hash);
   var key = k.passKDF("random_key", salt);
   writeln("Generated Key: ", key.toHex());
   /* Key Generation phase ends */
 
   /* IV is manipulated to return the same encryption on every run (for testing purposes) */
-  var iv = new CryptoBuffer("random_iv_asdfiljhkalsmvncbhdhfu");
+  var iv = new unmanaged CryptoBuffer("random_iv_asdfiljhkalsmvncbhdhfu");
   writeln("Generated IV: ", iv.toHex());
 
   /* The message to be encrypted */
-  var msg = new CryptoBuffer("foo_bar");
+  var msg = new unmanaged CryptoBuffer("foo_bar");
   writeln("Original Message: ", msg.toHex());
 
   /* Encrypt the message using the key and IV */

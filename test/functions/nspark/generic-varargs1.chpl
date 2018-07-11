@@ -5,7 +5,7 @@ class Foo {
   proc init(type eltType, args...) {
     this.eltType = eltType;
     this.args = args;
-    this.initDone();
+    this.complete();
 
     writeln(eltType:string);
     writeln(val);
@@ -13,11 +13,10 @@ class Foo {
 }
 
 {
-  var foo = new Foo(6*int, 4, 8, 15, 16, 23, 42);
-  delete foo;
+  var foo = new owned Foo(6*int, 4, 8, 15, 16, 23, 42);
 }
 
 {
-  var foo = new Foo((int, real), 42, 13.0);
+  var foo = new unmanaged Foo((int, real), 42, 13.0);
   delete foo;
 }

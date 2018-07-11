@@ -2,12 +2,12 @@
 .. _readme-mason:
 
 =====
-mason
+Mason
 =====
 
 Mason is Chapel's package manager
 
-
+.. contents::
 
 
 Installation Instructions
@@ -19,11 +19,9 @@ In ``$CHPL_HOME`` run the following:
    
    make mason
 
-
 It builds the mason binary so that the command line interface can be used.
 This installs mason in the same place as the chapel compiler (``chpl``) so that
 mason can be used anywhere in the user's file system.
-
 
 To remove mason, change directory to ``$CHPL_HOME/tools/mason`` and run:
 
@@ -31,23 +29,19 @@ To remove mason, change directory to ``$CHPL_HOME/tools/mason`` and run:
 
    make clean
 
-      
-To remove mason change directory to ``$CHPL_HOME/tools/mason`` and run:
-
-.. code-block:: sh
-
-   make clobber
-
 
 Environment Variables
 =====================
 
 Mason can be configured by setting the following environment variables:
 
-- ``MASON_HOME`` : Path to a directory where mason will store registry and package data.
-  Defaults to ``$HOME/.mason``.
-- ``MASON_REGISTRY`` : A valid git URL pointing to a repository of package information.
-  Defaults to ``https://github.com/chapel-lang/mason-registry``
+- ``MASON_HOME`` : Path to a directory where mason will store cached registry
+  and package data. Defaults to ``$HOME/.mason``.
+- ``MASON_REGISTRY`` : A comma separated list of ``name|location`` pairs, where
+  ``name`` is a local name for the registry at ``location``. Defaults to
+  ``mason-registry|https://github.com/chapel-lang/mason-registry``. If the
+  ``name|`` part of a pair is omitted it is inferred to be the word following
+  the final slash in ``location`` with any ".git" suffix removed.
 
 The ``mason env`` command will print the inferred or set values of these
 environment variables. If a variable was set by the user, an asterisk will be
@@ -57,17 +51,18 @@ printed at the end of the line. For example, if ``$MASON_HOME`` was set:
 
    > mason env
    MASON_HOME: /path/to/something *
-   MASON_REGISTRY: https://github.com/chapel-lang/mason-registry
+   MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
 
 .. warning::
 
-   If MASON_REGISTRY changes after invoking a mason commands that updates the
+   If MASON_REGISTRY changes after invoking a mason command that updates the
    local copy of the registry (e.g. ``mason update``), the local copies of the
    registry and dependency sources will be removed.
 
+
 Setting up Your Project
 =======================
-	
+
 ``mason new [ project name ] [ options ]`` is the command that initializes
 a new project. It also creates a git repository unless ``--no-vcs`` is included.
 
@@ -76,14 +71,14 @@ following hierarchy::
 
 	MyPackage/
   	  Mason.toml
+  	  test/
   	  src/
     	    MyPackage.chpl
 
+
 Mason will ensure that the main file be named after the package to enforce namespacing.
 While it is common practice for package names to be PascalCase and chpl files to be lowercase,
-it is an acceptable tradeoff for reliability. ``MyPackage`` will be the first file listed in ``src/``.
-
-
+it is an acceptable tradeoff for reliability. ``MyPackage.chpl`` will be the first file listed in ``src/``.
 
 
 Building and Running Your Project
@@ -98,24 +93,24 @@ When invoked, ``mason build [ options ]`` will do the following:
 
 ``mason run [ options ]`` will, in turn:
 
-    - Invoke build.
-    - Run the resulting executable out of ``target/``, if it exists.
+    - Run the executable built above out of ``target/``, if it exists.
     - All options not recognized by ``mason`` will be forwarded to the executable.
-        
-For example, after ``mason run [ options ]``, the project directory appears as so::
+
+For example, after ``mason build && mason run [ options ]``, the project directory appears as so::
 
 
     MyPackage/
       Mason.toml
       Mason.lock
       src/
-	MyPackage.chpl
+        MyPackage.chpl
+      test/
       target/
-	debug/
-       (release/)
-	  MyPackage
+        debug/
+        (release/)
+           MyPackage
 
-	
+
 For projects that span multiple files, the main module is designated by the module that 
 shares the name with the package directory and the name field in the ``Mason.toml``.
 
@@ -129,13 +124,15 @@ MyPackage's structure is as follows::
       Mason.toml
       Mason.lock
       src/
-	MyPackage.chpl
-	MySubPackage.chpl
-        util/
-	  MyPackageUtils.chpl
+        MyPackage.chpl
+        MySubPackage.chpl
+      util/
+        MyPackageUtils.chpl
+      test/
       target/
-	debug/
-	  MyPackage
+        debug/
+          MyPackage
+
 
 
 If MyPackage needs multiple files in different directories like the example above,
@@ -160,6 +157,60 @@ To try out different values at runtime, pass the values for ``number`` to ``maso
    ``mason build`` or ``mason run``, respectively, the flag can be thrown after ``--`` 
    to override this conflict. For example, ``mason run -- -nl 4``. Instead of mason recognizing
    this argument, this command will run the executable over 4 locales.
+
+
+Testing your Project
+====================
+
+Testing a Mason project is easy! Start by adding test files to the ``test/`` directory and specifying
+them in your Mason.toml as follows:
+
+.. code-block:: text
+
+    [brick]
+    name = "MyPackage"
+    version = "0.1.0"
+    chplVersion = "1.16.0"
+    authors = ["Sam Partee <Sam@Partee.com>"]
+    tests = ["sampleTest.chpl"]
+
+    [dependencies]
+    curl = '1.0.0'
+
+
+When the ``mason test [options]`` command is invoked, mason will find and download the necessary dependencies
+for your project that you listed in your Mason.toml and compile them with your main module found in
+``src/``. For example, after listing ``sampleTest.chpl`` as a test, the project structure would be
+as follows::
+
+    MyPackage/
+      Mason.toml
+      Mason.lock
+      src/
+        MyPackage.chpl
+      test/
+        sampleTest.chpl
+      target/
+        debug/
+        (release/)
+           MyPackage
+
+To test the project, run ``mason test [options]``, which will update the lock file, compile the tests,
+and produce the binary within ``target/test/`` as follows::
+
+    MyPackage/
+      Mason.toml
+      Mason.lock
+      src/
+        MyPackage.chpl
+      test/
+        sampleTest.chpl
+      target/
+        test/
+          sampleTest
+        debug/
+        (release/)
+          MyPackage
 
 
 
@@ -197,7 +248,6 @@ later. For example, if you are using the 1.16 release, chplVersion will be
 ``1.16.0``.
 
 
-
 TOML
 ====
 
@@ -207,37 +257,36 @@ necessary information to build a chapel program using mason.
 `TOML Spec <https://github.com/toml-lang/toml>`_.
 
 
-
-
 Mason-Registry
 ==============
 
-The initial mason registry is a GitHub repository containing a list of versioned manifest files.
+The default mason registry is a GitHub repository containing a list of versioned manifest files.
 
 `Mason-Registry <https://github.com/chapel-lang/mason-registry>`_.
 
-The registry will be downloaded to ``$MASON_HOME/registry`` by ``mason update``
-if a registry at that location does not already exist.
+A registry will be downloaded to ``$MASON_HOME/<name>`` by ``mason update``
+for each registry named in ``$MASON_REGISTRY`` if a registry at that location
+does not already exist.
 
-The registry consists of the following hierarchy:
-
+The registry consists of a hierarchy like the following:
 
 .. code-block:: text
 
- registry/
-   Curl/
-      1.0.0.toml
-      2.0.0.toml
-   RecordParser/
-      1.0.0.toml
-      1.1.0.toml
-      1.2.0.toml
-   VisualDebug/
-      2.2.0.toml
-      2.2.1.toml
+ mason-registry/
+    Bricks/
+       Curl/
+          1.0.0.toml
+          2.0.0.toml
+       RecordParser/
+          1.0.0.toml
+          1.1.0.toml
+          1.2.0.toml
+       VisualDebug/
+          2.2.0.toml
+          2.2.1.toml
 
 Each versioned manifest file is identical to the manifest file in the top-level directory
-of the package repository, with one exception, a URL pointing to the repository and revision
+of the package repository, with one exception, a file path or URL pointing to the repository and revision
 in which the version is located.
 
 Continuing the example from before, the 'registry' ``0.1.0.toml`` would include the additional source field:
@@ -263,8 +312,6 @@ If no query is provided, all packages in the registry will be listed.
     Packages will be listed regardless of their chplVersion compatibility.
 
 
-
-
 Submit a Package
 ================
 
@@ -287,6 +334,75 @@ Once your package is uploaded, maintain the integrity of your package, and pleas
 chapel team if your package should be taken down. 
 
 
+Local Registries
+================
+
+It is sometimes desirable to use a local registry, for example with libraries
+you don't intend to distribute. The following steps create a local registry
+starting with Bricks for ``ProjectA`` and ``ProjectB`` which were created with
+``mason new ProjectA`` and ``mason new ProjectB``, and are located at
+``/path/to/my/projects/Project[AB]``. It is expected that mason will be
+extended to simplify and handle more of this process.
+
+First create, commit, and tag the projects that will be in the registry:
+
+.. code-block:: sh
+
+   # Create ProjectA
+   cd /path/to/my/projects
+   mason new ProjectA
+   cd ProjectA
+   git add Mason.toml src/ProjectA.chpl
+   git commit
+   git tag -a v0.1.0 -m "Tag version 0.1.0"
+
+   # Create ProjectB
+   cd ..
+   mason new ProjectB
+   cd ProjectB
+   git add Mason.toml src/ProjectB.chpl
+   git commit
+   git tag -a v0.1.0 -m "Tag version 0.1.0"
+
+Next, create a local registry:
+
+.. code-block:: sh
+
+   # Create the local registry
+   mkdir /path/to/local/registry
+   cd /path/to/local/registry
+   mkdir -p Bricks/ProjectA Bricks/ProjectB
+
+   # Add bricks for ProjectA and ProjectB
+   cp /path/to/my/projects/ProjectA/Mason.toml Bricks/ProjectA/0.1.0.toml
+   cp /path/to/my/projects/ProjectB/Mason.toml Bricks/ProjectB/0.1.0.toml
+
+   # Edit Bricks/ProjectA/0.1.0.toml to add:
+   source = "/path/to/my/projects/ProjectA"
+
+   # Edit Bricks/ProjectB/0.1.0.toml to add:
+   source = "/path/to/my/projects/ProjectB"
+
+   # Initialize and check everything in to the git repository
+   git init
+   git add Bricks/ProjectA/0.1.0.toml Bricks/ProjectB/0.1.0.toml
+   git commit
+
+Now ``MASON_REGISTRY`` can be set to point at both the local registry and the
+default registry.
+
+.. code-block:: sh
+
+   export MASON_REGISTRY="local-registry|/path/to/local/registry,mason-registry|https://github.com/chapel-lang/mason-registry"
+
+The ``MyPackage`` package is now free to include ``ProjectA`` and ``ProjectB``
+as dependencies by adding the following lines to the ``[dependencies]`` section
+of its .toml file.
+
+.. code-block:: text
+
+   ProjectA = "0.1.0"
+   ProjectB = "0.1.0"
 
 
 Namespacing
@@ -295,8 +411,6 @@ Namespacing
 All packages will exist in a single common namespace with a first-come, first-served policy.
 It is easier to go to separate namespaces than to roll them back, so this position affords
 flexibility.
-
-
 
 
 Semantic Versioning
@@ -323,8 +437,6 @@ The format for all versions will be a.b.c.
   (ex. 1.13.1 -> 1.13.2)
 
 
-
-
 Incompatible Version Resolution Strategy
 ========================================
 
@@ -336,9 +448,6 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
        (ex. 1.4.3, 1.7.0 --> 1.7)
     3. If multiple major versions are present, mason will print an error.
        (ex. 1.13.0, 2.1.0 --> incompatible)
-
-
-
 
 
 The Lock File
@@ -356,7 +465,7 @@ a lock file is written below as if generated from the earlier example of a ``Mas
 
      [curl]
      name = 'curl'
-     version = '0.1.0'
+     version = '1.0.0'
      chplVersion = "1.16.0..1.16.0"
      source = 'https://github.com/username/curl'
 
@@ -368,9 +477,6 @@ a lock file is written below as if generated from the earlier example of a ``Mas
      authors = ["Sam Partee <Sam@Partee.com>"]
      source = "https://github.com/Spartee/MyPackage"
      dependencies = ['curl 1.0.0 https://github.com/username/curl']
-
-
-
 
 
 Dependency Code

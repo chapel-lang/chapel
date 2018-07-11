@@ -8,7 +8,6 @@ class Foo {
       }
       writeln("In a cobegin, whee!");
     }
-    super.init();
   }
 }
 

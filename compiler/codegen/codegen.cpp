@@ -953,33 +953,75 @@ static const int maxUniquifyAddedChars = 25;
 static const int maxCNameAddedChars = 20;
 static char* longCNameReplacementBuffer = NULL;
 static Map<const char*, int> uniquifyNameCounts;
-static const char* uniquifyName(const char* name,
-                                std::set<const char*>* set1,
-                                std::set<const char*>* set2 = NULL) {
-  const char* newName = name;
-  if (fMaxCIdentLen > 0 &&
-      (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
-  {
-    // how much of the name to preserve
-    int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
-    if (!longCNameReplacementBuffer) {
-      longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
-      longCNameReplacementBuffer[prefixLen] = '\0';
+
+// Return the next uniquifying number for 'name'.
+// Cache the lookup result in 'elem' - speed up "call_tmp" etc.
+static int uniquifyNameNextCount(MapElem<const char*, int>*& elem,
+                                 const char* name) {
+  if (!elem) {
+    elem = uniquifyNameCounts.get_record(name);
+    if (!elem) {  // The first time we see 'name'.
+      uniquifyNameCounts.put(name, 2);
+      return 2;
     }
-    strncpy(longCNameReplacementBuffer, newName, prefixLen);
-    INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
-    longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
-    name = newName = astr(longCNameReplacementBuffer);
   }
-  while ((set1->find(newName)!=set1->end()) || (set2 && (set2->find(newName)!=set2->end()))) {
-    char numberTmp[64];
-    int count = uniquifyNameCounts.get(name);
-    uniquifyNameCounts.put(name, count+1);
-    snprintf(numberTmp, 64, "%d", count+2);
-    newName = astr(name, numberTmp);
+  return ++elem->value;
+}
+
+static void uniquifyName(Symbol* sym,
+                         std::set<const char*>* set1,
+                         std::set<const char*>* set2 = NULL)
+{
+  const char* name = sym->cname;
+  const char* newName = name;
+
+  if (sym->isRenameable())
+  {
+    if (fMaxCIdentLen > 0 &&
+        (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
+    {
+      // how much of the name to preserve
+      int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
+      if (!longCNameReplacementBuffer) {
+        longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
+        longCNameReplacementBuffer[prefixLen] = '\0';
+      }
+      strncpy(longCNameReplacementBuffer, newName, prefixLen);
+      INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
+      longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
+      name = newName = astr(longCNameReplacementBuffer);
+    }
+
+    MapElem<const char*, int>* elem = NULL;
+    while ((set1->find(newName)!=set1->end()) || (set2 && (set2->find(newName)!=set2->end()))) {
+      char numberTmp[64];
+      snprintf(numberTmp, 64, "%d", uniquifyNameNextCount(elem, name));
+      newName = astr(name, numberTmp);
+    }
+
+    sym->cname = newName;
   }
+  else
+  {
+    // If we have already seen this name before, we need to go back
+    // to that earlier-seen symbol, either renaming it or checking
+    // that its type is the same. See also #9299.
+    //
+    // This is currently not implemented. For now, at least detect it
+    // to avoid generating erroneous C code silently.
+    //
+    // Do this only for things local to a function.
+    // We use multiple Symbols for the same extern at the global scope,
+    // be it a (possibly generic) function, type, variable.
+    // Ex.: c_pointer_return, qbuffer_ptr_t, QBUFFER_PTR_NULL.
+    //
+    if (set2 && (set1->find(name) != set1->end()) )
+      INT_FATAL(sym, "name conflict with a non-renameable symbol");
+  }
+
+  // Record the name even if the symbol is not renameable.
+  // This enables detection of like-named symbols encountered later.
   set1->insert(newName);
-  return newName;
 }
 
 static inline bool shouldCodegenAggregate(AggregateType* ct)
@@ -1035,6 +1077,47 @@ static void codegen_aggregate_def(AggregateType* ct) {
   ct->symbol->codegenDef();
 }
 
+//
+// Generates a .h file to complement the library file created using --library
+// This .h file will contain necessary #includes, any explicitly exported
+// functions, and the module initialization function declarations.
+//
+static void codegen_library_header(std::vector<FnSymbol*> functions) {
+  if (fLibraryCompile) {
+    fileinfo libhdrfile = { NULL, NULL, NULL };
+
+    // Name the generated header file after the executable (and assume any
+    // modifications to it have already happened)
+    openCFile(&libhdrfile, libmodeHeadername, "h");
+    // SIMPLIFYING ASSUMPTION: not handling LLVM just yet.  If were to, would
+    // probably put assignment to gChplCompilationConfig here
+
+    // follow convention of just not writing to the file if we can't open it
+    if (libhdrfile.fptr != NULL) {
+      FILE* save_cfile = gGenInfo->cfile;
+
+      gGenInfo->cfile = libhdrfile.fptr;
+
+      //genComment("Generated header file for use with %s",
+      //           executableFilename);
+
+      fprintf(libhdrfile.fptr, "#include \"stdchpl.h\"\n");
+
+      // Maybe need something here to support LLVM extern blocks?
+
+      // Print out the module initialization function headers and the exported
+      // functions
+      for_vector(FnSymbol, fn, functions) {
+        if (fn->hasFlag(FLAG_EXPORT)) {
+          fn->codegenPrototype();
+        }
+      }
+
+      gGenInfo->cfile = save_cfile;
+    }
+    closeCFile(&libhdrfile);
+  }
+}
 
 //
 // Produce compilation-time configuration info into a .c file and
@@ -1438,8 +1521,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   // mangle type names if they clash with other types
   //
   forv_Vec(TypeSymbol, ts, types) {
-    if (ts->isRenameable())
-      ts->cname = uniquifyName(ts->cname, &cnames);
+    uniquifyName(ts, &cnames);
   }
   uniquifyNameCounts.clear();
 
@@ -1453,7 +1535,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
         Symbol* sym = constant->sym;
         legalizeName(sym);
         sym->cname = astr(enumType->symbol->cname, "_", sym->cname);
-        sym->cname = uniquifyName(sym->cname, &cnames);
+        uniquifyName(sym, &cnames);
       }
     }
   }
@@ -1469,7 +1551,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
         std::set<const char*> fieldNameSet;
         for_fields(field, ct) {
           legalizeName(field);
-          field->cname = uniquifyName(field->cname, &fieldNameSet);
+          uniquifyName(field, &fieldNameSet);
         }
         uniquifyNameCounts.clear();
       }
@@ -1481,8 +1563,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   // constants, or other global variables
   //
   forv_Vec(VarSymbol, var, globals) {
-    if (var->isRenameable())
-      var->cname = uniquifyName(var->cname, &cnames);
+    uniquifyName(var, &cnames);
   }
   uniquifyNameCounts.clear();
 
@@ -1491,8 +1572,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   // global variables, or other functions
   //
   for_vector(FnSymbol, fn, functions) {
-    if (fn->isRenameable())
-      fn->cname = uniquifyName(fn->cname, &cnames);
+    uniquifyName(fn, &cnames);
   }
   uniquifyNameCounts.clear();
 
@@ -1505,7 +1585,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
     std::set<const char*> formalNameSet;
     for_formals(formal, fn) {
       legalizeName(formal);
-      formal->cname = uniquifyName(formal->cname, &formalNameSet, &cnames);
+      uniquifyName(formal, &formalNameSet, &cnames);
     }
     uniquifyNameCounts.clear();
   }
@@ -1538,12 +1618,16 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
             def->sym->cname = astr("T");
         }
       }
-      def->sym->cname = uniquifyName(def->sym->cname, &local, &cnames);
+      uniquifyName(def->sym, &local, &cnames);
     }
     uniquifyNameCounts.clear();
   }
 
   codegen_header_compilation_config();
+
+  if (fLibraryCompile) {
+    codegen_library_header(functions);
+  }
 
   FILE* hdrfile = info->cfile;
 
@@ -1650,7 +1734,8 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
       }
     }
     forv_Vec(TypeSymbol, typeSymbol, types) {
-      typeSymbol->codegenMetadata();
+      if (!isUnmanagedClassType(typeSymbol->type))
+        typeSymbol->codegenMetadata();
     }
     // Aggregate annotations for class objects must wait until all other
     // type annotations are defined, because there might be cycles.
@@ -1951,7 +2036,14 @@ static const char* generateFileName(ChainHashMap<char*, StringHashFns, int>& fil
   int version = 1;
   while (filenames.get(filename)) {
     version++;
-    sprintf(filename, "%s%d", lowerFilename, version);
+    int wanted_to_write = snprintf(filename, sizeof(filename), "%s%d",
+                                   lowerFilename, version);
+    if (wanted_to_write < 0) {
+      USR_FATAL("character encoding error while generating file name");
+    } else if ((size_t)wanted_to_write >= sizeof(filename)) {
+      USR_FATAL("module name '%s' is too long to be the basis for a file name",
+                currentModuleName);
+    }
   }
   filenames.put(filename, 1);
 
@@ -2059,20 +2151,10 @@ static const char* getClangBuiltinWrappedName(const char* name)
 }
 #endif
 
-
-void codegen(void) {
-  if (no_codegen)
-    return;
-
-  if( fLLVMWideOpt ) {
-    // --llvm-wide-opt is picky about other settings.
-    // Check them here.
-    if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
-  }
-
-  // Set the executable name to the name of the file containing the
-  // main module (minus its path and extension) if it isn't set
-  // already.
+// Set the executable name to the name of the file containing the
+// main module (minus its path and extension) if it isn't set
+// already.  If in library mode, set the name of the header file as well.
+static void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
     const char* mainModFilename = mainMod->astloc.filename;
@@ -2085,22 +2167,74 @@ void codegen(void) {
       lastSlash++;
     }
 
-    // copy from that slash onwards into the executableFilename,
-    // saving space for a `\0` terminator
-    if (strlen(lastSlash) >= sizeof(executableFilename)) {
-      INT_FATAL("input filename exceeds executable filename buffer size");
-    }
-    strncpy(executableFilename, lastSlash, sizeof(executableFilename)-1);
-    executableFilename[sizeof(executableFilename)-1] = '\0';
+    // "Executable" name should be given a "lib" prefix in library compilation,
+    // and just the main module name in normal compilation.
+    if (fLibraryCompile) {
+      // If the header name isn't set either, don't use the prefix version
+      if (libmodeHeadername[0] == '\0') {
+        // copy from that slash onwards into the libmodeHeadername,
+        // saving space for a `\0` terminator
+        if (strlen(lastSlash) >= sizeof(libmodeHeadername)) {
+          INT_FATAL("input filename exceeds header filename buffer size");
+        }
+        strncpy(libmodeHeadername, lastSlash, sizeof(libmodeHeadername)-1);
+        libmodeHeadername[sizeof(libmodeHeadername)-1] = '\0';
+        // remove the filename extension from the library header name.
+        char* lastDot = strrchr(libmodeHeadername, '.');
+        if (lastDot == NULL) {
+          INT_FATAL(mainMod,
+                    "main module filename is missing its extension: %s\n",
+                    libmodeHeadername);
+        }
+        *lastDot = '\0';
+      }
+      if (strlen(lastSlash) >= sizeof(executableFilename) - 3) {
+        INT_FATAL("input filename exceeds executable filename buffer size");
+      }
+      strcpy(executableFilename, "lib");
+      strncat(executableFilename, lastSlash,
+              sizeof(executableFilename)-strlen(executableFilename)-1);
 
-    // remove the filename extension
+    } else {
+      // copy from that slash onwards into the executableFilename,
+      // saving space for a `\0` terminator
+      if (strlen(lastSlash) >= sizeof(executableFilename)) {
+        INT_FATAL("input filename exceeds executable filename buffer size");
+      }
+      strncpy(executableFilename, lastSlash, sizeof(executableFilename)-1);
+      executableFilename[sizeof(executableFilename)-1] = '\0';
+    }
+
+    // remove the filename extension from the executable filename
     char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {
       INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
                 executableFilename);
     }
     *lastDot = '\0';
+
   }
+
+  // If we're in library mode and the executable name was set but the header
+  // name wasn't, use the executable name for the header name as well
+  if (fLibraryCompile && libmodeHeadername[0] == '\0') {
+    strncpy(libmodeHeadername, executableFilename, sizeof(libmodeHeadername)-1);
+    libmodeHeadername[sizeof(libmodeHeadername)-1] = '\0';
+  }
+}
+
+
+void codegen(void) {
+  if (no_codegen)
+    return;
+
+  if( fLLVMWideOpt ) {
+    // --llvm-wide-opt is picky about other settings.
+    // Check them here.
+    if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
+  }
+
+  setupDefaultFilenames();
 
   if( llvmCodegen ) {
 #ifndef HAVE_LLVM

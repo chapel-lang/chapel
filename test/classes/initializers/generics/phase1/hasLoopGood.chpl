@@ -14,7 +14,6 @@ class InLoop {
       }
     }
     highestNum = highest;
-    super.init();
   }
 }
 

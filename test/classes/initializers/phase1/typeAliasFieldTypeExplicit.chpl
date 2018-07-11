@@ -7,10 +7,8 @@ class Foo {
 
   proc init(xVal: tAlias) {
     x = xVal;
-    super.init();
   }
 }
 
-var foo = new Foo(true);
+var foo = new owned Foo(true);
 writeln(foo);
-delete foo;

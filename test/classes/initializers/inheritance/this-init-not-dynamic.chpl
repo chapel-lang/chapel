@@ -20,7 +20,6 @@ class Base {
 
   proc init(x : int, y : int) {
     writeln('Base.init(x, y)');
-    super.init();
   }
 }
 
@@ -36,11 +35,11 @@ class Derived : Base {
   }
 }
 
-var b = new Base();
+var b = new unmanaged Base();
 
 writeln();
 
-var d = new Derived();
+var d = new unmanaged Derived();
 
 writeln();
 writeln(b);

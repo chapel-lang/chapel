@@ -5,7 +5,7 @@ class LotsOFields {
 }
 
 proc main() {
-  var c: LotsOFields = new LotsOFields(2, 6.3, true);
+  var c: unmanaged LotsOFields = new unmanaged LotsOFields(2, 6.3, true);
 
   writeln(c);
   delete c;

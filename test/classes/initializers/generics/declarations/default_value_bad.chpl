@@ -3,12 +3,9 @@
 // anything assigned into it.
 class Foo {
   var x;
-  var y;
 
   proc init(xVal = 3) {
     x = xVal;
-    y = xVal + 2;
-    super.init();
   }
 }
 

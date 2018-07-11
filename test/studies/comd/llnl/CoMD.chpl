@@ -568,7 +568,7 @@ proc createFccLattice(lat : real) : void {
     on locGrid[ijk] {
       const MyDom = Grid[ijk];
       const force = MyDom.force;
-      const name : string   = force.name;
+      const name : string = force.name;
       const mass : real = force.mass;
       const atomicNumber : int  = force.atomicNumber;
 local {
@@ -847,8 +847,8 @@ tArray[timerEnum.TOTAL].stop();
     writeln("_____________________________________________________________________");
 
     var loopTime : real = tArray(timerEnum.LOOP).duration;
-    for i in 1..timerEnum.ATOMHALO do if(tArray(i).times > 0) then tArray(i).print(loopTime);
-    for i in timerEnum.SORT..timers do if(tArray(i).times > 0) then tArray(i).print(loopTime);
+    for i in timerEnum.TOTAL..timerEnum.ATOMHALO do if(tArray(i).times > 0) then tArray(i).print(loopTime);
+    for i in timerEnum.SORT..timerEnum.COMMREDUCE do if(tArray(i).times > 0) then tArray(i).print(loopTime);
   }
 
   writeln(); 

@@ -44,6 +44,11 @@ module ChapelTuple {
     param size : int;
   }
 
+  pragma "tuple init fn"
+  inline proc chpl__init_tuple(param size : int) {
+    // body inserted during generic instantiation
+  }
+
   //
   // syntactic support for tuples
   //
@@ -72,6 +77,8 @@ module ChapelTuple {
   // tuple value allowing refs (ref actuals)
   pragma "allow ref"
   pragma "build tuple"
+  pragma "suppress lvalue error"
+  // suppressing lvalue errors -- workaround forall exprs yielding owned
   inline proc _build_tuple_always_allow_ref(x...)
     return x;
 
@@ -306,7 +313,8 @@ module ChapelTuple {
   // General tuple cast function
   //
   pragma "tuple cast fn"
-  inline proc _cast(type t, x: _tuple) where t:_tuple {
+  pragma "unsafe"
+  inline proc _cast(type t:_tuple, x: _tuple) {
     // body filled in during resolution
   }
 
@@ -685,7 +693,7 @@ module ChapelTuple {
   }
 
   inline proc +(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                       t: (y(1).type)  {
+                                        isSubtype(t, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x + y(d);
@@ -700,7 +708,7 @@ module ChapelTuple {
   }
 
   inline proc -(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                       t: (y(1).type)  {
+                                        isSubtype(t, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x - y(d);
@@ -715,7 +723,7 @@ module ChapelTuple {
   }
 
   inline proc *(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                       x: (y(1).type)  {
+                                        isSubtype(x, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x * y(d);
@@ -730,7 +738,7 @@ module ChapelTuple {
   }
 
   inline proc /(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                       t: (y(1).type)  {
+                                        isSubtype(t, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x / y(d);
@@ -745,7 +753,7 @@ module ChapelTuple {
   }
 
   inline proc %(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                       t: (y(1).type)  {
+                                        isSubtype(t, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x % y(d);
@@ -760,7 +768,7 @@ module ChapelTuple {
   }
 
   inline proc **(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                       t: (y(1).type)  {
+                                         isSubtype(t, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x ** y(d);
@@ -775,7 +783,7 @@ module ChapelTuple {
   }
 
   inline proc &(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                       t: (y(1).type)  {
+                                        isSubtype(t, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x & y(d);
@@ -790,7 +798,7 @@ module ChapelTuple {
   }
 
   inline proc |(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                       t: (y(1).type)  {
+                                        isSubtype(t, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x | y(d);
@@ -805,7 +813,7 @@ module ChapelTuple {
   }
 
   inline proc ^(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                       t: (y(1).type)  {
+                                        isSubtype(t, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x ^ y(d);
@@ -820,7 +828,7 @@ module ChapelTuple {
   }
 
   inline proc <<(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                       t: (y(1).type)  {
+                                         isSubtype(t, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x << y(d);
@@ -835,13 +843,12 @@ module ChapelTuple {
   }
 
   inline proc >>(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                       t: (y(1).type)  {
+                                         isSubtype(t, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x >> y(d);
     return result;
   }
-
 
 
 }

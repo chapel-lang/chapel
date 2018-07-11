@@ -3,7 +3,6 @@ class A {
 
   proc init(k=5) {
     this.k = k;
-    super.init();
   }
 }
 
@@ -12,7 +11,6 @@ class B {
 
   proc init(a = nil) {
     this.a = a;
-    super.init();
   }
 }
 

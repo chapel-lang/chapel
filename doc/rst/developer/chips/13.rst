@@ -20,7 +20,7 @@ several versions.
 
 Note that Chapel 1.14 and earlier uses array reference counting but that
 is no longer necessary because of changes in the language (see
-https://chapel-lang.org/docs/latest/language/evolution.html#lexical-scoping
+https://chapel-lang.org/docs/language/evolution.html#lexical-scoping
 ).
 
 Function Return Behavior

@@ -22,7 +22,7 @@ proc buildjk() {
           for lat in 1..lattop {
             if (L == myG) then
               cobegin with (ref myG) {
-                buildjk_atom4(new blockIndices(iat, jat, kat, lat));
+                buildjk_atom4(new unmanaged blockIndices(iat, jat, kat, lat));
                 myG = readAndIncrementG();
               }
             L += 1;

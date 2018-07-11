@@ -1,0 +1,9 @@
+enumsLikeParams2.chpl:11: error: unresolved call 'foo(color)'
+enumsLikeParams2.chpl:3: note: candidates are: foo(x: int(64))
+enumsLikeParams2.chpl:7: note:                 foo(param x: int(64))
+enumsLikeParams2.chpl:14: error: unresolved call 'foo(color)'
+enumsLikeParams2.chpl:3: note: candidates are: foo(x: int(64))
+enumsLikeParams2.chpl:7: note:                 foo(param x: int(64))
+enumsLikeParams2.chpl:17: error: unresolved call 'foo(color)'
+enumsLikeParams2.chpl:3: note: candidates are: foo(x: int(64))
+enumsLikeParams2.chpl:7: note:                 foo(param x: int(64))

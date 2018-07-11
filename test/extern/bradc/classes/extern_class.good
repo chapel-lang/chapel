@@ -1,2 +1,3 @@
+extern_class.chpl:1: warning: Extern classes have been deprecated
 (a = 5)
 5

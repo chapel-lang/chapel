@@ -206,7 +206,7 @@ class AbstractJob(object):
         :rtype: bool
         :returns: True when testing KNL
         """
-        return chpl_arch.get('target') == 'mic-knl'
+        return chpl_arch.get('target').arch == 'mic-knl'
 
     def _qsub_command_base(self, output_file):
         """Returns base qsub command, without any resource listing.
@@ -254,6 +254,9 @@ class AbstractJob(object):
             submit_command.append('-l')
             submit_command.append('{0}={1}'.format(
                 self.processing_elems_per_node_resource, 1))
+        more_l = os.environ.get('CHPL_LAUNCHCMD_QSUB_MORE_L')
+        if more_l:
+            submit_command.append('{0}'.format(more_l))
 
 
         logging.debug('qsub command: {0}'.format(submit_command))
@@ -842,6 +845,7 @@ class PbsProJob(AbstractJob):
         if self.hostlist is not None:
             # This relies on the caller to use the correct select syntax.
             select_stmt = select_pattern.format(self.hostlist)
+            select_stmt = select_stmt.replace('<num_locales>', str(num_locales))
         elif num_locales > 0:
             select_stmt = select_pattern.format(num_locales)
 

@@ -163,11 +163,7 @@ BlockStmt::copyInner(SymbolMap* map) {
           // otherwise the EnumType will not have the correct symbol, and the
           // symbol will not be in the tree.
 
-          // Also, NOTE: This does not generate new assignment and enumerate
-          // functions for the enum, as those are already local to the function
-          // being instantiated and so will get copied independently and
-          // updated when we replace the old type reference with the new one.
-          buildFarScopeEnumFunctions(et);
+          buildEnumFunctions(et);
         }
       }
     }
@@ -617,6 +613,18 @@ CallExpr* CondStmt::foldConstantCondition() {
         result = new CallExpr(PRIM_NOOP);
 
         insertBefore(result);
+
+        // A squashed IfExpr's result does not need FLAG_IF_EXPR_RESULT, which
+        // is only used when there are multiple paths that could return a
+        // different type.
+        if (CallExpr* call = toCallExpr(thenStmt->body.tail)) {
+          if (call->isPrimitive(PRIM_MOVE)) {
+            Symbol* LHS = toSymExpr(call->get(1))->symbol();
+            if (LHS->hasFlag(FLAG_IF_EXPR_RESULT)) {
+              LHS->removeFlag(FLAG_IF_EXPR_RESULT);
+            }
+          }
+        }
 
         if (var->immediate->bool_value() == gTrue->immediate->bool_value()) {
           Expr* then_stmt = thenStmt;

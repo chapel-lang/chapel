@@ -1,0 +1,17 @@
+#! /usr/bin/env bash
+#
+# CCE versions greater than 8.6.4 have issues with processor-local atomics,
+# so suppress this case for now.
+#
+eval `$CHPL_HOME/util/printchplenv --make`
+
+if [ "$CHPL_MAKE_TARGET_COMPILER" = cray-prgenv-cray -a "$CHPL_MAKE_COMM" = none ]; then
+
+  cce_version=`module list -t 2>&1 | grep "^cce/" | sed -e "s,^cce/,,"`
+
+  if [ -n "$cce_version" -a "$cce_version" \> "8.6.4" ]; then
+    echo 1
+    exit 0
+  fi
+fi
+echo 0

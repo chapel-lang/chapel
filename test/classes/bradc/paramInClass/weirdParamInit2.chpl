@@ -6,9 +6,9 @@ class D {
   param y: int;
 }
 
-var c = new C(2);
+var c = new unmanaged C(2);
 
-var d = new D(c.x);
+var d = new unmanaged D(c.x);
 
 writeln("c is: {x = ", c.x, "}");
 writeln("d is: {y = ", d.y, "}");

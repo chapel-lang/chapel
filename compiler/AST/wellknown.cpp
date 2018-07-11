@@ -29,10 +29,12 @@ AggregateType* dtBaseArr;
 AggregateType* dtBaseDom;
 AggregateType* dtDist;
 AggregateType* dtError;
+AggregateType* dtExternalArray;
 AggregateType* dtLocale;
 AggregateType* dtLocaleID;
 AggregateType* dtMainArgument;
 AggregateType* dtOnBundleRecord;
+AggregateType* dtOwned;
 AggregateType* dtTaskBundleRecord;
 AggregateType* dtTuple;
 
@@ -102,10 +104,12 @@ static WellKnownType sWellKnownTypes[] = {
   { "BaseArr",               &dtBaseArr,          true  },
   { "BaseDom",               &dtBaseDom,          true  },
   { "BaseDist",              &dtDist,             true  },
+  { "chpl_external_array",   &dtExternalArray,    false },
   { "locale",                &dtLocale,           true  },
   { "chpl_localeID_t",       &dtLocaleID,         false },
   { "chpl_main_argument",    &dtMainArgument,     false },
   { "chpl_comm_on_bundle_t", &dtOnBundleRecord,   false },
+  { "_owned",                &dtOwned,            false },
   { "chpl_task_bundle_t",    &dtTaskBundleRecord, false },
   { "_tuple",                &dtTuple,            false },
   { "Error",                 &dtError,            true  }

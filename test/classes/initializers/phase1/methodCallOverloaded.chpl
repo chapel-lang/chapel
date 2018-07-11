@@ -9,7 +9,6 @@ class Foo {
       xVal = true;
     }
     x = xVal;
-    super.init();
   }
 
   proc overloaded(val: int) {

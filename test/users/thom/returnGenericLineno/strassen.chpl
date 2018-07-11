@@ -11,12 +11,24 @@ module Strassen
 
         proc getInstance() : Strassen  // Error message line# wrong
         {
-            return new Strassen(n);
+            return new Strassen("name", false, n);
         }
+        proc writeThis(w)
+        {
+          w <~> "StrassenFactory " <~> n;
+        }
+
     }
 
     class Strassen : Benchmark
     {
         var n;
+        proc writeThis(w)
+        {
+          w <~> "Strassen " <~> n;
+        }
+        proc runKernel()
+        {
+        }
     }
 }

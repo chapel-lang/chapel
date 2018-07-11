@@ -12,7 +12,6 @@ class InLoop {
     for i in arr.domain {
       highestNum = arr[i];
     }
-    super.init();
   }
 }
 

@@ -7,18 +7,13 @@ class Foo {
 
   proc init(type tVal = bool) {
     t = tVal;
-    super.init();
   }
 }
 
-var foo1 = new Foo(int); // specifies a different value
-var foo2 = new Foo(); // relies on the default value
-var foo3 = new Foo(bool); // specifies the same value as the default
+var foo1 = new borrowed Foo(int); // specifies a different value
+var foo2 = new borrowed Foo(); // relies on the default value
+var foo3 = new borrowed Foo(bool); // specifies the same value as the default
 
 writeln(foo1);
 writeln(foo2);
 writeln(foo3);
-
-delete foo1;
-delete foo2;
-delete foo3;

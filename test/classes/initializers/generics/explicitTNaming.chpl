@@ -3,10 +3,8 @@ class Foo {
 
   proc init(type t) {
     this.t = t;
-    super.init();
   }
 }
 
-var foo = new Foo(t=int);
+var foo = new borrowed Foo(t=int);
 writeln(foo.type: string);
-delete foo;

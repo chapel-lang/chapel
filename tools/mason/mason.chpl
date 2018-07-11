@@ -28,6 +28,8 @@ use MasonNew;
 use MasonBuild;
 use MasonUpdate;
 use MasonSearch;
+use MasonTest;
+use MasonRun;
 use FileSystem;
 
 /*
@@ -75,6 +77,7 @@ proc main(args: [] string) {
     when 'update' do UpdateLock(args);
     when 'run' do masonRun(args);
     when 'search' do masonSearch(args);
+    when 'test' do masonTest(args);
     when 'env' do masonEnv(args);
     when 'doc' do masonDoc(args);
     when 'clean' do masonClean();
@@ -94,76 +97,42 @@ proc main(args: [] string) {
 }
 
 
-
-
-proc masonRun(args) {
-  var toRun = basename(getEnv('PWD'));
-  var show = false;
-  var execopts: [1..0] string;
-  if args.size > 2 {
-    for arg in args[2..] {
-      if arg == '-h' || arg == '--help' {
-        masonRunHelp();
-        exit();
-      }
-      else if arg == '--build' {
-        masonBuild(['mason', 'build']);
-      }
-      else if arg == '--show' {
-        show = true;
-      }
-      else {
-        execopts.push_back(arg);
-      }
-    }
-  }
-  // Find the Binary and execute
-  if isDir('target') {
-    var execs = ' '.join(execopts);
-    var command = "target/debug/" + toRun + ' ' + execs;
-    if isDir('target/release') then
-      command = "target/release/" + toRun + ' ' + execs;
-
-    if show then
-      writeln("Executing binary: " + command);
-
-    if isFile("Mason.lock") then  // If built
-      runCommand(command);
-    else if isFile("Mason.toml") { // If not built
-      masonBuild(args);
-      runCommand(command);
-    }
-    else writeln("call mason run from the top level of your projects directory");
-  }
-  else {
-    writeln("Mason cannot find the compiled program");
-    exit();
-  }
-}
-
-
 proc masonClean() {
-  runCommand('rm -rf target');
+  try! {
+    const cwd = getEnv("PWD");
+
+    const projectHome = getProjectHome(cwd);
+    runCommand('rm -rf ' + projectHome + '/target');
+  }
+  catch e: MasonError {
+    writeln(e.message());
+  }
 }
 
 
 proc masonDoc(args) {
-  var toDoc = basename(getEnv('PWD'));
-  var project = toDoc + '.chpl';
-  if isDir('src/') {
-    if isFile('src/' + project) {
-      var command = 'chpldoc src/' + project;
-      writeln(command);
-      runCommand(command);
+  try! {
+    const cwd = getEnv("PWD");
+    const projectHome = getProjectHome(cwd);
+    const toDoc = basename(projectHome);
+    const project = toDoc + '.chpl';
+    if isDir(projectHome + '/src/') {
+      if isFile(projectHome + '/src/' + project) {
+        const command = 'chpldoc ' + projectHome + '/src/' + project + ' -o ' + projectHome + '/doc/';
+        writeln(command);
+        runCommand(command);
+      }
+    }
+    else {
+      writeln('Mason could not find the project to document!');
+      runCommand('chpldoc');
     }
   }
-  else {
-    writeln('Mason could not find the project to document!');
-    runCommand('chpldoc');
+  catch e: MasonError {
+    writeln(e.message());
   }
 }
 
 proc printVersion() {
   writeln('mason 0.1.0');
 }
-

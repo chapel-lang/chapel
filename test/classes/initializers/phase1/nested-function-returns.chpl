@@ -8,12 +8,10 @@ class Foo {
       return arg+2;
     }
     field = nested(val);
-    super.init();
   }
 }
 
 proc main() {
-  var f = new Foo(13);
+  var f = new owned Foo(13);
   writeln(f);
-  delete f;
 }

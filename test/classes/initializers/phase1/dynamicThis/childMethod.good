@@ -1,0 +1,3 @@
+childMethod.chpl:17: In initializer:
+childMethod.chpl:20: error: cannot call method "childMethod" on type "Child" in phase one
+childMethod.chpl:20: note: "this" in phase one treated as parent type "Parent" for method calls

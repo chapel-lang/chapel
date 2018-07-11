@@ -6,7 +6,7 @@ class bar {
 
 class foo {
   type t;
-  var  x : bar(t) = new bar(t);
+  var  x : unmanaged bar(t) = new unmanaged bar(t);
 
   proc deinit() {
     delete x;
@@ -17,17 +17,14 @@ class foo {
   }
 }
 
-var f1 : foo(t=int)    = new foo(t = int);
+var f1 : foo(t=int)    = new borrowed foo(t = int);
 
 f1.x.y = 12;
 
 f1.print();
 
-var f2 : foo(t=string) = new foo(t = string);
+var f2 : foo(t=string) = new borrowed foo(t = string);
 
 f2.x.y = "hello world";
 
 f2.print();
-
-delete f2;
-delete f1;

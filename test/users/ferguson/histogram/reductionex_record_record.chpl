@@ -13,6 +13,7 @@
       var counts:NBUCKETS*int;
     }
 
+    pragma "use default init"
     class myhisto: ReduceScanOp {
       type eltType;
       const per = (max - min)/NBUCKETS;

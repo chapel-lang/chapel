@@ -42,37 +42,53 @@ private var failedChapelVersion : [1..0] string;
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
 proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
-  if isFile(tf) {
+
+  try! {
+
+    const cwd = getEnv("PWD");
+    const projectHome = getProjectHome(cwd, tf);
+    const tomlPath = projectHome + "/" + tf;
+    const lockPath = projectHome + "/" + lf;
+    
+
     updateRegistry(tf, args);
-    var openFile = openreader(tf);
-    var TomlFile = parseToml(openFile);
-    var lockFile = createDepTree(TomlFile);
+    const openFile = openreader(tomlPath);
+    const TomlFile = parseToml(openFile);
+    const lockFile = createDepTree(TomlFile);
 
     if failedChapelVersion.size > 0 {
       const prefix = if failedChapelVersion.size == 1
-                     then "The following package is"
-                     else "The following packages are";
+        then "The following package is"
+        else "The following packages are";
       stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
       for msg in failedChapelVersion do
         stderr.writeln("  ", msg);
       exit(1);
     }
 
-    genLock(lockFile, lf);
+    // Generate Lock File
+    genLock(lockFile, lockPath);
+
+    // Close Memory
     openFile.close();
     delete TomlFile;
     delete lockFile;
+
   }
-  else writeln("Cannot update: no Mason.toml found");
+  catch e: MasonError {
+    writeln(e.message());
+  }
+  return (tf, lf);
 }
 
 
 /* Writes out the lock file */
-proc genLock(lock: Toml, lf) {
-  var lockFile = open(lf, iomode.cw);
-  var tomlWriter = lockFile.writer();
+proc genLock(lock: Toml, lf: string) {
+  const lockFile = open(lf, iomode.cw);
+  const tomlWriter = lockFile.writer();
   tomlWriter.writeln(lock);
   tomlWriter.close();
+  lockFile.close();
 }
 
 proc checkRegistryChanged() {
@@ -238,12 +254,12 @@ proc chplVersionError(brick:Toml) {
    from the Mason.toml. Starts at the root of the
    project and continues down dep tree recursively
    until each dep is recorded */
-proc createDepTree(root: Toml) {
+proc createDepTree(root: unmanaged Toml) {
   var dp: domain(string);
-  var dps: [dp] Toml;
-  var depTree: Toml = dps;
+  var dps: [dp] unmanaged Toml;
+  var depTree: unmanaged Toml = dps;
   if root.pathExists("brick") {
-    depTree["root"] = new Toml(root["brick"]);
+    depTree["root"] = new unmanaged Toml(root["brick"]);
   }
   else {
     stderr.writeln("Could not find brick; Mason cannot update");
@@ -283,8 +299,8 @@ proc createDepTree(root: Toml) {
   return depTree;
 }
 
-proc createDepTrees(depTree: Toml, deps: [?d] Toml, name: string) : Toml {
-  var depList: [1..0] Toml;
+proc createDepTrees(depTree: unmanaged Toml, deps: [?d] unmanaged Toml, name: string) : unmanaged Toml {
+  var depList: [1..0] unmanaged Toml;
   while deps.domain.size > 0 {
     var dep = deps[deps.domain.first];
 
@@ -300,11 +316,11 @@ proc createDepTrees(depTree: Toml, deps: [?d] Toml, name: string) : Toml {
       chplVersion = verToUse["chplVersion"].s;
     }
 
-    depList.push_back(new Toml(package));
+    depList.push_back(new unmanaged Toml(package));
 
     if depTree.pathExists(package) == false {
       var dt: domain(string);
-      var depTbl: [dt] Toml;
+      var depTbl: [dt] unmanaged Toml;
       depTree[package] = depTbl;
     }
     depTree[package]["name"] = package;
@@ -384,8 +400,8 @@ proc IVRS(A: Toml, B: Toml) {
 
 
 /* Returns the Mason.toml for each dep listed as a Toml */
-proc getManifests(deps: [?dom] (string, Toml)) {
-  var manifests: [1..0] Toml;
+proc getManifests(deps: [?dom] (string, unmanaged Toml)) {
+  var manifests: [1..0] unmanaged Toml;
   for dep in deps {
     var name = dep(1);
     var version: string = dep(2).s;
@@ -414,9 +430,9 @@ proc retrieveDep(name: string, version: string) {
 
 /* Checks if a dependency has deps; if so, the
    dependencies are returned as a (string, Toml) */
-proc getDependencies(tomlTbl: Toml) {
+proc getDependencies(tomlTbl: unmanaged Toml) {
   var depsD: domain(1);
-  var deps: [depsD] (string, Toml);
+  var deps: [depsD] (string, unmanaged Toml);
   for k in tomlTbl.D {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]) {
@@ -429,7 +445,7 @@ proc getDependencies(tomlTbl: Toml) {
 
 /* Iterator to collect fields from a toml
    TODO custom fields returned */
-iter allFields(tomlTbl: Toml) {
+iter allFields(tomlTbl: unmanaged Toml) {
   for (k,v) in zip(tomlTbl.D, tomlTbl.A) {
     if v.tag == fieldToml then
       continue;

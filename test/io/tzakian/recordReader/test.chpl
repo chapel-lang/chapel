@@ -18,7 +18,7 @@ record Bar {
   var Name: string;
 }
 
-var M = new RecordReader(Bar, fr);
+var M = new unmanaged RecordReader(Bar, fr);
 
 writeln("======== test of get() ============");
 var c = M.get();
@@ -51,7 +51,7 @@ var strt = "\\s*beer/name: (.*)\\s*beer/beerId: (.*)\\s*beer/brewerId: (.*)\\s*b
 delete M;
 
 
-var N = new RecordReader(Beer, ffr, strt);
+var N = new unmanaged RecordReader(Beer, ffr, strt);
 
 writeln("========== test of stream() ==============");
 for r in N.stream() do

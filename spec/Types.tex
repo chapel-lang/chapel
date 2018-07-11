@@ -195,7 +195,7 @@ The standard \chpl{Math} module provides some functions on
 complex types. See
 \\ %formatting
 \mbox{$$ $$ $$ $$ $$} %indent
-\url{https://chapel-lang.org/docs/latest/modules/standard/Math.html}
+\url{https://chapel-lang.org/docs/modules/standard/Math.html}
 
 \begin{example}
 Given a complex number \chpl{c} with the value \chpl{3.14+2.72i}, the
@@ -254,18 +254,33 @@ enum-type:
 
 An enumerated type defines a set of named constants that can be
 referred to via a member access on the enumerated type.
-These constants are treated as parameters of integral type.  Each
-enumerated type is a distinct type. If the \sntx{init-part} is
-omitted, the \sntx{enum-constant} has an integral value one higher
-than the previous \sntx{enum-constant} in the enum, with the first
-having the value \chpl{1}.
+Each enumerated type is a distinct type.
+
+\index{enumerated types!abstract}
+\index{enumerated types!concrete}
+\index{enumerated types!semi-concrete}
+If the \sntx{init-part} is omitted for all of the named constants in
+an enumerated type, the enumerated values are \emph{abstract} and do
+not have associated integer values.  Any constant that has an
+\sntx{init-part} will be associated with that integer value.  Such
+constants must be parameter values of integral type.  Any constant
+that does not have an \sntx{init-part}, yet which follows one that
+does, will be associated with an integer value one greater than its
+predecessor.  An enumerated type whose first constant has
+an \sntx{init-part} is called \emph{concrete}, since all constants in
+the enum will have an associated integer value, whether explicit or
+implicit.  An enumerated type that specifies an \sntx{init-part} for
+some constants, but not the first is called \emph{semi-concrete}.
+Numeric conversions are automatically supported for enumerated types
+which are concrete or semi-concrete
+(see~\rsec{Explicit_Enumeration_Conversions}).
 
 \begin{chapelexample}{enum.chpl}
 The code
 \begin{chapel}
 enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
 \end{chapel}
-defines an enumerated type with four constants.  The function
+defines an abstract enumerated type with four constants.  The function
 \begin{chapel}
 proc quote(s: statesman) {
   select s {
@@ -282,7 +297,7 @@ proc quote(s: statesman) {
 }
 \end{chapel}
 \begin{chapelnoprint}
-for s in statesman.Aristotle..statesman.Kissinger do
+for s in statesman do
   quote(s:statesman);
 \end{chapelnoprint}
 \begin{chapeloutput}
@@ -304,7 +319,7 @@ The following method is also available:
 \index{enumerated types!size@\chpl{size}}
 \index{predefined functions!size (enum)@\chpl{size} (enum)}
 \begin{protohead}
-proc $enum$.size: int
+proc $enum$.size: param int
 \end{protohead}
 \begin{protobody}
 The number of constants in the given enumerated type.

@@ -29,7 +29,7 @@ class XmlTag : XmlElement {
   }
 }
 
-var parsedElements: [AllPairs] single XmlElement;
+var parsedElements: [AllPairs] single unmanaged XmlElement;
 
 proc main {
   forall z in AllIndices with (ref StartIndices, ref EndIndices) do {
@@ -91,7 +91,7 @@ proc processTag(i,j) {
   if (!(hasIndex(i+1, j, StartIndices) || hasIndex(i, j-1, EndIndices)) &&
       (sourceText[i] != "<" && sourceText[j] != ">")) then {
     /* all text? assumes all entities are escaped*/
-    var elt = new XmlPCData(j-i+1, sourceText[i..j]);
+    var elt = new unmanaged XmlPCData(j-i+1, sourceText[i..j]);
     parsedElements(i,j) = elt;
     writeln("PCData : ", elt.data);
     return;
@@ -111,7 +111,7 @@ proc processTag(i,j) {
         name = sourceText[i+1..stop-1];
         break;
       }
-    var elt = new XmlTag(j-i+1, name);
+    var elt = new unmanaged XmlTag(j-i+1, name);
     parsedElements(i,j) = elt;
     writeln("Self-closed : ", elt.name);
     return;
@@ -143,10 +143,10 @@ proc processTag(i,j) {
     return;
   }
   var start = min reduce ([x in EndIndices] if x > i then x);
-  var elt = new XmlTag(j-i+1, tagName);
+  var elt = new unmanaged XmlTag(j-i+1, tagName);
   start = min reduce ([x in StartIndices] if x > start then x);
   while (start < stop) {
-    var item : XmlElement = nil;
+    var item : unmanaged XmlElement = nil;
     for e in EndIndices do
       if e > start && e < stop &&
         item == nil && parsedElements(start, e) != nil {

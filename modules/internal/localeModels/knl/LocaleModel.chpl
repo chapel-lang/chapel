@@ -97,16 +97,18 @@ module LocaleModel {
   // In that case, subloc is adjusted to the new memory kind.
   //
   private inline
-  proc packSublocID(nNumaDomains:int, subloc:int, memoryKind:int)
+  proc packSublocID(nNumaDomains:int,
+                    subloc:int,
+                    memoryKind:int):chpl_sublocID_t
   {
     var whichNuma = subloc;
     if whichNuma == c_sublocid_none || whichNuma == c_sublocid_all then
-      return whichNuma;
+      return whichNuma:chpl_sublocID_t;
 
     if whichNuma == c_sublocid_any ||
       whichNuma == numaDomainForAny(nNumaDomains) {
       if memoryKind == memoryKindMCDRAM() then
-        return numaDomainForAny(nNumaDomains);
+        return (numaDomainForAny(nNumaDomains)):chpl_sublocID_t;
       else
         return c_sublocid_any;
     }
@@ -277,9 +279,9 @@ module LocaleModel {
               : chpl_sublocID_t;
       ndName = "ND"+_sid;
 
-      this.initDone();
+      this.complete();
 
-      ddr = new MemoryLocale(sid, this);
+      ddr = new unmanaged MemoryLocale(sid, this);
 
       var hbm_available = (hbw_check_available() == 0);
       // hbw_check_available() == 0 -> HBM is available.
@@ -292,7 +294,7 @@ module LocaleModel {
       extern proc chpl_task_setSubloc(chpl_sublocID_t);
       const origSubloc = chpl_task_getRequestedSubloc();
       chpl_task_setSubloc(hbm_id);
-      hbm = new MemoryLocale(hbm_id, this);
+      hbm = new unmanaged MemoryLocale(hbm_id, this);
 
       chpl_task_setSubloc(origSubloc);
     }
@@ -315,14 +317,10 @@ module LocaleModel {
     proc addChild(loc:locale) { halt("Cannot add children to this locale type."); }
     proc getChild(idx:int) : locale { return nil; }
 
-    // This is commented out b/c it leads to an internal error during
-    // the resolveIntents pass.  See
-    // test/functions/iterators/sungeun/iterInClass.future
-    //
-    // iter getChildren() : locale {
-    //  halt("No children to iterate over.");
-    //  yield nil;
-    // }
+    iter getChildren() : locale {
+      halt("No children to iterate over.");
+      yield nil;
+    }
   }
 
   //
@@ -348,7 +346,7 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      this.initDone();
+      this.complete();
 
       setup();
     }
@@ -361,7 +359,7 @@ module LocaleModel {
 
       _node_id = chpl_nodeID: int;
 
-      this.initDone();
+      this.complete();
 
       setup();
     }
@@ -436,7 +434,7 @@ module LocaleModel {
     proc setup() {
       helpSetupLocaleNUMA(this, local_name, numSublocales);
 
-      ddr = new MemoryLocale(c_sublocid_any, this);
+      ddr = new unmanaged MemoryLocale(c_sublocid_any, this);
 
       var hbm_available = (hbw_check_available() == 0);
       // hbw_check_available() == 0 -> HBM is available.
@@ -449,7 +447,7 @@ module LocaleModel {
       const origSubloc = chpl_task_getRequestedSubloc();
       extern proc chpl_task_setSubloc(chpl_sublocID_t);
       chpl_task_setSubloc(hbm_id);
-      hbm = new MemoryLocale(hbm_id, this);
+      hbm = new unmanaged MemoryLocale(hbm_id, this);
       chpl_task_setSubloc(origSubloc);
     }
     //------------------------------------------------------------------------}
@@ -521,8 +519,8 @@ module LocaleModel {
         yield loc;
     }
 
-    proc getDefaultLocaleSpace() const ref return this.myLocaleSpace;
-    proc getDefaultLocaleArray() const ref return myLocales;
+    override proc getDefaultLocaleSpace() const ref return this.myLocaleSpace;
+    override proc getDefaultLocaleArray() const ref return myLocales;
 
     proc localeIDtoLocale(id : chpl_localeID_t) {
       const node = chpl_nodeFromLocaleID(id);

@@ -12,10 +12,7 @@ Destroying a RefCount
 After scope
 Before scope (copy initialization)
 Initializing a RefCount
-Initializing a RefCount
-Starting R assign {count = 1}{count = 1}
-Destroying a RefCount
-Done R assign {count = 2}
+In R.init(R) {count = 1}
 Starting test_one {count = 2}
 In R.routine {count = 2}
 In test_two {count = 2}
@@ -26,7 +23,7 @@ Destroying a RefCount
 After scope (copy initialization)
 Before scope (copy initialization 2)
 Initializing a RefCount
-In R initCopy {count = 1}
+In R.init(R) {count = 1}
 Starting test_one {count = 2}
 In R.routine {count = 2}
 In test_two {count = 2}

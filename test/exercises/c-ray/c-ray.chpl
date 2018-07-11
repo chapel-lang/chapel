@@ -108,7 +108,7 @@ record camera {
 //
 // variables used to store the scene
 //
-var objects: [1..0] sphere,  // the scene's spheres; start with an empty array
+var objects: [1..0] unmanaged sphere,  // the scene's spheres; start with an empty array
     lights: [1..0] vec3,     // the scene's lights;  "
     cam: camera;             // camera (there will be only one)
 
@@ -232,7 +232,7 @@ proc trace(ray, depth=0): vec3 {
     return (0.0, 0.0, 0.0);
 
   // find the nearest intersection...
-  var nearestObj: sphere,
+  var nearestObj: unmanaged sphere,
       nearestSp: spoint;
 
   for obj in objects {
@@ -411,13 +411,13 @@ proc loadScene() {
   // be problematic in any way.
   //
   if scene == "built-in" {
-    objects.push_back(new sphere((-1.5, -0.3, -1), 0.7,
+    objects.push_back(new unmanaged sphere((-1.5, -0.3, -1), 0.7,
                                  new material((1.0, 0.2, 0.05), 50.0, 0.3)));
-    objects.push_back(new sphere((1.5, -0.4, 0), 0.6,
+    objects.push_back(new unmanaged sphere((1.5, -0.4, 0), 0.6,
                                  new material((0.1, 0.85, 1.0), 50.0, 0.4)));
-    objects.push_back(new sphere((0, -1000, 2), 999,
+    objects.push_back(new unmanaged sphere((0, -1000, 2), 999,
                                  new material((0.1, 0.2, 0.6), 80.0, 0.8)));
-    objects.push_back(new sphere((0, 0, 2), 1,
+    objects.push_back(new unmanaged sphere((0, 0, 2), 1,
                                  new material((1.0, 0.5, 0.1), 60.0, 0.7)));
     lights.push_back((-50, 100, -50));
     lights.push_back((40, 40, 150));
@@ -484,7 +484,7 @@ proc loadScene() {
           refl = columns[10]: real;
 
     // this must be a sphere, so store it
-    objects.push_back(new sphere(pos, rad, new material(col, spow, refl)));
+    objects.push_back(new unmanaged sphere(pos, rad, new material(col, spow, refl)));
 
     // helper routine for printing errors in the input file
     proc inputError(msg) {
@@ -517,7 +517,7 @@ proc initRands() {
   } else {
     use Random;
 
-    var rng = new RandomStream(seed=(if seed then seed
+    var rng = new unmanaged RandomStream(seed=(if seed then seed
                                              else SeedGenerator.currentTime),
                                eltType=real);
     for u in urand do

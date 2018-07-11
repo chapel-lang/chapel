@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Consulting and Adding Key-Value Info Attributes</title>
+<title>Hardware Locality (hwloc): Distributing items over a topology</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -39,64 +39,49 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
-<div class="title">Consulting and Adding Key-Value Info Attributes</div>  </div>
+<div class="title">Distributing items over a topology</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:ga8b835295a52b6768a5e6c8abb1f9c54d"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00169.html#ga8b835295a52b6768a5e6c8abb1f9c54d">hwloc_distrib_flags_e</a> { <a class="el" href="a00169.html#gga8b835295a52b6768a5e6c8abb1f9c54da2ca08404bfbebe9ed5f34c3d7635425a">HWLOC_DISTRIB_FLAG_REVERSE</a>
+ }</td></tr>
+<tr class="separator:ga8b835295a52b6768a5e6c8abb1f9c54d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gab358661a92bb27d8542b255cc9f6f25e"><td class="memItemLeft" align="right" valign="top">static const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00169.html#gab358661a92bb27d8542b255cc9f6f25e">hwloc_obj_get_info_by_name</a> (<a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj, const char *name)</td></tr>
-<tr class="separator:gab358661a92bb27d8542b255cc9f6f25e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7e90c5398a9d77df31d7d45faf0f316b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00169.html#ga7e90c5398a9d77df31d7d45faf0f316b">hwloc_obj_add_info</a> (<a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj, const char *name, const char *value)</td></tr>
-<tr class="separator:ga7e90c5398a9d77df31d7d45faf0f316b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2e3db06f766509ae2004ee4c8bbf5204"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00169.html#ga2e3db06f766509ae2004ee4c8bbf5204">hwloc_distrib</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> *roots, unsigned n_roots, <a class="el" href="a00150.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a> *set, unsigned n, unsigned until, unsigned long flags)</td></tr>
+<tr class="separator:ga2e3db06f766509ae2004ee4c8bbf5204"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="ga7e90c5398a9d77df31d7d45faf0f316b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7e90c5398a9d77df31d7d45faf0f316b">&#9670;&nbsp;</a></span>hwloc_obj_add_info()</h2>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="ga8b835295a52b6768a5e6c8abb1f9c54d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8b835295a52b6768a5e6c8abb1f9c54d">&#9670;&nbsp;</a></span>hwloc_distrib_flags_e</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void hwloc_obj_add_info </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>value</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="memname">enum <a class="el" href="a00169.html#ga8b835295a52b6768a5e6c8abb1f9c54d">hwloc_distrib_flags_e</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Add the given info name and value pair to the given object. </p>
-<p>The info is appended to the existing info array even if another key with the same name already exists.</p>
-<p>The input strings are copied before being added in the object infos.</p>
-<dl class="section note"><dt>Note</dt><dd>This function may be used to enforce object colors in the lstopo graphical output by using "lstopoStyle" as a name and "Background=#rrggbb" as a value. See CUSTOM COLORS in the lstopo(1) manpage for details.</dd>
-<dd>
-If <code>value</code> contains some non-printable characters, they will be dropped when exporting to XML, see <a class="el" href="a00174.html#ga2bf166eda4d3605362ac86f77684002a" title="Export the topology into an XML file. ">hwloc_topology_export_xml()</a>. </dd></dl>
+<p>Flags to be given to <a class="el" href="a00169.html#ga2e3db06f766509ae2004ee4c8bbf5204" title="Distribute n items over the topology under roots. ">hwloc_distrib()</a>. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga8b835295a52b6768a5e6c8abb1f9c54da2ca08404bfbebe9ed5f34c3d7635425a"></a>HWLOC_DISTRIB_FLAG_REVERSE&#160;</td><td class="fielddoc"><p>Distrib in reverse order, starting from the last objects. </p>
+</td></tr>
+</table>
 
 </div>
 </div>
-<a id="gab358661a92bb27d8542b255cc9f6f25e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gab358661a92bb27d8542b255cc9f6f25e">&#9670;&nbsp;</a></span>hwloc_obj_get_info_by_name()</h2>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="ga2e3db06f766509ae2004ee4c8bbf5204"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2e3db06f766509ae2004ee4c8bbf5204">&#9670;&nbsp;</a></span>hwloc_distrib()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -105,16 +90,46 @@ If <code>value</code> contains some non-printable characters, they will be dropp
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static const char* hwloc_obj_get_info_by_name </td>
+          <td class="memname">static int hwloc_distrib </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj</em>, </td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> *&#160;</td>
+          <td class="paramname"><em>roots</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>n_roots</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00150.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a> *&#160;</td>
+          <td class="paramname"><em>set</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>until</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>flags</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -129,9 +144,15 @@ If <code>value</code> contains some non-printable characters, they will be dropp
 </table>
 </div><div class="memdoc">
 
-<p>Search the given key name in object infos and return the corresponding value. </p>
-<p>If multiple keys match the given name, only the first one is returned.</p>
-<dl class="section return"><dt>Returns</dt><dd><code>NULL</code> if no such key exists. </dd></dl>
+<p>Distribute <code>n</code> items over the topology under <code>roots</code>. </p>
+<p>Array <code>set</code> will be filled with <code>n</code> cpusets recursively distributed linearly over the topology under objects <code>roots</code>, down to depth <code>until</code> (which can be INT_MAX to distribute down to the finest level).</p>
+<p><code>n_roots</code> is usually 1 and <code>roots</code> only contains the topology root object so as to distribute over the entire topology.</p>
+<p>This is typically useful when an application wants to distribute <code>n</code> threads over a machine, giving each of them as much private cache as possible and keeping them locally in number order.</p>
+<p>The caller may typically want to also call <a class="el" href="a00174.html#ga36d802130aa5d96bc1b5a90d2f0f3765" title="Keep a single index among those set in bitmap bitmap. ">hwloc_bitmap_singlify()</a> before binding a thread so that it does not move at all.</p>
+<p><code>flags</code> should be 0 or a OR'ed set of <a class="el" href="a00169.html#ga8b835295a52b6768a5e6c8abb1f9c54d" title="Flags to be given to hwloc_distrib(). ">hwloc_distrib_flags_e</a>.</p>
+<dl class="section note"><dt>Note</dt><dd>This function requires the <code>roots</code> objects to have a CPU set.</dd>
+<dd>
+This function replaces the now deprecated hwloc_distribute() and hwloc_distributev() functions. </dd></dl>
 
 </div>
 </div>

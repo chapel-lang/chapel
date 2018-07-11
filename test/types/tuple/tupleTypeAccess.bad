@@ -1,0 +1,2 @@
+tupleTypeAccess.chpl:16: In function 'accept':
+tupleTypeAccess.chpl:18: error: unresolved call '(GoodStudent,ExcellentStudent)(1)'

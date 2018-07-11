@@ -8,9 +8,9 @@ class C {
   var a = r.n;
 }
 
-var c = new C();
+var c = new unmanaged C();
 r.n = 2;
-var d = new C();
+var d = new unmanaged C();
 
 writeln(c);
 writeln(d);

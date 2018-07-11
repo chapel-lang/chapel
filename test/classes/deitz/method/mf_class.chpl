@@ -5,11 +5,11 @@ class foo {
   }
 }
 
-proc bar(f : foo) {
+proc bar(f : borrowed foo) {
   writeln("function bar ", f.x);
 }
 
-var f : foo = new foo();
+var f : unmanaged foo = new unmanaged foo();
 
 f.bar();
 bar(f);

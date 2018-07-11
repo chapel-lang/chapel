@@ -7,7 +7,6 @@ class Container {
     y = new Stored(true);
     v = 10;
 
-    super.init();
   }
 }
 

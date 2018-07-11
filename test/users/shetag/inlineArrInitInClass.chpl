@@ -5,7 +5,7 @@ class A {
 }
 
 proc main() {
-  const a = new A(6);
+  const a = new unmanaged A(6);
 
   writeln(a);
 

@@ -1,0 +1,2 @@
+bug: nested record type is pruned
+#9773

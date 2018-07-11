@@ -9,8 +9,7 @@ class C {
 proc C.init(d, a) where d: domain(?) {
   this.d = d;
   this.a = a;
-  super.init();
 }
 
-var c1 = new C(d1,a1);
+var c1 = new shared C(d1,a1);
 writeln(c1);

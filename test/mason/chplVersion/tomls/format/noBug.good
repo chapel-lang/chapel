@@ -3,6 +3,6 @@
 [root]
 name = "noBug"
 version = "0.1.0"
-chplVersion = "1.17.0..1.17.0"
+chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 
 

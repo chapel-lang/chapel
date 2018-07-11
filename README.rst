@@ -28,17 +28,17 @@ For more information about Chapel, please refer to the following resources:
    If you are viewing this file locally, we recommend referring to
    doc/README.rst for local references to documentation and resources.
 
-=====================  ==================================================================================
+=====================  ========================================================
 Project homepage:      https://chapel-lang.org
 Installing Chapel:     https://chapel-lang.org/download.html
-Building from source:  https://chapel-lang.org/docs/latest/usingchapel/QUICKSTART.html
+Building from source:  https://chapel-lang.org/docs/usingchapel/QUICKSTART.html
 Sample computations:   https://chapel-lang.org/hellos.html
 Learning Chapel:       https://chapel-lang.org/learning.html
 Reporting bugs:        https://chapel-lang.org/bugs.html
-Online documentation:  https://chapel-lang.org/docs/latest/
+Online documentation:  https://chapel-lang.org/docs/
 GitHub:                https://github.com/chapel-lang/chapel
 Mailing lists:         https://sourceforge.net/p/chapel/mailman
 Facebook:              https://www.facebook.com/ChapelLanguage
 Twitter:               https://twitter.com/ChapelLanguage
-=====================  ==================================================================================
+=====================  ========================================================
 

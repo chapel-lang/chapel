@@ -44,6 +44,10 @@ static int             explainInstantiationLine   = -2;
 static ModuleSymbol*   explainInstantiationModule = NULL;
 static Vec<FnSymbol*>  whereStack;
 
+static bool            fixupDefaultInitCopy(FnSymbol* fn,
+                                            FnSymbol* newFn,
+                                            CallExpr* call);
+
 static void
 explainInstantiation(FnSymbol* fn) {
   if (strcmp(fn->name, fExplainInstantiation) &&
@@ -73,7 +77,7 @@ explainInstantiation(FnSymbol* fn) {
         else
           len += sprintf(msg+len, ", ");
         INT_ASSERT(arg);
-        if (strcmp(fn->name, "_construct__tuple"))
+        if (strcmp(fn->name, tupleInitName))
           len += sprintf(msg+len, "%s = ", arg->name);
         if (VarSymbol* vs = toVarSymbol(e->value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
@@ -129,15 +133,30 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
     // With FLAG_REF on the function, that means it's a constructor
     // for the ref type, so re-instantiate it with whatever actualTS is.
     return actualTS;
+  } else if (actualTS->hasFlag(FLAG_REF)) {
+    // the value is a ref and
+    // instantiation of a formal of ref type loses ref
+    return getNewSubType(fn, key, actualTS->getValType()->symbol);
   } else {
-    bool actualRef = actualTS->hasFlag(FLAG_REF);
+    if (isManagedPtrType(actualTS->getValType()))
+      if (!(fn->hasFlag(FLAG_INIT_COPY_FN) ||
+            fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+            fn->hasFlag(FLAG_BUILD_TUPLE) ||
+            fn->hasFlag(FLAG_NO_BORROW_CONVERT) ||
+            fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
+            fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
+            (fn->name == astrInit && fn->hasFlag(FLAG_COMPILER_GENERATED)) ||
+            fn->name == astr_cast))
+        if (ArgSymbol* arg = toArgSymbol(key))
+          if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
+            if (arg->intent == INTENT_IN ||
+                arg->intent == INTENT_CONST ||
+                arg->intent == INTENT_CONST_IN ||
+                arg->intent == INTENT_BLANK)
+              if (arg->getValType() == dtAny)
+                return getManagedPtrBorrowType(actualTS->getValType())->symbol;
 
-    if(actualRef)
-      // the value is a ref and
-      // instantiation of a formal of ref type loses ref
-      return getNewSubType(fn, key, actualTS->getValType()->symbol);
-    else
-      return actualTS;
+    return actualTS;
   }
 }
 
@@ -412,8 +431,28 @@ FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs) {
  * \param fn   Generic function to finish instantiating
  */
 void instantiateBody(FnSymbol* fn) {
-  if (getPartialCopyData(fn)) {
+  if (getPartialCopyData(fn) != NULL) {
     fn->finalizeCopy();
+  }
+}
+
+static
+void gatherFieldSubstitutionsForNewType(AggregateType* oldType,
+                                        AggregateType* newType,
+                                        SymbolMap& map) {
+
+  // Gather the parent fields.
+  if (newType->isClass()) {
+    for(int i = 0; i < newType->dispatchParents.n; i++) {
+      gatherFieldSubstitutionsForNewType(oldType->dispatchParents.v[i],
+                                         newType->dispatchParents.v[i],
+                                         map);
+    }
+  }
+
+  // Gather the current class fields
+  for (int i = 1; i <= newType->fields.length; i++) {
+    map.put(oldType->getField(i), newType->getField(i));
   }
 }
 
@@ -434,7 +473,8 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   // (_build_tuple, tuple type constructor, tuple default constructor)
   //
 
-  if (fn->hasFlag(FLAG_TUPLE)            == true ||
+  if (fn->hasFlag(FLAG_INIT_TUPLE)       == true ||
+      isTupleTypeConstructor(fn)         == true ||
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true) {
     retval = createTupleSignature(fn, subs, call);
 
@@ -486,6 +526,9 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
         } else {
           newType = ct->generateType(subs);
+
+          // Gather up substitutions for old -> new fields
+          gatherFieldSubstitutionsForNewType(ct, newType, map);
         }
       }
 
@@ -528,6 +571,86 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
   return retval;
 }
+
+// This function is called by generic instantiation
+// for the default initCopy function in ChapelBase.chpl.
+static bool fixupDefaultInitCopy(FnSymbol* fn,
+                                 FnSymbol* newFn,
+                                 CallExpr* call) {
+  ArgSymbol* arg    = newFn->getFormal(1);
+  bool       retval = false;
+
+  if (AggregateType* ct = toAggregateType(arg->type)) {
+    if (isUserDefinedRecord(ct) == true && ct->hasInitializers()) {
+      // If the user has defined any initializer,
+      // initCopy function should call the copy-initializer.
+      //
+      // If no copy-initializer exists, we should make initCopy
+      // be a dummy function that generates an error
+      // if it remains in the AST after callDestructors. We do
+      // that since callDestructors can remove some initCopy calls
+      // and we'd like types that cannot be copied to survive
+      // compilation until callDestructors has a chance to
+      // remove those calls.
+
+      // Go ahead and instantiate the body now so we can fix
+      // it up completely...
+      instantiateBody(newFn);
+
+      if (FnSymbol* initFn = findCopyInit(ct)) {
+        Symbol*   thisTmp  = newTemp(ct);
+        DefExpr*  def      = new DefExpr(thisTmp);
+        CallExpr* initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
+
+        newFn->insertBeforeEpilogue(def);
+
+        def->insertAfter(initCall);
+        // Make sure the copy-init function is resolved, since the
+        // above code adds a call that would be considered already resolved.
+        resolveCallAndCallee(initCall);
+
+        if (ct->hasPostInitializer() == true) {
+          CallExpr* post = new CallExpr("postinit", gMethodToken, thisTmp);
+
+          initCall->insertAfter(post);
+        }
+
+        // Replace the other setting of the return-value-variable
+        // with what we have now...
+
+        // find the RVV
+        Symbol* retSym = newFn->getReturnSymbol();
+
+        // Remove other PRIM_MOVEs to the RVV
+        for_alist(stmt, newFn->body->body) {
+          if (CallExpr* callStmt = toCallExpr(stmt)) {
+            if (callStmt->isPrimitive(PRIM_MOVE) == true) {
+              SymExpr* se = toSymExpr(callStmt->get(1));
+
+              INT_ASSERT(se);
+
+              if (se->symbol() == retSym) {
+                stmt->remove();
+              }
+            }
+          }
+        }
+
+        // Set the RVV to the copy
+        newFn->insertBeforeEpilogue(new CallExpr(PRIM_MOVE, retSym, thisTmp));
+
+      } else {
+        // No copy-initializer could be found
+        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+      }
+
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
 
 //
 // determine root function in the case of partial instantiation
@@ -635,6 +758,9 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
   //
   for_formals(formal, fn) {
     ArgSymbol* newFormal = toArgSymbol(map.get(formal));
+
+    if (formal->type == dtAny)
+      newFormal->addFlag(FLAG_INSTANTIATED_FROM_ANY);
 
     if (Symbol* value = subs.get(formal)) {
       INT_ASSERT(formal->intent == INTENT_PARAM || isTypeSymbol(value));

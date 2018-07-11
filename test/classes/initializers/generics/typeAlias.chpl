@@ -5,12 +5,11 @@ class Generic {
   proc init(value: ?eltType) {
     this.eltType = eltType;
     this.value   = value;
-    super.init();
   }
 }
 
 type Concrete = Generic(string);
 
-var foo = new Concrete("hello");
+var foo = new unmanaged Concrete("hello");
 writeln(foo);
 delete foo;

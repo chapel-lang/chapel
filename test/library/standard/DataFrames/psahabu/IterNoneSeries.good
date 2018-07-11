@@ -1,0 +1,37 @@
+these():
+a
+c
+e
+
+items():
+(A, a)
+(C, c)
+(E, e)
+
+fast():
+a
+b
+c
+d
+e
+
+items_fast():
+(A, a)
+(B, b)
+(C, c)
+(D, d)
+(E, e)
+
+_these():
+(true, a)
+(false, b)
+(true, c)
+(false, d)
+(true, e)
+
+_items():
+(true, (A, a))
+(false, (B, b))
+(true, (C, c))
+(false, (D, d))
+(true, (E, e))

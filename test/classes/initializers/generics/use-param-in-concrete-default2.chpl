@@ -9,12 +9,9 @@ class Foo {
   proc init(param pVal) {
     p = pVal;
     x = pVal + 2;
-    super.init();
   }
 }
 
-var foo1 = new Foo(2);
+var foo1 = new owned Foo(2);
 
 writeln(foo1);
-
-delete foo1;

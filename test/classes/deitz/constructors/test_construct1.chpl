@@ -5,11 +5,10 @@ class C {
   proc init(xVal, yVal) {
     x = xVal;
     y = yVal;
-    super.init();
   }
 
   proc init(b: bool) {
-    this.initDone();
+    this.complete();
     if b then
       x = 24;
     else
@@ -17,10 +16,10 @@ class C {
   }
 }
 
-var c = new C(2, 3);
+var c = new unmanaged C(2, 3);
 writeln(c);
 delete c;
 
-c = new C(true);
+c = new unmanaged C(true);
 writeln(c);
 delete c;

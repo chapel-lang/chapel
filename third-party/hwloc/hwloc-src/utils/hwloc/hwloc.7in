@@ -196,7 +196,7 @@ A NUMA node; a set of processors around memory which the processors
 can directly access.
 .
 If \fBhbm\fR is used instead of \fBnumanode\fR in locations,
-command-line tools only consider high-bandwidth memory nodes such as KNL's MCDRAM.
+command-line tools only consider high-bandwidth memory nodes such as Intel Xeon Phi MCDRAM.
 .
 .TP
 .B package

@@ -8,13 +8,10 @@ class A {
   var x:t;
   proc init(type t) {
     this.t = t;
-    super.init();
   }
   // initializer for class 'A' requires a generic argument called 't'
 }
 
-var a = new A(int);
+var a = new borrowed A(int);
 
 writeln(a);
-
-delete a;

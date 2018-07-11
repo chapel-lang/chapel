@@ -18,7 +18,7 @@ config const numMeetings : int = 6000000; // number of meetings to take place
 config const numChameneos1 : int = 3;     // size of population 1
 config const numChameneos2 : int = 10;    // size of population 2
 enum color {blue=0, red=1, yellow=2};
-enum digit {zero, one, two, three, four,
+enum digit {zero=0, one, two, three, four,
             five, six, seven, eight, nine};
 config const verbose = false;
 // if verbose is true, prints out non-det output, otherwise prints det output
@@ -36,7 +36,7 @@ class MeetingPlace {
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
   proc init() {
-    this.initDone();
+    this.complete();
     spotsLeft$.writeXF(numMeetings*2);
   }
 
@@ -51,7 +51,7 @@ class MeetingPlace {
      otherwise returns the color of the chameneos who arrives 1st
      (denies meetings of 3+ chameneos) */
 
-  proc meet(chameneos : Chameneos) {
+  proc meet(chameneos : unmanaged Chameneos) {
     /* peek at spotsLeft$ */
     if (peek) {
       if (spotsLeft$.readXX() == 0) {
@@ -94,7 +94,7 @@ proc getComplement(myColor : color, otherColor : color) {
   if (myColor == otherColor) {
     return myColor;
   }
-  return (3 - myColor - otherColor):color;
+  return (3 - myColor:int - otherColor:int):color;
 }
 
 class Chameneos {
@@ -107,12 +107,12 @@ class Chameneos {
      with another Chameneos.  If it does, it will get the complement of the
      color of the Chameneos it met with, and change to the complement of that
      color. */
-  proc start(place : MeetingPlace) {
-    var meetingPlace : MeetingPlace = place;
+  proc start(place : unmanaged MeetingPlace) {
+    var meetingPlace : unmanaged MeetingPlace = place;
     var stop : bool = false;
     var otherColor : color;
     while (!stop) {
-      (stop, otherColor) = meetingPlace.meet(this);
+      (stop, otherColor) = meetingPlace.meet(_to_unmanaged(this));
       myColor = getComplement(myColor, otherColor);
     }
   }
@@ -138,15 +138,15 @@ proc populate (size : int) {
                             color.yellow, color.blue, color.red, color.yellow,
                             color.red, color.blue);
   const D : domain(1) = {1..size};
-  var population : [D] Chameneos;
+  var population : [D] unmanaged Chameneos;
 
   if (size == 10) {
     for i in D {
-      population(i) = new Chameneos(i, colorsDefault10(i));
+      population(i) = new unmanaged Chameneos(i, colorsDefault10(i));
     }
   } else {
     for i in D {
-      population(i) = new Chameneos(i, ((i-1) % 3):color);
+      population(i) = new unmanaged Chameneos(i, ((i-1) % 3):color);
     }
   }
   return population;
@@ -157,7 +157,7 @@ proc populate (size : int) {
    met another Chameneos, spells out the number of times it met with itself,
    then spells out the total number of times all the Chameneos met
    another Chameneos. */
-proc run(population : [] Chameneos, meetingPlace : MeetingPlace) {
+proc run(population : [] unmanaged Chameneos, meetingPlace : unmanaged MeetingPlace) {
   for i in population {
     write(" ", i.myColor);
   }
@@ -169,7 +169,7 @@ proc run(population : [] Chameneos, meetingPlace : MeetingPlace) {
   meetingPlace.reset();
 }
 
-proc runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
+proc runQuiet(population : [] unmanaged Chameneos, meetingPlace : unmanaged MeetingPlace) {
   coforall i in population {
     i.start(meetingPlace);
   }
@@ -180,7 +180,7 @@ proc runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
   printInfoQuiet(totalMeetings, totalMeetingsWithSelf);
 }
 
-proc printInfo(population : [] Chameneos) {
+proc printInfo(population : [] unmanaged Chameneos) {
   for i in population {
     write(i.meetings);
     spellInt(i.meetingsWithSelf);
@@ -211,7 +211,7 @@ proc printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 proc spellInt(n : int) {
   var s : string = n:string;
   for i in 1..s.length {
-    write(" ", (s[i]:int + 1):digit);
+    write(" ", (s[i]:int):digit);
   }
   writeln();
 }
@@ -224,7 +224,7 @@ proc main() {
 
     printColorChanges();
 
-    const forest : MeetingPlace = new MeetingPlace();
+    const forest : unmanaged MeetingPlace = new unmanaged MeetingPlace();
 
     const population1 = populate(numChameneos1);
     const population2 = populate(numChameneos2);

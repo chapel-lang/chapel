@@ -19,10 +19,9 @@
 
 #include "loopDetails.h"
 
+#include "ForallStmt.h"
 #include "ForLoop.h"
-#include "expr.h"
 #include "resolution.h"
-#include "symbol.h"
 
 /* This file implements functions allowing
    late resolution passes (late const checking/cull over references
@@ -30,6 +29,7 @@
    variables for loops.
  */
 
+static const IteratorDetails emptyDetails;
 
 bool isChplIterOrLoopIterator(Symbol* sym, ForLoop*& loop)
 {
@@ -100,6 +100,30 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
   return NULL;
 }
 
+/* Given an expression, find the preceding variable
+   declared in the same block that is marked with FLAG_CHPL__ITER,
+   or NULL if no such variable exists.
+ */
+static Symbol* findPrecedingChplIter(Expr* ref)
+{
+  Symbol* chpl_iter = NULL;
+  Expr* e = ref;
+  while (e) {
+    if (DefExpr* d = toDefExpr(e)) {
+      Symbol* var = d->sym;
+      if (var->hasFlag(FLAG_CHPL__ITER)) {
+        chpl_iter = var;
+        break;
+      }
+    }
+    e = e->prev;
+  }
+
+  return chpl_iter;
+}
+
+static Symbol* findNewIterLF(Expr* ref);
+
 /* Given chpl_iter for a "new-style" forall loop ie generated from ForallStmt,
    find the corresponding chpl__iterLF variable, if it exists.
    That's because it has the corresponding _build_tuple call that
@@ -107,14 +131,17 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
  */
 static Symbol* findNewIterLF(Symbol* chpl_iter) {
   INT_ASSERT(!strcmp(chpl_iter->name, "chpl__iterPAR"));
-  Expr* iprev = chpl_iter->defPoint->prev;
-  if (!iprev) return NULL;
-  DefExpr* defExp = toDefExpr(iprev->prev);
-  if (!defExp) return NULL;
-  Symbol* defSym = defExp->sym;
-  if (!defSym->hasFlag(FLAG_CHPL__ITER)) return NULL;
-  INT_ASSERT(!strcmp(defSym->name, "chpl__iterLF"));
-  return defSym;
+  return findNewIterLF(chpl_iter->defPoint);
+}
+
+static Symbol* findNewIterLF(Expr* ref) {
+  Symbol* chpl_iter = findPrecedingChplIter(ref);
+
+  if (chpl_iter) {
+    INT_ASSERT(!strcmp(chpl_iter->name, "chpl__iterLF"));
+  }
+
+  return chpl_iter;
 }
 
 /* Collapse compiler-introduced copies of references
@@ -278,13 +305,20 @@ void gatherLoopDetails(ForLoop*  forLoop,
     // Find the leader loop and run the analysis on that.
 
     Expr* inExpr = forLoop->parentExpr;
-    while (inExpr && !isForLoop(inExpr)) {
+    while (inExpr) {
+      if (ForLoop* forLoop = toForLoop(inExpr)) {
+        gatherLoopDetails(forLoop,
+                      isForall, leaderDetails, followerForLoop, detailsVector);
+        return;
+      }
+      if (ForallStmt* forall = toForallStmt(inExpr)) {
+        gatherLoopDetails(forall,
+                      isForall, leaderDetails, followerForLoop, detailsVector);
+        return;
+      }
       inExpr = inExpr->parentExpr;
     }
-    INT_ASSERT(inExpr); // couldn't find leader ForLoop
-    gatherLoopDetails(toForLoop(inExpr),
-                      isForall, leaderDetails, followerForLoop, detailsVector);
-    return;
+    INT_ASSERT(false); // couldn't find leader ForLoop or ForallStmt
   }
 
 
@@ -292,20 +326,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
 
   // find the variable marked with "chpl__iter" variable
   // in the loop header.
-  Symbol* chpl_iter = NULL;
-  {
-    Expr* e = forLoop;
-    while (e) {
-      if (DefExpr* d = toDefExpr(e)) {
-        Symbol* var = d->sym;
-        if (var->hasFlag(FLAG_CHPL__ITER)) {
-          chpl_iter = var;
-          break;
-        }
-      }
-      e = e->prev;
-    }
-  }
+  Symbol* chpl_iter = findPrecedingChplIter(forLoop);
 
   bool forall = (chpl_iter != NULL);
   // MPF: should be the same as isLoweredForallLoop but it isn't yet
@@ -564,6 +585,134 @@ void gatherLoopDetails(ForLoop*  forLoop,
       leaderDetails.iterator = getTheIteratorFn(leaderDetails.iteratorClass);
 
       ForLoop* followerFor = findFollowerForLoop(forLoop);
+      INT_ASSERT(followerFor);
+      followerForLoop = followerFor;
+
+      // Set the detailsVector based upon the follower loop
+      Symbol* followerIndex = followerFor->indexGet()->symbol();
+      Symbol* followerIterator = followerFor->iteratorGet()->symbol();
+
+      if (!zippered) {
+        followerIndex = collapseIndexVarReferences(followerIndex);
+        detailsVector[0].index = followerIndex;
+        detailsVector[0].iteratorClass = followerIterator->typeInfo();
+        detailsVector[0].iterator = getTheIteratorFn(detailsVector[0].iteratorClass);
+      } else {
+        // Set detailsVector[i].index
+        findZipperedIndexVariables(followerIndex, detailsVector);
+
+        // Figure out iterator class of zippered followers from
+        // the tuple type.
+        AggregateType* tupleType = toAggregateType(followerIterator->type);
+        int i = 0;
+        for_fields(field, tupleType) {
+          detailsVector[i].iteratorClass = field->type;
+          detailsVector[i].iterator =
+            getTheIteratorFn(detailsVector[i].iteratorClass);
+
+          i++;
+        }
+      }
+      return;
+    }
+  }
+}
+
+
+//
+// Same as above except for a ForallStmt.
+// Like for forall case above, this could be:
+//  * standalone iterator, which is not zippered
+//  * leader-follower loop that is not zippered
+//  * leader-follower loop that is zippered
+
+void gatherLoopDetails(ForallStmt* fs,
+                       bool&     isForall,
+                       IteratorDetails& leaderDetails,
+                       ForLoop*& followerForLoop,
+                       std::vector<IteratorDetails>& detailsVector)
+{
+  bool isLeader = false;
+  bool zippered = false;
+
+  Symbol* newIterLF = findNewIterLF(fs);
+  // copied from the other gatherLoopDetails()
+  if (newIterLF) {
+    isLeader = true;
+    if (SymExpr* useSE = newIterLF->getSingleUse())
+      if (CallExpr* useCall = toCallExpr(useSE->parentExpr))
+        if (useCall->isNamed("_toFollowerZip"))
+          zippered = true;
+  }
+
+  INT_ASSERT(isLeader ==
+             !strcmp(parIdxVar(fs)->name, "chpl_followThis"));
+
+  isForall = true;
+  detailsVector.clear();
+
+  {
+    // Todo: factor our shared code with the other gatherLoopDetails()?
+    // Handle forall loops
+
+    // It could be:
+    // standalone iterator that is not zippered
+    // leader-follower loop that is not zippered
+    // leader-follower loop that is zippered
+
+    if (!isLeader)
+    {
+      IteratorDetails detailsSA;
+      detailsSA.iterable = fs->iteratedExpressions().head;
+      detailsSA.index = parIdxVar(fs);
+      detailsSA.iteratorClass = NULL;
+      detailsSA.iterator = toCallExpr(detailsSA.iterable)->resolvedFunction();
+
+      leaderDetails = emptyDetails;
+      followerForLoop = NULL;
+      detailsVector.push_back(detailsSA);
+      return;
+    }
+    else
+    {
+      // Leader-follower iteration
+
+      // Find the iterables
+
+      SymExpr* def = newIterLF->getSingleDef();
+      CallExpr* move = toCallExpr(def->parentExpr);
+      INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+
+      if (!zippered) {
+        Expr* iterable = move->get(2);
+        INT_ASSERT(iterable);
+        // Comes up in non-zippered leader-follower iteration
+        IteratorDetails details;
+        details.iterable = iterable;
+        // Other details set below.
+        detailsVector.push_back(details);
+      } else {
+        CallExpr* buildTupleCall = toCallExpr(move->get(2));
+        INT_ASSERT(buildTupleCall);
+        // build up the detailsVector
+        for_actuals(actual, buildTupleCall) {
+          SymExpr* actualSe = toSymExpr(actual);
+          INT_ASSERT(actualSe); // otherwise not normalized
+          // actualSe is the iterable in this case
+          IteratorDetails details;
+          details.iterable = actualSe;
+          // Other details set below.
+          detailsVector.push_back(details);
+        }
+      }
+
+      leaderDetails.iterable = detailsVector[0].iterable;
+      leaderDetails.index = parIdxVar(fs);
+      leaderDetails.iteratorClass = NULL;
+      leaderDetails.iterator = toCallExpr(
+            fs->iteratedExpressions().head)->resolvedFunction();
+
+      ForLoop* followerFor = findFollowerForLoop(fs->loopBody());
       INT_ASSERT(followerFor);
       followerForLoop = followerFor;
 

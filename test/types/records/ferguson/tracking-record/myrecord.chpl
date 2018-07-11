@@ -21,6 +21,20 @@ record R {
   var c: C;
 }
 
+proc R.init(x : int = 0, c : C = nil) {
+  if debug then writeln("in R.init(", x, ", ", c, ")");
+  this.x = x;
+  this.c = c;
+  this.complete();
+  this.setup(x, true);
+}
+
+proc R.init(other:R) {
+  if debug then writeln("in R.init(", other, ")");
+  this.complete();
+  this.setup(other.x, true);
+}
+
 proc ref R.setup(x:int, allow_zero:bool=false) {
   if !allow_zero then assert(x != 0);
 
@@ -34,7 +48,7 @@ proc ref R.setup(x:int, allow_zero:bool=false) {
   this.c = nil;
 
   this.x = x;
-  this.c = new C(x = x, id = 1+c_counter.fetchAdd(1));
+  this.c = new unmanaged C(x = x, id = 1+c_counter.fetchAdd(1));
   
   extern proc printf(fmt:c_string, arg:C);
   if debug {
@@ -74,7 +88,9 @@ proc R.verify() {
   extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
 
   // default initialized records have nil ptr, OK
-  if c == nil && x == 0 then return;
+  if c == nil && x == 0 {
+    return;
+  }
 
   if c == nil {
     // any time we set x!=0 the class should be initialized
@@ -86,59 +102,6 @@ proc R.verify() {
     writeln("R.verify failed - got x=", x, " but c.x=", c.x);
     assert(false);
   }
-}
-
-// We'd like this to be by ref, but doing so leads to an internal
-// compiler error.  See
-// $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
-pragma "donor fn"
-pragma "auto copy fn"
-proc chpl__autoCopy(arg: R) {
-  extern proc printf(fmt:c_string, arg:C);
-  extern proc printf(fmt:c_string, arg:C, arg2:C);
-  if debug {
-    printf("in auto copy from arg.c=%p ", arg.c);
-    writeln("x=", arg.x, " ", arg.c);
-  }
-
-  // TODO - is no auto destroy necessary here?
-  pragma "no auto destroy"
-  var ret: R;
-
-  // allow copies of default initialized record
-  if allocateAlways || arg.x!=0 || arg.c!=nil {
-    ret.setup(x = arg.x, true);
-  }
-
-  if debug {
-    printf("leaving auto copy from arg.c=%p to ret.c=%p ", arg.c, ret.c);
-    writeln(arg.c, ret.c);
-  }
-
-  return ret;
-}
-
-// I'd like this to be ref, but that breaks
-//    var outerX: R; begin { var x = outerX; }
-pragma "init copy fn"
-proc chpl__initCopy(arg: R) {
-  extern proc printf(fmt:c_string, arg:C);
-  extern proc printf(fmt:c_string, arg:C, arg2:C);
-  if debug {
-    printf("in init copy from arg.c=%p ", arg.c);
-    writeln(arg.c);
-  }
-
-  var ret: R;
-
-  ret.setup(x = arg.x, true);
-
-  if debug {
-    printf("leaving init copy from arg.c=%p to ret.c=%p ", arg.c, ret.c);
-    writeln(arg.c, ret.c);
-  }
-
-  return ret;
 }
 
 proc =(ref lhs: R, rhs: R) {

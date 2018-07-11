@@ -18,7 +18,7 @@ class subthing : mything {
 
 
 {
-  var a = new mything(1);
+  var a = new borrowed mything(1);
 
   writeln("Writing ", a);
 
@@ -30,7 +30,7 @@ class subthing : mything {
 
   var r = f.reader();
 
-  var b = new mything(2);
+  var b = new borrowed mything(2);
 
   r.read(b);
   r.close();
@@ -38,13 +38,10 @@ class subthing : mything {
   writeln("Read ", b);
 
   assert(a.x == b.x);
-
-  delete b;
-  delete a;
 }
 
 {
-  var a = new subthing(3,4);
+  var a = new borrowed subthing(3,4);
 
   writeln("Writing ", a);
 
@@ -56,7 +53,7 @@ class subthing : mything {
 
   var r = f.reader();
 
-  var b = new subthing(5,6);
+  var b = new borrowed subthing(5,6);
 
   r.read(b);
   r.close();
@@ -65,13 +62,10 @@ class subthing : mything {
 
   assert(a.x == b.x);
   assert(a.y == b.y);
-
-  delete b;
-  delete a;
 }
 
 {
-  var a = new subthing(3,4);
+  var a = new borrowed subthing(3,4);
 
   writeln("Writing ", a);
 
@@ -83,8 +77,8 @@ class subthing : mything {
 
   var r = f.reader();
 
-  var b = new subthing(5,6);
-  var c:mything = b;
+  var b = new borrowed subthing(5,6);
+  var c:borrowed mything = b;
 
   r.read(c);
   r.close();
@@ -93,9 +87,6 @@ class subthing : mything {
 
   assert(a.x == b.x);
   assert(a.y == b.y);
-
-  delete b;
-  delete a;
 }
 
 

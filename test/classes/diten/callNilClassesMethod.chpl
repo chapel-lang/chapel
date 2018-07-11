@@ -9,6 +9,6 @@ class Unallocated {
 }
 
 proc main {
-  var aaa: Unallocated;
+  var aaa: unmanaged Unallocated;
   writeln(aaa.method());
 }

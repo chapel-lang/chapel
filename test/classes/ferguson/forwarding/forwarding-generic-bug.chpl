@@ -11,11 +11,11 @@ class Wrapper {
   forwarding var inner;
 }
 
-var b = new C();
+var b = new unmanaged C();
 b.helper(42);
-var f = new Wrapper(b);
+var f = new unmanaged Wrapper(b);
 f.helper(b);
-var ff = new Wrapper(f);
+var ff = new unmanaged Wrapper(f);
 ff.helper(f);
 
 delete ff;

@@ -1,6 +1,6 @@
 class foo { var a : int;  }
 
-var x = new foo();
+var x = new unmanaged foo();
 
 writeln(x);
 

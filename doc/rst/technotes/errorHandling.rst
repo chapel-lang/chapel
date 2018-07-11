@@ -286,6 +286,14 @@ scope is exited, regardless of how it is exited.
     }
   }
 
+.. note::
+
+  It is not possible to throw errors out of a ``defer`` statement because the
+  atomicity of all ``defer`` statements must be guaranteed, and the handling
+  context would be unclear.
+
+  Errors also cannot be thrown by ``deinit()`` for similar reasons.
+
 .. _technote-errorHandling-methods:
 
 Methods
@@ -611,7 +619,6 @@ Current Limitations
 * Error handling does not work yet with initializers.
 * It is not yet decided whether or not it will be possible to
   throw from a `deinit` function.
-* In the future, there will be a better way to select strict mode.
 * Errors can't currently be thrown from iterators that are not inlined by the
   compiler
 

@@ -16,13 +16,11 @@ class DerivedClass: BaseClass {
   var c: int;
 
   proc init(b:int, c:int) {
-    this.c = c;
     super.init(b);
+    this.c = c;
   }
 }
 
-var D = new DerivedClass(1,2);
+var D = new borrowed DerivedClass(1,2);
 
 writeln(D);
-
-delete D;

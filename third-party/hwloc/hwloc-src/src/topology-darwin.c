@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2013 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -35,9 +35,13 @@ hwloc_look_darwin(struct hwloc_backend *backend)
   int64_t l1dcachesize, l1icachesize;
   int64_t cacheways[2];
   int64_t l2cachesize;
+  int64_t l3cachesize;
   int64_t cachelinesize;
   int64_t memsize;
+  int64_t _tmp;
   char cpumodel[64];
+  char cpuvendor[64];
+  char cpufamilynumber[20], cpumodelnumber[20], cpustepping[20];
 
   if (topology->levels[0][0]->cpuset)
     /* somebody discovered things */
@@ -45,26 +49,54 @@ hwloc_look_darwin(struct hwloc_backend *backend)
 
   hwloc_alloc_obj_cpusets(topology->levels[0][0]);
 
-  if (hwloc_get_sysctlbyname("hw.ncpu", &_nprocs) || _nprocs <= 0)
-    return -1;
+  if (hwloc_get_sysctlbyname("hw.logicalcpu", &_nprocs) || _nprocs <= 0)
+    /* fallback to deprecated way */
+    if (hwloc_get_sysctlbyname("hw.ncpu", &_nprocs) || _nprocs <= 0)
+      return -1;
+
   nprocs = _nprocs;
   topology->support.discovery->pu = 1;
 
   hwloc_debug("%u procs\n", nprocs);
 
+  size = sizeof(cpuvendor);
+  if (sysctlbyname("machdep.cpu.vendor", cpuvendor, &size, NULL, 0))
+    cpuvendor[0] = '\0';
+
   size = sizeof(cpumodel);
   if (sysctlbyname("machdep.cpu.brand_string", cpumodel, &size, NULL, 0))
     cpumodel[0] = '\0';
 
+  if (hwloc_get_sysctlbyname("machdep.cpu.family", &_tmp))
+    cpufamilynumber[0] = '\0';
+  else
+    snprintf(cpufamilynumber, sizeof(cpufamilynumber), "%lld", (long long) _tmp);
+  if (hwloc_get_sysctlbyname("machdep.cpu.model", &_tmp))
+    cpumodelnumber[0] = '\0';
+  else
+    snprintf(cpumodelnumber, sizeof(cpumodelnumber), "%lld", (long long) _tmp);
+  /* .extfamily and .extmodel are already added to .family and .model */
+  if (hwloc_get_sysctlbyname("machdep.cpu.stepping", &_tmp))
+    cpustepping[0] = '\0';
+  else
+    snprintf(cpustepping, sizeof(cpustepping), "%lld", (long long) _tmp);
+
   if (!hwloc_get_sysctlbyname("hw.packages", &_npackages) && _npackages > 0) {
     unsigned npackages = _npackages;
     int64_t _cores_per_package;
+    unsigned cores_per_package;
     int64_t _logical_per_package;
     unsigned logical_per_package;
 
     hwloc_debug("%u packages\n", npackages);
 
-    if (!hwloc_get_sysctlbyname("machdep.cpu.logical_per_package", &_logical_per_package) && _logical_per_package > 0)
+    if (!hwloc_get_sysctlbyname("machdep.cpu.thread_count", &_logical_per_package) && _logical_per_package > 0)
+      /* official/modern way */
+      logical_per_package = _logical_per_package;
+    else if (!hwloc_get_sysctlbyname("machdep.cpu.logical_per_package", &_logical_per_package) && _logical_per_package > 0)
+      /* old way, gives the max supported by this "kind" of processor,
+       * can be larger than the actual number for this model.
+       */
       logical_per_package = _logical_per_package;
     else
       /* Assume the trivia.  */
@@ -83,16 +115,45 @@ hwloc_look_darwin(struct hwloc_backend *backend)
         hwloc_debug_1arg_bitmap("package %u has cpuset %s\n",
                    i, obj->cpuset);
 
+        if (cpuvendor[0] != '\0')
+          hwloc_obj_add_info(obj, "CPUVendor", cpuvendor);
         if (cpumodel[0] != '\0')
           hwloc_obj_add_info(obj, "CPUModel", cpumodel);
+        if (cpufamilynumber[0] != '\0')
+          hwloc_obj_add_info(obj, "CPUFamilyNumber", cpufamilynumber);
+        if (cpumodelnumber[0] != '\0')
+          hwloc_obj_add_info(obj, "CPUModelNumber", cpumodelnumber);
+        if (cpustepping[0] != '\0')
+          hwloc_obj_add_info(obj, "CPUStepping", cpustepping);
+
         hwloc_insert_object_by_cpuset(topology, obj);
       }
-    else
+    else {
+      if (cpuvendor[0] != '\0')
+        hwloc_obj_add_info(topology->levels[0][0], "CPUVendor", cpuvendor);
       if (cpumodel[0] != '\0')
         hwloc_obj_add_info(topology->levels[0][0], "CPUModel", cpumodel);
+      if (cpufamilynumber[0] != '\0')
+        hwloc_obj_add_info(topology->levels[0][0], "CPUFamilyNumber", cpufamilynumber);
+      if (cpumodelnumber[0] != '\0')
+        hwloc_obj_add_info(topology->levels[0][0], "CPUModelNumber", cpumodelnumber);
+      if (cpustepping[0] != '\0')
+        hwloc_obj_add_info(topology->levels[0][0], "CPUStepping", cpustepping);
+    }
 
-    if (!hwloc_get_sysctlbyname("machdep.cpu.cores_per_package", &_cores_per_package) && _cores_per_package > 0) {
-      unsigned cores_per_package = _cores_per_package;
+    if (!hwloc_get_sysctlbyname("machdep.cpu.core_count", &_cores_per_package) && _cores_per_package > 0)
+      /* official/modern way */
+      cores_per_package = _cores_per_package;
+    else if (!hwloc_get_sysctlbyname("machdep.cpu.cores_per_package", &_cores_per_package) && _cores_per_package > 0)
+      /* old way, gives the max supported by this "kind" of processor,
+       * can be larger than the actual number for this model.
+       */
+      cores_per_package = _cores_per_package;
+    else
+      /* no idea */
+      cores_per_package = 0;
+
+    if (cores_per_package > 0) {
       hwloc_debug("%u cores per package\n", cores_per_package);
 
       if (!(logical_per_package % cores_per_package))
@@ -109,9 +170,18 @@ hwloc_look_darwin(struct hwloc_backend *backend)
           hwloc_insert_object_by_cpuset(topology, obj);
         }
     }
-  } else
+  } else {
+    if (cpuvendor[0] != '\0')
+      hwloc_obj_add_info(topology->levels[0][0], "CPUVendor", cpuvendor);
     if (cpumodel[0] != '\0')
       hwloc_obj_add_info(topology->levels[0][0], "CPUModel", cpumodel);
+    if (cpufamilynumber[0] != '\0')
+      hwloc_obj_add_info(topology->levels[0][0], "CPUFamilyNumber", cpufamilynumber);
+    if (cpumodelnumber[0] != '\0')
+      hwloc_obj_add_info(topology->levels[0][0], "CPUModelNumber", cpumodelnumber);
+    if (cpustepping[0] != '\0')
+      hwloc_obj_add_info(topology->levels[0][0], "CPUStepping", cpustepping);
+  }
 
   if (hwloc_get_sysctlbyname("hw.l1dcachesize", &l1dcachesize))
     l1dcachesize = 0;
@@ -121,6 +191,9 @@ hwloc_look_darwin(struct hwloc_backend *backend)
 
   if (hwloc_get_sysctlbyname("hw.l2cachesize", &l2cachesize))
     l2cachesize = 0;
+
+  if (hwloc_get_sysctlbyname("hw.l3cachesize", &l3cachesize))
+    l3cachesize = 0;
 
   if (hwloc_get_sysctlbyname("machdep.cpu.cache.L1_associativity", &cacheways[0]))
     cacheways[0] = 0;
@@ -176,6 +249,8 @@ hwloc_look_darwin(struct hwloc_backend *backend)
           cachesize[1] = l1dcachesize;
         if (n > 2)
           cachesize[2] = l2cachesize;
+        if (n > 3)
+          cachesize[3] = l3cachesize;
       }
 
       hwloc_debug("%s", "caches");

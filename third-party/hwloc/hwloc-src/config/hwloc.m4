@@ -1,6 +1,6 @@
 dnl -*- Autoconf -*-
 dnl
-dnl Copyright © 2009-2017 Inria.  All rights reserved.
+dnl Copyright © 2009-2018 Inria.  All rights reserved.
 dnl Copyright © 2009-2012, 2015-2017 Université Bordeaux
 dnl Copyright © 2004-2005 The Trustees of Indiana University and Indiana
 dnl                         University Research and Technology
@@ -473,27 +473,39 @@ EOF])
     AC_CHECK_DECLS([_putenv], [], [], [AC_INCLUDES_DEFAULT])
     # Could add mkdir and access for hwloc-gather-cpuid.c on Windows
 
-    # Do a full link test instead of just using AC_CHECK_FUNCS, which
-    # just checks to see if the symbol exists or not.  For example,
-    # the prototype of sysctl uses u_int, which on some platforms
-    # (such as FreeBSD) is only defined under __BSD_VISIBLE, __USE_BSD
-    # or other similar definitions.  So while the symbols "sysctl" and
-    # "sysctlbyname" might still be available in libc (which autoconf
-    # checks for), they might not be actually usable.
-    AC_TRY_LINK([
-               #include <stdio.h>
-               #include <sys/types.h>
-               #include <sys/sysctl.h>
-               ],
-                [return sysctl(NULL,0,NULL,NULL,NULL,0);],
-                AC_DEFINE([HAVE_SYSCTL],[1],[Define to '1' if sysctl is present and usable]))
-    AC_TRY_LINK([
-               #include <stdio.h>
-               #include <sys/types.h>
-               #include <sys/sysctl.h>
-               ],
-                [return sysctlbyname(NULL,NULL,NULL,NULL,0);],
-                AC_DEFINE([HAVE_SYSCTLBYNAME],[1],[Define to '1' if sysctlbyname is present and usable]))
+    if test "x$hwloc_linux" != "xyes" ; then
+      # Don't detect sysctl* on Linux because its sysctl() syscall is
+      # long deprecated and unneeded. Some libc still expose the symbol
+      # and raise a big warning at link time.
+
+      # Do a full link test instead of just using AC_CHECK_FUNCS, which
+      # just checks to see if the symbol exists or not.  For example,
+      # the prototype of sysctl uses u_int, which on some platforms
+      # (such as FreeBSD) is only defined under __BSD_VISIBLE, __USE_BSD
+      # or other similar definitions.  So while the symbols "sysctl" and
+      # "sysctlbyname" might still be available in libc (which autoconf
+      # checks for), they might not be actually usable.
+      AC_MSG_CHECKING([for sysctl])
+      AC_TRY_LINK([
+                 #include <stdio.h>
+                 #include <sys/types.h>
+                 #include <sys/sysctl.h>
+                 ],
+                  [return sysctl(NULL,0,NULL,NULL,NULL,0);],
+                  [AC_DEFINE([HAVE_SYSCTL],[1],[Define to '1' if sysctl is present and usable])
+                   AC_MSG_RESULT(yes)],
+                  [AC_MSG_RESULT(no)])
+      AC_MSG_CHECKING([for sysctlbyname])
+      AC_TRY_LINK([
+                 #include <stdio.h>
+                 #include <sys/types.h>
+                 #include <sys/sysctl.h>
+                 ],
+                  [return sysctlbyname(NULL,NULL,NULL,NULL,0);],
+                  [AC_DEFINE([HAVE_SYSCTLBYNAME],[1],[Define to '1' if sysctlbyname is present and usable])
+                   AC_MSG_RESULT(yes)],
+                  [AC_MSG_RESULT(no)])
+    fi
 
     AC_CHECK_DECLS([getprogname], [], [], [AC_INCLUDES_DEFAULT])
     AC_CHECK_DECLS([getexecname], [], [], [AC_INCLUDES_DEFAULT])
@@ -802,12 +814,38 @@ EOF])
     # OpenCL support
     hwloc_opencl_happy=no
     if test "x$enable_opencl" != "xno"; then
-        hwloc_opencl_happy=yes
+      hwloc_opencl_happy=yes
+      case ${target} in
+      *-*-darwin*)
+        # On Darwin, only use the OpenCL framework
+        AC_CHECK_HEADERS([OpenCL/cl_ext.h], [
+	  AC_MSG_CHECKING([for the OpenCL framework])
+          tmp_save_LDFLAGS="$LDFLAGS"
+          LDFLAGS="$LDFLAGS -framework OpenCL"
+	  AC_LINK_IFELSE([
+            AC_LANG_PROGRAM([[
+#include <OpenCL/opencl.h>
+            ]], [[
+return clGetDeviceIDs(0, 0, 0, NULL, NULL);
+            ]])],
+          [AC_MSG_RESULT(yes)
+	   HWLOC_OPENCL_LDFLAGS="-framework OpenCL"],
+	  [AC_MSG_RESULT(no)
+	   hwloc_opencl_happy=no])
+          LDFLAGS="$tmp_save_LDFLAGS"
+        ], [hwloc_opencl_happy=no])
+      ;;
+      *)
+        # On Others, look for OpenCL at normal locations
         AC_CHECK_HEADERS([CL/cl_ext.h], [
 	  AC_CHECK_LIB([OpenCL], [clGetDeviceIDs], [HWLOC_OPENCL_LIBS="-lOpenCL"], [hwloc_opencl_happy=no])
         ], [hwloc_opencl_happy=no])
+      ;;
+      esac
     fi
+    AC_SUBST(HWLOC_OPENCL_CFLAGS)
     AC_SUBST(HWLOC_OPENCL_LIBS)
+    AC_SUBST(HWLOC_OPENCL_LDFLAGS)
     # Check if required extensions are available
     if test "x$hwloc_opencl_happy" = "xyes"; then
       tmp_save_CFLAGS="$CFLAGS"
@@ -1139,6 +1177,7 @@ EOF])
            HWLOC_REQUIRES="$HWLOC_PCIACCESS_REQUIRES $HWLOC_REQUIRES"])
     AS_IF([test "$hwloc_opencl_component" = "static"],
           [HWLOC_LIBS="$HWLOC_LIBS $HWLOC_OPENCL_LIBS"
+           HWLOC_LDFLAGS="$HWLOC_LDFLAGS $HWLOC_OPENCL_LDFLAGS"
            HWLOC_CFLAGS="$HWLOC_CFLAGS $HWLOC_OPENCL_CFLAGS"
            HWLOC_REQUIRES="$HWLOC_OPENCL_REQUIRES $HWLOC_REQUIRES"])
     AS_IF([test "$hwloc_cuda_component" = "static"],

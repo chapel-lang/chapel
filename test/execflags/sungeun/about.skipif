@@ -6,3 +6,6 @@ COMPOPTS <= --verify
 COMPOPTS <= --llvm
 COMPOPTS <= --incremental
 COMPOPTS <= --denormalize
+COMPOPTS <= --warn-unstable
+COMPOPTS <= --lifetime-checking
+COMPOPTS <= --force-initializers

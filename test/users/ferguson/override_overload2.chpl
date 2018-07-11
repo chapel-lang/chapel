@@ -13,14 +13,10 @@ class SubReader : BaseReader {
   }
 }
 
-var s1 = new SubReader();
+var s1 = new borrowed SubReader();
 
 var x:int;
 var y:real;
 
 s1.read(x);
 s1.read(y);
-
-delete s1;
-
-

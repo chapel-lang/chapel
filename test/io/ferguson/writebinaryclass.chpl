@@ -4,14 +4,14 @@ class R {
   var c:int;
   var d:int;
   var e:int;
-  proc equals(x:R) {
+  proc equals(x:borrowed R) {
     return a == x.a && b == x.b && c == x.c && d == x.d && e == x.e;
   }
 }
 
 var f = open("binary-output.bin", iomode.cwr);
 
-var A = new R(1,2,3,4,5);
+var A = new borrowed R(1,2,3,4,5);
 
 {
   var w = f.writer(kind=iobig);
@@ -22,20 +22,18 @@ var A = new R(1,2,3,4,5);
 
 {
   var r = f.reader(kind=iobig);
-  var B = new R(0,0,0,0,0);
+  var B = new borrowed R(0,0,0,0,0);
 
   r.read(B);
   writeln("Read ", B);
 
   assert(B.equals(A));
-
-  delete B;
 }
 
 
 {
   var r = f.reader(kind=iobig);
-  var B = new R(0,0,0,0,0);
+  var B = new borrowed R(0,0,0,0,0);
 
   assert(r.read(B.a));
   assert(r.read(B.b));
@@ -46,11 +44,7 @@ var A = new R(1,2,3,4,5);
   writeln("Read again ", B);
 
   assert(B.equals(A));
-
-  delete B;
 }
 
 
 f.close();
-
-delete A;

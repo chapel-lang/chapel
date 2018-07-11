@@ -4,7 +4,7 @@ class C {
   var n : C(t);
 }
 
-var c = new C(int);
+var c = new unmanaged C(int);
 
 writeln(c);
 

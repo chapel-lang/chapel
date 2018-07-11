@@ -1,0 +1,2 @@
+test_nested2.chpl:5: error: Illegal use of identifier 'd' from enclosing type
+Note: This source location is a guess.

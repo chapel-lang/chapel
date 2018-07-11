@@ -1,3 +1,5 @@
+config param testenum=false;
+
 proc foo(x: int(?w), y: int(w)) {
   writeln("In int foo ", w);
 }
@@ -29,5 +31,7 @@ var myb: mybool;
 // the conversion from bool/enum
 foo(b, i);
 foo(b, ui);
-foo(myb, i);
-foo(myb, ui);
+if testenum {
+  foo(myb, i);
+  foo(myb, ui);
+}

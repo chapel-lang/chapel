@@ -15,10 +15,10 @@ use GridVariable_def;
 
 class GridSolution {
 
-  const grid:     Grid;
+  const grid:     unmanaged Grid;
   
-  var old_data:     GridVariable;
-  var current_data: GridVariable;
+  var old_data:     unmanaged GridVariable;
+  var current_data: unmanaged GridVariable;
   var old_time:     real;
   var current_time: real;
   
@@ -28,11 +28,10 @@ class GridSolution {
   //| >    initializer    | >
   //|/....................|/
   
-  proc init (grid: Grid) {
+  proc init (grid: unmanaged Grid) {
     this.grid = grid;
-    old_data =     new GridVariable(grid = grid);
-    current_data = new GridVariable(grid = grid);
-    super.init();
+    old_data =     new unmanaged GridVariable(grid = grid);
+    current_data = new unmanaged GridVariable(grid = grid);
   }
   // /|''''''''''''''''''''/|
   //< |    initializer    < |

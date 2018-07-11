@@ -18,7 +18,7 @@ record R {
             stride : int = 1) {
     this.idxType = idxType;
     this.stridable = stridable;
-    this.initDone();
+    this.complete();
     if stridable then this.stride = stride;
   }
 }
@@ -34,7 +34,7 @@ class C {
             stride : int = 1) {
     this.idxType = idxType;
     this.stridable = stridable;
-    this.initDone();
+    this.complete();
     if stridable then this.stride = stride;
   }
 }

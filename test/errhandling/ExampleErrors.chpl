@@ -15,7 +15,6 @@ class StringError : Error {
 
   proc init(msg:string) {
     this.msg = msg;
-    super.init();
   }
 
   proc message() {

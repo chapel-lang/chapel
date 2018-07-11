@@ -5,10 +5,9 @@ class C {
   proc init(type ctVal, y: ctVal) {
     ct = ctVal;
     x = y;
-    super.init();
   }
 }
 
-var c = new C(int, y=2);
+var c = new unmanaged C(int, y=2);
 writeln(c);
 delete c;

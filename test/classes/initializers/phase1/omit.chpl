@@ -4,7 +4,6 @@ class OmitOne {
 
   proc init(bVal: real) {
     fieldB = bVal;
-    super.init();
   }
 }
 
@@ -15,18 +14,14 @@ class OmitMultiple {
 
   proc init(bVal: bool) {
     fieldB = bVal;
-    super.init();
   }
 }
 
 proc main() {
-  var one = new OmitOne(17.9);
+  var one = new owned OmitOne(17.9);
 
-  var two = new OmitMultiple(true);
+  var two = new owned OmitMultiple(true);
 
   writeln(one);
   writeln(two);
-
-  delete one;
-  delete two;
 }

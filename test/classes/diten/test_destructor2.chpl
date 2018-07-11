@@ -4,11 +4,11 @@ class C {
 
 record R {
 // private:
-  var c, c2: C;
+  var c, c2: unmanaged C;
 // public:
   proc init(a:int, b:int) {
     writeln("R");
-    c = new C(a, b);
+    c = new unmanaged C(a, b);
   }
   proc deinit() {
     writeln("~R");

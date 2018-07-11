@@ -214,6 +214,16 @@ void CollapseBlocks::exitAggrType(AggregateType* node)
 
 }
 
+bool CollapseBlocks::enterUnmanagedClassType(UnmanagedClassType* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitUnmanagedClassType(UnmanagedClassType* node)
+{
+
+}
+
 bool CollapseBlocks::enterEnumType(EnumType* node)
 {
   return false;
@@ -322,12 +332,32 @@ void CollapseBlocks::exitNamedExpr(NamedExpr* node)
 
 }
 
+bool CollapseBlocks::enterIfExpr(IfExpr* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitIfExpr(IfExpr* node)
+{
+
+}
+
 void CollapseBlocks::visitSymExpr(SymExpr* node)
 {
 
 }
 
 void CollapseBlocks::visitUsymExpr(UnresolvedSymExpr* node)
+{
+
+}
+
+bool CollapseBlocks::enterLoopExpr(LoopExpr* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitLoopExpr(LoopExpr* node)
 {
 
 }

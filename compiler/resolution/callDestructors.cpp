@@ -22,16 +22,17 @@
 #include "addAutoDestroyCalls.h"
 #include "astutil.h"
 #include "errorHandling.h"
-#include "expr.h"
+#include "ForallStmt.h"
 #include "iterator.h"
+#include "lateConstCheck.h"
+#include "lifetime.h"
+#include "UnmanagedClassType.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "stlUtil.h"
-#include "stmt.h"
 #include "stringutil.h"
-#include "symbol.h"
 #include "virtualDispatch.h"
 
 /************************************* | **************************************
@@ -73,14 +74,20 @@ public:
 
 private:
   typedef std::map<int, ReturnByRef*> RefMap;
+  typedef std::set<FnSymbol*>         FnSet;
+  typedef enum {
+    TF_NONE,  // do not transform
+    TF_FULL,  // transform fully
+    TF_ASGN   // run only updateAssignments()
+  } TransformationKind;  // how to transform a function
 
-  static void             returnByRefCollectCalls(RefMap& calls);
-  static FnSymbol*        theTransformableFunction(CallExpr* call);
-  static bool             isTransformableFunction(FnSymbol* fn);
+  static void             returnByRefCollectCalls(RefMap& calls, FnSet& fns);
+  static TransformationKind transformableFunctionKind(FnSymbol* fn);
   static void             transformFunction(FnSymbol* fn);
   static ArgSymbol*       addFormal(FnSymbol* fn);
   static void             insertAssignmentToFormal(FnSymbol*  fn,
                                                    ArgSymbol* formal);
+  static void             updateAssignments(FnSymbol* fn);
   static void             updateAssignmentsFromRefArgToValue(FnSymbol* fn);
   static void             updateAssignmentsFromRefTypeToValue(FnSymbol* fn);
   static void             updateAssignmentsFromModuleLevelValue(FnSymbol* fn);
@@ -108,11 +115,15 @@ void ReturnByRef::apply()
 {
   RefMap           map;
   RefMap::iterator iter;
+  FnSet            asgnUpdates;
 
-  returnByRefCollectCalls(map);
+  returnByRefCollectCalls(map, asgnUpdates);
 
   for (iter = map.begin(); iter != map.end(); iter++)
     iter->second->transform();
+
+  for_set(FnSymbol, fn, asgnUpdates)
+    updateAssignments(fn);
 
   for (int i = 0; i < virtualMethodTable.n; i++)
   {
@@ -123,9 +134,12 @@ void ReturnByRef::apply()
       for (int j = 0; j < numFns; j++)
       {
         FnSymbol* fn = virtualMethodTable.v[i].value->v[j];
+        TransformationKind tfKind = transformableFunctionKind(fn);
 
-        if (isTransformableFunction(fn))
+        if (tfKind == TF_FULL)
           transformFunction(fn);
+        else if (tfKind == TF_ASGN)
+          updateAssignments(fn);
       }
     }
   }
@@ -136,7 +150,7 @@ void ReturnByRef::apply()
 // and all calls to these functions.
 //
 
-void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
+void ReturnByRef::returnByRefCollectCalls(RefMap& calls, FnSet& fns)
 {
   RefMap::iterator iter;
 
@@ -148,8 +162,12 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
     if (call->inTree()) {
 
       // Only transform calls to transformable functions
-      if (FnSymbol* fn = theTransformableFunction(call))
-      {
+      // The common case is a user-level call to a resolved function
+      // Also handle the PRIMOP for a virtual method call
+      if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
+       TransformationKind tfKind = transformableFunctionKind(fn);
+       if (tfKind == TF_FULL)
+       {
         RefMap::iterator iter = calls.find(fn->id);
         ReturnByRef*     info = NULL;
 
@@ -164,23 +182,138 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
         }
 
         info->addCall(call);
+       }
+       else if (tfKind == TF_ASGN)
+       {
+         fns.insert(fn);
+       }
       }
     }
   }
 }
 
-FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
-{
-  // The common case is a user-level call to a resolved function
-  // Also handle the PRIMOP for a virtual method call
-  FnSymbol* theCall = call->resolvedOrVirtualFunction();
+static inline bool isParIterOrForwarder(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_ITERATOR_FN))
+    // This is an iterator. Is it parallel?
+    return fn->hasFlag(FLAG_INLINE_ITERATOR);
 
-  return (theCall && isTransformableFunction(theCall)) ? theCall : NULL;
+  if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    // This is a forwarder. Query the iterator itself.
+    return getTheIteratorFnFromIteratorRec(fn->retType)
+             ->hasFlag(FLAG_INLINE_ITERATOR);
+
+  // Otherwise, no.
+  return false;
 }
 
-bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
+static CallExpr* callingExpr(SymExpr* targetSE) {
+  if (CallExpr* call = toCallExpr(targetSE->parentExpr))
+    if (targetSE == call->baseExpr)
+      return call;
+  return NULL;
+}
+
+// Does 'fn' return the result of a call to 'se' ?
+static bool isReturnedValue(FnSymbol* fn, SymExpr* se) {
+  Symbol* currSym  = fn->getReturnSymbol();
+
+  // Traverse the chain of moves. Like in stripReturnScaffolding().
+  while (true) {
+    if (SymExpr* defSE = currSym->getSingleDef())
+      if (CallExpr* defMove = toCallExpr(defSE->parentExpr))
+        if (defMove->isPrimitive(PRIM_MOVE)) {
+          Expr* defSrc = defMove->get(2);
+
+          if (CallExpr* srcCall = toCallExpr(defSrc))
+            if (srcCall->baseExpr == se)
+              return true;  // found it
+
+          if (SymExpr* srcSE = toSymExpr(defSrc)) {
+            currSym = srcSE->symbol();
+            continue;  // continue traversing the chain of moves
+          }
+        }
+    // The chain of moves is over. Return false.
+    break;
+  }
+  return false;
+}
+
+static bool feedsIntoForallIterableExpr(FnSymbol* fn, SymExpr* use) {
+  if (CallExpr* call = callingExpr(use))
+  {
+    if (isForallIterExpr(call))
+      return true;
+
+    if (FnSymbol* useFn = toFnSymbol(use->parentSymbol))
+      // Does 'useFn' return the value of 'use' ?
+      if (useFn->retType == fn->retType &&
+          isReturnedValue(useFn, use))
+      {
+        bool forForall = false;
+        bool otherUse  = false;
+        for_SymbolSymExprs(use2, useFn) {
+          CallExpr* call2 = callingExpr(use2);
+          if (isForallIterExpr(call2)) forForall = true;
+          else                          otherUse = true;
+        }
+
+        INT_ASSERT(!(forForall && otherUse));
+        return forForall;
+      }
+  }
+
+  // Otherwise, no.
+  return false;
+}
+
+/*
+If the only uses of the parallel iterator are as the iterable expression
+in ForallStmts, it will be inlined.
+Its return value, which is an iterator record, is irrelevant.
+The return-by-ref transformation adds clutter, so skip it in this case.
+
+A parallel iterator can also be used in a for-loop.
+Such a for-loop is converted into a forall during resolution using
+replaceEflopiWithForall() - only if the loop body contains a yield statement.
+Otherwise it remains a for-loop. (Todo: convert in this case as well?)
+
+Another double-use scenario is in an astr_loopexpr_iterNN via _toLeader.
+Todo: replace astr_loopexpr_iterNN with a ForallStmt.
+
+When the same parallel iterator is used both ways,
+we need to split the uses into two so that each category
+is treated appropriately.
+*/
+static void detectParIterUses(FnSymbol* fn, bool& forForall, bool& otherUse) {
+  for_SymbolSymExprs(use, fn) {
+    if (feedsIntoForallIterableExpr(fn, use))
+      forForall = true;
+    else
+      otherUse = true;
+  }
+}
+
+// Redirect uses of 'fn' in ForallStmts to fn's clone
+// so it does not undergo the ReturnByRef transformation.
+static void splitParIterUses(FnSymbol* fn) {
+  SET_LINENO(fn);
+  FnSymbol* clone = fn->copy();
+  fn->defPoint->insertAfter(new DefExpr(clone));
+
+  for_SymbolSymExprs(use, fn)
+    if (feedsIntoForallIterableExpr(fn, use)) {
+      // go ahead redirect
+      SET_LINENO(use);
+      use->replace(new SymExpr(clone));
+    }
+}
+
+ReturnByRef::TransformationKind
+ReturnByRef::transformableFunctionKind(FnSymbol* fn)
 {
   bool retval = false;
+  bool asgn   = false;
 
   if (AggregateType* type = toAggregateType(fn->retType))
   {
@@ -216,7 +349,26 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
       retval = true;
   }
 
-  return retval;
+  if (retval && isParIterOrForwarder(fn)) {
+    bool forForall = false;
+    bool otherUses = false;
+    // compute forForall and otherUses
+    detectParIterUses(fn, forForall, otherUses);
+
+    if (forForall && otherUses)
+      splitParIterUses(fn);
+
+    if (!otherUses)
+      // Do not transform the returns.
+      asgn = true;
+  }
+
+  if (asgn)
+    return TF_ASGN;
+  else if (retval)
+    return TF_FULL;
+  else
+    return TF_NONE;
 }
 
 void ReturnByRef::transformFunction(FnSymbol* fn)
@@ -230,9 +382,7 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
   if (fn->hasFlag(FLAG_ITERATOR_FN) == false && formal != NULL) {
     insertAssignmentToFormal(fn, formal);
   }
-  updateAssignmentsFromRefArgToValue(fn);
-  updateAssignmentsFromRefTypeToValue(fn);
-  updateAssignmentsFromModuleLevelValue(fn);
+  updateAssignments(fn);
   if (formal != NULL) {
     updateReturnStatement(fn);
     updateReturnType(fn);
@@ -292,6 +442,12 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
   // if that turns out to be necessary. It might well be
   // necessary in order to return array slices by value.
   returnOrFirstAutoDestroy->insertBefore(moveExpr);
+}
+
+void ReturnByRef::updateAssignments(FnSymbol* fn) {
+  updateAssignmentsFromRefArgToValue(fn);
+  updateAssignmentsFromRefTypeToValue(fn);
+  updateAssignmentsFromModuleLevelValue(fn);
 }
 
 //
@@ -714,7 +870,8 @@ bool isCallExprTemporary(Expr* initFrom) {
   SymExpr* fromSe = toSymExpr(initFrom);
   INT_ASSERT(fromSe);
   Symbol* fromSym = fromSe->symbol();
-  if (fromSym->hasFlag(FLAG_EXPR_TEMP)) {
+  if (fromSym->hasFlag(FLAG_EXPR_TEMP) ||
+      fromSym->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) {
     // It's from an auto-destroyed value that is an expression temporary
     // storing the result of a function call.
     return true;
@@ -1066,7 +1223,7 @@ void insertReferenceTemps(CallExpr* call) {
 static void checkForErroneousInitCopies() {
 
   // Mark initCopy/autoCopy functions calling functions marked with
-  // FLAG_ERRONEOUS_INITCOPY/FLAG_ERRONEUS_AUTOCOPY with the same
+  // FLAG_ERRONEOUS_INITCOPY/FLAG_ERRONEOUS_AUTOCOPY with the same
   // flag. This situation can come up with the compiler-generated
   // tuple copy functions.
   bool changed;
@@ -1225,8 +1382,15 @@ void callDestructors() {
   ReturnByRef::apply();
 
   insertYieldTemps();
+
+  checkLifetimes();
+
+  lateConstCheck(NULL);
+
   insertGlobalAutoDestroyCalls();
   insertReferenceTemps();
 
   checkForErroneousInitCopies();
+
+  convertClassTypesToCanonical();
 }

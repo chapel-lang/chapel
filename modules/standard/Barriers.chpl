@@ -71,7 +71,7 @@ module Barriers {
     pragma "no doc"
     var bar: BarrierBaseType;
     pragma "no doc"
-    var owned: bool = false;
+    var isowned: bool = false;
 
     /* Construct a new barrier object.
 
@@ -82,28 +82,29 @@ module Barriers {
     */
     proc init(numTasks: int,
               barrierType: BarrierType = BarrierType.Atomic,
-              reusable: bool = (barrierType == BarrierType.Atomic)) {
-      this.initDone();
+              reusable: bool = true) {
+      this.complete();
       select barrierType {
         when BarrierType.Atomic {
           if reusable {
-            bar = new aBarrier(numTasks, reusable=true);
+            bar = new unmanaged aBarrier(numTasks, reusable=true);
           } else {
-            bar = new aBarrier(numTasks, reusable=false);
+            bar = new unmanaged aBarrier(numTasks, reusable=false);
           }
         }
         when BarrierType.Sync {
           if reusable {
-            halt("reusable barriers not implemented for ", barrierType);
+            bar = new unmanaged sBarrier(numTasks, reusable=true);
           } else {
-            bar = new sBarrier(numTasks);
+            bar = new unmanaged sBarrier(numTasks, reusable=false);
           }
         }
         otherwise {
-          halt("unknown barrier type");
+          use ChapelHaltWrappers;
+          exhaustiveSelectHalt("unknown barrier type");
         }
       }
-      owned = true;
+      isowned = true;
     }
 
     pragma "no doc"
@@ -115,12 +116,12 @@ module Barriers {
     pragma "no doc"
     proc init(b: Barrier) {
       this.bar = b.bar;
-      this.owned = false;
+      this.isowned = false;
     }
 
     pragma "no doc"
     proc deinit() {
-      if owned && bar != nil {
+      if isowned && bar != nil {
         delete bar;
       }
     }
@@ -175,30 +176,37 @@ module Barriers {
 
   /* The BarrierBaseType class provides an abstract base type for barriers
    */
-  pragma "no doc" class BarrierBaseType {
+  pragma "no doc"
+  pragma "use default init"
+  class BarrierBaseType {
     pragma "no doc"
     proc barrier() {
-      halt("barrier() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc notify() {
-      halt("notify() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc wait() {
-      halt("wait() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc check(): bool {
-      halt("check() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc reset(nTasks: int) {
-      halt("reset() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
   }
 
@@ -229,7 +237,7 @@ module Barriers {
      */
     proc init(n: int, param reusable: bool) {
       this.reusable = reusable;
-      this.initDone();
+      this.complete();
       reset(n);
     }
 
@@ -238,7 +246,7 @@ module Barriers {
     proc init(n: int, param reusable: bool, param hackIntoCommBarrier: bool) {
       this.reusable = reusable;
       this.hackIntoCommBarrier = hackIntoCommBarrier;
-      this.initDone();
+      this.complete();
       reset(n);
     }
 
@@ -262,8 +270,10 @@ module Barriers {
             extern proc chpl_comm_barrier(msg: c_string);
             chpl_comm_barrier("local barrier call".localize().c_str());
           }
-          if done.testAndSet() then
-            halt("Too many callers to barrier()");
+          if boundsChecking && done.testAndSet() {
+            use ChapelHaltWrappers;
+            boundsCheckHalt("Too many callers to barrier()");
+          }
           if reusable {
             count.waitFor(n-1);
             count.add(1);
@@ -284,8 +294,10 @@ module Barriers {
       on this {
         const myc = count.fetchSub(1);
         if myc<=1 {
-          if done.testAndSet() then
-            halt("Too many callers to notify()");
+          if boundsChecking && done.testAndSet() {
+            use ChapelHaltWrappers;
+            boundsCheckHalt("Too many callers to notify()");
+          }
         }
       }
     }
@@ -317,37 +329,61 @@ module Barriers {
   /* A task barrier implemented using sync and single variables. Can be used
      as a simple barrier or as a split-phase barrier.
    */
-  pragma "no doc" class sBarrier: BarrierBaseType {
+ pragma "no doc" class sBarrier: BarrierBaseType {
+    /* If true the barrier can be used multiple times.  When using this as a
+       split-phase barrier this causes :proc:`wait` to block until all tasks
+       have reached the wait */
+    param reusable = true;
+
     pragma "no doc"
-    var count: sync int;
+    var inGate: sync int;
     pragma "no doc"
-    var done: single bool;
+    var outGate: sync int;
+    pragma "no doc"
+    var blockers: chpl__processorAtomicType(int);
+    pragma "no doc"
+    var maxBlockers: int;
 
     /* Construct a new `n` task Barrier.
-
        :arg n: The number of tasks that will be involved in the barrier.
      */
-    proc init(n: int) {
-      count = n;
-      super.init();
+    proc init(n: int, param reusable: bool) {
+      this.reusable = reusable;
+      this.complete();
+      reset(n);
     }
 
-    proc reset(nTasks: int) {
-      halt("cannot reset sync based barrier");
+    inline proc reset(nTasks: int) {
+      maxBlockers = nTasks;
+      blockers.write(0);
+      outGate.reset();
+      inGate.writeXF(0);
     }
 
     /* Block until `n` tasks have called this method.
      */
     inline proc barrier() {
       on this {
-        const myc = count;
-        if myc==1 {
-          done = true;
+        if boundsChecking && blockers.read() >= maxBlockers {
+          use ChapelHaltWrappers;
+          boundsCheckHalt("Too many callers to barrier()");
+        }
+        inGate.readFF();
+        var waiters = blockers.fetchAdd(1) + 1;
+
+        if waiters == maxBlockers {
+          inGate.reset();
+          outGate.writeXF(0);
         } else {
-          if myc < 1 then
-            halt("Too many callers to barrier()");
-          count = myc-1;
-          wait();
+          outGate.readFF();
+        }
+
+        if reusable {
+          waiters = blockers.fetchSub(1) - 1;
+          if waiters == 0 {
+            outGate.reset();
+            inGate.writeXF(0);
+          }
         }
       }
     }
@@ -355,36 +391,48 @@ module Barriers {
     /* Notify the barrier that this task has reached this point. */
     inline proc notify() {
       on this {
-        const myc = count;
-        if myc==1 {
-          done = true;
-        } else {
-          if myc < 1 then
-            halt("Too many callers to notify()");
-          count = myc-1;
+        if boundsChecking && blockers.read() >= maxBlockers {
+          use ChapelHaltWrappers;
+          boundsCheckHalt("Too many callers to notify()");
+        }
+
+        inGate.readFF();
+        var waiters = blockers.fetchAdd(1) + 1;
+        if waiters == maxBlockers {
+          inGate.reset();
+          outGate.writeXF(0);
         }
       }
     }
 
     /* Wait until `n` tasks have called :proc:`notify`. */
     inline proc wait() {
-      done;
+      on this {
+        outGate.readFF();
+        if reusable {
+          var waiters = blockers.fetchSub(1) - 1;
+          if waiters == 0 {
+            outGate.reset();
+            inGate.writeXF(0);
+          }
+        }
+      }
     }
 
     /* Return `true` if `n` tasks have called :proc:`notify`
      */
     inline proc check(): bool {
-      return done.readXX();
+      return outGate.isFull;
     }
   }
 
   pragma "no doc"
   proc =(ref lhs: Barrier, rhs: Barrier) {
-    if lhs.owned {
+    if lhs.isowned {
       delete lhs.bar;
     }
     lhs.bar = rhs.bar;
-    lhs.owned = false;
+    lhs.isowned = false;
   }
 
 }

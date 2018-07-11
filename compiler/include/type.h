@@ -50,6 +50,7 @@ class DefExpr;
 class EnumSymbol;
 class Expr;
 class FnSymbol;
+class UnmanagedClassType;
 class Symbol;
 class TypeSymbol;
 class VarSymbol;
@@ -94,9 +95,6 @@ public:
   AggregateType*         refType;
 
   Vec<FnSymbol*>         methods;
-
-  // all generic fields have defaults
-  bool                   hasGenericDefaults;
 
   Symbol*                defaultValue;
 
@@ -312,9 +310,6 @@ class EnumType : public Type {
   // what integer type contains all of this enum values?
   // if this is NULL it will just be recomputed when needed.
   PrimitiveType* integerType;
- private:
-  Immediate minConstant;
-  Immediate maxConstant;
 
  public:
   const char* doc;
@@ -329,12 +324,7 @@ class EnumType : public Type {
   void codegenDef();
   int codegenStructure(FILE* outfile, const char* baseoffset);
 
-  // computes integerType and does the next=last+1 assignments.
-  // This will only really work after the function resolution.
-  void sizeAndNormalize();
   PrimitiveType* getIntegerType();
-  Immediate* getMinConstant();
-  Immediate* getMaxConstant();
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
@@ -386,17 +376,23 @@ private:
 
 // internal types
 TYPE_EXTERN Type*             dtAny;
+TYPE_EXTERN Type*             dtAnyBool;
+TYPE_EXTERN Type*             dtAnyComplex;
+TYPE_EXTERN Type*             dtAnyEnumerated;
+TYPE_EXTERN Type*             dtAnyImag;
+TYPE_EXTERN Type*             dtAnyReal;
+
 TYPE_EXTERN Type*             dtIteratorRecord;
 TYPE_EXTERN Type*             dtIteratorClass;
 TYPE_EXTERN Type*             dtIntegral;
-TYPE_EXTERN Type*             dtAnyComplex;
 TYPE_EXTERN Type*             dtNumeric;
-TYPE_EXTERN Type*             dtAnyEnumerated;
 
 TYPE_EXTERN PrimitiveType*    dtNil;
 TYPE_EXTERN PrimitiveType*    dtUnknown;
 TYPE_EXTERN PrimitiveType*    dtVoid;
 TYPE_EXTERN PrimitiveType*    dtValue;
+TYPE_EXTERN PrimitiveType*    dtBorrowed;
+TYPE_EXTERN PrimitiveType*    dtUnmanaged;
 TYPE_EXTERN PrimitiveType*    dtMethodToken;
 TYPE_EXTERN PrimitiveType*    dtTypeDefaultToken;
 TYPE_EXTERN PrimitiveType*    dtModuleToken;
@@ -445,6 +441,8 @@ int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
 bool isClass(Type* t);
 bool isClassOrNil(Type* t);
+bool isClassLike(Type* t); // includes UnmanagedClassType & ClassType
+bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUnion(Type* t);
 
@@ -455,6 +453,8 @@ bool isRecordWrappedType(const Type* t);
 bool isDomImplType(Type* t);
 bool isArrayImplType(Type* t);
 bool isDistImplType(Type* t);
+bool isManagedPtrType(const Type* t);
+Type* getManagedPtrBorrowType(const Type* t);
 bool isSyncType(const Type* t);
 bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);

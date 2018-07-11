@@ -7,10 +7,10 @@
 2.2 4
 3.3 5
 (b.domain, s)
-red 3
+blue 3
 green 4
-blue 5
+red 5
 (s, b.domain)
-red 3
+blue 3
 green 4
-blue 5
+red 5

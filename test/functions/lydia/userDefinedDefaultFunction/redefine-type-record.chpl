@@ -1,9 +1,10 @@
+pragma "use default init"
 record bar {
   type t;
   var aField: t;
 }
 
-inline proc _defaultOf(type t) where t:bar(int(8)) {
+inline proc _defaultOf(type t:bar(int(8))) {
   var res: t = noinit;
   res.aField = -1;
   return res;

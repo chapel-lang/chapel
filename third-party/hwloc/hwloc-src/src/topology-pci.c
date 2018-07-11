@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2011, 2013 Université Bordeaux
  * Copyright © 2014 Cisco Systems, Inc.  All rights reserved.
  * Copyright © 2015      Research Organization for Information Science
@@ -73,6 +73,19 @@
 
 #define CONFIG_SPACE_CACHESIZE 256
 
+#ifdef HWLOC_WIN_SYS
+#error pciaccess locking currently not implemented on Windows
+
+#elif defined HWLOC_HAVE_PTHREAD_MUTEX
+/* pthread mutex if available (except on windows) */
+#include <pthread.h>
+static pthread_mutex_t hwloc_pciaccess_mutex = PTHREAD_MUTEX_INITIALIZER;
+#define HWLOC_PCIACCESS_LOCK() pthread_mutex_lock(&hwloc_pciaccess_mutex)
+#define HWLOC_PCIACCESS_UNLOCK() pthread_mutex_unlock(&hwloc_pciaccess_mutex)
+
+#else /* HWLOC_WIN_SYS || HWLOC_HAVE_PTHREAD_MUTEX */
+#error No mutex implementation available
+#endif
 
 static int
 hwloc_look_pci(struct hwloc_backend *backend)
@@ -101,9 +114,15 @@ hwloc_look_pci(struct hwloc_backend *backend)
 
   hwloc_debug("%s", "\nScanning PCI buses...\n");
 
+  /* pciaccess isn't thread-safe. it uses a single global variable that doesn't have
+   * refcounting, and is dynamically reallocated when vendor/device names are needed, etc.
+   */
+  HWLOC_PCIACCESS_LOCK();
+
   /* initialize PCI scanning */
   ret = pci_system_init();
   if (ret) {
+    HWLOC_PCIACCESS_UNLOCK();
     hwloc_debug("%s", "Can not initialize libpciaccess\n");
     return -1;
   }
@@ -256,6 +275,7 @@ hwloc_look_pci(struct hwloc_backend *backend)
   /* finalize device scanning */
   pci_iterator_destroy(iter);
   pci_system_cleanup();
+  HWLOC_PCIACCESS_UNLOCK();
 
 #ifdef HWLOC_LINUX_SYS
   dir = opendir("/sys/bus/pci/slots/");

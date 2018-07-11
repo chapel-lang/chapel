@@ -3,9 +3,7 @@ class Foo {
   var y = if x then 10 else 11;
 }
 
-var foo1 = new Foo(true);
-var foo2 = new Foo(false);
+var foo1 = new shared Foo(true);
+var foo2 = new shared Foo(false);
 writeln(foo1);
 writeln(foo2);
-delete foo1;
-delete foo2;

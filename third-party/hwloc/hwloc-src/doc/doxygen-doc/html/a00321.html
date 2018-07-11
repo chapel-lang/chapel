@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Terms and Definitions</title>
+<title>Hardware Locality (hwloc): Components and plugins</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -39,102 +39,104 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="headertitle">
-<div class="title">Terms and Definitions </div>  </div>
+<div class="title">Components and plugins </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="termsanddefs_objects"></a>
-Objects</h1>
+<div class="textblock"><p> 
+<div class="section">
+</p>
+<p>hwloc is organized in components that are responsible for discovering objects. Depending on the topology configuration, some components will be used, some will be ignored. The usual default is to enable the native operating system component, (e.g. <code>linux</code> or <code>solaris</code>) and the <code>pci</code> miscellaneous component. If available, an architecture-specific component (such as <code>x86</code>) may also improve the topology detection.</p>
+<p>If a XML topology is loaded, the <code>xml</code> discovery component will be used instead of all other components. It internally uses a specific class of components for the actual XML import/export routines (<code>xml_libxml</code> and <code>xml_nolibxml</code>) but these will not be discussed here (see <a class="el" href="a00317.html#xml_backends">libxml2 and minimalistic XML backends</a>).</p>
+<p> 
+</div><div class="section" id="plugins_default">
+ </p>
+<h1><a class="anchor" id="plugins_default"></a>
+Components enabled by default</h1>
+<p>The hwloc core contains a list of components sorted by priority. Each one is enabled as long as it does not conflict with the previously enabled ones. This includes native operating system components, architecture-specific ones, and if available, I/O components such as <code>pci</code>.</p>
+<p>Usually the native operating system component (when it exists, e.g. <code>linux</code> or <code>aix</code>) is enabled first. Then hwloc looks for an architecture specific component (e.g. <code>x86</code>). Finally there also exist a basic component (<code>no_os</code>) that just tries to discover the number of PUs in the system.</p>
+<p>Each component discovers as much topology information as possible. Most of them, including most native OS components, do nothing unless the topology is still empty. Some others, such as <code>x86</code> and <code>pci</code>, can complete and annotate what other backends found earlier.</p>
+<p>Default priorities ensure that clever components are invoked first. Native operating system components have higher priorities, and are therefore invoked first, because they likely offer very detailed topology information. If needed, it will be later extended by architecture-specific information (e.g. from the <code>x86</code> component).</p>
+<p>If any configuration function such as <a class="el" href="a00154.html#ga879439b7ee99407ee911b3ac64e9a25e" title="Enable XML-file based topology. ">hwloc_topology_set_xml()</a> is used before loading the topology, the corresponding component is enabled first. Then, as usual, hwloc enables any other component (based on priorities) that does not conflict.</p>
+<p>Certain components that manage a virtual topology, for instance XML topology import, synthetic topology description, or custom building, conflict with all other components. Therefore, one of them may only be loaded (e.g. with <code><a class="el" href="a00154.html#ga879439b7ee99407ee911b3ac64e9a25e" title="Enable XML-file based topology. ">hwloc_topology_set_xml()</a></code>) if no other component is enabled.</p>
+<p>The environment variable <code>HWLOC_COMPONENTS_VERBOSE</code> may be set to get verbose messages about component registration (including their priority) and enabling.</p>
+<p> 
+</div><div class="section" id="plugins_select">
+ </p>
+<h1><a class="anchor" id="plugins_select"></a>
+Selecting which components to use</h1>
+<p>Once topology configuration functions such as <code><a class="el" href="a00154.html#gad1f15795219e2c3ca6d44ba0db604c4f" title="Prepare the topology for custom assembly. ">hwloc_topology_set_custom()</a></code> have been taken care of, the priority order of the remaining components may be changed through the <code>HWLOC_COMPONENTS</code> environment variable (component names must be separated by commas).</p>
+<p>Specifying <code>x86</code> in this variable will cause the <code>x86</code> component to take precedence over any other component, including the native operating system component. It is therefore loaded first, before hwloc tries to load all remaining non-conflicting components. In this case, <code>x86</code> would take care of discovering everything it supports, instead of only completing what the native OS information. This may be useful if the native component is buggy on some platforms.</p>
+<p>It is possible to prevent some components from being loaded by prefixing their name with <code>-</code> in the list. For instance <code>x86,-pci</code> will load the <code>x86</code> component, then let hwloc load all the usual components except <code>pci</code>.</p>
+<p>It is possible to prevent all remaining components from being loaded by placing <code>stop</code> in the environment variable. Only the components listed before this keyword will be enabled.</p>
+<p>Certain component names (<code>xml</code> and <code>synthetic</code>) accept an argument (e.g. <code>xml=file.xml</code>). These arguments behave exactly as if the corresponding string had been passed to <code><a class="el" href="a00154.html#ga879439b7ee99407ee911b3ac64e9a25e" title="Enable XML-file based topology. ">hwloc_topology_set_xml()</a></code> or <code><a class="el" href="a00154.html#ga4fab186bb6181a00bcf585825fddd38d" title="Enable synthetic topology. ">hwloc_topology_set_synthetic()</a></code>.</p>
+<p> 
+</div><div class="section" id="plugins_load">
+ </p>
+<h1><a class="anchor" id="plugins_load"></a>
+Loading components from plugins</h1>
+<p>Components may optionally be built as plugins so that the hwloc core library does not directly depend on their dependencies (for instance the <code>libpciaccess</code> library). Plugin support may be enabled with the <code>--enable-plugins</code> configure option. All components buildable as plugins will then be built as plugins. The configure option may be given a comma-separated list of component names to specify the exact list of components to build as plugins.</p>
+<p>Plugins are built as independent dynamic libraries that are installed in <code>$libdir/hwloc</code>. All plugins found in this directory are loaded during <code>topology_init()</code> (unless blacklisted in <code>HWLOC_PLUGINS_BLACKLIST</code>, see <a class="el" href="a00311.html">Environment Variables</a>). A specific list of directories (colon-separated) to scan may be specified in the <code>HWLOC_PLUGINS_PATH</code> environment variable.</p>
+<p>Note that loading a plugin just means that the corresponding component is registered to the hwloc core. Components are then only enabled if the topology configuration requests it, as explained in the previous sections.</p>
+<p>Also note that plugins should carefully be enabled and used when embedding hwloc in another project, see <a class="el" href="a00322.html">Embedding hwloc in Other Software</a> for details.</p>
+<p> 
+</div><div class="section" id="plugins_add">
+ </p>
+<h1><a class="anchor" id="plugins_adding"></a>
+Adding new discovery components and plugins</h1>
+<p>The types and functions cited below are declared in the <a class="el" href="a00146_source.html" title="Public interface for building hwloc plugins. ">hwloc/plugins.h</a> header. Components are supposed to only use hwloc public headers (<a class="el" href="a00101_source.html" title="The hwloc API. ">hwloc.h</a> and anything under the <code>include/hwloc</code> subdirectory) and nothing from the <code>include/private</code> subdirectory in the source tree.</p>
+<h2><a class="anchor" id="plugins_disc_basic"></a>
+Basics of discovery components</h2>
+<p>Each discovery component is defined by a <code><a class="el" href="a00300.html" title="Discovery component structure. ">hwloc_disc_component</a></code> structure which contains an <code>instantiate()</code> callback. This function is invoked when this component is actually used by a topology. It fills a new <code><a class="el" href="a00304.html" title="Discovery backend structure. ">hwloc_backend</a></code> structure that usually contains <code>discover()</code> and/or <code>notify_new_object()</code> callbacks taking care of the actual topology discovery.</p>
+<dl class="section note"><dt>Note</dt><dd>If two discovery components have the same name, only the highest priority one is actually made available. This offers a way for third-party plugins to override existing components.</dd></dl>
+<h2><a class="anchor" id="plugins_disc_register"></a>
+Registering a new discovery component</h2>
+<p>Registering components to the hwloc core relies on a <code><a class="el" href="a00308.html" title="Generic component structure. ">hwloc_component</a></code> structure. Its <code>data</code> field points to the previously defined <code><a class="el" href="a00300.html" title="Discovery component structure. ">hwloc_disc_component</a></code> structure while its <code>type</code> should be <a class="el" href="a00190.html#gga397a1bf7d21dd073320ad0045340f463a5d6e561f467fe9795a29e7368b613900" title="The data field must point to a struct hwloc_disc_component. ">HWLOC_COMPONENT_TYPE_DISC</a>. This structure should be named <code>hwloc_&lt;name&gt;_component</code>.</p>
+<p>The configure script should be modified to add <code>&lt;name&gt;</code> to its <code>hwloc_components</code> shell variable so that the component is actually available.</p>
+<dl class="section note"><dt>Note</dt><dd>The symbol name of the <code><a class="el" href="a00308.html" title="Generic component structure. ">hwloc_component</a></code> structure is independent of the name of the discovery component mentioned in the previous section.</dd></dl>
+<p>When the component is statically built inside the hwloc library, the symbol <code>hwloc_&lt;name&gt;_component</code> is added by configure to the <code>src/static-components.h</code>. The core then registers all components listed in this file.</p>
+<p>If the new component may be built as a plugin, the configure script should also define the shell variable <code>hwloc_&lt;name&gt;_component_maybeplugin=1</code>. When the configure script actually enables the component as a plugin, it will set the variable <code>hwloc_&lt;name&gt;_component</code> to <code>plugin</code>. The build system may then use this variable to change the way the component is built. It should create a <code>hwloc_&lt;name&gt;.so</code> shared object. All these files are loaded in alphabetic order, and the components they contain are registered to the hwloc core.</p>
+<p> 
+</div><div class="section" id="plugins_list">
+ </p>
+<h1><a class="anchor" id="plugins_list"></a>
+Existing components and plugins</h1>
+<p>All components distributed within hwloc are listed below. The list of actually available components may be listed at running with the <code>HWLOC_COMPONENTS_VERBOSE</code> environment variable (see <a class="el" href="a00311.html">Environment Variables</a>).</p>
 <dl>
-<dt>Object </dt>
-<dd><p class="startdd">Interesting kind of part of the system, such as a Core, a Cache, a NUMA memory node, etc. The different types detected by hwloc are detailed in the <a class="el" href="a00163.html#gacd37bb612667dc437d66bfb175a8dc55" title="Type of topology object. ">hwloc_obj_type_t</a> enumeration.</p>
-<p>They are topologically sorted by CPU set into a tree (see <a class="el" href="a00321.html#termsanddefs_tree">Hierarchy, Tree and Levels</a>). </p>
-<p class="enddd"></p>
+<dt>aix, darwin, freebsd, hpux, linux, netbsd, osf, solaris, windows </dt>
+<dd>Each officially supported operating system has its own native component, which is statically built when supported, and which is used by default.  </dd>
+<dt>x86 </dt>
+<dd>The x86 architecture (either 32 or 64 bits) has its own component that may complete or replace the previously-found CPU information. It is statically built when supported.  </dd>
+<dt>bgq </dt>
+<dd>This component is specific to IBM BlueGene/Q compute node (running CNK). It is built and enabled by default when <code>--host=powerpc64-bgq-linux</code> is passed to configure (see <a class="el" href="a00323.html#faq_bgq">How do I build hwloc for BlueGene/Q?</a>).  </dd>
+<dt>no_os </dt>
+<dd>A basic component that just tries to detect the number of processing units in the system. It mostly serves on operating systems that are not natively supported. It is always statically built.  </dd>
+<dt>pci </dt>
+<dd>PCI object discovery uses the external pciaccess library (aka libpciaccess); see <a class="el" href="a00313.html">I/O Devices</a>. <b>It may be built as a plugin</b>.  </dd>
+<dt>linuxpci </dt>
+<dd>This component can probe PCI devices on Linux without the help of external libraries such as libpciaccess. Its priority is lower than the pci component because it misses device names.  </dd>
+<dt>opencl </dt>
+<dd>The OpenCL component creates co-processor OS device objects such as <em>opencl0d0</em> (first device of the first OpenCL platform) or <em>opencl1d3</em> (fourth device of the second platform). Only the AMD OpenCL implementation currently offers locality information. <b>It may be built as a plugin</b>.  </dd>
+<dt>cuda </dt>
+<dd>This component creates co-processor OS device objects such as <em>cuda0</em> that correspond to NVIDIA GPUs used with CUDA library. <b>It may be built as a plugin</b>.  </dd>
+<dt>nvml </dt>
+<dd>Probing the NVIDIA Management Library creates OS device objects such as <em>nvml0</em> that are useful for batch schedulers. It also detects the actual PCIe link bandwidth without depending on power management state and without requiring administrator privileges. <b>It may be built as a plugin</b>.  </dd>
+<dt>gl </dt>
+<dd>Probing the NV-CONTROL X extension (NVCtrl library) creates OS device objects such as <em>:0.0</em> corresponding to NVIDIA displays. They are useful for graphical applications that need to place computation and/or data near a rendering GPU. <b>It may be built as a plugin</b>.  </dd>
+<dt>synthetic </dt>
+<dd>Synthetic topology support (see <a class="el" href="a00318.html">Synthetic topologies</a>) is always built statically.  </dd>
+<dt>custom </dt>
+<dd>Custom topology support (see <a class="el" href="a00315.html">Multi-node Topologies</a>) is always built statically.  </dd>
+<dt>xml </dt>
+<dd>XML topology import (see <a class="el" href="a00317.html">Importing and exporting topologies from/to XML files</a>) is always built statically. It internally uses one of the XML backends (see <a class="el" href="a00317.html#xml_backends">libxml2 and minimalistic XML backends</a>). <ul>
+<li>
+<b>xml_nolibxml</b> is a basic and hwloc-specific XML import/export. It is always statically built.  </li>
+<li>
+<b>xml_libxml</b> relies on the external libxml2 library for provinding a feature-complete XML import/export. <b>It may be built as a plugin</b>.   </li>
+</ul>
 </dd>
-<dt>Processing Unit (or Logical Processor) </dt>
-<dd><p class="startdd">The smallest processing element that can be represented by a hwloc object. It may be a single-core processor, a core of a multicore processor, or a single thread in a SMT processor. hwloc's PU acronym stands for Processing Unit.</p>
-<p>"Logical processor" should not be confused with "Logical index of a
-  processor". </p>
-<p class="enddd"></p>
-</dd>
-<dt>Package </dt>
-<dd><p class="startdd">A processor Package is the physical package that usually gets inserted into a socket on the motherboard. It is also often called a physical processor or a CPU even if these names bring confusion with respect to cores and processing units. A processor package usually contains multiple cores (and may also be composed of multiple dies). hwloc Package objects were called Sockets up to hwloc 1.10. </p>
-<p class="enddd"></p>
-</dd>
-<dt>NUMA Node </dt>
-<dd><p class="startdd">An object that contains memory that is directly and byte-accessible to the host processors. It is usually close to some cores (the corresponding objects are descendants of the NUMA node object in the hwloc tree, see <a class="el" href="a00321.html#termsanddefs_tree">Hierarchy, Tree and Levels</a>) as specified by its CPU set. </p>
-<p class="enddd"></p>
-</dd>
+<dt>fake </dt>
+<dd>A dummy plugin that does nothing but is used for debugging plugin support.  </dd>
 </dl>
-<h1><a class="anchor" id="termsanddefs_indexes"></a>
-Indexes and Sets</h1>
-<dl>
-<dt>OS or physical index </dt>
-<dd><p class="startdd">The index that the operating system (OS) uses to identify the object. This may be completely arbitrary, non-unique, non-contiguous, not representative of logical proximity, and may depend on the BIOS configuration. That is why hwloc almost never uses them, only in the default lstopo output (<code>P#x</code>) and cpuset masks. See also <a class="el" href="a00335.html#faq_indexes">Should I use logical or physical/OS indexes? and how?</a>.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Logical index </dt>
-<dd><p class="startdd">Index to uniquely identify objects of the same type and depth, automatically computed by hwloc according to the topology. It expresses logical proximity in a generic way, i.e. objects which have adjacent logical indexes are adjacent in the topology. That is why hwloc almost always uses it in its API, since it expresses logical proximity. They can be shown (as <code>L#x</code>) by <code>lstopo</code> thanks to the <code>-l</code> option. This index is always linear and in the range [0, num_objs_same_type_same_level-1]. Think of it as ``cousin rank.'' The ordering is based on topology first, and then on OS CPU numbers, so it is stable across everything except firmware CPU renumbering. "Logical index" should not be confused with "Logical processor". A "Logical
-  processor" (which in hwloc we rather call "processing unit" to avoid the confusion) has both a physical index (as chosen arbitrarily by BIOS/OS) and a logical index (as computed according to logical proximity by hwloc). See also <a class="el" href="a00335.html#faq_indexes">Should I use logical or physical/OS indexes? and how?</a>.</p>
-<p class="enddd"></p>
-</dd>
-<dt>CPU set </dt>
-<dd><p class="startdd">The set of logical processors (or processing units) logically included in an object (if it makes sense). They are always expressed using physical logical processor numbers (as announced by the OS). They are implemented as the <a class="el" href="a00186.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a> opaque structure. hwloc CPU sets are just masks, they do <em>not</em> have any relation with an operating system actual binding notion like Linux' cpusets.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Node set </dt>
-<dd><p class="startdd">The set of NUMA memory nodes logically included in an object (if it makes sense). They are always expressed using physical node numbers (as announced by the OS). They are implemented with the <a class="el" href="a00186.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a> opaque structure. as bitmaps.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Bitmap </dt>
-<dd><p class="startdd">A possibly-infinite set of bits used for describing sets of objects such as CPUs (CPU sets) or memory nodes (Node sets). They are implemented with the <a class="el" href="a00186.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a> opaque structure. </p>
-<p class="enddd"></p>
-</dd>
-</dl>
-<h1><a class="anchor" id="termsanddefs_tree"></a>
-Hierarchy, Tree and Levels</h1>
-<dl>
-<dt>Parent object </dt>
-<dd><p class="startdd">The object logically containing the current object, for example because its CPU set includes the CPU set of the current object.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Ancestor object </dt>
-<dd><p class="startdd">The parent object, or its own parent object, and so on.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Children object(s) </dt>
-<dd><p class="startdd">The object (or objects) contained in the current object because their CPU set is included in the CPU set of the current object.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Arity </dt>
-<dd><p class="startdd">The number of children of an object.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Sibling objects </dt>
-<dd><p class="startdd">Objects which have the same parent. They usually have the same type (and hence are cousins, as well), but they may not if the topology is asymmetric.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Sibling rank </dt>
-<dd><p class="startdd">Index to uniquely identify objects which have the same parent, and is always in the range [0, parent_arity).</p>
-<p class="enddd"></p>
-</dd>
-<dt>Cousin objects </dt>
-<dd><p class="startdd">Objects of the same type (and depth) as the current object, even if they do not have the same parent.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Level </dt>
-<dd><p class="startdd">Set of objects of the same type and depth. All these objects are cousins.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Depth </dt>
-<dd><p class="startdd">Nesting level in the object tree, starting from the root object. If the topology is symmetric, the depth of a child is equal to the parent depth plus one, and an object depth is also equal to the number of parent/child links between the root object and the given object. If the topology is asymmetric, the difference between some parent and child depths may be larger than one when some intermediate levels (for instance groups) are missing in only some parts of the machine. </p>
-<p class="enddd"></p>
-</dd>
-</dl>
-<p>The following diagram can help to understand the vocabulary of the relationships by showing the example of a machine with two dual core packages (with no hardware threads); thus, a topology with 5 levels. Each box with rounded corner corresponds to one <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d" title="Convenience typedef; a pointer to a struct hwloc_obj. ">hwloc_obj_t</a>, containing the values of the different integer fields (depth, logical_index, etc.), and arrows show to which other <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d" title="Convenience typedef; a pointer to a struct hwloc_obj. ">hwloc_obj_t</a> pointers point to (first_child, parent, etc.). The L2 cache of the last core is intentionally missing to show how asymmetric topologies are handled. See <a class="el" href="a00335.html#faq_asymmetric">What happens if my topology is asymmetric?</a> for more information about such strange topologies.</p>
-<div class="image">
-<img src="diagram.png" alt="diagram.png"/>
-</div>
- <p>It should be noted that for PU objects, the logical index &ndash; as computed linearly by hwloc &ndash; is not the same as the OS index. </p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

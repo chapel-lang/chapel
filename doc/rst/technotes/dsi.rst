@@ -88,6 +88,12 @@ externally for users' benefit) beyond the DSI requirements.
 For example, a distribution (i.e. a domain map that distributes data across
 multiple locales) will typically define "local descriptor" classes as well.
 
+A domain map author can provide additional functionality to users simply by
+implementing methods on "global descriptor" classes. When user code contains a
+method call on an array, domain, or distribution that is not handled by one of
+the predefined methods, that call is forwarded to the corresponding global
+descriptor.
+
 
 ======================================
 Phase 1: The Essentials
@@ -954,5 +960,223 @@ implicitly for each ``GlobalDomain`` object and so will be local in any case.
 Phase 4: Bulk-Transfer Interface
 =================================
 
-The bulk-transfer interface design is still in flux. Once finalized, it will
-be documented here.
+What is the bulk-transfer interface?
+------------------------------------
+
+While the Chapel language does not require a specific implementation for array
+assignment, in practice the values are assigned individually:
+
+ .. code-block:: chapel
+
+  for[all] (d, s) in zip(dest, src) {
+    d = s;
+  }
+
+When assignment occurs between arrays on different locales, this can result in
+significant communication overhead. The bulk-transfer interface aims at
+reducing communication between locales by enabling domain maps to handle
+certain kinds of assignments themselves.
+
+How does the bulk-transfer interface work with DSI?
+---------------------------------------------------
+
+The bulk-transfer interface is an optional interface supported only on array
+descriptors. The following methods are prefixed with ``doi`` for "Domain map
+Optional Interface." An array descriptor can implement one or more of these
+methods to opt-in to support for bulk-transfers:
+
+.. method:: proc GlobalArray.doiBulkTransferToKnown(myDom:domain, otherClass, otherDom:domain) : bool
+
+  Perform an array assignment from ``this`` to ``otherClass``.
+
+.. method:: proc GlobalArray.doiBulkTransferFromKnown(myDom:domain, otherClass, otherDom:domain) : bool
+
+  Perform an array assignment from ``otherClass`` to ``this``
+
+.. method:: proc GlobalArray.doiBulkTransferToAny(myDom:domain, otherClass, otherDom:domain) : bool
+
+  Perform an array assignment from ``this`` to ``otherClass``.
+
+.. method:: proc GlobalArray.doiBulkTransferFromAny(myDom:domain, otherClass, otherDom:domain) : bool
+
+  Perform an array assignment from ``otherClass`` to ``this``
+
+Each method shares these arguments:
+
+* ``myDom:domain`` - the indices to be transferred to/from ``this``
+
+* ``otherClass`` - a class inheriting from ``BaseArr`` that represents the
+  other array in the assignment
+
+* ``otherDom:domain`` - the indices to be transferred to/from ``otherClass``
+
+Callers of these methods must satisfy the following guarantees for these
+arguments:
+
+* ``this.rank == myDom.rank``
+
+* ``otherClass.rank == otherDom.rank``
+
+* ``myDom.size == otherDom.size``
+
+.. note::
+
+  ``myDom`` and ``otherDom`` are not required to be distributed, even if the
+  corresponding arrays are distributed. They simply represent the indices
+  involved in the transfer.
+
+Each method returns a ``bool`` indicating whether the assignment occurred. This
+allows domain maps to resort to the Chapel implementation of array assignment
+if they are incapable or unwilling to perform the assignment themselves.
+
+Known and Any methods
+---------------------
+
+There are two kinds of transfers accounted for in this interface.
+
+The first kind of transfer is a ``Known`` transfer. These are transfers that
+the implementer believes to be optimal. Typically this means that the
+implementer knows the type and internals of the other domain map involved in
+the transfer.
+
+The second kind of transfer is an ``Any`` transfer. These are transfers to/from
+domain maps whose type and internals are **not** known. These transfers
+typically rely on attempting to have the unknown domain map transfer to/from
+the internal data of the domain map on which the method is implemented. See
+`Implementing 'Any' Methods`_ for more detail.
+
+This interface recognizes these kinds of transfers because otherwise it is
+difficult to determine which distribution implements the best transfer.
+
+For example, the author of ``PopularDist`` could implement ``Any`` methods for
+better performance with unknown third-party domain maps. The author of
+``NewDist`` could implement ``Known`` methods to ``PopularDist`` due to its
+popularity. By doing so the author of ``NewDist`` has informed Chapel that it
+knows better than ``PopularDist`` and a more optimal transfer occurs.
+
+Chapel will call ``Known`` methods before ``Any`` methods if they can be
+resolved. A recommended convention is to implement ``Known`` methods with a
+where-clause that constrains the type of the ``otherClass`` argument. This
+prevents the ``Known`` method from being called with unknown types.
+
+.. note::
+
+  There is no defined preference for ``To`` and ``From`` methods. Domain map
+  authors should not currently rely on a particular direction being attempted
+  first.
+
+When Does a Bulk-Transfer Occur?
+--------------------------------
+
+There are a number of conditions that need to be true for a bulk-transfer to
+occur:
+
+* The config param ``useBulkTransfer`` must be true
+
+* The element types of the arrays must be identical
+
+* The element type must be one of the following:
+
+    * ``integral``
+    * ``real``
+    * ``complex``
+    * records or tuples that are "Plain Old Data"
+
+The element type is restricted in order to preserve copy semantics of each
+element. For example, ``integral`` types can be bit-copied and so have no
+side-effects. A record with a copy-initializer may have side effects that
+should not be eliminated by the bulk-transfer optimization. In order to avoid
+eliminating these side-effects, only records or tuples that are "Plain Old
+Data" are considered valid for bulk-transfers. The (currently undocumented)
+function ``isPODType(t)`` returns a param boolean indicating whether the given
+type is "Plain Old Data".
+
+The ``useBulkTransfer`` config param is ``true`` by default but can be disabled
+at compilation time. For example:
+
+.. code-block:: bash
+
+  chpl myProgram.chpl -suseBulkTransfer=false
+
+Implementing 'Any' Methods
+--------------------------
+
+`Any <Known and Any Methods_>`_ methods are generally implemented by
+transferring data of an internal type of ``this`` to/from a subset of indices
+in ``otherClass``. For example, a distribution can be implemented in terms of
+Chapel's default rectangular arrays. An ``Any`` method on that distribution
+could be implemented by attempting to transfer data to/from ``otherClass`` to
+a default rectangular array, like so (in pseudo-chapel):
+
+.. code-block:: none
+
+  // For a single locale's data
+  var localDom = localData.domain[myDom]; // local subset of indices for ``this``
+  var locOther = <translate localDom to otherDom's coordinates>;
+  otherClass.doiBulkTransfer[To|From][Any|Known](locOther, localData, localDom);
+
+Implementers who call these ``doiBulkTransfer`` methods should note that they
+can return ``false``, meaning the caller needs to complete the transfer.
+
+.. warning::
+
+  Beware of implementing bulk-transfers by manually calling other
+  ``doiBulkTransfer`` methods. For example:
+
+  .. code-block:: chapel
+
+    proc GlobalArray.doiBulkTransferFromAny(myDom:domain, otherClass, otherDom:domain) {
+      otherClass.doiBulkTransferToAny(otherDom, this, myDom);
+    }
+
+  This pattern can lead to potential recursion depending on the implementation
+  of the other domain map's bulk-transfer method. Instead of implementing the
+  example method above, the author could have not implemented it at all and
+  let the Chapel internals invoke the ``doiBulkTransferToAny`` directly.
+
+Transfers for Aliasing Domain Maps
+----------------------------------
+
+It is valid to write a domain map that aliases another domain map's data. For
+example, a user could write their own variant of a Chapel array slice in terms
+of the Domain Map Standard Interface.
+
+When aliasing other domain maps it is recommended to only implement `Known <Known and Any Methods_>`_
+transfers that forward to the underlying domain map's bulk-transfer methods.
+By implementing `Known <Known and Any Methods_>`_ transfers the underlying domain map will have a
+chance to perform a more optimal transfer before the `Any <Known and Any Methods_>`_ transfers are
+attempted.
+
+Transfers for Rank-changes
+--------------------------
+
+Implementing a bulk-transfer when rank-changed can be tricky. In the interest
+of simplicity, Chapel by default will not attempt to call bulk-transfer methods
+on arrays that have been rank-changed.
+
+Domain map authors can opt-in to handling rank changes by implementing the
+following method:
+
+.. method:: proc GlobalArray.doiCanBulkTransferRankChange() param : bool
+
+If this method is resolvable and returns ``true`` then Chapel will attempt
+to call bulk-transfer methods on the array.
+
+Domain map authors should note that this means that ``this.rank`` may not be
+equal to ``otherClass.rank`` when rank-changes are involved. They should also
+note that while ``myDom`` and ``otherDom`` are of the same size, their
+dimensions may not match in size. For example:
+
+.. code-block:: chapel
+
+  var A, B : [1..10, 1..10] int;
+  A[.., 1] = B[1, ..];
+
+The call to a bulk-transfer method could look like:
+
+.. code-block:: chapel
+
+  classA.doiBulkTransferFromKnown({1..10, 1..1}, classB, {1..1, 1..10});
+
+The implementer of this method is left with the task of determining which
+dimensions were rank-changed.

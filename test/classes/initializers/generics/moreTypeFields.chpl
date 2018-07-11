@@ -10,7 +10,6 @@ class Foo {
   proc init(type t1Val, type t2Val) {
     t1 = t1Val;
     t2 = t2Val;
-    super.init();
   }
 }
 

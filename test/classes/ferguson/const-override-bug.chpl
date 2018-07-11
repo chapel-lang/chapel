@@ -18,11 +18,10 @@ class myNumaDomain : myAbstractLocaleModel {
 
   proc init() {
     name = "test";
-    super.init();
   }
 }
 
 
-var c = new myNumaDomain();
+var c = new unmanaged myNumaDomain();
 writeln(c.name);
 delete c;

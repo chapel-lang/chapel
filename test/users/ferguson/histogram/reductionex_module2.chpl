@@ -5,6 +5,7 @@
     param PER;
     */
 
+    pragma "use default init"
     class myhisto: ReduceScanOp {
       type eltType;
       var counts:NBUCKETS*int;

@@ -183,10 +183,8 @@ proc init(A:[?D]) {
   var n = D.dim(1).length;
   ref Asquare = A(..,1..n);
   ref b = A(..,n+1);
-  var rstream = new RandomStream(real, seed=1234567891);
+  var rstream = new owned RandomStream(real, seed=1234567891);
 
   rstream.fillRandom(Asquare);
   rstream.fillRandom(b);
-
-  delete rstream;
 }

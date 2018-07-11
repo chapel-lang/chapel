@@ -8,7 +8,7 @@ record RECTYPE {
     writeln("RECTYPE constructor");
     VARFIELD   = 200;
     CONSTFIELD = 300;
-    this.initDone();
+    this.complete();
     initRT();
   }
 

@@ -1,2 +1,2 @@
 methodCall.chpl:4: In initializer:
-methodCall.chpl:5: error: cannot call a method during phase 1 of initialization
+methodCall.chpl:5: error: cannot call a method before super.init() or this.init()

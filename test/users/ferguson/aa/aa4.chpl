@@ -22,8 +22,8 @@ proc foo(n:int, ref p:CC, ref q:C)
 }
 
 proc doit() {
-  var p  = new CC(0.0, 0);
-  var q  = new C(1.0);
+  var p  = new borrowed CC(0.0, 0);
+  var q  = new borrowed C(1.0);
   var pC = p:C;
 
   foo(10, p, q);
@@ -35,9 +35,6 @@ proc doit() {
   foo(8, p, pC);
 
   writeln("p=", p, " q=", q);
-
-  delete q;
-  delete p;
 }
 
 proc main() {

@@ -1,3 +1,2 @@
 withParamTypeNoDefNoArgsInCall.chpl:5: error: unresolved call 'Foo.init()'
 withParamTypeNoDefNoArgsInCall.chpl:1: note: candidates are: Foo.init(param p: bool)
-deleted module lines

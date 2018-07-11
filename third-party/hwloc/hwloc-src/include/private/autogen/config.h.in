@@ -261,6 +261,9 @@
 /* Define to 1 if you have the `openat' function. */
 #undef HAVE_OPENAT
 
+/* Define to 1 if you have the <OpenCL/cl_ext.h> header file. */
+#undef HAVE_OPENCL_CL_EXT_H
+
 /* Define to 1 if you have the <picl.h> header file. */
 #undef HAVE_PICL_H
 

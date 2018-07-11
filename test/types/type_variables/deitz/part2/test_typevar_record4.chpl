@@ -1,17 +1,17 @@
 class node {
   type t;
   var element : t;
-  var next : node(t);
+  var next : unmanaged node(t);
 }
 
 record foo {
   type t;
   var length : int;
-  var first : node(t);
-  var last : node(t);
+  var first : unmanaged node(t);
+  var last : unmanaged node(t);
 
   proc append(e : t) {
-   var anew : node(t) = new node(t);
+   var anew : unmanaged node(t) = new unmanaged node(t);
     anew.element = e;
     if length > 0 {
       last.next = anew;
@@ -25,7 +25,7 @@ record foo {
   }
 
   proc prepend(e : t) {
-    var anew : node(t) = new node(t);
+    var anew : unmanaged node(t) = new unmanaged node(t);
     anew.element = e;
     if length > 0 {
       anew.next = first;

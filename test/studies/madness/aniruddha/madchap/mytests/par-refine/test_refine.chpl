@@ -6,12 +6,14 @@ proc main() {
 
     writeln("Mad Chapel -- Concurrent Refinement Test\n");
 
-    var fcn  : [1..4] AFcn = ((new Fn_Test1():AFcn),  (new Fn_Test2():AFcn),  (new Fn_Test3():AFcn), (new Fn_Unity():AFcn));
-    var dfcn : [1..4] AFcn = ((new Fn_dTest1():AFcn), (new Fn_dTest2():AFcn), (new Fn_dTest3():AFcn), (new Fn_dUnity():AFcn));
+    var fcn  : [1..4] unmanaged AFcn = ((new unmanaged Fn_Test1():unmanaged
+          AFcn),  (new unmanaged Fn_Test2():unmanaged AFcn),  (new unmanaged
+            Fn_Test3():unmanaged AFcn), (new unmanaged Fn_Unity():unmanaged AFcn));
+    var dfcn : [1..4] unmanaged AFcn = ((new unmanaged Fn_dTest1():unmanaged AFcn), (new unmanaged Fn_dTest2():unmanaged AFcn), (new unmanaged Fn_dTest3():unmanaged AFcn), (new unmanaged Fn_dUnity():unmanaged AFcn));
 
     for i in fcn.domain {
         writeln("** Testing function ", i);
-        var F = new Function(k=5, thresh=1e-5, f=fcn[i]);
+        var F = new unmanaged Function(k=5, thresh=1e-5, f=fcn[i]);
         writeln("F", i, ".norm2() = ", F.norm2());
 
         F.summarize();

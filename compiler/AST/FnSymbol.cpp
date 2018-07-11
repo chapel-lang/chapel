@@ -37,7 +37,6 @@ FnSymbol*                 initStringLiterals    = NULL;
 
 FnSymbol*                 gAddModuleFn          = NULL;
 FnSymbol*                 gGenericTupleTypeCtor = NULL;
-FnSymbol*                 gGenericTupleInit     = NULL;
 FnSymbol*                 gGenericTupleDestroy  = NULL;
 
 std::map<FnSymbol*, int>  ftableMap;
@@ -348,8 +347,6 @@ void FnSymbol::finalizeCopy() {
       for_alist_backward(node, varArgNodes->body) {
         this->body->insertAtHead(node->remove());
       }
-
-      this->removeFlag(FLAG_EXPANDED_VARARGS);
 
     } else if (this->body->body.length == 0) {
       this->body->replace( COPY_INT(partialCopySource->body) );
@@ -691,13 +688,11 @@ bool FnSymbol::tagIfGeneric() {
       if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
         if (AggregateType* at = toAggregateType(retType)) {
           at->markAsGeneric();
+          if (result == 2)
+            at->markAsGenericWithDefaults();
         }
 
         retType->symbol->addFlag(FLAG_GENERIC);
-
-        if (result == 2) {
-          retType->hasGenericDefaults = true;
-        }
       }
 
       retval = true;
@@ -739,7 +734,11 @@ int FnSymbol::hasGenericFormals() const {
       isGeneric = true;
 
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-      if (formal->type->hasGenericDefaults     == false ||
+      bool typeHasGenericDefaults = false;
+      if (AggregateType* at = toAggregateType(formal->type))
+        typeHasGenericDefaults = at->isGenericWithDefaults();
+
+      if (typeHasGenericDefaults               == false ||
           formal->hasFlag(FLAG_MARKED_GENERIC) == true ||
           formal                               == _this ||
           formal->hasFlag(FLAG_IS_MEME)        == true) {
@@ -881,7 +880,13 @@ bool FnSymbol::isInitializer() const {
 }
 
 bool FnSymbol::isPostInitializer() const {
-  return isMethod() == true && strcmp(name, "postInit") == 0;
+  return isMethod() == true && strcmp(name, "postinit") == 0;
+}
+
+bool FnSymbol::isDefaultInit() const {
+  return hasFlag(FLAG_COMPILER_GENERATED) &&
+         hasFlag(FLAG_DEFAULT_COPY_INIT) == false &&
+         isInitializer();
 }
 
 // This function or method is an iterator (as opposed to a procedure).
@@ -934,6 +939,10 @@ void FnSymbol::printDocs(std::ostream* file, unsigned int tabs) {
     // due to the argument that it's of negligible value in most cases.
     if (this->hasFlag(FLAG_EXPORT)) {
       *file << "export ";
+    }
+
+    if (this->hasFlag(FLAG_OVERRIDE)) {
+      *file << "override ";
     }
 
     // Print iter/proc.

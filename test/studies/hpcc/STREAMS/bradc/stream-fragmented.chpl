@@ -67,7 +67,7 @@ proc printConfiguration() {
 
 
 proc initVectors(B, C, ProblemSpace) {
-  var randlist = new NPBRandomStream(eltType=real, seed=seed);
+  var randlist = new owned NPBRandomStream(eltType=real, seed=seed);
 
   randlist.skipToNth(B.domain.low);
   randlist.fillRandom(B);
@@ -78,8 +78,6 @@ proc initVectors(B, C, ProblemSpace) {
     writelnFragArray("B is: ", B, "\n");
     writelnFragArray("C is: ", C, "\n");
   }
-
-  delete randlist;
 }
 
 

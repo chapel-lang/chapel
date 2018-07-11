@@ -1,15 +1,15 @@
 class myseq_node {
   type elementType;
   var element : elementType;
-  var next : myseq_node(elementType);
+  var next : unmanaged myseq_node(elementType);
 }
 
 class myseq {
   type elementType;
 
   var  length : int;
-  var  first  : myseq_node(elementType);
-  var  last   : myseq_node(elementType);
+  var  first  : unmanaged myseq_node(elementType);
+  var  last   : unmanaged myseq_node(elementType);
 
   proc deinit() {
     if first != nil then delete first;
@@ -18,7 +18,7 @@ class myseq {
   proc append(e : elementType) {
     if first != nil then delete first;
 
-    first = new myseq_node(elementType = elementType);
+    first = new unmanaged myseq_node(elementType = elementType);
     first.element = e;
     last = first;
     length = 1;
@@ -29,7 +29,7 @@ class myseq {
   }
 }
 
-var s : myseq(int) = new myseq(int);
+var s : myseq(int) = new borrowed myseq(int);
 
 s.append(2);
 
@@ -38,6 +38,3 @@ s.print();
 s.append(3);
 
 s.print();
-
-delete s;
-

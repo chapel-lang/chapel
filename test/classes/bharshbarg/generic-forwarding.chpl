@@ -8,14 +8,14 @@ class Lower {
 
 class Upper {
   type eltType;
-  forwarding var low : Lower(eltType) = new Lower(eltType);
+  forwarding var low : unmanaged Lower(eltType) = new unmanaged Lower(eltType);
 
   proc deinit() {
     delete low;
   }
 }
 
-var u = new Upper(int);
+var u = new unmanaged Upper(int);
 
 u.something(u);
 

@@ -538,7 +538,7 @@ err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out)
   got = lseek(fd, offset, whence);
   if( got != (off_t) -1 ) {
     *offset_out = got;
-    err_out = 0; 
+    err_out = 0;
   } else {
     *offset_out = got;
     err_out = errno;
@@ -547,12 +547,47 @@ err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out)
   return err_out;
 }
 
-err_t sys_stat(const char* path, struct stat* buf)
+
+void stat_to_sys_stat(const char* path, sys_stat_t* out_buf, struct stat* in_buf)
+{
+  stat(path, in_buf);
+  out_buf->st_dev = in_buf->st_dev;
+  out_buf->st_ino = in_buf->st_ino;
+  out_buf->st_mode = in_buf->st_mode;
+  out_buf->st_nlink = in_buf->st_nlink;
+  out_buf->st_uid = in_buf->st_uid;
+  out_buf->st_gid = in_buf->st_gid;
+  out_buf->st_rdev = in_buf->st_rdev;
+  out_buf->st_size = in_buf->st_size;
+  //out_buf->st_blksize = in_buf->st_blksize;
+  //out_buf->st_blocks = in_buf->st_blocks;
+
+#if (_POSIX_C_SOURCE == 200809L)
+  out_buf->st_atim = in_buf->st_atim;
+  out_buf->st_mtim = in_buf->st_mtim;
+  out_buf->st_ctim = in_buf->st_ctim;
+#else
+  time_t atime = in_buf->st_atime;
+  time_t mtime = in_buf->st_mtime;
+  time_t ctime = in_buf->st_ctime;
+  struct timespec atim = {atime, 0};
+  struct timespec mtim = {mtime, 0};
+  struct timespec ctim = {ctime, 0};
+  out_buf->st_atim = atim;
+  out_buf->st_mtim = mtim;
+  out_buf->st_ctim = ctim;
+#endif
+}
+
+
+err_t sys_stat(const char* path, sys_stat_t* out_buf)
 {
   off_t got;
   err_t err_out;
+  struct stat in_buf;
 
-  got = stat(path, buf);
+  got = stat(path, &in_buf);
+  stat_to_sys_stat(path, out_buf, &in_buf);
   if( got != -1 ) {
     err_out = 0;
   } else {

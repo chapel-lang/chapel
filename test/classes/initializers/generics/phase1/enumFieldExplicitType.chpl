@@ -7,10 +7,9 @@ class Foo {
   proc init(val: Color) {
     a = val;
     b = Color.green;
-    super.init();
   }
 }
 
-var foo = new Foo(Color.blue);
+var foo = new unmanaged Foo(Color.blue);
 writeln(foo);
 delete foo;

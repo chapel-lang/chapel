@@ -11,12 +11,11 @@ class Foo {
     }
 
     x = xVal;
-    super.init();
   }
 }
 
 sync {
-  var foo = new Foo(14);
+  var foo = new unmanaged Foo(14);
   writeln(foo);
   delete foo;
 }

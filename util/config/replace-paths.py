@@ -48,6 +48,14 @@ if __name__ == '__main__':
 
         origpath = m
         path = os.path.realpath(origpath)
+
+        if os.path.isfile(path):
+          # Leave out the filename, since we're only trying to replace
+          # directories. This prevents clang++ from being replaced
+          # with e.g. clang-6.0 when clang++ is a symbolic link.
+          origpath = os.path.dirname(origpath)
+          path = os.path.dirname(path)
+
         #sys.stdout.write("maybe found path {0} \n".format(path))
 
         for kv in tofix:

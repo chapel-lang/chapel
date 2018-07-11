@@ -24,7 +24,7 @@ Options:
   [filter]
   --[no-]tidy   (default) [don't] Omit sub-variables irrelevant to the current
                  configuration
-  --anonymize   Omit machine specific detailss, script location, and CHPL_HOME
+  --anonymize   Omit machine specific details, script location, and CHPL_HOME
   --overrides   Omit variables that have not been user supplied via environment
                  or chplconfig
 
@@ -71,6 +71,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_ORIG_TARGET_COMPILER', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT, 'arch'),
     ChapelEnv('CHPL_RUNTIME_ARCH', INTERNAL),
+    ChapelEnv('CHPL_TARGET_ARCH_FLAG', INTERNAL),
     ChapelEnv('CHPL_TARGET_BACKEND_ARCH', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
@@ -87,7 +88,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_MAKE', INTERNAL, 'make'),
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
-    ChapelEnv('CHPL_GMP', RUNTIME | DEFAULT, 'gmp'),
+    ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_REGEXP', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_LLVM', COMPILER, 'llvm'),
@@ -131,12 +132,12 @@ def compute_all_values():
     ENV_VALS['CHPL_HOST_COMPILER'] = chpl_compiler.get('host')
     ENV_VALS['CHPL_TARGET_PLATFORM'] = chpl_platform.get('target')
     ENV_VALS['CHPL_TARGET_COMPILER'] = chpl_compiler.get('target')
-    ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')
+    ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target').arch
 
     # Use module's LCD architecture in case it was built before
     # Internal, but this value is used in place of CHPL_TARGET_ARCH for --path
     ENV_VALS['CHPL_RUNTIME_ARCH'] = chpl_arch.get('target',
-            get_lcd=chpl_home_utils.using_chapel_module())
+            get_lcd=chpl_home_utils.using_chapel_module()).arch
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
@@ -165,8 +166,9 @@ def compute_internal_values():
 
     # Maps architecture name that Chapel uses to the name that can be included
     # in an argument like -march e.g. for gcc-4.7: 'ivybridge' -> 'core-avx-i'
-    ENV_VALS['CHPL_TARGET_BACKEND_ARCH'] = chpl_arch.get('target',
-            map_to_compiler=True)
+    backend_info = chpl_arch.get('target', map_to_compiler=True)
+    ENV_VALS['CHPL_TARGET_ARCH_FLAG'] = backend_info.flag
+    ENV_VALS['CHPL_TARGET_BACKEND_ARCH'] = backend_info.arch
 
     ENV_VALS['CHPL_HOST_MEM'] = chpl_mem.get('host')
     ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
@@ -331,7 +333,7 @@ def parse_args():
         description = 'Print the current Chapel configuration. '
                       '[content] arguments determine what gets printed. '
                       '[filter] arguments determine what gets omitted. '
-                      '[format] arguments deermine how it gets printed. '
+                      '[format] arguments determine how it gets printed. '
                       '[shortcut] arguments are for convenience.')
 
     #[shortcut]

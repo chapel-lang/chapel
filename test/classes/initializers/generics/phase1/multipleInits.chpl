@@ -8,7 +8,6 @@ class LotsOFields {
     f2 = val2;
     f2 = val2*3; // uh oh!
     f3 = val3;
-    super.init();
   }
 }
 

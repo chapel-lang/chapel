@@ -11,22 +11,23 @@
 
 ## `chapel/chapel:<version>`
 Supported Chapel versions:
-* [`1.16.0`, `latest` (_1.16.0/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.16.0/Dockerfile/)
+* [`1.17.1`, `latest` (_1.17.1/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/release/1.17/util/dockerfiles/Dockerfile/)
+* [`1.17.0` (_1.17.0/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/release/1.17/util/dockerfiles/1.17.0/Dockerfile/)
+* [`1.16.0` (_1.16.0/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.16.0/Dockerfile/)
 * [`1.15.0` (_1.15.0/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.15.0/Dockerfile/)
-* [`1.14.0` (_1.14.0/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.14.0/Dockerfile/)
-* [`1.13.1` (_1.13.1/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.13.1/Dockerfile)
 
 This is the core image for Chapel. It provides the complete Chapel compiler and runtime.  It can be used to compile and run Chapel programs inside the Docker container. On 64-bit Linux hosts, the compiled Chapel program binary can sometimes be executed outside the container (your mileage may vary). Other Chapel-based Docker images can be created from this image.
 
 ## [`chapel/chapel-gasnet:<version>`](https://hub.docker.com/r/chapel/chapel-gasnet/)
 
-* [`1.16.0`, `latest` (_1.16.0/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.16.0/gasnet/Dockerfile/)
+* [`1.17.1`, `latest` (_1.17.1/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/release/1.17/util/dockerfiles/gasnet/Dockerfile/)
+* [`1.17.0` (_1.17.0/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/release/1.17/util/dockerfiles/1.17.0/gasnet/Dockerfile/)
+* [`1.16.0` (_1.16.0/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.16.0/gasnet/Dockerfile/)
 * [`1.15.0` (_1.15.0/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.15.0/gasnet/Dockerfile/)
-* [`1.14.0` (_1.14.0/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.14.0/gasnet/Dockerfile/)
 
 The Chapel core image (above), rebuilt with `CHPL_COMM=gasnet` and `GASNET_SPAWNFN=L`. Simulates a multilocale Chapel platform within the Docker container.
 
-Multilocale Chapel brings additional requirements, unrelated to Docker. The `chpl` compilation produces two binary files (e.g. `hello_real` as well as `hello`). When you run the binary, you need another command line parameter, `-nl #`, to specify the number of locales. Please see [Multilocale Chapel Execution](https://chapel-lang.org/docs/latest/usingchapel/multilocale.html) for details.
+Multilocale Chapel brings additional requirements, unrelated to Docker. The `chpl` compilation produces two binary files (e.g. `hello_real` as well as `hello`). When you run the binary, you need another command line parameter, `-nl #`, to specify the number of locales. Please see [Multilocale Chapel Execution](https://chapel-lang.org/docs/usingchapel/multilocale.html) for details.
 
 # How to use the image
 
@@ -68,8 +69,8 @@ Hello, world!
 
 # Documentation
 
-Chapel's documentation is [available online](https://chapel-lang.org/docs/latest/).
-Documentation for a specific release is also available: [1.16](https://chapel-lang.org/docs/1.16/), [1.15](https://chapel-lang.org/docs/1.15/), [1.14](https://chapel-lang.org/docs/1.14/), [1.13](https://chapel-lang.org/docs/1.13/).
+Chapel's documentation is [available online](https://chapel-lang.org/docs/).
+Documentation for a specific release is also available: [1.16](https://chapel-lang.org/docs/1.16/), [1.15](https://chapel-lang.org/docs/1.15/).
 
 # License
 

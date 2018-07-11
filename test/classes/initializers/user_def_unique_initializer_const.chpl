@@ -5,11 +5,10 @@ class C {
 
   proc init(y, z) {
     x = y+z;
-    super.init();
   }
 }
 
-var c = new C(2, 3);
+var c = new unmanaged C(2, 3);
 
 writeln(c.x);
 

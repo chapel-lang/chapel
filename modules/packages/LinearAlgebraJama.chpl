@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,68 +24,68 @@ The Jama Chapel module is a port of the JAMA matrix library
 http://math.nist.gov/javanumerics/jama/
 
 JAMA is a basic linear algebra package for Java. This is a port of Jama to Chapel.
-Jama provides user-level classes for constructing and manipulating real, dense 
-matrices. Jama is meant to provide sufficient functionality for routine problems, 
-packaged in a way that is natural and understandable to non-experts. Jama is 
-intended to serve as the standard matrix class for Chapel. Jama is a straightforward 
-public-domain reference implementation has been developed by the MathWorks and 
-NIST as a strawman for such a class. MathWorks and NIST released this version in 
-order to obtain public comment. There was no guarantee that future versions of 
+Jama provides user-level classes for constructing and manipulating real, dense
+matrices. Jama is meant to provide sufficient functionality for routine problems,
+packaged in a way that is natural and understandable to non-experts. Jama is
+intended to serve as the standard matrix class for Chapel. Jama is a straightforward
+public-domain reference implementation has been developed by the MathWorks and
+NIST as a strawman for such a class. MathWorks and NIST released this version in
+order to obtain public comment. There was no guarantee that future versions of
 JAMA will be compatible with this one.
 
-A sibling matrix package, Jampack, has also been developed at NIST and the 
-University of Maryland. The two packages arose from the need to evaluate 
-alternate designs for the implementation of matrices in Java. JAMA is based 
-on a single matrix class within a strictly object-oriented framework. Jampack 
-uses a more open approach that lends itself to extension by the user. As it 
-turns out, for the casual user the packages differ principally in the syntax 
-of the matrix operations. We hope you will take the time to look at Jampack 
+A sibling matrix package, Jampack, has also been developed at NIST and the
+University of Maryland. The two packages arose from the need to evaluate
+alternate designs for the implementation of matrices in Java. JAMA is based
+on a single matrix class within a strictly object-oriented framework. Jampack
+uses a more open approach that lends itself to extension by the user. As it
+turns out, for the casual user the packages differ principally in the syntax
+of the matrix operations. We hope you will take the time to look at Jampack
 along with JAMA. There is much to be learned from both packages.
 
 Capabilities.
 
-JAMA is comprised of six Java classes: Matrix, CholeskyDecomposition, 
-LUDecomposition, QRDecomposition, SingularValueDecomposition and 
+JAMA is comprised of six Java classes: Matrix, CholeskyDecomposition,
+LUDecomposition, QRDecomposition, SingularValueDecomposition and
 EigenvalueDecomposition.
 
 Reference Implementation.
 
-The implementation of JAMA downloadable from this site is meant to be a 
-reference implementation only. As such, it is pedagogical in nature. The 
-algorithms employed are similar to those of the classic Wilkinson and Reinsch 
-Handbook, i.e. the same algorithms used in EISPACK, LINPACK and MATLAB. 
-Matrices are stored internally as native arrays (i.e., double[][]). The 
-coding style is straightforward and readable. While the reference 
-implementation itself should provide reasonable execution speed for small 
-to moderate size applications, we fully expect software vendors to 
+The implementation of JAMA downloadable from this site is meant to be a
+reference implementation only. As such, it is pedagogical in nature. The
+algorithms employed are similar to those of the classic Wilkinson and Reinsch
+Handbook, i.e. the same algorithms used in EISPACK, LINPACK and MATLAB.
+Matrices are stored internally as native arrays (i.e., double[][]). The
+coding style is straightforward and readable. While the reference
+implementation itself should provide reasonable execution speed for small
+to moderate size applications, we fully expect software vendors to
 provide versions which are optimized for particular environments. Not Covered.
 
-JAMA is by no means a complete linear algebra environment. For example, 
-there are no provisions for matrices with particular structure (e.g., 
-banded, sparse) or for more specialized decompositions (e.g. Schur, 
-generalized eigenvalue). Complex matrices are not included. It is not our 
-intention to ignore these important problems. We expect that some of these 
-(e.g. complex) will be addressed in future versions. It is our intent that 
+JAMA is by no means a complete linear algebra environment. For example,
+there are no provisions for matrices with particular structure (e.g.,
+banded, sparse) or for more specialized decompositions (e.g. Schur,
+generalized eigenvalue). Complex matrices are not included. It is not our
+intention to ignore these important problems. We expect that some of these
+(e.g. complex) will be addressed in future versions. It is our intent that
 the design of JAMA not preclude extension to some of these additional areas.
 
-Finally, JAMA is not a general-purpose array class. Instead, it focuses on 
-the principle mathematical functionality required to do numerical linear algebra. 
-As a result, there are no methods for array operations such as reshaping or 
-applying elementary functions (e.g. sine, exp, log) elementwise. Such operations, 
+Finally, JAMA is not a general-purpose array class. Instead, it focuses on
+the principle mathematical functionality required to do numerical linear algebra.
+As a result, there are no methods for array operations such as reshaping or
+applying elementary functions (e.g. sine, exp, log) elementwise. Such operations,
 while quite useful in many applications, are best collected into a separate array
 class.
 
-The Matrix class provides the fundamental operations of numerical linear algebra. 
-Various constructors create Matrices from two dimensional arrays of double precision 
-floating point numbers. Various gets and sets provide access to submatrices and 
-matrix elements. The basic arithmetic operations include matrix addition and 
-multiplication, matrix norms and selected element-by-element array operations. 
+The Matrix class provides the fundamental operations of numerical linear algebra.
+Various constructors create Matrices from two dimensional arrays of double precision
+floating point numbers. Various gets and sets provide access to submatrices and
+matrix elements. The basic arithmetic operations include matrix addition and
+multiplication, matrix norms and selected element-by-element array operations.
 A convenient matrix print method is also included.
 
-Five fundamental matrix decompositions, which consist of pairs or triples of 
-matrices, permutation vectors, and the like, produce results in five 
-decomposition classes. These decompositions are accessed by the Matrix class 
-to compute solutions of simultaneous linear equations, determinants, inverses 
+Five fundamental matrix decompositions, which consist of pairs or triples of
+matrices, permutation vectors, and the like, produce results in five
+decomposition classes. These decompositions are accessed by the Matrix class
+to compute solutions of simultaneous linear equations, determinants, inverses
 and other matrix functions. The five decompositions are
 
     Cholesky Decomposition of symmetric, positive definite matrices
@@ -94,20 +94,20 @@ and other matrix functions. The five decompositions are
     Eigenvalue Decomposition of both symmetric and nonsymmetric square matrices
     Singular Value Decomposition of rectangular matrices
 
-The current JAMA deals only with real matrices. We expect that future versions 
-will also address complex matrices. This has been deferred since crucial design 
-decisions cannot be made until certain issues regarding the implementation of 
+The current JAMA deals only with real matrices. We expect that future versions
+will also address complex matrices. This has been deferred since crucial design
+decisions cannot be made until certain issues regarding the implementation of
 complex in the Java language are resolved.
 
-The design of JAMA represents a compromise between the need for pure and elegant 
-object-oriented design and the need to enable high performance implementations. 
+The design of JAMA represents a compromise between the need for pure and elegant
+object-oriented design and the need to enable high performance implementations.
 
 Authors
 
 JAMA's initial design, as well as this reference implementation, was developed by
 Joe Hicklin
 Cleve Moler
-Peter Webb      ... from The MathWorks             
+Peter Webb      ... from The MathWorks
 
 Ronald F. Boisvert
 Bruce Miller
@@ -116,11 +116,11 @@ Karin Remington      ... from NIST
 
 Copyright Notice
 
-This software is a cooperative product of The MathWorks and the National Institute 
-of Standards and Technology (NIST) which has been released to the public domain. 
-Neither The MathWorks nor NIST assumes any responsibility whatsoever for its use 
-by other parties, and makes no guarantees, expressed or implied, about its quality, 
-reliability, or any other characteristic. 
+This software is a cooperative product of The MathWorks and the National Institute
+of Standards and Technology (NIST) which has been released to the public domain.
+Neither The MathWorks nor NIST assumes any responsibility whatsoever for its use
+by other parties, and makes no guarantees, expressed or implied, about its quality,
+reliability, or any other characteristic.
 
 */
 module LinearAlgebraJama {
@@ -138,11 +138,11 @@ proc hypot(a, b:real) {
    if (abs(a) > abs(b)) {
       r = b/a;
       r = abs(a)*((1.0+r*r)**0.5); //Math.sqrt(1+r*r);
-   } 
+   }
    else if (b != 0.0) {
       r = a/b;
       r = abs(b)*((1.0+r*r)**0.5); //sqrt(1+r*r);
-   } 
+   }
    else {
       r = 0.0;
    }
@@ -156,7 +156,7 @@ proc hypot(a, b:real) {
 
    For a symmetric, positive definite matrix A, the Cholesky decomposition
    is an lower triangular matrix L so that A = L*L'.
-   
+
    If the matrix is not symmetric or positive definite, the constructor
    returns a partial decomposition and sets an internal flag that may
    be queried by the isSPD() method.
@@ -182,7 +182,7 @@ class CholeskyDecomposition {
        Structure to access L and isspd flag.
        Arg a Square, symmetric matrix.
    */
-   proc init (Arg:Matrix) {
+   proc init (Arg: unmanaged Matrix) {
 
 
      // Initialize.
@@ -192,7 +192,7 @@ class CholeskyDecomposition {
       //L = new double[n,n];
       isspd = (Arg.getColumnDimension() == n);
 
-      this.initDone();
+      this.complete();
 
       // Main loop.
       //for (int j = 0; j < n; j++) {
@@ -210,7 +210,7 @@ class CholeskyDecomposition {
             s = (A[j,k] - s)/L[k,k];
             Lrowj[k] = s;
             d = d + s*s;
-            isspd = isspd & (A[k,j] == A[j,k]); 
+            isspd = isspd & (A[k,j] == A[j,k]);
          }
          d = A[j,j] - d;
          isspd = isspd & (d > 0.0);
@@ -235,7 +235,7 @@ class CholeskyDecomposition {
    */
 
    proc getL () {
-      return new Matrix(L,n,n);
+      return new unmanaged Matrix(L,n,n);
    }
 
    /* Solve A*X = B
@@ -243,7 +243,7 @@ class CholeskyDecomposition {
    return     X so that L*L'*X = B
    */
 
-   proc solve (B:Matrix) {
+   proc solve (B: unmanaged Matrix) {
       if (B.getRowDimension() != n) {
          assert(B.getRowDimension() != n, "Matrix row dimensions must agree.");
       }
@@ -269,7 +269,7 @@ class CholeskyDecomposition {
                 X[k,j] /= L[k,k];
              }
            }
-     
+
            // Solve L'*X = Y;
            //for (int k = n-1; k >= 0; k--) {
            for k in 1..n-1 by -1 {
@@ -281,17 +281,17 @@ class CholeskyDecomposition {
                 X[k,j] /= L[k,k];
              }
            }
-      
-      return new Matrix(X,n,nx);
+
+      return new unmanaged Matrix(X,n,nx);
    }
 
 }
 
-/* Eigenvalues and eigenvectors of a real matrix. 
+/* Eigenvalues and eigenvectors of a real matrix.
 
     If A is symmetric, then A = V*D*V' where the eigenvalue matrix D is
     diagonal and the eigenvector matrix V is orthogonal.
-    I.e. A = V.times(D.times(V.transpose())) and 
+    I.e. A = V.times(D.times(V.transpose())) and
     V.times(V.transpose()) equals the identity matrix.
 
     If A is not symmetric, then the eigenvalue matrix D is block diagonal
@@ -331,7 +331,7 @@ class EigenvalueDecomposition {
    internal storage of nonsymmetric Hessenberg form.
    */
    var hDom = {1..1,1..1};
-   var H : [hDom] real; 
+   var H : [hDom] real;
 
    /* Working storage for nonsymmetric algorithm.
    working storage for nonsymmetric algorithm.
@@ -353,7 +353,7 @@ class EigenvalueDecomposition {
       }
 
       // Householder reduction to tridiagonal form.
-   
+
       for i in 2..n by -1 {
          // Scale to avoid under/overflow.
 
@@ -361,7 +361,7 @@ class EigenvalueDecomposition {
          var h = 0.0;
          const irng = {1..i};
 
-         for k in irng { 
+         for k in irng {
             scale = scale + abs(d[k]);
          }
 
@@ -373,13 +373,13 @@ class EigenvalueDecomposition {
                V[i,j] = 0.0;
                V[j,i] = 0.0;
             }
-         } 
+         }
          else {
-   
+
             // Generate Householder vector.
-   
+
             //for (int k = 0; k < i; k++) {
-            for k in irng { 
+            for k in irng {
                d[k] /= scale;
                h += d[k] * d[k];
             }
@@ -395,15 +395,15 @@ class EigenvalueDecomposition {
             for j in irng {
                e[j] = 0.0;
             }
-   
+
             // Apply similarity transformation to remaining columns.
-   
-            for j in irng { 
+
+            for j in irng {
                f = d[j];
                V[j,i] = f;
                g = e[j] + V[j,j] * f;
 
-               for k in j+1..i-1 { 
+               for k in j+1..i-1 {
                   g += V[k,j] * d[k];
                   e[k] += V[k,j] * f;
                }
@@ -422,7 +422,7 @@ class EigenvalueDecomposition {
                e[j] -= hh * d[j];
             }
 
-            for j in irng { 
+            for j in irng {
                f = d[j];
                g = e[j];
 
@@ -435,10 +435,10 @@ class EigenvalueDecomposition {
          }
          d[i] = h;
       }
-   
+
       // Accumulate transformations.
-   
-      for i in 1..n-1 { 
+
+      for i in 1..n-1 {
          const irng = {1..i};
          V[n-1,i] = V[i,i];
          V[i,i] = 1.0;
@@ -450,7 +450,7 @@ class EigenvalueDecomposition {
 
             for j in irng {
                var g = 0.0;
-               for k in irng { 
+               for k in irng {
                   g += V[k,i+1] * V[k,j];
                }
 
@@ -472,31 +472,31 @@ class EigenvalueDecomposition {
 
       V[n-1,n-1] = 1.0;
       e[1] = 0.0;
-   } 
+   }
 
    /* Symmetric tridiagonal QL algorithm. */
-   
+
    proc tql2 () {
 
    //  This is derived from the Algol procedures tql2, by
    //  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
    //  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
    //  Fortran subroutine in EISPACK.
-   
+
       //for (int i = 1; i < n; i++) {
       for i in 2..n {
          e[i-1] = e[i];
       }
       e[n-1] = 0.0;
-   
+
       var f = 0.0;
       var tst1 = 0.0;
       var eps = 2.0 ** -52.0;
 
-      for l in 1..n { 
+      for l in 1..n {
 
          // Find small subdiagonal element
-   
+
          tst1 = max(tst1,abs(d[l]) + abs(e[l]));
          var m = l;
          while (m < n) {
@@ -505,17 +505,17 @@ class EigenvalueDecomposition {
             }
             m+=1;
          }
-   
+
          // If m == l, d[l] is an eigenvalue,
          // otherwise, iterate.
-   
+
          if (m > l) {
             var itr = 0;
             do {
                itr = itr + 1;  // (Could check iteration count here.)
-   
+
                // Compute implicit shift
-   
+
                var g = d[l];
                var p = (d[l+1] - g) / (2.0 * e[l]);
                var r = hypot(p,1.0);
@@ -527,13 +527,13 @@ class EigenvalueDecomposition {
                var dl1 = d[l+1];
                var h = g - d[l];
 
-               for i in l+2..n { 
+               for i in l+2..n {
                   d[i] -= h;
                }
                f = f + h;
-   
+
                // Implicit QL transformation.
-   
+
                p = d[m];
                var c = 1.0;
                var c2 = c;
@@ -554,9 +554,9 @@ class EigenvalueDecomposition {
                   c = p / r;
                   p = c * d[i] - s * g;
                   d[i+1] = h + s * (c * g + s * d[i]);
-   
+
                   // Accumulate transformation.
-   
+
                   for k in 1..n {
                      h = V[k,i+1];
                      V[k,i+1] = s * V[k,i] + c * h;
@@ -566,17 +566,17 @@ class EigenvalueDecomposition {
                p = -s * s2 * c3 * el1 * e[l] / dl1;
                e[l] = s * p;
                d[l] = c * p;
-   
+
                // Check for convergence.
-   
+
             } while (abs(e[l]) > eps*tst1);
          }
          d[l] = d[l] + f;
          e[l] = 0.0;
       }
-     
+
       // Sort eigenvalues and corresponding vectors.
-   
+
       //for (int i = 0; i < n-1; i++) {
       for i in d.domain {
          var k = i;
@@ -604,31 +604,31 @@ class EigenvalueDecomposition {
    /* Nonsymmetric reduction to Hessenberg form. */
 
    proc orthes () {
-   
+
       //  This is derived from the Algol procedures orthes and ortran,
       //  by Martin and Wilkinson, Handbook for Auto. Comp.,
       //  Vol.ii-Linear Algebra, and the corresponding
       //  Fortran subroutines in EISPACK.
-   
+
       var low = 1;
       var high = n;
-   
+
       for m in low+1..high-1 {
-   
+
          // Scale column.
-   
+
          var scale = 0.0;
 
-         for i in m..high { 
+         for i in m..high {
             scale = scale + abs(H[i,m-1]);
          }
          if (scale != 0.0) {
-   
+
             // Compute Householder transformation.
-   
+
             var h = 0.0;
 
-            for i in m..high { 
+            for i in m..high {
                ort[i] = H[i,m-1]/scale;
                h += ort[i] * ort[i];
             }
@@ -639,11 +639,11 @@ class EigenvalueDecomposition {
             }
             h = h - ort[m] * g;
             ort[m] = ort[m] - g;
-   
+
             // Apply Householder similarity transformation
             // H = (I-u*u'/h)*H*(I-u*u')/h)
-   
-            for j in m..n { 
+
+            for j in m..n {
                var f = 0.0;
                for i in m..high {
                   f += ort[i]*H[i,j];
@@ -653,7 +653,7 @@ class EigenvalueDecomposition {
                   H[i,j] -= f*ort[i];
                }
            }
-   
+
            for i in 1..high {
                var f = 0.0;
                for j in m..high by -1 {
@@ -668,7 +668,7 @@ class EigenvalueDecomposition {
             H[m,m-1] = scale*g;
          }
       }
-   
+
       // Accumulate transformations (Algol's ortran).
 
       for (i,j) in V.domain {
@@ -718,24 +718,24 @@ class EigenvalueDecomposition {
    /* Nonsymmetric reduction from Hessenberg to real Schur form. */
 
    proc hqr2 () {
-   
+
       //  This is derived from the Algol procedure hqr2,
       //  by Martin and Wilkinson, Handbook for Auto. Comp.,
       //  Vol.ii-Linear Algebra, and the corresponding
       //  Fortran subroutine in EISPACK.
-   
+
       // Initialize
-   
+
       var nn :int = this.n;
       var n :int = nn-1; // suspicious of this subtraction
       var low = 1;
       var high = nn;
-      var eps = 2.0 ** -52.0; 
+      var eps = 2.0 ** -52.0;
       var exshift = 0.0;
       var p,q,r,s,z,t,w,x,y:real;
-   
+
       // Store roots isolated by balanc and compute matrix norm
-   
+
       var norm = 0.0;
       for i in 1..nn {
          if (i < low | i > high) {
@@ -746,14 +746,14 @@ class EigenvalueDecomposition {
             norm = norm + abs(H[i,j]);
          }
       }
-   
+
       // Outer loop over eigenvalue index
-   
+
       var itr = 0;
       while (n >= low) {
-   
+
          // Look for single small sub-diagonal element
-   
+
          var l = n;
          while (l > low) {
             s = abs(H[l-1,l-1]) + abs(H[l,l]);
@@ -765,30 +765,30 @@ class EigenvalueDecomposition {
             }
             l-=1;
          }
-       
+
          // Check for convergence
          // One root found
-   
+
          if (l == n) {
             H[n,n] = H[n,n] + exshift;
             d[n] = H[n,n];
          e[n] = 0.0;
          n-=1;
             itr = 0;
-   
+
          // Two roots found
-   
+
          } else if (l == n-1) {
             w = H[n,n-1] * H[n-1,n];
             p = (H[n-1,n-1] - H[n,n]) / 2.0;
             q = p * p + w;
-            z = abs(q) ** 0.5; 
+            z = abs(q) ** 0.5;
             H[n,n] = H[n,n] + exshift;
             H[n-1,n-1] = H[n-1,n-1] + exshift;
             x = H[n,n];
-   
+
             // Real pair
-   
+
             if (q >= 0) {
                if (p >= 0) {
                   z = p + z;
@@ -806,36 +806,36 @@ class EigenvalueDecomposition {
                s = abs(x) + abs(z);
                p = x / s;
                q = z / s;
-               r = (p * p+q * q) ** 0.5; 
+               r = (p * p+q * q) ** 0.5;
                p = p / r;
                q = q / r;
-   
+
                // Row modification
-   
+
                for j in n-1..nn {
                   z = H[n-1,j];
                   H[n-1,j] = q * z + p * H[n,j];
                   H[n,j] = q * H[n,j] - p * z;
                }
-   
+
                // Column modification
-   
+
                for i in 1..n {
                   z = H[i,n-1];
                   H[i,n-1] = q * z + p * H[i,n];
                   H[i,n] = q * H[i,n] - p * z;
                }
-   
+
                // Accumulate transformations
-   
+
                for i in low..high {
                   z = V[i,n-1];
                   V[i,n-1] = q * z + p * V[i,n];
                   V[i,n] = q * V[i,n] - p * z;
                }
-   
+
             // Complex pair
-   
+
             } else {
                d[n-1] = x + p;
                d[n] = x + p;
@@ -844,13 +844,13 @@ class EigenvalueDecomposition {
             }
             n = n - 2;
             itr = 0;
-   
+
          // No convergence yet
-   
+
          } else {
-   
+
             // Form shift
-   
+
             x = H[n,n];
             y = 0.0;
             w = 0.0;
@@ -858,9 +858,9 @@ class EigenvalueDecomposition {
                y = H[n-1,n-1];
                w = H[n,n-1] * H[n-1,n];
             }
-   
+
             // Wilkinson's original ad hoc shift
-   
+
             if (itr == 10) {
                exshift += x;
                for i in low..n {
@@ -878,7 +878,7 @@ class EigenvalueDecomposition {
                 s = (y - x) / 2.0;
                 s = s * s + w;
                 if (s > 0) {
-                    s = s ** 0.5; 
+                    s = s ** 0.5;
                     if (y < x) {
                        s = -s;
                     }
@@ -890,11 +890,11 @@ class EigenvalueDecomposition {
                     x = 0.964; y = 0.964; w = 0.964;
                 }
             }
-   
+
             itr = itr + 1;   // (Could check iteration count here.)
-   
+
             // Look for two consecutive small sub-diagonal elements
-   
+
             var m = n-2;
             while (m >= l) {
                z = H[m,m];
@@ -917,16 +917,16 @@ class EigenvalueDecomposition {
                }
                m-=1;
             }
-   
+
             for i in m+2..n {
                H[i,i-2] = 0.0;
                if (i > m+2) {
                   H[i,i-3] = 0.0;
                }
             }
-   
+
             // Double QR step involving rows l:n and columns m:n
-   
+
             for k in m..n-1 {
                var notlast = (k != n-1);
                if (k != m) {
@@ -958,9 +958,9 @@ class EigenvalueDecomposition {
                   z = r / s;
                   q = q / p;
                   r = r / p;
-   
+
                   // Row modification
-   
+
                   for j in k..nn {
                      p = H[k,j] + q * H[k+1,j];
                      if (notlast) {
@@ -970,9 +970,9 @@ class EigenvalueDecomposition {
                      H[k,j] = H[k,j] - p * x;
                      H[k+1,j] = H[k+1,j] - p * y;
                   }
-   
+
                   // Column modification
-   
+
                   for i in 1..min(n,k+3) {
                      p = x * H[i,k] + y * H[i,k+1];
                      if (notlast) {
@@ -982,9 +982,9 @@ class EigenvalueDecomposition {
                      H[i,k] = H[i,k] - p;
                      H[i,k+1] = H[i,k+1] - p * q;
                   }
-   
+
                   // Accumulate transformations
-   
+
                   for i in low..high {
                      p = x * V[i,k] + y * V[i,k+1];
                      if (notlast) {
@@ -998,19 +998,19 @@ class EigenvalueDecomposition {
             }  // k loop
          }  // check convergence
       }  // while (n >= low)
-      
+
       // Backsubstitute to find vectors of upper triangular form
 
       if (norm == 0.0) {
          return;
       }
-   
+
       for n in 1..nn-1 by -1 {
          p = d[n];
          q = e[n];
-   
+
          // Real vector
-   
+
          if (q == 0) {
             var l = n;
             H[n,n] = 1.0;
@@ -1031,9 +1031,9 @@ class EigenvalueDecomposition {
                      } else {
                         H[i,n] = -r / (eps * norm);
                      }
-   
+
                   // Solve real equations
-   
+
                   } else {
                      x = H[i,i+1];
                      y = H[i+1,i];
@@ -1046,9 +1046,9 @@ class EigenvalueDecomposition {
                         H[i+1,n] = (-s - y * t) / z;
                      }
                   }
-   
+
                   // Overflow control
-   
+
                   t = abs(H[i,n]);
                   if ((eps * t) * t > 1) {
                      for j in i..n {
@@ -1057,14 +1057,14 @@ class EigenvalueDecomposition {
                   }
                }
             }
-   
+
          // Complex vector
-   
+
          } else if (q < 0) {
             var l = n-1;
 
             // Last vector component imaginary so matrix is triangular
-   
+
             if (abs(H[n,n-1]) > abs(H[n-1,n])) {
                H[n-1,n-1] = q / H[n,n-1];
                H[n-1,n] = -(H[n,n] - p) / H[n,n-1];
@@ -1087,7 +1087,7 @@ class EigenvalueDecomposition {
                   sa = sa + H[i,j] * H[j,n];
                }
                w = H[i,i] - p;
-   
+
                if (e[i] < 0.0) {
                   z = w;
                   r = ra;
@@ -1099,9 +1099,9 @@ class EigenvalueDecomposition {
                      H[i,n-1] = cdivr;
                      H[i,n] = cdivi;
                   } else {
-   
+
                      // Solve complex equations
-   
+
                      x = H[i,i+1];
                      y = H[i+1,i];
                      vr = (d[i] - p) * (d[i] - p) + e[i] * e[i] - q * q;
@@ -1122,7 +1122,7 @@ class EigenvalueDecomposition {
                         H[i+1,n] = cdivi;
                      }
                   }
-   
+
                   // Overflow control
 
                   t = max(abs(H[i,n-1]),abs(H[i,n]));
@@ -1136,9 +1136,9 @@ class EigenvalueDecomposition {
             }
          }
       }
-   
+
       // Vectors of isolated roots
-   
+
       for i in 1..nn {
          if (i < low | i > high) {
             for j in i..nn {
@@ -1146,9 +1146,9 @@ class EigenvalueDecomposition {
             }
          }
       }
-   
+
       // Back transformation to get eigenvectors of original matrix
-   
+
       for j in low..nn-1 by -1 {
          for i in low..high {
             z = 0.0;
@@ -1166,14 +1166,14 @@ class EigenvalueDecomposition {
        Structure to access D and V.
    */
 
-   proc init (Arg:Matrix) {
+   proc init (Arg: unmanaged Matrix) {
       var A = Arg.getArray();
       n = Arg.getColumnDimension();
       issymmetric = true;
       dDom = {1..n};
       eDom = {1..n};
       vDom = {1..n,1..n};
-      this.initDone();
+      this.complete();
 
       var j = 1;
       while( (j < n) & issymmetric ) {
@@ -1189,24 +1189,24 @@ class EigenvalueDecomposition {
          for (i,j) in {1..n, 1..n} {
                V[i,j] = A[i,j];
          }
-   
+
          // Tridiagonalize.
          tred2();
-   
+
          // Diagonalize.
          tql2();
 
       } else {
          hDom = {1..n, 1..n};
          ortDom = {1..n};
-         
+
          for (j,i) in {1..n,1..n} {
                H[i,j] = A[i,j];
          }
-   
+
          // Reduce to Hessenberg form.
          orthes();
-   
+
          // Reduce Hessenberg to real Schur form.
          hqr2();
       }
@@ -1215,8 +1215,8 @@ class EigenvalueDecomposition {
    /* Return the eigenvector matrix
    */
 
-   proc getV () : Matrix {
-      return new Matrix(V,n,n);
+   proc getV () : unmanaged Matrix {
+      return new unmanaged Matrix(V,n,n);
    }
 
    /* Return the real parts of the eigenvalues
@@ -1238,8 +1238,8 @@ class EigenvalueDecomposition {
    /* Return the block diagonal eigenvalue matrix
    */
 
-   proc getD () : Matrix {
-      var X = new Matrix(n,n);
+   proc getD () : unmanaged Matrix {
+      var X = new unmanaged Matrix(n,n);
       var D = X.getArray();
       const nrng = {1..n};
       for i in nrng {
@@ -1258,7 +1258,7 @@ class EigenvalueDecomposition {
 
 }
 
-/* 
+/*
    LU Decomposition.
 
    For an m-by-n matrix A with m >= n, the LU decomposition is an m-by-n
@@ -1297,7 +1297,7 @@ class LUDecomposition {
    A Rectangular matrix
    */
 
-   proc init (A:Matrix) {
+   proc init (A: unmanaged Matrix) {
    // Use a "left-looking", dot-product, Crout/Doolittle algorithm.
 
       m = A.getRowDimension();
@@ -1309,7 +1309,7 @@ class LUDecomposition {
 
       pivDom = {1..m};
       piv = pivDom;
-      this.initDone();
+      this.complete();
 
       var lurowiDom = {1..n};
       var LUrowi : [lurowiDom] real;
@@ -1330,21 +1330,21 @@ class LUDecomposition {
 
          // Apply previous transformations.
 
-         for i in mrng { 
+         for i in mrng {
             LUrowi = LU[i,..];
 
             // Most of the time is spent in the following dot product.
 
             var kmax = min(i,j);
             var s = 0.0;
-            for k in 1..kmax { 
+            for k in 1..kmax {
                s += LUrowi[k]*LUcolj[k];
             }
 
             LUcolj[i] -= s;
             LUrowi[j] = LUcolj[i];
          }
-   
+
          // Find pivot and exchange if necessary.
 
          var p = j;
@@ -1362,7 +1362,7 @@ class LUDecomposition {
          }
 
          // Compute multipliers.
-         
+
          if ( (j < m) & (LU[j,j] != 0.0)) {
             for i in j+1..m {
                LU[i,j] /= LU[j,j];
@@ -1387,7 +1387,7 @@ class LUDecomposition {
    */
 
    proc getL () {
-      var X = new Matrix(m,n);
+      var X = new unmanaged Matrix(m,n);
       var L = X.getArray();
       for (i,j) in {1..m,1..n} {
             if (i > j) {
@@ -1405,7 +1405,7 @@ class LUDecomposition {
    */
 
    proc getU () {
-      var X = new Matrix(n,n);
+      var X = new unmanaged Matrix(n,n);
       var U = X.getArray();
       for (i,j) in {1..n, 1..n} {
             if (i <= j) {
@@ -1454,7 +1454,7 @@ class LUDecomposition {
         X so that L*U*X = B(piv,:)
    */
 
-   proc solve (B:Matrix) {
+   proc solve (B: unmanaged Matrix) {
       if (B.getRowDimension() != m) {
          assert(B.getRowDimension() != m, "Matrix row dimensions must agree.");
       }
@@ -1465,7 +1465,7 @@ class LUDecomposition {
       // Copy right hand side with pivoting
       var nx = B.getColumnDimension();
       var Xmat = B.getMatrix(piv,1,nx);
-      var X = Xmat.A; 
+      var X = Xmat.A;
 
       // Solve L*Y = B(piv,:)
       for k in 1..n {
@@ -1495,7 +1495,7 @@ class LUDecomposition {
 */
 
 proc identity (m:int, n:int) {
-   var A = new Matrix(m,n);
+   var A = new unmanaged Matrix(m,n);
    var X = A.getArray();
    for (i,j) in {1..m, 1..n} {
       X[i,j] = if(i == j) then 1.0 else 0.0;
@@ -1509,7 +1509,7 @@ proc identity (m:int, n:int) {
    The Java Matrix Class provides the fundamental operations of numerical
    linear algebra.  Various constructors create Matrices from two dimensional
    arrays of double precision floating point numbers.  Various "gets" and
-   "sets" provide access to submatrices and matrix elements.  Several methods 
+   "sets" provide access to submatrices and matrix elements.  Several methods
    implement basic matrix arithmetic, including matrix addition and
    multiplication, matrix norms, and element-by-element array operations.
    Methods for reading and printing matrices are also included.  All the
@@ -1537,7 +1537,7 @@ author The MathWorks, Inc. and the National Institute of Standards and Technolog
 version 5 August 1998
 */
 
-class Matrix { 
+class Matrix {
 
    /* Row and column dimensions.
      row dimension.
@@ -1550,7 +1550,7 @@ class Matrix {
    var aDom = {1..1, 1..1};
    var A : [aDom] real;
 
-   /* Construct an m-by-n matrix of zeros. 
+   /* Construct an m-by-n matrix of zeros.
         m    Number of rows.
         n    Number of columns.
    */
@@ -1559,7 +1559,6 @@ class Matrix {
       this.m = m;
       this.n = n;
       aDom = {1..m, 1..n};
-      super.init();
    }
 
    /* Construct an m-by-n constant matrix.
@@ -1573,7 +1572,6 @@ class Matrix {
       this.n = n;
       aDom = {1..m, 1..n};
       A = s;
-      super.init();
    }
 
    /* Construct a matrix from a 2-D array.
@@ -1586,12 +1584,12 @@ class Matrix {
          n = 1;
       }
       else {
-        m = aDom.high(1); 
-        n = aDom.high(2); 
+        m = aDom.high(1);
+        n = aDom.high(2);
       }
 
       this.aDom = {1..m, 1..n};
-      this.initDone();
+      this.complete();
 
       for i in 1..m {
          if (this.aDom.high(2) != n) {
@@ -1618,7 +1616,6 @@ class Matrix {
       this.n = n;
       this.aDom = {1..m, 1..n};
       this.A = A(this.aDom);
-      super.init();
    }
 
    /* Construct a matrix from a one-dimensional packed array
@@ -1630,7 +1627,7 @@ class Matrix {
       this.m = m;
       n = if(m != 0) then vals.domain.high/m else 0;
       aDom = {1..m, 1..n};
-      this.initDone();
+      this.complete();
       if (m*n != vals.domain.high) {
          assert(m*n != vals.domain.high, "Array length must be a multiple of m.");
       }
@@ -1645,7 +1642,7 @@ class Matrix {
    proc constructWithCopy(A : [?aDom] real) where aDom.rank == 2 {
       var m = aDom.high(1);
       var n = aDom.high(2);
-      var X = new Matrix(m,n);
+      var X = new unmanaged Matrix(m,n);
       var C = X.getArray();
 
       for i in 1..m {
@@ -1660,7 +1657,7 @@ class Matrix {
    */
 
    proc copy () {
-      var X = new Matrix(m,n);
+      var X = new unmanaged Matrix(m,n);
       var C = X.getArray();
       for (i,j) in {1..m, 1..n} {
             C[i,j] = A[i,j];
@@ -1698,7 +1695,7 @@ class Matrix {
    */
 
    proc getColumnPackedCopy () {
-      var vals : [1..m*n] real; 
+      var vals : [1..m*n] real;
       for (i,j) in {1..m, 1..n} {
          vals[i+j*m] = A[i,j];
       }
@@ -1752,7 +1749,7 @@ class Matrix {
    */
 
    proc getMatrix (i0:int, i1:int, j0:int, j1:int) {
-      var X = new Matrix(i1-i0+1,j1-j0+1);
+      var X = new unmanaged Matrix(i1-i0+1,j1-j0+1);
       for (i,j) in {i0..i1, j0..j1} {
          X.A[(i-i0)+1,(j-j0)+1] = A[i,j];
       }
@@ -1766,7 +1763,7 @@ class Matrix {
    */
 
    proc getMatrix (r:[?rDom] int, c:[?cDom] int) {
-      var X = new Matrix(r.length,c.length);
+      var X = new unmanaged Matrix(r.length,c.length);
       var B = X.getArray();
          for (i,j) in {1..rDom.high, 1..cDom.high} {
                B[i,j] = A[r[i],c[j]];
@@ -1782,7 +1779,7 @@ class Matrix {
    */
 
    proc getMatrix (i0:int, i1:int, c:[?cDom] int) {
-      var X = new Matrix(i1-i0+1,c.length);
+      var X = new unmanaged Matrix(i1-i0+1,c.length);
       var B = X.getArray();
         for (i,j) in {i0..i1, 1..cDom.high} {
                B[i-i0,j] = A[i,c[j]];
@@ -1798,7 +1795,7 @@ class Matrix {
    */
 
    proc getMatrix (r:[?rDom] int, j0:int, j1:int) {
-      var X = new Matrix(rDom.high,j1-j0+1);
+      var X = new unmanaged Matrix(rDom.high,j1-j0+1);
       var B = X.getArray();
          for (i,j) in {1..rDom.high, j0..j1} {
                B[i,(j-j0)+1] = A[r[i],j];
@@ -1824,7 +1821,7 @@ class Matrix {
    X    A(i0:i1,j0:j1)
    */
 
-   proc setMatrix (i0, i1, j0, j1:int, X:Matrix) {
+   proc setMatrix (i0, i1, j0, j1:int, X: unmanaged Matrix) {
          for (i,j) in {i0..i1, j0..j1} {
                A[i,j] = X.get(i-i0,j-j0);
          }
@@ -1836,10 +1833,10 @@ class Matrix {
    X    A(r(:),c(:))
    */
 
-   proc setMatrix (r:[?rDom] int, c:[?cDom] int, X:Matrix) {
+   proc setMatrix (r:[?rDom] int, c:[?cDom] int, X: unmanaged Matrix) {
       for (i,j) in {1..rDom.high, 1..cDom.high} {
                A[r[i],c[j]] = X.get(i,j);
-      } 
+      }
    }
 
    /* Set a submatrix.
@@ -1849,7 +1846,7 @@ class Matrix {
    X    A(r(:),j0:j1)
    */
 
-   proc setMatrix (r:[?rDom] int, j0:int, j1:int, X:Matrix) {
+   proc setMatrix (r:[?rDom] int, j0:int, j1:int, X: unmanaged Matrix) {
          for (i,j) in {1..rDom.high, j0..j1} {
                A[r[i],j] = X.get(i,j-j0);
          }
@@ -1862,7 +1859,7 @@ class Matrix {
    X    A(i0:i1,c(:))
    */
 
-   proc setMatrix (i0, i1:int, c:[?cDom] int, X:Matrix) {
+   proc setMatrix (i0, i1:int, c:[?cDom] int, X: unmanaged Matrix) {
          for (i,j) in {i0..i1, 1..cDom.high} {
                A[i,c[j]] = X.get(i-i0,j);
          }
@@ -1873,7 +1870,7 @@ class Matrix {
    */
 
    proc transpose () {
-      var X = new Matrix(n,m);
+      var X = new unmanaged Matrix(n,m);
       var C = X.A;
       for (i,j) in {1..m, 1..n} {
             C[j,i] = A[i,j];
@@ -1900,7 +1897,7 @@ class Matrix {
    */
 
    proc norm2 () : real{
-      var toret : SingularValueDecomposition = new SingularValueDecomposition(this);
+      var toret : unmanaged SingularValueDecomposition = new unmanaged SingularValueDecomposition(this);
       return toret.norm2();
    }
 
@@ -1934,7 +1931,7 @@ class Matrix {
    */
 
    proc uminus () {
-      var X = new Matrix(m,n);
+      var X = new unmanaged Matrix(m,n);
       var C = X.getArray();
       for (i,j) in {1..m, 1..n} {
             C[i,j] = -A[i,j];
@@ -1947,9 +1944,9 @@ class Matrix {
    return     A + B
    */
 
-   proc plus (B:Matrix) {
+   proc plus (B: unmanaged Matrix) {
       checkMatrixDimensions(B);
-      var X = new Matrix(m,n);
+      var X = new unmanaged Matrix(m,n);
       var C = X.getArray();
       for (i,j) in {1..m, 1..n} {
             C[i,j] = A[i,j] + B.A[i,j];
@@ -1962,7 +1959,7 @@ class Matrix {
    return     A + B
    */
 
-   proc plusEquals (B:Matrix) {
+   proc plusEquals (B: unmanaged Matrix) {
       checkMatrixDimensions(B);
       for (i,j) in {1..m, 1..n} {
             A[i,j] = A[i,j] + B.A[i,j];
@@ -1975,9 +1972,9 @@ class Matrix {
    return     A - B
    */
 
-   proc minus (B:Matrix) {
+   proc minus (B: unmanaged Matrix) {
       checkMatrixDimensions(B);
-      var X = new Matrix(m,n);
+      var X = new unmanaged Matrix(m,n);
       var C = X.getArray();
       for (i,j) in {1..m, 1..n} {
             C[i,j] = A[i,j] - B.A[i,j];
@@ -1990,7 +1987,7 @@ class Matrix {
    return     A - B
    */
 
-   proc minusEquals (B:Matrix) {
+   proc minusEquals (B: unmanaged Matrix) {
       checkMatrixDimensions(B);
       for (i,j) in {1..m, 1..n} {
             A[i,j] = A[i,j] - B.A[i,j];
@@ -2003,9 +2000,9 @@ class Matrix {
    return     A.*B
    */
 
-   proc arrayTimes (B:Matrix) {
+   proc arrayTimes (B: unmanaged Matrix) {
       checkMatrixDimensions(B);
-      var X = new Matrix(m,n);
+      var X = new unmanaged Matrix(m,n);
       var C = X.getArray();
       for (i,j) in {1..m, 1..n} {
             C[i,j] = A[i,j] * B.A[i,j];
@@ -2018,7 +2015,7 @@ class Matrix {
    return     A.*B
    */
 
-   proc arrayTimesEquals (B:Matrix) {
+   proc arrayTimesEquals (B: unmanaged Matrix) {
       checkMatrixDimensions(B);
       for (i,j) in {1..m, 1..n} {
             A[i,j] = A[i,j] * B.A[i,j];
@@ -2031,9 +2028,9 @@ class Matrix {
    return     A./B
    */
 
-   proc arrayRightDivide (B:Matrix) {
+   proc arrayRightDivide (B: unmanaged Matrix) {
       checkMatrixDimensions(B);
-      var X = new Matrix(m,n);
+      var X = new unmanaged Matrix(m,n);
       var C = X.getArray();
       for (i,j) in {1..m, 1..n} {
             C[i,j] = A[i,j] / B.A[i,j];
@@ -2046,7 +2043,7 @@ class Matrix {
    return     A./B
    */
 
-   proc arrayRightDivideEquals (B:Matrix) {
+   proc arrayRightDivideEquals (B: unmanaged Matrix) {
       checkMatrixDimensions(B);
       for (i,j) in {1..m, 1..n} {
             A[i,j] = A[i,j] / B.A[i,j];
@@ -2059,9 +2056,9 @@ class Matrix {
    return     A.\B
    */
 
-   proc arrayLeftDivide (B:Matrix) {
+   proc arrayLeftDivide (B: unmanaged Matrix) {
       checkMatrixDimensions(B);
-      var X = new Matrix(m,n);
+      var X = new unmanaged Matrix(m,n);
       var C = X.getArray();
       for (i,j) in {1..m, 1..n} {
             C[i,j] = B.A[i,j] / A[i,j];
@@ -2074,7 +2071,7 @@ class Matrix {
    return     A.\B
    */
 
-   proc arrayLeftDivideEquals (B:Matrix) {
+   proc arrayLeftDivideEquals (B: unmanaged Matrix) {
       checkMatrixDimensions(B);
       for (i,j) in {1..m, 1..n} {
             A[i,j] = B.A[i,j] / A[i,j];
@@ -2088,7 +2085,7 @@ class Matrix {
    */
 
    proc times (s:real) {
-      var X = new Matrix(m,n);
+      var X = new unmanaged Matrix(m,n);
       var C = X.getArray();
       for (i,j) in {1..m, 1..n} {
             C[i,j] = s*A[i,j];
@@ -2113,11 +2110,11 @@ class Matrix {
    return     Matrix product, A * B
    */
 
-   proc times (B:Matrix) {
+   proc times (B: unmanaged Matrix) {
       if (B.m != n) {
          assert(B.m != n, "Matrix inner dimensions must agree.");
       }
-      var X = new Matrix(m,B.n);
+      var X = new unmanaged Matrix(m,B.n);
       var C = X.getArray();
       var Bcolj : [1..n] real;
       for j in 1..B.n {
@@ -2138,7 +2135,7 @@ class Matrix {
    */
 
    proc lu () {
-      return new LUDecomposition(this);
+      return new unmanaged LUDecomposition(_to_unmanaged(this));
    }
 
    /* QR Decomposition
@@ -2146,7 +2143,7 @@ class Matrix {
    */
 
    proc qr () {
-      return new QRDecomposition(this);
+      return new unmanaged QRDecomposition(_to_unmanaged(this));
    }
 
    /* Cholesky Decomposition
@@ -2154,7 +2151,7 @@ class Matrix {
    */
 
    proc chol () {
-      return new CholeskyDecomposition(this);
+      return new unmanaged CholeskyDecomposition(_to_unmanaged(this));
    }
 
    /* Singular Value Decomposition
@@ -2162,11 +2159,11 @@ class Matrix {
    */
 
    proc svd () {
-      return new SingularValueDecomposition(this);
+      return new unmanaged SingularValueDecomposition(_to_unmanaged(this));
    }
 
    proc rsvd() {
-      return new RandomSingularValueDecomposition(this);
+      return new unmanaged RandomSingularValueDecomposition(_to_unmanaged(this));
    }
 
    /* Eigenvalue Decomposition
@@ -2174,7 +2171,7 @@ class Matrix {
    */
 
    proc eig () {
-      return new EigenvalueDecomposition(this);
+      return new unmanaged EigenvalueDecomposition(_to_unmanaged(this));
    }
 
    /* Solve A*X = B
@@ -2182,9 +2179,9 @@ class Matrix {
    return     solution if A is square, least squares solution otherwise
    */
 
-   proc solve (B:Matrix) {
-      var toret = if(m == n) then (new LUDecomposition(this)).solve(B) 
-                             else (new QRDecomposition(this)).solve(B);
+   proc solve (B: unmanaged Matrix) {
+      var toret = if(m == n) then (new unmanaged LUDecomposition(_to_unmanaged(this))).solve(B)
+                             else (new unmanaged QRDecomposition(_to_unmanaged(this))).solve(B);
       return toret;
    }
 
@@ -2193,7 +2190,7 @@ class Matrix {
    return     solution if A is square, least squares solution otherwise.
    */
 
-   proc solveTranspose (B:Matrix) {
+   proc solveTranspose (B: unmanaged Matrix) {
       return transpose().solve(B.transpose());
    }
 
@@ -2210,7 +2207,7 @@ class Matrix {
    */
 
    proc det () {
-      var toret : LUDecomposition = new LUDecomposition(this);
+      var toret : unmanaged LUDecomposition = new unmanaged LUDecomposition(_to_unmanaged(this));
       return toret.det();
    }
 
@@ -2219,7 +2216,7 @@ class Matrix {
    */
 
    proc rank () {
-      var toret : SingularValueDecomposition = new SingularValueDecomposition(this);
+      var toret : SingularValueDecomposition = new unmanaged SingularValueDecomposition(_to_unmanaged(this));
       return toret.rank();
    }
 
@@ -2228,7 +2225,7 @@ class Matrix {
    */
 
    proc cond () {
-      var toret : SingularValueDecomposition = new SingularValueDecomposition(this);
+      var toret : SingularValueDecomposition = new unmanaged SingularValueDecomposition(_to_unmanaged(this));
       return toret.cond();
    }
 
@@ -2250,15 +2247,15 @@ class Matrix {
    */
 
    proc random (m, n:int) {
-      var A = new Matrix(m,n);
-      var randlist = new RandomStream(real, seed);
+      var A = new unmanaged Matrix(m,n);
+      var randlist = new owned RandomStream(real, seed);
       randlist.fillRandom(A.A);
       return A;
    }
 
    /* Check if size(A) == size(B) */
 
-   proc checkMatrixDimensions (B:Matrix) {
+   proc checkMatrixDimensions (B: unmanaged Matrix) {
       if (B.m != m || B.n != n) {
          assert((B.m != m || B.n != n), "Matrix dimensions must agree.");
       }
@@ -2267,8 +2264,8 @@ class Matrix {
 }
 
 proc random (m, n:int) {
-   var A = new Matrix(m,n);
-   var randlist = new RandomStream(real, seed);
+   var A = new unmanaged Matrix(m,n);
+   var randlist = new owned RandomStream(real, seed);
    randlist.fillRandom(A.A);
    return A;
 }
@@ -2310,15 +2307,15 @@ class QRDecomposition {
    A    Rectangular matrix
    */
 
-   proc init (A:Matrix) {
+   proc init (A: unmanaged Matrix) {
       // Initialize.
       m = A.getRowDimension();
       n = A.getColumnDimension();
 
-      qrDom = {1..m, 1..n}; 
+      qrDom = {1..m, 1..n};
       QR = A.getArrayCopy();
       rdiagDom = {1..n};
-      this.initDone();
+      this.complete();
 
       // Main loop.
       for k in rdiagDom {
@@ -2340,7 +2337,7 @@ class QRDecomposition {
 
             // Apply transformation to remaining columns.
             for j in k+1..n {
-               var s = 0.0; 
+               var s = 0.0;
                for i in k..m {
                   s += QR[i,k]*QR[i,j];
                }
@@ -2372,9 +2369,9 @@ class QRDecomposition {
    */
 
    proc getH () {
-      var X = new Matrix(m,n);
+      var X = new unmanaged Matrix(m,n);
       var H = X.getArray();
-      for (i,j) in {1..m, 1..n} { 
+      for (i,j) in {1..m, 1..n} {
             if (i >= j) {
                H[i,j] = QR[i,j];
             } else {
@@ -2389,11 +2386,11 @@ class QRDecomposition {
    */
 
    proc getR () {
-      var X = new Matrix(n,n);
+      var X = new unmanaged Matrix(n,n);
       // BUG HERE! Tried to make this a ref to speed things up - it got weird b/c
       // making this a ref instead of a var makes the output from getQ change.
       //
-      var retR = X.A; 
+      var retR = X.A;
       for (i,j) in {1..n, 1..n} {
             if (i < j) {
                retR[i,j] = QR[i,j];
@@ -2412,7 +2409,7 @@ class QRDecomposition {
    */
 
    proc getQ () {
-      var X = new Matrix(m,n);
+      var X = new unmanaged Matrix(m,n);
       var retQ = X.A;
 
       for k in 1..n-1 by -1 {
@@ -2443,14 +2440,14 @@ class QRDecomposition {
    return     X that minimizes the two norm of Q*R*X-B.
    */
 
-   proc solve (B:Matrix) {
+   proc solve (B: unmanaged Matrix) {
       if (B.getRowDimension() != m) {
          assert(B.getRowDimension() != m, "Matrix row dimensions must agree.");
       }
       if (!this.isFullRank()) {
          assert(!this.isFullRank(), "Matrix is rank deficient.");
       }
-      
+
       // Copy right hand side
       var nx = B.getColumnDimension();
       var X = B.getArrayCopy();
@@ -2458,7 +2455,7 @@ class QRDecomposition {
       // Compute Y = transpose(Q)*B
       for k in 1..n {
          for j in 1..nx {
-            var s = 0.0; 
+            var s = 0.0;
             const kmrng = {k..m};
             for i in kmrng {
                s += QR[i,k]*X[i,j];
@@ -2484,22 +2481,22 @@ class QRDecomposition {
 
       }
 
-      var toret = new Matrix(X,n,nx);
+      var toret = new unmanaged Matrix(X,n,nx);
       return toret.getMatrix(1,n,1,nx);
    }
 
 }
 
-/* 
+/*
    Singular Value Decomposition.
-   
+
    For an m-by-n matrix A with m >= n, the singular value decomposition is
    an m-by-n orthogonal matrix U, an n-by-n diagonal matrix S, and
    an n-by-n orthogonal matrix V so that A = U*S*V'.
-   
+
    The singular values, sigma[k] = S[k,k], are ordered so that
    sigma[0] >= sigma[1] >= ... >= sigma[n-1].
-   
+
    The singular value decomposition always exists, so the constructor will
    never fail.  The matrix condition number and the effective numerical
    rank can be computed from this decomposition.
@@ -2533,7 +2530,7 @@ class SingularValueDecomposition {
    Arg    Rectangular matrix
    */
 
-   proc init (Arg:Matrix) {
+   proc init (Arg: unmanaged Matrix) {
 
       // Derived from LINPACK code.
       // Initialize.
@@ -2541,15 +2538,15 @@ class SingularValueDecomposition {
       n = Arg.getColumnDimension();
 
       /* Tactics...This algorithm assumes a zero-index language
-         since chapel is one-index, it was decided for the 
-         sake of developer sanity to use chapel's alias 
-         functionality to temporarily use zero-indexing 
+         since chapel is one-index, it was decided for the
+         sake of developer sanity to use chapel's alias
+         functionality to temporarily use zero-indexing
        */
 
       var aDom = {0..m-1, 0..n-1};
       ref A = Arg.getArrayCopy().reindex(aDom); // alias the matrix
 
-      /* Apparently the failing cases are only a proper subset of (m<n), 
+      /* Apparently the failing cases are only a proper subset of (m<n),
       so let's not throw error.  Correct fix to come later?
       */
       var nu = min(m,n);
@@ -2558,7 +2555,7 @@ class SingularValueDecomposition {
       uDom = {1..m, 1..nu};
       vDom = {1..n, 1..n};
 
-      this.initDone();
+      this.complete();
 
       ref S = s.reindex({0..min(m+1,n)-1}); // chapel aliases saved the day!
       ref UU = U[uDom].reindex({0..m-1,0..nu-1});
@@ -2757,8 +2754,8 @@ class SingularValueDecomposition {
 
       var pp = p-1;
       var itr = 0;
-      var eps = 2.0 ** -52.0; 
-      var tiny = 2.0 ** -966.0; 
+      var eps = 2.0 ** -52.0;
+      var tiny = 2.0 ** -966.0;
 
       while (p > 0) {
          var k,kase : int;
@@ -2775,7 +2772,7 @@ class SingularValueDecomposition {
          //              s(k), ..., s(p) are not negligible (qr step).
          // kase = 4     if e(p-1) is negligible (convergence).
 
-         for z in -1..p-2 by -1 { 
+         for z in -1..p-2 by -1 {
             if (z == -1) {
                k = z;
                break;
@@ -2798,7 +2795,7 @@ class SingularValueDecomposition {
                   ks = ksk;
                   break;
                }
-               var t = if(ksk != p) then abs(e[ksk]) else 0.0 + 
+               var t = if(ksk != p) then abs(e[ksk]) else 0.0 +
                           if(ksk != k+1) then abs(e[ksk-1]) else 0.0;
 
                if (abs(S[ksk]) <= tiny + eps*t)  {
@@ -2873,7 +2870,7 @@ class SingularValueDecomposition {
             when 3 {
 
                // Calculate the shift.
-   
+
                var scale = max(max(max(max(abs(S[p-1]),abs(S[p-2])),abs(e[p-2])),
                                            abs(S[k])),abs(e[k]));
 
@@ -2886,7 +2883,7 @@ class SingularValueDecomposition {
                var c = (sp*epm1)*(sp*epm1);
                var shift = 0.0;
                if ((b != 0.0) | (c != 0.0)) {
-                  shift = ((b*b)+c) ** 0.5; 
+                  shift = ((b*b)+c) ** 0.5;
                   if (b < 0.0) {
                      shift = -shift;
                   }
@@ -2894,9 +2891,9 @@ class SingularValueDecomposition {
                }
                var f = (sk + sp)*(sk - sp) + shift;
                var g = sk*ek;
-   
+
                // Chase zeros.
-   
+
                for j in k..p-2 {
                   var t = hypot(f,g);
                   var cs = f/t;
@@ -2940,7 +2937,7 @@ class SingularValueDecomposition {
             when 4 {
 
                // Make the singular values positive.
-   
+
                if (S[k] <= 0.0) {
                   S[k] = if(S[k] < 0.0) then -S[k] else 0.0;
                   if (wantv) {
@@ -2949,9 +2946,9 @@ class SingularValueDecomposition {
                      }
                   }
                }
-   
+
                // Order the singular values.
-   
+
                while (k < pp) {
                   if (S[k] >= S[k+1]) {
                      break;
@@ -2983,7 +2980,7 @@ class SingularValueDecomposition {
    */
 
    proc getU () {
-      return new Matrix(U,m,min(m+1,n));
+      return new unmanaged Matrix(U,m,min(m+1,n));
    }
 
    /* Return the right singular vectors
@@ -2991,7 +2988,7 @@ class SingularValueDecomposition {
    */
 
    proc getV () {
-      return new Matrix(V,n,n);
+      return new unmanaged Matrix(V,n,n);
    }
 
    /* Return the one-dimensional array of singular values
@@ -3007,7 +3004,7 @@ class SingularValueDecomposition {
    */
 
    proc getS () {
-      var X = new Matrix(n,n);
+      var X = new unmanaged Matrix(n,n);
       var S = X.getArray();
       for i in 1..n {
          for j in 1..n {
@@ -3039,7 +3036,7 @@ class SingularValueDecomposition {
    */
 
    proc rank () {
-      var eps = 2.0 ** -52.0; 
+      var eps = 2.0 ** -52.0;
       var tol = max(m,n)*s[1]*eps;
       var r = 0;
 

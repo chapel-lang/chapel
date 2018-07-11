@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+import collections
 import optparse
 import os
+import platform
 from string import punctuation
 from sys import stderr, stdout
 import sys
@@ -13,93 +15,215 @@ from compiler_utils import CompVersion, compiler_is_prgenv, get_compiler_version
 from utils import memoize, run_command
 
 
+#
+# Intel architectures are accessed with the -march= flag.
+# ARM architectures are accessed with the -mcpu= flag, except that some
+# compilers can handle -march=native for ARM (and some cannot).
+# Therefore, our translations need to specify which flag is used.
+#
 class argument_map(object):
     # intel does not support amd archs... it may be worth testing setting the
     # equivalent intel arch, but I don't have any good way to do this as of now
     intel = {
-        'native':      'native',
-        'core2':       'core2',
-        'nehalem':     'corei7',
-        'westmere':    'corei7',
-        'sandybridge': 'corei7-avx',
-        'ivybridge':   'core-avx-i',
-        'haswell':     'core-avx2',
-        'broadwell':   'core-avx2',
-        'knc':         'knc',
-        'k8':          'none',
-        'k8sse3':      'none',
-        'barcelona':   'none',
-        'bdver1':      'none',
-        'bdver2':      'none',
-        'bdver3':      'none',
-        'bdver4':      'none',
+        'native':        ('arch', 'native'),
+        'core2':         ('arch', 'core2'),
+        'nehalem':       ('arch', 'corei7'),
+        'westmere':      ('arch', 'corei7'),
+        'sandybridge':   ('arch', 'corei7-avx'),
+        'ivybridge':     ('arch', 'core-avx-i'),
+        'haswell':       ('arch', 'core-avx2'),
+        'broadwell':     ('arch', 'core-avx2'),
+        'knc':           ('arch', 'knc'),
+        'mic-knl':       ('arch', 'knl'),
+        'x86-skylake':   ('arch', 'skylake-avx512'),
+        'k8':            ('none', 'none'),
+        'k8sse3':        ('none', 'none'),
+        'barcelona':     ('none', 'none'),
+        'bdver1':        ('none', 'none'),
+        'bdver2':        ('none', 'none'),
+        'bdver3':        ('none', 'none'),
+        'bdver4':        ('none', 'none'),
+        'aarch64':       ('none', 'none'),
+        'arm-thunderx':  ('none', 'none'),
+        'arm-thunderx2': ('none', 'none'),
     }
 
     gcc43 = {
-        'native':      'native',
-        'core2':       'core2',
-        'nehalem':     'core2',
-        'westmere':    'core2',
-        'sandybridge': 'core2',
-        'ivybridge':   'core2',
-        'haswell':     'core2',
-        'broadwell':   'core2',
-        'knc':         'none',
-        'k8':          'k8',
-        'k8sse3':      'k8-sse3',
-        'barcelona':   'barcelona',
-        'bdver1':      'barcelona',
-        'bdver2':      'barcelona',
-        'bdver3':      'barcelona',
-        'bdver4':      'barcelona',
+        'native':        ('arch', 'native'),
+        'core2':         ('arch', 'core2'),
+        'nehalem':       ('arch', 'core2'),
+        'westmere':      ('arch', 'core2'),
+        'sandybridge':   ('arch', 'core2'),
+        'ivybridge':     ('arch', 'core2'),
+        'haswell':       ('arch', 'core2'),
+        'broadwell':     ('arch', 'core2'),
+        'knc':           ('none', 'none'),
+        'mic-knl':       ('none', 'none'),
+        'x86-skylake':   ('none', 'none'),
+        'k8':            ('arch', 'k8'),
+        'k8sse3':        ('arch', 'k8-sse3'),
+        'barcelona':     ('arch', 'barcelona'),
+        'bdver1':        ('arch', 'barcelona'),
+        'bdver2':        ('arch', 'barcelona'),
+        'bdver3':        ('arch', 'barcelona'),
+        'bdver4':        ('arch', 'barcelona'),
+        'aarch64':       ('none', 'none'),
+        'arm-thunderx':  ('none', 'none'),
+        'arm-thunderx2': ('none', 'none'),
     }
 
     gcc47 = {
-        'native':      'native',
-        'core2':       'core2',
-        'nehalem':     'corei7',
-        'westmere':    'corei7',
-        'sandybridge': 'corei7-avx',
-        'ivybridge':   'core-avx-i',
-        'haswell':     'core-avx2',
-        'broadwell':   'core-avx2',
-        'knc':         'none',
-        'k8':          'k8',
-        'k8sse3':      'k8-sse3',
-        'barcelona':   'barcelona',
-        'bdver1':      'bdver1',
-        'bdver2':      'bdver2',
-        'bdver3':      'bdver2',
-        'bdver4':      'bdver2',
+        'native':        ('arch', 'native'),
+        'core2':         ('arch', 'core2'),
+        'nehalem':       ('arch', 'corei7'),
+        'westmere':      ('arch', 'corei7'),
+        'sandybridge':   ('arch', 'corei7-avx'),
+        'ivybridge':     ('arch', 'core-avx-i'),
+        'haswell':       ('arch', 'core-avx2'),
+        'broadwell':     ('arch', 'core-avx2'),
+        'knc':           ('none', 'none'),
+        'mic-knl':       ('none', 'none'),
+        'x86-skylake':   ('none', 'none'),
+        'k8':            ('arch', 'k8'),
+        'k8sse3':        ('arch', 'k8-sse3'),
+        'barcelona':     ('arch', 'barcelona'),
+        'bdver1':        ('arch', 'bdver1'),
+        'bdver2':        ('arch', 'bdver2'),
+        'bdver3':        ('arch', 'bdver2'),
+        'bdver4':        ('arch', 'bdver2'),
+        'aarch64':       ('none', 'none'),
+        'arm-thunderx':  ('none', 'none'),
+        'arm-thunderx2': ('none', 'none'),
+    }
+
+    gcc48 = {
+        'native':        ('arch', 'native'),
+        'core2':         ('arch', 'core2'),
+        'nehalem':       ('arch', 'corei7'),
+        'westmere':      ('arch', 'corei7'),
+        'sandybridge':   ('arch', 'corei7-avx'),
+        'ivybridge':     ('arch', 'core-avx-i'),
+        'haswell':       ('arch', 'core-avx2'),
+        'broadwell':     ('arch', 'core-avx2'),
+        'knc':           ('none', 'none'),
+        'mic-knl':       ('none', 'none'),
+        'x86-skylake':   ('none', 'none'),
+        'k8':            ('arch', 'k8'),
+        'k8sse3':        ('arch', 'k8-sse3'),
+        'barcelona':     ('arch', 'barcelona'),
+        'bdver1':        ('arch', 'bdver1'),
+        'bdver2':        ('arch', 'bdver2'),
+        'bdver3':        ('arch', 'bdver2'),
+        'bdver4':        ('arch', 'bdver2'),
+        'aarch64':       ('cpu',  'generic'),
+        'arm-thunderx':  ('cpu',  'generic'),
+        'arm-thunderx2': ('cpu',  'generic'),
     }
 
     gcc49 = {
-        'native':      'native',
-        'core2':       'core2',
-        'nehalem':     'nehalem',
-        'westmere':    'westmere',
-        'sandybridge': 'sandybridge',
-        'ivybridge':   'ivybridge',
-        'haswell':     'haswell',
-        'broadwell':   'broadwell',
-        'knc':         'none',
-        'k8':          'k8',
-        'k8sse3':      'k8-sse3',
-        'barcelona':   'barcelona',
-        'bdver1':      'bdver1',
-        'bdver2':      'bdver2',
-        'bdver3':      'bdver3',
-        'bdver4':      'bdver4',
+        'native':        ('arch', 'native'),
+        'core2':         ('arch', 'core2'),
+        'nehalem':       ('arch', 'nehalem'),
+        'westmere':      ('arch', 'westmere'),
+        'sandybridge':   ('arch', 'sandybridge'),
+        'ivybridge':     ('arch', 'ivybridge'),
+        'haswell':       ('arch', 'haswell'),
+        'broadwell':     ('arch', 'broadwell'),
+        'knc':           ('none', 'none'),
+        'mic-knl':       ('none', 'none'),
+        'x86-skylake':   ('none', 'none'),
+        'k8':            ('arch', 'k8'),
+        'k8sse3':        ('arch', 'k8-sse3'),
+        'barcelona':     ('arch', 'barcelona'),
+        'bdver1':        ('arch', 'bdver1'),
+        'bdver2':        ('arch', 'bdver2'),
+        'bdver3':        ('arch', 'bdver3'),
+        'bdver4':        ('arch', 'bdver4'),
+        'aarch64':       ('cpu',  'generic'),
+        'arm-thunderx':  ('cpu',  'generic'),
+        'arm-thunderx2': ('cpu',  'generic'),
     }
 
-    clang = gcc47
+    gcc5 = {
+        'native':        ('arch', 'native'),
+        'core2':         ('arch', 'core2'),
+        'nehalem':       ('arch', 'nehalem'),
+        'westmere':      ('arch', 'westmere'),
+        'sandybridge':   ('arch', 'sandybridge'),
+        'ivybridge':     ('arch', 'ivybridge'),
+        'haswell':       ('arch', 'haswell'),
+        'broadwell':     ('arch', 'broadwell'),
+        'knc':           ('none', 'none'),
+        'mic-knl':       ('arch', 'knl'),
+        'x86-skylake':   ('none', 'none'),
+        'k8':            ('arch', 'k8'),
+        'k8sse3':        ('arch', 'k8-sse3'),
+        'barcelona':     ('arch', 'barcelona'),
+        'bdver1':        ('arch', 'bdver1'),
+        'bdver2':        ('arch', 'bdver2'),
+        'bdver3':        ('arch', 'bdver3'),
+        'bdver4':        ('arch', 'bdver4'),
+        'aarch64':       ('cpu',  'generic'),
+        'arm-thunderx':  ('cpu',  'generic'),
+        'arm-thunderx2': ('cpu',  'generic'),
+    }
+
+    gcc6 = {
+        'native':        ('arch', 'native'),
+        'core2':         ('arch', 'core2'),
+        'nehalem':       ('arch', 'nehalem'),
+        'westmere':      ('arch', 'westmere'),
+        'sandybridge':   ('arch', 'sandybridge'),
+        'ivybridge':     ('arch', 'ivybridge'),
+        'haswell':       ('arch', 'haswell'),
+        'broadwell':     ('arch', 'broadwell'),
+        'knc':           ('none', 'none'),
+        'mic-knl':       ('arch', 'knl'),
+        'x86-skylake':   ('arch', 'skylake-avx512'),
+        'k8':            ('arch', 'k8'),
+        'k8sse3':        ('arch', 'k8-sse3'),
+        'barcelona':     ('arch', 'barcelona'),
+        'bdver1':        ('arch', 'bdver1'),
+        'bdver2':        ('arch', 'bdver2'),
+        'bdver3':        ('arch', 'bdver3'),
+        'bdver4':        ('arch', 'bdver4'),
+        'aarch64':       ('cpu',  'thunderx'),
+        'arm-thunderx':  ('cpu',  'thunderx'),
+        'arm-thunderx2': ('cpu',  'thunderx'),
+    }
+
+    gcc7 = {
+        'native':        ('arch', 'native'),
+        'core2':         ('arch', 'core2'),
+        'nehalem':       ('arch', 'nehalem'),
+        'westmere':      ('arch', 'westmere'),
+        'sandybridge':   ('arch', 'sandybridge'),
+        'ivybridge':     ('arch', 'ivybridge'),
+        'haswell':       ('arch', 'haswell'),
+        'broadwell':     ('arch', 'broadwell'),
+        'knc':           ('none', 'none'),
+        'mic-knl':       ('arch', 'knl'),
+        'x86-skylake':   ('arch', 'skylake-avx512'),
+        'k8':            ('arch', 'k8'),
+        'k8sse3':        ('arch', 'k8-sse3'),
+        'barcelona':     ('arch', 'barcelona'),
+        'bdver1':        ('arch', 'bdver1'),
+        'bdver2':        ('arch', 'bdver2'),
+        'bdver3':        ('arch', 'bdver3'),
+        'bdver4':        ('arch', 'bdver4'),
+        'aarch64':       ('cpu',  'thunderx'),
+        'arm-thunderx':  ('cpu',  'thunderx'),
+        'arm-thunderx2': ('cpu',  'thunderx2t99'),
+    }
+
+    clang = gcc7
 
     @classmethod
     def find(cls, arch, compiler, version):
         if arch == 'unknown' or arch == '':
-            return 'unknown'
+            return ('none', 'unknown')
         elif arch == 'none':
-            return 'none'
+            return ('none', 'none')
 
         arg_value = cls._get(arch, compiler, version)
         if not arg_value:
@@ -107,7 +231,7 @@ class argument_map(object):
                          'compiler="{1}" version="{2}"\n'.format(arch,
                                                                  compiler,
                                                                  version))
-        return arg_value
+        return arg_value or (None, None)
 
     @classmethod
     def _get(cls, arch, compiler, version):
@@ -115,8 +239,16 @@ class argument_map(object):
             return arch
 
         if compiler in ['gnu', 'mpi-gnu', 'aarch64-gnu']:
-            if version >= CompVersion('4.9'):
+            if version >= CompVersion('7.0'):
+                return cls.gcc7.get(arch, '')
+            elif version >= CompVersion('6.0'):
+                return cls.gcc6.get(arch, '')
+            elif version >= CompVersion('5.0'):
+                return cls.gcc6.get(arch, '')
+            elif version >= CompVersion('4.9'):
                 return cls.gcc49.get(arch, '')
+            elif version >= CompVersion('4.8'):
+                return cls.gcc48.get(arch, '')
             elif version >= CompVersion('4.7'):
                 return cls.gcc47.get(arch, '')
             elif version >= CompVersion('4.3'):
@@ -124,9 +256,11 @@ class argument_map(object):
             return 'none'
         elif compiler == 'intel':
             return cls.intel.get(arch, '')
-        elif compiler == 'clang':
-            return cls.clang.get(arch, '')
-        elif compiler == 'clang-included':
+        elif compiler in ['clang', 'clang-included']:
+            # Clang doesn't know how to do architecture detection for aarch64.
+            if arch == 'native':
+                if get_native_machine() == 'aarch64':
+                    return 'unknown'
             return cls.clang.get(arch, '')
         else:
             stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler))
@@ -134,13 +268,17 @@ class argument_map(object):
 
 
 class feature_sets(object):
-    core2 = ['mmx', 'sse', 'sse2', 'sse3', 'ssse3']
+    core2 = ['mmx', 'sse', 'sse2', 'ssse3']
     nehalem = core2 + ['sse41', 'sse42', 'popcnt']
     westmere = nehalem + ['aes', 'pclmulqdq']
     sandybridge = westmere + ['avx']
     ivybridge = sandybridge + ['rdrand', 'f16c']
-    haswell = ivybridge + ['movbe', 'avx2', 'fma', 'bmi', 'bmi2']
+    haswell = ivybridge + ['movbe', 'avx2', 'fma', 'bmi1', 'bmi2']
     broadwell = haswell + ['rdseed', 'adx']
+    knl = broadwell + ['avx512f', 'avx512cd',
+                       'avx512er', 'avx512pf']
+    skylake = broadwell + ['avx512f', 'avx512cd',
+                           'avx512bw', 'avx512dq', 'avx512vl']
 
     intel = [
         ('core2',       core2),
@@ -150,6 +288,8 @@ class feature_sets(object):
         ('ivybridge',   ivybridge),
         ('haswell',     haswell),
         ('broadwell',   broadwell),
+        ('mic-knl',     knl),
+        ('x86-skylake', skylake),
     ]
 
     k8 = ['mmx', 'sse', 'sse2']
@@ -171,7 +311,17 @@ class feature_sets(object):
         ('bdver4',    bdver4),
     ]
 
-    combined = intel + amd
+    thunderx = ['fp', 'asimd', 'evtstrm', 'aes', 'pmull',
+                'sha1', 'sha2', 'crc32']
+    thunderx2 = thunderx + ['atomics']
+
+    arm = [
+        ('aarch64',       thunderx),
+        ('arm-thunderx',  thunderx),
+        ('arm-thunderx2', thunderx2),
+    ]
+
+    combined = intel + amd + arm
 
     @classmethod
     def subset(sets, a, b):
@@ -211,6 +361,8 @@ class feature_sets(object):
             options = sets.intel
         elif "authenticamd" == vendor.lower():
             options = sets.amd
+        elif "arm" == vendor.lower():
+            options = sets.arm
 
         found = ''
         for name, fset in options:
@@ -221,23 +373,41 @@ class feature_sets(object):
 
         return found
 
-def get_cpuinfo(platform='linux'):
+@memoize
+def get_native_machine():
+    return platform.uname()[4]
+
+@memoize
+def is_known_arm(arch):
+    if arch.startswith("arm-") or ('aarch64' in arch) or ('thunderx' in arch):
+        return True
+    else:
+        return False
+
+def get_cpuinfo(platform_val='linux'):
     vendor_string = ''
     feature_string = ''
-    if platform == "darwin":
+    if platform_val == "darwin":
         vendor_string = run_command(['sysctl', '-n', 'machdep.cpu.vendor'])
         feature_string = run_command(['sysctl', '-n', 'machdep.cpu.features'])
         # osx reports AVX1.0 while linux reports it as AVX
         feature_string = feature_string.replace("AVX1.0", "AVX")
+        feature_string = feature_string.replace("SSE4.", "SSE4")
     elif os.path.isfile('/proc/cpuinfo'):
         with open('/proc/cpuinfo') as f:
             cpuinfo = f.readlines()
+        # Compensate for missing vendor in ARM /proc/cpuinfo
+        if get_native_machine() == 'aarch64':
+            vendor_string = "arm"
         for line in cpuinfo:
             if 'vendor_id' in line:
                 vendor_string = line.split(':')[1].strip()
             elif 'flags' in line:
                 feature_string = line.split(':')[1].strip()
+            elif line.startswith('Features'):
+                feature_string = line.split(':')[1].strip()
             if vendor_string and feature_string:
+                feature_string = feature_string.replace("sse4_", "sse4")
                 break
     else:
         raise ValueError("Unknown platform, could not find CPU information")
@@ -255,7 +425,10 @@ class InvalidLocationError(ValueError):
 # what we have in the module build script.
 def get_module_lcd_arch(platform_val, arch):
     if platform_val == "cray-xc":
-        return "sandybridge"
+        if is_known_arm(arch):
+            return "arm-thunderx2"
+        else:
+            return "sandybridge"
     elif platform_val == "cray-xe" or platform_val == "cray-xk":
         return "barcelona"
     elif platform_val == "aarch64":
@@ -268,6 +441,8 @@ def get_module_lcd_arch(platform_val, arch):
 @memoize
 def get(location, map_to_compiler=False, get_lcd=False):
 
+    arch_tuple = collections.namedtuple('arch_tuple', ['flag', 'arch'])
+
     if not location or location == "host":
         arch = overrides.get('CHPL_HOST_ARCH', '')
     elif location == 'target':
@@ -277,7 +452,7 @@ def get(location, map_to_compiler=False, get_lcd=False):
 
     # fast path out for when the user has set arch=none
     if arch == 'none':
-        return arch
+        return arch_tuple('none', arch)
 
     comm_val = chpl_comm.get()
     compiler_val = chpl_compiler.get(location)
@@ -306,13 +481,16 @@ def get(location, map_to_compiler=False, get_lcd=False):
                 stderr.write("Warning: Could not detect the lowest common "
                              "denominator processor type for this platform. "
                              "You may be unable to use the Chapel compiler\n")
-        return arch
+        if is_known_arm(arch):
+            return arch_tuple('cpu', arch)
+        else:
+            return arch_tuple('arch', arch)
     elif 'pgi' in compiler_val:
-        return 'none'
+        return arch_tuple('none', 'none')
     elif 'cray' in compiler_val:
-        return 'none'
+        return arch_tuple('none', 'none')
     elif 'ibm' in compiler_val:
-        return 'none'
+        return arch_tuple('none', 'none')
 
     # Only try to do any auto-detection or verification when:
     # comm == none  -- The inverse means that we are probably cross-compiling.
@@ -344,35 +522,55 @@ def get(location, map_to_compiler=False, get_lcd=False):
                 except ValueError:
                     stderr.write("Warning: Unknown platform, could not find CPU information\n")
         else:
+            # Clang cannot detect the architecture for aarch64.  Otherwise,
             # let the backend compiler do the actual feature set detection. We
             # could be more aggressive in setting a precise architecture using
             # the double checking code above, but it seems like a waste of time
             # to not use the work the backend compilers have already done
-            arch = 'native'
+            if compiler_val in ['clang', 'clang-included']:
+                if get_native_machine() == 'aarch64':
+                    arch = 'unknown'
+                else:
+                    arch = 'native'
+            else:
+                arch = 'native'
 
 
     if map_to_compiler:
         version = get_compiler_version(compiler_val)
-        arch = argument_map.find(arch, compiler_val, version)
+        (flag, arch) = argument_map.find(arch, compiler_val, version)
+    elif arch and arch != 'none' and arch != 'unknown':
+        if is_known_arm(arch):
+            flag = 'cpu'
+        else:
+            flag = 'arch'
+    else:
+        flag = 'none'
 
-    return arch or 'unknown'
+    return arch_tuple(flag or 'none', arch or 'unknown')
 
 
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target] "
-                                         "[--compflag] [--lcdflag]")
+                                         "[--compflag] [--lcdflag] "
+                                         "[--specialize]")
     parser.add_option('--target', dest='location', action='store_const',
                       const='target', default='target')
     parser.add_option('--host', dest='location', action='store_const',
                       const='host')
-    parser.add_option('--compflag', dest='map_to_compiler', action='store_true',
+    parser.add_option('--comparch', dest='map_to_compiler',
+                      action='store_true', default=False)
+    parser.add_option('--compflag', dest='compflag', action='store_true',
                       default=False)
     parser.add_option('--lcdflag', dest = 'get_lcd', action='store_true',
                       default=False)
     (options, args) = parser.parse_args()
 
-    arch = get(options.location, options.map_to_compiler, options.get_lcd)
+    (flag, arch) = get(options.location, options.map_to_compiler,
+                       options.get_lcd)
 
+    if options.compflag:
+        stdout.write("{0}=".format(flag))
     stdout.write("{0}\n".format(arch))
 
 

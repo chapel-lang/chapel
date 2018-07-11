@@ -10,7 +10,7 @@ class Looper {
         if (arr[i] > highest) {
           highest = arr[i];
         }
-        this.initDone();
+        this.complete();
         highestNum = highest;
       }
     }

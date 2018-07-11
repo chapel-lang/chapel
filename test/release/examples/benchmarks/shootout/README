@@ -27,6 +27,7 @@ At present, this directory contains the following codes:
     regexdna.chpl       : Performs DNA matching
     regexdna-redux.chpl : Performs DNA matching
     revcomp.chpl        : Calculate the strand to bind with a given DNA strand
+    revcomp-fast.chpl   : An optimized version of the above
     spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix
     threadring.chpl     : Passes a token between a large number of threads
     fasta.chpl          : Generates DNA with different nucleotide distributions

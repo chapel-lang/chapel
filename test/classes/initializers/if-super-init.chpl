@@ -1,4 +1,4 @@
-// Generate an error message for an unbalanced initDone()
+// Generate an error message for an unbalanced complete()
 
 record MyRec {
   var f0 : int;
@@ -9,7 +9,7 @@ record MyRec {
 
   proc init(x : int) {
     if (x > 10) then
-      this.initDone();
+      this.complete();
   }
 }
 

@@ -11,14 +11,14 @@ class IfInit {
 
     // Error f2 is only initialized if f1 is false
 
-    super.init();
   }
 }
 
 proc main() {
-  var c1 : IfInit = new IfInit(3);
+  var c1 : IfInit = new borrowed IfInit(3);
 
   writeln(c1);
 
-  delete c1;
+  var c2 = new borrowed IfInit(7);
+  writeln(c2);
 }

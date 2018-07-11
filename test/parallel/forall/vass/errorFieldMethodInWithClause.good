@@ -1,0 +1,8 @@
+errorFieldMethodInWithClause.chpl:15: error: cannot reference a field or function 'myField' in a with-clause of this forall loop
+errorFieldMethodInWithClause.chpl:17: error: cannot reference a field or function 'myProcc' in a with-clause of this forall loop
+errorFieldMethodInWithClause.chpl:19: error: cannot reference a field or function 'ourProc' in a with-clause of this forall loop
+errorFieldMethodInWithClause.chpl:19: error: cannot reference a field or function 'ourIter' in a with-clause of this forall loop
+errorFieldMethodInWithClause.chpl:29: error: cannot reference a field or function 'myFild' in a with-clause of this forall loop
+errorFieldMethodInWithClause.chpl:31: error: cannot reference a field or function 'myProc' in a with-clause of this forall loop
+errorFieldMethodInWithClause.chpl:33: error: cannot reference a field or function 'ourProc' in a with-clause of this forall loop
+errorFieldMethodInWithClause.chpl:33: error: cannot reference a field or function 'ourIter' in a with-clause of this forall loop

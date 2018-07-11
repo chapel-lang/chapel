@@ -109,7 +109,7 @@ echo ""
 
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
-num_procs=$(python -c "import multiprocessing; print(multiprocessing.cpu_count())")
+num_procs=$($CHPL_HOME/util/buildRelease/chpl-make-cpu_count)
 
 # If make check fails, store the log file in CHPL_HOME. Also, create a temp dir
 # in $CHPL_HOME where the hello*.chpl tests are copied and run.

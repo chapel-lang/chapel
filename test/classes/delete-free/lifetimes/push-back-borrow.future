@@ -1,0 +1,3 @@
+bug: lifetime checking does not error on bad push_back
+
+#9853

@@ -11,7 +11,7 @@ class C {
 
 }
 
-var c = new C();
+var c = new unmanaged C();
 c.x = 2;
 writeln(c.x);
 delete c;

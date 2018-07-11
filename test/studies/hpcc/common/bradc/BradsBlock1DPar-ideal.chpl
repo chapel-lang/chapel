@@ -239,18 +239,18 @@ class Block1DDom {
 
   //
   // an array of local domain class descriptors -- set up in
-  // initialize() below
+  // postinit() below
   //
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method; would want to be able to use
+  // removing the postinit method; would want to be able to use
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
   var locDoms: [dist.targetLocDom] LocBlock1DDom(glbIdxType, lclIdxType);
 
-  proc initialize() {
+  proc postinit() {
     for locid in dist.targetLocDom do
       on dist.targetLocs(locid) do
         locDoms(locid) = new LocBlock1DDom(glbIdxType, lclIdxType, this, 
@@ -453,14 +453,14 @@ class Block1DArr {
   // an array of local array classes
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method; would want to be able to use
+  // removing the postinit method; would want to be able to use
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(glbIdxType, lclIdxType, elemType);
 
-  proc initialize() {
+  proc postinit() {
     for locid in dom.dist.targetLocDom do
       on dom.dist.targetLocs(locid) do
         locArr(locid) = new LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDoms(locid));

@@ -26,9 +26,9 @@
 
 // Problem size parameters
 enum  classVals {S=0, W=1, A=2, B=3, C=4};
-const Classes: domain(classVals);
-const ClassNkeys:  [Classes] int = ( 16, 20, 23, 25, 27 ),
-      ClassRanges: [Classes] int = ( 11, 16, 19, 21, 23 );
+const Classes = {classVals.S..classVals.C};
+const ClassNkeys:  [Classes] int = [ 16, 20, 23, 25, 27 ],
+      ClassRanges: [Classes] int = [ 11, 16, 19, 21, 23 ];
 
 // Set of config constants that control size of problem and output options
 config const probClass = classVals.S;	 // default to Sample class
@@ -327,19 +327,19 @@ proc partialVerification(iteration: int, keyBuff1 /*:[countDom]int*/ ) {
   //  version except that we use enums to access the comparison values directly.
 
   for i in 0..4 {
-    var k = key(testIndexArray(probClass,i));
+    var k = key(testIndexArray(probClass:int,i));
     var kbidx = if distType==ISDistType.block then k-1 else (k-1,0);
     select probClass {
       when classVals.S do {
         if (i <= 2) {
-          if (keyBuff1(kbidx) != testRankArray(probClass,i)+iteration) {
+          if (keyBuff1(kbidx) != testRankArray(probClass:int,i)+iteration) {
             writeln("Failed partial verification: iteration ",
                     iteration, ", test key ", i);
           } else {
             passedVerifications += 1;
           }
         } else {
-          if (keyBuff1(kbidx) != testRankArray(probClass,i)-iteration) {
+          if (keyBuff1(kbidx) != testRankArray(probClass:int,i)-iteration) {
             writeln("Failed partial verification: iteration ",
                     iteration, ", test key ", i);
           } else {
@@ -349,14 +349,14 @@ proc partialVerification(iteration: int, keyBuff1 /*:[countDom]int*/ ) {
       }
       when classVals.W do {
         if (i < 2) {
-          if (keyBuff1(kbidx) != testRankArray(probClass,i) + (iteration-2)) {
+          if (keyBuff1(kbidx) != testRankArray(probClass:int,i) + (iteration-2)) {
             writeln("Failed partial verification: iteration ",
                     iteration, ", test key ", i);
           } else {
             passedVerifications += 1;
           }
         } else {
-          if (keyBuff1(kbidx) != testRankArray(probClass,i) - iteration) {
+          if (keyBuff1(kbidx) != testRankArray(probClass:int,i) - iteration) {
             writeln("Failed partial verification: iteration ",
                     iteration, ", test key ", i);
           } else {
@@ -366,14 +366,14 @@ proc partialVerification(iteration: int, keyBuff1 /*:[countDom]int*/ ) {
       }
       when classVals.A do {
         if (i <= 2) {
-          if (keyBuff1(kbidx) != testRankArray(probClass,i) + (iteration-1)) {
+          if (keyBuff1(kbidx) != testRankArray(probClass:int,i) + (iteration-1)) {
             writeln("Failed partial verification: iteration ",
                     iteration, ", test key ", i);
           } else {
             passedVerifications += 1;
           }
         } else {
-          if (keyBuff1(kbidx) != testRankArray(probClass,i) - (iteration-1)) {
+          if (keyBuff1(kbidx) != testRankArray(probClass:int,i) - (iteration-1)) {
             writeln("Failed partial verification: iteration ",
                     iteration, ", test key ", i);
           } else {
@@ -383,14 +383,14 @@ proc partialVerification(iteration: int, keyBuff1 /*:[countDom]int*/ ) {
       }
       when classVals.B do {
         if (i == 1 || i == 2 || i == 4) {
-          if (keyBuff1(kbidx) != testRankArray(probClass,i) + iteration) {
+          if (keyBuff1(kbidx) != testRankArray(probClass:int,i) + iteration) {
             writeln("Failed partial verification: iteration ",
                     iteration, ", test key ", i);
           } else {
             passedVerifications += 1;
           }
         } else {
-          if (keyBuff1(kbidx) != testRankArray(probClass,i) - iteration) {
+          if (keyBuff1(kbidx) != testRankArray(probClass:int,i) - iteration) {
             writeln("Failed partial verification: iteration ",
                     iteration, ", test key ", i);
           } else {
@@ -400,14 +400,14 @@ proc partialVerification(iteration: int, keyBuff1 /*:[countDom]int*/ ) {
       }
       when classVals.C do {
         if (i <= 2) {
-          if (keyBuff1(kbidx) != testRankArray(probClass,i) + iteration) {
+          if (keyBuff1(kbidx) != testRankArray(probClass:int,i) + iteration) {
             writeln("Failed partial verification: iteration ",
                     iteration, ", test key ", i);
           } else {
             passedVerifications += 1;
           }
         } else {
-          if (keyBuff1(kbidx) != testRankArray(probClass,i) - iteration) {
+          if (keyBuff1(kbidx) != testRankArray(probClass:int,i) - iteration) {
             writeln("Failed partial verification: iteration ",
                     iteration, ", test key ", i);
           } else {

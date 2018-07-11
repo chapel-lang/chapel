@@ -24,7 +24,7 @@ class C {
   }
 }
 
-var c = new C();
+var c = new unmanaged C();
 c.foo(2);
 c.bar(3);
 c.baz(4,5);

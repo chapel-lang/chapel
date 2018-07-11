@@ -216,7 +216,7 @@ module Sys {
     var addr:sys_sockaddr_storage_t;
     var len:socklen_t;
     proc init() {
-      this.initDone();
+      this.complete();
       sys_init_sys_sockaddr_t(this);
     }
   }

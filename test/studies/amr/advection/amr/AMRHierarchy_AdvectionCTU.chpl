@@ -18,7 +18,7 @@ use AMRBC_def;
 //------------------------------------------------------------------
 
 proc AMRHierarchy.advance_AdvectionCTU(
-  bc:             AMRBC,
+  bc:             unmanaged AMRBC,
   velocity:       dimension*real,
   time_requested: real)
 {
@@ -101,7 +101,7 @@ proc AMRHierarchy.advance_AdvectionCTU(
 
 proc AMRHierarchy.stepLevel_AdvectionCTU(
   i_level: int,
-  bc:        AMRBC,
+  bc:        unmanaged AMRBC,
   velocity:  dimension*real,
   dt:        real)
 {

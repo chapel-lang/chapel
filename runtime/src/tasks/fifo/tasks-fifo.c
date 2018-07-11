@@ -30,7 +30,7 @@
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks-internal.h"
-#include "chplsys.h"
+#include "chpl-topo.h"
 #include "chpl-linefile-support.h"
 #include "error.h"
 #include <stdio.h>
@@ -167,7 +167,7 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
   // in order to ensure fairness and thus progress.  If we're not, we
   // can spin-wait.
   suspend_using_cond = (chpl_thread_getNumThreads() >=
-                        chpl_getNumLogicalCpus(true));
+                        chpl_topo_getNumCPUsLogical(true));
 
   while (s->is_full != want_full) {
     if (!suspend_using_cond) {
@@ -748,17 +748,17 @@ void chpl_task_startMovedTask(chpl_fn_int_t  fid, chpl_fn_p fp,
 
 
 //
-// chpl_task_getSubloc() is in tasks-fifo.h.
+// chpl_task_getSubloc() is in chpl-tasks-impl.h.
 //
 
 
 //
-// chpl_task_setSubloc() is in tasks-fifo.h.
+// chpl_task_setSubloc() is in chpl-tasks-impl.h.
 //
 
 
 //
-// chpl_task_getRequestedSubloc() is in tasks-fifo.h.
+// chpl_task_getRequestedSubloc() is in chpl-tasks-impl.h.
 //
 
 
@@ -822,7 +822,7 @@ uint32_t chpl_task_getMaxPar(void) {
   // lesser of the number of physical CPUs and whatever the threading
   // layer says it can do.
   //
-  max = (uint32_t) chpl_getNumPhysicalCpus(true);
+  max = (uint32_t) chpl_topo_getNumCPUsPhysical(true);
   maxThreads = chpl_thread_getMaxThreads();
   if (maxThreads < max && maxThreads > 0)
     max = maxThreads;

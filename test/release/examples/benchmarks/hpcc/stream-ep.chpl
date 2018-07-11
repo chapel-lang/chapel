@@ -153,12 +153,10 @@ proc printConfiguration() {
 // Initialize vectors B and C using a random stream of values
 //
 proc initVectors(B, C) {
-  var randlist = new RandomStream(eltType=real, seed=seed);
+  var randlist = new borrowed RandomStream(eltType=real, seed=seed);
 
   randlist.fillRandom(B);
   randlist.fillRandom(C);
-
-  delete randlist;
 }
 
 //

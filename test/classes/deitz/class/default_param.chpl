@@ -2,9 +2,9 @@ class C {
   param p: int = 1;
 }
 
-var c: C;
+var c: unmanaged C;
 
-c = new C();
+c = new unmanaged C();
 
 writeln("{p = ", c.p, "}");
 

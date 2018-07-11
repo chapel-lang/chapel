@@ -740,7 +740,17 @@ void AstToText::appendExpr(Expr* expr, bool printingType)
 
 void AstToText::appendExpr(UnresolvedSymExpr* expr)
 {
-  appendExpr(expr->unresolved);
+  if (strcmp(expr->unresolved, "_shared") == 0) {
+    mText += "shared";
+  } else if (strcmp(expr->unresolved, "_owned") == 0) {
+    mText += "owned";
+  } else if (strcmp(expr->unresolved, "_borrowed") == 0) {
+    mText += "borrowed";
+  } else if (strcmp(expr->unresolved, "_unmanaged") == 0) {
+    mText += "unmanaged";
+  } else {
+    appendExpr(expr->unresolved);
+  }
 }
 
 void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
@@ -1031,6 +1041,18 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         mText += "..";
       }
 
+      else if (strcmp(fnName, "_owned") == 0)
+      {
+        mText += "owned ";
+        appendExpr(expr->get(1), printingType);
+      }
+
+      else if (strcmp(fnName, "_shared") == 0)
+      {
+        mText += "shared ";
+        appendExpr(expr->get(1), printingType);
+      }
+
       else if ((fnName != astrSdot)                          == 0)
       {
         SymExpr* symExpr1 = toSymExpr(expr->get(1));
@@ -1190,6 +1212,16 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
     else if (expr->isPrimitive(PRIM_NEW))
     {
       mText += "new ";
+      appendExpr(expr->get(1), printingType);
+    }
+    else if (expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
+    {
+      mText += "unmanaged ";
+      appendExpr(expr->get(1), printingType);
+    }
+    else if (expr->isPrimitive(PRIM_TO_BORROWED_CLASS))
+    {
+      mText += "borrowed ";
       appendExpr(expr->get(1), printingType);
     }
     else

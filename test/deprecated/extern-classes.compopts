@@ -1,0 +1,2 @@
+extern-classes.h --no-force-initializers # extern-classes.ctor.good
+extern-classes.h --force-initializers # extern-classes.init.good

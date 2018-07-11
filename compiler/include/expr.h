@@ -242,37 +242,6 @@ private:
   bool                   hasRef;
 };
 
-//
-//
-//
-//
-
-class ForallExpr : public Expr {
-public:
-  Expr* indices;
-  Expr* iteratorExpr;
-  Expr* expr;
-  Expr* cond;
-  bool maybeArrayType;
-  bool zippered;
-
-  ForallExpr(Expr* indices,
-             Expr* iteratorExpr,
-             Expr* expr,
-             Expr* cond,
-             bool maybeArrayType,
-             bool zippered);
-
-  DECLARE_COPY(ForallExpr);
-
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void    verify();
-  virtual void    accept(AstVisitor* visitor);
-  virtual GenRet  codegen();
-
-  virtual Expr*   getFirstExpr();
-};
-
 
 class NamedExpr : public Expr {
  public:
@@ -350,15 +319,8 @@ static inline bool needsCapture(FnSymbol* taskFn) {
          taskFn->hasFlag(FLAG_NON_BLOCKING);
 }
 
-inline SymExpr* ShadowVarSymbol::outerVarSE() const {
-  if (SymExpr* ovse = toSymExpr(this->outerVarRep))
-    return ovse;
-  else
-    return NULL;
-}
-
 inline Symbol* ShadowVarSymbol::outerVarSym() const {
-  if (SymExpr* ovse = this->outerVarSE())
+  if (SymExpr* ovse = this->outerVarSE)
     return ovse->symbol();
   else
     return NULL;

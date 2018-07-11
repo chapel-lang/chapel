@@ -214,7 +214,7 @@ Machine (P#0 total=536857436KB Backend=Linux LinuxCgroup=/torque/513099.master.c
   Bridge Host->PCI L#0 (P#0 buses=0000:[00-01])
     Bridge PCI->PCI (P#48 busid=0000:00:03.0 id=8086:340a class=0604(PCI_B) buses=0000:[01-01])
       PCI 1000:0079 (P#4096 busid=0000:01:00.0 class=0104(RAID))
-        Block L#0 (LinuxDeviceID=8:0) "sda"
+        Block(Other) L#0 (LinuxDeviceID=8:0 Type=Other) "sda"
 depth 0:	1 Machine (type #1)
  depth 1:	2 Group0 (type #7)
   depth 2:	4 NUMANode (type #2)

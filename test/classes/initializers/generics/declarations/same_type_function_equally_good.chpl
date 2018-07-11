@@ -11,7 +11,6 @@ class Foo {
     t = tVal;
     x = xVal;
     y = yVal;
-    super.init();
   }
 
   proc init(xVal, type yType) {
@@ -19,7 +18,6 @@ class Foo {
     x = xVal;
     var yVal: t;
     y = yVal;
-    super.init();
   }
 }
 

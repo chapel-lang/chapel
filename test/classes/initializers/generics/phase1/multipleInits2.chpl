@@ -8,7 +8,6 @@ class LotsOFields {
     f2 = val2;
     f3 = val3;
     f2 = val2*3; // uh oh! Could error with "out of order" or "multiple init"
-    super.init();
   }
 }
 

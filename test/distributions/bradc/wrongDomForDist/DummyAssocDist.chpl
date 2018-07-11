@@ -1,14 +1,17 @@
 class MyDist : BaseDist {
+  proc init() { }
+
   proc dsiNewAssociativeDom(type idxType, param parSafe:bool) {
-    return new MyDom();
+    return new unmanaged MyDom();
   }
 
-  proc dsiClone() return new MyDist();
+  proc dsiClone() return new unmanaged MyDist();
 }
 
+pragma "use default init"
 class MyDom : BaseAssociativeDom {
   type idxType = int(32);
-  const dist: MyDist;
+  const dist: unmanaged MyDist;
 
   proc dsiGetIndices() {
     var r: range;

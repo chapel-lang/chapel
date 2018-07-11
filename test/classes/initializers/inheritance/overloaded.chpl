@@ -3,7 +3,6 @@ class Parent {
 
   proc init() {
     covered = 4;
-    super.init();
   }
 }
 
@@ -12,10 +11,9 @@ class Child: Parent {
 
   proc init(val) {
     covered = val;
-    super.init();
   }
 }
 
-var child = new Child(10);
+var child = new unmanaged Child(10);
 writeln(child);
 delete child;

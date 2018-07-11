@@ -8,7 +8,6 @@ class GenericClass {
   proc init(type i, param r : int) {
     this.idxType = i;
     this.rank = r;
-    super.init();
   }
 
   iter these() {
@@ -101,16 +100,13 @@ proc main() {
   var grr = new GenericRecord(real);
   promote(grr);
 
-  var cc = new ConcreteClass(10);
+  var cc = new borrowed ConcreteClass(10);
   promote(cc);
-  delete cc;
 
-  var gcTwo = new GenericClass(int, 2);
+  var gcTwo = new borrowed GenericClass(int, 2);
   promote(gcTwo);
-  delete gcTwo;
 
-  var gcOne = new GenericClass(int, 1);
+  var gcOne = new borrowed GenericClass(int, 1);
   promote(gcOne);
-  delete gcOne;
 }
 

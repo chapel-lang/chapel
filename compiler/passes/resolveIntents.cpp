@@ -33,6 +33,7 @@ static IntentTag constIntentForType(Type* t) {
       is_complex_type(t) ||
       is_enum_type(t) ||
       isClass(t) ||
+      isUnmanagedClassType(t) ||
       isUnion(t) ||
       t == dtOpaque ||
       t == dtTaskID ||
@@ -43,6 +44,7 @@ static IntentTag constIntentForType(Type* t) {
       t == dtCFnPtr ||
       t == dtVoid ||
       t->symbol->hasFlag(FLAG_RANGE) ||
+      isManagedPtrType(t) ||
       // MPF: This rule seems odd to me
       (t->symbol->hasFlag(FLAG_EXTERN) && !isRecord(t))) {
     return INTENT_CONST_IN;
@@ -88,9 +90,13 @@ IntentTag blankIntentForType(Type* t) {
       t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF)) {
     retval = INTENT_REF;
 
-  } else if(t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
+  } else if (t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
             || isTupleContainingRefMaybeConst(t)) {
     retval = INTENT_REF_MAYBE_CONST;
+
+  } else if (isManagedPtrType(t)) {
+    // allow blank intent owned to be transferred out of
+    retval = INTENT_IN;
 
   } else if (is_bool_type(t)                         ||
              is_int_type(t)                          ||
@@ -103,6 +109,7 @@ IntentTag blankIntentForType(Type* t) {
              t == dtCVoidPtr                         ||
              t == dtCFnPtr                           ||
              isClass(t)                              ||
+             isUnmanagedClassType(t)                 ||
              isRecord(t)                             ||
              // Note: isRecord(t) includes range (FLAG_RANGE)
              isUnion(t)                              ||
@@ -197,15 +204,15 @@ static IntentTag blankIntentForThisArg(Type* t) {
 
 IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
+  FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
+
   if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
     return blankIntentForThisArg(arg->type);
   else if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_CONST)
     return constIntentForThisArg(arg->type);
-  else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_EXTERN) &&
-           arg->intent == INTENT_BLANK)
+  else if (fn->hasFlag(FLAG_EXTERN) && arg->intent == INTENT_BLANK)
     return INTENT_CONST_IN;
-  else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_ALLOW_REF) &&
-           arg->type->symbol->hasFlag(FLAG_REF))
+  else if (fn->hasFlag(FLAG_ALLOW_REF) && arg->type->symbol->hasFlag(FLAG_REF))
 
     // This is a workaround for an issue with RVF erroneously forwarding a
     // reduce variable. The workaround adjusts the build_tuple_always_allow_ref
@@ -213,6 +220,12 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
     // the type. It would be better to rely on task/forall intents
     // to correctly mark const / not const / maybe const.
     return INTENT_REF;
+
+  else if (isManagedPtrType(arg->type) &&
+           (arg->intent == INTENT_BLANK || arg->intent == INTENT_CONST) &&
+           arg->hasFlag(FLAG_INSTANTIATED_FROM_ANY))
+
+    return INTENT_CONST_REF;
 
   else
     return concreteIntent(arg->intent, arg->type);

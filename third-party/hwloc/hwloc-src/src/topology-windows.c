@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -190,6 +190,7 @@ typedef WORD (WINAPI *PFN_GETACTIVEPROCESSORGROUPCOUNT)(void);
 static PFN_GETACTIVEPROCESSORGROUPCOUNT GetActiveProcessorGroupCountProc;
 
 static unsigned long nr_processor_groups = 1;
+static unsigned long max_numanode_index = 0;
 
 typedef WORD (WINAPI *PFN_GETACTIVEPROCESSORCOUNT)(WORD);
 static PFN_GETACTIVEPROCESSORCOUNT GetActiveProcessorCountProc;
@@ -253,9 +254,9 @@ static void hwloc_win_get_function_ptrs(void)
 	(PFN_GETNUMAAVAILABLEMEMORYNODEEX) GetProcAddress(kernel32, "GetNumaAvailableMemoryNodeEx");
       GetLogicalProcessorInformationExProc =
 	(PFN_GETLOGICALPROCESSORINFORMATIONEX)GetProcAddress(kernel32, "GetLogicalProcessorInformationEx");
+      QueryWorkingSetExProc =
+	(PFN_QUERYWORKINGSETEX) GetProcAddress(kernel32, "K32QueryWorkingSetEx");
       VirtualAllocExNumaProc =
-	(PFN_VIRTUALALLOCEXNUMA) GetProcAddress(kernel32, "K32QueryWorkingSetEx");
-      VirtualAllocExNumaProc =*
 	(PFN_VIRTUALALLOCEXNUMA) GetProcAddress(kernel32, "VirtualAllocExNuma");
       VirtualFreeExProc =
 	(PFN_VIRTUALFREEEX) GetProcAddress(kernel32, "VirtualFreeEx");
@@ -264,10 +265,10 @@ static void hwloc_win_get_function_ptrs(void)
     if (GetActiveProcessorGroupCountProc)
       nr_processor_groups = GetActiveProcessorGroupCountProc();
 
-    if (!VirtualAllocExNumaProc) {
+    if (!QueryWorkingSetExProc) {
       HMODULE psapi = LoadLibrary("psapi.dll");
       if (psapi)
-        VirtualAllocExNumaProc = (PFN_VIRTUALALLOCEXNUMA) GetProcAddress(psapi, "QueryWorkingSetEx");
+        QueryWorkingSetExProc = (PFN_QUERYWORKINGSETEX) GetProcAddress(psapi, "QueryWorkingSetEx");
     }
 }
 
@@ -672,12 +673,14 @@ hwloc_win_free_membind(hwloc_topology_t topology __hwloc_attribute_unused, void 
  */
 
 static int
-hwloc_win_get_area_membind(hwloc_topology_t topology __hwloc_attribute_unused, const void *addr, size_t len, hwloc_nodeset_t nodeset, hwloc_membind_policy_t * policy, int flags)
+hwloc_win_get_area_memlocation(hwloc_topology_t topology __hwloc_attribute_unused, const void *addr, size_t len, hwloc_nodeset_t nodeset, int flags __hwloc_attribute_unused)
 {
   SYSTEM_INFO SystemInfo;
   DWORD page_size;
   uintptr_t start;
   unsigned nb;
+  PSAPI_WORKING_SET_EX_INFORMATION *pv;
+  unsigned i;
 
   GetSystemInfo(&SystemInfo);
   page_size = SystemInfo.dwPageSize;
@@ -688,38 +691,24 @@ hwloc_win_get_area_membind(hwloc_topology_t topology __hwloc_attribute_unused, c
   if (!nb)
     nb = 1;
 
-  {
-    PSAPI_WORKING_SET_EX_INFORMATION *pv;
-    unsigned i;
+  pv = calloc(nb, sizeof(*pv));
+  if (!pv)
+    return -1;
 
-    pv = calloc(nb, sizeof(*pv));
-
-    for (i = 0; i < nb; i++)
-      pv[i].VirtualAddress = (void*) (start + i * page_size);
-    if (!QueryWorkingSetExProc(GetCurrentProcess(), pv, nb * sizeof(*pv))) {
-      free(pv);
-      return -1;
-    }
-    *policy = HWLOC_MEMBIND_BIND;
-    if (flags & HWLOC_MEMBIND_STRICT) {
-      unsigned node = pv[0].VirtualAttributes.Node;
-      for (i = 1; i < nb; i++) {
-	if (pv[i].VirtualAttributes.Node != node) {
-	  errno = EXDEV;
-          free(pv);
-	  return -1;
-	}
-      }
-      hwloc_bitmap_only(nodeset, node);
-      free(pv);
-      return 0;
-    }
-    hwloc_bitmap_zero(nodeset);
-    for (i = 0; i < nb; i++)
-      hwloc_bitmap_set(nodeset, pv[i].VirtualAttributes.Node);
+  for (i = 0; i < nb; i++)
+    pv[i].VirtualAddress = (void*) (start + i * page_size);
+  if (!QueryWorkingSetExProc(GetCurrentProcess(), pv, nb * sizeof(*pv))) {
     free(pv);
-    return 0;
+    return -1;
   }
+
+  for (i = 0; i < nb; i++) {
+    if (pv[i].VirtualAttributes.Valid)
+      hwloc_bitmap_set(nodeset, pv[i].VirtualAttributes.Node);
+  }
+
+  free(pv);
+  return 0;
 }
 
 
@@ -782,6 +771,8 @@ hwloc_look_windows(struct hwloc_backend *backend)
 	  case RelationNumaNode:
 	    type = HWLOC_OBJ_NUMANODE;
 	    id = procInfo[i].NumaNode.NodeNumber;
+	    if (id > max_numanode_index)
+	      max_numanode_index = id;
 	    break;
 	  case RelationProcessorPackage:
 	    type = HWLOC_OBJ_PACKAGE;
@@ -899,6 +890,8 @@ hwloc_look_windows(struct hwloc_backend *backend)
             num = 1;
             GroupMask = &procInfo->NumaNode.GroupMask;
 	    id = procInfo->NumaNode.NodeNumber;
+	    if (id > max_numanode_index)
+	      max_numanode_index = id;
 	    break;
 	  case RelationProcessorPackage:
 	    type = HWLOC_OBJ_PACKAGE;
@@ -1074,8 +1067,8 @@ hwloc_set_windows_hooks(struct hwloc_binding_hooks *hooks,
     support->membind->bind_membind = 1;
   }
 
-  if (QueryWorkingSetExProc)
-    hooks->get_area_membind = hwloc_win_get_area_membind;
+  if (QueryWorkingSetExProc && max_numanode_index <= 63 /* PSAPI_WORKING_SET_EX_BLOCK.Node is 6 bits only */)
+    hooks->get_area_memlocation = hwloc_win_get_area_memlocation;
 }
 
 static int hwloc_windows_component_init(unsigned long flags __hwloc_attribute_unused)

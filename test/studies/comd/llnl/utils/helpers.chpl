@@ -17,7 +17,7 @@ class Ticker {
   var times : int;
 
   proc init(const in tName : string) {
-    this.initDone();
+    this.complete();
     name = tName;
     tick = new Timer();
     tick.clear();
@@ -45,7 +45,7 @@ class Ticker {
 
 const timers = 19;
 enum timerEnum {TOTAL = 1, INIT, FCREATE, INITGRID, EPILOGUE, REDIST1, F1, LOOP, TIMESTEP, POSITION, VELOCITY, REDIST, ATOMHALO, SORT, FORCE, FORCE1, FORCE2, EAMHALO, COMMREDUCE};
-var tArray : [1..timers] Ticker = 
+var tArray : [timerEnum.TOTAL..timerEnum.COMMREDUCE] Ticker = 
 (	new Ticker("total              "),
 	new Ticker("init               "),
 	new Ticker("  createForce      "),

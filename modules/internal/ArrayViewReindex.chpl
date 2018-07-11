@@ -32,6 +32,7 @@ module ArrayViewReindex {
   // that it creates reindexed views of, and a down-facing and up-facing
   // domain indicating the old and new index sets, respectively.
   //
+  pragma "use default init"
   class ArrayViewReindexDist: BaseDist {
     // a pointer down to the distribution that this class is creating
     // reindexed views of
@@ -48,24 +49,26 @@ module ArrayViewReindex {
         return downDistInst;
     }
 
-    proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
-      var newdom = new ArrayViewReindexDom(rank=rank,
+    override proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
+      var newdom = new unmanaged ArrayViewReindexDom(rank=rank,
                                            idxType=idxType,
                                            //                                           stridable=true,
                                            stridable=stridable,
                                            downdomPid=downdomPid,
                                            downdomInst=downdomInst,
                                            distPid=this.pid,
-                                           distInst=this);
+                                           distInst=_to_unmanaged(this));
       newdom.dsiSetIndices(inds);
       return newdom;
     }
 
-    proc dsiClone() return new ArrayViewReindexDist(downDistPid=downDistPid,
+    proc dsiClone() {
+      return new unmanaged ArrayViewReindexDist(downDistPid=downDistPid,
                                                     downDistInst=downDistInst,
                                                     updom=updom,
                                                     downdomPid=downdomPid,
                                                     downdomInst=downdomInst);
+    }
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
@@ -77,14 +80,14 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new ArrayViewReindexDist(downDistPid = privatizeData(1),
+      return new unmanaged ArrayViewReindexDist(downDistPid = privatizeData(1),
                                       downDistInst = privatizeData(2),
                                       updom = privatizeData(3),
                                       downdomPid = privatizeData(4),
                                       downdomInst = privatizeData(5));
     }
 
-    proc dsiDestroyDist() {
+    override proc dsiDestroyDist() {
       _delete_dom(updom, false);
       //      _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
@@ -97,9 +100,10 @@ module ArrayViewReindex {
   // for rectangular domains so this is a subclass of
   // BaseRectangularDom.
   //
+ pragma "use default init"
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
-    var updom: DefaultRectangularDom(rank, idxType, stridable);
+    var updom: unmanaged DefaultRectangularDom(rank, idxType, stridable);
     forwarding updom except these;
 
     // the old original index set that we're equivalent to
@@ -139,9 +143,9 @@ module ArrayViewReindex {
     proc dsiBuildArray(type eltType) {
       pragma "no auto destroy"
       const downarr = _newArray(downdom.dsiBuildArray(eltType));
-      return new ArrayViewReindexArr(eltType  =eltType,
+      return new unmanaged ArrayViewReindexArr(eltType  =eltType,
                                         _DomPid = this.pid,
-                                        dom = this,
+                                        dom = _to_unmanaged(this),
                                         _ArrPid=downarr._pid,
                                         _ArrInstance=downarr._instance,
                                         ownsArrInstance=true);
@@ -239,7 +243,7 @@ module ArrayViewReindex {
       return ind;
     }
 
-    proc dsiMyDist() {
+    override proc dsiMyDist() {
       return dist;
     }
 
@@ -286,7 +290,7 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new ArrayViewReindexDom(rank = this.rank,
+      return new unmanaged ArrayViewReindexDom(rank = this.rank,
                                      idxType = this.idxType,
                                      stridable = this.stridable,
                                      updom = privatizeData(1),
@@ -313,6 +317,24 @@ module ArrayViewReindex {
 
   } // end of class ArrayViewReindexDom
 
+  private proc buildIndexCacheHelper(arr, dom) {
+    if chpl__isDROrDRView(arr) {
+      if (chpl__isArrayView(arr)) {
+        if arr.isSliceArrayView() && !arr._containsRCRE() {
+          // Only slices below in the view stack, which won't have built up
+          // an indexCache.
+          return arr._getActualArray().dsiGetRAD().toSlice(arr.dom).toReindex(dom);
+        } else {
+          return arr.indexCache.toReindex(dom);
+        }
+      } else {
+        return arr.dsiGetRAD().toReindex(dom);
+      }
+    } else {
+      return false;
+    }
+  }
+
   //
   // The class representing a slice of an array.  Like other array
   // class implementations, it supports the standard dsi interface.
@@ -335,9 +357,21 @@ module ArrayViewReindex {
     // (eventually...), the indexCache provides a mean of directly
     // accessing the array's ddata to avoid indirection overheads
     // through the array field above.
-    const indexCache = buildIndexCache();
+    const indexCache;
 
-    const ownsArrInstance = false;
+    const ownsArrInstance;
+
+    proc init(type eltType, const _DomPid, const dom,
+              const _ArrPid, const _ArrInstance,
+              const ownsArrInstance : bool = false) {
+      this.eltType         = eltType;
+      this._DomPid         = _DomPid;
+      this.dom             = dom;
+      this._ArrPid         = _ArrPid;
+      this._ArrInstance    = _ArrInstance;
+      this.indexCache      = buildIndexCacheHelper(_ArrInstance, dom);
+      this.ownsArrInstance = ownsArrInstance;
+    }
 
     forwarding arr except these,
                       doiBulkTransferFromKnown, doiBulkTransferToKnown,
@@ -449,7 +483,6 @@ module ArrayViewReindex {
     //
     // accessors
     //
-
     inline proc dsiAccess(i: idxType ...rank) ref {
       return dsiAccess(i);
     }
@@ -539,7 +572,7 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new ArrayViewReindexArr(eltType=this.eltType,
+      return new unmanaged ArrayViewReindexArr(eltType=this.eltType,
                                      _DomPid=privatizeData(1),
                                      dom=privatizeData(2),
                                      _ArrPid=privatizeData(3),
@@ -594,7 +627,7 @@ module ArrayViewReindex {
     }
 
     // not sure what this is, but everyone seems to have one...
-    inline proc dsiGetBaseDom() {
+    override proc dsiGetBaseDom() {
       return privDom;
     }
 
@@ -623,7 +656,7 @@ module ArrayViewReindex {
       return this;
     }
 
-    proc dsiDestroyArr() {
+    override proc dsiDestroyArr() {
       if ownsArrInstance {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }
@@ -633,12 +666,12 @@ module ArrayViewReindex {
       return arr.doiCanBulkTransferRankChange();
 
     proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool {
-      const shifted = chpl_reindexConvertDom(destDom.dims(), destDom._value, this.dom.dist.downdomInst);
+      const shifted = chpl_reindexConvertDomMaybeSlice(destDom.dims(), privDom.updom, this.dom.dist.downdomInst);
       return chpl__bulkTransferArray(this.arr, shifted, srcClass, srcDom);
     }
 
     proc doiBulkTransferToKnown(srcDom, destClass, destDom) : bool {
-      const shifted = chpl_reindexConvertDom(srcDom.dims(), srcDom._value, this.dom.dist.downdomInst);
+      const shifted = chpl_reindexConvertDomMaybeSlice(srcDom.dims(), privDom.updom, this.dom.dist.downdomInst);
       return chpl__bulkTransferArray(destClass, destDom, this.arr, shifted);
     }
   }
@@ -649,7 +682,7 @@ module ArrayViewReindex {
     // indices/domains back into the original index set.
     //
 
-  inline proc chpl_reindexConvertIdxDim(i: integral, updom, downdom, dim: int) {
+  inline proc chpl_reindexConvertIdxDim(i, updom, downdom, dim: int) {
     return downdom.dsiDim(dim).orderToIndex(updom.dsiDim(dim).indexOrder(i));
   }
 
@@ -686,6 +719,43 @@ module ArrayViewReindex {
     for param d in 1..updom.rank {
       // Slicing the ranges preserves the stride
       ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d)];
+    }
+    return {(...ranges)};
+  }
+
+  // Sometimes we want to take a slice of a reindex and translate it into the
+  // downward domain's indices. If the slice is strided, then we have to return
+  // a strided domain. If the downward domain is not strided, then the returned
+  // translation will be of a different type.
+  //
+  // dsiSetIndices on a reindexed domain uses 'chpl_reindexConvertDom' to
+  // resize the downward domain, meaning that the result must be of the same
+  // type. We therefore need this additional, and very similar method to
+  // translate potentially-strided slices.
+  inline proc chpl_reindexConvertDomMaybeSlice(dims, updom, downdom) {
+    if updom.rank != dims.size {
+      compilerError("Called chpl_reindexConvertDomMaybeSlice with incorrect rank. Got " + dims.size:string + ", expecting " + updom.rank:string);
+    }
+
+    var ranges : downdom.rank * range(downdom.idxType, stridable=downdom.stridable || dims(1).stridable);
+    var actualLow, actualHigh: downdom.rank*downdom.idxType;
+    for param d in 1..dims.size {
+      if (dims(d).size == 0) {
+        actualLow(d) = downdom.dsiDim(d).low;
+        actualHigh(d) = downdom.dsiDim(d).high;
+      } else {
+        actualLow(d) = chpl_reindexConvertIdxDim(dims(d).first, updom, downdom, d);
+        actualHigh(d) = chpl_reindexConvertIdxDim(dims(d).last, updom, downdom, d);
+      }
+    }
+    for param d in 1..updom.rank {
+      if (downdom.dsiDim(d).stridable || dims(d).stridable) {
+        const relStride = max(1, (dims(d).stride / updom.dsiDim(d).stride) * downdom.dsiDim(d).stride);
+        // Slicing the ranges preserves the stride
+        ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d) by relStride];
+      } else {
+        ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d)];
+      }
     }
     return {(...ranges)};
   }

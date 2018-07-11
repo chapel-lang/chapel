@@ -13,12 +13,9 @@ class A {
     // I removed the argument and explicit setting of field t, to show that
     // omitted type fields work just fine.
     this.x = xVal;
-    super.init();
   }
 }
 
-var a = new A(2);
+var a = new borrowed A(2);
 
 writeln(a);
-
-delete a;

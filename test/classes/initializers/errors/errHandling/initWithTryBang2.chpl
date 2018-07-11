@@ -6,7 +6,7 @@ class Foo {
   proc init() {
     x = 10;
     try! outerFunc();
-    super.init();
+
   }
 }
 

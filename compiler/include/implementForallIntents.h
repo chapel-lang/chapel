@@ -38,6 +38,9 @@
 
 extern Map<FnSymbol*,FnSymbol*> pristineLeaderIterators;
 
+Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
+void  resolveShadowVarsIfNeeded(DefExpr* def);
+
 IntentTag argIntentForForallIntent(ForallIntentTag tfi);
 bool      callingParallelIterator(CallExpr* call);
 void      addArgsToToLeaderCallForPromotionWrapper(FnSymbol* fn,
@@ -45,11 +48,10 @@ void      addArgsToToLeaderCallForPromotionWrapper(FnSymbol* fn,
                                                    Symbol* extraFormals[]);
 VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref);
 FnSymbol*  copyLeaderFn(FnSymbol* origFn, bool ignore_isResolved);
+ArgSymbol* newExtraFormal(ShadowVarSymbol* svar, int ix, Symbol* eActual,
+                          bool nested);
 
-void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall);
-void printIFI2cache();
-
-static const char* intentArgName(int ix, const char* base) {
+static inline const char* intentArgName(int ix, const char* base) {
   return astr("_x", istr(ix+1), "_", base);
 }
 

@@ -12,13 +12,13 @@ class OverrideMe
 {
   proc getC()
   {
-    return new C();
+    return new unmanaged C();
   }
 
   iter manyC()
   {
-    yield new C();
-    yield new C();
+    yield new unmanaged C();
+    yield new unmanaged C();
   }
 }
 
@@ -26,21 +26,21 @@ class OverridesIt : OverrideMe
 {
   proc getC()
   {
-    return new SubC();
+    return new unmanaged SubC();
   }
 
   iter manyC()
   {
-    yield new SubC();
-    yield new SubC();
+    yield new unmanaged SubC();
+    yield new unmanaged SubC();
   }
 }
 
 proc main()
 {
-  var o : OverrideMe;
+  var o : unmanaged OverrideMe;
 
-  o = new OverridesIt();
+  o = new unmanaged OverridesIt();
 
   var t1 = o.getC();
 

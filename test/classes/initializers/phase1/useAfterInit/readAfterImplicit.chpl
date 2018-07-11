@@ -5,7 +5,7 @@ record R {
 
   proc init() {
     this.y = x * 2.0;
-    this.initDone();
+    this.complete();
   }
 }
 

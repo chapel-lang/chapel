@@ -1,4 +1,4 @@
-# Copyright © 2009-2016 Inria.  All rights reserved.
+# Copyright © 2009-2018 Inria.  All rights reserved.
 # Copyright © 2009-2012 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 # Copyright © 2011-2012 Oracle and/or its affiliates.  All rights reserved.
@@ -76,7 +76,7 @@ else
 plugins_LTLIBRARIES += hwloc_opencl.la
 hwloc_opencl_la_SOURCES = topology-opencl.c
 hwloc_opencl_la_CFLAGS = $(AM_CFLAGS) $(HWLOC_OPENCL_CFLAGS) -DHWLOC_INSIDE_PLUGIN
-hwloc_opencl_la_LDFLAGS = $(plugins_ldflags) $(HWLOC_OPENCL_LIBS)
+hwloc_opencl_la_LDFLAGS = $(plugins_ldflags) $(HWLOC_OPENCL_LIBS) $(HWLOC_OPENCL_LDFLAGS)
 endif
 endif HWLOC_HAVE_OPENCL
 
@@ -204,7 +204,7 @@ endif HWLOC_HAVE_WINDOWS
 # Installable library
 
 libhwloc_la_SOURCES = $(sources)
-libhwloc_la_LDFLAGS = $(ldflags) -version-info $(libhwloc_so_version) $(HWLOC_LIBS)
+libhwloc_la_LDFLAGS = $(ldflags) -version-info $(libhwloc_so_version) $(HWLOC_LIBS) $(HWLOC_LDFLAGS)
 
 if HWLOC_HAVE_PLUGINS
 AM_CPPFLAGS += $(LTDLINCL)

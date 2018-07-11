@@ -38,6 +38,6 @@ class Calendar {
   var year, month: int;
 }
 
-proc type Calendar.fromDate(d: Date): Calendar {
-  return new Calendar(d.year, d.month);
+proc type Calendar.fromDate(d: Date): unmanaged Calendar {
+  return new unmanaged Calendar(d.year, d.month);
 }

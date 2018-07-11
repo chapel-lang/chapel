@@ -8,10 +8,10 @@ class D: C {
   var y: int;
 }
 
-var s: list(C);
+var s: list(unmanaged C);
 
-s.append(new D(1, 2));
-s.append(new C(3));
+s.append(new unmanaged D(1, 2));
+s.append(new unmanaged C(3));
 
 writeln(s);
 

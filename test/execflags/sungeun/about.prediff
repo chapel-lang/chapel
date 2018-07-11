@@ -42,5 +42,5 @@ with open(goodfile, 'w') as gfh:
     chplenv += "CHPL_RUNTIME_INCL="+chpl_home+"/runtime/include\n"
     chplenv += "CHPL_RUNTIME_LIB="+chpl_home+"/lib\n"
     chplenv += "CHPL_THIRD_PARTY="+chpl_home+"/third-party\n"
-    for (env, val) in (e.split('=') for e in sorted(chplenv.split('\n')) if e):
+    for (env, val) in (e.split('=', 1) for e in sorted(chplenv.split('\n')) if e):
         gfh.write('  %s: %s\n'%(env, val))

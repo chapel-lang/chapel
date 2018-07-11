@@ -3,12 +3,11 @@ class ThisEarly {
 
   proc init(r: real) {
     this.r = r; // This is the only accepted use of this
-    super.init();
   }
 }
 
 proc main() {
-  var c: ThisEarly = new ThisEarly(5);
+  var c: ThisEarly = new unmanaged ThisEarly(5);
 
   writeln(c.r);
 

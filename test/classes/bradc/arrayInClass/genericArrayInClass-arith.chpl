@@ -27,12 +27,12 @@ class SparseC {
   var x: [sparseDom] t;
 }
 
-enum probClass {S, W, A, B, C};
+enum probClass {S=1, W, A, B, C};
 
 class EnumC {
   type t;
   
-  var enumDom: domain(probClass);
+  var enumDom: domain(probClass) = probClass.S..probClass.C;
   var x: [enumDom] t;
 }
 
@@ -49,11 +49,11 @@ proc foo(C) {
 const vecDom = {1..3};
 type vec = [vecDom] real;
 
-var myArithC = new ArithC(vec);
-var myAssocC = new AssocC(vec);
-var myOpaqueC = new OpaqueC(vec);
-var mySparseC = new SparseC(vec);
-var myEnumC = new EnumC(vec);
+var myArithC = new unmanaged ArithC(vec);
+var myAssocC = new unmanaged AssocC(vec);
+var myOpaqueC = new unmanaged OpaqueC(vec);
+var mySparseC = new unmanaged SparseC(vec);
+var myEnumC = new unmanaged EnumC(vec);
 
 // initialize class instances
 

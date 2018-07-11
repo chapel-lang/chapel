@@ -1,0 +1,38 @@
+.. default-domain:: chpl
+
+.. module:: lifetimeChecking.doc
+
+lifetimeChecking.doc
+====================
+**Usage**
+
+.. code-block:: chapel
+
+   use lifetimeChecking.doc;
+
+.. class:: Foo
+
+.. data:: var a = new owned Foo()
+
+.. data:: var b = new unmanaged Foo()
+
+.. data:: var c = new borrowed Foo()
+
+.. data:: var d = new shared Foo()
+
+.. data:: var w = new owned Foo()
+
+   Double check documentation 
+
+.. data:: var x = new unmanaged Foo()
+
+   Double check documentation 
+
+.. data:: var y = new borrowed Foo()
+
+   Double check documentation 
+
+.. data:: var z = new shared Foo()
+
+   Double check documentation 
+

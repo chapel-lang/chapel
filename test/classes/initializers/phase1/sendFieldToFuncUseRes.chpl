@@ -5,7 +5,6 @@ class Foo {
   proc init(xVal) {
     x = xVal;
     y = bar(x); // This should be allowed
-    super.init();
   }
 }
 
@@ -14,6 +13,6 @@ proc bar(val) {
   return !val;
 }
 
-var foo = new Foo(true);
+var foo = new unmanaged Foo(true);
 writeln(foo);
 delete foo;

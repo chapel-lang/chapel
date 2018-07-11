@@ -1,6 +1,508 @@
 Release Changes List
 ====================
 
+version 1.17.1
+==============
+
+Update to twentieth public release of Chapel, April 2018
+(see also changes below for 1.17.0)
+
+Bug Fixes
+---------
+* fixed a bug in which postinit() was not called for generic records
+* fixed a bug in which most launchers would not work with 'make install'
+* fixed a portability problem w.r.t. our processing of /proc/cpuinfo
+* fixed a bug in which LinearAlgebra.Sparse.eye() would unintentionally promote
+
+Cray-specific Changes
+---------------------
+* reduced contention for polling threads for CHPL_COMM=ugni
+* fixed a bug in computing the max number of comm domains for CHPL_COMM=ugni
+* improved the handling of unregisterable memory segments for CHPL_COMM=ugni
+* increased conservatism in IPA for CHPL_TARGET_COMPILER=cray-prgenv-cray
+* fixed debug build mode for CHPL_COMM=ugni
+
+Documentation
+-------------
+* simplified URLs to use https://chapel-lang/docs/ rather than .../docs/latest/
+* fixed some typos and broken links in this file
+
+Packaging Changes
+-----------------
+* converted our use of easy_install to pip when installing virtualenv
+
+Third-Party Software Changes
+----------------------------
+* updated hwloc to 1.11.10
+* fix our snapshot of fltk
+
+
+version 1.17.0
+==============
+
+Twentieth public release of Chapel, April 5, 2018
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+* tool / configuration highlights:
+  - added support for bash tab completion for `chpl` compiler options
+  - `chpl` now offers suggestions for unrecognized flags
+  - changed the generated executable's name from the main module to its filename
+  - improved support for `chpl`s LLVM back-end
+  - added support for multiple mason repositories, including local registries
+* language highlights:
+  - dramatically improved support for user-defined and implicit initializers
+  - added support for uninterpreted triple-quoted strings
+  - usability improvements for `Owned(c)` and `Shared(c)`
+  - improved coercions for `enum` and numeric types, particularly `real(32)`
+* standard library / package highlights:
+  - `LinearAlgebra` matrices now use 1-based indices by default
+  - new Kronecker, Cholesky, eigenvector/value routines in `LinearAlgebra`
+  - added the Blowfish cipher to the `Crypto` module
+  - added support for joinPath(), isAbsPath(), commonPath() to the `Path` module
+  - added Bessel functions to `Math` module
+  - added new channel.advancePastByte(), mark(), commit(), and revert() methods
+  - increased the use of error-handling in standard, package, internal modules
+* performance / benchmark / memory highlights::
+  - significant performance improvements when executing using Cray networks
+  - added a new faster version of the reverse-complement benchmark
+  - closed a number of minor memory leaks
+* portability highlights:
+  - ported Chapel to the Cray XC50 system with ARM processors
+  - improved portability to FreeBSD and PowerPC
+  - improved portability for specific versions of gcc
+* documentation highlights:
+  - moved Chapel's website from http://chapel.cray.com to https://chapel-lang.org
+  - added a color-coded version selection menu to the online documentation
+
+File / Directory Structure
+--------------------------
+* made `make install` install mason
+* added the CHPL_COMM_SUBSTRATE setting to GASNet-specific paths
+
+New Tools / Tool Changes
+------------------------
+* added support for bash tab completion for `chpl` compiler options
+  (see https://chapel-lang.org/docs/1.17/usingchapel/compiling.html#tab-completion-for-flags)
+* changed the generated executable's name from the main module to its filename
+  (see the `-o` flag on https://chapel-lang.org/docs/1.17/usingchapel/man.html)
+* added support for multiple mason repositories, including local registries
+  (see https://chapel-lang.org/docs/1.17/tools/mason/mason.html#local-registries)
+* added support for `mason help` and `mason version` commands
+* `chpl` now offers suggestions for unrecognized flags
+  (see error message for `chpl -fast`)
+* rewrote `printchplenv` and reworked its interface and output
+  (see `util/printchplenv --help`)
+* rewrote `compileline`
+  (see `util/config/compileline --help`))
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+* `in` intents now behave more like variable initialization
+  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/13.rst)
+* ranges are now passed by `const in` intent by default
+  (see 'The Default Intent' in the 'Procedures' chapter of the specification)
+* disallowed implicit coercions for type arguments with a formal type specifier
+  (see 'Implicit Conversions' in the specification's 'Conversions' chapter)
+* changed the alignment of a non-stridable range from 0 to its low bound
+  (i.e., `(3..5).alignment` is now 3 where it used to be 0)
+
+New Features
+------------
+* added support for uninterpreted triple-quoted strings
+  (see 'Literals' section in 'Lexical Structure' chapter of the specification)
+* added support for `continue` statements within forall loops
+* extended `delete` to accept arrays and list of expressions to delete
+  (see 'Deleting Class Objects' in the 'Classes' chapter of the specification)
+* type and param fields can now be accessed from a type variable
+  (see 'Field Accesses' in the 'Classes' chapter of the specification)
+* added support for forwarding methods on arrays, domains, and distributions
+  (see https://chapel-lang.org/docs/1.17/technotes/dsi.html#overview)
+* added an `isEmpty()` method on domains
+* added support for associative domains whose index types contain ranges
+* added support for subtype queries on distributions
+  (see 'Methods on All Domain Types' in the 'Domains' chapter of the spec)
+* added support for using GASNet's `smp` conduit
+
+Feature Improvements
+--------------------
+* dramatically improved support for user-defined initializers
+  (see https://chapel-lang.org/docs/1.17/technotes/initializers.html)
+* improved `enum` and numeric coercions, greatly improving `real(32)` usability
+  (see 'Implicit Numeric, Bool, and Enumeration Conversions' in the spec)
+* made string->value casts throw rather than halt() when encountering errors
+* `Owned(c)` and `Shared(c)` now coerce to type `c`
+  (see https://chapel-lang.org/docs/1.17/modules/packages/OwnedObject.html)
+* made `Owned(d)` coerce to `Owned(c)` when `c` is a superclass of `d`
+  (see https://chapel-lang.org/docs/1.17/modules/packages/OwnedObject.html)
+* writing out an `Owned(c)` now simply prints the `c` object
+* improved support for casting arrays to strings
+* made clear() for an array of records call the records' deinitializers
+* added support for defining multiple config types in a single statement
+  (see 'Type Aliases' in the 'Types' chapter of the language specification)
+* made error-handling propagate through forwarded methods
+* added support for invoking recursive parallel iterators via forall loops
+* enabled wide pointers to be cast to `c_void_ptr`
+* improved support for enums with non-trivial initialization expressions
+* improved default argument handling
+
+Removed Features
+----------------
+* removed the `msg` field from the `Error` class
+* removed deprecated `Barrier` module in favor of `Barriers`
+* removed deprecated `LayoutCSR` module in favor of `LayoutCS`
+* removed `ReplicatedDist` in favor of `Replicated`
+
+Standard Modules / Library
+--------------------------
+* added Bessel functions to `Math` module
+  (see https://chapel-lang.org/docs/1.17/modules/standard/Math.html#Math.j0)
+* added support for joinPath(), isAbsPath(), commonPath() to the `Path` module
+  (see https://chapel-lang.org/docs/1.17/modules/standard/Path.html)
+* added support for channel.advancePastByte() to read until a particular byte
+  (see https://chapel-lang.org/docs/1.17/modules/standard/IO.html#IO.channel.advancePastByte)
+* added versions of channel.mark(), commit(), revert() when locking==false
+  (see https://chapel-lang.org/docs/1.17/modules/standard/IO.html#IO.channel.mark)
+* improved support for I/O on `date`, `time`, and `datetime` types in `DateTime`
+  (see https://chapel-lang.org/docs/1.17/modules/standard/DateTime.html#DateTime.date.readWriteThis)
+* made DateTime.time.tzinfo `Shared` for automated memory management
+  (see https://chapel-lang.org/docs/1.17/modules/standard/DateTime.html#DateTime.time.init)
+* array `push*` methods now use `in` intents to improve their use with Owned
+  (see https://chapel-lang.org/docs/1.17/builtins/ChapelArray.html#ChapelArray.push_back)
+* added `string.size` overload for `string.length`
+  (see https://chapel-lang.org/docs/1.17/builtins/String.html#String.string.size)
+* updated several modules to use error handling rather than `try!` / `halt()`
+* made the `Buffers` module into a package module
+  (see https://chapel-lang.org/docs/1.17/modules/packages/Buffers.html)
+* made the `UtilReplicatedVar` module into a package module `ReplicatedVar`
+  (see https://chapel-lang.org/docs/1.17/modules/packages/ReplicatedVar.html)
+
+Package Modules
+---------------
+* `LinearAlgebra` matrices now use 1-based indices by default
+  (see https://chapel-lang.org/docs/1.17/modules/packages/LinearAlgebra.html#linear-algebra-interface)
+* added Kronecker product, `kron()`, to `LinearAlgebra` module
+  (see https://chapel-lang.org/docs/1.17/modules/packages/LinearAlgebra.html#LinearAlgebra.kron)
+* added Cholesky factorization routine to `LinearAlgebra` module
+  (see https://chapel-lang.org/docs/1.17/modules/packages/LinearAlgebra.html#LinearAlgebra.cholesky)
+* added eigenvalue/eigenvector solvers to `LinearAlgebra` module
+  (see https://chapel-lang.org/docs/1.17/modules/packages/LinearAlgebra.html#LinearAlgebra.eigvals)
+* added support for `eye()` to `LinearAlgebra` for CS* domains
+  (see https://chapel-lang.org/docs/1.17/modules/packages/LinearAlgebra/Sparse.html#Sparse.eye)
+* added the Blowfish cipher to the `Crypto` module
+  (see https://chapel-lang.org/docs/1.17/modules/packages/Crypto.html#Crypto.Blowfish)
+* added a new scalable barrier across all locales
+  (see https://chapel-lang.org/docs/1.17/modules/packages/AllLocalesBarriers.html)
+* added binaryInsertionSort to the `Sort` module
+  (see https://chapel-lang.org/docs/1.17/modules/packages/Sort.html#Sort.binaryInsertionSort)
+* added `--debugTomlReader` flag for `TOML.TomlReader` submodule
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+* added the ability for sparse CS domains to have a sparse parent domain
+* added support for querying the stridability of sparse domains
+  (see https://chapel-lang.org/docs/1.17/builtins/ChapelArray.html#ChapelArray.stridable)
+* added support for strided Block-sparse domains and arrays
+* redesigned the bulk-transfer interface to reduce its complexity
+  (see https://chapel-lang.org/docs/1.17/technotes/dsi.html#phase-4-bulk-transfer-interface)
+
+Interoperability Improvements
+-----------------------------
+* extern blocks now support #defines containing casted literals
+  (see https://chapel-lang.org/docs/1.17/technotes/extern.html#defines)
+
+Performance Optimizations/Improvements
+--------------------------------------
+* improved performance of sparse matrix-matrix multiplication in `LinearAlgebra`
+* improved remote value forwarding optimization for types with initializers
+* reduced wide-pointer overhead for domains and distributions
+* re-enabled and improved --llvm-wide-opt optimizations
+* improved the performance of the `Barriers` module by using processor atomics
+* improved execution start up times under `ugni`
+* increased the amount of communication concurrency permitted for `ugni`
+* significantly improved scalability of `coforall ... do on ... {}` under `ugni`
+* increased the rate that on-stmts that can be processed under `ugni`
+* improved performance of puts/gets for GASNet over the `aries` conduit
+
+Memory Improvements
+-------------------
+* closed a number of memory leaks
+* significantly improved iterator memory management
+* optimized away storage of alignment-related fields from non-stridable ranges
+* fixed some incorrect memory descriptors
+
+Compiler Flags
+--------------
+* removed support for the `--wide-pointers` flag
+
+Documentation
+-------------
+* moved Chapel's website from http://chapel.cray.com to https://chapel-lang.org
+  (see https://chapel-lang.org)
+* added a color-coded version selection menu to the online documentation
+  (see the upper-left corner of https://chapel-lang.org/docs/)
+* simplified the URLs for the current release's documentation
+  (see https://chapel-lang.org/docs/)
+* documented the built-in Error types
+  (see https://chapel-lang.org/docs/1.17/builtins/ChapelError.html)
+* updated function overload disambiguation rules in the language specification
+  (see 'Determining More Specific Functions' in the 'Procedures' chapter)
+* described combining promotion and default arguments in the specification
+  (see 'Promotion' in the 'Data Parallelism' chapter of the specification)
+* documented type arguments with type specifiers
+  (see 'Formal Type Arguments' in the 'Generics' chapter of the specification)
+* improved documentation for `-f` configuration file flag
+  (see https://chapel-lang.org/docs/1.17/usingchapel/executing.html#configuration-file)
+* improved documentation for which domain maps are supported by `LinearAlgebra`
+  (see https://chapel-lang.org/docs/1.17/modules/packages/LinearAlgebra.html#linear-algebra-interface)
+* added m4 to Chapel's prerequisites list (required for GMP)
+  (see https://chapel-lang.org/docs/1.17/usingchapel/prereqs.html)
+* documented `range.size`
+  (see https://chapel-lang.org/docs/1.17/builtins/ChapelRange.html#ChapelRange.range.size)
+* documented `compileline --compile-c++` in the libraries documentation
+  (see https://chapel-lang.org/docs/1.17/technotes/libraries.html)
+* added missing documentation for `dsiAssignDomain`
+  (see https://chapel-lang.org/docs/1.17/technotes/dsi.html)
+* updated `mason` documentation to reflect new features
+* fixed dead links within documentation
+* fixed a number of typos
+
+Example Codes
+-------------
+* added a new faster version of the reverse-complement benchmark
+  (see examples/benchmarks/shootout/revcomp-fast.chpl)
+* updated example codes with respect to initializer changes
+* converted leader-follower iterators in SSCA#2 into standalone iterators
+  (see examples/benchmarks/ssca2/)
+* fixed a timing bug in our implementation of ISx when using multiple trials
+  (see examples/benchmarks/isx/isx.chpl)
+* fixed a bug in the LCALS inner_prod loop kernel
+  (see examples/benchmarks/lcals/)
+* removed the explicit version of MiniMD from the release
+
+Locale Models
+-------------
+* converted locale models to use initializers
+
+Portability
+-----------
+* made CHPL_LLVM=system more portable and added support for Mac Homebrew
+  (see https://www.chapel-lang.org/docs/1.17/technotes/llvm.html)
+* improved portability to FreeBSD and PowerPC
+* improved the portability of computing available memory on a locale
+* made INFINITY and NAN independent of bit patterns
+* made c2chapel Makefile POSIX-compliant
+* improved portability of code w.r.t. certain versions of gcc and libmvec
+* worked around a gcc bug by ensuring the last line in a file is not an #include
+
+Cray-specific Changes
+---------------------
+* ported Chapel to the Cray XC50 system with ARM processors
+  (see https://www.chapel-lang.org/docs/1.17/platforms/cray.html)
+* made `ugni` registered heap extensions dynamic, improving NUMA locality
+  (see https://chapel-lang.org/docs/1.17/platforms/cray.html#ugni-communication-layer-and-the-heap)
+* raised the limit on Aries NIC resource usage for `ugni`
+  (see https://chapel-lang.org/docs/1.17/platforms/cray.html#communication-layer-concurrency)
+* improved upon `Bus error` messages when array allocation fails for `ugni`
+* improved backwards compatibility of `ugni` with respect to chained operations
+* improved Cray XC code to pass stricter requirements of Clang
+
+Platform-specific Changes
+-------------------------
+* fixed a bug causing control-C to hang the compiler on Mac OS X
+* improved portability of re2 for Cygwin
+
+Syntax Highlighting
+-------------------
+* added error-handling constructs to syntax highlighters
+* added `prototype` modules to syntax highlighters
+
+Error Messages / Semantic Checks
+--------------------------------
+* improved parser errors to support multiple errors
+* added an error message when trying to `use GMP` for CHPL_GMP=none
+* added user errors for `param` arguments with a non-`param` default value
+* added a user error for `yield` and `return` statements at module scope
+* added a user error for mismatched default values vs. formal types
+* added an error when mixing constructors and initializers in a class hierarchy
+* added a hint for initializers improperly recognized as copy initializers
+* significantly improved error messages for initializer problems
+* improved error messages for improper break/continue/return in forall loops
+* improved error messages for out-of-bounds tuple element accesses
+* improved an error message for a missing module / enum to name the symbol
+* improved error messages for bad entries in config files
+* added an error for creating a `ref` to a type
+* improved an error message when zipping a tuple with a multi-dimensional object
+* disallowed throwing from within defer statements and deinit() routines
+* improved error messages for unimplemented features in parallel iterators
+* improved error messages for assignments within conditionals
+* improved errors for arguments with inferred types and conditional defaults
+* improved errors for functions returning generic type variables
+* fixed the path to `multilocale.rst` in runtime error messages
+
+Execution-time Checks
+---------------------
+* added bounds checking for indices as they're added to default sparse domains
+* improved an error when trying to open a directory
+
+Bug Fixes
+---------
+* fixed a bug in which `mason run` used directory name as project name
+* made `mason` exit cleanly if a build fails on `mason run --build`
+* fixed a bug in the interaction between `coforall` and `try!`
+* fixed a bug in which `try` and `return` could result in garbage return values
+* fixed a bug in which non-returning functions could be assigned to variables
+* fixed a bug when assigning between void values
+* fixed a bug for iterating over anonymous low-bounded ranges (e.g., `lo..`)
+* fixed a bug with where clauses that use the integral type
+* fixed a bug in which iterator default arguments could access invalid memory
+* fixed a bug relating to promoting atomic operations with `order` arguments
+* fixed several bugs relating to type arguments with a specified type
+* fixed a bug with forwarding certain generic functions
+* fixed a segfault when casting an empty string to a real
+* fixed a bug in enum->int casts for enums with nontrivial value expressions
+* fixed task intents for const ref variables
+* fixed a bug with enums declared in generic functions
+* fixed a bug with casting an enum's constants to certain types
+* fixed a bug with assignment for opaque domains
+* fixed a bug with arguments whose default value is a `new` record with init
+* fixed an internal compiler error with dynamic dispatch of serial iterators
+* fixed a bug in clear() for rectangular domains
+* fixed bugs related to sparse matrix-matrix multiplication
+* fixed a bug with `StencilDist` arrays in which cached values would be printed
+* fixed default values of new array elements added to associative arrays
+* fixed a bug in bounds-checking for the `insert()` method on arrays
+* fixed a bug with JSON output of records with `enum` fields
+* fixed a bug with chpldoc and general enum documentation comments
+* fixed some bugs with respect to `Owned` patterns
+* fixed a bug in which tuples could not be zipped with arrays
+* fixed a bug relating to when multiple modules define a procedure named main()
+* fixed bugs in `LinearAlgebra` routines relating to square / non-square matrices
+* fixed a bug in which `LinearAlgebra.dot()` did not have sorted indices
+* fixed an incorrect return type in the `Crypto` module
+* fixed a bug where `TOML` module failed to parse quoted values with whitespace
+* fixed a bug regarding zippering PCG random streams' iterate() method
+* fixed a use-after-free error in task counting at program shutdown
+* fixed a bug related to concurrent array creation under ugni
+* fixed an incorrect data type being used in the KNL locale model
+* fixed a bug with large arrays and --llvm
+* fixed a bug where the memory layer was shut down too early
+* fixed a build issue on systems with CUDA installed
+* fixed a bug related to clock-skew with compiler performance timings
+* fixed a build issue on systems with low-resolution timestamps
+
+Launchers
+---------
+* added a `smp` launcher for simulating multi-locales on a shared-memory system
+  (see https://chapel-lang.org/docs/1.17/usingchapel/launcher.html#currently-supported-launchers)
+* added a `gasnetrun_ofi` launcher for running with GASNet over its OFI conduit
+  (see https://chapel-lang.org/docs/1.17/usingchapel/launcher.html#currently-supported-launchers)
+
+Compiler Performance
+--------------------
+* significantly improved the speed of --llvm compilation
+
+Third-Party Software Changes
+----------------------------
+* made Chapel default to using LLVM 6.0.0 when enabled
+  (see https://www.chapel-lang.org/docs/1.17/usingchapel/chplenv.html)
+* removed support for LLVM versions older than 4.x
+  (see https://www.chapel-lang.org/docs/1.17/usingchapel/chplenv.html)
+* updated hwloc to 1.11.9
+* updated fltk to 1.3.4-2
+
+Testing System
+--------------
+* dramatically improved the usability of the web-based performance graphs
+* added tab-completion support for start_test
+* made `start_test` process files, subdirectories in sorted order
+* allow performance testing flags to be overridden
+* added support for executable compopts files with conditionally empty output
+* added support for a -futures-only flag to parallel testing scripts
+* improved testing system's ability to run from a non-CHPL_HOME util/ directory
+* improved test system checks and support for valid valgrind configurations
+* fixed a race in code that limits the number of concurrently executing tests
+* fixed a sporadic error in tests using the high-precision timer option
+
+Developer-oriented changes: Configuration changes
+-------------------------------------------------
+* Added `CHPL_RUNTIME_ARCH` to specify architecture runtime is built for
+* Added `CHPL_TARGET_BACKEND_ARCH` to specify cpu-type used for `-march` flag
+* removed a special case and detected 64-bit ARM atomics the same as others
+
+Developer-oriented changes: Module changes
+------------------------------------------
+* converted most internal/standard/package module objects to use `[de]init()`
+* simplified how automatic `use`s are handled in internal modules
+
+Developer-oriented changes: Makefile improvements
+-------------------------------------------------
+* added support for computing the compiler version when using git worktree
+* added an error for unsupported flex versions when generating the lexer
+* fixed a problem preventing `make check -j` from succeeding
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+* added a `--lifetime-checking` flag to enable prototype use-after-free checks
+* added a `--warn-unstable` flag to warn of changing language features
+* updated `--llvm-print-ir` to produce LLVM modules that work with other tools
+* removed 1-character developer-only flags
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+* greatly improved support for default initializers
+* significant clean-up/refactoring of the compiler's resolution passes
+* simplified the implementation of forall intents
+* enabled more of the compiler to work with qualified references
+* updated the version of `flex` used to generate the parser warning-free
+* simplified the computation of yielded types for forall loops
+* clang support no longer requires internal clang headers
+* made the compiler stop distinguishing between `()` and `[]` promotions
+* improvements to type encapsulation for AggregateType
+* added support for enabling promotion on types with initializers
+* some iterators are no longer treated as recursive
+* stopped adding init methods to virtual maps
+* stopped normalizing ContextCallExprs after their insertion at resolution
+* added comparison operators for compiler representation of source locations
+* permitted compiler analysis of loops to be run in more places
+* improved the normalization of error handling
+* removed the processIteratorYields pass
+* removed dead code in removeUnnecessaryAutoCopyCalls
+* removed the removeWrapRecords pass
+* removed the `c_string_copy` type
+* improved precision of LLVM alias analysis metadata
+* added experimental targeting to ARM's Allinea compiler
+
+Developer-oriented changes: Documentation improvements
+------------------------------------------------------
+* Updated CONTRIBUTING.md content, to reduce redundancy with other docs
+  (see https://github.com/chapel-lang/chapel/blob/master/.github/CONTRIBUTING.md)
+* Updated GitHub issue template to request users to note blocking issues
+  (see https://github.com/chapel-lang/chapel/blob/master/.github/ISSUE_TEMPLATE.md)
+* modified ContributorInfo.rst and TestSystem.rst for clarity
+* Document new future file format option
+  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst#futures-a-mechanism-for-tracking-bugs-feature-requests-etc)
+
+Developer-oriented changes: Module improvements
+-----------------------------------------------
+* removed some initialize() methods on module code
+* converted `proc these` on array records into iterators
+* removed the multi-ddata implementation, previously disabled / unused
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+* added `ugni` statistics for dynamic allocation operations
+
+Developer-oriented changes: Testing System
+------------------------------------------
+* converted most tests from constructors and initialize() to initializers
+* updated smokeTest scripting with respect to whitespace
+
+Developer-oriented changes: Third-party improvements
+----------------------------------------------------
+* moved handling of CHPL_COMM_USE_GDB from a GASNet patch to Chapel's launchers
+
+
 version 1.16.0
 ==============
 
@@ -42,8 +544,8 @@ Highlights (see subsequent sections for further details)
   - various improvements for the 'ugni' communication layer on Cray systems
   - numerous bug fixes, error message improvements, and third-party updates
 
-New Dependences / Configuration Changes
----------------------------------------
+New Dependencies / Configuration Changes
+----------------------------------------
 * added a new 'configure'/'make install' option for building+installing Chapel
   (see https://chapel-lang.org/docs/1.16/usingchapel/building.html#installing-chapel)
 * users of the LLVM-based front- or back-ends must now have CMake to build
@@ -1291,7 +1793,7 @@ Developer-oriented changes: Module changes
 * made the chpl_here_* routines more generic w.r.t. integral types
 * added a 'PODValAccess' config param that returns POD array elements by value
 * added a method to the 'bytes' type to get a raw pointer to memory
-* adjusted printing within 'DefaultRectangular' to avoid IO dependences
+* adjusted printing within 'DefaultRectangular' to avoid IO dependencies
 * cleaned up the use of '_desync' functions
 * unified the formatting of the 'ChapelSyncVar' module
 
@@ -2197,7 +2699,7 @@ Developer-oriented changes: Compiler improvements/changes
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added support for task callbacks in the runtime
-* eliminated reliance on __always_inline
+* eliminated reliance on `__always_inline`
 * added chpl_mem_goodAllocSize() to runtime to support minimizing wasted memory
 * added the ability to flag certain memory types to avoid tracking them
 * added a capability to generate a header file #defining CHPL_* variables
@@ -2218,7 +2720,7 @@ Fourteenth public release of Chapel, April 2, 2015
 Highlights
 ----------
 * revamped 'chpldoc' and used it to create web docs for all standard modules
-  (see https://chapel-lang.org/docs/latest/)
+  (see https://chapel-lang.org/docs/)
 * added a new FileSystem standard module supporting operations on files/dirs
   (see https://chapel-lang.org/docs/1.11/modules/standard/FileSystem.html)
 * added a new FFTW standard module supporting key FFTW routines
@@ -2302,7 +2804,7 @@ New Interoperability Features
 -----------------------------
 * initial support for Python->Chapel interoperability via PyChapel
   (see http://pychapel.readthedocs.org/ for more details)
-* added a prototype capability to embed external dependences to source via 'use'
+* added a prototype capability to embed external dependencies to source via 'use'
   (e.g., use "foo.h", "-lfoo"; is like adding these to the 'chpl' command-line)
 * added support for passing multidimensional arrays to external routines
   (see doc/technotes/README.extern)
@@ -2404,7 +2906,7 @@ Third-Party Software Changes
 * upgraded the bundled version of dygraphs to version 1.1.0
 * added support for dynamically installing Python packages required by 'chpldoc'
   (see 'chpldoc-venv' in third-party/README)
-* rearchitected scripting framework for third-party dependences
+* rearchitected scripting framework for third-party dependencies
 * made the re2 build do a better job of propagating errors back to the Makefiles
 * changed Qthreads to avoid using guard pages when mprotect() won't work
 * fixed a bug in limiting the maximum size of Qthreads memory pools
@@ -2412,7 +2914,7 @@ Third-Party Software Changes
 Documentation
 -------------
 * added web-based docs for all standard modules and removed from spec/READMEs
-  (see https://chapel-lang.org/docs/latest/)
+  (see https://chapel-lang.org/docs/)
 * made some minor improvements to the Quick Reference document
 * added documentation for class and record destructors to the spec
 * removed an outdated distinction between function calls using () vs. [] in spec
@@ -3314,7 +3816,7 @@ Testing System
 
 Makefile Changes
 ----------------
-* made all builds update Makefile dependences, not just developer builds 
+* made all builds update Makefile dependencies, not just developer builds 
 * made Makefiles propagate CFLAGS/CXXFLAGS to third-party builds
 
 Internal/Developer-oriented
@@ -4458,7 +4960,7 @@ Internal
 - the threading layer of the runtime now has its own header file
 - added a --library flag for creation of a standalone Chapel library
 - made normalize_returns() able to be called multiple times
-- fixed a bug related to internal module dependences of depth > 2
+- fixed a bug related to internal module dependencies of depth > 2
 - added capabilities to help debug deleted AST nodes
   (see --break-on-delete-id and --log-deleted-ids-to)
 - removed --runtime flag from compiler

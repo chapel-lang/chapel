@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s Struct Reference</title>
+<title>Hardware Locality (hwloc): hwloc_backend Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -36,107 +36,171 @@ $(function() {
 });
 </script>
 <div id="main-nav"></div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="a00296.html">hwloc_topology_diff_u</a></li><li class="navelem"><a class="el" href="a00304.html">hwloc_topology_diff_obj_attr_s</a></li>  </ul>
-</div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Data Fields</a>  </div>
   <div class="headertitle">
-<div class="title">hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s Struct Reference</div>  </div>
+<div class="title">hwloc_backend Struct Reference<div class="ingroups"><a class="el" href="a00189.html">Components and Plugins: Discovery backends</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p><code>#include &lt;<a class="el" href="a00155_source.html">diff.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="a00146_source.html">plugins.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:a70a118ad288bd98f18c8ce6dc52e2d10"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00199.html#ga4b86adb00c8b2d09ebc4ef8f3bfd92b2">hwloc_topology_diff_type_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#a70a118ad288bd98f18c8ce6dc52e2d10">type</a></td></tr>
-<tr class="separator:a70a118ad288bd98f18c8ce6dc52e2d10"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acb9170a8eb3392656d70f7f3ef3e3eed"><td class="memItemLeft" align="right" valign="top">union <a class="el" href="a00296.html">hwloc_topology_diff_u</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#acb9170a8eb3392656d70f7f3ef3e3eed">next</a></td></tr>
-<tr class="separator:acb9170a8eb3392656d70f7f3ef3e3eed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa28a121d9e158b1e610fb844ae1c8824"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#aa28a121d9e158b1e610fb844ae1c8824">obj_depth</a></td></tr>
-<tr class="separator:aa28a121d9e158b1e610fb844ae1c8824"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adb9f4d414470b6670cde8d90759a6c1c"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#adb9f4d414470b6670cde8d90759a6c1c">obj_index</a></td></tr>
-<tr class="separator:adb9f4d414470b6670cde8d90759a6c1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a91f0645f9062e892652357cd141c8ebb"><td class="memItemLeft" align="right" valign="top">union <a class="el" href="a00280.html">hwloc_topology_diff_obj_attr_u</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#a91f0645f9062e892652357cd141c8ebb">diff</a></td></tr>
-<tr class="separator:a91f0645f9062e892652357cd141c8ebb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa8eafe495aadd81c2e3c4ec527c10ba"><td class="memItemLeft" align="right" valign="top">unsigned long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#aaa8eafe495aadd81c2e3c4ec527c10ba">flags</a></td></tr>
+<tr class="separator:aaa8eafe495aadd81c2e3c4ec527c10ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5209e6508c110dcd4c3c296466f07cb3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#a5209e6508c110dcd4c3c296466f07cb3">is_custom</a></td></tr>
+<tr class="separator:a5209e6508c110dcd4c3c296466f07cb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8806f6db077f1bb2e9d63ec99223f7a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#ab8806f6db077f1bb2e9d63ec99223f7a">is_thissystem</a></td></tr>
+<tr class="separator:ab8806f6db077f1bb2e9d63ec99223f7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ea5bd36b7f06efdb65b98b32af16c68"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#a2ea5bd36b7f06efdb65b98b32af16c68">private_data</a></td></tr>
+<tr class="separator:a2ea5bd36b7f06efdb65b98b32af16c68"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36c4fa86350525b46340c67b802c69c7"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#a36c4fa86350525b46340c67b802c69c7">disable</a> )(struct <a class="el" href="a00304.html">hwloc_backend</a> *backend)</td></tr>
+<tr class="separator:a36c4fa86350525b46340c67b802c69c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb9e1dcf68853a65355082b359a3a2d7"><td class="memItemLeft" align="right" valign="top">int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#aeb9e1dcf68853a65355082b359a3a2d7">discover</a> )(struct <a class="el" href="a00304.html">hwloc_backend</a> *backend)</td></tr>
+<tr class="separator:aeb9e1dcf68853a65355082b359a3a2d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3d1836eeda1970a4c51342df186581e"><td class="memItemLeft" align="right" valign="top">int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#ab3d1836eeda1970a4c51342df186581e">get_obj_cpuset</a> )(struct <a class="el" href="a00304.html">hwloc_backend</a> *backend, struct <a class="el" href="a00304.html">hwloc_backend</a> *caller, struct <a class="el" href="a00204.html">hwloc_obj</a> *obj, <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> cpuset)</td></tr>
+<tr class="separator:ab3d1836eeda1970a4c51342df186581e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a4803e23309be318d7cdb641a5f1037"><td class="memItemLeft" align="right" valign="top">int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00304.html#a5a4803e23309be318d7cdb641a5f1037">notify_new_object</a> )(struct <a class="el" href="a00304.html">hwloc_backend</a> *backend, struct <a class="el" href="a00304.html">hwloc_backend</a> *caller, struct <a class="el" href="a00204.html">hwloc_obj</a> *obj)</td></tr>
+<tr class="separator:a5a4803e23309be318d7cdb641a5f1037"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Field Documentation</h2>
-<a id="a91f0645f9062e892652357cd141c8ebb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a91f0645f9062e892652357cd141c8ebb">&#9670;&nbsp;</a></span>diff</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Discovery backend structure. </p>
+<p>A backend is the instantiation of a discovery component. When a component gets enabled for a topology, its instantiate() callback creates a backend.</p>
+<p><a class="el" href="a00189.html#ga330a0b581de4817d0cf1e7401db22436" title="Allocate a backend structure, set good default values, initialize backend-&gt;component and topology...">hwloc_backend_alloc()</a> initializes all fields to default values that the component may change (except "component" and "next") before enabling the backend with <a class="el" href="a00189.html#gaa4edf46c5d88eef53b3b8f572d88b9c5" title="Enable a previously allocated and setup backend. ">hwloc_backend_enable()</a>. </p>
+</div><h2 class="groupheader">Field Documentation</h2>
+<a id="a36c4fa86350525b46340c67b802c69c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36c4fa86350525b46340c67b802c69c7">&#9670;&nbsp;</a></span>disable</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">union <a class="el" href="a00280.html">hwloc_topology_diff_obj_attr_u</a> hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s::diff</td>
+          <td class="memname">void(* hwloc_backend::disable) (struct <a class="el" href="a00304.html">hwloc_backend</a> *backend)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
+<p>Callback for freeing the private_data. May be NULL. </p>
+
 </div>
 </div>
-<a id="acb9170a8eb3392656d70f7f3ef3e3eed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acb9170a8eb3392656d70f7f3ef3e3eed">&#9670;&nbsp;</a></span>next</h2>
+<a id="aeb9e1dcf68853a65355082b359a3a2d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb9e1dcf68853a65355082b359a3a2d7">&#9670;&nbsp;</a></span>discover</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">union <a class="el" href="a00296.html">hwloc_topology_diff_u</a>* hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s::next</td>
+          <td class="memname">int(* hwloc_backend::discover) (struct <a class="el" href="a00304.html">hwloc_backend</a> *backend)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
+<p>Main discovery callback. returns &gt; 0 if it modified the topology tree, -1 on error, 0 otherwise. May be NULL if type is <a class="el" href="a00188.html#gga0dceb95fada01e5e4558429912053ca7aaf4d61f8e2c7c28e88cd81bb565695b7" title="OpenCL, Cuda, etc. ">HWLOC_DISC_COMPONENT_TYPE_MISC</a>. </p>
+
 </div>
 </div>
-<a id="aa28a121d9e158b1e610fb844ae1c8824"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa28a121d9e158b1e610fb844ae1c8824">&#9670;&nbsp;</a></span>obj_depth</h2>
+<a id="aaa8eafe495aadd81c2e3c4ec527c10ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa8eafe495aadd81c2e3c4ec527c10ba">&#9670;&nbsp;</a></span>flags</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">unsigned hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s::obj_depth</td>
+          <td class="memname">unsigned long hwloc_backend::flags</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
+<p>Backend flags, as an OR'ed set of <a class="el" href="a00189.html#ga21513209613570877b6bfa9898106f2a" title="Backend flags. ">hwloc_backend_flag_e</a>. </p>
+
 </div>
 </div>
-<a id="adb9f4d414470b6670cde8d90759a6c1c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adb9f4d414470b6670cde8d90759a6c1c">&#9670;&nbsp;</a></span>obj_index</h2>
+<a id="ab3d1836eeda1970a4c51342df186581e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3d1836eeda1970a4c51342df186581e">&#9670;&nbsp;</a></span>get_obj_cpuset</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">unsigned hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s::obj_index</td>
+          <td class="memname">int(* hwloc_backend::get_obj_cpuset) (struct <a class="el" href="a00304.html">hwloc_backend</a> *backend, struct <a class="el" href="a00304.html">hwloc_backend</a> *caller, struct <a class="el" href="a00204.html">hwloc_obj</a> *obj, <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> cpuset)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
+<p>Callback used by the PCI backend to retrieve the locality of a PCI object from the OS/cpu backend. May be NULL. </p>
+
 </div>
 </div>
-<a id="a70a118ad288bd98f18c8ce6dc52e2d10"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a70a118ad288bd98f18c8ce6dc52e2d10">&#9670;&nbsp;</a></span>type</h2>
+<a id="a5209e6508c110dcd4c3c296466f07cb3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5209e6508c110dcd4c3c296466f07cb3">&#9670;&nbsp;</a></span>is_custom</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="a00199.html#ga4b86adb00c8b2d09ebc4ef8f3bfd92b2">hwloc_topology_diff_type_t</a> hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s::type</td>
+          <td class="memname">int hwloc_backend::is_custom</td>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Backend-specific 'is_custom' property. Shortcut on !strcmp(..-&gt;component-&gt;name, "custom"). Only the custom component should touch this. </p>
+
+</div>
+</div>
+<a id="ab8806f6db077f1bb2e9d63ec99223f7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8806f6db077f1bb2e9d63ec99223f7a">&#9670;&nbsp;</a></span>is_thissystem</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_backend::is_thissystem</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Backend-specific 'is_thissystem' property. Set to 0 or 1 if the backend should enforce the thissystem flag when it gets enabled. Set to -1 if the backend doesn't care (default). </p>
+
+</div>
+</div>
+<a id="a5a4803e23309be318d7cdb641a5f1037"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a4803e23309be318d7cdb641a5f1037">&#9670;&nbsp;</a></span>notify_new_object</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int(* hwloc_backend::notify_new_object) (struct <a class="el" href="a00304.html">hwloc_backend</a> *backend, struct <a class="el" href="a00304.html">hwloc_backend</a> *caller, struct <a class="el" href="a00204.html">hwloc_obj</a> *obj)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Callback called by backends to notify this backend that a new object was added. returns &gt; 0 if it modified the topology tree, 0 otherwise. May be NULL. </p>
+
+</div>
+</div>
+<a id="a2ea5bd36b7f06efdb65b98b32af16c68"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ea5bd36b7f06efdb65b98b32af16c68">&#9670;&nbsp;</a></span>private_data</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void* hwloc_backend::private_data</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Backend private data, or NULL if none. </p>
 
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li><a class="el" href="a00155_source.html">diff.h</a></li>
+<li><a class="el" href="a00146_source.html">plugins.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

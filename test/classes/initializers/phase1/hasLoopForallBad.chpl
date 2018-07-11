@@ -8,7 +8,6 @@ class Foo {
     forall i in 1..numPrints {
       field = i;
     }
-    super.init();
   }
 }
 

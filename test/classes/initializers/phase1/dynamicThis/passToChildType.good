@@ -1,0 +1,3 @@
+passToChildType.chpl:17: In initializer:
+passToChildType.chpl:19: error: unresolved call 'foobar(Parent)'
+passToChildType.chpl:23: note: candidates are: foobar(c: Child)

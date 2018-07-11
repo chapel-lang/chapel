@@ -21,7 +21,7 @@ for i in foo(10) do
 // AFTER
 //
 proc goo(n: int)
-  return new bar(n);
+  return new unmanaged bar(n);
 
 class bar {
   var n, i, result: int;

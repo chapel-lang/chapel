@@ -76,6 +76,11 @@ class DimensionalDist : BaseDist {
 
 // class LocDimensionalDist - no local distribution descriptor - for now
 
+private proc locDescTypeHelper(dom1, dom2) type {
+  return (dom1.dsiNewLocalDom1d(0).type, dom2.dsiNewLocalDom1d(0).type);
+}
+
+pragma "use default init"
 class DimensionalDom : BaseRectangularDom {
   // required
   param rank: int;
@@ -93,7 +98,7 @@ class DimensionalDom : BaseRectangularDom {
 
   // this is our index set; we store it here so we can get to it easily
   // although it is not necessary, strictly speaking
-  var whole: domainT;
+  var whole: domain(rank, idxType, stridable);
 
   // convenience - our instantiation of LocDimensionalDom
   proc lddTypeArg1 type  return domainT;
@@ -102,7 +107,8 @@ class DimensionalDom : BaseRectangularDom {
   proc locDdescType type  return LocDimensionalDom(lddTypeArg1, lddTypeArg2);
 
   // local domain descriptors
-  var localDdescs: [dist.targetIds] locDdescType; // not reprivatized
+  var localDdescs : [dist.targetIdx] LocDimensionalDom(domain(rank, idxType, stridable),
+                                                       locDescTypeHelper(dom1, dom2));
 
   // for privatization
   var pid: int = -1;
@@ -125,6 +131,7 @@ class LocDimensionalDom {
   var myStorageDom: domain(myBlock.rank, stoSzT, false);
 }
 
+pragma "use default init"
 class DimensionalArr : BaseArr {
   // required
   type eltType;
@@ -155,7 +162,7 @@ class LocDimensionalArr {
 
 // constructor
 // gotta list all the things we let the user set
-proc DimensionalDist.DimensionalDist(
+proc DimensionalDist.init(
   targetLocales,
   di1,
   di2,
@@ -165,11 +172,18 @@ proc DimensionalDist.DimensionalDist(
   dataParIgnoreRunningTasks: bool = getDataParIgnoreRunningTasks(),
   dataParMinGranularity: int      = getDataParMinGranularity()
 ) {
+  this.targetLocales = targetLocales;
+  this.di1 = di1;
+  this.di2 = di2;
   this.name = name;
+  this.idxType = idxType;
   this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.maxTaskPar
                                else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
+
+  this.complete();
+
   checkInvariants();
 
   _passLocalLocIDsDist(di1, di2, this.targetLocales,
@@ -255,7 +269,7 @@ proc DimensionalDist.dsiPrivatize(privatizeData) {
 
 // constructor of a privatized copy
 // (currently almost same the user constructor; 'dummy' is to distinguish)
-proc DimensionalDist.DimensionalDist(param dummy: int,
+proc DimensionalDist.init(param dummy: int,
   targetLocales,
   di1,
   di2,
@@ -265,10 +279,17 @@ proc DimensionalDist.DimensionalDist(param dummy: int,
   dataParIgnoreRunningTasks,
   dataParMinGranularity
 ) {
+  this.targetLocales = targetLocales;
+  this.di1 = di1;
+  this.di2 = di2;
   this.name = name;
+  this.idxType = idxType;
   this.dataParTasksPerLocale     = dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity     = dataParMinGranularity;
+
+  this.complete();
+
   // should not need it, but run it for now just in case
   checkInvariants();
 }

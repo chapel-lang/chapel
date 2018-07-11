@@ -59,7 +59,7 @@
      }
 
      /* Abstract node representation */
-     var processSet: [D] Process;
+     var processSet: [D] unmanaged Process;
 
     /*
         Acts as the starting point for the program execution.
@@ -100,7 +100,7 @@
     proc initialize() {
         forall i in 0..(processes-1) {
             const pid = IdStore[i];
-            processSet[i] = new Process(id=pid, leaderId=pid, send=pid,  status=false);
+            processSet[i] = new unmanaged Process(id=pid, leaderId=pid, send=pid,  status=false);
         }
     }
 

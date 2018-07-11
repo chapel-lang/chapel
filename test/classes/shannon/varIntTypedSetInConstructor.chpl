@@ -7,9 +7,9 @@ class setConst {
 
 
 
-const const_testSix     : setConst = new setConst(thisShouldBeSix     =  6);
-const const_testEleven  : setConst = new setConst(thisShouldBeEleven  = 11);
-const const_testSixteen : setConst = new setConst(thisShouldBeSixteen = 16);
+const const_testSix     : unmanaged setConst = new unmanaged setConst(thisShouldBeSix     =  6);
+const const_testEleven  : unmanaged setConst = new unmanaged setConst(thisShouldBeEleven  = 11);
+const const_testSixteen : unmanaged setConst = new unmanaged setConst(thisShouldBeSixteen = 16);
 
 writeln("const_testSix.thisShouldBeSix         = ",
          const_testSix.thisShouldBeSix);
@@ -27,9 +27,9 @@ delete const_testSix;
 
 
 
-var var_testSix     : setConst = new setConst(thisShouldBeSix     =  6);
-var var_testEleven  : setConst = new setConst(thisShouldBeEleven  = 11);
-var var_testSixteen : setConst = new setConst(thisShouldBeSixteen = 16);
+var var_testSix     : unmanaged setConst = new unmanaged setConst(thisShouldBeSix     =  6);
+var var_testEleven  : unmanaged setConst = new unmanaged setConst(thisShouldBeEleven  = 11);
+var var_testSixteen : unmanaged setConst = new unmanaged setConst(thisShouldBeSixteen = 16);
 
 writeln("var_testSix.thisShouldBeSix         = ",
          var_testSix.thisShouldBeSix);

@@ -22,7 +22,7 @@ record Rec
     copy         = false;
     freed        = false;
 
-    this.initDone();
+    this.complete();
 
     if (sDebug == true) then
       writeln("Constructing Rec       id:  ", id);
@@ -37,7 +37,7 @@ record Rec
     copy   = true;
     freed  = false;
 
-    this.initDone();
+    this.complete();
 
     if (sDebug == true) then
       writeln("copying Rec other: ", other.id);

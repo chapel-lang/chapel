@@ -9,7 +9,7 @@ proc examples() {
 
   writeln("declaring owned1 storing C(1)"); 
   // 'owned1' has a unique pointer to a new C instance
-  var owned1 = new Owned(new C(1));
+  var owned1 = new Owned(new unmanaged C(1));
   writeln("owned1 = ", owned1.borrow());
 
   writeln("declaring owned2 storing nil");
@@ -27,7 +27,7 @@ proc examples() {
   writeln("owned1 = ", owned1.borrow());
 
   writeln("declaring owned3 storing C(3)");
-  var owned3 = new Owned(new C(3));
+  var owned3 = new Owned(new unmanaged C(3));
   writeln("owned3 = ", owned3.borrow());
 
   // An Owned variable can be re-used. Here, owned3 is filled
@@ -41,7 +41,7 @@ proc examples() {
   writeln("owned3 = ", owned3.borrow());
 
   writeln("declaring owned4 storing C(4)");
-  var owned4 = new Owned(new C(4));
+  var owned4 = new Owned(new unmanaged C(4));
   writeln("owned4 = ", owned4.borrow());
 
   // An non-empty Owned variable can also be pointed to
@@ -55,7 +55,7 @@ proc examples() {
   writeln("owned4 = ", owned4.borrow());
 
   writeln("declaring owned5 storing C(5)");
-  var owned5 = new Owned(new C(5));
+  var owned5 = new Owned(new unmanaged C(5));
   writeln("owned5 = ", owned5.borrow());
 
   // The clear method can be used to delete the
@@ -68,7 +68,7 @@ proc examples() {
   // an Owned to point to.
   // After this line:
   //  'owned1' will contain C(100); previous object C(4) will be destroyed
-  owned1.retain(new C(100));
+  owned1.retain(new unmanaged C(100));
   writeln("after owned1.retain C(100)");
   writeln("owned1 = ", owned1.borrow());
 
@@ -90,7 +90,7 @@ proc examples() {
   }
 
   writeln("declaring owned6 storing C(6)");
-  var owned6 = new Owned(new C(6));
+  var owned6 = new Owned(new unmanaged C(6));
   takesOwnership(owned6);
   // After that call, owned6 contains nil
    writeln("owned6 = ", owned6.borrow());

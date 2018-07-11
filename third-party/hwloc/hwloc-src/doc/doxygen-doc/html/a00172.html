@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Modifying a loaded Topology</title>
+<title>Hardware Locality (hwloc): Manipulating Distances</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -39,80 +39,57 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
-<div class="title">Modifying a loaded Topology</div>  </div>
+<div class="title">Manipulating Distances</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:ga9d80f08eb25b7ac22f1b998dc8bf521f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga9d80f08eb25b7ac22f1b998dc8bf521f">hwloc_restrict_flags_e</a> { <a class="el" href="a00172.html#gga9d80f08eb25b7ac22f1b998dc8bf521fa4d18407f5520793b50b9e892f5bb55d1">HWLOC_RESTRICT_FLAG_ADAPT_DISTANCES</a>, 
-<a class="el" href="a00172.html#gga9d80f08eb25b7ac22f1b998dc8bf521fa699969227a09bbc1a7de51dc9fb7be4b">HWLOC_RESTRICT_FLAG_ADAPT_MISC</a>, 
-<a class="el" href="a00172.html#gga9d80f08eb25b7ac22f1b998dc8bf521faa95d6985e36ec1e55f68b210297a85cb">HWLOC_RESTRICT_FLAG_ADAPT_IO</a>
- }</td></tr>
-<tr class="separator:ga9d80f08eb25b7ac22f1b998dc8bf521f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga77c753751f3b90fac14117523fe604df"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga77c753751f3b90fac14117523fe604df">hwloc_topology_insert_misc_object_by_cpuset</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> cpuset, const char *name)</td></tr>
-<tr class="separator:ga77c753751f3b90fac14117523fe604df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1472cdf93327dfff4b5b2aedfde29cf3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga1472cdf93327dfff4b5b2aedfde29cf3">hwloc_topology_insert_misc_object_by_parent</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> parent, const char *name)</td></tr>
-<tr class="separator:ga1472cdf93327dfff4b5b2aedfde29cf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaffdb5403e5178b0d29852dd3319de3fc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#gaffdb5403e5178b0d29852dd3319de3fc">hwloc_topology_restrict</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> restrict topology, <a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> cpuset, unsigned long flags)</td></tr>
-<tr class="separator:gaffdb5403e5178b0d29852dd3319de3fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga07219dc0fd6e4553a658eaa73f038c42"><td class="memItemLeft" align="right" valign="top">static const struct <a class="el" href="a00244.html">hwloc_distances_s</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga07219dc0fd6e4553a658eaa73f038c42">hwloc_get_whole_distance_matrix_by_depth</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, unsigned depth)</td></tr>
+<tr class="separator:ga07219dc0fd6e4553a658eaa73f038c42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga64529254be72b3c4343b25926c84b12f"><td class="memItemLeft" align="right" valign="top">static const struct <a class="el" href="a00244.html">hwloc_distances_s</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga64529254be72b3c4343b25926c84b12f">hwloc_get_whole_distance_matrix_by_type</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00151.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a> type)</td></tr>
+<tr class="separator:ga64529254be72b3c4343b25926c84b12f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2d159b21a49964cc629dde03cbf05702"><td class="memItemLeft" align="right" valign="top">static const struct <a class="el" href="a00244.html">hwloc_distances_s</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga2d159b21a49964cc629dde03cbf05702">hwloc_get_distance_matrix_covering_obj_by_depth</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj, unsigned depth, unsigned *firstp)</td></tr>
+<tr class="separator:ga2d159b21a49964cc629dde03cbf05702"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga79ed880a55f9d03b4ae58ef5116812d7"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga79ed880a55f9d03b4ae58ef5116812d7">hwloc_get_latency</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj1, <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj2, float *latency, float *reverse_latency)</td></tr>
+<tr class="separator:ga79ed880a55f9d03b4ae58ef5116812d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="ga9d80f08eb25b7ac22f1b998dc8bf521f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga9d80f08eb25b7ac22f1b998dc8bf521f">&#9670;&nbsp;</a></span>hwloc_restrict_flags_e</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="a00172.html#ga9d80f08eb25b7ac22f1b998dc8bf521f">hwloc_restrict_flags_e</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Flags to be given to <a class="el" href="a00172.html#gaffdb5403e5178b0d29852dd3319de3fc" title="Restrict the topology to the given CPU set. ">hwloc_topology_restrict()</a>. </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga9d80f08eb25b7ac22f1b998dc8bf521fa4d18407f5520793b50b9e892f5bb55d1"></a>HWLOC_RESTRICT_FLAG_ADAPT_DISTANCES&#160;</td><td class="fielddoc"><p>Adapt distance matrices according to objects being removed during restriction. If this flag is not set, distance matrices are removed. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="gga9d80f08eb25b7ac22f1b998dc8bf521fa699969227a09bbc1a7de51dc9fb7be4b"></a>HWLOC_RESTRICT_FLAG_ADAPT_MISC&#160;</td><td class="fielddoc"><p>Move Misc objects to ancestors if their parents are removed during restriction. If this flag is not set, Misc objects are removed when their parents are removed. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="gga9d80f08eb25b7ac22f1b998dc8bf521faa95d6985e36ec1e55f68b210297a85cb"></a>HWLOC_RESTRICT_FLAG_ADAPT_IO&#160;</td><td class="fielddoc"><p>Move I/O objects to ancestors if their parents are removed during restriction. If this flag is not set, I/O devices and bridges are removed when their parents are removed. </p>
-</td></tr>
-</table>
-
-</div>
-</div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga77c753751f3b90fac14117523fe604df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga77c753751f3b90fac14117523fe604df">&#9670;&nbsp;</a></span>hwloc_topology_insert_misc_object_by_cpuset()</h2>
+<a id="ga2d159b21a49964cc629dde03cbf05702"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2d159b21a49964cc629dde03cbf05702">&#9670;&nbsp;</a></span>hwloc_get_distance_matrix_covering_obj_by_depth()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_topology_insert_misc_object_by_cpuset </td>
+          <td class="memname">static const struct <a class="el" href="a00244.html">hwloc_distances_s</a>* hwloc_get_distance_matrix_covering_obj_by_depth </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>cpuset</em>, </td>
+          <td class="paramtype"><a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
+          <td class="paramname"><em>obj</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em>&#160;</td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>depth</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned *&#160;</td>
+          <td class="paramname"><em>firstp</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -120,41 +97,59 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p>Add a MISC object to the topology. </p>
-<p>A new MISC object will be created and inserted into the topology at the position given by bitmap <code>cpuset</code>. This offers a way to add new intermediate levels to the topology hierarchy.</p>
-<p><code>cpuset</code> and <code>name</code> will be copied to setup the new object attributes.</p>
-<dl class="section return"><dt>Returns</dt><dd>the newly-created object. </dd>
-<dd>
-<code>NULL</code> if the insertion conflicts with the existing topology tree.</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>If <code>name</code> contains some non-printable characters, they will be dropped when exporting to XML, see <a class="el" href="a00174.html#ga2bf166eda4d3605362ac86f77684002a" title="Export the topology into an XML file. ">hwloc_topology_export_xml()</a>. </dd></dl>
+<p>Get distances for the given depth and covering some objects. </p>
+<p>Return a distance matrix that describes depth <code>depth</code> and covers at least object <code>obj</code> and all its children.</p>
+<p>When looking for the distance between some objects, a common ancestor should be passed in <code>obj</code>.</p>
+<p><code>firstp</code> is set to logical index of the first object described by the matrix.</p>
+<p>The returned structure belongs to the hwloc library. The caller should not modify or free it. </p>
 
 </div>
 </div>
-<a id="ga1472cdf93327dfff4b5b2aedfde29cf3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga1472cdf93327dfff4b5b2aedfde29cf3">&#9670;&nbsp;</a></span>hwloc_topology_insert_misc_object_by_parent()</h2>
+<a id="ga79ed880a55f9d03b4ae58ef5116812d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga79ed880a55f9d03b4ae58ef5116812d7">&#9670;&nbsp;</a></span>hwloc_get_latency()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_topology_insert_misc_object_by_parent </td>
+          <td class="memname">static int hwloc_get_latency </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>parent</em>, </td>
+          <td class="paramtype"><a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
+          <td class="paramname"><em>obj1</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
+          <td class="paramname"><em>obj2</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float *&#160;</td>
+          <td class="paramname"><em>latency</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float *&#160;</td>
+          <td class="paramname"><em>reverse_latency</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -162,39 +157,40 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p>Add a MISC object as a leaf of the topology. </p>
-<p>A new MISC object will be created and inserted into the topology at the position given by parent. It is appended to the list of existing children, without ever adding any intermediate hierarchy level. This is useful for annotating the topology without actually changing the hierarchy.</p>
-<p><code>name</code> will be copied to the setup the new object attributes. However, the new leaf object will not have any <code>cpuset</code>.</p>
-<dl class="section return"><dt>Returns</dt><dd>the newly-created object</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>If <code>name</code> contains some non-printable characters, they will be dropped when exporting to XML, see <a class="el" href="a00174.html#ga2bf166eda4d3605362ac86f77684002a" title="Export the topology into an XML file. ">hwloc_topology_export_xml()</a>. </dd></dl>
+<p>Get the latency in both directions between two objects. </p>
+<p>Look at ancestor objects from the bottom to the top until one of them contains a distance matrix that matches the objects exactly.</p>
+<p><code>latency</code> gets the value from object <code>obj1</code> to <code>obj2</code>, while <code>reverse_latency</code> gets the reverse-direction value, which may be different on some architectures.</p>
+<dl class="section return"><dt>Returns</dt><dd>-1 if no ancestor contains a matching latency matrix. </dd></dl>
 
 </div>
 </div>
-<a id="gaffdb5403e5178b0d29852dd3319de3fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaffdb5403e5178b0d29852dd3319de3fc">&#9670;&nbsp;</a></span>hwloc_topology_restrict()</h2>
+<a id="ga07219dc0fd6e4553a658eaa73f038c42"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga07219dc0fd6e4553a658eaa73f038c42">&#9670;&nbsp;</a></span>hwloc_get_whole_distance_matrix_by_depth()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int hwloc_topology_restrict </td>
+          <td class="memname">static const struct <a class="el" href="a00244.html">hwloc_distances_s</a>* hwloc_get_whole_distance_matrix_by_depth </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> restrict&#160;</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>cpuset</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned long&#160;</td>
-          <td class="paramname"><em>flags</em>&#160;</td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>depth</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -202,17 +198,62 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p>Restrict the topology to the given CPU set. </p>
-<p>Topology <code>topology</code> is modified so as to remove all objects that are not included (or partially included) in the CPU set <code>cpuset</code>. All objects CPU and node sets are restricted accordingly.</p>
-<p><code>flags</code> is a OR'ed set of <a class="el" href="a00172.html#ga9d80f08eb25b7ac22f1b998dc8bf521f" title="Flags to be given to hwloc_topology_restrict(). ">hwloc_restrict_flags_e</a>.</p>
-<dl class="section note"><dt>Note</dt><dd>This call may not be reverted by restricting back to a larger cpuset. Once dropped during restriction, objects may not be brought back, except by loading another topology with <a class="el" href="a00165.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology. ">hwloc_topology_load()</a>.</dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>0 on success.</dd>
-<dd>
--1 with errno set to EINVAL if the input cpuset is invalid. The topology is not modified in this case.</dd>
-<dd>
--1 with errno set to ENOMEM on failure to allocate internal data. The topology is reinitialized in this case. It should be either destroyed with <a class="el" href="a00165.html#ga9f34a640b6fd28d23699d4d084667b15" title="Terminate and free a topology context. ">hwloc_topology_destroy()</a> or configured and loaded again. </dd></dl>
+<p>Get the distances between all objects at the given depth. </p>
+<dl class="section return"><dt>Returns</dt><dd>a distances structure containing a matrix with all distances between all objects at the given depth.</dd></dl>
+<p>Slot i+nbobjs*j contains the distance from the object of logical index i the object of logical index j.</p>
+<dl class="section note"><dt>Note</dt><dd>This function only returns matrices covering the whole topology, without any unknown distance value. Those matrices are available in top-level object of the hierarchy. Matrices of lower objects are not reported here since they cover only part of the machine.</dd></dl>
+<p>The returned structure belongs to the hwloc library. The caller should not modify or free it.</p>
+<dl class="section return"><dt>Returns</dt><dd><code>NULL</code> if no such distance matrix exists. </dd></dl>
+
+</div>
+</div>
+<a id="ga64529254be72b3c4343b25926c84b12f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga64529254be72b3c4343b25926c84b12f">&#9670;&nbsp;</a></span>hwloc_get_whole_distance_matrix_by_type()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static const struct <a class="el" href="a00244.html">hwloc_distances_s</a>* hwloc_get_whole_distance_matrix_by_type </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00151.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a>&#160;</td>
+          <td class="paramname"><em>type</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the distances between all objects of a given type. </p>
+<dl class="section return"><dt>Returns</dt><dd>a distances structure containing a matrix with all distances between all objects of the given type.</dd></dl>
+<p>Slot i+nbobjs*j contains the distance from the object of logical index i the object of logical index j.</p>
+<dl class="section note"><dt>Note</dt><dd>This function only returns matrices covering the whole topology, without any unknown distance value. Those matrices are available in top-level object of the hierarchy. Matrices of lower objects are not reported here since they cover only part of the machine.</dd></dl>
+<p>The returned structure belongs to the hwloc library. The caller should not modify or free it.</p>
+<dl class="section return"><dt>Returns</dt><dd><code>NULL</code> if no such distance matrix exists. </dd></dl>
 
 </div>
 </div>

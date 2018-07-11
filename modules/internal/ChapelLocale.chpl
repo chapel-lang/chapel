@@ -288,7 +288,7 @@ module ChapelLocale {
 
     // A useful default definition is provided (not pure virtual).
     pragma "no doc"
-    proc writeThis(f) {
+    override proc writeThis(f) {
       f <~> name;
     }
 
@@ -334,22 +334,22 @@ module ChapelLocale {
   class DummyLocale : locale {
     proc init() { }
 
-    proc chpl_id() : int {
+    override proc chpl_id() : int {
       return -1;
     }
-    proc chpl_localeid() : chpl_localeID_t {
+    override proc chpl_localeid() : chpl_localeID_t {
       return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
     }
-    proc chpl_name() : string {
+    override proc chpl_name() : string {
       return "dummy-locale";
     }
-    proc getChildCount() : int {
+    override proc getChildCount() : int {
       return 0;
     }
-    proc getChild(idx:int) : locale {
+    override proc getChild(idx:int) : locale {
       return this;
     }
-    proc addChild(loc:locale)
+    override proc addChild(loc:locale)
     {
       halt("addChild on DummyLocale");
     }
@@ -432,7 +432,7 @@ module ChapelLocale {
     iter chpl_initOnLocales() {
       if numLocales > 1 then
         halt("The locales must be initialized in parallel");
-      for locIdx in (origRootLocale:RootLocale).getDefaultLocaleSpace() {
+      for locIdx in (origRootLocale:borrowed RootLocale).getDefaultLocaleSpace() {
         yield locIdx;
         rootLocale = origRootLocale;
         rootLocaleInitialized = true;
@@ -447,7 +447,7 @@ module ChapelLocale {
       where tag==iterKind.standalone {
       // Simple locales barrier, see implementation below for notes
       var b: localesBarrier;
-      var flags: [1..#numLocales-1] localesSignal;
+      var flags: [1..#numLocales-1] unmanaged localesSignal;
       coforall locIdx in 0..#numLocales /*ref(b)*/ {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
@@ -478,10 +478,12 @@ module ChapelLocale {
   // too complicated this early on, so we are using a for loop to
   // broadcast that we are done.
   pragma "no doc"
+  pragma "use default init"
   class localesSignal {
     var s: atomic bool;
   }
   pragma "no doc"
+  pragma "use default init"
   record localesBarrier {
     proc wait(locIdx, flags) {
       if locIdx==0 {
@@ -506,7 +508,7 @@ module ChapelLocale {
         for f in flags do
           f.s.testAndSet();
       } else {
-        var f = new localesSignal();
+        var f = new unmanaged localesSignal();
         // expose my flag to locale 0
         flags[locIdx] = f;
         // wait (locally) for locale 0 to set my flag
@@ -527,8 +529,8 @@ module ChapelLocale {
   // object.
   pragma "no doc"
   proc chpl_init_rootLocale() {
-    origRootLocale = new RootLocale();
-    (origRootLocale:RootLocale).setup();
+    origRootLocale = new unmanaged RootLocale();
+    (origRootLocale:borrowed RootLocale).setup();
   }
 
   // This function sets up a private copy of rootLocale by replicating
@@ -543,12 +545,12 @@ module ChapelLocale {
     rootLocale = origRootLocale;
     if replicateRootLocale && locIdx!=0 {
       // Create a new local rootLocale
-      var newRootLocale = new RootLocale();
+      var newRootLocale = new unmanaged RootLocale();
       // We don't want to be doing unnecessary ref count updates here
       // as they require additional tasks.  We know we don't need them
       // so tell the compiler to not insert them.
       pragma "no copy" pragma "no auto destroy"
-      const ref origLocales = (origRootLocale:RootLocale).getDefaultLocaleArray();
+      const ref origLocales = (origRootLocale:borrowed RootLocale).getDefaultLocaleArray();
       var origRL = origLocales._value.theData;
       var newRL = newRootLocale.getDefaultLocaleArray()._value.theData;
       // We must directly implement a bulk copy here, as the mechanisms
@@ -566,7 +568,7 @@ module ChapelLocale {
       // We mimic a private Locales array alias by using the move
       // primitive.
       pragma "no auto destroy"
-      const ref tmp = (rootLocale:RootLocale).getDefaultLocaleArray();
+      const ref tmp = (rootLocale:borrowed RootLocale).getDefaultLocaleArray();
       __primitive("move", Locales, tmp);
     }
     rootLocaleInitialized = true;
@@ -579,7 +581,7 @@ module ChapelLocale {
   // representative.
   // The dummy locale provides system-default tasking and memory management.
   pragma "no doc"
-  const dummyLocale = new DummyLocale();
+  const dummyLocale = new unmanaged DummyLocale();
 
   pragma "no doc"
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
@@ -612,15 +614,18 @@ module ChapelLocale {
   
   // Returns a wide pointer to the locale with the given id.
   pragma "no doc"
+  pragma "fn returns infinite lifetime"
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
     if rootLocale then
-      return (rootLocale:AbstractRootLocale).localeIDtoLocale(id);
+      return (rootLocale:borrowed AbstractRootLocale).localeIDtoLocale(id);
     else
       // For code prior to rootLocale initialization
       return dummyLocale;
   }
 
   pragma "no doc"
+  pragma "unsafe"
+  pragma "fn returns infinite lifetime"
   proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
     return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
   

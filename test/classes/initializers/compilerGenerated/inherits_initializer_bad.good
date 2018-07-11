@@ -1,5 +1,3 @@
 inherits_initializer_bad.chpl:20: In function 'main':
 inherits_initializer_bad.chpl:21: error: unresolved call 'Parent.init()'
 inherits_initializer_bad.chpl:10: note: candidates are: Parent.init(x1: int, x2: int)
-inherits_initializer_bad.chpl:16: note:                 Child.init(b: int(64))
-deleted module lines

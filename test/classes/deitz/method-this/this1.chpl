@@ -3,12 +3,12 @@ class D {
 }
 
 class C {
-  var d : D = new D();
-  proc this() ref : D
+  var d : unmanaged D = new unmanaged D();
+  proc this() ref : unmanaged D
     return d;
 }
 
-var c : C = new C();
+var c : unmanaged C = new unmanaged C();
 
 writeln(c);
 writeln(c.d);

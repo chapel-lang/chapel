@@ -12,16 +12,11 @@ class B: A {
   }
 }
 
-var a = new A();
-var b = new B();
-var b2: A = new B();
+var a = new owned A();
+var b = new owned B();
+var b2: owned A = new owned B();
 
 a.foo();
 b.foo();
 
 b2.foo();
-
-delete b2;
-
-delete b;
-delete a;

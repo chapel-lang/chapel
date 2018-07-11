@@ -8,7 +8,6 @@ class Parent {
   // generated child initializer.
   proc init() {
     a = 11;
-    super.init();
   }
 }
 
@@ -17,8 +16,7 @@ class Child : Parent {
 }
 
 proc main() {
-  var c = new Child(4);
+  var c = new owned Child(4);
 
   writeln(c);
-  delete c;
 }

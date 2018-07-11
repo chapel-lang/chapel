@@ -1,0 +1,18 @@
+Calling f(unmanaged)
+in f unmanaged
+Calling f(borrowed)
+in f borrowed
+Calling f(default)
+in f borrowed
+Calling call_f(unmanaged MyClass)
+in f unmanaged
+in f unmanaged
+Calling call_f(MyClass)
+in f borrowed
+in f borrowed
+Calling method on unmanaged
+In MyClass.primaryMethod(), this.type is MyClass
+In MyClass.secondaryMethod(), this.type is MyClass
+Calling f(new MyClass())
+in f borrowed
+in f borrowed

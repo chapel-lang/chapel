@@ -11,8 +11,8 @@
 #  - paratest.server is run from $CHPL_HOME/test.
 #  - Chapel compiler bin as $CHPL_HOME/bin/"platform"/chpl.
 #  - Scripts start_test in $CHPL_HOME/util and paratest.client in the same 
-#  	   directory as paratest.server. It will create a temporary directory 
-#  	   .synch to synchronize the distribution of work to the client processes.
+#      directory as paratest.server. It will create a temporary directory 
+#     .synch to synchronize the distribution of work to the client processes.
 #  - Be able to run start_test remotely. This may include the following:
 #    - Chapel built without node-specific local temporary directories.
 #        Nodes must be able to execute start_test. For example, the
@@ -42,7 +42,7 @@ $sleep_time = 1;                       # polling time (sec) to distribute work
 $futures_mode = 0;
 $filedist = 0;
 $dirs = "";
-$node_para = 1;				                 # the number of tasks to run on each node
+$node_para = 1;                        # the number of tasks to run on each node
 $valgrind = 0;
 $memleaks = "/dev/null";
 $memleaksflag = 0;
@@ -103,8 +103,11 @@ sub collect_logs {
     }
 
     systemd ("echo \\[Parallel testing started at $starttime\\] > $fin_log");
-    print "Collecting logs to $fin_log\n" if $verbose;
-    foreach $log (@logs) {
+    # Keep the individual logs upon failure.
+    !$? or die "Could not set up final log '$fin_log': $?\n";
+
+    print "Collecting logs to $fin_log\n";
+    foreach $log (sort @logs) {
         if (-e $log) {
             print "Merging $log\n" if $verbose;
             open GLOG, $log or die "Cannot open log '$log'\n";
@@ -350,8 +353,12 @@ sub feed_nodes {
       }
 
       $endtime = `date`; chomp $endtime;
+      print "\n";
       if ($memleaksflag) {
+          print "Collecting memleaks logs to $memleaks\n";
           systemd("cat $logdir/tmp.*.memleaks > $memleaks");
+          # Keep the individual logs upon failure.
+          !$? or die "Could not collect memleaks logs: $?\n";
           systemd("rm -f $logdir/tmp.*.memleaks");
       }
     }
@@ -525,7 +532,7 @@ sub main {
 
     while ($#ARGV >= 0) {
         $_ = $ARGV[0];
-        if (/^-compopts/) {
+        if (/^-compopts$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $compopts = "$compopts $ARGV[0]";
@@ -533,7 +540,7 @@ sub main {
                 print "missing -compopts arg\n";
                 exit (8);
             }
-        } elsif (/^-execopts/) {
+        } elsif (/^-execopts$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $execopts = "$execopts $ARGV[0]";
@@ -541,7 +548,7 @@ sub main {
                 print "missing -execopts arg\n";
                 exit (8);
             }
-        } elsif (/^-env/) {
+        } elsif (/^-env$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $extra_env = "$extra_env $ARGV[0]";
@@ -549,9 +556,9 @@ sub main {
                 print "missing -env arg\n";
                 exit (8);
             }
-        } elsif (/^-filedist/) {
+        } elsif (/^-filedist$/) {
             $filedist = 1;
-        } elsif (/^-dirfile/) {
+        } elsif (/^-dirfile$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $dirfile = $ARGV[0];
@@ -559,7 +566,7 @@ sub main {
                 print "missing -dirfile arg\n";
                 exit (8);
             }
-        } elsif (/^-dirs/) {
+        } elsif (/^-dirs$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $dirs = trim("$dirs $ARGV[0]");
@@ -568,7 +575,7 @@ sub main {
                 exit (8);
             }
          # "undocumented" option, only meant to be used by other scripts
-        } elsif (/^-futures-mode/) {
+        } elsif (/^-futures-mode$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $futures_mode = $ARGV[0];
@@ -576,11 +583,11 @@ sub main {
                 print "missing -futures-mode arg\n";
                 exit (8);
             }
-        } elsif (/^-futures-only/) {
+        } elsif (/^-futures-only$/) {
             $futures_mode = 2;
-        } elsif (/^-futures/) {
+        } elsif (/^-futures$/) {
             $futures_mode = 1;
-        } elsif (/^-logfile/) {
+        } elsif (/^-logfile$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $fin_logfile = $ARGV[0];
@@ -588,7 +595,7 @@ sub main {
                 print "missing -logfile arg\n";
                 exit (8);
             }
-        } elsif (/^-nodefile/) {
+        } elsif (/^-nodefile$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $nodefile = $ARGV[0];
@@ -596,7 +603,7 @@ sub main {
                 print "missing -nodefile arg\n";
                 exit (8);
             }
-        } elsif (/^-nodepara/) {
+        } elsif (/^-nodepara$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $node_para = $ARGV[0];
@@ -604,7 +611,7 @@ sub main {
                 print "missing -nodepara arg\n";
                 exit(8);
             }
-        } elsif (/^-timeout/) {
+        } elsif (/^-timeout$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $timeout = $ARGV[0];
@@ -612,7 +619,7 @@ sub main {
                 print "missing -timeout arg\n";
                 exit(8);
             }
-        } elsif (/^-memleaks/) {
+        } elsif (/^-memleaks$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $memleaks = $ARGV[0];
@@ -621,20 +628,18 @@ sub main {
                 print "missing -memleaks arg\n";
                 exit (8);
             }
-        } elsif (/^-valgrind/) {
-            if (/^-valgrindexe/) {
-                $valgrind = 2;
-                $ENV{'CHPL_TEST_VGRND_EXE'} = "on";
-            } else {
-                $valgrind = 1;
-                $ENV{'CHPL_TEST_VGRND_COMP'} = "on";
-                $ENV{'CHPL_TEST_VGRND_EXE'} = "on";
-            }
-        } elsif (/^-show-all-errors/) {
+        } elsif (/^-valgrind$/) {
+            $valgrind = 1;
+            $ENV{'CHPL_TEST_VGRND_COMP'} = "on";
+            $ENV{'CHPL_TEST_VGRND_EXE'} = "on";
+        } elsif (/^-valgrindexe$/) {
+            $valgrind = 2;
+            $ENV{'CHPL_TEST_VGRND_EXE'} = "on";
+        } elsif (/^-show-all-errors$/) {
             $show_all_errors = 1;
         } elsif (/^-junit-xml$/) {
             $junit_xml = 1;
-        } elsif (/^-junit-xml-file/) {
+        } elsif (/^-junit-xml-file$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $junit_xml_file = $ARGV[0];
@@ -643,7 +648,7 @@ sub main {
                 print "missing -junit-xml-file arg\n";
                 exit (8);
             }
-        } elsif (/^-junit-remove-prefix/) {
+        } elsif (/^-junit-remove-prefix$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $junit_remove_prefix = $ARGV[0];
@@ -651,7 +656,7 @@ sub main {
                 print "missing -junit-remove-prefix arg\n";
                 exit (8);
             }
-        } elsif (/^-help|^-h/) {
+        } elsif (/^-help$|^-h$/) {
             print_help;
             exit (9);
         } else {
@@ -666,13 +671,18 @@ sub main {
     # Check for a compatible valgrind configuration
     if ($valgrind > 0) {
       $tasks = `$ENV{CHPL_HOME}/util/chplenv/chpl_tasks.py`; chomp $tasks;
-      $mem = `$ENV{CHPL_HOME}/util/chplenv/chpl_mem.py`; chomp $mem;
+      $mem = `$ENV{CHPL_HOME}/util/chplenv/chpl_mem.py --target`; chomp $mem;
+      $regexp = `$ENV{CHPL_HOME}/util/chplenv/chpl_regexp.py`; chomp $regexp;
+      $re2_valgrind = `$ENV{CHPL_HOME}/util/test/re2_supports_valgrind.py`; chomp $re2_valgrind;
 
       if ($tasks ne "fifo") {
         die "Error: valgrind requires tasks=fifo - try quickstart";
       }
       if ($mem ne "cstdlib") {
         die "Error: valgrind requires mem=cstdlib - try quickstart";
+      }
+      if ($regexp eq "re2" && $re2_valgrind eq "False") {
+        die "Error: valgrind requires regexp=none or re2 built with CHPL_RE2_VALGRIND_SUPPORT";
       }
     }
 
@@ -747,10 +757,10 @@ sub main {
         die "Error generating Spec tests in $ENV{CHPL_HOME}/spec\n" unless $? == 0;
         chdir $cwd;
         if ($filedist) {
-	    print "[Collecting test files in $cwd]\n";
+            print "[Collecting test files in $cwd]\n";
             @testdir_list = find_files (".", 0, !$futures_mode, 1);
         } else {
-	    print "[Collecting test directories in $cwd]\n";
+            print "[Collecting test directories in $cwd]\n";
             @testdir_list = find_subdirs (".", 0);
         }
     }

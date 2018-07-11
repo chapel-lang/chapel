@@ -4,8 +4,7 @@ class C {
   }
 }
 
-var c = new C();
+var c = new borrowed C();
 
 c.foo(2);
 (c.foo)(3);
-delete c;

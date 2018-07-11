@@ -9,12 +9,9 @@ class C {
   
   proc init() {
     x = f(d);
-    super.init();
   }
 }
 
-var c = new C();
+var c = new owned C();
 
 writeln(c.x);
-
-delete c;

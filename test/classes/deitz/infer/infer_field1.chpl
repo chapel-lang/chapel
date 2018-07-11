@@ -3,17 +3,17 @@ class C {
   var y;
 }
 
-proc foo(c : C) {
+proc foo(c : borrowed C) {
   c.x = 2;
   c.y = 3;
 }
 
-proc bar(c : C) {
+proc bar(c : borrowed C) {
   c.x = "hello";
   c.y = "world";
 }
 
-var c = new C(0, 0), d = new C("", "");
+var c = new unmanaged C(0, 0), d = new unmanaged C("", "");
 foo(c);
 bar(d);
 writeln(c);

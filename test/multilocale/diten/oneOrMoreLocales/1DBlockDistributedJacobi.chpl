@@ -11,19 +11,19 @@ class DistribArray {
   type arrType;
   const arrSize: int;
   const localSize:int = arrSize / numLocales;
-  var internalArr: [LocaleSpace] DistribArrayNode(arrType);
+  var internalArr: [LocaleSpace] unmanaged DistribArrayNode(arrType);
   var isLocalize = false;
 
-  proc initialize() {
+  proc postinit() {
     if isLocalize then return;
 
     for loc in LocaleSpace {
       on Locales(loc) {
         if (loc != numLocales-1) {
-          internalArr(loc) = new DistribArrayNode(arrType, localSize);
+          internalArr(loc) = new unmanaged DistribArrayNode(arrType, localSize);
         } else {
           const numElts = arrSize - localSize*(numLocales-1);
-          internalArr(loc) = new DistribArrayNode(arrType, numElts);
+          internalArr(loc) = new unmanaged DistribArrayNode(arrType, numElts);
         }
       }
     }
@@ -39,10 +39,10 @@ class DistribArray {
   }
 
   proc localize() {
-    var localArrays: [LocaleSpace] DistribArray(arrType);
+    var localArrays: [LocaleSpace] unmanaged DistribArray(arrType);
     for loc in LocaleSpace {
       on Locales(loc) {
-        var x = new DistribArray(arrType, arrSize, localSize, isLocalize=true);
+        var x = new unmanaged DistribArray(arrType, arrSize, localSize, isLocalize=true);
         [i in LocaleSpace] x.internalArr(i) = internalArr(i);
         localArrays(loc) = x;
       }
@@ -81,7 +81,7 @@ class DistribArray {
     }
   }
 
-  proc copy(b: DistribArray(arrType)) {
+  proc copy(b: unmanaged DistribArray(arrType)) {
     if (b.arrSize != arrSize) then
       halt("Bad sizes in DistribArray.copy");
 
@@ -99,8 +99,8 @@ class DistribArray {
 
 proc main {
   var delta: sync real;
-  var distA = new DistribArray(real, size);
-  var distB = new DistribArray(real, size);
+  var distA = new unmanaged DistribArray(real, size);
+  var distB = new unmanaged DistribArray(real, size);
   ref localAs = distA.localize();
   ref localBs = distB.localize();
   localAs(0).element(0) = 1.0;

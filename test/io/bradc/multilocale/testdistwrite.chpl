@@ -3,7 +3,7 @@ class D {
 }
 
 class C {
-  var Ds: [LocaleSpace] D;
+  var Ds: [LocaleSpace] unmanaged D;
 
   proc writeThis(x) {
     for loc in Locales do
@@ -12,11 +12,11 @@ class C {
   }
 }
 
-var myC = new C();
+var myC = new unmanaged C();
 
 for loc in Locales do
   on loc do
-    myC.Ds[loc.id] = new D(me=loc.id);
+    myC.Ds[loc.id] = new unmanaged D(me=loc.id);
 
 writeln(myC);
 

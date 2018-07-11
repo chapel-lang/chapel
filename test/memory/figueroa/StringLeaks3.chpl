@@ -6,11 +6,12 @@ use Memory;
 config const n = 1;
 
 proc foo () {
+  var stdout = openfd(1).writer();
   var s1 = "Good bye",
       s2 = s1;
   if n > 0 then
     s2 = "Nos vemos";
-  writeln(s2);
+  stdout.writeln(s2);
 }
 
 var m1 = memoryUsed();

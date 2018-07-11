@@ -155,11 +155,11 @@ iter postorder(tree: Tree): Tree {
          / \
         d   e
 */
-var tree = new Tree( "a",
-  new Tree("b"),
-  new Tree("c",
-    new Tree("d"),
-    new Tree("e")));
+var tree = new unmanaged Tree( "a",
+  new unmanaged Tree("b"),
+  new unmanaged Tree("c",
+    new unmanaged Tree("d"),
+    new unmanaged Tree("e")));
 
 //
 // This method uses the postorder iterator to print out each node.
@@ -169,7 +169,7 @@ proc Tree.writeThis(x)
 {
   var first = true;
 
-  for node in postorder(tree) {
+  for node in postorder(this) {
     if first then
       first = false;
     else

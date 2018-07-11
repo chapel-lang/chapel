@@ -51,3 +51,6 @@ SpellChecking.rst
 
 Potpourri.txt
   Notes not in any of the above categories.
+
+Valgrind.rst
+  Building the Chapel compiler so that compiled programs work with valgrind.

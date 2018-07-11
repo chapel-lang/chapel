@@ -32,7 +32,9 @@ AST_SRCS =                                          \
            flags.cpp                                \
            FnSymbol.cpp                             \
            ForallStmt.cpp                           \
+           IfExpr.cpp                               \
            iterator.cpp                             \
+           LoopExpr.cpp                             \
            ModuleSymbol.cpp                         \
            PartialCopyData.cpp                      \
            primitive.cpp                            \
@@ -40,6 +42,7 @@ AST_SRCS =                                          \
            symbol.cpp                               \
            TryStmt.cpp                              \
            type.cpp                                 \
+           UnmanagedClassType.cpp                   \
            UseStmt.cpp                              \
            view.cpp                                 \
            wellknown.cpp                            \

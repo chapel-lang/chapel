@@ -6,7 +6,7 @@ record R {
 record R2 {
   var r: R;
 
-  proc init(initR) {
+  proc init(initR:R) {
     r = initR;
   }
 }

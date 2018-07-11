@@ -9,7 +9,7 @@ record REC {
   proc init() {
     arvar = ARR;
     arcst = ARR;
-    this.initDone();
+    this.complete();
     arvar[1] = 1111;
     arcst[2] = 1111;
   }
@@ -22,14 +22,14 @@ class CLSS {
   proc init() {
     cvar = ARR;
     ccst = ARR;
-    this.initDone();
+    this.complete();
     cvar[1] = 1111;
     ccst[2] = 1111;
   }
 }
 
-var cvar = new CLSS();
-const cconst = new CLSS();
+var cvar = new unmanaged CLSS();
+const cconst = new unmanaged CLSS();
 var qvar: REC;
 const qconst: REC;
 

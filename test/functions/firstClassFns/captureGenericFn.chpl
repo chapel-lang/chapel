@@ -6,7 +6,7 @@ class R {
   type t;
 }
 
-proc f2(x:R) {
+proc f2(x:borrowed R) {
   return x;
 }
 

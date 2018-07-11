@@ -4,390 +4,773 @@
 Initializers
 ============
 
-The Chapel team is implementing a new approach to user-defined
-initialization of variables with record type or instances of class
-type.  This approach relies on methods known as initializers rather
-than the original methods known as constructors.
+Chapel is transitioning from the use of constructors for class and
+record types to a new strategy called initializers.  Initializers
+retain the convenience of constructors for simple types and provide
+additional power and flexibility for more complex types; particularly
+for generic types.
 
-A discussion of the current design and rationale is provided in `CHIP 10`_.
+A discussion of the original design and rationale is provided in `CHIP 10`_.
+
+Chapel's 1.16 release, in October 2017, provided a preview
+implementation of this feature.
+
+Release 1.17 advances this effort.  Bugs have been fixed, features
+have been added, and many components of the internal implementation of
+Chapel have transitioned from explicit constructors to explicit
+initializers.  A discussion of the experiences and concerns from this
+effort is provided in `CHIP 23`_.  These experiences resulted in a
+useful simplification for record types and an important change in the
+specification for classes with inheritance.
+
+This release continues to provide full support for constructors and it
+provides significant support for initializers.  The Chapel team
+remains determined to deprecate constructors as soon as initializers
+are sufficiently mature.
+
 
 .. _CHIP 10:
    https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst
 
-Release Chapel 1.16.0 provides a strong preview implementation of this
-new feature.  Though some known bugs remain, the feature is rapidly
-approaching full support and developers should feel encouraged to
-write initializers where previously they had relied on constructors.
-
-It is anticipated that the implementation will continue to advance
-steadily after this release and that many aspects of the internal
-implementation of Chapel will transition from constructor methods to
-initializer methods during this release.
+.. _CHIP 23:
+   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/23.rst
 
 
-The Initializer Method
-----------------------
 
-An initializer is a method on a class or record named "init".  It is invoked
-by the ``new`` operator, where the type name and initializer arguments are
-preceded with the ``new`` keyword.
+Introduction
+------------
 
-If the program declares an initializer method on a type, it is a user-defined
-initializer.  If the program declares no initializers or constructors for a
-class or record, a compiler generated constructor for that type is created
-automatically.  Work has begun on having the compiler generate an initializer
-instead a constructor, but it is not yet complete (see below for the status on
-`Compiler Generated Initializers`_).
-
-User-Defined Initializers
--------------------------
-
-A user-defined initializer is an initializer method explicitly declared in the
-program.  An initializer declaration has the same syntax as a method
-declaration, except that the name of the function is "init", and there is no
-return type specifier.
-
-When an initializer is invoked, the usual function resolution mechanism is
-applied to determine which user-defined initializer is required.
-
-The following example shows a class with two initializers:
+Consider a simple record declaration
 
 .. code-block:: chapel
 
-   class MessagePoint {
-     var x, y: real;
-     var message: string;
+   record LabeledPoint {
+     var x:   real;
+     var y:   real;
+     var txt: string;
+   }
+
+   var p1 = new LabeledPoint(x = 1.0, y = 2.0);
+   var p2 = new LabeledPoint(txt = 'Seattle');
+
+
+For release 1.17 the compiler continues to generate an all-fields
+constructor for this program.  As this is a record, rather than a
+class, the compiler also continues to generate a default copy
+constructor and a default assignment operator. These could be written
+as
+
+.. code-block:: chapel
+
+   proc LabeledPoint(x:   real   = 0.0,
+                     y:   real   = 0.0,
+                     txt: string = '') {
+     this.x   = x;
+     this.y   = y;
+     this.txt = txt;
+   }
+
+   proc LabeledPoint(other: LabeledPoint) {
+     this.x   = other.x;
+     this.y   = other.y;
+     this.txt = other.txt;
+   }
+
+   proc = (ref dst: LabeledPoint, src: LabeledPoint) {
+     dst.x   = src.x;
+     dst.y   = src.y;
+     dst.txt = src.txt;
+   }
+
+
+For simple type declarations like this, the migration from
+constructors to initializers will be largely unnoticed.  At some point
+in the future the compiler will generate a default all-fields
+initializer and a default copy initializer.  The definition of
+the default initializers will be largely the same as the default
+constructors but with the inclusion of an additional builtin
+method.
+
+.. code-block:: chapel
+
+   proc init(x:   real   = 0.0,
+             y:   real   = 0.0,
+             txt: string = '') {
+     this.x   = x;
+     this.y   = y;
+     this.txt = txt;
+   }
+
+   proc init(other: LabeledPoint) {
+     this.x   = other.x;
+     this.y   = other.y;
+     this.txt = other.txt;
+   }
+
+   proc postinit() {
+
+   }
+
+Separately the compiler will continue to generate the same default
+assignment operator.  The ``new`` operator will perform three
+steps
+
+1. allocate space
+2. invoke an appropriate version of the ``init`` method based
+   on the types of the subexpressions for the ``new`` operator
+3. invoke the ``postinit`` method
+
+This effort would be largely uninteresting if it were merely a change
+in name.  The benefits of initializers compared to constructors become
+evident for more sophisticated types and particularly for generic
+types.
+
+
+The ``init`` and ``postinit`` methods are discussed in more detail
+below.  This tech note discusses these methods for the simpler case of
+record types in some detail, and then describes the extensions
+required to support classes with inheritance.
+
+
+
+
+
+
+
+Constructors or Initializers but not both
+-----------------------------------------
+
+In release 1.17, a record or class type may include user-defined
+constructors or user-defined initializers but not both.  If there are
+no user-defined initializers then the compiler will continue to
+generate the appropriate default constructors.
+
+If there are any user-defined initializers then the default constructors
+are suppressed.  For a record type, a default copy initializer will be
+generated unless it is defined by the application.  However there will
+not be a default all-fields initializer.
+
+
+
+
+
+
+
+
+
+
+
+Initializers for Records
+------------------------
+
+Field initialization may be customized by defining one or more
+overloads of the ``init`` method. Consider the following definition
+for LabeledPoint.  There are two overloads for the ``init`` method
+that are distinguished by their signatures.  These methods cannot
+return a value. The type designer can rely on the compiler to
+insert default field initializations when appropriate.
+
+
+
+.. code-block:: chapel
+
+   record LabeledPoint {
+     var x:   real   = 1.0;
+     var y:   real   = 1.0;
+     var txt: string = 'Unlabeled';
+
+     proc init(_x: real, _y: real) {
+       x = _x;
+       y = _y;
+                        // Compiler inserts txt = 'Unlabeled';
+     }
+
+     proc init(_txt: string) {
+                        // Compiler inserts x = 1.0;
+                        // Compiler inserts y = 1.0;
+       txt = _txt;
+     }
+   }
+
+   const p1 = new LabeledPoint(10.0, 20.0);
+   const p2 = new LabeledPoint('London');
+
+
+Fields must be initialized in field declaration order.  This reduces
+ambiguity for omitted field initializations and ensures that
+observable side-effects occur in a well defined order.
+
+
+
+
+
+
+Fields may be initialized within a conditional statement. The same set
+of fields must be initialized in every branch.  The compiler will
+initialize any omitted fields in a natural way.
+
+.. code-block:: chapel
+
+   record Point {
+     var x: real = 1.0;
+     var y: real = 1.0;
+     var z: real = 5.0;
+
+     proc init(_z: real) {
+       if _z < 5 {
+         x = _z;
+                        // Compiler inserts y = 1.0;
+       } else {
+                        // Compiler inserts x = 1.0;
+         y = _z;
+       }
+
+       z = _z;
+     }
+
+     proc init(_x : real, _y : real) {
+       if _x + _y < 8.0 {
+         x = _x;
+         y = _y;
+       }                // Compiler inserts the else branch
+                        //     else {
+                        //     x = 1.0;
+                        //     y = 1.0;
+                        //   }
+
+                        // Compiler inserts z = 5.0;
+     }
+   }
+
+
+
+
+
+
+The complete method
++++++++++++++++++++
+
+To promote safety, an ``init`` method cannot call a method on ``this``
+until every field has been initialized.  Similarly an ``init`` method
+cannot pass ``this`` as an actual to a function until every field has
+been initialized.
+
+The support for default field initialization introduces the potential
+for confusion about the overall status of initialization.  This is
+resolved by calling a builtin method named ``complete``.  Unlike the
+builtin methods ``init`` and ``postinit``, this method cannot be
+overridden.  Calling this method makes it clear to the developer and
+the compiler that the record should be considered to be fully
+initialized.  The compiler will insert any remaining default field
+initializations.
+
+.. code-block:: chapel
+
+   record LabeledPoint {
+     var x:   real;
+     var y:   real;
+     var txt: string;
+
+     proc init(x: real) {
+       this.x = x;
+
+                        // Compiler inserts y   = 1.0;
+                        // Compiler inserts txt = '';
+
+       this.complete();
+
+       writeln('In init ', this);
+     }
 
      proc init(x: real, y: real) {
        this.x = x;
        this.y = y;
-       this.message = "a point";
-       super.init();
-     }
+                        // Compiler inserts this.complete();
+   }
 
-     proc init(message: string) {
-       this.x = 0;
-       this.y = 0;
-       this.message = message;
-       super.init();
-     }
-   } // class MessagePoint
 
-   // create two objects
-   var mp1 = new MessagePoint(1.0,2.0);
-   var mp2 = new MessagePoint("point mp2");
 
-The first initializer lets the user specify the initial coordinates and the
-second initializer lets the user specify the initial message when creating a
-MessagePoint.
 
-Order of Initialization
------------------------
 
-The specification of a class may be derived from, or inherit from, the
-specification of one or more other classes.  The initialization of an
-instance of a derived class requires that the initializer for each parent
-class be executed in some well defined order.
 
-Chapel initializes an instance in two phases that we refer to as "Phase 1"
-and "Phase 2".
 
-Phase 1 proceeds from the most derived class to the base class, and the fields
-for each class are initialized in field declaration order. This implies that
-the fields of any parent classes will be in an undefined state during phase 1.
-This in turn requires that certain constraints be observed during phase 1.
-These are described in more detail below.
+Delegating to other init methods
+++++++++++++++++++++++++++++++++
 
-Phase 2 proceeds from the base class to the most derived class once phase 1
-has been completed for the base class.  At this point every field of the
-instance is in a well defined state and so there are no restrictions on
-the operations that may be performed.
-
-Note that this protocol is well-defined for instances of classes that do
-not include inheritance.  The fields of the instance are initialized in
-field declaration order during Phase 1 and then Phase 2 may be used to
-perform additional initialization.
-
-Records in Chapel do not currently provide support for inheritance but we
-choose to view the initialization of record values in the same manner.
-
-The Initializer Body
---------------------
-
-The code written in an initializer is divided into two sequentially-ordered
-categories that define the operations to be performed in phase 1 and then
-phase 2.  The two phases are separated by a phase division indicator.  When
-the phase division indicator is not present, the body of an initializer is
-assumed to be entirely composed of Phase 2 statements.  Otherwise, any code
-prior to the phase division indicator is considered to be in Phase 1, and any
-code following it is considered to be in Phase 2.  Phase 1 and Phase 2 will
-be described in the next few subsections, and additional details and rationale
-can be found in `CHIP 10`_.
-
-Note that aside from ``try!`` statements without a ``catch`` block, error
-handling constructs are not allowed in initializers.  An initializer cannot
-be declared as ``throws``.  See `Interaction With Error Handling`_.
-
-Phase 1
-+++++++
-
-The code residing in Phase 1 must follow a set of strong requirements.
-
-Other methods on the ``this`` instance cannot be called.  The ``this``
-instance may not be passed to another function.
-
-Fields must be initialized in declaration order; however, fields can be
-omitted. Omitted fields are given the declared initial value if present,
-or the default of its declared type.  Fields with neither a declared initial
-value nor a declared type cannot be omitted.
+An overload of the ``init`` method may delegate to another
+``init`` method. For example it might be convenient to define
+three overloads as follows
 
 .. code-block:: chapel
 
-   class Foo {
-     var bar = 10;
-     var baz = false;
-     var dip: real;
+   record LabeledPoint {
+     var x:   real;
+     var y:   real;
+     var txt: string;
 
-     proc init(barVal, dipVal) {
-       bar = barVal;
-       // omitted initialization: baz = false;
-       dip = dipVal;
-       super.init();
+     proc init(x: real, y: real, txt : string) {
+       this.x   = x;
+       this.y   = y;
+       this.txt = txt;
+                         // Compiler inserts a call to this.complete();
+     }
+
+     proc init(x: real, y: real) {
+       init(x, y, 'Unlabeled');
+
+       writeln('init 2 :- ', this);
+     }
+
+     proc init(txt: string) {
+       init(1.0, 1.0, txt);
+
+       this.someOtherMethod();
      }
    }
 
-   var foo = new Foo(11, 2.0);
+A field cannot be initialized more than once.  This requirement
+is enforced by preventing an ``init`` method from initializing
+any fields if it delegates to another ``init`` method.
 
-Both explicit and implicit initialization of a field can depend on the values
-of prior fields.  However, later fields may not be referenced.
+The current instance is known to be fully initialized when a
+call to a delegated initializer returns.  It is safe to call
+non-builtin methods and to pass ``this`` as an actual to functions
+without calling this.complete().
 
+An ``init`` method may delegate to another ``init`` method within a
+conditional statement.  However every branch must fully initialize the
+record.  This can be accomplished by delegating to an ``init`` method
+or by invoking the builtin method this.complete() within every branch.
+
+
+
+
+
+Record Initialization vs Record Assignment
+++++++++++++++++++++++++++++++++++++++++++
+
+It is important to distinguish between initialization and assignment
+within the body of a record initializer.  For background consider the
+following simple examples for variable initialization and assignment
 
 .. code-block:: chapel
 
-   class Foo2 {
-     var bar = 10;
-     var baz = 5;
-     var dip = baz * 3;
+   proc example(other : MyRecord) {
+     var x = 10;                     // x is initialized
 
-     proc init(barVal) {
-       bar = barVal;
-       baz = divceil(bar, 2);
-       // omitted initialization: dip = baz * 3;
-       super.init();
+     x = 20;                         // Assignment operator is invoked
+
+
+
+     var r = new MyRecord(...);      // r is initialized
+
+     r = other;                      // Assignment operator is invoked
+
+     r = new MyRecord(...);          // Initialization of an internal temporary
+                                     // followed by assignment to r
+   }
+
+The difference between initialization and assignment is generally
+unimportant for a variable with a primitive type or a class type.
+There is usually little need to override the assignment operator
+for these types and the default assignment operators are as efficient
+as variable initialization.
+
+The distinction is particularly important for variables with record
+type when the record includes fields with class type.  In this case it
+is important to consider the ownership of the class instance that
+is referenced by the field.  The assignment operator for the record
+must enforce the desired rules for sharing the class instance and the
+class instance should be deleted when the last reference is removed.
+
+Consider the initializer for Point3D in the following contrived
+example.  Point3D includes a field with a record type.  This field is
+initialized and then assigned.
+
+.. code-block:: chapel
+
+   record Point2D {
+     var x : real;
+     var y : real;
+
+     proc init() {
+       x = 0.0;
+       y = 0.0;
+     }
+
+     proc init(_x : real, _y : real) {
+       x = _x;
+       y = _y;
      }
    }
 
-   var foo2 = new Foo2(11);
+   record Point3D {
+     var p : Point2D;
+     var z : real = 1.0;
 
-Parent fields may not be accessed or initialized during Phase 1.
+     proc init(_p : Point2D, _z : real) {
+       p = _p;                       // Initialize p
+       z = _z;                       // Initialize z
 
-``const`` fields may be initialized during Phase 1.  Local variables may be
-created and used.  Functions that are not methods on the ``this`` instance
-may be called, so long as ``this`` is not provided as an argument.
-
-Loops and parallel statements are allowed during Phase 1, but field
-initialization within them is forbidden.  ``on`` statements whose bodies
-extend into Phase 2 are not allowed, but more limited ``on`` statements are
-acceptable.
-
-When Phase 1 of the initializer body has completed and the phase division
-indicator has been processed, it can safely be assumed that all fields are
-in a usable state.
-
-Phase Division Indicator
-++++++++++++++++++++++++
-
-An explicit call to another initializer ends Phase 1 and begins Phase 2.
-This call takes one of two forms:
-
-Form 1: call to an initializer defined on the parent type
-
-.. code-block:: chapel
-
-   super.init();
-
-Form 2: call to another initializer defined on the same type
-
-.. code-block:: chapel
-
-   this.init();
-
-If the type has no parent, an argument-less call of the first form will still
-be valid, but otherwise treated as a no-op.
-
-Example of initializers using the first form:
-
-.. code-block:: chapel
-
-   class Foo { // no parent type
-     var x: int;
-
-     proc init(xVal: int) {
-       x = xVal;
-       super.init(); // argument-less call ends Phase 1
+       p = _p;                       // Assign p
      }
    }
 
-   class Bar: Foo { // inherits from Foo
-     var y: bool;
+   var p2 = new Point2D(10.0, 20.0);
+   var p3 = new Point3D(p2, 30.0);
 
-     proc init(yVal: bool) {
-       y = yVal;
-       super.init(10); // Calls the parent initializer
-     }
-   }
+Within the ``init`` method for Point3D, the local field ``p`` is
+initialized using the default copy initializer.  Later it is
+assigned, in fact to the same value, using the default
+assignment operator.
 
-   var bar = new Bar(true);
 
-When using the second form, field initialization statements are not permitted
-in Phase 1, though other statements are allowed.  Omitted field initialization
-will not be inserted prior to calls of the second form.
-
-Example of an initializer using the second form:
+Now consider the following alternative and invalid definition for
+Point3D.init()
 
 .. code-block:: chapel
 
-   class Rectangle {
-     var len, width: int;
+   record Point3D {
+     var p : Point2D;
+     var z : real = 1.0;
 
-     proc init(val: int) {
-       this.init(val, val); // calls the other initializer
-       writeln("Making a square");
-     }
+     proc init(_p : Point2D, _z : real) {
+       z = _z;                       // Initialize z
 
-     proc init(lenVal: int, widthVal: int) {
-       len = lenVal;
-       width = widthVal;
-       super.init();
+       p = _p;                       // COMPILER ERROR
      }
    }
 
-   var square = new Rectangle(4);
-
-For a single control flow path through the body, only one phase division
-indicator is allowed.  It is forbidden to have both calls, or multiple of
-either, in a single control flow path.  It is forbidden to enclose the phase
-division indicator in a parallel statement, on statement, or a loop statement.
-If the phase division indicator is enclosed by a conditional, it must be a
-``param`` conditional.
-
-If no phase division indicator is provided, an argument-less first form call
-will be inserted at the beginning of the body.  The
-`Compiler Generated Initializers`_ will also include an argument-less first
-form call after completing the initialization of its fields.  If the parent
-type has defined an initializer that this call cannot resolve to, attempts
-to initialize the child with the compiler generated initializer will result
-in an error.
-
-
-Phase 2
-+++++++
-
-Code in Phase 2 is functionally similar to other methods on the type, and less
-restrictive than code in Phase 1.  Modifications to the fields are considered
-assignment rather than initialization.  Other methods may be called on the
-``this`` instance, and the ``this`` instance may be passed as an argument to
-another function.  Parent fields may be accessed.
-
-As in other methods, code in Phase 2 may not redefine ``const``, ``param``,
-and ``type`` fields.
-
-
-Generics
---------
-
-A class or record with a ``param`` field, ``type`` field, or a ``var`` /
-``const`` field with no type or initial value is considered generic over that
-field.  Generic fields are treated similarly to other fields, with some
-exceptions.  Only generic fields are capable of being declared without a type
-or initial value, so only those generic fields without either must have an
-explicit initialization in Phase 1 - other generic fields may rely on omitted
-initialization like other fields do.  Like ``const`` fields, ``type`` and
-``param`` fields may not be updated during Phase 2.
-
-Note: user-defined constructors for generic classes and records required an
-argument per generic field and did not allow generic fields to be set during
-the constructor body.  Initializers do not have this constraint.
-
-
-Copy Initializers
------------------
-
-An initializer may be defined to control the behavior when a copy of an
-instance is made.  This initializer is define with a single argument on
-the same type as the type being created:
+It is unclear if the type designer intended that both of these
+statements should be field initializations but accidentally reversed
+the initializations, or s/he intended the compiler to insert a default
+field initialization before the initialization of ``z`` followed by an
+assignment.  This ambiguity is addressed by signaling an error at
+compile time.  Here is an alternative that clarifies that assignment
+is intended
 
 .. code-block:: chapel
 
-   class Foo {
-     var x: int;
-     var wasCopied = false;
+   record Point3D {
+     var p : Point2D;
+     var z : real = 1.0;
 
-     proc init(xVal: int) {
-       x = xVal;
-       super.init();
-     }
+     proc init(_p : Point2D, _z : real) {
+                                     // Compiler insert p.init()
+       z = _z;                       // Initialize z
 
-     // copy initializer
-     proc init(other: Foo) {
-       x = other.x;
-       wasCopied = true;
-       super.init();
+       complete();
+
+       p = _p;                       // Assignment
      }
    }
 
-   var foo1 = new Foo(5);
-   var foo2 = new Foo(foo1); // user inserted copy
-   writeln(foo1);
-   writeln(foo2);
-   delete foo1;
-   delete foo2;
 
-For more details on when the copy initializer would be called, please refer to
-`CHIP 13 - When Do Records and Array Copies Occur`_
 
-.. _CHIP 13 - When Do Records and Array Copies Occur:
-   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/13.rst
+
+Post Initialization for Records
++++++++++++++++++++++++++++++++
+
+A record type that defines an initializer also implements a
+``postinit`` method.  This method is invoked when the ``init`` method
+returns i.e. after the record is fully initialized.  The ``postinit``
+method does not accept any formals and does not return a value.
+The compiler-generated definition has no observable effect.
+
+A user may override this method and customize the behavior.  Writing a
+``postinit`` method provides a way for the record author to leverage
+the default all-fields initializer while also specifying additional
+computation to perform before returning the new object.
+
+
+
+
+Initializers for Generic Records
+++++++++++++++++++++++++++++++++
+
+Consider the following record declaration
+
+.. code-block:: chapel
+
+   record Point {
+     type t;
+     var  x: t;
+     var  y: t;
+
+     ...
+   }
+
+The declaration describes a family of user-defined types rather than
+a specific type.  The set of actual types that will be generated by
+this declaration depends on the definition of any overloads for the
+``init`` method and the set of ``new`` expressions in the program.
+
+Now consider the following program
+
+.. code-block:: chapel
+
+   record Point {
+     type t;
+     var  x: t;
+     var  y: t;
+
+     proc init(x, y) {
+       this.t = x.type;
+       this.x = x;
+       this.y = y;
+     }
+   }
+
+   var p1 = new Point(1,   2);
+   var p2 = new Point(1.0, 2.0);
+
+This program will generate two user defined types; Point(int) and
+Point(real).  In Chapel we say that the Point declaration defines a
+generic type.
+
+A user-defined type is generic if it includes at least one generic field.
+A generic field is one of
+
+1. a specified or unspecified type alias,
+2. a parameter field, or
+3. a var or const field that has no type and no initialization expression.
+
+
+User-defined initializers provide notable flexibility for generic types
+compared to user-defined constructors.  This flexibility is evident
+in the range of ``init`` method that can be supported and hence for
+the allowable ``new`` expressions.
+
+
+
+
+
+Initializers for Classes
+------------------------
+
+Class types include two factors that require additional consideration;
+inheritance, and dynamic dispatch for method calls.
+
+In an application that includes a class type that does not inherit
+from some other class type and that is not a base type for any other
+class type, the discussion of initializers for records can be
+applied directly.
+
+
+
+Initializers or Constructors
+++++++++++++++++++++++++++++
+
+A base class can rely on initializers or constructors but not both.
+Release Chapel 1.17 continues to rely on constructors as the default
+i.e. if there are no user-defined initializers then the base class
+relies on constructors.
+
+If a base class relies on initializers then any derived classes must
+rely on initializers i.e. must include user-defined initializers.
+If a base class relies on constructors then derived classes may
+not include user-defined initializers.
+
+
+
+Parents before Children
++++++++++++++++++++++++
+
+Chapel's approach to generic types and for data dependent types,
+e.g. arrays, may require that a parent's fields be initialized before
+those of a derived class.  This is supported by requiring that an
+``init`` method to delegate to an ``init`` method of the parent class
+before any local fields are initialized.
+
+
+
+
+
+
+In the following example the class Point2 is a generic class that defines
+two fields that are constrained to be of the same type. The class
+Point3 defines a field that must also have this type.  Hence it is
+necessary that the initializer for Point2 be analyzed before that
+of Point3.
+
+.. code-block:: chapel
+
+   class Point2 {
+     type t;
+
+     var  x: t;
+     var  y: t;
+
+     proc init(x, y) {
+       this.t = x.type;
+       this.x = x;
+       this.y = y;
+     }
+   }
+
+   class Point3 : Point2 {
+     var  z: t;
+
+     proc init(x, y) {
+       super.init(x, y);
+
+                            // compiler inserts z.init()
+     }
+
+     proc init(x, y, z) {
+       super.init(x, y);
+
+       this.z = z;
+     }
+   }
+
+
+
+
+
+
+This second example provides an example for data dependent types.  It
+is required the arrays ``a`` and ``b`` share the same domain and hence
+the initializer for class Base must execute before the initializer for
+Derived.
+
+.. code-block:: chapel
+
+   class Base {
+     var d : domain(1);
+     var a : [d] int;
+
+     proc init(_a : [] int) {
+       d = _a.domain;
+       a = _a;
+     }
+   }
+
+   class Derived : Base {
+     var b : [d] int;
+
+     proc init(_a : [] int) {
+       super.init(_a);
+
+       // Compiler inserts initialization for b[]
+     }
+   }
+
+
+An ``init`` method for a derived class may delegate to another
+``init`` method for the same class so long as this leads to a
+delegation to the parent class.
+
+
+If an ``init`` method for a derived class does not delegate to
+any ``init`` method, the compiler will insert a call to super.init()
+as the first statement.
+
+
+
+
+
+
+
+
+
+Dynamic Dispatch
+++++++++++++++++
+
+An instance of class type is not fully initialized until the ``init``
+method for the most derived class returns. Care is required to ensure
+that a call to a non-init method cannot access an uninitialized field.
+This is achieved by updating the runtime type of the instance during
+the execution of the ``init`` methods.
+
+
+An ``init`` method may not call any non-init method until the parent
+class has been initialized i.e. until the call to super.init(...) has
+returned.  At this point the dynamic type of the instance will be that
+of the parent class.  The ``init`` method can invoke any method that
+is defined on the parent class and dynamic dispatch will occur in a
+manner that is safe.  It is also permitted to pass ``this`` as an
+actual to functions so long as the formal can be an instance of the
+parent type.
+
+If an ``init`` method invokes the this.complete() method, the dynamic
+type of the instance will be updated to match the current type. It
+becomes possible to invoke methods that are defined on the current type
+and dynamic dispatch for methods defined on the parent type will use
+the current type.
+
+
+
+
+
+The postinit method
++++++++++++++++++++
+
+The ``postinit`` method for the most derived type will be invoked
+when the selected ``init`` method returns.  At this point the
+instance will be fully initialized.  Any method calls within an
+override of a ``postinit`` method will dispatch on the instance's
+final type.
+
+
+The ``postinit`` method for a derived class must delegate to the
+``postinit`` method for the parent class.  It is most natural
+to delegate to the parent class as the first statement but there
+is no requirement to do so.  If an override of this method does not
+delegate to the parent class, the compiler will insert a call to
+super.postinit() as the first statement.
+
+
+
+
+
+
+
+
+
+
 
 Remaining Work
 --------------
 
-With the 1.16.0 release, support for initializers is mostly stable with a few
-bugs and some unimplemented features remaining.  It is recommended for
-developers writing new classes and records to write initializers when possible.
-Please report any bugs encountered using the guidance described at the `bugs`_
-page.
+With the 1.17 release, support for initializers is mostly stable
+with a few bugs and some unimplemented features remaining.  It is
+recommended that new applications with user-defined class or record
+types use initializers when possible.  Please report any bugs
+encountered using the guidance described at the `bugs`_ page.
 
 .. _bugs:
-   https://chapel-lang.org/docs/latest/usingchapel/bugs.html
+   https://chapel-lang.org/docs/usingchapel/bugs.html
+
+
+
 
 Compiler Generated Initializers
 +++++++++++++++++++++++++++++++
 
-Prototypical support of compiler generated initializers has been added.  With
-the 1.16.0 release and the developer-oriented flag ``--force-initializers``,
-user-defined classes will attempt to generate default initializers instead of
-default constructors.  User-defined records, and records and classes defined in
-the internal, standard, or package modules will not yet generate default
-initializers with this flag.  However, there are still failures with even that
-limited application.
+Support for compiler generated initializers is considerably more
+mature than it was for the 1.16 release.  With the 1.17 release
+the developer-oriented flag ``--force-initializers`` will attempt to
+generate default initializers for classes and records defined in
+application modules.
 
-It is anticipated that compiler generated initializers will be fully supported
-in the next release.
+Additionally the compiler has a mechanism that has been used to cause
+classes and records that are defined in internal, standard, and
+package modules to use default initializers rather than default
+constructors.
+
+While many cases are now working there are still failure cases that
+require attention.
+
+
+
 
 Interaction With Error Handling
 +++++++++++++++++++++++++++++++
 
-Due to time constraints, the 1.16.0 release went out with very limited support
-for error handling constructs: an initializer cannot be declared as ``throws``,
-and only ``try!`` statements without ``catch`` blocks are allowed in the body.
-
-In later releases, we hope to support ``throw``, and ``try`` and ``try!``
-statements with ``catch`` blocks during Phase 2, allowing initializers to be
-declared as ``throws``.  It may be possible to allow these constructs in Phase
-1, though for simplicity's sake they will likely still be banned around field
-initialization statements and forbidden from crossing the Phase 1/Phase 2
-divide.
+Release 1.17 has limited support for error handling constructs: an
+initializer cannot be declared as ``throws``, and only ``try!``
+statements without ``catch`` blocks are allowed in the body.
 
 In the world where initializers can ``throw``, we will only allow child classes
 to ``throw`` if the parent initializer ``throws`` (though there may be
@@ -399,29 +782,13 @@ another initializer on the type, which calls a parent initializer that
 Noinit
 ++++++
 
-Variable initialization when provided the ``noinit`` keyword in place of an
-initial value for a class or record should generate a call to an initializer
-that has defined what ``noinit`` means for that type.  More details on the
-direction for this support can be found in the `noinit section`_ of CHIP 10.
+The syntax for declaring a variable includes the ability to use the
+``noinit`` keyword in place of an initial value.  If the variable has
+record or class type this is intended to call an initializer that
+customizes the meaning of this keyword for that type.  More details on
+the direction for this support can be found in the `noinit section`_
+of CHIP 10.
 
 .. _noinit section:
    https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst#noinit
 
-Bugs
-++++
-
-- secondary initializers in outside modules when the type doesn't define an
-  initializer in its original module
-- nested types when the outer type and/or the inner type defines an initializer
-  and the outer type and/or the inner type is generic.
-- others
-
-Other TODOs
-+++++++++++
-
-- Convert library types to utilize initializers instead of constructors
-- Improve some slightly cryptic error messages
-- Ensure we *always* error when a method is called in Phase 1 (we only
-  sometimes do today)
-- Extend on statement support to allow field initialization within its bounds
-  after getting larger team buy in.

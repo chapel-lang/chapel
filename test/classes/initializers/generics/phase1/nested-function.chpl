@@ -9,7 +9,6 @@ class Foo {
     }
     field = val;
     nested();
-    super.init();
   }
 }
 

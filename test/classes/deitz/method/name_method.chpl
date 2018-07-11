@@ -5,7 +5,7 @@ class C {
   }
 }
 
-var c = new C();
+var c = new unmanaged C();
 c.foo(i=2);
 writeln(c);
 delete c;

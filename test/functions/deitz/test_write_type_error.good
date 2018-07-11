@@ -1,8 +1,8 @@
 test_write_type_error.chpl:2: error: unresolved call 'writeln(type int(64))'
-$CHPL_HOME/modules/standard/IO.chpl:: note: candidates are: channel.writeln(out error: syserr)
-$CHPL_HOME/modules/standard/IO.chpl:: note:                 channel.writeln()
-$CHPL_HOME/modules/standard/IO.chpl:: note:                 channel.writeln(const args ...?k, out error: syserr)
+$CHPL_HOME/modules/standard/IO.chpl:: note: candidates are: channel.writeln()
+$CHPL_HOME/modules/standard/IO.chpl:: note:                 channel.writeln(out error: syserr)
 $CHPL_HOME/modules/standard/IO.chpl:: note:                 channel.writeln(const args ...?k)
+$CHPL_HOME/modules/standard/IO.chpl:: note:                 channel.writeln(const args ...?k, out error: syserr)
 $CHPL_HOME/modules/standard/IO.chpl:: note:                 channel.writeln(const args ...?k, style: iostyle)
 $CHPL_HOME/modules/standard/IO.chpl:: note:                 channel.writeln(const args ...?k, style: iostyle, out error: syserr)
 $CHPL_HOME/modules/standard/IO.chpl:: note:                 writeln(const args ...?n)

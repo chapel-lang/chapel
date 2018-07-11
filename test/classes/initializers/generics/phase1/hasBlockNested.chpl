@@ -15,12 +15,10 @@ class Scoping {
       c = cVal;
     }
     d = dVal;
-    super.init();
   }
 }
 
 proc main() {
-  var s: Scoping(9, 12, 5:uint, -8) = new Scoping(9, 12, 5:uint, -8);
+  var s: Scoping(9, 12, 5:uint, -8) = new borrowed Scoping(9, 12, 5:uint, -8);
   writeln(s.type: string);
-  delete s;
 }

@@ -3,7 +3,6 @@ class Foo {
 
   proc init(xVal) {
     x = xVal;
-    super.init();
   }
 }
 
@@ -12,7 +11,6 @@ class DefaultArg {
 
   proc init(yVal = new Foo(3)) {
     y = yVal;
-    super.init();
   }
 }
 

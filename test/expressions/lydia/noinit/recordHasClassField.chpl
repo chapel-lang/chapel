@@ -3,12 +3,12 @@ class aClass {
 }
 
 record foo {
-  var t: aClass;
+  var t: unmanaged aClass;
 }
 
 var bar: foo = noinit;
 
-bar.t = new aClass();
+bar.t = new unmanaged aClass();
 
 writeln(bar);
 

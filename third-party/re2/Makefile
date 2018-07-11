@@ -31,6 +31,10 @@ ifneq (, $(CHPL_RE2_VALGRIND_SUPPORT))
 CHPL_RE2_CXXFLAGS += -DRE2_ON_VALGRIND
 endif
 
+ifeq ($(CHPL_LIBMODE),shared)
+CXXFLAGS += $(SHARED_LIB_CFLAGS)
+endif
+
 CHPL_RE2_CFG_OPTIONS += $(CHPL_RE2_MORE_CFG_OPTIONS)
 
 # RE2 2017-04-01 uses C++11 features
@@ -74,6 +78,9 @@ $(RE2_H_FILE): $(RE2_BUILD_SUBDIR)
 	mkdir -p ../build/$(RE2_UNIQUE_SUBDIR) && \
 	rm -rf ../build/$(RE2_UNIQUE_SUBDIR) && \
 	mv obj ../build/$(RE2_UNIQUE_SUBDIR)
+ifneq (, $(CHPL_RE2_VALGRIND_SUPPORT))
+	touch $(RE2_INSTALL_DIR)/CHPL_RE2_VALGRIND_SUPPORT
+endif
 
 re2: $(RE2_H_FILE)
 

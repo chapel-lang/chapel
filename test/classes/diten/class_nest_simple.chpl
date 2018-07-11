@@ -10,7 +10,7 @@ class myouter {
   }
 
   proc foo() {
-    var inside_inner = new inner();
+    var inside_inner = new unmanaged inner();
 
     writeln("outer.a is: ", a);
     inside_inner.bar();
@@ -20,7 +20,7 @@ class myouter {
 }
 
 proc main() {
-  var outside: myouter = new myouter();
+  var outside: unmanaged myouter = new unmanaged myouter();
 
   outside.foo();
 

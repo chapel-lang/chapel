@@ -21,5 +21,3 @@ writeln("mink int small result: ", mink reduce smallA);
 // Verify calling reduction on empty array returns array of max(eltType)
 // values.
 writeln("mink int empty result: ", mink reduce emptyArray);
-
-delete randStream;

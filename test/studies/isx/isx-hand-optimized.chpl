@@ -132,6 +132,12 @@ config const recvBuffFactor = 2.0,
 config const numBurnInRuns = 1,
              numTrials = 1;
 
+// Horrible hack to help https://github.com/chapel-lang/chapel/issues/9414
+record TimerArr {
+  var A: [1..numTrials] real;
+  proc this(i) ref { return A[i]; }
+  iter these() ref { for a in A do yield a; }
+}
 
 if printConfig then
   printConfiguration();
@@ -145,7 +151,7 @@ var allBucketKeys: [DistTaskSpace] [0..#recvBuffSize] keyType;
 var recvOffset: [DistTaskSpace] atomic int;
 var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
     exchangeKeysTime, exchangeKeysOnlyTime, exchangeKeysBarrierTime,
-    countKeysTime: [DistTaskSpace] [1..numTrials] real;
+    countKeysTime: [DistTaskSpace] TimerArr;
 var verifyKeyCount: atomic int;
 
 allLocalesBarrier.reset(perBucketMultiply);

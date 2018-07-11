@@ -37,6 +37,7 @@ namespace llvm {
 
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/MDBuilder.h"
+#include "llvm/Target/TargetMachine.h"
 
 struct ClangInfo;
 class LayeredValueTable;

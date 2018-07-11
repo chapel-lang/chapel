@@ -11,12 +11,11 @@ class ManyFields {
     // though it isn't explicitly re-stated
     f3 = f2 - 2; // Depends on an omitted field
     f4 = f1 + 4; // Depends on an earlier field's explicit initialization
-    super.init();
   }
 }
 
 proc main() {
-  var c: ManyFields = new ManyFields(2);
+  var c: ManyFields = new unmanaged ManyFields(2);
   writeln(c);
   delete c;
 }

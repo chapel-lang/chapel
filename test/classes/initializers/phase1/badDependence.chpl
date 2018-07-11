@@ -10,7 +10,6 @@ class ManyFields {
 
     f5 = val;
 
-    super.init();
   }
 }
 

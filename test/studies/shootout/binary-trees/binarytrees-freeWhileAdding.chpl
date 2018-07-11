@@ -65,14 +65,14 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  const left, right: Tree;
+  const left, right: unmanaged Tree;
 
-  proc type build(depth): Tree {
+  proc type build(depth): unmanaged Tree {
     if depth <= 0 then
-      return new Tree();
+      return new unmanaged Tree();
     else
-      return new Tree(Tree.build(depth-1),
-                      Tree.build(depth-1));
+      return new unmanaged Tree(Tree.build(depth-1),
+                                Tree.build(depth-1));
   }
 
   //

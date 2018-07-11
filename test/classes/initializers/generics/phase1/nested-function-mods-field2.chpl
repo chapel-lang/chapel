@@ -10,7 +10,6 @@ class Foo {
 
     field = val;
     nested(); // so this call shouldn't be allowed in Phase 1
-    super.init();
   }
 }
 

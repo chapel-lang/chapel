@@ -24,11 +24,13 @@
 #include "gasnet_coll.h"
 #include "gasnet_tools.h"
 #include "chpl-comm.h"
+#include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
+#include "chpl-topo.h"
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chpl-atomics.h"
@@ -49,8 +51,7 @@
 #include <assert.h>
 #include <time.h>
 
-static chpl_sync_aux_t chpl_comm_diagnostics_sync;
-static chpl_commDiagnostics chpl_comm_commDiagnostics;
+static chpl_atomic_commDiagnostics comm_diagnostics;
 static int chpl_comm_no_debug_private = 0;
 static gasnet_seginfo_t* seginfo_table = NULL;
 
@@ -641,9 +642,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
   ret = gasnet_put_nb_bulk(node, raddr, addr, size);
 
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-    chpl_sync_lock(&chpl_comm_diagnostics_sync);
-    chpl_comm_commDiagnostics.put_nb++;
-    chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+    chpl_comm_diags_incr(&comm_diagnostics.put_nb);
   }
 
   return (chpl_comm_nb_handle_t) ret;
@@ -679,9 +678,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
   ret = gasnet_get_nb_bulk(addr, node, raddr, size);
 
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-    chpl_sync_lock(&chpl_comm_diagnostics_sync);
-    chpl_comm_commDiagnostics.get_nb++;
-    chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+    chpl_comm_diags_incr(&comm_diagnostics.get_nb);
   }
 
   return (chpl_comm_nb_handle_t) ret;
@@ -798,7 +795,7 @@ static void set_num_comm_domains() {
   char num_cpus_val[22]; // big enough for an unsigned 64-bit quantity
   int num_cpus;
 
-  num_cpus = chpl_getNumPhysicalCpus(true) + 1;
+  num_cpus = chpl_topo_getNumCPUsPhysical(true) + 1;
 
   snprintf(num_cpus_val, sizeof(num_cpus_val), "%d", num_cpus);
   if (setenv("GASNET_DOMAIN_COUNT", num_cpus_val, 0) != 0) {
@@ -929,15 +926,14 @@ void chpl_comm_post_task_init(void) {
     sched_yield();
   }
 
-  // clear diags
-  memset(&chpl_comm_commDiagnostics, 0, sizeof(chpl_commDiagnostics));
-
   // Initialize the caching layer, if it is active.
   chpl_cache_init();
 }
 
 void chpl_comm_rollcall(void) {
-  chpl_sync_initAux(&chpl_comm_diagnostics_sync);
+  // Initialize diags
+  chpl_comm_diags_init(&comm_diagnostics);
+
   chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID, 
            chpl_numNodes, chpl_nodeName());
 }
@@ -1158,9 +1154,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
       printf("%d: %s:%d: remote put to %d\n", chpl_nodeID,
              chpl_lookupFilename(fn), ln, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_commDiagnostics.put++;
-      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+      chpl_comm_diags_incr(&comm_diagnostics.put);
     }
 
     // Handle remote address not in remote segment.
@@ -1240,9 +1234,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
       printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
              chpl_lookupFilename(fn), ln, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_commDiagnostics.get++;
-      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+      chpl_comm_diags_incr(&comm_diagnostics.get);
     }
 
     // Handle remote address not in remote segment.
@@ -1405,9 +1397,7 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
     printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
            chpl_lookupFilename(fn), ln, srcnode);
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-    chpl_sync_lock(&chpl_comm_diagnostics_sync);
-    chpl_comm_commDiagnostics.get++;
-    chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+    chpl_comm_diags_incr(&comm_diagnostics.get);
   }
 
   // TODO -- handle strided get for non-registered memory
@@ -1470,9 +1460,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
     printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
            chpl_lookupFilename(fn), ln, dstnode);
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-    chpl_sync_lock(&chpl_comm_diagnostics_sync);
-    chpl_comm_commDiagnostics.put++;
-    chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+    chpl_comm_diags_incr(&comm_diagnostics.put);
   }
   // TODO -- handle strided put for non-registered memory
   gasnet_puts_bulk(dstnode, dstaddr, dststr, srcaddr, srcstr, cnt, strlvls); 
@@ -1611,9 +1599,7 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_commDiagnostics.execute_on++;
-      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+      chpl_comm_diags_incr(&comm_diagnostics.execute_on);
     }
 
     execute_on_common(node, subloc, fid, arg, arg_size,
@@ -1639,9 +1625,7 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_commDiagnostics.execute_on_nb++;
-      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+      chpl_comm_diags_incr(&comm_diagnostics.execute_on_nb);
     }
   
     execute_on_common(node, subloc, fid, arg, arg_size,
@@ -1669,9 +1653,7 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
       printf("%d: remote (no-fork) task created on %d\n",
              chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_commDiagnostics.execute_on_fast++;
-      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+      chpl_comm_diags_incr(&comm_diagnostics.execute_on_fast);
     }
 
   execute_on_common(node, subloc, fid, arg, arg_size,
@@ -1734,15 +1716,11 @@ void chpl_stopCommDiagnosticsHere() {
 }
 
 void chpl_resetCommDiagnosticsHere() {
-  chpl_sync_lock(&chpl_comm_diagnostics_sync);
-  memset(&chpl_comm_commDiagnostics, 0, sizeof(chpl_commDiagnostics));
-  chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+  chpl_comm_diags_reset(&comm_diagnostics);
 }
 
 void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
-  chpl_sync_lock(&chpl_comm_diagnostics_sync);
-  chpl_memcpy(cd, &chpl_comm_commDiagnostics, sizeof(chpl_commDiagnostics));
-  chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+  chpl_comm_diags_copy(cd, &comm_diagnostics);
 }
 
 void chpl_comm_gasnet_help_register_global_var(int i, wide_ptr_t wide_addr) {

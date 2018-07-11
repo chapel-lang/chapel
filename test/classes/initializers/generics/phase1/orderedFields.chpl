@@ -7,13 +7,11 @@ class LotsOFields {
     f1 = val1;
     f2 = val2;
     f3 = val3;
-    super.init();
   }
 }
 
 proc main() {
-  var c: LotsOFields(6.3) = new LotsOFields(2, 6.3, true);
+  var c: LotsOFields(6.3) = new borrowed LotsOFields(2, 6.3, true);
 
   writeln(c);
-  delete c;
 }

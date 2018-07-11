@@ -7,14 +7,10 @@ class Foo {
 
   proc init(type tVal) {
     t = tVal;
-    super.init();
   }
 }
 
-var foo1 = new Foo(int);
-var foo2 = new Foo(int);
+var foo1 = new borrowed Foo(int);
+var foo2 = new borrowed Foo(int);
 
 writeln(foo1.type == foo2.type);
-
-delete foo1;
-delete foo2;

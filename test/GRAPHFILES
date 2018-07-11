@@ -233,7 +233,9 @@ parallel/taskCompare/lydia/loopCompare.graph
 # suite: Task Spawning
 parallel/taskCompare/elliot/taskSpawn.graph
 parallel/taskCompare/elliot/serialTaskSpawn.graph
+# suite: Barrier
 performance/comm/barrier/empty-chpl-barrier.graph
+studies/hpcc/STREAMS/elliot/stream-spmd-barrier.graph
 # suite: Compiler performance
 performance/compiler/bradc/fft-timecomp.graph
 performance/compiler/bradc/compSampler-timecomp.graph
@@ -319,3 +321,4 @@ statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
+Samples/Performance/cleanCopy/foobar.graph

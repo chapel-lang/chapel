@@ -1,0 +1,5 @@
+perfkeys: Performance (GB/s) =, Performance (GB/s) =
+graphkeys: atomic barrier, sync barrier
+files: stream-spmd-atomic-barrier.dat, stream-spmd-sync-barrier.dat
+ylabel: Performance (GB/s)
+graphtitle: SPMD Barrier STREAM Performance (GB/s)

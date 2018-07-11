@@ -11,7 +11,7 @@ record R {
     this.x = -1;
     this.y = 1.0;
     plusOne(x);
-    this.initDone();
+    this.complete();
   }
 }
 

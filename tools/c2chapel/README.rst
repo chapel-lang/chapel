@@ -16,5 +16,5 @@ function declaration in a header file:
 
   extern proc foo(str: c_string, n : c_int) : void;
 
-See the `online documentation <https://chapel-lang.org/docs/latest/tools/c2chapel/c2chapel.html>`_ for more
+See the `online documentation <https://chapel-lang.org/docs/tools/c2chapel/c2chapel.html>`_ for more
 information.

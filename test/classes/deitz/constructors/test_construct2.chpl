@@ -2,7 +2,7 @@ class C {
   var x: int;
   var y: int;
   proc init(b: bool) {
-    this.initDone();
+    this.complete();
     if b then
       x = 24;
     else
@@ -10,6 +10,6 @@ class C {
   }
 }
 
-var c = new C(true);
+var c = new unmanaged C(true);
 writeln(c);
 delete c;

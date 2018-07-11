@@ -1,0 +1,9 @@
+ref-escapes-recursive.chpl:6: In function 'bad1':
+ref-escapes-recursive.chpl:9: error: Reference to scoped variable cannot be returned
+ref-escapes-recursive.chpl:8: note: consider scope of x
+ref-escapes-recursive.chpl:15: In function 'bad2':
+ref-escapes-recursive.chpl:18: error: Reference to scoped variable cannot be returned
+ref-escapes-recursive.chpl:16: note: consider scope of x
+ref-escapes-recursive.chpl:24: In function 'bad3':
+ref-escapes-recursive.chpl:28: error: Reference to scoped variable tmp cannot be returned
+ref-escapes-recursive.chpl:25: note: consider scope of x

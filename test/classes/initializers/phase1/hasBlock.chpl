@@ -7,12 +7,11 @@ class Scoping {
       a = aVal;
     }
     b = bVal;
-    super.init();
   }
 }
 
 proc main() {
-  var s: Scoping = new Scoping(9, 12);
+  var s: Scoping = new unmanaged Scoping(9, 12);
   writeln(s);
   delete s;
 }

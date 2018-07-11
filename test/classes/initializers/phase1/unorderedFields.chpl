@@ -7,7 +7,6 @@ class LotsOFields {
     f1 = val1;
     f3 = val3;
     f2 = val2; // uh oh!
-    super.init();
   }
 }
 

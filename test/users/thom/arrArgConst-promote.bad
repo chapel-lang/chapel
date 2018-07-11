@@ -1,0 +1,2 @@
+arrArgConst-promote.chpl:8: error: unresolved call 'writeArr(promoted expression)'
+arrArgConst-promote.chpl:1: note: candidates are: writeArr(const X: [] real)

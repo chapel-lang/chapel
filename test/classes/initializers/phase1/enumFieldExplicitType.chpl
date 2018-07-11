@@ -21,10 +21,8 @@ class Foo {
     g = Color.blue;
     h = Color.red;
     i = Color.green;
-    super.init();
   }
 }
 
-var foo = new Foo(Color.blue);
+var foo = new borrowed Foo(Color.blue);
 writeln(foo);
-delete foo;

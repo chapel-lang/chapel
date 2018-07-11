@@ -1,4 +1,4 @@
-use Shared;
+use TestHelpers;
 
 config var verbose_test: bool;
 

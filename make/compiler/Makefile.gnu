@@ -74,7 +74,9 @@ SHARED_LIB_CFLAGS = -fPIC
 # Set the target architecture for optimization
 ifneq ($(CHPL_MAKE_TARGET_ARCH), none)
 ifneq ($(CHPL_MAKE_TARGET_ARCH), unknown)
-SPECIALIZE_CFLAGS = -march=$(CHPL_MAKE_TARGET_BACKEND_ARCH)
+ifneq ($(CHPL_MAKE_TARGET_ARCH_FLAG), none)
+SPECIALIZE_CFLAGS = -m$(CHPL_MAKE_TARGET_ARCH_FLAG)=$(CHPL_MAKE_TARGET_BACKEND_ARCH)
+endif
 endif
 endif
 
@@ -144,8 +146,9 @@ GEN_CFLAGS += $(C_STD)
 #
 # Flags for turning on warnings for C++/C code
 #
-WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
-WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
+WARN_COMMONFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
+WARN_CXXFLAGS = $(WARN_COMMONFLAGS)
+WARN_CFLAGS = $(WARN_COMMONFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
 
@@ -167,7 +170,17 @@ endif
 # Avoid false positive warnings about string overflows
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 7; echo "$$?"),0)
+OPT_CFLAGS += -fno-ipa-cp-clone
 SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
+endif
+
+#
+# Avoid false positive warnings about class member access and string overflows.
+# The string overflow false positives occur in runtime code unlike gcc 7.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-class-memaccess
+RUNTIME_CFLAGS += -Wno-stringop-overflow
 endif
 
 #

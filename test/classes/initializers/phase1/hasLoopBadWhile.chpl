@@ -10,7 +10,6 @@ class InLoop {
       highestNum = arr[i]; // uh oh!
       i += 1;
     }
-    super.init();
   }
 }
 

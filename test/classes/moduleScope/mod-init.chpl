@@ -11,9 +11,9 @@ proc main() {
   var m3a = new M3.A(40);
   var m4a = new M4.A(50);
 
-  delete m2a;
-  delete m1a;
-  delete a;
+  // Would delete m2a, m1a, a
+  // but these might be borrows
+  // at some point
 }
 
 class A {

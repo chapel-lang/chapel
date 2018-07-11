@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -156,8 +156,8 @@ hwloc_fallback_nbprocessors(struct hwloc_topology *topology) {
     nn = -1;
   n = nn;
 #elif defined(HAVE_SYSCTL) && HAVE_DECL_CTL_HW && HAVE_DECL_HW_NCPU
-  static int name[2] = {CTL_HW, HW_NPCU};
-  if (hwloc_get_sysctl(name, sizeof(name)/sizeof(*name)), &n)
+  static int name[2] = {CTL_HW, HW_NCPU};
+  if (hwloc_get_sysctl(name, sizeof(name)/sizeof(*name), &n))
     n = -1;
 #else
 #ifdef __GNUC__

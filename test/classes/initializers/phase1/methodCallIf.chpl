@@ -3,7 +3,6 @@ class Foo {
 
   proc init(xVal) {
     x = if xVal > 5 then option1() else option2();
-    super.init();
   }
 
   proc option1() {

@@ -13,17 +13,17 @@ class D: C {
   }
 }
 
-var c = new C();
+var c = new unmanaged C();
 c.foo();
 c.foo();
 delete c;
 
-c = new D(rank=1);
+c = new unmanaged D(rank=1);
 c.foo();
 c.foo();
 delete c;
 
-c = new D(rank=2);
+c = new unmanaged D(rank=2);
 c.foo();
 c.foo();
 delete c;

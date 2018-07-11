@@ -7,7 +7,6 @@ class Foo {
         x = xVal;
       }
     }
-    super.init();
   }
 }
 

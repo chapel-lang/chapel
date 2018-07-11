@@ -6,10 +6,9 @@ class Foo {
   var x: tAlias;
 
   proc init() {
-    super.init();
   }
 }
 
-var foo = new Foo();
+var foo = new unmanaged Foo();
 writeln(foo);
 delete foo;

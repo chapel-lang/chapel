@@ -52,7 +52,7 @@ if (numProducers > 1 || numConsumers > 1) then
 //
 proc main() {
   // a shared bounded buffer with the requested capacity
-  var buffer = new BoundedBuffer(capacity=bufferSize);
+  var buffer = new borrowed BoundedBuffer(capacity=bufferSize);
 
   // per-producer/consumer counts of the number of items they processed
   var prodCounts: [1..numProducers] int,
@@ -95,8 +95,6 @@ proc main() {
                   consTot, numItems);
   else
     stderr.writef("Producers/consumers processed %i items total.\n", numItems);
-
-  delete buffer;
 }
 
 
@@ -104,7 +102,7 @@ proc main() {
 // produce 1/numProducers of the requested 'numItems' items using an
 // aligned strided range.  Return the number of items we produced.
 //
-proc producer(b: BoundedBuffer, pid: int) {
+proc producer(b: borrowed BoundedBuffer, pid: int) {
   var myItems = 0..#numItems by numProducers align pid-1;
 
   for i in myItems {
@@ -119,7 +117,7 @@ proc producer(b: BoundedBuffer, pid: int) {
 // consume items greedily until a sentinel value is found.  Return
 // the number of items we successfully consumed.
 //
-proc consumer(b: BoundedBuffer, cid: int) {
+proc consumer(b: borrowed BoundedBuffer, cid: int) {
   var count = 0;
   do {
     const (data, more) = b.consume();
@@ -187,7 +185,7 @@ proc consumer(b: BoundedBuffer, cid: int) {
 // with atomics before, refer to the online documentation or ask one
 // of the helpers for a hint:
 //
-//   https://chapel-lang.org/docs/latest/builtins/internal/Atomics.html
+//   https://chapel-lang.org/docs/builtins/internal/Atomics.html
 //
 // STEP 5 (optional): Compare the performance of your two versions
 // (note: you may want to turn off the --noisy and/or --verbose
@@ -215,7 +213,7 @@ class BoundedBuffer {
       head = 0,                            // the head's cursor position
       tail = 0;                            // the tail's cursor position
 
-  var rng = new RandomStream(real);
+  var rng = new owned RandomStream(real);
 
   //
   // Place an item at the head position of the buffer, assuming
@@ -260,12 +258,5 @@ class BoundedBuffer {
     pos = (pos + 1) % capacity;
 
     return prevPos;
-  }
-
-  //
-  // Clean up after ourselves
-  //
-  proc deinit() {
-    delete rng;
   }
 }

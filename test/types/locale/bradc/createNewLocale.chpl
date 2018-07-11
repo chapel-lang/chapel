@@ -1,2 +1,2 @@
-var myNewLoc = new locale();
+var myNewLoc = new unmanaged locale();
 writeln("myNewLoc = ", myNewLoc);

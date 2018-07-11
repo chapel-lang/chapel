@@ -43,10 +43,9 @@
 
 #include "ResolveScope.h"
 
+#include "ForallStmt.h"
+#include "LoopExpr.h"
 #include "scopeResolve.h"
-#include "stmt.h"
-#include "symbol.h"
-#include "type.h"
 
 static std::map<BaseAST*, ResolveScope*> sScopeMap;
 
@@ -77,6 +76,9 @@ ResolveScope* ResolveScope::findOrCreateScopeFor(DefExpr* def) {
 
     } else if (TypeSymbol* typeSymbol = toTypeSymbol(ast)) {
       retval = new ResolveScope(typeSymbol, NULL);
+
+    } else if (LoopExpr* fe = toLoopExpr(ast)) {
+      retval = new ResolveScope(fe, NULL);
 
     } else {
       INT_ASSERT(false);
@@ -122,43 +124,18 @@ ResolveScope::ResolveScope(ModuleSymbol*       modSymbol,
   mAstRef = modSymbol;
   mParent = parent;
 
+  // Use modSymbol->block for sScopeMap
   INT_ASSERT(getScopeFor(modSymbol->block) == NULL);
-
   sScopeMap[modSymbol->block] = this;
 }
 
-ResolveScope::ResolveScope(FnSymbol*           fnSymbol,
+ResolveScope::ResolveScope(BaseAST*            ast,
                            const ResolveScope* parent) {
-  mAstRef = fnSymbol;
+  mAstRef = ast;
   mParent = parent;
 
-  INT_ASSERT(getScopeFor(fnSymbol) == NULL);
-
-  sScopeMap[fnSymbol] = this;
-}
-
-ResolveScope::ResolveScope(TypeSymbol*         typeSymbol,
-                           const ResolveScope* parent) {
-  Type* type = typeSymbol->type;
-
-  INT_ASSERT(isEnumType(type) || isAggregateType(type));
-
-  mAstRef = typeSymbol;
-  mParent = parent;
-
-  INT_ASSERT(getScopeFor(typeSymbol) == NULL);
-
-  sScopeMap[typeSymbol] = this;
-}
-
-ResolveScope::ResolveScope(BlockStmt*          blockStmt,
-                           const ResolveScope* parent) {
-  mAstRef = blockStmt;
-  mParent = parent;
-
-  INT_ASSERT(getScopeFor(blockStmt) == NULL);
-
-  sScopeMap[blockStmt] = this;
+  INT_ASSERT(getScopeFor(ast) == NULL);
+  sScopeMap[ast] = this;
 }
 
 /************************************* | **************************************
@@ -250,12 +227,19 @@ void ResolveScope::addBuiltIns() {
   extend(gSingleVarAuxFields);
 
   extend(dtAny->symbol);
-  extend(dtIntegral->symbol);
+  extend(dtAnyBool->symbol);
   extend(dtAnyComplex->symbol);
+  extend(dtAnyEnumerated->symbol);
+  extend(dtAnyImag->symbol);
+  extend(dtAnyReal->symbol);
+
+  extend(dtIntegral->symbol);
   extend(dtNumeric->symbol);
 
   extend(dtIteratorRecord->symbol);
   extend(dtIteratorClass->symbol);
+  extend(dtBorrowed->symbol);
+  extend(dtUnmanaged->symbol);
 
   extend(dtMethodToken->symbol);
   extend(gMethodToken);
@@ -266,13 +250,12 @@ void ResolveScope::addBuiltIns() {
   extend(dtModuleToken->symbol);
   extend(gModuleToken);
 
-  extend(dtAnyEnumerated->symbol);
-
   extend(gBoundsChecking);
   extend(gCastChecking);
   extend(gDivZeroChecking);
   extend(gPrivatization);
   extend(gLocal);
+  extend(gWarnUnstable);
   extend(gNodeID);
 }
 
@@ -393,8 +376,11 @@ bool ResolveScope::extend(Symbol* newSym) {
                 newSym->stringLoc());
     }
 
-    // If oldSym is a constructor and newSym is a type, update with the type
-    if (newFn == NULL || newFn->_this == NULL) {
+    // Prefer storage of non-functions over functions,
+    //                   functions over methods,
+    //                   public functions over private functions
+    if (newFn == NULL || (newFn->_this == NULL &&
+                          newFn->hasFlag(FLAG_PRIVATE) == false)) {
       mBindings[name] = newSym;
     }
 

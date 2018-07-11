@@ -384,8 +384,11 @@ FnSymbol* CallExpr::resolvedFunction() const {
       }
 
     } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
-      // Confirm that this is a partial call
-      INT_ASSERT(subCall->partialTag == true);
+      // Confirm that this is a partial call, but only if the call is not
+      // within a DefExpr (indicated by not having a stmt-expr)
+      if (subCall->getStmtExpr() != NULL) {
+        INT_ASSERT(subCall->partialTag == true);
+      }
 
     } else {
       INT_ASSERT(false);

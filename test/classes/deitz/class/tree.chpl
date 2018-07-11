@@ -1,8 +1,8 @@
 class BinaryTree {
   type eltType;
   var data: eltType;
-  var left: BinaryTree(eltType);
-  var right: BinaryTree(eltType);
+  var left: unmanaged BinaryTree(eltType);
+  var right: unmanaged BinaryTree(eltType);
 
   proc deinit() {
     if left  != nil then delete left;
@@ -21,13 +21,13 @@ iter BinaryTree.postOrder(): eltType {
 }
 
 var bt =
-  new BinaryTree(int, 1,
-    new BinaryTree(int, 2,
-      new BinaryTree(int, 3),
-      new BinaryTree(int, 4)),
-    new BinaryTree(int, 5,
-      new BinaryTree(int, 6),
-      new BinaryTree(int, 7)));
+  new unmanaged BinaryTree(int, 1,
+    new unmanaged BinaryTree(int, 2,
+      new unmanaged BinaryTree(int, 3),
+      new unmanaged BinaryTree(int, 4)),
+    new unmanaged BinaryTree(int, 5,
+      new unmanaged BinaryTree(int, 6),
+      new unmanaged BinaryTree(int, 7)));
 
 writeln(bt.postOrder());
 

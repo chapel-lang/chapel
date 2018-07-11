@@ -51,14 +51,14 @@ record Population {
   // a domain and array representing the chameneos in this population
   //
   const chamSpace: domain(1),
-        chameneos: [chamSpace] Chameneos;
+        chameneos: [chamSpace] unmanaged Chameneos;
 
   //
   // construct the population in terms of an array of colors passed in
   //
   proc init(colors: [] Color) {
     chamSpace = colors.domain;
-    chameneos = new Chameneos(1..colors.size, colors);
+    chameneos = new unmanaged Chameneos(1..colors.size, colors);
   }
 
   //
@@ -66,7 +66,7 @@ record Population {
   // place, and then creating per-chameneos tasks to have meetings.
   //
   proc holdMeetings(numMeetings) {
-    const place = new MeetingPlace(numMeetings);
+    const place = new unmanaged MeetingPlace(numMeetings);
 
     coforall c in chameneos do           // create a task per chameneos
       c.haveMeetings(place, chameneos);
@@ -238,7 +238,7 @@ class MeetingPlace {
   // Initialize the number of meetings that should take place
   //
   proc init(numMeetings) {
-    this.initDone();
+    this.complete();
     state.write(numMeetings << bitsPerChameneosID);
   }
 

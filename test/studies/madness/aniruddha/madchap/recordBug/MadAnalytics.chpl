@@ -26,7 +26,7 @@ class Fn_dTest1: AFcn {
 
 /** superposition of multiple gaussians */
 class Fn_Test2: AFcn {
-    var g = new Fn_Test1();
+    var g = new unmanaged Fn_Test1();
 
     proc deinit() {
       delete g;
@@ -40,7 +40,7 @@ class Fn_Test2: AFcn {
 
 /** derivative of test2 */
 class Fn_dTest2: AFcn {
-    var g = new Fn_dTest1();
+    var g = new unmanaged Fn_dTest1();
 
     proc deinit() {
       delete g;

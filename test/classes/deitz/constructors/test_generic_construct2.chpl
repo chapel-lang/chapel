@@ -8,19 +8,17 @@ class C {
     this.ct = ct;
     this.bt = bt;
     x = y;
-    super.init();
   }
 
   proc init(type ct, y: ct) {
     this.ct = ct;
     x = y;
-    super.init();
   }
 }
 
-var c = new C(int, y=2);
+var c = new unmanaged C(int, y=2);
 writeln(c);
-var d = new C(int, int, y=2);
+var d = new unmanaged C(int, int, y=2);
 writeln(d);
 delete c;
 delete d;

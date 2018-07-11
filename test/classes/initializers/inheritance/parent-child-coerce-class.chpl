@@ -14,8 +14,6 @@ class Child : Parent {
   }
 }
 
-var obj = new Derived();
-var x = new Child(obj);
+var obj = new owned Derived();
+var x = new owned Child(obj);
 writeln(x);
-delete x;
-delete obj;

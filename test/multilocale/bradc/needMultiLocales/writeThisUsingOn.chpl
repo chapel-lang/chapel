@@ -13,7 +13,7 @@ class LocC {
 class C {
   var locCs: [LocaleSpace] LocC;
 
-  proc initialize() {
+  proc postinit() {
     for loc in LocaleSpace {
       on Locales(loc) {
         locCs(loc) = new LocC(loc);

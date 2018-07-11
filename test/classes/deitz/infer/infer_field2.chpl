@@ -2,7 +2,7 @@ use List;
 use infer_field2_common;
 
 proc foo() {
-  var c  = new C();
+  var c  = new unmanaged C();
   var cc = c;
 
   var s : list(int);
@@ -33,7 +33,7 @@ proc main {
   for i in bar() do
     writeln(i);
 
-  var c  = new C();
+  var c  = new unmanaged C();
   var cc = c;
 
   c = next_foo(c);

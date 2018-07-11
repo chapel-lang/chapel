@@ -5,10 +5,9 @@ class Foo {
 
   proc init() throws {
     x = 10;
-    super.init();
   }
 }
 
-var foo = new Foo();
+var foo = new unmanaged Foo();
 writeln(foo);
 delete foo;

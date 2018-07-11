@@ -34,7 +34,6 @@ enum AggregateTag {
   AGGREGATE_UNION
 };
 
-
 enum InitializerStyle {
   DEFINES_CONSTRUCTOR,
   DEFINES_INITIALIZER,
@@ -64,8 +63,23 @@ public:
   bool                        isRecord()                                 const;
   bool                        isUnion()                                  const;
 
+  // is it a generic type (e.g. contains a type field with or without default)
+  // e.g. this would return true for
+  //    class C { type t = int; }
+  //    class C { type t; }
+  //    class C { param p; }
+  //    class C { var x; }
   bool                        isGeneric()                                const;
   void                        markAsGeneric();
+
+  // is it a generic type with defaults for all type/param fields?
+  // these don't behave the same as fully generic types.
+  // For example, returns true for
+  //    class C { type t = int; }
+  // and false for
+  //    class C { type t; }
+  bool                        isGenericWithDefaults()                    const;
+  void                        markAsGenericWithDefaults();
 
   const char*                 classStructName(bool standalone);
 
@@ -113,17 +127,21 @@ public:
   bool                        isInstantiatedFrom(const AggregateType* base)
                                                                          const;
 
+  AggregateType*              getRootInstantiation();
+
   DefExpr*                    toLocalField(const char* name)             const;
   DefExpr*                    toLocalField(SymExpr*    expr)             const;
   DefExpr*                    toLocalField(CallExpr*   expr)             const;
 
-  DefExpr*                    toSuperField(SymExpr*  expr);
-  DefExpr*                    toSuperField(CallExpr* expr);
+  DefExpr*                    toSuperField(const char* name)             const;
+  DefExpr*                    toSuperField(SymExpr*  expr)               const;
+  DefExpr*                    toSuperField(CallExpr* expr)               const;
 
   int                         getMemberGEP(const char* name);
 
   void                        createOuterWhenRelevant();
 
+  // intended to be called during scope resolve
   void                        buildConstructors();
 
   void                        addRootType();
@@ -140,12 +158,26 @@ public:
 
   Symbol*                     getSubstitution(const char* name);
 
+  UnmanagedClassType*         getUnmanagedClass();
+
+  void                        generateUnmanagedClassTypes();
+
+  // Returns true if a field is considered generic
+  // (i.e. it needs a type constructor argument)
+  bool                        fieldIsGeneric(Symbol* field,
+                                             bool &hasDefault)           const;
+
 
   //
   // Public fields
   //
 
   AggregateTag                aggregateTag;
+
+  // These fields support differentiating between unmanaged class
+  // pointers and borrows. At the present time, borrows are represented
+  // by plain AggregateType and unmanaged class pointers use this special type.
+  UnmanagedClassType*         unmanagedClass;
 
   FnSymbol*                   typeConstructor;
 
@@ -183,15 +215,13 @@ public:
 private:
   static ArgSymbol*           createGenericArg(VarSymbol* field);
 
-  static void                 insertImplicitThis(FnSymbol*         fn,
-                                                 Vec<const char*>& names);
+  void                        insertImplicitThis(FnSymbol*         fn,
+                                                 Vec<const char*>& names) const;
 
 private:
   virtual std::string         docsDirective();
 
   std::string                 docsSuperClass();
-
-  bool                        fieldIsGeneric(Symbol* field)              const;
 
   void                        addDeclaration(DefExpr* defExpr);
 
@@ -211,7 +241,7 @@ private:
 
   FnSymbol*                   buildTypeConstructor();
 
-  CallExpr*                   typeConstrSuperCall(FnSymbol* fn)          const;
+  CallExpr*                   typeConstrSuperCall(FnSymbol* fn)  const;
 
   bool                        isFieldInThisClass(const char* name)       const;
 
@@ -225,11 +255,13 @@ private:
                                                  Expr*      expr)        const;
 
   ArgSymbol*                  insertGenericArg(FnSymbol*  fn,
-                                               VarSymbol* field)         const;
+                                               VarSymbol* field)  const;
 
   void                        buildConstructor();
 
-  bool                        needsConstructor();
+public:
+  bool                        needsConstructor() const;
+private:
 
   ArgSymbol*                  moveConstructorToOuter(FnSymbol* fn);
 
@@ -241,7 +273,8 @@ private:
                                              ArgSymbol* arg);
 
   bool                        addSuperArgs(FnSymbol*                    fn,
-                                           const std::set<const char*>& names);
+                                           const std::set<const char*>& names,
+                                           SymbolMap&                   fieldArgMap);
 
   std::vector<AggregateType*> instantiations;
 
@@ -255,6 +288,7 @@ private:
   int                         genericField;
 
   bool                        mIsGeneric;
+  bool                        mIsGenericWithDefaults;
 };
 
 extern AggregateType* dtObject;

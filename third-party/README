@@ -72,7 +72,7 @@ jemalloc/
 llvm/
   Summary: This directory holds LLVM and Clang.  LLVM is provided as
            an optional back-end target in place of C (see
-           doc/technotes/llvm.rst for details).  CLANG is used to
+           doc/rst/technotes/llvm.rst for details).  CLANG is used to
            support "extern blocks" within Chapel -- a capability for
            embedding C code into a Chapel source file.
 
@@ -117,7 +117,8 @@ qthread/
 
 re2/
   Summary: The RE2 regular expression library used to support regular
-           expression operations described in doc/technotes/regexp.rst
+           expression operations described in
+           doc/rst/modules/standard/Regexp.rst
 
   License: New BSD license (see re2/re2/LICENSE)
 

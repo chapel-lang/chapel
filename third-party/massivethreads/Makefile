@@ -19,6 +19,10 @@ CHPL_MASSIVETHREADS_CFG_OPTIONS += --enable-myth-ld=no \
                                    --enable-eco-mode=no \
                                    --enable-bind-workers=no
 
+ifeq ($(CHPL_LIBMODE),shared)
+CFLAGS += $(SHARED_LIB_CFLAGS)
+endif
+
 CHPL_MASSIVETHREADS_CFG_OPTIONS += $(CHPL_MASSIVETHREADS_MORE_CFG_OPTIONS)
 
 default: all
@@ -37,7 +41,7 @@ clobber: FORCE
 
 massivethreads-config: FORCE
 	mkdir -p $(MASSIVETHREADS_BUILD_DIR)
-	cd $(MASSIVETHREADS_BUILD_DIR) && $(MASSIVETHREADS_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(MASSIVETHREADS_INSTALL_DIR) $(CHPL_MASSIVETHREADS_CFG_OPTIONS)
+	cd $(MASSIVETHREADS_BUILD_DIR) && $(MASSIVETHREADS_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CFLAGS)' --prefix=$(MASSIVETHREADS_INSTALL_DIR) $(CHPL_MASSIVETHREADS_CFG_OPTIONS)
 
 massivethreads-build: FORCE
 	cd $(MASSIVETHREADS_BUILD_DIR) && $(MAKE)

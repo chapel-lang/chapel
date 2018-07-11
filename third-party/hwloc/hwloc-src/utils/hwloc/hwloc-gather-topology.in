@@ -3,7 +3,7 @@
 
 #
 # Copyright © 2009 CNRS
-# Copyright © 2009-2017 Inria.  All rights reserved.
+# Copyright © 2009-2018 Inria.  All rights reserved.
 # Copyright © 2009-2012 Université Bordeaux
 # See COPYING in top-level directory.
 #
@@ -65,13 +65,15 @@ name="$1"
 basename=`basename "$name"`
 dirname=`dirname "$name"`
 
-
 if [ x$gatherio = x0 ]; then
   echo "I/O files won't be saved (--io not given)."
 fi
 if [ x$gatherdmi = x0 ]; then
   echo "DMI files won't be saved (--dmi not given)."
 fi
+
+echo
+echo "*** Note that this tool may be slow on large nodes or when I/O is enabled. ***"
 echo
 
 if ! mkdir -p "$dirname" ; then

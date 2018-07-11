@@ -46,7 +46,8 @@
 #include "chpl-linefile-support.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks-internal.h"
-#include "tasks-qthreads.h"
+#include "chpl-tasks-impl.h"
+#include "chpl-topo.h"
 
 #include "qthread.h"
 #include "qthread/qtimer.h"
@@ -65,8 +66,6 @@
 #include <math.h>
 
 
-//#define SUPPORT_BLOCKREPORT
-//#define SUPPORT_TASKREPORT
 
 #ifdef CHAPEL_PROFILE
 # define PROFILE_INCR(counter,count) do { (void)qthread_incr(&counter,count); } while (0)
@@ -126,9 +125,8 @@ static void profile_print(void)
 // effect of its (very portable) memory fence.
 //
 volatile int chpl_qthread_done_initializing;
-static syncvar_t canexit = SYNCVAR_STATIC_EMPTY_INITIALIZER;
-static volatile int done_finalizing;
-static pthread_mutex_t done_init_final_mux = PTHREAD_MUTEX_INITIALIZER;
+static aligned_t canexit = 0;
+static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Make qt env sizes uniform. Same as qt, but they use the literal everywhere
 #define QT_ENV_S 100
@@ -143,6 +141,8 @@ struct chpl_task_list {
 };
 
 static aligned_t next_task_id = 1;
+
+static pthread_t initer;
 
 pthread_t chpl_qthread_process_pthread;
 pthread_t chpl_qthread_comm_pthread;
@@ -166,20 +166,16 @@ chpl_task_bundle_t chpl_qthread_comm_task_bundle = {
                                    .id = chpl_nullTaskID };
 
 chpl_qthread_tls_t chpl_qthread_process_tls = {
-                               .bundle = &chpl_qthread_process_bundle,
-                               .lock_filename = 0,
-                               .lock_lineno = 0 };
+                               .bundle = &chpl_qthread_process_bundle };
 
 chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
-                               .bundle = &chpl_qthread_comm_task_bundle,
-                               .lock_filename = 0,
-                               .lock_lineno = 0 };
+                               .bundle = &chpl_qthread_comm_task_bundle };
 
 //
-// chpl_qthread_get_tasklocal() is in tasks-qthreads.h
+// chpl_qthread_get_tasklocal() is in chpl-tasks-impl.h
 //
 
-static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
+static aligned_t exit_ret = 0;
 
 void chpl_task_yield(void)
 {
@@ -194,52 +190,16 @@ void chpl_task_yield(void)
 // Sync variables
 void chpl_sync_lock(chpl_sync_aux_t *s)
 {
-    aligned_t l;
-    chpl_bool uncontested_lock = true;
-
     PROFILE_INCR(profile_sync_lock, 1);
 
-    //
-    // To prevent starvation due to never switching away from a task that is
-    // spinning while doing readXX() on a sync variable, yield if this sync var
-    // has a "lot" of uncontested locks. Note that the uncontested locks do not
-    // have to be consecutive. Also note that the number of uncontested locks
-    // is a lossy counter. Currently a "lot" is defined as ~100 uncontested
-    // locks, with care taken to not yield on the first uncontested lock.
-    //
-    // If real qthreads sync vars were used, it's possible this wouldn't be
-    // needed.
-    //
-
-    l = qthread_incr(&s->lockers_in, 1);
-
-    while (l != s->lockers_out) {
-        uncontested_lock = false;
-        qthread_yield();
-    }
-
-    if (uncontested_lock) {
-        if ((++s->uncontested_locks & 0x5F) == 0) {
-            qthread_yield();
-        }
-    }
+    qthread_lock(&s->lock);
 }
 
 void chpl_sync_unlock(chpl_sync_aux_t *s)
 {
     PROFILE_INCR(profile_sync_unlock, 1);
 
-    qthread_incr(&s->lockers_out, 1);
-}
-
-static inline void about_to_block(int32_t  lineno,
-                                  int32_t filename)
-{
-    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
-    assert(data);
-
-    data->lock_lineno   = lineno;
-    data->lock_filename = filename;
+    qthread_unlock(&s->lock);
 }
 
 void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
@@ -248,11 +208,10 @@ void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
 {
     PROFILE_INCR(profile_sync_waitFullAndLock, 1);
 
-    if (blockreport) { about_to_block(lineno, filename); }
     chpl_sync_lock(s);
     while (s->is_full == 0) {
         chpl_sync_unlock(s);
-        qthread_syncvar_readFE(NULL, &(s->signal_full));
+        qthread_readFE(NULL, &(s->signal_full));
         chpl_sync_lock(s);
     }
 }
@@ -263,11 +222,10 @@ void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
 {
     PROFILE_INCR(profile_sync_waitEmptyAndLock, 1);
 
-    if (blockreport) { about_to_block(lineno, filename); }
     chpl_sync_lock(s);
     while (s->is_full != 0) {
         chpl_sync_unlock(s);
-        qthread_syncvar_readFE(NULL, &(s->signal_empty));
+        qthread_readFE(NULL, &(s->signal_empty));
         chpl_sync_lock(s);
     }
 }
@@ -276,7 +234,7 @@ void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s)         // and unlock
 {
     PROFILE_INCR(profile_sync_markAndSignalFull, 1);
 
-    qthread_syncvar_fill(&(s->signal_full));
+    qthread_fill(&(s->signal_full));
     s->is_full = 1;
     chpl_sync_unlock(s);
 }
@@ -285,7 +243,7 @@ void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s)         // and unlock
 {
     PROFILE_INCR(profile_sync_markAndSignalEmpty, 1);
 
-    qthread_syncvar_fill(&(s->signal_empty));
+    qthread_fill(&(s->signal_empty));
     s->is_full = 0;
     chpl_sync_unlock(s);
 }
@@ -302,11 +260,10 @@ void chpl_sync_initAux(chpl_sync_aux_t *s)
 {
     PROFILE_INCR(profile_sync_initAux, 1);
 
-    s->lockers_in   = 0;
-    s->lockers_out  = 0;
+    s->lock         = 0;
     s->is_full      = 0;
-    s->signal_empty = SYNCVAR_EMPTY_INITIALIZER;
-    s->signal_full  = SYNCVAR_EMPTY_INITIALIZER;
+    s->signal_empty = 0;
+    s->signal_full  = 0;
 }
 
 void chpl_sync_destroyAux(chpl_sync_aux_t *s)
@@ -314,86 +271,45 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s)
     PROFILE_INCR(profile_sync_destroyAux, 1);
 }
 
-#ifdef SUPPORT_BLOCKREPORT
-static void chapel_display_thread(qt_key_t     addr,
-                                  qthread_f    f,
-                                  void        *arg,
-                                  void        *retloc,
-                                  unsigned int thread_id,
-                                  void        *tls,
-                                  void        *callarg)
-{
-    chpl_qthread_tls_t *rep = (chpl_qthread_tls_t *)tls;
-
-    if (rep) {
-        if ((rep->lock_lineno > 0) && rep->lock_filename) {
-          fprintf(stderr, "Waiting at: %s:%zu (task %s:%zu)\n",
-                  chpl_lookupFilename(rep->lock_filename), rep->lock_lineno,
-                  chpl_lookupFilename(rep->chpl_data.task_filename),
-                  rep->chpl_data.task_lineno);
-        } else if (rep->lock_lineno == 0 && rep->lock_filename) {
-          fprintf(stderr,
-                  "Waiting for more work (line 0? file:%s) (task %s:%zu)\n",
-                  chpl_lookupFilename(rep->lock_filename),
-                  chpl_lookupFilename(rep->chpl_data.task_filename),
-                  rep->chpl_data.task_lineno);
-        } else if (rep->lock_lineno == 0) {
-          fprintf(stderr,
-                  "Waiting for dependencies (uninitialized task %s:%zu)\n",
-                  chpl_lookupFilename(rep->chpl_data.task_filename),
-                  rep->chpl_data.task_lineno);
-        }
-        fflush(stderr);
-    }
-}
-
-static void report_locked_threads(void)
-{
-    qthread_feb_callback(chapel_display_thread, NULL);
-    qthread_syncvar_callback(chapel_display_thread, NULL);
-}
-#endif  // SUPPORT_BLOCKREPORT
-
 static void SIGINT_handler(int sig)
 {
     signal(sig, SIG_IGN);
 
     if (blockreport) {
-#ifdef SUPPORT_BLOCKREPORT
-        report_locked_threads();
-#else
         fprintf(stderr,
                 "Blockreport is currently unsupported by the qthreads "
                 "tasking layer.\n");
-#endif
     }
 
     if (taskreport) {
-#ifdef SUPPORT_TASKREPORT
-        report_all_tasks();
-#else
         fprintf(stderr, "Taskreport is currently unsupported by the qthreads tasking layer.\n");
-#endif
     }
 
     chpl_exit_any(1);
 }
 
-// Tasks
-
+// We call this routine in a separate pthread for 2 main reasons:
+// 1) qthread_initialize() converts the current thread into a shephered (the
+//    "real mccoy" shepherd) and creates a qthread on top of that. If we called
+//    this from the main process we'd have to be very careful about using
+//    pthread mutexes, sched_yield, and other similar constructs that don't
+//    play well with qthreads in the rest of the runtime. That's a lot of
+//    effort and easy to forget about, so we want to avoid that.
+//
+// 2) qthread_finalize() only does anything when called from the original
+//    context that called qthread_initialize, so this is an easy way to ensure
+//    that.
 static void *initializer(void *junk)
 {
     qthread_initialize();
-    (void) pthread_mutex_lock(&done_init_final_mux);  // implicit memory fence
+    qthread_purge(&canexit);
+    (void) pthread_mutex_lock(&init_mutex);
     chpl_qthread_done_initializing = 1;
-    (void) pthread_mutex_unlock(&done_init_final_mux);
+    (void) pthread_mutex_unlock(&init_mutex);
 
-    qthread_syncvar_readFF(NULL, &canexit);
+    qthread_readFF(NULL, &canexit);
 
     qthread_finalize();
-    (void) pthread_mutex_lock(&done_init_final_mux);  // implicit memory fence
-    done_finalizing = 1;
-    (void) pthread_mutex_unlock(&done_init_final_mux);
 
     return NULL;
 }
@@ -541,7 +457,7 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
 
         hwpar = numThreadsPerLocale;
 
-        numPUsPerLocale = chpl_getNumLogicalCpus(true);
+        numPUsPerLocale = chpl_topo_getNumCPUsLogical(true);
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
             if (verbosity > 0) {
                 printf("QTHREADS: Reduced numThreadsPerLocale=%d to %d "
@@ -560,7 +476,7 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
     }
     // User did not set chapel or qthreads vars -- our default
     else {
-        hwpar = chpl_getNumPhysicalCpus(true);
+        hwpar = chpl_topo_getNumCPUsPhysical(true);
     }
 
     // hwpar will only be <= 0 if the user set QT_NUM_SHEPHERDS and/or
@@ -574,7 +490,7 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
 
         // If there is more parallelism requested than the number of cores, set the
         // worker unit to pu, otherwise core.
-        if (hwpar > chpl_getNumPhysicalCpus(true)) {
+        if (hwpar > chpl_topo_getNumCPUsPhysical(true)) {
           chpl_qt_setenv("WORKER_UNIT", "pu", 0);
         } else {
           chpl_qt_setenv("WORKER_UNIT", "core", 0);
@@ -690,8 +606,6 @@ void chpl_task_init(void)
 {
     int32_t   commMaxThreads;
     int32_t   hwpar;
-    pthread_t initer;
-    pthread_attr_t pAttr;
 
     chpl_qthread_process_pthread = pthread_self();
     chpl_qthread_process_bundle.id = qthread_incr(&next_task_id, 1);
@@ -709,9 +623,7 @@ void chpl_task_init(void)
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 
     // Initialize qthreads
-    pthread_attr_init(&pAttr);
-    pthread_attr_setdetachstate(&pAttr, PTHREAD_CREATE_DETACHED);
-    pthread_create(&initer, &pAttr, initializer, NULL);
+    pthread_create(&initer, NULL, initializer, NULL);
     while (chpl_qthread_done_initializing == 0)
         sched_yield();
 
@@ -739,12 +651,11 @@ void chpl_task_exit(void)
         /* sometimes, tasking is told to shutdown even though it hasn't been
          * told to start yet */
         if (chpl_qthread_done_initializing == 1) {
-            qthread_syncvar_fill(&canexit);
-            while (done_finalizing == 0)
-                sched_yield();
+            qthread_fill(&canexit);
+            pthread_join(initer, NULL);
         }
     } else {
-        qthread_syncvar_fill(&exit_ret);
+        qthread_fill(&exit_ret);
     }
 }
 
@@ -840,8 +751,8 @@ void chpl_task_callMain(void (*chpl_main)(void))
 
     wrap_callbacks(chpl_task_cb_event_kind_create, &arg.arg);
 
-    qthread_fork_syncvar_copyargs(main_wrapper, &arg, sizeof(arg), &exit_ret);
-    qthread_syncvar_readFF(NULL, &exit_ret);
+    qthread_fork_copyargs(main_wrapper, &arg, sizeof(arg), &exit_ret);
+    qthread_readFF(NULL, &exit_ret);
 }
 
 void chpl_task_stdModulesInitialized(void)
@@ -965,15 +876,15 @@ void chpl_task_startMovedTask(chpl_fn_int_t       fid,
 }
 
 //
-// chpl_task_getSubloc() is in tasks-qthreads.h
+// chpl_task_getSubloc() is in chpl-tasks-impl.h
 //
 
 //
-// chpl_task_setSubloc() is in tasks-qthreads.h
+// chpl_task_setSubloc() is in chpl-tasks-impl.h
 //
 
 //
-// chpl_task_getRequestedSubloc() is in tasks-qthreads.h
+// chpl_task_getRequestedSubloc() is in chpl-tasks-impl.h
 //
 
 

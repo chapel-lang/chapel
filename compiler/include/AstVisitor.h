@@ -21,6 +21,7 @@
 #define _AST_VISITOR_H_
 
 class AggregateType;
+class UnmanagedClassType;
 class EnumType;
 class PrimitiveType;
 
@@ -36,8 +37,10 @@ class CallExpr;
 class ContextCallExpr;
 class DefExpr;
 class NamedExpr;
+class IfExpr;
 class SymExpr;
 class UnresolvedSymExpr;
+class LoopExpr;
 
 class UseStmt;
 class BlockStmt;
@@ -76,6 +79,9 @@ public:
   //
   virtual bool   enterAggrType       (AggregateType*     node) = 0;
   virtual void   exitAggrType        (AggregateType*     node) = 0;
+
+  virtual bool   enterUnmanagedClassType(UnmanagedClassType*     node) = 0;
+  virtual void   exitUnmanagedClassType (UnmanagedClassType*     node) = 0;
 
   virtual bool   enterEnumType       (EnumType*          node) = 0;
   virtual void   exitEnumType        (EnumType*          node) = 0;
@@ -118,9 +124,15 @@ public:
   virtual bool   enterNamedExpr      (NamedExpr*         node) = 0;
   virtual void   exitNamedExpr       (NamedExpr*         node) = 0;
 
+  virtual bool   enterIfExpr         (IfExpr*            node) = 0;
+  virtual void   exitIfExpr          (IfExpr*            node) = 0;
+
   virtual void   visitSymExpr        (SymExpr*           node) = 0;
 
   virtual void   visitUsymExpr       (UnresolvedSymExpr* node) = 0;
+
+  virtual bool   enterLoopExpr     (LoopExpr*        node) = 0;
+  virtual void   exitLoopExpr      (LoopExpr*        node) = 0;
 
   //
   // The sub-classes of Stmt

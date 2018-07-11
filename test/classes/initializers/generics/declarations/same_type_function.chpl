@@ -6,12 +6,10 @@ class Foo {
   proc init(type t) {
     var xVal: t;
     x = xVal;
-    super.init();
   }
 
   proc init(xVal) {
     x = xVal;
-    super.init();
   }
 }
 

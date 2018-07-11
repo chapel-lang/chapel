@@ -82,7 +82,7 @@
   Usage
   _____
 
-  To use :record:`DistBag`, the constructor must be invoked explicitly to
+  To use :record:`DistBag`, the initializer must be invoked explicitly to
   properly initialize the structure. Using the default state without initializing
   will result in a halt.
 
@@ -240,9 +240,10 @@ module DistributedBag {
     var _rc : Shared(DistributedBagRC(eltType));
 
     pragma "no doc"
-    proc DistBag(type eltType, targetLocales = Locales) {
-      _pid = (new DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
-      _rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
+    proc init(type eltType, targetLocales = Locales) {
+      this.eltType = eltType;
+      this._pid = (new unmanaged DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
+      this._rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
     }
 
     pragma "no doc"
@@ -290,10 +291,10 @@ module DistributedBag {
       this.targetLocDom  = targetLocDom;
       this.targetLocales = targetLocales;
 
-      initDone();
+      complete();
 
       this.pid           = _newPrivatizedClass(this);
-      this.bag           = new Bag(eltType, this);
+      this.bag           = new unmanaged Bag(eltType, this);
     }
 
     pragma "no doc"
@@ -304,19 +305,19 @@ module DistributedBag {
       this.targetLocales = other.targetLocales;
       this.pid           = pid;
 
-      initDone();
+      complete();
 
-      this.bag           = new Bag(eltType, this);
+      this.bag           = new unmanaged Bag(eltType, this);
     }
 
     pragma "no doc"
-    proc ~DistributedBagImpl() {
+    proc deinit() {
       delete bag;
     }
 
     pragma "no doc"
     proc dsiPrivatize(pid) {
-      return new DistributedBagImpl(this, pid);
+      return new unmanaged DistributedBagImpl(this, pid);
     }
 
     pragma "no doc"
@@ -629,7 +630,7 @@ module DistributedBag {
 
     // Contiguous memory containing all elements
     var elems :  c_ptr(eltType);
-    var next : BagSegmentBlock(eltType);
+    var next : unmanaged BagSegmentBlock(eltType);
 
     // The capacity of this block.
     var cap : int;
@@ -671,22 +672,24 @@ module DistributedBag {
       return elt;
     }
 
-    proc BagSegmentBlock(type eltType, capacity) {
+    proc init(type eltType, capacity) {
+      this.eltType = eltType;
       if capacity == 0 {
         halt("DistributedBag Internal Error: Capacity is 0...");
       }
 
-      cap = capacity;
-      elems = c_malloc(eltType, capacity);
+      this.elems = c_malloc(eltType, capacity);
+      this.cap = capacity;
     }
 
-    proc BagSegmentBlock(type eltType, ptr, capacity) {
-      cap = capacity;
-      elems = ptr;
-      size = cap;
+    proc init(type eltType, ptr, capacity) {
+      this.eltType = eltType;
+      this.elems = ptr;
+      this.cap = capacity;
+      this.size = cap;
     }
 
-    proc ~BagSegmentBlock() {
+    proc deinit() {
       c_free(elems);
     }
   }
@@ -799,14 +802,14 @@ module DistributedBag {
         var block = tailBlock;
         // Empty? Create a new one of initial size
         if block == nil then {
-          tailBlock = new BagSegmentBlock(eltType, distributedBagInitialBlockSize);
+          tailBlock = new unmanaged BagSegmentBlock(eltType, distributedBagInitialBlockSize);
           headBlock = tailBlock;
           block = tailBlock;
         }
 
         // Full? Create a new one double the previous size
         if block.isFull {
-          block.next = new BagSegmentBlock(eltType, min(distributedBagMaxBlockSize, block.cap * 2));
+          block.next = new unmanaged BagSegmentBlock(eltType, min(distributedBagMaxBlockSize, block.cap * 2));
           tailBlock = block.next;
           block = block.next;
         }
@@ -882,14 +885,14 @@ module DistributedBag {
 
       // Empty? Create a new one of initial size
       if block == nil then {
-        tailBlock = new BagSegmentBlock(eltType, distributedBagInitialBlockSize);
+        tailBlock = new unmanaged BagSegmentBlock(eltType, distributedBagInitialBlockSize);
         headBlock = tailBlock;
         block = tailBlock;
       }
 
       // Full? Create a new one double the previous size
       if block.isFull {
-        block.next = new BagSegmentBlock(eltType, min(distributedBagMaxBlockSize, block.cap * 2));
+        block.next = new unmanaged BagSegmentBlock(eltType, min(distributedBagMaxBlockSize, block.cap * 2));
         tailBlock = block.next;
         block = block.next;
       }
@@ -945,11 +948,12 @@ module DistributedBag {
       return (startIdxDeq.fetchAdd(1) % here.maxTaskPar : uint) : int;
     }
 
-    proc Bag(type eltType, parentHandle) {
+    proc init(type eltType, parentHandle) {
+      this.eltType = eltType;
       this.parentHandle = parentHandle;
     }
 
-    proc ~Bag() {
+    proc deinit() {
       forall segment in segments {
         var block = segment.headBlock;
         while block != nil {

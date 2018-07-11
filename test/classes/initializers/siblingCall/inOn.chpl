@@ -9,7 +9,6 @@ class Foo {
 
   proc init(a, b) {
     x = a + b;
-    super.init();
   }
 }
 

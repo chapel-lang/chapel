@@ -30,7 +30,7 @@
 # CHPL_HOME: Grabbed from the environment or deduced based on the path to
 #    the compiler.
 # CHPL_TEST_VGRND_COMP: Use valgrind on the compiler
-# CHPL_TEST_VBRND_EXE: Use valgrind on the test program
+# CHPL_TEST_VGRND_EXE: Use valgrind on the test program
 # CHPL_VALGRIND_OPTS: Options to valgrind
 # CHPL_TEST_FUTURES: 2 == test futures only
 #                    1 == test futures and non-futures
@@ -301,8 +301,9 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
         try:
             # grab the chplenv so it can be stuffed into the subprocess env
             env_cmd = [os.path.join(utildir, 'printchplenv'), '--all', '--simple', '--no-tidy', '--internal']
+
             chpl_env = Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
-            chpl_env = dict(map(lambda l: l.split('='), chpl_env.splitlines()))
+            chpl_env = dict(map(lambda l: l.split('=', 1), chpl_env.splitlines()))
             file_env = os.environ.copy()
             file_env.update(chpl_env)
 
@@ -1068,7 +1069,8 @@ for testname in testsrc:
     # print test_filename_files, dirlist
 
     if (perftest and (test_filename_files.count(PerfTFile(test_filename,'keys'))==0) and
-        (test_filename_files.count(PerfTFile(test_filename,'execopts'))==0)):
+        (test_filename_files.count(PerfTFile(test_filename,'execopts'))==0) and
+        (test_filename_files.count(PerfTFile(test_filename,'compopts'))==0)):
         sys.stdout.write('[Skipping noperf test: %s/%s]\n'%(localdir,test_filename))
         continue # on to next test
 
@@ -1301,12 +1303,12 @@ for testname in testsrc:
     chpldoc_opts_filename = test_filename + chpldocsuffix
     if test_is_chpldoc and os.access(chpldoc_opts_filename, os.R_OK):
         compoptslist = ReadFileWithComments(chpldoc_opts_filename, False)
-        if not compoptslist:
+        if os.stat(chpldoc_opts_filename).st_size == 0:
             sys.stdout.write('[Warning: ignoring an empty chpldocopts file %s]\n' %
                              (test_filename+compoptssuffix))
     elif os.access(test_filename+compoptssuffix, os.R_OK):
         compoptslist = ReadFileWithComments(test_filename+compoptssuffix, False)
-        if not compoptslist:
+        if os.stat(test_filename+compoptssuffix).st_size == 0:
             # cf. for execoptslist no warning is issued
             sys.stdout.write('[Warning: ignoring an empty compopts file %s]\n'%(test_filename+compoptssuffix))
 
@@ -1339,15 +1341,15 @@ for testname in testsrc:
         compenv = list()
 
     testenv = {}
-    for var, val in [env.split('=') for env in globalExecenv]:
+    for var, val in [env.split('=', 1) for env in globalExecenv]:
         testenv[var.strip()] = val.strip()
-    for var, val in [env.split('=') for env in execenv]:
+    for var, val in [env.split('=', 1) for env in execenv]:
         testenv[var.strip()] = val.strip()
 
     testcompenv = {}
-    for var, val in [env.split('=') for env in globalCompenv]:
+    for var, val in [env.split('=', 1) for env in globalCompenv]:
         testcompenv[var.strip()] = val.strip()
-    for var, val in [env.split('=') for env in compenv]:
+    for var, val in [env.split('=', 1) for env in compenv]:
         testcompenv[var.strip()] = val.strip()
 
 
@@ -1429,8 +1431,11 @@ for testname in testsrc:
             #       will use COMPOPTS/.compopts or some other filename.
             #       (thomasvandoren, 2015-04-08)
             pass
-        else:
+        elif 'CHPL_TEST_NO_USE_O' not in os.environ or \
+             os.environ.get('CHPL_TEST_NO_USE_O') != "true":
             args += ['-o', execname] + envCompopts + shlex.split(compopts)
+        else:
+            args += envCompopts + shlex.split(compopts)
         args += [testname]
 
         if is_c_test:
@@ -1833,7 +1838,7 @@ for testname in testsrc:
             args=list()
             if timer and timereal:
                 cmd='./'+execname
-                os.environ['CHPL_LAUNCHER_REAL_WRAPPER'] = timer
+                testenv['CHPL_LAUNCHER_REAL_WRAPPER'] = timer
             elif timer:
                 cmd=timer
                 args+=['./'+execname]
@@ -1943,6 +1948,10 @@ for testname in testsrc:
                             launcher_error = 'Jira 324 -- PBS job killed for'
                         elif re.search('Fatal MPP reservation error on confirm', output, re.IGNORECASE) != None:
                             launcher_error = 'Jira 329 -- Fatal MPP reservation error for'
+                        elif re.search('Fatal MPP reservation error on create', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 329 -- Fatal MPP reservation error for'
+                        elif re.search('Text file busy', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 333 -- Text file busy for'
                         elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
                               re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
                             exectimeout = True
@@ -2164,7 +2173,8 @@ for testname in testsrc:
 
                             err_strings = ['Clock skew detected']
                             for s in err_strings:
-                                if re.search(s, output, re.IGNORECASE) != None:
+                                # NOTE: checking pre_exec (compiler) output
+                                if re.search(s, pre_exec_output, re.IGNORECASE) != None:
                                     extra_msg = '(possible JIRA 287) '
                                     break
 

@@ -2,11 +2,11 @@ class C {
   var x = 10;
 }
 
-var globc: C;
+var globc: borrowed C;
 
 class D {
   var y = 20;
-  var locc: C;
+  var locc: borrowed C;
 
   proc doit {
     locc = globc;
@@ -14,11 +14,9 @@ class D {
 }
 
 proc main() {
-  var d: D = new D();
+  var d: borrowed D = new borrowed D();
 
   d.doit;
   writeln(d);
-
-  delete d;
 }
 

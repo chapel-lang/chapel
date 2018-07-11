@@ -51,3 +51,8 @@ CHPL_GASNET_MORE_CFLAGS += -O0 -UNDEBUG
 endif
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-prgenv
+
+# Certain versions of CCE have had difficulty with high levels of
+# interprocedural analysis.  We conservatively back off slightly in
+# case someone happens to be using one of those versions.
+OPT_CFLAGS += -hipa2

@@ -610,7 +610,8 @@ EXTRA_DIST = ds/dictionary/dictionary_shavit.c \
 	sincs/donecount_cas.c sincs/original.c barrier/feb.c \
 	barrier/array.c barrier/log.c barrier/sinc.c alloc/base.c \
 	alloc/chapel.c affinity/common.c affinity/hwloc.c \
-	affinity/binders.c affinity/hwloc_v2.c affinity/sys.c \
+	affinity/hwloc_via_chapel.c affinity/binders.c \
+	affinity/hwloc_v2.c affinity/no.c affinity/sys.c \
 	affinity/libnuma.c affinity/libnumaV2.c affinity/mach.c \
 	affinity/tilera.c affinity/plpa.c affinity/lgrp.c \
 	affinity/shepcomp.h

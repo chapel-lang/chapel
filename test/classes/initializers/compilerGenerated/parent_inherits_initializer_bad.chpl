@@ -9,9 +9,9 @@ class GrandParent {
   // super.init() call in the generated parent initializer.
   proc init(x1: int, x2: int) {
     a = x1 + x2;
-    super.init();
   }
 }
+
 
 class Parent: GrandParent {
   var b: int;
@@ -22,10 +22,9 @@ class Child : Parent {
 }
 
 proc main() {
-  var child = new Child(4);
+  var child = new owned Child(4);
   // TODO: I would like a better error message, this current one is confusing
   // (but reasonable when you know why it is complaining)
 
   writeln(child);
-  delete child;
 }

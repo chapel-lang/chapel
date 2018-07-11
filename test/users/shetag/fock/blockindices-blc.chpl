@@ -9,7 +9,6 @@ class blockIndices {
     js = bas_info(jat);
     ks = bas_info(kat);
     ls = bas_info(lat);
-    super.init();
   }
 
   // BLC: TODO -- this should have a better name

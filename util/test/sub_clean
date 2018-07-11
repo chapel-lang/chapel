@@ -53,21 +53,21 @@ def cleanChapelTest(f):
             pass
         cleanCleanfiles(None, execname+'.cleanfiles', False)
 
-# Clean files listed in the file f
-def cleanCleanfiles(f, c, rmCore):
-    if f:
-        cleanfile = f+'/'+c
+# Clean files listed in the file c, in the directory d (if given)
+def cleanCleanfiles(d, c, rmCore):
+    if d:
+        cleanfile = os.path.join(d,c)
     else:
         cleanfile = c
     if os.access(cleanfile,os.R_OK):
         cleanfiles = ReadCleanfiles(cleanfile)
         if rmCore:
             cleanfiles += ['core']
-        for file in cleanfiles:
-            if f:
-                globfiles = glob.glob(f+'/'+file)
+        for f in cleanfiles:
+            if d:
+                globfiles = glob.glob(os.path.join(d,f))
             else:
-                globfiles = glob.glob(file)
+                globfiles = glob.glob(f)
             for g in globfiles:
                 print('Removing '+g)
                 try:

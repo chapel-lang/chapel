@@ -5,11 +5,11 @@ use LevelBC_def;
 //|/___________________________________|/
 class ZeroInflowBC: LevelBC {
 
-  proc apply(q: LevelVariable, t: real){
+  proc apply(q: unmanaged LevelVariable, t: real){
     apply_Homogeneous(q);
   }
 
-  proc apply_Homogeneous(q: LevelVariable){
+  proc apply_Homogeneous(q: unmanaged LevelVariable){
 
     for grid in level.grids {
 

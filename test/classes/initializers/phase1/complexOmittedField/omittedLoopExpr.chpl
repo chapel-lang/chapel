@@ -4,10 +4,9 @@ class Foo {
 
   proc init(dom) {
     D = dom;
-    super.init();
   }
 }
 
-var foo = new Foo(1..10);
+var foo = new unmanaged Foo(1..10);
 writeln(foo);
 delete foo;

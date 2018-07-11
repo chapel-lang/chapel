@@ -7,17 +7,15 @@ class Foo {
   proc init(param xVal, yVal) where (xVal > 10) {
     x = xVal;
     y = yVal;
-    super.init();
   }
 
   proc init(param xVal) where (xVal < 10) {
     x = xVal;
-    super.init();
   }
 }
 
-var f1 = new Foo(13, 4);
-var f2 = new Foo(3);
+var f1 = new unmanaged Foo(13, 4);
+var f2 = new unmanaged Foo(3);
 writeln(f1);
 writeln(f2);
 delete f1;

@@ -11,7 +11,7 @@ Note: this is work in progress and is subject to change.
 Overview
 --------
 
-Reduce intents are a kind of forall intent - see Section 25.3
+Reduce intents are a kind of forall intent - see Section 26.3
 "Forall Intents" of the Chapel Language Specification.
 
 As with any forall intent, a reduce intent can be specified on any

@@ -68,7 +68,7 @@ module vertexColoring {
     }
 
     /** Abstract node representation */
-    var nodeSet:[D] Node;
+    var nodeSet:[D] unmanaged Node;
     var again:[D] bool;
 
     /*
@@ -119,7 +119,7 @@ module vertexColoring {
     proc initialize() {
         forall (node, num_label, i) in zip(nodeSet, nlabel, D) {
             num_label = i;
-            node = new Node();
+            node = new unmanaged Node();
             node.parent = parent[i];
             var count = 0;
             for j in D {
@@ -218,7 +218,7 @@ module vertexColoring {
    proc six2three() {
        for k in 1..3 {
             var x = 6-k;
-            var randStream = new RandomStream(real, 3);
+            var randStream = new owned RandomStream(real, 3);
             var ncolor : int = randStream.getNext(): int;
             ncolor = ncolor%3;
             shiftDown();
@@ -247,8 +247,6 @@ module vertexColoring {
 
             if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
             }
-
-            delete randStream;
         }
 
     }

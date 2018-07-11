@@ -11,10 +11,9 @@ class DefaultArg {
 
   proc init(yVal = new Foo(3)) {
     y = yVal;
-    super.init();
   }
 }
 
-var c = new DefaultArg();
+var c = new unmanaged DefaultArg();
 writeln(c);
 delete c;
