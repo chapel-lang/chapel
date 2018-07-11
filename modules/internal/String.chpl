@@ -113,7 +113,7 @@ module String {
   type bufferType = c_ptr(uint(8));
 
   private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
-  private extern proc qio_encode_char_buf(dst:bufferType, chr:int(32)):syserr;
+  private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):syserr;
 
   pragma "no doc"
   extern const CHPL_SHORT_STRING_SIZE : c_int;
