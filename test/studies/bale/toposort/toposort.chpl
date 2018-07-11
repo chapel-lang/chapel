@@ -128,7 +128,7 @@ where D.rank == 2
   return new PermutationMap( row_map, column_map );
 }
 
-proc permute( M : [?D] ?T, permutation_map : PermutationMap(D.idxType) )
+proc permute( M : [?D] ?T, permutation_map : PermutationMap(D.idxType), copy_values : bool = false )
 where D.rank == 2 && isSparseDom( D )
 {
   var timer : Timer;
@@ -137,10 +137,11 @@ where D.rank == 2 && isSparseDom( D )
   timer.stop();
   if debugPermute then writeln( "Create domain ", timer.elapsed() );
   timer.clear();
-  timer.start();
 
+  timer.start();
   var sD_bulk : [1..#D.size] D.rank*D.idxType;
-  for (pos,idx) /*permuted_idx*/ in zip(1..#D.size, D) {
+  // TODO make parallel
+  for (pos,idx) in zip(1..#D.size, D) {
     sD_bulk[pos]= permutation_map[idx];
   }
   sD.bulkAdd( sD_bulk );
@@ -153,13 +154,17 @@ where D.rank == 2 && isSparseDom( D )
   timer.stop();
   if debugPermute then writeln( "Create array ", timer.elapsed() );
   timer.clear();
-  timer.start();
-  permuted_M.irv = M.irv;
-  for idx in D {
-    permuted_M[ permutation_map[idx] ] = M[idx];
+
+  if copy_values {
+    timer.start();
+    permuted_M.irv = M.irv;
+    forall idx in D {
+      permuted_M[ permutation_map[idx] ] = M[idx];
+    }
+    timer.stop();
+    if debugPermute then writeln( "Add array ", timer.elapsed() );
+    timer.clear();
   }
-  timer.stop();
-  if debugPermute then writeln( "Add array ", timer.elapsed() );
 
   return permuted_M;
 }
@@ -658,7 +663,7 @@ proc main(){
   if printPermutations then writeln("Permutation Map:\n", permutation_map);
 
   if !silentMode then writeln("Permuting upper triangluar matrix");
-  var permuted_M = permute( M, permutation_map );
+  var permuted_M = permute( M, permutation_map, printMatrices );
 
 
   if printMatrices {
@@ -696,7 +701,7 @@ proc main(){
 
   if printPermutations then writeln( "Solved permutation map:\n", solved_map );
 
-  var solved_permuated_permuted_M = permute( permuted_M, solved_map );
+  var solved_permuated_permuted_M = permute( permuted_M, solved_map, printMatrices );
 
   if printMatrices {
     writeln( "Solved-permuted permuted upper triangluar matrix:" );
