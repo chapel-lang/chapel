@@ -1133,7 +1133,9 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   }
 }
 
+//
 // Returns false if
+//
 //  fLocal == true
 // or
 //  CHPL_COMM == "ugni"
@@ -1149,6 +1151,9 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 // The tasking layer matters because qthreads and fifo allocate task stacks
 // from the communication registered heap (fifo can only do so if stack checks
 // are turned off.)
+//
+// See also the discussion in #9106.
+//
 static bool
 needHeapVars() {
   if (fLocal) return false;
@@ -1296,7 +1301,7 @@ makeHeapAllocations() {
           // does not handle the case where 'call' is in 'calledBy' because
           // 'call' is a virtual method call to a function in a parent class.
           // Ex. dsiReallocate() in arrays/deitz/jacobi-no-local.chpl.
-          // This case is TODO.
+          // This case is TODO. See also #9106.
           continue;
         }
         // Previous passes mean that we should always get a formal SymExpr
