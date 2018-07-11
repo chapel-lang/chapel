@@ -1933,7 +1933,40 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
   return call->resolvedFunction();
 }
 
+static bool recordContainsType(AggregateType* at, Type* t) {
+  if (t == at) {
+    return true;
+  } else if (isRecord(t)) {
+    for_fields(field, toAggregateType(t)) {
+      if (isRecord(field->type)) {
+        return recordContainsType(at, field->type);
+      }
+    }
+  }
+
+  return false;
+}
+
+static void checkForInfiniteRecord(AggregateType* at) {
+  for_fields(field, at) {
+    if (field->type == at) {
+      USR_FATAL(field, "Record has infinite size "
+                       "(field '%s' has same type as enclosing record)",
+                       field->name);
+    } else if (recordContainsType(at, field->type)) {
+      USR_FATAL(field, "Record has infinite size "
+                       "(type of field '%s' contains same type as enclosing record)",
+                       field->name);
+    }
+  }
+}
+
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
+
+  if (isRecord(at)) {
+    checkForInfiniteRecord(at);
+  }
+
   if (at->symbol->instantiationPoint == NULL &&
       fn->instantiationPoint != NULL) {
     at->symbol->instantiationPoint = fn->instantiationPoint;
@@ -2431,6 +2464,15 @@ static void resolveNormalCallFinalChecks(CallExpr* call) {
 static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
                                        CallInfo&            info,
                                        bool                 followerChecks) {
+  if (best->fn->isInitializer()) {
+    AggregateType* at = toAggregateType(best->fn->_this->getValType());
+    if (isRecord(at)) {
+      // If we allow an infinite record's initializer to be processed for
+      // default values, we will enter an infinite loop and the compiler will
+      // crash.
+      checkForInfiniteRecord(at);
+    }
+  }
   best->fn = wrapAndCleanUpActuals(best->fn,
                                    info,
                                    best->actualIdxToFormal,
@@ -8165,6 +8207,9 @@ static void resolveAutoCopies() {
         ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isRecord(at) == true) {
+          // If we attempt to resolve auto-copy and co. for an infinite record
+          // we may enter an infinite loop and the compiler will crash.
+          checkForInfiniteRecord(at);
           resolveAutoCopyEtc(at);
         }
 
