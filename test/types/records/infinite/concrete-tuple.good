@@ -1,0 +1,1 @@
+concrete-tuple.chpl:3: error: Record has infinite size (type of field 'x' contains same type as enclosing record)

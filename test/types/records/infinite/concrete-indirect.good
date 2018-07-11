@@ -1,0 +1,1 @@
+concrete-indirect.chpl:3: error: Record has infinite size (type of field 'b' contains same type as enclosing record)

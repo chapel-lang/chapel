@@ -1,0 +1,1 @@
+generic-simple.chpl:4: error: Record has infinite size (field 'r' has same type as enclosing record)

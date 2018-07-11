@@ -1,0 +1,1 @@
+concrete-function.chpl:7: error: Record has infinite size (field 'x' has same type as enclosing record)
