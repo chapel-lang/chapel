@@ -1,3 +1,0 @@
-bug: #define with cast to float/double doesn't work in extern block
-#7764
-

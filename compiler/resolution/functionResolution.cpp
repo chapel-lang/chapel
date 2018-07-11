@@ -7420,23 +7420,27 @@ void resolveTypeConstructor(AggregateType* at) {
 }
 
 static void resolveExprTypeConstructor(SymExpr* symExpr) {
-  if (AggregateType* at = toAggregateType(symExpr->typeInfo())) {
-    if (at->typeConstructor) {
-      if (at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
-          at->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
-          at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
-        CallExpr* parent = toCallExpr(symExpr->parentExpr);
-        Symbol*   sym    = symExpr->symbol();
+  Type* t = symExpr->typeInfo();
+  AggregateType* at = toAggregateType(t);
 
-        if (parent                               == NULL  ||
-            parent->isPrimitive(PRIM_IS_SUBTYPE) == false ||
-            sym->hasFlag(FLAG_TYPE_VARIABLE)     == false) {
-          if (isStringLiteral(sym) == false) {
+  if (UnmanagedClassType * ut = toUnmanagedClassType(t))
+    at = ut->getCanonicalClass();
 
-            // Resolve type constructors for this type
-            // as well as any parent types it has.
-            resolveTypeConstructor(at);
-          }
+  if (at != NULL && at->typeConstructor) {
+    if (at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
+        at->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
+        at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+      CallExpr* parent = toCallExpr(symExpr->parentExpr);
+      Symbol*   sym    = symExpr->symbol();
+
+      if (parent                               == NULL  ||
+          parent->isPrimitive(PRIM_IS_SUBTYPE) == false ||
+          sym->hasFlag(FLAG_TYPE_VARIABLE)     == false) {
+        if (isStringLiteral(sym) == false) {
+
+          // Resolve type constructors for this type
+          // as well as any parent types it has.
+          resolveTypeConstructor(at);
         }
       }
     }
