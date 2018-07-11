@@ -114,7 +114,8 @@ module OwnedObject {
     /*
        Default-initialize a :record:`Owned`.
      */
-    proc _owned(type a, type t=_to_borrowed(a)) {
+    proc init(type a) {
+      this.t = _to_borrowed(a);
       this.p = nil;
     }
 
@@ -128,7 +129,9 @@ module OwnedObject {
 
        :arg p: the class instance to manage. Must be of class type.
      */
-    proc _owned(p, type t=_to_borrowed(p.type)) {
+    proc init(p) {
+      this.t = _to_borrowed(p.type);
+
       if !isClass(p) then
         compilerError("Owned only works with classes");
 
@@ -140,7 +143,8 @@ module OwnedObject {
        that takes over ownership from `src`. `src` will
        refer to `nil` after this call.
      */
-    proc _owned(ref src:_owned, type t=src.t) {
+    proc init(ref src:_owned) {
+      this.t = src.t;
       this.p = src.release();
     }
 
