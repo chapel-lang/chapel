@@ -3537,7 +3537,7 @@ module HDF5_HL {
     }
     */
 
-    /* Read the dataset named `dsetName` out of all HDF5 files in the
+    /* Read the dataset named `dsetName` from all HDF5 files in the
        directory `dirName` with filenames that begin with `filenameStart`.
        This will read the files in parallel with one task per locale in the
        `locs` array.  Specifying the same locale multiple times in the `locs`
@@ -3638,8 +3638,8 @@ module HDF5_HL {
 
 
 
-    /* Read the dataset named `dsetName` out of the open file that `file_id`
-       refers to.  Store the input into the array `data`.
+    /* Read the dataset named `dsetName` from the open file that `file_id`
+       refers to.  Store the dataset into the array `data`.
        Can read data of type int/uint (size 8, 16, 32, 64), real (size 32, 64),
        and c_string.
      */
@@ -3740,8 +3740,8 @@ module HDF5_HL {
        for example when it is too big to fit into the system memory, or
        to allow each section to fit within cache.
 
-       Currently, the `chunkShape` domain describing the output arrays and
-       the shape of the data in the file must both be the same rank.
+       Currently, the `chunkShape` domain describing the yielded array shape
+       and the shape of the data in the file must both have the same rank.
        For example, if the data in the file is 2D, `chunkShape` must be
        two-dimensional as well.  It is expected that this restriction can
        be relaxed in the future.
@@ -3833,13 +3833,13 @@ module HDF5_HL {
         }
 
         for (starts, counts) in blockStartsCounts() {
-          // If `positionalOutputTup` were used instead of `outputTup` below,
-          // the output array's domain would reflect the position of the data
-          // within the input data set.  Instead, we are currently just using
-          // 1-based domains for the yielded arrays.
+          // If `positionalRangeTup` were used instead of `rangeTup` below,
+          // the yielded array's domain would reflect the position of the data
+          // within the data set being read.  Instead, we are currently just
+          // using 1-based domains for the yielded arrays.
           //
-          //var positionalOutputTup: outRank * range,
-          var outputTup: outRank * range;
+          //var positionalRangeTup: outRank * range,
+          var rangeTup: outRank * range;
 
           var inOffsetArr, inCountArr,
               outOffsetArr, outCountArr: [1..outRank] hsize_t;
@@ -3849,10 +3849,10 @@ module HDF5_HL {
             inCountArr[i] = counts(i): hsize_t;
             outOffsetArr[i] = 0: hsize_t;
             outCountArr[i] = counts(i): hsize_t;
-            //positionalOutputTup(i) = starts(i)..#counts(i);
-            outputTup(i) = 1..#counts(i);
+            //positionalRangeTup(i) = starts(i)..#counts(i);
+            rangeTup(i) = 1..#counts(i);
           }
-          var A: [(...outputTup)] eltType;
+          var A: [(...rangeTup)] eltType;
 
           H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
                               c_ptrTo(inOffsetArr), nil,
