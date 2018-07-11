@@ -2,7 +2,14 @@
 
 {% block sidebartitle %}
 
-<a href="{{ pathto(master_doc) }}" class="icon icon-home"> {{ project }}</a>
+<a href="{{ pathto(master_doc) }}" class="icon icon-home"> {{ project }}
+
+<!-- display version if button won't be rendered -->
+<?php if (false) { ?>
+<br>{{ chplversion }}
+<?php } ?>
+
+</a>
 
 <?php
 // Variables given by sphinx

@@ -1,0 +1,1 @@
+bug: int literals should be checked for overflow at compile-time

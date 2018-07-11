@@ -1358,6 +1358,20 @@ static void normalizeCallToConstructor(CallExpr* call) {
           if (subCall->partialTag == true) {
             fixPrimNew(call);
           }
+        } else if (subCall->partialTag == true && subCall->methodTag == true) {
+          // This pattern can happen for an aggregate like:
+          //   class C {
+          //     type t = A;
+          //     var x : t;
+          //     proc init(i:int) {
+          //       x = new t(i); // relevant 'new'
+          //     }
+          //   }
+          //
+          // Transforms "new (call ( call ('t' _mt this) args ) )" into:
+          //   new ( call ('t' _mt this) args )
+          //
+          fixPrimNew(call);
         }
       }
     }
@@ -2248,6 +2262,16 @@ static void normVarTypeInference(DefExpr* defExpr) {
         // Add a call to postinit() if present
         insertPostInit(var, argExpr);
 
+        // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
+        // test for --force-initializers, but PR #10171 was merged first and
+        // somehow fixed that test. The test in question was:
+        //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+        if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
+          if (ne->name == astr_chpl_manager) {
+            ne->remove();
+          }
+        }
+
       } else {
         defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
       }
@@ -2390,6 +2414,16 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
       // Add a call to postinit() if present
       insertPostInit(var, argExpr);
+
+      // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
+      // test for --force-initializers, but PR #10171 was merged first and
+      // somehow fixed that test. The test in question was:
+      //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+      if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
+        if (ne->name == astr_chpl_manager) {
+          ne->remove();
+        }
+      }
     }
 
   } else if (isNewExpr(initExpr) == true) {
@@ -2419,6 +2453,16 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       // Add a call to postinit() if present
       insertPostInit(initExprTemp, argExpr);
 
+      // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
+      // test for --force-initializers, but PR #10171 was merged first and
+      // somehow fixed that test. The test in question was:
+      //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+      if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
+        if (ne->name == astr_chpl_manager) {
+          ne->remove();
+        }
+      }
+
       initExprTemp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
       argExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExprTemp, typeExpr));
@@ -2443,21 +2487,30 @@ static bool isNewExpr(Expr* expr) {
 }
 
 static AggregateType* typeForNewExpr(CallExpr* newExpr) {
-  AggregateType* retval = NULL;
 
   if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
+
+    // Avoid normalize-time type inference for managed new
+    for_actuals(actual, constructor) {
+      if (NamedExpr* ne = toNamedExpr(actual))
+        if (ne->name == astr_chpl_manager)
+          if (SymExpr* se = toSymExpr(ne->actual))
+            if (isTypeSymbol(se->symbol()))
+              return NULL;
+    }
+
     if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
       if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
         if (AggregateType* type = toAggregateType(sym->type)) {
           if (isClass(type) == true || isRecord(type) == true) {
-            retval = type;
+            return type;
           }
         }
       }
     }
   }
 
-  return retval;
+  return NULL;
 }
 
 // Internal and Standard modules always honor no-init
@@ -3464,6 +3517,19 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   } else if (call->isNamed("*")) {
     // it happens to be that 1st actual == size so that will be checked below
     addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried));
+  } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+    // Check that whatever it is is a borrow
+    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_SUBTYPE,
+                                              dtBorrowed->symbol, queried));
+    // don't try to do anything else if there isn't a nested call
+    if (!isCallExpr(call->get(1)))
+        return;
+
+    // For nested calls, proceed as if the PRIM_TO_BORROWED_CLASS wasn't there
+    // that's because the borrowed class is the 'canonical' class representation
+    // used in the compiler.
+    call = toCallExpr(call->get(1));
+
   } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
     if (CallExpr* subCall = toCallExpr(call->get(1))) {
       if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {

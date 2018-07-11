@@ -838,13 +838,7 @@ static void build_enum_enumerate_function(EnumType* et) {
 }
 
 static void build_enum_cast_function(EnumType* et) {
-  bool initsExist = false;
-  for_enums(constant, et) {
-    if (constant->init) {
-      initsExist = true;
-      break;
-    }
-  }
+  bool initsExist = !et->isAbstract();
 
   FnSymbol* fn;
   ArgSymbol* arg1, *arg2;

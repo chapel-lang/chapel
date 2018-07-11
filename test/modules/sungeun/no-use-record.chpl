@@ -1,4 +1,5 @@
 module X {
+  pragma "use default init"
   record R { var x: int; }
 }
 

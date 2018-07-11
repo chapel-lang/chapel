@@ -97,4 +97,52 @@ module ChapelHaltWrappers {
     const err = "Out of memory allocating \"" + s + "\"";
     __primitive("chpl_error", err.localize().c_str());
   }
+
+
+  //
+  // Halt wrappers for runtime semantic checks (where we expect these to halt
+  // when the checks are enabled even in an error-handling world.)
+  //
+
+  /* Halt wrapper for --nil-checks */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc nilCheckHalt(s:string) {
+    halt(s);
+  }
+
+  /* Halt wrapper for --bounds-checks */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc boundsCheckHalt(s:string) {
+    halt(s);
+  }
+
+  /* Halt wrapper for --formal-domain-checks */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc formalDomainCheckHalt(s:string) {
+    halt(s);
+  }
+
+  /* Halt wrapper for --local-checks */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc localCheckHalt(s:string) {
+    halt(s);
+  }
+
+  /* Halt wrapper for --cast-checks */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc safeCastCheckHalt(s:string) {
+    halt(s);
+  }
+
+  /* Halt wrapper for --div-by-zero */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc divByZeroCheckHalt(s:string) {
+    halt(s);
+  }
 }

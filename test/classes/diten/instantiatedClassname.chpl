@@ -1,3 +1,4 @@
+pragma "use default init"
 class C {
   param a: int = 1;
   param b: int = 2;

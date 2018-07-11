@@ -27,7 +27,7 @@ module StringCasts {
   //
   // Type -- Foo.type:string
   //
-  proc _cast(type t, type x)  param : string where t == string {
+  proc _cast(type t:string, type x)  param : string {
     return __primitive("typeToString", x);
   }
 
@@ -35,7 +35,7 @@ module StringCasts {
   // Bool
   //
 
-  inline proc _cast(type t, x: bool) where t == string {
+  inline proc _cast(type t:string, x: bool) {
     if (x) {
       return "true";
     } else {
@@ -43,7 +43,7 @@ module StringCasts {
     }
   }
 
-  proc _cast(type t, x: string) throws where isBoolType(t) {
+  proc _cast(type t:chpl_anybool, x: string) throws {
     var str = x.strip();
     if str.isEmptyString() {
       throw new unmanaged IllegalArgumentError("bad cast from empty string to bool");
@@ -60,7 +60,7 @@ module StringCasts {
   //
   // int
   //
-  proc _cast(type t, x: integral) where t == string {
+  proc _cast(type t:string, x: integral) {
     //TODO: switch to using qio's writef somehow
     extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
     extern proc strlen(const str: c_string) : size_t;
@@ -83,7 +83,7 @@ module StringCasts {
     return ret;
   }
 
-  inline proc _cast(type t, x: string) throws where isIntegralType(t) {
+  inline proc _cast(type t:integral, x: string) throws {
     //TODO: switch to using qio's readf somehow
     pragma "insert line file info"
     extern proc c_string_to_int8_t  (x:c_string, ref err: bool) : int(8);
@@ -156,12 +156,12 @@ module StringCasts {
     return ret;
   }
 
-  proc _cast(type t, x:real(?w)) where t == string {
+  proc _cast(type t:string, x:chpl_anyreal) {
     //TODO: switch to using qio's writef somehow
     return _real_cast_helper(x:real(64), false);
   }
 
-  proc _cast(type t, x:imag(?w)) where t == string {
+  proc _cast(type t:string, x:chpl_anyimag) {
     //TODO: switch to using qio's writef somehow
     // The Chapel version of the imag --> real cast smashes it flat rather than
     // just stripping off the "i".  See the cast in ChapelBase.
@@ -169,7 +169,7 @@ module StringCasts {
     return _real_cast_helper(r, true);
   }
 
-  inline proc _cast(type t, x: string) throws where isRealType(t) {
+  inline proc _cast(type t:chpl_anyreal, x: string) throws {
     pragma "insert line file info"
     extern proc c_string_to_real32(x: c_string, ref err: bool) : real(32);
     pragma "insert line file info"
@@ -194,7 +194,7 @@ module StringCasts {
     return retVal;
   }
 
-  inline proc _cast(type t, x: string) throws where isImagType(t) {
+  inline proc _cast(type t:chpl_anyimag, x: string) throws {
     pragma "insert line file info"
     extern proc c_string_to_imag32(x: c_string, ref err: bool) : imag(32);
     pragma "insert line file info"
@@ -223,7 +223,7 @@ module StringCasts {
   //
   // complex
   //
-  proc _cast(type t, x: complex(?w)) where t == string {
+  proc _cast(type t:string, x: chpl_anycomplex) {
     if isnan(x.re) || isnan(x.im) then
       return "nan";
     var re = (x.re):string;
@@ -246,7 +246,7 @@ module StringCasts {
   }
 
 
-  inline proc _cast(type t, x: string) throws where isComplexType(t) {
+  inline proc _cast(type t:chpl_anycomplex, x: string) throws {
     pragma "insert line file info"
     extern proc c_string_to_complex64(x:c_string, ref err: bool) : complex(64);
     pragma "insert line file info"

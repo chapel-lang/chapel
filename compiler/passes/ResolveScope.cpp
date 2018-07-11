@@ -227,8 +227,13 @@ void ResolveScope::addBuiltIns() {
   extend(gSingleVarAuxFields);
 
   extend(dtAny->symbol);
-  extend(dtIntegral->symbol);
+  extend(dtAnyBool->symbol);
   extend(dtAnyComplex->symbol);
+  extend(dtAnyEnumerated->symbol);
+  extend(dtAnyImag->symbol);
+  extend(dtAnyReal->symbol);
+
+  extend(dtIntegral->symbol);
   extend(dtNumeric->symbol);
 
   extend(dtIteratorRecord->symbol);
@@ -244,8 +249,6 @@ void ResolveScope::addBuiltIns() {
 
   extend(dtModuleToken->symbol);
   extend(gModuleToken);
-
-  extend(dtAnyEnumerated->symbol);
 
   extend(gBoundsChecking);
   extend(gCastChecking);

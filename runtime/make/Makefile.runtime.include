@@ -118,11 +118,10 @@ UNWIND_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.unwind-$(CHPL_MAKE_UNWIND)
 HWLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.hwloc-$(CHPL_MAKE_HWLOC)
 -include $(HWLOC_INCLUDE)
 
-#
-# For use with pyChapel / library-mode.
-# Position independent code is required to create shared objects.
+# For use with library-mode. Position independent code is required by shared
+# objects that want to bring in our static runtime/third-party libraries
 ifeq ($(CHPL_LIBMODE),shared)
-RUNTIME_DEFS += -fPIC
+RUNTIME_DEFS += $(SHARED_LIB_CFLAGS)
 endif
 
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)

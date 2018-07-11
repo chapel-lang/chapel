@@ -622,7 +622,19 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType == dtAnyBool && is_bool_type(actualType)) {
+    return true;
+  }
+
   if (formalType == dtAnyComplex && is_complex_type(actualType)) {
+    return true;
+  }
+
+  if (formalType == dtAnyImag && is_imag_type(actualType)) {
+    return true;
+  }
+
+  if (formalType == dtAnyReal && is_real_type(actualType)) {
     return true;
   }
 
@@ -653,7 +665,8 @@ bool canInstantiate(Type* actualType, Type* formalType) {
                      canonicalClassType(formalType)))
     return true;
 
-  if (formalType == dtBorrowed && isClass(actualType))
+  if (formalType == dtBorrowed && isClass(actualType) &&
+     (actualType == dtObject || !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
     return true;
 
   if (AggregateType* atActual = toAggregateType(actualType)) {
@@ -2464,10 +2477,26 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       if (info.actuals.head()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
         USR_FATAL_CONT(call, "illegal cast to non-type");
       } else {
-        USR_FATAL_CONT(call,
-                       "illegal cast from %s to %s",
-                       toString(info.actuals.v[1]->type),
-                       toString(info.actuals.v[0]->type));
+        Type* dstType = info.actuals.v[0]->type;
+        Type* srcType = info.actuals.v[1]->type;
+        EnumType* dstEnumType = toEnumType(dstType);
+        EnumType* srcEnumType = toEnumType(srcType);
+        if (srcEnumType && srcEnumType->isAbstract()) {
+          USR_FATAL_CONT(call,
+                         "can't cast from an abstract enum ('%s') to %s",
+                         toString(srcType),
+                         toString(dstType));
+        } else if (dstEnumType && dstEnumType->isAbstract()) {
+          USR_FATAL_CONT(call,
+                         "can't cast from %s to an abstract enum type ('%s')",
+                         toString(srcType),
+                         toString(dstType));
+        } else {
+          USR_FATAL_CONT(call,
+                         "illegal cast from %s to %s",
+                         toString(srcType),
+                         toString(dstType));
+        }
       }
 
     } else if (strcmp("these", info.name) == 0) {
@@ -4058,6 +4087,11 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
       // now. Otherwise our task function has to remain generic.
       INT_ASSERT(varActual->type->symbol->hasFlag(FLAG_GENERIC) == false);
 
+      if (formal->id == breakOnResolveID)
+        gdbShouldBreakHere();
+
+      IntentTag origFormalIntent = formal->intent;
+
       // Need to copy varActual->type even for type variables.
       // BTW some formals' types may have been set in createTaskFunctions().
       formal->type = varActual->type;
@@ -4096,19 +4130,38 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
       // by blank or const intent. As of this writing (6'2015)
       // records and strings are (incorrectly) captured at the point
       // when the task function/arg bundle is created.
+      bool shouldCapture = false;
       if (taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) == true &&
           varActual->isConstValWillNotChange()      == false &&
           (concreteIntent(formal->intent, formal->type->getValType())
            & INTENT_FLAG_IN)) {
         // skip dummy_locale_arg: chpl_localeID_t
         if (argNum != 0 || taskFn->hasFlag(FLAG_ON) == false) {
-          captureTaskIntentValues(argNum,
-                                  formal,
-                                  actual,
-                                  varActual,
-                                  info,
-                                  taskFn);
+          shouldCapture = true;
         }
+      }
+
+      // Also always capture when getting a borrow from an owned/shared.
+      if (isManagedPtrType(varActual->getValType()) &&
+          (taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
+           taskFn->hasFlag(FLAG_BEGIN)) &&
+          (//origFormalIntent == INTENT_IN ||
+           origFormalIntent == INTENT_CONST ||
+           //origFormalIntent == INTENT_CONST_IN ||
+           origFormalIntent == INTENT_BLANK)) {
+        if (taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL))
+          shouldCapture = true;
+        formal->type = getManagedPtrBorrowType(varActual->getValType());
+        formal->intent = INTENT_CONST_IN;
+      }
+
+      if (shouldCapture) {
+        captureTaskIntentValues(argNum,
+                                formal,
+                                actual,
+                                varActual,
+                                info,
+                                taskFn);
       }
 
       argNum = argNum + 1;
@@ -4502,25 +4555,24 @@ static void handleSetMemberTypeMismatch(Type*     t,
                                         CallExpr* call,
                                         SymExpr*  rhs);
 
-static void resolveSetMember(CallExpr* call) {
+// Returns the field Symbol for 'fieldExpr'.
+// It must be a field in 'base' type.
+static Symbol* resolveFieldSymbol(Type* base, Expr* fieldExpr) {
+  AggregateType* ct = toAggregateType(base);
+  INT_ASSERT(ct); // required for PRIM_SET_MEMBER
 
-  if (call->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+  // fieldExpr must be either a literal or a field.
+  // In any case it is a VarSymbol.
+  SymExpr* sym = toSymExpr(fieldExpr);
+  VarSymbol* var = toVarSymbol(sym->symbol());
+
+  if (var->immediate == NULL) {
+    // Confirm that this is already a correct field Symbol.
+    INT_ASSERT(var->defPoint->parentSymbol == ct->symbol);
+    return var;
   }
 
   // Get the field name.
-  SymExpr* sym = toSymExpr(call->get(2));
-
-  if (sym == NULL) {
-    INT_FATAL(call, "bad set member primitive");
-  }
-
-  VarSymbol* var = toVarSymbol(sym->symbol());
-
-  if (var == NULL || var->immediate == NULL) {
-    INT_FATAL(call, "bad set member primitive");
-  }
-
   const char* name = var->immediate->v_string;
 
   // Special case: An integer field name is actually a tuple member index.
@@ -4529,29 +4581,28 @@ static void resolveSetMember(CallExpr* call) {
 
     if (get_int(sym, &i) == true) {
       name = astr("x", istr(i));
-
-      call->get(2)->replace(new SymExpr(new_CStringSymbol(name)));
     }
   }
-
-  AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
-
-  if (ct == NULL) {
-    INT_FATAL(call, "bad set member primitive");
-  }
-
-  Symbol* fs = NULL;
 
   for_fields(field, ct) {
-    if (strcmp(field->name, name) == 0) {
-      fs = field;
-      break;
+    if (!strcmp(field->name, name)) {
+      fieldExpr->replace(new SymExpr(field));
+      return field;
     }
   }
 
-  if (fs == NULL) {
-    INT_FATAL(call, "bad set member primitive");
+  INT_ASSERT(false); // did not find field - bad set member primitive
+  return NULL;
+}
+
+static void resolveSetMember(CallExpr* call) {
+
+  if (call->id == breakOnResolveID) {
+    gdbShouldBreakHere();
   }
+
+  Symbol* fs = resolveFieldSymbol(call->get(1)->typeInfo()->getValType(),
+                                  call->get(2));
 
   Type* t = call->get(3)->typeInfo();
 
@@ -9290,22 +9341,21 @@ static void removeRandomPrimitive(CallExpr* call) {
 
       SymExpr* memberSE = toSymExpr(call->get(2));
       const char* memberName = NULL;
+      Symbol* sym = NULL;  // the member symbol
 
-      if (!get_string(memberSE, &memberName)) {
+      if (get_string(memberSE, &memberName)) {
+        sym = baseType->getField(memberName);
+        SET_LINENO(memberSE);
+        memberSE->replace(new SymExpr(sym));
+      } else {
         // Confirm that this is already a correct field Symbol.
-        INT_ASSERT(memberSE->symbol()->defPoint->parentSymbol
-                   == baseType->symbol);
-        break;
+        sym = memberSE->symbol();
+        INT_ASSERT(sym->defPoint->parentSymbol == baseType->symbol);
       }
 
-      Symbol* sym = baseType->getField(memberName);
       if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
           sym->isParameter())
         call->getStmtExpr()->remove();
-      else {
-        SET_LINENO(call->get(2));
-        call->get(2)->replace(new SymExpr(sym));
-      }
     }
     break;
 

@@ -100,7 +100,8 @@ module Barriers {
           }
         }
         otherwise {
-          halt("unknown barrier type");
+          use ChapelHaltWrappers;
+          exhaustiveSelectHalt("unknown barrier type");
         }
       }
       isowned = true;
@@ -180,27 +181,32 @@ module Barriers {
   class BarrierBaseType {
     pragma "no doc"
     proc barrier() {
-      halt("barrier() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc notify() {
-      halt("notify() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc wait() {
-      halt("wait() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc check(): bool {
-      halt("check() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc reset(nTasks: int) {
-      halt("reset() not implemented");
+      use ChapelHaltWrappers;
+      pureVirtualMethodHalt();
     }
   }
 
@@ -264,8 +270,11 @@ module Barriers {
             extern proc chpl_comm_barrier(msg: c_string);
             chpl_comm_barrier("local barrier call".localize().c_str());
           }
-          if done.testAndSet() then
-            halt("Too many callers to barrier()");
+          const alreadySet = done.testAndSet();
+          if boundsChecking && alreadySet {
+            use ChapelHaltWrappers;
+            boundsCheckHalt("Too many callers to barrier()");
+          }
           if reusable {
             count.waitFor(n-1);
             count.add(1);
@@ -286,8 +295,11 @@ module Barriers {
       on this {
         const myc = count.fetchSub(1);
         if myc<=1 {
-          if done.testAndSet() then
-            halt("Too many callers to notify()");
+          const alreadySet = done.testAndSet();
+          if boundsChecking && alreadySet {
+            use ChapelHaltWrappers;
+            boundsCheckHalt("Too many callers to notify()");
+          }
         }
       }
     }
@@ -354,8 +366,10 @@ module Barriers {
      */
     inline proc barrier() {
       on this {
-        if blockers.read() >= maxBlockers then
-          halt("Too many callers to barrier()");
+        if boundsChecking && blockers.read() >= maxBlockers {
+          use ChapelHaltWrappers;
+          boundsCheckHalt("Too many callers to barrier()");
+        }
         inGate.readFF();
         var waiters = blockers.fetchAdd(1) + 1;
 
@@ -379,8 +393,10 @@ module Barriers {
     /* Notify the barrier that this task has reached this point. */
     inline proc notify() {
       on this {
-        if blockers.read() >= maxBlockers then
-          halt("Too many callers to notify()");
+        if boundsChecking && blockers.read() >= maxBlockers {
+          use ChapelHaltWrappers;
+          boundsCheckHalt("Too many callers to notify()");
+        }
 
         inGate.readFF();
         var waiters = blockers.fetchAdd(1) + 1;

@@ -671,13 +671,18 @@ sub main {
     # Check for a compatible valgrind configuration
     if ($valgrind > 0) {
       $tasks = `$ENV{CHPL_HOME}/util/chplenv/chpl_tasks.py`; chomp $tasks;
-      $mem = `$ENV{CHPL_HOME}/util/chplenv/chpl_mem.py`; chomp $mem;
+      $mem = `$ENV{CHPL_HOME}/util/chplenv/chpl_mem.py --target`; chomp $mem;
+      $regexp = `$ENV{CHPL_HOME}/util/chplenv/chpl_regexp.py`; chomp $regexp;
+      $re2_valgrind = `$ENV{CHPL_HOME}/util/test/re2_supports_valgrind.py`; chomp $re2_valgrind;
 
       if ($tasks ne "fifo") {
         die "Error: valgrind requires tasks=fifo - try quickstart";
       }
       if ($mem ne "cstdlib") {
         die "Error: valgrind requires mem=cstdlib - try quickstart";
+      }
+      if ($regexp eq "re2" && $re2_valgrind eq "False") {
+        die "Error: valgrind requires regexp=none or re2 built with CHPL_RE2_VALGRIND_SUPPORT";
       }
     }
 

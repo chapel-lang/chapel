@@ -1173,7 +1173,12 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
         SymExpr* _this = new SymExpr(mFn->_this);
         SymExpr* name  = new SymExpr(new_CStringSymbol(sym->name));
 
-        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, name));
+        if (field->sym->hasFlag(FLAG_PARAM) ||
+            field->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+          symExpr->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, _this, name));
+        } else {
+          symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, name));
+        }
 
       } else {
         USR_FATAL(expr,

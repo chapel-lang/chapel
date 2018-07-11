@@ -3,7 +3,9 @@ class C {
   var x: t;
 }
 
-var c = (new unmanaged C(t=unmanaged C(int).type,x=new unmanaged C(int)));
+var c = (new unmanaged C(
+           t=(unmanaged C(int)).type,
+           x=new unmanaged C(int)));
 writeln(c);
 delete c.x;
 delete c;

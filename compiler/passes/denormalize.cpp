@@ -57,6 +57,8 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo);
 void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
     std::set<Symbol*>& deferredSyms);
 
+int maxDenormalizesPerFunction = 1000;
+
 /*
  * This function tries to remove temporary variables in function `fn`
  *
@@ -101,6 +103,7 @@ void denormalize(void) {
           findCandidatesInFuncOnlySym(fn, deferredSyms, candidates,
               analysisData);
         }
+
         denormalizeOrDeferCandidates(candidates, deferredSyms);
 
         isFirstRound = false;
@@ -177,6 +180,11 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
   bool cachedGlobalManip = analysisData.isRegisteredGlobalManip(fn);
   bool cachedExternManip = analysisData.isRegisteredExternManip(fn);
 
+  // Limit the denormalization candidates to avoid
+  // too much recursion in code generation
+  int limit = maxDenormalizesPerFunction;
+  int found = 0;
+
   for_set(Symbol, sym, symVec) {
 
     SymExpr *use = NULL;
@@ -225,9 +233,15 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
           DefCastPair defCastPair(def, castTo);
           udcMap.insert(std::pair<SymExpr*, DefCastPair>
               (use, defCastPair));
+          found++;
         }
       }
     }
+
+    // Stop if we've found too many.
+    if (found >= limit)
+      break;
+
   } // end loop for symbol
   if(!cachedGlobalManip) {
     analysisData.registerGlobalManip(fn, false);
