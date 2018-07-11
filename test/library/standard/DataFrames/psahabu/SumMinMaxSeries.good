@@ -1,0 +1,41 @@
+noNone:
+A    1
+B    2
+C    3
+D    4
+E    5
+dtype: int(64)
+
+someNone:
+A    1
+B    None
+C    3
+D    None
+E    5
+dtype: int(64)
+
+moreNone:
+A    None
+B    20
+C    None
+D    40
+E    None
+dtype: int(64)
+
+noNone.sum(): 15
+
+someNone.sum(): 9
+
+moreNone.sum(): 60
+
+noNone.min(): 1
+
+someNone.min(): 1
+
+moreNone.min(): 20
+
+noNone.max(): 5
+
+someNone.max(): 5
+
+moreNone.max(): 40

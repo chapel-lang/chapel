@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -110,7 +110,7 @@ static qioerr setup_actions(
   if( *std__fd == QIO_FD_FORWARD ) {
     // Do nothing. Assume file descriptor childfd does not have close-on-exec.
   } else if( *std__fd == QIO_FD_PIPE || *std__fd == QIO_FD_BUFFERED_PIPE ) {
-    // child can't write to the parent end of the pipe. 
+    // child can't write to the parent end of the pipe.
     rc = posix_spawn_file_actions_addclose(actions, pipe_parent_end);
     if( rc ) return qio_int_to_err(errno);
 
@@ -129,7 +129,7 @@ static qioerr setup_actions(
     *hasactions = true;
   } else if( *std__fd == QIO_FD_TO_STDOUT ) {
     // Do nothing.
-    assert(0);
+
   } else {
     // Use a given file descriptor for childfd (e.g. stdin).
     rc = posix_spawn_file_actions_adddup2(actions, *std__fd, childfd);
@@ -226,7 +226,7 @@ qioerr qio_do_openproc(const char** argv,
   // set the spawn attr POSIX_SPAWN_USEVFORK.
   // It is unclear whether or not the linux implementation
   // will work correctly when combining POSIX_SPAWN_USEVFORK
-  // with file actions (e.g. to make a pipe for stdin/stdout). 
+  // with file actions (e.g. to make a pipe for stdin/stdout).
 
   // If we seek to improve performance on linux, here are some options:
   //  * POSIX_SPAWN_USEVFORK
@@ -306,7 +306,7 @@ qioerr qio_do_openproc(const char** argv,
   DONE_SLOW_SYSCALL;
 
   return 0;
- 
+
 error:
   DONE_SLOW_SYSCALL;
   // intentionally ignoring error returns here...
@@ -397,9 +397,19 @@ qioerr qio_waitpid(int64_t pid,
   int flags = 0;
   pid_t got;
 
-  if( ! blocking ) flags |= WNOHANG;
+  flags |= WNOHANG;
 
-  got = waitpid((pid_t) pid, &status, flags);
+  do {
+    got = waitpid((pid_t) pid, &status, flags);
+    if ( got == -1 && errno == EINTR ) {
+      // Try again is a non-blocking wait was interrupted
+      got = 0;
+    }
+    if ( ! blocking ) {
+      break;
+    }
+    chpl_task_yield();
+  } while (got == 0);
 
   // Check for error
   if( got == -1 ) {
@@ -564,7 +574,10 @@ qioerr qio_proc_communicate(
     // Run select to wait for something
     if( do_input || do_output || do_error ) {
       // TODO -- use sys_select so threading can interact
-      rc = select(nfds, &rfds, &wfds, &efds, NULL);
+      struct timeval t;
+      t.tv_sec = 0;
+      t.tv_usec = 10;
+      rc = select(nfds, &rfds, &wfds, &efds, &t);
       if (rc > 0) {
         // read ready file descriptors
         input_ready = input_fd != -1 && FD_ISSET(input_fd, &wfds);
@@ -628,6 +641,7 @@ qioerr qio_proc_communicate(
       if( err ) break;
     }
 
+    chpl_task_yield();
   }
 
   // we could close the file descriptors at this point,

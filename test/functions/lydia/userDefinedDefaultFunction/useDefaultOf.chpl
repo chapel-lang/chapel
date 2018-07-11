@@ -1,3 +1,4 @@
+pragma "use default init"
 record foo {
   var a: int;
   var b: int;

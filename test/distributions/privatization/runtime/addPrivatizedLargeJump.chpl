@@ -3,7 +3,7 @@ use PrivatizationWrappers;
 var addOrder = [0, 1000, 10000];
 
 for i in addOrder {
-  var newValue = new C(i);
+  var newValue = new unmanaged C(i);
   insertPrivatized(newValue, i);
 }
 

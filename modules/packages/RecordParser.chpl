@@ -101,7 +101,7 @@ RecordParser Types and Functions
  */
 module RecordParser {
 
-use IO, Regexp;
+use IO, Regexp, Reflection;
 
 
 /* A class providing the ability to read records matching a regular expression.
@@ -117,7 +117,7 @@ class RecordReader {
   /* The regular expression to read (using match on the channel) */
   var matchRegexp: regexp;
   pragma "no doc"
-  param num_fields = __primitive("num fields", t); // Number of fields in record
+  param num_fields = numFields(t); // Number of fields in record
 
   /* Create a RecordReader to match an auto-generated regular expression
      for a record created by the :proc:`createRegexp` routine.
@@ -165,7 +165,7 @@ class RecordReader {
     // regex..)
     var accum: string = "\\s*";
     for param n in 1..num_fields {
-      accum = accum + __primitive("field num to name", t, n) + "\\s*(.*?)" + "\\s*";
+      accum = accum + getFieldName(t, n) + "\\s*(.*?)" + "\\s*";
     }
     return accum;
   }
@@ -232,12 +232,16 @@ class RecordReader {
         return (rec, false);
       }
       for param n in 1..num_fields {
-        var tmp = __primitive("field by num", rec, n);
+        var tmp = getField(rec, n);
         var s: string;
+        ref dst = getFieldRef(rec, n);
         myReader.extractMatch(m(n + 1), s);
-        if(s == "")
-          then __primitive("field by num", rec, n) = tmp;
-        else __primitive("field by num", rec, n) = s:tmp.type;
+        if s == "" then
+          dst = tmp;
+        else if tmp.type == string then
+          dst = s;
+        else
+          dst = s:tmp.type;
         once = true;
       }
     }

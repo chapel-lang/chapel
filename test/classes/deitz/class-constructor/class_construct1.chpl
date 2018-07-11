@@ -5,7 +5,7 @@ class foo {
   }
 }
 
-var f : foo = new foo(50);
+var f : unmanaged foo = new unmanaged foo(50);
 
 writeln(f);
 

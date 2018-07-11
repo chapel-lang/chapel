@@ -6,15 +6,11 @@ class B: A {
   var y: int;
 }
 
-var a = new A();
-var b: B;
-var c: B;
+var a = new owned A();
+var b: owned B;
+var c: owned B;
 
 writeln(a);
 writeln("{x = ", a.x, "}");
 
-b = new B();
-
-delete b;
-delete a;
-
+b = new owned B();

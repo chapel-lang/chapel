@@ -63,7 +63,7 @@ the following source and target types,
 as defined in the referenced subsections:
 
 \begin{itemize}
-\item numeric, boolean, and enumerated types~(\rsec{Implicit_NumBoolEnum_Conversions}),
+\item numeric and boolean types~(\rsec{Implicit_NumBool_Conversions}),
 \item class types~(\rsec{Implicit_Class_Conversions}),
 \item integral types in the special case when the expression's value
       is a compile-time constant~(\rsec{Implicit_Compile_Time_Constant_Conversions}), and
@@ -82,8 +82,8 @@ is allowed from type \chpl{T1} to \chpl{T2} and from \chpl{T2} to \chpl{T3},
 that by itself does not allow an implicit conversion
 from \chpl{T1} to \chpl{T3}.
 
-\subsection{Implicit Numeric, Bool and Enumeration Conversions}
-\label{Implicit_NumBoolEnum_Conversions}
+\subsection{Implicit Numeric and Bool Conversions}
+\label{Implicit_NumBool_Conversions}
 
 \index{conversions!numeric}
 \index{conversions!implicit!numeric}
@@ -136,16 +136,7 @@ If such a conversion is actually desired, a cast \rsec{Explicit_Conversions}
 can be inserted.
 \end{rationale}
 
-\index{conversions!enumerated types}
-\index{conversions!implicit!enumerated types}
-An expression of an enumerated type can be implicitly converted
-to an integral type, provided that all of the constants defined by the
-enumerated type are representable by the integral type.
-
-% Requiring an explicit cast to convert an integer to an enumerated type
-% is consistent with C# and later versions of C++.
-
-Legal implicit conversions with numeric, boolean and enumerated types
+Legal implicit conversions with numeric and boolean types
 may thus be tabulated as follows:
 
 \begin{center}
@@ -157,8 +148,6 @@ Source Type  & bool($t$) & uint($t$) & int($t$) & real($t$) & imag($t$) & comple
 \cline{1-7} \\
 
 bool($s$)    & all $s,t$ & all $s,t$   & all $s$; $2 \le t$ & & & \\ [7pt]
-
-enum         &           & (see rules) & (see rules)        & & & \\ [7pt]
 
 uint($s$)    & & $s \le t$ & $s < t$   & $s \le mant(t)$   & & $s \le mant(t/2)$   \\ [7pt]
 
@@ -322,16 +311,22 @@ part of the resulting complex value.
 \index{conversions!explicit!enumeration}
 
 Explicit conversions are allowed from any enumerated type to any
-integer or real type, \chpl{bool}, or \chpl{string}, and vice versa.
+\chpl{string} and vice-versa, and include \chpl{param} conversions.
+For enumerated types that are either concrete or semi-concrete
+(\rsec{Enumerated_Types}), conversions are supported between the
+enum's constants and any numeric type or \chpl{bool},
+including \chpl{param} conversions.  For a semi-concrete enumerated
+type, if a conversion is attempted involving a constant with no
+underlying integer value, it will generate a compile-time error for
+a \chpl{param} conversion or an execution-time error otherwise.
 
 When the target type is an integer type, the value is first converted to its
 underlying integer type and then to the target type, following the rules above
 for converting between integers.
 
-When the target type is a real or complex type, the value is first converted to
-its underlying integer type and then to the target type.
-
-The conversion of an enumerated type to \chpl{imag} is not permitted.
+When the target type is a real, imaginary, or complex type, the value
+is first converted to its underlying integer type and then to the
+target type.
 
 When the target type is \chpl{bool}, the value is first converted to its
 underlying integer type.  If the result is zero, the value of the \chpl{bool}

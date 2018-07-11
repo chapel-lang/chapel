@@ -94,7 +94,7 @@ void EnumType::codegenDef() {
       fprintf(outfile, "%s", constant->sym->codegen().c.c_str());
       if (constant->init) {
         fprintf(outfile, " = %s", constant->init->codegen().c.c_str());
-      } else INT_FATAL("enum init not defined");
+      }
       first = false;
     }
     fprintf(outfile, "} ");
@@ -110,12 +110,22 @@ void EnumType::codegenDef() {
       type = ty->codegen().type;
       info->lvt->addGlobalType(symbol->cname, type);
 
+      // Convert enums to constants with the user-specified immediate,
+      // sized appropraitely, when it exists.  When it doesn't, give
+      // it the semi-arbitrary 0-based ordinal value (similar to what
+      // the C back-end would do itself).  Note that once some enum
+      // has a non-NULL constant->init, all subsequent ones should as
+      // well.
+      int order = 0;
       for_enums(constant, this) {
         //llvm::Constant *initConstant;
 
-        if(constant->init == NULL) INT_FATAL(this, "no constant->init");
-
-        VarSymbol* s = toVarSymbol(toSymExpr(constant->init)->symbol());
+        VarSymbol* s;
+        if (constant->init) {
+          s = toVarSymbol(toSymExpr(constant->init)->symbol());
+        } else {
+          s = new_IntSymbol(order, INT_SIZE_64);
+        }
         INT_ASSERT(s);
         INT_ASSERT(s->immediate);
 
@@ -123,6 +133,7 @@ void EnumType::codegenDef() {
 
         info->lvt->addGlobalValue(constant->sym->cname,
                                   sizedImmediate->codegen());
+        order++;
       }
     }
 #endif
@@ -165,6 +176,7 @@ int EnumType::codegenStructure(FILE* outfile, const char* baseoffset) {
 // name the typedef for the struct itself.
 //
 const char* AggregateType::classStructName(bool standalone) {
+
   if (standalone) {
     const char* basename = symbol->cname;
     if (aggregateTag == AGGREGATE_CLASS) {

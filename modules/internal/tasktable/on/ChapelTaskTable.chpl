@@ -51,6 +51,11 @@ module ChapelTaskTable {
   // sort the tasks and indent to show the parent/child relationships, which
   // might be very nice.
   //
+  // This 'plain old data' pragma appears to be necessary for the following
+  // test to work: parallel/begin/stonea/reports.chpl
+  //
+  pragma "plain old data"
+  pragma "use default init"
   record chpldev_Task {
     var state     : taskState;
     var lineno    : uint(32);
@@ -58,6 +63,7 @@ module ChapelTaskTable {
     var tl_info   : uint(64);
   }
   
+  pragma "use default init"
   class chpldev_taskTable_t {
     var dom : domain(chpl_taskID_t, parSafe=false);
     var map : [dom] chpldev_Task;

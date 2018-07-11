@@ -576,6 +576,7 @@ class LocBlock1DDom {
 //
 // the global array class
 //
+pragma "use default init"
 class Block1DArr: BaseArray {
   // GENERICS:
 

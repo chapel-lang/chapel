@@ -36,11 +36,18 @@ ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   fZippered(zippered),
   fLoopBody(body),
   fFromForLoop(false),
-  fContinueLabel(NULL)
+  fContinueLabel(NULL),
+  fErrorHandlerLabel(NULL),
+  fFromResolvedForLoop(false),
+  fRecIterIRdef(NULL),
+  fRecIterICdef(NULL),
+  fRecIterGetIterator(NULL),
+  fRecIterFreeIterator(NULL)
 {
   fIterVars.parent = this;
   fIterExprs.parent = this;
   fShadowVars.parent = this;
+
   gForallStmts.add(this);
 }
 
@@ -54,23 +61,33 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   for_alist(expr, fShadowVars)
     _this->fShadowVars.insertAtTail(COPY_INT(expr));
 
+  _this->fFromForLoop = fFromForLoop;
+  _this->fFromResolvedForLoop = fFromResolvedForLoop;
+  // todo: fContinueLabel, fErrorHandlerLabel
+
+  _this->fRecIterIRdef        = COPY_INT(fRecIterIRdef);
+  _this->fRecIterICdef        = COPY_INT(fRecIterICdef);
+  _this->fRecIterGetIterator  = COPY_INT(fRecIterGetIterator);
+  _this->fRecIterFreeIterator = COPY_INT(fRecIterFreeIterator);
+
   return _this;
 }
 
 void ForallStmt::replaceChild(Expr* oldAst, Expr* newAst) {
-  if (oldAst == fLoopBody) {
-    if (!newAst)
-      fLoopBody = NULL;
-    else if (BlockStmt* newBlock = toBlockStmt(newAst))
-      fLoopBody = newBlock;
-    else
-      // It is caller responsibility to make newAst fit.
-      INT_ASSERT(false);
+  if (oldAst == fLoopBody)
+    fLoopBody = toBlockStmt(newAst);
 
-  } else {
-    // We did not find oldAst in our ForallStmt.
+  else if (oldAst == fRecIterIRdef)
+    fRecIterIRdef = toDefExpr(newAst);
+  else if (oldAst == fRecIterICdef)
+    fRecIterICdef = toDefExpr(newAst);
+  else if (oldAst == fRecIterGetIterator)
+    fRecIterGetIterator = toCallExpr(newAst);
+  else if (oldAst == fRecIterFreeIterator)
+    fRecIterFreeIterator = toCallExpr(newAst);
+
+  else
     INT_ASSERT(false);
-  }
 }
 
 // Todo: are these checks done elsewhere?
@@ -102,6 +119,21 @@ void ForallStmt::verify() {
     INT_ASSERT(isShadowVarSymbol(svDef->sym));
   }
 
+  // Either all four are present or none.
+  if (fRecIterIRdef != NULL) {
+    INT_ASSERT(fRecIterICdef        != NULL);
+    INT_ASSERT(fRecIterGetIterator  != NULL);
+    INT_ASSERT(fRecIterFreeIterator != NULL);
+    verifyParent(fRecIterIRdef);        verifyNotOnList(fRecIterIRdef);
+    verifyParent(fRecIterICdef);        verifyNotOnList(fRecIterICdef);
+    verifyParent(fRecIterGetIterator);  verifyNotOnList(fRecIterGetIterator);
+    verifyParent(fRecIterFreeIterator); verifyNotOnList(fRecIterFreeIterator);
+  } else {
+    INT_ASSERT(fRecIterICdef        == NULL);
+    INT_ASSERT(fRecIterGetIterator  == NULL);
+    INT_ASSERT(fRecIterFreeIterator == NULL);
+  }
+
   INT_ASSERT(fLoopBody);
   verifyParent(fLoopBody);
   verifyNotOnList(fLoopBody);
@@ -114,19 +146,24 @@ void ForallStmt::verify() {
   INT_ASSERT(!fLoopBody->byrefVars);
   INT_ASSERT(!fLoopBody->forallIntents);
 
-  // Currently ForallStmt are gone during resolve().
-  INT_ASSERT(!resolved);
+  // ForallStmts are lowered away during lowerIterators().
+  INT_ASSERT(!iteratorsLowered);
 }
 
 void ForallStmt::accept(AstVisitor* visitor) {
-  if (visitor->enterForallStmt(this)) {
-    for_alist(expr, inductionVariables())
-      expr->accept(visitor);
-    for_alist(expr, iteratedExpressions())
-      expr->accept(visitor);
-    for_alist(expr, shadowVariables())
-      expr->accept(visitor);
+  if (visitor->enterForallStmt(this))
+  {
+    for_alist(expr, inductionVariables())  expr->accept(visitor);
+    for_alist(expr, iteratedExpressions()) expr->accept(visitor);
+    for_alist(expr, shadowVariables())     expr->accept(visitor);
+
+    if (fRecIterIRdef)        fRecIterIRdef->accept(visitor);
+    if (fRecIterICdef)        fRecIterICdef->accept(visitor);
+    if (fRecIterGetIterator)  fRecIterGetIterator->accept(visitor);
+    if (fRecIterFreeIterator) fRecIterFreeIterator->accept(visitor);
+    
     fLoopBody->accept(visitor);
+
     visitor->exitForallStmt(this);
   }
 }
@@ -138,14 +175,7 @@ GenRet ForallStmt::codegen() {
 }
 
 Expr* ForallStmt::getFirstExpr() {
-  if (Expr* iv = fIterVars.head->getFirstExpr())
-    return iv;
-  else if (Expr* ie = fIterExprs.head->getFirstExpr())
-    return ie;
-
-  // we must have found something
-  INT_ASSERT(false);
-  return NULL; //dummy
+  return fIterVars.head->getFirstExpr();
 }
 
 Expr* ForallStmt::getNextExpr(Expr* expr) {
@@ -153,16 +183,41 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
     return fIterExprs.head;
 
   if (expr == fIterExprs.tail) {
-    if (Expr* inv = fShadowVars.head)
-      return inv;
+    if (Expr* sv1 = fShadowVars.head)
+      return sv1->getFirstExpr();
+    else if (fRecIterIRdef != NULL)
+      return fRecIterIRdef->getFirstExpr();
     else
       return fLoopBody->getFirstExpr();
   }
 
-  if (expr == fShadowVars.tail)
+  if (expr == fShadowVars.tail) {
+    if (fRecIterIRdef != NULL)
+      return fRecIterIRdef->getFirstExpr();
+    else
+      return fLoopBody->getFirstExpr();
+  }
+
+  // Out of these four fields, either all are present or none:
+  //  fRecIterIRdef, fRecIterICdef, fRecIterGetIterator, fRecIterFreeIterator
+
+  if (expr == fRecIterIRdef)
+    return fRecIterICdef->getFirstExpr();
+
+  if (expr == fRecIterICdef)
+    return fRecIterGetIterator->getFirstExpr();
+
+  if (expr ==fRecIterGetIterator)
+    return fRecIterFreeIterator->getFirstExpr();
+
+  if (expr == fRecIterFreeIterator)
     return fLoopBody->getFirstExpr();
 
-  return this;
+  if (expr == fLoopBody)
+    return this;
+
+  INT_ASSERT(false); // should have done one of the above
+  return NULL;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -183,6 +238,15 @@ int ForallStmt::reduceIntentIdx(Symbol* var) {
 
   // Did not see 'var' with a reduce intent.
   return -1;
+}
+
+// If there is only one induction var, treat this forall as non-zippered
+// This is for the rare case that the zip tuple in "forall ... in zip() ..."
+// is a 1-tuple.
+// We do this before "lowering" the ForallStmt to leader+follower
+// because after lowering there is always just one induction var.
+void ForallStmt::setNotZippered() {
+  fZippered = false;
 }
 
 // Return the enclosing forall statement for 'expr', or NULL if none.
@@ -210,27 +274,26 @@ bool isForallLoopBody(Expr* expr) {
   return false;
 }
 
-// valid after addParIdxVarsAndRestruct()
-VarSymbol* parIdxVar(const ForallStmt* fs) {
-  DefExpr* def = toDefExpr(fs->loopBody()->body.head);
-  VarSymbol* result = toVarSymbol(def->sym);
-  INT_ASSERT(result && !strcmp(result->name, "chpl__parIdx"));
-  return result;
+// Is 'expr' one of fs->fRecIter* for some 'fs' ?
+bool isForallRecIterHelper(Expr* expr) {
+  if (expr->list == NULL)
+    if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+      if (expr == pfs->fRecIterIRdef ||
+          expr == pfs->fRecIterICdef ||
+          expr == pfs->fRecIterGetIterator ||
+          expr == pfs->fRecIterFreeIterator)
+        return true;
+  return false;
 }
 
-// ditto
-VarSymbol* parIdxCopyVar(const ForallStmt* fs) {
-  DefExpr* def = toDefExpr(fs->loopBody()->body.head->next);
-  VarSymbol* result = toVarSymbol(def->sym);
-  INT_ASSERT(result && !strcmp(result->name, "chpl__parIdxCopy"));
-  return result;
-}
-
-// ditto
-BlockStmt* userLoop(const ForallStmt* fs) {
-  BlockStmt* ul = toBlockStmt(fs->loopBody()->body.tail);
-  INT_ASSERT(ul);
-  return ul;
+// Return the index variable of the parallel loop.
+// Valid after addParIdxVarsAndRestruct().
+VarSymbol* parIdxVar(ForallStmt* fs) {
+  INT_ASSERT(fs->inductionVariables().length == 1);
+  DefExpr* ivdef = toDefExpr(fs->inductionVariables().head);
+  VarSymbol* ivsym = toVarSymbol(ivdef->sym);
+  INT_ASSERT(ivsym != NULL);
+  return ivsym;
 }
 
 LabelSymbol* ForallStmt::continueLabel() {

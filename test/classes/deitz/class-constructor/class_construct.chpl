@@ -2,7 +2,7 @@ class C {
   var x : int;
 }
 
-var c = new C(1);
+var c = new unmanaged C(1);
 
 writeln(c);
 

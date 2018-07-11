@@ -16,6 +16,6 @@ class C {
   }
 }
 
-var myC = new C();
+var myC = new unmanaged C();
 myC.foo();
 delete myC;

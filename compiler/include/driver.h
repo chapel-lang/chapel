@@ -57,6 +57,7 @@ extern bool fNoRemoteSerialization;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoTupleCopyOpt;
+extern bool fNoOptimizeRangeIteration;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoVectorize;
 extern bool fNoPrivatization;
@@ -91,6 +92,7 @@ extern const char* CHPL_ORIG_TARGET_COMPILER;
 extern const char* CHPL_TARGET_ARCH;
 extern const char* CHPL_RUNTIME_ARCH;
 extern const char* CHPL_TARGET_BACKEND_ARCH;
+extern const char* CHPL_TARGET_ARCH_FLAG;
 extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
@@ -138,6 +140,7 @@ extern bool fLocal;
 extern bool fIgnoreLocalClasses;
 extern bool fUserDefaultInitializers;
 extern bool fLifetimeChecking;
+extern bool fOverrideChecking;
 extern bool fHeterogeneous;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
@@ -173,10 +176,12 @@ extern bool printSearchDirs;
 extern bool printModuleFiles;
 extern bool ignore_warnings;
 extern bool ignore_errors;
+extern bool ignore_user_errors;
 extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 extern bool fWarnUnstable;
+extern bool fDefaultUnmanaged;
 
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportInlinedIterators;
@@ -199,6 +204,8 @@ extern bool preserveInlinedLineNumbers;
 
 extern int breakOnID;
 extern int breakOnDeleteID;
+
+extern char stopAfterPass[128];
 
 // code generation strings
 extern const char* compileCommand;

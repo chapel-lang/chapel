@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+#Note: This is a temporary solution to supporting additional python dependencies
+#      Something integrated with start_test would be preferred in the long term,
+#      such that a test author only needs to specify a requirements.txt file
+
 clean_venv() {
     echo "Aborted virtualenv build due to errors"
     rm -rf pyzmq-venv
@@ -8,7 +12,9 @@ clean_venv() {
 
 if [[ ! -f pyzmq-venv/bin/activate ]] ; then
     # Path to Chapel-installed virtualenv
-    CHPL_VIRTUALENV=$(python $CHPL_HOME/util/chplenv/chpl_home_utils.py --venv)/../virtualenv
+    PYTHON_VERSION=$(python $CHPL_HOME/util/chplenv/chpl_python_version.py)
+    CHPL_VIRTUALENV=$(python $CHPL_HOME/util/chplenv/chpl_home_utils.py --venv)/../lib/python${PYTHON_VERSION}/site-packages/virtualenv.py
+
 
     # If Chapel virtualenv DNE, check for system-installed virtualenv
     if [[ ! -f ${CHPL_VIRTUALENV} ]]; then
@@ -25,7 +31,7 @@ if [[ ! -f pyzmq-venv/bin/activate ]] ; then
     trap clean_venv ERR
 
     # Create virtualenv
-    ${CHPL_VIRTUALENV} pyzmq-venv
+    python ${CHPL_VIRTUALENV} pyzmq-venv
     source pyzmq-venv/bin/activate
     python -m pip install ${CHPL_PIP_INSTALL_PARAMS} -r requirements.txt
     deactivate

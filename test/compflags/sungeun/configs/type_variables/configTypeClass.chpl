@@ -5,7 +5,7 @@ class C {
   var x, y: t;
 }
 
-var p = new C(myIdxType);
+var p = new unmanaged C(myIdxType);
 
 writeln("p = ", p);
 writeln("numBits(myIdxType) = ", numBits(myIdxType));

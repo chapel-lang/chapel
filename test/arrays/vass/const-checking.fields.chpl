@@ -28,8 +28,8 @@ class CLSS {
   }
 }
 
-var cvar = new CLSS();
-const cconst = new CLSS();
+var cvar = new unmanaged CLSS();
+const cconst = new unmanaged CLSS();
 var qvar: REC;
 const qconst: REC;
 

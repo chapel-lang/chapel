@@ -6,15 +6,15 @@ class D : C {
   var y : real = 2.0;
 }
 
-proc foo(c : C) {
+proc foo(c : unmanaged C) {
   writeln(c.x);
 }
 
-var c : C;
+var c : unmanaged C;
 
-c = new C();
+c = new unmanaged C();
 foo(c);
 delete c;
-c = new D();
+c = new unmanaged D();
 foo(c);
 delete c;

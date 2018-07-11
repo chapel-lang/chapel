@@ -129,13 +129,13 @@ When run on 6 locales, the output is:
     0 0 0 1 1 1 0 0
 
 
-**Constructor Arguments**
+**Initializer Arguments**
 
-The ``BlockCyclic`` class constructor is defined as follows:
+The ``BlockCyclic`` class initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc BlockCyclic(
+    proc BlockCyclic.init(
       startIdx,
       blocksize,
       targetLocales: [] locale = Locales, 
@@ -185,7 +185,7 @@ class BlockCyclic : BaseDist {
   const blocksize: rank*int;
   const targetLocDom: domain(rank);
   const targetLocales: [targetLocDom] locale;
-  const locDist: [targetLocDom] LocBlockCyclic(rank, idxType);
+  const locDist: [targetLocDom] unmanaged LocBlockCyclic(rank, idxType);
 
   var dataParTasksPerLocale: int; // tasks per locale for forall iteration
 
@@ -197,10 +197,10 @@ class BlockCyclic : BaseDist {
             type idxType             = _determineIdxTypeFromArg(startIdx))
   {
     // argument sanity checks, with friendly error messages
-    if isTuple(startIdx) != isTuple(blocksize) then compilerError("when invoking BlockCyclic constructor, startIdx and blocksize must be either both tuples or both integers");
-    if isTuple(startIdx) && startIdx.size != blocksize.size then compilerError("when invoking BlockCyclic constructor and startIdx and blocksize are tuples, their sizes must match");
-    if !isIntegralType(idxType) then compilerError("when invoking BlockCyclic constructor, startIdx must be an integer or a tuple of integers");
-    if !isIntegralType(_determineIdxTypeFromArg(blocksize)) then compilerError("when invoking BlockCyclic constructor, blocksize must be an integer or a tuple of integers");
+    if isTuple(startIdx) != isTuple(blocksize) then compilerError("when invoking BlockCyclic initializer, startIdx and blocksize must be either both tuples or both integers");
+    if isTuple(startIdx) && startIdx.size != blocksize.size then compilerError("when invoking BlockCyclic initializer and startIdx and blocksize are tuples, their sizes must match");
+    if !isIntegralType(idxType) then compilerError("when invoking BlockCyclic initializer, startIdx must be an integer or a tuple of integers");
+    if !isIntegralType(_determineIdxTypeFromArg(blocksize)) then compilerError("when invoking BlockCyclic initializer, blocksize must be an integer or a tuple of integers");
 
     this.rank = rank;
     this.idxType = idxType;
@@ -227,12 +227,12 @@ class BlockCyclic : BaseDist {
       }
     } else {
       if targetLocales.rank != rank then
-    compilerError("locales array rank must be one or match distribution rank");
+        compilerError("locales array rank must be one or match distribution rank");
 
       var ranges: rank*range;
       for param i in 1..rank do {
-    var thisRange = targetLocales.domain.dim(i);
-    ranges(i) = 0..#thisRange.length; 
+        var thisRange = targetLocales.domain.dim(i);
+        ranges(i) = 0..#thisRange.length;
       }
       
       targetLocDom = {(...ranges)};
@@ -246,7 +246,7 @@ class BlockCyclic : BaseDist {
 
     coforall locid in targetLocDom do
       on this.targetLocales(locid) do
-        locDist(locid) = new LocBlockCyclic(rank, idxType, locid, this);
+        locDist(locid) = new unmanaged LocBlockCyclic(rank, idxType, locid, _to_unmanaged(this));
 
     if dataParTasksPerLocale == 0 then
       this.dataParTasksPerLocale = here.maxTaskPar;
@@ -257,8 +257,8 @@ class BlockCyclic : BaseDist {
       for loc in locDist do writeln(loc);
   }
 
-  // copy constructor for privatization
-  proc init(param rank: int, type idxType, other: BlockCyclic(rank, idxType)) {
+  // copy initializer for privatization
+  proc init(param rank: int, type idxType, other: unmanaged BlockCyclic(rank, idxType)) {
     this.rank = rank;
     this.idxType = idxType;
     lowIdx = other.lowIdx;
@@ -270,10 +270,10 @@ class BlockCyclic : BaseDist {
   }
 
   proc dsiClone() {
-    return new BlockCyclic(lowIdx, blocksize, targetLocales, dataParTasksPerLocale);
+    return new unmanaged BlockCyclic(lowIdx, blocksize, targetLocales, dataParTasksPerLocale);
   }
 
-  proc dsiDestroyDist() {
+  override proc dsiDestroyDist() {
     coforall ld in locDist do {
       on ld do
         delete ld;
@@ -312,14 +312,16 @@ proc BlockCyclic._locsize {
 //
 // create a new rectangular domain over this distribution
 //
-proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
+override proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
                                       param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("BlockCyclic domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("BlockCyclic domain rank does not match distribution's");
 
-  var dom = new BlockCyclicDom(rank=rank, idxType=idxType, dist=this, stridable=stridable);
+  var dom = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType,
+                                         dist=_to_unmanaged(this),
+                                         stridable=stridable);
   dom.dsiSetIndices(inds);
   return dom;
 }
@@ -447,10 +449,15 @@ class LocBlockCyclic {
   // Constructor computes what chunk of index(1) is owned by the
   // current locale
   //
-  proc LocBlockCyclic(param rank: int,
-                 type idxType, 
-                 locid,   // the locale index from the target domain
-                 dist: BlockCyclic(rank, idxType)) { // reference to glob dist
+  proc init(param rank: int,
+            type idxType,
+            locid,   // the locale index from the target domain
+            dist: unmanaged BlockCyclic(rank, idxType)) { // reference to glob dist
+    this.rank = rank;
+    this.idxType = idxType;
+
+    this.complete();
+
     if rank == 1 {
       const lo = dist.lowIdx(1) + (locid * dist.blocksize(1));
       const str = dist.blocksize(1) * dist.targetLocDom.numIndices;
@@ -477,17 +484,18 @@ proc LocBlockCyclic.writeThis(x) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Domain Class
 //
+pragma "use default init"
 class BlockCyclicDom: BaseRectangularDom {
   //
   // LEFT LINK: a pointer to the parent distribution
   //
-  const dist: BlockCyclic(rank, idxType);
+  const dist: unmanaged BlockCyclic(rank, idxType);
 
   //
   // DOWN LINK: an array of local domain class descriptors -- set up in
   // setup() below
   //
-  var locDoms: [dist.targetLocDom] LocBlockCyclicDom(rank, idxType, stridable);
+  var locDoms: [dist.targetLocDom] unmanaged LocBlockCyclicDom(rank, idxType, stridable);
 
   //
   // a domain describing the complete domain
@@ -578,7 +586,9 @@ proc BlockCyclicDom.dsiSerialWrite(x) {
 // how to allocate a new array over this domain
 //
 proc BlockCyclicDom.dsiBuildArray(type eltType) {
-  var arr = new BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+  var arr = new unmanaged BlockCyclicArr(eltType=eltType, rank=rank,
+                                         idxType=idxType, stridable=stridable,
+                                         dom=_to_unmanaged(this));
   arr.setup();
   return arr;
 }
@@ -621,13 +631,13 @@ proc BlockCyclicDom.dsiGetIndices() {
   return whole.getIndices();
 }
 
-proc BlockCyclicDom.dsiMyDist() return dist;
+override proc BlockCyclicDom.dsiMyDist() return dist;
 
 proc BlockCyclicDom.setup() {
   coforall localeIdx in dist.targetLocDom do
     on dist.targetLocales(localeIdx) do
       if (locDoms(localeIdx) == nil) then
-        locDoms(localeIdx) = new LocBlockCyclicDom(rank, idxType, stridable, this, 
+        locDoms(localeIdx) = new unmanaged LocBlockCyclicDom(rank, idxType, stridable, _to_unmanaged(this),
                                                    dist.getStarts(whole, localeIdx));
       else {
         locDoms(localeIdx).myStarts = dist.getStarts(whole, localeIdx);
@@ -654,8 +664,8 @@ proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
 proc BlockCyclicDom.dsiGetPrivatizeData() return 0;
 
 proc BlockCyclicDom.dsiPrivatize(privatizeData) {
-  var privateDist = new BlockCyclic(rank, idxType, dist);
-  var c = new BlockCyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
+  var privateDist = new unmanaged BlockCyclic(rank, idxType, dist);
+  var c = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
   c.locDoms = locDoms;
   c.whole = whole;
   return c;
@@ -680,6 +690,7 @@ proc BlockCyclicDom.dsiIndexOrder(i) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Domain Class
 //
+pragma "use default init"
 class LocBlockCyclicDom {
   param rank: int;
   type idxType;
@@ -688,7 +699,7 @@ class LocBlockCyclicDom {
   //
   // UP LINK: a reference to the parent global domain class
   //
-  const globDom: BlockCyclicDom(rank, idxType, stridable);
+  const globDom: unmanaged BlockCyclicDom(rank, idxType, stridable);
 
   //
   // a local domain describing the indices owned by this locale
@@ -698,7 +709,11 @@ class LocBlockCyclicDom {
   // indices back to the local index type.
   //
   var myStarts: domain(rank, idxType, stridable=true);
-  var myFlatInds: domain(1) = {0..#computeFlatInds()};
+  var myFlatInds: domain(1);
+}
+
+proc LocBlockCyclicDom.postinit() {
+  myFlatInds = {0..#computeFlatInds()};
 }
 
 //
@@ -782,37 +797,38 @@ proc LocBlockCyclicDom._sizes {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
+pragma "use default init"
 class BlockCyclicArr: BaseRectangularArr {
 
   //
   // LEFT LINK: the global domain descriptor for this array
   //
-  var dom: BlockCyclicDom(rank, idxType, stridable);
+  var dom: unmanaged BlockCyclicDom(rank, idxType, stridable);
 
   //
   // DOWN LINK: an array of local array classes
   //
-  var locArr: [dom.dist.targetLocDom] LocBlockCyclicArr(eltType, rank, idxType, stridable);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable);
 
   //
   // optimized reference to a local LocBlockCyclicArr instance (or nil)
   //
-  var myLocArr: LocBlockCyclicArr(eltType, rank, idxType, stridable);
+  var myLocArr: unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable);
 }
 
-proc BlockCyclicArr.dsiGetBaseDom() return dom;
+override proc BlockCyclicArr.dsiGetBaseDom() return dom;
 
 proc BlockCyclicArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
-      locArr(localeIdx) = new LocBlockCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx), dom.locDoms(localeIdx));
+      locArr(localeIdx) = new unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx), dom.locDoms(localeIdx));
       if this.locale == here then
         myLocArr = locArr(localeIdx);
     }
   }
 }
 
-proc BlockCyclicArr.dsiDestroyArr() {
+override proc BlockCyclicArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       delete locArr(localeIdx);
@@ -826,7 +842,7 @@ proc BlockCyclicArr.dsiGetPrivatizeData() return 0;
 
 proc BlockCyclicArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
-  var c = new BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  var c = new unmanaged BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   c.locArr = locArr;
   for localeIdx in dom.dist.targetLocDom do
     if c.locArr(localeIdx).locale == here then
@@ -975,7 +991,7 @@ iter BlockCyclicArr.dsiLocalSubdomains() {
 iter BlockCyclicDom.dsiLocalSubdomains() {
   // TODO -- could be replaced by a privatized myLocDom in BlockCyclicDom
   // as it is with BlockCyclicArr
-  var myLocDom:LocBlockCyclicDom(rank, idxType, stridable) = nil;
+  var myLocDom:unmanaged LocBlockCyclicDom(rank, idxType, stridable) = nil;
   for (loc, locDom) in zip(dist.targetLocales, locDoms) {
     if loc == here then
       myLocDom = locDom;
@@ -988,6 +1004,7 @@ iter BlockCyclicDom.dsiLocalSubdomains() {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Array Class
 //
+pragma "use default init"
 class LocBlockCyclicArr {
   type eltType;
   param rank: int;
@@ -997,8 +1014,8 @@ class LocBlockCyclicArr {
   //
   // LEFT LINK: a reference to the local domain class for this array and locale
   //
-  const allocDom: LocBlockCyclicDom(rank, idxType, stridable);
-  const indexDom: LocBlockCyclicDom(rank, idxType, stridable);
+  const allocDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable);
+  const indexDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable);
 
 
   // STATE:

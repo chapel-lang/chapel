@@ -130,7 +130,7 @@ These options are all specified using files in the same directory as the test.
 Some files apply to a directory as a whole while others will apply to a single
 test by sharing the same base filename.  Those files which impact the entire
 directory are named in upper case, e.g. ``COMPOPTS``, or ``PERFNUMTRIALS``.
-They can be overriden or augumented with test-specific settings using the same
+They can be overridden or augmented with test-specific settings using the same
 name but in lower case, e.g. ``foo.compopts``.
 
 Compile-time Arguments
@@ -471,7 +471,7 @@ Here is a sample ``.dat`` file, for the performance test at
 
 Because the lines are tab-separated, the key will not necessarily "line up"
 visually with the corresponding header.  Modifying these files by hand is
-inadvisible.
+inadvisable.
 
 Performance tests submitted to the Chapel repository are run on a nightly basis,
 generating these ``.dat`` files.  Modifications to the ``.perfkeys`` that
@@ -715,7 +715,7 @@ There are three situations under which a future will get resolved.
    gets resolved.
 
    - This could happen if the two issues appeared to be unrelated, or if the
-     existance of the future had been forgotten
+     existence of the future had been forgotten
 
 3) A developer examines the future and determines the current behavior is correct
 
@@ -745,6 +745,12 @@ stored in the ``typeTests/`` and ``OOPTests/`` subdirectories.
 
 If invoked without any arguments, ``start_test`` will start in the current
 directory and recursively look for tests in subdirectories.
+
+If invoked with the ``--valgrindexe`` flag, ``start_test`` will compile the
+program and execute it with ``valgrind``. The ``--valgrind`` flag does the
+same, plus it also runs the compiler under ``valgrind``, which increases
+testing time compared to ``--valgrindexe``. To learn about best practices
+with ``valgrind``, see ``Valgrind.rst``.
 
 Performance Testing
 -------------------

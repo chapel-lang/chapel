@@ -3,7 +3,7 @@ class foo {
 }
 
 proc bar(type t) {
-  var M = new t();
+  var M = new unmanaged t();
   return M;
 }
 

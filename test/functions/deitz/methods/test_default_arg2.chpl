@@ -5,7 +5,7 @@ class C {
   }
 }
 
-var c = new C();
+var c = new unmanaged C();
 writeln(c);
 c.foo(3, 5);
 c.foo(3);

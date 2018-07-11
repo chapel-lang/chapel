@@ -249,24 +249,24 @@ module SSCA2_kernels
 
       // There will be numTPVs copies of the temps, thus throttling the
       // number of starting vertices being considered simultaneously.
-      var TPV: [TPVLocaleSpace] taskPrivateData(domain(index(vertex_domain)),
+      var TPV: [TPVLocaleSpace] unmanaged taskPrivateData(domain(index(vertex_domain)),
                                                 vertex_domain.type);
 
       // Initialize
       coforall (t, i) in zip(TPVLocaleSpace, TPVSpace) do on TPVLocaleSpace.dist.idxToLocale(t) {
-          TPV[i] = new taskPrivateData(domain(index(vertex_domain)), vertex_domain);
+          TPV[i] = new unmanaged taskPrivateData(domain(index(vertex_domain)), vertex_domain);
           var tpv = TPV[i];
           forall v in vertex_domain do
             tpv.BCaux[v].children_list.nd = {1..G.n_Neighbors[v]};
           for loc in Locales do on loc {
-            tpv.Active_Level[here.id] = new Level_Set (Sparse_Vertex_List);
+            tpv.Active_Level[here.id] = new unmanaged Level_Set (Sparse_Vertex_List);
             tpv.Active_Level[here.id].previous = nil;
-            tpv.Active_Level[here.id].next = new Level_Set (Sparse_Vertex_List);;
+            tpv.Active_Level[here.id].next = new unmanaged Level_Set (Sparse_Vertex_List);;
             tpv.Active_Level[here.id].next.previous = tpv.Active_Level[here.id];
             tpv.Active_Level[here.id].next.next = nil;
           }
       }
-      var TPVM: TPVManager(TPV.type) = new TPVManager(TPV);
+      var TPVM: unmanaged TPVManager(TPV.type) = new unmanaged TPVManager(TPV);
 
       // ------------------------------------------------------ 
       // Each iteration of the outer loop of Brandes's algorithm
@@ -403,7 +403,7 @@ module SSCA2_kernels
             //  for now, just do a normal barrier
 
             if Active_Level[here.id].next.next == nil {
-              Active_Level[here.id].next.next = new Level_Set (Sparse_Vertex_List);
+              Active_Level[here.id].next.next = new unmanaged Level_Set (Sparse_Vertex_List);
               Active_Level[here.id].next.next.previous = Active_Level[here.id].next;
               Active_Level[here.id].next.next.next = nil;
             } else {
@@ -535,8 +535,8 @@ module SSCA2_kernels
   class Level_Set {
     type Sparse_Vertex_List;
     var Members  : Sparse_Vertex_List;
-    var previous : Level_Set (Sparse_Vertex_List);
-    var next : Level_Set (Sparse_Vertex_List);
+    var previous : unmanaged Level_Set (Sparse_Vertex_List);
+    var next : unmanaged Level_Set (Sparse_Vertex_List);
   }
 
   //
@@ -572,7 +572,7 @@ module SSCA2_kernels
     const vertex_domain;
     var used  : atomic bool;
     var BCaux : [vertex_domain] taskPrivateArrayData(index(vertex_domain));
-    var Active_Level : [PrivateSpace] Level_Set (Sparse_Vertex_List);
+    var Active_Level : [PrivateSpace] unmanaged Level_Set (Sparse_Vertex_List);
   }
 
   // This is a simple class that hands out task private variables from the

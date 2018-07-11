@@ -268,6 +268,10 @@ myinstalldir  util/chplenv            "$DEST_CHPL_HOME"/util/chplenv/
 # (needed for LLVM builds)
 myinstallfile util/config/compileline "$DEST_CHPL_HOME"/util/config/
 
+# copy util/config/fixpath.py
+# (needed by setchplenv*)
+myinstallfile util/config/fixpath.py  "$DEST_CHPL_HOME"/util/config/
+
 
 if [ ! -z "$DEST_DIR" ]
 then
@@ -313,6 +317,9 @@ do
     myinstalldir "third-party/$dir/install" "$DEST_THIRD_PARTY/$dir/install/"
   fi
 done
+
+# copy filter-llvm-config.awk
+myinstallfile third-party/llvm/filter-llvm-config.awk "$DEST_THIRD_PARTY"/llvm
 
 # copy utf8-decoder header
 myinstallfile third-party/utf8-decoder/utf8-decoder.h "$DEST_THIRD_PARTY"/utf8-decoder/

@@ -9,7 +9,7 @@ class foo {
   }
 }
 
-var f : foo(t=int) = new foo(t=int, x=3);
+var f : unmanaged foo(t=int) = new unmanaged foo(t=int, x=3);
 
 f.print();
 

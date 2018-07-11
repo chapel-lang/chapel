@@ -14,6 +14,6 @@ class Child: Parent {
   }
 }
 
-var child = new Child(10);
+var child = new unmanaged Child(10);
 writeln(child);
 delete child;

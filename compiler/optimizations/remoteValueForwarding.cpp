@@ -104,7 +104,8 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     if (ct->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
       for_fields(field, ct) {
-        if (field->isRef()) {
+        if (field->hasFlag(FLAG_REF_TO_IMMUTABLE)) {
+          INT_ASSERT(field->isRef());
           if (isSafeToDerefField(defMap, useMap, field) == true) {
             Type* vt = field->getValType();
 
@@ -195,6 +196,8 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                             ArgSymbol*                    arg);
 
 static bool isSufficientlyConst(ArgSymbol* arg);
+
+static CallExpr* findDestroyCallForArg(ArgSymbol* arg);
 
 static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
                               FnSymbol*                     fn,
@@ -377,80 +380,11 @@ static void adjustArgIntentForDeref(ArgSymbol* arg) {
   arg->removeFlag(FLAG_SCOPE);
 }
 
-//
-// BHARSH 2017-08-21:
-//
-// This function inserts calls to chpl__serialize and chpl__deserialize.
-// For example, AST like this:
-//
-//   call on_fn tmp myRecord;
-//
-//   function on_fn(const in dummy_locale_arg, const ref myRecord : Foo) {
-//     call writeln myRecord;
-//   }
-//
-// Will be transformed to AST like this:
-//
-//   var myRecord_data : 3*int;
-//   call chpl__serialize myRecord myRecord_data;
-//   call on_fn tmp myRecord_data
-//
-//   function on_fn(const in dummy_locale_arg, const myRecord_data : 3*int) {
-//     var myRecord : Foo;
-//     call chpl__deserialize myRecord_data myRecord;
-//     call writeln myRecord;
-//     call chpl__autoDestroy myRecord_data;
-//     call chpl__autoDestroy myRecord;
-//   }
-//
-// If we're RVF-ing something with a runtime type, this function copies the
-// original formal and uses it to construct a runtime type within the
-// on-statement. This will change the number of formals for this on-statement
-// unlike traditional RVF.
-//
-// BHARSH TODO: Split this function into more easily-digestible pieces
-// BHARSH TODO: capture the assumptions made here in documentation
-//
-static CallExpr* findDestroyCallForArg(ArgSymbol* arg);
-static void insertSerialization(FnSymbol*  fn,
-                                ArgSymbol* arg) {
-  Type* oldArgType    = arg->type;
-  bool newStyleInIntent = shouldAddFormalTempAtCallSite(arg, fn);
-
-  Serializers ser = serializeMap[oldArgType->getValType()];
-
-  FnSymbol* serializeFn   = ser.serializer;
-  FnSymbol* deserializeFn = ser.deserializer;
-  INT_ASSERT(serializeFn != NULL && deserializeFn != NULL);
-
-  bool needsRuntimeType = oldArgType->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
-
-  Type* dataType = NULL;
-  if (serializeFn->hasFlag(FLAG_FN_RETARG)) {
-    ArgSymbol* retArg = toArgSymbol(toDefExpr(serializeFn->formals.tail)->sym);
-    INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
-
-    dataType = retArg->getValType();
-  } else {
-    dataType = serializeFn->retType;
-  }
-  arg->type = dataType;
-  adjustArgIntentForDeref(arg);
-
-  // If argDestroyCall is set, we'll move the destroy
-  // call from the task function to the call sites.
-  CallExpr* argDestroyCall = findDestroyCallForArg(arg);
-
-  // Current compiler always moves the auto-destroy
-  // for a coforall index variable into the task function
-  // These asserts just remind us to check this code if that changes.
-  if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR) &&
-      getAutoDestroy(arg->getValType()))
-    INT_ASSERT(argDestroyCall);
-  else
-    INT_ASSERT(!argDestroyCall);
-
-  // Update each callsite to invoke the serializer
+// Update each callsite to invoke the serializer.
+static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
+                       Type* dataType,          CallExpr* argDestroyCall,
+                       FnSymbol* serializeFn,   bool newStyleInIntent)
+{
   forv_Vec(CallExpr, call, *fn->calledBy) {
     SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
     SET_LINENO(actual);
@@ -509,15 +443,16 @@ static void insertSerialization(FnSymbol*  fn,
 
     actual->replace(new SymExpr(data));
   }
+}
 
-  // Remove the old auto-destroy call from the task fn.
-  if (argDestroyCall) {
-    argDestroyCall->remove();
-  }
-
-  // Replace all uses of 'arg' with a local reference to a deserialized
-  // instance of 'arg'
-  SET_LINENO(fn);
+// Insert and return the temp that will hold the deserialized
+// instance of 'arg'.
+// Replace all references to 'arg' within the task function
+// with local references to that temp.
+static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn, ArgSymbol* arg,
+                                Type* oldArgType, FnSymbol* deserializeFn,
+                                bool needsRuntimeType)
+{
   VarSymbol* deserialized = newTemp(arg->cname, oldArgType->getValType());
   VarSymbol* dsRef = newTemp(arg->cname, QualifiedType(QUAL_REF, oldArgType->getValType()));
   for_SymbolSymExprs(se, arg) {
@@ -553,6 +488,13 @@ static void insertSerialization(FnSymbol*  fn,
   anchor->insertBefore(callToAdd);
   anchor->insertBefore(new CallExpr(PRIM_MOVE, dsRef, new CallExpr(PRIM_SET_REFERENCE, deserialized)));
 
+  return deserialized;
+}
+
+// Destroy 'arg' and 'deserialized' before returning from the task function.
+static void destroyArgAndDeserialized(FnSymbol* fn, ArgSymbol* arg,
+                             bool newStyleInIntent, VarSymbol* deserialized)
+{
   CallExpr* lastExpr = toCallExpr(fn->body->body.tail);
   INT_ASSERT(lastExpr && lastExpr->isPrimitive(PRIM_RETURN));
 
@@ -567,6 +509,95 @@ static void insertSerialization(FnSymbol*  fn,
       lastExpr->insertBefore(new CallExpr(deserializeDestroyFn, deserialized));
     }
   }
+}
+
+//
+// BHARSH 2017-08-21:
+//
+// This function inserts calls to chpl__serialize and chpl__deserialize.
+// For example, AST like this:
+//
+//   call on_fn tmp myRecord;
+//
+//   function on_fn(const in dummy_locale_arg, const ref myRecord : Foo) {
+//     call writeln myRecord;
+//   }
+//
+// Will be transformed to AST like this:
+//
+//   var myRecord_data : 3*int;
+//   call chpl__serialize myRecord myRecord_data;
+//   call on_fn tmp myRecord_data
+//
+//   function on_fn(const in dummy_locale_arg, const myRecord_data : 3*int) {
+//     var myRecord : Foo;
+//     call chpl__deserialize myRecord_data myRecord;
+//     call writeln myRecord;
+//     call chpl__autoDestroy myRecord_data;
+//     call chpl__autoDestroy myRecord;
+//   }
+//
+// If we're RVF-ing something with a runtime type, this function copies the
+// original formal and uses it to construct a runtime type within the
+// on-statement. This will change the number of formals for this on-statement
+// unlike traditional RVF.
+//
+// BHARSH TODO: Split this function into better easily-digestible pieces
+// BHARSH TODO: capture the assumptions made here in documentation
+//
+static void insertSerialization(FnSymbol*  fn,
+                                ArgSymbol* arg) {
+  Type* oldArgType    = arg->type;
+  bool newStyleInIntent = shouldAddFormalTempAtCallSite(arg, fn);
+
+  Serializers ser = serializeMap[oldArgType->getValType()];
+
+  FnSymbol* serializeFn   = ser.serializer;
+  FnSymbol* deserializeFn = ser.deserializer;
+  INT_ASSERT(serializeFn != NULL && deserializeFn != NULL);
+
+  bool needsRuntimeType = oldArgType->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+
+  Type* dataType = NULL;
+  if (serializeFn->hasFlag(FLAG_FN_RETARG)) {
+    ArgSymbol* retArg = toArgSymbol(toDefExpr(serializeFn->formals.tail)->sym);
+    INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
+
+    dataType = retArg->getValType();
+  } else {
+    dataType = serializeFn->retType;
+  }
+  arg->type = dataType;
+  adjustArgIntentForDeref(arg);
+
+  // If argDestroyCall is set, we'll move the destroy
+  // call from the task function to the call sites.
+  CallExpr* argDestroyCall = findDestroyCallForArg(arg);
+
+  // Current compiler always moves the auto-destroy
+  // for a coforall index variable into the task function
+  // These asserts just remind us to check this code if that changes.
+  if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR) &&
+      getAutoDestroy(arg->getValType()))
+    INT_ASSERT(argDestroyCall);
+  else
+    INT_ASSERT(!argDestroyCall);
+
+  serializeAtCallSites(fn, arg, dataType, argDestroyCall, serializeFn,
+                       newStyleInIntent);
+
+  // Remove the old auto-destroy call from the task fn.
+  if (argDestroyCall) {
+    argDestroyCall->remove();
+  }
+
+  SET_LINENO(fn);
+
+  // The deserialized instance.
+  VarSymbol* deserialized = replaceArgWithDeserialized(fn, arg, oldArgType,
+                                             deserializeFn, needsRuntimeType);
+
+  destroyArgAndDeserialized(fn, arg, newStyleInIntent, deserialized);
 }
 
 static CallExpr* findDestroyCallForArg(ArgSymbol* arg) {

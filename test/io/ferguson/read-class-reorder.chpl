@@ -13,7 +13,7 @@ class Child /*: Parent*/ {
   var z: int;
 }
 
-var a: Child = new Child(x = 1, y = 2, z = 3);
+var a: borrowed Child = new borrowed Child(x = 1, y = 2, z = 3);
 
 writeln("a is ", a);
 
@@ -27,5 +27,3 @@ writer.close();
 var reader = f.reader();
 reader.read(a);
 writeln("a after reading is ", a);
-
-delete a;

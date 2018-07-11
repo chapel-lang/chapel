@@ -25,18 +25,19 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of gcc 7.3
-#GITHUB_USER=
-#GITHUB_BRANCH=
-SHORT_NAME=gcc73
-START_DATE=03/19/18
+# Test performance of cstdlib atomics with gcc 8.1
+#GITHUB_USER=bradcray
+#GITHUB_BRANCH=dsiReallocPar
+SHORT_NAME=cstdlib-atomics
+START_DATE=07/02/18
 
-source /data/cf/chapel/setup_gcc73.bash
+source /data/cf/chapel/setup_gcc81.bash
+export CHPL_ATOMICS=cstdlib
 
 #git branch -D $GITHUB_USER-$GITHUB_BRANCH
 #git checkout -b $GITHUB_USER-$GITHUB_BRANCH
 #git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
-perf_args="${perf_args} -numtrials 5 -startdate $START_DATE"
+perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
 $CWD/nightly -cron ${perf_args} ${nightly_args}

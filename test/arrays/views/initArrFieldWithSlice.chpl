@@ -1,3 +1,4 @@
+pragma "use default init"
 class C {
   var X: [1..3] real;
 }

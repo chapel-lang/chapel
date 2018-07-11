@@ -9,9 +9,6 @@ class StoreSomeInts {
 }
 
 var powers_arr: [1..3] int = (1, 2, 3);
-var powers                 = new StoreSomeInts(powers_arr);
+var powers                 = new borrowed StoreSomeInts(powers_arr);
 
 writeln("powers = ", powers);
-
-delete powers;
-

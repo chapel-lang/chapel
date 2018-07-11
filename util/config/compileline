@@ -47,17 +47,17 @@ def parseArguments():
                       help="print out the make command")
     parser.add_option("--llvm", const="llvm",
                       dest="actions", action='append_const',
-                      help="specify that the rest of the arguments are for a"
+                      help="specify that the rest of the arguments are for a "
                            "compilation working with the LLVM backend. This "
                            "argument causes this script to set "
                            "CHPL_TARGET_COMPILER=clang-included")
     parser.add_option("--compile", "--compile-cc", const="compilecc",
                       dest="actions", action='append_const',
-                      help="print a C compiler invocation that can use"
+                      help="print a C compiler invocation that can use "
                            "the Chapel runtime")
     parser.add_option("--compile-c++", const="compilecxx",
                       dest="actions", action='append_const',
-                      help="print a C++ compiler invocation that can use"
+                      help="print a C++ compiler invocation that can use "
                            "the Chapel runtime")
     parser.add_option("--cflags", const="cflags",
                       dest="actions", action='append_const',
@@ -67,15 +67,15 @@ def parseArguments():
                       help="print C++ compilation flags that Chapel would use")
     parser.add_option("--includes-and-defines", const="includesanddefines",
                       dest="actions", action='append_const',
-                      help="Print -D and -I compilation flags to include"
+                      help="Print -D and -I compilation flags to include "
                            "the Chapel runtime")
     parser.add_option("--libraries", const="libraries",
                       dest="actions", action='append_const',
-                      help="print out -L and -l options to link with"
+                      help="print out -L and -l options to link with "
                            "the Chapel runtime")
     parser.add_option("--main.o", const="maino",
                       dest="actions", action='append_const',
-                      help="pront out the path to the main.o file")
+                      help="print out the path to the main.o file")
     parser.add_option("--llvm-install-dir", const="llvminstalldir",
                       dest="actions", action='append_const',
                       help="print path to included LLVM installation")
@@ -87,7 +87,7 @@ def parseArguments():
                       help="print which clang C++ compiler is configured")
     parser.add_option("--clang-sysroot-arguments", const="clangsysroot",
                       dest="actions", action='append_const',
-                      help="print out any saved clang arguments that"
+                      help="print out any saved clang arguments that "
                            "specify the system root")
 
     (options, args) = parser.parse_args()

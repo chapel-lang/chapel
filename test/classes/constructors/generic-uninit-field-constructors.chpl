@@ -14,7 +14,7 @@ class A {
   // constructor for class 'A' requires a generic argument called 't'
 }
 
-var a = new A(real);
+var a = new unmanaged A(real);
 
 writeln(a);
 
@@ -31,7 +31,7 @@ class B {
   // constructor for class 'B' requires a generic argument called 'p'
 }
 
-var b = new B("hello-user");
+var b = new unmanaged B("hello-user");
 
 writeln("{p = ", b.p, "}");
 
@@ -47,7 +47,7 @@ class C {
   // constructor for class 'C' requires a generic argument called 'cst'
 }
 
-var c = new C(1.2);
+var c = new unmanaged C(1.2);
 
 writeln(c);
 
@@ -65,7 +65,7 @@ class D {
   // constructor for class 'D' requires a generic argument called 'vbl'
 }
 
-var d = new D(7);
+var d = new unmanaged D(7);
 
 writeln(d);
 
@@ -86,7 +86,7 @@ class Ad {
   var x:t;
 }
 
-var ad = new Ad(real);
+var ad = new unmanaged Ad(real);
 
 writeln(ad);
 
@@ -101,7 +101,7 @@ class Bd {
   param p;
 }
 
-var bd = new Bd("hello-default");
+var bd = new unmanaged Bd("hello-default");
 
 writeln("{p = ", bd.p, "}");
 
@@ -117,7 +117,7 @@ class Cd {
   const cst;
 }
 
-var cd = new Cd(1.33);
+var cd = new unmanaged Cd(1.33);
 
 writeln(cd);
 
@@ -135,7 +135,7 @@ class Dd {
   var vbl;
 }
 
-var dd = new Dd(55);
+var dd = new unmanaged Dd(55);
 
 writeln(dd);
 

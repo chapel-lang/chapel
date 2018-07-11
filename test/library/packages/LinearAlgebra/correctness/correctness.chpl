@@ -113,7 +113,7 @@ use TestUtils;
   /* CSR Sparse array -> Dense array */
   {
     use LayoutCS;
-    var spsD: sparse subdomain(MDom) dmapped CS();
+    var spsD: sparse subdomain(MDom) dmapped CS(sortedIndices=false);
     var spsA: [spsD] real;
     spsD += (1,1);
     spsD += (2,2);
@@ -375,6 +375,13 @@ use TestUtils;
 
   assertEqual(A2, B2, "matPow(A, 2)");
   assertEqual(A3, B3, "matPow(A, 3)");
+
+  var A0 = matPow(A, 0);
+  var A1 = matPow(A, 1);
+  var I3 = eye(3, eltType=real);
+
+  assertEqual(A0, I3, "matPow(A, 0)");
+  assertEqual(A1, A,  "matPow(A, 1)");
 }
 
 
@@ -589,11 +596,11 @@ use TestUtils;
         tParentDom = {1..3, 1..5},
         tParentDomT = {1..5, 1..3};
 
-  var   Dom: sparse subdomain(parentDom) dmapped CS(),
-        Dom2: sparse subdomain(parentDom2) dmapped CS(),
-        IDom: sparse subdomain (parentDom) dmapped CS(),
-        tDom: sparse subdomain (tParentDom) dmapped CS(),
-        tDomT: sparse subdomain (tParentDomT) dmapped CS();
+  var   Dom: sparse subdomain(parentDom) dmapped CS(sortedIndices=false),
+        Dom2: sparse subdomain(parentDom2) dmapped CS(sortedIndices=false),
+        IDom: sparse subdomain (parentDom) dmapped CS(sortedIndices=false),
+        tDom: sparse subdomain (tParentDom) dmapped CS(sortedIndices=false),
+        tDomT: sparse subdomain (tParentDomT) dmapped CS(sortedIndices=false);
 
 
   // Identity sparse domain

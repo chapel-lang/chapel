@@ -147,6 +147,7 @@ proc makeBasicToml(name: string) {
 
 proc makeProjectFiles(name: string) {
   mkdir(name + "/src");
+  mkdir(name + "/test");
   const libTemplate = '/* Documentation for ' + name +
     ' */\nmodule '+ name + ' {\n  writeln("New library: '+ name +'");\n}';
   var lib = open(name+'/src/'+name+'.chpl', iomode.cw);

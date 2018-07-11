@@ -15,7 +15,11 @@ proc refIdentity(arg) ref {
   return arg;
 }
 
-proc ifexpr(a, b, c) {
+proc ifexpr(a, b, c) ref {
+   return if a[1] == 1 then refIdentity(b) else refIdentity(c);
+}
+
+proc ifexpr(a, b, c) const ref {
    return if a[1] == 1 then refIdentity(b) else refIdentity(c);
 }
 

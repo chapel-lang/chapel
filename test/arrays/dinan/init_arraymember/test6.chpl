@@ -12,7 +12,7 @@ class C {
   }
 }
 
-var c = new C();
+var c = new unmanaged C();
 
 writeln(c.x);
 

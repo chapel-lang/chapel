@@ -2,7 +2,7 @@ use MRA;
 use MadAnalytics;
 
 class Square: AFcn {
-    var f: AFcn;
+    var f: unmanaged AFcn;
     proc this(x: real): real {
         return f(x)**2;
     }
@@ -13,13 +13,13 @@ proc main() {
 
     writeln("Mad Chapel -- Multiplication Test\n");
 
-    var fcn  : [1..4] AFcn = (new Fn_Test1():AFcn,  new Fn_Test2():AFcn,  new Fn_Test3():AFcn, new Fn_Unity():AFcn);
+    var fcn  : [1..4] unmanaged AFcn = (new unmanaged Fn_Test1():unmanaged AFcn, new unmanaged Fn_Test2():unmanaged AFcn,  new unmanaged Fn_Test3():unmanaged AFcn, new unmanaged Fn_Unity():unmanaged AFcn);
 
     for i in fcn.domain {
         writeln("** Testing function ", i);
-        var F1 = new Function(k=5, thresh=1e-5, f=fcn[i], autorefine=false);
-        var F2 = new Function(k=5, thresh=1e-5, f=fcn[i]);
-        var G = new Function(k=5, thresh=1e-5, f=new Fn_Unity());
+        var F1 = new unmanaged Function(k=5, thresh=1e-5, f=fcn[i], autorefine=false);
+        var F2 = new unmanaged Function(k=5, thresh=1e-5, f=fcn[i]);
+        var G = new unmanaged Function(k=5, thresh=1e-5, f=new unmanaged Fn_Unity());
 
         writeln("\nMultiplying F", i, "*Unity ...");
         var H1 = F1 * G;
@@ -31,7 +31,7 @@ proc main() {
 
         writeln("\nMultiplying F",i,"*F",i," ...");
         var H2 = F1 * F1;
-        H2.f = new Square(fcn[i]):AFcn;
+        H2.f = new unmanaged Square(fcn[i]):unmanaged AFcn;
         delete H2.f;
         H2.f = fcn[i];
         if verbose then H2.summarize();

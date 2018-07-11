@@ -1,0 +1,10 @@
+test1
+_owned(MyClass)
+in MyClass.init
+_owned(MyClass)
+in MyClass.deinit
+test2
+in MyClass.init
+Container(_owned(MyClass))
+_owned(MyClass)
+in MyClass.deinit

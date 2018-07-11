@@ -88,18 +88,18 @@ referring to the domain or array.
 See the :ref:`primers-replicated` primer for more examples of the Replicated
 distribution.
 
-**Constructor Arguments**
+**Initializer Arguments**
 
-The ``Replicated`` class constructor is defined as follows:
+The ``Replicated`` class initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc Replicated(
+    proc Replicated.init(
       targetLocales: [] locale = Locales,
       purposeMessage: string = "used to create a Replicated")
 
 The optional ``purposeMessage`` may be useful for debugging
-when the constructor encounters an error.
+when the initializer encounters an error.
 
 
 **Limitations**
@@ -115,7 +115,7 @@ class Replicated : BaseDist {
 }
 
 
-// constructor: replicate over the given locales
+// initializer: replicate over the given locales
 // (by default, over all locales)
 proc Replicated.init(targetLocales: [] locale = Locales,
                      purposeMessage: string = "used to create a Replicated")
@@ -128,7 +128,7 @@ proc Replicated.init(targetLocales: [] locale = Locales,
   }
 
   if traceReplicatedDist then
-    writeln("Replicated constructor over ", targetLocales);
+    writeln("Replicated initializer over ", targetLocales);
 }
 
 proc Replicated.dsiEqualDMaps(that: Replicated(?)) {
@@ -139,7 +139,7 @@ proc Replicated.dsiEqualDMaps(that) param {
   return false;
 }
 
-proc Replicated.dsiDestroyDist() {
+override proc Replicated.dsiDestroyDist() {
   // no action necessary here
 }
 
@@ -165,7 +165,7 @@ proc Replicated.dsiPrivatize(privatizeData)
   const privDom = otherTargetLocales.domain;
   const privTargetLocales: [privDom] locale = otherTargetLocales;
 
-  return new Replicated(privTargetLocales, "used during privatization");
+  return new unmanaged Replicated(privTargetLocales, "used during privatization");
 }
 
 
@@ -175,20 +175,19 @@ proc Replicated.dsiPrivatize(privatizeData)
 //
 // global domain class
 //
+pragma "use default init"
 class ReplicatedDom : BaseRectangularDom {
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
   // (looks like it must be called exactly 'dist')
-  const dist : Replicated; // must be a Replicated
+  const dist : unmanaged Replicated; // must be a Replicated
 
   // this is our index set; we store it here so we can get to it easily
   var domRep: domain(rank, idxType, stridable);
 
   // local domain objects
-  // NOTE: 'dist' must be initialized prior to 'localDoms'
-  // => currently have to use the default constructor
-  // NOTE: if they ever change after the constructor - Reprivatize them
-  var localDoms: [dist.targetLocDom] LocReplicatedDom(rank, idxType, stridable);
+  // NOTE: if they ever change after the initializer - Reprivatize them
+  var localDoms: [dist.targetLocDom] unmanaged LocReplicatedDom(rank, idxType, stridable);
 
   proc numReplicands return localDoms.numElements;
 
@@ -208,6 +207,7 @@ class ReplicatedDom : BaseRectangularDom {
 //
 // local domain class
 //
+pragma "use default init"
 class LocReplicatedDom {
   // copy from the global domain
   param rank: int;
@@ -219,7 +219,7 @@ class LocReplicatedDom {
 }
 
 
-// No explicit ReplicatedDom constructor - use the default one.
+// No explicit ReplicatedDom initializer - use the default one.
 // proc ReplicatedDom.ReplicatedDom(...){...}
 
 // Since we piggy-back on (default-mapped) Chapel domains, we can redirect
@@ -233,33 +233,38 @@ proc ReplicatedDom.redirectee(): domain(rank, idxType, stridable)
   return domRep;
 
 // The same across all domain maps
-proc ReplicatedDom.dsiMyDist() return dist;
+override proc ReplicatedDom.dsiMyDist() return dist;
 
 
 // privatization
 
 proc ReplicatedDom.dsiSupportsPrivatization() param return true;
 
+pragma "use default init"
+record ReplicatedDomPrvData {
+  var distpid;
+  var domRep;
+  var localDoms;
+}
+
 proc ReplicatedDom.dsiGetPrivatizeData() {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiGetPrivatizeData");
 
-  // TODO: perhaps return 'domRep' and 'localDoms' by value,
-  // to reduce communication needed in dsiPrivatize().
-  return (dist.pid, domRep, localDoms);
+  return new ReplicatedDomPrvData(dist.pid, domRep, localDoms);
 }
 
 proc ReplicatedDom.dsiPrivatize(privatizeData) {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiPrivatize on ", here);
 
-  var privdist = chpl_getPrivatizedCopy(this.dist.type, privatizeData(1));
-  return new ReplicatedDom(rank=rank, idxType=idxType, stridable=stridable,
+  var privdist = chpl_getPrivatizedCopy(this.dist.type, privatizeData.distpid);
+  return new unmanaged ReplicatedDom(rank=rank, idxType=idxType, stridable=stridable,
                            dist = privdist,
-                           domRep = privatizeData(2),
-                           localDoms = privatizeData(3));
+                           domRep = privatizeData.domRep,
+                           localDoms = privatizeData.localDoms);
 }
 
 proc ReplicatedDom.dsiGetReprivatizeData() {
-  return (domRep,);
+  return domRep;
 }
 
 proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
@@ -267,17 +272,17 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
          this.idxType == other.idxType &&
          this.stridable == other.stridable);
 
-  this.domRep = reprivatizeData(1);
+  this.domRep = reprivatizeData;
 }
 
 
-proc Replicated.dsiClone(): this.type {
+proc Replicated.dsiClone(): _to_unmanaged(this.type) {
   if traceReplicatedDist then writeln("Replicated.dsiClone");
-  return new Replicated(targetLocales);
+  return new unmanaged Replicated(targetLocales);
 }
 
 // create a new domain mapped with this distribution
-proc Replicated.dsiNewRectangularDom(param rank: int,
+override proc Replicated.dsiNewRectangularDom(param rank: int,
                                          type idxType,
                                          param stridable: bool,
                                          inds)
@@ -285,15 +290,15 @@ proc Replicated.dsiNewRectangularDom(param rank: int,
   if traceReplicatedDist then writeln("Replicated.dsiNewRectangularDom ",
                                       (rank, idxType:string, stridable, inds));
 
-  // Have to call the default constructor because we need to initialize 'dist'
+  // Have to call the default initializer because we need to initialize 'dist'
   // prior to initializing 'localDoms' (which needs a non-nil value for 'dist'.
-  var result = new ReplicatedDom(rank=rank, idxType=idxType,
-                                 stridable=stridable, dist=this);
+  var result = new unmanaged ReplicatedDom(rank=rank, idxType=idxType,
+                                 stridable=stridable, dist=_to_unmanaged(this));
 
   // create local domain objects
   coforall (loc, locDom) in zip(targetLocales, result.localDoms) do
     on loc do
-      locDom = new LocReplicatedDom(rank, idxType, stridable);
+      locDom = new unmanaged LocReplicatedDom(rank, idxType, stridable);
   result.dsiSetIndices(inds);
 
   return result;
@@ -377,6 +382,15 @@ proc ReplicatedDom.dsiHigh
 proc ReplicatedDom.dsiStride
   return redirectee().stride;
 
+proc ReplicatedDom.dsiAlignedLow
+  return redirectee().alignedLow;
+
+proc ReplicatedDom.dsiAlignedHigh
+  return redirectee().alignedHigh;
+
+proc ReplicatedDom.dsiAlignment
+  return redirectee().alignment;
+
 // here replication is visible
 proc ReplicatedDom.dsiNumIndices
   return redirectee().numIndices;
@@ -414,7 +428,7 @@ class ReplicatedArr : BaseArr {
   // the replicated arrays
   // NOTE: 'dom' must be initialized prior to initializing 'localArrs'
   var localArrs: [dom.dist.targetLocDom]
-              LocReplicatedArr(eltType, dom.rank, dom.idxType, dom.stridable);
+              unmanaged LocReplicatedArr(eltType, dom.rank, dom.idxType, dom.stridable);
 
   //
   // helper function to get the local array safely
@@ -444,6 +458,7 @@ proc _array.replicand(loc: locale) ref {
 //
 // local array class
 //
+pragma "use default init"
 class LocReplicatedArr {
   // these generic fields let us give types to the other fields easily
   type eltType;
@@ -451,18 +466,19 @@ class LocReplicatedArr {
   type idxType;
   param stridable: bool;
 
-  var myDom: LocReplicatedDom(rank, idxType, stridable);
+  var myDom: unmanaged LocReplicatedDom(rank, idxType, stridable);
   var arrLocalRep: [myDom.domLocalRep] eltType;
 }
 
 
-// ReplicatedArr constructor.
+// ReplicatedArr initializer.
 // We create our own to make field initializations convenient:
 // 'eltType' and 'dom' as passed explicitly;
 // the fields in the parent class, BaseArr, are initialized to their defaults.
 //
-proc ReplicatedArr.ReplicatedArr(type eltType, dom: ReplicatedDom) {
-  // initializes the fields 'eltType', 'dom' by name
+proc ReplicatedArr.init(type eltType, dom) {
+  this.eltType = eltType;
+  this.dom = dom;
 }
 
 proc ReplicatedArr.stridable param {
@@ -478,41 +494,45 @@ proc ReplicatedArr.rank param {
 }
 
 // The same across all domain maps
-proc ReplicatedArr.dsiGetBaseDom() return dom;
+override proc ReplicatedArr.dsiGetBaseDom() return dom;
 
 
 // privatization
 
 proc ReplicatedArr.dsiSupportsPrivatization() param return true;
 
+pragma "use default init"
+record ReplicatedArrPrvData {
+  var dompid;
+  var localArrs;
+}
+
 proc ReplicatedArr.dsiGetPrivatizeData() {
   if traceReplicatedDist then writeln("ReplicatedArr.dsiGetPrivatizeData");
 
-  // TODO: perhaps return 'localArrs' by value,
-  // to reduce communication needed in dsiPrivatize().
-  return (dom.pid, localArrs);
+  return new ReplicatedArrPrvData(dom.pid, localArrs);
 }
 
 proc ReplicatedArr.dsiPrivatize(privatizeData) {
   if traceReplicatedDist then writeln("ReplicatedArr.dsiPrivatize on ", here);
 
-  var privdom = chpl_getPrivatizedCopy(this.dom.type, privatizeData(1));
-  var result = new ReplicatedArr(eltType, privdom);
-  result.localArrs = privatizeData(2);
+  var privdom = chpl_getPrivatizedCopy(this.dom.type, privatizeData.dompid);
+  var result = new unmanaged ReplicatedArr(eltType, privdom);
+  result.localArrs = privatizeData.localArrs;
   return result;
 }
 
 
 // create a new array over this domain
 proc ReplicatedDom.dsiBuildArray(type eltType)
-  : ReplicatedArr(eltType, this.type)
+  : unmanaged ReplicatedArr(eltType, _to_unmanaged(this.type))
 {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiBuildArray");
-  var result = new ReplicatedArr(eltType, this);
+  var result = new unmanaged ReplicatedArr(eltType, _to_unmanaged(this));
   coforall (loc, locDom, locArr)
    in zip(dist.targetLocales, localDoms, result.localArrs) do
     on loc do
-      locArr = new LocReplicatedArr(eltType, rank, idxType, stridable,
+      locArr = new unmanaged LocReplicatedArr(eltType, rank, idxType, stridable,
                                     locDom);
   return result;
 }
@@ -532,13 +552,13 @@ proc ReplicatedArr.dsiSerialRead(f, loc): void {
   localArrs[f.readWriteThisFromLocale().id].arrLocalRep._value.dsiSerialRead(f);
 }
 
-proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr) : ReplicatedArr {
+proc chpl_serialReadWriteRectangular(f, arr, dom) where isSubtype(_to_borrowed(chpl__getActualArray(arr)), ReplicatedArr) {
   const origloc = f.readWriteThisFromLocale();
   on origloc do
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
 }
 
-proc ReplicatedArr.dsiDestroyArr() {
+override proc ReplicatedArr.dsiDestroyArr() {
   coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
     on loc do
       delete locArr;

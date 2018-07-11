@@ -203,8 +203,8 @@ module ChapelIO {
   // TODO -- this should probably be private
   pragma "no doc"
   proc _isNilObject(val) {
-    proc helper(o: object) return o == nil;
-    proc helper(o)         return false;
+    proc helper(o: borrowed object) return o == nil;
+    proc helper(o)                  return false;
     return helper(val);
   }
 
@@ -257,7 +257,7 @@ module ChapelIO {
       var isBinary = writer.binary();
 
       if (isClassType(t)) {
-        if t != object {
+        if _to_borrowed(t) != borrowed object {
           // only write parent fields for subclasses of object
           // since object has no .super field.
           writeThisFieldsDefaultImpl(writer, x.super, first);
@@ -379,12 +379,16 @@ module ChapelIO {
           }
 
           // Skip an unknown JSON field.
-          var e:syserr;
-          reader.skipField(error=e);
-          if !e {
+          var err:syserr = ENOERR;
+          try {
+            reader.skipField();
             needsComma = true;
+          } catch e: SystemError {
+            err = e.err;
+          } catch {
+            err = EINVAL;
           }
-          reader.setError(e);
+          reader.setError(err);
         }
       }
     }
@@ -397,7 +401,7 @@ module ChapelIO {
       var superclass_error : syserr = ENOERR;
 
       if (isClassType(t)) {
-        if t != object {
+        if _to_borrowed(t) != borrowed object {
           // only write parent fields for subclasses of object
           // since object has no .super field.
           type superType = x.super.type;
@@ -500,12 +504,17 @@ module ChapelIO {
               if skip_unk != 0 && st == QIO_AGGREGATE_FORMAT_JSON {
 
                 // Skip an unknown JSON field.
-                var e:syserr;
-                reader.skipField(error=e);
-                if !e {
+                var err:syserr = ENOERR;
+                try {
+                  reader.skipField();
                   needsComma = true;
+                } catch e: SystemError {
+                  err = e.err;
+                } catch {
+                  err = EINVAL;
                 }
-                reader.setError(e);
+                reader.setError(err);
+
               } else {
                 reader.setError(EFORMAT:syserr);
                 break;

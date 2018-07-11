@@ -3,8 +3,8 @@ class myclass {
   var y: real = 4.2;
 }
 
-var a: myclass = new myclass();
-var b: myclass = new myclass();
+var a: borrowed myclass = new borrowed myclass();
+var b: borrowed myclass = new borrowed myclass();
 
 writeln("a is: ", a, ", b is: ", b);
 
@@ -12,9 +12,6 @@ a.x = 24;
 b.y = 2.4;
 
 writeln("a is: ", a, ", b is: ", b);
-
-delete b;
-delete a;
 
 a = nil;
 b = nil;

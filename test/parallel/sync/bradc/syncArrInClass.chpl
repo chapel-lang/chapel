@@ -2,7 +2,7 @@ class C {
   var arr: [1..3] sync int;
 }
 
-var myC = new C();
+var myC = new unmanaged C();
 
 writeln("Made it past constructor");
 

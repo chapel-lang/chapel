@@ -13,10 +13,9 @@ class Foo {
 
 }
 
-proc _defaultOf(type t) where t == imag {
+proc _defaultOf(type t:imag) {
   return 1.0i;
 }
 
-var r: Foo = new Foo(3);
+var r: Foo = new borrowed Foo(3);
 writeln(r);
-delete r;

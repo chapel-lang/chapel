@@ -15,17 +15,13 @@ class B {
 }
 
 proc main() {
-  const a1: A = new A();
+  const a1: A = new borrowed A();
 
   writeln(a1);
 
-  const a2: A = new A(k=6);
+  const a2: A = new borrowed A(k=6);
   writeln(a2);
 
-  const b = new B(a=a1);
+  const b = new borrowed B(a=a1);
   writeln(b);
-
-  delete b;
-  delete a2;
-  delete a1;
 }

@@ -5,7 +5,7 @@ class foo {
   }
 }
 
-var f : foo(int) = new foo(2);
+var f : unmanaged foo(int) = new unmanaged foo(2);
 
 f.print();
 

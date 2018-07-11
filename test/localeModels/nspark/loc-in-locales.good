@@ -1,1 +1,2 @@
-loc-in-locales.chpl:3: error: Variables can't be declared using not-fully-instantiated generic types like 'channel'
+loc-in-locales.chpl:3: error: Cannot default-initialize a variable with generic type
+loc-in-locales.chpl:3: note: 'not-fully-instantiated' has generic type 'channel'

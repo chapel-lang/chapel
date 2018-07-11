@@ -46,6 +46,18 @@ config param debugSparseBlockDistBulkTransfer = false;
 // There is no SparseBlock distribution class. Instead, we
 // just use Block.
 
+// Helper type for sorting locales
+record TargetLocaleComparator {
+  param rank;
+  type idxType;
+  type sparseLayoutType;
+  var dist: unmanaged Block(rank, idxType, sparseLayoutType);
+  proc key(a: index(rank, idxType)) {
+    return (dist.targetLocsIdx(a), a);
+  }
+}
+
+
 //
 // SparseBlock Domain Class
 //
@@ -59,12 +71,12 @@ config param debugSparseBlockDistBulkTransfer = false;
 class SparseBlockDom: BaseSparseDomImpl {
   type sparseLayoutType;
   param stridable: bool = false;  // TODO: remove default value eventually
-  const dist: Block(rank, idxType, sparseLayoutType);
+  const dist: unmanaged Block(rank, idxType, sparseLayoutType);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
+  var locDoms: [dist.targetLocDom] unmanaged LocSparseBlockDom(rank, idxType, stridable,
       sparseLayoutType);
 
-  proc initialize() {
+  proc postinit() {
     setup();
     //    writeln("Exiting initialize");
   }
@@ -76,7 +88,7 @@ class SparseBlockDom: BaseSparseDomImpl {
         on dist.targetLocales(localeIdx) do {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
-         locDoms(localeIdx) = new LocSparseBlockDom(rank, idxType, stridable,
+         locDoms(localeIdx) = new unmanaged LocSparseBlockDom(rank, idxType, stridable,
              sparseLayoutType, dist.getChunk(whole,localeIdx));
           //                    writeln("Back on ", here.id);
         }
@@ -125,21 +137,15 @@ class SparseBlockDom: BaseSparseDomImpl {
     return max reduce ([l in locDoms] l.mySparseBlock.last);
   }
 
-  // Tried to put this record in the function and the if statement, but got a
-  // segfault from the compiler.
-  record TargetLocaleComparator {
-    proc key(a: index(rank, idxType)) { 
-      return (dist.targetLocsIdx(a), a);
-    }
-  }
-
   proc bulkAdd_help(inds: [] index(rank,idxType),
       dataSorted=false, isUnique=false) {
     use Sort;
     use Search;
 
     // without _new_, record functions throw null deref
-    var comp = new TargetLocaleComparator();
+    var comp = new TargetLocaleComparator(rank=rank, idxType=idxType,
+                                          sparseLayoutType=sparseLayoutType,
+                                          dist=dist);
 
     if !dataSorted then sort(inds, comparator=comp);
 
@@ -201,8 +207,8 @@ class SparseBlockDom: BaseSparseDomImpl {
   // how to allocate a new array over this domain
   //
   proc dsiBuildArray(type eltType) {
-    var arr = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
-        stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
+    var arr = new unmanaged SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
+        stridable=stridable, sparseLayoutType=sparseLayoutType, dom=_to_unmanaged(this));
     arr.setup();
     return arr;
   }
@@ -265,7 +271,7 @@ class SparseBlockDom: BaseSparseDomImpl {
         locDom.dsiClear();
   }
 
-  proc dsiMyDist() return dist;
+  override proc dsiMyDist() return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     if !lhsPrivate then
@@ -284,13 +290,14 @@ class SparseBlockDom: BaseSparseDomImpl {
 // stridable: generic domain stridable parameter
 // mySparseBlock: a non-distributed domain that defines the local indices
 //
+pragma "use default init"
 class LocSparseBlockDom {
   param rank: int;
   type idxType;
   param stridable: bool;
   type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
-  var sparseDist = new sparseLayoutType; //unresolved call workaround
+  var sparseDist = new unmanaged sparseLayoutType; //unresolved call workaround
   var mySparseBlock: sparse subdomain(parentDom) dmapped new dmap(sparseDist);
 
   proc dsiAdd(ind: rank*idxType) {
@@ -329,19 +336,23 @@ class LocSparseBlockDom {
 //
 class SparseBlockArr: BaseSparseArr {
   param stridable: bool;
-  type sparseLayoutType = DefaultDist;
+  type sparseLayoutType = unmanaged DefaultDist;
 
+  // INIT TODO: Can we address this constructor/initializer issue now?
   // ideally I wanted to have `var locArr: [dom.dist.targetLocDom]`. However,
   // superclass' fields cannot be used in child class' field initializers. See
   // the constructor for the workaround.
   var locArrDom: domain(rank,idxType);
-  var locArr: [locArrDom] LocSparseBlockArr(eltType, rank, idxType, stridable,
+  var locArr: [locArrDom] unmanaged LocSparseBlockArr(eltType, rank, idxType, stridable,
       sparseLayoutType);
   var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable,
       sparseLayoutType);
 
-  proc SparseBlockArr(type eltType, param rank, type idxType, param stridable,
+  proc init(type eltType, param rank, type idxType, param stridable,
       type sparseLayoutType ,dom) {
+    super.init(eltType=eltType, rank=rank, idxType=idxType, dom=dom);
+    this.stridable = stridable;
+    this.sparseLayoutType = sparseLayoutType;
     locArrDom = dom.dist.targetLocDom;
   }
 
@@ -350,7 +361,7 @@ class SparseBlockArr: BaseSparseArr {
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
         const locDom = dom.getLocDom(localeIdx);
-        locArr(localeIdx) = new LocSparseBlockArr(eltType, rank, idxType,
+        locArr(localeIdx) = new unmanaged LocSparseBlockArr(eltType, rank, idxType,
             stridable, sparseLayoutType, locDom);
         if thisid == here.id then
           myLocArr = locArr(localeIdx);
@@ -358,7 +369,7 @@ class SparseBlockArr: BaseSparseArr {
     }
   }
 
-  proc dsiDestroyArr() {
+  override proc dsiDestroyArr() {
     coforall localeIdx in dom.dist.targetLocDom {
       on locArr(localeIdx) {
         delete locArr(localeIdx);
@@ -463,13 +474,14 @@ class SparseBlockArr: BaseSparseArr {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
+pragma "use default init"
 class LocSparseBlockArr {
   type eltType;
   param rank: int;
   type idxType;
   param stridable: bool;
   type sparseLayoutType;
-  const locDom: LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
+  const locDom: unmanaged LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
   var myElems: [locDom.mySparseBlock] eltType;
 
   proc dsiAccess(i) ref {
@@ -699,7 +711,7 @@ proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc SparseBlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
-  var c = new SparseBlockDom(rank=rank, idxType=idxType,
+  var c = new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                              sparseLayoutType=sparseLayoutType,
                              stridable=parentDom.stridable, dist=privdist,
                              whole=whole,
@@ -724,7 +736,7 @@ proc SparseBlockArr.dsiGetPrivatizeData() return dom.pid;
 
 proc SparseBlockArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
-  var c = new SparseBlockArr(sparseLayoutType=sparseLayoutType,
+  var c = new unmanaged SparseBlockArr(sparseLayoutType=sparseLayoutType,
       eltType=eltType, rank=rank, idxType=idxType, stridable=stridable,
       dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {

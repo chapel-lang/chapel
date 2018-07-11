@@ -106,7 +106,7 @@ class UserMapAssoc : BaseDist {
   //
   proc init(type idxType = int(64),
             mapper,
-            other: UserMapAssoc(idxType, mapper.type)) {
+            other: unmanaged UserMapAssoc(idxType, mapper.type)) {
     this.idxType = idxType;
     this.mapper = mapper; // normally == other.mapper;
     targetLocDom = other.targetLocDom;
@@ -116,7 +116,7 @@ class UserMapAssoc : BaseDist {
   }
 
   proc dsiClone() {
-    return new UserMapAssoc(idxType, mapper, targetLocales);
+    return new unmanaged UserMapAssoc(idxType, mapper, targetLocales);
   }
 
   // DISTRIBUTION INTERFACE:
@@ -137,7 +137,7 @@ class UserMapAssoc : BaseDist {
   // global domain construction to not do anything with whole...
   //
   proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
-    var dom = new UserMapAssocDom(idxType=idxType, mapperType=mapper.type, dist=this);
+    var dom = new unmanaged UserMapAssocDom(idxType=idxType, mapperType=mapper.type, dist=_to_unmanaged(this));
     dom.setup();
     return dom;
   }
@@ -254,6 +254,7 @@ class UserMapAssoc : BaseDist {
 //
 // The global domain class
 //
+pragma "use default init"
 class UserMapAssocDom: BaseAssociativeDom {
   param parSafe: bool=true; // we need this because of the wrapper interface
 
@@ -270,7 +271,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // LEFT: a pointer to the parent distribution
   //
-  const dist: UserMapAssoc(idxType, mapperType);
+  const dist: unmanaged UserMapAssoc(idxType, mapperType);
 
   //
   // DOWN: an array of local domain class descriptors -- set up in
@@ -284,7 +285,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // SJD: note cannot do this anymore because constructor does not
   // setup (for privatization reasons)
   //
-  var locDoms: [dist.targetLocDom] LocUserMapAssocDom(idxType, mapperType);
+  var locDoms: [dist.targetLocDom] unmanaged LocUserMapAssocDom(idxType, mapperType);
 
 
   // STATE:
@@ -450,7 +451,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // how to allocate a new array over this domain
   //
   proc dsiBuildArray(type elemType) {
-    var arr = new UserMapAssocArr(idxType=idxType, mapperType=mapperType, eltType=elemType, dom=this);
+    var arr = new unmanaged UserMapAssocArr(idxType=idxType, mapperType=mapperType, eltType=elemType, dom=_to_unmanaged(this));
     arr.setup();
     return arr;
   }
@@ -482,7 +483,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // INTERNAL INTERFACE
   //
-  proc dsiMyDist(): UserMapAssoc(idxType, mapperType) {
+  proc dsiMyDist(): unmanaged UserMapAssoc(idxType, mapperType) {
     return dist;
   }
 
@@ -490,8 +491,8 @@ class UserMapAssocDom: BaseAssociativeDom {
     for localeIdx in dist.targetLocDom do
       on dist.targetLocales(localeIdx) do
         if (locDoms(localeIdx) == nil) then
-          locDoms(localeIdx) = new LocUserMapAssocDom(idxType=idxType,
-              mapperType=mapperType, this);
+          locDoms(localeIdx) = new unmanaged LocUserMapAssocDom(idxType=idxType,
+              mapperType=mapperType, _to_unmanaged(this));
     if debugUserMapAssoc then
       [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
 
@@ -500,8 +501,8 @@ class UserMapAssocDom: BaseAssociativeDom {
   proc dsiSupportsPrivatization() param return true;
   proc dsiGetPrivatizeData() return 0;
   proc dsiPrivatize(privatizeData) {
-    var privateDist = new UserMapAssoc(idxType, dist.mapper, dist);
-    var c = new UserMapAssocDom(idxType=idxType, mapperType=mapperType, dist=privateDist);
+    var privateDist = new unmanaged UserMapAssoc(idxType, dist.mapper, dist);
+    var c = new unmanaged UserMapAssocDom(idxType=idxType, mapperType=mapperType, dist=privateDist);
     c.locDoms = locDoms;
     return c;
   }
@@ -530,7 +531,7 @@ class LocUserMapAssocDom {
   //
   // UP: a reference to the parent global domain class
   //
-  const wholeDom: UserMapAssocDom(idxType, mapperType, parSafe=true);
+  const wholeDom: unmanaged UserMapAssocDom(idxType, mapperType, parSafe=true);
 
 
   // STATE:
@@ -615,6 +616,7 @@ class LocUserMapAssocDom {
 //
 // the global array class
 //
+pragma "use default init"
 class UserMapAssocArr: BaseArr {
   // GENERICS:
 
@@ -634,11 +636,11 @@ class UserMapAssocArr: BaseArr {
   //
   // LEFT: the global domain descriptor for this array
   //
-  var dom: UserMapAssocDom(idxType, mapperType, parSafe=true);
+  var dom: unmanaged UserMapAssocDom(idxType, mapperType, parSafe=true);
 
   //
   // DOWN: an array of local array classes
-  var locArrs: [dom.dist.targetLocDom] LocUserMapAssocArr(idxType, mapperType, eltType);
+  var locArrs: [dom.dist.targetLocDom] unmanaged LocUserMapAssocArr(idxType, mapperType, eltType);
   //var locAssocDoms: domain(BaseAssociativeDom);
   //var locArrsByAssoc: [locAssocDoms] LocUserMapAssocArr(idxType, mapperType, eltType);
 
@@ -649,7 +651,7 @@ class UserMapAssocArr: BaseArr {
   proc setup() {
     coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocales(localeIdx) do
-        locArrs(localeIdx) = new LocUserMapAssocArr(idxType, mapperType, eltType, dom.locDoms(localeIdx));
+        locArrs(localeIdx) = new unmanaged LocUserMapAssocArr(idxType, mapperType, eltType, dom.locDoms(localeIdx));
     for localeIdx in dom.dist.targetLocDom {
       var locDomImpl = dom.locDoms(localeIdx).myInds._value;
       //locAssocDoms += locDomImpl;
@@ -661,7 +663,7 @@ class UserMapAssocArr: BaseArr {
   proc dsiGetPrivatizeData() return 0;
   proc dsiPrivatize(privatizeData) {
     var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
-    var c = new UserMapAssocArr(idxType=idxType, mapperType=mapperType, eltType=eltType, dom=privdom);
+    var c = new unmanaged UserMapAssocArr(idxType=idxType, mapperType=mapperType, eltType=eltType, dom=privdom);
     c.locArrs = locArrs;
     //c.locAssocDoms = locAssocDoms;
     //c.locArrsByAssoc = locArrsByAssoc;
@@ -814,7 +816,7 @@ class LocUserMapAssocArr {
   //
   // LEFT: a reference to the local domain class for this array and locale
   //
-  const locDom: LocUserMapAssocDom(idxType, mapperType);
+  const locDom: unmanaged LocUserMapAssocDom(idxType, mapperType);
 
 
   // STATE:

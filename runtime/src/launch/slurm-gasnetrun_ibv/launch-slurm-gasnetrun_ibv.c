@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "chplcgfns.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
@@ -215,8 +216,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     else
       fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", argv[0]);
 //    fprintf(slurmFile, "cd $SBATCH_O_WORKDIR\n");
-      fprintf(slurmFile, "%s/gasnetrun_ibv -n %d %s ",
-              WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
+      fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d %s ",
+              CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
       for (i=1; i<argc; i++) {
         fprintf(slurmFile, " '%s'", argv[i]);
       }
@@ -249,8 +250,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(expectFile, " -C %s", constraint);
   }
 //  fprintf(expectFile, "-I %s ", slurmFilename);
-  fprintf(expectFile, " %s/gasnetrun_ibv -n %d %s ", 
-          WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
+  fprintf(expectFile, " %s/%s/gasnetrun_ibv -n %d %s ",
+          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " %s", argv[i]);
   }

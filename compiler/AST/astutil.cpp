@@ -25,7 +25,10 @@
 #include "DeferStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "IfExpr.h"
 #include "expr.h"
+#include "LoopExpr.h"
+#include "UnmanagedClassType.h"
 #include "passes.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"
@@ -1079,4 +1082,8 @@ void convertToQualifiedRefs() {
     }
   }
 #undef fixRefSymbols
+}
+
+bool isTupleTypeConstructor(FnSymbol* fn) {
+  return fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) && fn->hasFlag(FLAG_TUPLE);
 }

@@ -1,7 +1,3 @@
-2-enclosing-par-loops-error-1.chpl:27: In iterator 'pariter':
-2-enclosing-par-loops-error-1.chpl:30: error: this yield is nested in two or more enclosing parallel loops
-2-enclosing-par-loops-error-1.chpl:30: note: (a parallel loop is a for-loop over parallel iterator or a forall-loop)
-2-enclosing-par-loops-error-1.chpl:30: note: this is currently not implemented within parallel iterators
-2-enclosing-par-loops-error-1.chpl:29: note: the immediately enclosing parallel loop is here
-2-enclosing-par-loops-error-1.chpl:28: note: the second enclosing parallel loop is here
-2-enclosing-par-loops-error-1.chpl:35: note: the forall loop that invokes the iterator is here
+200000
+200000
+200000

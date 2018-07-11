@@ -6,15 +6,6 @@ CHPL_MAKE_HOST_TARGET = --host
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 include $(THIRD_PARTY_DIR)/chpl-venv/Makefile.include
 
-ifneq (,$(findstring cygwin, $(CHPL_MAKE_TARGET_PLATFORM)))
-# easy_install from cygwin's setuptools is `easy_install-<MAJOR>.<MINOR>`
-# instead of `easy_install`. If we can't find easy_install, look for the
-# versioned one.
-EASY_INSTALL = $(shell which easy_install 2>/dev/null || which easy_install-$(PYTHON_VERSION))
-else
-EASY_INSTALL = $(shell which easy_install)
-endif
-
 default: all
 
 all: test-venv chpldoc-venv
@@ -28,32 +19,40 @@ clobber: FORCE
 
 check-python:
 ifeq ($(wildcard $(PYTHON)),)
-	$(error python and easy_install are required to install chpldoc \
+	$(error python and pip are required to install chpldoc \
 	        and start_test dependencies. See https://www.python.org/)
 endif
 
-check-easy-install:
-ifeq ($(wildcard $(EASY_INSTALL)),)
-	$(error python and easy_install are required to install chpldoc \
-	        and start_test dependencies. See https://www.python.org/)
-endif
-
-check-exes: check-python check-easy-install
+check-exes: check-python
 
 $(CHPL_VENV_INSTALL_DIR):
 	mkdir -p $@
 
+# Install pip via get-pip.py to ensure we have an updated version
+$(PIP): $(CHPL_VENV_INSTALL_DIR)
+	@if [ -z "$$CHPL_PIP" ]; then \
+	  echo "Installing local copy of pip with get-pip.py from $(GETPIP)"; \
+	  (cd install && curl -O $(GETPIP) || \
+	  { echo "Failed on command: curl -O $(GETPIP)."; \
+	    echo "Try setting CHPL_PIP to $$(which pip) and trying again"; \
+	    exit 1; } && \
+	  export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) && \
+	  python get-pip.py --user --no-warn-conflicts) \
+	fi
+
 # Install virtualenv program.
-$(CHPL_VENV_VIRTUALENV): $(CHPL_VENV_INSTALL_DIR) check-exes
-	export PYTHONPATH=$(CHPL_VENV_INSTALL_DIR):$$PYTHONPATH && \
-	$(EASY_INSTALL) --install-dir=$(CHPL_VENV_INSTALL_DIR) $(CHPL_EASY_INSTALL_PARAMS) $(shell cat virtualenv.txt)
+$(CHPL_VENV_VIRTUALENV): check-exes $(PIP)
+	export PYTHONPATH="$$CHPL_PYTHONPATH:$(PIPLIBS):$$PYTHONPATH" && \
+	python -S $(PIP) install -U --force-reinstall --ignore-installed $(LOCAL_PIP_FLAGS) \
+	 --prefix=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
 
 # Phony convenience target for installing virtualenv.
 virtualenv: $(CHPL_VENV_VIRTUALENV)
 
 # Create the virtualenv.
 $(CHPL_VENV_VIRTUALENV_DIR): $(CHPL_VENV_VIRTUALENV)
-	$(CHPL_VENV_VIRTUALENV) --python=$(PYTHON) $@
+	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
+	python $(CHPL_VENV_VIRTUALENV) --python=$(PYTHON) $@
 
 # Phony convenience target for creating virtualenv.
 create-virtualenv: $(CHPL_VENV_VIRTUALENV_DIR)
@@ -71,30 +70,33 @@ create-virtualenv: $(CHPL_VENV_VIRTUALENV_DIR)
 #
 # By calling `python .../path/to/pip ...`, this issue is circumvented.
 $(CHPL_VENV_TEST_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
+	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
 	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
-	python $(CHPL_VENV_VIRTUALENV_BIN)/pip $(CHPL_VENV_PIP_FLAGS) install \
-	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) -r test-requirements.txt && \
+	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
+	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r test-requirements.txt && \
 	if [ "$(PYTHON_MAJOR_VERSION)" = "2" ] ; then \
-	python $(CHPL_VENV_VIRTUALENV_BIN)/pip $(CHPL_VENV_PIP_FLAGS) install \
-	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) -r test-requirements-python2.txt ; \
+	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
+	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r test-requirements-python2.txt && \
 	fi && \
-	$(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
+	python $(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
 	touch $(CHPL_VENV_TEST_REQS)
 
 $(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_VIRTUALENV_DIR)
+	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
 	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
-	python $(CHPL_VENV_VIRTUALENV_BIN)/pip $(CHPL_VENV_PIP_FLAGS) install \
-	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) -r chpldoc-requirements.txt && \
-	$(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR)
+	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
+	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r chpldoc-requirements.txt && \
+	python $(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR)
 
 $(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
+	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
 	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
-	python $(CHPL_VENV_VIRTUALENV_BIN)/pip $(CHPL_VENV_PIP_FLAGS) install \
-	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) -r chplspell-requirements.txt && \
-	$(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
+	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
+	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r chplspell-requirements.txt && \
+	python $(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
 	touch $(CHPL_VENV_CHPLSPELL_REQS)
 
 test-venv: $(CHPL_VENV_TEST_REQS)
@@ -126,6 +128,6 @@ use-system-python: FORCE
 
 FORCE:
 
-.PHONY: install-requirements create-virtualenv virtualenv check-exes rm-sphinx-build check-easy-install check-python
+.PHONY: install-requirements create-virtualenv virtualenv check-exes rm-sphinx-build check-pip check-python
 
 .NOTPARALLEL:

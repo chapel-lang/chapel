@@ -4,6 +4,7 @@ var ARR: [1..n] int = 1..n;
 var numErrors = 0;
 
 // A (simplified) copy of the predefined SumReduceScanOp.
+pragma "use default init"
 class UserReduceOp: ReduceScanOp {
   type eltType;
   var value: eltType;
@@ -12,7 +13,7 @@ class UserReduceOp: ReduceScanOp {
   proc accumulate(elm)  { value = value + elm; }
   proc combine(other)   { value = value + other.value; }
   proc generate()       return value;
-  proc clone()          return new UserReduceOp(eltType=eltType);
+  proc clone()          return new unmanaged UserReduceOp(eltType=eltType);
 }
 
 proc check(test:string, expected: int, ri: int, re: int) {

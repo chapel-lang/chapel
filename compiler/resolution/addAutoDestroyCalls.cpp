@@ -26,6 +26,7 @@
 #include "DeferStmt.h"
 #include "errorHandling.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -38,7 +39,8 @@ static void cullForDefaultConstructor(FnSymbol* fn);
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
-                      std::set<VarSymbol*>& ignoredVariables);
+                      std::set<VarSymbol*>& ignoredVariables,
+                      ForallStmt*       pfs = NULL);
 
 void addAutoDestroyCalls() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -134,7 +136,12 @@ static LabelSymbol* findReturnLabel(FnSymbol* fn);
 static bool         isReturnLabel(const Expr*        stmt,
                                   const LabelSymbol* returnLabel);
 static bool         isErrorLabel(const Expr*        stmt);
-static bool isYieldStmt(const Expr* stmt);
+static bool         isYieldStmt(const Expr* stmt);
+static void         walkForallBlocks(FnSymbol* fn,
+                                     AutoDestroyScope* parentScope,
+                                     ForallStmt* forall,
+                                     std::set<VarSymbol*>& parentIgnored);
+
 static void gatherIgnoredVariablesForErrorHandling(
     CondStmt* cond,
     std::set<VarSymbol*>& ignoredVariables);
@@ -142,14 +149,33 @@ static void gatherIgnoredVariablesForYield(
     Expr* stmt,
     std::set<VarSymbol*>& ignoredVariables);
 
+//
+// A ForallStmt index variable does not have a DefExprs in the loop body.
+// Yet, it needs to be autoDestroyed at the end of the block.
+// For that to happen, we add it to 'scope'.
+//
+static void addForallIndexVarToScope(AutoDestroyScope* scope,
+                                     ForallStmt* forall)
+{
+  VarSymbol* idx = parIdxVar(forall);
+  if (isAutoDestroyedVariable(idx)) {
+    INT_ASSERT(!idx->isRef()); // no destruction for ref iterators
+    scope->variableAdd(idx);
+  }
+}
+
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
-                      std::set<VarSymbol*>& ignoredVariables) {
+                      std::set<VarSymbol*>& ignoredVariables,
+                      ForallStmt*       pfs) {
   AutoDestroyScope scope(parent, block);
 
   LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
   bool             isDeadCode = false;
+
+  if (pfs != NULL)
+    addForallIndexVarToScope(&scope, pfs);
 
   // Updating the variableToExclude is a good start, but an iterator
   // can have multiple yields in it. If each yield consumes the value,
@@ -196,6 +222,10 @@ static void walkBlock(FnSymbol*         fn,
       // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
       } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
         walkBlock(fn, &scope, subBlock, ignoredVariables);
+
+      // Recurse in to a ForallStmt
+      } else if (ForallStmt* forall = toForallStmt(stmt)) {
+        walkForallBlocks(fn, &scope, forall, ignoredVariables);
 
       // Recurse in to the BlockStmt(s) of a CondStmt
       } else if (CondStmt*  cond     = toCondStmt(stmt))  {
@@ -328,6 +358,28 @@ static bool isYieldStmt(const Expr* stmt) {
 
   return false;
 }
+
+// Helper for walkBlock() to walk everything for a ForallStmt.
+static void walkForallBlocks(FnSymbol* fn,
+                             AutoDestroyScope* parentScope,
+                             ForallStmt* forall,
+                             std::set<VarSymbol*>& parentIgnored)
+{
+  std::set<VarSymbol*> toIgnoreLB(parentIgnored);
+  walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB, forall);
+
+  for_shadow_vars(svar, temp, forall)
+    if (!svar->initBlock()->body.empty() || !svar->deinitBlock()->body.empty())
+      {
+        // I am unsure about these recursive walkBlock() calls, specifically
+        //  * should 'toIgnoreSV' start out with 'parentIgnored'?
+        //  * is it appropriate to reference 'fn' ?  -vass 1/2018
+        std::set<VarSymbol*> toIgnoreSV(parentIgnored);
+        walkBlock(fn, parentScope, svar->initBlock(), toIgnoreSV);
+        walkBlock(fn, parentScope, svar->deinitBlock(), toIgnoreSV);
+      }
+}
+
 /*
  This function identifies variables that have not yet been initialized
  because the function that would initialize them has thrown an error.
@@ -444,18 +496,9 @@ bool isAutoDestroyedVariable(Symbol* sym) {
   bool retval = false;
 
   if (VarSymbol* var = toVarSymbol(sym)) {
-    if ((var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true &&
-         var->hasFlag(FLAG_NO_AUTO_DESTROY)     == false) ||
-
-        // This logic seems wrong somehow, but if I comment it out,
-        // I get memory leaks in a missing deinit after the assign
-        // in reader_chpl implementing stdinInit()
-
-        (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true/*  &&
-         var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
-         // TODO - can we remove this isRefCountedType?
-         // X
-         isRefCountedType(var->type)                             == false*/)) {
+    if (var->hasFlag(FLAG_NO_AUTO_DESTROY)     == false &&
+        (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true ||
+         var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true)) {
 
       retval = (var->isType() == false && autoDestroyMap.get(var->type) != 0);
     }

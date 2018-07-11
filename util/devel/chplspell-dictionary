@@ -2406,7 +2406,6 @@ stdin
 strd
 strdup
 strerror
-stridability
 stridelevel
 stridelevels
 stridelvl
@@ -2717,6 +2716,8 @@ yret
 
 FILEID: 0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5
 ppne
+sdef
+urse
 
 FILEID: 7e73d6b2-1d84-11e6-a3a6-10ddb1d4c3d5
 adfb
@@ -2758,11 +2759,13 @@ FILEID: fe909ee2-1d85-11e6-a3a6-10ddb1d4c3d5
 casttype
 ffast
 fsyntax
+imodules
 infs
 inparens
 ipra
 maino
 mcpu
+mpicxx
 qunused
 reassoc
 thunderx
@@ -3250,6 +3253,7 @@ desync
 getcid
 hepl
 illumos
+libmvec
 librt
 memkind
 nomail
@@ -3586,6 +3590,7 @@ ttag
 FILEID: 390fbcc4-4e3c-11e6-907f-843835579daa
 chpluserobj
 libmvec
+pathvec
 tofix
 
 FILEID: 22f875dc-4e3e-11e6-907f-843835579daa
@@ -3765,6 +3770,7 @@ srcwide
 
 FILEID: 80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5
 disubprogram
+nfor
 optos
 toctree
 
@@ -4289,6 +4295,7 @@ FILEID: 5010068a-0c15-11e7-980e-10ddb1d4c3d5
 arrpid
 emptyrange
 isview
+privdata
 rcdist
 rcdom
 rcdomclass
@@ -4400,6 +4407,7 @@ rtmp
 FILEID: ad56c506-780b-11e7-88ba-10ddb1d4c3d5
 constup
 svdef
+tpvs
 wmikanik
 
 FILEID: 3b5ef8a0-780c-11e7-88ba-10ddb1d4c3d5
@@ -4497,6 +4505,7 @@ atemp
 centry
 cntx
 cval
+eflopies
 extd
 icontext
 iinfo
@@ -4516,6 +4525,7 @@ extd
 
 FILEID: ebe3ea10-ca86-11e7-8b8c-10ddb1d4c3d5
 skind
+totype
 
 FILEID: c09c5496-ff1f-11e7-bed3-10ddb1d4c3d5
 lrint
@@ -4558,6 +4568,50 @@ writehalf
 FILEID: 84377626-2f20-11e8-aa67-10ddb1d4c3d5
 testmain
 
+FILEID: a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5
+dabc
+
+FILEID: c51f1070-3a21-11e8-af7e-10ddb1d4c3d5
+abcdefghijklmnopqrstuvwxyz
+pathlen
+
+FILEID: 641fb78e-4110-11e8-af7e-10ddb1d4c3d5
+ivsym
+
+FILEID: 7e01f6c6-4110-11e8-af7e-10ddb1d4c3d5
+nfor
+
+FILEID: 9fb5188e-4110-11e8-af7e-10ddb1d4c3d5
+forwardee
+ianch
+iwrap
+mappee
+nfor
+retexpr
+retsym
+vclone
+wmikanik
+
+FILEID: d741a952-4110-11e8-af7e-10ddb1d4c3d5
+ectories
+
+FILEID: d635d1bc-4aae-11e8-af7e-10ddb1d4c3d5
+stonea
+
+FILEID: 07648a72-5b7a-11e8-af7e-10ddb1d4c3d5
+urse
+
+FILEID: 0b4871a8-5b7a-11e8-af7e-10ddb1d4c3d5
+einitialized
+
+FILEID: 1ad5560e-5b7a-11e8-af7e-10ddb1d4c3d5
+algdata
+nalloc
+
+FILEID: 23858b0c-5b7a-11e8-af7e-10ddb1d4c3d5
+chplgmp
+nalloc
+
 NATURAL:
 abcd
 abcdefg
@@ -4588,6 +4642,7 @@ alice
 alioth
 alist
 allgather
+allinea
 alloced
 allocs
 alnum
@@ -4678,6 +4733,7 @@ bernstein
 bertolacci
 bessel
 betweenness
+bhardwaj
 bharshbarg
 bharshbarger
 biesack
@@ -4776,6 +4832,7 @@ cbrt
 ccflags
 ccopy
 ccwarnings
+cdef
 cdiv
 certinfo
 cfgfile
@@ -4833,6 +4890,7 @@ cleanloop
 clearbit
 cleison
 cloexec
+clonevar
 closefile
 clrbit
 cmdstr
@@ -4885,6 +4943,7 @@ cppreference
 cproj
 cpuaffinity
 cpubind
+cpuinfo
 cpus
 cpuset
 cpython
@@ -5106,6 +5165,7 @@ ehostunreach
 ehren
 eidrm
 eigenvectors
+eigvals
 eilseq
 einprogress
 eintr
@@ -5552,6 +5612,7 @@ irwxo
 irwxu
 isaac
 isalias
+isborrowed
 isclosed
 isdirect
 isfinite
@@ -5561,11 +5622,14 @@ isnan
 isocalendar
 isoformat
 isoweekday
+isowned
+isshared
 isslice
 issubtype
 issuercert
 istr
 isuid
+isunmanaged
 isvtx
 iten
 iterables
@@ -5767,6 +5831,7 @@ logfiles
 login
 logtmp
 loisel
+london
 longlong
 lookahead
 lookups
@@ -6001,6 +6066,7 @@ niak
 nicholas
 nightlytesting
 nikhil
+nimit
 nist
 nixos
 noakes
@@ -6125,6 +6191,7 @@ ornl
 osmanya
 otoh
 ourself
+outervar
 outfd
 outfile
 outputfile
@@ -6146,6 +6213,7 @@ parameterizable
 parameterization
 parameterized
 paratest
+parekh
 parens
 parenthesization
 parsable
@@ -6160,8 +6228,10 @@ pctflag
 percentfound
 perfcompopts
 perfdat
+perfexecenv
 perfexecopts
 perfkeys
+perfnumtrials
 performant
 perfstats
 perftimeout
@@ -6228,7 +6298,9 @@ princeton
 printchplenv
 printcmp
 printf
+prithvi
 privatebugs
+priy
 prng
 procs
 profilability
@@ -6264,6 +6336,7 @@ pwritev
 pychapel
 pydoc
 pygments
+qian
 qioerr
 qsbr
 qsub
@@ -6291,6 +6364,7 @@ raytracing
 rcpt
 rcvbuf
 rcvd
+rdef
 rdma
 rdonly
 rdwr
@@ -6602,6 +6676,7 @@ strcmp
 strcmps
 strerror
 strftime
+stridability
 stridable
 strided
 stringify
@@ -6654,7 +6729,9 @@ superclass
 superclasses
 superuser
 suppressif
+surya
 suse
+svars
 svec
 sverbose
 svid
@@ -6743,6 +6820,7 @@ titus
 tmacd
 tmpbinname
 tmpdirname
+tmps
 tmpvar
 tochar
 toctou
@@ -6760,7 +6838,9 @@ toolchain
 tooltip
 toordinal
 topdown
+toraw
 toret
+tounmanaged
 traceback
 tradeoff
 tradeoffs
@@ -6819,17 +6899,21 @@ uninstantiated
 uniprocessor
 uniquified
 uniquify
+uniquifying
 universidad
 universitet
 unlinking
 unlocal
+unmanaged
 unmutated
+unnati
 unnormalize
 unnormalized
 unpadded
 unparenthesized
 unpatented
 unpivoted
+unregisterable
 unrelatedly
 unresolveds
 unresolvedsymexpr
@@ -6931,6 +7015,7 @@ workgroup
 workgroups
 workitem
 workitems
+worktree
 wpointer
 wrappee
 writeable

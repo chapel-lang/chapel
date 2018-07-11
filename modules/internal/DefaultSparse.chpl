@@ -26,24 +26,24 @@ module DefaultSparse {
   config param debugDefaultSparse = false;
 
   class DefaultSparseDom: BaseSparseDomImpl {
-    var dist: DefaultDist;
+    var dist: unmanaged DefaultDist;
 
     pragma "local field"
     var indices: [nnzDom] index(rank, idxType);
 
     proc linksDistribution() param return false;
-    proc dsiLinksDistribution()     return false;
+    override proc dsiLinksDistribution() return false;
 
-    proc DefaultSparseDom(param rank, type idxType, dist: DefaultDist,
+    proc init(param rank, type idxType, dist: unmanaged DefaultDist,
         parentDom: domain) {
+      super.init(rank, idxType, parentDom);
 
       this.dist = dist;
-      this.parentDom = parentDom;
     }
 
     proc dsiBuildArray(type eltType)
-      return new DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
-                                  dom=this);
+      return new unmanaged DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
+                                  dom=_to_unmanaged(this));
 
     iter dsiIndsIterSafeForRemoving() {
       for i in 1..nnz by -1 {
@@ -322,11 +322,11 @@ module DefaultSparse {
       return actualAddCnt;
     }
 
-    proc dsiMyDist() : BaseDist {
+    override proc dsiMyDist() : unmanaged BaseDist {
       return dist;
     }
 
-    proc dsiClear() {
+    override proc dsiClear() {
       nnz = 0;
       // should we empty the domain too ?
       // nnzDom = {1..0};
@@ -346,6 +346,7 @@ module DefaultSparse {
   }
 
 
+  pragma "use default init"
   class DefaultSparseArr: BaseSparseArrImpl {
 
     /*proc DefaultSparseArr(type eltType, param rank, type idxType, dom) {*/

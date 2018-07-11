@@ -48,7 +48,7 @@ proc countSolutions(boardSize: int, showEachSoln: bool) {
 // If the column succeeds, we proceed to the next row
 // (or show the result if we have filled all rows).
 //
-proc tryQueenInNextRow(board: Board): void {
+proc tryQueenInNextRow(board: unmanaged Board): void {
   // iterate over the columns
   for col in 1..board.boardSize {
     // place the queen in that column if legal
@@ -96,7 +96,7 @@ class Board {
 // NB could not do this by writing our own constructor.
 //
 proc createBoard(boardSize:int) {
-  return new Board(boardSize = boardSize);
+  return new unmanaged Board(boardSize = boardSize);
 }
 
 // If placing a queen at (lastfilled+1,col) is legal, do so and return true.

@@ -38,9 +38,9 @@ static void cleanup(ModuleSymbol* module);
 
 static void normalizeNestedFunctionExpressions(FnSymbol* fn);
 
-static void normalizeLoopIterExpressions(FnSymbol* fn);
-
 static void destructureTupleAssignment(CallExpr* call);
+
+static void replaceIsSubtypeWithPrimitive(CallExpr* call);
 
 static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
@@ -79,8 +79,6 @@ static void cleanup(ModuleSymbol* module) {
         if (fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) == true) {
           normalizeNestedFunctionExpressions(fn);
 
-        } else if (strncmp("_iterator_for_loopexpr", fn->name, 22) == 0) {
-          normalizeLoopIterExpressions(fn);
         }
       }
     }
@@ -95,9 +93,10 @@ static void cleanup(ModuleSymbol* module) {
       }
 
     } else if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamed("_build_tuple") == true) {
+      if (call->isNamed("_build_tuple"))
         destructureTupleAssignment(call);
-      }
+      if (call->isNamed("isSubtype"))
+        replaceIsSubtypeWithPrimitive(call);
 
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -133,20 +132,12 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
 
     ct->addDeclarations(def);
 
-  } else if (ArgSymbol* arg = toArgSymbol(def->parentSymbol)) {
-    if (fn->hasFlag(FLAG_IF_EXPR_FN) && arg->typeExpr == NULL) {
-      USR_FATAL_CONT(fn,
-                     "cannot currently use an if expression as the default "
-                     "value for an argument when the argument's type is "
-                     "inferred");
+  } else if (isArgSymbol(def->parentSymbol)) {
+    Expr* stmt = def->getStmtExpr();
 
-    } else {
-      Expr* stmt = def->getStmtExpr();
+    def->replace(new UnresolvedSymExpr(fn->name));
 
-      def->replace(new UnresolvedSymExpr(fn->name));
-
-      stmt->insertBefore(def);
-    }
+    stmt->insertBefore(def);
 
   } else {
     Expr* stmt = def->getStmtExpr();
@@ -157,41 +148,6 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
   }
 }
 
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void normalizeLoopIterExpressions(FnSymbol* fn) {
-  DefExpr*  def    = fn->defPoint;
-  FnSymbol* parent = toFnSymbol(def->parentSymbol);
-  Symbol*   parSym = parent->defPoint->parentSymbol;
-
-  INT_ASSERT(strncmp("_parloopexpr", parent->name, 12) == 0 ||
-             strncmp("_seqloopexpr", parent->name, 12) == 0);
-
-  // Walk up through nested loop expressions
-  while (strncmp("_parloopexpr", parSym->name, 12) == 0  ||
-         strncmp("_seqloopexpr", parSym->name, 12) == 0) {
-    parent = toFnSymbol(parSym);
-    parSym = parent->defPoint->parentSymbol;
-  }
-
-  def->remove();
-
-  // Move the parent
-  if (TypeSymbol* ts = toTypeSymbol(parSym)) {
-    AggregateType* ct = toAggregateType(ts->type);
-
-    INT_ASSERT(ct);
-
-    ct->addDeclarations(def);
-
-  } else {
-    parent->defPoint->insertBefore(def);
-  }
-}
 
 /************************************* | **************************************
 *                                                                             *
@@ -238,6 +194,14 @@ static void destructureTupleAssignment(CallExpr* call) {
   }
 }
 
+
+static void replaceIsSubtypeWithPrimitive(CallExpr* call) {
+  Expr* sub = call->get(1);
+  Expr* sup = call->get(2);
+  sub->remove();
+  sup->remove();
+  call->replace(new CallExpr(PRIM_IS_SUBTYPE, sup, sub));
+}
 
 //
 // If call is an empty return statement, e.g. "return;"

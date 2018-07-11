@@ -1,0 +1,24 @@
+intChoicesDupTypes.chpl:60: error: unresolved call 'intOrEnum(color)'
+fnOrder1/intChoicesHelp.chpl:43: note: candidates are: intOrEnum(x: color)
+fnOrder1/intChoicesHelp.chpl:47: note:                 intOrEnum(x: sizes)
+fnOrder1/intChoicesHelp.chpl:51: note:                 intOrEnum(x: int(64))
+intChoicesDupTypes.chpl:61: error: unresolved call 'intOrEnum(color)'
+fnOrder1/intChoicesHelp.chpl:43: note: candidates are: intOrEnum(x: color)
+fnOrder1/intChoicesHelp.chpl:47: note:                 intOrEnum(x: sizes)
+fnOrder1/intChoicesHelp.chpl:51: note:                 intOrEnum(x: int(64))
+intChoicesDupTypes.chpl:72: error: unresolved call 'intOrEnum(sizes)'
+fnOrder1/intChoicesHelp.chpl:43: note: candidates are: intOrEnum(x: color)
+fnOrder1/intChoicesHelp.chpl:47: note:                 intOrEnum(x: sizes)
+fnOrder1/intChoicesHelp.chpl:51: note:                 intOrEnum(x: int(64))
+intChoicesDupTypes.chpl:73: error: unresolved call 'intOrEnum(sizes)'
+fnOrder1/intChoicesHelp.chpl:43: note: candidates are: intOrEnum(x: color)
+fnOrder1/intChoicesHelp.chpl:47: note:                 intOrEnum(x: sizes)
+fnOrder1/intChoicesHelp.chpl:51: note:                 intOrEnum(x: int(64))
+intChoicesDupTypes.chpl:74: error: unresolved call 'intOrEnum(sizes)'
+fnOrder1/intChoicesHelp.chpl:43: note: candidates are: intOrEnum(x: color)
+fnOrder1/intChoicesHelp.chpl:47: note:                 intOrEnum(x: sizes)
+fnOrder1/intChoicesHelp.chpl:51: note:                 intOrEnum(x: int(64))
+intChoicesDupTypes.chpl:75: error: unresolved call 'intOrEnum(sizes)'
+fnOrder1/intChoicesHelp.chpl:43: note: candidates are: intOrEnum(x: color)
+fnOrder1/intChoicesHelp.chpl:47: note:                 intOrEnum(x: sizes)
+fnOrder1/intChoicesHelp.chpl:51: note:                 intOrEnum(x: int(64))

@@ -246,30 +246,27 @@ module BigInteger {
     }
 
     proc numLimbs : uint {
-      var mpz_struct = this.mpz[1];
-
-      return chpl_gmp_mpz_nlimbs(mpz_struct).safeCast(uint);
+      return chpl_gmp_mpz_nlimbs(this.mpz);
     }
 
-    proc get_limbn(n: uint) : uint {
-      const n_ = n.safeCast(mp_size_t);
-      var   ret: mp_limb_t;
+    proc get_limbn(n: integral) : uint {
+      var   ret: uint;
 
       if _local {
-        ret = mpz_getlimbn(this.mpz, n_);
+        ret = chpl_gmp_mpz_getlimbn(this.mpz, n);
 
       } else if this.localeId == chpl_nodeID {
-        ret = mpz_getlimbn(this.mpz, n_);
+        ret = chpl_gmp_mpz_getlimbn(this.mpz, n);
 
       } else {
         const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_getlimbn(this.mpz, n_);
+          ret = chpl_gmp_mpz_getlimbn(this.mpz, n);
         }
       }
 
-      return ret.safeCast(uint);
+      return ret;
     }
 
     proc mpzStruct() : __mpz_struct {
@@ -329,12 +326,12 @@ module BigInteger {
       if _local {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
-        ret = new string(tmpvar, owned = true, needToCopy = false);
+        ret = new string(tmpvar, isowned = true, needToCopy = false);
 
       } else if this.localeId == chpl_nodeID {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
-        ret = new string(tmpvar, owned = true, needToCopy = false);
+        ret = new string(tmpvar, isowned = true, needToCopy = false);
 
       } else {
         const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
@@ -342,7 +339,7 @@ module BigInteger {
         on __primitive("chpl_on_locale_num", thisLoc) {
           var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
-          ret = new string(tmpvar, owned = true, needToCopy = false);
+          ret = new string(tmpvar, isowned = true, needToCopy = false);
         }
       }
 

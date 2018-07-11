@@ -1,7 +1,7 @@
 enum color { red, green, blue };
 
 var D: domain(real);
-var E: domain(color);
+var E: domain(color) = {color.red, color.green, color.blue};
 
 D.add(1.1);
 D.add(2.2);

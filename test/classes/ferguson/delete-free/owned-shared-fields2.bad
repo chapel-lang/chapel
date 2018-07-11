@@ -1,4 +1,2 @@
-owned-shared-fields2.chpl:9: error: implicit copy-initialization invoked for a type that does not allow it
-owned-shared-fields2.chpl:18: error: implicit copy-initialization invoked for a type that does not allow it
-owned-shared-fields2.chpl:13: error: implicit copy-initialization invoked for a type that does not allow it
-owned-shared-fields2.chpl:22: error: implicit copy-initialization invoked for a type that does not allow it
+leaks
+3          48         MyClass

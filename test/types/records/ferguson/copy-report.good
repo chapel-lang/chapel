@@ -4,126 +4,124 @@ VARIABLE INITIALIZATION -- VALUE CALL
    blank return intent, untyped variable
    const return intent, untyped variable
    blank return intent, typed variable
-    assign
    const return intent, typed variable
-    assign
  call in arg / call
  field initialization / value call
    default constructor
-    initCopy
 
 VARIABLE INITIALIZATION -- LOCAL VAR
  variable initialization / local var
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
+    R.init(R)
  field initialization / local var
    default constructor
-    initCopy
+    R.init(R)
 
 VARIABLE INITIALIZATION -- IN ARG (GLOBAL)
-    initCopy
+    R.init(R)
  variable initialization / in-intent arg
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
+    R.init(R)
 
-    initCopy
+    R.init(R)
  variable initialization / const-in-intent arg
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
+    R.init(R)
 
 VARIABLE INITIALIZATION -- IN ARG (IN ARG (CALL-EXPR)))
  passing in intent arg to in intent arg
-    initCopy
+    R.init(R)
  variable initialization / in-intent arg
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
+    R.init(R)
  passing const in intent arg to const in intent arg
-    initCopy
+    R.init(R)
  variable initialization / const-in-intent arg
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
+    R.init(R)
 
 VARIABLE INITIALIZATION -- OUTER VAR
  variable initialization / outer var
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
+    R.init(R)
 
 VARIABLE INITIALIZATION -- GLOBAL / REF
  variable initialization / global var
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
+    R.init(R)
  variable initialization / global ref
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
+    R.init(R)
  variable initialization / local ref
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
+    R.init(R)
  variable initialization / blank-intent arg
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
+    R.init(R)
  variable initialization / const-ref arg
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
+    R.init(R)
  variable initialization / ref arg
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
-    initCopy
+    R.init(R)
+    R.init(R)
  variable initialization / inout-intent arg
    untyped variable
-    initCopy
+    R.init(R)
    typed variable
-    assign
+    R.init(R)
+   function epilogue
     assign
  field initialization / global var
    default constructor
-    initCopy
+    R.init(R)
  field initialization / global ref
    default constructor
-    initCopy
+    R.init(R)
  field initialization / local ref
    default constructor
-    initCopy
+    R.init(R)
  field initialization / blank-intent arg
    default constructor
-    initCopy
+    R.init(R)
  field initialization / const-ref arg
    default constructor
-    initCopy
+    R.init(R)
  field initialization / ref arg
    default constructor
-    initCopy
-    initCopy
+    R.init(R)
+    R.init(R)
  field initialization / in arg
    default constructor
-    initCopy
-    initCopy
+    R.init(R)
+    R.init(R)
  field initialization / inout arg
    default constructor
-    initCopy
+    R.init(R)
     assign
 
 VALUE RETURN -- VALUE CALL
@@ -135,13 +133,13 @@ VALUE RETURN -- LOCAL VAR
 
 VALUE RETURN -- OUTER VAR
  return / outer variable
-    initCopy
+    R.init(R)
 
 VALUE RETURN -- IN ARG (GLOBAL)
-    initCopy
+    R.init(R)
  return / in arg
 
-    initCopy
+    R.init(R)
  return / const in arg
 
 VALUE RETURN -- IN ARG (CALL-EXPR)
@@ -150,19 +148,19 @@ VALUE RETURN -- IN ARG (CALL-EXPR)
 
 VALUE RETURN -- GLOBAL/REF
  return / global variable
-    initCopy
+    R.init(R)
  return / ref global variable
-    initCopy
+    R.init(R)
  return / blank intent arg
-    initCopy
+    R.init(R)
  return / ref intent arg
-    initCopy
+    R.init(R)
  return / const ref intent arg
-    initCopy
+    R.init(R)
  return / call returning ref
-    initCopy
+    R.init(R)
  return / call returning const ref
-    initCopy
+    R.init(R)
 
 REF USE -- REF VALUE
  return ref / global variable

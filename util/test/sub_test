@@ -259,7 +259,7 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
             # grab the chplenv so it can be stuffed into the subprocess env
             env_cmd = [os.path.join(utildir, 'printchplenv'), '--all', '--simple', '--no-tidy', '--internal']
             chpl_env = subprocess.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
-            chpl_env = dict(map(lambda l: l.split('='), chpl_env.splitlines()))
+            chpl_env = dict(map(lambda l: l.split('=', 1), chpl_env.splitlines()))
             file_env = os.environ.copy()
             file_env.update(chpl_env)
 
@@ -1025,7 +1025,8 @@ for testname in testsrc:
     # print test_filename_files, dirlist
 
     if (perftest and (test_filename_files.count(PerfTFile(test_filename,'keys'))==0) and
-        (test_filename_files.count(PerfTFile(test_filename,'execopts'))==0)):
+        (test_filename_files.count(PerfTFile(test_filename,'execopts'))==0) and
+        (test_filename_files.count(PerfTFile(test_filename,'compopts'))==0)):
         sys.stdout.write('[Skipping noperf test: %s/%s]\n'%(localdir,test_filename))
         continue # on to next test
 
@@ -1296,15 +1297,15 @@ for testname in testsrc:
         compenv = list()
 
     testenv = {}
-    for var, val in [env.split('=') for env in globalExecenv]:
+    for var, val in [env.split('=', 1) for env in globalExecenv]:
         testenv[var.strip()] = val.strip()
-    for var, val in [env.split('=') for env in execenv]:
+    for var, val in [env.split('=', 1) for env in execenv]:
         testenv[var.strip()] = val.strip()
 
     testcompenv = {}
-    for var, val in [env.split('=') for env in globalCompenv]:
+    for var, val in [env.split('=', 1) for env in globalCompenv]:
         testcompenv[var.strip()] = val.strip()
-    for var, val in [env.split('=') for env in compenv]:
+    for var, val in [env.split('=', 1) for env in compenv]:
         testcompenv[var.strip()] = val.strip()
 
 
@@ -1386,8 +1387,11 @@ for testname in testsrc:
             #       will use COMPOPTS/.compopts or some other filename.
             #       (thomasvandoren, 2015-04-08)
             pass
-        else:
+        elif 'CHPL_TEST_NO_USE_O' not in os.environ or \
+             os.environ.get('CHPL_TEST_NO_USE_O') != "true":
             args += ['-o', execname] + envCompopts + shlex.split(compopts)
+        else:
+            args += envCompopts + shlex.split(compopts)
         args += [testname]
 
         if is_c_test:
@@ -1903,6 +1907,8 @@ for testname in testsrc:
                             launcher_error = 'Jira 329 -- Fatal MPP reservation error for'
                         elif re.search('Fatal MPP reservation error on create', output, re.IGNORECASE) != None:
                             launcher_error = 'Jira 329 -- Fatal MPP reservation error for'
+                        elif re.search('Text file busy', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 333 -- Text file busy for'
                         elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
                               re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
                             exectimeout = True

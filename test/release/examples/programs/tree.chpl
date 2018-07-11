@@ -17,7 +17,7 @@ config const treeHeight: uint = 4;
 //
 class node {
   var id: int;
-  var left, right: node;
+  var left, right: unmanaged node;
   proc deinit() {
     if left then delete left;
     if right then delete right;
@@ -39,8 +39,8 @@ proc main() {
 // node's children in parallel.  It uses the monotonically decreasing
 // height variable to control the recursion.
 //
-proc buildTree(height: uint = treeHeight, id: int = 1): node {
-  var newNode = new node(id);
+proc buildTree(height: uint = treeHeight, id: int = 1): unmanaged node {
+  var newNode = new unmanaged node(id);
 
   if height > 1 {
     cobegin {

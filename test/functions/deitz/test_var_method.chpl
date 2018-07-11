@@ -5,10 +5,9 @@ class C {
   }
 }
 
-var c : C = new C();
+var c : borrowed C = new borrowed C();
 c.i = 2;
 writeln(c);
 writeln(c.foo());
 c.foo() = 3;
 writeln(c);
-delete c;

@@ -410,6 +410,12 @@ bool AstDumpToNode::enterForallStmt(ForallStmt* node)
   writeField("shadowVariables:     ", node->shadowVariables());
 
   newline();
+  if (node->fRecIterIRdef) {
+    writeField("fRecIterIRdef:        ", 20, node->fRecIterIRdef);
+    writeField("fRecIterICdef:        ", 20, node->fRecIterICdef);
+    writeField("fRecIterGetIterator:  ", 20, node->fRecIterGetIterator);
+    writeField("fRecIterFreeIterator: ", 20, node->fRecIterFreeIterator);
+  }
   writeField("loopBody: ", 10, node->loopBody());
 
   mOffset = mOffset - 2;
@@ -1054,6 +1060,17 @@ void AstDumpToNode::exitNamedExpr(NamedExpr* node)
 //
 //
 
+bool AstDumpToNode::enterIfExpr(IfExpr* node) {
+  return false;
+}
+
+void AstDumpToNode::exitIfExpr(IfExpr* node) {
+}
+
+//
+//
+//
+
 void AstDumpToNode::visitSymExpr(SymExpr* node)
 {
   Symbol* sym = node->symbol();
@@ -1083,6 +1100,18 @@ void AstDumpToNode::visitUsymExpr(UnresolvedSymExpr* node)
   enterNode(node);
   fprintf(mFP, " \"%s\"", node->unresolved);
   exitNode(node);
+}
+
+
+//
+//
+//
+
+bool AstDumpToNode::enterLoopExpr(LoopExpr* node) {
+  return false;
+}
+
+void AstDumpToNode::exitLoopExpr(LoopExpr* node) {
 }
 
 

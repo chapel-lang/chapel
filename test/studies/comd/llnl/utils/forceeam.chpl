@@ -95,18 +95,15 @@ class ForceEAM : Force {
   var eamPot : EAMPot;
   var phiIO, rhoIO, fIO : InterpolationObject;
 
-  proc ForceEAM() {}
+  proc init() {}
 
-  proc ForceEAM(potDir:string, potFile:string, potType:string) {
+  proc init(potDir:string, potFile:string, potType:string) {
+    this.complete();
+
     this.potName = "EAM";
     var input_file = potDir + "/" + potFile;
     var fchan: file;
-    try {
-      open(input_file, iomode.r);
-    } catch {
-      var errMsg : string = "Can't open file " + input_file + ". Fatal Error";
-      throwError(errMsg);
-    }
+    try! open(input_file, iomode.r);
 
     if (potType == "setfl") then eamReadSetfl(fchan);
     else if (potType == "funcfl") then eamReadFuncfl(fchan);

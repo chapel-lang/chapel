@@ -30,6 +30,7 @@ use MasonUpdate;
 proc masonBuild(args) {
   var show = false;
   var release = false;
+  var force = false;
   var compopts: [1..0] string;
   if args.size > 2 {
     for arg in args[2..] {
@@ -40,6 +41,9 @@ proc masonBuild(args) {
       else if arg == '--release' {
         release = true;
       }
+      else if arg == '--force' {
+        force = true;
+      }
       else if arg == '--show' {
         show = true;
       }
@@ -48,8 +52,10 @@ proc masonBuild(args) {
       }
     }
   }
-  UpdateLock(args);
-  buildProgram(release, show, compopts);
+  const configNames = UpdateLock(args);
+  const tomlName = configNames[1];
+  const lockName = configNames[2];
+  buildProgram(release, show, force, compopts, tomlName, lockName);
 }
 
 private proc checkChplVersion(lockFile : Toml) {
@@ -62,63 +68,68 @@ private proc checkChplVersion(lockFile : Toml) {
   }
 }
 
-proc buildProgram(release: bool, show: bool, compopts: [?d] string) {
-  if isFile("Mason.lock") {
+proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
+                  tomlName="Mason.toml", lockName="Mason.lock") {
 
+  try! {
+
+    const cwd = getEnv("PWD");
+    const projectHome = getProjectHome(cwd, tomlName);
+    const toParse = open(projectHome + "/" + lockName, iomode.r);
+    var lockFile = new Owned(parseToml(toParse));
+    const projectName = lockFile["root"]["name"].s;
+    
     // --fast
     var binLoc = 'debug';
     if release then
       binLoc = 'release';
 
-    // Make Binary Directory
-    makeTargetFiles(binLoc);
 
-    // Install dependencies into $MASON_HOME/src
-    var toParse = open("Mason.lock", iomode.r);
-    var lockFile = parseToml(toParse);
-    checkChplVersion(lockFile);
+    // build on last modification
+    if projectModified(projectHome, projectName, binLoc) || force {
 
-    if isDir(MASON_HOME) == false {
-      mkdir(MASON_HOME, parents=true);
-    }
+      if isFile(projectHome + "/" + lockName) {
 
-    var sourceList = genSourceList(lockFile);
-    getSrcCode(sourceList, show);
+        // Make build files and check chapel version
+        makeTargetFiles(binLoc, projectHome);
+        checkChplVersion(lockFile);
 
-    // Checks if dependencies exist and retrieves them for compilation
-    if lockFile.pathExists('root.compopts') {
-      const cmpFlags = lockFile["root"]["compopts"].s;
-      compopts.push_back(cmpFlags);
-    }
+        if isDir(MASON_HOME) == false {
+          mkdir(MASON_HOME, parents=true);
+        }
 
-    // Compile Program
-    if compileSrc(lockFile, binLoc, show, release, compopts) {
-      writeln("Build Successful\n");
+        // generate list of dependencies and get src code
+        var sourceList = genSourceList(lockFile);
+        getSrcCode(sourceList, show);
+
+        // Checks for compilation options are present in Mason.toml
+        if lockFile.pathExists('root.compopts') {
+          const cmpFlags = lockFile["root"]["compopts"].s;
+          compopts.push_back(cmpFlags);
+        }
+
+        // Compile Program
+        if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
+          writeln("Build Successful\n");
+        }
+        else {
+          writeln("Build Failed");
+          exit(1);
+        }
+        // Close memory
+        toParse.close();
+      }
+      else {
+        writeln("Cannot build: no Mason.lock found");
+        exit(1);
+      }
     }
     else {
-      writeln("Build Failed");
-      exit(1);
+      writeln("Skipping Build... No changes to project");
     }
-    // Close memory
-     delete lockFile;
-     toParse.close();
   }
-  else writeln("Cannot build: no Mason.lock found");
-}
-
-
-/* Creates the rest of the project structure */
-proc makeTargetFiles(binLoc: string) {
-  if !isDir('target') {
-    mkdir('target');
-  }
-  if !isDir('target/' + binLoc) {
-    mkdir('target/' + binLoc);
-
-    // TODO:
-    //mkdir('target/' + binLoc + '/tests');
-    //mkdir('target/'+ binLoc + '/examples');
-    //mkdir('target/' + binLoc + '/benches');
+  catch e: MasonError {
+    exit(1);  
   }
 }
 
@@ -128,12 +139,13 @@ proc makeTargetFiles(binLoc: string) {
    named after the project folder in which it is
    contained */
 proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
-                release: bool, compopts: [?dom] string) : bool {
-  var sourceList = genSourceList(lockFile);
-  var depPath = MASON_HOME + '/src/';
-  var project = lockFile["root"]["name"].s;
-  var pathToProj = 'src/'+ project + '.chpl';
-  var moveTo = ' -o target/'+ binLoc +'/'+ project;
+                release: bool, compopts: [?dom] string, projectHome: string) : bool {
+
+  const sourceList = genSourceList(lockFile);
+  const depPath = MASON_HOME + '/src/';
+  const project = lockFile["root"]["name"].s;
+  const pathToProj = projectHome + '/src/'+ project + '.chpl';
+  const moveTo = ' -o ' + projectHome + '/target/'+ binLoc +'/'+ project;
 
   if isFile(pathToProj) {
     var command: string = 'chpl ' + pathToProj + moveTo + ' ' + ' '.join(compopts);
@@ -156,7 +168,7 @@ proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
     }
 
     // Confirming File Structure
-    if isFile('target/' + binLoc + '/' + project) then
+    if isFile(projectHome + '/target/' + binLoc + '/' + project) then
       return true;
     else return false;
   }
@@ -183,6 +195,7 @@ proc genSourceList(lockFile: Toml) {
   }
   return sourceList;
 }
+
 
 /* Checks to see if dependency has already been
    downloaded previously */

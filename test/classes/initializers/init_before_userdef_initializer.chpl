@@ -15,8 +15,6 @@ class C {
   }
 }
 
-var c: C = new C(true);
+var c: C = new borrowed C(true);
 
 writeln("Got back: x=", c.x, " y=", c.y);
-
-delete c;

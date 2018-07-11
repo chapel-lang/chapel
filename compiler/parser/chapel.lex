@@ -118,6 +118,7 @@ align            return processToken(yyscanner, TALIGN);
 as               return processToken(yyscanner, TAS);
 atomic           return processToken(yyscanner, TATOMIC);
 begin            return processToken(yyscanner, TBEGIN);
+borrowed         return processToken(yyscanner, TBORROWED);
 break            return processToken(yyscanner, TBREAK);
 by               return processToken(yyscanner, TBY);
 catch            return processToken(yyscanner, TCATCH);
@@ -158,6 +159,8 @@ on               return processToken(yyscanner, TON);
 only             return processToken(yyscanner, TONLY);
 otherwise        return processToken(yyscanner, TOTHERWISE);
 out              return processToken(yyscanner, TOUT);
+override         return processToken(yyscanner, TOVERRIDE);
+owned            return processToken(yyscanner, TOWNED);
 param            return processToken(yyscanner, TPARAM);
 pragma           return processToken(yyscanner, TPRAGMA);
 __primitive      return processToken(yyscanner, TPRIMITIVE);
@@ -173,6 +176,7 @@ return           return processToken(yyscanner, TRETURN);
 scan             return processToken(yyscanner, TSCAN);
 select           return processToken(yyscanner, TSELECT);
 serial           return processToken(yyscanner, TSERIAL);
+shared           return processToken(yyscanner, TSHARED);
 single           return processToken(yyscanner, TSINGLE);
 sparse           return processToken(yyscanner, TSPARSE);
 subdomain        return processToken(yyscanner, TSUBDOMAIN);
@@ -184,6 +188,7 @@ try              return processToken(yyscanner, TTRY);
 "try!"           return processToken(yyscanner, TTRYBANG);
 type             return processToken(yyscanner, TTYPE);
 union            return processToken(yyscanner, TUNION);
+unmanaged        return processToken(yyscanner, TUNMANAGED);
 use              return processToken(yyscanner, TUSE);
 var              return processToken(yyscanner, TVAR);
 when             return processToken(yyscanner, TWHEN);
@@ -373,7 +378,11 @@ static int processToken(yyscan_t scanner, int t) {
         t == TREF    ||
         t == TCOLON  ||
         t == TASSIGN ||
-        t == TRSBR) {
+        t == TRSBR ||
+        t == TBORROWED ||
+        t == TUNMANAGED ||
+        t == TOWNED ||
+        t == TSHARED) {
       captureString.push_back(' ');
     }
   }

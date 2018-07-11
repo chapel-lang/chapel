@@ -14,7 +14,7 @@ class Child : Parent {
 }
 
 proc main() {
-  var child = new Child(1, 2, 4);
+  var child = new unmanaged Child(1, 2, 4);
   // Note: the order of arguments in the default case is parent first, then
   // child.  This reflects the order in which fields are initialized in a
   // user-defined initializer.

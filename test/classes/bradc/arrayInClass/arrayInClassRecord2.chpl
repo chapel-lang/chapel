@@ -12,7 +12,7 @@ class C {
 
 
 var myR = new R();
-var myC = new C();
+var myC = new unmanaged C();
 
 writeln("A is: ", A);
 foo(A, 17);

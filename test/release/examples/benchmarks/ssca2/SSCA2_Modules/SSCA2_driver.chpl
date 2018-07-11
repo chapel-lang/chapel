@@ -58,10 +58,10 @@ module SSCA2_driver
         largest_edges ( G, Heavy_Edge_List );
 
         if RUN_KERNEL3 {
-          var Heavy_Edge_Subgraphs : [Heavy_Edge_List] Generated_Subgraph (vertex);
+          var Heavy_Edge_Subgraphs : [Heavy_Edge_List] unmanaged Generated_Subgraph (vertex);
 
           for (x,y) in Heavy_Edge_List do
-            Heavy_Edge_Subgraphs ( (x, y) ) = new Generated_Subgraph (vertex);
+            Heavy_Edge_Subgraphs ( (x, y) ) = new unmanaged Generated_Subgraph (vertex);
         	    
           // --------
           // Kernel 3:
@@ -111,9 +111,9 @@ module SSCA2_driver
             var linear_index         : index (vertex_indices);
 
             var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 
-                             new NPBRandomStream (real, seed = 3217900597)
+                             new unmanaged NPBRandomStream (real, seed = 3217900597)
                            else
-                             new NPBRandomStream (real);
+                             new unmanaged NPBRandomStream (real);
 
             var V_s      = 0;
 

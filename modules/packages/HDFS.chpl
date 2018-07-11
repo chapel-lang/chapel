@@ -173,9 +173,24 @@ record hdfsChapelFileSystem {
 // --------- Connecting/disconnecting ---------
 
 /* Make a connection to HDFS for a single locale */
-proc hdfsChapelConnect(out error: syserr, path: c_string, port: int): c_void_ptr{
+proc hdfsChapelConnect(path: c_string, port: int): c_void_ptr throws {
   var ret: c_void_ptr;
-  error = hdfs_connect(ret, path, port);
+  var err = hdfs_connect(ret, path, port);
+  if err then try ioerror(err, "Unable to connect to HDFS", path:string);
+  return ret;
+}
+
+pragma "no doc"
+proc hdfsChapelConnect(out error: syserr, path: c_string, port: int): c_void_ptr{
+  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  var ret: c_void_ptr;
+  try {
+    ret = hdfsChapelConnect(path, port);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
   return ret;
 }
 
@@ -272,50 +287,80 @@ record hdfsChapelFileSystem_local {
   var _internal_: c_void_ptr;
 }
 
-pragma "no doc"
 // this is used in hdfsChapelFileSystem_local.hdfs_chapel_open
-proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
-    style:iostyle = defaultIOStyle(), fs:c_void_ptr):file {
+proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle = defaultIOStyle(), fs:c_void_ptr):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
-  error = qio_file_open_access_usr(ret._file_internal, path.localize().c_str(),
-                                   _modestring(mode).localize().c_str(),
-                                   hints, local_style, fs,
-                                   hdfs_function_struct_ptr);
-  return ret;
-}
-
-/* Open a file on an HDFS filesystem for a single locale */
-proc hdfsChapelFileSystem_local.hdfs_chapel_open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
-  var err:syserr = ENOERR;
-  var ret = open(err, path, mode, hints, style, this._internal_);
+  var err = qio_file_open_access_usr(ret._file_internal, path.localize().c_str(),
+                                     _modestring(mode).localize().c_str(),
+                                     hints, local_style, fs,
+                                     hdfs_function_struct_ptr);
   if err then try ioerror(err, "in foreign open", path);
   return ret;
 }
 
 pragma "no doc"
-proc hdfsChapelFileSystem_local.hdfs_chapel_disconnect() throws {
-  on this.home {
-    var err: syserr;
-    err = hdfs_disconnect(this._internal_);
-    if err then try ioerror(err, "Unable to disconnect from HDFS");
+proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle = defaultIOStyle(), fs:c_void_ptr):file {
+  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  var ret:file;
+  ret.home = here;
+  try {
+    ret = open(path, mode, hints, style, fs);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
   }
+  return ret;
+}
+
+/* Open a file on an HDFS filesystem for a single locale */
+proc hdfsChapelFileSystem_local.hdfs_chapel_open(
+    path:string, mode:iomode, hints:iohints=IOHINT_NONE,
+    style:iostyle = defaultIOStyle()):file throws {
+  var ret: file;
+  try {
+    ret = open(path, mode, hints, style, this._internal_);
+  } catch e: SystemError {
+    try ioerror(e.err, "in foreign open", path);
+  } catch {
+    try ioerror(EINVAL:syserr, "in foreign open", path);
+  }
+  return ret;
+}
+
+pragma "no doc"
+proc hdfsChapelFileSystem_local.hdfs_chapel_disconnect() throws {
+  var err: syserr;
+  on this.home {
+    err = hdfs_disconnect(this._internal_);
+  }
+  if err then try ioerror(err, "Unable to disconnect from HDFS");
 }
 
 /* Connect to an HDFS filesystem on a single locale */
 proc hdfs_chapel_connect(path:string, port: int): hdfsChapelFileSystem_local throws {
-  var err: syserr;
-  var ret = hdfs_chapel_connect(err, path, port);
+  var ret: hdfsChapelFileSystem_local;
+  ret.home = here;
+  var err = hdfs_connect(ret._internal_, path.localize().c_str(), port);
   if err then try ioerror(err, "Unable to connect to HDFS", path);
   return ret;
 }
 
 pragma "no doc"
-proc hdfs_chapel_connect(out error:syserr, path:string, port: int): hdfsChapelFileSystem_local{
-  var ret:hdfsChapelFileSystem_local;
-  ret.home = here;
-  error = hdfs_connect(ret._internal_, path.localize().c_str(), port);
+proc hdfs_chapel_connect(out error:syserr, path:string, port: int): hdfsChapelFileSystem_local {
+  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  var ret: hdfsChapelFileSystem_local;
+  try {
+    ret = hdfs_chapel_connect(path, port);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
   return ret;
 }
 

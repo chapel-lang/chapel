@@ -1,6 +1,6 @@
 record Wrapper {
-  forwarding var a:A;
-  forwarding var b:B;
+  forwarding var a:unmanaged A;
+  forwarding var b:unmanaged B;
   proc deinit() {
     delete a, b;
   }
@@ -14,5 +14,5 @@ class B {
   proc foo() { writeln("in B.foo()"); }
 }
 
-var r = new Wrapper(new A(), new B());
+var r = new Wrapper(new unmanaged A(), new unmanaged B());
 r.foo(); // duplicate forwarding methods

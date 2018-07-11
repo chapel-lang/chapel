@@ -1,6 +1,7 @@
 use MDTypes;
 use configs;
 
+pragma "use default init"
 class Force {
   var cutoff : real;        // potential cutoff distance in Angstroms
   var mass : real;          // mass of atoms in internal units

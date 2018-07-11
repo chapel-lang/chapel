@@ -6,11 +6,9 @@ class D {
   param y: int;
 }
 
-var c = new C(2);
+var c = new unmanaged C(2);
 
 param x = c.x;
 
 writeln("c is: {x = ", c.x, "}");
 writeln("x is: ", x);
-
-delete c;

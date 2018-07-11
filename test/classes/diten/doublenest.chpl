@@ -1,6 +1,6 @@
 class a {
   proc foo() {
-    var bvar = new b();
+    var bvar = new unmanaged b();
 
     bvar.foo();
 
@@ -9,7 +9,7 @@ class a {
 
   class b {
     proc foo() {
-      var cvar = new c(9);
+      var cvar = new unmanaged c(9);
 
       writeln("in a.b.foo(), cvar.x is: ", cvar.x);
 
@@ -23,7 +23,7 @@ class a {
 }
 
 proc main() {
-  var avar = new a();
+  var avar = new unmanaged a();
 
   avar.foo();
 

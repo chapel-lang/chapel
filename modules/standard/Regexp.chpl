@@ -401,28 +401,9 @@ class BadRegexpError : Error {
   proc init(msg: string) {
     this.msg = msg;
   }
-  proc message() {
+  override proc message() {
     return msg;
   }
-}
-
-pragma "no doc"
-proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp throws {
-
-  if CHPL_REGEXP == "none" {
-    compilerError("Cannot use Regexp with CHPL_REGEXP=none");
-  }
-
-  var err: syserr;
-  var ret = compile(pattern, err, utf8, posix, literal, nocapture, ignorecase,
-                    multiline, dotnl, nongreedy);
-
-  if err {
-    var err_str = qio_regexp_error(ret._regexp);
-    var err_msg = err_str:string + " when compiling regexp '" + pattern + "'";
-    throw new BadRegexpError(err_msg);
-  }
-  return ret;
 }
 
 /*
@@ -436,8 +417,6 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
                  get the regular expression ``\s``, you'd have to write
                  ``"\\s"`` because the ``\`` is the escape character within
                  Chapel string literals
-   :arg error: (optional) if provided, return an error code instead of halting
-               if an error is encountered
    :arg utf8: (optional, default true) set to `true` to create a regular
                expression matching UTF-8; `false` for binary or ASCII only.
    :arg posix: (optional) set to true to disable non-POSIX regular expression
@@ -467,7 +446,12 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
                    ``(?U)``.
 
  */
-proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture, /*i*/ ignorecase, /*m*/ multiline, /*s*/ dotnl, /*U*/ nongreedy):regexp {
+proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp throws {
+
+  if CHPL_REGEXP == "none" {
+    compilerError("Cannot use Regexp with CHPL_REGEXP=none");
+  }
+
   var opts:qio_regexp_options_t;
   qio_regexp_init_default_options(opts);
   opts.utf8 = utf8;
@@ -479,15 +463,28 @@ proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture,
   opts.dotnl = dotnl;
   opts.nongreedy = nongreedy;
 
-  var ret:regexp;
+  var ret: regexp;
   qio_regexp_create_compile(pattern.localize().c_str(), pattern.length, opts, ret._regexp);
-
-  if qio_regexp_ok(ret._regexp) {
-    error = ENOERR;
-  } else {
-    error = qio_format_error_bad_regexp();
+  if !qio_regexp_ok(ret._regexp) {
+    var err_str = qio_regexp_error(ret._regexp);
+    var err_msg = err_str:string + " when compiling regexp '" + pattern + "'";
+    throw new BadRegexpError(err_msg);
   }
+  return ret;
+}
 
+pragma "no doc"
+proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture, /*i*/ ignorecase, /*m*/ multiline, /*s*/ dotnl, /*U*/ nongreedy):regexp {
+  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  var ret: regexp;
+  try {
+    ret = compile(pattern, utf8, posix, literal, nocapture, ignorecase,
+                  multiline, dotnl, nongreedy);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
   return ret;
 }
 
@@ -506,6 +503,7 @@ proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture,
     string.
  */
 pragma "no doc"
+pragma "use default init"
 record stringPart {
   var offset:int;
   var length:int;
@@ -527,6 +525,7 @@ record stringPart {
       if !m then do_something_if_not_matched();
 
  */
+pragma "use default init"
 record reMatch {
   /* true if the regular expression search matched successfully */
   var matched:bool;
@@ -578,6 +577,18 @@ record regexp {
   var home: locale = here;
   pragma "no doc"
   var _regexp:qio_regexp_t = qio_regexp_null();
+
+  proc init() {
+  }
+
+  proc init(x: regexp) {
+    this.home = x.home;
+    this._regexp = x._regexp;
+    this.complete();
+    on home {
+      qio_regexp_retain(_regexp);
+    }
+  }
 
   /* did this regular expression compile ? */
   proc ok:bool {
@@ -975,17 +986,21 @@ record regexp {
     // and there's no way to get the flags
     var litOne = new ioLiteral("new regexp(\"");
     var litTwo = new ioLiteral("\")");
-    var err:syserr = ENOERR;
-    if(f.read(error=err, litOne, pattern, litTwo)) {
-      on this.home {
-        var localPattern = pattern.localize();
-        var opts:qio_regexp_options_t;
-        qio_regexp_init_default_options(opts);
-        qio_regexp_create_compile(localPattern.c_str(), localPattern.length, opts, this._regexp);
+
+    try {
+      if (f.read(litOne, pattern, litTwo)) {
+        on this.home {
+          var localPattern = pattern.localize();
+          var opts:qio_regexp_options_t;
+          qio_regexp_init_default_options(opts);
+          qio_regexp_create_compile(localPattern.c_str(), localPattern.length, opts, this._regexp);
+        }
       }
+    } catch e: SystemError {
+      f.setError(e.err);
+    } catch {
+      f.setError(EINVAL:syserr);
     }
-    if err then
-      f.setError(err);
   }
 }
 
@@ -1013,16 +1028,6 @@ proc =(ref ret:regexp, x:regexp)
 
     qio_regexp_create_compile(pattern, pattern.length, options, ret._regexp);
   }
-}
-
-// TODO -- shouldn't have to write this this way!
-pragma "no doc"
-pragma "init copy fn"
-proc chpl__initCopy(x: regexp) {
-  on x.home {
-    qio_regexp_retain(x._regexp);
-  }
-  return x;
 }
 
 // Cast regexp to string.

@@ -20,8 +20,7 @@ class Child : Parent {
 }
 
 proc main() {
-  var child = new Child(4);
+  var child = new shared Child(4);
 
   writeln(child);
-  delete child;
 }

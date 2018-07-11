@@ -7,10 +7,8 @@ class foo {
   }
 }
 
-var f = new foo();
+var f = new borrowed foo();
 
 if f.bar
   then writeln("Bar");
   else writeln("Not Bar");
-
-delete f;

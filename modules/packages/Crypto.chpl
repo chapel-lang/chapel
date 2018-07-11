@@ -101,7 +101,7 @@ module Crypto {
      into a Crypto utility or coming out of it, is a `CryptoBuffer`.
 
      A `CryptoBuffer` can enclose a `string` or a `[] uint(8)` passed to its
-     constructor and provides helper functions to access those values.
+     initializer and provides helper functions to access those values.
 
   */
   class CryptoBuffer {
@@ -112,7 +112,7 @@ module Crypto {
     pragma "no doc"
     var buff: [buffDomain] uint(8);
 
-    /* The `CryptoBuffer` class constructor that initializes the buffer
+    /* The `CryptoBuffer` class initializer that initializes the buffer
        when a `string` is supplied to it.
 
        :arg s: `string` input for buffer conversion.
@@ -134,7 +134,7 @@ module Crypto {
       }
     }
 
-    /* The `CryptoBuffer` class constructor that initializes the buffer
+    /* The `CryptoBuffer` class initializer that initializes the buffer
        when a `[] uint(8)` is supplied to it.
 
        :arg s: `[] uint(8)` input for buffer conversion.
@@ -221,7 +221,7 @@ module Crypto {
      private key or both of them. Hence, the contents of an object of the
      class `RSAKey` may be decided by the user.
 
-     Calling the `RSAKey` constructor without using any key import or export
+     Calling the `RSAKey` initializer without using any key import or export
      functions may result in generation of a single object that contains both the
      keys (public and private).
 
@@ -235,7 +235,7 @@ module Crypto {
     pragma "no doc"
     var keyObj: EVP_PKEY_PTR;
 
-    /* The `RSAKey` class constructor that initializes the `EVP_PKEY` object
+    /* The `RSAKey` class initializer that initializes the `EVP_PKEY` object
        of OpenSSL and basically, initializes a set of public and private keys.
 
        It checks for valid RSA key lengths and generates a public key and private
@@ -283,7 +283,7 @@ module Crypto {
     pragma "no doc"
     var value: CryptoBuffer;
 
-    /* The `Envelope` class constructor that encapsulates the IV, AES encrypted
+    /* The `Envelope` class initializer that encapsulates the IV, AES encrypted
        ciphertext buffer and an array of encrypted key buffers.
 
        :arg iv: Initialization Vector.
@@ -382,6 +382,14 @@ module Crypto {
     return hash;
   }
 
+  /* The `Digest` enum represents all the hashing functions provided by the
+     OpenSSL primitives. Value from this enum is passed to the `Hash` class
+     initializer in order to select the type of hashing function to be used.
+
+  */
+  enum Digest {
+    MD5, SHA1, SHA224, SHA256, SHA384, SHA512, RIPEMD160
+  }
   /* The `Hash` class represents all the hashing functions provided by the
      OpenSSL primitives. It supports all the prominent and most commonly used
      deterministic hashing functions.
@@ -397,33 +405,39 @@ module Crypto {
     pragma "no doc"
     var hashSpace: [hashDomain] uint(8);
 
-    /* The `Hash` class constructor that initializes the hashing function
-       to be used. This constructor sets the byte length of the
+    /* The `Hash` class initializer that initializes the hashing function
+       to be used. This initializer sets the byte length of the
        respective hash and allocates a domain for memory allocation
        for hashing. It currently supports the following hashing functions -
        ``MD5``, ``SHA1``, ``SHA224``, ``SHA256``, ``SHA384``, ``SHA512`` and
-       ``RIPEMD160``.
+       ``RIPEMD160`` consumed via an enum, `Digest`.
 
-       :arg digestName: Name of the hashing function to be used.
-       :type digestName: `string`
+       :arg digestName: Hashing function to be used.
+       :type digestName: `Digest`
 
        :return: An object of class `Hash`.
        :rtype: `Hash`
 
+       Initialization example,
+
+       .. code-block:: chapel
+
+          var h = new Hash(Digest.SHA256);
+
     */
-    proc init(digestName: string) {
+    proc init(digestName: Digest) {
       this.complete();
       select digestName {
-        when "MD5"        do this.hashLen = 16;
-        when "SHA1"       do this.hashLen = 20;
-        when "SHA224"     do this.hashLen = 28;
-        when "SHA256"     do this.hashLen = 32;
-        when "SHA384"     do this.hashLen = 48;
-        when "SHA512"     do this.hashLen = 64;
-        when "RIPEMD160"  do this.hashLen = 20;
-        otherwise do halt("A digest with the name \'" + digestName + "\' doesn't exist.");
+        when Digest.MD5        do this.hashLen = 16;
+        when Digest.SHA1       do this.hashLen = 20;
+        when Digest.SHA224     do this.hashLen = 28;
+        when Digest.SHA256     do this.hashLen = 32;
+        when Digest.SHA384     do this.hashLen = 48;
+        when Digest.SHA512     do this.hashLen = 64;
+        when Digest.RIPEMD160  do this.hashLen = 20;
+        otherwise do halt("A digest with the name \'" + digestName: string + "\' doesn't exist.");
       }
-      this.digestName = digestName;
+      this.digestName = digestName: string;
       this.hashDomain = {0..#this.hashLen};
     }
 
@@ -452,7 +466,7 @@ module Crypto {
     */
     proc getDigest(inputBuffer: CryptoBuffer): CryptoBuffer {
       this.hashSpace = digestPrimitives(this.digestName, this.hashLen, inputBuffer);
-      var hashBuffer = new CryptoBuffer(this.hashSpace);
+      var hashBuffer = new unmanaged CryptoBuffer(this.hashSpace);
       return hashBuffer;
     }
   }
@@ -525,6 +539,14 @@ module Crypto {
    return plaintext;
   }
 
+  /* The `CryptoChainMode` enum represents all cipher chaining modes
+     that can be used by a symmetric cipher. It is used by the `AES` and
+     `Blowfish` class initializers to select a chaining mode.
+
+  */
+  enum CryptoChainMode {
+    cbc, ecb, cfb, ofb
+  }
   /* The `AES` class represents the symmetric encryption algorithm, AES.
      The Advanced Encryption Standard (AES), also known by its original name Rijndael
      is a specification for the encryption of electronic data established by the
@@ -546,27 +568,33 @@ module Crypto {
     pragma "no doc"
     var byteLen: int;
 
-    /* The `AES` class constructor that initializes the AES encryption
+    /* The `AES` class initializer that initializes the AES encryption
        algorithm with the right key length and chaining mode.
 
        :arg bits: Number of bits representing the variant of AES based on
                   key-size. (128, 192 or 256)
        :type bits: `int`
 
-       :arg mode: Name of the chaining mode to be used.
-       :type mode: `string`
+       :arg mode: Chaining mode to be used.
+       :type mode: `CryptoChainMode`
 
        :return: An object of class `AES`.
        :rtype: `AES`
 
+       Initialization example,
+
+       .. code-block:: chapel
+
+          var aes = new AES(256, CryptoChainMode.cbc);
+
     */
-    proc init(bits: int, mode: string) {
+    proc init(bits: int, mode: CryptoChainMode) {
       var tmpCipher: CONST_EVP_CIPHER_PTR;
-      if (bits == 128 && mode == "cbc") {
+      if (bits == 128 && mode == CryptoChainMode.cbc) {
         tmpCipher = EVP_aes_128_cbc();
-      } else if (bits == 192 && mode == "cbc") {
+      } else if (bits == 192 && mode == CryptoChainMode.cbc) {
         tmpCipher = EVP_aes_192_cbc();
-      } else if (bits == 256 && mode == "cbc") {
+      } else if (bits == 256 && mode == CryptoChainMode.cbc) {
         tmpCipher = EVP_aes_256_cbc();
       } else {
         halt("The desired variant of AES does not exist.");
@@ -612,7 +640,7 @@ module Crypto {
     */
     proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
       var encryptedPlaintext = aesEncrypt(plaintext, key, IV, this.cipher);
-      var encryptedPlaintextBuff = new CryptoBuffer(encryptedPlaintext);
+      var encryptedPlaintextBuff = new unmanaged CryptoBuffer(encryptedPlaintext);
       return encryptedPlaintextBuff;
     }
 
@@ -639,7 +667,7 @@ module Crypto {
     */
     proc decrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
       var decryptedCiphertext = aesDecrypt(ciphertext, key, IV, this.cipher);
-      var decryptedCiphertextBuff = new CryptoBuffer(decryptedCiphertext);
+      var decryptedCiphertextBuff = new unmanaged CryptoBuffer(decryptedCiphertext);
       return decryptedCiphertextBuff;
     }
   }
@@ -742,23 +770,29 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     pragma "no doc"
     var byteLen: int;
 
-    /* The `Blowfish` class constructor that initializes the Blowfish encryption
+    /* The `Blowfish` class initializer that initializes the Blowfish encryption
        algorithm with the right key length and chaining mode.
 
        :arg mode: Name of the chaining mode to be used.
-       :type mode: `string`
+       :type mode: `CryptoChainMode`
 
        :return: An object of class `Blowfish`.
        :rtype: `Blowfish`
 
+       Initialization example,
+
+       .. code-block:: chapel
+
+          var bf = new Blowfish(CryptoChainMode.cbc);
+
     */
-    proc init(mode: string) {
+    proc init(mode: CryptoChainMode) {
       var tmpCipher: CONST_EVP_CIPHER_PTR;
       select mode {
-        when "cbc"  do tmpCipher = EVP_bf_cbc();
-        when "ecb"  do tmpCipher = EVP_bf_ecb();
-        when "cfb"  do tmpCipher = EVP_bf_cfb();
-        when "ofb"  do tmpCipher = EVP_bf_ofb();
+        when CryptoChainMode.cbc  do tmpCipher = EVP_bf_cbc();
+        when CryptoChainMode.ecb  do tmpCipher = EVP_bf_ecb();
+        when CryptoChainMode.cfb  do tmpCipher = EVP_bf_cfb();
+        when CryptoChainMode.ofb  do tmpCipher = EVP_bf_ofb();
         otherwise do halt("The desired variant of Blowfish cipher does not exist.");
       }
       this.cipher = tmpCipher;
@@ -795,7 +829,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
         throw new IllegalArgumentError("key", "Blowfish cipher expects a size greater than 10 bytes.");
       }
       var encryptedPlaintext = bfEncrypt(plaintext, key, IV, this.cipher);
-      var encryptedPlaintextBuff = new CryptoBuffer(encryptedPlaintext);
+      var encryptedPlaintextBuff = new unmanaged CryptoBuffer(encryptedPlaintext);
       return encryptedPlaintextBuff;
     }
 
@@ -822,7 +856,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     */
     proc decrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
       var decryptedCiphertext = bfDecrypt(ciphertext, key, IV, this.cipher);
-      var decryptedCiphertextBuff = new CryptoBuffer(decryptedCiphertext);
+      var decryptedCiphertextBuff = new unmanaged CryptoBuffer(decryptedCiphertext);
       return decryptedCiphertextBuff;
     }
   }
@@ -846,6 +880,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
      buffer of the same size.
 
   */
+  pragma "use default init"
   class CryptoRandom {
     /* This function represents a CSPRNG that generates and allocates the desired
        number of random values as specified by the argument. Halts for number of
@@ -853,7 +888,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
        .. code-block:: chapel
 
-          var a = (new CryptoRandom()).createRandomBuffer(5)
+          var a = (new CryptoRandom()).getRandomBuffer(5)
 
        would give us a `CryptoBuffer` of size `5` and pre-initialized with values.
 
@@ -864,12 +899,12 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc createRandomBuffer(buffLen: int): CryptoBuffer throws {
+    proc getRandomBuffer(buffLen: int): CryptoBuffer throws {
       if (buffLen < 1) {
         throw new IllegalArgumentError("buffLen", "Invalid random buffer length specified.");
       }
       var randomizedBuff = try createRandomBuffer(buffLen);
-      var randomizedCryptoBuff = new CryptoBuffer(randomizedBuff);
+      var randomizedCryptoBuff = new unmanaged CryptoBuffer(randomizedBuff);
       return randomizedCryptoBuff;
     }
   }
@@ -909,7 +944,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     pragma "no doc"
     var hashName: string;
 
-    /* The `KDF` class constructor that initializes the common data used by most
+    /* The `KDF` class initializer that initializes the common data used by most
        of the Key Derivation Functions.
 
        :arg byteLen: Size of the expected key in bytes / key length.
@@ -939,7 +974,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
     /* This function represents Password-Based KDF 2. It generates a secure-key
        buffer based on the salt and also on the metadata provided in the `KDF`
-       constructor.
+       initializer.
 
        :arg userKey: User-specified `string` representation of the key.
        :type userKey: `string`
@@ -953,7 +988,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     */
     proc passKDF(userKey: string, saltBuff: CryptoBuffer): CryptoBuffer {
       var key = PBKDF2(userKey, saltBuff, this.byteLen, this.iterCount, this.hashName);
-      var keyBuff = new CryptoBuffer(key);
+      var keyBuff = new unmanaged CryptoBuffer(key);
       return keyBuff;
     }
   }
@@ -968,7 +1003,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       for i in keys.domain do {
         var keySize = EVP_PKEY_size(keys[i].getKeyPair());
         var dummyMalloc: [1..((keySize): int(64))] uint(8);
-        encSymmKeys[i] = new CryptoBuffer(dummyMalloc);
+        encSymmKeys[i] = new unmanaged CryptoBuffer(dummyMalloc);
       }
 
       var encSymmKeysPtr: [keys.domain] c_ptr(uint(8));
@@ -1063,6 +1098,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        as an argument) by passing a single `RSAKey` object every time the decryption takes place.
 
     */
+  pragma "use default init"
   class RSA {
 
     /* This is the 'RSA' encrypt routine that encrypts the plaintext buffer. This
@@ -1103,7 +1139,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
       var ciphertext = rsaEncrypt(keys, plaintext, iv, encSymmKeys);
 
-      var envp = new Envelope(new CryptoBuffer(iv), encSymmKeys, new CryptoBuffer(ciphertext));
+      var envp = new unmanaged Envelope(new unmanaged CryptoBuffer(iv), encSymmKeys, new unmanaged CryptoBuffer(ciphertext));
       return envp;
     }
 
@@ -1133,7 +1169,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       var encKeys = envp.getEncKeys();
 
       var plaintext = try rsaDecrypt(key, iv, ciphertext, encKeys);
-      var plaintextBuff = new CryptoBuffer(plaintext);
+      var plaintextBuff = new unmanaged CryptoBuffer(plaintext);
       return plaintextBuff;
     }
   }
@@ -1165,7 +1201,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern type CONST_EVP_MD_PTR;
     extern type CONST_EVP_CIPHER_PTR;
 
-    extern proc EVP_CIPHER_iv_length(const e: EVP_CIPHER_PTR): c_int;
+    extern proc EVP_CIPHER_iv_length(e: CONST_EVP_CIPHER_PTR): c_int;
     extern proc EVP_PKEY_size(pkey: EVP_PKEY_PTR): c_int;
     extern proc EVP_PKEY_CTX_new_id(id: c_int, e: ENGINE_PTR): EVP_PKEY_CTX_PTR;
     extern proc EVP_PKEY_keygen_init(ctx: EVP_PKEY_CTX_PTR): c_int;

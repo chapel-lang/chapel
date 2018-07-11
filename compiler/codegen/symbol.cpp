@@ -786,6 +786,26 @@ static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
   return useType;
 }
 
+// Alter the C code type to avoid _ref_, c_ptr_ prefixes and instead use a
+// type that C understands without additional information (e.g. instead of
+// _ref_int64_t, just int64_t *).  But only for exported symbols like the
+// return type of exported functions, or arguments of those functions.
+//
+// TODO: apply to _ddata as well?
+static std::string
+transformTypeForPointer(Type* type) {
+  std::string typeName = type->codegen().c;
+  if (type->symbol->hasFlag(FLAG_REF)) {
+    Type* referenced = type->getValType();
+    return referenced->codegen().c + " *";
+
+  } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+    Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
+    return pointedTo->codegen().c + " *";
+  }
+  return typeName;
+}
+
 GenRet ArgSymbol::codegenType() {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
@@ -794,7 +814,8 @@ GenRet ArgSymbol::codegenType() {
   Type* useType = getArgSymbolCodegenType(this);
 
   if( outfile ) {
-    ret.c = useType->codegen().c;
+    std::string argType = transformTypeForPointer(useType);
+    ret.c = argType;
   } else {
 #ifdef HAVE_LLVM
     llvm::Type *argType = useType->codegen().type;
@@ -1213,7 +1234,13 @@ void TypeSymbol::codegenAggMetadata() {
 GenRet TypeSymbol::codegen() {
   GenInfo *info = gGenInfo;
   GenRet ret;
-  ret.chplType = typeInfo();
+  ret.chplType = type;
+
+  // Should not be code generating non-canonical class pointers
+  // (these are replaced with canonical ones after resolution)
+  if (isUnmanagedClassType(type))
+    INT_FATAL("attempting to code generate a managed class type");
+
   if( info->cfile ) {
     ret.c = cname;
   } else {
@@ -1248,7 +1275,9 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
   if( info->cfile ) {
     // Cast to right function type.
     std::string str;
-    str += retType->codegen().c.c_str();
+
+    std::string retString = transformTypeForPointer(retType);
+    str += retString.c_str();
     if( forHeader ) {
       str += " ";
       str += cname;

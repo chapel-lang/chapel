@@ -85,4 +85,11 @@ proc main() {
     var A, B : [1..4, 1..4, 1..4, 1..4] int;
     stridedAssign(A[1, 1..4, 1..4, 1], B[1..4, 1, 1, 1..4]);
   }
+  {
+    // Based on #9457
+    var A : [1..8] int = 1..8;
+    ref reA = A.reindex(1..8);
+    var temp = reA[5..8];
+    stridedAssign(reA[1..4], temp);
+  }
 }

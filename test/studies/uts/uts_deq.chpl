@@ -65,7 +65,7 @@ class TreeNode {
   var nChildren: int = 0;
 
   // Generate this node's children
-  proc genChildren(ref q: DeQueue(TreeNode)): int {
+  proc genChildren(ref q: DeQueue(unmanaged TreeNode)): int {
     select distrib {
       when NodeDistrib.Geometric do 
         nChildren = numGeoChildren(geoDist);
@@ -81,7 +81,7 @@ class TreeNode {
 
     for i in 0..nChildren-1 {
       if debug then writeln("  + (", depth, ", ", i, ")");
-      var t = new TreeNode(depth+1);
+      var t = new unmanaged TreeNode(depth+1);
       rng_spawn(hash[1], t.hash[1], i:sha_int);
       q.pushTop(t);
     }
@@ -202,7 +202,7 @@ proc uts_showSearchParams() {
 }
 
 
-proc balance_load(ref state: LDBalanceState, ref q: DeQueue(TreeNode)): int {
+proc balance_load(ref state: LDBalanceState, ref q: DeQueue(unmanaged TreeNode)): int {
   if (parallel) {
     // Trade some imbalance here for blocking overhead
     if (q.size > 2*chunkSize && thread_cnt.read() < MAX_THREADS) {
@@ -233,7 +233,7 @@ proc balance_load(ref state: LDBalanceState, ref q: DeQueue(TreeNode)): int {
 /*
 **  Parallel Tree Creation
 */
-proc create_tree(ref q: DeQueue(TreeNode)) {
+proc create_tree(ref q: DeQueue(unmanaged TreeNode)) {
   var count, maxDepth: int;
   var ldbal_state = new LDBalanceState();
 
@@ -262,11 +262,11 @@ proc create_tree(ref q: DeQueue(TreeNode)) {
 
 proc main() {
   var t_create: Timer;
-  var root: TreeNode;
-  var queue: DeQueue(TreeNode);
+  var root: unmanaged TreeNode;
+  var queue: DeQueue(unmanaged TreeNode);
  
   // Create the root and push it into a queue
-  root = new TreeNode(0);
+  root = new unmanaged TreeNode(0);
   rng_init(root.hash[1], SEED:sha_int);
   global_count.add(1);
   queue.pushTop(root);

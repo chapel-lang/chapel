@@ -62,7 +62,9 @@ checkResolved() {
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->isIterator()) {
       IteratorInfo* ii = toAggregateType(fn->retType)->iteratorInfo;
-      if (ii && ii->iterator && ii->iterator->defPoint->parentSymbol == fn) {
+      if (ii && ii->iterator &&
+          ii->iterator->defPoint->parentSymbol == fn &&
+          fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
         // This error isn't really possible in regular code anymore,
         // since you have to have FLAG_FN_RETURNS_ITERATOR / that pragma
         // to generate it. (Otherwise the iterator expression is turned
@@ -224,6 +226,9 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
       return 0;
     }
   }
+
+  if (isForallStmt(expr))
+    return 0;
 
   if (isExternBlockStmt(expr))
     return 0;
@@ -393,6 +398,7 @@ checkReturnPaths(FnSymbol* fn) {
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
       fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
+      fn->hasFlag(FLAG_INIT_TUPLE) ||
       fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_AUTO_II))
     return; // No.

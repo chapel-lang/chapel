@@ -28,7 +28,7 @@ class blockIndices {
 }
 
 config const nlocales = 5;
-var task : sync blockIndices;
+var task : sync unmanaged blockIndices;
 
 var numTasksDone : sync int = 0;
  
@@ -37,7 +37,7 @@ proc buildjk() {
     for l in 1..nlocales do
       begin  
         {	      	
-          var bI, copyofbI : blockIndices;
+          var bI, copyofbI : unmanaged blockIndices;
           bI = task;
           while (bI.ilo != 0) {
             copyofbI = bI;
@@ -51,9 +51,9 @@ proc buildjk() {
           numTasksDone = numDone;
           if numDone == nlocales then
             delete bI;
-        //task = new blockIndices(0,0,0,0,0,0,0,0);
+        //task = new unmanaged blockIndices(0,0,0,0,0,0,0,0);
         //task.writeXF(bI);		
-        //task.writeXF(blockIndices(0,0,0,0,0,0,0,0));
+        //task.writeXF(unmanaged blockIndices(0,0,0,0,0,0,0,0));
         }
     
     {
@@ -62,12 +62,12 @@ proc buildjk() {
           forall kat in 1..iat {
             const lattop = if (kat==iat) then jat else kat;  
             forall lat in 1..lattop {
-              task = new blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
+              task = new unmanaged blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
             }
           }
         }
       }
-      task = new blockIndices(0,0,0,0,0,0,0,0);
+      task = new unmanaged blockIndices(0,0,0,0,0,0,0,0);
     }
   }
   

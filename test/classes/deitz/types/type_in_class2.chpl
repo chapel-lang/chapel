@@ -3,7 +3,7 @@ class node {
   var element : element_type;
 }
 
-var n : node = new node();
+var n : unmanaged node = new unmanaged node();
 
 n.element = 12;
 

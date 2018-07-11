@@ -172,6 +172,7 @@ module Spawn {
      generally not needed since the channels will be closed when the
      subprocess record is automatically destroyed.
    */
+  pragma "use default init"
   record subprocess {
     /* The kind of a subprocess is used to create the types
        for any channels that are necessary. */
@@ -538,13 +539,15 @@ module Spawn {
       // stdin_file will decrement file reference count when it
       // goes out of scope, but the channel will still keep
       // the file alive by referring to it.
-      var stdin_file = openfd(stdin_fd, error=err, hints=QIO_HINT_OWNED);
-      if err {
-        ret.spawn_error = err; return ret;
-      }
-      ret.stdin_channel = stdin_file.writer(error=err);
-      if err {
-        ret.spawn_error = err; return ret;
+      try {
+        var stdin_file = openfd(stdin_fd, hints=QIO_HINT_OWNED);
+        ret.stdin_channel = stdin_file.writer();
+      } catch e: SystemError {
+        ret.spawn_error = e.err;
+        return ret;
+      } catch {
+        ret.spawn_error = EINVAL;
+        return ret;
       }
 
       if stdin == QIO_FD_BUFFERED_PIPE {
@@ -561,27 +564,29 @@ module Spawn {
 
     if stdout_pipe {
       ret.stdout_pipe = true;
-      var stdout_file = openfd(stdout_fd, error=err, hints=QIO_HINT_OWNED);
-      if err {
-        ret.spawn_error = err; return ret;
-      }
-
-      ret.stdout_channel = stdout_file.reader(error=err);
-      if err {
-        ret.spawn_error = err; return ret;
+      try {
+        var stdout_file = openfd(stdout_fd, hints=QIO_HINT_OWNED);
+        ret.stdout_channel = stdout_file.reader();
+      } catch e: SystemError {
+        ret.spawn_error = e.err;
+        return ret;
+      } catch {
+        ret.spawn_error = EINVAL;
+        return ret;
       }
     }
 
     if stderr_pipe {
       ret.stderr_pipe = true;
-      ret.stderr_file = openfd(stderr_fd, error=err, hints=QIO_HINT_OWNED);
-      if err {
-        ret.spawn_error = err; return ret;
-      }
-
-      ret.stderr_channel = ret.stderr_file.reader(error=err);
-      if err {
-        ret.spawn_error = err; return ret;
+      try {
+        ret.stderr_file = openfd(stderr_fd, hints=QIO_HINT_OWNED);
+        ret.stderr_channel = ret.stderr_file.reader();
+      } catch e: SystemError {
+        ret.spawn_error = e.err;
+        return ret;
+      } catch {
+        ret.spawn_error = EINVAL;
+        return ret;
       }
     }
 
@@ -662,28 +667,34 @@ module Spawn {
      If the child process has terminated, after this
      call, :attr:`~subprocess.running` will be `false`.
    */
-  proc subprocess.poll(out error:syserr) {
+  proc subprocess.poll() throws {
+    try _throw_on_launch_error();
+
+    var err:syserr = ENOERR;
     on home {
       // check if child process has terminated.
       var done:c_int = 0;
       var exitcode:c_int = 0;
-      error = qio_waitpid(pid, 0, done, exitcode);
+      err = qio_waitpid(pid, 0, done, exitcode);
       if done {
         this.running = false;
         this.exit_status = exitcode;
       }
     }
+    if err then try ioerror(err, "in subprocess.poll");
   }
 
-  // documented in the out error version
+  // documented in the throws version
   pragma "no doc"
-  proc subprocess.poll() throws {
-    var err:syserr = ENOERR;
-
-    try _throw_on_launch_error();
-
-    this.poll(error=err);
-    if err then try ioerror(err, "in subprocess.poll");
+  proc subprocess.poll(out error:syserr) {
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    try {
+      this.poll();
+    } catch e: SystemError {
+      error = e.err;
+    } catch {
+      error = EINVAL;
+    }
   }
 
   /*
@@ -710,60 +721,95 @@ module Spawn {
         to its output while the parent process is waiting for it to complete
         (and not consuming its output).
 
-    :arg error: optional argument to capture any error encountered
-                when waiting for the child process.
     :arg buffer: if `true`, buffer input and output pipes (see above).
-
    */
-  proc subprocess.wait(out error:syserr, buffer=true) {
+  proc subprocess.wait(buffer=true) throws {
+    try _throw_on_launch_error();
 
     if buffer {
-      this.communicate(error);
+      try this.communicate();
       return;
     }
 
-    error = this.spawn_error;
-    if !running then return;
+    if !running {
+      if this.spawn_error then
+        try ioerror(this.spawn_error, "in subprocess.wait");
+    }
+
+    var stdin_err:syserr  = ENOERR;
+    var wait_err:syserr   = ENOERR;
+    var stdout_err:syserr = ENOERR;
+    var stderr_err:syserr = ENOERR;
 
     on home {
-
       // Close stdin.
       if this.stdin_pipe {
         // send data to stdin
         _stop_stdin_buffering();
-        this.stdin_channel.close(error=error);
+        try {
+          this.stdin_channel.close();
+        } catch e: SystemError {
+          stdin_err = e.err;
+        } catch {
+          stdin_err = EINVAL;
+        }
       }
 
       // wait for child process to terminate
       var done:c_int = 0;
       var exitcode:c_int = 0;
-      error = qio_waitpid(pid, 1, done, exitcode);
+      wait_err = qio_waitpid(pid, 1, done, exitcode);
       if done {
         this.running = false;
         this.exit_status = exitcode;
       }
 
-      // Close stdout/stderr channels.
-      // If the channels are to stay open, use buffer=true or communicate.
+      // If these channels are to stay open, use buffer=true or communicate.
+      // Close stdout channel.
       if this.stdout_pipe {
-        this.stdout_channel.close(error=error);
-      }
-      if this.stderr_pipe {
-        this.stderr_channel.close(error=error);
+        try {
+          this.stdout_channel.close();
+        } catch e: SystemError {
+          stdout_err = e.err;
+        } catch {
+          stdout_err = EINVAL;
+        }
       }
 
+      // Close stderr channel.
+      if this.stderr_pipe {
+        try {
+          this.stderr_channel.close();
+        } catch e: SystemError {
+          stderr_err = e.err;
+        } catch {
+          stderr_err = EINVAL;
+        }
+      }
+    }
+
+    if wait_err {
+      try ioerror(wait_err, "in subprocess.wait");
+    } else if stdin_err {
+      try ioerror(stdin_err, "in subprocess.wait");
+    } else if stdout_err {
+      try ioerror(stdout_err, "in subprocess.wait");
+    } else if stderr_err {
+      try ioerror(stderr_err, "in subprocess.wait");
     }
   }
 
-  // documented in the out error version
+  // documented in the throws version
   pragma "no doc"
-  proc subprocess.wait(buffer=true) throws {
-    var err:syserr = ENOERR;
-
-    try _throw_on_launch_error();
-
-    this.wait(error=err, buffer=buffer);
-    if err then try ioerror(err, "in subprocess.wait");
+  proc subprocess.wait(out error:syserr, buffer=true) {
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    try {
+      this.wait(buffer);
+    } catch e: SystemError {
+      error = e.err;
+    } catch {
+      error = EINVAL;
+    }
   }
 
   /*
@@ -778,46 +824,47 @@ module Spawn {
     input to the child process and buffering up the output
     of the child process as necessary while waiting for
     it to terminate.
-
-    :arg error: optional argument to capture any error encountered
-                when waiting for the child process.
    */
-  proc subprocess.communicate(out error:syserr) {
+  proc subprocess.communicate() throws {
+    try _throw_on_launch_error();
 
+    var err:syserr = ENOERR;
     on home {
       if this.stdin_pipe {
         // send data to stdin
         _stop_stdin_buffering();
       }
 
-      error = qio_proc_communicate(
+      err = qio_proc_communicate(
         locking,
         stdin_channel._channel_internal,
         stdout_channel._channel_internal,
         stderr_channel._channel_internal);
     }
+    if err then try ioerror(err, "in subprocess.communicate");
 
-    if !error {
-      // wait for child process to terminate
-      var done:c_int = 0;
-      var exitcode:c_int = 0;
-      error = qio_waitpid(pid, 1, done, exitcode);
-      if done {
-        this.running = false;
-        this.exit_status = exitcode;
-      }
+    // wait for child process to terminate
+    var done:c_int = 0;
+    var exitcode:c_int = 0;
+    err = qio_waitpid(pid, 1, done, exitcode);
+    if done {
+      this.running = false;
+      this.exit_status = exitcode;
     }
+    if err then try ioerror(err, "in subprocess.communicate");
   }
 
-  // documented in the out error version
+  // documented in the throws version
   pragma "no doc"
-  proc subprocess.communicate() throws {
-    var err:syserr = ENOERR;
-
-    try _throw_on_launch_error();
-
-    this.communicate(error=err);
-    if err then try ioerror(err, "in subprocess.communicate");
+  proc subprocess.communicate(out error:syserr) {
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    try {
+      this.communicate();
+    } catch e: SystemError {
+      error = e.err;
+    } catch {
+      error = EINVAL;
+    }
   }
 
   /*
@@ -825,35 +872,57 @@ module Spawn {
     function does not wait for the subprocess to complete.  Note that it is
     generally not necessary to call this function since these channels will be
     closed when the subprocess record goes out of scope.
-
-    :arg error: optional argument to capture any error encountered
-                when closing the pipes.
    */
-  proc subprocess.close(out error:syserr) {
-    error = ENOERR;
+  proc subprocess.close() throws {
+    // TODO: see subprocess.wait() for more on this error handling approach
+    var err: syserr = ENOERR;
+
     // Close stdin.
     if this.stdin_pipe {
       // send data to stdin
       _stop_stdin_buffering();
-      this.stdin_channel.close(error=error);
+      try {
+        this.stdin_channel.close();
+      } catch e: SystemError {
+        err = e.err;
+      } catch {
+        err = EINVAL;
+      }
     }
     // Close stdout.
     if this.stdout_pipe {
-      this.stdout_channel.close(error=error);
+      try {
+        this.stdout_channel.close();
+      } catch e: SystemError {
+        err = e.err;
+      } catch {
+        err = EINVAL;
+      }
     }
     // Close stderr.
     if this.stderr_pipe {
-      this.stderr_channel.close(error=error);
+      try {
+        this.stderr_channel.close();
+      } catch e: SystemError {
+        err = e.err;
+      } catch {
+        err = EINVAL;
+      }
     }
+    if err then try ioerror(err, "in subprocess.close");
   }
 
-  // documented in the out error version
+  // documented in the throws version
   pragma "no doc"
-  proc subprocess.close() throws {
-    var err:syserr = ENOERR;
-
-    this.close(error=err);
-    if err then try ioerror(err, "in subprocess.close");
+  proc subprocess.close(out error:syserr) {
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    try {
+      this.close();
+    } catch e: SystemError {
+      error = e.err;
+    } catch {
+      error = EINVAL;
+    }
   }
 
   // Signals as required by POSIX.1-2008, 2013 edition
@@ -941,73 +1010,73 @@ module Spawn {
 
 
     :arg signal: the signal to send
-
-    :arg error: optional argument to capture any error encountered
-                when sending a signal to the child process
    */
-  proc subprocess.send_signal(out error:syserr, signal: int) {
-    on home {
-      error = qio_send_signal(pid, signal:c_int);
-    }
-  }
-
-  // documented in the out error version
-  pragma "no doc"
   proc subprocess.send_signal(signal:int) throws {
-    var err:syserr = ENOERR;
-
     try _throw_on_launch_error();
 
-    this.send_signal(error=err, signal=signal);
-    if err then try ioerror(err, "in subprocess.send_signal");
+    var err: syserr = ENOERR;
+    on home {
+      err = qio_send_signal(pid, signal:c_int);
+    }
+    if err then try ioerror(err, "in subprocess.send_signal, with signal " + signal);
+  }
+
+  // documented in the throws version
+  pragma "no doc"
+  proc subprocess.send_signal(out error:syserr, signal: int) {
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    try {
+      this.send_signal(signal);
+    } catch e: SystemError {
+      error = e.err;
+    } catch {
+      error = EINVAL;
+    }
   }
 
   /*
     Unconditionally kill the child process.  The associated signal,
     `SIGKILL`, cannot be caught by the child process. See
     :proc:`subprocess.send_signal`.
-
-
-    :arg error: optional argument to capture any error encountered
-                when killing the child process
    */
-  proc subprocess.kill(out error:syserr) {
-    this.send_signal(error, SIGKILL);
+  proc subprocess.kill() throws {
+    try _throw_on_launch_error();
+    try this.send_signal(SIGKILL);
   }
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.kill() throws {
-    var err:syserr = ENOERR;
-
-    try _throw_on_launch_error();
-
-    this.kill(error=err);
-    if err then try ioerror(err, "in subprocess.kill");
+  proc subprocess.kill(out error:syserr) {
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    try {
+      this.kill();
+    } catch e: SystemError {
+      error = e.err;
+    } catch {
+      error = EINVAL;
+    }
   }
 
   /*
     Request termination of the child process.  The associated signal,
     `SIGTERM`, may be caught and handled by the child process. See
     :proc:`subprocess.send_signal`.
-
-    :arg error: optional argument to capture any error encountered
-                when terminating the child process
    */
-  proc subprocess.terminate(out error:syserr) {
-    this.send_signal(error, SIGTERM);
+  proc subprocess.terminate() throws {
+    try _throw_on_launch_error();
+    try this.send_signal(SIGTERM);
   }
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.terminate() throws {
-    var err:syserr = ENOERR;
-
-    try _throw_on_launch_error();
-
-    this.terminate(error=err);
-    if err then try ioerror(err, "in subprocess.terminate");
+  proc subprocess.terminate(out error:syserr) {
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    try {
+      this.terminate();
+    } catch e: SystemError {
+      error = e.err;
+    } catch {
+      error = EINVAL;
+    }
   }
-
 }
-

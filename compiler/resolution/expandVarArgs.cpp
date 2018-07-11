@@ -499,11 +499,11 @@ static CallExpr* expandVarArgString(FnSymbol*      fn,
 
   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
     retval = new CallExpr("_type_construct__tuple");
-  } else {
-    retval = new CallExpr("_construct__tuple");
-  }
 
-  retval->insertAtTail(new_IntSymbol(n));
+    retval->insertAtTail(new_IntSymbol(n));
+  } else {
+    retval = new CallExpr("_build_tuple");
+  }
 
   // Create a local for every blank string
   for (int i = 0; i < n; i++) {
@@ -552,7 +552,7 @@ static CallExpr* buildTupleCall(ArgSymbol* formal, const Formals& formals) {
   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
     retval = new CallExpr("_type_construct__tuple");
   } else {
-    retval = new CallExpr("_construct__tuple");
+    retval = new CallExpr(tupleInitName);
   }
 
   retval->insertAtTail(new_IntSymbol(n));

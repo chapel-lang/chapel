@@ -8,5 +8,4 @@ class C2: C1 {
   proc deinit () {writeln("Inside ~C2");}
 }
 
-var c2: C2 = new C2();
-delete c2;
+var c2: borrowed C2 = new borrowed C2();

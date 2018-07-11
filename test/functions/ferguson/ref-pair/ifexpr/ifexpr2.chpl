@@ -10,7 +10,11 @@ proc getter() const ref {
 }
 
 
-proc ifexpr(a, b, c) {
+proc ifexpr(a, b, c) ref {
+   return if a[1] == 1 then b else c;
+}
+
+proc ifexpr(a, b, c) const ref {
    return if a[1] == 1 then b else c;
 }
 

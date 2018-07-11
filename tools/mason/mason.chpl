@@ -28,6 +28,7 @@ use MasonNew;
 use MasonBuild;
 use MasonUpdate;
 use MasonSearch;
+use MasonTest;
 use MasonRun;
 use FileSystem;
 
@@ -76,6 +77,7 @@ proc main(args: [] string) {
     when 'update' do UpdateLock(args);
     when 'run' do masonRun(args);
     when 'search' do masonSearch(args);
+    when 'test' do masonTest(args);
     when 'env' do masonEnv(args);
     when 'doc' do masonDoc(args);
     when 'clean' do masonClean();
@@ -96,27 +98,41 @@ proc main(args: [] string) {
 
 
 proc masonClean() {
-  runCommand('rm -rf target');
+  try! {
+    const cwd = getEnv("PWD");
+
+    const projectHome = getProjectHome(cwd);
+    runCommand('rm -rf ' + projectHome + '/target');
+  }
+  catch e: MasonError {
+    writeln(e.message());
+  }
 }
 
 
 proc masonDoc(args) {
-  var toDoc = basename(getEnv('PWD'));
-  var project = toDoc + '.chpl';
-  if isDir('src/') {
-    if isFile('src/' + project) {
-      var command = 'chpldoc src/' + project;
-      writeln(command);
-      runCommand(command);
+  try! {
+    const cwd = getEnv("PWD");
+    const projectHome = getProjectHome(cwd);
+    const toDoc = basename(projectHome);
+    const project = toDoc + '.chpl';
+    if isDir(projectHome + '/src/') {
+      if isFile(projectHome + '/src/' + project) {
+        const command = 'chpldoc ' + projectHome + '/src/' + project + ' -o ' + projectHome + '/doc/';
+        writeln(command);
+        runCommand(command);
+      }
+    }
+    else {
+      writeln('Mason could not find the project to document!');
+      runCommand('chpldoc');
     }
   }
-  else {
-    writeln('Mason could not find the project to document!');
-    runCommand('chpldoc');
+  catch e: MasonError {
+    writeln(e.message());
   }
 }
 
 proc printVersion() {
   writeln('mason 0.1.0');
 }
-

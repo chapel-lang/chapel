@@ -1,3 +1,4 @@
+pragma "use default init"
 class Foo {
 	var x$: sync int;
 }

@@ -15,7 +15,7 @@ class ManyFields {
 }
 
 proc main() {
-  var c: ManyFields = new ManyFields(2);
+  var c: ManyFields = new unmanaged ManyFields(2);
   writeln(c);
   delete c;
 }

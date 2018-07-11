@@ -3,8 +3,8 @@ class myclass {
   var y: real;
 }
 
-var a: myclass = new myclass();
-var b: myclass = new myclass();
+var a: unmanaged myclass = new unmanaged myclass();
+var b: unmanaged myclass = new unmanaged myclass();
 
 writeln("a is: ", a, ", b is: ", b);
 writeln("a is: (", a.x, ", ", a.y, ") -- b is: (", b.x, ", ", b.y, ")");

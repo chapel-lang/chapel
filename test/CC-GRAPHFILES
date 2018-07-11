@@ -21,3 +21,5 @@ performance/ferguson/remote-tuple-write-small-copy.graph
 performance/ferguson/remote-tuple-write-small.graph
 performance/ferguson/remote-two-array-read.graph
 performance/ferguson/array-assign-get.graph
+# suite: BulkTransfer
+optimizations/bulkcomm/block/exchange.graph

@@ -3,9 +3,9 @@
 \index{ranges}
 
 A \emph{range} is a first-class, constant-space representation of a
-regular sequence of integer indices.
-Ranges support iteration over the sequences they represent
-and are the basis for defining domains (\rsec{Domains}).
+regular sequence of indices of either integer, boolean, or enumerated
+type.  Ranges support iteration over the sequences they represent and
+are the basis for defining domains (\rsec{Domains}).
 
 Ranges are presented as follows:
 \begin{itemize}
@@ -31,10 +31,10 @@ as follows.
 \begin{itemize}
 
 \index{ranges!low bound}
-\item The \emph{low bound} is either an integer or -$\infty$.
+\item The \emph{low bound} is either a specific index value or -$\infty$.
 
 \index{ranges!high bound}
-\item The \emph{high bound} is either an integer or +$\infty$.
+\item The \emph{high bound} is either a specific index value or +$\infty$.
   The low and high bounds determine the span of the represented sequence.
 %
   Chapel does not represent $\infty$ explicitly. Instead, infinite
@@ -55,20 +55,11 @@ as follows.
 
 \index{ranges!alignment}
 \index{ranges!alignment!ambiguous}
-\item The \emph{alignment} is either an integer or is \emph{ambiguous}.
-  It defines how the represented sequence's members are aligned relative to 0.
-%REVIEW: vass: please put a better definition of "alignment" above
-% if you can make one.
-% (BTW see also the definition of "aligned integer" below.)
+\item The \emph{alignment} is either a specific index value or is \emph{ambiguous}.
+  It defines how the represented sequence's members are aligned relative to the stride.
   For a range with a stride other than 1 or -1, 
   ambiguous alignment means that the represented sequence is undefined.
   In such a case, certain operations discussed later result in an error.
-
-\begin{openissue}
-We consider disallowing ambiguous alignment for ranges whose both bounds
-are integers (not $\infty$), in order to enable more efficient
-implementation.
-\end{openissue}
 
 \end{itemize}
 
@@ -94,10 +85,12 @@ The sequence, if defined, is increasing if $stride > 0$ and decreasing if $strid
 \index{ranges!empty}
 If the represented sequence is defined but
 there are no indices satisfying the applicable equation(s) above,
-the range and its represented sequence are \emph{empty}.
+the range and its represented sequence are \emph{empty}.  A common
+case of this occurs when the high bound is greater than the low
+bound.
 
 \index{ranges!aligned integer}
-We will say that an integer $ix$ is \emph{aligned}
+We will say that a value $ix$ is \emph{aligned}
 w.r.t. the range $(low, high, stride, alignmt)$
 if:
 \begin{itemize}
@@ -141,18 +134,18 @@ Ranges have the following additional properties.
   \end{itemize}
 
 \index{ranges!aligned low bound}
-\item The \emph{aligned low bound} is the smallest integer that is
+\item The \emph{aligned low bound} is the smallest value that is
   greater than or equal to the low bound and is aligned w.r.t. the range,
-  if such an integer exists.
+  if such a value exists.
 % For now we are allowing an empty range to have an aligned low bound.
 
   The aligned low bound equals the smallest member of the represented
   sequence, when both exist.
 
 \index{ranges!aligned high bound}
-\item The \emph{aligned high bound} is the largest integer that is
+\item The \emph{aligned high bound} is the largest value that is
   less than or equal to the high bound and is aligned w.r.t. the range,
-  if such an integer exists.
+  if such a value exists.
 % For now we are allowing an empty range to have an aligned high bound.
 
   The aligned high bound equals the largest member of the represented
@@ -181,7 +174,7 @@ Ranges have the following additional properties.
 
 \index{ranges!iterable}
 \item The range is \emph{iterable}, that is, it is legal to iterate over it,
-  if it has the first index.
+  if it has a first index.
 
 \end{itemize}
 
@@ -203,11 +196,12 @@ The type of a range is characterized by three parameters:
   bound is $\infty$, the represented sequence also contains indices
   that are not representable by \chpl{idxType}.
 
-  \chpl{idxType} must be an integral type and is \chpl{int} by default.
+  \chpl{idxType} must be an integral, boolean, or enumerated type and is \chpl{int} by default.
 %
   The range's low bound and high bound (when they are not $\infty$)
   and alignment are of the type \chpl{idxType}. The range's stride
-  is of the signed integer type that has the same bit size as \chpl{idxType}.
+  is of the signed integer type that has the same bit size as \chpl{idxType}
+  for integral ranges; for boolean and enumerated ranges, it is simply \chpl{int}.
 
 \index{ranges!boundedType}
 \item \chpl{boundedType} indicates which of the range's bounds are not $\infty$.
@@ -230,7 +224,7 @@ enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 \end{chapel}
 
 The value of \chpl{boundedType} determines which bounds of the range
-are integers (making the range ``bounded'', as opposed to infinite,
+are specified (making the range ``bounded'', as opposed to infinite,
 in the corresponding direction(s))
 as follows:
 
@@ -238,25 +232,25 @@ as follows:
 
 \index{ranges!bounded}
 \item \chpl{bounded}:
-  both bounds are integers.
+  both bounds are specified.
 
 \index{ranges!boundedLow}
 \item \chpl{boundedLow}:
-  the low bound is an integer (the high bound is +$\infty$).
+  the low bound is specified (the high bound is +$\infty$).
 
 \index{ranges!boundedHigh}
 \item \chpl{boundedHigh}:
-  the high bound is an integer (the low bound is -$\infty$).
+  the high bound is specified (the low bound is -$\infty$).
 
 \index{ranges!boundedNone}
 \item \chpl{boundedNone}:
-  neither bound is an integer (both bounds are $\infty$).
+  neither bound is specified (both bounds are $\infty$).
 
 \end{itemize}
 
 \noindent \chpl{boundedType} is \chpl{BoundedRangeType.bounded} by default.
 
-The parameters \chpl{idxType}, \chpl{boundedType} and \chpl{stridable}
+The parameters \chpl{idxType}, \chpl{boundedType}, and \chpl{stridable}
 affect all values of the corresponding range type.
 For example, the range's low bound is -$\infty$ if and only if
 the \chpl{boundedType} of that range's type is either \chpl{boundedHigh}
@@ -350,19 +344,14 @@ The type of a range literal is a range with the following parameters:
   \begin{itemize}
 
   \item If both the low bound and the high bound expressions are given
-        and have the same integral type, then \chpl{idxType} is that type.
+        and have the same type, then \chpl{idxType} is that type.
 
-%REVIEW: not precise. E.g. it does not allow one bound to be converted
-% to another bound's type. Also, should be the most specific such type.
   \item If both the low bound and the high bound expressions are given
-        and an implicit conversion is allowed from each expression's type
-        to the same integral type, then \chpl{idxType} is that
-        integral type.
+        and an implicit conversion is allowed from one expression's type
+        to the other's, then \chpl{idxType} is that type.
 
-%REVIEW: should be the most specific integral type.
-  \item If only one bound expression is given and it has an integral type
-        or an implicit conversion is allowed from that expression's type
-        to an integral type, then \chpl{idxType} is that integral type.
+  \item If only one bound expression is given and it has an integral, boolean, or
+        enumerated type, then \chpl{idxType} is that type.
 
   \item If neither bound expression is given, then \chpl{idxType} is
         \chpl{int}.

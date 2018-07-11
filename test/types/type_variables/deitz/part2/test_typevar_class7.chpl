@@ -17,11 +17,11 @@ class foo {
   }
 }
 
-var f1 : foo(t=int)    = new foo(t = int);
-var b1 : bar(t=int)    = new bar(t = int);
+var f1 : foo(t=int)    = new borrowed foo(t = int);
+var b1 : bar(t=int)    = new borrowed bar(t = int);
 
-var f2 : foo(t=string) = new foo(t = string);
-var b2 : bar(t=string) = new bar(t = string);
+var f2 : foo(t=string) = new borrowed foo(t = string);
+var b2 : bar(t=string) = new borrowed bar(t = string);
 
 f1.x = 12;
 f2.x = "hello";
@@ -32,9 +32,3 @@ f1.print();
 f2.print();
 b1.print();
 b2.print();
-
-delete b2;
-delete f2;
-
-delete b1;
-delete f1;

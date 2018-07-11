@@ -1,0 +1,2 @@
+bug: shared MyGenericClass doesn't work as argument type
+#9725

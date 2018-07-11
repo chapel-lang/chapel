@@ -13,6 +13,5 @@ class Child : Parent {
 }
 
 var i:int = 1;
-var x = new Child(i);
+var x = new borrowed Child(i);
 writeln(x);
-delete x;

@@ -75,6 +75,7 @@ module NetworkAtomics {
 
   // int(64)
   pragma "atomic type"
+  pragma "use default init"
   record ratomic_int64 {
     var _v: int(64);
     inline proc const read(order:memory_order = memory_order_seq_cst):int(64) {
@@ -269,6 +270,7 @@ module NetworkAtomics {
 
   // int32
   pragma "atomic type"
+  pragma "use default init"
   record ratomic_int32 {
     var _v: int(32);
     inline proc const read(order:memory_order = memory_order_seq_cst):int(32) {
@@ -460,6 +462,7 @@ module NetworkAtomics {
 
   // uint(64)
   pragma "atomic type"
+  pragma "use default init"
   record ratomic_uint64 {
     var _v: uint(64);
     inline proc const read(order:memory_order = memory_order_seq_cst):uint(64) {
@@ -651,6 +654,7 @@ module NetworkAtomics {
 
   // uint(32)
   pragma "atomic type"
+  pragma "use default init"
   record ratomic_uint32 {
     var _v: uint(32);
     inline proc const read(order:memory_order = memory_order_seq_cst):uint(32) {
@@ -790,6 +794,7 @@ module NetworkAtomics {
 
   // bool, implemented with int(64)
   pragma "atomic type"
+  pragma "use default init"
   record ratomicbool {
     var _v: int(64);
     inline proc const read(order:memory_order = memory_order_seq_cst):bool {
@@ -911,6 +916,7 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
                                               ref result:bool(32));
   
   pragma "atomic type"
+  pragma "use default init"
   record ratomic_real64 {
     var _v: real(64);
     inline proc const read(order:memory_order = memory_order_seq_cst):real(64) {

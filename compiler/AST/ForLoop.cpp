@@ -23,6 +23,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "DeferStmt.h"
+#include "driver.h"
 
 #include <algorithm>
 
@@ -75,6 +76,8 @@
  */
 static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
 {
+  if (fNoOptimizeRangeIteration)
+    return;
   if (CallExpr* call = toCallExpr(iteratorExpr))
   {
     CallExpr* range = NULL;

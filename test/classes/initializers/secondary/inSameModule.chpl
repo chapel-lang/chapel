@@ -13,7 +13,7 @@ proc Foo.init(xVal) {
 }
 
 proc main() {
-  var f = new Foo(10);
+  var f = new unmanaged Foo(10);
   // Should use the secondary initializer defined in this module
   // Additionally, we expect the default constructor/initializer to never be
   // created or used. (Do we?)

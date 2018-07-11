@@ -69,6 +69,7 @@ const char* CHPL_ORIG_TARGET_COMPILER = NULL;
 const char* CHPL_TARGET_ARCH = NULL;
 const char* CHPL_RUNTIME_ARCH = NULL;
 const char* CHPL_TARGET_BACKEND_ARCH = NULL;
+const char* CHPL_TARGET_ARCH_FLAG = NULL;
 const char* CHPL_LOCALE_MODEL = NULL;
 const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
@@ -100,6 +101,7 @@ bool no_codegen = false;
 int  debugParserLevel = 0;
 bool fVerify = false;
 bool ignore_errors = false;
+bool ignore_user_errors = false;
 bool ignore_errors_for_pass = false;
 bool ignore_warnings = false;
 int  fcg = 0;
@@ -114,6 +116,7 @@ bool fNoTupleCopyOpt = false;
 bool fNoRemoteValueForwarding = false;
 bool fNoRemoteSerialization = false;
 bool fNoRemoveCopyCalls = false;
+bool fNoOptimizeRangeIteration = false;
 bool fNoOptimizeLoopIterators = false;
 bool fNoVectorize = true;
 bool fNoGlobalConstOpt = false;
@@ -141,6 +144,7 @@ bool fLLVMWideOpt = false;
 
 bool fWarnConstLoops = true;
 bool fWarnUnstable = false;
+bool fDefaultUnmanaged = false;
 
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
@@ -169,6 +173,7 @@ bool fLocal;   // initialized in postLocal()
 bool fIgnoreLocalClasses = false;
 bool fUserDefaultInitializers = false;
 bool fLifetimeChecking = false;
+bool fOverrideChecking = false;
 bool fHeterogeneous = false;
 bool fieeefloat = false;
 int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
@@ -221,6 +226,8 @@ bool specializeCCode = false;
 bool fNoMemoryFrees = false;
 int numGlobalsOnHeap = 0;
 bool preserveInlinedLineNumbers = false;
+
+char stopAfterPass[128];
 
 const char* compileCommand = NULL;
 char compileVersion[64];
@@ -552,11 +559,11 @@ static void setLLVMFlags(const ArgumentDescription* desc, const char* arg) {
 
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
-  addLibInfo(astr("-l", libraryFilename));
+ addLibFile(libraryFilename);
 }
 
 static void handleLibPath(const ArgumentDescription* desc, const char* arg_unused) {
-  addLibInfo(astr("-L", libraryFilename));
+  addLibPath(libraryFilename);
 }
 
 static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused) {
@@ -646,6 +653,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoloopInvariantCodeMotion= false;
   fNoInline = false;
   fNoInlineIterators = false;
+  fNoOptimizeRangeIteration = false;
   fNoOptimizeLoopIterators = false;
   fNoLiveAnalysis = false;
   fNoRemoteValueForwarding = false;
@@ -692,6 +700,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoInline = true;                   // --no-inline
   fNoInlineIterators = true;          // --no-inline-iterators
   fNoLiveAnalysis = true;             // --no-live-analysis
+  fNoOptimizeRangeIteration = true;   // --no-optimize-range-iteration
   fNoOptimizeLoopIterators = true;    // --no-optimize-loop-iterators
   fNoVectorize = true;                // --no-vectorize
   fNoRemoteValueForwarding = true;    // --no-remote-value-forwarding
@@ -744,7 +753,6 @@ static void setLogDir(const ArgumentDescription* desc, const char* arg) {
 static void setLogPass(const ArgumentDescription* desc, const char* arg) {
   logSelectPass(arg);
 }
-
 
 static void setPrintPassesFile(const ArgumentDescription* desc, const char* fileName) {
   printPassesFile = fopen(fileName, "w");
@@ -813,6 +821,7 @@ static ArgumentDescription arg_desc[] = {
  {"inline-iterators-yield-limit", ' ', "<limit>", "Limit number of yields permitted in inlined iterators", "I", &inline_iter_yield_limit, "CHPL_INLINE_ITER_YIELD_LIMIT", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
  {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoloopInvariantCodeMotion, NULL, NULL},
+ {"optimize-range-iteration", ' ', NULL, "Enable [disable] optimization of iteration over anonymous ranges", "n", &fNoOptimizeRangeIteration, "CHPL_DISABLE_OPTIMIZE_RANGE_ITERATION", NULL},
  {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
  {"optimize-on-clauses", ' ', NULL, "Enable [disable] optimization of on clauses", "n", &fNoOptimizeOnClauses, "CHPL_DISABLE_OPTIMIZE_ON_CLAUSES", NULL},
  {"optimize-on-clause-limit", ' ', "<limit>", "Limit recursion depth of on clause optimization search", "I", &optimize_on_clause_limit, "CHPL_OPTIMIZE_ON_CLAUSE_LIMIT", NULL},
@@ -849,7 +858,7 @@ static ArgumentDescription arg_desc[] = {
  {"ccflags", ' ', "<flags>", "Back-end C compiler flags (can be specified multiple times)", "S", NULL, "CHPL_CC_FLAGS", setCCFlags},
  {"debug", 'g', NULL, "[Don't] Support debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
  {"dynamic", ' ', NULL, "Generate a dynamically linked binary", "F", &fLinkStyle, NULL, setDynamicLink},
- {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, NULL, handleIncDir},
+ {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, "CHPL_INCLUDE_PATH", handleIncDir},
  {"ldflags", ' ', "<flags>", "Back-end C linker flags (can be specified multiple times)", "S", NULL, "CHPL_LD_FLAGS", setLDFlags},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
@@ -955,10 +964,10 @@ static ArgumentDescription arg_desc[] = {
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
  {"warn-unstable", ' ', NULL, "Enable [disable] warnings code that is about to change or recently changed behavior", "N", &fWarnUnstable, "CHPL_WARN_UNSTABLE", NULL},
+ {"default-unmanaged", ' ', NULL, "Enable [disable] class type defaulting to unmanaged", "N", &fDefaultUnmanaged, "CHPL_DEFAULT_UNMANAGED", NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
- {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL},
- {"break-on-delete-id", ' ', NULL, "Break when AST id is deleted", "I", &breakOnDeleteID, "CHPL_BREAK_ON_DELETE_ID", NULL},
+ DRIVER_ARG_BREAKFLAGS_COMMON,
  {"break-on-codegen", ' ', NULL, "Break when function cname is code generated", "S256", &breakOnCodegenCname, "CHPL_BREAK_ON_CODEGEN", NULL},
  {"break-on-codegen-id", ' ', NULL, "Break when id is code generated", "I", &breakOnCodegenID, "CHPL_BREAK_ON_CODEGEN_ID", NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
@@ -970,12 +979,15 @@ static ArgumentDescription arg_desc[] = {
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "N", &fLifetimeChecking, NULL, NULL},
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
+ {"ignore-user-errors", ' ', NULL, "[Don't] attempt to ignore user errors", "N", &ignore_user_errors, "CHPL_IGNORE_USER_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
+ {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
+ {"override-checking", ' ', NULL, "[Don't] check use of override keyword", "N", &fOverrideChecking, NULL, NULL},
  {"preserve-inlined-line-numbers", ' ', NULL, "[Don't] Preserve file names/line numbers in inlined code", "N", &preserveInlinedLineNumbers, "CHPL_PRESERVE_INLINED_LINE_NUMBERS", NULL},
  {"print-id-on-error", ' ', NULL, "[Don't] print AST id in error messages", "N", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
  {"print-unused-internal-functions", ' ', NULL, "[Don't] print names and locations of unused internal functions", "N", &fPrintUnusedInternalFns, NULL, NULL},
@@ -986,6 +998,7 @@ static ArgumentDescription arg_desc[] = {
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  {"user-constructor-error", ' ', NULL, "Enable [disable] errors for user code constructors", "N", &fNoUserConstructors, NULL, NULL},
+ {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", NULL},
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
 };
@@ -1048,7 +1061,13 @@ static void printStuff(const char* argv0) {
     printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL);
     printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY);
     printf("\n");
-    snprintf(buf, FILENAME_MAX, "%s/util/printchplenv --all", CHPL_HOME);
+    int wanted_to_write = snprintf(buf, sizeof(buf),
+                                   "%s/util/printchplenv --all", CHPL_HOME);
+    if (wanted_to_write < 0) {
+      USR_FATAL("character encoding error in CHPL_HOME path name");
+    } else if ((size_t)wanted_to_write >= sizeof(buf)) {
+      USR_FATAL("CHPL_HOME path name is too long");
+    }
     int status = mysystem(buf, "running printchplenv", false);
     clean_exit(status);
   }
@@ -1147,6 +1166,7 @@ static void setChapelEnvs() {
   CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
   CHPL_RUNTIME_ARCH    = envMap["CHPL_RUNTIME_ARCH"];
   CHPL_TARGET_BACKEND_ARCH = envMap["CHPL_TARGET_BACKEND_ARCH"];
+  CHPL_TARGET_ARCH_FLAG = envMap["CHPL_TARGET_ARCH_FLAG"];
   CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
   CHPL_COMM            = envMap["CHPL_COMM"];
   CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];

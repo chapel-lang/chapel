@@ -168,9 +168,6 @@ proc isPODType(type t) param {
 pragma "no doc"
 proc chpl__unsignedType(type t) type 
 {
-  if ! isIntegralType(t) then
-    compilerError("range idxType is non-integral: ", t:string);
-
   return uint(numBits(t));
 }
 
@@ -179,9 +176,6 @@ proc chpl__unsignedType(type t) type
 pragma "no doc"
 proc chpl__signedType(type t) type 
 {
-  if ! isIntegralType(t) then
-    compilerError("range idxType is non-integral: ", t:string);
-
   return int(numBits(t));
 }
 
@@ -398,10 +392,8 @@ proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
 
 
 // Is 'sub' a subtype (or equal to) 'super'?
-/* Returns `true` if the type `sub` is a subtype of the type `super`. */
-proc isSubtype(type sub, type super) param where   sub: super  return true;
-pragma "no doc"
-proc isSubtype(type sub, type super) param where !(sub: super) return false;
+/* isSubtype Returns `true` if the type `sub` is a subtype of the type `super`. */
+// TODO -- fix documentation
 
 // Is 'sub' a proper subtype of 'super'?
 /* Returns `true` if the type `sub` is a subtype of the type `super`
@@ -461,8 +453,7 @@ private proc chpl__commonType(type s, type t) type
 // joint documentation, for user convenience
 /*
 Returns the number of bits used to store the values of type `t`.
-This is available for all numeric types, fixed-width `bool` types,
-and ``enum`` types.
+This is available for all numeric types and fixed-width `bool` types.
 It is not available for default-width `bool`.
 */
 proc numBits(type t) param where t == bool {
@@ -514,8 +505,7 @@ param bitsPerByte = 8;
 
 /*
 Returns the number of bytes used to store the values of type `t`.
-This is available for all numeric types, fixed-width `bool` types,
-and ``enum`` types.
+This is available for all numeric types and fixed-width `bool` types.
 It is not available for default-width `bool`.
 */
 proc numBytes(type t) param return numBits(t)/8;
@@ -602,9 +592,14 @@ iter type enumerated.these(){
     yield i;
 }
 
-// TODO add chpl_ to these functions' names - they are not intended for user.
-private proc enum_minbits(type t: enumerated) param {
-  return __primitive( "enum min bits", t);
+private proc chpl_enum_minbits(type t: enumerated) param {
+  if t.size <= max(uint(8)) then
+    return 8;
+  if t.size <= max(uint(16)) then
+    return 16;
+  if t.size <= max(uint(32)) then
+    return 32;
+  return 64;
 }
 private proc enum_issigned(type t: enumerated) param {
   return __primitive( "enum is signed", t);
@@ -612,20 +607,10 @@ private proc enum_issigned(type t: enumerated) param {
 // TODO - maybe this function can be useful for the user, for C interop?
 // If so, give it a different name.
 pragma "no doc"
-proc enum_mintype(type t: enumerated) type {
-  param minbits = enum_minbits(t);
-  param signed = enum_issigned(t);
-  if signed {
-    return int(minbits);
-  } else {
-    return uint(minbits);
-  }
+proc chpl_enum_mintype(type t: enumerated) type {
+  return uint(chpl_enum_minbits(t));
 }
 
-pragma "no doc" // documented with the other numBits() above
-proc numBits(type t: enumerated) param {
-  return numBits(enum_mintype(t));
-}
 
 /*
 Returns `this`, cast to the type `T`.
@@ -638,17 +623,18 @@ no checks at all will be done.
 */
 inline proc integral.safeCast(type T) : T where isUintType(T) {
   if castChecking {
+    use ChapelHaltWrappers;
     if isIntType(this.type) {
       // int(?) -> uint(?)
       if this < 0 then // runtime check
-        halt("casting "+this.type:string+" less than 0 to "+T:string);
+        safeCastCheckHalt("casting "+this.type:string+" less than 0 to "+T:string);
     }
 
     if max(this.type):uint > max(T):uint {
       // [u]int(?) -> uint(?)
       if (this:uint > max(T):uint) then // runtime check
-        halt("casting "+this.type:string+" with a value greater than the maximum of "+
-             T:string+" to "+T:string);
+        safeCastCheckHalt("casting "+this.type:string+" with a value " +
+            "greater than the maximum of "+ T:string+" to "+T:string);
     }
   }
   return this:T;
@@ -657,27 +643,28 @@ inline proc integral.safeCast(type T) : T where isUintType(T) {
 pragma "no doc" // documented with the other safeCast above
 inline proc integral.safeCast(type T) : T where isIntType(T) {
   if castChecking {
+    use ChapelHaltWrappers;
     if max(this.type):uint > max(T):uint {
       // this isUintType check lets us avoid a runtime check for this < 0
       if isUintType(this.type) {
         // uint(?) -> int(?)
         if this:uint > max(T):uint then // runtime check
-          halt("casting "+this.type:string+" with a value greater than the maximum of "+
-               T:string+" to "+T:string);
+          safeCastCheckHalt("casting "+this.type:string+" with a value " +
+              "greater than the maximum of "+ T:string+" to "+T:string);
       } else {
         // int(?) -> int(?)
         // max(T) <= max(int), so cast to int is safe
         if this:int > max(T):int then // runtime check
-          halt("casting "+this.type:string+" with a value greater than the maximum of "+
-               T:string+" to "+T:string);
+          safeCastCheckHalt("casting "+this.type:string+" with a value " +
+              "greater than the maximum of "+ T:string+" to "+T:string);
       }
     }
     if isIntType(this.type) {
       if min(this.type):int < min(T):int {
         // int(?) -> int(?)
         if this:int < min(T):int then // runtime check
-          halt("casting "+this.type:string+" with a value less than the minimum of "+
-               T:string+" to "+T:string);
+          safeCastCheckHalt("casting "+this.type:string+" with a value less " +
+              "than the minimum of "+ T:string+" to "+T:string);
       }
     }
   }

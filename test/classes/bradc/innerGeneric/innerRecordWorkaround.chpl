@@ -11,7 +11,7 @@ class A{
   var b = new B(T=t, v=min(t), c=1);
 }
 
-var a = new A(t = int);
+var a = new unmanaged A(t = int);
 
 writeln("a is: ", a);
 

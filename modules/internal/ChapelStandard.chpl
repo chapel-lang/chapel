@@ -27,6 +27,8 @@ module ChapelStandard {
   use CPtr;
   use CString;
   use String;
+  use OwnedObject;
+  use SharedObject;
   use ChapelDebugPrint;
   use ChapelEnv;
   use ChapelBase;
@@ -55,6 +57,7 @@ module ChapelStandard {
   use DefaultAssociative;
   use DefaultSparse;
   use DefaultOpaque;
+  use ExternalArray;
   use ChapelTaskID;
   use ChapelTaskTable;
   use MemTracking;

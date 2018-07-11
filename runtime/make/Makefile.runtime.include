@@ -31,8 +31,6 @@ RUNTIME_INCLUDE_ROOT = $(RUNTIME_ROOT)/include
 endif
 
 RUNTIME_DEFS += \
-        -DCHPL_TASKS_MODEL_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
-        -DCHPL_THREADS_MODEL_H=\"threads-$(CHPL_MAKE_THREADS).h\" \
 	$(CHPL_MAKE_WIDE_POINTERS_DEFINES)
 
 ifeq ($(DEBUG),1)
@@ -63,7 +61,6 @@ endif
 # Some tasking layers put something in RUNTIME_INCLS first.
 RUNTIME_INCLS += \
         -I. \
-        -I$(CHPL_MAKE_HOME)/modules/packages \
         -I$(RUNTIME_INCLUDE_ROOT)/localeModels/$(CHPL_MAKE_LOCALE_MODEL) \
         -I$(RUNTIME_INCLUDE_ROOT)/localeModels \
         -I$(RUNTIME_INCLUDE_ROOT)/comm/$(CHPL_MAKE_COMM) \
@@ -121,11 +118,10 @@ UNWIND_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.unwind-$(CHPL_MAKE_UNWIND)
 HWLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.hwloc-$(CHPL_MAKE_HWLOC)
 -include $(HWLOC_INCLUDE)
 
-#
-# For use with pyChapel / library-mode.
-# Position independent code is required to create shared objects.
+# For use with library-mode. Position independent code is required by shared
+# objects that want to bring in our static runtime/third-party libraries
 ifeq ($(CHPL_LIBMODE),shared)
-RUNTIME_DEFS += -fPIC
+RUNTIME_DEFS += $(SHARED_LIB_CFLAGS)
 endif
 
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)

@@ -19,10 +19,10 @@ proc Foo.init(xVal: int) {
 }
 
 proc main() {
-  var f = new Foo(10);
+  var f = new unmanaged Foo(10);
   // Should use the secondary initializer defined in this module
   writeln(f); // expect 10, true
-  var f2 = new Foo(false);
+  var f2 = new unmanaged Foo(false);
   writeln(f2); // expect 3, false
 
   delete f;

@@ -184,6 +184,12 @@ OPTIONS
     Enable [disable] live variable analysis, which is currently only used to
     optimize iterators that are not inlined.
 
+**--[no-]optimize-range-iteration**
+
+    Enable [disable] anonymous range iteration optimizations. This allows the
+    compiler to avoid creating ranges when they are only used for iteration.
+    By default this is enabled.
+
 **--[no-]optimize-loop-iterators**
 
     Enable [disable] optimizations to aggressively optimize iterators that
@@ -365,22 +371,31 @@ OPTIONS
 
 **-I, --hdr-search-path <dir>**
 
-    Add dir to the back-end C compiler's search path for header files.
+    Add the specified dir[ectories] to the back-end C compiler's
+    search path for header files along with any directories in the
+    CHPL\_INCLUDE\_PATH environment variable.  Both the environment
+    variable and this flag accept a colon-separated list of
+    directories.
 
 **--ldflags <flags>**
 
-    Add the specified flags to the C compiler link line when linking the
-    generated code. Multiple **--ldflags** *options* can be provided and in
-    that case the combination of the flags will be forwarded to the C
-    compiler.
+    Add the specified flags to the back-end C compiler link line when
+    linking the generated code. Multiple **--ldflags** *options* can
+    be provided and in that case the combination of the flags will be
+    forwarded to the C compiler.
 
 **-l, --lib-linkage <library>**
 
-    Specify a C library to link in on the C compiler command line.
+    Specify a C library to link to on the back-end C compiler command
+    line.
 
 **-L, --lib-search-path <dir>**
 
-    Specify a C library search path on the C compiler command line.
+    Add the specified dir[ectories] to the back-end C compiler's
+    search path for libraries along with any directories in the
+    CHPL\_LIB\_PATH environment variable.  Both the environment
+    variable and this flag accept a colon-separated list of
+    directories.
 
 **-O, --[no-]optimize**
 

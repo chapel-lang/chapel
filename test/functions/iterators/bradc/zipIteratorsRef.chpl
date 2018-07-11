@@ -6,7 +6,7 @@ class C {
   }
 }
 
-var myC = new C();
+var myC = new unmanaged C();
 
 writeln("myC is: ");
 for c in myC do
@@ -21,7 +21,7 @@ writeln("myC is: ");
 for c in myC do
   writeln(c, " ");
 
-var otherC = new C();
+var otherC = new borrowed C();
 
 writeln("otherC is: ");
 for c in otherC do
@@ -36,4 +36,3 @@ for c in otherC do
   writeln(c, " ");
 
 delete myC;
-delete otherC;

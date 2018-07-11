@@ -4,6 +4,6 @@ class Foo {
   var arr: [dom] int = n;
 }
 
-var foo = new Foo(5);
+var foo = new unmanaged Foo(5);
 writeln(foo);
 delete foo;

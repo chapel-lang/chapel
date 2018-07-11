@@ -89,7 +89,7 @@ var T: [TableSpace] elemType;
 
 config const maxLookahead = 1024;
 
-pragma "locale private" var myBuckets: Buckets;
+pragma "locale private" var myBuckets: unmanaged Buckets;
 
 //
 // The program entry point
@@ -105,7 +105,7 @@ proc main() {
   [i in TableSpace] T(i) = i;
   for loc in Locales {
     on loc {
-      myBuckets = new Buckets();
+      myBuckets = new unmanaged Buckets();
     }
   }
   const startTime = getCurrentTime();              // capture the start time

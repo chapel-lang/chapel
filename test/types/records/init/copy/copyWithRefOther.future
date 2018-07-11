@@ -1,4 +1,5 @@
 feature request: copy initializers taking 'ref' arguments
+#8234
 
 At present, if a copy initializer takes a 'ref' argument, the
 internal/compiler-generated code (chpl__initCopy/autoCopy) that wraps

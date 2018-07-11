@@ -16,7 +16,7 @@ class C {
   }
 }
 
-var myC = new C(rank=2);
+var myC = new unmanaged C(rank=2);
 
 
 myC.foo(1);

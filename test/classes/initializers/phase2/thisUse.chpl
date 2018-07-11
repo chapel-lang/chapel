@@ -14,6 +14,5 @@ proc outsideFunc(x: ThisPhase2) {
 }
 
 proc main() {
-  var c: ThisPhase2 = new ThisPhase2(2.5 + 1.3i);
-  delete c;
+  var c: ThisPhase2 = new borrowed ThisPhase2(2.5 + 1.3i);
 }

@@ -3,9 +3,7 @@ class Foo {
   var x: t;
 }
 
-var foo = new Foo(int);
+var foo = new borrowed Foo(int);
 
 writeln(foo.type: string);
 writeln(foo);
-
-delete foo;

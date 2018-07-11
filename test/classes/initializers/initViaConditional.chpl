@@ -8,14 +8,10 @@ class C {
   }
 }
 
-var myC1 = new C(true);
-var myC2 = new C(false);
-var myC3 = new C(gflag);
+var myC1 = new owned C(true);
+var myC2 = new owned C(false);
+var myC3 = new owned C(gflag);
 
 writeln(myC1);
 writeln(myC2);
 writeln(myC3);
-
-delete myC1;
-delete myC2;
-delete myC3;

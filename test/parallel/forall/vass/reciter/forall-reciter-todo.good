@@ -17,3 +17,21 @@ myiter start 3
   303    603
 myiter done  3
 done iii2  1819
+recursing for depth 2
+recursing for depth 1
+myiter start 1
+  101      1
+  102    102
+  103    204
+myiter done  1
+myiter start 2
+  201      1
+  202    202
+  203    404
+myiter done  2
+myiter start 3
+  301      1
+  302    302
+  303    604
+myiter done  3
+done iii3  1

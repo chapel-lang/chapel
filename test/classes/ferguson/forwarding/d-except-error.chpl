@@ -12,6 +12,6 @@ class C {
   proc bar() { writeln("in C.bar()"); }
 }
 
-var r = new Wrapper(new C());
+var r = new Wrapper(new unmanaged C());
 r.foo(); // OK
 r.bar(); // error: in except list

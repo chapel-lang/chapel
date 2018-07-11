@@ -3,7 +3,7 @@ class C {
 }
 
 var a: [1..3] int;
-var c = new C(a);
+var c = new unmanaged C(a);
 a(2) = 1;
 writeln(c);
 writeln(a);

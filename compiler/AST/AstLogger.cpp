@@ -36,6 +36,14 @@ bool AstLogger::enterAggrType(AggregateType* node) {
 void AstLogger::exitAggrType(AggregateType* node) {
 }
 
+bool AstLogger::enterUnmanagedClassType(UnmanagedClassType* node) {
+  return true;
+}
+
+void AstLogger::exitUnmanagedClassType(UnmanagedClassType* node) {
+}
+
+
 bool AstLogger::enterEnumType(EnumType* node) {
   return true;
 }
@@ -109,6 +117,13 @@ bool AstLogger::enterNamedExpr(NamedExpr* node) {
 }
 
 void AstLogger::exitNamedExpr(NamedExpr* node) {
+}
+
+bool AstLogger::enterIfExpr(IfExpr* node) {
+  return true;
+}
+
+void AstLogger::exitIfExpr(IfExpr* node) {
 }
 
 void AstLogger::visitSymExpr(SymExpr* node) {

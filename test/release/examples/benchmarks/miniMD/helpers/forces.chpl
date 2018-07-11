@@ -15,6 +15,17 @@ class Force {
   proc compute(store : bool) : void {}
 }
 
+class Funcfl {
+  var eamFile : string;
+  var numDensity, numPotentials : int;
+  var deltaDensity, deltaPotential, cut, mass : real;
+  var zrSpace : domain(1);
+  var frhoSpace : domain(1);
+  var frho : [frhoSpace] real;
+  var rhor, zr : [zrSpace] real;
+} 
+
+
 // 'Embedded atom model'
 class ForceEAM : Force  {
   var numDensity, numPotentials : int;
@@ -35,16 +46,6 @@ class ForceEAM : Force  {
 
   var FP: [DistSpace] [perBinSpace] real;
               
-  class Funcfl {
-    var eamFile : string;
-    var numDensity, numPotentials : int;
-    var deltaDensity, deltaPotential, cut, mass : real;
-    var zrSpace : domain(1);
-    var frhoSpace : domain(1);
-    var frho : [frhoSpace] real;
-    var rhor, zr : [zrSpace] real;
-  } 
-
   var funcfl : Funcfl;
 
   proc init(cf : real) {

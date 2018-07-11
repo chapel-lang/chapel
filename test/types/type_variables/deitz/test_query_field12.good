@@ -1,4 +1,4 @@
-bounded low ranges: (1.., 1.. by 2)
-bounded high ranges: (..4, ..4 by 2)
-mixed bounded type ranges: (1.., ..4, 1.. by 2, ..4 by 2)
-mixed bounded type ranges: (.., 1.., ..4, 1..4, 1..4 by 2)
+test_query_field12.chpl:13: error: unresolved call 'foo(range(int(64),boundedLow,false), range(int(64),boundedLow,true))'
+test_query_field12.chpl:1: note: candidates are: foo(x: range(int, BoundedRangeType.boundedLow, ?stridable) ...?k)
+test_query_field12.chpl:5: note:                 foo(x: range(int, BoundedRangeType.boundedHigh, ?stridable) ...?k)
+test_query_field12.chpl:9: note:                 foo(x: range(?) ...?k)

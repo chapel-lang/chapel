@@ -37,13 +37,13 @@ writeln("myArr[2] = ", myArr[2]);
 ////// alias of a class field //////
 
 class C { var cField = 51; }
-var myC = new C();
+var myC = new borrowed C();
 ref refClassField = myC.cField;
 myC.cField = 62;
 writeln("refClassField = ", refClassField);
 refClassField = 73;
 writeln("cField = ", myC.cField);
-delete myC;
+
 
 
 ////// alias of a record variable and a record field //////

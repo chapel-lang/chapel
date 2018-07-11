@@ -315,6 +315,29 @@ all:
   04/03/18:
     - text: Reduce contention from ugni's polling thread (#9068)
       config: 16 node XC
+  04/08/18:
+    - move lowering of ForallStmts at resolution (#8785)
+  04/11/18:
+    - Convert BaseDom and its derived classes to use initializers (#9113)
+  04/14/18:
+    - Update BaseArr to use initializers (#9160)
+  04/17/18:
+    - Workaround for StencilDom performance (#9231)
+  04/18/18:
+    - Update strings to use initializers (#9217)
+  04/19/19:
+    - Use zero-arg initializer in BaseDom (#9250)
+  05/17/18:
+    - text: ubuntu update to 18.04 (gcc upgraded to 7.3)
+      config: shootout
+  06/01/18:
+    - Represent if-expressions with IfExpr node instead of if-function (#9649)
+  06/04/18:
+    - text: Use the block transfer engine for large transfers under ugni (#9683)
+      config: 16 node XC
+  06/20/18:
+    - text: Optimize non-fetching network atomics (#9876)
+      config: 16 node XC
 
 
 AllCompTime:
@@ -330,6 +353,8 @@ AllCompTime:
     - Fix parse slowdown (#5257)
   02/07/17:
     - Loop over Defs and Uses with SymbolSymExprs (#5285)
+  05/23/18:
+    - Fix problems with tuples (#9572)
 
 arguments:
   09/20/17:
@@ -372,7 +397,7 @@ bfs:
   10/29/15:
     - Difficult to consistently replicate
 
-binary-trees:
+binary-trees: &binary-trees-base
   12/05/14:
     - introduce "library mode"
   01/26/16:
@@ -395,16 +420,10 @@ binary-trees:
     - upgrade jemalloc to 4.4.0 (#5278)
   04/03/17:
     - Updated to n=21 problem size and new rules (#5907)
-
+  06/23/18:
+    - Update more tests to compile with --warn-unstable (#9986)
 binarytrees-submitted:
-  09/21/16:
-    - switch from type method factory to init()-based implementation (#4598)
-  09/22/16:
-    - simplify init()-based implementation (#4609)
-  10/10/16:
-    - Brad's fix of off-by-one error in checksum (#4734)
-  04/03/17:
-    - Updated to n=21 problem size and new rules (#5907)
+  <<: *binary-trees-base
 
 blackscholes:
   10/21/16:
@@ -428,11 +447,19 @@ CoMD:
   07/26/17:
     - Update PR 5296 (#6722)
 
-compSampler-timecomp:
+CoMD-elegant-aos:
+  06/12/18:
+    - Convert blocking calls in Spawn module to yielding non-blocking loops (#9507)
+
+compSampler-timecomp: &timecomp-base
   09/09/16:
     - disable function resolution optimization (#4476)
   09/14/16:
     - re-enable function resolution optimization (#4517)
+  05/16/18:
+    - Faster 'fixStringLiteralInit' implementation (#9506)
+  05/23/18:
+    - Fix problems with tuples (#9572)
 
 cg:
   09/20/16:
@@ -446,10 +473,7 @@ cg-a:
 
 
 cg-sparse-timecomp:
-  09/09/16:
-    - disable function resolution optimization (#4476)
-  09/14/16:
-    - re-enable function resolution optimization (#4517)
+  <<: *timecomp-base
 
 c-ray:
   10/11/16:
@@ -460,6 +484,8 @@ c-ray:
 create-views:
   04/05/18:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
+  04/19/18:
+    - Use zero-arg initializer in BaseDom (#9250)
 
 dgemm.128:
   09/06/13:
@@ -481,13 +507,15 @@ ep-b:
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
 
-ep.ml-perf:
+ep.ml-perf: &ep-ml-base
   07/26/17:
     - Update PR 5296 (#6722)
-
+  05/23/18:
+    - Fix problems with tuples (#9572)
+  06/26/18:
+    - Make associative domains of enums more standard (#9978)
 ep.ml-time:
-  07/26/17:
-    - Update PR 5296 (#6722)
+  <<: *ep-ml-base
 
 fannkuch-redux:
   07/22/14:
@@ -537,10 +565,7 @@ fastaredux:
     - implemented good_alloc_size for jemalloc(#3446)
 
 fft-timecomp:
-  09/09/16:
-    - disable function resolution optimization (#4476)
-  09/14/16:
-    - re-enable function resolution optimization (#4517)
+  <<: *timecomp-base
 
 forall-dom-range:
   01/22/15:
@@ -827,6 +852,31 @@ memleaksfull:
     - Convert RecordParser over from constructors to initializers (#8810)
   04/04/18:
     - Update a slew of tests with initialize() methods to use postinit() instead (#8988)
+  04/07/18:
+    - Fix some initializer leaks (#9111)
+  04/10/18:
+    - Partial reduction straw man (#9158)
+  04/19/18:
+    - New test for warn-unstable (#9229)
+    - Partial reductions for LayoutCS (#9269)
+  04/20/18:
+    - Adjust partial-reduction tests (#9284)
+  05/16/18:
+    - deprecate 'out error' pattern from modules (#9450)
+  05/17/18:
+    - Enable fields with generic declared type (#9489)
+  05/24/18:
+    - Migrate tests to use decorated new(#9499)
+  06/05/18:
+    - Create an array/domain/distribution class for external arrays (#9694)
+    - DataFrame ADT (#9696)
+  06/13/18:
+    - Fix several memory leaks (#9796)
+    - Fix regexp leak (#9799)
+    - Close some memory leaks in these tests (#9802)
+  06/19/18:
+    - Remove origin field from DefaultRectangular (#9863)
+    - Allow basic usage of nested types with initializers (#9886)
 
 meteor:
   12/18/13:
@@ -841,6 +891,8 @@ mg-b:
     - Optimize updateFluff (#6418)
   06/22/17:
     - Only perform packed updateFluff when there are multiple locales (#6512)
+  06/22/18:
+    - Make 'for' loop in dsiReallocate parallel (#9895)
 
 mg.ml-time:
   05/11/17:
@@ -867,6 +919,10 @@ miniMD:
     - Three way refpair (#5561)
   12/05/17:
     - Enforce qualified refs after inlining (#7906)
+  04/19/18:
+    - Use zero-arg initializer in BaseDom (#9250)
+  04/24/18:
+    - Update miniMD problem size (#9296)
 
 miniMD.ml-time:
   09/14/17:
@@ -889,6 +945,8 @@ nbody:
     - revert jemalloc to 4.0.4 (#3477)
   05/28/16:
     - upgrade jemalloc to 4.2.0 (#3919)
+  04/19/18:
+    - Use zero-arg initializer in BaseDom (#9250)
 
 no-op:
   02/24/17:
@@ -902,17 +960,15 @@ parOpEquals:
   02/28/15:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
 
-pidigits:
+pidigits: &pidigits-base
   05/16/16:
     - switched release version to use ledrug algorithm
   09/24/16:
-    - rearranged pidigits; release versions now use bigints (#4655-6)
-
+    - rearranged pidigits; release versions now use bigints (#4655) (#4656)
+  05/01/18:
+    - Move chplgmp.c out of runtime (#8944)
 pidigits-submitted:
-  05/16/16:
-    - switched release version to use ledrug algorithm
-  09/24/16:
-    - rearranged pidigits; release versions now use bigints (#4655-6)
+  <<: *pidigits-base
 
 prk-stencil:
   02/14/16:
@@ -1006,19 +1062,18 @@ regexdna: &regexdna-base
     - Update RE2 (#6024)
   06/22/17:
     - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
-
 regexdna-redux:
   <<: *regexdna-base
-
 regexdna-submitted:
   <<: *regexdna-base
-
 regexdnaredux-submitted:
   <<: *regexdna-base
 
 return-array-8: &return-array-base
   03/04/17:
     - remove unnecessary return from array-return tests (#5486)
+  05/01/18:
+    - Enable variables declared with generic type (#9355)
 return-array-20000000:
   <<: *return-array-base
 return-array-40000000:
@@ -1039,10 +1094,18 @@ revcomp:
     - Brad version overhauled, based on mark-skip-read-begin (#8815)
   03/31/18:
     - Update revcomp problem size; filenames for fasta-based inputs (#9043)
+  04/19/18:
+    - Use zero-arg initializer in BaseDom (#9250)
 
 sad:
   05/03/16:
     - inconclusive due to noise
+
+search:
+  04/20/17:
+    - Update RE2 (#6024)
+  05/26/18:
+    - Update tuples to use special function instead of constructors (#9317)
 
 spectralnorm:
   01/21/15:
@@ -1107,6 +1170,10 @@ stream:
     - text: Improve inferConstRefs' canRHSBeConstRef helper function (#5710)
       config: 16 node XC
 
+stream-spmd-barrier:
+  06/07/18:
+    - Prevent serialization from qthread sync vars (#9737)
+
 taskSpawn:
   07/24/16:
     - Stopped performing remote value forwarding on task functions (#4240)
@@ -1123,15 +1190,11 @@ twopt-paircount:
   06/22/17:
     - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
 
-search:
-  04/20/17:
-    - Update RE2 (#6024)
-
 testSerialReductions:
   08/16/14:
     - result of Greg's commit to let the tasking layer determine parallelism
 
-thread-ring:
+thread-ring: &thread-ring-base
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
       config: chap03
@@ -1139,6 +1202,10 @@ thread-ring:
     - Limit the maximum size of qthreads memory pools to 65MB (#5748)
   12/05/17:
     - Enforce qualified refs after inlining (#7906)
+  06/07/18:
+    - Prevent serialization from qthread sync vars (#9737)
+threadring-submitted:
+  <<: *thread-ring-base
 
 time_array_vs_ddata:
   05/31/14:
@@ -1193,6 +1260,8 @@ timeVectorArray:
     - Resolve push_back / pop_front regressions w/ inline (#7397)
   12/05/17:
     - Enforce qualified refs after inlining (#7906)
+  06/22/18:
+    - Make 'for' loop in dsiReallocate parallel (#9895)
 
 views-forall-iter:
   10/12/17:

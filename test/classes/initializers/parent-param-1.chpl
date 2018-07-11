@@ -21,9 +21,7 @@ class Base {
 
 
 proc main() {
-  var c = new Derived(20);
+  var c = new owned Derived(20);
 
   writeln(c);
-
-  delete c;
 }

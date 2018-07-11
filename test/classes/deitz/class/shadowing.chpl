@@ -6,7 +6,7 @@ class D: C {
   var x: int;
 }
 
-var d = new D();
+var d = new unmanaged D();
 
 writeln(d.x);
 

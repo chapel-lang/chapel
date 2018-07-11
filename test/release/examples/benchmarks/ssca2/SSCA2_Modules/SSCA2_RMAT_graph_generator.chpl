@@ -271,9 +271,9 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
     // Random Numbers return in the range [0.0, 1.0)
 
     var Rand_Gen = if REPRODUCIBLE_PROBLEMS then
-                     new NPBRandomStream (real, seed = 0556707007)
+                     new owned NPBRandomStream (real, seed = 0556707007)
                    else
-                     new NPBRandomStream (real);
+                     new owned NPBRandomStream (real);
 
     var   Noisy_a     : [edge_domain] real,
           Noisy_b     : [edge_domain] real,
@@ -336,7 +336,6 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
         permutation (v) <=> permutation (new_id);
       };
 
-    delete Rand_Gen;
   } // if newEG
 
     forall e in Edges do {

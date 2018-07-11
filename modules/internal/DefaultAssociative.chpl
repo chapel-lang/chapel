@@ -55,7 +55,7 @@ module DefaultAssociative {
     type idxType;
     param parSafe: bool;
   
-    var dist: DefaultDist;
+    var dist: unmanaged DefaultDist;
   
     // The guts of the associative domain
   
@@ -64,7 +64,7 @@ module DefaultAssociative {
     var numEntries: atomic_int64;
     var tableLock: atomicbool; // do not access directly, use function below
     var tableSizeNum = 1;
-    var tableSize:int = chpl__primes(tableSizeNum);
+    var tableSize : int;
     var tableDom = {0..tableSize-1};
     var table: [tableDom] chpl_TableEntry(idxType);
   
@@ -81,23 +81,29 @@ module DefaultAssociative {
     var postponeResize = false;
   
     proc linksDistribution() param return false;
-    proc dsiLinksDistribution()     return false;
+    override proc dsiLinksDistribution() return false;
   
-    proc DefaultAssociativeDom(type idxType,
-                               param parSafe: bool,
-                               dist: DefaultDist) {
+    proc init(type idxType,
+              param parSafe: bool,
+              dist: unmanaged DefaultDist) {
       if !chpl__validDefaultAssocDomIdxType(idxType) then
         compilerError("Default Associative domains with idxType=",
                       idxType:string, " are not allowed", 2);
+      if chpl_warnUnstable && isEnumType(idxType) then
+        compilerWarning("As of Chapel 1.18, associative domains of enums are empty by default rather than full, and associative domains and arrays of enums no longer maintain order");
+
+      this.idxType = idxType;
+      this.parSafe = parSafe;
       this.dist = dist;
+      this.tableSize = chpl__primes(tableSizeNum);
     }
   
     //
     // Standard Internal Domain Interface
     //
     proc dsiBuildArray(type eltType) {
-      return new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
-                                       parSafeDom=parSafe, dom=this);
+      return new unmanaged DefaultAssociativeArr(eltType=eltType, idxType=idxType,
+                                       parSafeDom=parSafe, dom=_to_unmanaged(this));
     }
   
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
@@ -144,17 +150,8 @@ module DefaultAssociative {
     }
 
     iter these() {
-      if !isEnumType(idxType) {
-        for slot in _fullSlots() {
-          yield table[slot].idx;
-        }
-      } else {
-        for val in chpl_enumerate(idxType) {
-          var (match, slot) = _findFilledSlot(val);
-          if match then
-            yield table[slot].idx;
-        }
-      }
+      for slot in _fullSlots() do
+        yield table[slot].idx;
     }
  
     iter these(param tag: iterKind) where tag == iterKind.standalone {
@@ -266,7 +263,7 @@ module DefaultAssociative {
     //
     // Associative Domain Interface
     //
-    proc dsiMyDist() : BaseDist {
+    override proc dsiMyDist() : unmanaged BaseDist {
       return dist;
     }
 
@@ -285,7 +282,7 @@ module DefaultAssociative {
       return _findFilledSlot(idx)(1);
     }
   
-    proc dsiAdd(idx) {
+    override proc dsiAdd(idx) {
       // add helpers will return a tuple like (slotNum, numIndicesAdded);
 
       // these two seemingly redundant lines were necessary to work around a
@@ -330,6 +327,9 @@ module DefaultAssociative {
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
+
+    // TODO - once we can annotate idx argument should outlive 'this'
+    pragma "unsafe"
     proc _add(idx: idxType, in slotNum : index(tableDom) = -1) {
       var foundSlot : bool = (slotNum != -1);
       if !foundSlot then
@@ -556,11 +556,12 @@ module DefaultAssociative {
     }
   }
   
+  pragma "use default init"
   class DefaultAssociativeArr: BaseArr {
     type eltType;
     type idxType;
     param parSafeDom: bool;
-    var dom : DefaultAssociativeDom(idxType, parSafe=parSafeDom);
+    var dom : unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);
   
     var data : [dom.tableDom] eltType;
   
@@ -571,9 +572,9 @@ module DefaultAssociative {
     // Standard internal array interface
     // 
   
-    proc dsiGetBaseDom() return dom;
+    override proc dsiGetBaseDom() return dom;
   
-    proc clearEntry(idx: idxType) {
+    override proc clearEntry(idx: idxType) {
       const initval: eltType;
       dsiAccess(idx) = initval;
     }
@@ -738,16 +739,16 @@ module DefaultAssociative {
     // Internal associative array interface
     //
   
-    proc _backupArray() {
+    override proc _backupArray() {
       tmpDom = dom.tableDom;
       tmpTable = data;
     }
   
-    proc _removeArrayBackup() {
+    override proc _removeArrayBackup() {
       tmpDom = {0..(-1:chpl_table_index_type)};
     }
   
-    proc _preserveArrayElement(oldslot, newslot) {
+    override proc _preserveArrayElement(oldslot, newslot) {
       data(newslot) = tmpTable[oldslot];
     }
 
@@ -761,7 +762,7 @@ module DefaultAssociative {
       return _newDomain(dom);
     }
 
-    proc dsiDestroyArr() {
+    override proc dsiDestroyArr() {
       //
       // BHARSH 2017-09-08: Workaround to avoid recursive iterator generation.
       //
@@ -822,6 +823,10 @@ module DefaultAssociative {
   inline proc chpl__defaultHash(u: uint(64)): uint {
     return _gen_key(u);
   }
+
+  inline proc chpl__defaultHash(e) where isEnum(e) {
+    return _gen_key(chpl__enumToOrder(e));
+  }
   
   inline proc chpl__defaultHash(f: real): uint {
     return _gen_key(__primitive( "real2int", f));
@@ -849,7 +854,7 @@ module DefaultAssociative {
     return hash;
   }
   
-  inline proc chpl__defaultHash(o: object): uint {
+  inline proc chpl__defaultHash(o: borrowed object): uint {
     return _gen_key(__primitive( "object2int", o));
   }
 

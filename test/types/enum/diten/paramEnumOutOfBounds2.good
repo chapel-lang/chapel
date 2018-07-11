@@ -1,0 +1,2 @@
+paramEnumOutOfBounds2.chpl:3: error: enum cast out of bounds
+paramEnumOutOfBounds2.chpl:3: error: illegal cast from int(64) to enumt

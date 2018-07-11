@@ -76,8 +76,8 @@ proc main() {
   //
   const MatVectSpace: domain(2)
     dmapped DimensionalDist2D(targetLocales,
-                              new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
-                              new BlockCyclicDim(gridCols, lowIdx=1, blkSize))
+                              new unmanaged BlockCyclicDim(gridRows, lowIdx=1, blkSize),
+                              new unmanaged BlockCyclicDim(gridCols, lowIdx=1, blkSize))
                     = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
@@ -214,8 +214,8 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 proc replicateD1(Ab, BD) {
   const replBD = {1..blkSize, 1..n+1}
     dmapped DimensionalDist2D(targetLocales,
-                              new ReplicatedDim(gridRows),
-                              new BlockCyclicDim(gridCols, lowIdx=1, blkSize));
+                              new unmanaged ReplicatedDim(gridRows),
+                              new unmanaged BlockCyclicDim(gridCols, lowIdx=1, blkSize));
   var replB: [replBD] elemType;
 
   coforall dest in targetLocales[.., 0] do
@@ -231,8 +231,8 @@ proc replicateD1(Ab, BD) {
 proc replicateD2(Ab, AD) {
   const replAD = {1..n, 1..blkSize}
     dmapped DimensionalDist2D(targetLocales,
-                              new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
-                              new ReplicatedDim(gridCols));
+                              new unmanaged BlockCyclicDim(gridRows, lowIdx=1, blkSize),
+                              new unmanaged ReplicatedDim(gridCols));
   var replA: [replAD] elemType;
 
   coforall dest in targetLocales[0, ..] do

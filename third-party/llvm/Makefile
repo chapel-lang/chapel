@@ -51,6 +51,15 @@ clobber: FORCE
 $(LLVM_SRC_FILE):
 	./unpack-llvm.sh
 
+# Note, for Polly+GPU, we'd need to add
+# -DLLVM_TARGETS_TO_BUILD="host;X86;AArch64;NVPTX"
+# -DPOLLY_ENABLE_GPGPU_CODEGEN=ON
+# to the flags supplied below.
+
+# Note, for Region Vectorizer (RV), we'd need to add
+# -DRV_ENABLE_CRT=on
+# to the flags supplied below.
+
 $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	mkdir -p $(LLVM_BUILD_DIR)
 	@if ./cmake-ok.sh $(CMAKE); then \
@@ -128,7 +137,7 @@ llvm-minimal: $(LLVM_CONFIGURED_HEADER_FILE) $(LLVM_HEADER_FILE) $(LLVM_SUPPORT_
 
 clang-included: llvm
 
-system: $(LLVM_SRC_FILE) $(LLVM_CLANG_CONFIG_FILE)
+system: $(LLVM_CLANG_CONFIG_FILE)
 
 system-minimal:
 

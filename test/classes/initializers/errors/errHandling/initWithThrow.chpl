@@ -6,10 +6,9 @@ class Foo {
 
   proc init() {
     x = 10;
-    throw new Error();
+    throw new unmanaged Error();
   }
 }
 
-var foo = new Foo();
+var foo = new owned Foo();
 writeln(foo);
-delete foo;

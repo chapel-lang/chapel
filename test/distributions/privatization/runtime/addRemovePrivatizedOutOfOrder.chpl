@@ -4,7 +4,7 @@ var addOrder = [5000, 7500, 2500, 10000, 0];
 var removeOrder = [5000, -1, 2500, 10000, 0];
 
 for (i,j) in zip(addOrder, removeOrder) {
-  var newValue = new C(i);
+  var newValue = new unmanaged C(i);
   insertPrivatized(newValue, i);
   if j >= 0 {
     var c = getPrivatized(j);

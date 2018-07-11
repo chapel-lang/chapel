@@ -1,4 +1,7 @@
 // see also errorFieldMethodInWithClause.chpl
+//
+// with-clauses of forall loops are tested in
+//  parallel/forall/vass/errorFieldMethodInWithClause.chpl
 
 class MyClass {
   var myField:int = 111;
@@ -20,11 +23,6 @@ class MyClass {
         writeln(myField);
       }
   }
-  proc myForall() {
-      forall 1..1 with (ref myField) {
-        writeln(myField);
-      }
-  }
 }  // class MyClass
 
 var c = new MyClass();
@@ -34,8 +32,6 @@ writeln(c);
 c.myCobegin();
 writeln(c);
 c.myCoforall();
-writeln(c);
-c.myForall();
 writeln(c);
 
 record MyRecord {
@@ -58,11 +54,6 @@ record MyRecord {
         writeln(myField);
       }
   }
-  proc myForall() {
-      forall 1..1 with (ref myField) {
-        writeln(myField);
-      }
-  }
 }  // record MyRecord
 
 var r = new MyRerord();
@@ -72,6 +63,4 @@ writeln(r);
 r.myCobegin();
 writeln(r);
 r.myCoforall();
-writeln(r);
-r.myForall();
 writeln(r);

@@ -1037,8 +1037,11 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 
   fn->setMethod(true);
 
+  fn->addFlag(FLAG_NEW_WRAPPER);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+  fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
 
   if (initMethod->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
     fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);

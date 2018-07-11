@@ -21,7 +21,7 @@ class C {
 config const i8:int(8)    = 8;
 config const i64:int(64)  = 64;
 
-var r = new Wrapper(new C());
+var r = new Wrapper(new unmanaged C());
 
 writeln("int(8)");
 r.foo(i8);

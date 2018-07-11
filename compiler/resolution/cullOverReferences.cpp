@@ -22,8 +22,10 @@
 #include "astutil.h"
 #include "driver.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
+#include "lateConstCheck.h"
 #include "loopDetails.h"
 #include "postFold.h"
 #include "resolution.h"
@@ -95,7 +97,6 @@ static void lowerContextCallPreferRefConstRef(ContextCallExpr* cc);
 static void lowerContextCallPreferConstRefValue(ContextCallExpr* cc);
 static void lowerContextCallComputeConstRef(ContextCallExpr* cc, bool notConst, Symbol* lhsSymbol);
 static bool firstPassLowerContextCall(ContextCallExpr* cc);
-static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst);
 
 static bool
 symExprIsSetByDef(SymExpr* def) {
@@ -384,7 +385,14 @@ void createFieldQualifiersIfNeeded(Symbol* sym)
   if (at && !sym->fieldQualifiers) {
     int numFields = at->numFields();
     sym->fieldQualifiers = new Qualifier[numFields+1]; // +1 for 1-base
-    sym->fieldQualifiers[0] = QUAL_UNKNOWN;
+    Qualifier totalQ = QUAL_UNKNOWN;
+    if (sym->isRef()) {
+      if (sym->isConstant())
+        totalQ = QUAL_CONST_REF;
+      else
+        totalQ = QUAL_REF;
+    }
+    sym->fieldQualifiers[0] = totalQ;
     int i = 1;
     for_fields(field, at) {
       Qualifier q = QUAL_UNKNOWN;
@@ -462,6 +470,7 @@ void markConst(GraphNode node)
         if (sym->fieldQualifiers[i] == QUAL_REF)
           sym->fieldQualifiers[i] = QUAL_CONST_REF;
       }
+      markSymbolConst(sym);
     } else {
       // mark only fieldIndex
       int i = node.fieldIndex;
@@ -747,12 +756,27 @@ void cullOverReferences() {
       // information to resolve. These can be added to the revisitGraph.
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
 
+        bool foundLoop = false;
+        bool isForall = false;
+        IteratorDetails leaderDetails;
+        ForLoop* followerForLoop = NULL;
+        std::vector<IteratorDetails> detailsVector;
+
+        if (isForallIterExpr(call)) {
+          ForallStmt* pfs = toForallStmt(call->parentExpr);
+          gatherLoopDetails(pfs, isForall, leaderDetails,
+                            followerForLoop, detailsVector);
+          foundLoop = true;
+        }
+
+        // Otherwise, look for a ForLoop / old style forall
+
         // Check if sym is iterated over. In that case, what's the
         // index variable?
         //
         // It's important that this case run before the check
         // for build_tuple.
-        {
+        else {
           // Find enclosing PRIM_MOVE
           CallExpr* move = toCallExpr(se->parentExpr->getStmtExpr());
           if (!move->isPrimitive(PRIM_MOVE))
@@ -763,6 +787,8 @@ void cullOverReferences() {
             SymExpr* lhs = toSymExpr(move->get(1));
             Symbol* iterator = lhs->symbol();
             ForLoop* forLoop = NULL;
+            ForallStmt*   fs = NULL;
+            // Todo expand isChplIterOrLoopIterator to watch for ForallStmt?
 
             // marked with chpl__iter or with type iterator class?
             if (isChplIterOrLoopIterator(iterator, forLoop)) {
@@ -771,21 +797,19 @@ void cullOverReferences() {
 
               if (!forLoop) {
                 Expr* e = move;
-                while (e && !isForLoop(e)) {
+                while (e) {
+                  if ( (forLoop = toForLoop(e)) )
+                    break;
+                  if ( (fs = toForallStmt(e)) )
+                    break;
                   e = e->next;
                 }
-                forLoop = toForLoop(e);
               }
 
               if (forLoop) {
                 // Gather the loop details to understand the
                 // correspondence between what was iterated over
                 // and the index variables.
-
-                bool isForall = false;
-                IteratorDetails leaderDetails;
-                ForLoop* followerForLoop = NULL;
-                std::vector<IteratorDetails> detailsVector;
 
                 /*
                 printf("print working on node %i %i\n",
@@ -796,7 +820,20 @@ void cullOverReferences() {
 
                 gatherLoopDetails(forLoop, isForall, leaderDetails,
                                   followerForLoop, detailsVector);
+                foundLoop = true;
+              }
+              else if (fs) {
+                // Ditto if it is a ForallStmt.
 
+                gatherLoopDetails(fs, isForall, leaderDetails,
+                                  followerForLoop, detailsVector);
+                foundLoop = true;
+              }
+            }
+          }
+        }
+
+        if (foundLoop) {
                 bool handled = false;
 
                 for (size_t i = 0; i < detailsVector.size(); i++) {
@@ -859,9 +896,6 @@ void cullOverReferences() {
 
                 if (handled)
                   continue; // continue outer loop
-              }
-            }
-          }
         }
 
         if (FnSymbol* calledFn = call->resolvedFunction()) {
@@ -1185,7 +1219,7 @@ void cullOverReferences() {
   // Now, lower ContextCalls
   forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
     // Some ContextCallExprs have already been removed above
-    if (cc->parentExpr == NULL)
+    if (!cc->inTree())
       continue;
 
     CallExpr* move = toCallExpr(cc->parentExpr);
@@ -1209,7 +1243,7 @@ void cullOverReferences() {
   // markConst / markNotConst so there is nothing else to do
   // here for ArgSymbols.
 
-  lateConstCheck(reasonNotConst);
+  lateConstCheck(&reasonNotConst);
 }
 
 // Handle certain degenerate cases, such as when a
@@ -1470,256 +1504,5 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
     // Replace the ContextCallExpr with the ref call
     if (refCall) cc->replace(refCall);
     else if(constRefCall) cc->replace(constRefCall);
-  }
-}
-
-static bool isTupleOfTuples(Type* t)
-{
-  AggregateType* at = toAggregateType(t->getValType());
-
-  if (at && at->symbol->hasFlag(FLAG_TUPLE)) {
-    for_fields(field, at) {
-      if (field->getValType()->symbol->hasFlag(FLAG_TUPLE))
-        return true;
-    }
-  }
-
-  return false;
-}
-
-
-static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
-{
-  // First, figure out the module and function it's in
-  Expr* expr = toExpr(reason);
-  if (Symbol* s = toSymbol(reason))
-    expr = s->defPoint;
-  ModuleSymbol* inModule = expr->getModule();
-  FnSymbol* inFunction = NULL;
-
-  if (FnSymbol* fn = toFnSymbol(reason))
-    inFunction = fn;
-  else
-    inFunction = expr->getFunction();
-
-  // We'll output differently based upon whether it's
-  // in a user-defined module or a compiler-generated function.
-  bool user = inModule->modTag == MOD_USER;
-  bool compilerGenerated = false;
-  if (inFunction != NULL)
-    compilerGenerated = inFunction->hasFlag(FLAG_COMPILER_GENERATED);
-
-  BaseAST* last = *lastPrintedReason;
-  bool same = (last != NULL &&
-               reason->fname() == last->fname() &&
-               reason->linenum() == last->linenum());
-
-  if (developer || (user && !compilerGenerated && !same)) {
-    if (isArgSymbol(reason) || isFnSymbol(reason))
-      USR_PRINT(reason, "to ref formal here");
-    else if (TypeSymbol* ts = toTypeSymbol(reason))
-      USR_PRINT(reason, "to formal of type %s", ts->name);
-    else
-      USR_PRINT(reason, "passed as ref here");
-
-    // useful for debugging this pass
-    if (developer)
-      USR_PRINT(reason, "id %i", reason->id);
-  } else {
-    if (TypeSymbol* ts = toTypeSymbol(reason))
-      USR_PRINT("to formal of type %s", ts->name);
-  }
-
-  *lastPrintedReason = reason;
-}
-
-/* Since const-checking can depend on ref-pair determination
-   or upon the determination of whether an array formal with
-   blank intent is passed by ref or by value, do final const checking here.
-
-   TODO: decide if we also need const checking in functionResolution.cpp.
- */
-static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
-{
-  forv_Vec(CallExpr, call, gCallExprs) {
-
-    // Ignore calls removed earlier by this pass.
-    if (call->parentExpr == NULL) {
-      continue;
-    }
-
-    if (FnSymbol* calledFn = call->resolvedFunction()) {
-      char        cn1          = calledFn->name[0];
-      const char* calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
-
-      // resolved calls
-      for_formals_actuals(formal, actual, call) {
-        bool error = false;
-
-        if (actual->qualType().isConst() && ! formal->qualType().isConst()) {
-          // But... there are exceptions
-
-          // If the formal intent is INTENT_REF_MAYBE_CONST,
-          // earlier cullOverReferences should have changed it
-          // to INTENT_REF or INTENT_CONST_REF. If not, it's something
-          // that was ignored by earlier portions of this pass.
-          if (formal->intent == INTENT_REF_MAYBE_CONST) {
-            // OK, not an error
-
-          // it's OK if we're calling a function marked
-          // FLAG_REF_TO_CONST_WHEN_CONST_THIS and the result is
-          // marked const. In that case, we pretend that the `this`
-          // argument would be marked const too.
-          } else if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
-                     formal->hasFlag(FLAG_ARG_THIS)) {
-            CallExpr* move = toCallExpr(call->parentExpr);
-            if (move && move->isPrimitive(PRIM_MOVE)) {
-              SymExpr* lhs = toSymExpr(move->get(1));
-              Symbol* lhsSym = lhs->symbol();
-              if (lhsSym->qualType().isConst())
-                ; // OK, lhsSym has const Qualifier
-              else if (lhsSym->hasFlag(FLAG_REF_TO_CONST))
-                ; // OK, lhsSym is marked with FLAG_REF_TO_CONST
-              else
-                error = true; // l-value error
-            }
-
-          // Or, if passing a 'const' thing into an 'in' formal,
-          // that's OK
-          } else if (formal->intent == INTENT_IN &&
-                     !formal->type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
-            // OK, not an error
-          } else {
-            error = true;
-          }
-        }
-
-        // TODO: check tuple const-ness:
-        //   make analysis above more complete
-        //   work with toSymExpr(actual)->symbol()->fieldQualifiers
-        //   handle tuples containing tuples properly
-
-        FnSymbol* inFn = call->parentSymbol->getFunction();
-
-        // Ignore errors in functions marked with FLAG_SUPPRESS_LVALUE_ERRORS.
-        if (inFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
-          error = false;
-        }
-
-        // A 'const' record should be able to be initialized
-        if (calledFn->name == astrInit) {
-          error = false;
-        }
-
-        // For now, ignore errors with tuple construction/build_tuple
-        if (calledFn->hasFlag(FLAG_BUILD_TUPLE) ||
-            (calledFn->hasFlag(FLAG_CONSTRUCTOR) &&
-             calledFn->retType->symbol->hasFlag(FLAG_TUPLE))) {
-          error = false;
-        }
-
-        // For now, ignore errors with tuples-of-tuples.
-        // Otherwise errors with e.g.
-        //   const tup = (("a", 1), ("b", 2));
-        //   for x in tup { writeln(x); }
-        if (isTupleOfTuples(formal->type)) {
-          error = false;
-        }
-
-        // For now, ignore errors with default constructors
-        if (calledFn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
-          error = false;
-        }
-
-        // For now, ignore errors with calls to promoted functions.
-        // To turn this off, get this example working:
-        //   test/functions/ferguson/ref-pair/plus-reduce-field-in-const.chpl
-        if (calledFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-          error = false;
-        }
-
-        if (error) {
-          USR_FATAL_CONT(actual,
-                         "const actual is passed to %s formal '%s' of %s%s",
-                         formal->intentDescrString(),
-                         formal->name,
-                         calledFn->name, calleeParens);
-
-          BaseAST* lastPrintedReason = NULL;
-
-          printReason(formal->getValType()->symbol, &lastPrintedReason);
-
-          SymExpr* actSe = toSymExpr(actual);
-
-          if (actSe != NULL &&
-              actSe->symbol()->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
-            printTaskOrForallConstErrorNote(actSe->symbol());
-          }
-
-          printReason(formal, &lastPrintedReason);
-
-          BaseAST* reason     = reasonNotConst[formal];
-          BaseAST* lastReason = formal;
-
-          while (reason) {
-            BaseAST* printCause = reason;
-
-            // If the last reason and the this reason are both Symbols,
-            // try to figure out what links them by looking at uses
-            // of lastReason.
-            if (isSymbol(lastReason) && isArgSymbol(reason)) {
-              Symbol*    lastSym   = toSymbol(lastReason);
-              ArgSymbol* curFormal = toArgSymbol(reason);
-
-              for_SymbolSymExprs(se, lastSym) {
-                if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
-                  if (parentCall->isResolved()) {
-                    if (curFormal == actual_to_formal(se)) {
-                      printReason(se, &lastPrintedReason);
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-
-            // Go from LHS VarSymbol to called fn
-            // for better reporting for the reason of context-call
-            if (VarSymbol* v = toVarSymbol(reason)) {
-              for_SymbolDefs(def, v) {
-                if (CallExpr* parentCall = toCallExpr(def->parentExpr)) {
-                  if (parentCall->isPrimitive(PRIM_MOVE)) {
-                    if (CallExpr* rhsCall = toCallExpr(parentCall->get(2))) {
-                      if (FnSymbol* rhsCalledFn = rhsCall->resolvedFunction()) {
-                        printReason(def,         &lastPrintedReason);
-                        printReason(rhsCalledFn, &lastPrintedReason);
-                        printCause = NULL;
-
-                        break;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-
-            if (printCause) {
-              // Print out an annotation line
-              printReason(printCause, &lastPrintedReason);
-            }
-
-            if (reasonNotConst.count(reason) != 0) {
-              lastReason = reason;
-              reason     = reasonNotConst[reason];
-            } else {
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    // For now, don't check primitives. Compiler can be loose
-    // with const-ness on its own internal temporaries.
   }
 }

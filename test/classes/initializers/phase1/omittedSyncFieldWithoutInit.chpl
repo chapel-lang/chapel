@@ -7,6 +7,6 @@ class Foo {
   }
 }
 
-var foo1 = new Foo(3);
+var foo1 = new unmanaged Foo(3);
 writeln(foo1.s.isFull); // the omitted initialization should leave s empty
 delete foo1;

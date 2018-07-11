@@ -479,7 +479,10 @@ void UseStmt::createRelatedNames(Symbol* maybeType) {
     Type* type = ts->type;
 
     forv_Vec(FnSymbol, method, type->methods) {
-      relatedNames.push_back(method->name);
+      if (method->isInitializer() == false &&
+          method->hasFlag(FLAG_NEW_WRAPPER) == false) {
+        relatedNames.push_back(method->name);
+      }
     }
 
     if (AggregateType* at = toAggregateType(type)) {
@@ -502,6 +505,11 @@ void UseStmt::createRelatedNames(Symbol* maybeType) {
 
     relatedNames.push_back(constrName);
     relatedNames.push_back(typeConstrName);
+
+    if (except == false) {
+      relatedNames.push_back("init");
+      relatedNames.push_back("_new");
+    }
   }
 }
 

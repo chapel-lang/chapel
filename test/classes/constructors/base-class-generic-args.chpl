@@ -26,16 +26,10 @@ proc Oval.area() return 3.14159*r2;
 
 
 
-var c = new Circle(h=(4,));
+var c = new borrowed Circle(h=(4,));
 
 writeln("circle area:",c.area());
 
-delete c;
-
-
-
-var o = new Oval(h1=(1,),h2=2.0);
+var o = new borrowed Oval(h1=(1,),h2=2.0);
 
 writeln(o.area()," r:",o.r," r2:",o.r2);
-
-delete o;

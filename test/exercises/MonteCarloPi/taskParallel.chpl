@@ -20,7 +20,7 @@ writeln("Number of tasks     = ", tasks);
 //
 var counts: [0..#tasks] int;
 coforall tid in 0..#tasks {
-  var rs = new NPBRandomStream(real, seed, parSafe=false);
+  var rs = new owned NPBRandomStream(real, seed, parSafe=false);
   const nPerTask = n/tasks,
         extras = n%tasks;
   rs.skipToNth(2*(tid*nPerTask + (if tid < extras then tid else extras)) + 1);
@@ -30,8 +30,6 @@ coforall tid in 0..#tasks {
     count += (rs.getNext()**2 + rs.getNext()**2) <= 1.0;
 
   counts[tid] = count;
-
-  delete rs;
 }
 
 //

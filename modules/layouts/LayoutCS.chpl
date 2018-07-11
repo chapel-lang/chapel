@@ -23,6 +23,10 @@ pragma "no doc"
 /* Debug flag */
 config param debugCS = false;
 
+/* Default sparse dimension index sorting mode for LayoutCS.
+Sparse dimension indices will default to sorted order if true, inserted order if false */
+config param LayoutCSDefaultToSorted = true;
+
 pragma "no doc"
 /* Comparator used for sorting by columns */
 record _ColumnComparator {
@@ -37,15 +41,13 @@ const _columnComparator: _ColumnComparator;
 // Necessary since `t == CS` does not support classes with param fields
 //
 pragma "no doc"
-proc isCSType(type t) param where t:CS return true;
-pragma "no doc"
-proc isCSType(type t) param return false;
+proc isCSType(type t) param return isSubtype(_to_borrowed(t), CS);
 
 /*
 This CS layout provides a Compressed Sparse Row (CSR) and Compressed Sparse
 Column (CSC) implementation for Chapel's sparse domains and arrays.
 
-To declare a CS domain, invoke the ``CS`` constructor in a `dmapped` clause,
+To declare a CS domain, invoke the ``CS`` initializer in a `dmapped` clause,
 specifying CSR vs. CSC format with the ``param compressRows`` argument, which
 defaults to ``true`` if omitted. For example:
 
@@ -72,14 +74,17 @@ on the locale where the array variable is declared.
 pragma "use default init"
 class CS: BaseDist {
   param compressRows: bool = true;
+  param sortedIndices: bool = LayoutCSDefaultToSorted;
 
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-    return new CSDom(rank, idxType, this.compressRows, dom.stridable, this, dom);
+    return new unmanaged CSDom(rank, idxType, this.compressRows, this.sortedIndices, dom.stridable, _to_unmanaged(this), dom);
   }
 
-  proc dsiClone() return new CS(compressRows=this.compressRows);
+  proc dsiClone() {
+    return new unmanaged CS(compressRows=this.compressRows,sortedIndices=this.sortedIndices);
+  }
 
-  proc dsiEqualDMaps(that: CS(this.compressRows)) param {
+  proc dsiEqualDMaps(that: CS(this.compressRows,this.sortedIndices)) param {
     return true;
   }
 
@@ -91,8 +96,9 @@ class CS: BaseDist {
 
 class CSDom: BaseSparseDomImpl {
   param compressRows;
+  param sortedIndices;
   param stridable;
-  var dist: CS(compressRows);
+  var dist: unmanaged CS(compressRows,sortedIndices);
 
   var rowRange: range(idxType, stridable=stridable);
   var colRange: range(idxType, stridable=stridable);
@@ -108,29 +114,37 @@ class CSDom: BaseSparseDomImpl {
   var idx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
   /* Initializer */
-  proc CSDom(param rank, type idxType, param compressRows, param stridable, dist: CS(compressRows), parentDom: domain) {
+  proc init(param rank, type idxType, param compressRows, param sortedIndices, param stridable, dist: unmanaged CS(compressRows,sortedIndices), parentDom: domain) {
     if (rank != 2 || parentDom.rank != 2) then
       compilerError("Only 2D sparse domains are supported by the CS distribution");
     if parentDom.idxType != idxType then
       compilerError("idxType mismatch in CSDom.init(): " + idxType:string + " != " + parentDom.idxType:string);
 
+    super.init(rank, idxType, parentDom);
+
+    this.compressRows = compressRows;
+    this.sortedIndices = sortedIndices;
+    this.stridable = stridable;
+
     this.dist = dist;
-    this.parentDom = parentDom;
     rowRange = parentDom.dim(1);
     colRange = parentDom.dim(2);
     startIdxDom = if compressRows then {rowRange.low..rowRange.high+1} else {colRange.low..colRange.high+1};
+
+    this.complete();
+
     nnzDom = {1..nnz};
     dsiClear();
   }
 
-  proc dsiMyDist() return dist;
+  override proc dsiMyDist() return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
   }
 
   proc dsiBuildArray(type eltType)
-    return new CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=this);
+    return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=_to_unmanaged(this));
 
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.compressRows then rowRange.high else colRange.high;
@@ -157,7 +171,6 @@ class CSDom: BaseSparseDomImpl {
         yield (cursor, idx(i));
       else
         yield (idx(i), cursor);
-
     }
   }
 
@@ -246,10 +259,19 @@ class CSDom: BaseSparseDomImpl {
     const (row, col) = ind;
 
     var ret: (bool, idxType);
-    if this.compressRows then
-      ret = binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
-    else
-      ret = binarySearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
+    if this.compressRows {
+      if this.sortedIndices then
+        ret = binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
+      else {
+        ret = linearSearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
+      }
+    } else {
+      if this.sortedIndices then
+        ret = binarySearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
+      else {
+        ret = linearSearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
+      }
+    }
 
     return ret;
   }
@@ -569,6 +591,7 @@ class CSDom: BaseSparseDomImpl {
 } // CSDom
 
 
+pragma "use default init"
 class CSArr: BaseSparseArrImpl {
 
   proc dsiAccess(ind: rank*idxType) ref {

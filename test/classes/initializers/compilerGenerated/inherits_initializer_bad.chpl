@@ -18,10 +18,9 @@ class Child : Parent {
 }
 
 proc main() {
-  var c = new Child(4);
+  var c = new shared Child(4);
   // TODO: I would like a better error message, this current one is confusing
   // (but reasonable when you know why it is complaining)
 
   writeln(c);
-  delete c;
 }

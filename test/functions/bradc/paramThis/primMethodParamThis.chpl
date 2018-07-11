@@ -16,12 +16,12 @@ class C {
   }
 }
 
-var myC = new C();
+var myC = new borrowed C();
 
 myC.foo;
 myC.bar();
 
-delete myC;
+
 
 // we don't have any way to create param classes (or records)
 // currently, so we only test the non-param case.

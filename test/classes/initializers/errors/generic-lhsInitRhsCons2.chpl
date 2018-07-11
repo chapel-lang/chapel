@@ -17,6 +17,5 @@ class hasConstruct {
 }
 
 
-var hi: hasInit = new hasConstruct(10);
+var hi: borrowed hasInit = new borrowed hasConstruct(10);
 writeln(hi);
-delete hi;

@@ -14,6 +14,7 @@ version of the 1d example code.
 
 type elemType = real(64);
 
+pragma "use default init"
 class Vector {
   var n : int;
   var a : [1..n] elemType;
@@ -82,6 +83,7 @@ class Vector {
   }
 }
 
+pragma "use default init"
 class Matrix {
   var n,m : int;
   var a : [1..n,1..m] elemType;

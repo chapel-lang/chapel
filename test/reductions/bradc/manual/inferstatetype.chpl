@@ -20,7 +20,7 @@ forall i in D {
   A(i) = i;
 }
 
-var myreduce = new mysumreduce(t = int);
+var myreduce = new unmanaged mysumreduce(t = int);
 var state    = myreduce.ident();
 
 for i in D {
@@ -32,4 +32,3 @@ var result = state;
 writeln("result is: ", result);
 
 delete myreduce;
-

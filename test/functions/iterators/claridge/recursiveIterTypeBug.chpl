@@ -12,12 +12,12 @@
 
 proc main {
 
-  // var node: Node;
+  // var node: unmanaged Node;
   // for n in traverse(node) do writeln(n.data);
 
-  var list = new List("A");
+  var list = new unmanaged List("A");
 
-  list.head.next = new Node("B");
+  list.head.next = new unmanaged Node("B");
 
   for n in traverse(list.head) do writeln(n.data);
 
@@ -28,9 +28,9 @@ proc main {
 
 
 class List {
-  var head: Node;
+  var head: unmanaged Node;
 
-  proc init ( str: string ) { head = new Node(str); }
+  proc init ( str: string ) { head = new unmanaged Node(str); }
 
   proc deinit() { delete head; }
 }
@@ -38,11 +38,11 @@ class List {
 
 class Node {
   var data: string;
-  var next: Node;
+  var next: unmanaged Node;
 }
 
 
-iter traverse( node: Node ) : Node
+iter traverse( node: unmanaged Node ) : unmanaged Node
 {
   if node != nil {
     yield node;
@@ -53,7 +53,7 @@ iter traverse( node: Node ) : Node
 
 //---- The non-recursive version works just fine. ----
 //
-// iter traverse( node: Node ) : Node
+// iter traverse( node: unmanaged Node ) : unmanaged Node
 // {
 //   var n = node;
 //   while n != nil {

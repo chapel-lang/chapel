@@ -20,14 +20,14 @@ proc getC(cc:MyOtherClass) ref {
 }
 
 proc test() {
-  var c = new MyClass(1);
-  var cc = new MyOtherClass(c);
+  var c = new unmanaged MyClass(1);
+  var cc = new unmanaged MyOtherClass(c);
 
   ref rx = getX(c);
   ref rc = getC(cc);
 
   rx = 2;
-  rc = new MyClass(3);
+  rc = new unmanaged MyClass(3);
 
   writeln(c);
   writeln(cc);

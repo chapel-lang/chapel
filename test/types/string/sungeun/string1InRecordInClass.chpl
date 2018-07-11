@@ -7,7 +7,7 @@ class myC {
 }
 
 
-var c  = new myC();
+var c  = new unmanaged myC();
 var s1 = "hi";
 
 writeln((c,s1));

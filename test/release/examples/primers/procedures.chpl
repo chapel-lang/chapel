@@ -134,7 +134,7 @@ class Circle {
 //
 proc create_circle(x = 0.0, y = 0.0, diameter = 0.0)
 {
-  var result = new Circle();
+  var result = new unmanaged Circle();
 
   result.radius = diameter / 2;
   result.center.x = x;

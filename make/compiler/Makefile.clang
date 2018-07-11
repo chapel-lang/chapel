@@ -84,7 +84,9 @@ SHARED_LIB_CFLAGS = -fPIC
 # Set the target architecture for optimization
 ifneq ($(CHPL_MAKE_TARGET_ARCH), none)
 ifneq ($(CHPL_MAKE_TARGET_ARCH), unknown)
-SPECIALIZE_CFLAGS = -march=$(CHPL_MAKE_TARGET_BACKEND_ARCH)
+ifneq ($(CHPL_MAKE_TARGET_ARCH_FLAG), none)
+SPECIALIZE_CFLAGS = -m$(CHPL_MAKE_TARGET_ARCH_FLAG)=$(CHPL_MAKE_TARGET_BACKEND_ARCH)
+endif
 endif
 endif
 

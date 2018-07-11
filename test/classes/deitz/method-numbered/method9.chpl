@@ -16,10 +16,8 @@ class C {
   }
 }
 
-var c = new C();
+var c = new borrowed C();
 
 c.foo();
 c.bar();
 c.baz();
-
-delete c;

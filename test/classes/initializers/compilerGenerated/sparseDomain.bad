@@ -1,1 +1,0 @@
-sparseDomain.chpl:8: error: halt reached - Sparse arrays can't be zippered with anything other than their domains and sibling arrays

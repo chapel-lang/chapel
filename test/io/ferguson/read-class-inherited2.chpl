@@ -10,8 +10,8 @@ class Child : Parent {
   var z: int;
 }
 
-var a: Child = new Child(x = 1, y = 2, z = 3);
-var b: Child = new Child(x = 10, y = 20, z = 30);
+var a: borrowed Child = new borrowed Child(x = 1, y = 2, z = 3);
+var b: borrowed Child = new borrowed Child(x = 10, y = 20, z = 30);
 
 writeln("a is ", a);
 writeln("b is ", b);
@@ -24,6 +24,3 @@ writer.close();
 var reader = f.reader();
 reader.read(b);
 writeln("b after reading in a's values from a file: ", b);
-
-delete b;
-delete a;

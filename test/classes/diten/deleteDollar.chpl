@@ -8,7 +8,7 @@ class c$ {
 }
 
 proc main {
-  var c$$ = new c$();
+  var c$$ = new unmanaged c$();
   c$$.writeme();
   delete c$$;
 }

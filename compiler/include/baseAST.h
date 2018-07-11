@@ -49,6 +49,7 @@
   macro(PrimitiveType) sep                         \
   macro(EnumType) sep                              \
   macro(AggregateType) sep                         \
+  macro(UnmanagedClassType) sep                    \
                                                    \
   macro(ModuleSymbol) sep                          \
   macro(VarSymbol)    sep                          \
@@ -64,8 +65,9 @@
   macro(DefExpr) sep                               \
   macro(CallExpr) sep                              \
   macro(ContextCallExpr) sep                       \
-  macro(ForallExpr) sep                            \
+  macro(LoopExpr) sep                            \
   macro(NamedExpr) sep                             \
+  macro(IfExpr) sep                                \
                                                    \
   macro(UseStmt) sep                               \
   macro(BlockStmt) sep                             \
@@ -164,9 +166,11 @@ enum AstTag {
   E_DefExpr,
   E_CallExpr,
   E_ContextCallExpr,
-  E_ForallExpr,
+  E_LoopExpr,
   E_ForwardingStmt,
   E_NamedExpr,
+  E_IfExpr,
+
   E_UseStmt,
   E_DeferStmt,
   E_TryStmt,
@@ -188,7 +192,8 @@ enum AstTag {
 
   E_PrimitiveType,
   E_EnumType,
-  E_AggregateType
+  E_AggregateType,
+  E_UnmanagedClassType
 };
 
 static inline bool isExpr(AstTag tag)
@@ -198,7 +203,7 @@ static inline bool isSymbol(AstTag tag)
 { return tag >= E_ModuleSymbol   && tag <= E_LabelSymbol; }
 
 static inline bool isType(AstTag tag)
-{ return tag >= E_PrimitiveType  && tag <= E_AggregateType; }
+{ return tag >= E_PrimitiveType  && tag <= E_UnmanagedClassType; }
 
 
 //
@@ -359,8 +364,9 @@ def_is_ast(SymExpr)
 def_is_ast(UnresolvedSymExpr)
 def_is_ast(DefExpr)
 def_is_ast(ContextCallExpr)
-def_is_ast(ForallExpr)
+def_is_ast(LoopExpr)
 def_is_ast(NamedExpr)
+def_is_ast(IfExpr)
 def_is_ast(UseStmt)
 def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
@@ -381,6 +387,7 @@ def_is_ast(LabelSymbol)
 def_is_ast(PrimitiveType)
 def_is_ast(EnumType)
 def_is_ast(AggregateType)
+def_is_ast(UnmanagedClassType)
 #undef def_is_ast
 
 bool isLoopStmt(const BaseAST* a);
@@ -405,8 +412,9 @@ def_to_ast(SymExpr)
 def_to_ast(UnresolvedSymExpr)
 def_to_ast(DefExpr)
 def_to_ast(ContextCallExpr)
-def_to_ast(ForallExpr)
+def_to_ast(LoopExpr)
 def_to_ast(NamedExpr)
+def_to_ast(IfExpr)
 def_to_ast(UseStmt)
 def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
@@ -430,6 +438,7 @@ def_to_ast(Symbol)
 def_to_ast(PrimitiveType)
 def_to_ast(EnumType)
 def_to_ast(AggregateType)
+def_to_ast(UnmanagedClassType)
 def_to_ast(Type)
 
 def_to_ast(LoopStmt);
@@ -458,8 +467,9 @@ def_less_ast(SymExpr)
 def_less_ast(UnresolvedSymExpr)
 def_less_ast(DefExpr)
 def_less_ast(ContextCallExpr)
-def_less_ast(ForallExpr)
+def_less_ast(LoopExpr)
 def_less_ast(NamedExpr)
+def_less_ast(IfExpr)
 def_less_ast(UseStmt)
 def_less_ast(BlockStmt)
 def_less_ast(CondStmt)
@@ -483,6 +493,7 @@ def_less_ast(Symbol)
 def_less_ast(PrimitiveType)
 def_less_ast(EnumType)
 def_less_ast(AggregateType)
+def_less_ast(UnmanagedClassType)
 def_less_ast(Type)
 
 def_less_ast(LoopStmt);
@@ -557,14 +568,20 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_ContextCallExpr:                                               \
     AST_CALL_LIST(_a, ContextCallExpr, options, call, __VA_ARGS__);     \
     break;                                                              \
-  case E_ForallExpr:                                                    \
-    AST_CALL_CHILD(_a, ForallExpr, indices,      call, __VA_ARGS__);    \
-    AST_CALL_CHILD(_a, ForallExpr, iteratorExpr, call, __VA_ARGS__);    \
-    AST_CALL_CHILD(_a, ForallExpr, expr,         call, __VA_ARGS__);    \
-    AST_CALL_CHILD(_a, ForallExpr, cond,         call, __VA_ARGS__);    \
+  case E_LoopExpr:                                                      \
+    AST_CALL_LIST(_a,  LoopExpr, defIndices,   call, __VA_ARGS__);      \
+    AST_CALL_CHILD(_a, LoopExpr, indices,      call, __VA_ARGS__);      \
+    AST_CALL_CHILD(_a, LoopExpr, iteratorExpr, call, __VA_ARGS__);      \
+    AST_CALL_CHILD(_a, LoopExpr, cond,         call, __VA_ARGS__);      \
+    AST_CALL_CHILD(_a, LoopExpr, loopBody,     call, __VA_ARGS__);      \
     break;                                                              \
   case E_NamedExpr:                                                     \
     AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \
+    break;                                                              \
+  case E_IfExpr:                                                        \
+    AST_CALL_CHILD(_a, IfExpr, getCondition(), call, __VA_ARGS__);      \
+    AST_CALL_CHILD(_a, IfExpr, getThenStmt(), call, __VA_ARGS__);       \
+    AST_CALL_CHILD(_a, IfExpr, getElseStmt(), call, __VA_ARGS__);       \
     break;                                                              \
   case E_DefExpr:                                                       \
     AST_CALL_CHILD(_a, DefExpr, init, call, __VA_ARGS__);               \
@@ -647,6 +664,10 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST (_a, ForallStmt, inductionVariables(),  call, __VA_ARGS__); \
     AST_CALL_LIST (_a, ForallStmt, iteratedExpressions(), call, __VA_ARGS__); \
     AST_CALL_LIST (_a, ForallStmt, shadowVariables(),     call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, fRecIterIRdef,         call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, fRecIterICdef,         call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, fRecIterGetIterator,   call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, fRecIterFreeIterator,  call, __VA_ARGS__); \
     AST_CALL_CHILD(_a, ForallStmt, loopBody(),            call, __VA_ARGS__); \
     break;                                                                    \
   case E_ModuleSymbol:                                                  \
@@ -657,10 +678,12 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_CHILD(_a, ArgSymbol, defaultExpr, call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, ArgSymbol, variableExpr, call, __VA_ARGS__);     \
     break;                                                              \
-  case E_ShadowVarSymbol:                                               \
-    AST_CALL_CHILD(_a, ShadowVarSymbol, outerVarRep, call, __VA_ARGS__);\
-    AST_CALL_CHILD(_a, ShadowVarSymbol, specBlock,   call, __VA_ARGS__);\
-    break;                                                              \
+  case E_ShadowVarSymbol:                                                   \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, outerVarSE,    call, __VA_ARGS__);  \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, specBlock,     call, __VA_ARGS__);  \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, svInitBlock,   call, __VA_ARGS__);  \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, svDeinitBlock, call, __VA_ARGS__);  \
+    break;                                                                  \
   case E_TypeSymbol:                                                    \
     AST_CALL_CHILD(_a, Symbol, type, call, __VA_ARGS__);                \
     break;                                                              \
@@ -677,6 +700,8 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST(_a, AggregateType, fields, call, __VA_ARGS__);        \
     AST_CALL_LIST(_a, AggregateType, inherits, call, __VA_ARGS__);      \
     AST_CALL_LIST(_a, AggregateType, forwardingTo, call, __VA_ARGS__);  \
+    break;                                                              \
+  case E_UnmanagedClassType:                                              \
     break;                                                              \
   default:                                                              \
     break;                                                              \

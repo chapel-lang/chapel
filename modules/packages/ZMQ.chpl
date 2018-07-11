@@ -205,7 +205,7 @@ and Chapel's ZMQ module intends on providing interfaces and serialization
 protocols suitable for exchanging data between Chapel and non-Chapel programs.
 
 As an example (and test) of Chapel-Python interoperability over ZeroMQ, the
-following sources demonstrate a :const:`PUSH`-:const:`PULL` socket pair between
+following sources demonstrate a :const:`REQ`-:const:`REP` socket pair between
 a Chapel server and a Python client using the
 `PyZMQ Python bindings for ZeroMQ <https://pyzmq.readthedocs.io/en/latest/>`_.
 
@@ -497,14 +497,14 @@ module ZMQ {
    */
   record Context {
     pragma "no doc"
-    var classRef: ContextClass;
+    var classRef: unmanaged ContextClass;
 
     /*
       Create a ZMQ context.
      */
     proc init() {
       this.complete();
-      acquire(new ContextClass());
+      acquire(new unmanaged ContextClass());
     }
 
     pragma "no doc"
@@ -519,7 +519,7 @@ module ZMQ {
     }
 
     pragma "no doc"
-    proc acquire(newRef: ContextClass) {
+    proc acquire(newRef: unmanaged ContextClass) {
       classRef = newRef;
       classRef.incRefCount();
     }
@@ -592,7 +592,7 @@ module ZMQ {
    */
   record Socket {
     pragma "no doc"
-    var classRef: SocketClass;
+    var classRef: unmanaged SocketClass;
 
     pragma "no doc"
     var context: Context;
@@ -613,7 +613,7 @@ module ZMQ {
       context = ctx;
       this.complete();
       on ctx.classRef.home do
-        acquire(new SocketClass(ctx, sockType));
+        acquire(new unmanaged SocketClass(ctx, sockType));
     }
 
     pragma "no doc"
@@ -622,7 +622,7 @@ module ZMQ {
     }
 
     pragma "no doc"
-    proc acquire(newRef: SocketClass) {
+    proc acquire(newRef: unmanaged SocketClass) {
       classRef = newRef;
       classRef.incRefCount();
     }
@@ -763,8 +763,8 @@ module ZMQ {
         //
         // TODO: If *not crossing locales*, check for ownership and
         // conditionally have ZeroMQ free the memory.
-        var copy = new string(s=data, owned=true);
-        copy.owned = false;
+        var copy = new string(s=data, isowned=true);
+        copy.isowned = false;
 
         // Create the ZeroMQ message from the string buffer
         var msg: zmq_msg_t;
@@ -806,7 +806,7 @@ module ZMQ {
     // send, enumerated types
     pragma "no doc"
     proc send(data: ?T, flags: int = 0) throws where isEnumType(T) {
-      try send(data:int, flags);
+      try send(chpl__enumToOrder(data), flags);
     }
 
     // send, records (of other supported things)
@@ -866,7 +866,7 @@ module ZMQ {
         var len = zmq_msg_size(msg):int;
         var str = new string(buff=zmq_msg_data(msg):c_ptr(uint(8)),
                              length=len, size=len+1,
-                             owned=true, needToCopy=true);
+                             isowned=true, needToCopy=true);
         if (0 != zmq_msg_close(msg)) {
           try throw_socket_error(errno, "recv");
         }
@@ -900,7 +900,7 @@ module ZMQ {
     // recv, enumerated types
     pragma "no doc"
     proc recv(type T, flags: int = 0) throws where isEnumType(T) {
-      return try recv(int, flags):T;
+      return try chpl__orderToEnum(recv(int, flags), T);
     }
 
     // recv, records (of other supported things)

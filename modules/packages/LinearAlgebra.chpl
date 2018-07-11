@@ -404,7 +404,7 @@ proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangular
 }
 
 /* Add matrices, maintaining dimensions */
-proc _array.plus(A: [?Adom]) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
+proc _array.plus(A: [?Adom] ?eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
   if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
   if Adom.shape != this.domain.shape then halt("Unmatched shapes");
   var C: [Adom] eltType = this + A;
@@ -419,7 +419,7 @@ proc matMinus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangula
 }
 
 /* Subtract matrices, maintaining dimensions */
-proc _array.minus(A: [?Adom]) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
+proc _array.minus(A: [?Adom] ?eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
   if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
   if Adom.shape != this.domain.shape then halt("Unmatched shapes");
   var C: [Adom] eltType = this - A;
@@ -622,21 +622,26 @@ proc matPow(A: [], b) where isNumeric(b) {
   if !isSquare(A) then
     halt("Array not square");
 
-  return _expBySquaring(A, b);
+  return _expBySquaring(A, b).value;
 }
 
+// This is a workaround for undesired use
+// of runtime-type of the input array x below
+// in the return type. See also issue #9438.
+record _wrap {
+  var value;
+}
 
 pragma "no doc"
 /* Exponentiate by squaring recursively */
-private proc _expBySquaring(x: ?t, n): t {
-    // TODO -- _expBySquaring(pinv(x), -n);
-    if n < 0  then halt("Negative powers not yet supported");
-    else if n == 0  then return eye(x.domain, x.eltType);
-    else if n == 1  then return x;
-    else if n%2 == 0  then return _expBySquaring(dot(x, x), n / 2);
-    else return dot(x, _expBySquaring(dot(x, x), (n - 1) / 2));
+private proc _expBySquaring(x: ?t, n): _wrap(t) {
+  // TODO -- _expBySquaring(pinv(x), -n);
+  if n < 0  then halt("Negative powers not yet supported");
+  else if n == 0  then return new _wrap(eye(x.domain, x.eltType));
+  else if n == 1  then return new _wrap(x);
+  else if n%2 == 0  then return _expBySquaring(dot(x, x), n / 2);
+  else return new _wrap(dot(x, _expBySquaring(dot(x, x), (n - 1) / 2).value));
 }
-
 
 /* Return cross-product of 3-element vectors ``A`` and ``B`` with domain of
   ``A`` */
@@ -1094,11 +1099,11 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 //
 // Type helpers
 //
-private proc isDefaultRectangularDom (D: domain) param where D._value: DefaultRectangularDom { return true; }
+private proc isDefaultRectangularDom (D: domain) param where _to_borrowed(D._value): DefaultRectangularDom { return true; }
 private proc isDefaultRectangularDom (D: domain) param { return false; }
 private proc isDefaultRectangularArr (A: []) param { return isDefaultRectangularDom(A.domain); }
 
-private proc isDefaultSparseDom(D: domain) param where D._value: DefaultSparseDom { return true; }
+private proc isDefaultSparseDom(D: domain) param where _to_borrowed(D._value): DefaultSparseDom { return true; }
 private proc isDefaultSparseDom(D: domain) param { return false; }
 private proc isDefaultSparseArr(A: []) param { return isDefaultSparseDom(A.domain); }
 
@@ -1201,7 +1206,7 @@ module Sparse {
     nonzeros as ``Dom``
   */
   proc CSRDomain(Dom: domain) where Dom.rank == 2 && isCSDom(Dom) {
-    var csrDom: sparse subdomain(Dom._value.parentDom) dmapped CS();
+    var csrDom: sparse subdomain(Dom._value.parentDom) dmapped CS(sortedIndices=false);
     csrDom += Dom;
     return csrDom;
   }
@@ -1209,7 +1214,7 @@ module Sparse {
   pragma "no doc"
   /* Return a CSR domain based on domain: ``Dom`` - Dense case */
   proc CSRDomain(Dom: domain(2)) where Dom.rank == 2 {
-    var csrDom: sparse subdomain(Dom) dmapped CS();
+    var csrDom: sparse subdomain(Dom) dmapped CS(sortedIndices=false);
     return csrDom;
   }
 
@@ -1287,7 +1292,7 @@ module Sparse {
     where indDom.rank == 1 && nnzDom.rank == 1 {
     const (M, N) = shape;
     const D = {1..M, 1..N};
-    var ADom: sparse subdomain(D) dmapped CS();
+    var ADom: sparse subdomain(D) dmapped CS(sortedIndices=false);
 
     ADom.startIdxDom = {1..indptr.size};
     ADom.startIdx = indptr;
@@ -1422,8 +1427,10 @@ module Sparse {
 
     var C = CSRMatrix((M, N), data, indices, indPtr);
 
-    // TODO: Check if array is not using sorted indices, when that's possible
-    sortIndices(C);
+    // TODO remove _value when issue #9926 gets fixed
+    if C.domain._value.sortedIndices {
+      sortIndices(C);
+    }
 
     return C;
   }
@@ -1573,7 +1580,7 @@ module Sparse {
     }
 
     const parentDT = transpose(D._value.parentDom);
-    var Dom: sparse subdomain(parentDT) dmapped CS();
+    var Dom: sparse subdomain(parentDT) dmapped CS(sortedIndices=false);
     Dom += indices;
     return Dom;
   }
@@ -1595,45 +1602,31 @@ module Sparse {
   proc _array.T where isCSArr(this) { return transpose(this); }
 
   /* Element-wise addition */
-  proc _array.plus(A) where isCSArr(this) && isCSArr(A) {
-    if this.domain._value.parentDom != A.domain._value.parentDom then
-      halt('Cannot add sparse arrays with non-matching parent domains');
-
-    // Create copy of 'this'
-    var BDom = this.domain;
-    var B: [BDom] this.eltType;
-    forall (i,j) in B.domain do B[i,j] = this[i,j];
-
-    // If domain indices do not match, bulk add A's indices to B
-    if this.domain != A.domain {
-      BDom += A.domain;
+  proc _array.plus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
+    if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    var sps = CSRDomain(Adom.parentDom);
+    sps += this.domain;
+    sps += Adom;
+    var S: [sps] eltType;
+    forall (i,j) in sps {
+      S[i,j] = this[i,j] + A[i,j];
     }
-
-    // Do in-place addition of A into B
-    forall (i,j) in A.domain do B[i,j] += A[i,j];
-
-    return B;
+    return S;
   }
 
   /* Element-wise subtraction */
-  proc _array.minus(A) where isCSArr(this) && isCSArr(A) {
-    if this.domain._value.parentDom != A.domain._value.parentDom then
-      halt('Cannot add sparse arrays with non-matching parent domains');
-
-    // Create copy of 'this'
-    var BDom = this.domain;
-    var B: [BDom] this.eltType;
-    forall (i,j) in B.domain do B[i,j] = this[i,j];
-
-    // If domain indices do not match, bulk add A's indices to B
-    if this.domain != A.domain {
-      BDom += A.domain;
+  proc _array.minus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
+    if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    var sps = CSRDomain(Adom.parentDom);
+    sps += this.domain;
+    sps += Adom;
+    var S: [sps] eltType;
+    forall (i,j) in sps {
+      S[i,j] = this[i,j] - A[i,j];
     }
-
-    // Do in-place addition of A into B
-    forall (i,j) in A.domain do B[i,j] -= A[i,j];
-
-    return B;
+    return S;
   }
 
   /* Element-wise multiplication */

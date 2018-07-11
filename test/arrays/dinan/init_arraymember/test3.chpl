@@ -12,8 +12,6 @@ class C {
   }
 }
 
-var c = new C();
+var c = new owned C();
 
 writeln(c.x);
-
-delete c;

@@ -79,7 +79,7 @@
   Usage
   _____
 
-  First, the :record:`DistDeque` must be initialized before use by calling its constructor.
+  First, the :record:`DistDeque` must be initialized before use by calling its initializer.
 
   .. code-block:: chapel
 
@@ -222,7 +222,7 @@ module DistributedDeque {
 
     proc init(type eltType, cap = -1, targetLocales = Locales) {
       this.eltType = eltType;
-      this._pid = (new DistributedDequeImpl(eltType, cap, targetLocales)).pid;
+      this._pid = (new unmanaged DistributedDequeImpl(eltType, cap, targetLocales)).pid;
       this._rc = new Shared(new DistributedDequeRC(eltType, _pid = _pid));
     }
 
@@ -322,7 +322,7 @@ module DistributedDeque {
       for 0 .. #here.maxTaskPar {
         for loc in targetLocales do on loc {
           var i = idx.fetchAdd(1);
-          slots[i] = new LocalDeque(eltType);
+          slots[i] = new unmanaged LocalDeque(eltType);
         }
       }
 
@@ -331,9 +331,9 @@ module DistributedDeque {
       while countersLeftToAlloc > 0 {
         for loc in targetLocales do on loc {
           select countersLeftToAlloc {
-            when 3 do globalHead = new DistributedDequeCounter();
-            when 2 do globalTail = new DistributedDequeCounter();
-            when 1 do queueSize = new DistributedDequeCounter();
+            when 3 do globalHead = new unmanaged DistributedDequeCounter();
+            when 2 do globalTail = new unmanaged DistributedDequeCounter();
+            when 1 do queueSize = new unmanaged DistributedDequeCounter();
           }
 
           countersLeftToAlloc -= 1;
@@ -363,7 +363,7 @@ module DistributedDeque {
 
     pragma "no doc"
     proc dsiPrivatize(privData) {
-        return new DistributedDequeImpl(this, privData);
+        return new unmanaged DistributedDequeImpl(this, privData);
     }
 
     pragma "no doc"
@@ -804,8 +804,8 @@ module DistributedDeque {
     var headIdx : int = 1;
     var tailIdx : int = 1;
     var size : int;
-    var next : LocalDequeNode(eltType);
-    var prev : LocalDequeNode(eltType);
+    var next : unmanaged LocalDequeNode(eltType);
+    var prev : unmanaged LocalDequeNode(eltType);
 
     inline proc isFull {
       return size == distributedDequeBlockSize;
@@ -870,11 +870,11 @@ module DistributedDeque {
 
     var lock$ : sync bool;
 
-    var head : LocalDequeNode(eltType);
-    var tail : LocalDequeNode(eltType);
+    var head : unmanaged LocalDequeNode(eltType);
+    var tail : unmanaged LocalDequeNode(eltType);
 
     // We cache the last deleted node to handle cases where we have rapid mixed push/pop
-    var cached : LocalDequeNode(eltType);
+    var cached : unmanaged LocalDequeNode(eltType);
 
     // The size of a segment. This is used as both a means of knowing when an element
     // gets added, as well as a barrier to prevent the head and tail from being cached.
@@ -897,10 +897,10 @@ module DistributedDeque {
       }
 
       // Create a new one...
-      return  new LocalDequeNode(eltType);
+      return new unmanaged LocalDequeNode(eltType);
     }
 
-    inline proc retireNode(node) {
+    inline proc retireNode(node:unmanaged) {
       if cached != nil {
         delete cached;
       }

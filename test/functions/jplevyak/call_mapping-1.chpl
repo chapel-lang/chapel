@@ -13,9 +13,9 @@ class E {
 var a : [d] int;
 var x = 1;
 var z = 1;
-var Y1 = new C();
-var Y2 = new D();
-var Y3 = new E();
+var Y1 = new borrowed C();
+var Y2 = new borrowed D();
+var Y3 = new borrowed E();
 
 a(x) = z;
 writeln(a(x));
@@ -25,7 +25,3 @@ Y2.a(2) = z;
 writeln(Y2.a(2));
 Y3.a(2) = z;
 writeln(Y3.a(2));
-
-delete Y1;
-delete Y2;
-delete Y3;

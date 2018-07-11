@@ -42,7 +42,7 @@ class C {
   var max: int;
 }
 
-iter simple4( c: C) : int {
+iter simple4( c: borrowed C) : int {
   var i : int;
   while i < c.max {
     yield i * 4;
@@ -50,7 +50,6 @@ iter simple4( c: C) : int {
   }
 }
 
-var c: C = new C();
+var c: borrowed C = new borrowed C();
 c.max = 10;
 writeln( "test4: ", simple4( c));
-delete c;

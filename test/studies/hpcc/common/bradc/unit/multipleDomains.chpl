@@ -16,7 +16,7 @@ var myLocales: [myLocalesDom] locale = [i in myLocalesDom] Locales(i%numLocales)
 // really need param domains and ranges and the obvious conversions
 // between them.
 // 
-const ProblemDist = new Block1DDist(bbox={1..10:int(64)}, targetLocales=myLocales);
+const ProblemDist = new unmanaged Block1DDist(bbox={1..10:int(64)}, targetLocales=myLocales);
 
 writeln("ProblemDist =\n", ProblemDist);
 writeln();

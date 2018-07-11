@@ -3,7 +3,7 @@ class C {
   var x : t;
 }
 
-var c = new C(t = real);
+var c = new unmanaged C(t = real);
 var d : c.t;
 
 d = 1;

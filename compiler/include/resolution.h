@@ -52,6 +52,7 @@ extern Vec<CallExpr*>                   inits;
 extern Vec<BlockStmt*>                  standardModuleSet;
 
 extern char                             arrayUnrefName[];
+extern char                             primCoerceTmpName[];
 
 extern Map<Type*,     FnSymbol*>        autoDestroyMap;
 
@@ -74,6 +75,8 @@ bool       propagateNotPOD(Type* t);
 Expr*      resolvePrimInit(CallExpr* call);
 
 bool       isTupleContainingOnlyReferences(Type* t);
+
+bool       isTupleContainingAnyReferences(Type* t);
 
 void       ensureEnumTypeResolved(EnumType* etype);
 
@@ -136,6 +139,7 @@ FnSymbol* findCopyInit(AggregateType* ct);
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
+FnSymbol* getTheIteratorFnFromIteratorRec(Type* irType);
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
@@ -209,8 +213,6 @@ void      insertAndResolveCasts(FnSymbol* fn);
 void      ensureInMethodList(FnSymbol* fn);
 
 
-bool      doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet);
-
 bool      hasAutoCopyForType(Type* type);
 FnSymbol* getAutoCopyForType(Type* type);   // requires hasAutoCopyForType()==true
 void      getAutoCopyTypeKeys(Vec<Type*>& keys);
@@ -253,14 +255,31 @@ AggregateType* computeNonRefTuple(AggregateType* t);
 
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
 
+void addTupleCoercion(AggregateType* fromT, AggregateType* toT, Symbol* fromSym, Symbol* toSym, Expr* insertBefore);
+
+// other resolution functions
 bool evaluateWhereClause(FnSymbol* fn);
 
 bool isAutoDestroyedVariable(Symbol* sym);
 
 SymExpr* findSourceOfYield(CallExpr* yield);
 
+void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);
+
 void resolvePromotionType(AggregateType* at);
 
 void resolveDestructor(AggregateType* at);
+
+void fixTypeNames(AggregateType* at);
+
+Type* getInstantiationType(Type* actualType, Type* formalType);
+
+void resolveIfExprType(CondStmt* stmt);
+
+void trimVisibleCandidates(CallInfo& call,
+                           Vec<FnSymbol*>& mostApplicable,
+                           Vec<FnSymbol*>& visibleFns);
+
+bool isNumericParamDefaultType(Type* type);
 
 #endif

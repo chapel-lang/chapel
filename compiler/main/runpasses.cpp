@@ -177,6 +177,11 @@ void runPasses(PhaseTracker& tracker, bool isChpldoc) {
       break;
     }
 
+    // Breaks early if the user specified to stop after this pass
+    if (stopAfterPass[0] != '\0' && strcmp(sPassList[i].name, stopAfterPass) == 0) {
+      break;
+    }
+
     // Break early if this is a chpl doc run
     if (isChpldoc == true && strcmp(sPassList[i].name, "docs") == 0) {
       break;

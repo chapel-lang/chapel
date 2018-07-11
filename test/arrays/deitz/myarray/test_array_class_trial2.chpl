@@ -16,7 +16,7 @@ class array1d {
   }
 }
 
-var a1 : array1d(int) = new array1d(int);
+var a1 : borrowed array1d(int) = new borrowed array1d(int);
 
 a1(1) = 3;
 a1(2) = 2;
@@ -28,31 +28,23 @@ var e3 = a1(3);
 
 writeln(e1, " ", e2, " ", e3);
 
-delete a1;
-
-
-
 
 
 class array2d {
   type t;
 
-  var data : array1d(t) = new array1d(t);
-			proc this(i : int, j : int) ref {
-			  return data((i - 1) * 2 + j);
-			}
+  var data : unmanaged array1d(t) = new unmanaged array1d(t);
+
+  proc this(i : int, j : int) ref {
+    return data((i - 1) * 2 + j);
+  }
 
   proc deinit() {
     delete data;
   }
 }
 
-var a2 : array2d(int) = new array2d(int);
+var a2 : borrowed array2d(int) = new borrowed array2d(int);
 
 a2(1, 1) = 4;
 writeln(a2(1, 1));
-
-delete a2;
-
-
-

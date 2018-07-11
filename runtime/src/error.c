@@ -222,17 +222,17 @@ void msg_explicit_vs(char *restrict, size_t,
 static
 void msg_explicit_vs(char *restrict str, size_t size,
                      int32_t lineno, const char *restrict filename,
-                     const char *restrict warn_or_err,
+                     const char *restrict severity,
                      const char *restrict format, va_list ap) {
   int len;
 
   if (lineno > 0)
     len = snprintf(str, size, "%s:%" PRId32 ": %s: ", filename, lineno,
-                   warn_or_err);
+                   severity);
   else if (filename)
-    len = snprintf(str, size, "%s: %s: ", filename, warn_or_err);
+    len = snprintf(str, size, "%s: %s: ", filename, severity);
   else
-    len = snprintf(str, size, "%s: ", warn_or_err);
+    len = snprintf(str, size, "%s: ", severity);
 
   if (len < size) {
     str += len;
@@ -245,6 +245,24 @@ void msg_explicit_vs(char *restrict str, size_t size,
       str[len + 1] = '\0';
     }
   }
+}
+
+
+static
+void msg_explicit_v(FILE*,
+                    int32_t, const char *restrict,
+                    const char *restrict,
+                    const char *restrict, va_list)
+       __attribute__((format(printf, 5, 0)));
+
+static
+void msg_explicit_v(FILE* f,
+                    int32_t lineno, const char *restrict filename,
+                    const char *restrict severity,
+                    const char *restrict format, va_list ap) {
+  char buf[1024];
+  msg_explicit_vs(buf, sizeof(buf), lineno, filename, severity, format, ap);
+  fputs(buf, f);
 }
 
 
@@ -285,6 +303,19 @@ void chpl_internal_error(const char* message) {
   spinhaltIfAlreadyExiting();
   fflush(stdout);
   fprintf(stderr, "internal error: %s\n", message);
+  chpl_exit_any(2);
+}
+
+
+void chpl_internal_error_v(const char *restrict format, ...) {
+  spinhaltIfAlreadyExiting();
+  fflush(stdout);
+
+  va_list ap;
+  va_start(ap, format);
+  msg_explicit_v(stderr, 0, NULL, "internal error", format, ap);
+  va_end(ap);
+
   chpl_exit_any(2);
 }
 

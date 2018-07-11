@@ -7,20 +7,20 @@ class MyClass {
 
 record R {
   pragma "owned"
-  var owned:MyClass;
+  var myowned:unmanaged MyClass;
 
-  proc readOwned() {
-    return owned;
+  proc readOwned() : borrowed MyClass {
+    return myowned;
   }
 }
 
 proc R.deinit() {
-  delete owned;
+  delete myowned;
 }
 
 proc badReturnBorrowLocalArrayElement() {
   var A:[1..10] R;
-  A[1] = new R(new MyClass(1));
+  A[1] = new R(new unmanaged MyClass(1));
 
   return A[1].readOwned();
   // A and its elements are destroyed here
@@ -28,9 +28,9 @@ proc badReturnBorrowLocalArrayElement() {
 
 proc badReturnBorrowLocalArrayElement2() {
   var A:[1..10] R;
-  A[1] = new R(new MyClass(1));
+  A[1] = new R(new unmanaged MyClass(1));
 
-  var ret:MyClass;
+  var ret:borrowed MyClass;
   
   ret = A[1].readOwned();
   return ret;
@@ -39,11 +39,11 @@ proc badReturnBorrowLocalArrayElement2() {
 
 
 proc badReturnBorrowLocalArrayIteration() {
-  var ret:MyClass;
+  var ret:borrowed MyClass;
   var A:[1..10] R;
 
   for i in 1..10 {
-    A[i] = new R(new MyClass(i));
+    A[i] = new R(new unmanaged MyClass(i));
   }
 
   for elt in A {
@@ -54,11 +54,11 @@ proc badReturnBorrowLocalArrayIteration() {
 }
 
 proc badReturnBorrowLocalArrayIteration2() {
-  var ret:MyClass;
+  var ret:borrowed MyClass;
   var A:[1..10] R;
 
   for i in 1..10 {
-    A[i] = new R(new MyClass(i));
+    A[i] = new R(new unmanaged MyClass(i));
   }
 
   for i in 1..10 {

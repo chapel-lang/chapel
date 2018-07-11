@@ -58,6 +58,7 @@ writeln("globalArrIdVar ", globalArrIdVar);
 writeln("globalIntIdVar ", globalIntIdVar);
 
 // uses *Const identity values
+pragma "use default init"
 class PlusReduceOpConst: ReduceScanOp {
   type eltType;
   var  value: eltType;
@@ -67,10 +68,11 @@ class PlusReduceOpConst: ReduceScanOp {
   proc accumulateOntoState(ref state, elm) { state = state + elm; }
   proc combine(other)   { value = value + other.value; }
   proc generate()       return value;
-  proc clone()          return new PlusReduceOpConst(eltType=eltType);
+  proc clone()          return new unmanaged PlusReduceOpConst(eltType=eltType);
 }
 
 // uses *Var identity values
+pragma "use default init"
 class PlusReduceOpVar: ReduceScanOp {
   type eltType;
   var  value: eltType;
@@ -80,5 +82,5 @@ class PlusReduceOpVar: ReduceScanOp {
   proc accumulateOntoState(ref state, elm) { state = state + elm; }
   proc combine(other)   { value = value + other.value; }
   proc generate()       return value;
-  proc clone()          return new PlusReduceOpVar(eltType=eltType);
+  proc clone()          return new unmanaged PlusReduceOpVar(eltType=eltType);
 }

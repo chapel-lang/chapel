@@ -1,0 +1,29 @@
+noTrue:
+1    false
+2    false
+3    false
+dtype: bool
+
+oneTrue:
+1    false
+2    true
+3    false
+dtype: bool
+
+allTrue:
+1    true
+2    true
+3    true
+dtype: bool
+
+noTrue.and(): false
+
+oneTrue.and(): false
+
+allTrue.and(): true
+
+noTrue.or(): false
+
+oneTrue.or(): true
+
+allTrue.or(): true

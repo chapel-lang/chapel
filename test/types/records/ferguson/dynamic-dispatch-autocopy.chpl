@@ -23,7 +23,6 @@ record R {
 
 /* user record's can't write their own
    autoCopy after PR #5164
-pragma "donor fn"
 pragma "auto copy fn"
 proc chpl__autoCopy(arg: R) {
 

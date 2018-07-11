@@ -1,1 +1,1 @@
-foo = Upper(int(64))
+foo = unmanaged Upper(int(64))

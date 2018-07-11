@@ -3,6 +3,6 @@ class C {
   var y: int = 1;
 }
 
-var c: C = new C();
+var c: borrowed C = new borrowed C();
 
 writeln(c.x, " ", c.y);

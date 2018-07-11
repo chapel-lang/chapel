@@ -117,6 +117,7 @@
     ProcIter                  procIter;
     FlagSet*                  flagSet;
     ShadowVarSymbol*          pShadowVar;
+    ShadowVarPrefix           pShadowVarPref;
     std::vector<OnlyRename*>* ponlylist;
   };
 
@@ -197,6 +198,7 @@
   #include "flex-chapel.h"
   #include "ForallStmt.h"
   #include "ForLoop.h"
+  #include "IfExpr.h"
   #include "misc.h"
   #include "parser.h"
   #include "stmt.h"
@@ -289,19 +291,19 @@
 //
 // keywords (alphabetical)
 //
-%token TALIGN TAS TATOMIC TBEGIN TBREAK TBY TCATCH
+%token TALIGN TAS TATOMIC TBEGIN TBREAK TBORROWED TBY TCATCH
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFOR TFORALL TFORWARDING
 %token TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
-%token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT
+%token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
 %token TRECORD TREDUCE TREF TREQUIRE TRETURN
-%token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
+%token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSUBDOMAIN
 %token TSYNC TTHEN TTHROW TTHROWS TTRY TTRYBANG TTYPE TUNDERSCORE
-%token TUNION TUSE TVAR TWHEN TWHERE TWHILE TWITH TYIELD TZIP
+%token TUNION TUNMANAGED TUSE TVAR TWHEN TWHERE TWHILE TWITH TYIELD TZIP
 
 //
 // operators and punctuation (alphabetical)
@@ -327,6 +329,7 @@
 %left TELSE
 %left TCOMMA
 %left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE
+// %left TOWNED TUNMANAGED TSHARED
 %left TIN
 %left TALIGN TBY THASH
 %left TOR
@@ -345,6 +348,7 @@
 %left TREDUCE TSCAN TDMAPPED
 %right TEXP
 %left TCOLON
+%left TBORROWED TOWNED TUNMANAGED TSHARED
 %right TNEW
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
@@ -434,6 +438,7 @@
 %type <procIter> proc_or_iter
 %type <pfnsymbol> linkage_spec
 %type <pShadowVar> intent_expr
+%type <pShadowVarPref> shadow_var_prefix
 
 %%
 
@@ -688,7 +693,7 @@ loop_stmt:
   TDO stmt TWHILE expr TSEMI                    { $$ = DoWhileStmt::build($4, $2); }
 | TWHILE expr do_stmt                           { $$ = WhileDoStmt::build($2, $3); }
 | TCOFORALL expr TIN expr opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, $4, $5, $6); }
-| TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, zipToTuple($4), $5, $6, true); }
+| TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, $4, $5, $6, true); }
 | TCOFORALL expr opt_task_intent_ls do_stmt     { $$ = buildCoforallLoopStmt(NULL, $2, $3, $4); }
 | TFOR expr TIN expr do_stmt                    { $$ = ForLoop::buildForLoop(  $2, $4, $5, false, false); }
 | TFOR expr TIN zippered_iterator do_stmt       { $$ = ForLoop::buildForLoop(  $2, $4, $5, false,  true); }
@@ -1006,6 +1011,13 @@ linkage_spec:
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
+| TOVERRIDE     {
+                  $$ = new FnSymbol("");
+                  $$->addFlag(FLAG_OVERRIDE);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
 ;
 
 fn_decl_stmt:
@@ -1131,6 +1143,8 @@ formal_ls:
 formal:
   opt_intent_tag ident opt_formal_type opt_init_expr
     { $$ = buildArgDefExpr($1, $2, $3, $4, NULL); }
+| pragma_ls opt_intent_tag ident opt_formal_type opt_init_expr
+    { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, $5, NULL)); }
 | opt_intent_tag ident opt_formal_type var_arg_expr
     { $$ = buildArgDefExpr($1, $2, $3, NULL, $4); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
@@ -1357,6 +1371,13 @@ opt_type:
                           { $$ = NULL; }
 | TCOLON type_level_expr  { $$ = $2; }
 | TCOLON array_type       { $$ = $2; }
+| TCOLON TDOMAIN          { $$ = new UnresolvedSymExpr("_domain"); }
+| TCOLON TSINGLE          { $$ = new UnresolvedSymExpr( "_singlevar"); }
+| TCOLON TSYNC            { $$ = new UnresolvedSymExpr( "_syncvar"); }
+| TCOLON TBORROWED        { $$ = new UnresolvedSymExpr( "_borrowed"); }
+| TCOLON TOWNED           { $$ = new UnresolvedSymExpr( "_owned"); }
+| TCOLON TUNMANAGED       { $$ = new UnresolvedSymExpr( "_unmanaged"); }
+| TCOLON TSHARED          { $$ = new UnresolvedSymExpr( "_shared"); }
 | error                   { $$ = NULL; }
 ;
 
@@ -1429,6 +1450,10 @@ opt_formal_type:
 | TCOLON TDOMAIN            { $$ = new UnresolvedSymExpr("_domain"); }
 | TCOLON TSINGLE            { $$ = new UnresolvedSymExpr( "_singlevar"); }
 | TCOLON TSYNC              { $$ = new UnresolvedSymExpr( "_syncvar"); }
+| TCOLON TBORROWED          { $$ = new UnresolvedSymExpr( "_borrowed"); }
+| TCOLON TOWNED             { $$ = new UnresolvedSymExpr( "_owned"); }
+| TCOLON TUNMANAGED         { $$ = new UnresolvedSymExpr( "_unmanaged"); }
+| TCOLON TSHARED            { $$ = new UnresolvedSymExpr( "_shared"); }
 | TCOLON formal_array_type  { $$ = $2; }
 ;
 
@@ -1505,31 +1530,39 @@ type_level_expr:
     { $$ = new CallExpr("chpl__atomicType", $2); }
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
+| TBORROWED expr
+    { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS, $2); }
+| TOWNED expr
+    { $$ = new CallExpr( "_owned", $2); }
+| TUNMANAGED expr
+    { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS, $2); }
+| TSHARED expr
+    { $$ = new CallExpr( "_shared", $2); }
 ;
 
 for_expr:
   TFOR expr TIN expr TDO expr %prec TFOR
     { $$ = buildForLoopExpr($2, $4, $6); }
 | TFOR expr TIN zippered_iterator TDO expr %prec TFOR
-    { $$ = buildForLoopExpr($2, zipToTuple($4), $6, NULL, false, true); }
+    { $$ = buildForLoopExpr($2, $4, $6, NULL, false, true); }
 | TFOR expr TDO expr %prec TFOR
     { $$ = buildForLoopExpr(NULL, $2, $4); }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForLoopExpr($2, $4, $9, $7); }
 | TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = buildForLoopExpr($2, zipToTuple($4), $9, $7, false, true); }
+    { $$ = buildForLoopExpr($2, $4, $9, $7, false, true); }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForLoopExpr(NULL, $2, $7, $5); }
 | TFORALL expr TIN expr TDO expr %prec TFOR
     { $$ = buildForallLoopExpr($2, $4, $6); }
 | TFORALL expr TIN zippered_iterator TDO expr %prec TFOR
-    { $$ = buildForallLoopExpr($2, zipToTuple($4), $6, NULL, false, true); }
+    { $$ = buildForallLoopExpr($2, $4, $6, NULL, false, true); }
 | TFORALL expr TDO expr %prec TFOR
     { $$ = buildForallLoopExpr(NULL, $2, $4); }
 | TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForallLoopExpr($2, $4, $9, $7); }
 | TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = buildForallLoopExpr($2, zipToTuple($4), $9, $7, false, true); }
+    { $$ = buildForallLoopExpr($2, $4, $9, $7, false, true); }
 | TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForallLoopExpr(NULL, $2, $7, $5); }
 | TLSBR expr_ls TRSBR expr %prec TFOR
@@ -1549,7 +1582,7 @@ for_expr:
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopExpr($2->get(1)->remove(), zipToTuple($4), $6, NULL, false, true);
+      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6, NULL, false, true);
     }
 | TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
@@ -1561,13 +1594,13 @@ for_expr:
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopExpr($2->get(1)->remove(), zipToTuple($4), $9, $7, false, true);
+      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $9, $7, false, true);
     }
 ;
 
 cond_expr:
   TIF expr TTHEN expr TELSE expr
-    { $$ = new CallExpr(new DefExpr(buildIfExpr($2, $4, $6))); }
+    { $$ = new IfExpr($2, $4, $6); }
 /* MPF: it would be nice to match TIF expr TTHEN expr but
    the attempt below leads to reduce-reduce conflicts:
       TIF expr TTHEN expr %prec TNOELSE
@@ -1605,11 +1638,8 @@ task_intent_clause:
 ;
 
 task_intent_ls:
-  intent_expr
-    { $$ = new CallExpr(PRIM_ACTUALS_LIST);
-      addTaskIntent($$, $1); }
-| task_intent_ls TCOMMA intent_expr
-    { addTaskIntent($1, $3); }
+  intent_expr { $$ = new CallExpr(PRIM_ACTUALS_LIST); addTaskIntent($$, $1); }
+| task_intent_ls TCOMMA intent_expr                 { addTaskIntent($1, $3); }
 ;
 
 forall_intent_clause:
@@ -1617,23 +1647,32 @@ forall_intent_clause:
 ;
 
 forall_intent_ls:
-  intent_expr
-    { $$ = new CallExpr(PRIM_ACTUALS_LIST);
-      addForallIntent($$, $1); }
-| forall_intent_ls TCOMMA intent_expr
-    { addForallIntent($1, $3); }
+  intent_expr { $$ = new CallExpr(PRIM_ACTUALS_LIST); addForallIntent($$, $1); }
+| forall_intent_ls TCOMMA intent_expr               { addForallIntent($1, $3); }
 ;
 
 intent_expr:
-  required_intent_tag ident_expr  {
-      $$ = ShadowVarSymbol::buildFromArgIntent($1, $2);
+  shadow_var_prefix ident_expr opt_type opt_init_expr
+    {
+      $$ = ShadowVarSymbol::buildForPrefix($1, $2, $3, $4);
     }
-| expr                TREDUCE ident_expr  {
+| reduce_scan_op_expr TREDUCE ident_expr
+    {
       $$ = ShadowVarSymbol::buildFromReduceIntent($3, $1);
     }
-| reduce_scan_op_expr TREDUCE ident_expr  {
+| expr                TREDUCE ident_expr
+    {
       $$ = ShadowVarSymbol::buildFromReduceIntent($3, $1);
     }
+;
+
+shadow_var_prefix:
+  TCONST       { $$ = SVP_CONST;     }
+| TIN          { $$ = SVP_IN;        }
+| TCONST TIN   { $$ = SVP_CONST_IN;  }
+| TREF         { $$ = SVP_REF;       }
+| TCONST TREF  { $$ = SVP_CONST_REF; }
+| TVAR         { $$ = SVP_VAR;       }
 ;
 
 io_expr:
@@ -1788,16 +1827,16 @@ unary_op_expr:
 
 reduce_expr:
   expr TREDUCE expr                              { $$ = buildReduceExpr($1, $3); }
-| expr TREDUCE zippered_iterator                 { $$ = buildReduceExpr($1, zipToTuple($3), true); }
+| expr TREDUCE zippered_iterator                 { $$ = buildReduceExpr($1, $3, true); }
 | reduce_scan_op_expr TREDUCE expr               { $$ = buildReduceExpr($1, $3); }
-| reduce_scan_op_expr TREDUCE zippered_iterator  { $$ = buildReduceExpr($1, zipToTuple($3), true); }
+| reduce_scan_op_expr TREDUCE zippered_iterator  { $$ = buildReduceExpr($1, $3, true); }
 ;
 
 scan_expr:
   expr TSCAN expr                              { $$ = buildScanExpr($1, $3); }
-| expr TSCAN zippered_iterator                 { $$ = buildScanExpr($1, zipToTuple($3), true); }
+| expr TSCAN zippered_iterator                 { $$ = buildScanExpr($1, $3, true); }
 | reduce_scan_op_expr TSCAN expr               { $$ = buildScanExpr($1, $3); }
-| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = buildScanExpr($1, zipToTuple($3), true); }
+| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = buildScanExpr($1, $3, true); }
 ;
 
 

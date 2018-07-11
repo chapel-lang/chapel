@@ -13,8 +13,8 @@ class C {
   proc baz() { field = 1; }
 }
 
-var r:Wrapper(C);
-r.Array[1] = new C();
+var r:Wrapper(unmanaged C);
+r.Array[1] = new unmanaged C();
 r.foo(); // prints "in Wrapper.foo()"
 r.bar(); // same as r.instance.bar(), prints "in C.foo()"
 

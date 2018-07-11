@@ -3,6 +3,7 @@ var randInts: [1..10] int;
 const mostCommon = mostFrequent reduce randInts;
 writeln(mostCommon);
 
+pragma "use default init"
 class mostFrequent: ReduceScanOp {
   type eltType;
 

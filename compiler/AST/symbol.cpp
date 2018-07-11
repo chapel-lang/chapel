@@ -65,6 +65,7 @@ VarSymbol *gCastChecking = NULL;
 VarSymbol *gDivZeroChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
+VarSymbol* gWarnUnstable = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 
@@ -255,7 +256,8 @@ bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
 // Don't generate documentation for this symbol, either because it is private,
 // or because the symbol should not be documented independent of privacy
 bool Symbol::noDocGen() const {
-  return hasFlag(FLAG_NO_DOC) || hasFlag(FLAG_PRIVATE);
+  return hasFlag(FLAG_NO_DOC) || hasFlag(FLAG_PRIVATE) ||
+    hasFlag(FLAG_COMPILER_GENERATED);
 }
 
 
@@ -919,13 +921,14 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 
 ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent,
                                  const char* name,
-                                 Expr* outerVar,
+                                 SymExpr* outerVar,
                                  Expr* spec):
   VarSymbol(E_ShadowVarSymbol, name, dtUnknown),
   intent(iIntent),
-  // For task-private variables, set 'outerVarRep' to NULL.
-  outerVarRep(outerVar),
+  outerVarSE(outerVar),
   specBlock(NULL),
+  svInitBlock(new BlockStmt()),
+  svDeinitBlock(new BlockStmt()),
   reduceGlobalOp(NULL),
   pruneit(false)
 {
@@ -944,17 +947,14 @@ void ShadowVarSymbol::verify() {
   Symbol::verify();
   if (astTag != E_ShadowVarSymbol)
     INT_FATAL(this, "Bad ShadowVarSymbol::astTag");
-  if (!iteratorsLowered && !isReduce())
-    INT_ASSERT(outerVarRep);
-  if (outerVarRep && outerVarRep->parentSymbol != this)
-    INT_FATAL(this, "Bad ShadowVarSymbol::outerVarRep::parentSymbol");
+  if (intent != TFI_REDUCE && intent != TFI_IN_OUTERVAR &&
+      intent != TFI_TASK_PRIVATE)
+    INT_ASSERT(!normalized || outerVarSE); // non-NULL already after scopeResolve
+  if (outerVarSE && outerVarSE->parentSymbol != this)
+    INT_FATAL(this, "Bad ShadowVarSymbol::outerVarSE::parentSymbol");
   if (specBlock && specBlock->parentSymbol != this)
     INT_FATAL(this, "Bad ShadowVarSymbol::specBlock::parentSymbol");
-  if (outerVarRep) {
-    verifyNotOnList(outerVarRep);
-    // this assert holds already after scopeResolve
-    INT_ASSERT(!normalized || isSymExpr(outerVarRep));
-  }
+  verifyNotOnList(outerVarSE);
   // for VarSymbol
   if (!type)
     INT_FATAL(this, "ShadowVarSymbol::type is NULL");
@@ -965,73 +965,108 @@ void ShadowVarSymbol::verify() {
     INT_ASSERT(pfs);
     INT_ASSERT(defPoint->list == &(pfs->shadowVariables()));
   }
-  INT_ASSERT(isReduce() == (intent == TFI_REDUCE));
-  if (!iteratorsLowered && specBlock != NULL)
-    INT_ASSERT(isReduce());
+  if (specBlock != NULL)
+    INT_ASSERT(intent == TFI_REDUCE || intent == TFI_REDUCE_OP);
+  INT_ASSERT(!iteratorsLowered); // should be gone at lowerIterators
 }
 
 void ShadowVarSymbol::accept(AstVisitor* visitor) {
   visitor->visitVarSym(this);
-  if (outerVarRep)
-    outerVarRep->accept(visitor);
+  if (outerVarSE)
+    outerVarSE->accept(visitor);
   if (specBlock)
     specBlock->accept(visitor);
 }
 
 ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
   ShadowVarSymbol* ss = new ShadowVarSymbol(intent, name,
-                                            COPY_INT(outerVarRep), NULL);
+                                            COPY_INT(outerVarSE), NULL);
   ss->type = type;
   ss->qual = qual;
-  ss->specBlock   = COPY_INT(specBlock);
+  ss->specBlock     = COPY_INT(specBlock);
+  ss->svInitBlock   = COPY_INT(svInitBlock);
+  ss->svDeinitBlock = COPY_INT(svDeinitBlock);
+
   ss->copyFlags(this);
   ss->cname = cname;
   return ss;
 }
 
 void ShadowVarSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
-  if (oldAst == outerVarRep)
-    outerVarRep = toSymExpr(newAst);
+  if (oldAst == outerVarSE)
+    outerVarSE = toSymExpr(newAst);
   else if (oldAst == specBlock)
     specBlock = toBlockStmt(newAst);
+  else if (oldAst == svInitBlock)
+    svInitBlock = toBlockStmt(newAst);
+  else if (oldAst == svDeinitBlock)
+    svDeinitBlock = toBlockStmt(newAst);
   else
     INT_FATAL(this, "Unexpected case in ShadowVarSymbol::replaceChild");
 }
 
 bool ShadowVarSymbol::isConstant() const {
-  switch (intent) {
+  switch (intent)
+  {
     case TFI_DEFAULT:
       return type->isDefaultIntentConst();
+
     case TFI_CONST:
     case TFI_CONST_IN:
     case TFI_CONST_REF:
+    case TFI_IN_OUTERVAR:
+    case TFI_REDUCE_OP:
       return true;
+
     case TFI_IN:
     case TFI_REF:
     case TFI_REDUCE:
       return false;
+
+    case TFI_TASK_PRIVATE:
+      return VarSymbol::isConstant();
   }
   return false; // dummy
 }
 
 bool ShadowVarSymbol::isConstValWillNotChange() {
-  //
-  // This is written to only be called post resolveIntents
-  //
-  INT_ASSERT(intent != TFI_DEFAULT && intent != TFI_CONST);
-  return intent == TFI_CONST_IN;
+  switch (intent) {
+    case TFI_DEFAULT:
+    case TFI_CONST:
+      // Caller responsibility - no abstract intents please.
+      INT_ASSERT(false);
+      return false;
+
+    case TFI_CONST_IN:
+    case TFI_IN_OUTERVAR: // should these two be here?
+    case TFI_REDUCE_OP:
+      return true;
+
+    case TFI_CONST_REF:
+    case TFI_IN:
+    case TFI_REF:
+    case TFI_REDUCE:
+      return false;
+
+    case TFI_TASK_PRIVATE:
+      return VarSymbol::isConstValWillNotChange();
+  }
+  return false; // dummy
 }
 
 // describes the intent (for use in an English sentence)
 const char* ShadowVarSymbol::intentDescrString() const {
   switch (intent) {
-    case TFI_DEFAULT:   return "default intent";
-    case TFI_CONST:     return "'const' intent";
-    case TFI_IN:        return "'in' intent";
-    case TFI_CONST_IN:  return "'const in' intent";
-    case TFI_REF:       return "'ref' intent";
-    case TFI_CONST_REF: return "'const ref' intent";
-    case TFI_REDUCE:    return "'reduce' intent";
+    case TFI_DEFAULT:       return "default intent";
+    case TFI_CONST:         return "'const' intent";
+    case TFI_IN_OUTERVAR:   return "outer-var intent";
+    case TFI_IN:            return "'in' intent";
+    case TFI_CONST_IN:      return "'const in' intent";
+    case TFI_REF:           return "'ref' intent";
+    case TFI_CONST_REF:     return "'const ref' intent";
+    case TFI_REDUCE:        return "'reduce' intent";
+    case TFI_REDUCE_OP:     return "reduceOp intent";
+    case TFI_TASK_PRIVATE:  return "task-private intent";
   }
   INT_FATAL(this, "unknown intent");
   return "unknown intent"; //dummy
@@ -1048,14 +1083,48 @@ Expr* ShadowVarSymbol::reduceOpExpr() const {
   return specBlock->body.head;
 }
 
+ShadowVarSymbol* ShadowVarSymbol::OutervarForIN() const {
+  const ShadowVarSymbol* SI = this;
+  DefExpr* soDef = toDefExpr(SI->defPoint->prev);
+  ShadowVarSymbol* SO = toShadowVarSymbol(soDef->sym);
+  INT_ASSERT(SO->intent == TFI_IN_OUTERVAR);
+  return SO;
+}
+
+ShadowVarSymbol* ShadowVarSymbol::INforOutervar() const {
+  const ShadowVarSymbol* SO = this;
+  DefExpr* siDef = toDefExpr(SO->defPoint->next);
+  ShadowVarSymbol* SI = toShadowVarSymbol(siDef->sym);
+  INT_ASSERT(SI->intent == TFI_IN || SI->intent == TFI_CONST_IN);
+  return SI;
+}
+
+ShadowVarSymbol* ShadowVarSymbol::ReduceOpForAccumState() const {
+  const ShadowVarSymbol* AS = this;
+  DefExpr* rpDef = toDefExpr(AS->defPoint->prev);
+  ShadowVarSymbol* RP = toShadowVarSymbol(rpDef->sym);
+  INT_ASSERT(RP->intent == TFI_REDUCE_OP);
+  return RP;
+}
+
+ShadowVarSymbol* ShadowVarSymbol::AccumStateForReduceOp() const {
+  const ShadowVarSymbol* RP = this;
+  DefExpr* asDef = toDefExpr(RP->defPoint->next);
+  ShadowVarSymbol* AS = toShadowVarSymbol(asDef->sym);
+  INT_ASSERT(AS->intent == TFI_REDUCE);
+  return AS;
+}
+
 void ShadowVarSymbol::removeSupportingReferences() {
-  if (outerVarRep) outerVarRep->remove();
-  if (specBlock)   specBlock->remove();
+  if (outerVarSE)    outerVarSE->remove();
+  if (specBlock)     specBlock->remove();
+  if (svInitBlock)   svInitBlock->remove();
+  if (svDeinitBlock) svDeinitBlock->remove();
 }
 
 bool isOuterVarOfShadowVar(Expr* expr) {
   if (ShadowVarSymbol* ss = toShadowVarSymbol(expr->parentSymbol))
-    if (expr == ss->outerVarRep)
+    if (expr == ss->outerVarSE)
       return true;
   return false;
 }
@@ -1073,7 +1142,8 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
     llvmTbaaAggTypeDescriptor(NULL),
     llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
-    doc(NULL)
+    doc(NULL),
+    instantiationPoint(NULL)
 {
   addFlag(FLAG_TYPE_VARIABLE);
   if (!type)
@@ -1100,6 +1170,7 @@ TypeSymbol::copyInner(SymbolMap* map) {
   new_type->addSymbol(new_type_symbol);
   new_type_symbol->copyFlags(this);
   new_type_symbol->cname = cname;
+  new_type_symbol->instantiationPoint = instantiationPoint;
   return new_type_symbol;
 }
 
@@ -1196,6 +1267,23 @@ void TypeSymbol::renameInstantiatedIndividual(Symbol* sym) {
   } else {
     VarSymbol* var = toVarSymbol(sym);
     if (var && var->immediate) {
+      // Add cast suffix if it's a non-default-sized immediate
+      const char* castSuffix = "";
+      const char* castSuffixC = "";
+      Type* immType = var->type;
+      if (is_int_type(immType) || is_uint_type(immType) ||
+          is_bool_type(immType) ||
+          is_real_type(immType) || is_imag_type(immType) ||
+          is_complex_type(immType)) {
+        if (!isNumericParamDefaultType(immType)) {
+          castSuffix = astr(":", toString(immType));
+          char width_buf[16];
+          snprintf(width_buf, sizeof(width_buf), "%i", get_width(immType));
+          castSuffixC = astr(width_buf);
+        }
+      }
+
+      // Compute a string representation of the immediate
       Immediate* immediate = var->immediate;
       if (var->type == dtString || var->type == dtStringC)
         renameInstantiatedTypeString(this, var);
@@ -1203,16 +1291,18 @@ void TypeSymbol::renameInstantiatedIndividual(Symbol* sym) {
         // Handle boolean types specially.
         const char* name4bool = immediate->bool_value() ? "true" : "false";
         const char* cname4bool = immediate->bool_value() ? "T" : "F";
-        this->name = astr(this->name, name4bool);
-        this->cname = astr(this->cname, cname4bool);
+        this->name = astr(this->name, name4bool, castSuffix);
+        this->cname = astr(this->cname, cname4bool, castSuffixC);
       } else {
         const size_t bufSize = 128;
         char imm[bufSize];
         snprint_imm(imm, bufSize, *var->immediate);
-        this->name = astr(this->name, imm);
-        this->cname = astr(this->cname, imm);
+        this->name = astr(this->name, imm, castSuffix);
+        this->cname = astr(this->cname, imm, castSuffixC);
       }
+
     } else {
+      // Not an immediate
       this->name = astr(this->name, sym->cname);
       this->cname = astr(this->cname, sym->cname);
     }
@@ -1457,13 +1547,6 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   int strLength = unescapeString(str, castCall).length();
 
-  CallExpr *ctor = new CallExpr("_construct_string",
-      castTemp,
-      new_IntSymbol(strLength),   // length
-      new_IntSymbol(strLength ? strLength+1 : 0), // size, empty string needs 0
-      gFalse);                    // owned = false
-  ctor->insertAtTail(gFalse);     // needToCopy = false
-
   s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
   s->addFlag(FLAG_CONST);
@@ -1474,7 +1557,23 @@ VarSymbol *new_StringSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
-  CallExpr* ctorCall = new CallExpr(PRIM_MOVE, new SymExpr(s), ctor);
+  // Unresolved sym exprs will be handled specially in normalize()
+  Expr* newFirst = NULL;
+  if (dtString->symbol != NULL) {
+    newFirst = new SymExpr(dtString->symbol);
+  } else {
+    newFirst = new UnresolvedSymExpr("string");
+  }
+
+  CallExpr *initCall = new CallExpr(PRIM_NEW,
+      newFirst,
+      castTemp,
+      new_IntSymbol(strLength),   // length
+      new_IntSymbol(strLength ? strLength+1 : 0)); // size, empty string needs 0
+  initCall->insertAtTail(gFalse); // owned = false
+  initCall->insertAtTail(gFalse); // needToCopy = false
+
+  CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
 
   if (initStringLiterals == NULL) {
     createInitStringLiterals();
@@ -1487,7 +1586,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   insertPt->insertBefore(cptrCall);
   insertPt->insertBefore(new DefExpr(castTemp));
   insertPt->insertBefore(castCall);
-  insertPt->insertBefore(ctorCall);
+  insertPt->insertBefore(moveCall);
 
   s->immediate = new Immediate;
   *s->immediate = imm;
@@ -1805,19 +1904,32 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
 const char* astrSdot = NULL;
 const char* astrSequals = NULL;
 const char* astr_cast = NULL;
+const char* astr_defaultOf = NULL;
 const char* astrInit = NULL;
+const char* astrNew = NULL;
 const char* astrDeinit = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
+const char* astr_chpl_manager = NULL;
+const char* astr_forallexpr = NULL;
+const char* astr_forexpr = NULL;
+const char* astr_loopexpr_iter = NULL;
 
 void initAstrConsts() {
   astrSdot    = astr(".");
   astrSequals = astr("=");
   astr_cast   = astr("_cast");
+  astr_defaultOf = astr("_defaultOf");
   astrInit    = astr("init");
+  astrNew     = astr("_new");
   astrDeinit  = astr("deinit");
   astrTag     = astr("tag");
   astrThis    = astr("this");
+  astr_chpl_manager = astr("_chpl_manager");
+
+  astr_forallexpr    = astr("chpl__forallexpr");
+  astr_forexpr       = astr("chpl__forexpr");
+  astr_loopexpr_iter = astr("chpl__loopexpr_iter");
 }
 
 /************************************* | **************************************

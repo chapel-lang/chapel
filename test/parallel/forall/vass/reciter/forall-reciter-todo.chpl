@@ -52,4 +52,12 @@ proc main {
     ovarPR += iii2;
   }
   writef("done iii2  %i\n", ovarPR);
+
+  // testing in intents
+  var ovarIn = 1;
+  forall iii3 in myiter(2) with (in ovarIn) {
+    writef("%5i  %5i\n", iii3, ovarIn);
+    ovarIn += iii3;
+  }
+  writef("done iii3  %i\n", ovarIn);
 }

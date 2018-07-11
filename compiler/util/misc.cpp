@@ -345,7 +345,7 @@ static void printErrorFooter(bool guess) {
     //
     // and exit if it's fatal (isn't it always?)
     //
-    if (err_fatal) {
+    if (err_fatal && !(err_user && ignore_user_errors)) {
       clean_exit(1);
     }
   }
@@ -446,7 +446,7 @@ void handleError(const char* fmt, ...) {
   if (exit_immediately) {
     if (ignore_errors_for_pass) {
       exit_end_of_pass = true;
-    } else if (!ignore_errors) {
+    } else if (!ignore_errors && !(ignore_user_errors && err_user)) {
       clean_exit(1);
     }
   }
@@ -522,7 +522,7 @@ static void vhandleError(FILE*          file,
   if (exit_immediately) {
     if (ignore_errors_for_pass) {
       exit_end_of_pass = true;
-    } else if (!ignore_errors) {
+    } else if (!ignore_errors && !(ignore_user_errors && err_user)) {
       clean_exit(1);
     }
   }
@@ -533,7 +533,7 @@ void exitIfFatalErrorsEncountered() {
   if (exit_eventually) {
     if (ignore_errors_for_pass) {
       exit_end_of_pass = true;
-    } else if (!ignore_errors) {
+    } else if (!ignore_errors && !(ignore_user_errors && err_user)) {
       clean_exit(1);
     }
   }
@@ -542,7 +542,7 @@ void exitIfFatalErrorsEncountered() {
 
 void considerExitingEndOfPass() {
   if (exit_end_of_pass) {
-    if (!ignore_errors) {
+    if (!ignore_errors && !(ignore_user_errors && err_user)) {
       clean_exit(1);
     }
   }

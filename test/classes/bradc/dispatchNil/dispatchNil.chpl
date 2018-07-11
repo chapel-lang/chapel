@@ -11,7 +11,7 @@ class C {
 }
 
 class D : C {
-  var DsC: C;
+  var DsC: unmanaged C;
   var y: int = DsC.baz();
 
   proc foo() {
@@ -23,12 +23,12 @@ class D : C {
   }
 
   proc buildNew() {
-    return new D();
+    return new unmanaged D();
   }
 }
 
-var myC = new C();
-var myD = new D(DsC=myC);
+var myC = new unmanaged C();
+var myD = new unmanaged D(DsC=myC);
 
 writeln("myC = ", myC);
 writeln("myD = ", myD);

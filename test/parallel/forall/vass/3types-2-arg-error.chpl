@@ -19,6 +19,7 @@ record Routput {
   var outField: chpl__sumType(eltType);
 }
 
+pragma "use default init"
 class MyOp: ReduceScanOp {
   type eltType;
 

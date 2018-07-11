@@ -72,14 +72,14 @@ class Private: BaseDist {
     for i in inds do
       if i.size != 0 then
         halt("Tried to create a privateDom with a specific index set");
-    return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=this);
+    return new unmanaged PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=_to_unmanaged(this));
   }
 
   proc writeThis(x) {
     x <~> "Private Distribution\n";
   }
   // acts like a singleton
-  proc dsiClone() return this;
+  proc dsiClone() return _to_unmanaged(this);
 
   proc trackDomains() param return false;
   proc dsiTrackDomains()    return false;
@@ -87,8 +87,9 @@ class Private: BaseDist {
   proc singleton() param return true;
 }
 
+pragma "use default init"
 class PrivateDom: BaseRectangularDom {
-  var dist: Private;
+  var dist: unmanaged Private;
 
   iter these() { for i in 0..numLocales-1 do yield i; }
 
@@ -107,8 +108,9 @@ class PrivateDom: BaseRectangularDom {
 
   proc dsiSerialWrite(x) { x <~> "Private Domain"; }
 
-  proc dsiBuildArray(type eltType)
-    return new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+  proc dsiBuildArray(type eltType) {
+    return new unmanaged PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=_to_unmanaged(this));
+  }
 
   proc dsiNumIndices return numLocales;
   proc dsiLow return 0;
@@ -127,8 +129,9 @@ class PrivateDom: BaseRectangularDom {
 
   proc dsiGetPrivatizeData() return 0;
 
-  proc dsiPrivatize(privatizeData)
-    return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
+  proc dsiPrivatize(privatizeData) {
+    return new unmanaged PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
+  }
 
   proc dsiGetReprivatizeData() return 0;
 
@@ -138,8 +141,9 @@ class PrivateDom: BaseRectangularDom {
   proc dsiMyDist() return dist;
 }
 
+pragma "use default init"
 class PrivateArr: BaseRectangularArr {
-  var dom: PrivateDom(rank, idxType, stridable);
+  var dom: unmanaged PrivateDom(rank, idxType, stridable);
   var data: eltType;
 }
 
@@ -151,7 +155,7 @@ proc PrivateArr.dsiGetPrivatizeData() return 0;
 
 proc PrivateArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
-  return new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  return new unmanaged PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
 }
 
 proc PrivateArr.dsiAccess(i: idxType) ref {
@@ -163,9 +167,9 @@ proc PrivateArr.dsiAccess(i: idxType) ref {
     if boundsChecking then
       if i < 0 || i >= numLocales then
         halt("array index out of bounds: ", i);
-    var privarr = this;
+    var privarr = _to_unmanaged(this);
     on Locales(i) {
-      privarr = chpl_getPrivatizedCopy(this.type, this.pid);
+      privarr = chpl_getPrivatizedCopy(_to_unmanaged(this.type), this.pid);
     }
     return privarr.data;
   }
@@ -201,5 +205,5 @@ proc PrivateArr.dsiSerialWrite(x) {
 }
 
 // TODO: Fix 'new Private()' leak -- Discussed in #6726
-const PrivateSpace: domain(1) dmapped new dmap(new Private());
+const PrivateSpace: domain(1) dmapped Private();
 

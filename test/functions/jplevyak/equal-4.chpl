@@ -1,12 +1,12 @@
 class foo { var a : int;  }
 
-var x : foo = new foo();
+var x : unmanaged foo = new unmanaged foo();
 
 delete x;
 
 
 
-x = new foo();
+x = new unmanaged foo();
 
 writeln(x);
 

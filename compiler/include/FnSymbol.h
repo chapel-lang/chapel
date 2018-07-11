@@ -148,6 +148,7 @@ public:
 
   bool                       isInitializer()                             const;
   bool                       isPostInitializer()                         const;
+  bool                       isDefaultInit()                             const;
 
   AggregateType*             getReceiver()                               const;
 
@@ -185,7 +186,6 @@ extern FnSymbol*                chpl_gen_main;
 extern FnSymbol*                gAddModuleFn;
 
 extern FnSymbol*                gGenericTupleTypeCtor;
-extern FnSymbol*                gGenericTupleInit;
 extern FnSymbol*                gGenericTupleDestroy;
 
 extern std::map<FnSymbol*, int> ftableMap;

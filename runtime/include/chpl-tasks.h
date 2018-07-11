@@ -25,13 +25,10 @@
 #include <stdint.h>
 #include "chplcgfns.h"
 #include "chpltypes.h"
+#include "chpl-tasks-impl.h"
 #include "chpl-tasks-prvdata.h"
 
-#ifdef CHPL_TASKS_MODEL_H
-#include CHPL_TASKS_MODEL_H
-#endif
-
-// CHPL_TASKS_MODEL_H must define the task bundle header type,
+// chpl-tasks-impl.h must define the task bundle header type,
 // chpl_task_bundle_t.
 typedef chpl_task_bundle_t* chpl_task_bundle_p;
 

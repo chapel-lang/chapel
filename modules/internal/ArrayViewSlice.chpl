@@ -25,6 +25,20 @@
 module ArrayViewSlice {
   use ChapelStandard;
 
+  private proc buildIndexCacheHelper(arr, dom) {
+    param isRankChangeReindex = arr.isRankChangeArrayView() ||
+                                arr.isReindexArrayView() ||
+                                (chpl__isArrayView(arr) && arr._containsRCRE());
+    if chpl__isDROrDRView(arr) && isRankChangeReindex {
+      if chpl__isArrayView(arr) then
+        return arr.indexCache.toSlice(dom);
+      else
+        return arr.dsiGetRAD().toSlice(dom);
+    } else {
+      return false;
+    }
+  }
+
   //
   // The class representing a slice of an array.  Like other array
   // class implementations, it supports the standard dsi interface.
@@ -47,7 +61,18 @@ module ArrayViewSlice {
     // (eventually...), the indexCache provides a mean of directly
     // accessing the array's ddata to avoid indirection overheads
     // through the array field above.
-    const indexCache = buildIndexCache();
+    //const indexCache = buildIndexCache();
+    const indexCache;
+
+    proc init(type eltType, const _DomPid, const dom, const _ArrPid, const _ArrInstance) {
+      this.eltType      = eltType;
+      this._DomPid      = _DomPid;
+      this.dom          = dom;
+      this._ArrPid      = _ArrPid;
+      this._ArrInstance = _ArrInstance;
+
+      this.indexCache = buildIndexCacheHelper(_ArrInstance, dom);
+    }
 
     forwarding arr except these,
                       doiBulkTransferFromKnown, doiBulkTransferToKnown,
@@ -219,7 +244,7 @@ module ArrayViewSlice {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new ArrayViewSliceArr(eltType=this.eltType,
+      return new unmanaged ArrayViewSliceArr(eltType=this.eltType,
                                    _DomPid=privatizeData(1),
                                    dom=privatizeData(2),
                                    _ArrPid=privatizeData(3),
@@ -271,7 +296,7 @@ module ArrayViewSlice {
     }
 
     // not sure what this is, but everyone seems to have one...
-    inline proc dsiGetBaseDom() {
+    override proc dsiGetBaseDom() {
       return dom;
     }
 

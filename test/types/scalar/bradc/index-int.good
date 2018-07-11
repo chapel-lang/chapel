@@ -1,1 +1,1 @@
-index-int.chpl:1: error: int(64) does not support indexing
+index-int.chpl:1: error: illegal type index expression

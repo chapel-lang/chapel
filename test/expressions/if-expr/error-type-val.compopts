@@ -1,0 +1,2 @@
+-sthenType=true # error-type-val.then.good
+-sthenType=false # error-type-val.else.good

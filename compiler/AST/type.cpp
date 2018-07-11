@@ -38,6 +38,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "UnmanagedClassType.h"
 #include "vec.h"
 
 static bool isDerivedType(Type* type, Flag flag);
@@ -45,7 +46,6 @@ static bool isDerivedType(Type* type, Flag flag);
 Type::Type(AstTag astTag, Symbol* iDefaultVal) : BaseAST(astTag) {
   symbol              = NULL;
   refType             = NULL;
-  hasGenericDefaults  = false;
   defaultValue        = iDefaultVal;
   destructor          = NULL;
   isInternalType      = false;
@@ -128,7 +128,41 @@ const char* toString(Type* type) {
   const char* retval = NULL;
 
   if (type != NULL) {
-    retval = type->getValType()->symbol->name;
+    Type* vt = type->getValType();
+
+    if (AggregateType* at = toAggregateType(vt)) {
+      const char* drDomName = "DefaultRectangularDom";
+      const int   drDomNameLen = strlen(drDomName);
+
+      if (isArrayClass(at) && !at->symbol->hasFlag(FLAG_BASE_ARRAY)) {
+        Symbol* domField = at->getField("dom", false);
+        Symbol* eltTypeField = at->getField("eltType", false);
+
+        if (domField && eltTypeField) {
+          Type* domainType = canonicalClassType(domField->type);
+          Type* eltType    = eltTypeField->type;
+
+          if (domainType != dtUnknown && eltType != dtUnknown)
+            retval = astr("[", toString(domainType), "] ", toString(eltType));
+        }
+
+      } else if (strncmp(at->symbol->name, drDomName, drDomNameLen) == 0) {
+        retval = astr("domain", at->symbol->name + drDomNameLen);
+
+      } else if (isRecordWrappedType(at) == true) {
+        Symbol* instanceField = at->getField("_instance", false);
+
+        if (instanceField) {
+          Type* implType = canonicalClassType(instanceField->type);
+
+          if (implType != dtUnknown)
+            retval = toString(implType);
+        }
+      }
+    }
+
+    if (retval == NULL)
+      retval = vt->symbol->name;
 
   } else {
     retval = "null type";
@@ -298,7 +332,7 @@ void PrimitiveType::accept(AstVisitor* visitor) {
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
-  constants(), integerType(NULL), minConstant(), maxConstant(),
+  constants(), integerType(NULL),
   doc(NULL)
 {
   gEnumTypes.add(this);
@@ -334,8 +368,6 @@ EnumType::copyInner(SymbolMap* map) {
     newDef->sym->type = copy;
     copy->constants.insertAtTail(newDef);
   }
-  copy->minConstant = this->minConstant;
-  copy->maxConstant = this->maxConstant;;
   copy->addSymbol(symbol);
   return copy;
 }
@@ -346,329 +378,9 @@ void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void EnumType::sizeAndNormalize() {
-  bool first = true;
-  bool issigned = false;
-  int64_t v;
-  uint64_t uv;
-  int64_t min_v, max_v;
-  uint64_t min_uv, max_uv;
-  int num_bytes;
-  uint64_t max;
-  int64_t min;
-  PrimitiveType* ret = NULL;
-  Immediate* minImm = NULL;
-  Immediate* maxImm = NULL;
-
-  // First, look for negative numbers in the enum.
-  // If there are any, we have to store all
-  // the values in negative numbers.
-  for_enums(constant, this) {
-    // If this passes testing, much of the following can
-    // be significantly simplified.
-    INT_ASSERT(constant->init);
-
-    if( constant->init ) {
-      if( get_int( constant->init, &v ) ) {
-        if( v < 0 ) {
-          issigned = true;
-        }
-      } else if( get_uint( constant->init, &uv ) ) {
-        // OK!
-      } else {
-        // If we get here, then the initializer does not have an immediate
-        // value associated with it....
-        SymExpr* sym = toSymExpr(constant->init);
-
-        // We think that all params should have init values by now.
-        INT_ASSERT(sym && !sym->symbol()->hasFlag(FLAG_PARAM));
-
-        // So we're going to blame this on the user.
-        USR_FATAL(constant,
-                  "enumerator '%s' is not an integer param value",
-                  constant->sym->name);
-        // And unfortunately, if we get here, we don't know how to proceed,
-        // which is why no USR_FATAL_CONT().
-      }
-    }
-  }
-
-  // Set initializers for all enum symbols and
-  // compute the minimum and maximum values.
-  v = 1;
-  uv = 1;
-  min_v = max_v = 1;
-  min_uv = max_uv = 1;
-
-  first = true;
-  for_enums(constant, this) {
-    SET_LINENO(constant);
-    if( constant->init ) {
-      // set v and uv to the initializer value
-      // if the number doesn't fit in one of them, set it
-      // to 1. That avoids overflow when we increment these below,
-      // and won't confuse max/min calculations since any size
-      // integer needs to be able to represent 1.
-      if( get_int( constant->init, &v ) ) {
-        if( v >= 0 ) uv = v;
-        else uv = 1;
-      } else if( get_uint( constant->init, &uv ) ) {
-        if (uv <= (uint64_t)INT64_MAX) v = uv;
-        else v = 1;
-      }
-    } else {
-      // create initializer with v
-      if( issigned ) {
-        if( v >= INT32_MIN && v <= INT32_MAX ) {
-          constant->init = new SymExpr(new_IntSymbol(v, INT_SIZE_32));
-        } else {
-          constant->init = new SymExpr(new_IntSymbol(v, INT_SIZE_64));
-        }
-      } else {
-        if( uv <= UINT32_MAX ) {
-          constant->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_32));
-        } else {
-          constant->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
-        }
-      }
-      parent_insert_help(constant, constant->init);
-    }
-    if( first ) {
-      min_v = v;
-      max_v = v;
-      min_uv = uv;
-      max_uv = uv;
-      first = false;
-    } else {
-      if( min_v > v ) min_v = v;
-      if( max_v < v ) max_v = v;
-      if( min_uv > uv ) min_uv = uv;
-      if( max_uv < uv ) max_uv = uv;
-
-    }
-    // Increment v for the next one, in case it is not set.
-    v++;
-    uv++;
-  }
-
-  // User error if the enum contains both negative values and
-  // something needing a uint64.
-  if (min_v < 0 && max_uv > (uint64_t)INT64_MAX)
-    USR_FATAL(this,
-              "this enum cannot be represented with a single integer type");
-
-  num_bytes = 0;
-
-  // Now figure out, based on min/max values, what integer
-  // size we must use.
-  if( issigned ) {
-    int num_bytes_neg = 0;
-    if( min_v >= INT8_MIN ) {
-      num_bytes_neg = 1;
-    } else if( min_v >= INT16_MIN ) {
-      num_bytes_neg = 2;
-    } else if( min_v >= INT32_MIN ) {
-      num_bytes_neg = 4;
-    } else {
-      num_bytes_neg = 8;
-    }
-
-    if( max_v <= INT8_MAX ) {
-      num_bytes = 1;
-    } else if( max_v <= INT16_MAX ) {
-      num_bytes = 2;
-    } else if( max_v <= INT32_MAX ) {
-      num_bytes = 4;
-    } else {
-      num_bytes = 8;
-    }
-
-    if( num_bytes < num_bytes_neg ) num_bytes = num_bytes_neg;
-  } else {
-    if( max_uv <= UINT8_MAX ) {
-      num_bytes = 1;
-    } else if( max_uv <= UINT16_MAX ) {
-      num_bytes = 2;
-    } else if( max_uv <= UINT32_MAX ) {
-      num_bytes = 4;
-    } else {
-      num_bytes = 8;
-    }
-  }
-
-  // Now figure out field min and max values.
-  // and set et->integerType
-  min = max = 0;
-
-  IF1_int_type int_size = INT_SIZE_DEFAULT;
-
-  if( num_bytes == 1 ) {
-    int_size = INT_SIZE_8;
-    if( issigned ) {
-      max = INT8_MAX;
-      min = INT8_MIN;
-    } else {
-      max = UINT8_MAX;
-    }
-  } else if( num_bytes == 2 ) {
-    int_size = INT_SIZE_16;
-    if( issigned ) {
-      max = INT16_MAX;
-      min = INT16_MIN;
-    } else {
-      max = UINT16_MAX;
-    }
-  } else if( num_bytes == 4 ) {
-    int_size = INT_SIZE_32;
-    if( issigned ) {
-      max = INT32_MAX;
-      min = INT32_MIN;
-    } else {
-      max = UINT32_MAX;
-    }
-  } else if( num_bytes == 8 ) {
-    int_size = INT_SIZE_64;
-    if( issigned ) {
-      max = INT64_MAX;
-      min = INT64_MIN;
-    } else {
-      max = UINT64_MAX;
-    }
-  }
-
-  if (issigned)
-    ret = dtInt[int_size];
-  else
-    ret = dtUInt[int_size];
-
-  // At the end of it all, check that each enum
-  // symbol fits into the assigned type.
-  // This check is necessary because we might have
-  // had the impossible-to-fit enum
-  // because it has e.g. UINT64_MAX and INT64_MIN.
-  for_enums(constant, this) {
-    if( get_int( constant->init, &v ) ) {
-      if( v < min || (v > 0 && (uint64_t)v > max) ) {
-        INT_FATAL(constant, "Does not fit in enum integer type");
-      }
-    } else if( get_uint( constant->init, &uv ) ) {
-      if( uv > max ) {
-        INT_FATAL(constant, "Does not fit in enum integer type");
-      }
-    }
-  }
-
-  // Replace the immediates with one of the appropriate numeric type.
-  // This is a way of normalizing the enum constants and simplifying
-  // what follow-on passes need to deal with.
-  for_enums(constant, this) {
-    SET_LINENO(constant);
-    INT_ASSERT(constant->init);
-
-    if (ret == constant->init->typeInfo()) {
-      // Nothing to do, constant already has appropriate type
-    } else {
-      bool have_v = true;
-      bool have_uv = true;
-      v = 0;
-      uv = 0;
-      // set v and uv to the initializer value
-      if( get_int( constant->init, &v ) ) {
-        if( v >= 0 ) uv = v;
-        else have_uv = false;
-      } else if( get_uint( constant->init, &uv ) ) {
-        if (uv <= (uint64_t)INT64_MAX) v = uv;
-        else have_v = false;
-      }
-
-      if( issigned ) {
-        INT_ASSERT(have_v);
-        constant->init->replace(new SymExpr(new_IntSymbol(v, int_size)));
-      } else {
-        INT_ASSERT(have_uv);
-        constant->init->replace(new SymExpr(new_UIntSymbol(uv, int_size)));
-      }
-    }
-  }
-
-  first = true;
-
-  min_v = max_v = 0;
-  min_uv = max_uv = 0;
-
-  // Set minConstant and maxConstant
-  for_enums(constant, this) {
-    SET_LINENO(constant);
-    INT_ASSERT(constant->init);
-
-    bool got = false;
-
-    v = 0;
-    uv = 0;
-    if (issigned)
-      got = get_int(constant->init, &v);
-    else
-      got = get_uint(constant->init, &uv);
-
-    INT_ASSERT(got);
-
-    Immediate* imm = getSymbolImmediate(constant->sym);
-
-    if (first) {
-      if (issigned) {
-        min_v = v;
-        max_v = v;
-      } else {
-        min_uv = uv;
-        max_uv = uv;
-      }
-      minImm = imm;
-      maxImm = imm;
-      first = false;
-    } else {
-      if (issigned) {
-        if (v < min_v) {
-          min_v = v;
-          minImm = imm;
-        }
-        if (v > max_v) {
-          max_v = v;
-          maxImm = imm;
-        }
-      } else {
-        if (uv < min_uv) {
-          min_uv = uv;
-          minImm = imm;
-        }
-        if (uv > max_uv) {
-          max_uv = uv;
-          maxImm = imm;
-        }
-      }
-    }
-  }
-
-  INT_ASSERT(minImm && maxImm);
-  this->minConstant = *minImm;
-  this->maxConstant = *maxImm;
-
-
-  integerType = ret;
-}
-
 PrimitiveType* EnumType::getIntegerType() {
   INT_ASSERT(integerType);
-  if( ! integerType ) {
-    sizeAndNormalize();
-  }
   return integerType;
-}
-
-Immediate* EnumType::getMinConstant() {
-  return &minConstant;
-}
-Immediate* EnumType::getMaxConstant() {
-  return &maxConstant;
 }
 
 
@@ -913,11 +625,24 @@ void initPrimitiveTypes() {
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
 
-  dtIntegral = createInternalType ("integral", "integral");
-  dtIntegral->symbol->addFlag(FLAG_GENERIC);
+  dtAnyBool = createInternalType("chpl_anybool", "bool");
+  dtAnyBool->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
+  dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyImag = createInternalType("chpl_anyimag", "imag");
+  dtAnyImag->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyReal = createInternalType("chpl_anyreal", "real");
+  dtAnyReal->symbol->addFlag(FLAG_GENERIC);
+
+  // could also be called dtAnyIntegral
+  dtIntegral = createInternalType ("integral", "integral");
+  dtIntegral->symbol->addFlag(FLAG_GENERIC);
 
   dtNumeric = createInternalType ("numeric", "numeric");
   dtNumeric->symbol->addFlag(FLAG_GENERIC);
@@ -927,6 +652,12 @@ void initPrimitiveTypes() {
 
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
+
+  dtBorrowed = createInternalType("_borrowed", "_borrowed");
+  dtBorrowed->symbol->addFlag(FLAG_GENERIC);
+
+  dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
+  dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
 
   dtMethodToken = createInternalType ("_MT", "_MT");
 
@@ -939,9 +670,6 @@ void initPrimitiveTypes() {
   dtModuleToken = createInternalType("tmodule=", "tmodule=");
 
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
-
-  dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
-  dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
@@ -1033,6 +761,10 @@ void initCompilerGlobals() {
   gLocal = new VarSymbol("_local", dtBool);
   gLocal->addFlag(FLAG_PARAM);
   setupBoolGlobal(gLocal, fLocal);
+
+  gWarnUnstable = new VarSymbol("chpl_warnUnstable", dtBool);
+  gWarnUnstable->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gWarnUnstable, fWarnUnstable);
 
   // defined and maintained by the runtime
   gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
@@ -1203,6 +935,15 @@ bool isClassOrNil(Type* t) {
   return isClass(t);
 }
 
+bool isClassLike(Type* t) {
+  return isClass(t) || isUnmanagedClassType(t);
+}
+
+bool isClassLikeOrNil(Type* t) {
+  if (t == dtNil) return true;
+  return isClassLike(t);
+}
+
 bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
     return ct->isRecord();
@@ -1274,7 +1015,19 @@ static bool isDerivedType(Type* type, Flag flag)
 }
 
 bool isManagedPtrType(const Type* t) {
-  return t->symbol->hasFlag(FLAG_MANAGED_POINTER);
+  return t && t->symbol->hasFlag(FLAG_MANAGED_POINTER);
+}
+
+Type* getManagedPtrBorrowType(const Type* t) {
+  INT_ASSERT(isManagedPtrType(t));
+
+  const AggregateType* at = toConstAggregateType(t);
+
+  INT_ASSERT(at);
+
+  Type* ret = at->getField("t")->type;
+  Type* borrow = canonicalClassType(ret);
+  return borrow;
 }
 
 bool isSyncType(const Type* t) {
@@ -1463,7 +1216,7 @@ bool needsCapture(Type* t) {
       is_complex_type(t) ||
       is_enum_type(t) ||
       t == dtStringC ||
-      isClass(t) ||
+      isClassLike(t) ||
       isRecord(t) ||
       isUnion(t) ||
       t == dtTaskID || // false?

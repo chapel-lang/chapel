@@ -49,7 +49,6 @@
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/MC/SubtargetFeature.h"
@@ -60,6 +59,11 @@
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+
+#ifdef HAVE_LLVM_RV
+#include "rv/passes.h"
+#endif
 
 #endif
 
@@ -1368,6 +1372,14 @@ void finishCodegenLLVM() {
   }
 }
 
+#ifdef HAVE_LLVM_RV
+static void registerRVPasses(const llvm::PassManagerBuilder &Builder,
+                             llvm::legacy::PassManagerBase &PM) {
+
+  rv::addOuterLoopVectorizer(PM);
+}
+#endif
+
 static
 void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
   ClangInfo* clangInfo = gGenInfo->clangInfo;
@@ -1401,9 +1413,24 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
 
   PMBuilder.DisableUnrollLoops = !opts.UnrollLoops;
   PMBuilder.MergeFunctions = opts.MergeFunctions;
+#if HAVE_LLVM_VER > 60
+  PMBuilder.PrepareForThinLTO = opts.PrepareForThinLTO;
+#else
   PMBuilder.PrepareForThinLTO = opts.EmitSummaryIndex;
+#endif
+
   PMBuilder.PrepareForLTO = opts.PrepareForLTO;
   PMBuilder.RerollLoops = opts.RerollLoops;
+
+
+#ifdef HAVE_LLVM_RV
+  // Enable Region Vectorizer aka Outer Loop Vectorizer
+  if (!fNoVectorize) {
+    // This in copied from 'registerRVPasses'
+    PMBuilder.addExtension(PassManagerBuilder::EP_VectorizerStart,
+                           registerRVPasses);
+  }
+#endif
 
   // TODO: we might need to call TargetMachine's addEarlyAsPossiblePasses
 }
@@ -1554,6 +1581,14 @@ void runClang(const char* just_parse_filename) {
   runtime_includes += "/list-includes-and-defines";
 
   readArgsFromFile(runtime_includes, args);
+
+  std::string dashImodules = "-I";
+  dashImodules += CHPL_HOME;
+  dashImodules += "/modules";
+
+  args.push_back(dashImodules + "/standard");
+  args.push_back(dashImodules + "/packages");
+
   // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
   expandInstallationPaths(args);
 
@@ -1576,20 +1611,17 @@ void runClang(const char* just_parse_filename) {
     args.push_back(clang_opt);
 
   if (specializeCCode &&
+      CHPL_TARGET_ARCH_FLAG != NULL &&
       CHPL_TARGET_BACKEND_ARCH != NULL &&
+      CHPL_TARGET_ARCH_FLAG[0] != '\0' &&
       CHPL_TARGET_BACKEND_ARCH[0] != '\0' &&
+      0 != strcmp(CHPL_TARGET_ARCH_FLAG, "none") &&
       0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none") &&
       0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "unknown")) {
-    std::string march = "-march=";
-    const char *backend_arch = CHPL_TARGET_BACKEND_ARCH;
-    if (strncmp(backend_arch, "arm-", 4) == 0) {
-      backend_arch += 4;
-      march = "-mcpu=";
-    }
-    march += backend_arch;
-    if (strcmp(backend_arch, "thunderx2") == 0) {
-      march += "t99";
-    }
+    std::string march = "-m";
+    march += CHPL_TARGET_ARCH_FLAG;
+    march += "=";
+    march += CHPL_TARGET_BACKEND_ARCH;
     args.push_back(march);
   }
 
@@ -1607,7 +1639,7 @@ void runClang(const char* just_parse_filename) {
     clangCCArgs.push_back(args[i]);
   }
 
-  forv_Vec(const char*, dirName, incDirs) {
+  for_vector(const char, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
   clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
@@ -1620,7 +1652,7 @@ void runClang(const char* just_parse_filename) {
 
   clangCCArgs.push_back("-pthread");
 
-  // libFlag and ldflags are handled during linking later.
+  // library directories/files and ldflags are handled during linking later.
 
   clangCCArgs.push_back("-DCHPL_GEN_CODE");
 
@@ -2472,7 +2504,11 @@ void makeBinaryLLVM(void) {
                              tmpErr, sys::fs::F_None);
     if (tmpErr)
       USR_FATAL("Could not open output file %s", preOptFilename.c_str());
+#if HAVE_LLVM_VER < 70
     WriteBitcodeToFile(info->module, output.os());
+#else
+    WriteBitcodeToFile(*info->module, output.os());
+#endif
     output.keep();
     output.os().flush();
   }
@@ -2565,7 +2601,11 @@ void makeBinaryLLVM(void) {
                                tmpErr, sys::fs::F_None);
       if (tmpErr)
         USR_FATAL("Could not open output file %s", opt1Filename.c_str());
+#if HAVE_LLVM_VER < 70
       WriteBitcodeToFile(info->module, output1.os());
+#else
+      WriteBitcodeToFile(*info->module, output1.os());
+#endif
       output1.keep();
       output1.os().flush();
     }
@@ -2598,7 +2638,11 @@ void makeBinaryLLVM(void) {
                                  tmpErr, sys::fs::F_None);
         if (tmpErr)
           USR_FATAL("Could not open output file %s", opt2Filename.c_str());
+#if HAVE_LLVM_VER < 70
         WriteBitcodeToFile(info->module, output2.os());
+#else
+        WriteBitcodeToFile(*info->module, output2.os());
+#endif
         output2.keep();
         output2.os().flush();
       }
@@ -2623,9 +2667,16 @@ void makeBinaryLLVM(void) {
     llvm::TargetMachine::CodeGenFileType FileType =
       llvm::TargetMachine::CGFT_ObjectFile;
     bool disableVerify = ! developer;
+#if HAVE_LLVM_VER > 60
+    info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
+                                             nullptr,
+                                             FileType,
+                                             disableVerify);
+#else
     info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
                                              FileType,
                                              disableVerify);
+#endif
 
     // Run the passes to emit the .o file now!
     emitPM.run(*info->module);
@@ -2660,9 +2711,23 @@ void makeBinaryLLVM(void) {
     readArgsFromCommand(gather_prgenv, clangLDArgs);
   }
 
+  std::string runtime_ld_override(CHPL_RUNTIME_LIB);
+  runtime_ld_override += "/";
+  runtime_ld_override += CHPL_RUNTIME_SUBDIR;
+  runtime_ld_override += "/override-ld";
+
+  std::vector<std::string> ldOverride;
+  readArgsFromFile(runtime_ld_override, ldOverride);
+  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
+  expandInstallationPaths(ldOverride);
 
   std::string clangCC = clangInfo->clangCC;
   std::string clangCXX = clangInfo->clangCXX;
+  std::string useLinkCXX = clangCXX;
+
+  if (ldOverride.size() > 0)
+    useLinkCXX = ldOverride[0];
+
 
   std::vector<std::string> dotOFiles;
 
@@ -2765,10 +2830,10 @@ void makeBinaryLLVM(void) {
   codegen_makefile(&mainfile, &tmpbinname, true);
   INT_ASSERT(tmpbinname);
 
-  // Run the linker. We always use clang++ because some third-party
-  // libraries are written in C++. With the C backend, this switcheroo
-  // is accomplished in the Makefiles somewhere
-  std::string command = clangCXX + " " + options + " " +
+  // Run the linker. We always use a C++ compiler because some third-party
+  // libraries are written in C++. Here we use clang++ or possibly a
+  // linker override specified by the Makefiles (e.g. setting it to mpicxx)
+  std::string command = useLinkCXX + " " + options + " " +
                         moduleFilename + " " + maino +
                         " -o " + tmpbinname;
   for( size_t i = 0; i < dotOFiles.size(); i++ ) {
@@ -2784,9 +2849,13 @@ void makeBinaryLLVM(void) {
   // Put user-requested libraries at the end of the compile line,
   // they should at least be after the .o files and should be in
   // order where libraries depend on libraries to their right.
-  for (int i=0; i<numLibFlags; i++) {
-    command += " ";
-    command += libFlag[i];
+  for_vector(const char, dirName, libDirs) {
+    command += " -L";
+    command += dirName;
+  }
+  for_vector(const char, libName, libFiles) {
+    command += " -l";
+    command += libName;
   }
 
   if( printSystemCommands ) {

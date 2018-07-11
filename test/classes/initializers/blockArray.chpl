@@ -1,7 +1,7 @@
 use BlockDist;
 
 proc main() {
-  var f = new Foo(3, 4);
+  var f = new unmanaged Foo(3, 4);
 
   writeln(f);
 

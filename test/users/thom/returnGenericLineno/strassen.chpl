@@ -13,10 +13,22 @@ module Strassen
         {
             return new Strassen("name", false, n);
         }
+        proc writeThis(w)
+        {
+          w <~> "StrassenFactory " <~> n;
+        }
+
     }
 
     class Strassen : Benchmark
     {
         var n;
+        proc writeThis(w)
+        {
+          w <~> "Strassen " <~> n;
+        }
+        proc runKernel()
+        {
+        }
     }
 }

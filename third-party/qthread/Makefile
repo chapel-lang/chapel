@@ -24,25 +24,36 @@ else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
 CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
 endif
 
-ifeq ($(CHPL_MAKE_HWLOC),hwloc)
-CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc --with-hwloc=$(HWLOC_INSTALL_DIR)
-endif
-ifeq ($(CHPL_MAKE_HWLOC),system)
-CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc
+ifneq ($(CHPL_MAKE_HWLOC),none)
+  # Have Qthreads get its hwloc topology from the Chapel runtime,
+  # unless directed not to.
+  ifeq (, $(call isTrue, $(CHPL_QTHREAD_DONT_GET_TOPO_FROM_RT)))
+    CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc_via_chapel
+    CFLAGS_NEEDS_RT_INCLUDES = y
+  else
+    CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc
+  endif
+  ifeq ($(CHPL_MAKE_HWLOC),hwloc)
+    CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(HWLOC_INSTALL_DIR)
+  endif
 endif
 
 
 # Have qthreads use Chapel's allocator, unless directed not to
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
-CHPL_QTHREAD_CFG_OPTIONS += --with-alloc=chapel
-CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include/mem/$(CHPL_MAKE_MEM)/
-CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include/
-ifeq ($(CHPL_MAKE_MEM),jemalloc)
-CFLAGS += -I$(JEMALLOC_INCLUDE_DIR)
-RUNTIME_LFLAGS += -L$(JEMALLOC_LIB_DIR)
-RUNTIME_LFLAGS += -ljemalloc
-RUNTIME_LFLAGS += $(shell $(JEMALLOC_BIN_DIR)/jemalloc-config --libs)
+  CHPL_QTHREAD_CFG_OPTIONS += --with-alloc=chapel
+  CFLAGS_NEEDS_RT_INCLUDES = y
 endif
+
+ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
+  CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include/localeModels/$(CHPL_MAKE_LOCALE_MODEL)
+  CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include/mem/$(CHPL_MAKE_MEM)
+  CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include
+  ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
+    ifeq ($(CHPL_MAKE_MEM),jemalloc)
+      CFLAGS += -I$(JEMALLOC_INCLUDE_DIR)
+    endif
+  endif
 endif
 
 # enable oversubscription for testing
@@ -85,6 +96,10 @@ CHPL_QTHREAD_CFG_OPTIONS += --enable-condwait-queue
 # spinlocks to be fast, so disable them for pgi, and PrgEnv-pgi
 ifneq (, $(findstring pgi,$(CHPL_MAKE_TARGET_COMPILER)))
 CHPL_QTHREAD_CFG_OPTIONS += --disable-internal-spinlock
+endif
+
+ifeq ($(CHPL_LIBMODE),shared)
+CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 
 CHPL_QTHREAD_CFG_OPTIONS += $(CHPL_QTHREAD_MORE_CFG_OPTIONS)

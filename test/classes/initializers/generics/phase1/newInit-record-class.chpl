@@ -1,10 +1,10 @@
 // Initialize a class field in a record with an initializer
 record Container {
-  var y: Stored;
+  var y: unmanaged Stored;
   var v;
 
   proc init() {
-    y = new Stored(true);
+    y = new unmanaged Stored(true);
     v = 10;
   }
 

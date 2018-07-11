@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
+#include "UnmanagedClassType.h"
 #include "preFold.h"
 #include "resolution.h"
 #include "stringutil.h"
@@ -63,22 +64,27 @@ static Expr* postFoldSymExpr(SymExpr* symExpr);
       Symbol* rhsSym = rhsSe->symbol();                                 \
                                                                         \
       if (isEnumSymbol(lhsSym)) {                                       \
-        ensureEnumTypeResolved(toEnumType(lhsSym->type));               \
-      }                                                                 \
+        if (prim != P_prim_equal) {                                     \
+          INT_FATAL("Trying to do a primitive other than '==' on enums"); \
+        }                                                               \
+        if (!isEnumSymbol(rhsSym)) {                                    \
+          INT_FATAL("Trying to do a mixed enum non-enum primitive");    \
+        }                                                               \
+        Immediate enumcomp;                                             \
+        enumcomp = (lhsSym == rhsSym);                                  \
+        retval = new SymExpr(new_ImmediateSymbol(&enumcomp));           \
+        call->replace(retval);                                          \
+      } else {                                                          \
+        if (Immediate* lhs = getSymbolImmediate(lhsSym)) {              \
+          if (Immediate* rhs = getSymbolImmediate(rhsSym)) {            \
+            Immediate i3;                                               \
                                                                         \
-      if (isEnumSymbol(rhsSym)) {                                       \
-        ensureEnumTypeResolved(toEnumType(rhsSym->type));               \
-      }                                                                 \
+            fold_constant(prim, lhs, rhs, &i3);                         \
                                                                         \
-      if (Immediate* lhs = getSymbolImmediate(lhsSym)) {                \
-        if (Immediate* rhs = getSymbolImmediate(rhsSym)) {              \
-          Immediate i3;                                                 \
+            retval = new SymExpr(new_ImmediateSymbol(&i3));             \
                                                                         \
-          fold_constant(prim, lhs, rhs, &i3);                           \
-                                                                        \
-          retval = new SymExpr(new_ImmediateSymbol(&i3));               \
-                                                                        \
-          call->replace(retval);                                        \
+            call->replace(retval);                                      \
+          }                                                             \
         }                                                               \
       }                                                                 \
     }                                                                   \
@@ -266,7 +272,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
       if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
         AggregateType* ag = toAggregateType(st);
 
-        st = ag->getField("_instance")->type;
+        st = canonicalClassType(ag->getField("_instance")->type);
       } else {
         // Try to work around some resolution order issues
         st = resolveTypeAlias(subExpr);
@@ -490,14 +496,25 @@ static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
     // by at->instantiatedFrom
     retval = true;
 
-  } else if (AggregateType* at = toAggregateType(sub)) {
-    for (int i = 0; i < at->dispatchParents.n && retval == false; i++) {
-      retval = isSubTypeOrInstantiation(at->dispatchParents.v[i], super);
+  } else if (isAggregateType(sub) || isUnmanagedClassType(sub)) {
+    // handle unmanaged / class types
+    AggregateType* subAt = toAggregateType(sub);
+    Type* useSuper = super;
+
+    if (classesWithSameKind(sub, super)) {
+      subAt = toAggregateType(canonicalClassType(sub));
+      useSuper = canonicalClassType(super);
     }
 
-    if (retval == false) {
-      if (at->instantiatedFrom != NULL) {
-        retval = isSubTypeOrInstantiation(at->instantiatedFrom,   super);
+    if (subAt) {
+      for (int i = 0; i < subAt->dispatchParents.n && retval == false; i++) {
+        retval = isSubTypeOrInstantiation(subAt->dispatchParents.v[i], useSuper);
+      }
+
+      if (retval == false) {
+        if (subAt->instantiatedFrom != NULL) {
+          retval = isSubTypeOrInstantiation(subAt->instantiatedFrom, useSuper);
+        }
       }
     }
   }
@@ -695,20 +712,16 @@ bool requiresImplicitDestroy(CallExpr* call) {
   bool retval = false;
 
   if (FnSymbol* fn = call->resolvedFunction()) {
-    FnSymbol* parent = call->getFunction();
 
-    if (parent->hasFlag(FLAG_DONOR_FN)                        == false &&
-        isRecord(fn->retType)                                 == true  &&
+    if (isRecord(fn->retType)                                 == true  &&
         fn->hasFlag(FLAG_NO_IMPLICIT_COPY)                    == false &&
         fn->isIterator()                                      == false &&
         fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
-        fn->hasFlag(FLAG_DONOR_FN)                            == false &&
-        fn->hasFlag(FLAG_INIT_COPY_FN)                        == false &&
         fn->hasFlag(FLAG_AUTO_II)                             == false &&
         fn->hasFlag(FLAG_CONSTRUCTOR)                         == false &&
         fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)                    == false &&
-        strcmp(fn->name, "=")                                 !=     0 &&
-        strcmp(fn->name, "_defaultOf")                        !=     0) {
+        fn->name != astrSequals                                        &&
+        fn->name != astr_defaultOf) {
       retval = true;
     }
   }

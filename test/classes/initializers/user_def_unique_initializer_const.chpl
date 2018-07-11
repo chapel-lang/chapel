@@ -8,7 +8,7 @@ class C {
   }
 }
 
-var c = new C(2, 3);
+var c = new unmanaged C(2, 3);
 
 writeln(c.x);
 

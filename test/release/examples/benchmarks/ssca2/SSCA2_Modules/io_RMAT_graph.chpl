@@ -199,8 +199,7 @@ proc Readin_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
 
   } else {
     // !IOserial
-    const repfileMap = new Replicated(Locales);
-    const repfileDom = repfileBase dmapped new dmap(repfileMap);
+    const repfileDom = repfileBase dmapped Replicated(Locales);
     var repfiles: [repfileDom] file;
 
     coforall l in Locales do on l {

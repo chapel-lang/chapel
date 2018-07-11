@@ -76,6 +76,10 @@ class DimensionalDist : BaseDist {
 
 // class LocDimensionalDist - no local distribution descriptor - for now
 
+private proc locDescTypeHelper(dom1, dom2) type {
+  return (dom1.dsiNewLocalDom1d(0).type, dom2.dsiNewLocalDom1d(0).type);
+}
+
 class DimensionalDom : BaseRectangularDom {
   // required
   param rank: int;
@@ -93,7 +97,7 @@ class DimensionalDom : BaseRectangularDom {
 
   // this is our index set; we store it here so we can get to it easily
   // although it is not necessary, strictly speaking
-  var whole: domainT;
+  var whole: domain(rank, idxType, stridable);
 
   // convenience - our instantiation of LocDimensionalDom
   proc lddTypeArg1 type  return domainT;
@@ -102,7 +106,8 @@ class DimensionalDom : BaseRectangularDom {
   proc locDdescType type  return LocDimensionalDom(lddTypeArg1, lddTypeArg2);
 
   // local domain descriptors
-  var localDdescs: [dist.targetIds] locDdescType; // not reprivatized
+  var localDdescs : [dist.targetIdx] LocDimensionalDom(domain(rank, idxType, stridable),
+                                                       locDescTypeHelper(dom1, dom2));
 
   // for privatization
   var pid: int = -1;
@@ -125,6 +130,7 @@ class LocDimensionalDom {
   var myStorageDom: domain(myBlock.rank, stoSzT, false);
 }
 
+pragma "use default init"
 class DimensionalArr : BaseArr {
   // required
   type eltType;

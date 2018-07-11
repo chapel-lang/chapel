@@ -7,8 +7,6 @@ class D : C {
   var y : t;
 }
 
-var d = new D(t=real);
+var d = new borrowed D(t=real);
 
 writeln(d);
-
-delete d;

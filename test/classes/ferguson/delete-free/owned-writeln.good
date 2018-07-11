@@ -1,0 +1,4 @@
+before writeln x={x = 1}
+{x = 1}
+after writeln x={x = 1}
+Destroying C 1

@@ -12,8 +12,7 @@ class LotsOFields {
 }
 
 proc main() {
-  var c: LotsOFields = new LotsOFields(2, 6.3, true);
+  var c: LotsOFields = new borrowed LotsOFields(2, 6.3, true);
 
   writeln(c);
-  delete c;
 }

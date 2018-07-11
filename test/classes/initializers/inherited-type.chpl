@@ -29,9 +29,7 @@ class Base {
 
 
 proc main() {
-  var c = new Derived(10, 20, 30);
+  var c = new borrowed Derived(10, 20, 30);
 
   writeln(c);
-
-  delete c;
 }

@@ -68,6 +68,7 @@ for ii in 1..k
 
 /*Reduction class*/
 
+pragma "use default init"
 class kmeansReduction : ReduceScanOp{
 
 type eltType;
@@ -109,7 +110,7 @@ proc accumulate (da: eltType)
     }
 }
 
-proc combine(km: kmeansReduction(eltType))
+proc combine(km: borrowed kmeansReduction(eltType))
 {
     RO.counts = RO.counts + km.RO.counts;
     RO.error = RO.error + km.RO.error;

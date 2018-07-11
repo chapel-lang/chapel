@@ -77,5 +77,7 @@ void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel) {
   for_vector(ForallStmt, forall, foralls) {
     if (forall->fContinueLabel && !isAlive(forall->fContinueLabel))
       forall->fContinueLabel = NULL;
+    if (forall->fErrorHandlerLabel && !isAlive(forall->fErrorHandlerLabel))
+      forall->fErrorHandlerLabel = NULL;
   }
 }

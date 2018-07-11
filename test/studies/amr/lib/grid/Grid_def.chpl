@@ -44,7 +44,7 @@ class Grid {
   const extended_cells: domain(dimension, stridable=true);
   
   // const ghost_domains: MultiDomain(dimension, stridable=true);
-  const ghost_domains: List( domain(dimension, stridable=true) );
+  const ghost_domains: unmanaged List( domain(dimension, stridable=true) );
 
 
 
@@ -99,17 +99,17 @@ class Grid {
     // the grid and stored in a linked list.
     //-------------------------------------------------------------
 
-    ghost_domains = new List( domain(dimension,stridable=true) );
+    ghost_domains = new unmanaged List( domain(dimension,stridable=true) );
     this.complete();
 
     //==== Sanity check ====
     sanityChecks();
 
-    var inner_location: dimension*int;
+    var inner_location: dimension*loc1d;
     for d in dimensions do inner_location(d) = loc1d.inner;
 
     var ghost_domain: domain(dimension, stridable=true);
-    for loc in (loc1d.below:int .. loc1d.above by 2)**dimension {
+    for loc in (loc1d.below .. loc1d.above by 2)**dimension {
       if loc != inner_location {
         for d in dimensions {
           if loc(d) == loc1d.below {
@@ -186,11 +186,11 @@ class Grid {
     var loc: dimension*int;
 
     for d in dimensions {
-           if idx(d) <  i_low(d)  then loc(d) = loc1d.below;
-      else if idx(d) == i_low(d)  then loc(d) = loc1d.low;
-      else if idx(d) <  i_high(d) then loc(d) = loc1d.inner;
-      else if idx(d) == i_high(d) then loc(d) = loc1d.high;
-      else                             loc(d) = loc1d.above;
+           if idx(d) <  i_low(d)  then loc(d) = loc1d.below: int;
+      else if idx(d) == i_low(d)  then loc(d) = loc1d.low: int;
+      else if idx(d) <  i_high(d) then loc(d) = loc1d.inner: int;
+      else if idx(d) == i_high(d) then loc(d) = loc1d.high: int;
+      else                             loc(d) = loc1d.above: int;
     }
 
     return loc;
@@ -311,7 +311,7 @@ proc readGrid(file_name: string) {
   var i_low: dimension*int;
 
 
-  return new Grid(x_low, x_high, i_low, n_cells, n_ghost_cells);
+  return new unmanaged Grid(x_low, x_high, i_low, n_cells, n_ghost_cells);
 
 }
 // /|"""""""""""""""""""""""""/|

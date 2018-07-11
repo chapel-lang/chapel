@@ -19,12 +19,12 @@ class C: B {
   }
 }
 
-var a = new A();
-var b = new B();
-var c = new C();
+var a = new borrowed A();
+var b = new borrowed B();
+var c = new borrowed C();
 
-var c2: A = new C();
-var c3: B = new C();
+var c2: borrowed A = new borrowed C();
+var c3: borrowed B = new borrowed C();
 
 a.foo();
 b.foo();
@@ -32,10 +32,3 @@ c.foo();
 
 c2.foo();
 c3.foo();
-
-delete c3;
-delete c2;
-
-delete c;
-delete b;
-delete a;

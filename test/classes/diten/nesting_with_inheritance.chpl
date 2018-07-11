@@ -18,7 +18,7 @@ class myouter {
     }
   }
   proc runit() {
-    var nes = new nested();
+    var nes = new unmanaged nested();
 
     nes.bar();
 
@@ -26,7 +26,7 @@ class myouter {
   }
 }
 
-var outervar = new myouter();
+var outervar = new unmanaged myouter();
 
 outervar.runit();
 

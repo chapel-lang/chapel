@@ -54,7 +54,6 @@ proc ref R.verify() {
   }
 }
 
-pragma "donor fn"
 pragma "auto copy fn"
 proc chpl__autoCopy(arg: R) {
   extern proc printf(fmt:c_string, arg:c_ptr(int));

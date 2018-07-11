@@ -4,7 +4,7 @@ class C {
   proc foo() return 314:t;
 }
 
-var c = new C(int(64));
+var c = new unmanaged C(int(64));
 
 writeln(c);
 

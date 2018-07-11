@@ -11,7 +11,6 @@ inline proc chpl__initCopy(ref r: myR) {
 }
 
 pragma "auto copy fn"
-pragma "donor fn"
 inline proc chpl__autoCopy(ref r: myR) {
   var ret: myR;
   ret.base = r.base;

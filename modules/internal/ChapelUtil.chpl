@@ -135,7 +135,7 @@ module ChapelUtil {
 
   proc chpl_addModule(moduleName: c_string, deinitFun: c_fn_ptr) {
     chpl_moduleDeinitFuns =
-      new chpl_ModuleDeinit(moduleName, deinitFun, chpl_moduleDeinitFuns);
+      new unmanaged chpl_ModuleDeinit(moduleName, deinitFun, chpl_moduleDeinitFuns);
   }
 
   proc chpl_deinitModules() {

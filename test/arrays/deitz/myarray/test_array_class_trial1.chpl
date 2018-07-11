@@ -26,10 +26,7 @@ class array1d {
 
 }
 
-var a : array1d(int) = new array1d(int);
+var a : borrowed array1d(int) = new borrowed array1d(int);
 
 a(1) = 2;
 writeln(a(1));
-
-delete a;
-

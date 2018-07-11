@@ -7,7 +7,7 @@ class D : C {
   var y : real;
 }
 
-var d = new D(p=2);
+var d = new borrowed D(p=2);
 
 writeln(d);
 
@@ -17,5 +17,3 @@ proc foo(d : D) {
 }
 
 foo(d);
-
-delete d;

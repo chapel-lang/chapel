@@ -1,5 +1,5 @@
 class A {
-  forwarding var driver: B;
+  forwarding var driver: borrowed B;
 }
 
 class B {
@@ -23,7 +23,7 @@ class C: B {
 }
 
 proc main() {
-  var obj = new A(new C() );
+  var obj = new borrowed A(new borrowed C() );
   obj.print();
   obj.printv(1);
 }

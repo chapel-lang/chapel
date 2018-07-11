@@ -1,5 +1,5 @@
 record Wrapper {
-  forwarding var instance:C;
+  forwarding var instance:unmanaged C;
   proc foo() { writeln("in Wrapper.foo()"); }
   proc deinit() {
     delete instance;
@@ -13,7 +13,7 @@ class C {
   proc baz() { field = 1; }
 }
 
-var r = new Wrapper(new C());
+var r = new Wrapper(new unmanaged C());
 r.foo(); // direct method shadows forwarding method
 r.foo();
 r.bar(); // same as r.instance.bar(), prints "in C.foo()"

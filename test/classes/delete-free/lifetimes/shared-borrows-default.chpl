@@ -3,10 +3,12 @@ module l16 {
 
 use SharedObject;
 
+pragma "use default init"
 class MyClass {
   var x:int;
 }
 
+pragma "use default init"
 record R {
   var c:Shared(MyClass);
 }
@@ -48,16 +50,16 @@ proc m(c:Shared(MyClass)) {
 }
 
 proc test() {
-  var shared = new Shared(new MyClass(1));
+  var myshared = new Shared(new MyClass(1));
 
-  var v1 = f(shared);
-  var v2 = g(shared);
+  var v1 = f(myshared);
+  var v2 = g(myshared);
   var v3 = h();
   var v4 = i();
   var v5 = j();
   var v6 = k();
-  var v7 = l(shared);
-  var v8 = m(shared);
+  var v7 = l(myshared);
+  var v8 = m(myshared);
 
   writeln(v1.c.borrow());
   writeln(v2.c.borrow());

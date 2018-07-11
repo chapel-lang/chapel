@@ -11,9 +11,9 @@ class bar {
   var y : int;
 }
 
-var f : foo(t=bar) = new foo(t=bar);
+var f : unmanaged foo(t=bar) = new unmanaged foo(t=bar);
 
-f.x = new bar(x = 12, y = 13);
+f.x = new unmanaged bar(x = 12, y = 13);
 
 writeln(f);
 f.print();

@@ -28,15 +28,15 @@ config const debug   = false;
 class Function {
     const k            : int;  // use first k Legendre polynomials as the basis in each box
     const thresh       : real; // truncation threshold for small wavelet coefficients
-    var   f            : AFcn; // analytic f(x) to project into the numerical represntation
+    var   f            : unmanaged AFcn; // analytic f(x) to project into the numerical represntation
     const initial_level: int;  // initial level of refinement
     const max_level    : int;  // maximum level of refinement mostly as a sanity check
     const autorefine   : bool; // automatically refine during multiplication
     var   compressed   : bool; // keep track of what basis we are in
 
     // Sum and Difference coefficients
-    const sumC : FTree;
-    const diffC: FTree;
+    const sumC : unmanaged FTree;
+    const diffC: unmanaged FTree;
 
     // Two-Scale relationship matrices
     const hgDom: domain(2);
@@ -59,9 +59,10 @@ class Function {
     const r0   : [dcDom] real;
     const rp   : [dcDom] real;
 
-    proc init(k:int=5, thresh:real=1e-5, f:AFcn=nil, initial_level:int=2,
+    proc init(k:int=5, thresh:real=1e-5, f:unmanaged AFcn=nil, initial_level:int=2,
               max_level:int=30, autorefine:bool=true, compressed:bool=false,
-              sumC:FTree=new FTree(order=k), diffC:FTree=new FTree(order=k)) {
+              sumC:unmanaged FTree=new unmanaged FTree(order=k),
+              diffC:unmanaged FTree=new unmanaged FTree(order=k)) {
         if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
         this.k = k;
         this.thresh = thresh;
@@ -138,7 +139,7 @@ class Function {
     /** Return a deep copy of this Function
      */
     proc copy() {
-        return new Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
+        return new unmanaged Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine, compressed=compressed,
                 sumC=sumC.copy(), diffC=diffC.copy());
     }
@@ -148,7 +149,7 @@ class Function {
      */
     proc skeletonCopy() {
         // Omit: f, compressed, sumC, diffC
-        return new Function(k=k, thresh=thresh, initial_level=initial_level,
+        return new unmanaged Function(k=k, thresh=thresh, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine);
     }
 
@@ -457,7 +458,7 @@ class Function {
         }
 
         // return this so operations can be chained
-        return this;
+        return _to_unmanaged(this);
     }
 
 
@@ -612,14 +613,14 @@ class Function {
 /*************************************************************************/
 
 
-proc +(F: Function, G: Function): Function {
+proc +(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
     return F.add(G);
 }
 
-proc -(F: Function, G: Function): Function {
+proc -(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
     return F.subtract(G);
 }
     
-proc *(F: Function, G: Function): Function {
+proc *(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
     return F.multiply(G);
 }

@@ -7,7 +7,7 @@ class C {
   var c;
 }
 
-var x = new C(new foo());
+var x = new unmanaged C(new foo());
 
 x.c.i = -1;
 

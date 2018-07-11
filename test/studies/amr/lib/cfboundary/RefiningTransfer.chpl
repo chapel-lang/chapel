@@ -20,9 +20,9 @@ class GridCFGhostRegion {
   //| >    fields    | >
   //|/...............|/
 
-  const grid:             Grid;
-  var coarse_neighbors: domain(Grid);
-  var transfer_regions:  [coarse_neighbors] MultiDomain(dimension,stridable=true);
+  const grid:             unmanaged Grid;
+  var coarse_neighbors: domain(unmanaged Grid);
+  var transfer_regions:  [coarse_neighbors] unmanaged MultiDomain(dimension,stridable=true);
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -35,9 +35,9 @@ class GridCFGhostRegion {
   //|/....................|/
   
   proc init (
-    grid:         Grid,
-    parent_level: Level,
-    coarse_level: Level)
+    grid:         unmanaged Grid,
+    parent_level: unmanaged Level,
+    coarse_level: unmanaged Level)
   {
         
     this.grid = grid;
@@ -56,7 +56,7 @@ class GridCFGhostRegion {
         
         //---- Initialize a MultiDomain to the intersection, less grid's interior ----
         
-        var boundary_multidomain = new MultiDomain(dimension, stridable=true);
+        var boundary_multidomain = new unmanaged MultiDomain(dimension, stridable=true);
         boundary_multidomain.add( fine_intersection );
         boundary_multidomain.subtract( grid.cells );
         
@@ -144,9 +144,9 @@ class LevelCFGhostRegion {
   //| >    fields    | >
   //|/...............|/
   
-  const level:               Level;  
-  const coarse_level:        Level;
-  var grid_cf_ghost_regions: [level.grids] GridCFGhostRegion;
+  const level:               unmanaged Level;  
+  const coarse_level:        unmanaged Level;
+  var grid_cf_ghost_regions: [level.grids] unmanaged GridCFGhostRegion;
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -169,7 +169,7 @@ class LevelCFGhostRegion {
   { 
         
     for grid in level.grids do
-      grid_cf_ghost_regions(grid) = new GridCFGhostRegion(grid, level, coarse_level);
+      grid_cf_ghost_regions(grid) = new unmanaged GridCFGhostRegion(grid, level, coarse_level);
       
   }
   // /|'''''''''''''''''''''''''''''''''''/|
@@ -194,7 +194,7 @@ class LevelCFGhostRegion {
   //|\'''''''''''''''''''''''''''''|\
   //| >    special method: this    | >
   //|/.............................|/
-  proc this ( grid: Grid )
+  proc this ( grid: unmanaged Grid )
   {
     return grid_cf_ghost_regions( grid );
   }
@@ -228,12 +228,12 @@ class GridCFGhostSolution {
   //| >    fields    | >
   //|/...............|/
   
-  const grid_cf_ghost_region: GridCFGhostRegion;
+  const grid_cf_ghost_region: unmanaged GridCFGhostRegion;
   
-  var old_data: [grid_cf_ghost_region.coarse_neighbors] MultiArray(dimension,true,real);
+  var old_data: [grid_cf_ghost_region.coarse_neighbors] unmanaged MultiArray(dimension,true,real);
   var old_time: real;
 
-  var current_data: [grid_cf_ghost_region.coarse_neighbors] MultiArray(dimension,true,real);
+  var current_data: [grid_cf_ghost_region.coarse_neighbors] unmanaged MultiArray(dimension,true,real);
   var current_time: real;
 
 
@@ -264,10 +264,10 @@ class GridCFGhostSolution {
   {      
     for c_neighbor in grid_cf_ghost_region.coarse_neighbors {
 
-      old_data(c_neighbor) = new MultiArray(dimension,true,real);
+      old_data(c_neighbor) = new unmanaged MultiArray(dimension,true,real);
       old_data(c_neighbor).allocate( grid_cf_ghost_region.transfer_regions(c_neighbor) );
 
-      current_data(c_neighbor) = new MultiArray(dimension,true,real);
+      current_data(c_neighbor) = new unmanaged MultiArray(dimension,true,real);
       current_data(c_neighbor).allocate( grid_cf_ghost_region.transfer_regions(c_neighbor) );
     }
   }
@@ -330,7 +330,7 @@ class GridCFGhostSolution {
   // data from the input coarse LevelSolution.
   //---------------------------------------------------------
 
-  proc fill ( coarse_level_solution: LevelSolution )
+  proc fill ( coarse_level_solution: unmanaged LevelSolution )
   {
 
     //---- Calculate refinement ratio ----
@@ -398,11 +398,11 @@ class LevelCFGhostSolution {
   //| >    fields    | >
   //|/...............|/
   
-  const level_cf_ghost_region: LevelCFGhostRegion;
+  const level_cf_ghost_region: unmanaged LevelCFGhostRegion;
   
-  const level:                 Level;
+  const level:                 unmanaged Level;
   
-  var grid_cf_ghost_solutions: [level.grids] GridCFGhostSolution;
+  var grid_cf_ghost_solutions: [level.grids] unmanaged GridCFGhostSolution;
 
   var old_time:     real;    
   var current_time: real;
@@ -440,7 +440,7 @@ class LevelCFGhostSolution {
            "Error: LevelCFGhostRegion.initialize: Input level must equal level_cf_ghost_region.level");
     
     for grid in level.grids do
-      grid_cf_ghost_solutions(grid) = new GridCFGhostSolution( level_cf_ghost_region(grid) );
+      grid_cf_ghost_solutions(grid) = new unmanaged GridCFGhostSolution( level_cf_ghost_region(grid) );
 
   }
   // /|'''''''''''''''''''''''''''''''''''/|
@@ -472,7 +472,7 @@ class LevelCFGhostSolution {
   // GridCFGhostSolution.
   //-----------------------------------------------------------
   
-  proc this ( grid: Grid )
+  proc this ( grid: unmanaged Grid )
   {
     return grid_cf_ghost_solutions( grid );
   }
@@ -492,7 +492,7 @@ class LevelCFGhostSolution {
   // data from the input coarse LevelSolution.
   //---------------------------------------------------------------
   
-  proc fill ( coarse_level_solution: LevelSolution)
+  proc fill ( coarse_level_solution: unmanaged LevelSolution)
   {
     //==== Make aliases for the levels involved ====
     const level        = this.level_cf_ghost_region.level;
@@ -543,7 +543,7 @@ class LevelCFGhostSolution {
 //-----------------------------------------------------------------
 
 proc GridVariable.fillCFGhostRegion (
-  grid_cf_ghost_solution: GridCFGhostSolution,
+  grid_cf_ghost_solution: unmanaged GridCFGhostSolution,
   time:                   real )
 {
   //==== Safety check ====
@@ -595,7 +595,7 @@ proc GridVariable.fillCFGhostRegion (
 //------------------------------------------------------------------
 
 proc LevelVariable.fillCFGhostRegion (
-  level_cf_ghost_solution: LevelCFGhostSolution,
+  level_cf_ghost_solution: unmanaged LevelCFGhostSolution,
   time:                    real )
 {
 

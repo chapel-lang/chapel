@@ -12,8 +12,7 @@ class Foo {
   }
 }
 
-var x = new Foo(4);
-var y = new Foo(6);
+var x = new borrowed Foo(4);
+var y = new borrowed Foo(6);
 writeln(x);
 writeln(y);
-delete x, y;

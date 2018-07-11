@@ -73,17 +73,10 @@ tags
 
 # Modules ignores.
 /modules/docs
-/modules/internal/tasks/muxed
-/modules/internal/threads/soft-threads
 /modules/webdocs
 
 # Runtime ignores.
-/runtime/etc/Makefile.threads-soft-threads
 /runtime/include/chpl_rt_utils.h
-/runtime/include/tasks/muxed
-/runtime/include/threads/soft-threads
-/runtime/src/tasks/muxed
-/runtime/src/threads/soft-threads
 /runtime/src/timers/
 
 # Spec ignores.
@@ -209,6 +202,9 @@ tags
 /test/memory/shannon/jacobi.log
 /test/memory/shannon/configVarFile.log
 
+/test/library/packages/HDF5/ex_lite1.h5
+/test/library/packages/HDF5/ex_lite3.h5
+/test/library/standard/FileSystem/copyFile/*.out
 /test/library/standard/FileSystem/fsouza/chdir/destination
 /test/library/standard/FileSystem/fsouza/chown/file.txt
 /test/library/standard/FileSystem/fsouza/isdir/my_dir
@@ -258,6 +254,10 @@ tags
 /test/library/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/library/standard/machine/numPUs.good
 /test/library/standard/Memory/countMemory/countMemory.*.good
+
+/test/localeModels/dmk/locale_name.good
+
+/test/mason/run/.mason
 
 /test/multilocale/deitz/needMultiLocales/test_remote_file_read_class.txt
 /test/multilocale/numLocales/bradc/testVerboseFlag.good

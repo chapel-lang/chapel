@@ -10,7 +10,7 @@ proc run(c:C) {
     c.x(i) = 1;
 }
 
-var c = new C();
+var c = new unmanaged C();
 run(c);
 writeln(c);
 delete c;

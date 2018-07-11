@@ -24,6 +24,6 @@ class ZeroBasedArr: BaseArr {
   }
 }
 
-var myArr = new ZeroBasedArr(3);
+var myArr = new unmanaged ZeroBasedArr(3);
 writeln(myArr);
 delete myArr;

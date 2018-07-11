@@ -23,8 +23,8 @@ class SubWriterTwo : BaseWriter {
   }
 }
 
-var s1 = new SubWriterOne();
-var s2 = new SubWriterTwo();
+var s1 = new borrowed SubWriterOne();
+var s2 = new borrowed SubWriterTwo();
 
 var s1w = s1:BaseWriter;
 var s2w = s2:BaseWriter;
@@ -34,9 +34,3 @@ s1w.write(5);
 s1w.write("baz");
 s2w.write(7);
 s2w.write("bar");
-
-delete s2;
-delete s1;
-
-
-

@@ -24,7 +24,7 @@ class OneToTen {
   }
 }
 
-var sharedOneToTen = new OneToTen();
+var sharedOneToTen = new unmanaged OneToTen();
 
 cobegin {
   for x in sharedOneToTen.count() do A(x) = 1;

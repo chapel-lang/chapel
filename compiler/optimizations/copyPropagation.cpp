@@ -199,10 +199,10 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
 
     ArgSymbol* arg = actual_to_formal(se);
 
-    if (arg->intent == INTENT_OUT   ||  // TODO: Try removing this
-        arg->intent == INTENT_INOUT ||  // and this
-        arg->intent == INTENT_REF   ||  // and this.
-        arg->hasFlag(FLAG_ARG_THIS))    // We need this case.
+    if (arg->intent == INTENT_OUT   ||
+        arg->intent == INTENT_INOUT ||
+        arg->intent == INTENT_REF   ||
+        arg->hasFlag(FLAG_ARG_THIS)) // Todo: replace with arg intent check?
     {
       liveRefs.insert(se->symbol());
       return true;
@@ -946,8 +946,11 @@ void copyPropagation(void) {
   if (!fNoCopyPropagation) {
     forv_Vec(FnSymbol, fn, gFnSymbols)
     {
+      // BHARSH INIT TODO: Can this be eliminated now that tuples no longer use
+      // constructors?
+      //
       // This test is necessary because extern function stubs may contain
-      // _construct_tuple calls that are unresolved.
+      // _construct__tuple calls that are unresolved.
       if (fn->hasFlag(FLAG_EXTERN))
         continue;
 

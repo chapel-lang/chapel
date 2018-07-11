@@ -20,6 +20,7 @@
 module AtomicsCommon {
   use ChapelStandard;
 
+  pragma "use default init"
   record atomic_refcnt {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network

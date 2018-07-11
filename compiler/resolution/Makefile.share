@@ -28,8 +28,10 @@ RESOLUTION_SRCS =                                              \
                   implementForallIntents.cpp                   \
                   implementForallIntents2.cpp                  \
                   initializerResolution.cpp                    \
+                  lateConstCheck.cpp                           \
                   lifetime.cpp                                 \
                   loopDetails.cpp                              \
+                  lowerForalls.cpp                             \
                   lowerIterators.cpp                           \
                   postFold.cpp                                 \
                   preFold.cpp                                  \

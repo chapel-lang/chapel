@@ -57,12 +57,11 @@ proc main {
   }
   writeln("done iii0");
 
-  // testing in and ref intents
-  var ovarIn = 1, ovarRef = 2;
-  forall iii2 in myiter(2) with (in ovarIn, ref ovarRef) {
-    writef("%5i  %5i  %5i\n", iii2, ovarIn, ovarRef);
-    ovarIn += iii2;
-    ovarRef += iii2;
+  // testing ref intents
+  var ovarRef = 1;
+  forall iii1 in myiter(2) with (ref ovarRef) {
+    writef("%5i  %5i\n", iii1, ovarRef);
+    ovarRef += iii1;
   }
-  writef("done iii2  %i  %i\n", ovarIn, ovarRef);
+  writef("done iii1  %i\n", ovarRef);
 }

@@ -17,7 +17,7 @@ class MyClass1 : MyClass0 {
 }
 
 proc main() {
-  var c : MyClass1 = new MyClass1(50);
+  var c : unmanaged MyClass1 = new unmanaged MyClass1(50);
 
   writeln(c);
 

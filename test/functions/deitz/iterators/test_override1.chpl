@@ -12,7 +12,7 @@ class D: C {
   }
 }
 
-var c = new C();
+var c = new unmanaged C();
 
 for i in c.foo(4) do
   writeln(i);
@@ -20,7 +20,7 @@ writeln();
 
 delete c;
 
-c = new D();
+c = new unmanaged D();
 
 for i in c.foo(4) do
   writeln(i);

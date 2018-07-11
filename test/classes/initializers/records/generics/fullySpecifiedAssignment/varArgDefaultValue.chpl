@@ -9,7 +9,7 @@ record Foo {
   }
 }
 
-var foo1: Foo(bool) = new Foo(true);
+var foo1: Foo(int) = new Foo(true);
 // specifies a different value (of a different type)
 var foo2: Foo(int) = new Foo(); // relies on the default value
 var foo3: Foo(int) = new Foo(3); // specifies the same value as the default

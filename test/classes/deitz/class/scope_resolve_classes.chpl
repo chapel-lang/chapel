@@ -11,7 +11,7 @@ module M {
   }
 
   proc main() {
-    var c = new C();
+    var c = new unmanaged C();
     c.foo();
     delete c;
   }

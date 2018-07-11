@@ -56,7 +56,7 @@ module LocaleModel {
     const sid: chpl_sublocID_t;
     const ndName: string; // note: locale provides `proc name`
 
-    proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
+    override proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
     proc chpl_localeid() {
       return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
                                 sid);
@@ -77,13 +77,13 @@ module LocaleModel {
       f <~> '.'+ndName;
     }
 
-    proc getChildCount(): int { return 0; }
+    override proc getChildCount(): int { return 0; }
     iter getChildIndices() : int {
       halt("No children to iterate over.");
       yield -1;
     }
     proc addChild(loc:locale) { halt("Cannot add children to this locale type."); }
-    proc getChild(idx:int) : locale { return nil; }
+    override proc getChild(idx:int) : locale { return nil; }
 
     iter getChildren() : locale {
       halt("No children to iterate over.");
@@ -130,7 +130,7 @@ module LocaleModel {
       setup();
     }
 
-    proc chpl_id() return _node_id;     // top-level locale (node) number
+    override proc chpl_id() return _node_id;     // top-level locale (node) number
     proc chpl_localeid() {
       return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
     }
@@ -168,14 +168,14 @@ module LocaleModel {
 
     proc getChildSpace() return childSpace;
 
-    proc getChildCount() return numSublocales;
+    override proc getChildCount() return numSublocales;
 
     iter getChildIndices() : int {
       for idx in childSpace do
         yield idx;
     }
 
-    proc getChild(idx:int) : locale {
+    override proc getChild(idx:int) : locale {
       if boundsChecking then
         if (idx < 0) || (idx >= numSublocales) then
           halt("sublocale child index out of bounds (",idx,")");
@@ -237,7 +237,7 @@ module LocaleModel {
     // We return numLocales for now, since we expect nodes to be
     // numbered less than this.
     // -1 is used in the abstract locale class to specify an invalid node ID.
-    proc chpl_id() return numLocales;
+    override proc chpl_id() return numLocales;
     proc chpl_localeid() {
       return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
@@ -248,7 +248,7 @@ module LocaleModel {
       f <~> name;
     }
 
-    proc getChildCount() return this.myLocaleSpace.numIndices;
+    override proc getChildCount() return this.myLocaleSpace.numIndices;
 
     proc getChildSpace() return this.myLocaleSpace;
 
@@ -257,17 +257,17 @@ module LocaleModel {
         yield idx;
     }
 
-    proc getChild(idx:int) return this.myLocales[idx];
+    override proc getChild(idx:int) return this.myLocales[idx];
 
     iter getChildren() : locale  {
       for loc in this.myLocales do
         yield loc;
     }
 
-    proc getDefaultLocaleSpace() const ref return this.myLocaleSpace;
-    proc getDefaultLocaleArray() const ref return myLocales;
+    override proc getDefaultLocaleSpace() const ref return this.myLocaleSpace;
+    override proc getDefaultLocaleArray() const ref return myLocales;
 
-    proc localeIDtoLocale(id : chpl_localeID_t) {
+    override proc localeIDtoLocale(id : chpl_localeID_t) {
       const node = chpl_nodeFromLocaleID(id);
       const subloc = chpl_sublocFromLocaleID(id);
       if chpl_isActualSublocID(subloc) then

@@ -45,6 +45,5 @@ class Child : Parent {
   }
 }
 
-var c = new Child();
+var c = new owned Child();
 writeln("c = ", c);
-delete c;

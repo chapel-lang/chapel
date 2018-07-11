@@ -14,11 +14,11 @@ class Deque : Collection {
 
 record wrapper {
     type t;
-    var instance : Deque(t);
+    var instance : unmanaged Deque(t);
 
     inline proc _value { 
         if instance == nil then
-            instance = new Deque(t);
+            instance = new unmanaged Deque(t);
         return instance;
     }
 

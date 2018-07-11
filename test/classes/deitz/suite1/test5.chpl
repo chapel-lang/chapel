@@ -3,7 +3,6 @@ class C {
   var x : t;
 }
 
-var c : C(t = int) = new C(t = int);
+var c : borrowed C(t = int) = new borrowed C(t = int);
 c.x = 12;
 writeln(c);
-delete c;
