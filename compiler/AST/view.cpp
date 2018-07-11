@@ -908,21 +908,27 @@ void fnsWithName(const char* name, Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& fnVec) {
 }
 
 //
-// whocalls: print all CallExprs whose baseExpr is the given SymExpr or Symbol
+// whocalls: print all ways that the AST with the given 'id' is invoked
 //
+static void whocalls(int id, Symbol* sym);
+
 void whocalls(BaseAST* ast) {
   if (!ast) {
     printf("whocalls: aborting: got NULL\n");
     return;
   }
-  printf("whocalls(%s[%d])\n", ast->astTagAsString(), ast->id);
-  if (SymExpr* se = toSymExpr(ast)) {
-    whocalls(se->symbol()->id);
-  } else if (isSymbol(ast)) {
-    whocalls(ast->id);
-  } else {
-    printf("whocalls: aborting: need a SymExpr or Symbol\n");
-  }
+  Symbol* sym = NULL;
+  if (SymExpr* se = toSymExpr(ast))
+    sym = se->symbol();
+  else if (DefExpr* def = toDefExpr(ast))
+    sym = def->sym;
+  else if (Symbol* symm = toSymbol(ast))
+    sym = symm;
+
+  if (sym == NULL)
+    printf("whocalls: aborting: need a SymExpr or DefExpr or Symbol\n");
+  else
+    whocalls(ast->id, sym);
 }
 
 static char* parentMsg(Expr* expr, int* cntInTreeP, int* cntNonTreeP) {
@@ -937,8 +943,20 @@ static char* parentMsg(Expr* expr, int* cntInTreeP, int* cntNonTreeP) {
   return result;
 }
 
-// 'id' better be a Symbol
 void whocalls(int id) {
+  whocalls(id, NULL);
+}
+
+// 'sym' is used to print the function name
+static void whocalls(int id, Symbol* sym) {
+  if (sym == NULL)
+    printf("whocalls [%d]\n", id);
+  else if (sym->id == id)
+    printf("whocalls %s %s[%d]\n", sym->astTagAsString(), sym->name, id);
+  else
+    printf("whocalls [%d]  ignoring %s %s[%d]\n",
+           id, sym->astTagAsString(), sym->name, sym->id);
+  
   int callAll = 0, callMatch = 0, callNonTreeMatch = 0;
   forv_Vec(CallExpr, call, gCallExprs) {
     if (SymExpr* se = toSymExpr(call->baseExpr)) {
@@ -1012,6 +1030,7 @@ void whocalls(int id) {
   int forNontree = forNonTreeMatch + fItNonTreeMatch;
   if (forNontree) printf(", also %d not in tree", forNontree);
   printf(".  %d of %d in VMT+FT.\n", vmtMatch+ftMatch, vmtAll+ftAll);
+  printf("\n");
 }
 
 FnSymbol* debugGetTheIteratorFn(int id) {
@@ -1035,7 +1054,8 @@ FnSymbol* debugGetTheIteratorFn(BaseAST* ast) {
   else if (SymExpr* se = toSymExpr(ast))
     return debugGetTheIteratorFn(se->symbol());
   else {
-    printf("<don't know how to get the iterator for node %d>\n", ast->id);
+    printf("<don't know how to get the iterator for node %s %d>\n",
+           ast->astTagAsString(), ast->id);
     return NULL;
   }
 }
