@@ -94,8 +94,8 @@ void checkReturnTypesHaveRefTypes();
 // buildDefaultFunctions.cpp
 void buildDefaultDestructor(AggregateType* ct);
 void buildEnumFunctions(EnumType* et);
-void build_accessor(AggregateType* ct, Symbol* field,
-                    bool setter, bool typeMethod);
+FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
+                         bool setter, bool typeMethod);
 
 // callDestructors.cpp
 void insertReferenceTemps(CallExpr* call);

@@ -292,7 +292,7 @@ static void fixup_accessor(AggregateType* ct, Symbol *field,
 
 // This function builds the getter or the setter, depending on the
 // 'setter' argument.
-void build_accessor(AggregateType* ct, Symbol* field,
+FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
                            bool setter, bool typeMethod) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike   = ct->isRecord() || ct->isUnion();
@@ -407,6 +407,8 @@ void build_accessor(AggregateType* ct, Symbol* field,
   fn->addFlag(FLAG_NO_PARENS);
 
   fn->_this = _this;
+
+  return fn;
 }
 
 // Getter and setter functions are provided by the compiler if not supplied by
