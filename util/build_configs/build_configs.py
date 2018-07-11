@@ -26,22 +26,6 @@ import subprocess
 import sys
 import time
 
-# Add the chplenv dir to the python path.
-chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
-sys.path.insert(0, os.path.abspath(chplenv_dir))
-
-# Import chplenv modules here.
-import chpl_comm
-import chpl_gmp
-import chpl_launcher
-import chpl_llvm
-import chpl_locale_model
-import chpl_make
-import chpl_mem
-import chpl_regexp
-import chpl_tasks
-
-
 class Dimension(object):
     """Encapsulate information about a single dimension."""
 
@@ -51,7 +35,10 @@ class Dimension(object):
         self.var_name = var_name
         self.values = values
         self.default = default
-        self.help_text = self._get_help_text(help_text.format(**locals()))
+        if help_text:
+            self.help_text = self._get_help_text(help_text.format(**locals()))
+        else:
+            self.help_text = self._get_help_text('')
 
         self.validate()
 
@@ -64,7 +51,10 @@ class Dimension(object):
         :rtype: str
         :returns: formatted help text
         """
-        return '{0} (default: {1})'.format(help_text, self.default)
+        if self.default:
+            return '{0} (default: {1})'.format(help_text, self.default)
+        else:
+            return help_text
 
     def __repr__(self):
         """Stringify this dimension."""
@@ -83,71 +73,39 @@ class Dimension(object):
         if not self.var_name or self.var_name != self.var_name.upper():
             raise ValueError('var_name must an upper case string: {0}'.format(
                 self.var_name))
-        if not self.values or not isinstance(self.values, list):
-            raise ValueError('values must be a non-empty list: {0}'.format(
-                self.values))
-        if not self.default or not isinstance(self.default, basestring):
-            raise ValueError('default must be a non-empty string: {0}'.format(
-                self.default))
-        if not self.help_text or not isinstance(self.help_text, basestring):
-            raise ValueError('help_text must be a non-empty string: {0}'.format(
+        if not isinstance(self.help_text, basestring):
+            raise ValueError('help_text must be a string: {0}'.format(
                 self.help_text))
 
 
 """Dimensions this script knows about when compiling chapel. Order determines
 how they will show up in the usage and what order is used in interactive mode.
 """
-Dimensions = [
-    Dimension(
-        'comm', 'CHPL_COMM',
-        values=['none', 'gasnet'],
-        default=chpl_comm.get(),
-        help_text='Chapel communication ({var_name}) value to build.',
-    ),
-    Dimension(
-        'task', 'CHPL_TASKS',
-        values=['fifo', 'qthreads'],
-        default=chpl_tasks.get(),
-        help_text='Tasks ({var_name}) values to build.',
-    ),
-    Dimension(
-        'mem', 'CHPL_MEM',
-        values=['cstdlib', 'jemalloc'],
-        default=chpl_mem.get('target'),
-        help_text='Memory allocator ({var_name}) values to build.',
-    ),
-    Dimension(
-        'launcher', 'CHPL_LAUNCHER',
-        values=['none', 'pbs-aprun', 'aprun', 'slurm-srun'],
-        default=chpl_launcher.get(),
-        help_text='Launcher ({var_name}) to build.',
-    ),
-    Dimension(
-        'gmp', 'CHPL_GMP',
-        values=['none', 'gmp', 'system'],
-        default=chpl_gmp.get(),
-        help_text='GMP ({var_name}) values to build.',
-    ),
-    Dimension(
-        'regexp', 'CHPL_REGEXP',
-        values=['none', 're2'],
-        default=chpl_regexp.get(),
-        help_text='Regular expression ({var_name}) values to build.',
-    ),
-    Dimension(
-        'localeModel', 'CHPL_LOCALE_MODEL',
-        values=['flat', 'knl', 'numa'],
-        default=chpl_locale_model.get(),
-        help_text='Locale model ({var_name}) values to build.',
-    ),
-    Dimension(
-        'llvm', 'CHPL_LLVM',
-        values=['none', 'llvm', 'system'],
-        default=chpl_llvm.get(),
-        help_text='LLVM ({var_name}) values to build.',
-    ),
-]
 
+known_dimensions = [
+    ( 'host_platform',      'CHPL_HOST_PLATFORM', ),
+    ( 'host_compiler',      'CHPL_HOST_COMPILER', ),
+    ( 'target_platform',    'CHPL_TARGET_PLATFORM', ),
+    ( 'target_compiler',    'CHPL_TARGET_COMPILER', ),
+    ( 'arch',               'CHPL_TARGET_ARCH', ),
+    ( 'locale_model',       'CHPL_LOCALE_MODEL', ),
+    ( 'comm',               'CHPL_COMM', ),
+    ( 'substrate',          'CHPL_COMM_SUBSTRATE', ),
+    ( 'segment',            'CHPL_GASNET_SEGMENT', ),
+    ( 'tasks',              'CHPL_TASKS', ),
+    ( 'launcher',           'CHPL_LAUNCHER', ),
+    ( 'timers',             'CHPL_TIMERS', ),
+    ( 'unwind',             'CHPL_UNWIND', ),
+    ( 'mem',                'CHPL_MEM', ),
+    ( 'atomics',            'CHPL_ATOMICS', ),
+    ( 'hwloc',              'CHPL_HWLOC', ),
+    ( 'regexp',             'CHPL_REGEXP', ),
+    ( 'llvm',               'CHPL_LLVM', ),
+    ( 'auxfs',              'CHPL_AUX_FILESYS', ),
+]
+Dimensions = []
+for (name, var_name) in known_dimensions:
+    Dimensions.append(Dimension(name, var_name))
 
 class Config(object):
 
@@ -168,13 +126,21 @@ class Config(object):
 
     def __str__(self):
         """Return name string for this configuration."""
-        f = lambda x: '{0}={1}'.format(x, getattr(self, x))
-        return ' '.join(map(lambda dim: f(dim.name), Dimensions))
+        values = []
+        for dim in Dimensions:
+            value = getattr(self, dim.name)
+            if value:
+                values.append('{0}={1}'.format(dim.name, value))
+        return ' '.join(values)
 
     def verbose_str(self):
         """Return verbose string of configs - one per line indented."""
-        f = lambda x: '    {0}={1}'.format(x, getattr(self, x))
-        return '\n'.join(map(lambda dim: f(dim.name), Dimensions))
+        values = []
+        for dim in Dimensions:
+            value = getattr(self, dim.name)
+            if value:
+                values.append('\t{0}={1}'.format(dim.name, value))
+        return '\n'.join(values)
 
     def get_env(self, orig_env):
         """Update and return an existing configuration with this configuration's
@@ -189,7 +155,9 @@ class Config(object):
         new_env = orig_env.copy()
 
         for dim in Dimensions:
-            new_env[dim.var_name] = getattr(self, dim.name)
+            new_env_var = getattr(self, dim.name)
+            if new_env_var:
+                new_env[dim.var_name] = getattr(self, dim.name)
 
         return new_env
 
@@ -211,6 +179,10 @@ def main():
         logging.info('Using parallel execution for build.')
 
     build_env = os.environ.copy()
+    chpl_misc = get_chpl_misc(opts, build_env)
+    chpl_home = chpl_misc['chpl_home']
+    logging.info('Using CHPL_HOME={0}'.format(chpl_home))
+    build_env['CHPL_HOME'] = chpl_home
 
     build_configs = get_configs(opts)
     config_count_str = '{0} configuration{1}'.format(
@@ -223,7 +195,7 @@ def main():
     with elapsed_time('All {0}'.format(config_count_str)):
         for build_config in build_configs:
             result = build_chpl(
-                opts.chpl_home,
+                chpl_misc,
                 build_config,
                 build_env,
                 parallel=opts.parallel,
@@ -241,6 +213,35 @@ def main():
     )
     return exit_code
 
+def get_chpl_misc(opts, build_env):
+    """Initializes and returns misc chplenv-related settings like chpl_make, chpl_home
+
+    TODO: complete dox
+    """
+
+    # chpl_home with abspath
+    chpl_home_opt = os.path.abspath(opts.chpl_home)
+    chpl_home_env = build_env.get('CHPL_HOME')
+    if chpl_home_env:
+        chpl_home_env = os.path.abspath(chpl_home_env)
+        if chpl_home_env != chpl_home_opt:
+            logging.warn('Resetting build_env[CHPL_HOME],\nfrom\t{0}\nto\t{1}'.format(chpl_home_env, chpl_home_opt))
+    chpl_home = chpl_home_opt
+
+    chplenv_exe = os.path.join(chpl_home, 'util', 'printchplenv')
+    chplenv_dir = os.path.join(chpl_home, 'util', 'chplenv')
+    chpl_make_exe = os.path.join(chplenv_dir, 'chpl_make.py')
+    result, output, error = check_output(chpl_make_exe, chpl_home, build_env)
+    if result or not output:
+        raise RuntimeError('{0} returns {1} with stdout:\n{2}\nstderr:\n{3}'.format(chpl_make_exe, result, output, error))
+    logging.debug('chpl_make is {0}\n{1}'.format(output.strip(), error.strip()))
+    chpl_make = output.strip()
+
+    return {
+        'chplenv_exe'   : chplenv_exe,
+        'chpl_make'     : chpl_make,
+        'chpl_home'     : chpl_home
+    }
 
 def get_configs(opts):
     """Compile list of configurations to build based on command line options.
@@ -277,7 +278,7 @@ def get_configs(opts):
     return configs
 
 
-def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False, dry_run=False, make_targets=None):
+def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_run=False, make_targets=None):
     """Build Chapel with the provided environment.
 
     :type chpl_home: str
@@ -298,10 +299,13 @@ def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False, dry_
     :rtype: int
     :returns: exit code from building configuration
     """
-    build_env = build_config.get_env(env)
     logging.info('Building config: {0}'.format(build_config))
 
-    make_cmd = chpl_make.get()
+    build_env = build_config.get_env(env)
+
+    chpl_home = chpl_misc['chpl_home']
+    make_cmd = chpl_misc['chpl_make']
+
     if parallel:
         def _cpu_count():
             """ return Python cpu_count(), optionally capped by env var CHPL_MAKE_MAX_CPU_COUNT
@@ -315,14 +319,16 @@ def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False, dry_
                 pass
             return cpus
         make_cmd += ' --jobs={0}'.format(_cpu_count())
-
     if make_targets:
         make_cmd += ' {0}'.format(make_targets)
-
-    logging.debug('Using make command: {0}'.format(make_cmd))
+        logging.info('Using make command: {0}'.format(make_cmd))
+    else:
+        logging.debug('Using make command: {0}'.format(make_cmd))
 
     if dry_run:
-        logging.info('dry-run config:\n{0}\n{1}'.format(build_config, make_cmd))
+        logging.info('dry-run: {0}'.format(make_cmd))
+# FIXME result, output, error = check_output(chpl_home + '/util/printchplenv --simple --all --no-tidy', chpl_home, build_env)
+# FIXME logging.info('result:\n{0}\n\noutput:\n{1}\n\nerror:{2}\n'.format(result, output, error))
         return 0
     else:
         with elapsed_time(build_config):
@@ -370,7 +376,7 @@ def check_output(command, chpl_home, env, stdin=None, verbose=False):
     stderr = None
     if not verbose:
         stdout = subprocess.PIPE
-        stderr = subprocess.STDOUT
+        stderr = subprocess.PIPE
 
     p = subprocess.Popen(
         command,
@@ -395,14 +401,13 @@ def elapsed_time(timer_name):
 
 
 def print_configs():
-    """Print each configuration dimension and its possible values."""
+    """Print each configuration dimension and its allowed values (if any)"""
     for dim in Dimensions:
-        print('{name} - {help_text}'.format(name=dim.name, var_name=dim.var_name, help_text=dim.help_text))
-        print('    Default: {0}'.format(dim.default))
-        print('    Values:')
-        for value in dim.values:
-            print('      {0}'.format(value))
-        print()
+        print('{name}\t{help_text}\n\t{var_name}'.format(name=dim.name, var_name=dim.var_name, help_text=dim.help_text))
+        if dim.values:
+            print('\t\tValues:')
+            for value in dim.values:
+                print('\t\t{0}'.format(value))
 
 
 def parse_config_value_callback(option, opt, value, parser, choices, **kwargs):
@@ -435,7 +440,7 @@ def parse_config_value_callback(option, opt, value, parser, choices, **kwargs):
     # Split the value provided. Validate each value parsed here.
     parsed_vals = value.split(',')
     for v in parsed_vals:
-        if v not in choices:
+        if choices and v not in choices:
           parser.error('option {0}: invalid choice: {1} (choose from {2})'.format(
               opt, v, choices))
 
@@ -509,7 +514,8 @@ comm=gasnet either of these will work:
 
     for dim in Dimensions:
         config_group.add_option(
-            '--{0}'.format(dim.name),
+            '--{0}'.format(dim.name.replace('_','-')),
+            metavar=dim.var_name,
             action='callback', type="string",
             callback=parse_config_value_callback, callback_args=(dim.values,),
             help=dim.help_text
