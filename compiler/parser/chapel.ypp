@@ -997,43 +997,25 @@ linkage_spec:
                   context->latestComment = NULL;
                 }
 | TEXPORT opt_ident_or_string {
-                  $$ = new FnSymbol($2);
-                  $$->addFlag(FLAG_EXPORT);
-                  $$->addFlag(FLAG_LOCAL_ARGS);
+                  $$ = buildLinkageFn(FLAG_EXPORT, $2, NULL);
 
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
 | TEXPORT parenthesized_expr {
-                  $$ = new FnSymbol("");
-                  $$->addFlag(FLAG_EXPORT);
-                  $$->addFlag(FLAG_LOCAL_ARGS);
-                  DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
-                                                    astr_chpl_cname,
-                                                  new SymExpr(dtString->symbol),
-                                                    $2, NULL);
-                  $$->insertFormalAtTail(argDef);
+                  $$ = buildLinkageFn(FLAG_EXPORT, NULL, $2);
 
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
 | TEXTERN opt_ident_or_string {
-                  $$ = new FnSymbol($2);
-                  $$->addFlag(FLAG_EXTERN);
-                  $$->addFlag(FLAG_LOCAL_ARGS);
+                  $$ = buildLinkageFn(FLAG_EXTERN, $2, NULL);
 
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
 | TEXTERN parenthesized_expr {
-                  $$ = new FnSymbol("");
-                  $$->addFlag(FLAG_EXTERN);
-                  $$->addFlag(FLAG_LOCAL_ARGS);
-                  DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
-                                                    astr_chpl_cname,
-                                                  new SymExpr(dtString->symbol),
-                                                    $2, NULL);
-                  $$->insertFormalAtTail(argDef);
+                  $$ = buildLinkageFn(FLAG_EXTERN, NULL, $2);
 
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
@@ -1065,15 +1047,15 @@ fn_decl_stmt:
   opt_ret_tag opt_ret_type opt_throws_error opt_where_part opt_function_body_stmt
     {
       FnSymbol* fn = $4;
-      FnSymbol* earlyFn = $1;
+      FnSymbol* linkageFn = $1;
 
       fn->copyFlags($1);
-      if (*earlyFn->name)
+      if (*linkageFn->name)
         // The user explicitly named this function (controls mangling).
-        fn->cname = earlyFn->name;
-      else if (earlyFn->numFormals() == 1)
+        fn->cname = linkageFn->name;
+      else if (linkageFn->numFormals() == 1)
         // cname should be set based upon param
-        fn->insertFormalAtTail(earlyFn->getFormal(1));
+        fn->insertFormalAtTail(linkageFn->getFormal(1));
 
       if ($2 == ProcIter_ITER)
       {

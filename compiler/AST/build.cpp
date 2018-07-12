@@ -2170,6 +2170,32 @@ FnSymbol* buildLambda(FnSymbol *fn) {
   return fn;
 }
 
+// Creates a dummy function that accumulates flags & cname
+FnSymbol* buildLinkageFn(Flag externOrExport, const char* cname, Expr* paramCNameExpr) {
+
+  if (cname == NULL) cname = "";
+
+  FnSymbol* ret = new FnSymbol(cname);
+
+  if (externOrExport == FLAG_EXTERN) {
+    ret->addFlag(FLAG_LOCAL_ARGS);
+    ret->addFlag(FLAG_EXTERN);
+  }
+  if (externOrExport == FLAG_EXPORT) {
+    ret->addFlag(FLAG_LOCAL_ARGS);
+    ret->addFlag(FLAG_EXPORT);
+  }
+
+  if (paramCNameExpr) {
+    DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
+				      astr_chpl_cname,
+				      new SymExpr(dtString->symbol),
+				      paramCNameExpr, NULL);
+    ret->insertFormalAtTail(argDef);
+  }
+
+  return ret;
+}
 
 // Replaces the dummy function name "_" with the real name, sets the 'this'
 // intent tag. For methods, it also adds a method tag and "this" declaration.
