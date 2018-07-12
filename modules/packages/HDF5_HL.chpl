@@ -19,13 +19,16 @@
 
 // Generated with c2chapel version 0.1.0
 module HDF5_HL {
+
+  use HDF5_Chapel;
+
+  module C_HDF5 {
+
   // Header given to c2chapel:
   require "hdf5_hl.h";
   require "-lhdf5", "-lhdf5_hl";
 
-  use HDF5_HL_Macros;
   use HDF5_WAR;
-  use HDF5_Chapel;
 
   extern proc H5open() : herr_t;
 
@@ -576,6 +579,7 @@ module HDF5_HL {
   extern proc H5Dcreate_anon(file_id : hid_t, type_id : hid_t, space_id : hid_t, plist_id : hid_t, dapl_id : hid_t) : hid_t;
 
   extern proc H5Dopen2(file_id : hid_t, name : c_string, dapl_id : hid_t) : hid_t;
+  extern proc H5Dopen(file_id : hid_t, name : c_string, dapl_id : hid_t) : hid_t;
 
   extern proc H5Dclose(dset_id : hid_t) : herr_t;
 
@@ -2858,8 +2862,6 @@ module HDF5_HL {
     var p : c_void_ptr;
   }
 
-  module HDF5_HL_Macros {
-
     /* Macros defined in H5public.h */
     extern const H5_VERS_MAJOR: c_uint;
     extern const H5_VERS_MINOR: c_uint;
@@ -3465,7 +3467,6 @@ module HDF5_HL {
       H5open();
       return H5T_FORTRAN_S1_g;
     }
-  }
 
   /* This module defines some wrappers for HDF5 functions that issue #9324
      makes difficult/impossible to use otherwise. The workaround wrappers are
@@ -3517,6 +3518,7 @@ module HDF5_HL {
       }
     }
   }
+  }
 
   module HDF5_Chapel {
     /*
@@ -3550,7 +3552,7 @@ module HDF5_HL {
     proc readAllHDF5Files(locs: [] locale, dirName: string, dsetName: string,
                           filenameStart: string, type eltType, param rank,
                           preprocessor: HDF5Preprocessor = nil) {
-      use BlockDist, HDF5_WAR, FileSystem;
+      use BlockDist, C_HDF5.HDF5_WAR, FileSystem;
 
       var filenames: [1..0] string;
       for f in findfiles(dirName) {
@@ -3568,23 +3570,24 @@ module HDF5_HL {
     proc readAllNamedHDF5Files(locs: [] locale, filenames: [] string,
                                dsetName: string, type eltType, param rank,
                                preprocessor: HDF5Preprocessor = nil) {
-      use BlockDist, HDF5_WAR;
+      use BlockDist, C_HDF5.HDF5_WAR;
       const Space = filenames.domain;
       const BlockSpace = Space dmapped Block(Space, locs,
                                              dataParTasksPerLocale=1);
       var files: [BlockSpace] ArrayWrapper(eltType, rank);
       forall (f, name) in zip(files, filenames) {
         var locName = name; // copy this string to be local
-        var file_id = H5Fopen(locName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-        var dims: [0..#rank] hsize_t;
+        var file_id = H5Fopen(locName.c_str(), C_HDF5.H5F_ACC_RDONLY, C_HDF5.H5P_DEFAULT);
+        var dims: [0..#rank] C_HDF5.hsize_t;
         var dsetRank: c_int;
 
-        H5LTget_dataset_ndims(file_id, dsetName.c_str(), dsetRank);
+        C_HDF5.H5LTget_dataset_ndims(file_id, dsetName.c_str(), dsetRank);
         if rank != dsetRank {
           halt("rank mismatch in file: " + name + " dataset: " + dsetName +
                rank + " != " + dsetRank);
         }
-        H5LTget_dataset_info_WAR(file_id, dsetName.c_str(), c_ptrTo(dims), nil, nil);
+        C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dsetName.c_str(),
+                                                 c_ptrTo(dims), nil, nil);
         var data: [0..# (* reduce dims)] eltType;
         readHDF5Dataset(file_id, dsetName, data);
 
@@ -3595,7 +3598,7 @@ module HDF5_HL {
 
         if preprocessor then preprocessor.preprocess(data);
         f = new ArrayWrapper(data.eltType, rank, D, reshape(data, D));
-        H5Fclose(file_id);
+        C_HDF5.H5Fclose(file_id);
       }
       return files;
     }
@@ -3654,22 +3657,22 @@ module HDF5_HL {
 
     /* Return the HDF5 type equivalent to the Chapel type `eltType` */
     proc getHDF5Type(type eltType) {
-      var hdf5Type: hid_t;
+      var hdf5Type: C_HDF5.hid_t;
       select eltType {
-        when int(8)   do hdf5Type = H5T_STD_I8LE;
-        when int(16)  do hdf5Type = H5T_STD_I16LE;
-        when int(32)  do hdf5Type = H5T_STD_I32LE;
-        when int(64)  do hdf5Type = H5T_STD_I64LE;
-        when uint(8)  do hdf5Type = H5T_STD_U8LE;
-        when uint(16) do hdf5Type = H5T_STD_U16LE;
-        when uint(32) do hdf5Type = H5T_STD_U32LE;
-        when uint(64) do hdf5Type = H5T_STD_U64LE;
-        when real(32) do hdf5Type = H5T_IEEE_F32LE;
-        when real(64) do hdf5Type = H5T_IEEE_F64LE;
+        when int(8)   do hdf5Type = C_HDF5.H5T_STD_I8LE;
+        when int(16)  do hdf5Type = C_HDF5.H5T_STD_I16LE;
+        when int(32)  do hdf5Type = C_HDF5.H5T_STD_I32LE;
+        when int(64)  do hdf5Type = C_HDF5.H5T_STD_I64LE;
+        when uint(8)  do hdf5Type = C_HDF5.H5T_STD_U8LE;
+        when uint(16) do hdf5Type = C_HDF5.H5T_STD_U16LE;
+        when uint(32) do hdf5Type = C_HDF5.H5T_STD_U32LE;
+        when uint(64) do hdf5Type = C_HDF5.H5T_STD_U64LE;
+        when real(32) do hdf5Type = C_HDF5.H5T_IEEE_F32LE;
+        when real(64) do hdf5Type = C_HDF5.H5T_IEEE_F64LE;
 
         when c_string {
-          hdf5Type = H5Tcopy(H5T_C_S1);
-          H5Tset_size(hdf5Type, H5T_VARIABLE);
+          hdf5Type = C_HDF5.H5Tcopy(C_HDF5.H5T_C_S1);
+          C_HDF5.H5Tset_size(hdf5Type, C_HDF5.H5T_VARIABLE);
         }
 
         otherwise {
@@ -3707,7 +3710,7 @@ module HDF5_HL {
                                 param rank: int,
                                 data: [] ArrayWrapper(eltType, rank),
                                 mode: Hdf5OpenMode) throws {
-      use BlockDist, HDF5_WAR, FileSystem;
+      use BlockDist, C_HDF5.HDF5_WAR, FileSystem;
 
       // assert(isBlockDistributed(data) &&
       //        data.<dist>.dataParTasksPerLocale==1);
@@ -3718,16 +3721,21 @@ module HDF5_HL {
         var fileExists: bool;
 
         if mode == Hdf5OpenMode.Truncate || !exists(filename) {
-          file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+          file_id = C_HDF5.H5Fcreate(filename.c_str(), C_HDF5.H5F_ACC_TRUNC,
+                                     C_HDF5.H5P_DEFAULT, C_HDF5.H5P_DEFAULT);
         } else {
-          file_id = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+          file_id = C_HDF5.H5Fopen(filename.c_str(), C_HDF5.H5F_ACC_RDWR,
+                                   C_HDF5.H5P_DEFAULT);
         }
-        var dims: [0..#rank] hsize_t;
+        var dims: [0..#rank] C_HDF5.hsize_t;
         for param i in 0..rank-1 {
-          dims[i] = arr.D.dim(i+1).size: hsize_t;
+          dims[i] = arr.D.dim(i+1).size: C_HDF5.hsize_t;
         }
-        H5LTmake_dataset_WAR(file_id, dsetName.c_str(), rank, c_ptrTo(dims), getHDF5Type(eltType), c_ptrTo(arr.A));
-        H5Fclose(file_id);
+        C_HDF5.HDF5_WAR.H5LTmake_dataset_WAR(file_id, dsetName.c_str(), rank,
+                                             c_ptrTo(dims),
+                                             getHDF5Type(eltType),
+                                             c_ptrTo(arr.A));
+        C_HDF5.H5Fclose(file_id);
       }
     }
 
@@ -3752,17 +3760,20 @@ module HDF5_HL {
       where isRectangularDom(chunkShape) {
 
       param outRank = chunkShape.rank;
-      var file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-      var dataset = H5Dopen(file_id, dset.c_str(), H5P_DEFAULT);
-      var dataspace = H5Dget_space(dataset);
+      var file_id = C_HDF5.H5Fopen(filename.c_str(),
+                                   C_HDF5.H5F_ACC_RDONLY,
+                                   C_HDF5.H5P_DEFAULT);
+      var dataset = C_HDF5.H5Dopen(file_id, dset.c_str(),
+                                   C_HDF5.H5P_DEFAULT);
+      var dataspace = C_HDF5.H5Dget_space(dataset);
 
       var dsetRank: c_int;
 
-      H5LTget_dataset_ndims(file_id, dset.c_str(), dsetRank);
+      C_HDF5.H5LTget_dataset_ndims(file_id, dset.c_str(), dsetRank);
 
-      var dims: [1..dsetRank] hsize_t;
-      H5LTget_dataset_info_WAR(file_id, dset.c_str(), c_ptrTo(dims),
-                               nil, nil);
+      var dims: [1..dsetRank] C_HDF5.hsize_t;
+      C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dset.c_str(),
+                                               c_ptrTo(dims), nil, nil);
 
       // Can't build a tuple with dsetRank because it isn't a param.
       // Otherwise we could do this to get a domain describing the data:
@@ -3776,26 +3787,28 @@ module HDF5_HL {
             const readCount = min(dims[1]:int-inOffset, chunkShape.size);
             var A: [1..readCount] eltType;
 
-            var inOffsetArr = [inOffset: hsize_t],
-                inCountArr  = [readCount: hsize_t];
+            var inOffsetArr = [inOffset: C_HDF5.hsize_t],
+                inCountArr  = [readCount: C_HDF5.hsize_t];
 
-            H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
-                                c_ptrTo(inOffsetArr), nil,
-                                c_ptrTo(inCountArr), nil);
+            C_HDF5.H5Sselect_hyperslab(dataspace,
+                                       C_HDF5.H5S_SELECT_SET,
+                                       c_ptrTo(inOffsetArr), nil,
+                                       c_ptrTo(inCountArr), nil);
 
-            var outDims   = [readCount: hsize_t],
-                outOffset = [0: hsize_t],
-                outCount  = [readCount: hsize_t];
+            var outDims   = [readCount: C_HDF5.hsize_t],
+                outOffset = [0: C_HDF5.hsize_t],
+                outCount  = [readCount: C_HDF5.hsize_t];
 
-            var memspace = H5Screate_simple(1, c_ptrTo(outDims), nil);
+            var memspace = C_HDF5.H5Screate_simple(1, c_ptrTo(outDims), nil);
 
-            H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
-                                c_ptrTo(outOffset), nil,
-                                c_ptrTo(outCount), nil);
-            H5Dread(dataset, getHDF5Type(eltType), memspace,
-                    dataspace, H5P_DEFAULT, c_ptrTo(A));
+            C_HDF5.H5Sselect_hyperslab(memspace,
+                                       C_HDF5.H5S_SELECT_SET,
+                                       c_ptrTo(outOffset), nil,
+                                       c_ptrTo(outCount), nil);
+            C_HDF5.H5Dread(dataset, getHDF5Type(eltType), memspace, dataspace,
+                           C_HDF5.H5P_DEFAULT, c_ptrTo(A));
 
-            H5Sclose(memspace);
+            C_HDF5.H5Sclose(memspace);
 
             if preprocessor then preprocessor.preprocess(A);
             yield A;
@@ -3842,32 +3855,32 @@ module HDF5_HL {
           var rangeTup: outRank * range;
 
           var inOffsetArr, inCountArr,
-              outOffsetArr, outCountArr: [1..outRank] hsize_t;
+              outOffsetArr, outCountArr: [1..outRank] C_HDF5.hsize_t;
 
           for param i in 1..outRank {
-            inOffsetArr[i] = starts(i): hsize_t;
-            inCountArr[i] = counts(i): hsize_t;
-            outOffsetArr[i] = 0: hsize_t;
-            outCountArr[i] = counts(i): hsize_t;
+            inOffsetArr[i] = starts(i): C_HDF5.hsize_t;
+            inCountArr[i] = counts(i): C_HDF5.hsize_t;
+            outOffsetArr[i] = 0: C_HDF5.hsize_t;
+            outCountArr[i] = counts(i): C_HDF5.hsize_t;
             //positionalRangeTup(i) = starts(i)..#counts(i);
             rangeTup(i) = 1..#counts(i);
           }
           var A: [(...rangeTup)] eltType;
 
-          H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
-                              c_ptrTo(inOffsetArr), nil,
-                              c_ptrTo(inCountArr), nil);
+          C_HDF5.H5Sselect_hyperslab(dataspace, C_HDF5.H5S_SELECT_SET,
+                                     c_ptrTo(inOffsetArr), nil,
+                                     c_ptrTo(inCountArr), nil);
 
-          var memspace = H5Screate_simple(outRank, c_ptrTo(outCountArr), nil);
+          var memspace = C_HDF5.H5Screate_simple(outRank, c_ptrTo(outCountArr), nil);
 
-          H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
-                              c_ptrTo(outOffsetArr), nil,
-                              c_ptrTo(outCountArr), nil);
+          C_HDF5.H5Sselect_hyperslab(memspace, C_HDF5.H5S_SELECT_SET,
+                                     c_ptrTo(outOffsetArr), nil,
+                                     c_ptrTo(outCountArr), nil);
 
-          H5Dread(dataset, getHDF5Type(eltType), memspace,
-                  dataspace, H5P_DEFAULT, c_ptrTo(A));
+          C_HDF5.H5Dread(dataset, getHDF5Type(eltType), memspace,
+                         dataspace, C_HDF5.H5P_DEFAULT, c_ptrTo(A));
 
-          H5Sclose(memspace);
+          C_HDF5.H5Sclose(memspace);
 
           if preprocessor then preprocessor.preprocess(A);
           yield A;
@@ -3880,9 +3893,9 @@ module HDF5_HL {
              dsetRank, "D data");
       }
 
-      H5Dclose(dataset);
-      H5Sclose(dataspace);
-      H5Fclose(file_id);
+      C_HDF5.H5Dclose(dataset);
+      C_HDF5.H5Sclose(dataspace);
+      C_HDF5.H5Fclose(file_id);
     }
 
 
