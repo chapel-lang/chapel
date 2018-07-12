@@ -178,11 +178,11 @@ static void propagate_environment(FILE *f)
       fprintf(f, " -u LC_COLLATE");
 
     if (lang)
-      fprintf(f, " LANG=%s", lang);
+      fprintf(f, " LANG='%s'", lang);
     if (lc_all)
-      fprintf(f, " LC_ALL=%s", lc_all);
+      fprintf(f, " LC_ALL='%s'", lc_all);
     if (lc_collate)
-      fprintf(f, " LC_COLLATE=%s", lc_collate);
+      fprintf(f, " LC_COLLATE='%s'", lc_collate);
   }
 }
 
