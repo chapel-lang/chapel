@@ -808,6 +808,7 @@ module ChapelBase {
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
+  pragma "use default init"
   class _ddata {
     type eltType;
 
@@ -882,6 +883,7 @@ module ChapelBase {
   pragma "ref"
   pragma "no default functions"
   pragma "no object"
+  pragma "use default init"
   class _ref {
     var _val;
   }

@@ -654,7 +654,7 @@ AggregateType* AggregateType::generateType(SymbolMap& subs) {
   AggregateType* retval = this;
 
   // Determine if there is a generic parent class
-  if (isClass() == true) {
+  if (isClass() == true && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
     AggregateType* parent = dispatchParents.v[0];
 
     // Is the parent generic?
@@ -1782,8 +1782,9 @@ void AggregateType::buildConstructor() {
 }
 
 void AggregateType::buildDefaultInitializer() {
-  if (defaultInitializer                       == NULL ||
-      strcmp(defaultInitializer->name, "init") !=    0) {
+  if ((defaultInitializer                       == NULL ||
+      strcmp(defaultInitializer->name, "init") !=    0) &&
+      symbol->hasFlag(FLAG_REF) == false) {
     SET_LINENO(this);
     FnSymbol*  fn    = new FnSymbol("init");
     ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
@@ -2133,6 +2134,11 @@ void AggregateType::buildCopyInitializer() {
     preNormalizeInitMethod(fn);
     normalize(fn);
 
+    // Generate a bit-copy for extern records in order to copy unknown fields.
+    if (symbol->hasFlag(FLAG_EXTERN)) {
+      fn->insertAtHead(new CallExpr(PRIM_ASSIGN, fn->_this, other));
+    }
+
     methods.add(fn);
   }
 }
@@ -2159,15 +2165,10 @@ bool AggregateType::needsConstructor() const {
   }
 
   AggregateType* thisNC = const_cast<AggregateType*>(this);
-  ModuleSymbol* mod = thisNC->getModule();
 
-  // For now, always generate a default constructor for types in the internal
-  // and library modules
-  if (mod && (mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD))
+  if (initializerStyle == DEFINES_CONSTRUCTOR)
     return true;
-  else if (initializerStyle == DEFINES_CONSTRUCTOR)
-    return true;
-  else if (fUserDefaultInitializers)
+  else if (fUserDefaultInitializers && this != dtObject)
     // Don't generate a default constructor when --force-initializers is true,
     // we want to generate a default initializer or fail.
     return false;
@@ -2238,18 +2239,13 @@ bool AggregateType::parentDefinesInitializer() const {
 // when the type has defined an initializer both methods will return false.
 bool AggregateType::wantsDefaultInitializer() const {
   AggregateType* nonConstHole = (AggregateType*) this;
-  ModuleSymbol*  mod          = nonConstHole->getModule();
   bool           retval       = true;
 
   // We want a default initializer if the type has been explicitly marked
   if (symbol->hasFlag(FLAG_USE_DEFAULT_INIT) == true) {
     retval = true;
-
-  // For now, no default initializers for library and internal types
-  } else if (mod         == NULL         ||
-             mod->modTag == MOD_INTERNAL ||
-             mod->modTag == MOD_STANDARD) {
-    retval = false;
+  } else if (this == dtObject || symbol->hasFlag(FLAG_TUPLE)) {
+    return false;
 
   // No default initializers if the --force-initializers flag is not used
   } else if (fUserDefaultInitializers == false) {

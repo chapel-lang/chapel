@@ -1472,7 +1472,6 @@ bool isRecordWithInitializers(Type* type) {
 
   if (AggregateType* at = toAggregateType(type)) {
     if (at->isRecord()                   == true  &&
-        at->symbol->hasFlag(FLAG_EXTERN) == false &&
         (at->initializerStyle == DEFINES_INITIALIZER ||
          at->wantsDefaultInitializer())) {
       retval = true;
