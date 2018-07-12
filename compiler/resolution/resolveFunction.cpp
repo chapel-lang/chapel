@@ -104,6 +104,8 @@ static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal);
 
 static bool recordContainingCopyMutatesField(Type* at);
 
+static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal);
+
 static void resolveFormals(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (formal->type == dtUnknown) {
@@ -118,12 +120,7 @@ static void resolveFormals(FnSymbol* fn) {
     }
 
     if (formal->name == astr_chpl_cname) {
-      // Handle param cnames for functions 
-      resolveBlockStmt(formal->defaultExpr);
-      SymExpr* se = toSymExpr(formal->defaultExpr->body.last());
-      VarSymbol* var = toVarSymbol(se->symbol());
-      INT_ASSERT(var->isParameter());
-      fn->cname = var->immediate->v_string;
+      handleParamCNameFormal(fn, formal);
       formal->defPoint->remove();
     }
 
@@ -311,6 +308,23 @@ static bool recordContainingCopyMutatesField(Type* t) {
   return ret;
 }
 
+static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal) {
+  // Handle param cnames for functions
+  resolveBlockStmt(formal->defaultExpr);
+  SymExpr* se = toSymExpr(formal->defaultExpr->body.last());
+  if (se == NULL) {
+    USR_FATAL(fn, "extern name expression must be param");
+  }
+  VarSymbol* var = toVarSymbol(se->symbol());
+  if (!var->isParameter()) {
+    USR_FATAL(fn, "extern name expression must be param");
+  }
+  if (var->type == dtString || var->type == dtStringC) {
+    fn->cname = var->immediate->v_string;
+  } else {
+    USR_FATAL(fn, "extern name expression must be a string");
+  }
+}
 
 /************************************* | **************************************
 *                                                                             *
