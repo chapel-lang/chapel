@@ -2188,9 +2188,9 @@ FnSymbol* buildLinkageFn(Flag externOrExport, const char* cname, Expr* paramCNam
 
   if (paramCNameExpr) {
     DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
-				      astr_chpl_cname,
-				      new SymExpr(dtString->symbol),
-				      paramCNameExpr, NULL);
+                                      astr_chpl_cname,
+                                      new SymExpr(dtString->symbol),
+                                      paramCNameExpr, NULL);
     ret->insertFormalAtTail(argDef);
   }
 
