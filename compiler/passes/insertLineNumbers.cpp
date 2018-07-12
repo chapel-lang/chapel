@@ -158,6 +158,7 @@ insertLineNumber(CallExpr* call) {
     }
 
   } else if (fn->hasFlag(FLAG_EXTERN)                           ||
+             fn->hasFlag(FLAG_LINE_NUMBER_OK)                   ||
              (fn->hasFlag(FLAG_EXPORT) &&
               !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO))         ||
              ftableMap.count(fn)                                ||
