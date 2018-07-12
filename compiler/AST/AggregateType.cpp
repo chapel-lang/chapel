@@ -2260,10 +2260,6 @@ bool AggregateType::wantsDefaultInitializer() const {
   } else if (initializerStyle != DEFINES_NONE_USE_DEFAULT) {
     retval = false;
 
-  // For now, no default initializers for unions
-  } else if (isUnion()  == true) {
-    retval = false;
-
   } else if (symbol->hasFlag(FLAG_REF) == true) {
     retval = false;
 
