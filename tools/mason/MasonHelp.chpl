@@ -159,3 +159,14 @@ proc masonTestHelp() {
   writeln("Tests pass if they exit with status code 0");
 }
 
+proc masonPkgPcHelp() {
+  writeln("Print .pc file for a pkg-config package.");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason pkg-pc [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln();
+  writeln("Print a .pc to help set correct compilation options for a Mason project.");
+}
