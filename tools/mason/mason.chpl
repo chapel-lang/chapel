@@ -31,6 +31,7 @@ use MasonSearch;
 use MasonTest;
 use MasonRun;
 use FileSystem;
+use PkgConfig;
 
 /*
 
@@ -81,6 +82,7 @@ proc main(args: [] string) {
     when 'env' do masonEnv(args);
     when 'doc' do masonDoc(args);
     when 'clean' do masonClean();
+    when 'pkg-pc' do masonPkgPcLookup(args);
     when 'help' do masonHelp();
     when 'version' do printVersion();
     when '--list' do masonList();

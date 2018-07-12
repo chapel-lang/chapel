@@ -21,6 +21,7 @@ use TOML;
 use FileSystem;
 use MasonUtils;
 use MasonEnv;
+use PkgConfig;
 
 /*
 Update: Performs the upfront dependency resolution and generates the lock file.
@@ -295,6 +296,17 @@ proc createDepTree(root: unmanaged Toml) {
       }
     }
   }
+  if root.pathExists("external") {
+
+    // Check for pkg-config dependencies
+    if root.pathExists("external.pkgconfig") {
+      const exDeps = getPCDeps(root["external.pkgconfig"]);
+      var PCdom: domain(string);
+      var PCtoml: [PCdom] unmanaged Toml;
+      depTree["external"] = PCtoml;
+      depTree["external"]["pkgconfig"] = exDeps;
+    }
+  }
 
   return depTree;
 }
@@ -452,4 +464,5 @@ iter allFields(tomlTbl: unmanaged Toml) {
     else yield(k,v);
   }
 }
+
 
