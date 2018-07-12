@@ -1,0 +1,17 @@
+
+[root]
+name = "zlib"
+version = "0.1.0"
+chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
+
+[external]
+
+[external.pkgconfig]
+
+[external.pkgconfig.zlib]
+name = "zlib"
+version = "1.2.8"
+libs = "-lz"
+include = "/usr/include"
+
+

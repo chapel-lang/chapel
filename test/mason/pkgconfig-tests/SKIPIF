@@ -1,0 +1,8 @@
+#!/bin/bash
+
+
+if [[ $HOST == *chapcs* ]] ; then
+   echo False
+else
+   echo True
+fi

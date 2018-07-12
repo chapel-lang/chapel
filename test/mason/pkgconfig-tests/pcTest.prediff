@@ -1,0 +1,16 @@
+#!/bin/bash
+
+outputfile=$2
+compiler=$3
+
+curver=`$compiler --version | head -1 | sed 's/chpl version \([0-9]\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/'`
+curver=`echo $curver | sed 's/\./\\\./g'`
+
+sed "s/$curver/CHPL_CUR_FULL/g" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile
+sed "s/1.0.2j/0.9.8zh/g" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile
+sed "s/-lssl -lcrypto/-lssl -lcrypto -lz/g" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile
+sed "s/-L\/lib64 -lz/-lz/g" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile

@@ -1,0 +1,17 @@
+
+[root]
+name = "openssl"
+version = "0.1.0"
+chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
+
+[external]
+
+[external.pkgconfig]
+
+[external.pkgconfig.openssl]
+name = "openssl"
+version = "0.9.8zh"
+libs = "-lssl -lcrypto -lz"
+include = "/usr/include"
+
+

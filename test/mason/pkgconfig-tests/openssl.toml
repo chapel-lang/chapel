@@ -1,0 +1,11 @@
+
+[brick]
+name = "openssl"
+version = "0.1.0"
+chplVersion = "1.18.0"
+
+[dependencies]
+
+[external]
+    [external.pkgconfig]
+    openssl = "*"
