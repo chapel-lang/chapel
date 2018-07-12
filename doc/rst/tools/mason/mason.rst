@@ -311,6 +311,86 @@ If no query is provided, all packages in the registry will be listed.
 
     Packages will be listed regardless of their chplVersion compatibility.
 
+External Dependencies
+=====================
+Mason allows for specification of external, non-Chapel dependencies through pkg-config.
+An example of using the Linear Algebra library that requires both BLAS and Lapack:
+
+``Mason.toml``
+
+.. code-block:: text
+
+    [brick]
+    name = "cholesky"
+    version = "0.1.0"
+    chplVersion = "1.18.0"
+    compopts = "--ccflags -Wno-enum-conversion --ccflags -Wno-strict-prototypes"
+
+    [dependencies]
+    
+    [external]
+        [external.pkgconfig]
+        lapack = "3.8.0"
+        openblas = "*"
+
+
+This ``Mason.toml`` is updated to reflect the necessary dependency information for Mason
+to build the package in the ``Mason.lock``. Mason gets external dependency information,
+in this case, from the ``.pc`` files found via the ``PKG_CONFIG_PATH``. The ``*`` means
+that Mason will grab the latest package available known to pkg-config in your system.
+
+
+``Mason.lock``
+
+.. code-block:: text
+
+   [root]
+   name = "cholesky"
+   compopts = "--ccflags -Wno-enum-conversion --ccflags -Wno-strict-prototypes"
+   version = "0.1.0"
+   chplVersion = "1.18.0..1.18.0"
+
+   [external]
+
+     [external.pkgconfig]
+
+        [external.pkgconfig.lapack]
+        name = "lapack"
+        version = "3.8.0"
+        libs = "-L/usr/local/Cellar/lapack/3.8.0_1/lib -lapack"
+        include = "/usr/local/Cellar/lapack/3.8.0_1/include"
+
+        [external.pkgconfig.openblas]
+        name = "openblas"
+        version = "0.3.1"
+        libs = "-L/usr/local/Cellar/openblas/0.3.1/lib -openblas"
+        include = "/usr/local/Cellar/openblas/0.3.1/include"
+
+
+It is required, even though the package is specified in the ``Mason.toml`` that the
+name of the package be specified in the file where it is being used. For example,
+the source code of the example using the Linear algebra library.
+
+.. code-block:: chpl
+
+    use LinearAlgebra;
+
+    var D = {1..4, 1..4};
+    var A: [D] real = ((18.0, 22.0,  54.0,  42.0),
+    (22.0, 70.0,  86.0,  62.0),
+    (54.0, 86.0, 174.0, 134.0),
+    (42.0, 62.0, 134.0, 106.0));
+
+    var L = cholesky(A);
+    var U = cholesky(A, lower=false);
+    writeln("A:");
+    writeln(A);
+    writeln("L:");
+    writeln(L);
+    writeln("U:");
+    writeln(U);
+
+
 
 Submit a Package
 ================
