@@ -88,7 +88,8 @@ module ChapelIteratorSupport {
   }
   pragma "no doc"
   proc iteratorToArrayElementType(type t:_iteratorRecord) type {
-    return iteratorToArrayType(__primitive("scalar promotion type", t));
+    return chpl__unref(
+             iteratorToArrayType(__primitive("scalar promotion type", t)));
   }
 
   proc _iteratorRecord.writeThis(f) {
