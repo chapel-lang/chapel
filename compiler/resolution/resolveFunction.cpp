@@ -117,6 +117,16 @@ static void resolveFormals(FnSymbol* fn) {
       }
     }
 
+    if (formal->name == astr_chpl_cname) {
+      // Handle param cnames for functions 
+      resolveBlockStmt(formal->defaultExpr);
+      SymExpr* se = toSymExpr(formal->defaultExpr->body.last());
+      VarSymbol* var = toVarSymbol(se->symbol());
+      INT_ASSERT(var->isParameter());
+      fn->cname = var->immediate->v_string;
+      formal->defPoint->remove();
+    }
+
     if (formal->type->symbol->hasFlag(FLAG_REF) == false) {
       if (formal->type                             != dtString ||
           formal->hasFlag(FLAG_INSTANTIATED_PARAM) == false) {

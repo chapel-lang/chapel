@@ -1004,6 +1004,19 @@ linkage_spec:
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
+| TEXPORT parenthesized_expr {
+                  $$ = new FnSymbol("");
+                  $$->addFlag(FLAG_EXPORT);
+                  $$->addFlag(FLAG_LOCAL_ARGS);
+                  DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
+                                                    astr_chpl_cname,
+                                                  new SymExpr(dtString->symbol),
+                                                    $2, NULL);
+                  $$->insertFormalAtTail(argDef);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
 | TEXTERN opt_ident_or_string {
                   $$ = new FnSymbol($2);
                   $$->addFlag(FLAG_EXTERN);
@@ -1012,6 +1025,20 @@ linkage_spec:
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
+| TEXTERN parenthesized_expr {
+                  $$ = new FnSymbol("");
+                  $$->addFlag(FLAG_EXTERN);
+                  $$->addFlag(FLAG_LOCAL_ARGS);
+                  DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
+                                                    astr_chpl_cname,
+                                                  new SymExpr(dtString->symbol),
+                                                    $2, NULL);
+                  $$->insertFormalAtTail(argDef);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
+
 | TOVERRIDE     {
                   $$ = new FnSymbol("");
                   $$->addFlag(FLAG_OVERRIDE);
@@ -1038,11 +1065,15 @@ fn_decl_stmt:
   opt_ret_tag opt_ret_type opt_throws_error opt_where_part opt_function_body_stmt
     {
       FnSymbol* fn = $4;
+      FnSymbol* earlyFn = $1;
 
       fn->copyFlags($1);
-      // The user explicitly named this function (controls mangling).
-      if (*$1->name)
-        fn->cname = $1->name;
+      if (*earlyFn->name)
+        // The user explicitly named this function (controls mangling).
+        fn->cname = earlyFn->name;
+      else if (earlyFn->numFormals() == 1)
+        // cname should be set based upon param
+        fn->insertFormalAtTail(earlyFn->getFormal(1));
 
       if ($2 == ProcIter_ITER)
       {
