@@ -327,8 +327,11 @@ def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_
 
     if dry_run:
         logging.info('dry-run: {0}'.format(make_cmd))
-# FIXME result, output, error = check_output(chpl_home + '/util/printchplenv --simple --all --no-tidy', chpl_home, build_env)
-# FIXME logging.info('result:\n{0}\n\noutput:\n{1}\n\nerror:{2}\n'.format(result, output, error))
+        result, output, error = check_output(chpl_home + '/util/printchplenv --simple --all --no-tidy', chpl_home, build_env)
+        if result or error:
+            logging.warn('printchplenv status: {0}\n{1}\n{2}'.format(result, output, error))
+        else:
+            logging.debug('printchplenv:\n{0}'.format(output))
         return 0
     else:
         with elapsed_time(build_config):
