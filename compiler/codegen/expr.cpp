@@ -4255,8 +4255,7 @@ DEFINE_PRIM(PRIM_CHECK_NIL) {
     codegenCall("chpl_check_nil",
                 ptr,
                 call->get(2),
-                call->get(3)); /*gGenInfo->lineno,
-                gFilenameLookupCache[gGenInfo->filename]); */
+                call->get(3));
 }
 DEFINE_PRIM(PRIM_LOCAL_CHECK) {
     // arguments are (wide ptr, line, function/file, error string)
