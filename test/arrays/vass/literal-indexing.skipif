@@ -1,0 +1,3 @@
+# Currently it fails under valgrind.
+# Do not test it elsewhere, to ensure clean .bad match.
+CHPL_TEST_VGRND_EXE != on

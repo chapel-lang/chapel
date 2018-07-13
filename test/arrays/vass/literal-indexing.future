@@ -11,3 +11,6 @@ that suggests a singleton expression.
 
 Vass says that even in the forall-loop interpretation the result of
 four-times-[2] should be an array of arrays, not a single array.
+
+As of 07/2018, this test also fails valgrind at execution time.
+This needs to be fixed independently of the above.
