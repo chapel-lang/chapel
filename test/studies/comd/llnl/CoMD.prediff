@@ -52,7 +52,11 @@ def printChunk(start, numAfter):
 text = printChunk("Simulation Validation:", 4)
 
 if os.getenv('CHPL_TEST_PERF') == 'on':
-    text += printChunk("Timings", 10)
+    perfText = printChunk("Timings", 16)
+    if perfText == "":
+      text = "" # error during processing of timings output
+    else:
+      text += perfText
 
 if text != "" and all(found.values()):
     with open(tmp_file, 'a') as tf:
