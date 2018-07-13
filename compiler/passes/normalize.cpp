@@ -698,7 +698,7 @@ static void checkSelfDef(CallExpr* call, Symbol* sym) {
 }
 
 // If the AST node defines a symbol, then return that symbol.
-// Otheriwse return NULL. Also check for self-defs.
+// Otherwise return NULL. Also check for self-defs.
 static Symbol* theDefinedSymbol(BaseAST* ast) {
   Symbol* retval = NULL;
 
@@ -2265,7 +2265,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
         // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
         // test for --force-initializers, but PR #10171 was merged first and
         // somehow fixed that test. The test in question was:
-        //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+        //   test/classes/delete-free/owned/owned-raw-ignored-record.chpl
         if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
           if (ne->name == astr_chpl_manager) {
             ne->remove();
@@ -2418,7 +2418,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
       // test for --force-initializers, but PR #10171 was merged first and
       // somehow fixed that test. The test in question was:
-      //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+      //   test/classes/delete-free/owned/owned-raw-ignored-record.chpl
       if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
         if (ne->name == astr_chpl_manager) {
           ne->remove();
@@ -2456,7 +2456,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
       // test for --force-initializers, but PR #10171 was merged first and
       // somehow fixed that test. The test in question was:
-      //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+      //   test/classes/delete-free/owned/owned-raw-ignored-record.chpl
       if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
         if (ne->name == astr_chpl_manager) {
           ne->remove();
