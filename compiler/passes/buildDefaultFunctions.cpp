@@ -573,6 +573,7 @@ static void build_chpl_entry_points() {
   chpl_gen_main->addFlag(FLAG_EXPORT);  // chpl_gen_main is always exported.
   chpl_gen_main->addFlag(FLAG_LOCAL_ARGS);
   chpl_gen_main->addFlag(FLAG_COMPILER_GENERATED);
+  chpl_gen_main->addFlag(FLAG_GEN_MAIN_FUNC);
 
   mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
 
