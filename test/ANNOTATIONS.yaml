@@ -338,6 +338,10 @@ all:
   06/20/18:
     - text: Optimize non-fetching network atomics (#9876)
       config: 16 node XC
+  06/29/18:
+    - Avoid using syncvar_t in the qthreads shim (#10082)
+  07/04/18:
+    - Remove spinwaiting from qthreads chpl_sync_lock() (#10133)
 
 
 AllCompTime:
@@ -460,6 +464,9 @@ compSampler-timecomp: &timecomp-base
     - Faster 'fixStringLiteralInit' implementation (#9506)
   05/23/18:
     - Fix problems with tuples (#9572)
+  07/10/18:
+    - use isSubtype in preference to ':' in where clauses (#10143)
+    - Refactor codegenPrimitive, add limit to denormalize (#10187)
 
 cg:
   09/20/16:
@@ -553,6 +560,8 @@ fasta:
       config: chapcs
   08/02/17:
     - Remove handling of references from copyPropagation (#6779)
+  07/04/18:
+    - Disable enum->int casts for enums without values (#10114)
 
 fastaredux:
   01/14/14:
@@ -563,6 +572,8 @@ fastaredux:
     - optimize certain functions that return with ref-intent (#3101)
   03/12/16:
     - implemented good_alloc_size for jemalloc(#3446)
+  07/04/18:
+    - Disable enum->int casts for enums without values (#10114)
 
 fft-timecomp:
   <<: *timecomp-base
@@ -671,6 +682,8 @@ jacobi:
     - Remove handling of references from copyPropagation (#6779)
   03/13/18:
     - Enable phase one dynamic dispatch (#8790)
+  07/10/18:
+    - use isSubtype in preference to ':' in where clauses (#10143)
 
 knucleotide:
   10/17/15:
