@@ -144,5 +144,6 @@ const char* idCommentTemp(BaseAST* ast);
 void genComment(const char* comment, bool push=false);
 void flushStatements(void);
 
+void registerPrimitiveCodegens();
 
 #endif //CODEGEN_H

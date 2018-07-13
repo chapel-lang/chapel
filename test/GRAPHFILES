@@ -288,6 +288,9 @@ users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
 # suite: Elegance
 studies/elegance/elegance.graph
+# suite: Bale
+studies/bale/toposort/toposort.perf.graph
+studies/bale/toposort/toposort.time.graph
 # suite: Serial Performance
 patterns/primality/prime.graph
 statements/lydia/forCompare.graph

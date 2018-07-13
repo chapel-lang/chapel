@@ -150,7 +150,7 @@ TEST_JOB=${TEST_JOB_BASENAME}
 
 if [ "${CHPL_CHECK_DEBUG}" == 1 ] ; then
     log_debug "printchplenv, because \$CHPL_CHECK_DEBUG == 1"
-    $CHPL_HOME/util/printchplenv
+    $CHPL_HOME/util/printchplenv --all --no-tidy
 fi
 
 # Collect comm protocol environment variables (lowercase to avoid conflicts)

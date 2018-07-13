@@ -117,9 +117,12 @@ public:
 
   void            convertToNoop();
 
+  static void     registerPrimitivesForCodegen();
+
 private:
   GenRet          codegenPrimitive();
   GenRet          codegenPrimMove();
+
 
   // Declare CallExpr::codegenPRIM_UNKNOWN() etc
 #define PRIMITIVE_G(NAME) static void codegen ## NAME (CallExpr*, GenRet&);

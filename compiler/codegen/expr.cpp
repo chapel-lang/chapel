@@ -3499,12 +3499,17 @@ GenRet CallExpr::codegen() {
   return ret;
 }
 
+// to define a primitive's code generation method
 #define DEFINE_PRIM(NAME) \
   void CallExpr::codegen ## NAME (CallExpr* call, GenRet &ret)
 
+// to call a primitive's code generation method
+#define CODEGEN_PRIM(NAME, call, ret) \
+  codegen ## NAME (call, ret);
+
 // to call another primitive's DEFINE_PRIM
 #define FORWARD_PRIM(NAME) \
-  codegen ## NAME (call, ret);
+  CODEGEN_PRIM(NAME, call, ret);
 
 DEFINE_PRIM(PRIM_UNKNOWN) {
     // This is handled separately
@@ -3615,7 +3620,7 @@ DEFINE_PRIM(PRIM_ARRAY_FREE) {
 DEFINE_PRIM(PRIM_NOOP) {
 }
 DEFINE_PRIM(PRIM_MOVE) {
-    ret = call->codegenPrimMove();
+    INT_FATAL("Handled in switch");
 }
 
 DEFINE_PRIM(PRIM_DEREF) { codegenIsSpecialPrimitive(NULL, call, ret); }
@@ -4952,53 +4957,49 @@ DEFINE_PRIM(PRIM_LOOKUP_FILENAME) {
     ret = call->codegenBasicPrimitiveExpr();
 }
 
-
-GenRet CallExpr::codegenPrimitive() {
-  SET_LINENO(this);
-
-  static bool codegenPrimitivesRegistered = false;
-  if (!codegenPrimitivesRegistered) {
-
-    // The following macros call registerPrimitiveCodegen for
-    // the DEFINE_PRIM routines above for each primitive labelled
-    // as PRIMITIVE_G (i.e. as needing code generation)
+void CallExpr::registerPrimitivesForCodegen() {
+  // The following macros call registerPrimitiveCodegen for
+  // the DEFINE_PRIM routines above for each primitive labelled
+  // as PRIMITIVE_G (i.e. as needing code generation)
 #define PRIMITIVE_G(NAME) \
-  if (NAME!=PRIM_UNKNOWN) registerPrimitiveCodegen(NAME, codegen ## NAME );
+if (NAME!=PRIM_UNKNOWN) registerPrimitiveCodegen(NAME, codegen ## NAME );
 #define PRIMITIVE_R(NAME)
 #include "primitive_list.h"
 
 #undef PRIMITIVE_G
 #undef PRIMITIVE_R
+}
 
-  }
+GenRet CallExpr::codegenPrimitive() {
+  SET_LINENO(this);
 
   GenRet ret;
 
-  switch (primitive->tag) {
-  case PRIM_UNKNOWN:
+  PrimitiveTag tag = primitive->tag;
+  void (*codegenFn)(CallExpr*, GenRet&);
+  codegenFn = primitive->codegenFn;
+
+  if (tag == PRIM_MOVE) {
+    // PRIM_MOVE is the most common by far
+    ret = this->codegenPrimMove();
+  } else if (tag == PRIM_UNKNOWN) {
+    // PRIM_UNKNOWN won't have a codegenFn
     ret = codegenBasicPrimitiveExpr();
-    break;
-  case PRIM_WARNING:
-    INT_ASSERT(0);
-    break;
-  case NUM_KNOWN_PRIMS:
-    INT_FATAL(this, "impossible");
-    break;
-  default:
-    if (primitive->codegenFn != NULL) {
-      primitive->codegenFn(this, ret);
-    } else {
-      INT_FATAL(this, "primitive codegen fail; should it still be in the AST?");
+  } else if (codegenFn != NULL) {
+    // use a registered DEFINE_PRIM function from above
+    codegenFn(this, ret);
+  } else {
+    // otherwise, error
+    INT_FATAL(this, "primitive codegen fail; should it still be in the AST?");
 
-      if (gGenInfo->cfile) {
-        std::string stmt;
+    if (gGenInfo->cfile) {
+      std::string stmt;
 
-        stmt += "/* ERR ";
-        stmt += primitive->name;
-        stmt += "*/";
+      stmt += "/* ERR ";
+      stmt += primitive->name;
+      stmt += "*/";
 
-        gGenInfo->cStatements.push_back(stmt);
-      }
+      gGenInfo->cStatements.push_back(stmt);
     }
   }
 
