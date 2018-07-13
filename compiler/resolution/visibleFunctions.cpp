@@ -131,7 +131,7 @@ static void buildVisibleFunctionMap() {
       if (fn->hasFlag(FLAG_AUTO_II)) {
         block = theProgram->block;
       } else {
-        block = getVisibilityBlock(fn->defPoint);
+        block = getVisibilityBlock(fn->defPoint, false);
         //
         // add all functions in standard modules to theProgram
         //
@@ -160,23 +160,13 @@ static void buildVisibleFunctionMap() {
 * chain, which is defined by getVisibilityBlock().                            *
 * The functions defined/visible in a block are given by 'visibleFunctionMap'. *
 *                                                                             *
-* 'visibilityBlockCache' maps a block to the nearest block up the visibility  *
-* chain that contains any functions, according to visibleFunctionMap.         *
-* In other words, it skips those blocks that do not define any visible        *
-* functions (of any name).                                                    *
-* Todo: some blocks only define if-functions (i.e. _if_fnNNN); such blocks    *
-* probably should not be present in visibleFunctionMap.                       *
-*                                                                             *
-* getVisibleFunctions returns the block appropriate for visibilityBlockCache  *
-* or NULL if there is none, e.g. when the next block up is the rootModule.    *
-*                                                                             *
 ************************************** | *************************************/
 
-static BlockStmt* getVisibleFunctions(const char*           name,
-                                      CallExpr*             call,
-                                      BlockStmt*            block,
-                                      std::set<BlockStmt*>& visited,
-                                      Vec<FnSymbol*>&       visibleFns);
+static void getVisibleFunctions(const char*           name,
+                                CallExpr*             call,
+                                BlockStmt*            block,
+                                std::set<BlockStmt*>& visited,
+                                Vec<FnSymbol*>&       visibleFns);
 
 void getVisibleFunctions(const char*      name,
                          CallExpr*        call,
@@ -187,13 +177,11 @@ void getVisibleFunctions(const char*      name,
   getVisibleFunctions(name, call, block, visited, visibleFns);
 }
 
-static BlockStmt* getVisibleFunctions(const char*           name,
-                                      CallExpr*             call,
-                                      BlockStmt*            block,
-                                      std::set<BlockStmt*>& visited,
-                                      Vec<FnSymbol*>&       visibleFns) {
-  BlockStmt* retval = NULL;
-
+static void getVisibleFunctions(const char*           name,
+                                CallExpr*             call,
+                                BlockStmt*            block,
+                                std::set<BlockStmt*>& visited,
+                                Vec<FnSymbol*>&       visibleFns) {
   //
   // all functions in standard modules are stored in a single block
   //
@@ -205,14 +193,22 @@ static BlockStmt* getVisibleFunctions(const char*           name,
   // avoid infinite recursion due to modules with mutual uses
   //
   if (visited.find(block) == visited.end()) {
-    bool canSkipThisBlock = true;
 
-    if (isModuleSymbol(block->parentSymbol)) {
+    bool moduleBlock = false;
+    bool fnBlock = false;
+    if (ModuleSymbol* inMod = toModuleSymbol(block->parentSymbol))
+      if (block == inMod->block)
+        moduleBlock = true;
+    if (FnSymbol* inFn = toFnSymbol(block->parentSymbol))
+      if (block == inFn->body)
+        fnBlock = true;
+
+    if (moduleBlock || fnBlock) {
       visited.insert(block);
     }
 
     if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
-      canSkipThisBlock = false; // cannot skip if this block defines functions
+      // note, defines functions
 
       if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
         forv_Vec(FnSymbol, fn, *fns) {
@@ -228,6 +224,7 @@ static BlockStmt* getVisibleFunctions(const char*           name,
     }
 
     if (block->useList != NULL) {
+      // note, uses other modules
       for_actuals(expr, block->useList) {
         UseStmt* use = toUseStmt(expr);
 
@@ -241,8 +238,6 @@ static BlockStmt* getVisibleFunctions(const char*           name,
           if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
             // The use statement could be of an enum instead of a module,
             // but only modules can define functions.
-            // cannot skip if this block uses modules
-            canSkipThisBlock = false;
 
             if (mod->isVisible(call) == true) {
               if (use->isARename(name) == true) {
@@ -264,31 +259,22 @@ static BlockStmt* getVisibleFunctions(const char*           name,
       }
     }
 
-    //
-    // visibilityBlockCache contains blocks that can be skipped
-    //
-    if (BlockStmt* next = visibilityBlockCache.get(block)) {
+    if (block != rootModule->block) {
+      BlockStmt* next  = getVisibilityBlock(block, false);
+
+      // Recurse in the enclosing block
       getVisibleFunctions(name, call, next, visited, visibleFns);
 
-      retval = (canSkipThisBlock) ? next : block;
-
-    } else if (block != rootModule->block) {
-      BlockStmt* next  = getVisibilityBlock(block);
-      BlockStmt* cache = getVisibleFunctions(name,
-                                             call,
-                                             next,
-                                             visited,
-                                             visibleFns);
-
-      if (cache) {
-        visibilityBlockCache.put(block, cache);
+      if (fnBlock) {
+        FnSymbol* fn = toFnSymbol(block->parentSymbol);
+        if (fn->instantiationPoint && fn->instantiationPoint->parentSymbol) {
+          // Also look at the instantiation point
+          BlockStmt* next = fn->instantiationPoint;
+          getVisibleFunctions(name, call, next, visited, visibleFns);
+        }
       }
-
-      retval = (canSkipThisBlock) ? cache : block;
     }
   }
-
-  return retval;
 }
 
 /************************************* | **************************************
@@ -299,10 +285,10 @@ static BlockStmt* getVisibleFunctions(const char*           name,
 
 static bool isTryTokenCond(Expr* expr);
 
-BlockStmt* getVisibilityBlock(Expr* expr) {
+BlockStmt* getVisibilityBlock(Expr* expr, bool usePtOfInsn) {
   if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
     if (block->blockTag == BLOCK_SCOPELESS)
-      return getVisibilityBlock(block);
+      return getVisibilityBlock(block, usePtOfInsn);
     else if (block->parentExpr && isTryTokenCond(block->parentExpr)) {
       // Make the visibility block of the then and else blocks of a
       // conditional using chpl__tryToken be the block containing the
@@ -312,17 +298,17 @@ BlockStmt* getVisibilityBlock(Expr* expr) {
       // folded out leaving expressions with no visibility block.
       // test/functions/iterators/angeles/dynamic.chpl is an example that
       // currently fails without this.
-      return getVisibilityBlock(block->parentExpr);
+      return getVisibilityBlock(block->parentExpr, usePtOfInsn);
     } else
       return block;
   } else if (expr->parentExpr) {
-    return getVisibilityBlock(expr->parentExpr);
+    return getVisibilityBlock(expr->parentExpr, usePtOfInsn);
   } else if (Symbol* s = expr->parentSymbol) {
-      FnSymbol* fn = toFnSymbol(s);
-      if (fn && fn->instantiationPoint)
-        return fn->instantiationPoint;
-      else
-        return getVisibilityBlock(s->defPoint);
+    FnSymbol* fn = toFnSymbol(s);
+    if (fn && fn->instantiationPoint && usePtOfInsn)
+      return fn->instantiationPoint;
+    else
+      return getVisibilityBlock(s->defPoint, usePtOfInsn);
   } else {
     INT_FATAL(expr, "Expression has no visibility block.");
     return NULL;

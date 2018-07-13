@@ -35,7 +35,7 @@ void       getVisibleFunctions(const char*      name,
                                CallExpr*        call,
                                Vec<FnSymbol*>&  visibleFns);
 
-BlockStmt* getVisibilityBlock(Expr* expr);
+BlockStmt* getVisibilityBlock(Expr* expr, bool usePtOfInsn=true);
 
 void       visibleFunctionsClear();
 

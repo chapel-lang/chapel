@@ -858,7 +858,7 @@ static void moveGlobalDeclarationsToModuleScope() {
 ************************************** | *************************************/
 
 static void insertUseForExplicitModuleCalls() {
-  forv_Vec(SymExpr, se, gSymExprs) {
+  /*forv_Vec(SymExpr, se, gSymExprs) {
     if (se->inTree() && se->symbol() == gModuleToken) {
       SET_LINENO(se);
 
@@ -879,7 +879,7 @@ static void insertUseForExplicitModuleCalls() {
       block->insertAtHead(stmt->remove());
       block->useListAdd(mod);
     }
-  }
+  }*/
 }
 
 //
