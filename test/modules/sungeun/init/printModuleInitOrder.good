@@ -17,6 +17,7 @@ Initializing Modules:
      LocaleModelHelpFlat
       LocaleModelHelpSetup
        ChapelLocale
+        HaltWrappers
        DefaultRectangular
         DSIUtil
         ChapelArray
@@ -29,7 +30,6 @@ Initializing Modules:
     LocalesArray
     ChapelDistribution
      List
-      HaltWrappers
     ChapelIO
      IO
       SysError
