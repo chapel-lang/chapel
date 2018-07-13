@@ -3893,8 +3893,7 @@ module HDF5_HL {
      */
     class HDF5Preprocessor {
       proc preprocess(A: []) {
-        use ChapelHaltWrappers;
-        pureVirtualMethodHalt();
+        HaltWrappers.pureVirtualMethodHalt();
       }
     }
 

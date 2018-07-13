@@ -100,8 +100,7 @@ module Barriers {
           }
         }
         otherwise {
-          use ChapelHaltWrappers;
-          exhaustiveSelectHalt("unknown barrier type");
+          HaltWrappers.exhaustiveSelectHalt("unknown barrier type");
         }
       }
       isowned = true;
@@ -181,32 +180,27 @@ module Barriers {
   class BarrierBaseType {
     pragma "no doc"
     proc barrier() {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc notify() {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc wait() {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc check(): bool {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc reset(nTasks: int) {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
     }
   }
 
@@ -272,8 +266,7 @@ module Barriers {
           }
           const alreadySet = done.testAndSet();
           if boundsChecking && alreadySet {
-            use ChapelHaltWrappers;
-            boundsCheckHalt("Too many callers to barrier()");
+            HaltWrappers.boundsCheckHalt("Too many callers to barrier()");
           }
           if reusable {
             count.waitFor(n-1);
@@ -297,8 +290,7 @@ module Barriers {
         if myc<=1 {
           const alreadySet = done.testAndSet();
           if boundsChecking && alreadySet {
-            use ChapelHaltWrappers;
-            boundsCheckHalt("Too many callers to notify()");
+            HaltWrappers.boundsCheckHalt("Too many callers to notify()");
           }
         }
       }
@@ -367,8 +359,7 @@ module Barriers {
     inline proc barrier() {
       on this {
         if boundsChecking && blockers.read() >= maxBlockers {
-          use ChapelHaltWrappers;
-          boundsCheckHalt("Too many callers to barrier()");
+          HaltWrappers.boundsCheckHalt("Too many callers to barrier()");
         }
         inGate.readFF();
         var waiters = blockers.fetchAdd(1) + 1;
@@ -394,8 +385,7 @@ module Barriers {
     inline proc notify() {
       on this {
         if boundsChecking && blockers.read() >= maxBlockers {
-          use ChapelHaltWrappers;
-          boundsCheckHalt("Too many callers to notify()");
+          HaltWrappers.boundsCheckHalt("Too many callers to notify()");
         }
 
         inGate.readFF();
