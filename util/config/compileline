@@ -72,9 +72,9 @@ def parseArguments():
                       dest="actions", action='append_const',
                       help="Print -D and -I compilation flags to include "
                            "the Chapel runtime")
-    parser.add_option("--ldshared", const="ldshared",
+    parser.add_option("--linkershared", const="linkershared",
                       dest="actions", action='append_const',
-                      help="print out the command for ldshared")
+                      help="print out the command for linking with shared")
     parser.add_option("--libraries", const="libraries",
                       dest="actions", action='append_const',
                       help="print out -L and -l options to link with "
@@ -198,12 +198,12 @@ def main():
             mysystem(make_helper, "printcxxflags")
         elif a == "includesanddefines":
             mysystem(make_helper, "printincludesanddefines")
-        elif a == "ldshared":
-            mysystem(make_helper, "printldshared")
         elif a == "libraries":
             mysystem(make_helper, "printlibraries")
         elif a == "linker":
             mysystem(make_helper, "printlinker")
+        elif a == "linkershared":
+            mysystem(make_helper, "printlinkershared")
         elif a == "maino":
             mysystem(make_helper, "printmaino")
         elif a == "llvminstalldir":

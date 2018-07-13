@@ -119,7 +119,7 @@ printcflags:
 printcxxflags:
 	@echo $(CHPL_MAKE_BASE_CXXFLAGS) $(GEN_CXXFLAGS) $(COMP_GEN_CXXFLAGS)
 
-printldshared:
+printlinkershared:
 	@echo $(LD) $(LIB_DYNAMIC_FLAG)
 
 printlibraries:
