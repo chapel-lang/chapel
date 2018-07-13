@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Interactive CLI for building one or more Chapel configurations."""
+"""CLI for building multiple Chapel configurations."""
 
 # TODO: Add flag to ignore env when picking defaults, maybe --ignore-environment.
-# TODO: Add additional configuration flags.
 # TODO: Split up compile process into stages (compile, runtime, then third-party, etc).
 # TODO: Parallelize build stages that are amenable (e.g. runtime, third-party, etc).
 # TODO: Add --all-configs (?) flag that will build all configurations.
 # TODO: Figure out how to support compiler configs. It is a bit challenging because the default should almost certainly come from chplenv (otherwise that logic will be duplicated here).
-# TODO: Figure out how to best support complex configs, like comm with substrate and segment values.
 # TODO: Add interactive mode where user is asked what configs they want.
 
 from __future__ import absolute_import, print_function, unicode_literals
@@ -134,7 +132,7 @@ class Config(object):
             value = getattr(self, dim.name)
             if value:
                 values.append('{0}={1}'.format(dim.name, value))
-        return ' '.join(values)
+        return ','.join(values)
 
     def verbose_str(self):
         """Return verbose string of configs - one per line indented."""
@@ -181,14 +179,8 @@ def main():
         print_configs()
         return 0
 
-    if opts.parallel:
-        logging.info('Using parallel execution for build.')
-
     build_env = os.environ.copy()
-    chpl_misc = get_chpl_misc(opts, build_env)
-    chpl_home = chpl_misc['chpl_home']
-    logging.info('Using CHPL_HOME={0}'.format(chpl_home))
-    build_env['CHPL_HOME'] = chpl_home
+    chpl_misc = get_chpl_misc(opts, args, build_env)
 
     build_configs = get_configs(opts)
     config_count_str = '{0} configuration{1}'.format(
@@ -197,7 +189,7 @@ def main():
     logging.info('Building {0}.'.format(config_count_str))
     logging.debug('Build configs: {0}'.format(build_configs))
 
-    statuses = []
+    statuses = [0,]
     with elapsed_time('All {0}'.format(config_count_str)):
         for build_config in build_configs:
             result = build_chpl(
@@ -207,46 +199,145 @@ def main():
                 parallel=opts.parallel,
                 verbose=opts.verbose,
                 dry_run=opts.dry_run,
-                make_targets=opts.make_targets
             )
-            statuses.append((build_config, result))
+            statuses.append(result)
 
-    # Sum of all exit codes is the exit code from this program.
-    exit_code = reduce(
-        lambda a, b: a+b,
-        map(operator.itemgetter(1), statuses),
-        0
-    )
+    # exit from this program.
+    exit_code = max(statuses)
     return exit_code
 
-def get_chpl_misc(opts, build_env):
-    """Initializes and returns misc chplenv-related settings like chpl_make, chpl_home
+def get_chpl_misc(opts, args, build_env):
+    """Miscellaneous chplenv-related paths, settings, and options
 
     TODO: complete dox
     """
 
-    # chpl_home with abspath
+    # full path to CHPL_HOME
     chpl_home_opt = os.path.abspath(opts.chpl_home)
     chpl_home_env = build_env.get('CHPL_HOME')
     if chpl_home_env:
         chpl_home_env = os.path.abspath(chpl_home_env)
         if chpl_home_env != chpl_home_opt:
             logging.warn('Resetting build_env[CHPL_HOME],\nfrom\t{0}\nto\t{1}'.format(chpl_home_env, chpl_home_opt))
-    chpl_home = chpl_home_opt
 
-    chplenv_exe = os.path.join(chpl_home, 'util', 'printchplenv')
+    chpl_home = chpl_home_opt
+    logging.info('Using CHPL_HOME={0}'.format(chpl_home))
+    build_env['CHPL_HOME'] = chpl_home
+    if not os.path.isdir(chpl_home):
+        logging.error('CHPL_HOME={0} not found'.format(chpl_home))
+        sys.exit(2)
+
+    # path to "CHPL_HOME/util/chplenv" dir
     chplenv_dir = os.path.join(chpl_home, 'util', 'chplenv')
-    chpl_make_exe = os.path.join(chplenv_dir, 'chpl_make.py')
-    result, output, error = check_output(chpl_make_exe, chpl_home, build_env)
-    if result or not output:
-        raise RuntimeError('{0} returns {1} with stdout:\n{2}\nstderr:\n{3}'.format(chpl_make_exe, result, output, error))
-    logging.debug('chpl_make is {0}\n{1}'.format(output.strip(), error.strip()))
-    chpl_make = output.strip()
+    if not os.path.isdir(chplenv_dir):
+        logging.error('chplenv_dir={0} not found'.format(chplenv_dir))
+        sys.exit(2)
+
+    # path to chpl_make.py
+    chpl_make_py = os.path.join(chplenv_dir, 'chpl_make.py')
+    if not os.path.isfile(chpl_make_py):
+        logging.error('chpl_make_py={0} not found'.format(chpl_make_py))
+        sys.exit(2)
+
+    # path to printchplenv
+    chplenv_exe = os.path.join(chpl_home, 'util', 'printchplenv')
+    if not os.path.isfile(chplenv_exe):
+        logging.error('printchplenv={0} not found'.format(chplenv_exe))
+        sys.exit(2)
+
+    # run "printchplenv" without any commandline config options or setenv, check for errors
+    chplenv_cmd = chplenv_exe + ' --simple --all --no-tidy'
+    result, output, error = check_output(chplenv_cmd, chpl_home, build_env)
+    if result:
+        logging.error('From {0}\n{1}\n{2}\nexit code {3}'.format(chplenv_cmd, error, output, result))
+        sys.exit(2)
+    if error:
+        logging.warn('From {0}\n{1}\n{2}'.format(chplenv_cmd, error, output))
+    elif not output:
+        logging.error('{0}\nreturns no output'.format(chplenv_cmd))
+        sys.exit(2)
+
+    # Chapel's preferred make command on this platform ("make", "gmake")
+    result, output, error = check_output(chpl_make_py, chpl_home, build_env)
+    if result or error:
+        logging.error('From {0}\n{1}\n{2}\nexit code {3}'.format(chpl_make_py, error, output, result))
+        sys.exit(2)
+    if output:
+        chpl_make = output
+        logging.debug('Chapel make is {0}'.format(output))
+    else:
+        logging.error('{0}\nreturns no output'.format(chpl_make_py))
+        sys.exit(2)
+
+    # construct the Chapel make command line, including all options and extras
+    make_cmd = chpl_make
+    dryrun_cmd = chplenv_cmd
+
+    if opts.parallel:
+        def _cpu_count():
+            """ return Python cpu_count(), optionally capped by env var CHPL_MAKE_MAX_CPU_COUNT
+            """
+            cpus = multiprocessing.cpu_count()
+            try:
+                max = os.getenv('CHPL_MAKE_MAX_CPU_COUNT', '0')
+                if int(max) > 0:
+                    cpus = min(int(max), cpus)
+            except:
+                pass
+            return cpus
+
+        logging.info('Using parallel make with {0} CPUs'.format(_cpu_count()))
+        make_cmd += ' --jobs={0}'.format(_cpu_count())
+
+    # extra options appended to Chapel "make", if any, not checked
+    if args and isinstance(args, basestring):
+        make_targets = args
+    elif args:
+        make_targets = ' '.join(args)
+    else:
+        make_targets = ''
+    if make_targets:
+        logging.info('Using make_targets={0}'.format(make_targets))
+
+    make_cmd += ' {0}'.format(make_targets)
+
+    # setenv file, if any
+    if opts.setenv:
+        setenv = os.path.abspath(opts.setenv)
+        if not os.path.isfile(setenv):
+            logging.error('setenv={0} not found'.format(setenv))
+            sys.exit(2)
+        logging.info('Using setenv={0}'.format(setenv))
+        if opts.verbose:
+            x = '-x'
+        else:
+            x = '+x'
+        make_cmd = 'bash {0} -c "source {1} && {2}"'.format(x, setenv, make_cmd)
+        dryrun_cmd = 'bash {0} -c "source {1} 2>&1 && {2}"'.format(x, setenv, dryrun_cmd)
+    else:
+        setenv = None
+
+    if opts.dry_run:
+        logging.debug('Using dryrun_cmd={0}'.format(dryrun_cmd))
+    else:
+        logging.debug('Using make_cmd={0}'.format(make_cmd))
+
+    if opts.make_log and not opts.dry_run:
+        logging.info('Using Chapel make log file={0}'.format(opts.make_log))
+        make_logfile = open(opts.make_log, 'w')
+    else:
+        make_logfile = None
 
     return {
+        'chpl_home'     : chpl_home,
+        'make_cmd'      : make_cmd,
+        'dryrun_cmd'    : dryrun_cmd,
         'chplenv_exe'   : chplenv_exe,
+        'chplenv_cmd'   : chplenv_cmd,
         'chpl_make'     : chpl_make,
-        'chpl_home'     : chpl_home
+        'setenv'        : setenv,
+        'make_targets'  : make_targets,
+        'make_logfile'  : make_logfile,
     }
 
 def get_configs(opts):
@@ -267,9 +358,8 @@ def get_configs(opts):
     for dim in Dimensions:
         values = getattr(opts, dim.name)
         if values is None:
-            logging.debug(
-                'No value specified for {0}, defaulting to: {1}'.format(
-                    dim.name, dim.default))
+            if dim.default:
+                logging.debug('No value specified for {0}, defaulting to: {1}'.format(dim.name, dim.default))
             dimension_values.append([dim.default])
         else:
             dimension_values.append(values)
@@ -284,11 +374,11 @@ def get_configs(opts):
     return configs
 
 
-def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_run=False, make_targets=None):
+def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_run=False):
     """Build Chapel with the provided environment.
 
-    :type chpl_home: str
-    :arg chpl_home: CHPL_HOME env var
+    :type chpl_misc: dict
+    :arg chpl_misc: miscellaneous chplenv-related paths, settings, and options
 
     :type build_config: Config
     :arg build_config: build configuration to build
@@ -296,69 +386,63 @@ def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_
     :type env: dict
     :arg env: Dictionary of key/value pairs to set as the environment.
 
-    :type parallel: bool
-    :arg parallel: enable parallel execution for build
-
     :type verbose: bool
     :arg verbose: if True, increase output
+
+    :type dry_run: bool
+    :arg dry_run: if True, do not actually run Chapel make
 
     :rtype: int
     :returns: exit code from building configuration
     """
-    logging.info('Building config: {0}'.format(build_config))
 
     build_env = build_config.get_env(env)
 
-    chpl_home = chpl_misc['chpl_home']
-    make_cmd = chpl_misc['chpl_make']
+    chpl_home       = chpl_misc['chpl_home']
+    make_cmd        = chpl_misc['make_cmd']
+    dryrun_cmd      = chpl_misc['dryrun_cmd']
+    make_logfile    = chpl_misc['make_logfile']
+    make_targets    = chpl_misc['make_targets']
 
-    if parallel:
-        def _cpu_count():
-            """ return Python cpu_count(), optionally capped by env var CHPL_MAKE_MAX_CPU_COUNT
-            """
-            cpus = multiprocessing.cpu_count()
-            try:
-                max = os.getenv('CHPL_MAKE_MAX_CPU_COUNT', '0')
-                if int(max) > 0:
-                    cpus = min(int(max), cpus)
-            except:
-                pass
-            return cpus
-        make_cmd += ' --jobs={0}'.format(_cpu_count())
-    if make_targets:
-        make_cmd += ' {0}'.format(make_targets)
-        logging.info('Using make command: {0}'.format(make_cmd))
-    else:
-        logging.debug('Using make command: {0}'.format(make_cmd))
+    build_config_name = '{0}'.format(build_config)
+    if not build_config_name:
+        build_config_name = 'None'
+
+    logging.info('Building config:\n\t{0}'.format(build_config_name))
+    if make_logfile:
+        print('\n[BUILD_CONFIGS] make_targets: {0}'.format(make_targets), file=make_logfile)
+        print('\n[BUILD_CONFIGS] config: {0}'.format(build_config_name), file=make_logfile)
+
+    build_env['BUILD_CONFIGS_config'] = '{0}'.format(build_config_name)
+    build_env['BUILD_CONFIGS_chplenv_exe'] = chpl_misc['chplenv_exe']
+    build_env['BUILD_CONFIGS_chpl_make'] = chpl_misc['chpl_make']
+    build_env['BUILD_CONFIGS_make_targets'] = chpl_misc['make_targets']
 
     if dry_run:
-        logging.info('dry-run: {0}'.format(make_cmd))
-        result, output, error = check_output(chpl_home + '/util/printchplenv --simple --all --no-tidy', chpl_home, build_env)
-        if result or error:
-            logging.warn('printchplenv status: {0}\n{1}\n{2}'.format(result, output, error))
-        else:
-            logging.debug('printchplenv:\n{0}'.format(output))
-        return 0
+        logging.info('dry-run command:\n\t{0}'.format(dryrun_cmd))
+        build_env['BUILD_CONFIGS_dryrun_cmd']  = dryrun_cmd
+        with elapsed_time(build_config_name):
+            result, output, error = check_output(dryrun_cmd, chpl_home, build_env)
+            if result or error:
+                logging.warn('Errors/Warnings from dry-run config {0}\n{1}\n{2}\nExit code {3}'.format(
+                    build_config_name, output, error, result))
+            elif verbose:
+                logging.debug('Results from dry-run config {0}\n{1}\n{2}\nExit code {3}'.format(
+                    build_config_name, output, error, result))
     else:
-        with elapsed_time(build_config):
-            result, output, error = check_output(
-                make_cmd, chpl_home, build_env, verbose=verbose)
-            logging.debug('Exit code for config {0}: {1}'.format(
-                build_config, result))
-        logging.info('Finished config:\n{0}'.format(build_config.verbose_str()))
+        logging.info('Chapel make command:\n\t{0}'.format(make_cmd))
+        build_env['BUILD_CONFIGS_make_cmd'] = make_cmd
+        if make_logfile:
+            print('\n[BUILD_CONFIGS] command: {0}\n'.format(make_cmd), file=make_logfile)
+        with elapsed_time(build_config_name):
+            result, output, error = check_output(make_cmd, chpl_home, build_env, file=make_logfile)
+        if result:
+            logging.error('Non-zero exit code {0}'.format(result))
 
-        if result != 0:
-            if output is not None:
-                logging.error('stdout:\n{0}'.format(output))
-            if error is not None:
-                logging.error('stderr:\n{0}'.format(error))
-            logging.error('Non-zero exit code when building config {0}: {1}'.format(
-                build_config, result))
-
-        return result
+    return result
 
 
-def check_output(command, chpl_home, env, stdin=None, verbose=False):
+def check_output(command, chpl_home, env, stdin=None, file=None):
     """Runs command in subprocess and returns result.
 
     :type command: str
@@ -373,17 +457,19 @@ def check_output(command, chpl_home, env, stdin=None, verbose=False):
     :type stdin: str
     :arg stdin: string to pass as stdin to process
 
-    :type verbose: bool
-    :arg verbose: if True, let stdout/stderr stream
+    :type file: File
+    :arg file: if it exists, redirect stdout/stderr stream
 
     :rtype: tuple(int, str, str)
     :returns: exit code/status from subcommand, stdout string, stderr string
     """
     command = shlex.split(str(command))
 
-    stdout = None
-    stderr = None
-    if not verbose:
+    if file:
+        stdout = file
+        stderr = subprocess.STDOUT
+        file.flush()
+    else:
         stdout = subprocess.PIPE
         stderr = subprocess.PIPE
 
@@ -396,6 +482,21 @@ def check_output(command, chpl_home, env, stdin=None, verbose=False):
     )
     out, err = p.communicate(input=stdin)
     retcode = p.returncode
+
+    if file:
+        if out:
+            raise ValueError('if file exists then "out" should be empty')
+        if err:
+            raise ValueError('if file exists then "err" should be empty')
+    else:
+        if out:
+            out=out.strip()
+        else:
+            out=''
+        if err:
+            err=err.strip()
+        else:
+            err=''
 
     return retcode, out, err
 
@@ -476,7 +577,7 @@ comm=gasnet either of these will work:
             return text
 
     parser = optparse.OptionParser(
-        usage='usage: %prog [options] args',
+        usage='usage: %prog [options] [extra options appended to Chapel "make" commands]',
         description=usage_description,
         formatter=NoWrapHelpFormatter()
     )
@@ -496,7 +597,11 @@ comm=gasnet either of these will work:
     parser.add_option(
         '-n', '--dry-run',
         action='store_true',
-        help='Dry run only. Do not run make.'
+        help='Dry run only. Do not run Chapel make.'
+    )
+    parser.add_option(
+        '-l', '--make-log',
+        help='Output file to receive Chapel make output (default: output not saved)'
     )
     parser.add_option(
         '--show-configs',
@@ -513,8 +618,8 @@ comm=gasnet either of these will work:
         help='Enable parallel execution for build.'
     )
     parser.add_option(
-        '-T', '--make-targets',
-        help='Arguments to be appended to the "make" commands (default: None).',
+        '-s', '--setenv',
+        help='Input file with bash-compatible env setup commands (default: None).',
     )
 
     config_group = optparse.OptionGroup(
