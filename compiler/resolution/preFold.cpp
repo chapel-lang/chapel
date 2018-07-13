@@ -456,8 +456,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   } else if (call->isPrimitive(PRIM_IS_CLASS_TYPE)) {
     Type* t = call->get(1)->typeInfo();
 
-    if (isClassLike(t) && !t->symbol->hasFlag(FLAG_EXTERN) &&
-        !t->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+    if (isClassLike(t) &&
+        !t->symbol->hasFlag(FLAG_EXTERN) &&
+        !t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+        !t->symbol->hasFlag(FLAG_DATA_CLASS)) {
       retval = new SymExpr(gTrue);
     } else {
       retval = new SymExpr(gFalse);
