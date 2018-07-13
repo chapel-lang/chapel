@@ -105,7 +105,10 @@ known_dimensions = [
 ]
 Dimensions = []
 for (name, var_name) in known_dimensions:
-    Dimensions.append(Dimension(name, var_name))
+    value = os.environ.get(var_name)
+    if isinstance(value, basestring) and not value:
+        value = None
+    Dimensions.append(Dimension(name, var_name, default=value))
 
 class Config(object):
 
@@ -156,8 +159,11 @@ class Config(object):
 
         for dim in Dimensions:
             new_env_var = getattr(self, dim.name)
-            if new_env_var:
-                new_env[dim.var_name] = getattr(self, dim.name)
+            if not new_env_var or not isinstance(new_env_var, basestring) or new_env_var == 'UNSET':
+                if new_env_var and dim.var_name in new_env:
+                    del new_env[dim.var_name]
+            else:
+                new_env[dim.var_name] = new_env_var
 
         return new_env
 
