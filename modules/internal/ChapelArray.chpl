@@ -4138,6 +4138,29 @@ module ChapelArray {
   //
 
   pragma "init copy fn"
+  proc chpl__initCopy(ir: _iteratorRecord)
+    where chpl_iteratorHasShape(ir)
+  {
+    var shape = _newDomain(ir._shape_);
+
+    // Important: ir._shape_ points to a domain class for a domain
+    // that is owned by the forall-expression or the leader in the
+    // promoted expression.
+    shape._unowned = true;
+
+    // Right now there are two distinct events for each array element:
+    //  * initialization upon the array declaration,
+    //  * assignment within the forall loop.
+    // TODO: we want to have just a single move, as is done with 'eltCopy'
+    // in the other case. Ex. users/vass/km/array-of-records-crash-1.chpl
+
+    var result: [shape] iteratorToArrayElementType(ir.type);
+    forall (r, src) in zip(result, ir) do
+      r = src;
+    return result;
+  }
+
+  pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {
 
     // We'd like to know the yielded type of the record, but we can't
@@ -4162,26 +4185,6 @@ module ChapelArray {
     // Additionally, the dynamic growing limits parallelism here, so
     // adding better shape information would allow it to be parallel and
     // thus enable better performance.
-
-if chpl_iteratorHasShape(ir) {
-    var shape = _newDomain(ir._shape_);
-
-    // Important: ir._shape_ points to a domain class for a domain
-    // that is owned by the forall-expression or the leader in the
-    // promoted expression.
-    shape._unowned = true;
-
-    // Right now there are two distinct events for each array element:
-    //  * initialization upon the array declaration,
-    //  * assignment within the forall loop.
-    // TODO: we want to have just a single move, as is done with 'eltCopy'
-    // in the other case. Ex. users/vass/km/array-of-records-crash-1.chpl
-
-    var result: [shape] iteratorToArrayElementType(ir.type);
-    forall (r, src) in zip(result, ir) do
-      r = src;
-    return result;
-} else {
 
     var i  = 0;
     var size:size_t = 0;
@@ -4271,7 +4274,6 @@ if chpl_iteratorHasShape(ir) {
       return A;
 
     }
-}
   }
 
   /* ================================================
