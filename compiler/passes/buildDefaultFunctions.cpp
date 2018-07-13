@@ -872,7 +872,7 @@ static void build_enum_cast_function(EnumType* et) {
       if (lastInit != NULL) {
         CondStmt* when =
           new CondStmt(new CallExpr(PRIM_WHEN,
-                                    new CallExpr("+", lastInit->copy(), 
+                                    new CallExpr("+", lastInit->copy(),
                                                  new SymExpr(new_IntSymbol(count)))),
                        new CallExpr(PRIM_RETURN,
                                     new CallExpr(PRIM_CAST,
@@ -904,45 +904,54 @@ static void build_enum_cast_function(EnumType* et) {
     fn->insertFormalAtTail(arg1);
     fn->insertFormalAtTail(arg2);
 
-    // Generate a select statement with when clauses for each of the
-    // enumeration constants, and an otherwise clause that calls halt.
-    count = 0;
-    whenstmts = buildChapelStmt();
-    lastInit = NULL;
-    for_enums(constant, et) {
-      if (constant->init) {
-        lastInit = constant->init;
-        count = 0;
-      } else {
-        if (lastInit != NULL) {
-          count++;
-        }
-      }
-      CallExpr* result;
-      if (lastInit) {
-        result = new CallExpr(PRIM_RETURN,
-                              new CallExpr(PRIM_CAST, arg1,
-                                           new CallExpr("+", lastInit->copy(),
-                                                        new SymExpr(new_IntSymbol(count)))));
-      } else {
-        const char *errorString = astr("illegal cast: ", et->symbol->name, 
-                                       ".", constant->sym->name,
-                                       " has no integer value");
-        result = new CallExpr("halt", new_StringSymbol(errorString));
-      }
-      CondStmt* when =
-        new CondStmt(new CallExpr(PRIM_WHEN, new SymExpr(constant->sym)),
-                     result);
-                                  
-      whenstmts->insertAtTail(when);
-    }
+    if (et->isConcrete()) {
+      // If this enum is concrete, rely on the C cast and inline
+      fn->insertAtTail(new CallExpr(PRIM_RETURN,
+                                    new CallExpr(PRIM_CAST, arg1, arg2)));
+      fn->addFlag(FLAG_INLINE);
+    } else {
+      // Otherwise, it's semi-concrete, so we need errors for some cases.
+      // Generate a select statement with when clauses for each of the
+      // enumeration constants, and an otherwise clause that calls halt.
 
-    otherwise =
-      new CondStmt(new CallExpr(PRIM_WHEN),
-                   new BlockStmt(new CallExpr("halt",
-                                              new_StringSymbol(errorString))));
-    whenstmts->insertAtTail(otherwise);
-    fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
+      count = 0;
+      whenstmts = buildChapelStmt();
+      lastInit = NULL;
+      for_enums(constant, et) {
+        if (constant->init) {
+          lastInit = constant->init;
+          count = 0;
+        } else {
+          if (lastInit != NULL) {
+            count++;
+          }
+        }
+        CallExpr* result;
+        if (lastInit) {
+          result = new CallExpr(PRIM_RETURN,
+                                new CallExpr(PRIM_CAST, arg1,
+                                             new CallExpr("+", lastInit->copy(),
+                                                          new SymExpr(new_IntSymbol(count)))));
+        } else {
+          const char *errorString = astr("illegal cast: ", et->symbol->name,
+                                         ".", constant->sym->name,
+                                         " has no integer value");
+          result = new CallExpr("halt", new_StringSymbol(errorString));
+        }
+        CondStmt* when =
+          new CondStmt(new CallExpr(PRIM_WHEN, new SymExpr(constant->sym)),
+                       result);
+
+        whenstmts->insertAtTail(when);
+      }
+
+      otherwise =
+        new CondStmt(new CallExpr(PRIM_WHEN),
+                     new BlockStmt(new CallExpr("halt",
+                                                new_StringSymbol(errorString))));
+      whenstmts->insertAtTail(otherwise);
+      fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
+    }
 
     def = new DefExpr(fn);
     //
@@ -1018,7 +1027,7 @@ static void build_enum_to_order_function(EnumType* et, bool paramVersion) {
   FnSymbol* fn = new FnSymbol(astr("chpl__enumToOrder"));
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* arg1 = new ArgSymbol(paramVersion ? INTENT_PARAM: INTENT_BLANK, 
+  ArgSymbol* arg1 = new ArgSymbol(paramVersion ? INTENT_PARAM: INTENT_BLANK,
                                   "e", et);
   fn->insertFormalAtTail(arg1);
   if (paramVersion)
