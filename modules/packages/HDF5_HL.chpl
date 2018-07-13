@@ -3389,13 +3389,13 @@ module HDF5_HL {
       const filename: string;
       const file_id: hid_t;
 
-      proc init(name: string, access: c_uint = H5F_ACC_RDONLY) {
+      proc init(name: string, access: c_uint = C_HDF5.H5F_ACC_RDONLY) {
         filename = name;
-        file_id = H5Fopen(name.c_str(), access, H5P_DEFAULT);
+        file_id = C_HDF5.H5Fopen(name.c_str(), access, C_HDF5.H5P_DEFAULT);
       }
 
       proc deinit() {
-        H5Fclose(file_id);
+        C_HDF5.H5Fclose(file_id);
       }
     }
     */
@@ -3413,7 +3413,7 @@ module HDF5_HL {
     proc readAllHDF5Files(locs: [] locale, dirName: string, dsetName: string,
                           filenameStart: string, type eltType, param rank,
                           preprocessor: HDF5Preprocessor = nil) {
-      use BlockDist, C_HDF5.HDF5_WAR, FileSystem;
+      use FileSystem;
 
       var filenames: [1..0] string;
       for f in findfiles(dirName) {
@@ -3431,14 +3431,15 @@ module HDF5_HL {
     proc readAllNamedHDF5Files(locs: [] locale, filenames: [] string,
                                dsetName: string, type eltType, param rank,
                                preprocessor: HDF5Preprocessor = nil) {
-      use BlockDist, C_HDF5.HDF5_WAR;
+      use BlockDist;
+
       const Space = filenames.domain;
       const BlockSpace = Space dmapped Block(Space, locs,
                                              dataParTasksPerLocale=1);
       var files: [BlockSpace] ArrayWrapper(eltType, rank);
       forall (f, name) in zip(files, filenames) {
         var locName = name; // copy this string to be local
-        var file_id = H5Fopen(locName.c_str(), C_HDF5.H5F_ACC_RDONLY, C_HDF5.H5P_DEFAULT);
+        var file_id = C_HDF5.H5Fopen(locName.c_str(), C_HDF5.H5F_ACC_RDONLY, C_HDF5.H5P_DEFAULT);
         var dims: [0..#rank] C_HDF5.hsize_t;
         var dsetRank: c_int;
 
@@ -3513,7 +3514,8 @@ module HDF5_HL {
       type eltType = data.eltType;
 
       const hdf5Type = getHDF5Type(eltType);
-      H5LTread_dataset(file_id, dsetName.c_str(), hdf5Type, c_ptrTo(data));
+      C_HDF5.H5LTread_dataset(file_id, dsetName.c_str(),
+                              hdf5Type, c_ptrTo(data));
     }
 
     /* Return the HDF5 type equivalent to the Chapel type `eltType` */
@@ -3571,13 +3573,13 @@ module HDF5_HL {
                                 param rank: int,
                                 data: [] ArrayWrapper(eltType, rank),
                                 mode: Hdf5OpenMode) throws {
-      use BlockDist, C_HDF5.HDF5_WAR, FileSystem;
+      use BlockDist, FileSystem;
 
       // assert(isBlockDistributed(data) &&
       //        data.<dist>.dataParTasksPerLocale==1);
 
       forall (arr, dsetName, fname) in zip(data, dsetNames, filenames) {
-        var file_id: hid_t;
+        var file_id: C_HDF5.hid_t;
         const filename = dirName + "/" + fname;
         var fileExists: bool;
 
