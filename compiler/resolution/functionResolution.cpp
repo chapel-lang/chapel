@@ -1933,32 +1933,50 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
   return call->resolvedFunction();
 }
 
-static bool recordContainsType(AggregateType* at, Type* t) {
-  if (t == at) {
-    return true;
-  } else if (isRecord(t)) {
-    for_fields(field, toAggregateType(t)) {
-      if (isRecord(field->type)) {
-        return recordContainsType(at, field->type);
+static void checkForInfiniteRecord(AggregateType* at, std::set<AggregateType*>& nestedRecords) {
+  for_fields(field, at) {
+    if (isRecord(field->type)) {
+      AggregateType* ft = toAggregateType(field->type);
+      if (nestedRecords.find(ft) != nestedRecords.end()) {
+        // Found a cycle
+        // Note: error message text agreed upon in #10281
+        if (ft == at) {
+          // Simple cycle:
+          // record B {
+          //   var b : B;
+          // }
+          USR_FATAL(field,
+                    "record '%s' cannot contain a recursive field '%s' of type '%s'",
+                    at->symbol->name,
+                    field->name,
+                    at->symbol->name);
+        } else {
+          // Cycle involving multiple records
+          if (at->symbol->hasFlag(FLAG_TUPLE)) {
+            USR_FATAL(ft, "tuple '%s' cannot contain recursive record type '%s'", at->symbol->name, ft->symbol->name);
+          } else {
+            USR_FATAL(field,
+                      "record '%s' cannot contain a recursive field '%s' whose type '%s' contains '%s'",
+                      at->symbol->name,
+                      field->name,
+                      ft->symbol->name,
+                      at->symbol->name);
+          }
+        }
+      } else {
+        nestedRecords.insert(ft);
+        checkForInfiniteRecord(ft, nestedRecords);
+        nestedRecords.erase(ft);
       }
     }
   }
-
-  return false;
 }
 
+// Convenience wrapper
 static void checkForInfiniteRecord(AggregateType* at) {
-  for_fields(field, at) {
-    if (field->type == at) {
-      USR_FATAL(field, "Record has infinite size "
-                       "(field '%s' has same type as enclosing record)",
-                       field->name);
-    } else if (recordContainsType(at, field->type)) {
-      USR_FATAL(field, "Record has infinite size "
-                       "(type of field '%s' contains same type as enclosing record)",
-                       field->name);
-    }
-  }
+  std::set<AggregateType*> nestedRecords;
+  nestedRecords.insert(at);
+  checkForInfiniteRecord(at, nestedRecords);
 }
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
