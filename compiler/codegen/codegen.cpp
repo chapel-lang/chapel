@@ -2234,6 +2234,9 @@ void codegen(void) {
     if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
   }
 
+  // Prepare primitives for codegen
+  CallExpr::registerPrimitivesForCodegen();
+
   setupDefaultFilenames();
 
   if( llvmCodegen ) {
