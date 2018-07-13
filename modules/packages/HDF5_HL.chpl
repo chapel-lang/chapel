@@ -2878,96 +2878,65 @@ module HDF5_HL {
 
     /* Macros defined in H5Fpublic.h */
 
-    proc H5F_ACC_RDONLY {
-      /* absence of rdwr => rd-only */
-      return 0x0000: c_uint;
-    }
+    /* absence of rdwr => rd-only */
+    param H5F_ACC_RDONLY = 0x0000: c_uint;
 
-    proc H5F_ACC_RDWR {
-      /* open for read and write */
-      return 0x0001: c_uint;
-    }
+    /* open for read and write */
+    param H5F_ACC_RDWR = 0x0001: c_uint;
 
-    proc H5F_ACC_TRUNC {
-      /* overwrite existing files */
-      return 0x0002: c_uint;
-    }
+    /* overwrite existing files */
+    param H5F_ACC_TRUNC = 0x0002: c_uint;
 
-    proc H5F_ACC_EXCL {
-      /* fail if file already exists */
-      return 0x0004: c_uint;
-    }
+    /* fail if file already exists */
+    param H5F_ACC_EXCL = 0x0004: c_uint;
 
     /* NOTE: 0x0008u was H5F_ACC_DEBUG, now deprecated */
-    proc H5F_ACC_CREAT {
-      /* create non-existing files */
-      return 0x0010: c_uint;
-    }
 
-    proc H5F_ACC_SWMR_WRITE {
-      /* indicate that this file is open for writing in a
-       * single-writer/multi-reader (SWMR) scenario.  Note that the
-       * process(es) opening the file for reading must open the file
-       * with RDONLY access, and use the special "SWMR_READ" access flag. */
-      return 0x0020: c_uint;
-    }
+    /* create non-existing files */
+    param H5F_ACC_CREAT = 0x0010: c_uint;
 
-    proc H5F_ACC_SWMR_READ {
-      /* indicate that this file is open for reading in a
-       * single-writer/multi-reader (SWMR) scenario.  Note that the
-       * process(es) opening the file for SWMR reading must also
-       * open the file with the RDONLY flag.  */
-      return 0x0040: c_uint;
-    }
+    /* indicate that this file is open for writing in a
+       single-writer/multi-reader (SWMR) scenario.  Note that the
+       process(es) opening the file for reading must open the file
+       with RDONLY access, and use the special "SWMR_READ" access flag. */
+    param H5F_ACC_SWMR_WRITE = 0x0020: c_uint;
 
-    /* Value passed to H5Pset_elink_acc_flags to cause flags to be taken from the
-     * parent file. */
-    proc H5F_ACC_DEFAULT {
-      /* ignore setting on lapl */
-      return 0xffff: c_uint;
-    }
+    /* indicate that this file is open for reading in a
+       single-writer/multi-reader (SWMR) scenario.  Note that the
+       process(es) opening the file for SWMR reading must also
+       open the file with the RDONLY flag.  */
+    param H5F_ACC_SWMR_READ = 0x0040: c_uint;
+
+    /* Value passed to H5Pset_elink_acc_flags to cause flags to be taken
+       from the parent file.  Ignore setting on lapl */
+    param H5F_ACC_DEFAULT = 0xffff: c_uint;
 
 
     /* Flags for H5Fget_obj_count() & H5Fget_obj_ids() calls */
-    proc H5F_OBJ_FILE {
-      /* File objects */
-      return 0x0001: c_uint;
-    }
 
-    proc H5F_OBJ_DATASET {
-      /* Dataset objects */
-      return 0x0002: c_uint;
-    }
+    /* File objects */
+    param H5F_OBJ_FILE = 0x0001: c_uint;
 
-    proc H5F_OBJ_GROUP {
-      /* Group objects */
-      return 0x0004: c_uint;
-    }
+    /* Dataset objects */
+    param H5F_OBJ_DATASET = 0x0002: c_uint;
 
-    proc H5F_OBJ_DATATYPE {
-      /* Named datatype objects */
-      return 0x0008: c_uint;
-    }
+    /* Group objects */
+    param H5F_OBJ_GROUP = 0x0004: c_uint;
 
-    proc H5F_OBJ_ATTR {
-      /* Attribute objects */
-      return 0x0010: c_uint;
-    }
+    /* Named datatype objects */
+    param H5F_OBJ_DATATYPE = 0x0008: c_uint;
 
-    proc H5F_OBJ_ALL {
-      return H5F_OBJ_FILE|H5F_OBJ_DATASET|H5F_OBJ_GROUP|H5F_OBJ_DATATYPE|H5F_OBJ_ATTR;
-    }
+    /* Attribute objects */
+    param H5F_OBJ_ATTR = 0x0010: c_uint;
 
-    proc H5F_OBJ_LOCAL {
-      /* Restrict search to objects opened through current file ID */
-      /* as opposed to objects opened through any file ID accessing this file */
+    param H5F_OBJ_ALL = H5F_OBJ_FILE | H5F_OBJ_DATASET | H5F_OBJ_GROUP |
+                        H5F_OBJ_DATATYPE | H5F_OBJ_ATTR;
 
-      return 0x0020: c_uint;
-    }
+    /* Restrict search to objects opened through current file ID
+       as opposed to objects opened through any file ID accessing this file */
+    param H5F_OBJ_LOCAL = 0x0020: c_uint;
 
-    proc H5F_FAMILY_DEFAULT {
-      return 0: hsize_t;
-    }
+    param H5F_FAMILY_DEFAULT = 0: hsize_t;
 
     /* Macros defined in H5Ppublic.h */
     /*
@@ -3109,18 +3078,12 @@ module HDF5_HL {
 
     /* Common creation order flags (for links in groups and
      * attributes on objects) */
-    proc H5P_CRT_ORDER_TRACKED {
-      return 0x0001: c_int;
-    }
+    param H5P_CRT_ORDER_TRACKED = 0x0001: c_int;
 
-    proc H5P_CRT_ORDER_INDEXED {
-      return 0x0002: c_int;
-    }
+    param H5P_CRT_ORDER_INDEXED = 0x0002: c_int;
 
     /* Default value for all property list classes */
-    proc H5P_DEFAULT {
-      return 0: hid_t;
-    }
+    param H5P_DEFAULT = 0: hid_t;
 
     /* Macros defined in H5Tpublic.h */
     /*
