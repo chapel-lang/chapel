@@ -466,11 +466,7 @@ static bool passedToInitOrRetarg(SymExpr* use,
   if (form->hasFlag(FLAG_RETARG))
     return true;
 
-  // vass - remove this
-  INT_ASSERT(!strcmp(calledFn->cname, "init") == (calledFn->cname == astrInit));
-
-  if (calledFn->cname == astrInit &&
-      calledFn->isMethod()        &&
+  if (calledFn->isInitializer()  &&
       form->hasFlag(FLAG_ARG_THIS))
     return true;
 
