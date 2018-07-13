@@ -21,8 +21,7 @@
    This module provides halt wrappers to make it easier to find and identify
    particular use-cases.
  */
-module ChapelHaltWrappers {
-  use ChapelIO; // for halt()
+module HaltWrappers {
 
   //
   // Halt wrappers for cases where we want error-handling, but error-handling

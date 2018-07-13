@@ -69,6 +69,7 @@ module ChapelStandard {
 
   // Standard modules.
   use Assert;
+  use HaltWrappers only ;
   use Types;
   use Math;
 

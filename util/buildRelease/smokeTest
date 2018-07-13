@@ -34,7 +34,7 @@ source $CHPL_HOME/util/setchplenv.bash
 echo ""
 
 # Show me the environment!
-$CHPL_HOME/util/printchplenv
+$CHPL_HOME/util/printchplenv --all --no-tidy
 echo ""
 
 # Check for tabs.

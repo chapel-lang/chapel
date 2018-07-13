@@ -29,12 +29,12 @@ Initializing Modules:
     LocalesArray
     ChapelDistribution
      List
-      ChapelHaltWrappers
-       ChapelIO
-        IO
-         SysError
-         FormattedIO
-          Regexp
+      HaltWrappers
+    ChapelIO
+     IO
+      SysError
+      FormattedIO
+       Regexp
     LocaleTree
     DefaultAssociative
     ExternalArray

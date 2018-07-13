@@ -830,7 +830,6 @@ private module GlobWrappers {
 
   // glob wrapper that takes care of casting and error checking
   inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
-    use ChapelHaltWrappers;
     extern proc chpl_glob(pattern: c_string, flags: c_int,
                           ref ret_glob: glob_t): c_int;
 
@@ -843,7 +842,7 @@ private module GlobWrappers {
     // convert that into an out of memory error.
     assert (err == 0 || err == GLOB_NOMATCH || err == GLOB_NOSPACE);
     if err == GLOB_NOSPACE then
-      outOfMemoryHalt("glob()");
+      HaltWrappers.outOfMemoryHalt("glob()");
   }
 
   // glob_num wrapper that takes care of casting
@@ -932,7 +931,6 @@ iter glob(pattern: string = "*", param tag: iterKind)
 pragma "no doc"
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
-  use ChapelHaltWrappers;
   use GlobWrappers;
   var glb : glob_t;
   if (followThis.size != 1) then
@@ -942,7 +940,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
   glob_w(pattern, glb);
   const num = glob_num_w(glb);
   if (r.high >= num) then
-    zipLengthHalt("glob() is being zipped with something too big; it only has " + num + " matches");
+    HaltWrappers.zipLengthHalt("glob() is being zipped with something too big; it only has " + num + " matches");
 
   for i in r do
     yield glob_index_w(glb, i);
