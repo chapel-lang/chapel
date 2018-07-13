@@ -46,7 +46,7 @@ If compiler support for atomics is available, the atomic operations
 will be mapped down the appropriate compiler intrinsics which often
 map directly to processor atomics.  If intrinsics are not available,
 the atomic implementation defaults to using locks in the form of
-Chapel's sync vars. As a result the locks implementation will be
+Pthread mutexes. As a result the locks implementation will be
 slower than the intrinsic implementation. Since Chapel's atomics
 were modeled after the C11 edition of the C standard, the cstdlib
 implementation is just a wrapper around C standard atomics.  As C11

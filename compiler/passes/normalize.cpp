@@ -3313,7 +3313,7 @@ static bool isGenericActual(Expr* expr) {
     return true;
   if (SymExpr* se = toSymExpr(expr))
     if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
-      if (AggregateType* at = toAggregateType(ts->type))
+      if (AggregateType* at = toAggregateType(canonicalClassType(ts->type)))
         if (!at->needsConstructor())
           // Ignore aggregate types with old-style constructors since
           // it computes genericity in resolution (vs in scope resolve)
@@ -3517,37 +3517,58 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   } else if (call->isNamed("*")) {
     // it happens to be that 1st actual == size so that will be checked below
     addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried));
-  } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
-    // Check that whatever it is is a borrow
+  } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+
+
+    bool borrowed = call->isPrimitive(PRIM_TO_BORROWED_CLASS);
+    Type* parentType = borrowed?dtBorrowed:dtUnmanaged;
+
+    // Check that whatever it has right borrow / unmanaged nature
     addToWhereClause(fn, formal, new CallExpr(PRIM_IS_SUBTYPE,
-                                              dtBorrowed->symbol, queried));
-    // don't try to do anything else if there isn't a nested call
-    if (!isCallExpr(call->get(1)))
-        return;
+                                              parentType->symbol, queried));
 
-    // For nested calls, proceed as if the PRIM_TO_BORROWED_CLASS wasn't there
-    // that's because the borrowed class is the 'canonical' class representation
-    // used in the compiler.
-    call = toCallExpr(call->get(1));
+    Type* theType = NULL;
+    // Match on an inner call to a TypeSymbol
+    CallExpr* subCall = toCallExpr(call->get(1));
+    if (subCall != NULL)
+      if (SymExpr* subBase = toSymExpr(subCall->baseExpr))
+        if (TypeSymbol* ts = toTypeSymbol(subBase->symbol()))
+          theType = ts->type;
 
-  } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
-    if (CallExpr* subCall = toCallExpr(call->get(1))) {
-      if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {
-        if (AggregateType* at = toAggregateType(subBase->symbol()->type)) {
-          if (isClass(at)) {
-            // TODO -- should this move to scope resolve?
+    if (theType == NULL)
+      // pattern of call to TypeSymbol not found, stop here
+      return;
 
-            // Replace PRIM_TO_UNMANAGED( MyClass( Def ?t ) )
-            // with
-            // unmanaged MyClass ( Def ?t )
+    // Only work with theType being unmanaged or class type
+    // e.g. if it's a record, we just ignore the PRIM_TO_...
+    if (borrowed || !isClassLike(theType)) {
+      // For nested calls in PRIM_TO_BORROWED_CLASS,
+      // proceed as if the PRIM_TO_BORROWED_CLASS wasn't
+      // there. That's because the borrowed class is the
+      // 'canonical' class representation used in the compiler.
 
-            Type* unm = at->getUnmanagedClass();
-            subCall->baseExpr->replace(new SymExpr(unm->symbol));
-            call->replace(subCall->remove());
-            call = subCall;
-          }
-        }
-      }
+      // This branch also applies to say `unmanaged MyRecord(?t)`
+      call = toCallExpr(call->get(1));
+
+    } else {
+      // For nested calls in PRIM_TO_UNMANAGED_CLASS, where the
+      // called type is a class or an unmanaged class.
+      Type* t = canonicalClassType(theType);
+      AggregateType* at = toAggregateType(t);
+      INT_ASSERT(at);
+
+      // Replace PRIM_TO_UNMANAGED( MyClass( Def ?t ) )
+      // with
+      // unmanaged MyClass ( Def ?t )
+
+      // This can't be applied generally in scopeResolve b/c
+      // of the way type constructors are currently normalized.
+
+      Type* unm = at->getUnmanagedClass();
+      subCall->baseExpr->replace(new SymExpr(unm->symbol));
+      call->replace(subCall->remove());
+      call = subCall;
     }
   }
 

@@ -3517,8 +3517,6 @@ DEFINE_PRIM(PRIM_ARRAY_SET) {
     // get(1): (wide?) base pointer
     // get(2): index
     // get(3): value
-    // get(4): src-line
-    // get(5): src-file
 
     // Used to handle FLAG_WIDE_CLASS/FLAG_STAR_TUPLE specially,
     // but these should be taken care of by codegenElementPtr and
@@ -4140,9 +4138,7 @@ DEFINE_PRIM(PRIM_SETCID) {
     //  wide=get(1),
     //  local=chpl__cid_<type>,
     //  stype=dtObject->typeInfo(),
-    //  sfield=chpl__cid,
-    //  ln=get(2),
-    //  fn=get(3))
+    //  sfield=chpl__cid)
     //
     if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_NO_OBJECT)    == true &&
         call->get(1)->typeInfo()->symbol->hasFlag(FLAG_OBJECT_CLASS) == false) {
@@ -4260,8 +4256,8 @@ DEFINE_PRIM(PRIM_CHECK_NIL) {
 
     codegenCall("chpl_check_nil",
                 ptr,
-                gGenInfo->lineno,
-                gFilenameLookupCache[gGenInfo->filename]);
+                call->get(2),
+                call->get(3));
 }
 DEFINE_PRIM(PRIM_LOCAL_CHECK) {
     // arguments are (wide ptr, line, function/file, error string)

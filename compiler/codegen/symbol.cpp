@@ -1506,6 +1506,9 @@ void FnSymbol::codegenDef() {
     if (fNoInline)
       func->addFnAttr(llvm::Attribute::NoInline);
 
+    if (this->hasFlag(FLAG_LLVM_READNONE))
+      func->addFnAttr(llvm::Attribute::ReadNone);
+
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
 

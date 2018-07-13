@@ -107,6 +107,9 @@ module CPtr {
   inline proc =(ref a:c_ptr, b:c_ptr) { __primitive("=", a, b); }
 
   pragma "no doc"
+  inline proc =(ref a: c_ptr, b: c_void_ptr) { __primitive("=", a, b); }
+
+  pragma "no doc"
   inline proc =(ref a:c_ptr, b:_nilType) { __primitive("=", a, c_nil); }
 
   pragma "no doc"

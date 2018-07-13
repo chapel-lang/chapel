@@ -5,7 +5,7 @@ class C {
   param c: int = 3;
 }
 
-proc foo(c: borrowed C) {
+proc foo(c: borrowed C(?)) {
   writeln(c.b);
 }
 

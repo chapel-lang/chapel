@@ -158,6 +158,34 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   }
 }
 
+static void propagate_environment(FILE *f)
+{
+  char *lang = getenv("LANG");
+  char *lc_all = getenv("LC_ALL");
+  char *lc_collate = getenv("LC_COLLATE");
+
+  // If any of the relevant character set environment variables
+  // are set, replicate the state of all of them.
+  if (lang || lc_all || lc_collate) {
+    fprintf(f, " env");
+
+    // All the undefines have to come first.
+    if (!lang)
+      fprintf(f, " -u LANG");
+    if (!lc_all)
+      fprintf(f, " -u LC_ALL");
+    if (!lc_collate)
+      fprintf(f, " -u LC_COLLATE");
+
+    if (lang)
+      fprintf(f, " LANG=%s", lang);
+    if (lc_all)
+      fprintf(f, " LC_ALL=%s", lc_all);
+    if (lc_collate)
+      fprintf(f, " LC_COLLATE=%s", lc_collate);
+  }
+}
+
 static char* chpl_launch_create_command(int argc, char* argv[], 
                                         int32_t numLocales) {
   int i;
@@ -216,8 +244,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     else
       fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", argv[0]);
 //    fprintf(slurmFile, "cd $SBATCH_O_WORKDIR\n");
-      fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d %s ",
-              CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
+      fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d",
+              CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales);
+      propagate_environment(slurmFile);
+      fprintf(slurmFile, " %s ", chpl_get_real_binary_name());
       for (i=1; i<argc; i++) {
         fprintf(slurmFile, " '%s'", argv[i]);
       }
@@ -250,8 +280,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(expectFile, " -C %s", constraint);
   }
 //  fprintf(expectFile, "-I %s ", slurmFilename);
-  fprintf(expectFile, " %s/%s/gasnetrun_ibv -n %d %s ",
-          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
+  fprintf(expectFile, " %s/%s/gasnetrun_ibv -n %d",
+          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales);
+  propagate_environment(expectFile);
+  fprintf(expectFile, " %s ", chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " %s", argv[i]);
   }
