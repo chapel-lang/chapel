@@ -939,7 +939,7 @@ static DefExpr* fieldByName(AggregateType* at, const char* name) {
     DefExpr*   defExpr = toDefExpr(currField);
     VarSymbol* var     = toVarSymbol(defExpr->sym);
 
-    if (strcmp(var->name, name) == 0) {
+    if (var && strcmp(var->name, name) == 0) {
       retval    = defExpr;
     } else {
       currField = currField->next;

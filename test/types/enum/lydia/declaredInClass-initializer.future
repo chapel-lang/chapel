@@ -1,8 +1,8 @@
-bug: enums declared in class scope can't have fields use their type
+bug: enums declared in class scope don't work with initializers yet
 
-The spec says that it is legal to declare an enum within the top level scope of
-a class (as well as classes, records, and unions).  However, trying to use that
-enum runs into issues.
+The spec says that it is legal to declare an enum within the top level
+scope of a class (as well as classes, records, and unions).  However,
+in the initializer-based world we don't support these yet.
 
 This future covers omitted initialization of a field declared with that enum
 type as its type (and explicitly naming a constant to set it in Phase 2)

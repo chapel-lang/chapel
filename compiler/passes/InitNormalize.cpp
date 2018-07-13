@@ -1851,10 +1851,14 @@ void InitNormalize::fieldInitFromField(Expr* insertBefore) {
   DefExpr* field = mCurrField;
 
   if        (field->exprType == NULL && field->init == NULL) {
-    USR_FATAL_CONT(insertBefore,
-                   "can't omit initialization of field \"%s\", "
-                   "no type or default value provided",
-                   field->sym->name);
+    if (toEnumType(field->sym->type) != NULL) {
+      USR_FATAL(field, "can't handle enums local to a class/record/union yet");
+    } else {
+      USR_FATAL_CONT(insertBefore,
+                     "can't omit initialization of field \"%s\", "
+                     "no type or default value provided",
+                     field->sym->name);
+    }
 
   } else if (field->sym->hasFlag(FLAG_PARAM) ||
              field->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
