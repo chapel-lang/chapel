@@ -116,6 +116,29 @@ class PermutationMap {
       f <~> format_string.format( i, column_map[i] ) <~> "\n";
     }
   }
+
+  proc permuteDomain( D : domain )
+  where D.rank == 2 && isSparseDom( D )
+  {
+    // Timer for debugging purposes
+    var timer : Timer;
+
+    // resulting domain after permutation
+    var sD : D.type;
+
+    timer.start();
+    var sD_bulk : [1..#D.size] D.rank*D.idxType;
+    // TODO make parallel
+    for (pos,idx) in zip(1..#D.size, D) {
+      sD_bulk[pos]= this[idx];
+    }
+    sD.bulkAdd( sD_bulk );
+    timer.stop();
+    if debugPermute then writeln( "Add domain ", timer.elapsed() );
+    timer.clear();
+
+    return sD;
+  }
 }
 
 proc create_random_permutation_map( D : domain ) : PermutationMap(D.idxType)
@@ -128,46 +151,7 @@ where D.rank == 2
   return new PermutationMap( row_map, column_map );
 }
 
-proc permute( M : [?D] ?T, permutation_map : PermutationMap(D.idxType), copy_values : bool = false )
-where D.rank == 2 && isSparseDom( D )
-{
-  var timer : Timer;
-  timer.start();
-  var sD : if isSparseDom(D) then D.type else sparse subdomain({D.dim(1),D.dim(2)});
-  timer.stop();
-  if debugPermute then writeln( "Create domain ", timer.elapsed() );
-  timer.clear();
 
-  timer.start();
-  var sD_bulk : [1..#D.size] D.rank*D.idxType;
-  // TODO make parallel
-  for (pos,idx) in zip(1..#D.size, D) {
-    sD_bulk[pos]= permutation_map[idx];
-  }
-  sD.bulkAdd( sD_bulk );
-  timer.stop();
-  if debugPermute then writeln( "Add domain ", timer.elapsed() );
-  timer.clear();
-
-  timer.start();
-  var permuted_M : [sD] T;
-  timer.stop();
-  if debugPermute then writeln( "Create array ", timer.elapsed() );
-  timer.clear();
-
-  if copy_values {
-    timer.start();
-    permuted_M.irv = M.irv;
-    forall idx in D {
-      permuted_M[ permutation_map[idx] ] = M[idx];
-    }
-    timer.stop();
-    if debugPermute then writeln( "Add array ", timer.elapsed() );
-    timer.clear();
-  }
-
-  return permuted_M;
-}
 
 record TopoSortResult {
   type idxType;
@@ -182,7 +166,7 @@ record TopoSortResult {
   }
 }
 
-proc toposort_parallel( M : [?D] ?T, numTasks : int = here.maxTaskPar )
+proc toposort_parallel( D : domain, numTasks : int = here.maxTaskPar )
 where D.rank == 2
 {
   if numTasks < 1 then halt("Must run with numTaks >= 1");
@@ -387,7 +371,7 @@ where D.rank == 2
   return result;
 }
 
-proc toposort_serial( M : [?D] ?T )
+proc toposort_serial( D : domain )
 where D.rank == 2
 {
   var result = new TopoSortResult(D.idxType);
@@ -611,6 +595,7 @@ config type eltType = string;
 config const numTasks : int = here.maxTaskPar;
 
 config const silentMode : bool = false;
+config const printStages : bool = !silentMode;
 config const printPerfStats : bool = false;
 config const printMatrices : bool = false;
 config const printNonZeros : bool = false;
@@ -625,58 +610,31 @@ proc main(){
   if density < minDensity then halt("Specified density (%n) is less than min density (%n) for N (%n)".format( density, minDensity, N) );
   if density > maxDensity then halt("Specified density (%n) is greater than max density (%n) for N (%n)".format( density, maxDensity, N) );
 
-  const sparse_number_non_zeros = max(0, floor( N*N*density) ) : int;
-  const actual_density = sparse_number_non_zeros / (1.0*N*N);
-  if !silentMode then writeln( "Number of tasks: %n\nN: %n\nSpecified density: %dr%%\nActual density %dr%%\nTotal Number NonZeros: %n".format(numTasks, N, density * 100.0, actual_density * 100.0, sparse_number_non_zeros) );
+  if !silentMode then writeln( "Number of tasks: %n\nN: %n\nSpecified density: %dr%%".format(numTasks, N, density * 100.0 ) );
 
   // create upper triangular matrix
-  const D : domain(2) = {1..#N,1..#N};
   if !silentMode then writeln("Creating sparse upper triangluar domain");
+  const D : domain(2) = {1..#N,1..#N};
   const sparse_D = create_sparse_upper_triangluar_domain( D, density, seed );
-  var M : [sparse_D] eltType;
 
-  if printMatrices {
-    if !silentMode then writeln("Filling matrix with values");
-    if isNumericType( eltType ) {
-      var v = 1;
-      for idx in sparse_D {
-        M[idx] = v : eltType;
-        v += 1;
-      }
-    } else if isStringType( eltType ) {
-      M = "X";
-      M.irv = "_";
-    }
-  }
-
-  if printMatrices {
-    writeln( "Upper triangluar matrix:" );
-    pretty_print_sparse( M, print_IRV = printNonZeros, separate_elements = padPrintedMatrixElements );
-  }
+  if !silentMode then writeln( "Actual Density: density: %dr%%\nTotal Number NonZeros: %n".format((sparse_D.size / (1.0*N*N))*100, sparse_D.size) );
 
   var permutation_map = create_random_permutation_map( sparse_D );
   if printPermutations then writeln("Permutation Map:\n", permutation_map);
 
-  if !silentMode then writeln("Permuting upper triangluar matrix");
-  var permuted_M = permute( M, permutation_map, printMatrices );
+  if !silentMode then writeln("Permuting upper triangluar domain");
+  var permuted_sparse_D = permutation_map.permuteDomain( sparse_D );
 
-
-  if printMatrices {
-    writeln( "Permuted upper triangluar matrix:" );
-    pretty_print_sparse( permuted_M, print_IRV = printNonZeros, separate_elements = padPrintedMatrixElements );
-  }
-
-
-  var topo_result : TopoSortResult(M.domain.idxType);
+  var topo_result : TopoSortResult(sparse_D.idxType);
 
   select implementation {
     when ToposortImplementation.Serial {
-      if !silentMode then writeln("Toposorting permuted upper triangluar matrix using Serial implementation.");
-      topo_result = toposort_serial( permuted_M );
+      if !silentMode then writeln("Toposorting permuted upper triangluar domain using Serial implementation.");
+      topo_result = toposort_serial( permuted_sparse_D );
     }
     when ToposortImplementation.Parallel {
-      if !silentMode then writeln("Toposorting permuted upper triangluar matrix using Parallel implementation.");
-      topo_result = toposort_parallel( permuted_M, numTasks );
+      if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation.");
+      topo_result = toposort_parallel( permuted_sparse_D, numTasks );
     }
     otherwise {
       writeln( "Unknown implementation: ", implementation );
@@ -696,12 +654,41 @@ proc main(){
 
   if printPermutations then writeln( "Solved permutation map:\n", solved_map );
 
-  var solved_permuated_permuted_M = permute( permuted_M, solved_map, printMatrices );
+  var solved_permuted_permuted_sparse_D = solved_map.permuteDomain( permuted_sparse_D );
 
   if printMatrices {
+    var M : [sparse_D] eltType;
+    var permuted_M : [permuted_sparse_D] eltType;
+    var solved_permuated_permuted_M : [solved_permuted_permuted_sparse_D] eltType;
+
+    if !silentMode then writeln("Filling matrix with values");
+    if isNumericType( eltType ) {
+      var v = 1;
+      for idx in sparse_D {
+        M[idx] = v : eltType;
+        permuted_M[ permutation_map[idx] ] = v;
+        solved_permuated_permuted_M[ solved_map[permutation_map[idx]] ] = v;
+        v += 1;
+      }
+    } else if isStringType( eltType ) {
+      M = "X";
+      M.irv = "_";
+      permuted_M = "X";
+      permuted_M.irv = "_";
+      solved_permuated_permuted_M = "X";
+      solved_permuated_permuted_M.irv = "_";
+    }
+
+    writeln( "Upper triangluar matrix:" );
+    pretty_print_sparse( M, print_IRV = printNonZeros, separate_elements = padPrintedMatrixElements );
+
+    writeln( "Permuted upper triangluar matrix:" );
+    pretty_print_sparse( permuted_M, print_IRV = printNonZeros, separate_elements = padPrintedMatrixElements );
+
     writeln( "Solved-permuted permuted upper triangluar matrix:" );
     pretty_print_sparse( solved_permuated_permuted_M, print_IRV = printNonZeros, separate_elements = padPrintedMatrixElements );
   }
-  var is_UT = check_is_uper_triangular_domain( solved_permuated_permuted_M.domain );
-  if !is_UT then halt("Solved-permuted permuted upper triangluar matrix is not upper triangular!");
+
+  var is_UT = check_is_uper_triangular_domain( solved_permuted_permuted_sparse_D );
+  if !is_UT then halt("Solved-permuted permuted upper triangluar domain is not upper triangular!");
 }
