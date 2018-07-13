@@ -1,1 +1,1 @@
-concrete-simple.chpl:3: error: Record has infinite size (field 'x' has same type as enclosing record)
+concrete-simple.chpl:3: error: record 'R' cannot contain a recursive field 'x' of type 'R'

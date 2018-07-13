@@ -1,1 +1,1 @@
-concrete-tuple.chpl:3: error: Record has infinite size (type of field 'x' contains same type as enclosing record)
+concrete-tuple.chpl:2: error: tuple '3*R' cannot contain recursive record type 'R'

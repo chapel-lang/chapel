@@ -1,1 +1,1 @@
-concrete-indirect2.chpl:11: error: Record has infinite size (type of field 'a' contains same type as enclosing record)
+concrete-indirect2.chpl:5: error: record 'R1' cannot contain a recursive field 'a' whose type 'R3' contains 'R1'

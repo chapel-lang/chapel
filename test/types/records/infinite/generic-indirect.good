@@ -1,1 +1,1 @@
-generic-indirect.chpl:3: error: Record has infinite size (type of field 'b' contains same type as enclosing record)
+generic-indirect.chpl:8: error: record 'B(int(64))' cannot contain a recursive field 'a' whose type 'A' contains 'B(int(64))'
