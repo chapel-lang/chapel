@@ -627,6 +627,8 @@ def check_environment_with_args():
     if not tgt_platform == "sunos":
         os.environ["LC_COLLATE"] = "C"
         os.environ["LANG"] = "en_US.UTF-8"
+        if "LC_ALL" in os.environ:
+            del os.environ["LC_ALL"]
 
     global log_file
     log_file = os.path.join(logs_dir, "{0}.{1}.log"
