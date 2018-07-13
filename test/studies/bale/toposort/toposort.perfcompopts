@@ -1,1 +1,1 @@
---set useDimIterCol=true
+--set useDimIterCol=true --set enableRuntimeDebugging=false

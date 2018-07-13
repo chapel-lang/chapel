@@ -1,7 +1,7 @@
 use Random;
 use Time;
 use LayoutCS;
-
+config param enableRuntimeDebugging = true;
 config const debugAll : bool = false;
 config const debugTopo = debugAll;
 config const debugTopoTasking = debugAll || debugTopo;
@@ -134,7 +134,7 @@ class PermutationMap {
     }
     sD.bulkAdd( sDBulk );
     timer.stop();
-    if debugPermute then writeln( "Add domain ", timer.elapsed() );
+    if enableRuntimeDebugging && debugPermute then writeln( "Add domain ", timer.elapsed() );
     timer.clear();
 
     return sD;
@@ -193,7 +193,7 @@ where D.rank == 2
     var count = 0;
     var sum = 0;
 
-    if debugTopo then writeln( "initializing row ", row );
+    if enableRuntimeDebugging && debugTopo then writeln( "initializing row ", row );
     if useDimIterCol {
      // compilerWarning("iterating over columns in init with dimIter");
       for col in D.dimIter(2,row) {
@@ -220,7 +220,7 @@ where D.rank == 2
   }
   result.timers["initialization"].stop();
 
-  if debugTopo {
+  if enableRuntimeDebugging && debugTopo {
     writeln( "initial workQueue ", workQueue );
     writeln( "initial rowSum    ", rowSum );
     writeln( "initial rowCount  ", rowCount );
@@ -241,32 +241,32 @@ where D.rank == 2
   // sanity check: if queue is empty, set to kill signal.
   // (I dont think this-^ is possible, but it could in the future?)
   workSignal.writeEF( if workQueue.size > 0 then TaskSignal.wake else TaskSignal.kill );
-  if debugTopoTasking then writeln( "Spawning tasks ", 1..#numTasks );
+  if enableRuntimeDebugging && debugTopoTasking then writeln( "Spawning tasks ", 1..#numTasks );
 
   result.timers["toposort"].start();
   coforall taskId in 1..#numTasks
     with (ref diagonalPosition, ref rowSum, ref rowCount, ref workQueue, ref sharedLock)
   {
-    if debugTopoTasking then writeln(taskId, " spawning." );
+    if enableRuntimeDebugging && debugTopoTasking then writeln(taskId, " spawning." );
     // continue looping until kill or fail signal is recieved
     var continueWorking = true;
     while continueWorking {
-      if debugTopoTasking then writeln( taskId, " waiting." );
+      if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " waiting." );
       // wait for work and get signal
       var signal = workSignal;
-      if debugTopoTasking then writeln( taskId, " recieved signal: ", signal );
+      if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " recieved signal: ", signal );
       // if signal is kill signal relay message and exit
       select signal {
         when TaskSignal.kill {
           workSignal.writeEF( TaskSignal.kill );
           continueWorking = false;
-          if debugTopoTasking then writeln( taskId, " killed." );
+          if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " killed." );
           break; // break out of loop;
         }
         when TaskSignal.fail {
           workSignal.writeXF( TaskSignal.fail );
           continueWorking = false;
-          if debugTopoTasking then writeln( taskId, " failing out.");
+          if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " failing out.");
           break; // break out of loop;
         }
         otherwise { /* no need to popogate signal */ }
@@ -274,7 +274,7 @@ where D.rank == 2
 
       // Critical section
       sharedLock.lock();
-      if debugTopo {
+      if enableRuntimeDebugging && debugTopo {
         writeln(
           "========================",
           "\ntaskId ",  taskId,
@@ -290,7 +290,7 @@ where D.rank == 2
       var queueSize = workQueue.size;
       // if queueSize is < 1, someone stole our work. unlock and rewait
       if queueSize < 1 {
-        if debugTopoTasking then writeln( taskId, " queue size is ", queueSize);
+        if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " queue size is ", queueSize);
         sharedLock.unlock();
         continue;
       }
@@ -302,13 +302,13 @@ where D.rank == 2
       queueSize = workQueue.size;
 
       // if there are no more diagonal to place, then there is no work, send kill signal
-      if debugTopo then writeln( (taskId, localDiagonalPosition, diagonalPosition) );
+      if enableRuntimeDebugging && debugTopo then writeln( (taskId, localDiagonalPosition, diagonalPosition) );
       if diagonalPosition >= numDiagonals {
-        if debugTopoTasking then writeln( taskId, " sending kill signal." );
+        if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " sending kill signal." );
         workSignal.writeXF( TaskSignal.kill );
         continueWorking = false;
       } else if queueSize > 0 {
-        if debugTopoTasking then writeln( taskId, " sending work signal." );
+        if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " sending work signal." );
         workSignal.writeXF( TaskSignal.wake );
       }
       sharedLock.unlock();
@@ -320,7 +320,7 @@ where D.rank == 2
       rowMap[swapRow] = D.dim(1).high - localDiagonalPosition;
       columnMap[swapColumn] = D.dim(2).high - localDiagonalPosition;
 
-      if debugTopo then writeln( "Swaping ", (swapRow,swapColumn), " -> ", (rowMap[swapRow], columnMap[swapColumn]) );
+      if enableRuntimeDebugging && debugTopo then writeln( "Swaping ", (swapRow,swapColumn), " -> ", (rowMap[swapRow], columnMap[swapColumn]) );
 
       // foreach row along the swapped column who has a nonzero at (row, swapColumn)
       // remove swapColumn from rowSum and reduce rowCount
@@ -332,7 +332,7 @@ where D.rank == 2
           // if previousRowCount = 2 (ie rowCount[row] == 1)
           if previousRowCount == 2 {
             sharedLock.lock();
-            if debugTopo then writeln( "Queueing ", row);
+            if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
             workQueue.push_back( row );
             sharedLock.unlock();
             workSignal.writeXF( TaskSignal.wake );
@@ -347,7 +347,7 @@ where D.rank == 2
             // if rowCount[row] == 1
             if previousRowCount == 2 {
               sharedLock.lock();
-              if debugTopo then writeln( "Queueing ", row);
+              if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
               workQueue.push_back( row );
               sharedLock.unlock();
               workSignal.writeXF( TaskSignal.wake );
@@ -357,7 +357,7 @@ where D.rank == 2
       }
 
     } // while continueWorking
-    if debugTopoTasking then writeln( taskId, " completed." );
+    if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " completed." );
   } // coforall tasks
   result.timers["toposort"].stop();
   var signal = workSignal;
@@ -391,7 +391,7 @@ where D.rank == 2
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
   for row in D.dim(1) {
-    if debugTopo then writeln( "initializing row ", row );
+    if enableRuntimeDebugging && debugTopo then writeln( "initializing row ", row );
     if useDimIterCol {
      // compilerWarning("iterating over columns in init with dimIter");
       for col in D.dimIter(2,row) {
@@ -414,7 +414,7 @@ where D.rank == 2
   }
   result.timers["initialization"].stop();
 
-  if debugTopo {
+  if enableRuntimeDebugging && debugTopo {
     writeln( "initial workQueue ", workQueue );
     writeln( "initial rowSum    ", rowSum );
     writeln( "initial rowCount  ", rowCount );
@@ -425,7 +425,7 @@ where D.rank == 2
 
   result.timers["toposort"].start();
   while workQueue.size > 0 {
-    if debugTopo {
+    if enableRuntimeDebugging && debugTopo {
       writeln(
         "========================",
         "\nworkQueue ", workQueue,
@@ -448,7 +448,7 @@ where D.rank == 2
     columnMap[swapColumn] = D.dim(2).high - diagonalPosition;
     diagonalPosition += 1; // increment to next position
 
-    if debugTopo then writeln( "Swaping ", (swapRow,swapColumn), " -> ", (rowMap[swapRow], columnMap[swapColumn]) );
+    if enableRuntimeDebugging && debugTopo then writeln( "Swaping ", (swapRow,swapColumn), " -> ", (rowMap[swapRow], columnMap[swapColumn]) );
 
     // foreach row along the swapped column who has a nonzero at (row, swapColumn)
     // remove swapColumn from rowSum and reduce rowCount
@@ -458,7 +458,7 @@ where D.rank == 2
         rowCount[row] -= 1;
         rowSum[row] -= swapColumn;
         if rowCount[row] == 1 {
-          if debugTopo then writeln( "Queueing ", row);
+          if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
           workQueue.push_back( row );
         }
       }
@@ -469,7 +469,7 @@ where D.rank == 2
           rowCount[row] -= 1;
           rowSum[row] -= swapColumn;
           if rowCount[row] == 1 {
-            if debugTopo then writeln( "Queueing ", row);
+            if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
             workQueue.push_back( row );
           }
         }
@@ -502,7 +502,7 @@ proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : in
   // number of non-diagonal elements added
   var numberNonZerosAddedInStrictlyUT : int = numberNonZerosAddedInUT - N;
 
-  if debugCreateSparseUTDomain {
+  if enableRuntimeDebugging && debugCreateSparseUTDomain {
     writeln( "Dense: ", numberNonZerosInFullUTDomain );
     writeln( "Added: ", numberNonZerosAddedInUT );
     writeln( "Non-diagonal: ", numberNonZerosAddedInStrictlyUT );
@@ -526,7 +526,7 @@ proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : in
       const position = positionOffset;
       const colRange = i+1..D.dim(1).high;
 
-      if debugCreateSparseUTDomain then writeln("filling ", i, " x ", colRange);
+      if enableRuntimeDebugging && debugCreateSparseUTDomain then writeln("filling ", i, " x ", colRange);
       for j in colRange {
         sDRandom[ position + (j - i) ] = (i,j);
       }
@@ -543,7 +543,7 @@ proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : in
   }
   sparseD.bulkAdd( sDDiag );
 
-  if debugCreateSparseUTDomain then writeln( "there are ", sparseD.size, " non zeros, for density of ", sparseD.size / ( N*N : real ) );
+  if enableRuntimeDebugging && debugCreateSparseUTDomain then writeln( "there are ", sparseD.size, " non zeros, for density of ", sparseD.size / ( N*N : real ) );
 
   if sparseD.size != numberNonZerosAddedInUT then halt("Created a domain with unexpected number of non-zero indices. Created %n, expected %n".format(sparseD.size, numberNonZerosAddedInUT));
 
