@@ -1,8 +1,0 @@
-feature request: enums should be usable like modules
-
-This test captures a desire that I have to 'use' an enum like a module
-in order to refer to its symbols directly and without going through
-the enum type name.  This seems like a reasonable thing to want
-(especially coming from C) and not a particularly difficult thing to
-implement.
-
