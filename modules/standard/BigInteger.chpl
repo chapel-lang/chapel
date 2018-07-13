@@ -2218,8 +2218,8 @@ module BigInteger {
 Computes the quotients when corresponding elements of a bigint array *n* are divided by corresponding elements of a bigint array *d*, and stores the quotient in another bigint array preceding the function call for whichever elements of the array are exactly divisible, with remainder zero.
 
 * Arguments:
-	* const ref n: bigint: a bigint array
-	* const ref d: bigint: another bigint array
+    * const ref n: bigint: a bigint array
+    * const ref d: bigint: another bigint array
 
 */
 
