@@ -4164,10 +4164,20 @@ module ChapelArray {
     // thus enable better performance.
 
 if chpl_iteratorHasShape(ir) {
-    // todo: more from buildArray() ?
-    var x = ir._shape_.dsiBuildArray(iteratorToArrayElementType(ir.type));
-    ir._shape_.add_arr(x);
-    var result = _newArray(x);
+    var shape = _newDomain(ir._shape_);
+
+    // Important: ir._shape_ points to a domain class for a domain
+    // that is owned by the forall-expression or the leader in the
+    // promoted expression.
+    shape._unowned = true;
+
+    // Right now there are two distinct events for each array element:
+    //  * initialization upon the array declaration,
+    //  * assignment within the forall loop.
+    // TODO: we want to have just a single move, as is done with 'eltCopy'
+    // in the other case. Ex. users/vass/km/array-of-records-crash-1.chpl
+
+    var result: [shape] iteratorToArrayElementType(ir.type);
     forall (r, src) in zip(result, ir) do
       r = src;
     return result;
