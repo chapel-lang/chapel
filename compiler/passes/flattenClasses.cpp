@@ -24,10 +24,11 @@
 
 void flattenClasses() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (AggregateType* ct = toAggregateType(ts->type)) {
-      if (toAggregateType(ct->symbol->defPoint->parentSymbol->type)) {
-        ModuleSymbol* mod = ct->getModule();
-        DefExpr*      def = ct->symbol->defPoint;
+    Type* t = ts->type;
+    if (isAggregateType(t) || isUnmanagedClassType(t)) {
+      if (toAggregateType(t->symbol->defPoint->parentSymbol->type)) {
+        ModuleSymbol* mod = t->getModule();
+        DefExpr*      def = t->symbol->defPoint;
 
         def->remove();
         mod->block->insertAtTail(def);

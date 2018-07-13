@@ -414,8 +414,8 @@ CHPL_ATOMICS
                      standard atomics (from C11)
         intrinsics   implement atomics using target compiler intrinsics
                      (which typically map down to hardware capabilities)
-        locks        implement atomics by using Chapel sync variables to
-                     protect normal operations
+        locks        implement atomics by using mutexes to protect normal
+                     operations
         ===========  =====================================================
 
    If unset, CHPL_ATOMICS defaults to ``intrinsics`` for most configurations.

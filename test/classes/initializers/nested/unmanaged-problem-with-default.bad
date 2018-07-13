@@ -1,1 +1,0 @@
-unmanaged-problem-with-default.chpl:2: error: can't omit initialization of field "unmanaged Inner", no type or default value provided

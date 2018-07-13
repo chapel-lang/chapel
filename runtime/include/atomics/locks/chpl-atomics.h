@@ -17,19 +17,24 @@
  * limitations under the License.
  */
 
-// chpl-atomics.h
-//
-// Since some of these non-intrinsic atomic routines are somewhat verbose, the GNU
-// compiler issues a warning if inlining is requested and denied.
-// If inlining is desired anyway, supply -DINLINE_LOCK_BASED_ATOMICS
-//
-
 #ifndef _chpl_atomics_h_
 #define _chpl_atomics_h_
 
-#include "chpltypes.h" // chpl_bool
-#include "chpl-tasks.h" // chpl_sync_aux_t
+#include "chpltypes.h"
+#include <pthread.h>
 
+// Locks based atomic implementation. Note that we use pthread mutexes instead
+// of chpl sync variables because we need to use atomics during runtime init
+// and teardown (when the tasking layer is not active.) It's safe to use
+// pthread mutexes because the critical section of these routines never yield.
+// Since there are no yields, there's no possibility of recursive locking on
+// the same thread from different tasks or unlocking from a different thread,
+// both of which violate pthread semantics.
+
+
+// Since some of these non-intrinsic atomic routines are somewhat verbose, the GNU
+// compiler issues a warning if inlining is requested and denied.
+// If inlining is desired anyway, supply -DINLINE_LOCK_BASED_ATOMICS
 #ifdef MAYBE_INLINE
  #error No fair.  I want to use this name.
 #endif
@@ -40,54 +45,54 @@
 #endif
 
 typedef struct atomic_int_least8_s {
-  chpl_sync_aux_t sv;
+  pthread_mutex_t lock;
   int_least8_t v;
 } atomic_int_least8_t;
 typedef struct atomic_int_least16_s {
-  chpl_sync_aux_t sv;
+  pthread_mutex_t lock;
   int_least16_t v;
 } atomic_int_least16_t;
 typedef struct atomic_int_least32_s {
-  chpl_sync_aux_t sv;
+  pthread_mutex_t lock;
   int_least32_t v;
 } atomic_int_least32_t;
 typedef struct atomic_int_least64_s {
-  chpl_sync_aux_t sv;
+  pthread_mutex_t lock;
   int_least64_t v;
 } atomic_int_least64_t;
 typedef struct atomic_uint_least8_s {
-  chpl_sync_aux_t sv;
+  pthread_mutex_t lock;
   uint_least8_t v;
 } atomic_uint_least8_t;
 typedef struct atomic_uint_least16_s {
-  chpl_sync_aux_t sv;
+  pthread_mutex_t lock;
   uint_least16_t v;
 } atomic_uint_least16_t;
 typedef struct atomic_uint_least32_s {
-  chpl_sync_aux_t sv;
+  pthread_mutex_t lock;
   uint_least32_t v;
 } atomic_uint_least32_t;
 typedef struct atomic_uint_least64_s {
-  chpl_sync_aux_t sv;
+  pthread_mutex_t lock;
   uint_least64_t v;
 } atomic_uint_least64_t;
 typedef struct atomic_uintptr_s {
-  chpl_sync_aux_t sv;
+  pthread_mutex_t lock;
   uintptr_t v;
 } atomic_uintptr_t;
 
 typedef struct atomic_bool_s {
-  chpl_sync_aux_t sv;
+  pthread_mutex_t lock;
   chpl_bool v;
 } atomic_bool;
 
 typedef struct atomic__real32_s {
-  chpl_sync_aux_t sv;
+  pthread_mutex_t lock;
   _real32 v;
 } atomic__real32;
 
 typedef struct atomic__real64_s {
-  chpl_sync_aux_t sv;
+  pthread_mutex_t lock;
   _real64 v;
 } atomic__real64;
 
@@ -117,16 +122,16 @@ static inline chpl_bool atomic_is_lock_free_ ## type(atomic_ ## type * obj) { \
 } \
 static inline void atomic_init_ ## type(atomic_ ## type * obj, basetype value) { \
   obj->v = value; \
-  chpl_sync_initAux(&obj->sv); \
+  (void) pthread_mutex_init(&obj->lock, NULL); \
 } \
 static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
-  chpl_sync_destroyAux(&obj->sv); \
+  (void) pthread_mutex_destroy(&obj->lock); \
 } \
 static MAYBE_INLINE void \
 atomic_store_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_order order) { \
-  chpl_sync_lock(&obj->sv); \
+  (void) pthread_mutex_lock(&obj->lock); \
   obj->v = value; \
-  chpl_sync_unlock(&obj->sv); \
+  (void) pthread_mutex_unlock(&obj->lock); \
 } \
 static inline void atomic_store_ ## type(atomic_ ## type * obj, basetype value) { \
   atomic_store_explicit_ ## type(obj, value, memory_order_seq_cst); \
@@ -134,9 +139,9 @@ static inline void atomic_store_ ## type(atomic_ ## type * obj, basetype value) 
 static MAYBE_INLINE basetype \
 atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
   basetype ret; \
-  chpl_sync_lock(&obj->sv); \
+  (void) pthread_mutex_lock(&obj->lock); \
   ret = obj->v; \
-  chpl_sync_unlock(&obj->sv); \
+  (void) pthread_mutex_unlock(&obj->lock); \
   return ret; \
 } \
 static inline basetype atomic_load_ ## type(atomic_ ## type * obj) { \
@@ -145,10 +150,10 @@ static inline basetype atomic_load_ ## type(atomic_ ## type * obj) { \
 static MAYBE_INLINE basetype \
 atomic_exchange_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_order order) { \
   basetype ret; \
-  chpl_sync_lock(&obj->sv); \
+  (void) pthread_mutex_lock(&obj->lock); \
   ret = obj->v; \
   obj->v = value; \
-  chpl_sync_unlock(&obj->sv); \
+  (void) pthread_mutex_unlock(&obj->lock); \
   return ret; \
 } \
 static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype value) { \
@@ -157,14 +162,14 @@ static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype 
 static MAYBE_INLINE chpl_bool \
 atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
   basetype ret; \
-  chpl_sync_lock(&obj->sv); \
+  (void) pthread_mutex_lock(&obj->lock); \
   if( obj->v == expected ) { \
     obj->v = desired; \
     ret = true; \
   } else { \
     ret = false; \
   } \
-  chpl_sync_unlock(&obj->sv); \
+  (void) pthread_mutex_unlock(&obj->lock); \
   return ret; \
 } \
 static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
@@ -181,10 +186,10 @@ static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * 
 static MAYBE_INLINE type \
 atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
-  chpl_sync_lock(&obj->sv); \
+  (void) pthread_mutex_lock(&obj->lock); \
   ret = obj->v; \
   obj->v += operand; \
-  chpl_sync_unlock(&obj->sv); \
+  (void) pthread_mutex_unlock(&obj->lock); \
   return ret; \
 } \
 static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
@@ -193,10 +198,10 @@ static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand
 static MAYBE_INLINE type \
 atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
-  chpl_sync_lock(&obj->sv); \
+  (void) pthread_mutex_lock(&obj->lock); \
   ret = obj->v; \
   obj->v -= operand; \
-  chpl_sync_unlock(&obj->sv); \
+  (void) pthread_mutex_unlock(&obj->lock); \
   return ret; \
 } \
 static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \
@@ -205,10 +210,10 @@ static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand
 static MAYBE_INLINE type \
 atomic_fetch_or_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
-  chpl_sync_lock(&obj->sv); \
+  (void) pthread_mutex_lock(&obj->lock); \
   ret = obj->v; \
   obj->v |= operand; \
-  chpl_sync_unlock(&obj->sv); \
+  (void) pthread_mutex_unlock(&obj->lock); \
   return ret; \
 } \
 static inline type atomic_fetch_or_ ## type(atomic_ ## type * obj, type operand) { \
@@ -217,10 +222,10 @@ static inline type atomic_fetch_or_ ## type(atomic_ ## type * obj, type operand)
 static MAYBE_INLINE type \
 atomic_fetch_and_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
-  chpl_sync_lock(&obj->sv); \
+  (void) pthread_mutex_lock(&obj->lock); \
   ret = obj->v; \
   obj->v &= operand; \
-  chpl_sync_unlock(&obj->sv); \
+  (void) pthread_mutex_unlock(&obj->lock); \
   return ret; \
 } \
 static inline type atomic_fetch_and_ ## type(atomic_ ## type * obj, type operand) { \
@@ -229,10 +234,10 @@ static inline type atomic_fetch_and_ ## type(atomic_ ## type * obj, type operand
 static MAYBE_INLINE type \
 atomic_fetch_xor_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
-  chpl_sync_lock(&obj->sv); \
+  (void) pthread_mutex_lock(&obj->lock); \
   ret = obj->v; \
   obj->v ^= operand; \
-  chpl_sync_unlock(&obj->sv); \
+  (void) pthread_mutex_unlock(&obj->lock); \
   return ret; \
 } \
 static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand) { \
@@ -243,10 +248,10 @@ static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand
 static MAYBE_INLINE type \
 atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
-  chpl_sync_lock(&obj->sv); \
+  (void) pthread_mutex_lock(&obj->lock); \
   ret = obj->v; \
   obj->v += operand; \
-  chpl_sync_unlock(&obj->sv); \
+  (void) pthread_mutex_unlock(&obj->lock); \
   return ret; \
 } \
 static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
@@ -255,10 +260,10 @@ static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand
 static MAYBE_INLINE type \
 atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
-  chpl_sync_lock(&obj->sv); \
+  (void) pthread_mutex_lock(&obj->lock); \
   ret = obj->v; \
   obj->v -= operand; \
-  chpl_sync_unlock(&obj->sv); \
+  (void) pthread_mutex_unlock(&obj->lock); \
   return ret; \
 } \
 static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \

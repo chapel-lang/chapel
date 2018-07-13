@@ -174,7 +174,9 @@ symbolFlag( FLAG_LAST_RESORT , ypr, "last resort" , "overload of last resort in 
 
 // Tells resolution to use this function's line number even if that function
 // has FLAG_COMPILER_GENERATED.
-symbolFlag( FLAG_LINE_NUMBER_OK, npr, "lineno ok", ncm )
+symbolFlag( FLAG_LINE_NUMBER_OK, ypr, "lineno ok", ncm )
+
+symbolFlag( FLAG_LLVM_READNONE , ypr, "llvm readnone" , ncm )
 
 symbolFlag( FLAG_LOCALE_MODEL_ALLOC , ypr, "locale model alloc" , "locale model specific alloc" )
 symbolFlag( FLAG_LOCALE_MODEL_FREE , ypr, "locale model free" , "locale model specific free" )
