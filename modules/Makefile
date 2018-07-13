@@ -107,6 +107,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LinearAlgebra.chpl \
 	packages/MPI.chpl \
 	packages/Norm.chpl \
+	packages/Pythonic.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
