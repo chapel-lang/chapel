@@ -22,6 +22,10 @@ module HDF5_HL {
 
   use HDF5_Chapel;
 
+  // Check that the HDF5 version matches what is expected and initialize HDF5
+  C_HDF5.H5check();
+  C_HDF5.H5open();
+
   module C_HDF5 {
 
     // Header given to c2chapel:
@@ -2876,37 +2880,27 @@ module HDF5_HL {
 
     proc H5F_ACC_RDONLY {
       /* absence of rdwr => rd-only */
-      H5check();
-      H5open();
       return 0x0000: c_uint;
     }
 
     proc H5F_ACC_RDWR {
       /* open for read and write */
-      H5check();
-      H5open();
       return 0x0001: c_uint;
     }
 
     proc H5F_ACC_TRUNC {
       /* overwrite existing files */
-      H5check();
-      H5open();
       return 0x0002: c_uint;
     }
 
     proc H5F_ACC_EXCL {
       /* fail if file already exists */
-      H5check();
-      H5open();
       return 0x0004: c_uint;
     }
 
     /* NOTE: 0x0008u was H5F_ACC_DEBUG, now deprecated */
     proc H5F_ACC_CREAT {
       /* create non-existing files */
-      H5check();
-      H5open();
       return 0x0010: c_uint;
     }
 
@@ -2915,7 +2909,6 @@ module HDF5_HL {
        * single-writer/multi-reader (SWMR) scenario.  Note that the
        * process(es) opening the file for reading must open the file
        * with RDONLY access, and use the special "SWMR_READ" access flag. */
-      H5check();
       return 0x0020: c_uint;
     }
 
@@ -2924,7 +2917,6 @@ module HDF5_HL {
        * single-writer/multi-reader (SWMR) scenario.  Note that the
        * process(es) opening the file for SWMR reading must also
        * open the file with the RDONLY flag.  */
-      H5check();
       return 0x0040: c_uint;
     }
 
@@ -2932,8 +2924,6 @@ module HDF5_HL {
      * parent file. */
     proc H5F_ACC_DEFAULT {
       /* ignore setting on lapl */
-      H5check();
-      H5open();
       return 0xffff: c_uint;
     }
 
@@ -2985,168 +2975,135 @@ module HDF5_HL {
      */
 
     proc H5P_ROOT {
-      H5open();
       return H5P_CLS_ROOT_ID_g;
     }
 
     proc H5P_OBJECT_CREATE {
-      H5open();
       return H5P_CLS_OBJECT_CREATE_ID_g;
     }
 
     proc H5P_FILE_CREATE {
-      H5open();
       return H5P_CLS_FILE_CREATE_ID_g;
     }
 
     proc H5P_FILE_ACCESS {
-      H5open();
       return H5P_CLS_FILE_ACCESS_ID_g;
     }
 
     proc H5P_DATASET_CREATE {
-      H5open();
       return H5P_CLS_DATASET_CREATE_ID_g;
     }
 
     proc H5P_DATASET_ACCESS {
-      H5open();
       return H5P_CLS_DATASET_ACCESS_ID_g;
     }
 
     proc H5P_DATASET_XFER {
-      H5open();
       return H5P_CLS_DATASET_XFER_ID_g;
     }
 
     proc H5P_FILE_MOUNT {
-      H5open();
       return H5P_CLS_FILE_MOUNT_ID_g;
     }
 
     proc H5P_GROUP_CREATE {
-      H5open();
       return H5P_CLS_GROUP_CREATE_ID_g;
     }
 
     proc H5P_GROUP_ACCESS {
-      H5open();
       return H5P_CLS_GROUP_ACCESS_ID_g;
     }
 
     proc H5P_DATATYPE_CREATE {
-      H5open();
       return H5P_CLS_DATATYPE_CREATE_ID_g;
     }
 
     proc H5P_DATATYPE_ACCESS {
-      H5open();
       return H5P_CLS_DATATYPE_ACCESS_ID_g;
     }
 
     proc H5P_STRING_CREATE {
-      H5open();
       return H5P_CLS_STRING_CREATE_ID_g;
     }
 
     proc H5P_ATTRIBUTE_CREATE {
-      H5open();
       return H5P_CLS_ATTRIBUTE_CREATE_ID_g;
     }
 
     proc H5P_ATTRIBUTE_ACCESS {
-      H5open();
       return H5P_CLS_ATTRIBUTE_ACCESS_ID_g;
     }
 
     proc H5P_OBJECT_COPY {
-      H5open();
       return H5P_CLS_OBJECT_COPY_ID_g;
     }
 
     proc H5P_LINK_CREATE {
-      H5open();
       return H5P_CLS_LINK_CREATE_ID_g;
     }
 
     proc H5P_LINK_ACCESS {
-      H5open();
       return H5P_CLS_LINK_ACCESS_ID_g;
     }
 
     /* The library's default property lists */
     proc H5P_FILE_CREATE_DEFAULT {
-      H5open();
       return H5P_LST_FILE_CREATE_ID_g;
     }
 
     proc H5P_FILE_ACCESS_DEFAULT {
-      H5open();
       return H5P_LST_FILE_ACCESS_ID_g;
     }
 
     proc H5P_DATASET_CREATE_DEFAULT {
-      H5open();
       return H5P_LST_DATASET_CREATE_ID_g;
     }
 
     proc H5P_DATASET_ACCESS_DEFAULT {
-      H5open();
       return H5P_LST_DATASET_ACCESS_ID_g;
     }
 
     proc H5P_DATASET_XFER_DEFAULT {
-      H5open();
       return H5P_LST_DATASET_XFER_ID_g;
     }
 
     proc H5P_FILE_MOUNT_DEFAULT {
-      H5open();
       return H5P_LST_FILE_MOUNT_ID_g;
     }
 
     proc H5P_GROUP_CREATE_DEFAULT {
-      H5open();
       return H5P_LST_GROUP_CREATE_ID_g;
     }
 
     proc H5P_GROUP_ACCESS_DEFAULT {
-      H5open();
       return H5P_LST_GROUP_ACCESS_ID_g;
     }
 
     proc H5P_DATATYPE_CREATE_DEFAULT {
-      H5open();
       return H5P_LST_DATATYPE_CREATE_ID_g;
     }
 
     proc H5P_DATATYPE_ACCESS_DEFAULT {
-      H5open();
       return H5P_LST_DATATYPE_ACCESS_ID_g;
     }
 
     proc H5P_ATTRIBUTE_CREATE_DEFAULT {
-      H5open();
       return H5P_LST_ATTRIBUTE_CREATE_ID_g;
     }
 
     proc H5P_ATTRIBUTE_ACCESS_DEFAULT {
-      H5open();
       return H5P_LST_ATTRIBUTE_ACCESS_ID_g;
     }
 
     proc H5P_OBJECT_COPY_DEFAULT {
-      H5open();
       return H5P_LST_OBJECT_COPY_ID_g;
     }
 
     proc H5P_LINK_CREATE_DEFAULT {
-      H5open();
       return H5P_LST_LINK_CREATE_ID_g;
     }
 
     proc H5P_LINK_ACCESS_DEFAULT {
-      H5open();
       return H5P_LST_LINK_ACCESS_ID_g;
     }
 
@@ -3184,119 +3141,96 @@ module HDF5_HL {
     }
 
     proc H5T_NATIVE_SCHAR {
-      H5open();
       return H5T_NATIVE_SCHAR_g;
     }
 
     proc H5T_NATIVE_UCHAR {
-      H5open();
       return H5T_NATIVE_UCHAR_g;
     }
 
     proc H5T_NATIVE_SHORT {
-      H5open();
       return H5T_NATIVE_SHORT_g;
     }
 
     proc H5T_NATIVE_USHORT {
-      H5open();
       return H5T_NATIVE_USHORT_g;
     }
 
     proc H5T_NATIVE_INT {
-      H5open();
       return H5T_NATIVE_INT_g;
     }
 
     proc H5T_NATIVE_UINT {
-      H5open();
       return H5T_NATIVE_UINT_g;
     }
 
     proc H5T_NATIVE_LONG {
-      H5open();
       return H5T_NATIVE_LONG_g;
     }
 
     proc H5T_NATIVE_ULONG {
-      H5open();
       return H5T_NATIVE_ULONG_g;
     }
 
     proc H5T_NATIVE_LLONG {
-      H5open();
       return H5T_NATIVE_LLONG_g;
     }
 
     proc H5T_NATIVE_ULLONG {
-      H5open();
       return H5T_NATIVE_ULLONG_g;
     }
 
     proc H5T_NATIVE_FLOAT {
-      H5open();
       return H5T_NATIVE_FLOAT_g;
     }
 
     proc H5T_NATIVE_DOUBLE {
-      H5open();
       return H5T_NATIVE_DOUBLE_g;
     }
 
     //#if H5_SIZEOF_LONG_DOUBLE !=0
     proc H5T_NATIVE_LDOUBLE {
-      H5open();
       return H5T_NATIVE_LDOUBLE_g;
     }
     //#endif
 
     proc H5T_NATIVE_B8 {
-      H5open();
       return H5T_NATIVE_B8_g;
     }
 
     proc H5T_NATIVE_B16 {
-      H5open();
       return H5T_NATIVE_B16_g;
     }
 
     proc H5T_NATIVE_B32 {
-      H5open();
       return H5T_NATIVE_B32_g;
     }
 
     proc H5T_NATIVE_B64 {
-      H5open();
       return H5T_NATIVE_B64_g;
     }
 
     proc H5T_NATIVE_OPAQUE {
-      H5open();
       return H5T_NATIVE_OPAQUE_g;
     }
 
     proc H5T_NATIVE_HADDR {
-      H5open();
       return H5T_NATIVE_HADDR_g;
     }
 
     proc H5T_NATIVE_HSIZE {
-      H5open();
       return H5T_NATIVE_HSIZE_g;
     }
 
     proc H5T_NATIVE_HSSIZE {
-      H5open();
       return H5T_NATIVE_HSSIZE_g;
     }
 
     proc H5T_NATIVE_HERR {
-      H5open();
       return H5T_NATIVE_HERR_g;
     }
 
     proc H5T_NATIVE_HBOOL {
-      H5open();
       return H5T_NATIVE_HBOOL_g;
     }
 
@@ -3304,19 +3238,15 @@ module HDF5_HL {
      * The IEEE floating point types in various byte orders.
      */
     proc H5T_IEEE_F32BE {
-      H5open();
       return H5T_IEEE_F32BE_g;
     }
     proc H5T_IEEE_F32LE {
-      H5open();
       return H5T_IEEE_F32LE_g;
     }
     proc H5T_IEEE_F64BE {
-      H5open();
       return H5T_IEEE_F64BE_g;
     }
     proc H5T_IEEE_F64LE {
-      H5open();
       return H5T_IEEE_F64LE_g;
     }
     /*
@@ -3324,107 +3254,81 @@ module HDF5_HL {
      * unsigned integers of various sizes and byte orders.
      */
     proc H5T_STD_I8BE {
-      H5open();
       return H5T_STD_I8BE_g;
     }
     proc H5T_STD_I8LE {
-      H5open();
       return H5T_STD_I8LE_g;
     }
     proc H5T_STD_I16BE {
-      H5open();
       return H5T_STD_I16BE_g;
     }
     proc H5T_STD_I16LE {
-      H5open();
       return H5T_STD_I16LE_g;
     }
     proc H5T_STD_I32BE {
-      H5open();
       return H5T_STD_I32BE_g;
     }
     proc H5T_STD_I32LE {
-      H5open();
       return H5T_STD_I32LE_g;
     }
     proc H5T_STD_I64BE {
-      H5open();
       return H5T_STD_I64BE_g;
     }
     proc H5T_STD_I64LE {
-      H5open();
       return H5T_STD_I64LE_g;
     }
     proc H5T_STD_U8BE {
-      H5open();
       return H5T_STD_U8BE_g;
     }
     proc H5T_STD_U8LE {
-      H5open();
       return H5T_STD_U8LE_g;
     }
     proc H5T_STD_U16BE {
-      H5open();
       return H5T_STD_U16BE_g;
     }
     proc H5T_STD_U16LE {
-      H5open();
       return H5T_STD_U16LE_g;
     }
     proc H5T_STD_U32BE {
-      H5open();
       return H5T_STD_U32BE_g;
     }
     proc H5T_STD_U32LE {
-      H5open();
       return H5T_STD_U32LE_g;
     }
     proc H5T_STD_U64BE {
-      H5open();
       return H5T_STD_U64BE_g;
     }
     proc H5T_STD_U64LE {
-      H5open();
       return H5T_STD_U64LE_g;
     }
     proc H5T_STD_B8BE {
-      H5open();
       return H5T_STD_B8BE_g;
     }
     proc H5T_STD_B8LE {
-      H5open();
       return H5T_STD_B8LE_g;
     }
     proc H5T_STD_B16BE {
-      H5open();
       return H5T_STD_B16BE_g;
     }
     proc H5T_STD_B16LE {
-      H5open();
       return H5T_STD_B16LE_g;
     }
     proc H5T_STD_B32BE {
-      H5open();
       return H5T_STD_B32BE_g;
     }
     proc H5T_STD_B32LE {
-      H5open();
       return H5T_STD_B32LE_g;
     }
     proc H5T_STD_B64BE {
-      H5open();
       return H5T_STD_B64BE_g;
     }
     proc H5T_STD_B64LE {
-      H5open();
       return H5T_STD_B64LE_g;
     }
     proc H5T_STD_REF_OBJ {
-      H5open();
       return H5T_STD_REF_OBJ_g;
     }
     proc H5T_STD_REF_DSETREG {
-      H5open();
       return H5T_STD_REF_DSETREG_g;
     }
 
@@ -3432,19 +3336,15 @@ module HDF5_HL {
      * Types which are particular to Unix.
      */
     proc H5T_UNIX_D32BE {
-      H5open();
       return H5T_UNIX_D32BE_g;
     }
     proc H5T_UNIX_D32LE {
-      H5open();
       return H5T_UNIX_D32LE_g;
     }
     proc H5T_UNIX_D64BE {
-      H5open();
       return H5T_UNIX_D64BE_g;
     }
     proc H5T_UNIX_D64LE {
-      H5open();
       return H5T_UNIX_D64LE_g;
     }
 
@@ -3453,7 +3353,6 @@ module HDF5_HL {
      * of `bits' as their size.
      */
     proc H5T_C_S1 {
-      H5open();
       return H5T_C_S1_g;
     }
     proc H5T_VARIABLE {
@@ -3464,7 +3363,6 @@ module HDF5_HL {
      * Types particular to Fortran.
      */
     proc H5T_FORTRAN_S1 {
-      H5open();
       return H5T_FORTRAN_S1_g;
     }
 
