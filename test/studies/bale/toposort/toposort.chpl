@@ -7,9 +7,9 @@ config const debugTopo = debugAll;
 config const debugTopoTasking = debugAll || debugTopo;
 config const debugCreateSparseUTDomain = debugAll;
 config const debugPermute = debugAll;
-config param use_dimIter = true;
-config param use_dimIterRow = false; // not currently supported on master
-config param use_dimIterCol = use_dimIter;
+config param useDimIter = true;
+config param useDimIterRow = false; // not currently supported on master
+config param useDimIterCol = useDimIter;
 
 record Lock {
   var lock$ : sync bool;
@@ -35,25 +35,25 @@ record Lock {
 class PermutationMap {
   type idxType;
   param rank = 2;
-  var row_dom : domain(1);
-  var column_dom : domain(1);
-  var row_map : [row_dom] idxType;
-  var column_map : [column_dom] idxType;
+  var rowDom : domain(1);
+  var columnDom : domain(1);
+  var rowMap : [rowDom] idxType;
+  var columnMap : [columnDom] idxType;
 
-  proc init( row_map : [] ?idxType, column_map : [] idxType ){
+  proc init( rowMap : [] ?idxType, columnMap : [] idxType ){
     this.idxType = idxType;
-    this.row_dom = row_map.domain;
-    this.column_dom = column_map.domain;
-    this.row_map = row_map;
-    this.column_map = column_map;
+    this.rowDom = rowMap.domain;
+    this.columnDom = columnMap.domain;
+    this.rowMap = rowMap;
+    this.columnMap = columnMap;
   }
 
   inline proc map( idx : rank*idxType ) : rank*idxType {
-    return (row_map[idx[1]], column_map[idx[2]]);
+    return (rowMap[idx[1]], columnMap[idx[2]]);
   }
 
   inline proc inverseMap( idx : rank*idxType ) : rank*idxType {
-    return ( linearSearch(row_map, idx[1]), linearSearch(row_map, idx[1]) );
+    return ( linearSearch(rowMap, idx[1]), linearSearch(rowMap, idx[1]) );
   }
 
   inline proc this( idx : rank*idxType ) : rank*idxType {
@@ -61,59 +61,59 @@ class PermutationMap {
   }
 
   proc createInverseMap() : PermutationMap(idxType) {
-    var inverse_row_map : [row_map.domain] row_map.eltType;
-    var inverse_column_map : [column_map.domain] column_map.eltType;
+    var inverseRowMap : [rowMap.domain] rowMap.eltType;
+    var inverseColumnMap : [columnMap.domain] columnMap.eltType;
 
-    for i in row_map.domain {
-      inverse_row_map[ row_map[i] ] = i;
+    for i in rowMap.domain {
+      inverseRowMap[ rowMap[i] ] = i;
     }
 
-    for i in column_map.domain {
-      inverse_column_map[ column_map[i] ] = i;
+    for i in columnMap.domain {
+      inverseColumnMap[ columnMap[i] ] = i;
     }
 
-    return new PermutationMap( inverse_row_map, inverse_column_map );
+    return new PermutationMap( inverseRowMap, inverseColumnMap );
   }
 
-  iter these( on_domain : domain ) : rank*idxType
-  where on_domain.rank == 2
+  iter these( onDomain : domain ) : rank*idxType
+  where onDomain.rank == 2
   {
-    for idx in on_domain do yield this.map( idx );
+    for idx in onDomain do yield this.map( idx );
   }
 
-  iter inverseThese( on_domain : domain ) : rank*idxType
-  where on_domain.rank == 2
+  iter inverseThese( onDomain : domain ) : rank*idxType
+  where onDomain.rank == 2
   {
-    for idx in on_domain do yield inverseMap( idx );
+    for idx in onDomain do yield inverseMap( idx );
   }
 
 
   // TODO make parallel
-  iter these(param tag : iterKind, on_domain : domain) : rank*idxType
-  where tag == iterKind.standalone && on_domain.rank == 2
+  iter these(param tag : iterKind, onDomain : domain) : rank*idxType
+  where tag == iterKind.standalone && onDomain.rank == 2
   {
-    for idx in this.these( on_domain ) do yield idx;
+    for idx in this.these( onDomain ) do yield idx;
   }
 
   // TODO leader follower iterator
 
   proc writeThis( f ){
-    const max_val = max( (max reduce row_map), (max reduce column_map) ) : string;
-    const min_val = min( (min reduce row_map), (min reduce column_map) ) : string;
-    const padding = max( max_val.length, min_val.length );
-    const format_string = "%%%nn -> %%%nn".format( max(2,padding), padding );
-    const in_space = max(padding-2,0);
+    const maxVal = max( (max reduce rowMap), (max reduce columnMap) ) : string;
+    const minVal = min( (min reduce rowMap), (min reduce columnMap) ) : string;
+    const padding = max( maxVal.length, minVal.length );
+    const formatString = "%%%nn -> %%%nn".format( max(2,padding), padding );
+    const inSpace = max(padding-2,0);
     f <~> "Row map\n";
-    for i in 0..#in_space do f <~> " ";
+    for i in 0..#inSpace do f <~> " ";
     f <~> "in -> out\n";
-    for i in row_dom {
-      f <~> format_string.format( i, row_map[i] ) <~> "\n";
+    for i in rowDom {
+      f <~> formatString.format( i, rowMap[i] ) <~> "\n";
     }
     f <~> "Column map\n" ;
-    for i in 0..#in_space do f <~> " ";
+    for i in 0..#inSpace do f <~> " ";
     f <~> "in -> out\n";
-    for i in column_dom {
-      f <~> format_string.format( i, column_map[i] ) <~> "\n";
+    for i in columnDom {
+      f <~> formatString.format( i, columnMap[i] ) <~> "\n";
     }
   }
 
@@ -127,12 +127,12 @@ class PermutationMap {
     var sD : D.type;
 
     timer.start();
-    var sD_bulk : [1..#D.size] D.rank*D.idxType;
+    var sDBulk : [1..#D.size] D.rank*D.idxType;
     // TODO make parallel
     for (pos,idx) in zip(1..#D.size, D) {
-      sD_bulk[pos]= this[idx];
+      sDBulk[pos]= this[idx];
     }
-    sD.bulkAdd( sD_bulk );
+    sD.bulkAdd( sDBulk );
     timer.stop();
     if debugPermute then writeln( "Add domain ", timer.elapsed() );
     timer.clear();
@@ -141,32 +141,34 @@ class PermutationMap {
   }
 }
 
-proc create_random_permutation_map( D : domain ) : PermutationMap(D.idxType)
+proc createRandomPermutationMap( D : domain, seed : int ) : PermutationMap(D.idxType)
 where D.rank == 2
 {
-  var row_map : [D.dim(1)] D.idxType = D.dim(1);
-  var column_map : [D.dim(2)] D.idxType = D.dim(2);
-  shuffle( row_map );
-  shuffle( column_map );
-  return new PermutationMap( row_map, column_map );
+  var rowMap : [D.dim(1)] D.idxType = D.dim(1);
+  var columnMap : [D.dim(2)] D.idxType = D.dim(2);
+  //use seed to create two new seeds, one for each shuffle
+  var randStreamSeeded: RandomStream(int) = new RandomStream(int, seed);
+  const seed1 = randStreamSeeded.getNext() | 1;
+  const seed2 = randStreamSeeded.getNext() | 1;
+  shuffle( rowMap, seed = seed1 );
+  shuffle( columnMap , seed = seed2);
+  return new PermutationMap( rowMap, columnMap );
 }
-
-
 
 record TopoSortResult {
   type idxType;
-  var permutation_map : PermutationMap(idxType);
-  var timer_dom : domain(string);
-  var timers : [timer_dom] Timer;
+  var permutationMap : PermutationMap(idxType);
+  var timerDom : domain(string);
+  var timers : [timerDom] Timer;
 
   proc init(type idxType){
     this.idxType = idxType;
-    this.permutation_map = nil;
-    this.timer_dom = {"whole","initialization","toposort"};
+    this.permutationMap = nil;
+    this.timerDom = {"whole","initialization","toposort"};
   }
 }
 
-proc toposort_parallel( D : domain, numTasks : int = here.maxTaskPar )
+proc toposortParallel( D : domain, numTasks : int = here.maxTaskPar )
 where D.rank == 2
 {
   if numTasks < 1 then halt("Must run with numTaks >= 1");
@@ -174,25 +176,25 @@ where D.rank == 2
   var result = new TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
-  var num_diagonals = min( D.dim(1).size, D.dim(2).size );
+  var numDiagonals = min( D.dim(1).size, D.dim(2).size );
 
-  var row_map : [D.dim(1)] D.idxType = [i in D.dim(1)] -1;
-  var column_map : [D.dim(2)] D.idxType = [i in D.dim(2)] -1;
+  var rowMap : [D.dim(1)] D.idxType = [i in D.dim(1)] -1;
+  var columnMap : [D.dim(2)] D.idxType = [i in D.dim(2)] -1;
 
-  var row_sum : [D.dim(1)] atomic int;
-  var row_count : [D.dim(1)] atomic int;
-  var work_queue : list(D.idxType);
-  var shared_lock = new Lock();
+  var rowSum : [D.dim(1)] atomic int;
+  var rowCount : [D.dim(1)] atomic int;
+  var workQueue : list(D.idxType);
+  var sharedLock = new Lock();
 
-  // initialize row_count and row_sum and put work in queue
+  // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
-  forall row in D.dim(1) with (ref row_sum, ref row_count, ref work_queue, ref shared_lock) {
+  forall row in D.dim(1) with (ref rowSum, ref rowCount, ref workQueue, ref sharedLock) {
     // Accumulate task locally, then write at end.
     var count = 0;
     var sum = 0;
 
     if debugTopo then writeln( "initializing row ", row );
-    if use_dimIterCol {
+    if useDimIterCol {
      // compilerWarning("iterating over columns in init with dimIter");
       for col in D.dimIter(2,row) {
         count += 1;
@@ -208,25 +210,25 @@ where D.rank == 2
       }
     }
     if count == 1 {
-      shared_lock.lock();
-      work_queue.push_back( row );
-      shared_lock.unlock();
+      sharedLock.lock();
+      workQueue.push_back( row );
+      sharedLock.unlock();
     }
 
-    row_count[row].write( count);
-    row_sum[row].write( sum );
+    rowCount[row].write( count);
+    rowSum[row].write( sum );
   }
   result.timers["initialization"].stop();
 
   if debugTopo {
-    writeln( "initial work_queue ", work_queue );
-    writeln( "initial row_sum    ", row_sum );
-    writeln( "initial row_count  ", row_count );
+    writeln( "initial workQueue ", workQueue );
+    writeln( "initial rowSum    ", rowSum );
+    writeln( "initial rowCount  ", rowCount );
   }
 
   // insert position along diagonal from (N,N)
-  // must be accessed under shared_lock
-  var diagonal_position : int = 0;
+  // must be accessed under sharedLock
+  var diagonalPosition : int = 0;
   // Values for work signal
   enum TaskSignal {
     kill = min(int), // no more work signal, die when recieving
@@ -234,241 +236,241 @@ where D.rank == 2
     wake = 1 // more work signal, pop from stack and continue with recieving
   };
   // This will signal tasks to get work, and keeps track of queue size;
-  var work_signal : sync TaskSignal;
+  var workSignal : sync TaskSignal;
   // initialize work signal.
   // sanity check: if queue is empty, set to kill signal.
   // (I dont think this-^ is possible, but it could in the future?)
-  work_signal.writeEF( if work_queue.size > 0 then TaskSignal.wake else TaskSignal.kill );
+  workSignal.writeEF( if workQueue.size > 0 then TaskSignal.wake else TaskSignal.kill );
   if debugTopoTasking then writeln( "Spawning tasks ", 1..#numTasks );
 
   result.timers["toposort"].start();
-  coforall task_id in 1..#numTasks
-    with (ref diagonal_position, ref row_sum, ref row_count, ref work_queue, ref shared_lock)
+  coforall taskId in 1..#numTasks
+    with (ref diagonalPosition, ref rowSum, ref rowCount, ref workQueue, ref sharedLock)
   {
-    if debugTopoTasking then writeln(task_id, " spawning." );
+    if debugTopoTasking then writeln(taskId, " spawning." );
     // continue looping until kill or fail signal is recieved
-    var continue_working = true;
-    while continue_working {
-      if debugTopoTasking then writeln( task_id, " waiting." );
+    var continueWorking = true;
+    while continueWorking {
+      if debugTopoTasking then writeln( taskId, " waiting." );
       // wait for work and get signal
-      var signal = work_signal;
-      if debugTopoTasking then writeln( task_id, " recieved signal: ", signal );
+      var signal = workSignal;
+      if debugTopoTasking then writeln( taskId, " recieved signal: ", signal );
       // if signal is kill signal relay message and exit
       select signal {
         when TaskSignal.kill {
-          work_signal.writeEF( TaskSignal.kill );
-          continue_working = false;
-          if debugTopoTasking then writeln( task_id, " killed." );
+          workSignal.writeEF( TaskSignal.kill );
+          continueWorking = false;
+          if debugTopoTasking then writeln( taskId, " killed." );
           break; // break out of loop;
         }
         when TaskSignal.fail {
-          work_signal.writeXF( TaskSignal.fail );
-          continue_working = false;
-          if debugTopoTasking then writeln( task_id, " failing out.");
+          workSignal.writeXF( TaskSignal.fail );
+          continueWorking = false;
+          if debugTopoTasking then writeln( taskId, " failing out.");
           break; // break out of loop;
         }
         otherwise { /* no need to popogate signal */ }
       }
 
       // Critical section
-      shared_lock.lock();
+      sharedLock.lock();
       if debugTopo {
         writeln(
           "========================",
-          "\ntask_id ",  task_id,
-          "\nwork_queue ", work_queue,
-          "\nrow_sum    ", row_sum,
-          "\nrow_count  ", row_count,
-          "\nrow_map    ", row_map,
-          "\ncolumn_map ", column_map,
+          "\ntaskId ",  taskId,
+          "\nworkQueue ", workQueue,
+          "\nrowSum    ", rowSum,
+          "\nrowCount  ", rowCount,
+          "\nrowMap    ", rowMap,
+          "\ncolumnMap ", columnMap,
           "\n========================"
         );
       }
 
-      var queue_size = work_queue.size;
-      // if queue_size is < 1, someone stole our work. unlock and rewait
-      if queue_size < 1 {
-        if debugTopoTasking then writeln( task_id, " queue size is ", queue_size);
-        shared_lock.unlock();
+      var queueSize = workQueue.size;
+      // if queueSize is < 1, someone stole our work. unlock and rewait
+      if queueSize < 1 {
+        if debugTopoTasking then writeln( taskId, " queue size is ", queueSize);
+        sharedLock.unlock();
         continue;
       }
 
       // safely get row and diagonal position
-      var local_diagonal_position = diagonal_position;
-      diagonal_position += 1; // increment to next position
-      var swap_row = work_queue.pop_front();
-      queue_size = work_queue.size;
+      var localDiagonalPosition = diagonalPosition;
+      diagonalPosition += 1; // increment to next position
+      var swapRow = workQueue.pop_front();
+      queueSize = workQueue.size;
 
       // if there are no more diagonal to place, then there is no work, send kill signal
-      if debugTopo then writeln( (task_id, local_diagonal_position, diagonal_position) );
-      if diagonal_position >= num_diagonals {
-        if debugTopoTasking then writeln( task_id, " sending kill signal." );
-        work_signal.writeXF( TaskSignal.kill );
-        continue_working = false;
-      } else if queue_size > 0 {
-        if debugTopoTasking then writeln( task_id, " sending work signal." );
-        work_signal.writeXF( TaskSignal.wake );
+      if debugTopo then writeln( (taskId, localDiagonalPosition, diagonalPosition) );
+      if diagonalPosition >= numDiagonals {
+        if debugTopoTasking then writeln( taskId, " sending kill signal." );
+        workSignal.writeXF( TaskSignal.kill );
+        continueWorking = false;
+      } else if queueSize > 0 {
+        if debugTopoTasking then writeln( taskId, " sending work signal." );
+        workSignal.writeXF( TaskSignal.wake );
       }
-      shared_lock.unlock();
+      sharedLock.unlock();
 
       // get non-zero column
-      var swap_column = row_sum[swap_row].read();
+      var swapColumn = rowSum[swapRow].read();
 
       // permute this row to the diagonal
-      row_map[swap_row] = D.dim(1).high - local_diagonal_position;
-      column_map[swap_column] = D.dim(2).high - local_diagonal_position;
+      rowMap[swapRow] = D.dim(1).high - localDiagonalPosition;
+      columnMap[swapColumn] = D.dim(2).high - localDiagonalPosition;
 
-      if debugTopo then writeln( "Swaping ", (swap_row,swap_column), " -> ", (row_map[swap_row], column_map[swap_column]) );
+      if debugTopo then writeln( "Swaping ", (swapRow,swapColumn), " -> ", (rowMap[swapRow], columnMap[swapColumn]) );
 
-      // foreach row along the swapped column who has a nonzero at (row, swap_column)
-      // remove swap_column from row_sum and reduce row_count
-      if use_dimIterRow {
+      // foreach row along the swapped column who has a nonzero at (row, swapColumn)
+      // remove swapColumn from rowSum and reduce rowCount
+      if useDimIterRow {
         // compilerWarning("iterating over rows in kernel with dimIter");
-        for row in D.dimIter(1,swap_column) {
-          var previous_row_count = row_count[row].fetchAdd( -1 );
-          row_sum[row].add( -swap_column );
-          // if previous_row_count = 2 (ie row_count[row] == 1)
-          if previous_row_count == 2 {
-            shared_lock.lock();
+        for row in D.dimIter(1,swapColumn) {
+          var previousRowCount = rowCount[row].fetchAdd( -1 );
+          rowSum[row].add( -swapColumn );
+          // if previousRowCount = 2 (ie rowCount[row] == 1)
+          if previousRowCount == 2 {
+            sharedLock.lock();
             if debugTopo then writeln( "Queueing ", row);
-            work_queue.push_back( row );
-            shared_lock.unlock();
-            work_signal.writeXF( TaskSignal.wake );
+            workQueue.push_back( row );
+            sharedLock.unlock();
+            workSignal.writeXF( TaskSignal.wake );
           }
         }
       } else {
         // compilerWarning("iterating over rows in kernel with dim");
         for row in D.dim(1) {
-          if D.member((row, swap_column)) {
-            var previous_row_count = row_count[row].fetchAdd( -1 );
-            row_sum[row].add( -swap_column );
-            // if row_count[row] == 1
-            if previous_row_count == 2 {
-              shared_lock.lock();
+          if D.member((row, swapColumn)) {
+            var previousRowCount = rowCount[row].fetchAdd( -1 );
+            rowSum[row].add( -swapColumn );
+            // if rowCount[row] == 1
+            if previousRowCount == 2 {
+              sharedLock.lock();
               if debugTopo then writeln( "Queueing ", row);
-              work_queue.push_back( row );
-              shared_lock.unlock();
-              work_signal.writeXF( TaskSignal.wake );
+              workQueue.push_back( row );
+              sharedLock.unlock();
+              workSignal.writeXF( TaskSignal.wake );
             }
           }
         }
       }
 
-    } // while continue_working
-    if debugTopoTasking then writeln( task_id, " completed." );
+    } // while continueWorking
+    if debugTopoTasking then writeln( taskId, " completed." );
   } // coforall tasks
   result.timers["toposort"].stop();
-  var signal = work_signal;
+  var signal = workSignal;
   if signal == TaskSignal.fail {
     writeln("Recieved fail signal at some point in execution.");
     exit( -1 );
   }
 
-  result.permutation_map = new PermutationMap( row_map, column_map );
+  result.permutationMap = new PermutationMap( rowMap, columnMap );
 
   result.timers["whole"].stop();
 
   return result;
 }
 
-proc toposort_serial( D : domain )
+proc toposortSerial( D : domain )
 where D.rank == 2
 {
   var result = new TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
-  var num_diagonals = min( D.dim(1).size, D.dim(2).size );
+  var numDiagonals = min( D.dim(1).size, D.dim(2).size );
 
-  var row_map : [D.dim(1)] D.idxType = [i in D.dim(1)] -1;
-  var column_map : [D.dim(2)] D.idxType = [i in D.dim(2)] -1;
+  var rowMap : [D.dim(1)] D.idxType = [i in D.dim(1)] -1;
+  var columnMap : [D.dim(2)] D.idxType = [i in D.dim(2)] -1;
 
-  var row_sum : [D.dim(1)] int;
-  var row_count : [D.dim(1)] int;
-  var work_queue : list(D.idxType);
+  var rowSum : [D.dim(1)] int;
+  var rowCount : [D.dim(1)] int;
+  var workQueue : list(D.idxType);
 
-  // initialize row_count and row_sum and put work in queue
+  // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
   for row in D.dim(1) {
     if debugTopo then writeln( "initializing row ", row );
-    if use_dimIterCol {
+    if useDimIterCol {
      // compilerWarning("iterating over columns in init with dimIter");
       for col in D.dimIter(2,row) {
-        row_count[row] += 1;
-        row_sum[row] += col;
+        rowCount[row] += 1;
+        rowSum[row] += col;
       }
     } else {
       // compilerWarning("iterating over columns in init with dim");
       for col in D.dim(2) {
         if D.member((row,col)) {
-          row_count[row] += 1;
-          row_sum[row] += col;
+          rowCount[row] += 1;
+          rowSum[row] += col;
         }
       }
     }
 
-    if row_count[row] == 1 {
-      work_queue.push_back( row );
+    if rowCount[row] == 1 {
+      workQueue.push_back( row );
     }
   }
   result.timers["initialization"].stop();
 
   if debugTopo {
-    writeln( "initial work_queue ", work_queue );
-    writeln( "initial row_sum    ", row_sum );
-    writeln( "initial row_count  ", row_count );
+    writeln( "initial workQueue ", workQueue );
+    writeln( "initial rowSum    ", rowSum );
+    writeln( "initial rowCount  ", rowCount );
   }
 
   // insert position along diagonal from (N,N)
-  var diagonal_position : int = 0;
+  var diagonalPosition : int = 0;
 
   result.timers["toposort"].start();
-  while work_queue.size > 0 {
+  while workQueue.size > 0 {
     if debugTopo {
       writeln(
         "========================",
-        "\nwork_queue ", work_queue,
-        "\nrow_sum    ", row_sum,
-        "\nrow_count  ", row_count,
-        "\nrow_map    ", row_map,
-        "\ncolumn_map ", column_map,
+        "\nworkQueue ", workQueue,
+        "\nrowSum    ", rowSum,
+        "\nrowCount  ", rowCount,
+        "\nrowMap    ", rowMap,
+        "\ncolumnMap ", columnMap,
         "\n========================"
       );
     }
 
     // get work row
-    var swap_row = work_queue.pop_front();
+    var swapRow = workQueue.pop_front();
 
     // get non-zero column
-    var swap_column = row_sum[swap_row];
+    var swapColumn = rowSum[swapRow];
 
     // permute this row to the diagonal
-    row_map[swap_row] = D.dim(1).high - diagonal_position;
-    column_map[swap_column] = D.dim(2).high - diagonal_position;
-    diagonal_position += 1; // increment to next position
+    rowMap[swapRow] = D.dim(1).high - diagonalPosition;
+    columnMap[swapColumn] = D.dim(2).high - diagonalPosition;
+    diagonalPosition += 1; // increment to next position
 
-    if debugTopo then writeln( "Swaping ", (swap_row,swap_column), " -> ", (row_map[swap_row], column_map[swap_column]) );
+    if debugTopo then writeln( "Swaping ", (swapRow,swapColumn), " -> ", (rowMap[swapRow], columnMap[swapColumn]) );
 
-    // foreach row along the swapped column who has a nonzero at (row, swap_column)
-    // remove swap_column from row_sum and reduce row_count
-    if use_dimIterRow {
+    // foreach row along the swapped column who has a nonzero at (row, swapColumn)
+    // remove swapColumn from rowSum and reduce rowCount
+    if useDimIterRow {
       // compilerWarning("iterating over rows in kernel with dimIter");
-      for row in D.dimIter(1,swap_column) {
-        row_count[row] -= 1;
-        row_sum[row] -= swap_column;
-        if row_count[row] == 1 {
+      for row in D.dimIter(1,swapColumn) {
+        rowCount[row] -= 1;
+        rowSum[row] -= swapColumn;
+        if rowCount[row] == 1 {
           if debugTopo then writeln( "Queueing ", row);
-          work_queue.push_back( row );
+          workQueue.push_back( row );
         }
       }
     } else {
       // compilerWarning("iterating over rows in kernel with dim");
       for row in D.dim(1) {
-        if D.member((row, swap_column)) {
-          row_count[row] -= 1;
-          row_sum[row] -= swap_column;
-          if row_count[row] == 1 {
+        if D.member((row, swapColumn)) {
+          rowCount[row] -= 1;
+          rowSum[row] -= swapColumn;
+          if rowCount[row] == 1 {
             if debugTopo then writeln( "Queueing ", row);
-            work_queue.push_back( row );
+            workQueue.push_back( row );
           }
         }
       }
@@ -477,14 +479,14 @@ where D.rank == 2
   } // while work in queue
   result.timers["toposort"].stop();
 
-  result.permutation_map = new PermutationMap( row_map, column_map );
+  result.permutationMap = new PermutationMap( rowMap, columnMap );
   result.timers["whole"].stop();
   return result;
 }
 
-proc create_sparse_upper_triangluar_domain( D : domain(2), density : real, seed : int ) {
+proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : int ) {
   // Must be square matrix, uniformly dimensioned dense domain
-  if D.dim(1) != D.dim(2) then halt("Domain provided to create_sparse_upper_triangluar_domain is not square.");
+  if D.dim(1) != D.dim(2) then halt("Domain provided to createSparseUpperTriangluarDomain is not square.");
   const N = D.dim(1).size;
   const minDensity : real = 1.0/N;
   const maxDensity : real = (N+1.0)/(2.0*N);
@@ -494,84 +496,84 @@ proc create_sparse_upper_triangluar_domain( D : domain(2), density : real, seed 
   if density > maxDensity then halt( "Specified density (%n) is greater than maximum density (%n) for N (%n)".format( density, maxDensity, N));
 
   // number of elements in complete UT matrix
-  var number_non_zeros_in_full_UT_domain : int = (( N * N + N)/2.0) : int;
+  var numberNonZerosInFullUTDomain : int = (( N * N + N)/2.0) : int;
   // number of elements added
-  var number_non_zeros_added_in_UT : int = max( N, floor( N*N*density ) ) : int;
+  var numberNonZerosAddedInUT : int = max( N, floor( N*N*density ) ) : int;
   // number of non-diagonal elements added
-  var number_non_zeros_added_in_strictly_UT : int = number_non_zeros_added_in_UT - N;
+  var numberNonZerosAddedInStrictlyUT : int = numberNonZerosAddedInUT - N;
 
   if debugCreateSparseUTDomain {
-    writeln( "Dense: ", number_non_zeros_in_full_UT_domain );
-    writeln( "Added: ", number_non_zeros_added_in_UT );
-    writeln( "Non-diagonal: ", number_non_zeros_added_in_strictly_UT );
+    writeln( "Dense: ", numberNonZerosInFullUTDomain );
+    writeln( "Added: ", numberNonZerosAddedInUT );
+    writeln( "Non-diagonal: ", numberNonZerosAddedInStrictlyUT );
   }
 
   // resulting sparse domain
-  var sparse_D : sparse subdomain(D) dmapped CS();
+  var sparseD : sparse subdomain(D) dmapped CS();
 
   // if adding more than diagonals...
-  if number_non_zeros_added_in_strictly_UT > 0 {
+  if numberNonZerosAddedInStrictlyUT > 0 {
 
-    var sD_random_dom : domain(1) = {1..#number_non_zeros_in_full_UT_domain-N};
-    var sD_random : [sD_random_dom] D.rank*D.idxType;
+    var sDRandomDom : domain(1) = {1..#numberNonZerosInFullUTDomain-N};
+    var sDRandom : [sDRandomDom] D.rank*D.idxType;
 
     // TODO figure out effecient way to add small number of non-zeros
 
     forall i in D.dim(1).low..D.dim(1).high-1 {
 
       const delta = (D.dim(1).high-1 - i);
-      const position_offset = ( delta*delta + delta ) / 2;
-      const position = position_offset;
-      const col_range = i+1..D.dim(1).high;
+      const positionOffset = ( delta*delta + delta ) / 2;
+      const position = positionOffset;
+      const colRange = i+1..D.dim(1).high;
 
-      if debugCreateSparseUTDomain then writeln("filling ", i, " x ", col_range);
-      for j in col_range {
-        sD_random[ position + (j - i) ] = (i,j);
+      if debugCreateSparseUTDomain then writeln("filling ", i, " x ", colRange);
+      for j in colRange {
+        sDRandom[ position + (j - i) ] = (i,j);
       }
     }
 
-    shuffle( sD_random, seed );
-    sparse_D.bulkAdd( sD_random[1..#number_non_zeros_added_in_strictly_UT] );
+    shuffle( sDRandom, seed );
+    sparseD.bulkAdd( sDRandom[1..#numberNonZerosAddedInStrictlyUT] );
   }
 
   // Diagonal indices
-  var sD_diag : [D.dim(1)] D.rank*D.idxType;
+  var sDDiag : [D.dim(1)] D.rank*D.idxType;
   forall i in D.dim(1) {
-    sD_diag[i] = (i,i);
+    sDDiag[i] = (i,i);
   }
-  sparse_D.bulkAdd( sD_diag );
+  sparseD.bulkAdd( sDDiag );
 
-  if debugCreateSparseUTDomain then writeln( "there are ", sparse_D.size, " non zeros, for density of ", sparse_D.size / ( N*N : real ) );
+  if debugCreateSparseUTDomain then writeln( "there are ", sparseD.size, " non zeros, for density of ", sparseD.size / ( N*N : real ) );
 
-  if sparse_D.size != number_non_zeros_added_in_UT then halt("Created a domain with unexpected number of non-zero indices. Created %n, expected %n".format(sparse_D.size, number_non_zeros_added_in_UT));
+  if sparseD.size != numberNonZerosAddedInUT then halt("Created a domain with unexpected number of non-zero indices. Created %n, expected %n".format(sparseD.size, numberNonZerosAddedInUT));
 
-  return sparse_D;
+  return sparseD;
 }
 
-proc check_is_uper_triangular_domain( D : domain ) : bool
+proc checkIsUperTriangularDomain( D : domain ) : bool
 where D.rank == 2 && isSparseDom( D )
 {
-  var is_UT = true;
+  var isUT = true;
   for (i,j) in D {
-    is_UT = is_UT && (i <= j);
-    if !is_UT then break;
+    isUT = isUT && (i <= j);
+    if !isUT then break;
   }
-  return is_UT;
+  return isUT;
 }
 
-proc pretty_print_sparse( M : [?D] ?T, print_IRV : bool = false, separate_elements : bool = true )
+proc prettyPrintSparse( M : [?D] ?T, printIRV : bool = false, separateElements : bool = true )
 where D.rank == 2
 {
   const padding = max reduce ( [i in M] (i : string).length );
-  const format_string = "%%%ns%s".format( padding, if separate_elements then " " else "" );
-  const blank_list = [i in 1..#padding+if separate_elements then 1 else 0 ] " ";
-  const blank_string = "".join( blank_list );
+  const formatString = "%%%ns%s".format( padding, if separateElements then " " else "" );
+  const blankList = [i in 1..#padding+if separateElements then 1 else 0 ] " ";
+  const blankString = "".join( blankList );
 
   for i in D.dim(1){
     for j in D.dim(2){
-      if print_IRV || D.member((i,j))
-        then writef( format_string, M[i,j] : string );
-        else write( blank_string );
+      if printIRV || D.member((i,j))
+        then writef( formatString, M[i,j] : string );
+        else write( blankString );
     }
     writeln();
   }
@@ -590,7 +592,7 @@ const maxDensity : real = (N+1.0)/(2.0*N);
 config const additionalDensity : real = 1.0 - minDensity;
 
 config const density : real = min( maxDensity, minDensity + max(0, additionalDensity) );
-config type eltType = string;
+config type eltType = int;
 
 config const numTasks : int = here.maxTaskPar;
 
@@ -615,26 +617,26 @@ proc main(){
   // create upper triangular matrix
   if !silentMode then writeln("Creating sparse upper triangluar domain");
   const D : domain(2) = {1..#N,1..#N};
-  const sparse_D = create_sparse_upper_triangluar_domain( D, density, seed );
+  const sparseD = createSparseUpperTriangluarDomain( D, density, seed );
 
-  if !silentMode then writeln( "Actual Density: density: %dr%%\nTotal Number NonZeros: %n".format((sparse_D.size / (1.0*N*N))*100, sparse_D.size) );
+  if !silentMode then writeln( "Actual Density: density: %dr%%\nTotal Number NonZeros: %n".format((sparseD.size / (1.0*N*N))*100, sparseD.size) );
 
-  var permutation_map = create_random_permutation_map( sparse_D );
-  if printPermutations then writeln("Permutation Map:\n", permutation_map);
+  var permutationMap = createRandomPermutationMap( sparseD, seed );
+  if printPermutations then writeln("Permutation Map:\n", permutationMap);
 
   if !silentMode then writeln("Permuting upper triangluar domain");
-  var permuted_sparse_D = permutation_map.permuteDomain( sparse_D );
+  var permutedSparseD = permutationMap.permuteDomain( sparseD );
 
-  var topo_result : TopoSortResult(sparse_D.idxType);
+  var topoResult : TopoSortResult(sparseD.idxType);
 
   select implementation {
     when ToposortImplementation.Serial {
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Serial implementation.");
-      topo_result = toposort_serial( permuted_sparse_D );
+      topoResult = toposortSerial( permutedSparseD );
     }
     when ToposortImplementation.Parallel {
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation.");
-      topo_result = toposort_parallel( permuted_sparse_D, numTasks );
+      topoResult = toposortParallel( permutedSparseD, numTasks );
     }
     otherwise {
       writeln( "Unknown implementation: ", implementation );
@@ -642,53 +644,53 @@ proc main(){
     }
   }
 
-  var solved_map = topo_result.permutation_map;
+  var solvedMap = topoResult.permutationMap;
 
   if printPerfStats {
     writeln( "Benchmark timers:");
-    for timer_name in topo_result.timer_dom {
-      writeln(timer_name, ": ", topo_result.timers[timer_name].elapsed() );
+    for timerName in topoResult.timerDom {
+      writeln(timerName, ": ", topoResult.timers[timerName].elapsed() );
     }
-    writeln( "Rows/second: ", (N/topo_result.timers["whole"].elapsed()) );
+    writeln( "Rows/second: ", (N/topoResult.timers["whole"].elapsed()) );
   }
 
-  if printPermutations then writeln( "Solved permutation map:\n", solved_map );
+  if printPermutations then writeln( "Solved permutation map:\n", solvedMap );
 
-  var solved_permuted_permuted_sparse_D = solved_map.permuteDomain( permuted_sparse_D );
+  var solvedPermutedPermutedSparseD = solvedMap.permuteDomain( permutedSparseD );
 
   if printMatrices {
-    var M : [sparse_D] eltType;
-    var permuted_M : [permuted_sparse_D] eltType;
-    var solved_permuated_permuted_M : [solved_permuted_permuted_sparse_D] eltType;
+    var M : [sparseD] eltType;
+    var permutedM : [permutedSparseD] eltType;
+    var solvedPermuatedPermutedM : [solvedPermutedPermutedSparseD] eltType;
 
     if !silentMode then writeln("Filling matrix with values");
     if isNumericType( eltType ) {
       var v = 1;
-      for idx in sparse_D {
+      for idx in sparseD {
         M[idx] = v : eltType;
-        permuted_M[ permutation_map[idx] ] = v;
-        solved_permuated_permuted_M[ solved_map[permutation_map[idx]] ] = v;
+        permutedM[ permutationMap[idx] ] = v;
+        solvedPermuatedPermutedM[ solvedMap[permutationMap[idx]] ] = v;
         v += 1;
       }
     } else if isStringType( eltType ) {
       M = "X";
       M.irv = "_";
-      permuted_M = "X";
-      permuted_M.irv = "_";
-      solved_permuated_permuted_M = "X";
-      solved_permuated_permuted_M.irv = "_";
+      permutedM = "X";
+      permutedM.irv = "_";
+      solvedPermuatedPermutedM = "X";
+      solvedPermuatedPermutedM.irv = "_";
     }
 
     writeln( "Upper triangluar matrix:" );
-    pretty_print_sparse( M, print_IRV = printNonZeros, separate_elements = padPrintedMatrixElements );
+    prettyPrintSparse( M, printIRV = printNonZeros, separateElements = padPrintedMatrixElements );
 
     writeln( "Permuted upper triangluar matrix:" );
-    pretty_print_sparse( permuted_M, print_IRV = printNonZeros, separate_elements = padPrintedMatrixElements );
+    prettyPrintSparse( permutedM, printIRV = printNonZeros, separateElements = padPrintedMatrixElements );
 
     writeln( "Solved-permuted permuted upper triangluar matrix:" );
-    pretty_print_sparse( solved_permuated_permuted_M, print_IRV = printNonZeros, separate_elements = padPrintedMatrixElements );
+    prettyPrintSparse( solvedPermuatedPermutedM, printIRV = printNonZeros, separateElements = padPrintedMatrixElements );
   }
 
-  var is_UT = check_is_uper_triangular_domain( solved_permuted_permuted_sparse_D );
-  if !is_UT then halt("Solved-permuted permuted upper triangluar domain is not upper triangular!");
+  var isUpperTriangular = checkIsUperTriangularDomain( solvedPermutedPermutedSparseD );
+  if !isUpperTriangular then halt("Solved-permuted permuted upper triangluar domain is not upper triangular!");
 }
