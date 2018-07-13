@@ -1144,7 +1144,7 @@ def print_chapel_environment():
     logger.write()
     logger.write("### Chapel Environment ###")
     try:
-        out = subprocess.check_output(os.path.join(util_dir, "printchplenv"))
+        out = subprocess.check_output([os.path.join(util_dir, "printchplenv"), "--all", "--no-tidy"])
         logger.write(out)
     except:
         pass
