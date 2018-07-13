@@ -12,16 +12,18 @@ vals['  Initial energy  :'] = -1.166063303458
 vals['  Final energy    :'] = -1.166049767266
 vals['  eFinal/eInitial :'] = 0.999988
 
+found = dict.fromkeys(vals.keys(), False)
+
 def verify(line):
     info = line.split(' ')
     pre = ' '.join(info[:-1])
     if pre in vals:
         last = float(info[-1])
+        found[pre] = True # indicate pattern was found
         if abs(last - vals[pre]) < EPSILON:
             pre += ' SUCCESS\n'
         else:
             pre += ' FAILURE\n'
-        vals[pre] = True # indicate pattern was found
         return pre
     else:
         return line
@@ -52,7 +54,16 @@ text = printChunk("Simulation Validation:", 4)
 if os.getenv('CHPL_TEST_PERF') == 'on':
     text += printChunk("Timings", 10)
 
-if text != "" and all(vals.values()):
+if text != "" and all(found.values()):
     with open(tmp_file, 'a') as tf:
         tf.write(text)
     shutil.move(tmp_file, out_file)
+else:
+    with open(tmp_file, 'a') as tf:
+        with open(out_file) as outf:
+            tf.write(outf.read())
+        if text == "":
+            tf.write("\nPREDIFF ERROR: Unexpected number of lines\n")
+        if all(found.values()) == False:
+            tf.write("\nPREDIFF ERROR: Unable to find validation values\n")
+        shutil.move(tmp_file, out_file)
