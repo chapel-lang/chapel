@@ -177,17 +177,9 @@ module BLAS {
     Tells the BLAS module to look for ``mkl_cblas.h`` instead of ``cblas.h``.
     Set this to `true` if you are using the Intel MKL BLAS implementation.
   */
-  config param isBLAS_MKL=false;
-
   use C_BLAS;
 
   use SysCTypes;
-
-  if (isBLAS_MKL) {
-    require "mkl_cblas.h";
-  } else {
-    require "cblas.h";
-  }
 
   /* Return `true` if type is supported by BLAS */
   proc isBLASType(type t) param: bool{
@@ -2384,6 +2376,28 @@ module BLAS {
 
   */
   module C_BLAS {
+
+    config param blasHeader = "",
+                 // TODO: Would this be better as an enum?
+                 blasImpl = "blas",
+                 isBLAS_MKL = false;
+
+    if isBLAS_MKL {
+      compilerWarning('"isBLAS_MKL" flag is deprecated.');
+      compilerWarning('Use "blasImpl" instead: --set blasImpl=\\"mkl\\"');
+    }
+
+    if blasHeader == "" {
+      if blasImpl == "mkl" || isBLAS_MKL {
+        require "mkl_cblas.h";
+      } else {
+        require "cblas.h";
+      }
+
+    } else {
+      require blasHeader;
+    }
+
     extern type CBLAS_INDEX = c_int;
 
     // Define the external types
