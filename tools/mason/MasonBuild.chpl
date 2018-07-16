@@ -249,12 +249,26 @@ proc getTomlCompopts(lock: borrowed Toml, compopts: [?d] string) {
     const cmpFlags = lock["root"]["compopts"].s;
     compopts.push_back(cmpFlags);
   }
-  // Get pkgconfig dependency compilation options
-  if lock.pathExists('system') {
-    const exDeps = lock['system'];
+  
+  if lock.pathExists('external') {
+    const exDeps = lock['external'];
     for (name, depInfo) in zip(exDeps.D, exDeps.A) {
+      for (k,v) in allFields(depInfo) {
+        select k {
+            when "libs" do compopts.push_back("-L" + v.s); 
+            when "include" do compopts.push_back("-I" + v.s);
+            otherwise {
+              continue;
+            }
+          }
+      }
+    }
+    if lock.pathExists('external.pkgconfig') {
+    const pkgDeps = lock['external.pkgconfig'];
+    for (name, depInfo) in zip(pkgDeps.D, pkgDeps.A) {
       compopts.push_back(depInfo["libs"].s);
       compopts.push_back("-I" + depInfo["include"].s);
+}
     }
   }
   return compopts;

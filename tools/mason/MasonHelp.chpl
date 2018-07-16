@@ -172,6 +172,23 @@ proc masonEnvHelp() {
   writeln("asterisk at the end of the line.");
 }
 
+proc masonExternalHelp() {
+  writeln("Use, install and search for external packages to build Mason packages with");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason external [options]");
+  writeln();
+  writeln("Options:");  
+  writeln("    list                        List all external packages available");
+  writeln("    search                      Search for a specific external package");
+  writeln("    -h, --help                  Display this message");
+  writeln("        --installed             Check that an external package is installed");
+  writeln();
+  writeln("Please see Mason documentation for instructions on using external packages");
+}
+
+
+
 proc masonTestHelp() {
   writeln("Run test files located within target/debug/test");
   writeln();

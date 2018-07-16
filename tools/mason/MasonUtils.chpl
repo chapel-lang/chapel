@@ -349,3 +349,13 @@ proc isIdentifier(name:string) {
 }
 
 
+/* Iterator to collect fields from a toml
+   TODO custom fields returned */
+iter allFields(tomlTbl: unmanaged Toml) {
+  for (k,v) in zip(tomlTbl.D, tomlTbl.A) {
+    if v.tag == fieldToml then
+      continue;
+    else yield(k,v);
+  }
+}
+
