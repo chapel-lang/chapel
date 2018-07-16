@@ -1323,8 +1323,16 @@ static bool hasGenericArrayReturn(FnSymbol* fn) {
   return false;
 }
 
+// Validates the declared domain, if it exists.  Also, ensures the value is
+// returned appropriately
 static void insertDomainCheck(Expr* actualRet, CallExpr* retVar,
                               Expr* domExpr) {
+  // We are returning an array in this function.  In the case where a
+  // promoted expression is returned, we need to call chpl__unref, which
+  // modifies its argument.  Then we pass that into the check function.
+  // LYDIA NOTE: If the unref call is performed in the check function, we don't
+  // return it correctly from the original function.  This is vaguely
+  // terrifying, but I am not sure what to do about it.
   VarSymbol* unrefTemp = newTemp();
   retVar->insertBefore(new DefExpr(unrefTemp));
   CallExpr* makeArray = new CallExpr(PRIM_MOVE, unrefTemp,
@@ -1332,29 +1340,10 @@ static void insertDomainCheck(Expr* actualRet, CallExpr* retVar,
                                                   actualRet->copy()));
   retVar->insertBefore(makeArray);
 
-  VarSymbol* actualDom = newTemp();
-  retVar->insertBefore(new DefExpr(actualDom));
-  CallExpr* exprDom = new CallExpr("_dom", gMethodToken, unrefTemp);
-  retVar->insertBefore(new CallExpr(PRIM_MOVE, actualDom, exprDom));
-
-  CallExpr* checkDom = new CallExpr("==", actualDom, domExpr->copy());
-
-  VarSymbol* cond = newTemp();
-  retVar->insertBefore(new DefExpr(cond));
-
-  VarSymbol* checkVar = newTemp();
-  retVar->insertBefore(new DefExpr(checkVar));
-  retVar->insertBefore(new CallExpr(PRIM_MOVE, checkVar, checkDom));
-  retVar->insertBefore(new CallExpr(PRIM_MOVE, cond,
-                                    new CallExpr("_cond_test", checkVar)));
-
-  Symbol* msg = new_StringSymbol("domain mismatch on return");
-  BlockStmt* failureMode = new BlockStmt(new CallExpr("halt",
-                                                      msg));
-
-  retVar->insertBefore(new CondStmt(new SymExpr(cond),
-                                    new BlockStmt(new CallExpr(PRIM_NOOP)),
-                                    failureMode));
+  CallExpr* checkDom = new CallExpr("chpl__checkDomainsMatch",
+                                    unrefTemp,
+                                    domExpr->copy());
+  retVar->insertBefore(checkDom);
 }
 
 // Validates the declared element type, if it exists

@@ -848,6 +848,17 @@ module ChapelArray {
      return false. */
   proc isSparseArr(a: []) param return isSparseDom(a.domain);
 
+  // Helper function used to ensure a returned array matches the declared
+  // return type when the declared return type specifies a particular domain
+  // but not the element type.
+  proc chpl__checkDomainsMatch(a, b) {
+    if (boundsChecking) {
+      if (a.domain != b) {
+        HaltWrappers.boundsCheckHalt("domain mismatch on return");
+      }
+    }
+  }
+
   //
   // Support for distributions
   //
