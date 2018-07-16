@@ -1,8 +1,9 @@
 #!/bin/bash
 
+# Check if pkg-config is available
+command -v pkg-config 2> /dev/null || echo False && exit
 
-if [[ $HOST == *chapcs* ]] ; then
-   echo False
-else
-   echo True
-fi
+# Check if packages are available
+pkg-config --exists openssl  || echo False && exit
+pkg-config --exists zlib || echo False && exit
+

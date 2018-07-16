@@ -10,8 +10,8 @@ chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 
 [external.pkgconfig.openssl]
 name = "openssl"
-version = "0.9.8zh"
-libs = "-lssl -lcrypto -lz"
+version = "opensslversion"
+libs = "opensslflags"
 include = "/usr/include"
 
 

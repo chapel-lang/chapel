@@ -10,8 +10,8 @@ chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 
 [external.pkgconfig.zlib]
 name = "zlib"
-version = "1.2.8"
-libs = "-lz"
+version = "zlibversion"
+libs = "zlibflags"
 include = "/usr/include"
 
 

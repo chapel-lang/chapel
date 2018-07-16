@@ -314,7 +314,9 @@ If no query is provided, all packages in the registry will be listed.
 External Dependencies
 =====================
 Mason allows for specification of external, non-Chapel dependencies through pkg-config.
-An example of using the Linear Algebra library that requires both BLAS and Lapack:
+For this reason, Mason must have access to a ``pkg-config`` installation. The following
+example utilizes ``pkg-config 0.29.2``. An example of using the Linear Algebra library
+that requires both BLAS and Lapack:
 
 ``Mason.toml``
 
@@ -366,29 +368,6 @@ that Mason will grab the latest package available known to pkg-config in your sy
         libs = "-L/usr/local/Cellar/openblas/0.3.1/lib -openblas"
         include = "/usr/local/Cellar/openblas/0.3.1/include"
 
-
-It is required, even though the package is specified in the ``Mason.toml`` that the
-name of the package be specified in the file where it is being used. For example,
-the source code of the example using the Linear algebra library.
-
-.. code-block:: chpl
-
-    use LinearAlgebra;
-
-    var D = {1..4, 1..4};
-    var A: [D] real = ((18.0, 22.0,  54.0,  42.0),
-    (22.0, 70.0,  86.0,  62.0),
-    (54.0, 86.0, 174.0, 134.0),
-    (42.0, 62.0, 134.0, 106.0));
-
-    var L = cholesky(A);
-    var U = cholesky(A, lower=false);
-    writeln("A:");
-    writeln(A);
-    writeln("L:");
-    writeln(L);
-    writeln("U:");
-    writeln(U);
 
 
 
