@@ -69,6 +69,7 @@ public:
   Symbol*                    retSymbol;
 
   // Number of formals before tuple type constructor formals are added.
+  // TODO--this is unused
   int                        numPreTupleFormals;
 
 #ifdef HAVE_LLVM

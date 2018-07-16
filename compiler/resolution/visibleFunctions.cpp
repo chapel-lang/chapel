@@ -195,15 +195,41 @@ static void getVisibleFunctions(const char*           name,
   if (visited.find(block) == visited.end()) {
 
     bool moduleBlock = false;
+    ModuleSymbol* inMod = toModuleSymbol(block->parentSymbol);
+    if (inMod && block == inMod->block)
+      moduleBlock = true;
     bool fnBlock = false;
-    if (ModuleSymbol* inMod = toModuleSymbol(block->parentSymbol))
-      if (block == inMod->block)
-        moduleBlock = true;
-    if (FnSymbol* inFn = toFnSymbol(block->parentSymbol))
-      if (block == inFn->body)
-        fnBlock = true;
+    FnSymbol* inFn = toFnSymbol(block->parentSymbol);
+    if (inFn && (block == inFn->body || block == inFn->where))
+      fnBlock = true;
 
-    if (moduleBlock || fnBlock) {
+
+    if (call->id == breakOnResolveID) {
+      if (moduleBlock)
+        printf("visible fns: block %i visiting module %s %s:%i\n", block->id,
+            inMod->name, block->fname(), block->linenum());
+      else if (fnBlock) {
+        if (inFn->instantiatedFrom)
+          printf("visible fns: block %i visiting fn %s %s:%i insn from block id %i\n", block->id,
+               inFn->name, block->fname(), block->linenum(),
+               inFn->instantiatedFrom->id);
+        else
+          printf("visible fns: block %i visiting fn %s %s:%i\n", block->id,
+               inFn->name, block->fname(), block->linenum());
+      }
+      else
+        printf("visible fns: block %i visiting block %s:%i\n", block->id,
+              block->fname(), block->linenum());
+    }
+
+    /*if (moduleBlock || fnBlock)  -- see comment below*/
+    {
+
+      // e.g. in associative.chpl primer, instatiation occurs in a
+      // block that isn't a fn or module block.
+      // But, we could probably optimize by knowing:
+      //   - which blocks are irrelevant
+      //   - which blocks are traversed as outer blocks
       visited.insert(block);
     }
 
@@ -287,7 +313,8 @@ static bool isTryTokenCond(Expr* expr);
 
 BlockStmt* getVisibilityBlock(Expr* expr, bool usePtOfInsn) {
   if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
-    if (block->blockTag == BLOCK_SCOPELESS)
+    if (block->blockTag == BLOCK_SCOPELESS ||
+        block->blockTag == BLOCK_TYPE)
       return getVisibilityBlock(block, usePtOfInsn);
     else if (block->parentExpr && isTryTokenCond(block->parentExpr)) {
       // Make the visibility block of the then and else blocks of a
