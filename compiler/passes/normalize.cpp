@@ -1323,25 +1323,11 @@ static bool hasGenericArrayReturn(FnSymbol* fn) {
   return false;
 }
 
-// Validates the declared domain, if it exists.  Also, ensures the value is
-// returned appropriately
+// Validates the declared domain, if it exists.
 static void insertDomainCheck(Expr* actualRet, CallExpr* retVar,
                               Expr* domExpr) {
-  // We are returning an array in this function.  In the case where a
-  // promoted expression is returned, we need to call chpl__unref, which
-  // modifies its argument.  Then we pass that into the check function.
-  // LYDIA NOTE: If the unref call is performed in the check function, we don't
-  // return it correctly from the original function.  This is vaguely
-  // terrifying, but I am not sure what to do about it.
-  VarSymbol* unrefTemp = newTemp();
-  retVar->insertBefore(new DefExpr(unrefTemp));
-  CallExpr* makeArray = new CallExpr(PRIM_MOVE, unrefTemp,
-                                     new CallExpr("chpl__unref",
-                                                  actualRet->copy()));
-  retVar->insertBefore(makeArray);
-
   CallExpr* checkDom = new CallExpr("chpl__checkDomainsMatch",
-                                    unrefTemp,
+                                    actualRet->copy(),
                                     domExpr->copy());
   retVar->insertBefore(checkDom);
 }
@@ -1349,16 +1335,8 @@ static void insertDomainCheck(Expr* actualRet, CallExpr* retVar,
 // Validates the declared element type, if it exists
 static void insertElementTypeCheck(Expr* declaredRet, Expr* actualRet,
                                    CallExpr* retVar) {
-  // See note in insertDomainCheck about the unref call
-  VarSymbol* unrefTemp = newTemp();
-  retVar->insertBefore(new DefExpr(unrefTemp));
-  CallExpr* makeArray = new CallExpr(PRIM_MOVE, unrefTemp,
-                                     new CallExpr("chpl__unref",
-                                                  actualRet->copy()));
-  retVar->insertBefore(makeArray);
-
   CallExpr* checkEltType = new CallExpr("chpl__checkEltTypeMatch",
-                                        unrefTemp,
+                                        actualRet->copy(),
                                         declaredRet->copy());
   retVar->insertBefore(checkEltType);
 }
