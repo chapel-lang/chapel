@@ -2152,9 +2152,6 @@ void AggregateType::buildCopyInitializer() {
 // generate default initializers for types where neither an initializer nor a
 // constructor has been defined.
 bool AggregateType::needsConstructor() const {
-  // Temporarily only generate default initializers for classes and records
-  if (isUnion())
-    return true;
 
   // We don't want a default constructor if the type has been explicitly marked
   if (symbol->hasFlag(FLAG_USE_DEFAULT_INIT))
@@ -2254,10 +2251,6 @@ bool AggregateType::wantsDefaultInitializer() const {
   // Only want a default initializer when no
   // initializer or constructor is defined
   } else if (initializerStyle != DEFINES_NONE_USE_DEFAULT) {
-    retval = false;
-
-  // For now, no default initializers for unions
-  } else if (isUnion()  == true) {
     retval = false;
 
   } else if (symbol->hasFlag(FLAG_REF) == true) {

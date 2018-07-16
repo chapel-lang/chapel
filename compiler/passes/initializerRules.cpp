@@ -258,7 +258,7 @@ static void preNormalizeInit(FnSymbol* fn) {
   if (fn->throwsError() == true) {
     USR_FATAL(fn, "initializers are not yet allowed to throw errors");
 
-  } else if (at->isRecord() == true) {
+  } else if (at->isRecord() == true || at->isUnion()) {
     preNormalizeInitRecord(fn);
 
   } else if (at->isClass()  == true) {
