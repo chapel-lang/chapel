@@ -1,4 +1,4 @@
-proc _defaultOf(type t) where (isBoolType(t)) {
+proc _defaultOf(type t:bool) {
   writeln("I default initialized!");
   return false:t;
 }

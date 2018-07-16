@@ -4,7 +4,7 @@ record bar {
   var whatev = 5;
 }
 
-proc _defaultOf(type t) where t:bar(3) {
+proc _defaultOf(type t:bar(3)) {
   var res: bar(3) = noinit;
   res.whatev = 7;
   return res;

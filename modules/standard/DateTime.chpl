@@ -269,14 +269,13 @@ module DateTime {
      1 <= `day` <= the number of days in the given month and year
   */
   proc date.init(year, month, day) {
-    use ChapelHaltWrappers;
     if year < MINYEAR-1 || year > MAXYEAR+1 then
-      initHalt("year is out of the valid range");
+      HaltWrappers.initHalt("year is out of the valid range");
     if month < 1 || month > 12 then
-      initHalt("month is out of the valid range");
+      HaltWrappers.initHalt("month is out of the valid range");
     const dim = try! daysInMonth(year, month);
     if day < 1 || day > dim then
-      initHalt("day is out of the valid range");
+      HaltWrappers.initHalt("day is out of the valid range");
 
     this.chpl_year = year;
     this.chpl_month = month;
@@ -563,15 +562,14 @@ module DateTime {
    */
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
                  tzinfo: Shared(TZInfo)=nilTZ) {
-    use ChapelHaltWrappers;
     if hour < 0 || hour >= 24 then
-      initHalt("hour out of range");
+      HaltWrappers.initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
-      initHalt("minute out of range");
+      HaltWrappers.initHalt("minute out of range");
     if second < 0 || second >= 60 then
-      initHalt("second out of range");
+      HaltWrappers.initHalt("second out of range");
     if microsecond < 0 || microsecond >= 1000000 then
-      initHalt("microsecond out of range");
+      HaltWrappers.initHalt("microsecond out of range");
     this.chpl_hour = hour;
     this.chpl_minute = minute;
     this.chpl_second = second;
@@ -1488,7 +1486,6 @@ module DateTime {
      and microseconds. */
   proc timedelta.init(days=0, seconds=0, microseconds=0,
                       milliseconds=0, minutes=0, hours=0, weeks=0) {
-    use ChapelHaltWrappers;
     param usps = 1000000,  // microseconds per second
           uspms = 1000,    // microseconds per millisecond
           spd = 24*60*60; // seconds per day
@@ -1517,10 +1514,10 @@ module DateTime {
     this.chpl_microseconds = us;
 
     if this.days < -999999999 then
-      initHalt("Overflow: days < -999999999");
+      HaltWrappers.initHalt("Overflow: days < -999999999");
 
     if this.days > 999999999 then
-      initHalt("Overflow: days > 999999999");
+      HaltWrappers.initHalt("Overflow: days > 999999999");
   }
 
   /* Create a `timedelta` from a given number of seconds */
@@ -1666,29 +1663,25 @@ module DateTime {
   class TZInfo {
     /* The offset from UTC this class represents */
     proc utcoffset(dt: datetime): timedelta {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
       return new timedelta();
     }
 
     /* The `timedelta` for daylight saving time */
     proc dst(dt: datetime): timedelta {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
       return new timedelta();
     }
 
     /* The name of this time zone */
     proc tzname(dt: datetime): string {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
       return "";
     }
 
     /* Convert a `time` in UTC to this time zone */
     proc fromutc(in dt: datetime): datetime {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
       return new datetime(0,0,0);
     }
   }

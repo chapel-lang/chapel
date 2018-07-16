@@ -4,7 +4,7 @@ class bar {
 
 var global = new unmanaged bar(4);
 
-proc _defaultOf(type t):t where t:unmanaged bar {
+proc _defaultOf(type t:unmanaged bar):t {
   return global:unmanaged bar;
 }
 

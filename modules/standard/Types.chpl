@@ -392,10 +392,8 @@ proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
 
 
 // Is 'sub' a subtype (or equal to) 'super'?
-/* Returns `true` if the type `sub` is a subtype of the type `super`. */
-proc isSubtype(type sub, type super) param where   sub: super  return true;
-pragma "no doc"
-proc isSubtype(type sub, type super) param where !(sub: super) return false;
+/* isSubtype Returns `true` if the type `sub` is a subtype of the type `super`. */
+// TODO -- fix documentation
 
 // Is 'sub' a proper subtype of 'super'?
 /* Returns `true` if the type `sub` is a subtype of the type `super`
@@ -603,9 +601,6 @@ private proc chpl_enum_minbits(type t: enumerated) param {
     return 32;
   return 64;
 }
-private proc enum_issigned(type t: enumerated) param {
-  return __primitive( "enum is signed", t);
-}
 // TODO - maybe this function can be useful for the user, for C interop?
 // If so, give it a different name.
 pragma "no doc"
@@ -628,14 +623,15 @@ inline proc integral.safeCast(type T) : T where isUintType(T) {
     if isIntType(this.type) {
       // int(?) -> uint(?)
       if this < 0 then // runtime check
-        halt("casting "+this.type:string+" less than 0 to "+T:string);
+        HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+            " less than 0 to "+T:string);
     }
 
     if max(this.type):uint > max(T):uint {
       // [u]int(?) -> uint(?)
       if (this:uint > max(T):uint) then // runtime check
-        halt("casting "+this.type:string+" with a value greater than the maximum of "+
-             T:string+" to "+T:string);
+        HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+            " with a value greater than the maximum of "+ T:string+" to "+T:string);
     }
   }
   return this:T;
@@ -649,22 +645,22 @@ inline proc integral.safeCast(type T) : T where isIntType(T) {
       if isUintType(this.type) {
         // uint(?) -> int(?)
         if this:uint > max(T):uint then // runtime check
-          halt("casting "+this.type:string+" with a value greater than the maximum of "+
-               T:string+" to "+T:string);
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+              " with a value greater than the maximum of "+ T:string+" to "+T:string);
       } else {
         // int(?) -> int(?)
         // max(T) <= max(int), so cast to int is safe
         if this:int > max(T):int then // runtime check
-          halt("casting "+this.type:string+" with a value greater than the maximum of "+
-               T:string+" to "+T:string);
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+              " with a value greater than the maximum of "+ T:string+" to "+T:string);
       }
     }
     if isIntType(this.type) {
       if min(this.type):int < min(T):int {
         // int(?) -> int(?)
         if this:int < min(T):int then // runtime check
-          halt("casting "+this.type:string+" with a value less than the minimum of "+
-               T:string+" to "+T:string);
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+              " with a value less than the minimum of "+ T:string+" to "+T:string);
       }
     }
   }

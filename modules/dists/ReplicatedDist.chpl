@@ -552,7 +552,7 @@ proc ReplicatedArr.dsiSerialRead(f, loc): void {
   localArrs[f.readWriteThisFromLocale().id].arrLocalRep._value.dsiSerialRead(f);
 }
 
-proc chpl_serialReadWriteRectangular(f, arr, dom) where _to_borrowed(chpl__getActualArray(arr)) : ReplicatedArr {
+proc chpl_serialReadWriteRectangular(f, arr, dom) where isSubtype(_to_borrowed(chpl__getActualArray(arr)), ReplicatedArr) {
   const origloc = f.readWriteThisFromLocale();
   on origloc do
     chpl_serialReadWriteRectangularHelper(f, arr, dom);

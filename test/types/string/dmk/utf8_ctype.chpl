@@ -1,0 +1,53 @@
+var mystring1: string = "événement";
+var mystring2: string = "1234";
+var mystring3: string = "   ";
+var mystring4: string = "événement important";
+
+proc tests(s: string) {
+  writeln("[", s, "]");
+  writeln("isUpper: ", s.isUpper());
+  writeln("isLower: ", s.isLower());
+  writeln("isSpace: ", s.isSpace());
+  writeln("isAlpha: ", s.isAlpha());
+  writeln("isDigit: ", s.isDigit());
+  writeln("isAlnum: ", s.isAlnum());
+  writeln("isPrintable: ", s.isPrintable());
+  writeln("isTitle: ", s.isTitle());
+}
+
+tests(mystring1);
+tests(mystring2);
+tests(mystring3);
+tests(mystring4);
+mystring1 = mystring1.capitalize();
+mystring2 = mystring2.capitalize();
+mystring3 = mystring3.capitalize();
+mystring4 = mystring4.capitalize();
+tests(mystring1);
+tests(mystring2);
+tests(mystring3);
+tests(mystring4);
+mystring1 = mystring1.toTitle();
+mystring2 = mystring2.toTitle();
+mystring3 = mystring3.toTitle();
+mystring4 = mystring4.toTitle();
+tests(mystring1);
+tests(mystring2);
+tests(mystring3);
+tests(mystring4);
+mystring1 = mystring1.toUpper();
+mystring2 = mystring2.toUpper();
+mystring3 = mystring3.toUpper();
+mystring4 = mystring4.toUpper();
+tests(mystring1);
+tests(mystring2);
+tests(mystring3);
+tests(mystring4);
+mystring1 = mystring1.toLower();
+mystring2 = mystring2.toLower();
+mystring3 = mystring3.toLower();
+mystring4 = mystring4.toLower();
+tests(mystring1);
+tests(mystring2);
+tests(mystring3);
+tests(mystring4);

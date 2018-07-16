@@ -36,11 +36,6 @@ module ChapelBase {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
   }
 
-  inline proc _throwPVFCError() {
-    halt("Pure virtual function called.");
-  }
-
-
   //
   // compile-time diagnostics
   //
@@ -816,16 +811,19 @@ module ChapelBase {
     }
   }
 
-  proc chpl_isDdata(type t) param where t: _ddata return true;
+  proc chpl_isDdata(type t:_ddata) param return true;
   proc chpl_isDdata(type t) param return false;
 
   inline proc =(ref a: _ddata(?t), b: _ddata(t)) {
     __primitive("=", a, b);
   }
 
-  inline proc _cast(type t, x) where t:_ddata && x:_nilType {
+  inline proc _cast(type t:_ddata, x:_nilType) {
     return __primitive("cast", t, x);
   }
+
+  inline proc _defaultOf(type t:_ddata)
+    return __primitive("cast", t, nil);
 
   // Removing the 'eltType' arg results in errors for --baseline
   inline proc _ddata_shift(type eltType, data: _ddata(eltType), shift: integral) {
@@ -1087,111 +1085,120 @@ module ChapelBase {
            isIntegralType(t) ||
            isRealType(t);
 
-  inline proc _cast(type t, x: bool) where chpl_typeSupportsPrimitiveCast(t)
+  inline proc _cast(type t:chpl_anybool, x:chpl_anybool)
+    return __primitive("cast", t, x);
+  inline proc _cast(type t:integral, x:chpl_anybool)
+    return __primitive("cast", t, x);
+  inline proc _cast(type t:chpl_anyreal, x:chpl_anybool)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t, x: bool(?w)) where chpl_typeSupportsPrimitiveCast(t)
+  inline proc _cast(type t:chpl_anybool, x:integral)
+    return __primitive("cast", t, x);
+  inline proc _cast(type t:integral, x:integral)
+    return __primitive("cast", t, x);
+  inline proc _cast(type t:chpl_anyreal, x:integral)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t, x: int(?w)) where chpl_typeSupportsPrimitiveCast(t)
+  inline proc _cast(type t:chpl_anybool, x:chpl_anyreal)
+    return __primitive("cast", t, x);
+  inline proc _cast(type t:integral, x:chpl_anyreal)
+    return __primitive("cast", t, x);
+  inline proc _cast(type t:chpl_anyreal, x:chpl_anyreal)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t, x: uint(?w)) where chpl_typeSupportsPrimitiveCast(t)
-    return __primitive("cast", t, x);
-
-  inline proc _cast(type t, x: real(?w)) where chpl_typeSupportsPrimitiveCast(t)
-    return __primitive("cast", t, x);
-
-  inline proc _cast(type t, x: enumerated) where isBoolType(t)
+  inline proc _cast(type t:chpl_anybool, x:enumerated)
     return x: int: bool;
-
-  inline proc _cast(type t, x: enumerated) where isRealType(t)
+  // _cast(type t:integral, x:enumerated)
+  // is generated for each enum in buildDefaultFunctions
+  inline proc _cast(type t:chpl_anyreal, x:enumerated)
     return x: int: real;
 
-  inline proc _cast(type t, x) where t:object && x:t
+  inline proc _cast(type t:borrowed, x:t)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t, x) where t:unmanaged object && x:t
+  inline proc _cast(type t:unmanaged, x:t)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t, x) where t:object && x:_nilType
+  inline proc _cast(type t:borrowed, x:_nilType)
+    return __primitive("cast", t, x);
+
+  inline proc _cast(type t:unmanaged, x:_nilType)
     return __primitive("cast", t, x);
 
   // dynamic cast handles class casting based upon runtime class type
   // this also might be called a downcast
   pragma "unsafe"
-  inline proc _cast(type t, x) where x:object && t:x && (x.type != t)
+  inline proc _cast(type t:borrowed, x:borrowed) where isSubtype(t,x.type) && (x.type != t)
     return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
 
   // this version handles unmanaged -> unmanaged
   pragma "unsafe"
-  inline proc _cast(type t:unmanaged, x:_unmanaged) where t:x && (x.type != t)
+  inline proc _cast(type t:unmanaged, x:_unmanaged) where isSubtype(t,x.type) && (x.type != t)
     return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
 
   // this version handles unmanaged -> borrow
   pragma "unsafe"
-  inline proc _cast(type t, x:_unmanaged) where t:object && t:_to_borrowed(x.type) && (x.type != t) {
+  inline proc _cast(type t:borrowed, x:_unmanaged) where isSubtype(t,_to_borrowed(x.type)) && (_to_borrowed(x.type) != t) {
     // first convert to borrow
     var casttmp = __primitive("to borrowed class", x);
     // then cast the borrow
     return if x != nil then __primitive("dynamic_cast", t, casttmp) else __primitive("cast", t, nil);
   }
 
-  inline proc _cast(type t, x:_nilType) where t == _nilType
+  inline proc _cast(type t:_nilType, x:_nilType)
     return nil;
 
   //
   // casts to complex
   //
-  inline proc _cast(type t, x: bool) where isComplexType(t)
+  inline proc _cast(type t:chpl_anycomplex, x: bool)
     return (x, 0):t;
 
-  inline proc _cast(type t, x: int(?w)) where isComplexType(t)
+  inline proc _cast(type t:chpl_anycomplex, x: integral)
     return (x, 0):t;
 
-  inline proc _cast(type t, x: uint(?w)) where isComplexType(t)
+  inline proc _cast(type t:chpl_anycomplex, x: chpl_anyreal)
     return (x, 0):t;
 
-  inline proc _cast(type t, x: real(?w)) where isComplexType(t)
-    return (x, 0):t;
-
-  inline proc _cast(type t, x: imag(?w)) where isComplexType(t)
+  inline proc _cast(type t:chpl_anycomplex, x: chpl_anyimag)
     return (0, _i2r(x)):t;
 
-  inline proc _cast(type t, x: complex(?w)) where isComplexType(t)
+  inline proc _cast(type t:chpl_anycomplex, x: chpl_anycomplex)
     return (x.re, x.im):t;
 
-  inline proc _cast(type t, x: enumerated) where isComplexType(t)
+  inline proc _cast(type t:chpl_anycomplex, x: enumerated)
     return (x:real, 0):t;
 
   //
   // casts to imag
   //
-  inline proc _cast(type t, x: bool) where isImagType(t)
+  inline proc _cast(type t:chpl_anyimag, x: bool)
     return if x then 1i:t else 0i:t;
 
-  inline proc _cast(type t, x: int(?w)) where isImagType(t)
+  inline proc _cast(type t:chpl_anyimag, x: integral)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t, x: uint(?w)) where isImagType(t)
+  inline proc _cast(type t:chpl_anyimag, x: chpl_anyreal)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t, x: real(?w)) where isImagType(t)
+  inline proc _cast(type t:chpl_anyimag, x: chpl_anyimag)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t, x: imag(?w)) where isImagType(t)
-    return __primitive("cast", t, x);
-
-  inline proc _cast(type t, x: complex(?w)) where isImagType(t)
+  inline proc _cast(type t:chpl_anyimag, x: chpl_anycomplex)
     return let xim = x.im in __primitive("cast", t, xim);
 
-  inline proc _cast(type t, x: enumerated) where isImagType(t)
+  inline proc _cast(type t:chpl_anyimag, x: enumerated)
     return x:real:imag;
 
   //
   // casts from complex
   //
-  inline proc _cast(type t, x: complex(?w)) where isRealType(t) || isIntegralType(t) {
+  inline proc _cast(type t:chpl_anyreal, x: chpl_anycomplex) {
+    var y: t;
+    y = x.re:t;
+    return y;
+  }
+  inline proc _cast(type t:integral, x: chpl_anycomplex) {
     var y: t;
     y = x.re:t;
     return y;
@@ -1200,10 +1207,12 @@ module ChapelBase {
   //
   // casts from imag
   //
-  inline proc _cast(type t, x: imag(?w)) where isRealType(t) || isIntegralType(t)
+  inline proc _cast(type t:chpl_anyreal, x: chpl_anyimag)
+    return __primitive("cast", t, x);
+  inline proc _cast(type t:integral, x: chpl_anyimag)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
+  inline proc _cast(type t:chpl_anybool, x: chpl_anyimag)
     return if x != 0i then true else false;
 
   pragma "dont disable remote value forwarding"
@@ -1304,14 +1313,6 @@ module ChapelBase {
     pragma "no copy" var ret = x;
     return ret;
   }
-
-  proc chpl__maybeAutoDestroyed(x: numeric) param return false;
-  proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
-  // Uses this spelling to be a peer to the below version
-  // (otherwise the below version won't be used if t coerces to object)
-  proc chpl__maybeAutoDestroyed(x: ?t) param where t:object return false;
-  pragma "no borrow convert"
-  proc chpl__maybeAutoDestroyed(x) param return true;
 
   pragma "compiler generated"
   pragma "last resort"
@@ -1932,27 +1933,20 @@ module ChapelBase {
 
   // What follows are the type _defaultOf methods, used to initialize types
   // Booleans
-  pragma "no doc"
-  inline proc _defaultOf(type t) param where (isBoolType(t)) return false:t;
+  inline proc _defaultOf(type t:chpl_anybool) param return false:t;
 
   // ints, reals, imags, complexes
-  pragma "no doc"
-  inline proc _defaultOf(type t) param where (isIntegralType(t)) return 0:t;
+  inline proc _defaultOf(type t:integral) param return 0:t;
   // TODO: In order to make _defaultOf param for reals and imags we had to split
   // the cases into their default size and a non-param case.  It is hoped that
   // in the future, floating point numbers may be castable whilst param.  In that
   // world, we can again shrink these calls into the size-ignorant case.
-  pragma "no doc"
-  inline proc _defaultOf(type t) param where t == real return 0.0;
-  pragma "no doc"
-  inline proc _defaultOf(type t) where (isRealType(t) && t != real) return 0.0:t;
-  pragma "no doc"
-  inline proc _defaultOf(type t) param where t == imag return 0.0i;
-  pragma "no doc"
-  inline proc _defaultOf(type t) where (isImagType(t) && t != imag) return 0.0i:t;
+  inline proc _defaultOf(type t:real) param return 0.0;
+  inline proc _defaultOf(type t:chpl_anyreal) return 0.0:t;
+  inline proc _defaultOf(type t:imag) param return 0.0i;
+  inline proc _defaultOf(type t:chpl_anyimag) return 0.0i:t;
   // Also, complexes cannot yet be parameterized
-  pragma "no doc"
-  inline proc _defaultOf(type t): t where (isComplexType(t)) {
+  inline proc _defaultOf(type t:chpl_anycomplex):t {
     var ret:t = noinit;
     param floatwidth = numBits(t)/2;
     ret.re = 0.0:real(floatwidth);
@@ -1961,27 +1955,20 @@ module ChapelBase {
   }
 
   // Enums
-  pragma "no doc"
-  inline proc _defaultOf(type t) param where (isEnumType(t)) {
+  inline proc _defaultOf(type t:enumerated) param
     return chpl_enum_first(t);
-  }
 
   // Classes
-  pragma "no doc"
-  inline proc _defaultOf(type t) where isClassType(t) {
+  inline proc _defaultOf(type t:borrowed)
     return __primitive("cast", t, nil);
-  }
-  // Note: the above case includes _ddata and unmanaged class types
+  inline proc _defaultOf(type t:unmanaged)
+    return __primitive("cast", t, nil);
 
   // Various types whose default value is known
-  pragma "no doc"
-  inline proc _defaultOf(type t) param where t: void return _void;
-  pragma "no doc"
-  inline proc _defaultOf(type t) where t: opaque return _nullOpaque;
-  pragma "no doc"
-  inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
-  pragma "no doc"
-  inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
+  inline proc _defaultOf(type t:void) param return _void;
+  inline proc _defaultOf(type t:opaque) return _nullOpaque;
+  inline proc _defaultOf(type t:chpl_taskID_t) return chpl_nullTaskID;
+  inline proc _defaultOf(type t:_sync_aux_t) return _nullSyncVarAuxFields;
 
   // There used to be a catch-all _defaultOf that return nil:t, but that
   // was the nexus of several tricky resolution bugs.
@@ -2008,12 +1995,8 @@ module ChapelBase {
     return ret;
   }
 
-  // cast from nil to unmanaged
-  inline proc _cast(type t, x) where t:_unmanaged && x:_nilType {
-    return __primitive("cast", t, x);
-  }
   // cast from unmanaged to borrow
-  inline proc _cast(type t, x) where t:object && _to_borrowed(x.type):t && x:_unmanaged {
+  inline proc _cast(type t:borrowed, x:_unmanaged) where isSubtype(_to_borrowed(x.type),t) {
     return __primitive("cast", t, x);
   }
 }

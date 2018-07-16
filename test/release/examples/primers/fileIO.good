@@ -16,10 +16,12 @@ Read line: Hello
 Read line: This
 Read line:  is 
 Read line:  a test 
+Read line:  of UTF-8 Euro Sign: €
 Read line: Hello
 Read line: This
 Read line:  is 
 Read line:  a test 
+Read line:  of UTF-8 Euro Sign: €
 Running Example 5
 Running Example 6
 This should be a chunk: {

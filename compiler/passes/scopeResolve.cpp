@@ -36,6 +36,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TryStmt.h"
+#include "UnmanagedClassType.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -104,6 +105,8 @@ static bool          lookupThisScopeAndUses(const char*           name,
                                             std::vector<Symbol*>& symbols);
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
+
+static void          resolveUnmanagedBorrows();
 
 void scopeResolve() {
   //
@@ -253,6 +256,8 @@ void scopeResolve() {
   renameDefaultTypesToReflectWidths();
 
   cleanupExternC();
+
+  resolveUnmanagedBorrows();
 }
 
 /************************************* | **************************************
@@ -1386,7 +1391,7 @@ static void checkRefsToIdxVars(ForallStmt* fs, DefExpr* def,
 static void setupShadowVars() {
   forv_Vec(ForallStmt, fs, gForallStmts)
     for_shadow_vars_and_defs(svar, def, temp, fs) {
-       if (hasOuterVariable(svar))
+      if (hasOuterVariable(svar))
         setupOuterVar(fs, svar);
       if (svar->isTaskPrivate())
         checkRefsToIdxVars(fs, def, svar);
@@ -2260,4 +2265,46 @@ static ModuleSymbol* definesModuleSymbol(Expr* expr) {
   }
 
   return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
+
+// Find 'unmanaged SomeClass' and 'borrowed SomeClass' and replace these
+// with the compiler's simpler representation (canonical type or unmanaged type)
+static void resolveUnmanagedBorrows() {
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+        call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+      SET_LINENO(call);
+
+      bool unmanaged = call->isPrimitive(PRIM_TO_UNMANAGED_CLASS);
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+          TypeSymbol* useTS = ts;
+          if (unmanaged) {
+            if (AggregateType* at = toAggregateType(ts->type)) {
+              if (isClass(at)) {
+                UnmanagedClassType* unm = at->getUnmanagedClass();
+                useTS = unm->symbol;
+              }
+            }
+          }
+          // replace the call with a new symexpr pointing to ts
+          call->replace(new SymExpr(useTS));
+        }
+      }
+      // It's tempting to give type constructor calls the same
+      // treatment, but type constructors are so special;
+      // see normalizeCallToTypeConstructor which changes
+      // them to _type_construct_C e.g. and such a function won't
+      // exist for the unmanaged type.
+    }
+  }
 }

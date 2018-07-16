@@ -17,6 +17,7 @@ Initializing Modules:
      LocaleModelHelpFlat
       LocaleModelHelpSetup
        ChapelLocale
+        HaltWrappers
        DefaultRectangular
         DSIUtil
         ChapelArray

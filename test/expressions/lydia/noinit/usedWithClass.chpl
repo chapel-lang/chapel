@@ -4,7 +4,7 @@ class Foo {
 
 }
 
-inline proc _defaultOf(type t) where t == unmanaged Foo {
+inline proc _defaultOf(type t:unmanaged Foo) {
   writeln("I default initialized!");
   return nil:t;
 }

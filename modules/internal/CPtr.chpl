@@ -107,80 +107,112 @@ module CPtr {
   inline proc =(ref a:c_ptr, b:c_ptr) { __primitive("=", a, b); }
 
   pragma "no doc"
+  inline proc =(ref a: c_ptr, b: c_void_ptr) { __primitive("=", a, b); }
+
+  pragma "no doc"
   inline proc =(ref a:c_ptr, b:_nilType) { __primitive("=", a, c_nil); }
 
   pragma "no doc"
-  inline proc _cast(type t, x) where t:c_ptr && x:_nilType {
+  inline proc _cast(type t:c_ptr, x:_nilType) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:c_void_ptr && x:_nilType {
+  inline proc _cast(type t:c_void_ptr, x:_nilType) {
     return c_nil;
   }
 
 
   pragma "no doc"
-  inline proc _cast(type t, x) where t:c_ptr && x.type:c_ptr {
+  inline proc _cast(type t:c_ptr, x:c_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:c_void_ptr && x.type:c_ptr {
+  inline proc _cast(type t:c_void_ptr, x:c_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:c_ptr && x.type:c_void_ptr {
+  inline proc _cast(type t:c_ptr, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:string && x.type:c_void_ptr {
+  inline proc _cast(type t:string, x:c_void_ptr) {
     return __primitive("ref to string", x):string;
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:string && x.type:c_ptr {
+  inline proc _cast(type t:string, x:c_ptr) {
     return __primitive("ref to string", x):string;
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where _to_borrowed(t):object && x.type:c_void_ptr {
+  inline proc _cast(type t:borrowed, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:c_void_ptr && _to_borrowed(x.type):object {
+  inline proc _cast(type t:unmanaged, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where (t:_ddata && x.type: c_ptr &&
-                                      t.eltType == x.eltType) {
+  inline proc _cast(type t:c_void_ptr, x:borrowed) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where (t:_ddata && x.type: c_void_ptr) {
+  inline proc _cast(type t:c_void_ptr, x:unmanaged) {
+    return __primitive("cast", t, x);
+  }
+
+  pragma "no doc"
+  inline proc _cast(type t:_ddata, x:c_ptr) where t.eltType == x.eltType {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x)
-  where (t:c_intptr || t:c_uintptr || t:int(64) || t:uint(64)) &&
-        (x.type:c_void_ptr || x.type:c_ptr) {
+  inline proc _cast(type t:_ddata, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
+
+  pragma "no doc"
+  inline proc _cast(type t:c_intptr, x:c_void_ptr)
+    return __primitive("cast", t, x);
+  pragma "no doc"
+  inline proc _cast(type t:c_uintptr, x:c_void_ptr)
+    return __primitive("cast", t, x);
+  pragma "no doc"
+  inline proc _cast(type t:int(64), x:c_void_ptr) where c_uintptr != int(64)
+    return __primitive("cast", t, x);
+  pragma "no doc"
+  inline proc _cast(type t:uint(64), x:c_void_ptr) where c_uintptr != uint(64)
+    return __primitive("cast", t, x);
+
+  pragma "no doc"
+  inline proc _cast(type t:c_intptr, x:c_ptr)
+    return __primitive("cast", t, x);
+  pragma "no doc"
+  inline proc _cast(type t:c_uintptr, x:c_ptr)
+    return __primitive("cast", t, x);
+  pragma "no doc"
+  inline proc _cast(type t:int(64), x:c_ptr) where c_intptr != int(64)
+    return __primitive("cast", t, x);
+  pragma "no doc"
+  inline proc _cast(type t:uint(64), x:c_ptr) where c_uintptr != int(64)
+    return __primitive("cast", t, x);
+
 
   pragma "compiler generated"
   pragma "last resort"
   pragma "no doc"
-  inline proc _defaultOf(type t) where t == c_void_ptr {
+  inline proc _defaultOf(type t:c_void_ptr) {
       return __primitive("cast", t, nil);
   }
 
   pragma "compiler generated"
   pragma "last resort"
   pragma "no doc"
-  inline proc _defaultOf(type t) where t:c_ptr {
+  inline proc _defaultOf(type t:c_ptr) {
       return __primitive("cast", t, nil);
   }
 
   pragma "compiler generated"
   pragma "last resort"
   pragma "no doc"
-  inline proc _defaultOf(type t) where t == c_fn_ptr {
+  inline proc _defaultOf(type t:c_fn_ptr) {
       return __primitive("cast", t, nil);
   }
 
@@ -384,9 +416,9 @@ module CPtr {
 
   /* Returns true if t is a c_ptr type or c_void_ptr.
    */
-  proc isAnyCPtr(type t) param where t:c_ptr return true;
+  proc isAnyCPtr(type t:c_ptr) param return true;
   pragma "no doc"
-  proc isAnyCPtr(type t) param where t:c_void_ptr return true;
+  proc isAnyCPtr(type t:c_void_ptr) param return true;
   pragma "no doc"
   proc isAnyCPtr(type t) param return false;
 
@@ -400,8 +432,7 @@ module CPtr {
     :arg src: the source memory area to copy from
     :arg n: the number of bytes from src to copy to dest
    */
-  inline proc c_memmove(dest, const src, n: integral)
-  where isAnyCPtr(dest.type) && isAnyCPtr(src.type) {
+  inline proc c_memmove(dest:c_void_ptr, const src:c_void_ptr, n: integral) {
     extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: size_t);
     memmove(dest, src, n.safeCast(size_t));
   }
@@ -416,8 +447,7 @@ module CPtr {
     :arg src: the source memory area to copy from
     :arg n: the number of bytes from src to copy to dest
    */
-  inline proc c_memcpy(dest, const src, n: integral)
-  where isAnyCPtr(dest.type) && isAnyCPtr(src.type) {
+  inline proc c_memcpy(dest:c_void_ptr, const src:c_void_ptr, n: integral) {
     extern proc memcpy (dest: c_void_ptr, const src: c_void_ptr, n: size_t);
     memcpy(dest, src, n.safeCast(size_t));
   }
@@ -431,8 +461,7 @@ module CPtr {
               the first n bytes of s1 are found, respectively, to be less than,
               to match, or be greater than the first n bytes of s2.
    */
-  inline proc c_memcmp(const s1, const s2, n: integral)
-  where isAnyCPtr(s1.type) && isAnyCPtr(s2.type) {
+  inline proc c_memcmp(const s1:c_void_ptr, const s2:c_void_ptr, n: integral) {
     extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: size_t) : c_int;
     return memcmp(s1, s2, n.safeCast(size_t)).safeCast(int);
   }
@@ -448,8 +477,7 @@ module CPtr {
 
     :returns: s
    */
-  inline proc c_memset(s, c:integral, n: integral)
-  where isAnyCPtr(s.type) {
+  inline proc c_memset(s:c_void_ptr, c:integral, n: integral) {
     extern proc memset(s: c_void_ptr, c: c_int, n: size_t) : c_void_ptr;
     memset(s, c.safeCast(c_int), n.safeCast(size_t));
     return s;

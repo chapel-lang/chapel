@@ -2031,7 +2031,7 @@ record ioChar {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioChar) where t == string {
+inline proc _cast(type t:string, x: ioChar) {
   var csc: c_string =  qio_encode_to_string(x.ch);
   // The caller has responsibility for freeing the returned string.
   return new string(csc, needToCopy=false);
@@ -2067,7 +2067,7 @@ record ioNewline {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioNewline) where t == string {
+inline proc _cast(type t:string, x: ioNewline) {
   return "\n";
 }
 
@@ -2097,7 +2097,7 @@ record ioLiteral {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioLiteral) where t == string {
+inline proc _cast(type t:string, x: ioLiteral) {
   return x.val;
 }
 
@@ -2121,7 +2121,7 @@ record ioBits {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioBits) where t == string {
+inline proc _cast(type t:string, x: ioBits) {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
   return ret;
 }
@@ -2169,6 +2169,10 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
  */
 inline proc channel.lock() throws {
   var err:syserr = ENOERR;
+
+  if is_c_nil(_channel_internal) then
+    throw SystemError.fromSyserr(EINVAL, "Operation attempted on an invalid channel");
+
   if locking {
     on this.home {
       err = qio_channel_lock(_channel_internal);
@@ -4313,6 +4317,10 @@ proc channel.atEOF(): bool throws {
 */
 proc channel.close() throws {
   var err:syserr = ENOERR;
+
+  if is_c_nil(_channel_internal) then
+    throw SystemError.fromSyserr(EINVAL, "cannot close invalid channel");
+
   on this.home {
     err = qio_channel_close(locking, _channel_internal);
   }

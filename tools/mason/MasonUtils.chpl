@@ -275,31 +275,41 @@ proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
 }
 
 
-extern "struct stat" record chpl_stat {
-  var st_mtime: off_t;
+extern "struct sys_stat_s" record chpl_stat {
+  var st_mtim: chpl_timespec;
+}
+
+extern "struct timespec" record chpl_timespec {
+  var tv_sec: int;
+  var tv_nsec: int;
 }
 
 proc getLastModified(filename: string) : int {
-  extern proc stat(filename: c_string, ref chpl_stat): c_int;
+  extern proc sys_stat(filename: c_string, ref chpl_stat): c_int;
 
   var file_buf: chpl_stat;
   var file_path = filename.c_str();
 
-  if (stat(file_path, file_buf) == 0) {
-    return file_buf.st_mtime;
+  if (sys_stat(file_path, file_buf) == 0) {
+    return file_buf.st_mtim.tv_sec;
     }
   return -1;
 }
 
 proc projectModified(projectHome, projectName, binLocation) : bool {
   const binaryPath = joinPath(projectHome, "target", binLocation, projectName);
-
+  const tomlPath = joinPath(projectHome, "Mason.toml");
+  
   if isFile(binaryPath) {
+    const binModTime = getLastModified(binaryPath);
     for file in listdir(joinPath(projectHome, "src")) {
       var srcPath = joinPath(projectHome, "src", file);
-      if getLastModified(srcPath) > getLastModified(binaryPath) {
+      if getLastModified(srcPath) > binModTime {
         return true;
       }
+    }
+    if getLastModified(tomlPath) > binModTime {
+      return true;
     }
     return false;
   }

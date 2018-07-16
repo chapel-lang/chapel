@@ -168,4 +168,4 @@ log_info "Current loaded modules:"
 module list
 
 log_info "Chapel environment:"
-$CHPL_HOME/util/printchplenv
+$CHPL_HOME/util/printchplenv --all --no-tidy

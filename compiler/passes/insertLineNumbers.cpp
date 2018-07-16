@@ -158,6 +158,7 @@ insertLineNumber(CallExpr* call) {
     }
 
   } else if (fn->hasFlag(FLAG_EXTERN)                           ||
+             fn->hasFlag(FLAG_LINE_NUMBER_OK)                   ||
              (fn->hasFlag(FLAG_EXPORT) &&
               !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO))         ||
              ftableMap.count(fn)                                ||
@@ -310,7 +311,8 @@ void insertLineNumbers() {
   // line number and filename arguments to these functions, and add
   // them to the queue
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO)) {
+    if (fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO) &&
+        !fn->hasFlag(FLAG_LINE_NUMBER_OK)) {
       if (!filenameMap.get(fn)) {  // avoid duplicates
         SET_LINENO(fn);
         newLine(fn);

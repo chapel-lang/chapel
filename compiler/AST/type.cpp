@@ -378,6 +378,30 @@ void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
+bool EnumType::isAbstract() {
+  for_enums(constant, this) {
+    if (constant->init) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool EnumType::isConcrete() {
+  // if the first constant has an initializer, it's concrete;
+  // otherwise, it's not.  This loop with a guaranteed return is a
+  // lazy way of getting that first constant.
+  for_enums(constant, this) {
+    if (constant->init) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
+
 PrimitiveType* EnumType::getIntegerType() {
   INT_ASSERT(integerType);
   return integerType;
@@ -625,11 +649,24 @@ void initPrimitiveTypes() {
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
 
-  dtIntegral = createInternalType ("integral", "integral");
-  dtIntegral->symbol->addFlag(FLAG_GENERIC);
+  dtAnyBool = createInternalType("chpl_anybool", "bool");
+  dtAnyBool->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
+  dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyImag = createInternalType("chpl_anyimag", "imag");
+  dtAnyImag->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyReal = createInternalType("chpl_anyreal", "real");
+  dtAnyReal->symbol->addFlag(FLAG_GENERIC);
+
+  // could also be called dtAnyIntegral
+  dtIntegral = createInternalType ("integral", "integral");
+  dtIntegral->symbol->addFlag(FLAG_GENERIC);
 
   dtNumeric = createInternalType ("numeric", "numeric");
   dtNumeric->symbol->addFlag(FLAG_GENERIC);
@@ -657,9 +694,6 @@ void initPrimitiveTypes() {
   dtModuleToken = createInternalType("tmodule=", "tmodule=");
 
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
-
-  dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
-  dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {

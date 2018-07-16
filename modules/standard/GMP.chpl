@@ -111,14 +111,14 @@ module GMP {
 
   require "GMPHelper/chplgmp.h";
 
-  export proc chpl_gmp_alloc(size:size_t) : c_void_ptr {
+  proc chpl_gmp_alloc(size:size_t) : c_void_ptr {
     pragma "insert line file info"
     extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
     extern const CHPL_RT_MD_GMP:chpl_mem_descInt_t;
     return chpl_mem_alloc(size, CHPL_RT_MD_GMP);
   }
 
-  export proc chpl_gmp_realloc(ptr:c_void_ptr,
+  proc chpl_gmp_realloc(ptr:c_void_ptr,
                                old_size:size_t, new_size:size_t) : c_void_ptr {
     pragma "insert line file info"
     extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
@@ -126,7 +126,7 @@ module GMP {
     return chpl_mem_realloc(ptr, new_size, CHPL_RT_MD_GMP);
   }
 
-  export proc chpl_gmp_free(ptr:c_void_ptr, old_size:size_t) {
+  proc chpl_gmp_free(ptr:c_void_ptr, old_size:size_t) {
     pragma "insert line file info"
       extern proc chpl_mem_free(ptr:c_void_ptr) : void;
     chpl_mem_free(ptr);
@@ -1114,7 +1114,7 @@ module GMP {
 
 
   /* Get an MPZ value stored on another locale */
-  export proc chpl_gmp_get_mpz(ref ret: mpz_t,
+  proc chpl_gmp_get_mpz(ref ret: mpz_t,
                         src_locale: int,
                         in from: __mpz_struct,
                         copy_allocated:bool = false) {

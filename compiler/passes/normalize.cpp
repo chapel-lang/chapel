@@ -1515,6 +1515,20 @@ static void normalizeCallToConstructor(CallExpr* call) {
           if (subCall->partialTag == true) {
             fixPrimNew(call);
           }
+        } else if (subCall->partialTag == true && subCall->methodTag == true) {
+          // This pattern can happen for an aggregate like:
+          //   class C {
+          //     type t = A;
+          //     var x : t;
+          //     proc init(i:int) {
+          //       x = new t(i); // relevant 'new'
+          //     }
+          //   }
+          //
+          // Transforms "new (call ( call ('t' _mt this) args ) )" into:
+          //   new ( call ('t' _mt this) args )
+          //
+          fixPrimNew(call);
         }
       }
     }
@@ -2405,6 +2419,16 @@ static void normVarTypeInference(DefExpr* defExpr) {
         // Add a call to postinit() if present
         insertPostInit(var, argExpr);
 
+        // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
+        // test for --force-initializers, but PR #10171 was merged first and
+        // somehow fixed that test. The test in question was:
+        //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+        if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
+          if (ne->name == astr_chpl_manager) {
+            ne->remove();
+          }
+        }
+
       } else {
         defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
       }
@@ -2547,6 +2571,16 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
       // Add a call to postinit() if present
       insertPostInit(var, argExpr);
+
+      // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
+      // test for --force-initializers, but PR #10171 was merged first and
+      // somehow fixed that test. The test in question was:
+      //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+      if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
+        if (ne->name == astr_chpl_manager) {
+          ne->remove();
+        }
+      }
     }
 
   } else if (isNewExpr(initExpr) == true) {
@@ -2576,6 +2610,16 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       // Add a call to postinit() if present
       insertPostInit(initExprTemp, argExpr);
 
+      // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
+      // test for --force-initializers, but PR #10171 was merged first and
+      // somehow fixed that test. The test in question was:
+      //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+      if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
+        if (ne->name == astr_chpl_manager) {
+          ne->remove();
+        }
+      }
+
       initExprTemp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
       argExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExprTemp, typeExpr));
@@ -2600,21 +2644,30 @@ static bool isNewExpr(Expr* expr) {
 }
 
 static AggregateType* typeForNewExpr(CallExpr* newExpr) {
-  AggregateType* retval = NULL;
 
   if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
+
+    // Avoid normalize-time type inference for managed new
+    for_actuals(actual, constructor) {
+      if (NamedExpr* ne = toNamedExpr(actual))
+        if (ne->name == astr_chpl_manager)
+          if (SymExpr* se = toSymExpr(ne->actual))
+            if (isTypeSymbol(se->symbol()))
+              return NULL;
+    }
+
     if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
       if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
         if (AggregateType* type = toAggregateType(sym->type)) {
           if (isClass(type) == true || isRecord(type) == true) {
-            retval = type;
+            return type;
           }
         }
       }
     }
   }
 
-  return retval;
+  return NULL;
 }
 
 // Internal and Standard modules always honor no-init
@@ -3417,7 +3470,7 @@ static bool isGenericActual(Expr* expr) {
     return true;
   if (SymExpr* se = toSymExpr(expr))
     if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
-      if (AggregateType* at = toAggregateType(ts->type))
+      if (AggregateType* at = toAggregateType(canonicalClassType(ts->type)))
         if (!at->needsConstructor())
           // Ignore aggregate types with old-style constructors since
           // it computes genericity in resolution (vs in scope resolve)
@@ -3621,24 +3674,58 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   } else if (call->isNamed("*")) {
     // it happens to be that 1st actual == size so that will be checked below
     addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried));
-  } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
-    if (CallExpr* subCall = toCallExpr(call->get(1))) {
-      if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {
-        if (AggregateType* at = toAggregateType(subBase->symbol()->type)) {
-          if (isClass(at)) {
-            // TODO -- should this move to scope resolve?
+  } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
 
-            // Replace PRIM_TO_UNMANAGED( MyClass( Def ?t ) )
-            // with
-            // unmanaged MyClass ( Def ?t )
 
-            Type* unm = at->getUnmanagedClass();
-            subCall->baseExpr->replace(new SymExpr(unm->symbol));
-            call->replace(subCall->remove());
-            call = subCall;
-          }
-        }
-      }
+    bool borrowed = call->isPrimitive(PRIM_TO_BORROWED_CLASS);
+    Type* parentType = borrowed?dtBorrowed:dtUnmanaged;
+
+    // Check that whatever it has right borrow / unmanaged nature
+    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_SUBTYPE,
+                                              parentType->symbol, queried));
+
+    Type* theType = NULL;
+    // Match on an inner call to a TypeSymbol
+    CallExpr* subCall = toCallExpr(call->get(1));
+    if (subCall != NULL)
+      if (SymExpr* subBase = toSymExpr(subCall->baseExpr))
+        if (TypeSymbol* ts = toTypeSymbol(subBase->symbol()))
+          theType = ts->type;
+
+    if (theType == NULL)
+      // pattern of call to TypeSymbol not found, stop here
+      return;
+
+    // Only work with theType being unmanaged or class type
+    // e.g. if it's a record, we just ignore the PRIM_TO_...
+    if (borrowed || !isClassLike(theType)) {
+      // For nested calls in PRIM_TO_BORROWED_CLASS,
+      // proceed as if the PRIM_TO_BORROWED_CLASS wasn't
+      // there. That's because the borrowed class is the
+      // 'canonical' class representation used in the compiler.
+
+      // This branch also applies to say `unmanaged MyRecord(?t)`
+      call = toCallExpr(call->get(1));
+
+    } else {
+      // For nested calls in PRIM_TO_UNMANAGED_CLASS, where the
+      // called type is a class or an unmanaged class.
+      Type* t = canonicalClassType(theType);
+      AggregateType* at = toAggregateType(t);
+      INT_ASSERT(at);
+
+      // Replace PRIM_TO_UNMANAGED( MyClass( Def ?t ) )
+      // with
+      // unmanaged MyClass ( Def ?t )
+
+      // This can't be applied generally in scopeResolve b/c
+      // of the way type constructors are currently normalized.
+
+      Type* unm = at->getUnmanagedClass();
+      subCall->baseExpr->replace(new SymExpr(unm->symbol));
+      call->replace(subCall->remove());
+      call = subCall;
     }
   }
 

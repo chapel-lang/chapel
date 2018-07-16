@@ -57,7 +57,7 @@
 #include <vector>
 
 // function prototypes
-static bool compareSymbol(void* v1, void* v2);
+static bool compareSymbol(const void* v1, const void* v2);
 
 // Global so that we don't have to pass around
 // to all of the codegen() routines
@@ -272,7 +272,7 @@ genClassIDs(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
 
 struct compareSymbolFunctor {
   // This is really operator less-than
-  bool operator() (Symbol* a, Symbol* b) {
+  bool operator() (const Symbol* a, const Symbol* b) const {
     return compareSymbol(a, b);
   }
 };
@@ -892,7 +892,7 @@ genClassNames(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
 
 
 static bool
-compareSymbol(void* v1, void* v2) {
+compareSymbol(const void* v1, const void* v2) {
   Symbol* s1 = (Symbol*)v1;
   Symbol* s2 = (Symbol*)v2;
   ModuleSymbol* m1 = s1->getModule();
@@ -1108,7 +1108,9 @@ static void codegen_library_header(std::vector<FnSymbol*> functions) {
       // Print out the module initialization function headers and the exported
       // functions
       for_vector(FnSymbol, fn, functions) {
-        if (fn->hasFlag(FLAG_EXPORT)) {
+        if (fn->hasFlag(FLAG_EXPORT) &&
+            fn->getModule()->modTag != MOD_INTERNAL &&
+            fn->hasFlag(FLAG_GEN_MAIN_FUNC) == false) {
           fn->codegenPrototype();
         }
       }
@@ -2191,9 +2193,9 @@ static void setupDefaultFilenames() {
       if (strlen(lastSlash) >= sizeof(executableFilename) - 3) {
         INT_FATAL("input filename exceeds executable filename buffer size");
       }
-      strncpy(executableFilename, "lib", 3);
-      strncat(executableFilename, lastSlash, sizeof(executableFilename)-4);
-      executableFilename[sizeof(executableFilename)-1] = '\0';
+      strcpy(executableFilename, "lib");
+      strncat(executableFilename, lastSlash,
+              sizeof(executableFilename)-strlen(executableFilename)-1);
 
     } else {
       // copy from that slash onwards into the executableFilename,
@@ -2218,7 +2220,8 @@ static void setupDefaultFilenames() {
   // If we're in library mode and the executable name was set but the header
   // name wasn't, use the executable name for the header name as well
   if (fLibraryCompile && libmodeHeadername[0] == '\0') {
-    strncpy(libmodeHeadername, executableFilename, sizeof(executableFilename));
+    strncpy(libmodeHeadername, executableFilename, sizeof(libmodeHeadername)-1);
+    libmodeHeadername[sizeof(libmodeHeadername)-1] = '\0';
   }
 }
 
@@ -2232,6 +2235,9 @@ void codegen(void) {
     // Check them here.
     if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
   }
+
+  // Prepare primitives for codegen
+  CallExpr::registerPrimitivesForCodegen();
 
   setupDefaultFilenames();
 
