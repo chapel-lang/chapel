@@ -859,6 +859,18 @@ module ChapelArray {
     }
   }
 
+  // Helper function used to ensure a returned array matches the declared
+  // return type when the declared return type specifies a particular element
+  // type but not the domain
+  proc chpl__checkEltTypeMatch(a, type b) {
+    if (a.eltType != b) {
+      compilerError("array element type mismatch in return from ",
+                    a.eltType: string,
+                    " to ",
+                    b: string);
+    }
+  }
+
   //
   // Support for distributions
   //

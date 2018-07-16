@@ -1,2 +1,2 @@
 returnArbitraryBadEltType.chpl:1: In function 'inc':
-returnArbitraryBadEltType.chpl:2: error: type mismatch in assignment from real(64) to int(64)
+returnArbitraryBadEltType.chpl:2: error: array element type mismatch in return from real(64) to int(64)

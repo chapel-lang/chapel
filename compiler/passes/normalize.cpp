@@ -1349,6 +1349,7 @@ static void insertDomainCheck(Expr* actualRet, CallExpr* retVar,
 // Validates the declared element type, if it exists
 static void insertElementTypeCheck(Expr* declaredRet, Expr* actualRet,
                                    CallExpr* retVar) {
+  // See note in insertDomainCheck about the unref call
   VarSymbol* unrefTemp = newTemp();
   retVar->insertBefore(new DefExpr(unrefTemp));
   CallExpr* makeArray = new CallExpr(PRIM_MOVE, unrefTemp,
@@ -1356,58 +1357,10 @@ static void insertElementTypeCheck(Expr* declaredRet, Expr* actualRet,
                                                   actualRet->copy()));
   retVar->insertBefore(makeArray);
 
-  VarSymbol* actualEltType = newTemp();
-  actualEltType->addFlag(FLAG_MAYBE_TYPE);
-  actualEltType->addFlag(FLAG_MAYBE_PARAM);
-  retVar->insertBefore(new DefExpr(actualEltType));
-  CallExpr* exprEltType = new CallExpr("eltType", gMethodToken, unrefTemp);
-  retVar->insertBefore(new CallExpr(PRIM_MOVE, actualEltType, exprEltType));
-
-  CallExpr* checkEltType = new CallExpr("==", actualEltType,
+  CallExpr* checkEltType = new CallExpr("chpl__checkEltTypeMatch",
+                                        unrefTemp,
                                         declaredRet->copy());
-
-  VarSymbol* cond = newTemp();
-  cond->addFlag(FLAG_MAYBE_PARAM);
-
-  retVar->insertBefore(new DefExpr(cond));
-
-  VarSymbol* checkVar = newTemp();
-  checkVar->addFlag(FLAG_MAYBE_PARAM);
-  retVar->insertBefore(new DefExpr(checkVar));
-  retVar->insertBefore(new CallExpr(PRIM_MOVE, checkVar, checkEltType));
-  retVar->insertBefore(new CallExpr(PRIM_MOVE, cond,
-                                    new CallExpr("_cond_test", checkVar)));
-
-  VarSymbol* stringVar = newTemp();
-  stringVar->addFlag(FLAG_MAYBE_PARAM);
-  BlockStmt* failureMode = new BlockStmt(new DefExpr(stringVar));
-  CallExpr* actualEltTypeString = new CallExpr(PRIM_MOVE,
-                                               stringVar,
-                                               new CallExpr("_cast",
-                                                            dtString->symbol,
-                                                            actualEltType));
-  failureMode->insertAtTail(actualEltTypeString);
-  VarSymbol* retStringVar = newTemp();
-  retStringVar->addFlag(FLAG_MAYBE_PARAM);
-  failureMode->insertAtTail(new DefExpr(retStringVar));
-  CallExpr* retEltTypeString = new CallExpr(PRIM_MOVE,
-                                            retStringVar,
-                                            new CallExpr("_cast",
-                                                         dtString->symbol,
-                                                         declaredRet->copy()));
-
-  failureMode->insertAtTail(retEltTypeString);
-  CallExpr* compError = new CallExpr("compilerError",
-                                     new_StringSymbol("type mismatch in assignment from "),
-                                     stringVar,
-                                     new_StringSymbol(" to "),
-                                     retStringVar,
-                                     new_IntSymbol(0, INT_SIZE_64));
-  failureMode->insertAtTail(compError);
-
-  retVar->insertBefore(new CondStmt(new SymExpr(cond),
-                                    new BlockStmt(new CallExpr(PRIM_NOOP)),
-                                    failureMode));
+  retVar->insertBefore(checkEltType);
 }
 
 static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
