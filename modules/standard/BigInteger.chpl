@@ -2214,13 +2214,22 @@ module BigInteger {
   // divexact
 
 /*
+This function computes the quotient when a bigint variable *n* is divided by a
+bigint variable *d*, i.e. it calculates, ``q = n/d``
+where, *q*: quotient, *n*: dividend, *d*: divisor.
 
-Computes the quotients when corresponding elements of a bigint array *n* are divided by corresponding elements of a bigint array *d*, and stores the quotient in another bigint array preceding the function call for whichever elements of the array are exactly divisible, with remainder zero.
+The result is stored in ``this``, that is, the method receiver. It works faster
+than regular division, when exact division is known to occur.
+It may produce incorrect results,
+when *n* is not divisible by *d*.
 
-* Arguments:
-    * const ref n: bigint: a bigint array
-    * const ref d: bigint: another bigint array
+:arg n: a bigint variable
 
+:type n: bigint
+
+:arg d: a bigint variable
+
+:type d: bigint
 */
 
 
