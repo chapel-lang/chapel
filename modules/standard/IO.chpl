@@ -1529,9 +1529,7 @@ proc _modestring(mode:iomode) {
     when iomode.rw do return _rw;
     when iomode.cw do return _cw;
     when iomode.cwr do return _cwr;
-    otherwise {
-      HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
-    }
+    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
   }
 }
 
