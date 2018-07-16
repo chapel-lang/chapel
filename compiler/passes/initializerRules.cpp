@@ -1443,6 +1443,10 @@ void preNormalizePostInit(AggregateType* at) {
     }
   }
 
+  if (isRecord(at) && at->hasPostInitializer()) {
+    at->symbol->addFlag(FLAG_NOT_POD);
+  }
+
   if (errors > 0) {
     USR_STOP();
   }
