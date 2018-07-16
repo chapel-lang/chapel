@@ -143,8 +143,10 @@ proc getPCDeps(exDeps: unmanaged Toml) {
   
   for (name, vers) in zip(exDeps.D, exDeps.A) {
     try! {
-      const pkgInfo = getPkgInfo(name, vers.s);
-      exDepTree[name] = pkgInfo;
+      if pkgConfigExists() {
+        const pkgInfo = getPkgInfo(name, vers.s);
+        exDepTree[name] = pkgInfo;
+      }
     }
     catch e: MasonError {
       writeln(e.message());
