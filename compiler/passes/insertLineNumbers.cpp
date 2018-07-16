@@ -130,8 +130,10 @@ insertLineNumber(CallExpr* call) {
 
   FnSymbol*     fn   = call->getFunction();
   ModuleSymbol* mod  = fn->getModule();
-  ArgSymbol*    file = filenameMap.get(fn);
-  ArgSymbol*    line = linenoMap.get(fn);
+  ArgSymbol*    fileArg = filenameMap.get(fn);
+  ArgSymbol*    lineArg = linenoMap.get(fn);
+  Symbol*       file    = NULL;
+  Symbol*       line    = NULL;
 
   if (strcmp(fn->name, "chpl__heapAllocateGlobals") == 0 ||
       strcmp(fn->name, "chpl__initStringLiterals")  == 0 ||
@@ -161,32 +163,16 @@ insertLineNumber(CallExpr* call) {
     preferASTLine = true; // developer mode generally uses AST line numbers
                           // FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO overrides
 
-  if (call->isPrimitive(PRIM_GET_USER_FILE) ||
-      call->isPrimitive(PRIM_GET_USER_LINE)) {
-
-    INT_ASSERT(preferASTLine == false);
-
-    // add both arguments or none
-    if (!file) {
-      line = newLine(fn);
-      file = newFile(fn);
-    }
-
-    if (call->isPrimitive(PRIM_GET_USER_FILE)) {
-      call->replace(new SymExpr(file));
-    } else if (call->isPrimitive(PRIM_GET_USER_LINE)) {
-      call->replace(new SymExpr(line));
-    }
-
-  } else if (preferASTLine) {
+  if (preferASTLine) {
     // This branch handles the case in which line number
     // should just be whatever is in the AST node
+    // Sets file and line based on call's AST node
 
     if (call->isResolved() &&
         call->resolvedFunction()->hasFlag(FLAG_COMMAND_LINE_SETTING)) {
       // Make up pretend line numbers for errors with command line
       // configuration variables.
-      call->insertAtTail(new_IntSymbol(0));
+      line = new_IntSymbol(0);
 
       FnSymbol* fn = call->resolvedFunction();
 
@@ -205,27 +191,43 @@ insertLineNumber(CallExpr* call) {
 
       int         filenameIdx    = getFilenameLookupPosition(cmdLineSetting);
 
-      call->insertAtTail(new_IntSymbol(filenameIdx, INT_SIZE_32));
+      file = new_IntSymbol(filenameIdx, INT_SIZE_32);
 
     } else {
       // Apply the line number from the call AST node
-      call->insertAtTail(new_IntSymbol(call->linenum()));
+      line = new_IntSymbol(call->linenum());
 
       int filenameIdx = getFilenameLookupPosition(call->fname());
 
-      call->insertAtTail(new_IntSymbol(filenameIdx, INT_SIZE_32));
+      file = new_IntSymbol(filenameIdx, INT_SIZE_32);
+    }
+  } else {
+    // This branch handles the case in which we should be using
+    // file/line arguments in the enclosing function.
+
+    // Create them if they don't exist yet.
+    if (lineArg == NULL)
+      lineArg = newLine(fn);
+    if (fileArg == NULL)
+      fileArg = newFile(fn);
+
+    line = lineArg;
+    file = fileArg;
+  }
+
+  if (call->isPrimitive(PRIM_GET_USER_FILE) ||
+      call->isPrimitive(PRIM_GET_USER_LINE)) {
+
+    // Replace these primitives with whatever line/file we chose
+    // (probably an argument)
+    if (call->isPrimitive(PRIM_GET_USER_FILE)) {
+      call->replace(new SymExpr(file));
+    } else if (call->isPrimitive(PRIM_GET_USER_LINE)) {
+      call->replace(new SymExpr(line));
     }
 
-  } else if (file) {
-    // Use existing line number argument
-    call->insertAtTail(line);
-    call->insertAtTail(file);
-
   } else {
-    // Add new line number argument
-    line = newLine(fn);
-    file = newFile(fn);
-
+    // add line/file as arguments to the call
     call->insertAtTail(line);
     call->insertAtTail(file);
   }
