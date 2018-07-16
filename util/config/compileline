@@ -59,6 +59,9 @@ def parseArguments():
                       dest="actions", action='append_const',
                       help="print a C++ compiler invocation that can use "
                            "the Chapel runtime")
+    parser.add_option("--compiler", const="compiler",
+                      dest="actions", action='append_const',
+                      help="print the C compiler used")
     parser.add_option("--cflags", const="cflags",
                       dest="actions", action='append_const',
                       help="print C compilation flags that Chapel would use")
@@ -69,10 +72,16 @@ def parseArguments():
                       dest="actions", action='append_const',
                       help="Print -D and -I compilation flags to include "
                            "the Chapel runtime")
+    parser.add_option("--linkershared", const="linkershared",
+                      dest="actions", action='append_const',
+                      help="print out the command for linking with shared")
     parser.add_option("--libraries", const="libraries",
                       dest="actions", action='append_const',
                       help="print out -L and -l options to link with "
                            "the Chapel runtime")
+    parser.add_option("--linker", const="linker",
+                      dest="actions", action='append_const',
+                      help="print the linker used")
     parser.add_option("--main.o", const="maino",
                       dest="actions", action='append_const',
                       help="print out the path to the main.o file")
@@ -181,6 +190,8 @@ def main():
             mysystem(make_helper, "printcompileline")
         elif a == "compilecxx":
             mysystem(make_helper, "printcxxcompileline")
+        elif a == "compiler":
+            mysystem(make_helper, "printccompiler")
         elif a == "cflags":
             mysystem(make_helper, "printcflags")
         elif a == "cxxflags":
@@ -189,6 +200,10 @@ def main():
             mysystem(make_helper, "printincludesanddefines")
         elif a == "libraries":
             mysystem(make_helper, "printlibraries")
+        elif a == "linker":
+            mysystem(make_helper, "printlinker")
+        elif a == "linkershared":
+            mysystem(make_helper, "printlinkershared")
         elif a == "maino":
             mysystem(make_helper, "printmaino")
         elif a == "llvminstalldir":
