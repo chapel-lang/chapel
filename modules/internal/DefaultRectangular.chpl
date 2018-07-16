@@ -106,9 +106,9 @@ module DefaultRectangular {
       this.dist = dist;
     }
 
-    proc intIdxType type {
+    /* proc intIdxType type {
       return chpl__idxTypeToIntIdxType(idxType);
-    }
+    } */
 
     override proc dsiMyDist() {
       return dist;
@@ -503,13 +503,13 @@ module DefaultRectangular {
     proc dsiDim(param d : int)
       return ranges(d);
 
-    proc dsiNumIndices {
+    /* proc dsiNumIndices {
       var sum = 1:intIdxType;
       for param i in 1..rank do
         sum *= ranges(i).length;
       return sum;
       // WANT: return * reduce (this(1..rank).length);
-    }
+    } */
 
     proc dsiLow {
       if rank == 1 {
@@ -647,7 +647,7 @@ module DefaultRectangular {
   }
 
   // helper routines for converting tuples of integers into tuple indices
-  
+
   inline proc chpl__intToIdx(type idxType, i: integral, j ...) {
     const first = chpl__intToIdx(idxType, i);
     const rest = chpl__intToIdx(idxType, (...j));

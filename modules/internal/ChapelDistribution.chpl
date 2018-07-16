@@ -390,6 +390,23 @@ module ChapelDistribution {
       compilerError("Cannot remove indices from a rectangular domain");
       return 0;
     }
+
+    proc dsiNumIndices {
+      var sum = 1:intIdxType;
+      for param i in 1..rank do
+        sum *= this.dsiDim(i).length;
+      return sum;
+      // WANT: return * reduce (this(1..rank).length);
+    }
+
+    proc intIdxType type {
+      return chpl__idxTypeToIntIdxType(idxType);
+    }
+
+    proc dsiDim(i){
+      halt("Cannot invoke dsiDim on " + (this.type : string) + " instantiation");
+      return 1..0; // dummy
+    }
   }
 
   pragma "use default init"
