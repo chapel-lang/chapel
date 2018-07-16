@@ -36,5 +36,5 @@ git checkout -b $GITHUB_USER-$GITHUB_BRANCH
 git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
-perf_args="${perf_args} -numtrials 5 -startdate $START_DATE"
+perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
 $CWD/nightly -cron ${perf_args} ${nightly_args}

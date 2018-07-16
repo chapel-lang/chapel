@@ -3,7 +3,7 @@
 testname=$1
 outfile=$2
 
-grep "lineno-memLeaks.chpl:2" $outfile
+grep "lineno-memLeaks.chpl:2" $outfile > /dev/null
 if [ $? -eq 0 ]
 then
   echo CORRECT LINENO IN MEMLEAKS > $outfile.2
