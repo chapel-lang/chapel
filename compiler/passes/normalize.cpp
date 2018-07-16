@@ -1305,6 +1305,7 @@ static bool hasGenericArrayReturn(FnSymbol* fn) {
   if (returnsArray(fn)) {
     BlockStmt* typeExpr = fn->retExprType;
 
+    // returnsArray ensured this was a call to "chpl__buildArrayRuntimeType"
     CallExpr* call = toCallExpr(typeExpr->body.tail);
     int nArgs = call->numActuals();
     Expr* domExpr = call->get(1);
