@@ -150,7 +150,6 @@ insertLineNumber(CallExpr* call) {
       file = newFile(fn);
     }
 
-    //
     if (call->isPrimitive(PRIM_GET_USER_FILE)) {
       call->replace(new SymExpr(file));
     } else if (call->isPrimitive(PRIM_GET_USER_LINE)) {
@@ -158,14 +157,16 @@ insertLineNumber(CallExpr* call) {
     }
 
   } else if (fn->hasFlag(FLAG_EXTERN)                           ||
-             fn->hasFlag(FLAG_LINE_NUMBER_OK)                   ||
              (fn->hasFlag(FLAG_EXPORT) &&
               !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO))         ||
              ftableMap.count(fn)                                ||
-             (mod->modTag == MOD_USER               &&
+             ((mod->modTag == MOD_USER || fn->hasFlag(FLAG_LINE_NUMBER_OK)) &&
               !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
               !fn->hasFlag(FLAG_INLINE)) ||
              (developer && !fn->hasFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO))) {
+    // This branch handles the case in which line number
+    // should just be whatever is in the AST node
+
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call
     // or the call is via the ftable
