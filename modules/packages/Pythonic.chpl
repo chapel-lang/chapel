@@ -51,13 +51,13 @@ module Pythonic {
 
   iter enumerate(iterable, start=0) {
     for (x, i) in zip(iterable, start..) do
-      yield (x,i);
+      yield (i,x);
   }
 
   pragma "no doc"
   iter enumerate(param tag: iterKind, iterable, start=1)
    where tag == iterKind.standalone {
     forall (x, i) in zip(iterable, start..) do
-      yield (x,i);
+      yield (i,x);
   }
 }
