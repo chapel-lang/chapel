@@ -98,6 +98,7 @@ module ChapelUtil {
   }
   
   pragma "no default functions"
+  pragma "use default init"
   extern record chpl_main_argument {
     var argc: int(64);
     var argv: _ddata(string);
@@ -107,6 +108,8 @@ module ChapelUtil {
   proc =(ref lhs:chpl_main_argument, rhs:chpl_main_argument) {
     __primitive("=", lhs, rhs);
   }
+
+  proc chpl__initCopy(x:chpl_main_argument) return x;
 
   proc chpl_convert_args(arg: chpl_main_argument) {
     var local_arg = arg;
