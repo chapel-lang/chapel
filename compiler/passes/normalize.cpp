@@ -1384,7 +1384,7 @@ static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
     insertElementTypeCheck(retEltExpr, retExpr, ret);
   }
 
-  // Do something about coercion
+  // TODO: Do something about coercion
 
   ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
 }
