@@ -1108,7 +1108,9 @@ static void codegen_library_header(std::vector<FnSymbol*> functions) {
       // Print out the module initialization function headers and the exported
       // functions
       for_vector(FnSymbol, fn, functions) {
-        if (fn->hasFlag(FLAG_EXPORT)) {
+        if (fn->hasFlag(FLAG_EXPORT) &&
+            fn->getModule()->modTag != MOD_INTERNAL &&
+            fn->hasFlag(FLAG_GEN_MAIN_FUNC) == false) {
           fn->codegenPrototype();
         }
       }
