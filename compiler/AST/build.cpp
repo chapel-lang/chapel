@@ -2194,7 +2194,8 @@ FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr) {
   }
 
   // Handle non-trivial param names that need to be resolved
-  if (paramCNameExpr && cname[0] == '\0') {
+  // the check for dtString->symbol avoids this block under chpldoc
+  if (paramCNameExpr && cname[0] == '\0' && dtString->symbol != NULL) {
     DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
                                       astr_chpl_cname,
                                       new SymExpr(dtString->symbol),
