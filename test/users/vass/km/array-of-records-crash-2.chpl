@@ -7,7 +7,6 @@ record vertex_struct {
 
   proc init() { }
 
-  // constructor
   proc init(nd: domain(1)) {
     this.nd = nd;
     vlock$ = true;
