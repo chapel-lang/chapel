@@ -2065,8 +2065,6 @@ module Random {
       proc init(type eltType = real(64),
                 seed: int(64) = SeedGenerator.oddCurrentTime,
                 param parSafe: bool = true) {
-        use ChapelHaltWrappers;
-
         this.eltType = eltType;
 
         // The mod operation is written in these steps in order
@@ -2078,7 +2076,7 @@ module Random {
         var useed = seed:uint(64);
         var mod:uint(64);
         if useed % 2 == 0 then
-          initHalt("NPBRandomStream seed must be an odd integer");
+          HaltWrappers.initHalt("NPBRandomStream seed must be an odd integer");
         // Adjust seed to be between 0 and 2**46.
         mod = useed & two_46_mask;
         this.seed = mod:int(64);
@@ -2086,7 +2084,7 @@ module Random {
         this.complete();
 
         if this.seed % 2 == 0 || this.seed < 1 || this.seed > two_46:int(64) then
-          initHalt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
+          HaltWrappers.initHalt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
 
         NPBRandomStreamPrivate_cursor = seed;
         NPBRandomStreamPrivate_count = 1;

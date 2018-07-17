@@ -1500,7 +1500,7 @@ DefExpr* InitNormalize::firstField(FnSymbol* fn) const {
   DefExpr*       retval = toDefExpr(at->fields.head);
 
   // Skip the pseudo-field "super"
-  if (at->isClass() == true) {
+  if (at->isClass() == true && at->symbol->hasFlag(FLAG_NO_OBJECT) == false) {
 
     if (at->isGeneric() == true) {
       AggregateType* pt = toAggregateType(retval->sym->type);

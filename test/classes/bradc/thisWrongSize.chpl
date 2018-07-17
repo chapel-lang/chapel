@@ -4,7 +4,9 @@ class C {
   var dom: domain(1) = {1..2};
   var data: [dom] D(idxtype);
 
-  proc C(type idxtype) {
+  proc init(type idxtype) {
+    this.idxtype = idxtype;
+    this.complete();
     for i in dom do
       data(i) = new D(idxtype);
   }

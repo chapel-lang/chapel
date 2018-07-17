@@ -3,7 +3,7 @@ class myLocale {
   proc name return chpl_name() : string;
 
   proc chpl_name() : string {
-    _throwPVFCError();
+    HaltWrappers.pureVirtualMethodHalt();
     return "";
   }
 

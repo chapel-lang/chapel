@@ -5653,6 +5653,14 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
         call->convertToNoop();
 
         resolveCallAndCallee(callInit);
+
+        if (AggregateType* at = toAggregateType(callLhs->getValType())) {
+          if (isRecord(at) && at->hasPostInitializer()) {
+            CallExpr* postinit = new CallExpr("postinit", gMethodToken, callLhs->copy());
+            call->insertBefore(postinit);
+            resolveCallAndCallee(postinit);
+          }
+        }
       }
     }
 

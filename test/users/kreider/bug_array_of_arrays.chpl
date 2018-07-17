@@ -5,7 +5,9 @@ class tst {
   param ndim : int;
   var Ldata : domain(rank=1);
 
-  proc tst(nelt : int, type dataType, param ndim) {
+  proc init(nelt : int, type dataType, param ndim) {
+    this.dataType = dataType;
+    this.ndim = ndim;
     Ldata = 1..nelt;
   }
 
