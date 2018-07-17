@@ -209,7 +209,17 @@ def main():
 def get_chpl_misc(opts, args, build_env):
     """Miscellaneous chplenv-related paths, settings, and options
 
-    TODO: complete dox
+    :type opts: optparse.Values
+    :arg opts: Options parsed from command line
+
+    :type args: list
+    :arg args: Additional command line parameters, not found in opts
+
+    :type build_env: dict
+    :arg build_env: Dictionary of key/value pairs to set as the environment.
+
+    :rtype dict
+    :returns: Miscellaneous chplenv-related paths, settings, and options
     """
 
     # full path to CHPL_HOME
