@@ -95,6 +95,9 @@ void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
   if (fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
     AggregateType* at = toAggregateType(fn->_this->type);
     INT_ASSERT(at->typeConstructor != NULL);
+
+    if (at->typeConstructor->isResolved()) return;
+
     CallExpr* typeConstructorCall = new CallExpr(at->typeConstructor);
 
     for_formals(formal, fn) {

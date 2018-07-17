@@ -242,19 +242,19 @@ module ChapelLocale {
     // concrete classes.
     pragma "no doc"
     proc chpl_id() : int {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return -1;
     }
 
     pragma "no doc"
     proc chpl_localeid() : chpl_localeID_t {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
     }
 
     pragma "no doc"
     proc chpl_name() : string {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return "";
     }
 
@@ -264,25 +264,25 @@ module ChapelLocale {
     //
     pragma "no doc"
     proc defaultMemory() : locale {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return this;
     }
 
     pragma "no doc"
     proc largeMemory() : locale {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return this;
     }
 
     pragma "no doc"
     proc lowLatencyMemory() : locale {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return this;
     }
 
     pragma "no doc"
     proc highBandwidthMemory() : locale {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return this;
     }
 
@@ -294,7 +294,7 @@ module ChapelLocale {
 
     pragma "no doc"
     proc getChildCount() : int {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return 0;
     }
   
@@ -308,19 +308,19 @@ module ChapelLocale {
     pragma "no doc"
     proc addChild(loc:locale)
     {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
     }
   
     pragma "no doc"
     proc getChild(idx:int) : locale {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return this;
     }
 
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
 //    iter getChildren() : locale  {
-//    _throwPVFCError();
+//    HaltWrappers.pureVirtualMethodHalt();
 //      yield 0;
 //    }
 
@@ -411,17 +411,17 @@ module ChapelLocale {
     // which are used as the default set of targetLocales in many
     // distributions.
     proc getDefaultLocaleSpace() const ref {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return chpl_emptyLocaleSpace;
     }
 
     proc getDefaultLocaleArray() const ref {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return chpl_emptyLocales;
     }
 
     proc localeIDtoLocale(id : chpl_localeID_t) : locale {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return this;
     }
 

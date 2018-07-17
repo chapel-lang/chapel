@@ -2,8 +2,9 @@ class Foo {
     type eltType;
     var elements : [1..3] eltType;
 
-    proc Foo (type eltType, first : eltType, second : eltType, third : eltType)
+    proc init (type eltType, first : eltType, second : eltType, third : eltType)
     {
+        this.eltType = eltType;
         elements[1] = first;
         elements[2] = second;
         elements[3] = third;

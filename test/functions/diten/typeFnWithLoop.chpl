@@ -1,6 +1,6 @@
 class C {
   var a: int;
-  proc C(n: int) {
+  proc init(n: int) {
     a = n;
     writeln("construct C");
   }

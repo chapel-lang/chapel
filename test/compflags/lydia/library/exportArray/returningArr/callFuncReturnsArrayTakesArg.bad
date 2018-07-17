@@ -1,4 +1,0 @@
-callFuncReturnsArrayTakesArg.test.c:4:33: fatal error: returnArrayTakesArg.h: No such file or directory
- #include "returnArrayTakesArg.h"
-                                 ^
-compilation terminated.

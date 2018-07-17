@@ -8,7 +8,8 @@ extern record my_struct {
 
 record MyRecord {
   var y:my_struct;
-  proc MyRecord(i:int) {
+  proc init(i:int) {
+    this.complete();
     y.x = i:c_int;
   }
   proc deinit() {

@@ -130,8 +130,10 @@ insertLineNumber(CallExpr* call) {
 
   FnSymbol*     fn   = call->getFunction();
   ModuleSymbol* mod  = fn->getModule();
-  ArgSymbol*    file = filenameMap.get(fn);
-  ArgSymbol*    line = linenoMap.get(fn);
+  ArgSymbol*    fileArg = filenameMap.get(fn);
+  ArgSymbol*    lineArg = linenoMap.get(fn);
+  Symbol*       file    = NULL;
+  Symbol*       line    = NULL;
 
   if (strcmp(fn->name, "chpl__heapAllocateGlobals") == 0 ||
       strcmp(fn->name, "chpl__initStringLiterals")  == 0 ||
@@ -141,37 +143,36 @@ insertLineNumber(CallExpr* call) {
            !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO));
   }
 
-  if (call->isPrimitive(PRIM_GET_USER_FILE) ||
-      call->isPrimitive(PRIM_GET_USER_LINE)) {
+  bool preferASTLine = false;
 
-    // add both arguments or none
-    if (!file) {
-      line = newLine(fn);
-      file = newFile(fn);
-    }
+  // Should we prefer to use the AST's line and file info
+  // rather than adding an argument and propagating it at runtime?
+  if ((fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_EXPORT)) &&
+      !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO))
+    preferASTLine = true; // don't add arguments to extern/export fns
+                          // but do use arguments already added if the fn
+                          // is marked with FLAG_INSERT_LINE_FILE_INFO
+  else if (ftableMap.count(fn))
+    preferASTLine = true; // don't add arguments to ftable calls
+  else if ((mod->modTag == MOD_USER || fn->hasFlag(FLAG_LINE_NUMBER_OK)) &&
+           !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+           !fn->hasFlag(FLAG_INLINE))
+    preferASTLine = true; // in user's code, it's better to use AST line number
+                          // as long as it's not compiler generated/inline
+  else if (developer && !fn->hasFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO))
+    preferASTLine = true; // developer mode generally uses AST line numbers
+                          // FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO overrides
 
-    //
-    if (call->isPrimitive(PRIM_GET_USER_FILE)) {
-      call->replace(new SymExpr(file));
-    } else if (call->isPrimitive(PRIM_GET_USER_LINE)) {
-      call->replace(new SymExpr(line));
-    }
+  if (preferASTLine) {
+    // This branch handles the case in which line number
+    // should just be whatever is in the AST node
+    // Sets file and line based on call's AST node
 
-  } else if (fn->hasFlag(FLAG_EXTERN)                           ||
-             fn->hasFlag(FLAG_LINE_NUMBER_OK)                   ||
-             (fn->hasFlag(FLAG_EXPORT) &&
-              !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO))         ||
-             ftableMap.count(fn)                                ||
-             (mod->modTag == MOD_USER               &&
-              !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-              !fn->hasFlag(FLAG_INLINE)) ||
-             (developer && !fn->hasFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO))) {
-    // call is in user code; insert AST line number and filename
-    // or developer flag is on and the call is not the halt() call
-    // or the call is via the ftable
     if (call->isResolved() &&
         call->resolvedFunction()->hasFlag(FLAG_COMMAND_LINE_SETTING)) {
-      call->insertAtTail(new_IntSymbol(0));
+      // Make up pretend line numbers for errors with command line
+      // configuration variables.
+      line = new_IntSymbol(0);
 
       FnSymbol* fn = call->resolvedFunction();
 
@@ -190,28 +191,43 @@ insertLineNumber(CallExpr* call) {
 
       int         filenameIdx    = getFilenameLookupPosition(cmdLineSetting);
 
-      call->insertAtTail(new_IntSymbol(filenameIdx, INT_SIZE_32));
+      file = new_IntSymbol(filenameIdx, INT_SIZE_32);
 
     } else {
-      call->insertAtTail(new_IntSymbol(call->linenum()));
+      // Apply the line number from the call AST node
+      line = new_IntSymbol(call->linenum());
 
       int filenameIdx = getFilenameLookupPosition(call->fname());
 
-      call->insertAtTail(new_IntSymbol(filenameIdx, INT_SIZE_32));
+      file = new_IntSymbol(filenameIdx, INT_SIZE_32);
+    }
+  } else {
+    // This branch handles the case in which we should be using
+    // file/line arguments in the enclosing function.
+
+    // Create them if they don't exist yet.
+    if (lineArg == NULL)
+      lineArg = newLine(fn);
+    if (fileArg == NULL)
+      fileArg = newFile(fn);
+
+    line = lineArg;
+    file = fileArg;
+  }
+
+  if (call->isPrimitive(PRIM_GET_USER_FILE) ||
+      call->isPrimitive(PRIM_GET_USER_LINE)) {
+
+    // Replace these primitives with whatever line/file we chose
+    // (probably an argument)
+    if (call->isPrimitive(PRIM_GET_USER_FILE)) {
+      call->replace(new SymExpr(file));
+    } else if (call->isPrimitive(PRIM_GET_USER_LINE)) {
+      call->replace(new SymExpr(line));
     }
 
-  } else if (file) {
-    // call is in non-user code, but the function already has line
-    // number and filename arguments
-    call->insertAtTail(line);
-    call->insertAtTail(file);
-
   } else {
-    // call is in non-user code, and the function requires new line
-    // number and filename arguments
-    line = newLine(fn);
-    file = newFile(fn);
-
+    // add line/file as arguments to the call
     call->insertAtTail(line);
     call->insertAtTail(file);
   }

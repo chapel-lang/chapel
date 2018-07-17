@@ -17,6 +17,7 @@ Initializing Modules:
      LocaleModelHelpFlat
       LocaleModelHelpSetup
        ChapelLocale
+        HaltWrappers
        DefaultRectangular
         DSIUtil
         ChapelArray
@@ -29,12 +30,11 @@ Initializing Modules:
     LocalesArray
     ChapelDistribution
      List
-      ChapelHaltWrappers
-       ChapelIO
-        IO
-         SysError
-         FormattedIO
-          Regexp
+    ChapelIO
+     IO
+      SysError
+      FormattedIO
+       Regexp
     LocaleTree
     DefaultAssociative
     ExternalArray

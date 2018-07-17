@@ -187,8 +187,7 @@ record list {
    */
  proc pop_front():eltType {
    if boundsChecking && length < 1 {
-     use ChapelHaltWrappers;
-     boundsCheckHalt("pop_front on empty list");
+     HaltWrappers.boundsCheckHalt("pop_front on empty list");
    }
    var oldfirst = first;
    var newfirst = first.next;

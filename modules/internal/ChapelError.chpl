@@ -335,6 +335,7 @@ module ChapelError {
   }
   pragma "no doc"
   pragma "insert line file info"
+  pragma "always propagate line file info"
   // TODO -- deprecate this version
   proc chpl_fix_thrown_error(err: borrowed Error): unmanaged Error {
     return chpl_fix_thrown_error(_to_unmanaged(err));
@@ -348,6 +349,7 @@ module ChapelError {
 
   pragma "no doc"
   pragma "insert line file info"
+  pragma "always propagate line file info"
   proc chpl_fix_thrown_error(err: unmanaged Error): unmanaged Error {
     var fixErr: unmanaged Error = err;
     if fixErr == nil then
@@ -362,6 +364,7 @@ module ChapelError {
   }
   pragma "no doc"
   pragma "insert line file info"
+  pragma "always propagate line file info"
   proc chpl_fix_thrown_error(ref err: Owned(Error)): unmanaged Error {
     return chpl_fix_thrown_error(err.release());
   }
@@ -373,6 +376,7 @@ module ChapelError {
   pragma "no doc"
   pragma "function terminates program"
   pragma "insert line file info"
+  pragma "always propagate line file info"
   proc chpl_uncaught_error(err: unmanaged Error) {
     extern proc chpl_error_preformatted(c_string);
 

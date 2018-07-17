@@ -943,6 +943,7 @@ proc CyclicArr.setRADOpt(val=true) {
   if doRADOpt then setupRADOpt();
 }
 
+pragma "use default init"
 class LocCyclicArr {
   type eltType;
   param rank: int;
@@ -956,9 +957,6 @@ class LocCyclicArr {
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: atomicbool; // This will only be accessed locally, so
                               // force the use of processor atomics
-
-  // INIT TODO: using default-init resulted in extra GETs for the tests in
-  // distributions/robust/arithmetic/performance/multilocale
 
   // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid

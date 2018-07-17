@@ -243,8 +243,8 @@ Performing I/O with Channels
 
 Channels contain read and write methods, which are generic methods that can
 read or write anything, and can also take optional arguments such as I/O style
-or to return an error instead of halting. These functions generally take any
-number of arguments. See:
+or. These functions generally take any number of arguments and `throw`
+if there was an error. See:
 
  * :proc:`channel.write`
  * :proc:`channel.writeln`
@@ -612,9 +612,9 @@ proc stringStyleWithVariableLength() {
   This method returns the appropriate :record:`iostyle` ``str_style`` value
   to indicate a string format where string data is preceded by a ``lengthBytes``
   of length. Only lengths of 1, 2, 4, or 8 are supported; if this method
-  is called with any other length, it will halt with an error.
+  is called with any other length, it will throw an error.
  */
-proc stringStyleWithLength(lengthBytes:int) {
+proc stringStyleWithLength(lengthBytes:int) throws {
   var x = iostringstyle.lenVb_data;
   select lengthBytes {
     when 0 do x = iostringstyle.lenVb_data;
@@ -622,7 +622,10 @@ proc stringStyleWithLength(lengthBytes:int) {
     when 2 do x = iostringstyle.len2b_data;
     when 4 do x = iostringstyle.len4b_data;
     when 8 do x = iostringstyle.len8b_data;
-    otherwise halt("Unhandled string length prefix size");
+    otherwise
+      throw SystemError.fromSyserr(EINVAL,
+                                   "Invalid string length prefix " +
+                                   lengthBytes);
   }
   return x;
 }
@@ -1526,7 +1529,7 @@ proc _modestring(mode:iomode) {
     when iomode.rw do return _rw;
     when iomode.cw do return _cw;
     when iomode.cwr do return _cwr;
-    otherwise halt("Invalid mode");
+    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
   }
 }
 
@@ -2026,7 +2029,9 @@ record ioChar {
   var ch:int(32);
   pragma "no doc"
   proc writeThis(f) {
-    halt("ioChar.writeThis must handled by channel");
+    // ioChar.writeThis should not be called;
+    // I/O routines should handle ioChar directly
+    assert(false);
   }
 }
 

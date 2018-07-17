@@ -1108,7 +1108,9 @@ static void codegen_library_header(std::vector<FnSymbol*> functions) {
       // Print out the module initialization function headers and the exported
       // functions
       for_vector(FnSymbol, fn, functions) {
-        if (fn->hasFlag(FLAG_EXPORT)) {
+        if (fn->hasFlag(FLAG_EXPORT) &&
+            fn->getModule()->modTag != MOD_INTERNAL &&
+            fn->hasFlag(FLAG_GEN_MAIN_FUNC) == false) {
           fn->codegenPrototype();
         }
       }
@@ -1409,11 +1411,16 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   if( hdrfile ) {
     fprintf(hdrfile, "\nconst char* chpl_mem_descs[] = {\n");
     bool first = true;
-    forv_Vec(const char*, memDesc, memDescsVec) {
-      if (!first)
-        fprintf(hdrfile, ",\n");
-      fprintf(hdrfile, "\"%s\"", memDesc);
-      first = false;
+    if (memDescsVec.n == 0) {
+      // Quiet PGI warning about empty initializer
+      fprintf(hdrfile, "\nNULL,");
+    } else {
+      forv_Vec(const char*, memDesc, memDescsVec) {
+        if (!first)
+          fprintf(hdrfile, ",\n");
+        fprintf(hdrfile, "\"%s\"", memDesc);
+        first = false;
+      }
     }
     fprintf(hdrfile, "\n};\n");
   }
@@ -2233,6 +2240,9 @@ void codegen(void) {
     // Check them here.
     if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
   }
+
+  // Prepare primitives for codegen
+  CallExpr::registerPrimitivesForCodegen();
 
   setupDefaultFilenames();
 

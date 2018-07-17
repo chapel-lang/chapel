@@ -282,10 +282,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
           if (type == sym->type) {
             se->setSymbol(arg);
 
-          } else {
-            CallExpr* call        = toCallExpr(se->parentExpr);
-            INT_ASSERT(call);
-
+          } else if (CallExpr* call = toCallExpr(se->parentExpr)) {
             FnSymbol* fnc         = call->resolvedFunction();
             bool      canPassToFn = false;
 
@@ -327,6 +324,13 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
 
               se->setSymbol(tmp);
             }
+
+          } else {
+            // So far, the only other known case is when 'se' is some
+            // shadow variable's outer sym. If so, just replace the symbol.
+            ShadowVarSymbol* svar = toShadowVarSymbol(se->parentSymbol);
+            INT_ASSERT(svar && se == svar->outerVarSE);
+            se->setSymbol(arg);
           }
         }
       }

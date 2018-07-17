@@ -70,6 +70,7 @@ module CPtr {
   pragma "no object"
   pragma "no default functions"
   pragma "no wide class"
+  pragma "use default init"
   pragma "c_ptr class"
   class c_ptr {
     /* The type that this pointer points to */
@@ -105,6 +106,9 @@ module CPtr {
 
   pragma "no doc"
   inline proc =(ref a:c_ptr, b:c_ptr) { __primitive("=", a, b); }
+
+  pragma "no doc"
+  inline proc =(ref a: c_ptr, b: c_void_ptr) { __primitive("=", a, b); }
 
   pragma "no doc"
   inline proc =(ref a:c_ptr, b:_nilType) { __primitive("=", a, c_nil); }

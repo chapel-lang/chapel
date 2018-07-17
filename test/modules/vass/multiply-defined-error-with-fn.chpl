@@ -15,12 +15,12 @@ module MPIvass {
 
 module BarriersVass {
   record Barrier {
-    proc Barrier(numTasks: int) { }
+    proc init(numTasks: int) { }
   }
 }
 
 module BarriersVass2 {
   record Barrier {
-    proc Barrier(numTasks: int) { }
+    proc init(numTasks: int) { }
   }
 }

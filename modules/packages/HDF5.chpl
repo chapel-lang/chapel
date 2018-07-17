@@ -18,7 +18,7 @@
  */
 
 // Generated with c2chapel version 0.1.0
-module HDF5_HL {
+module HDF5 {
 
   use HDF5_Chapel;
 
