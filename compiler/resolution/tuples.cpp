@@ -121,7 +121,6 @@ makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
 
   typeCtor->retTag             = RET_TYPE;
   typeCtor->retType            = newType;
-  typeCtor->numPreTupleFormals = 1;
   typeCtor->instantiatedFrom   = gGenericTupleTypeCtor;
   typeCtor->instantiationPoint = instantiationPoint;
 
