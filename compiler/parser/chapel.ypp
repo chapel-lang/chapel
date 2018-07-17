@@ -1388,14 +1388,6 @@ ret_array_type:
     { $$ = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", $2), $4);
     }
-| TLSBR expr_ls TIN expr TRSBR type_level_expr
-    {
-      if ($2->argList.length != 1)
-        USR_FATAL($4, "invalid index expression");
-      $$ = new CallExpr("chpl__buildArrayRuntimeType",
-             new CallExpr("chpl__ensureDomainExpr", $4), $6, $2->get(1)->remove(),
-             new CallExpr("chpl__ensureDomainExpr", $4->copy()));
-    }
 | TLSBR error TRSBR
     {
       $$ = new CallExpr(PRIM_ERROR);
