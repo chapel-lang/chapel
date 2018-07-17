@@ -62,6 +62,8 @@ static Map<BlockStmt*, BlockStmt*>            visibilityBlockCache;
 
 static int                                    nVisibleFunctions       = 0;
 
+
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -131,7 +133,7 @@ static void buildVisibleFunctionMap() {
       if (fn->hasFlag(FLAG_AUTO_II)) {
         block = theProgram->block;
       } else {
-        block = getVisibilityBlock(fn->defPoint, false);
+        block = getVisibilityScope(fn->defPoint);
         //
         // add all functions in standard modules to theProgram
         //
@@ -157,7 +159,7 @@ static void buildVisibleFunctionMap() {
 /************************************* | **************************************
 *                                                                             *
 * Collects functions called 'name' visible in 'block' and up the visibility   *
-* chain, which is defined by getVisibilityBlock().                            *
+* chain.                                                                      *
 * The functions defined/visible in a block are given by 'visibleFunctionMap'. *
 *                                                                             *
 ************************************** | *************************************/
@@ -171,7 +173,7 @@ static void getVisibleFunctions(const char*           name,
 void getVisibleFunctions(const char*      name,
                          CallExpr*        call,
                          Vec<FnSymbol*>&  visibleFns) {
-  BlockStmt*           block    = getVisibilityBlock(call);
+  BlockStmt*           block    = getVisibilityScope(call);
   std::set<BlockStmt*> visited;
 
   getVisibleFunctions(name, call, block, visited, visibleFns);
@@ -215,25 +217,24 @@ static void getVisibleFunctions(const char*           name,
     }
 
     if (call->id == breakOnResolveID) {
-      int insnId = 0;
-      if (instantiationPt)
-        insnId = instantiationPt->id;
-
       if (moduleBlock)
-        printf("visible fns: block %i visiting module %s %s:%i (insn id %i)\n",
+        printf("visible fns: block %i module %s %s:%i\n",
                block->id, inMod->name,
-               block->fname(), block->linenum(),
-               insnId);
+               block->fname(), block->linenum());
       else if (fnBlock)
-        printf("visible fns: block %i visiting fn %s %s:%i (insn id %i)\n",
+        printf("visible fns: block %i fn %s %s:%i\n",
                block->id, inFn->name,
-               block->fname(), block->linenum(),
-               insnId);
+               block->fname(), block->linenum());
       else
-        printf("visible fns: block %i visiting block %s:%i (insn id %i)\n",
+        printf("visible fns: block %i %s:%i\n",
                block->id,
-               block->fname(), block->linenum(),
-               insnId);
+               block->fname(), block->linenum());
+
+      if (instantiationPt) {
+        printf("  instantiated from block %i %s:%i\n",
+               instantiationPt->id,
+               instantiationPt->fname(), instantiationPt->linenum());
+      }
     }
 
     /*if (moduleBlock || fnBlock)  -- see comment below*/
@@ -300,7 +301,7 @@ static void getVisibleFunctions(const char*           name,
     }
 
     if (block != rootModule->block) {
-      BlockStmt* next  = getVisibilityBlock(block, false);
+      BlockStmt* next  = getVisibilityScope(block);
 
       // Recurse in the enclosing block
       getVisibleFunctions(name, call, next, visited, visibleFns);
@@ -321,11 +322,12 @@ static void getVisibleFunctions(const char*           name,
 
 static bool isTryTokenCond(Expr* expr);
 
-BlockStmt* getVisibilityBlock(Expr* expr, bool usePtOfInsn) {
+BlockStmt* getInstantiationPoint(Expr* expr) {
+  // TODO -- only set it if it's not an outer scope
+  //   collapse it based on knowing outer scopes are visited
   if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
-    if (block->blockTag == BLOCK_SCOPELESS ||
-        block->blockTag == BLOCK_TYPE)
-      return getVisibilityBlock(block, usePtOfInsn);
+    if (block->blockTag == BLOCK_SCOPELESS)
+      return getInstantiationPoint(block);
     else if (block->parentExpr && isTryTokenCond(block->parentExpr)) {
       // Make the visibility block of the then and else blocks of a
       // conditional using chpl__tryToken be the block containing the
@@ -335,17 +337,45 @@ BlockStmt* getVisibilityBlock(Expr* expr, bool usePtOfInsn) {
       // folded out leaving expressions with no visibility block.
       // test/functions/iterators/angeles/dynamic.chpl is an example that
       // currently fails without this.
-      return getVisibilityBlock(block->parentExpr, usePtOfInsn);
+      return getInstantiationPoint(block->parentExpr);
     } else
       return block;
   } else if (expr->parentExpr) {
-    return getVisibilityBlock(expr->parentExpr, usePtOfInsn);
+    return getInstantiationPoint(expr->parentExpr);
   } else if (Symbol* s = expr->parentSymbol) {
     FnSymbol* fn = toFnSymbol(s);
-    if (fn && fn->instantiationPoint && usePtOfInsn)
+    if (fn && fn->instantiationPoint)
       return fn->instantiationPoint;
     else
-      return getVisibilityBlock(s->defPoint, usePtOfInsn);
+      return getInstantiationPoint(s->defPoint);
+  } else {
+    INT_FATAL(expr, "Expression has no visibility block.");
+    return NULL;
+  }
+}
+
+
+
+BlockStmt* getVisibilityScope(Expr* expr) {
+  if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
+    if (block->blockTag == BLOCK_SCOPELESS)
+      return getVisibilityScope(block);
+    else if (block->parentExpr && isTryTokenCond(block->parentExpr)) {
+      // Make the visibility block of the then and else blocks of a
+      // conditional using chpl__tryToken be the block containing the
+      // conditional statement.  Without this, there were some cases where
+      // a function gets instantiated into one side of the conditional but
+      // used in both sides, then the side with the instantiation gets
+      // folded out leaving expressions with no visibility block.
+      // test/functions/iterators/angeles/dynamic.chpl is an example that
+      // currently fails without this.
+      return getVisibilityScope(block->parentExpr);
+    } else
+      return block;
+  } else if (expr->parentExpr) {
+    return getVisibilityScope(expr->parentExpr);
+  } else if (Symbol* s = expr->parentSymbol) {
+    return getVisibilityScope(s->defPoint);
   } else {
     INT_FATAL(expr, "Expression has no visibility block.");
     return NULL;

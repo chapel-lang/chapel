@@ -10271,7 +10271,7 @@ static void expandInitFieldPrims()
 
 DisambiguationContext::DisambiguationContext(CallInfo& info) {
   actuals = &info.actuals;
-  scope   = (info.scope) ? info.scope : getVisibilityBlock(info.call);
+  scope   = (info.scope) ? info.scope : getVisibilityScope(info.call);
   explain = false;
 
   if (fExplainVerbose == true) {
