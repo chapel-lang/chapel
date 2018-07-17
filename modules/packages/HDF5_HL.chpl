@@ -22,9 +22,12 @@ module HDF5_HL {
 
   use HDF5_Chapel;
 
-  // Check that the HDF5 version matches what is expected and initialize HDF5
-  C_HDF5.H5check();
-  C_HDF5.H5open();
+  coforall loc in Locales do on loc {
+    // Check that the HDF5 version matches what is expected
+    // and initialize the HDF5 library on all locales.
+    C_HDF5.H5check();
+    C_HDF5.H5open();
+  }
 
   module C_HDF5 {
 
