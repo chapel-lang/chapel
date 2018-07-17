@@ -1,3 +1,7 @@
+bug: valgrind failure
+#10376
+
+Once the valgrind failure is fixed, return to the following original .future:
 bug: an unexpected interpretation of the expression: [1,2,3,4][2]
 
 Kyle discovered that [1,2,3,4] is being parsed as a forall loop.
@@ -11,6 +15,3 @@ that suggests a singleton expression.
 
 Vass says that even in the forall-loop interpretation the result of
 four-times-[2] should be an array of arrays, not a single array.
-
-As of 07/2018, this test also fails valgrind at execution time.
-This needs to be fixed independently of the above.
