@@ -2401,6 +2401,17 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
     } else {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
       CallExpr* argExpr = toCallExpr(arg);
+      SymExpr*  modToken = NULL;
+      SymExpr*  modValue = NULL;
+
+      if (argExpr->numActuals() >= 2) {
+        if (SymExpr* se = toSymExpr(argExpr->get(1))) {
+          if (se->symbol() == gModuleToken) {
+            modToken = toSymExpr(argExpr->get(1)->remove());
+            modValue = toSymExpr(argExpr->get(1)->remove());
+          }
+        }
+      }
 
       // This call must be in tree before extending argExpr
       defExpr->insertAfter(argExpr);
@@ -2411,6 +2422,11 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       // Add _mt and _this (insert at head in reverse order)
       argExpr->insertAtHead(var);
       argExpr->insertAtHead(gMethodToken);
+
+      if (modToken != NULL) {
+        argExpr->insertAtHead(modValue);
+        argExpr->insertAtHead(modToken);
+      }
 
       // Add a call to postinit() if present
       insertPostInit(var, argExpr);
