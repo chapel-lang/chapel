@@ -495,13 +495,11 @@ module DefaultRectangular {
     proc dsiDims()
       return ranges;
 
-    proc dsiDim(d : int)
-      return ranges(d);
+    override proc dsiDim(d : int) return ranges(d);
 
     // optional, is this necessary? probably not now that
     // homogeneous tuples are implemented as C vectors.
-    proc dsiDim(param d : int)
-      return ranges(d);
+    /* override proc dsiDim(param d : int) return ranges(d); */
 
     /* proc dsiNumIndices {
       var sum = 1:intIdxType;

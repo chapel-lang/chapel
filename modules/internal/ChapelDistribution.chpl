@@ -392,9 +392,10 @@ module ChapelDistribution {
     }
 
     proc dsiNumIndices {
+      compilerWarning((this.type:string) + ".dsiNumIndices");
       var sum = 1:intIdxType;
-      for param i in 1..rank do
-        sum *= this.dsiDim(i).length;
+      for d in 1..rank do
+        sum *= dsiDim(d).length;
       return sum;
       // WANT: return * reduce (this(1..rank).length);
     }
@@ -403,10 +404,17 @@ module ChapelDistribution {
       return chpl__idxTypeToIntIdxType(idxType);
     }
 
-    proc dsiDim(i){
-      halt("Cannot invoke dsiDim on " + (this.type : string) + " instantiation");
+    proc dsiDim(d){
+      compilerError("Cannot invoke dsiDim on " + (this.type : string) + " instantiation");
       return 1..0; // dummy
     }
+
+    // optional, is this necessary? probably not now that
+    // homogeneous tuples are implemented as C vectors.
+    /* proc dsiDim(param d : int){
+      compilerError("Cannot invoke dsiDim on " + (this.type : string) + " instantiation");
+      return 1..0; // dummy
+    } */
   }
 
   pragma "use default init"
