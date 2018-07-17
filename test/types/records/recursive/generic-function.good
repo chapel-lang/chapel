@@ -1,1 +1,1 @@
-generic-function.chpl:9: error: Record has infinite size (field 'r' has same type as enclosing record)
+generic-function.chpl:8: error: record 'R' cannot contain a recursive field 'r' of type 'R'
