@@ -364,7 +364,7 @@
 %type <aggrTag> class_tag
 
 %type <pch> ident fn_ident assignop_ident opt_ident
-%type <pch> opt_ident_or_string
+%type <pch> opt_string
 
 
 
@@ -637,8 +637,8 @@ ident:
   TIDENT  { $$ = $1; }
 ;
 
-opt_ident_or_string:
-  opt_ident     { $$ = $1; }
+opt_string:
+                { $$ = NULL; }
 | STRINGLITERAL { $$ = $1; }
 ;
 
@@ -831,7 +831,7 @@ class_decl_stmt:
                                              FLAG_UNKNOWN,
                                              @1.comment));
     }
-| TEXTERN opt_ident_or_string class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
+| TEXTERN opt_string class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($4,
                                              $2,
@@ -851,7 +851,7 @@ class_decl_stmt:
                                              FLAG_UNKNOWN,
                                              @1.comment));
     }
-| TEXTERN opt_ident_or_string class_tag ident opt_inherit TLCBR error TRCBR
+| TEXTERN opt_string class_tag ident opt_inherit TLCBR error TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($4,
                                              $2,
@@ -996,7 +996,7 @@ linkage_spec:
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
-| TEXPORT opt_ident_or_string {
+| TEXPORT opt_string {
                   $$ = buildLinkageFn(FLAG_EXPORT, $2, NULL);
 
                   @$.comment             = context->latestComment;
@@ -1008,7 +1008,7 @@ linkage_spec:
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
-| TEXTERN opt_ident_or_string {
+| TEXTERN opt_string {
                   $$ = buildLinkageFn(FLAG_EXTERN, $2, NULL);
 
                   @$.comment             = context->latestComment;
