@@ -1,0 +1,3 @@
+# This protects users work files in this subdir from "git clean"
+!build_configs.py
+!setenv-example-1.bash
