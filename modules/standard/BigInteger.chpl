@@ -715,7 +715,7 @@ module BigInteger {
     return c;
   }
 
-  proc -(const ref a: bigint, const ref b: int) {
+  proc -(const ref a: bigint, b: int) {
     var c = new bigint();
 
     if b >= 0 {
@@ -1432,7 +1432,7 @@ module BigInteger {
     return cmp(a, b) > 0;
   }
 
-  proc >(b: int, const ref a: bigint) {
+  proc >(a: int, const ref b: bigint) {
     return cmp(a, b) > 0;
   }
 
@@ -1440,7 +1440,7 @@ module BigInteger {
     return cmp(a, b) > 0;
   }
 
-  proc >(b: uint, const ref a: bigint) {
+  proc >(a: uint, const ref b: bigint) {
     return cmp(a, b) > 0;
   }
 
@@ -1455,7 +1455,7 @@ module BigInteger {
     return cmp(a, b) < 0;
   }
 
-  proc <(b: int, const ref a: bigint) {
+  proc <(a: int, const ref b: bigint) {
     return cmp(a, b) < 0;
   }
 
@@ -1463,7 +1463,7 @@ module BigInteger {
     return cmp(a, b) < 0;
   }
 
-  proc <(b: uint, const ref a: bigint) {
+  proc <(a: uint, const ref b: bigint) {
     return cmp(a, b) < 0;
   }
 
@@ -1477,7 +1477,7 @@ module BigInteger {
     return cmp(a, b) >= 0;
   }
 
-  proc >=(b: int, const ref a: bigint) {
+  proc >=(a: int, const ref b: bigint) {
     return cmp(a, b) >= 0;
   }
 
@@ -1485,7 +1485,7 @@ module BigInteger {
     return cmp(a, b) >= 0;
   }
 
-  proc >=(b: uint, const ref a: bigint) {
+  proc >=(a: uint, const ref b: bigint) {
     return cmp(a, b) >= 0;
   }
 
@@ -1500,7 +1500,7 @@ module BigInteger {
     return cmp(a, b) <= 0;
   }
 
-  proc <=(b: int, const ref a: bigint) {
+  proc <=(a: int, const ref b: bigint) {
     return cmp(a, b) <= 0;
   }
 
@@ -1508,7 +1508,7 @@ module BigInteger {
     return cmp(a, b) <= 0;
   }
 
-  proc <=(b: uint, const ref a: bigint) {
+  proc <=(a: uint, const ref b: bigint) {
     return cmp(a, b) <= 0;
   }
 
