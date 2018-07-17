@@ -60,7 +60,7 @@ external-procedure-declaration-statement:
   `extern' external-name[OPT] `proc' function-name argument-list return-intent[OPT] return-type[OPT]
 \end{syntax}
 
-Chapel will call the external function using the parameter types supplied
+Chapel code will call the external function using the parameter types supplied
 in the \chpl{extern} declaration. Therefore, in general, the type of each
 argument in the supplied \sntx{argument-list} must be the Chapel
 equivalent of the corresponding external type.
@@ -70,11 +70,13 @@ declared using the optional \sntx{return-type} specifier.  If it is omitted,
 Chapel assumes that no value is returned, or equivalently that the function
 returns \chpl{void}.
 
-It is possible for an \chpl{extern} function to present a different name
-to Chapel code than the name of the function actually used when linking.
-For example, the code below declares a function callable in Chapel as
-\chpl{c_atoi} but that will actually link with the C \chpl{atoi}
-function.
+It is possible to use the \sntx{external-name} syntax to create an
+\chpl{extern} function that presents a different name to Chapel code than
+the name of the function actually used when linking. The
+\sntx{external-name} expression must evaluate to a \chpl{param}
+\chpl{string}. For example, the code below declares a function callable
+in Chapel as \chpl{c_atoi} but that will actually link with the C
+\chpl{atoi} function.
 
 \begin{chapel}
   extern "atoi" proc c_atoi(arg:c_string):c_int;
@@ -135,7 +137,7 @@ The rest of the procedure declaration is the same as for a non-exported
 function.  An exported procedure can be called from within Chapel as
 well. Currently, iterators cannot be exported.
 
-As with the \snxt{extern-name} for \chpl{extern} \chpl{proc}, if this
+As with the \sntx{extern-name} for \chpl{extern} \chpl{proc}, if this
 syntax element is provided, then it is a \chpl{param} \chpl{string}
 determining the name of the function to use when linking. For example,
 the code below declares a function callable in C as \chpl{chapel_addone}
