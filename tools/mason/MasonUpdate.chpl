@@ -21,7 +21,7 @@ use TOML;
 use FileSystem;
 use MasonUtils;
 use MasonEnv;
-use PkgConfig;
+use MasonSystem; 
 
 /*
 Update: Performs the upfront dependency resolution and generates the lock file.

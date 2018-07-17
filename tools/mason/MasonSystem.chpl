@@ -22,6 +22,45 @@ use Path;
 use MasonUtils;
 use MasonHelp;
 
+/* Entry point for mason system commands */
+proc masonSystem(args) {
+  try! {
+    if args.size < 3 {
+      masonSystemHelp();
+    }
+    else if args[2] == "--help" || args[2] == "-h" {
+      masonSystemHelp();
+    }
+    else if pkgConfigExists() {
+      if args[2] == "pc" {
+        const pkgName = args[3];
+        if pkgExists(pkgName) {
+          printPkgPc(pkgName);
+        }
+        else {
+          writeln("Mason could not find: " + pkgName);
+          writeln("Make sure the package is installed and it's .pc file is in the PKG_CONFIG_PATH");
+        }
+      }
+      else if args[2] == "list" {
+        listAllPkgs();
+      }
+      else if args[2] == "-i" || args[2] == "--installed" {
+        checkInstalled(args[3]);
+      }
+      else {
+        masonSystemHelp();
+      }
+    }
+    else {
+      masonSystemHelp();
+    }
+  }
+  catch e: MasonError {
+    writeln(e.message());
+  }
+}
+
 
 /* Checks to see that pkg-config is installed */
 proc pkgConfigExists() throws {
@@ -32,30 +71,24 @@ proc pkgConfigExists() throws {
   return true;
 }
 
-/* Given arguments from the command line
-   prints .pc file for a pkg-config package */
-proc masonPkgPcLookup(args) {
-  try! {
-    if args.size < 3 || args[2] == "--help" || args[2] == "-h" {
-      masonPkgPcHelp();
-    }
-    else {
-      const pkgName = args[2];
-      if pkgConfigExists() {
-        if pkgExists(pkgName) {
-          printPkgPc(pkgName);
-        }
-        else {
-          writeln("Mason could not find: " + pkgName);
-          writeln("Make sure the package is installed and it's .pc file is in the PKG_CONFIG_PATH");
-        }
-      }
-    }
+
+/* User query for checking package installation */
+proc checkInstalled(pkgName: string) throws {
+  if pkgExists(pkgName) {
+    const version = "".join(getPkgVariable(pkgName, "--modversion")).strip();
+    writeln(" ".join(pkgName,"version", version, "exists"));
   }
-  catch e: MasonError {
-    writeln(e.message());
+  else {
+    throw new MasonError("Mason could not find " + pkgName +" on your system");
   }
 }
+
+/* Lists all packages available on user system */
+proc listAllPkgs() {
+  const command = "pkg-config --list-all";
+  const startus = runCommand(command);
+}
+
 
 /* Prints a pc for user debugging */
 proc printPkgPc(pkgName: string) throws {

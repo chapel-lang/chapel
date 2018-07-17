@@ -159,14 +159,20 @@ proc masonTestHelp() {
   writeln("Tests pass if they exit with status code 0");
 }
 
-proc masonPkgPcHelp() {
-  writeln("Print .pc file for a pkg-config package.");
+proc masonSystemHelp() {
+  writeln("Integrate a Mason package with system packages found via pkg-config");
   writeln();
   writeln("Usage:");
-  writeln("    mason pkg-pc [options]");
+  writeln('    mason system [options] [<args>...]');
+  writeln("    mason system [options]");
   writeln();
   writeln("Options:");
+  writeln("    pc                          Print a system packages .pc file");
+  writeln("    list                        List all packages available on the system");
+  writeln("    -i, --installed             Check for package existance on system");
   writeln("    -h, --help                  Display this message");
   writeln();
-  writeln("Print a .pc to help set correct compilation options for a Mason project.");
+  writeln("The pc command sometimes has trouble finding a .pc file if the file is named ");
+  writeln("something other than <package name>.pc  Use -i to ensure package exists");
+  writeln("For more information on using system dependencies see Mason documentation");
 }

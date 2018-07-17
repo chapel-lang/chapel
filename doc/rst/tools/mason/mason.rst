@@ -369,6 +369,8 @@ that Mason will grab the latest package available known to pkg-config in your sy
         include = "/usr/local/Cellar/openblas/0.3.1/include"
 
 
+Use the ``mason system`` command for help with developing Mason packages with system
+package dependencies.
 
 
 Submit a Package

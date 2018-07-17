@@ -25,7 +25,7 @@ use MasonUtils;
 use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
-use PkgConfig;
+use MasonSystem;
 
 proc masonBuild(args) {
   var show = false;
