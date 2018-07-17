@@ -195,31 +195,45 @@ static void getVisibleFunctions(const char*           name,
   if (visited.find(block) == visited.end()) {
 
     bool moduleBlock = false;
-    ModuleSymbol* inMod = toModuleSymbol(block->parentSymbol);
-    if (inMod && block == inMod->block)
-      moduleBlock = true;
     bool fnBlock = false;
-    FnSymbol* inFn = toFnSymbol(block->parentSymbol);
-    if (inFn && (block == inFn->body || block == inFn->where))
+    ModuleSymbol* inMod = block->getModule();
+    FnSymbol* inFn = block->getFunction();
+    BlockStmt* instantiationPt = NULL;
+    if (block->parentExpr != NULL) {
+      // not a module or function level block
+    } else if (inMod && block == inMod->block) {
+      moduleBlock = true;
+    } else if (inFn != NULL) {
+      // TODO - probably remove this assert
+      INT_ASSERT(block->parentSymbol == inFn ||
+                 isArgSymbol(block->parentSymbol) ||
+                 isShadowVarSymbol(block->parentSymbol));
+      // Could also check
       fnBlock = true;
-
+      if (inFn->instantiationPoint && inFn->instantiationPoint->parentSymbol)
+        instantiationPt = inFn->instantiationPoint;
+    }
 
     if (call->id == breakOnResolveID) {
+      int insnId = 0;
+      if (instantiationPt)
+        insnId = instantiationPt->id;
+
       if (moduleBlock)
-        printf("visible fns: block %i visiting module %s %s:%i\n", block->id,
-            inMod->name, block->fname(), block->linenum());
-      else if (fnBlock) {
-        if (inFn->instantiatedFrom)
-          printf("visible fns: block %i visiting fn %s %s:%i insn from block id %i\n", block->id,
-               inFn->name, block->fname(), block->linenum(),
-               inFn->instantiatedFrom->id);
-        else
-          printf("visible fns: block %i visiting fn %s %s:%i\n", block->id,
-               inFn->name, block->fname(), block->linenum());
-      }
+        printf("visible fns: block %i visiting module %s %s:%i (insn id %i)\n",
+               block->id, inMod->name,
+               block->fname(), block->linenum(),
+               insnId);
+      else if (fnBlock)
+        printf("visible fns: block %i visiting fn %s %s:%i (insn id %i)\n",
+               block->id, inFn->name,
+               block->fname(), block->linenum(),
+               insnId);
       else
-        printf("visible fns: block %i visiting block %s:%i\n", block->id,
-              block->fname(), block->linenum());
+        printf("visible fns: block %i visiting block %s:%i (insn id %i)\n",
+               block->id,
+               block->fname(), block->linenum(),
+               insnId);
     }
 
     /*if (moduleBlock || fnBlock)  -- see comment below*/
@@ -291,13 +305,9 @@ static void getVisibleFunctions(const char*           name,
       // Recurse in the enclosing block
       getVisibleFunctions(name, call, next, visited, visibleFns);
 
-      if (fnBlock) {
-        FnSymbol* fn = toFnSymbol(block->parentSymbol);
-        if (fn->instantiationPoint && fn->instantiationPoint->parentSymbol) {
-          // Also look at the instantiation point
-          BlockStmt* next = fn->instantiationPoint;
-          getVisibleFunctions(name, call, next, visited, visibleFns);
-        }
+      if (instantiationPt != NULL) {
+        // Also look at the instantiation point
+        getVisibleFunctions(name, call, instantiationPt, visited, visibleFns);
       }
     }
   }
