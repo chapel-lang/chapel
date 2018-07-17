@@ -355,22 +355,34 @@ BlockStmt* getInstantiationPoint(Expr* expr) {
 }
 
 
-
 BlockStmt* getVisibilityScope(Expr* expr) {
+
+  Expr* cur = expr;
+  while (cur != NULL) {
+    // Stop when we find a non-scopeless block
+    if (BlockStmt* block = toBlockStmt(cur->parentExpr))
+      if (block->blockTag != BLOCK_SCOPELESS)
+        return block;
+
+    // Where to look next?
+    if (cur->parentExpr)
+      cur = cur->parentExpr;
+    else if (cur->parentSymbol)
+      cur = cur->parentSymbol->defPoint;
+    else
+      cur = NULL;
+  }
+
+  if (cur == NULL)
+    INT_FATAL(expr, "Expression has no visibility block.");
+
+  return NULL;
+
+  /* the old implementation
   if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
     if (block->blockTag == BLOCK_SCOPELESS)
       return getVisibilityScope(block);
-    else if (block->parentExpr && isTryTokenCond(block->parentExpr)) {
-      // Make the visibility block of the then and else blocks of a
-      // conditional using chpl__tryToken be the block containing the
-      // conditional statement.  Without this, there were some cases where
-      // a function gets instantiated into one side of the conditional but
-      // used in both sides, then the side with the instantiation gets
-      // folded out leaving expressions with no visibility block.
-      // test/functions/iterators/angeles/dynamic.chpl is an example that
-      // currently fails without this.
-      return getVisibilityScope(block->parentExpr);
-    } else
+    else
       return block;
   } else if (expr->parentExpr) {
     return getVisibilityScope(expr->parentExpr);
@@ -379,7 +391,7 @@ BlockStmt* getVisibilityScope(Expr* expr) {
   } else {
     INT_FATAL(expr, "Expression has no visibility block.");
     return NULL;
-  }
+  }*/
 }
 
 //
