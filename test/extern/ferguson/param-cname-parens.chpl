@@ -6,11 +6,11 @@ proc getExternProcName() param {
 }
 
 
-export getExportedProcName() proc foo() {
+export (getExportedProcName()) proc foo() {
   writeln("in foo");
 }
 
-extern getExternProcName() proc bar();
+extern (getExternProcName()) proc bar();
 
 foo();
 bar();

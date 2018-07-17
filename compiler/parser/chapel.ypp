@@ -424,7 +424,7 @@
 %type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
 %type <pexpr> opt_init_type var_arg_expr
-%type <pexpr> opt_try_expr
+%type <pexpr> opt_try_expr opt_expr
 %type <pexpr> tuple_component tuple_var_decl_component
 %type <pdefexpr> formal enum_item
 %type <pdefexpr> query_expr opt_query_expr
@@ -449,7 +449,7 @@ program:
 
 // 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
 toplevel_stmt_ls:
-                                       { $$ = new BlockStmt();                                  resetTempID(); }
+                                       { $$ = new BlockStmt(); resetTempID(); }
 | toplevel_stmt_ls toplevel_stmt       { $1->appendChapelStmt($2); context->generatedStmt = $1; resetTempID(); }
 ;
 
@@ -996,31 +996,18 @@ linkage_spec:
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
-| TEXPORT opt_string {
-                  $$ = buildLinkageFn(FLAG_EXPORT, $2, NULL);
+| TEXPORT opt_expr {
+                  $$ = buildLinkageFn(FLAG_EXPORT, $2);
 
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
-| TEXPORT parenthesized_expr {
-                  $$ = buildLinkageFn(FLAG_EXPORT, NULL, $2);
+| TEXTERN opt_expr {
+                  $$ = buildLinkageFn(FLAG_EXTERN, $2);
 
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
-| TEXTERN opt_string {
-                  $$ = buildLinkageFn(FLAG_EXTERN, $2, NULL);
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
-                }
-| TEXTERN parenthesized_expr {
-                  $$ = buildLinkageFn(FLAG_EXTERN, NULL, $2);
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
-                }
-
 | TOVERRIDE     {
                   $$ = new FnSymbol("");
                   $$->addFlag(FLAG_OVERRIDE);
@@ -1772,6 +1759,10 @@ expr:
 | TDOTDOT
     { $$ = new CallExpr("chpl_build_unbounded_range"); }
 ;
+
+opt_expr:
+                  { $$ = NULL; }
+| expr            { $$ = $1; }
 
 opt_try_expr:
   TTRY expr       { $$ = tryExpr($2); }

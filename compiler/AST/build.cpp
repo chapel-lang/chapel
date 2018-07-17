@@ -2171,9 +2171,16 @@ FnSymbol* buildLambda(FnSymbol *fn) {
 }
 
 // Creates a dummy function that accumulates flags & cname
-FnSymbol* buildLinkageFn(Flag externOrExport, const char* cname, Expr* paramCNameExpr) {
+FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr) {
 
-  if (cname == NULL) cname = "";
+  const char* cname = "";
+  // Look for a string literal we can use
+  if (paramCNameExpr != NULL)
+    if (SymExpr* se = toSymExpr(paramCNameExpr))
+      if (VarSymbol* v = toVarSymbol(se->symbol()))
+        if (v->isImmediate())
+          if (v->immediate->const_kind == CONST_KIND_STRING)
+            cname = v->immediate->v_string;
 
   FnSymbol* ret = new FnSymbol(cname);
 
@@ -2186,7 +2193,8 @@ FnSymbol* buildLinkageFn(Flag externOrExport, const char* cname, Expr* paramCNam
     ret->addFlag(FLAG_EXPORT);
   }
 
-  if (paramCNameExpr) {
+  // Handle non-trivial param names that need to be resolved
+  if (paramCNameExpr && cname[0] == '\0') {
     DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
                                       astr_chpl_cname,
                                       new SymExpr(dtString->symbol),
