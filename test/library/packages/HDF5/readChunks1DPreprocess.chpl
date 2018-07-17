@@ -1,4 +1,4 @@
-use HDF5_HL, HDF5Preprocessors;
+use HDF5, HDF5Preprocessors;
 
 config const infileName = "readChunks1DInput.h5";
 config const dsetName = "Ai";
