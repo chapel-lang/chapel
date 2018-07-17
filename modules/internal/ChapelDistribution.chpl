@@ -392,7 +392,6 @@ module ChapelDistribution {
     }
 
     proc dsiNumIndices {
-      compilerWarning((this.type:string) + ".dsiNumIndices");
       var sum = 1:intIdxType;
       for d in 1..rank do
         sum *= dsiDim(d).length;
@@ -405,7 +404,7 @@ module ChapelDistribution {
     }
 
     proc dsiDim(d){
-      compilerError("Cannot invoke dsiDim on " + (this.type : string) + " instantiation");
+      halt("Cannot invoke dsiDim on " + (this.type : string) + " instantiation");
       return 1..0; // dummy
     }
 
