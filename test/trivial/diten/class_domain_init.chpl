@@ -3,7 +3,7 @@ class two_d_array {
   var D: domain(2);
   var a: [D] real;
 
-  proc initialize(){
+  proc postinit(){
     D = {1..h, 1..w};
   }
 }
