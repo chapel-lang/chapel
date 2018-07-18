@@ -2227,8 +2227,8 @@ static void normVarTypeInference(DefExpr* defExpr) {
         if (argExpr->numActuals() >= 2) {
           if (SymExpr* se = toSymExpr(argExpr->get(1))) {
             if (se->symbol() == gModuleToken) {
-              modToken = toSymExpr(argExpr->get(1)->remove());
-              modValue = toSymExpr(argExpr->get(1)->remove());
+              modValue = toSymExpr(argExpr->get(2)->remove());
+              modToken = toSymExpr(se->remove());
             }
           }
         }
@@ -2407,8 +2407,8 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       if (argExpr->numActuals() >= 2) {
         if (SymExpr* se = toSymExpr(argExpr->get(1))) {
           if (se->symbol() == gModuleToken) {
-            modToken = toSymExpr(argExpr->get(1)->remove());
-            modValue = toSymExpr(argExpr->get(1)->remove());
+            modValue = toSymExpr(argExpr->get(2)->remove());
+            modToken = toSymExpr(se->remove());
           }
         }
       }
