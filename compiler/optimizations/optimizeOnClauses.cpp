@@ -314,6 +314,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_REQUIRE:
   case NUM_KNOWN_PRIMS:
   case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
+  case PRIM_ITERATOR_RECORD_SET_SHAPE:
   case PRIM_THROW:
   case PRIM_TRY_EXPR:
   case PRIM_TRYBANG_EXPR:

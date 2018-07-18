@@ -172,6 +172,7 @@ GenRet LoopExpr::codegen() {
 static int loopexpr_uid = 1;
 
 static CallExpr* buildLoopExprFunctions(LoopExpr* faExpr);
+static void addIterRecShape(CallExpr* forallExprCall, bool zippered);
 
 class LowerLoopExprVisitor : public AstVisitorTraverse
 {
@@ -190,10 +191,16 @@ class LowerLoopExprVisitor : public AstVisitorTraverse
 // table.
 //
 bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
-  // Don't touch LoopExprs in DefExprs, they should be copied later into
-  // BlockStmts.
-  if (node->inTree() && node->getStmtExpr() != NULL) {
+  if (! node->inTree()) {
+    // nothing to do
+  } else if (node->getStmtExpr() == NULL) {
+    // Don't touch LoopExprs in DefExprs, they should be copied later into
+    // BlockStmts.
+    INT_ASSERT(isDefExpr(node->parentExpr));
+  } else {
     SET_LINENO(node);
+
+    bool noFilter = node->cond == NULL;
 
     CallExpr* replacement = buildLoopExprFunctions(node);
 
@@ -204,6 +211,12 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
     // The iterator expr might be a loop-expr itself, make sure it gets
     // lowered.
     iterExpr->accept(this);
+
+    // Do not preserve the shape if there is a filtering predicate.
+    if (node->forall && noFilter) {
+      normalize(replacement); // for addIterRecShape()
+      addIterRecShape(replacement, node->zippered);
+    }
   }
 
   return false;
@@ -213,6 +226,33 @@ void lowerLoopExprs(BaseAST* ast) {
   LowerLoopExprVisitor vis;
   ast->accept(&vis);
 }
+
+
+static Expr* getShapeForZippered(Expr* tupleRef) {
+  Symbol* tupleSym = toSymExpr(tupleRef)->symbol();
+  SymExpr* tupleDef = tupleSym->getSingleDef();
+  CallExpr* move = toCallExpr(tupleDef->parentExpr);
+  INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+  CallExpr* buildTup = toCallExpr(move->get(2));
+  INT_ASSERT(buildTup->isNamed("_build_tuple"));
+  // The shape comes from the first tuple component.
+  return buildTup->get(1);
+}
+
+// 'forallExprCall', during resolution, returns an iterator record
+// for the forall expression. Ensure it will get a shape.
+static void addIterRecShape(CallExpr* forallExprCall, bool zippered) {
+  if (CallExpr* move = toCallExpr(forallExprCall->parentExpr)) {
+    if (move->isPrimitive(PRIM_MOVE)) {
+      Expr* dest = move->get(1)->copy();
+      Expr* shape = forallExprCall->get(1);
+      if (zippered) shape = getShapeForZippered(shape);
+      move->getStmtExpr()->insertAfter(
+        new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE, dest, shape->copy()));
+    }
+  }
+}
+
 
 static Expr* removeOrNull(Expr* arg) { return arg ? arg->remove() : NULL; }
 
@@ -326,6 +366,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, ArgSymbol* iteratorExprArg, Blo
 
   return block;
 }
+
 
 static FnSymbol* buildSerialIteratorFn(FnSymbol* fn,
                                        const char* iteratorName,

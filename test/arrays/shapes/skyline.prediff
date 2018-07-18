@@ -1,0 +1,14 @@
+#!/bin/bash
+outfile=$2
+
+mv $outfile $outfile.tmp
+
+# grep for specific items in valgrind output
+egrep 'Invalid read of size 8|Address|Block was alloc' $outfile.tmp | head -3 \
+| sed 's@^==.*Invalid@Invalid@; s@^==.*Block@Block@; s@^.*Address .* is@Address xxx is@' \
+> $outfile
+
+# also grep for expected output
+grep '^[0-9]' $outfile.tmp >> $outfile
+
+rm $outfile.tmp

@@ -2047,6 +2047,29 @@ static void       buildFastFollowerCheck(bool                  isStatic,
                                          FnSymbol*             wrapper,
                                          std::set<ArgSymbol*>& formals);
 
+// insert PRIM_ITERATOR_RECORD_SET_SHAPE(iterRecord,shapeSource)
+static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
+  CallExpr* move = toCallExpr(call->parentExpr);
+  // If call's result is not used, do not insert.
+  // This happens, for example, during resolveSerializeDeserialize().
+  if (move == NULL) return;
+  INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+  Symbol* irTemp = toSymExpr(move->get(1))->symbol();
+
+  // Which of call's arguments determines the shape?
+  Symbol* shapeSource = NULL;
+  int i = 0;
+  for_actuals(actual, call) {
+    if (promotion.promotedType[i++] != NULL) {
+      shapeSource = toSymExpr(actual)->symbol();
+      break;
+    }
+  }
+
+  move->insertAfter(new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE,
+                                 irTemp, shapeSource));
+}
+
 static bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
                                 std::vector<ArgSymbol*>& actualFormals) {
   bool retval = false;
@@ -2106,6 +2129,8 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
 
     addCache(promotionsCache, promotion.fn, promotion.wrapperFn, &promotion.subs);
   }
+
+  addSetIteratorShape(promotion, info.call);
 
   return retval;
 }

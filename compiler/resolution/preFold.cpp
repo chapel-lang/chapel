@@ -851,6 +851,26 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     retval = standaloneCall;
 
+  } else if (call->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE)) {
+    Symbol* ir = toSymExpr(call->get(1))->symbol();
+    if (ir->hasFlag(FLAG_TYPE_VARIABLE)) {
+      // This is a type. Do not do shape.
+      retval = new CallExpr(PRIM_NOOP);
+      call->replace(retval);
+    } else if (ir->type == dtUnknown) {
+      // Ex. test/arrays/return/returnArbitraryArray and siblings.
+      INT_ASSERT(ir->hasFlag(FLAG_RVV));
+      // Delay the lowering - skip 'call' for now.
+      retval = new CallExpr(PRIM_NOOP);
+      call->insertAfter(retval);
+    } else {
+      // Keep in sync with setIteratorRecordShape(CallExpr* call).
+      INT_ASSERT(ir->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
+      Symbol* shapeSpec = toSymExpr(call->get(2))->symbol();
+      retval = setIteratorRecordShape(call, ir, shapeSpec);
+      call->replace(retval);
+    }
+
   } else if (call->isPrimitive(PRIM_TYPE_TO_STRING)) {
     SymExpr* se = toSymExpr(call->get(1));
 

@@ -1062,8 +1062,7 @@ bool canCoerce(Type*     actualType,
 ************************************** | *************************************/
 
 static bool isGenericInstantiation(Type*     actualType,
-                                   Type*     formalType,
-                                   FnSymbol* fn);
+                                   Type*     formalType);
 
 static
 bool doCanDispatch(Type*     actualType,
@@ -1078,7 +1077,7 @@ bool doCanDispatch(Type*     actualType,
   if (actualType == formalType) {
     retval = true;
 
-  } else if (isGenericInstantiation(actualType, formalType, fn) == true) {
+  } else if (isGenericInstantiation(actualType, formalType) == true) {
     retval = true;
 
   // The following check against FLAG_REF ensures that 'nil' can't be
@@ -1192,8 +1191,7 @@ bool canDispatch(Type*     actualType,
 }
 
 static bool isGenericInstantiation(Type*     actualType,
-                                   Type*     formalType,
-                                   FnSymbol* fn) {
+                                   Type*     formalType) {
   AggregateType* atActual = toAggregateType(actualType);
   AggregateType* atFormal = toAggregateType(formalType);
   bool           retval   = false;
@@ -4610,8 +4608,7 @@ static void resolveSetMember(CallExpr* call) {
     INT_FATAL(call, "Unable to resolve field type");
   }
 
-  INT_ASSERT(isFnSymbol(call->parentSymbol));
-  if (isGenericInstantiation(fs->type, t, toFnSymbol(call->parentSymbol))) {
+  if (isGenericInstantiation(fs->type, t)) {
     fs->type = t;
   }
   if (fs->type->symbol->hasFlag(FLAG_GENERIC)) {

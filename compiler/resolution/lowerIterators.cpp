@@ -99,9 +99,15 @@ FnSymbol* getTheIteratorFnFromIteratorRec(Type* irType)
 FnSymbol* debugGetTheIteratorFn(Type* type) {
   FnSymbol* result = NULL;
   if (AggregateType* agg = toAggregateType(type)) {
-    if (agg->symbol->hasFlag(FLAG_TUPLE))
-      result = getTheIteratorFn(agg);
-    else if (agg->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+    if (agg->symbol->hasFlag(FLAG_TUPLE)) {
+      // Through the end of resolution, the first field is the tuple size.
+      if (!strcmp(agg->getField(1)->name, "size")) {
+        if (!strcmp(agg->getField(2)->name, "x1"))
+          result = getTheIteratorFn(agg->getField(2)->type);
+      } else {
+        result = getTheIteratorFn(agg);
+      }
+    } else if (agg->symbol->hasFlag(FLAG_ITERATOR_CLASS))
       result = getTheIteratorFn(agg);
     else if (agg->symbol->hasFlag(FLAG_ITERATOR_RECORD))
       if (IteratorInfo* ii = agg->iteratorInfo)

@@ -28,6 +28,7 @@
 #include "ForLoop.h"
 #include "oldCollectors.h"
 #include "optimizations.h"
+#include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -107,6 +108,63 @@ removeRetSymbolAndUses(FnSymbol* fn) {
 
   return yieldedType;
 }
+
+
+//
+// Handle the shape of the yielded values.
+//
+
+//
+// Insert before 'ref':
+//   temp = chpl_computeIteratorShape(shapeSpec);
+//   ir._shape_ = temp;
+//
+// Add _shape_ field to ir.type and figure out its type,
+// if the field did not exist.
+//
+CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec) {
+  // We could skip this if the field already exists and is void.
+  // It might be better to insert these anyway for uniformity.
+  VarSymbol* value  = newTemp("shapeTemp");
+  CallExpr* compute = new CallExpr("chpl_computeIteratorShape", shapeSpec);
+  CallExpr* set     = new CallExpr(PRIM_MOVE, value, compute);
+  ref->insertBefore(new DefExpr(value));
+  ref->insertBefore(set);
+  resolveExpr(compute);
+  resolveExpr(set);
+
+  AggregateType* iRecord = toAggregateType(ir->type);
+  INT_ASSERT(iRecord->symbol->hasFlag(FLAG_ITERATOR_RECORD));
+  Symbol* field = iRecord->getField("_shape_", false);
+  if (field == NULL) {
+    field = new VarSymbol("_shape_", value->type);
+    iRecord->fields.insertAtTail(new DefExpr(field));
+    // An accessor lets us get _shape_ in Chapel code.
+    FnSymbol* accessor = build_accessor(iRecord, field, false, false);
+    // This sidesteps the visibility issue in the presence of nested
+    // LoopExprs. Ex. test/expressions/loop-expr/scoping.chpl
+    theProgram->block->insertAtTail(accessor->defPoint->remove());
+  } else {
+    INT_ASSERT(field->type == value->type);
+  }
+
+  return new CallExpr(PRIM_SET_MEMBER, ir, field, value);
+}
+
+//
+// Replaces the primitive 'call' with the above.
+//
+void setIteratorRecordShape(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE));
+
+  // Keep in sync with the PRIM_ITERATOR_RECORD_SET_SHAPE case in preFold.
+  Symbol* ir = toSymExpr(call->get(1))->symbol();
+  INT_ASSERT(ir->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
+  Symbol* shapeSpec = toSymExpr(call->get(2))->symbol();
+  CallExpr* shapeCall = setIteratorRecordShape(call, ir, shapeSpec);
+  call->replace(shapeCall);
+}
+
 
 //
 // Determines that an iterator has a single loop with a single yield
@@ -1290,6 +1348,7 @@ rebuildGetIterator(IteratorInfo* ii) {
 
   // Enumerate the fields in the iterator record (argument).
   for_fields(field, ii->irecord) {
+    if (!strcmp(field->name, "_shape_")) continue;
     // Load the record field into a temp,
     // and then use that to set the corresponding class field.
     VarSymbol* fieldReadTmp  = newTemp(field->qualType());

@@ -94,6 +94,8 @@ void checkReturnTypesHaveRefTypes();
 // buildDefaultFunctions.cpp
 void buildDefaultDestructor(AggregateType* ct);
 void buildEnumFunctions(EnumType* et);
+FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
+                         bool setter, bool typeMethod);
 
 // callDestructors.cpp
 void insertReferenceTemps(CallExpr* call);
@@ -114,6 +116,10 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 // inlineFunctions.cpp
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
 
+// iterator.cpp
+CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec);
+void setIteratorRecordShape(CallExpr* call);
+
 // lowerIterators.cpp, lowerForalls.cpp
 void lowerForallStmtsInline();
 void handleChplPropagateErrorCall(CallExpr* call);
@@ -130,6 +136,9 @@ void checkUseBeforeDefs(FnSymbol* fn);
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
 CallExpr* findDownEndCount(FnSymbol* fn);
+
+// resolution
+Expr*     resolveExpr(Expr* expr);
 
 // type.cpp
 void initForTaskIntents();

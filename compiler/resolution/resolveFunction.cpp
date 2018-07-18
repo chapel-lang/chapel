@@ -557,6 +557,7 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
 ************************************** | *************************************/
 
 static bool doNotUnaliasArray(FnSymbol* fn);
+static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
   bool skipArray = doNotUnaliasArray(fn);
@@ -591,6 +592,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
           VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
           CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
+          CallExpr*  shapeSet  = findSetShape(call, ret);
           FnSymbol*  unrefFn   = NULL;
 
           // Used by callDestructors to catch assignment from
@@ -618,9 +620,17 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
             initTmp->remove();
 
             INT_ASSERT(unrefCall->inTree() == false);
+
+            if (shapeSet) setIteratorRecordShape(shapeSet);
+
+          } else if (shapeSet) {
+            // Set the shape on the array unref temp instead of 'ret'.
+            shapeSet->get(1)->replace(new SymExpr(tmp));
+            call->insertBefore(shapeSet->remove());
+            setIteratorRecordShape(shapeSet);
           }
         }
-              }
+      }
     }
   }
 }
@@ -669,6 +679,19 @@ bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
   } else {
     return false;
   }
+}
+
+// Find the PRIM_ITERATOR_RECORD_SET_SHAPE call following 'setRet'.
+// It should be setting the shape for 'ret'.
+static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
+  for (Expr* curr = setRet->next; curr; curr = curr->next)
+    if (CallExpr* call = toCallExpr(curr))
+      if (call->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE)) {
+        INT_ASSERT(toSymExpr(call->get(1))->symbol() == ret);
+        return call;
+      }
+  // not found
+  return NULL;
 }
 
 /************************************* | **************************************
