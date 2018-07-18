@@ -1074,7 +1074,10 @@ module Math {
 
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
-  extern "j0f" proc j0(x: real(32)): real(32);
+  inline proc j0(x: real(32)): real(32) {
+    extern proc chpl_float_j0(x: real(32)): real(32);
+    return chpl_float_j0(x);
+  }
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   inline proc j0(x: real(64)): real(64) {
@@ -1082,9 +1085,11 @@ module Math {
     return j0(x);
   }
 
-
   /* Returns the Bessel function of the first kind of order `1` of `x`. */
-  extern "j1f" proc j1(x: real(32)): real(32);
+  inline proc j1(x: real(32)): real(32) {
+    extern proc chpl_float_j1(x: real(32)): real(32);
+    return chpl_float_j1(x);
+  }
 
   /* Returns the Bessel function of the first kind of order `1` of `x`. */
   inline proc j1(x: real(64)): real(64) {
@@ -1092,11 +1097,10 @@ module Math {
     return j1(x);
   }
 
-
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
   inline proc jn(n: int, x: real(32)): real(32) {
-    extern proc jnf(n: c_int, x: real(32)): real(32);
-    return jnf(n.safeCast(c_int), x);
+    extern proc chpl_float_jn(n: c_int, x: real(32)): real(32);
+    return chpl_float_jn(n.safeCast(c_int), x);
   }
 
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
@@ -1105,57 +1109,62 @@ module Math {
     return jn(n.safeCast(c_int), x);
   }
 
+  /* Returns the Bessel function of the second kind of order `0` of `x`, where
+     `x` must be greater than 0 */
+  inline proc y0(x: real(32)): real(32) {
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
+
+    extern proc chpl_float_y0(x: real(32)): real(32);
+    return chpl_float_y0(x);
+  }
 
   /* Returns the Bessel function of the second kind of order `0` of `x`,
-     if and only if the value of `x` is greater than 0*/
-  extern "y0f" proc y0(x: real(32)): real(32);
-
-  /* Returns the Bessel function of the second kind of order `0` of `x`,
-     if and only if the value of `x` is greater than 0 */
+     where `x` must be greater than 0 */
   inline proc y0(x: real(64)): real(64) {
-    if boundsChecking {
-      if x < 0 then
-        halt("Input value for Bessel function of second kind must be greater than 0");
-    }
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
+
     extern proc y0(x: real(64)): real(64);
     return y0(x);
   }
 
+  /* Returns the Bessel function of the second kind of order `1` of `x`,
+     where `x` must be greater than 0 */
+  inline proc y1(x: real(32)): real(32) {
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
+
+    extern proc chpl_float_y1(x: real(32)): real(32);
+    return chpl_float_y1(x);
+  }
 
   /* Returns the Bessel function of the second kind of order `1` of `x`,
-     if and only if the value of `x` is greater than 0 */
-  extern "y1f" proc y1(x: real(32)): real(32);
-
-  /* Returns the Bessel function of the second kind of order `1` of `x`,
-     if and only if the value of `x` is greater than 0 */
+     where `x` must be greater than 0 */
   inline proc y1(x: real(64)): real(64) {
-    if boundsChecking {
-      if x < 0 then
-        halt("Input value for Bessel function of second kind must be greater than 0");
-    }
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
+
     extern proc y1(x: real(64)): real(64);
     return y1(x);
   }
 
-
   /* Returns the Bessel function of the second kind of order `n` of `x`,
-     if and only if the value of `x` is greater than 0 */
+     where `x` must be greater than 0 */
   inline proc yn(n: int, x: real(32)): real(32) {
-    if boundsChecking {
-      if x < 0 then
-        halt("Input value for Bessel function of second kind must be greater than 0");
-    }
-    extern proc ynf(n: c_int, x: real(32)): real(32);
-    return ynf(n.safeCast(c_int), x);
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
+
+    extern proc chpl_float_yn(n: c_int, x: real(32)): real(32);
+    return chpl_float_yn(n.safeCast(c_int), x);
   }
 
   /* Returns the Bessel function of the second kind of order `n` of `x`,
-     if and only if the value of `x` is greater than 0 */
+     where `x` must be greater than 0 */
   inline proc yn(n: int, x: real(64)): real(64) {
-    if boundsChecking {
-      if x < 0 then
-        halt("Input value for Bessel function of second kind must be greater than 0");
-    }
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
+
     extern proc yn(n: c_int, x: real(64)): real(64);
     return yn(n.safeCast(c_int), x);
   }
