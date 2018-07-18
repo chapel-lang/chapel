@@ -1651,7 +1651,6 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   fcf_name << "_chpl_fcf_" << unique_fcf_id++ << "_" << flname;
 
   TypeSymbol *ts = new TypeSymbol(astr(fcf_name.str().c_str()), ct);
-  ts->addFlag(FLAG_USE_DEFAULT_INIT);
 
   // Allow a use of a FCF to appear at the statement level i.e.
   //    nameOfFunc;
@@ -1962,7 +1961,6 @@ static AggregateType* createAndInsertFunParentClass(CallExpr*   call,
   TypeSymbol*    parentTs = new TypeSymbol(name, parent);
 
   parentTs->addFlag(FLAG_FUNCTION_CLASS);
-  parentTs->addFlag(FLAG_USE_DEFAULT_INIT);
 
   // Because this function type needs to be globally visible (because
   // we don't know the modules it will be passed to), we put it at the
