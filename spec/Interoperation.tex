@@ -138,10 +138,11 @@ function.  An exported procedure can be called from within Chapel as
 well. Currently, iterators cannot be exported.
 
 As with the \sntx{extern-name} for \chpl{extern} \chpl{proc}, if this
-syntax element is provided, then it is a \chpl{param} \chpl{string}
-determining the name of the function to use when linking. For example,
-the code below declares a function callable in C as \chpl{chapel_addone}
-but it is callable from Chapel code as \chpl{addone}:
+syntax element is provided, then it must be a \chpl{param} \chpl{string}
+and will be used to determine the name of the function to use when
+linking. For example, the code below declares a function callable in C as
+\chpl{chapel_addone} but it is callable from Chapel code as
+\chpl{addone}:
 
 \begin{chapel}
   export "chapel_addone" proc addone(arg:c_int):c_int {
