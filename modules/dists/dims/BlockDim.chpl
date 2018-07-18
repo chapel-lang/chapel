@@ -74,7 +74,6 @@ class BlockDim {
   proc boundingBox return bbStart .. (bbStart + bbLength - 1);
 }
 
-pragma "use default init"
 class Block1dom {
   type idxType;
   param stridable: bool;
@@ -91,7 +90,6 @@ class Block1dom {
   proc dsiSetIndicesUnimplementedCase param return false;
 }
 
-pragma "use default init"
 class Block1locdom {
   var myRange;
 }

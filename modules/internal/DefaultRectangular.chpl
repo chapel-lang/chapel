@@ -37,7 +37,6 @@ module DefaultRectangular {
   config param defaultDisableLazyRADOpt = false;
   config param earlyShiftData = true;
 
-  pragma "use default init"
   class DefaultDist: BaseDist {
     override proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
       const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable, _to_unmanaged(this));

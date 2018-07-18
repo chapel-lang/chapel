@@ -503,7 +503,6 @@ proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture,
     string.
  */
 pragma "no doc"
-pragma "use default init"
 record stringPart {
   var offset:int;
   var length:int;
@@ -525,7 +524,6 @@ record stringPart {
       if !m then do_something_if_not_matched();
 
  */
-pragma "use default init"
 record reMatch {
   /* true if the regular expression search matched successfully */
   var matched:bool;

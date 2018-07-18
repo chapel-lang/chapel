@@ -290,7 +290,6 @@ class SparseBlockDom: BaseSparseDomImpl {
 // stridable: generic domain stridable parameter
 // mySparseBlock: a non-distributed domain that defines the local indices
 //
-pragma "use default init"
 class LocSparseBlockDom {
   param rank: int;
   type idxType;
@@ -474,7 +473,6 @@ class SparseBlockArr: BaseSparseArr {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
-pragma "use default init"
 class LocSparseBlockArr {
   type eltType;
   param rank: int;

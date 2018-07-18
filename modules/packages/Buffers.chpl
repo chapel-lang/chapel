@@ -278,7 +278,6 @@ module Buffers {
 
   /* A region within a buffer (indicated by two :record:`buffer_iterator` s ) */
   pragma "ignore noinit"
-  pragma "use default init"
   record buffer_range {
     var start:buffer_iterator;
     var end:buffer_iterator;

@@ -26,7 +26,6 @@ module MatrixMarket {
   enum MMTypes { Real, Complex, Pattern }
   enum MMFormat { Symmetric, General }
 
-  pragma "use default init"
   record MMInfo {
     var mm_coordfmt:MMCoordFormat;
     var mm_types:MMTypes;
