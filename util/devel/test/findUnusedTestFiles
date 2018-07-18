@@ -103,9 +103,9 @@ for f in $(find $CHPL_HOME/test                                               \
       # it just invokes "../../PREDIFF $0", so the later PREDIFF section
       # won't catch it.
 
-      # Keep the line testing it under 80 columns.  Sigh.
-      DRAPM="$CHPL_HOME/test/distributions/robust/"
-      DRAPM="${DRAPM}arithmetic/performance/multilocale"
+      # Keep the line testing this path under 80 columns.  Sigh.
+      DRAPM="$CHPL_HOME/test/distributions/robust"
+      DRAPM="${DRAPM}/arithmetic/performance/multilocale"
       if [ $d == $DRAPM ]; then
 	  base=${base%.cyclic}
 	  base=${base%.replicated}
@@ -141,7 +141,7 @@ for f in $(find $CHPL_HOME/test                                               \
       continue
    fi
 
-   # See if this file is symlinked to
+   # See if this file is symlinked to by something in its dir
    if ls -lR "$d" | grep ^l | grep " -> $(basename $f)" > /dev/null 2>&1; then
      continue
    fi
