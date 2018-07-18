@@ -45,9 +45,12 @@ for f in $(find $CHPL_HOME/test                                               \
            -name \*.perfcompopts -o -name \*.perfexecopts                     \
           ); do
 
+   d=$(dirname $f)
+
    # Get the base name by stripping off the extensions we're looking
    # for, and extensions the test system will automatically look for
    # ("no-local" and following (order matters)).
+   f=$(basename $f)
    base=$f
    for ext in good bad future prediff precomp preexec compopts execopts      \
               numlocales catfiles notest noexec cleanfiles skipif suppressif \
@@ -72,8 +75,6 @@ for f in $(find $CHPL_HOME/test                                               \
    # deprecated/potential future chpldoc mode #1369 e9a18221a
    base=${base/%.logical.doc/.doc}
 
-   d=$(dirname $f)
-
    # Ignore everything in a NOTEST dir
    if [ -f $d/NOTEST ]; then
        continue
@@ -82,15 +83,15 @@ for f in $(find $CHPL_HOME/test                                               \
    # Note .bad files lacking a .future.  This is much simpler than all
    # the ways .good files can be named.
    if [ $BADFILE == 1 ]; then
-       if [ ! -f ${base}.future ]; then
-	   echo ${f#${CHPL_HOME}/}
+       if [ ! -f $d/${base}.future ]; then
+	   echo ${d#${CHPL_HOME}/}/$f
 	   continue
        fi
    fi
 
    # A .notest, .skipif, or .suppressif file can apply to a subdirectory
    if [ $NOTESTFILE == 1 -o $SKIPIFFILE == 1 -o $SUPPRESSIFFILE == 1 ]; then
-       if [ -d ${base} ]; then
+       if [ -d $d/${base} ]; then
 	   continue
        fi
    fi
@@ -117,8 +118,6 @@ for f in $(find $CHPL_HOME/test                                               \
 	   $d == "$CHPL_HOME/test/release/examples/benchmarks/isx/goods-4" -o \
 	   $d == "$CHPL_HOME/test/studies/isx/goods-1" -o \
 	   $d == "$CHPL_HOME/test/studies/isx/goods-4" ]; then
-	  base=${base/\/goods-1/}
-	  base=${base/\/goods-4/}
 	  d=${d/\/goods-1/}
 	  d=${d/\/goods-4/}
       fi
@@ -136,12 +135,12 @@ for f in $(find $CHPL_HOME/test                                               \
    toml=${base}.toml
    c=${base}.test.c
 
-   if [ -f $chpl -o -f $c -o -f $toml ]; then
+   if [ -f $d/$chpl -o -f $d/$c -o -f $d/$toml ]; then
       continue
    fi
 
    # See if this file is symlinked to by something in its dir
-   if ls -lR "$d" | grep ^l | grep " -> $(basename $f)" > /dev/null 2>&1; then
+   if ls -lR "$d" | grep ^l | grep " -> $f" > /dev/null 2>&1; then
      continue
    fi
 
@@ -153,7 +152,7 @@ for f in $(find $CHPL_HOME/test                                               \
    # Some opts files have "# goodname.good", others just "# goodname",
    # so check $base instead of $f.
    # The grep includes /dev/null in case $co $eo and $cdo are all empty.
-   if grep $(basename $base) $co $eo $cdo /dev/null > /dev/null 2>&1; then
+   if grep $base $co $eo $cdo /dev/null > /dev/null 2>&1; then
       continue
    fi
 
@@ -174,11 +173,11 @@ for f in $(find $CHPL_HOME/test                                               \
 	   base=${base%.[0-9]*-[0-9]*}
 	   chpl=$base.chpl
 	   c=$base.test.c
-	   if [ -f $chpl -o -f $c ]; then
+	   if [ -f $d/$chpl -o -f $d/$c ]; then
                continue
 	   fi
        fi
    fi
 
-   echo ${f#${CHPL_HOME}/}
+   echo ${d#${CHPL_HOME}/}/$f
 done
