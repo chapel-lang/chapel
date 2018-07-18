@@ -57,7 +57,6 @@ public:
   RetTag         iteratorRetTag;
 };
 
-CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec);
 CallExpr* isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts);
 void lowerIterator(FnSymbol* fn);
 

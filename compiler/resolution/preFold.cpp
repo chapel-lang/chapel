@@ -22,7 +22,6 @@
 #include "astutil.h"
 #include "driver.h"
 #include "ForallStmt.h"
-#include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
 #include "resolution.h"
@@ -858,7 +857,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // This is a type. Do not do shape.
       retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
+    } else if (ir->type == dtUnknown) {
+      // Ex. test/arrays/return/returnArbitraryArray and siblings.
+      INT_ASSERT(ir->hasFlag(FLAG_RVV));
+      // Delay the lowering - skip 'call' for now.
+      retval = new CallExpr(PRIM_NOOP);
+      call->insertAfter(retval);
     } else {
+      // Keep in sync with setIteratorRecordShape(CallExpr* call).
       INT_ASSERT(ir->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
       Symbol* shapeSpec = toSymExpr(call->get(2))->symbol();
       retval = setIteratorRecordShape(call, ir, shapeSpec);

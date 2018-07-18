@@ -29,7 +29,6 @@
 #include "oldCollectors.h"
 #include "optimizations.h"
 #include "passes.h"
-#include "resolution.h" // maybe resolve* belong in passes.h?
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -110,6 +109,7 @@ removeRetSymbolAndUses(FnSymbol* fn) {
   return yieldedType;
 }
 
+
 //
 // Handle the shape of the yielded values.
 //
@@ -150,6 +150,21 @@ CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec) {
 
   return new CallExpr(PRIM_SET_MEMBER, ir, field, value);
 }
+
+//
+// Replaces the primitive 'call' with the above.
+//
+void setIteratorRecordShape(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE));
+
+  // Keep in sync with the PRIM_ITERATOR_RECORD_SET_SHAPE case in preFold.
+  Symbol* ir = toSymExpr(call->get(1))->symbol();
+  INT_ASSERT(ir->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
+  Symbol* shapeSpec = toSymExpr(call->get(2))->symbol();
+  CallExpr* shapeCall = setIteratorRecordShape(call, ir, shapeSpec);
+  call->replace(shapeCall);
+}
+
 
 //
 // Determines that an iterator has a single loop with a single yield

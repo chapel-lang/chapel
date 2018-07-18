@@ -567,6 +567,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
           VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
           CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
+          CallExpr*  shapeSet  = toCallExpr(call->next);
           FnSymbol*  unrefFn   = NULL;
 
           // Used by callDestructors to catch assignment from
@@ -582,6 +583,13 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
           resolveFunction(unrefFn);
 
+          if (shapeSet) {
+            if (!shapeSet->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE))
+              shapeSet = NULL;
+            else
+              INT_ASSERT(toSymExpr(shapeSet->get(1))->symbol() == ret);
+          }
+
           // Relies on the ArrayView variant having
           // the 'unref fn' flag in ChapelArray.
           if (arrayIsh && unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
@@ -594,9 +602,17 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
             initTmp->remove();
 
             INT_ASSERT(unrefCall->inTree() == false);
+
+            if (shapeSet) setIteratorRecordShape(shapeSet);
+
+          } else if (shapeSet) {
+            // set the shape on the "array unref temp" instead of 'ret'
+            shapeSet->get(1)->replace(new SymExpr(tmp));
+            call->insertBefore(shapeSet->remove());
+            setIteratorRecordShape(shapeSet);
           }
         }
-              }
+      }
     }
   }
 }
