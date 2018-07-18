@@ -893,6 +893,15 @@ static CallExpr* makeUnmanagedNew(Expr* typeArg, Expr* arg) {
                                       new SymExpr(dtUnmanaged->symbol))));
 }
 
+static void adjustMinMaxReduceOp(Expr* reduceOp) {
+  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(reduceOp)) {
+    if (!strcmp(sym->unresolved, "max"))
+      sym->unresolved = astr("MaxReduceScanOp");
+    else if (!strcmp(sym->unresolved, "min"))
+      sym->unresolved = astr("MinReduceScanOp");
+  }
+}  
+
 // Do whatever is needed for a reduce intent.
 // Return the globalOp symbol.
 static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
@@ -901,13 +910,7 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
 {
   Expr* reduceOp = reduceOpRef;  // save away these
   Expr* otherROp = otherROpRef;
-
-  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(reduceOp)) {
-    if (!strcmp(sym->unresolved, "max"))
-      sym->unresolved = astr("MaxReduceScanOp");
-    else if (!strcmp(sym->unresolved, "min"))
-      sym->unresolved = astr("MinReduceScanOp");
-  }
+  adjustMinMaxReduceOp(reduceOp);
 
   VarSymbol* globalOp;
   if (useThisGlobalOp) {
@@ -1208,6 +1211,7 @@ void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar) {
   Expr* ovar = new UnresolvedSymExpr(svar->name);
   if (Expr* ri = svar->reduceOpExpr()) {
     // This is a reduce intent. NB 'intent' is undefined.
+    adjustMinMaxReduceOp(ri);
     ti->insertAtTail(ri);
     ti->insertAtTail(ovar);
   } else {
@@ -1738,13 +1742,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
 static void
 buildReduceScanPreface1(FnSymbol* fn, Symbol* data, Symbol* eltType,
                        Expr* opExpr, Expr* dataExpr, bool zippered=false) {
-  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(opExpr)) {
-    if (!strcmp(sym->unresolved, "max"))
-      sym->unresolved = astr("MaxReduceScanOp");
-    else if (!strcmp(sym->unresolved, "min"))
-      sym->unresolved = astr("MinReduceScanOp");
-  }
-
+  adjustMinMaxReduceOp(opExpr);
   eltType->addFlag(FLAG_MAYBE_TYPE);
   fn->insertAtTail(new DefExpr(eltType));
 
