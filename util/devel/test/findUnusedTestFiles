@@ -35,7 +35,7 @@
 # The script reports to stdout the name of any test file it thinks is
 # unused.
 
-for g in $(find $CHPL_HOME/test                                               \
+for f in $(find $CHPL_HOME/test                                               \
            -name \*.good       -o -name \*.bad      -o -name \*.future -o     \
            -name \*.prediff    -o -name \*.precomp  -o -name \*.preexec -o    \
            -name \*.compopts   -o -name \*.execopts -o -name \*.numlocales -o \
@@ -48,7 +48,7 @@ for g in $(find $CHPL_HOME/test                                               \
    # Get the base name by stripping off the extensions we're looking
    # for, and extensions the test system will automatically look for
    # ("no-local" and following (order matters)).
-   base=$g
+   base=$f
    for ext in good bad future prediff precomp preexec compopts execopts      \
               numlocales catfiles notest noexec cleanfiles skipif suppressif \
               timeout perfnumtrials perfcompopts perfexecopts                \
@@ -62,19 +62,19 @@ for g in $(find $CHPL_HOME/test                                               \
    NOTESTFILE=0
    SKIPIFFILE=0
    SUPPRESSIFFILE=0
-   [ ${g%.good} == ${g}   ] || GOODFILE=1
-   [ ${g%.bad} == ${g}    ] || BADFILE=1
-   [ ${g%.future} == ${g} ] || FUTUREFILE=1
-   [ ${g%.notest} == ${g} ] || NOTESTFILE=1
-   [ ${g%.skipif} == ${g} ] || SKIPIFFILE=1
-   [ ${g%.suppressif} == ${g} ] || SUPPRESSIFFILE=1
+   [ ${f%.good} == ${f}   ] || GOODFILE=1
+   [ ${f%.bad} == ${f}    ] || BADFILE=1
+   [ ${f%.future} == ${f} ] || FUTUREFILE=1
+   [ ${f%.notest} == ${f} ] || NOTESTFILE=1
+   [ ${f%.skipif} == ${f} ] || SKIPIFFILE=1
+   [ ${f%.suppressif} == ${f} ] || SUPPRESSIFFILE=1
 
    # deprecated/potential future chpldoc mode #1369 e9a18221a
    base=${base/%.logical.doc/.doc}
 
    c=${base}.test.c
 
-   d=$(dirname $g)
+   d=$(dirname $f)
 
    # Ignore everything in a NOTEST dir
    if [ -f $d/NOTEST ]; then
@@ -85,7 +85,7 @@ for g in $(find $CHPL_HOME/test                                               \
    # the ways .good files can be named.
    if [ $BADFILE == 1 ]; then
        if [ ! -f ${base}.future ]; then
-	   echo ${g#${CHPL_HOME}/}
+	   echo ${f#${CHPL_HOME}/}
 	   continue
        fi
    fi
@@ -142,7 +142,7 @@ for g in $(find $CHPL_HOME/test                                               \
    fi
 
    # See if this file is symlinked to
-   if ls -lR "$d" | grep ^l | grep " -> $(basename $g)" > /dev/null 2>&1; then
+   if ls -lR "$d" | grep ^l | grep " -> $(basename $f)" > /dev/null 2>&1; then
      continue
    fi
 
@@ -152,7 +152,7 @@ for g in $(find $CHPL_HOME/test                                               \
    cdo=$(compgen -G $d/'*.chpldocopts')
 
    # Some opts files have "# goodname.good", others just "# goodname",
-   # so check $base instead of $g.
+   # so check $base instead of $f.
    # The grep includes /dev/null in case $co $eo and $cdo are all empty.
    if grep $(basename $base) $co $eo $cdo /dev/null > /dev/null 2>&1; then
       continue
@@ -181,5 +181,5 @@ for g in $(find $CHPL_HOME/test                                               \
        fi
    fi
 
-   echo ${g#${CHPL_HOME}/}
+   echo ${f#${CHPL_HOME}/}
 done
