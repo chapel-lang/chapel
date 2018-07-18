@@ -49,7 +49,7 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # When building the Chapel allocator file we need all the Chapel runtime
   # defs and include directories, plus the third-party include dirs other
   # than that for Qthreads itself (since we're building it).  Notably, we
-  # do not want -DOPTIMIZE; if we have that set when building Qthreads it
+  # do not want -DNDEBUG; if we have that set when building Qthreads it
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
   CFLAGS += \
