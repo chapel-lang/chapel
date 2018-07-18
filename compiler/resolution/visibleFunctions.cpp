@@ -322,8 +322,6 @@ static void getVisibleFunctions(const char*           name,
 
 static bool isTryTokenCond(Expr* expr);
 
-static BlockStmt* collapsedInstantiationPoint(FnSymbol* fn);
-
 BlockStmt* getInstantiationPoint(Expr* expr) {
 
   Expr* cur = expr;
