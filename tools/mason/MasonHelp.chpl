@@ -132,6 +132,24 @@ proc masonSearchHelp() {
   writeln(desc);
 }
 
+proc masonModifyHelp() {
+  writeln("Modify a Mason package's Mason.toml");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason rm [options] package");
+  writeln("    mason add [options] package@version");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln("        --external              Add/Remove dependency from external dependencies");
+  writeln("        --system                Add/Remove dependency from system dependencies");  
+  writeln();
+  writeln("Not listing an option will add/remove the dependency from the Mason [dependencies] table");
+  writeln("Versions are not nessescary for removing");
+  writeln("Manually edit the Mason.toml if multiple versions of the same package are listed");
+  
+}
+
 proc masonEnvHelp() {
   writeln("Print environment variables recognized by mason");
   writeln();
