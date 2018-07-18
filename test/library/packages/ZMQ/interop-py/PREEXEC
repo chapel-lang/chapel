@@ -32,6 +32,7 @@ if [[ ! -f pyzmq-venv/bin/activate ]] ; then
 
     # Create virtualenv
     python ${CHPL_VIRTUALENV} pyzmq-venv
+    touch pyzmq-venv.notest
     source pyzmq-venv/bin/activate
     python -m pip install ${CHPL_PIP_INSTALL_PARAMS} -r requirements.txt
     deactivate
