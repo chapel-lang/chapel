@@ -247,6 +247,10 @@ static const char* convertTypedef(ModuleSymbol*           module,
   const char* typedef_name = astr(tdn->getNameAsString().c_str());
   const clang::Type* contents_type = tdn->getUnderlyingType().getTypePtr();
 
+  // Don't convert primitive types
+  if (typedef_name == dtStringC->symbol->name)
+    return typedef_name;
+
   //If we've already converted this, return immediately to
   //  avoid multiple Chapel definitions.
   if( alreadyConvertedExtern(module, typedef_name) )
