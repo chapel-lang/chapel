@@ -1,12 +1,10 @@
 // Verifies the behavior when a child with a default initializer inherits from
 // a parent that also had a default initializer and inherited from a parent that
 // also had a default initializer.
-pragma "use default init"
 class GrandParent {
   var a: int;
 }
 
-pragma "use default init"
 class Parent : GrandParent {
   var b: int;
 }

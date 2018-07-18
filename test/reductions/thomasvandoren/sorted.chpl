@@ -16,7 +16,6 @@ use Sort;
 // break, though, so I'm leaving it in for now.
 //
 
-pragma "use default init"
 class isSorted : ReduceScanOp {
   type eltType;
   param communicative = false;  // Note: This has no effect in the current

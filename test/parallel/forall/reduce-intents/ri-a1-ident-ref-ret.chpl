@@ -58,7 +58,6 @@ writeln("globalArrIdVar ", globalArrIdVar);
 writeln("globalIntIdVar ", globalIntIdVar);
 
 // uses *Const identity values
-pragma "use default init"
 class PlusReduceOpConst: ReduceScanOp {
   type eltType;
   var  value: eltType;
@@ -72,7 +71,6 @@ class PlusReduceOpConst: ReduceScanOp {
 }
 
 // uses *Var identity values
-pragma "use default init"
 class PlusReduceOpVar: ReduceScanOp {
   type eltType;
   var  value: eltType;

@@ -3,7 +3,6 @@
  * eltType.
  */
 
-pragma "use default init"
 class mink : ReduceScanOp {
   type eltType;
   const k: int = 10;

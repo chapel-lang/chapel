@@ -1,4 +1,3 @@
-pragma "use default init"
 class Grandparent {
   var w: int;
 }

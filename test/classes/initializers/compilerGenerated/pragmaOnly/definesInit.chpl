@@ -1,5 +1,4 @@
 // Verifies behavior when type defines an explicit initializer
-pragma "use default init"
 class Foo {
   var x: int;
 

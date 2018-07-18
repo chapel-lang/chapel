@@ -1,6 +1,5 @@
 use Random;
 
-pragma "use default init"
 class lastmaxloc: ReduceScanOp {
   type eltType;
   var value: eltType = min(eltType);
@@ -24,7 +23,6 @@ class lastmaxloc: ReduceScanOp {
   proc generate() return value;
 }
 
-pragma "use default init"
 class lastminloc: ReduceScanOp {
   type eltType;
   var value: eltType = max(eltType);

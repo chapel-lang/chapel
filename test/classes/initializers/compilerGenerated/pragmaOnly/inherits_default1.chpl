@@ -4,7 +4,6 @@ class Parent {
   var a: int;
 }
 
-pragma "use default init"
 class Child : Parent {
   var b: int;
 }

@@ -1,4 +1,3 @@
-pragma "use default init"
 class LotsOFields {
   var f1: int;
   var f2: real = 14.3;

@@ -3,7 +3,6 @@
 // Simple case to ensure all deinits in a hierarchy are called
 //
 
-pragma "use default init"
 class Parent {
   type idxType;
 
@@ -30,7 +29,6 @@ writeln();
 // More complex case that mimics some BaseDom hierarchy
 //
 
-pragma "use default init"
 class A {
   param rank : int;
   type idxType;
@@ -39,7 +37,6 @@ class A {
   }
 }
 
-pragma "use default init"
 class B : A {
   var x : int;
   proc deinit() {

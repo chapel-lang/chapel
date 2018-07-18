@@ -1,4 +1,3 @@
-pragma "use default init"
 class Parent {
   var x: int;
 }

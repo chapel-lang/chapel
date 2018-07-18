@@ -1,5 +1,4 @@
 // Verifies behavior when type defines multiple explicit constructors
-pragma "use default init"
 class Foo {
   var x: int;
 

@@ -6,7 +6,6 @@ var ARR: [1..n] int = 1..n;
 var numErrors = 0;
 
 // A (simplified) copy of the predefined SumReduceScanOp.
-pragma "use default init"
 class UserReduceOp: ReduceScanOp {
   type eltType;
   var value: eltType;

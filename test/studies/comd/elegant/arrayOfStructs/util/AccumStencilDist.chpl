@@ -80,7 +80,6 @@ class LocAccumStencil {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-pragma "use default init"
 class AccumStencilDom: BaseRectangularDom {
   param ignoreFluff : bool;
   const dist: unmanaged AccumStencil(rank, idxType, ignoreFluff);
@@ -121,7 +120,6 @@ class LocAccumStencilDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-pragma "use default init"
 class AccumStencilArr: BaseRectangularArr {
   param ignoreFluff: bool;
   var doRADOpt: bool = defaultDoRADOpt;

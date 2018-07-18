@@ -1,7 +1,6 @@
 class C {
   var x: owned D(int);
 
-  pragma "use default init"
   class D {
     var y;
   }

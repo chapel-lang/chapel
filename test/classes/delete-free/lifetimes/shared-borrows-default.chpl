@@ -3,12 +3,10 @@ module l16 {
 
 use SharedObject;
 
-pragma "use default init"
 class MyClass {
   var x:int;
 }
 
-pragma "use default init"
 record R {
   var c:Shared(MyClass);
 }

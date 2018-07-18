@@ -12,12 +12,10 @@ class Grandparent {
   }
 }
 
-pragma "use default init"
 class Parent: Grandparent {
   var b: int;
 }
 
-pragma "use default init"
 class Child : Parent {
   var c: int;
 }

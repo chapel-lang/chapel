@@ -13,7 +13,6 @@ class Parent {
   }
 }
 
-pragma "use default init"
 class Child : Parent {
   var b: int;
 }

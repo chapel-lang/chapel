@@ -5,7 +5,6 @@ class GrandParent {
   var a: int;
 }
 
-pragma "use default init"
 class Parent : GrandParent {
   var b: int;
 }

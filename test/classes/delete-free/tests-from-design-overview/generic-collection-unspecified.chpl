@@ -1,7 +1,5 @@
-pragma "use default init"
 class MyClass { var x:int; }
 
-pragma "use default init"
 record Collection {
   var element;
 }

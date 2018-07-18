@@ -9,7 +9,6 @@ class Parent : GrandParent {
   var b: int;
 }
 
-pragma "use default init"
 class Child : Parent {
   var c: int;
 }
