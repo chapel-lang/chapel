@@ -1,1 +1,2 @@
-CHPL_GMP==none
+# Tests in this directory assume we can use GMP
+CHPL_GMP == none
