@@ -86,7 +86,7 @@ proc checkInstalled(pkgName: string) throws {
 /* Lists all packages available on user system */
 proc listAllPkgs() {
   const command = "pkg-config --list-all";
-  const startus = runCommand(command);
+  const status = runCommand(command);
 }
 
 
@@ -109,7 +109,7 @@ proc printPkgPc(pkgName: string) throws {
 
 
 /* Gets a single variable from pkg-config
-   given pkgname and variable */
+   given package name and variable */
 proc getPkgVariable(pkgName: string, option: string) {
 
   var command = " ".join("pkg-config", pkgName, option);
@@ -128,7 +128,7 @@ proc getPkgVariable(pkgName: string, option: string) {
   return lines;
  }
 
-/* Queries pkg-config for package existance */
+/* Queries pkg-config for package existence */
 proc pkgExists(pkgName: string) : bool {
 
   const debug = " --print-errors";

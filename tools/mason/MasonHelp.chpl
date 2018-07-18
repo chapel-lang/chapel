@@ -46,6 +46,7 @@ proc masonHelp() {
   writeln('    clean       Remove the target directory');
   writeln('    doc         Build this project\'s documentation');
   writeln('    test        Compile and run tests found in /test');
+  writeln('    system      Integrate with system packages found via pkg-config');
 }
 
 proc masonList() {
@@ -61,6 +62,7 @@ proc masonList() {
   writeln('      doc                ');
   writeln('      help               ');
   writeln('      version            ');
+  writeln('      system             ');
 }
 
 
@@ -169,7 +171,7 @@ proc masonSystemHelp() {
   writeln("Options:");
   writeln("    pc                          Print a system packages .pc file");
   writeln("    list                        List all packages available on the system");
-  writeln("    -i, --installed             Check for package existance on system");
+  writeln("    -i, --installed             Check for package existence on system");
   writeln("    -h, --help                  Display this message");
   writeln();
   writeln("The pc command sometimes has trouble finding a .pc file if the file is named ");
