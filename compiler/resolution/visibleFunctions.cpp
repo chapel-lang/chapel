@@ -377,6 +377,7 @@ BlockStmt* getVisibilityScope(Expr* expr) {
     // Pretend that ArgSymbols are in the function's body
     // (which is reasonable since functions cannot be defined
     //  within an ArgSymbol).
+    // See e.g. test default-argument-generic.chpl
     if (isArgSymbol(cur->parentSymbol)) {
       return cur->getFunction()->body;
     }
