@@ -100,7 +100,7 @@ FnSymbol* debugGetTheIteratorFn(Type* type) {
   FnSymbol* result = NULL;
   if (AggregateType* agg = toAggregateType(type)) {
     if (agg->symbol->hasFlag(FLAG_TUPLE)) {
-      // Sometimes the first field of the tuple is its size.
+      // Through the end of resolution, the first field is the tuple size.
       if (!strcmp(agg->getField(1)->name, "size")) {
         if (!strcmp(agg->getField(2)->name, "x1"))
           result = getTheIteratorFn(agg->getField(2)->type);

@@ -2059,11 +2059,12 @@ static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
   // Which of call's arguments determines the shape?
   Symbol* shapeSource = NULL;
   int i = 0;
-  for_actuals(actual, call)
+  for_actuals(actual, call) {
     if (promotion.promotedType[i++] != NULL) {
       shapeSource = toSymExpr(actual)->symbol();
       break;
     }
+  }
 
   move->insertAfter(new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE,
                                  irTemp, shapeSource));

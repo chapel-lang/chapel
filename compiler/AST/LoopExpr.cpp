@@ -172,7 +172,7 @@ GenRet LoopExpr::codegen() {
 static int loopexpr_uid = 1;
 
 static CallExpr* buildLoopExprFunctions(LoopExpr* faExpr);
-static void addIterRecShape(CallExpr* feRep, bool zippered);
+static void addIterRecShape(CallExpr* forallExprCall, bool zippered);
 
 class LowerLoopExprVisitor : public AstVisitorTraverse
 {
@@ -239,13 +239,13 @@ static Expr* getShapeForZippered(Expr* tupleRef) {
   return buildTup->get(1);
 }
 
-// 'feRep', during resolution, is an iterator record for the
-// forall expression. Ensure it will get a shape.
-static void addIterRecShape(CallExpr* feRep, bool zippered) {
-  if (CallExpr* move = toCallExpr(feRep->parentExpr)) {
+// 'forallExprCall', during resolution, returns an iterator record
+// for the forall expression. Ensure it will get a shape.
+static void addIterRecShape(CallExpr* forallExprCall, bool zippered) {
+  if (CallExpr* move = toCallExpr(forallExprCall->parentExpr)) {
     if (move->isPrimitive(PRIM_MOVE)) {
       Expr* dest = move->get(1)->copy();
-      Expr* shape = feRep->get(1);
+      Expr* shape = forallExprCall->get(1);
       if (zippered) shape = getShapeForZippered(shape);
       move->getStmtExpr()->insertAfter(
         new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE, dest, shape->copy()));

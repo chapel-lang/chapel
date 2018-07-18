@@ -139,7 +139,7 @@ CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec) {
   if (field == NULL) {
     field = new VarSymbol("_shape_", value->type);
     iRecord->fields.insertAtTail(new DefExpr(field));
-    // TODO: what should accessor's return intent be?
+    // An accessor lets us get _shape_ in Chapel code.
     FnSymbol* accessor = build_accessor(iRecord, field, false, false);
     // This sidesteps the visibility issue in the presence of nested
     // LoopExprs. Ex. test/expressions/loop-expr/scoping.chpl

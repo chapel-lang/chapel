@@ -533,6 +533,7 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
 ************************************** | *************************************/
 
 static bool doNotUnaliasArray(FnSymbol* fn);
+static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
   bool skipArray = doNotUnaliasArray(fn);
@@ -567,7 +568,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
           VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
           CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
-          CallExpr*  shapeSet  = toCallExpr(call->next);
+          CallExpr*  shapeSet  = findSetShape(call, ret);
           FnSymbol*  unrefFn   = NULL;
 
           // Used by callDestructors to catch assignment from
@@ -582,13 +583,6 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
           unrefFn = resolveNormalCall(unrefCall);
 
           resolveFunction(unrefFn);
-
-          if (shapeSet) {
-            if (!shapeSet->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE))
-              shapeSet = NULL;
-            else
-              INT_ASSERT(toSymExpr(shapeSet->get(1))->symbol() == ret);
-          }
 
           // Relies on the ArrayView variant having
           // the 'unref fn' flag in ChapelArray.
@@ -606,7 +600,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
             if (shapeSet) setIteratorRecordShape(shapeSet);
 
           } else if (shapeSet) {
-            // set the shape on the "array unref temp" instead of 'ret'
+            // Set the shape on the array unref temp instead of 'ret'.
             shapeSet->get(1)->replace(new SymExpr(tmp));
             call->insertBefore(shapeSet->remove());
             setIteratorRecordShape(shapeSet);
@@ -661,6 +655,19 @@ bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
   } else {
     return false;
   }
+}
+
+// Find the PRIM_ITERATOR_RECORD_SET_SHAPE call following 'setRet'.
+// It should be setting the shape for 'ret'.
+static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
+  for (Expr* curr = setRet->next; curr; curr = curr->next)
+    if (CallExpr* call = toCallExpr(curr))
+      if (call->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE)) {
+        INT_ASSERT(toSymExpr(call->get(1))->symbol() == ret);
+        return call;
+      }
+  // not found
+  return NULL;
 }
 
 /************************************* | **************************************
