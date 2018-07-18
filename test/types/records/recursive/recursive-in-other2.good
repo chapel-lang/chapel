@@ -1,0 +1,1 @@
+recursive-in-other2.chpl:11: error: record 'C' cannot contain a recursive field 'b' whose type 'B' contains 'C'

@@ -1931,7 +1931,58 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
   return call->resolvedFunction();
 }
 
+static void checkForInfiniteRecord(AggregateType* at, std::set<AggregateType*>& nestedRecords) {
+  for_fields(field, at) {
+    if (isRecord(field->type)) {
+      AggregateType* ft = toAggregateType(field->type);
+      if (nestedRecords.find(ft) != nestedRecords.end()) {
+        // Found a cycle
+        // Note: error message text agreed upon in #10281
+        if (ft == at) {
+          // Simple cycle:
+          // record B {
+          //   var b : B;
+          // }
+          USR_FATAL(field,
+                    "record '%s' cannot contain a recursive field '%s' of type '%s'",
+                    at->symbol->name,
+                    field->name,
+                    at->symbol->name);
+        } else {
+          // Cycle involving multiple records
+          if (at->symbol->hasFlag(FLAG_TUPLE)) {
+            USR_FATAL(ft, "tuple '%s' cannot contain recursive record type '%s'", at->symbol->name, ft->symbol->name);
+          } else {
+            USR_FATAL(field,
+                      "record '%s' cannot contain a recursive field '%s' whose type '%s' contains '%s'",
+                      at->symbol->name,
+                      field->name,
+                      ft->symbol->name,
+                      at->symbol->name);
+          }
+        }
+      } else {
+        nestedRecords.insert(ft);
+        checkForInfiniteRecord(ft, nestedRecords);
+        nestedRecords.erase(ft);
+      }
+    }
+  }
+}
+
+// Convenience wrapper
+static void checkForInfiniteRecord(AggregateType* at) {
+  std::set<AggregateType*> nestedRecords;
+  nestedRecords.insert(at);
+  checkForInfiniteRecord(at, nestedRecords);
+}
+
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
+
+  if (isRecord(at)) {
+    checkForInfiniteRecord(at);
+  }
+
   if (at->symbol->instantiationPoint == NULL &&
       fn->instantiationPoint != NULL) {
     at->symbol->instantiationPoint = fn->instantiationPoint;
@@ -2429,6 +2480,15 @@ static void resolveNormalCallFinalChecks(CallExpr* call) {
 static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
                                        CallInfo&            info,
                                        bool                 followerChecks) {
+  if (best->fn->isInitializer()) {
+    AggregateType* at = toAggregateType(best->fn->_this->getValType());
+    if (isRecord(at)) {
+      // If we allow an infinite record's initializer to be processed for
+      // default values, we will enter an infinite loop and the compiler will
+      // crash.
+      checkForInfiniteRecord(at);
+    }
+  }
   best->fn = wrapAndCleanUpActuals(best->fn,
                                    info,
                                    best->actualIdxToFormal,
@@ -8190,6 +8250,9 @@ static void resolveAutoCopies() {
         ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isRecord(at) == true) {
+          // If we attempt to resolve auto-copy and co. for an infinite record
+          // we may enter an infinite loop and the compiler will crash.
+          checkForInfiniteRecord(at);
           resolveAutoCopyEtc(at);
         }
 
