@@ -1,1 +1,1 @@
-bug: default constructor expects a sync int, but when passed an int upon construction, does not perform a coercion from int to sync inc.  
+bug: default initializer expects a sync int, but when passed an int upon initialization, does not perform a coercion from int to sync inc.
