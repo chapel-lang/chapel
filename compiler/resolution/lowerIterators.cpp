@@ -839,22 +839,22 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
     Expr* actual = loopBodyFnCall->get(2)->remove();
     ArgSymbol* formal = loopBodyFn->getFormal(i+1);
     // The formal's ref-ness must transfer to 'field' below.
+    bool fieldIsRef = formal->isRef();
     // Todo: replace ref type with QUAL_REF.
-    Type* fieldType = formal->isRef() ? formal->type->getRefType() : formal->type;
+    Type* fieldType = fieldIsRef ? formal->type->getRefType() : formal->type;
 
     // Create a field for this arg.
     VarSymbol* field = new VarSymbol(astr("_arg", istr(i++)), fieldType);
     ct->fields.insertAtTail(new DefExpr(field));
-    if (fieldType->isRef())
-      if (SymExpr* actualSE = toSymExpr(actual))
-        if (actualSE->symbol()->isConstValWillNotChange())
-          field->addFlag(FLAG_REF_TO_IMMUTABLE);
+    // Make sure the older code is aligned with newer representation.
+    INT_ASSERT(fieldIsRef == fieldType->isRef());
+    INT_ASSERT(fieldIsRef == field->type->symbol->hasFlag(FLAG_REF));
 
-    if (field->type->symbol->hasFlag(FLAG_REF) &&
-        field->getValType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
+    if (fieldIsRef) {
       // Does anything need to be done here if the iterator invokes
       // task function(s)?
-      if (iteratorFn->hasFlag(FLAG_ITERATOR_WITH_ON)) {
+      if (iteratorFn->hasFlag(FLAG_ITERATOR_WITH_ON) &&
+          field->getValType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
 
         // For recursive args in forked bodies,
         // build up a local copy of the argument bundle (recursive copy).
@@ -885,6 +885,18 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
         iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, castTmp)));
         iteratorFnCall->insertAfter(new CallExpr(argBundleFreeFn, recursiveFnID, retTmp));
         actual = new SymExpr(tmp);
+      }
+      else if (SymExpr* actualSE = toSymExpr(actual)) {
+        Symbol* actualSym = actualSE->symbol();
+        if (actualSym->isConstValWillNotChange())
+          field->addFlag(FLAG_REF_TO_IMMUTABLE);
+        if (!actualSym->isRef()) {
+          // We are passing the actual by reference. Add a ref temp.
+          VarSymbol* refTmp = newTemp("refTmp", fieldType);
+          iteratorFnCall->insertBefore(new DefExpr(refTmp));
+          iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, refTmp, new CallExpr(PRIM_ADDR_OF, actual)));
+          actual = new SymExpr(refTmp);
+        }
       }
     }
 

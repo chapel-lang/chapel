@@ -97,9 +97,6 @@ void buildEnumFunctions(EnumType* et);
 FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
                          bool setter, bool typeMethod);
 
-// callDestructors.cpp
-void insertReferenceTemps(CallExpr* call);
-
 // createTaskFunctions.cpp -> implementForallIntents.cpp
 extern Symbol* markPruned;
 extern Symbol* markUnspecified;

@@ -342,7 +342,7 @@ ReturnByRef::transformableFunctionKind(FnSymbol* fn)
 
   // Task functions within iterators can yield and so also need
   // this transformation.
-  // Reasonable alternative: update insertYieldTemps to handle
+  // Reasonable alternative: update insertCopiesForYields to handle
   // yielding a PRIM_DEREF or yielding a reference argument.
   if (fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
     if (isUserDefinedRecord(fn->iteratorInfo->yieldedType))
@@ -759,8 +759,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   // Noakes 2017/03/04
   // Cannot use the qualified-type here.  The formal may be still a _ref(type)
   // and using a qualified-type generates yet another temp.
-  Symbol*   tmpVar    = newTemp("ret_tmp",             useLhs->type);
-  Symbol*   refVar    = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
+  Symbol*   tmpVar    = newTemp("ret_tmp", useLhs->type);
 
   FnSymbol* unaliasFn = NULL;
 
@@ -810,17 +809,12 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
     }
   }
 
-  // Introduce a tmpVar and a reference to the tmpVar
-  CallExpr* addrOfTmp = new CallExpr(PRIM_ADDR_OF, tmpVar);
-
-  moveExpr->insertBefore(new DefExpr(tmpVar));
-  moveExpr->insertBefore(new DefExpr(refVar));
-  moveExpr->insertBefore(new CallExpr(PRIM_MOVE, refVar, addrOfTmp));
-
   // Convert the by-value call to a void call with an additional formal
   moveExpr->replace(callExpr->remove());
 
-  callExpr->insertAtTail(refVar);
+  callExpr->insertAtTail(tmpVar);
+
+  callExpr->insertBefore(new DefExpr(tmpVar));
   callExpr->insertAfter(new CallExpr(PRIM_MOVE, useLhs, tmpVar));
 
   // Possibly reduce a copy operation to a simple move
@@ -838,7 +832,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
       // bad AST if I simply did this:
       //   copyExpr->replace(new CallExpr(unaliasFn, refVar));
       VarSymbol* unaliasTemp = newTemp("unaliasTemp", unaliasFn->retType);
-      CallExpr*  unaliasCall = new CallExpr(unaliasFn, refVar);
+      CallExpr*  unaliasCall = new CallExpr(unaliasFn, tmpVar);
 
       callExpr->insertBefore(new DefExpr(unaliasTemp));
       callExpr->insertAfter(new CallExpr(PRIM_MOVE, unaliasTemp, unaliasCall));
@@ -1108,7 +1102,7 @@ static void insertDestructorCalls() {
 //
 // Note that for parallel iterators, yields can occur in task
 // functions (that aren't iterators themselves).
-static void insertYieldTemps()
+static void insertCopiesForYields()
 {
   // Examine all calls.
   forv_Vec(CallExpr, call, gCallExprs)
@@ -1164,42 +1158,6 @@ static void insertYieldTemps()
 
         foundSe->replace(new SymExpr(tmp));
       }
-    }
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
-* Insert reference temps for function arguments that expect them.             *
-*                                                                             *
-************************************** | *************************************/
-
-static void insertReferenceTemps() {
-  forv_Vec(CallExpr, call, gCallExprs) {
-    // Is call in the tree?
-    if (call->inTree()) {
-      if (call->isResolved() || call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-        insertReferenceTemps(call);
-      }
-    }
-  }
-}
-
-void insertReferenceTemps(CallExpr* call) {
-  for_formals_actuals(formal, actual, call) {
-    if (formal->type == actual->typeInfo()->refType) {
-      SET_LINENO(call);
-
-      VarSymbol* tmp    = newTemp("_ref_tmp_", formal->qualType());
-
-      tmp->addFlag(FLAG_REF_TEMP);
-      actual->replace(new SymExpr(tmp));
-
-      Expr*      stmt   = call->getStmtExpr();
-      CallExpr*  addrOf = new CallExpr(PRIM_ADDR_OF, actual);
-
-      stmt->insertBefore(new DefExpr(tmp));
-      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, addrOf));
     }
   }
 }
@@ -1381,14 +1339,13 @@ void callDestructors() {
 
   ReturnByRef::apply();
 
-  insertYieldTemps();
+  insertCopiesForYields();
 
   checkLifetimes();
 
   lateConstCheck(NULL);
 
   insertGlobalAutoDestroyCalls();
-  insertReferenceTemps();
 
   checkForErroneousInitCopies();
 

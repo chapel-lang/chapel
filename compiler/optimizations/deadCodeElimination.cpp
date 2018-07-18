@@ -317,47 +317,36 @@ static bool isDeadStringLiteral(VarSymbol* string) {
 }
 
 //
-// Noakes 2017/03/04
+// Noakes 2017/03/04, updated 2018/05
 //
-// The current pattern to initialize a string literal is approximately
+// The current pattern to initialize a string literal,
+// a VarSymbol _str_literal_NNN, is approximately
 //
-//   var  call_tmp : c_ptr;
+//   def  call_tmp : c_ptr;
+//   move call_tmp, cast(c_ptr(uint(8)), c"literal string");
 //
-//   move call_tmp, cast(c_ptr(uint(8)), c"literal string")
+//   def  new_temp  : string;
+//   call init(new_temp, call_tmp, ...);
 //
-//   var  ret_tmp  : string;
-//   ref  ref_tmp  : string;
+//   move _str_literal_NNN, new_temp;  // this is 'defn' - the single def
 //
-//   move ref_tmp,  addrOf(ret_tmp);
-//
-//   _construct_string(call_tmp, ... , ref_tmp);
-//
-//   move the_str,  ret_tmp       // This is the single def
-//
-
 static void removeDeadStringLiteral(DefExpr* defExpr) {
   SymExpr*   defn  = toVarSymbol(defExpr->sym)->getSingleDef();
 
-  // Step backwards from the def of 'the_str'
-  Expr*      stmt7 = defn->getStmtExpr();         // move the_str, ret_tmp
-  Expr*      stmt6 = stmt7 ? stmt7->prev : NULL;  // _construct_string
-  Expr*      stmt5 = stmt6 ? stmt6->prev : NULL;  // move ref_tmp, addrOf(..)
-  Expr*      stmt4 = stmt5 ? stmt5->prev : NULL;  // ref  ref_tmp
-  Expr*      stmt3 = stmt4 ? stmt4->prev : NULL;  // var  ret_tmp
-  Expr*      stmt2 = stmt3 ? stmt3->prev : NULL;  // move call_tmp, cast(..)
-  Expr*      stmt1 = stmt2 ? stmt2->prev : NULL;  // var  call_tmp
+  // Step backwards from 'defn'
+  Expr* stmt5 = defn->getStmtExpr();
+  Expr* stmt4 = stmt5->prev;
+  Expr* stmt3 = stmt4->prev;
+  Expr* stmt2 = stmt3->prev;
+  Expr* stmt1 = stmt2->prev;
 
   // Simple sanity checks
-  INT_ASSERT(isDefExpr (stmt1));
-  INT_ASSERT(isCallExpr(stmt2));
-  INT_ASSERT(isDefExpr (stmt3));
-  INT_ASSERT(isDefExpr (stmt4));
-  INT_ASSERT(isCallExpr(stmt5));
-  INT_ASSERT(isCallExpr(stmt6));
-  INT_ASSERT(isCallExpr(stmt7));
+  INT_ASSERT(isDefExpr (stmt1));   // def  call_tmp
+  INT_ASSERT(isCallExpr(stmt2));   // move call_tmp, cast(...)
+  INT_ASSERT(isDefExpr (stmt3));   // def  new_temp
+  INT_ASSERT(isCallExpr(stmt4));   // call init(...)
+  INT_ASSERT(isCallExpr(stmt5));   // move _str_literal_NNN, new_temp
 
-  stmt7->remove();
-  stmt6->remove();
   stmt5->remove();
   stmt4->remove();
   stmt3->remove();

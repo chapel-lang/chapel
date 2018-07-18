@@ -204,8 +204,18 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     // If we needed to auto-copy it, it should be stored by value
     else if (autoCopy)
       field->qual = QUAL_VAL; // this is a no-op
-    // If the actual is a reference, store a reference
-    else if (var->isRef())
+    // If the actual or the formal is a reference, store a reference
+    else if (var->isRef() ||
+             // 2018-06: for a record or tuple, if the default intent is used,
+             // the formal's type is non-ref and we have been using QUAL_VAL.
+             // Whereas with a const ref intent, the formal's type is ref and
+             // and we have been setting field->qual = QUAL_REF.
+             // TODO: make the behavior consistent in both cases.
+             (formal->isRef() && formal->type->isRef()
+              // For a coforall index variable, pass by ref only
+              // if it is a ref iterator, as indicated by ref-ness of 'var'.
+              && !var->hasFlag(FLAG_COFORALL_INDEX_VAR))
+            )
       field->qual = QUAL_REF;
     // BHARSH TODO: This really belongs in RVF. Note the sync/single comment
     // in 'needsAutoCopyAutoDestroyForArg'
@@ -348,7 +358,6 @@ static Symbol* insertAutoCopyForTaskArg
     fcall->insertBefore(new DefExpr(valTmp));
     CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var);
     fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
-    insertReferenceTemps(autoCopyCall);
     var = valTmp;
   }
 
@@ -376,7 +385,6 @@ static void insertAutoDestroyForVar(Symbol *arg, FnSymbol* wrap_fn)
 
   CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn, arg);
   wrap_fn->insertAtTail(autoDestroyCall);
-  insertReferenceTemps(autoDestroyCall);
 }
 
 static void
@@ -1125,7 +1133,9 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   }
 }
 
+//
 // Returns false if
+//
 //  fLocal == true
 // or
 //  CHPL_COMM == "ugni"
@@ -1141,6 +1151,9 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 // The tasking layer matters because qthreads and fifo allocate task stacks
 // from the communication registered heap (fifo can only do so if stack checks
 // are turned off.)
+//
+// See also the discussion in #9106.
+//
 static bool
 needHeapVars() {
   if (fLocal) return false;
@@ -1172,8 +1185,10 @@ needHeapVars() {
 // refVec.
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
+  if (!needHeapVars()) return; // nothing to do
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_LOCAL_ON) && needHeapVars()) {
+    if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_LOCAL_ON)) {
       for_formals(formal, fn) {
         if (formal->isRef()) {
           refSet.set_add(formal);
@@ -1281,20 +1296,28 @@ makeHeapAllocations() {
           if (formal == arg)
             se = toSymExpr(actual);
         }
-        INT_ASSERT(se);
+        if (se == NULL) {
+          // The 'se' computation above, equivalently formal_to_actual(),
+          // does not handle the case where 'call' is in 'calledBy' because
+          // 'call' is a virtual method call to a function in a parent class.
+          // Ex. dsiReallocate() in arrays/deitz/jacobi-no-local.chpl.
+          // This case is TODO. See also #9106.
+          continue;
+        }
         // Previous passes mean that we should always get a formal SymExpr
         // to match the ArgSymbol.  And that formal should have the
         // ref flag, since we obtained it through the refVec.
-        //
-        // BHARSH TODO: This INT_ASSERT existed before the switch to qualified
-        // types. After the switch it's now possible to pass a non-ref actual
-        // to a ref formal, and codegen will just take care of it.  With that
-        // in mind, do we need to do something here if the actual is not a ref,
-        // or can we just skip that case?
-        //INT_ASSERT(se->symbol()->isRef());
-        if (se->symbol()->isRef() && !refSet.set_in(se->symbol())) {
+        INT_ASSERT(arg->intent & INTENT_FLAG_REF);
+        if (se->symbol()->isRef()) {
+         if (!refSet.set_in(se->symbol())) {
           refSet.set_add(se->symbol());
           refVec.add(se->symbol());
+         }
+        } else {
+          if (!varSet.set_in(se->symbol())) {
+            varSet.set_add(se->symbol());
+            varVec.add(se->symbol());
+          }
         }
         // BHARSH TODO: Need to add to varVec here?
       }

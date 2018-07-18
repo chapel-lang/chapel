@@ -293,24 +293,16 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
 static bool isUse(SymExpr* se)
 {
   if (toGotoStmt(se->parentExpr))
-  {
     return false;
-  }
 
   if (toCondStmt(se->parentExpr))
-  {
     return true;
-  }
 
   if (toBlockStmt(se->parentExpr))
-  {
     return true;
-  }
 
   if (isDefExpr(se->parentExpr))
-  {
     return false;
-  }
 
   CallExpr* call = toCallExpr(se->parentExpr);
 
@@ -318,23 +310,14 @@ static bool isUse(SymExpr* se)
   {
     // Skip the "base" symbol.
     if (se->symbol() == fn)
-    {
       return false;
-    }
 
     // A "normal" call.
     ArgSymbol* arg = actual_to_formal(se);
 
     if (arg->intent == INTENT_OUT ||
-        arg->intent == INTENT_REF)
-    {
+        (arg->intent & INTENT_FLAG_REF))
       return false;
-    } else if (arg->intent == INTENT_CONST_REF &&
-               isRecord(arg->type)) {
-      // We can currently return a const reference to a field in a record
-      // passed by const ref.
-      return false;
-    }
   }
 
   else
