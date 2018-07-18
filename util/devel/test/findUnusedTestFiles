@@ -80,6 +80,12 @@ for f in $(find $CHPL_HOME/test                                               \
        continue
    fi
 
+   # Some .mason dirctories are created at runtime, so ignore e.g. the
+   # .mason.notest even when there's not a .mason dir.
+   if [ ${f#.mason} != $f ]; then
+       continue
+   fi
+
    # Note .bad files lacking a .future.  This is much simpler than all
    # the ways .good files can be named.
    if [ $BADFILE == 1 ]; then
