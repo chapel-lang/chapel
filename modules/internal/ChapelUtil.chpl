@@ -101,7 +101,7 @@ module ChapelUtil {
   pragma "use default init"
   extern record chpl_main_argument {
     var argc: int(64);
-    var argv: _ddata(string);
+    // var argv: c_ptr(c_string);
     var return_value: int(32);
   }
 

@@ -1,2 +1,2 @@
-Warning: sleep() called with negative time parameter
+sleepTimeUnits.chpl:16: warning: sleep() called with negative time parameter: '-5.0'
 Done
