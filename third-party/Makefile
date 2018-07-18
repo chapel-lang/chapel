@@ -127,17 +127,21 @@ $(MASSIVETHREADS_INSTALL_DIR): $(MASSIVETHREADS_DEPEND)
 	rm -rf $(MASSIVETHREADS_INSTALL_DIR) && rm -rf $(MASSIVETHREADS_BUILD_DIR)
 	cd massivethreads && $(MAKE)
 
-# Qthreads may use hwloc and/or jemalloc. Ensure they are built first
+# Qthreads may use hwloc and/or jemalloc, and its use of compileline
+# to get build options requires a completed GASNet build if we're
+# using that. Ensure they are built first.
 ifeq ($(CHPL_MAKE_HWLOC), hwloc)
-QTHREAD_DEPEND_INSTALL_DIRS += $(HWLOC_INSTALL_DIR)
+QTHREAD_OTHER_INSTALL_DIR_DEPS += $(HWLOC_INSTALL_DIR)
 endif
 ifeq ($(CHPL_MAKE_JEMALLOC), jemalloc)
-QTHREAD_DEPEND_INSTALL_DIRS += $(JEMALLOC_INSTALL_DIR)
+QTHREAD_OTHER_INSTALL_DIR_DEPS += $(JEMALLOC_INSTALL_DIR)
 endif
-QTHREAD_DEPEND_INSTALL_DIRS += $(QTHREAD_INSTALL_DIR)
-qthread: $(QTHREAD_DEPEND_INSTALL_DIRS)
+ifeq ($(CHPL_MAKE_COMM), gasnet)
+QTHREAD_OTHER_INSTALL_DIR_DEPS += $(GASNET_INSTALL_DIR)
+endif
+qthread: $(QTHREAD_INSTALL_DIR)
 
-$(QTHREAD_INSTALL_DIR): $(QTHREAD_DEPEND) $(HWLOC_DEPEND) $(JEMALLOC_DEPEND)
+$(QTHREAD_INSTALL_DIR): $(QTHREAD_DEPEND) $(QTHREAD_OTHER_INSTALL_DIR_DEPS)
 	rm -rf $(QTHREAD_INSTALL_DIR) && rm -rf $(QTHREAD_BUILD_DIR)
 	cd qthread && $(MAKE)
 $(QTHREAD_ALIASES): qthread
