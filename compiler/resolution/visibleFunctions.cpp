@@ -369,36 +369,6 @@ BlockStmt* getInstantiationPoint(Expr* expr) {
     INT_FATAL(expr, "Expression has no visibility block.");
 
   return NULL;
-
-  /* old implementation
-
-  if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
-    if (block->blockTag == BLOCK_SCOPELESS)
-      return getInstantiationPoint(block);
-    else if (block->parentExpr && isTryTokenCond(block->parentExpr)) {
-      // Make the visibility block of the then and else blocks of a
-      // conditional using chpl__tryToken be the block containing the
-      // conditional statement.  Without this, there were some cases where
-      // a function gets instantiated into one side of the conditional but
-      // used in both sides, then the side with the instantiation gets
-      // folded out leaving expressions with no visibility block.
-      // test/functions/iterators/angeles/dynamic.chpl is an example that
-      // currently fails without this.
-      return getInstantiationPoint(block->parentExpr);
-    } else
-      return block;
-  } else if (expr->parentExpr) {
-    return getInstantiationPoint(expr->parentExpr);
-  } else if (Symbol* s = expr->parentSymbol) {
-    FnSymbol* fn = toFnSymbol(s);
-    if (fn && fn->instantiationPoint)
-      return fn->instantiationPoint;
-    else
-      return getInstantiationPoint(s->defPoint);
-  } else {
-    INT_FATAL(expr, "Expression has no visibility block.");
-    return NULL;
-  }*/
 }
 
 
@@ -431,21 +401,6 @@ BlockStmt* getVisibilityScope(Expr* expr) {
     INT_FATAL(expr, "Expression has no visibility block.");
 
   return NULL;
-
-  /* the old implementation
-  if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
-    if (block->blockTag == BLOCK_SCOPELESS)
-      return getVisibilityScope(block);
-    else
-      return block;
-  } else if (expr->parentExpr) {
-    return getVisibilityScope(expr->parentExpr);
-  } else if (Symbol* s = expr->parentSymbol) {
-    return getVisibilityScope(s->defPoint);
-  } else {
-    INT_FATAL(expr, "Expression has no visibility block.");
-    return NULL;
-  }*/
 }
 
 //
