@@ -3126,6 +3126,9 @@ static bool populateForwardingMethods(CallInfo& info) {
       FnSymbol* scratch = new FnSymbol("delegate_scratch_fn");
       scratch->addFlag(FLAG_COMPILER_GENERATED);
 
+      if (at->symbol->instantiationPoint)
+        scratch->instantiationPoint = at->symbol->instantiationPoint;
+
       Expr* where = getInsertPointForTypeFunction(at);
       if (BlockStmt* block = toBlockStmt(where))
         block->insertAtHead(new DefExpr(scratch));
