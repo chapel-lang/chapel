@@ -322,6 +322,8 @@ static void getVisibleFunctions(const char*           name,
 
 static bool isTryTokenCond(Expr* expr);
 
+static BlockStmt* collapsedInstantiationPoint(FnSymbol* fn);
+
 BlockStmt* getInstantiationPoint(Expr* expr) {
 
   // TODO: Optimization: Walk up the "visibility chain" but skip
@@ -352,7 +354,8 @@ BlockStmt* getInstantiationPoint(Expr* expr) {
     } else if (Symbol* s = cur->parentSymbol) {
       FnSymbol* fn = toFnSymbol(s);
       if (fn && fn->instantiationPoint)
-        return fn->instantiationPoint;
+        //return fn->instantiationPoint;
+        return collapsedInstantiationPoint(fn);
       else {
         // continue
       }
@@ -408,6 +411,13 @@ BlockStmt* getVisibilityScope(Expr* expr) {
 
   Expr* cur = expr;
   while (cur != NULL) {
+    // Pretend that ArgSymbols are in the function's body
+    // (which is reasonable since functions cannot be defined
+    //  within an ArgSymbol).
+    if (isArgSymbol(cur->parentSymbol)) {
+      return cur->getFunction()->body;
+    }
+
     // Stop when we find a non-scopeless block
     if (BlockStmt* block = toBlockStmt(cur->parentExpr))
       if (block->blockTag != BLOCK_SCOPELESS)
@@ -458,6 +468,82 @@ static bool isTryTokenCond(Expr* expr) {
   return sym->symbol() == gTryToken;
 }
 
+static bool isVisibilityParent(BlockStmt* parent, BlockStmt* inner)
+{
+  BlockStmt* cur = inner;
+  while (cur != NULL && cur != rootModule->block) {
+    if (cur == parent) return true;
+
+    cur = getVisibilityScope(cur);
+  }
+  return false;
+}
+
+static BlockStmt* canonicalVisibilityBlock(BlockStmt* block)
+{
+  //
+  // update visible function map as necessary
+  //
+  if (gFnSymbols.n != nVisibleFunctions) {
+    buildVisibleFunctionMap();
+  }
+
+  //
+  // all functions in standard modules are stored in a single block
+  //
+  if (standardModuleSet.set_in(block)) {
+    block = theProgram->block;
+  }
+
+  // Find the first outer scope of block that defines functions
+  while (visibleFunctionMap.get(block) == NULL) {
+    block = getVisibilityScope(block);
+
+    if (standardModuleSet.set_in(block)) {
+      block = theProgram->block;
+    }
+  }
+
+  return block;
+}
+
+// This fn implements an optimization on visibility
+// There can be a large module with a lot of generic functions
+// that depend on each other.
+// Suppose we have generic functions
+//   fn1 calls fn2 calls fn3.
+// Now suppose we are resolving a call in fn3. What blocks are traversed
+// in the visibility calculation?
+//
+//   fn3, module, uses, fn2, fn1, (whatever called fn1)
+//
+// But traversing fn2 and fn1 is probably not useful because
+// the probably don't define any functions.
+static BlockStmt* collapsedInstantiationPoint(FnSymbol* fn)
+{
+  FnSymbol* insnInFn = fn->instantiationPoint->getFunction();
+
+  if (insnInFn && insnInFn->instantiationPoint) {
+
+    BlockStmt* normalVisibility = canonicalVisibilityBlock(fn->body);
+    BlockStmt* instantiationPt = canonicalVisibilityBlock(fn->instantiationPoint);
+
+    // Now, if the outer scope of instantiationPt defining functions
+    // is a parent scope of normalVisibility, then the optimization can occur,
+    // because we'll find visible functions by looking at parents
+    // of normalVisibility.
+
+    if (isVisibilityParent(instantiationPt, normalVisibility)) {
+
+      INT_ASSERT(instantiationPt == canonicalVisibilityBlock(insnInFn->body));
+
+      printf("Collapsed\n");
+      return collapsedInstantiationPoint(insnInFn);
+    }
+  }
+
+  return fn->instantiationPoint;
+}
 
 /************************************* | **************************************
 *                                                                             *
