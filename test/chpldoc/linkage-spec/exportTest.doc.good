@@ -72,6 +72,14 @@ exportTest.doc
 
 .. function:: export proc allThreeCommentless2(val: int): int
 
+.. function:: export proc withExternCName()
+
+.. function:: proc getName() param
+
+   test param method for withParamExternCName 
+
+.. function:: export proc withParamExternCName()
+
 .. default-domain:: chpl
 
 .. module:: Other

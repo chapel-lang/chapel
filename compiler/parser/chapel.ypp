@@ -364,7 +364,7 @@
 %type <aggrTag> class_tag
 
 %type <pch> ident fn_ident assignop_ident opt_ident
-%type <pch> opt_ident_or_string
+%type <pch> opt_string
 
 
 
@@ -424,7 +424,7 @@
 %type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
 %type <pexpr> opt_init_type var_arg_expr
-%type <pexpr> opt_try_expr
+%type <pexpr> opt_try_expr opt_expr
 %type <pexpr> tuple_component tuple_var_decl_component
 %type <pdefexpr> formal enum_item
 %type <pdefexpr> query_expr opt_query_expr
@@ -449,7 +449,7 @@ program:
 
 // 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
 toplevel_stmt_ls:
-                                       { $$ = new BlockStmt();                                  resetTempID(); }
+                                       { $$ = new BlockStmt(); resetTempID(); }
 | toplevel_stmt_ls toplevel_stmt       { $1->appendChapelStmt($2); context->generatedStmt = $1; resetTempID(); }
 ;
 
@@ -637,8 +637,8 @@ ident:
   TIDENT  { $$ = $1; }
 ;
 
-opt_ident_or_string:
-  opt_ident     { $$ = $1; }
+opt_string:
+                { $$ = NULL; }
 | STRINGLITERAL { $$ = $1; }
 ;
 
@@ -831,7 +831,7 @@ class_decl_stmt:
                                              FLAG_UNKNOWN,
                                              @1.comment));
     }
-| TEXTERN opt_ident_or_string class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
+| TEXTERN opt_string class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($4,
                                              $2,
@@ -851,7 +851,7 @@ class_decl_stmt:
                                              FLAG_UNKNOWN,
                                              @1.comment));
     }
-| TEXTERN opt_ident_or_string class_tag ident opt_inherit TLCBR error TRCBR
+| TEXTERN opt_string class_tag ident opt_inherit TLCBR error TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($4,
                                              $2,
@@ -996,18 +996,14 @@ linkage_spec:
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
-| TEXPORT opt_ident_or_string {
-                  $$ = new FnSymbol($2);
-                  $$->addFlag(FLAG_EXPORT);
-                  $$->addFlag(FLAG_LOCAL_ARGS);
+| TEXPORT opt_expr {
+                  $$ = buildLinkageFn(FLAG_EXPORT, $2);
 
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
-| TEXTERN opt_ident_or_string {
-                  $$ = new FnSymbol($2);
-                  $$->addFlag(FLAG_EXTERN);
-                  $$->addFlag(FLAG_LOCAL_ARGS);
+| TEXTERN opt_expr {
+                  $$ = buildLinkageFn(FLAG_EXTERN, $2);
 
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
@@ -1038,11 +1034,15 @@ fn_decl_stmt:
   opt_ret_tag opt_ret_type opt_throws_error opt_where_part opt_function_body_stmt
     {
       FnSymbol* fn = $4;
+      FnSymbol* linkageFn = $1;
 
       fn->copyFlags($1);
-      // The user explicitly named this function (controls mangling).
-      if (*$1->name)
-        fn->cname = $1->name;
+      if (*linkageFn->name)
+        // The user explicitly named this function (controls mangling).
+        fn->cname = linkageFn->name;
+      else if (linkageFn->numFormals() == 1)
+        // cname should be set based upon param
+        fn->insertFormalAtTail(linkageFn->getFormal(1));
 
       if ($2 == ProcIter_ITER)
       {
@@ -1759,6 +1759,10 @@ expr:
 | TDOTDOT
     { $$ = new CallExpr("chpl_build_unbounded_range"); }
 ;
+
+opt_expr:
+                  { $$ = NULL; }
+| expr            { $$ = $1; }
 
 opt_try_expr:
   TTRY expr       { $$ = tryExpr($2); }

@@ -2170,6 +2170,41 @@ FnSymbol* buildLambda(FnSymbol *fn) {
   return fn;
 }
 
+// Creates a dummy function that accumulates flags & cname
+FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr) {
+
+  const char* cname = "";
+  // Look for a string literal we can use
+  if (paramCNameExpr != NULL)
+    if (SymExpr* se = toSymExpr(paramCNameExpr))
+      if (VarSymbol* v = toVarSymbol(se->symbol()))
+        if (v->isImmediate())
+          if (v->immediate->const_kind == CONST_KIND_STRING)
+            cname = v->immediate->v_string;
+
+  FnSymbol* ret = new FnSymbol(cname);
+
+  if (externOrExport == FLAG_EXTERN) {
+    ret->addFlag(FLAG_LOCAL_ARGS);
+    ret->addFlag(FLAG_EXTERN);
+  }
+  if (externOrExport == FLAG_EXPORT) {
+    ret->addFlag(FLAG_LOCAL_ARGS);
+    ret->addFlag(FLAG_EXPORT);
+  }
+
+  // Handle non-trivial param names that need to be resolved
+  // the check for dtString->symbol avoids this block under chpldoc
+  if (paramCNameExpr && cname[0] == '\0' && dtString->symbol != NULL) {
+    DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
+                                      astr_chpl_cname,
+                                      new SymExpr(dtString->symbol),
+                                      paramCNameExpr, NULL);
+    ret->insertFormalAtTail(argDef);
+  }
+
+  return ret;
+}
 
 // Replaces the dummy function name "_" with the real name, sets the 'this'
 // intent tag. For methods, it also adds a method tag and "this" declaration.
