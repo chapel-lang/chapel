@@ -47,8 +47,9 @@ proc masonHelp() {
   writeln('    env         Print environment variables recognized by mason');
   writeln('    clean       Remove the target directory');
   writeln('    doc         Build this project\'s documentation');
-  writeln('    test        Compile and run tests found in test/');
   writeln('    system      Integrate with system packages found via pkg-config');
+  writeln('    test        Compile and run tests found in /test');
+  writeln('    external    Integrate external dependencies into mason pacakges');
 }
 
 proc masonList() {
@@ -59,7 +60,8 @@ proc masonList() {
   writeln('      update             ');
   writeln('      build              ');
   writeln('      run                ');
-  writeln('      test                ');
+  writeln('      test               ');
+  writeln('      external           ');
   writeln('      search             ');
   writeln('      env                ');
   writeln('      clean              ');
@@ -176,17 +178,19 @@ proc masonExternalHelp() {
   writeln("Use, install and search for external packages to build Mason packages with");
   writeln();
   writeln("Usage:");
-  writeln("    mason external [options]");
+  writeln('    mason external [options] [<args>...]');
+  writeln('    mason external [options]');
   writeln();
-  writeln("Options:");  
+  writeln("Options:");
   writeln("    list                        List all external packages available");
   writeln("    search                      Search for a specific external package");
+  writeln("    compiler                    Find and Search for compilers on system");
+  writeln("    install                     Install an external package");
   writeln("    -h, --help                  Display this message");
   writeln("        --installed             Check that an external package is installed");
   writeln();
   writeln("Please see Mason documentation for instructions on using external packages");
 }
-
 
 
 proc masonTestHelp() {

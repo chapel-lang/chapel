@@ -1,22 +1,22 @@
-
-
 /*
- * Commands to do
- * Mason external
- ** search -- find and list availible spack packages
- ** find   -- find and list system installed packages
- ** 
- * Local functions
- ** spackInstalled()
- ** installSpack()
- ** setSpkEnv() == source spack env script
- ** getSpkDep(pkgName, show) == spack find pkgName
- ** listSpkDep() == spack list
- ** spkPkgExists(pkgName, show) == spack search pkgName
- ** spkPkgInstalled(pkgName, show) == spack info pkgName
- ** spkInstall(pkgName, show, version, compiler) == spack install pkgName@version%compiler
- ** 
+ * Copyright 2004-2018 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 
 use MasonUtils;
 use Path;
@@ -25,49 +25,78 @@ use TOML;
 use MasonHelp;
 
 proc masonExternal(args: [] string) {
-  if args.size < 3 {
-    masonExternalHelp();
-    exit();
-  }
-  
-  select (args[2]) {
-    when 'list' do listSpkgs();
-    when 'search' do spkgExists(args[3], show=true);
-    when '--help' do masonExternalHelp();
-    when '-h' do masonExternalHelp();
-    when '--installed' do spkgInstalled(args[3], show=true);
-    otherwise {
-      writeln('error: no such subcommand');
-      writeln('try mason external --help');
+  try! {
+    if args.size < 3 {
+      masonExternalHelp();
       exit();
     }
+  
+    select (args[2]) {
+      when 'list' do listSpkgs();
+      when 'search' do searchSpkgs(args);
+      when 'compiler' do compiler(args);
+      when 'install' do installSpkg(args);
+      when '--help' do masonExternalHelp();
+      when '-h' do masonExternalHelp();
+      when '--installed' do spkgInstalled(args);
+      otherwise {
+       writeln('error: no such subcommand');
+       writeln('try mason external --help');
+       exit();
+      }
+    }
+  }
+  catch e: MasonError {
+    writeln(e.message());
   }
 }
 
+
 /* Queries spack for package existance */
-proc spkgExists(pkgName: string, show=false) : bool {
+proc spkgExists(pkgName: string) : bool {
   const command = "spack list " + pkgName;
-  const status = runWithStatus(command, show);
+  const status = runWithStatus(command);
   if status != 0 {
     return false;
   }
   return true;
+}
+
+
+/* Queries spack for package existance */
+proc searchSpkgs(args: [?d] string) {
+  if args.size < 4 {
+    listSpkgs();
+  }
+  else {
+    const pkgName = args[3];
+    const command = "spack list " + pkgName;
+    const status = runCommand(command);
+  }
 }
 
 /* Queries system to see if package is installed on system */
-proc spkgInstalled(pkgName: string, show=false) : bool {
-  const command = "spack find " + pkgName;
-  const status = runWithStatus(command, show);
-  if status != 0 {
-    return false;
+proc spkgInstalled(args: [?d] string) {
+  if args.size < 4 {
+    listInstalled();
   }
-  return true;
+  else {
+    const pkgName = args[3];
+    const command = "spack find " + pkgName;
+    const status = runCommand(command);
+  }
 }
 
-/* lists spack packages */
+/* lists available spack packages */
 proc listSpkgs() {
   const command = "spack list";
-  const lines = runCommand(command);
+  const status = runCommand(command);
+}
+
+/* lists all installed spack packages */
+proc listInstalled() {
+  const command = "spack find";
+  const status = runCommand(command);
 }
 
 /* Returns spack package path for build information */
@@ -141,4 +170,63 @@ proc getSpkgInfo(pkgName: string, version: string) throws {
   return spkgInfo;
 }
 
+/* Entry point into the various compiler functions */
+proc compiler(args: [?d] string) {
+  var option = "list";
+  if args.size > 3 {
+    option = args[3];
+  }
+  select option {
+      when "list" do listCompilers();
+      when "find" do findCompilers();
+      otherwise do masonExternalHelp();
+    }
+}
+
+/* lists available compilers on system */
+proc listCompilers() {
+  const command = "spack compilers";
+  const status = runCommand(command);
+ }
+
+/* Finds available compilers */
+proc findCompilers() {
+  const command = "spack compiler find";
+  const status = runCommand(command);
+}
+
+
+/* Install an external package
+   TODO: Allow spec expressions
+ */
+proc installSpkg(args: [?d] string) throws {
+  if args.size < 4 {
+    // masonExternalInstallHelp()
+    masonExternalHelp();
+  }
+  else {
+    const pkgName = args[3];
+    var command = "spack install";
+    var toInstall = pkgName;
+    var compiler = "";
+    var version = "";
+    
+
+    // pkg and version
+    if args.size == 5 {
+      version = args[5];
+      toInstall = "".join(pkgName, "@", version);
+    }
+    // pkg, version, and compiler
+    else if args.size == 6 {
+      version = args[5];
+      compiler = args[6];
+      toInstall = "".join(pkgName, "@", version, "%", compiler);
+    }
+    const status = runWithStatus(" ".join(command, toInstall));
+    if status != 0 {
+      throw new MasonError("Package could not be installed");
+    }
+  }
+}
 
