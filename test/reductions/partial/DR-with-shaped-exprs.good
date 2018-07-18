@@ -1,0 +1,38 @@
+
+input #1
+{1..2, 1..3}
+100 100 100
+10000 10000 10000
+
+array - preserving columns
+{1..1, 1..3}
+10100 10100 10100
+
+array - preserving rows
+{1..2, 1..1}
+300
+30000
+
+forall expression - preserving columns
+{1..1, 1..3}
+10100 10100 10100
+
+forall expression - preserving rows
+{1..2, 1..1}
+300
+30000
+
+input #2
+{1..2, 1..3}
+101 102 103
+10001 10002 10003
+
+promoted expression - preserving columns
+{1..1, 1..3}
+10102 10104 10106
+
+promoted expression - preserving rows
+{1..2, 1..1}
+306
+30006
+
