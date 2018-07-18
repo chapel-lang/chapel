@@ -72,8 +72,6 @@ for f in $(find $CHPL_HOME/test                                               \
    # deprecated/potential future chpldoc mode #1369 e9a18221a
    base=${base/%.logical.doc/.doc}
 
-   c=${base}.test.c
-
    d=$(dirname $f)
 
    # Ignore everything in a NOTEST dir
@@ -136,6 +134,7 @@ for f in $(find $CHPL_HOME/test                                               \
 
    chpl=${base}.chpl
    toml=${base}.toml
+   c=${base}.test.c
 
    if [ -f $chpl -o -f $c -o -f $toml ]; then
       continue
