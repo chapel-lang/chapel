@@ -699,12 +699,15 @@ where tag == iterKind.follower
 //************************* Helper functions
 private proc defaultNumTasks(nTasks:int)
 {
-  var dnTasks=nTasks;
-  if nTasks==0 then {
-    if dataParTasksPerLocale==0 then dnTasks=here.maxTaskPar;
-      else dnTasks=dataParTasksPerLocale;
-  } else if nTasks<0 then {
-    halt("'numTasks' is negative");
+  var dnTasks = nTasks;
+  if nTasks <= 0  {
+    if dataParTasksPerLocale == 0 then
+      dnTasks = here.maxTaskPar;
+    else
+      dnTasks = dataParTasksPerLocale;
+
+    if nTasks < 0 then
+      warning("'numTasks' < 0, defaulting to numTasks=" + dnTasks);
   }
   return dnTasks;
 }
