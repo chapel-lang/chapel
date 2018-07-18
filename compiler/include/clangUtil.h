@@ -20,6 +20,7 @@
 #ifndef CLANGUTIL_H
 #define CLANGUTIL_H
 
+#include "baseAST.h"
 #include "files.h"
 #include "genret.h"
 
@@ -36,6 +37,7 @@ namespace llvm {
   class Value;
 }
 namespace clang {
+  class Decl;
   class TypeDecl;
   class ValueDecl;
 }
@@ -67,7 +69,8 @@ bool lookupInExternBlock(ModuleSymbol* module, const char* name,
                          clang::TypeDecl** cTypeOut,
                          clang::ValueDecl** cValueOut,
                          const char** cCastedToTypeOut,
-                         Type** chplTypeOut);
+                         Type** chplTypeOut,
+                         astlocT* astlocOut);
 bool alreadyConvertedExtern(ModuleSymbol* module, const char* name);
 bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
 

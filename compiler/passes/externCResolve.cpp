@@ -316,9 +316,17 @@ void convertDeclToChpl(ModuleSymbol* module,
   clang::ValueDecl* cValue = NULL;
   const char* cCastedToType = NULL;
   Type* chplType = NULL;
+  astlocT astloc(0, NULL);
 
   // If we've got nothing... give up.
-  if(!lookupInExternBlock(module, name, &cType, &cValue, &cCastedToType, &chplType)) return;
+  if(!lookupInExternBlock(module, name, &cType, &cValue, &cCastedToType,
+        &chplType, &astloc)) return;
+
+  // use currentAstLoc if astloc was empty
+  if (astloc.lineno == 0)
+    astloc = currentAstLoc;
+  // Use the astloc from lookup if possible
+  astlocMarker markAstLoc(astloc);
 
   // Now, if we have no cdecl, it may be a macro.
   if( (!cType) && (!cValue) ) {
