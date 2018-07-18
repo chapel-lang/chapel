@@ -2342,7 +2342,7 @@ DefExpr* buildForwardingExprFnDef(Expr* expr) {
   // This way, we can work with the rest of the compiler that
   // assumes that 'this' is an ArgSymbol.
   static int delegate_counter = 0;
-  const char* name = astr("forwarding_expr", istr(++delegate_counter));
+  const char* name = astr("chpl_forwarding_expr", istr(++delegate_counter));
   if (UnresolvedSymExpr* usex = toUnresolvedSymExpr(expr))
     name = astr(name, "_", usex->unresolved);
   FnSymbol* fn = new FnSymbol(name);

@@ -2185,6 +2185,10 @@ static bool isGenericRecordInit(CallExpr* call) {
   return retval;
 }
 
+
+static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly);
+static bool typeUsesForwarding(Type* t);
+
 static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
   Vec<FnSymbol*>            mostApplicable;
   Vec<ResolutionCandidate*> candidates;
@@ -2205,6 +2209,20 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
                                    bestRef,
                                    bestCref,
                                    bestVal);
+
+  // If no candidates were found and it's a method, try forwarding
+  if (candidates.n                  == 0 &&
+      info.call->numActuals()       >= 1 &&
+      info.call->get(1)->typeInfo() == dtMethodToken) {
+    Type* receiverType = canonicalClassType(info.call->get(2)->getValType());
+    if (typeUsesForwarding(receiverType)) {
+      FnSymbol* fn = resolveForwardedCall(info, checkOnly);
+      if (fn) {
+        return fn;
+      }
+      // otherwise error is printed in next block
+    }
+  }
 
   if (numMatches == 0) {
     if (info.call->partialTag == false) {
@@ -2813,9 +2831,6 @@ static void filterCandidate (CallInfo&                  info,
                              FnSymbol*                  fn,
                              Vec<ResolutionCandidate*>& candidates);
 
-static bool typeUsesForwarding(Type* t);
-
-static bool populateForwardingMethods(CallInfo& info);
 
 void trimVisibleCandidates(CallInfo&       info,
                            Vec<FnSymbol*>& mostApplicable,
@@ -2899,39 +2914,6 @@ static void findVisibleFunctionsAndCandidates(
   trimVisibleCandidates(info, mostApplicable, visibleFns);
 
   findVisibleCandidates(info, mostApplicable, candidates);
-
-  // If no candidates were found and it's a method, try forwarding
-  if (candidates.n             == 0 &&
-      call->numActuals()       >= 1 &&
-      call->get(1)->typeInfo() == dtMethodToken) {
-    Type* receiverType =
-      canonicalClassType(call->get(2)->typeInfo()->getValType());
-
-    if (typeUsesForwarding(receiverType) == true &&
-        populateForwardingMethods(info)  == true) {
-      visibleFns.clear();
-      mostApplicable.clear();
-
-      forv_Vec(ResolutionCandidate*, candidate, candidates) {
-        delete candidate;
-      }
-
-      candidates.clear();
-
-      if (fn != NULL) {
-        visibleFns.add(fn);
-
-        handleTaskIntentArgs(info, fn);
-
-      } else {
-        findVisibleFunctions(info, visibleFns);
-      }
-
-      trimVisibleCandidates(info, mostApplicable, visibleFns);
-
-      findVisibleCandidates(info, visibleFns, candidates);
-    }
-  }
 
   explainGatherCandidate(info, candidates);
 }
@@ -3028,31 +3010,31 @@ static bool typeUsesForwarding(Type* t) {
   return retval;
 }
 
-static bool populateForwardingMethods(CallInfo& info) {
-  CallExpr*      forCall    = info.call;
-  const char*    calledName = info.name;
-  Type*          t          = forCall->get(2)->typeInfo()->getValType();
+// Returns a relevant FnSymbol if it worked
+static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
+  CallExpr* call = info.call;
+  const char* calledName = info.name;
+  const char* inFnName = call->getFunction()->name;
+  Expr* receiver = call->get(2);
+  Type* t = receiver->getValType();
+  AggregateType* at = toAggregateType(canonicalClassType(t));
 
-  AggregateType* at         = toAggregateType(canonicalClassType(t));
-  bool           addedAny   = false;
+  FnSymbol* best = NULL;
+  CallExpr* bestCall = NULL;
+  BlockStmt* bestBlock = NULL;
 
-  // Currently, only AggregateTypes can forward
-  if (at == NULL) {
-    return false;
-  }
 
-  // If the type has not yet been resolved, stop,
-  // since otherwise computing the forwarding fn won't go well.
-  for_fields(field, at) {
-    if (field->type == dtUnknown) {
-      return false;
-    }
-  }
+  // Don't forward forwarding expr (infinite loop ensues)
+  const char* ignorePrefix = "chpl_forwarding_expr";
+  if (0 == memcmp(ignorePrefix, calledName, strlen(ignorePrefix)))
+    return NULL;
+//  if (0 == memcmp(ignorePrefix, inFnName, strlen(ignorePrefix)))
+//    return NULL;
 
-  // try resolving the call on the forwarding expressions
+  // Try each of the forwarding clauses to see if any get us
+  // a match.
   for_alist(expr, at->forwardingTo) {
     ForwardingStmt* delegate = toForwardingStmt(expr);
-
     INT_ASSERT(delegate);
 
     // Forwarding method should use line number of forwarding stmt
@@ -3061,28 +3043,10 @@ static bool populateForwardingMethods(CallInfo& info) {
     const char* fnGetTgt   = delegate->fnReturningForwarding;
     const char* methodName = calledName;
 
-    if (delegate->type == NULL) {
-      SET_LINENO(at->symbol);
-
-      delegate->type = dtUnknown; // avoiding loop from recursion
-
-      Symbol*   tmp        = newTemp(at);
-
-      at->symbol->defPoint->insertBefore(new DefExpr(tmp));
-
-      CallExpr* getTgtCall = new CallExpr(fnGetTgt, gMethodToken, tmp);
-      FnSymbol* fn         = resolveUninsertedCall(at, getTgtCall);
-
-      resolveFunction(fn);
-
-      Type* delegateType = fn->retType->getValType();
-
-      tmp->defPoint->remove();
-
-      INT_ASSERT(delegateType != dtUnknown);
-
-      delegate->type = delegateType;
-    }
+    // Don't try to recursively forward when processing
+    // forwarding expression!
+    if (inFnName == fnGetTgt)
+      continue;
 
     // Adjust methodName for rename processing.
     if (delegate->renamed.count(calledName) > 0) {
@@ -3118,281 +3082,74 @@ static bool populateForwardingMethods(CallInfo& info) {
     // Make sure methodName is a blessed string
     methodName = astr(methodName);
 
-    // Populate delegate->scratchFn now
-    if (delegate->scratchFn == NULL) {
-      FnSymbol* scratch = new FnSymbol("delegate_scratch_fn");
-      scratch->addFlag(FLAG_COMPILER_GENERATED);
+    // Create a tmp to store the forwarded-to method target.
+    VarSymbol* tgt = newTemp("tgt");
+    tgt->addFlag(FLAG_MAYBE_REF);
+    DefExpr* defTgt = new DefExpr(tgt);
 
-      if (at->symbol->instantiationPoint)
-        scratch->instantiationPoint = at->symbol->instantiationPoint;
+    // Create a block to store temporaries etc.
+    // Store it just before the call being resolved.
+    BlockStmt* block = new BlockStmt(defTgt); //, BLOCK_SCOPELESS);
+    call->getStmtExpr()->insertBefore(block);
 
-      Expr* where = getInsertPointForTypeFunction(at);
-      if (BlockStmt* block = toBlockStmt(where))
-        block->insertAtHead(new DefExpr(scratch));
-      else
-        where->insertBefore(new DefExpr(scratch));
+    SymExpr* receiverSe = toSymExpr(receiver);
+    INT_ASSERT(receiverSe);
+    Symbol* receiverSym = receiverSe->symbol();
 
-      normalize(scratch);
+    // Set the target
+    CallExpr* getTgt = new CallExpr(fnGetTgt, gMethodToken, receiver->copy());
+    CallExpr* setTgt = new CallExpr(PRIM_MOVE, tgt, getTgt);
+    block->insertAtTail(setTgt);
 
-      delegate->scratchFn = scratch;
-    }
+    // Create the new call expression
+    SymbolMap map;
+    map.put(receiverSym, tgt);
+    CallExpr* forwardedCall = call->copy(&map);
+    forwardedCall->baseExpr = new UnresolvedSymExpr(methodName);
+    block->insertAtTail(forwardedCall);
 
-    // There are 2 ways that more methods can be added to
-    // delegate->type during resolution:
-    //   1) delegate->type itself use a 'delegate'
-    //   2) delegate->type is a generic instantiation
-    //      and the method in question hasn't been instantiated yet
-    //
-    // We handle 1 by resolving a call here to the method in question.
-    // We handle 2 below by creating a generic wrapper for a generic function.
-    {
-      BlockStmt* block    = new BlockStmt();
-      Type*      testType = delegate->type;
-      Symbol*    tmp      = newTemp(testType);
-
-      CallExpr*  test     = new CallExpr(new UnresolvedSymExpr(methodName),
-                                         gMethodToken,
-                                         tmp);
-
-
-      int        i        = 0;
-
-      // The test call should have the same parentheses-less/partial
-      // properties as the call we are working with.
-      test->methodTag = forCall->methodTag;
-      test->partialTag = forCall->partialTag;
-
-      for_actuals(actual, forCall) {
-        if (i > 1) { // skip method token, object
-          test->insertAtTail(actual->copy());
-        }
-
-        i++;
+    // Now try to resolve setTgt and forwardedCall
+    if (tryResolveCall(getTgt)) {
+      // getTgt might not resolve if we're looking for a type
+      // method and target is value, for example.
+      if (FnSymbol* callee = getTgt->resolvedFunction()) {
+        resolveFnForCall(callee, getTgt);
       }
 
-      block->insertAtTail(new DefExpr(tmp));
-      block->insertAtTail(test);
-
-      delegate->scratchFn->insertAtHead(block);
-
-      tryResolveCall(test);
-    }
-
-    // Now, forward all methods named 'methodName' as 'calledName'.
-    // Forward generic functions as generic functions.
-
-    std::vector<FnSymbol*> methods;
-
-    collectVisibleMethodsNamed(canonicalClassType(delegate->type), methodName, methods);
-
-    // Compute the type of `this` for use in the forwarding function.
-    AggregateType* thisType = at;
-
-    while (thisType->instantiatedFrom != NULL) {
-      thisType = thisType->instantiatedFrom;
-    }
-
-    for_vector(FnSymbol, method, methods) {
-      // ignore holes
-      if (method == NULL)
-        continue;
-
-      // Name should already be filtered out
-      INT_ASSERT(method->name == methodName);
-
-      // We shouldn't have collected any invisible fns /
-      // instantiations of generics
-      INT_ASSERT(!method->hasFlag(FLAG_INVISIBLE_FN));
-      INT_ASSERT(method->instantiatedFrom == NULL);
-
-      // Skip any methods that don't match parentheses-less
-      // vs parentheses-ful vs the call.
-      if (method->hasFlag(FLAG_NO_PARENS) != forCall->methodTag) {
-        continue;
-      }
-
-      // Skip any methods that are init/ctor/dtor
-      // These cannot yet be forwarded.
-      if (method->hasFlag(FLAG_DESTRUCTOR)  == true ||
-          method->hasFlag(FLAG_CONSTRUCTOR) == true ||
-          strcmp(methodName, "init")        ==    0) {
-        continue;
-      }
-
-      // This wrapper method will be added to the type at and so will be found
-      // through normal resolution processes if this comes up agin.
-      addedAny = true;
-
-      // Create a "wrapper" method that forwards to the delegate
-      FnSymbol* fn = new FnSymbol(calledName);
-
-      fn->copyFlags(method);
-
-      // but we need to resolve the wrapper method again
-      fn->removeFlag(FLAG_RESOLVED);
-
-      // Never give an error when returning 'void' from a forwarding fn
-      fn->removeFlag(FLAG_VOID_NO_RETURN_VALUE);
-
-      // Also, don't consider it an iterator, since instead it is a
-      // function returning an iterator.
-      //  (e.g. proc these() return _value.these(); )
-      fn->removeFlag(FLAG_ITERATOR_FN);
-
-      fn->setMethod(true);
-
-      fn->addFlag(FLAG_INLINE);
-      fn->addFlag(FLAG_FORWARDING_FN);
-      fn->addFlag(FLAG_COMPILER_GENERATED);
-      fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
-
-      // see below, after arguments added, for adjustment to FLAG_GENERIC
-
-      fn->addFlag(FLAG_LAST_RESORT);
-
-      if (method->throwsError()) {
-        fn->throwsErrorInit();
-      }
-
-      fn->retTag = method->retTag;
-
-      ArgSymbol* mt    = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
-      ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisType);
-
-      _this->addFlag(FLAG_ARG_THIS);
-
-      fn->insertFormalAtTail(mt);
-      fn->insertFormalAtTail(_this);
-
-      fn->_this = _this;
-
-      // Add a call to the original function
-      VarSymbol* tgt = newTemp("tgt");
-      tgt->addFlag(FLAG_MAYBE_REF);
-
-      CallExpr* getTgt   = new CallExpr(fnGetTgt, gMethodToken, _this);
-      CallExpr* setTgt   = new CallExpr(PRIM_MOVE, tgt, getTgt);
-      CallExpr* wrapCall = new CallExpr(new UnresolvedSymExpr(method->name),
-                                        gMethodToken,
-                                        tgt);
-
-      // Create an argument symbol that we're about to replace
-      // with a call to fnGetTgt.
-      // This enables forwarding a function that used 'this' in
-      // its argument type or default value declarations.
-      ArgSymbol* dummyThis = new ArgSymbol(INTENT_BLANK,
-                                           "dummyThis",
-                                           dtUnknown);
-      fn->insertFormalAtHead(dummyThis);
-
-      SymbolMap map;
-
-      // Add mt, dummyThis to SymbolMap since these were computed above
-      map.put(method->getFormal(1), mt);
-      map.put(method->getFormal(2), dummyThis);
-
-      // Add the arguments to the wrapper function
-      // Add the arguments to the call
-      int i = 0;
-
-      for_formals(formal, method) {
-        if (i > 1) { // skip method token, target - added above
-          // Pass map so that later arguments will use it
-          // to replace uses of old formals with the new formals
-          DefExpr* def = formal->defPoint->copy(&map);
-
-          fn->insertFormalAtTail(def);
-
-          wrapCall->insertAtTail(new SymExpr(def->sym));
-        }
-
-        i++;
-      }
-
-      // Adjust whether or not fn is generic:
-      //  - it should be marked it as generic if `this` argument is generic
-      //  - it should not be marked generic if all arguments are concrete
-      //    (including if the arguments represent generic types with defaults)
-      fn->removeFlag(FLAG_GENERIC);
-      fn->tagIfGeneric();
-
-      // copy the where clause
-      if (method->where != NULL) {
-        fn->where = method->where->copy(&map);
-      }
-
-      // Add forwarding method to the tree so that
-      // for_SymbolSymExprs below will work.
-      at->symbol->defPoint->insertBefore(new DefExpr(fn));
-
-      std::map<BlockStmt*, VarSymbol*> addedTgts;
-
-      // Fix up any uses of dummyThis to call fnGetTgt.
-      for_SymbolSymExprs(se, dummyThis) {
-        // Find the parent BlockStmt to insert fixTgt in to.
-        Expr* insert = se;
-
-        while ( insert->parentExpr != NULL ) {
-          insert = insert->parentExpr;
-        }
-
-        INT_ASSERT(insert && isBlockStmt(insert));
-
-        BlockStmt* block  = toBlockStmt(insert);
-        VarSymbol* fixTgt = NULL;
-
-        // does this BlockStmt already have a call?
-        if (addedTgts.count(block)) {
-          fixTgt = addedTgts[block];
+      resolveCall(setTgt);
+      FnSymbol* fn = tryResolveCall(forwardedCall);
+      if (fn) {
+        if (best == NULL) {
+          best = fn;
+          bestCall = forwardedCall;
+          bestBlock = block;
         } else {
-          // add the call to fnGetTgt and DefExpr for fixTgt.
-          fixTgt = newTemp("tgt");
-
-          fixTgt->addFlag(FLAG_MAYBE_REF);
-
-          CallExpr* fixGetTgt = new CallExpr(fnGetTgt, gMethodToken, _this);
-          CallExpr* fixSetTgt = new CallExpr(PRIM_MOVE, fixTgt, fixGetTgt);
-
-          block->insertAtHead(fixSetTgt);
-          block->insertAtHead(new DefExpr(fixTgt));
-
-          addedTgts[block] = fixTgt;
+          USR_FATAL(call, "ambiguity error in forwarding");
         }
-        se->replace(new SymExpr(fixTgt));
+      } else {
+        // Remove the block for any forwards that didn't resolve
+        block->remove();
       }
-
-      // Remove dummyThis from the function
-      dummyThis->defPoint->remove();
-
-      // at this point, we don't know the return type for
-      // wrapCall, and we don't want to resolve it yet.
-      // to work with other code in resolution that tolerates
-      // "returning" a dtVoid, we take some steps to "normalize"
-      // here. Calling normalize directly would result in a PRIM_DEREF
-      // that interferes with accepting void returns.
-      VarSymbol* retval = newTemp("ret", dtUnknown);
-      retval->addFlag(FLAG_RVV);
-
-      if (fn->retTag == RET_PARAM)
-        retval->addFlag(FLAG_PARAM);
-      if (fn->retTag == RET_TYPE)
-        retval->addFlag(FLAG_TYPE_VARIABLE);
-      if (fn->hasFlag(FLAG_MAYBE_TYPE))
-        retval->addFlag(FLAG_MAYBE_TYPE);
-
-      fn->body->insertAtTail(new DefExpr(retval));
-      fn->body->insertAtTail(new DefExpr(tgt));
-      fn->body->insertAtTail(setTgt);
-      fn->body->insertAtTail(new CallExpr(PRIM_MOVE, retval, wrapCall));
-      fn->body->insertAtTail(new CallExpr(PRIM_RETURN, retval));
-
-      // Add the new function as a method.
-      at->methods.add(fn);
     }
   }
 
-  return addedAny;
+  // Replace call with bestCall and put any statements in bestBlock
+  // just before the call, then remove bestBlock.
+  if (best != NULL) {
+    for_actuals(actual, call) {
+      actual->remove();
+    }
+    call->baseExpr->replace(bestCall->baseExpr->remove());
+    for_actuals(actual, bestCall) {
+      call->insertAtTail(actual->remove());
+    }
+    bestCall->remove();
+    bestBlock->flattenAndRemove();
+  }
+
+  return best;
 }
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -6579,7 +6336,7 @@ static void resolveNewHandleGenericClass(CallExpr* newExpr, Type* manager) {
     FnSymbol* init = initCall->resolvedFunction();
     INT_ASSERT(init);
     AggregateType* initType = toAggregateType(init->_this->type);
- 
+
     resolveNewManaged(finalMove, initCall, last, initType, manager);
   }
 }
