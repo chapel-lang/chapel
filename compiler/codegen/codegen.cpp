@@ -1411,11 +1411,16 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   if( hdrfile ) {
     fprintf(hdrfile, "\nconst char* chpl_mem_descs[] = {\n");
     bool first = true;
-    forv_Vec(const char*, memDesc, memDescsVec) {
-      if (!first)
-        fprintf(hdrfile, ",\n");
-      fprintf(hdrfile, "\"%s\"", memDesc);
-      first = false;
+    if (memDescsVec.n == 0) {
+      // Quiet PGI warning about empty initializer
+      fprintf(hdrfile, "\nNULL,");
+    } else {
+      forv_Vec(const char*, memDesc, memDescsVec) {
+        if (!first)
+          fprintf(hdrfile, ",\n");
+        fprintf(hdrfile, "\"%s\"", memDesc);
+        first = false;
+      }
     }
     fprintf(hdrfile, "\n};\n");
   }
