@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -208,7 +208,7 @@ The ``Block`` class initializer is defined as follows:
 
     proc Block.init(
       boundingBox: domain,
-      targetLocales: [] locale  = Locales, 
+      targetLocales: [] locale  = Locales,
       dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
       dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
       dataParMinGranularity     = // value of  dataParMinGranularity      config const,
@@ -440,7 +440,7 @@ proc Block.init(boundingBox: domain,
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
-  if rank != 2 && isCSType(sparseLayoutType) then 
+  if rank != 2 && isCSType(sparseLayoutType) then
     compilerError("CS layout is only supported for 2 dimensional domains");
 
   if boundingBox.size == 0 then
@@ -671,6 +671,8 @@ proc BlockDom.dsiDisplayRepresentation() {
 proc BlockDom.dsiDims() return whole.dims();
 
 proc BlockDom.dsiDim(d: int) return whole.dim(d);
+
+proc BlockDom.dsiDim(param d: int) return whole.dim(d);
 
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);

@@ -159,12 +159,12 @@ module ExternalArray {
     }
 
     // Necessary?
-    proc dsiDim(param d: int) {
+    /* proc dsiDim(param d: int) {
       if (d != rank) {
         halt("domains over external arrays have only one dimension");
       }
       return dsiGetIndices();
-    }
+    } */
 
     proc dsiDims()
       return dsiGetIndices();
@@ -187,7 +187,7 @@ module ExternalArray {
     type eltType;
 
     const dom;
-    
+
     const _ArrInstance: chpl_external_array;
     const elts = _ArrInstance.elts: _ddata(eltType);
 

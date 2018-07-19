@@ -494,12 +494,8 @@ module ChapelDistribution {
     proc dsiDim(d) : range(idxType, BoundedRangeType.bounded, stridable) {
       halt("Cannot invoke dsiDim on " + (this.type : string) + " instantiation");
     }
-
-    // optional, is this necessary? probably not now that
-    // homogeneous tuples are implemented as C vectors.
-    /* proc dsiDim(param d : int){
-      compilerError("Cannot invoke dsiDim on " + (this.type : string) + " instantiation");
-      return 1..0; // dummy
+    /* proc dsiDim(param d : int) : range(idxType, BoundedRangeType.bounded, stridable) {
+      halt("Cannot invoke dsiDim on " + (this.type : string) + " instantiation");
     } */
   }
 

@@ -280,7 +280,7 @@ proc WrapperRectDom.dsiMyDist() return dist;
 
 proc WrapperRectDom.dsiDims()             return whole.dims();
 proc WrapperRectDom.dsiDim(d)             return whole.dim(d);
-proc WrapperRectDom.dsiDim(param d)       return whole.dim(d);
+/* proc WrapperRectDom.dsiDim(param d)       return whole.dim(d); */
 proc WrapperRectDom.dsiLow                return whole.low;
 proc WrapperRectDom.dsiHigh               return whole.high;
 proc WrapperRectDom.dsiStride             return whole.stride;
