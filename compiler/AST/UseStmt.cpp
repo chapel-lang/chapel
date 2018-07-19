@@ -93,6 +93,10 @@ UseStmt* UseStmt::copyInner(SymbolMap* map) {
     _this = new UseStmt(COPY_INT(src));
   }
 
+  for_vector(const char, sym, methodsAndFields) {
+    _this->methodsAndFields.push_back(sym);
+  }
+
   return _this;
 }
 
@@ -307,6 +311,7 @@ void UseStmt::validateList() {
 
     validateNamed();
     validateRenamed();
+    trackMethods();
   }
 }
 
@@ -457,6 +462,61 @@ BaseAST* UseStmt::getSearchScope() const {
   return retval;
 }
 
+void UseStmt::trackMethods() {
+  if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+      Vec<AggregateType*> types = mod->getTopLevelClasses();
+
+      // Note: stores duplicates
+      forv_Vec(AggregateType, t, types) {
+        forv_Vec(FnSymbol, method, t->methods) {
+          methodsAndFields.push_back(method->name);
+        }
+
+        for_fields(sym, t) {
+          methodsAndFields.push_back(sym->name);
+        }
+
+        // TODO: remove constructor portion when constructors are deprecated
+        // The type constructor portion will probably always need to remain
+        unsigned int constrLen = strlen(t->symbol->name) +
+          strlen("_construct_") + 1;
+        unsigned int typeConstrLen = constrLen + strlen("_type");
+
+        char*        constrName = (char*) malloc(constrLen);
+        char*        typeConstrName = (char*) malloc(typeConstrLen);
+
+        strcpy(constrName,     "_construct_");
+        strcat(constrName,     t->symbol->name);
+
+        strcpy(typeConstrName, "_type_construct_");
+        strcat(typeConstrName, t->symbol->name);
+
+        methodsAndFields.push_back(constrName);
+        methodsAndFields.push_back(typeConstrName);
+      }
+
+      if (types.size() != 0) {
+        // These are all compiler generated functions that might (or in some
+        // cases definitely are) not defined on the type explicitly.  Allow them
+        // as well.
+        methodsAndFields.push_back("init");
+        methodsAndFields.push_back("_new");
+        methodsAndFields.push_back("deinit");
+      }
+
+      Vec<FnSymbol*> fns = mod->getTopLevelFunctions(false);
+      forv_Vec(FnSymbol, fn, fns) {
+        if (fn->hasFlag(FLAG_METHOD)) {
+          // Again, stores duplicates.  This is probably less costly than
+          // checking for them.
+          methodsAndFields.push_back(fn->name);
+        }
+      }
+    }
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -498,6 +558,9 @@ bool UseStmt::skipSymbolSearch(const char* name) const {
     if (matchedNameOrConstructor(name) == true) {
       retval = false;
 
+    } else if (isAllowedMethodName(name) == true) {
+      retval = false;
+
     } else {
       retval =  true;
     }
@@ -517,6 +580,18 @@ bool UseStmt::matchedNameOrConstructor(const char* name) const {
       it != renamed.end();
       ++it) {
     if (strcmp(name, it->first) == 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Returns true if the name was in the list of methods and fields defined in
+// this module, false otherwise.
+bool UseStmt::isAllowedMethodName(const char* name) const {
+  for_vector(const char, toCheck, methodsAndFields) {
+    if (strcmp(name, toCheck) == 0) {
       return true;
     }
   }

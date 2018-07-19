@@ -81,6 +81,9 @@ private:
 
   void            validateRenamed();
 
+  void            trackMethods();
+  bool            isAllowedMethodName(const char* name)                  const;
+
   bool            matchedNameOrConstructor(const char* name)             const;
 
   void            noRepeats()                                            const;
@@ -92,6 +95,7 @@ public:
 
 private:
   bool                               except;
+  std::vector<const char*>           methodsAndFields;
 };
 
 #endif
