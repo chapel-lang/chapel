@@ -509,7 +509,7 @@ module DefaultRectangular {
       // WANT: return * reduce (this(1..rank).length);
     } */
 
-    proc dsiLow {
+    /* proc dsiLow {
       if rank == 1 {
         return ranges(1).low;
       } else {
@@ -595,7 +595,7 @@ module DefaultRectangular {
           result(i) = ranges(i).last;
         return result;
       }
-    }
+    } */
 
     proc dsiBuildArray(type eltType) {
       return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,

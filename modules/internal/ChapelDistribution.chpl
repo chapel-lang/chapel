@@ -399,6 +399,94 @@ module ChapelDistribution {
       // WANT: return * reduce (this(1..rank).length);
     }
 
+    proc dsiLow {
+      if rank == 1 {
+        return dsiDim(1).low;
+      } else {
+        var result: rank*idxType;
+        for param i in 1..rank do
+          result(i) = dsiDim(i).low;
+        return result;
+      }
+    }
+
+    proc dsiHigh {
+      if rank == 1 {
+        return dsiDim(1).high;
+      } else {
+        var result: rank*idxType;
+        for param i in 1..rank do
+          result(i) = dsiDim(i).high;
+        return result;
+      }
+    }
+
+    proc dsiAlignedLow {
+      if rank == 1 {
+        return ds(1).alignedLow;
+      } else {
+        var result: rank*idxType;
+        for param i in 1..rank do
+          result(i) = dsiDim(i).alignedLow;
+        return result;
+      }
+    }
+
+    proc dsiAlignedHigh {
+      if rank == 1 {
+        return dsiDim(1).alignedHigh;
+      } else {
+        var result: rank*idxType;
+        for param i in 1..rank do
+          result(i) = dsiDim(i).alignedHigh;
+        return result;
+      }
+    }
+
+    proc dsiStride {
+      if rank == 1 {
+        return dsiDim(1).stride;
+      } else {
+        var result: rank*chpl__signedType(intIdxType);
+        for param i in 1..rank do
+          result(i) = dsiDim(i).stride;
+        return result;
+      }
+    }
+
+    proc dsiAlignment {
+      if rank == 1 {
+        return dsiDim(1).alignment;
+      } else {
+        var result: rank*idxType;
+        for param i in 1..rank do
+          result(i) = dsiDim(i).alignment;
+        return result;
+      }
+    }
+
+    proc dsiFirst {
+      if rank == 1 {
+        return dsiDim(1).first;
+      } else {
+        var result: rank*idxType;
+        for param i in 1..rank do
+          result(i) = dsiDim(i).first;
+        return result;
+      }
+    }
+
+    proc dsiLast {
+      if rank == 1 {
+        return dsiDim(1).last;
+      } else {
+        var result: rank*idxType;
+        for param i in 1..rank do
+          result(i) = dsiDim(i).last;
+        return result;
+      }
+    }
+
     proc intIdxType type {
       return chpl__idxTypeToIntIdxType(idxType);
     }
