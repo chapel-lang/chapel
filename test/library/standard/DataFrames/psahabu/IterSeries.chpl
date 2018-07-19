@@ -3,13 +3,13 @@ use DataFrames;
 var A = ["a", "b", "c", "d", "e"];
 var I = ["A", "B", "C", "D", "E"];
 
-var letters = new TypedSeries(A, new TypedIndex(I));
+var letters = new unmanaged TypedSeries(A, new unmanaged TypedIndex(I));
 
-for i in letters.idx:TypedIndex(string) do
+for i in letters.idx:unmanaged TypedIndex(string) do
   writeln(i);
 
 writeln();
-for i in (letters.idx:TypedIndex(string)).items() do
+for i in (letters.idx:unmanaged TypedIndex(string)).items() do
   writeln(i);
 
 writeln();
