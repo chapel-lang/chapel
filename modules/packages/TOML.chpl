@@ -182,10 +182,10 @@ module TomlParser {
               parseAssign();
             }
             else {
-              throw new TomlError("Unexpected Token -> " + getToken(source));
+              throw new TomlError("Unexpected Token on line " + debugCounter + " -> " + getToken(source));
             }
+            debugCounter += 1;
             if debugTomlParser {
-              debugCounter += 1;
               debugPrint();
             }
           }
@@ -402,12 +402,12 @@ module TomlParser {
         }
         // Error
         else {
-          throw new TomlError("Unexpected Token -> " + val);
+          throw new TomlError("Unexpected Token on line " + debugCounter + " -> " + getToken(source));
           return val;
         }
       }
       catch e: IllegalArgumentError {
-        writeln("Illegal value in Mason.toml: " + val);
+        writeln("Illegal value on line " + debugCounter + " -> " + val);
         exit(1);
       }
       catch e: TomlError {
