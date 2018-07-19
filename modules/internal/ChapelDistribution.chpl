@@ -494,9 +494,6 @@ module ChapelDistribution {
     proc dsiDim(d) : range(idxType, BoundedRangeType.bounded, stridable) {
       halt("Cannot invoke dsiDim on " + (this.type : string) + " instantiation");
     }
-    /* proc dsiDim(param d : int) : range(idxType, BoundedRangeType.bounded, stridable) {
-      halt("Cannot invoke dsiDim on " + (this.type : string) + " instantiation");
-    } */
   }
 
   pragma "use default init"

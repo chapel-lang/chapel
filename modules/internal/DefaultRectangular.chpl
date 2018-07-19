@@ -497,10 +497,6 @@ module DefaultRectangular {
 
     override proc dsiDim(d : int) return ranges(d);
 
-    // optional, is this necessary? probably not now that
-    // homogeneous tuples are implemented as C vectors.
-    /* override proc dsiDim(param d : int) return ranges(d); */
-
     /* proc dsiNumIndices {
       var sum = 1:intIdxType;
       for param i in 1..rank do

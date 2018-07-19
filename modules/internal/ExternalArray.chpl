@@ -158,14 +158,6 @@ module ExternalArray {
       return domRange;
     }
 
-    // Necessary?
-    /* proc dsiDim(param d: int) {
-      if (d != rank) {
-        halt("domains over external arrays have only one dimension");
-      }
-      return dsiGetIndices();
-    } */
-
     proc dsiDims()
       return dsiGetIndices();
 

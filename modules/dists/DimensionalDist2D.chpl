@@ -755,7 +755,6 @@ override proc DimensionalDom.dsiMyDist() return dist;
 
 proc DimensionalDom.dsiDims()             return whole.dims();
 proc DimensionalDom.dsiDim(d)             return whole.dim(d);
-/* proc DimensionalDom.dsiDim(param d)       return whole.dim(d); */
 proc DimensionalDom.dsiLow                return whole.low;
 proc DimensionalDom.dsiHigh               return whole.high;
 proc DimensionalDom.dsiStride             return whole.stride;
