@@ -96,7 +96,7 @@ proc pkgSearch(args) {
 
     for line in sub.stdout.lines() {
       if pattern.search(line) {
-        writeln(line);
+        write(line);
       }
     }
   }
@@ -125,9 +125,11 @@ proc printPkgPc(args) throws {
         var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir")).strip();
         var pcFile = joinPath(pcDir, pkgName + ".pc");
         var pc = open(pcFile, iomode.r);
+        writeln("\n------- " + pkgName + ".pc -------\n");
         for line in pc.lines() {
           write(line);
         }
+        writeln("\n-------------------\n");
       }
       else {
         throw new MasonError("Mason could not find " + pkgName + " on your system");
@@ -135,6 +137,9 @@ proc printPkgPc(args) throws {
     }
     catch e: FileNotFoundError {
       writeln("Package exists but Mason could not find it's .pc file");
+    }
+    catch e: MasonError {
+      writeln(e.message());
     }
   }
 }
