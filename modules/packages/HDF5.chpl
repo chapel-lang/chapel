@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-// Generated with c2chapel version 0.1.0
 module HDF5 {
 
   use HDF5_Chapel;
