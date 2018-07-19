@@ -1,4 +1,4 @@
-use FileSystem, HDF5_HL;
+use FileSystem, HDF5;
 
 type inputTypes = (int, real, c_string);
 
@@ -8,7 +8,7 @@ config const printFileInfo = false;
 config const printTiming = false;
 
 proc main {
-  use HDF5_HL, Time;
+  use HDF5, Time;
 
   var t = new Timer();
 
