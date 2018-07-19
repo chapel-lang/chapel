@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+# The NetCDF package requires the netCDF library.
+#
+# Installation of the netCDF library is detected with the find_library function,
+# which looks for the appropriate dynamic library (e.g. libnetcdf.so).
+# Note that if the dynamic library is found, this test assumes that the
+# header and static library are available.
+
+from __future__ import print_function
+from ctypes.util import find_library
+
+print(find_library('netcdf') is None)
