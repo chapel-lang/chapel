@@ -209,7 +209,6 @@ static void getVisibleFunctions(const char*           name,
       INT_ASSERT(block->parentSymbol == inFn ||
                  isArgSymbol(block->parentSymbol) ||
                  isShadowVarSymbol(block->parentSymbol));
-      // Could also check
       fnBlock = true;
       if (inFn->instantiationPoint && inFn->instantiationPoint->parentSymbol)
         instantiationPt = inFn->instantiationPoint;
@@ -236,19 +235,15 @@ static void getVisibleFunctions(const char*           name,
       }
     }
 
-    /*if (moduleBlock || fnBlock)  -- see comment below*/
-    {
-
-      // e.g. in associative.chpl primer, instatiation occurs in a
-      // block that isn't a fn or module block.
-      // But, we could probably optimize by knowing:
-      //   - which blocks are irrelevant
-      //   - which blocks are traversed as outer blocks
-      visited.insert(block);
-    }
+    // Why does the following statement apply to all blocks,
+    // and not just module or function blocks?
+    //
+    // e.g. in associative.chpl primer, instatiation occurs in a
+    // block that isn't a fn or module block.
+    visited.insert(block);
 
     if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
-      // note, defines functions
+      // the block defines functions
 
       if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
         forv_Vec(FnSymbol, fn, *fns) {
@@ -264,7 +259,7 @@ static void getVisibleFunctions(const char*           name,
     }
 
     if (block->useList != NULL) {
-      // note, uses other modules
+      // the block uses other modules
       for_actuals(expr, block->useList) {
         UseStmt* use = toUseStmt(expr);
 
@@ -313,14 +308,12 @@ static void getVisibleFunctions(const char*           name,
   }
 }
 
-/************************************* | **************************************
-*                                                                             *
-* return the innermost block for searching for visible functions              *
-*                                                                             *
-************************************** | *************************************/
-
 static bool isTryTokenCond(Expr* expr);
 
+/*
+   This function returns a BlockStmt to use as the instantiationPoint
+   for expr (to be used when instantiating a type or a function).
+ */
 BlockStmt* getInstantiationPoint(Expr* expr) {
 
   Expr* cur = expr;
@@ -368,7 +361,14 @@ BlockStmt* getInstantiationPoint(Expr* expr) {
   return NULL;
 }
 
+/* This function returns the next BlockStmt enclosing `expr` that
+   should be searched for function definitions when getting visible
+   functions.
 
+   This can be considered the scope of `expr`.
+   Note that `expr` might be able to resolve calls from an instantiation
+   point as well.
+ */
 BlockStmt* getVisibilityScope(Expr* expr) {
 
   Expr* cur = expr;
