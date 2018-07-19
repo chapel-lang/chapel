@@ -2,3 +2,6 @@
 /**
 !/build_configs.py
 !/setenv-example-1.bash
+!/README*
+!/functions.bash
+!/chapel_build.bash
