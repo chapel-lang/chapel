@@ -3010,85 +3010,106 @@ static bool typeUsesForwarding(Type* t) {
   return retval;
 }
 
-static CallExpr* findSubCallToName(Expr* call, const char* unresolved) {
+static const char* getForwardedMethodName(const char* calledName,
+                                          ForwardingStmt* delegate) {
 
-  if (call->isNamedAstr(unresolved))
-    return call;
+  const char* methodName = calledName;
 
-  if (CallExpr* subcall = toCallExpr(call->baseExpr)) {
-    if (subcall->baseExpr && subcall->isNamedAstr(unresolved))
-      return subcall;
-  }
+  if (delegate->renamed.count(calledName) > 0) {
+    methodName = delegate->renamed[calledName];
+    // Make sure methodName is a blessed string
+    // TODO -- remove this assert
+    INT_ASSERT(methodName == astr(methodName));
 
-  for_actuals(actual, call) {
-    if (CallExpr* subcall = toCallExpr(actual)) {
-      if (subcall->baseExpr && subcall->isNamedAstr(unresolved))
-        return subcall;
-      else if (CallExpr* found = findSubCallToName(subcall, unresolved))
-        return found;
+  } else if (delegate->named.count(calledName)) {
+    if (delegate->except) {
+      // don't handle this symbol
+      methodName = NULL;
+
+    } else {
+      // OK, calledName is in the only list.
+    }
+
+  } else {
+    // It's not a specifically mentioned symbol.
+    // It's OK if:
+    //  - there was no list at all, or
+    //  - the list was an 'except' list
+    if ((delegate->renamed.size() == 0 && delegate->named.size() == 0) ||
+	delegate->except) {
+      // OK
+    } else {
+      methodName = NULL;
     }
   }
-  return NULL;
+
+  return methodName;
 }
+
+static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* delegate, const char* methodName) {
+
+  FnSymbol* ret = NULL;
+  const char* fnGetTgt   = delegate->fnReturningForwarding;
+  Expr* receiver = call->get(2);
+  Expr* callStmt = call->getStmtExpr();
+
+  // Create a tmp to store the forwarded-to method target.
+  VarSymbol* tgt = newTemp("tgt");
+  tgt->addFlag(FLAG_MAYBE_REF);
+  tgt->addFlag(FLAG_MAYBE_TYPE);
+  DefExpr* defTgt = new DefExpr(tgt);
+
+  callStmt->insertBefore(defTgt);
+
+  // Set the target
+  CallExpr* getTgt = new CallExpr(fnGetTgt, gMethodToken, receiver->copy());
+  CallExpr* setTgt = new CallExpr(PRIM_MOVE, tgt, getTgt);
+  callStmt->insertBefore(setTgt);
+
+  // Adjust the call expression
+  UnresolvedSymExpr* baseUrse = toUnresolvedSymExpr(call->baseExpr);
+  SymExpr* receiverSe = toSymExpr(receiver);
+  INT_ASSERT(baseUrse && receiverSe);
+  baseUrse->unresolved = methodName;
+  receiverSe->setSymbol(tgt);
+
+  // Now try to resolve setTgt and forwardedCall
+  if (tryResolveCall(getTgt)) {
+    // getTgt might not resolve if we're looking for a type
+    // method and target is value, for example.
+    if (FnSymbol* callee = getTgt->resolvedFunction()) {
+      resolveFnForCall(callee, getTgt);
+    }
+
+    resolveCall(setTgt);
+    ret = tryResolveCall(call);
+  }
+
+  return ret;
+}
+
 
 // Returns a relevant FnSymbol if it worked
 static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
+  CallExpr* call = info.call;
   const char* calledName = info.name;
-  const char* inFnName = info.call->getFunction()->name;
+  const char* inFnName = call->getFunction()->name;
+  Expr* receiver = call->get(2);
+  Type* t = receiver->getValType();
+  AggregateType* at = toAggregateType(canonicalClassType(t));
+
   FnSymbol* bestFn = NULL;
+  CallExpr* bestCall = NULL;
   BlockStmt* bestBlock = NULL;
-  CallExpr* bestCallStmt = NULL;
   ForwardingStmt* bestDelegate = NULL;
+
 
   // Don't forward forwarding expr (infinite loop ensues)
   const char* ignorePrefix = "chpl_forwarding_expr";
   if (0 == memcmp(ignorePrefix, calledName, strlen(ignorePrefix)))
     return NULL;
-
-  // This code is a little bit weird because of the need to support
-  // ContextCallExprs added around the call & to work with the normal
-  // post-order traversal in resolveExpr.
-
-  // In particular, it goes to a lot of trouble to include the real
-  // 'call' (and not a copy of it) in the adjusted AST it tries to resolve
-  // to do the forwarding.
-
-  // Since there can be multiple delegates for forwarding, that means
-  // that it has to be able to put the call back the way it was
-  // in order to try the other delegates.
-
-  AggregateType* at = NULL;
-  CallExpr* callStmt = NULL;
-  CallExpr* originalCallStmt = NULL;
-  CallExpr* placeholder = NULL;
-  Symbol* originalReceiver = NULL;
-  const char* originalUnresolved = NULL;
-  {
-    CallExpr* call = info.call;
-    Expr* receiver = call->get(2);
-    Type* t = receiver->getValType();
-    at = toAggregateType(canonicalClassType(t));
-    INT_ASSERT(at);
-    Expr* stmt = call->getStmtExpr();
-    callStmt = toCallExpr(stmt);
-    INT_ASSERT(callStmt);
-    originalCallStmt = callStmt->copy();
-    placeholder = new CallExpr(PRIM_NOOP);
-    // Take callStmt out of the AST tree
-    callStmt->replace(placeholder);
-
-    SymExpr* callReceiverSe = toSymExpr(receiver);
-    INT_ASSERT(callReceiverSe);
-    originalReceiver = callReceiverSe->symbol();
-
-    UnresolvedSymExpr* callBaseExprUrse = toUnresolvedSymExpr(call->baseExpr);
-    INT_ASSERT(callBaseExprUrse);
-    originalUnresolved = callBaseExprUrse->unresolved;
-  }
-
-
-  // callStmt is no longer in the AST. We'll modify
-  // call's baseExpr and target and try resolving it below.
+//  if (0 == memcmp(ignorePrefix, inFnName, strlen(ignorePrefix)))
+//    return NULL;
 
   // Try each of the forwarding clauses to see if any get us
   // a match.
@@ -3099,151 +3120,76 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
     // Forwarding method should use line number of forwarding stmt
     SET_LINENO(delegate);
 
-    const char* fnGetTgt   = delegate->fnReturningForwarding;
-    const char* methodName = calledName;
-
     // Don't try to recursively forward when processing
     // forwarding expression!
-    if (inFnName == fnGetTgt)
+    if (inFnName == delegate->fnReturningForwarding)
       continue;
 
     // Adjust methodName for rename processing.
-    if (delegate->renamed.count(calledName) > 0) {
-      methodName = delegate->renamed[calledName];
-
-    } else if (delegate->named.count(calledName)) {
-      if (delegate->except) {
-        // don't handle this symbol
-        methodName = NULL;
-
-      } else {
-        // OK, calledName is in the only list.
-      }
-
-    } else {
-      // It's not a specifically mentioned symbol.
-      // It's OK if:
-      //  - there was no list at all, or
-      //  - the list was an 'except' list
-      if ((delegate->renamed.size() == 0 && delegate->named.size() == 0) ||
-          delegate->except) {
-        // OK
-      } else {
-        methodName = NULL;
-      }
-    }
+    const char* methodName = NULL;
+    methodName = getForwardedMethodName(calledName, delegate);
 
     // Stop processing this delegate if we've ruled out this name.
     if (methodName == NULL) {
       continue;
     }
 
-    // Make sure methodName is a blessed string
-    INT_ASSERT(methodName == astr(methodName));
-
-    // Reconstruct some important variables
-    CallExpr* call = findSubCallToName(callStmt, originalUnresolved);
-    INT_ASSERT(call);
-    SymExpr* callReceiverSe = toSymExpr(call->get(2));
-    INT_ASSERT(callReceiverSe);
-    UnresolvedSymExpr* callBaseExprUrse = toUnresolvedSymExpr(call->baseExpr);
-    INT_ASSERT(callBaseExprUrse);
-
-    // Create a tmp to store the forwarded-to method target.
-    VarSymbol* tgt = newTemp("tgt");
-    tgt->addFlag(FLAG_MAYBE_REF);
-    tgt->addFlag(FLAG_MAYBE_TYPE);
-    DefExpr* defTgt = new DefExpr(tgt);
-
     // Create a block to store temporaries etc.
     // Store it just before the call being resolved.
-    BlockStmt* block = new BlockStmt(defTgt); //, BLOCK_SCOPELESS);
-    placeholder->insertBefore(block);
+    CallExpr* forwardedCall = call->copy();
+    BlockStmt* block = new BlockStmt(forwardedCall);
+    call->getStmtExpr()->insertBefore(block);
 
-    // Set the target
-    CallExpr* getTgt = new CallExpr(fnGetTgt, gMethodToken, originalReceiver);
-    CallExpr* setTgt = new CallExpr(PRIM_MOVE, tgt, getTgt);
-    block->insertAtTail(setTgt);
+    FnSymbol* fn = NULL;
+    fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName);
 
-    // set the call's base expression to the right method
-    callBaseExprUrse->unresolved = methodName;
-    // set the call's receiver to the tgt temp
-    callReceiverSe->setSymbol(tgt);
-    // put call's enclosing statement into the AST at this block
-    block->insertAtTail(callStmt);
-
-    FnSymbol* foundFn = NULL;
-    // Now try to resolve setTgt and forwardedCall
-    if (tryResolveCall(getTgt)) {
-      // getTgt might not resolve if we're looking for a type
-      // method and target is value, for example.
-      if (FnSymbol* callee = getTgt->resolvedFunction()) {
-        resolveFnForCall(callee, getTgt);
-        resolveCall(setTgt);
-        foundFn = tryResolveCall(call);
-      }
-    }
-
-    // Remove call from the block no matter what
-    // (it'll replace placeholder on success and continue on failure)
-    callStmt->remove();
-
-    if (foundFn == NULL) {
-      // Reset the call so it's ready for other forwards.
-      // set the method to the original name
-      callBaseExprUrse->unresolved = originalUnresolved;
-      // set the call's receiver to the tgt temp
-      callReceiverSe->setSymbol(originalReceiver);
-
-      // Fix any actuals that have changed
-      CallExpr* originalCall = findSubCallToName(originalCallStmt, originalUnresolved);
-
-      int i = 0;
-      for_actuals(actual, call) {
-        if (i > 2) // skip method token, receiver
-          actual->remove();
-        i++;
-      }
-      i = 0;
-      for_actuals(actual, originalCall) {
-        if (i > 2) // skip method token, receiver
-          call->insertAtTail(actual->copy());
-        i++;
-      }
-
-      // Remove the block
-      block->remove();
-    } else {
-      // If we found a match, great!
+    if (fn) {
       if (bestFn == NULL) {
-        bestFn = foundFn;
-        bestBlock = block;
-        bestCallStmt = callStmt;
-        bestDelegate = delegate;
+	bestFn = fn;
+	bestCall = forwardedCall;
+	bestBlock = block;
+	bestDelegate = delegate;
       } else {
-        USR_FATAL_CONT(call, "ambiguous forwarded call");
-        USR_PRINT(bestFn, "candidates include: %s", toString(bestFn));
-        USR_PRINT(bestDelegate, "from forwarding statement here");
-        USR_PRINT(foundFn, "candidates include: %s", toString(foundFn));
-        USR_PRINT(delegate, "from forwarding statement here");
-        USR_STOP();
+	USR_FATAL_CONT(call, "ambiguous forwarded call");
+	USR_PRINT(bestFn, "candidates include: %s", toString(bestFn));
+	USR_PRINT(bestDelegate, "from forwarding statement here");
+	USR_PRINT(fn, "candidates include: %s", toString(fn));
+	USR_PRINT(delegate, "from forwarding statement here");
+	USR_STOP();
       }
-
-      // Make callStmt a copy of the original so that
-      // ambiguity can be discovered.
-      callStmt = originalCallStmt->copy();
+    } else {
+      // Remove the block for any forwards that didn't resolve
+      block->remove();
     }
   }
 
-  // Either way, put the callStmt back in the AST
-  if (bestCallStmt) callStmt = bestCallStmt;
-  placeholder->replace(callStmt);
-
+  // Replace call with bestCall and put any statements in bestBlock
+  // just before the call, then remove bestBlock.
   if (bestFn != NULL) {
-    bestBlock->flattenAndRemove();
-  }
+    if (isContextCallExpr(bestCall->parentExpr)) {
+      // retry to get the right ContextCall expression
+      bestBlock->remove();
 
-  INT_ASSERT(info.call->parentSymbol);
+      // Adjust methodName for rename processing.
+      const char* methodName = getForwardedMethodName(calledName, bestDelegate);
+      INT_ASSERT(methodName);
+
+      bestFn = adjustAndResolveForwardedCall(call, bestDelegate, methodName);
+    } else {
+      // Replace actuals in call with those from bestCall
+      // Note that the above path could be used instead, but
+      // this branch hopefully makes fewer temporary AST nodes.
+      for_actuals(actual, call) {
+	actual->remove();
+      }
+      call->baseExpr->replace(bestCall->baseExpr->remove());
+      for_actuals(actual, bestCall) {
+	call->insertAtTail(actual->remove());
+      }
+      bestCall->remove();
+      bestBlock->flattenAndRemove();
+    }
+  }
 
   return bestFn;
 }
