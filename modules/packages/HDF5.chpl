@@ -19,8 +19,6 @@
 
 module HDF5 {
 
-  use HDF5_Chapel;
-
   coforall loc in Locales do on loc {
     // Check that the HDF5 version matches what is expected
     // and initialize the HDF5 library on all locales.
@@ -3383,7 +3381,6 @@ module HDF5 {
     }
   }
 
-  module HDF5_Chapel {
     /*
     // This record could be used to open and close an HDF5 file based on
     // simple scoping rules.  It is currently not used.
@@ -3790,5 +3787,4 @@ module HDF5 {
       var D: domain(rank);
       var A: [D] eltType;
     }
-  }
 }
