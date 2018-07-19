@@ -169,7 +169,7 @@ proc masonSystemHelp() {
   writeln("    mason system [options]");
   writeln();
   writeln("Options:");
-  writeln("    pc                          Print a system packages .pc file");
+  writeln("    pc                          Print a system package's .pc file");
   writeln("    search                      List all packages available on the system");
   writeln("    -i, --installed             Check for package existence on system");
   writeln("    -h, --help                  Display this message");
