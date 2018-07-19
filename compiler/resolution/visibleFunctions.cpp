@@ -58,7 +58,6 @@ public:
 };
 
 static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
-static Map<BlockStmt*, BlockStmt*>            visibilityBlockCache;
 
 static int                                    nVisibleFunctions       = 0;
 
@@ -441,8 +440,6 @@ void visibleFunctionsClear() {
   }
 
   visibleFunctionMap.clear();
-
-  visibilityBlockCache.clear();
 }
 
 /************************************* | **************************************
