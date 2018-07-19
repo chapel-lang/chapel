@@ -1,0 +1,10 @@
+#!/bin/bash
+
+outputfile=$2
+compiler=$3
+
+curver=`$compiler --version | head -1 | sed 's/chpl version \([0-9]\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/'`
+curver=`echo $curver | sed 's/\./\\\./g'`
+
+sed "s/$curver/CHPL_CUR_FULL/g" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile
