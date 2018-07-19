@@ -3381,410 +3381,410 @@ module HDF5 {
     }
   }
 
-    /*
-    // This record could be used to open and close an HDF5 file based on
-    // simple scoping rules.  It is currently not used.
-    record HDF5_file {
-      const filename: string;
-      const file_id: hid_t;
+  /*
+  // This record could be used to open and close an HDF5 file based on
+  // simple scoping rules.  It is currently not used.
+  record HDF5_file {
+    const filename: string;
+    const file_id: hid_t;
 
-      proc init(name: string, access: c_uint = C_HDF5.H5F_ACC_RDONLY) {
-        filename = name;
-        file_id = C_HDF5.H5Fopen(name.c_str(), access, C_HDF5.H5P_DEFAULT);
-      }
-
-      proc deinit() {
-        C_HDF5.H5Fclose(file_id);
-      }
-    }
-    */
-
-    /* Read the dataset named `dsetName` from all HDF5 files in the
-       directory `dirName` with filenames that begin with `filenameStart`.
-       This will read the files in parallel with one task per locale in the
-       `locs` array.  Specifying the same locale multiple times in the `locs`
-       array will cause undefined behavior.
-
-       Returns a distributed array of :record:`ArrayWrapper` records
-       containing the arrays that are read. Each instance will reside on
-       the locale where the corresponding data was read.
-     */
-    proc readAllHDF5Files(locs: [] locale, dirName: string, dsetName: string,
-                          filenameStart: string, type eltType, param rank,
-                          preprocessor: HDF5Preprocessor = nil) {
-      use FileSystem;
-
-      var filenames: [1..0] string;
-      for f in findfiles(dirName) {
-        if f.startsWith(dirName + '/' + filenameStart:string) &&
-           f.endsWith(".h5") {
-          filenames.push_back(f);
-        }
-      }
-
-      return readAllNamedHDF5Files(locs, filenames, dsetName,
-                                   eltType, rank, preprocessor=preprocessor);
+    proc init(name: string, access: c_uint = C_HDF5.H5F_ACC_RDONLY) {
+      filename = name;
+      file_id = C_HDF5.H5Fopen(name.c_str(), access, C_HDF5.H5P_DEFAULT);
     }
 
-    /* Read all HDF5 files named in the filenames array into arrays */
-    proc readAllNamedHDF5Files(locs: [] locale, filenames: [] string,
-                               dsetName: string, type eltType, param rank,
-                               preprocessor: HDF5Preprocessor = nil) {
-      use BlockDist;
-
-      const Space = filenames.domain;
-      const BlockSpace = Space dmapped Block(Space, locs,
-                                             dataParTasksPerLocale=1);
-      var files: [BlockSpace] ArrayWrapper(eltType, rank);
-      forall (f, name) in zip(files, filenames) {
-        var locName = name; // copy this string to be local
-        var file_id = C_HDF5.H5Fopen(locName.c_str(), C_HDF5.H5F_ACC_RDONLY, C_HDF5.H5P_DEFAULT);
-        var dims: [0..#rank] C_HDF5.hsize_t;
-        var dsetRank: c_int;
-
-        C_HDF5.H5LTget_dataset_ndims(file_id, dsetName.c_str(), dsetRank);
-        if rank != dsetRank {
-          halt("rank mismatch in file: " + name + " dataset: " + dsetName +
-               rank + " != " + dsetRank);
-        }
-        C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dsetName.c_str(),
-                                                 c_ptrTo(dims), nil, nil);
-        var data: [0..# (* reduce dims)] eltType;
-        readHDF5Dataset(file_id, dsetName, data);
-
-        var rngTup: rank*range;
-        for param i in 0..rank-1 do rngTup[i+1] = 1..dims[i]:int;
-
-        const D = {(...rngTup)};
-
-        if preprocessor then preprocessor.preprocess(data);
-        f = new ArrayWrapper(data.eltType, rank, D, reshape(data, D));
-        C_HDF5.H5Fclose(file_id);
-      }
-      return files;
+    proc deinit() {
+      C_HDF5.H5Fclose(file_id);
     }
+  }
+  */
 
+  /* Read the dataset named `dsetName` from all HDF5 files in the
+     directory `dirName` with filenames that begin with `filenameStart`.
+     This will read the files in parallel with one task per locale in the
+     `locs` array.  Specifying the same locale multiple times in the `locs`
+     array will cause undefined behavior.
 
-    /* Read the datasets named `dsetName` from the files named in
-       `filenames` into a 1D array.  This function assumes the data
-       elements are all int(64)s.
-       `fnCols` and `fnRows` refer to the columns and rows that `filenames`
-       should have when converting it back to 2-D.
-     */
-    proc readNamedHDF5FilesInto1DArrayInt(filenames: [] string,
-                                          fnCols: int, fnRows: int,
-                                          dsetName: string) {
-      // Would like to add an argument:
-      // `preprocessor: HDF5Preprocessor=nil`
-      // and forward it along to the `readAllNamedHDF5Files` call, but the
-      // Python->Chapel interface is not currently able to handle Chapel types
-      use BlockDist;
+     Returns a distributed array of :record:`ArrayWrapper` records
+     containing the arrays that are read. Each instance will reside on
+     the locale where the corresponding data was read.
+   */
+  proc readAllHDF5Files(locs: [] locale, dirName: string, dsetName: string,
+                        filenameStart: string, type eltType, param rank,
+                        preprocessor: HDF5Preprocessor = nil) {
+    use FileSystem;
 
-      var filenames2D = reshape(filenames, {1..fnCols, 1..fnRows});
-
-      var data = readAllNamedHDF5Files(Locales, filenames2D, dsetName,
-                                       int, rank=2);
-      const rows = + reduce [subset in data[.., 1]] subset.D.dim(1).length;
-      const cols = + reduce [subset in data[1, ..]] subset.D.dim(2).length;
-
-      var A: [1..rows, 1..cols] int;
-
-      const rowsPerFile = data(1,1).D.dim(1).length,
-            colsPerFile = data(1,1).D.dim(2).length;
-      for (row, col) in data.domain {
-        const startRow = (row-1)*rowsPerFile+1, endRow = row*rowsPerFile,
-              startCol = (col-1)*colsPerFile+1, endCol = col*colsPerFile;
-        A[startRow..endRow, startCol..endCol] = data(row, col).A;
-      }
-
-      return reshape(A, {1..rows*cols});
-    }
-
-
-
-    /* Read the dataset named `dsetName` from the open file that `file_id`
-       refers to.  Store the dataset into the array `data`.
-       Can read data of type int/uint (size 8, 16, 32, 64), real (size 32, 64),
-       and c_string.
-     */
-    proc readHDF5Dataset(file_id, dsetName: string, data) {
-      if !isArray(data) then compilerError("'data' must be an array");
-
-      type eltType = data.eltType;
-
-      const hdf5Type = getHDF5Type(eltType);
-      C_HDF5.H5LTread_dataset(file_id, dsetName.c_str(),
-                              hdf5Type, c_ptrTo(data));
-    }
-
-    /* Return the HDF5 type equivalent to the Chapel type `eltType` */
-    proc getHDF5Type(type eltType) {
-      var hdf5Type: C_HDF5.hid_t;
-      select eltType {
-        when int(8)   do hdf5Type = C_HDF5.H5T_STD_I8LE;
-        when int(16)  do hdf5Type = C_HDF5.H5T_STD_I16LE;
-        when int(32)  do hdf5Type = C_HDF5.H5T_STD_I32LE;
-        when int(64)  do hdf5Type = C_HDF5.H5T_STD_I64LE;
-        when uint(8)  do hdf5Type = C_HDF5.H5T_STD_U8LE;
-        when uint(16) do hdf5Type = C_HDF5.H5T_STD_U16LE;
-        when uint(32) do hdf5Type = C_HDF5.H5T_STD_U32LE;
-        when uint(64) do hdf5Type = C_HDF5.H5T_STD_U64LE;
-        when real(32) do hdf5Type = C_HDF5.H5T_IEEE_F32LE;
-        when real(64) do hdf5Type = C_HDF5.H5T_IEEE_F64LE;
-
-        when c_string {
-          hdf5Type = C_HDF5.H5Tcopy(C_HDF5.H5T_C_S1);
-          C_HDF5.H5Tset_size(hdf5Type, C_HDF5.H5T_VARIABLE);
-        }
-
-        otherwise {
-          halt("Unhandled type in getHDF5Type: ", eltType:string);
-        }
-      }
-      return hdf5Type;
-    }
-
-    /* Enum indicating the way to open a file for writing.  `Truncate` will
-       clear the contents of an existing file.  `Append` will add to a file
-       that already exists.  Both will open a new empty file.
-     */
-    enum Hdf5OpenMode { Truncate, Append };
-
-    /* Write the arrays from the :record:`ArrayWrapper` records stored in
-       the `data` argument to the corresponding filename in the
-       `filenames` array. The dataset name is taken from the corresponding
-       position in the `dsetNames` array.
-
-       The `data` argument should be a Block distributed array with
-       `dataParTasksPerLocale==1`.
-
-       Either truncate or append to the file depending on the `mode` argument.
-
-       It would be preferable to find the `eltType` and `rank` values
-       directly from the `data` argument instead of needing explicit
-       arguments for them, but it isn't obvious how to do that currently.
-       If the generic fields in the `ArrayWrapper` could be queried that
-       would be a nice replacement for these arguments.  e.g.
-       `data: [] ArrayWrapper(?eltType, ?rank)`.
-     */
-    proc writeArraysToHDF5Files(dirName: string, dsetNames: [] string,
-                                filenames: [] string, type eltType,
-                                param rank: int,
-                                data: [] ArrayWrapper(eltType, rank),
-                                mode: Hdf5OpenMode) throws {
-      use BlockDist, FileSystem;
-
-      // assert(isBlockDistributed(data) &&
-      //        data.<dist>.dataParTasksPerLocale==1);
-
-      forall (arr, dsetName, fname) in zip(data, dsetNames, filenames) {
-        var file_id: C_HDF5.hid_t;
-        const filename = dirName + "/" + fname;
-        var fileExists: bool;
-
-        if mode == Hdf5OpenMode.Truncate || !exists(filename) {
-          file_id = C_HDF5.H5Fcreate(filename.c_str(), C_HDF5.H5F_ACC_TRUNC,
-                                     C_HDF5.H5P_DEFAULT, C_HDF5.H5P_DEFAULT);
-        } else {
-          file_id = C_HDF5.H5Fopen(filename.c_str(), C_HDF5.H5F_ACC_RDWR,
-                                   C_HDF5.H5P_DEFAULT);
-        }
-        var dims: [0..#rank] C_HDF5.hsize_t;
-        for param i in 0..rank-1 {
-          dims[i] = arr.D.dim(i+1).size: C_HDF5.hsize_t;
-        }
-        C_HDF5.HDF5_WAR.H5LTmake_dataset_WAR(file_id, dsetName.c_str(), rank,
-                                             c_ptrTo(dims),
-                                             getHDF5Type(eltType),
-                                             c_ptrTo(arr.A));
-        C_HDF5.H5Fclose(file_id);
+    var filenames: [1..0] string;
+    for f in findfiles(dirName) {
+      if f.startsWith(dirName + '/' + filenameStart:string) &&
+         f.endsWith(".h5") {
+        filenames.push_back(f);
       }
     }
 
-    /* Read the dataset named `dset` from the HDF5 file named `filename`.
-       The dataset consists of elements of type `eltType`.  The file will
-       be read in chunks matching the `chunkShape` domain, and yielded as
-       arrays of that size until the end of the dataset is reached.
+    return readAllNamedHDF5Files(locs, filenames, dsetName,
+                                 eltType, rank, preprocessor=preprocessor);
+  }
 
-       This allows operating on a very large dataset in smaller sections,
-       for example when it is too big to fit into the system memory, or
-       to allow each section to fit within cache.
+  /* Read all HDF5 files named in the filenames array into arrays */
+  proc readAllNamedHDF5Files(locs: [] locale, filenames: [] string,
+                             dsetName: string, type eltType, param rank,
+                             preprocessor: HDF5Preprocessor = nil) {
+    use BlockDist;
 
-       Currently, the `chunkShape` domain describing the yielded array shape
-       and the shape of the data in the file must both have the same rank.
-       For example, if the data in the file is 2D, `chunkShape` must be
-       two-dimensional as well.  It is expected that this restriction can
-       be relaxed in the future.
-     */
-    iter hdf5ReadChunks(filename: string, dset: string,
-                        chunkShape: domain, type eltType,
-                        preprocessor: HDF5Preprocessor=nil)
-      where isRectangularDom(chunkShape) {
-
-      param outRank = chunkShape.rank;
-      var file_id = C_HDF5.H5Fopen(filename.c_str(),
-                                   C_HDF5.H5F_ACC_RDONLY,
-                                   C_HDF5.H5P_DEFAULT);
-      var dataset = C_HDF5.H5Dopen(file_id, dset.c_str(),
-                                   C_HDF5.H5P_DEFAULT);
-      var dataspace = C_HDF5.H5Dget_space(dataset);
-
+    const Space = filenames.domain;
+    const BlockSpace = Space dmapped Block(Space, locs,
+                                           dataParTasksPerLocale=1);
+    var files: [BlockSpace] ArrayWrapper(eltType, rank);
+    forall (f, name) in zip(files, filenames) {
+      var locName = name; // copy this string to be local
+      var file_id = C_HDF5.H5Fopen(locName.c_str(), C_HDF5.H5F_ACC_RDONLY, C_HDF5.H5P_DEFAULT);
+      var dims: [0..#rank] C_HDF5.hsize_t;
       var dsetRank: c_int;
 
-      C_HDF5.H5LTget_dataset_ndims(file_id, dset.c_str(), dsetRank);
-
-      var dims: [1..dsetRank] C_HDF5.hsize_t;
-      C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dset.c_str(),
+      C_HDF5.H5LTget_dataset_ndims(file_id, dsetName.c_str(), dsetRank);
+      if rank != dsetRank {
+        halt("rank mismatch in file: " + name + " dataset: " + dsetName +
+             rank + " != " + dsetRank);
+      }
+      C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dsetName.c_str(),
                                                c_ptrTo(dims), nil, nil);
+      var data: [0..# (* reduce dims)] eltType;
+      readHDF5Dataset(file_id, dsetName, data);
 
-      // Can't build a tuple with dsetRank because it isn't a param.
-      // Otherwise we could do this to get a domain describing the data:
-      // var dimTup: dsetRank * range;
-      // for i in 1..dsetRank do dimTup(i) = 1..dims[i];
-      // const dataDom = {(...dimTup)};
+      var rngTup: rank*range;
+      for param i in 0..rank-1 do rngTup[i+1] = 1..dims[i]:int;
 
-      if outRank == 1 {
-        if dsetRank == 1 {
-          for inOffset in 0..#dims[1] by chunkShape.size {
-            const readCount = min(dims[1]:int-inOffset, chunkShape.size);
-            var A: [1..readCount] eltType;
+      const D = {(...rngTup)};
 
-            var inOffsetArr = [inOffset: C_HDF5.hsize_t],
-                inCountArr  = [readCount: C_HDF5.hsize_t];
+      if preprocessor then preprocessor.preprocess(data);
+      f = new ArrayWrapper(data.eltType, rank, D, reshape(data, D));
+      C_HDF5.H5Fclose(file_id);
+    }
+    return files;
+  }
 
-            C_HDF5.H5Sselect_hyperslab(dataspace,
-                                       C_HDF5.H5S_SELECT_SET,
-                                       c_ptrTo(inOffsetArr), nil,
-                                       c_ptrTo(inCountArr), nil);
 
-            var outDims   = [readCount: C_HDF5.hsize_t],
-                outOffset = [0: C_HDF5.hsize_t],
-                outCount  = [readCount: C_HDF5.hsize_t];
+  /* Read the datasets named `dsetName` from the files named in
+     `filenames` into a 1D array.  This function assumes the data
+     elements are all int(64)s.
+     `fnCols` and `fnRows` refer to the columns and rows that `filenames`
+     should have when converting it back to 2-D.
+   */
+  proc readNamedHDF5FilesInto1DArrayInt(filenames: [] string,
+                                        fnCols: int, fnRows: int,
+                                        dsetName: string) {
+    // Would like to add an argument:
+    // `preprocessor: HDF5Preprocessor=nil`
+    // and forward it along to the `readAllNamedHDF5Files` call, but the
+    // Python->Chapel interface is not currently able to handle Chapel types
+    use BlockDist;
 
-            var memspace = C_HDF5.H5Screate_simple(1, c_ptrTo(outDims), nil);
+    var filenames2D = reshape(filenames, {1..fnCols, 1..fnRows});
 
-            C_HDF5.H5Sselect_hyperslab(memspace,
-                                       C_HDF5.H5S_SELECT_SET,
-                                       c_ptrTo(outOffset), nil,
-                                       c_ptrTo(outCount), nil);
-            C_HDF5.H5Dread(dataset, getHDF5Type(eltType), memspace, dataspace,
-                           C_HDF5.H5P_DEFAULT, c_ptrTo(A));
+    var data = readAllNamedHDF5Files(Locales, filenames2D, dsetName,
+                                     int, rank=2);
+    const rows = + reduce [subset in data[.., 1]] subset.D.dim(1).length;
+    const cols = + reduce [subset in data[1, ..]] subset.D.dim(2).length;
 
-            C_HDF5.H5Sclose(memspace);
+    var A: [1..rows, 1..cols] int;
 
-            if preprocessor then preprocessor.preprocess(A);
-            yield A;
-          }
-        } else {
-          halt("reading in 1-D from ", dsetRank,
-               "-D file not implemented");
-        }
-      } else if outRank == dsetRank {
-        // Read N-D blocks matching the N-D rank of the datafile.  This
-        // could replace the 1D/1D case above.
+    const rowsPerFile = data(1,1).D.dim(1).length,
+          colsPerFile = data(1,1).D.dim(2).length;
+    for (row, col) in data.domain {
+      const startRow = (row-1)*rowsPerFile+1, endRow = row*rowsPerFile,
+            startCol = (col-1)*colsPerFile+1, endCol = col*colsPerFile;
+      A[startRow..endRow, startCol..endCol] = data(row, col).A;
+    }
 
-        // This iterator yields pairs (starts, counts) for each block to
-        // be read. 'starts' is a rank-D start index for each block.
-        // 'counts' contains a count of elements in each dimension.  The
-        // block is then represented by the domain:
-        //
-        // { starts(1)..#counts(1), starts(2)..#counts(2),
-        //           ...,           starts(n)..#counts(n) }
-        //
-        // The set of all of these blocks make the full space
-        // representing the data set in the file to be read.
-        iter blockStartsCounts(param dim=1) {
-          for inOffset in 0..#dims[dim] by chunkShape.dim[dim].size {
-            const readCount = min(dims[dim]:int - inOffset, chunkShape.dim[dim].size);
-            if dim == outRank {
-              yield ((inOffset,), (readCount,));
-            } else {
-              for inOffset2 in blockStartsCounts(dim+1) {
-                yield ((inOffset, (...inOffset2(1))),
-                       (readCount, (...inOffset2(2))));
-              }
-            }
-          }
-        }
+    return reshape(A, {1..rows*cols});
+  }
 
-        for (starts, counts) in blockStartsCounts() {
-          // If `positionalRangeTup` were used instead of `rangeTup` below,
-          // the yielded array's domain would reflect the position of the data
-          // within the data set being read.  Instead, we are currently just
-          // using 1-based domains for the yielded arrays.
-          //
-          //var positionalRangeTup: outRank * range,
-          var rangeTup: outRank * range;
 
-          var inOffsetArr, inCountArr,
-              outOffsetArr, outCountArr: [1..outRank] C_HDF5.hsize_t;
 
-          for param i in 1..outRank {
-            inOffsetArr[i] = starts(i): C_HDF5.hsize_t;
-            inCountArr[i] = counts(i): C_HDF5.hsize_t;
-            outOffsetArr[i] = 0: C_HDF5.hsize_t;
-            outCountArr[i] = counts(i): C_HDF5.hsize_t;
-            //positionalRangeTup(i) = starts(i)..#counts(i);
-            rangeTup(i) = 1..#counts(i);
-          }
-          var A: [(...rangeTup)] eltType;
+  /* Read the dataset named `dsetName` from the open file that `file_id`
+     refers to.  Store the dataset into the array `data`.
+     Can read data of type int/uint (size 8, 16, 32, 64), real (size 32, 64),
+     and c_string.
+   */
+  proc readHDF5Dataset(file_id, dsetName: string, data) {
+    if !isArray(data) then compilerError("'data' must be an array");
 
-          C_HDF5.H5Sselect_hyperslab(dataspace, C_HDF5.H5S_SELECT_SET,
+    type eltType = data.eltType;
+
+    const hdf5Type = getHDF5Type(eltType);
+    C_HDF5.H5LTread_dataset(file_id, dsetName.c_str(),
+                            hdf5Type, c_ptrTo(data));
+  }
+
+  /* Return the HDF5 type equivalent to the Chapel type `eltType` */
+  proc getHDF5Type(type eltType) {
+    var hdf5Type: C_HDF5.hid_t;
+    select eltType {
+      when int(8)   do hdf5Type = C_HDF5.H5T_STD_I8LE;
+      when int(16)  do hdf5Type = C_HDF5.H5T_STD_I16LE;
+      when int(32)  do hdf5Type = C_HDF5.H5T_STD_I32LE;
+      when int(64)  do hdf5Type = C_HDF5.H5T_STD_I64LE;
+      when uint(8)  do hdf5Type = C_HDF5.H5T_STD_U8LE;
+      when uint(16) do hdf5Type = C_HDF5.H5T_STD_U16LE;
+      when uint(32) do hdf5Type = C_HDF5.H5T_STD_U32LE;
+      when uint(64) do hdf5Type = C_HDF5.H5T_STD_U64LE;
+      when real(32) do hdf5Type = C_HDF5.H5T_IEEE_F32LE;
+      when real(64) do hdf5Type = C_HDF5.H5T_IEEE_F64LE;
+
+      when c_string {
+        hdf5Type = C_HDF5.H5Tcopy(C_HDF5.H5T_C_S1);
+        C_HDF5.H5Tset_size(hdf5Type, C_HDF5.H5T_VARIABLE);
+      }
+
+      otherwise {
+        halt("Unhandled type in getHDF5Type: ", eltType:string);
+      }
+    }
+    return hdf5Type;
+  }
+
+  /* Enum indicating the way to open a file for writing.  `Truncate` will
+     clear the contents of an existing file.  `Append` will add to a file
+     that already exists.  Both will open a new empty file.
+   */
+  enum Hdf5OpenMode { Truncate, Append };
+
+  /* Write the arrays from the :record:`ArrayWrapper` records stored in
+     the `data` argument to the corresponding filename in the
+     `filenames` array. The dataset name is taken from the corresponding
+     position in the `dsetNames` array.
+
+     The `data` argument should be a Block distributed array with
+     `dataParTasksPerLocale==1`.
+
+     Either truncate or append to the file depending on the `mode` argument.
+
+     It would be preferable to find the `eltType` and `rank` values
+     directly from the `data` argument instead of needing explicit
+     arguments for them, but it isn't obvious how to do that currently.
+     If the generic fields in the `ArrayWrapper` could be queried that
+     would be a nice replacement for these arguments.  e.g.
+     `data: [] ArrayWrapper(?eltType, ?rank)`.
+   */
+  proc writeArraysToHDF5Files(dirName: string, dsetNames: [] string,
+                              filenames: [] string, type eltType,
+                              param rank: int,
+                              data: [] ArrayWrapper(eltType, rank),
+                              mode: Hdf5OpenMode) throws {
+    use BlockDist, FileSystem;
+
+    // assert(isBlockDistributed(data) &&
+    //        data.<dist>.dataParTasksPerLocale==1);
+
+    forall (arr, dsetName, fname) in zip(data, dsetNames, filenames) {
+      var file_id: C_HDF5.hid_t;
+      const filename = dirName + "/" + fname;
+      var fileExists: bool;
+
+      if mode == Hdf5OpenMode.Truncate || !exists(filename) {
+        file_id = C_HDF5.H5Fcreate(filename.c_str(), C_HDF5.H5F_ACC_TRUNC,
+                                   C_HDF5.H5P_DEFAULT, C_HDF5.H5P_DEFAULT);
+      } else {
+        file_id = C_HDF5.H5Fopen(filename.c_str(), C_HDF5.H5F_ACC_RDWR,
+                                 C_HDF5.H5P_DEFAULT);
+      }
+      var dims: [0..#rank] C_HDF5.hsize_t;
+      for param i in 0..rank-1 {
+        dims[i] = arr.D.dim(i+1).size: C_HDF5.hsize_t;
+      }
+      C_HDF5.HDF5_WAR.H5LTmake_dataset_WAR(file_id, dsetName.c_str(), rank,
+                                           c_ptrTo(dims),
+                                           getHDF5Type(eltType),
+                                           c_ptrTo(arr.A));
+      C_HDF5.H5Fclose(file_id);
+    }
+  }
+
+  /* Read the dataset named `dset` from the HDF5 file named `filename`.
+     The dataset consists of elements of type `eltType`.  The file will
+     be read in chunks matching the `chunkShape` domain, and yielded as
+     arrays of that size until the end of the dataset is reached.
+
+     This allows operating on a very large dataset in smaller sections,
+     for example when it is too big to fit into the system memory, or
+     to allow each section to fit within cache.
+
+     Currently, the `chunkShape` domain describing the yielded array shape
+     and the shape of the data in the file must both have the same rank.
+     For example, if the data in the file is 2D, `chunkShape` must be
+     two-dimensional as well.  It is expected that this restriction can
+     be relaxed in the future.
+   */
+  iter hdf5ReadChunks(filename: string, dset: string,
+                      chunkShape: domain, type eltType,
+                      preprocessor: HDF5Preprocessor=nil)
+    where isRectangularDom(chunkShape) {
+
+    param outRank = chunkShape.rank;
+    var file_id = C_HDF5.H5Fopen(filename.c_str(),
+                                 C_HDF5.H5F_ACC_RDONLY,
+                                 C_HDF5.H5P_DEFAULT);
+    var dataset = C_HDF5.H5Dopen(file_id, dset.c_str(),
+                                 C_HDF5.H5P_DEFAULT);
+    var dataspace = C_HDF5.H5Dget_space(dataset);
+
+    var dsetRank: c_int;
+
+    C_HDF5.H5LTget_dataset_ndims(file_id, dset.c_str(), dsetRank);
+
+    var dims: [1..dsetRank] C_HDF5.hsize_t;
+    C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dset.c_str(),
+                                             c_ptrTo(dims), nil, nil);
+
+    // Can't build a tuple with dsetRank because it isn't a param.
+    // Otherwise we could do this to get a domain describing the data:
+    // var dimTup: dsetRank * range;
+    // for i in 1..dsetRank do dimTup(i) = 1..dims[i];
+    // const dataDom = {(...dimTup)};
+
+    if outRank == 1 {
+      if dsetRank == 1 {
+        for inOffset in 0..#dims[1] by chunkShape.size {
+          const readCount = min(dims[1]:int-inOffset, chunkShape.size);
+          var A: [1..readCount] eltType;
+
+          var inOffsetArr = [inOffset: C_HDF5.hsize_t],
+              inCountArr  = [readCount: C_HDF5.hsize_t];
+
+          C_HDF5.H5Sselect_hyperslab(dataspace,
+                                     C_HDF5.H5S_SELECT_SET,
                                      c_ptrTo(inOffsetArr), nil,
                                      c_ptrTo(inCountArr), nil);
 
-          var memspace = C_HDF5.H5Screate_simple(outRank, c_ptrTo(outCountArr), nil);
+          var outDims   = [readCount: C_HDF5.hsize_t],
+              outOffset = [0: C_HDF5.hsize_t],
+              outCount  = [readCount: C_HDF5.hsize_t];
 
-          C_HDF5.H5Sselect_hyperslab(memspace, C_HDF5.H5S_SELECT_SET,
-                                     c_ptrTo(outOffsetArr), nil,
-                                     c_ptrTo(outCountArr), nil);
+          var memspace = C_HDF5.H5Screate_simple(1, c_ptrTo(outDims), nil);
 
-          C_HDF5.H5Dread(dataset, getHDF5Type(eltType), memspace,
-                         dataspace, C_HDF5.H5P_DEFAULT, c_ptrTo(A));
+          C_HDF5.H5Sselect_hyperslab(memspace,
+                                     C_HDF5.H5S_SELECT_SET,
+                                     c_ptrTo(outOffset), nil,
+                                     c_ptrTo(outCount), nil);
+          C_HDF5.H5Dread(dataset, getHDF5Type(eltType), memspace, dataspace,
+                         C_HDF5.H5P_DEFAULT, c_ptrTo(A));
 
           C_HDF5.H5Sclose(memspace);
 
           if preprocessor then preprocessor.preprocess(A);
           yield A;
         }
-      } else if outRank < dsetRank {
-        // read a slice of the data set
-        halt("slicing reads not supported");
-      } else { // outRank > dsetRank
-        halt("cannot read ", outRank, "-dimension slices from ",
-             dsetRank, "D data");
+      } else {
+        halt("reading in 1-D from ", dsetRank,
+             "-D file not implemented");
+      }
+    } else if outRank == dsetRank {
+      // Read N-D blocks matching the N-D rank of the datafile.  This
+      // could replace the 1D/1D case above.
+
+      // This iterator yields pairs (starts, counts) for each block to
+      // be read. 'starts' is a rank-D start index for each block.
+      // 'counts' contains a count of elements in each dimension.  The
+      // block is then represented by the domain:
+      //
+      // { starts(1)..#counts(1), starts(2)..#counts(2),
+      //           ...,           starts(n)..#counts(n) }
+      //
+      // The set of all of these blocks make the full space
+      // representing the data set in the file to be read.
+      iter blockStartsCounts(param dim=1) {
+        for inOffset in 0..#dims[dim] by chunkShape.dim[dim].size {
+          const readCount = min(dims[dim]:int - inOffset, chunkShape.dim[dim].size);
+          if dim == outRank {
+            yield ((inOffset,), (readCount,));
+          } else {
+            for inOffset2 in blockStartsCounts(dim+1) {
+              yield ((inOffset, (...inOffset2(1))),
+                     (readCount, (...inOffset2(2))));
+            }
+          }
+        }
       }
 
-      C_HDF5.H5Dclose(dataset);
-      C_HDF5.H5Sclose(dataspace);
-      C_HDF5.H5Fclose(file_id);
-    }
+      for (starts, counts) in blockStartsCounts() {
+        // If `positionalRangeTup` were used instead of `rangeTup` below,
+        // the yielded array's domain would reflect the position of the data
+        // within the data set being read.  Instead, we are currently just
+        // using 1-based domains for the yielded arrays.
+        //
+        //var positionalRangeTup: outRank * range,
+        var rangeTup: outRank * range;
 
+        var inOffsetArr, inCountArr,
+            outOffsetArr, outCountArr: [1..outRank] C_HDF5.hsize_t;
 
-    /* A class to preprocess arrays returned by HDF5 file reading procedures.
-       Procedures in this module that take an `HDF5Preprocessor` argument can
-       accept a subclass of this class with the `preprocess` method overridden
-       to do preprocessing as desired before returning the data read.
-     */
-    class HDF5Preprocessor {
-      proc preprocess(A: []) {
-        HaltWrappers.pureVirtualMethodHalt();
+        for param i in 1..outRank {
+          inOffsetArr[i] = starts(i): C_HDF5.hsize_t;
+          inCountArr[i] = counts(i): C_HDF5.hsize_t;
+          outOffsetArr[i] = 0: C_HDF5.hsize_t;
+          outCountArr[i] = counts(i): C_HDF5.hsize_t;
+          //positionalRangeTup(i) = starts(i)..#counts(i);
+          rangeTup(i) = 1..#counts(i);
+        }
+        var A: [(...rangeTup)] eltType;
+
+        C_HDF5.H5Sselect_hyperslab(dataspace, C_HDF5.H5S_SELECT_SET,
+                                   c_ptrTo(inOffsetArr), nil,
+                                   c_ptrTo(inCountArr), nil);
+
+        var memspace = C_HDF5.H5Screate_simple(outRank, c_ptrTo(outCountArr), nil);
+
+        C_HDF5.H5Sselect_hyperslab(memspace, C_HDF5.H5S_SELECT_SET,
+                                   c_ptrTo(outOffsetArr), nil,
+                                   c_ptrTo(outCountArr), nil);
+
+        C_HDF5.H5Dread(dataset, getHDF5Type(eltType), memspace,
+                       dataspace, C_HDF5.H5P_DEFAULT, c_ptrTo(A));
+
+        C_HDF5.H5Sclose(memspace);
+
+        if preprocessor then preprocessor.preprocess(A);
+        yield A;
       }
+    } else if outRank < dsetRank {
+      // read a slice of the data set
+      halt("slicing reads not supported");
+    } else { // outRank > dsetRank
+      halt("cannot read ", outRank, "-dimension slices from ",
+           dsetRank, "D data");
     }
 
-    // There is an internal error involving function arguments of this type
-    // being passed as shadow variables to forall loops if this type is not
-    // used in any other way.  As a workaround, declare an instance so that
-    // it is used.
-    private const unusedInternalErrorWorkaround: HDF5Preprocessor;
+    C_HDF5.H5Dclose(dataset);
+    C_HDF5.H5Sclose(dataspace);
+    C_HDF5.H5Fclose(file_id);
+  }
 
-    /* A record that stores a rectangular array.  An array of `ArrayWrapper`
-       records can store multiple differently sized arrays.
-     */
-    record ArrayWrapper {
-      type eltType;
-      param rank: int;
-      var D: domain(rank);
-      var A: [D] eltType;
+
+  /* A class to preprocess arrays returned by HDF5 file reading procedures.
+     Procedures in this module that take an `HDF5Preprocessor` argument can
+     accept a subclass of this class with the `preprocess` method overridden
+     to do preprocessing as desired before returning the data read.
+   */
+  class HDF5Preprocessor {
+    proc preprocess(A: []) {
+      HaltWrappers.pureVirtualMethodHalt();
     }
+  }
+
+  // There is an internal error involving function arguments of this type
+  // being passed as shadow variables to forall loops if this type is not
+  // used in any other way.  As a workaround, declare an instance so that
+  // it is used.
+  private const unusedInternalErrorWorkaround: HDF5Preprocessor;
+
+  /* A record that stores a rectangular array.  An array of `ArrayWrapper`
+     records can store multiple differently sized arrays.
+   */
+  record ArrayWrapper {
+    type eltType;
+    param rank: int;
+    var D: domain(rank);
+    var A: [D] eltType;
+  }
 }
