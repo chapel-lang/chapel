@@ -407,7 +407,7 @@ module TomlParser {
         }
       }
       catch e: IllegalArgumentError {
-        writeln("Line "+ debugCounter +": Illegal value -> " + val);
+        writeln("Line "+ debugCounter +": Illegal Value -> " + val);
         exit(1);
       }
       catch e: TomlError {
