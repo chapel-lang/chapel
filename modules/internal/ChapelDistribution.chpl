@@ -423,7 +423,7 @@ module ChapelDistribution {
 
     proc dsiAlignedLow {
       if rank == 1 {
-        return ds(1).alignedLow;
+        return dsiDim(1).alignedLow;
       } else {
         var result: rank*idxType;
         for param i in 1..rank do
@@ -491,9 +491,8 @@ module ChapelDistribution {
       return chpl__idxTypeToIntIdxType(idxType);
     }
 
-    proc dsiDim(d){
+    proc dsiDim(d) : range(idxType, BoundedRangeType.bounded, stridable) {
       halt("Cannot invoke dsiDim on " + (this.type : string) + " instantiation");
-      return 1..0; // dummy
     }
 
     // optional, is this necessary? probably not now that

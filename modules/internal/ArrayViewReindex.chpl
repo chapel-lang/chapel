@@ -121,7 +121,7 @@ module ArrayViewReindex {
       else
         return distInst;
     }
-    
+
     //
     // TODO: If we put this expression into the variable declaration
     // above, we get a memory leak.  File a future against this?
@@ -177,6 +177,8 @@ module ArrayViewReindex {
       downdomInst = downdomLoc._instance;
       ownsDownDomInst = true;
     }
+
+    proc dsiDim(d) return this.updom.dsiDim(d);
 
     iter these() {
       if chpl__isDROrDRView(downdom) {

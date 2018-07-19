@@ -207,6 +207,8 @@ module ArrayViewRankChange {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
+    proc dsiDim(d) return this.upDom.dsiDim(d);
+
     iter these() {
       if chpl__isDROrDRView(downDom) {
         for i in upDom do
