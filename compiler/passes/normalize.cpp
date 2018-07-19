@@ -69,7 +69,6 @@ static void        updateInitMethod (FnSymbol* fn);
 
 static void        checkUseBeforeDefs();
 static void        moveGlobalDeclarationsToModuleScope();
-static void        insertUseForExplicitModuleCalls(void);
 
 static void        lowerIfExprs(BaseAST* base);
 
@@ -187,8 +186,6 @@ void normalize() {
   checkUseBeforeDefs();
 
   moveGlobalDeclarationsToModuleScope();
-
-  insertUseForExplicitModuleCalls();
 
   if (!fMinimalModules) {
     // Calls to _statementLevelSymbol() are inserted here and in
@@ -857,30 +854,6 @@ static void moveGlobalDeclarationsToModuleScope() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void insertUseForExplicitModuleCalls() {
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->inTree() && se->symbol() == gModuleToken) {
-      SET_LINENO(se);
-
-      CallExpr*     call  = toCallExpr(se->parentExpr);
-      INT_ASSERT(call);
-
-      SymExpr*      mse   = toSymExpr(call->get(2));
-      INT_ASSERT(mse);
-
-      ModuleSymbol* mod   = toModuleSymbol(mse->symbol());
-      INT_ASSERT(mod);
-
-      Expr*         stmt  = se->getStmtExpr();
-      BlockStmt*    block = new BlockStmt();
-
-      stmt->insertBefore(block);
-
-      block->insertAtHead(stmt->remove());
-      block->useListAdd(mod);
-    }
-  }
-}
 
 //
 // Inserts a temporary for the result if the last statement is a call.

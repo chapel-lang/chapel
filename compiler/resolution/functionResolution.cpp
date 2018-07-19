@@ -1900,7 +1900,7 @@ static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call, bool errorOnF
 
 static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call, bool
     errorOnFailure) {
-  BlockStmt* block = new BlockStmt(call);
+  BlockStmt* block = new BlockStmt(call, BLOCK_SCOPELESS);
 
   insert->insertAtHead(block); // Tail?
 
@@ -1916,7 +1916,7 @@ static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call, bool
 }
 
 static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorOnFailure) {
-  BlockStmt* block = new BlockStmt(call);
+  BlockStmt* block = new BlockStmt(call, BLOCK_SCOPELESS);
 
   insert->insertBefore(block);
 
@@ -10271,7 +10271,7 @@ static void expandInitFieldPrims()
 
 DisambiguationContext::DisambiguationContext(CallInfo& info) {
   actuals = &info.actuals;
-  scope   = (info.scope) ? info.scope : getVisibilityBlock(info.call);
+  scope   = (info.scope) ? info.scope : getVisibilityScope(info.call);
   explain = false;
 
   if (fExplainVerbose == true) {
