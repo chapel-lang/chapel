@@ -93,10 +93,6 @@ UseStmt* UseStmt::copyInner(SymbolMap* map) {
     _this = new UseStmt(COPY_INT(src));
   }
 
-  for_vector(const char, sym, relatedNames) {
-    _this->relatedNames.push_back(sym);
-  }
-
   return _this;
 }
 
@@ -126,14 +122,6 @@ void UseStmt::verify() {
 
   if (src == NULL) {
     INT_FATAL(this, "Bad UseStmt::src");
-  }
-
-  if (relatedNames.size() != 0 &&
-      named.size()        == 0 &&
-      renamed.size()      == 0) {
-    INT_FATAL(this,
-              "Have names to avoid, but nothing was listed in the "
-              "use to begin with");
   }
 
   verifyNotOnList(src);
@@ -407,8 +395,6 @@ void UseStmt::validateNamed() {
                            (except == true) ? "except" : "only",
                            name);
           }
-
-          createRelatedNames(sym);
         }
       }
     }
@@ -437,10 +423,7 @@ void UseStmt::validateRenamed() {
     } else if (symbols.size() == 1) {
       Symbol* sym = symbols[0];
 
-      if (sym->hasFlag(FLAG_PRIVATE) == false) {
-        createRelatedNames(sym);
-
-      } else {
+      if (sym->hasFlag(FLAG_PRIVATE)) {
         USR_FATAL_CONT(this,
                        "Bad identifier in rename, '%s' is private",
                        it->second);
@@ -472,45 +455,6 @@ BaseAST* UseStmt::getSearchScope() const {
   }
 
   return retval;
-}
-
-void UseStmt::createRelatedNames(Symbol* maybeType) {
-  if (TypeSymbol* ts = toTypeSymbol(maybeType)) {
-    Type* type = ts->type;
-
-    forv_Vec(FnSymbol, method, type->methods) {
-      if (method->isInitializer() == false &&
-          method->hasFlag(FLAG_NEW_WRAPPER) == false) {
-        relatedNames.push_back(method->name);
-      }
-    }
-
-    if (AggregateType* at = toAggregateType(type)) {
-      for_fields(sym, at) {
-        relatedNames.push_back(sym->name);
-      }
-    }
-
-    unsigned int constrLen      = strlen(ts->name) + strlen("_construct_") + 1;
-    unsigned int typeConstrLen  = constrLen        + strlen("_type");
-
-    char*        constrName     = (char*) malloc(constrLen);
-    char*        typeConstrName = (char*) malloc(typeConstrLen);
-
-    strcpy(constrName,     "_construct_");
-    strcat(constrName,     ts->name);
-
-    strcpy(typeConstrName, "_type_construct_");
-    strcat(typeConstrName, ts->name);
-
-    relatedNames.push_back(constrName);
-    relatedNames.push_back(typeConstrName);
-
-    if (except == false) {
-      relatedNames.push_back("init");
-      relatedNames.push_back("_new");
-    }
-  }
 }
 
 /************************************* | **************************************
@@ -546,18 +490,12 @@ bool UseStmt::skipSymbolSearch(const char* name) const {
     if (matchedNameOrConstructor(name) == true) {
       retval =  true;
 
-    } else if (inRelatedNames(name)) {
-      retval =  true;
-
     } else {
       retval = false;
     }
 
   } else {
     if (matchedNameOrConstructor(name) == true) {
-      retval = false;
-
-    } else if (inRelatedNames(name) == true) {
       retval = false;
 
     } else {
@@ -579,17 +517,6 @@ bool UseStmt::matchedNameOrConstructor(const char* name) const {
       it != renamed.end();
       ++it) {
     if (strcmp(name, it->first) == 0) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-// Returns true if the name was in the relatedNames field, false otherwise.
-bool UseStmt::inRelatedNames(const char* name) const {
-  for_vector(const char, toCheck, relatedNames) {
-    if (strcmp(name, toCheck) == 0) {
       return true;
     }
   }
@@ -664,9 +591,6 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
         SET_LINENO(this);
 
         return new UseStmt(src, &newOnlyList, false, &newRenamed);
-        // Note: we don't populate the relatedNames vector for the new use,
-        // since we don't have a way to connect the names in it back to the
-        // types we did or didn't include in the shorter 'only' list.
       }
 
     } else {
