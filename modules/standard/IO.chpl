@@ -3698,7 +3698,6 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
      amount <= 0 || (start + amount - 1 > arg.domain.high) then return false;
 
   var err:syserr = ENOERR;
-  var got_copy: int;
   on this.home {
     try! this.lock();
     param newLineChar = 0x0A;
@@ -3707,19 +3706,19 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
     const maxIdx = start + amount - 1;
     while i <= maxIdx {
       got = qio_channel_read_byte(false, this._channel_internal);
+      if got < 0 then break;
       arg[i] = got:uint(8);
       i += 1;
-      if got < 0 || got == newLineChar then break;
+      if got == newLineChar then break;
     }
     numRead = i - start;
-    if got < 0 then err = (-got):syserr;
-    got_copy = got;
+    if i == start && got < 0 then err = (-got):syserr;
     this.unlock();
   }
 
-  if !err && got_copy != 0 {
+  if !err {
     return true;
-  } else if err == EEOF || got_copy == 0 {
+  } else if err == EEOF {
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readline(arg : [] uint(8))");
