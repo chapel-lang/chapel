@@ -18,7 +18,6 @@ proc main {
 
 }
 
-pragma "use default init"
 class MyReduceOp: ReduceScanOp {
   type eltType;
   var  value: eltType;
