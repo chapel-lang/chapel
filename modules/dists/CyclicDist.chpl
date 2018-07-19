@@ -493,18 +493,6 @@ proc CyclicDom.dsiDisplayRepresentation() {
   dist.dsiDisplayRepresentation();
 }
 
-proc CyclicDom.dsiLow return whole.low;
-
-proc CyclicDom.dsiHigh return whole.high;
-
-proc CyclicDom.dsiAlignedLow return whole.alignedLow;
-
-proc CyclicDom.dsiAlignedHigh return whole.alignedHigh;
-
-proc CyclicDom.dsiAlignment return whole.alignment;
-
-proc CyclicDom.dsiStride return whole.stride;
-
 proc CyclicDom.dsiMember(i) return whole.member(i);
 
 proc CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);

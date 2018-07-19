@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,7 +19,7 @@
 
 //
 // BlockCyclic Distribution
-// 
+//
 //      BlockCyclic    BlockCyclicDom     BlockCyclicArr
 //
 //   LocBlockCyclic    LocBlockCyclicDom  LocBlockCyclicArr
@@ -106,7 +106,7 @@ to the ID of the locale to which it is mapped.
 
     const Space = {1..8, 1..8};
     const D: domain(2)
-      dmapped BlockCyclic(startIdx=Space.low,blocksize=(2,3)) 
+      dmapped BlockCyclic(startIdx=Space.low,blocksize=(2,3))
       = Space;
     var A: [D] int;
 
@@ -138,7 +138,7 @@ The ``BlockCyclic`` class initializer is defined as follows:
     proc BlockCyclic.init(
       startIdx,
       blocksize,
-      targetLocales: [] locale = Locales, 
+      targetLocales: [] locale = Locales,
       dataParTasksPerLocale    = // value of dataParTasksPerLocale config const
       param rank: int          = // inferred from startIdx argument,
       type idxType             = // inferred from startIdx argument )
@@ -234,7 +234,7 @@ class BlockCyclic : BaseDist {
         var thisRange = targetLocales.domain.dim(i);
         ranges(i) = 0..#thisRange.length;
       }
-      
+
       targetLocDom = {(...ranges)};
       if debugBlockCyclicDist then writeln(targetLocDom);
 
@@ -368,7 +368,7 @@ proc BlockCyclic.getStarts(inds, locid) {
   var R: rank*range(idxType, stridable=true);
   for i in 1..rank {
     var lo, hi: idxType;
-    const domlo = inds.dim(i).low, 
+    const domlo = inds.dim(i).low,
           domhi = inds.dim(i).high;
     const mylo = locDist(locid).myStarts(i).low;
     const mystr = locDist(locid).myStarts(i).stride;
@@ -386,7 +386,7 @@ proc BlockCyclic.getStarts(inds, locid) {
       }
     } else {
       halt("BLC: need to handle domain low less than lowIdx");
-        }     
+        }
       } else {
         lo = domlo;
         hi = domhi;
@@ -425,7 +425,7 @@ proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   var locInd: rank*int;
   for param i in 1..rank {
     const ind0 = ind(i) - lowIdx(i);
-    locInd(i) = ((ind0 / blocksize(i)) % targetLocDom.dim(i).length): int; 
+    locInd(i) = ((ind0 / blocksize(i)) % targetLocDom.dim(i).length): int;
   }
   return locInd;
 }
@@ -593,11 +593,6 @@ proc BlockCyclicDom.dsiBuildArray(type eltType) {
   return arr;
 }
 
-proc BlockCyclicDom.dsiNumIndices return whole.numIndices;
-proc BlockCyclicDom.dsiLow return whole.low;
-proc BlockCyclicDom.dsiHigh return whole.high;
-proc BlockCyclicDom.dsiStride return whole.stride;
-
 //
 // INTERFACE NOTES: Could we make setIndices() for a rectangular
 // domain take a domain rather than something else?
@@ -747,13 +742,13 @@ proc LocBlockCyclicDom.enumerateBlocks() {
         lo = i;
       else
         lo = i(j);
-      write(lo, "..", min(lo + globDom.dist.blocksize(j)-1, 
+      write(lo, "..", min(lo + globDom.dist.blocksize(j)-1,
                           globDom.whole.dim(j).high));
     }
     writeln("}");
-  } 
+  }
 }
-  
+
 
 //
 // queries for this locale's number of indices, low, and high bounds
