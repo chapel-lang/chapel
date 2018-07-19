@@ -3010,26 +3010,85 @@ static bool typeUsesForwarding(Type* t) {
   return retval;
 }
 
+static CallExpr* findSubCallToName(Expr* call, const char* unresolved) {
+
+  if (call->isNamedAstr(unresolved))
+    return call;
+
+  if (CallExpr* subcall = toCallExpr(call->baseExpr)) {
+    if (subcall->baseExpr && subcall->isNamedAstr(unresolved))
+      return subcall;
+  }
+
+  for_actuals(actual, call) {
+    if (CallExpr* subcall = toCallExpr(actual)) {
+      if (subcall->baseExpr && subcall->isNamedAstr(unresolved))
+        return subcall;
+      else if (CallExpr* found = findSubCallToName(subcall, unresolved))
+        return found;
+    }
+  }
+  return NULL;
+}
+
 // Returns a relevant FnSymbol if it worked
 static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
-  CallExpr* call = info.call;
   const char* calledName = info.name;
-  const char* inFnName = call->getFunction()->name;
-  Expr* receiver = call->get(2);
-  Type* t = receiver->getValType();
-  AggregateType* at = toAggregateType(canonicalClassType(t));
-
-  FnSymbol* best = NULL;
-  CallExpr* bestCall = NULL;
+  const char* inFnName = info.call->getFunction()->name;
+  FnSymbol* bestFn = NULL;
   BlockStmt* bestBlock = NULL;
-
+  CallExpr* bestCallStmt = NULL;
+  ForwardingStmt* bestDelegate = NULL;
 
   // Don't forward forwarding expr (infinite loop ensues)
   const char* ignorePrefix = "chpl_forwarding_expr";
   if (0 == memcmp(ignorePrefix, calledName, strlen(ignorePrefix)))
     return NULL;
-//  if (0 == memcmp(ignorePrefix, inFnName, strlen(ignorePrefix)))
-//    return NULL;
+
+  // This code is a little bit weird because of the need to support
+  // ContextCallExprs added around the call & to work with the normal
+  // post-order traversal in resolveExpr.
+
+  // In particular, it goes to a lot of trouble to include the real
+  // 'call' (and not a copy of it) in the adjusted AST it tries to resolve
+  // to do the forwarding.
+
+  // Since there can be multiple delegates for forwarding, that means
+  // that it has to be able to put the call back the way it was
+  // in order to try the other delegates.
+
+  AggregateType* at = NULL;
+  CallExpr* callStmt = NULL;
+  CallExpr* originalCallStmt = NULL;
+  CallExpr* placeholder = NULL;
+  Symbol* originalReceiver = NULL;
+  const char* originalUnresolved = NULL;
+  {
+    CallExpr* call = info.call;
+    Expr* receiver = call->get(2);
+    Type* t = receiver->getValType();
+    at = toAggregateType(canonicalClassType(t));
+    INT_ASSERT(at);
+    Expr* stmt = call->getStmtExpr();
+    callStmt = toCallExpr(stmt);
+    INT_ASSERT(callStmt);
+    originalCallStmt = callStmt->copy();
+    placeholder = new CallExpr(PRIM_NOOP);
+    // Take callStmt out of the AST tree
+    callStmt->replace(placeholder);
+
+    SymExpr* callReceiverSe = toSymExpr(receiver);
+    INT_ASSERT(callReceiverSe);
+    originalReceiver = callReceiverSe->symbol();
+
+    UnresolvedSymExpr* callBaseExprUrse = toUnresolvedSymExpr(call->baseExpr);
+    INT_ASSERT(callBaseExprUrse);
+    originalUnresolved = callBaseExprUrse->unresolved;
+  }
+
+
+  // callStmt is no longer in the AST. We'll modify
+  // call's baseExpr and target and try resolving it below.
 
   // Try each of the forwarding clauses to see if any get us
   // a match.
@@ -3080,74 +3139,113 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
     }
 
     // Make sure methodName is a blessed string
-    methodName = astr(methodName);
+    INT_ASSERT(methodName == astr(methodName));
+
+    // Reconstruct some important variables
+    CallExpr* call = findSubCallToName(callStmt, originalUnresolved);
+    INT_ASSERT(call);
+    SymExpr* callReceiverSe = toSymExpr(call->get(2));
+    INT_ASSERT(callReceiverSe);
+    UnresolvedSymExpr* callBaseExprUrse = toUnresolvedSymExpr(call->baseExpr);
+    INT_ASSERT(callBaseExprUrse);
 
     // Create a tmp to store the forwarded-to method target.
     VarSymbol* tgt = newTemp("tgt");
     tgt->addFlag(FLAG_MAYBE_REF);
+    tgt->addFlag(FLAG_MAYBE_TYPE);
     DefExpr* defTgt = new DefExpr(tgt);
 
     // Create a block to store temporaries etc.
     // Store it just before the call being resolved.
     BlockStmt* block = new BlockStmt(defTgt); //, BLOCK_SCOPELESS);
-    call->getStmtExpr()->insertBefore(block);
-
-    SymExpr* receiverSe = toSymExpr(receiver);
-    INT_ASSERT(receiverSe);
-    Symbol* receiverSym = receiverSe->symbol();
+    placeholder->insertBefore(block);
 
     // Set the target
-    CallExpr* getTgt = new CallExpr(fnGetTgt, gMethodToken, receiver->copy());
+    CallExpr* getTgt = new CallExpr(fnGetTgt, gMethodToken, originalReceiver);
     CallExpr* setTgt = new CallExpr(PRIM_MOVE, tgt, getTgt);
     block->insertAtTail(setTgt);
 
-    // Create the new call expression
-    SymbolMap map;
-    map.put(receiverSym, tgt);
-    CallExpr* forwardedCall = call->copy(&map);
-    forwardedCall->baseExpr = new UnresolvedSymExpr(methodName);
-    block->insertAtTail(forwardedCall);
+    // set the call's base expression to the right method
+    callBaseExprUrse->unresolved = methodName;
+    // set the call's receiver to the tgt temp
+    callReceiverSe->setSymbol(tgt);
+    // put call's enclosing statement into the AST at this block
+    block->insertAtTail(callStmt);
 
+    FnSymbol* foundFn = NULL;
     // Now try to resolve setTgt and forwardedCall
     if (tryResolveCall(getTgt)) {
       // getTgt might not resolve if we're looking for a type
       // method and target is value, for example.
       if (FnSymbol* callee = getTgt->resolvedFunction()) {
         resolveFnForCall(callee, getTgt);
+        resolveCall(setTgt);
+        foundFn = tryResolveCall(call);
+      }
+    }
+
+    // Remove call from the block no matter what
+    // (it'll replace placeholder on success and continue on failure)
+    callStmt->remove();
+
+    if (foundFn == NULL) {
+      // Reset the call so it's ready for other forwards.
+      // set the method to the original name
+      callBaseExprUrse->unresolved = originalUnresolved;
+      // set the call's receiver to the tgt temp
+      callReceiverSe->setSymbol(originalReceiver);
+
+      // Fix any actuals that have changed
+      CallExpr* originalCall = findSubCallToName(originalCallStmt, originalUnresolved);
+
+      int i = 0;
+      for_actuals(actual, call) {
+        if (i > 2) // skip method token, receiver
+          actual->remove();
+        i++;
+      }
+      i = 0;
+      for_actuals(actual, originalCall) {
+        if (i > 2) // skip method token, receiver
+          call->insertAtTail(actual->copy());
+        i++;
       }
 
-      resolveCall(setTgt);
-      FnSymbol* fn = tryResolveCall(forwardedCall);
-      if (fn) {
-        if (best == NULL) {
-          best = fn;
-          bestCall = forwardedCall;
-          bestBlock = block;
-        } else {
-          USR_FATAL(call, "ambiguity error in forwarding");
-        }
+      // Remove the block
+      block->remove();
+    } else {
+      // If we found a match, great!
+      if (bestFn == NULL) {
+        bestFn = foundFn;
+        bestBlock = block;
+        bestCallStmt = callStmt;
+        bestDelegate = delegate;
       } else {
-        // Remove the block for any forwards that didn't resolve
-        block->remove();
+        USR_FATAL_CONT(call, "ambiguous forwarded call");
+        USR_PRINT(bestFn, "candidates include: %s", toString(bestFn));
+        USR_PRINT(bestDelegate, "from forwarding statement here");
+        USR_PRINT(foundFn, "candidates include: %s", toString(foundFn));
+        USR_PRINT(delegate, "from forwarding statement here");
+        USR_STOP();
       }
+
+      // Make callStmt a copy of the original so that
+      // ambiguity can be discovered.
+      callStmt = originalCallStmt->copy();
     }
   }
 
-  // Replace call with bestCall and put any statements in bestBlock
-  // just before the call, then remove bestBlock.
-  if (best != NULL) {
-    for_actuals(actual, call) {
-      actual->remove();
-    }
-    call->baseExpr->replace(bestCall->baseExpr->remove());
-    for_actuals(actual, bestCall) {
-      call->insertAtTail(actual->remove());
-    }
-    bestCall->remove();
+  // Either way, put the callStmt back in the AST
+  if (bestCallStmt) callStmt = bestCallStmt;
+  placeholder->replace(callStmt);
+
+  if (bestFn != NULL) {
     bestBlock->flattenAndRemove();
   }
 
-  return best;
+  INT_ASSERT(info.call->parentSymbol);
+
+  return bestFn;
 }
 
 
