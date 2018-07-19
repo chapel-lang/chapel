@@ -4,9 +4,3 @@ CHPL_COMM != none
 COMPOPTS <= --no-local
 CHPL_TEST_VGRND_EXE == on
 COMPOPTS <= --baseline
-# Some checksums differ from expected values on the following configurations.
-# I think it is caused by sizeof(long double) being less than 16.
-CHPL_TARGET_PLATFORM == cygwin32
-CHPL_TARGET_PLATFORM == cygwin64
-CHPL_TARGET_PLATFORM == linux32
-CHPL_TARGET_COMPILER == cray-prgenv-cray
