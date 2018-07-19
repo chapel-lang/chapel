@@ -81,11 +81,7 @@ private:
 
   void            validateRenamed();
 
-  void            createRelatedNames(Symbol* maybeType);
-
   bool            matchedNameOrConstructor(const char* name)             const;
-
-  bool            inRelatedNames(const char* name)                       const;
 
   void            noRepeats()                                            const;
 
@@ -96,7 +92,6 @@ public:
 
 private:
   bool                               except;
-  std::vector<const char*>           relatedNames;
 };
 
 #endif
