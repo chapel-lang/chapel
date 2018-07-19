@@ -909,7 +909,7 @@ static void checkMethodsOverride() {
               okKnown = true;
             } else {
               // We don't really know yet because there might be
-              // suprious matches
+              // spurious matches
               ok = false;
               okKnown = false;
             }
