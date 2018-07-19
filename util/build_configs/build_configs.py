@@ -4,10 +4,6 @@
 """CLI for building multiple Chapel configurations."""
 
 # TODO: Add flag to ignore env when picking defaults, maybe --ignore-environment.
-# TODO: Split up compile process into stages (compile, runtime, then third-party, etc).
-# TODO: Parallelize build stages that are amenable (e.g. runtime, third-party, etc).
-# TODO: Add --all-configs (?) flag that will build all configurations.
-# TODO: Figure out how to support compiler configs. It is a bit challenging because the default should almost certainly come from chplenv (otherwise that logic will be duplicated here).
 # TODO: Add interactive mode where user is asked what configs they want.
 
 from __future__ import absolute_import, print_function, unicode_literals
@@ -188,6 +184,12 @@ def main():
         's' if len(build_configs) > 1 else '')
     logging.info('Building {0}.'.format(config_count_str))
     logging.debug('Build configs: {0}'.format(build_configs))
+
+    make_logfile = chpl_misc['make_logfile']
+    chpl_home = chpl_misc['chpl_home']
+    if make_logfile:
+        print('[BUILD_CONFIGS] Building {0}\n'.format(config_count_str), file=make_logfile)
+        print('[BUILD_CONFIGS] CHPL_HOME={0}\n'.format(chpl_home), file=make_logfile)
 
     statuses = [0,]
     with elapsed_time('All {0}'.format(config_count_str)):
@@ -420,10 +422,12 @@ def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_
 
     logging.info('Building config:\n\t{0}'.format(build_config_name))
     if make_logfile:
-        print('\n[BUILD_CONFIGS] make_targets: {0}'.format(make_targets), file=make_logfile)
-        print('\n[BUILD_CONFIGS] config: {0}'.format(build_config_name), file=make_logfile)
+        print('[BUILD_CONFIGS] make_targets:\n\t{0}'.format(make_targets), file=make_logfile)
+        print('[BUILD_CONFIGS] config:\n\t{0}'.format(build_config_name), file=make_logfile)
 
     build_env['BUILD_CONFIGS_config'] = '{0}'.format(build_config_name)
+    build_env['BUILD_CONFIGS_verbose'] = '{0}'.format(verbose)
+    build_env['BUILD_CONFIGS_dry_run'] = '{0}'.format(dry_run)
     build_env['BUILD_CONFIGS_chplenv_exe'] = chpl_misc['chplenv_exe']
     build_env['BUILD_CONFIGS_chpl_make'] = chpl_misc['chpl_make']
     build_env['BUILD_CONFIGS_make_targets'] = chpl_misc['make_targets']
@@ -431,6 +435,8 @@ def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_
     if dry_run:
         logging.info('dry-run command:\n\t{0}'.format(dryrun_cmd))
         build_env['BUILD_CONFIGS_dryrun_cmd']  = dryrun_cmd
+        if make_logfile:
+            print('[BUILD_CONFIGS] command:\n\t{0}\n'.format(make_cmd), file=make_logfile)
         with elapsed_time(build_config_name):
             result, output, error = check_output(dryrun_cmd, chpl_home, build_env)
             if result or error:
@@ -443,7 +449,7 @@ def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_
         logging.info('Chapel make command:\n\t{0}'.format(make_cmd))
         build_env['BUILD_CONFIGS_make_cmd'] = make_cmd
         if make_logfile:
-            print('\n[BUILD_CONFIGS] command: {0}\n'.format(make_cmd), file=make_logfile)
+            print('[BUILD_CONFIGS] command:\n\t{0}\n'.format(make_cmd), file=make_logfile)
         with elapsed_time(build_config_name):
             result, output, error = check_output(make_cmd, chpl_home, build_env, file=make_logfile)
         if result:
