@@ -8085,7 +8085,13 @@ static FnSymbol* resolveNormalSerializer(CallExpr* call) {
 
   block->remove();
 
-  return call->resolvedFunction();
+  FnSymbol* ret = call->resolvedFunction();
+
+  if (ret != NULL) {
+    ret->instantiationPoint = chpl_gen_main->body;
+  }
+
+  return ret;
 }
 
 static bool resolveSerializeDeserialize(AggregateType* at) {
