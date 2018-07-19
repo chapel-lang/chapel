@@ -21,6 +21,7 @@
 use Path;
 use MasonUtils;
 use MasonHelp;
+use Regexp;
 
 /* Entry point for mason system commands */
 proc masonSystem(args) {
@@ -32,18 +33,11 @@ proc masonSystem(args) {
       masonSystemHelp();
     }
     else if pkgConfigExists() {
-      if args[2] == "pc" {
-        const pkgName = args[3];
-        if pkgExists(pkgName) {
-          printPkgPc(pkgName);
-        }
-        else {
-          writeln("Mason could not find: " + pkgName);
-          writeln("Make sure the package is installed and it's .pc file is in the PKG_CONFIG_PATH");
-        }
+      if args[2] == "pc" {  
+        printPkgPc(args);
       }
-      else if args[2] == "list" {
-        listAllPkgs();
+      else if args[2] == "search" {
+        pkgSearch(args);
       }
       else if args[2] == "-i" || args[2] == "--installed" {
         checkInstalled(args[3]);
@@ -83,6 +77,32 @@ proc checkInstalled(pkgName: string) throws {
   }
 }
 
+/* Searches available system packages */
+proc pkgSearch(args) {
+  
+  if args.size < 4 {
+    listAllPkgs();
+  }
+  else if args[3] == '-h' || args[3] == '--help' {
+    masonSystemSearchHelp();
+  }
+  else {
+    const pkgName = args[3];
+    const pattern = compile(pkgName, ignorecase=true);
+    const command = "pkg-config --list-all";
+    const cmd = command.split();
+    var sub = spawn(cmd, stdout=PIPE);
+    sub.wait();
+
+    for line in sub.stdout.lines() {
+      if pattern.search(line) {
+        writeln(line);
+      }
+    }
+  }
+}
+
+
 /* Lists all packages available on user system */
 proc listAllPkgs() {
   const command = "pkg-config --list-all";
@@ -91,19 +111,31 @@ proc listAllPkgs() {
 
 
 /* Prints a pc for user debugging */
-proc printPkgPc(pkgName: string) throws {
-  try! {
-    var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir")).strip();
-    var pcFile = joinPath(pcDir, pkgName + ".pc");
-    var pc = open(pcFile, iomode.r);
-    for line in pc.lines() {
-      write(line);
-    }
+proc printPkgPc(args) throws {
+  if args.size < 4 {
+    masonSystemPcHelp();
   }
-  catch e: FileNotFoundError {
-    // start issue about this
-    //throw new MasonError("Package exists but Mason could not find it's .pc file");
-    writeln("Package exists but Mason could not find it's .pc file");
+  else if args[3] == "-h" || args[3] == "--help" {
+    masonSystemPcHelp();
+  }
+  else {
+    try! {
+      const pkgName = args[3];
+      if pkgExists(pkgName) {
+        var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir")).strip();
+        var pcFile = joinPath(pcDir, pkgName + ".pc");
+        var pc = open(pcFile, iomode.r);
+        for line in pc.lines() {
+          write(line);
+        }
+      }
+      else {
+        throw new MasonError("Mason could not find " + pkgName + " on your system");
+      }
+    }
+    catch e: FileNotFoundError {
+      writeln("Package exists but Mason could not find it's .pc file");
+    }
   }
 }
 

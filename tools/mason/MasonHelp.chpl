@@ -170,7 +170,7 @@ proc masonSystemHelp() {
   writeln();
   writeln("Options:");
   writeln("    pc                          Print a system packages .pc file");
-  writeln("    list                        List all packages available on the system");
+  writeln("    search                      List all packages available on the system");
   writeln("    -i, --installed             Check for package existence on system");
   writeln("    -h, --help                  Display this message");
   writeln();
@@ -178,3 +178,28 @@ proc masonSystemHelp() {
   writeln("something other than <package name>.pc  Use -i to ensure package exists");
   writeln("For more information on using system dependencies see Mason documentation");
 }
+
+proc masonSystemSearchHelp() {
+  writeln("Search for packages on system found via pkg-config");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason search [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln();
+}
+
+
+proc masonSystemPcHelp() {
+  writeln("Print a package's .pc file (pkg-config file)");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason pc [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln();
+}
+
+
