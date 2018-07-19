@@ -672,7 +672,7 @@ proc BlockDom.dsiDims() return whole.dims();
 
 proc BlockDom.dsiDim(d: int) return whole.dim(d);
 
-proc BlockDom.dsiDim(param d: int) return whole.dim(d);
+/* proc BlockDom.dsiDim(param d: int) return whole.dim(d); */
 
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
