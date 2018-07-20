@@ -155,7 +155,7 @@ proc masonTestHelp() {
   writeln("    -h, --help                  Display this message");
   writeln("        --show                  Direct output of tests to stdout");
   writeln("        --no-run                Compile tests without running them");
-  writeln("        --parallel              Run tests in parallel(sequential by default");
+  writeln("        --parallel              Run tests in parallel(sequential by default)");
   writeln();
   writeln("Test configuration is up to the user");
   writeln("Tests pass if they exit with status code 0");
@@ -170,8 +170,7 @@ proc masonSystemHelp() {
   writeln();
   writeln("Options:");
   writeln("    pc                          Print a system package's .pc file");
-  writeln("    search                      List all packages available on the system");
-  writeln("    -i, --installed             Check for package existence on system");
+  writeln("    search                      Search all packages available on the system");  
   writeln("    -h, --help                  Display this message");
   writeln();
   writeln("The pc command sometimes has trouble finding a .pc file if the file is named ");
@@ -187,6 +186,8 @@ proc masonSystemSearchHelp() {
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
+  writeln("        --no-desc               Only display package name");
+  writeln("        --hungry                Parse descriptions of package to include more search results");
   writeln();
 }
 

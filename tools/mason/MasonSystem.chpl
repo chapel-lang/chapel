@@ -39,9 +39,6 @@ proc masonSystem(args) {
       else if args[2] == "search" {
         pkgSearch(args);
       }
-      else if args[2] == "-i" || args[2] == "--installed" {
-        checkInstalled(args[3]);
-      }
       else {
         masonSystemHelp();
       }
@@ -65,38 +62,58 @@ proc pkgConfigExists() throws {
   return true;
 }
 
-
-/* User query for checking package installation */
-proc checkInstalled(pkgName: string) throws {
-  if pkgExists(pkgName) {
-    const version = "".join(getPkgVariable(pkgName, "--modversion")).strip();
-    writeln(" ".join(pkgName,"version", version, "exists"));
-  }
-  else {
-    throw new MasonError("Mason could not find " + pkgName +" on your system");
-  }
-}
-
 /* Searches available system packages */
-proc pkgSearch(args) {
-  
+proc pkgSearch(args) throws {
+
+  var hungry = false;
+  var quiet = false;
+  var pkgName = "";
   if args.size < 4 {
     listAllPkgs();
-  }
-  else if args[3] == '-h' || args[3] == '--help' {
-    masonSystemSearchHelp();
+    exit(1);
   }
   else {
-    const pkgName = args[3];
-    const pattern = compile(pkgName, ignorecase=true);
-    const command = "pkg-config --list-all";
-    const cmd = command.split();
-    var sub = spawn(cmd, stdout=PIPE);
-    sub.wait();
-
-    for line in sub.stdout.lines() {
+    for arg in args[3..] {   
+      if arg == '-h' || arg == '--help' {
+        masonSystemSearchHelp();
+        exit(1);
+      }
+      else if arg == "--hungry" {
+        hungry=true;
+      }
+      else if arg == "--no-desc" {
+        quiet = true;
+      }
+      else {
+        pkgName = arg;
+      }
+    }
+  }
+  if pkgName == "" {
+    throw new MasonError("Must include a package name");
+  }
+  const pattern = compile(pkgName, ignorecase=true);
+  const command = "pkg-config --list-all";
+  const cmd = command.split();
+  var sub = spawn(cmd, stdout=PIPE);
+  sub.wait();
+  
+  for line in sub.stdout.lines() {
+    const toSearch = line.partition(" ");
+    if hungry {
       if pattern.search(line) {
-        write(line);
+        if quiet {
+          writeln(toSearch[1]);
+        }
+        else write(line);
+      }
+    }
+    else {
+      if pattern.search(toSearch[1]) {
+        if quiet {
+          writeln(toSearch[1]);
+        }
+        else write(line);
       }
     }
   }

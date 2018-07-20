@@ -313,10 +313,9 @@ If no query is provided, all packages in the registry will be listed.
 
 External Dependencies
 =====================
-Mason allows for specification of external, non-Chapel dependencies through pkg-config.
-For this reason, Mason must have access to a ``pkg-config`` installation. The following
-example utilizes ``pkg-config 0.29.2``. An example of using the Linear Algebra library
-that requires both BLAS and Lapack:
+Mason allows for specification of external, non-Chapel dependencies through ``pkg-config``.
+For this reason, Mason must have access to a ``pkg-config`` installation. An example of
+using the :mod:`LinearAlgebra` library that requires both BLAS and LAPACK:
 
 ``Mason.toml``
 
@@ -339,7 +338,7 @@ that requires both BLAS and Lapack:
 This ``Mason.toml`` is updated to reflect the necessary dependency information for Mason
 to build the package in the ``Mason.lock``. Mason gets external dependency information,
 in this case, from the ``.pc`` files found via the ``PKG_CONFIG_PATH``. The ``*`` means
-that Mason will grab the latest package available known to pkg-config in your system.
+that Mason will grab the latest package available known to ``pkg-config`` in your system.
 
 
 ``Mason.lock``
