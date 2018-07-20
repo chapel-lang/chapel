@@ -540,7 +540,7 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 *                                                                             *
 ************************************** | *************************************/
 
-bool UseStmt::skipSymbolSearch(const char* name) const {
+bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
   bool retval = false;
 
   if (isPlainUse() == true) {
@@ -558,9 +558,15 @@ bool UseStmt::skipSymbolSearch(const char* name) const {
     if (matchedNameOrConstructor(name) == true) {
       retval = false;
 
-    } else if (isAllowedMethodName(name) == true) {
-      retval = false;
-
+    } else if (methodCall) {
+      if (isAllowedMethodName(name) == true) {
+        // Only allow the symbol if the call is a method call.  Functions with
+        // the same name should not be allowed unqualified when they are omitted
+        // from the explicit only list
+        retval = false;
+      } else {
+        retval = true;
+      }
     } else {
       retval =  true;
     }

@@ -59,7 +59,7 @@ public:
 
   UseStmt*        applyOuterUse(const UseStmt* outer);
 
-  bool            skipSymbolSearch(const char* name)                     const;
+  bool            skipSymbolSearch(const char* name, bool methodCall)    const;
 
   bool            providesNewSymbols(const UseStmt* other)               const;
 
