@@ -19,6 +19,7 @@
 
 #include "docs.h"
 
+#include <algorithm>
 #include <cerrno>
 #include <fstream>
 #include <iostream>
@@ -182,21 +183,21 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std:
 
     std::vector<VarSymbol*> configs = mod->getTopLevelConfigVars();
     if (fDocsAlphabetize)
-      sort(configs.begin(), configs.end(), compareNames);
+      std::sort(configs.begin(), configs.end(), compareNames);
     for_vector(VarSymbol, var, configs) {
       var->printDocs(file, tabs + 1);
     }
 
     std::vector<VarSymbol*> variables = mod->getTopLevelVariables();
     if (fDocsAlphabetize)
-      sort(variables.begin(), variables.end(), compareNames);
+      std::sort(variables.begin(), variables.end(), compareNames);
     for_vector(VarSymbol, var, variables) {
       var->printDocs(file, tabs + 1);
     }
     std::vector<FnSymbol*> fns = mod->getTopLevelFunctions(fDocsIncludeExterns);
     // If alphabetical option passed, fDocsAlphabetizes the output
     if (fDocsAlphabetize)
-      sort(fns.begin(), fns.end(), compareNames);
+      std::sort(fns.begin(), fns.end(), compareNames);
   
     for_vector(FnSymbol, fn, fns) {
       // TODO: Add flag to compiler to turn on doc dev only output
@@ -210,7 +211,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std:
 
     std::vector<AggregateType*> classes = mod->getTopLevelClasses();
     if (fDocsAlphabetize)
-      sort(classes.begin(), classes.end(), compareClasses);
+      std::sort(classes.begin(), classes.end(), compareClasses);
 
     for_vector(AggregateType, cl, classes) {
       printClass(file, cl, tabs + 1);
@@ -218,7 +219,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std:
 
     std::vector<ModuleSymbol*> mods = mod->getTopLevelModules();
     if (fDocsAlphabetize)
-      sort(mods.begin(), mods.end(), compareNames);
+      std::sort(mods.begin(), mods.end(), compareNames);
   
     for_vector(ModuleSymbol, subMod, mods) {
       // TODO: Add flag to compiler to turn on doc dev only output
