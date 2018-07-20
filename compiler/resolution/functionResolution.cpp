@@ -3036,7 +3036,7 @@ static const char* getForwardedMethodName(const char* calledName,
     //  - there was no list at all, or
     //  - the list was an 'except' list
     if ((delegate->renamed.size() == 0 && delegate->named.size() == 0) ||
-	delegate->except) {
+        delegate->except) {
       // OK
     } else {
       methodName = NULL;
@@ -3145,17 +3145,17 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
 
     if (fn) {
       if (bestFn == NULL) {
-	bestFn = fn;
-	bestCall = forwardedCall;
-	bestBlock = block;
-	bestDelegate = delegate;
+        bestFn = fn;
+        bestCall = forwardedCall;
+        bestBlock = block;
+        bestDelegate = delegate;
       } else {
-	USR_FATAL_CONT(call, "ambiguous forwarded call");
-	USR_PRINT(bestFn, "candidates include: %s", toString(bestFn));
-	USR_PRINT(bestDelegate, "from forwarding statement here");
-	USR_PRINT(fn, "candidates include: %s", toString(fn));
-	USR_PRINT(delegate, "from forwarding statement here");
-	USR_STOP();
+        USR_FATAL_CONT(call, "ambiguous forwarded call");
+        USR_PRINT(bestFn, "candidates include: %s", toString(bestFn));
+        USR_PRINT(bestDelegate, "from forwarding statement here");
+        USR_PRINT(fn, "candidates include: %s", toString(fn));
+        USR_PRINT(delegate, "from forwarding statement here");
+        USR_STOP();
       }
     } else {
       // Remove the block for any forwards that didn't resolve
@@ -3180,11 +3180,11 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
       // Note that the above path could be used instead, but
       // this branch hopefully makes fewer temporary AST nodes.
       for_actuals(actual, call) {
-	actual->remove();
+        actual->remove();
       }
       call->baseExpr->replace(bestCall->baseExpr->remove());
       for_actuals(actual, bestCall) {
-	call->insertAtTail(actual->remove());
+        call->insertAtTail(actual->remove());
       }
       bestCall->remove();
       bestBlock->flattenAndRemove();
