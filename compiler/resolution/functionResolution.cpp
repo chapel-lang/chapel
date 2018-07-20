@@ -8019,7 +8019,10 @@ static void resolveExports() {
     }
 
     if (fn->hasFlag(FLAG_EXPORT) ||
-        (!fn->hasFlag(FLAG_GENERIC) && fn->defPoint->getModule()->modTag == MOD_USER)) {
+        (!fn->hasFlag(FLAG_GENERIC) &&
+         fn->defPoint &&
+         fn->defPoint->getModule() &&
+         fn->defPoint->getModule()->modTag == MOD_USER)) {
       SET_LINENO(fn);
 
       resolveSignatureAndFunction(fn);
