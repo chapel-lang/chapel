@@ -36,6 +36,7 @@ if [ -z "$BUILD_CONFIGS_config" ]; then
         case $opt in
         ( v ) verbose=-v ;;
         ( n ) dry_run=-n ;;
+        ( h ) usage;;
         ( \?) log_error "Invalid option: -$OPTARG"; usage;;
         ( : ) log_error "Option -$OPTARG requires an argument."; usage;;
         esac
@@ -52,6 +53,9 @@ if [ -z "$BUILD_CONFIGS_config" ]; then
 
     export CHPL_REGEXP=re2  # to support mason
 
+    substrate=UNSET     # To take Chapel's default for the current platform
+                        # Or use "smp" for example
+
     # Show the initial/default Chapel build config with printchplenv
 
     log_info "Chapel printchplenv, with initial env:"
@@ -61,7 +65,7 @@ if [ -z "$BUILD_CONFIGS_config" ]; then
 
     log_info "Start build_configs $dry_run $verbose # (no make target)"
     $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.make.log" \
-        --comm=none,gasnet --substrate=none,udp
+        --comm=none,gasnet --substrate=none,$substrate
 
     # We can use build_configs.py to make mason, though we need only one Chapel config.
 

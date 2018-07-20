@@ -49,6 +49,7 @@ if [ -z "$BUILD_CONFIGS_config" ]; then
         case $opt in
         ( v ) verbose=-v ;;
         ( n ) dry_run=-n ;;
+        ( h ) usage;;
         ( \?) log_error "Invalid option: -$OPTARG"; usage;;
         ( : ) log_error "Option -$OPTARG requires an argument."; usage;;
         esac
@@ -62,7 +63,12 @@ if [ -z "$BUILD_CONFIGS_config" ]; then
     log_debug "with CHPL_HOME=$CHPL_HOME"
     ck_chpl_home "$CHPL_HOME"
 
+    # Default Chapel build config values may be defined here
+
     export CHPL_REGEXP=re2  # to support mason
+
+    substrate=smp,udp   # desired gasnet substrate(s).
+                        # Use UNSET here to take Chapel's default for the current platform
 
     # Show the initial/default Chapel build config with printchplenv
 
@@ -72,7 +78,7 @@ if [ -z "$BUILD_CONFIGS_config" ]; then
     # Use build_configs.py to make Chapel compiler
 
     compiler_targets=  # would be "compiler", except "make mason" may fail in the next step
-    compiler_config="--tasks=UNSET --comm=none --launcher=none --auxfs=none --substrate=none --regex=re2"
+    compiler_config="--tasks=UNSET --comm=none --launcher=none --auxfs=none --substrate=none"
 
     log_info "Start build_configs $dry_run $verbose $compiler_targets # (with compiler config)"
 
@@ -93,7 +99,7 @@ if [ -z "$BUILD_CONFIGS_config" ]; then
     log_info "Start build_configs $dry_run $verbose # (runtime == no make target)"
 
     $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
-        --tasks=UNSET --comm=none,gasnet --launcher=UNSET --auxfs=UNSET --substrate=none,udp,UNSET
+        --tasks=UNSET --comm=none,gasnet --launcher=UNSET --auxfs=UNSET --substrate=none,$substrate
 
     # Use build_configs.py to make cleanall, the build config should not matter
 

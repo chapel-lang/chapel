@@ -12,21 +12,51 @@ source $cwd/functions.bash
 
 tarball=
 workdir=
-project=
 setenv=
 verbose=
 dry_run=
-while getopts :vnC:t:s: opt; do
+usage() {
+    echo "usage: $thisfile [options]
+  where:
+    -v : verbose/debug output
+    -n : Show make commands but do not actually run them (dry_run)
+    -s setenv   : Setenv project script file defining the Chapel build(s) to run.
+                  If none, no Chapel build will be run.
+    -C newdir   : cd to this directory before starting (optional)
+    -t tarball  : Chapel release tarball file with Chapel source to build.
+                  If given, -C newdir may point to an existing directory,
+                    the tarball will be expanding there, and CHPL_HOME
+                    will be BELOW -C newdir.
+                  If none, -C newdir MUST point to an existing CHPL_HOME.
+"
+    exit 1
+}
+while getopts :vnC:t:s:h opt; do
     case $opt in
     ( C ) workdir=$OPTARG ;;
     ( t ) tarball=$OPTARG ;;
     ( s ) setenv=$OPTARG ;;
     ( v ) verbose=-v ;;
     ( n ) dry_run=-n ;;
-    ( \?) log_error "Invalid option: -$OPTARG"; exit 1;;
-    ( : ) log_error "Option -$OPTARG requires an argument."; exit 1;;
+    ( h ) usage;;
+    ( \?) log_error "Invalid option: -$OPTARG"; usage;;
+    ( : ) log_error "Option -$OPTARG requires an argument."; usage;;
     esac
 done
+
+# setenv says what to build
+case "$setenv" in
+( "" )
+    log_error "No '-s setenv' was given. No builds will be run."
+    exit 1
+    ;;
+( * )
+    if [ ! -f "$setenv" ]; then
+        log_error "'-s $setenv' file not found."
+        exit 2
+    fi
+    ;;
+esac
 
 case "$tarball" in
 ( "" )
@@ -99,18 +129,4 @@ case "$tarball" in
     ;;
 esac
 
-# setenv says what to build
-case "$setenv" in
-( "" )
-    log_error "No '-s setenv' was given. No builds will be run."
-    exit 1
-    ;;
-( * )
-    if [ ! -f "$setenv" ]; then
-        log_error "'-s $setenv' file not found."
-        exit 2
-    fi
-    ;;
-esac
-
-$cwd/$setenv $verbose $dry_run -s $setenv
+$cwd/$setenv $verbose $dry_run
