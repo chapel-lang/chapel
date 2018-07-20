@@ -12,6 +12,9 @@ matrix:
     - name: "make check-chpldoc && make docs"
       env: NIGHTLY_TEST_SETTINGS=true CHPL_SMOKE_SKIP_MAKE_CHECK=true TEST_COMMAND="./util/buildRelease/smokeTest"
 
+    - name: "make check-chpldoc && make docs (python 3)"
+      env: NIGHTLY_TEST_SETTINGS=true CHPL_SMOKE_SKIP_MAKE_CHECK=true TEST_COMMAND="./util/buildRelease/smokeTest"
+
     - name: "check annotations"
       env: TEST_COMMAND="make test-venv && CHPL_HOME=$PWD ./util/run-in-venv.bash ./util/test/check_annotations.py"
       git:
@@ -25,6 +28,6 @@ matrix:
           - cscope
 
 script:
-  - (eval "$TEST_COMMAND")
+  - alias python=python3 && (eval "$TEST_COMMAND")
 
 sudo: false
