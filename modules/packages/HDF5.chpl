@@ -3761,6 +3761,112 @@ module HDF5 {
   }
 
 
+    /* Read the HDF5 dataset named `dsetName` from the file `filename` into
+       the distributed array `A`.  Each locale reads its local portion of
+       the array from the file.
+
+       Currently only Block and Cyclic distributed arrays are supported.
+     */
+    proc hdf5ReadDistributedArray(A, filename: string, dsetName: string) {
+      // This function currently only supports Block and Cyclic distributed
+      // arrays.  It is expected that this will be expanded to other
+      // distributions in the future.
+      //
+      // BlockCyclic would work if it stored elements in its local blocks
+      // sequentially instead of storing blocks side-by-side.
+      // e.g. for 2x2 blocks A and B, store the elements of each block next
+      // to each other in memory:
+      // A11, A12, A21, A22, B11, B12, B21, B22
+      // instead of:
+      // A11, A12, B11, B12
+      // A21, A22, B21, B22
+      use BlockDist, CyclicDist;
+      proc isBlock(D: Block) param return true;
+      proc isBlock(D) param return false;
+      proc isCyclic(D: Cyclic) param return true;
+      proc isCyclic(D) param return false;
+      if !(isBlock(A.dom.dist) || isCyclic(A.dom.dist)) then
+        compilerError("hdf5ReadDistributedArray currently only supports block or cyclic distributed arrays");
+
+      coforall loc in A.targetLocales() do on loc {
+        // make sure the file name is local
+        var filenameCopy = filename;
+        var file_id = C_HDF5.H5Fopen(filenameCopy.c_str(),
+                                     C_HDF5.H5F_ACC_RDONLY,
+                                     C_HDF5.H5P_DEFAULT);
+        var dataset = C_HDF5.H5Dopen(file_id, dsetName.c_str(),
+                                     C_HDF5.H5P_DEFAULT);
+        var dataspace = C_HDF5.H5Dget_space(dataset);
+        var dsetRank: c_int;
+
+        C_HDF5.H5LTget_dataset_ndims(file_id, dsetName.c_str(), dsetRank);
+
+        var dims: [1..dsetRank] C_HDF5.hsize_t;
+        {
+          /*
+          // This chained module call causes a compiler error.  As a
+          // workaround, 'use' the module in a new scope instead.
+          C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dsetName.c_str(),
+                                                   c_ptrTo(dims), nil, nil);
+          */
+          use C_HDF5.HDF5_WAR;
+          H5LTget_dataset_info_WAR(file_id, dsetName.c_str(),
+                                   c_ptrTo(dims), nil, nil);
+        }
+
+        const wholeLow = A.domain.whole.low;
+        for dom in A.localSubdomains() {
+          // The dataset is 0-based, so unTranslate each block
+          const dsetBlock = dom.chpl__unTranslate(wholeLow);
+
+          // Arrays to represent locations with the file
+          var dsetOffsetArr, dsetCountArr,
+              dsetStrideArr: [1..dom.rank] C_HDF5.hsize_t;
+
+          // Arrays to represent locations in the distributed array
+          var memOffsetArr, memCountArr,
+              memStrideArr: [1..dom.rank] C_HDF5.hsize_t;
+
+          for param i in 1..dom.rank {
+            dsetOffsetArr[i] = dsetBlock.dim(i).low: C_HDF5.hsize_t;
+            dsetCountArr[i]  = dsetBlock.dim(i).size: C_HDF5.hsize_t;
+            dsetStrideArr[i] = dsetBlock.dim(i).stride: C_HDF5.hsize_t;
+
+            // We'll write to a slice of the array so that offset is always 0
+            memOffsetArr[i] = 0: C_HDF5.hsize_t;
+            memStrideArr[i] = 1: C_HDF5.hsize_t;
+            memCountArr[i] = dom.dim(i).size: C_HDF5.hsize_t;
+          }
+
+          // create the hyperslab into the dataset on disk
+          C_HDF5.H5Sselect_hyperslab(dataspace, C_HDF5.H5S_SELECT_SET,
+                                     c_ptrTo(dsetOffsetArr),
+                                     c_ptrTo(dsetStrideArr),
+                                     c_ptrTo(dsetCountArr), nil);
+
+          // create the hyperslab into the array to read the dataset into
+          var memspace = C_HDF5.H5Screate_simple(dom.rank,
+                                                 c_ptrTo(memCountArr), nil);
+          C_HDF5.H5Sselect_hyperslab(memspace, C_HDF5.H5S_SELECT_SET,
+                                     c_ptrTo(memOffsetArr),
+                                     c_ptrTo(memStrideArr),
+                                     c_ptrTo(memCountArr), nil);
+          ref AA = A[dom];
+          C_HDF5.H5Dread(dataset, getHDF5Type(A.eltType), memspace, dataspace,
+                         C_HDF5.H5P_DEFAULT, c_ptrTo(AA));
+
+          C_HDF5.H5Sclose(memspace);
+
+        }
+
+        // close dataspace, dataset
+        C_HDF5.H5Dclose(dataset);
+        C_HDF5.H5Sclose(dataspace);
+        C_HDF5.H5Fclose(file_id);
+      }
+    }
+
+
   /* A class to preprocess arrays returned by HDF5 file reading procedures.
      Procedures in this module that take an `HDF5Preprocessor` argument can
      accept a subclass of this class with the `preprocess` method overridden
