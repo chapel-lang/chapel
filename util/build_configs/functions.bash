@@ -45,40 +45,16 @@ case "$setenv" in
 ( * )       project=$setenv ;;
 esac
 
-# verbosity option, from build_configs env or cmdline arg "-v"
+# verbosity option, from build_configs env
 case "$BUILD_CONFIGS_verbose" in
 ( True )    verbose=-v ;;
-( False )   verbose= ;;
-( "" )
-    verbose=
-    let i=1
-    while [ $i -le $# ]; do
-        eval v="\${${i}}"
-        case "$v" in
-        ( -v ) verbose=-v ;;
-        ( +v ) verbose= ;;
-        esac
-        let i=i+1
-    done
-    ;;
+( * )       verbose= ;;
 esac
 
-# dryrun option, from build_configs env or cmdline arg "-n"
+# dryrun option, from build_configs env
 case "$BUILD_CONFIGS_dry_run" in
 ( True )    dry_run=-n ;;
-( False )   dry_run= ;;
-( "" )
-    dry_run=
-    let i=1
-    while [ $i -le $# ]; do
-        eval v="\${${i}}"
-        case "$v" in
-        ( -n ) dry_run=-n ;;
-        ( +n ) dry_run= ;;
-        esac
-        let i=i+1
-    done
-    ;;
+( * )       dry_run= ;;
 esac
 
 # convenience functions to manage bash shell debug flags -e and -x, like pushd and popd manage the cwd

@@ -15,28 +15,63 @@
 #   Multiple make targets:
 #       To build chpldoc, test-venv, etc
 
-set +x -e
+set +x -e   # exit if any errors
+
 if [ -z "$BUILD_CONFIGS_config" ]; then
 
-    # Top-level: this setenv script is being run outside of build_configs.py
-    #   to orchestrate multiple build_config.py runs
+# This is a top-level setenv "project":
+#
+#   The user runs this script, and this script runs build_config.py,
+#   as many times as needed, passing the desired Chapel build config
+#   parameters and make targets each time. It can also make changes
+#   to the default environment seen by build_config.py.
+
+    # setenv, cwd == name and directory location of this script file
 
     setenv=$( basename "$0" )
     cwd=$( cd $(dirname "$0") && pwd )
+
+    # functions.bash provides local bash functions like log_info, and
+    #   sets shell variable project from the filename of this setenv file
+
     source $cwd/functions.bash
 
+    # cmdline options
+
+    usage() {
+        echo "Usage:  $setenv [-v] [-n]"
+        echo "  where"
+        echo "    -v : verbose/debug output"
+        echo "    -n : dry-run: show make commands but do not actually run them"
+        exit 1
+    }
+    while getopts :vn opt; do
+        case $opt in
+        ( v ) verbose=-v ;;
+        ( n ) dry_run=-n ;;
+        ( \?) log_error "Invalid option: -$OPTARG"; usage;;
+        ( : ) log_error "Option -$OPTARG requires an argument."; usage;;
+        esac
+    done
+
     log_info "Begin project $setenv"
+
+    # CHPL_HOME from the environment, or default to this Chapel workspace
 
     CHPL_HOME=${CHPL_HOME:-$( cd $cwd/../.. && pwd )}
     log_debug "with CHPL_HOME=$CHPL_HOME"
     ck_chpl_home "$CHPL_HOME"
 
+    export CHPL_REGEXP=re2  # to support mason
+
+    # Show the initial/default Chapel build config with printchplenv
+
     log_info "Chapel printchplenv, with initial env:"
     $CHPL_HOME/util/printchplenv --all --no-tidy || echo >&2 ignore error
 
-    # Chapel make compiler for this Chapel platform, with users env as modified below
+    # Use build_configs.py to make Chapel compiler
 
-    compiler_targets=   # would be "compiler", except "make mason" will fail in the next step
+    compiler_targets=  # would be "compiler", except "make mason" may fail in the next step
     compiler_config="--tasks=UNSET --comm=none --launcher=none --auxfs=none --substrate=none --regex=re2"
 
     log_info "Start build_configs $dry_run $verbose $compiler_targets # (with compiler config)"
@@ -44,7 +79,7 @@ if [ -z "$BUILD_CONFIGS_config" ]; then
     $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.compiler.log" \
         $compiler_config $compiler_targets
 
-    # Chapel make "tools" == chpldoc test-venv mason, same config as compiler
+    # Use build_configs.py to make Chapel "tools" == chpldoc test-venv mason, same config as compiler
 
     tools_targets="test-venv chpldoc mason"
 
@@ -53,14 +88,14 @@ if [ -z "$BUILD_CONFIGS_config" ]; then
     $cwd/build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.tools.log" \
         $compiler_config $tools_targets
 
-    # Chapel make "runtime" for multiple Chapel build_configs (no make target)
+    # Use build_configs.py to make Chapel "runtime" for multiple Chapel build_configs
 
     log_info "Start build_configs $dry_run $verbose # (runtime == no make target)"
 
     $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
         --tasks=UNSET --comm=none,gasnet --launcher=UNSET --auxfs=UNSET --substrate=none,udp,UNSET
 
-    # make cleanall, the build config should not matter
+    # Use build_configs.py to make cleanall, the build config should not matter
 
     clean_targets=cleanall
 
@@ -72,12 +107,25 @@ if [ -z "$BUILD_CONFIGS_config" ]; then
     log_info "End $setenv"
 else
 
-    # build_configs-make-level: this setenv script is being run by build_configs.py,
-    #   to set the appropriate environment to "make" this Chapel config.
-    # This script can also just skip the "make" by doing a bash exit.
+# This is a setenv "callback":
+#
+#   This same setenv script may be source'd by build_config.py, once for each
+#   Chapel build config, to customize the host environment seen by each Chapel make.
+#
+#   build_config.py defines CHPL_HOME and other CHPL_XXXX env values for each Chapel
+#   build config, then source's this script, and finally runs Chapel make.
+#
+#   This script can make arbitrary changes to the environment seen by Chapel make.
+#   It can also skip the Chapel make command entirely, by doing a shell exit.
+
+    # setenv, cwd == name and directory location of this script file
 
     setenv=$( basename "${BASH_SOURCE[0]}" )
     cwd=$( cd $(dirname "${BASH_SOURCE[0]}") && pwd )
+
+    # functions.bash provides local bash functions like log_info, and sets
+    #   shell variables verbose and dry_run from cmdline options -v -n
+
     source $cwd/functions.bash
 
     log_info "Begin callback $setenv"
