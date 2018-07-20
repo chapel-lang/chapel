@@ -2003,6 +2003,12 @@ void resolvePromotionType(AggregateType* at) {
   INT_ASSERT(at->scalarPromotionType == NULL);
   INT_ASSERT(at->symbol->hasFlag(FLAG_GENERIC) == false);
 
+  // Don't try to resolve promotion type for managed pointers.
+  // This is a workaround. Otherwise, we try to call the .borrow()
+  // function before the field types are established.
+  if (isManagedPtrType(at))
+    return;
+
   VarSymbol* temp     = newTemp(at);
   CallExpr* promoCall = new CallExpr("chpl__promotionType", gMethodToken, temp);
 
@@ -4879,6 +4885,10 @@ static void resolveInitField(CallExpr* call) {
     // Update the type of the field.  If necessary, update to a new
     // instantiation of the overarching type (and replaces references to the
     // fields from the old instantiation
+
+    if (fs->id == breakOnResolveID) {
+      gdbShouldBreakHere();
+    }
 
     bool ignoredHasDefault = false;
 
