@@ -2214,14 +2214,10 @@ module BigInteger {
   // divexact
 
 /*
-This function computes the quotient when a bigint variable *n* is divided by a
-bigint variable *d*, i.e. it calculates, ``q = n/d``
-where, *q*: quotient, *n*: dividend, *d*: divisor.
+Computes ``n/d`` and stores the result in ``bigint`` instance.
 
-The result is stored in ``this``, that is, the method receiver. It works faster
-than regular division, when exact division is known to occur.
-It may produce incorrect results,
-when *n* is not divisible by *d*.
+``divexact`` is optimized to handle cases where ``n/d`` results in an integer. 
+When ``n/d`` does not produce an integer, this method may produce incorrect results.
 
 :arg n: a bigint variable
 
