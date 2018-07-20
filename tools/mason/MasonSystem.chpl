@@ -28,12 +28,14 @@ proc masonSystem(args) {
   try! {
     if args.size < 3 {
       masonSystemHelp();
+      exit(0);
     }
     else if args[2] == "--help" || args[2] == "-h" {
       masonSystemHelp();
+      exit(0);
     }
     else if pkgConfigExists() {
-      if args[2] == "pc" {  
+      if args[2] == "pc" {
         printPkgPc(args);
       }
       else if args[2] == "search" {
@@ -41,14 +43,16 @@ proc masonSystem(args) {
       }
       else {
         masonSystemHelp();
+        exit(0);
       }
     }
     else {
       masonSystemHelp();
+      exit(0);
     }
   }
   catch e: MasonError {
-    writeln(e.message());
+    stderr.writeln(e.message());
   }
 }
 
@@ -70,13 +74,13 @@ proc pkgSearch(args) throws {
   var pkgName = "";
   if args.size < 4 {
     listAllPkgs();
-    exit(1);
+    exit(0);
   }
   else {
-    for arg in args[3..] {   
+    for arg in args[3..] {
       if arg == '-h' || arg == '--help' {
         masonSystemSearchHelp();
-        exit(1);
+        exit(0);
       }
       else if arg == "--hungry" {
         hungry=true;
@@ -97,7 +101,7 @@ proc pkgSearch(args) throws {
   const cmd = command.split();
   var sub = spawn(cmd, stdout=PIPE);
   sub.wait();
-  
+
   for line in sub.stdout.lines() {
     const toSearch = line.partition(" ");
     if hungry {
@@ -131,9 +135,11 @@ proc listAllPkgs() {
 proc printPkgPc(args) throws {
   if args.size < 4 {
     masonSystemPcHelp();
+    exit(0);
   }
   else if args[3] == "-h" || args[3] == "--help" {
     masonSystemPcHelp();
+    exit(0);
   }
   else {
     try! {
@@ -153,10 +159,10 @@ proc printPkgPc(args) throws {
       }
     }
     catch e: FileNotFoundError {
-      writeln("Package exists but Mason could not find it's .pc file");
+      stderr.writeln("Package exists but Mason could not find it's .pc file");
     }
     catch e: MasonError {
-      writeln(e.message());
+      stderr.writeln(e.message());
     }
   }
 }
@@ -178,7 +184,7 @@ proc getPkgVariable(pkgName: string, option: string) {
     if line.length > 1 then
     lines.push_back(line);
   }
-  
+
   return lines;
  }
 
@@ -227,7 +233,7 @@ proc getPCDeps(exDeps: unmanaged Toml) {
 
   var exDom: domain(string);
   var exDepTree: [exDom] unmanaged Toml;
-  
+
   for (name, vers) in zip(exDeps.D, exDeps.A) {
     try! {
       if pkgConfigExists() {
@@ -236,10 +242,8 @@ proc getPCDeps(exDeps: unmanaged Toml) {
       }
     }
     catch e: MasonError {
-      writeln(e.message());
+      stderr.writeln(e.message());
     }
   }
   return exDepTree;
 }
-
-
