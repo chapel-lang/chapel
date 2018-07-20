@@ -1,7 +1,8 @@
 # This hides users work files in this subdir
 /**
 !/build_configs.py
-!/setenv-example-1.bash
-!/README*
 !/functions.bash
 !/chapel_build.bash
+!/setenv-example-1.bash
+!/setenv-gh9943.bash
+!/README*
