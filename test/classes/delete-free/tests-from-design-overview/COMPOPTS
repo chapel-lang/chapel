@@ -1,1 +1,1 @@
---lifetime-checking
+--lifetime-checking --no-warn-unstable

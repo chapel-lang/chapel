@@ -15,6 +15,6 @@ class hasConstruct {
 }
 
 
-var hi: hasInit = new hasConstruct(10);
+var hi: unmanaged hasInit = new unmanaged hasConstruct(10);
 writeln(hi);
 delete hi;

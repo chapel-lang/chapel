@@ -1,7 +1,7 @@
 // This test case represents a bug originally reported in issue #7783
 
 class A{
-  forwarding var driver: B;
+  forwarding var driver: unmanaged B;
 }
 
 class B{

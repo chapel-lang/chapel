@@ -10,7 +10,6 @@ class Foo {
   }
 }
 
-var foo: Foo(4); // We can create an instantiation with p = 4
-foo = new Foo();// and we can initialize it
+var foo: borrowed Foo(4); // We can create an instantiation with p = 4
+foo = new borrowed Foo();// and we can initialize it
 writeln(foo.type:string);
-delete foo;
