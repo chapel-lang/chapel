@@ -182,7 +182,7 @@ proc genSourceList(lockFile: Toml) {
   var sourceList: [1..0] (string, string, string);
   for (name, package) in zip(lockFile.D, lockFile.A) {
     if package.tag == fieldToml {
-      if name == "root" || name == "external" then continue;
+      if name == "root" || name == "system" then continue;
       else {
         var version = lockFile[name]["version"].s;
         var source = lockFile[name]["source"].s;
@@ -235,8 +235,8 @@ private proc getCompopts(lock: Toml, compopts: [?d] string) {
     compopts.push_back(cmpFlags);
   }
   // Get pkgconfig dependency compilation options
-  if lock.pathExists('external.pkgconfig') {
-    const exDeps = lock['external.pkgconfig'];
+  if lock.pathExists('system') {
+    const exDeps = lock['system'];
     for (name, depInfo) in zip(exDeps.D, exDeps.A) {
       compopts.push_back(depInfo["libs"].s);
       compopts.push_back("-I" + depInfo["include"].s);

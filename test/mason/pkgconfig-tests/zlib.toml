@@ -6,6 +6,5 @@ chplVersion = "1.18.0"
 
 [dependencies]
 
-[external]
-    [external.pkgconfig]
-    zlib = "*"
+[system]
+zlib = "*"

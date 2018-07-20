@@ -296,18 +296,13 @@ proc createDepTree(root: unmanaged Toml) {
       }
     }
   }
-  if root.pathExists("external") {
-
-    // Check for pkg-config dependencies
-    if root.pathExists("external.pkgconfig") {
-      const exDeps = getPCDeps(root["external.pkgconfig"]);
-      var PCdom: domain(string);
-      var PCtoml: [PCdom] unmanaged Toml;
-      depTree["external"] = PCtoml;
-      depTree["external"]["pkgconfig"] = exDeps;
-    }
+  // Check for pkg-config dependencies
+  if root.pathExists("system") {
+    const exDeps = getPCDeps(root["system"]);
+    var PCdom: domain(string);
+    var PCtoml: [PCdom] unmanaged Toml;
+    depTree["system"] = exDeps;
   }
-
   return depTree;
 }
 

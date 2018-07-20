@@ -4,11 +4,9 @@ name = "zlib"
 version = "0.1.0"
 chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 
-[external]
+[system]
 
-[external.pkgconfig]
-
-[external.pkgconfig.zlib]
+[system.zlib]
 name = "zlib"
 version = "zlibversion"
 libs = "zlibflags"
