@@ -3059,6 +3059,13 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
   Expr* receiver = call->get(2);
   Expr* callStmt = call->getStmtExpr();
 
+  // Handle method receiver being a NamedExpr
+  //   e.g. test/arrays/deitz/jacobi5-no-local.chpl
+  if (NamedExpr* ne = toNamedExpr(receiver)) {
+    INT_ASSERT(ne->name == astrThis);
+    receiver = ne->actual;
+  }
+
   // Create a tmp to store the forwarded-to method target.
   VarSymbol* tgt = newTemp(astr_chpl_forward_tgt);
   tgt->addFlag(FLAG_MAYBE_REF);
