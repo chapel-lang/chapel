@@ -172,7 +172,7 @@ bool fUserSetLocal = false;
 bool fLocal;   // initialized in postLocal()
 bool fIgnoreLocalClasses = false;
 bool fUserDefaultInitializers = true;
-bool fLifetimeChecking = false;
+bool fLifetimeChecking = true;
 bool fOverrideChecking = false;
 bool fHeterogeneous = false;
 bool fieeefloat = false;
