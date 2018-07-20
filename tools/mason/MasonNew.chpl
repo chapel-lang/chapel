@@ -27,44 +27,53 @@ use MasonEnv;
 
 
 
-proc masonNew(args) {
-  if args.size < 3 {
-    writeln('error: Invalid arguments.');
-    masonNewHelp();
-    exit();
-  } else {
-    var vcs = true;
-    var show = false;
-    var name = '';
-    for arg in args[2..] {
-      if arg == '-h' || arg == '--help' {
-        masonNewHelp();
-        exit();
+proc masonNew(args) throws {
+  try! {
+    if args.size < 3 {
+      masonNewHelp();
+      exit();
+    } else {
+      var vcs = true;
+      var show = false;
+      var name = '';
+      for arg in args[2..] {
+        if arg == '-h' || arg == '--help' {
+          masonNewHelp();
+          exit();
+        }
+        else if arg == '--no-vcs' {
+          vcs = false;
+        }
+        else if arg == '--show' {
+          show = true;
+        }
+        else {
+          name = arg;
+        }
       }
-      else if arg == '--no-vcs' {
-        vcs = false;
+      
+      if name == '' {
+        throw new MasonError("No package name specified");
       }
-      else if arg == '--show' {
-        show = true;
+      else if !isIdentifier(name) {
+        throw new MasonError("Bad package name '" + name +
+                             "' - only Chapel identifiers are legal package names");
+      }
+      else if name.count("$") > 0 {
+        throw new MasonError("Bad package name '" + name +
+                             "' - $ is not allowed in package names");
+      }
+      else if isDir(name) {
+          throw new MasonError("A directory named '" + name + "' already exists");
       }
       else {
-        name = arg;
+        InitProject(name, vcs, show);
       }
     }
-
-    if name == '' {
-      writeln("No package name specified");
-    } else if !isIdentifier(name) {
-      writeln("Bad package name '", name,
-               "' - only Chapel identifiers are legal package names");
-    } else if name.count("$") > 0 {
-      writeln("Bad package name '", name,
-              "' - $ is not allowed in package names");
-    } else if isDir(name) {
-      writeln("A directory named '", name, "' already exists");
-    } else {
-      InitProject(name, vcs, show);
-    }
+  }
+  catch e: MasonError {
+    writeln(e.message());
+    exit(1);
   }
 }
 
@@ -96,7 +105,7 @@ proc isIdentifier(name:string) {
   return ok;
 }
 
-proc InitProject(name, vcs, show) {
+proc InitProject(name, vcs, show) throws {
   if vcs {
     gitInit(name, show);
     addGitIgnore(name);
@@ -111,7 +120,7 @@ proc InitProject(name, vcs, show) {
     writeln("Created new library project: " + name);
   }
   else {
-    writeln("Failed to create project");
+    throw new MasonError("Failed to create project");
   }
 }
 

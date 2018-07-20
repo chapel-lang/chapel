@@ -66,35 +66,40 @@ Full documentation is located in the chapel release in $CHPL_HOME/doc/rst/tools/
 
 
 
-proc main(args: [] string) {
-  if args.size < 2 {
-    masonHelp();
-    exit();
-  }
-
-  select (args[1]) {
-    when 'new' do masonNew(args);
-    when 'build' do masonBuild(args);
-    when 'update' do UpdateLock(args);
-    when 'run' do masonRun(args);
-    when 'search' do masonSearch(args);
-    when 'test' do masonTest(args);
-    when 'env' do masonEnv(args);
-    when 'doc' do masonDoc(args);
-    when 'clean' do masonClean();
-    when 'system' do masonSystem(args);
-    when 'help' do masonHelp();
-    when 'version' do printVersion();
-    when '--list' do masonList();
-    when '-h' do masonHelp();
-    when '--help' do masonHelp();
-    when '-V' do printVersion();
-    when '--version' do printVersion();
-    otherwise {
-      writeln('error: no such subcommand');
-      writeln('try mason --help');
+proc main(args: [] string) throws {
+  try! {
+    if args.size < 2 {
+      masonHelp();
       exit();
     }
+
+    select (args[1]) {
+      when 'new' do masonNew(args);
+      when 'build' do masonBuild(args);
+      when 'update' do UpdateLock(args);
+      when 'run' do masonRun(args);
+      when 'search' do masonSearch(args);
+      when 'system' do masonSystem(args);
+      when 'test' do masonTest(args);
+      when 'env' do masonEnv(args);
+      when 'doc' do masonDoc(args);
+      when 'clean' do masonClean();
+      when 'help' do masonHelp();
+      when 'version' do printVersion();
+      when '--list' do masonList();
+      when '-h' do masonHelp();
+      when '--help' do masonHelp();
+      when '-V' do printVersion();
+      when '--version' do printVersion();
+      otherwise {
+        throw new MasonError('No such subcommand \ntry mason --help');
+        exit(1);
+      }
+    }
+  }
+  catch e: MasonError {
+    writeln(e.message());
+    exit(1);
   }
 }
 
