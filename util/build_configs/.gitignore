@@ -1,0 +1,4 @@
+# This hides users work files in this subdir
+/**
+!/build_configs.py
+!/setenv-example-1.bash
