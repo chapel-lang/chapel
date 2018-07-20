@@ -118,7 +118,8 @@ proc modifyToml(add: bool, dep: string, external: bool, system: bool,
   return (newToml, tomlPath);
 }
 
-proc masonAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
+/* Add a mason dependency to Mason.toml */
+private proc masonAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
   if toml.pathExists("dependencies") {
     if toml.pathExists("dependencies." + toAdd) {
       throw new MasonError("A dependency by that name already exists in Mason.toml");
@@ -136,7 +137,9 @@ proc masonAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
   }
   return toml;
 }
-proc masonRemove(toml: unmanaged Toml, toRm: string, version: string) throws {
+
+/* Remove a mason dependency from Mason.toml */
+private proc masonRemove(toml: unmanaged Toml, toRm: string, version: string) throws {
   if toml.pathExists("dependencies") {
     if toml.pathExists("dependencies." + toRm) {
       toml["dependencies"].D.remove(toRm);
@@ -151,39 +154,31 @@ proc masonRemove(toml: unmanaged Toml, toRm: string, version: string) throws {
   return toml;
 }
 
-proc masonSystemAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
-  if toml.pathExists("external") {
-    if toml.pathExists("external.pkgconfig") {
-      if toml.pathExists("external.pkgconfig." + toAdd) {
-        throw new MasonError("A dependency by that name already exists in Mason.toml");
-      }
-      else {
-        toml["external.pkgconfig"][toAdd] = version;
-      }
+/* Add a system dependency to Mason.toml */
+private proc masonSystemAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
+  
+  if toml.pathExists("system") {
+    if toml.pathExists("system." + toAdd) {
+      throw new MasonError("A dependency by that name already exists in Mason.toml");
     }
     else {
-      var pkgdom: domain(string);
-      var pkgdeps: [pkgdom] unmanaged Toml;
-      toml["external"]["pkgconfig"] = pkgdeps;
-      toml["external.pkgconfig"][toAdd] = version;
+      toml["system"][toAdd] = version;
     }
   }
-  // Create dependency table if it doesnt exist
   else {
-    var exdom: domain(string);
-    var exdeps: [exdom] unmanaged Toml;
     var pkgdom: domain(string);
     var pkgdeps: [pkgdom] unmanaged Toml;
-    toml["external"] = exdeps;
-    toml["external"]["pkgconfig"] = pkgdeps;
-    toml["external.pkgconfig"][toAdd] = version;
+    toml["system"] = pkgdeps;
+    toml["system"][toAdd] = version;
   }
   return toml;
-} 
-proc masonSystemRemove(toml: unmanaged Toml, toRm: string, version: string) throws {
-  if toml.pathExists("external.pkgconfig") {
-    if toml.pathExists("external.pkgconfig." + toRm) {
-      toml["external.pkgconfig"].D.remove(toRm);
+}
+
+/* Remove a system dependency from Mason.toml */
+private proc masonSystemRemove(toml: unmanaged Toml, toRm: string, version: string) throws {
+  if toml.pathExists("system") {
+    if toml.pathExists("system." + toRm) {
+      toml["system"].D.remove(toRm);
     }
     else {
       throw new MasonError("No system dependency exists by " + toRm);
@@ -194,7 +189,9 @@ proc masonSystemRemove(toml: unmanaged Toml, toRm: string, version: string) thro
   }
   return toml;
 }
-proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
+
+/* Add an external dependency to Mason.toml */
+private proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
   if toml.pathExists("external") {
     if toml.pathExists("external." + toAdd) {
       throw new MasonError("An external dependency by that name already exists in Mason.toml");
@@ -210,8 +207,10 @@ proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, version: string) thro
     toml["external"][toAdd] = version;
   }
   return toml;
-} 
-proc masonExternalRemove(toml: unmanaged Toml, toRm: string, version: string) throws {
+}
+
+/* Remove an external dependency from Mason.toml */
+private proc masonExternalRemove(toml: unmanaged Toml, toRm: string, version: string) throws {
   if toml.pathExists("external") {
     if toml.pathExists("external." + toRm) {
       toml["external"].D.remove(toRm);
@@ -226,8 +225,8 @@ proc masonExternalRemove(toml: unmanaged Toml, toRm: string, version: string) th
   return toml;
 }
 
-
-proc generateToml(toml: Toml, tomlPath: string) {
+/* Generate the modified Mason.toml */
+private proc generateToml(toml: Toml, tomlPath: string) {
   const tomlFile = open(tomlPath, iomode.cw);
   const tomlWriter = tomlFile.writer();
   tomlWriter.writeln(toml);
