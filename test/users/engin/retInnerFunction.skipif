@@ -1,0 +1,3 @@
+# The failure mode is different under gasnet.
+# Do not test it there, to ensure clean .bad match.
+CHPL_COMM != none
