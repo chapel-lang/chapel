@@ -45,7 +45,7 @@ proc masonHelp() {
   writeln('    env         Print environment variables recognized by mason');
   writeln('    clean       Remove the target directory');
   writeln('    doc         Build this project\'s documentation');
-  writeln('    test        Compile and run tests found in /test');
+  writeln('    test        Compile and run tests found in test/');
   writeln('    system      Integrate with system packages found via pkg-config');
 }
 
