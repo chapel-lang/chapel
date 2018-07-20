@@ -77,7 +77,7 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
 
   }
   catch e: MasonError {
-    writeln(e.message());
+    stderr.writeln(e.message());
   }
   return (tf, lf);
 }
@@ -255,7 +255,7 @@ proc chplVersionError(brick:Toml) {
    from the Mason.toml. Starts at the root of the
    project and continues down dep tree recursively
    until each dep is recorded */
-proc createDepTree(root: unmanaged Toml) {
+private proc createDepTree(root: unmanaged Toml) {
   var dp: domain(string);
   var dps: [dp] unmanaged Toml;
   var depTree: unmanaged Toml = dps;
@@ -306,7 +306,7 @@ proc createDepTree(root: unmanaged Toml) {
   return depTree;
 }
 
-proc createDepTrees(depTree: unmanaged Toml, deps: [?d] unmanaged Toml, name: string) : unmanaged Toml {
+private proc createDepTrees(depTree: unmanaged Toml, deps: [?d] unmanaged Toml, name: string) : unmanaged Toml {
   var depList: [1..0] unmanaged Toml;
   while deps.domain.size > 0 {
     var dep = deps[deps.domain.first];
@@ -356,7 +356,7 @@ proc createDepTrees(depTree: unmanaged Toml, deps: [?d] unmanaged Toml, name: st
    - differing major versions are not allowed
    - Always newest minor and patch
    - in accordance with semantic versioning  */
-proc IVRS(A: Toml, B: Toml) {
+private proc IVRS(A: Toml, B: Toml) {
   const name = A["name"].s;
   const (okA, Alo, Ahi) = verifyChapelVersion(A);
   const (okB, Blo, Bhi) = verifyChapelVersion(B);
@@ -407,7 +407,7 @@ proc IVRS(A: Toml, B: Toml) {
 
 
 /* Returns the Mason.toml for each dep listed as a Toml */
-proc getManifests(deps: [?dom] (string, unmanaged Toml)) {
+private proc getManifests(deps: [?dom] (string, unmanaged Toml)) {
   var manifests: [1..0] unmanaged Toml;
   for dep in deps {
     var name = dep(1);
@@ -421,7 +421,7 @@ proc getManifests(deps: [?dom] (string, unmanaged Toml)) {
 
 /* Responsible for parsing the Mason.toml to be given
    back to a call from getManifests */
-proc retrieveDep(name: string, version: string) {
+private proc retrieveDep(name: string, version: string) {
   for cached in MASON_CACHED_REGISTRY {
     const tomlPath = cached + "/Bricks/"+name+"/"+version+".toml";
     if isFile(tomlPath) {
@@ -437,7 +437,7 @@ proc retrieveDep(name: string, version: string) {
 
 /* Checks if a dependency has deps; if so, the
    dependencies are returned as a (string, Toml) */
-proc getDependencies(tomlTbl: unmanaged Toml) {
+private proc getDependencies(tomlTbl: unmanaged Toml) {
   var depsD: domain(1);
   var deps: [depsD] (string, unmanaged Toml);
   for k in tomlTbl.D {

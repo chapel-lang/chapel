@@ -79,7 +79,7 @@ proc masonNew(args) throws {
 
 /* Return 'true' for valid identifiers according to Chapel parser/spec,
    otherwise 'false' */
-proc isIdentifier(name:string) {
+private proc isIdentifier(name:string) {
 
   // Identifiers can't be empty
   if name == "" then
@@ -125,13 +125,13 @@ proc InitProject(name, vcs, show) throws {
 }
 
 
-proc gitInit(name: string, show: bool) {
+private proc gitInit(name: string, show: bool) {
   var initialize = "git init -q " + name;
   if show then initialize = "git init " + name;
   runCommand(initialize);
 }
 
-proc addGitIgnore(name: string) {
+private proc addGitIgnore(name: string) {
   var toIgnore = "\ntarget/\nMason.lock";
   var gitIgnore = open(name+"/.gitignore", iomode.cw);
   var GIwriter = gitIgnore.writer();
@@ -154,7 +154,7 @@ proc makeBasicToml(name: string) {
 }
 
 
-proc makeProjectFiles(name: string) {
+private proc makeProjectFiles(name: string) {
   mkdir(name + "/src");
   mkdir(name + "/test");
   const libTemplate = '/* Documentation for ' + name +
