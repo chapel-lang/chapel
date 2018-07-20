@@ -3180,7 +3180,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
     // Create a block to store temporaries etc.
     // Store it just before the call being resolved.
     CallExpr* forwardedCall = call->copy();
-    BlockStmt* block = new BlockStmt(forwardedCall);
+    BlockStmt* block = new BlockStmt(forwardedCall, BLOCK_SCOPELESS);
     call->getStmtExpr()->insertBefore(block);
 
     FnSymbol* fn = NULL;
