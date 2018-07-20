@@ -180,25 +180,25 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std:
   if (!mod->noDocGen()) {
     mod->printDocs(file, tabs, parentName);
 
-    Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
+    std::vector<VarSymbol*> configs = mod->getTopLevelConfigVars();
     if (fDocsAlphabetize)
-      qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
-    forv_Vec(VarSymbol, var, configs) {
+      sort(configs.begin(), configs.end(), compareNames);
+    for_vector(VarSymbol, var, configs) {
       var->printDocs(file, tabs + 1);
     }
 
-    Vec<VarSymbol*> variables = mod->getTopLevelVariables();
+    std::vector<VarSymbol*> variables = mod->getTopLevelVariables();
     if (fDocsAlphabetize)
-      qsort(variables.v, variables.n, sizeof(variables.v[0]), compareNames);
-    forv_Vec(VarSymbol, var, variables) {
+      sort(variables.begin(), variables.end(), compareNames);
+    for_vector(VarSymbol, var, variables) {
       var->printDocs(file, tabs + 1);
     }
-    Vec<FnSymbol*> fns = mod->getTopLevelFunctions(fDocsIncludeExterns);
+    std::vector<FnSymbol*> fns = mod->getTopLevelFunctions(fDocsIncludeExterns);
     // If alphabetical option passed, fDocsAlphabetizes the output
     if (fDocsAlphabetize)
-      qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
+      sort(fns.begin(), fns.end(), compareNames);
   
-    forv_Vec(FnSymbol, fn, fns) {
+    for_vector(FnSymbol, fn, fns) {
       // TODO: Add flag to compiler to turn on doc dev only output
 
       // We want methods on classes that are defined at the module level to be
@@ -208,19 +208,19 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std:
       }
     }
 
-    Vec<AggregateType*> classes = mod->getTopLevelClasses();
+    std::vector<AggregateType*> classes = mod->getTopLevelClasses();
     if (fDocsAlphabetize)
-      qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
+      sort(classes.begin(), classes.end(), compareClasses);
 
-    forv_Vec(AggregateType, cl, classes) {
+    for_vector(AggregateType, cl, classes) {
       printClass(file, cl, tabs + 1);
     }
 
-    Vec<ModuleSymbol*> mods = mod->getTopLevelModules();
+    std::vector<ModuleSymbol*> mods = mod->getTopLevelModules();
     if (fDocsAlphabetize)
-      qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
+      sort(mods.begin(), mods.end(), compareNames);
   
-    forv_Vec(ModuleSymbol, subMod, mods) {
+    for_vector(ModuleSymbol, subMod, mods) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!devOnlyModule(subMod)) {
         std::string parent = "";

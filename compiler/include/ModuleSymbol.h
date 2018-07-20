@@ -66,11 +66,11 @@ public:
   virtual void            codegenDef();
 
   // New interface
-  Vec<AggregateType*>     getTopLevelClasses();
-  Vec<VarSymbol*>         getTopLevelConfigVars();
-  Vec<VarSymbol*>         getTopLevelVariables();
-  Vec<FnSymbol*>          getTopLevelFunctions(bool includeExterns);
-  Vec<ModuleSymbol*>      getTopLevelModules();
+  std::vector<AggregateType*> getTopLevelClasses();
+  std::vector<VarSymbol*>     getTopLevelConfigVars();
+  std::vector<VarSymbol*>     getTopLevelVariables();
+  std::vector<FnSymbol*>      getTopLevelFunctions(bool includeExterns);
+  std::vector<ModuleSymbol*>  getTopLevelModules();
 
   void                    addDefaultUses();
 
@@ -109,7 +109,7 @@ public:
 
 private:
   void                    getTopLevelConfigOrVariables(
-                                             Vec<VarSymbol*>* contain,
+                                             std::vector<VarSymbol*>* contain,
                                              Expr*            expr,
                                              bool             config);
 
