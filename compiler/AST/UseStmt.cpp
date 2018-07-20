@@ -492,17 +492,17 @@ void UseStmt::trackMethods() {
         strcpy(typeConstrName, "_type_construct_");
         strcat(typeConstrName, t->symbol->name);
 
-        methodsAndFields.push_back(constrName);
-        methodsAndFields.push_back(typeConstrName);
+        functionsToAlwaysCheck.push_back(constrName);
+        functionsToAlwaysCheck.push_back(typeConstrName);
       }
 
       if (types.size() != 0) {
         // These are all compiler generated functions that might (or in some
         // cases definitely are) not defined on the type explicitly.  Allow them
         // as well.
-        methodsAndFields.push_back("init");
-        methodsAndFields.push_back("_new");
-        methodsAndFields.push_back("deinit");
+        functionsToAlwaysCheck.push_back("init");
+        functionsToAlwaysCheck.push_back("_new");
+        functionsToAlwaysCheck.push_back("deinit");
       }
 
       Vec<FnSymbol*> fns = mod->getTopLevelFunctions(false);
@@ -558,15 +558,12 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
     if (matchedNameOrConstructor(name) == true) {
       retval = false;
 
-    } else if (methodCall) {
-      if (isAllowedMethodName(name) == true) {
-        // Only allow the symbol if the call is a method call.  Functions with
-        // the same name should not be allowed unqualified when they are omitted
-        // from the explicit only list
-        retval = false;
-      } else {
-        retval = true;
-      }
+    } else if (isAllowedMethodName(name, methodCall) == true) {
+      // Only allow the symbol if the call is a method call.  Functions with
+      // the same name should not be allowed unqualified when they are omitted
+      // from the explicit only list, except for "init", "_new", etc.
+      retval = false;
+
     } else {
       retval =  true;
     }
@@ -595,10 +592,17 @@ bool UseStmt::matchedNameOrConstructor(const char* name) const {
 
 // Returns true if the name was in the list of methods and fields defined in
 // this module, false otherwise.
-bool UseStmt::isAllowedMethodName(const char* name) const {
-  for_vector(const char, toCheck, methodsAndFields) {
+bool UseStmt::isAllowedMethodName(const char* name, bool methodCall) const {
+  for_vector(const char, toCheck, functionsToAlwaysCheck) {
     if (strcmp(name, toCheck) == 0) {
       return true;
+    }
+  }
+  if (methodCall) {
+    for_vector(const char, toCheck, methodsAndFields) {
+      if (strcmp(name, toCheck) == 0) {
+        return true;
+      }
     }
   }
 
