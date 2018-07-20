@@ -8077,7 +8077,7 @@ static void insertRuntimeTypeTemps() {
 ************************************** | *************************************/
 
 static FnSymbol* resolveNormalSerializer(CallExpr* call) {
-  BlockStmt* block = new BlockStmt(call);
+  BlockStmt* block = new BlockStmt(call, BLOCK_SCOPELESS);
 
   chpl_gen_main->body->insertAtHead(block);
 
@@ -8086,10 +8086,6 @@ static FnSymbol* resolveNormalSerializer(CallExpr* call) {
   block->remove();
 
   FnSymbol* ret = call->resolvedFunction();
-
-  if (ret != NULL) {
-    ret->instantiationPoint = chpl_gen_main->body;
-  }
 
   return ret;
 }
