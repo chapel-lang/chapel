@@ -98,7 +98,7 @@ proc main(args: [] string) throws {
     }
   }
   catch e: MasonError {
-    writeln(e.message());
+    stderr.writeln(e.message());
     exit(1);
   }
 }
@@ -112,7 +112,7 @@ proc masonClean() {
     runCommand('rm -rf ' + projectHome + '/target');
   }
   catch e: MasonError {
-    writeln(e.message());
+    stderr.writeln(e.message());
   }
 }
 
@@ -136,7 +136,7 @@ proc masonDoc(args) {
     }
   }
   catch e: MasonError {
-    writeln(e.message());
+    stderr.writeln(e.message());
   }
 }
 
