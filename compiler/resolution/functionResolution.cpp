@@ -3060,11 +3060,13 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
   Expr* callStmt = call->getStmtExpr();
 
   // Create a tmp to store the forwarded-to method target.
-  VarSymbol* tgt = newTemp("tgt");
+  VarSymbol* tgt = newTemp(astr_chpl_forward_tgt);
   tgt->addFlag(FLAG_MAYBE_REF);
   tgt->addFlag(FLAG_MAYBE_TYPE);
   DefExpr* defTgt = new DefExpr(tgt);
 
+  // note: cycle detection uses the name of tgt
+  // as well as the fact that it's 1st in the block
   callStmt->insertBefore(defTgt);
 
   // Set the target
@@ -3094,6 +3096,31 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
   return ret;
 }
 
+static void detectForwardingCycle(CallExpr* call) {
+  BlockStmt* cur = toBlockStmt(call->getStmtExpr()->parentExpr);
+  DefExpr* firstDef = NULL;
+  while (cur != NULL) {
+    DefExpr* def = toDefExpr(cur->body.head);
+    if (def == NULL || def->sym->name != astr_chpl_forward_tgt)
+      return; // not a cycle
+
+    if (firstDef == NULL) {
+      firstDef = def;
+      INT_ASSERT(firstDef->sym->type && firstDef->sym->type != dtUnknown);
+    } else {
+      // If firstDef has same type as def, cycle is found.
+      if (firstDef->sym->type == def->sym->type) {
+        Type* t = canonicalClassType(firstDef->sym->getValType());
+        TypeSymbol* ts = t->symbol;
+        USR_FATAL_CONT(call, "forwarding cycle detected");
+        USR_PRINT(ts, "for the type %s", ts->name);
+        USR_STOP();
+      }
+    }
+    cur = toBlockStmt(cur->parentExpr);
+  }
+}
+
 
 // Returns a relevant FnSymbol if it worked
 static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
@@ -3116,6 +3143,9 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
     return NULL;
 //  if (0 == memcmp(ignorePrefix, inFnName, strlen(ignorePrefix)))
 //    return NULL;
+
+  // Detect cycles
+  detectForwardingCycle(call);
 
   // Try each of the forwarding clauses to see if any get us
   // a match.
