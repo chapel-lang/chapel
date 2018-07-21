@@ -13,14 +13,14 @@
 
 #if defined(GASNET_PAR) && GASNETC_GNI_MULTI_DOMAIN
   /* Poll without progress functions */
-  #define gasnetc_AMPoll() gasnetc_AMPoll_core(GASNETE_THREAD_GET_ALONE)
+  #define gasnetc_AMPoll() gasnetc_AMPoll_core(GASNETI_THREAD_GET_ALONE)
 
   /* GASNet internal code calls gasneti_AMPoll(), which does not trace */
-  #define gasneti_AMPoll() gasnetc_AMPoll_internal(GASNETE_THREAD_GET_ALONE)
+  #define gasneti_AMPoll() gasnetc_AMPoll_internal(GASNETI_THREAD_GET_ALONE)
   #define GASNETI_GASNETI_AMPOLL
 
   /* GASNet client calls gasnet_AMPoll(), which traces */
-  #define gasnet_AMPoll() gasnetc_AMPoll_client(GASNETE_THREAD_GET_ALONE)
+  #define gasnet_AMPoll() gasnetc_AMPoll_client(GASNETI_THREAD_GET_ALONE)
   #define _GASNET_AMPOLL
 
   /* No spin pollers */
@@ -31,7 +31,7 @@
 #include <gasnet_help.h>
 
 #if defined(GASNET_PAR) && GASNETC_GNI_MULTI_DOMAIN 
-  /* Too early to use GASNETE_THREAD_*, though GASNETI_THREADINFO_OPT is defined when applicable */
+  /* Too early to use GASNETI_THREAD_*, though GASNETI_THREADINFO_OPT is defined when applicable */
   #if GASNETI_THREADINFO_OPT
     #define GASNETC_AM_POLL_FARG void *_threadinfo
     #define GASNETC_AM_POLL_PASS _threadinfo

@@ -2,6 +2,21 @@ GASNet portals4-conduit documentation -*- text -*-
 Original Author: Brian Barrett <bwbarre@sandia.gov>
 Contact info: Portals Dev Team <ng-portals@sandia.gov>
 
+=====================================================================
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+=====================================================================
+
+The portals4-conduit is a BETA conduit. It may be removed in a future release.
+
+Users needing a high level of system stability are recommended to select other
+conduits using the --enable-<conduit> options to the GASNet configure script.
+
+=====================================================================
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+=====================================================================
+
 User Information:
 -----------------
 

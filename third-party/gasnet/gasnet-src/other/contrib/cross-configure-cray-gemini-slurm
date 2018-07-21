@@ -38,6 +38,9 @@ EXTRA_CONFIGURE_ARGS="--disable-auto-conduit-detect --enable-smp --enable-mpi --
 EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --with-feature-list=os_cnl"
 # minimal backtracing support
 EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --enable-backtrace-execinfo"
+if test -x /usr/bin/gdb ; then # Enable gdb probe if it appears to be present
+  EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --enable-backtrace-gdb"
+fi
 
 # Work around bug 3480 if a PrgEnv environment module with major version >= 6 is loaded
 if test -n `echo ":$LOADEDMODULES" | grep ':PrgEnv-[a-z]*/[6-9]' 2>/dev/null`; then

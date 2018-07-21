@@ -15,11 +15,7 @@
 
 #define GASNETC_MAX_ARGS   16
 
-#if GASNET_PSHM
-  #define GASNETC_MAX_MEDIUM MIN(65536, GASNETI_MAX_MEDIUM_PSHM)
-#else
-  #define GASNETC_MAX_MEDIUM 65536  /* limited only by buffering constraints */
-#endif
+#define GASNETC_MAX_MEDIUM MIN(65536, GASNETC_MAX_MEDIUM_PSHM_DFLTMAX)
 
 #define GASNETC_MAX_LONG   ((size_t)0x7fffffff) /* unlimited */
 

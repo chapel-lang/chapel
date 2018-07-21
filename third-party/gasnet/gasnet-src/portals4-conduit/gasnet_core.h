@@ -125,15 +125,7 @@ typedef struct _gasnet_hsl_t {
 
 #define gasnet_AMMaxArgs()          ((size_t)16)
 #define GASNETC_MAX_MEDIUM_ 2048
-#if GASNET_PSHM
-  /* If supporting PSHM a conduit must "negotiate" the maximum size of a
-   * Medium message.  This can either be done by lowering the conduit's value to
-   * the default PSHM value (as shown here), or GASNETI_MAX_MEDIUM_PSHM can be
-   * defined in gasnet_core_fwd.h to give the conduit complete control. */
-  #define gasnet_AMMaxMedium()      ((size_t)MIN(GASNETC_MAX_MEDIUM_, GASNETI_MAX_MEDIUM_PSHM))
-#else
-  #define gasnet_AMMaxMedium()      ((size_t)GASNETC_MAX_MEDIUM_) 
-#endif
+#define gasnet_AMMaxMedium()        ((size_t)MIN(GASNETC_MAX_MEDIUM_, GASNETC_MAX_MEDIUM_PSHM_DFLTMAX))
 /* Not sure why, but LONG_MAX causes an assert during init.  Everyone
    else is smaller than this, so who cares */
 #define gasnet_AMMaxLongRequest()   ((size_t)10 * 1024 * 1024)

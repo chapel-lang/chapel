@@ -33,10 +33,14 @@ int gasneti_VerboseErrors = 1;
   #ifdef GASNETI_ATOMIC_LOCK_TBL_DEFNS
     #define _gasneti_atomic_lock_initializer	GASNET_HSL_INITIALIZER
     #define _gasneti_atomic_lock_init(x)	gasnet_hsl_init(x)
+    #define _gasneti_atomic_lock_lock(x)	gasnet_hsl_lock(x)
+    #define _gasneti_atomic_lock_unlock(x)	gasnet_hsl_unlock(x)
     #define _gasneti_atomic_lock_malloc		gasneti_malloc
     GASNETI_ATOMIC_LOCK_TBL_DEFNS(gasneti_hsl_atomic_, gasnet_hsl_)
     #undef _gasneti_atomic_lock_initializer
     #undef _gasneti_atomic_lock_init
+    #undef _gasneti_atomic_lock_lock
+    #undef _gasneti_atomic_lock_unlock
     #undef _gasneti_atomic_lock_malloc
   #endif
   #ifdef GASNETI_GENATOMIC32_DEFN
@@ -223,6 +227,8 @@ extern void gasneti_check_config_preinit(void) {
 }
 
 static void gasneti_check_portable_conduit(void);
+static void gasneti_check_architecture(void);
+int gasneti_malloc_munmap_disabled = 0;
 extern void gasneti_check_config_postattach(void) {
   gasneti_check_config_preinit();
 
@@ -238,11 +244,15 @@ extern void gasneti_check_config_postattach(void) {
     if (firstcall) { /* miscellaneous conduit-independent initializations */
       firstcall = 0;
 
-      if (gasneti_getenv_yesno_withdefault("GASNET_DISABLE_MUNMAP",0)) {
+      #ifndef GASNET_DISABLE_MUNMAP_DEFAULT
+      #define GASNET_DISABLE_MUNMAP_DEFAULT 0
+      #endif
+      if (gasneti_getenv_yesno_withdefault("GASNET_DISABLE_MUNMAP",GASNET_DISABLE_MUNMAP_DEFAULT)) {
         #if HAVE_PTMALLOC                                        
           mallopt(M_TRIM_THRESHOLD, -1);
           mallopt(M_MMAP_MAX, 0);
           GASNETI_TRACE_PRINTF(I,("Setting mallopt M_TRIM_THRESHOLD=-1 and M_MMAP_MAX=0"));
+          gasneti_malloc_munmap_disabled = 1;
         #else
           GASNETI_TRACE_PRINTF(I,("WARNING: GASNET_DISABLE_MUNMAP set on an unsupported platform"));
           if (gasneti_verboseenv()) 
@@ -251,10 +261,13 @@ extern void gasneti_check_config_postattach(void) {
       }
       #if GASNET_NDEBUG
         gasneti_check_portable_conduit();
+        gasneti_check_architecture();
       #endif
     }
   }
   gasneti_memcheck_all();
+
+  gasneti_flush_streams();  // flush above messages, and ensure FS_SYNC envvar is initted
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -366,6 +379,9 @@ extern int gasneti_amregister(gasnet_handlerentry_t *table, int numentries,
 #ifndef GASNETC_FATALSIGNAL_CALLBACK
 #define GASNETC_FATALSIGNAL_CALLBACK(sig)
 #endif
+#ifndef GASNETC_FATALSIGNAL_CLEANUP_CALLBACK
+#define GASNETC_FATALSIGNAL_CLEANUP_CALLBACK(sig)
+#endif
 
 static void do_raise(int sig) {
 #if defined(PTHREAD_MUTEX_INITIALIZER) && !GASNET_SEQ && HAVE_PTHREAD_KILL && 0 
@@ -391,23 +407,38 @@ void gasneti_defaultSignalHandler(int sig) {
     case SIGILL:
     case SIGSEGV:
     case SIGBUS:
-    case SIGFPE:
+    case SIGFPE: {
       oldsigpipe = gasneti_reghandler(SIGPIPE, SIG_IGN);
 
       GASNETC_FATALSIGNAL_CALLBACK(sig); /* give conduit first crack at it */
-      fprintf(stderr,"*** Caught a fatal signal: %s(%i) on node %i/%i\n",
-        signame, sig, (int)gasnet_mynode(), (int)gasnet_nodes()); 
-      fflush(stderr);
+
+      FILE * streams[] = { stderr, GASNETI_MAYBE_TRACEFILE };
+      for (int s = 0; s < sizeof(streams)/sizeof(streams[0]); s++) {
+        FILE *stream = streams[s];
+        if (stream) {
+          fprintf(stream, "*** Caught a fatal signal: %s(%i) on node %i/%i\n", 
+                        signame, sig, (int)gasnet_mynode(), (int)gasnet_nodes());
+          fflush(stream);
+        }
+      }
 
       gasnett_freezeForDebuggerErr(); /* allow freeze */
 
       gasneti_print_backtrace_ifenabled(STDERR_FILENO); /* try to print backtrace */
 
+      // Try to flush I/O (especially the tracefile) before crashing
+      signal(SIGALRM, _exit); alarm(5); 
+      gasneti_flush_streams();
+      alarm(0);
+
       (void) gasneti_reghandler(SIGPIPE, oldsigpipe);
+
+      GASNETC_FATALSIGNAL_CLEANUP_CALLBACK(sig); /* conduit hook to kill the job */
 
       signal(sig, SIG_DFL); /* restore default core-dumping handler and re-raise */
       do_raise(sig);
       break;
+    }
     default: 
       /* translate signal to SIGQUIT */
       { static int sigquit_raised = 0;
@@ -773,57 +804,6 @@ extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double d
   return result;
 }
 
-// Parse an environment variable as a memory size as follows:
-//  + If parses as double between 0. and 1., multiply by "fraction_of".
-//  + If parses as integer (w/ optional suffix) take as an absolute size.
-// In either case, align down to PAGESIZE and then die if below "minimum".
-extern uint64_t gasneti_getenv_memsize_withdefault(const char *key, const char *dflt, uint64_t minimum, uint64_t fraction_of)
-{
-  const char *str = gasneti_getenv(key);
-  int using_default = (NULL == str);
-  if (using_default) str = dflt;
-
-  double dbl;
-  int64_t val;
-  int is_fraction = 0;
-  if (0 == gasneti_parse_dbl(str, &dbl)) {
-    if ((dbl > 0.) && (dbl < 1.)) {
-      is_fraction = 1;
-      val = dbl * fraction_of;
-    } else {
-      val = dbl;
-    }
-  } else {
-    // Note: default suffix is irrelevant since un-suffixed case was parsed as a double
-    val = gasneti_parse_int(str, 1);
-  }
-  gasneti_envint_display(key, val, using_default, 1);
-
-  // check sign before ALIGNDOWN
-  if (val < 0) {
-    gasneti_fatalerror("%s='%s' is negative.", key, str);
-  }
-
-  // ALIGNDOWN before checking against minimum
-  val = GASNETI_PAGE_ALIGNDOWN(val);
-  GASNETI_TRACE_PRINTF(I, ("%s='%s' yields %"PRId64,
-                           key, str, val));
-
-  if (val < minimum) {
-    const char *parsed_as = is_fraction ? "a fraction" : "an amount";
-    char min_display[16];
-    char val_display[16];
-    gasneti_format_number(minimum, min_display, sizeof(min_display), 1);
-    gasneti_format_number(val,     val_display, sizeof(val_display), 1);
-    gasneti_fatalerror(
-            "Parsing '%s' as %s of memory yields %s of %"PRId64" (%s), "
-            "which is less than the minimum supported value of %s.",
-            str, parsed_as, key, val, val_display, min_display);
-  }
-
-  return (uint64_t) val;
-}
-
 /* ------------------------------------------------------------------------------------ */
 /* Bits for conduits which want/need to override pthread_create() */
 
@@ -881,10 +861,6 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
         if (!strcmp(name,"udp")) continue;
         if (!strcmp(name,"ofi")) continue;
         if (!strcmp(name,"portals4")) continue;
-      #if !GASNET_SEQ
-        /* Ignore conduits that lack thread safety */
-        if (!strcmp(name,"shmem")) continue;
-      #endif
         if (strlen(natives)) strcat(natives,", ");
         strcat(natives,name);
       }
@@ -948,6 +924,34 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
       fflush(stderr);
     }
   }
+}
+
+static void gasneti_check_architecture(void) { // check for bad build configurations
+  #if PLATFORM_OS_CNL && PLATFORM_ARCH_X86_64 // bug 3743, verify correct processor tuning
+  { FILE *fp = fopen("/proc/cpuinfo","r");
+    char model[255];
+    if (!fp) gasneti_fatalerror("*** ERROR: Failure in fopen('/proc/cpuinfo','r')=%s",strerror(errno));
+    while (!feof(fp) && fgets(model, sizeof(model), fp)) {
+      if (strstr(model,"model name")) break;
+    }
+    fclose(fp);
+    GASNETI_TRACE_PRINTF(I,("CPU %s",model));
+    int isKNL = !!strstr(model, "Phi");
+    #ifdef __CRAY_MIC_KNL  // module craype-mic-knl that tunes for AVX512
+      const char *warning = isKNL ? 0 :
+      "WARNING: This executable was optimized for MIC KNL (module craype-mic-knl) but run on another processor!\n";
+    #else // some other x86 tuning mode
+      const char *warning = isKNL ? 
+      "WARNING: This executable is running on a MIC KNL architecture, but was not optimized for MIC KNL.\n"
+      "WARNING: This often has a MAJOR impact on performance. Please re-build with module craype-mic-knl!\n"
+      : 0;
+    #endif
+    if (warning && gasnet_mynode() == 0) {
+      fprintf(stderr, warning);
+      fflush(stderr);
+    }
+  }
+  #endif
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -1049,7 +1053,9 @@ static void gasneti_nodemap_helper_qsort(const char *ids, size_t sz, size_t stri
 GASNETI_NEVER_INLINE(gasneti_nodemap_helper,
 static void gasneti_nodemap_helper(const void *ids, size_t sz, size_t stride)) {
   #ifndef GASNETC_DEFAULT_NODEMAP_EXACT
-    #define GASNETC_DEFAULT_NODEMAP_EXACT 0
+    // Default to slow-but-steady (it wins the race)
+    // However, see Bug 3770 - RFE: restore default linear-time nodemap behavior
+    #define GASNETC_DEFAULT_NODEMAP_EXACT 1
   #endif
   gasneti_assert(ids);
   gasneti_assert(sz > 0);
@@ -2048,6 +2054,8 @@ extern char *_gasneti_extern_strndup(const char *s, size_t n GASNETI_CURLOCFARG)
   extern void *(*gasnett_debug_calloc_fn)(size_t N, size_t S, const char *curloc);
   extern void *(*gasnett_debug_realloc_fn)(void *ptr, size_t sz, const char *curloc);
   extern void (*gasnett_debug_free_fn)(void *ptr, const char *curloc);
+  extern char *(*gasnett_debug_strdup_fn)(const char *ptr, const char *curloc);
+  extern char *(*gasnett_debug_strndup_fn)(const char *ptr, size_t n, const char *curloc);
   void *(*gasnett_debug_malloc_fn)(size_t sz, const char *curloc) =
          &_gasneti_extern_malloc;
   void *(*gasnett_debug_calloc_fn)(size_t N, size_t S, const char *curloc) =
@@ -2056,6 +2064,10 @@ extern char *_gasneti_extern_strndup(const char *s, size_t n GASNETI_CURLOCFARG)
         &_gasneti_extern_realloc;
   void (*gasnett_debug_free_fn)(void *ptr, const char *curloc) =
          &_gasneti_extern_free;
+  char *(*gasnett_debug_strdup_fn)(const char *s, const char *curloc) =
+         &_gasneti_extern_strdup;
+  char *(*gasnett_debug_strndup_fn)(const char *s, size_t sz, const char *curloc) =
+         &_gasneti_extern_strndup;
   /* these only exist with debug malloc */
   extern void (*gasnett_debug_memcheck_fn)(void *ptr, const char *curloc);
   extern void (*gasnett_debug_memcheck_one_fn)(const char *curloc);

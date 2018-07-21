@@ -35,8 +35,10 @@
 
 #if defined(GASNETI_MMAP_OR_PSHM) && defined(GASNETI_USE_HUGETLBFS)
   #define gasneti_mmap_aligndown(sz) gasneti_mmap_aligndown_huge(sz)
+  #define gasneti_mmap_pagesize()    gasneti_mmap_pagesize_huge()
 #else
   #define gasneti_mmap_aligndown(sz) GASNETI_PAGE_ALIGNDOWN(sz)
+  #define gasneti_mmap_pagesize()    GASNETI_PAGESIZE
 #endif
 
 #ifdef GASNETI_MMAP_OR_PSHM
@@ -82,10 +84,13 @@
   #undef GASNETI_USE_HIGHSEGMENT
   #define GASNETI_USE_HIGHSEGMENT 0
   /* Provide greater alignment than default: */
-  static uintptr_t gasneti_mmap_aligndown_huge(uintptr_t sz) {
+  static uintptr_t gasneti_mmap_pagesize_huge() {
      static long pagesz = 0;
      if (!pagesz) pagesz = gethugepagesize();
-     return GASNETI_ALIGNDOWN(sz, pagesz);
+     return pagesz;
+  }
+  static uintptr_t gasneti_mmap_aligndown_huge(uintptr_t sz) {
+     return GASNETI_ALIGNDOWN(sz, gasneti_mmap_pagesize_huge());
   }
  #endif
 
@@ -1142,38 +1147,56 @@ extern gasnet_seginfo_t gasneti_mmap_segment_search(uintptr_t maxsz) {
 /* ------------------------------------------------------------------------------------ */
 #endif /* GASNETI_MMAP_OR_PSHM */
 
-#if defined(GASNETI_MMAP_MAX_SIZE)
-  GASNETI_IDENT(gasneti_IdentString_DefaultMaxSegsize, 
-                "$GASNetDefaultMaxSegsize: " _STRINGIFY(GASNETI_MMAP_MAX_SIZE) " $");
-#elif defined(GASNETI_MALLOCSEGMENT_MAX_SIZE)
-  GASNETI_IDENT(gasneti_IdentString_DefaultMaxSegsize, 
-                "$GASNetDefaultMaxSegsize: " _STRINGIFY(GASNETI_MALLOCSEGMENT_MAX_SIZE) " $");
-#endif
+GASNETI_IDENT(gasneti_IdentString_DefaultMaxSegsizeStr, 
+              "$GASNetDefaultMaxSegsizeStr: " GASNETI_MAX_SEGSIZE_CONFIGURE " $");
 
 /* return user-selected limit for the max segment size, as gleaned from several sources */
-uint64_t gasnet_max_segsize; /* intentional tentative definition, to allow client override */
-uintptr_t _gasneti_max_segsize(uint64_t configure_val) {
+const char *gasnet_max_segsize_str; // intentional tentative definition, to allow client override
+uint64_t gasnet_max_segsize;        // DEPRECATED: intentional tentative definition, to allow client override 
+uintptr_t gasneti_max_segsize() {
   static uintptr_t result = 0;
   uint64_t tmp;
   if (!result) {
-    int is_dflt = 1;
+    uintptr_t auxsegsz = gasneti_auxseg_preinit();
+    uint64_t pph = gasneti_myhost.node_count;
+    gasneti_assert(pph > 0);
     /* start with the configure-selected default */
-    tmp = configure_val;
-    /* next, check the compile-time override */
-    if (gasnet_max_segsize) tmp = gasnet_max_segsize;
-    /* finally, check the environment override */
-    { const char *envstr = gasneti_getenv("GASNET_MAX_SEGSIZE");
-      if (envstr) { tmp = gasneti_parse_int(envstr, 1); is_dflt = 0; }
+    const char *dflt = GASNETI_MAX_SEGSIZE_CONFIGURE;
+    /* next, check the compile-time overrides */
+    if (gasnet_max_segsize) { // lower-priority deprecated override, interpreted as /p
+      static char tmp[80];
+      snprintf(tmp,sizeof(tmp),"%"PRIu64"/p",gasnet_max_segsize);
+      dflt = tmp;
     }
-    #if PLATFORM_ARCH_32
-      /* need to be careful about 32-bit overflow: hard limit is 2^32 - pagesz */
-      result = MIN(tmp,(uint32_t)-1);
+    if (gasnet_max_segsize_str) { // higher-priority string override
+      dflt = gasnet_max_segsize_str;
+    }
+
+    #if PLATFORM_ARCH_32 && !defined(GASNETI_ALLOW_HUGE_32BIT_SEGMENT)
+      /* need to be careful about overflow on 32-bit:
+         can't use a full 4 GB due to sign bit problems 
+         on the int argument to mmap() for some 32-bit systems
+         so use 2GB - pagesz 
+      */
+      uint64_t hardmax = (((uint64_t)1)<<31) - GASNET_PAGESIZE;
     #else
-      result = tmp;
+      uint64_t hardmax = (uint64_t)-1; // unlimited
     #endif
-    result = (uintptr_t)GASNETI_PAGE_ALIGNDOWN(result); /* ensure page alignment */
-    result = MAX(GASNET_PAGESIZE, result); /* ensure at least one page */
-    gasneti_envint_display("GASNET_MAX_SEGSIZE", result, is_dflt, 1);
+
+    // finally, check the environment override, parse the result and factor in min/max/auxseg
+    uint64_t val = gasneti_getenv_memsize_withdefault("GASNET_MAX_SEGSIZE", dflt,
+                                                GASNET_PAGESIZE+auxsegsz, hardmax,
+                                                gasneti_getPhysMemSz(1), pph,
+                                                auxsegsz);
+
+    // round UP to nearest huge page, if needed, to ensure we don't truncate client's MAX_SEGSIZE request
+    val = GASNETI_ALIGNUP(val, gasneti_mmap_pagesize());
+
+    gasneti_assert(val == GASNETI_PAGE_ALIGNDOWN(val));
+    gasneti_assert(val >= GASNET_PAGESIZE);
+    gasneti_assert(val <= hardmax);
+    result = (uintptr_t)val;
+    gasneti_assert(result == val); // overflow check
   }
   return result;
 }
@@ -1536,8 +1559,8 @@ void gasneti_segmentInit(uintptr_t localSegmentLimit,
     #endif
     /* some systems don't support mmap - 
        TODO: safe mechanism to determine a true max seg sz, 
-       for now just trust the GASNETI_MALLOCSEGMENT_LIMIT size */
-    gasneti_MaxLocalSegmentSize = GASNETI_PAGE_ALIGNDOWN(MIN(localSegmentLimit, GASNETI_MALLOCSEGMENT_LIMIT));
+       for now just trust gasneti_max_segsize */
+    gasneti_MaxLocalSegmentSize = GASNETI_PAGE_ALIGNDOWN(MIN(localSegmentLimit, gasneti_max_segsize()));
     gasneti_MaxGlobalSegmentSize = gasneti_MaxLocalSegmentSize;
   #endif
   GASNETI_TRACE_PRINTF(C, ("MaxLocalSegmentSize = %"PRIuPTR"   MaxGlobalSegmentSize = %"PRIuPTR,
@@ -1956,17 +1979,18 @@ static uintptr_t gasneti_auxseg_client_request_sz = 0;
   }
 #endif
 
-/* collect required auxseg sizes and subtract them from the values to report to client */
-void gasneti_auxseg_init(void) {
-  int i;
-  int numfns = (sizeof(gasneti_auxsegfns)/sizeof(gasneti_auxsegregfn_t))-1;
+// collect and return optimal auxseg size sum, padded to page size
+// may be called multiple times, subsequent calls return cached value
+uintptr_t gasneti_auxseg_preinit(void) {
+  if (gasneti_auxseg_sz) return gasneti_auxseg_sz; // only the first call computes requirements
 
+  const int numfns = (sizeof(gasneti_auxsegfns)/sizeof(gasneti_auxsegregfn_t))-1;
   gasneti_assert(gasneti_auxsegfns[numfns] == NULL);
   if (numfns > 0)
     gasneti_auxseg_alignedsz = gasneti_calloc(numfns,sizeof(gasneti_auxseg_request_t));
 
   /* collect requests */
-  for (i=0; i < numfns; i++) {
+  for (int i = 0; i < numfns; i++) {
     gasneti_auxseg_alignedsz[i] = (gasneti_auxsegfns[i])(NULL);
     gasneti_auxseg_total_alignedsz.minsz += 
       GASNETI_ALIGNUP(gasneti_auxseg_alignedsz[i].minsz,GASNETI_CACHE_LINE_BYTES);
@@ -1979,13 +2003,23 @@ void gasneti_auxseg_init(void) {
     GASNETI_PAGE_ALIGNUP(gasneti_auxseg_total_alignedsz.optimalsz);
 
   gasneti_auxseg_sz = gasneti_auxseg_total_alignedsz.optimalsz;
-  #if GASNET_SEGMENT_EVERYTHING
-    GASNETI_TRACE_PRINTF(C, ("gasneti_auxseg_init(): gasneti_auxseg_sz = %"PRIuPTR, gasneti_auxseg_sz));
-  #else
+  GASNETI_TRACE_PRINTF(C, ("gasneti_auxseg_preinit(): gasneti_auxseg_sz = %"PRIuPTR, gasneti_auxseg_sz));
+  gasneti_assert(gasneti_auxseg_sz % GASNET_PAGESIZE == 0);
+  return gasneti_auxseg_sz;
+}
+// subtract auxseg requirements from the values to report to client
+void gasneti_auxseg_init(void) {
+  gasneti_auxseg_preinit();
+  #if !GASNET_SEGMENT_EVERYTHING
     /* TODO: implement request downsizing down to minsz */
-    if (gasneti_auxseg_sz >= gasneti_MaxGlobalSegmentSize)
-      gasneti_fatalerror("GASNet internal auxseg size (%"PRIuPTR" bytes) exceeds available segment size (%"PRIuPTR" bytes)",
-        gasneti_auxseg_sz, gasneti_MaxGlobalSegmentSize);
+    if (gasneti_auxseg_sz >= gasneti_MaxGlobalSegmentSize) {
+      const char *moreinfo = "";
+      if (gasneti_max_segsize() <= gasneti_auxseg_sz) {
+        moreinfo = "\nYou may need to adjust the GASNET_MAX_SEGSIZE envvar - see the GASNet README for details.";
+      }
+      gasneti_fatalerror("GASNet internal auxseg size (%"PRIuPTR" bytes) exceeds available segment size (%"PRIuPTR" bytes).%s",
+        gasneti_auxseg_sz, gasneti_MaxGlobalSegmentSize, moreinfo);
+    }
 
     #if GASNETI_AUXSEG_PRESERVE_POW2_FULLSEGSZ
       if (!GASNETI_POWEROFTWO(gasneti_MaxLocalSegmentSize) && 
@@ -1999,7 +2033,6 @@ void gasneti_auxseg_init(void) {
                    "MaxLocalSegmentSize = %"PRIuPTR"   MaxGlobalSegmentSize = %"PRIuPTR,
                    gasneti_auxseg_sz, gasneti_MaxLocalSegmentSize, gasneti_MaxGlobalSegmentSize));
   #endif
-  gasneti_assert(gasneti_auxseg_sz % GASNET_PAGESIZE == 0);
 }
 
 #if GASNET_SEGMENT_EVERYTHING

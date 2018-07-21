@@ -97,7 +97,7 @@ typedef struct {
 } gasnetc_longmsg_t;
 
 #define GASNETC_ARGSEND_AUX(s,nargs) \
-        (offsetof(s,args)+(nargs*sizeof(gasnet_handlerarg_t)))
+        gasneti_offsetof(s,args[nargs])
 #define GASNETC_ARGSEND(cat,nargs) \
         GASNETC_ARGSEND_AUX(gasnetc_##cat##msg_t,(nargs))
 

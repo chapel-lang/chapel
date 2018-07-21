@@ -446,19 +446,30 @@ extern void gasneti_bootstrapBarrier(void)
 #endif
 
 static uint8_t *gasnetc_sys_exchange_buf[2] = { NULL, NULL };
+#if GASNET_DEBUG
+static size_t gasnetc_sys_exchange_elemsz[2];
+#endif
 
 static uint8_t *gasnetc_sys_exchange_addr(int phase, size_t elemsz)
 {
+#if GASNETC_USE_RCV_THREAD
+  static gasneti_mutex_t lock = GASNETI_MUTEX_INITIALIZER;
+  gasneti_mutex_lock(&lock);
+#endif
+
   if (gasnetc_sys_exchange_buf[phase] == NULL) {
-  #if GASNETC_USE_RCV_THREAD
-    static gasneti_mutex_t lock = GASNETI_MUTEX_INITIALIZER;
-    gasneti_mutex_lock(&lock);
-  #endif
     gasnetc_sys_exchange_buf[phase] = gasneti_malloc(elemsz * gasneti_nodes);
-  #if GASNETC_USE_RCV_THREAD
-    gasneti_mutex_unlock(&lock);
+  #if GASNET_DEBUG
+    gasnetc_sys_exchange_elemsz[phase] = elemsz;
+  } else {
+    gasneti_assert(gasnetc_sys_exchange_elemsz[phase] == elemsz);
   #endif
   }
+
+#if GASNETC_USE_RCV_THREAD
+  gasneti_mutex_unlock(&lock);
+#endif
+
   return gasnetc_sys_exchange_buf[phase];
 }
 
@@ -839,14 +850,56 @@ static void gasnetc_init_pin_info(int first_local, int num_local) {
     // Will probe on request or if neither configure nor environment has provided a value
   #endif
   const int do_probe = gasneti_getenv_yesno_withdefault("GASNET_PHYSMEM_PROBE", do_probe_default);
+  const int quiet = do_probe ? !gasneti_getenv_yesno_withdefault("GASNET_PHYSMEM_WARN", 1): 0;
+
+  // We document that the behavior is undefined unless
+  // GASNET_PHYSMEM_{PROBE,WARN} are single-valued.  However, as noted in bug
+  // 3769, the case of non-equal values can lead to non-collective calls to
+  // gasnetc_bootstrapExchange_ib() (not a clean failure mode).
+  // So, we do some extra work here to ensure single-valued behavior.
+  // However, we do are not documenting this specific behavior to reserve
+  // the right to silently change it in the future.
+  struct {  // TODO? pack into a single byte?
+    int8_t do_probe;
+    int8_t quiet;
+  } *all_knobs, my_knobs = { do_probe, quiet };
+  all_knobs = gasneti_malloc(gasneti_nodes * sizeof(my_knobs));
+  gasnetc_bootstrapExchange_ib(&my_knobs, sizeof(my_knobs), all_knobs);
+#if 1
+  // Option 1: fatal error on mismatch
+  if (!gasneti_mynode) {
+    for (gasnet_node_t n = 0; n < gasneti_nodes; ++n) {
+      if (do_probe != all_knobs[n].do_probe) {
+      #ifdef GASNETC_IBV_PHYSMEM_MAX_CONFIGURE
+        gasneti_fatalerror("GASNET_PHYSMEM_PROBE is not single-valued");
+      #else
+        gasneti_fatalerror("GASNET_PHYSMEM_PROBE is not single-valued (might be defaulted from GASNET_PHYSMEM_MAX)");
+      #endif
+      }
+      if (quiet != all_knobs[n].quiet) {
+        gasneti_fatalerror("GASNET_PHYSMEM_WARN is not single-valued");
+      }
+    }
+  }
+#else
+  // Option 2: logical OR do_probe and AND of quiet
+  // NOTE: if one pisks this option, one must also remove 'const' from decls
+  for (gasnet_node_t n = 0; n < gasneti_nodes; ++n) {
+    do_probe |= all_knobs[n].do_probe;
+    quiet    &= all_knobs[n].quiet;
+  }
+#endif
+  gasneti_free(all_knobs);
 
   uint64_t physmemsz = gasneti_getPhysMemSz(1);
+#if PLATFORM_ARCH_32
+  uint64_t hardmax = 0xFFFFFFFF;
+#else
+  uint64_t hardmax = 0; // unlimited
+#endif
   uint64_t limit = gasneti_getenv_memsize_withdefault(
                            "GASNET_PHYSMEM_MAX", GASNETC_DEFAULT_PHYSMEM_MAX,
-                           GASNETC_PHYSMEM_MIN, physmemsz);
-#if PLATFORM_ARCH_32
-   limit = MIN(limit, 0xFFFFFFFF);
-#endif
+                           GASNETC_PHYSMEM_MIN, hardmax, physmemsz, 0, 0);
 
   #if defined(RLIMIT_MEMLOCK) && GASNETC_HONOR_RLIMIT_MEMLOCK
   { /* Honor soft mlock limit (build-time option) */
@@ -879,11 +932,14 @@ static void gasnetc_init_pin_info(int first_local, int num_local) {
   gasnetc_pin_info.num_local = num_local;
   gasnetc_pin_info.regions = gasnetc_fh_maxregions;
   GASNETC_FOR_ALL_HCA_INDEX(i) {
+    if (! gasnetc_hca[i].hca_cap.max_mr) { // Treat zero as unbounded (e.g. Omni-Path)
+      GASNETI_TRACE_PRINTF(I, ("HCA %d advertises hca_cap.max_mr == 0, treating as unbounded", i));
+      continue;
+    }
     gasnetc_pin_info.regions = MIN(gasnetc_pin_info.regions, gasnetc_hca[i].hca_cap.max_mr);
   }
 
   if (do_probe) {
-    int quiet = !gasneti_getenv_yesno_withdefault("GASNET_PHYSMEM_WARN", 1);
     int did_warn = 0;
     gasneti_tick_t start_time = gasneti_ticks_now();
     // Warn if any node has more than 2G (unless QUIET)
@@ -1002,7 +1058,7 @@ static int gasnetc_load_settings(void) {
     default: fprintf(stderr,
                      "WARNING: ignoring invalid GASNET_MAX_MTU value %d.\n",
                      i);
-             /* fall through to "auto" case: */
+             /* fall through to "auto" case: */ GASNETI_FALLTHROUGH
   case    0: /* TODO: "automatic" might be more sophisticated than using the maximum */
   case   -1: gasnetc_max_mtu = 0; /* Use port's active_mtu */
              break;
@@ -1843,10 +1899,10 @@ static int gasnetc_init(int *argc, char ***argv) {
    */
   {
     GASNETI_TRACE_PRINTF(C,("I am node %d of %d on-node peers",
-                            gasneti_nodemap_local_rank, gasneti_nodemap_local_count));
+                            gasneti_myhost.node_rank, gasneti_myhost.node_count));
 
     /* Query the pinning limits of the HCA */
-    gasnetc_init_pin_info(gasneti_nodemap_local[0], gasneti_nodemap_local_count);
+    gasnetc_init_pin_info(gasneti_myhost.nodes[0], gasneti_myhost.node_count);
 
     gasneti_assert(gasnetc_pin_info.memory != 0);
     gasneti_assert(gasnetc_pin_info.memory != (uintptr_t)(-1));
@@ -2179,12 +2235,12 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     firehose_region_t *prereg = gasnetc_prereg_list(&reg_count);
     size_t maxsz;
 
-    gasnetc_firehose_mem = gasnetc_pin_info.memory;
+    uint64_t temp_fh_mem = gasnetc_pin_info.memory; // Math can exceed 4G and later fall below
     gasnetc_firehose_reg = gasnetc_pin_info.regions;
 
     /* Adjust for prepinned regions (they were pinned before init_pin_info probe) */
     for (i = 0; i < reg_count; ++i) {
-      gasnetc_firehose_mem += prereg[i].len;
+      temp_fh_mem += prereg[i].len;
     }
 
     /* Now initialize firehose */
@@ -2193,8 +2249,8 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
 
       #if GASNETC_PIN_SEGMENT
         /* Adjust for the pinned segment (which is not advertised to firehose as prepinned) */
-        gasneti_assert_always(gasnetc_firehose_mem > maxsize);
-        gasnetc_firehose_mem -= maxsize;
+        gasneti_assert_always(temp_fh_mem > maxsize);
+        temp_fh_mem -= maxsize;
         gasneti_assert_always(gasnetc_firehose_reg > gasnetc_max_regs);
         gasnetc_firehose_reg -= gasnetc_max_regs;
 
@@ -2208,7 +2264,11 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
                                |  FIREHOSE_INIT_FLAG_MAY_REINIT;
       #endif
 
-
+      #if PLATFORM_ARCH_32
+        gasnetc_firehose_mem = GASNETI_PAGE_ALIGNDOWN(MIN(temp_fh_mem, 0xFFFFFFFF));
+      #else
+        gasnetc_firehose_mem = temp_fh_mem;
+      #endif
       firehose_init(gasnetc_firehose_mem, gasnetc_firehose_reg, gasnetc_fh_maxsize,
                     prereg, reg_count, gasnetc_firehose_flags, &gasnetc_firehose_info);
       gasnetc_did_firehose_init = 1;
@@ -3590,7 +3650,7 @@ extern int gasnetc_AMReplyLongM(
   See the GASNet spec and http://gasnet.lbl.gov/dist/docs/gasnet.html for
     philosophy and hints on efficiently implementing no-interrupt sections
   Note: the extended-ref implementation provides a thread-specific void* within the 
-    gasnete_threaddata_t data structure which is reserved for use by the core 
+    gasneti_threaddata_t data structure which is reserved for use by the core 
     (and this is one place you'll probably want to use it)
 */
 #if GASNETC_USE_INTERRUPTS

@@ -24,38 +24,37 @@ else
   blcr_ldflags =
 endif
 
-if USE_STRICT_PROTOTYPES
-  strict_proto_flags = -DGASNET_USE_STRICT_PROTOTYPES
-else
-  strict_proto_flags = 
-endif
-
 CC  = @CC@
-CFLAGS = @GASNET_OPT_CFLAGS@ @MISC_CFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CFLAGS) $(apputils_flags) $(strict_proto_flags)
+CFLAGS = @GASNET_OPT_CFLAGS@ @DEVWARN_CFLAGS@ @MISC_CFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CFLAGS) $(apputils_flags)
 CXX = @CXX@
-CXXFLAGS = @GASNET_OPT_CXXFLAGS@ @MISC_CXXFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CXXFLAGS)
+CXXFLAGS = @GASNET_OPT_CXXFLAGS@ @DEVWARN_CXXFLAGS@ @MISC_CXXFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CXXFLAGS)
 LDFLAGS = @LDFLAGS@ @cxxLDFLAGS@ $(MANUAL_LDFLAGS)
 
 PERL = @PERL@
 
-platform_defines = @GASNET_EXTRA_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMUDP_ENV_PREFIX=GASNET $(blcr_defines) $(MANUAL_DEFINES)
+platform_defines = @GASNET_EXTRA_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMX_ENV_PREFIX=GASNET $(blcr_defines) $(MANUAL_DEFINES)
 
 platform_libraries = -L$(top_builddir) -lgasnet_tools-seq @LIBS@ @GASNET_UDP_LIBS@ $(blcr_ldflags)
 
 VPATH = $(srcdir)
-testdir = $(srcdir)/../amxtests
+amxdir = $(srcdir)/../amx
 altincdir = $(srcdir)/..
 gasnet_tools = -I$(srcdir)/../.. -I../.. -DHAVE_GASNET_TOOLS
-INCLUDES = -I$(srcdir) -I. -I$(altincdir) $(platform_defines) $(gasnet_tools)
+INCLUDES = -I$(srcdir) -I. -I$(amxdir) -I$(altincdir) $(platform_defines) $(gasnet_tools)
 compile = $(CC) $(CFLAGS) $(INCLUDES)
 cxxcompile = $(CXX) $(CXXFLAGS) $(INCLUDES)
 link = $(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCLUDES) 
 linkend = $(platform_libraries) $(MANUAL_LIBS)
 
 if USE_UDP_CONDUIT
-BUILT_SOURCES = amudp_portable_platform.h
+BUILT_SOURCES = amx_portable_platform.h
 lib_LIBRARIES = libamudp.a
 bin_PROGRAMS = amudprun
+if HAVE_EXESUFFIX
+# ensure 'make amudprun' works on Cygwin
+amudpru% : amudpru%$(EXESUFFIX)
+	:
+endif
 endif
 headers = \
 	amudp.h			\
@@ -82,7 +81,7 @@ libamudp_a_SOURCES = \
 	socklist.cpp		\
 	sockutil.cpp		
 
-amudp_portable_platform.h: $(altincdir)/gasnet_portable_platform.h
+amx_portable_platform.h: $(altincdir)/gasnet_portable_platform.h
 	cp -f $< $@
 
 libamudp_a_DEPENDENCIES = $(libamudp_a_SOURCES:%.cpp=%.o) $(libamudp_a_SOURCES:%.c=%.o)
@@ -125,11 +124,11 @@ tests-clean:
 
 include Makefile.tests
 
-test%.o : $(testdir)/test%.c $(testdir)/*.h $(allheaders)
-	$(compile) -DAMUDP -I$(testdir) -c $< -o $@
+test%.o : $(amxdir)/test%.c $(amxdir)/*.h $(allheaders)
+	$(compile) -DAMUDP -I$(amxdir) -c $< -o $@
 
-apputils.o : $(testdir)/apputils.c $(testdir)/apputils.h $(allheaders)
-	$(compile) -DAMUDP -I$(testdir) -c $(testdir)/apputils.c -o apputils.o
+apputils.o : $(amxdir)/apputils.c $(amxdir)/apputils.h $(allheaders)
+	$(compile) -DAMUDP -I$(amxdir) -c $(amxdir)/apputils.c -o apputils.o
 
 amudprun$(EXEEXT): amudprun.o $(headers) libamudp.a
 	$(link) -o $@ $< -L. -lamudp $(linkend)
@@ -150,14 +149,15 @@ $(top_builddir)/libgasnet_tools-seq.a: force
 amudprun-host$(EXEEXT): force
 	@ srcdir=`cd $(srcdir) && pwd`; \
 	set -x && \
-	mkdir -p host && \
-	cd host && \
+	mkdir -p .host && \
+	cd .host && \
 	ln -sf $$srcdir/Makefile* . && \
 	ln -sf $$srcdir/../portable_inttypes.h . && \
-	ln -sf $$srcdir/../gasnet_portable_platform.h amudp_portable_platform.h && \
-	$(MAKE) amudprun -f Makefile.standalone srcdir=$$srcdir altincdir=. MANUAL_DEFINES="-DAMUDP_ENV_PREFIX=GASNET $(MANUAL_DEFINES)" && \
+	ln -sf $$srcdir/../gasnet_portable_platform.h amx_portable_platform.h && \
+	ln -sf $$srcdir/../amx/*.[ch] . && \
+	$(MAKE) amudprun -f Makefile.standalone srcdir=$$srcdir altincdir=. MANUAL_DEFINES="-DAMX_ENV_PREFIX=GASNET $(MANUAL_DEFINES)" && \
 	mv amudprun ../amudprun-host && \
-	cd .. && rm -Rf host
+	cd .. && rm -Rf .host
 
 if USE_UDP_CONDUIT
 if GNU_NM
@@ -167,8 +167,9 @@ check-exports: libamudp.a
             @NM@ --defined-only $$lib |                                             \
 	    @PERL@ -pe 's/ \.refptr\.//' |                                          \
             grep -v -e ' [\._]*amudp_' -e ' [\._]*AMUDP_' -e ' [\._]*AM_'           \
+                    -e ' [\._]*amx_' -e ' [\._]*AMX_' -e ' [\._]*SOCK_'             \
                     -e ' [\._]*gasnett_' -e ' [\._]*gasneti_'                       \
-                    -e 'get_pc_thunk'                                               \
+		    -e ' [\._][\._]*debug_' -e 'get_pc_thunk'                       \
                     -e __FUNCTION__ -e __PRETTY_FUNCTION__ -e debug_info_seg |      \
             @PERL@ -n -e 'print if /^[0-9a-fA-F]+\s+[A-Z]\s+/' > .$$lib.exp;        \
           if test -s .$$lib.exp ; then                                              \
@@ -190,6 +191,7 @@ check: tests
 
 clean_local_files = libamudp.a *.o core .test-results amudprun-host $(BUILT_SOURCES)
 clean-local:
+	rm -Rf .host
 	@for f in $(testprograms); do                                \
 	  cmd="rm -f '$$f$(EXESUFFIX)'"; echo "$$cmd"; eval "$$cmd" || exit $$? ; \
 	 done;

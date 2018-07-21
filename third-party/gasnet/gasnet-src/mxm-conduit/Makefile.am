@@ -134,7 +134,7 @@ libgasnet-mxm-parsync.a: $(libgasnet_dependencies)
 
 if USE_MXM_CONDUIT  
 lib_LIBRARIES = $(libraries) 
-all-local: $(lib_LIBRARIES) $(makefile_fragments)
+all-local: $(lib_LIBRARIES) $(pkgconfig_files)
 clean-local: do-clean-local
 install-data-local: do-install-data-local
 uninstall-local: do-uninstall-local

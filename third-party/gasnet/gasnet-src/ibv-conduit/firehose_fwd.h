@@ -38,7 +38,11 @@ typedef struct _firehose_client_t {
     uint32_t          rkey[GASNETC_IB_MAX_HCAS];	/* used for remote access by HCA */
 } firehose_client_t;
 
-#ifndef GASNETC_PUTINMOVE_LIMIT_MAX
+#if GASNET_SEGMENT_FAST
+  /* unused, but cannot be empty */
+  typedef char firehose_remotecallback_args_t;
+#else // Using remote firehose
+ #ifndef GASNETC_PUTINMOVE_LIMIT_MAX
   /* Compile-time max bytes to piggyback on a put/miss.
    * Environment can always specify a lesser limit, but not larger.
    *
@@ -54,19 +58,20 @@ typedef struct _firehose_client_t {
    * NOTE: these are correct at the time of writting, but subject to change.
    * Unfortunately we can't currently work everything out with the preprocessor.
    */
-  #if (GASNETC_BUFSZ == 4096)
+  #if (GASNETC_BUFSZ >= 4096)
     /* Diminishing returns as the value is increased beyond 3k */
     #define GASNETC_PUTINMOVE_LIMIT_MAX 3072
   #else
     /* WARNING: too large values of GASNETC_IB_MAX_HCAS could be a problem */
     #error "Since GASNETC_BUFSZ is set to a non-default value, GASNETC_PUTINMOVE_LIMIT_MAX must also be set"
   #endif
-#endif
-typedef struct {
+ #endif
+  typedef struct {
     void	*addr;
     size_t	len;
     char	data[GASNETC_PUTINMOVE_LIMIT_MAX];
-} firehose_remotecallback_args_t;
+  } firehose_remotecallback_args_t;
+#endif
 
 #define FIREHOSE_REMOTE_CALLBACK_IN_HANDLER
 

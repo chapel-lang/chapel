@@ -161,6 +161,18 @@ GASNETI_BEGIN_NOWARN
                     GASNETI_SRCLINES_CONFIG)
 
 /* ------------------------------------------------------------------------------------ */
+// Default (read-only) shared-memory MaxMedium value "recommended" to conduits.
+// Either GASNETC_MAX_MEDIUM_PSHM or gasnet_AMMaxMedium determines the actual maximum.
+// See template-conduit/gasnet_core.h for more info.
+#if !GASNETI_PSHM_ENABLED
+  #define GASNETC_MAX_MEDIUM_PSHM_DFLTMAX 65536
+#elif PLATFORM_ARCH_64
+  #define GASNETC_MAX_MEDIUM_PSHM_DFLTMAX 65416
+#else
+  #define GASNETC_MAX_MEDIUM_PSHM_DFLTMAX 65436
+#endif
+
+/* ------------------------------------------------------------------------------------ */
 /* GASNet forward definitions, which may override some of the defaults below */
 #include <gasnet_core_fwd.h>
 #include <gasnet_extended_fwd.h>
@@ -257,11 +269,6 @@ GASNETI_BEGIN_NOWARN
   #define GASNET_ERR_BARRIER_MISMATCH     (_GASNET_ERR_BASE+5)
 #endif
 
-/* Largest Medium supported by AMPSHM */
-#ifndef GASNETI_MAX_MEDIUM_PSHM
-  #define GASNETI_MAX_MEDIUM_PSHM 65000
-#endif
-
 extern const char *gasnet_ErrorName(int);
 extern const char *gasnet_ErrorDesc(int);
 
@@ -297,11 +304,7 @@ extern const char *gasnet_ErrorDesc(int);
   /*  struct type used to negotiate handler registration in gasnet_init() */
   typedef struct gasneti_handlerentry_s {
     gasnet_handler_t index; /*  == 0 for don't care  */
-   #ifdef GASNET_USE_STRICT_PROTOTYPES
-    void *fnptr;    
-   #else
     void (*fnptr)();    
-   #endif
   } gasnet_handlerentry_t;
 #endif
 
@@ -482,8 +485,8 @@ static int *gasneti_linkconfig_idiotcheck(void);
 #endif
 GASNETI_USED
 static int *gasneti_linkconfig_idiotcheck(void) {
-  static int val;
-  val +=
+  static int _val;
+  _val +=
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MAJOR_,GASNET_RELEASE_VERSION_MAJOR))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MINOR_,GASNET_RELEASE_VERSION_MINOR))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_PATCH_,GASNET_RELEASE_VERSION_PATCH))
@@ -508,12 +511,12 @@ static int *gasneti_linkconfig_idiotcheck(void) {
         ;
   #if GASNETI_IDIOTCHECK_RECURSIVE_REFERENCE
   if (_gasneti_linkconfig_idiotcheck == &gasneti_linkconfig_idiotcheck)
-    val += *(*_gasneti_linkconfig_idiotcheck)();
+    _val += *(*_gasneti_linkconfig_idiotcheck)();
   #endif
-  return &val;
+  return &_val;
 }
-extern int gasneti_internal_idiotcheck(gasnet_handlerentry_t *table, int numentries,
-                                       uintptr_t segsize, uintptr_t minheapoffset);
+extern int gasneti_internal_idiotcheck(gasnet_handlerentry_t *_table, int _numentries,
+                                       uintptr_t _segsize, uintptr_t _minheapoffset);
 
 #if defined(GASNET_DEBUG) && (defined(__OPTIMIZE__) || defined(NDEBUG))
     #error Tried to compile GASNet client code with optimization enabled but also GASNET_DEBUG (which seriously hurts performance). Reconfigure/rebuild GASNet without --enable-debug

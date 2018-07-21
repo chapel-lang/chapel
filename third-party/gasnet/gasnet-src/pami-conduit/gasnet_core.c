@@ -736,7 +736,7 @@ extern void gasnetc_cb_big_token(pami_context_t context, void *cookie, pami_resu
   if (is_req) gasnetc_put_request_credit();
 }
 
-GASNETI_ALWAYS_INLINE(run_short)
+GASNETI_INLINE(run_short)
 void run_short(gasnetc_token_t *token) {
   gasnetc_shortmsg_t            *header = &token->shortmsg;
   const int                      is_req = header->is_req;
@@ -755,7 +755,7 @@ void run_short(gasnetc_token_t *token) {
   GASNETI_RUN_HANDLER_SHORT(is_req,handler_id,handler_fn,token,args,numargs);
 }
 
-GASNETI_ALWAYS_INLINE(run_medium)
+GASNETI_INLINE(run_medium)
 void run_medium(gasnetc_token_t *token) {
   gasnetc_medmsg_t              *header = &token->medmsg;
   const int                      is_req = header->is_req;
@@ -772,7 +772,7 @@ void run_medium(gasnetc_token_t *token) {
   GASNETI_RUN_HANDLER_MEDIUM(is_req,handler_id,handler_fn,token,args,numargs,data,nbytes);
 }
 
-GASNETI_ALWAYS_INLINE(run_long)
+GASNETI_INLINE(run_long)
 void run_long(gasnetc_token_t *token) {
   gasnetc_longmsg_t             *header = &token->longmsg;
   const int                      is_req = header->is_req;
@@ -1583,7 +1583,7 @@ extern int gasnetc_AMReplyLongM(
   See the GASNet spec and http://gasnet.lbl.gov/dist/docs/gasnet.html for
     philosophy and hints on efficiently implementing no-interrupt sections
   Note: the extended-ref implementation provides a thread-specific void* within the 
-    gasnete_threaddata_t data structure which is reserved for use by the core 
+    gasneti_threaddata_t data structure which is reserved for use by the core 
     (and this is one place you'll probably want to use it)
 */
 #if GASNETC_USE_INTERRUPTS
