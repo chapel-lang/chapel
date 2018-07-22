@@ -8020,10 +8020,24 @@ static void resolveExports() {
 
     if (fn->hasFlag(FLAG_EXPORT) ||
         (!fn->hasFlag(FLAG_GENERIC) &&
+         !fn->hasFlag(FLAG_RESOLVED) &&
+         !fn->hasFlag(FLAG_INVISIBLE_FN) &&
+         !fn->hasFlag(FLAG_INLINE) &&
+         //         !fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)
+         !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+         // TODO: What chpl_ functions are not marked compiler-generated?
+         (strncmp(fn->name, "chpl_", 5) != 0) &&
          fn->defPoint &&
          fn->defPoint->getModule() &&
          fn->defPoint->getModule()->modTag == MOD_USER)) {
       SET_LINENO(fn);
+      /*
+      printf("---\n");
+      printf("%s\n", fn->name);
+      printf("---\n");
+      viewFlags(fn->id);
+      printf("---\n\n");
+      */
 
       resolveSignatureAndFunction(fn);
     }
