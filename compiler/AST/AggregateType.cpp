@@ -2153,22 +2153,27 @@ void AggregateType::buildCopyInitializer() {
 // constructor has been defined.
 bool AggregateType::needsConstructor() const {
 
-  // We don't want a default constructor if the type has been explicitly marked
-  if (symbol->hasFlag(FLAG_USE_DEFAULT_INIT))
-    return false;
-
   if (hasPostInitializer() == true) {
     return false;
   }
 
   AggregateType* thisNC = const_cast<AggregateType*>(this);
 
-  if (initializerStyle == DEFINES_CONSTRUCTOR)
+  if (initializerStyle == DEFINES_CONSTRUCTOR) {
     return true;
-  else if (fUserDefaultInitializers && this != dtObject)
+  } else if (fUserDefaultInitializers == false) {
+    // Don't allow constructors for internal/standard types, except for object
+    ModuleSymbol* mod = thisNC->getModule();
+    if (this == dtObject) {
+      return true;
+    } else if (mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD) {
+      return false;
+    }
+  } else if (fUserDefaultInitializers && this != dtObject) {
     // Don't generate a default constructor when --force-initializers is true,
     // we want to generate a default initializer or fail.
     return false;
+  }
 
   if (initializerStyle == DEFINES_INITIALIZER) {
     // Defining an initializer means we don't need a default constructor
@@ -2238,22 +2243,17 @@ bool AggregateType::wantsDefaultInitializer() const {
   AggregateType* nonConstHole = (AggregateType*) this;
   bool           retval       = true;
 
-  // We want a default initializer if the type has been explicitly marked
-  if (symbol->hasFlag(FLAG_USE_DEFAULT_INIT) == true) {
-    retval = true;
-  } else if (this == dtObject || symbol->hasFlag(FLAG_TUPLE)) {
+  if (this == dtObject || symbol->hasFlag(FLAG_TUPLE)) {
     return false;
 
-  // No default initializers if the --force-initializers flag is not used
-  } else if (fUserDefaultInitializers == false) {
+  // Allow constructors in user code if --no-force-initializers is thrown
+  } else if (fUserDefaultInitializers == false &&
+             nonConstHole->getModule()->modTag == MOD_USER) {
     retval = false;
 
   // Only want a default initializer when no
   // initializer or constructor is defined
   } else if (initializerStyle != DEFINES_NONE_USE_DEFAULT) {
-    retval = false;
-
-  } else if (symbol->hasFlag(FLAG_REF) == true) {
     retval = false;
 
   // Iterator classes and records want neither default constructors nor
@@ -2479,12 +2479,6 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
       USR_FATAL(fn,
                 "a%s cannot be declared without parentheses",
                 isCtor ? " constructor" : "n initializer");
-    }
-
-    if (ct->symbol->hasFlag(FLAG_USE_DEFAULT_INIT)) {
-      USR_FATAL_CONT(fn, "cannot apply 'use default init' to type '%s', it"
-                     " defines a%s here", ct->symbol->name,
-                     isCtor ? " constructor" : "n initializer");
     }
 
     if (fn->hasFlag(FLAG_METHOD_PRIMARY) == false &&

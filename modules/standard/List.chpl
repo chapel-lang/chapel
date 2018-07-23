@@ -27,7 +27,6 @@
 module List {
 
 pragma "no doc"
-pragma "use default init"
 class listNode {
   type eltType;
   var data: eltType;

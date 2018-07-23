@@ -28,7 +28,6 @@ module ChapelBase {
   pragma "ref"
   pragma "no default functions"
   pragma "no object"
-  pragma "use default init"
   class _ref {
     var _val;
   }

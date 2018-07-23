@@ -32,7 +32,6 @@ module DynamicIters {
    An atomic test-and-set lock.
 */
 pragma "no doc"
-pragma "use default init"
 record vlock {
   var l: atomic bool;
   proc lock() {

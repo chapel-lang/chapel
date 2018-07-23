@@ -8,7 +8,6 @@ class MyDist : BaseDist {
   proc dsiClone() return new unmanaged MyDist();
 }
 
-pragma "use default init"
 class MyDom : BaseAssociativeDom {
   type idxType = int(32);
   const dist: unmanaged MyDist;

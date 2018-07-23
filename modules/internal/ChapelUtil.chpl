@@ -98,7 +98,6 @@ module ChapelUtil {
   }
   
   pragma "no default functions"
-  pragma "use default init"
   extern record chpl_main_argument {
     var argc: int(64);
     // var argv: c_ptr(c_string);

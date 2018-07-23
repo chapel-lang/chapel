@@ -11,10 +11,8 @@ class Node {
 var n = new Node();
 writeln(n);
 
-pragma "use default init"
 class C {
   var n : Node = new Node();
-  pragma "use default init"
   class Node {
     var x : int;
   }

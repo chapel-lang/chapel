@@ -874,7 +874,6 @@ module DataFrames {
     }
   }
 
-  pragma "use default init"
   class SeriesMapper {
     type eltType;
     type retType;

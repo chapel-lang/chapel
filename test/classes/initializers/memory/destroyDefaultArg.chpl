@@ -22,7 +22,6 @@ record R {
   }
 }
 
-pragma "use default init"
 class CC {
   var r : R;
 }
@@ -34,7 +33,6 @@ class CC {
 }
 writeln("resource = ", resource);
 
-pragma "use default init"
 class GC {
   type t;
   var r : R;
@@ -47,7 +45,6 @@ class GC {
 }
 writeln("resource = ", resource);
 
-pragma "use default init"
 record CR {
   var r : R;
 }
@@ -58,7 +55,6 @@ record CR {
 }
 writeln("resource = ", resource);
 
-pragma "use default init"
 record GR {
   type t;
   var r : R;

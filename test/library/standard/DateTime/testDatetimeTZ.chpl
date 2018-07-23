@@ -463,7 +463,6 @@ proc test_more_astimezone() {
 proc test_aware_subtract() {
   // Ensure that utcoffset() is ignored when the operands have the
   // same tzinfo member.
-  pragma "use default init"
   class OperandDependentOffset: TZInfo {
     proc utcoffset(dt: datetime) {
       if dt.minute < 10 {

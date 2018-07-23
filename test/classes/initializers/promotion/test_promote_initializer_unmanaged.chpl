@@ -1,5 +1,4 @@
 // copied from test/arrays/deitz/part5/test_promote_constructor.chpl
-pragma "use default init"
 class C {
   var a: int;
 }

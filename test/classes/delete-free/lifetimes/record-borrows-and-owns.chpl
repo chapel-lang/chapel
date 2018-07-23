@@ -1,12 +1,10 @@
 pragma "safe"
 module zz {
 
-pragma "use default init"
 class MyClass {
   var x:int;
 }
 
-pragma "use default init"
 record R {
   var _borrowed:borrowed MyClass;
 

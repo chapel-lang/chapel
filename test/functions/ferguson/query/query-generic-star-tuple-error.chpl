@@ -1,10 +1,8 @@
-pragma "use default init"
 class GenericClass {
   type t;
   var v: int;
 }
 
-pragma "use default init"
 record Wrapper {
   var f;
 }

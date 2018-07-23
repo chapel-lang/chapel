@@ -445,7 +445,6 @@ class LocCyclic {
 }
 
 
-pragma "use default init"
 class CyclicDom : BaseRectangularDom {
   const dist: unmanaged Cyclic(rank, idxType);
 
@@ -651,7 +650,6 @@ proc CyclicDom.dsiLocalSlice(param stridable: bool, ranges) {
 }
 
 
-pragma "use default init"
 class LocCyclicDom {
   param rank: int;
   type idxType;
@@ -666,7 +664,6 @@ class LocCyclicDom {
 proc LocCyclicDom.member(i) return myBlock.member(i);
 
 
-pragma "use default init"
 class CyclicArr: BaseRectangularArr {
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: unmanaged CyclicDom(rank, idxType, stridable);
@@ -943,7 +940,6 @@ proc CyclicArr.setRADOpt(val=true) {
   if doRADOpt then setupRADOpt();
 }
 
-pragma "use default init"
 class LocCyclicArr {
   type eltType;
   param rank: int;
