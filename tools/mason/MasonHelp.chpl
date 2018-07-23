@@ -186,8 +186,8 @@ proc masonSystemSearchHelp() {
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
-  writeln("        --no-desc               Only display package name");
-  writeln("        --hungry                Parse descriptions of package to include more search results");
+  writeln("        --no-show-desc          Only display package name");
+  writeln("        --desc                  Parse descriptions of package to include more search results");
   writeln();
 }
 

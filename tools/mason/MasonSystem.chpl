@@ -69,7 +69,7 @@ proc pkgConfigExists() throws {
 /* Searches available system packages */
 proc pkgSearch(args) throws {
 
-  var hungry = false;
+  var desc = false;
   var quiet = false;
   var pkgName = "";
   if args.size < 4 {
@@ -82,10 +82,10 @@ proc pkgSearch(args) throws {
         masonSystemSearchHelp();
         exit(0);
       }
-      else if arg == "--hungry" {
-        hungry=true;
+      else if arg == "--desc" {
+        desc=true;
       }
-      else if arg == "--no-desc" {
+      else if arg == "--no-show-desc" {
         quiet = true;
       }
       else {
@@ -104,7 +104,7 @@ proc pkgSearch(args) throws {
 
   for line in sub.stdout.lines() {
     const toSearch = line.partition(" ");
-    if hungry {
+    if desc {
       if pattern.search(line) {
         if quiet {
           writeln(toSearch[1]);
