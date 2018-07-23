@@ -29,6 +29,9 @@ proc errors() {
   errorsInArgs(x, y, y);
 }
 
+proc okTypeMethod(type t) {
+}
+
 proc ok() {
   var a:MyRecord;
   var b:MyGenericRecord(int);
@@ -48,6 +51,11 @@ proc ok() {
 
   extern proc printf(fmt:c_string, arg:MyClass);
   if debug then printf("%p\n", d);
+
+  okTypeMethod(unmanaged MyClass);
+  okTypeMethod(MyClass); // intentionally allowed
+
+  type okType = MyClass; // intentionally allowed
 }
 
 
