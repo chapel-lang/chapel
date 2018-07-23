@@ -28,7 +28,7 @@ class CC {
 
 {
   writeln("----- Concrete Class -----");
-  var cc = new CC();
+  var cc = new unmanaged CC();
   delete cc;
 }
 writeln("resource = ", resource);
@@ -40,7 +40,7 @@ class GC {
 
 {
   writeln("----- Generic Class -----");
-  var gc = new GC(int);
+  var gc = new unmanaged GC(int);
   delete gc;
 }
 writeln("resource = ", resource);

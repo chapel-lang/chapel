@@ -10,7 +10,7 @@ class VDistArray {
   }
 }
 
-var foo = new VDistArray(0, -4, 4);
+var foo = new unmanaged VDistArray(0, -4, 4);
 
 for i in -4..4 do
   writeln(i, " ", foo.data[i].locale.id);

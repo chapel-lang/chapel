@@ -11,5 +11,5 @@ class Outer {
   }
 }
 
-var x = new Outer();
+var x = new owned Outer();
 writeln(x);

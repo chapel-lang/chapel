@@ -7,7 +7,7 @@ class Foo {
   }
 }
 
-proc badCall(arg: Foo, val) {
+proc badCall(arg: borrowed Foo, val) {
   arg.x = val;
 }
 

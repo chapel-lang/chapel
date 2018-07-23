@@ -18,8 +18,6 @@ record Stored {
   }
 }
 
-var c = new Container();
+var c = new owned Container();
 
 writeln(c);
-
-delete c;
