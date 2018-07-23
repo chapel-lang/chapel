@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <sys/select.h>
 
 GASNETI_IDENT(gasnetc_IdentString_Version, "$GASNetCoreLibraryVersion: " GASNET_CORE_VERSION_STR " $");
 GASNETI_IDENT(gasnetc_IdentString_Name,    "$GASNetCoreLibraryName: " GASNET_CORE_NAME_STR " $");
@@ -101,8 +102,7 @@ static struct gasnetc_exit_data {
   volatile sig_atomic_t pid_tbl[1]; /* Variable length */
 } *gasnetc_exit_data = NULL;
 #define GASNETC_EXIT_DATA_SZ \
-    (offsetof(struct gasnetc_exit_data, pid_tbl[0]) + \
-     gasneti_nodes * sizeof(gasnetc_exit_data->pid_tbl[0]))
+    gasneti_offsetof(struct gasnetc_exit_data, pid_tbl[gasneti_nodes])
 
 #ifdef GASNETC_USE_SOCKETPAIR
   #include <sys/socket.h>
@@ -187,8 +187,14 @@ static void gasnetc_signal_job(int sig) {
   }
 }
 
-extern void gasnetc_fatalsignal_callback(int sig) {
+extern void gasnetc_fatalsignal_cleanup_callback(int sig) {
   gasnetc_exit_barrier_notify(128 + sig);
+  { // bug3624: pause to reduce the chance that concurrent crashes
+    // across nodes might kill each other while backtraces are printing
+    struct timeval tv; // use signal-safe sleep
+    tv.tv_sec = 1; tv.tv_usec = 0;
+    select(0, NULL, NULL, NULL, &tv);
+  }
   gasnetc_signal_job(GASNETC_REMOTEEXIT_SIGNAL);
 }
 
@@ -1142,7 +1148,7 @@ extern int gasnetc_AMReplyLongM(
   See the GASNet spec and http://gasnet.lbl.gov/dist/docs/gasnet.html for
     philosophy and hints on efficiently implementing no-interrupt sections
   Note: the extended-ref implementation provides a thread-specific void* within the 
-    gasnete_threaddata_t data structure which is reserved for use by the core 
+    gasneti_threaddata_t data structure which is reserved for use by the core 
     (and this is one place you'll probably want to use it)
 */
 #if GASNETC_USE_INTERRUPTS

@@ -10,17 +10,14 @@
 
 # header files to be installed
 # Conduit-specific headers will overwrite any conflicts in extended-ref
-headers = $(top_srcdir)/extended-ref/*.h $(srcdir)/*.h $(CONDUIT_EXTRAHEADERS)
+headers = $(top_srcdir)/extended-ref/*.h                    \
+          $(top_srcdir)/extended-ref/vis/gasnet_vis_fwd.h   \
+          $(top_srcdir)/extended-ref/coll/gasnet_coll_fwd.h   \
+          $(srcdir)/*.h                                     \
+	  $(CONDUIT_EXTRAHEADERS)
 
 # headers to exclude from $(headers) - please don't use wildcards
-# XXX: Probably not complete and we lack an automated update machanism
-private_headers = gasnet_coll_autotune.h \
-                  gasnet_coll_hashtable.h \
-                  gasnet_coll_scratch.h \
-                  gasnet_coll_team.h \
-                  gasnet_coll_trees.h \
-                  gasnet_extended_refcoll.h \
-                  gasnet_extended_refvis.h \
+private_headers = \
                   $(CONDUIT_PRIVATEHEADERS)
 
 @BUILD_SEQ_LIBS_TRUE@     makefile_fragments_seq =     $(CONDUIT_NAME)-seq.mak
@@ -45,7 +42,7 @@ EXTRA_DIST = $(CONDUIT_FILELIST) README
 
 # convenience aliases
 seq par parsync: force
-	@$(MAKE) $(CONDUIT_NAME)-$@.mak gasnet-$(CONDUIT_NAME)-$@.pc libgasnet-$(CONDUIT_NAME)-$@.a
+	@$(MAKE) gasnet-$(CONDUIT_NAME)-$@.pc libgasnet-$(CONDUIT_NAME)-$@.a
 	@for dir in $(SUBDIRS) ; do 		\
 	  if test "$$dir" != "." ; then 	\
 	    ( cd $$dir && $(MAKE) all ) || exit 1 ; 	\
@@ -263,7 +260,7 @@ $(top_builddir)/other/fragment-head.mak: $(top_srcdir)/other/fragment-head.mak.i
 $(top_builddir)/tests/Makefile: $(top_srcdir)/tests/Makefile.in
 	cd $(top_builddir)/tests && $(MAKE) Makefile
 
-Makefile: $(srcdir)/Makefile.am 			\
+Makefile: $(srcdir)/Makefile.in 			\
           $(top_builddir)/other/Makefile-conduit.mak 	\
           $(top_builddir)/other/Makefile-libgasnet.mak 	\
           $(top_builddir)/tests/Makefile

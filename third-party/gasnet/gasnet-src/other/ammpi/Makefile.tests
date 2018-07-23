@@ -50,23 +50,22 @@ run-tests: tests
 
 # make a distribution
 amxdist:
-	@sh -x -c ' \
-         VERSION=`grep "#define AMMPI_LIBRARY_VERSION" $(srcdir)/ammpi.h | head -1 | awk '"'"'{ print $$3 }'"'"'` \
+	@set -x ; \
+	 VERSION=`grep "#define AMMPI_LIBRARY_VERSION" $(srcdir)/ammpi.h | head -2 | $(PERL) -e '$$/=undef; my @a=split(/\s+/,<>); print "$$a[2].$$a[5]"'` ; \
          export VERSION ; \
 	 distdir=ammpi$${VERSION} ; \
          echo "+++ Building distribution for AMMPI version $${VERSION} +++" && \
          rm -Rf $$distdir.tar.gz $$distdir && \
          mkdir $$distdir && \
-         cp $(srcdir)/Makefile.* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.[ch] $(testdir)/*.[ch] \
+         cp $(srcdir)/Makefile.* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.[ch] $(amxdir)/*.[ch] \
 	    $(altincdir)/portable_inttypes.h $(altincdir)/gasnet_portable_platform.h \
 	    $$distdir && \
 	 cd $$distdir && \
-	 mv gasnet_portable_platform.h ammpi_portable_platform.h && \
+	 mv gasnet_portable_platform.h amx_portable_platform.h && \
          rm -f Makefile.in Makefile.am Makefile.titanium* && \
          mv Makefile.standalone Makefile && \
 	 cd .. && \
          tar -cvhf $$distdir.tar $$distdir && gzip -9 $$distdir.tar && \
          rm -Rf $$distdir && \
-         echo "+++ $$distdir.tar.gz is ready for distribution +++" \
-        '
+         echo "+++ $$distdir.tar.gz is ready for distribution +++" 
 

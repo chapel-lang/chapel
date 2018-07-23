@@ -102,7 +102,7 @@ void put_tests(int iters, int nbytes)
 {GASNET_BEGIN_FUNCTION();
     int i;
     int64_t begin=0, end, delay_time, loops=0;
-    stat_struct_t st;
+    static stat_struct_t st;
 
 	memset(mymem, 0, nbytes);
 
@@ -225,7 +225,7 @@ void get_tests(int iters, int nbytes)
 {GASNET_BEGIN_FUNCTION();
     int i;
     int64_t begin=0, end, delay_time, loops=0;
-    stat_struct_t st;
+    static stat_struct_t st;
 
 	memset(mymem, 0, nbytes);
 

@@ -1,6 +1,20 @@
 BLCR support in GASNet
 ======================
 
+=====================================================================
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+=====================================================================
+
+GASNet's BLCR integration support is now DEPRECATED.
+No further development of this feature is anticipated.
+It may be removed in a future release.
+
+=====================================================================
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+=====================================================================
+
 BLCR is "Berkeley Lab Checkpoint/Restart", a system-level checkpointer for
 Linux.  For more information on BLCR, visit http://ftg.lbl.gov/checkpoint
 

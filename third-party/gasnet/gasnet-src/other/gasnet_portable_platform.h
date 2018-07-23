@@ -1,6 +1,7 @@
 /*   $Source: bitbucket.org:berkeleylab/gasnet.git/other/portable_platform.h $
  * Description: Portable platform detection header
- * Copyright 2006, Dan Bonachea <bonachea@cs.berkeley.edu>
+ * Copyright 2006, Dan Bonachea 
+ * Copyright 2018, The Regents of the University of California
  * Terms of Use: In ADDITION to the license information in license.txt, 
  *  anyone redistributing this header agrees not to change any part of this notice, or
  *  the version handshake in the header versioning section below. 
@@ -15,7 +16,9 @@
  *
  * Developers who clone this header into their own project are HIGHLY encouraged to  
  * contribute any improvements (especially addition of new platforms) back to the 
- * canonical version, for the benefit of the community.
+ * canonical version, for the benefit of the community. 
+ * Contributions and bug reports should be directed to:
+ *   http://gasnet-bugs.lbl.gov or gasnet-staff@lbl.gov
  */
 /* ------------------------------------------------------------------------------------ */
 /* Header versioning: DO NOT CHANGE ANYTHING IN THIS SECTION 
@@ -26,9 +29,9 @@
 /* Publish and enforce version number for the public interface to this header */
 /* YOU ARE NOT PERMITTED TO CHANGE THIS SECTION WITHOUT DIRECT APPROVAL FROM DAN BONACHEA */
 #if _PORTABLE_PLATFORM_H != PLATFORM_HEADER_VERSION \
-     || PLATFORM_HEADER_VERSION < 4
+     || PLATFORM_HEADER_VERSION < 7
 #undef  PLATFORM_HEADER_VERSION 
-#define PLATFORM_HEADER_VERSION 4
+#define PLATFORM_HEADER_VERSION 7
 #undef  _PORTABLE_PLATFORM_H
 #define _PORTABLE_PLATFORM_H PLATFORM_HEADER_VERSION
 /* End Header versioning handshake */
@@ -47,6 +50,8 @@
 #undef PLATFORM_COMPILER_VERSION_EQ
 #undef PLATFORM_COMPILER_VERSION_LE
 #undef PLATFORM_COMPILER_VERSION_LT
+#undef PLATFORM_COMPILER_C_LANGLVL
+#undef PLATFORM_COMPILER_CXX_LANGLVL
 #undef PLATFORM_COMPILER_INTEL
 #undef PLATFORM_COMPILER_INTEL_C
 #undef PLATFORM_COMPILER_INTEL_CXX
@@ -158,6 +163,7 @@
 #undef PLATFORM_ARCH_ARM
 #undef PLATFORM_ARCH_AARCH64
 #undef PLATFORM_ARCH_TILE
+#undef PLATFORM_ARCH_S390
 #undef PLATFORM_ARCH_UNKNOWN
 
 /* prevent known old/broken versions of this header from loading */
@@ -198,6 +204,9 @@
   PLATFORM_COMPILER_VERSION:
      defined to an integral expression which is guaranteed to be monotonically non-decreasing 
      with increasing compiler versions. Will be zero for unrecognized compilers.
+     The exact encoding of compiler version tuples into this constant may occasionally
+     change when this header is upgraded, so code should use the (in)equality macros below
+     to check against particular compiler versions, instead of embedding an encoded constant.
   PLATFORM_COMPILER_VERSION_STR:
      A string representation of the compiler version, which may contain additional info
   PLATFORM_COMPILER_VERSION_[GT,GE,EQ,LE,LT](maj,min,pat):
@@ -206,6 +215,10 @@
      the provided version components
   PLATFORM_COMPILER_IDSTR:
      a string which uniquely identifies recognized compilers
+  PLATFORM_COMPILER_C_LANGLVL and PLATFORM_COMPILER_CXX_LANGLVL: (in PLATFORM_HEADER_VERSION >= 5)
+     defined to a positive integral value corresponding to the C or C++ (respectively) 
+     language standard to which the current compiler advertises conformance.
+     Otherwise undef (in particular at most one of these is defined in a given compilation).
 */
 
 #if defined(__INTEL_COMPILER)
@@ -304,7 +317,7 @@
     #endif
   #endif
 
-#elif defined(__xlC__) 
+#elif defined(__xlC__) || defined(__ibmxl__)
   #define PLATFORM_COMPILER_XLC  1
   #define PLATFORM_COMPILER_FAMILYNAME XLC
   #define PLATFORM_COMPILER_FAMILYID 5
@@ -313,9 +326,26 @@
   #else
     #define PLATFORM_COMPILER_XLC_C  1
   #endif
-  #define PLATFORM_COMPILER_VERSION __xlC__
+  #ifdef __ibmxl_version__
+    #define PLATFORM_COMPILER_VERSION \
+      (__ibmxl_version__ << 24 | __ibmxl_release__ << 16 | \
+       __ibmxl_modification__ << 8 | __ibmxl_ptf_fix_level__)
+    #define PLATFORM_COMPILER_VERSION_STR \
+      PLATFORM_STRINGIFY(__ibmxl_version__) "." PLATFORM_STRINGIFY(__ibmxl_release__) "." PLATFORM_STRINGIFY(__ibmxl_modification__) "." PLATFORM_STRINGIFY(__ibmxl_ptf_fix_level__)
+  #else
+    #ifdef __xlC_ver__
+      #define PLATFORM_COMPILER_VERSION (__xlC__ << 16 | __xlC_ver__)
+    #else
+      #define PLATFORM_COMPILER_VERSION (__xlC__ << 16)
+    #endif
+    #ifdef __xlc__
+      #define PLATFORM_COMPILER_VERSION_STR __xlc__
+    #else
+      #define PLATFORM_COMPILER_VERSION_STR PLATFORM_STRINGIFY(__xlC__)
+    #endif
+  #endif
   #define PLATFORM_COMPILER_VERSION_INT(maj,min,pat) \
-        ( ((maj) << 8) | ((min) << 4) | (pat) )
+        ( ((maj) << 24) | ((min) << 16) | ((pat) << 8) )
 
 #elif defined(__DECC) || defined(__DECCXX)
   #define PLATFORM_COMPILER_COMPAQ  1
@@ -350,8 +380,13 @@
   #elif defined(__SUNPRO_CC) && __SUNPRO_CC > 0
     #define PLATFORM_COMPILER_VERSION __SUNPRO_CC
   #endif
-  #define PLATFORM_COMPILER_VERSION_INT(maj,min,pat) \
-        ( ((maj) << 8) | ((min) << 4) | (pat) )
+  /* Sun version numbers look like hex but are actually a sloppy concatenation of decimal version numbers
+   * leading to weird discontinuities in the version space, luckily it remains monotonic (so far)
+   */
+  #define PLATFORM_COMPILER_VERSION_INT(maj,min,pat) ( \
+        (min) < 10 ?                                   \
+        ( ((maj) << 8) | ((min) << 4) | (pat) ) :      \
+        ( ((maj) << 12) | (((min)/10) << 8) | (((min)%10) << 4) | (pat) )  )
 
 #elif defined(__HP_cc) || defined(__HP_aCC)
   #define PLATFORM_COMPILER_HP  1
@@ -600,6 +635,19 @@
   #define PLATFORM_COMPILER_ID (10000+PLATFORM_COMPILER_FAMILYID)
 #else
   #define PLATFORM_COMPILER_ID PLATFORM_COMPILER_FAMILYID
+#endif
+
+/* default language spec conformance detection */
+#if !defined(PLATFORM_COMPILER_C_LANGLVL) && !defined(PLATFORM_COMPILER_CXX_LANGLVL)
+  #if defined(__cplusplus) && (__cplusplus > 0)  /* C++98 or newer */
+    #define PLATFORM_COMPILER_CXX_LANGLVL  __cplusplus
+  #elif defined(__STDC_VERSION__) && (__STDC_VERSION__ > 0)  /* C95 or newer */
+    #define PLATFORM_COMPILER_C_LANGLVL  __STDC_VERSION__
+  #elif defined(__STDC__) && !defined(__cplusplus) && !defined(__STDC_VERSION__) /* C89/C90 */
+    #define PLATFORM_COMPILER_C_LANGLVL  199000L
+  #else 
+    /* unknown - leave both undef */
+  #endif
 #endif
 
 #undef _PLATFORM_COMPILER_STD_STDC
@@ -933,6 +981,16 @@
     #define _PLATFORM_ARCH_32 1
   #endif
 
+#elif defined(__s390__)
+  #define PLATFORM_ARCH_S390 1
+  #define PLATFORM_ARCH_FAMILYNAME S390
+  #define _PLATFORM_ARCH_BIG_ENDIAN 1
+  #if defined(__s390x__)
+    #define _PLATFORM_ARCH_64 1
+  #else
+    #define _PLATFORM_ARCH_32 1
+  #endif
+
 #else /* unknown CPU */
   #define PLATFORM_ARCH_UNKNOWN 1
   #define PLATFORM_ARCH_FAMILYNAME UNKNOWN
@@ -1022,14 +1080,21 @@ ARCH_FAMILYNAME = PLATFORM_STRINGIFY(PLATFORM_ARCH_FAMILYNAME)
 ;
 int main(void) {
   #define PLATFORM_DISP(x) printf("PLATFORM_"#x"=%s\n",x)
-  #define PLATFORM_DISPI(x) printf("PLATFORM_"#x"=%i\n",PLATFORM_##x)
-  #define PLATFORM_DISPX(x) printf("PLATFORM_"#x"=0x%x\n",PLATFORM_##x)
+  #define PLATFORM_DISPI(x) printf("PLATFORM_"#x"=%li\n",(long int)PLATFORM_##x)
+  #define PLATFORM_DISPX(x) printf("PLATFORM_"#x"=0x%lx\n",(long int)PLATFORM_##x)
   PLATFORM_DISP(COMPILER_FAMILYNAME);
   PLATFORM_DISP(COMPILER_FAMILYID);
   PLATFORM_DISPI(COMPILER_ID);
   PLATFORM_DISPX(COMPILER_VERSION);
   PLATFORM_DISP(COMPILER_VERSION_STR);
   PLATFORM_DISP(COMPILER_IDSTR);
+  #if PLATFORM_COMPILER_C_LANGLVL
+    PLATFORM_DISPI(COMPILER_C_LANGLVL);
+  #elif PLATFORM_COMPILER_CXX_LANGLVL
+    PLATFORM_DISPI(COMPILER_CXX_LANGLVL);
+  #else
+    printf("WARNING: Missing PLATFORM_COMPILER_C(XX)_LANGLVL!");
+  #endif
   PLATFORM_DISP(OS_FAMILYNAME);
   PLATFORM_DISP(ARCH_FAMILYNAME);
   #if PLATFORM_ARCH_32

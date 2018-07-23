@@ -956,11 +956,11 @@ void run_MULTI_ADDR_test(thread_data_t *td, uint8_t **dst_arr, uint8_t **src_arr
   test_free(handles);
 }
 
-
+static double szfactor = 2.;
 
 void *thread_main(void *arg) {
   thread_data_t *td = (thread_data_t*) arg;
-  size_t size;
+  double sz;
   int i,flag_iter;
   gasnet_node_t root_thread = ROOT_THREAD;
   int skip_msg_printed = 0;
@@ -984,6 +984,7 @@ void *thread_main(void *arg) {
 
   for(flag_iter=0; flag_iter<9; flag_iter++) {
     int flags;
+    PTHREAD_BARRIER(threads_per_node);
     if(td->my_local_thread==0) TEST_SECTION_BEGIN();
     COLL_BARRIER();
     
@@ -1011,35 +1012,36 @@ void *thread_main(void *arg) {
 	if(td->my_local_thread == 0 && !skip_msg_printed)
           MSG0("skipping SINGLE/SINGLE test (multiple threads per node)");
       } else {
-	for(size = 1; size<=max_data_size; size=size*2) {
-	  run_SINGLE_ADDR_test(td, all_dsts, all_srcs, size, root_thread, flags|GASNET_COLL_SINGLE);
+	for(sz = 1; sz<=max_data_size; sz*=szfactor) {
+	  run_SINGLE_ADDR_test(td, all_dsts, all_srcs, (size_t)sz, root_thread, flags|GASNET_COLL_SINGLE);
 	}
       }
       skip_msg_printed =1;
 #endif
 
 #if SINGLE_LOCAL_MODE_ENABLED || ALL_ADDR_MODE_ENABLED
-      for(size = 1; size<=max_data_size; size=size*2) {
-        run_SINGLE_ADDR_test(td, my_dsts, my_srcs, size, root_thread, flags|GASNET_COLL_LOCAL);   
+      for(sz = 1; sz<=max_data_size; sz*=szfactor) {
+        run_SINGLE_ADDR_test(td, my_dsts, my_srcs, (size_t)sz, root_thread, flags|GASNET_COLL_LOCAL);   
       }
 #endif
 
 #if MULTI_SINGLE_MODE_ENABLED || ALL_ADDR_MODE_ENABLED
-      for(size = 1; size<=max_data_size; size=size*2) {
-        run_MULTI_ADDR_test(td, all_dsts, all_srcs, size, root_thread, flags|GASNET_COLL_SINGLE);
+      for(sz = 1; sz<=max_data_size; sz*=szfactor) {
+        run_MULTI_ADDR_test(td, all_dsts, all_srcs, (size_t)sz, root_thread, flags|GASNET_COLL_SINGLE);
       }
 #endif      
 
 #if MULTI_LOCAL_MODE_ENABLED || ALL_ADDR_MODE_ENABLED
-      for(size = 1; size<=max_data_size; size=size*2) {
-        run_MULTI_ADDR_test(td, my_dsts, my_srcs, size, root_thread, flags|GASNET_COLL_LOCAL);
+      for(sz = 1; sz<=max_data_size; sz*=szfactor) {
+        run_MULTI_ADDR_test(td, my_dsts, my_srcs, (size_t)sz, root_thread, flags|GASNET_COLL_LOCAL);
       }
 #endif
       if(td->my_local_thread==0  && !VERBOSE_VERIFICATION_OUTPUT) {
+        size_t final_size = (size_t) (sz/szfactor);
         char flag_str[8];
         fill_flag_str(flags, flag_str);
-        MSG0("%c: sync_mode: %s %d-%"PRIuPTR" (powers of 2) bytes root: %d.  PASS",  
-             TEST_SECTION_NAME(), flag_str, (int)(sizeof(int)*1), (uintptr_t) sizeof(int)*max_data_size, (int) root_thread);
+        MSG0("%c: sync_mode: %s %d-%"PRIuPTR" bytes root: %d.  PASS",  
+             TEST_SECTION_NAME(), flag_str, (int)(sizeof(int)*1), (uintptr_t) sizeof(int)*final_size, (int) root_thread);
       }
 
     }
@@ -1054,26 +1056,41 @@ int main(int argc, char **argv)
 {
   static uint8_t *A, *B;
   int i,j;
+  int help = 0;
   thread_data_t *td_arr;
   
   GASNET_Safe(gasnet_init(&argc, &argv));
   
+  int arg = 1;
+  while (argc > arg) {
+    if (!strcmp(argv[arg], "-szfactor")) {
+      ++arg;
+      if (argc > arg) { szfactor = atof(argv[arg]); arg++; }
+      else help = 1;
+    } else if (argv[arg][0] == '-') {
+      help = 1;
+      ++arg;
+    } else break;
+  }
   
-  if(argc > 1) {
-    max_data_size = MAX(atoi(argv[1])/sizeof(int),1); 
+  if(argc > arg) {
+    max_data_size = MAX(atoi(argv[arg])/sizeof(int),1); 
+    arg++;
   } else {
     max_data_size = DEFAULT_MAX_DATA_SIZE/sizeof(int);
   }
   
-  if (argc > 2) {
-    outer_verification_iters = MAX(1,atoi(argv[2]));
+  if (argc > arg) {
+    outer_verification_iters = MAX(1,atoi(argv[arg]));
+    arg++;
   } else {
     outer_verification_iters = DEFAULT_OUTER_VERIFICATION_ITERS;
   }
 
   
-  if (argc > 3) {
-    inner_verification_iters = MAX(1,atoi(argv[3]));
+  if (argc > arg) {
+    inner_verification_iters = MAX(1,atoi(argv[arg]));
+    arg++;
   } else {
     inner_verification_iters = DEFAULT_INNER_VERIFICATION_ITERS;
   }
@@ -1081,19 +1098,30 @@ int main(int argc, char **argv)
      since this is waht we use for the performance runs*/
   inner_verification_iters = MAX(1, inner_verification_iters);
   
-  if(argc > 4) {
-    performance_iters = atoi(argv[4]);
+  if(argc > arg) {
+    performance_iters = atoi(argv[arg]);
+    arg++;
   } else {
     performance_iters = DEFAULT_PERFORMANCE_ITERS;
   }
   
+#if GASNET_PAR
+  #define PAR_USAGE "(thread count per node) "
+#else
+  #define PAR_USAGE ""
+#endif
+
   /* Need to test_init before gasnet_attach to use TEST_LOCALPROCS() */
-  test_init_early("testcollperf",(performance_iters != 0),"(max data size) (outer_verification_iters) (inner_verification_iters) (performance_iters) (thread count per node) (test sections)");
-  MSG("hostname is: %s (pid=%i)", gasnett_gethostname(), (int)getpid());
+  test_init_early("testcollperf",(performance_iters != 0),
+                  "[options] (max data size) (outer_verification_iters) (inner_verification_iters) (performance_iters) " PAR_USAGE "(test sections)\n"
+                  "  -szfactor <f>   \n"
+                  "            selects f as growth factor for data sizes."
+                 );
 
 #if GASNET_PAR
-  if (argc > 5) {
-    threads_per_node = atoi(argv[5]);
+  if (argc > arg) {
+    threads_per_node = atoi(argv[arg]);
+    arg++;
   } else {
     if (gasnett_getenv_yesno_withdefault("GASNET_TEST_POLITE_SYNC",0)) {
       /* May overcommit only if somebody already expected it */
@@ -1101,7 +1129,7 @@ int main(int argc, char **argv)
     } else {
       threads_per_node = gasnett_cpu_count() / TEST_LOCALPROCS(); 
     }
-    threads_per_node = MIN(threads_per_node, 8);
+    threads_per_node = MIN(threads_per_node, 4);
     threads_per_node = test_thread_limit(threads_per_node);
     threads_per_node = MAX(threads_per_node, 1);
   }
@@ -1109,12 +1137,17 @@ int main(int argc, char **argv)
     printf("ERROR: Threads must be between 1 and %d\n", TEST_MAXTHREADS);
     exit(EXIT_FAILURE);
   }
-  if (argc > 6) TEST_SECTION_PARSE(argv[6]);
 #else
   threads_per_node = 1;
-  if (argc > 5) TEST_SECTION_PARSE(argv[5]);
 #endif  
-  
+
+  if (argc > arg) {
+    TEST_SECTION_PARSE(argv[arg]);
+    arg++;
+  }
+
+  if (help || argc > arg) test_usage();
+
   /* get SPMD info */
   mynode = gasnet_mynode();
   nodes = gasnet_nodes();
@@ -1127,8 +1160,8 @@ int main(int argc, char **argv)
   {
     size_t curr_req = inner_verification_iters * THREADS * threads_per_node * sizeof(int) * max_data_size * 2;
     size_t max_mem_usage = gasnet_getMaxGlobalSegmentSize()/2;
-    MSG0("command line args: max_data_size=%"PRIuPTR" bytes outer_verification_iters=%d inner_verification_iters=%d performance_iters=%d threads_per_node=%d ", (uintptr_t)(max_data_size*sizeof(int)), 
-         outer_verification_iters, inner_verification_iters, performance_iters, (int) threads_per_node);
+    MSG0("command line args: max_data_size=%"PRIuPTR" bytes outer_verification_iters=%d inner_verification_iters=%d performance_iters=%d threads_per_node=%d szfactor=%.2f", (uintptr_t)(max_data_size*sizeof(int)), 
+         outer_verification_iters, inner_verification_iters, performance_iters, (int) threads_per_node, szfactor);
     if(curr_req > max_mem_usage) {
       MSG0("WARNING: inner iterations too large.\n");
       MSG0("Scaling down inner iterations and scaling up outer iterations to compensate\n");

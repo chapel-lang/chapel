@@ -9,7 +9,7 @@
 
 # headers live in gemini-conduit in source tree, but aries-conduit when installed
 CONDUIT_INCLUDES = -DGASNET_CONDUIT_ARIES
-CONDUIT_INCLUDES = -DGASNET_CONDUIT_ARIES -I@TOP_SRCDIR@/other/firehose -I@TOP_SRCDIR@/gemini-conduit ###NOINSTALL###
+CONDUIT_INCLUDES = -DGASNET_CONDUIT_ARIES -I@TOP_SRCDIR@/gemini-conduit ###NOINSTALL###
 
 CONDUIT_LDFLAGS = @GNI_LDFLAGS@
 CONDUIT_LIBS = @GNI_LIBS@

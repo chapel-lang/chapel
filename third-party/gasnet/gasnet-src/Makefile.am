@@ -15,14 +15,12 @@ SUBDIRS =            \
 # GASNET_TOOLSONLY_TRUE_BEGIN
 # CONDUITMODE_DIST_SUBDIRS = 
 # CONDUITMODE_headers = 
-# CONDUITMODE_EXTRA_DIST = 	\
-# 	.gasnet_toolsonly_mode 
+# CONDUITMODE_EXTRA_DIST = .gasnet_toolsonly_mode 
 # GASNET_TOOLSONLY_TRUE_END
 # GASNET_TOOLSONLY_FALSE_BEGIN
   # Directories we manually recurse into:
 CONDUITMODE_DIST_SUBDIRS =    	\
 	mpi-conduit  		\
-	shmem-conduit  		\
 	smp-conduit  		\
 	udp-conduit  		\
 	ibv-conduit 		\
@@ -36,14 +34,13 @@ CONDUITMODE_DIST_SUBDIRS =    	\
 CONDUITMODE_headers = 		\
 	gasnet.h           	\
 	gasnet_ammacros.h  	\
-	gasnet_coll.h      	\
 	gasnet_handler.h   	\
 	gasnet_trace.h     	\
-	gasnet_vis.h      
+	extended-ref/coll/gasnet_coll.h \
+	extended-ref/vis/gasnet_vis.h      
 CONDUITMODE_EXTRA_DIST =    	\
 	docs              	\
 	extended-ref      	\
-	template-conduit  	\
 	gasnet_internal.h 	\
 	gasnet_internal.c 	\
 	gasnet_mmap.c  	  	\
@@ -68,6 +65,7 @@ headers =                  	\
 	gasnet_asm.h       	\
 	gasnet_atomicops.h 	\
 	gasnet_atomic_bits.h 	\
+	gasnet_atomic_fwd.h 	\
         gasnet_basic.h     	\
         gasnet_help.h      	\
 	gasnet_membar.h    	\
@@ -76,6 +74,7 @@ headers =                  	\
 	gasnet_toolhelp.h  	
 
 EXTRA_DIST =              		\
+	$(CONDUITMODE_EXTRA_DIST)       \
 	README				\
  	README-tools 			\
 	ChangeLog	  		\
@@ -86,9 +85,7 @@ EXTRA_DIST =              		\
         configure.in      		\
         acconfig.h        		\
         acinclude.m4      		\
-        $(headers)        		\
-        gasnet_tools.c    		\
-	$(CONDUITMODE_EXTRA_DIST)
+        gasnet_tools.c    		
 #       tests handled below
 
 include_HEADERS = $(headers)
@@ -343,7 +340,7 @@ distclean: force
 if TOOLSONLY_MODE
 TESTDIST = README testtools.c test.h Makefile.in
 else
-TESTDIST = `find . -print`
+TESTDIST = `find . -print | grep -v ^./mpi`
 endif
 
 dist-hook:
@@ -353,7 +350,7 @@ dist-hook:
         fi
 	if test -d $(srcdir)/.git ; then \
 	  GASNET_DESC=`$${GIT=git} --git-dir=$(srcdir)/.git describe` || exit $$? ; \
-	  $(PERL) -pi -e "s:no-version-control-info:$$GASNET_DESC:;" -- $(distdir)/configure || exit $$? ; \
+	  $(PERL) -pi -e "s:no-version-control-info:$$GASNET_DESC:;" -- $(distdir)/configure $(distdir)/gasnet_tools.c || exit $$? ; \
 	  echo $$GASNET_DESC > $(distdir)/version.git || exit $$? ; \
 	fi
 	if test -f $(distdir)/docs/Makefile ; then \

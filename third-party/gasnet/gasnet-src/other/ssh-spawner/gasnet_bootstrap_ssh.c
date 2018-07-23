@@ -1706,7 +1706,11 @@ static void spawn_ctrl(int argc, char **argv) {
   char *cmdline = quote_arg(argv[0]);
   int j;
 
-  if (gethostname(my_host, sizeof(my_host)) < 0) {
+  const char *masterip;
+  if (is_root && (NULL != (masterip = my_getenv(ENV_PREFIX "MASTERIP")))) {
+    strncpy(my_host, masterip, sizeof(my_host) - 1);
+    my_host[sizeof(my_host) - 1] = '\0';
+  } else if (gethostname(my_host, sizeof(my_host)) < 0) {
     die(1, "gethostname() failed");
   }
 
@@ -2387,7 +2391,7 @@ static void do_common(int argc, char **argv)
   {
     char **sublist;
     gasnet_node_t rank;
-    nodediv_t ppn, npc;
+    nodediv_t ppn, npc = {0,0};
     int j;
 
     ppn = nodediv(tree_ranks, tree_nodes);
@@ -2683,6 +2687,7 @@ extern gasneti_spawnerfn_t const * gasneti_bootstrapInit_ssh(int *argc_p, char *
   if (!null_init && (*argc_p > 1) && !strcmp((*argv_p)[1], "-GASNET-SPAWN-master")) {
     /* Force legacy explict-master support: */
     explicit_master = 1;
+    spawn_args = "XX"; // unused, but avoids "may be used uninitialized" warnings
   } else {
     spawner    = my_getenv(ENV_PREFIX "SPAWN_CONTROL");
     spawn_args = my_getenv(ENV_PREFIX "SPAWN_ARGS");
@@ -2740,14 +2745,14 @@ extern gasneti_spawnerfn_t const * gasneti_bootstrapInit_ssh(int *argc_p, char *
 
     switch (spawn_cmd) {
     #if GASNET_BLCR
-      case 'R': is_restart = 1; /* Fall through... */
+      case 'R': is_restart = 1; GASNETI_FALLTHROUGH
     #endif
       case 'M':  /* The master (root control process) */
         do_master(spawn_args, argc_p, argv_p); /* Does not return */
         break;
 
     #if GASNET_BLCR
-      case 'D': is_restart = 1; /* Fall through... */
+      case 'D': is_restart = 1; GASNETI_FALLTHROUGH
     #endif
       case 'C':  /* Non-root control process */
         do_control(spawn_args, argc_p, argv_p);

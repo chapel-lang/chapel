@@ -407,11 +407,18 @@ static void *test_malloc_2D(int count, size_t size) {
 }
 #define test_free_2D test_free
 
+static volatile int done = 0;
+
 void *thread_main(void *arg) {
   thread_data_t *td = arg;
   int i;
                 
 #if GASNET_PAR
+  if (td->local_id >= threads) {
+    while (!done) gasnet_AMPoll();
+    return NULL;
+  }
+
   gasnet_image_t *imagearray = test_malloc(numprocs * sizeof(gasnet_image_t));
   for (i=0; i<numprocs; ++i) { imagearray[i] = threads; }
   gasnet_coll_init(imagearray, td->mythread, NULL, 0, 0);
@@ -468,6 +475,9 @@ void *thread_main(void *arg) {
   
   test_free(td->hndl);
 
+  PTHREAD_LOCALBARRIER(threads);
+  done = 1;
+
   return NULL;
 }
 
@@ -475,21 +485,47 @@ int main(int argc, char **argv)
 {
     static int *A, *B, *C, *D, *E, *F, *G;
     gasnet_node_t myproc, i;
+    int pollers = 0;
     int j;
    
     /* call startup */
     GASNET_Safe(gasnet_init(&argc, &argv));
 
-    if (argc > 1) {
-      iters = atoi(argv[1]);
+    int arg = 1;
+    int help = 0;
+    while (argc > arg) {
+      if (!strcmp(argv[arg], "-p")) {
+#if GASNET_PAR
+        ++arg;
+        if (argc > arg) { pollers = atoi(argv[arg]); arg++; }
+        else help = 1;
+#else
+        if (0 == gasnet_mynode()) {
+          fprintf(stderr, "testcoll %s\n", GASNET_CONFIG_STRING);
+          fprintf(stderr, "ERROR: The -p option is only available in the PAR configuration.\n");
+          fflush(NULL);
+        }
+        sleep(1);
+        gasnet_exit(1);
+#endif
+      } else if (argv[arg][0] == '-') {
+        help = 1;
+        ++arg;
+      } else break;
+    }
+
+    if (argc > arg) {
+      iters = atoi(argv[arg]);
+      ++arg;
     }
     if (iters < 1) {
       iters = 1000;
     }
 
 #if GASNET_PAR
-    if (argc > 2) {
-      threads = atoi(argv[2]);
+    if (argc > arg) {
+      threads = atoi(argv[arg]);
+      ++arg;
     }
     threads = test_thread_limit(threads);
     if (threads < 1) {
@@ -505,9 +541,18 @@ int main(int argc, char **argv)
     datasize = iters * (3 + 4 * images);
 
     GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
-    test_init("testcoll",0,"(iters) (threadcnt)");
-    TEST_SET_WAITMODE(threads);
-    if (argc > 3) test_usage();
+
+#if GASNET_PAR
+  #define USAGE "[options] (iters) (threadcnt)\n" \
+                "  The -p option gives the number of polling threads, specified as\n" \
+                "    a non-negative integer argument (default is no polling threads).\n"
+#else
+  #define USAGE "(iters)\n"
+#endif
+    test_init("testcoll",0,USAGE);
+
+    TEST_SET_WAITMODE(threads + pollers);
+    if (argc > arg || help) test_usage();
     
     MSG0("Running coll test(s) with %d iterations.", iters);
 
@@ -573,7 +618,7 @@ int main(int argc, char **argv)
     BARRIER();
 
 #if GASNET_PAR
-    MSG("Forking %d gasnet threads", threads);
+    MSG("Forking %d gasnet threads (%d active, %d polling)", threads+pollers, threads, pollers);
     {
         int i;
 	thread_data_t* tt_thread_data = test_malloc(threads*sizeof(thread_data_t));

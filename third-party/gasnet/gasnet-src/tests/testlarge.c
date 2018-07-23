@@ -17,9 +17,10 @@
 
 #include <gasnet.h>
 
+int numprocs;
 size_t maxsz = 0;
 #ifndef TEST_SEGSZ
-  #define TEST_SEGSZ_EXPR ((uintptr_t)maxsz)
+  #define TEST_SEGSZ_EXPR ((numprocs==1?2:1)*(uintptr_t)alignup(maxsz,PAGESZ))
 #endif
 #include "test.h"
 
@@ -39,7 +40,6 @@ gasnet_handlerentry_t handler_table[2];
 int insegment = 0;
 
 int myproc;
-int numprocs;
 int peerproc = -1;
 int iamsender = 0;
 int unitsMB = 0;
@@ -316,6 +316,10 @@ int main(int argc, char **argv)
     if (!maxsz) maxsz = 2*1024*1024; /* 2 MB default */
     if (argc > arg) { TEST_SECTION_PARSE(argv[arg]); arg++; }
 
+    /* get SPMD info (needed for segment size) */
+    myproc = gasnet_mynode();
+    numprocs = gasnet_nodes();
+
     #ifdef GASNET_SEGMENT_EVERYTHING
       if (maxsz > TEST_SEGSZ) { ERR("maxsz must be <= %"PRIuPTR" on GASNET_SEGMENT_EVERYTHING",(uintptr_t)TEST_SEGSZ); gasnet_exit(1); }
     #endif
@@ -339,10 +343,6 @@ int main(int argc, char **argv)
       ERR("maxsz (%"PRIuPTR") must be >= %"PRIuPTR"\n",(uintptr_t)max_payload,(uintptr_t)min_payload);
       test_usage();
     }
-
-    /* get SPMD info */
-    myproc = gasnet_mynode();
-    numprocs = gasnet_nodes();
 
     if (!firstlastmode) {
       /* Only allow 1 or even number for numprocs */
@@ -373,7 +373,9 @@ int main(int argc, char **argv)
     }
 
     myseg = TEST_SEG(myproc);
-    tgtmem = TEST_SEG(peerproc);
+    tgtmem = (numprocs > 1) ? TEST_SEG(peerproc)
+                            : (void*)(alignup(maxsz,PAGESZ) + (uintptr_t)myseg);
+
 
         if (insegment) {
 	    msgbuf = (void *) myseg;

@@ -275,6 +275,10 @@ main(int argc, char **argv)
 		printf("ERROR: Threads must be between 1 and %u\n",(unsigned int)TEST_MAXTHREADS);
 		exit(EXIT_FAILURE);
 	}
+	if (gasnet_nodes() == 1 && threads_num == 1) {
+		printf("ERROR: Threads must be greater than 1 when running a single process\n");
+		exit(EXIT_FAILURE);
+	}
 
         /* limit sizes to a reasonable size */
         #define LIMIT(sz) MIN(sz,4194304)
@@ -397,8 +401,10 @@ alloc_thread_data(int threads)
 					td->ltid = j;
 					td->tid_peer_local = base + 
 						((j+1) % threads);
-					td->tid_peer = (tid+threads) % 
-						tot_threads;
+					td->tid_peer = (nodes == 1)
+                                            ? ((tid+1) % threads)
+                                            : ((tid+threads) % tot_threads);
+                                        assert_always(td->tid_peer != tid);
 				}
 			}
 		}

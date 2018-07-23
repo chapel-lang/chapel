@@ -13,7 +13,7 @@ static void
 gasnete_coll_pami_gathrvi(const gasnet_team_handle_t team,
                           gasnet_image_t dstimage, void *dst,
                           const void *src, size_t nbytes,
-                          int flags GASNETE_THREAD_FARG)
+                          int flags GASNETI_THREAD_FARG)
 {
     const int i_am_root = gasnete_coll_image_is_local(team, dstimage);
     int i_am_leader = gasnete_coll_pami_images_barrier(team); /* XXX: over-synced for IN_NO and IN_MY */
@@ -29,7 +29,7 @@ gasnete_coll_pami_gathrvi(const gasnet_team_handle_t team,
         (void) gasnete_coll_pami_images_barrier(team);
     }
 
-    GASNETE_FAST_UNALIGNED_MEMCPY(gasnete_coll_scale_ptr(team->pami.scratch_space,
+    GASNETI_MEMCPY(               gasnete_coll_scale_ptr(team->pami.scratch_space,
                                                          td->my_local_image,
                                                          nbytes),
                                   src, nbytes);
@@ -81,7 +81,7 @@ static void
 gasnete_coll_pami_gathr(const gasnet_team_handle_t team,
                         gasnet_image_t dstimage, void *dst,
                         const void *src, size_t nbytes,
-                        int flags GASNETE_THREAD_FARG)
+                        int flags GASNETI_THREAD_FARG)
 {
     const int i_am_root = gasnete_coll_image_is_local(team, dstimage);
 
@@ -131,7 +131,7 @@ extern void
 gasnete_coll_gather_pami(gasnet_team_handle_t team,
                          gasnet_image_t dstimage, void *dst,
                          void *src, size_t nbytes,
-                         int flags GASNETE_THREAD_FARG)
+                         int flags GASNETI_THREAD_FARG)
 {
   if ((team->pami.geom == PAMI_GEOMETRY_NULL) || !gasnete_use_pami_gathr
   #if GASNET_PAR
@@ -141,17 +141,17 @@ gasnete_coll_gather_pami(gasnet_team_handle_t team,
      ) {
     /* Use generic implementation for cases we don't (yet) handle, or when disabled */
     gasnet_coll_handle_t handle;
-    handle = gasnete_coll_gather_nb_default(team,dstimage,dst,src,nbytes,flags,0 GASNETE_THREAD_PASS);
-    gasnete_coll_wait_sync(handle GASNETE_THREAD_PASS);
+    handle = gasnete_coll_gather_nb_default(team,dstimage,dst,src,nbytes,flags,0 GASNETI_THREAD_PASS);
+    gasnete_coll_wait_sync(handle GASNETI_THREAD_PASS);
   } else { /* Use PAMI-specific implementation: */
   #if GASNET_PAR
     if (team->multi_images_any) {
-      gasnete_coll_pami_gathrvi(team,dstimage,dst,src,nbytes,flags GASNETE_THREAD_PASS);
+      gasnete_coll_pami_gathrvi(team,dstimage,dst,src,nbytes,flags GASNETI_THREAD_PASS);
     } else {
-      gasnete_coll_pami_gathr(team,dstimage,dst,src,nbytes,flags GASNETE_THREAD_PASS);
+      gasnete_coll_pami_gathr(team,dstimage,dst,src,nbytes,flags GASNETI_THREAD_PASS);
     }
   #else
-    gasnete_coll_pami_gathr(team,dstimage,dst,src,nbytes,flags GASNETE_THREAD_PASS);
+    gasnete_coll_pami_gathr(team,dstimage,dst,src,nbytes,flags GASNETI_THREAD_PASS);
   #endif
   }
 }
@@ -160,7 +160,7 @@ extern void
 gasnete_coll_gatherM_pami(gasnet_team_handle_t team,
                           gasnet_image_t dstimage, void *dst,
                           void * const srclist[], size_t nbytes,
-                          int flags GASNETE_THREAD_FARG)
+                          int flags GASNETI_THREAD_FARG)
 {
   if ((team->pami.geom == PAMI_GEOMETRY_NULL) || !gasnete_use_pami_gathr
   #if GASNET_PAR
@@ -170,20 +170,20 @@ gasnete_coll_gatherM_pami(gasnet_team_handle_t team,
      ) {
     /* Use generic implementation for cases we don't (yet) handle, or when disabled */
     gasnet_coll_handle_t handle;
-    handle = gasnete_coll_gatherM_nb_default(team,dstimage,dst,srclist,nbytes,flags,0 GASNETE_THREAD_PASS);
-    gasnete_coll_wait_sync(handle GASNETE_THREAD_PASS);
+    handle = gasnete_coll_gatherM_nb_default(team,dstimage,dst,srclist,nbytes,flags,0 GASNETI_THREAD_PASS);
+    gasnete_coll_wait_sync(handle GASNETI_THREAD_PASS);
   } else { /* Use PAMI-specific implementation: */
   #if GASNET_PAR
     const gasnete_coll_threaddata_t * const td = GASNETE_COLL_MYTHREAD_NOALLOC;
     void * const src = srclist[((flags & GASNET_COLL_LOCAL) ? td->my_local_image : td->my_image)];
     if (team->multi_images_any) {
-      gasnete_coll_pami_gathrvi(team,dstimage,dst,src,nbytes,flags GASNETE_THREAD_PASS);
+      gasnete_coll_pami_gathrvi(team,dstimage,dst,src,nbytes,flags GASNETI_THREAD_PASS);
     } else {
-      gasnete_coll_pami_gathr(team,dstimage,dst,src,nbytes,flags GASNETE_THREAD_PASS);
+      gasnete_coll_pami_gathr(team,dstimage,dst,src,nbytes,flags GASNETI_THREAD_PASS);
     }
   #else
     void * const src = GASNETE_COLL_MY_1ST_IMAGE(team, srclist, flags);
-    gasnete_coll_pami_gathr(team,dstimage,dst,src,nbytes,flags GASNETE_THREAD_PASS);
+    gasnete_coll_pami_gathr(team,dstimage,dst,src,nbytes,flags GASNETI_THREAD_PASS);
   #endif
   }
 }

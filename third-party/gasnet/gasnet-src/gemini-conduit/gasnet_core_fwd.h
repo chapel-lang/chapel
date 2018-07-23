@@ -94,21 +94,9 @@ extern int gasnetc_pthread_create(gasnetc_pthread_create_fn_t *create_fn, pthrea
 #define GASNETC_USING_SUSPEND_RESUME 1
 #endif
 
-#if GASNETC_GNI_FIREHOSE
-  #include <firehose_trace.h>
-  #define GASNETC_FH_STATS(CNT,VAL,TIME) \
-        GASNETI_FIREHOSE_STATS(CNT,VAL,TIME)      \
-        TIME(C, FIREHOSE_MOVE, processing time)   \
-        VAL(C, FIREHOSE_PIN, pages)               \
-        VAL(C, FIREHOSE_UNPIN, pages)
-#else
-  #define GASNETC_FH_STATS(CNT,VAL,TIME) /*empty*/
-#endif
-
   /* this can be used to add conduit-specific 
      statistical collection values (see gasnet_trace.h) */
 #define GASNETC_CONDUIT_STATS(CNT,VAL,TIME)       \
-        GASNETC_FH_STATS(CNT,VAL,TIME) \
         TIME(C, GET_AM_REM_BUFFER_STALL, stalled time) \
         TIME(C, GET_AM_LOC_BUFFER_STALL, stalled time) \
         TIME(C, ALLOC_PD_STALL, stalled time) \

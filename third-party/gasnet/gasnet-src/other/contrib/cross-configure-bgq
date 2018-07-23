@@ -58,7 +58,8 @@ MPIRUN_CMD_BATCH='runjob -n %N : %C' ; export MPIRUN_CMD_BATCH  # launch command
 EXTRA_CONFIGURE_ARGS='--with-max-pthreads-per-node=64 --disable-udp --disable-amudp'
 EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --disable-aligned-segments"
 EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --enable-pshm --enable-pshm-gheap"
-EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --with-segment-mmap-max=12G"
+# "host" for BGQ is actually per-process, so .75/h is actually 75% of process physmem
+EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --with-max-segsize=0.75/h"
 EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --with-feature-list=os_bgq"
 if test -z "$USE_GCC$USE_CLANG" ; then
 EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --disable-tls"

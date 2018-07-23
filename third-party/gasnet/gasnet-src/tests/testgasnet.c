@@ -13,7 +13,7 @@
 
 #define TEST_GASNET 1
 #define SHORT_REQ_BASE 128
-#include <other/amxtests/testam.h>
+#include <other/amx/testam.h>
 
 /* Define to get one big function that pushes the gcc inliner heursitics */
 #undef TESTGASNET_NO_SPLIT
@@ -138,9 +138,7 @@ void test_threadinfo(int threadid, int numthreads) {
     PTHREAD_LOCALBARRIER(num_threads);
     test_threadinfo(idx, num_threads);
     PTHREAD_LOCALBARRIER(num_threads);
-  #if GASNETI_ARCH_ALTIX
-    /* Don't pin threads because system is either shared or using cgroups */
-  #elif GASNETI_ARCH_IBMPE
+  #if GASNETI_ARCH_IBMPE
     /* Don't pin threads because system s/w will have already done so */
   #else
     gasnett_set_affinity(idx);

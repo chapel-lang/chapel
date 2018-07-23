@@ -155,6 +155,12 @@ typedef struct _gasnete_valget_op_t *gasnet_valget_handle_t;
 /* Use counter-based eop: */
 #define GASNETE_EOP_COUNTED 1
 
+// Configure default VIS tuning knobs
+// 12/15/17: Measurements on NERSC Cori show the ideal MAXCHUNK for I+S to be:
+//   Haswell: ~512 for puts and ~1024 for gets
+//   KNL:     ~512 for puts and gets
+#define GASNETE_VIS_MAXCHUNK_DEFAULT 512
+
 /* ------------------------------------------------------------------------------------ */
 /* Extensions: */
 

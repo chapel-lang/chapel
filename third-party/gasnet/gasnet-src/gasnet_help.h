@@ -114,7 +114,8 @@ void _gasneti_leak_aligned(void *ptr GASNETI_CURLOCFARG) {
 }
 #define gasneti_leak_aligned(ptr) _gasneti_leak_aligned((ptr) GASNETI_CURLOCAARG)
 
-extern uint64_t gasnet_max_segsize; /* client-overrideable max segment size */
+extern const char *gasnet_max_segsize_str; // client-overrideable max segment size
+extern uint64_t gasnet_max_segsize; // DEPRECATED: client-overrideable max segment size
 #if GASNET_SEGMENT_EVERYTHING
   #define gasneti_in_clientsegment(node,ptr,nbytes) (gasneti_assert((node) < gasneti_nodes), 1)
   #define gasneti_in_fullsegment(node,ptr,nbytes)   (gasneti_assert((node) < gasneti_nodes), 1)
@@ -146,24 +147,24 @@ extern uint64_t gasnet_max_segsize; /* client-overrideable max segment size */
 #endif
 
 #define _gasneti_boundscheck(node,ptr,nbytes,nodetest,segtest) do {            \
-    gasnet_node_t _node = (node);                                              \
-    const void *_ptr = (const void *)(ptr);                                    \
-    size_t _nbytes = (size_t)(nbytes);                                         \
-    if_pf (!nodetest(_node))                                                   \
+    gasnet_node_t _bc_node = (node);                                           \
+    const void *_bc_ptr = (const void *)(ptr);                                 \
+    size_t _bc_nbytes = (size_t)(nbytes);                                      \
+    if_pf (!nodetest(_bc_node))                                                \
       gasneti_fatalerror("Node index out of range (%lu >= %lu) at %s",         \
-                         (unsigned long)_node, (unsigned long)gasneti_nodes,   \
+                         (unsigned long)_bc_node, (unsigned long)gasneti_nodes,\
                          gasneti_current_loc);                                 \
-    if_pf (_ptr == NULL || !segtest(_node,_ptr,_nbytes))                       \
+    if_pf (_bc_ptr == NULL || !segtest(_bc_node,_bc_ptr,_bc_nbytes))           \
       gasneti_fatalerror("Remote address out of range "                        \
          "(node=%lu ptr=" GASNETI_LADDRFMT" nbytes=%" PRIuPTR ") at %s"        \
          "\n  clientsegment=(" GASNETI_LADDRFMT"..." GASNETI_LADDRFMT")"       \
          "\n    fullsegment=(" GASNETI_LADDRFMT"..." GASNETI_LADDRFMT")",      \
-         (unsigned long)_node, GASNETI_LADDRSTR(_ptr), (uintptr_t)_nbytes,     \
+         (unsigned long)_bc_node, GASNETI_LADDRSTR(_bc_ptr), (uintptr_t)_bc_nbytes, \
          gasneti_current_loc,                                                  \
-         GASNETI_LADDRSTR(gasneti_seginfo_client[_node].addr),                 \
-         GASNETI_LADDRSTR(gasneti_seginfo_client_ub[_node]),                   \
-         GASNETI_LADDRSTR(gasneti_seginfo[_node].addr),                        \
-         GASNETI_LADDRSTR(gasneti_seginfo_ub[_node])                           \
+         GASNETI_LADDRSTR(gasneti_seginfo_client[_bc_node].addr),              \
+         GASNETI_LADDRSTR(gasneti_seginfo_client_ub[_bc_node]),                \
+         GASNETI_LADDRSTR(gasneti_seginfo[_bc_node].addr),                     \
+         GASNETI_LADDRSTR(gasneti_seginfo_ub[_bc_node])                        \
          );                                                                    \
   } while(0)
 
@@ -403,7 +404,7 @@ extern uint64_t gasnet_max_segsize; /* client-overrideable max segment size */
     uint32_t gasnete_threadinfo_available = 0
     /* if you get an unused variable warning on gasnete_threadinfo_available, 
        it means you POST'ed in a function which made no GASNet calls that needed it
-       So, PLEASE don't add GASNETI_UNUSED annotations here. */
+       So, PLEASE don't add __unused__ annotations here. */
 
   #if GASNETI_LAZY_BEGINFUNCTION
     // bug 3498: Ensure a sequence point after the assignment to gasnete_threadinfo_cache
@@ -414,14 +415,14 @@ extern uint64_t gasnet_max_segsize; /* client-overrideable max segment size */
     }
     #define GASNET_GET_THREADINFO()                              \
       ( (sizeof(gasnete_threadinfo_available) == 1) ?            \
-        (gasnet_threadinfo_t)gasnete_mythread() :                \
+        (gasnet_threadinfo_t)_gasneti_mythread_slow() :          \
         (GASNETT_PREDICT_TRUE(gasnete_threadinfo_cache) ? gasnete_threadinfo_cache :   \
-        gasneti_lazy_get_threadinfo(&gasnete_threadinfo_cache,(gasnet_threadinfo_t)gasnete_mythread()))  \
+        gasneti_lazy_get_threadinfo(&gasnete_threadinfo_cache,(gasnet_threadinfo_t)_gasneti_mythread_slow()))  \
       )
   #else
-    #define GASNET_GET_THREADINFO()                   \
-      ( (sizeof(gasnete_threadinfo_available) == 1) ? \
-        (gasnet_threadinfo_t)gasnete_mythread() :     \
+    #define GASNET_GET_THREADINFO()                     \
+      ( (sizeof(gasnete_threadinfo_available) == 1) ?   \
+        (gasnet_threadinfo_t)_gasneti_mythread_slow() : \
         (gasnet_threadinfo_t)(uintptr_t)gasnete_threadinfo_cache )
   #endif
 
@@ -446,6 +447,59 @@ extern uint64_t gasnet_max_segsize; /* client-overrideable max segment size */
   #endif
   #define GASNET_GET_THREADINFO() (NULL)
   #define GASNET_BEGIN_FUNCTION() GASNET_POST_THREADINFO(GASNET_GET_THREADINFO())
+#endif
+
+/* ------------------------------------------------------------------------------------ */
+/* thread-id optimization support */
+
+#if GASNETI_THREADINFO_OPT
+  // -----------------------------------------------------------------------------------------
+  // Propagating info into GASNETI_THREAD_FARG function context
+  // GASNETI_THREAD_FARG(_ALONE): use to declare the threadinfo hidden arg as part of a function declaration
+  #if GASNETI_RESTRICT_MAY_QUALIFY_TYPEDEFS
+    #define GASNETI_THREAD_FARG_ALONE   gasnet_threadinfo_t const GASNETI_RESTRICT _threadinfo
+  #else
+    #define GASNETI_THREAD_FARG_ALONE   void * const GASNETI_RESTRICT _threadinfo
+  #endif
+  #define GASNETI_THREAD_FARG         , GASNETI_THREAD_FARG_ALONE
+  // GASNETI_THREAD_GET(_ALONE): use to retrieve the threadinfo (possibly from GASNET_POST_THREADINFO in the enclosing context)
+  // and pass as the hidden argument to a function declared using GASNETI_THREAD_FARG(_ALONE)
+  #define GASNETI_THREAD_GET_ALONE    GASNET_GET_THREADINFO()
+  #define GASNETI_THREAD_GET          , GASNETI_THREAD_GET_ALONE
+  // -----------------------------------------------------------------------------------------
+  // Inside GASNETI_THREAD_FARG context
+  //   The macros in this section should ONLY be used by code inside "GASNETI_THREAD_FARG context",
+  //   such as inside functions declared using GASNETI_THREAD_FARG*.
+  // GASNETI_THREAD_PASS(_ALONE): propagate the hidden arg to a callee also declared with GASNETI_THREAD_FARG*
+  #define GASNETI_THREAD_PASS_ALONE   (_threadinfo)
+  #define GASNETI_THREAD_PASS         , GASNETI_THREAD_PASS_ALONE
+  // GASNETI_MYTHREAD: retrieve the value of the FARG as a (gasneti_threaddata_t *)
+  #define GASNETI_MYTHREAD            ((struct _gasneti_threaddata_t *)_threadinfo)
+  // -----------------------------------------------------------------------------------------
+  // Declaring GASNETI_THREAD_FARG context
+  //   The macros in this section declare "GASNETI_THREAD_FARG context" inline for the rest of this basic block
+  // GASNETI_THREAD_LOOKUP: declare a hidden FARG inline and populate from a prior GASNET_POST_THREADINFO or lookup
+  #define GASNETI_THREAD_LOOKUP       GASNETI_THREAD_FARG_ALONE = GASNETI_THREAD_GET_ALONE;
+  // GASNETI_THREAD_POST(x): declare a hidden FARG inline and populate with the given value
+  #define GASNETI_THREAD_POST(x)      GASNETI_THREAD_FARG_ALONE = (x);
+  // -----------------------------------------------------------------------------------------
+  // Misc
+  // GASNETI_THREAD_SWALLOW: Utility to discard an FARG passed to a 0-arg function-like macro
+  //   TODO-EX: move and rename this essentially unrelated utility macro
+  #define GASNETI_THREAD_SWALLOW(x)
+  // GASNETI_GASNETI_TISTARTOFBITS: Utility to discard an FARG when calling GASNETE_STARTOFBITS
+  #define GASNETI_TISTARTOFBITS(ptr,nbytes,ti) GASNETE_STARTOFBITS(ptr,nbytes)
+#else
+  #define GASNETI_THREAD_FARG_ALONE   void
+  #define GASNETI_THREAD_FARG         
+  #define GASNETI_THREAD_GET_ALONE   
+  #define GASNETI_THREAD_GET         
+  #define GASNETI_THREAD_PASS_ALONE   
+  #define GASNETI_THREAD_PASS         
+  #define GASNETI_THREAD_LOOKUP
+  #define GASNETI_THREAD_SWALLOW(x)
+  #define GASNETI_TISTARTOFBITS       GASNETE_STARTOFBITS
+  #define GASNETI_MYTHREAD            (_gasneti_mythread_slow())
 #endif
 
 /* ------------------------------------------------------------------------------------ */
@@ -904,6 +958,57 @@ void *gasneti_pshm_addr2local(gasnet_node_t node, void *addr) {
 } 
 GASNETI_PUREP(gasneti_pshm_addr2local)
 #endif /* GASNET_PSHM */
+
+/* ------------------------------------------------------------------------------------ */
+// Wrappers for memcpy()
+
+/* TODO-EX: these should replace the alignment-aware versions */
+// + GASNETI_MEMCPY
+//     Arguments must match POSIX constraints:
+//       Zero value of nbytes is permitted
+//       Both pointers must be valid (even for !nbytes)
+//       If nbytes non-zero src and dst ranges must not overlap
+//     This is the least costly option and should be used whenever the
+//     call site can be guaranteed to meet these requirements.
+// + GASNETI_MEMCPY_SAFE_EMPTY
+//     Omits memcpy() (thus ignoring pointers entirely) IFF !nbytes
+// + GASNETI_MEMCPY_SAFE_IDENTICAL
+//     Omits memcpy() IFF (src == dst)
+// + GASNETI_MEMCPY_SAFE
+//     Omits memcpy() IFF (!nbytes || src == dst)
+//     This is the most costly option.
+//     Use any of the versions above when possible.
+#define GASNETI_MEMCPY(dst,src,nbytes) do {                \
+    static uint8_t _fm_dummy;                              \
+    void       *_fm_d = (dst);                             \
+    void const *_fm_s = (src);                             \
+    size_t      _fm_n = (nbytes);                          \
+    gasneti_assume(_fm_s && _fm_d);                        \
+    gasneti_assert((_fm_dummy += *(volatile uint8_t*)_fm_s, 1)); \
+    gasneti_assert((_fm_dummy += *(volatile uint8_t*)_fm_d, 1)); \
+    gasneti_assume(!_fm_n || ((uintptr_t)_fm_s >= (uintptr_t)_fm_d+_fm_n)   \
+                          || ((uintptr_t)_fm_d >= (uintptr_t)_fm_s+_fm_n)); \
+    (void) memcpy(_fm_d, _fm_s, _fm_n);                    \
+  } while (0)
+#define GASNETI_MEMCPY_SAFE_IDENTICAL(dst,src,nbytes) do { \
+    void       *_fmc_d = (dst);                            \
+    void const *_fmc_s = (src);                            \
+    if_pt (_fmc_d != _fmc_s)                               \
+        GASNETI_MEMCPY(_fmc_d, _fmc_s, (nbytes));          \
+  } while (0)
+#define GASNETI_MEMCPY_SAFE_EMPTY(dst,src,nbytes) do {     \
+    size_t _fmse_n = (nbytes);                             \
+    if_pt (_fmse_n)                                        \
+        GASNETI_MEMCPY((dst), (src), _fmse_n);             \
+  } while (0)
+#define GASNETI_MEMCPY_SAFE(dst,src,nbytes) do {           \
+    void       *_fms_d = (dst);                            \
+    void const *_fms_s = (src);                            \
+    size_t      _fms_n = (nbytes);                         \
+    if_pt (_fms_n && _fms_d != _fms_s)                     \
+        GASNETI_MEMCPY(_fms_d, _fms_s, _fms_n);            \
+  } while (0)
+
 /* ------------------------------------------------------------------------------------ */
 
 #endif

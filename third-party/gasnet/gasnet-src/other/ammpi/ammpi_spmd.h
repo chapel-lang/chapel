@@ -11,7 +11,7 @@
 AMMPI_BEGIN_EXTERNC
 
 #undef  AMMPI_SPMDStartup
-#define AMMPI_SPMDStartup _CONCAT(AMMPI_SPMDStartup_AMMPI,AMMPI_DEBUG_CONFIG)
+#define AMMPI_SPMDStartup AMX_CONCAT(AMMPI_SPMDStartup_AMMPI,AMMPI_DEBUG_CONFIG)
 
 /* ------------------------------------------------------------------------------------ */
 /* AMMPI SPMD Entry Points */

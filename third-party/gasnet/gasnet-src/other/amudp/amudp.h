@@ -47,7 +47,8 @@ typedef uint32_t amudp_node_t;
 typedef struct sockaddr_in en_t;
 
 /* CPU ticks */
-typedef uint64_t amudp_cputick_t; 
+#define _AMX_TICK_T
+typedef uint64_t amx_tick_t; 
 
 typedef enum {
   amudp_Short=0,
@@ -70,9 +71,9 @@ typedef struct {
   uint64_t ReturnedMessages;
   uint64_t OutOfOrderRequests;
   uint64_t OutOfOrderReplies;
-  amudp_cputick_t RequestMinLatency;  /* in CPU ticks, only if AMUDP_COLLECT_LATENCY_STATS */
-  amudp_cputick_t RequestMaxLatency;  /* in CPU ticks, only if AMUDP_COLLECT_LATENCY_STATS */
-  amudp_cputick_t RequestSumLatency;  /* in CPU ticks, only if AMUDP_COLLECT_LATENCY_STATS */
+  amx_tick_t RequestMinLatency;  /* in CPU ticks, only if AMUDP_COLLECT_LATENCY_STATS */
+  amx_tick_t RequestMaxLatency;  /* in CPU ticks, only if AMUDP_COLLECT_LATENCY_STATS */
+  amx_tick_t RequestSumLatency;  /* in CPU ticks, only if AMUDP_COLLECT_LATENCY_STATS */
   uint64_t RequestDataBytesSent[amudp_NumCategories];  /* total of args + data payload */
   uint64_t ReplyDataBytesSent[amudp_NumCategories];  /* total of args + data payload */
   uint64_t RequestTotalBytesSent[amudp_NumCategories];  /* total of args + data payload */
@@ -80,11 +81,7 @@ typedef struct {
   uint64_t TotalBytesSent; /* total user level packet sizes for all req/rep */
 } amudp_stats_t;
 
-#ifdef GASNET_USE_STRICT_PROTOTYPES
-typedef void *amudp_handler_fn_t;
-#else
 typedef void (*amudp_handler_fn_t)();  /* prototype for handler function */
-#endif
 
 /* Endpoint bundle object */
 struct amudp_eb;
@@ -117,15 +114,16 @@ typedef int op_t;
 /* ------------------------------------------------------------------------------------ */
 /* AMUDP-specific user entry points */
 
-extern int AMUDP_VerboseErrors; /* set to non-zero for verbose error reporting */
+// programmatic tuning knobs
 extern int AMUDP_PoliteSync; /* set to non-zero for polite blocking while awaiting send resources */
-extern int AMUDP_SilentMode; /* set to non-zero to silence any non-error output */
-extern const char *AMUDP_ProcessLabel; /* human-readable label for this process */
+extern int AMX_VerboseErrors; /* set to non-zero for verbose error reporting */
+extern int AMX_SilentMode; /* set to non-zero to silence any non-error output */
+extern const char *AMX_ProcessLabel; /* human-readable label for this process */
 
 #ifdef __GNUC__
 __attribute__((__format__ (__printf__, 1, 2)))
 #endif
-extern void AMUDP_FatalErr(const char *msg, ...);
+extern void AMX_FatalErr(const char *msg, ...);
 
 /* set the UDP interface (local IP address) to be used for new endpoints -
  * it's necessary to call this on multi-homed hosts, otherwise endpoint creation will fail
@@ -155,6 +153,8 @@ typedef void (*AMUDP_postHandlerCallback_t)(amudp_category_t cat, int isReq);
 extern int AMUDP_SetHandlerCallbacks(ep_t ep, AMUDP_preHandlerCallback_t preHandlerCallback, 
                                               AMUDP_postHandlerCallback_t postHandlerCallback);
 
+extern int AMUDP_SPMDHandleControlTraffic(int *controlMessagesServiced);
+
 /* ------------------------------------------------------------------------------------ */
 /* AM-2 Entry Points */
 
@@ -166,7 +166,7 @@ extern int AMUDP_SetHandlerCallbacks(ep_t ep, AMUDP_preHandlerCallback_t preHand
 #ifdef AMUDP_COEXIST_WITH_AM
   /* allow linking with another library that also implements AM - rename entry points 
    * note this still does not allow the same .c file to use both AM implementations
-   * (any given source file should #include at most one AM header file)
+   * (any given  file should #include at most one AM header file)
    */
   #define AM_Init                 AMUDP_Init
   #define AM_Terminate            AMUDP_Terminate
@@ -202,19 +202,17 @@ extern int AMUDP_SetHandlerCallbacks(ep_t ep, AMUDP_preHandlerCallback_t preHand
 
 /* standardized AM-2 extensions */
 #define AMX_SetTranslationTag     AMUDP_SetTranslationTag
-#define AMX_VerboseErrors         AMUDP_VerboseErrors
 #define AMX_GetEndpointStatistics AMUDP_GetEndpointStatistics
 #define AMX_DumpStatistics        AMUDP_DumpStatistics
 #define AMX_AggregateStatistics   AMUDP_AggregateStatistics
 #define AMX_initial_stats         AMUDP_initial_stats
 #define amx_stats_t               amudp_stats_t
 #define amx_handler_fn_t          amudp_handler_fn_t
-#define AMX_FatalErr              AMUDP_FatalErr
 #define AMX_GetSourceId           AMUDP_GetSourceId
 #define AMX_enEqual               AMUDP_enEqual
 
 #undef AM_Init
-#define AM_Init AMUDP_CONCAT(AM_Init_AMUDP,AMUDP_DEBUG_CONFIG)
+#define AM_Init AMX_CONCAT(AM_Init_AMUDP,AMUDP_DEBUG_CONFIG)
 
 /* System parameters */
 extern int AM_MaxSegLength(uintptr_t* nbytes);
@@ -277,40 +275,40 @@ extern int AM_Poll(eb_t bundle);
 extern int AMUDP_Request(ep_t request_endpoint, amudp_node_t reply_endpoint, handler_t handler, 
                          int numargs, ...);
 extern int AMUDP_RequestI (ep_t request_endpoint, amudp_node_t reply_endpoint, handler_t handler, 
-                          void *source_addr, int nbytes,
+                          void *source_addr, size_t nbytes,
                           int numargs, ...);
 extern int AMUDP_RequestXfer(ep_t request_endpoint, amudp_node_t reply_endpoint, handler_t handler, 
-                          void *source_addr, int nbytes, uintptr_t dest_offset, 
+                          void *source_addr, size_t nbytes, uintptr_t dest_offset, 
                           int async,
                           int numargs, ...);
 
 extern int AMUDP_Reply(void *token, handler_t handler, 
                          int numargs, ...);
 extern int AMUDP_ReplyI(void *token, handler_t handler, 
-                          void *source_addr, int nbytes,
+                          void *source_addr, size_t nbytes,
                           int numargs, ...);
 extern int AMUDP_ReplyXfer(void *token, handler_t handler, 
-                          void *source_addr, int nbytes, uintptr_t dest_offset, 
+                          void *source_addr, size_t nbytes, uintptr_t dest_offset, 
                           int numargs, ...);
 
 /* alternate forms that take va_list ptr to support GASNet */
 extern int AMUDP_RequestVA(ep_t request_endpoint, amudp_node_t reply_endpoint, handler_t handler, 
                          int numargs, va_list argptr);
 extern int AMUDP_RequestIVA(ep_t request_endpoint, amudp_node_t reply_endpoint, handler_t handler, 
-                          void *source_addr, int nbytes,
+                          void *source_addr, size_t nbytes,
                           int numargs, va_list argptr);
 extern int AMUDP_RequestXferVA(ep_t request_endpoint, amudp_node_t reply_endpoint, handler_t handler, 
-                          void *source_addr, int nbytes, uintptr_t dest_offset, 
+                          void *source_addr, size_t nbytes, uintptr_t dest_offset, 
                           int async,
                           int numargs, va_list argptr);
 
 extern int AMUDP_ReplyVA(void *token, handler_t handler, 
                          int numargs, va_list argptr);
 extern int AMUDP_ReplyIVA(void *token, handler_t handler, 
-                          void *source_addr, int nbytes,
+                          void *source_addr, size_t nbytes,
                           int numargs, va_list argptr);
 extern int AMUDP_ReplyXferVA(void *token, handler_t handler, 
-                          void *source_addr, int nbytes, uintptr_t dest_offset, 
+                          void *source_addr, size_t nbytes, uintptr_t dest_offset, 
                           int numargs, va_list argptr);
 
 /* we cast to int32_t here to simulate function call - AM says these functions take 32-bit int args, 
