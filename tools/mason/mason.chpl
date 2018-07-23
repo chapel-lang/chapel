@@ -73,7 +73,6 @@ proc main(args: [] string) throws {
       masonHelp();
       exit(0);
     }
-
     select (args[1]) {
       when 'new' do masonNew(args);
       when 'add' do masonModify(args);
