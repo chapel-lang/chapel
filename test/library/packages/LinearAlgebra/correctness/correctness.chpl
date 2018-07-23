@@ -755,9 +755,8 @@ use TestUtils;
   {
     var A: [IDom] real = 1;
     var v: [1..3] real = 2;
-    var Av = dot(A, v);
-    var A2 = 2*A;
-    assertEqual(Av, A2, 'A.dot(v)');
+    var Av: [1..3] real = 2;
+    assertEqual(dot(A, v), Av, 'A.dot(v)');
   }
 
   {
@@ -806,24 +805,6 @@ use TestUtils;
     var A2: A.type = 2*A;
     assertEqual(A2, B, "dot(A, 2)");
     assertEqual(A2, C, "dot(2, A)");
-  }
-
-  /* .dot - matrix-vector */
-  {
-    var A: [IDom] real = 1;
-    var v: [1..3] real = 2;
-    var Av = A.dot(v);
-    var A2 = 2*A;
-    assertEqual(Av, A2, 'A.dot(v)');
-  }
-
-  /* .dot - vector-matrix */
-  {
-    var A: [IDom] real = 1;
-    var v: [1..3] real = 2;
-    var Av = v.dot(A);
-    var A2 = 2*A;
-    assertEqual(Av, A2, 'v.dot(A)');
   }
 
   {
