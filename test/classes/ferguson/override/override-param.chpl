@@ -46,7 +46,7 @@ class Child : Parent {
 proc main() {
   var a = new borrowed Parent();
   var b = new borrowed Child();
-  var c:Parent = new borrowed Child();
+  var c:borrowed Parent = new borrowed Child();
   a.accepts_type(int);
   b.accepts_type(int);
   c.accepts_type(int);

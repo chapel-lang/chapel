@@ -73,7 +73,7 @@ module AllLocalesBarriers {
     var globalBarrier: [BarrierSpace] aBarrier(reusable=true, hackIntoCommBarrier=true);
 
     proc init(numTasksPerLocale: int) {
-      globalBarrier = [b in BarrierSpace] new aBarrier(numTasksPerLocale, reusable=true, hackIntoCommBarrier=true);
+      globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(numTasksPerLocale, reusable=true, hackIntoCommBarrier=true);
     }
 
     proc deinit() {
