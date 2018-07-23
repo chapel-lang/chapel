@@ -1,9 +1,0 @@
-feature request: error when calling function that returns a type not named in only list
-
-At the moment, when a type is not in your 'only' list you can't name it, but you
-can call a function in your 'only' list that returns a value of that type.  You
-won't get an error for doing this until you try to access a method on that type
-whose name also wasn't in the 'only' list.  I think the correct behavior is to
-warn/error when calling a function which gives you a type you can't otherwise
-obtain, especially since I think that naming a type in your 'only' list should
-bring in all the methods and fields that would be visible to you.

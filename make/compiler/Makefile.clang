@@ -99,8 +99,7 @@ ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` == ppc970 && echo -arch ppc64)
 RUNTIME_CFLAGS += $(ARCH)
 RUNTIME_CXXFLAGS += $(ARCH)
-# the -D_POSIX_C_SOURCE flag prevents nonstandard functions from polluting the global name space
-GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH) -fno-strict-overflow
+GEN_CFLAGS += $(ARCH) -fno-strict-overflow
 GEN_LFLAGS += $(ARCH)
 endif
 

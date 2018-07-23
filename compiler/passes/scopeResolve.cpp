@@ -1861,7 +1861,7 @@ static bool lookupThisScopeAndUses(const char*           name,
 
         forv_Vec(UseStmt, use, *moduleUses) {
           if (use != NULL) {
-            if (use->skipSymbolSearch(name) == false) {
+            if (use->skipSymbolSearch(name, false) == false) {
               const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
               BaseAST* scopeToUse = use->getSearchScope();
 

@@ -93,8 +93,8 @@ UseStmt* UseStmt::copyInner(SymbolMap* map) {
     _this = new UseStmt(COPY_INT(src));
   }
 
-  for_vector(const char, sym, relatedNames) {
-    _this->relatedNames.push_back(sym);
+  for_vector(const char, sym, methodsAndFields) {
+    _this->methodsAndFields.push_back(sym);
   }
 
   return _this;
@@ -126,14 +126,6 @@ void UseStmt::verify() {
 
   if (src == NULL) {
     INT_FATAL(this, "Bad UseStmt::src");
-  }
-
-  if (relatedNames.size() != 0 &&
-      named.size()        == 0 &&
-      renamed.size()      == 0) {
-    INT_FATAL(this,
-              "Have names to avoid, but nothing was listed in the "
-              "use to begin with");
   }
 
   verifyNotOnList(src);
@@ -319,6 +311,7 @@ void UseStmt::validateList() {
 
     validateNamed();
     validateRenamed();
+    trackMethods();
   }
 }
 
@@ -407,8 +400,6 @@ void UseStmt::validateNamed() {
                            (except == true) ? "except" : "only",
                            name);
           }
-
-          createRelatedNames(sym);
         }
       }
     }
@@ -437,10 +428,7 @@ void UseStmt::validateRenamed() {
     } else if (symbols.size() == 1) {
       Symbol* sym = symbols[0];
 
-      if (sym->hasFlag(FLAG_PRIVATE) == false) {
-        createRelatedNames(sym);
-
-      } else {
+      if (sym->hasFlag(FLAG_PRIVATE)) {
         USR_FATAL_CONT(this,
                        "Bad identifier in rename, '%s' is private",
                        it->second);
@@ -474,41 +462,57 @@ BaseAST* UseStmt::getSearchScope() const {
   return retval;
 }
 
-void UseStmt::createRelatedNames(Symbol* maybeType) {
-  if (TypeSymbol* ts = toTypeSymbol(maybeType)) {
-    Type* type = ts->type;
+void UseStmt::trackMethods() {
+  if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+      Vec<AggregateType*> types = mod->getTopLevelClasses();
 
-    forv_Vec(FnSymbol, method, type->methods) {
-      if (method->isInitializer() == false &&
-          method->hasFlag(FLAG_NEW_WRAPPER) == false) {
-        relatedNames.push_back(method->name);
+      // Note: stores duplicates
+      forv_Vec(AggregateType, t, types) {
+        forv_Vec(FnSymbol, method, t->methods) {
+          methodsAndFields.push_back(method->name);
+        }
+
+        for_fields(sym, t) {
+          methodsAndFields.push_back(sym->name);
+        }
+
+        // TODO: remove constructor portion when constructors are deprecated
+        // The type constructor portion will probably always need to remain
+        unsigned int constrLen = strlen(t->symbol->name) +
+          strlen("_construct_") + 1;
+        unsigned int typeConstrLen = constrLen + strlen("_type");
+
+        char*        constrName = (char*) malloc(constrLen);
+        char*        typeConstrName = (char*) malloc(typeConstrLen);
+
+        strcpy(constrName,     "_construct_");
+        strcat(constrName,     t->symbol->name);
+
+        strcpy(typeConstrName, "_type_construct_");
+        strcat(typeConstrName, t->symbol->name);
+
+        functionsToAlwaysCheck.push_back(constrName);
+        functionsToAlwaysCheck.push_back(typeConstrName);
       }
-    }
 
-    if (AggregateType* at = toAggregateType(type)) {
-      for_fields(sym, at) {
-        relatedNames.push_back(sym->name);
+      if (types.size() != 0) {
+        // These are all compiler generated functions that might (or in some
+        // cases definitely are) not defined on the type explicitly.  Allow them
+        // as well.
+        functionsToAlwaysCheck.push_back("init");
+        functionsToAlwaysCheck.push_back("_new");
+        functionsToAlwaysCheck.push_back("deinit");
       }
-    }
 
-    unsigned int constrLen      = strlen(ts->name) + strlen("_construct_") + 1;
-    unsigned int typeConstrLen  = constrLen        + strlen("_type");
-
-    char*        constrName     = (char*) malloc(constrLen);
-    char*        typeConstrName = (char*) malloc(typeConstrLen);
-
-    strcpy(constrName,     "_construct_");
-    strcat(constrName,     ts->name);
-
-    strcpy(typeConstrName, "_type_construct_");
-    strcat(typeConstrName, ts->name);
-
-    relatedNames.push_back(constrName);
-    relatedNames.push_back(typeConstrName);
-
-    if (except == false) {
-      relatedNames.push_back("init");
-      relatedNames.push_back("_new");
+      Vec<FnSymbol*> fns = mod->getTopLevelFunctions(false);
+      forv_Vec(FnSymbol, fn, fns) {
+        if (fn->hasFlag(FLAG_METHOD)) {
+          // Again, stores duplicates.  This is probably less costly than
+          // checking for them.
+          methodsAndFields.push_back(fn->name);
+        }
+      }
     }
   }
 }
@@ -536,7 +540,7 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 *                                                                             *
 ************************************** | *************************************/
 
-bool UseStmt::skipSymbolSearch(const char* name) const {
+bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
   bool retval = false;
 
   if (isPlainUse() == true) {
@@ -544,9 +548,6 @@ bool UseStmt::skipSymbolSearch(const char* name) const {
 
   } else if (except == true) {
     if (matchedNameOrConstructor(name) == true) {
-      retval =  true;
-
-    } else if (inRelatedNames(name)) {
       retval =  true;
 
     } else {
@@ -557,7 +558,10 @@ bool UseStmt::skipSymbolSearch(const char* name) const {
     if (matchedNameOrConstructor(name) == true) {
       retval = false;
 
-    } else if (inRelatedNames(name) == true) {
+    } else if (isAllowedMethodName(name, methodCall) == true) {
+      // Only allow the symbol if the call is a method call.  Functions with
+      // the same name should not be allowed unqualified when they are omitted
+      // from the explicit only list, except for "init", "_new", etc.
       retval = false;
 
     } else {
@@ -586,11 +590,19 @@ bool UseStmt::matchedNameOrConstructor(const char* name) const {
   return false;
 }
 
-// Returns true if the name was in the relatedNames field, false otherwise.
-bool UseStmt::inRelatedNames(const char* name) const {
-  for_vector(const char, toCheck, relatedNames) {
+// Returns true if the name was in the list of methods and fields defined in
+// this module, false otherwise.
+bool UseStmt::isAllowedMethodName(const char* name, bool methodCall) const {
+  for_vector(const char, toCheck, functionsToAlwaysCheck) {
     if (strcmp(name, toCheck) == 0) {
       return true;
+    }
+  }
+  if (methodCall) {
+    for_vector(const char, toCheck, methodsAndFields) {
+      if (strcmp(name, toCheck) == 0) {
+        return true;
+      }
     }
   }
 
@@ -664,9 +676,6 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
         SET_LINENO(this);
 
         return new UseStmt(src, &newOnlyList, false, &newRenamed);
-        // Note: we don't populate the relatedNames vector for the new use,
-        // since we don't have a way to connect the names in it back to the
-        // types we did or didn't include in the shorter 'only' list.
       }
 
     } else {
