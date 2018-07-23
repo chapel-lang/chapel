@@ -53,6 +53,7 @@ proc masonSystem(args) {
   }
   catch e: MasonError {
     stderr.writeln(e.message());
+    exit(1);
   }
 }
 
@@ -160,9 +161,11 @@ proc printPkgPc(args) throws {
     }
     catch e: FileNotFoundError {
       stderr.writeln("Package exists but Mason could not find it's .pc file");
+      exit(1);
     }
     catch e: MasonError {
       stderr.writeln(e.message());
+      exit(1);
     }
   }
 }
@@ -243,6 +246,7 @@ proc getPCDeps(exDeps: unmanaged Toml) {
     }
     catch e: MasonError {
       stderr.writeln(e.message());
+      exit(1);
     }
   }
   return exDepTree;
