@@ -465,10 +465,10 @@ BaseAST* UseStmt::getSearchScope() const {
 void UseStmt::trackMethods() {
   if (SymExpr* se = toSymExpr(src)) {
     if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-      Vec<AggregateType*> types = mod->getTopLevelClasses();
+      std::vector<AggregateType*> types = mod->getTopLevelClasses();
 
       // Note: stores duplicates
-      forv_Vec(AggregateType, t, types) {
+      for_vector(AggregateType, t, types) {
         forv_Vec(FnSymbol, method, t->methods) {
           methodsAndFields.push_back(method->name);
         }
@@ -505,8 +505,8 @@ void UseStmt::trackMethods() {
         functionsToAlwaysCheck.push_back("deinit");
       }
 
-      Vec<FnSymbol*> fns = mod->getTopLevelFunctions(false);
-      forv_Vec(FnSymbol, fn, fns) {
+      std::vector<FnSymbol*> fns = mod->getTopLevelFunctions(false);
+      for_vector(FnSymbol, fn, fns) {
         if (fn->hasFlag(FLAG_METHOD)) {
           // Again, stores duplicates.  This is probably less costly than
           // checking for them.
