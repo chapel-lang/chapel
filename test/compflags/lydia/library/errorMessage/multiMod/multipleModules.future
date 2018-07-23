@@ -1,0 +1,2 @@
+error message: shouldn't reference main when compiling with --library
+#10462
