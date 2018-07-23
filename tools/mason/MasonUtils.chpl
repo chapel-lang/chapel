@@ -315,3 +315,5 @@ proc projectModified(projectHome, projectName, binLocation) : bool {
   }
   return true;
 }
+
+

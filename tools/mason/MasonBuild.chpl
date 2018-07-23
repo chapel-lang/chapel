@@ -25,7 +25,7 @@ use MasonUtils;
 use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
-
+use MasonSystem;
 
 proc masonBuild(args) {
   var show = false;
@@ -68,7 +68,7 @@ private proc checkChplVersion(lockFile : Toml) {
   }
 }
 
-proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
+proc buildProgram(release: bool, show: bool, force: bool, cmdLineCompopts: [?d] string,
                   tomlName="Mason.toml", lockName="Mason.lock") {
 
   try! {
@@ -102,11 +102,8 @@ proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
         var sourceList = genSourceList(lockFile);
         getSrcCode(sourceList, show);
 
-        // Checks for compilation options are present in Mason.toml
-        if lockFile.pathExists('root.compopts') {
-          const cmpFlags = lockFile["root"]["compopts"].s;
-          compopts.push_back(cmpFlags);
-        }
+        // get compilation options including external dependencies
+        const compopts = getCompopts(lockFile, cmdLineCompopts);
 
         // Compile Program
         if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
@@ -185,7 +182,7 @@ proc genSourceList(lockFile: Toml) {
   var sourceList: [1..0] (string, string, string);
   for (name, package) in zip(lockFile.D, lockFile.A) {
     if package.tag == fieldToml {
-      if name == "root" then continue;
+      if name == "root" || name == "system" then continue;
       else {
         var version = lockFile[name]["version"].s;
         var source = lockFile[name]["source"].s;
@@ -228,4 +225,22 @@ proc getSrcCode(sourceList: [?d] 3*string, show) {
       gitC(destination, checkout);
     }
   }
+}
+
+private proc getCompopts(lock: Toml, compopts: [?d] string) {
+
+  // Checks for compilation options are present in Mason.toml
+  if lock.pathExists('root.compopts') {
+    const cmpFlags = lock["root"]["compopts"].s;
+    compopts.push_back(cmpFlags);
+  }
+  // Get pkgconfig dependency compilation options
+  if lock.pathExists('system') {
+    const exDeps = lock['system'];
+    for (name, depInfo) in zip(exDeps.D, exDeps.A) {
+      compopts.push_back(depInfo["libs"].s);
+      compopts.push_back("-I" + depInfo["include"].s);
+    }
+  }
+  return compopts;
 }

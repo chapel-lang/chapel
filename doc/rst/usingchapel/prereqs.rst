@@ -40,6 +40,9 @@ about your environment for using Chapel:
   * If you wish to use chpldoc or Chapel's test system, ``curl`` and
     python-devel (or equivalent packages for your platform) are required.
 
+  * If you wish to use the ``mason system``, chapel's package manager, ``pkg-config`` is
+    required.
+
 .. _readme-prereqs-installation:
 
 Installation
