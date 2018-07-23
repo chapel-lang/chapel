@@ -311,8 +311,8 @@ If no query is provided, all packages in the registry will be listed.
 
     Packages will be listed regardless of their chplVersion compatibility.
 
-External Dependencies
-=====================
+Non-Chapel Dependencies
+=======================
 Mason allows for specification of external, non-Chapel dependencies through ``pkg-config``.
 For this reason, Mason must have access to a ``pkg-config`` installation. An example of
 using the :mod:`LinearAlgebra` library that requires both BLAS and LAPACK:
@@ -329,10 +329,9 @@ using the :mod:`LinearAlgebra` library that requires both BLAS and LAPACK:
 
     [dependencies]
     
-    [external]
-        [external.pkgconfig]
-        lapack = "3.8.0"
-        openblas = "*"
+    [system]
+    lapack = "3.8.0"
+    openblas = "*"
 
 
 This ``Mason.toml`` is updated to reflect the necessary dependency information for Mason
@@ -351,17 +350,14 @@ that Mason will grab the latest package available known to ``pkg-config`` in you
    version = "0.1.0"
    chplVersion = "1.18.0..1.18.0"
 
-   [external]
-
-     [external.pkgconfig]
-
-        [external.pkgconfig.lapack]
+   [system]
+        [system.lapack]
         name = "lapack"
         version = "3.8.0"
         libs = "-L/usr/local/Cellar/lapack/3.8.0_1/lib -lapack"
         include = "/usr/local/Cellar/lapack/3.8.0_1/include"
 
-        [external.pkgconfig.openblas]
+        [system.openblas]
         name = "openblas"
         version = "0.3.1"
         libs = "-L/usr/local/Cellar/openblas/0.3.1/lib -openblas"
@@ -369,7 +365,9 @@ that Mason will grab the latest package available known to ``pkg-config`` in you
 
 
 Use the ``mason system`` command for help with developing Mason packages with system
-package dependencies.
+package dependencies. Use ``mason system search <package>`` to lookup packages that are available
+on your system via ``pkg-config``. To view a package's ``.pc`` file, use the ``mason system pc <package>``
+command.
 
 
 Submit a Package
