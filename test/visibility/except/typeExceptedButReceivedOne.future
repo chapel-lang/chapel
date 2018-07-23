@@ -1,9 +1,0 @@
-feature request: error when calling function that returns a type named in except list
-
-Right now, though any plain accesses of a type named in the 'except' list will
-fail to resolve, we can still make calls to functions that return that type
-and thus get an instance of it.  Maybe that's okay, a way to specify that the
-'foo' you most care about is someone else's 'foo' but that this one still has
-its uses?  In any case, I'd like to detect when this happens and possibly emit
-a warning, but right now that would likely involve dismantling a larger portion
-of functionResolution than I want to touch right now.

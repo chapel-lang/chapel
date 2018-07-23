@@ -265,7 +265,12 @@ static void getVisibleFunctions(const char*           name,
 
         INT_ASSERT(use);
 
-        if (use->skipSymbolSearch(name) == false) {
+        bool isMethodCall = false;
+        if (call->numActuals() >= 2 &&
+            call->get(1)->typeInfo() == dtMethodToken)
+          isMethodCall = true;
+
+        if (use->skipSymbolSearch(name, isMethodCall) == false) {
           SymExpr* se = toSymExpr(use->src);
 
           INT_ASSERT(se);
