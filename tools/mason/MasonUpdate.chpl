@@ -78,6 +78,7 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
   }
   catch e: MasonError {
     stderr.writeln(e.message());
+    exit(1);
   }
   return (tf, lf);
 }

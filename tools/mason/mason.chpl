@@ -70,7 +70,7 @@ proc main(args: [] string) throws {
   try! {
     if args.size < 2 {
       masonHelp();
-      exit();
+      exit(0);
     }
 
     select (args[1]) {
