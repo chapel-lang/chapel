@@ -2219,11 +2219,11 @@ Computes ``n/d`` and stores the result in ``bigint`` instance.
 ``divexact`` is optimized to handle cases where ``n/d`` results in an integer. 
 When ``n/d`` does not produce an integer, this method may produce incorrect results.
 
-:arg n: a bigint variable
+:arg n: numerator
 
 :type n: bigint
 
-:arg d: a bigint variable
+:arg d: denominator
 
 :type d: bigint
 */
