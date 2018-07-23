@@ -12,9 +12,7 @@ class Foo {
   }
 }
 
-var f1 = new Foo(13);
-var f2 = new Foo(3.4);
+var f1 = new owned Foo(13);
+var f2 = new owned Foo(3.4);
 writeln(f1);
 writeln(f2);
-delete f1;
-delete f2;

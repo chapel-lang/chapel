@@ -3,8 +3,8 @@ class C {
   param r: int;
 }
 
-proc foo(x: C(t=?tt, r=?rr),
-        y: C(tt, rr)) {
+proc foo(x: borrowed C(t=?tt, r=?rr),
+         y: borrowed C(tt, rr)) {
   writeln("In foo, x = ", x, ", y = ", y);
 }
 

@@ -26,10 +26,8 @@ class B : A {
   }
 }
 
-var t = new B(true);
-delete t;
+var t = new shared B(true);
 
 writeln();
 
-var f = new B(false);
-delete f;
+var f = new owned B(false);

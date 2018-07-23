@@ -1,2 +1,2 @@
 returnClassDiffModule6.chpl:12: In function 'main':
-returnClassDiffModule6.chpl:14: error: unresolved call 'C.myvar'
+returnClassDiffModule6.chpl:14: error: unresolved call 'unmanaged C.myvar'
