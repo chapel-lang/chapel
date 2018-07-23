@@ -742,7 +742,7 @@ use TestUtils;
     assertEqual(csrAB, CSRMatrix(AB), "csrA.dot(csrB)");
   }
 
-  /* dot - matrix-matrix */
+  /* dot - matrix-matrix (identity) */
   {
     var A: [Dom] real;
     var I: [IDom] real;
@@ -751,14 +751,33 @@ use TestUtils;
   }
 
 
-  /* dot - matrix-vector */
+  /* dot - matrix-vector (identity) */
   {
-    var A: [IDom] real = 1;
+    var Asps: [IDom] real = 1;
     var v: [1..3] real = 2;
     var Av: [1..3] real = 2;
-    assertEqual(dot(A, v), Av, 'A.dot(v)');
+    assertEqual(dot(Asps, v), Av, 'Asps.dot(v)');
   }
 
+  /* dot - vector-matrix (identity) */
+  {
+    var Asps: [IDom] real = 1;
+    var v: [1..3] real = 2;
+    var Av: [1..3] real = 2;
+    assertEqual(dot(v, Asps), Av, 'v.dot(Asps)');
+  }
+
+  /* dot - vector-matrix */
+  {
+    var A = Matrix([1,1,0],
+                   [0,1,1]);
+    var Asps = CSRMatrix(A);
+    var v = Vector(2,3);
+    const Av = Vector(2, 5, 3);
+    assertEqual(v.dot(Asps), Av, 'v.dot(Asps)');
+  }
+
+  /* dot - matrix-vector */
   {
     var A = Matrix([1,1,0],
                    [0,1,1]);
@@ -768,6 +787,34 @@ use TestUtils;
     assertEqual(Asps.dot(v), Av, 'Asps.dot(v)');
   }
 
+  /* dot - matrix-scalar */
+  {
+    var A: [IDom] real = 1;
+    var B = dot(A, 2);
+    var C = dot(2, A);
+    assertEqual(A.domain, B.domain, "dot(A, 2)");
+    assertEqual(A.domain, C.domain, "dot(2, A)");
+    assertEqual(B, C, "matrix-scalar");
+    var A2: A.type = 2*A;
+    assertEqual(A2, B, "dot(A, 2)");
+    assertEqual(A2, C, "dot(2, A)");
+  }
+
+
+  /* dot - matrix-scalar */
+  {
+    var A: [IDom] real = 1;
+    var B = A.dot(2);
+    var C = dot(2, A);
+    assertEqual(A.domain, B.domain, "A.dot(2)");
+    assertEqual(A.domain, C.domain, "dot(2, A)");
+    assertEqual(B, C, "matrix-scalar");
+    var A2: A.type = 2*A;
+    assertEqual(A2, B, "dot(A, 2)");
+    assertEqual(A2, C, "dot(2, A)");
+  }
+
+  /* dot - Various matrix-matrix tests */
   {
     var A = eye(3,5);
     // Identity matrix (3x5)
@@ -792,42 +839,6 @@ use TestUtils;
     // A big matrix
     var C = eye(1000, 2000);
     test_CSRdot(C);
-  }
-
-  /* dot - matrix-scalar */
-  {
-    var A: [IDom] real = 1;
-    var B = dot(A, 2);
-    var C = dot(2, A);
-    assertEqual(A.domain, B.domain, "dot(A, 2)");
-    assertEqual(A.domain, C.domain, "dot(2, A)");
-    assertEqual(B, C, "matrix-scalar");
-    var A2: A.type = 2*A;
-    assertEqual(A2, B, "dot(A, 2)");
-    assertEqual(A2, C, "dot(2, A)");
-  }
-
-  {
-    var A = Matrix([1,1,0],
-                   [0,1,1]);
-    var Asps = CSRMatrix(A);
-    var v = Vector(2,3);
-    const Av = Vector(2, 5, 3);
-    assertEqual(v.dot(Asps), Av, 'v.dot(Asps)');
-  }
-
-
-  /* dot - matrix-scalar */
-  {
-    var A: [IDom] real = 1;
-    var B = A.dot(2);
-    var C = dot(2, A);
-    assertEqual(A.domain, B.domain, "A.dot(2)");
-    assertEqual(A.domain, C.domain, "dot(2, A)");
-    assertEqual(B, C, "matrix-scalar");
-    var A2: A.type = 2*A;
-    assertEqual(A2, B, "dot(A, 2)");
-    assertEqual(A2, C, "dot(2, A)");
   }
 
   /* transpose */
