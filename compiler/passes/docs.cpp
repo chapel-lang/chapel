@@ -183,21 +183,21 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std:
 
     std::vector<VarSymbol*> configs = mod->getTopLevelConfigVars();
     if (fDocsAlphabetize)
-      std::sort(configs.begin(), configs.end(), compareNames);
+      qsort(&configs[0], configs.size(), sizeof(VarSymbol*), compareNames);
     for_vector(VarSymbol, var, configs) {
       var->printDocs(file, tabs + 1);
     }
 
     std::vector<VarSymbol*> variables = mod->getTopLevelVariables();
     if (fDocsAlphabetize)
-      std::sort(variables.begin(), variables.end(), compareNames);
+      qsort(&variables[0], variables.size(), sizeof(VarSymbol*), compareNames);
     for_vector(VarSymbol, var, variables) {
       var->printDocs(file, tabs + 1);
     }
     std::vector<FnSymbol*> fns = mod->getTopLevelFunctions(fDocsIncludeExterns);
     // If alphabetical option passed, fDocsAlphabetizes the output
     if (fDocsAlphabetize)
-      std::sort(fns.begin(), fns.end(), compareNames);
+      qsort(&fns[0], fns.size(), sizeof(FnSymbol*), compareNames);
   
     for_vector(FnSymbol, fn, fns) {
       // TODO: Add flag to compiler to turn on doc dev only output
@@ -211,7 +211,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std:
 
     std::vector<AggregateType*> classes = mod->getTopLevelClasses();
     if (fDocsAlphabetize)
-      std::sort(classes.begin(), classes.end(), compareClasses);
+      qsort(&classes[0], classes.size(), sizeof(AggregateType*), compareClasses);
 
     for_vector(AggregateType, cl, classes) {
       printClass(file, cl, tabs + 1);
@@ -219,7 +219,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std:
 
     std::vector<ModuleSymbol*> mods = mod->getTopLevelModules();
     if (fDocsAlphabetize)
-      std::sort(mods.begin(), mods.end(), compareNames);
+      qsort(&mods[0], mods.size(), sizeof(ModuleSymbol*), compareNames);
   
     for_vector(ModuleSymbol, subMod, mods) {
       // TODO: Add flag to compiler to turn on doc dev only output
