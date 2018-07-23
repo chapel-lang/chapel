@@ -1,9 +1,22 @@
 #!/bin/bash
 
-# Check if pkg-config is available
-command -v pkg-config 2> /dev/null || echo False && exit
 
-# Check if packages are available
-pkg-config --exists openssl  || echo False && exit
-pkg-config --exists zlib || echo False && exit
+skip="False"
+zlibcall= $(pkg-config zlib --exists)
+zlib=$?
+if  [ $zlib = 0 ] ; then
+    skip="False"
+else
+    skip="True"
+fi
 
+opensslCall= $(pkg-config openssl --exists)
+openssl=$?
+
+if [ $openssl = 0 ] ; then
+    skip="False"
+else
+    skip="True"
+fi
+
+echo "$skip"
