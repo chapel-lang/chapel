@@ -51,6 +51,8 @@ proc masonHelp() {
 
 proc masonList() {
   writeln('Installed Mason Commands:');
+  writeln('      add                ');
+  writeln('      rm                 ');
   writeln('      new                ');
   writeln('      update             ');
   writeln('      build              ');
