@@ -147,7 +147,7 @@ proc masonModifyHelp() {
   writeln("        --system                Add/Remove dependency from system dependencies");  
   writeln();
   writeln("Not listing an option will add/remove the dependency from the Mason [dependencies] table");
-  writeln("Versions are not nessescary for removing");
+  writeln("Versions are not necessary for removing");
   writeln("Manually edit the Mason.toml if multiple versions of the same package are listed");
   
 }
