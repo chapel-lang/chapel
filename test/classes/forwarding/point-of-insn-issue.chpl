@@ -2,7 +2,7 @@ record ForwardingRecord {
   var instance;
 
   proc init(type msgType) {
-    instance = new ForwardedClass(msgType);
+    instance = new unmanaged ForwardedClass(msgType);
   }
 
   forwarding instance;
@@ -27,5 +27,6 @@ module other {
   proc main() {
     var rec = new ForwardingRecord(R);
     rec.fn(new R());
+    delete rec.instance;
   }
 }
