@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "files.h"
 #include "insertLineNumbers.h"
+#include "library.h"
 #include "llvmDebug.h"
 #include "llvmUtil.h"
 #include "LayeredValueTable.h"
@@ -1077,49 +1078,6 @@ static void codegen_aggregate_def(AggregateType* ct) {
   ct->symbol->codegenDef();
 }
 
-//
-// Generates a .h file to complement the library file created using --library
-// This .h file will contain necessary #includes, any explicitly exported
-// functions, and the module initialization function declarations.
-//
-static void codegen_library_header(std::vector<FnSymbol*> functions) {
-  if (fLibraryCompile) {
-    fileinfo libhdrfile = { NULL, NULL, NULL };
-
-    // Name the generated header file after the executable (and assume any
-    // modifications to it have already happened)
-    openCFile(&libhdrfile, libmodeHeadername, "h");
-    // SIMPLIFYING ASSUMPTION: not handling LLVM just yet.  If were to, would
-    // probably put assignment to gChplCompilationConfig here
-
-    // follow convention of just not writing to the file if we can't open it
-    if (libhdrfile.fptr != NULL) {
-      FILE* save_cfile = gGenInfo->cfile;
-
-      gGenInfo->cfile = libhdrfile.fptr;
-
-      //genComment("Generated header file for use with %s",
-      //           executableFilename);
-
-      fprintf(libhdrfile.fptr, "#include \"stdchpl.h\"\n");
-
-      // Maybe need something here to support LLVM extern blocks?
-
-      // Print out the module initialization function headers and the exported
-      // functions
-      for_vector(FnSymbol, fn, functions) {
-        if (fn->hasFlag(FLAG_EXPORT) &&
-            fn->getModule()->modTag != MOD_INTERNAL &&
-            fn->hasFlag(FLAG_GEN_MAIN_FUNC) == false) {
-          fn->codegenPrototype();
-        }
-      }
-
-      gGenInfo->cfile = save_cfile;
-    }
-    closeCFile(&libhdrfile);
-  }
-}
 
 //
 // Produce compilation-time configuration info into a .c file and
