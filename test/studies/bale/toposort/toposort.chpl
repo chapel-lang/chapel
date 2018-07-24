@@ -850,9 +850,10 @@ proc main(){
       topoResult = toposortParallel( permutedSparseD, numTasks );
     }
     when ToposortImplementation.Distributed {
-      var distributedD : D.type dmapped Block(D) = D;
+      var distributedD : D.type dmapped Block(D, targetLocales=reshape(Locales, {Locales.domain.dim(1),1..#1}) ) = D;
 
       var distributedPermutedSparseD : sparse subdomain(distributedD);
+      // TODO make faster...
       for i in permutedSparseD {
         distributedPermutedSparseD += i;
       }
