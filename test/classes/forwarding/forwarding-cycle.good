@@ -1,1 +1,2 @@
-forwarding-cycle.chpl:4: error: unable to resolve type
+forwarding-cycle.chpl:4: error: forwarding cycle detected
+forwarding-cycle.chpl:3: note: for the type A
