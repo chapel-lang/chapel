@@ -1,125 +1,95 @@
 #!/usr/bin/env bash
 
-# Example setenv script
+# Example setenv script that illustrates a solution to
+#   https://github.com/chapel-lang/chapel/issues/9943,
+# using build_configs.py with a custom setenv script (ie, this file).
 
-set +x -e   # exit if any errors
+# How to use this example:
+#
+#   git clone ssh://git@github.com/chapel-lang/chapel.git
+#   cd chapel/util/build_configs
+#
+#   # build Chapel with and without gasnet
+#   ./setenv-gh9943.bash
+#
+#   # run a test with and without gasnet (optional)
+#   source ../setchplenv.bash
+#
+#   export CHPL_COMM=gasnet
+#   export CHPL_COMM_SUBSTRATE=smp
+#   chpl -o hello6 $CHPL_HOME/test/release/examples/hello6*.chpl
+#   ./hello6 -nl 2
+#
+#   export CHPL_COMM=gasnet
+#   export CHPL_COMM_SUBSTRATE=udp
+#   export GASNET_SPAWNFN=L
+#   chpl -o hello6 $CHPL_HOME/test/release/examples/hello6*.chpl
+#   ./hello6 -nl 2
+#
+#   export CHPL_COMM=none
+#   chpl -o hello6 $CHPL_HOME/test/release/examples/hello6*.chpl
+#   ./hello6
 
 if [ -z "$BUILD_CONFIGS_config" ]; then
 
-# This is a top-level setenv "project":
-#
-#   The user runs this script, and this script runs build_config.py,
-#   as many times as needed, passing the desired Chapel build config
-#   parameters and make targets each time. It can also make changes
-#   to the default environment seen by build_config.py.
+    # This is a top-level setenv "project":
+    #
+    #   The user runs this script, and this script runs build_config.py,
+    #   as many times as needed, passing the desired Chapel build config
+    #   parameters and make targets each time. It can also make changes
+    #   to the default environment seen by build_config.py.
 
-    # setenv, cwd == name and directory location of this script file
+    # CHPL_HOME == this Chapel git workspace
 
-    setenv=$( basename "$0" )
-    cwd=$( cd $(dirname "$0") && pwd )
-
-    # functions.bash provides local bash functions like log_info, and
-    #   sets shell variable project from the filename of this setenv file
-
-    source $cwd/functions.bash
-
-    # cmdline options
-
-    usage() {
-        echo "Usage:  $setenv [-v] [-n]"
-        echo "  where"
-        echo "    -v : verbose/debug output"
-        echo "    -n : dry-run: show make commands but do not actually run them"
-        exit 1
-    }
-    while getopts :vn opt; do
-        case $opt in
-        ( v ) verbose=-v ;;
-        ( n ) dry_run=-n ;;
-        ( h ) usage;;
-        ( \?) log_error "Invalid option: -$OPTARG"; usage;;
-        ( : ) log_error "Option -$OPTARG requires an argument."; usage;;
-        esac
-    done
-
-    log_info "Begin project $setenv"
-
-    # CHPL_HOME from the environment, or default to this Chapel workspace
-
-    CHPL_HOME=${CHPL_HOME:-$( cd $cwd/../.. && pwd )}
-    ck_chpl_home "$CHPL_HOME"
+    CHPL_HOME=$( cd ../.. && pwd )
 
     # Default Chapel build config values may be defined here
 
-    export CHPL_REGEXP=re2  # to support mason
+    export CHPL_REGEXP=re2  # required by mason
 
-    substrate=UNSET     # To take Chapel's default for the current platform
-                        # Or use "smp" for example
-
-    # Show the initial/default Chapel build config with printchplenv
-
-    log_info "Chapel printchplenv, with initial env:"
-    $CHPL_HOME/util/printchplenv --all --no-tidy || echo >&2 ignore error
+    substrates=smp,udp      # two widely-supported gasnet substrates for this example
 
     # Use build_configs.py to make Chapel with and without gasnet
 
-    log_info "Start build_configs $dry_run $verbose # (no make target)"
-    $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.make.log" \
-        --comm=none,gasnet --substrate=none,$substrate
+    ./build_configs.py -p $dry_run $verbose -s setenv-gh9943.bash -l setenv-gh9943.make.log \
+        --comm=none,gasnet --substrate=none,$substrates  # no make target
 
     # We can use build_configs.py to make mason, though we need only one Chapel config.
 
-    log_info "Start build_configs $dry_run $verbose mason # (make mason with comm=none)"
-    $cwd/build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.mason.log" \
-        --comm=none --substrate=UNSET \
-        mason
+    ./build_configs.py -s setenv-gh9943.bash -l setenv-gh9943.mason.log \
+        --comm=none --substrate=UNSET mason
 
-    log_info "End $setenv"
 else
 
-# This is a setenv "callback":
-#
-#   This same setenv script may be source'd by build_config.py, once for each
-#   Chapel build config, to customize the host environment seen by each Chapel make.
-#
-#   build_config.py defines CHPL_HOME and other CHPL_XXXX env values for each Chapel
-#   build config, then source's this script, and finally runs Chapel make.
-#
-#   This script can make arbitrary changes to the environment seen by Chapel make.
-#   It can also skip the Chapel make command entirely, by doing a shell exit.
-
-    # setenv, cwd == name and directory location of this script file
-
-    setenv=$( basename "${BASH_SOURCE[0]}" )
-    cwd=$( cd $(dirname "${BASH_SOURCE[0]}") && pwd )
-
-    # functions.bash provides local bash functions like log_info, and sets
-    #   shell variables verbose and dry_run from cmdline options -v -n
-
-    source $cwd/functions.bash
-
-    log_info "Begin callback $setenv"
+    # This is a setenv "callback":
+    #
+    #   This same setenv script may be source'd by build_config.py, once for each
+    #   Chapel build config, to customize the host environment seen by each Chapel make.
+    #
+    #   build_config.py defines CHPL_HOME and other CHPL_XXXX env values for each Chapel
+    #   build config, then source's this script, and finally runs Chapel make.
+    #
+    #   This script can make arbitrary changes to the environment seen by Chapel make.
+    #   It can also skip the Chapel make command entirely, by doing a shell exit.
 
     if [ "$CHPL_COMM" == none ]; then
         if [ "$CHPL_COMM_SUBSTRATE" != none ]; then
 
-            # exit now because we already built the runtime with COMM=none
-            log_info "Skip Chapel make for comm=$CHPL_COMM, substrate=$CHPL_COMM_SUBSTRATE"
+            # skip Chapel make because we already built the runtime with COMM=none
+
             exit 0
         else
 
-            # COMM=none means no substrate
-            log_info "Unset CHPL_COMM_SUBSTRATE for comm=$CHPL_COMM, substrate=$CHPL_COMM_SUBSTRATE"
+            # COMM==none means no substrate, so unset the env variable
+
             unset CHPL_COMM_SUBSTRATE
         fi
     else
         if [ "$CHPL_COMM_SUBSTRATE" == none ]; then
 
-            # exit now because gasnet needs a substrate
-            log_info "Skip Chapel make for comm=$CHPL_COMM, substrate=$CHPL_COMM_SUBSTRATE"
+            # skip Chapel make because gasnet needs a substrate
+
             exit 0
         fi
     fi
-
-    log_info "End $setenv"
 fi
