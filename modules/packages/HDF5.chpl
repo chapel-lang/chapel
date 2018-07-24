@@ -3438,7 +3438,7 @@ module HDF5 {
     var files: [BlockSpace] ArrayWrapper(eltType, rank);
     forall (f, name) in zip(files, filenames) {
       var locName = name; // copy this string to be local
-      var file_id = C_HDF5.H5Fopen(locName.c_str(), C_HDF5.H5F_ACC_RDONLY, C_HDF5.H5P_DEFAULT);
+      var file_id = C_HDF5.H5Fopen(locName.c_str(), C_HDF5.H5F_ACC_RDONLY, C_HDF5.H5P_DEFAULT): hid_t;
       var dims: [0..#rank] C_HDF5.hsize_t;
       var dsetRank: c_int;
 
@@ -3624,7 +3624,7 @@ module HDF5 {
     param outRank = chunkShape.rank;
     var file_id = C_HDF5.H5Fopen(filename.c_str(),
                                  C_HDF5.H5F_ACC_RDONLY,
-                                 C_HDF5.H5P_DEFAULT);
+                                 C_HDF5.H5P_DEFAULT): hid_t;
     var dataset = C_HDF5.H5Dopen(file_id, dset.c_str(),
                                  C_HDF5.H5P_DEFAULT);
     var dataspace = C_HDF5.H5Dget_space(dataset);
