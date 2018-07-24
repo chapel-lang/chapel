@@ -3113,7 +3113,7 @@ static void detectForwardingCycle(CallExpr* call) {
       if (firstDef->sym->type == def->sym->type) {
         Type* t = canonicalClassType(firstDef->sym->getValType());
         TypeSymbol* ts = t->symbol;
-        USR_FATAL_CONT(call, "forwarding cycle detected");
+        USR_FATAL_CONT(def, "forwarding cycle detected");
         USR_PRINT(ts, "for the type %s", ts->name);
         USR_STOP();
       }

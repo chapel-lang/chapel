@@ -1,2 +1,2 @@
 forwarding-cycle.chpl:4: error: forwarding cycle detected
-forwarding-cycle.chpl:3: note: for the type A
+forwarding-cycle.chpl:6: note: for the type B
