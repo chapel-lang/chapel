@@ -1,3 +1,5 @@
+// This test came from issue #10358
+
 record ForwardingRecord {
   var instance;
 
