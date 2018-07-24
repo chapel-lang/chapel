@@ -1,18 +1,18 @@
 #!/bin/bash
 
 
-skipZlib="False"
-skipSsl="False"
-skipConfig="False"
+has_zlib="False"
+has_ssl="False"
+correct_config="False"
 
 # Check for zlib via pkg-config
 # Skip test if not found
 zlibcall= $(pkg-config zlib --exists)
 zlib=$?
 if  [ $zlib = 0 ] ; then
-    skipZlib="False"
+    has_zlib="True"
 else
-    skipZlib="True"
+    has_zlib="False"
 fi
 
 # Check for openssl via pkg-config
@@ -21,18 +21,18 @@ opensslCall= $(pkg-config openssl --exists)
 openssl=$?
 
 if [ $openssl = 0 ] ; then
-    skipSsl="False"
+    has_ssl="True"
 else
-    skipSsl="True"
+    has_ssl="False"
 fi
 
 if [ "$CHPL_COMM" = 'none' ] && [ "$CHPL_REGEXP" = 're2' ] ; then
-    skipConfig="False"
+    correct_config="True"
 else
-    skipConfig="True"
+    correct_config="False"
 fi
 
-if [ "$skipZlib" = 'False' ] && [ "$skipSsl" = 'False' ] && [ "$skipConfig" = 'False' ] ; then
+if [ "$has_zlib" = 'True' ] && [ "$has_ssl" = 'True' ] && [ "$correct_config" = 'True' ] ; then
     echo "False"
 else
     echo "True"
