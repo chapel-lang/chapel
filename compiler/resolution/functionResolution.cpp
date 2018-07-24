@@ -9036,7 +9036,9 @@ static void cleanupVoidVarsAndFields() {
           def->sym->type == dtVoid->refType) {
         if (VarSymbol* var = toVarSymbol(def->sym)) {
           // Avoid removing the "_val" field from refs
-          if (!def->parentSymbol->hasFlag(FLAG_REF)) {
+          // and forall statements' induction variables.
+          if (! def->parentSymbol->hasFlag(FLAG_REF) &&
+              ! isForallIterVarDef(def)              ) {
             if (var != gVoid) {
               def->remove();
             }
