@@ -880,15 +880,27 @@ static Expr* handleUnstableClassType(SymExpr* se) {
           if (DefExpr* d = toDefExpr(cur))
             inDef = d;
         }
-        // Find outer call, not counting baseExpr
+        // Find outer call, but don't count:
+        //  * baseExpr
+        //  * calls to types
+        //  * not counting baseExpr
         for (Expr* cur = se; cur != NULL; cur = cur->parentExpr ) {
           if (CallExpr* c = toCallExpr(cur))
             inCall = c;
-          if (CallExpr* p = toCallExpr(cur->parentExpr))
-            if (p->baseExpr == cur)
+          if (CallExpr* p = toCallExpr(cur->parentExpr)) {
+            if (p->baseExpr == cur) {
               // don't count base expr so we can warn on
               // var x:MyGenericClass(int).
               break;
+            } else if (SymExpr* se = toSymExpr(p->baseExpr)) {
+              if (isTypeSymbol(se->symbol()))
+                // Don't count calls to types (type construction)
+                break;
+            } else if (p->isNamed("chpl__buildArrayRuntimeType")) {
+              // Don't count array type construction
+              break;
+            }
+          }
         }
 
         FnSymbol* inFn = se->getFunction();
