@@ -14,9 +14,7 @@ class ManyFields {
 }
 
 proc main() {
-  var c: ManyFields = new ManyFields(2);
+  var c: owned ManyFields = new owned ManyFields(2);
 
   writeln(c);
-
-  delete c;
 }

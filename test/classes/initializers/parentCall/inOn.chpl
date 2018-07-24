@@ -9,6 +9,6 @@ class Foo {
   }
 }
 
-var foo = new Foo(5);
+var foo = new unmanaged Foo(5);
 writeln(foo);
 delete foo;

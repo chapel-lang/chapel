@@ -20,9 +20,8 @@ class Child : Parent {
   }
 }
 
-proc foobar(c : Child) {
+proc foobar(c : borrowed Child) {
   writeln("foobar(Child)");
 }
 
-var c = new Child();
-delete c;
+var c = new shared Child();

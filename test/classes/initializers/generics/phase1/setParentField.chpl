@@ -16,7 +16,6 @@ class Child : Parent {
 }
 
 proc main() {
-  var c: Child(true) = new Child(1.25, true);
+  var c: shared Child(true) = new shared Child(1.25, true);
   writeln(c);
-  delete c;
 }

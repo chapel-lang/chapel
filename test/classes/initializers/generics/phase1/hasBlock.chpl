@@ -11,7 +11,6 @@ class Scoping {
 }
 
 proc main() {
-  var s: Scoping(9, 12) = new Scoping(9, 12);
+  var s: borrowed Scoping(9, 12) = new borrowed Scoping(9, 12);
   writeln(s.type: string);
-  delete s;
 }

@@ -17,5 +17,5 @@ proc _defaultOf(type t:imag) {
   return 1.0i;
 }
 
-var r: Foo = new borrowed Foo(3);
+var r: borrowed Foo = new borrowed Foo(3);
 writeln(r);

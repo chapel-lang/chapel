@@ -7,7 +7,7 @@ class Bar {
 }
 
 class Foo {
-  var B = new Bar(42, second=10);
+  var B = new unmanaged Bar(42, second=10);
 
   proc init() {
   }

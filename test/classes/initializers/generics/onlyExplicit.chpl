@@ -9,10 +9,7 @@ class Foo {
   }
 }
 
-var f1 = new Foo(true);
-var f2 = new Foo(false);
+var f1 = new borrowed Foo(true);
+var f2 = new borrowed Foo(false);
 writeln(f1.type:string);
 writeln(f2.type:string);
-
-delete f1;
-delete f2;

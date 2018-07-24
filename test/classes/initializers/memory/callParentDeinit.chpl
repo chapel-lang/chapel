@@ -20,7 +20,7 @@ class Child : Parent {
   }
 }
 
-var ch = new Child(int);
+var ch = new unmanaged Child(int);
 delete ch;
 
 writeln();
@@ -53,5 +53,5 @@ class C : B {
   }
 }
 
-var c = new C(1, int);
+var c = new unmanaged C(1, int);
 delete c;
