@@ -1826,6 +1826,13 @@ void AggregateType::buildDefaultInitializer() {
       fn->addFlag(FLAG_METHOD_PRIMARY);
 
       preNormalizeInitMethod(fn);
+
+      if (this->isUnion()) {
+        fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
+                                      fn->_this,
+                                      new_IntSymbol(0)));
+      }
+
       normalize(fn);
 
       // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did that
