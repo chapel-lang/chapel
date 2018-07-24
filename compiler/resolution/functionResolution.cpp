@@ -2003,12 +2003,6 @@ void resolvePromotionType(AggregateType* at) {
   INT_ASSERT(at->scalarPromotionType == NULL);
   INT_ASSERT(at->symbol->hasFlag(FLAG_GENERIC) == false);
 
-  // Don't try to resolve promotion type for managed pointers.
-  // This is a workaround. Otherwise, we try to call the .borrow()
-  // function before the field types are established.
-  if (isManagedPtrType(at))
-    return;
-
   VarSymbol* temp     = newTemp(at);
   CallExpr* promoCall = new CallExpr("chpl__promotionType", gMethodToken, temp);
 
@@ -3148,8 +3142,12 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
   const char* ignorePrefix = "chpl_forwarding_expr";
   if (0 == memcmp(ignorePrefix, calledName, strlen(ignorePrefix)))
     return NULL;
-//  if (0 == memcmp(ignorePrefix, inFnName, strlen(ignorePrefix)))
-//    return NULL;
+
+  // This is a workaround for resolvePromotionType being called
+  // when some fields have unknown type. A better solution
+  // is preferred.
+  if (0 == strcmp(calledName, "chpl__promotionType"))
+    return NULL;
 
   // Detect cycles
   detectForwardingCycle(call);
