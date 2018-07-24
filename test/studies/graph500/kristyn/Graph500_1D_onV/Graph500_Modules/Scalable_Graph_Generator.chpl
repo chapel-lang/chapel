@@ -73,9 +73,9 @@ module Scalable_Graph_Generator
       // Random Numbers return in the range [0.0, 1.0)
 
       var Rand_Gen = if REPRODUCIBLE_PROBLEMS then
-                       new NPBRandomStream (seed = 0556707007)
+                       new unmanaged NPBRandomStream (seed = 0556707007)
                      else
-                       new NPBRandomStream ();
+                       new unmanaged NPBRandomStream ();
 
 
       const vertex_range = 1..N_VERTICES;
