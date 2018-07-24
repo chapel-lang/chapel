@@ -1,0 +1,4 @@
+getMakefile.h
+libgetMakefile.a
+Makefile.chpl_lib
+mytest
