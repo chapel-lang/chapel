@@ -15,6 +15,5 @@ class D : C {
   }
 }
 
-var myD = new D(real);
+var myD = new borrowed D(real);
 writeln(myD);
-delete myD;

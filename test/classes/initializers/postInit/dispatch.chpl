@@ -41,12 +41,8 @@ class E : C {
 }
 
 writeln("C:");
-var myC = new C();
+var myC = new owned C();
 writeln("D:");
-var myD = new D();
+var myD = new owned D();
 writeln("E:");
-var myE = new E();
-
-delete myE;
-delete myD;
-delete myC;
+var myE = new owned E();

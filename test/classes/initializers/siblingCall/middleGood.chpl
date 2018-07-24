@@ -17,7 +17,7 @@ class Foo {
 }
 
 proc main() {
-  var c: Foo = new Foo(8);
+  var c: unmanaged Foo = new unmanaged Foo(8);
   writeln(c);
   delete c;
 }

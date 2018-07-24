@@ -3,7 +3,7 @@ class C {
   param r: int;
 }
 
-proc foo(x: C(t=?tt, r=?rr)) {
+proc foo(x: unmanaged C(t=?tt, r=?rr)) {
   writeln("In foo");
 }
 
