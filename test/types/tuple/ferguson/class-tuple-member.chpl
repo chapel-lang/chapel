@@ -5,7 +5,7 @@ class C {
   var x:dim*int;
 }
 
-proc run(c:C) {
+proc run(c:borrowed C) {
   for i in 1..dim do
     c.x(i) = 1;
 }

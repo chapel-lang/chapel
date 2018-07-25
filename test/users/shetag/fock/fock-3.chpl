@@ -12,7 +12,7 @@ var oneAtATime: sync bool = true;
 
 config const numLocs = 100;
 config const poolSize = 1;
-const t = new taskpool(poolSize);
+const t = new unmanaged taskpool(poolSize);
 
 proc buildjk() {
   cobegin {

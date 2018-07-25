@@ -22,7 +22,7 @@ class mink : ReduceScanOp {
       }
   }
   
-  proc combine(s: mink(eltType))
+  proc combine(s: borrowed mink(eltType))
   {
     for i in 1..k
       {

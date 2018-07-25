@@ -13,14 +13,14 @@ proc build_not_domain(type t) {
 }
 
 var watDom = build_not_domain(string);
-var x:CC;
+var x:borrowed CC;
 
 class RR {
   var dom = build_not_domain(string);
 }
 
 class CC {
-  proc this(idx: int):RR { return new RR(); }
+  proc this(idx: int):unmanaged RR { return new unmanaged RR(); }
 }
 
-proc f(arg:CC):RR return arg;
+proc f(arg:unmanaged CC):unmanaged RR return arg;

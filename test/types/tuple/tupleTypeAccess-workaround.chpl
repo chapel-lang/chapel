@@ -11,18 +11,13 @@ class ExcellentStudent: Student {
 }
 
 class AdvancedBasketWeaving {
-  var acceptableStudentTypes = (new GoodStudent(), new ExcellentStudent());
+  var acceptableStudentTypes = (new borrowed GoodStudent(), new borrowed ExcellentStudent());
 
-  proc accept(student: Student) {
+  proc accept(student: borrowed Student) {
     for param i in 1..acceptableStudentTypes.size {
       if student: acceptableStudentTypes(i).type != nil then return "YES!";
     }
     return "Computer says 'No'";
-  }
-
-  proc deinit() {
-    for param i in 1..acceptableStudentTypes.size do
-      delete acceptableStudentTypes(i);
   }
 }
 
