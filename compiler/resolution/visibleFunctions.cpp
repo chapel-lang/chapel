@@ -211,6 +211,8 @@ static void getVisibleFunctions(const char*           name,
                  isArgSymbol(block->parentSymbol) ||
                  isShadowVarSymbol(block->parentSymbol));
       fnBlock = true;
+      if (inFn->instantiationPoint)
+        INT_ASSERT(inFn->instantiationPoint->parentSymbol);
       if (inFn->instantiationPoint && inFn->instantiationPoint->parentSymbol)
         instantiationPt = inFn->instantiationPoint;
     }
