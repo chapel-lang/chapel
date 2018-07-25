@@ -81,6 +81,22 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   gBlockStmts.add(this);
 }
 
+BlockStmt::BlockStmt(BlockTag initBlockTag) :
+  Stmt(E_BlockStmt) {
+
+
+  blockTag      = initBlockTag;
+  useList       = NULL;
+  userLabel     = NULL;
+  byrefVars     = NULL;
+  forallIntents = NULL;
+  blockInfo     = NULL;
+
+  body.parent   = this;
+
+  gBlockStmts.add(this);
+}
+
 
 BlockStmt::~BlockStmt() {
   if (forallIntents)
