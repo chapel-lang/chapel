@@ -87,6 +87,7 @@ proc modifyToml(add: bool, dep: string, external: bool, system: bool,
       const split = dep.split('@');
       const dependency = split[1];
       const version = split[2];
+      checkDepName(dependency);
       checkVersion(version);
 
       if system && add {
@@ -112,6 +113,7 @@ proc modifyToml(add: bool, dep: string, external: bool, system: bool,
       }
       else depName = dep;
       const dependency = depName;
+      checkDepName(depName);
       
       if !system && !external {
         writeln("Removing Mason dependency " + dependency);
@@ -254,5 +256,12 @@ private proc checkVersion(version: string) throws {
   const pattern = compile("([0-9].[0-9].[0-9][a-zA-Z]?)");
   if !pattern.match(version) {
     throw new MasonError("Version formatting incorrect. ex. 1.2.3");
+  }
+}
+
+private proc checkDepName(dep: string) throws {
+  if !isIdentifier(dep) {
+      throw new MasonError("Bad package name '" + dep +
+                             "' - only Chapel identifiers are legal package names");  
   }
 }
