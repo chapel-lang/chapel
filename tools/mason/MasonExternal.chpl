@@ -28,7 +28,7 @@ proc masonExternal(args: [] string) {
   try! {
     if args.size < 3 {
       masonExternalHelp();
-      exit();
+      exit(0);
     }
   
     select (args[2]) {
@@ -42,12 +42,13 @@ proc masonExternal(args: [] string) {
       otherwise {
        writeln('error: no such subcommand');
        writeln('try mason external --help');
-       exit();
+       exit(1);
       }
     }
   }
   catch e: MasonError {
     writeln(e.message());
+    exit(1);
   }
 }
 
@@ -141,6 +142,7 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
     }
     catch e: MasonError {
       writeln(e.message());
+      exit(1);
     }
   }
   return exDepTree;

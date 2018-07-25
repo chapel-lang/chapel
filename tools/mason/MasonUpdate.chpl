@@ -303,8 +303,6 @@ private proc createDepTree(root: unmanaged Toml) {
   // Check for pkg-config dependencies
   if root.pathExists("system") {
     const exDeps = getPCDeps(root["system"]);
-    var PCdom: domain(string);
-    var PCtoml: [PCdom] unmanaged Toml;
     depTree["system"] = exDeps;
   }
 

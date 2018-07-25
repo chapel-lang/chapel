@@ -197,7 +197,7 @@ proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: [1..0] (string, string, string);
   for (name, package) in zip(lockFile.D, lockFile.A) {
     if package.tag == fieldToml {
-      if name == "root" || name == "system" then continue;
+      if name == "root" || name == "system" || name == "external" then continue;
       else {
         var version = lockFile[name]["version"].s;
         var source = lockFile[name]["source"].s;
@@ -257,18 +257,16 @@ proc getTomlCompopts(lock: borrowed Toml, compopts: [?d] string) {
         select k {
             when "libs" do compopts.push_back("-L" + v.s); 
             when "include" do compopts.push_back("-I" + v.s);
-            otherwise {
-              continue;
-            }
+            otherwise continue;
           }
       }
     }
-    if lock.pathExists('external.pkgconfig') {
-    const pkgDeps = lock['external.pkgconfig'];
+  }
+  if lock.pathExists('system') {
+    const pkgDeps = lock['system'];
     for (name, depInfo) in zip(pkgDeps.D, pkgDeps.A) {
       compopts.push_back(depInfo["libs"].s);
       compopts.push_back("-I" + depInfo["include"].s);
-}
     }
   }
   return compopts;
