@@ -1911,6 +1911,7 @@ const char* astrDeinit = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
 const char* astr_chpl_cname = NULL;
+const char* astr_chpl_forward_tgt = NULL;
 const char* astr_chpl_manager = NULL;
 const char* astr_forallexpr = NULL;
 const char* astr_forexpr = NULL;
@@ -1927,6 +1928,7 @@ void initAstrConsts() {
   astrTag     = astr("tag");
   astrThis    = astr("this");
   astr_chpl_cname = astr("_chpl_cname");
+  astr_chpl_forward_tgt = astr("_chpl_forward_tgt");
   astr_chpl_manager = astr("_chpl_manager");
 
   astr_forallexpr    = astr("chpl__forallexpr");

@@ -1046,7 +1046,7 @@ ForwardingStmt::ForwardingStmt(DefExpr* toFnDef, std::set<const char*>* args, bo
     // for instance.
     for (std::map<const char*, const char*>::iterator it = renames->begin();
          it != renames->end(); ++it) {
-      renamed[it->first] = it->second;
+      renamed[it->first] = astr(it->second);
     }
   }
 }
