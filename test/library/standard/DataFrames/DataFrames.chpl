@@ -57,8 +57,29 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc writeThis(f, d: unmanaged DataFrame = nil) {
+    proc writeThis(f, d: borrowed DataFrame = nil) {
       halt("cannot writeThis on generic Index");
+    }
+
+    iter these(type idxType) {
+      var _typed = this:borrowed TypedIndex(idxType);
+      if _typed == nil then halt("Unable to cast Index to type " + idxType:string);
+
+      for i in _typed do yield i;
+    }
+
+    iter items(type idxType) {
+      var _typed = this:borrowed TypedIndex(idxType);
+      if _typed == nil then halt("Unable to cast Index to type " + idxType:string);
+
+      for i in _typed.items() do yield i;
+    }
+
+    proc this(lab : ?idxType) ref : int {
+      var _typed = this:borrowed TypedIndex(idxType);
+      if _typed == nil then halt("Unable to cast Index to type " + idxType:string);
+
+      return _typed[lab];
     }
   }
 
@@ -102,7 +123,7 @@ module DataFrames {
         yield tup;
     }
 
-    proc this(lab: idxType) ref {
+    proc this(lab: idxType) ref : int {
       return labelToOrd[lab];
     }
 
@@ -146,7 +167,7 @@ module DataFrames {
       }
 
       return new owned TypedSeries(uni_data[1..curr_ord],
-                             new unmanaged TypedIndex(uni_rev_idx[1..curr_ord]),
+                             new shared TypedIndex(uni_rev_idx[1..curr_ord]),
                              uni_valid_bits[1..curr_ord]);
     }
 
@@ -156,7 +177,11 @@ module DataFrames {
       for (i, d) in s.items(idxType) do
         mapped[this[i]] = mapper.f(d);
 
-      return new owned TypedSeries(mapped, _to_unmanaged(this), s.valid_bits);
+      // TODO: We would prefer to use this commented-out pattern once we can
+      // specify the this-intent as shared
+      //return new owned TypedSeries(mapped, this:shared TypedIndex(idxType), s.valid_bits);
+
+      return new owned TypedSeries(mapped, s.valid_bits);
     }
 
     override
@@ -176,7 +201,7 @@ module DataFrames {
       }
 
       return new owned TypedSeries(filter_data[1..curr_ord],
-                             new unmanaged TypedIndex(filter_rev_idx[1..curr_ord]),
+                             new shared TypedIndex(filter_rev_idx[1..curr_ord]),
                              filter_valid_bits[1..curr_ord]);
     }
 
@@ -216,7 +241,7 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f, d: unmanaged DataFrame = nil) {
+    proc writeThis(f, d: borrowed DataFrame = nil) {
       var idxWidth = writeIdxWidth() + 1;
       for space in 1..idxWidth do
         f <~> " ";
@@ -252,8 +277,16 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc reindex(idx) {
+    proc reindex(idx : shared Index) {
       halt("generic Series cannot be reindexed");
+    }
+
+    pragma "no doc"
+    proc reindex(type eltType, idx : shared Index) {
+      var _typed = this:borrowed TypedSeries(eltType);
+      if _typed == nil then halt("Unable to cast generic index with type ", eltType:string);
+
+      _typed.reindex(idx);
     }
 
     pragma "no doc"
@@ -355,7 +388,7 @@ module DataFrames {
     type eltType;
 
     // TODO: ords dmap Block
-    var idx: unmanaged Index;
+    var idx: shared Index;
     var ords: domain(1);
     var data: [ords] eltType;
     var valid_bits: [ords] bool;
@@ -383,7 +416,7 @@ module DataFrames {
       this.valid_bits = valid_bits;
     }
 
-    proc init(data: [] ?T, idx: unmanaged Index) {
+    proc init(data: [] ?T, idx: shared Index) {
       super.init();
       eltType = T;
 
@@ -393,7 +426,7 @@ module DataFrames {
       this.valid_bits = true;
     }
 
-    proc init(data: [] ?T, idx: unmanaged Index, valid_bits: [] bool) {
+    proc init(data: [] ?T, idx: shared Index, valid_bits: [] bool) {
       super.init();
       eltType = T;
 
@@ -425,7 +458,7 @@ module DataFrames {
 
     iter items(type idxType) {
       if idx {
-        for (v, i, d) in zip(valid_bits, idx:unmanaged TypedIndex(idxType), data) do
+        for (v, i, d) in zip(valid_bits, idx.these(idxType), data) do
           if v then yield (i, d);
       }
     }
@@ -443,7 +476,7 @@ module DataFrames {
 
     iter items_fast(type idxType) {
       if idx {
-        for t in zip(idx:unmanaged TypedIndex(idxType), data) do
+        for t in zip(idx.these(idxType), data) do
           yield t;
       }
     }
@@ -474,7 +507,7 @@ module DataFrames {
 
     proc this(lab: ?idxType) {
       if idx then
-        return data[(idx:unmanaged TypedIndex(idxType))[lab]];
+        return data[idx[lab]];
 
       var default: eltType;
       return default;
@@ -501,7 +534,7 @@ module DataFrames {
 
     proc valid(lab: ?idxType) {
       if idx then
-        return valid_bits[(idx:unmanaged TypedIndex(idxType))[lab]];
+        return valid_bits[idx[lab]];
 
       return false;
     }
@@ -511,7 +544,7 @@ module DataFrames {
     }
 
     override
-    proc reindex(idx: unmanaged Index) {
+    proc reindex(idx: shared Index) {
       this.idx = idx;
     }
 
@@ -550,8 +583,12 @@ module DataFrames {
 
     override
     proc map(mapper: borrowed SeriesMapper): owned Series {
-      if idx then
-        return idx.map(this, mapper);
+      if idx {
+        // Workaround for lack of shared this-intent for Index.map
+        var ret = idx.map(this, mapper);
+        ret.reindex(mapper.retType, idx);
+        return ret;
+      }
 
       var mapped = [d in data] mapper.f(d);
       return new owned TypedSeries(mapped, this.valid_bits);
@@ -703,7 +740,7 @@ module DataFrames {
     //   Currently run into confusing const errors in DefaultAssociative
     var columns: [labels] unmanaged Series;
 
-    var idx: unmanaged Index;
+    var idx: shared Index;
 
     // TODO: init with labels arg
 
@@ -720,7 +757,7 @@ module DataFrames {
         this.columns[lab] = s.copy().release();
     }
 
-    proc init(columns: [?D], idx: unmanaged Index) {
+    proc init(columns: [?D], idx: shared Index) {
       this.labels = D;
       this.idx = idx;
       this.complete();
@@ -748,7 +785,7 @@ module DataFrames {
       columns[lab] = sCopy;
     }
 
-    proc reindex(idx: unmanaged Index) {
+    proc reindex(idx: shared Index) {
       this.idx = idx;
       for s in columns do
         s.reindex(idx);

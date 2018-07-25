@@ -1,7 +1,7 @@
 use DataFrames;
 
 var oneDigit = new owned TypedSeries([1, 2, 3, 4, 5],
-                               new unmanaged TypedIndex(["A", "B", "C", "D", "E"]));
+                               new shared TypedIndex(["A", "B", "C", "D", "E"]));
 var n = 12;
 
 writeln("series:");

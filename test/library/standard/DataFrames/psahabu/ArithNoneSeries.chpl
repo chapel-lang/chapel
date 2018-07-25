@@ -1,6 +1,6 @@
 use DataFrames;
 
-var I = new unmanaged TypedIndex(["A", "B", "C", "D", "E"]);
+var I = new shared TypedIndex(["A", "B", "C", "D", "E"]);
 var V1 = [true, false, true, false, true];
 var V2 = [false, true, false, true, false];
 

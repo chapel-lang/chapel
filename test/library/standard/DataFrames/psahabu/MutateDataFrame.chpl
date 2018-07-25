@@ -18,7 +18,7 @@ df.insert("columnOne", columnOne);
 df.insert("columnTwo", columnTwo);
 df.insert("columnThree", columnThree);
 
-var idx = new unmanaged TypedIndex(["rowOne", "rowTwo", "rowThree", "rowFour", "rowFive"]);
+var idx = new shared TypedIndex(["rowOne", "rowTwo", "rowThree", "rowFour", "rowFive"]);
 df.reindex(idx);
 
 writeln(df);

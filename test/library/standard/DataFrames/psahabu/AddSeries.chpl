@@ -1,6 +1,6 @@
 use DataFrames;
 
-var I = new unmanaged TypedIndex(["A", "B", "C", "D", "E"]);
+var I = new shared TypedIndex(["A", "B", "C", "D", "E"]);
 
 var oneDigit = new owned TypedSeries([1, 2, 3, 4, 5], I);
 var twoDigit = new owned TypedSeries([10, 20, 30, 40, 50], I);
@@ -12,8 +12,8 @@ writeln(twoDigit);
 writeln("\nsum:");
 writeln(oneDigit + twoDigit);
 
-var X = new owned TypedSeries([0, 1, 2], new unmanaged TypedIndex(["A", "B", "C"]));
-var Y = new owned TypedSeries([10, 20, 0, 0], new unmanaged TypedIndex(["B", "C", "D", "E"]));
+var X = new owned TypedSeries([0, 1, 2], new shared TypedIndex(["A", "B", "C"]));
+var Y = new owned TypedSeries([10, 20, 0, 0], new shared TypedIndex(["B", "C", "D", "E"]));
 
 writeln("\naddends:");
 writeln(X);
