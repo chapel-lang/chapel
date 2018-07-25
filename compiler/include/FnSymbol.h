@@ -120,6 +120,11 @@ public:
   Symbol*                    replaceReturnSymbol(Symbol* newRetSymbol,
                                                  Type*   newRetType);
 
+  // Removes all statements from body and adds all statements from block.
+  void                       replaceBodyStmtsWithStmts(BlockStmt* block);
+  // Removes all statements from body and adds the passed statement.
+  void                       replaceBodyStmtsWithStmt(Expr* stmt);
+
   int                        numFormals()                                const;
   ArgSymbol*                 getFormal(int i)                            const;
 

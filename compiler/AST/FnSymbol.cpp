@@ -522,6 +522,24 @@ Symbol* FnSymbol::replaceReturnSymbol(Symbol* newRetSymbol, Type* newRetType) {
   return retval;
 }
 
+// Removes all statements from body and adds all statements from block.
+void FnSymbol::replaceBodyStmtsWithStmts(BlockStmt* block) {
+  for_alist(stmt, this->body->body) {
+    stmt->remove();
+  }
+  for_alist(stmt, block->body) {
+    this->body->insertAtTail(stmt->remove());
+  }
+}
+
+// Removes all statements from body and adds expr
+void FnSymbol::replaceBodyStmtsWithStmt(Expr* stmt) {
+  for_alist(stmt, this->body->body) {
+    stmt->remove();
+  }
+  this->body->insertAtTail(stmt);
+}
+
 
 void FnSymbol::insertBeforeEpilogue(Expr* ast) {
   LabelSymbol* label = getEpilogueLabel();
