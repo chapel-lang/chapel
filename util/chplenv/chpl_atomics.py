@@ -42,7 +42,7 @@ def get(flag='target'):
                 atomics_val = 'intrinsics'
             elif compiler_val == 'cray-prgenv-cray':
                 atomics_val = 'intrinsics'
-            elif compiler_val == 'cray-prgenv-allinea':
+            elif compiler_val == 'allinea' or compiler_val == 'cray-prgenv-allinea':
                 atomics_val = 'cstdlib'
             elif compiler_val == 'clang':
                 atomics_val = 'intrinsics'
