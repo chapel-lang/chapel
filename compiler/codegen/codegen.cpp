@@ -2304,6 +2304,9 @@ void codegen(void) {
     }
 
     codegen_makefile(&mainfile, NULL, false, userFileName);
+    if (fLibraryCompile && fLibraryMakefile) {
+      codegen_library_makefile();
+    }
   }
 
   // Vectors to store different symbol names to be used while generating header

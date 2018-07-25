@@ -19,6 +19,9 @@
 
 #include "library.h"
 
+#include <stdio.h>
+#include <string>
+
 #include "FnSymbol.h"
 #include "codegen.h"
 #include "driver.h"
@@ -67,4 +70,52 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
     }
     closeCFile(&libhdrfile);
   }
+}
+
+// Helper function to avoid unnecessary repetition when getting information
+// from compileline
+static std::string getCompilelineOption(std::string option) {
+  std::string fullCommand = "$CHPL_HOME/util/config/compileline --" + option;
+  char buffer[128];
+  std::string res = "";
+  FILE* compilelineCall = popen(fullCommand.c_str(), "r");
+  while (!feof(compilelineCall)) {
+    if (fgets(buffer, 128, compilelineCall) != NULL) {
+      res += buffer;
+    }
+  }
+  pclose(compilelineCall);
+  return res;
+}
+
+void codegen_library_makefile() {
+  fileinfo makefile;
+  openCFile(&makefile, "Makefile.chpl_lib");
+
+  // compileline --includes-and-defines adds -I. to the list.  Does this work
+  // if the library is in a different directory?  Add a test
+  std::string cflags = getCompilelineOption("cflags");
+  cflags.pop_back(); // remove trailing newline
+  std::string includes = getCompilelineOption("includes-and-defines");
+  fprintf(makefile.fptr, "CHPL_CFLAGS = %s %s\n",
+          cflags.c_str(),
+          includes.c_str());
+
+  // Need the full path to where the generated library file will live for the
+  // -L
+  // Need to get the equivalent of -lname for the library
+  std::string libraries = getCompilelineOption("libraries");
+  fprintf(makefile.fptr, "CHPL_LDFLAGS = %s \n",
+          libraries.c_str()); // TODO: populate with -L. -lname at start
+
+  std::string compiler = getCompilelineOption("compiler");
+  fprintf(makefile.fptr, "CHPL_COMPILER = %s\n", compiler.c_str());
+
+  std::string linker = getCompilelineOption("linker");
+  fprintf(makefile.fptr, "CHPL_LINKER = %s\n", linker.c_str());
+
+  std::string linkerShared = getCompilelineOption("linkershared");
+  fprintf(makefile.fptr, "CHPL_LINKERSHARED = %s", linkerShared.c_str());
+
+  closeCFile(&makefile);
 }
