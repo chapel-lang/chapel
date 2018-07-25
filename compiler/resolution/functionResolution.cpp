@@ -2795,6 +2795,10 @@ void trimVisibleCandidates(CallInfo&       info,
   bool isNew    = call->numActuals() >= 1 && call->isNamedAstr(astrNew);
   bool isDeinit = isMethod && call->isNamedAstr(astrDeinit);
 
+  // 3 actuals: _mt, 'this', thing-to-be-copied
+  bool maybeCopyInit = isInit && call->numActuals() == 3 &&
+                       call->get(2)->getValType() == call->get(3)->getValType();
+
   if (!(isInit || isNew || isDeinit)) {
     mostApplicable = visibleFns;
   } else {
@@ -2830,6 +2834,12 @@ void trimVisibleCandidates(CallInfo&       info,
           shouldKeep = false;
         }
       } else {
+        shouldKeep = false;
+      }
+
+      // Default-initializers should not be considered for calls that look
+      // like a copy-init
+      if (shouldKeep && maybeCopyInit && fn->isDefaultInit()) {
         shouldKeep = false;
       }
 
