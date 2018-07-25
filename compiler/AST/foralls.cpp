@@ -836,7 +836,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   BlockStmt*    userBody = toBlockStmt(pfs->loopBody()->body.tail->remove());
   INT_ASSERT(pfs->loopBody()->body.empty());
 
-  BlockStmt* preFS           = new BlockStmt();
+  BlockStmt* preFS           = new BlockStmt(BLOCK_SCOPELESS);
   // cf in build.cpp: new ForLoop(leadIdx, leadIter, NULL, zippered)
   BlockStmt* leadForLoop     = pfs->loopBody();
 

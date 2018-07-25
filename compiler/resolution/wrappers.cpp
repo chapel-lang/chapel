@@ -616,7 +616,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   wrapper->insertAtTail(new DefExpr(rvv));
 
   // This is the block we'll resolve to compute the return intent
-  BlockStmt* block = new BlockStmt();
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
   wrapper->insertAtTail(block);
 
   wrapper->insertAtTail(new CallExpr(PRIM_RETURN, rvv));
