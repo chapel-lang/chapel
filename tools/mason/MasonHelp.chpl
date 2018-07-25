@@ -38,6 +38,8 @@ proc masonHelp() {
   writeln();
   writeln('Some common mason commands are (see all commands with --list):');
   writeln('    new         Create a new mason project');
+  writeln('    add         Add a dependency to Mason.toml');
+  writeln('    rm          Remove a dependency from Mason.toml');
   writeln('    update      Update/Generate Mason.lock');
   writeln('    build       Compile the current project');
   writeln('    run         Build and execute src/<project name>.chpl');
