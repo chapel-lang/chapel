@@ -539,7 +539,6 @@ proc ReplicatedArr.dsiAccess(indexx) ref {
 
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
-  //  writeln("in dsiSerialWrite() on locale ", here.id);
   localArrs[f.readWriteThisFromLocale().id].arrLocalRep._value.dsiSerialWrite(f);
 }
 
