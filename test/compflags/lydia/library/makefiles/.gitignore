@@ -2,3 +2,6 @@ getMakefile.h
 libgetMakefile.a
 Makefile.chpl_lib
 mytest
+headerName.h
+myLib.a
+renamedTest
