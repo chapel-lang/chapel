@@ -101,12 +101,22 @@ void codegen_library_makefile() {
           cflags.c_str(),
           includes.c_str());
 
-  // Need the full path to where the generated library file will live for the
-  // -L
   // Need to get the equivalent of -lname for the library
   std::string libraries = getCompilelineOption("libraries");
-  fprintf(makefile.fptr, "CHPL_LDFLAGS = %s \n",
-          libraries.c_str()); // TODO: populate with -L. -lname at start
+  std::string libname = "-l";
+  int libLength = strlen("lib");
+  if (strncmp(executableFilename, "lib", libLength) == 0) {
+    // libname = "-l<name>" when executableFilename = "lib<name>"
+    libname += &executableFilename[libLength];
+  } else {
+    // libname = executableFilename plus the extension when executableFilename
+    // does not start with "lib"
+    libname = executableFilename;
+    libname += getExtension();
+  }
+  fprintf(makefile.fptr, "CHPL_LDFLAGS = -L. %s %s \n",
+          libname.c_str(),
+          libraries.c_str());
 
   std::string compiler = getCompilelineOption("compiler");
   fprintf(makefile.fptr, "CHPL_COMPILER = %s\n", compiler.c_str());
@@ -118,4 +128,12 @@ void codegen_library_makefile() {
   fprintf(makefile.fptr, "CHPL_LINKERSHARED = %s", linkerShared.c_str());
 
   closeCFile(&makefile);
+}
+
+const char* getExtension() {
+  if (fLibraryCompile) {
+    if (fLinkStyle==LS_DYNAMIC) return ".so";
+    else return ".a";
+  }
+  return "";
 }

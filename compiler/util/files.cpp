@@ -32,6 +32,7 @@
 #include "beautify.h"
 #include "driver.h"
 #include "llvmVer.h"
+#include "library.h"
 #include "misc.h"
 #include "mysystem.h"
 #include "stlUtil.h"
@@ -675,10 +676,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
     fprintf(makefile.fptr, "SKIP_COMPILE_LINK = skip\n");
   }
 
-  if (fLibraryCompile) {
-    if (fLinkStyle==LS_DYNAMIC) exeExt = ".so";
-    else exeExt = ".a";
-  }
+  exeExt = getExtension();
+
   fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
   // BLC: This munging is done so that cp won't complain if the source
   // and destination are the same file (e.g., myprogram and ./myprogram)
