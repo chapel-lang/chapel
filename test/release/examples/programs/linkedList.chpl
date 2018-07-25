@@ -106,14 +106,18 @@ class List {
       return;
 
     if head.value == value {
+      var temp = head;
       head = head.next;
+      delete temp;
       return;
     }
 
     var current = head;
     while current.next != nil {
       if current.next.value == value {
-        current.next = current.next.next;
+        var temp = current.next;
+        current.next = temp.next;
+        delete temp;
         return;
       }
       current = current.next;
