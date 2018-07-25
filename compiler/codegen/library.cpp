@@ -97,7 +97,7 @@ void codegen_library_makefile() {
   // Makefile that is using this one, that won't be sufficient to find the
   // header file.  I will handle this with the output directory change
   std::string cflags = getCompilelineOption("cflags");
-  cflags.pop_back(); // remove trailing newline
+  cflags.erase(cflags.length() - 1); // remove trailing newline
   std::string includes = getCompilelineOption("includes-and-defines");
   fprintf(makefile.fptr, "CHPL_CFLAGS = %s %s\n",
           cflags.c_str(),
