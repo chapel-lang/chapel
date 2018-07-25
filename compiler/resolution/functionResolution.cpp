@@ -9218,6 +9218,8 @@ static void removeRandomPrimitive(CallExpr* call) {
           baseType->symbol->hasFlag(FLAG_REF))
         baseType = baseType->getValType();
 
+      baseType = canonicalClassType(baseType);
+
       SymExpr* memberSE = toSymExpr(call->get(2));
       const char* memberName = NULL;
       Symbol* sym = NULL;  // the member symbol

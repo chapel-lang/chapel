@@ -286,9 +286,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_FIELD_BY_NUM)) {
     // if call->get(1) is a reference type, dereference it
-    AggregateType* classType  = toAggregateType(call->get(1)->typeInfo());
-
-    classType = toAggregateType(classType->getValType());
+    Type*          t          = canonicalClassType(call->get(1)->getValType());
+    AggregateType* classType  = toAggregateType(t);
 
     VarSymbol*     var        = toVarSymbol(toSymExpr(call->get(2))->symbol());
 
@@ -320,10 +319,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     call->replace(retval);
 
   } else if (call->isPrimitive(PRIM_FIELD_NAME_TO_NUM)) {
-    SymExpr*       se1        = toSymExpr(call->get(1));
-    AggregateType* classType  = toAggregateType(se1->symbol()->type);
-
-    classType = toAggregateType(classType->getValType());
+    Type*          t          = canonicalClassType(call->get(1)->getValType());
+    AggregateType* classType  = toAggregateType(t);
 
     VarSymbol*     var        = toVarSymbol(toSymExpr(call->get(2))->symbol());
     Immediate*     imm        = var->immediate;
@@ -349,8 +346,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     call->replace(retval);
 
   } else if (call->isPrimitive(PRIM_FIELD_NUM_TO_NAME)) {
-    SymExpr*       se1        = toSymExpr(call->get(1));
-    AggregateType* classType  = toAggregateType(se1->symbol()->type);
+    Type*          t          = canonicalClassType(call->get(1)->getValType());
+    AggregateType* classType  = toAggregateType(t);
 
     classType = toAggregateType(classType->getValType());
 
@@ -742,11 +739,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
   } else if (call->isPrimitive(PRIM_NUM_FIELDS)) {
-    SymExpr*       se1        = toSymExpr(call->get(1));
-    AggregateType* classType  = toAggregateType(se1->symbol()->type);
+    Type*          t          = canonicalClassType(call->get(1)->getValType());
+    AggregateType* classType  = toAggregateType(t);
     int            fieldCount = 0;
-
-    classType = toAggregateType(classType->getValType());
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
