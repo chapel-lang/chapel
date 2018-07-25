@@ -65,6 +65,7 @@ proc masonModify(args) throws {
   }
   catch e: MasonError {
     writeln(e.message());
+    exit(1);
   }
 }
 
@@ -78,19 +79,16 @@ proc modifyToml(add: bool, dep: string, external: bool, system: bool,
 
   try! {
     
-    if dep.find("@") == 0 && add {
-      throw new MasonError("Dependency formatted incorrectly.\nFormat: package@version");
-    }
-    else {
-      const split = dep.split("@");
+    // Adding a dependency
+    if add {
+      if dep.find("@") == 0 {
+        throw new MasonError("Dependency formatted incorrectly.\nFormat: package@version");
+      }
+      const split = dep.split('@');
       const dependency = split[1];
       const version = split[2];
-      
-      if !system && !external && !add {
-        writeln("Removing Mason dependency " + dependency);
-        newToml = masonRemove(toml, dependency, version);
-      }
-      else if system && add {
+
+      if system && add {
         writeln("Adding system dependency " + dependency + " version " + version);
         newToml = masonSystemAdd(toml, dependency, version);
       }
@@ -98,22 +96,39 @@ proc modifyToml(add: bool, dep: string, external: bool, system: bool,
         writeln("Adding external dependency " + dependency + " version " + version);
         newToml = masonExternalAdd(toml, dependency, version);
       }
-      else if system && !add {
-        writeln("Removing system dependency " + dependency);
-        newToml = masonSystemRemove(toml, dependency, version);
-      }
-      else if external && !add {
-        writeln("Removing external dependency " + dependency);
-        newToml = masonExternalRemove(toml, dependency, version);
-      }
       else {
         writeln("Adding Mason dependency " + dependency + " version " + version);
         newToml = masonAdd(toml, dependency, version);
+      }    
+    }
+
+    // Removing a dependency
+    else {
+      var depName: string;
+      if dep.find('@') != 0 {
+        const split = dep.split('@');
+        depName = split[1];
+      }
+      else depName = dep;
+      const dependency = depName;
+      
+      if !system && !external {
+        writeln("Removing Mason dependency " + dependency);
+        newToml = masonRemove(toml, dependency);
+      }
+      else if system{
+        writeln("Removing system dependency " + dependency);
+        newToml = masonSystemRemove(toml, dependency);
+      }
+      else if external{
+        writeln("Removing external dependency " + dependency);
+        newToml = masonExternalRemove(toml, dependency);
       }
     }
   }
   catch e: MasonError {
     writeln(e.message());
+    exit(1);
   }
   return (newToml, tomlPath);
 }
@@ -139,7 +154,7 @@ private proc masonAdd(toml: unmanaged Toml, toAdd: string, version: string) thro
 }
 
 /* Remove a mason dependency from Mason.toml */
-private proc masonRemove(toml: unmanaged Toml, toRm: string, version: string) throws {
+private proc masonRemove(toml: unmanaged Toml, toRm: string) throws {
   if toml.pathExists("dependencies") {
     if toml.pathExists("dependencies." + toRm) {
       toml["dependencies"].D.remove(toRm);
@@ -175,7 +190,7 @@ private proc masonSystemAdd(toml: unmanaged Toml, toAdd: string, version: string
 }
 
 /* Remove a system dependency from Mason.toml */
-private proc masonSystemRemove(toml: unmanaged Toml, toRm: string, version: string) throws {
+private proc masonSystemRemove(toml: unmanaged Toml, toRm: string) throws {
   if toml.pathExists("system") {
     if toml.pathExists("system." + toRm) {
       toml["system"].D.remove(toRm);
@@ -210,7 +225,7 @@ private proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, version: stri
 }
 
 /* Remove an external dependency from Mason.toml */
-private proc masonExternalRemove(toml: unmanaged Toml, toRm: string, version: string) throws {
+private proc masonExternalRemove(toml: unmanaged Toml, toRm: string) throws {
   if toml.pathExists("external") {
     if toml.pathExists("external." + toRm) {
       toml["external"].D.remove(toRm);
