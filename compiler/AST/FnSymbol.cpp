@@ -31,6 +31,7 @@
 #include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "visibleFunctions.h"
 
 FnSymbol*                 chpl_gen_main         = NULL;
 FnSymbol*                 initStringLiterals    = NULL;
@@ -53,7 +54,8 @@ FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
   _this              = NULL;
   _outer             = NULL;
   instantiatedFrom   = NULL;
-  instantiationPoint = NULL;
+  _instantiationPoint = NULL;
+  _backupInstantiationPoint = NULL;
   basicBlocks        = NULL;
   calledBy           = NULL;
   userString         = NULL;
@@ -145,7 +147,8 @@ void FnSymbol::verify() {
   verifyInTree(_this,              "FnSymbol::_this");
   verifyInTree(_outer,             "FnSymbol::_outer");
   verifyInTree(instantiatedFrom,   "FnSymbol::instantiatedFrom");
-  verifyInTree(instantiationPoint, "FnSymbol::instantiationPoint");
+  verifyInTree(_instantiationPoint, "FnSymbol::instantiationPoint");
+  verifyInTree(_backupInstantiationPoint, "FnSymbol::backupInstantiationPoint");
   verifyInTree(valueFunction,      "FnSymbol::valueFunction");
   verifyInTree(retSymbol,          "FnSymbol::retSymbol");
 }
@@ -194,7 +197,8 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
   newFn->_outer             = this->_outer;
   newFn->retTag             = this->retTag;
   newFn->instantiatedFrom   = this->instantiatedFrom;
-  newFn->instantiationPoint = this->instantiationPoint;
+  newFn->_instantiationPoint = this->_instantiationPoint;
+  newFn->_backupInstantiationPoint = this->_backupInstantiationPoint;
 
   return newFn;
 }
@@ -522,6 +526,45 @@ Symbol* FnSymbol::replaceReturnSymbol(Symbol* newRetSymbol, Type* newRetType) {
   return retval;
 }
 
+// Removes all statements from body and adds all statements from block.
+void FnSymbol::replaceBodyStmtsWithStmts(BlockStmt* block) {
+  for_alist(stmt, this->body->body) {
+    stmt->remove();
+  }
+  for_alist(stmt, block->body) {
+    this->body->insertAtTail(stmt->remove());
+  }
+}
+
+// Removes all statements from body and adds expr
+void FnSymbol::replaceBodyStmtsWithStmt(Expr* addStmt) {
+  for_alist(stmt, this->body->body) {
+    stmt->remove();
+  }
+  this->body->insertAtTail(addStmt);
+}
+
+void FnSymbol::setInstantiationPoint(Expr* expr) {
+  if (expr == NULL) {
+    this->_instantiationPoint = NULL;
+    this->_backupInstantiationPoint = NULL;
+  } else {
+    BlockStmt* block = toBlockStmt(expr);
+    if (block == NULL || block->blockTag == BLOCK_SCOPELESS)
+      block = getInstantiationPoint(expr);
+    this->_instantiationPoint = block;
+    this->_backupInstantiationPoint = block->getFunction();
+  }
+}
+
+BlockStmt* FnSymbol::instantiationPoint() const {
+  if (this->_instantiationPoint && this->_instantiationPoint->parentSymbol)
+    return this->_instantiationPoint;
+  else if (this->_backupInstantiationPoint)
+    return this->_backupInstantiationPoint->body;
+  else
+    return NULL;
+}
 
 void FnSymbol::insertBeforeEpilogue(Expr* ast) {
   LabelSymbol* label = getEpilogueLabel();

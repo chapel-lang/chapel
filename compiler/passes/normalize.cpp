@@ -2055,7 +2055,7 @@ static void init_typed_var(VarSymbol* var,
   if (var->hasFlag(FLAG_EXTERN) == true) {
     INT_ASSERT(var->hasFlag(FLAG_PARAM) == false);
 
-    BlockStmt* block = new BlockStmt(NULL, BLOCK_EXTERN_TYPE);
+    BlockStmt* block = new BlockStmt(BLOCK_EXTERN_TYPE);
 
     block->insertAtTail(typeDefn);
     block->insertAtTail(initMove);
@@ -2361,7 +2361,7 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
   //
   // expects to find the init code inside a block stmt.
   if (var->hasFlag(FLAG_EXTERN) == true) {
-    BlockStmt* block    = new BlockStmt(NULL, BLOCK_EXTERN_TYPE);
+    BlockStmt* block    = new BlockStmt(BLOCK_EXTERN_TYPE);
 
     VarSymbol* typeTemp = newTemp("type_tmp");
     DefExpr*   typeDefn = new DefExpr(typeTemp);

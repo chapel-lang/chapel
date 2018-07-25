@@ -1812,14 +1812,14 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
     retval = chpl_gen_main->body;
 
   } else if (at->defaultInitializer &&
-             at->defaultInitializer->instantiationPoint) {
+             at->defaultInitializer->instantiationPoint()) {
     // Here for historical reasons
-    retval = at->defaultInitializer->instantiationPoint;
+    retval = at->defaultInitializer->instantiationPoint();
 
   } else if (at->typeConstructor &&
-             at->typeConstructor->instantiationPoint) {
+             at->typeConstructor->instantiationPoint()) {
     // This case can apply to generic types with initializers
-    retval = at->typeConstructor->instantiationPoint;
+    retval = at->typeConstructor->instantiationPoint();
 
   } else {
     // This case applies to non-generic AggregateTypes and
@@ -1928,8 +1928,8 @@ void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
   }
 
   if (at->symbol->instantiationPoint == NULL &&
-      fn->instantiationPoint != NULL) {
-    at->symbol->instantiationPoint = fn->instantiationPoint;
+      fn->instantiationPoint() != NULL) {
+    at->symbol->instantiationPoint = fn->instantiationPoint();
   }
   if (at->scalarPromotionType == NULL) {
     resolvePromotionType(at);
@@ -1956,7 +1956,7 @@ void resolvePromotionType(AggregateType* at) {
   FnSymbol* promoFn = resolveUninsertedCall(at, promoCall, false);
 
   if (promoFn != NULL) {
-    promoFn->instantiationPoint = at->symbol->instantiationPoint;
+    promoFn->setInstantiationPoint(at->symbol->instantiationPoint);
     resolveFunction(promoFn);
 
     INT_ASSERT(promoFn->retType != dtUnknown);
@@ -1975,7 +1975,7 @@ void resolveDestructor(AggregateType* at) {
   FnSymbol* deinitFn = resolveUninsertedCall(at, call, false);
 
   if (deinitFn != NULL) {
-    deinitFn->instantiationPoint = at->symbol->instantiationPoint;
+    deinitFn->setInstantiationPoint(at->symbol->instantiationPoint);
     resolveFunction(deinitFn);
     at->setDestructor(deinitFn);
   }
@@ -5102,7 +5102,7 @@ FnSymbol* findCopyInit(AggregateType* at) {
   // ret's instantiationPoint points to the dummy BlockStmt created by
   // resolveUninsertedCall, so it needs to be updated.
   if (ret != NULL) {
-    ret->instantiationPoint = at->symbol->instantiationPoint;
+    ret->setInstantiationPoint(at->symbol->instantiationPoint);
   }
 
   return ret;
@@ -8082,7 +8082,7 @@ static void resolveAutoCopyEtc(AggregateType* at) {
       INT_ASSERT(fn);
 
       if (at->hasInitializers()) {
-        fn->instantiationPoint = at->symbol->instantiationPoint;
+        fn->setInstantiationPoint(at->symbol->instantiationPoint);
       }
 
       resolveFunction(fn);
@@ -8512,7 +8512,7 @@ static void cleanupAfterRemoves() {
     if (fn->instantiatedFrom != NULL)
       fn->addFlag(FLAG_INSTANTIATED_GENERIC);
     fn->instantiatedFrom = NULL;
-    fn->instantiationPoint = NULL;
+    fn->setInstantiationPoint(NULL);
     // How about fn->substitutions, basicBlocks, calledBy ?
   }
 
@@ -9486,7 +9486,7 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
   fn->getReturnSymbol()->type = runtimeType;
 
   // Build a new body for the original function.
-  BlockStmt* block = new BlockStmt();
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
   VarSymbol* var = newTemp("_return_tmp_", fn->retType);
   block->insertAtTail(new DefExpr(var));
 
@@ -9509,7 +9509,7 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
   block->insertAtTail(new CallExpr(PRIM_RETURN, var));
 
   // Replace the body of the original chpl__buildRuntime...Type() function.
-  fn->body->replace(block);
+  fn->replaceBodyStmtsWithStmts(block);
 }
 
 static void removeFormalTypeAndInitBlocks()

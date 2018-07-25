@@ -80,6 +80,7 @@ class BlockStmt : public Stmt {
 public:
                       BlockStmt(Expr*    initBody     = NULL,
                                 BlockTag initBlockTag = BLOCK_NORMAL);
+                      BlockStmt(BlockTag initBlockTag);
   virtual            ~BlockStmt();
 
   DECLARE_COPY(BlockStmt);

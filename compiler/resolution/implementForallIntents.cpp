@@ -1676,7 +1676,7 @@ static void extendLeader(CallExpr* call, CallExpr* origToLeaderCall,
   }
 
   FnSymbol* iterFn = copyLeaderFn(origIterFn, /*ignore_isResolved:*/false);
-  iterFn->instantiationPoint = getInstantiationPoint(call);
+  iterFn->setInstantiationPoint(call);
   call->baseExpr->replace(new SymExpr(iterFn));
 
   int numExtraArgs = origToLeaderCall->numActuals()-1;
@@ -1773,7 +1773,7 @@ void implementForallIntents2wrapper(CallExpr* call, CallExpr* eflopiHelper)
     // and may be reused for an unrelated call. Create a clone.
     FnSymbol* wDest = dest->copy();
     wDest->addFlag(FLAG_INVISIBLE_FN);
-    wDest->instantiationPoint = getInstantiationPoint(call);
+    wDest->setInstantiationPoint(call);
     // Do we also need to update paramMap like in copyLeaderFn() ?
     dest->defPoint->insertAfter(new DefExpr(wDest));
     call->baseExpr->replace(new SymExpr(wDest));
@@ -2069,12 +2069,13 @@ static void moveInstantiationPoint(BlockStmt* to, BlockStmt* from, Type* type) {
   // This snippet updates the instantiation point of the reduction class and
   // its methods to point to the surviving Block (parent of 'hld').
   //
+  // MPF 2018-07-25: I believe this workaround can be removed
   AggregateType* reductionClass = toAggregateType(canonicalClassType(type));
   if (reductionClass->symbol->instantiationPoint == from) {
     reductionClass->symbol->instantiationPoint = to;
     forv_Vec(FnSymbol, fn, reductionClass->methods) {
-      if (fn->instantiationPoint == from) {
-        fn->instantiationPoint = to;
+      if (fn->instantiationPoint() == from) {
+        fn->setInstantiationPoint(to);
       }
     }
   }
