@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-
+use Regexp;
 use TOML;
 use MasonUtils;
 
@@ -87,6 +87,7 @@ proc modifyToml(add: bool, dep: string, external: bool, system: bool,
       const split = dep.split('@');
       const dependency = split[1];
       const version = split[2];
+      checkVersion(version);
 
       if system && add {
         writeln("Adding system dependency " + dependency + " version " + version);
@@ -249,3 +250,9 @@ private proc generateToml(toml: Toml, tomlPath: string) {
   tomlFile.close();
 }
 
+private proc checkVersion(version: string) throws {
+  const pattern = compile("([0-9].[0-9].[0-9][a-zA-Z]?)");
+  if !pattern.match(version) {
+    throw new MasonError("Version formatting incorrect. ex. 1.2.3");
+  }
+}
