@@ -345,7 +345,7 @@ static void addDefaultsAndReorder(FnSymbol *fn,
 
   // Create a Block to store the default values
   // We'll flatten this back out again in a minute.
-  BlockStmt* body = new BlockStmt();
+  BlockStmt* body = new BlockStmt(BLOCK_SCOPELESS);
   call->getStmtExpr()->insertBefore(body);
 
   // Fill in the NULLs in newActuals with the appropriate default argument.
@@ -1777,7 +1777,7 @@ static void insertRuntimeTypeDefaultWrapper(FnSymbol* fn,
     i++;
   }
 
-  BlockStmt* body = new BlockStmt();
+  BlockStmt* body = new BlockStmt(BLOCK_SCOPELESS);
   call->getStmtExpr()->insertBefore(body);
 
   Symbol* newSym = insertRuntimeTypeDefault(fn, formal, call, body, copyMap, curActual->symbol());

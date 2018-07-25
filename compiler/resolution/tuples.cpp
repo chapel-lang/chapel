@@ -516,7 +516,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
 
   CallExpr* ret = new CallExpr(PRIM_RETURN, call);
 
-  fn->body->replace( new BlockStmt( ret));
+  fn->replaceBodyStmtsWithStmt(ret);
   normalize(fn);
 }
 
@@ -736,7 +736,7 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
   ArgSymbol*     arg   = fn->getFormal(2);
   AggregateType* fromT = toAggregateType(arg->type);
 
-  BlockStmt* block = new BlockStmt();
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
   VarSymbol* retv = new VarSymbol("retv", toT);
   block->insertAtTail(new DefExpr(retv));
@@ -825,7 +825,7 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
   }
 
   block->insertAtTail(new CallExpr(PRIM_RETURN, retv));
-  fn->body->replace(block);
+  fn->replaceBodyStmtsWithStmts(block);
   normalize(fn);
 }
 
@@ -845,7 +845,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
     ct = computeCopyTuple(origCt, valueOnly, copy_fun, fn->body);
   }
 
-  BlockStmt* block = new BlockStmt();
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
   VarSymbol* retv = new VarSymbol("retv", ct);
   block->insertAtTail(new DefExpr(retv));
@@ -879,7 +879,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
   }
 
   block->insertAtTail(new CallExpr(PRIM_RETURN, retv));
-  fn->body->replace(block);
+  fn->replaceBodyStmtsWithStmts(block);
   normalize(fn);
 }
 
@@ -917,7 +917,7 @@ instantiate_tuple_unref(FnSymbol* fn)
   const char* useCopy = "chpl__initCopy";
   ct = computeCopyTuple(origCt, true, useCopy, fn->body);
 
-  BlockStmt* block = new BlockStmt();
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
   if( ct == origCt ) {
     // Just return the passed argument.
@@ -964,7 +964,7 @@ instantiate_tuple_unref(FnSymbol* fn)
     block->insertAtTail(new CallExpr(PRIM_RETURN, retv));
   }
 
-  fn->body->replace(block);
+  fn->replaceBodyStmtsWithStmts(block);
   normalize(fn);
 }
 

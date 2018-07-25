@@ -9486,7 +9486,7 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
   fn->getReturnSymbol()->type = runtimeType;
 
   // Build a new body for the original function.
-  BlockStmt* block = new BlockStmt();
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
   VarSymbol* var = newTemp("_return_tmp_", fn->retType);
   block->insertAtTail(new DefExpr(var));
 
@@ -9509,7 +9509,7 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
   block->insertAtTail(new CallExpr(PRIM_RETURN, var));
 
   // Replace the body of the original chpl__buildRuntime...Type() function.
-  fn->body->replace(block);
+  fn->replaceBodyStmtsWithStmts(block);
 }
 
 static void removeFormalTypeAndInitBlocks()
