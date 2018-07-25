@@ -537,11 +537,11 @@ void FnSymbol::replaceBodyStmtsWithStmts(BlockStmt* block) {
 }
 
 // Removes all statements from body and adds expr
-void FnSymbol::replaceBodyStmtsWithStmt(Expr* stmt) {
+void FnSymbol::replaceBodyStmtsWithStmt(Expr* addStmt) {
   for_alist(stmt, this->body->body) {
     stmt->remove();
   }
-  this->body->insertAtTail(stmt);
+  this->body->insertAtTail(addStmt);
 }
 
 void FnSymbol::setInstantiationPoint(Expr* expr) {
