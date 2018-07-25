@@ -1,6 +1,6 @@
 use DataFrames;
 
-var oneDigit = new unmanaged TypedSeries([1, 2, 3, 4, 5],
+var oneDigit = new owned TypedSeries([1, 2, 3, 4, 5],
                                new unmanaged TypedIndex(["A", "B", "C", "D", "E"]));
 var n = 12;
 

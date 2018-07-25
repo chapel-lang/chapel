@@ -28,21 +28,21 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc uni(lhs: borrowed TypedSeries, rhs: borrowed TypedSeries, unifier: borrowed SeriesUnifier): unmanaged Series {
+    proc uni(lhs: borrowed TypedSeries, rhs: borrowed TypedSeries, unifier: borrowed SeriesUnifier): owned Series {
       halt("generic Index cannot be unioned");
-      return _to_unmanaged(lhs);
+      return new owned Series();
     }
 
     pragma "no doc"
-    proc map(s: borrowed TypedSeries, mapper: borrowed SeriesMapper): unmanaged Series {
+    proc map(s: borrowed TypedSeries, mapper: borrowed SeriesMapper): owned Series {
       halt("generic Index cannot be mapped");
-      return _to_unmanaged(s);
+      return new owned Series();
     }
 
     pragma "no doc"
-    proc filter(s: borrowed TypedSeries, filterSeries: borrowed TypedSeries): unmanaged Series {
+    proc filter(s: borrowed TypedSeries, filterSeries: borrowed TypedSeries): owned Series {
       halt("generic Index cannot be filtered");
-      return _to_unmanaged(s);
+      return new owned Series();
     }
 
     pragma "no doc"
@@ -52,7 +52,7 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc writeThis(f, s: unmanaged TypedSeries(?) = nil) {
+    proc writeThis(f, s: borrowed TypedSeries(?) = nil) {
       halt("cannot writeThis on generic Index");
     }
 
@@ -115,7 +115,7 @@ module DataFrames {
     // TODO: sort Index
     override
     proc uni(lhs: borrowed TypedSeries(?lhsType), rhs: borrowed TypedSeries(?rhsType),
-             unifier: borrowed SeriesUnifier(lhsType)): unmanaged TypedSeries(lhsType)
+             unifier: borrowed SeriesUnifier(lhsType)): owned Series
              where lhsType == rhsType {
       var uni_ords = 1..(lhs.ords.size + rhs.ords.size);
       var uni_rev_idx: [uni_ords] idxType;
@@ -145,22 +145,22 @@ module DataFrames {
         }
       }
 
-      return new unmanaged TypedSeries(uni_data[1..curr_ord],
+      return new owned TypedSeries(uni_data[1..curr_ord],
                              new unmanaged TypedIndex(uni_rev_idx[1..curr_ord]),
                              uni_valid_bits[1..curr_ord]);
     }
 
     override
-    proc map(s: borrowed TypedSeries(?T), mapper: borrowed SeriesMapper(T, ?R)): unmanaged TypedSeries(R) {
+    proc map(s: borrowed TypedSeries(?T), mapper: borrowed SeriesMapper(T, ?R)): owned Series {
       var mapped: [ords] R;
       for (i, d) in s.items(idxType) do
         mapped[this[i]] = mapper.f(d);
 
-      return new unmanaged TypedSeries(mapped, _to_unmanaged(this), s.valid_bits);
+      return new owned TypedSeries(mapped, _to_unmanaged(this), s.valid_bits);
     }
 
     override
-    proc filter(s: borrowed TypedSeries(?T), filterSeries: borrowed TypedSeries(bool)): unmanaged TypedSeries(T) {
+    proc filter(s: borrowed TypedSeries(?T), filterSeries: borrowed TypedSeries(bool)): owned Series {
       var filter_rev_idx: [ords] idxType;
       var filter_data: [ords] T;
       var filter_valid_bits: [ords] bool;
@@ -175,7 +175,7 @@ module DataFrames {
         }
       }
 
-      return new unmanaged TypedSeries(filter_data[1..curr_ord],
+      return new owned TypedSeries(filter_data[1..curr_ord],
                              new unmanaged TypedIndex(filter_rev_idx[1..curr_ord]),
                              filter_valid_bits[1..curr_ord]);
     }
@@ -198,7 +198,7 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f, s: unmanaged TypedSeries(?) = nil) {
+    proc writeThis(f, s: borrowed TypedSeries(?) = nil) {
       var idxWidth = writeIdxWidth() + 4;
       for (idx, (v, d)) in zip(this, s._these()) {
         // TODO: clean up to simple cast after bugfix
@@ -248,7 +248,7 @@ module DataFrames {
   class Series {
     pragma "no doc"
     proc copy() {
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
@@ -259,79 +259,79 @@ module DataFrames {
     pragma "no doc"
     proc uni(lhs: borrowed TypedSeries, unifier: borrowed SeriesUnifier) {
       halt("generic Series cannot be unioned");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
     proc map(mapper: borrowed SeriesMapper) {
       halt("generic Series cannot be unioned");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
     proc add(rhs) {
       halt("generic Series cannot be added");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
     proc add_scalar(n) {
       halt("generic Series cannot be added");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
     proc subtr(rhs) {
       halt("generic Series cannot be subtracted");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
     proc subtr_scalar(n) {
       halt("generic Series cannot be subtracted");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
     proc mult(rhs) {
       halt("generic Series cannot be multiplied");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
     proc mult_scalar(n) {
       halt("generic Series cannot be multiplied");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
     proc lt_scalar(n) {
       halt("generic Series cannot be compared");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
     proc gt_scalar(n) {
       halt("generic Series cannot be compared");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
     proc eq_scalar(n) {
       halt("generic Series cannot be compared");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
     proc lteq_scalar(n) {
       halt("generic Series cannot be compared");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
     proc gteq_scalar(n) {
       halt("generic Series cannot be compared");
-      return _to_unmanaged(this);
+      return new owned Series();
     }
 
     pragma "no doc"
@@ -404,8 +404,8 @@ module DataFrames {
     }
 
     override
-    proc copy() {
-      return new unmanaged TypedSeries(this.data, this.idx, this.valid_bits);
+    proc copy() : owned Series {
+      return new owned TypedSeries(this.data, this.idx, this.valid_bits);
     }
 
     /*
@@ -481,8 +481,8 @@ module DataFrames {
     }
 
     // TODO: filterSeries needs to be Owned
-    proc this(filterSeries: ?T) where T: unmanaged Series {
-      var castFilter = filterSeries: unmanaged TypedSeries(bool);
+    proc this(filterSeries: ?T) : owned Series where isSubtype(T, Series) {
+      var castFilter = filterSeries: borrowed TypedSeries(bool);
       if idx then
         return idx.filter(this, castFilter);
 
@@ -492,7 +492,7 @@ module DataFrames {
         if b && i <= data.size then
           filter_data[i] = this.at(i);
       }
-      return new unmanaged TypedSeries(filter_data, this.valid_bits);
+      return new owned TypedSeries(filter_data, this.valid_bits);
     }
 
     proc at(ord: int) {
@@ -520,9 +520,9 @@ module DataFrames {
      */
 
     override
-    proc uni(lhs: borrowed TypedSeries(eltType), unifier: borrowed SeriesUnifier(eltType)): unmanaged TypedSeries(eltType) {
+    proc uni(lhs: borrowed TypedSeries(eltType), unifier: borrowed SeriesUnifier(eltType)): owned Series {
       if lhs.idx then
-        return lhs.idx.uni(lhs, this, unifier):unmanaged TypedSeries(eltType);
+        return lhs.idx.uni(lhs, this, unifier):owned Series;
 
       var uni_ords = if lhs.ords.size > this.ords.size
                      then 1..lhs.ords.size
@@ -545,16 +545,16 @@ module DataFrames {
         }
       }
 
-      return new unmanaged TypedSeries(uni_data, uni_valid_bits);
+      return new owned TypedSeries(uni_data, uni_valid_bits);
     }
 
     override
-    proc map(mapper: borrowed SeriesMapper): unmanaged Series {
+    proc map(mapper: borrowed SeriesMapper): owned Series {
       if idx then
         return idx.map(this, mapper);
 
       var mapped = [d in data] mapper.f(d);
-      return new unmanaged TypedSeries(mapped, this.valid_bits);
+      return new owned TypedSeries(mapped, this.valid_bits);
     }
 
     /*
@@ -563,60 +563,60 @@ module DataFrames {
     // TODO: "in" operator for idx.contains(lab)
 
     override
-    proc add(rhs): unmanaged Series {
+    proc add(rhs : borrowed Series): owned Series {
       return rhs.uni(this, new borrowed SeriesAdd(eltType));
     }
 
     override
-    proc add_scalar(n): unmanaged Series {
+    proc add_scalar(n): owned Series {
       var with_scalar = data + n;
-      return new unmanaged TypedSeries(with_scalar, idx);
+      return new owned TypedSeries(with_scalar, idx);
     }
 
     override
-    proc subtr(rhs): unmanaged Series {
+    proc subtr(rhs): owned Series {
       return rhs.uni(this, new borrowed SeriesSubtr(eltType));
     }
 
     override
-    proc subtr_scalar(n): unmanaged Series {
+    proc subtr_scalar(n): owned Series {
       var with_scalar = data - n;
-      return new unmanaged TypedSeries(with_scalar, idx);
+      return new owned TypedSeries(with_scalar, idx);
     }
 
     override
-    proc mult(rhs): unmanaged Series {
+    proc mult(rhs): owned Series {
       return rhs.uni(this, new borrowed SeriesMult(eltType));
     }
 
     override
-    proc mult_scalar(n): unmanaged Series {
+    proc mult_scalar(n): owned Series {
       var with_scalar = data * n;
-      return new unmanaged TypedSeries(with_scalar, idx);
+      return new owned TypedSeries(with_scalar, idx);
     }
 
     override
-    proc lt_scalar(n): unmanaged Series {
+    proc lt_scalar(n): owned Series {
       return this.map(new borrowed SeriesLessThan(n));
     }
 
     override
-    proc gt_scalar(n): unmanaged Series {
+    proc gt_scalar(n): owned Series {
       return this.map(new borrowed SeriesGreaterThan(n));
     }
 
     override
-    proc eq_scalar(n): unmanaged Series {
+    proc eq_scalar(n): owned Series {
       return this.map(new borrowed SeriesEqualTo(n));
     }
 
     override
-    proc lteq_scalar(n): unmanaged Series {
+    proc lteq_scalar(n): owned Series {
       return this.map(new borrowed SeriesLessThanEqualTo(n));
     }
 
     override
-    proc gteq_scalar(n): unmanaged Series {
+    proc gteq_scalar(n): owned Series {
       return this.map(new borrowed SeriesGreaterThanEqualTo(n));
     }
 
@@ -698,7 +698,11 @@ module DataFrames {
 
   class DataFrame {
     var labels: domain(string);
+
+    // TODO: array of owned Series
+    //   Currently run into confusing const errors in DefaultAssociative
     var columns: [labels] unmanaged Series;
+
     var idx: unmanaged Index;
 
     // TODO: init with labels arg
@@ -707,13 +711,13 @@ module DataFrames {
       this.complete();
     }
 
-    proc init(columns: [?D] unmanaged Series) {
+    proc init(columns: [?D] borrowed Series) {
       this.labels = D;
       this.idx = nil;
       this.complete();
 
       for (lab, s) in zip(labels, columns) do
-        this.columns[lab] = s.copy();
+        this.columns[lab] = s.copy().release();
     }
 
     proc init(columns: [?D], idx: unmanaged Index) {
@@ -725,6 +729,10 @@ module DataFrames {
         this.insert(lab, s);
     }
 
+    proc deinit() {
+      delete columns;
+    }
+
     iter these() {
       for s in columns do
         yield s;
@@ -734,8 +742,8 @@ module DataFrames {
       return columns[lab];
     }
 
-    proc insert(lab: string, s: unmanaged Series) {
-      var sCopy = s.copy();
+    proc insert(lab: string, s: borrowed Series) {
+      var sCopy = s.copy().release();
       sCopy.reindex(idx);
       columns[lab] = sCopy;
     }
