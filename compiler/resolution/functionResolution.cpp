@@ -1760,59 +1760,6 @@ static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-// Collect methods with a particular name from a type and from
-// any type it's instantiated from.
-static void collectVisibleMethodsNamed(Type*                   t,
-                                       const char*             nameAstr,
-                                       std::vector<FnSymbol*>& methods) {
-
-  forv_Vec(FnSymbol, method, t->methods) {
-    if (method->name == nameAstr &&
-        !method->hasFlag(FLAG_INVISIBLE_FN)) {
-      methods.push_back(method);
-    }
-  }
-
-  if (AggregateType* at = toAggregateType(t)) {
-    // Collect also methods from whatever type t is instantiated from
-    if (at->instantiatedFrom != NULL) {
-      collectVisibleMethodsNamed(at->instantiatedFrom, nameAstr, methods);
-
-      // Currently it's not possible for a specific instantiation
-      // to inherit from another type when the generic version
-      // does not.
-      return;
-    }
-
-    size_t maxChildMethods = methods.size();
-
-    // Collect also methods from a parent class type
-    forv_Vec(AggregateType, parent, at->dispatchParents) {
-      collectVisibleMethodsNamed(parent, nameAstr, methods);
-    }
-
-    // Filter out methods any of the parent methods
-    // that have a signature match with the child's methods.
-    // Such methods represent overrides with inheritance.
-    for (size_t i = maxChildMethods; i < methods.size(); i++) {
-      bool remove = false;
-
-      for (size_t j = 0; j < maxChildMethods; j++) {
-        if (methods[i] != NULL &&
-            methods[j] != NULL &&
-            signatureMatch(methods[i], methods[j])) {
-          remove = true;
-          break;
-        }
-      }
-
-      if (remove) {
-        methods[i] = NULL;
-      }
-    }
-  }
-}
-
 /************************************* | **************************************
 *                                                                             *
 * Checks that types match.                                                    *
