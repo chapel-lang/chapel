@@ -3,14 +3,14 @@ class EC {
   var b: sync bool = true;
 }
 
-proc up(e: EC) {
+proc up(e: borrowed EC) {
   var i = e.i;
   if i == 0 then
     e.b.reset();
   e.i = i + 1;
 }
 
-proc down(e: EC) {
+proc down(e: borrowed EC) {
   var i = e.i;
   if i == 1 then
     e.b = true;
@@ -18,10 +18,10 @@ proc down(e: EC) {
 }
 
 proc allocate() {
-  return new EC();
+  return new unmanaged EC();
 }
 
-proc wait(e: EC) {
+proc wait(e: unmanaged EC) {
   e.b;
   e.i; // wait until down is finished setting i
   delete e;
