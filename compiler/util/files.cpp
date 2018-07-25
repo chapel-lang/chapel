@@ -328,13 +328,18 @@ void closefile(fileinfo* thefile) {
 }
 
 
-void openCFile(fileinfo* fi, const char* name, const char* ext) {
+void openCFile(fileinfo* fi, const char* name, const char* ext,
+               bool useTmpDir) {
   if (ext)
     fi->filename = astr(name, ".", ext);
   else
     fi->filename = astr(name);
 
-  fi->pathname = genIntermediateFilename(fi->filename);
+  if (useTmpDir) {
+    fi->pathname = genIntermediateFilename(fi->filename);
+  } else {
+    fi->pathname = astr(name);
+  }
   openfile(fi, "w");
 }
 

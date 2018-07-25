@@ -90,7 +90,8 @@ static std::string getCompilelineOption(std::string option) {
 
 void codegen_library_makefile() {
   fileinfo makefile;
-  openCFile(&makefile, "Makefile.chpl_lib");
+  // TODO: alter location to use generated library directory
+  openCFile(&makefile, "Makefile.chpl_lib", "", false);
 
   // TODO: compileline --includes-and-defines adds -I. to the list
   // automatically.  If the library is in a different directory from the
