@@ -92,8 +92,10 @@ void codegen_library_makefile() {
   fileinfo makefile;
   openCFile(&makefile, "Makefile.chpl_lib");
 
-  // compileline --includes-and-defines adds -I. to the list.  Does this work
-  // if the library is in a different directory?  Add a test
+  // TODO: compileline --includes-and-defines adds -I. to the list
+  // automatically.  If the library is in a different directory from the
+  // Makefile that is using this one, that won't be sufficient to find the
+  // header file.  I will handle this with the output directory change
   std::string cflags = getCompilelineOption("cflags");
   cflags.pop_back(); // remove trailing newline
   std::string includes = getCompilelineOption("includes-and-defines");
@@ -101,7 +103,6 @@ void codegen_library_makefile() {
           cflags.c_str(),
           includes.c_str());
 
-  // Need to get the equivalent of -lname for the library
   std::string libraries = getCompilelineOption("libraries");
   std::string libname = "-l";
   int libLength = strlen("lib");
@@ -114,6 +115,7 @@ void codegen_library_makefile() {
     libname = executableFilename;
     libname += getExtension();
   }
+  // TODO: adjust for different location for the library, see earlier TODO
   fprintf(makefile.fptr, "CHPL_LDFLAGS = -L. %s %s \n",
           libname.c_str(),
           libraries.c_str());
