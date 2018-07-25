@@ -489,7 +489,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     wrapper->addFlag(FLAG_METHOD_PRIMARY);
   }
 
-  wrapper->instantiationPoint = fn->instantiationPoint;
+  wrapper->setInstantiationPoint(fn->instantiationPoint());
 
   if (fn->hasFlag(FLAG_LAST_RESORT)) {
     wrapper->addFlag(FLAG_LAST_RESORT);
@@ -856,7 +856,7 @@ static FnSymbol* buildWrapperForDefaultedFormals(FnSymbol*     fn,
   SymbolMap copyMap;
   CallExpr* call    = new CallExpr(fn);
   FnSymbol* retval  = buildEmptyWrapper(fn);
-  retval->instantiationPoint = getInstantiationPoint(info.call);
+  retval->setInstantiationPoint(info.call);
 
   retval->cname = astr("_default_wrap_", fn->cname);
 
@@ -2347,7 +2347,7 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
 
   normalize(liFn);
 
-  liFn->instantiationPoint = instantiationPt;
+  liFn->setInstantiationPoint(instantiationPt);
 }
 
 static void buildFollowerIterator(PromotionInfo& promotion,
@@ -2412,7 +2412,7 @@ static void buildFollowerIterator(PromotionInfo& promotion,
 
   normalize(fiFn);
 
-  fiFn->instantiationPoint = instantiationPt;
+  fiFn->setInstantiationPoint(instantiationPt);
 
   fixUnresolvedSymExprsForPromotionWrapper(fiFn, fn);
 }
@@ -2481,7 +2481,7 @@ static void initPromotionWrapper(PromotionInfo& promotion,
 
   FnSymbol* fn = promotion.fn;
   FnSymbol* retval = buildEmptyWrapper(fn);
-  retval->instantiationPoint = instantiationPoint;
+  retval->setInstantiationPoint(instantiationPoint);
 
   retval->cname = astr("_promotion_wrap_", fn->cname);
 
@@ -2822,7 +2822,7 @@ static void buildFastFollowerCheck(bool                  isStatic,
 
   normalize(checkFn);
 
-  checkFn->instantiationPoint = getInstantiationPoint(info.call);
+  checkFn->setInstantiationPoint(info.call);
 }
 
 /************************************* | **************************************

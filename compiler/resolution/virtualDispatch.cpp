@@ -223,13 +223,13 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
 
     if (ct->hasInitializers() == false) {
       FnSymbol*  typeConstr         = ct->typeConstructor;
-      BlockStmt* instantiationPoint = typeConstr->instantiationPoint;
+      BlockStmt* instantiationPoint = typeConstr->instantiationPoint();
 
       if (instantiationPoint == NULL) {
         instantiationPoint = toBlockStmt(typeConstr->defPoint->parentExpr);
       }
 
-      fn->instantiationPoint = instantiationPoint;
+      fn->setInstantiationPoint(instantiationPoint);
     } else {
       //
       // BHARSH 2018-04-06:
@@ -239,7 +239,7 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
       // A smaller test case:
       //   types/type_variables/deitz/test_point_of_instantiation3.chpl
       //
-      fn->instantiationPoint = ct->symbol->instantiationPoint;
+      fn->setInstantiationPoint(ct->symbol->instantiationPoint);
     }
 
     return fn;

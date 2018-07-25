@@ -122,7 +122,7 @@ makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
   typeCtor->retTag             = RET_TYPE;
   typeCtor->retType            = newType;
   typeCtor->instantiatedFrom   = gGenericTupleTypeCtor;
-  typeCtor->instantiationPoint = instantiationPoint;
+  typeCtor->setInstantiationPoint(instantiationPoint);
 
   typeCtor->insertAtTail(ret);
 
@@ -164,7 +164,7 @@ FnSymbol* makeBuildTupleType(std::vector<ArgSymbol*> typeCtorArgs,
   buildTupleType->substitutions.copy(newType->substitutions);
 
   buildTupleType->instantiatedFrom = gBuildTupleType;
-  buildTupleType->instantiationPoint = instantiationPoint;
+  buildTupleType->setInstantiationPoint(instantiationPoint);
 
   tupleModule->block->insertAtTail(new DefExpr(buildTupleType));
 
@@ -201,7 +201,7 @@ FnSymbol* makeBuildStarTupleType(std::vector<ArgSymbol*> typeCtorArgs,
   buildStarTupleType->substitutions.copy(newType->substitutions);
 
   buildStarTupleType->instantiatedFrom = gBuildStarTupleType;
-  buildStarTupleType->instantiationPoint = instantiationPoint;
+  buildStarTupleType->setInstantiationPoint(instantiationPoint);
 
   tupleModule->block->insertAtTail(new DefExpr(buildStarTupleType));
   return buildStarTupleType;
@@ -272,7 +272,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
   ctor->insertAtTail(ret);
   ctor->substitutions.copy(newType->substitutions);
 
-  ctor->instantiationPoint = instantiationPoint;
+  ctor->setInstantiationPoint(instantiationPoint);
 
   tupleModule->block->insertAtTail(new DefExpr(ctor));
 
@@ -315,7 +315,7 @@ FnSymbol* makeDestructTuple(TypeSymbol* newTypeSymbol,
   dtor->substitutions.copy(newType->substitutions);
 
   dtor->instantiatedFrom = gGenericTupleDestroy;
-  dtor->instantiationPoint = instantiationPoint;
+  dtor->setInstantiationPoint(instantiationPoint);
 
   tupleModule->block->insertAtTail(new DefExpr(dtor));
 
@@ -995,7 +995,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
   std::vector<TypeSymbol*> args;
   bool                     allSame            = true;
   FnSymbol*                typeConstr         = at->typeConstructor;
-  BlockStmt*               instantiationPoint = typeConstr->instantiationPoint;
+  BlockStmt*             instantiationPoint = typeConstr->instantiationPoint();
   int                      i                  = 0;
   AggregateType*           retval             = NULL;
 

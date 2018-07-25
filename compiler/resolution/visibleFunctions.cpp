@@ -211,10 +211,15 @@ static void getVisibleFunctions(const char*           name,
                  isArgSymbol(block->parentSymbol) ||
                  isShadowVarSymbol(block->parentSymbol));
       fnBlock = true;
-      if (inFn->instantiationPoint)
-        INT_ASSERT(inFn->instantiationPoint->parentSymbol);
-      if (inFn->instantiationPoint && inFn->instantiationPoint->parentSymbol)
-        instantiationPt = inFn->instantiationPoint;
+      BlockStmt* inFnInstantiationPoint = inFn->instantiationPoint();
+      if (inFnInstantiationPoint && !inFnInstantiationPoint->parentSymbol) {
+        INT_FATAL(inFn, "instantiation point not in tree\n"
+                        "try --break-on-remove-id %i and consider making\n"
+                        "that block scopeless",
+                        inFnInstantiationPoint->id);
+      }
+      if (inFnInstantiationPoint && inFnInstantiationPoint->parentSymbol)
+        instantiationPt = inFnInstantiationPoint;
     }
 
     if (call->id == breakOnResolveID) {
@@ -337,12 +342,10 @@ BlockStmt* getInstantiationPoint(Expr* expr) {
     } else if (cur->parentExpr) {
       // continue
     } else if (Symbol* s = cur->parentSymbol) {
-      FnSymbol* fn = toFnSymbol(s);
-      if (fn && fn->instantiationPoint)
-        return fn->instantiationPoint;
-      else {
-        // continue
-      }
+      if (FnSymbol* fn = toFnSymbol(s))
+        if (BlockStmt* instantiationPt = fn->instantiationPoint())
+          return instantiationPt;
+      // otherwise continue
     }
 
     // Where to look next?
