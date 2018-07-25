@@ -144,7 +144,7 @@ proc updateRegistry(tf: string, args : [] string) {
       const localRegistry = registryHome;
       mkdir(localRegistry, parents=true);
       const cloneRegistry = 'git clone -q ' + registry + ' .';
-      writeln("Initializing mason-registry for ", name);
+      writeln("Updating mason-registry for ", name);
       gitC(localRegistry, cloneRegistry);
     }
   }
