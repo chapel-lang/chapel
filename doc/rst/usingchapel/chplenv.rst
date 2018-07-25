@@ -141,20 +141,22 @@ CHPL_*_COMPILER
    and generated code for ``CHPL_TARGET_PLATFORM``.  Currently supported values
    are as follows:
 
-        =================  ===================================================
-        Value              Description
-        =================  ===================================================
-        clang              The Clang compiler suite -- clang and clang++
-        clang-included     The Clang compiler in third-party/llvm
-        cray-prgenv-cray   The Cray PrgEnv compiler using the Cray CCE backend
-        cray-prgenv-gnu    The Cray PrgEnv compiler using the GNU backend
-        cray-prgenv-intel  The Cray PrgEnv compiler using the Intel backend
-        cray-prgenv-pgi    The Cray PrgEnv compiler using the PGI backend
-        gnu                The GNU compiler suite -- gcc and g++
-        ibm                The IBM compiler suite -- xlc and xlC
-        intel              The Intel compiler suite -- icc and icpc
-        pgi                The PGI compiler suite -- pgcc and pgc++
-        =================  ===================================================
+        =================== ===================================================
+        Value               Description
+        =================== ===================================================
+        allinea             The Allinea ARM compiler suite -- clang and clang++
+        clang               The Clang compiler suite -- clang and clang++
+        clang-included      The Clang compiler in third-party/llvm
+        cray-prgenv-allinea The Cray PrgEnv compiler using the Allinea backend
+        cray-prgenv-cray    The Cray PrgEnv compiler using the Cray CCE backend
+        cray-prgenv-gnu     The Cray PrgEnv compiler using the GNU backend
+        cray-prgenv-intel   The Cray PrgEnv compiler using the Intel backend
+        cray-prgenv-pgi     The Cray PrgEnv compiler using the PGI backend
+        gnu                 The GNU compiler suite -- gcc and g++
+        ibm                 The IBM compiler suite -- xlc and xlC
+        intel               The Intel compiler suite -- icc and icpc
+        pgi                 The PGI compiler suite -- pgcc and pgc++
+        =================== ===================================================
 
    The default for ``CHPL_*_COMPILER`` depends on the value of the corresponding
    ``CHPL_*_PLATFORM`` environment variable:
