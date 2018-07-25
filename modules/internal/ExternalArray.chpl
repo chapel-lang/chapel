@@ -38,7 +38,6 @@ module ExternalArray {
 
   extern proc chpl_free_external_array(x: chpl_external_array);
 
-  pragma "use default init"
   class ExternDist: BaseDist {
 
     proc dsiNewRectangularDom(param rank: int = 1, type idxType = int,
@@ -334,15 +333,15 @@ module ExternalArray {
   }
 
   proc convertToExternalArray(arr: []) {
+    if (!isIntegralType(arr.domain.idxType)) {
+      compilerError("cannot return an array with indices that are not " +
+                    "integrals");
+    }
     if (arr.domain.stridable) {
       compilerError("cannot return a strided array");
     }
     if (arr.domain.rank != 1) {
       compilerError("cannot return an array with rank != 1");
-    }
-    if (!isIntegralType(arr.domain.idxType)) {
-      compilerError("cannot return an array with indices that are not " +
-                    "integrals");
     }
     if (arr.domain.low != 0) {
       halt("cannot return an array when the lower bounds is not 0");

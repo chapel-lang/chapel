@@ -143,12 +143,6 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
           USR_WARN(fn, "function's return type is not a value type.  Ignoring.");
         }
         fn->retTag = RET_TYPE;
-      } else if (flag == FLAG_USE_DEFAULT_INIT) {
-        AggregateType* at = toAggregateType(sym->type);
-        if (!isTypeSymbol(sym) || at == NULL) {
-          USR_FATAL_CONT(sym, "cannot apply 'use default init' to symbol '%s',"
-                         " not a class or record definition", sym->name);
-        }
       }
     }
   }
@@ -893,6 +887,15 @@ static CallExpr* makeUnmanagedNew(Expr* typeArg, Expr* arg) {
                                       new SymExpr(dtUnmanaged->symbol))));
 }
 
+static void adjustMinMaxReduceOp(Expr* reduceOp) {
+  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(reduceOp)) {
+    if (!strcmp(sym->unresolved, "max"))
+      sym->unresolved = astr("MaxReduceScanOp");
+    else if (!strcmp(sym->unresolved, "min"))
+      sym->unresolved = astr("MinReduceScanOp");
+  }
+}  
+
 // Do whatever is needed for a reduce intent.
 // Return the globalOp symbol.
 static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
@@ -901,13 +904,7 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
 {
   Expr* reduceOp = reduceOpRef;  // save away these
   Expr* otherROp = otherROpRef;
-
-  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(reduceOp)) {
-    if (!strcmp(sym->unresolved, "max"))
-      sym->unresolved = astr("MaxReduceScanOp");
-    else if (!strcmp(sym->unresolved, "min"))
-      sym->unresolved = astr("MinReduceScanOp");
-  }
+  adjustMinMaxReduceOp(reduceOp);
 
   VarSymbol* globalOp;
   if (useThisGlobalOp) {
@@ -1208,6 +1205,7 @@ void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar) {
   Expr* ovar = new UnresolvedSymExpr(svar->name);
   if (Expr* ri = svar->reduceOpExpr()) {
     // This is a reduce intent. NB 'intent' is undefined.
+    adjustMinMaxReduceOp(ri);
     ti->insertAtTail(ri);
     ti->insertAtTail(ovar);
   } else {
@@ -1738,13 +1736,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
 static void
 buildReduceScanPreface1(FnSymbol* fn, Symbol* data, Symbol* eltType,
                        Expr* opExpr, Expr* dataExpr, bool zippered=false) {
-  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(opExpr)) {
-    if (!strcmp(sym->unresolved, "max"))
-      sym->unresolved = astr("MaxReduceScanOp");
-    else if (!strcmp(sym->unresolved, "min"))
-      sym->unresolved = astr("MinReduceScanOp");
-  }
-
+  adjustMinMaxReduceOp(opExpr);
   eltType->addFlag(FLAG_MAYBE_TYPE);
   fn->insertAtTail(new DefExpr(eltType));
 
@@ -2170,6 +2162,41 @@ FnSymbol* buildLambda(FnSymbol *fn) {
   return fn;
 }
 
+// Creates a dummy function that accumulates flags & cname
+FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr) {
+
+  const char* cname = "";
+  // Look for a string literal we can use
+  if (paramCNameExpr != NULL)
+    if (SymExpr* se = toSymExpr(paramCNameExpr))
+      if (VarSymbol* v = toVarSymbol(se->symbol()))
+        if (v->isImmediate())
+          if (v->immediate->const_kind == CONST_KIND_STRING)
+            cname = v->immediate->v_string;
+
+  FnSymbol* ret = new FnSymbol(cname);
+
+  if (externOrExport == FLAG_EXTERN) {
+    ret->addFlag(FLAG_LOCAL_ARGS);
+    ret->addFlag(FLAG_EXTERN);
+  }
+  if (externOrExport == FLAG_EXPORT) {
+    ret->addFlag(FLAG_LOCAL_ARGS);
+    ret->addFlag(FLAG_EXPORT);
+  }
+
+  // Handle non-trivial param names that need to be resolved
+  // the check for dtString->symbol avoids this block under chpldoc
+  if (paramCNameExpr && cname[0] == '\0' && dtString->symbol != NULL) {
+    DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
+                                      astr_chpl_cname,
+                                      new SymExpr(dtString->symbol),
+                                      paramCNameExpr, NULL);
+    ret->insertFormalAtTail(argDef);
+  }
+
+  return ret;
+}
 
 // Replaces the dummy function name "_" with the real name, sets the 'this'
 // intent tag. For methods, it also adds a method tag and "this" declaration.
@@ -2315,13 +2342,14 @@ DefExpr* buildForwardingExprFnDef(Expr* expr) {
   // This way, we can work with the rest of the compiler that
   // assumes that 'this' is an ArgSymbol.
   static int delegate_counter = 0;
-  const char* name = astr("forwarding_expr", istr(++delegate_counter));
+  const char* name = astr("chpl_forwarding_expr", istr(++delegate_counter));
   if (UnresolvedSymExpr* usex = toUnresolvedSymExpr(expr))
     name = astr(name, "_", usex->unresolved);
   FnSymbol* fn = new FnSymbol(name);
 
   fn->addFlag(FLAG_INLINE);
   fn->addFlag(FLAG_MAYBE_REF);
+  fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
   fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));

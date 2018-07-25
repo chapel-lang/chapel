@@ -140,5 +140,12 @@ typedef struct _gasnete_op_t *gasnet_handle_t;
 #define GASNETE_COLL_NEEDS_CORE 1
 #endif
 
+// Configure default VIS tuning knobs
+// 12/15/17: Measurements on ALCF Cetus (BG/Q) show the ideal MAXCHUNK for I+S to be:
+//   ~512 for puts and ~256 for gets
+#if PLATFORM_OS_BGQ
+  #define GASNETE_VIS_MAXCHUNK_DEFAULT 256
+#endif
+
 #endif
 

@@ -88,7 +88,7 @@ struct gasnetc_hash_s {
 /* A lock-free hash table deserves lock-free allocation */
 #if 1
   static gasneti_lifo_head_t entry_pool = GASNETI_LIFO_INITIALIZER;
-  GASNETI_ALWAYS_INLINE(alloc_hash_entry)
+  GASNETI_INLINE(alloc_hash_entry)
   hash_entry *alloc_hash_entry(void)
   {
     hash_entry *entry = gasneti_lifo_pop(&entry_pool);
@@ -277,14 +277,14 @@ static void *gasnetc_lf_list_find(marked_ptr_t  *head,
     }
 } /*}}}*/
 
-GASNETI_ALWAYS_INLINE(so_regularkey) GASNETI_CONST
+GASNETI_INLINE(so_regularkey) GASNETI_CONST
 so_key_t so_regularkey(const lkey_t key)
 {
     return REVERSE(key | MSB);
 }
 GASNETI_CONSTP(so_regularkey)
 
-GASNETI_ALWAYS_INLINE(so_dummykey) GASNETI_CONST
+GASNETI_INLINE(so_dummykey) GASNETI_CONST
 so_key_t so_dummykey(const lkey_t key)
 {
     return REVERSE(key);
@@ -404,7 +404,7 @@ int  gasnetc_hash_remove(gasnetc_hash        h,
     return 1;
 }
 
-GASNETI_ALWAYS_INLINE(GET_PARENT) GASNETI_CONST
+GASNETI_INLINE(GET_PARENT) GASNETI_CONST
 size_t GET_PARENT(uint64_t bucket)
 {
     uint64_t t = bucket;

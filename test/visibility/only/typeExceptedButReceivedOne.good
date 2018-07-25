@@ -1,2 +1,1 @@
-typeExceptedButReceivedOne.chpl:5: In function 'main':
-typeExceptedButReceivedOne.chpl:6: error: 'bar()' returns a type that isn't visible
+6

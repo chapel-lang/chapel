@@ -336,7 +336,6 @@ symbolFlag( FLAG_UNALIAS_FN,  ypr, "unalias fn" , "function to copy array slices
 symbolFlag( FLAG_UNCHECKED_THROWS,  ypr, "unchecked throws" , "function throws but handling the errors is not required even in strict mode")
 symbolFlag( FLAG_UNREF_FN,  ypr, "unref fn" , "function to remove reference fields from tuples or copy array slices when returning")
 symbolFlag( FLAG_UNSAFE,  ypr, "unsafe" , "unsafe (disable lifetime checking)")
-symbolFlag( FLAG_USE_DEFAULT_INIT, ypr, "use default init", "generate default initializer instead of constructor")
 symbolFlag( FLAG_VECTORIZE_YIELDING_LOOPS, ypr, "vectorize yielding loops", "used to explicitly vectorize yielding loops in iterators" )
 symbolFlag( FLAG_VIRTUAL , npr, "virtual" , ncm )
 symbolFlag( FLAG_VOID_NO_RETURN_VALUE, npr, "no return value for void", "function does not return a value if the return type is void" )

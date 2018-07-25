@@ -848,12 +848,54 @@ module ChapelArray {
      return false. */
   proc isSparseArr(a: []) param return isSparseDom(a.domain);
 
+  // Helper function used to ensure a returned array matches the declared
+  // return type when the declared return type specifies a particular domain
+  // but not the element type.
+  proc chpl__checkDomainsMatch(a: [], b) {
+    if (boundsChecking) {
+      if (a.domain != b) {
+        HaltWrappers.boundsCheckHalt("domain mismatch on return");
+      }
+    }
+  }
+
+  proc chpl__checkDomainsMatch(a: _iteratorRecord, b) {
+    if (boundsChecking) {
+      // Should use iterator.shape here to avoid copy
+      var tmp = a;
+      if (tmp.domain != b) {
+        HaltWrappers.boundsCheckHalt("domain mismatch on return");
+      }
+    }
+  }
+
+  // Helper function used to ensure a returned array matches the declared
+  // return type when the declared return type specifies a particular element
+  // type but not the domain
+  proc chpl__checkEltTypeMatch(a: [], type b) {
+    if (a.eltType != b) {
+      compilerError("array element type mismatch in return from ",
+                    a.eltType: string,
+                    " to ",
+                    b: string);
+    }
+  }
+
+  proc chpl__checkEltTypeMatch(a: _iteratorRecord, type b) {
+    type eltType = iteratorToArrayElementType(a.type);
+    if (eltType != b) {
+      compilerError("array element type mismatch in return from ",
+                    eltType: string,
+                    " to ",
+                    b: string);
+    }
+  }
+
   //
   // Support for distributions
   //
   pragma "no doc"
   pragma "syntactic distribution"
-  pragma "use default init"
   record dmap { }
 
   proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
@@ -880,7 +922,6 @@ module ChapelArray {
   pragma "distribution"
   pragma "ignore noinit"
   pragma "no doc"
-  pragma "use default init"
   record _distribution {
     var _pid:int;  // only used when privatized
     pragma "owned"
@@ -1008,7 +1049,6 @@ module ChapelArray {
   }
 
 
-  pragma "use default init"
   record _serialized_domain {
     param rank;
     type idxType;
@@ -1026,7 +1066,6 @@ module ChapelArray {
   pragma "domain"
   pragma "has runtime type"
   pragma "ignore noinit"
-  pragma "use default init"
   record _domain {
     var _pid:int; // only used when privatized
     pragma "owned"
@@ -2098,7 +2137,6 @@ module ChapelArray {
   pragma "array"
   pragma "has runtime type"
   pragma "ignore noinit"
-  pragma "use default init"
   pragma "default intent is ref if modified"
   record _array {
     var _pid:int;  // only used when privatized
@@ -3955,7 +3993,6 @@ module ChapelArray {
   // index for all opaque domains
   //
   pragma "no doc"
-  pragma "use default init"
   record _OpaqueIndex {
     var node:int = 0;
     var i:uint = 0;
@@ -4136,6 +4173,29 @@ module ChapelArray {
   // confusion for the compiler is resolved by the liberal use of
   // pragmas.
   //
+
+  pragma "init copy fn"
+  proc chpl__initCopy(ir: _iteratorRecord)
+    where chpl_iteratorHasShape(ir)
+  {
+    var shape = _newDomain(ir._shape_);
+
+    // Important: ir._shape_ points to a domain class for a domain
+    // that is owned by the forall-expression or the leader in the
+    // promoted expression.
+    shape._unowned = true;
+
+    // Right now there are two distinct events for each array element:
+    //  * initialization upon the array declaration,
+    //  * assignment within the forall loop.
+    // TODO: we want to have just a single move, as is done with 'eltCopy'
+    // in the other case. Ex. users/vass/km/array-of-records-crash-1.chpl
+
+    var result: [shape] iteratorToArrayElementType(ir.type);
+    forall (r, src) in zip(result, ir) do
+      r = src;
+    return result;
+  }
 
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {

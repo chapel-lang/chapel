@@ -57,6 +57,7 @@
  */
 module SharedObject {
 
+  use OwnedObject;
 
   // TODO unify with RefCountBase. Even though that one is for
   // intrusive ref-counting and this one isn't, there's no fundamental
@@ -148,6 +149,34 @@ module SharedObject {
     }
 
     /*
+       Initialize a :record:`Shared` taking a pointer from
+       a :record:`Owned`.
+
+       This :record:`Shared` will take over the deletion of the class
+       instance. It is an error to directly delete the class instance
+       while it is managed by :record:`Shared`.
+
+       :arg take: the owned value to take ownership from
+     */
+    proc init(in take:owned) {
+      var p = take.release();
+      this.t = _to_borrowed(p.type);
+
+      if !isClass(p) then
+        compilerError("Shared only works with classes");
+
+      var rc:unmanaged ReferenceCount = nil;
+
+      if p != nil then
+        rc = new unmanaged ReferenceCount();
+
+      this.p = p;
+      this.pn = rc;
+
+      this.complete();
+    }
+
+    /*
        Copy-initializer. Creates a new :record:`Shared`
        that refers to the same class instance as `src`.
        These will share responsibility for managing the instance.
@@ -235,6 +264,20 @@ module SharedObject {
     lhs.clear();
     lhs.p = rhs.p;
     lhs.pn = rhs.pn;
+  }
+
+  /*
+     Set a :record:`Shared` from a :record`Owned`.
+     On return, `lhs` will refer to the object previously
+     managed by `rhs`, and `rhs` will refer to `nil`.
+   */
+  proc =(ref lhs:_shared, in rhs:owned) {
+    lhs.retain(rhs.release());
+  }
+
+  pragma "no doc"
+  proc =(ref lhs:shared, rhs:_nilType) {
+    lhs.clear();
   }
 
   /*

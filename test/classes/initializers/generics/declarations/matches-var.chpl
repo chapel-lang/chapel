@@ -9,5 +9,5 @@ class Foo {
   }
 }
 
-var foo: Foo(int);
+var foo: borrowed Foo(int);
 writeln(foo.type:string);

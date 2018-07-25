@@ -10,7 +10,7 @@ pragma "ignore noinit"
 record R {
   var a: int;
 
-  proc R() {
+  proc init() {
     writeln("default init!");
     a = 4;
   }

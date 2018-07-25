@@ -467,6 +467,9 @@ compSampler-timecomp: &timecomp-base
   07/10/18:
     - use isSubtype in preference to ':' in where clauses (#10143)
     - Refactor codegenPrimitive, add limit to denormalize (#10187)
+  07/14/18:
+    - Improve the speed of codegenPrimitive (#10321)
+
 
 cg:
   09/20/16:
@@ -562,6 +565,8 @@ fasta:
     - Remove handling of references from copyPropagation (#6779)
   07/04/18:
     - Disable enum->int casts for enums without values (#10114)
+  07/14/18:
+    - Optimize enum->int casts for concrete types (#10308)
 
 fastaredux:
   01/14/14:
@@ -574,6 +579,8 @@ fastaredux:
     - implemented good_alloc_size for jemalloc(#3446)
   07/04/18:
     - Disable enum->int casts for enums without values (#10114)
+  07/14/18:
+    - Optimize enum->int casts for concrete types (#10308)
 
 fft-timecomp:
   <<: *timecomp-base
@@ -684,6 +691,8 @@ jacobi:
     - Enable phase one dynamic dispatch (#8790)
   07/10/18:
     - use isSubtype in preference to ':' in where clauses (#10143)
+  07/19/18:
+    - Do not introduce ref temps (#10010)
 
 knucleotide:
   10/17/15:

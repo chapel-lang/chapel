@@ -34,14 +34,6 @@
   #define GASNET_ALIGNED_SEGMENTS   1
 #endif
 
-#if !defined(GASNETE_PUTGET_ALWAYSREMOTE) && !defined(GASNETE_PUTGET_ALWAYSLOCAL)
- #if GASNET_PSHM
-  #define GASNETE_PUTGET_ALWAYSREMOTE 1
- #else
-  #define GASNETE_PUTGET_ALWAYSLOCAL 1
- #endif
-#endif
-
 #define GASNETI_GASNETC_AMPOLL
 #if GASNET_PSHM
   extern int gasnetc_AMPoll(void);
@@ -82,8 +74,8 @@
 #define GASNETC_CONDUIT_STATS(CNT,VAL,TIME) 
 
 #if GASNET_PSHM
-  #define GASNETC_FATALSIGNAL_CALLBACK(sig) gasnetc_fatalsignal_callback(sig)
-  extern void gasnetc_fatalsignal_callback(int sig);
+  #define GASNETC_FATALSIGNAL_CLEANUP_CALLBACK(sig) gasnetc_fatalsignal_cleanup_callback(sig)
+  extern void gasnetc_fatalsignal_cleanup_callback(int sig);
 #endif
 
 #endif

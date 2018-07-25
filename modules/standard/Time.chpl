@@ -111,7 +111,9 @@ proc getCurrentDayOfWeek() : Day {
 }
 
 /*
-   Delay a task for a duration in the units specified
+   Delay a task for a duration in the units specified. This function
+   will return without sleeping and emit a warning if the duration is
+   negative.
 
    :arg  t: The duration for the time to sleep
    :type t: `real`
@@ -123,7 +125,7 @@ inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
   extern proc chpl_task_sleep(s:c_double) : void;
 
   if t < 0 {
-    try! stderr.writeln("Warning: sleep() called with negative time parameter");
+    warning("sleep() called with negative time parameter: '"+t+"'");
     return;
   }
   chpl_task_sleep(_convert_to_seconds(unit, t:real):c_double);
@@ -137,7 +139,6 @@ inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
    A :record:`!Timer` is either running or stopped.
 */
 
-pragma "use default init"
 record Timer {
   pragma "no doc"
   var time:        _timevalue = chpl_null_timevalue();
@@ -160,17 +161,17 @@ record Timer {
     }
   }
 
-  /* Starts the timer. It is an error to start a timer that is already running. */
+  /* Starts the timer. A warning is emitted if the timer is already running. */
   proc start() : void {
     if !running {
       running = true;
       time    = chpl_now_timevalue();
     } else {
-      halt("start called on a timer that has not been stopped");
+      warning("start called on a timer that has not been stopped");
     }
   }
 
-  /* Stops the timer. It is an error to stop a timer that is not running. */
+  /* Stops the timer. A warning is emitted if the timer is not running. */
   proc stop() : void {
     if running {
       var time2: _timevalue = chpl_now_timevalue();
@@ -178,7 +179,7 @@ record Timer {
       accumulated += _diff_time(time2, time);
       running      = false;
     } else {
-      halt("stop called on a timer that has not been started");
+      warning("stop called on a timer that has not been started");
     }
   }
 
@@ -230,9 +231,7 @@ private proc _convert_to_seconds(unit: TimeUnits, us: real) {
     when TimeUnits.hours        do return us * 3600.0;
   }
 
-  halt("internal error in module Time");
-
-  // will never get here, but to avoid warnings:
+  HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
   return -1.0;
 }
 
@@ -246,9 +245,7 @@ private proc _convert_microseconds(unit: TimeUnits, us: real) {
     when TimeUnits.hours        do return us / 3600.0e+6;
   }
 
-  halt("internal error in module Time");
-
-  // will never get here, but to avoid warnings:
+  HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
   return -1.0;
 }
 

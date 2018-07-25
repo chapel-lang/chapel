@@ -856,7 +856,7 @@ static FnSymbol* buildWrapperForDefaultedFormals(FnSymbol*     fn,
   SymbolMap copyMap;
   CallExpr* call    = new CallExpr(fn);
   FnSymbol* retval  = buildEmptyWrapper(fn);
-  retval->instantiationPoint = getVisibilityBlock(info.call);
+  retval->instantiationPoint = getInstantiationPoint(info.call);
 
   retval->cname = astr("_default_wrap_", fn->cname);
 
@@ -1991,22 +1991,22 @@ namespace {
 }
 
 static FnSymbol*  buildPromotionWrapper(PromotionInfo& promotion,
-                                        BlockStmt* visibilityBlock,
+                                        BlockStmt* instantiationPt,
                                         CallInfo&  info,
                                         bool       fastFollowerChecks);
 
 static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
-                                     BlockStmt* visibilityBlock,
+                                     BlockStmt* instantiationPt,
                                      CallInfo&  info,
                                      bool       fastFollowerChecks);
 
 static void       buildLeaderIterator(FnSymbol* wrapFn,
-                                      BlockStmt* visibilityBlock,
+                                      BlockStmt* instantiationPt,
                                       Expr*     iterator,
                                       bool      zippered);
 
 static void       buildFollowerIterator(PromotionInfo& promotion,
-                                        BlockStmt* visibilityBlock,
+                                        BlockStmt* instantiationPt,
                                         Expr*     indices,
                                         Expr*     iterator,
                                         CallExpr* wrapCall);
@@ -2025,7 +2025,7 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
                                   CallExpr* wrapCall);
 
 static void initPromotionWrapper(PromotionInfo& promotion,
-                                 BlockStmt* visibilityBlock);
+                                 BlockStmt* instantiationPt);
 
 static Expr*      getIndices(PromotionInfo& promotion);
 
@@ -2046,6 +2046,29 @@ static void       buildFastFollowerCheck(bool                  isStatic,
                                          CallInfo&             info,
                                          FnSymbol*             wrapper,
                                          std::set<ArgSymbol*>& formals);
+
+// insert PRIM_ITERATOR_RECORD_SET_SHAPE(iterRecord,shapeSource)
+static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
+  CallExpr* move = toCallExpr(call->parentExpr);
+  // If call's result is not used, do not insert.
+  // This happens, for example, during resolveSerializeDeserialize().
+  if (move == NULL) return;
+  INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+  Symbol* irTemp = toSymExpr(move->get(1))->symbol();
+
+  // Which of call's arguments determines the shape?
+  Symbol* shapeSource = NULL;
+  int i = 0;
+  for_actuals(actual, call) {
+    if (promotion.promotedType[i++] != NULL) {
+      shapeSource = toSymExpr(actual)->symbol();
+      break;
+    }
+  }
+
+  move->insertAfter(new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE,
+                                 irTemp, shapeSource));
+}
 
 static bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
                                 std::vector<ArgSymbol*>& actualFormals) {
@@ -2096,9 +2119,9 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
 
   if (retval == NULL) {
     SET_LINENO(info.call);
-    BlockStmt* visibilityBlock = getVisibilityBlock(info.call);
+    BlockStmt* instantiationPt = getInstantiationPoint(info.call);
     retval = buildPromotionWrapper(promotion,
-                                   visibilityBlock,
+                                   instantiationPt,
                                    info,
                                    fastFollowerChecks);
 
@@ -2106,6 +2129,8 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
 
     addCache(promotionsCache, promotion.fn, promotion.wrapperFn, &promotion.subs);
   }
+
+  addSetIteratorShape(promotion, info.call);
 
   return retval;
 }
@@ -2176,12 +2201,12 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
 }
 
 static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
-                                       BlockStmt* visibilityBlock,
+                                       BlockStmt* instantiationPt,
                                        CallInfo&  info,
                                        bool       fastFollowerChecks) {
 
   BlockStmt* loop       = NULL;
-  initPromotionWrapper(promotion, visibilityBlock);
+  initPromotionWrapper(promotion, instantiationPt);
   FnSymbol*  retval     = promotion.wrapperFn;
   FnSymbol*  fn         = promotion.fn;
 
@@ -2197,7 +2222,7 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
     // Save the wrapCall to adjust it later
     promotion.wrapCalls.push_back(wrapCall);
   } else {
-    loop = buildPromotionLoop(promotion, visibilityBlock, info, fastFollowerChecks);
+    loop = buildPromotionLoop(promotion, instantiationPt, info, fastFollowerChecks);
   }
 
   retval->insertAtTail(new BlockStmt(loop));
@@ -2214,7 +2239,7 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
 }
 
 static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
-                                     BlockStmt* visibilityBlock,
+                                     BlockStmt* instantiationPt,
                                      CallInfo&  info,
                                      bool       fastFollowerChecks) {
   FnSymbol*  wrapFn     = promotion.wrapperFn;
@@ -2231,9 +2256,9 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
   yieldTmp->addFlag(FLAG_EXPR_TEMP);
 
-  buildLeaderIterator(wrapFn, visibilityBlock, iterator, zippered);
+  buildLeaderIterator(wrapFn, instantiationPt, iterator, zippered);
 
-  buildFollowerIterator(promotion, visibilityBlock, indices, iterator, wrapCall);
+  buildFollowerIterator(promotion, instantiationPt, indices, iterator, wrapCall);
 
   if (fNoFastFollowers == false && fastFollowerChecks == true) {
     std::set<ArgSymbol*> requiresPromotion;
@@ -2260,7 +2285,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 }
 
 static void buildLeaderIterator(FnSymbol* wrapFn,
-                                BlockStmt* visibilityBlock,
+                                BlockStmt* instantiationPt,
                                 Expr*     iterator,
                                 bool      zippered) {
   SymbolMap   leaderMap;
@@ -2322,11 +2347,11 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
 
   normalize(liFn);
 
-  liFn->instantiationPoint = visibilityBlock;
+  liFn->instantiationPoint = instantiationPt;
 }
 
 static void buildFollowerIterator(PromotionInfo& promotion,
-                                  BlockStmt* visibilityBlock,
+                                  BlockStmt* instantiationPt,
                                   Expr*     indices,
                                   Expr*     iterator,
                                   CallExpr* wrapCall) {
@@ -2387,7 +2412,7 @@ static void buildFollowerIterator(PromotionInfo& promotion,
 
   normalize(fiFn);
 
-  fiFn->instantiationPoint = visibilityBlock;
+  fiFn->instantiationPoint = instantiationPt;
 
   fixUnresolvedSymExprsForPromotionWrapper(fiFn, fn);
 }
@@ -2452,11 +2477,11 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
 }
 
 static void initPromotionWrapper(PromotionInfo& promotion,
-                                 BlockStmt* visibilityBlock) {
+                                 BlockStmt* instantiationPoint) {
 
   FnSymbol* fn = promotion.fn;
   FnSymbol* retval = buildEmptyWrapper(fn);
-  retval->instantiationPoint = visibilityBlock;
+  retval->instantiationPoint = instantiationPoint;
 
   retval->cname = astr("_promotion_wrap_", fn->cname);
 
@@ -2797,7 +2822,7 @@ static void buildFastFollowerCheck(bool                  isStatic,
 
   normalize(checkFn);
 
-  checkFn->instantiationPoint = getVisibilityBlock(info.call);
+  checkFn->instantiationPoint = getInstantiationPoint(info.call);
 }
 
 /************************************* | **************************************

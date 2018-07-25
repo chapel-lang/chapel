@@ -24,49 +24,49 @@
 */
 
 extern int gasnetc_AMRequestShortM( 
-                            gasnet_node_t dest,       /* destination node */
-                            gasnet_handler_t handler, /* index into destination endpoint's handler table */ 
-                            int numargs, ...);
+                            gasnet_node_t _dest,                // destination node
+                            gasnet_handler_t _handler,          // index into dest's handler table
+                            int _numargs, ...);
 
 extern int gasnetc_AMRequestMediumM( 
-                            gasnet_node_t dest,      /* destination node */
-                            gasnet_handler_t handler, /* index into destination endpoint's handler table */ 
-                            void *source_addr, size_t nbytes,   /* data payload */
-                            int numargs, ...);
+                            gasnet_node_t _dest,                // destination node
+                            gasnet_handler_t _handler,          // index into dest's handler table
+                            void *_source_addr, size_t _nbytes, // data payload
+                            int _numargs, ...);
 
-extern int gasnetc_AMRequestLongM( gasnet_node_t dest,        /* destination node */
-                            gasnet_handler_t handler, /* index into destination endpoint's handler table */ 
-                            void *source_addr, size_t nbytes,   /* data payload */
-                            void *dest_addr,                    /* data destination on destination node */
-                            int numargs, ...);
+extern int gasnetc_AMRequestLongM( gasnet_node_t _dest,         // destination node
+                            gasnet_handler_t _handler,          // index into dest's handler table
+                            void *_source_addr, size_t _nbytes, // data payload
+                            void *_dest_addr,                   // data destination on destination node
+                            int _numargs, ...);
 
 #if GASNETC_NO_AMREQUESTLONGASYNC
   #define gasnetc_AMRequestLongAsyncM gasnetc_AMRequestLongM
 #else
-  extern int gasnetc_AMRequestLongAsyncM( gasnet_node_t dest,        /* destination node */
-                              gasnet_handler_t handler, /* index into destination endpoint's handler table */ 
-                              void *source_addr, size_t nbytes,   /* data payload */
-                              void *dest_addr,                    /* data destination on destination node */
-                              int numargs, ...);
+  extern int gasnetc_AMRequestLongAsyncM( gasnet_node_t _dest,  // destination node
+                            gasnet_handler_t _handler,          // index into dest's handler table
+                            void *_source_addr, size_t _nbytes, // data payload
+                            void *_dest_addr,                   // data destination on destination node
+                            int _numargs, ...);
 #endif
 
 extern int gasnetc_AMReplyShortM( 
-                            gasnet_token_t token,       /* token provided on handler entry */
-                            gasnet_handler_t handler, /* index into destination endpoint's handler table */ 
-                            int numargs, ...);
+                            gasnet_token_t _token,              // token provided on handler entry
+                            gasnet_handler_t _handler,          // index into dest's handler table
+                            int _numargs, ...);
 
 extern int gasnetc_AMReplyMediumM( 
-                            gasnet_token_t token,       /* token provided on handler entry */
-                            gasnet_handler_t handler, /* index into destination endpoint's handler table */ 
-                            void *source_addr, size_t nbytes,   /* data payload */
-                            int numargs, ...);
+                            gasnet_token_t _token,              // token provided on handler entry
+                            gasnet_handler_t _handler,          // index into dest's handler table
+                            void *_source_addr, size_t _nbytes, // data payload
+                            int _numargs, ...);
 
 extern int gasnetc_AMReplyLongM( 
-                            gasnet_token_t token,       /* token provided on handler entry */
-                            gasnet_handler_t handler, /* index into destination endpoint's handler table */ 
-                            void *source_addr, size_t nbytes,   /* data payload */
-                            void *dest_addr,                    /* data destination on destination node */
-                            int numargs, ...);
+                            gasnet_token_t _token,              // token provided on handler entry
+                            gasnet_handler_t _handler,          // index into dest's handler table
+                            void *_source_addr, size_t _nbytes, // data payload
+                            void *_dest_addr,                   // data destination on destination node
+                            int _numargs, ...);
 
 /* ------------------------------------------------------------------------------------ */
 /*

@@ -154,7 +154,7 @@ TEST_PARAMS=                    					\
    testenv_args='GASNet is \"Global Address Space Networking\"';	\
    testvisperf_args="-maxdata 131072 -maxcontig 512 10"; 		\
    testslice_args="1024000 10 10";			 		\
-   testcollperf_args="32768 2 50 0";			 		\
+   testcollperf_args="-szfactor 4 16384 2 50 0";			\
    $(CONDUIT_TESTPARAMS) dummy=1 ; 					\
    $(MANUAL_TESTPARAMS) dummy=1 ;
 
@@ -396,13 +396,13 @@ testcxx: force
 		echo "ERROR: testcxx target requested, but no c++ compiler is configured"; \
 		exit 1; \
 	 fi
-	$(GASNET_CXX) -I$(srcdir) $(GASNET_CXXCPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_CXXFLAGS) -c -o $@.o $(srcdir)/$@.cc
+	$(GASNET_CXX) -I$(srcdir) $(GASNET_CXXCPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CXXFLAGS) $(GASNET_CXXFLAGS) -c -o $@.o $(srcdir)/$@.cc
 	$(GASNET_CXX) $(GASNET_CXXFLAGS) $(GASNET_LDFLAGS) -o $@ $@.o $($@_extraobjs) $(GASNET_LIBS)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 
 # This is a model for how GASNet clients should be built:
 test% : force
-	$(GASNET_CC) -I$(srcdir) $(GASNET_CPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_CFLAGS) -c -o $@.o $(srcdir)/$@.c
+	$(GASNET_CC) -I$(srcdir) $(GASNET_CPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CFLAGS) $(GASNET_CFLAGS) -c -o $@.o $(srcdir)/$@.c
 	$(GASNET_LD) $(GASNET_LDFLAGS) -o $@ $@.o $($@_extraobjs) $(GASNET_LIBS)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 

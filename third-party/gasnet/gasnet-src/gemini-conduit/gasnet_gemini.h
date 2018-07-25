@@ -12,17 +12,13 @@
 #include "gasnet_internal.h"
 #include "gasnet_core_internal.h"
 #include <gasnet_extended_internal.h>
-#if GASNETC_GNI_FIREHOSE
-#include <firehose.h>
-#endif
 #if GASNETC_GNI_UDREG
 #include <udreg_pub.h>
 #endif
 
 #define GASNETC_STRICT_MEM_CONSISTENCY  1 /* use GNI_MEM_STRICT_PI_ORDERING */
 #define GASNETC_RELAXED_MEM_CONSISTENCY 2 /* use GNI_MEM_RELAXED_PI_ORDERING */
-#define GASNETC_DEFAULT_MEM_CONSISTENCY 3 /* use neither */
-#define GASNETC_DEFAULT_RDMA_MEM_CONSISTENCY  GASNETC_RELAXED_MEM_CONSISTENCY
+#define GASNETC_NEITHER_MEM_CONSISTENCY 3 /* use neither */
 
 #if defined(GASNET_PAR) && GASNETC_GNI_MULTI_DOMAIN
 #define GASNETC_USE_MULTI_DOMAIN 1
@@ -122,14 +118,6 @@ typedef struct {
   gasnetc_post_descriptor_t *deferred_reply;
 } gasnetc_token_t;
 
-#if GASNETC_GNI_FIREHOSE
-extern size_t gasnetc_fh_align;
-extern size_t gasnetc_fh_align_mask;
-extern int gasnetc_use_firehose;
-#else
-#define gasnetc_use_firehose 0
-#endif
-
 /* Control messages */
 enum {
     GC_CTRL_SHUTDOWN 
@@ -188,7 +176,7 @@ typedef union gasnetc_packet_u {
   
 /* compute header len, padded to multiple of 8-bytes */
 #define GASNETC_HEADLEN_AUX(type,nargs) \
-        GASNETI_ALIGNUP_NOASSERT(offsetof(type,args)+(nargs * sizeof(uint32_t)),8)
+        GASNETI_ALIGNUP_NOASSERT(gasneti_offsetof(type,args[nargs]),8)
 #define GASNETC_HEADLEN(cat,nargs) \
         GASNETC_HEADLEN_AUX(gasnetc_am_##cat##_packet_t,(nargs))
 
@@ -243,9 +231,6 @@ void gasnetc_init_bounce_buffer_pool(GASNETC_DIDX_FARG_ALONE);
 /* largest get that can be handled by gasnetc_rdma_get_unaligned() */
 extern size_t gasnetc_max_get_unaligned;
 
-/* largest put that gasnetc_rdma_put_lc() will accept */
-extern size_t gasnetc_max_put_lc;
-
 /* completion actions: */
 enum {
   _gc_post_reserved = 2,  /* Bits 0-2 hold offset for trimmed copy operations */
@@ -255,7 +240,6 @@ enum {
   /* mutually-exclusive resource recovery actions */
   _gc_post_unbounce,
   _gc_post_unregister,
-  _gc_post_firehose,
   /* mutually-exclusive signaling actions */
   _gc_post_completion_flag,
   _gc_post_completion_cntr,
@@ -270,7 +254,6 @@ enum {
 #define GC_POST_SEND            GC_POST(send)
 #define GC_POST_UNBOUNCE        GC_POST(unbounce)
 #define GC_POST_UNREGISTER      GC_POST(unregister)
-#define GC_POST_FIREHOSE        GC_POST(firehose)
 #define GC_POST_COMPLETION_FLAG GC_POST(completion_flag)
 #define GC_POST_COMPLETION_CNTR GC_POST(completion_cntr)
 #define GC_POST_COMPLETION_SEND GC_POST(completion_send)
@@ -283,9 +266,8 @@ struct gasnetc_post_descriptor {
     uint8_t immediate[GASNETC_GNI_IMMEDIATE_BOUNCE_SIZE];
     gasneti_weakatomic_t counter;
     gasnetc_notify_t notify;
-  #if GASNETC_GNI_FIREHOSE
-    firehose_request_t fh_req;
-  #endif
+    gasnet_register_value_t put_val;
+    uint64_t u64;
   #if GASNETC_GNI_UDREG
     udreg_entry_t *udreg_entry;
   #endif
@@ -297,6 +279,7 @@ struct gasnetc_post_descriptor {
   #define gpd_am_header  pd.sync_flag_value
   #define gpd_am_packet  pd.local_addr
   #define gpd_am_peer    pd.first_operand
+  #define gpd_put_lc     pd.second_operand
   uint32_t flags;
 #if GASNETC_USE_MULTI_DOMAIN
   int domain_idx;
@@ -335,9 +318,10 @@ size_t gasnetc_rdma_put_bulk(gasnet_node_t node,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd) GASNETI_WARN_UNUSED_RESULT;
 
-void gasnetc_rdma_put_lc(gasnet_node_t node,
+size_t gasnetc_rdma_put_lc(gasnet_node_t node,
 		 void *dest_addr, void *source_addr,
-		 size_t nbytes, gasnetc_post_descriptor_t *gpd);
+		 size_t nbytes, unsigned int *initiated_lc,
+		 gasnetc_post_descriptor_t *gpd) GASNETI_WARN_UNUSED_RESULT;
 
 void gasnetc_rdma_put_buff(gasnet_node_t node,
 		 void *dest_addr, void *source_addr,
@@ -354,16 +338,6 @@ void gasnetc_rdma_get_unaligned(gasnet_node_t node,
 int gasnetc_rdma_get_buff(gasnet_node_t node,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd);
-
-#if GASNETC_GNI_FIREHOSE
-size_t gasnetc_rdma_put_fh(gasnet_node_t node,
-		 void *dest_addr, void *source_addr,
-		 size_t nbytes, gasnetc_post_descriptor_t *gpd) GASNETI_WARN_UNUSED_RESULT;
-
-size_t gasnetc_rdma_get_fh(gasnet_node_t node,
-		 void *dest_addr, void *source_addr,
-		 size_t nbytes, gasnetc_post_descriptor_t *gpd) GASNETI_WARN_UNUSED_RESULT;
-#endif
 
 /* Extensions: */
 #if GASNETC_GNI_FETCHOP

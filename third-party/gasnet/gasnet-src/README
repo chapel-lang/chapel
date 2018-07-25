@@ -19,6 +19,7 @@ Other documentation:
    can be browsed online: http://bitbucket.org/berkeleylab/gasnet/src/develop
    + README-devel: GASNet design information and coding standards
    + README-git: Rules developers are expected to follow when committing
+   + template-conduit: A fill-in-the-blanks conduit code skeleton
 
 Contents of this file:
  * Introduction
@@ -71,8 +72,11 @@ production or development (and many that are not).
 The minimum system requirements are:
 
  * A POSIX-like environment, e.g. Linux or another version of Unix.
-   For Windows systems, the free 'Cygwin' toolkit (http://www.cygwin.com/).
    For Mac systems, the free 'XCode command-line tools' from the Apple Store.
+   For Windows systems one needs either of two options:
+   + The free 'Cygwin' toolkit (http://www.cygwin.com/)
+   + Windows 10 Subsystem for Linux, a.k.a. WSL
+     (https://docs.microsoft.com/en-us/windows/wsl/)
  * Make (we recommend GNU make version 3.79 or newer).
  * Perl (version 5.005 or newer).
  * The following standard Unix tools: 'awk', 'sed', 'env', 'basename', 'dirname',
@@ -144,15 +148,10 @@ or similarly, if you want libgasnet to contain debugging symbols:
       Note that not all conduits and operating systems support this feature.
       For more information, see the section below entitled "GASNet inter-Process
       SHared Memory (PSHM)".
-    --with-segment-mmap-max=<n>GB - configure maximum segment size.
-      Many of the GASNet network conduits obtain memory for the shared segment
-      (in FAST and LARGE segment configurations) using mmap().  By default
-      GASNet will use a very conservative (2GB minus pagesize) maximum value
-      for calls to mmap().  This configure option allows one to raise that
-      to a value more appropriate to your platform.  See also the description
-      below for the GASNET_MAX_SEGSIZE environment variable, for information
-      on the two setings which take precedence over this configure setting.
-
+    --with-max-segment=<val> - configure-time default value for GASNET_MAX_SEGSIZE,
+      which is used when GASNET_MAX_SEGSIZE is not set at runtime. See the description 
+      of the GASNET_MAX_SEGSIZE environment variable below for details.
+      
   Configure will detect various interesting features about your system and
 compilers, including which GASNet conduits are supported.
 
@@ -384,7 +383,7 @@ mpi-conduit: MPI (Message Passing Interface)
 ofi-conduit: Open Fabrics Interfaces
  GASNet over the Open Fabrics Interface framework (libfabric).
  Rigorously tested and supported over the portable/reference OFI sockets Provider.
- Believed to also work over the Intel Truescale and Omni-Path Providers.
+ Believed to also work over the Intel Omni-Path psm2 Provider.
 
 portals4-conduit: Portals4   *BETA*
  GASNet over the Portals4 network API developed at Sandia National Lab.
@@ -417,12 +416,6 @@ psm-conduit: Intel Omni-Path PSM2
  The core GASNet developers have limited access to this hardware, but have completed 
  minimal validation on x86_64/Linux. 
  
-shmem-conduit: SGI Altix / Cray X1 Shmem   *DEPRECATED*
- GASNet over proprietary (hardware-supported) SHMEM. Does not function over OpenSHMEM.
- The core GASNet developers have been unable to test this conduit recently,
- and it is officially deprecated. 
- If you have interest in this conduit please contact us!
-
 Single-node Development Options
 ===============================
 
@@ -438,8 +431,8 @@ Option 1.  smp-conduit
 This is a pure shared-memory implementation and should be the fastest and
 easiest to use option.  GASNet's shared memory support should work "out of
 the box" (no special configuration options required) on common laptop,
-desktop, and workstation environments, including Linux, MacOS, Windows with
-Cygwin, and Solaris.
+desktop, and workstation environments, including Linux, macOS, Windows with
+Cygwin, Windows 10 Subsystem for Linux (WSL), and Solaris.
 
 Option 2.  udp-conduit
 ----------------------
@@ -482,9 +475,6 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
     * Linux/MIPS/gcc/{32,n32,64}:       smp, udp, #
     * Linux/MIPS64el/gcc/{32,n32,64}:   smp, udp, #
 
-    * Linux/SGI-Altix-IA64/{gcc,IntelC}/64: smp, mpi, udp, shmem
-    * Linux/SGI-Altix-Xeon/{gcc,IntelC}/64: smp, mpi, udp, shmem
-
     * FreeBSD/{x86,amd64}/{gcc,clang}/{32,64}: smp, mpi, udp
     * OpenBSD/{x86,amd64}/{gcc,clang}/{32,64}: smp, mpi, udp
     * NetBSD/{x86,amd64}/{gcc,clang}/{32,64}:  smp, mpi, udp
@@ -496,12 +486,12 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
     * Solaris11/x86/gcc,SunStudio12/{32,64}: smp, udp, mpi, ibv
 
     * MSWindows-Cygwin/{x86,x86_64}/{gcc,clang}/{32,64}: smp, udp, mpi (OpenMPI)
-    * MSWindows10-Linux/{gcc,clang}/64: smp, udp, mpi, BETA
+    * MSWindows10-Linux(WSL)/{gcc,clang}/64: smp, udp, mpi
 
-
-    * MacOSX/PowerPC/{gcc,xlc}/{32,64}: smp, udp, mpi
-    * MacOSX/{x86,x86_64}/{gcc,icc,clang}/{32,64}: smp, udp, mpi
-    * MacOSX/{x86,x86_64}/PGI/{32,64}: smp, udp, #
+    * macOS/PowerPC/{gcc,xlc}/{32,64}: smp, udp, mpi &
+    * macOS/{x86,x86_64}/icc/{32,64}: smp, udp, mpi &
+    * macOS/{x86,x86_64}/{gcc,clang}/{32,64}: smp, udp, mpi
+    * macOS/{x86,x86_64}/PGI/{32,64}: smp, udp, #
 
     * CNL/Cray-XT/{gcc,PGI,PathScale,Intel}/64: smp, mpi &
 
@@ -513,8 +503,6 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
     * Linux/Cray-XD1/{gcc,PGI}/64: smp, mpi &
 
     * CNK/IBM-BlueGeneQ-PowerPC/{gcc,xlc,clang}/64: smp, mpi, pami
- 
-    * MTX/Cray-MTA/CrayMTAC/64: smp, udp &
  
     * ucLinux/Microblaze/gcc/32: smp, udp, #%&
 
@@ -566,9 +554,23 @@ application-specific support.
  See usage information below.
 
 * GASNET_MAX_SEGSIZE - control the upper limit for FAST/LARGE segment size on most conduits
- This setting defaults to the value passed to configure: --with-segment-mmap-max=XGB
- or the one provided by the GASNet client at link-time with a definition like:
-   uint64_t gasnet_max_segsize = ((uint64_t)8) << 30; /* set to 8GB */
+ This setting defaults to the value passed to configure: --with-max-segsize=<val>
+ In FAST and LARGE segment configurations, GASNet probes each compute node at
+ startup to determine an upper-limit on the available space for use in the
+ GASNet segment (and some other large internal objects). This value provides
+ one upper-limit to that probe, which also has the effect of limiting the 
+ space available for client segments (as reported by gasnet_getMaxLocalSegmentSize()).
+ <val> has the following format: size_spec ( / opt_suffix )
+ where 'size_spec' is either an absolute memory size: [0-9]+{KB,MB,GB}
+ or a fraction of compute node physical memory: 0.85
+ and 'opt_suffix' is one of the following: (or empty, which means "P")
+  "P" : means the limit is per-process and EXCLUDES internal GASNet objects
+  "H" : means the limit is host-wide and INCLUDES internal GASNet objects 
+ Examples:
+  "0.85/H" : limit host-wide use at 85% of physical memory (this is also the default)
+  "4GB/P"  : try to ensure 4GB per process of GASNet shared segment space
+ The default behavior of this option has grown considerably smarter over time, so
+ it's anticipated that most clients will never need to set this.
 
 * GASNET_DISABLE_MUNMAP - requests the use of mallopt() on glibc systems to disable
  mmap-based allocation for satisfying malloc. This can be used to work-around a
@@ -577,7 +579,7 @@ application-specific support.
  on some systems (32-bit Linux in particular) the disable is only partly effective
  because once the sbrk()-controlled heap reaches the bottom of shared libraries,
  glibc will use mmap() used to obtain memory regardless of any options one can
- control.
+ control. The default is conduit-dependent.
 
 * GASNET_MAX_THREADS - per-node limit on the number of GASNet client pthreads 
   (in PAR and PARSYNC modes) that can simultaneously be live on each GASNet node.
@@ -697,37 +699,19 @@ application-specific support.
 * GASNET_VIS_AMPIPE - set to 1 to enable packing of most non-contiguous
  put/gets into AMMediums, with each packet of size approx MaxMedium (the only
  exception being cases where both sides happen to be fully contiguous, in
- which case we skip packing). This support is currently experimental, and thus
- disabled by default.
+ which case we skip packing). The default is conduit-dependent.
 
-* GASNET_VIS_MAXCHUNK - limits the max size of a strided or indexed chunk which
- will be packed by AM pipelining. Defaults to the size that will fit in one MaxMedium
+* GASNET_VIS_{PUT,GET}_MAXCHUNK - limits the max size of a contiguous chunk which
+ will be packed by AM pipelining in a strided put/get or indexed put/get, respectively.
+ The chunk size may additionally be limited based on the size that will fit in one MaxMedium.
+ The default value is conduit-specific.
+
+* GASNET_VIS_MAXCHUNK - Provides a default value for GASNET_VIS_{PUT,GET}_MAXCHUNK,
+ to be used when the more specific knob is unset.
 
 * GASNET_VIS_REMOTECONTIG - enables a pack & RDMA algorithm for gather puts and
  scatter gets - i.e. cases that are locally non-contiguous but remotely
- contiguous. Currently unsafe for use on some conduits, thus disabled by default.
- (Currently ibv is known to be unsafe without GASNET_DISABLE_MUNMAP).
-
-* GASNET_COLL_OPT - set to 1 to enable the optimized versions of 
- the collectives. These include binomial trees for the rooted collectives 
- (broadcast, scatter, and gather) and Bruck's algorithm for the non-rooted ones
- (gather all, and exchange) for small enough message sizes. Defaults to 1 if no 
- value is specified.
-
-* GASNET_COLL_BROADCAST_OPT - set to 1 to enable optimized binomial tree broadcast. 
- Defaults to GASNET_COLL_OPT.
-
-* GASNET_COLL_SCATTER_OPT - set to 1 to enable optimized binomial tree scatter.
- Defaults to GASNET_COLL_OPT.
-
-* GASNET_COLL_GATHER_OPT - set to 1 to enable optimized binomial tree gather.
- Defaults to GASNET_COLL_OPT.
-
-* GASNET_COLL_GATHER_ALL_OPT - set to 1 to enable optimized gather all. Defaults to 
- GASNET_COLL_OPT.
-
-* GASNET_COLL_EXCHANGE_OPT - set to 1 to enable optimized exchange. Defaults to 
- GASNET_COLL_OPT
+ contiguous. The default is conduit-dependent.
 
 * GASNET_COLL_SCRATCH_SIZE - specifies the size of the GASNet auxiliary scratch space 
  per node. Most of the optimized collectives rely on this auxiliary space to enable 
@@ -953,11 +937,14 @@ The PSHM support in GASNet can operate via three generic mechanisms: POSIX
 shared memory, SystemV shared memory, or mmap()ed disk files.
 
 POSIX shared memory is recommended as the best option in most cases, but is
-not always available (many kernels can be configured not to support it).
+not always available (many kernels can be configured not to support it), or
+may not permit large-enough allocations.  See "System Settings for POSIX
+Shared Memory", below, for information on sizing of allocations.
 
 In the absence of the POSIX shared memory, users are advised to use the
-SystemV shared memory as the next-best option.  However, see the next section
-for information about configuring a system to use SystemV shared memory.
+SystemV shared memory as the next-best option.  However, see "System Settings
+for SystemV Shared Memory", below, for information about configuring a system
+to use SystemV shared memory.
 
 In the absence of both POSIX and SystemV shared memory, a user may try
 using mmap()ed disk files.  However, on some systems we see significant
@@ -1014,11 +1001,58 @@ intra-memory AM traffic:
      it may stall (default 32).  The shared memory allocated on a compute
      node with P processes is roughly (2 * P * Depth * MaxMsgSz).
 
-Kernel settings for SystemV:
----------------------------
-On most operating systems the amount of available SystemV shared memory
-and the number of shared memory segments is controlled by the kernel
-parameters: shmmax, shmall and shmmni.
+System Settings for POSIX Shared Memory:
+---------------------------------------
+On most systems (all but Solaris and some cross-compiled platforms), the
+default implementation of PSHM uses POSIX shared memory.  On many operating
+systems the amount of available POSIX shared memory is controlled by the
+sizing of a pseudo-filesystem that consumes space in memory (and sometimes
+swap space) rather than stable storage.  If this filesystem is not large
+enough, it can limit the amount of POSIX shared memory which can be allocated
+for the GASNet segment.
+
+Insufficient available POSIX shared memory may either lead to failures at
+start-up, or to SIGBUS or SIGSEGV later in a run (if the OS has permitted
+allocation of more virtual address space than is actually available).  If one
+encounters either of these failure modes when GASNet is configured to use
+POSIX shared memory, then one should check the space available (see below) and
+may need to increase the corresponding system settings.  Setting these
+parameters is system-specific and requires administrator privileges.
+
+On most modern Linux distribution, POSIX shared memory allocations reside in
+the /dev/shm filesystem (of type 'tmpfs'), though /var/shm and /run/shm are
+also used in some cases.  The mechanism for sizing of this filesystem varies
+greatly between distributions.  Please consult the documentation for your
+specific Linux distribution for instructions to resize.  In particular, be
+advised that distributions may mount this filesystem early in the boot
+process, without regards to any entry in /etc/fstab.
+
+On macOS, Cygwin and Solaris, there are no settings (known to us at this time)
+required to increase the space available for allocation as POSIX shared
+memory.
+
+On FreeBSD, POSIX shared memory allocations reside in the /tmp filesystem,
+which is normally of type 'tmpfs'.  This filesystem often defaults to having
+no limit on its size other than the sum of physical memory and swap space.
+However, the size can be set in /etc/fstab.  See the fstab(5) and tmpfs(5)
+manpages for more information.
+
+On NetBSD, POSIX shared memory allocations reside in the /var/shm filesystem
+(of type 'tmpfs'), which can be sized in /etc/fstab.  See the fstab(5) and
+mount_tmpfs(8) manpages for more information.
+
+On OpenBSD, POSIX shared memory allocations reside in the /tmp filesystem,
+which is normally a filesystem of type 'mfs' and can be sized in /etc/fstab.
+See the fstab(5) and mount_mfs(8) manpages for more information.
+
+System Settings for SystemV Shared Memory:
+-----------------------------------------
+SystemV shared memory is the second most widely used implementation of PSHM
+after POSIX shared memory.  It is used by default on Solaris, and is
+recommended on most other systems when POSIX does not work for any reason.
+On most operating systems the amount of available SystemV shared memory and
+the number of shared memory segments is controlled by the kernel parameters:
+shmmax, shmall and shmmni.
    shmmax = largest size of a shared memory segment (in bytes)
    shmall = total amount of memory allocatable as shared (in pages)
    shmmni = maximum number of shared memory segments
@@ -1052,7 +1086,7 @@ kernel.shmmni=128
         To activate the new settings reboot, or run the following:
         sudo /sbin/sysctl -p /etc/sysctl.conf
 
-   - MacOS:
+   - macOS:
         Add the following three lines to /etc/sysctl.conf (sudo required):
 kern.sysv.shmmax=1099511627776
 kern.sysv.shmall=268435456
@@ -1105,17 +1139,17 @@ kern.shminfo.shmall=268435456
         of the CYGWIN environment variable.  Again, you should see the
         Cygwin documentation for more information on this subject.
 
-Warning to users of Mac OS X:
------------------------------
+Warning to users of macOS:
+-------------------------
 We have evidence which suggests that there is a kernel bug in all releases of
-Mac OS X though at least 10.12 (Sierra) which leads to a small leak of kernel
+macOS though at least 10.12 (Sierra) which leads to a small leak of kernel
 memory (perhaps a few 10s of bytes) each time POSIX or SystemV shared memory
 is used.  This may, after tens of thousands of runs of GASNet applications
 using PSHM, lead to a low memory condition contributing to slow performance
 and eventually to total memory exhaustion.  In normal usage, it is reasonable
 to expect that a Mac laptop or desktop system will be rebooted for software
 updates frequently enough that this leak will not impact normal users.
-Also note that --enable-pshm-file is NOT recommended for use on OSX, where
+Also note that --enable-pshm-file is NOT recommended for use on macOS, where
 it has been seen to cause VERY slow startup times.
 
 IMPORTANT: SYSTEM CLEANING OF PSHM OBJECTS:

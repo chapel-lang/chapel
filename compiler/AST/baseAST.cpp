@@ -208,7 +208,7 @@ static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
 
 void cleanAst() {
   // Important: Sometimes scopeResolve will create dummy UseStmts that are
-  // never inserted into the tree, and will be deleted inbetween passes.
+  // never inserted into the tree, and will be deleted in between passes.
   //
   // If we do not destroy the caches, they may contain pointers back to these
   // dummy uses.

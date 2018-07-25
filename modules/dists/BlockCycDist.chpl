@@ -484,7 +484,6 @@ proc LocBlockCyclic.writeThis(x) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Domain Class
 //
-pragma "use default init"
 class BlockCyclicDom: BaseRectangularDom {
   //
   // LEFT LINK: a pointer to the parent distribution
@@ -690,7 +689,6 @@ proc BlockCyclicDom.dsiIndexOrder(i) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Domain Class
 //
-pragma "use default init"
 class LocBlockCyclicDom {
   param rank: int;
   type idxType;
@@ -797,7 +795,6 @@ proc LocBlockCyclicDom._sizes {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
-pragma "use default init"
 class BlockCyclicArr: BaseRectangularArr {
 
   //
@@ -1004,7 +1001,6 @@ iter BlockCyclicDom.dsiLocalSubdomains() {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Array Class
 //
-pragma "use default init"
 class LocBlockCyclicArr {
   type eltType;
   param rank: int;

@@ -3,7 +3,6 @@ proc throwAnError() throws {
 }
 
 
-pragma "use default init"
 class OtherError : Error { }
 
 proc throwOtherError() throws {

@@ -12,7 +12,7 @@
 
 #if GASNET_PAMI_NATIVE_COLL
 
-#include <gasnet_extended_refcoll.h>
+#include <gasnet_refcoll.h>
 #include <gasnet_coll.h>
 #include <gasnet_coll_internal.h>
 

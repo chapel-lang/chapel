@@ -220,8 +220,6 @@ FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
 FnSymbol* getAutoDestroy(Type* t);          //  "
 FnSymbol* getUnalias(Type* t);
 
-Expr*     resolveExpr(Expr* expr);
-
 
 
 bool isPOD(Type* t);

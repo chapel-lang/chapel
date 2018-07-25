@@ -11,7 +11,6 @@ class C {
   }
 }
 
-pragma "use default init"
 class D : C {
 }
 

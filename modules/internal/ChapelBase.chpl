@@ -803,7 +803,6 @@ module ChapelBase {
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
-  pragma "use default init"
   class _ddata {
     type eltType;
 
@@ -878,7 +877,6 @@ module ChapelBase {
   pragma "ref"
   pragma "no default functions"
   pragma "no object"
-  pragma "use default init"
   class _ref {
     var _val;
   }
@@ -894,7 +892,6 @@ module ChapelBase {
   // to add non-generic fields here.
   // And to get 'errors' field from any generic instantiation.
   pragma "no default functions"
-  pragma "use default init"
   class _EndCountBase {
     var errors: unmanaged chpl_TaskErrors;
     var taskList: c_void_ptr = _defaultOf(c_void_ptr);
@@ -1112,6 +1109,8 @@ module ChapelBase {
     return x: int: bool;
   // _cast(type t:integral, x:enumerated)
   // is generated for each enum in buildDefaultFunctions
+  inline proc _cast(type t:enumerated, x:enumerated) where x.type == t
+    return x;
   inline proc _cast(type t:chpl_anyreal, x:enumerated)
     return x: int: real;
 
@@ -1924,7 +1923,6 @@ module ChapelBase {
   extern const QIO_TUPLE_FORMAT_JSON:int;
 
   // Support for module deinit functions.
-  pragma "use default init"
   class chpl_ModuleDeinit {
     const moduleName: c_string;          // for debugging; non-null, not owned
     const deinitFun:  c_fn_ptr;          // module deinit function

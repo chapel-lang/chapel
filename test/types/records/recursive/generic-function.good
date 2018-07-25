@@ -1,0 +1,1 @@
+generic-function.chpl:8: error: record 'R' cannot contain a recursive field 'r' of type 'R'

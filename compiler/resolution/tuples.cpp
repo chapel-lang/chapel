@@ -121,7 +121,6 @@ makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
 
   typeCtor->retTag             = RET_TYPE;
   typeCtor->retType            = newType;
-  typeCtor->numPreTupleFormals = 1;
   typeCtor->instantiatedFrom   = gGenericTupleTypeCtor;
   typeCtor->instantiationPoint = instantiationPoint;
 
@@ -1226,7 +1225,7 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
     }
   }
 
-  BlockStmt* point = getVisibilityBlock(call);
+  BlockStmt* point = getInstantiationPoint(call);
   TupleInfo info   = getTupleInfo(args, point, noRef);
 
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {

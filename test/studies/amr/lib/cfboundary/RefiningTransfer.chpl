@@ -155,17 +155,17 @@ class LevelCFGhostRegion {
   
   
   //|\'''''''''''''''''''''''''''''''''''|\
-  //| >    special method: initialize    | >
+  //| >    special method: postinit      | >
   //|/...................................|/
   //
   //--------------------------------------------------------------------
   // Intended constructor signature is
   //    LevelCFGhostRegion( level, coarse_level ).
-  // The 'initialize' method is required instead of a proper constructor
+  // The 'postinit' method is required instead of a proper initializer
   // because grid_cf_ghost_regions depends on level.grids.
   //--------------------------------------------------------------------
   
-  proc initialize ()
+  proc postinit ()
   { 
         
     for grid in level.grids do
@@ -173,7 +173,7 @@ class LevelCFGhostRegion {
       
   }
   // /|'''''''''''''''''''''''''''''''''''/|
-  //< |    special method: initialize    < |
+  //< |    special method: postinit      < |
   // \|...................................\|
   
   
@@ -249,18 +249,18 @@ class GridCFGhostSolution {
   
   
   //|\'''''''''''''''''''''''''''''''''''|\
-  //| >    special method: initialize    | >
+  //| >    special method: postinit      | >
   //|/...................................|/
   //
   //-----------------------------------------------------------------------------
   // The intended constructor signature is
   //     GridCFGhostSolution( grid_cf_ghost_region: GridCFGhostRegion ).
-  // The 'initialize' method is required instead because the fields
+  // The 'postinit' method is required instead because the fields
   // old_value_multiarrays and current_value_multiarrays are typed by the
   // input.
   //-----------------------------------------------------------------------------
   
-  proc initialize ()
+  proc postinit ()
   {      
     for c_neighbor in grid_cf_ghost_region.coarse_neighbors {
 
@@ -272,7 +272,7 @@ class GridCFGhostSolution {
     }
   }
   // /|'''''''''''''''''''''''''''''''''''/|
-  //< |    special method: initialize    < |
+  //< |    special method: postinit      < |
   // \|...................................\|
   
   
@@ -414,37 +414,37 @@ class LevelCFGhostSolution {
   
   
   //|\'''''''''''''''''''''''''''''''''''|\
-  //| >    special method: initialize    | >
+  //| >    special method: postinit      | >
   //|/...................................|/
   //
   //---------------------------------------------------------------------------
   // This mimics the constructor signature
   //     LevelCFGhostSolution ( level_cf_ghost_region: LevelCFGhostRegion, 
   //                            level: Level ).
-  // The 'initialize' method is currently required in place of a proper 
-  // constructor because grid_cf_ghost_solutions is typed by level.grids, 
+  // The 'postinit' method is currently required in place of a proper 
+  // initializer because grid_cf_ghost_solutions is typed by level.grids, 
   // which is provided by the input argument.
   //
-  // Ideally, the constructor signature would be simply
-  //     LevelCFGhostSolution ( level_cf_ghost_region: LevelCFGhostRegion ),
+  // Ideally, the initializer signature would be simply
+  //     init ( level_cf_ghost_region: LevelCFGhostRegion ),
   // but doing so and attempting to set level = level_cf_ghost_region.level
   // creates a nil reference in the meantime, as grid_cf_ghost_solutions
   // attempts to read its domain before this assignment can occur.
   //---------------------------------------------------------------------------
   
-  proc initialize ()
+  proc postinit ()
   {
     
     
     assert(level == level_cf_ghost_region.level,
-           "Error: LevelCFGhostRegion.initialize: Input level must equal level_cf_ghost_region.level");
+           "Error: LevelCFGhostRegion.postinit: Input level must equal level_cf_ghost_region.level");
     
     for grid in level.grids do
       grid_cf_ghost_solutions(grid) = new unmanaged GridCFGhostSolution( level_cf_ghost_region(grid) );
 
   }
   // /|'''''''''''''''''''''''''''''''''''/|
-  //< |    special method: initialize    < |
+  //< |    special method: postinit      < |
   // \|...................................\|
  
  

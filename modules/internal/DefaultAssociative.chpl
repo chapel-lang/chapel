@@ -556,7 +556,6 @@ module DefaultAssociative {
     }
   }
   
-  pragma "use default init"
   class DefaultAssociativeArr: BaseArr {
     type eltType;
     type idxType;

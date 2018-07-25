@@ -104,6 +104,17 @@ cannot be represented using the GMP scalar type.
 The checks are controlled by the compiler options ``--[no-]cast-checks``,
 ``--fast``, etc.
 
+Casting from ``bigint`` to ``integral`` and ``real`` types is also
+supported.  Values that are too large for the resultant type are
+truncated.  GMP primitives are used to first cast to platform-specific C
+types, which are then cast to Chapel types.  As a result, casting to
+64-bit types on 32-bit platforms may result in additional truncation.
+Additionally, casting a negative ``bigint`` to a ``uint`` will result in
+the absolute value truncated to fit within the type.::
+
+  var a = new bigint(-1);
+  writeln(a:uint);        // prints "1"
+
 See :mod:`GMP` for more information on how to use GMP with Chapel.
 
 */
@@ -169,7 +180,7 @@ module BigInteger {
       if mpz_init_set_str(this.mpz, str_, base_) != 0 {
         mpz_clear(this.mpz);
 
-        halt("Error initializing big integer: bad format");
+        HaltWrappers.initHalt("Error initializing big integer: bad format");
       }
 
       this.localeId = chpl_nodeID;
@@ -389,33 +400,28 @@ module BigInteger {
       }
     }
 
-    return ret.safeCast(int);
+    return ret:t;
   }
 
   pragma "no doc"
   inline proc _cast(type t, const ref x: bigint) where isUintType(t) {
     var ret: c_ulong;
 
-    if (mpz_cmp_ui(x.mpz, 0) >= 0) {
-      if _local {
-        ret = mpz_get_ui(x.mpz);
+    if _local {
+      ret = mpz_get_ui(x.mpz);
 
-      } else if x.localeId == chpl_nodeID {
-        ret = mpz_get_ui(x.mpz);
-
-      } else {
-        const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", xLoc) {
-          ret = mpz_get_ui(x.mpz);
-        }
-      }
+    } else if x.localeId == chpl_nodeID {
+      ret = mpz_get_ui(x.mpz);
 
     } else {
-      halt("unable to convert a negative bigint to a uint(?w)");
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", xLoc) {
+        ret = mpz_get_ui(x.mpz);
+      }
     }
 
-    return ret.safeCast(uint);
+    return ret:t;
   }
 
   pragma "no doc"
@@ -436,7 +442,7 @@ module BigInteger {
       }
     }
 
-    return ret : real;
+    return ret:t;
   }
 
   //
@@ -709,7 +715,7 @@ module BigInteger {
     return c;
   }
 
-  proc -(const ref a: bigint, const ref b: int) {
+  proc -(const ref a: bigint, b: int) {
     var c = new bigint();
 
     if b >= 0 {
@@ -1426,7 +1432,7 @@ module BigInteger {
     return cmp(a, b) > 0;
   }
 
-  proc >(b: int, const ref a: bigint) {
+  proc >(a: int, const ref b: bigint) {
     return cmp(a, b) > 0;
   }
 
@@ -1434,7 +1440,7 @@ module BigInteger {
     return cmp(a, b) > 0;
   }
 
-  proc >(b: uint, const ref a: bigint) {
+  proc >(a: uint, const ref b: bigint) {
     return cmp(a, b) > 0;
   }
 
@@ -1449,7 +1455,7 @@ module BigInteger {
     return cmp(a, b) < 0;
   }
 
-  proc <(b: int, const ref a: bigint) {
+  proc <(a: int, const ref b: bigint) {
     return cmp(a, b) < 0;
   }
 
@@ -1457,7 +1463,7 @@ module BigInteger {
     return cmp(a, b) < 0;
   }
 
-  proc <(b: uint, const ref a: bigint) {
+  proc <(a: uint, const ref b: bigint) {
     return cmp(a, b) < 0;
   }
 
@@ -1471,7 +1477,7 @@ module BigInteger {
     return cmp(a, b) >= 0;
   }
 
-  proc >=(b: int, const ref a: bigint) {
+  proc >=(a: int, const ref b: bigint) {
     return cmp(a, b) >= 0;
   }
 
@@ -1479,7 +1485,7 @@ module BigInteger {
     return cmp(a, b) >= 0;
   }
 
-  proc >=(b: uint, const ref a: bigint) {
+  proc >=(a: uint, const ref b: bigint) {
     return cmp(a, b) >= 0;
   }
 
@@ -1494,7 +1500,7 @@ module BigInteger {
     return cmp(a, b) <= 0;
   }
 
-  proc <=(b: int, const ref a: bigint) {
+  proc <=(a: int, const ref b: bigint) {
     return cmp(a, b) <= 0;
   }
 
@@ -1502,7 +1508,7 @@ module BigInteger {
     return cmp(a, b) <= 0;
   }
 
-  proc <=(b: uint, const ref a: bigint) {
+  proc <=(a: uint, const ref b: bigint) {
     return cmp(a, b) <= 0;
   }
 
@@ -2212,6 +2218,23 @@ module BigInteger {
 
 
   // divexact
+
+/*
+Computes ``n/d`` and stores the result in ``bigint`` instance.
+
+``divexact`` is optimized to handle cases where ``n/d`` results in an integer. 
+When ``n/d`` does not produce an integer, this method may produce incorrect results.
+
+:arg n: numerator
+
+:type n: bigint
+
+:arg d: denominator
+
+:type d: bigint
+*/
+
+
   proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
     if _local {
       mpz_divexact(this.mpz, n.mpz, d.mpz);

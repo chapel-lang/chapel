@@ -28,21 +28,21 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc uni(lhs: TypedSeries, rhs: TypedSeries, unifier: SeriesUnifier): Series {
+    proc uni(lhs: borrowed TypedSeries, rhs: borrowed TypedSeries, unifier: borrowed SeriesUnifier): unmanaged Series {
       halt("generic Index cannot be unioned");
-      return lhs;
+      return _to_unmanaged(lhs);
     }
 
     pragma "no doc"
-    proc map(s: TypedSeries, mapper: SeriesMapper): Series {
+    proc map(s: borrowed TypedSeries, mapper: borrowed SeriesMapper): unmanaged Series {
       halt("generic Index cannot be mapped");
-      return s;
+      return _to_unmanaged(s);
     }
 
     pragma "no doc"
-    proc filter(s: TypedSeries, filterSeries: TypedSeries): Series {
+    proc filter(s: borrowed TypedSeries, filterSeries: borrowed TypedSeries): unmanaged Series {
       halt("generic Index cannot be filtered");
-      return s;
+      return _to_unmanaged(s);
     }
 
     pragma "no doc"
@@ -52,12 +52,12 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc writeThis(f, s: TypedSeries(?) = nil) {
+    proc writeThis(f, s: unmanaged TypedSeries(?) = nil) {
       halt("cannot writeThis on generic Index");
     }
 
     pragma "no doc"
-    proc writeThis(f, d: DataFrame = nil) {
+    proc writeThis(f, d: unmanaged DataFrame = nil) {
       halt("cannot writeThis on generic Index");
     }
   }
@@ -106,14 +106,16 @@ module DataFrames {
       return labelToOrd[lab];
     }
 
+    override
     proc contains(lab: idxType) {
       return labels.member(lab);
     }
 
     // TODO: enforce same index type with another dispatch
     // TODO: sort Index
-    proc uni(lhs: TypedSeries(?lhsType), rhs: TypedSeries(?rhsType),
-             unifier: SeriesUnifier(lhsType)): TypedSeries(lhsType)
+    override
+    proc uni(lhs: borrowed TypedSeries(?lhsType), rhs: borrowed TypedSeries(?rhsType),
+             unifier: borrowed SeriesUnifier(lhsType)): unmanaged TypedSeries(lhsType)
              where lhsType == rhsType {
       var uni_ords = 1..(lhs.ords.size + rhs.ords.size);
       var uni_rev_idx: [uni_ords] idxType;
@@ -143,23 +145,22 @@ module DataFrames {
         }
       }
 
-      delete unifier;
-      return new TypedSeries(uni_data[1..curr_ord],
-                             new TypedIndex(uni_rev_idx[1..curr_ord]),
+      return new unmanaged TypedSeries(uni_data[1..curr_ord],
+                             new unmanaged TypedIndex(uni_rev_idx[1..curr_ord]),
                              uni_valid_bits[1..curr_ord]);
     }
 
-    proc map(s: TypedSeries(?T), mapper: SeriesMapper(T, ?R)): TypedSeries(R) {
+    override
+    proc map(s: borrowed TypedSeries(?T), mapper: borrowed SeriesMapper(T, ?R)): unmanaged TypedSeries(R) {
       var mapped: [ords] R;
       for (i, d) in s.items(idxType) do
         mapped[this[i]] = mapper.f(d);
 
-      delete mapper;
-      return new TypedSeries(mapped, this, s.valid_bits);
+      return new unmanaged TypedSeries(mapped, _to_unmanaged(this), s.valid_bits);
     }
 
-    proc filter(s: TypedSeries(?T), filterSeries: TypedSeries(bool)):
-                TypedSeries(T) {
+    override
+    proc filter(s: borrowed TypedSeries(?T), filterSeries: borrowed TypedSeries(bool)): unmanaged TypedSeries(T) {
       var filter_rev_idx: [ords] idxType;
       var filter_data: [ords] T;
       var filter_valid_bits: [ords] bool;
@@ -174,11 +175,12 @@ module DataFrames {
         }
       }
 
-      return new TypedSeries(filter_data[1..curr_ord],
-                             new TypedIndex(filter_rev_idx[1..curr_ord]),
+      return new unmanaged TypedSeries(filter_data[1..curr_ord],
+                             new unmanaged TypedIndex(filter_rev_idx[1..curr_ord]),
                              filter_valid_bits[1..curr_ord]);
     }
 
+    override
     proc nrows() {
       return ords.size;
     }
@@ -195,7 +197,8 @@ module DataFrames {
       return idxWidth;
     }
 
-    proc writeThis(f, s: TypedSeries(?) = nil) {
+    override
+    proc writeThis(f, s: unmanaged TypedSeries(?) = nil) {
       var idxWidth = writeIdxWidth() + 4;
       for (idx, (v, d)) in zip(this, s._these()) {
         // TODO: clean up to simple cast after bugfix
@@ -212,7 +215,8 @@ module DataFrames {
       }
     }
 
-    proc writeThis(f, d: DataFrame = nil) {
+    override
+    proc writeThis(f, d: unmanaged DataFrame = nil) {
       var idxWidth = writeIdxWidth() + 1;
       for space in 1..idxWidth do
         f <~> " ";
@@ -244,7 +248,7 @@ module DataFrames {
   class Series {
     pragma "no doc"
     proc copy() {
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
@@ -253,81 +257,81 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc uni(lhs: TypedSeries, unifier: SeriesUnifier) {
+    proc uni(lhs: borrowed TypedSeries, unifier: borrowed SeriesUnifier) {
       halt("generic Series cannot be unioned");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
-    proc map(mapper: SeriesMapper) {
+    proc map(mapper: borrowed SeriesMapper) {
       halt("generic Series cannot be unioned");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
     proc add(rhs) {
       halt("generic Series cannot be added");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
     proc add_scalar(n) {
       halt("generic Series cannot be added");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
     proc subtr(rhs) {
       halt("generic Series cannot be subtracted");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
     proc subtr_scalar(n) {
       halt("generic Series cannot be subtracted");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
     proc mult(rhs) {
       halt("generic Series cannot be multiplied");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
     proc mult_scalar(n) {
       halt("generic Series cannot be multiplied");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
     proc lt_scalar(n) {
       halt("generic Series cannot be compared");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
     proc gt_scalar(n) {
       halt("generic Series cannot be compared");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
     proc eq_scalar(n) {
       halt("generic Series cannot be compared");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
     proc lteq_scalar(n) {
       halt("generic Series cannot be compared");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
     proc gteq_scalar(n) {
       halt("generic Series cannot be compared");
-      return this;
+      return _to_unmanaged(this);
     }
 
     pragma "no doc"
@@ -351,7 +355,7 @@ module DataFrames {
     type eltType;
 
     // TODO: ords dmap Block
-    var idx: Index;
+    var idx: unmanaged Index;
     var ords: domain(1);
     var data: [ords] eltType;
     var valid_bits: [ords] bool;
@@ -379,7 +383,7 @@ module DataFrames {
       this.valid_bits = valid_bits;
     }
 
-    proc init(data: [] ?T, idx: Index) {
+    proc init(data: [] ?T, idx: unmanaged Index) {
       super.init();
       eltType = T;
 
@@ -389,7 +393,7 @@ module DataFrames {
       this.valid_bits = true;
     }
 
-    proc init(data: [] ?T, idx: Index, valid_bits: [] bool) {
+    proc init(data: [] ?T, idx: unmanaged Index, valid_bits: [] bool) {
       super.init();
       eltType = T;
 
@@ -399,8 +403,9 @@ module DataFrames {
       this.valid_bits = valid_bits;
     }
 
+    override
     proc copy() {
-      return new TypedSeries(this.data, this.idx, this.valid_bits);
+      return new unmanaged TypedSeries(this.data, this.idx, this.valid_bits);
     }
 
     /*
@@ -420,7 +425,7 @@ module DataFrames {
 
     iter items(type idxType) {
       if idx {
-        for (v, i, d) in zip(valid_bits, idx:TypedIndex(idxType), data) do
+        for (v, i, d) in zip(valid_bits, idx:unmanaged TypedIndex(idxType), data) do
           if v then yield (i, d);
       }
     }
@@ -438,7 +443,7 @@ module DataFrames {
 
     iter items_fast(type idxType) {
       if idx {
-        for t in zip(idx:TypedIndex(idxType), data) do
+        for t in zip(idx:unmanaged TypedIndex(idxType), data) do
           yield t;
       }
     }
@@ -469,15 +474,15 @@ module DataFrames {
 
     proc this(lab: ?idxType) {
       if idx then
-        return data[(idx:TypedIndex(idxType))[lab]];
+        return data[(idx:unmanaged TypedIndex(idxType))[lab]];
 
       var default: eltType;
       return default;
     }
 
     // TODO: filterSeries needs to be Owned
-    proc this(filterSeries: ?T) where T: Series {
-      var castFilter = filterSeries: TypedSeries(bool);
+    proc this(filterSeries: ?T) where T: unmanaged Series {
+      var castFilter = filterSeries: unmanaged TypedSeries(bool);
       if idx then
         return idx.filter(this, castFilter);
 
@@ -487,7 +492,7 @@ module DataFrames {
         if b && i <= data.size then
           filter_data[i] = this.at(i);
       }
-      return new TypedSeries(filter_data, this.valid_bits);
+      return new unmanaged TypedSeries(filter_data, this.valid_bits);
     }
 
     proc at(ord: int) {
@@ -496,7 +501,7 @@ module DataFrames {
 
     proc valid(lab: ?idxType) {
       if idx then
-        return valid_bits[(idx:TypedIndex(idxType))[lab]];
+        return valid_bits[(idx:unmanaged TypedIndex(idxType))[lab]];
 
       return false;
     }
@@ -505,7 +510,8 @@ module DataFrames {
       return valid_bits[ord];
     }
 
-    proc reindex(idx: Index) {
+    override
+    proc reindex(idx: unmanaged Index) {
       this.idx = idx;
     }
 
@@ -513,9 +519,10 @@ module DataFrames {
      * Functional Constructs
      */
 
-    proc uni(lhs: TypedSeries(eltType), unifier: SeriesUnifier(eltType)): TypedSeries(eltType) {
+    override
+    proc uni(lhs: borrowed TypedSeries(eltType), unifier: borrowed SeriesUnifier(eltType)): unmanaged TypedSeries(eltType) {
       if lhs.idx then
-        return lhs.idx.uni(lhs, this, unifier):TypedSeries(eltType);
+        return lhs.idx.uni(lhs, this, unifier):unmanaged TypedSeries(eltType);
 
       var uni_ords = if lhs.ords.size > this.ords.size
                      then 1..lhs.ords.size
@@ -538,17 +545,16 @@ module DataFrames {
         }
       }
 
-      delete unifier;
-      return new TypedSeries(uni_data, uni_valid_bits);
+      return new unmanaged TypedSeries(uni_data, uni_valid_bits);
     }
 
-    proc map(mapper: SeriesMapper): Series {
+    override
+    proc map(mapper: borrowed SeriesMapper): unmanaged Series {
       if idx then
         return idx.map(this, mapper);
 
       var mapped = [d in data] mapper.f(d);
-      delete mapper;
-      return new TypedSeries(mapped, this.valid_bits);
+      return new unmanaged TypedSeries(mapped, this.valid_bits);
     }
 
     /*
@@ -556,51 +562,62 @@ module DataFrames {
      */
     // TODO: "in" operator for idx.contains(lab)
 
-    proc add(rhs): Series {
-      return rhs.uni(this, new SeriesAdd(eltType));
+    override
+    proc add(rhs): unmanaged Series {
+      return rhs.uni(this, new borrowed SeriesAdd(eltType));
     }
 
-    proc add_scalar(n): Series {
+    override
+    proc add_scalar(n): unmanaged Series {
       var with_scalar = data + n;
-      return new TypedSeries(with_scalar, idx);
+      return new unmanaged TypedSeries(with_scalar, idx);
     }
 
-    proc subtr(rhs): Series {
-      return rhs.uni(this, new SeriesSubtr(eltType));
+    override
+    proc subtr(rhs): unmanaged Series {
+      return rhs.uni(this, new borrowed SeriesSubtr(eltType));
     }
 
-    proc subtr_scalar(n): Series {
+    override
+    proc subtr_scalar(n): unmanaged Series {
       var with_scalar = data - n;
-      return new TypedSeries(with_scalar, idx);
+      return new unmanaged TypedSeries(with_scalar, idx);
     }
 
-    proc mult(rhs): Series {
-      return rhs.uni(this, new SeriesMult(eltType));
+    override
+    proc mult(rhs): unmanaged Series {
+      return rhs.uni(this, new borrowed SeriesMult(eltType));
     }
 
-    proc mult_scalar(n): Series {
+    override
+    proc mult_scalar(n): unmanaged Series {
       var with_scalar = data * n;
-      return new TypedSeries(with_scalar, idx);
+      return new unmanaged TypedSeries(with_scalar, idx);
     }
 
-    proc lt_scalar(n): Series {
-      return this.map(new SeriesLessThan(n));
+    override
+    proc lt_scalar(n): unmanaged Series {
+      return this.map(new borrowed SeriesLessThan(n));
     }
 
-    proc gt_scalar(n): Series {
-      return this.map(new SeriesGreaterThan(n));
+    override
+    proc gt_scalar(n): unmanaged Series {
+      return this.map(new borrowed SeriesGreaterThan(n));
     }
 
-    proc eq_scalar(n): Series {
-      return this.map(new SeriesEqualTo(n));
+    override
+    proc eq_scalar(n): unmanaged Series {
+      return this.map(new borrowed SeriesEqualTo(n));
     }
 
-    proc lteq_scalar(n): Series {
-      return this.map(new SeriesLessThanEqualTo(n));
+    override
+    proc lteq_scalar(n): unmanaged Series {
+      return this.map(new borrowed SeriesLessThanEqualTo(n));
     }
 
-    proc gteq_scalar(n): Series {
-      return this.map(new SeriesGreaterThanEqualTo(n));
+    override
+    proc gteq_scalar(n): unmanaged Series {
+      return this.map(new borrowed SeriesGreaterThanEqualTo(n));
     }
 
     /*
@@ -627,6 +644,7 @@ module DataFrames {
       return || reduce this.these();
     }
 
+    override
     proc nrows(): int {
       if idx then
         return idx.nrows();
@@ -634,9 +652,10 @@ module DataFrames {
         return ords.size;
     }
 
+    override
     proc writeThis(f) {
       if idx {
-        idx.writeThis(f, this);
+        idx.writeThis(f, _to_unmanaged(this));
       } else {
         for (v, (i, d)) in this._items() {
           f <~> i + "    ";
@@ -651,6 +670,7 @@ module DataFrames {
     }
 
     pragma "no doc"
+    override
     proc writeElem(f, i, len: int) {
       // TODO: clean up to simple cast after bugfix
       var output = if this.valid(i)
@@ -663,6 +683,7 @@ module DataFrames {
     }
 
     pragma "no doc"
+    override
     proc writeElemNoIndex(f, i: int, len: int) {
       // TODO: clean up to simple cast after bugfix
       var output = if this.valid_at(i)
@@ -677,8 +698,8 @@ module DataFrames {
 
   class DataFrame {
     var labels: domain(string);
-    var columns: [labels] Series;
-    var idx: Index;
+    var columns: [labels] unmanaged Series;
+    var idx: unmanaged Index;
 
     // TODO: init with labels arg
 
@@ -686,7 +707,7 @@ module DataFrames {
       this.complete();
     }
 
-    proc init(columns: [?D] Series) {
+    proc init(columns: [?D] unmanaged Series) {
       this.labels = D;
       this.idx = nil;
       this.complete();
@@ -695,7 +716,7 @@ module DataFrames {
         this.columns[lab] = s.copy();
     }
 
-    proc init(columns: [?D], idx: Index) {
+    proc init(columns: [?D], idx: unmanaged Index) {
       this.labels = D;
       this.idx = idx;
       this.complete();
@@ -713,13 +734,13 @@ module DataFrames {
       return columns[lab];
     }
 
-    proc insert(lab: string, s: Series) {
+    proc insert(lab: string, s: unmanaged Series) {
       var sCopy = s.copy();
       sCopy.reindex(idx);
       columns[lab] = sCopy;
     }
 
-    proc reindex(idx: Index) {
+    proc reindex(idx: unmanaged Index) {
       this.idx = idx;
       for s in columns do
         s.reindex(idx);
@@ -734,9 +755,10 @@ module DataFrames {
       return nMax;
     }
 
+    override
     proc writeThis(f) {
       if idx {
-        idx.writeThis(f, this);
+        idx.writeThis(f, _to_unmanaged(this));
       } else {
         var n = nrows();
         var nStr = new string(n: string);
@@ -790,37 +812,68 @@ module DataFrames {
   // TODO: isNumericType prevents instantiation with bools
   // would prefer "is summable" type here
   class SeriesAdd : SeriesUnifier {
-    proc f(lhs: eltType, rhs: eltType): eltType where isNumericType(eltType) ||
-                                                      isStringType(eltType) {
-      return lhs + rhs;
+    override
+    proc f(lhs: eltType, rhs: eltType): eltType {
+      if (isNumericType(eltType) || isStringType(eltType)) {
+        return lhs + rhs;
+      } else {
+        var empty: eltType;
+        return empty;
+      }
     }
   }
 
   class SeriesSubtr : SeriesUnifier {
-    proc f(lhs: eltType, rhs: eltType): eltType where isNumericType(eltType) {
-      return lhs - rhs;
+    override
+    proc f(lhs: eltType, rhs: eltType): eltType {
+      if isNumericType(eltType) {
+        return lhs - rhs;
+      } else {
+        var empty: eltType;
+        return empty;
+      }
     }
 
-    proc f_rhs(rhs: eltType): eltType where isNumericType(eltType) {
-      return -rhs;
+    override
+    proc f_rhs(rhs: eltType): eltType {
+      if isNumericType(eltType) {
+        return -rhs;
+      } else {
+        return rhs;
+      }
     }
   }
 
   class SeriesMult : SeriesUnifier {
-    proc f(lhs: eltType, rhs: eltType): eltType where isNumericType(eltType) {
-      return lhs * rhs;
+    override
+    proc f(lhs: eltType, rhs: eltType): eltType {
+      if isNumericType(eltType) {
+        return lhs * rhs;
+      } else {
+        var empty: eltType;
+        return empty;
+      }
     }
 
-    proc f_lhs(lhs: eltType): eltType where isNumericType(eltType) {
-      return 0;
+    override
+    proc f_lhs(lhs: eltType): eltType {
+      if isNumericType(eltType) {
+        return 0;
+      } else {
+        return lhs;
+      }
     }
 
-    proc f_rhs(rhs: eltType): eltType where isNumericType(eltType) {
-      return 0;
+    override
+    proc f_rhs(rhs: eltType): eltType {
+      if isNumericType(eltType) {
+        return 0;
+      } else {
+        return rhs;
+      }
     }
   }
 
-  pragma "use default init"
   class SeriesMapper {
     type eltType;
     type retType;
@@ -844,6 +897,7 @@ module DataFrames {
       super.init(x);
     }
 
+    override
     proc f(d: eltType): retType {
       return d < x;
     }
@@ -854,6 +908,7 @@ module DataFrames {
       super.init(x);
     }
 
+    override
     proc f(d: eltType): retType {
       return d > x;
     }
@@ -864,6 +919,7 @@ module DataFrames {
       super.init(x);
     }
 
+    override
     proc f(d: eltType): retType {
       return d == x;
     }
@@ -874,6 +930,7 @@ module DataFrames {
       super.init(x);
     }
 
+    override
     proc f(d: eltType): retType {
       return d <= x;
     }
@@ -884,6 +941,7 @@ module DataFrames {
       super.init(x);
     }
 
+    override
     proc f(d: eltType): retType {
       return d >= x;
     }
@@ -892,75 +950,75 @@ module DataFrames {
   /*
    * ARITHMETIC AND INEQUALITY OPERATORS
    */
-  proc +(lhs: Series, rhs: Series) {
+  proc +(lhs: borrowed Series, rhs: borrowed Series) {
     return lhs.add(rhs);
   }
 
-  proc +(lhs: Series, n: ?N) where isNumericType(N) {
+  proc +(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.add_scalar(n);
   }
 
-  proc +(n: ?N, rhs: Series) where isNumericType(N) {
+  proc +(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.add_scalar(n);
   }
 
-  proc -(lhs: Series, rhs: Series) {
+  proc -(lhs: borrowed Series, rhs: borrowed Series) {
     return lhs.subtr(rhs);
   }
 
-  proc -(lhs: Series, n: ?N) where isNumericType(N) {
+  proc -(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.subtr_scalar(n);
   }
 
-  proc *(lhs: Series, rhs: Series) {
+  proc *(lhs: borrowed Series, rhs: borrowed Series) {
     return lhs.mult(rhs);
   }
 
-  proc *(lhs: Series, n: ?N) where isNumericType(N) {
+  proc *(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.mult_scalar(n);
   }
 
-  proc *(n: ?N, rhs: Series) where isNumericType(N) {
+  proc *(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.mult_scalar(n);
   }
 
-  proc <(lhs: Series, n: ?N) where isNumericType(N) {
+  proc <(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.lt_scalar(n);
   }
 
-  proc <(n: ?N, rhs: Series) where isNumericType(N) {
+  proc <(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.gt_scalar(n);
   }
 
-  proc >(lhs: Series, n: ?N) where isNumericType(N) {
+  proc >(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.gt_scalar(n);
   }
 
-  proc >(n: ?N, rhs: Series) where isNumericType(N) {
+  proc >(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.lt_scalar(n);
   }
 
-  proc ==(lhs: Series, n: ?N) where isNumericType(N) {
+  proc ==(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.eq_scalar(n);
   }
 
-  proc ==(n: ?N, rhs: Series) where isNumericType(N) {
+  proc ==(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.eq_scalar(n);
   }
 
-  proc <=(lhs: Series, n: ?N) where isNumericType(N) {
+  proc <=(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.lteq_scalar(n);
   }
 
-  proc <=(n: ?N, rhs: Series) where isNumericType(N) {
+  proc <=(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.gteq_scalar(n);
   }
 
-  proc >=(lhs: Series, n: ?N) where isNumericType(N) {
+  proc >=(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.gteq_scalar(n);
   }
 
-  proc >=(n: ?N, rhs: Series) where isNumericType(N) {
+  proc >=(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.lteq_scalar(n);
   }
 }

@@ -258,7 +258,7 @@ static void preNormalizeInit(FnSymbol* fn) {
   if (fn->throwsError() == true) {
     USR_FATAL(fn, "initializers are not yet allowed to throw errors");
 
-  } else if (at->isRecord() == true) {
+  } else if (at->isRecord() == true || at->isUnion()) {
     preNormalizeInitRecord(fn);
 
   } else if (at->isClass()  == true) {
@@ -1433,14 +1433,15 @@ void preNormalizePostInit(AggregateType* at) {
   int errors = 0;
   for_vector(AggregateType, cur, chain) {
     if (postinitCache.find(cur) == postinitCache.end()) {
-      if (cur->hasInitializers() == false) {
-        cur->symbol->addFlag(FLAG_USE_DEFAULT_INIT);
-      }
       // Don't insert a super.init for the highest ancestor
       bool insertSuper = cur != chain.front();
       errors += insertPostInit(cur, insertSuper);
       postinitCache.insert(cur);
     }
+  }
+
+  if (isRecord(at) && at->hasPostInitializer()) {
+    at->symbol->addFlag(FLAG_NOT_POD);
   }
 
   if (errors > 0) {

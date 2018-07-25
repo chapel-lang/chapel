@@ -1,0 +1,6 @@
+1
+const ref
+1
+(ptr = {_x = 3})
+ref
+(ptr = {_x = 4})

@@ -880,7 +880,6 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
      buffer of the same size.
 
   */
-  pragma "use default init"
   class CryptoRandom {
     /* This function represents a CSPRNG that generates and allocates the desired
        number of random values as specified by the argument. Halts for number of
@@ -1098,7 +1097,6 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        as an argument) by passing a single `RSAKey` object every time the decryption takes place.
 
     */
-  pragma "use default init"
   class RSA {
 
     /* This is the 'RSA' encrypt routine that encrypts the plaintext buffer. This

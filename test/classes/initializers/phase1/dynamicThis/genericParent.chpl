@@ -15,10 +15,10 @@ class Parent {
   }
 }
 
-proc foobar(p : Parent(int)) {
+proc foobar(p : borrowed Parent(int)) {
   writeln("foobar(Parent(int))");
 }
-proc foobar(p : Parent) {
+proc foobar(p : borrowed Parent) {
   writeln("foobar(Parent(other))");
 }
 
@@ -39,11 +39,11 @@ class Child : Parent {
 }
 
 writeln("----- integer -----");
-var childInt = new Child(int);
+var childInt = new unmanaged Child(int);
 delete childInt;
 
 writeln();
 
 writeln("----- real -----");
-var childReal = new Child(real);
+var childReal = new unmanaged Child(real);
 delete childReal;

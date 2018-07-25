@@ -1,6 +1,107 @@
 GASNet ChangeLog 
 ----------------
 ----------------------------------------------------------------------
+07-20-2018: Release 1.32.0
+
+* Cray uGNI (gemini- and aries-conduits)
+  - Improved performance of non-bulk puts beyond the bounce-buffer size
+  - Fix bug 3632: aries-conduit SEGV at startup with multi-domain
+  - Fix bug 3647: aries-conduit should honor non-default process layouts
+  - Fix bug 3695: AMReply injection might corrupt the payload of the
+    running AM Medium Request handler.
+  - Tweak the interface and documentation of GASNET_GNI_MEM_CONSISTENCY envvar.
+
+* Libfabric (ofi-conduit)
+  - Fix bug 3682: incorrect behavior for non-bulk puts larger than a page
+  - Compatibility fixes for libfabric version 1.6
+
+* InfiniBand Verbs (ibv-conduit)
+  - GASNET_DISABLE_MUNMAP now defaults to enabled for ibv-conduit.
+  - Now use HCA's maximum supported MTU by default, resulting in nearly a 2x
+    increase in peak Get bandwidth on modern HCAs.
+  - Fix bug 3339: allow ibv-conduit to operate on Omni-Path hardware.
+    ofi-conduit and psm-conduit remain the recommended conduits for Omni-Path.
+
+* Mellanox ConnectX series HCAs (mxm-conduit)
+  - This conduit is now DEPRECATED.
+  - Use of ibv-conduit is recommended for users with InfiniBand hardware.
+  - Adjust envvar GASNET_PHYSMEM_{MAX,PROBE} handling to match other conduits
+
+* Portable UDP (udp-conduit)
+  - Reduce polling cost on single-supernode runs. smp-conduit remains the
+    recommended conduit for use on single-supernode shared-memory systems.
+
+* Portable MPI (mpi-conduit)
+  - Reduce polling cost on single-supernode runs. smp-conduit remains the
+    recommended conduit for use on single-supernode shared-memory systems.
+
+* GASNet tools (spec v1.12)
+  - Numerous improvements to backtrace support, including fixing the
+    following bugs:
+    + Bug 3624: Improve backtrace fail-over behavior
+    + Bug 3625: call prctl(PR_SET_PTRACER,...) before backtrace on Linux
+    + Bug 3626: prioritize lldb on Mac OS X
+    + Bug 3627: unblock the unfreeze signal prior to backtrace
+    + Bug 3637: Fix EXECINFO backtrace for *BSD
+    + Enable GDB backtrace on Cray systems, when available
+  - Bug 3664: GASNETT_PREDICT_{TRUE,FALSE} result value semantics change slightly
+  - Add gasnett_unreachable()
+  - GASNETT_PLEASE_INLINE has been removed. Recommended replacement is `inline`
+  - Improve behavior when installed public headers are passed to a compiler 
+    that was not probed at configure time.
+
+* General and Misc.
+  - GASNET_MAX_SEGSIZE syntax has been expanded and now defaults to 85% of physical 
+    memory, split evenly between co-located processes on a host. 
+    Configure option to control this default renamed to --with-max-segsize=
+  - GASNET_VIS_{AMPIPE,REMOTECONTIG} is now enabled by default on most conduits
+  - GASNET_VIS_MAXCHUNK default value adjusted on many conduits to improve perf
+  - New knobs GASNET_VIS_{PUT,GET}_MAXCHUNK for tuning put/get VIS chunk size
+  - Fix GASNET_NULL_ARGV_OK for mpi-conduit and mpi-spawner
+  - Additional debug checks now detect prohibited overlap in loopback RMA and AMLong.
+  - The extended-ref source directory has been re-arranged
+  - Clients using gasnet_coll_* must now explicitly #include <gasnet_coll.h>
+  - Events leading up to a crash are now more reliably reported in the trace file.
+
+* Platform support/portability
+  - Support for Microsoft Windows 10 Subsystem for Linux (WSL) has graduated
+    out of BETA status
+  - Update MALLOC_OPTIONS setting for OpenBSD 6.x
+  - Add gasnetrun support for IBM Job Step Manager (jsrun)
+  - Add PLATFORM_COMPILER_C(XX)_LANGLVL to portable_platform (v5)
+  - Fix bug 3741: misidentification of IBM XL Compilers 13.1.6 and newer (v6)
+  - Fix bug 3743: verify correct KNL processor tuning on CNL
+  - Fix bug 3679: AMUDP incompatibility with PGI C++ 17+
+  - Public headers are less susceptible to malfunctions when compiled with
+    un-prefixed tokens redefined by the preprocessor. C/C++ keywords remain
+    reserved, as do tokens prepended by one or more underscores or one of the
+    reserved gasnet prefixes (see 'GASNet coding standards' in README-devel)
+
+* Configure and Build
+  - Option --enable-strict-prototypes has been removed, see bug 3608.
+  - Fix bug 3613: warning on #pragma GCC diagnostic for gcc < 4.6
+  - Fix bug 3629: avoid a parallel make bug
+  - Add a git hash "watermark" to libraries
+  - Warning enable flags are removed from GASNET_C(XX)FLAGS and friends. 
+    The flags remain available in GASNET_DEVWARN_C(XX)FLAGS for opt-in.
+
+* Removal of unmaintained platform support
+  - This release no longer supports the following platforms:
+    + Cray/Tera MTA
+    + SGI Altix
+  - This release no longer supports the shmem-conduit, which was specific
+    to the obsolete Cray X1 and SGI Altix NUMAlink networks.
+  - This release removes support for the following compilers:
+    + Kuck and Associates (KAI) C++ Compiler
+    + PGI compilers older than the 7.2-5 release
+    + Pathscale compilers older than 3.0
+  - This release removes support for the following compilers which had
+    ceased to work with GASNet 1.28.0 due to insufficient support for C99:
+    + GCC 2.x
+    + LCC (a.k.a. "Local C Compiler" or "Little C Compiler")
+  - BLCR integration support is officially deprecated
+
+----------------------------------------------------------------------
 08-31-2017 : Release 1.30.0
 
 * Cray uGNI (gemini- and aries-conduits)
@@ -8,6 +109,11 @@ GASNet ChangeLog
     or share/doc/gasnet/README-{aries,gemini} (installed).
   - Improve the handling of GASNET_PHYSMEM_* env vars to be more user-friendly
   - Improve robustness of exit code
+  - The following configure options have been renamed, replacing "gni" by
+    "aries" or "gemini" as appropriate:
+          --with-gni-max-medium=
+          --{en,dis}able-gni-multi-domain
+          --{en,dis}able-gni-udreg
   - NOTE to users of PrgEnv-cray: there is a known bug in CCE-8.6 that leads to
     errors when linking libgasnet.  See bug 3589 at http://gasnet-bugs.lbl.gov
     for the most complete and up-to-date details.
@@ -39,7 +145,7 @@ GASNet ChangeLog
   - Improve latency for AM Medium/Long under 128 bytes, via PAMI_Send_immediate()
   - gasnet.h no longer includes PAMI headers into client code
 
-* GASNet tools
+* GASNet tools (spec v1.10)
   - Fix bug 3448: x86*/Linux timers once again default to use of the TSC due
     to addition of new logic for correct calibration on newer Intel CPUs.
   - Add gasnett_nsleep()
@@ -197,6 +303,10 @@ GASNet ChangeLog
   - Restructure AMUDP headers to reduce namespace clutter
   - Fix a compatibility issue with Cray CNL
   - Fix a use-after-free bug in argument processing
+
+* SGI Altix / Cray X1 Shmem (shmem-conduit)
+  - This conduit is now DEPRECATED. It relies on system-specific extensions
+    to SHMEM implemented in DSM hardware that has now been retired.
 
 * Platform support/portability
   - Cygwin-2.x

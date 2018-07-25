@@ -242,7 +242,6 @@ proc varInitArgInout(inout arg)
 
 
 
-pragma "use default init"
 record Container {
   var field: R;
 }

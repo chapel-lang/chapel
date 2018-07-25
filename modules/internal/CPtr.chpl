@@ -70,7 +70,6 @@ module CPtr {
   pragma "no object"
   pragma "no default functions"
   pragma "no wide class"
-  pragma "use default init"
   pragma "c_ptr class"
   class c_ptr {
     /* The type that this pointer points to */

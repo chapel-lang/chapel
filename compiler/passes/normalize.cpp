@@ -69,7 +69,6 @@ static void        updateInitMethod (FnSymbol* fn);
 
 static void        checkUseBeforeDefs();
 static void        moveGlobalDeclarationsToModuleScope();
-static void        insertUseForExplicitModuleCalls(void);
 
 static void        lowerIfExprs(BaseAST* base);
 
@@ -187,8 +186,6 @@ void normalize() {
   checkUseBeforeDefs();
 
   moveGlobalDeclarationsToModuleScope();
-
-  insertUseForExplicitModuleCalls();
 
   if (!fMinimalModules) {
     // Calls to _statementLevelSymbol() are inserted here and in
@@ -698,7 +695,7 @@ static void checkSelfDef(CallExpr* call, Symbol* sym) {
 }
 
 // If the AST node defines a symbol, then return that symbol.
-// Otheriwse return NULL. Also check for self-defs.
+// Otherwise return NULL. Also check for self-defs.
 static Symbol* theDefinedSymbol(BaseAST* ast) {
   Symbol* retval = NULL;
 
@@ -857,30 +854,6 @@ static void moveGlobalDeclarationsToModuleScope() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void insertUseForExplicitModuleCalls() {
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->inTree() && se->symbol() == gModuleToken) {
-      SET_LINENO(se);
-
-      CallExpr*     call  = toCallExpr(se->parentExpr);
-      INT_ASSERT(call);
-
-      SymExpr*      mse   = toSymExpr(call->get(2));
-      INT_ASSERT(mse);
-
-      ModuleSymbol* mod   = toModuleSymbol(mse->symbol());
-      INT_ASSERT(mod);
-
-      Expr*         stmt  = se->getStmtExpr();
-      BlockStmt*    block = new BlockStmt();
-
-      stmt->insertBefore(block);
-
-      block->insertAtHead(stmt->remove());
-      block->useListAdd(mod);
-    }
-  }
-}
 
 //
 // Inserts a temporary for the result if the last statement is a call.
@@ -1105,7 +1078,9 @@ static void processManagedNew(CallExpr* newCall) {
 
 static void fixupExportedArrayReturns(FnSymbol* fn);
 static bool isVoidReturn(CallExpr* call);
-static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret);
+static bool hasGenericArrayReturn(FnSymbol* fn);
+static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
+                          bool genericArrayRet);
 
 static void normalizeReturns(FnSymbol* fn) {
   SET_LINENO(fn);
@@ -1206,13 +1181,15 @@ static void normalizeReturns(FnSymbol* fn) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, retval));
   }
 
+  bool genericArrayRet = hasGenericArrayReturn(fn);
+
   // Now, for each return statement appearing in the function body,
   // move the value of its body into the declared return value.
   for_vector(CallExpr, ret, rets) {
     SET_LINENO(ret);
 
     if (isIterator == false && retval != NULL) {
-      insertRetMove(fn, retval, ret);
+      insertRetMove(fn, retval, ret, genericArrayRet);
     }
 
     // replace with GOTO(label)
@@ -1223,6 +1200,10 @@ static void normalizeReturns(FnSymbol* fn) {
     } else {
       ret->remove();
     }
+  }
+
+  if (genericArrayRet) {
+    fn->retExprType->remove();
   }
 
   if (labelIsUsed == false) {
@@ -1274,7 +1255,7 @@ static void normalizeYields(FnSymbol* fn) {
       retval->addFlag(FLAG_YVV);
 
       yield->insertBefore(new DefExpr(retval));
-      insertRetMove(fn, retval, yield);
+      insertRetMove(fn, retval, yield, false);
       yield->insertBefore(new CallExpr(PRIM_YIELD, retval));
       yield->remove();
     }
@@ -1293,13 +1274,83 @@ static bool isVoidReturn(CallExpr* call) {
   return retval;
 }
 
-static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
+static bool hasGenericArrayReturn(FnSymbol* fn) {
+  if (returnsArray(fn)) {
+    BlockStmt* typeExpr = fn->retExprType;
+
+    // returnsArray ensured this was a call to "chpl__buildArrayRuntimeType"
+    CallExpr* call = toCallExpr(typeExpr->body.tail);
+    int nArgs = call->numActuals();
+    Expr* domExpr = call->get(1);
+    Expr* eltExpr = nArgs == 2 ? call->get(2) : NULL;
+    bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
+
+    if (noDom || eltExpr == NULL) {
+      // Either the domain is not provided explicitly as part of the return
+      // type, or the element type is not provided, or both
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Validates the declared domain, if it exists.
+static void insertDomainCheck(Expr* actualRet, CallExpr* retVar,
+                              Expr* domExpr) {
+  CallExpr* checkDom = new CallExpr("chpl__checkDomainsMatch",
+                                    actualRet->copy(),
+                                    domExpr->copy());
+  retVar->insertBefore(checkDom);
+}
+
+// Validates the declared element type, if it exists
+static void insertElementTypeCheck(Expr* declaredRet, Expr* actualRet,
+                                   CallExpr* retVar) {
+  CallExpr* checkEltType = new CallExpr("chpl__checkEltTypeMatch",
+                                        actualRet->copy(),
+                                        declaredRet->copy());
+  retVar->insertBefore(checkEltType);
+}
+
+static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
+                                              VarSymbol* retval,
+                                              CallExpr* ret,
+                                              Expr* retExpr) {
+  BlockStmt* typeExpr = fn->retExprType;
+
+  CallExpr* call = toCallExpr(typeExpr->body.tail);
+  int nArgs = call->numActuals();
+  Expr* domExpr = call->get(1);
+  Expr* retEltExpr = nArgs == 2 ? call->get(2) : NULL;
+  bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
+
+  if (!noDom) {
+    // Add checks against the declared domain
+    insertDomainCheck(retExpr, ret, domExpr);
+  }
+
+  if (retEltExpr != NULL) {
+    insertElementTypeCheck(retEltExpr, retExpr, ret);
+  }
+
+  // TODO: Do something about coercion
+
+  ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
+}
+
+static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
+                          bool genericArrayRet) {
   Expr* retExpr = ret->get(1)->remove();
 
   if (fn->returnsRefOrConstRef() == true) {
     CallExpr* addrOf = new CallExpr(PRIM_ADDR_OF, retExpr);
 
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, addrOf));
+
+  } else if (genericArrayRet) {
+    modifyPartiallyGenericArrayReturn(fn, retval, ret, retExpr);
 
   } else if (fn->retExprType != NULL) {
     Expr*     tail   = fn->retExprType->body.tail;
@@ -2227,8 +2278,8 @@ static void normVarTypeInference(DefExpr* defExpr) {
         if (argExpr->numActuals() >= 2) {
           if (SymExpr* se = toSymExpr(argExpr->get(1))) {
             if (se->symbol() == gModuleToken) {
-              modToken = toSymExpr(argExpr->get(1)->remove());
-              modValue = toSymExpr(argExpr->get(1)->remove());
+              modValue = toSymExpr(argExpr->get(2)->remove());
+              modToken = toSymExpr(se->remove());
             }
           }
         }
@@ -2265,7 +2316,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
         // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
         // test for --force-initializers, but PR #10171 was merged first and
         // somehow fixed that test. The test in question was:
-        //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+        //   test/classes/delete-free/owned/owned-raw-ignored-record.chpl
         if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
           if (ne->name == astr_chpl_manager) {
             ne->remove();
@@ -2401,6 +2452,17 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
     } else {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
       CallExpr* argExpr = toCallExpr(arg);
+      SymExpr*  modToken = NULL;
+      SymExpr*  modValue = NULL;
+
+      if (argExpr->numActuals() >= 2) {
+        if (SymExpr* se = toSymExpr(argExpr->get(1))) {
+          if (se->symbol() == gModuleToken) {
+            modValue = toSymExpr(argExpr->get(2)->remove());
+            modToken = toSymExpr(se->remove());
+          }
+        }
+      }
 
       // This call must be in tree before extending argExpr
       defExpr->insertAfter(argExpr);
@@ -2412,13 +2474,18 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       argExpr->insertAtHead(var);
       argExpr->insertAtHead(gMethodToken);
 
+      if (modToken != NULL) {
+        argExpr->insertAtHead(modValue);
+        argExpr->insertAtHead(modToken);
+      }
+
       // Add a call to postinit() if present
       insertPostInit(var, argExpr);
 
       // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
       // test for --force-initializers, but PR #10171 was merged first and
       // somehow fixed that test. The test in question was:
-      //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+      //   test/classes/delete-free/owned/owned-raw-ignored-record.chpl
       if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
         if (ne->name == astr_chpl_manager) {
           ne->remove();
@@ -2456,7 +2523,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
       // test for --force-initializers, but PR #10171 was merged first and
       // somehow fixed that test. The test in question was:
-      //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+      //   test/classes/delete-free/owned/owned-raw-ignored-record.chpl
       if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
         if (ne->name == astr_chpl_manager) {
           ne->remove();

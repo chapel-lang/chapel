@@ -26,7 +26,7 @@ class MethodTooEarly {
 }
 
 proc main() {
-  var c : MethodTooEarly = new MethodTooEarly(3);
+  var c : unmanaged MethodTooEarly = new unmanaged MethodTooEarly(3);
 
   delete c;
 }

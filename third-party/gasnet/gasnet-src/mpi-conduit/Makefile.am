@@ -34,7 +34,7 @@ CONDUIT_EXTRALIBCFLAGS = -I$(top_srcdir)/other/ammpi -I$(top_builddir)/other/amm
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS =                                      \
       $(top_srcdir)/other/ammpi/ammpi.h                     \
-      $(top_builddir)/other/ammpi/ammpi_portable_platform.h 
+      $(top_builddir)/other/ammpi/amx_portable_platform.h 
 
 # headers selected by default rules that should NOT be installed
 CONDUIT_PRIVATEHEADERS =
@@ -46,7 +46,7 @@ CONDUIT_EXTRADEPS = $(top_builddir)/other/ammpi/libammpi.a $(top_srcdir)/other/a
 $(top_builddir)/other/ammpi/libammpi.a: force
 	cd $(top_builddir)/other/ammpi && $(MAKE) libammpi.a
 
-$(top_builddir)/other/ammpi/ammpi_portable_platform.h: $(top_builddir)/other/ammpi/libammpi.a
+$(top_builddir)/other/ammpi/amx_portable_platform.h: $(top_builddir)/other/ammpi/libammpi.a
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as
@@ -95,7 +95,7 @@ libgasnet-mpi-parsync.a: $(libgasnet_dependencies)
 
 if USE_MPI_CONDUIT  
 lib_LIBRARIES = $(libraries) 
-all-local: $(lib_LIBRARIES) $(makefile_fragments)
+all-local: $(lib_LIBRARIES) $(pkgconfig_files)
 clean-local: do-clean-local
 install-data-local: do-install-data-local
 uninstall-local: do-uninstall-local

@@ -304,25 +304,23 @@ module Atomics {
   };
 
 
-  pragma "no doc"
-  inline proc create_atomic_bool():atomic_bool {
-    var ret:atomic_bool;
-    atomic_init_bool(ret, false);
-    return ret;
-  }
-
   pragma "atomic type"
   pragma "ignore noinit"
   /*
      The boolean atomic type.
   */
-  pragma "use default init"
   record atomicbool {
     pragma "no doc"
-    var _v:atomic_bool = create_atomic_bool();
+    var _v:atomic_bool;
 
     pragma "no doc"
-    inline proc deinit() {
+    proc init() {
+      this.complete();
+      atomic_init_bool(_v, _defaultOf(bool));
+    }
+
+    pragma "no doc"
+    proc deinit() {
       atomic_destroy_bool(_v);
     }
 
@@ -431,19 +429,16 @@ module Atomics {
     }
   }
 
-  inline proc create_atomic_uint_least8():atomic_uint_least8_t {
-    var ret:atomic_uint_least8_t;
-    atomic_init_uint_least8_t(ret, 0);
-    return ret;
-  }
-
   pragma "atomic type"
   pragma "ignore noinit" 
   pragma "no doc"
-  pragma "use default init"
   record atomic_uint8 {
-    var _v:atomic_uint_least8_t = create_atomic_uint_least8();
-    inline proc deinit() {
+    var _v:atomic_uint_least8_t;
+    proc init() {
+      this.complete();
+      atomic_init_uint_least8_t(_v, _defaultOf(uint(8)));
+    }
+    proc deinit() {
       atomic_destroy_uint_least8_t(_v);
     }
     inline proc const read(order:memory_order = memory_order_seq_cst):uint(8) {
@@ -535,19 +530,16 @@ module Atomics {
     }
   }
 
-  inline proc create_atomic_uint_least16():atomic_uint_least16_t {
-    var ret:atomic_uint_least16_t;
-    atomic_init_uint_least16_t(ret, 0);
-    return ret;
-  }
-
   pragma "atomic type"
   pragma "ignore noinit"
   pragma "no doc"
-  pragma "use default init"
   record atomic_uint16 {
-    var _v:atomic_uint_least16_t = create_atomic_uint_least16();
-    inline proc deinit() {
+    var _v:atomic_uint_least16_t;
+    proc init() {
+      this.complete();
+      atomic_init_uint_least16_t(_v, _defaultOf(uint(16)));
+    }
+    proc deinit() {
       atomic_destroy_uint_least16_t(_v);
     }
     inline proc const read(order:memory_order = memory_order_seq_cst):uint(16) {
@@ -639,19 +631,16 @@ module Atomics {
     }
   }
 
-  inline proc create_atomic_uint_least32():atomic_uint_least32_t {
-    var ret:atomic_uint_least32_t;
-    atomic_init_uint_least32_t(ret, 0);
-    return ret;
-  }
-
   pragma "atomic type"
   pragma "ignore noinit"
   pragma "no doc"
-  pragma "use default init"
   record atomic_uint32 {
-    var _v:atomic_uint_least32_t = create_atomic_uint_least32();
-    inline proc deinit() {
+    var _v:atomic_uint_least32_t;
+    proc init() {
+      this.complete();
+      atomic_init_uint_least32_t(_v, _defaultOf(uint(32)));
+    }
+    proc deinit() {
       atomic_destroy_uint_least32_t(_v);
     }
     inline proc const read(order:memory_order = memory_order_seq_cst):uint(32) {
@@ -743,19 +732,16 @@ module Atomics {
     }
   }
 
-  inline proc create_atomic_uint_least64():atomic_uint_least64_t {
-    var ret:atomic_uint_least64_t;
-    atomic_init_uint_least64_t(ret, 0);
-    return ret;
-  }
-
   pragma "atomic type"
   pragma "ignore noinit"
   pragma "no doc"
-  pragma "use default init"
   record atomic_uint64 {
-    var _v:atomic_uint_least64_t = create_atomic_uint_least64();
-    inline proc deinit() {
+    var _v:atomic_uint_least64_t;
+    proc init() {
+      this.complete();
+      atomic_init_uint_least64_t(_v, _defaultOf(uint(64)));
+    }
+    proc deinit() {
       atomic_destroy_uint_least64_t(_v);
     }
     inline proc const read(order:memory_order = memory_order_seq_cst):uint(64) {
@@ -847,19 +833,16 @@ module Atomics {
     }
   }
 
-  inline proc create_atomic_int_least8():atomic_int_least8_t {
-    var ret:atomic_int_least8_t;
-    atomic_init_int_least8_t(ret, 0);
-    return ret;
-  }
-
   pragma "atomic type"
   pragma "ignore noinit"
   pragma "no doc"
-  pragma "use default init"
   record atomic_int8 {
-    var _v:atomic_int_least8_t = create_atomic_int_least8();
-    inline proc deinit() {
+    var _v:atomic_int_least8_t;
+    proc init() {
+      this.complete();
+      atomic_init_int_least8_t(_v, _defaultOf(int(8)));
+    }
+    proc deinit() {
       atomic_destroy_int_least8_t(_v);
     }
     inline proc const read(order:memory_order = memory_order_seq_cst):int(8) {
@@ -951,19 +934,16 @@ module Atomics {
     }
   }
 
-  inline proc create_atomic_int_least16():atomic_int_least16_t {
-    var ret:atomic_int_least16_t;
-    atomic_init_int_least16_t(ret, 0);
-    return ret;
-  }
-
   pragma "atomic type"
   pragma "ignore noinit"
   pragma "no doc"
-  pragma "use default init"
   record atomic_int16 {
-    var _v:atomic_int_least16_t = create_atomic_int_least16();
-    inline proc deinit() {
+    var _v:atomic_int_least16_t;
+    proc init() {
+      this.complete();
+      atomic_init_int_least16_t(_v, _defaultOf(int(16)));
+    }
+    proc deinit() {
       atomic_destroy_int_least16_t(_v);
     }
     inline proc const read(order:memory_order = memory_order_seq_cst):int(16) {
@@ -1055,19 +1035,16 @@ module Atomics {
     }
   }
 
-  inline proc create_atomic_int_least32():atomic_int_least32_t {
-    var ret:atomic_int_least32_t;
-    atomic_init_int_least32_t(ret, 0);
-    return ret;
-  }
-
   pragma "atomic type"
   pragma "ignore noinit"
   pragma "no doc"
-  pragma "use default init"
   record atomic_int32 {
-    var _v:atomic_int_least32_t = create_atomic_int_least32();
-    inline proc deinit() {
+    var _v:atomic_int_least32_t;
+    proc init() {
+      this.complete();
+      atomic_init_int_least32_t(_v, _defaultOf(int(32)));
+    }
+    proc deinit() {
       atomic_destroy_int_least32_t(_v);
     }
     inline proc const read(order:memory_order = memory_order_seq_cst):int(32) {
@@ -1158,21 +1135,20 @@ module Atomics {
     }
   }
 
-  inline proc create_atomic_int_least64():atomic_int_least64_t {
-    var ret:atomic_int_least64_t;
-    atomic_init_int_least64_t(ret, 0);
-    return ret;
-  }
-
   pragma "atomic type"
   pragma "ignore noinit"
-  pragma "use default init"
   record atomic_int64 {
     pragma "no doc"
-    var _v:atomic_int_least64_t = create_atomic_int_least64();
+    var _v:atomic_int_least64_t;
 
     pragma "no doc"
-    inline proc deinit() {
+    proc init() {
+      this.complete();
+      atomic_init_int_least64_t(_v, _defaultOf(int(64)));
+    }
+
+    pragma "no doc"
+    proc deinit() {
       atomic_destroy_int_least64_t(_v);
     }
 
@@ -1374,19 +1350,16 @@ module Atomics {
 
   }
 
-  inline proc create_atomic__real64():atomic__real64 {
-    var ret:atomic__real64;
-    atomic_init__real64(ret, 0.0);
-    return ret;
-  }
-
   pragma "atomic type"
   pragma "ignore noinit"
   pragma "no doc"
-  pragma "use default init"
   record atomic_real64 {
-    var _v:atomic__real64 = create_atomic__real64();
-    inline proc deinit() {
+    var _v:atomic__real64;
+    proc init() {
+      this.complete();
+      atomic_init__real64(_v, _defaultOf(real(64)));
+    }
+    proc deinit() {
       atomic_destroy__real64(_v);
     }
     inline proc const read(order:memory_order = memory_order_seq_cst):real(64) {
@@ -1454,20 +1427,16 @@ module Atomics {
     }
   }
   
-
-  inline proc create_atomic__real32():atomic__real32 {
-    var ret:atomic__real32;
-    atomic_init__real32(ret, 0.0:real(32));
-    return ret;
-  }
-
   pragma "atomic type"
   pragma "ignore noinit"
   pragma "no doc"
-  pragma "use default init"
   record atomic_real32 {
-    var _v:atomic__real32 = create_atomic__real32();
-    inline proc deinit() {
+    var _v:atomic__real32;
+    proc init() {
+      this.complete();
+      atomic_init__real32(_v, _defaultOf(real(32)));
+    }
+    proc deinit() {
       atomic_destroy__real32(_v);
     }
     inline proc const read(order:memory_order = memory_order_seq_cst):real(32) {
@@ -1478,7 +1447,6 @@ module Atomics {
     inline proc write(value:real(32), order:memory_order = memory_order_seq_cst) {
       on this do atomic_store_explicit__real32(_v, value, order);
     }
-
     inline proc exchange(value:real(32), order:memory_order = memory_order_seq_cst):real(32) {
       var ret:real(32);
       on this do ret = atomic_exchange_explicit__real32(_v, value, order);

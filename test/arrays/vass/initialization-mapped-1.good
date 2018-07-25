@@ -1,2 +1,5 @@
-initialization-mapped-1.chpl:8: warning: _domain(BlockDom(1,int(64),false,DefaultDist))
-initialization-mapped-1.chpl:9: warning: _domain(BlockDom(1,int(64),false,DefaultDist))
+initialization-mapped-1.chpl:8: warning: BlockDom(1,int(64),false,unmanaged DefaultDist)
+initialization-mapped-1.chpl:9: warning: BlockDom(1,int(64),false,unmanaged DefaultDist)
+Note: This source location is a guess.
+initialization-mapped-1.chpl:9: warning: BlockDom(1,int(64),false,unmanaged DefaultDist)
+initialization-mapped-1.chpl:11: error: done

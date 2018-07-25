@@ -52,8 +52,8 @@ class BlockCyclicDom {
   type idxType;
   const whole: domain(nDims, idxType);
   const dist: unmanaged BlockCyclicDist(idxType);
-  const locDoms: [dist.localeDomain] unmanaged LocBlockCyclicDom(nDims, idxType);
-  proc initialize() {
+  var locDoms: [dist.localeDomain] unmanaged LocBlockCyclicDom(nDims, idxType);
+  proc postinit() {
     var blksInDim: nDims*idxType;
     for i in 1..nDims {
       blksInDim(i) = ceil(whole.dim(i).length:real(64) /
@@ -103,7 +103,7 @@ class LocBlockCyclicDom {
   const whole: unmanaged BlockCyclicDom(nDims, idxType);
   const locRanges: nDims*range(idxType, BoundedRangeType.bounded);
   const locDom: domain(nDims);
-  proc initialize() {
+  proc postinit() {
     locDom.setIndices(locRanges);
   }
 }
@@ -114,8 +114,8 @@ class BlockCyclicArr {
   type idxType;
   type eltType;
   const dom: unmanaged BlockCyclicDom(nDims, idxType);
-  const locArrs: [dom.dist.localeDomain] unmanaged LocBlockCyclicArr(nDims, idxType, eltType);
-  proc initialize() {
+  var locArrs: [dom.dist.localeDomain] unmanaged LocBlockCyclicArr(nDims, idxType, eltType);
+  proc postinit() {
     for ind in dom.dist.localeDomain {
       on dom.dist.locales(ind) {
         locArrs(ind) = new unmanaged LocBlockCyclicArr(nDims, idxType, eltType, _to_unmanaged(this), dom.locDoms(ind));

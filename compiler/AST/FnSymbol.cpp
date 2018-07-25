@@ -195,7 +195,6 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
   newFn->retTag             = this->retTag;
   newFn->instantiatedFrom   = this->instantiatedFrom;
   newFn->instantiationPoint = this->instantiationPoint;
-  newFn->numPreTupleFormals = this->numPreTupleFormals;
 
   return newFn;
 }

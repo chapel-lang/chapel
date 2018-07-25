@@ -460,77 +460,60 @@ static bool inferConstRef(Symbol* sym) {
   return isConstRef;
 }
 
-//
-// ref: The reference symbol we will test to see if it is only used as an
-// actual where the corresponding formal has FLAG_RETARG.
-//
-// defCall: The CallExpr where 'ref' is set from a PRIM_ADDR_OF or
-// PRIM_SET_REFERENCE. This call will be ignored while considering uses of
-// the 'ref' Symbol.
-//
-static bool onlyUsedForRetarg(Symbol* ref, CallExpr* defCall) {
-  bool isRetArgOnly = true;
+static bool passedToInitOrRetarg(SymExpr* use,
+                                 ArgSymbol* form, FnSymbol* calledFn)
+{
+  if (form->hasFlag(FLAG_RETARG))
+    return true;
 
-  INT_ASSERT(ref->isRef());
-  INT_ASSERT(defCall != NULL);
+  if (calledFn->isInitializer()  &&
+      form->hasFlag(FLAG_ARG_THIS))
+    return true;
 
-  for_SymbolSymExprs(use, ref) {
-    if (use->parentExpr == defCall) {
-      continue;
-    }
-
-    CallExpr* call = toCallExpr(use->parentExpr);
-    if (call->isResolved()) {
-      ArgSymbol* form = actual_to_formal(use);
-      if (form->hasFlag(FLAG_RETARG) == false) {
-        isRetArgOnly = false;
-      }
-    } else {
-      isRetArgOnly = false;
-    }
-  }
-
-  return isRetArgOnly;
+  return false;  // neither init nor retarg
 }
 
 //
-// Returns true if 'ref' is only used in the following two cases:
+// Returns true if 'ref' is only used in the following cases:
+//
 //   1) Used in 'defCall', usually a PRIM_ADDR_OF or PRIM_SET_REFERENCE
 //
 //   2) Passed to an initializer in the 'this' slot.
+//
+//   3) Initialized from a function call, as represented by return-by-ref.
 //
 // An initializer can thwart detection of a 'const' thing because it takes the
 // "this" argument by ref. Normally such a pattern would cause us to assume
 // the variable was not const, but in this case we know it is a single def.
 //
-static bool onlyUsedForInitializer(Symbol* ref, CallExpr* defCall) {
-  bool isInitOnly = true;
+// defCall: The CallExpr where 'ref' is set from a PRIM_ADDR_OF or
+// PRIM_SET_REFERENCE. This call will be ignored while considering uses of
+// the 'ref' Symbol.
+//
+static bool onlyUsedForInitOrRetarg(Symbol* ref, CallExpr* defCall) {
+  bool seenInitOrRetarg = false;
 
   INT_ASSERT(ref->isRef());
   INT_ASSERT(defCall != NULL);
 
   for_SymbolSymExprs(use, ref) {
-    if (use->parentExpr == defCall) {
+    if (use->parentExpr == defCall)
       continue;
-    }
 
     CallExpr* call = toCallExpr(use->parentExpr);
-    if (call->isResolved()) {
-      FnSymbol*  fn         = call->resolvedFunction();
-      ArgSymbol* form       = actual_to_formal(use);
-      bool       isInitFn   = strcmp(fn->cname, "init") == 0 &&
-                              fn->isMethod() &&
-                              form->hasFlag(FLAG_ARG_THIS);
 
-      if (isInitFn == false) {
-        isInitOnly = false;
+    if (FnSymbol*  fn = call->resolvedFunction()) {
+      ArgSymbol* form = actual_to_formal(use);
+      if (passedToInitOrRetarg(use, form, fn)) {
+        INT_ASSERT(!seenInitOrRetarg); // init/retarg happens just once
+        seenInitOrRetarg = true;
+      } else {
+        return false;  // a use other than what we are looking for
       }
-    } else {
-      isInitOnly = false;
     }
   }
 
-  return isInitOnly;
+  return true;
 }
 
 // Note: This function is currently not recursive
@@ -564,18 +547,13 @@ static bool inferConst(Symbol* sym) {
 
     CallExpr* parent = toCallExpr(call->parentExpr);
 
-    if (call->isResolved()) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
       ArgSymbol* form = actual_to_formal(use);
 
-      //
-      // If 'sym' is constructed through a _retArg, we can consider that to
-      // be a single 'def'.
-      //
-      if (form->hasFlag(FLAG_RETARG)) {
-        numDefs += 1;
-      }
-      else if (form->isRef()) {
-        if (!inferConstRef(form)) {
+      if (form->isRef()) {
+        if (passedToInitOrRetarg(use, form, fn)) {
+          numDefs += 1;
+        } else if (!inferConstRef(form)) {
           isConstVal = false;
         }
       }
@@ -586,9 +564,7 @@ static bool inferConst(Symbol* sym) {
         Symbol* LHS = toSymExpr(parent->get(1))->symbol();
         INT_ASSERT(LHS->isRef());
 
-        if (onlyUsedForRetarg(LHS, parent)) {
-          numDefs += 1;
-        } else if (onlyUsedForInitializer(LHS, parent)) {
+        if (onlyUsedForInitOrRetarg(LHS, parent)) {
           numDefs += 1;
         } else if (!inferConstRef(LHS)) {
           isConstVal = false;

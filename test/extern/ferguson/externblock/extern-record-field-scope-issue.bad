@@ -1,0 +1,2 @@
+extern-record-field-scope-issue.chpl:15: In function 'test':
+extern-record-field-scope-issue.chpl:17: error: unresolved call 'my_struct.my_field'

@@ -2311,83 +2311,6 @@ void handleIsWidePointer() {
 }
 
 //
-// Consider the following AST:
-//   (move ret_to_arg_ref_tmp (addr-of foobar))
-//   (call myFunc ret_to_arg_ref_tmp)
-//
-// A _retArg is used to return a record and will write into the 'foobar'
-// variable. This means that we should only widen the _retArg formal based on
-// the uses in 'myFunc', not based on the wideness of 'foobar'.
-//
-// It is not uncommon for 'foobar' to be re-used after the call to 'myFunc',
-// which sometimes involves the widening of 'foobar' unrelated to the _retArg
-// formal. This function creates a temporary for the _retArg's result so that
-// modifications to the destination do not impact the _retArg's wideness. The
-// AST above will be turned into something like this:
-//
-//   (def retarg_tmp : foobar.type)
-//   (move ref_to_retarg_result (addr-of retarg_tmp))
-//   (call myFunc ref_to_retarg_result)
-//   (move foobar retarg_tmp)
-//
-// Note: this function currently only exists to support the hacky
-// _array._instance wideness analysis.
-//
-// TODO: How to handle this kind of AST?
-//   (move ret_to_arg_ref_tmp (. base member)
-//
-static void createRetargTemps() {
-  forv_Vec(CallExpr, call, gCallExprs) {
-    FnSymbol* fn = call->resolvedFunction();
-    if (fn != NULL && fn->hasFlag(FLAG_FN_RETARG)) {
-      for_formals_actuals(formal, actual, call) {
-        if (formal->hasFlag(FLAG_RETARG) && canWidenRecord(formal->getValType())) {
-          Symbol* act = toSymExpr(actual)->symbol();
-          CallExpr* move = NULL;
-          bool refNeedsReplacing = false;
-          for_SymbolSymExprs(se, act) {
-            if (CallExpr* parent = toCallExpr(se->parentExpr)) {
-              if (parent->isPrimitive(PRIM_MOVE)) {
-                INT_ASSERT(move == NULL);
-                move = parent;
-              } else if (parent != call) {
-                refNeedsReplacing = true;
-              }
-            }
-          }
-          INT_ASSERT(move);
-
-          SET_LINENO(call);
-          CallExpr* RHS = toCallExpr(move->get(2));
-          if (RHS->isPrimitive(PRIM_ADDR_OF) || RHS->isPrimitive(PRIM_SET_REFERENCE)) {
-            SymExpr* src = toSymExpr(RHS->get(1));
-
-            VarSymbol* tmp = newTemp("retarg_tmp", src->symbol()->qualType());
-            move->insertBefore(new DefExpr(tmp));
-            src->replace(new SymExpr(tmp));
-
-            CallExpr* loadResult = new CallExpr(PRIM_MOVE, src->copy(), tmp);
-            call->insertAfter(loadResult);
-
-            if (refNeedsReplacing) {
-              VarSymbol* ref = newTemp("ref_to_retarg_result", actual->qualType());
-              call->insertBefore(new DefExpr(ref));
-              loadResult->insertAfter(new CallExpr(PRIM_MOVE, ref, new CallExpr(PRIM_SET_REFERENCE, src->copy())));
-
-              for_SymbolSymExprs(se, act) {
-                if (se->parentExpr != call && se->parentExpr != move) {
-                  se->replace(new SymExpr(ref));
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-//
 // In this pass we pretended that an _array record was a wide class in order
 // to simulate what the wideness will be for its _instance field. Now that
 // we're done analyzing, replace any 'wide array records' with normal records.
@@ -2446,8 +2369,6 @@ insertWideReferences(void) {
     handleIsWidePointer();
     return;
   }
-
-  createRetargTemps();
 
   //
   // fragmentLocalBlocks splits up local blocks, but sometimes they end up

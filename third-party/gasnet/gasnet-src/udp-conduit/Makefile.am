@@ -40,7 +40,7 @@ CONDUIT_EXTRALIBCFLAGS = -I$(top_srcdir)/other/amudp -I$(top_builddir)/other/amu
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS =                                        \
 	$(blcr_extraheaders)                                  \
-	$(top_builddir)/other/amudp/amudp_portable_platform.h \
+	$(top_builddir)/other/amudp/amx_portable_platform.h   \
 	$(top_srcdir)/other/amudp/amudp_const.h 
 
 # headers selected by default rules that should NOT be installed
@@ -57,7 +57,7 @@ CONDUIT_EXTRADEPS = \
 $(top_builddir)/other/amudp/libamudp.a: force
 	cd $(top_builddir)/other/amudp && $(MAKE) libamudp.a
 
-$(top_builddir)/other/amudp/amudp_portable_platform.h: $(top_builddir)/other/amudp/libamudp.a
+$(top_builddir)/other/amudp/amx_portable_platform.h: $(top_builddir)/other/amudp/libamudp.a
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as
@@ -111,7 +111,7 @@ libgasnet-udp-parsync.a: $(libgasnet_dependencies)
 
 if USE_UDP_CONDUIT  
 lib_LIBRARIES = $(libraries) 
-all-local: $(lib_LIBRARIES) $(makefile_fragments)
+all-local: $(lib_LIBRARIES) $(pkgconfig_files)
 clean-local: do-clean-local
 install-data-local: do-install-data-local
 uninstall-local: do-uninstall-local

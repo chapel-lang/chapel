@@ -1,14 +1,11 @@
-pragma "use default init"
 class MyClass {
   var x;
 }
 
-pragma "use default init"
 class OtherClass {
   var y;
 }
 
-pragma "use default init"
 class Concrete {
   var z:int;
 }

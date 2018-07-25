@@ -60,7 +60,7 @@ proc masonTest(args) {
   runTests(show, run, parallel);
 }
 
-private proc runTests(show: bool, run: bool, parallel: bool) {
+private proc runTests(show: bool, run: bool, parallel: bool) throws {
 
   try! {
 
@@ -106,7 +106,7 @@ private proc runTests(show: bool, run: bool, parallel: bool) {
         const compilation = runWithStatus(compCommand);
 
         if compilation != 0 {
-          writeln("compilation failed for " + test);
+          stderr.writeln("compilation failed for " + test);
         }
         else {
           if show || !run then writeln("compiled ", test, " successfully");
@@ -132,11 +132,12 @@ private proc runTests(show: bool, run: bool, parallel: bool) {
       }
     }
     else {
-      writeln("No tests were found in /test");
+      throw new MasonError("No tests were found in /test");
     }
     toParse.close();
   }
   catch e: MasonError {
+    stderr.writeln(e.message());
     exit(1);
   }
 }

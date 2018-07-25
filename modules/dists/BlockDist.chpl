@@ -337,7 +337,6 @@ class LocBlock {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-pragma "use default init"
 class BlockDom: BaseRectangularDom {
   type sparseLayoutType;
   const dist: unmanaged Block(rank, idxType, sparseLayoutType);
@@ -353,7 +352,6 @@ class BlockDom: BaseRectangularDom {
 // stridable: generic domain stridable parameter
 // myBlock: a non-distributed domain that defines the local indices
 //
-pragma "use default init"
 class LocBlockDom {
   param rank: int;
   type idxType;
@@ -372,7 +370,6 @@ class LocBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-pragma "use default init"
 class BlockArr: BaseRectangularArr {
   type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
@@ -393,7 +390,6 @@ class BlockArr: BaseRectangularArr {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
-pragma "use default init"
 class LocBlockArr {
   type eltType;
   param rank: int;
@@ -1254,7 +1250,6 @@ proc Block.dsiReprivatize(other, reprivatizeData) {
 
 proc BlockDom.dsiSupportsPrivatization() param return true;
 
-pragma "use default init"
 record BlockDomPrvData {
   var distpid;
   var dims;

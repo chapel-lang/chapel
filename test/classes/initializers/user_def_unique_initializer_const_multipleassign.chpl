@@ -12,8 +12,6 @@ class C {
   }
 }
 
-var c = new C(2, 3);
+var c = new borrowed C(2, 3);
 
 writeln(c.x);
-
-delete c;

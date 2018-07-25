@@ -1,8 +1,8 @@
 use DataFrames;
 
-var noTrue = new TypedSeries([false, false, false]);
-var oneTrue = new TypedSeries([false, true, false]);
-var allTrue = new TypedSeries([true, true, true]);
+var noTrue = new unmanaged TypedSeries([false, false, false]);
+var oneTrue = new unmanaged TypedSeries([false, true, false]);
+var allTrue = new unmanaged TypedSeries([true, true, true]);
 
 writeln("noTrue:");
 writeln(noTrue);

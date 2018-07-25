@@ -18,9 +18,11 @@ CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/chplspell-requirements.tx
 PYTHON = $(shell which python)
 ifeq ($(wildcard $(PYTHON)),)
 PYTHON_VERSION = _not_found
+PYTHON_MAJOR_VERSION = _not_found
 else
 # Python version has 2 digits, like "2.6" or "2.7"
 PYTHON_VERSION = $(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py)
+PYTHON_MAJOR_VERSION = $(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py --major-only)
 endif
 
 # chpl-venv installation path depends on Python version
@@ -35,6 +37,10 @@ CHPL_VENV_VIRTUALENV_BIN=$(CHPL_VENV_VIRTUALENV_DIR)/bin
 CHPL_VENV_SPHINX_BUILD=$(CHPL_VENV_VIRTUALENV_BIN)/sphinx-build
 CHPL_VENV_TEST_REQS=$(CHPL_VENV_VIRTUALENV_DIR)/chpl-test-reqs
 CHPL_VENV_CHPLSPELL_REQS=$(CHPL_VENV_VIRTUALENV_DIR)/chpl-chplspell-reqs
+
+
+CHPL_VENV_PIP_CACHE_DIR=$(CHPL_VENV_INSTALL_SUBDIR)/pip-cache
+CHPL_PIP_INSTALL_PARAMS+=--cache-dir $(CHPL_VENV_PIP_CACHE_DIR)
 
 # pip installation path variants
 PIPLIB_VER=$(CHPL_VENV_INSTALL_DIR)/lib/python$(PYTHON_VERSION)/site-packages

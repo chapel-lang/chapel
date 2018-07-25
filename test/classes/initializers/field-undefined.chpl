@@ -12,7 +12,7 @@ class Foo {
 }
 
 proc main() {
-  var c = new Foo(10, 20, 3);
+  var c = new unmanaged Foo(10, 20, 3);
 
   writeln(c);
 

@@ -410,6 +410,17 @@ static uintptr_t gasnetc_trypin(uintptr_t limit, uintptr_t step)
 
 /* -------------------------------------------------------------------------- */
 
+#ifdef GASNETC_MXM_PHYSMEM_MAX_CONFIGURE
+  #define GASNETC_DEFAULT_PHYSMEM_MAX GASNETC_MXM_PHYSMEM_MAX_CONFIGURE
+#else
+  #define GASNETC_DEFAULT_PHYSMEM_MAX "2/3"
+#endif
+#ifdef GASNETC_MXM_PHYSMEM_PROBE_CONFIGURE
+  #define GASNETC_DEFAULT_PHYSMEM_PROBE GASNETC_MXM_PHYSMEM_PROBE_CONFIGURE
+#else
+  #define GASNETC_DEFAULT_PHYSMEM_PROBE 0
+#endif
+
 static void gasnetc_init_pin_info(int first_local, int ppn)
 {
     gasnetc_pin_info_t *all_info = gasneti_malloc(gasneti_nodes * sizeof(gasnetc_pin_info_t));
@@ -418,22 +429,30 @@ static void gasnetc_init_pin_info(int first_local, int ppn)
     uintptr_t tmp;
 
     /*
-     * We bound our search by the smallest of:
-     *   - 2/3 of physical memory
+     * We bound our search by the first of the following found to be set:
      *   - env(GASNET_PHYSMEM_MAX)
+     *   - --with-mxm-physmem-max=VALUE
+     * or 2/3 of physical memory if neither environment nor configure settings are present.
      */
     MXM_DEBUG("Initializing pinning info\n");
     limit = 2 * (gasneti_getPhysMemSz(1) / 3);
     MXM_LOG("Physical memory size: %"PRIu64", limit: %"PRIuPTR"\n", gasneti_getPhysMemSz(1), limit);
 
-    /* Honor PHYSMEM_MAX if set */
-    tmp = gasneti_getenv_int_withdefault("GASNET_PHYSMEM_MAX", 0, 1);
+    /* Honor PHYSMEM_MAX if set, subject to a legacy requirement that 0 yields 2/3 of phys mem */
+    char *val = gasneti_getenv("GASNET_PHYSMEM_MAX");
+    if (val && val[0] == '0' && val[1] == '\0') {
+      tmp = 0;
+    } else {
+      // TODO: better lower bound than GASNET_PAGESIZE?
+      tmp = gasneti_getenv_memsize_withdefault("GASNET_PHYSMEM_MAX", GASNETC_DEFAULT_PHYSMEM_MAX,
+                                               GASNET_PAGESIZE, 0, gasneti_getPhysMemSz(1), 0, 0);
+    }
     if (tmp) {
         MXM_DEBUG("GASNET_PHYSMEM_MAX is set to %"PRIuPTR"\n", tmp);
         limit = tmp;
         MXM_DEBUG("Updated limit: %"PRIuPTR"\n", limit);
     } else {
-        MXM_DEBUG("GASNET_PHYSMEM_MAX is not set\n");
+        MXM_DEBUG("GASNET_PHYSMEM_MAX is zero or not set\n");
     }
 
     limit = GASNETI_PAGE_ALIGNDOWN(limit);
@@ -446,7 +465,8 @@ static void gasnetc_init_pin_info(int first_local, int ppn)
     gasnetc_pin_info.memory = ~((uintptr_t)0);
     gasnetc_pin_info.ppn = ppn;
 
-    const int do_probe = gasneti_getenv_yesno_withdefault("GASNET_PHYSMEM_PROBE", 0);
+    const int do_probe = gasneti_getenv_yesno_withdefault("GASNET_PHYSMEM_PROBE",
+                                                          GASNETC_DEFAULT_PHYSMEM_PROBE);
     if (do_probe) {
         /* Now search for largest pinnable memory, on one process per machine */
         uintptr_t step = GASNETI_MMAP_GRANULARITY;
@@ -841,7 +861,6 @@ static int gasnetc_init(int *argc, char ***argv)
         /* it may be appropriate to use gasneti_segmentInit() here to set
            gasneti_MaxLocalSegmentSize and gasneti_MaxGlobalSegmentSize,
            if your conduit can use memory anywhere in the address space
-           (you may want to tune GASNETI_MMAP_MAX_SIZE to limit the max size)
 
            it may also be appropriate to first call gasneti_mmapLimit() to
            account for limitations imposed by having multiple GASNet nodes
@@ -2549,7 +2568,7 @@ int gasnetc_SystemReply(gasnet_token_t token,
   See the GASNet spec and http://gasnet.lbl.gov/dist/docs/gasnet.html for
     philosophy and hints on efficiently implementing no-interrupt sections
   Note: the extended-ref implementation provides a thread-specific void* within the
-    gasnete_threaddata_t data structure which is reserved for use by the core
+    gasneti_threaddata_t data structure which is reserved for use by the core
     (and this is one place you'll probably want to use it)
 */
 #if GASNETC_USE_INTERRUPTS

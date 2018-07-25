@@ -13,6 +13,8 @@
 int mynode, nodes;
 int peer = -1;
 int testid = 0;
+int use_allnodes = 0;
+int use_threads = 0;
 int numpthreads = 4;
 volatile int signal_bt = 0;
 #define thread_barrier() PTHREAD_BARRIER(numpthreads)
@@ -56,11 +58,6 @@ const char *crashtestdesc[] = {
   "floating-point exception"
 };
 #define NUMCRASHTEST (sizeof(crashtestdesc)/sizeof(char*))
-#ifdef GASNET_PAR
-#define NUMCRASHTEST_WITH_PAR (NUMCRASHTEST*2)
-#else
-#define NUMCRASHTEST_WITH_PAR NUMCRASHTEST
-#endif
 void do_crash_test(int crashid);
 
 #define hidx_exit_handler		201
@@ -181,7 +178,7 @@ void testSignalHandler(int sig) {
 
 int main(int argc, char **argv) {
   #define MAXLINE 255
-  static char usagestr[MAXLINE*(NUMTEST+NUMCRASHTEST_WITH_PAR)];
+  static char usagestr[MAXLINE*(NUMTEST+NUMCRASHTEST)];
   char testdescstr[MAXLINE];
   gasnet_handlerentry_t htable[] = { 
     { hidx_exit_handler, test_exit_handler },
@@ -190,12 +187,14 @@ int main(int argc, char **argv) {
   };
 
   GASNET_Safe(gasnet_init(&argc, &argv));
-  { int i;
-    snprintf(usagestr,sizeof(usagestr),
-             "[-r] (exittestnum:1..%i | crashtestnum:100..%i)", (int)NUMTEST, (int)(100+NUMCRASHTEST_WITH_PAR-1));
+  { int i = 200+NUMCRASHTEST;
+    const char *threads="";    
     #ifdef GASNET_PAR
-      strcat(usagestr, " (num_pthreads)");
+      threads = " (num_pthreads)";
+      i += 200;
     #endif
+    snprintf(usagestr,sizeof(usagestr),
+             "[-r] (exittestnum:1..%i | crashtestnum:100..%i)%s", (int)NUMTEST, i-1, threads);
     strcat(usagestr, "\n  -r: reverse the node numbering");
     strcat(usagestr, "\n\n Exit tests:\n");
     for (i = 0; i < NUMTEST; i++) {
@@ -203,23 +202,18 @@ int main(int argc, char **argv) {
       snprintf(tmp,MAXLINE,"  %3i: %s\n", i+1, testdesc[i]);
       strcat(usagestr, tmp);
     }
-    strcat(usagestr, "\n Crash tests:\n");
+    strcat(usagestr, "\n Crash tests: (add 100 to activate all nodes");
+    #ifdef GASNET_PAR
+      strcat(usagestr,", add 200 to use multiple threads");
+    #endif
+    strcat(usagestr, ")\n");
     for (i = 0; i < NUMCRASHTEST; i++) {
       char tmp[MAXLINE];
       snprintf(tmp,MAXLINE,"  %3i: %s\n", i+100, crashtestdesc[i]);
       strcat(usagestr, tmp);
     }
-  #ifdef GASNET_PAR
-    for (i = 0; i < NUMCRASHTEST; i++) {
-      char tmp[MAXLINE];
-      snprintf(tmp,MAXLINE,"  %3i: %s from one pthread, others in thread barrier\n", 
-                   (int)(i+100+NUMCRASHTEST), crashtestdesc[i]);
-      strcat(usagestr, tmp);
-    }
-  #endif
   }
   test_init_early("testexit",0,usagestr);
-  MSG("hostname is: %s (pid=%i)", gasnett_gethostname(), (int)getpid());
 
   mynode = gasnet_mynode();
   nodes = gasnet_nodes();
@@ -233,7 +227,6 @@ int main(int argc, char **argv) {
   #endif
   if (argc > 0 || testid <= 0 || 
       (testid > NUMTEST && testid < 100) || 
-      (testid >= 100+NUMCRASHTEST_WITH_PAR) || 
       numpthreads <= 1) test_usage_early();
 
   peer = mynode ^ 1;
@@ -244,12 +237,22 @@ int main(int argc, char **argv) {
 
   if (testid < 100) {
     snprintf(testdescstr, sizeof(testdescstr), "Running exit test %i: %s",testid, testdesc[testid-1]);
-  } else if (testid-100<NUMCRASHTEST) {
-    snprintf(testdescstr, sizeof(testdescstr), "Running crash test %i: %s",testid, 
-            crashtestdesc[testid-100]);
   } else {
-    snprintf(testdescstr, sizeof(testdescstr), "Running crash test %i: %s from one pthread, others in thread barrier",testid, 
-      crashtestdesc[testid-100-NUMCRASHTEST]);
+    int dispid = testid;
+    const char *thread = "", *node = "";
+    #ifdef GASNET_PAR
+      if (testid >= 300) {
+        thread = ", from one pthread w/others in thread barrier";
+        testid -= 200; use_threads = 1;
+      }
+    #endif
+    if (testid >= 200) {
+      node = ", with all nodes active";
+      testid -= 100; use_allnodes = 1;
+    }
+    if (testid < 100 || testid >= 100+NUMCRASHTEST) test_usage_early();
+    snprintf(testdescstr, sizeof(testdescstr), "Running crash test %i: %s%s%s",dispid, 
+      crashtestdesc[testid-100],thread,node);
   }
   if (testid == 6 || testid == 7) {
     PUTS0(testdescstr);
@@ -335,15 +338,13 @@ int main(int argc, char **argv) {
   #endif
   default: 
       if (testid >= 100 && testid < 100+NUMCRASHTEST) {
+      #ifdef GASNET_PAR
+        if (use_threads) {
+          test_createandjoin_pthreads(numpthreads, &workerthread, NULL, 0);
+        } else
+      #endif
         do_crash_test(testid);
-      }
-    #ifdef GASNET_PAR
-      else if (testid >= 100+NUMCRASHTEST && testid < 100+2*NUMCRASHTEST) {
-        testid -= NUMCRASHTEST;
-        test_createandjoin_pthreads(numpthreads, &workerthread, NULL, 0);
-      }
-    #endif
-      else {
+      } else {
         FATALERR("bad test id: %i", testid);
       }
   }
@@ -356,12 +357,12 @@ int main(int argc, char **argv) {
 void do_crash_test(int crashid) {
   switch(crashid) {
     case 100:
-      if (mynode == nodes-1) { sleep(1); gasnett_print_backtrace(STDERR_FILENO); }
+      if (use_allnodes || mynode == nodes-1) { sleep(1); gasnett_print_backtrace(STDERR_FILENO); }
       BARRIER();
       gasnet_exit(0);
       break;
     case 101:
-      if (mynode == nodes-1) { 
+      if (use_allnodes || mynode == nodes-1) { 
         sleep(1); 
         signal_bt = 1;
         kill(getpid(), SIGQUIT);
@@ -371,21 +372,21 @@ void do_crash_test(int crashid) {
       gasnet_exit(0);
       break;
     case 102:
-      if (mynode == nodes-1) { 
+      if (use_allnodes || mynode == nodes-1) { 
         gasnett_fatalerror("Synthetic fatal error");
         FATALERR("gasnett_fatalerror FAILED!!");
       }
       BARRIER();
       break;
     case 103:
-      if (mynode == nodes-1) { 
+      if (use_allnodes || mynode == nodes-1) { 
         abort();
         FATALERR("abort() FAILED!!");
       }
       BARRIER();
       break;
     case 104:
-      if (mynode == nodes-1) { 
+      if (use_allnodes || mynode == nodes-1) { 
         static char volatile *p = NULL;
         *p = *p + 10;
         FATALERR("Failed to generate a segmentation fault");
@@ -393,7 +394,7 @@ void do_crash_test(int crashid) {
       BARRIER();
       break;
     case 105:
-      if (mynode == nodes-1) { 
+      if (use_allnodes || mynode == nodes-1) { 
         static uint64_t myarr[3];
         static char *p = ((char *)(myarr+1))+1;
         *(uint16_t volatile *)p = *(uint16_t volatile *)p + 10;
@@ -409,7 +410,7 @@ void do_crash_test(int crashid) {
       BARRIER();
       break;
     case 106:
-      if (mynode == nodes-1) { 
+      if (use_allnodes || mynode == nodes-1) { 
         static double volatile d = 0.0;
         static int volatile i = 0;
         d = 16.0 / d;

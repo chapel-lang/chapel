@@ -92,6 +92,35 @@ module ChapelIteratorSupport {
              iteratorToArrayType(__primitive("scalar promotion type", t)));
   }
 
+  pragma "no doc"
+  inline proc chpl_computeIteratorShape(arg: []) {
+    return chpl_computeIteratorShape(arg.domain);
+  }
+  pragma "no doc"
+  inline proc chpl_computeIteratorShape(arg: domain) {
+    return arg._instance;
+  }
+  pragma "no doc"
+  inline proc chpl_computeIteratorShape(arg: _iteratorRecord) {
+    if chpl_iteratorHasShape(arg) then
+      return arg._shape_;
+    else
+      return _void;
+  }
+  pragma "no doc"
+  inline proc chpl_computeIteratorShape(arg) {
+    // none of the above cases
+    return _void;
+  }
+  pragma "no doc"
+  inline proc chpl_iteratorHasShape(ir: _iteratorRecord) param {
+    use Reflection;
+    if hasField(ir.type, "_shape_") then
+      return ir._shape_.type != void;
+    else
+      return false;
+  }
+
   proc _iteratorRecord.writeThis(f) {
     var first: bool = true;
     for e in this {

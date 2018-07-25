@@ -263,7 +263,7 @@ module LCALSDataTypes {
     // class implements the same pattern used in the LCALS reference.
     //
     // var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays][0..#2, 0..#aligned_chunksize, 0..#4] real;
-    var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays] LCALS_Overlapping_Array_3D(real) = [i in 0..s_num_3D_2xNx4_Real_arrays] new LCALS_Overlapping_Array_3D(real, 2*4*aligned_chunksize); // 2 X loop_length X 4 array size
+    var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays] LCALS_Overlapping_Array_3D(real) = [i in 0..#s_num_3D_2xNx4_Real_arrays] new LCALS_Overlapping_Array_3D(real, 2*4*aligned_chunksize); // 2 X loop_length X 4 array size
 
     var RealArray_scalars: [0..#s_num_Real_scalars] real;
     proc deinit() {

@@ -10,11 +10,8 @@ class Foo {
   }
 }
 
-var foo = new Foo(1, 2, 3, 4); // 10
+var foo = new shared Foo(1, 2, 3, 4); // 10
 writeln(foo);
 
-var foo2 = new Foo(5, 6, 7); // 18
+var foo2 = new shared Foo(5, 6, 7); // 18
 writeln(foo2);
-
-delete foo;
-delete foo2;
