@@ -882,8 +882,7 @@ static Expr* handleUnstableClassType(SymExpr* se) {
         }
         // Find outer call, but don't count:
         //  * baseExpr
-        //  * calls to types
-        //  * not counting baseExpr
+        //  * type construction (calls to types, buildArrayRuntimeType)
         for (Expr* cur = se; cur != NULL; cur = cur->parentExpr ) {
           if (CallExpr* c = toCallExpr(cur))
             inCall = c;
