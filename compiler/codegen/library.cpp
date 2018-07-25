@@ -19,7 +19,6 @@
 
 #include "library.h"
 
-#include <stdio.h>
 #include <string>
 
 #include "FnSymbol.h"
