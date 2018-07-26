@@ -3181,6 +3181,8 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
         actual->remove();
       }
       call->baseExpr->replace(bestCall->baseExpr->remove());
+      call->partialTag = bestCall->partialTag;
+
       for_actuals(actual, bestCall) {
         call->insertAtTail(actual->remove());
       }
