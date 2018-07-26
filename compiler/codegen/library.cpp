@@ -75,16 +75,8 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 // from compileline
 static std::string getCompilelineOption(std::string option) {
   std::string fullCommand = "$CHPL_HOME/util/config/compileline --" + option;
-  char buffer[128];
-  std::string res = "";
-  FILE* compilelineCall = popen(fullCommand.c_str(), "r");
-  while (!feof(compilelineCall)) {
-    if (fgets(buffer, 128, compilelineCall) != NULL) {
-      res += buffer;
-    }
-  }
-  pclose(compilelineCall);
-  return res;
+
+  return runCommand(fullCommand);
 }
 
 void codegen_library_makefile() {
