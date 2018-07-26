@@ -27,7 +27,7 @@ about your environment for using Chapel:
   * You have access to standard C and C++ compilers. We test our code
     using a range of compilers on a nightly basis; these include
     relatively recent versions of gcc/g++, clang, and compilers from
-    Cray, Intel, and PGI.
+    Allinea, Cray, Intel, and PGI.
 
     * Note that you will need a C++11 compiler to build LLVM or regular
       expression support (i.e.  CHPL_LLVM=llvm or CHPL_REGEXP=re2). If
