@@ -760,11 +760,10 @@ module ChapelBase {
       }
     }
 
-    // need a real `here` since it's used in the range parallel iters
-    if initMethod == ArrayInit.parallelInit {
-      if here == dummyLocale {
-        initMethod = ArrayInit.serialInit;
-      }
+    // The parallel range iter uses 'here`/rootLocale, so fallback to serial
+    // initialization if the root locale hasn't been setup
+    if initMethod == ArrayInit.parallelInit && !rootLocaleInitialized {
+      initMethod = ArrayInit.serialInit;
     }
 
     // Q: why is the declaration of 'y' in the following loops?
