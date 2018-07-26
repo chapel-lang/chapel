@@ -9,10 +9,8 @@ class two_d_array {
 }
 
 proc main(){
-  var tda: two_d_array = new two_d_array(3, 4);
+  var tda: shared two_d_array = new shared two_d_array(3, 4);
 
   writeln(tda.D);
-
-  delete tda;
 }
 

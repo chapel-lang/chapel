@@ -7,7 +7,7 @@ config const verbose: bool = false;
 
 var count:int;
 var pi, startTime, totalTime: real;
-var rs = new NPBRandomStream(real, seed);
+var rs = new owned NPBRandomStream(real, seed);
 
 startTime = getCurrentTime(TimeUnits.microseconds);
 
@@ -23,5 +23,3 @@ writeln(pi);
 totalTime = (getCurrentTime(TimeUnits.microseconds) - startTime) / 1000000;
 if (verbose) then
   writeln("Calculation took: ", totalTime, " seconds");
-
-delete rs;
