@@ -943,10 +943,11 @@ bool FnSymbol::returnsRefOrConstRef() const {
 
 QualifiedType FnSymbol::getReturnQualType() const {
   Qualifier q = QUAL_UNKNOWN;
+  bool isWideRef = retType->symbol->hasFlag(FLAG_WIDE_REF);
   if (retTag == RET_REF)
-    q = QUAL_REF;
+    q = isWideRef ? QUAL_WIDE_REF : QUAL_REF;
   else if(retTag == RET_CONST_REF)
-    q = QUAL_CONST_REF;
+    q = isWideRef ? QUAL_CONST_WIDE_REF : QUAL_CONST_REF;
   return QualifiedType(retType, q);
 }
 
