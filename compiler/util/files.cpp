@@ -32,6 +32,7 @@
 #include "beautify.h"
 #include "driver.h"
 #include "llvmVer.h"
+#include "library.h"
 #include "misc.h"
 #include "mysystem.h"
 #include "stlUtil.h"
@@ -338,7 +339,7 @@ void openCFile(fileinfo* fi, const char* name, const char* ext) {
 }
 
 void closeCFile(fileinfo* fi, bool beautifyIt) {
-  fclose(fi->fptr);
+  closefile(fi->fptr);
   //
   // We should beautify if (1) we were asked to and (2) either (a) we
   // were asked to save the C code or (b) we were asked to codegen cpp
@@ -675,10 +676,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
     fprintf(makefile.fptr, "SKIP_COMPILE_LINK = skip\n");
   }
 
-  if (fLibraryCompile) {
-    if (fLinkStyle==LS_DYNAMIC) exeExt = ".so";
-    else exeExt = ".a";
-  }
+  exeExt = getLibraryExtension();
+
   fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
   // BLC: This munging is done so that cp won't complain if the source
   // and destination are the same file (e.g., myprogram and ./myprogram)

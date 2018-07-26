@@ -163,6 +163,7 @@ extern int  fLinkStyle;
 extern int  debugParserLevel;
 extern int  debugShortLoc;
 extern bool fLibraryCompile;
+extern bool fLibraryMakefile;
 extern bool fUseNoinit;
 extern bool fNoUserConstructors;
 extern bool no_codegen;
