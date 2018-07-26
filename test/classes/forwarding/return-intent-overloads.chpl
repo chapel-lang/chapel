@@ -11,7 +11,7 @@ class MyClass {
 }
 
 record R {
-  forwarding var ptr:MyClass;
+  forwarding var ptr:borrowed MyClass;
 }
 
 proc getx1(arg:R) {
@@ -31,7 +31,8 @@ proc setx4(ref arg:R) {
 }
 
 proc test() {
-  var r = new R(new MyClass(1));
+  var inner = new owned MyClass(1);
+  var r = new R(inner.borrow());
   var x1 = getx1(r);
   writeln(x1);
   var x2 = getx2(r);

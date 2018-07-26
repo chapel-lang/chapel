@@ -14,8 +14,7 @@ class SoManyParams {
 }
 
 proc main() {
-  var c = new SoManyParams(7);
+  var c = new borrowed SoManyParams(7);
   writeln(c.type:string);
   writeln(c);
-  delete c;
 }
