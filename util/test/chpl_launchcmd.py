@@ -308,31 +308,40 @@ class AbstractJob(object):
                  status(job_id) can raise a ValueError, which can indicate that
                  the job has completed *and* been dequeued. If the output file
                  exists and the job has been dequeued, it is safe to assume it
-                 completed. Otherwise we raise the error
+                 completed. Allow up to 30 seconds extra waiting time for the
+                 output file to show up locally. Otherwise we raise the error
                 """
+                extra_waiting_time = 0.0
                 try:
                     job_status = self.status(job_id)
-                    return job_status
+                    return job_status, extra_waiting_time
                 except ValueError as ex:
                     # ValueError may indicate that the job completed and was
                     # dequeued before we last checked the status. If the output
-                    # file exists, assume success. Otherwise re raise error
-                    # message.
-                    if os.path.exists(output_file):
-                        return 'C'
-                    raise
+                    # file exists (after a reasonable waiting time up to 30 sec),
+                    # assume success. Otherwise raise the error.
+                    start_wait_time = time.time()
+                    while not os.path.exists(output_file):
+                        if extra_waiting_time > 30.0:
+                            raise
+                        time.sleep(.5)
+                        extra_waiting_time = time.time() - start_wait_time
+                    if extra_waiting_time > 0.0:
+                        logging.warn('extra waiting time for qsub = {0} sec.'.format(extra_waiting_time))
+                    return 'C', extra_waiting_time
 
             exec_start_time = time.time()
             alreadyRunning = False
-            status = job_status(job_id, output_file)
+            status, extra_waiting_time = job_status(job_id, output_file)
             while status != 'C':
                 if not alreadyRunning and status == 'R':
                     alreadyRunning = True
                     exec_start_time = time.time()
                 time.sleep(.5)
-                status = job_status(job_id, output_file)
+                status, extra_waiting_time = job_status(job_id, output_file)
 
-            exec_time = time.time() - exec_start_time
+            # extra waiting time (if any) is not counted in the reported exec time
+            exec_time = time.time() - exec_start_time - extra_waiting_time
             # Note that this time isn't very accurate as we don't get the exact
             # start or end time, however this does give a better estimate than
             # timing the whole binary for cases where the time in the queue is
