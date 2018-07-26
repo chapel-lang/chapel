@@ -327,7 +327,7 @@ class AbstractJob(object):
                         time.sleep(.5)
                         extra_waiting_time = time.time() - start_wait_time
                     if extra_waiting_time > 0.0:
-                        logging.warn('extra waiting time for qsub = {0} sec.'.format(extra_waiting_time))
+                        logging.debug('extra waiting time for qsub = {0} sec.'.format(extra_waiting_time))
                     return 'C', extra_waiting_time
 
             exec_start_time = time.time()
