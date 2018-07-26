@@ -11,7 +11,6 @@ class InParallel {
 }
 
 proc main() {
-  var c: InParallel(1, 2.0) = new InParallel(1, 2.0);
+  var c: shared InParallel(1, 2.0) = new shared InParallel(1, 2.0);
   writeln(c.type: string);
-  delete c;
 }

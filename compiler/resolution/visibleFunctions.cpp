@@ -183,6 +183,7 @@ static void getVisibleFunctions(const char*           name,
                                 BlockStmt*            block,
                                 std::set<BlockStmt*>& visited,
                                 Vec<FnSymbol*>&       visibleFns) {
+
   //
   // all functions in standard modules are stored in a single block
   //
@@ -210,8 +211,15 @@ static void getVisibleFunctions(const char*           name,
                  isArgSymbol(block->parentSymbol) ||
                  isShadowVarSymbol(block->parentSymbol));
       fnBlock = true;
-      if (inFn->instantiationPoint && inFn->instantiationPoint->parentSymbol)
-        instantiationPt = inFn->instantiationPoint;
+      BlockStmt* inFnInstantiationPoint = inFn->instantiationPoint();
+      if (inFnInstantiationPoint && !inFnInstantiationPoint->parentSymbol) {
+        INT_FATAL(inFn, "instantiation point not in tree\n"
+                        "try --break-on-remove-id %i and consider making\n"
+                        "that block scopeless",
+                        inFnInstantiationPoint->id);
+      }
+      if (inFnInstantiationPoint && inFnInstantiationPoint->parentSymbol)
+        instantiationPt = inFnInstantiationPoint;
     }
 
     if (call->id == breakOnResolveID) {
@@ -315,27 +323,18 @@ static void getVisibleFunctions(const char*           name,
 
 static bool isTryTokenCond(Expr* expr);
 
+static Expr* getTryTokenParent(Expr* expr);
+
 /*
    This function returns a BlockStmt to use as the instantiationPoint
    for expr (to be used when instantiating a type or a function).
  */
 BlockStmt* getInstantiationPoint(Expr* expr) {
 
-  Expr* cur = expr;
+  Expr* cur = getTryTokenParent(expr);
   while (cur != NULL) {
-
     if (BlockStmt* block = toBlockStmt(cur->parentExpr)) {
       if (block->blockTag == BLOCK_SCOPELESS) {
-        // continue
-      } else if (block->parentExpr && isTryTokenCond(block->parentExpr)) {
-        // Make the visibility block of the then and else blocks of a
-        // conditional using chpl__tryToken be the block containing the
-        // conditional statement.  Without this, there were some cases where
-        // a function gets instantiated into one side of the conditional but
-        // used in both sides, then the side with the instantiation gets
-        // folded out leaving expressions with no visibility block.
-        // test/functions/iterators/angeles/dynamic.chpl is an example that
-        // currently fails without this.
         // continue
       } else {
         return block;
@@ -343,12 +342,10 @@ BlockStmt* getInstantiationPoint(Expr* expr) {
     } else if (cur->parentExpr) {
       // continue
     } else if (Symbol* s = cur->parentSymbol) {
-      FnSymbol* fn = toFnSymbol(s);
-      if (fn && fn->instantiationPoint)
-        return fn->instantiationPoint;
-      else {
-        // continue
-      }
+      if (FnSymbol* fn = toFnSymbol(s))
+        if (BlockStmt* instantiationPt = fn->instantiationPoint())
+          return instantiationPt;
+      // otherwise continue
     }
 
     // Where to look next?
@@ -420,6 +417,27 @@ static bool isTryTokenCond(Expr* expr) {
 
   return sym->symbol() == gTryToken;
 }
+
+//
+// If the expr is in a CondStmt with chpl__tryToken (including in
+// nested blocks), then return the CondStmt. Otherwise, just return expr.
+//
+// Why is this relevant for visibility?  If a function has an
+// instantiationPoint that is a block that is removed, then bad things
+// happen (in particular functions that should be visible are no longer
+// visible). And the chpl__tryToken handling can remove all nested blocks
+// inside the clause not selected.
+//
+// test/functions/iterators/angeles/dynamic.chpl might be a relevant example.
+//
+static Expr* getTryTokenParent(Expr* expr) {
+  for (Expr* cur = expr; cur != NULL; cur = cur->parentExpr) {
+    if (isTryTokenCond(cur))
+      return cur;
+  }
+  return expr;
+}
+
 
 /************************************* | **************************************
 *                                                                             *

@@ -1,11 +1,11 @@
 use DataFrames;
 
-var df = new unmanaged DataFrame();
+var df = new owned DataFrame();
 
 var validBits = [true, false, true, false, true];
-var columnOne: unmanaged Series = new unmanaged TypedSeries(["a", "b", "c", "d", "e"], validBits);
-var columnTwo: unmanaged Series = new unmanaged TypedSeries([1, 2, 3, 4, 5], validBits);
-var columnThree: unmanaged Series = new unmanaged TypedSeries([10.0, 20.0, 30.0, 40.0, 50.0]);
+var columnOne: owned Series = new owned TypedSeries(["a", "b", "c", "d", "e"], validBits);
+var columnTwo: owned Series = new owned TypedSeries([1, 2, 3, 4, 5], validBits);
+var columnThree: owned Series = new owned TypedSeries([10.0, 20.0, 30.0, 40.0, 50.0]);
 
 writeln(columnOne);
 writeln();
@@ -18,7 +18,7 @@ df.insert("columnOne", columnOne);
 df.insert("columnTwo", columnTwo);
 df.insert("columnThree", columnThree);
 
-var idx = new unmanaged TypedIndex(["rowOne", "rowTwo", "rowThree", "rowFour", "rowFive"]);
+var idx = new shared TypedIndex(["rowOne", "rowTwo", "rowThree", "rowFour", "rowFive"]);
 df.reindex(idx);
 
 writeln(df);

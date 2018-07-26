@@ -18,10 +18,10 @@ class C {
 
 record R {
   var x: int = 0;
-  var c: C;
+  var c: unmanaged C;
 }
 
-proc R.init(x : int = 0, c : C = nil) {
+proc R.init(x : int = 0, c : unmanaged C = nil) {
   if debug then writeln("in R.init(", x, ", ", c, ")");
   this.x = x;
   this.c = c;

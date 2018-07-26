@@ -4,6 +4,6 @@ class C {
 }
 
 proc main {
-  var c = new C();
+  var c = new borrowed C();
   writeln(c);
 }

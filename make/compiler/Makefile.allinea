@@ -20,3 +20,7 @@
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.clang
 
 # Any allinea-specific settings can go here.
+
+# By default with -Wall, the Allinea compiler does not tolerate linker
+# flags when they are not used.
+RUNTIME_CFLAGS += -Wno-unused-command-line-argument

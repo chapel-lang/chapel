@@ -60,7 +60,7 @@ class PermutationMap {
     return map( idx );
   }
 
-  proc createInverseMap() : PermutationMap(idxType) {
+  proc createInverseMap() : owned PermutationMap(idxType) {
     var inverseRowMap : [rowMap.domain] rowMap.eltType;
     var inverseColumnMap : [columnMap.domain] columnMap.eltType;
 
@@ -72,7 +72,7 @@ class PermutationMap {
       inverseColumnMap[ columnMap[i] ] = i;
     }
 
-    return new PermutationMap( inverseRowMap, inverseColumnMap );
+    return new owned PermutationMap( inverseRowMap, inverseColumnMap );
   }
 
   iter these( onDomain : domain ) : rank*idxType
@@ -141,23 +141,23 @@ class PermutationMap {
   }
 }
 
-proc createRandomPermutationMap( D : domain, seed : int ) : PermutationMap(D.idxType)
+proc createRandomPermutationMap( D : domain, seed : int ) : owned PermutationMap(D.idxType)
 where D.rank == 2
 {
   var rowMap : [D.dim(1)] D.idxType = D.dim(1);
   var columnMap : [D.dim(2)] D.idxType = D.dim(2);
   //use seed to create two new seeds, one for each shuffle
-  var randStreamSeeded: RandomStream(int) = new RandomStream(int, seed);
+  var randStreamSeeded = new owned RandomStream(int, seed);
   const seed1 = randStreamSeeded.getNext() | 1;
   const seed2 = randStreamSeeded.getNext() | 1;
   shuffle( rowMap, seed = seed1 );
   shuffle( columnMap , seed = seed2);
-  return new PermutationMap( rowMap, columnMap );
+  return new owned PermutationMap( rowMap, columnMap );
 }
 
 record TopoSortResult {
   type idxType;
-  var permutationMap : PermutationMap(idxType);
+  var permutationMap : shared PermutationMap(idxType);
   var timerDom : domain(string);
   var timers : [timerDom] Timer;
 
@@ -366,7 +366,7 @@ where D.rank == 2
     exit( -1 );
   }
 
-  result.permutationMap = new PermutationMap( rowMap, columnMap );
+  result.permutationMap = new owned PermutationMap( rowMap, columnMap );
 
   result.timers["whole"].stop();
 
@@ -479,7 +479,7 @@ where D.rank == 2
   } // while work in queue
   result.timers["toposort"].stop();
 
-  result.permutationMap = new PermutationMap( rowMap, columnMap );
+  result.permutationMap = new owned PermutationMap( rowMap, columnMap );
   result.timers["whole"].stop();
   return result;
 }

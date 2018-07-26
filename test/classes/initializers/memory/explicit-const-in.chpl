@@ -27,6 +27,5 @@ class C {
 }
 
 var r = new R();
-var c = new C(r);
+var c = new owned C(r);
 writeln("c = ", c);
-delete c;

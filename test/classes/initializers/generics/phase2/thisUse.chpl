@@ -11,10 +11,10 @@ class ThisPhase2 {
   }
 }
 
-proc outsideFunc(x: ThisPhase2) {
+proc outsideFunc(x: borrowed ThisPhase2) {
   writeln(x.someField);
 }
 
 proc main() {
-  var c: ThisPhase2(true) = new borrowed ThisPhase2(2.5 + 1.3i, true);
+  var c: borrowed ThisPhase2(true) = new borrowed ThisPhase2(2.5 + 1.3i, true);
 }

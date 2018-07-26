@@ -1,9 +1,7 @@
-pragma "use default init"
 record GenericRecord {
   var field;
 }
 
-pragma "use default init"
 record Wrapper {
   var f:GenericRecord;
 }

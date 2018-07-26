@@ -1,7 +1,6 @@
 
 require 'extern-record-init.h';
 
-pragma "use default init"
 extern record R {
   var b : int;
   var c : int;

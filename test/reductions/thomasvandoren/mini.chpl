@@ -3,7 +3,6 @@
  * value and its location (i.e. `(value, location)`).
  */
 
-pragma "use default init"
 class mini : ReduceScanOp {
   type eltType;
   var value: eltType = max(eltType);

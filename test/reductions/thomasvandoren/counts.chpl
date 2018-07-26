@@ -6,7 +6,6 @@
  * could determine a ranking of the particles within each octant.
  */
 
-pragma "use default init"
 class counts : ReduceScanOp {
   type eltType;
   const k: int = 8;
@@ -16,7 +15,7 @@ class counts : ReduceScanOp {
     v[value] += 1;
   }
 
-  proc combine(state: counts(eltType)) {
+  proc combine(state: borrowed counts(eltType)) {
     // rely on promotion, instead of iterating over state.v
     v += state.v;
   }

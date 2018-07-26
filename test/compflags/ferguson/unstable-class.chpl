@@ -26,7 +26,13 @@ proc errorsInArgs( x: MyClass, y: MyGenericClass, z: MyGenericClass(int) ) {
 proc errors() {
   var x: MyClass;
   var y: MyGenericClass(int);
+  var a: [1..10] MyClass;
+  var b: [1..10] MyGenericClass(int);
+  var c: MyGenericRecord(MyClass);
   errorsInArgs(x, y, y);
+}
+
+proc okTypeMethod(type t) {
 }
 
 proc ok() {
@@ -48,6 +54,11 @@ proc ok() {
 
   extern proc printf(fmt:c_string, arg:MyClass);
   if debug then printf("%p\n", d);
+
+  okTypeMethod(unmanaged MyClass);
+  okTypeMethod(MyClass); // intentionally allowed
+
+  type okType = MyClass; // intentionally allowed
 }
 
 

@@ -143,12 +143,6 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
           USR_WARN(fn, "function's return type is not a value type.  Ignoring.");
         }
         fn->retTag = RET_TYPE;
-      } else if (flag == FLAG_USE_DEFAULT_INIT) {
-        AggregateType* at = toAggregateType(sym->type);
-        if (!isTypeSymbol(sym) || at == NULL) {
-          USR_FATAL_CONT(sym, "cannot apply 'use default init' to symbol '%s',"
-                         " not a class or record definition", sym->name);
-        }
       }
     }
   }
@@ -2348,13 +2342,14 @@ DefExpr* buildForwardingExprFnDef(Expr* expr) {
   // This way, we can work with the rest of the compiler that
   // assumes that 'this' is an ArgSymbol.
   static int delegate_counter = 0;
-  const char* name = astr("forwarding_expr", istr(++delegate_counter));
+  const char* name = astr("chpl_forwarding_expr", istr(++delegate_counter));
   if (UnresolvedSymExpr* usex = toUnresolvedSymExpr(expr))
     name = astr(name, "_", usex->unresolved);
   FnSymbol* fn = new FnSymbol(name);
 
   fn->addFlag(FLAG_INLINE);
   fn->addFlag(FLAG_MAYBE_REF);
+  fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
   fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));

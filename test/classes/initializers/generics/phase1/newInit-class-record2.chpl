@@ -16,7 +16,7 @@ record Stored {
   }
 }
 
-var c = new Container();
+var c = new unmanaged Container();
 
 writeln(c);
 

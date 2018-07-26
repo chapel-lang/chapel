@@ -81,6 +81,22 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   gBlockStmts.add(this);
 }
 
+BlockStmt::BlockStmt(BlockTag initBlockTag) :
+  Stmt(E_BlockStmt) {
+
+
+  blockTag      = initBlockTag;
+  useList       = NULL;
+  userLabel     = NULL;
+  byrefVars     = NULL;
+  forallIntents = NULL;
+  blockInfo     = NULL;
+
+  body.parent   = this;
+
+  gBlockStmts.add(this);
+}
+
 
 BlockStmt::~BlockStmt() {
   if (forallIntents)
@@ -1046,7 +1062,7 @@ ForwardingStmt::ForwardingStmt(DefExpr* toFnDef, std::set<const char*>* args, bo
     // for instance.
     for (std::map<const char*, const char*>::iterator it = renames->begin();
          it != renames->end(); ++it) {
-      renamed[it->first] = it->second;
+      renamed[it->first] = astr(it->second);
     }
   }
 }

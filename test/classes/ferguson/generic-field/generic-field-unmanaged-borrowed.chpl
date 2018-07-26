@@ -1,9 +1,7 @@
-pragma "use default init"
 class ClassA {
   var a:int;
 }
 
-pragma "use default init"
 class ClassB {
   var b:real;
 }

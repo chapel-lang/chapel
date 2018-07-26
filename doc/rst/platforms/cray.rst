@@ -139,6 +139,7 @@ Building Chapel for a Cray System from Source
    On a Cray X-series system, ensure that you have one of the following
    Programming Environment modules loaded to specify your target compiler::
 
+       PrgEnv-allinea (ARM only)
        PrgEnv-cray
        PrgEnv-gnu
        PrgEnv-intel

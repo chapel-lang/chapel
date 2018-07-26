@@ -16,6 +16,5 @@ class D : C {
   }
 }
 
-var myD = new D(10);
+var myD = new shared D(10);
 writeln(myD);
-delete myD;

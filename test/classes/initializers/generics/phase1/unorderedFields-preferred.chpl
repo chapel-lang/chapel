@@ -11,8 +11,7 @@ class LotsOFields {
 }
 
 proc main() {
-  var c: LotsOFields = new LotsOFields(2, 6.3, true);
+  var c: shared LotsOFields = new shared LotsOFields(2, 6.3, true);
 
   writeln(c);
-  delete c;
 }

@@ -764,30 +764,12 @@ static void set_max_segsize_env_var(size_t size) {
 static void set_max_segsize() {
   size_t size;
 
+  // GASNet defaults to 85% of physical memory, which is a good default for us,
+  // so only override if a user explicitly set CHPL_RT_MAX_HEAP_SIZE
   if ((size = (size_t) chpl_comm_getenvMaxHeapSize()) != 0) {
     set_max_segsize_env_var(size);
     return;
   }
-
-  // If GASNET_NEEDS_MAX_SEGSIZE is defined then we have to have
-  // GASNET_MAX_SEGSIZE set.  Otherwise, we don't.
-#ifdef GASNET_NEEDS_MAX_SEGSIZE
-  if (getenv("GASNET_MAX_SEGSIZE")) {
-    return;
-  }
-
-  // Use 90% of the available memory as the maximum segment size,
-  // heuristically.  But if that's less than the 2g GASNet default
-  // segment size, just let GASNet choose the segment size.
-  if ((size = (size_t) chpl_sys_availMemoryBytes()) != 0) {
-    size_t dst_size = 0.9 * size;
-    if (dst_size >= (1UL << 31)) {
-      if (dst_size > (size_t) chpl_sys_physicalMemoryBytes())
-        chpl_internal_error("Overflow/underflow determining max segment size");
-      set_max_segsize_env_var(dst_size);
-    }
-  }
-#endif
 }
 
 static void set_num_comm_domains() {

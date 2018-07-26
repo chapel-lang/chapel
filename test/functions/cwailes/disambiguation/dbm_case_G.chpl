@@ -2,7 +2,7 @@ class Bar {
   type t;
 }
 
-proc foo(a: Bar(?t)) {
+proc foo(a: borrowed Bar(?t)) {
   writeln("foo1");
 }
 

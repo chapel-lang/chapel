@@ -38,7 +38,6 @@ module ExternalArray {
 
   extern proc chpl_free_external_array(x: chpl_external_array);
 
-  pragma "use default init"
   class ExternDist: BaseDist {
 
     proc dsiNewRectangularDom(param rank: int = 1, type idxType = int,

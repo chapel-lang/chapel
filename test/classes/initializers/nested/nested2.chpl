@@ -2,7 +2,6 @@ class C {
   param rank: int;
   var x: owned D;
 
-  pragma "use default init"
   class D {
   }
 

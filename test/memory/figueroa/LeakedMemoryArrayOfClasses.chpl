@@ -5,7 +5,7 @@ class C {
 }
 
 proc foo() {
-  var c: [1..10] C = [i in 1..10]new C();
+  var c: [1..10] unmanaged C = [i in 1..10] new unmanaged C();
   for cc in c do delete cc;
 }
 

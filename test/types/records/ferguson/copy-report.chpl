@@ -10,7 +10,7 @@ class Instance {
 
 record R {
   var x: int = 0;
-  var ptr: Instance = nil;
+  var ptr: unmanaged Instance = nil;
 }
 
 proc R.init() {
@@ -20,12 +20,12 @@ proc R.init() {
 
 proc R.init(x:int) {
   this.x = x;
-  this.ptr = new Instance(x);
+  this.ptr = new unmanaged Instance(x);
 }
 
 proc R.init(from: R) {
   this.x = from.x + 1;
-  this.ptr = new Instance(this.x);
+  this.ptr = new unmanaged Instance(this.x);
   writeln("    R.init(R)"); // ie copy-init
 }
 
@@ -38,7 +38,7 @@ proc =(ref lhs: R, rhs: R) {
   writeln("    assign");
   lhs.x = rhs.x;
   delete lhs.ptr;
-  lhs.ptr = new Instance(rhs.x);
+  lhs.ptr = new unmanaged Instance(rhs.x);
 }
 
 
@@ -242,7 +242,6 @@ proc varInitArgInout(inout arg)
 
 
 
-pragma "use default init"
 record Container {
   var field: R;
 }

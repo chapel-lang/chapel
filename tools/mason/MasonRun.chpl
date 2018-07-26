@@ -23,7 +23,7 @@ use MasonUtils;
 use FileSystem;
 use TOML;
 
-proc masonRun(args) {
+proc masonRun(args) throws {
 
   try! {
 
@@ -71,18 +71,20 @@ proc masonRun(args) {
         masonBuild(args);
         runCommand(command);
       }
-      else writeln("Mason could not find your Mason.lock file");
+      else {
+        throw new MasonError("Mason could not find your Mason.toml file");
+      }
 
       // Close memory
       toParse.close();
     }
     else {
-      writeln("Mason could not find the compiled program");
-      exit();
+      throw new MasonError("Mason could not find the compiled program");
     }
   }
   catch e: MasonError {
-    writeln(e.message());
+    stderr.writeln(e.message());
+    exit(1);
   }
 }
 
