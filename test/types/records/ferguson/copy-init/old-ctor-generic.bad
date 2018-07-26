@@ -1,1 +1,3 @@
 old-ctor-generic.chpl:6: error: constructor for class 'R' requires a generic argument called 'x'
+old-ctor-generic.chpl:6: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+old-ctor-generic.chpl:6: warning: Type 'R' defines a constructor here

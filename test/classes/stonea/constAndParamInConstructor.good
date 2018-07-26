@@ -1,3 +1,6 @@
+constAndParamInConstructor.chpl:4: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+constAndParamInConstructor.chpl:4: warning: Type 'Foo' defines a constructor here
+constAndParamInConstructor.chpl:12: warning: Type 'Bar' defines a constructor here
 constAndParamInConstructor.chpl:4: In initializer 'Foo':
 constAndParamInConstructor.chpl:4: error: invalid access of class member in initializer argument list
 constAndParamInConstructor.chpl:12: In initializer 'Bar':
