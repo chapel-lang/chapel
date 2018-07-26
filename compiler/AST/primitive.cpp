@@ -330,7 +330,8 @@ returnInfoGetTupleMemberRef(CallExpr* call) {
 
 static QualifiedType
 returnInfoGetMemberRef(CallExpr* call) {
-  AggregateType* ct = toAggregateType(call->get(1)->getValType());
+  Type* t = canonicalClassType(call->get(1)->getValType());
+  AggregateType* ct = toAggregateType(t);
   INT_ASSERT(ct);
   SymExpr* se = toSymExpr(call->get(2));
   INT_ASSERT(se);

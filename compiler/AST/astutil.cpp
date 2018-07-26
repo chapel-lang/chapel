@@ -686,13 +686,10 @@ bool isTypeExpr(Expr* expr) {
     } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true ||
                call->isPrimitive(PRIM_GET_MEMBER)       == true) {
       SymExpr*       left = toSymExpr(call->get(1));
-      AggregateType* ct   = toAggregateType(left->typeInfo());
+      Type*          t    = canonicalClassType(left->getValType());
+      AggregateType* ct   = toAggregateType(t);
 
       INT_ASSERT(ct != NULL);
-
-      if (ct->symbol->hasFlag(FLAG_REF) == true) {
-        ct = toAggregateType(ct->getValType());
-      }
 
       if (left->symbol()->type->symbol->hasFlag(FLAG_TUPLE) == true &&
           left->symbol()->hasFlag(FLAG_TYPE_VARIABLE)       == true) {

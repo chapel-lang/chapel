@@ -225,7 +225,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
     SymExpr*       base      = toSymExpr (call->get(1));
     const char*    fieldName = get_string(call->get(2));
 
-    AggregateType* at        = toAggregateType(base->getValType());
+    Type*          t         = canonicalClassType(base->getValType());
+    AggregateType* at        = toAggregateType(t);
     VarSymbol*     field     = toVarSymbol(at->getField(fieldName));
 
     if (field->isParameter() == true || field->isType() == true) {
