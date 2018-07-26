@@ -922,6 +922,9 @@ static Expr* handleUnstableClassType(SymExpr* se) {
               pCall == outerCall->get(1)) {
             // 'new Owned(SomeClass(int))'
             ok = true;
+          } else if (outerCall && callMakesDmap(outerCall)) {
+            // var something: dmap( Block( ) )
+            ok = true;
           } else if (outerOuterCall && callMakesDmap(outerOuterCall)) {
             // new dmap( new Block( ) )
             ok = true;
