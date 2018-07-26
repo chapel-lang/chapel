@@ -53,8 +53,7 @@ const char* objectFileForCFile(const char* cfile);
 
 const char* genIntermediateFilename(const char* filename);
 
-void openCFile(fileinfo* fi, const char* name, const char* ext = NULL,
-               bool useTmpDir = true);
+void openCFile(fileinfo* fi, const char* name, const char* ext = NULL);
 void closeCFile(fileinfo* fi, bool beautifyIt=true);
 
 fileinfo* openTmpFile(const char* tmpfilename, const char* mode = "w");

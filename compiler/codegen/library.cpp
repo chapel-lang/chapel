@@ -22,10 +22,12 @@
 #include <string>
 
 #include "FnSymbol.h"
+#include "beautify.h"
 #include "codegen.h"
 #include "driver.h"
 #include "files.h"
 #include "stlUtil.h"
+#include "stringutil.h"
 
 //
 // Generates a .h file to complement the library file created using --library
@@ -86,10 +88,16 @@ static std::string getCompilelineOption(std::string option) {
   return res;
 }
 
+static void openLibraryHelperFile(fileinfo* fi,
+                                  const char* name,
+                                  const char* ext = NULL,
+                                  bool useTmpDir = true);
+static void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt = true);
+
 void codegen_library_makefile() {
   fileinfo makefile;
   // TODO: alter location to use generated library directory
-  openCFile(&makefile, "Makefile.chpl_lib", "", false);
+  openLibraryHelperFile(&makefile, "Makefile.chpl_lib", "", false);
 
   // Save the CHPL_HOME location so it can be used in the other makefile
   // variables instead of letting them be cluttered with its value
@@ -134,7 +142,7 @@ void codegen_library_makefile() {
   std::string linkerShared = getCompilelineOption("linkershared");
   fprintf(makefile.fptr, "CHPL_LINKERSHARED = %s", linkerShared.c_str());
 
-  closeCFile(&makefile);
+  closeLibraryHelperFile(&makefile);
 }
 
 const char* getExtension() {
@@ -143,4 +151,37 @@ const char* getExtension() {
     else return ".a";
   }
   return "";
+}
+
+void openLibraryHelperFile(fileinfo* fi, const char* name, const char* ext,
+                           bool useTmpDir) {
+  if (ext)
+    fi->filename = astr(name, ".", ext);
+  else
+    fi->filename = astr(name);
+
+  if (useTmpDir) {
+    fi->pathname = genIntermediateFilename(fi->filename);
+  } else {
+    fi->pathname = astr(name);
+  }
+  openfile(fi, "w");
+}
+
+void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
+  closefile(fi->fptr);
+  //
+  // We should beautify if (1) we were asked to and (2) either (a) we
+  // were asked to save the C code or (b) we were asked to codegen cpp
+  // #line information (note that this can affect the output in the
+  // event of a failed C compilation whether or not the --savec option
+  // is used because a C codegen error will report the Chapel line #,
+  // which can be helpful.
+  //
+  // TODO: With some refactoring, we could simply do the #line part of
+  // beautify without also improving indentation and such which could
+  // save some time.
+  //
+  if (beautifyIt && (saveCDir[0] || printCppLineno))
+    beautify(fi);
 }

@@ -328,23 +328,18 @@ void closefile(fileinfo* thefile) {
 }
 
 
-void openCFile(fileinfo* fi, const char* name, const char* ext,
-               bool useTmpDir) {
+void openCFile(fileinfo* fi, const char* name, const char* ext) {
   if (ext)
     fi->filename = astr(name, ".", ext);
   else
     fi->filename = astr(name);
 
-  if (useTmpDir) {
-    fi->pathname = genIntermediateFilename(fi->filename);
-  } else {
-    fi->pathname = astr(name);
-  }
+  fi->pathname = genIntermediateFilename(fi->filename);
   openfile(fi, "w");
 }
 
 void closeCFile(fileinfo* fi, bool beautifyIt) {
-  fclose(fi->fptr);
+  closefile(fi->fptr);
   //
   // We should beautify if (1) we were asked to and (2) either (a) we
   // were asked to save the C code or (b) we were asked to codegen cpp
