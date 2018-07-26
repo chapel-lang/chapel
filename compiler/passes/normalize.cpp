@@ -3723,6 +3723,8 @@ static bool isConstructor(FnSymbol* fn) {
   return retval;
 }
 
+static bool firstConstructorWarning = true;
+
 static void updateConstructor(FnSymbol* fn) {
   SymbolMap      map;
   Type*          type = fn->getFormal(2)->type;
@@ -3794,6 +3796,13 @@ static void updateConstructor(FnSymbol* fn) {
       USR_FATAL_CONT(fn, "Type '%s' defined a constructor here",
                      ct->symbol->name);
     }
+  } else if (fWarnConstructors) {
+    if (firstConstructorWarning == true) {
+      USR_PRINT(fn, "Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.");
+      firstConstructorWarning = false;
+    }
+
+    USR_WARN(fn, "Type '%s' defines a constructor here", ct->symbol->name);
   }
 
   fn->addFlag(FLAG_CONSTRUCTOR);
