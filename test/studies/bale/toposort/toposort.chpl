@@ -2,6 +2,7 @@ use Random;
 use Time;
 use LayoutCS;
 use BlockDist;
+use DistributedBag;
 
 config param enableRuntimeDebugging = true;
 config const debugAll : bool = false;
@@ -9,9 +10,15 @@ config const debugTopo = debugAll;
 config const debugTopoTasking = debugAll || debugTopo;
 config const debugCreateSparseUTDomain = debugAll;
 config const debugPermute = debugAll;
+config const debugWorkQueue = debugAll;
+
 config param useDimIter = true;
-config param useDimIterRow = false; // not currently supported on master
-config param useDimIterCol = useDimIter;
+config param useDimIterRow = useDimIter; // not currently supported on master
+config param useDimIterCol = false;
+
+config param useDimIterDistributed = false; //SparseBlockDom.dimIter not supported on any rank
+config param useDimIterRowDistributed = useDimIterDistributed;
+config param useDimIterColDistributed = useDimIterDistributed;
 
 record Lock {
   var lock$ : sync bool;
@@ -31,6 +38,89 @@ record Lock {
 
   proc forceUnlock(){
     lock$.writeXF(true);
+  }
+}
+
+class DistributedWorkQueue {
+  type eltType;
+  var localesDomain : domain(1) = {1..0};
+  var locales : [localesDomain] locale;
+  var queue : DistBag(eltType);
+  var waitForWork : atomic bool;
+
+  proc init( type eltType, targetLocales : [] locale ){
+    this.eltType = eltType;
+
+    this.localesDomain = {1..#targetLocales.domain.size};
+    this.locales = reshape( targetLocales, this.localesDomain );
+    this.queue = new DistBag( eltType, targetLocales=this.locales );
+
+    this.complete();
+
+    this.waitForWork.write(true);
+  }
+
+  proc deinit(){ }
+
+  // This is not the ideal interface. Would prefer owner to be derived
+  // from an internal oracle passed in at init(). This is currently not posible
+  // due to limitations in SparseBlockDom (namely, it cannot be assigned).
+  proc add( value : eltType, owner : locale ) {
+    on owner {
+      if enableRuntimeDebugging && debugWorkQueue then writeln( "add ", (owner, value) );
+      this.queue.add( value );
+    }
+  }
+
+  proc remove( ) : eltType {
+    var (hasValue, value) = this.queue.remove();
+    if !hasValue then halt("Queue has no elements.");
+    return value;
+  }
+
+  proc size : int {
+    return this.queue.getSize();
+  }
+
+  proc clear(){
+    // remove() returns ( poppedElement? : bool , value if poppedElement else ??? : eltType )
+    while this.queue.remove()[1] do /* nothing */ ;
+  }
+
+  iter these() : eltType {
+    while this.waitForWork.read() || this.queue.size > 0 {
+      var (hasWork, work) = this.queue.remove();
+      if hasWork then yield work;
+      else {
+        if enableRuntimeDebugging && debugWorkQueue then writeln("waiting");
+        chpl_task_yield();
+      }
+    }
+  }
+
+  iter these( param tag : iterKind ) : eltType
+  where tag == iterKind.standalone {
+    coforall loc in this.locales {
+      on loc {
+        coforall taskID in 1..#here.maxTaskPar {
+          while this.waitForWork.read() || this.queue.size > 0 {
+            // Collection.remove() returns (hasWork, work) pairs
+            var (hasWork, work) = queue.remove();
+            if hasWork {
+              if enableRuntimeDebugging && debugWorkQueue then writeln( "Yeild ", (loc, taskID, work));
+              yield work;
+            } else {
+              if enableRuntimeDebugging && debugWorkQueue then writeln( "waiting" );
+              chpl_task_yield();
+            }
+          }
+        }
+      }
+    }
+  }
+
+  proc terminateWorkLoop(){
+    this.waitForWork.write(false);
   }
 }
 
@@ -178,19 +268,19 @@ where D.rank == 2
   var result = new TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
-  var numDiagonals = min( D.dim(1).size, D.dim(2).size );
+  const numDiagonals = min( D.dim(1).size, D.dim(2).size );
+  const minCol = D.dim(2).low;
 
   var rowMap : [D.dim(1)] D.idxType = [i in D.dim(1)] -1;
   var columnMap : [D.dim(2)] D.idxType = [i in D.dim(2)] -1;
 
   var rowSum : [D.dim(1)] atomic int;
   var rowCount : [D.dim(1)] atomic int;
-  var workQueue : list(D.idxType);
-  var sharedLock = new Lock();
+  var workQueue = new DistributedWorkQueue(D.idxType, Locales);
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
-  forall row in D.dim(1) with (ref rowSum, ref rowCount, ref workQueue, ref sharedLock) {
+  forall row in D.dim(1) {
     // Accumulate task locally, then write at end.
     var count = 0;
     var sum = 0;
@@ -211,13 +301,12 @@ where D.rank == 2
         }
       }
     }
+
     if count == 1 {
-      sharedLock.lock();
-      workQueue.push_back( row );
-      sharedLock.unlock();
+      workQueue.add( row, D.dist.dsiIndexToLocale( (row,minCol) ) );
     }
 
-    rowCount[row].write( count);
+    rowCount[row].write( count );
     rowSum[row].write( sum );
   }
   result.timers["initialization"].stop();
@@ -229,153 +318,77 @@ where D.rank == 2
   }
 
   // insert position along diagonal from (N,N)
-  // must be accessed under sharedLock
-  var diagonalPosition : int = 0;
-  // Values for work signal
-  enum TaskSignal {
-    kill = min(int), // no more work signal, die when recieving
-    fail = kill : int + 1, // signal that someone failed, and so should exit with error
-    wake = 1 // more work signal, pop from stack and continue with recieving
-  };
-  // This will signal tasks to get work, and keeps track of queue size;
-  var workSignal : sync TaskSignal;
-  // initialize work signal.
-  // sanity check: if queue is empty, set to kill signal.
-  // (I dont think this-^ is possible, but it could in the future?)
-  workSignal.writeEF( if workQueue.size > 0 then TaskSignal.wake else TaskSignal.kill );
-  if enableRuntimeDebugging && debugTopoTasking then writeln( "Spawning tasks ", 1..#numTasks );
+  var diagonalPosition : atomic int;
+  diagonalPosition.write(0);
 
   result.timers["toposort"].start();
-  coforall locale in Locales {
-    on locale {
-      coforall taskId in 1..#numTasks
-        with (ref diagonalPosition, ref rowSum, ref rowCount, ref workQueue, ref sharedLock)
-      {
-        if enableRuntimeDebugging && debugTopoTasking then writeln(taskId, " spawning." );
-        // continue looping until kill or fail signal is recieved
-        var continueWorking = true;
-        while continueWorking {
-          if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " waiting." );
-          // wait for work and get signal
-          var signal = workSignal;
-          if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " recieved signal: ", signal );
-          // if signal is kill signal relay message and exit
-          select signal {
-            when TaskSignal.kill {
-              workSignal.writeEF( TaskSignal.kill );
-              continueWorking = false;
-              if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " killed." );
-              break; // break out of loop;
-            }
-            when TaskSignal.fail {
-              workSignal.writeXF( TaskSignal.fail );
-              continueWorking = false;
-              if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " failing out.");
-              break; // break out of loop;
-            }
-            otherwise { /* no need to popogate signal */ }
-          }
 
-          // Critical section
-          sharedLock.lock();
-          if enableRuntimeDebugging && debugTopo {
-            writeln(
-              "========================",
-              "\ntaskId ",  taskId,
-              "\nworkQueue ", workQueue,
-              "\nrowSum    ", rowSum,
-              "\nrowCount  ", rowCount,
-              "\nrowMap    ", rowMap,
-              "\ncolumnMap ", columnMap,
-              "\n========================"
-            );
-          }
+  // For each queued row (and rows that will be queued)...
+  forall swapRow in workQueue {
+    // The body of this loop executes on the locale where swapRow is queued
 
-          var queueSize = workQueue.size;
-          // if queueSize is < 1, someone stole our work. unlock and rewait
-          if queueSize < 1 {
-            if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " queue size is ", queueSize);
-            sharedLock.unlock();
-            continue;
-          }
-
-          // safely get row and diagonal position
-          var localDiagonalPosition = diagonalPosition;
-          diagonalPosition += 1; // increment to next position
-          var swapRow = workQueue.pop_front();
-          queueSize = workQueue.size;
-
-          // if there are no more diagonal to place, then there is no work, send kill signal
-          if enableRuntimeDebugging && debugTopo then writeln( (taskId, localDiagonalPosition, diagonalPosition) );
-          if diagonalPosition >= numDiagonals {
-            if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " sending kill signal." );
-            workSignal.writeXF( TaskSignal.kill );
-            continueWorking = false;
-          } else if queueSize > 0 {
-            if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " sending work signal." );
-            workSignal.writeXF( TaskSignal.wake );
-          }
-          sharedLock.unlock();
-
-          // get non-zero column
-          var swapColumn = rowSum[swapRow].read();
-
-          // permute this row to the diagonal
-          rowMap[swapRow] = D.dim(1).high - localDiagonalPosition;
-          columnMap[swapColumn] = D.dim(2).high - localDiagonalPosition;
-
-          if enableRuntimeDebugging && debugTopo then writeln( "Swaping ", (swapRow,swapColumn), " -> ", (rowMap[swapRow], columnMap[swapColumn]) );
-
-          // foreach row along the swapped column who has a nonzero at (row, swapColumn)
-          // remove swapColumn from rowSum and reduce rowCount
-          if useDimIterRow {
-            // compilerWarning("iterating over rows in kernel with dimIter");
-            for row in D.dimIter(1,swapColumn) {
-              var previousRowCount = rowCount[row].fetchAdd( -1 );
-              rowSum[row].add( -swapColumn );
-              // if previousRowCount = 2 (ie rowCount[row] == 1)
-              if previousRowCount == 2 {
-                sharedLock.lock();
-                if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
-                workQueue.push_back( row );
-                sharedLock.unlock();
-                workSignal.writeXF( TaskSignal.wake );
-              }
-            }
-          } else {
-            // compilerWarning("iterating over rows in kernel with dim");
-            for row in D.dim(1) {
-              if D.member((row, swapColumn)) {
-                var previousRowCount = rowCount[row].fetchAdd( -1 );
-                rowSum[row].add( -swapColumn );
-                // if rowCount[row] == 1
-                if previousRowCount == 2 {
-                  sharedLock.lock();
-                  if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
-                  workQueue.push_back( row );
-                  sharedLock.unlock();
-                  workSignal.writeXF( TaskSignal.wake );
-                }
-              }
-            }
-          }
-
-        } // while continueWorking
-        if enableRuntimeDebugging && debugTopoTasking then writeln( taskId, " completed." );
-      } // coforall tasks
+    if enableRuntimeDebugging && debugTopo {
+      writeln(
+        "========================",
+        "\nworkQueue ", workQueue,
+        "\nrowSum    ", rowSum,
+        "\nrowCount  ", rowCount,
+        "\nrowMap    ", rowMap,
+        "\ncolumnMap ", columnMap,
+        "\n========================"
+      );
     }
-  }
+
+    // get non-zero column
+    var swapColumn = rowSum[swapRow].read();
+    // get and infrement localDiagonal
+    var localDiagonal = diagonalPosition.fetchAdd(1);
+    // permute this row to the diagonal
+    rowMap[swapRow] = D.dim(1).high - localDiagonal;
+    columnMap[swapColumn] = D.dim(2).high - localDiagonal;
+
+    // if localDiagonal == numDiagonals - 1 (i.e. diagonalPosition == numDiagonals)
+    if localDiagonal == numDiagonals - 1 {
+      if enableRuntimeDebugging && debugTopo then writeln("Terminating Loop");
+      workQueue.terminateWorkLoop();
+    }
+
+    if enableRuntimeDebugging && debugTopo then writeln( "Swaping ", (swapRow,swapColumn), " -> ", (rowMap[swapRow], columnMap[swapColumn]) );
+
+    // foreach row along the swapped column who has a nonzero at (row, swapColumn)
+    // remove swapColumn from rowSum and reduce rowCount
+    // NOTE: dimIter is not supported on any dimension on SparseBlockDom
+    if useDimIterRowDistributed {
+      // compilerWarning("iterating over rows in kernel with dimIter");
+      for row in D.dimIter(1,swapColumn) {
+        var previousRowCount = rowCount[row].fetchSub( 1 );
+        rowSum[row].add( -swapColumn );
+        // if previousRowCount = 2 (ie rowCount[row] == 1)
+        if previousRowCount == 2 {
+          if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
+          workQueue.add( row, D.dist.dsiIndexToLocale( (row,minCol) ) );
+        }
+      }
+    } else {
+      // compilerWarning("iterating over rows in kernel with dim");
+      for row in D.dim(1) {
+        if D.member((row, swapColumn)) {
+          var previousRowCount = rowCount[row].fetchSub( 1 );
+          rowSum[row].add( -swapColumn );
+          // if previousRowCount = 2 (ie rowCount[row] == 1)
+          if previousRowCount == 2 {
+            if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
+            workQueue.add( row, D.dist.dsiIndexToLocale( (row,minCol) ) );
+          }
+        }
+      }
+    }
+
+  } // while work in queue
   result.timers["toposort"].stop();
-  var signal = workSignal;
-  if signal == TaskSignal.fail {
-    writeln("Recieved fail signal at some point in execution.");
-    exit( -1 );
-  }
 
-  result.permutationMap = new PermutationMap( rowMap, columnMap );
-
+  result.permutationMap = new owned PermutationMap( rowMap, columnMap );
   result.timers["whole"].stop();
-
   return result;
 }
 
@@ -426,7 +439,7 @@ where D.rank == 2
       sharedLock.unlock();
     }
 
-    rowCount[row].write( count);
+    rowCount[row].write( count );
     rowSum[row].write( sum );
   }
   result.timers["initialization"].stop();
@@ -720,7 +733,7 @@ proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : in
   }
 
   // resulting sparse domain
-  var sparseD : sparse subdomain(D);
+  var sparseD : sparse subdomain(D) dmapped CS(compressRows=false);
 
   // if adding more than diagonals...
   if numberNonZerosAddedInStrictlyUT > 0 {
@@ -803,7 +816,7 @@ const maxDensity : real = (N+1.0)/(2.0*N);
 config const additionalDensity : real = 1.0 - minDensity;
 
 config const density : real = min( maxDensity, minDensity + max(0, additionalDensity) );
-config type eltType = int;
+config type eltType = string;
 
 config const numTasks : int = here.maxTaskPar;
 
@@ -850,6 +863,7 @@ proc main(){
       topoResult = toposortParallel( permutedSparseD, numTasks );
     }
     when ToposortImplementation.Distributed {
+      if !silentMode then writeln("Toposorting permuted upper triangluar domain using Distributed implementation.");
       var distributedD : D.type dmapped Block(D, targetLocales=reshape(Locales, {Locales.domain.dim(1),1..#1}) ) = D;
 
       var distributedPermutedSparseD : sparse subdomain(distributedD);
@@ -857,7 +871,7 @@ proc main(){
       for i in permutedSparseD {
         distributedPermutedSparseD += i;
       }
-      topoResult = toposortDistributed( distributedPermutedSparseD, numTasks );
+      topoResult = toposortDistributed( distributedPermutedSparseD );
     }
     otherwise {
       writeln( "Unknown implementation: ", implementation );
