@@ -32,6 +32,7 @@
 #include "docsDriver.h"
 #include "files.h"
 #include "ipe.h"
+#include "library.h"
 #include "log.h"
 #include "ModuleSymbol.h"
 #include "misc.h"

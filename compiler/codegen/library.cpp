@@ -108,7 +108,7 @@ void codegen_library_makefile() {
   }
   fileinfo makefile;
   // TODO: alter location to use generated library directory
-  openLibraryHelperFile(&makefile, "Makefile", name.c_str(), false);
+  openLibraryHelperFile(&makefile, "Makefile", name.c_str());
 
   // Save the CHPL_HOME location so it can be used in the other makefile
   // variables instead of letting them be cluttered with its value
@@ -165,7 +165,8 @@ const char* getLibraryExtension() {
 
 static void ensureLibDirExists() {
   if (libDir[0] == '\0') {
-    libDir = "lib";
+    strncpy(libDir, "lib", sizeof("lib"));
+    libDir[sizeof("lib")] = '\0';
   }
   ensureDirExists(libDir, "ensuring --library-dir directory exists");
 }
@@ -177,11 +178,8 @@ openLibraryHelperFile(fileinfo* fi, const char* name, const char* ext) {
   else
     fi->filename = astr(name);
 
-  if (useTmpDir) {
-    fi->pathname = genIntermediateFilename(fi->filename);
-  } else {
-    fi->pathname = astr(fi->filename);
-  }
+  ensureLibDirExists();
+  fi->pathname = astr(libDir, "/", fi->filename);
   openfile(fi, "w");
 }
 
