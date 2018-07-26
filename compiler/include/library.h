@@ -26,6 +26,6 @@ class FnSymbol;
 
 void codegen_library_header(std::vector<FnSymbol*> functions);
 void codegen_library_makefile();
-const char* getExtension();
+const char* getLibraryExtension();
 
 #endif //LIBRARY_H

@@ -676,7 +676,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
     fprintf(makefile.fptr, "SKIP_COMPILE_LINK = skip\n");
   }
 
-  exeExt = getExtension();
+  exeExt = getLibraryExtension();
 
   fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
   // BLC: This munging is done so that cp won't complain if the source

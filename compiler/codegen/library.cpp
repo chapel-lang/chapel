@@ -135,7 +135,7 @@ void codegen_library_makefile() {
     // libname = executableFilename plus the extension when executableFilename
     // does not start with "lib"
     libname = name;
-    libname += getExtension();
+    libname += getLibraryExtension();
   }
   // TODO: adjust for different location for the library, see earlier TODO
   fprintf(makefile.fptr, "CHPL_LDFLAGS = -L. %s %s \n",
@@ -151,10 +151,10 @@ void codegen_library_makefile() {
   std::string linkerShared = getCompilelineOption("linkershared");
   fprintf(makefile.fptr, "CHPL_LINKERSHARED = %s", linkerShared.c_str());
 
-  closeLibraryHelperFile(&makefile);
+  closeLibraryHelperFile(&makefile, false);
 }
 
-const char* getExtension() {
+const char* getLibraryExtension() {
   if (fLibraryCompile) {
     if (fLinkStyle==LS_DYNAMIC) return ".so";
     else return ".a";
