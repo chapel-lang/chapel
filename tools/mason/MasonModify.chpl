@@ -1,0 +1,267 @@
+/*
+ * Copyright 2004-2018 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+use Regexp;
+use TOML;
+use MasonUtils;
+
+proc masonModify(args) throws {
+
+  try! {
+    if args.size < 3 {
+      masonModifyHelp();
+      exit();
+    }
+    else {
+      const cwd = getEnv("PWD");
+      const projectHome = getProjectHome(cwd, "Mason.toml");
+      var external = false;
+      var system = false;
+      var add = true;
+      var dep = "";
+      for arg in args[1..] {
+        if arg == '-h' || arg == '--help' {
+          masonModifyHelp();
+        }
+        else if arg == "--system" {
+          system = true;
+        }
+        else if arg == "--external" {
+          external = true;
+        }
+        else if arg == "add" {
+          add = true;
+        }
+        else if arg == "rm" {
+          add = false;
+        }
+        else {
+          dep = arg;
+        }
+      }
+      if external && system then throw new MasonError("Invalid combination of arguments");
+      else if dep == "" then throw new MasonError("Must enter a dependency");
+      else {
+        const result = modifyToml(add, dep, external, system, projectHome);
+        generateToml(result[1], result[2]);
+      }
+    }
+  }
+  catch e: MasonError {
+    writeln(e.message());
+    exit(1);
+  }
+}
+
+proc modifyToml(add: bool, dep: string, external: bool, system: bool,
+                projectHome: string, tf="Mason.toml") throws {
+
+  const tomlPath = projectHome + "/" + tf;    
+  const openFile = openreader(tomlPath);
+  const toml = parseToml(openFile);
+  var newToml: unmanaged Toml;
+
+  try! {
+    
+    // Adding a dependency
+    if add {
+      if dep.find("@") == 0 {
+        throw new MasonError("Dependency formatted incorrectly.\nFormat: package@version");
+      }
+      const split = dep.split('@');
+      const dependency = split[1];
+      const version = split[2];
+      checkDepName(dependency);
+      checkVersion(version);
+
+      if system && add {
+        writeln("Adding system dependency " + dependency + " version " + version);
+        newToml = masonSystemAdd(toml, dependency, version);
+      }
+      else if external && add {
+        writeln("Adding external dependency " + dependency + " version " + version);
+        newToml = masonExternalAdd(toml, dependency, version);
+      }
+      else {
+        writeln("Adding Mason dependency " + dependency + " version " + version);
+        newToml = masonAdd(toml, dependency, version);
+      }    
+    }
+
+    // Removing a dependency
+    else {
+      var depName: string;
+      if dep.find('@') != 0 {
+        const split = dep.split('@');
+        depName = split[1];
+      }
+      else depName = dep;
+      const dependency = depName;
+      checkDepName(depName);
+      
+      if !system && !external {
+        writeln("Removing Mason dependency " + dependency);
+        newToml = masonRemove(toml, dependency);
+      }
+      else if system{
+        writeln("Removing system dependency " + dependency);
+        newToml = masonSystemRemove(toml, dependency);
+      }
+      else if external{
+        writeln("Removing external dependency " + dependency);
+        newToml = masonExternalRemove(toml, dependency);
+      }
+    }
+  }
+  catch e: MasonError {
+    writeln(e.message());
+    exit(1);
+  }
+  return (newToml, tomlPath);
+}
+
+/* Add a mason dependency to Mason.toml */
+private proc masonAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
+  if toml.pathExists("dependencies") {
+    if toml.pathExists("dependencies." + toAdd) {
+      throw new MasonError("A dependency by that name already exists in Mason.toml");
+    }
+    else {
+      toml["dependencies"][toAdd] = version;
+    }
+  }
+  // Create dependency table if it doesnt exist
+  else {
+    var tdom: domain(string);
+    var deps: [tdom] unmanaged Toml;
+    toml["dependencies"] = deps;
+    toml["dependencies"][toAdd] = version;
+  }
+  return toml;
+}
+
+/* Remove a mason dependency from Mason.toml */
+private proc masonRemove(toml: unmanaged Toml, toRm: string) throws {
+  if toml.pathExists("dependencies") {
+    if toml.pathExists("dependencies." + toRm) {
+      toml["dependencies"].D.remove(toRm);
+    }
+    else {
+      throw new MasonError("No dependency exists by that name");
+    }
+  }
+  else {
+    throw new MasonError("No dependencies");
+  }
+  return toml;
+}
+
+/* Add a system dependency to Mason.toml */
+private proc masonSystemAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
+  
+  if toml.pathExists("system") {
+    if toml.pathExists("system." + toAdd) {
+      throw new MasonError("A dependency by that name already exists in Mason.toml");
+    }
+    else {
+      toml["system"][toAdd] = version;
+    }
+  }
+  else {
+    var pkgdom: domain(string);
+    var pkgdeps: [pkgdom] unmanaged Toml;
+    toml["system"] = pkgdeps;
+    toml["system"][toAdd] = version;
+  }
+  return toml;
+}
+
+/* Remove a system dependency from Mason.toml */
+private proc masonSystemRemove(toml: unmanaged Toml, toRm: string) throws {
+  if toml.pathExists("system") {
+    if toml.pathExists("system." + toRm) {
+      toml["system"].D.remove(toRm);
+    }
+    else {
+      throw new MasonError("No system dependency exists by " + toRm);
+    }
+  }
+  else {
+    throw new MasonError("No system dependency exists by " + toRm);
+  }
+  return toml;
+}
+
+/* Add an external dependency to Mason.toml */
+private proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
+  if toml.pathExists("external") {
+    if toml.pathExists("external." + toAdd) {
+      throw new MasonError("An external dependency by that name already exists in Mason.toml");
+    }
+    else {
+      toml["external"][toAdd] = version;
+    }
+  }
+  else {
+    var exdom: domain(string);
+    var exdeps: [exdom] unmanaged Toml;
+    toml["external"] = exdeps;
+    toml["external"][toAdd] = version;
+  }
+  return toml;
+}
+
+/* Remove an external dependency from Mason.toml */
+private proc masonExternalRemove(toml: unmanaged Toml, toRm: string) throws {
+  if toml.pathExists("external") {
+    if toml.pathExists("external." + toRm) {
+      toml["external"].D.remove(toRm);
+    }
+    else {
+      throw new MasonError("No external dependency exists by that name");
+    }
+  }
+  else {
+    throw new MasonError("No external dependency exists by that name");
+  }
+  return toml;
+}
+
+/* Generate the modified Mason.toml */
+private proc generateToml(toml: Toml, tomlPath: string) {
+  const tomlFile = open(tomlPath, iomode.cw);
+  const tomlWriter = tomlFile.writer();
+  tomlWriter.writeln(toml);
+  tomlWriter.close();
+  tomlFile.close();
+}
+
+private proc checkVersion(version: string) throws {
+  const pattern = compile("([0-9].[0-9].[0-9][a-zA-Z]?)");
+  if !pattern.match(version) {
+    throw new MasonError("Version formatting incorrect. ex. 1.2.3");
+  }
+}
+
+private proc checkDepName(dep: string) throws {
+  if !isIdentifier(dep) {
+      throw new MasonError("Bad package name '" + dep +
+                             "' - only Chapel identifiers are legal package names");  
+  }
+}

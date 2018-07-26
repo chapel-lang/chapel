@@ -20,7 +20,7 @@
  * Github: @Spartee
  */
 
-
+use MasonModify;
 use MasonUtils;
 use MasonHelp;
 use MasonEnv;
@@ -66,15 +66,17 @@ Full documentation is located in the chapel release in $CHPL_HOME/doc/rst/tools/
 
 
 
+
 proc main(args: [] string) throws {
   try! {
     if args.size < 2 {
       masonHelp();
       exit(0);
     }
-
     select (args[1]) {
       when 'new' do masonNew(args);
+      when 'add' do masonModify(args);
+      when 'rm' do masonModify(args);
       when 'build' do masonBuild(args);
       when 'update' do UpdateLock(args);
       when 'run' do masonRun(args);

@@ -1,0 +1,12 @@
+Adding external dependency test version 1.2.3
+
+[brick]
+name = "Tester"
+version = "0.1.0"
+
+[dependencies]
+
+[external]
+test = "1.2.3"
+
+

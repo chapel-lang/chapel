@@ -38,6 +38,8 @@ proc masonHelp() {
   writeln();
   writeln('Some common mason commands are (see all commands with --list):');
   writeln('    new         Create a new mason project');
+  writeln('    add         Add a dependency to Mason.toml');
+  writeln('    rm          Remove a dependency from Mason.toml');
   writeln('    update      Update/Generate Mason.lock');
   writeln('    build       Compile the current project');
   writeln('    run         Build and execute src/<project name>.chpl');
@@ -51,6 +53,8 @@ proc masonHelp() {
 
 proc masonList() {
   writeln('Installed Mason Commands:');
+  writeln('      add                ');
+  writeln('      rm                 ');
   writeln('      new                ');
   writeln('      update             ');
   writeln('      build              ');
@@ -130,6 +134,24 @@ proc masonSearchHelp() {
   writeln("    -h, --help                  Display this message");
   writeln();
   writeln(desc);
+}
+
+proc masonModifyHelp() {
+  writeln("Modify a Mason package's Mason.toml");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason rm [options] package");
+  writeln("    mason add [options] package@version");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln("        --external              Add/Remove dependency from external dependencies");
+  writeln("        --system                Add/Remove dependency from system dependencies");  
+  writeln();
+  writeln("Not listing an option will add/remove the dependency from the Mason [dependencies] table");
+  writeln("Versions are necessary for adding dependencies, but not for removing dependencies");
+  writeln("Manually edit the Mason.toml if multiple versions of the same package are listed");
+  writeln("Package names and versions are not validated upon adding");
 }
 
 proc masonEnvHelp() {
