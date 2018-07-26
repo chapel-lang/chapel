@@ -9,7 +9,7 @@ param WAIT = 10000000;
 class C {
   var s: sync int;
 }
-var c: C = new C();
+var c: unmanaged C = new unmanaged C();
 
 writeln( "\ntest 1");
 begin {

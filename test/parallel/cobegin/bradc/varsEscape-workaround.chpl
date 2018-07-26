@@ -1,5 +1,5 @@
 class C {
-  var left, right: C;
+  var left, right: unmanaged C;
   
   proc countNodes(): int {
     var lnodes, rnodes: int;
@@ -11,7 +11,9 @@ class C {
   }
 }
 
-var c = new C(new C(), new C(new C(), new C()));
+var c = new unmanaged C(
+              new unmanaged C(),
+              new unmanaged C(new unmanaged C(), new unmanaged C()));
 
 writeln("c has ", c.countNodes(), " nodes");
 

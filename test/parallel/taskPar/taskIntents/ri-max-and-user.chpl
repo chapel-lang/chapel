@@ -25,5 +25,5 @@ class MyReduceOp: ReduceScanOp {
   proc accumulate(elm)  { value = value + elm; }
   proc combine(other)   { value = value + other.value; }
   proc generate()       return value;
-  proc clone()          return new MyReduceOp(eltType=eltType);
+  proc clone()          return new unmanaged MyReduceOp(eltType=eltType);
 }

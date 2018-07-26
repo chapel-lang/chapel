@@ -10,7 +10,7 @@ class C : D {
   }
 }
 
-var c : D = new C();
+var c : unmanaged D = new unmanaged C();
 
 var (a, b) = (true, 0);
 for 1 .. 5 {

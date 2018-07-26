@@ -63,5 +63,5 @@ class PlusReduceOp: ReduceScanOp {
   proc accumulate(elm)  { value = value + elm; }
   proc combine(other)   { value = value + other.value; }
   proc generate()       return value;
-  proc clone()          return new PlusReduceOp(eltType=eltType);
+  proc clone()          return new unmanaged PlusReduceOp(eltType=eltType);
 }
