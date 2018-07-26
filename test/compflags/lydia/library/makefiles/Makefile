@@ -1,5 +1,5 @@
 ifeq ($(MAKECMDGOALS),mytest)
-include Makefile.getMakefile
+include lib/Makefile.getMakefile
 mytest: mytest.c libgetMakefile.a
 	@$(CHPL_COMPILER) $(CHPL_CFLAGS) -o mytest mytest.c $(CHPL_LDFLAGS)
 	@./mytest
@@ -9,7 +9,7 @@ mytest:
 endif
 
 ifeq ($(MAKECMDGOALS),renamedTest)
-include Makefile.myLib
+include lib/Makefile.myLib
 renamedTest: renamedTest.c myLib.a
 	@$(CHPL_COMPILER) $(CHPL_CFLAGS) -o renamedTest renamedTest.c $(CHPL_LDFLAGS)
 	@./renamedTest
