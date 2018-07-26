@@ -340,7 +340,9 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
 
   CallExpr* newOp = new CallExpr(PRIM_NEW,
                                  reduceAt->symbol,
-                                 new NamedExpr("eltType", new SymExpr(eltType)));
+                                 new NamedExpr("eltType", new SymExpr(eltType)),
+                                 new NamedExpr(astr_chpl_manager,
+                                             new SymExpr(dtUnmanaged->symbol)));
   headAnchor->insertBefore(new CallExpr(PRIM_MOVE, globalOp, newOp));
 
   insertInitialAccumulate(headAnchor, globalOp, origSym);
