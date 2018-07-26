@@ -25,7 +25,7 @@ proc main() {
     w.close();
   }
 
-  var args : [1..0] string;
+  var args = ["--no-update-registry"]; 
   var configs = UpdateLock(args, tf, temp.tryGetPath());
   var lock = open(temp.tryGetPath(), iomode.r);
   var lockFile = parseToml(lock);
