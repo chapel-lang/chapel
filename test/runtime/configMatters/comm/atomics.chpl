@@ -2,9 +2,8 @@ config param enable_type_i32 = true;
 config param enable_type_i64 = true;
 config param enable_type_ui32 = true;
 config param enable_type_ui64 = true;
-config param enable_type_r32 = (CHPL_COMM == 'ugni'
-                                && false /* no support in module code */ );
-config param enable_type_r64 = (CHPL_COMM == 'ugni');
+config param enable_type_r32 = true;
+config param enable_type_r64 = true;
 
 config const default_do_type_flag = true;
 
