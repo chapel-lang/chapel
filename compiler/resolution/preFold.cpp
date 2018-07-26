@@ -171,6 +171,54 @@ Expr* preFold(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool isFollowerITer(FnSymbol* iter) {
+  // Follower iterator is not resolved yet - can't use isFollowerIterator().
+  // Instead, heuristically just look for a "followThis" formal.
+  // This is OK because we are in compiler-generated loopexpr function.
+  for_formals(formal, iter)
+    if (!strcmp(formal->name, iterFollowthisArgname))
+      return true;
+  return false;
+}
+
+static FnSymbol* findForallexprFollower(FnSymbol* serialIter) {
+  if (strncmp(serialIter->name, astr_loopexpr_iter, strlen(astr_loopexpr_iter)))
+    // Not a forall-expression.
+    return NULL;
+
+  // All iterators are defined in the same block - loopexpr function's body.
+  BlockStmt* parent = toBlockStmt(serialIter->defPoint->parentExpr);
+  for (Expr* curr = parent->body.head; curr != NULL; curr = curr->next) {
+    if (DefExpr* def = toDefExpr(curr))
+      if (FnSymbol* fn = toFnSymbol(def->sym))
+        if (fn->name == serialIter->name)
+          if (isFollowerITer(fn))
+            return fn;
+  }
+
+  //
+  // The loopexpr function does not define parallel iterators
+  // when it implements a (serial) for-expression.
+  // We may still try to run a forall loop over it because of this code
+  // in chpl__transferArray (whose 'b' corresponds to our serialIter):
+  //
+  //     {...
+  //     } else if chpl__tryToken { // try to parallelize ....
+  //       forall (aa,bb) in zip(a,b) do
+  //         aa = bb;
+  //     } else {
+  //       for (aa,bb) in zip(a,b) do
+  //         aa = bb;
+  //     }
+  //
+  // So the "if chpl__tryToken" will take the 'else' branch.
+  // Ex. 1st line in studies/sudoku/deitz/sudoku.chpl
+  // Or the user may mistakenly run a forall loop over a for-expression.
+  // In either case, the resolution should fail. So, return NULL.
+  //
+  return NULL;
+}
+
 static Expr* preFoldPrimOp(CallExpr* call) {
   Expr* retval = NULL;
 
@@ -759,6 +807,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     if (FnSymbol* follower = iteratorFollowerMap.get(iterator)) {
       followerCall = new CallExpr(follower);
+    } else if (FnSymbol* f2 = findForallexprFollower(iterator)) {
+      followerCall = new CallExpr(f2);
     } else {
       followerCall = new CallExpr(iterator->name);
     }
