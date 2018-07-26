@@ -95,9 +95,19 @@ static void openLibraryHelperFile(fileinfo* fi,
 static void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt = true);
 
 void codegen_library_makefile() {
+  std::string name = "";
+  int libLength = strlen("lib");
+  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  if (startsWithLib) {
+    name += &executableFilename[libLength];
+  } else {
+    // libname = executableFilename when executableFilename does not start with
+    // "lib"
+    name = executableFilename;
+  }
   fileinfo makefile;
   // TODO: alter location to use generated library directory
-  openLibraryHelperFile(&makefile, "Makefile.chpl_lib", "", false);
+  openLibraryHelperFile(&makefile, "Makefile", name.c_str(), false);
 
   // Save the CHPL_HOME location so it can be used in the other makefile
   // variables instead of letting them be cluttered with its value
@@ -118,14 +128,13 @@ void codegen_library_makefile() {
 
   std::string libraries = getCompilelineOption("libraries");
   std::string libname = "-l";
-  int libLength = strlen("lib");
-  if (strncmp(executableFilename, "lib", libLength) == 0) {
+  if (startsWithLib) {
     // libname = "-l<name>" when executableFilename = "lib<name>"
-    libname += &executableFilename[libLength];
+    libname += name;
   } else {
     // libname = executableFilename plus the extension when executableFilename
     // does not start with "lib"
-    libname = executableFilename;
+    libname = name;
     libname += getExtension();
   }
   // TODO: adjust for different location for the library, see earlier TODO
@@ -163,7 +172,7 @@ void openLibraryHelperFile(fileinfo* fi, const char* name, const char* ext,
   if (useTmpDir) {
     fi->pathname = genIntermediateFilename(fi->filename);
   } else {
-    fi->pathname = astr(name);
+    fi->pathname = astr(fi->filename);
   }
   openfile(fi, "w");
 }

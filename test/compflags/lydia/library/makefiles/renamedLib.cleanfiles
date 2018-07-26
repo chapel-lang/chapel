@@ -1,4 +1,4 @@
 headerName.h
 myLib.a
 renamedTest
-Makefile.chpl_lib
+Makefile.myLib

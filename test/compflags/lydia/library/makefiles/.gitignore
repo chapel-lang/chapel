@@ -1,7 +1,8 @@
 getMakefile.h
 libgetMakefile.a
-Makefile.chpl_lib
+Makefile.getMakefile
 mytest
 headerName.h
 myLib.a
 renamedTest
+Makefile.myLib
