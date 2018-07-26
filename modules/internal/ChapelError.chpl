@@ -105,7 +105,7 @@ module ChapelError {
   pragma "no doc"
   record chpl_TaskErrors {
     var _head: unmanaged Error;
-    var _errorsLock: atomicbool;
+    var _errorsLock: chpl__processorAtomicType(bool);
     // this atomic controls:
     //  - _head
     //  - all list elements ->_next

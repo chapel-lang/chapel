@@ -561,7 +561,7 @@ module SSCA2_kernels
   //
   record taskPrivateArrayData {
     type vertex;
-    var min_distance  : atomic_int64; // used only on home locale
+    var min_distance  : chpl__processorAtomicType(int); // used only on home locale
     var path_count$   : atomic real;
     var depend        : real;
     var children_list : child_struct(vertex);

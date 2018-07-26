@@ -171,9 +171,9 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   // additional data structures for backwardSub()
   //
   type cpuAtomicElemType = // presently unused
-    if elemType == real(64) then atomic_real64
+    if elemType == real(64) then chpl__processorAtomicType(real)
     else compilerError("need to define cpuAtomicElemType");
-  type cpuAtomicCountType = atomic_int64;
+  type cpuAtomicCountType = chpl__processorAtomicType(int);
   const replPD = {0..#blkSize} dmapped new dmap(distReplicated);
 
   // the working 'x' vector - we reuse replK

@@ -951,8 +951,7 @@ class LocCyclicArr {
   var locRAD: LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
   var locCyclicRAD: LocCyclicRADCache(rank, idxType); // see below for why
   var myElems: [locDom.myBlock] eltType;
-  var locRADLock: atomicbool; // This will only be accessed locally, so
-                              // force the use of processor atomics
+  var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
 
   // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid

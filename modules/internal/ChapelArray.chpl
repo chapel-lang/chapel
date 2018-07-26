@@ -170,7 +170,7 @@ module ChapelArray {
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
   pragma "no doc"
-  var numPrivateObjects: atomic_int64;
+  var numPrivateObjects: chpl__processorAtomicType(int);
   pragma "no doc"
   param nullPid = -1;
 
