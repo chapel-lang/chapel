@@ -29,6 +29,8 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 
+char libDir[FILENAME_MAX + 1]  = "";
+
 //
 // Generates a .h file to complement the library file created using --library
 // This .h file will contain necessary #includes, any explicitly exported
@@ -90,8 +92,7 @@ static std::string getCompilelineOption(std::string option) {
 
 static void openLibraryHelperFile(fileinfo* fi,
                                   const char* name,
-                                  const char* ext = NULL,
-                                  bool useTmpDir = true);
+                                  const char* ext = NULL);
 static void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt = true);
 
 void codegen_library_makefile() {
@@ -162,8 +163,15 @@ const char* getLibraryExtension() {
   return "";
 }
 
-void openLibraryHelperFile(fileinfo* fi, const char* name, const char* ext,
-                           bool useTmpDir) {
+static void ensureLibDirExists() {
+  if (libDir[0] == '\0') {
+    libDir = "lib";
+  }
+  ensureDirExists(libDir, "ensuring --library-dir directory exists");
+}
+
+static void
+openLibraryHelperFile(fileinfo* fi, const char* name, const char* ext) {
   if (ext)
     fi->filename = astr(name, ".", ext);
   else
@@ -180,17 +188,8 @@ void openLibraryHelperFile(fileinfo* fi, const char* name, const char* ext,
 void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
   closefile(fi->fptr);
   //
-  // We should beautify if (1) we were asked to and (2) either (a) we
-  // were asked to save the C code or (b) we were asked to codegen cpp
-  // #line information (note that this can affect the output in the
-  // event of a failed C compilation whether or not the --savec option
-  // is used because a C codegen error will report the Chapel line #,
-  // which can be helpful.
+  // We should beautify if we were asked to
   //
-  // TODO: With some refactoring, we could simply do the #line part of
-  // beautify without also improving indentation and such which could
-  // save some time.
-  //
-  if (beautifyIt && (saveCDir[0] || printCppLineno))
+  if (beautifyIt)
     beautify(fi);
 }
