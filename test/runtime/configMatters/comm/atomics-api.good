@@ -1,0 +1,319 @@
+Testing 'atomic bool':
+  init        a=false
+  read        a=false, i=false
+  write       a=true
+  xchg        a=false, i=true
+  cmpxchg     a=false, b=false
+  cmpxchg     a=true, b=true
+  cmpxchgW    a=true, b=false
+  cmpxchgW    a=false, b=true
+  cmpxchgS    a=false, b=false
+  cmpxchgS    a=true, b=true
+  test&Set    a=true, i=true
+  clear       a=false
+  waitFor     a=true
+
+Testing 'atomic int(8)':
+  init        a=0
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  cmpxchg     a=2, b=false
+  cmpxchg     a=3, b=true
+  cmpxchgW    a=3, b=false
+  cmpxchgW    a=4, b=true
+  cmpxchgS    a=4, b=false
+  cmpxchgS    a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(16)':
+  init        a=0
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  cmpxchg     a=2, b=false
+  cmpxchg     a=3, b=true
+  cmpxchgW    a=3, b=false
+  cmpxchgW    a=4, b=true
+  cmpxchgS    a=4, b=false
+  cmpxchgS    a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(32)':
+  init        a=0
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  cmpxchg     a=2, b=false
+  cmpxchg     a=3, b=true
+  cmpxchgW    a=3, b=false
+  cmpxchgW    a=4, b=true
+  cmpxchgS    a=4, b=false
+  cmpxchgS    a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(64)':
+  init        a=0
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  cmpxchg     a=2, b=false
+  cmpxchg     a=3, b=true
+  cmpxchgW    a=3, b=false
+  cmpxchgW    a=4, b=true
+  cmpxchgS    a=4, b=false
+  cmpxchgS    a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(64)':
+  init        a=0
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  cmpxchg     a=2, b=false
+  cmpxchg     a=3, b=true
+  cmpxchgW    a=3, b=false
+  cmpxchgW    a=4, b=true
+  cmpxchgS    a=4, b=false
+  cmpxchgS    a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(8)':
+  init        a=0
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  cmpxchg     a=2, b=false
+  cmpxchg     a=3, b=true
+  cmpxchgW    a=3, b=false
+  cmpxchgW    a=4, b=true
+  cmpxchgS    a=4, b=false
+  cmpxchgS    a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(16)':
+  init        a=0
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  cmpxchg     a=2, b=false
+  cmpxchg     a=3, b=true
+  cmpxchgW    a=3, b=false
+  cmpxchgW    a=4, b=true
+  cmpxchgS    a=4, b=false
+  cmpxchgS    a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(32)':
+  init        a=0
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  cmpxchg     a=2, b=false
+  cmpxchg     a=3, b=true
+  cmpxchgW    a=3, b=false
+  cmpxchgW    a=4, b=true
+  cmpxchgS    a=4, b=false
+  cmpxchgS    a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(64)':
+  init        a=0
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  cmpxchg     a=2, b=false
+  cmpxchg     a=3, b=true
+  cmpxchgW    a=3, b=false
+  cmpxchgW    a=4, b=true
+  cmpxchgS    a=4, b=false
+  cmpxchgS    a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(64)':
+  init        a=0
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  cmpxchg     a=2, b=false
+  cmpxchg     a=3, b=true
+  cmpxchgW    a=3, b=false
+  cmpxchgW    a=4, b=true
+  cmpxchgS    a=4, b=false
+  cmpxchgS    a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic real(32)':
+  init        a=0.0
+  read        a=0.0, i=0.0
+  write       a=1.0
+  xchg        a=2.0, i=1.0
+  cmpxchg     a=2.0, b=false
+  cmpxchg     a=3.0, b=true
+  cmpxchgW    a=3.0, b=false
+  cmpxchgW    a=4.0, b=true
+  cmpxchgS    a=4.0, b=false
+  cmpxchgS    a=5.0, b=true
+  fetchAdd    a=6.0, i=5.0
+  add         a=7.0
+  fetchSub    a=6.0, i=7.0
+  sub         a=5.0
+  waitFor     a=6.0
+
+Testing 'atomic real(64)':
+  init        a=0.0
+  read        a=0.0, i=0.0
+  write       a=1.0
+  xchg        a=2.0, i=1.0
+  cmpxchg     a=2.0, b=false
+  cmpxchg     a=3.0, b=true
+  cmpxchgW    a=3.0, b=false
+  cmpxchgW    a=4.0, b=true
+  cmpxchgS    a=4.0, b=false
+  cmpxchgS    a=5.0, b=true
+  fetchAdd    a=6.0, i=5.0
+  add         a=7.0
+  fetchSub    a=6.0, i=7.0
+  sub         a=5.0
+  waitFor     a=6.0
+
+Testing 'atomic real(64)':
+  init        a=0.0
+  read        a=0.0, i=0.0
+  write       a=1.0
+  xchg        a=2.0, i=1.0
+  cmpxchg     a=2.0, b=false
+  cmpxchg     a=3.0, b=true
+  cmpxchgW    a=3.0, b=false
+  cmpxchgW    a=4.0, b=true
+  cmpxchgS    a=4.0, b=false
+  cmpxchgS    a=5.0, b=true
+  fetchAdd    a=6.0, i=5.0
+  add         a=7.0
+  fetchSub    a=6.0, i=7.0
+  sub         a=5.0
+  waitFor     a=6.0
+
+Promotion -- Testing 'atomic int(64)':
+  init        a=0 0 0
+  read        a=0 0 0, i=0 0 0
+  write       a=1 1 1
+  xchg        a=2 2 2, i=1 1 1
+  cmpxchg     a=2 2 2, b=false false false
+  cmpxchg     a=3 3 3, b=true true true
+  cmpxchgW    a=3 3 3, b=false false false
+  cmpxchgW    a=4 4 4, b=true true true
+  cmpxchgS    a=4 4 4, b=false false false
+  cmpxchgS    a=5 5 5, b=true true true
+  fetchAdd    a=6 6 6, i=5 5 5
+  add         a=7 7 7
+  fetchSub    a=6 6 6, i=7 7 7
+  sub         a=5 5 5
+  fetchOr     a=13 13 13, i=5 5 5
+  or          a=15 15 15
+  fetchAnd    a=7 7 7, i=15 15 15
+  and         a=5 5 5
+  fetchXor    a=0 0 0, i=5 5 5
+  xor         a=5 5 5
+  waitFor     a=6 6 6
+
