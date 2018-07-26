@@ -503,6 +503,7 @@ void UseStmt::trackMethods() {
         functionsToAlwaysCheck.push_back("init");
         functionsToAlwaysCheck.push_back("_new");
         functionsToAlwaysCheck.push_back("deinit");
+        functionsToAlwaysCheck.push_back("_defaultOf");
       }
 
       std::vector<FnSymbol*> fns = mod->getTopLevelFunctions(false);
