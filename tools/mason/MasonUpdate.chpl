@@ -135,7 +135,7 @@ proc updateRegistry(tf: string, args : [] string) {
     if isDir(registryHome) {
       var pullRegistry = 'git pull -q origin master';
       if tf == "Mason.toml" then
-        writeln("Updating mason-registry for ", name);
+        writeln("Updating mason-registry");
       gitC(registryHome, pullRegistry);
     }
     // Registry has moved or does not exist
@@ -144,7 +144,7 @@ proc updateRegistry(tf: string, args : [] string) {
       const localRegistry = registryHome;
       mkdir(localRegistry, parents=true);
       const cloneRegistry = 'git clone -q ' + registry + ' .';
-      writeln("Updating mason-registry for ", name);
+      writeln("Updating mason-registry");
       gitC(localRegistry, cloneRegistry);
     }
   }
