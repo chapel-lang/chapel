@@ -75,14 +75,27 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 // from compileline
 static std::string getCompilelineOption(std::string option) {
   std::string fullCommand = "$CHPL_HOME/util/config/compileline --" + option;
+  fullCommand += "> cmd.out.tmp";
+  runCommand(fullCommand);
+  std::string replace = "$CHPL_HOME/util/config/replace-paths.py ";
+  replace += "--fixpath '$(CHPL_HOME)' $CHPL_HOME < cmd.out.tmp";
 
-  return runCommand(fullCommand);
+  std::string res = runCommand(replace);
+  std::string cleanup = "rm cmd.out.tmp";
+  runCommand(cleanup);
+  return res;
 }
 
 void codegen_library_makefile() {
   fileinfo makefile;
   // TODO: alter location to use generated library directory
   openCFile(&makefile, "Makefile.chpl_lib", "", false);
+
+  // Save the CHPL_HOME location so it can be used in the other makefile
+  // variables instead of letting them be cluttered with its value
+  std::string cmd = "echo $CHPL_HOME";
+  std::string chplHome = runCommand(cmd);
+  fprintf(makefile.fptr, "CHPL_HOME = %s\n", chplHome.c_str());
 
   // TODO: compileline --includes-and-defines adds -I. to the list
   // automatically.  If the library is in a different directory from the
