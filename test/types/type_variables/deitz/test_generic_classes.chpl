@@ -9,7 +9,7 @@ class C {
 class D {
   param a: int;
   param b: int;
-  var c: C(a, b);
+  var c: borrowed C(a, b);
 }
 
 var c = new borrowed C(5, 4, 1, 2, 3);

@@ -5,7 +5,7 @@ class C {
   var xx: tt;
 }
 
-proc foo(c: C(int, ?tt)) {
+proc foo(c: borrowed C(int, ?tt)) {
   var y: int;
   var yy: tt;
   writeln((y, yy));
@@ -13,7 +13,7 @@ proc foo(c: C(int, ?tt)) {
 
 }
 
-proc foo(c: C(real, ?tt)) {
+proc foo(c: borrowed C(real, ?tt)) {
   var y: real;
   var yy: tt;
   writeln((y, yy));

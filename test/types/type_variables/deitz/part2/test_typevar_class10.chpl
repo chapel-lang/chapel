@@ -5,7 +5,7 @@ class bar {
     return new unmanaged bar(t, y);
 }
 
-var b : bar(int) = new unmanaged bar(int, 4);
+var b : unmanaged bar(int) = new unmanaged bar(int, 4);
 
 writeln(b);
 

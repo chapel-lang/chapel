@@ -11,7 +11,7 @@ var d = new borrowed D(p=2);
 
 writeln(d);
 
-proc foo(d : D) {
+proc foo(d : borrowed D) {
   for param i in 1..d.p do
     writeln(i);
 }

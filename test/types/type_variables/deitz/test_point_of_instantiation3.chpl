@@ -19,7 +19,7 @@ module M2 {
 
 module M3 {
   use M1;
-  proc bar(c: C) {
+  proc bar(c: borrowed C) {
     c.foo();
   }
 }
@@ -33,7 +33,7 @@ module M4 {
   }
 
   proc main() {
-    var c: C = new borrowed D(t=R);
+    var c: borrowed C = new borrowed D(t=R);
 
     bar(c);
 

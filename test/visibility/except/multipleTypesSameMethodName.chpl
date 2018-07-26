@@ -20,7 +20,7 @@ module OtherMod {
   use M except C2;
 
   proc main() {
-    var c1 = new C1(7);
+    var c1 = new unmanaged C1(7);
     // verifies that if an excluded type has a method with
     // the same name as a method on an included type, the
     // included type can still call its own method.

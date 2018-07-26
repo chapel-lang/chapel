@@ -120,9 +120,9 @@ proc countLines(fn : string) : int {
   return ipart;
 }
 
-proc readFile(fn : string) : Particle3D  {
+proc readFile(fn : string) : unmanaged Particle3D  {
   var npart = countLines(fn);
-  var pp = new Particle3D(npart);
+  var pp = new unmanaged Particle3D(npart);
 
   var ff = openreader(fn);
   var ipart = 0;
@@ -137,7 +137,7 @@ proc readFile(fn : string) : Particle3D  {
   return pp;
 }
 
-proc splitOn(pp : Particle3D, idom : domain(1), splitDim : int, xsplit : real) : int {
+proc splitOn(pp : borrowed Particle3D, idom : domain(1), splitDim : int, xsplit : real) : int {
   // Setup for a prefix scan
   forall ii in idom {
     if (pp.arr[splitDim,ii] < xsplit) {
@@ -185,7 +185,7 @@ class KDNode {
 }
 
 
-proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : unmanaged KDNode  {
+proc BuildTree(pp : borrowed Particle3D, lo : int, hi : int, id : int) : unmanaged KDNode  {
   var me : unmanaged KDNode = new unmanaged KDNode();
   me.lo = lo;
   me.hi = hi;
@@ -229,7 +229,7 @@ proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : unmanaged KDNode
   return me;
 }
 
-proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 : unmanaged KDNode) {
+proc TreeAccumulate(hh : borrowed UniformBins, p1, p2 : borrowed Particle3D, node1, node2 : unmanaged KDNode) {
   // Compute the distance between node1 and node2
   var rr = sqrt (+ reduce(node1.xcen - node2.xcen)**2);
   var rmin = rr - (node1.rcell+node2.rcell);
@@ -271,7 +271,7 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 : unmana
   
 
 // The basic pair counter
-proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scale : real) {
+proc smuAccumulate(hh : borrowed UniformBins, p1,p2 : borrowed Particle3D, d1,d2 : domain(1), scale : real) {
   for ii in d1 { // Loop over first set of particles
    
     var x1,y1,z1,w1,r2 : real;
@@ -301,10 +301,10 @@ proc doPairs() {
 
   // Read in the file
   tt.clear(); tt.start();
-  var pp1, pp2 : Particle3D;
+  var pp1, pp2 : unmanaged Particle3D;
   if isPerf {
-    pp1 = new Particle3D(nParticles, true);
-    pp2 = new Particle3D(nParticles, true);
+    pp1 = new unmanaged Particle3D(nParticles, true);
+    pp2 = new unmanaged Particle3D(nParticles, true);
   } else {
     pp1 = readFile(fn1);
     pp2 = readFile(fn2);
@@ -336,7 +336,7 @@ proc doPairs() {
   
 
   // Set up the histogram
-  var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
+  var hh = new unmanaged UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
 
   // Do the paircounts with a tree
   hh.reset();

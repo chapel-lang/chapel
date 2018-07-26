@@ -1,5 +1,5 @@
 var watDom: domain(string);
-var wat: [watDom] WAT;
+var wat: [watDom] unmanaged WAT;
 
 class WAT { }
 
@@ -8,5 +8,5 @@ class R {
 }
 
 class C {
-  proc this(idx: int):R { return new R(); }
+  proc this(idx: int):unmanaged R { return new unmanaged R(); }
 }
