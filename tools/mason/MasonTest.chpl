@@ -202,7 +202,7 @@ private proc getDependencyString(sourceList: [?d] (string, string, string),
   return compopts;
 }
 
-private proc getTests(lock: Toml, projectHome: string) {
+private proc getTests(lock: borrowed Toml, projectHome: string) {
   var testNames: [1..0] string;
   const testPath = joinPath(projectHome, "test");
 

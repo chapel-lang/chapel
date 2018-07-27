@@ -85,7 +85,7 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
 
 
 /* Writes out the lock file */
-proc genLock(lock: Toml, lf: string) {
+proc genLock(lock: borrowed Toml, lf: string) {
   const lockFile = open(lf, iomode.cw);
   const tomlWriter = lockFile.writer();
   tomlWriter.writeln(lock);
@@ -152,7 +152,7 @@ proc updateRegistry(tf: string, args : [] string) {
 
 private const maxVersion = new VersionInfo(max(int), max(int), max(int));
 
-proc parseChplVersion(brick:Toml) {
+proc parseChplVersion(brick:borrowed Toml) {
   use Regexp;
 
   if brick.pathExists("chplVersion") == false {
@@ -219,7 +219,7 @@ proc parseChplVersion(brick:Toml) {
   return (low, hi);
 }
 
-proc verifyChapelVersion(brick:Toml) {
+proc verifyChapelVersion(brick:borrowed Toml) {
   const tupInfo = getChapelVersionInfo();
   const current = new VersionInfo(tupInfo(1), tupInfo(2), tupInfo(3));
   var low, hi : VersionInfo;
@@ -241,7 +241,7 @@ proc prettyVersionRange(low, hi) {
     return low.str() + ".." + hi.str();
 }
 
-proc chplVersionError(brick:Toml) {
+proc chplVersionError(brick:borrowed Toml) {
   const info = verifyChapelVersion(brick);
   if info(1) == false {
     const low  = info(2);
@@ -357,7 +357,7 @@ private proc createDepTrees(depTree: unmanaged Toml, deps: [?d] unmanaged Toml, 
    - differing major versions are not allowed
    - Always newest minor and patch
    - in accordance with semantic versioning  */
-private proc IVRS(A: Toml, B: Toml) {
+private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
   const name = A["name"].s;
   const (okA, Alo, Ahi) = verifyChapelVersion(A);
   const (okB, Blo, Bhi) = verifyChapelVersion(B);
