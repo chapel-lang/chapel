@@ -38,8 +38,6 @@ writeln("Checking 32-bit RNG seq 1");
     if verbose then writef("%xu\n", got);
     assert( got == expect32_1[i] );
   }
-
-  delete rs;
 }
 
 {
@@ -66,8 +64,6 @@ writeln("Checking 32-bit RNG seq 1");
     if verbose then writef("%xu\n", got);
     assert( got:uint(32) == expect32_1[i] );
   }
-
-  delete rs;
 }
 
 
@@ -99,8 +95,6 @@ writeln("Checking 32-bit RNG seq 1");
     if verbose then writef("%xu\n", got);
     assert( got == expect32_1[i] >> 24 );
   }
-
-  delete rs;
 }
 
 // check 16 bit version
@@ -132,8 +126,6 @@ writeln("Checking 32-bit RNG seq 1");
     if verbose then writef("%xu\n", got);
     assert( got == expect32_1[i] >> 16 );
   }
-
-  delete rs;
 }
 
 writeln("Checking 2x 32-bit RNG seq 1 seq 2");
@@ -166,8 +158,6 @@ writeln("Checking 2x 32-bit RNG seq 1 seq 2");
     if verbose then writef("%xu\n", got);
     assert( got == (expect32_1[i]:uint(64) << 32) | expect32_2[i]:uint(64) );
   }
-
-  delete rs;
 }
 
 //writeln("Checking real(32)");
@@ -204,8 +194,6 @@ writeln("Checking 2x 32-bit RNG seq 1 seq 2");
     if verbose then writef("%n\n", got);
     assert( got == expect[i] );
   }
-
-  delete rs;
 }*/
 
 writeln("Checking real(64)");
