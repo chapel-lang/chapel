@@ -3,6 +3,7 @@ use Time;
 use LayoutCS;
 use BlockDist;
 use DistributedBag;
+use CommDiagnostics;
 
 config param enableRuntimeDebugging = true;
 config const debugAll : bool = false;
@@ -11,6 +12,9 @@ config const debugTopoTasking = debugAll || debugTopo;
 config const debugCreateSparseUTDomain = debugAll;
 config const debugPermute = debugAll;
 config const debugWorkQueue = debugAll;
+config const debugLock = debugAll;
+config const debugSyncLock = debugLock;
+config const debugAtomicLock = debugLock;
 
 config param useDimIter = true;
 config param useDimIterRow = useDimIter; // not currently supported on master
@@ -20,7 +24,7 @@ config param useDimIterDistributed = false; //SparseBlockDom.dimIter not support
 config param useDimIterRowDistributed = useDimIterDistributed;
 config param useDimIterColDistributed = useDimIterDistributed;
 
-record Lock {
+record SyncLock {
   var lock$ : sync bool;
 
   proc init(){
@@ -29,11 +33,15 @@ record Lock {
   }
 
   proc lock(){
+    if debugSyncLock then writeln("Locking");
     lock$.readFE();
+    if debugSyncLock then writeln("Locked");
   }
 
   proc unlock(){
+    if enableRuntimeDebugging && debugSyncLock then writeln("Unlocking");
     lock$.writeEF(true);
+    if enableRuntimeDebugging && debugSyncLock then writeln("Unlocked");
   }
 
   proc forceUnlock(){
@@ -41,86 +49,239 @@ record Lock {
   }
 }
 
-class DistributedWorkQueue {
+record AtomicLock {
+  var lock$: atomic bool;
+
+  proc init(){
+    this.complete();
+    lock$.clear();
+  }
+
+  proc lock(){
+    while lock$.testAndSet() do chpl_task_yield();
+  }
+
+  proc unlock(){
+    lock$.clear();
+  }
+}
+
+class Vector {
   type eltType;
-  var localesDomain : domain(1) = {1..0};
-  var locales : [localesDomain] locale;
-  var queue : DistBag(eltType);
-  var waitForWork : atomic bool;
+  var listDomain : domain(1);
+  var listArray : [listDomain] eltType;
+  var size : int;
+  var factor : int;
 
-  proc init( type eltType, targetLocales : [] locale ){
+  proc init( type eltType, factor : int = 2, initialCapacity = 10 ){
     this.eltType = eltType;
+    assert( factor > 1, "Factor must be > 1");
+    this.listDomain = { 1..#initialCapacity };
+    this.size = 0;
+    this.factor = factor;
+  }
 
-    this.localesDomain = {1..#targetLocales.domain.size};
-    this.locales = reshape( targetLocales, this.localesDomain );
-    this.queue = new DistBag( eltType, targetLocales=this.locales );
+  proc init( that : Vector(?eltType) ){
+    this.eltType = eltType;
+    this.listDomain = that.listDomain;
+    this.listArray = that.listArray;
+    this.size = that.size;
+    this.factor = that.factor;
+  }
+
+  proc push_back( value : eltType ){
+    if this.size == this.listDomain.size {
+      this.listDomain = {1..#( this.factor * this.listDomain.size )};
+    }
+    this.listArray[size+1] = value;
+    this.size += 1;
+  }
+
+  proc clear( ){
+    this.size = 0;
+  }
+
+  proc compact(){
+    this.listDomain = {1..#this.size};
+  }
+}
+
+class LocalDistributedWorkQueue {
+  type eltType;
+  type lockType;
+
+  const localeDomain : domain(1);
+  const localeArray : [localeDomain] locale;
+
+  var queue : Vector(eltType);
+  var lock : lockType;
+  var terminated : atomic bool;
+  const terminatedRetries : int;
+
+  var pid = -1;
+
+  proc init( type eltType, type lockType, localeArray : [?localeDomain] locale, retries : int = 5 ){
+    this.eltType = eltType;
+    this.lockType = lockType;
+    this.localeDomain = {0..#localeDomain.size};
+    this.localeArray = reshape( localeArray, {0..#localeDomain.size} );
+    this.queue = new Vector(eltType);
+    this.terminatedRetries = retries;
 
     this.complete();
 
-    this.waitForWork.write(true);
+    terminated.write(false);
+    this.pid = _newPrivatizedClass(this);
+  }
+
+  proc init( that : LocalDistributedWorkQueue(?eltType, ?lockType), pid : int) {
+    this.eltType = eltType;
+    this.lockType = lockType;
+    this.localeDomain = that.localeDomain;
+    this.localeArray = that.localeArray;
+    this.queue = new Vector( that.queue );
+    this.terminatedRetries = that.terminatedRetries;
+    this.pid = pid;
+
+    this.complete();
+
+    this.terminated.write(false);
   }
 
   proc deinit(){ }
 
-  // This is not the ideal interface. Would prefer owner to be derived
-  // from an internal oracle passed in at init(). This is currently not posible
-  // due to limitations in SparseBlockDom (namely, it cannot be assigned).
+  proc dsiGetPrivatizeData() {
+    return pid;
+  }
+
+  proc dsiPrivatize(pid) {
+    return new LocalDistributedWorkQueue(this, pid);
+  }
+
+  inline proc getPrivatizedThis {
+    return chpl_getPrivatizedCopy(this.type, this.pid);
+  }
+
   proc add( value : eltType, owner : locale ) {
     on owner {
-      if enableRuntimeDebugging && debugWorkQueue then writeln( "add ", (owner, value) );
-      this.queue.add( value );
+      var instance = getPrivatizedThis;
+      instance.lock.lock();
+      instance.queue.push_back( value );
+      instance.lock.unlock();
     }
   }
 
-  proc remove( ) : eltType {
-    var (hasValue, value) = this.queue.remove();
-    if !hasValue then halt("Queue has no elements.");
-    return value;
-  }
-
-  proc size : int {
-    return this.queue.getSize();
-  }
-
-  proc clear(){
-    // remove() returns ( poppedElement? : bool , value if poppedElement else ??? : eltType )
-    while this.queue.remove()[1] do /* nothing */ ;
-  }
-
-  iter these() : eltType {
-    while this.waitForWork.read() || this.queue.size > 0 {
-      var (hasWork, work) = this.queue.remove();
-      if hasWork then yield work;
-      else {
-        if enableRuntimeDebugging && debugWorkQueue then writeln("waiting");
-        chpl_task_yield();
-      }
+  pragma "fn returns iterator"
+  inline proc these(param tag ) where (tag == iterKind.standalone) {
+    var maxTasks : [0..#Locales.size] int;
+    forall onLocale in Locales {
+      maxTasks[ onLocale.id ] = onLocale.maxTaskPar;
     }
+    return this.these(tag=tag, maxTasks);
   }
 
-  iter these( param tag : iterKind ) : eltType
+  iter these(param tag : iterKind, maxTasksPerLocale : [] int) : eltType
   where tag == iterKind.standalone {
-    coforall loc in this.locales {
-      on loc {
-        coforall taskID in 1..#here.maxTaskPar {
-          while this.waitForWork.read() || this.queue.size > 0 {
-            // Collection.remove() returns (hasWork, work) pairs
-            var (hasWork, work) = queue.remove();
-            if hasWork {
-              if enableRuntimeDebugging && debugWorkQueue then writeln( "Yeild ", (loc, taskID, work));
-              yield work;
-            } else {
-              if enableRuntimeDebugging && debugWorkQueue then writeln( "waiting" );
-              chpl_task_yield();
-            }
+    coforall onLocale in localeArray do on onLocale {
+
+      const maxTasks = maxTasksPerLocale[onLocale.id];
+      // get local copy
+      var instance = getPrivatizedThis;
+
+      // reset termination
+      instance.terminated.write(false);
+
+      var continueLooping = !this.terminated.read();
+      var countdown = this.terminatedRetries;
+
+      // main yield loop.
+      while continueLooping {
+        var terminated = this.terminated.read();
+        continueLooping = !terminated || countdown > 0;
+        if terminated then countdown -= 1;
+
+        var unlockedQueue = new Vector(eltType);
+        // get current chunk of work by quickly swaping out the unlocked queue
+        // with the instance queue
+        instance.lock.lock();
+        unlockedQueue <=> instance.queue;
+        instance.lock.unlock();
+
+        // yield all in local chunk
+        if unlockedQueue.size > 0 {
+          unlockedQueue.compact();
+          forall work in unlockedQueue.listArray._value.these( tasksPerLocale = maxTasks ) {
+            yield work;
           }
+        } else  {
+          chpl_task_yield();
         }
+
+        delete unlockedQueue;
       }
+
+    }
+
+    // clear terminated flag
+    coforall onLocale in localeArray do on onLocale {
+      var instance = getPrivatizedThis;
+      instance.terminated.write(false);
     }
   }
 
-  proc terminateWorkLoop(){
-    this.waitForWork.write(false);
+  proc terminate(){
+    coforall onLocale in this.localeArray {
+      on onLocale {
+        var instance = getPrivatizedThis;
+        instance.terminated.write(true);
+      }
+    }
+  }
+}
+
+class DistributedWorkQueue {
+  type eltType;
+  type lockType;
+
+  var localesDomain : domain(1) = {1..0};
+  var locales : [localesDomain] locale;
+
+  var pid = -1;
+
+  pragma "no doc"
+  inline proc _value {
+    if pid == -1 then halt("DistributedWorkQueue is uninitialized.");
+    return chpl_getPrivatizedCopy(LocalDistributedWorkQueue(eltType,lockType), pid);
+  }
+
+  forwarding _value;
+
+  proc init( type eltType, targetLocales : [] locale, type lockType = AtomicLock ){
+    this.eltType = eltType;
+    this.lockType = lockType;
+
+    this.localesDomain = {0..#targetLocales.domain.size};
+
+    this.complete();
+    this.pid = (new LocalDistributedWorkQueue(eltType, lockType, targetLocales)).pid;
+  }
+
+  proc deinit(){ }
+
+  pragma "fn returns iterator"
+  inline proc these(param tag ) where (tag == iterKind.standalone)
+    && __primitive("method call resolves", _value, "these", tag=tag){
+    var maxTasks : [0..#Locales.size] int;
+    forall onLocale in Locales {
+      maxTasks[ onLocale.id ] = onLocale.maxTaskPar;
+    }
+    return _value.these(tag=tag, maxTasks);
+  }
+
+  pragma "fn returns iterator"
+  inline proc these(param tag, maxTasksPerLocale : [?d] int ) where (tag == iterKind.standalone)
+    && __primitive("method call resolves", _value, "these", tag=tag){
+    return _value.these(tag=tag, maxTasksPerLocale);
   }
 }
 
@@ -350,7 +511,7 @@ where D.rank == 2
     // if localDiagonal == numDiagonals - 1 (i.e. diagonalPosition == numDiagonals)
     if localDiagonal == numDiagonals - 1 {
       if enableRuntimeDebugging && debugTopo then writeln("Terminating Loop");
-      workQueue.terminateWorkLoop();
+      workQueue.terminate();
     }
 
     if enableRuntimeDebugging && debugTopo then writeln( "Swaping ", (swapRow,swapColumn), " -> ", (rowMap[swapRow], columnMap[swapColumn]) );
@@ -408,7 +569,7 @@ where D.rank == 2
   var rowSum : [D.dim(1)] atomic int;
   var rowCount : [D.dim(1)] atomic int;
   var workQueue : list(D.idxType);
-  var sharedLock = new Lock();
+  var sharedLock = new AtomicLock();
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
