@@ -553,7 +553,7 @@ OPTIONS
     variable, because such a loop condition is likely unintended. 'While'
     loops with 'param' conditions do not trigger this warning.
 
-**-[no-]warn-constructors**
+**--[no-]warn-constructors**
 
     Enable [disable] warnings for constructors
 
