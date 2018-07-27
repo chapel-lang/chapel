@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "getMakefile.h"
+#include "lib/getMakefile.h"
 
 extern void chpl_library_init(int argc, char* argv[]);
 extern void chpl_library_finalize(void);

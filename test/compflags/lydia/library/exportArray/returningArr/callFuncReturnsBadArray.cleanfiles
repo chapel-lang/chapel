@@ -1,2 +1,2 @@
 libreturnBadArray.a
-returnBadArray.h
+lib/returnBadArray.h

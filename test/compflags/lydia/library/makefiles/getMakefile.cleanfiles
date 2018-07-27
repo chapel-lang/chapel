@@ -1,4 +1,4 @@
-getMakefile.h
+lib/getMakefile.h
 libgetMakefile.a
 mytest
 lib/Makefile.getMakefile

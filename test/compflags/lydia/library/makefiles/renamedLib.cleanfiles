@@ -1,4 +1,4 @@
-headerName.h
+lib/headerName.h
 myLib.a
 renamedTest
 lib/Makefile.myLib

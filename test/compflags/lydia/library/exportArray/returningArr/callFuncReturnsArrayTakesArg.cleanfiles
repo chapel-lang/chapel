@@ -1,2 +1,2 @@
 libreturnArrayTakesArg.a
-returnArrayTakesArg.h
+lib/returnArrayTakesArg.h

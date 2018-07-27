@@ -1,2 +1,2 @@
 libexportFuncWithExplicitVoidRet.a
-exportFuncWithExplicitVoidRet.h
+lib/exportFuncWithExplicitVoidRet.h
