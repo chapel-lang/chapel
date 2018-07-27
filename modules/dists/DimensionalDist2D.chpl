@@ -385,10 +385,11 @@ class LocDimensionalArr {
 
 // initializer
 // gotta list all the things we let the user set
+pragma "no borrow convert"
 proc DimensionalDist2D.init(
   targetLocales: [] locale,
-  di1,
-  di2,
+  in di1,
+  in di2,
   name: string = "dimensional distribution",
   type idxType = int,
   dataParTasksPerLocale: int      = getDataParTasksPerLocale(),
@@ -410,7 +411,7 @@ proc DimensionalDist2D.init(
 
   checkInvariants();
 
-  _passLocalLocIDsDist(di1, true, di2, true,
+  _passLocalLocIDsDist(this.di1, true, this.di2, true,
                      this.targetLocales, true, this.targetLocales.domain.low);
 }
 
@@ -421,9 +422,10 @@ proc DimensionalDist2D.init(
 // using 'Locales' for targetLocales by default.
 // Recall that di1 and di2 determine the number of locales in each dimension.
 //
+pragma "no borrow convert"
 proc newDimensionalDist2D(
-  di1,
-  di2,
+  in di1,
+  in di2,
   targetLocales: [] locale = Locales,
   name: string = "dimensional distribution",
   type idxType = int,
