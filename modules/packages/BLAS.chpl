@@ -175,26 +175,24 @@ in memory.
 */
 module BLAS {
 
-    // TODO: Document
-    config param blasHeader = "";
+  // TODO: Document
+  config param blasHeader = '';
 
-    // TODO: Would this be better as an enum?
-    config param blasImpl = "blas",
+  // TODO: Would this be better as an enum?
+  config param blasImpl = 'blas';
 
-    // Deprecated
-    pragma "no doc"
-    config param isBLAS_MKL = false;
+  /* Deprecated */
+  config param isBLAS_MKL = false;
 
-    if isBLAS_MKL {
-      compilerWarning('"isBLAS_MKL" flag is deprecated.');
-      compilerWarning('Use "blasImpl" instead: --set blasImpl=\\"mkl\\"');
-    }
+  if isBLAS_MKL {
+    compilerWarning('"isBLAS_MKL" flag is deprecated.');
+    compilerWarning('Use "blasImpl" instead: --set blasImpl=\\"mkl\\"');
+  }
 
-    param header = if blasHeader == "" then
-                     if blasImpl == "mkl" || isBLAS_MKL then 'mkl_cblas.h'
-                     else 'cblas.h'
-                   else blasHeader;
-    writeln(header);
+  param header = if blasHeader == '' then
+                   if blasImpl == 'mkl' || isBLAS_MKL then 'mkl_cblas.h'
+                   else 'cblas.h'
+                 else blasHeader;
 
   use C_BLAS;
 
