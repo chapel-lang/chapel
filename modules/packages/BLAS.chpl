@@ -63,6 +63,8 @@ BLAS Implementations:
 
     * The compilation command above likely requires the additional flag: ``-latlas``
 
+.. coment:: TODO update usage of isBLAS_MKL
+
   * **MKL**
 
     * Compile with :param:`isBLAS_MKL` if using MKL BLAS.
@@ -173,16 +175,34 @@ in memory.
 */
 module BLAS {
 
-  /*
-    Tells the BLAS module to look for ``mkl_cblas.h`` instead of ``cblas.h``.
-    Set this to `true` if you are using the Intel MKL BLAS implementation.
-  */
+    // TODO: Document
+    config param blasHeader = "";
+
+    // TODO: Would this be better as an enum?
+    config param blasImpl = "blas",
+
+    // Deprecated
+    pragma "no doc"
+    config param isBLAS_MKL = false;
+
+    if isBLAS_MKL {
+      compilerWarning('"isBLAS_MKL" flag is deprecated.');
+      compilerWarning('Use "blasImpl" instead: --set blasImpl=\\"mkl\\"');
+    }
+
+    param header = if blasHeader == "" then
+                     if blasImpl == "mkl" || isBLAS_MKL then 'mkl_cblas.h'
+                     else 'cblas.h'
+                   else blasHeader;
+    writeln(header);
+
   use C_BLAS;
 
   use SysCTypes;
 
   /* Return `true` if type is supported by BLAS */
-  proc isBLASType(type t) param: bool{
+  proc isBLASType(type t) param: bool {
+    require header;
     return isRealType(t) || isComplexType(t);
   }
 
@@ -215,6 +235,7 @@ module BLAS {
     order : Order = Order.Row)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
+    require header;
     // Types
     type eltType = A.eltType;
 
@@ -279,6 +300,7 @@ module BLAS {
     order : Order = Order.Row)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
+    require header;
     // Types
     type eltType = A.eltType;
 
@@ -340,6 +362,7 @@ module BLAS {
     order : Order = Order.Row)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
+    require header;
     // Types
     type eltType = A.eltType;
 
@@ -392,6 +415,7 @@ module BLAS {
     order : Order = Order.Row)
     where (Adom.rank == 2) && (Cdom.rank==2)
   {
+    require header;
     // Types
     type eltType = A.eltType;
 
@@ -455,6 +479,7 @@ module BLAS {
     order : Order = Order.Row)
     where (Adom.rank == 2) && (Cdom.rank==2)
   {
+    require header;
     // Types
     type eltType = A.eltType;
 
@@ -509,6 +534,7 @@ module BLAS {
     order : Order = Order.Row)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
+    require header;
     // Types
     type eltType = A.eltType;
 
@@ -573,6 +599,7 @@ module BLAS {
     order : Order = Order.Row)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
+    require header;
     // Types
     type eltType = A.eltType;
 
@@ -625,6 +652,7 @@ module BLAS {
     order : Order = Order.Row)
     throws where (Adom.rank == 2) && (Bdom.rank==2)
   {
+    require header;
 
 
     // Determine sizes
@@ -682,6 +710,7 @@ module BLAS {
     order : Order = Order.Row)
     throws where (Adom.rank == 2) && (Bdom.rank==2)
   {
+    require header;
     // Types
     type eltType = A.eltType;
 
@@ -744,6 +773,7 @@ module BLAS {
             order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (Xdom.rank==1) && (Ydom.rank == 1)
   {
+    require header;
     // Determine sizes
     var m = Ydom.dim(1).size : c_int,
         n = Xdom.dim(1).size : c_int;
@@ -791,6 +821,7 @@ module BLAS {
             incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (xdom.rank == 1) && (ydom.rank == 1)
   {
+    require header;
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
@@ -835,6 +866,7 @@ module BLAS {
            order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
            where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
+    require header;
 
     // Determine sizes
     var m = Xdom.dim(1).size : c_int,
@@ -868,6 +900,7 @@ module BLAS {
             order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
+    require header;
     var m = Xdom.dim(1).size : c_int,
         n = Ydom.dim(1).size : c_int;
 
@@ -899,6 +932,7 @@ module BLAS {
             order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
+    require header;
     var m = Xdom.dim(1).size : c_int,
         n = Ydom.dim(1).size : c_int;
 
@@ -935,6 +969,7 @@ module BLAS {
             uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
@@ -967,7 +1002,8 @@ module BLAS {
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
             throws where (Adom.rank == 2) && (vDom.rank == 1)
-    {
+  {
+    require header;
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
@@ -1001,6 +1037,7 @@ module BLAS {
             uplo : Uplo = Uplo.Upper, incx : c_int = 1)
             throws where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
@@ -1035,7 +1072,8 @@ module BLAS {
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
             throws where (Adom.rank == 2) && (vDom.rank == 1)
-    {
+  {
+    require header;
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
@@ -1076,6 +1114,7 @@ module BLAS {
             incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
@@ -1108,6 +1147,7 @@ module BLAS {
             incx : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
@@ -1142,7 +1182,8 @@ module BLAS {
             uplo : Uplo = Uplo.Upper,
             incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
-    {
+  {
+    require header;
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
@@ -1177,6 +1218,7 @@ module BLAS {
             incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
@@ -1214,6 +1256,7 @@ module BLAS {
             incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
@@ -1245,6 +1288,7 @@ module BLAS {
            incx : c_int = 1)
            where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
 
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
@@ -1277,6 +1321,7 @@ module BLAS {
             incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
@@ -1306,6 +1351,7 @@ module BLAS {
             incx : c_int = 1, incy : c_int = 1)
             throws where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
@@ -1340,6 +1386,7 @@ module BLAS {
            incx : c_int = 1)
            throws where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
 
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
@@ -1375,6 +1422,7 @@ module BLAS {
             incx : c_int = 1, incy : c_int = 1)
             throws where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
 
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
@@ -1417,6 +1465,7 @@ module BLAS {
             incx : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
@@ -1462,6 +1511,7 @@ module BLAS {
             incx : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
 
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
@@ -1512,6 +1562,7 @@ module BLAS {
             incx : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
 
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
@@ -1552,6 +1603,7 @@ module BLAS {
             incx : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
 
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
@@ -1591,6 +1643,7 @@ module BLAS {
             incx : c_int = 1)
             throws where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
 
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
@@ -1635,6 +1688,7 @@ module BLAS {
             incx : c_int = 1)
             throws where (Adom.rank == 2) && (vDom.rank == 1)
   {
+    require header;
 
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
@@ -1698,7 +1752,8 @@ module BLAS {
         else z = 1
 
   */
-  proc rotg(ref a : ?eltType, ref b : eltType, ref c : eltType, ref s : eltType){
+  proc rotg(ref a : ?eltType, ref b : eltType, ref c : eltType, ref s : eltType) {
+    require header;
     select eltType {
       when real(32) do{
         cblas_srotg (a, b, c, s);
@@ -1756,6 +1811,7 @@ module BLAS {
 
   */
   proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: []eltType) throws {
+    require header;
 
     if P.size != 5 then
       throw new IllegalArgumentError("P", "must consist of 5 elements, passed to rotmg");
@@ -1798,7 +1854,9 @@ module BLAS {
 
   */
   proc rot(X: [?D] ?eltType, Y: [D] eltType, c: eltType, s: eltType,  incY: c_int = 1, incX: c_int = 1)
-  where D.rank == 1 {
+    where D.rank == 1
+  {
+    require header;
 
     const N = D.size: c_int;
 
@@ -1854,7 +1912,10 @@ module BLAS {
       - ``Y``: Vector with updated elements
 
   */
-  proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX: c_int = 1) throws where D.rank == 1 {
+  proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX: c_int = 1) throws
+    where D.rank == 1
+  {
+    require header;
 
     if P.size != 5 then
       throw new IllegalArgumentError("P", "must consist of 5 elements, passed to rotm");
@@ -1894,7 +1955,9 @@ module BLAS {
 
   */
   proc swap(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
-   where D.rank == 1 {
+    where D.rank == 1
+  {
+    require header;
 
     const N = D.size: c_int;
 
@@ -1935,7 +1998,9 @@ module BLAS {
 
   */
   proc scal(X: [?D]?eltType, ref alpha:eltType, incX: c_int = 1)
-  where D.rank == 1 {
+    where D.rank == 1
+  {
+    require header;
 
     const N = D.size: c_int;
 
@@ -1978,7 +2043,9 @@ module BLAS {
 
    */
   proc copy(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
-    where D.rank == 1 {
+    where D.rank == 1
+  {
+    require header;
 
     const N = D.size: c_int;
 
@@ -2023,7 +2090,9 @@ module BLAS {
   */
 
   proc axpy(X: [?D]?eltType, Y: [D]eltType, ref alpha:eltType, incY: c_int = 1, incX: c_int = 1)
-   where D.rank == 1 {
+    where D.rank == 1
+  {
+    require header;
 
     const N = D.size: c_int;
     select eltType {
@@ -2062,7 +2131,9 @@ module BLAS {
       :returns: Scalar value of dot product
   */
   proc dot(X: [?xD]?eltType,  Y: [?yD] eltType, incY: c_int = 1, incX: c_int = 1) : eltType
-  where xD.rank == 1 && yD.rank == 1 {
+    where xD.rank == 1 && yD.rank == 1
+  {
+    require header;
 
     const N = xD.size: c_int;
 
@@ -2099,7 +2170,9 @@ module BLAS {
 
   */
   proc dotu(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
-  where D.rank == 1 {
+    where D.rank == 1
+  {
+    require header;
 
     const N = D.size: c_int;
 
@@ -2142,6 +2215,7 @@ module BLAS {
   */
   proc dotc(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
    where D.rank == 1 {
+    require header;
 
     const N = D.size: c_int;
 
@@ -2182,6 +2256,7 @@ module BLAS {
   */
   proc dsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(64)
    where D.rank == 1 {
+    require header;
 
     const N = D.size: c_int;
     return cblas_dsdot (N, X, incX, Y, incY);
@@ -2209,6 +2284,7 @@ module BLAS {
   */
   proc sdsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(32)
    where D.rank == 1 {
+    require header;
 
     var alpha = 0: real(32);
     const N = D.size: c_int;
@@ -2232,7 +2308,9 @@ module BLAS {
 
   */
   proc nrm2(X: [?D]?eltType, incX: c_int = 1)
-  where D.rank == 1 {
+    where D.rank == 1
+  {
+    require header;
 
     const N = D.size: c_int;
 
@@ -2271,7 +2349,9 @@ module BLAS {
 
   */
   proc asum(X: [?D]?eltType, incX: c_int = 1)
-  where D.rank == 1 {
+    where D.rank == 1
+  {
+    require header;
 
     const N = D.size: c_int;
 
@@ -2308,7 +2388,9 @@ module BLAS {
 
   */
   proc amax(X: [?D]?eltType, incX: c_int = 1)
-  where D.rank == 1 {
+    where D.rank == 1 {
+  {
+    require header;
 
     const N = D.size: c_int;
 
@@ -2339,6 +2421,7 @@ module BLAS {
 
   pragma "no doc"
   inline proc getLeadingDim(A: [?Adom], order : Order) : c_int {
+    require header;
     if order==Order.Row then
       return Adom.dim(2).size : c_int;
     else
@@ -2347,8 +2430,8 @@ module BLAS {
 
   pragma "no doc"
   inline proc getLeadingDim(Arr: [], order : Order) : c_int
-  where chpl__isArrayView(Arr)
-  {
+    where chpl__isArrayView(Arr)
+  { require header;
     const dims = chpl__getActualArray(Arr).dom.dsiDims();
     if order==Order.Row then
       return dims(2).size : c_int;
@@ -2364,6 +2447,12 @@ module BLAS {
     This submodule wraps the netlib C_BLAS implementation, providing access to
     all of C_BLAS calls.
 
+    Direct usage of this module requires an explicit ``require`` statement of
+    the BLAS header file, for example::
+
+      use C_BLAS;
+      require "cblas.h";
+
     Arrays are passed in directly, while pointers to scalar
     quantities (including complex numbers) are passed by reference (removing
     the need to wrap these with ``c_ptrTo``). As with BLAS calls in C,
@@ -2376,27 +2465,6 @@ module BLAS {
 
   */
   module C_BLAS {
-
-    config param blasHeader = "",
-                 // TODO: Would this be better as an enum?
-                 blasImpl = "blas",
-                 isBLAS_MKL = false;
-
-    if isBLAS_MKL {
-      compilerWarning('"isBLAS_MKL" flag is deprecated.');
-      compilerWarning('Use "blasImpl" instead: --set blasImpl=\\"mkl\\"');
-    }
-
-    if blasHeader == "" {
-      if blasImpl == "mkl" || isBLAS_MKL {
-        require "mkl_cblas.h";
-      } else {
-        require "cblas.h";
-      }
-
-    } else {
-      require blasHeader;
-    }
 
     extern type CBLAS_INDEX = c_int;
 
@@ -2420,19 +2488,6 @@ module BLAS {
     extern const CblasLeft : CBLAS_SIDE;
     extern const CblasRight : CBLAS_SIDE;
 
-    {
-      assert(Order.Row:c_int == CblasRowMajor,"Enum value for Order.Row does not agree with CblasRowMajor");
-      assert(Order.Col:c_int == CblasColMajor,"Enum value for Order.Col does not agree with CblasColMajor");
-      assert(Op.N:c_int == CblasNoTrans,"Enum value for Op.N does not agree with CblasNoTrans");
-      assert(Op.T:c_int == CblasTrans,"Enum value for Op.T does not agree with CblasTrans");
-      assert(Op.H:c_int == CblasConjTrans,"Enum value for Op.H does not agree with CblasConjTrans");
-      assert(Uplo.Upper:c_int == CblasUpper,"Enum value for Uplo.Upper does not agree with CblasUpper");
-      assert(Uplo.Lower:c_int == CblasLower,"Enum value for Uplo.Lower does not agree with CblasLower");
-      assert(Diag.NonUnit:c_int == CblasNonUnit,"Enum value for Diag.NonUnit does not agree with CblasNonUnit");
-      assert(Diag.Unit:c_int == CblasUnit,"Enum value for Diag.Unit does not agree with CblasUnit");
-      assert(Side.Left:c_int == CblasLeft,"Enum value for Side.Left does not agree with CblasLeft");
-      assert(Side.Right:c_int == CblasRight,"Enum value for Side.Right does not agree with CblasRight");
-    }
 
     extern proc cblas_sdsdot (N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int): c_float;
     extern proc cblas_dsdot (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int): c_double;
@@ -2578,6 +2633,21 @@ module BLAS {
     extern proc cblas_zher2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, beta: c_double, C: [], ldc: c_int);
 
   }
+
+  // These checks are useful, but should be opt-in via a param flag
+  //{
+  //  assert(Order.Row:c_int == CblasRowMajor,"Enum value for Order.Row does not agree with CblasRowMajor");
+  //  assert(Order.Col:c_int == CblasColMajor,"Enum value for Order.Col does not agree with CblasColMajor");
+  //  assert(Op.N:c_int == CblasNoTrans,"Enum value for Op.N does not agree with CblasNoTrans");
+  //  assert(Op.T:c_int == CblasTrans,"Enum value for Op.T does not agree with CblasTrans");
+  //  assert(Op.H:c_int == CblasConjTrans,"Enum value for Op.H does not agree with CblasConjTrans");
+  //  assert(Uplo.Upper:c_int == CblasUpper,"Enum value for Uplo.Upper does not agree with CblasUpper");
+  //  assert(Uplo.Lower:c_int == CblasLower,"Enum value for Uplo.Lower does not agree with CblasLower");
+  //  assert(Diag.NonUnit:c_int == CblasNonUnit,"Enum value for Diag.NonUnit does not agree with CblasNonUnit");
+  //  assert(Diag.Unit:c_int == CblasUnit,"Enum value for Diag.Unit does not agree with CblasUnit");
+  //  assert(Side.Left:c_int == CblasLeft,"Enum value for Side.Left does not agree with CblasLeft");
+  //  assert(Side.Right:c_int == CblasRight,"Enum value for Side.Right does not agree with CblasRight");
+  //}
 
 
 }
