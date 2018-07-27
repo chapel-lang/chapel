@@ -91,8 +91,8 @@ foo.printFields();
 // A class type includes a memory management strategy. The currently supported
 // strategies are ``owned``, ``shared``, ``unmanaged``, and ``borrowed``.
 var unm: unmanaged C = new unmanaged C();
-// 'unm' refers to a manually managed instance that needs to be ``delete``d
-//  at some point
+// 'unm' refers to a manually managed instance. It needs to have ``delete``
+// called on it to free the memory.
 delete unm;
 
 var own: owned C = new owned C(1, 10);
