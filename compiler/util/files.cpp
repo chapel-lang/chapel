@@ -642,10 +642,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   openCFile(&makefile, "Makefile");
   const char* tmpDirName = intDirName;
   const char* strippedExeFilename = stripdirectories(executableFilename);
-  const char* strippedHeadername = stripdirectories(libmodeHeadername);
   const char* exeExt = "";
   const char* tmpbin = "";
-  const char* tmpheader = "";
   std::string chplmakeallvars = "\0";
 
 
@@ -691,12 +689,6 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   // -- after linking is done.  As it turns out, this saves a
   // factor of 5 or so in time in running the test system, as opposed
   // to specifying BINNAME on the C compiler command line.
-
-  if (fLibraryCompile) {
-    fprintf(makefile.fptr, "HEADERNAME = %s%s\n\n", libmodeHeadername, ".h");
-    tmpheader = astr(tmpDirName, "/", strippedHeadername, ".h");
-    fprintf(makefile.fptr, "TMPHEADERNAME = %s\n", tmpheader);
-  }
 
   fprintf(makefile.fptr, "COMP_GEN_WARN = %i\n", ccwarnings);
   fprintf(makefile.fptr, "COMP_GEN_DEBUG = %i\n", debugCCode);

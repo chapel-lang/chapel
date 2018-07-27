@@ -25,7 +25,6 @@
 #include "beautify.h"
 #include "codegen.h"
 #include "driver.h"
-#include "files.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 
@@ -42,7 +41,7 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 
     // Name the generated header file after the executable (and assume any
     // modifications to it have already happened)
-    openCFile(&libhdrfile, libmodeHeadername, "h");
+    openLibraryHelperFile(&libhdrfile, libmodeHeadername, "h");
     // SIMPLIFYING ASSUMPTION: not handling LLVM just yet.  If were to, would
     // probably put assignment to gChplCompilationConfig here
 
@@ -71,7 +70,7 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 
       gGenInfo->cfile = save_cfile;
     }
-    closeCFile(&libhdrfile);
+    closeLibraryHelperFile(&libhdrfile);
   }
 }
 
@@ -90,11 +89,6 @@ static std::string getCompilelineOption(std::string option) {
   return res;
 }
 
-static void openLibraryHelperFile(fileinfo* fi,
-                                  const char* name,
-                                  const char* ext = NULL);
-static void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt = true);
-
 void codegen_library_makefile() {
   std::string name = "";
   int libLength = strlen("lib");
@@ -107,7 +101,6 @@ void codegen_library_makefile() {
     name = executableFilename;
   }
   fileinfo makefile;
-  // TODO: alter location to use generated library directory
   openLibraryHelperFile(&makefile, "Makefile", name.c_str());
 
   // Save the CHPL_HOME location so it can be used in the other makefile
@@ -171,7 +164,7 @@ static void ensureLibDirExists() {
   ensureDirExists(libDir, "ensuring --library-dir directory exists");
 }
 
-static void
+void
 openLibraryHelperFile(fileinfo* fi, const char* name, const char* ext) {
   if (ext)
     fi->filename = astr(name, ".", ext);

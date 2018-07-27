@@ -22,12 +22,19 @@
 
 #include <vector>
 
+#include "files.h"
+
 class FnSymbol;
 
 extern char libDir[FILENAME_MAX + 1];
 
 void codegen_library_header(std::vector<FnSymbol*> functions);
 void codegen_library_makefile();
+
+void openLibraryHelperFile(fileinfo* fi,
+                           const char* name,
+                           const char* ext = NULL);
+void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt = true);
 const char* getLibraryExtension();
 
 #endif //LIBRARY_H
