@@ -1,0 +1,32 @@
+FROM debian:stretch
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    ca-certificates \
+    curl \
+    gcc \
+    g++ \
+    perl \
+    python \
+    python-dev \
+    python-setuptools \
+    libgmp10 \
+    libgmp-dev \
+    bash \
+    make \
+    mawk \
+    file \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV CHPL_VERSION master
+ENV CHPL_HOME    /opt/chapel/$CHPL_VERSION
+ENV CHPL_GMP     system
+
+RUN mkdir -p /opt/chapel \
+    && wget -q -O - https://github.com/chapel-lang/chapel/archive/master.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
+    && make -C $CHPL_HOME \
+    && make -C $CHPL_HOME chpldoc \
+    && make -C $CHPL_HOME test-venv
+
+ENV PATH $PATH:$CHPL_HOME/bin/linux64:$CHPL_HOME/util
