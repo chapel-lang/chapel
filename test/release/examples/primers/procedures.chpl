@@ -134,7 +134,7 @@ class Circle {
 //
 proc create_circle(x = 0.0, y = 0.0, diameter = 0.0)
 {
-  var result = new unmanaged Circle();
+  var result = new owned Circle();
 
   result.radius = diameter / 2;
   result.center.x = x;
@@ -158,8 +158,6 @@ var c = create_circle(diameter=3.0,2.0);
 
 writeln(c);
 writeln();
-
-delete c;
 
 //
 // Procedures can also have arguments of indeterminate type: these are known
