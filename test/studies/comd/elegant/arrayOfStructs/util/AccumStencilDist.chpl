@@ -149,8 +149,7 @@ class LocAccumStencilArr {
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
   pragma "local field"
   var myElems: [locDom.myFluff] eltType;
-  var locRADLock: atomicbool; // This will only be accessed locally
-                              // force the use of processor atomics
+  var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
 
   var recvM, recvP : [locDom.recvDom] eltType;
   var recvMFlag, recvPFlag : atomic bool;

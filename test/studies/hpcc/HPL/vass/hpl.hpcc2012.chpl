@@ -169,9 +169,9 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   // Additional data structures for backwardSub().
   //
   type cpuAtomicElemType = // presently unused
-    if elemType == real(64) then atomic_real64
+    if elemType == real(64) then chpl__processorAtomicType(real)
     else compilerError("need to define cpuAtomicElemType");
-  type cpuAtomicCountType = atomic_int64;
+  type cpuAtomicCountType = chpl__processorAtomicType(int);
   const replPD = {0..#blkSize} dmapped new dmap(distReplicated);
 
   // for the working 'x' vector, replX, we'll reuse replK

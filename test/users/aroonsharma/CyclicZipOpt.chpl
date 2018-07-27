@@ -1016,8 +1016,7 @@ class LocCyclicZipOptArr {
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var locCyclicZipOptRAD: LocCyclicZipOptRADCache(rank, idxType); // see below for why
   var myElems: [locDom.myBlock] eltType;
-  var locRADLock: atomicbool; // This will only be accessed locally, so
-                              // force the use of processor atomics
+  var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
 
   // These function will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid

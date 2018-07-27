@@ -67,7 +67,7 @@ module ChapelReduce {
 
   pragma "ReduceScanOp"
   class ReduceScanOp {
-    var l: atomicbool; // only accessed locally
+    var l: chpl__processorAtomicType(bool); // only accessed locally
 
     proc lock() {
       var lockAttempts = 0,
