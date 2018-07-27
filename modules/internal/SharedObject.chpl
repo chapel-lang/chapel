@@ -227,7 +227,7 @@ module SharedObject {
         if p != nil && pn != nil {
           var count = pn.release();
           if count == 0 {
-            delete p;
+            delete _to_unmanaged(p);
             delete pn;
           }
         }

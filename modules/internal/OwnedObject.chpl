@@ -155,7 +155,7 @@ module OwnedObject {
     proc deinit() {
       if isClass(p) { // otherwise, let error happen on init call
         if p != nil then
-          delete p;
+          delete _to_unmanaged(p);
       }
     }
 
@@ -165,7 +165,7 @@ module OwnedObject {
      */
     proc ref clear() {
       if p != nil {
-        delete p;
+        delete _to_unmanaged(p);
         p = nil;
       }
     }
@@ -180,7 +180,7 @@ module OwnedObject {
       var oldPtr = p;
       p = newPtr;
       if oldPtr then
-        delete oldPtr;
+        delete _to_unmanaged(oldPtr);
     }
 
     /*
