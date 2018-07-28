@@ -929,7 +929,6 @@ ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent,
   specBlock(NULL),
   svInitBlock(new BlockStmt()),
   svDeinitBlock(new BlockStmt()),
-  reduceGlobalOp(NULL),
   pruneit(false)
 {
   if (intentsResolved)
