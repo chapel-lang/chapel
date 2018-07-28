@@ -2,7 +2,6 @@ use Random;
 use Time;
 use LayoutCS;
 use BlockDist;
-use DistributedBag;
 use CommDiagnostics;
 
 config param enableRuntimeDebugging = true;
@@ -616,18 +615,20 @@ where D.rank == 2
   var result = new TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
-  var numDiagonals = min( D.dim(1).size, D.dim(2).size );
+  const rows = D.dim(1);
+  const columns = D.dim(2);
+  const numDiagonals = min( rows.size, columns.size );
 
-  var rowMap : [D.dim(1)] D.idxType = [i in D.dim(1)] -1;
-  var columnMap : [D.dim(2)] D.idxType = [i in D.dim(2)] -1;
+  var rowMap : [rows] D.idxType = [i in rows] -1;
+  var columnMap : [columns] D.idxType = [i in columns] -1;
 
-  var rowSum : [D.dim(1)] int;
-  var rowCount : [D.dim(1)] int;
+  var rowSum : [rows] int;
+  var rowCount : [rows] int;
   var workQueue : list(D.idxType);
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
-  for row in D.dim(1) {
+  for row in rows {
     if enableRuntimeDebugging && debugTopo then writeln( "initializing row ", row );
     if useDimIterCol {
      // compilerWarning("iterating over columns in init with dimIter");
@@ -637,7 +638,7 @@ where D.rank == 2
       }
     } else {
       // compilerWarning("iterating over columns in init with dim");
-      for col in D.dim(2) {
+      for col in columns {
         if D.member((row,col)) {
           rowCount[row] += 1;
           rowSum[row] += col;
@@ -681,8 +682,8 @@ where D.rank == 2
     var swapColumn = rowSum[swapRow];
 
     // permute this row to the diagonal
-    rowMap[swapRow] = D.dim(1).high - diagonalPosition;
-    columnMap[swapColumn] = D.dim(2).high - diagonalPosition;
+    rowMap[swapRow] = rows.high - diagonalPosition;
+    columnMap[swapColumn] = columns.high - diagonalPosition;
     diagonalPosition += 1; // increment to next position
 
     if enableRuntimeDebugging && debugTopo then writeln( "Swaping ", (swapRow,swapColumn), " -> ", (rowMap[swapRow], columnMap[swapColumn]) );
@@ -701,7 +702,7 @@ where D.rank == 2
       }
     } else {
       // compilerWarning("iterating over rows in kernel with dim");
-      for row in D.dim(1) {
+      for row in rows {
         if D.member((row, swapColumn)) {
           rowCount[row] -= 1;
           rowSum[row] -= swapColumn;
@@ -729,19 +730,20 @@ where D.rank == 2
   var result = new TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
-  const numDiagonals = min( D.dim(1).size, D.dim(2).size );
-  const minCol = D.dim(2).low;
+  const rows = D.dim(1);
+  const columns = D.dim(2);
+  const numDiagonals = min( rows.size, columns.size );
 
-  var rowMap : [D.dim(1)] D.idxType = [i in D.dim(1)] -1;
-  var columnMap : [D.dim(2)] D.idxType = [i in D.dim(2)] -1;
+  var rowMap : [rows] D.idxType = [i in rows] -1;
+  var columnMap : [columns] D.idxType = [i in columns] -1;
 
-  var rowSum : [D.dim(1)] atomic int;
-  var rowCount : [D.dim(1)] atomic int;
+  var rowSum : [rows] atomic int;
+  var rowCount : [rows] atomic int;
   var workQueue = new ParallelWorkQueue(D.idxType);
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
-  forall row in D.dim(1) {
+  forall row in rows {
     // Accumulate task locally, then write at end.
     var count = 0;
     var sum = 0;
@@ -755,7 +757,7 @@ where D.rank == 2
       }
     } else {
       // compilerWarning("iterating over columns in init with dim");
-      for col in D.dim(2) {
+      for col in columns {
         if D.member((row,col)) {
           count += 1;
           sum += col;
@@ -805,8 +807,8 @@ where D.rank == 2
     // get and infrement localDiagonal
     var localDiagonal = diagonalPosition.fetchAdd(1);
     // permute this row to the diagonal
-    rowMap[swapRow] = D.dim(1).high - localDiagonal;
-    columnMap[swapColumn] = D.dim(2).high - localDiagonal;
+    rowMap[swapRow] = rows.high - localDiagonal;
+    columnMap[swapColumn] = columns.high - localDiagonal;
 
     // if localDiagonal == numDiagonals - 1 (i.e. diagonalPosition == numDiagonals)
     if localDiagonal == numDiagonals - 1 {
@@ -822,7 +824,7 @@ where D.rank == 2
       // compilerWarning("iterating over rows in kernel with dimIter");
       for row in D.dimIter(1,swapColumn) {
         var previousRowCount = rowCount[row].fetchSub( 1 );
-        rowSum[row].add( -swapColumn );
+        rowSum[row].sub( swapColumn );
         // if previousRowCount = 2 (ie rowCount[row] == 1)
         if previousRowCount == 2 {
           if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
@@ -831,10 +833,10 @@ where D.rank == 2
       }
     } else {
       // compilerWarning("iterating over rows in kernel with dim");
-      for row in D.dim(1) {
+      for row in rows {
         if D.member((row, swapColumn)) {
           var previousRowCount = rowCount[row].fetchSub( 1 );
-          rowSum[row].add( -swapColumn );
+          rowSum[row].sub( swapColumn );
           // if previousRowCount = 2 (ie rowCount[row] == 1)
           if previousRowCount == 2 {
             if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
@@ -870,19 +872,21 @@ where D.rank == 2
   var result = new TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
-  const numDiagonals = min( D.dim(1).size, D.dim(2).size );
-  const minCol = D.dim(2).low;
+  const rows = D.dim(1);
+  const columns = D.dim(2);
+  const numDiagonals = min( rows.size, columns.size );
+  const minCol = columns.low;
 
-  var rowMap : [D.dim(1)] D.idxType = [i in D.dim(1)] -1;
-  var columnMap : [D.dim(2)] D.idxType = [i in D.dim(2)] -1;
+  var rowMap : [rows] D.idxType = [i in rows] -1;
+  var columnMap : [columns] D.idxType = [i in columns] -1;
 
-  var rowSum : [D.dim(1)] atomic int;
-  var rowCount : [D.dim(1)] atomic int;
+  var rowSum : [rows] atomic int;
+  var rowCount : [rows] atomic int;
   var workQueue = new DistributedWorkQueue(D.idxType, Locales);
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
-  forall row in D.dim(1) {
+  forall row in rows {
     // Accumulate task locally, then write at end.
     var count = 0;
     var sum = 0;
@@ -896,7 +900,7 @@ where D.rank == 2
       }
     } else {
       // compilerWarning("iterating over columns in init with dim");
-      for col in D.dim(2) {
+      for col in columns {
         if D.member((row,col)) {
           count += 1;
           sum += col;
@@ -947,8 +951,8 @@ where D.rank == 2
     // get and infrement localDiagonal
     var localDiagonal = diagonalPosition.fetchAdd(1);
     // permute this row to the diagonal
-    rowMap[swapRow] = D.dim(1).high - localDiagonal;
-    columnMap[swapColumn] = D.dim(2).high - localDiagonal;
+    rowMap[swapRow] = rows.high - localDiagonal;
+    columnMap[swapColumn] = columns.high - localDiagonal;
 
     // if localDiagonal == numDiagonals - 1 (i.e. diagonalPosition == numDiagonals)
     if localDiagonal == numDiagonals - 1 {
@@ -965,7 +969,7 @@ where D.rank == 2
       // compilerWarning("iterating over rows in kernel with dimIter");
       for row in D.dimIter(1,swapColumn) {
         var previousRowCount = rowCount[row].fetchSub( 1 );
-        rowSum[row].add( -swapColumn );
+        rowSum[row].sub( swapColumn );
         // if previousRowCount = 2 (ie rowCount[row] == 1)
         if previousRowCount == 2 {
           if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
@@ -974,10 +978,10 @@ where D.rank == 2
       }
     } else {
       // compilerWarning("iterating over rows in kernel with dim");
-      for row in D.dim(1) {
+      for row in rows {
         if D.member((row, swapColumn)) {
           var previousRowCount = rowCount[row].fetchSub( 1 );
-          rowSum[row].add( -swapColumn );
+          rowSum[row].sub( swapColumn );
           // if previousRowCount = 2 (ie rowCount[row] == 1)
           if previousRowCount == 2 {
             if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
