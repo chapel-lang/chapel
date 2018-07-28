@@ -146,7 +146,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
 void implementForallIntents1(DefExpr* defChplIter);
 void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
 void implementForallIntents2wrapper(CallExpr* call, CallExpr* origToLeaderCall);
-void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall);
+void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall);
 void stashPristineCopyOfLeaderIter(FnSymbol* origLeader, bool ignoreIsResolved);
 
 // reduce intents

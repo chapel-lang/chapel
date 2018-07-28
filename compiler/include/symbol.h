@@ -450,9 +450,6 @@ public:
   BlockStmt* svInitBlock;      // always present
   BlockStmt* svDeinitBlock;    //  "
 
-  // A reduction class instance aka "Operator".
-  Symbol* reduceGlobalOp;
-
   // Once pruning is no longer needed, this should be removed.
   bool pruneit;
 };
