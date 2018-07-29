@@ -110,11 +110,11 @@ gemini
 aries
     Aries for Cray XC series
     (see :ref:`Using Chapel on Cray Systems <readme-cray>`)
-
 mpi
     MPI - portable conduit, works on any network with MPI 1.1 or newer
 mxm
     Mellanox MXM for InfiniBand
+    (mxm is deprecated -- the ibv substrate is recommended)
 ofi
     OFI for multiple networks supported by libfabric
 pami
