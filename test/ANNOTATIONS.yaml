@@ -819,6 +819,10 @@ memleaks:
     - Have reindex domains/distributions preserve locality (#5757)
   07/25/17:
     - fix leaks introduced by reindex views in PR 5757 (#6776)
+  07/24/18:
+    - Initializers on by default (#10459)
+  07/25/18:
+    - Fix size of loop expr in LCALS (#10499)
 
 memleaksfull:
   07/08/14:
@@ -899,6 +903,15 @@ memleaksfull:
   06/19/18:
     - Remove origin field from DefaultRectangular (#9863)
     - Allow basic usage of nested types with initializers (#9886)
+  07/20/18:
+    - Fix leak in locale.cwd() (#10411)
+  07/24/18:
+    - Initializers on by default (#10459)
+  07/25/18:
+    - Fix size of loop expr in LCALS (#10499)
+  07/26/18:
+    - Close DataFrame leaks (#10514)
+    - Fix leak in cast to string from c_ptr (#10523)
 
 meteor:
   12/18/13:
