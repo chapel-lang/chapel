@@ -10,6 +10,10 @@ ifneq ($(CHPL_MAKE_COMM_SEGMENT),none)
 CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT)
 endif
 
+ifneq ($(CHPL_MAKE_COMM_SUBSTRATE),none)
+CHPL_GASNET_CFG_OPTIONS += --enable-$(CHPL_MAKE_COMM_SUBSTRATE)
+endif
+
 # PSHM (inter-Process SHared Memory) provide a mechanism for gasnet instances
 # on the same node to communicate through shared memory instead of the real
 # conduit. In "production" we only run a single gasnet client per node so this
@@ -37,7 +41,6 @@ ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
 CHPL_GASNET_CFG_OPTIONS += --enable-gemini-multi-domain
 else
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),aries)
-CHPL_GASNET_CFG_OPTIONS += --enable-aries
 CHPL_GASNET_CFG_OPTIONS += --enable-aries-multi-domain
 else
 # We need to do this because the auto-detect stuff for gemini is not
