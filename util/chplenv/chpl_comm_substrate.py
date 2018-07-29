@@ -27,8 +27,6 @@ def get():
                 substrate_val = 'ibv'
             elif platform_val == 'marenostrum':
                 substrate_val = 'udp'
-            elif platform_val == 'pwr5':
-                substrate_val = 'lapi'
             elif platform_val == 'pwr6':
                 substrate_val = 'ibv'
             else:

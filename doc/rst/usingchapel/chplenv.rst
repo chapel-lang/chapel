@@ -71,7 +71,6 @@ CHPL_HOST_PLATFORM
         marenostrum  BSC's MareNostrum platform
         netbsd32     32-bit NetBSD platforms
         netbsd64     64-bit NetBSD platforms
-        pwr5         IBM Power5 SMP cluster
         pwr6         IBM Power6 SMP cluster
         sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
@@ -169,7 +168,7 @@ CHPL_*_COMPILER
                         where PE_ENV is set by PrgEnv-* modules)
         darwin        clang if available, otherwise gnu
         marenostrum   ibm
-        pwr5, pwr6    ibm
+        pwr6          ibm
         other         gnu
         ============  ==================================================
 
