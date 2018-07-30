@@ -85,7 +85,9 @@ module Atomics {
   use MemConsistency;
   use ChapelEnv;
 
+  pragma "no doc"
   extern proc atomic_thread_fence(order:memory_order);
+  pragma "no doc"
   extern proc atomic_signal_fence(order:memory_order);
 
   // these can be called just the way they are:
@@ -171,9 +173,6 @@ module Atomics {
 
   pragma "atomic type"
   pragma "ignore noinit"
-  /*
-     The boolean atomic type.
-  */
   record AtomicBool {
     pragma "no doc"
     var _v:externT(bool);
