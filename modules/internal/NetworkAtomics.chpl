@@ -30,7 +30,7 @@ module NetworkAtomics {
   // int(64)
   pragma "atomic type"
   record RAtomicT {
-    type T = int(64)
+    type T;
     var _v: T;
 
     inline proc _localeid: int(32) {
@@ -120,7 +120,8 @@ module NetworkAtomics {
     }
 
     inline proc fetchOr(value:T, order:memory_order = memory_order_seq_cst): T {
-     pragma "insert line file info" extern externFunc("fetch_or", T)
+      if !isIntegral(T) then compilerError("fetchOr is only defined for integer atomic types");
+      pragma "insert line file info" extern externFunc("fetch_or", T)
         proc atomic_fetch_or(ref op:T, l:int(32), ref obj:T, ref result:T): void;
 
       var ret:T;
@@ -130,7 +131,8 @@ module NetworkAtomics {
     }
 
     inline proc or(value:T, order:memory_order = memory_order_seq_cst): void {
-     pragma "insert line file info" extern externFunc("or", T)
+      if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
+      pragma "insert line file info" extern externFunc("or", T)
         proc atomic_or(ref op:T, l:int(32), ref obj:T): void;
 
       var v = value;
@@ -138,6 +140,7 @@ module NetworkAtomics {
     }
 
     inline proc fetchAnd(value:T, order:memory_order = memory_order_seq_cst): T {
+      if !isIntegral(T) then compilerError("fetchAnd is only defined for integer atomic types");
       pragma "insert line file info" extern externFunc("fetch_and", T)
         proc atomic_fetch_and(ref op:T, l:int(32), ref obj:T, ref result:T): void;
 
@@ -148,6 +151,7 @@ module NetworkAtomics {
     }
 
     inline proc and(value:T, order:memory_order = memory_order_seq_cst): void {
+      if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
       pragma "insert line file info" extern externFunc("and", T)
         proc atomic_and(ref op:T, l:int(32), ref obj:T): void;
 
@@ -156,6 +160,7 @@ module NetworkAtomics {
     }
 
     inline proc fetchXor(value:T, order:memory_order = memory_order_seq_cst): T {
+      if !isIntegral(T) then compilerError("fetchXor is only defined for integer atomic types");
       pragma "insert line file info" extern externFunc("fetch_xor", T)
         proc atomic_fetch_xor(ref op:T, l:int(32), ref obj:T, ref result:T): void;
 
@@ -166,6 +171,7 @@ module NetworkAtomics {
     }
 
     inline proc xor(value:T, order:memory_order = memory_order_seq_cst): void {
+      if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
       pragma "insert line file info" extern externFunc("xor", T)
         proc atomic_xor(ref op:T, l:int(32), ref obj:T): void;
 

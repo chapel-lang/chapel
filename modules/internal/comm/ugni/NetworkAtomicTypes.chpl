@@ -20,13 +20,16 @@
 module NetworkAtomicTypes {
   use NetworkAtomics;
 
-  proc chpl__networkAtomicType(type base_type) type {
-    if base_type==bool then return RAtomicBool;
-    else if base_type==uint(32) then return ratomic_uint32;
-    else if base_type==uint(64) then return ratomic_uint64;
-    else if base_type==int(32) then return ratomic_int32;
-    else if base_type==int(64) then return RAtomicT();
-    else if base_type==real(64) then return ratomic_real64;
-    else return chpl__processorAtomicType(base_type);
+  private proc isSupported(type T) param {
+    return T == bool     ||
+           T ==  int(32) || T ==  int(64) ||
+           T == uint(32) || T == uint(64) ||
+           T == real(64);
+  }
+
+  proc chpl__networkAtomicType(type T) type {
+    if T == bool           then return RAtomicBool;
+    else if isSupported(T) then return RAtomicT(T);
+    else                        return chpl__processorAtomicType(T);
   }
 }
