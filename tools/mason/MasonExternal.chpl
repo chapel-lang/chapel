@@ -32,13 +32,14 @@ proc masonExternal(args: [] string) {
     }
   
     select (args[2]) {
-      when 'list' do listSpkgs();
       when 'search' do searchSpkgs(args);
       when 'compiler' do compiler(args);
       when 'install' do installSpkg(args);
+      when 'uninstall' do installSpkg(args);
       when '--help' do masonExternalHelp();
       when '-h' do masonExternalHelp();
-      when '--installed' do spkgInstalled(args);
+      when '--installed' do spkgOnSystem(args);
+      when '--info' do spkgInfo(args);
       otherwise {
        writeln('error: no such subcommand');
        writeln('try mason external --help');
@@ -52,10 +53,9 @@ proc masonExternal(args: [] string) {
   }
 }
 
-
 /* Queries spack for package existance */
-proc spkgExists(pkgName: string) : bool {
-  const command = "spack list " + pkgName;
+proc spkgExists(spec: string) : bool {
+  const command = "spack list " + spec;
   const status = runWithStatus(command);
   if status != 0 {
     return false;
@@ -63,6 +63,11 @@ proc spkgExists(pkgName: string) : bool {
   return true;
 }
 
+/* lists available spack packages */
+proc listSpkgs() {
+  const command = "spack list";
+  const status = runCommand(command);
+}
 
 /* Queries spack for package existance */
 proc searchSpkgs(args: [?d] string) {
@@ -76,101 +81,56 @@ proc searchSpkgs(args: [?d] string) {
   }
 }
 
-/* Queries system to see if package is installed on system */
-proc spkgInstalled(args: [?d] string) {
-  if args.size < 4 {
-    listInstalled();
-  }
-  else {
-    const pkgName = args[3];
-    const command = "spack find " + pkgName;
-    const status = runCommand(command);
-  }
-}
-
-/* lists available spack packages */
-proc listSpkgs() {
-  const command = "spack list";
-  const status = runCommand(command);
-}
-
-/* lists all installed spack packages */
+/* lists all installed spack packages for user */
 proc listInstalled() {
   const command = "spack find";
   const status = runCommand(command);
 }
 
-/* Returns spack package path for build information */
-proc getSpkgPath(pkgName: string, version: string) throws {
-  const command = "spack find -p " + pkgName;
-  const pkgInfo = runCommand(command, quiet=true);
-  const pkg = "@".join(pkgName, version);
-  var found = false;
-  var path: string;
-  for item in pkgInfo.split() {
-    
-    if item == pkg {
-      found = true;
-    }
-    else if found == true {
-      return item;
-    }
+/* User facing function to show packages installed on
+   system. Takes all spack arguments ex. -df <package> */
+proc spkgOnSystem(args: [?d] string) {
+  if args.size < 3 {
+    masonExternalHelp();
   }
-  if !found {
-    throw new MasonError("Mason could not find " + pkg);
-  }
-  return path;
-}
-
-
-/* Given a toml of external dependencies returns
-   the dependencies in a toml */
-proc getExternalPackages(exDeps: unmanaged Toml) {
-
-  var exDom: domain(string);
-  var exDepTree: [exDom] unmanaged Toml;
-
-  for (name, vers) in zip(exDeps.D, exDeps.A) {
-    try! {
-      select vers.tag {
-          when fieldToml do continue;
-          otherwise {
-            const pkgInfo = getSpkgInfo(name, vers.s);
-            exDepTree[name] = pkgInfo;
-          }
-        }
-    }
-    catch e: MasonError {
-      writeln(e.message());
-      exit(1);
-    }
-  }
-  return exDepTree;
-}
-
-
-/* Retrieves build information for MasonUpdate */
-proc getSpkgInfo(pkgName: string, version: string) throws {
-
-  var spkgDom: domain(string);
-  var spkgToml: [spkgDom] unmanaged Toml;
-  var spkgInfo: unmanaged Toml = spkgToml;
-
-  if spkgExists(pkgName) {
-    const spkgPath = getSpkgPath(pkgName, version);
-    const libs = joinPath(spkgPath, "lib");
-    const include = joinPath(spkgPath, "include");
-
-    spkgInfo["name"] = pkgName;
-    spkgInfo["version"] = version;
-    spkgInfo["libs"] = libs;
-    spkgInfo["include"] = include;
+  else if args.size == 3 {
+    listInstalled();
   }
   else {
-    throw new MasonError("No pkg-config package by the name of: " + pkgName);
+    var command = "spack find";
+    var packageWithArgs = " ".join(args[3..]);
+    const status = runCommand(" ".join(command, packageWithArgs));
   }
-  return spkgInfo;
 }
+
+/* User facing function to show info about a package */
+proc spkgInfo(args) {
+  if args.size < 3 {
+    masonExternalHelp();
+    exit(1);
+  }
+  else {
+    const command = "spack info";
+    const pkgName = args[3];
+    const status = runCommand(" ".join(command, pkgName));
+  }
+}
+
+/* Queries system to see if package is installed on system */
+private proc spkgInstalled(spec: string) {
+  const command = "spack find -df " + spec;
+  const pkgInfo = runCommand(command, quiet=true);
+  var found = false;
+  var dependencies: [1..0] string; // a list of pkg dependencies
+  for item in pkgInfo.split() {  
+    if item == spec {
+      return true;
+    }
+  }
+  return false;
+}
+
+
 
 /* Entry point into the various compiler functions */
 proc compiler(args: [?d] string) {
@@ -197,18 +157,152 @@ proc findCompilers() {
   const status = runCommand(command);
 }
 
+/* Given a toml of external dependencies returns
+   the dependencies in a toml */
+proc getExternalPackages(exDeps: unmanaged Toml) {
 
-/* Install an external package
-   TODO: Allow spec expressions
- */
+  var exDom: domain(string);
+  var exDepTree: [exDom] unmanaged Toml;
+
+  for (name, spec) in zip(exDeps.D, exDeps.A) {
+    try! {
+      select spec.tag {
+          when fieldToml do continue;
+          otherwise {
+            var dependencies = getSpkgDependencies(spec.s);
+            const pkgInfo = getSpkgInfo(spec.s, dependencies);
+            exDepTree[name] = pkgInfo;
+          }
+        }
+    }
+    catch e: MasonError {
+      writeln(e.message());
+      exit(1);
+    }
+  }
+  return exDepTree;
+}
+
+/* Retrieves build information for MasonUpdate */
+proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throws {
+
+  // put above try b/c compiler comlains about return value
+  var depList: [1..0] unmanaged Toml;
+  var spkgDom: domain(string);
+  var spkgToml: [spkgDom] unmanaged Toml;
+  var spkgInfo: unmanaged Toml = spkgToml;
+
+  try {
+
+    // TODO: create a parser for returning what the user has inputted in
+    // terms of name, version, compiler etc..
+    var split = spec.split("@");
+    var pkgName = split[1];
+    var versplit = split[2].split("%");
+    var version = versplit[1];
+    var compiler = versplit[2];
+
+    if spkgInstalled(spec) {
+      const spkgPath = getSpkgPath(spec);
+      const libs = joinPath(spkgPath, "lib");
+      const include = joinPath(spkgPath, "include");
+
+      spkgInfo["name"] = pkgName;
+      spkgInfo["version"] = version;
+      spkgInfo["compiler"] = compiler;
+      spkgInfo["libs"] = libs;
+      spkgInfo["include"] = include;
+
+      while dependencies.domain.size > 0 {
+        var dep = dependencies[dependencies.domain.first];
+        var depSpec = dep.split("@");
+        var name = depSpec[1];
+
+        // put dep into current packages dep list
+        depList.push_back(new unmanaged Toml(name));
+
+        // get dependencies of dep
+        var depsOfDep = getSpkgDependencies(dep);
+
+        // get a toml that contains the dependency info and put it
+        // in a subtable of the current dependencies table
+        spkgInfo[name] = getSpkgInfo(dep, depsOfDep);
+
+        // remove dep for recursion
+        dependencies.remove(dependencies.domain.first);
+      }
+      if depList.domain.size > 0 {
+        spkgInfo["dependencies"] = depList;
+      }
+    }
+    else {
+      throw new MasonError("No package installed by the name of: " + pkgName);
+    }
+  }
+  catch e: MasonError {
+    writeln(e.message());
+  }
+  return spkgInfo;
+}
+
+/* Returns spack package path for build information */
+proc getSpkgPath(spec: string) throws {
+  const command = "spack location -i " + spec;
+  const pkgPath = runCommand(command, quiet=true);
+  if pkgPath == "" {
+    throw new MasonError("Mason could not find " + spec);
+  }
+  return pkgPath.strip();
+}
+
+proc getSpkgDependencies(spec: string) throws {
+  const command = "spack find -df " + spec;
+  const pkgInfo = runCommand(command, quiet=true);
+  var found = false;
+  var dependencies: [1..0] string; // a list of pkg dependencies
+  for item in pkgInfo.split() {
+    
+    if item == spec {
+      found = true;
+    }
+    else if found == true {
+      const dep = item.strip("^");
+      dependencies.push_back(dep); // format: pkg@version%compiler
+    }
+  }
+  if !found {
+    throw new MasonError("Mason could not find dependency: " + spec);
+  }
+  return dependencies;
+}
+
+
+/* Un/Install an external package */
 proc installSpkg(args: [?d] string) throws {
   if args.size < 4 {
-    // masonExternalInstallHelp()
-    masonExternalHelp();
+    masonUnInstallHelp();
+    exit(1);
   }
   else {
+    var command: string;
+    if args[2] == "install" {
+      command = "spack install";
+    }
+    else if args[2] == "uninstall" {
+      command = "spack uninstall -y";
+      var confirm: string;
+      writeln("Are you sure you want to uninstall " + args[3] +"? [y/n]");
+      read(confirm);
+      if confirm != "y" {
+        writeln("Aborting...");
+        exit(0);
+      }
+    }
+    else {
+      masonUnInstallHelp();
+      exit(1);
+    }
     const pkgName = args[3];
-    var command = "spack install";
     var toInstall = pkgName;
     var compiler = "";
     var version = "";
@@ -231,4 +325,3 @@ proc installSpkg(args: [?d] string) throws {
     }
   }
 }
-

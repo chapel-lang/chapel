@@ -242,6 +242,7 @@ proc getSrcCode(sourceList: [?d] 3*string, show) {
   }
 }
 
+// Retrieves root table compopts, external compopts, and system compopts
 proc getTomlCompopts(lock: borrowed Toml, compopts: [?d] string) {
 
   // Checks for compilation options are present in Mason.toml
