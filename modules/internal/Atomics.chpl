@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -94,7 +94,7 @@ module Atomics {
   extern type atomic_uint_least32_t;
   extern type atomic_uint_least64_t;
   extern type atomic_uintptr_t;
-  
+
   extern type atomic__real64;
   extern type atomic__real32;
 
@@ -327,7 +327,7 @@ module Atomics {
     /*
        :returns: The stored value.
     */
-    inline proc const read(order:memory_order = memory_order_seq_cst):bool {
+    inline proc const read(order:memory_order = memory_order_seq_cst): bool {
       var ret:bool;
       on this do ret = atomic_load_explicit_bool(_v, order);
       return ret;
@@ -336,22 +336,22 @@ module Atomics {
     /*
        Stores `value` as the new value.
     */
-    inline proc write(value:bool, order:memory_order = memory_order_seq_cst) {
+    inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
       on this do atomic_store_explicit_bool(_v, value, order);
     }
 
     /*
        Stores `value` as the new value and returns the original value.
     */
-    inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst):bool {
+    inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
       var ret:bool;
       on this do ret = atomic_exchange_explicit_bool(_v, value, order);
       return ret;
     }
 
     /* Equivalent to :proc:`compareExchangeStrong` */
-    inline proc compareExchange(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, order);
+    inline proc compareExchange(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+      return this.compareExchangeStrong(expected, desired, order);
     }
 
     /*
@@ -359,7 +359,7 @@ module Atomics {
        return `false` even if the original value was equal to `expected`. This
        may happen if the value could not be updated atomically.
     */
-    inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_bool(_v, expected, desired, order);
       return ret;
@@ -369,7 +369,7 @@ module Atomics {
        Stores `desired` as the new value, if and only if the original value is
        equal to `expected`. Returns `true` if `desired` was stored.
     */
-    inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_bool(_v, expected, desired, order);
       return ret;
@@ -378,33 +378,28 @@ module Atomics {
     /*
        Stores `true` as the new value and returns the old value.
     */
-    inline proc testAndSet(order:memory_order = memory_order_seq_cst) {
-      var ret:bool;
-      on this do ret = atomic_exchange_explicit_bool(_v, true, order);
-      return ret;
+    inline proc testAndSet(order:memory_order = memory_order_seq_cst): bool {
+      return this.exchange(true, order);
     }
 
     /*
        Stores `false` as the new value.
     */
-    inline proc clear(order:memory_order = memory_order_seq_cst) {
-      on this do atomic_store_explicit_bool(_v, false, order);
+    inline proc clear(order:memory_order = memory_order_seq_cst): void {
+      this.write(false, order);
     }
 
     /*
-       :arg val: Value to compare against.
+       :arg value: Value to compare against.
 
-       Waits until the stored value is equal to `val`. The implementation may
+       Waits until the stored value is equal to `value`. The implementation may
        yield the running task while waiting.
     */
-    inline proc const waitFor(val:bool, order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(value:bool, order:memory_order = memory_order_seq_cst): void {
       on this {
-        while (atomic_load_explicit_bool(_v, memory_order_relaxed) != val) {
+        while (this.read(order=memory_order_relaxed) != value) {
           chpl_task_yield();
         }
-        // After waiting for the value, do a thread fence
-        // in order to guarantee e.g. an acquire barrier even
-        // if the on statement is not included.
         atomic_thread_fence(order);
       }
     }
@@ -412,14 +407,14 @@ module Atomics {
     /*
        :returns: Stored value using memory_order_relaxed.
     */
-    inline proc const peek() {
+    inline proc const peek(): bool {
       return this.read(order=memory_order_relaxed);
     }
 
     /*
        Stores `value` as the new value using memory_order_relaxed.
     */
-    inline proc poke(value:bool) {
+    inline proc poke(value:bool): void {
       this.write(value, order=memory_order_relaxed);
     }
 
@@ -430,7 +425,7 @@ module Atomics {
   }
 
   pragma "atomic type"
-  pragma "ignore noinit" 
+  pragma "ignore noinit"
   pragma "no doc"
   record atomic_uint8 {
     var _v:atomic_uint_least8_t;
@@ -1155,7 +1150,7 @@ module Atomics {
     /*
        :returns: The stored value.
     */
-    inline proc const read(order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc const read(order:memory_order = memory_order_seq_cst): int(64) {
       var ret:int(64);
       on this do ret = atomic_load_explicit_int_least64_t(_v, order);
       return ret;
@@ -1164,22 +1159,22 @@ module Atomics {
     /*
        Stores `value` as the new value.
     */
-    inline proc write(value:int(64), order:memory_order = memory_order_seq_cst) {
+    inline proc write(value:int(64), order:memory_order = memory_order_seq_cst): void {
       on this do atomic_store_explicit_int_least64_t(_v, value, order);
     }
 
     /*
        Stores `value` as the new value and returns the original value.
     */
-    inline proc exchange(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc exchange(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
       var ret:int(64);
       on this do ret = atomic_exchange_explicit_int_least64_t(_v, value, order);
       return ret;
     }
 
     /* Equivalent to :proc:`compareExchangeStrong` */
-    inline proc compareExchange(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, order);
+    inline proc compareExchange(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst): bool {
+      return this.compareExchangeStrong(expected, desired, order);
     }
 
     /*
@@ -1187,7 +1182,7 @@ module Atomics {
        return `false` even if the original value was equal to `expected`. This
        may happen if the value could not be updated atomically.
     */
-    inline proc compareExchangeWeak(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst): bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_int_least64_t(_v, expected, desired, order);
       return ret;
@@ -1197,7 +1192,7 @@ module Atomics {
        Stores `desired` as the new value, if and only if the original value is
        equal to `expected`. Returns `true` if `desired` was stored.
     */
-    inline proc compareExchangeStrong(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst): bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_int_least64_t(_v, expected, desired, order);
       return ret;
@@ -1209,7 +1204,7 @@ module Atomics {
        Adds `value` to the original value and stores the result. Defined for
        integer and real atomic types.
     */
-    inline proc fetchAdd(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc fetchAdd(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_add_explicit_int_least64_t(_v, value, order);
       return ret;
@@ -1219,7 +1214,7 @@ module Atomics {
        Adds `value` to the original value and stores the result. Defined for
        integer and real atomic types.
     */
-    inline proc add(value:int(64), order:memory_order = memory_order_seq_cst):void {
+    inline proc add(value:int(64), order:memory_order = memory_order_seq_cst): void {
       on this do atomic_fetch_add_explicit_int_least64_t(_v, value, order);
     }
 
@@ -1229,7 +1224,7 @@ module Atomics {
        Subtracts `value` from the original value and stores the result. Defined
        for integer and real atomic types.
     */
-    inline proc fetchSub(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc fetchSub(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_sub_explicit_int_least64_t(_v, value, order);
       return ret;
@@ -1239,7 +1234,7 @@ module Atomics {
        Subtracts `value` from the original value and stores the result. Defined
        for integer and real atomic types.
     */
-    inline proc sub(value:int(64), order:memory_order = memory_order_seq_cst):void {
+    inline proc sub(value:int(64), order:memory_order = memory_order_seq_cst): void {
       on this do atomic_fetch_sub_explicit_int_least64_t(_v, value, order);
     }
 
@@ -1251,7 +1246,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc fetchOr(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc fetchOr(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_or_explicit_int_least64_t(_v, value, order);
       return ret;
@@ -1263,7 +1258,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc or(value:int(64), order:memory_order = memory_order_seq_cst):void {
+    inline proc or(value:int(64), order:memory_order = memory_order_seq_cst): void {
       on this do atomic_fetch_or_explicit_int_least64_t(_v, value, order);
     }
 
@@ -1275,7 +1270,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc fetchAnd(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc fetchAnd(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_and_explicit_int_least64_t(_v, value, order);
       return ret;
@@ -1287,7 +1282,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc and(value:int(64), order:memory_order = memory_order_seq_cst):void {
+    inline proc and(value:int(64), order:memory_order = memory_order_seq_cst): void {
       on this do atomic_fetch_and_explicit_int_least64_t(_v, value, order);
     }
 
@@ -1299,7 +1294,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc fetchXor(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc fetchXor(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_xor_explicit_int_least64_t(_v, value, order);
       return ret;
@@ -1311,18 +1306,17 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc xor(value:int(64), order:memory_order = memory_order_seq_cst):void {
+    inline proc xor(value:int(64), order:memory_order = memory_order_seq_cst): void {
       on this do atomic_fetch_xor_explicit_int_least64_t(_v, value, order);
     }
 
     /*
-       Waits until the stored value is equal to `val`. The implementation may
+       Waits until the stored value is equal to `value`. The implementation may
        yield the running task while waiting.
     */
-    inline proc const waitFor(val:int(64), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(value:int(64), order:memory_order = memory_order_seq_cst): void {
       on this {
-        while (atomic_load_explicit_int_least64_t(_v, memory_order_relaxed)
-                != val) {
+        while (this.read(order=memory_order_relaxed) != value) {
           chpl_task_yield();
         }
         atomic_thread_fence(order);
@@ -1332,14 +1326,14 @@ module Atomics {
     /*
        :returns: Stored value using memory_order_relaxed.
     */
-    inline proc const peek() {
+    inline proc const peek(): int(64) {
       return this.read(order=memory_order_relaxed);
     }
 
     /*
        Stores `value` as the new value using memory_order_relaxed.
     */
-    inline proc poke(value:int(64)) {
+    inline proc poke(value:int(64)): void {
       this.write(value, order=memory_order_relaxed);
     }
 
@@ -1347,7 +1341,6 @@ module Atomics {
     proc const writeThis(x) {
       x <~> read();
     }
-
   }
 
   pragma "atomic type"
@@ -1426,7 +1419,7 @@ module Atomics {
       x <~> read();
     }
   }
-  
+
   pragma "atomic type"
   pragma "ignore noinit"
   pragma "no doc"
