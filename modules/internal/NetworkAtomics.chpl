@@ -200,33 +200,6 @@ module NetworkAtomics {
     }
   }
 
-  inline proc =(ref a:RAtomicT, const b:RAtomicT) {
-    a.write(b.read());
-  }
-  inline proc =(ref a:RAtomicT, b) {
-    compilerError("Cannot directly assign network atomic variables");
-  }
-  inline proc +(a:RAtomicT, b) {
-    compilerError("Cannot directly add network atomic variables");
-    return a;
-  }
-  inline proc -(a:RAtomicT, b) {
-    compilerError("Cannot directly subtract network atomic variables");
-    return a;
-  }
-  inline proc *(a:RAtomicT, b) {
-    compilerError("Cannot directly multiply network atomic variables");
-    return a;
-  }
-  inline proc /(a:RAtomicT, b) {
-    compilerError("Cannot directly divide network atomic variables");
-    return a;
-  }
-  inline proc %(a:RAtomicT, b) {
-    compilerError("Cannot directly divide network atomic variables");
-    return a;
-  }
-
   pragma "atomic type"
   record RAtomicBool {
     var _v: int(64);
@@ -315,28 +288,32 @@ module NetworkAtomics {
     a.write(b.read());
   }
   inline proc =(ref a:RAtomicBool, b) {
-    compilerError("Cannot directly assign network atomic variables");
+    compilerError("Cannot directly assign atomic variables");
   }
-  inline proc +(a:RAtomicBool, b) {
-    compilerError("Cannot directly add network atomic variables");
+  inline proc =(ref a:RAtomicT, const b:RAtomicT) {
+    a.write(b.read());
+  }
+  inline proc =(ref a:RAtomicT, b) {
+    compilerError("Cannot directly assign atomic variables");
+  }
+  inline proc +(a:RAtomicT, b) {
+    compilerError("Cannot directly add atomic variables");
     return a;
   }
-  inline proc -(a:RAtomicBool, b) {
-    compilerError("Cannot directly subtract network atomic variables");
+  inline proc -(a:RAtomicT, b) {
+    compilerError("Cannot directly subtract atomic variables");
     return a;
   }
-  inline proc *(a:RAtomicBool, b) {
-    compilerError("Cannot directly multiply network atomic variables");
+  inline proc *(a:RAtomicT, b) {
+    compilerError("Cannot directly multiply atomic variables");
     return a;
   }
-  inline proc /(a:RAtomicBool, b) {
-    compilerError("Cannot directly divide network atomic variables");
+  inline proc /(a:RAtomicT, b) {
+    compilerError("Cannot directly divide atomic variables");
     return a;
   }
-  inline proc %(a:RAtomicBool, b) {
-    compilerError("Cannot directly divide network atomic variables");
+  inline proc %(a:RAtomicT, b) {
+    compilerError("Cannot directly divide atomic variables");
     return a;
   }
-  
 }
-
