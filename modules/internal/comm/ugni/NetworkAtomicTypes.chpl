@@ -25,7 +25,7 @@ module NetworkAtomicTypes {
     else if base_type==uint(32) then return ratomic_uint32;
     else if base_type==uint(64) then return ratomic_uint64;
     else if base_type==int(32) then return ratomic_int32;
-    else if base_type==int(64) then return ratomic_int64;
+    else if base_type==int(64) then return ratomic_int64();
     else if base_type==real(64) then return ratomic_real64;
     else return chpl__processorAtomicType(base_type);
   }
