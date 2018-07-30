@@ -22,8 +22,8 @@ class C {
 // each field in the class.  Once a class has been constructed, its methods
 // can be called.
 //
-// Class types include a strategy for freeing them. Below it is ``owned``
-// but we'll discuss these options more below.
+// Class types include a strategy for freeing them. We'll discuss this
+// more below.
 //
 // A class variable can refer to an *instance* of a class. Different class
 // variables can refer to the same instance.
@@ -96,13 +96,18 @@ var unm: unmanaged C = new unmanaged C();
 delete unm;
 
 var own: owned C = new owned C(1, 10);
-// the instance referred to by 'own' is deleted at end of scope
+// The instance referred to by 'own' is deleted when it is no longer in scope.
+// Only one `owned C` can refer to a given instance at a time but the
+// ownership can be transferred to another variable.
 
 var share: shared C = new shared C(1, 10);
-// the instance referred to by 'share' is reference counted
+// The instance referred to by 'share' is reference counted -- that is,
+// several `shared C` variables can refer to the same instance and
+// will be reclaimed when the last one goes out of scope.
 
 var tmp: borrowed C = new borrowed C(1, 10);
-// the instance referred to by 'tmp' will be deleted at the end of scope
+// The instance referred to by 'tmp' will be deleted when it is no longer in
+// scope. The ownership can't be transferred to another variable.
 
 // It is possible to ``borrow`` from another class pointer.
 // One way to do that is by calling the ``borrow()`` method directly:
@@ -117,9 +122,9 @@ var b1 = own.borrow();
 // A class type without a decorator, such as ``C``, is the same
 // as ``borrowed C``. The ``this`` argument of a method is a borrow as well.
 
-// The compiler will automatically converts from ``owned`` ``shared``
-// or ``unmanaged`` in the process of doing a method or function call
-// or variable initialization.
+// The compiler automatically adds conversion from ``owned`` ``shared``
+// or ``unmanaged`` in the process of resolving a function call,
+// method call, or variable initialization.
 
 var b2: borrowed C = own; // same as b2 = own.borrow();
 own.printFields(); // same as own.borrow().printFields();

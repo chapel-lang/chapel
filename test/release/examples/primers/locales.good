@@ -25,7 +25,7 @@ x is stored on locale 0, while y lives on 1
 
 Using a data-driven on-clause, I'm now executing on locale 0
 
-at start of on 1, myData is on locale 0
-at end of on 1, myData is on locale 1
-after on 1, myData is on locale 1
-Using on myData, I'm now executing on locale 1
+at start of 'on Locales[1]', myData is on locale 0
+at end of 'on Locales[1]', myData is on locale 1
+after 'on Locales[1]', myData is on locale 1
+Using 'on myData', I'm now executing on locale 1

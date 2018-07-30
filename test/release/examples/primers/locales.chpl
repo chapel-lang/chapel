@@ -214,18 +214,18 @@ class Data {
   var x:int;
 }
 
-var myData:unmanaged Data; // myData is a pointer-to-nil stored on Locale 0
+var myData: unmanaged Data; // myData is a pointer-to-nil stored on Locale 0
 
 on Locales[1 % numLocales] {
-  writeln("at start of on 1, myData is on locale ", myData.locale.id);
+  writeln("at start of 'on Locales[1]', myData is on locale ", myData.locale.id);
   myData = new unmanaged Data(1);
   // now myData points to something on Locales[1]
-  writeln("at end of on 1, myData is on locale ", myData.locale.id);
+  writeln("at end of 'on Locales[1]', myData is on locale ", myData.locale.id);
 }
-writeln("after on 1, myData is on locale ", myData.locale.id);
+writeln("after 'on Locales[1]', myData is on locale ", myData.locale.id);
 
 on myData {
-  writeln("Using on myData, I'm now executing on locale ", here.id);
+  writeln("Using 'on myData', I'm now executing on locale ", here.id);
 }
 
 //
