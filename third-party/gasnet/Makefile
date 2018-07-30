@@ -27,10 +27,6 @@ ifneq ($(CHPL_MAKE_COMM_SEGMENT),everything)
 CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
 endif
 
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr5)
-CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
-endif
-
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr6)
 CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
 endif

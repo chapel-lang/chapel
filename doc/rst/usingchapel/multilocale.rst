@@ -110,11 +110,11 @@ gemini
 aries
     Aries for Cray XC series
     (see :ref:`Using Chapel on Cray Systems <readme-cray>`)
-
 mpi
     MPI - portable conduit, works on any network with MPI 1.1 or newer
 mxm
     Mellanox MXM for InfiniBand
+    (mxm is deprecated -- the ibv substrate is recommended)
 ofi
     OFI for multiple networks supported by libfabric
 pami
@@ -123,8 +123,6 @@ portals4
     Portals4 (BETA) for the Portals 4.x API
 psm
     PSM for Intel's OmniPath fabric
-shmem
-    SHMEM for SGI Altix
 smp
     Simulates multiple locales on a single shared-memory machine
 
@@ -140,7 +138,6 @@ cray-cs                ibv
 cray-xc                aries
 cray-xe                gemini
 cray-xk                gemini
-pwr5                   lapi
 pwr6                   ibv
 other                  udp
 ====================  ===================

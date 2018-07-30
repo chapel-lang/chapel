@@ -14,6 +14,6 @@ class Bar {
       }
   }
 }
-var bar = new Bar(Foo.Foo1);
+var bar = new unmanaged Bar(Foo.Foo1);
 writeln(bar);
 delete bar;

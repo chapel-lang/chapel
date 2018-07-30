@@ -1,1 +1,3 @@
+lhsConsRhsInit.chpl:12: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+lhsConsRhsInit.chpl:12: warning: Type 'hasConstruct' defines a constructor here
 lhsConsRhsInit.chpl:18: error: type mismatch in assignment from unmanaged hasInit to unmanaged hasConstruct

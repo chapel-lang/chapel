@@ -21,8 +21,7 @@ class Child : Parent {
 }
 
 proc main() {
-  var child = new Child(10, 11);
+  var child = new borrowed Child(10, 11);
   writeln(child.type:string);
   writeln(child);
-  delete child;
 }

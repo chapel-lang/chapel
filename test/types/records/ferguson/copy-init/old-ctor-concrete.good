@@ -1,3 +1,5 @@
+old-ctor-concrete.chpl:6: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+old-ctor-concrete.chpl:6: warning: Type 'R' defines a constructor here
 Creating r
 r (x = 1)
 copy-initializing

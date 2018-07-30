@@ -1,1 +1,3 @@
+constructor2.chpl:3: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+constructor2.chpl:3: warning: Type 'myR' defines a constructor here
 hi

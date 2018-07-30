@@ -64,11 +64,6 @@ def get():
                 launcher_val = 'gasnetrun_ofi'
             elif substrate_val == 'psm':
                 launcher_val = 'gasnetrun_psm'
-            elif substrate_val == 'lapi':
-                # our loadleveler launcher is not yet portable/stable/flexible
-                # enough to serve as a good default
-                #launcher_val = 'loadleveler'
-                launcher_val = 'none'
         elif comm_val == 'mpi':
             launcher_val = 'mpirun'
         else:

@@ -1,1 +1,3 @@
 generic_constructor.chpl:5: error: constructor for class 'Foo' requires a generic argument called 'x'
+generic_constructor.chpl:5: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+generic_constructor.chpl:5: warning: Type 'Foo' defines a constructor here

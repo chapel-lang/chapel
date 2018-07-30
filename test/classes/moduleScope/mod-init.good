@@ -1,3 +1,6 @@
+mod-init.chpl:38: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+mod-init.chpl:38: warning: Type 'A' defines a constructor here
+mod-init.chpl:58: warning: Type 'A' defines a constructor here
 A.init(10)
 
 M1.A.init(20)

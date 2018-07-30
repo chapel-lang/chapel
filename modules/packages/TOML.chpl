@@ -968,8 +968,8 @@ module TomlReader {
 
     var tomlStr: string;
     var tokenD = {1..0},
-      tokenlist: [tokenD] Tokens;
-    var currentLine: Tokens;
+      tokenlist: [tokenD] unmanaged Tokens;
+    var currentLine: unmanaged Tokens;
 
 
     proc init(tomlStr: string) {

@@ -36,4 +36,3 @@ Older Platforms
 
    ibm
    marenostrum
-   sgi

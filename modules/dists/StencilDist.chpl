@@ -352,8 +352,7 @@ class LocStencilArr {
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
   pragma "local field"
   var myElems: [locDom.myFluff] eltType;
-  var locRADLock: atomicbool; // This will only be accessed locally
-                              // force the use of processor atomics
+  var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
 
   // TODO: use void type when packed update is disabled
   var recvBufs, sendBufs : [locDom.NeighDom] [locDom.bufDom] eltType;

@@ -881,8 +881,7 @@ module DefaultRectangular {
     var targetLocDom: domain(rank);
     var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType,
                                               stridable);
-    var RADLocks: [targetLocDom] atomicbool; // only accessed locally
-                                             // force processor atomics
+    var RADLocks: [targetLocDom] chpl__processorAtomicType(bool); // only accessed locally
 
     proc init(type eltType, param rank: int, type idxType,
               param stridable: bool, newTargetLocDom: domain(rank)) {

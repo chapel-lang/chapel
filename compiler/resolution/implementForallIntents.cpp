@@ -1835,11 +1835,11 @@ void implementForallIntents2wrapper(CallExpr* call, CallExpr* eflopiHelper)
 
 //
 //-----------------------------------------------------------------------------
-//  implementForallIntentsNew()
+//  implementForallIntents1New()
 //-----------------------------------------------------------------------------
 //
-// The counterparts of implementForallIntents1() and implementForallIntents2()
-// for the (new) ForallStmt-based representation.
+// The counterpart of implementForallIntents1()
+// for the "new" ForallStmt-based representation.
 //
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2128,8 +2128,6 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
 
   hld->flattenAndRemove();
 
-  // Todo: this replace() is somewhat expensive.
-  // Can instead we update fs->riSpecs[i] aka 'riSpec' in-place?
   origRiSpec->replace(new SymExpr(globalOp));
   
   return globalOp;
@@ -2137,10 +2135,6 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
 
 static void handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
 {
-  if (svar->reduceGlobalOp != NULL)
-    // Already handled, ex. in tupcomForYieldInForall().
-    return;
-
   Symbol* globalOp = NULL;
   Symbol* fiVarSym = svar->outerVarSym();
   Expr*   riSpec   = svar->reduceOpExpr();
@@ -2180,8 +2174,8 @@ static void handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
     // What else can this be?
     INT_FATAL(fs, "not implemented");
   }
-
-  svar->reduceGlobalOp = globalOp;
+  // Removing 'globalOp' is left as future work.
+  if (globalOp) INT_ASSERT(globalOp); // dummy use of 'globalOp'
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2426,7 +2420,7 @@ static void replaceVarUsesNew(ForallStmt* fs, SymbolMap& outer2shadow) {
 
 /////////////////////////////////////////////////////////////////////////////
 
-static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
+void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
   SymbolMap            outer2shadow;
   BlockStmt*           forallBody1 = fs->loopBody();
   int                  numShadowVars = 0;
@@ -2463,31 +2457,4 @@ static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
     INT_ASSERT(fs->numShadowVars() > 0);  // avoid unnecessary work
     replaceVarUsesNew(fs, outer2shadow);
   }
-}
-
-/////////////////////////////////////////////////////////////////////////////
-
-// implementForallIntentsNew() -- based on "new" ForallStmt representation
-
-static void checkForNonIterator(CallExpr* parCall) {
-  FnSymbol* dest = parCall->resolvedFunction();
-  AggregateType* retType = toAggregateType(dest->retType);
-  if (!retType || !retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-    USR_FATAL_CONT(parCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", dest->name);
-    USR_PRINT(dest, "The function '%s' is declared here", dest->name);
-    USR_STOP();
-  }
-}
-
-//
-// Performs both implementForallIntents1 and implementForallIntents2.
-// 'parCall' must have already been resolved.
-//
-void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall)
-{
-  INT_ASSERT(parCall == fs->firstIteratedExpr());
-
-  implementForallIntents1New(fs, parCall);
-
-  checkForNonIterator(parCall);
 }

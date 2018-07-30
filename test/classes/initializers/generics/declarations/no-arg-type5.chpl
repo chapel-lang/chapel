@@ -12,9 +12,9 @@ class Foo {
   }
 }
 
-var foo3 = new Foo();
-var foo: Foo(int); // We can create an instantiation with t = int
-var foo2: Foo(int);
+var foo3 = new unmanaged Foo();
+var foo: unmanaged Foo(int); // We can create an instantiation with t = int
+var foo2: unmanaged Foo(int);
 writeln(foo.type == foo2.type);
 writeln(foo.type == foo3.type);
 writeln(foo.type:string);
