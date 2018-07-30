@@ -30,8 +30,7 @@ the following settings:
 #. Set ``CHPL_HOME`` and ``MANPATH`` as indicated in :ref:`readme-chplenv`.
 
 
-#. Set ``CHPL_HOST_PLATFORM`` to ``pwr5`` for a Power5 cluster or
-   ``pwr6`` for a Power6 cluster.  For example:
+#. Set ``CHPL_HOST_PLATFORM`` to ``pwr6`` for a Power6 cluster.  e.g.:
 
    .. code-block:: sh
 

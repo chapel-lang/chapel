@@ -138,7 +138,6 @@ cray-cs                ibv
 cray-xc                aries
 cray-xe                gemini
 cray-xk                gemini
-pwr5                   lapi
 pwr6                   ibv
 other                  udp
 ====================  ===================
