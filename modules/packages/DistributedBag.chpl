@@ -208,7 +208,7 @@ module DistributedBag {
 
     proc deinit() {
       coforall loc in Locales do on loc {
-          delete chpl_getPrivatizedCopy(DistributedBagImpl(eltType), _pid);
+          delete chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
       }
     }
   }
@@ -283,7 +283,7 @@ module DistributedBag {
     // Node-local fields below. These fields are specific to the privatized instance.
     // To access them from another node, make sure you use 'getPrivatizedThis'
     pragma "no doc"
-    var bag : Bag(eltType);
+    var bag : unmanaged Bag(eltType);
 
     proc init(type eltType, targetLocales : [?targetLocDom] locale = Locales) {
       super.init(eltType);
@@ -705,8 +705,8 @@ module DistributedBag {
     // Used as a test-and-test-and-set spinlock.
     var status : atomic uint;
 
-    var headBlock : BagSegmentBlock(eltType);
-    var tailBlock : BagSegmentBlock(eltType);
+    var headBlock : unmanaged BagSegmentBlock(eltType);
+    var tailBlock : unmanaged BagSegmentBlock(eltType);
 
     var nElems : atomic uint;
 
