@@ -265,15 +265,5 @@ that are not actively maintained but may still work.
 Launcher Name  Description
 =============  ==========================================================
 loadleveler    launch using IBM loadleveler (still needs refining)
-marenostrum    launch using MareNostrum's mnsubmit script
 mpirun         launch using mpirun (no mpi comm currently) 
 =============  ==========================================================
-
-These launchers are the default for the following configurations: 
-
-============================  ===========================================
-If                            CHPL_LAUNCHER
-============================  ===========================================
-CHPL_PLATFORM=marenostrum     marenostrum
-============================  ===========================================
-
