@@ -122,7 +122,7 @@ var b1 = own.borrow();
 // A class type without a decorator, such as ``C``, is the same
 // as ``borrowed C``. The ``this`` argument of a method is a borrow as well.
 
-// The compiler automatically adds conversion from ``owned`` ``shared``
+// The compiler automatically adds conversion from ``owned``, ``shared``,
 // or ``unmanaged`` in the process of resolving a function call,
 // method call, or variable initialization.
 
