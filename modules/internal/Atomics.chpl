@@ -340,7 +340,8 @@ module Atomics {
 
     pragma "no doc"
     proc init() {
-      extern externFunc("init", bool, explicit=false) proc atomic_init(ref obj:externT(bool), value:bool): void;
+      extern externFunc("init", bool, explicit=false)
+        proc atomic_init(ref obj:externT(bool), value:bool): void;
 
       this.complete();
       atomic_init(_v, _defaultOf(bool));
@@ -348,7 +349,8 @@ module Atomics {
 
     pragma "no doc"
     proc deinit() {
-      extern externFunc("destroy", bool, explicit=false) proc atomic_destroy(ref obj:externT(bool)): void;
+      extern externFunc("destroy", bool, explicit=false)
+        proc atomic_destroy(ref obj:externT(bool)): void;
 
       atomic_destroy(_v);
     }
@@ -357,7 +359,8 @@ module Atomics {
        :returns: The stored value.
     */
     inline proc const read(order:memory_order = memory_order_seq_cst): bool {
-      extern externFunc("load", bool) proc atomic_load(const ref obj:externT(bool), order:memory_order): bool;
+      extern externFunc("load", bool)
+        proc atomic_load(const ref obj:externT(bool), order:memory_order): bool;
 
       var ret:bool;
       on this do ret = atomic_load(_v, order);
@@ -368,7 +371,8 @@ module Atomics {
        Stores `value` as the new value.
     */
     inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
-      extern externFunc("store", bool) proc atomic_store(ref obj:externT(bool), value:bool, order:memory_order): void;
+      extern externFunc("store", bool)
+        proc atomic_store(ref obj:externT(bool), value:bool, order:memory_order): void;
 
       on this do atomic_store(_v, value, order);
     }
@@ -377,7 +381,8 @@ module Atomics {
        Stores `value` as the new value and returns the original value.
     */
     inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
-      extern externFunc("exchange", bool) proc atomic_exchange(ref obj:externT(bool), value:bool, order:memory_order): bool;
+      extern externFunc("exchange", bool)
+        proc atomic_exchange(ref obj:externT(bool), value:bool, order:memory_order): bool;
 
       var ret:bool;
       on this do ret = atomic_exchange(_v, value, order);
@@ -395,7 +400,8 @@ module Atomics {
        may happen if the value could not be updated atomically.
     */
     inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
-      extern externFunc("compare_exchange_weak", bool) proc atomic_compare_exchange_weak(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
+      extern externFunc("compare_exchange_weak", bool)
+        proc atomic_compare_exchange_weak(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
 
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak(_v, expected, desired, order);
@@ -407,7 +413,8 @@ module Atomics {
        equal to `expected`. Returns `true` if `desired` was stored.
     */
     inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
-      extern externFunc("compare_exchange_strong", bool) proc atomic_compare_exchange_strong(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
+      extern externFunc("compare_exchange_strong", bool)
+        proc atomic_compare_exchange_strong(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
 
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong(_v, expected, desired, order);
@@ -1180,7 +1187,8 @@ module Atomics {
 
     pragma "no doc"
     proc init(type T) {
-      extern externFunc("init", T, explicit=false) proc atomic_init(ref obj:externT(T), value:T): void;
+      extern externFunc("init", T, explicit=false)
+        proc atomic_init(ref obj:externT(T), value:T): void;
 
       this.T = T;
       this.complete();
@@ -1189,7 +1197,8 @@ module Atomics {
 
     pragma "no doc"
     proc deinit() {
-      extern externFunc("destroy", T, explicit=false) proc atomic_destroy(ref obj:externT(T)): void;
+      extern externFunc("destroy", T, explicit=false)
+        proc atomic_destroy(ref obj:externT(T)): void;
 
       atomic_destroy(_v);
     }
@@ -1198,7 +1207,8 @@ module Atomics {
        :returns: The stored value.
     */
     inline proc const read(order:memory_order = memory_order_seq_cst): T {
-      extern externFunc("load", T) proc atomic_load(const ref obj:externT(T), order:memory_order): T;
+      extern externFunc("load", T)
+        proc atomic_load(const ref obj:externT(T), order:memory_order): T;
 
       var ret:T;
       on this do ret = atomic_load(_v, order);
@@ -1209,7 +1219,8 @@ module Atomics {
        Stores `value` as the new value.
     */
     inline proc write(value:T, order:memory_order = memory_order_seq_cst): void {
-      extern externFunc("store", T) proc atomic_store(ref obj:externT(T), value:T, order:memory_order): void;
+      extern externFunc("store", T)
+        proc atomic_store(ref obj:externT(T), value:T, order:memory_order): void;
 
       on this do atomic_store(_v, value, order);
     }
@@ -1218,7 +1229,8 @@ module Atomics {
        Stores `value` as the new value and returns the original value.
     */
     inline proc exchange(value:T, order:memory_order = memory_order_seq_cst): T {
-      extern externFunc("exchange", T) proc atomic_exchange(ref obj:externT(T), value:T, order:memory_order): T;
+      extern externFunc("exchange", T)
+        proc atomic_exchange(ref obj:externT(T), value:T, order:memory_order): T;
 
       var ret:T;
       on this do ret = atomic_exchange(_v, value, order);
@@ -1236,7 +1248,8 @@ module Atomics {
        may happen if the value could not be updated atomically.
     */
     inline proc compareExchangeWeak(expected:T, desired:T, order:memory_order = memory_order_seq_cst): bool {
-      extern externFunc("compare_exchange_weak", T) proc atomic_compare_exchange_weak(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
+      extern externFunc("compare_exchange_weak", T)
+        proc atomic_compare_exchange_weak(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
 
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak(_v, expected, desired, order);
@@ -1248,7 +1261,8 @@ module Atomics {
        equal to `expected`. Returns `true` if `desired` was stored.
     */
     inline proc compareExchangeStrong(expected:T, desired:T, order:memory_order = memory_order_seq_cst): bool {
-      extern externFunc("compare_exchange_strong", T) proc atomic_compare_exchange_strong(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
+      extern externFunc("compare_exchange_strong", T)
+        proc atomic_compare_exchange_strong(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
 
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong(_v, expected, desired, order);
@@ -1262,7 +1276,8 @@ module Atomics {
        integer and real atomic types.
     */
     inline proc fetchAdd(value:T, order:memory_order = memory_order_seq_cst): T {
-      extern externFunc("fetch_add", T) proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
+      extern externFunc("fetch_add", T)
+        proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
 
       var ret:T;
       on this do ret = atomic_fetch_add(_v, value, order);
@@ -1274,7 +1289,8 @@ module Atomics {
        integer and real atomic types.
     */
     inline proc add(value:T, order:memory_order = memory_order_seq_cst): void {
-      extern externFunc("fetch_add", T) proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
+      extern externFunc("fetch_add", T)
+        proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
 
       on this do atomic_fetch_add(_v, value, order);
     }
@@ -1286,7 +1302,8 @@ module Atomics {
        for integer and real atomic types.
     */
     inline proc fetchSub(value:T, order:memory_order = memory_order_seq_cst): T {
-      extern externFunc("fetch_sub", T) proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
+      extern externFunc("fetch_sub", T)
+        proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
 
       var ret:T;
       on this do ret = atomic_fetch_sub(_v, value, order);
@@ -1298,7 +1315,8 @@ module Atomics {
        for integer and real atomic types.
     */
     inline proc sub(value:T, order:memory_order = memory_order_seq_cst): void {
-      extern externFunc("fetch_sub", T) proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
+      extern externFunc("fetch_sub", T)
+        proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
 
       on this do atomic_fetch_sub(_v, value, order);
     }
@@ -1312,7 +1330,8 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc fetchOr(value:T, order:memory_order = memory_order_seq_cst): T {
-      extern externFunc("fetch_or", T) proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
+      extern externFunc("fetch_or", T)
+        proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
 
       var ret:T;
       on this do ret = atomic_fetch_or(_v, value, order);
@@ -1326,7 +1345,8 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc or(value:T, order:memory_order = memory_order_seq_cst): void {
-      extern externFunc("fetch_or", T) proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
+      extern externFunc("fetch_or", T)
+        proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
 
       on this do atomic_fetch_or(_v, value, order);
     }
@@ -1340,7 +1360,8 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc fetchAnd(value:T, order:memory_order = memory_order_seq_cst): T {
-      extern externFunc("fetch_and", T) proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
+      extern externFunc("fetch_and", T)
+        proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
 
       var ret:T;
       on this do ret = atomic_fetch_and(_v, value, order);
@@ -1354,7 +1375,8 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc and(value:T, order:memory_order = memory_order_seq_cst): void {
-      extern externFunc("fetch_and", T) proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
+      extern externFunc("fetch_and", T)
+        proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
 
       on this do atomic_fetch_and(_v, value, order);
     }
@@ -1368,7 +1390,8 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc fetchXor(value:T, order:memory_order = memory_order_seq_cst): T {
-      extern externFunc("fetch_xor", T) proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
+      extern externFunc("fetch_xor", T)
+        proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
 
       var ret:T;
       on this do ret = atomic_fetch_xor(_v, value, order);
@@ -1382,7 +1405,8 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc xor(value:T, order:memory_order = memory_order_seq_cst): void {
-      extern externFunc("fetch_xor", T) proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
+      extern externFunc("fetch_xor", T)
+        proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
 
       on this do atomic_fetch_xor(_v, value, order);
     }
