@@ -103,14 +103,6 @@ module Atomics {
   extern proc atomic_thread_fence(order:memory_order);
   extern proc atomic_signal_fence(order:memory_order);
 
-  extern proc atomic_is_lock_free_bool(ref obj:atomic_bool):bool;
-  extern proc atomic_init_bool(ref obj:atomic_bool, value:bool);
-  extern proc atomic_destroy_bool(ref obj:atomic_bool);
-  extern proc atomic_store_explicit_bool(ref obj:atomic_bool, value:bool, order:memory_order);
-  extern proc atomic_load_explicit_bool(const ref obj:atomic_bool, order:memory_order):bool;
-  extern proc atomic_exchange_explicit_bool(ref obj:atomic_bool, value:bool, order:memory_order):bool;
-  extern proc atomic_compare_exchange_strong_explicit_bool(ref obj:atomic_bool, expected:bool, desired:bool, order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_bool(ref obj:atomic_bool, expected:bool, desired:bool, order:memory_order):bool;
 
   extern proc atomic_is_lock_free_uint_least8_t(ref obj:atomic_uint_least8_t):bool;
   extern proc atomic_init_uint_least8_t(ref obj:atomic_uint_least8_t, value:uint(8));
@@ -225,19 +217,6 @@ module Atomics {
   extern proc atomic_fetch_and_explicit_int_least32_t(ref obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
   extern proc atomic_fetch_xor_explicit_int_least32_t(ref obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
 
-  extern proc atomic_is_lock_free_int_least64_t(ref obj:atomic_int_least64_t):bool;
-  extern proc atomic_init_int_least64_t(ref obj:atomic_int_least64_t, value:int(64));
-  extern proc atomic_destroy_int_least64_t(ref obj:atomic_int_least64_t);
-  extern proc atomic_store_explicit_int_least64_t(ref obj:atomic_int_least64_t, value:int(64), order:memory_order);
-  extern proc atomic_load_explicit_int_least64_t(const ref obj:atomic_int_least64_t, order:memory_order):int(64);
-  extern proc atomic_exchange_explicit_int_least64_t(ref obj:atomic_int_least64_t, value:int(64), order:memory_order):int(64);
-  extern proc atomic_compare_exchange_strong_explicit_int_least64_t(ref obj:atomic_int_least64_t, expected:int(64), desired:int(64), order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_int_least64_t(ref obj:atomic_int_least64_t, expected:int(64), desired:int(64), order:memory_order):bool;
-  extern proc atomic_fetch_add_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
-  extern proc atomic_fetch_sub_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
-  extern proc atomic_fetch_or_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
-  extern proc atomic_fetch_and_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
-  extern proc atomic_fetch_xor_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
 
   extern proc atomic_init__real64(ref obj:atomic__real64, value:real(64));
   extern proc atomic_destroy__real64(ref obj:atomic__real64);
@@ -315,12 +294,16 @@ module Atomics {
 
     pragma "no doc"
     proc init() {
+      extern proc atomic_init_bool(ref obj:atomic_bool, value:bool): void;
+
       this.complete();
       atomic_init_bool(_v, _defaultOf(bool));
     }
 
     pragma "no doc"
     proc deinit() {
+      extern proc atomic_destroy_bool(ref obj:atomic_bool): void;
+
       atomic_destroy_bool(_v);
     }
 
@@ -328,6 +311,8 @@ module Atomics {
        :returns: The stored value.
     */
     inline proc const read(order:memory_order = memory_order_seq_cst): bool {
+      extern proc atomic_load_explicit_bool(const ref obj:atomic_bool, order:memory_order): bool;
+
       var ret:bool;
       on this do ret = atomic_load_explicit_bool(_v, order);
       return ret;
@@ -337,6 +322,8 @@ module Atomics {
        Stores `value` as the new value.
     */
     inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
+      extern proc atomic_store_explicit_bool(ref obj:atomic_bool, value:bool, order:memory_order): void;
+
       on this do atomic_store_explicit_bool(_v, value, order);
     }
 
@@ -344,6 +331,8 @@ module Atomics {
        Stores `value` as the new value and returns the original value.
     */
     inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
+      extern proc atomic_exchange_explicit_bool(ref obj:atomic_bool, value:bool, order:memory_order): bool;
+
       var ret:bool;
       on this do ret = atomic_exchange_explicit_bool(_v, value, order);
       return ret;
@@ -360,6 +349,8 @@ module Atomics {
        may happen if the value could not be updated atomically.
     */
     inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+      extern proc atomic_compare_exchange_weak_explicit_bool(ref obj:atomic_bool, expected:bool, desired:bool, order:memory_order): bool;
+
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_bool(_v, expected, desired, order);
       return ret;
@@ -370,6 +361,8 @@ module Atomics {
        equal to `expected`. Returns `true` if `desired` was stored.
     */
     inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+      extern proc atomic_compare_exchange_strong_explicit_bool(ref obj:atomic_bool, expected:bool, desired:bool, order:memory_order): bool;
+
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_bool(_v, expected, desired, order);
       return ret;
@@ -1138,12 +1131,16 @@ module Atomics {
 
     pragma "no doc"
     proc init() {
+      extern proc atomic_init_int_least64_t(ref obj:atomic_int_least64_t, value:int(64)): void;
+
       this.complete();
       atomic_init_int_least64_t(_v, _defaultOf(int(64)));
     }
 
     pragma "no doc"
     proc deinit() {
+      extern proc atomic_destroy_int_least64_t(ref obj:atomic_int_least64_t): void;
+
       atomic_destroy_int_least64_t(_v);
     }
 
@@ -1151,6 +1148,8 @@ module Atomics {
        :returns: The stored value.
     */
     inline proc const read(order:memory_order = memory_order_seq_cst): int(64) {
+      extern proc atomic_load_explicit_int_least64_t(const ref obj:atomic_int_least64_t, order:memory_order): int(64);
+
       var ret:int(64);
       on this do ret = atomic_load_explicit_int_least64_t(_v, order);
       return ret;
@@ -1160,6 +1159,8 @@ module Atomics {
        Stores `value` as the new value.
     */
     inline proc write(value:int(64), order:memory_order = memory_order_seq_cst): void {
+      extern proc atomic_store_explicit_int_least64_t(ref obj:atomic_int_least64_t, value:int(64), order:memory_order): void;
+
       on this do atomic_store_explicit_int_least64_t(_v, value, order);
     }
 
@@ -1167,6 +1168,8 @@ module Atomics {
        Stores `value` as the new value and returns the original value.
     */
     inline proc exchange(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
+      extern proc atomic_exchange_explicit_int_least64_t(ref obj:atomic_int_least64_t, value:int(64), order:memory_order): int(64);
+
       var ret:int(64);
       on this do ret = atomic_exchange_explicit_int_least64_t(_v, value, order);
       return ret;
@@ -1183,6 +1186,8 @@ module Atomics {
        may happen if the value could not be updated atomically.
     */
     inline proc compareExchangeWeak(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst): bool {
+      extern proc atomic_compare_exchange_weak_explicit_int_least64_t(ref obj:atomic_int_least64_t, expected:int(64), desired:int(64), order:memory_order): bool;
+
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_int_least64_t(_v, expected, desired, order);
       return ret;
@@ -1193,6 +1198,8 @@ module Atomics {
        equal to `expected`. Returns `true` if `desired` was stored.
     */
     inline proc compareExchangeStrong(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst): bool {
+      extern proc atomic_compare_exchange_strong_explicit_int_least64_t(ref obj:atomic_int_least64_t, expected:int(64), desired:int(64), order:memory_order): bool;
+
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_int_least64_t(_v, expected, desired, order);
       return ret;
@@ -1205,6 +1212,8 @@ module Atomics {
        integer and real atomic types.
     */
     inline proc fetchAdd(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
+      extern proc atomic_fetch_add_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order): int(64);
+
       var ret:int(64);
       on this do ret = atomic_fetch_add_explicit_int_least64_t(_v, value, order);
       return ret;
@@ -1215,6 +1224,8 @@ module Atomics {
        integer and real atomic types.
     */
     inline proc add(value:int(64), order:memory_order = memory_order_seq_cst): void {
+      extern proc atomic_fetch_add_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order): int(64);
+
       on this do atomic_fetch_add_explicit_int_least64_t(_v, value, order);
     }
 
@@ -1225,6 +1236,8 @@ module Atomics {
        for integer and real atomic types.
     */
     inline proc fetchSub(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
+      extern proc atomic_fetch_sub_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order): int(64);
+
       var ret:int(64);
       on this do ret = atomic_fetch_sub_explicit_int_least64_t(_v, value, order);
       return ret;
@@ -1235,6 +1248,8 @@ module Atomics {
        for integer and real atomic types.
     */
     inline proc sub(value:int(64), order:memory_order = memory_order_seq_cst): void {
+      extern proc atomic_fetch_sub_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order): int(64);
+
       on this do atomic_fetch_sub_explicit_int_least64_t(_v, value, order);
     }
 
@@ -1247,6 +1262,8 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc fetchOr(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
+      extern proc atomic_fetch_or_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order): int(64);
+
       var ret:int(64);
       on this do ret = atomic_fetch_or_explicit_int_least64_t(_v, value, order);
       return ret;
@@ -1259,6 +1276,8 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc or(value:int(64), order:memory_order = memory_order_seq_cst): void {
+      extern proc atomic_fetch_or_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order): int(64);
+
       on this do atomic_fetch_or_explicit_int_least64_t(_v, value, order);
     }
 
@@ -1271,6 +1290,8 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc fetchAnd(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
+      extern proc atomic_fetch_and_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order): int(64);
+
       var ret:int(64);
       on this do ret = atomic_fetch_and_explicit_int_least64_t(_v, value, order);
       return ret;
@@ -1283,6 +1304,8 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc and(value:int(64), order:memory_order = memory_order_seq_cst): void {
+      extern proc atomic_fetch_and_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order): int(64);
+
       on this do atomic_fetch_and_explicit_int_least64_t(_v, value, order);
     }
 
@@ -1295,6 +1318,8 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc fetchXor(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
+      extern proc atomic_fetch_xor_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order): int(64);
+
       var ret:int(64);
       on this do ret = atomic_fetch_xor_explicit_int_least64_t(_v, value, order);
       return ret;
@@ -1307,6 +1332,8 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc xor(value:int(64), order:memory_order = memory_order_seq_cst): void {
+      extern proc atomic_fetch_xor_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order): int(64);
+
       on this do atomic_fetch_xor_explicit_int_least64_t(_v, value, order);
     }
 
