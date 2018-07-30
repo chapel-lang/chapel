@@ -1,3 +1,8 @@
+modifies-const-fields-of-this.chpl:12: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+modifies-const-fields-of-this.chpl:12: warning: Type 'CyclicRecord' defines a constructor here
+modifies-const-fields-of-this.chpl:16: warning: Type 'CyclicRecord' defines a constructor here
+modifies-const-fields-of-this.chpl:33: warning: Type 'CyclicClass' defines a constructor here
+modifies-const-fields-of-this.chpl:37: warning: Type 'CyclicClass' defines a constructor here
 modifies-const-fields-of-this.chpl:49: In function 'main':
 modifies-const-fields-of-this.chpl:51: error: illegal call to helpConstruct() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed
 modifies-const-fields-of-this.chpl:16: In initializer 'CyclicRecord':

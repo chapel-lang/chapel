@@ -1,3 +1,5 @@
+brad-dispatch.chpl:4: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+brad-dispatch.chpl:4: warning: Type 'C' defines a constructor here
 C(1,2);
 {x = 1, y = 2}
 C(x=3, y=4);

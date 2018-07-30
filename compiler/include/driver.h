@@ -183,6 +183,7 @@ extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 extern bool fWarnUnstable;
 extern bool fDefaultUnmanaged;
+extern bool fWarnConstructors;
 
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportInlinedIterators;

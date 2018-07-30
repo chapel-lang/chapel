@@ -1,2 +1,5 @@
+base-class-generic-args.chpl:7: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+base-class-generic-args.chpl:7: warning: Type 'Circle' defines a constructor here
+base-class-generic-args.chpl:19: warning: Type 'Oval' defines a constructor here
 circle area:12.5664
 6.28318 r:(1) r2:2.0
