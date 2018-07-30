@@ -946,10 +946,10 @@ class LocCyclicArr {
   type idxType;
   param stridable: bool;
 
-  const locDom: LocCyclicDom(rank, idxType, stridable);
+  const locDom: unmanaged LocCyclicDom(rank, idxType, stridable);
 
-  var locRAD: LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
-  var locCyclicRAD: LocCyclicRADCache(rank, idxType); // see below for why
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
+  var locCyclicRAD: unmanaged LocCyclicRADCache(rank, idxType); // see below for why
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
 
