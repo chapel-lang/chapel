@@ -27,12 +27,16 @@ module NetworkAtomics {
     type T = int(64)
     var _v: T;
 
+    inline proc _localeid: int(32) {
+      return this.locale.id:int(32);
+    }
+
     inline proc const read(order:memory_order = memory_order_seq_cst): T {
       pragma "insert line file info" extern
         proc chpl_comm_atomic_get_int64(ref result:T, l:int(32), const ref obj:T): void;
 
       var ret:T;
-      chpl_comm_atomic_get_int64(ret, this.locale.id:int(32), this._v);
+      chpl_comm_atomic_get_int64(ret, _localeid, _v);
       return ret;
     }
 
@@ -41,7 +45,7 @@ module NetworkAtomics {
         proc chpl_comm_atomic_put_int64(ref desired:T, l:int(32), ref obj:T): void;
 
       var v = value;
-      chpl_comm_atomic_put_int64(v, this.locale.id:int(32), this._v);
+      chpl_comm_atomic_put_int64(v, _localeid, _v);
     }
 
     inline proc exchange(value:T, order:memory_order = memory_order_seq_cst): T {
@@ -50,7 +54,7 @@ module NetworkAtomics {
 
       var ret:T;
       var v = value;
-      chpl_comm_atomic_xchg_int64(v, this.locale.id:int(32), this._v, ret);
+      chpl_comm_atomic_xchg_int64(v, _localeid, _v, ret);
       return ret;
     }
 
@@ -69,7 +73,7 @@ module NetworkAtomics {
       var ret:bool(32);
       var te = expected;
       var td = desired;
-      chpl_comm_atomic_cmpxchg_int64(te, td, this.locale.id:int(32), this._v, ret);
+      chpl_comm_atomic_cmpxchg_int64(te, td, _localeid, _v, ret);
       return ret:bool;
     }
 
@@ -79,7 +83,7 @@ module NetworkAtomics {
 
       var ret:T;
       var v = value;
-      chpl_comm_atomic_fetch_add_int64(v, this.locale.id:int(32), this._v, ret);
+      chpl_comm_atomic_fetch_add_int64(v, _localeid, _v, ret);
       return ret;
     }
 
@@ -88,7 +92,7 @@ module NetworkAtomics {
         proc chpl_comm_atomic_add_int64(ref op:T, l:int(32), ref obj:T): void;
 
       var v = value;
-      chpl_comm_atomic_add_int64(v, this.locale.id:int(32), this._v);
+      chpl_comm_atomic_add_int64(v, _localeid, _v);
     }
 
     inline proc fetchSub(value:T, order:memory_order = memory_order_seq_cst): T {
@@ -97,7 +101,7 @@ module NetworkAtomics {
 
       var ret:T;
       var v = value;
-      chpl_comm_atomic_fetch_sub_int64(v, this.locale.id:int(32), this._v, ret);
+      chpl_comm_atomic_fetch_sub_int64(v, _localeid, _v, ret);
       return ret;
     }
 
@@ -106,7 +110,7 @@ module NetworkAtomics {
         proc chpl_comm_atomic_sub_int64(ref op:T, l:int(32), ref obj:T): void;
 
       var v = value;
-      chpl_comm_atomic_sub_int64(v, this.locale.id:int(32), this._v);
+      chpl_comm_atomic_sub_int64(v, _localeid, _v);
     }
 
     inline proc fetchOr(value:T, order:memory_order = memory_order_seq_cst): T {
@@ -115,7 +119,7 @@ module NetworkAtomics {
 
       var ret:T;
       var v = value;
-      chpl_comm_atomic_fetch_or_int64(v, this.locale.id:int(32), this._v, ret);
+      chpl_comm_atomic_fetch_or_int64(v, _localeid, _v, ret);
       return ret;
     }
 
@@ -124,7 +128,7 @@ module NetworkAtomics {
         proc chpl_comm_atomic_or_int64(ref op:T, l:int(32), ref obj:T): void;
 
       var v = value;
-      chpl_comm_atomic_or_int64(v, this.locale.id:int(32), this._v);
+      chpl_comm_atomic_or_int64(v, _localeid, _v);
     }
 
     inline proc fetchAnd(value:T, order:memory_order = memory_order_seq_cst): T {
@@ -133,7 +137,7 @@ module NetworkAtomics {
 
       var ret:T;
       var v = value;
-      chpl_comm_atomic_fetch_and_int64(v, this.locale.id:int(32), this._v, ret);
+      chpl_comm_atomic_fetch_and_int64(v, _localeid, _v, ret);
       return ret;
     }
 
@@ -142,7 +146,7 @@ module NetworkAtomics {
         proc chpl_comm_atomic_and_int64(ref op:T, l:int(32), ref obj:T): void;
 
       var v = value;
-      chpl_comm_atomic_and_int64(v, this.locale.id:int(32), this._v);
+      chpl_comm_atomic_and_int64(v, _localeid, _v);
     }
 
     inline proc fetchXor(value:T, order:memory_order = memory_order_seq_cst): T {
@@ -151,7 +155,7 @@ module NetworkAtomics {
 
       var ret:T;
       var v = value;
-      chpl_comm_atomic_fetch_xor_int64(v, this.locale.id:int(32), this._v, ret);
+      chpl_comm_atomic_fetch_xor_int64(v, _localeid, _v, ret);
       return ret;
     }
 
@@ -160,7 +164,7 @@ module NetworkAtomics {
         proc chpl_comm_atomic_xor_int64(ref op:T, l:int(32), ref obj:T): void;
 
       var v = value;
-      chpl_comm_atomic_xor_int64(v, this.locale.id:int(32), this._v);
+      chpl_comm_atomic_xor_int64(v, _localeid, _v);
     }
 
     inline proc const waitFor(value:T, order:memory_order = memory_order_seq_cst): void {
@@ -791,12 +795,16 @@ module NetworkAtomics {
   record ratomicbool {
     var _v: int(64);
 
+    inline proc _localeid: int(32) {
+      return this.locale.id:int(32);
+    }
+
     inline proc const read(order:memory_order = memory_order_seq_cst): bool {
       pragma "insert line file info" extern
         proc chpl_comm_atomic_get_int64(ref result:int(64), l:int(32), const ref obj:int(64)): void;
 
       var ret: int(64);
-      chpl_comm_atomic_get_int64(ret, this.locale.id:int(32), this._v);
+      chpl_comm_atomic_get_int64(ret, _localeid, _v);
       return ret:bool;
     }
 
@@ -805,7 +813,7 @@ module NetworkAtomics {
         proc chpl_comm_atomic_put_int64(ref desired:int(64), l:int(32), ref obj:int(64)): void;
 
       var v = value:int(64);
-      chpl_comm_atomic_put_int64(v, this.locale.id:int(32), this._v);
+      chpl_comm_atomic_put_int64(v, _localeid, _v);
     }
 
     inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
@@ -815,7 +823,7 @@ module NetworkAtomics {
 
       var ret:int(64);
       var v = value:int(64);
-      chpl_comm_atomic_xchg_int64(v, this.locale.id:int(32), this._v, ret);
+      chpl_comm_atomic_xchg_int64(v, _localeid, _v, ret);
       return ret:bool;
     }
 
@@ -834,7 +842,7 @@ module NetworkAtomics {
       var ret:bool(32);
       var te = expected:int(64);
       var td = desired:int(64);
-      chpl_comm_atomic_cmpxchg_int64(te, td, this.locale.id:int(32), this._v, ret);
+      chpl_comm_atomic_cmpxchg_int64(te, td, _localeid, _v, ret);
       return ret:bool;
     }
 
