@@ -181,16 +181,60 @@ proc masonExternalHelp() {
   writeln('    mason external [options] [<args>...]');
   writeln('    mason external [options]');
   writeln();
-  writeln("Options:");
-  writeln("    list                        List all external packages available");
+  writeln("Options:");  
   writeln("    search                      Search for a specific external package");
   writeln("    compiler                    Find and Search for compilers on system");
   writeln("    install                     Install an external package");
   writeln("    -h, --help                  Display this message");
   writeln("        --installed             Check that an external package is installed");
+  writeln("        --info                  Show information about an external package");
   writeln();
   writeln("Please see Mason documentation for instructions on using external packages");
 }
+
+proc masonExternalSearchHelp() {
+  writeln("Search for external packages");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason external search [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln("        --desc                  Parse descriptions of package to include more search results");
+  writeln();
+}
+
+proc masonUnInstallHelp() {
+  writeln("Install external packages through Mason onto your system");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason external install <package> [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln();
+  writeln("External Mason packages can be downloaded in a few ways:");
+  writeln("    mason external install <package>         ");
+  writeln("    mason external install <package> <version> ");
+  writeln("    mason external install <package> <version> <compiler> ");
+  writeln("    mason external install <full Spack spec expression");
+  writeln();
+ }
+
+
+proc masonCompilerHelp() {
+  writeln("Find and view compilers on your system");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason external compiler [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  //writeln("        --find                  Find compilers on your system");
+  //writeln("        --edit                  Open the compilers configuration file in $EDITOR");
+  //writeln("        --show                  Increase Verbosity");
+  writeln();
+ }
 
 
 proc masonTestHelp() {
