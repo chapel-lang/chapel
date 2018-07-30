@@ -31,6 +31,7 @@ extern char libDir[FILENAME_MAX + 1];
 void codegen_library_header(std::vector<FnSymbol*> functions);
 void codegen_library_makefile();
 
+void ensureLibDirExists();
 void openLibraryHelperFile(fileinfo* fi,
                            const char* name,
                            const char* ext = NULL);

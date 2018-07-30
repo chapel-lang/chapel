@@ -116,7 +116,8 @@ void codegen_library_makefile() {
   std::string cflags = getCompilelineOption("cflags");
   cflags.erase(cflags.length() - 1); // remove trailing newline
   std::string includes = getCompilelineOption("includes-and-defines");
-  fprintf(makefile.fptr, "CHPL_CFLAGS = %s %s\n",
+  fprintf(makefile.fptr, "CHPL_CFLAGS = -I%s %s %s\n",
+          libDir,
           cflags.c_str(),
           includes.c_str());
 
@@ -128,11 +129,14 @@ void codegen_library_makefile() {
   } else {
     // libname = executableFilename plus the extension when executableFilename
     // does not start with "lib"
-    libname = name;
+    libname = libDir;
+    libname += "/";
+    libname += name;
     libname += getLibraryExtension();
   }
   // TODO: adjust for different location for the library, see earlier TODO
-  fprintf(makefile.fptr, "CHPL_LDFLAGS = -L. %s %s \n",
+  fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s %s \n",
+          libDir,
           libname.c_str(),
           libraries.c_str());
 
@@ -156,7 +160,7 @@ const char* getLibraryExtension() {
   return "";
 }
 
-static void ensureLibDirExists() {
+void ensureLibDirExists() {
   if (libDir[0] == '\0') {
     strncpy(libDir, "lib", sizeof("lib"));
     libDir[sizeof("lib")] = '\0';

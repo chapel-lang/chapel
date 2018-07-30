@@ -676,7 +676,17 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
 
   exeExt = getLibraryExtension();
 
-  fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
+  if (fLibraryCompile) {
+    ensureLibDirExists();
+    // In --library compilation, put the generated library in the library
+    // directory
+    fprintf(makefile.fptr, "BINNAME = %s/%s%s\n\n",
+            libDir,
+            executableFilename,
+            exeExt);
+  } else {
+    fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
+  }
   // BLC: This munging is done so that cp won't complain if the source
   // and destination are the same file (e.g., myprogram and ./myprogram)
   tmpbin = astr(tmpDirName, "/", strippedExeFilename, ".tmp", exeExt);
