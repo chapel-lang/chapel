@@ -123,8 +123,6 @@ portals4
     Portals4 (BETA) for the Portals 4.x API
 psm
     PSM for Intel's OmniPath fabric
-shmem
-    SHMEM for SGI Altix
 smp
     Simulates multiple locales on a single shared-memory machine
 
