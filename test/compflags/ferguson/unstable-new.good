@@ -7,6 +7,8 @@ unstable-new.chpl:20: warning: new MyClass is unstable
 unstable-new.chpl:20: note: use 'new unmanaged MyClass' 'new owned MyClass' or 'new shared MyClass'
 unstable-new.chpl:21: warning: new MyGenericClass is unstable
 unstable-new.chpl:21: note: use 'new unmanaged MyGenericClass' 'new owned MyGenericClass' or 'new shared MyGenericClass'
+unstable-new.chpl:27: warning: 'delete' can only be applied to unmanaged classes
+unstable-new.chpl:28: warning: 'delete' can only be applied to unmanaged classes
 in errors
 {x = 1}
 {y = 1}
