@@ -22,56 +22,47 @@ module NetworkAtomics {
   use ChapelStandard;
 
   // int(64)
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_get_int64(ref result:int(64),
-                                         l:int(32), const ref obj:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_put_int64(ref desired:int(64),
-                                         l:int(32), ref obj:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_add_int64(ref op:int(64),
-                                         l:int(32), ref obj:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_fetch_add_int64(ref op:int(64),
-                                               l:int(32), ref obj:int(64),
-                                               ref result:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_sub_int64(ref op:int(64),
-                                         l:int(32), ref obj:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_fetch_sub_int64(ref op:int(64),
-                                               l:int(32), ref obj:int(64),
-                                               ref result:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_and_int64(ref op:int(64),
-                                         l:int(32), ref obj:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_fetch_and_int64(ref op:int(64),
-                                               l:int(32), ref obj:int(64),
-                                               ref result:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_or_int64(ref op:int(64),
-                                        l:int(32), ref obj:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_fetch_or_int64(ref op:int(64),
-                                              l:int(32), ref obj:int(64),
-                                              ref result:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_xor_int64(ref op:int(64),
-                                         l:int(32), ref obj:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_fetch_xor_int64(ref op:int(64),
-                                               l:int(32), ref obj:int(64),
-                                               ref result:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_xchg_int64(ref desired:int(64),
-                                          l:int(32), ref obj:int(64),
-                                          ref result:int(64));
-  pragma "insert line file info"
-  extern proc chpl_comm_atomic_cmpxchg_int64(ref expected:int(64),
-                                             ref desired:int(64),
-                                             l:int(32), ref obj:int(64),
-                                             ref result:bool(32));
+  pragma "insert line file info" extern
+    proc chpl_comm_atomic_get_int64(ref result:int(64), l:int(32), const ref obj:int(64)): void;
+
+  pragma "insert line file info" extern
+    proc chpl_comm_atomic_put_int64(ref desired:int(64), l:int(32), ref obj:int(64)): void;
+
+  pragma "insert line file info" extern
+    proc chpl_comm_atomic_add_int64(ref op:int(64), l:int(32), ref obj:int(64)): void;
+
+  pragma "insert line file info" extern
+    proc chpl_comm_atomic_fetch_add_int64(ref op:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
+
+  pragma "insert line file info" extern
+    proc chpl_comm_atomic_sub_int64(ref op:int(64), l:int(32), ref obj:int(64)): void;
+
+  pragma "insert line file info" extern
+    proc chpl_comm_atomic_fetch_sub_int64(ref op:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
+
+  pragma "insert line file info" extern
+    proc chpl_comm_atomic_and_int64(ref op:int(64), l:int(32), ref obj:int(64)): void;
+
+  pragma "insert line file info" extern
+    proc chpl_comm_atomic_fetch_and_int64(ref op:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
+
+  pragma "insert line file info" extern
+    proc chpl_comm_atomic_or_int64(ref op:int(64), l:int(32), ref obj:int(64)): void;
+
+  pragma "insert line file info" extern
+    proc chpl_comm_atomic_fetch_or_int64(ref op:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
+
+  pragma "insert line file info" extern
+    proc chpl_comm_atomic_xor_int64(ref op:int(64), l:int(32), ref obj:int(64)): void;
+
+  pragma "insert line file info" extern
+    proc chpl_comm_atomic_fetch_xor_int64(ref op:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
+
+  pragma "insert line file info" extern
+  proc chpl_comm_atomic_xchg_int64(ref desired:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
+
+  pragma "insert line file info" extern
+  proc chpl_comm_atomic_cmpxchg_int64(ref expected:int(64), ref desired:int(64), l:int(32), ref obj:int(64), ref result:bool(32)): void;
 
   // int(64)
   pragma "atomic type"
