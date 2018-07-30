@@ -40,8 +40,6 @@ def get():
                 sys.stderr.write(
                     'Warning: Cannot detect launcher on this system. Please '
                     'set CHPL_LAUNCHER in the environment.\n')
-        elif platform_val == 'marenostrum':
-            launcher_val = 'marenostrum'
         elif comm_val == 'gasnet':
             substrate_val = chpl_comm_substrate.get()
             if substrate_val == 'smp':

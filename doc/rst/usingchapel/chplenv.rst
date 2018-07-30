@@ -68,7 +68,6 @@ CHPL_HOST_PLATFORM
         darwin       Macintosh OS X platforms
         linux32      32-bit Linux platforms
         linux64      64-bit Linux platforms
-        marenostrum  BSC's MareNostrum platform
         netbsd32     32-bit NetBSD platforms
         netbsd64     64-bit NetBSD platforms
         pwr6         IBM Power6 SMP cluster
@@ -167,7 +166,6 @@ CHPL_*_COMPILER
                       - cray-prgenv-$PE_ENV (for ``CHPL_TARGET_COMPILER``,
                         where PE_ENV is set by PrgEnv-* modules)
         darwin        clang if available, otherwise gnu
-        marenostrum   ibm
         pwr6          ibm
         other         gnu
         ============  ==================================================
