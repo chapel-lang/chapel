@@ -3,12 +3,13 @@ use Time;
 use LayoutCS;
 use BlockDist;
 use CommDiagnostics;
+use Sort;
 
 config param enableRuntimeDebugging = true;
 config const debugAll : bool = false;
 config const debugTopo = debugAll;
 config const debugTopoTasking = debugAll || debugTopo;
-config const debugCreateSparseUTDomain = debugAll;
+config const debugCreateDomain = debugAll;
 config const debugPermute = debugAll;
 config const debugWorkQueue = debugAll;
 config const debugLock = debugAll;
@@ -514,10 +515,13 @@ where D.rank == 2
   return new owned PermutationMap( rowMap, columnMap );
 }
 
-proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : int ) {
+proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : int, fillModeDensity : real ) {
   // Must be square matrix, uniformly dimensioned dense domain
-  if D.dim(1) != D.dim(2) then halt("Domain provided to createSparseUpperTriangluarDomain is not square.");
+  if D.dim(1).size != D.dim(2).size then halt("Domain provided to createSparseUpperTriangluarDomain is not square.");
+  if (D.dim(1).low != D.dim(2).low) || (D.dim(1).high != D.dim(2).high) then halt("Domain provided to createSparseUpperTriangluarDomain does not have equivalent ranges.");
   const N = D.dim(1).size;
+  const low = D.dim(1).low;
+  const high = D.dim(1).high;
   const minDensity : real = 1.0/N;
   const maxDensity : real = (N+1.0)/(2.0*N);
 
@@ -525,45 +529,110 @@ proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : in
   if density < minDensity then halt( "Specified density (%n) is less than minimum density (%n) for N (%n)".format( density, minDensity, N));
   if density > maxDensity then halt( "Specified density (%n) is greater than maximum density (%n) for N (%n)".format( density, maxDensity, N));
 
-  // number of elements in complete UT matrix
-  var numberNonZerosInFullUTDomain : int = (( N * N + N)/2.0) : int;
+  // Maximum number of non-zero elements in 100% dense UT matrix
+  const maxNumberNonZerosInFullUTDomain : int = (( N * N + N)/2.0) : int;
+  // Maximum number of non-zeros elements in 100% desn UT matrix
+  const maxNumberNonZerosStrictlyInUT : int = maxNumberNonZerosInFullUTDomain - N;
   // number of elements added
-  var numberNonZerosAddedInUT : int = max( N, floor( N*N*density ) ) : int;
+  const numberNonZerosAddedInUT : int = max( N, floor( N*N*density ) ) : int;
   // number of non-diagonal elements added
-  var numberNonZerosAddedInStrictlyUT : int = numberNonZerosAddedInUT - N;
+  const numberNonZerosAddedInStrictlyUT : int = numberNonZerosAddedInUT - N;
 
-  if enableRuntimeDebugging && debugCreateSparseUTDomain {
-    writeln( "Dense: ", numberNonZerosInFullUTDomain );
+  if enableRuntimeDebugging && debugCreateDomain {
+    writeln( "Dense: ", maxNumberNonZerosInFullUTDomain );
     writeln( "Added: ", numberNonZerosAddedInUT );
-    writeln( "Non-diagonal: ", numberNonZerosAddedInStrictlyUT );
+    writeln( "Non-diagonal added: ", numberNonZerosAddedInStrictlyUT );
   }
 
-  // resulting sparse domain
-  var sparseD : sparse subdomain(D) dmapped CS(compressRows=false);
+  // Resulting sparse domain.
+  // Note: this is a simple sparse domain. Will dmap into appropriate domain
+  // (CS for example) when invoking a particular toposort implementation.
+  var sparseD : sparse subdomain(D);
 
-  // if adding more than diagonals...
+  // if adding non-diagonals
   if numberNonZerosAddedInStrictlyUT > 0 {
+    // if dense enough to warrant a dense fill and remove methods
+    // Note: this is pretty effecient, even for low densities
+    if density >= fillModeDensity {
+      var sDRandomDom : domain(1) = {1..#maxNumberNonZerosStrictlyInUT};
+      var sDRandom : [sDRandomDom] D.rank*D.idxType;
 
-    var sDRandomDom : domain(1) = {1..#numberNonZerosInFullUTDomain-N};
-    var sDRandom : [sDRandomDom] D.rank*D.idxType;
-
-    // TODO figure out effecient way to add small number of non-zeros
-
-    forall i in D.dim(1).low..D.dim(1).high-1 {
-
-      const delta = (D.dim(1).high-1 - i);
-      const positionOffset = ( delta*delta + delta ) / 2;
-      const position = positionOffset;
-      const colRange = i+1..D.dim(1).high;
-
-      if enableRuntimeDebugging && debugCreateSparseUTDomain then writeln("filling ", i, " x ", colRange);
-      for j in colRange {
-        sDRandom[ position + (j - i) ] = (i,j);
+      // foreach row
+      forall row in low..high-1 {
+        // Inital position in sDRandom is Sum(N-1) - Sum( (N-1) - (row-1) ) + 1
+        var i = (-((N-row)*(N-row)) - N + row) / 2 + ((N-1)*(N-1) + N - 1)/2 + 1;
+        for column in row+1..high {
+          sDRandom[ i ] = (row,column);
+          i += 1; // next position
+        }
       }
-    }
 
-    shuffle( sDRandom, seed );
-    sparseD.bulkAdd( sDRandom[1..#numberNonZerosAddedInStrictlyUT] );
+      // if not maximum density, shuffle, add subset
+      if numberNonZerosAddedInStrictlyUT < maxNumberNonZerosStrictlyInUT {
+        shuffle( sDRandom, seed );
+        sparseD.bulkAdd( sDRandom[1..#numberNonZerosAddedInStrictlyUT] );
+      } else {
+        sparseD.bulkAdd( sDRandom );
+      }
+      // add to returned sparse domain
+    }
+    // If *very* sparse, use insertion fill (not effecient even at relatively low densities)
+    else {
+      var random : RandomStream(D.idxType) = new RandomStream(D.idxType, seed);
+
+      // number of non-zero columns in each row in the strict UT region
+      var rowCount : [low..high-1] int;
+      var totalAdded = 0;
+      while totalAdded < numberNonZerosAddedInStrictlyUT {
+        // get random row
+        var row = (abs( random.getNext() ) % (high-1)) + 1;
+        // if row is not filled, add
+        if rowCount[row] < high-row{
+          rowCount[row] += 1;
+          totalAdded += 1;
+        }
+      }
+
+      // list of indices in strictly UT region
+      var sDRandomDom : domain(1) = {1..#numberNonZerosAddedInStrictlyUT};
+      var sDRandom : [sDRandomDom] D.rank*D.idxType;
+
+      // array of start index into sDRandom for each row.
+      // row=high is unused, can be used for asserting( i < startOffset[row+1] )
+      var startOffset : [low..high] int;
+      for row in startOffset.domain {
+        if row == low {
+           startOffset[row] = sDRandomDom.low; // base case
+        } else {
+          startOffset[row] = startOffset[row-1] + rowCount[row-1];
+        }
+      }
+
+      // foreach row...
+      forall row in low..high-1 {
+        // create a new local random number generator
+        // note: seed is still deterministic. Should get same behavior regardless
+        // of tasking (including number of tasks and scheduling)
+        var localRandom : RandomStream(D.idxType) = new RandomStream(D.idxType, (seed ^ (row << 1) | 1) );
+        // our index into sDRandomDom
+        var i = startOffset[row];
+        // set of indices we already have
+        var bagOfIndices : domain(D.idxType);
+        while rowCount[row] > 0 {
+          // random column in range row+1 .. high
+          var column = (abs( localRandom.getNext() ) % (high-row)) + row+1;
+          // if not already in our index set, add it
+          if !bagOfIndices.member( column ) {
+            bagOfIndices += column; // add to set
+            rowCount[row] -= 1; // decrement count
+            sDRandom[i] = (row,column); // add to index array
+            i += 1; // increment sDRandom index to next position
+          }
+        }
+      }
+      // add to returned sparse domain
+      sparseD.bulkAdd( sDRandom );
+    }
   }
 
   // Diagonal indices
@@ -573,7 +642,7 @@ proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : in
   }
   sparseD.bulkAdd( sDDiag );
 
-  if enableRuntimeDebugging && debugCreateSparseUTDomain then writeln( "there are ", sparseD.size, " non zeros, for density of ", sparseD.size / ( N*N : real ) );
+  if enableRuntimeDebugging && debugCreateDomain then writeln( "there are ", sparseD.size, " non zeros, for density of ", sparseD.size / ( N*N : real ) );
 
   if sparseD.size != numberNonZerosAddedInUT then halt("Created a domain with unexpected number of non-zero indices. Created %n, expected %n".format(sparseD.size, numberNonZerosAddedInUT));
 
@@ -1012,6 +1081,10 @@ const maxDensity : real = (N+1.0)/(2.0*N);
 config const additionalDensity : real = 1.0 - minDensity;
 
 config const density : real = min( maxDensity, minDensity + max(0, additionalDensity) );
+// density at and above which createSparseUpperTriangluarDomain uses dense fill
+// and below which uses sparse insert
+config const defaultFillModeDensity : real = .1;
+
 config type eltType = string;
 
 config const numTasks : int = here.maxTaskPar;
@@ -1029,15 +1102,17 @@ enum ToposortImplementation { Serial, Parallel, Distributed };
 config const implementation : ToposortImplementation = ToposortImplementation.Parallel;
 
 proc main(){
-  if density < minDensity then halt("Specified density (%n) is less than min density (%n) for N (%n)".format( density, minDensity, N) );
-  if density > maxDensity then halt("Specified density (%n) is greater than max density (%n) for N (%n)".format( density, maxDensity, N) );
+  if density < minDensity then halt("Specified density (%n) is less than min density (%n) for N (%n)".format( density, minDensity, N));
+  if density > maxDensity then halt("Specified density (%n) is greater than max density (%n) for N (%n)".format( density, maxDensity, N));
+
+  if defaultFillModeDensity > 1 || defaultFillModeDensity < 0 then halt("defaultFillModeDensity must be in [0.0, 1.0] (is %n)".format(defaultFillModeDensity));
 
   if !silentMode then writeln( "Number of tasks: %n\nN: %n\nSpecified density: %dr%%".format(numTasks, N, density * 100.0 ) );
 
   // create upper triangular matrix
   if !silentMode then writeln("Creating sparse upper triangluar domain");
   const D : domain(2) = {1..#N,1..#N};
-  const sparseD = createSparseUpperTriangluarDomain( D, density, seed );
+  const sparseD = createSparseUpperTriangluarDomain( D, density, seed, defaultFillModeDensity );
 
   if !silentMode then writeln( "Actual Density: density: %dr%%\nTotal Number NonZeros: %n".format((sparseD.size / (1.0*N*N))*100, sparseD.size) );
 
@@ -1052,11 +1127,15 @@ proc main(){
   select implementation {
     when ToposortImplementation.Serial {
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Serial implementation.");
-      topoResult = toposortSerial( permutedSparseD );
+      var dmappedPermutedSparseD : permutedSparseD.type dmapped CS(compressRows=false);
+      dmappedPermutedSparseD = permutedSparseD;
+      topoResult = toposortSerial( dmappedPermutedSparseD );
     }
     when ToposortImplementation.Parallel {
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation.");
-      topoResult = toposortParallel( permutedSparseD, numTasks );
+      var dmappedPermutedSparseD : permutedSparseD.type dmapped CS(compressRows=false);
+      dmappedPermutedSparseD = permutedSparseD;
+      topoResult = toposortParallel( dmappedPermutedSparseD, numTasks );
     }
     when ToposortImplementation.Distributed {
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Distributed implementation.");
