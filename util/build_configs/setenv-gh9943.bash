@@ -30,7 +30,7 @@
 #   chpl -o hello6 $CHPL_HOME/test/release/examples/hello6*.chpl
 #   ./hello6
 
-if [ -z "$BUILD_CONFIGS_config" ]; then
+if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     # This is a top-level setenv "project":
     #

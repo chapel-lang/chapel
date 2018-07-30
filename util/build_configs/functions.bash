@@ -46,13 +46,13 @@ case "$setenv" in
 esac
 
 # verbosity option, from build_configs env
-case "$BUILD_CONFIGS_verbose" in
+case "$BUILD_CONFIGS_VERBOSE" in
 ( True )    verbose=-v ;;
 ( * )       verbose= ;;
 esac
 
 # dryrun option, from build_configs env
-case "$BUILD_CONFIGS_dry_run" in
+case "$BUILD_CONFIGS_DRY_RUN" in
 ( True )    dry_run=-n ;;
 ( * )       dry_run= ;;
 esac

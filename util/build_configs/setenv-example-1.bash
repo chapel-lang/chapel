@@ -17,7 +17,7 @@
 
 set +x -e   # exit if any errors
 
-if [ -z "$BUILD_CONFIGS_config" ]; then
+if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
 # This is a top-level setenv "project":
 #
@@ -135,7 +135,7 @@ else
     source $cwd/functions.bash
 
     log_info "Begin callback $setenv"
-    log_debug "with config=$BUILD_CONFIGS_config"
+    log_debug "with config=$BUILD_CONFIGS_CALLBACK"
 
     if [ "$CHPL_COMM" == none ]; then
         if [ "$CHPL_COMM_SUBSTRATE" != none ]; then
@@ -160,7 +160,7 @@ else
 
     if [ -z "$dry_run" ] ; then
         log_info "Chapel config from printchplenv, after build_configs and setenv:"
-        $BUILD_CONFIGS_chplenv_exe --all --no-tidy
+        $BUILD_CONFIGS_CHPLENV_EXE --all --no-tidy
     fi
 
     log_info "End $setenv"

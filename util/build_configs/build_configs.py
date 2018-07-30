@@ -425,16 +425,16 @@ def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_
         print('[BUILD_CONFIGS] make_targets:\n\t{0}'.format(make_targets), file=make_logfile)
         print('[BUILD_CONFIGS] config:\n\t{0}'.format(build_config_name), file=make_logfile)
 
-    build_env['BUILD_CONFIGS_config'] = '{0}'.format(build_config_name)
-    build_env['BUILD_CONFIGS_verbose'] = '{0}'.format(verbose)
-    build_env['BUILD_CONFIGS_dry_run'] = '{0}'.format(dry_run)
-    build_env['BUILD_CONFIGS_chplenv_exe'] = chpl_misc['chplenv_exe']
-    build_env['BUILD_CONFIGS_chpl_make'] = chpl_misc['chpl_make']
-    build_env['BUILD_CONFIGS_make_targets'] = chpl_misc['make_targets']
+    build_env['BUILD_CONFIGS_CALLBACK'] = '{0}'.format(build_config_name)
+    build_env['BUILD_CONFIGS_VERBOSE'] = '{0}'.format(verbose)
+    build_env['BUILD_CONFIGS_DRY_RUN'] = '{0}'.format(dry_run)
+    build_env['BUILD_CONFIGS_CHPLENV_EXE'] = chpl_misc['chplenv_exe']
+    build_env['BUILD_CONFIGS_CHPL_MAKE'] = chpl_misc['chpl_make']
+    build_env['BUILD_CONFIGS_MAKE_TARGETS'] = chpl_misc['make_targets']
 
     if dry_run:
         logging.info('dry-run command:\n\t{0}'.format(dryrun_cmd))
-        build_env['BUILD_CONFIGS_dryrun_cmd']  = dryrun_cmd
+        build_env['BUILD_CONFIGS_DRYRUN_CMD']  = dryrun_cmd
         if make_logfile:
             print('[BUILD_CONFIGS] command:\n\t{0}\n'.format(make_cmd), file=make_logfile)
         with elapsed_time(build_config_name):
@@ -447,7 +447,7 @@ def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_
                     build_config_name, output, error, result))
     else:
         logging.info('Chapel make command:\n\t{0}'.format(make_cmd))
-        build_env['BUILD_CONFIGS_make_cmd'] = make_cmd
+        build_env['BUILD_CONFIGS_MAKE_CMD'] = make_cmd
         if make_logfile:
             print('[BUILD_CONFIGS] command:\n\t{0}\n'.format(make_cmd), file=make_logfile)
         with elapsed_time(build_config_name):
