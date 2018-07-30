@@ -29,7 +29,7 @@ module NetworkAtomics {
 
   // int(64)
   pragma "atomic type"
-  record ratomic_int64 {
+  record RAtomicT {
     type T = int(64)
     var _v: T;
 
@@ -195,29 +195,29 @@ module NetworkAtomics {
     }
   }
 
-  inline proc =(ref a:ratomic_int64, const b:ratomic_int64) {
+  inline proc =(ref a:RAtomicT, const b:RAtomicT) {
     a.write(b.read());
   }
-  inline proc =(ref a:ratomic_int64, b) {
+  inline proc =(ref a:RAtomicT, b) {
     compilerError("Cannot directly assign network atomic variables");
   }
-  inline proc +(a:ratomic_int64, b) {
+  inline proc +(a:RAtomicT, b) {
     compilerError("Cannot directly add network atomic variables");
     return a;
   }
-  inline proc -(a:ratomic_int64, b) {
+  inline proc -(a:RAtomicT, b) {
     compilerError("Cannot directly subtract network atomic variables");
     return a;
   }
-  inline proc *(a:ratomic_int64, b) {
+  inline proc *(a:RAtomicT, b) {
     compilerError("Cannot directly multiply network atomic variables");
     return a;
   }
-  inline proc /(a:ratomic_int64, b) {
+  inline proc /(a:RAtomicT, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
   }
-  inline proc %(a:ratomic_int64, b) {
+  inline proc %(a:RAtomicT, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
   }
@@ -798,7 +798,7 @@ module NetworkAtomics {
 
   // bool, implemented with int(64)
   pragma "atomic type"
-  record ratomicbool {
+  record RAtomicBool {
     var _v: int(64);
 
     inline proc _localeid: int(32) {
@@ -881,29 +881,29 @@ module NetworkAtomics {
     }
   }
 
-  inline proc =(ref a:ratomicbool, const b:ratomicbool) {
+  inline proc =(ref a:RAtomicBool, const b:RAtomicBool) {
     a.write(b.read());
   }
-  inline proc =(ref a:ratomicbool, b) {
+  inline proc =(ref a:RAtomicBool, b) {
     compilerError("Cannot directly assign network atomic variables");
   }
-  inline proc +(a:ratomicbool, b) {
+  inline proc +(a:RAtomicBool, b) {
     compilerError("Cannot directly add network atomic variables");
     return a;
   }
-  inline proc -(a:ratomicbool, b) {
+  inline proc -(a:RAtomicBool, b) {
     compilerError("Cannot directly subtract network atomic variables");
     return a;
   }
-  inline proc *(a:ratomicbool, b) {
+  inline proc *(a:RAtomicBool, b) {
     compilerError("Cannot directly multiply network atomic variables");
     return a;
   }
-  inline proc /(a:ratomicbool, b) {
+  inline proc /(a:RAtomicBool, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
   }
-  inline proc %(a:ratomicbool, b) {
+  inline proc %(a:RAtomicBool, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
   }
