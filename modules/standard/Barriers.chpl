@@ -69,7 +69,7 @@ module Barriers {
   /* A barrier that will cause `numTasks` to wait before proceeding. */
   record Barrier {
     pragma "no doc"
-    var bar: BarrierBaseType;
+    var bar: unmanaged BarrierBaseType;
     pragma "no doc"
     var isowned: bool = false;
 

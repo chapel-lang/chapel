@@ -191,9 +191,9 @@ module DistributedDeque {
     var _pid : int;
 
     proc deinit() {
-      chpl_getPrivatizedCopy(DistributedDequeImpl(eltType), _pid).Destroy();
+      chpl_getPrivatizedCopy(unmanaged DistributedDequeImpl(eltType), _pid).Destroy();
       coforall loc in Locales do on loc {
-        delete chpl_getPrivatizedCopy(DistributedDequeImpl(eltType), _pid);
+        delete chpl_getPrivatizedCopy(unmanaged DistributedDequeImpl(eltType), _pid);
       }
 
     }
@@ -284,13 +284,13 @@ module DistributedDeque {
 
     // Keeps track of which slot we are on...
     pragma "no doc"
-    var globalHead : DistributedDequeCounter;
+    var globalHead : unmanaged DistributedDequeCounter;
 
     pragma "no doc"
-    var globalTail : DistributedDequeCounter;
+    var globalTail : unmanaged DistributedDequeCounter;
 
     pragma "no doc"
-    var queueSize : DistributedDequeCounter;
+    var queueSize : unmanaged DistributedDequeCounter;
 
     // We maintain an array of slots, wherein each slot is a pointer into a node's
     // address space. To maximize parallelism, we maintain numLocales * maxTaskPar
@@ -302,7 +302,7 @@ module DistributedDeque {
     var slotSpace = {0..-1};
 
     pragma "no doc"
-    var slots : [slotSpace] LocalDeque(eltType);
+    var slots : [slotSpace] unmanaged LocalDeque(eltType);
 
     proc init(type eltType,
               cap : int = -1,
