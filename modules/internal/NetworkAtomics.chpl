@@ -28,6 +28,92 @@ module NetworkAtomics {
   }
 
   pragma "atomic type"
+  pragma "ignore noinit"
+  record RAtomicBool {
+    var _v: int(64);
+
+    inline proc _localeid: int(32) {
+      return this.locale.id:int(32);
+    }
+
+    inline proc const read(order:memory_order = memory_order_seq_cst): bool {
+      pragma "insert line file info" extern externFunc("get", int(64))
+        proc atomic_get(ref result:int(64), l:int(32), const ref obj:int(64)): void;
+
+      var ret: int(64);
+      atomic_get(ret, _localeid, _v);
+      return ret:bool;
+    }
+
+    inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
+      pragma "insert line file info" extern externFunc("put", int(64))
+        proc atomic_put(ref desired:int(64), l:int(32), ref obj:int(64)): void;
+
+      var v = value:int(64);
+      atomic_put(v, _localeid, _v);
+    }
+
+    inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
+      pragma "insert line file info" extern externFunc("xchg", int(64))
+        proc atomic_xchg(ref desired:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
+
+      var ret:int(64);
+      var v = value:int(64);
+      atomic_xchg(v, _localeid, _v, ret);
+      return ret:bool;
+    }
+
+    inline proc compareExchange(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+      return this.compareExchangeStrong(expected, desired, order);
+    }
+
+    inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+      return this.compareExchangeStrong(expected, desired, order);
+    }
+
+    inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+      pragma "insert line file info" extern externFunc("cmpxchg", int(64))
+        proc atomic_cmpxchg(ref expected:int(64), ref desired:int(64), l:int(32), ref obj:int(64), ref result:bool(32)): void;
+
+      var ret:bool(32);
+      var te = expected:int(64);
+      var td = desired:int(64);
+      atomic_cmpxchg(te, td, _localeid, _v, ret);
+      return ret:bool;
+    }
+
+    inline proc testAndSet(order:memory_order = memory_order_seq_cst): bool {
+      return this.exchange(true, order);
+    }
+
+    inline proc clear(order:memory_order = memory_order_seq_cst): void {
+      this.write(false, order);
+    }
+
+    inline proc const waitFor(value:bool, order:memory_order = memory_order_seq_cst): void {
+      on this {
+        while (this.read(order=memory_order_relaxed) != value) {
+          chpl_task_yield();
+        }
+        atomic_thread_fence(order);
+      }
+    }
+
+    inline proc const peek(): bool {
+      return _v:bool;
+    }
+
+    inline proc poke(value:bool): void {
+      _v = value:int(64);
+    }
+
+    proc const writeThis(x) {
+      x <~> read();
+    }
+  }
+
+  pragma "atomic type"
+  pragma "ignore noinit"
   record RAtomicT {
     type T;
     var _v: T;
@@ -200,89 +286,6 @@ module NetworkAtomics {
     }
   }
 
-  pragma "atomic type"
-  record RAtomicBool {
-    var _v: int(64);
-
-    inline proc _localeid: int(32) {
-      return this.locale.id:int(32);
-    }
-
-    inline proc const read(order:memory_order = memory_order_seq_cst): bool {
-      pragma "insert line file info" extern externFunc("get", int(64))
-        proc atomic_get(ref result:int(64), l:int(32), const ref obj:int(64)): void;
-
-      var ret: int(64);
-      atomic_get(ret, _localeid, _v);
-      return ret:bool;
-    }
-
-    inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
-      pragma "insert line file info" extern externFunc("put", int(64))
-        proc atomic_put(ref desired:int(64), l:int(32), ref obj:int(64)): void;
-
-      var v = value:int(64);
-      atomic_put(v, _localeid, _v);
-    }
-
-    inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
-      pragma "insert line file info" extern externFunc("xchg", int(64))
-        proc atomic_xchg(ref desired:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
-
-      var ret:int(64);
-      var v = value:int(64);
-      atomic_xchg(v, _localeid, _v, ret);
-      return ret:bool;
-    }
-
-    inline proc compareExchange(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
-      return this.compareExchangeStrong(expected, desired, order);
-    }
-
-    inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
-      return this.compareExchangeStrong(expected, desired, order);
-    }
-
-    inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
-      pragma "insert line file info" extern externFunc("cmpxchg", int(64))
-        proc atomic_cmpxchg(ref expected:int(64), ref desired:int(64), l:int(32), ref obj:int(64), ref result:bool(32)): void;
-
-      var ret:bool(32);
-      var te = expected:int(64);
-      var td = desired:int(64);
-      atomic_cmpxchg(te, td, _localeid, _v, ret);
-      return ret:bool;
-    }
-
-    inline proc testAndSet(order:memory_order = memory_order_seq_cst): bool {
-      return this.exchange(true, order);
-    }
-
-    inline proc clear(order:memory_order = memory_order_seq_cst): void {
-      this.write(false, order);
-    }
-
-    inline proc const waitFor(value:bool, order:memory_order = memory_order_seq_cst): void {
-      on this {
-        while (this.read(order=memory_order_relaxed) != value) {
-          chpl_task_yield();
-        }
-        atomic_thread_fence(order);
-      }
-    }
-
-    inline proc const peek(): bool {
-      return _v:bool;
-    }
-
-    inline proc poke(value:bool): void {
-      _v = value:int(64);
-    }
-
-    proc const writeThis(x) {
-      x <~> read();
-    }
-  }
 
   inline proc =(ref a:RAtomicBool, const b:RAtomicBool) {
     a.write(b.read());
