@@ -258,6 +258,7 @@ proc getTomlCompopts(lock: borrowed Toml, compopts: [?d] string) {
         select k {
             when "libs" do compopts.push_back("-L" + v.s); 
             when "include" do compopts.push_back("-I" + v.s);
+            when "other" do compopts.push_back("-I" + v.s);
             otherwise continue;
           }
       }

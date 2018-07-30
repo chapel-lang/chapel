@@ -206,7 +206,11 @@ proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throw
       const spkgPath = getSpkgPath(spec);
       const libs = joinPath(spkgPath, "lib");
       const include = joinPath(spkgPath, "include");
+      const other = joinPath(spkgPath, "other");
 
+      if isDir(other) {
+        spkgInfo["other"] = other;
+      }
       spkgInfo["name"] = pkgName;
       spkgInfo["version"] = version;
       spkgInfo["compiler"] = compiler;
