@@ -254,6 +254,9 @@ module Atomics {
     chpl_rmem_consist_fence(order);
   }
 
+  private proc isSupported(type T) param {
+    return T == bool || isInt(T) || isUint(T) || isReal(T);
+  }
 
   // Compute the C/Runtime type from the Chapel type
   // TODO support extern type renaming?
@@ -304,29 +307,21 @@ module Atomics {
   }
 
   pragma "no doc"
-  proc chpl__processorAtomicType(type base_type) type {
-    if base_type==bool then return AtomicBool;
-    else if base_type==uint(8) then return atomic_uint8;
-    else if base_type==uint(16) then return atomic_uint16;
-    else if base_type==uint(32) then return atomic_uint32;
-    else if base_type==uint(64) then return atomic_uint64;
-    else if base_type==int(8) then return atomic_int8;
-    else if base_type==int(16) then return atomic_int16;
-    else if base_type==int(32) then return atomic_int32;
-    else if base_type==int(64) then return AtomicT(base_type);
-    else if base_type==real(64) then return atomic_real64;
-    else if base_type==real(32) then return atomic_real32;
-    else compilerError("Unsupported atomic type");
+  proc chpl__processorAtomicType(type T) type {
+    if T == bool           then return AtomicBool;
+    else if isSupported(T) then return AtomicT(T);
+    else compilerError("Unsupported atomic type: " + T:string);
   }
 
+  // Parser hook
   pragma "no doc"
-  proc chpl__atomicType(type base_type) type {
+  proc chpl__atomicType(type T) type {
     if CHPL_NETWORK_ATOMICS == "none" {
-      return chpl__processorAtomicType(base_type);
+      return chpl__processorAtomicType(T);
     } else {
-      return chpl__networkAtomicType(base_type);
+      return chpl__networkAtomicType(T);
     }
-  };
+  }
 
 
   pragma "atomic type"
@@ -1330,6 +1325,7 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc fetchOr(value:T, order:memory_order = memory_order_seq_cst): T {
+      if !isIntegral(T) then compilerError("fetchOr is only defined for integer atomic types");
       extern externFunc("fetch_or", T)
         proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -1345,6 +1341,7 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc or(value:T, order:memory_order = memory_order_seq_cst): void {
+      if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
       extern externFunc("fetch_or", T)
         proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -1360,6 +1357,7 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc fetchAnd(value:T, order:memory_order = memory_order_seq_cst): T {
+      if !isIntegral(T) then compilerError("fetchAnd is only defined for integer atomic types");
       extern externFunc("fetch_and", T)
         proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -1375,6 +1373,7 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc and(value:T, order:memory_order = memory_order_seq_cst): void {
+      if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
       extern externFunc("fetch_and", T)
         proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -1390,6 +1389,7 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc fetchXor(value:T, order:memory_order = memory_order_seq_cst): T {
+      if !isIntegral(T) then compilerError("fetchXor is only defined for integer atomic types");
       extern externFunc("fetch_xor", T)
         proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -1405,6 +1405,7 @@ module Atomics {
        Only defined for integer atomic types.
     */
     inline proc xor(value:T, order:memory_order = memory_order_seq_cst): void {
+      if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
       extern externFunc("fetch_xor", T)
         proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
 
