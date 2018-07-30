@@ -305,7 +305,7 @@ module Atomics {
 
   pragma "no doc"
   proc chpl__processorAtomicType(type base_type) type {
-    if base_type==bool then return atomicbool;
+    if base_type==bool then return AtomicBool;
     else if base_type==uint(8) then return atomic_uint8;
     else if base_type==uint(16) then return atomic_uint16;
     else if base_type==uint(32) then return atomic_uint32;
@@ -313,7 +313,7 @@ module Atomics {
     else if base_type==int(8) then return atomic_int8;
     else if base_type==int(16) then return atomic_int16;
     else if base_type==int(32) then return atomic_int32;
-    else if base_type==int(64) then return atomic_int64();
+    else if base_type==int(64) then return AtomicT(base_type);
     else if base_type==real(64) then return atomic_real64;
     else if base_type==real(32) then return atomic_real32;
     else compilerError("Unsupported atomic type");
@@ -334,7 +334,7 @@ module Atomics {
   /*
      The boolean atomic type.
   */
-  record atomicbool {
+  record AtomicBool {
     pragma "no doc"
     var _v:externT(bool);
 
@@ -1178,9 +1178,9 @@ module Atomics {
 
   pragma "atomic type"
   pragma "ignore noinit"
-  record atomic_int64 {
+  record AtomicT {
     pragma "no doc"
-    type T = int(64);
+    type T;
 
     pragma "no doc"
     var _v:externT(T);
@@ -1606,10 +1606,10 @@ module Atomics {
   // We need to explicitly define these for all types because the atomic
   //  types are records and unless explicitly defined, it will resolve
   //  to the normal record version of the function.  Sigh.
-  inline proc =(ref a:atomicbool, const ref b:atomicbool) {
+  inline proc =(ref a:AtomicBool, const ref b:AtomicBool) {
     a.write(b.read());
   }
-  inline proc =(ref a:atomicbool, b) {
+  inline proc =(ref a:AtomicBool, b) {
     compilerError("Cannot directly assign atomic variables");
   }
   inline proc =(ref a:atomic_uint8, const ref b:atomic_uint8) {
@@ -1654,10 +1654,10 @@ module Atomics {
   inline proc =(ref a:atomic_int32, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc =(ref a:atomic_int64, const ref b:atomic_int64) {
+  inline proc =(ref a:AtomicT, const ref b:AtomicT) {
     a.write(b.read());
   }
-  inline proc =(ref a:atomic_int64, b) {
+  inline proc =(ref a:AtomicT, b) {
     compilerError("Cannot directly assign atomic variables");
   }
   inline proc =(ref a:atomic_real32, const ref b:atomic_real32) {
@@ -1701,7 +1701,7 @@ module Atomics {
     compilerError("Cannot directly add atomic variables");
     return a;
   }
-  inline proc +(a:atomic_int64, b) {
+  inline proc +(a:AtomicT, b) {
     compilerError("Cannot directly add atomic variables");
     return a;
   }
@@ -1742,7 +1742,7 @@ module Atomics {
     compilerError("Cannot directly subtract atomic variables");
     return a;
   }
-  inline proc -(a:atomic_int64, b) {
+  inline proc -(a:AtomicT, b) {
     compilerError("Cannot directly subtract atomic variables");
     return a;
   }
@@ -1783,7 +1783,7 @@ module Atomics {
     compilerError("Cannot directly multiply atomic variables");
     return a;
   }
-  inline proc *(a:atomic_int64, b) {
+  inline proc *(a:AtomicT, b) {
     compilerError("Cannot directly multiply atomic variables");
     return a;
   }
@@ -1824,7 +1824,7 @@ module Atomics {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }
-  inline proc /(a:atomic_int64, b) {
+  inline proc /(a:AtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }
@@ -1865,7 +1865,7 @@ module Atomics {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }
-  inline proc %(a:atomic_int64, b) {
+  inline proc %(a:AtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }
