@@ -7,6 +7,6 @@ class Foo {
 
 type bar = Foo;
 
-var myBar = new bar();
+var myBar = new unmanaged bar();
 
 delete myBar;
