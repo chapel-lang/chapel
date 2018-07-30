@@ -277,11 +277,11 @@ module Crypto {
     pragma "no doc"
     var keyDomain: domain(1);
     pragma "no doc"
-    var keys: [keyDomain] CryptoBuffer;
+    var keys: [keyDomain] owned CryptoBuffer;
     pragma "no doc"
-    var iv: CryptoBuffer;
+    var iv: owned CryptoBuffer;
     pragma "no doc"
-    var value: CryptoBuffer;
+    var value: owned CryptoBuffer;
 
     /* The `Envelope` class initializer that encapsulates the IV, AES encrypted
        ciphertext buffer and an array of encrypted key buffers.
@@ -464,9 +464,9 @@ module Crypto {
        :rtype: `CryptoBuffer`
 
     */
-    proc getDigest(inputBuffer: CryptoBuffer): CryptoBuffer {
+    proc getDigest(inputBuffer: CryptoBuffer): owned CryptoBuffer {
       this.hashSpace = digestPrimitives(this.digestName, this.hashLen, inputBuffer);
-      var hashBuffer = new unmanaged CryptoBuffer(this.hashSpace);
+      var hashBuffer = new owned CryptoBuffer(this.hashSpace);
       return hashBuffer;
     }
   }
@@ -638,9 +638,9 @@ module Crypto {
        :rtype: `CryptoBuffer`
 
     */
-    proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
+    proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): owned CryptoBuffer {
       var encryptedPlaintext = aesEncrypt(plaintext, key, IV, this.cipher);
-      var encryptedPlaintextBuff = new unmanaged CryptoBuffer(encryptedPlaintext);
+      var encryptedPlaintextBuff = new owned CryptoBuffer(encryptedPlaintext);
       return encryptedPlaintextBuff;
     }
 
@@ -665,9 +665,9 @@ module Crypto {
        :rtype: `CryptoBuffer`
 
     */
-    proc decrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
+    proc decrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): owned CryptoBuffer {
       var decryptedCiphertext = aesDecrypt(ciphertext, key, IV, this.cipher);
-      var decryptedCiphertextBuff = new unmanaged CryptoBuffer(decryptedCiphertext);
+      var decryptedCiphertextBuff = new owned CryptoBuffer(decryptedCiphertext);
       return decryptedCiphertextBuff;
     }
   }
@@ -818,7 +818,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer throws {
+    proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): owned CryptoBuffer throws {
       var ivLen = IV.getBuffSize();
       var keyLen = key.getBuffSize();
       if (ivLen != 8) {
@@ -829,7 +829,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
         throw new IllegalArgumentError("key", "Blowfish cipher expects a size greater than 10 bytes.");
       }
       var encryptedPlaintext = bfEncrypt(plaintext, key, IV, this.cipher);
-      var encryptedPlaintextBuff = new unmanaged CryptoBuffer(encryptedPlaintext);
+      var encryptedPlaintextBuff = new owned CryptoBuffer(encryptedPlaintext);
       return encryptedPlaintextBuff;
     }
 
@@ -854,9 +854,9 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc decrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
+    proc decrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): owned CryptoBuffer {
       var decryptedCiphertext = bfDecrypt(ciphertext, key, IV, this.cipher);
-      var decryptedCiphertextBuff = new unmanaged CryptoBuffer(decryptedCiphertext);
+      var decryptedCiphertextBuff = new owned CryptoBuffer(decryptedCiphertext);
       return decryptedCiphertextBuff;
     }
   }
@@ -898,12 +898,12 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc getRandomBuffer(buffLen: int): CryptoBuffer throws {
+    proc getRandomBuffer(buffLen: int): owned CryptoBuffer throws {
       if (buffLen < 1) {
         throw new IllegalArgumentError("buffLen", "Invalid random buffer length specified.");
       }
       var randomizedBuff = try createRandomBuffer(buffLen);
-      var randomizedCryptoBuff = new unmanaged CryptoBuffer(randomizedBuff);
+      var randomizedCryptoBuff = new owned CryptoBuffer(randomizedBuff);
       return randomizedCryptoBuff;
     }
   }
@@ -985,9 +985,9 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc passKDF(userKey: string, saltBuff: CryptoBuffer): CryptoBuffer {
+    proc passKDF(userKey: string, saltBuff: CryptoBuffer): owned CryptoBuffer {
       var key = PBKDF2(userKey, saltBuff, this.byteLen, this.iterCount, this.hashName);
-      var keyBuff = new unmanaged CryptoBuffer(key);
+      var keyBuff = new owned CryptoBuffer(key);
       return keyBuff;
     }
   }
@@ -1129,7 +1129,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `Envelope`
 
     */
-    proc encrypt(plaintext: CryptoBuffer, keys: [] RSAKey): Envelope {
+    proc encrypt(plaintext: CryptoBuffer, keys: [] RSAKey): owned Envelope {
       var ivLen = EVP_CIPHER_iv_length(EVP_aes_256_cbc()) - 1;
       var iv: [0..(ivLen: int(64))] uint(8);
 
@@ -1137,7 +1137,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
       var ciphertext = rsaEncrypt(keys, plaintext, iv, encSymmKeys);
 
-      var envp = new unmanaged Envelope(new unmanaged CryptoBuffer(iv), encSymmKeys, new unmanaged CryptoBuffer(ciphertext));
+      var envp = new owned Envelope(new owned CryptoBuffer(iv), encSymmKeys, new owned CryptoBuffer(ciphertext));
       return envp;
     }
 
@@ -1161,13 +1161,13 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc decrypt(envp: Envelope, key: RSAKey): CryptoBuffer throws {
+    proc decrypt(envp: Envelope, key: RSAKey): owned CryptoBuffer throws {
       var iv = envp.getIV().getBuffData();
       var ciphertext = envp.getEncMessage().getBuffData();
       var encKeys = envp.getEncKeys();
 
       var plaintext = try rsaDecrypt(key, iv, ciphertext, encKeys);
-      var plaintextBuff = new unmanaged CryptoBuffer(plaintext);
+      var plaintextBuff = new owned CryptoBuffer(plaintext);
       return plaintextBuff;
     }
   }
