@@ -136,7 +136,7 @@ module ChapelSyncvar {
 
     proc deinit() {
       if isOwned == true then
-        delete wrapped;
+        delete _to_unmanaged(wrapped);
     }
 
     // Do not allow implicit reads of sync vars.
@@ -312,7 +312,7 @@ module ChapelSyncvar {
   // This version has to be available to take precedence
   inline proc chpl__autoDestroy(x : _syncvar(?)) {
     if x.isOwned == true then
-      delete x.wrapped;
+      delete _to_unmanaged(x.wrapped);
   }
 
   pragma "no doc"
@@ -661,7 +661,7 @@ module ChapelSyncvar {
 
     proc deinit() {
       if isOwned == true then
-        delete wrapped;
+        delete _to_unmanaged(wrapped);
     }
 
     // Do not allow implicit reads of single vars.
@@ -755,7 +755,7 @@ module ChapelSyncvar {
   // This version has to be available to take precedence
   inline proc chpl__autoDestroy(x : _singlevar(?)) {
     if x.isOwned == true then
-      delete x.wrapped;
+      delete _to_unmanaged(x.wrapped);
   }
 
   pragma "no doc"
