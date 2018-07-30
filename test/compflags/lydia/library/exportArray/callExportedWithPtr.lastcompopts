@@ -1,1 +1,1 @@
--L. -lexportFuncWithPtr `$CHPL_HOME/util/config/compileline --libraries`
+-Llib/ -lexportFuncWithPtr `$CHPL_HOME/util/config/compileline --libraries`

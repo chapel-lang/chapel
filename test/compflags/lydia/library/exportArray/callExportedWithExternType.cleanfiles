@@ -1,2 +1,2 @@
-libexportFuncWithExternType.a
+lib/libexportFuncWithExternType.a
 lib/exportFuncWithExternType.h

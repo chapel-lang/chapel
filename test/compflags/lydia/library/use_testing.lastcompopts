@@ -1,1 +1,1 @@
--L. -ltesting `$CHPL_HOME/util/config/compileline --libraries`
+-Llib/ -ltesting `$CHPL_HOME/util/config/compileline --libraries`

@@ -1,2 +1,2 @@
-libreturnBadArray.a
+lib/libreturnBadArray.a
 lib/returnBadArray.h

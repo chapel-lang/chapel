@@ -1,2 +1,2 @@
-libreliesOnGlobal.a
+lib/libreliesOnGlobal.a
 lib/reliesOnGlobal.h
