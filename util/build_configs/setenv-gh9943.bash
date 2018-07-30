@@ -39,9 +39,9 @@ if [ -z "$BUILD_CONFIGS_config" ]; then
     #   parameters and make targets each time. It can also make changes
     #   to the default environment seen by build_config.py.
 
-    # CHPL_HOME == this Chapel git workspace
+    # CHPL_HOME from the environment, or default to this Chapel workspace
 
-    CHPL_HOME=$( cd ../.. && pwd )
+    CHPL_HOME=${CHPL_HOME:-$( cd $cwd/../.. && pwd )}
 
     # Default Chapel build config values may be defined here
 
