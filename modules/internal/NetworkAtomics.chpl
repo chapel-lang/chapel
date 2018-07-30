@@ -30,7 +30,7 @@ module NetworkAtomics {
       pragma "insert line file info" extern
         proc chpl_comm_atomic_get_int64(ref result:int(64), l:int(32), const ref obj:int(64)): void;
 
-      var ret: int(64);
+      var ret:int(64);
       chpl_comm_atomic_get_int64(ret, this.locale.id:int(32), this._v);
       return ret;
     }
@@ -76,8 +76,8 @@ module NetworkAtomics {
       pragma "insert line file info" extern
         proc chpl_comm_atomic_fetch_add_int64(ref op:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
 
-      var v = value;
       var ret:int(64);
+      var v = value;
       chpl_comm_atomic_fetch_add_int64(v, this.locale.id:int(32), this._v, ret);
       return ret;
     }
@@ -94,8 +94,8 @@ module NetworkAtomics {
       pragma "insert line file info" extern
         proc chpl_comm_atomic_fetch_sub_int64(ref op:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
 
-      var v = value;
       var ret:int(64);
+      var v = value;
       chpl_comm_atomic_fetch_sub_int64(v, this.locale.id:int(32), this._v, ret);
       return ret;
     }
@@ -112,8 +112,8 @@ module NetworkAtomics {
       pragma "insert line file info" extern
         proc chpl_comm_atomic_fetch_or_int64(ref op:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
 
-      var v = value;
       var ret:int(64);
+      var v = value;
       chpl_comm_atomic_fetch_or_int64(v, this.locale.id:int(32), this._v, ret);
       return ret;
     }
@@ -130,8 +130,8 @@ module NetworkAtomics {
       pragma "insert line file info" extern
         proc chpl_comm_atomic_fetch_and_int64(ref op:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
 
-      var v = value;
       var ret:int(64);
+      var v = value;
       chpl_comm_atomic_fetch_and_int64(v, this.locale.id:int(32), this._v, ret);
       return ret;
     }
@@ -148,8 +148,8 @@ module NetworkAtomics {
       pragma "insert line file info" extern
         proc chpl_comm_atomic_fetch_xor_int64(ref op:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
 
-      var v = value;
       var ret:int(64);
+      var v = value;
       chpl_comm_atomic_fetch_xor_int64(v, this.locale.id:int(32), this._v, ret);
       return ret;
     }
