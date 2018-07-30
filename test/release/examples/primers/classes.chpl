@@ -25,8 +25,7 @@ class C {
 // Class types include a strategy for freeing them. We'll discuss this
 // more below.
 //
-// A class variable can refer to an *instance* of a class. Different class
-// variables can refer to the same instance.
+// A class variable can refer to an *instance* of a class.
 var foo = new owned C(1, 3);
 foo.printFields();
 
