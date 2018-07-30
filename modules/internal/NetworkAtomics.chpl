@@ -77,108 +77,115 @@ module NetworkAtomics {
   pragma "atomic type"
   record ratomic_int64 {
     var _v: int(64);
-    inline proc const read(order:memory_order = memory_order_seq_cst):int(64) {
+
+    inline proc const read(order:memory_order = memory_order_seq_cst): int(64) {
       var ret: int(64);
       chpl_comm_atomic_get_int64(ret, this.locale.id:int(32), this._v);
       return ret;
     }
-    inline proc write(value:int(64), order:memory_order = memory_order_seq_cst) {
+
+    inline proc write(value:int(64), order:memory_order = memory_order_seq_cst): void {
       var v = value;
       chpl_comm_atomic_put_int64(v, this.locale.id:int(32), this._v);
     }
 
-    inline proc exchange(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc exchange(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
       var ret:int(64);
       var v = value;
       chpl_comm_atomic_xchg_int64(v, this.locale.id:int(32), this._v, ret);
       return ret;
     }
-    inline proc compareExchange(expected:int(64), desired:int(64),
-                                order:memory_order = memory_order_seq_cst):bool {
+
+    inline proc compareExchange(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst): bool {
+      return this.compareExchangeStrong(expected, desired, order);
+    }
+
+    inline proc compareExchangeWeak(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst): bool {
+      return this.compareExchangeStrong(expected, desired, order);
+    }
+
+    inline proc compareExchangeStrong(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst): bool {
       var ret:bool(32);
       var te = expected;
       var td = desired;
       chpl_comm_atomic_cmpxchg_int64(te, td, this.locale.id:int(32), this._v, ret);
-      return ret;
-    }
-    inline proc compareExchangeWeak(expected:int(64), desired:int(64),
-                                    order:memory_order = memory_order_seq_cst):bool {
-      return this.compareExchange(expected, desired);
-    }
-    inline proc compareExchangeStrong(expected:int(64), desired:int(64),
-                                      order:memory_order = memory_order_seq_cst):bool {
-      return this.compareExchange(expected, desired);
+      return ret:bool;
     }
 
-    inline proc fetchAdd(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc fetchAdd(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
       var v = value;
       var ret:int(64);
       chpl_comm_atomic_fetch_add_int64(v, this.locale.id:int(32), this._v, ret);
       return ret;
     }
-    inline proc add(value:int(64), order:memory_order = memory_order_seq_cst) {
+
+    inline proc add(value:int(64), order:memory_order = memory_order_seq_cst): void {
       var v = value;
       chpl_comm_atomic_add_int64(v, this.locale.id:int(32), this._v);
     }
 
-    inline proc fetchSub(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc fetchSub(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
       var v = value;
       var ret:int(64);
       chpl_comm_atomic_fetch_sub_int64(v, this.locale.id:int(32), this._v, ret);
       return ret;
     }
-    inline proc sub(value:int(64), order:memory_order = memory_order_seq_cst) {
+
+    inline proc sub(value:int(64), order:memory_order = memory_order_seq_cst): void {
       var v = value;
       chpl_comm_atomic_sub_int64(v, this.locale.id:int(32), this._v);
     }
 
-    inline proc fetchOr(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc fetchOr(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
       var v = value;
       var ret:int(64);
       chpl_comm_atomic_fetch_or_int64(v, this.locale.id:int(32), this._v, ret);
       return ret;
     }
-    inline proc or(value:int(64), order:memory_order = memory_order_seq_cst) {
+
+    inline proc or(value:int(64), order:memory_order = memory_order_seq_cst): void {
       var v = value;
       chpl_comm_atomic_or_int64(v, this.locale.id:int(32), this._v);
     }
 
-    inline proc fetchAnd(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc fetchAnd(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
       var v = value;
       var ret:int(64);
       chpl_comm_atomic_fetch_and_int64(v, this.locale.id:int(32), this._v, ret);
       return ret;
     }
-    inline proc and(value:int(64), order:memory_order = memory_order_seq_cst) {
+
+    inline proc and(value:int(64), order:memory_order = memory_order_seq_cst): void {
       var v = value;
       chpl_comm_atomic_and_int64(v, this.locale.id:int(32), this._v);
     }
 
-    inline proc fetchXor(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc fetchXor(value:int(64), order:memory_order = memory_order_seq_cst): int(64) {
       var v = value;
       var ret:int(64);
       chpl_comm_atomic_fetch_xor_int64(v, this.locale.id:int(32), this._v, ret);
       return ret;
     }
-    inline proc xor(value:int(64), order:memory_order = memory_order_seq_cst) {
+
+    inline proc xor(value:int(64), order:memory_order = memory_order_seq_cst): void {
       var v = value;
       chpl_comm_atomic_xor_int64(v, this.locale.id:int(32), this._v);
     }
 
-    inline proc const waitFor(val:int(64), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(value:int(64), order:memory_order = memory_order_seq_cst): void {
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
-        // After waiting for the value, do a thread fence
-        // in order to guarantee e.g. an acquire barrier even
-        // if the on statement is not included.
+        while (this.read(order=memory_order_relaxed) != value) {
+          chpl_task_yield();
+        }
         atomic_thread_fence(order);
       }
     }
 
-    inline proc const peek():int(64) {
+    inline proc const peek(): int(64) {
       return _v;
     }
-    inline proc poke(value:int(64)) {
+
+    inline proc poke(value:int(64)): void {
       _v = value;
     }
 
@@ -792,57 +799,63 @@ module NetworkAtomics {
   pragma "atomic type"
   record ratomicbool {
     var _v: int(64);
-    inline proc const read(order:memory_order = memory_order_seq_cst):bool {
+
+    inline proc const read(order:memory_order = memory_order_seq_cst): bool {
       var ret: int(64);
       chpl_comm_atomic_get_int64(ret, this.locale.id:int(32), this._v);
       return ret:bool;
     }
-    inline proc write(value:bool, order:memory_order = memory_order_seq_cst) {
+
+    inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
       var v = value:int(64);
       chpl_comm_atomic_put_int64(v, this.locale.id:int(32), this._v);
     }
 
-    inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst):bool {
+    inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
       var ret:int(64);
       var v = value:int(64);
       chpl_comm_atomic_xchg_int64(v, this.locale.id:int(32), this._v, ret);
       return ret:bool;
     }
-    inline proc compareExchange(expected:bool, desired:bool,
-                                order:memory_order = memory_order_seq_cst):bool {
+
+    inline proc compareExchange(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+      return this.compareExchangeStrong(expected, desired, order);
+    }
+
+    inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+      return this.compareExchangeStrong(expected, desired, order);
+    }
+
+    inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
       var ret:bool(32);
       var te = expected:int(64);
       var td = desired:int(64);
       chpl_comm_atomic_cmpxchg_int64(te, td, this.locale.id:int(32), this._v, ret);
-      return ret;
-    }
-inline proc compareExchangeWeak(expected:bool, desired:bool,
-                                order:memory_order = memory_order_seq_cst):bool {
-      return this.compareExchange(expected, desired);
-    }
-    inline proc compareExchangeStrong(expected:bool, desired:bool,
-                                      order:memory_order = memory_order_seq_cst):bool {
-      return this.compareExchange(expected, desired);
+      return ret:bool;
     }
 
-    inline proc testAndSet():bool {
-      return this.exchange(true);
-    }
-    inline proc clear() {
-      this.write(false);
+    inline proc testAndSet(order:memory_order = memory_order_seq_cst): bool {
+      return this.exchange(true, order);
     }
 
-    inline proc const waitFor(val:bool, order:memory_order = memory_order_seq_cst) {
+    inline proc clear(order:memory_order = memory_order_seq_cst): void {
+      this.write(false, order);
+    }
+
+    inline proc const waitFor(value:bool, order:memory_order = memory_order_seq_cst): void {
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        while (this.read(order=memory_order_relaxed) != value) {
+          chpl_task_yield();
+        }
         atomic_thread_fence(order);
       }
     }
 
-    inline proc const peek():bool {
+    inline proc const peek(): bool {
       return _v:bool;
     }
-    inline proc poke(value:bool) {
+
+    inline proc poke(value:bool): void {
       _v = value:int(64);
     }
 
