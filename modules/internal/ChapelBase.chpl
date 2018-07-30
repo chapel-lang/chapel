@@ -1378,7 +1378,7 @@ module ChapelBase {
       compilerError("should not delete 'nil'");
 
     // TODO - this should be an error after 1.18
-    if !isSubtype(arg.type, _unmanaged) then
+    if !isExternClassType(arg.type) && !isSubtype(arg.type, _unmanaged) then
       compilerWarning("'delete' can only be applied to unmanaged classes");
 
     if (arg != nil) {
