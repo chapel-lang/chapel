@@ -189,3 +189,9 @@ void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
   if (beautifyIt)
     beautify(fi);
 }
+
+void codegen_library_python(std::vector<FnSymbol*> functions) {
+  if (fLibraryCompile && fLibraryPython) {
+
+  }
+}
