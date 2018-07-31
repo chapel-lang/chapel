@@ -26,7 +26,7 @@ config param useDimIterDistributed = false; //SparseBlockDom.dimIter not support
 config param useDimIterRowDistributed = useDimIterDistributed;
 config param useDimIterColDistributed = useDimIterDistributed;
 
-record SyncLock {
+class SyncLock {
   var lock$ : sync bool;
 
   proc init(){
@@ -35,23 +35,23 @@ record SyncLock {
   }
 
   proc lock(){
-    if debugSyncLock then writeln("Locking");
     lock$.readFE();
-    if debugSyncLock then writeln("Locked");
   }
 
   proc unlock(){
-    if enableRuntimeDebugging && debugSyncLock then writeln("Unlocking");
     lock$.writeEF(true);
-    if enableRuntimeDebugging && debugSyncLock then writeln("Unlocked");
   }
 
   proc forceUnlock(){
     lock$.writeXF(true);
   }
+
+  proc isLocked() : bool {
+    return this.lock$.isFull;
+  }
 }
 
-record AtomicLock {
+class AtomicLock {
   var lock$: atomic bool;
 
   proc init(){
@@ -65,6 +65,10 @@ record AtomicLock {
 
   proc unlock(){
     lock$.clear();
+  }
+
+  proc isLocked() : bool {
+    return this.lock$.read();
   }
 }
 
@@ -125,8 +129,8 @@ class Vector {
 class ParallelWorkQueue {
   type eltType;
   type lockType;
-  var lock : lockType;
-  var queue : Vector(eltType);
+  var lock : unmanaged lockType;
+  var queue : unmanaged Vector(eltType);
 
   var terminated : atomic bool;
   const terminatedRetries : int;
@@ -134,10 +138,16 @@ class ParallelWorkQueue {
   proc init( type eltType, type lockType = SyncLock, retries : int = 5 ){
     this.eltType = eltType;
     this.lockType = lockType;
-    this.queue = new Vector( eltType );
+    this.lock = new unmanaged lockType();
+    this.queue = new unmanaged Vector( eltType );
     this.complete();
 
     terminated.write(false);
+  }
+
+  proc deinit(){
+    delete this.lock;
+    delete this.queue;
   }
 
   proc add( value : eltType ){
@@ -173,7 +183,7 @@ class ParallelWorkQueue {
       if terminated then countdown -= 1;
 
       /* syncLock.lock(); */
-      var unlockedQueue = new Vector(eltType);
+      var unlockedQueue = new unmanaged Vector(eltType);
       // get current chunk of work by quickly swaping out the unlocked queue
       // with the instance queue
       this.lock.lock();
@@ -209,6 +219,7 @@ class DistributedWorkQueue {
   var localesDomain : domain(1) = {1..0};
   var locales : [localesDomain] locale;
 
+  var localInstance : unmanaged LocalDistributedWorkQueue(eltType, lockType);
   var pid = -1;
 
   pragma "no doc"
@@ -226,10 +237,13 @@ class DistributedWorkQueue {
     this.localesDomain = {0..#targetLocales.domain.size};
 
     this.complete();
-    this.pid = (new LocalDistributedWorkQueue(eltType, lockType, targetLocales)).pid;
+    this.localInstance = new unmanaged LocalDistributedWorkQueue(eltType, lockType, targetLocales);
+    this.pid = this.localInstance.pid;
   }
 
-  proc deinit(){ }
+  proc deinit(){
+    delete this.localInstance;
+  }
 
   pragma "fn returns iterator"
   inline proc these(param tag ) where (tag == iterKind.standalone)
@@ -255,8 +269,8 @@ class LocalDistributedWorkQueue {
   const localeDomain : domain(1);
   const localeArray : [localeDomain] locale;
 
-  var queue : Vector(eltType);
-  var lock : lockType;
+  var lock : unmanaged lockType;
+  var queue : unmanaged Vector(eltType);
   var terminated : atomic bool;
   const terminatedRetries : int;
 
@@ -267,7 +281,8 @@ class LocalDistributedWorkQueue {
     this.lockType = lockType;
     this.localeDomain = {0..#localeDomain.size};
     this.localeArray = reshape( localeArray, {0..#localeDomain.size} );
-    this.queue = new Vector(eltType);
+    this.lock = new unmanaged lockType();
+    this.queue = new unmanaged Vector(eltType);
     this.terminatedRetries = retries;
 
     this.complete();
@@ -281,23 +296,28 @@ class LocalDistributedWorkQueue {
     this.lockType = lockType;
     this.localeDomain = that.localeDomain;
     this.localeArray = that.localeArray;
-    this.queue = new Vector( that.queue );
+    this.lock = new unmanaged lockType();
+    this.queue = new unmanaged Vector( that.queue );
     this.terminatedRetries = that.terminatedRetries;
     this.pid = pid;
 
     this.complete();
 
-    this.terminated.write(false);
+    this.lock.lock$.write( that.lock.isLocked() );
+    this.terminated.write(that.terminated.read());
   }
 
-  proc deinit(){ }
+  proc deinit(){
+    delete this.lock;
+    delete this.queue;
+  }
 
   proc dsiGetPrivatizeData() {
     return pid;
   }
 
   proc dsiPrivatize(pid) {
-    return new LocalDistributedWorkQueue(this, pid);
+    return new unmanaged LocalDistributedWorkQueue(this, pid);
   }
 
   inline proc getPrivatizedThis {
@@ -342,7 +362,7 @@ class LocalDistributedWorkQueue {
         continueLooping = !terminated || countdown > 0;
         if terminated then countdown -= 1;
 
-        var unlockedQueue = new Vector(eltType);
+        var unlockedQueue = new unmanaged Vector(eltType);
         // get current chunk of work by quickly swaping out the unlocked queue
         // with the instance queue
         instance.lock.lock();
@@ -498,7 +518,7 @@ class PermutationMap {
   }
 }
 
-record TopoSortResult {
+class TopoSortResult {
   type idxType;
   var permutationMap : shared PermutationMap(idxType);
   var timerDom : domain(string);
@@ -511,7 +531,7 @@ record TopoSortResult {
   }
 }
 
-proc createRandomPermutationMap( D : domain, seed : int ) : owned PermutationMap(D.idxType)
+proc createRandomPermutationMap( D : domain, seed : int ) : shared PermutationMap(D.idxType)
 where D.rank == 2
 {
   var rowMap : [D.dim(1)] D.idxType = D.dim(1);
@@ -522,7 +542,7 @@ where D.rank == 2
   const seed2 = randStreamSeeded.getNext() | 1;
   shuffle( rowMap, seed = seed1 );
   shuffle( columnMap , seed = seed2);
-  return new owned PermutationMap( rowMap, columnMap );
+  return new shared PermutationMap( rowMap, columnMap );
 }
 
 proc createSparseUpperTriangluarIndexList(
@@ -593,7 +613,7 @@ proc createSparseUpperTriangluarIndexList(
     }
     // If *very* sparse, use insertion fill (not effecient even at relatively low densities)
     else {
-      var random : RandomStream(D.idxType) = new RandomStream(D.idxType, seed);
+      var random : RandomStream(D.idxType) = new owned RandomStream(D.idxType, seed);
 
       // number of non-zero columns in each row in the strict UT region
       var rowCount : [low..high-1] int;
@@ -628,7 +648,7 @@ proc createSparseUpperTriangluarIndexList(
         // create a new local random number generator
         // note: seed is still deterministic. Should get same behavior regardless
         // of tasking (including number of tasks and scheduling)
-        var localRandom : RandomStream(D.idxType) = new RandomStream(D.idxType, (seed ^ (row << 1) | 1) );
+        var localRandom : RandomStream(D.idxType) = new owned RandomStream(D.idxType, (seed ^ (row << 1) | 1) );
         // our index into sDRandomDom
         var i = startOffset[row];
         // set of indices we already have
@@ -702,10 +722,10 @@ where D.rank == 2
   }
 }
 
-proc toposortSerial( D : domain )
+proc toposortSerial( D : domain ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
-  var result = new TopoSortResult(D.idxType);
+  var result = new shared TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
   const rows = D.dim(1);
@@ -815,12 +835,12 @@ where D.rank == 2
   return result;
 }
 
-proc toposortParallel( D : domain, numTasks : int = here.maxTaskPar )
+proc toposortParallel( D : domain, numTasks : int = here.maxTaskPar ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   if numTasks < 1 then halt("Must run with numTaks >= 1");
 
-  var result = new TopoSortResult(D.idxType);
+  var result = new shared TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
   const rows = D.dim(1);
@@ -832,7 +852,7 @@ where D.rank == 2
 
   var rowSum : [rows] atomic int;
   var rowCount : [rows] atomic int;
-  var workQueue = new ParallelWorkQueue(D.idxType);
+  var workQueue = new owned ParallelWorkQueue(D.idxType);
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
@@ -947,7 +967,7 @@ where D.rank == 2
   return result;
 }
 
-proc toposortDistributed( D : domain )
+proc toposortDistributed( D : domain ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   var maxTasksPerLocale : [0..#Locales.size] int;
@@ -957,12 +977,12 @@ where D.rank == 2
   return toposortDistributed( D, maxTasksPerLocale );
 }
 
-proc toposortDistributed( D : domain, maxTasksPerLocale : [] int )
+proc toposortDistributed( D : domain, maxTasksPerLocale : [] int ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   if (min reduce maxTasksPerLocale) < 1 then halt("Must run with numTasks >= 1");
 
-  var result = new TopoSortResult(D.idxType);
+  var result = new shared TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
   const rows = D.dim(1);
@@ -975,7 +995,7 @@ where D.rank == 2
 
   var rowSum : [rows] atomic int;
   var rowCount : [rows] atomic int;
-  var workQueue = new DistributedWorkQueue(D.idxType, Locales);
+  var workQueue = new owned DistributedWorkQueue(D.idxType, Locales);
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
@@ -1147,7 +1167,7 @@ proc main(){
   if !silentMode then writeln("Permuting upper triangluar domain");
   var permutedSparseUpperTriangularIndexList = permutationMap.permuateIndexList( sparseUpperTriangularIndexList );
 
-  var topoResult : TopoSortResult(D.idxType);
+  var topoResult : shared TopoSortResult(D.idxType);
 
   select implementation {
     when ToposortImplementation.Serial {
