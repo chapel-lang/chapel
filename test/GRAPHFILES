@@ -138,7 +138,6 @@ studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/thread-ring/thread-ring.graph
 # suite: Submitted Shootout benchmarks
 studies/shootout/submitted/binarytrees-submitted.graph
-studies/shootout/submitted/chameneosredux-submitted.graph
 studies/shootout/submitted/fannkuchredux-submitted.graph
 studies/shootout/submitted/fasta-submitted.graph
 studies/shootout/submitted/knucleotide-submitted.graph
