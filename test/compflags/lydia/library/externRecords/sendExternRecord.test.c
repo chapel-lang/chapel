@@ -1,4 +1,4 @@
-#include "receiveExternRecord.h"
+#include "lib/receiveExternRecord.h"
 
 extern void chpl_library_init(int argc, char* argv[]);
 extern void chpl_library_finalize(void);

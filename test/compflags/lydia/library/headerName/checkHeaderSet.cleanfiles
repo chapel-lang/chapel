@@ -1,2 +1,2 @@
-headerSet.h
-libcheckHeaderSet.a
+lib/headerSet.h
+lib/libcheckHeaderSet.a

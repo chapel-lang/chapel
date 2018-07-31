@@ -32,6 +32,7 @@
 #include "docsDriver.h"
 #include "files.h"
 #include "ipe.h"
+#include "library.h"
 #include "log.h"
 #include "ModuleSymbol.h"
 #include "misc.h"
@@ -631,6 +632,14 @@ static void verifySaveCDir(const ArgumentDescription* desc, const char* unused) 
   }
 }
 
+static void verifySaveLibDir(const ArgumentDescription* desc, const char* unused) {
+  if (libDir[0] == '-') {
+    USR_FATAL("--library-dir takes a directory name as its argument\n"
+              "       (you specified '%s', assumed to be another flag)",
+              libDir);
+  }
+}
+
 static void turnOffChecks(const ArgumentDescription* desc, const char* unused) {
   fNoNilChecks    = true;
   fNoBoundsChecks = true;
@@ -985,6 +994,7 @@ static ArgumentDescription arg_desc[] = {
  {"ignore-user-errors", ' ', NULL, "[Don't] attempt to ignore user errors", "N", &ignore_user_errors, "CHPL_IGNORE_USER_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
+ {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, NULL},
  {"library-makefile", ' ', NULL, "Generate a makefile to help use the generated library", "F", &fLibraryMakefile, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},

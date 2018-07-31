@@ -1,2 +1,2 @@
-libtesting.a
-testing.h
+lib/libtesting.a
+lib/testing.h

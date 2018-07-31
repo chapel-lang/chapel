@@ -1,2 +1,2 @@
-libexportFuncWithArrayArg.a
-exportFuncWithArrayArg.h
+lib/libexportFuncWithArrayArg.a
+lib/exportFuncWithArrayArg.h
