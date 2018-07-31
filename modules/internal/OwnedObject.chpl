@@ -256,6 +256,7 @@ module OwnedObject {
   // Note, coercion from _owned -> _owned.t is sometimes directly
   // supported in the compiler via a call to borrow() and
   // sometimes uses this cast.
+  pragma "no doc"
   inline proc _cast(type t, const ref x:_owned) where isSubtype(t,x.t) {
     return x.borrow();
   }
@@ -270,6 +271,12 @@ module OwnedObject {
     // returned value to have type t; otherwise it'd have type _owned(x.type).
     var ret = new _owned(x.release():t.t);
     return ret;
+  }
+
+  // cast from nil to owned
+  inline proc _cast(type t:_owned, x:_nilType) {
+    var tmp:t;
+    return tmp;
   }
 
   type Owned = _owned;

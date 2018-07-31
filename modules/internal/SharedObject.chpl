@@ -322,5 +322,11 @@ module SharedObject {
     return ret;
   }
 
+  // cast from nil to shared
+  inline proc _cast(type t:_shared, x:_nilType) {
+    var tmp:t;
+    return tmp;
+  }
+
   type Shared = _shared;
 }
