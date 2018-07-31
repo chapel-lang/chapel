@@ -122,7 +122,9 @@ proc rank(iteration: int) {
   keyArray(iteration) = iteration;
   keyArray(iteration+Imax) = Bmax - iteration;
 
-  accum(keyArray).add(1);
+  // workaround -- see https://github.com/chapel-lang/chapel/issues/10575
+  // accum(keyArray).add(1);
+  forall k in keyArray do accum(k).add(1);
   ranks = accum.read();
 
   ranks = + scan ranks;
