@@ -287,13 +287,13 @@ module Crypto {
        ciphertext buffer and an array of encrypted key buffers.
 
        :arg iv: Initialization Vector.
-       :type iv: `CryptoBuffer`
+       :type iv: `owned CryptoBuffer`
 
        :arg encSymmKey: Array of encrypted symmetric (AES) keys.
-       :type encSymmKey: `[] CryptoBuffer`
+       :type encSymmKey: `[] owned CryptoBuffer`
 
        :arg encSymmValue: AES-encrypted ciphertext buffer.
-       :type encSymmValue: `CryptoBuffer`
+       :type encSymmValue: `owned CryptoBuffer`
 
        :return: An object of class `Envelope`.
        :rtype: `Envelope`
@@ -460,8 +460,8 @@ module Crypto {
        :arg inputBuffer: A `CryptoBuffer` representing the input to be hashed.
        :type inputBuffer: `CryptoBuffer`
 
-       :return: A `CryptoBuffer` representing the hash digest.
-       :rtype: `CryptoBuffer`
+       :return: An `owned CryptoBuffer` representing the hash digest.
+       :rtype: `owned CryptoBuffer`
 
     */
     proc getDigest(inputBuffer: CryptoBuffer): owned CryptoBuffer {
@@ -634,8 +634,8 @@ module Crypto {
                 for encryption.
        :type IV: `CryptoBuffer`
 
-       :return: A `CryptoBuffer` representing the ciphertext.
-       :rtype: `CryptoBuffer`
+       :return: An `owned CryptoBuffer` representing the ciphertext.
+       :rtype: `owned CryptoBuffer`
 
     */
     proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): owned CryptoBuffer {
@@ -661,8 +661,8 @@ module Crypto {
                 for decryption (same as the one used in encryption).
        :type IV: `CryptoBuffer`
 
-       :return: A `CryptoBuffer` representing the obtained plaintext.
-       :rtype: `CryptoBuffer`
+       :return: An `owned CryptoBuffer` representing the obtained plaintext.
+       :rtype: `owned CryptoBuffer`
 
     */
     proc decrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): owned CryptoBuffer {
@@ -814,8 +814,8 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
                 for encryption.
        :type IV: `CryptoBuffer`
 
-       :return: A `CryptoBuffer` representing the ciphertext.
-       :rtype: `CryptoBuffer`
+       :return: An `owned CryptoBuffer` representing the ciphertext.
+       :rtype: `owned CryptoBuffer`
 
     */
     proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): owned CryptoBuffer throws {
@@ -850,8 +850,8 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
                 for decryption (same as the one used in encryption).
        :type IV: `CryptoBuffer`
 
-       :return: A `CryptoBuffer` representing the obtained plaintext.
-       :rtype: `CryptoBuffer`
+       :return: An `owned CryptoBuffer` representing the obtained plaintext.
+       :rtype: `owned CryptoBuffer`
 
     */
     proc decrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): owned CryptoBuffer {
@@ -894,8 +894,8 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :arg buffLen: Number of random values to be generated in the buffer.
        :type buffLen: `int`
 
-       :return: A `CryptoBuffer` representing the generated values.
-       :rtype: `CryptoBuffer`
+       :return: An `owned CryptoBuffer` representing the generated values.
+       :rtype: `owned CryptoBuffer`
 
     */
     proc getRandomBuffer(buffLen: int): owned CryptoBuffer throws {
@@ -981,8 +981,8 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :arg saltBuff: A `CryptoBuffer` representing the user generated salt.
        :type saltBuff: `CryptoBuffer`
 
-       :return: A `CryptoBuffer` representing the generated key.
-       :rtype: `CryptoBuffer`
+       :return: An `owned CryptoBuffer` representing the generated key.
+       :rtype: `owned CryptoBuffer`
 
     */
     proc passKDF(userKey: string, saltBuff: CryptoBuffer): owned CryptoBuffer {
@@ -1124,9 +1124,9 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
                   plaintext.
        :type keys: `[] RSAKey`
 
-       :return: An `Envelope` object which comprises of the IV buffer, array of
-                RSA encrypted keys and AES encrypted ciphertext.
-       :rtype: `Envelope`
+       :return: An `owned Envelope` object which comprises of the IV buffer,
+                array of RSA encrypted keys and AES encrypted ciphertext.
+       :rtype: `owned Envelope`
 
     */
     proc encrypt(plaintext: CryptoBuffer, keys: [] RSAKey): owned Envelope {
@@ -1156,9 +1156,8 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
                   plaintext.
        :type key: `RSAKey`
 
-       :return: An `Envelope` object which comprises of the IV buffer, array of
-                RSA encrypted keys and AES encrypted ciphertext.
-       :rtype: `CryptoBuffer`
+       :return: An `owned CryptoBuffer` representing the obtained plaintext.
+       :rtype: `owned CryptoBuffer`
 
     */
     proc decrypt(envp: Envelope, key: RSAKey): owned CryptoBuffer throws {
