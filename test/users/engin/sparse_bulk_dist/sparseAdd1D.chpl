@@ -21,3 +21,36 @@ SparseDom += FSparseDom;
 SparseDom += SSparseDom;
 
 for i in SparseDom do writeln(i);
+
+var containsAll = true;
+var localBag : [Locales.domain] domain(SparseDom.idxType);
+var fullBag : domain(SparseDom.idxType);
+var unionBag : domain(SparseDom.idxType);
+var intersectionBag : domain(SparseDom.idxType);
+
+for i in SparseDom do {
+  containsAll &= SparseDom.member( i );
+  fullBag += i;
+}
+writeln( containsAll );
+
+for onLocale in Locales {
+  on onLocale {
+    for localIndex in SparseDom.dsiLocalSubdomain() {
+      localBag[ onLocale.id ] += localIndex;
+    }
+  }
+}
+
+intersectionBag = fullBag;
+
+for onLocale in Locales {
+  for i in localBag[ onLocale.id ] {
+    unionBag |= localBag[ onLocale.id ];
+    intersectionBag &= localBag[ onLocale.id ];
+  }
+}
+// union of disparate sets is the full set
+writeln( unionBag == fullBag );
+// intersection of disparate sets is the empty set
+writeln( intersectionBag.size == 0 );

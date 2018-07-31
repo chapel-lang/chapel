@@ -12,7 +12,7 @@ var SparseDom: sparse subdomain(ParentDom);
 var SparseMat: [SparseDom] int;
 
 //create a small dense chunk somewhere in vector
-const denseChunk = {1..3, 5..7}; 
+const denseChunk = {1..3, 5..7};
 
 SparseDom += denseChunk; //not sure if this would work
 
@@ -59,3 +59,40 @@ for i in ParentDom.dim(1) {
   }
   writeln();
 }
+
+var containsAll = true;
+var matchingLocalSubdomains = true;
+var localBag : [Locales.domain] domain(SparseDom.rank*SparseDom.idxType);
+var fullBag : domain(SparseDom.rank*SparseDom.idxType);
+var unionBag : domain(SparseDom.rank*SparseDom.idxType);
+var intersectionBag : domain(SparseDom.rank*SparseDom.idxType);
+
+for i in SparseDom do {
+  containsAll &= SparseDom.member( i );
+  fullBag += i;
+}
+writeln( containsAll );
+
+for onLocale in Locales {
+  on onLocale {
+    for localIndex in SparseDom.dsiLocalSubdomain() {
+      localBag[ onLocale.id ] += localIndex;
+    }
+    matchingLocalSubdomains &= ( SparseDom.dsiLocalSubdomain() == SparseMat.dsiLocalSubdomain() );
+  }
+}
+
+writeln( matchingLocalSubdomains );
+
+intersectionBag = fullBag;
+
+for onLocale in Locales {
+  for i in localBag[ onLocale.id ] {
+    unionBag |= localBag[ onLocale.id ];
+    intersectionBag &= localBag[ onLocale.id ];
+  }
+}
+// union of disparate sets is the full set
+writeln( unionBag == fullBag );
+// intersection of disparate sets is the empty set
+writeln( intersectionBag.size == 0 );
