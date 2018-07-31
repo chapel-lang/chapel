@@ -143,6 +143,8 @@ static Map<FnSymbol*, const char*> innerCompilerWarningMap;
 
 static Map<FnSymbol*, const char*> outerCompilerWarningMap;
 
+static Vec<FnSymbol*> compilerErrorSet;
+
 static CapturedValueMap            capturedValues;
 
 
@@ -166,7 +168,7 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
 static bool
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
 static CallExpr* userCall(CallExpr* call);
-static void reissueCompilerWarning(const char* str, int offset);
+static void reissueCompilerWarning(const char* str, int offset, bool err);
 
 static void resolveTupleExpand(CallExpr* call);
 static void resolveSetMember(CallExpr* call);
@@ -1563,7 +1565,7 @@ userCall(CallExpr* call) {
   return call;
 }
 
-static void reissueCompilerWarning(const char* str, int offset) {
+static void reissueCompilerWarning(const char* str, int offset, bool err) {
   //
   // Disable compiler warnings in internal modules that are triggered
   // within a dynamic dispatch context because of potential user
@@ -1585,7 +1587,11 @@ static void reissueCompilerWarning(const char* str, int offset) {
       break;
   }
   gdbShouldBreakHere();
-  USR_WARN(from, "%s", str);
+  if (err) {
+    USR_FATAL_CONT(from, "%s", str);
+  } else {
+    USR_WARN(from, "%s", str);
+  }
 }
 
 //
@@ -2465,18 +2471,20 @@ static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
 }
 
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
+  bool err = compilerErrorSet.set_in(resolvedFn);
   if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 2);
+    reissueCompilerWarning(str, 2, err);
 
     if (callStack.n >= 2) {
       if (FnSymbol* fn = callStack.v[callStack.n - 2]->resolvedFunction()) {
         outerCompilerWarningMap.put(fn, str);
+        if (err) compilerErrorSet.set_add(fn);
       }
     }
   }
 
   if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 1);
+    reissueCompilerWarning(str, 1, err);
   }
 }
 
@@ -7458,10 +7466,12 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
 
     if (FnSymbol* fn = callStack.tail()->resolvedFunction())  {
       innerCompilerWarningMap.put(fn, str);
+      if (call->isPrimitive(PRIM_ERROR_CONT)) compilerErrorSet.set_add(fn);
     }
 
     if (FnSymbol* fn = callStack.v[head]->resolvedFunction()) {
       outerCompilerWarningMap.put(fn, str);
+      if (call->isPrimitive(PRIM_ERROR_CONT)) compilerErrorSet.set_add(fn);
     }
   }
 }
