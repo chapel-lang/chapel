@@ -26,12 +26,14 @@ use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
 use MasonSystem;
+use MasonExample;
 
 proc masonBuild(args) {
   var show = false;
   var release = false;
   var force = false;
   var compopts: [1..0] string;
+  var example = false;
   if args.size > 2 {
     for arg in args[2..] {
       if arg == '-h' || arg == '--help' {
@@ -47,15 +49,25 @@ proc masonBuild(args) {
       else if arg == '--show' {
         show = true;
       }
+      else if arg == '--example' {
+        example=true;
+      }
       else {
         compopts.push_back(arg);
       }
     }
   }
-  const configNames = UpdateLock(args);
-  const tomlName = configNames[1];
-  const lockName = configNames[2];
-  buildProgram(release, show, force, compopts, tomlName, lockName);
+  if example {
+    // compopts become test names. Build never runs examples
+    compopts.push_back("--no-run");
+    masonExample(compopts);
+  }
+  else {
+    const configNames = UpdateLock(args);
+    const tomlName = configNames[1];
+    const lockName = configNames[2];
+    buildProgram(release, show, force, compopts, tomlName, lockName);
+  }
 }
 
 private proc checkChplVersion(lockFile : borrowed Toml) throws {
@@ -104,7 +116,7 @@ proc buildProgram(release: bool, show: bool, force: bool, cmdLineCompopts: [?d] 
         getSrcCode(sourceList, show);
 
         // get compilation options including external dependencies
-        const compopts = getCompopts(lockFile, cmdLineCompopts);
+        const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
 
         // Compile Program
         if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
@@ -227,7 +239,7 @@ proc getSrcCode(sourceList: [?d] 3*string, show) {
   }
 }
 
-private proc getCompopts(lock: borrowed Toml, compopts: [?d] string) {
+proc getTomlCompopts(lock: borrowed Toml, compopts: [?d] string) {
 
   // Checks for compilation options are present in Mason.toml
   if lock.pathExists('root.compopts') {
