@@ -192,6 +192,95 @@ void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
 
 void codegen_library_python(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile && fLibraryPython) {
+    fileinfo pxd = { NULL, NULL, NULL };
 
+    openLibraryHelperFile(&pxd, libmodeHeadername, "pxd");
+
+    if (pxd.fptr != NULL) {
+      FILE* save_cfile = gGenInfo->cfile;
+
+      gGenInfo->cfile = pxd.fptr;
+
+      fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
+
+      // TODO: for each function, indent and output basically what we put in the
+      // header file, except bools need to be handled different.  Need a case
+      // per supported type.
+
+      // TODO: finish with
+      // ```
+      // cdef extern from "chpltypes.h":
+      //   ctypedef void* c_fn_ptr
+
+      // cdef extern from "chpl-init.h":
+      //   void chpl_library_init(int argc, char* argv[])
+      //   void chpl_library_finalize()
+      // ```
+      gGenInfo->cfile = save_cfile;
+    }
+    closeLibraryHelperFile(&pxd);
   }
+}
+
+void FnSymbol::codegenPXD() {
+  GenInfo *info = gGenInfo;
+
+  if (!hasFlag(FLAG_EXPORT)) return;
+  if (hasFlag(FLAG_NO_PROTOTYPE)) return;
+  if (hasFlag(FLAG_NO_CODEGEN)) return;
+
+  // Should I add the break-on-codegen-id stuff here?
+
+  if (info->cfile) {
+    FILE* outfile = info->cfile;
+    if (fGenIDS)
+      fprintf(outfile, "%s", idCommentTemp(this));
+
+    fprintf(outfile, "%s;\n", codegenPXDType().c.c_str());
+  } else {
+    // TODO: LLVM stuff
+  }
+}
+
+GenRet FnSymbol::codegenPXDType() {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+
+  ret.chplType = typeInfo();
+
+  if (info->cfile) {
+    // Cast to right function type.
+    std::string str;
+
+    std::string retString = /* TODO: get return type here */;
+    str += retString.c_str();
+    str += " ";
+    str += cname;
+    str += "(";
+
+    if (numFormals() != 0) {
+      int count = 0;
+      for_formals(formal, this) {
+        if (formal->hasFlag(FLAG_NO_CODEGEN))
+          continue; // do not print locale argument, end count, dummy class
+        if (count > 0)
+          str += ",\n";
+        str += /* TODO: formal type */;
+        str += " ";
+        str += formal->cname;
+        if (fGenIDS) {
+          str += " ";
+          str += idCommentTemp(formal);
+        }
+        count++;
+      }
+    } // pxd files do not take void as an argument list, just close the parens
+    str += ")";
+    ret.c = str;
+
+  } else {
+    // TODO: LLVM stuff
+  }
+
+  return ret;
 }
