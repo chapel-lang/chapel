@@ -139,6 +139,8 @@ delete c;   // This deletes the new D.
 delete c2;  // This deletes the new C.
 \end{chapelpost}
 \begin{chapeloutput}
+declaration.chpl:8: warning: 'delete' can only be applied to unmanaged classes
+declaration.chpl:9: warning: 'delete' can only be applied to unmanaged classes
 \end{chapeloutput}
 When the variable \chpl{c} is declared, it initially has the value
 of \chpl{nil}.  The next statement assigned to it an instance of the
@@ -445,6 +447,8 @@ delete mp2;
 --no-warn-constructors
 \end{chapelcompopts}
 \begin{chapeloutput}
+simpleConstructors.chpl:23: warning: 'delete' can only be applied to unmanaged classes
+simpleConstructors.chpl:24: warning: 'delete' can only be applied to unmanaged classes
 {x = 1.0, y = 2.0, message = a point}
 {x = 0.0, y = 0.0, message = point mp2}
 \end{chapeloutput}
@@ -666,6 +670,7 @@ writeln(c.setCount);
 delete c;
 \end{chapelpost}
 \begin{chapeloutput}
+getterSetter.chpl:21: warning: 'delete' can only be applied to unmanaged classes
 1
 2
 3
@@ -771,6 +776,8 @@ delete c;        // Deletes that object.
 --memLeaksByType
 \end{chapelexecopts}
 \begin{chapeloutput}
+delete.chpl:5: warning: 'delete' can only be applied to unmanaged classes
+delete.chpl:8: warning: 'delete' can only be applied to unmanaged classes
 
 ====================
 Leaked Memory Report
@@ -820,6 +827,8 @@ delete c;        // Deletes that object: Writes out "Bye, bye."
                  // and reclaims the memory that was held by c.
 \end{chapel}
 \begin{chapeloutput}
+classDeinitializer.chpl:7: warning: 'delete' can only be applied to unmanaged classes
+classDeinitializer.chpl:10: warning: 'delete' can only be applied to unmanaged classes
 Bye, bye.
 \end{chapeloutput}
 \end{chapelexample}

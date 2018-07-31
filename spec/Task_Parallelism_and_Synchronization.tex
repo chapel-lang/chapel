@@ -222,6 +222,10 @@ proc Tree.deinit() {
 delete tree;
 \end{chapelpost}
 \begin{chapeloutput}
+beginWithSyncVar.chpl:21: In function 'deinit':
+beginWithSyncVar.chpl:23: warning: 'delete' can only be applied to unmanaged classes
+beginWithSyncVar.chpl:24: warning: 'delete' can only be applied to unmanaged classes
+beginWithSyncVar.chpl:26: warning: 'delete' can only be applied to unmanaged classes
 4
 \end{chapeloutput}
 the sync variable \chpl{x$\mbox{\texttt{\$}}$} is assigned by an

@@ -89,7 +89,7 @@ class Actor {
   var name: string;
   var age: uint;
 }
-var anActor = new Actor(name="Tommy", age=27);
+var anActor = new owned Actor(name="Tommy", age=27);
 writeln(anActor);
 \end{chapelpre}
 \begin{chapel}
@@ -99,7 +99,6 @@ proc Actor.print() {
 \end{chapel}
 \begin{chapelpost}
 anActor.print();
-delete anActor;
 \end{chapelpost}
 \begin{chapeloutput}
 {name = Tommy, age = 27}
@@ -147,9 +146,8 @@ class C {
 proc bar(c: C) { writeln(c); }
 \end{chapel}
 \begin{chapelpost}
-var c1: C = new C();
+var c1: C = new owned C();
 c1.foo();
-delete c1;
 \end{chapelpost}
 \begin{chapeloutput}
 {}
@@ -352,13 +350,12 @@ class ThreeArray {
 }
 \end{chapel}
 \begin{chapelpost}
-var ta = new ThreeArray();
+var ta = new owned ThreeArray();
 for (i, j) in zip(ta, 1..) do
   i = j;
 
 for i in ta do
   writeln(i);
-delete ta;
 \end{chapelpost}
 \begin{chapeloutput}
 1
