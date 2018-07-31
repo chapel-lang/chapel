@@ -32,7 +32,7 @@ module NetworkAtomics {
   record RAtomicBool {
     var _v: int(64);
 
-    inline proc _localeid: int(32) {
+    inline proc _localeid(): int(32) {
       return this.locale.id:int(32);
     }
 
@@ -41,7 +41,7 @@ module NetworkAtomics {
         proc atomic_get(ref result:int(64), l:int(32), const ref obj:int(64)): void;
 
       var ret: int(64);
-      atomic_get(ret, _localeid, _v);
+      atomic_get(ret, _localeid(), _v);
       return ret:bool;
     }
 
@@ -50,7 +50,7 @@ module NetworkAtomics {
         proc atomic_put(ref desired:int(64), l:int(32), ref obj:int(64)): void;
 
       var v = value:int(64);
-      atomic_put(v, _localeid, _v);
+      atomic_put(v, _localeid(), _v);
     }
 
     inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
@@ -59,7 +59,7 @@ module NetworkAtomics {
 
       var ret:int(64);
       var v = value:int(64);
-      atomic_xchg(v, _localeid, _v, ret);
+      atomic_xchg(v, _localeid(), _v, ret);
       return ret:bool;
     }
 
@@ -78,7 +78,7 @@ module NetworkAtomics {
       var ret:bool(32);
       var te = expected:int(64);
       var td = desired:int(64);
-      atomic_cmpxchg(te, td, _localeid, _v, ret);
+      atomic_cmpxchg(te, td, _localeid(), _v, ret);
       return ret:bool;
     }
 
@@ -118,7 +118,7 @@ module NetworkAtomics {
     type T;
     var _v: T;
 
-    inline proc _localeid: int(32) {
+    inline proc _localeid(): int(32) {
       return this.locale.id:int(32);
     }
 
@@ -127,7 +127,7 @@ module NetworkAtomics {
         proc atomic_get(ref result:T, l:int(32), const ref obj:T): void;
 
       var ret:T;
-      atomic_get(ret, _localeid, _v);
+      atomic_get(ret, _localeid(), _v);
       return ret;
     }
 
@@ -136,7 +136,7 @@ module NetworkAtomics {
         proc atomic_put(ref desired:T, l:int(32), ref obj:T): void;
 
       var v = value;
-      atomic_put(v, _localeid, _v);
+      atomic_put(v, _localeid(), _v);
     }
 
     inline proc exchange(value:T, order:memory_order = memory_order_seq_cst): T {
@@ -145,7 +145,7 @@ module NetworkAtomics {
 
       var ret:T;
       var v = value;
-      atomic_xchg(v, _localeid, _v, ret);
+      atomic_xchg(v, _localeid(), _v, ret);
       return ret;
     }
 
@@ -164,7 +164,7 @@ module NetworkAtomics {
       var ret:bool(32);
       var te = expected;
       var td = desired;
-      atomic_cmpxchg(te, td, _localeid, _v, ret);
+      atomic_cmpxchg(te, td, _localeid(), _v, ret);
       return ret:bool;
     }
 
@@ -174,7 +174,7 @@ module NetworkAtomics {
 
       var ret:T;
       var v = value;
-      atomic_fetch_add(v, _localeid, _v, ret);
+      atomic_fetch_add(v, _localeid(), _v, ret);
       return ret;
     }
 
@@ -183,7 +183,7 @@ module NetworkAtomics {
         proc atomic_add(ref op:T, l:int(32), ref obj:T): void;
 
       var v = value;
-      atomic_add(v, _localeid, _v);
+      atomic_add(v, _localeid(), _v);
     }
 
     inline proc fetchSub(value:T, order:memory_order = memory_order_seq_cst): T {
@@ -192,7 +192,7 @@ module NetworkAtomics {
 
       var ret:T;
       var v = value;
-      atomic_fetch_sub(v, _localeid, _v, ret);
+      atomic_fetch_sub(v, _localeid(), _v, ret);
       return ret;
     }
 
@@ -201,7 +201,7 @@ module NetworkAtomics {
         proc atomic_sub(ref op:T, l:int(32), ref obj:T): void;
 
       var v = value;
-      atomic_sub(v, _localeid, _v);
+      atomic_sub(v, _localeid(), _v);
     }
 
     inline proc fetchOr(value:T, order:memory_order = memory_order_seq_cst): T {
@@ -211,7 +211,7 @@ module NetworkAtomics {
 
       var ret:T;
       var v = value;
-      atomic_fetch_or(v, _localeid, _v, ret);
+      atomic_fetch_or(v, _localeid(), _v, ret);
       return ret;
     }
 
@@ -221,7 +221,7 @@ module NetworkAtomics {
         proc atomic_or(ref op:T, l:int(32), ref obj:T): void;
 
       var v = value;
-      atomic_or(v, _localeid, _v);
+      atomic_or(v, _localeid(), _v);
     }
 
     inline proc fetchAnd(value:T, order:memory_order = memory_order_seq_cst): T {
@@ -231,7 +231,7 @@ module NetworkAtomics {
 
       var ret:T;
       var v = value;
-      atomic_fetch_and(v, _localeid, _v, ret);
+      atomic_fetch_and(v, _localeid(), _v, ret);
       return ret;
     }
 
@@ -241,7 +241,7 @@ module NetworkAtomics {
         proc atomic_and(ref op:T, l:int(32), ref obj:T): void;
 
       var v = value;
-      atomic_and(v, _localeid, _v);
+      atomic_and(v, _localeid(), _v);
     }
 
     inline proc fetchXor(value:T, order:memory_order = memory_order_seq_cst): T {
@@ -251,7 +251,7 @@ module NetworkAtomics {
 
       var ret:T;
       var v = value;
-      atomic_fetch_xor(v, _localeid, _v, ret);
+      atomic_fetch_xor(v, _localeid(), _v, ret);
       return ret;
     }
 
@@ -261,7 +261,7 @@ module NetworkAtomics {
         proc atomic_xor(ref op:T, l:int(32), ref obj:T): void;
 
       var v = value;
-      atomic_xor(v, _localeid, _v);
+      atomic_xor(v, _localeid(), _v);
     }
 
     inline proc const waitFor(value:T, order:memory_order = memory_order_seq_cst): void {
