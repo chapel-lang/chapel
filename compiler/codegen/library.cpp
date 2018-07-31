@@ -203,9 +203,9 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
 
       fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
 
-      // TODO: for each function, indent and output basically what we put in the
-      // header file, except bools need to be handled different.  Need a case
-      // per supported type.
+      for_vector(FnSymbol, fn, functions) {
+        fn->codegenPXD();
+      }
 
       // TODO: finish with
       // ```
