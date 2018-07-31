@@ -1984,7 +1984,6 @@ static void findOuterVarsNew(ForallStmt* fs, SymbolMap& outer2shadow,
         !sym->hasFlag(FLAG_TEMP)     && // not a temp
         !isFsIndexVar(fs, sym)       && // not fs's index var
         !isFsShadowVar(fs, sym)      && // not fs's intent var
-        !sym->hasFlag(FLAG_ARG_THIS) && // todo: no special case for 'this'
         isOuterVarNew(sym, block)       // it must be an outer variable
     ) {
       // if not there already
@@ -2300,16 +2299,6 @@ static void processShadowVarsNew(ForallStmt* fs, int& numShadowVars)
       if (tiIntent == INTENT_REF || tiIntent == INTENT_REF_MAYBE_CONST) {
         // do we want this? does this lead to more efficient generated code?
          pruneit = true;
-
-      } else if (isAtomicType(ovar->type)) {
-        // Currently we need it because sync variables do not get tupled
-        // and detupled properly when threading through the leader iterator.
-        // See e.g. test/distributions/dm/s7.chpl
-        // Atomic vars might not work either.
-        // And anyway, only 'ref' intent makes sense here.
-        pruneit = true;
-
-        USR_WARN(fs, "an atomic var currently can be passed into a forall loop by 'ref' intent only - %s is ignored for '%s'", intentDescrString(tiIntent), ovar->name);
       }
 
       if (pruneit) {
