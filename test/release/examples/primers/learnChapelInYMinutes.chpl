@@ -767,7 +767,6 @@ writeln(toThisArray);
 Classes
 -------
 */
-use OwnedObject;
 // Classes are similar to those in C++ and Java, allocated on the heap.
 class MyClass {
 
@@ -815,18 +814,18 @@ class MyClass {
 
 // Call compiler-generated initializer, using default value for memberBool.
 {
-  var myObject = new Owned(new MyClass(10));
-      myObject = new Owned(new MyClass(memberInt = 10)); // Equivalent
+  var myObject = new owned MyClass(10);
+      myObject = new owned MyClass(memberInt = 10); // Equivalent
   writeln(myObject.getMemberInt());
 
   // Same, but provide a memberBool value explicitly.
-  var myDiffObject = new Owned(new MyClass(-1, true));
-      myDiffObject = new Owned(new MyClass(memberInt = -1,
-                                  memberBool = true)); // Equivalent
+  var myDiffObject = new owned MyClass(-1, true);
+      myDiffObject = new owned MyClass(memberInt = -1,
+                                       memberBool = true); // Equivalent
   writeln(myDiffObject);
 
   // Similar, but rely on the default value of memberInt, passing in memberBool.
-  var myThirdObject = new Owned(new MyClass(memberBool = true));
+  var myThirdObject = new owned MyClass(memberBool = true);
   writeln(myThirdObject);
 
   // If the user-defined initializer above had been uncommented, we could
@@ -841,19 +840,18 @@ class MyClass {
 
   // We can define an operator on our class as well, but
   // the definition has to be outside the class definition.
-  proc +(A : MyClass, B : MyClass) : Owned(MyClass) {
+  proc +(A : borrowed MyClass, B : borrowed MyClass) : owned MyClass {
     return
-      new Owned(
-        new MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
-                    memberBool = A.getMemberBool() || B.getMemberBool()));
+      new owned MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
+                        memberBool = A.getMemberBool() || B.getMemberBool());
   }
 
   var plusObject = myObject + myDiffObject;
   writeln(plusObject);
 
-  // Destruction of an object: calls the deinit() routine and frees its memory
-  // would use 'delete' but it happens automatically for Owned variables
-  // when they go out of scope.
+  // Destruction of an object: calls the deinit() routine and frees its memory.
+  // ``unmanaged`` variables should have ``delete`` called on them.
+  // ``owned`` variables are destroyed when they go out of scope.
 }
 
 // Classes can inherit from one or more parent classes
@@ -879,7 +877,7 @@ class GenericClass {
 // Note: We include a type argument whose default is the type of the first
 // argument.  This lets our initializer copy classes of different
 // types and cast on the fly.
-  proc init(other : GenericClass(?),
+  proc init(other : borrowed GenericClass(?),
             type classType = other.classType) {
     this.classType = classType;
     this.classDomain = other.classDomain;

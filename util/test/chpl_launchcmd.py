@@ -754,7 +754,7 @@ class PbsProJob(AbstractJob):
     hostlist_resource = 'mppnodes'
     num_nodes_resource = 'mppwidth'
     num_cpus_resource = 'ncpus'
-    redirect_output = False
+    redirect_output = True
 
     @property
     def job_name(self):

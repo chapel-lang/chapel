@@ -21,10 +21,11 @@ proc main {
   var outer = new unmanaged Outer();
   var inner = outer.makeAnInner(1);
 
-  inner.outer = new unmanaged ExtendOuter();
+  var new_outer = new unmanaged ExtendOuter();
+  inner.outer = new_outer;
   writeln(inner.get_s());
 
-  delete inner.outer;
+  delete new_outer;
   delete inner;
   delete outer;
 }

@@ -36,4 +36,6 @@ writeln("Dynamic Child(int)");
 var pc:borrowed Parent = c;
 pc.parent_method();
 pc.overridden_method();
-delete pc;
+
+var upc:unmanaged Parent = c;
+delete upc;

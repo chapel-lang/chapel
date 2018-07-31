@@ -25,8 +25,8 @@ const colors10 = [blue, red, yellow, red, yellow, blue, red, yellow, red, blue];
 proc main() {
   printColorEquations();
 
-  const group1 = [i in 1..popSize1] new Chameneos(i, ((i-1)%3):Color);
-  const group2 = [i in 1..popSize2] new Chameneos(i, colors10[i]);
+  const group1 = [i in 1..popSize1] new unmanaged Chameneos(i, ((i-1)%3):Color);
+  const group2 = [i in 1..popSize2] new unmanaged Chameneos(i, colors10[i]);
 
   cobegin {
     holdMeetings(group1, n);
@@ -57,7 +57,7 @@ proc printColorEquations() {
 // place, and then creating per-chameneos tasks to have meetings.
 //
 proc holdMeetings(population, numMeetings) {
-  const place = new MeetingPlace(numMeetings);
+  const place = new unmanaged MeetingPlace(numMeetings);
 
   coforall c in population do           // create a task per chameneos
     c.haveMeetings(place, population);
