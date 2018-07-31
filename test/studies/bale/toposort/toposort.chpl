@@ -16,9 +16,11 @@ config const debugLock = debugAll;
 config const debugSyncLock = debugLock;
 config const debugAtomicLock = debugLock;
 
+config param warnDimIterMethod = false;
+
 config param useDimIter = true;
-config param useDimIterRow = useDimIter; // not currently supported on master
-config param useDimIterCol = false;
+config param useDimIterRow = useDimIter; // supported for CSC domains
+config param useDimIterCol = false; // not currently supported on master
 
 config param useDimIterDistributed = false; //SparseBlockDom.dimIter not supported on any rank
 config param useDimIterRowDistributed = useDimIterDistributed;
@@ -486,6 +488,14 @@ class PermutationMap {
 
     return sD;
   }
+
+  proc permuateIndexList( array : [?D] rank*idxType ) : [D] rank*idxType {
+    var retArray : [array.domain] array.eltType;
+    forall i in retArray.domain {
+      retArray[i] = this( array[i] );
+    }
+    return retArray;
+  }
 }
 
 record TopoSortResult {
@@ -515,7 +525,12 @@ where D.rank == 2
   return new owned PermutationMap( rowMap, columnMap );
 }
 
-proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : int, fillModeDensity : real ) {
+proc createSparseUpperTriangluarIndexList(
+  D : domain(2),
+  density : real,
+  seed : int,
+  fillModeDensity : real
+) {
   // Must be square matrix, uniformly dimensioned dense domain
   if D.dim(1).size != D.dim(2).size then halt("Domain provided to createSparseUpperTriangluarDomain is not square.");
   if (D.dim(1).low != D.dim(2).low) || (D.dim(1).high != D.dim(2).high) then halt("Domain provided to createSparseUpperTriangluarDomain does not have equivalent ranges.");
@@ -544,10 +559,8 @@ proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : in
     writeln( "Non-diagonal added: ", numberNonZerosAddedInStrictlyUT );
   }
 
-  // Resulting sparse domain.
-  // Note: this is a simple sparse domain. Will dmap into appropriate domain
-  // (CS for example) when invoking a particular toposort implementation.
-  var sparseD : sparse subdomain(D);
+  // Resulting list of indices
+  var sparseD : [1..#numberNonZerosAddedInUT] D.rank*D.idxType;
 
   // if adding non-diagonals
   if numberNonZerosAddedInStrictlyUT > 0 {
@@ -570,9 +583,11 @@ proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : in
       // if not maximum density, shuffle, add subset
       if numberNonZerosAddedInStrictlyUT < maxNumberNonZerosStrictlyInUT {
         shuffle( sDRandom, seed );
-        sparseD.bulkAdd( sDRandom[1..#numberNonZerosAddedInStrictlyUT] );
+        /* sparseD.bulkAdd( sDRandom[1..#numberNonZerosAddedInStrictlyUT] ); */
+        sparseD[N+1..#numberNonZerosAddedInStrictlyUT] = sDRandom[1..#numberNonZerosAddedInStrictlyUT];
       } else {
-        sparseD.bulkAdd( sDRandom );
+        /* sparseD.bulkAdd( sDRandom ); */
+        sparseD[N+1..#numberNonZerosAddedInStrictlyUT] = sDRandom;
       }
       // add to returned sparse domain
     }
@@ -631,16 +646,15 @@ proc createSparseUpperTriangluarDomain( D : domain(2), density : real, seed : in
         }
       }
       // add to returned sparse domain
-      sparseD.bulkAdd( sDRandom );
+      /* sparseD.bulkAdd( sDRandom ); */
+      sparseD[N+1..#numberNonZerosAddedInStrictlyUT] = sDRandom;
     }
   }
 
   // Diagonal indices
-  var sDDiag : [D.dim(1)] D.rank*D.idxType;
   forall i in D.dim(1) {
-    sDDiag[i] = (i,i);
+    sparseD[i] = (i,i);
   }
-  sparseD.bulkAdd( sDDiag );
 
   if enableRuntimeDebugging && debugCreateDomain then writeln( "there are ", sparseD.size, " non zeros, for density of ", sparseD.size / ( N*N : real ) );
 
@@ -654,6 +668,16 @@ where D.rank == 2 && isSparseDom( D )
 {
   var isUT = true;
   for (i,j) in D {
+    isUT = isUT && (i <= j);
+    if !isUT then break;
+  }
+  return isUT;
+}
+
+proc checkIsUperTriangularIndexList( array : [?D] 2*int ) : bool
+{
+  var isUT = true;
+  for (i,j) in array {
     isUT = isUT && (i <= j);
     if !isUT then break;
   }
@@ -700,13 +724,13 @@ where D.rank == 2
   for row in rows {
     if enableRuntimeDebugging && debugTopo then writeln( "initializing row ", row );
     if useDimIterCol {
-     // compilerWarning("iterating over columns in init with dimIter");
+     if warnDimIterMethod then compilerWarning("toposortSerial.init iterating over columns in init with dimIter");
       for col in D.dimIter(2,row) {
         rowCount[row] += 1;
         rowSum[row] += col;
       }
     } else {
-      // compilerWarning("iterating over columns in init with dim");
+      if warnDimIterMethod then compilerWarning("toposortSerial.init iterating over columns in init with dim");
       for col in columns {
         if D.member((row,col)) {
           rowCount[row] += 1;
@@ -760,7 +784,7 @@ where D.rank == 2
     // foreach row along the swapped column who has a nonzero at (row, swapColumn)
     // remove swapColumn from rowSum and reduce rowCount
     if useDimIterRow {
-      // compilerWarning("iterating over rows in kernel with dimIter");
+      if warnDimIterMethod then compilerWarning("toposortSerial.toposort iterating over rows in kernel with dimIter");
       for row in D.dimIter(1,swapColumn) {
         rowCount[row] -= 1;
         rowSum[row] -= swapColumn;
@@ -770,7 +794,7 @@ where D.rank == 2
         }
       }
     } else {
-      // compilerWarning("iterating over rows in kernel with dim");
+      if warnDimIterMethod then compilerWarning("toposortSerial.toposort iterating over rows in kernel with dim");
       for row in rows {
         if D.member((row, swapColumn)) {
           rowCount[row] -= 1;
@@ -819,13 +843,13 @@ where D.rank == 2
 
     if enableRuntimeDebugging && debugTopo then writeln( "initializing row ", row );
     if useDimIterCol {
-     // compilerWarning("iterating over columns in init with dimIter");
+     if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over columns in init with dimIter");
       for col in D.dimIter(2,row) {
         count += 1;
         sum += col;
       }
     } else {
-      // compilerWarning("iterating over columns in init with dim");
+      if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over columns in init with dim");
       for col in columns {
         if D.member((row,col)) {
           count += 1;
@@ -890,7 +914,7 @@ where D.rank == 2
     // foreach row along the swapped column who has a nonzero at (row, swapColumn)
     // remove swapColumn from rowSum and reduce rowCount
     if useDimIterRow {
-      // compilerWarning("iterating over rows in kernel with dimIter");
+      if warnDimIterMethod then compilerWarning("toposortParallel.toposort iterating over rows in kernel with dimIter");
       for row in D.dimIter(1,swapColumn) {
         var previousRowCount = rowCount[row].fetchSub( 1 );
         rowSum[row].sub( swapColumn );
@@ -901,7 +925,7 @@ where D.rank == 2
         }
       }
     } else {
-      // compilerWarning("iterating over rows in kernel with dim");
+      if warnDimIterMethod then compilerWarning("toposortParallel.toposort iterating over rows in kernel with dim");
       for row in rows {
         if D.member((row, swapColumn)) {
           var previousRowCount = rowCount[row].fetchSub( 1 );
@@ -962,13 +986,13 @@ where D.rank == 2
 
     if enableRuntimeDebugging && debugTopo then writeln( "initializing row ", row );
     if useDimIterColDistributed {
-     // compilerWarning("iterating over columns in init with dimIter");
+     if warnDimIterMethod then compilerWarning("toposortDistributed.init iterating over columns in init with dimIter");
       for col in D.dimIter(2,row) {
         count += 1;
         sum += col;
       }
     } else {
-      // compilerWarning("iterating over columns in init with dim");
+      if warnDimIterMethod then compilerWarning("toposortDistributed.init iterating over columns in init with dim");
       for col in columns {
         if D.member((row,col)) {
           count += 1;
@@ -1035,7 +1059,7 @@ where D.rank == 2
     // remove swapColumn from rowSum and reduce rowCount
     // NOTE: dimIter is not supported on any dimension on SparseBlockDom
     if useDimIterRowDistributed {
-      // compilerWarning("iterating over rows in kernel with dimIter");
+      if warnDimIterMethod then compilerWarning("toposortDistributed.toposort iterating over rows in kernel with dimIter");
       for row in D.dimIter(1,swapColumn) {
         var previousRowCount = rowCount[row].fetchSub( 1 );
         rowSum[row].sub( swapColumn );
@@ -1046,7 +1070,7 @@ where D.rank == 2
         }
       }
     } else {
-      // compilerWarning("iterating over rows in kernel with dim");
+      if warnDimIterMethod then compilerWarning("toposortDistributed.toposort iterating over rows in kernel with dim");
       for row in rows {
         if D.member((row, swapColumn)) {
           var previousRowCount = rowCount[row].fetchSub( 1 );
@@ -1112,40 +1136,46 @@ proc main(){
   // create upper triangular matrix
   if !silentMode then writeln("Creating sparse upper triangluar domain");
   const D : domain(2) = {1..#N,1..#N};
-  const sparseD = createSparseUpperTriangluarDomain( D, density, seed, defaultFillModeDensity );
 
-  if !silentMode then writeln( "Actual Density: density: %dr%%\nTotal Number NonZeros: %n".format((sparseD.size / (1.0*N*N))*100, sparseD.size) );
+  const sparseUpperTriangularIndexList = createSparseUpperTriangluarIndexList( D, density, seed, defaultFillModeDensity );
 
-  var permutationMap = createRandomPermutationMap( sparseD, seed );
+  if !silentMode then writeln( "Actual Density: density: %dr%%\nTotal Number NonZeros: %n".format((sparseUpperTriangularIndexList.size / (1.0*N*N))*100, sparseUpperTriangularIndexList.size) );
+
+  var permutationMap = createRandomPermutationMap( D, seed );
   if printPermutations then writeln("Permutation Map:\n", permutationMap);
 
   if !silentMode then writeln("Permuting upper triangluar domain");
-  var permutedSparseD = permutationMap.permuteDomain( sparseD );
+  var permutedSparseUpperTriangularIndexList = permutationMap.permuateIndexList( sparseUpperTriangularIndexList );
 
-  var topoResult : TopoSortResult(sparseD.idxType);
+  var topoResult : TopoSortResult(D.idxType);
 
   select implementation {
     when ToposortImplementation.Serial {
+       if !silentMode then writeln("Converting to CSC domain");
+
+      var dmappedPermutedSparseD : sparse subdomain(D) dmapped CS(compressRows=false);
+      dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
+
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Serial implementation.");
-      var dmappedPermutedSparseD : permutedSparseD.type dmapped CS(compressRows=false);
-      dmappedPermutedSparseD = permutedSparseD;
       topoResult = toposortSerial( dmappedPermutedSparseD );
     }
     when ToposortImplementation.Parallel {
+       if !silentMode then writeln("Converting to CSC domain");
+
+      var dmappedPermutedSparseD : sparse subdomain(D) dmapped CS(compressRows=false);
+      dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
+
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation.");
-      var dmappedPermutedSparseD : permutedSparseD.type dmapped CS(compressRows=false);
-      dmappedPermutedSparseD = permutedSparseD;
       topoResult = toposortParallel( dmappedPermutedSparseD, numTasks );
     }
     when ToposortImplementation.Distributed {
-      if !silentMode then writeln("Toposorting permuted upper triangluar domain using Distributed implementation.");
+       if !silentMode then writeln("Converting to Sparse Block domain");
       var distributedD : D.type dmapped Block(D, targetLocales=reshape(Locales, {Locales.domain.dim(1),1..#1}) ) = D;
 
       var distributedPermutedSparseD : sparse subdomain(distributedD);
-      // TODO make faster...
-      for i in permutedSparseD {
-        distributedPermutedSparseD += i;
-      }
+      distributedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
+
+      if !silentMode then writeln("Toposorting permuted upper triangluar domain using Distributed implementation.");
       topoResult = toposortDistributed( distributedPermutedSparseD );
     }
     otherwise {
@@ -1166,9 +1196,18 @@ proc main(){
 
   if printPermutations then writeln( "Solved permutation map:\n", solvedMap );
 
-  var solvedPermutedPermutedSparseD = solvedMap.permuteDomain( permutedSparseD );
+  var solvedPermutedIndexList = solvedMap.permuateIndexList( permutedSparseUpperTriangularIndexList );
 
   if printMatrices {
+    var sparseD : sparse subdomain(D);
+    var permutedSparseD : sparse subdomain(D);
+    var solvedPermutedPermutedSparseD : sparse subdomain(D);
+
+
+    sparseD.bulkAdd( sparseUpperTriangularIndexList );
+    permutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
+    solvedPermutedPermutedSparseD.bulkAdd( solvedPermutedIndexList );
+
     var M : [sparseD] eltType;
     var permutedM : [permutedSparseD] eltType;
     var solvedPermuatedPermutedM : [solvedPermutedPermutedSparseD] eltType;
@@ -1201,6 +1240,6 @@ proc main(){
     prettyPrintSparse( solvedPermuatedPermutedM, printIRV = printNonZeros, separateElements = padPrintedMatrixElements );
   }
 
-  var isUpperTriangular = checkIsUperTriangularDomain( solvedPermutedPermutedSparseD );
+  var isUpperTriangular = checkIsUperTriangularIndexList( solvedPermutedIndexList );
   if !isUpperTriangular then halt("Solved-permuted permuted upper triangluar domain is not upper triangular!");
 }
