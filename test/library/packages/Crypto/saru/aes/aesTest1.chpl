@@ -26,5 +26,5 @@ proc main(){
 
   /* Decrypt the message using the key and IV */
   var orig = a.decrypt(ct, key, iv);
-  writeln("Obtained Plaintext: ", orig.toHex());;
+  writeln("Obtained Plaintext: ", orig.toHex());
 }
