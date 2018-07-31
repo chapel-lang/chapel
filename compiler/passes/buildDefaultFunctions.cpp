@@ -1304,7 +1304,7 @@ static void build_union_assignment_function(AggregateType* ct) {
 }
 
 static void buildClassBorrowMethod(AggregateType* ct) {
-  if (function_exists("borrow", ct, ct))
+  if (function_exists("borrow", dtMethodToken, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("borrow");
