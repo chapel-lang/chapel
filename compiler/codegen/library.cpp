@@ -162,8 +162,9 @@ const char* getLibraryExtension() {
 
 void ensureLibDirExists() {
   if (libDir[0] == '\0') {
-    strncpy(libDir, "lib", sizeof("lib"));
-    libDir[sizeof("lib")] = '\0';
+    const char* dir = "lib";
+    INT_ASSERT(strlen(dir) < sizeof(libDir));
+    strcpy(libDir, dir);
   }
   ensureDirExists(libDir, "ensuring --library-dir directory exists");
 }
