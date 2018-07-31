@@ -1,8 +1,8 @@
 module LCALSStatic {
   use LCALSDataTypes;
 
-  var s_loop_data: LoopData;
-  var s_loop_suite_run_info = new LoopSuiteRunInfo();
+  var s_loop_data: unmanaged LoopData;
+  var s_loop_suite_run_info = new unmanaged LoopSuiteRunInfo();
 
   proc getLoopSuiteRunInfo() {
     return s_loop_suite_run_info;
