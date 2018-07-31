@@ -7064,8 +7064,9 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
     retval = foldTryCond(postFold(expr));
 
   } else if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_ERROR)   == true  ||
-        call->isPrimitive(PRIM_WARNING) == true) {
+    if (call->isPrimitive(PRIM_ERROR)      == true  ||
+        call->isPrimitive(PRIM_ERROR_CONT) == true  ||
+        call->isPrimitive(PRIM_WARNING)    == true) {
       resolveExprMaybeIssueError(call);
     }
 
@@ -7373,6 +7374,7 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
   // a dynamic dispatch context to reduce potential user confusion.
   //
   if (call->isPrimitive(PRIM_ERROR)         == true          ||
+      call->isPrimitive(PRIM_ERROR_CONT)    == true          ||
       call->getModule()->modTag             != MOD_INTERNAL  ||
       inDynamicDispatchResolution           == false         ||
       callStack.head()->getModule()->modTag != MOD_INTERNAL) {
@@ -7447,6 +7449,8 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
 
     if (call->isPrimitive(PRIM_ERROR) == true) {
       USR_FATAL(from, "%s", str);
+    } else if (call->isPrimitive(PRIM_ERROR_CONT) == true) {
+      USR_FATAL_CONT(from, "%s", str);
     } else {
       gdbShouldBreakHere();
       USR_WARN (from, "%s", str);
@@ -9278,6 +9282,7 @@ static void removeRandomPrimitive(CallExpr* call) {
 
     case PRIM_WARNING:
     case PRIM_ERROR:
+    case PRIM_ERROR_CONT:
     {
       // Warnings have now been issued, no need to keep the function around.
       // Remove calls to compilerWarning and let dead code elimination handle

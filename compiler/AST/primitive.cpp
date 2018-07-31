@@ -710,6 +710,7 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
 
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
+  prim_def(PRIM_ERROR_CONT, "error cont", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
   prim_def(PRIM_WHEN, "when case expressions", returnInfoVoid);
   prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoString);

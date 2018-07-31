@@ -127,6 +127,7 @@ void checkPrimitives()
      case PRIM_IS_STAR_TUPLE_TYPE:
      case PRIM_NEW:                 // new keyword
      case PRIM_ERROR:
+     case PRIM_ERROR_CONT:
      case PRIM_WARNING:
       if (resolved)
         INT_FATAL("Primitive should not appear after resolution is complete.");
