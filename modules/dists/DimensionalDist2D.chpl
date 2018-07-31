@@ -244,6 +244,8 @@ class DimensionalDist2D : BaseDist {
   proc targetIds return targetLocales.domain;
 
   // the dimension specifiers - ones being combined
+  const managed_di1, managed_di2;
+  // these ones are always unmanaged
   const di1, di2;
 
   // for debugging/tracing (remove later)
@@ -397,8 +399,12 @@ proc DimensionalDist2D.init(
   dataParMinGranularity: int      = getDataParMinGranularity()
 ) {
   this.targetLocales = targetLocales;
-  this.di1 = di1;
-  this.di2 = di2;
+  var unmanaged_di1 = _to_unmanaged(di1.borrow());
+  var unmanaged_di2 = _to_unmanaged(di2.borrow());
+  this.managed_di1 = di1;
+  this.managed_di2 = di2;
+  this.di1 = unmanaged_di1;
+  this.di2 = unmanaged_di2;
   this.name = name;
   this.idxType = idxType;
   this.dataParTasksPerLocale = if dataParTasksPerLocale==0
@@ -518,6 +524,8 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
   return new unmanaged DimensionalDist2D(targetLocales = privTargetLocales,
                              name          = privatizeData(2),
                              idxType       = this.idxType,
+                             managed_di1t  = managed_di1.type,
+                             managed_di2t  = managed_di2.type,
                              di1           = di1new,
                              di2           = di2new,
                              dataParTasksPerLocale     = privatizeData(3),
@@ -532,13 +540,20 @@ proc DimensionalDist2D.init(param dummy: int,
   targetLocales: [] locale,
   name,
   type idxType,
+  type managed_di1t,
+  type managed_di2t,
   di1,
   di2,
   dataParTasksPerLocale,
   dataParIgnoreRunningTasks,
   dataParMinGranularity
 ) {
+  var empty1:managed_di1t;
+  var empty2:managed_di2t;
+
   this.targetLocales = targetLocales;
+  this.managed_di1 = empty1;
+  this.managed_di2 = empty2;
   this.di1 = di1;
   this.di2 = di2;
   this.name = name;
