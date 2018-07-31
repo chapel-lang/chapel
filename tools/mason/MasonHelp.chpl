@@ -80,6 +80,7 @@ proc masonRunHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --build                  Compile before running binary');
   writeln('        --show                   Increase verbosity');
+  writeln('        --example <example>      Run an example');
   writeln('Runtime arguments can also be included after the run arguments ');
   writeln();
   writeln('When no options are provided, the following will take place:');
@@ -98,9 +99,11 @@ proc masonBuildHelp() {
   writeln('        --show                   Increase verbosity');
   writeln('        --release                Compile to target/release with optimizations (--fast)');
   writeln('        --force                  Force Mason to build the project');
+  writeln('        --example <example>      Build an example from the example/ directory');
   writeln();
+  writeln('When --example is thrown without an example, all examples will be built');
   writeln('When no options are provided, the following will take place:');
-  writeln('   - Build from mason project if Mason.lock present');
+  writeln('   - Build from mason project if Mason.lock present');  
 }
 
 proc masonNewHelp() {
@@ -182,6 +185,7 @@ proc masonTestHelp() {
   writeln("Test configuration is up to the user");
   writeln("Tests pass if they exit with status code 0");
 }
+
 
 proc masonSystemHelp() {
   writeln("Integrate a Mason package with system packages found via pkg-config");
