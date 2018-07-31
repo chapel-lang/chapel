@@ -24,7 +24,7 @@ module NetworkAtomicTypes {
     return T == bool     ||
            T ==  int(32) || T ==  int(64) ||
            T == uint(32) || T == uint(64) ||
-           T == real(64);
+           T == real(32) || T == real(64);
   }
 
   proc chpl__networkAtomicType(type T) type {
