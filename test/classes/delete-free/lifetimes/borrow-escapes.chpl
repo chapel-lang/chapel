@@ -117,13 +117,14 @@ proc bad23() {
 
 
 proc ok1() {
-  global = new unmanaged MyClass(10);
+  var unm = new unmanaged MyClass(10);
+  global = unm;
   var a:borrowed MyClass = global; // OK: lifetime global > lifetime a
   a = global;
   {
     var x = a; // OK: x has shorter lifetime than a
   }
-  delete global;
+  delete unm;
 }
 
 proc ok2() {

@@ -241,12 +241,12 @@ var Dest, Src: [NeighDom] domain(3);
 
 setupComms();
 
-var fobj : Force;
+var fobj : unmanaged Force;
 
 if force == "lj" {
-  fobj = new ForceLJ(force_cut);
+  fobj = new unmanaged ForceLJ(force_cut);
 } else {
-  fobj = new ForceEAM(force_cut);
+  fobj = new unmanaged ForceEAM(force_cut);
   mass = fobj.mass;
 }
 
