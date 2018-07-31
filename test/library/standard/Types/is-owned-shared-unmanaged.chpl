@@ -12,6 +12,7 @@ var o:owned MyClass;
 var s:shared MyClass;
 var u:unmanaged MyClass;
 var b:borrowed MyClass;
+var c:MyClass;
 
 proc myassert(param got) {
   if got != true then
@@ -32,6 +33,7 @@ myassert( isOwnedClass(o) );
 myassert( !isOwnedClass(s) );
 myassert( !isOwnedClass(u) );
 myassert( !isOwnedClass(b) );
+myassert( !isOwnedClass(c) );
 
 
 // check isSharedClass with type argument
@@ -48,6 +50,7 @@ myassert( !isSharedClass(o) );
 myassert( isSharedClass(s) );
 myassert( !isSharedClass(u) );
 myassert( !isSharedClass(b) );
+myassert( !isSharedClass(c) );
 
 // check isUnmanagedClass with type argument
 myassert( !isUnmanagedClass(int) );
@@ -63,6 +66,7 @@ myassert( !isUnmanagedClass(o) );
 myassert( !isUnmanagedClass(s) );
 myassert( isUnmanagedClass(u) );
 myassert( !isUnmanagedClass(b) );
+myassert( !isUnmanagedClass(c) );
 
 // check isBorrowedClass with type argument
 myassert( !isBorrowedClass(int) );
@@ -78,4 +82,4 @@ myassert( !isBorrowedClass(o) );
 myassert( !isBorrowedClass(s) );
 myassert( !isBorrowedClass(u) );
 myassert( isBorrowedClass(b) );
-
+myassert( isBorrowedClass(c) );

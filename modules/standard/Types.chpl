@@ -226,36 +226,27 @@ proc isEnumValue(e)      param  return isEnumType(e.type);
 // isTupleValue
 // isHomogeneousTupleValue
 pragma "no doc"
-proc isClassValue(e)     param  return isClassType(e.type);
-
+proc isClassValue(e)              param return isClassType(e.type);
 pragma "no doc"
-proc isOwnedClassType(type t) param {
-  return isSubtype(t, _owned);
-}
+proc isOwnedClassType(type t)     param return isSubtype(t, _owned);
 pragma "no doc"
 pragma "no borrow convert"
-proc isOwnedClassValue(e) param return isOwnedClassType(e.type);
+proc isOwnedClassValue(e)         param return isOwnedClassType(e.type);
 pragma "no doc"
-proc isSharedClassType(type t) param {
-  return isSubtype(t, _shared);
-}
+proc isSharedClassType(type t)    param return isSubtype(t, _shared);
 pragma "no doc"
 pragma "no borrow convert"
-proc isSharedClassValue(e) param return isSharedClassType(e.type);
+proc isSharedClassValue(e)        param return isSharedClassType(e.type);
 pragma "no doc"
-proc isUnmanagedClassType(type t) param {
-  return isSubtype(t, _unmanaged);
-}
+proc isUnmanagedClassType(type t) param return isSubtype(t, _unmanaged);
 pragma "no doc"
 pragma "no borrow convert"
-proc isUnmanagedClassValue(e) param return isUnmanagedClassType(e.type);
+proc isUnmanagedClassValue(e)     param return isUnmanagedClassType(e.type);
 pragma "no doc"
-proc isBorrowedClassType(type t) param {
-  return isSubtype(t, _borrowed);
-}
+proc isBorrowedClassType(type t)  param return isSubtype(t, _borrowed);
 pragma "no doc"
 pragma "no borrow convert"
-proc isBorrowedClassValue(e) param return isBorrowedClassType(e.type);
+proc isBorrowedClassValue(e)      param return isBorrowedClassType(e.type);
 
 pragma "no doc"
 proc isRecordValue(e)    param  return isRecordType(e.type);
