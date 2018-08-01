@@ -5,7 +5,7 @@ export proc takesBool(x: bool) {
 
 /* Tests returning a bool */
 export proc getBool(): bool {
-  var ret: bool = "whee";
+  var ret: bool = true;
   return ret;
 }
 
