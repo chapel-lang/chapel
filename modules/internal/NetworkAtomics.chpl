@@ -21,6 +21,17 @@ pragma "atomic module"
 module NetworkAtomics {
   use ChapelStandard;
 
+  /* Hybrid waitFor implementation that works on a generic atomic type.
+     Separated out to avoid code duplication */
+  private inline proc hybridWaitFor(const aThis, value, order:memory_order): void {
+    on aThis {
+      while (aThis.read(order=memory_order_relaxed) != value) {
+        chpl_task_yield();
+      }
+      atomic_thread_fence(order);
+    }
+  }
+
   private proc externFunc(param s: string, type T) param {
     if isInt(T)  then return "chpl_comm_atomic_" + s + "_int"  + numBits(T):string;
     if isUint(T) then return "chpl_comm_atomic_" + s + "_uint" + numBits(T):string;
@@ -91,12 +102,7 @@ module NetworkAtomics {
     }
 
     inline proc const waitFor(value:bool, order:memory_order = memory_order_seq_cst): void {
-      on this {
-        while (this.read(order=memory_order_relaxed) != value) {
-          chpl_task_yield();
-        }
-        atomic_thread_fence(order);
-      }
+      hybridWaitFor(this, value, order);
     }
 
     inline proc const peek(): bool {
@@ -265,12 +271,7 @@ module NetworkAtomics {
     }
 
     inline proc const waitFor(value:T, order:memory_order = memory_order_seq_cst): void {
-      on this {
-        while (this.read(order=memory_order_relaxed) != value) {
-          chpl_task_yield();
-        }
-        atomic_thread_fence(order);
-      }
+      hybridWaitFor(this, value, order);
     }
 
     inline proc const peek(): T {
