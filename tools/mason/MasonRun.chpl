@@ -43,7 +43,8 @@ proc masonRun(args) throws {
           exit(0);
         }
         else if arg == '--build' {
-          masonBuild(['mason', 'build']);
+          masonBuildRun(args[2..]);
+          exit(1);
         }
         else if arg == '--show' {
           show=true;
@@ -106,4 +107,54 @@ proc masonRun(args) throws {
     exit(1);
   }
 }
+
+// Builds before running
+private proc masonBuildRun(args: [?d] string) {
+  var example = false;
+  var show = false;
+  var release = false;
+  var force = false;
+  var examples: [1..0] string;  
+  for arg in args {
+    if arg == "--example" {
+      example = true;
+    }
+    else if arg == "--show" {
+      show = true;
+    }
+    else if arg == "--build" {
+      continue;
+    }
+    else if arg == "--force" {
+      force = true;
+    }
+    else if arg == "--release" {
+      release = true;
+    }
+    else {
+      examples.push_back(arg);
+    }
+  }
+  if example {
+    if show then examples.push_back("--show");
+    if release then examples.push_back("--release");
+    if force then examples.push_back("--force");
+    masonExample(examples);
+  }
+  else {
+    var buildArgs = ["mason", "build"];
+    if show then buildArgs.push_back("--show");
+    if release then buildArgs.push_back("--release");
+    if force then buildArgs.push_back("--force");
+    masonBuild(buildArgs);
+    //masonRun(["mason", "run", buildArgs[2..]); when #10622 is completed
+    if show {
+      masonRun(["mason", "run", "--show"]);
+    }
+    else {
+      masonRun(["mason", "run"]);
+    }
+  }
+}
+
 

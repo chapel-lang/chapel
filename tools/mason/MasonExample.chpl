@@ -30,20 +30,28 @@ use FileSystem;
 /* Runs the .chpl files found within the /example directory */
 proc masonExample(args) {
 
-  var show = true;
+  var show = false;
   var run = true;
   var build = true;
+  var release = false;
+  var force = false;
   var examples: [1..0] string;
 
   for arg in args {
-    if arg == '--no-show' {
-      show=false;
+    if arg == '--show' {
+      show = true;
     }
     else if arg == '--no-run' {
-      run=false;
+      run = false;
     }
     else if arg == '--no-build' {
-      build=false;
+      build = false;
+    }
+    else if arg == '--release' {
+      release = true;
+    }
+    else if arg == '--force' {
+      force = true;
     }
     else {
       examples.push_back(arg);
@@ -52,7 +60,7 @@ proc masonExample(args) {
   var uargs = [""];
   if !build then uargs.push_back("--no-update-registry");  
   UpdateLock(uargs);
-  runExamples(show, run, build, examples);
+  runExamples(show, run, build, release, force, examples);
 }
 
 
@@ -107,25 +115,27 @@ private proc getExampleOptions(toml: Toml, exampleNames: [?d] string) {
 }
 
 // Cleans out example dir from a previous run
-private proc setupExampleDir(projectHome: string, exampleNames: [?d] string) {
+private proc setupExampleDir(projectHome: string) {
 
   const exampleDir = joinPath(projectHome, "target/example/");
-  if isDir(exampleDir) {
-
-    // prevent building one example from removing all.
-    for example in exampleNames {
-      const exampleName = stripExt(example, ".chpl");
-      const exampleBinary = joinPath(exampleDir, exampleName);
-      if isFile(exampleBinary) {
-        remove(exampleBinary);
-      }
-    }
-  }
-  else {
-    // Make target files if they dont exist from a build
+  if !isDir(exampleDir) {
     makeTargetFiles("debug", projectHome);
   }
 }
+
+// prevent building one example from removing all.
+private proc removeExampleBinary(projectHome: string, exampleName: string) {
+
+  const exampleDir = joinPath(projectHome, "target/example/");
+  if isDir(exampleDir) {
+    const exampleBin = stripExt(exampleName, ".chpl");
+    const exampleBinPath = joinPath(exampleDir, exampleBin);
+    if isFile(exampleBinPath) {
+      remove(exampleBinPath);
+    }
+  }
+}
+
 
 // Takes in examples found by mason and examples requested by user
 // outputs examples that should be built/run
@@ -151,8 +161,8 @@ private proc determineExamples(exampleNames: [?d1] string,
 }
 
 
-private proc runExamples(show: bool, run: bool, build: bool,
-                         examplesRequested: [?d] string) throws {
+private proc runExamples(show: bool, run: bool, build: bool, release: bool,
+                         force: bool, examplesRequested: [?d] string) throws {
 
   try! {
 
@@ -167,13 +177,13 @@ private proc runExamples(show: bool, run: bool, build: bool,
     const compopts = buildInfo[3];
     const exampleNames = buildInfo[4];
     const perExampleOptions = buildInfo[5];
-
+    const projectName = basename(stripExt(projectPath, ".chpl"));
+    
     var numExamples = exampleNames.domain.size;
     var examplesToRun = determineExamples(exampleNames, examplesRequested);
 
     // Clean out example binaries from previous runs
-    if build then setupExampleDir(projectHome, examplesToRun);
-
+    if build then setupExampleDir(projectHome);
 
     if numExamples > 0 {
       for example in examplesToRun {
@@ -183,32 +193,49 @@ private proc runExamples(show: bool, run: bool, build: bool,
 
         // retrieves compopts and execopts found per example in the toml file
         const options = perExampleOptions[exampleName];
-        const exampleCompopts = options[1];
-        const exampleExecopts = options[2];
+        var exampleCompopts = options[1];
+        var exampleExecopts = options[2];
+
+        if release then exampleCompopts += " --fast";
 
         if build {
+          
+          if exampleModified(projectHome, projectName, example) || force { 
 
-          // get the string of dependencies for compilation
-          // also names example as --main-module
-          const masonCompopts = getMasonDependencies(sourceList, exampleName);
-          const allCompOpts = " ".join(" ".join(compopts), masonCompopts,
-                                      exampleCompopts);
+            // remove old binary
+            removeExampleBinary(projectHome, example);
 
-          const moveTo = "-o " + projectHome + "/target/example/" + exampleName;
-          const compCommand = " ".join("chpl",examplePath, projectPath,
-                                       moveTo, allCompOpts);
-          const compilation = runWithStatus(compCommand);
+            // get the string of dependencies for compilation
+            // also names example as --main-module
+            const masonCompopts = getMasonDependencies(sourceList, exampleName);
+            var allCompOpts = " ".join(" ".join(compopts), masonCompopts,
+                                       exampleCompopts);
 
-          if compilation != 0 {
-            stderr.writeln("compilation failed for " + example);
-          }
-          else {
-            if show || !run then writeln("compiled ", example, " successfully");
-            if run {
-              var result = runExampleBinary(projectHome, exampleName, show, exampleExecopts);
-              if result != 0 {
-                throw new MasonError("Failed to run example for: " + example);
+            const moveTo = "-o " + projectHome + "/target/example/" + exampleName;
+            const compCommand = " ".join("chpl",examplePath, projectPath,
+                                         moveTo, allCompOpts);
+            if show then writeln(compCommand);
+            const compilation = runWithStatus(compCommand);
+
+            if compilation != 0 {
+              stderr.writeln("compilation failed for " + example);
+            }
+            else {
+              if show || !run then writeln("compiled ", example, " successfully");
+              if run {
+                var result = runExampleBinary(projectHome, exampleName, show, exampleExecopts);
+                if result != 0 {
+                  throw new MasonError("Mason could not find compiled example: " + example);
+                }
               }
+            }
+          }
+          // build is skipped but examples still need to be run
+          else {
+            writeln("Skipping "+ example + ": no changes made to project or example");
+            var result = runExampleBinary(projectHome, exampleName, show, exampleExecopts);
+            if result != 0 {
+              throw new MasonError("Mason could not find compiled example: " + example);
             }
           }
         }
@@ -216,7 +243,7 @@ private proc runExamples(show: bool, run: bool, build: bool,
         else {
           var result = runExampleBinary(projectHome, exampleName, show, exampleExecopts);
           if result != 0 {
-            throw new MasonError("Failed to run example for: " + example);
+            throw new MasonError("Mason could not find compiled example: " + example);
           }
         }
       }
@@ -235,7 +262,7 @@ private proc runExamples(show: bool, run: bool, build: bool,
 private proc runExampleBinary(projectHome: string, exampleName: string,
                               show: bool, execopts: string) throws {
   const command = "".join(projectHome,'/target/example/', exampleName, " ", execopts);
-  const exampleResult = runWithStatus(command, show);
+  const exampleResult = runWithStatus(command, true);
   return exampleResult;
 }  
 
@@ -284,7 +311,7 @@ private proc getExamples(toml: Toml, projectHome: string) {
   return exampleNames;
 }
 
-/* Gets the path of the example following the example dir */
+/* Gets the path of the example by following the example dir */
 proc getExamplePath(fullPath: string, examplePath = "") : string {
   var split = splitPath(fullPath);
   if split[2] == "example" {
@@ -309,4 +336,28 @@ proc printAvailableExamples(toml: Toml, projectHome: string) {
     writeln(" --- " + example);
   }
   writeln("--------------------------");
+}
+
+// Checks to see if an example, source code, or Mason.toml has been modified
+proc exampleModified(projectHome: string, projectName: string,
+                             exampleName: string) {
+  const examplePath = joinPath(projectHome, "target/example", exampleName);
+
+  if projectModified(projectHome, projectName, "debug") {
+      return true;
+  }
+  else {
+    if isDir(examplePath) {
+      // check for changes to example
+      const exModTime = getLastModified(joinPath(projectHome, "example",
+                                                 getExamplePath(exampleName)));
+      const exBinModTime = getLastModified(examplePath);
+      if exModTime > exBinModTime {
+        return true;
+      }
+      else return false;
+    }
+    else return false;
+  }
+  return true;
 }

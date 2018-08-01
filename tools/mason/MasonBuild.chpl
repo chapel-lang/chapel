@@ -60,6 +60,9 @@ proc masonBuild(args) {
   if example {
     // compopts become test names. Build never runs examples
     compopts.push_back("--no-run");
+    if show then compopts.push_back("--show");
+    if release then compopts.push_back("--release");
+    if force then compopts.push_back("--force");
     masonExample(compopts);
   }
   else {

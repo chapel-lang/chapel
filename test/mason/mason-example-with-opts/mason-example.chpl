@@ -5,7 +5,7 @@ use MasonRun;
 proc main() {
 
   // build the examples
-  masonExample(["--no-run"]);
+  masonExample(["--no-run", "--force"]);
 
   // run info list of tests to run
   masonRun(["mason", "run", "--example"]);
