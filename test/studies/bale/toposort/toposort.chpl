@@ -124,6 +124,10 @@ class Vector {
   proc compact(){
     this.listDomain = {1..#this.size};
   }
+
+  proc writeThis( f ){
+    f <~> this.listArray[this.listDomain.low..#this.size];
+  }
 }
 
 class ParallelWorkQueue {
@@ -134,6 +138,8 @@ class ParallelWorkQueue {
 
   var terminated : atomic bool;
   const terminatedRetries : int;
+
+  forwarding queue only size;
 
   proc init( type eltType, type lockType = SyncLock, retries : int = 5 ){
     this.eltType = eltType;
@@ -209,6 +215,12 @@ class ParallelWorkQueue {
 
   proc terminate(){
     this.terminated.write(true);
+  }
+
+  proc writeThis( f ){
+    this.lock.lock();
+    f <~> this.queue;
+    this.lock.unlock();
   }
 }
 
@@ -741,24 +753,29 @@ where D.rank == 2
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
-  for row in rows {
-    if enableRuntimeDebugging && debugTopo then writeln( "initializing row ", row );
-    if useDimIterCol {
-     if warnDimIterMethod then compilerWarning("toposortSerial.init iterating over columns in init with dimIter");
-      for col in D.dimIter(2,row) {
+  // iterate in dense dimension (column) and then through the sparse dimensions
+  // (rows) and sum into global atomic arrays
+  for column in columns {
+    if enableRuntimeDebugging && debugTopo then writeln( "accumulating in column ", column );
+    if useDimIterRow {
+     if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over rows in init with dimIter");
+      for row in D.dimIter(1,column) {
         rowCount[row] += 1;
-        rowSum[row] += col;
+        rowSum[row] += column ;
       }
     } else {
-      if warnDimIterMethod then compilerWarning("toposortSerial.init iterating over columns in init with dim");
-      for col in columns {
-        if D.member((row,col)) {
+      if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over rows in init with dim");
+      for row in rows {
+        if D.member((row,column)) {
           rowCount[row] += 1;
-          rowSum[row] += col;
+          rowSum[row] += column;
         }
       }
     }
+  }
 
+  // Queue ready rows
+  for row in rows {
     if rowCount[row] == 1 {
       workQueue.push_back( row );
     }
@@ -856,42 +873,43 @@ where D.rank == 2
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
-  forall row in rows {
-    // Accumulate task locally, then write at end.
-    var count = 0;
-    var sum = 0;
-
-    if enableRuntimeDebugging && debugTopo then writeln( "initializing row ", row );
-    if useDimIterCol {
-     if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over columns in init with dimIter");
-      for col in D.dimIter(2,row) {
-        count += 1;
-        sum += col;
+  // iterate in dense dimension (column) and then through the sparse dimensions
+  // (rows) and sum into global atomic arrays
+  forall column in columns {
+    if enableRuntimeDebugging && debugTopo then writeln( "accumulating in column ", column );
+    if useDimIterRow {
+     if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over rows in init with dimIter");
+      for row in D.dimIter(1,column) {
+        rowCount[row].add(1);
+        rowSum[row].add(column);
       }
     } else {
-      if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over columns in init with dim");
-      for col in columns {
-        if D.member((row,col)) {
-          count += 1;
-          sum += col;
+      if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over rows in init with dim");
+      for row in rows {
+        if D.member((row,column)) {
+          rowCount[row].add(1);
+          rowSum[row].add(column);
         }
       }
     }
+  }
 
-    if count == 1 {
+  // Queue ready rows
+  forall row in rows {
+    if rowCount[row].read() == 1 {
       workQueue.add( row );
     }
-
-    rowCount[row].write( count );
-    rowSum[row].write( sum );
   }
+
   result.timers["initialization"].stop();
 
   if enableRuntimeDebugging && debugTopo {
-    /* writeln( "initial workQueue ", workQueue ); */
+    writeln( "initial workQueue ", workQueue );
     writeln( "initial rowSum    ", rowSum );
     writeln( "initial rowCount  ", rowCount );
   }
+
+  if workQueue.size < 1 then halt("Work queue is empty!");
 
   // insert position along diagonal from (N,N)
   var diagonalPosition : atomic int;
