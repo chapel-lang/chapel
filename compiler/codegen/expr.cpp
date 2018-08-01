@@ -5252,7 +5252,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       SymExpr* se = toSymExpr(call->get(2));
 
       // Invalid AST to use PRIM_GET_MEMBER with a ref field
-      INT_ASSERT(!call->get(2)->isRef());
+      INT_ASSERT(!call->get(2)->isRefOrWideRef());
 
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
           call->get(1)->isWideRef()   ||

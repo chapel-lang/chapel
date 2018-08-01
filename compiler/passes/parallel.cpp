@@ -1554,7 +1554,11 @@ makeHeapAllocations() {
                    call->get(1) == use) {
           VarSymbol* tmp = newTemp(var->qualType().toRef());
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, use->symbol(), heapType->getField(1))));
+          PrimitiveTag op = PRIM_GET_MEMBER;
+          if (heapType->getField(1)->isRef()) {
+            op = PRIM_GET_MEMBER_VALUE;
+          }
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(op, use->symbol(), heapType->getField(1))));
           use->replace(new SymExpr(tmp));
         } else {
           VarSymbol* tmp = newTemp(var->type);
