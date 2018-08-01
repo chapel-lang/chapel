@@ -70,10 +70,10 @@ module AllLocalesBarriers {
   class AllLocalesBarrier: BarrierBaseType {
 
     const BarrierSpace = LocaleSpace dmapped Block(LocaleSpace);
-    var globalBarrier: [BarrierSpace] unmanaged aBarrier(reusable=true, hackIntoCommBarrier=true);
+    var globalBarrier: [BarrierSpace] unmanaged aBarrier(reusable=true, procAtomics=true, hackIntoCommBarrier=true);
 
     proc init(numTasksPerLocale: int) {
-      globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(numTasksPerLocale, reusable=true, hackIntoCommBarrier=true);
+      globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(numTasksPerLocale, reusable=true, procAtomics=true, hackIntoCommBarrier=true);
     }
 
     proc deinit() {
