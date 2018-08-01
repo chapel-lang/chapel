@@ -129,16 +129,12 @@ module Barriers {
        is true, reset the barrier to be used again.
      */
     inline proc barrier() {
-      on bar {
-        bar.barrier();
-      }
+      bar.barrier();
     }
 
     /* Notify the barrier that this task has reached this point. */
     inline proc notify() {
-      on bar {
-        bar.notify();
-      }
+      bar.notify();
     }
 
     /* Wait until `n` tasks have called :proc:`notify`.  If `reusable` is true,
@@ -151,9 +147,7 @@ module Barriers {
        `n` tasks have called :proc:`notify`.
      */
     inline proc wait() {
-      on bar {
-        bar.wait();
-      }
+      bar.wait();
     }
 
     /* Return `true` if `n` tasks have called :proc:`notify`
@@ -167,9 +161,7 @@ module Barriers {
        when :proc:`reset` is called, the behavior is undefined.
      */
     inline proc reset(nTasks: int) {
-      on bar {
-        bar.reset(nTasks);
-      }
+      bar.reset(nTasks);
     }
   }
 
