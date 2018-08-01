@@ -170,7 +170,7 @@ void trace_remove(BaseAST* ast, char flag) {
     fprintf(deletedIdHandle, "%d %c %p %d\n",
             currentPassNo, flag, ast, ast->id);
   }
-  if (ast->id == breakOnDeleteID) {
+  if (ast->id == breakOnRemoveID) {
     if (deletedIdON() == true) fflush(deletedIdHandle);
     gdbShouldBreakHere();
   }
@@ -294,7 +294,7 @@ verify() {
 
 
 int breakOnID = -1;
-int breakOnDeleteID = -1;
+int breakOnRemoveID = -1;
 
 int lastNodeIDUsed() {
   return uid - 1;

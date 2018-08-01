@@ -205,7 +205,7 @@ extern int  numGlobalsOnHeap;
 extern bool preserveInlinedLineNumbers;
 
 extern int breakOnID;
-extern int breakOnDeleteID;
+extern int breakOnRemoveID;
 
 extern char stopAfterPass[128];
 
