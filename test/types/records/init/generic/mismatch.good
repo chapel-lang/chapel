@@ -1,0 +1,1 @@
+mismatch.chpl:16: error: type mismatch in assignment from A(real(64)) to A(int(64))
