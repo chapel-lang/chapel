@@ -1592,6 +1592,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
 
   if (fLibraryCompile) {
     codegen_library_header(functions);
+    codegen_library_python(functions);
   }
 
   FILE* hdrfile = info->cfile;

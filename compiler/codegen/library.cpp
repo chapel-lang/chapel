@@ -25,6 +25,7 @@
 #include "beautify.h"
 #include "codegen.h"
 #include "driver.h"
+#include "expr.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 
@@ -190,6 +191,19 @@ void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
     beautify(fi);
 }
 
+static void pxdEnd() {
+  FILE* pxd = gGenInfo->cfile;
+
+  // TODO: indentation is lost.  Probably from cleanup when file is closed.
+  // Figure out what to do about it, it will be necessary because python
+  fprintf(pxd, "cdef extern from \"chpltypes.h\":\n");
+  fprintf(pxd, "\tctypedef void* c_fn_ptr\n\n");
+
+  fprintf(pxd, "cdef extern from \"chpl-init.h\":\n");
+  fprintf(pxd, "\tvoid chpl_library_init(int argc, char* argv[])\n");
+  fprintf(pxd, "\tvoid chpl_library_finalize()\n");
+}
+
 void codegen_library_python(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile && fLibraryPython) {
     fileinfo pxd = { NULL, NULL, NULL };
@@ -204,18 +218,14 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
       fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
 
       for_vector(FnSymbol, fn, functions) {
-        fn->codegenPXD();
+        if (fn->getModule()->modTag != MOD_INTERNAL &&
+            fn->hasFlag(FLAG_GEN_MAIN_FUNC) == false) {
+          // TODO: make that check a function?
+          fn->codegenPXD();
+        }
       }
 
-      // TODO: finish with
-      // ```
-      // cdef extern from "chpltypes.h":
-      //   ctypedef void* c_fn_ptr
-
-      // cdef extern from "chpl-init.h":
-      //   void chpl_library_init(int argc, char* argv[])
-      //   void chpl_library_finalize()
-      // ```
+      pxdEnd();
       gGenInfo->cfile = save_cfile;
     }
     closeLibraryHelperFile(&pxd);
@@ -252,7 +262,7 @@ GenRet FnSymbol::codegenPXDType() {
     // Cast to right function type.
     std::string str;
 
-    std::string retString = /* TODO: get return type here */;
+    std::string retString = ""/* TODO: get return type here */;
     str += retString.c_str();
     str += " ";
     str += cname;
@@ -265,7 +275,7 @@ GenRet FnSymbol::codegenPXDType() {
           continue; // do not print locale argument, end count, dummy class
         if (count > 0)
           str += ",\n";
-        str += /* TODO: formal type */;
+        str += ""/* TODO: formal type */;
         str += " ";
         str += formal->cname;
         if (fGenIDS) {
