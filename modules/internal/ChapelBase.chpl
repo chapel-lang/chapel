@@ -51,6 +51,15 @@ module ChapelBase {
     __primitive("error");
   }
 
+  proc compilerErrorCont(param msg: string ...?n, param errorDepth: int) {
+    __primitive("error cont");
+  }
+
+  proc compilerErrorCont(param msg: string ...?n) {
+    __primitive("error cont");
+  }
+
+
   proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
     __primitive("warning");
   }

@@ -276,6 +276,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_QUERY_PARAM_FIELD:
   case PRIM_QUERY_TYPE_FIELD:
   case PRIM_ERROR:
+  case PRIM_ERROR_CONT:
   case PRIM_WARNING:
 
   case PRIM_BLOCK_PARAM_LOOP:
