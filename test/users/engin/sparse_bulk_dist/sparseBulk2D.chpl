@@ -95,4 +95,7 @@ for onLocale in Locales {
 // union of disparate sets is the full set
 writeln( unionBag == fullBag );
 // intersection of disparate sets is the empty set
-writeln( intersectionBag.size == 0 );
+// ... but only if there is more than one locale
+if Locales.size > 1
+  then writeln( intersectionBag.size == 0 );
+  else writeln( true );
