@@ -1,0 +1,13 @@
+cdef extern from "testing.h":
+  void chpl__init_testing(int _ln, int _fn)
+  void foo()
+  int takesAndReturns(int x)
+  void parallelProg(int numTasksToRun)
+  void threadring(int passes, int tasks)
+
+cdef extern from "chpltypes.h":
+  ctypedef void* c_fn_ptr
+
+cdef extern from "chpl-init.h":
+  void chpl_library_init(int argc, char* argv[])
+  void chpl_library_finalize()

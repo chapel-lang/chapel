@@ -1,0 +1,12 @@
+cdef extern from "uintFunctions.h":
+  void chpl__init_uintFunctions(int _ln, int _fn)
+  void takesUint(unsigned int x)
+  unsigned int getUint()
+  unsigned int takeAndReturn(unsigned int x)
+
+cdef extern from "chpltypes.h":
+  ctypedef void* c_fn_ptr
+
+cdef extern from "chpl-init.h":
+  void chpl_library_init(int argc, char* argv[])
+  void chpl_library_finalize()
