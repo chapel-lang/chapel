@@ -313,12 +313,13 @@ module SharedObject {
   // It only works in a value context (i.e. when the result of the
   // coercion is a value, not a reference).
   pragma "no doc"
-  inline proc _cast(type t:_shared, x:_shared) where isSubtype(x.t,t.t) {
+  inline proc _cast(type t:_shared, in x:_shared) where isSubtype(x.t,t.t) {
     var ret:t; // default-init the Shared type to return
     ret.p = x.p:t.t; // cast the class type
     ret.pn = x.pn;
-    if ret.pn != nil then
-      ret.pn.retain();
+    // steal the reference count increment we did for 'in' intent
+    x.p = nil;
+    x.pn = nil;
     return ret;
   }
 
