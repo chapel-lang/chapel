@@ -1707,7 +1707,7 @@ void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall) {
       stashPristineCopyOfLeaderIter(origLeader, /*ignore_isResolved:*/ false);
     }
   } else {
-    if (strncmp(origLeader->name, astr_loopexpr_iter, strlen(astr_loopexpr_iter)) == 0) {
+    if (isLoopExprFun(origLeader)) {
       propagateExtraArgsForLoopIter(call, origToLeaderCall, origLeader);
     } else {
       extendLeader(call, origToLeaderCall, origLeader);

@@ -182,7 +182,7 @@ static bool isFollowerITer(FnSymbol* iter) {
 }
 
 static FnSymbol* findForallexprFollower(FnSymbol* serialIter) {
-  if (strncmp(serialIter->name, astr_loopexpr_iter, strlen(astr_loopexpr_iter)))
+  if (!isLoopExprFun(serialIter))
     // Not a forall-expression.
     return NULL;
 
