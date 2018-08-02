@@ -6968,8 +6968,6 @@ Expr* resolveExpr(Expr* expr) {
 
     retval = foldTryCond(postFold(expr));
 
-    resolveShadowVarsIfNeeded(def);
-
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 
