@@ -303,7 +303,7 @@ proc getLastModified(filename: string) : int {
 proc projectModified(projectHome, projectName, binLocation) : bool {
   const binaryPath = joinPath(projectHome, "target", binLocation, projectName);
   const tomlPath = joinPath(projectHome, "Mason.toml");
-  
+   
   if isFile(binaryPath) {
     const binModTime = getLastModified(binaryPath);
     for file in listdir(joinPath(projectHome, "src")) {

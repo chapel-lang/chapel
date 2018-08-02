@@ -233,9 +233,11 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
           // build is skipped but examples still need to be run
           else {
             writeln("Skipping "+ example + ": no changes made to project or example");
-            var result = runExampleBinary(projectHome, exampleName, show, exampleExecopts);
-            if result != 0 {
-              throw new MasonError("Mason could not find compiled example: " + example);
+            if run {
+              var result = runExampleBinary(projectHome, exampleName, show, exampleExecopts);
+              if result != 0 {
+                throw new MasonError("Mason could not find compiled example: " + example);
+              }
             }
           }
         }
@@ -341,9 +343,11 @@ proc printAvailableExamples(toml: Toml, projectHome: string) {
 // Checks to see if an example, source code, or Mason.toml has been modified
 proc exampleModified(projectHome: string, projectName: string,
                              exampleName: string) {
+  const example = basename(stripExt(exampleName, ".chpl"));
   const examplePath = joinPath(projectHome, "target/example", exampleName);
 
-  if projectModified(projectHome, projectName, "debug") {
+  // check for changes to Mason.toml and src code
+  if projectModified(projectHome, example, "example") {
       return true;
   }
   else {
