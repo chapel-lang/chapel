@@ -1,6 +1,6 @@
 enumComparisonsMixed.chpl:4: error: Comparisons between mixed enumerated types not supported by default
-enumComparisonsMixed.chpl:5: warning: Comparisons between mixed enumerated types not supported by default
-enumComparisonsMixed.chpl:6: warning: Comparisons between mixed enumerated types not supported by default
-enumComparisonsMixed.chpl:7: warning: Comparisons between mixed enumerated types not supported by default
-enumComparisonsMixed.chpl:8: warning: Comparisons between mixed enumerated types not supported by default
-enumComparisonsMixed.chpl:9: warning: Comparisons between mixed enumerated types not supported by default
+enumComparisonsMixed.chpl:5: error: Comparisons between mixed enumerated types not supported by default
+enumComparisonsMixed.chpl:6: error: Comparisons between mixed enumerated types not supported by default
+enumComparisonsMixed.chpl:7: error: Comparisons between mixed enumerated types not supported by default
+enumComparisonsMixed.chpl:8: error: Comparisons between mixed enumerated types not supported by default
+enumComparisonsMixed.chpl:9: error: Comparisons between mixed enumerated types not supported by default
