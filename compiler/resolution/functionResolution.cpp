@@ -139,11 +139,11 @@ static Map<Type*,     Type*>       runtimeTypeMap;
 
 static Map<Type*,     FnSymbol*>   runtimeTypeToValueMap;
 
-static Map<FnSymbol*, const char*> innerCompilerWarningMap;
-static Map<FnSymbol*, const char*> outerCompilerWarningMap;
+static std::map<FnSymbol*, const char*> innerCompilerWarningMap;
+static std::map<FnSymbol*, const char*> outerCompilerWarningMap;
 
-static Map<FnSymbol*, const char*> innerCompilerErrorMap;
-static Map<FnSymbol*, const char*> outerCompilerErrorMap;
+static std::map<FnSymbol*, const char*> innerCompilerErrorMap;
+static std::map<FnSymbol*, const char*> outerCompilerErrorMap;
 
 static CapturedValueMap            capturedValues;
 
@@ -2471,33 +2471,39 @@ static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
 }
 
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
+  std::map<FnSymbol*, const char*>::iterator it;
+
   // reissue compiler errors
-  if (const char* str = innerCompilerErrorMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 2, true);
+  it = innerCompilerErrorMap.find(resolvedFn);
+  if (it != innerCompilerErrorMap.end()) {
+    reissueCompilerWarning(it->second, 2, true);
 
     if (callStack.n >= 2) {
       if (FnSymbol* fn = callStack.v[callStack.n - 2]->resolvedFunction()) {
-        outerCompilerErrorMap.put(fn, str);
+        outerCompilerErrorMap[fn] = it->second;
       }
     }
   }
-  if (const char* str = outerCompilerErrorMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 1, true);
+  it = outerCompilerErrorMap.find(resolvedFn);
+  if (it != outerCompilerErrorMap.end()) {
+    reissueCompilerWarning(it->second, 1, true);
   }
 
   // reissue compiler warnings
-  if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 2, false);
+  it = innerCompilerWarningMap.find(resolvedFn);
+  if (it != innerCompilerWarningMap.end()) {
+    reissueCompilerWarning(it->second, 2, false);
 
     if (callStack.n >= 2) {
       if (FnSymbol* fn = callStack.v[callStack.n - 2]->resolvedFunction()) {
-        outerCompilerWarningMap.put(fn, str);
+        outerCompilerWarningMap[fn] = it->second;
       }
     }
   }
 
-  if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 1, false);
+  it = outerCompilerWarningMap.find(resolvedFn);
+  if (it != outerCompilerWarningMap.end()) {
+    reissueCompilerWarning(it->second, 1, false);
   }
 }
 
@@ -7469,16 +7475,16 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
     if (call->isPrimitive(PRIM_ERROR) == true) {
       USR_FATAL(from, "%s", str);
       if (FnSymbol* fn = callStack.tail()->resolvedFunction())
-        innerCompilerErrorMap.put(fn, str);
+        innerCompilerErrorMap[fn] = str;
       if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
-        outerCompilerErrorMap.put(fn, str);
+        outerCompilerErrorMap[fn] = str;
     } else {
       gdbShouldBreakHere();
       USR_WARN (from, "%s", str);
       if (FnSymbol* fn = callStack.tail()->resolvedFunction())
-        innerCompilerWarningMap.put(fn, str);
+        innerCompilerWarningMap[fn] = str;
       if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
-        outerCompilerWarningMap.put(fn, str);
+        outerCompilerWarningMap[fn] = str;
     }
   }
 }
