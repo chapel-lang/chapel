@@ -527,7 +527,7 @@ override proc Block.dsiDestroyDist() {
   }
 }
 
-proc Block.dsiDisplayRepresentation() {
+override proc Block.dsiDisplayRepresentation() {
   writeln("boundingBox = ", boundingBox);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocales = ", for tl in targetLocales do tl.id);
@@ -662,7 +662,7 @@ proc LocBlock.init(param rank: int,
 
 override proc BlockDom.dsiMyDist() return dist;
 
-proc BlockDom.dsiDisplayRepresentation() {
+override proc BlockDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
   for tli in dist.targetLocDom do
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);

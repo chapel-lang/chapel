@@ -481,7 +481,7 @@ proc Stencil.dsiClone() {
                    ignoreFluff=this.ignoreFluff);
 }
 
-proc Stencil.dsiDestroyDist() {
+override proc Stencil.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
@@ -499,8 +499,8 @@ proc Stencil.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
-proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
-                                  param stridable: bool, inds) {
+override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
+                                           param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Stencil domain index type does not match distribution's");
   if rank != this.rank then
@@ -633,7 +633,7 @@ proc StencilDom.init(param rank : int,
   this.periodic = periodic;
 }
 
-proc StencilDom.dsiMyDist() return dist;
+override proc StencilDom.dsiMyDist() return dist;
 
 proc StencilDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
@@ -1003,7 +1003,7 @@ proc StencilArr.dsiDisplayRepresentation() {
   }
 }
 
-proc StencilArr.dsiGetBaseDom() return dom;
+override proc StencilArr.dsiGetBaseDom() return dom;
 
 //
 // NOTE: Each locale's myElems array must be initialized prior to setting up
@@ -1043,7 +1043,7 @@ proc StencilArr.setup() {
   if doRADOpt && disableStencilLazyRAD then setupRADOpt();
 }
 
-proc StencilArr.dsiDestroyArr() {
+override proc StencilArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       if !ignoreFluff then
@@ -1591,7 +1591,7 @@ proc StencilArr.updateFluff() {
   }
 }
 
-proc StencilArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
+override proc StencilArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
 {
   //
   // For the default rectangular array, this function changes the data
@@ -1607,7 +1607,7 @@ proc StencilArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded
 }
 
 // Call this *after* the domain has been reallocated
-proc StencilArr.dsiPostReallocate() {
+override proc StencilArr.dsiPostReallocate() {
   if doRADOpt then setupRADOpt();
 }
 

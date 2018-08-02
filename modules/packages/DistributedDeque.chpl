@@ -482,14 +482,14 @@ module DistributedDeque {
     /*
       Syntactic sugar for `pushBack`.
     */
-    proc add(elt : eltType) : bool {
+    override proc add(elt : eltType) : bool {
       return pushBack(elt);
     }
 
     /*
       Syntactic sugar for `popFront`.
     */
-    proc remove() : (bool, eltType) {
+    override proc remove() : (bool, eltType) {
       return popFront();
     }
 
@@ -587,14 +587,14 @@ module DistributedDeque {
     /*
       Obtains the number of elements held by this queue.
     */
-    proc getSize() : int {
+    override proc getSize() : int {
       return queueSize.read();
     }
 
     /*
       Performs a lookup for the element in the data structure.
     */
-    proc contains(elt : eltType) : bool {
+    override proc contains(elt : eltType) : bool {
       var containsElem : atomic bool;
       forall elem in this {
         if elem == elt {

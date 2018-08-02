@@ -80,7 +80,7 @@ module AllLocalesBarriers {
       [b in globalBarrier] delete b;
     }
 
-    proc barrier() {
+    override proc barrier() {
       globalBarrier.localAccess[here.id].barrier();
     }
 

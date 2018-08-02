@@ -41,8 +41,8 @@ module ExternalArray {
   pragma "use default init"
   class ExternDist: BaseDist {
 
-    proc dsiNewRectangularDom(param rank: int = 1, type idxType = int,
-                              param stridable: bool = false, inds) {
+    override proc dsiNewRectangularDom(param rank: int = 1, type idxType = int,
+                                       param stridable: bool = false, inds) {
       if (rank != 1) {
         halt("external arrays are only allowed a rank of 1 right now");
       }

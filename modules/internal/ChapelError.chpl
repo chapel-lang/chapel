@@ -55,7 +55,7 @@ module ChapelError {
        show information about the error including the result
        of calling :proc:`Error.message`.
      */
-    proc writeThis(f) {
+    override proc writeThis(f) {
       var description = chpl_describe_error(this);
       f <~> description;
     }
