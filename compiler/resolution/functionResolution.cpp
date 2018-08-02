@@ -2470,41 +2470,33 @@ static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
   return best->fn;
 }
 
-void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
+// Reissue compiler warning or error messages
+static void reissueMsgs(FnSymbol* resolvedFn,
+                        std::map<FnSymbol*, const char*>& innerMap,
+                        std::map<FnSymbol*, const char*>& outerMap,
+                        bool err) {
   std::map<FnSymbol*, const char*>::iterator it;
 
-  // reissue compiler errors
-  it = innerCompilerErrorMap.find(resolvedFn);
-  if (it != innerCompilerErrorMap.end()) {
-    reissueCompilerWarning(it->second, 2, true);
+  it = innerMap.find(resolvedFn);
+  if (it != innerMap.end()) {
+    reissueCompilerWarning(it->second, 2, err);
 
     if (callStack.n >= 2) {
       if (FnSymbol* fn = callStack.v[callStack.n - 2]->resolvedFunction()) {
-        outerCompilerErrorMap[fn] = it->second;
-      }
-    }
-  }
-  it = outerCompilerErrorMap.find(resolvedFn);
-  if (it != outerCompilerErrorMap.end()) {
-    reissueCompilerWarning(it->second, 1, true);
-  }
-
-  // reissue compiler warnings
-  it = innerCompilerWarningMap.find(resolvedFn);
-  if (it != innerCompilerWarningMap.end()) {
-    reissueCompilerWarning(it->second, 2, false);
-
-    if (callStack.n >= 2) {
-      if (FnSymbol* fn = callStack.v[callStack.n - 2]->resolvedFunction()) {
-        outerCompilerWarningMap[fn] = it->second;
+        outerMap[fn] = it->second;
       }
     }
   }
 
-  it = outerCompilerWarningMap.find(resolvedFn);
-  if (it != outerCompilerWarningMap.end()) {
-    reissueCompilerWarning(it->second, 1, false);
+  it = outerMap.find(resolvedFn);
+  if (it != outerMap.end()) {
+    reissueCompilerWarning(it->second, 1, err);
   }
+}
+
+void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
+  reissueMsgs(resolvedFn, innerCompilerErrorMap, outerCompilerErrorMap, true);
+  reissueMsgs(resolvedFn, innerCompilerWarningMap, outerCompilerWarningMap, false);
 }
 
 /************************************* | **************************************
