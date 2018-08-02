@@ -34,7 +34,5 @@ proc populate(ref A, ref ADom, nnz: int, seed: int) where isCSArr(A) {
   for idx in ADom {
     A[idx] = 2.0; //randomReals.getNext();
   }
-  delete randomIndices;
-  delete randomReals;
 }
 

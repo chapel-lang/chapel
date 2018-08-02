@@ -132,5 +132,3 @@ writeln("\trcR1D:");
 doNorm(rcR1D, 1);
 writeln("\trcR2D:");
 doNorm(rcR2D, 2);
-
-delete rng;
