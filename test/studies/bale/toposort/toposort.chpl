@@ -16,7 +16,9 @@ config const debugLock = debugAll;
 config const debugSyncLock = debugLock;
 config const debugAtomicLock = debugLock;
 
-config param warnDimIterMethod = false;
+config param warnMethods = false;
+config param warnDimIterMethod = warnMethods;
+config param warnParallelWorkQueueTheseMethod = warnMethods;
 
 config param useDimIter = true;
 config param useDimIterRow = useDimIter; // supported for CSC domains
@@ -134,18 +136,16 @@ class ParallelWorkQueue {
   type eltType;
   type lockType;
   var lock : unmanaged lockType;
-  var queue : unmanaged Vector(eltType);
+  var queue : unmanaged list(eltType);
 
   var terminated : atomic bool;
   const terminatedRetries : int;
-
-  forwarding queue only size;
 
   proc init( type eltType, type lockType = SyncLock, retries : int = 5 ){
     this.eltType = eltType;
     this.lockType = lockType;
     this.lock = new unmanaged lockType();
-    this.queue = new unmanaged Vector( eltType );
+    this.queue = new list( eltType );
     this.complete();
 
     terminated.write(false);
@@ -153,7 +153,14 @@ class ParallelWorkQueue {
 
   proc deinit(){
     delete this.lock;
-    delete this.queue;
+    /* delete this.queue; */
+  }
+
+  proc size : int {
+    this.lock.lock();
+    var retval = this.queue.size;
+    this.lock.unlock();
+    return retval;
   }
 
   proc add( value : eltType ){
@@ -162,52 +169,197 @@ class ParallelWorkQueue {
     this.lock.unlock();
   }
 
-  proc add( values : Vector(eltType) ){
-    this.lock.lock();
-    this.queue.push_back( values );
-    this.lock.unlock();
+  /* iter theseChunkedLoopWait( maxTasks = here.maxTaskPar ) : eltType
+  { } */
+
+  iter theseLoopWait(maxTasks = here.maxTaskPar ) : eltType
+  {
+    /* compilerError("ParallelWorkQueue.theseLoopWait serial being called"); */
   }
 
-  proc add( values : list(eltType) ){
-    this.lock.lock();
-    this.queue.push_back( values );
-    this.lock.unlock();
+  iter theseSyncWait(maxTasks = here.maxTaskPar, reloopCycles : int = 3 ) : eltType
+  {
+    /* compilerError("ParallelWorkQueue.theseSyncWait serial being called"); */
   }
 
-  iter these(param tag : iterKind, maxTasks = here.maxTaskPar) : eltType
-  where tag == iterKind.standalone {
+  /* iter theseChunkedLoopWait(param tag : iterKind, maxTasks = here.maxTaskPar ) : eltType
+  where tag == iterKind.standalone
+  {
+    if warnParallelWorkQueueTheseMethod then compilerWarning( "theseChunkedLoopWait standalone");
+
     // reset termination
     this.terminated.write(false);
 
-    var continueLooping = !this.terminated.read();
-    var countdown = this.terminatedRetries;
+    coforall taskId in 1..#maxTasks {
+      var continueLooping = true;
+      var countdown = this.terminatedRetries;
+      var unlockedQueue = new list(eltType);
 
-    // main yield loop.
-    while continueLooping {
-      var terminated = this.terminated.read();
-      continueLooping = !terminated || countdown > 0;
-      if terminated then countdown -= 1;
+      // main yield loop.
+      while continueLooping {
+        var terminated = this.terminated.read();
+        continueLooping = !terminated || countdown > 0;
+        if terminated then countdown -= 1;
 
-      /* syncLock.lock(); */
-      var unlockedQueue = new unmanaged Vector(eltType);
-      // get current chunk of work by quickly swaping out the unlocked queue
-      // with the instance queue
-      this.lock.lock();
-      unlockedQueue <=> this.queue;
-      this.lock.unlock();
+        // get current chunk of work by quickly swaping out the unlocked queue
+        // with the instance queue
+        this.lock.lock();
+        unlockedQueue <=> this.queue;
+        this.lock.unlock();
 
-      // yield all in local chunk
-      if unlockedQueue.size > 0 {
-        unlockedQueue.compact();
-        forall work in unlockedQueue.listArray._value.these( tasksPerLocale = maxTasks ) {
-          yield work;
+        // yield all in local chunk
+        if unlockedQueue.size > 0 {
+          unlockedQueue.compact();
+          forall work in unlockedQueue.listArray._value.these( tasksPerLocale = maxTasks ) {
+            yield work;
+          }
+        } else  {
+          chpl_task_yield();
         }
-      } else  {
-        chpl_task_yield();
-      }
 
-      delete unlockedQueue;
+      }
     }
+
+    // clear terminated flag
+    this.terminated.write(false);
+  } */
+
+  iter theseLoopWait(param tag : iterKind, maxTasks = here.maxTaskPar ) : eltType
+  where tag == iterKind.standalone
+  {
+    if warnParallelWorkQueueTheseMethod then compilerWarning( "theseLoopWait standalone");
+    // reset termination
+    this.terminated.write(false);
+
+    coforall taskId in 1..#maxTasks {
+      var continueLooping = true;
+      var countdown = this.terminatedRetries;
+
+      // main yield loop.
+      while continueLooping {
+        var terminated = this.terminated.read();
+        continueLooping = !terminated || countdown > 0;
+        if terminated then countdown -= 1;
+
+        this.lock.lock();
+        if this.queue.size > 0 {
+          var value = this.queue.pop_front();
+          this.lock.unlock();
+          yield value;
+        } else {
+          this.lock.unlock();
+          chpl_task_yield();
+        }
+
+      }
+    }
+
+    // clear terminated flag
+    this.terminated.write(false);
+  }
+
+  iter theseSyncWait(param tag : iterKind, maxTasks = here.maxTaskPar, reloopCycles : int = 3 ) : eltType
+  where tag == iterKind.standalone
+  {
+    if warnParallelWorkQueueTheseMethod then compilerWarning("theseSyncWait theseChunkedLoopWait");
+    // reset termination
+    this.terminated.write(false);
+    enum WorkSignal { Work, Die };
+    const minTaskId = 0;
+    var signals : [minTaskId..#maxTasks] WorkSignal;
+    var work : [minTaskId..#maxTasks] sync eltType;
+
+    // setup work signals (only changed when killed)
+    for signal in signals {
+      signal = WorkSignal.Work;
+    }
+
+    // begin main tasks
+    cobegin {
+      // Manager Task
+      {
+        var continueLooping = true;
+        var countdown = this.terminatedRetries;
+        const reloops = reloopCycles*maxTasks;
+        var unlockedQueue = new list(eltType);
+        var workerTaskId = minTaskId;
+
+        // yield loop.
+        while continueLooping {
+          var terminated = this.terminated.read();
+          continueLooping = !terminated || countdown > 0;
+          if terminated then countdown -= 1;
+
+          // exchange empty unlocked queue for the active locked queue
+          if unlockedQueue.size == 0 {
+            this.lock.lock();
+            unlockedQueue <=> this.queue;
+            this.lock.unlock();
+          }
+
+          // yield work (if any) from unlockedQueue
+          {
+            var giveWork = true;
+            var loops = reloops;
+
+            while giveWork {
+              // if no work, or max loops reached
+              if unlockedQueue.size == 0 || loops == 0 {
+               giveWork = false;
+              } else {
+                // if cannot dole work to this task, decrement loops,
+                if work[workerTaskId].isFull {
+                  loops -= 1;
+                } else {
+                  // Get work from queue
+                  var value = unlockedQueue.pop_front();
+                  // give work (non-blocking by arrangement);
+                  work[workerTaskId].writeEF( value );
+                }
+                // go to next task
+                workerTaskId = (workerTaskId + 1) % maxTasks;
+              }
+            }
+          }
+
+          chpl_task_yield();
+        } // while continueLooping
+
+        // kill tasks loop
+        const dummyValue : eltType;
+        for taskId in minTaskId..#maxTasks {
+          // set kill signal
+          signals[taskId] = ( WorkSignal.Die );
+          // give dummy value to wake task, which immediately check signal and dies.
+          work[taskId].writeEF(dummyValue);
+        }
+      } // begin manager task
+
+      // Worker Tasks
+      {
+        coforall taskId in minTaskId..#maxTasks {
+          var continueLooping = true;
+          while continueLooping {
+            // wait for work (blocking)
+            var value = work[taskId].readFE();
+            // check signal (non-blocking)
+            var signal = signals[taskId];
+            select signal {
+              when WorkSignal.Work do {
+                yield value;
+              }
+              when WorkSignal.Die do {
+                continueLooping = false;
+              }
+              otherwise do {
+                halt("Task ", taskId, " got bad signal: ", signal );
+              }
+            }
+          } // while continueLooping
+        } // coforall
+      } // begin worker tasks
+
+    }// cobegin
 
     // clear terminated flag
     this.terminated.write(false);
@@ -860,8 +1012,8 @@ where D.rank == 2
   var result = new shared TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
-  const rows = D.dim(1);
-  const columns = D.dim(2);
+  const rows : domain(1) = {D.dim(1)};
+  const columns : domain(1) = {D.dim(2)};
   const numDiagonals = min( rows.size, columns.size );
 
   var rowMap : [rows] D.idxType = [i in rows] -1;
@@ -869,13 +1021,13 @@ where D.rank == 2
 
   var rowSum : [rows] atomic int;
   var rowCount : [rows] atomic int;
-  var workQueue = new owned ParallelWorkQueue(D.idxType);
+  var workQueue = new  ParallelWorkQueue(D.idxType, AtomicLock);
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
   // iterate in dense dimension (column) and then through the sparse dimensions
   // (rows) and sum into global atomic arrays
-  forall column in columns {
+  forall column in columns._value.these(tasksPerLocale=numTasks) {
     if enableRuntimeDebugging && debugTopo then writeln( "accumulating in column ", column );
     if useDimIterRow {
      if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over rows in init with dimIter");
@@ -895,7 +1047,7 @@ where D.rank == 2
   }
 
   // Queue ready rows
-  forall row in rows {
+  forall row in rows._value.these(tasksPerLocale=numTasks) {
     if rowCount[row].read() == 1 {
       workQueue.add( row );
     }
@@ -918,9 +1070,7 @@ where D.rank == 2
   result.timers["toposort"].start();
 
   // For each queued row (and rows that will be queued)...
-  forall swapRow in workQueue {
-    // The body of this loop executes on the locale where swapRow is queued
-
+  forall swapRow in workQueue.theseLoopWait(maxTasks=numTasks) {
     if enableRuntimeDebugging && debugTopo {
       writeln(
         "========================",
