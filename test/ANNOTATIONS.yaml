@@ -527,6 +527,10 @@ ep.ml-perf: &ep-ml-base
 ep.ml-time:
   <<: *ep-ml-base
 
+empty-chpl-barrier.ml-time:
+  08/02/18:
+    - Optimize the atomic barrier implementation for network atomics (#10633)
+
 fannkuch-redux:
   07/22/14:
     - Error due to cleaning up file incompletely
@@ -647,6 +651,8 @@ isx.ml-time: &isx-ml-base
     - Avoid task yielding during ugni memory registration (#8162)
   01/24/18:
     - Stop forcing serial initialization for isx-hand-optimized (#8290)
+  08/02/18:
+    - Optimize the atomic barrier implementation for network atomics (#10633)
 isx-hand-optimized.ml-time:
   <<: *isx-ml-base
 isx-release.ml-time:
@@ -912,6 +918,8 @@ memleaksfull:
   07/26/18:
     - Close DataFrame leaks (#10514)
     - Fix leak in cast to string from c_ptr (#10523)
+  08/01/18:
+    - Additional SparseBlockDom/Arr dsi methods to support bale-toposort (#10604)
 
 meteor:
   12/18/13:
