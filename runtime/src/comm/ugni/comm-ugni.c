@@ -530,7 +530,7 @@ typedef struct {
   mem_region_t mregs[];
 } mem_region_table_t;
 
-static int max_mem_regions = 4096;
+static int max_mem_regions;
 static size_t mem_regions_size;
 
 static mem_region_table_t* mem_regions;
@@ -1817,6 +1817,18 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 #undef _PSTAT_INIT
 
   //
+  // We can easily reach 4k memory regions on Aries.  We can reach a
+  // bit more than 3500 memory regions on Gemini but getting there is
+  // tricky because we start bumping up against a number of limits
+  // all at once (node memory sizes, limits on number of registered
+  // pages, available page sizes).  Reflecting that, on Gemini dial
+  // back the default max number of registered memory regions to 2k.
+  //
+  max_mem_regions =
+    chpl_env_rt_get_int("COMM_UGNI_MAX_MEM_REGIONS",
+                        (nic_type == GNI_DEVICE_GEMINI) ? 2048 : 4096);
+
+  //
   // We have to create the local memory region table before the first
   // call to regMemAlloc() is made.  But that could come from the memory
   // layer, which is initialized after this, so we can't get the memory
@@ -1825,8 +1837,6 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   // accessible memory anyway, which we don't need for this.  So, just
   // allocate the space from the system.
   //
-  max_mem_regions = chpl_env_rt_get_int("COMM_UGNI_MAX_MEM_REGIONS",
-                                        max_mem_regions);
   mem_regions_size = sizeof(mem_regions[0])
                      + max_mem_regions * sizeof(mem_regions->mregs[0]);
   mem_regions = (mem_region_table_t*) sys_calloc(1, mem_regions_size);
@@ -3178,7 +3188,11 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
 
     static atomic_int_least8_t spoke;
     if (atomic_compare_exchange_strong_int_least8_t(&spoke, 0, 1)) {
-      chpl_warning("no more registered memory region table entries!", 0, 0);
+      char buf[100];
+      snprintf(buf, sizeof(buf),
+               "no more registered memory region table entries (max is %d)!",
+               max_mem_regions);
+      chpl_warning(buf, 0, 0);
     }
 
     DBG_P_LP(DBGF_MEMREG, "chpl_regMemAlloc(%#zx): out of table entries", size);

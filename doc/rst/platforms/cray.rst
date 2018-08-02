@@ -508,13 +508,13 @@ region it registers with the Gemini or Aries NIC.  Roughly speaking there
 are a few memory regions for each tasking layer thread, plus one for each
 array larger than 2 hugepages allocated and registered separately from the
 heap.  By default the comm layer can handle up to 4k (2**12) total memory
-regions, which is plenty under normal circumstances.  In the unlikely
-event a program needs more than this, the following message will be
-printed:
+regions on Cray XC systems or 2k on XE systems, which is plenty under
+normal circumstances.  In the event a program needs more than this, a
+message like the following will be printed:
 
   .. code-block:: sh
 
-    warning: no more registered memory region table entries!
+    warning: no more registered memory region table entries (max is 4096)!
 
 To provide for more registered regions, set the
 ``CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS`` environment variable to a number
