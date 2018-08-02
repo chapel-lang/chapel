@@ -39,6 +39,7 @@
 symbolFlag( FLAG_ALLOCATOR , ypr, "allocator" , "allocates heap storage" )
 symbolFlag( FLAG_ALLOW_REF , ypr, "allow ref" , ncm )
 symbolFlag( FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO , ypr, "always propagate line file info" , "counterpart to INSERT_LINE_FILE_INFO" )
+symbolFlag( FLAG_ALWAYS_RVF, ypr, "always RVF", "attach to a type to disable RVF for objects of that type" )
 symbolFlag( FLAG_DONT_ALLOW_REF , ypr, "do not allow ref" , ncm )
 symbolFlag( FLAG_ARG_THIS, npr, "arg this", "the hidden object argument")
 symbolFlag( FLAG_ARRAY , ypr, "array" , ncm )

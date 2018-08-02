@@ -265,6 +265,8 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
   if (arg->hasFlag(FLAG_NO_RVF)) {
     retval = false;
+  } else if (arg->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
+    retval = true;
 
   // Forward array values and references to array values.
   // This is OK because the array/domain/distribution wrapper
