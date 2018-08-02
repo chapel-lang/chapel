@@ -903,7 +903,7 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
       {
         Symbol* realOuterSym = svar->INforOutervar()->outerVarSym();
 
-        // If the outer var has a diffirent type from the real var,
+        // If the outer var has a different type from the real var,
         // there should be a non-trivial init block that we need to use.
         if (svar->getValType() != realOuterSym->getValType()) {
           addDefAndMap(aInit, map, svar, createCurrIN(svar));

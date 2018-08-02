@@ -31,6 +31,3 @@ endif
 # Remove -Winline from GASNet's provided flags
 # (might not be needed if it always comes in GASNET_OPT_CFLAGS)
 CHPL_GASNET_CFLAGS = $(CHPL_GASNET_CFLAGS_ALL:-Winline=)
-ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xk cray-xc) )
-CHPL_GASNET_CFLAGS += -DGASNET_NEEDS_MAX_SEGSIZE
-endif

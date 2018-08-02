@@ -22,19 +22,17 @@ record R {
   }
 }
 
-pragma "use default init"
 class CC {
   var r : R;
 }
 
 {
   writeln("----- Concrete Class -----");
-  var cc = new CC();
+  var cc = new unmanaged CC();
   delete cc;
 }
 writeln("resource = ", resource);
 
-pragma "use default init"
 class GC {
   type t;
   var r : R;
@@ -42,12 +40,11 @@ class GC {
 
 {
   writeln("----- Generic Class -----");
-  var gc = new GC(int);
+  var gc = new unmanaged GC(int);
   delete gc;
 }
 writeln("resource = ", resource);
 
-pragma "use default init"
 record CR {
   var r : R;
 }
@@ -58,7 +55,6 @@ record CR {
 }
 writeln("resource = ", resource);
 
-pragma "use default init"
 record GR {
   type t;
   var r : R;

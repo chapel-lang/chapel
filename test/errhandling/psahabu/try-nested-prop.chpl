@@ -1,6 +1,5 @@
 use ExampleErrors;
 
-pragma "use default init"
 class SpecificError : Error { }
 
 proc nestedTries() throws {

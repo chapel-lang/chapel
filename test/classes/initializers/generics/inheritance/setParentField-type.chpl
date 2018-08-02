@@ -17,7 +17,6 @@ class Bar : Foo {
   }
 }
 
-var bar = new Bar(4);
+var bar = new borrowed Bar(4);
 writeln(bar.type: string);
 writeln(bar);
-delete bar;

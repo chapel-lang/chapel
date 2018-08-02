@@ -488,7 +488,7 @@ static bool isOuterVar(Symbol* sym, FnSymbol* parentFn) {
   return false;
 }
 
-// TODO: There's some logic in flattenFuntions that creates/threads formals for
+// TODO: There's some logic in flattenFunctions that creates/threads formals for
 // outer variables for iterator-functions, can we leverage that?
 static void findOuterVars(LoopExpr* loopExpr, std::set<Symbol*>& outerVars) {
   std::vector<SymExpr*> uses;

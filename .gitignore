@@ -97,6 +97,7 @@ tags
 # Test ignores.
 /test/FUTURES
 /test/Logs
+/test/**/compperfdat
 /test/**/perfdat
 
 /test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
@@ -162,6 +163,8 @@ tags
 /test/compflags/waynew/Makefile
 /test/compflags/waynew/*.h
 /test/compflags/waynew/chplmake.out
+
+/test/deprecated/parentNameErr.good
 
 /test/distributions/dm/hplx.exec.out.tmp.orig
 
@@ -257,7 +260,10 @@ tags
 
 /test/localeModels/dmk/locale_name.good
 
+/test/mason/mason-test/.mason/
+/test/mason/pkgconfig-tests/.mason/
 /test/mason/run/.mason
+/test/mason/subdir-commands/.mason/
 
 /test/multilocale/deitz/needMultiLocales/test_remote_file_read_class.txt
 /test/multilocale/numLocales/bradc/testVerboseFlag.good

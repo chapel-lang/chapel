@@ -100,7 +100,6 @@ proc dist(x: coord, y:coord) {
 //
 // User-defined reduction class for computing updated center locations
 //
-pragma "use default init"
 class kmeans: ReduceScanOp {
   type eltType;                        // required field
   var error: real;                     // accumulated error

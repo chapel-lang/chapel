@@ -35,7 +35,7 @@ module LCALSDataTypes {
     var num_suite_passes: int;
     var loop_samp_frac: real;
 
-    var ref_loop_stat: LoopStat;
+    var ref_loop_stat: unmanaged LoopStat;
 
     var loop_weights: [weight_group_dom] real;
 
@@ -44,7 +44,7 @@ module LCALSDataTypes {
     var cache_flush_data: [cache_flush_data_dom] real;
     var cache_flush_data_sum: real;
 
-    var loop_test_stats: [loop_variant_dom] [loop_kernel_dom] LoopStat;
+    var loop_test_stats: [loop_variant_dom] [loop_kernel_dom] unmanaged LoopStat;
 
     proc getLoopStats(loop_variant: LoopVariantID) ref {
       return loop_test_stats[loop_variant];
@@ -65,7 +65,7 @@ module LCALSDataTypes {
     var loop_weight: real;
     var loop_length_dom = {LoopLength.LONG..LoopLength.SHORT};
 
-    var loop_run_time: [loop_length_dom] vector(real);
+    var loop_run_time: [loop_length_dom] unmanaged vector(real);
     var loop_run_count: [loop_length_dom] int;
     var mean: [loop_length_dom] real;
     var std_dev: [loop_length_dom] real;
@@ -80,7 +80,7 @@ module LCALSDataTypes {
     var loop_chksum: [loop_length_dom] real;
 
     proc init() {
-      loop_run_time = for i in loop_length_dom do new vector(real);
+      loop_run_time = for i in loop_length_dom do new unmanaged vector(real);
     }
 
     proc deinit() {
@@ -263,7 +263,7 @@ module LCALSDataTypes {
     // class implements the same pattern used in the LCALS reference.
     //
     // var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays][0..#2, 0..#aligned_chunksize, 0..#4] real;
-    var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays] LCALS_Overlapping_Array_3D(real) = [i in 0..s_num_3D_2xNx4_Real_arrays] new LCALS_Overlapping_Array_3D(real, 2*4*aligned_chunksize); // 2 X loop_length X 4 array size
+    var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays] unmanaged LCALS_Overlapping_Array_3D(real) = [i in 0..#s_num_3D_2xNx4_Real_arrays] new unmanaged LCALS_Overlapping_Array_3D(real, 2*4*aligned_chunksize); // 2 X loop_length X 4 array size
 
     var RealArray_scalars: [0..#s_num_Real_scalars] real;
     proc deinit() {

@@ -184,7 +184,6 @@ proc test_tz_aware_arithmetic() {
   var maxdiff = max - min;
   assert(maxdiff == datetime.max - datetime.min +
                     new timedelta(minutes=2*1439));
-  delete rng;
 }
 
 proc test_tzinfo_now() {
@@ -463,7 +462,6 @@ proc test_more_astimezone() {
 proc test_aware_subtract() {
   // Ensure that utcoffset() is ignored when the operands have the
   // same tzinfo member.
-  pragma "use default init"
   class OperandDependentOffset: TZInfo {
     proc utcoffset(dt: datetime) {
       if dt.minute < 10 {

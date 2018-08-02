@@ -6,16 +6,16 @@ class MyClass {
 }
 
 class MyOtherClass {
-  var c:MyClass;
+  var c:borrowed MyClass;
 }
 
 
 // It's OK to return a ref to a class field
-proc getX(c:MyClass) ref {
+proc getX(c:borrowed MyClass) ref {
   return c.x;
 }
 
-proc getC(cc:MyOtherClass) ref {
+proc getC(cc:borrowed MyOtherClass) ref {
   return cc.c;
 }
 

@@ -170,7 +170,7 @@ void trace_remove(BaseAST* ast, char flag) {
     fprintf(deletedIdHandle, "%d %c %p %d\n",
             currentPassNo, flag, ast, ast->id);
   }
-  if (ast->id == breakOnDeleteID) {
+  if (ast->id == breakOnRemoveID) {
     if (deletedIdON() == true) fflush(deletedIdHandle);
     gdbShouldBreakHere();
   }
@@ -208,7 +208,7 @@ static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
 
 void cleanAst() {
   // Important: Sometimes scopeResolve will create dummy UseStmts that are
-  // never inserted into the tree, and will be deleted inbetween passes.
+  // never inserted into the tree, and will be deleted in between passes.
   //
   // If we do not destroy the caches, they may contain pointers back to these
   // dummy uses.
@@ -294,7 +294,7 @@ verify() {
 
 
 int breakOnID = -1;
-int breakOnDeleteID = -1;
+int breakOnRemoveID = -1;
 
 int lastNodeIDUsed() {
   return uid - 1;

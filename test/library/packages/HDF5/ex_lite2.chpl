@@ -2,7 +2,7 @@
 // https://support.hdfgroup.org/ftp/HDF5/current/src/unpacked/hl/examples/ex_lite2.c
 
 proc main {
-  use HDF5_HL;
+  use HDF5.C_HDF5;
   var file_id: hid_t,
       data: [0..#6] c_int,
       dims: [0..#2] hsize_t,

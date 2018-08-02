@@ -45,7 +45,14 @@ int main(int argc, char **argv)
     int outer_iterations = 0;
     int inner_iterations = 0;
     int seedoffset = 0;
-    int numprocs, myproc, peerproc;
+    int numprocs, myproc;
+#if PLATFORM_COMPILER_CLANG
+    // The addition of a gratuitous 'volatile' here has been observed to
+    // work-around Bug 3630 in which Clang 4 and newer misoptimize this test.
+    volatile int peerproc;
+#else
+    int peerproc;
+#endif
     int sender_p;
     char *shadow_region_1, *shadow_region_2;
     int i,j;

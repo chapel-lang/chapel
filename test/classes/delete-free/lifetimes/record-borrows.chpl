@@ -20,25 +20,25 @@ class SubClass {
 }
 
 class MyClass {
-  var sub:SubClass;
-  proc init(sub:SubClass) {
+  var sub:borrowed SubClass;
+  proc init(sub:borrowed SubClass) {
     this.sub = sub;
   }
 }
 
 record RMyClass {
-  var c:MyClass;
+  var c:borrowed MyClass;
   proc init() {
     this.c = nil;
   }
-  proc init(c:MyClass) {
+  proc init(c:borrowed MyClass) {
     this.c = c;
   }
 }
 
 // Globals
-var globalMyClass:MyClass;
-var globalRMyClass:RMyClass;
+var globalMyClass:borrowed MyClass;
+var globalRMyClass:borrowed RMyClass;
 
 // Test initialization block
 {
@@ -69,7 +69,7 @@ class MyClassA {
   var x:int;
 }
 record SubRA {
-  var c:MyClassA;
+  var c:borrowed MyClassA;
 }
 record RA {
   var sub:SubRA;

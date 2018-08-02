@@ -1,5 +1,0 @@
-bug: Compiler reports an error when a record is declared inside a class, and the class has a variable that uses an aliased type from another module.
-
-Compiler output:
-
-nestedRecordInClass2.chpl:8: error: unable to resolve type

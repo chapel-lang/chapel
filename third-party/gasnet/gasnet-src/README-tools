@@ -3,7 +3,7 @@ README file for GASNet tools
 ============================
 Originally by: Dan Bonachea <bonachea@cs.berkeley.edu>
 Currently maintained by: Paul H. Hargrove <PHHargrove@lbl.gov>
-GASNet tools specification version: 1.10
+GASNet tools specification version: 1.12
 
 The GASNet tools are a set of communication-independent utilities that are used
 to implement GASNet, and constitute a useful portability tool for GASNet
@@ -584,12 +584,6 @@ definition
   fnname should be the name of the function, and definition should be the actual
   definition of the function (declaration and body)
           
-GASNETT_PLEASE_INLINE(fnname) 
-definition
-
-  Similar to GASNETT_INLINE - inline a function if possible, but don't generate an error 
-  for cases where it is impossible (eg recursive functions)
-      
 GASNETT_NEVER_INLINE(fnname,definition)
 
   Most forceful demand available to disable inlining for function.
@@ -668,10 +662,13 @@ declarator
 GASNETT_PREDICT_TRUE(expr)
 GASNETT_PREDICT_FALSE(expr)
 
-  These macros return the value of the expression given, but pass on a hint
-  that one expects the value to be true or false.  Use them to wrap a
-  conditional expression when you have strong reason to believe the branch
-  will frequently go in one direction and that the branch is a bottleneck.
+  These macros yield a non-zero value if and only if expr has non-zero value.
+
+  Additionally, they pass a hint to the compiler that one expects the value to
+  be non-zero or zero, respectively.  Use them to wrap a branch-controlling
+  expression when you have strong reason to believe the branch will frequently
+  go in one direction and that the branch is a bottleneck.
+
   The macros if_pf() and if_pf() are implemented in terms of these macros.
   Examples:
     do { S; } while(GASNETT_PREDICT_FALSE(expr)); // single-trip is common case
@@ -694,6 +691,11 @@ gasnett_constant_p(expr)
 
   This expands to use of __builtin_constant_p() on compilers with the necessary
   support, or to the constant 0 otherwise.
+
+gasnett_unreachable()
+
+  This annotation marks the current code location as unreachable (using compiler-specific
+  mechanisms), to assist optimization of surrounding code.
 
 -----------------------------------------------------
 Error-checking System Mutexes and Condition Variables
@@ -1225,7 +1227,9 @@ COMPILER.
 
   The client may define any of the following preprocessor symbols, prior to inclusion of
   gasnet.h or gasnet_tools.h, to inform GASNet's headers that the current compiler does
-  (#define to 1) or does NOT (#define to 0) support the corresponding syntax:
+  (#define to 1) or does NOT (#define to 0) support the corresponding syntax.
+  When using a configure-recognized compiler, these default to their configure-detected
+  values.
 
     GASNETT_USE_GCC_ATTRIBUTE_ALWAYSINLINE
       Compiler supports __attribute__((__always_inline__))
@@ -1237,8 +1241,6 @@ COMPILER.
       Compiler supports __attribute__((__warn_unused_result__)) 
     GASNETT_USE_GCC_ATTRIBUTE_USED
       Compiler supports __attribute__((__used__)) 
-    GASNETT_USE_GCC_ATTRIBUTE_UNUSED
-      Compiler supports __attribute__((__unused__)) 
     GASNETT_USE_GCC_ATTRIBUTE_MAYALIAS
       Compiler supports __attribute__((__may_alias__)) 
     GASNETT_USE_GCC_ATTRIBUTE_NORETURN
@@ -1256,6 +1258,24 @@ COMPILER.
     GASNETT_USE_GCC_ATTRIBUTE_FORMAT_FUNCPTR_ARG
       Compiler supports __attribute__((__format__ (...))) applied to a function pointer
       as an argument to a function (in its declaration and/or definition).
+    GASNETT_USE_BUILTIN_CONSTANT_P
+      Compiler supports __builtin_constant_p()
+    GASNETT_USE_BUILTIN_PREFETCH
+      Compiler supports __builtin_prefetch()
+    GASNETT_USE_BUILTIN_EXPECT
+      Compiler supports __builtin_expect()
+    GASNETT_USE_BUILTIN_UNREACHABLE
+      Compiler supports __builtin_unreachable()
+    GASNETT_USE_BUILTIN_ASSUME
+      Compiler supports __builtin_assume()
+    GASNETT_USE_ASSUME
+      Compiler supports __assume()
+
+  The following can be defined to control use of C++ attributes:
+    GASNETT_USE_CXX11_ATTRIBUTE_FALLTHROUGH
+      C++ compiler supports [[fallthrough]]
+    GASNETT_USE_CXX11_ATTRIBUTE_CLANG__FALLTHROUGH
+      C++ compiler supports [[clang::fallthrough]]
 
   The following can be defined to control use of "restrict"
     GASNETT_USE_RESTRICT
@@ -1266,11 +1286,6 @@ COMPILER.
       declared via typedefs (and thus don't look like pointers until the typedef has been
       expanded).  Setting to "0" will disable such use.
       One may not set GASNETT_USE_RESTRICT_ON_TYPEDEFS without setting GASNETT_USE_RESTRICT.
-
-  The following can control the implementation of GASNETT_PLEASE_INLINE(fnname)
-    GASNETT_USE_PLEASE_INLINE(fnname)
-      If defined, provides the implementation of GASNETT_PLEASE_INLINE()
-      However, note that in a debug build inlining is disabled and this macro is unused.
 
 * Feature control for ctype.h wrappers
 

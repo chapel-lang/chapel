@@ -2218,6 +2218,23 @@ module BigInteger {
 
 
   // divexact
+
+/*
+Computes ``n/d`` and stores the result in ``bigint`` instance.
+
+``divexact`` is optimized to handle cases where ``n/d`` results in an integer. 
+When ``n/d`` does not produce an integer, this method may produce incorrect results.
+
+:arg n: numerator
+
+:type n: bigint
+
+:arg d: denominator
+
+:type d: bigint
+*/
+
+
   proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
     if _local {
       mpz_divexact(this.mpz, n.mpz, d.mpz);

@@ -2023,7 +2023,6 @@ and :proc:`channel.write`) can use arguments of this type in order to read or
 write a single Unicode code point.
 
  */
-pragma "use default init"
 record ioChar {
   /* The code point value */
   var ch:int(32);
@@ -2056,7 +2055,6 @@ When reading an ioNewline, read routines will skip any character sequence
 ``skipWhitespaceOnly`` is set to true.
 
  */
-pragma "use default init"
 record ioNewline {
   /*
     Normally, we will skip anything at all to get to a \n,
@@ -2087,7 +2085,6 @@ When reading, the ioLiteral must be matched exactly - or else the read call
 will return an error with code :data:`SysBasic.EFORMAT`.
 
 */
-pragma "use default init"
 record ioLiteral {
   /* The value of the literal */
   var val: string;
@@ -2112,7 +2109,6 @@ Represents a value with a particular bit length that we want to read or write.
 The I/O will always be done in binary mode.
 
 */
-pragma "use default init"
 record ioBits {
   /* The bottom ``nbits`` of v will be read or written */
   var v:uint(64);
@@ -3698,7 +3694,6 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
      amount <= 0 || (start + amount - 1 > arg.domain.high) then return false;
 
   var err:syserr = ENOERR;
-  var got_copy: int;
   on this.home {
     try! this.lock();
     param newLineChar = 0x0A;
@@ -3707,19 +3702,19 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
     const maxIdx = start + amount - 1;
     while i <= maxIdx {
       got = qio_channel_read_byte(false, this._channel_internal);
+      if got < 0 then break;
       arg[i] = got:uint(8);
       i += 1;
-      if got < 0 || got == newLineChar then break;
+      if got == newLineChar then break;
     }
     numRead = i - start;
-    if got < 0 then err = (-got):syserr;
-    got_copy = got;
+    if i == start && got < 0 then err = (-got):syserr;
     this.unlock();
   }
 
-  if !err && got_copy != 0 {
+  if !err {
     return true;
-  } else if err == EEOF || got_copy == 0 {
+  } else if err == EEOF {
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readline(arg : [] uint(8))");
@@ -4400,7 +4395,6 @@ proc channel.modifyStyle(f:func(iostyle, iostyle))
    of a single type. Also supports an iterator yielding
    the read values.
  */
-pragma "use default init"
 record ItemReader {
   /* What type do we read and yield? */
   type ItemType;
@@ -4443,7 +4437,6 @@ proc channel.itemReader(type ItemType, param kind:iokind=iokind.dynamic) {
   return new ItemReader(ItemType, kind, locking, this);
 }
 
-pragma "use default init"
 record ItemWriter {
   /* What type do we write? */
   type ItemType;
@@ -5801,7 +5794,6 @@ proc _toRegexp(x:?t) where t != regexp
 }
 
 pragma "no doc"
-pragma "use default init"
 class _channel_regexp_info {
   var hasRegexp = false;
   var matchedRegexp = false;

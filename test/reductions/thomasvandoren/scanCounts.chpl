@@ -6,7 +6,6 @@
  * could determine a ranking of the particles within each octant.
  */
 
-pragma "use default init"
 class scanCounts : ReduceScanOp {
   type eltType;
   const k: int = 8;

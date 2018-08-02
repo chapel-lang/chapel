@@ -8,19 +8,14 @@
 #include <gasnet_vis.h>
 #include <gasnet_coll.h>
 
+/* select a larger than default segment, 
+   because this test needs plenty of memory to play with */
+uintptr_t segsz = (16*1024*1024);
 #ifndef TEST_SEGSZ
-  /* select a larger than default segment, 
-     because this test needs plenty of memory to play with */
-  #define TEST_SEGSZ          (16*1048576)
+  #define TEST_SEGSZ_EXPR ((uintptr_t)alignup(segsz,PAGESZ))
 #endif
-#include <test.h>
 
-#ifndef MAX_VECLEN
-#define MAX_VECLEN  100
-#endif
-#ifndef MAX_IDXLEN
-#define MAX_IDXLEN  8192
-#endif
+#include <test.h>
 
 /* VEC_SZ sets the size/offset alignment of all data accesses
    we support sizes 1, 4 and 8
@@ -53,15 +48,12 @@
 #endif
 
 #define NUM_AREAS   4
-#ifndef MAX_STRIDEDIM
-#define MAX_STRIDEDIM  20
-#endif
-#ifndef MAX_CHUNKSZ
-#define MAX_CHUNKSZ 256
-#endif
-#ifndef MAX_INFLIGHT_OPS
-#define MAX_INFLIGHT_OPS 16
-#endif
+
+size_t max_veclen = 100;
+size_t max_idxlen = 8192;
+size_t max_stridedim = 20;
+size_t max_chunksz = 256;
+size_t max_inflight_ops = 16;
 
 #define RUN_VECTOR   1
 #define RUN_INDEXED  2
@@ -118,8 +110,8 @@ void _verify_memvec_list(test_memvec_list *mv, const char *file, int line) {
  */
 test_memvec_list *rand_memvec_list(void *addr, size_t elemlen, int allowoverlap) {
   test_memvec_list *mv;
-  size_t count = TEST_RAND_PICK(TEST_RAND(1, MIN(MAX_VECLEN,elemlen)),
-                 TEST_RAND(1, TEST_RAND(1, TEST_RAND(1, MIN(MAX_VECLEN,elemlen)))));
+  size_t count = TEST_RAND_PICK(TEST_RAND(1, MIN(max_veclen,elemlen)),
+                 TEST_RAND(1, TEST_RAND(1, TEST_RAND(1, MIN(max_veclen,elemlen)))));
   size_t per = 0;
   if (TEST_RAND_ONEIN(20)) count = 0;
   if (count > 0) per = elemlen / count; 
@@ -245,7 +237,7 @@ void _verify_memvec_data_both(test_memvec_list *src, void *result,
           context, file, line);
         { size_t sz = gasnett_format_memveclist_bufsz(src->count);
           char *buf = test_malloc(sz);
-          gasnett_format_memveclist(buf, src->count, src->list);
+          gasnett_format_memveclist(buf, src->count, (void *)src->list);
           ERR("memvec: %s\n", buf);
         }
         FATALERR("testvis failed.");
@@ -286,28 +278,28 @@ void rand_chunkelem(size_t *one, size_t *two) {
   if (TEST_RAND_ONEIN(2)) { size_t *tmp = one; one = two; two = tmp; }
   switch (TEST_RAND(0,2)) {
     case 0: { /* same chunksz */
-      *one = TEST_RAND(1, TEST_RAND(1, MAX_CHUNKSZ));
+      *one = TEST_RAND(1, TEST_RAND(1, max_chunksz));
       *two = *one;
       break;
     }
     case 1: { /* one a multiple of another */
-      size_t factor = TEST_RAND(1, TEST_RAND(1, TEST_RAND(1, MAX_CHUNKSZ)));
-      *one = (TEST_RAND(factor, MAX_CHUNKSZ) / factor);
+      size_t factor = TEST_RAND(1, TEST_RAND(1, TEST_RAND(1, max_chunksz)));
+      *one = (TEST_RAND(factor, max_chunksz) / factor);
       *two = *one * factor;
       break;
     }
     case 2: { /* both a small multiple of underlying factor */
       size_t onemult = TEST_RAND(1, 5);
       size_t twomult = TEST_RAND(1, 5);
-      size_t factor = TEST_RAND(1, MAX_CHUNKSZ/MAX(onemult, twomult));
+      size_t factor = TEST_RAND(1, max_chunksz/MAX(onemult, twomult));
       *one = factor * onemult;
       *two = factor * twomult;
       break;
     }
     default: FATALERR("TEST_RAND failure");
   }
-  assert(*one >= 1 && *one <= MAX_CHUNKSZ);
-  assert(*two >= 1 && *two <= MAX_CHUNKSZ);
+  assert(*one >= 1 && *one <= max_chunksz);
+  assert(*two >= 1 && *two <= max_chunksz);
 }
 
 /* build a addrlist over the area [addr...addr+len*VEC_SZ]
@@ -316,7 +308,7 @@ void rand_chunkelem(size_t *one, size_t *two) {
 test_addr_list *rand_addr_list(void *addr, size_t chunkelem, size_t elemlen, int allowoverlap) {
   test_addr_list *al;
   size_t count;
-  size_t maxchunks = MIN(MAX_IDXLEN, elemlen/chunkelem);
+  size_t maxchunks = MIN(max_idxlen, elemlen/chunkelem);
   count = TEST_RAND_PICK(TEST_RAND(1, maxchunks),
                          TEST_RAND(1, TEST_RAND(1, TEST_RAND(1, maxchunks))));
   if (TEST_RAND_ONEIN(20)) count = 0;
@@ -491,7 +483,7 @@ void _verify_strided_desc(test_strided_desc *sd, const char *file, int line) {
    note elemlen is a VEC_T element count
  */
 test_strided_desc *rand_strided_desc(void *srcaddr, void *dstaddr, void *contigaddr, size_t elemlen) {
-  size_t dim = TEST_RAND(2, TEST_RAND(2, TEST_RAND(2, MAX_STRIDEDIM)));
+  size_t dim = TEST_RAND(2, TEST_RAND(2, TEST_RAND(2, max_stridedim+1)));
   size_t sz;
   test_strided_desc *sd;
   size_t i;
@@ -621,10 +613,21 @@ void _verify_strided_desc_data_both(test_strided_desc *desc, void *result,
         context, file, line);
       { size_t sz = gasnett_format_putsgets_bufsz(desc->stridelevels);
         char *buf = test_malloc(sz);
+      #ifdef GEX_SPEC_VERSION_MAJOR // this undocumented function changed signature in EX
+        gex_TM_t tm;
+        gasnet_QueryGexObjects(NULL,NULL,&tm,NULL);
+        gasnett_format_putsgets(buf, NULL, tm, nodeid,
+          desc->dstaddr, (void *)desc->dststrides,
+          desc->srcaddr, (void *)desc->srcstrides,
+          desc->count[0], desc->count+1,
+          desc->stridelevels);
+      #else
         gasnett_format_putsgets(buf, NULL, nodeid,
-          desc->dstaddr, desc->dststrides,
-          desc->srcaddr, desc->srcstrides,
-          desc->count, desc->stridelevels);
+          desc->dstaddr, (void *)desc->dststrides,
+          desc->srcaddr, (void *)desc->srcstrides,
+          desc->count,
+          desc->stridelevels);
+      #endif
         ERR("strided desc: %s\n", buf);
       }
       FATALERR("testvis failed.");
@@ -666,7 +669,7 @@ void _verify_strided_desc_data_both(test_strided_desc *desc, void *result,
 VEC_T *myseg = NULL;
 VEC_T *partnerseg = NULL;
 VEC_T *heapseg = NULL;
-size_t areasz = TEST_SEGSZ/NUM_AREAS/VEC_SZ; /* in elem */
+size_t areasz; /* in elem */
 int mynode, partner;
 VEC_T *my_seg_read_area;
 VEC_T *my_seg_write1_area;
@@ -778,7 +781,7 @@ void doit(int iters, int runtests) {
   if (runtests & RUN_VECTOR) { 
     int iter;
     TIME_DECL();
-    MSG("Vector...");
+    MSG("Vector... (max_veclen=%i)",(int)max_veclen);
     for (iter = 0; iter < iters; iter++) {
       /* put test */
       { test_memvec_list *src;
@@ -831,15 +834,16 @@ void doit(int iters, int runtests) {
       }
       TEST_PROGRESS_BAR(iter, iters);
     }
+    BARRIER();
     checkmem();
     TIME_OUTPUT(v);
-  }
+  } else BARRIER();
   BARRIER();
   /*---------------------------------------------------------------------------------*/
   if (runtests & RUN_INDEXED) { 
     int iter;
     TIME_DECL();
-    MSG("Indexed...");
+    MSG("Indexed... (max_idxlen=%i, max_chunksz=%i)",(int)max_idxlen,(int)max_chunksz);
     for (iter = 0; iter < iters; iter++) {
       /* put test */
       { test_addr_list *src;
@@ -896,15 +900,16 @@ void doit(int iters, int runtests) {
       }
       TEST_PROGRESS_BAR(iter, iters);
     }
+    BARRIER();
     checkmem();
     TIME_OUTPUT(i);
-  }
+  } else BARRIER();
   BARRIER();
   /*---------------------------------------------------------------------------------*/
   if (runtests & RUN_STRIDED) { 
     int iter;
     TIME_DECL();
-    MSG("Strided...");
+    MSG("Strided... (max_stridedim=%i)",(int)max_stridedim);
     for (iter = 0; iter < iters; iter++) {
       /* put test */
       { test_strided_desc *desc;
@@ -948,16 +953,17 @@ void doit(int iters, int runtests) {
       }
       TEST_PROGRESS_BAR(iter, iters);
     }
+    BARRIER();
     checkmem();
     TIME_OUTPUT(s);
-  }
+  } else BARRIER();
   BARRIER();
   /*---------------------------------------------------------------------------------*/
   if (runtests & RUN_NB) { 
     int iter;
-    MSG("Non-blocking tests...");
+    MSG("Non-blocking tests... (max_inflight_ops=%i)",(int)max_inflight_ops);
     for (iter = 0; iter < iters; iter++) {
-      size_t numops = TEST_RAND(1, MAX_INFLIGHT_OPS);
+      size_t numops = TEST_RAND(1, max_inflight_ops);
       gasnet_handle_t *handles = test_calloc(sizeof(gasnet_handle_t), numops);
       test_op *ops = test_calloc(sizeof(test_op), numops);
       size_t opareasz = areasz / numops;
@@ -1095,8 +1101,9 @@ void doit(int iters, int runtests) {
       test_free(ops);
       TEST_PROGRESS_BAR(iter, iters);
     }
+    BARRIER();
     checkmem();
-  }
+  } else BARRIER();
   /*---------------------------------------------------------------------------------*/
   BARRIER();
 }
@@ -1110,18 +1117,41 @@ int main(int argc, char **argv) {
 
   assert_always(VEC_SZ == sizeof(VEC_T));
   GASNET_Safe(gasnet_init(&argc, &argv));
-  GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
-  test_init("testvis",0, "[options] (iters) (seed)\n"
+  test_init_early("testvis",0, "[options] (iters) (seed)\n"
             " -v/-i/-s/-n  run vector/indexed/strided/non-blocking tests (defaults to all)\n"
             " -d        disable correctness verification checks\n"
             " -o        one-way (half duplex) mode\n"
             " -t        enable timing output\n"
+            " -mm <n>   segment space to use (in MB)\n"
+            " -mv <n>   max vector length (in elements)\n"
+            " -mi <n>   max index addr list length (in elements)\n"
+            " -ms <n>   max striding dimensions\n"
+            " -mn <n>   max in-flight non-blocking operations\n"
+            " -mc <n>   max chunk size (in bytes)\n"
             " iters     number of testing iterations\n"
             " seed      seed offset for PRNG \n"
             );
 
   for (i = 1; i < argc; i++) {
-    if (argv[i][0] == '-') {
+    if (argv[i][0] == '-' && (argv[i][1] == 'm' || argv[i][1] == 'M')) {
+      char argtype = argv[i][2];
+      char *valptr = &argv[i][3];
+      if (!*valptr) {
+        if (i+1 < argc) valptr = argv[++i];
+        else test_usage_early();
+      }
+      int64_t argval = gasnett_parse_int(valptr, 0);
+      if (argval == 0) test_usage_early();
+      switch(argtype) { // -m*
+          case 'm': case 'M': segsz = gasnett_parse_int(valptr, 1024*1024); break;
+          case 'v': case 'V': max_veclen = argval; break;
+          case 'i': case 'I': max_idxlen = argval; break;
+          case 's': case 'S': max_stridedim = argval; break;
+          case 'c': case 'C': max_chunksz = gasnett_parse_int(valptr, 1); break;
+          case 'n': case 'N': max_inflight_ops = argval; break;
+          default: test_usage_early();
+      }
+    } else if (argv[i][0] == '-') {
       int j;
       for (j = 1; argv[i][j]; j++) {
         switch(argv[i][j]) {
@@ -1132,7 +1162,7 @@ int main(int argc, char **argv) {
           case 'd': case 'D': verify = 0; break;
           case 'o': case 'O': halfduplex = 1; break;
           case 't': case 'T': showtiming = 1; break;
-          default: test_usage();
+          default: test_usage_early();
         }
       }
     } else break;
@@ -1140,8 +1170,10 @@ int main(int argc, char **argv) {
   if (runtests == 0) runtests = RUN_VECTOR | RUN_INDEXED | RUN_STRIDED | RUN_NB;
   if (i < argc) { iters = atoi(argv[i]); i++; }
   if (i < argc) { seedoffset = atoi(argv[i]); i++; }
-  if (i < argc) test_usage();
+  if (i < argc) test_usage_early();
+  GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
 
+  areasz = TEST_SEGSZ/NUM_AREAS/VEC_SZ; /* in elem */
   mynode = gasnet_mynode();
   myseg = TEST_SEG(mynode);
   partner = (gasnet_mynode() + 1) % gasnet_nodes();
@@ -1153,14 +1185,18 @@ int main(int argc, char **argv) {
     TEST_BCAST(&seedoffset, 0, &seedoffset, sizeof(&seedoffset));
   }
   TEST_SRAND(mynode+seedoffset);
-  MSG("running %i iterations of %s%s%s%s%s test (seed=%i)%s...", 
+  char segstr[64];
+  gasnett_format_number(segsz, segstr, sizeof(segstr), 1);
+  MSG("running %i iterations of %s%s%s%s%s test (VEC_SZ=%i, seed=%i, segsz=%s)%s...", 
     iters, 
     (halfduplex?"half-duplex ":""),
     (runtests&RUN_VECTOR?"V":""), 
     (runtests&RUN_INDEXED?"I":""), 
     (runtests&RUN_STRIDED?"S":""),
     (runtests&RUN_NB?"N":""),
+    VEC_SZ,
     mynode+seedoffset,
+    segstr,
     (verify?"":" (verification disabled)")
     );
 

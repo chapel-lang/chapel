@@ -1676,7 +1676,7 @@ static void extendLeader(CallExpr* call, CallExpr* origToLeaderCall,
   }
 
   FnSymbol* iterFn = copyLeaderFn(origIterFn, /*ignore_isResolved:*/false);
-  iterFn->instantiationPoint = getVisibilityBlock(call);
+  iterFn->setInstantiationPoint(call);
   call->baseExpr->replace(new SymExpr(iterFn));
 
   int numExtraArgs = origToLeaderCall->numActuals()-1;
@@ -1773,7 +1773,7 @@ void implementForallIntents2wrapper(CallExpr* call, CallExpr* eflopiHelper)
     // and may be reused for an unrelated call. Create a clone.
     FnSymbol* wDest = dest->copy();
     wDest->addFlag(FLAG_INVISIBLE_FN);
-    wDest->instantiationPoint = getVisibilityBlock(call);
+    wDest->setInstantiationPoint(call);
     // Do we also need to update paramMap like in copyLeaderFn() ?
     dest->defPoint->insertAfter(new DefExpr(wDest));
     call->baseExpr->replace(new SymExpr(wDest));
@@ -1835,11 +1835,11 @@ void implementForallIntents2wrapper(CallExpr* call, CallExpr* eflopiHelper)
 
 //
 //-----------------------------------------------------------------------------
-//  implementForallIntentsNew()
+//  implementForallIntents1New()
 //-----------------------------------------------------------------------------
 //
-// The counterparts of implementForallIntents1() and implementForallIntents2()
-// for the (new) ForallStmt-based representation.
+// The counterpart of implementForallIntents1()
+// for the "new" ForallStmt-based representation.
 //
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1984,7 +1984,6 @@ static void findOuterVarsNew(ForallStmt* fs, SymbolMap& outer2shadow,
         !sym->hasFlag(FLAG_TEMP)     && // not a temp
         !isFsIndexVar(fs, sym)       && // not fs's index var
         !isFsShadowVar(fs, sym)      && // not fs's intent var
-        !sym->hasFlag(FLAG_ARG_THIS) && // todo: no special case for 'this'
         isOuterVarNew(sym, block)       // it must be an outer variable
     ) {
       // if not there already
@@ -2069,12 +2068,13 @@ static void moveInstantiationPoint(BlockStmt* to, BlockStmt* from, Type* type) {
   // This snippet updates the instantiation point of the reduction class and
   // its methods to point to the surviving Block (parent of 'hld').
   //
+  // MPF 2018-07-25: I believe this workaround can be removed
   AggregateType* reductionClass = toAggregateType(canonicalClassType(type));
   if (reductionClass->symbol->instantiationPoint == from) {
     reductionClass->symbol->instantiationPoint = to;
     forv_Vec(FnSymbol, fn, reductionClass->methods) {
-      if (fn->instantiationPoint == from) {
-        fn->instantiationPoint = to;
+      if (fn->instantiationPoint() == from) {
+        fn->setInstantiationPoint(to);
       }
     }
   }
@@ -2127,8 +2127,6 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
 
   hld->flattenAndRemove();
 
-  // Todo: this replace() is somewhat expensive.
-  // Can instead we update fs->riSpecs[i] aka 'riSpec' in-place?
   origRiSpec->replace(new SymExpr(globalOp));
   
   return globalOp;
@@ -2136,10 +2134,6 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
 
 static void handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
 {
-  if (svar->reduceGlobalOp != NULL)
-    // Already handled, ex. in tupcomForYieldInForall().
-    return;
-
   Symbol* globalOp = NULL;
   Symbol* fiVarSym = svar->outerVarSym();
   Expr*   riSpec   = svar->reduceOpExpr();
@@ -2179,8 +2173,8 @@ static void handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
     // What else can this be?
     INT_FATAL(fs, "not implemented");
   }
-
-  svar->reduceGlobalOp = globalOp;
+  // Removing 'globalOp' is left as future work.
+  if (globalOp) INT_ASSERT(globalOp); // dummy use of 'globalOp'
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2305,16 +2299,6 @@ static void processShadowVarsNew(ForallStmt* fs, int& numShadowVars)
       if (tiIntent == INTENT_REF || tiIntent == INTENT_REF_MAYBE_CONST) {
         // do we want this? does this lead to more efficient generated code?
          pruneit = true;
-
-      } else if (isAtomicType(ovar->type)) {
-        // Currently we need it because sync variables do not get tupled
-        // and detupled properly when threading through the leader iterator.
-        // See e.g. test/distributions/dm/s7.chpl
-        // Atomic vars might not work either.
-        // And anyway, only 'ref' intent makes sense here.
-        pruneit = true;
-
-        USR_WARN(fs, "an atomic var currently can be passed into a forall loop by 'ref' intent only - %s is ignored for '%s'", intentDescrString(tiIntent), ovar->name);
       }
 
       if (pruneit) {
@@ -2425,7 +2409,7 @@ static void replaceVarUsesNew(ForallStmt* fs, SymbolMap& outer2shadow) {
 
 /////////////////////////////////////////////////////////////////////////////
 
-static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
+void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
   SymbolMap            outer2shadow;
   BlockStmt*           forallBody1 = fs->loopBody();
   int                  numShadowVars = 0;
@@ -2462,31 +2446,4 @@ static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
     INT_ASSERT(fs->numShadowVars() > 0);  // avoid unnecessary work
     replaceVarUsesNew(fs, outer2shadow);
   }
-}
-
-/////////////////////////////////////////////////////////////////////////////
-
-// implementForallIntentsNew() -- based on "new" ForallStmt representation
-
-static void checkForNonIterator(CallExpr* parCall) {
-  FnSymbol* dest = parCall->resolvedFunction();
-  AggregateType* retType = toAggregateType(dest->retType);
-  if (!retType || !retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-    USR_FATAL_CONT(parCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", dest->name);
-    USR_PRINT(dest, "The function '%s' is declared here", dest->name);
-    USR_STOP();
-  }
-}
-
-//
-// Performs both implementForallIntents1 and implementForallIntents2.
-// 'parCall' must have already been resolved.
-//
-void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall)
-{
-  INT_ASSERT(parCall == fs->firstIteratedExpr());
-
-  implementForallIntents1New(fs, parCall);
-
-  checkForNonIterator(parCall);
 }

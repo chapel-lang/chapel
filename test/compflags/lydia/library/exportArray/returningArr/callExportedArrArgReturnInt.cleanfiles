@@ -1,2 +1,2 @@
-libexportArrArgReturnInt.a
-exportArrArgReturnInt.h
+lib/libexportArrArgReturnInt.a
+lib/exportArrArgReturnInt.h

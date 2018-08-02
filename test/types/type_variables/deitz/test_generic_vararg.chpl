@@ -3,7 +3,7 @@ class C {
   var x: k*int;
 }
 
-proc foo(y: C, x: C ...y.k) {
+proc foo(y: borrowed C, x: borrowed C ...y.k) {
   writeln(x);
 }
 

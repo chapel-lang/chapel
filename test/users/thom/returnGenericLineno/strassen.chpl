@@ -9,9 +9,9 @@ module Strassen
     {
         var n : int;
 
-        proc getInstance() : Strassen  // Error message line# wrong
+        proc getInstance() : unmanaged Strassen  // Error message line# wrong
         {
-            return new Strassen("name", false, n);
+            return new unmanaged Strassen("name", false, n);
         }
         proc writeThis(w)
         {

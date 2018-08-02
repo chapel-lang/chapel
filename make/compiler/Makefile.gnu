@@ -87,8 +87,7 @@ IEEE_FLOAT_GEN_CFLAGS = -fno-fast-math
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC
 ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` = ppc970 && echo -arch ppc64)
-# the -D_POSIX_C_SOURCE flag prevents nonstandard functions from polluting the global name space
-GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH)
+GEN_CFLAGS += $(ARCH)
 GEN_LFLAGS += $(ARCH)
 endif
 

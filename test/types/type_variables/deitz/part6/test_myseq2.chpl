@@ -23,7 +23,7 @@ class myseq {
     }
   }
 
-  proc append(e : elementType) : myseq(elementType) {
+  proc append(e : elementType) : unmanaged myseq(elementType) {
     var anew : unmanaged myseq_node(elementType) = new unmanaged myseq_node(elementType);
     anew.element = e;
     if length > 0 {
@@ -34,7 +34,7 @@ class myseq {
       last = anew;
     }
     length += 1;
-    return this;
+    return _to_unmanaged(this);
   }
 
   proc print() {
@@ -48,7 +48,7 @@ class myseq {
   }
 }
 
-var s : myseq(int) = new myseq(int);
+var s : unmanaged myseq(int) = new unmanaged myseq(int);
 
 s.append(2);
 s.append(3);

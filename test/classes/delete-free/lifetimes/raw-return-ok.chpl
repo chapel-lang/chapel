@@ -9,7 +9,7 @@ module rawOK {
 
   record R {
     pragma "owned"
-    var tmp:MyClass;
+    var tmp:borrowed MyClass;
 
     proc makeClass() {
       var c = new unmanaged MyClass();

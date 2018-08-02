@@ -38,20 +38,14 @@ typedef struct _gasnete_op_t {
 } gasnete_op_t;
 
 /* for compactness, eops address each other in the free list using a gasnete_eopaddr_t */ 
-typedef union _gasnete_eopaddr_t {
-  struct {
-    uint8_t _bufferidx;
-    uint8_t _eopidx;
-  } compaddr;
-  uint16_t fulladdr;
-} gasnete_eopaddr_t;
+/* union is defined in gasnet_internal.h */
 #define bufferidx compaddr._bufferidx
 #define eopidx compaddr._eopidx
 
 #define gasnete_eopaddr_equal(addr1,addr2) ((addr1).fulladdr == (addr2).fulladdr)
 #define gasnete_eopaddr_isnil(addr) ((addr).fulladdr == EOPADDR_NIL.fulladdr)
 
-typedef struct _gasnete_eop_t {
+struct _gasnete_eop_t {
   uint8_t flags;                  /*  state flags */
   gasnete_threadidx_t threadidx;  /*  thread that owns me */
   gasnete_eopaddr_t addr;         /*  next cell while in free list, my own eopaddr_t while in use */
@@ -62,9 +56,9 @@ typedef struct _gasnete_eop_t {
   #ifdef GASNETE_CONDUIT_EOP_FIELDS
   GASNETE_CONDUIT_EOP_FIELDS
   #endif
-} gasnete_eop_t;
+};
 
-typedef struct _gasnete_iop_t {
+struct _gasnete_iop_t {
   uint8_t flags;                  /*  state flags */
   gasnete_threadidx_t threadidx;  /*  thread that owns me */
   uint16_t _unused;
@@ -83,25 +77,7 @@ typedef struct _gasnete_iop_t {
   #ifdef GASNETE_CONDUIT_IOP_FIELDS
   GASNETE_CONDUIT_IOP_FIELDS
   #endif
-} gasnete_iop_t;
-
-/* ------------------------------------------------------------------------------------ */
-typedef struct _gasnete_threaddata_t {
-  GASNETE_COMMON_THREADDATA_FIELDS /* MUST come first, for reserved ptrs */
-
-  gasnete_eop_t *eop_bufs[256]; /*  buffers of eops for memory management */
-  int eop_num_bufs;             /*  number of valid buffer entries */
-  gasnete_eopaddr_t eop_free;   /*  free list of eops */
-
-  /*  stack of iops - head is active iop servicing new implicit ops */
-  gasnete_iop_t *current_iop;  
-
-  gasnete_iop_t *iop_free;      /*  free list of iops */
-
-  #ifdef GASNETE_CONDUIT_THREADDATA_FIELDS
-  GASNETE_CONDUIT_THREADDATA_FIELDS
-  #endif
-} gasnete_threaddata_t;
+};
 
 /* ------------------------------------------------------------------------------------ */
 
@@ -145,7 +121,7 @@ void SET_OPSTATE(gasnete_eop_t *op, uint8_t state) {
 #if GASNET_DEBUG
   /* check an in-flight/complete eop */
   #define gasnete_eop_check(eop) do {                                \
-    gasnete_threaddata_t * _th;                                      \
+    gasneti_threaddata_t * _th;                                      \
     gasneti_assert(OPTYPE(eop) == OPTYPE_EXPLICIT);                  \
     gasneti_assert(OPSTATE(eop) == OPSTATE_INFLIGHT ||               \
                    OPSTATE(eop) == OPSTATE_COMPLETE);                \

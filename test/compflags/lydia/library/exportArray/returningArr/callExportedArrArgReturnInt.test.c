@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include "exportArrArgReturnInt.h"
+#include "lib/exportArrArgReturnInt.h"
 
 extern void chpl_library_init(int argc, char* argv[]);
 extern void chpl_library_finalize(void);

@@ -20,14 +20,13 @@
 module AtomicsCommon {
   use ChapelStandard;
 
-  pragma "use default init"
   record atomic_refcnt {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available. In the future, we could have both
     // network and processor atomic versions of atomic_refcnt if
     // necessary.
-    var _cnt:atomic_int64;
+    var _cnt:chpl__processorAtomicType(int);
     // Reference counting implemented according to
 // http://www.chaoticmind.net/~hcb/projects/boost.atomic/doc/atomic/usage_examples.html#boost_atomic.usage_examples.example_reference_counters
 // http://stackoverflow.com/questions/10268737/c11-atomics-and-intrusive-shared-pointer-reference-count

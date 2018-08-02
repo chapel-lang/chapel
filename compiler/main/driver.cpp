@@ -32,6 +32,7 @@
 #include "docsDriver.h"
 #include "files.h"
 #include "ipe.h"
+#include "library.h"
 #include "log.h"
 #include "ModuleSymbol.h"
 #include "misc.h"
@@ -97,6 +98,7 @@ static char moduleSearchPath[FILENAME_MAX] = "";
 static bool fBaseline = false;
 
 bool fLibraryCompile = false;
+bool fLibraryMakefile = false;
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool fVerify = false;
@@ -145,6 +147,7 @@ bool fLLVMWideOpt = false;
 bool fWarnConstLoops = true;
 bool fWarnUnstable = false;
 bool fDefaultUnmanaged = false;
+bool fWarnConstructors = true;
 
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
@@ -171,8 +174,8 @@ int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fUserSetLocal = false;
 bool fLocal;   // initialized in postLocal()
 bool fIgnoreLocalClasses = false;
-bool fUserDefaultInitializers = false;
-bool fLifetimeChecking = false;
+bool fUserDefaultInitializers = true;
+bool fLifetimeChecking = true;
 bool fOverrideChecking = false;
 bool fHeterogeneous = false;
 bool fieeefloat = false;
@@ -629,6 +632,14 @@ static void verifySaveCDir(const ArgumentDescription* desc, const char* unused) 
   }
 }
 
+static void verifySaveLibDir(const ArgumentDescription* desc, const char* unused) {
+  if (libDir[0] == '-') {
+    USR_FATAL("--library-dir takes a directory name as its argument\n"
+              "       (you specified '%s', assumed to be another flag)",
+              libDir);
+  }
+}
+
 static void turnOffChecks(const ArgumentDescription* desc, const char* unused) {
   fNoNilChecks    = true;
   fNoBoundsChecks = true;
@@ -893,6 +904,7 @@ static ArgumentDescription arg_desc[] = {
  {"permit-unhandled-module-errors", ' ', NULL, "Permit unhandled errors in explicit modules; such errors halt at runtime", "N", &fPermitUnhandledModuleErrors, "CHPL_PERMIT_UNHANDLED_MODULE_ERRORS", NULL},
  {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
  {"warn-const-loops", ' ', NULL, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", NULL},
+ {"warn-constructors", ' ', NULL, "Enable [disable] warnings for constructors", "N", &fWarnConstructors, "CHPL_WARN_CONSTRUCTORS", NULL},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
  {"warn-domain-literal", ' ', NULL, "Enable [disable] old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_WARN_DOMAIN_LITERAL", setWarnDomainLiteral},
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
@@ -982,7 +994,9 @@ static ArgumentDescription arg_desc[] = {
  {"ignore-user-errors", ' ', NULL, "[Don't] attempt to ignore user errors", "N", &ignore_user_errors, "CHPL_IGNORE_USER_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
+ {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, NULL},
+ {"library-makefile", ' ', NULL, "Generate a makefile to help use the generated library", "F", &fLibraryMakefile, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},

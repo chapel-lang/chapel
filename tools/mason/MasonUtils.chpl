@@ -315,3 +315,33 @@ proc projectModified(projectHome, projectName, binLocation) : bool {
   }
   return true;
 }
+
+/* Return 'true' for valid identifiers according to Chapel parser/spec,
+   otherwise 'false' */
+proc isIdentifier(name:string) {
+
+  // Identifiers can't be empty
+  if name == "" then
+    return false;
+
+  // Identifiers can't start with a digit or a $
+  if name[1].isDigit() then
+    return false;
+  if name[1] == "$" then
+    return false;
+
+  // Check all characters are legal identifier characters
+  // - lower case alphabetic
+  // - upper case alphabetic
+  // - digits
+  // - _
+  // - $
+  var ok = true;
+  for ch in name {
+    if !(ch == "$" || ch == "_" || ch.isAlnum()) then
+      ok = false;
+  }
+  return ok;
+}
+
+

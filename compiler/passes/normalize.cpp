@@ -69,7 +69,6 @@ static void        updateInitMethod (FnSymbol* fn);
 
 static void        checkUseBeforeDefs();
 static void        moveGlobalDeclarationsToModuleScope();
-static void        insertUseForExplicitModuleCalls(void);
 
 static void        lowerIfExprs(BaseAST* base);
 
@@ -187,8 +186,6 @@ void normalize() {
   checkUseBeforeDefs();
 
   moveGlobalDeclarationsToModuleScope();
-
-  insertUseForExplicitModuleCalls();
 
   if (!fMinimalModules) {
     // Calls to _statementLevelSymbol() are inserted here and in
@@ -698,7 +695,7 @@ static void checkSelfDef(CallExpr* call, Symbol* sym) {
 }
 
 // If the AST node defines a symbol, then return that symbol.
-// Otheriwse return NULL. Also check for self-defs.
+// Otherwise return NULL. Also check for self-defs.
 static Symbol* theDefinedSymbol(BaseAST* ast) {
   Symbol* retval = NULL;
 
@@ -857,30 +854,6 @@ static void moveGlobalDeclarationsToModuleScope() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void insertUseForExplicitModuleCalls() {
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->inTree() && se->symbol() == gModuleToken) {
-      SET_LINENO(se);
-
-      CallExpr*     call  = toCallExpr(se->parentExpr);
-      INT_ASSERT(call);
-
-      SymExpr*      mse   = toSymExpr(call->get(2));
-      INT_ASSERT(mse);
-
-      ModuleSymbol* mod   = toModuleSymbol(mse->symbol());
-      INT_ASSERT(mod);
-
-      Expr*         stmt  = se->getStmtExpr();
-      BlockStmt*    block = new BlockStmt();
-
-      stmt->insertBefore(block);
-
-      block->insertAtHead(stmt->remove());
-      block->useListAdd(mod);
-    }
-  }
-}
 
 //
 // Inserts a temporary for the result if the last statement is a call.
@@ -2082,7 +2055,7 @@ static void init_typed_var(VarSymbol* var,
   if (var->hasFlag(FLAG_EXTERN) == true) {
     INT_ASSERT(var->hasFlag(FLAG_PARAM) == false);
 
-    BlockStmt* block = new BlockStmt(NULL, BLOCK_EXTERN_TYPE);
+    BlockStmt* block = new BlockStmt(BLOCK_EXTERN_TYPE);
 
     block->insertAtTail(typeDefn);
     block->insertAtTail(initMove);
@@ -2343,7 +2316,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
         // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
         // test for --force-initializers, but PR #10171 was merged first and
         // somehow fixed that test. The test in question was:
-        //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+        //   test/classes/delete-free/owned/owned-raw-ignored-record.chpl
         if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
           if (ne->name == astr_chpl_manager) {
             ne->remove();
@@ -2388,7 +2361,7 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
   //
   // expects to find the init code inside a block stmt.
   if (var->hasFlag(FLAG_EXTERN) == true) {
-    BlockStmt* block    = new BlockStmt(NULL, BLOCK_EXTERN_TYPE);
+    BlockStmt* block    = new BlockStmt(BLOCK_EXTERN_TYPE);
 
     VarSymbol* typeTemp = newTemp("type_tmp");
     DefExpr*   typeDefn = new DefExpr(typeTemp);
@@ -2512,7 +2485,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
       // test for --force-initializers, but PR #10171 was merged first and
       // somehow fixed that test. The test in question was:
-      //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+      //   test/classes/delete-free/owned/owned-raw-ignored-record.chpl
       if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
         if (ne->name == astr_chpl_manager) {
           ne->remove();
@@ -2550,7 +2523,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       // BHARSH 2018-07-11: This NamedExpr was originally removed to fix a
       // test for --force-initializers, but PR #10171 was merged first and
       // somehow fixed that test. The test in question was:
-      //   test/classes/delete-free/owned/owned-raw-ingored-record.chpl
+      //   test/classes/delete-free/owned/owned-raw-ignored-record.chpl
       if (NamedExpr* ne = toNamedExpr(argExpr->argList.tail)) {
         if (ne->name == astr_chpl_manager) {
           ne->remove();
@@ -3750,6 +3723,8 @@ static bool isConstructor(FnSymbol* fn) {
   return retval;
 }
 
+static bool firstConstructorWarning = true;
+
 static void updateConstructor(FnSymbol* fn) {
   SymbolMap      map;
   Type*          type = fn->getFormal(2)->type;
@@ -3821,6 +3796,13 @@ static void updateConstructor(FnSymbol* fn) {
       USR_FATAL_CONT(fn, "Type '%s' defined a constructor here",
                      ct->symbol->name);
     }
+  } else if (fWarnConstructors) {
+    if (firstConstructorWarning == true) {
+      USR_PRINT(fn, "Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.");
+      firstConstructorWarning = false;
+    }
+
+    USR_WARN(fn, "Type '%s' defines a constructor here", ct->symbol->name);
   }
 
   fn->addFlag(FLAG_CONSTRUCTOR);

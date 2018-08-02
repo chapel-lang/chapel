@@ -1,2 +1,2 @@
-libexportFuncWithPtr.a
-exportFuncWithPtr.h
+lib/libexportFuncWithPtr.a
+lib/exportFuncWithPtr.h

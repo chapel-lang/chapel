@@ -297,6 +297,9 @@ DEBUGMALLOC_VAL = @DEBUGMALLOC_VAL@
 DEBUGMALLOC_VAR = @DEBUGMALLOC_VAR@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEVWARN_CFLAGS = @DEVWARN_CFLAGS@
+DEVWARN_CXXFLAGS = @DEVWARN_CXXFLAGS@
+DEVWARN_MPI_CFLAGS = @DEVWARN_MPI_CFLAGS@
 DIRNAME = @DIRNAME@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
@@ -352,7 +355,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 INTTYPES_DEFINES = @INTTYPES_DEFINES@
 KEEPTMP_CFLAGS = @KEEPTMP_CFLAGS@
-LADEBUG_PATH = @LADEBUG_PATH@
 LDFLAGS = @LDFLAGS@
 LIBGCC = @LIBGCC@
 LIBM = @LIBM@
@@ -416,9 +418,6 @@ READLINK = @READLINK@
 SEPARATE_CC = @SEPARATE_CC@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SHMEM_INCLUDES = @SHMEM_INCLUDES@
-SHMEM_LDFLAGS = @SHMEM_LDFLAGS@
-SHMEM_LIBS = @SHMEM_LIBS@
 SIZEOF_CHAR = @SIZEOF_CHAR@
 SIZEOF_DOUBLE = @SIZEOF_DOUBLE@
 SIZEOF_FLOAT = @SIZEOF_FLOAT@
@@ -427,7 +426,9 @@ SIZEOF_INT = @SIZEOF_INT@
 SIZEOF_LONG = @SIZEOF_LONG@
 SIZEOF_LONG_DOUBLE = @SIZEOF_LONG_DOUBLE@
 SIZEOF_LONG_LONG = @SIZEOF_LONG_LONG@
+SIZEOF_PTRDIFF_T = @SIZEOF_PTRDIFF_T@
 SIZEOF_SHORT = @SIZEOF_SHORT@
+SIZEOF_SIZE_T = @SIZEOF_SIZE_T@
 SIZEOF_VOID_P = @SIZEOF_VOID_P@
 SIZEOF__BOOL = @SIZEOF__BOOL@
 SMP_LIBS = @SMP_LIBS@
@@ -539,7 +540,7 @@ CONDUIT_EXTRALIBCFLAGS = -I$(top_srcdir)/other/amudp -I$(top_builddir)/other/amu
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS = \
 	$(blcr_extraheaders)                                  \
-	$(top_builddir)/other/amudp/amudp_portable_platform.h \
+	$(top_builddir)/other/amudp/amx_portable_platform.h   \
 	$(top_srcdir)/other/amudp/amudp_const.h 
 
 
@@ -941,7 +942,7 @@ uninstall-am: uninstall-libLIBRARIES uninstall-local
 $(top_builddir)/other/amudp/libamudp.a: force
 	cd $(top_builddir)/other/amudp && $(MAKE) libamudp.a
 
-$(top_builddir)/other/amudp/amudp_portable_platform.h: $(top_builddir)/other/amudp/libamudp.a
+$(top_builddir)/other/amudp/amx_portable_platform.h: $(top_builddir)/other/amudp/libamudp.a
 
 include $(top_builddir)/other/Makefile-conduit.mak
 
@@ -953,7 +954,7 @@ libgasnet-udp-par.a: $(libgasnet_dependencies)
 
 libgasnet-udp-parsync.a: $(libgasnet_dependencies)
 	@$(MAKE) do-libgasnet-parsync
-@USE_UDP_CONDUIT_TRUE@all-local: $(lib_LIBRARIES) $(makefile_fragments)
+@USE_UDP_CONDUIT_TRUE@all-local: $(lib_LIBRARIES) $(pkgconfig_files)
 @USE_UDP_CONDUIT_TRUE@clean-local: do-clean-local
 @USE_UDP_CONDUIT_TRUE@install-data-local: do-install-data-local
 @USE_UDP_CONDUIT_TRUE@uninstall-local: do-uninstall-local

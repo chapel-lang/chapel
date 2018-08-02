@@ -13,7 +13,7 @@ module missing_return_bug {
     return new unmanaged Branch(a, b);
   }
 
-  iter leaves(tree : Node) : int {
+  iter leaves(tree : unmanaged Node) : int {
     select tree.type {
       when ValueNode do {
         yield tree.value;

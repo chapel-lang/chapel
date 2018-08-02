@@ -1,12 +1,12 @@
 use DataFrames;
 
-var I = new TypedIndex(["A", "B", "C", "D", "E"]);
+var I = new shared TypedIndex(["A", "B", "C", "D", "E"]);
 var V1 = [true, false, true, false, true];
 var V2 = [false, true, false, true, false];
 
-var noNone = new TypedSeries([1, 2, 3, 4, 5], I);
-var someNone = new TypedSeries([1, 2, 3, 4, 5], I, V1);
-var moreNone = new TypedSeries([10, 20, 30, 40, 50], I, V2);
+var noNone = new owned TypedSeries([1, 2, 3, 4, 5], I);
+var someNone = new owned TypedSeries([1, 2, 3, 4, 5], I, V1);
+var moreNone = new owned TypedSeries([10, 20, 30, 40, 50], I, V2);
 
 writeln("noNone:");
 writeln(noNone);

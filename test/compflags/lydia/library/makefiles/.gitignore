@@ -1,0 +1,8 @@
+lib/getMakefile.h
+lib/libgetMakefile.a
+lib/Makefile.getMakefile
+mytest
+lib/headerName.h
+lib/myLib.a
+renamedTest
+lib/Makefile.myLib

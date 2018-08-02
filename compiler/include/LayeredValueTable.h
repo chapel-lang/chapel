@@ -90,8 +90,10 @@ class LayeredValueTable
       // to indicated that the symbol has already been imported
       // into the Chapel AST.
       bool addedToChapelAST;
+      // Line and file info for the C declaration
+      astlocT astloc;
 
-      Storage() {
+      Storage() : astloc(0, NULL) {
         u.value = NULL;
         u.block = NULL;
         u.type = NULL;
@@ -128,7 +130,8 @@ class LayeredValueTable
     llvm::BasicBlock *getBlock(llvm::StringRef name);
     llvm::Type *getType(llvm::StringRef name);
     void getCDecl(llvm::StringRef name, clang::TypeDecl** cTypeOut,
-        clang::ValueDecl** cValueOut, const char** cCastedToTypeOut=NULL);
+        clang::ValueDecl** cValueOut, const char** cCastedToTypeOut=NULL,
+        astlocT *astlocOut=NULL);
     VarSymbol* getVarSymbol(llvm::StringRef name);
  
     bool isAlreadyInChapelAST(llvm::StringRef name);

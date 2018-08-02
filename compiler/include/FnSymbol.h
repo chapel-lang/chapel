@@ -53,7 +53,12 @@ public:
   Symbol*                    _outer;
   FnSymbol*                  instantiatedFrom;
   SymbolMap                  substitutions;
-  BlockStmt*                 instantiationPoint;
+
+private:
+  BlockStmt*                 _instantiationPoint;
+  FnSymbol*                  _backupInstantiationPoint;
+
+public:
   std::vector<BasicBlock*>*  basicBlocks;
   Vec<CallExpr*>*            calledBy;
   const char*                userString;
@@ -67,9 +72,6 @@ public:
 
   // Used to store the return symbol during partial copying.
   Symbol*                    retSymbol;
-
-  // Number of formals before tuple type constructor formals are added.
-  int                        numPreTupleFormals;
 
 #ifdef HAVE_LLVM
   llvm::MDNode*              llvmDISubprogram;
@@ -122,6 +124,18 @@ public:
   Symbol*                    getReturnSymbol();
   Symbol*                    replaceReturnSymbol(Symbol* newRetSymbol,
                                                  Type*   newRetType);
+
+  // Removes all statements from body and adds all statements from block.
+  void                       replaceBodyStmtsWithStmts(BlockStmt* block);
+  // Removes all statements from body and adds the passed statement.
+  void                       replaceBodyStmtsWithStmt(Expr* stmt);
+
+  // Sets instantiationPoint and backupInstantiationPoint appropriately
+  //  expr might be a call or a BlockStmt
+  void                       setInstantiationPoint(Expr* expr);
+  // returns instantiationPoint or uses the backupInstantiationPoint
+  // if necessary
+  BlockStmt*                 instantiationPoint()                        const;
 
   int                        numFormals()                                const;
   ArgSymbol*                 getFormal(int i)                            const;

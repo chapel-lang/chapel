@@ -8,14 +8,16 @@
 #include "gasnet_vis.h"
 
 uintptr_t maxsz = 0;
+size_t areasz = 0;
 #ifndef TEST_SEGSZ
   #define TEST_SEGSZ_EXPR (maxsz)
 #endif
 #include "test.h"
 
-int insegment = 0;
+int insegment = 1;
 int doputs = 1;
 int dogets = 1;
+int doNB = 0;
 int remotecontig = 0;
 int localcontig = 0;
 size_t stridelevels = 2;
@@ -25,11 +27,13 @@ int numprocs;
 int peerproc = -1;
 int iamsender = 0;
 void *Lbase, *Rbase;
+gasnet_handle_t *evts = NULL;
+size_t evtcnt = 0;
 
-int min_payload = 0, max_payload = 0;
-int min_contig = 0, max_contig = 0;
-int contigfactor = 8;
-int datafactor = 2;
+size_t min_payload = 0, max_payload = 0;
+size_t min_contig = 0, max_contig = 0;
+double contigfactor = 8;
+double datafactor = 2;
 int densitysteps = 4;
 
 typedef enum { TEST_V=0, TEST_I=1, TEST_S=2 } test_vis_t;
@@ -38,8 +42,8 @@ const char *visdesc[] = { "VECTOR", "INDEXED", "STRIDED" };
 
 gasnet_memvec_t *make_vlist(void *baseaddr, size_t stride, size_t cnt, size_t chunksz) {
   gasnet_memvec_t *retval = test_malloc(cnt*sizeof(gasnet_memvec_t));
-  size_t i;
-  for (i = 0; i < cnt; i++) {
+  if (cnt > 1) assert(stride >= chunksz);
+  for (size_t i = 0; i < cnt; i++) {
     retval[i].addr = ((char*)baseaddr)+i*stride;
     retval[i].len = chunksz;
   }
@@ -48,15 +52,15 @@ gasnet_memvec_t *make_vlist(void *baseaddr, size_t stride, size_t cnt, size_t ch
 
 void * *make_ilist(void *baseaddr, size_t stride, size_t cnt, size_t chunksz) {
   void * *retval = test_malloc(cnt*sizeof(void *));
-  size_t i;
-  for (i = 0; i < cnt; i++) {
+  if (cnt > 1) assert(stride >= chunksz);
+  for (size_t i = 0; i < cnt; i++) {
     retval[i] = ((char*)baseaddr)+i*stride;
   }
   return retval;
 }
 
 int main(int argc, char **argv) {
-  int iters = 0;
+  long iters = 0;
   int arg;
   void *alloc = NULL;
   int firstlastmode = 0;
@@ -79,31 +83,31 @@ int main(int argc, char **argv) {
       ++arg;
     } else if (!strcmp(argv[arg], "-sl")) {
       ++arg;
-      if (argc > arg) { stridelevels = atoi(argv[arg]); arg++; }
+      if (argc > arg) { stridelevels = atol(argv[arg]); arg++; }
       else help = 1;
     } else if (!strcmp(argv[arg], "-mincontig")) {
       ++arg;
-      if (argc > arg) { min_contig = atoi(argv[arg]); arg++; }
+      if (argc > arg) { min_contig = atol(argv[arg]); arg++; }
       else help = 1;
     } else if (!strcmp(argv[arg], "-maxcontig")) {
       ++arg;
-      if (argc > arg) { max_contig = atoi(argv[arg]); arg++; }
+      if (argc > arg) { max_contig = atol(argv[arg]); arg++; }
       else help = 1;
     } else if (!strcmp(argv[arg], "-contigfactor")) {
       ++arg;
-      if (argc > arg) { contigfactor = atoi(argv[arg]); arg++; }
+      if (argc > arg) { contigfactor = atof(argv[arg]); arg++; }
       else help = 1;
     } else if (!strcmp(argv[arg], "-mindata")) {
       ++arg;
-      if (argc > arg) { min_payload = atoi(argv[arg]); arg++; }
+      if (argc > arg) { min_payload = atol(argv[arg]); arg++; }
       else help = 1;
     } else if (!strcmp(argv[arg], "-maxdata")) {
       ++arg;
-      if (argc > arg) { max_payload = atoi(argv[arg]); arg++; }
+      if (argc > arg) { max_payload = atol(argv[arg]); arg++; }
       else help = 1;
     } else if (!strcmp(argv[arg], "-datafactor")) {
       ++arg;
-      if (argc > arg) { datafactor = atoi(argv[arg]); arg++; }
+      if (argc > arg) { datafactor = atof(argv[arg]); arg++; }
       else help = 1;
     } else if (!strcmp(argv[arg], "-densitysteps")) {
       ++arg;
@@ -130,30 +134,38 @@ int main(int argc, char **argv) {
     } else if (!strcmp(argv[arg], "-l")) {
       localcontig = 1;
       ++arg;
+    } else if (!strcmp(argv[arg], "-nb")) {
+      doNB = 1;
+      ++arg;
+    } else if (!strcmp(argv[arg], "-nbi")) {
+      doNB = 0;
+      ++arg;
     } else if (argv[arg][0] == '-') {
       help = 1;
       ++arg;
     } else break;
   }
 
-  if (argc > arg) { iters = atoi(argv[arg]); arg++; }
-  if (!iters) iters = 1000;
+  const char *iterstr = "0.1"; // default iters
+  if (argc > arg) { 
+    iterstr = argv[arg];
+    arg++; 
+  }
   if (argc > arg) { TEST_SECTION_PARSE(argv[arg]); arg++; }
   if (min_contig && max_contig && min_contig > max_contig) { ERR("min_contig > max_contig"); help = 1; }
   if (min_payload && max_payload && min_payload > max_payload) { ERR("min_payload > max_payload"); help = 1; }
   if (min_payload && min_contig && min_payload < min_contig) { ERR("min_payload < min_contig"); help = 1; }
   if (max_contig && max_payload && max_contig > max_payload) { ERR("max_contig > max_payload"); help = 1; }
-  if (contigfactor < 2) { ERR("contigfactor < 2"); help = 1; }
-  if (datafactor < 2) { ERR("datafactor < 2"); help = 1; }
+  if (contigfactor <= 1) { ERR("contigfactor <= 1"); help = 1; }
+  if (datafactor <= 1) { ERR("datafactor <= 1"); help = 1; }
 
   if (!max_payload) max_payload = 2*1024*1024; /* 2 MB default */
-  #ifdef GASNET_SEGMENT_EVERYTHING
-    maxsz = gasnet_getMaxGlobalSegmentSize();
-  #else
-    maxsz = 16*1024*1024;
-  #endif
-  max_payload = (int)MIN(maxsz, max_payload);
-  maxsz = MIN(((uint64_t)max_payload) * densitysteps,maxsz);
+  areasz = gasnet_getMaxGlobalSegmentSize();
+  if (insegment) areasz = aligndown(areasz/2,PAGESZ);
+  max_payload = MIN(areasz, max_payload);
+  areasz = aligndown(MIN(max_payload * densitysteps,areasz),PAGESZ);
+  if (insegment) maxsz = areasz*2;
+  else           maxsz = areasz;
   if (!min_contig) min_contig = 8;
   if (!max_contig) max_contig = MIN(256*1024,max_payload);
   if (!min_payload) min_payload = min_contig;
@@ -172,11 +184,14 @@ int main(int argc, char **argv) {
              "            selects d density steps, inclusive from 100%..100/d%\n"
              "  -sl <n>   selects n striding levels (default is 2).\n"
              "  -in/-out  selects whether the initiator-side\n"
-             "            memory is in the GASNet segment or not (default is not).\n"
+             "            memory is in the GASNet segment or not (default is in-segment).\n"
              "  -a        enables full-duplex mode, where all nodes send.\n"
              "  -c        enables cross-machine pairing, default is nearest neighbor.\n"
              "  -f        enables 'first/last' mode, where the first/last\n"
-             "            nodes communicate with each other, while all other nodes sit idle.");
+             "            nodes communicate with each other, while all other nodes sit idle.\n"
+             "  -nbi      use NBI-mode synchronization (default)\n"
+             "  -nb       use NB-mode synchronization"
+             );
   if (help || argc > arg) test_usage();
 
   /* get SPMD info */
@@ -215,58 +230,101 @@ int main(int argc, char **argv) {
   Rbase = TEST_SEG(peerproc);
 
   if (insegment) {
-    Lbase = TEST_SEG(myproc);
+    Lbase = (uint8_t*)TEST_SEG(myproc) + areasz;
+    Lbase = alignup_ptr(Lbase, PAGESZ); /* ensure page alignment of base */
   } else {
-    alloc = test_calloc(maxsz+PAGESZ,1); /* use calloc to prevent valgrind warnings */
+    alloc = test_calloc(areasz+PAGESZ,1); /* use calloc to prevent valgrind warnings */
     Lbase = alignup_ptr(alloc, PAGESZ); /* ensure page alignment of base */
   }
   assert(((uintptr_t)Lbase) % PAGESZ == 0);
 
+  if (strchr(iterstr,'.')) TEST_ASI_INIT(iterstr);
+  else iters = atol(iterstr); 
+
   if (myproc == 0) {
-    MSG0("Running %i iterations of %s%s%snon-contiguous put/get%s%s\n local data %s-segment for sizes: %i...%i\n", 
-    iters, 
+    MSG0("Running %s iterations of %s%s%snon-contiguous put/get %s %s%s\n"
+         "   local data %s-segment for payload sizes: %" PRIuSZ "...%" PRIuSZ "  (datafactor=%.2f)\n"
+         "   contig sizes: %" PRIuSZ "...%" PRIuSZ "  (contigfactor=%.2f)\n"
+         "   densitysteps=%i stridelevels=%" PRIuSZ 
+         , 
+    iterstr, 
     (firstlastmode ? "first/last " : ""),
     (fullduplexmode ? "full-duplex ": ""),
     (crossmachinemode ? "cross-machine ": ""),
+    (doNB?"NB":"NBI"),
     (remotecontig?"(remotely-contiguous)":""),
     (localcontig?"(locally-contiguous)":""),
     insegment ? "in" : "out", 
-    min_payload, max_payload);
-    printf("rows are databytes/op : bandwidth values in MB/s\n");
+    min_payload, max_payload, datafactor,
+    min_contig, max_contig, contigfactor,
+    densitysteps, stridelevels);
+
+    // estimate total test run time
+   if (strchr(iterstr,'.')) {
+    int measurements = 0;
+    char sec = 'A';
+    for (test_vis_t viscat = TEST_V; viscat <= TEST_S; viscat++) {
+      for (int isget = 0; isget < 2; isget++) {
+        if (!strchr(test_sections,sec++) && test_sections[0]) continue;
+        if (isget && !dogets) continue;
+        if (!isget && !doputs) continue;
+        if (!dovis[viscat]) continue;
+        size_t lastcontigsz = 0;
+        for (double rawcontigsz = min_contig; rawcontigsz <= max_contig; rawcontigsz *= contigfactor) {
+          size_t contigsz = (size_t)rawcontigsz;
+          if (contigsz == lastcontigsz) continue;
+          if (contigsz > max_payload) continue;
+          lastcontigsz = contigsz;
+          size_t lastdatasz = 0;
+          for (double rawdatasz = min_payload; rawdatasz <= max_payload; rawdatasz *= datafactor) {
+            size_t datasz = aligndown((size_t)rawdatasz,contigsz);
+            if (datasz == lastdatasz) continue;
+            lastdatasz = datasz;
+            for (int di = 0; di < densitysteps; di++) {
+              measurements++;
+            }
+          }
+        }
+      }
+    }
+    double ttime = 2 * MAX(TEST_ASI_MININTERVAL,atof(iterstr)) * measurements;
+    MSG0("ESTIMATED test run time: ~ %d sec (%0.1f min)",(int)ttime,ttime/60);
+   }
+   MSG0("rows are databytes/op : bandwidth values in MiB/s");
   }
   BARRIER();
 
-  { int contigsz;
-    int rawdatasz;
-    int isget;
-    test_vis_t viscat;
-    for (viscat = TEST_V; viscat <= TEST_S; viscat++) {
-    for (isget = 0; isget < 2; isget++) {
+  for (test_vis_t viscat = TEST_V; viscat <= TEST_S; viscat++) {
+    for (int isget = 0; isget < 2; isget++) {
       if (TEST_SECTION_BEGIN_ENABLED()) {
         if (isget && !dogets) continue;
         if (!isget && !doputs) continue;
         if (!dovis[viscat]) continue;
-        for (contigsz = min_contig; contigsz <= max_contig; contigsz *= contigfactor) {
-          int di;
-          size_t lastdatasz = 0;
+        size_t lastcontigsz = 0;
+        for (double rawcontigsz = min_contig; rawcontigsz <= max_contig; rawcontigsz *= contigfactor) {
+          size_t contigsz = (size_t)rawcontigsz;
+          if (contigsz == lastcontigsz) continue;
           if (contigsz > max_payload) continue;
+          lastcontigsz = contigsz;
+          TEST_ASI_NEW_TEST();
           if (!myproc) {
-            printf("\n%c: %s %s CONTIGSZ = %i\n", TEST_SECTION_NAME(),
+            printf("\n%c: %s %s CONTIGSZ = %"PRIuSZ"\n", TEST_SECTION_NAME(),
                         visdesc[(int)viscat], (isget?"GET":"PUT"), contigsz);
             printf(" density:");
-            for (di = 0; di < densitysteps; di++) {
+            for (int di = 0; di < densitysteps; di++) {
               printf("%8i%%", (int)((densitysteps-di)*100.0/densitysteps));
             }
             printf("\n");
           }
-          for (rawdatasz = min_payload; rawdatasz <= max_payload; rawdatasz *= datafactor) {
-            char mystr[255];
-            size_t datasz = aligndown(rawdatasz,contigsz);
+          size_t lastdatasz = 0;
+          for (double rawdatasz = min_payload; rawdatasz <= max_payload; rawdatasz *= datafactor) {
+            size_t datasz = aligndown((size_t)rawdatasz,contigsz);
             if (datasz == lastdatasz) continue;
             lastdatasz = datasz;
-            if (singlesender) snprintf(mystr, sizeof(mystr), "%8i: ", (int)datasz);
-            else  snprintf(mystr, sizeof(mystr), "P%i: %6i: ", myproc, (int)datasz);
-            for (di = 0; di < densitysteps; di++) {
+            char mystr[255];
+            if (singlesender) snprintf(mystr, sizeof(mystr), "%8"PRIuSZ": ", datasz);
+            else  snprintf(mystr, sizeof(mystr), "P%i: %6"PRIuSZ": ", myproc, datasz);
+            for (int di = 0; di < densitysteps; di++) {
               gasnett_tick_t begin=0, end=0;
               size_t Lcnt = (localcontig ? 1 : datasz/contigsz);
               size_t Rcnt = (remotecontig? 1 : datasz/contigsz);
@@ -280,7 +338,8 @@ int main(int argc, char **argv) {
               size_t *Rstrides = NULL;
               size_t *LRcount = NULL;
               size_t stride = contigsz*(((double)densitysteps)/(densitysteps-di));
-              if (stride * MAX(Lcnt,Rcnt) > maxsz) { strcat(mystr,"    -   "); continue; }
+              assert(stride >= contigsz);
+              if (stride * MAX(Lcnt,Rcnt) > areasz) { strcat(mystr,"    -   "); continue; }
 
               if (iamsender) { /* setup metadata */
                 switch (viscat) {
@@ -320,37 +379,71 @@ int main(int argc, char **argv) {
                 }
               }
               #define DOIT(iters) do {                                                           \
-                int i;                                                                           \
+                if (doNB && iters > evtcnt) {                                                    \
+                  test_free(evts);                                                               \
+                  evts = test_malloc(iters * sizeof(gasnet_handle_t));                           \
+                  evtcnt = iters;                                                                \
+                }                                                                                \
                 switch (viscat) {                                                                \
                   case TEST_V:                                                                   \
-                    for (i = 0; i < iters; i++) {                                                \
-                      if (isget) gasnet_getv_nbi_bulk(Lcnt,Lvlist,peerproc,Rcnt,Rvlist);         \
-                      else gasnet_putv_nbi_bulk(peerproc,Rcnt,Rvlist,Lcnt,Lvlist);               \
+                    if (doNB) {                                                                  \
+                      if (isget) for (long i = 0; i < iters; i++)                                \
+                        evts[i] = gasnet_getv_nb_bulk(Lcnt,Lvlist,peerproc,Rcnt,Rvlist);         \
+                      else for (long i = 0; i < iters; i++)                                      \
+                        evts[i] = gasnet_putv_nb_bulk(peerproc,Rcnt,Rvlist,Lcnt,Lvlist);         \
+                    } else {                                                                     \
+                      if (isget) for (long i = 0; i < iters; i++)                                \
+                        gasnet_getv_nbi_bulk(Lcnt,Lvlist,peerproc,Rcnt,Rvlist);                  \
+                      else for (long i = 0; i < iters; i++)                                      \
+                        gasnet_putv_nbi_bulk(peerproc,Rcnt,Rvlist,Lcnt,Lvlist);                  \
                     }                                                                            \
                     break;                                                                       \
                   case TEST_I:                                                                   \
-                    for (i = 0; i < iters; i++) {                                                \
-                      if (isget) gasnet_geti_nbi_bulk(Lcnt,Lilist,Lsz,peerproc,Rcnt,Rilist,Rsz); \
-                      else gasnet_puti_nbi_bulk(peerproc,Rcnt,Rilist,Rsz,Lcnt,Lilist,Lsz);       \
+                    if (doNB) {                                                                  \
+                      if (isget) for (long i = 0; i < iters; i++)                                \
+                        evts[i] =                                                                \
+                         gasnet_geti_nb_bulk(Lcnt,Lilist,Lsz,peerproc,Rcnt,Rilist,Rsz);          \
+                      else for (long i = 0; i < iters; i++)                                      \
+                        evts[i] =                                                                \
+                         gasnet_puti_nb_bulk(peerproc,Rcnt,Rilist,Rsz,Lcnt,Lilist,Lsz);          \
+                    } else {                                                                     \
+                      if (isget) for (long i = 0; i < iters; i++)                                \
+                        gasnet_geti_nbi_bulk(Lcnt,Lilist,Lsz,peerproc,Rcnt,Rilist,Rsz);          \
+                      else for (long i = 0; i < iters; i++)                                      \
+                        gasnet_puti_nbi_bulk(peerproc,Rcnt,Rilist,Rsz,Lcnt,Lilist,Lsz);          \
                     }                                                                            \
                     break;                                                                       \
                   case TEST_S:                                                                   \
-                    for (i = 0; i < iters; i++) {                                                \
-                      if (isget) gasnet_gets_nbi_bulk(Lbase,Lstrides,peerproc,Rbase,Rstrides,    \
-                                                      LRcount,stridelevels);                     \
-                      else gasnet_puts_nbi_bulk(peerproc,Rbase,Rstrides,Lbase,Lstrides,          \
-                                                LRcount,stridelevels);                           \
+                    if (doNB) {                                                                  \
+                      if (isget) for (long i = 0; i < iters; i++)                                \
+                        evts[i] =                                                                \
+                         gasnet_gets_nb_bulk(Lbase,Lstrides,peerproc,Rbase,Rstrides,             \
+                                             LRcount,stridelevels);                              \
+                      else for (long i = 0; i < iters; i++)                                      \
+                        evts[i] =                                                                \
+                         gasnet_puts_nb_bulk(peerproc,Rbase,Rstrides,Lbase,Lstrides,             \
+                                             LRcount,stridelevels);                              \
+                    } else {                                                                     \
+                      if (isget) for (long i = 0; i < iters; i++)                                \
+                        gasnet_gets_nbi_bulk(Lbase,Lstrides,peerproc,Rbase,Rstrides,             \
+                                             LRcount,stridelevels);                              \
+                      else for (long i = 0; i < iters; i++)                                      \
+                        gasnet_puts_nbi_bulk(peerproc,Rbase,Rstrides,Lbase,Lstrides,             \
+                                             LRcount,stridelevels);                              \
                     }                                                                            \
                     break;                                                                       \
                 }                                                                                \
-                gasnet_wait_syncnbi_all();                                                       \
+                if (doNB) gasnet_wait_syncnb_all(evts, iters);                                   \
+                else gasnet_wait_syncnbi_all();                                                  \
               } while (0)
               if (iamsender) DOIT(1); /* pay some warm-up costs */
               BARRIER();
               if (iamsender) { 
+                TEST_ASI_BEGIN(name,iters,datasz,MIN(di,TEST_ASI_BANKS-1));
   	        begin = gasnett_ticks_now();
                 DOIT(iters);
 	        end = gasnett_ticks_now();
+                TEST_ASI_END(name,iters);
               }
               BARRIER();
               if (iamsender) { 
@@ -373,7 +466,6 @@ int main(int argc, char **argv) {
           }
         }
       }
-    }
     }
   }
 

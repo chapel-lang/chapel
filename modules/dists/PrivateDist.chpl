@@ -66,7 +66,6 @@ do not provide some standard domain/array functionality.
 This distribution may perform unnecessary communication
 between locales.
 */
-pragma "use default init"
 class Private: BaseDist {
   override proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
     for i in inds do
@@ -87,7 +86,6 @@ class Private: BaseDist {
   proc singleton() param return true;
 }
 
-pragma "use default init"
 class PrivateDom: BaseRectangularDom {
   var dist: unmanaged Private;
 
@@ -141,7 +139,6 @@ class PrivateDom: BaseRectangularDom {
   override proc dsiMyDist() return dist;
 }
 
-pragma "use default init"
 class PrivateArr: BaseRectangularArr {
   var dom: unmanaged PrivateDom(rank, idxType, stridable);
   var data: eltType;

@@ -1,2 +1,5 @@
+record-var-invokes-user-constructor.chpl:2: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+record-var-invokes-user-constructor.chpl:2: warning: Type 'R' defines a constructor here
+record-var-invokes-user-constructor.chpl:7: warning: Type 'Q' defines a constructor here
 no-arg R constructor
 Q(i) constructor

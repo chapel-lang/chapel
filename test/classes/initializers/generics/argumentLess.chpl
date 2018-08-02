@@ -9,7 +9,7 @@ class Foo {
   }
 }
 
-var foo = new Foo();
+var foo = new unmanaged Foo();
 writeln(foo.type: string);
 writeln(foo);
 delete foo;

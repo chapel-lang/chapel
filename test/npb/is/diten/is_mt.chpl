@@ -45,7 +45,7 @@ var passedVerifications = 0;
 
 proc main() {
   var time = new Timer();
-  var randomStream = new NPBRandomStream(real, seed);
+  var randomStream = new owned NPBRandomStream(real, seed);
   var tempreals: [1..4] real;
   var max = maxKey / 4;
 
@@ -88,8 +88,6 @@ proc main() {
     writeln(" Verification    = SUCCESSFUL");
   else
     writeln(" Verification    = FAILED ", passedVerifications);
-
-  delete randomStream;
 } 
 
 

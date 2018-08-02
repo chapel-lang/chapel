@@ -1,5 +1,5 @@
 MASON_HOME: $PWD/tempHome *
 MASON_REGISTRY: myRegistry|$PWD/tempHome/uncached/myRegistry *
-Initializing mason-registry for myRegistry
+Updating mason-registry
 multiple (0.2.0)
 simple (0.1.0)

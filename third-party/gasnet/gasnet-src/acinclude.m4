@@ -105,6 +105,50 @@ fi
 GASNET_FUN_END([$0($1)])
 ])
 
+dnl GASNET_PGI_VERSION_CHECK(type)  type=CC or CXX
+AC_DEFUN([GASNET_PGI_VERSION_CHECK],[
+GASNET_FUN_BEGIN([$0($1)])
+AC_MSG_CHECKING(for known buggy compilers)
+badpgimsg=""
+AC_TRY_COMPILE([
+#if ((10000 * __PGIC__) + (100 * __PGIC_MINOR__) + __PGIC_PATCHLEVEL__) < 70205
+# error
+#endif
+],[ ], [:], [
+AC_MSG_RESULT([$1] is PGI prior to 7.2-5)
+badpgimsg="Use of PGI compilers older than 7.2-5 is not supported.
+Consider using \$[$1] to select a different compiler."
+])
+if test -n "$badpgimsg"; then
+  AC_MSG_ERROR([$badpgimsg])
+else
+  AC_MSG_RESULT(ok)
+fi
+GASNET_FUN_END([$0($1)])
+])
+
+dnl GASNET_PATHSCALE_VERSION_CHECK(type)  type=CC or CXX
+AC_DEFUN([GASNET_PATHSCALE_VERSION_CHECK],[
+GASNET_FUN_BEGIN([$0($1)])
+AC_MSG_CHECKING(for known buggy compilers)
+badpathscalemsg=""
+AC_TRY_COMPILE([
+#if (__PATHCC__ < 3)
+# error
+#endif
+],[ ], [:], [
+AC_MSG_RESULT([$1] is PathScale prior to 3.0)
+badpathscalemsg="Use of PathScale compilers older than 3.0 is not supported.
+Consider using \$[$1] to select a different compiler."
+])
+if test -n "$badpathscalemsg"; then
+  AC_MSG_ERROR([$badpathscalemsg])
+else
+  AC_MSG_RESULT(ok)
+fi
+GASNET_FUN_END([$0($1)])
+])
+
 AC_DEFUN([GASNET_FIX_SHELL],[
 GASNET_FUN_BEGIN([$0])
 AC_MSG_CHECKING(for good shell)
@@ -168,6 +212,37 @@ popdef([lowername])
 GASNET_FUN_END([$0($1)])
 ])
 
+dnl autoconf before 2.50 lacks AC_INCLUDES_DEFAULT
+AC_DEFUN([GASNET_INCLUDES_DEFAULT],[
+  ifdef([AC_INCLUDES_DEFAULT],[AC_INCLUDES_DEFAULT],[ 
+    dnl provide fallback include default for autoconf 2.13
+    /* this should include only C89 headers containing declarations we may want in configure */
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <stddef.h>
+    #include <stdarg.h>
+    #include <string.h>
+    #include <ctype.h>
+    #include <limits.h>
+    #include <signal.h>
+    #include <errno.h>
+    #include <math.h>
+    #include <time.h>
+  ])
+])
+
+AC_DEFUN([myeval],[$1])
+
+dnl force our includes into an existing macro expansion
+define([_GASNET_INSERT_HEADERS],[
+ pushdef([hash],[#])
+ patsubst( [hash] (
+  $1
+ [hash] ), [\(#include <.*$\)], \1 GASNET_INCLUDES_DEFAULT)
+ popdef([hash])
+])
+
+
 ifdef([AC_AUTOCONF_VERSION],[ dnl fix a buggy AC_CHECK_SIZEOF(type *) in AC 2.66
   m4_if(m4_defn([AC_AUTOCONF_VERSION]), [2.66], [ 
     m4_copy([AC_CHECK_SIZEOF],[_GASNET_CHECK_SIZEOF])
@@ -189,7 +264,7 @@ AC_DEFUN([GASNET_CHECK_SIZEOF],[
 
   if test "$cross_compiling" = "yes" ; then
     uppername=
-    GASNET_TRY_CACHE_EXTRACT_EXPR([sizeof($1) (binary probe)],uppername,[],[sizeof($1)],uppername)
+    GASNET_TRY_CACHE_EXTRACT_EXPR([sizeof($1) (binary probe)],uppername,[GASNET_INCLUDES_DEFAULT],[sizeof($1)],uppername)
     if test -z "$uppername" ; then # last resort is to use CROSS var
       GASNET_CROSS_VAR(uppername,uppername)
     fi
@@ -204,7 +279,13 @@ AC_DEFUN([GASNET_CHECK_SIZEOF],[
   if test "$2" != "" ; then
     AC_MSG_CHECKING([$2 size:])
   fi
-  AC_CHECK_SIZEOF($1, $uppername) 
+
+  ifdef([AC_INCLUDES_DEFAULT], [
+    AC_CHECK_SIZEOF($1, $uppername)
+  ],[ dnl autoconf 2.13 lacks header support in CHECK_SIZEOF, add ours
+    _GASNET_INSERT_HEADERS([ AC_CHECK_SIZEOF($1, $uppername) ])
+  ])
+
   gasnet_checksizeoftmp_[]lowername="$ac_cv_[]barename"
   GASNET_POPVAR(ac_cv_[]barename)
   ac_cv_[]lowername=$gasnet_checksizeoftmp_[]lowername
@@ -335,14 +416,20 @@ AC_DEFUN([GASNET_SETUP_INTTYPES], [
   GASNET_CHECK_SIZEOF(long, $1)
   GASNET_CHECK_SIZEOF(long long, $1)
   GASNET_CHECK_SIZEOF(void *, $1)
+  GASNET_CHECK_SIZEOF(size_t, $1)
+  GASNET_CHECK_SIZEOF(ptrdiff_t, $1)
 
   GASNET_SETUP_INTTYPES_DUMMY($1) 
  
   GASNET_CHECK_INTTYPES(stdint.h,$1)
   GASNET_CHECK_INTTYPES(inttypes.h,$1)
   GASNET_CHECK_INTTYPES(sys/types.h,$1)
- 
-  [$1]INTTYPES_DEFINES="-D[$1]SIZEOF_CHAR=$[$1]SIZEOF_CHAR -D[$1]SIZEOF_SHORT=$[$1]SIZEOF_SHORT -D[$1]SIZEOF_INT=$[$1]SIZEOF_INT -D[$1]SIZEOF_LONG=$[$1]SIZEOF_LONG -D[$1]SIZEOF_LONG_LONG=$[$1]SIZEOF_LONG_LONG -D[$1]SIZEOF_VOID_P=$[$1]SIZEOF_VOID_P"
+
+  for type in CHAR SHORT INT LONG LONG_LONG VOID_P SIZE_T PTRDIFF_T ; do
+    eval val="\$[$1]SIZEOF_$type"
+    GASNET_APPEND_DEFINE([$1]INTTYPES_DEFINES, [$1]SIZEOF_$type, $val)
+  done
+
   GASNET_APPEND_DEFINE([$1]INTTYPES_DEFINES, [$1]HAVE_STDINT_H)
   GASNET_APPEND_DEFINE([$1]INTTYPES_DEFINES, [$1]COMPLETE_STDINT_H)
   GASNET_APPEND_DEFINE([$1]INTTYPES_DEFINES, [$1]HAVE_INTTYPES_H)
@@ -356,11 +443,16 @@ AC_DEFUN([GASNET_SETUP_INTTYPES], [
 
 
 dnl Appends -Dvar_to_define onto target_var, iff var_to_define is set
-dnl GASNET_APPEND_DEFINE(target_var, var_to_define)
+dnl If value also is provided, adds -Dvar_to_define=value
+dnl GASNET_APPEND_DEFINE(target_var, var_to_define [, value] )
 AC_DEFUN([GASNET_APPEND_DEFINE],[
 GASNET_FUN_BEGIN([$0])
   if test "$[$2]" != ""; then
-    [$1]="$[$1] -D[$2]"
+    ifelse([$3],[],[
+      [$1]="$[$1] -D[$2]"
+    ],[
+      [$1]="$[$1] -D[$2]=$3"
+    ])
   fi
 GASNET_FUN_END([$0])
 ]) 
@@ -1094,26 +1186,29 @@ dnl action-none runs for no foo arg given
 dnl GASNET_WITH(foo, description, action-withval, [action-without], [action-none])
 AC_DEFUN([GASNET_WITH],[
 GASNET_FUN_BEGIN([$0($1,...)])
-  pushdef([withname],with_[]patsubst([$1], -, _))
   ifdef([GASNET_SUPPRESSHELP], [], [
     AC_ARG_WITH($1,GASNET_OPTION_HELP(with-$1=,[$2]))
   ])
+  GASNET_WITH_NOHELP([$1],[$3],[$4],[$5])
+  popdef([withname])
+GASNET_FUN_END([$0($1,...)])
+])
+AC_DEFUN([GASNET_WITH_NOHELP],[
+  pushdef([withname],with_[]patsubst([$1], -, _))
   if test "${withname+set}" = set; then :
     withval=$withname;
     case "$withval" in
       no) :
-          $4
+          $3
       ;;
       *)  :
-          $3
+          $2
       ;;
     esac
   else
     :
-    $5
+    $4
   fi
-  popdef([withname])
-GASNET_FUN_END([$0($1,...)])
 ])
 
 AC_DEFUN([GASNET_IF_ENABLED_NOHELP],[
@@ -1600,7 +1695,7 @@ GASNET_FUN_END([$0(...)])
 dnl GASNET_CHECK_RESTRICT(PREFIX, opt compiler-desc)
 dnl Checks if 'restrict' C99 keyword (or variants) supported
 dnl #defines [PREFIX]_RESTRICT to correct variant, or to nothing
-dnl #defines [PREFIX]_RESTRICT_MAY_QUALIFY_TYPEDEFS if appropriate
+dnl #defines [PREFIX]_RESTRICT_MAY_QUALIFY_TYPEDEFS as appropriate
 AC_DEFUN([GASNET_CHECK_RESTRICT],[
 GASNET_FUN_BEGIN([$0])
   dnl Check for restrict keyword
@@ -1624,14 +1719,57 @@ GASNET_FUN_BEGIN([$0])
       restrict_keyword="__restrict")
   fi
   AC_DEFINE_UNQUOTED([$1]_RESTRICT, $restrict_keyword)
+  restrict_on_typedefs=0
   GASNET_TRY_CACHE_CHECK($2 for restrict qualifying typedefs, cvprefix[]_restrict_typedefs,
     [typedef void *foo_t;
      int dummy(foo_t [$1]_RESTRICT p) { return 1; }], [],
-    AC_DEFINE([$1]_RESTRICT_MAY_QUALIFY_TYPEDEFS))
+     restrict_on_typedefs=1)
+  AC_DEFINE_UNQUOTED([$1]_RESTRICT_MAY_QUALIFY_TYPEDEFS, $restrict_on_typedefs)
   popdef([cvprefix])
 GASNET_FUN_END([$0])
 ])
 
+dnl GASNET_CHECK_BUILTINS(PREFIX, opt compiler-desc)
+dnl Checks for various commpiler builtins of interest
+dnl #defines [PREFIX]_<feature> symbols
+AC_DEFUN([GASNET_CHECK_BUILTINS],[
+GASNET_FUN_BEGIN([$0])
+  pushdef([cvprefix],translit([$1],'A-Z','a-z'))
+  GASNET_TRY_CACHE_LINK($2 for __assume, cvprefix[]__assume,
+    [ extern int x; int x = 0; ], [
+      __assume(x == 0); 
+      if (x) __assume(0);
+    ], AC_DEFINE([$1]_ASSUME))
+
+  GASNET_TRY_CACHE_LINK($2 for __builtin_assume, cvprefix[]__builtin_assume,
+    [ extern int x; int x = 0; ], [
+      __builtin_assume(x == 0); 
+      if (x) __builtin_assume(0);
+    ], AC_DEFINE([$1]_BUILTIN_ASSUME))
+
+  GASNET_TRY_CACHE_LINK($2 for __builtin_unreachable, cvprefix[]__builtin_unreachable,
+    [ extern int x; int x = 0; ], [
+      if (x) { __builtin_unreachable(), ((void)0); }  dnl Detect bug 3702
+    ], AC_DEFINE([$1]_BUILTIN_UNREACHABLE))
+
+  GASNET_TRY_CACHE_LINK($2 for __builtin_expect, cvprefix[]__builtin_expect,
+    [ extern int x; int x = 0; ], [
+      if (__builtin_expect(x,1)) return 1;
+    ], AC_DEFINE([$1]_BUILTIN_EXPECT))
+
+  GASNET_TRY_CACHE_LINK($2 for __builtin_constant_p, cvprefix[]__builtin_constant_p,
+    [ extern int x; int x = 0; ], [
+      x = __builtin_constant_p(x) + __builtin_constant_p(2);
+    ], AC_DEFINE([$1]_BUILTIN_CONSTANT_P))
+
+  GASNET_TRY_CACHE_LINK($2 for __builtin_prefetch, cvprefix[]__builtin_prefetch,
+    [ extern int x; int x = 0; ], [
+      __builtin_prefetch(&x,0);
+    ], AC_DEFINE([$1]_BUILTIN_PREFETCH))
+
+  popdef([cvprefix])
+GASNET_FUN_END([$0])
+])
 dnl INTERNL USE ONLY
 AC_DEFUN([GASNETI_C_OR_CXX],[ifelse(index([$1],[CXX]),[-1],[C],[CXX])])
 
@@ -1670,8 +1808,8 @@ dnl Caller must setup CC, CFLAGS, etc for MPI_CC case.
 dnl XXX: treatment of inline modifier is not generic
 AC_DEFUN([GASNET_GET_GNU_ATTRIBUTES],[
   pushdef([inline_modifier],ifelse(index([$1],[MPI_CC]),
-                                   [-1],[GASNET_CC_INLINE_MODIFIER],
-                                        [GASNET_MPICC_INLINE_MODIFIER]))
+                                   [-1],[GASNETI_CC_INLINE_MODIFIER],
+                                        [GASNETI_MPI_CC_INLINE_MODIFIER]))
   GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__always_inline__],
             [__attribute__((__always_inline__))
              #if defined __cplusplus
@@ -1691,8 +1829,6 @@ AC_DEFUN([GASNET_GET_GNU_ATTRIBUTES],[
   GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__used__],
             [#include <stdlib.h>
 	     __attribute__((__used__)) void dummy(void) { abort(); }])
-  GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__unused__],
-            [void dummy(void) { __attribute__((__unused__)) int pointless; return; }])
   GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__may_alias__],
             [typedef int __attribute__((__may_alias__)) dummy;])
   GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__noreturn__],
@@ -1710,6 +1846,16 @@ AC_DEFUN([GASNET_GET_GNU_ATTRIBUTES],[
             [__attribute__((__cold__)) int dummy(void) { return 1; }])
   GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__deprecated__],
             [__attribute__((__deprecated__)) int dummy(void) { return 0; }])
+  GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__fallthrough__],
+            [int dummy(int x) {
+               int result = 0;
+               switch (x) {
+                 case 3: result++;  __attribute__((__fallthrough__));
+                 case 2: result++;  __attribute__((__fallthrough__));
+                 case 1: result++;
+               }
+               return result;
+             }])
   GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__format__],
             [#include <stdarg.h>
              __attribute__((__format__ (__printf__, 1, 2)))
@@ -1747,20 +1893,17 @@ AC_DEFUN([GASNET_GET_GNU_ATTRIBUTES],[
   fi
   popdef([cachevar])
 
-  pushdef([cachevar],cv_prefix[]translit([$1],'A-Z','a-z')[]_attr_unused_typedef)
-  AC_CACHE_CHECK($2 for __attribute__((__unused__)) on typedefs, cachevar,
-    GASNET_TRY_COMPILE_WITHWARN(GASNETI_C_OR_CXX([$1]), [
-          typedef struct foo_s { int i; long l; } foo_t __attribute__((__unused__));
-      ], [
-          foo_t pointless;
-      ], [ cachevar='yes' ],[ cachevar='no/warning' ],[ cachevar='no/error' ])
-  )
-  if test "$cachevar" = yes; then
-      AC_DEFINE([$1]_ATTRIBUTE_UNUSED_TYPEDEF)
-  else
-      AC_DEFINE([$1]_ATTRIBUTE_UNUSED_TYPEDEF, 0)
-  fi
-  popdef([cachevar])
+  # bug 3613: try to enable any warning settings that might be relevant to -Wunknown-pragmas
+  GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS")
+  _gasnet_CPPFLAGS_back="$CPPFLAGS"
+  for flag in '-Wall' '-Wextra' '-Wunknown-pragmas' ; do 
+    AC_MSG_CHECKING(for compiler flag $flag)
+    CPPFLAGS="$CPPFLAGS $flag"
+    GASNET_TRY_COMPILE_WITHWARN(GASNETI_C_OR_CXX([$1]), [], [], 
+      [ AC_MSG_RESULT(yes) ; _gasnet_CPPFLAGS_back="$CPPFLAGS" ], 
+      [ AC_MSG_RESULT(no) ; CPPFLAGS="$_gasnet_CPPFLAGS_back" ], 
+      [ AC_MSG_RESULT(no) ; CPPFLAGS="$_gasnet_CPPFLAGS_back" ])
+  done
 
   pushdef([cachevar],cv_prefix[]translit([$1],'A-Z','a-z')[]_pragma_gcc_diagnostic)
   AC_CACHE_CHECK($2 for pragma GCC diagnostic push/pop/ignored, cachevar,
@@ -1789,6 +1932,61 @@ AC_DEFUN([GASNET_GET_GNU_ATTRIBUTES],[
       AC_DEFINE([$1]_PRAGMA_GCC_DIAGNOSTIC, 0)
   fi
   popdef([cachevar])
+  GASNET_POPVAR(CPPFLAGS)
+])
+
+dnl check whether a given C++11 attribute is available
+dnl GASNET_CHECK_CXX11_ATTRIBUTE(PREFIX, compiler-name, attribute-name, declaration, code)
+dnl Independent of PREFIX the test is run as LANG_CPLUSPLUS
+dnl Caller is responsible for setting of CXX and friends in the MPI_CXX case (if any)
+AC_DEFUN([GASNET_CHECK_CXX11_ATTRIBUTE],[
+  GASNET_FUN_BEGIN([$0($1,$2,$3)])
+  pushdef([uppername],translit(patsubst([$3], [_], []),'a-z:','A-Z_'))
+  pushdef([cachevar],cv_prefix[]translit([$1]_cppattr_[]uppername,'A-Z','a-z'))
+  AC_CACHE_CHECK($2 for C++ attribute [[[[$3]]]], cachevar,
+    GASNET_TRY_COMPILE_WITHWARN(CXX, [$4], [$5], [
+          cachevar='yes'
+      ],[ dnl cachevar="no/warning: $gasnet_cmd_stdout$gasnet_cmd_stderr"
+          cachevar='no/warning'
+      ],[ dnl cachevar="no/error: $gasnet_cmd_stdout$gasnet_cmd_stderr"
+          cachevar='no/error'
+    ])
+  )
+  if test "$cachevar" = yes; then
+      AC_DEFINE($1_CXX11_ATTRIBUTE_[]uppername)
+      AC_DEFINE($1_CXX11_ATTRIBUTE)
+  else
+      AC_DEFINE($1_CXX11_ATTRIBUTE_[]uppername, 0)
+  fi
+  GASNET_FUN_END([$0($1,$2,$3)])
+  popdef([cachevar])
+  popdef([uppername])
+])
+
+dnl GASNET_GET_CXX11_ATTRIBUTES(PREFIX, opt compiler-name)
+dnl Check all C++11 attributes of interest/importance to GASNet
+dnl Caller must setup CXX, CXXFLAGS, etc for MPI_CXX case (if any).
+AC_DEFUN([GASNET_GET_CXX11_ATTRIBUTES],[
+  GASNET_CHECK_CXX11_ATTRIBUTE([$1], [$2], [fallthrough],
+            [int dummy(int x) {
+               int result = 0;
+               switch (x) {
+                 case 3: result++;  [[[[fallthrough]]]];
+                 case 2: result++;  [[[[fallthrough]]]];
+                 case 1: result++;
+               }
+               return result;
+             }])
+  GASNET_CHECK_CXX11_ATTRIBUTE([$1], [$2], [clang::fallthrough],
+            [int dummy(int x) {
+               int result = 0;
+               switch (x) {
+                 case 3: result++;  [[[[clang::fallthrough]]]];
+                 case 2: result++;  [[[[clang::fallthrough]]]];
+                 case 1: result++;
+               }
+               return result;
+             }])
 ])
 
 dnl  Check to see if __thread attribute exists and works
@@ -2440,17 +2638,21 @@ AC_CACHE_CHECK(for $1 compiler family, $3, [
     GASNET_IFDEF(__xlC__, $3=XLC, [], $_force_compile)
   fi
   if test "$$3" = "unknown"; then
+    GASNET_IFDEF(__ibmxl__, $3=XLC, [], $_force_compile)
+  fi
+  if test "$$3" = "unknown"; then
     GASNET_IFDEF(_CRAYC, $3=Cray, [], $_force_compile)
   fi
   dnl gcc-like compilers, which may define __GNUC__ - order matters here
   if test "$$3" = "unknown"; then
     GASNET_IFDEF(__GNUC__, $3=GNU, [], $_force_compile) 
     dnl Note GNUC one above must precede many of those below
+    GASNET_IFDEF(__clang__, $3=Clang, [], $_force_compile)
+    dnl Note __clang__ must precede one or more of those below
     GASNET_IFDEF(__PGI, $3=PGI, [], $_force_compile)
     GASNET_IFDEF(__INTEL_COMPILER, $3=Intel, [], $_force_compile)
     GASNET_IFDEF(__OPENCC__, $3=Open64, [], $_force_compile)
     GASNET_IFDEF(__PCC__, $3=PCC, [], $_force_compile)
-    GASNET_IFDEF(__clang__, $3=Clang, [], $_force_compile)
     GASNET_IFDEF(__PATHCC__, $3=Pathscale, [], $_force_compile)
   fi
   dnl other vendor compilers
@@ -2503,12 +2705,12 @@ if test "$$3" != "GNU" ; then
 else
   dnl GCC has sub-family too
   $2_SUBFAMILY='GNU'
-  GASNET_TRY_CACHE_EXTRACT_STR([for gcc version string],gcc_version_string,[
+  GASNET_TRY_CACHE_EXTRACT_STR([for gcc version string],$2_gcc_version_string,[
       #ifndef __VERSION__
         #define __VERSION__ "unknown"
       #endif
-    ],[__VERSION__],[_gasnet_gcc_version_string])
-  case "$_gasnet_gcc_version_string" in
+    ],[__VERSION__],[_gasnet_$2_gcc_version_string])
+  case "$_gasnet_$2_gcc_version_string" in
     *gccfss*) $2_SUBFAMILY='GCCFSS';;
     *) GASNET_IFDEF(__APPLE_CC__, [$2_SUBFAMILY='APPLE'])
        GASNET_IFDEF(__NVCC__, [$2_SUBFAMILY='NVIDIA'])
@@ -2777,9 +2979,12 @@ dnl else, run action-failure
 AC_DEFUN([GASNET_COMPILE_EXAMINE], [
 AC_REQUIRE([AC_OBJEXT])
 GASNET_FUN_BEGIN([$0(...)])
-  cat >conftest.$ac_ext <<"EOF"
+  dnl allow variable expansion on headers for AC_INCLUDES_DEFAULT
+  cat >conftest.$ac_ext <<EOF
 #include "confdefs.h"
 $1
+EOF
+  cat >>conftest.$ac_ext <<"EOF"
   int main(void) { 
 $2
   return 0; }
@@ -2812,9 +3017,12 @@ dnl if it suceeds, run action-success with $GASNET_EXAMINE_BIN set to filename o
 dnl else, run action-failure
 AC_DEFUN([GASNET_LINK_EXAMINE], [
 GASNET_FUN_BEGIN([$0(...)])
-  cat >conftest.$ac_ext <<"EOF"
+  dnl allow variable expansion on headers for AC_INCLUDES_DEFAULT
+  cat >conftest.$ac_ext <<EOF
 #include "confdefs.h"
 $1
+EOF
+  cat >>conftest.$ac_ext <<"EOF"
   int main(void) { 
 $2
   return 0; }
@@ -2848,10 +3056,11 @@ AC_REQUIRE([GASNET_PROG_PERL])
 GASNET_FUN_BEGIN([$0($1,$2,...)])
 AC_CACHE_CHECK($1, cv_prefix[]$2,[
 cv_prefix[]$2=""
+_extractstrembed='"$gasnetextractstr: (-(|" $4 "|)-) $"'
 pushdef([embedcode],[
  #include <stdio.h>
  extern const char *s; 
- const char *s = "$gasnetextractstr: (-(|" $4 "|)-) $";
+ const char *s = $_extractstrembed;
 ])
 pushdef([unpackcode],[
    _extract_prog='BEGIN{$/="\0";} if (m/\$gasnetextractstr: \(-\(\|(.+?)\|\)-\) \$/) { print "[$]1";}' 
@@ -2896,12 +3105,14 @@ pushdef([unpackcode],[
    _extract_prog='BEGIN{$/="\$";} if (m/^gasnetextractexpr: ([[ -]]) (.+?) \$/) { map($val=($val<<4)+($_-0x40),unpack("C8",[$]2)); print "-" if ([$]1 eq "-"); print $val;}' 
    cv_prefix[]$2=`$PERL -ne "$_extract_prog" $GASNET_EXAMINE_BIN`
 ])
+dnl Do not remove the "static" from the decl of "p" in GASNET_{COMPILE,LINK}_EXAMINE calls below.
+dnl It prevents (at least) Apple Clang 9.0.0 LTO from optimizing out the char array!
  GASNET_COMPILE_EXAMINE([$3
-   embedcode ],[ char *p = s; while (*p) printf("%c",*(p++)); ],
+   embedcode ],[ static char *p = s; while (*p) printf("%c",*(p++)); ],
    [ unpackcode ],[GASNET_MSG_ERROR(Failed while compile extracting $4)])
 if test -z "$cv_prefix[]$2" ; then
  GASNET_LINK_EXAMINE([$3
-   embedcode ],[ char *p = s; while (*p) printf("%c",*(p++)); ],
+   embedcode ],[ static char *p = s; while (*p) printf("%c",*(p++)); ],
    [ unpackcode ],[GASNET_MSG_ERROR(Failed while link extracting $4)])
 fi
 popdef([unpackcode])

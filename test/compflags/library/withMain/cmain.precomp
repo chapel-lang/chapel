@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-$3 --library lib.chpl
+$3 --library --library-dir lib-dir lib.chpl

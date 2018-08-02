@@ -6,7 +6,6 @@ record R {
   proc deinit() { writeln("R.deinit: ", x); }
 }
 
-pragma "use default init"
 class Simple {
   var r = new R();
 }

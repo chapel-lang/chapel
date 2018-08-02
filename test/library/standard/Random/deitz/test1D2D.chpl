@@ -10,8 +10,6 @@ config param algo = RNG.NPB;
 
   writeln(for i in 1..n do "%{#.#####}".format(rs.getNext()));
   writeln(rs.getNext());
-
-  delete rs;
 }
 
 {
@@ -19,8 +17,6 @@ config param algo = RNG.NPB;
 
   writeln(for i in 1..n do "%{#.#####}".format(rs.getNth(i)));
   writeln(rs.getNext());
-
-  delete rs;
 }
 
 {
@@ -30,8 +26,6 @@ config param algo = RNG.NPB;
   rs.fillRandom(A);
   writeln(for e in A do "%{#.#####}".format(e));
   writeln(rs.getNext());
-
-  delete rs;
 }
 
 {
@@ -41,8 +35,6 @@ config param algo = RNG.NPB;
   rs.fillRandom(A);
   writeln(for e in A do "%{#.#####}".format(e));
   writeln(rs.getNext());
-
-  delete rs;
 }
 
 {
@@ -53,8 +45,6 @@ config param algo = RNG.NPB;
   writeln(for e in A do "%{#######}".format(e.locale.id));
   writeln(for e in A do "%{#.#####}".format(e));
   writeln(rs.getNext());
-
-  delete rs;
 }
 
 {
@@ -65,8 +55,6 @@ config param algo = RNG.NPB;
   writeln(for e in A do "%{#######}".format(e.locale.id));
   writeln(for e in A do "%{#.#####}".format(e));
   writeln(rs.getNext());
-
-  delete rs;
 }
 
 {
@@ -78,8 +66,6 @@ config param algo = RNG.NPB;
   writeln(for e in A do "%{#######}".format(e.locale.id));
   writeln(for e in A do "%{#.#####}".format(e));
   writeln(rs.getNext());
-
-  delete rs;
 }
 
 {
@@ -91,8 +77,6 @@ config param algo = RNG.NPB;
   writeln(for e in A do "%{#######}".format(e.locale.id));
   writeln(for e in A do "%{#.#####}".format(e));
   writeln(rs.getNext());
-
-  delete rs;
 }
 
 {
@@ -104,8 +88,6 @@ config param algo = RNG.NPB;
   writeln(for e in A do "%{#######}".format(e.locale.id));
   writeln(for e in A do "%{#.#####}".format(e));
   writeln(rs.getNext());
-
-  delete rs;
 }
 
 {
@@ -117,6 +99,4 @@ config param algo = RNG.NPB;
   writeln(for e in A do "%{#######}".format(e.locale.id));
   writeln(for e in A do "%{#.#####}".format(e));
   writeln(rs.getNext());
-
-  delete rs;
 }

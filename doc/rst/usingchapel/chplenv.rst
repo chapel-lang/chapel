@@ -68,10 +68,8 @@ CHPL_HOST_PLATFORM
         darwin       Macintosh OS X platforms
         linux32      32-bit Linux platforms
         linux64      64-bit Linux platforms
-        marenostrum  BSC's MareNostrum platform
         netbsd32     32-bit NetBSD platforms
         netbsd64     64-bit NetBSD platforms
-        pwr5         IBM Power5 SMP cluster
         pwr6         IBM Power6 SMP cluster
         sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
@@ -141,20 +139,22 @@ CHPL_*_COMPILER
    and generated code for ``CHPL_TARGET_PLATFORM``.  Currently supported values
    are as follows:
 
-        =================  ===================================================
-        Value              Description
-        =================  ===================================================
-        clang              The Clang compiler suite -- clang and clang++
-        clang-included     The Clang compiler in third-party/llvm
-        cray-prgenv-cray   The Cray PrgEnv compiler using the Cray CCE backend
-        cray-prgenv-gnu    The Cray PrgEnv compiler using the GNU backend
-        cray-prgenv-intel  The Cray PrgEnv compiler using the Intel backend
-        cray-prgenv-pgi    The Cray PrgEnv compiler using the PGI backend
-        gnu                The GNU compiler suite -- gcc and g++
-        ibm                The IBM compiler suite -- xlc and xlC
-        intel              The Intel compiler suite -- icc and icpc
-        pgi                The PGI compiler suite -- pgcc and pgc++
-        =================  ===================================================
+        =================== ===================================================
+        Value               Description
+        =================== ===================================================
+        allinea             The Allinea ARM compiler suite -- clang and clang++
+        clang               The Clang compiler suite -- clang and clang++
+        clang-included      The Clang compiler in third-party/llvm
+        cray-prgenv-allinea The Cray PrgEnv compiler using the Allinea backend
+        cray-prgenv-cray    The Cray PrgEnv compiler using the Cray CCE backend
+        cray-prgenv-gnu     The Cray PrgEnv compiler using the GNU backend
+        cray-prgenv-intel   The Cray PrgEnv compiler using the Intel backend
+        cray-prgenv-pgi     The Cray PrgEnv compiler using the PGI backend
+        gnu                 The GNU compiler suite -- gcc and g++
+        ibm                 The IBM compiler suite -- xlc and xlC
+        intel               The Intel compiler suite -- icc and icpc
+        pgi                 The PGI compiler suite -- pgcc and pgc++
+        =================== ===================================================
 
    The default for ``CHPL_*_COMPILER`` depends on the value of the corresponding
    ``CHPL_*_PLATFORM`` environment variable:
@@ -166,8 +166,7 @@ CHPL_*_COMPILER
                       - cray-prgenv-$PE_ENV (for ``CHPL_TARGET_COMPILER``,
                         where PE_ENV is set by PrgEnv-* modules)
         darwin        clang if available, otherwise gnu
-        marenostrum   ibm
-        pwr5, pwr6    ibm
+        pwr6          ibm
         other         gnu
         ============  ==================================================
 

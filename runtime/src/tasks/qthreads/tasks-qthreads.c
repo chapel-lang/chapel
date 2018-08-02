@@ -289,7 +289,7 @@ static void SIGINT_handler(int sig)
 }
 
 // We call this routine in a separate pthread for 2 main reasons:
-// 1) qthread_initialize() converts the current thread into a shephered (the
+// 1) qthread_initialize() converts the current thread into a shepherd (the
 //    "real mccoy" shepherd) and creates a qthread on top of that. If we called
 //    this from the main process we'd have to be very careful about using
 //    pthread mutexes, sched_yield, and other similar constructs that don't

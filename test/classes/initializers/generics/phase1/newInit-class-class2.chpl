@@ -3,12 +3,8 @@ class Container {
   var y;
 
   proc init() {
-    y = new Stored(true);
+    y = new owned Stored(true);
 
-  }
-
-  proc deinit() {
-    delete y;
   }
 }
 
@@ -21,7 +17,7 @@ class Stored {
   }
 }
 
-var c = new Container();
+var c = new unmanaged Container();
 
 writeln(c);
 

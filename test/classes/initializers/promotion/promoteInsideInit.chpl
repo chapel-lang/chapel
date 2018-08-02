@@ -41,9 +41,7 @@ class GenericClass {
 
 
 proc main() {
-  var cc = new ConcreteClass(2);
-  delete cc;
+  var cc = new borrowed ConcreteClass(2);
 
-  var gc = new GenericClass(real, 1.0);
-  delete gc;
+  var gc = new borrowed GenericClass(real, 1.0);
 }

@@ -12,12 +12,10 @@ class D {
   }
 }
 
-var d = new D();
+var d = new owned D();
 
 writeln(d);
 writeln(d.cs);
 
 for i in 0..numLocales-1 do
   writeln(d.cs[i].locale.id);
-
-delete d;

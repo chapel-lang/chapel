@@ -9,5 +9,4 @@ proc doit(type C)
   writeln(c.x);
 }
 
-doit(A(int));
-
+doit(unmanaged A(int));

@@ -297,6 +297,9 @@ DEBUGMALLOC_VAL = @DEBUGMALLOC_VAL@
 DEBUGMALLOC_VAR = @DEBUGMALLOC_VAR@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEVWARN_CFLAGS = @DEVWARN_CFLAGS@
+DEVWARN_CXXFLAGS = @DEVWARN_CXXFLAGS@
+DEVWARN_MPI_CFLAGS = @DEVWARN_MPI_CFLAGS@
 DIRNAME = @DIRNAME@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
@@ -352,7 +355,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 INTTYPES_DEFINES = @INTTYPES_DEFINES@
 KEEPTMP_CFLAGS = @KEEPTMP_CFLAGS@
-LADEBUG_PATH = @LADEBUG_PATH@
 LDFLAGS = @LDFLAGS@
 LIBGCC = @LIBGCC@
 LIBM = @LIBM@
@@ -416,9 +418,6 @@ READLINK = @READLINK@
 SEPARATE_CC = @SEPARATE_CC@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SHMEM_INCLUDES = @SHMEM_INCLUDES@
-SHMEM_LDFLAGS = @SHMEM_LDFLAGS@
-SHMEM_LIBS = @SHMEM_LIBS@
 SIZEOF_CHAR = @SIZEOF_CHAR@
 SIZEOF_DOUBLE = @SIZEOF_DOUBLE@
 SIZEOF_FLOAT = @SIZEOF_FLOAT@
@@ -427,7 +426,9 @@ SIZEOF_INT = @SIZEOF_INT@
 SIZEOF_LONG = @SIZEOF_LONG@
 SIZEOF_LONG_DOUBLE = @SIZEOF_LONG_DOUBLE@
 SIZEOF_LONG_LONG = @SIZEOF_LONG_LONG@
+SIZEOF_PTRDIFF_T = @SIZEOF_PTRDIFF_T@
 SIZEOF_SHORT = @SIZEOF_SHORT@
+SIZEOF_SIZE_T = @SIZEOF_SIZE_T@
 SIZEOF_VOID_P = @SIZEOF_VOID_P@
 SIZEOF__BOOL = @SIZEOF__BOOL@
 SMP_LIBS = @SMP_LIBS@
@@ -512,7 +513,6 @@ CONDUIT_NAME = aries
 gemini_srcdir = $(top_srcdir)/gemini-conduit
 gemini_install_hdrs = $(gemini_srcdir)/*.h
 pmi_srcdir = $(top_srcdir)/other/pmi-spawner
-@GNI_FIREHOSE_ENABLED_TRUE@fh_type = region
 
 # any conduit-specific subdirectories containing Makefile.am's
 SUBDIRS = contrib
@@ -522,7 +522,6 @@ SUBDIRS = contrib
 # and any subdirectories not containing Makefile.am's
 CONDUIT_FILELIST = \
       gasnet_empty_internal.h \
-      firehose_fwd.h          \
       README                  \
       license.txt
 
@@ -530,7 +529,6 @@ CONDUIT_FILELIST = \
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line
 CONDUIT_SOURCELIST = \
-      $(fh_sourcelist)        \
       $(gemini_srcdir)/gasnet_core.c \
       $(gemini_srcdir)/gasnet_gemini.c \
       $(gemini_srcdir)/gasnet_extended.c \
@@ -539,22 +537,22 @@ CONDUIT_SOURCELIST = \
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @GNI_CFLAGS@ -I$(gemini_srcdir) -DGASNET_CONDUIT_ARIES -DHAVE_PMI_SPAWNER $(fh_extralibcflags)
+CONDUIT_EXTRALIBCFLAGS = @GNI_CFLAGS@ -I$(gemini_srcdir) -DGASNET_CONDUIT_ARIES -DHAVE_PMI_SPAWNER
 
 # additional conduit header files to install from external, non-standard directories
-CONDUIT_EXTRAHEADERS = $(gemini_install_hdrs) $(fh_extraheaders)
+CONDUIT_EXTRAHEADERS = $(gemini_install_hdrs)
 
 # headers selected by default rules that should NOT be installed
-CONDUIT_PRIVATEHEADERS = gasnet_gemini.h $(fh_privheaders)
+CONDUIT_PRIVATEHEADERS = gasnet_gemini.h
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
-CONDUIT_EXTRADEPS = $(gemini_srcdir)/*.[ch] $(pmi_srcdir)/*.[ch] $(fh_extradeps)
+CONDUIT_EXTRADEPS = $(gemini_srcdir)/*.[ch] $(pmi_srcdir)/*.[ch]
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as
 # forced targets in this file, and should probably use LIBINCLUDES/LIBDEFINES
-CONDUIT_SPECIAL_OBJS = $(fh_special_objs)
+CONDUIT_SPECIAL_OBJS = 
 
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:
@@ -929,7 +927,6 @@ uninstall-am: uninstall-libLIBRARIES uninstall-local
 
 .PRECIOUS: Makefile
 
-@GNI_FIREHOSE_ENABLED_TRUE@include $(top_builddir)/other/firehose/firehose.mak
 do-install-data-conduit:
 	@rm -f $(DESTDIR)$(docdir)/README-aries
 	$(INSTALL_DATA) $(srcdir)/../gemini-conduit/README $(DESTDIR)$(docdir)/README-aries
@@ -944,7 +941,7 @@ libgasnet-aries-par.a: $(libgasnet_dependencies)
 
 libgasnet-aries-parsync.a: $(libgasnet_dependencies)
 	@$(MAKE) do-libgasnet-parsync
-@USE_ARIES_CONDUIT_TRUE@all-local: $(lib_LIBRARIES) $(makefile_fragments)
+@USE_ARIES_CONDUIT_TRUE@all-local: $(lib_LIBRARIES) $(pkgconfig_files)
 @USE_ARIES_CONDUIT_TRUE@clean-local: do-clean-local
 @USE_ARIES_CONDUIT_TRUE@install-data-local: do-install-data-local
 @USE_ARIES_CONDUIT_TRUE@uninstall-local: do-uninstall-local

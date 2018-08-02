@@ -1,6 +1,6 @@
 class ll {
   type itemType;
-  var  list: ll_entry(itemType);
+  var  list: unmanaged ll_entry(itemType);
 
   class a_class {
     var a: int;
@@ -21,7 +21,7 @@ class ll {
   }
 
   proc add_front(e) {
-    list = new ll_entry(itemType, e, list);
+    list = new unmanaged ll_entry(itemType, e, list);
   }
 
   proc remove_front() {
@@ -41,14 +41,14 @@ class ll {
 
   proc add_back(e) {
     if list == nil then
-      list = new ll_entry(itemType, e);
+      list = new unmanaged ll_entry(itemType, e);
     else {
       var mylist = list;
 
       while mylist.next != nil do
         mylist = mylist.next;
 
-      mylist.next = new ll_entry(itemType, e);
+      mylist.next = new unmanaged ll_entry(itemType, e);
     }
   }
 
@@ -120,7 +120,7 @@ class ll {
   }
 
   proc reverse() {
-    var mylist: ll_entry(itemType);
+    var mylist: unmanaged ll_entry(itemType);
     var e: itemType;
 
     if list == nil then
@@ -130,7 +130,7 @@ class ll {
       var h = list;
 
       e      = list.element;
-      mylist = new ll_entry(itemType, e, mylist);
+      mylist = new unmanaged ll_entry(itemType, e, mylist);
       list   = list.next;
 
       delete h;
@@ -139,7 +139,7 @@ class ll {
     list = mylist;
   }
 
-  proc concatenate_front(list2: ll(itemType)){
+  proc concatenate_front(list2: unmanaged ll(itemType)){
     if list2 == nil then
       return;
 
@@ -169,12 +169,12 @@ class ll_entry {
   // But class nesting is not yet implemented
   type elementType;
   var element: elementType;
-  var next: ll_entry(elementType);
+  var next: unmanaged ll_entry(elementType);
 }
 
 proc main(){
-  var list1: ll(int) = new ll(int);
-  var list2: ll(int) = new ll(int);
+  var list1: unmanaged ll(int) = new unmanaged ll(int);
+  var list2: unmanaged ll(int) = new unmanaged ll(int);
 
   for i in 1..10 {
     list1.add_front(i);

@@ -46,7 +46,7 @@ proc main(){
   var space: [0..1, totalSpaceRange ] Cell;
   var timer: Timer;
   // initialize space with values
-  var generator = new RandomStream( real, globalSeed, parSafe = false );
+  var generator = new owned RandomStream( real, globalSeed, parSafe = false );
 
   forall i in computationSpaceRange do{
      space[0, i] = 0;
@@ -83,8 +83,6 @@ proc main(){
     if verifyResult(space,lowerBound,upperBound,false ) then writeln( "SUCCESS" );
     else writeln( "FAILURE" );
   }
-
-  delete generator;
 }
 
 
@@ -102,7 +100,7 @@ proc verifyResult(space: [] Cell, lowerBound: int, upperBound: int,
   for x in computationSpaceRange do
      spaceEndState[ x ] = space[ T & 1, x ];
 
-  var generator = new RandomStream( real, globalSeed, parSafe = false );
+  var generator = new owned RandomStream( real, globalSeed, parSafe = false );
 
   for i in computationSpaceRange do
      space[0, i] = generator.getNext();
@@ -130,8 +128,6 @@ proc verifyResult(space: [] Cell, lowerBound: int, upperBound: int,
 
   if passed && verbose then
      writeln( "SUCCESS!" );
-
-  delete generator;
 
   return passed;
 }

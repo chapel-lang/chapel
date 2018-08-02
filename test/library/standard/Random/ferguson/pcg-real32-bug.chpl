@@ -9,7 +9,3 @@ var displace = (rng.getNext(), rng.getNext(), rng.getNext());
 
 if verbose then
   writeln(displace);
-
-
-delete rng;
-

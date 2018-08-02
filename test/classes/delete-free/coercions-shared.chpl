@@ -17,7 +17,7 @@ proc test2() {
   var instance:borrowed MyClass = new Shared(new MyClass(1));
 }
 
-proc acceptMyClass(c:MyClass) {
+proc acceptMyClass(c:borrowed MyClass) {
   writeln(c);
 }
 

@@ -41,7 +41,6 @@ module LocaleModelHelpSetup {
 
   extern var chpl_nodeID: chpl_nodeID_t;
 
-  pragma "use default init"
   record chpl_root_locale_accum {
     var nPUsPhysAcc: atomic int;
     var nPUsPhysAll: atomic int;

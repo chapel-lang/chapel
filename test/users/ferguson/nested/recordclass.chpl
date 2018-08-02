@@ -7,7 +7,7 @@ record R {
   }
 
   proc test() {
-    var r2 = new R2(x);
+    var r2 = new unmanaged R2(x);
 
     writeln(r2.y);
 

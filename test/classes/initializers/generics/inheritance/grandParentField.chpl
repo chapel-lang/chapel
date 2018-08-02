@@ -28,6 +28,6 @@ class Child : Parent {
   }
 }
 
-var c = new Child(1, int);
+var c = new unmanaged Child(1, int);
 writeln("c = ", c);
 delete c;

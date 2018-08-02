@@ -1,4 +1,3 @@
-pragma "use default init"
 record GenericRecord {
   var field;
 }

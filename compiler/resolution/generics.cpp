@@ -705,7 +705,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
   newFn->substitutions.map_union(allSubs);
 
   if (call) {
-    newFn->instantiationPoint = getVisibilityBlock(call);
+    newFn->setInstantiationPoint(call);
   }
 
   Expr* putBefore = fn->defPoint;

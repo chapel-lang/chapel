@@ -3,7 +3,7 @@ use DataFrames;
 var A = ["a", "b", "c", "d", "e"];
 var I = ["A", "B", "C", "D", "E"];
 
-var letters = new unmanaged TypedSeries(A, new unmanaged TypedIndex(I));
+var letters = new owned TypedSeries(A, new shared TypedIndex(I));
 
 writeln("A: " + letters["A"]);
 writeln("C: " + letters["C"]);

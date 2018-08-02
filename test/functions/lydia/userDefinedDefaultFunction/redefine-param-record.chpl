@@ -1,4 +1,3 @@
-pragma "use default init"
 record bar {
   param size: int;
   var whatev = 5;

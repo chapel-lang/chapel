@@ -25,7 +25,7 @@ use MasonUtils;
 use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
-
+use MasonSystem;
 
 proc masonBuild(args) {
   var show = false;
@@ -58,18 +58,19 @@ proc masonBuild(args) {
   buildProgram(release, show, force, compopts, tomlName, lockName);
 }
 
-private proc checkChplVersion(lockFile : Toml) {
+private proc checkChplVersion(lockFile : borrowed Toml) throws {
   const root = lockFile["root"];
   const (success, low, hi) = verifyChapelVersion(root);
 
   if success == false {
-    stderr.writeln("Build failure: lock file expecting chplVersion ", prettyVersionRange(low, hi));
-    exit(1);
+    throw new MasonError("Build failure: lock file expecting chplVersion " + prettyVersionRange(low, hi));
   }
 }
 
-proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
-                  tomlName="Mason.toml", lockName="Mason.lock") {
+
+proc buildProgram(release: bool, show: bool, force: bool, cmdLineCompopts: [?d] string,
+                  tomlName="Mason.toml", lockName="Mason.lock") throws {
+
 
   try! {
 
@@ -102,26 +103,21 @@ proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
         var sourceList = genSourceList(lockFile);
         getSrcCode(sourceList, show);
 
-        // Checks for compilation options are present in Mason.toml
-        if lockFile.pathExists('root.compopts') {
-          const cmpFlags = lockFile["root"]["compopts"].s;
-          compopts.push_back(cmpFlags);
-        }
+        // get compilation options including external dependencies
+        const compopts = getCompopts(lockFile, cmdLineCompopts);
 
         // Compile Program
         if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
           writeln("Build Successful\n");
         }
         else {
-          writeln("Build Failed");
-          exit(1);
+          throw new MasonError("Build Failed");
         }
         // Close memory
         toParse.close();
       }
       else {
-        writeln("Cannot build: no Mason.lock found");
-        exit(1);
+        throw new MasonError("Cannot build: no Mason.lock found");
       }
     }
     else {
@@ -129,6 +125,7 @@ proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
     }
   }
   catch e: MasonError {
+    stderr.writeln(e.message());
     exit(1);  
   }
 }
@@ -138,8 +135,8 @@ proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
    folder. Requires that the main library file be
    named after the project folder in which it is
    contained */
-proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
-                release: bool, compopts: [?dom] string, projectHome: string) : bool {
+proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
+                release: bool, compopts: [?dom] string, projectHome: string) : bool throws {
 
   const sourceList = genSourceList(lockFile);
   const depPath = MASON_HOME + '/src/';
@@ -147,7 +144,10 @@ proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
   const pathToProj = projectHome + '/src/'+ project + '.chpl';
   const moveTo = ' -o ' + projectHome + '/target/'+ binLoc +'/'+ project;
 
-  if isFile(pathToProj) {
+  if !isFile(pathToProj) {
+    throw new MasonError("Mason could not find your project");
+  }
+  else {
     var command: string = 'chpl ' + pathToProj + moveTo + ' ' + ' '.join(compopts);
     if release then command += " --fast";
     if sourceList.numElements > 0 then command += " --main-module " + project;
@@ -172,20 +172,17 @@ proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
       return true;
     else return false;
   }
-  else {
-    writeln("Mason could not find your project!");
-    return false;
-  }
+  return false;
 }
 
 
 /* Generates a list of tuples that holds the git repo
    url and the name for local mason dependency pool */
-proc genSourceList(lockFile: Toml) {
+proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: [1..0] (string, string, string);
   for (name, package) in zip(lockFile.D, lockFile.A) {
     if package.tag == fieldToml {
-      if name == "root" then continue;
+      if name == "root" || name == "system" then continue;
       else {
         var version = lockFile[name]["version"].s;
         var source = lockFile[name]["source"].s;
@@ -228,4 +225,22 @@ proc getSrcCode(sourceList: [?d] 3*string, show) {
       gitC(destination, checkout);
     }
   }
+}
+
+private proc getCompopts(lock: borrowed Toml, compopts: [?d] string) {
+
+  // Checks for compilation options are present in Mason.toml
+  if lock.pathExists('root.compopts') {
+    const cmpFlags = lock["root"]["compopts"].s;
+    compopts.push_back(cmpFlags);
+  }
+  // Get pkgconfig dependency compilation options
+  if lock.pathExists('system') {
+    const exDeps = lock['system'];
+    for (name, depInfo) in zip(exDeps.D, exDeps.A) {
+      compopts.push_back(depInfo["libs"].s);
+      compopts.push_back("-I" + depInfo["include"].s);
+    }
+  }
+  return compopts;
 }

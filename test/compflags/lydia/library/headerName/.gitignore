@@ -1,6 +1,6 @@
-thing1.h
-thing2.a
-noHeaderSet.h
-noHeaderSet.a
-headerSet.h
-libcheckHeaderSet.a
+lib/thing1.h
+lib/thing2.a
+lib/noHeaderSet.h
+lib/noHeaderSet.a
+lib/headerSet.h
+lib/libcheckHeaderSet.a

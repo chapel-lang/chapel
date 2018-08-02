@@ -5,6 +5,7 @@
  */
 
 #include <gasnet.h>
+#include <gasnet_coll.h>
 
 size_t maxsz = 0;
 #ifndef TEST_SEGSZ

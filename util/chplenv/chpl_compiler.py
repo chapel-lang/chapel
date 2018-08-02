@@ -59,8 +59,6 @@ def get(flag='host', llvm_mode='default'):
                 compiler_val = get('host')
         elif platform_val.startswith('pwr'):
             compiler_val = 'ibm'
-        elif platform_val == 'marenostrum':
-            compiler_val = 'ibm'
         elif platform_val == 'darwin' or platform_val == 'freebsd':
             if find_executable('clang'):
                 compiler_val = 'clang'

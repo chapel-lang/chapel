@@ -1,2 +1,2 @@
-libexportFuncWithRealArr.a
-exportFuncWithRealArr.h
+lib/libexportFuncWithRealArr.a
+lib/exportFuncWithRealArr.h

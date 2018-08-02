@@ -5,18 +5,19 @@
  */
 
 #include <gasnet.h>
+int numnode = 0;
 uintptr_t maxsz = 0;
 #ifndef TEST_SEGSZ
-  #define TEST_SEGSZ_EXPR ((uintptr_t)maxsz)
+  #define TEST_SEGSZ_EXPR (((numnode&1)?2:1)*(uintptr_t)alignup(maxsz,SIZEOF_GASNET_REGISTER_VALUE_T))
 #endif
 #include <test.h>
 
 int mynode = 0;
-int numnode = 0;
 void *myseg = NULL;
 int sender, recvr;
 int peer;
-void *peerseg = NULL;
+void *request_addr = NULL;
+void *reply_addr = NULL;
 
 void report(const char *desc, int64_t totaltime, int iters, uintptr_t sz, int rt) {
   if (sender) {
@@ -38,6 +39,65 @@ gasnet_hsl_t inchsl = GASNET_HSL_INITIALIZER;
     var++;                      \
     gasnet_hsl_unlock(&inchsl); \
   } while (0)
+
+static enum {
+  SRC_NOOP = 0,  // send untouched source buffer (default)
+  SRC_GENERATE,  // "generate" payload (w/o memory reads)
+  SRC_MEMCPY,    // memcpy fixed payload to source buffer
+} src_mode;
+
+static void* zero_buffer;
+
+GASNETT_INLINE(prep_payload)
+void prep_payload(uint8_t *dst, size_t len) {
+  if (!len) return;
+  assert(! ((uintptr_t)dst % SIZEOF_GASNET_REGISTER_VALUE_T));
+  switch (src_mode) {
+    case SRC_NOOP:
+      return;
+      break;
+    case SRC_MEMCPY:
+      memcpy(dst, zero_buffer, len);
+      break;
+    case SRC_GENERATE: {
+      uint8_t *p = dst;
+      for (size_t words = len / SIZEOF_GASNET_REGISTER_VALUE_T; words; --words) {
+        *(gasnet_register_value_t *)p = words;
+        p += SIZEOF_GASNET_REGISTER_VALUE_T;
+      }
+      for (size_t bytes = len % SIZEOF_GASNET_REGISTER_VALUE_T; bytes; --bytes) {
+        *(p++) = bytes;
+      }
+      break;
+    }
+  }
+}
+
+#define RequestMedium0(dest,hidx,src_addr,nbytes) do {                              \
+    prep_payload(src_addr, nbytes);                                                 \
+    GASNET_Safe(gasnet_AMRequestMedium0(dest, hidx, src_addr, nbytes));             \
+} while (0)
+
+#define ReplyMedium0(token,hidx,src_addr,nbytes) do {                               \
+    prep_payload(src_addr, nbytes);                                                 \
+    GASNET_Safe(gasnet_AMReplyMedium0(token, hidx, src_addr, nbytes));              \
+} while (0)
+
+#define RequestLong0(dest,hidx,src_addr,nbytes,dst_addr) do {                       \
+    prep_payload(src_addr, nbytes);                                                 \
+    GASNET_Safe(gasnet_AMRequestLong0(dest, hidx, src_addr, nbytes, dst_addr));     \
+} while (0)
+
+#define ReplyLong0(token,hidx,src_addr,nbytes,dst_addr) do {                        \
+    prep_payload(src_addr, nbytes);                                                 \
+    GASNET_Safe(gasnet_AMReplyLong0(token, hidx, src_addr, nbytes, dst_addr));      \
+} while (0)
+
+#define RequestLongAsync0(dest,hidx,src_addr,nbytes,dst_addr) do {                   \
+    prep_payload(src_addr, nbytes);                                                  \
+    GASNET_Safe(gasnet_AMRequestLongAsync0(dest, hidx, src_addr, nbytes, dst_addr)); \
+} while (0)
+
 
 /* ------------------------------------------------------------------------------------ */
 #define hidx_ping_shorthandler   201
@@ -71,7 +131,7 @@ void pong_shorthandler(gasnet_token_t token) {
 
 
 void ping_medhandler(gasnet_token_t token, void *buf, size_t nbytes) {
-  GASNET_Safe(gasnet_AMReplyMedium0(token, hidx_pong_medhandler, buf, nbytes));
+  ReplyMedium0(token, hidx_pong_medhandler, buf, nbytes);
 }
 void pong_medhandler(gasnet_token_t token, void *buf, size_t nbytes) {
   flag++;
@@ -79,7 +139,7 @@ void pong_medhandler(gasnet_token_t token, void *buf, size_t nbytes) {
 
 
 void ping_longhandler(gasnet_token_t token, void *buf, size_t nbytes) {
-  GASNET_Safe(gasnet_AMReplyLong0(token, hidx_pong_longhandler, buf, nbytes, peerseg));
+  ReplyLong0(token, hidx_pong_longhandler, buf, nbytes, reply_addr);
 }
 
 void pong_longhandler(gasnet_token_t token, void *buf, size_t nbytes) {
@@ -95,7 +155,7 @@ void pong_shorthandler_flood(gasnet_token_t token) {
 
 
 void ping_medhandler_flood(gasnet_token_t token, void *buf, size_t nbytes) {
-  GASNET_Safe(gasnet_AMReplyMedium0(token, hidx_pong_medhandler_flood, buf, nbytes));
+  ReplyMedium0(token, hidx_pong_medhandler_flood, buf, nbytes);
 }
 void pong_medhandler_flood(gasnet_token_t token, void *buf, size_t nbytes) {
   INC(flag);
@@ -103,7 +163,7 @@ void pong_medhandler_flood(gasnet_token_t token, void *buf, size_t nbytes) {
 
 
 void ping_longhandler_flood(gasnet_token_t token, void *buf, size_t nbytes) {
-  GASNET_Safe(gasnet_AMReplyLong0(token, hidx_pong_longhandler_flood, buf, nbytes, peerseg));
+  ReplyLong0(token, hidx_pong_longhandler_flood, buf, nbytes, reply_addr);
 }
 
 void pong_longhandler_flood(gasnet_token_t token, void *buf, size_t nbytes) {
@@ -176,6 +236,15 @@ int main(int argc, char **argv) {
     } else if (!strcmp(argv[arg], "-c")) {
       crossmachinemode = 1;
       ++arg;
+    } else if (!strcmp(argv[arg], "-src-noop")) {
+      src_mode = SRC_NOOP;
+      ++arg;
+    } else if (!strcmp(argv[arg], "-src-generate")) {
+      src_mode = SRC_GENERATE;
+      ++arg;
+    } else if (!strcmp(argv[arg], "-src-memcpy")) {
+      src_mode = SRC_MEMCPY;
+      ++arg;
     } else if (argv[arg][0] == '-') {
       help = 1;
       ++arg;
@@ -191,18 +260,22 @@ int main(int argc, char **argv) {
   GASNET_Safe(gasnet_attach(htable, sizeof(htable)/sizeof(gasnet_handlerentry_t),
                             TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
 #if GASNET_PAR
-  test_init("testam", 1, "[options] (iters) (maxsz) (test_sections)\n"
-               "  The '-in' or '-out' option selects whether the requestor's\n"
-               "    buffer is in the GASNet segment or not (default is 'in').\n"
-               "  The -p option gives the number of polling threads, specified as\n"
+  #define PAR_USAGE \
+               "  The -p option gives the number of polling threads, specified as\n" \
                "    a non-negative integer argument (default is no polling threads).\n"
-               "  The -c option enables cross-machine pairing (default is nearest neighbor).\n");
 #else
+  #define PAR_USAGE ""
+#endif
   test_init("testam", 1, "[options] (iters) (maxsz) (test_sections)\n"
                "  The '-in' or '-out' option selects whether the requestor's\n"
                "    buffer is in the GASNet segment or not (default is 'in').\n"
+               PAR_USAGE
+               "  The '-src-*' options select treatment of the payload buffer used for\n"
+               "    Medium and Long AMs, as follows:\n"
+               "      -src-noop:      no per-operation initialization (default)\n"
+               "      -src-generate:  initialized (w/o memory reads) on each AM injection\n"
+               "      -src-memcpy:    initialized using memcpy() on each AM injection\n"
                "  The -c option enables cross-machine pairing (default is nearest neighbor).\n");
-#endif
   if (help || argc > arg) test_usage();
 
   TEST_PRINT_CONDUITINFO();
@@ -217,6 +290,10 @@ int main(int argc, char **argv) {
   maxmed = MIN(maxsz, gasnet_AMMaxMedium());
   maxlongreq = MIN(maxsz, gasnet_AMMaxLongRequest());
   maxlongrep = MIN(maxsz, gasnet_AMMaxLongReply());
+
+  if (src_mode == SRC_MEMCPY) {
+    zero_buffer = test_calloc(maxsz, 1);
+  }
 
   if (crossmachinemode) {
     if ((numnode%2) && (mynode == numnode-1)) {
@@ -237,21 +314,34 @@ int main(int argc, char **argv) {
 
   recvr = !sender || (peer == mynode);
 
-  peerseg = TEST_SEG(peer);
+  // Long Request and Reply (distinct for loopback)
+  reply_addr = TEST_SEG(peer);
+  request_addr = (peer == mynode) ? (void*)((uintptr_t)reply_addr + alignup(maxsz,SIZEOF_GASNET_REGISTER_VALUE_T))
+                                  : reply_addr;
 
   BARRIER();
 
+#if GASNET_PAR
+  #define PAR_FMT "  %i extra recvr polling threads\n"
+  #define PAR_ARG ,pollers
+#else
+  #define PAR_FMT /*empty*/
+  #define PAR_ARG /*empty*/
+#endif
   if (mynode == 0) {
-      printf("Running %sAM performance test with %i iterations"
-#if GASNET_PAR
-             " and %i extra recvr polling threads"
-#endif
-             "...\n",
+      printf("Running %i iterations of %s AM performance with:\n"
+             "  local addresses %sside the segment%s\n"
+             "  %s\n"
+             PAR_FMT
+             "  ...\n",
+             iters,
              (crossmachinemode ? "cross-machine ": ""),
-             iters
-#if GASNET_PAR
-             ,pollers
-#endif
+             (insegment ? "in" : "out"),
+             (insegment ? " (default)" : ""),
+             ((src_mode == SRC_NOOP)     ? "no payload initialization (default)"
+             :(src_mode == SRC_GENERATE) ? "payload initialized by computation"
+                                         : "payload initialized using memcpy()")
+             PAR_ARG
             );
       printf("   Msg Sz  Description                             Total time   Avg. time   Bandwidth\n"
              "   ------  -----------                             ----------   ---------   ---------\n");
@@ -380,11 +470,11 @@ void doAMShort(void) {
     uintptr_t MAXREQREP = MIN(MAXREQ, MAXREP);                                   \
     if (sender) { /* warm-up */                                                  \
       flag = 0;                                                                  \
-      GASNET_Safe(AMREQUEST(peer, PING_HIDX, myseg, MAXREQREP DEST));            \
+      AMREQUEST(peer, PING_HIDX, myseg, MAXREQREP DEST);                         \
       GASNET_BLOCKUNTIL(flag == 1);                                              \
       if (!ASYNC) {                                                              \
         for (i=0; i < iters; i++) {                                              \
-          GASNET_Safe(AMREQUEST(peer, PING_HIDX##_flood, myseg, MAXREQREP DEST));\
+          AMREQUEST(peer, PING_HIDX##_flood, myseg, MAXREQREP DEST);             \
         }                                                                        \
         GASNET_BLOCKUNTIL(flag == iters+1);                                      \
       }                                                                          \
@@ -402,7 +492,7 @@ void doAMShort(void) {
           int64_t start = TIME();                                                \
           flag = -1;                                                             \
           for (i=0; i < iters; i++) {                                            \
-            GASNET_Safe(AMREQUEST(peer, PING_HIDX, myseg, sz DEST));             \
+            AMREQUEST(peer, PING_HIDX, myseg, sz DEST);                          \
             GASNET_BLOCKUNTIL(flag == i);                                        \
           }                                                                      \
           report(msg,TIME() - start, iters, sz, 1);                              \
@@ -429,21 +519,21 @@ void doAMShort(void) {
             assert(peer == mynode);                                              \
             for (i=0; i < iters; i++) {                                          \
               int lim = i << 1;                                                  \
-              GASNET_Safe(AMREQUEST(peer, PONG_HIDX, myseg, sz DEST));           \
+              AMREQUEST(peer, PONG_HIDX, myseg, sz DEST);                        \
               GASNET_BLOCKUNTIL(flag == lim);                                    \
               lim++;                                                             \
-              GASNET_Safe(AMREQUEST(peer, PONG_HIDX, myseg, sz DEST));           \
+              AMREQUEST(peer, PONG_HIDX, myseg, sz DEST);                        \
               GASNET_BLOCKUNTIL(flag == lim);                                    \
             }                                                                    \
           } else if (sender) {                                                   \
             for (i=0; i < iters; i++) {                                          \
-              GASNET_Safe(AMREQUEST(peer, PONG_HIDX, myseg, sz DEST));           \
+              AMREQUEST(peer, PONG_HIDX, myseg, sz DEST);                        \
               GASNET_BLOCKUNTIL(flag == i);                                      \
             }                                                                    \
           } else if (recvr) {                                                    \
             for (i=0; i < iters; i++) {                                          \
               GASNET_BLOCKUNTIL(flag == i);                                      \
-              GASNET_Safe(AMREQUEST(peer, PONG_HIDX, myseg, sz DEST));           \
+              AMREQUEST(peer, PONG_HIDX, myseg, sz DEST);                        \
             }                                                                    \
           }                                                                      \
           report(msg,TIME() - start, iters, sz, 1);                              \
@@ -466,7 +556,7 @@ void doAMShort(void) {
         if (sender) {                                                            \
           int64_t start = TIME();                                                \
           for (i=0; i < iters; i++) {                                            \
-            GASNET_Safe(AMREQUEST(peer, PONG_HIDX##_flood, myseg, sz DEST));     \
+            AMREQUEST(peer, PONG_HIDX##_flood, myseg, sz DEST);                  \
           }                                                                      \
           if (recvr) GASNET_BLOCKUNTIL(flag == iters);                           \
           BARRIER();                                                             \
@@ -493,7 +583,7 @@ void doAMShort(void) {
           int64_t start = TIME();                                                \
           flag = 0;                                                              \
           for (i=0; i < iters; i++) {                                            \
-            GASNET_Safe(AMREQUEST(peer, PING_HIDX##_flood, myseg, sz DEST));     \
+            AMREQUEST(peer, PING_HIDX##_flood, myseg, sz DEST);                  \
           }                                                                      \
           GASNET_BLOCKUNTIL(flag == iters);                                      \
           report(msg,TIME() - start, iters, sz, 1);                              \
@@ -515,7 +605,7 @@ void doAMShort(void) {
         BARRIER();                                                               \
         start = TIME();                                                          \
         for (i=0; i < iters; i++) {                                              \
-          GASNET_Safe(AMREQUEST(peer, PONG_HIDX##_flood, myseg, sz DEST));       \
+          AMREQUEST(peer, PONG_HIDX##_flood, myseg, sz DEST);                    \
         }                                                                        \
         GASNET_BLOCKUNTIL(flag == iters);                                        \
         report(msg,TIME() - start, iters, sz, 0);                                \
@@ -529,21 +619,21 @@ void doAMShort(void) {
   } while (0)
 
   #define MEDDEST
-  #define LONGDEST , peerseg
+  #define LONGDEST , request_addr
 /* ------------------------------------------------------------------------------------ */
 void doAMMed(void) {
   GASNET_BEGIN_FUNCTION();
-  TESTAM_PERF("AMMedium   ",    gasnet_AMRequestMedium0,    hidx_ping_medhandler,  hidx_pong_medhandler,  maxmed, maxmed, 0, MEDDEST);
+  TESTAM_PERF("AMMedium   ",    RequestMedium0,    hidx_ping_medhandler,  hidx_pong_medhandler,  maxmed, maxmed, 0, MEDDEST);
 }
 /* ------------------------------------------------------------------------------------ */
 void doAMLong(void) {
   GASNET_BEGIN_FUNCTION();
-  TESTAM_PERF("AMLong     ",      gasnet_AMRequestLong0,      hidx_ping_longhandler, hidx_pong_longhandler, maxlongreq, maxlongrep, 0, LONGDEST);
+  TESTAM_PERF("AMLong     ",      RequestLong0,      hidx_ping_longhandler, hidx_pong_longhandler, maxlongreq, maxlongrep, 0, LONGDEST);
 }
 /* ------------------------------------------------------------------------------------ */
 void doAMLongAsync(void) {
   GASNET_BEGIN_FUNCTION();
-  TESTAM_PERF("AMLongAsync", gasnet_AMRequestLongAsync0, hidx_ping_longhandler, hidx_pong_longhandler, maxlongreq, maxlongrep, 1, LONGDEST);
+  TESTAM_PERF("AMLongAsync", RequestLongAsync0, hidx_ping_longhandler, hidx_pong_longhandler, maxlongreq, maxlongrep, 1, LONGDEST);
 }
 /* ------------------------------------------------------------------------------------ */
 void *doAll(void *ptr) {

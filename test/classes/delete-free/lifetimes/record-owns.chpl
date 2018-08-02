@@ -29,7 +29,7 @@ class MyClass {
 record RMyClass {
   var c:Owned(MyClass);
   proc init() {
-    this.c = new Owned(nil:MyClass);
+    this.c = new Owned(nil:unmanaged MyClass);
   }
   proc init(in c:Owned(MyClass)) {
     this.c = c;

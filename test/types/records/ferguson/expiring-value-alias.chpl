@@ -4,14 +4,14 @@ class C {
   var x:int;
 }
 
-proc getNum(c:C)
+proc getNum(c:borrowed C)
 {
   if c == nil then return -1;
   else return c.x;
 }
 
 record R {
-  var c:C;
+  var c:unmanaged C;
 }
 
 
@@ -19,7 +19,7 @@ proc addOne(r:R) {
   r.c.x += 1;
 }
 
-proc makeAlias(c:C)
+proc makeAlias(c:unmanaged C)
 {
   if debug then writeln("in makeAlias");
   return new R(c = c);
@@ -28,7 +28,7 @@ proc makeAlias(c:C)
 proc returnsR(x:int) {
   if debug then writeln("in returnsR");
   var ret: R;
-  ret.c = new C(x);
+  ret.c = new unmanaged C(x);
   return ret;
 }
 
@@ -73,7 +73,7 @@ proc passpass(r:R) {
 
 proc ret() {
   var r:R;
-  r.c = new C(5);
+  r.c = new unmanaged C(5);
   return r;
 }
 
@@ -95,7 +95,7 @@ proc passpassretret(r:R)
 proc test1() {
   writeln("test1");
   var r:R;
-  r.c = new C(3);
+  r.c = new unmanaged C(3);
 
   if debug then writeln("created r");
   writeln(getNum(r.c));
@@ -330,13 +330,13 @@ proc R.deinit() {
   if debug then writeln("  delete ", getNum(c));
 }
 
-proc R.init(c:C = nil) {
+proc R.init(c:unmanaged C = nil) {
   this.c = c;
 }
 
 proc R.init(other:R) {
   if debug then writeln("  R.init(R) from ", getNum(other.c));
-  this.c = new C(other.c.x);
+  this.c = new unmanaged C(other.c.x);
 }
 
 proc =(ref lhs: R, rhs: R) {

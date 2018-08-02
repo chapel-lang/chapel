@@ -868,27 +868,62 @@ static Expr* handleUnstableClassType(SymExpr* se) {
     if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
       if (isClass(ts->type)) {
         bool ok = false;
-        CallExpr* inCall = toCallExpr(se->parentExpr);
-        DefExpr* inDef = toDefExpr(se->parentExpr);
+        CallExpr* pCall = toCallExpr(se->parentExpr);
+        DefExpr* inDef = NULL;
+        CatchStmt* inCatch = NULL;
+        CallExpr* inCall = NULL;
+
+        // Find outer def/catch
+        for (Expr* cur = se; cur != NULL; cur = cur->parentExpr ) {
+          if (CatchStmt* c = toCatchStmt(cur))
+            inCatch = c;
+          if (DefExpr* d = toDefExpr(cur))
+            inDef = d;
+        }
+        // Find outer call, but don't count:
+        //  * baseExpr
+        //  * type construction (calls to types, buildArrayRuntimeType)
+        for (Expr* cur = se; cur != NULL; cur = cur->parentExpr ) {
+          if (CallExpr* c = toCallExpr(cur))
+            inCall = c;
+          if (CallExpr* p = toCallExpr(cur->parentExpr)) {
+            if (p->baseExpr == cur) {
+              // don't count base expr so we can warn on
+              // var x:MyGenericClass(int).
+              break;
+            } else if (SymExpr* se = toSymExpr(p->baseExpr)) {
+              if (isTypeSymbol(se->symbol()))
+                // Don't count calls to types (type construction)
+                break;
+            } else if (p->isNamed("chpl__buildArrayRuntimeType")) {
+              // Don't count array type construction
+              break;
+            }
+          }
+        }
+
         FnSymbol* inFn = se->getFunction();
-        if (inCall) {
-          if (callSpecifiesClassKind(inCall)) {
+        if (pCall) {
+          if (callSpecifiesClassKind(pCall)) {
             // It's OK, it's decorated
             ok = true;
           }
-          CallExpr* outerCall = toCallExpr(inCall->parentExpr);
+          CallExpr* outerCall = toCallExpr(pCall->parentExpr);
           CallExpr* outerOuterCall = NULL;
           if (outerCall) outerOuterCall = toCallExpr(outerCall->parentExpr);
 
-          if (hasChplManagerArgument(inCall) ||
+          if (hasChplManagerArgument(pCall) ||
               hasChplManagerArgument(outerCall)) {
             ok = true;
           } else if (outerOuterCall && outerCall &&
               callSpecifiesClassKind(outerOuterCall) &&
               outerCall == outerOuterCall->get(1) &&
               outerCall->isPrimitive(PRIM_NEW) &&
-              inCall == outerCall->get(1)) {
+              pCall == outerCall->get(1)) {
             // 'new Owned(SomeClass(int))'
+            ok = true;
+          } else if (outerCall && callMakesDmap(outerCall)) {
+            // var something: dmap( Block( ) )
             ok = true;
           } else if (outerOuterCall && callMakesDmap(outerOuterCall)) {
             // new dmap( new Block( ) )
@@ -898,38 +933,37 @@ static Expr* handleUnstableClassType(SymExpr* se) {
             // throw new Error()
             ok = true;
           } else if (outerCall && outerCall->isPrimitive(PRIM_NEW) &&
-                     inCall == outerCall->get(1)) {
+                     pCall == outerCall->get(1)) {
             // 'new SomeClass()'
             // let ok be set as it was above unless changing default
             if (fDefaultUnmanaged) ok = false;
           } else if (outerCall && callSpecifiesClassKind(outerCall) &&
-                     inCall->baseExpr == se) {
+                     pCall->baseExpr == se) {
             // ':borrowed MyGenericClass(int)'
             ok = true;
-          } else if (inCall->baseExpr == se) {
+          } else if (pCall->baseExpr == se) {
             // ':MyGenericClass(int)'
             // let ok be set as it was above unless changing default
             if (fDefaultUnmanaged) ok = false;
           }
-          if (inCall->isNamed(".") &&
-              inCall->get(1) == se) {
+          if (pCall->isNamed(".") &&
+              pCall->get(1) == se) {
             // Another pattern for the above case
             ok = true;
           }
         }
 
-        // Types in catch block specifications are OK
-        {
-          Expr* cur = se;
-          while (cur) {
-            if (CatchStmt* c = toCatchStmt(cur)) {
-              if (c->expr() == inDef) {
-                ok = true;
-                break;
-              }
-            }
-            cur = cur->parentExpr;
-          }
+        if (inDef && inDef->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+          // Types in type aliases are OK
+          ok = true;
+        } else if (inCatch) {
+          // Types in catch block specifications are OK
+          ok = true;
+        } else if (inCall && !inCall->isPrimitive(PRIM_NEW)) {
+          // typefunction(SomeClass)
+          // typefunction(SomeGenericClass(int))
+          if (!fDefaultUnmanaged)
+            ok = true;
         }
 
         // Types in extern function procs are assumed to
@@ -1861,7 +1895,7 @@ static bool lookupThisScopeAndUses(const char*           name,
 
         forv_Vec(UseStmt, use, *moduleUses) {
           if (use != NULL) {
-            if (use->skipSymbolSearch(name) == false) {
+            if (use->skipSymbolSearch(name, false) == false) {
               const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
               BaseAST* scopeToUse = use->getSearchScope();
 

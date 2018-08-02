@@ -48,7 +48,7 @@
  * These values are internal only, not real register values
  */
 #define CPUID_GENUINE_INTEL     0xf0000000
-#define CPUID_MODEL_UNDEFINED   -1
+#define CPUID_MODEL_UNDEFINED   ((uint32_t)-1)
 #define DEFAULT_PSM2_MQ_RNDV_HFI_WINDOW_SIZE 2097152
 
 typedef struct cpuid {

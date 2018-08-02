@@ -9,14 +9,10 @@ class Foo {
   }
 }
 
-var foo1 = new Foo(1); // specifies a different value
-var foo2 = new Foo(); // relies on the default value
-var foo3 = new Foo(3); // specifies the same value as the default
+var foo1 = new owned Foo(1); // specifies a different value
+var foo2 = new owned Foo(); // relies on the default value
+var foo3 = new owned Foo(3); // specifies the same value as the default
 
 writeln(foo1.type:string);
 writeln(foo2.type:string);
 writeln(foo3.type:string);
-
-delete foo1;
-delete foo2;
-delete foo3;

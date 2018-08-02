@@ -2,7 +2,7 @@ module RunVectorizeOnlyRawLoops {
   use LCALSDataTypes;
   use Timer;
 
-  proc runVectorizeOnlyRawLoops(loop_stats: [] LoopStat, run_loop:[] bool, ilength: LoopLength) {
+  proc runVectorizeOnlyRawLoops(loop_stats: [] unmanaged LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
     var loop_data = getLoopData();
 
@@ -11,7 +11,7 @@ module RunVectorizeOnlyRawLoops {
         var stat = loop_stats[iloop];
         var len = stat.loop_length[ilength];
         var num_samples = stat.samples_per_pass[ilength];
-        var ltimer = new LoopTimer();
+        var ltimer = new unmanaged LoopTimer();
 
         select iloop {
           when LoopKernelID.PRESSURE_CALC {

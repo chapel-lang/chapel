@@ -175,7 +175,6 @@ proc Replicated.dsiPrivatize(privatizeData)
 //
 // global domain class
 //
-pragma "use default init"
 class ReplicatedDom : BaseRectangularDom {
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
@@ -207,7 +206,6 @@ class ReplicatedDom : BaseRectangularDom {
 //
 // local domain class
 //
-pragma "use default init"
 class LocReplicatedDom {
   // copy from the global domain
   param rank: int;
@@ -240,7 +238,6 @@ override proc ReplicatedDom.dsiMyDist() return dist;
 
 proc ReplicatedDom.dsiSupportsPrivatization() param return true;
 
-pragma "use default init"
 record ReplicatedDomPrvData {
   var distpid;
   var domRep;
@@ -458,7 +455,6 @@ proc _array.replicand(loc: locale) ref {
 //
 // local array class
 //
-pragma "use default init"
 class LocReplicatedArr {
   // these generic fields let us give types to the other fields easily
   type eltType;
@@ -501,7 +497,6 @@ override proc ReplicatedArr.dsiGetBaseDom() return dom;
 
 proc ReplicatedArr.dsiSupportsPrivatization() param return true;
 
-pragma "use default init"
 record ReplicatedArrPrvData {
   var dompid;
   var localArrs;
@@ -544,7 +539,6 @@ proc ReplicatedArr.dsiAccess(indexx) ref {
 
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
-  //  writeln("in dsiSerialWrite() on locale ", here.id);
   localArrs[f.readWriteThisFromLocale().id].arrLocalRep._value.dsiSerialWrite(f);
 }
 

@@ -43,7 +43,7 @@ var passedVerifications = 0;
 
 proc main() {
   var time = new Timer();
-  var randomStream = new NPBRandomStream(real, seed);
+  var randomStream = new owned NPBRandomStream(real, seed);
   var tempreals: [1..4] real;
   var max = Bmax / 4;
 
@@ -86,8 +86,6 @@ proc main() {
     writeln(" Verification    = SUCCESSFUL");
   else
     writeln(" Verification    = FAILED ", passedVerifications);
-
-  delete randomStream;
 } 
 
 
@@ -124,7 +122,9 @@ proc rank(iteration: int) {
   keyArray(iteration) = iteration;
   keyArray(iteration+Imax) = Bmax - iteration;
 
-  accum(keyArray).add(1);
+  // workaround -- see https://github.com/chapel-lang/chapel/issues/10575
+  // accum(keyArray).add(1);
+  forall k in keyArray do accum(k).add(1);
   ranks = accum.read();
 
   ranks = + scan ranks;

@@ -37,7 +37,6 @@ module DefaultRectangular {
   config param defaultDisableLazyRADOpt = false;
   config param earlyShiftData = true;
 
-  pragma "use default init"
   class DefaultDist: BaseDist {
     override proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
       const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable, _to_unmanaged(this));
@@ -882,8 +881,7 @@ module DefaultRectangular {
     var targetLocDom: domain(rank);
     var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType,
                                               stridable);
-    var RADLocks: [targetLocDom] atomicbool; // only accessed locally
-                                             // force processor atomics
+    var RADLocks: [targetLocDom] chpl__processorAtomicType(bool); // only accessed locally
 
     proc init(type eltType, param rank: int, type idxType,
               param stridable: bool, newTargetLocDom: domain(rank)) {
@@ -1401,6 +1399,15 @@ module DefaultRectangular {
     chpl_serialReadWriteRectangular(f, arr, arr.dom);
   }
 
+  // ReplicatedDist declares a version of this method with a 'where'
+  // clause, but current resolution rules prefer the more visible
+  // function (rather than the one with a 'where' clause) and this
+  // call is more visible (e.g. ArrayViewSlice uses DefaultRectangular
+  // but not ReplicatedDist). Applying "last resort" to this function
+  // requests the compiler prefer another overload if one is applicable.
+  // Overload sets (or a similar idea) would be a better user-facing
+  // way to solve this problem (see CHIP 20).
+  pragma "last resort"
   proc chpl_serialReadWriteRectangular(f, arr, dom) {
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
   }

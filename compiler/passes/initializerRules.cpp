@@ -1433,9 +1433,6 @@ void preNormalizePostInit(AggregateType* at) {
   int errors = 0;
   for_vector(AggregateType, cur, chain) {
     if (postinitCache.find(cur) == postinitCache.end()) {
-      if (cur->hasInitializers() == false) {
-        cur->symbol->addFlag(FLAG_USE_DEFAULT_INIT);
-      }
       // Don't insert a super.init for the highest ancestor
       bool insertSuper = cur != chain.front();
       errors += insertPostInit(cur, insertSuper);

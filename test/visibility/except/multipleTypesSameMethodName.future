@@ -1,4 +1,0 @@
-bug: except list hides methods of included types sometimes
-
-See issue #7249.  If an excluded type has a method which shares a name with an
-included type's method, the included type's method will be uncallable.

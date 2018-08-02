@@ -28,6 +28,11 @@ CRAYPE_GEN_CFLAGS += -hnomessage=3140
 # Suppress warnings about floating-point value cannot be represented exactly.
 CRAYPE_GEN_CFLAGS += -hnomessage=1046
 
+# Suppress warnings about incompatible casts that are acceptable in other
+# settings.  Temporary fix for a ZMQ issue
+# https://github.com/chapel-lang/chapel/issues/9961
+CRAYPE_GEN_CFLAGS += -hnomessage=167
+
 # Could set CRAYPE_COMP_CXXFLAGS, CRAYPE_GEN_CFLAGS
 
 FAST_FLOAT_GEN_CFLAGS = -hfp2

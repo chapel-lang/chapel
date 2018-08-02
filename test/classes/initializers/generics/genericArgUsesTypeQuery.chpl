@@ -5,14 +5,14 @@ class C {
     this.t = t;
   }
 
-  proc init(other: C(?otherType),
+  proc init(other: borrowed C(?otherType),
             type classType = otherType) {
     this.t = other.t;
   }
 }
 
-var myC = new C(real, 10);
-var otherC = new C(myC);
+var myC = new unmanaged C(real, 10);
+var otherC = new unmanaged C(myC);
 writeln(otherC);
 writeln(otherC.t:string);
 

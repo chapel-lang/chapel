@@ -1,7 +1,7 @@
 // This test case represents a bug originally reported in issue #7783
 
 class A{
-  forwarding var driver: B;
+  forwarding var driver: borrowed B;
 }
 
 class B{
@@ -43,3 +43,12 @@ writeln(c3.foo3("Test", "Test"));
 
 var c4 = new unmanaged A(new unmanaged C());
 writeln(c4.foo4("Test"));
+
+delete c4.driver;
+delete c4;
+delete c3.driver;
+delete c3;
+delete c2.driver;
+delete c2;
+delete c1.driver;
+delete c1;

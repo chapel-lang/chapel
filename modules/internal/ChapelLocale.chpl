@@ -478,12 +478,10 @@ module ChapelLocale {
   // too complicated this early on, so we are using a for loop to
   // broadcast that we are done.
   pragma "no doc"
-  pragma "use default init"
   class localesSignal {
     var s: atomic bool;
   }
   pragma "no doc"
-  pragma "use default init"
   record localesBarrier {
     proc wait(locIdx, flags) {
       if locIdx==0 {
