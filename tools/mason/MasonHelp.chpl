@@ -81,7 +81,9 @@ proc masonRunHelp() {
   writeln('        --build                  Compile before running binary');
   writeln('        --show                   Increase verbosity');
   writeln('        --example <example>      Run an example');
+  writeln();
   writeln('Runtime arguments can also be included after the run arguments ');
+  writeln('When --example is thrown without an example, all available examples will be listed');
   writeln();
   writeln('When no options are provided, the following will take place:');
   writeln('   - Execute binary from mason project if target/ is present');

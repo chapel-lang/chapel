@@ -38,7 +38,7 @@ proc masonBuild(args) {
     for arg in args[2..] {
       if arg == '-h' || arg == '--help' {
         masonBuildHelp();
-        exit();
+        exit(0);
       }
       else if arg == '--release' {
         release = true;
@@ -50,7 +50,7 @@ proc masonBuild(args) {
         show = true;
       }
       else if arg == '--example' {
-        example=true;
+        example = true;
       }
       else {
         compopts.push_back(arg);
