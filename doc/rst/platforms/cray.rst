@@ -373,20 +373,34 @@ To use ugni communications:
    will probably give you satisfactory results.
 
    The Cray network interface chips (NICs) can only address memory that
-   has been registered with them, and there are limits on how many pages
-   of memory can be registered.  The Gemini(TM) NIC used on Cray XE and XK
-   systems can register no more than 16k (2**14) pages of memory.  The
-   Aries(TM) NIC used on Cray XC systems can register more, but it has an
-   on-board cache of registered page information with 16k entries and
-   performance will be reduced if the number of registered pages exceeds
-   the 16k entries in that cache.  Thus for any kind of Cray X* system,
-   you should choose a hugepage module whose page size is large enough
-   that 16k of its hugepages will cover the program's per-node memory
-   requirement or, if that is not known, the compute node memory size.
-   For example, the 2 MiB hugepages in the ``craype-hugepages2M`` module
-   will cover a 32 GiB Cray XE compute node, but on a Cray XC system
-   with 128 GiB compute nodes at least 8 MiB hugepages will be needed to
-   achieve full coverage.
+   has been registered with them, and there are some caveats with respect
+   to this memory registration.  On Cray XE and XK systems, the Gemini(TM)
+   NIC can register no more than 16k (2**14) pages of memory.  There you
+   should use a hugepage module whose pages are large enough that 16k of
+   them will span your program's per-node memory requirement or, if that
+   is not known, the compute node memory size.  For example, to cover a 32
+   GiB Cray XE compute node, you will need at least the 2 MiB hugepages in
+   the ``craype-hugepages2M`` module.
+
+   In practical terms, the Aries(TM) NIC on Cray XC systems is not limited
+   as to how much memory it can register.  However, it does have an
+   on-board cache of 512 registered page table entries, and registering
+   more than this can cause reduced performance if the program's memory
+   reference pattern causes refills in this cache.  We have seen up to a
+   15% reduction from typical nightly XC-16 performance in an ra-rmo run
+   using hugepages small enough that every reference should have missed in
+   this cache.  Covering an entire 128 GiB XC compute node with only 512
+   hugepages will require at least the ``craype-hugepages256M`` module's
+   256 MiB hugepages.
+
+   Offsetting this, using larger hugepages may reduce performance because
+   it can result in poorer NUMA affinity.  With the ugni communication
+   layer, arrays larger than 2 hugepages are allocated separately from the
+   heap, which improves NUMA affinity.  An obvious side effect of using
+   larger hugepages is that an array has to be larger to qualify.  Thus,
+   achieving the best performance for any given program may require
+   striking a balance between using larger hugepages to reduce NIC page
+   table cache refills and using smaller ones to improve NUMA locality.
 
    Note that when hugepages are used with the ugni comm layer, tasking
    layers cannot use guard pages for stack overflow detection.  Qthreads
@@ -479,11 +493,40 @@ support.  Basically, this controls how much of the communication
 resources on the NIC will be used by the program.  The default value is
 the number of hardware processor cores the program will use for Chapel
 tasks.  Usually this is enough, but for highly parallel codes that do a
-lot of remote references, increasing it may help the performance.
+lot of remote references, increasing it may improve performance.
 Useful values for ``CHPL_RT_COMM_CONCURRENCY`` are in the range 1 to 30
 on the Gemini-based Cray XE and XK systems, and 1 to 120 on the
 Aries-based Cray XC systems.  Values specified outside this range are
 silently increased or reduced so as to fall within it.
+
+
+ugni Communication Layer Registered Memory Regions
+__________________________________________________
+
+The ugni communication layer maintains information about every memory
+region it registers with the Gemini or Aries NIC.  Roughly speaking there
+are a few memory regions for each tasking layer thread, plus one for each
+array larger than 2 hugepages allocated and registered separately from the
+heap.  By default the comm layer can handle up to 4k (2**12) total memory
+regions, which is plenty under normal circumstances.  In the unlikely
+event a program needs more than this, the following message will be
+printed:
+
+  .. code-block:: sh
+
+    warning: no more registered memory region table entries!
+
+To provide for more registered regions, set the
+``CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS`` environment variable to a number
+indicating how many you want to allow.  For example:
+
+  .. code-block:: sh
+
+    export CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS=10000
+
+Note that there are certain comm layer overheads that are proportional to
+the number of registered memory regions, so allowing a very high number of
+them may lead to reduced performance.
 
 
 gasnet Communication Layer
