@@ -114,7 +114,7 @@ class TomlError : Error {
   proc init(msg:string) {
     this.msg = msg;
   }
-  proc message() {
+  override proc message() {
     return msg;
   }
 }

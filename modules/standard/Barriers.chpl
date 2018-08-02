@@ -344,7 +344,7 @@ module Barriers {
       reset(n);
     }
 
-    override inline proc reset(nTasks: int) {
+    /* inline */ override proc reset(nTasks: int) {
       maxBlockers = nTasks;
       blockers.write(0);
       outGate.reset();
