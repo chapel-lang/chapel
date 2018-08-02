@@ -60,6 +60,7 @@
 #include "chplexit.h"
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
+#include "chpl-mem-sys.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-atomics.h"
@@ -477,7 +478,7 @@ static gni_nic_device_t nic_type;
 // Declarations having to do with memory and memory registration.
 //
 // We register all of the read/write memory regions in /proc/self/maps
-// that have pathnames.  We can handle up to MAX_MEM_REGIONS of these.
+// that have pathnames.  We can handle up to max_mem_regions of these.
 // There are four regions we definitely want to register.  These are the
 // static data, the part of the heap right after the static data, the
 // main heap (probably on hugepages), and the stack.  We don't actually
@@ -496,14 +497,25 @@ static pthread_once_t hugepage_once_flag = PTHREAD_ONCE_INIT;
 static size_t hugepage_size;
 
 //
-// Memory regions.  mem_regions contains the address/length pairs and
-// uGNI memory domain handles for all of the registered memory regions.
-// mem_regions_map contains a copy of every node's mem_regions table.
-// And finally, mem_regions_map_addr_map contains the mem_regions_map
-// pointers on each node.
+// Memory region support.
 //
-#define MAX_MEM_REGIONS 1024
-
+// mem_regions contains the address/length pairs and uGNI memory domain
+// handles for all of the registered memory regions on this node.  It is
+// strictly local to the node.
+// mem_regions_all is a table containing a copy of mem_regions from
+// every node.  It is read-only to the local node but must be writable
+// by remote nodes.  As other nodes add and remove registered memory
+// regions they are responsible for updating their own mem_regions_all
+// elements on all other nodes.  Thus every node is kept up-to-date on
+// every other node's registrations.
+// mem_regions_all_entries is a local convenience array containing the
+// address of each node's element in mem_regions_all (since these
+// elements are not of fixed size).
+// mem_regions_all_my_entry_map contains the address of this node's
+// mem_regions_all entry on all other nodes.  When a node is changing
+// registrations it uses this to update its own mem_regions_all entries
+// on all the other nodes.
+//
 typedef struct {
   uint64_t         addr;
   uint64_t         len;  // includes reg. status; see mrtl_encode() etc. below
@@ -512,10 +524,22 @@ typedef struct {
 
 typedef struct {
   uint32_t     mreg_cnt;  // really hi idx + 1 (mregs[] may have holes)
-  mem_region_t mregs[MAX_MEM_REGIONS];
+  mem_region_t mregs[];
 } mem_region_table_t;
 
-static mem_region_table_t mem_regions;
+static int max_mem_regions = 4096;
+static size_t mem_regions_size;
+
+static mem_region_table_t* mem_regions;
+static atomic_int_least32_t mreg_free_cnt;
+static uint32_t mreg_cnt_max;
+
+static mem_region_table_t* mem_regions_all;
+static mem_region_table_t** mem_regions_all_entries;
+
+static mem_region_table_t** mem_regions_all_my_entry_map;
+
+static chpl_bool can_register_memory = false;
 
 //
 // The high bit of the 'len' member of a mem_region_t in the table
@@ -558,15 +582,6 @@ chpl_bool mrtl_isReg(uint64_t len) {
 static pthread_mutex_t mem_regions_mutex = PTHREAD_MUTEX_INITIALIZER;
 static __thread chpl_bool allow_task_yield = true;
 
-static chpl_bool can_register_memory = false;
-
-static uint32_t mreg_cnt_max;
-
-static atomic_int_least32_t mreg_free_cnt;
-
-static mem_region_table_t* mem_regions_map;
-static mem_region_table_t** mem_regions_map_addr_map;
-
 //
 // This is the memory region for the guaranteed NIC-registered memory
 // in which the memory region map, remote fork descriptors and their
@@ -582,11 +597,13 @@ static mem_region_t* gnr_mreg_map;
 //
 static struct sigaction previous_SIGBUS_sigact;
 
-struct {
+struct mregs_supp {
   chpl_mem_descInt_t desc;
   int ln;
   int32_t fn;
-} mr_mregs_supplement[MAX_MEM_REGIONS];  // parallels mem_regions.mregs[]
+};
+
+struct mregs_supp* mr_mregs_supplement;  // parallels mem_regions->mregs[]
 
 static chpl_bool exit_without_cleanup = false;
 
@@ -1401,7 +1418,7 @@ static void      gni_setup_per_comm_dom(int);
 static void      gni_init(gni_nic_handle_t*, int);
 static uint8_t   GNIT_Ptag(void);
 static uint32_t  GNIT_Cookie(void);
-static void      mem_regions_map_pre_init(void);
+static void      mem_regions_all_pre_init(void);
 static void      register_memory(void);
 static chpl_bool get_next_rw_memory_range(uint64_t*, uint64_t*, char*, size_t);
 static gni_return_t register_mem_region(uint64_t, uint64_t, gni_mem_handle_t*,
@@ -1800,10 +1817,25 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 #undef _PSTAT_INIT
 
   //
-  // These have to be initialized prior to the first regMemAlloc() call.
+  // We have to create the local memory region table before the first
+  // call to regMemAlloc() is made.  But that could come from the memory
+  // layer, which is initialized after this, so we can't get the memory
+  // from there.  We don't want to get it from our own internal memory
+  // manager because that isn't set up yet and it would give us remotely
+  // accessible memory anyway, which we don't need for this.  So, just
+  // allocate the space from the system.
   //
-  mem_regions.mreg_cnt = 0;
-  atomic_store_int_least32_t(&mreg_free_cnt, MAX_MEM_REGIONS);
+  max_mem_regions = chpl_env_rt_get_int("COMM_UGNI_MAX_MEM_REGIONS",
+                                        max_mem_regions);
+  mem_regions_size = sizeof(mem_regions[0])
+                     + max_mem_regions * sizeof(mem_regions->mregs[0]);
+  mem_regions = (mem_region_table_t*) sys_calloc(1, mem_regions_size);
+  mem_regions->mreg_cnt = 0;
+  atomic_init_int_least32_t(&mreg_free_cnt, max_mem_regions);
+
+  mr_mregs_supplement =
+    (struct mregs_supp*) sys_calloc(max_mem_regions,
+                                    sizeof(mr_mregs_supplement[0]));
 }
 
 
@@ -1916,7 +1948,7 @@ void chpl_comm_post_task_init(void)
   // computing how much NIC-registered memory we need.  Tell the
   // registered-memory module how much we need and then allocate it.
   //
-  mem_regions_map_pre_init();
+  mem_regions_all_pre_init();
   get_buf_pre_init();
   rf_done_pre_init();
   amo_res_pre_init();
@@ -2241,9 +2273,9 @@ uint32_t GNIT_Cookie(void)
 
 
 static
-void mem_regions_map_pre_init(void)
+void mem_regions_all_pre_init(void)
 {
-  chpl_comm_mem_reg_add_request(chpl_numNodes * sizeof(mem_regions_map[0]));
+  chpl_comm_mem_reg_add_request(chpl_numNodes * mem_regions_size);
 }
 
 
@@ -2264,7 +2296,7 @@ void register_memory(void)
   // register only non-anonymous regions (those associated with a path).
   // However, don't register device memory other than from /dev/zero.
   // This gets us the hugepage regions, the stack, and some other useful
-  // things.  Only the MAX_MEM_REGIONS largest regions are registered,
+  // things.  Only the max_mem_regions largest regions are registered,
   // except that the guaranteed NIC-registered region is registered no
   // matter how small it is.  In order to enhance the performance of
   // lookups we sort the regions in our memory map by size, from large
@@ -2283,12 +2315,12 @@ void register_memory(void)
   //
   // Register any already-recorded memory regions with uGNI.
   //
-  for (int i = 0; i < mem_regions.mreg_cnt; i++) {
-    (void) register_mem_region(mem_regions.mregs[i].addr,
-                               mrtl_len(mem_regions.mregs[i].len),
-                               &mem_regions.mregs[i].mdh,
+  for (int i = 0; i < mem_regions->mreg_cnt; i++) {
+    (void) register_mem_region(mem_regions->mregs[i].addr,
+                               mrtl_len(mem_regions->mregs[i].len),
+                               &mem_regions->mregs[i].mdh,
                                false /*allow_failure*/);
-    mrtl_setReg(&mem_regions.mregs[i].len);
+    mrtl_setReg(&mem_regions->mregs[i].len);
   }
 
   while (get_next_rw_memory_range(&addr, &len, pathname, sizeof(pathname))) {
@@ -2300,12 +2332,12 @@ void register_memory(void)
     // by chpl_comm_impl_regMemAlloc() before we were called.
     //
     i = 0;
-    while (i < mem_regions.mreg_cnt
-           && (addr != mem_regions.mregs[i].addr
-               || len != mrtl_len(mem_regions.mregs[i].len))) {
+    while (i < mem_regions->mreg_cnt
+           && (addr != mem_regions->mregs[i].addr
+               || len != mrtl_len(mem_regions->mregs[i].len))) {
       i++;
     }
-    if (i < mem_regions.mreg_cnt)
+    if (i < mem_regions->mreg_cnt)
       continue;
 
     //
@@ -2355,28 +2387,28 @@ void register_memory(void)
     // Put the memory region in the table, keeping it sorted by
     // decreasing size.
     //
-    if (mem_regions.mreg_cnt >= MAX_MEM_REGIONS)
+    if (mem_regions->mreg_cnt >= max_mem_regions)
       CHPL_INTERNAL_ERROR("too many preexisting memory regions");
 
-    for (i = mem_regions.mreg_cnt;
-         i > 0 && len > mrtl_len(mem_regions.mregs[i - 1].len);
+    for (i = mem_regions->mreg_cnt;
+         i > 0 && len > mrtl_len(mem_regions->mregs[i - 1].len);
          i--) {
-      mem_regions.mregs[i] = mem_regions.mregs[i - 1];
+      mem_regions->mregs[i] = mem_regions->mregs[i - 1];
     }
 
-    mem_regions.mregs[i].addr = addr;
-    mem_regions.mregs[i].len = mrtl_encode(len, true);
-    mem_regions.mregs[i].mdh = mdh;
-    mem_regions.mreg_cnt++;
+    mem_regions->mregs[i].addr = addr;
+    mem_regions->mregs[i].len = mrtl_encode(len, true);
+    mem_regions->mregs[i].mdh = mdh;
+    mem_regions->mreg_cnt++;
     (void) atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1);
   }
 
-  if (mem_regions.mreg_cnt == 0) {
+  if (mem_regions->mreg_cnt == 0) {
     CHPL_INTERNAL_ERROR("no registerable memory regions?");
   }
 
-  if (mem_regions.mreg_cnt > mreg_cnt_max)
-    mreg_cnt_max = mem_regions.mreg_cnt;
+  if (mem_regions->mreg_cnt > mreg_cnt_max)
+    mreg_cnt_max = mem_regions->mreg_cnt;
 
   //
   // Find the memory region associated with guaranteed NIC-registered
@@ -2387,9 +2419,9 @@ void register_memory(void)
 
     chpl_comm_mem_reg_tell(&p, NULL);
 
-    for (int i = 0; i < mem_regions.mreg_cnt; i++) {
-      if ((void*) (intptr_t) mem_regions.mregs[i].addr == p) {
-        gnr_mreg = &mem_regions.mregs[i];
+    for (int i = 0; i < mem_regions->mreg_cnt; i++) {
+      if ((void*) (intptr_t) mem_regions->mregs[i].addr == p) {
+        gnr_mreg = &mem_regions->mregs[i];
         break;
       }
     }
@@ -2403,15 +2435,24 @@ void register_memory(void)
   //
 
   // Must be directly communicable without proxy.
-  mem_regions_map = (mem_region_table_t*)
-                    chpl_comm_mem_reg_allocMany(chpl_numNodes,
-                                                sizeof(mem_regions_map[0]),
-                                                CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                                0, 0);
-  mem_regions_map_addr_map =
+  mem_regions_all = (mem_region_table_t*)
+                      chpl_comm_mem_reg_allocMany(chpl_numNodes,
+                                                  mem_regions_size,
+                                                  CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                  0, 0);
+  mem_regions_all_entries =
+    (mem_region_table_t**)
+      chpl_mem_allocMany(chpl_numNodes, sizeof(mem_regions_all_entries[0]),
+                         CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+  for (int i = 0; i < chpl_numNodes; i++) {
+    mem_regions_all_entries[i] =
+      (mem_region_table_t*) ((char*) mem_regions_all + i * mem_regions_size);
+  }
+
+  mem_regions_all_my_entry_map =
     (mem_region_table_t**)
       chpl_mem_allocMany(chpl_numNodes,
-                         sizeof(mem_regions_map_addr_map[0]),
+                         sizeof(mem_regions_all_my_entry_map[0]),
                          CHPL_RT_MD_COMM_PER_LOC_INFO,
                          0, 0);
   gnr_mreg_map = (mem_region_t*)
@@ -2421,27 +2462,48 @@ void register_memory(void)
   {
     typedef struct {
       c_nodeid_t nodeID;
-      mem_region_table_t mem_regions;
-      mem_region_table_t* mem_regions_map;
+      mem_region_table_t* mem_regions_all;
       mem_region_t gnr_mreg;
+      uint32_t mreg_cnt;
+      mem_region_t mregs[];
     } gdata_t;
 
-    gdata_t my_gdata = { chpl_nodeID, mem_regions, mem_regions_map, *gnr_mreg };
-    gdata_t* gdata;
+    gdata_t* my_gdata;
+    size_t gdata_mregs_size = mem_regions->mreg_cnt
+                              * sizeof(my_gdata->mregs[0]);
+    size_t gdata_size = sizeof(my_gdata[0]) + gdata_mregs_size;
+    my_gdata =
+      (gdata_t*) chpl_mem_alloc(gdata_size,
+                                CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                0, 0);
+    my_gdata->nodeID = chpl_nodeID;
+    my_gdata->mem_regions_all = mem_regions_all;
+    my_gdata->gnr_mreg = *gnr_mreg;
+    my_gdata->mreg_cnt = mem_regions->mreg_cnt;
+    memcpy(my_gdata->mregs, mem_regions->mregs, gdata_mregs_size);
 
-    gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
+    gdata_t* gdata;
+    gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, gdata_size,
                                           CHPL_RT_MD_COMM_PER_LOC_INFO,
                                           0, 0);
-    if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
+    if (PMI_Allgather(my_gdata, gdata, gdata_size) != PMI_SUCCESS)
       CHPL_INTERNAL_ERROR("PMI_Allgather(sdata/heap/etc. memory maps) failed");
 
     for (int i = 0; i < chpl_numNodes; i++) {
-      mem_regions_map[gdata[i].nodeID] = gdata[i].mem_regions;
-      mem_regions_map_addr_map[gdata[i].nodeID] = gdata[i].mem_regions_map;
-      gnr_mreg_map[gdata[i].nodeID] = gdata[i].gnr_mreg;
+      gdata_t* gdp = (gdata_t*) ((char*) gdata + i * gdata_size);
+      int node = gdp->nodeID;
+
+      gnr_mreg_map[node] = gdp->gnr_mreg;
+      mem_regions_all_entries[node]->mreg_cnt = gdp->mreg_cnt;
+      memcpy(&mem_regions_all_entries[node]->mregs, &gdp->mregs,
+             mem_regions_size);
+      mem_regions_all_my_entry_map[node] =
+          (mem_region_table_t*)
+          ((char*) gdp->mem_regions_all + chpl_nodeID * mem_regions_size);
     }
 
     chpl_mem_free(gdata, 0, 0);
+    chpl_mem_free(my_gdata, 0, 0);
   }
 
   can_register_memory = true;
@@ -2583,11 +2645,11 @@ mem_region_t* mreg_for_local_addr(void* addr)
       || (uint64_t) addr < mr->addr
       || (uint64_t) addr >= mr->addr + mrtl_len(mr->len)
       || !mrtl_isReg(mr->len)) {
-    mr = mreg_for_addr(addr, &mem_regions);
+    mr = mreg_for_addr(addr, mem_regions);
     PERFSTATS_ADD(local_mreg_cmps,
                   ((mr == NULL)
-                   ? mem_regions.mreg_cnt
-                   : (mr - &mem_regions.mregs[0] + 1)));
+                   ? mem_regions->mreg_cnt
+                   : (mr - &mem_regions->mregs[0] + 1)));
   }
   PERFSTATS_ADD(local_mreg_nsecs, PERFSTATS_TELAPSED(pstStart));
   return mr;
@@ -2601,7 +2663,8 @@ mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
   static __thread mem_region_t** mrs;
   mem_region_t* mr;
   if (mrs == NULL) {
-    mrs = (mem_region_t**) chpl_mem_allocManyZero(chpl_numNodes, sizeof(mrs[0]),
+    mrs = (mem_region_t**) chpl_mem_allocManyZero(chpl_numNodes,
+                                                  sizeof(mrs[0]),
                                                   CHPL_RT_MD_COMM_PER_LOC_INFO,
                                                   0, 0);
   }
@@ -2611,11 +2674,11 @@ mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
       || (uint64_t) addr < mr->addr
       || (uint64_t) addr >= mr->addr + mrtl_len(mr->len)
       || !mrtl_isReg(mr->len)) {
-    mr = mrs[locale] = mreg_for_addr(addr, &mem_regions_map[locale]);
+    mr = mrs[locale] = mreg_for_addr(addr, mem_regions_all_entries[locale]);
     PERFSTATS_ADD(remote_mreg_cmps,
                   ((mr == NULL)
-                   ? mem_regions_map[locale].mreg_cnt
-                   : (mr - &mem_regions_map[locale].mregs[0] + 1)));
+                   ? mem_regions_all_entries[locale]->mreg_cnt
+                   : (mr - &mem_regions_all_entries[locale]->mregs[0] + 1)));
   }
   PERFSTATS_ADD(remote_mreg_nsecs, PERFSTATS_TELAPSED(pstStart));
   return mr;
@@ -3028,10 +3091,10 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
   // See if this was within an as-yet-unregistered region where we may
   // be faulting in pages as a side effect of initialization.  If so,
   // report allocation failure and exit.  Note that we're not holding
-  // the dynamic registration mutex and thus mem_regions.mreg_cnt may
+  // the dynamic registration mutex and thus mem_regions->mreg_cnt may
   // vary while we're executing this loop.  However, if the SIGBUS is
   // the result of a fault-in failure on some region in the table, that
-  // count won't drop below the index of that region because we can't
+  // count won't drop below the index of that region, because we can't
   // remove the region until after it's registered and we can't finish
   // registering it without faulting in all its pages.
   // 
@@ -3046,7 +3109,7 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
     int mr_i;
     mem_region_t* mr;
 
-    for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
+    for (mr_i = mem_regions->mreg_cnt - 1, mr = &mem_regions->mregs[mr_i];
          mr_i >= 0 && (addr < mr->addr
                        || addr >= mr->addr + mrtl_len(mr->len)
                        || mrtl_isReg(mr->len));
@@ -3171,13 +3234,13 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
   // because we didn't underflow the free-entry-count check above.
   //
   for (mr_i = 0;
-       mr_i < MAX_MEM_REGIONS && mem_regions.mregs[mr_i].addr != 0;
+       mr_i < max_mem_regions && mem_regions->mregs[mr_i].addr != 0;
        mr_i++)
     ;
 
-  assert(mr_i < MAX_MEM_REGIONS);
+  assert(mr_i < max_mem_regions);
 
-  mr = &mem_regions.mregs[mr_i];
+  mr = &mem_regions->mregs[mr_i];
   mr->addr = (uint64_t) (uintptr_t) p;
   mr->len = mrtl_encode(size, false);
 
@@ -3188,10 +3251,10 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
   //
   // Adjust the region count, if necessary.
   //
-  if (mr_i >= mem_regions.mreg_cnt) {
-    mem_regions.mreg_cnt = mr_i + 1;
-    if (mem_regions.mreg_cnt > mreg_cnt_max)
-      mreg_cnt_max = mem_regions.mreg_cnt;
+  if (mr_i >= mem_regions->mreg_cnt) {
+    mem_regions->mreg_cnt = mr_i + 1;
+    if (mem_regions->mreg_cnt > mreg_cnt_max)
+      mreg_cnt_max = mem_regions->mreg_cnt;
   }
 
   regMemUnlock();
@@ -3199,7 +3262,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
   DBG_P_LP(DBGF_MEMREG,
            "chpl_regMemAlloc(%#" PRIx64 "): "
            "mregs[%d] = %#" PRIx64 ", cnt %d",
-           size, mr_i, mr->addr, (int) mem_regions.mreg_cnt);
+           size, mr_i, mr->addr, (int) mem_regions->mreg_cnt);
 
 #ifdef PERFSTATS_TIME_ZERO_INIT
   const size_t pgSize = get_hugepage_size();
@@ -3237,7 +3300,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   //
   // Find the memory region table entry for this memory.
   //
-  for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
+  for (mr_i = mem_regions->mreg_cnt - 1, mr = &mem_regions->mregs[mr_i];
        mr_i >= 0 && (mr->addr != (uint64_t) p || mrtl_len(mr->len) != size);
        mr_i--, mr--)
     ;
@@ -3275,23 +3338,24 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   // within them yet anyway, and later when we do register them we may
   // be able to send just the entries and not the count again.
   //
-  if (mr_i < mem_regions_map[chpl_nodeID].mreg_cnt) {
+  if (mr_i < mem_regions_all_entries[chpl_nodeID]->mreg_cnt) {
     DBG_P_L(DBGF_MEMREG_BCAST,
             "chpl_comm_impl_regMemPostAlloc(): entry %d, bcast",
             mr_i);
     PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
   } else {
-    const uint32_t mreg_cnt_public = mem_regions_map[chpl_nodeID].mreg_cnt;
+    const uint32_t mreg_cnt_public =
+                     mem_regions_all_entries[chpl_nodeID]->mreg_cnt;
 
     DBG_P_L(DBGF_MEMREG_BCAST,
             "chpl_comm_impl_regMemPostAlloc(): "
             "entry %d, bcast %d-%d and cnt %d",
             mr_i,
-            (int) mreg_cnt_public, (int) mem_regions.mreg_cnt - 1,
-            (int) mem_regions.mreg_cnt);
+            (int) mreg_cnt_public, (int) mem_regions->mreg_cnt - 1,
+            (int) mem_regions->mreg_cnt);
     PERFSTATS_INC(regMem_bCast_cnt);
-    regMemBroadcast(mreg_cnt_public, mem_regions.mreg_cnt - mreg_cnt_public,
+    regMemBroadcast(mreg_cnt_public, mem_regions->mreg_cnt - mreg_cnt_public,
                     true /*send_mreg_cnt*/);
   }
 
@@ -3310,7 +3374,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   //
   // Is this memory in our table?
   //
-  for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
+  for (mr_i = mem_regions->mreg_cnt - 1, mr = &mem_regions->mregs[mr_i];
        mr_i >= 0 && (mr->addr != (uint64_t) p || mrtl_len(mr->len) != size);
        mr_i--, mr--)
     ;
@@ -3348,12 +3412,12 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   // Adjust the memory region count downward, if this was the last
   // active region.
   //
-  if (mr_i == mem_regions.mreg_cnt - 1) {
+  if (mr_i == mem_regions->mreg_cnt - 1) {
     int j;
-    for (j = mr_i - 1; j >= 0 && mem_regions.mregs[j].addr == 0; j--)
+    for (j = mr_i - 1; j >= 0 && mem_regions->mregs[j].addr == 0; j--)
       ;
     assert(j >= 0);
-    mem_regions.mreg_cnt = j + 1;
+    mem_regions->mreg_cnt = j + 1;
   }
 
   //
@@ -3366,10 +3430,10 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   // the case now.  If removing the entry didn't change the length of
   // the table then we can just send the now-empty entry.
   //
-  if (mem_regions.mreg_cnt < mem_regions_map[chpl_nodeID].mreg_cnt) {
+  if (mem_regions->mreg_cnt < mem_regions_all_entries[chpl_nodeID]->mreg_cnt) {
     DBG_P_L(DBGF_MEMREG_BCAST,
             "chpl_comm_impl_regMemFree(): entry %d, bcast cnt %d",
-            mr_i, (int) mem_regions.mreg_cnt);
+            mr_i, (int) mem_regions->mreg_cnt);
     PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(0, 0, true /*send_mreg_cnt*/);
   } else {
@@ -3437,13 +3501,13 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
       // Update our own map in place.
       //
       if (mr_cnt > 0) {
-        memcpy((char*) &mem_regions_map_addr_map[ni][ni].mregs[mr_i],
-               (char*) &mem_regions.mregs[mr_i],
+        memcpy((char*) &mem_regions_all_my_entry_map[ni]->mregs[mr_i],
+               (char*) &mem_regions->mregs[mr_i],
                mr_cnt * sizeof(mem_region_t));
       }
 
       if (send_mreg_cnt) {
-        mem_regions_map_addr_map[ni][ni].mreg_cnt = mem_regions.mreg_cnt;
+        mem_regions_all_my_entry_map[ni]->mreg_cnt = mem_regions->mreg_cnt;
       }
     } else {
       //
@@ -3456,20 +3520,19 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
       }
 
       if (mr_cnt > 0) {
-        src_v[vi] = (char*) &mem_regions.mregs[mr_i];
+        src_v[vi] = (char*) &mem_regions->mregs[mr_i];
         node_v[vi] = ni;
-        tgt_v[vi] = (char*)
-                    &mem_regions_map_addr_map[ni][chpl_nodeID].mregs[mr_i];
+        tgt_v[vi] = (char*) &mem_regions_all_my_entry_map[ni]->mregs[mr_i];
         size_v[vi] = mr_cnt * sizeof(mem_region_t);
         remote_mr_v[vi] = &gnr_mreg_map[ni];
         vi++;
       }
 
       if (send_mreg_cnt) {
-        src_v[vi] = (char*) &mem_regions.mreg_cnt;
+        src_v[vi] = (char*) &mem_regions->mreg_cnt;
         node_v[vi] = ni;
-        tgt_v[vi] = (char*) &mem_regions_map_addr_map[ni][chpl_nodeID].mreg_cnt;
-        size_v[vi] = sizeof(mem_regions.mreg_cnt);
+        tgt_v[vi] = (char*) &mem_regions_all_my_entry_map[ni]->mreg_cnt;
+        size_v[vi] = sizeof(mem_regions->mreg_cnt);
         remote_mr_v[vi] = &gnr_mreg_map[ni];
         vi++;
       }
