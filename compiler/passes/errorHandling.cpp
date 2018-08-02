@@ -25,6 +25,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "driver.h"
+#include "resolution.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
@@ -704,9 +705,13 @@ class ImplicitThrowsVisitor : public AstVisitorTraverse {
 public:
   ImplicitThrowsVisitor(std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons);
 
+  // possibly record a throwing function call
+  void handleCallToFunction(FnSymbol* calledFn, Expr* forExpr);
+
   virtual bool enterTryStmt  (TryStmt*   node);
   virtual void exitTryStmt   (TryStmt*   node);
   virtual bool enterCallExpr (CallExpr*  node);
+  virtual bool enterForLoop  (ForLoop*  node);
 
   // Does this function throw?
   bool throws() { return canThrow; }
@@ -735,6 +740,44 @@ ImplicitThrowsVisitor::ImplicitThrowsVisitor(std::set<FnSymbol*>* visitedIn, imp
   reasons = reasonsIn;
 }
 
+void ImplicitThrowsVisitor::handleCallToFunction(FnSymbol* calledFn,
+                                                 Expr* forExpr) {
+  bool insideTry = (tryDepth > 0);
+
+  // We might be calling a function that could be implicitly
+  // throwing. For example, consider nested coforalls.
+  // That will appear to be a call to coforall_fn1, and
+  // that in turn appears to be a call to coforall_fn2.
+  //
+  // In that example, this enterCallExpr might be visiting
+  // a call to coforall_fn2. We don't know yet if it throws
+  // if we haven't visited it yet.
+  if (calledFn->throwsError() == false)
+    markImplicitThrows(calledFn, visited, reasons);
+
+  CallExpr* call = toCallExpr(forExpr);
+  TryTag tryTag = TRY_TAG_NONE;
+  if (call)
+    tryTag = call->tryTag;
+
+  if (calledFn->throwsError()) {
+    if (insideTry || tryTag == TRY_TAG_IN_TRYBANG) {
+      // OK
+    } else {
+
+      if (call && shouldEnforceStrict(call)) {
+        if (reasonThrows == NULL)
+          reasonThrows = forExpr;
+      }
+
+      // not in a try
+      canThrow = true;
+      if (!calledFn->hasFlag(FLAG_UNCHECKED_THROWS))
+        onlyUnchecked = false;
+    }
+  }
+}
+
 bool ImplicitThrowsVisitor::enterTryStmt(TryStmt* node) {
   tryDepth++;
 
@@ -759,33 +802,7 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = (tryDepth > 0);
 
   if (FnSymbol* calledFn = node->resolvedFunction()) {
-
-    // We might be calling a function that could be implicitly
-    // throwing. For example, consider nested coforalls.
-    // That will appear to be a call to coforall_fn1, and
-    // that in turn appears to be a call to coforall_fn2.
-    //
-    // In that example, this enterCallExpr might be visiting
-    // a call to coforall_fn2. We don't know yet if it throws
-    // if we haven't visited it yet.
-    markImplicitThrows(calledFn, visited, reasons);
-
-    if (calledFn->throwsError()) {
-      if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
-        // OK
-      } else {
-
-        if (shouldEnforceStrict(node)) {
-          if (reasonThrows == NULL)
-            reasonThrows = node;
-        }
-
-        // not in a try
-        canThrow = true;
-        if (!calledFn->hasFlag(FLAG_UNCHECKED_THROWS))
-          onlyUnchecked = false;
-      }
-    }
+    handleCallToFunction(calledFn, node);
   } else if (node->isPrimitive(PRIM_THROW)) {
     if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
       // OK
@@ -798,6 +815,19 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
   }
   return true;
 }
+
+bool ImplicitThrowsVisitor::enterForLoop (ForLoop*  node) {
+
+  SymExpr* it = node->iteratorGet();
+
+  FnSymbol* itFn = getTheIteratorFn(it->symbol()->type);
+
+  handleCallToFunction(itFn, node);
+
+  // Does the for loop run an iterator which throws?
+  return true;
+}
+
 
 typedef enum {
   ERROR_MODE_UNKNOWN,
@@ -954,6 +984,25 @@ void ErrorCheckingVisitor::exitDeferStmt(DeferStmt* node) {
 } /* end anon namespace */
 
 
+bool canFunctionImplicitlyThrow(FnSymbol* fn)
+{
+  // task functions can be implicit throws
+  if (isTaskFun(fn))
+    return true;
+  // loop-expr functions can be implicit throws
+  if (isLoopExprFun(fn))
+    return true;
+  // initCopy promoting iterators to arrays can be too
+  if (fn->hasFlag(FLAG_INIT_COPY_FN))
+    if (fn->numFormals() >= 1)
+      if (ArgSymbol* arg = fn->getFormal(1))
+        if (arg->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+          return true;
+
+  // otherwise, don't mark it
+  return false;
+}
+
 // Returns `true` if a block can exit with an error
 //  (e.g. by calling 'throw' or a throwing function,
 //   when these are not handled by try! or catch).
@@ -963,7 +1012,7 @@ void ErrorCheckingVisitor::exitDeferStmt(DeferStmt* node) {
 static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons)
 {
   // Currently, only task functions and if-exprs can be implicitly throws.
-  if (!isTaskFun(fn))
+  if (!canFunctionImplicitlyThrow(fn))
     return;
 
   // If we already visited this function, don't visit it again.

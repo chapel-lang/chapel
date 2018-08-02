@@ -23,6 +23,7 @@
 class BlockStmt;
 class BaseAST;
 class Expr;
+class FnSymbol;
 class Symbol;
 
 void lowerErrorHandling();
@@ -31,5 +32,8 @@ void normalizeErrorHandling(BaseAST* ast);
 
 bool isCheckErrorStmt(Expr* e);
 Symbol* getErrorSymbolFromCheckErrorStmt(Expr* e);
+// Returns true for functions which should propagate errors
+// if they have throws within (i.e. are automatically throwing).
+bool canFunctionImplicitlyThrow(FnSymbol* fn);
 
 #endif
