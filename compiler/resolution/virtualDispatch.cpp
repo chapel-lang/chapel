@@ -105,7 +105,6 @@ void resolveDynamicDispatches() {
 
   filterVirtualChildren();
 
-  if (fOverrideChecking)
     checkMethodsOverride();
 
   if (fPrintDispatch == true) {
@@ -313,13 +312,19 @@ static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
   return retval;
 }
 
+static bool checkOverrides(FnSymbol* fn) {
+  ModuleSymbol* parentMod = fn->getModule();
+  return (fOverrideChecking || 
+          (parentMod && parentMod->modTag != MOD_USER));
+}
+
 static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
   resolveSignature(cfn);
 
   if (signatureMatch(pfn, cfn) == true && evaluateWhereClause(cfn) == true) {
     resolveFunction(cfn);
 
-    if (fOverrideChecking && !cfn->hasFlag(FLAG_OVERRIDE) &&
+    if (checkOverrides(cfn) && !cfn->hasFlag(FLAG_OVERRIDE) &&
         // ignore errors with deinit
         0 != strcmp("deinit", cfn->name)) {
       const char* ptype = pfn->_this->type->symbol->name;
@@ -826,6 +831,7 @@ static void checkMethodsOverride() {
   // populate the map
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->_this)
+      if (checkOverrides(fn))
       if (AggregateType* ct = toAggregateType(fn->_this->getValType()))
         if (isOverrideableMethod(fn))
           map[ct][fn->name].push_back(fn);
@@ -833,7 +839,7 @@ static void checkMethodsOverride() {
 
   // now check each function
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-
+    if (checkOverrides(fn))
     if (fn->_this &&
         // ignore errors with deinit
         fn->name != astrDeinit &&
