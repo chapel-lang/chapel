@@ -163,31 +163,6 @@ static atomic_uint_least32_t next_thread_idx;
           abort();                                                      \
         } while (0)
 
-#define GNI_FAIL(rc, msg)                                               \
-        do {                                                            \
-          DBG_P_LP(1, "GNI: error code %d", (int) rc);                  \
-          CHPL_INTERNAL_ERROR(msg);                                     \
-        } while (0)
-
-#define GNI_POST_FAIL(rc, msg)                                          \
-        do {                                                            \
-          if (rc == GNI_RC_ERROR_RESOURCE)                              \
-            DBG_P_LP(1, "GNI: error code %d, cq_cnt_curr %d",           \
-                     (int) rc, (int) CQ_CNT_LOAD(cd));                  \
-          else                                                          \
-            DBG_P_LP(1, "GNI: error code %d", (int) rc);                \
-          CHPL_INTERNAL_ERROR(msg);                                     \
-        } while (0)
-
-#define GNI_CQ_EV_FAIL(rc, ev, msg)                                     \
-        do {                                                            \
-          char buf[1024];                                               \
-          (void) GNI_CqErrorStr(ev, buf, sizeof(buf));                  \
-          DBG_P_LP(1, "GNI: error code %d, str %s",                     \
-                   (int) rc, buf);                                      \
-          CHPL_INTERNAL_ERROR(msg);                                     \
-        } while (0)
-
 static const char* task_id(int);
 static const char* task_id(int firmly_bound)
 {
@@ -213,16 +188,13 @@ static const char* task_id(int firmly_bound)
 
 #define CHPL_INTERNAL_ERROR(msg)                                        \
         do {                                                            \
-          static __thread char buf[1000];                               \
-          (void) snprintf(buf, sizeof(buf),                             \
-                          "%d:%s:%d: internal error: %s",               \
+          static __thread char _cieBuf[1000];                           \
+          (void) snprintf(_cieBuf, sizeof(_cieBuf),                     \
+                          "%d:%s:%d: %s",                               \
                           (int) chpl_nodeID, __FILE__, (int) __LINE__,  \
                           msg);                                         \
-          chpl_internal_error(buf);                                     \
+          chpl_internal_error(_cieBuf);                                 \
         } while (0)
-#define GNI_FAIL(rc, msg)            CHPL_INTERNAL_ERROR(msg)
-#define GNI_POST_FAIL(rc, msg)       CHPL_INTERNAL_ERROR(msg)
-#define GNI_CQ_EV_FAIL(rc, ev, msg)  CHPL_INTERNAL_ERROR(msg)
 #endif
 
 #ifdef DEBUG_STATS
@@ -426,6 +398,37 @@ static void perfstats_init(void)
 //
 #define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
 #define ALIGN_UP(i, size)  ALIGN_DN((i) + (size) - 1, size)
+
+
+//
+// Error checking.
+//
+
+#define GNI_FAIL(rc, what)                                              \
+        do {                                                            \
+          char _gfBuf[200];                                             \
+          snprintf(_gfBuf, sizeof(_gfBuf), "%s failed, error code %d",  \
+                   what, (int) rc);                                     \
+          CHPL_INTERNAL_ERROR(_gfBuf);                                  \
+        } while (0)
+
+#define GNI_CHECK(fnCall)                                               \
+        do {                                                            \
+          gni_return_t rc;                                              \
+          if ((rc = (fnCall)) != GNI_RC_SUCCESS)                        \
+            GNI_FAIL(rc, #fnCall);                                      \
+        } while (0)
+
+#define GNI_CQ_EV_FAIL(rc, ev, what)                                    \
+        do {                                                            \
+          char _cqeBuf[100];                                            \
+          char _gcefBuf[200];                                           \
+          (void) GNI_CqErrorStr(ev, _cqeBuf, sizeof(_cqeBuf));          \
+          snprintf(_gcefBuf, sizeof(_gcefBuf),                          \
+                   "%s failed, error code %d, str \"%s\"",              \
+                   what, (int) rc, _cqeBuf);                            \
+          CHPL_INTERNAL_ERROR(_gcefBuf);                                \
+        } while (0)
 
 
 //
@@ -1789,10 +1792,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   }
 
   {
-    gni_return_t gni_rc;
-
-    if ((gni_rc = GNI_GetDeviceType(&nic_type)) != GNI_RC_SUCCESS)
-      GNI_FAIL(gni_rc, "GNI_GetDeviceType() failed");
+    GNI_CHECK(GNI_GetDeviceType(&nic_type));
     if (nic_type != GNI_DEVICE_GEMINI
         && nic_type != GNI_DEVICE_ARIES)
       CHPL_INTERNAL_ERROR("unexpected GNI device type");
@@ -2014,13 +2014,10 @@ uint32_t gni_get_nic_address(int device_id)
   int          alps_address = -1;
   char*        token;
   char*        p_ptr;
-  gni_return_t gni_rc;
 
   p_ptr = getenv("PMI_GNI_DEV_ID");
   if (!p_ptr) {
-      if ((gni_rc = GNI_CdmGetNicAddress(device_id, &address, &cpu_id))
-          != GNI_RC_SUCCESS)
-      GNI_FAIL(gni_rc, "GNI_CdmGetNicAddress() failed");
+    GNI_CHECK(GNI_CdmGetNicAddress(device_id, &address, &cpu_id));
   }
   else {
     while ((token = strtok(p_ptr,":")) != NULL) {
@@ -2132,7 +2129,6 @@ static
 void gni_setup_per_comm_dom(int cdi)
 {
   comm_dom_t*  cd = &comm_doms[cdi];
-  gni_return_t gni_rc;
   uint32_t     i;
 
   INIT_CD_BUSY(cd);
@@ -2155,10 +2151,8 @@ void gni_setup_per_comm_dom(int cdi)
   //
   cd->cq_cnt_max  = CD_ACTIVE_TRANS_MAX;
   CQ_CNT_STORE(cd, 0);
-  if ((gni_rc = GNI_CqCreate(cd->nih, cd->cq_cnt_max, 0, GNI_CQ_NOBLOCK, NULL,
-                             NULL, &cd->cqh))
-      != GNI_RC_SUCCESS)
-    GNI_FAIL(gni_rc, "GNI_CqCreate(cqh) failed");
+  GNI_CHECK(GNI_CqCreate(cd->nih, cd->cq_cnt_max, 0, GNI_CQ_NOBLOCK, NULL,
+                         NULL, &cd->cqh));
 
   //
   // Create GNI EndPoints (EPs) for the nodes, and bind them to their
@@ -2170,13 +2164,8 @@ void gni_setup_per_comm_dom(int cdi)
                                           CHPL_RT_MD_COMM_PER_LOC_INFO,
                                           0, 0);
   for (i = 0; i < chpl_numNodes; i++) {
-    if ((gni_rc = GNI_EpCreate(cd->nih, cd->cqh, &cd->remote_eps[i]))
-        != GNI_RC_SUCCESS)
-      GNI_FAIL(gni_rc, "GNI_EpCreate(cd->remote_eps[i]) failed");
-
-    if ((gni_rc = GNI_EpBind(cd->remote_eps[i], nic_addr_map[i], cdi))
-        != GNI_RC_SUCCESS)
-      GNI_FAIL(gni_rc, "GNI_EpBind(cd->remote_eps[i]) failed");
+    GNI_CHECK(GNI_EpCreate(cd->nih, cd->cqh, &cd->remote_eps[i]));
+    GNI_CHECK(GNI_EpBind(cd->remote_eps[i], nic_addr_map[i], cdi));
   }
 
 #ifdef DEBUG_STATS
@@ -2192,7 +2181,6 @@ void gni_setup_per_comm_dom(int cdi)
 static
 void gni_init(gni_nic_handle_t* nih, int cdi)
 {
-  gni_return_t     gni_rc;
   int              device_id = 0;
   uint32_t         ptag;
   uint32_t         cookie;
@@ -2210,13 +2198,8 @@ void gni_init(gni_nic_handle_t* nih, int cdi)
   GNI_CDM_MODES:
   - Check _FORK options for the data server
 \* -------------------------------------------------------------------------- */
-  if ((gni_rc = GNI_CdmCreate(cdi, ptag, cookie, modes, &cdm_handle))
-      != GNI_RC_SUCCESS)
-    GNI_FAIL(gni_rc, "GNI_CdmCreate() failed");
-
-  if ((gni_rc = GNI_CdmAttach(cdm_handle, device_id, &local_address, nih))
-      != GNI_RC_SUCCESS)
-    GNI_FAIL(gni_rc, "GNI_CdmAttach() failed");
+  GNI_CHECK(GNI_CdmCreate(cdi, ptag, cookie, modes, &cdm_handle));
+  GNI_CHECK(GNI_CdmAttach(cdm_handle, device_id, &local_address, nih));
 }
 
 
@@ -2373,7 +2356,7 @@ void register_memory(void)
     if ((gni_rc = register_mem_region(addr, len, &mdh, true /*allow_failure*/))
         != GNI_RC_SUCCESS) {
       if (strstr(pathname, "huge") != NULL) {
-        GNI_FAIL(gni_rc, "GNI_MemRegister() failed");
+        GNI_FAIL(gni_rc, "register_mem_region()");
       } else {
         DBG_P_L(DBGF_MEMREG,
                 "GNI_MemRegister(%#" PRIx64 ", %#" PRIx64 ", \"%s\") failed "
@@ -2592,7 +2575,7 @@ gni_return_t register_mem_region(uint64_t addr, uint64_t len,
                                 NULL, flags, -1, mdh))
       != GNI_RC_SUCCESS) {
     if (!allow_failure)
-      GNI_FAIL(gni_rc, "GNI_MemRegister() failed");
+      GNI_FAIL(gni_rc, "GNI_MemRegister()");
   }
 
   return gni_rc;
@@ -2603,15 +2586,10 @@ static
 inline
 void deregister_mem_region(mem_region_t* mr)
 {
-  gni_return_t gni_rc;
-
   DBG_P_L(DBGF_MEMREG,
           "GNI_MemDeregister(%#" PRIx64 ", %#" PRIx64 ")",
           mr->addr, mrtl_len(mr->len));
-  if ((gni_rc = GNI_MemDeregister(comm_doms[0].nih, &mr->mdh))
-      != GNI_RC_SUCCESS) {
-    GNI_FAIL(gni_rc, "GNI_MemDeregister() failed");
-  }
+  GNI_CHECK(GNI_MemDeregister(comm_doms[0].nih, &mr->mdh));
 }
 
 
@@ -2711,7 +2689,7 @@ void polling_task(void* ignore)
     else if (gni_rc == GNI_RC_TIMEOUT)
       ; // no-op
     else
-      GNI_CQ_EV_FAIL(gni_rc, ev, "GNI_Cq*Event(rf_cqh) failed in polling");
+      GNI_CQ_EV_FAIL(gni_rc, ev, "GNI_Cq*Event(rf_cqh)");
 
     //
     // Process CQ events due to our request responses completing.
@@ -2726,9 +2704,8 @@ void polling_task(void* ignore)
 static
 void set_up_for_polling(void)
 {
-  cq_cnt_t     cq_cnt;
-  gni_return_t gni_rc;
-  uint32_t     i;
+  cq_cnt_t cq_cnt;
+  uint32_t i;
 
   //
   // Grab a communication domain permanently.
@@ -2806,10 +2783,7 @@ void set_up_for_polling(void)
       cq_mode = GNI_CQ_BLOCKING;
 
     cq_cnt = FORK_REQ_BUFS_PER_LOCALE;
-    if ((gni_rc = GNI_CqCreate(cd->nih, cq_cnt, 0, cq_mode, NULL, NULL,
-                               &rf_cqh))
-        != GNI_RC_SUCCESS)
-      GNI_FAIL(gni_rc, "GNI_CqCreate(rf_cqh) failed");
+    GNI_CHECK(GNI_CqCreate(cd->nih, cq_cnt, 0, cq_mode, NULL, NULL, &rf_cqh));
   }
 
   //
@@ -2824,10 +2798,7 @@ void set_up_for_polling(void)
     DBG_P_L(DBGF_MEMREG,
             "RemFork space: GNI_MemRegister(%#" PRIx64 ", %#" PRIx64")",
             addr, len);
-    if ((gni_rc = GNI_MemRegister(cd->nih, addr, len, rf_cqh,
-                                  flags, -1, &rf_mdh))
-        != GNI_RC_SUCCESS)
-      GNI_FAIL(gni_rc, "GNI_MemRegister(fork requests) failed");
+    GNI_CHECK(GNI_MemRegister(cd->nih, addr, len, rf_cqh, flags, -1, &rf_mdh));
   }
 
   //
@@ -4910,9 +4881,7 @@ void consume_all_outstanding_cq_events(int cdi)
     gni_return_t           gni_rc;
 
     while ((gni_rc = GNI_CqGetEvent(cd->cqh, &ev)) == GNI_RC_SUCCESS) {
-      if ((gni_rc = GNI_GetCompleted(cd->cqh, ev, &post_desc))
-          != GNI_RC_SUCCESS)
-        GNI_FAIL(gni_rc, "GNI_GetCompleted() failed");
+      GNI_CHECK(GNI_GetCompleted(cd->cqh, ev, &post_desc));
 
       if (post_desc->post_id == 1) {
         //
@@ -7289,7 +7258,6 @@ void do_fork_post(c_nodeid_t locale,
 {
   gni_post_descriptor_t post_desc;
   int                   rbi;
-  gni_return_t          gni_rc;
 
   if (blocking) {
     //
@@ -7323,11 +7291,9 @@ void do_fork_post(c_nodeid_t locale,
   //
   // Initiate the transaction and wait for it to complete.
   //
-  gni_rc = GNI_EpSetEventData(cd->remote_eps[locale], 0,
-                              GNI_ENCODE_REM_INST_ID(chpl_nodeID, cd_idx, rbi));
-  if (gni_rc != GNI_RC_SUCCESS)
-    GNI_FAIL(gni_rc, "GNI_EpSetEvent() failed");
-
+  GNI_CHECK(GNI_EpSetEventData(cd->remote_eps[locale], 0,
+                               GNI_ENCODE_REM_INST_ID(chpl_nodeID, cd_idx,
+                                                      rbi)));
   DBG_P_LPS(DBGF_RF, "post %s",
             locale, cd_idx, rbi, p_rf_req->seq,
             fork_op_name(p_rf_req->op));
@@ -7606,7 +7572,6 @@ inline
 int post_fma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
 {
   int cdi;
-  gni_return_t gni_rc;
 
   if (post_desc->type == GNI_POST_FMA_PUT)
     PERFSTATS_ADD(sent_bytes, post_desc->length);
@@ -7618,13 +7583,8 @@ int post_fma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
   cdi = cd_idx;
 
   CQ_CNT_INC(cd);
-
-  if ((gni_rc = GNI_PostFma(cd->remote_eps[locale], post_desc))
-      != GNI_RC_SUCCESS)
-    GNI_POST_FAIL(gni_rc, "PostFMA() failed");
-
+  GNI_CHECK(GNI_PostFma(cd->remote_eps[locale], post_desc));
   release_comm_dom();
-
   return cdi;
 }
 
@@ -7693,7 +7653,6 @@ inline
 int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
 {
   int cdi;
-  gni_return_t gni_rc;
 
   if (cd == NULL)
     acquire_comm_dom();
@@ -7720,13 +7679,8 @@ int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
   }
 
   CQ_CNT_INC(cd);
-
-  if ((gni_rc = GNI_CtPostFma(cd->remote_eps[locale_v[0]], post_desc))
-      != GNI_RC_SUCCESS)
-    GNI_POST_FAIL(gni_rc, "CTPostFMA() failed");
-
+  GNI_CHECK(GNI_CtPostFma(cd->remote_eps[locale_v[0]], post_desc));
   release_comm_dom();
-
   return cdi;
 }
 
@@ -7764,7 +7718,6 @@ inline
 int post_rdma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
 {
   int cdi;
-  gni_return_t gni_rc;
 
   if (post_desc->type == GNI_POST_RDMA_PUT)
     PERFSTATS_ADD(sent_bytes, post_desc->length);
@@ -7778,12 +7731,8 @@ int post_rdma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
   post_desc->src_cq_hndl = cd->cqh;
 
   CQ_CNT_INC(cd);
-  if ((gni_rc = GNI_PostRdma(cd->remote_eps[locale], post_desc))
-      != GNI_RC_SUCCESS)
-    GNI_POST_FAIL(gni_rc, "PostRDMA() failed");
-
+  GNI_CHECK(GNI_PostRdma(cd->remote_eps[locale], post_desc));
   release_comm_dom();
-
   return cdi;
 }
 
