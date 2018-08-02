@@ -188,6 +188,7 @@ proc masonExternalHelp() {
   writeln("    -h, --help                  Display this message");
   writeln("        --installed             Check that an external package is installed");
   writeln("        --info                  Show information about an external package");
+  writeln("        --arch                  Print architechture information about current system");
   writeln();
   writeln("Please see Mason documentation for instructions on using external packages");
 }
@@ -232,7 +233,7 @@ proc masonCompilerHelp() {
   writeln("    -h, --help                  Display this message");
   writeln("        --find                  Find compilers on your system");
   writeln("        --edit                  Open the compilers configuration file in $EDITOR");
-  writeln("        --show                  Increase Verbosity");
+  writeln("        --list                  List the compilers on your system");
   writeln();
  }
 

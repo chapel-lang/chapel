@@ -80,20 +80,24 @@ proc stripExt(toStrip: string, ext: string) : string {
 
 
 /* Uses the Spawn module to create a subprocess */
-proc runCommand(cmd, quiet=false) : string {
+proc runCommand(cmd, quiet=false) : string throws {
   var ret : string;
+  try {
+    
+    var splitCmd = cmd.split();
+    var process = spawn(splitCmd, stdout=PIPE);
+    process.wait();
 
-  var splitCmd = cmd.split();
-  var process = spawn(splitCmd, stdout=PIPE);
-  process.wait();
-
-  for line in process.stdout.lines() {
-    ret += line;
-    if quiet == false {
-      write(line);
+    for line in process.stdout.lines() {
+      ret += line;
+      if quiet == false {
+        write(line);
+      }
     }
   }
-
+  catch {
+    throw new MasonError("Internal mason error");
+  }
   return ret;
 }
 

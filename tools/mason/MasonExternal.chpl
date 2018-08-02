@@ -19,10 +19,11 @@
 
 
 use MasonUtils;
-use Path;
 use FileSystem;
-use TOML;
 use MasonHelp;
+use MasonEnv;
+use Path;
+use TOML;
 
 proc masonExternal(args: [] string) {
   try! {
@@ -30,20 +31,26 @@ proc masonExternal(args: [] string) {
       masonExternalHelp();
       exit(0);
     }
-  
-    select (args[2]) {
-      when 'search' do searchSpkgs(args);
-      when 'compiler' do compiler(args);
-      when 'install' do installSpkg(args);
-      when 'uninstall' do installSpkg(args);
-      when '--help' do masonExternalHelp();
-      when '-h' do masonExternalHelp();
-      when '--installed' do spkgOnSystem(args);
-      when '--info' do spkgInfo(args);
-      otherwise {
-       writeln('error: no such subcommand');
-       writeln('try mason external --help');
-       exit(1);
+    else if args[2] == "--setup" {
+      setupSpack();
+      exit(0);
+    }
+    if spackInstalled() {
+      select (args[2]) {
+        when 'search' do searchSpkgs(args);
+        when 'compiler' do compiler(args);
+        when 'install' do installSpkg(args);
+        when 'uninstall' do installSpkg(args);
+        when '--help' do masonExternalHelp();
+        when '-h' do masonExternalHelp();
+        when '--installed' do spkgOnSystem(args);
+        when '--info' do spkgInfo(args);
+        when '--arch' do printArch();
+        otherwise {
+          writeln('error: no such subcommand');
+          writeln('try mason external --help');
+          exit(1);
+        }
       }
     }
   }
@@ -51,6 +58,45 @@ proc masonExternal(args: [] string) {
     writeln(e.message());
     exit(1);
   }
+}
+
+
+private proc spackInstalled() throws {
+  const status = runWithStatus("spack");
+  if status != 0 {
+    throw new MasonError("To use `mason external` call mason external --setup");
+  }
+  return true;
+}
+
+private proc setupSpack() throws {
+  const spackVers = "releases/v0.11.2";
+  const destination = MASON_HOME + "/spack/";
+  const clone = "git clone https://github.com/spack/spack " + destination;
+  const checkout = "git checkout " + spackVers;
+  const status = runWithStatus(clone);
+  if status != 0 {
+    throw new MasonError("Spack installation failed");
+  }
+  else {
+    gitC(destination, checkout);
+    setupSpackEnv();
+  }
+}
+
+
+private proc setupSpackEnv() {
+  const spackRoot = "'" + MASON_HOME + "/spack'";
+  const setSpackRoot = "export SPACK_ROOT=" + spackRoot;
+  const setPath = "export PATH=$SPACK_ROOT/bin:$PATH";
+  const spackScript = ". $SPACK_ROOT/share/spack/setup-env.sh";
+  var status = runCommand(setSpackRoot);
+  status = runCommand(setPath);
+  status = runCommand(spackScript);
+  writeln("To avoid having to run --setup, put the following in your .bashrc,\n"
+          + setSpackRoot + "\n"
+          + setPath + "\n"
+          + spackScript + "\n");
 }
 
 /* Queries spack for package existance */
@@ -64,16 +110,17 @@ proc spkgExists(spec: string) : bool {
 }
 
 /* lists available spack packages */
-proc listSpkgs() {
+private proc listSpkgs() {
   const command = "spack list";
   const status = runCommand(command);
 }
 
 /* Queries spack for package existance */
 //TODO: add --desc to search descriptions
-proc searchSpkgs(args: [?d] string) {
+private proc searchSpkgs(args: [?d] string) {
   if args.size < 4 {
     listSpkgs();
+    exit(0);
   }
   else {
     if args[3] == "-h" || args[3] == "--help" {
@@ -87,16 +134,17 @@ proc searchSpkgs(args: [?d] string) {
 }
 
 /* lists all installed spack packages for user */
-proc listInstalled() {
+private proc listInstalled() {
   const command = "spack find";
   const status = runCommand(command);
 }
 
 /* User facing function to show packages installed on
    system. Takes all spack arguments ex. -df <package> */
-proc spkgOnSystem(args: [?d] string) {
+private proc spkgOnSystem(args: [?d] string) {
   if args.size < 3 {
     masonExternalHelp();
+    exit(1);
   }
   else if args.size == 3 {
     listInstalled();
@@ -109,8 +157,12 @@ proc spkgOnSystem(args: [?d] string) {
 }
 
 /* User facing function to show info about a package */
-proc spkgInfo(args) {
-  if args.size < 3 {
+private proc spkgInfo(args) {
+  if args.size < 4 {
+    masonExternalHelp();
+    exit(1);
+  }
+  else if args[3].find('-') > 0 {
     masonExternalHelp();
     exit(1);
   }
@@ -138,29 +190,43 @@ private proc spkgInstalled(spec: string) {
 
 
 /* Entry point into the various compiler functions */
-proc compiler(args: [?d] string) {
+private proc compiler(args: [?d] string) {
   var option = "list";
   if args.size > 3 {
     option = args[3];
   }
   select option {
-      when "list" do listCompilers();
-      when "find" do findCompilers();
+      when "--list" do listCompilers();
+      when "--find" do findCompilers();
+      when "--edit" do editCompilers();
       otherwise do masonCompilerHelp();
     }
 }
 
 /* lists available compilers on system */
-proc listCompilers() {
+private proc listCompilers() {
   const command = "spack compilers";
   const status = runCommand(command);
  }
 
 /* Finds available compilers */
-proc findCompilers() {
+private proc findCompilers() {
   const command = "spack compiler find";
   const status = runCommand(command);
 }
+
+/* Opens the compiler configuration file in $EDITOR */
+private proc editCompilers() {
+  const command = "spack config edit compilers";
+  const status = runCommand(command);
+}
+
+/* Print system arch info */
+private proc printArch() {
+  const command = "spack arch";
+  const status = runCommand(command);
+}
+
 
 /* Given a toml of external dependencies returns
    the dependencies in a toml */
