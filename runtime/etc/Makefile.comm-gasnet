@@ -58,7 +58,10 @@ LD = $(GASNET_LD)   # GASNet chose C++ linker so stick with it
 else ifeq ($(GASNET_LD),$(GASNET_CC))
 LD = $(GASNET_CXX)  # GASNet chose C, so switch to C++
 else ifeq ($(GASNET_LD_REQUIRES_MPI),1)
-LD = mpicxx         # GASNet chose mpicc, so we'll choose mpicxx
+ifeq (, $(MPI_CXX))
+MPI_CXX = mpicxx    # GASNet defaults to mpicc, so we'll default to mpicxx
+endif
+LD = $(MPI_CXX)
 else
 LD = $(CXX)
 $(warning GASNET_LD unexpectedly set to '$(GASNET_LD)'.  Please file a Chapel bug against this.)
