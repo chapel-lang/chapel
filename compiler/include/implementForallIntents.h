@@ -39,7 +39,6 @@
 extern Map<FnSymbol*,FnSymbol*> pristineLeaderIterators;
 
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
-void  resolveShadowVarsIfNeeded(DefExpr* def);
 
 IntentTag argIntentForForallIntent(ForallIntentTag tfi);
 bool      callingParallelIterator(CallExpr* call);
