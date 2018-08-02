@@ -230,9 +230,9 @@ proc masonCompilerHelp() {
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
-  //writeln("        --find                  Find compilers on your system");
-  //writeln("        --edit                  Open the compilers configuration file in $EDITOR");
-  //writeln("        --show                  Increase Verbosity");
+  writeln("        --find                  Find compilers on your system");
+  writeln("        --edit                  Open the compilers configuration file in $EDITOR");
+  writeln("        --show                  Increase Verbosity");
   writeln();
  }
 

@@ -70,11 +70,16 @@ proc listSpkgs() {
 }
 
 /* Queries spack for package existance */
+//TODO: add --desc to search descriptions
 proc searchSpkgs(args: [?d] string) {
   if args.size < 4 {
     listSpkgs();
   }
   else {
+    if args[3] == "-h" || args[3] == "--help" {
+      masonExternalSearchHelp();
+      exit(0);
+    }
     const pkgName = args[3];
     const command = "spack list " + pkgName;
     const status = runCommand(command);
@@ -141,7 +146,7 @@ proc compiler(args: [?d] string) {
   select option {
       when "list" do listCompilers();
       when "find" do findCompilers();
-      otherwise do masonExternalHelp();
+      otherwise do masonCompilerHelp();
     }
 }
 
