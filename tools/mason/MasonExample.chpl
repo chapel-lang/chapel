@@ -344,24 +344,24 @@ proc printAvailableExamples(toml: Toml, projectHome: string) {
 proc exampleModified(projectHome: string, projectName: string,
                              exampleName: string) {
   const example = basename(stripExt(exampleName, ".chpl"));
-  const examplePath = joinPath(projectHome, "target/example", exampleName);
+  const exampleBinPath = joinPath(projectHome, "target/example", example);
+  const examplePath = joinPath(projectHome, "example");
 
   // check for changes to Mason.toml and src code
   if projectModified(projectHome, example, "example") {
       return true;
   }
   else {
-    if isDir(examplePath) {
+    // check for binary existance
+     if isFile(exampleBinPath) {
       // check for changes to example
-      const exModTime = getLastModified(joinPath(projectHome, "example",
-                                                 getExamplePath(exampleName)));
-      const exBinModTime = getLastModified(examplePath);
+       const exModTime = getLastModified(joinPath(examplePath, exampleName));
+       const exBinModTime = getLastModified(exampleBinPath);
       if exModTime > exBinModTime {
         return true;
       }
       else return false;
     }
-    else return false;
+    else return true;
   }
-  return true;
 }
