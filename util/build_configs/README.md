@@ -10,11 +10,16 @@ Work-in-progress (2018-07-31)
 
 * setenv-example-*.bash:
   Example setenv script files
+  - setenv-example-1: The simplest tutorial illustrating a trivial Chapel configuration.
+  - setenv-example-2: Same trivial Chapel configuration, but a more elaborate scripting style.
+  - setenv-example-3: Realistic Chapel configuration for a Cray-XC.
 
 * chapel_build.bash:
   Example high-level wrapper script to run a complete build process
 
-* functions.bash: Misc shell functions for use in other bash scripts
+* functions.bash: General-purpose shell functions for use in bash scripts
+
+* module_functions.bash: Shell functions to manipulate Cray system modules
 
 * Users local Chapel projects:
 

@@ -145,5 +145,5 @@ else
         $BUILD_CONFIGS_CHPLENV_EXE --all --no-tidy
     fi
 
-    log_info "End $setenv"
+    log_info "End callback $setenv"
 fi

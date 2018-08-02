@@ -334,7 +334,7 @@ def get_chpl_misc(opts, args, build_env):
     else:
         logging.debug('Using make_cmd={0}'.format(make_cmd))
 
-    if opts.make_log and not opts.dry_run:
+    if opts.make_log:
         logging.info('Using Chapel make log file={0}'.format(opts.make_log))
         make_logfile = open(opts.make_log, 'w')
     else:
@@ -436,15 +436,16 @@ def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_
         logging.info('dry-run command:\n\t{0}'.format(dryrun_cmd))
         build_env['BUILD_CONFIGS_DRYRUN_CMD']  = dryrun_cmd
         if make_logfile:
-            print('[BUILD_CONFIGS] command:\n\t{0}\n'.format(make_cmd), file=make_logfile)
+            print('[BUILD_CONFIGS] command:\n\t{0}\n'.format(dryrun_cmd), file=make_logfile)
+            result, output, error = check_output(dryrun_cmd, chpl_home, build_env, file=make_logfile)
         with elapsed_time(build_config_name):
             result, output, error = check_output(dryrun_cmd, chpl_home, build_env)
-            if result or error:
-                logging.warn('Errors/Warnings from dry-run config {0}\n{1}\n{2}\nExit code {3}'.format(
-                    build_config_name, output, error, result))
-            elif verbose:
-                logging.debug('Results from dry-run config {0}\n{1}\n{2}\nExit code {3}'.format(
-                    build_config_name, output, error, result))
+        if result or error:
+            logging.warn('Errors/Warnings from dry-run config {0}\n{1}\n{2}\nExit code {3}'.format(
+                build_config_name, output, error, result))
+        elif verbose:
+            logging.debug('Results from dry-run config {0}\n{1}\n{2}\nExit code {3}'.format(
+                build_config_name, output, error, result))
     else:
         logging.info('Chapel make command:\n\t{0}'.format(make_cmd))
         build_env['BUILD_CONFIGS_MAKE_CMD'] = make_cmd
