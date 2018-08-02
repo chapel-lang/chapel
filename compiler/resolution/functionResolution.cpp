@@ -140,8 +140,10 @@ static Map<Type*,     Type*>       runtimeTypeMap;
 static Map<Type*,     FnSymbol*>   runtimeTypeToValueMap;
 
 static Map<FnSymbol*, const char*> innerCompilerWarningMap;
-
 static Map<FnSymbol*, const char*> outerCompilerWarningMap;
+
+static Map<FnSymbol*, const char*> innerCompilerErrorMap;
+static Map<FnSymbol*, const char*> outerCompilerErrorMap;
 
 static CapturedValueMap            capturedValues;
 
@@ -166,7 +168,7 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
 static bool
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
 static CallExpr* userCall(CallExpr* call);
-static void reissueCompilerWarning(const char* str, int offset);
+static void reissueCompilerWarning(const char* str, int offset, bool err);
 
 static void resolveTupleExpand(CallExpr* call);
 static void resolveSetMember(CallExpr* call);
@@ -1563,13 +1565,13 @@ userCall(CallExpr* call) {
   return call;
 }
 
-static void reissueCompilerWarning(const char* str, int offset) {
+static void reissueCompilerWarning(const char* str, int offset, bool err) {
   //
   // Disable compiler warnings in internal modules that are triggered
   // within a dynamic dispatch context because of potential user
   // confusion.  See note in 'issueCompileError' above.
   //
-  if (inDynamicDispatchResolution)
+  if (!err && inDynamicDispatchResolution)
     if (callStack.tail()->getModule()->modTag == MOD_INTERNAL &&
         callStack.head()->getModule()->modTag == MOD_INTERNAL)
       return;
@@ -1584,8 +1586,12 @@ static void reissueCompilerWarning(const char* str, int offset) {
         !from->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
       break;
   }
-  gdbShouldBreakHere();
-  USR_WARN(from, "%s", str);
+  if (err) {
+    USR_FATAL(from, "%s", str);
+  } else {
+    gdbShouldBreakHere();
+    USR_WARN(from, "%s", str);
+  }
 }
 
 //
@@ -2465,8 +2471,23 @@ static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
 }
 
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
+  // reissue compiler errors
+  if (const char* str = innerCompilerErrorMap.get(resolvedFn)) {
+    reissueCompilerWarning(str, 2, true);
+
+    if (callStack.n >= 2) {
+      if (FnSymbol* fn = callStack.v[callStack.n - 2]->resolvedFunction()) {
+        outerCompilerErrorMap.put(fn, str);
+      }
+    }
+  }
+  if (const char* str = outerCompilerErrorMap.get(resolvedFn)) {
+    reissueCompilerWarning(str, 1, true);
+  }
+
+  // reissue compiler warnings
   if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 2);
+    reissueCompilerWarning(str, 2, false);
 
     if (callStack.n >= 2) {
       if (FnSymbol* fn = callStack.v[callStack.n - 2]->resolvedFunction()) {
@@ -2476,7 +2497,7 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
   }
 
   if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 1);
+    reissueCompilerWarning(str, 1, false);
   }
 }
 
@@ -7447,17 +7468,17 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
 
     if (call->isPrimitive(PRIM_ERROR) == true) {
       USR_FATAL(from, "%s", str);
+      if (FnSymbol* fn = callStack.tail()->resolvedFunction())
+        innerCompilerErrorMap.put(fn, str);
+      if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
+        outerCompilerErrorMap.put(fn, str);
     } else {
       gdbShouldBreakHere();
       USR_WARN (from, "%s", str);
-    }
-
-    if (FnSymbol* fn = callStack.tail()->resolvedFunction())  {
-      innerCompilerWarningMap.put(fn, str);
-    }
-
-    if (FnSymbol* fn = callStack.v[head]->resolvedFunction()) {
-      outerCompilerWarningMap.put(fn, str);
+      if (FnSymbol* fn = callStack.tail()->resolvedFunction())
+        innerCompilerWarningMap.put(fn, str);
+      if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
+        outerCompilerWarningMap.put(fn, str);
     }
   }
 }
