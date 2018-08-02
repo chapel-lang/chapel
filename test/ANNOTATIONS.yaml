@@ -342,6 +342,9 @@ all:
     - Avoid using syncvar_t in the qthreads shim (#10082)
   07/04/18:
     - Remove spinwaiting from qthreads chpl_sync_lock() (#10133)
+  08/01/18:
+    - text: cannot reproduce old numbers for gn+aries
+      config: 16 node XC
 
 
 AllCompTime:
