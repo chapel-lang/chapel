@@ -749,8 +749,11 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
 
   // Ignore a CondStmt containing a PRIM_CHECK_ERROR
   // so that we can still detect initCopy after a call that can throw
-  if (isCheckErrorStmt(nextExpr))
-      nextExpr = nextExpr->next;
+  //
+  // Also ignore a DefExpr which might e.g. define a user variable
+  // which is = initCopy(call_tmp).
+  while (nextExpr && (isCheckErrorStmt(nextExpr) || isDefExpr(nextExpr)))
+    nextExpr = nextExpr->next;
 
   CallExpr* copyExpr  = NULL;
 
@@ -826,7 +829,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
     if (rhsFn->hasFlag(FLAG_INIT_COPY_FN) && unaliasFn != NULL) {
       // BHARSH: It seems important that there's a temporary to store the
       // result of the unaliasFn call. Otherwise we'll move into a variable
-      // that has multiplie uses, which seems to cause a variety of problems.
+      // that has multiple uses, which seems to cause a variety of problems.
       //
       // In particular, I noticed that `changeRetToArgAndClone` generates
       // bad AST if I simply did this:
