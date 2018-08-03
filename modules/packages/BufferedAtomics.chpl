@@ -32,6 +32,9 @@ module BufferedAtomics {
     var v = value;
     atomic_add_buff(v, _localeid(), _v);
   }
+  inline proc AtomicT.addBuff(value:T): void {
+    this.add(value);
+  }
 
   inline proc RAtomicT.subBuff(value:T): void {
     pragma "insert line file info" extern externFunc("sub_buff", T)
@@ -39,6 +42,9 @@ module BufferedAtomics {
 
     var v = value;
     atomic_sub_buff(v, _localeid(), _v);
+  }
+  inline proc AtomicT.subBuff(value:T): void {
+    this.sub(value);
   }
 
   inline proc RAtomicT.orBuff(value:T): void {
@@ -49,6 +55,9 @@ module BufferedAtomics {
     var v = value;
     atomic_or_buff(v, _localeid(), _v);
   }
+  inline proc AtomicT.orBuff(value:T): void {
+    this.or(value);
+  }
 
   inline proc RAtomicT.andBuff(value:T): void {
     if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
@@ -58,6 +67,9 @@ module BufferedAtomics {
     var v = value;
     atomic_and_buff(v, _localeid(), _v);
   }
+  inline proc AtomicT.andBuff(value:T): void {
+    this.and(value);
+  }
 
   inline proc RAtomicT.xorBuff(value:T): void {
     if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
@@ -66,6 +78,9 @@ module BufferedAtomics {
 
     var v = value;
     atomic_xor_buff(v, _localeid(), _v);
+  }
+  inline proc AtomicT.xorBuff(value:T): void {
+    this.xor(value);
   }
 
   inline proc atomicBuffFlush(): void {
