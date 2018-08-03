@@ -94,6 +94,8 @@ static std::string getCompilelineOption(std::string option) {
   return res;
 }
 
+// Save the value of the environment variable "var" into the makefile, so it
+// can be referenced in the other variables for legibility purposes.
 static void setupMakeEnvVars(std::string var, fileinfo makefile) {
   std::string cmd = "echo $";
   cmd += var;
