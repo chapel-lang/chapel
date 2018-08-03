@@ -1065,10 +1065,19 @@ module ChapelBase {
       throw new unmanaged TaskErrors(e.errors);
   }
 
+  proc _do_command_line_cast(type t, x:c_string) throws {
+    var str = x:string;
+    if t == string {
+      return str;
+    } else {
+      return str:t;
+    }
+  }
+  // param s is used for error reporting
   pragma "command line setting"
-  proc _command_line_cast(param s: c_string, type t, x) {
+  proc _command_line_cast(param s: c_string, type t, x:c_string) {
     try! {
-      return _cast(t, x:string);
+      return _do_command_line_cast(t, x);
     }
   }
 
