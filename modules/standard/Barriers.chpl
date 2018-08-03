@@ -238,7 +238,7 @@ module Barriers {
     }
 
     pragma "no doc"
-    inline proc reset(nTasks: int) {
+    /* inline */ override proc reset(nTasks: int) {
       inline proc innerReset() {
         n = nTasks;
         count.write(n);
@@ -250,7 +250,7 @@ module Barriers {
     /* Block until n tasks have called this method.  If `reusable` is true,
        reset the barrier to be used again.
      */
-    inline proc barrier() {
+    /* inline */ override proc barrier() {
       inline proc innerBarrier() {
         const myc = count.fetchSub(1);
         if myc<=1 {
@@ -279,7 +279,7 @@ module Barriers {
     }
 
     /* Notify the barrier that this task has reached this point. */
-    inline proc notify() {
+    /* inline */ override proc notify() {
       inline proc innerNotify() {
         const myc = count.fetchSub(1);
         if myc<=1 {
@@ -297,7 +297,7 @@ module Barriers {
        :proc:`wait` will block until `n` tasks have called it after calling
        :proc:`notify`.
      */
-    inline proc wait() {
+    /* inline */ override proc wait() {
       inline proc innerWait() {
         done.waitFor(true);
         if reusable {
@@ -312,7 +312,7 @@ module Barriers {
 
     /* Return `true` if `n` tasks have called :proc:`notify`
      */
-    inline proc check(): bool {
+    /* inline */ override proc check(): bool {
       return done.read();
     }
   }
@@ -344,7 +344,7 @@ module Barriers {
       reset(n);
     }
 
-    inline proc reset(nTasks: int) {
+    /* inline */ override proc reset(nTasks: int) {
       maxBlockers = nTasks;
       blockers.write(0);
       outGate.reset();
@@ -353,7 +353,7 @@ module Barriers {
 
     /* Block until `n` tasks have called this method.
      */
-    inline proc barrier() {
+    /* inline */ override proc barrier() {
       on this {
         if boundsChecking && blockers.read() >= maxBlockers {
           HaltWrappers.boundsCheckHalt("Too many callers to barrier()");
@@ -379,7 +379,7 @@ module Barriers {
     }
 
     /* Notify the barrier that this task has reached this point. */
-    inline proc notify() {
+    /* inline */ override proc notify() {
       on this {
         if boundsChecking && blockers.read() >= maxBlockers {
           HaltWrappers.boundsCheckHalt("Too many callers to notify()");
@@ -395,7 +395,7 @@ module Barriers {
     }
 
     /* Wait until `n` tasks have called :proc:`notify`. */
-    inline proc wait() {
+    /* inline */ override proc wait() {
       on this {
         outGate.readFF();
         if reusable {
@@ -410,7 +410,7 @@ module Barriers {
 
     /* Return `true` if `n` tasks have called :proc:`notify`
      */
-    inline proc check(): bool {
+    /* inline */ override proc check(): bool {
       return outGate.isFull;
     }
   }

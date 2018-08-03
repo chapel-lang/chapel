@@ -267,7 +267,7 @@ module DefaultAssociative {
       return dist;
     }
 
-    proc dsiClear() {
+    override proc dsiClear() {
       on this {
         if parSafe then lockTable();
         for slot in tableDom {

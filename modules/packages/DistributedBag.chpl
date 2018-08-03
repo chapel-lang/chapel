@@ -343,7 +343,7 @@ module DistributedBag {
       Insert an element to this node's bag. The ordering is not guaranteed to be
       preserved.
     */
-    proc add(elt : eltType) : bool {
+    override proc add(elt : eltType) : bool {
       return bag.add(elt);
     }
 
@@ -352,7 +352,7 @@ module DistributedBag {
       are not guaranteed to be the same order it has been inserted. If this node's
       bag is empty, it will attempt to steal elements from bags of other nodes.
     */
-    proc remove() : (bool, eltType) {
+    override proc remove() : (bool, eltType) {
       return bag.remove();
     }
 
@@ -362,7 +362,7 @@ module DistributedBag {
       and may miss elements or even count duplicates resulting from any concurrent
       insertion or removal operations.
     */
-    proc getSize() : int {
+    override proc getSize() : int {
       var sz : atomic int;
       coforall loc in targetLocales do on loc {
         var instance = getPrivatizedThis;
@@ -380,7 +380,7 @@ module DistributedBag {
       updates across nodes, and may miss elements resulting from any concurrent
       insertion or removal operations.
     */
-    proc contains(elt : eltType) : bool {
+    override proc contains(elt : eltType) : bool {
       var foundElt : atomic bool;
       forall elem in getPrivatizedThis {
         if elem == elt {
@@ -543,7 +543,7 @@ module DistributedBag {
         parallel iteration, for both performance and memory benefit.
 
     */
-    iter these() : eltType {
+    override iter these() : eltType {
       for loc in targetLocales {
         for segmentIdx in 0..#here.maxTaskPar {
           // The size of the snapshot is only known once we have the lock.
