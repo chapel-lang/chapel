@@ -9,7 +9,7 @@ module RunBRawLoops {
     return 1.0 / sqrt(denom);
   }
 
-  proc runBRawLoops(loop_stats:[] LoopStat, run_loop:[] bool, ilength: LoopLength) {
+  proc runBRawLoops(loop_stats:[] unmanaged LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
     var loop_data = getLoopData();
     for iloop in loop_suite_run_info.loop_kernel_dom {
@@ -17,7 +17,7 @@ module RunBRawLoops {
         var stat = loop_stats[iloop];
         var len = stat.loop_length[ilength];
         var num_samples = stat.samples_per_pass[ilength];
-        var ltimer = new LoopTimer();
+        var ltimer = new unmanaged LoopTimer();
 
         select iloop {
           when LoopKernelID.INIT3 {

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include "returnArrayTakesArrayArg2.h"
+#include "lib/returnArrayTakesArrayArg2.h"
 
 extern void chpl_library_init(int argc, char* argv[]);
 extern void chpl_library_finalize(void);

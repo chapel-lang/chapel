@@ -1,25 +1,25 @@
 class Node {
   var data: int;
-  var left, right: Node;
+  var left, right: unmanaged Node;
 
   proc processNode() {
     writeln(data);
   }
 }
 
-const tree = new Node(5,
-               new Node(2,
-                 new Node(1, nil, nil),
-                 new Node(4,
-                   new Node(3, nil, nil),
+const tree = new unmanaged Node(5,
+               new unmanaged Node(2,
+                 new unmanaged Node(1, nil, nil),
+                 new unmanaged Node(4,
+                   new unmanaged Node(3, nil, nil),
                    nil)),
-               new Node(8,
-                 new Node(6, 
-                   nil, 
-                   new Node(7, nil, nil)),
-                   new Node(9, nil, nil)));
+               new unmanaged Node(8,
+                 new unmanaged Node(6,
+                   nil,
+                   new unmanaged Node(7, nil, nil)),
+                   new unmanaged Node(9, nil, nil)));
 
-                      
+
 sync begin walkTree(tree);
 
 proc walkTree(node) {

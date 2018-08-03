@@ -502,7 +502,6 @@ proc create_and_analyze_graph(Pairs)
           maxlabel = lab;
         }
       }
-      delete tiebreaker;
 
       // TODO:
       // Did the existing label correspond to a maximal label?

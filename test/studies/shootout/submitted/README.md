@@ -9,8 +9,6 @@ Benchmarks Games website.
 
 * [binarytrees.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=binarytrees&lang=chapel&id=1)
     * Allocates and deallocates many, many binary trees
-* [chameneosredux.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=chameneosredux&lang=chapel&id=1)
-    * Simulates meetings between color-changing Chameneos
 * [fannkuchredux.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=fannkuchredux&lang=chapel&id=1)
     * Performs many operations on small arrays
 * [fasta.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=fasta&lang=chapel&id=1) |

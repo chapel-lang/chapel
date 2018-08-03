@@ -1,2 +1,2 @@
-libreturnArrayOfReals.a
-returnArrayOfReals.h
+lib/libreturnArrayOfReals.a
+lib/returnArrayOfReals.h

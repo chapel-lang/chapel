@@ -16,7 +16,6 @@ proc setupDoms(ref D1, ref D2) {
     if !D2.member(rnd2) then
       D2 += rnd2;
   }
-  delete rs;
 }
 
 for i in 1..nTrials {

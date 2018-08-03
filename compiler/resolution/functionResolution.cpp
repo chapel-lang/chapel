@@ -139,9 +139,11 @@ static Map<Type*,     Type*>       runtimeTypeMap;
 
 static Map<Type*,     FnSymbol*>   runtimeTypeToValueMap;
 
-static Map<FnSymbol*, const char*> innerCompilerWarningMap;
+static std::map<FnSymbol*, const char*> innerCompilerWarningMap;
+static std::map<FnSymbol*, const char*> outerCompilerWarningMap;
 
-static Map<FnSymbol*, const char*> outerCompilerWarningMap;
+static std::map<FnSymbol*, const char*> innerCompilerErrorMap;
+static std::map<FnSymbol*, const char*> outerCompilerErrorMap;
 
 static CapturedValueMap            capturedValues;
 
@@ -166,7 +168,7 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
 static bool
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
 static CallExpr* userCall(CallExpr* call);
-static void reissueCompilerWarning(const char* str, int offset);
+static void reissueCompilerWarning(const char* str, int offset, bool err);
 
 static void resolveTupleExpand(CallExpr* call);
 static void resolveSetMember(CallExpr* call);
@@ -1031,6 +1033,11 @@ bool canCoerce(Type*     actualType,
     }
   }
 
+  // Handle coercions nil -> owned/shared
+  if (actualType == dtNil && isManagedPtrType(formalType)) {
+    return true;
+  }
+
   if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
     return true;
   }
@@ -1558,13 +1565,13 @@ userCall(CallExpr* call) {
   return call;
 }
 
-static void reissueCompilerWarning(const char* str, int offset) {
+static void reissueCompilerWarning(const char* str, int offset, bool err) {
   //
   // Disable compiler warnings in internal modules that are triggered
   // within a dynamic dispatch context because of potential user
   // confusion.  See note in 'issueCompileError' above.
   //
-  if (inDynamicDispatchResolution)
+  if (!err && inDynamicDispatchResolution)
     if (callStack.tail()->getModule()->modTag == MOD_INTERNAL &&
         callStack.head()->getModule()->modTag == MOD_INTERNAL)
       return;
@@ -1579,8 +1586,12 @@ static void reissueCompilerWarning(const char* str, int offset) {
         !from->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
       break;
   }
-  gdbShouldBreakHere();
-  USR_WARN(from, "%s", str);
+  if (err) {
+    USR_FATAL(from, "%s", str);
+  } else {
+    gdbShouldBreakHere();
+    USR_WARN(from, "%s", str);
+  }
 }
 
 //
@@ -2459,20 +2470,33 @@ static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
   return best->fn;
 }
 
-void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
-  if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 2);
+// Reissue compiler warning or error messages
+static void reissueMsgs(FnSymbol* resolvedFn,
+                        std::map<FnSymbol*, const char*>& innerMap,
+                        std::map<FnSymbol*, const char*>& outerMap,
+                        bool err) {
+  std::map<FnSymbol*, const char*>::iterator it;
+
+  it = innerMap.find(resolvedFn);
+  if (it != innerMap.end()) {
+    reissueCompilerWarning(it->second, 2, err);
 
     if (callStack.n >= 2) {
       if (FnSymbol* fn = callStack.v[callStack.n - 2]->resolvedFunction()) {
-        outerCompilerWarningMap.put(fn, str);
+        outerMap[fn] = it->second;
       }
     }
   }
 
-  if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 1);
+  it = outerMap.find(resolvedFn);
+  if (it != outerMap.end()) {
+    reissueCompilerWarning(it->second, 1, err);
   }
+}
+
+void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
+  reissueMsgs(resolvedFn, innerCompilerErrorMap, outerCompilerErrorMap, true);
+  reissueMsgs(resolvedFn, innerCompilerWarningMap, outerCompilerWarningMap, false);
 }
 
 /************************************* | **************************************
@@ -6963,8 +6987,6 @@ Expr* resolveExpr(Expr* expr) {
 
     retval = foldTryCond(postFold(expr));
 
-    resolveShadowVarsIfNeeded(def);
-
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 
@@ -7442,17 +7464,17 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
 
     if (call->isPrimitive(PRIM_ERROR) == true) {
       USR_FATAL(from, "%s", str);
+      if (FnSymbol* fn = callStack.tail()->resolvedFunction())
+        innerCompilerErrorMap[fn] = str;
+      if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
+        outerCompilerErrorMap[fn] = str;
     } else {
       gdbShouldBreakHere();
       USR_WARN (from, "%s", str);
-    }
-
-    if (FnSymbol* fn = callStack.tail()->resolvedFunction())  {
-      innerCompilerWarningMap.put(fn, str);
-    }
-
-    if (FnSymbol* fn = callStack.v[head]->resolvedFunction()) {
-      outerCompilerWarningMap.put(fn, str);
+      if (FnSymbol* fn = callStack.tail()->resolvedFunction())
+        innerCompilerWarningMap[fn] = str;
+      if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
+        outerCompilerWarningMap[fn] = str;
     }
   }
 }

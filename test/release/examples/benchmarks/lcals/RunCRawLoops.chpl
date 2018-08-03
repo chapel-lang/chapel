@@ -2,7 +2,7 @@ module RunCRawLoops {
   use LCALSDataTypes;
   use Timer;
 
-  proc runCRawLoops(loop_stats:[] LoopStat, run_loop:[] bool, ilength: LoopLength) {
+  proc runCRawLoops(loop_stats:[] unmanaged LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
     var loop_data = getLoopData();
     for iloop in loop_suite_run_info.loop_kernel_dom {
@@ -10,7 +10,7 @@ module RunCRawLoops {
         var stat = loop_stats[iloop];
         var len = stat.loop_length[ilength];
         var num_samples = stat.samples_per_pass[ilength];
-        var ltimer = new LoopTimer();
+        var ltimer = new unmanaged LoopTimer();
 
         select iloop {
           when LoopKernelID.HYDRO_1D {

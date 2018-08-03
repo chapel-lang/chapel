@@ -123,6 +123,3 @@ writeln("\trcR3D: ", checkRNG(rcR3D, rcT3D), " errors");
 
 if printRefArrays then
   outputRealArrays();
-
-delete trng;
-delete rng;

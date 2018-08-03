@@ -55,7 +55,6 @@ public:
 };
 
 bool astUnderFI(const Expr* ast, ForallIntents* fi);
-void setupShadowVariables(ForallStmt* fs);
 void resolveForallStmts1();
 void resolveForallStmts2();
 

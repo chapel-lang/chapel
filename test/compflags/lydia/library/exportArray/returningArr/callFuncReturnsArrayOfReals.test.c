@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "returnArrayOfReals.h"
+#include "lib/returnArrayOfReals.h"
 
 extern void chpl_library_init(int argc, char* argv[]);
 extern void chpl_library_finalize(void);

@@ -258,10 +258,12 @@ class SparseBlockDom: BaseSparseDomImpl {
     }
   }
 
-  proc dsiMember(ind) {
-    on whole.dist.idxToLocale(ind) {
-      writeln("Need to add support for mapping locale to local domain");
+  proc dsiMember(ind) : bool {
+    var _retval : bool = false;
+    on dist.dsiIndexToLocale(ind) {
+      _retval = locDoms[dist.targetLocsIdx(ind)].dsiMember(ind);
     }
+    return _retval;
   }
 
   proc dsiClear() {
@@ -804,3 +806,22 @@ proc dropDims(D: domain, dims...) {
   return DResult;
 }
 
+proc SparseBlockDom.dsiHasSingleLocalSubdomain() param return true;
+proc SparseBlockArr.dsiHasSingleLocalSubdomain() param return true;
+
+proc SparseBlockDom.dsiLocalSubdomain() {
+  // TODO -- could be replaced by a privatized myLocDom in BlockDom
+  // as it is with BlockArr
+  var myLocDom:unmanaged LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType) = nil;
+  for (loc, locDom) in zip(dist.targetLocales, locDoms) {
+    if loc == here {
+      myLocDom = locDom;
+      break;
+    }
+  }
+  return myLocDom.mySparseBlock;
+}
+
+proc SparseBlockArr.dsiLocalSubdomain() {
+  return myLocArr.locDom.mySparseBlock;
+}

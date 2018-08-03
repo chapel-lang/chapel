@@ -19,5 +19,13 @@
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.gnu
 
-CC=mpicc
-CXX=mpicxx
+ifeq (, $(MPI_CC))
+MPI_CC=mpicc
+endif
+
+ifeq (, $(MPI_CXX))
+MPI_CXX=mpicxx
+endif
+
+CC=$(MPI_CC)
+CXX=$(MPI_CXX)

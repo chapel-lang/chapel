@@ -1,1 +1,1 @@
--L. -lexportFuncWithExplicitVoidRet `$CHPL_HOME/util/config/compileline --libraries`
+-Llib/ -lexportFuncWithExplicitVoidRet `$CHPL_HOME/util/config/compileline --libraries`

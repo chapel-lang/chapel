@@ -184,7 +184,6 @@ proc test_tz_aware_arithmetic() {
   var maxdiff = max - min;
   assert(maxdiff == datetime.max - datetime.min +
                     new timedelta(minutes=2*1439));
-  delete rng;
 }
 
 proc test_tzinfo_now() {

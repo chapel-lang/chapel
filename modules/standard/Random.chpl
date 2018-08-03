@@ -136,7 +136,6 @@ module Random {
     where isSupportedNumericType(arr.eltType) {
     var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
     randNums.fillRandom(arr);
-    delete randNums;
   }
 
   pragma "no doc"
@@ -156,7 +155,6 @@ module Random {
   proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
     var randNums = makeRandomStream(seed, eltType=arr.domain.idxType, parSafe=false, algorithm=algorithm);
     randNums.shuffle(arr);
-    delete randNums;
   }
 
   /* Produce a random permutation, storing it in a 1-D array.
@@ -172,7 +170,6 @@ module Random {
   proc permutation(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
     var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
     randNums.permutation(arr);
-    delete randNums;
   }
 
   /*
@@ -197,15 +194,17 @@ module Random {
 
     :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
     :type algorithm: :type:`RNG`
+
+    :returns: an owned RandomStream
   */
   proc makeRandomStream(type eltType,
                         seed: int(64) = SeedGenerator.oddCurrentTime,
                         param parSafe: bool = true,
                         param algorithm = defaultRNG) {
     if algorithm == RNG.PCG then
-      return new unmanaged RandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
+      return new owned RandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
     else if algorithm == RNG.NPB then
-      return new unmanaged NPBRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
+      return new owned NPBRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
     else
       compilerError("Unknown random number generator");
   }

@@ -56,8 +56,6 @@ proc getRealRandoms(method:int) {
 
     for a in A do
       a = R.getNext();
-
-    delete R;
   }
 
   return A;

@@ -189,7 +189,7 @@ proc main {
   writeln("\n DONE!!! ");
 }
 
-proc computeStats(ilv: LoopVariantID, loop_stats: [] LoopStat, do_fom: bool) {
+proc computeStats(ilv: LoopVariantID, loop_stats: [] unmanaged LoopStat, do_fom: bool) {
   for stat in loop_stats {
     for ilen in stat.loop_length_dom {
       if stat.loop_run_count[ilen] > 0 {
@@ -709,7 +709,7 @@ proc computeReferenceLoopTimes() {
   var suite_info = getLoopSuiteRunInfo();
   var ref_loop_stat = suite_info.ref_loop_stat;
 
-  var lstat0: LoopStat;
+  var lstat0: unmanaged LoopStat;
 
   writeln("\n computeReferenceLoopTimes...");
 
@@ -719,7 +719,7 @@ proc computeReferenceLoopTimes() {
     runReferenceLoop0(lstat0, ilen);
   }
 
-  var lstat1: LoopStat;
+  var lstat1: unmanaged LoopStat;
   lstat1 = ref_loop_stat;
 
   for ilen in suite_info.loop_length_dom {
@@ -734,7 +734,7 @@ proc computeReferenceLoopTimes() {
 
 proc defineReferenceLoopRunInfo() {
   var suite_info = getLoopSuiteRunInfo();
-  var ref_loop_stat = new LoopStat();
+  var ref_loop_stat = new unmanaged LoopStat();
   suite_info.ref_loop_stat = ref_loop_stat;
 
   ref_loop_stat.loop_length[LoopLength.LONG]        = 24336;
@@ -777,7 +777,7 @@ proc defineLoopSuiteRunInfo(run_variants, run_loop,
   for ilv in run_variants.domain {
     for iloop in suite_info.loop_kernel_dom {
       var loop_name = iloop:string;
-      var loop_stat = new LoopStat();
+      var loop_stat = new unmanaged LoopStat();
       var max_loop_indx = 0;
       if run_loop[iloop] {
         select iloop {
@@ -1149,6 +1149,6 @@ proc defineLoopSuiteRunInfo(run_variants, run_loop,
     }
   }
   defineReferenceLoopRunInfo();
-  s_loop_data = new LoopData(max(max_loop_length, suite_info.ref_loop_stat.loop_length[LoopLength.LONG]));
+  s_loop_data = new unmanaged LoopData(max(max_loop_length, suite_info.ref_loop_stat.loop_length[LoopLength.LONG]));
 
 }

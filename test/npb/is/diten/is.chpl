@@ -131,7 +131,9 @@ proc rank(iteration: int) {
 
   if useBuckets {
     bucketSize.write(0);
-    bucketSize(keyArray >> shift).add(1);
+    // workaround -- see https://github.com/chapel-lang/chapel/issues/10575
+    // bucketSize(keyArray >> shift).add(1);
+    forall k in keyArray do bucketSize(k >> shift).add(1);
 
     bucketPtrs(0) = 0;
     for i in 1..numBuckets-1 do

@@ -1,4 +1,4 @@
-perfkeys: Time: ,Time: ,Time:  
+perfkeys: Time:, Time:, Time:  
 files: exchange-elegant.dat, exchange-destLocal.dat, exchange-bothLocal.dat
 graphkeys: elegant Time, destLocal Time, bothLocal Time
 ylabel: Time (seconds)

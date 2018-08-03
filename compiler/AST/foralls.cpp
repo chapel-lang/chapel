@@ -372,7 +372,7 @@ bool astUnderFI(const Expr* ast, ForallIntents* fi) {
 //
 //  * find the target parallel iterator (standalone or leader) and resolve it
 //  * issue an error, if neither is found
-//  * handle forall intents, using implementForallIntents1New()
+//  * handle forall intents, using setupAndResolveShadowVars()
 //  * partly lower by building leader+follow loop(s) as needed
 //
 // This happens when resolveExpr() encounters the first iterated expression
@@ -957,9 +957,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
     resolveParallelIteratorAndIdxVar(pfs, iterCall, origIterFn, gotSA);
 
-    implementForallIntents1New(pfs, iterCall);
-
-    setupShadowVariables(pfs);
+    setupAndResolveShadowVars(pfs);
 
     if (gotSA) {
       if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {

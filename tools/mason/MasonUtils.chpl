@@ -51,6 +51,7 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
   const target = joinPath(projectHome, 'target');
   const srcBin = joinPath(target, binLoc);
   const test = joinPath(target, 'test');
+  const example = joinPath(target, 'example');
 
   if !isDir(target) {
     mkdir(target);
@@ -60,6 +61,9 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
   }
   if !isDir(test) {
     mkdir(test);
+  }
+  if !isDir(example) {
+    mkdir(example);
   }
 }
 
@@ -299,7 +303,7 @@ proc getLastModified(filename: string) : int {
 proc projectModified(projectHome, projectName, binLocation) : bool {
   const binaryPath = joinPath(projectHome, "target", binLocation, projectName);
   const tomlPath = joinPath(projectHome, "Mason.toml");
-  
+   
   if isFile(binaryPath) {
     const binModTime = getLastModified(binaryPath);
     for file in listdir(joinPath(projectHome, "src")) {
