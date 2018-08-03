@@ -1893,7 +1893,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
 
           if (newType == oldType) {
             if (isUserDefinedRecord(newType) && !getSymbolImmediate(var)) {
-              result = new CallExpr("chpl__initCopy", var);
+              result = new CallExpr("_removed_cast", var);
               call->replace(result);
             } else {
               result = new SymExpr(var);

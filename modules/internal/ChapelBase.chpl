@@ -2017,4 +2017,8 @@ module ChapelBase {
   inline proc _cast(type t:borrowed, x:_unmanaged) where isSubtype(_to_borrowed(x.type),t) {
     return __primitive("cast", t, x);
   }
+
+  inline proc _removed_cast(in x) {
+    return x;
+  }
 }
