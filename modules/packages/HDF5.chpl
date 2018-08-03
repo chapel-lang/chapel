@@ -3878,11 +3878,6 @@ module HDF5 {
     }
   }
 
-  // There is an internal error involving function arguments of this type
-  // being passed as shadow variables to forall loops if this type is not
-  // used in any other way.  As a workaround, declare an instance so that
-  // it is used.
-  private const unusedInternalErrorWorkaround: HDF5Preprocessor;
 
   /* A record that stores a rectangular array.  An array of `ArrayWrapper`
      records can store multiple differently sized arrays.
