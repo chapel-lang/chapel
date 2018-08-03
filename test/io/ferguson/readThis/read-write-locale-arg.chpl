@@ -28,9 +28,9 @@ class C {
 }
 
 
-var a = new A(1);
-var b = new B(1);
-var c = new C(1);
+var a = new unmanaged A(1);
+var b = new unmanaged B(1);
+var c = new unmanaged C(1);
 
 var f = openmem();
 var w = f.writer();

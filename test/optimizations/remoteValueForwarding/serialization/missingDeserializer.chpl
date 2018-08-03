@@ -7,7 +7,7 @@ class Helper {
 }
 
 record Foo {
-  var h : Helper;
+  var h : unmanaged Helper;
   var serialized = false;
 
   proc chpl__serialize() {
@@ -16,7 +16,7 @@ record Foo {
 
   proc type chpl__deserialize(data) where foo {
     var f : Foo;
-    f.h = new Helper(data);
+    f.h = new unmanaged Helper(data);
     f.serialized = true;
     return f;
   }
@@ -27,7 +27,7 @@ record Foo {
 }
 
 proc main() {
-  const ff = new Foo(new Helper((1,2,3)));
+  const ff = new Foo(new unmanaged Helper((1,2,3)));
 
   startCommDiagnostics();
   on Locales.tail() {

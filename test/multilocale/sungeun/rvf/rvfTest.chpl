@@ -69,7 +69,7 @@ proc f(lid, rid) {
       on rx.x do if noisy then writeln(here.id); else assert(here.id==lid);
     }
     
-    var cx = new C();
+    var cx = new unmanaged C();
     if noisy {
       writeln(cx.locale.id);
       writeln(cx.x.locale.id);

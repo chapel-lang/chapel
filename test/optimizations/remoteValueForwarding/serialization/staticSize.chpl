@@ -7,7 +7,7 @@ class Helper {
 }
 
 record Foo {
-  var h : Helper;
+  var h : unmanaged Helper;
   inline proc ranges {
     return h.x;
   }
@@ -18,7 +18,7 @@ record Foo {
 
   proc type chpl__deserialize(data) {
     var f : Foo;
-    f.h = new Helper(data);
+    f.h = new unmanaged Helper(data);
     return f;
   }
 
@@ -43,7 +43,7 @@ proc stop(msg : string) {
 
 proc main() {
   const R = (1..n-1, 1..n, 1..n+1);
-  const f = new Foo(new Helper(R));
+  const f = new Foo(new unmanaged Helper(R));
 
   start();
   on Locales[numLocales-1] {
