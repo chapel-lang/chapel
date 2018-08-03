@@ -22,7 +22,7 @@
     }
 
     proc main() {
-      var instance = new Widget();
+      var instance = new unmanaged Widget();
       var x = 1;
       instance.setup(); // calls Base.setup()
       instance.run(x); // calls Widget.run()

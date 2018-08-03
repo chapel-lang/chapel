@@ -14,6 +14,6 @@ proc outerFunc() throws {
   throw new Error();
 }
 
-var foo = new Foo();
+var foo = new unmanaged Foo();
 writeln(foo);
 delete foo;
