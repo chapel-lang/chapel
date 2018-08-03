@@ -14,7 +14,7 @@ class ForLoops {
   var Z: [Dom] real = for i in 1..10 do i;
 }
 
-var fors = new ForLoops({1..10});
+var fors = new unmanaged ForLoops({1..10});
 writeln("----- ForLoops -----");
 writeln(fors);
 writeln();
@@ -36,7 +36,7 @@ class ForallLoops {
   var Z: [Dom] real = forall i in 1..10 do i;
 }
 
-var foralls = new ForallLoops({1..10});
+var foralls = new unmanaged ForallLoops({1..10});
 writeln("----- ForallLoops -----");
 writeln(foralls);
 writeln();
@@ -57,7 +57,7 @@ class SquareLoops {
   var Z: [Dom] real = [i in 1..10] i;
 }
 
-var squares = new SquareLoops({1..10});
+var squares = new unmanaged SquareLoops({1..10});
 writeln("----- SquareLoops -----");
 writeln(squares);
 writeln();

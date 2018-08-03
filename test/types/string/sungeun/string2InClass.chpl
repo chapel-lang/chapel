@@ -2,7 +2,7 @@ class myC {
   var s: string;
 }
 
-var c  = new myC();
+var c  = new unmanaged myC();
 var s1 = "hi";
 
 writeln(c);

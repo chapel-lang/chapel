@@ -7,8 +7,8 @@
 class Dummy {}
 
 class A {
-  var a: Dummy;
-  proc init() { this.a = new Dummy(); }
+  var a: unmanaged Dummy;
+  proc init() { this.a = new unmanaged Dummy(); }
   proc deinit() { delete this.a; }
 }
 
@@ -23,7 +23,7 @@ class C : B {
 }
 
 proc main() {
-  var c = new C();
+  var c = new unmanaged C();
   delete c;
   writeln("Hello!");
 }

@@ -16,5 +16,5 @@ var ba = b:borrowed A;
 
 writeln("a   says: ", a.fcn());
 writeln("b   says: ", b.fcn());
-writeln("b:A says: ", (b:A).fcn());
+writeln("b:A says: ", (b:borrowed A).fcn());
 writeln("ba  says: ", ba.fcn());

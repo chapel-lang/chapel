@@ -1,2 +1,2 @@
-libreturnArrayTakesArrayArg.a
-returnArrayTakesArrayArg.h
+lib/libreturnArrayTakesArrayArg.a
+lib/returnArrayTakesArrayArg.h

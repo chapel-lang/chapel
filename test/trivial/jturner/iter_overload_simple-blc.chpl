@@ -24,20 +24,15 @@ class GrandChild : Child {
   }
 }
 
-var c = new Child();
+var c = new owned Child();
 
 for m in c.foo(10) {
   writeln(m);
 }
 
-delete c;
 
-
-
-c = new GrandChild();
+c = new owned GrandChild();
 
 for m in c.foo(10) {
   writeln(m);
 }
-
-delete c;

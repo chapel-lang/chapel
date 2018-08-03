@@ -12,7 +12,6 @@ class ParaThis {
 }
 
 proc main() {
-  var c: ParaThis = new ParaThis();
+  var c: borrowed ParaThis = new borrowed ParaThis();
   writeln(c);
-  delete c;
 }

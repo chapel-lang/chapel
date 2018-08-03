@@ -1,4 +1,4 @@
-error message: parenthesesless constructor call on class field
+error message: parenthesesless initializer call on class field
 
 This future is related to parentheseslessConstError.
 

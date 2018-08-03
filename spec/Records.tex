@@ -225,6 +225,9 @@ record UniqueID {
 writeln(new UniqueID());  // create and use a record value without a variable
 writeln(new UniqueID());
 \end{chapel}
+\begin{chapelcompopts}
+--no-warn-constructors
+\end{chapelcompopts}
 produces the output
 \begin{chapelprintoutput}{}
 (time = 1/1/1011)
@@ -294,6 +297,9 @@ proc foo()
 
 foo();
 \end{chapel}
+\begin{chapelcompopts}
+--no-warn-constructors
+\end{chapelcompopts}
 \begin{chapeloutput}
 (c = {x = 0})
 

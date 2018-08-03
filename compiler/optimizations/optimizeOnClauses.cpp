@@ -615,8 +615,9 @@ optimizeOnClauses(void) {
   if (0 != strcmp(CHPL_ATOMICS, "locks")) {
     forv_Vec(ModuleSymbol, module, gModuleSymbols) {
       if( module->hasFlag(FLAG_ATOMIC_MODULE) ) {
-        Vec<FnSymbol*> moduleFunctions = module->getTopLevelFunctions(true);
-        forv_Vec(FnSymbol, fn, moduleFunctions) {
+        std::vector<FnSymbol*> moduleFunctions =
+          module->getTopLevelFunctions(true);
+        for_vector(FnSymbol, fn, moduleFunctions) {
           if( fn->hasFlag(FLAG_EXTERN) ) {
             fn->addFlag(FLAG_FAST_ON_SAFE_EXTERN);
             fn->addFlag(FLAG_LOCAL_FN);

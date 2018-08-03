@@ -21,7 +21,7 @@ class Z : Y {
   }
 }
 
-var z = new Z();
+var z = new unmanaged Z();
 delete z;
 writeln();
 
@@ -59,7 +59,7 @@ class C : B {
   }
 }
 
-var c = new C();
+var c = new unmanaged C();
 delete c;
 writeln();
 
@@ -85,5 +85,5 @@ class Child : Parent {
   }
 }
 
-var child = new Child();
+var child = new unmanaged Child();
 delete child;

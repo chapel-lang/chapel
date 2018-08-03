@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -166,7 +166,7 @@ proc isPODType(type t) param {
 
 // Returns the unsigned equivalent of the input type.
 pragma "no doc"
-proc chpl__unsignedType(type t) type 
+proc chpl__unsignedType(type t) type
 {
   return uint(numBits(t));
 }
@@ -174,7 +174,7 @@ proc chpl__unsignedType(type t) type
 
 // Returns the signed equivalent of the input type.
 pragma "no doc"
-proc chpl__signedType(type t) type 
+proc chpl__signedType(type t) type
 {
   return int(numBits(t));
 }
@@ -226,7 +226,28 @@ proc isEnumValue(e)      param  return isEnumType(e.type);
 // isTupleValue
 // isHomogeneousTupleValue
 pragma "no doc"
-proc isClassValue(e)     param  return isClassType(e.type);
+proc isClassValue(e)              param return isClassType(e.type);
+pragma "no doc"
+proc isOwnedClassType(type t)     param return isSubtype(t, _owned);
+pragma "no doc"
+pragma "no borrow convert"
+proc isOwnedClassValue(e)         param return isOwnedClassType(e.type);
+pragma "no doc"
+proc isSharedClassType(type t)    param return isSubtype(t, _shared);
+pragma "no doc"
+pragma "no borrow convert"
+proc isSharedClassValue(e)        param return isSharedClassType(e.type);
+pragma "no doc"
+proc isUnmanagedClassType(type t) param return isSubtype(t, _unmanaged);
+pragma "no doc"
+pragma "no borrow convert"
+proc isUnmanagedClassValue(e)     param return isUnmanagedClassType(e.type);
+pragma "no doc"
+proc isBorrowedClassType(type t)  param return isSubtype(t, _borrowed);
+pragma "no doc"
+pragma "no borrow convert"
+proc isBorrowedClassValue(e)      param return isBorrowedClassType(e.type);
+
 pragma "no doc"
 proc isRecordValue(e)    param  return isRecordType(e.type);
 pragma "no doc"
@@ -282,6 +303,14 @@ pragma "no doc"
 proc isHomogeneousTuple(type t)  param  return isHomogeneousTupleType(t);
 pragma "no doc"
 proc isClass(type t)     param  return isClassType(t);
+pragma "no doc"
+proc isOwnedClass(type t) param  return isOwnedClassType(t);
+pragma "no doc"
+proc isSharedClass(type t) param  return isSharedClassType(t);
+pragma "no doc"
+proc isUnmanagedClass(type t) param  return isUnmanagedClassType(t);
+pragma "no doc"
+proc isBorrowedClass(type t) param  return isBorrowedClassType(t);
 pragma "no doc"
 proc isRecord(type t)    param  return isRecordType(t);
 pragma "no doc"
@@ -351,6 +380,18 @@ proc isHomogeneousTuple(e: _tuple)  param  return isHomogeneousTupleValue(e);
 /* Returns `true` if the argument is a class type or value
    that is not an ``extern`` class, or when the argument is ``nil``. */
 proc isClass(e)     param  return isClassValue(e);
+/* Returns `true` if the argument is an ``owned`` class type. */
+pragma "no borrow convert"
+proc isOwnedClass(e)     param  return isOwnedClassValue(e);
+/* Returns `true` if the argument is a ``shared`` class type. */
+pragma "no borrow convert"
+proc isSharedClass(e)     param  return isSharedClassValue(e);
+/* Returns `true` if the argument is a ``unmanaged`` class type. */
+pragma "no borrow convert"
+proc isUnmanagedClass(e)     param  return isUnmanagedClassValue(e);
+/* Returns `true` if the argument is a ``borrowed`` class type. */
+pragma "no borrow convert"
+proc isBorrowedClass(e)     param  return isBorrowedClassValue(e);
 /* Returns `true` if the argument is a record type or value. */
 proc isRecord(e)    param  return isRecordValue(e);
 /* Returns `true` if the argument is a union type or value. */
@@ -393,7 +434,7 @@ proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
 
 // Is 'sub' a subtype (or equal to) 'super'?
 /* isSubtype Returns `true` if the type `sub` is a subtype of the type `super`. */
-// TODO -- fix documentation
+// isSubtype is directly handled by compiler
 
 // Is 'sub' a proper subtype of 'super'?
 /* Returns `true` if the type `sub` is a subtype of the type `super`

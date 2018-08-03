@@ -304,9 +304,14 @@ void chpl_library_init(int argc, char* argv[]) {
   chpl_task_callMain(chpl_std_module_init);     // Initialize std modules
 }
 
+// Defined in modules/internal/ChapelUtil.chpl.  Used to clean up any modules
+// we may have initialized
+extern void chpl_deinitModules(void);
+
 //
 // A wrapper around chpl-init.c:chpl_rt_finalize(...), sole purpose is 
 // to provide a "chpl_library_*" interface for the Chapel "library-user".
 void chpl_library_finalize(void) {
+  chpl_deinitModules();
   chpl_rt_finalize(0);
 }

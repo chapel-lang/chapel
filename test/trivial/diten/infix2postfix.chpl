@@ -11,15 +11,15 @@ config const infix = "3*((1+3-2)/4)+7";
 record Stack {
   class node {
     var element: string;
-    var next: node;
+    var next: unmanaged node;
   }
 
-  var head: node;
+  var head: unmanaged node;
   proc push(s: string) {
     if head == nil {
-      head = new node(s);
+      head = new unmanaged node(s);
     } else {
-      head = new node(s, head);
+      head = new unmanaged node(s, head);
     }
   }
   proc pop() {

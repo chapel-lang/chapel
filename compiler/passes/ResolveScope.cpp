@@ -486,7 +486,7 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
     // Do not use for_vector(); it terminates on a NULL
     for (size_t i = 0; i < useList.size(); i++) {
       if (const UseStmt* use = useList[i]) {
-        if (use->skipSymbolSearch(name) == false) {
+        if (use->skipSymbolSearch(name, true) == false) {
           BaseAST*    scopeToUse = use->getSearchScope();
           const char* nameToUse  = name;
 
@@ -681,7 +681,7 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
         const UseStmt* use = useList[i];
 
         if (use != NULL) {
-          if (use->skipSymbolSearch(fieldName) == false) {
+          if (use->skipSymbolSearch(fieldName, true) == false) {
             BaseAST*    scopeToUse = use->getSearchScope();
             const char* nameToUse  = NULL;
 

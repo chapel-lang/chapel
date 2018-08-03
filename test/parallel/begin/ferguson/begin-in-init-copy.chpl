@@ -3,7 +3,7 @@ class Impl {
 }
 
 record R {
-  var ptr:Impl;
+  var ptr:unmanaged Impl;
 }
 
 proc R.init() {

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [ -f noHeaderSet.h ]; then
+if [ -f lib/noHeaderSet.h ]; then
    echo "found header" >> $2
 fi
 
-if [ -f noHeaderSet.a ]; then
+if [ -f lib/noHeaderSet.a ]; then
    echo "found library" >> $2
 fi

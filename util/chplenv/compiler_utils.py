@@ -19,7 +19,7 @@ def get_compiler_name(compiler):
         return 'aarch64-unknown-linux-gnu-gcc'
     elif 'gnu' in compiler:
         return 'gcc'
-    elif compiler == 'clang':
+    elif compiler in ['clang', 'allinea']:
         return 'clang'
     elif compiler == 'intel':
         return 'icc'

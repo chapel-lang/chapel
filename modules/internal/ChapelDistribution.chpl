@@ -27,15 +27,13 @@ module ChapelDistribution {
   // Abstract distribution class
   //
   pragma "base dist"
-  pragma "use default init"
   class BaseDist {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _doms: list(unmanaged BaseDom);     // domains declared over this distribution
-    var _domsLock: atomicbool;    //   and lock for concurrent access
-    var _free_when_no_doms: bool; // true when the original _distribution
-                                  // has been destroyed
+    var _doms: list(unmanaged BaseDom); // domains declared over this distribution
+    var _domsLock: chpl__processorAtomicType(bool); // lock for concurrent access
+    var _free_when_no_doms: bool; // true when original _distribution is destroyed
     var pid:int = nullPid; // privatized ID, if privatization is supported
 
     proc deinit() {
@@ -176,7 +174,7 @@ module ChapelDistribution {
     var _arrs_containing_dom: int; // number of arrays using this domain
                                    // as var A: [D] [1..2] real
                                    // is using {1..2}
-    var _arrsLock: atomicbool; //   and lock for concurrent access
+    var _arrsLock: chpl__processorAtomicType(bool); // lock for concurrent access
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
 
@@ -366,7 +364,6 @@ module ChapelDistribution {
     //   }
   }
 
-  pragma "use default init"
   class BaseRectangularDom : BaseDom {
     param rank : int;
     type idxType;
@@ -392,7 +389,6 @@ module ChapelDistribution {
     }
   }
 
-  pragma "use default init"
   class BaseSparseDomImpl : BaseSparseDom {
 
     var nnzDom = {1..nnz};
@@ -553,7 +549,6 @@ module ChapelDistribution {
 
   }
 
-  pragma "use default init"
   class BaseSparseDom : BaseDom {
     // rank and idxType will be moved to BaseDom
     param rank: int;
@@ -612,7 +607,6 @@ module ChapelDistribution {
   } // end BaseSparseDom
 
 
-  pragma "use default init"
   class BaseAssociativeDom : BaseDom {
     proc deinit() {
       // this is a bug workaround
@@ -629,7 +623,6 @@ module ChapelDistribution {
 
   }
 
-  pragma "use default init"
   class BaseOpaqueDom : BaseDom {
     proc deinit() {
       // this is a bug workaround
@@ -645,7 +638,6 @@ module ChapelDistribution {
   // Abstract array class
   //
   pragma "base array"
-  pragma "use default init"
   class BaseArr {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
@@ -774,7 +766,6 @@ module ChapelDistribution {
      another base class.
    */
   pragma "base array"
-  pragma "use default init"
   class BaseArrOverRectangularDom: BaseArr {
     param rank : int;
     type idxType;
@@ -799,7 +790,6 @@ module ChapelDistribution {
   }
 
   pragma "base array"
-  pragma "use default init"
   class BaseRectangularArr: BaseArrOverRectangularDom {
     /* rank, idxType, stridable are from BaseArrOverRectangularDom */
     type eltType;
@@ -814,7 +804,6 @@ module ChapelDistribution {
    * implementing sparse array classes.
    */
   pragma "base array"
-  pragma "use default init"
   class BaseSparseArr: BaseArr {
     type eltType;
     param rank : int;
@@ -839,7 +828,6 @@ module ChapelDistribution {
    * go here.
    */
   pragma "base array"
-  pragma "use default init"
   class BaseSparseArrImpl: BaseSparseArr {
 
     proc deinit() {

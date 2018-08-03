@@ -450,9 +450,6 @@ public:
   BlockStmt* svInitBlock;      // always present
   BlockStmt* svDeinitBlock;    //  "
 
-  // A reduction class instance aka "Operator".
-  Symbol* reduceGlobalOp;
-
   // Once pruning is no longer needed, this should be removed.
   bool pruneit;
 };
@@ -662,6 +659,7 @@ extern const char* astrDeinit;
 extern const char* astrTag;
 extern const char* astrThis;
 extern const char* astr_chpl_cname;
+extern const char* astr_chpl_forward_tgt;
 extern const char* astr_chpl_manager;
 extern const char* astr_forallexpr;
 extern const char* astr_forexpr;

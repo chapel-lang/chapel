@@ -9,7 +9,7 @@ class A {
 proc fnSimple(arg) return 5;
 
 proc main() {
-  var a = new A();
+  var a = new borrowed A();
   on Locales[0] {
     forall 1..1 {
       var ptr = a.fn();

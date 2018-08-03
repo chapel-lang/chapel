@@ -14,7 +14,6 @@ class InLoop {
 proc main() {
   var arr = [3, -5, 2, 7, 1, 2, 5, 8, 3, 0];
 
-  var c: InLoop = new InLoop(arr);
+  var c: shared InLoop = new shared InLoop(arr);
   writeln(c);
-  delete c;
 }

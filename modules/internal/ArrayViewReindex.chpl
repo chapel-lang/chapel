@@ -32,7 +32,6 @@ module ArrayViewReindex {
   // that it creates reindexed views of, and a down-facing and up-facing
   // domain indicating the old and new index sets, respectively.
   //
-  pragma "use default init"
   class ArrayViewReindexDist: BaseDist {
     // a pointer down to the distribution that this class is creating
     // reindexed views of
@@ -100,7 +99,6 @@ module ArrayViewReindex {
   // for rectangular domains so this is a subclass of
   // BaseRectangularDom.
   //
- pragma "use default init"
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
     var updom: unmanaged DefaultRectangularDom(rank, idxType, stridable);

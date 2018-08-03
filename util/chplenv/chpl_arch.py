@@ -256,7 +256,7 @@ class argument_map(object):
             return 'none'
         elif compiler == 'intel':
             return cls.intel.get(arch, '')
-        elif compiler in ['clang', 'clang-included']:
+        elif compiler in ['clang', 'clang-included', 'allinea']:
             # Clang doesn't know how to do architecture detection for aarch64.
             if arch == 'native':
                 if get_native_machine() == 'aarch64':

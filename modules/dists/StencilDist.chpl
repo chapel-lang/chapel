@@ -300,7 +300,6 @@ class StencilDom: BaseRectangularDom {
 // NeighDom will be a rectangular domain where each dimension is the range
 // -1..1
 //
-pragma "use default init"
 class LocStencilDom {
   param rank: int;
   type idxType;
@@ -324,7 +323,6 @@ class LocStencilDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-pragma "use default init"
 class StencilArr: BaseRectangularArr {
   param ignoreFluff: bool;
   var doRADOpt: bool = defaultDoRADOpt;
@@ -345,7 +343,6 @@ class StencilArr: BaseRectangularArr {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
-pragma "use default init"
 class LocStencilArr {
   type eltType;
   param rank: int;
@@ -355,8 +352,7 @@ class LocStencilArr {
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
   pragma "local field"
   var myElems: [locDom.myFluff] eltType;
-  var locRADLock: atomicbool; // This will only be accessed locally
-                              // force the use of processor atomics
+  var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
 
   // TODO: use void type when packed update is disabled
   var recvBufs, sendBufs : [locDom.NeighDom] [locDom.bufDom] eltType;

@@ -12,7 +12,6 @@ proc test1() {
 
 test1();
 
-pragma "use default init"
 record R {
   var s:string;
 }

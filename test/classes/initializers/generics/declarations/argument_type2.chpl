@@ -9,11 +9,11 @@ class Foo {
   }
 }
 
-proc takesAFoo(val: Foo(int, int)) {
+proc takesAFoo(val: borrowed Foo(int, int)) {
   writeln(val);
   writeln(val.type: string);
 }
 
-var f = new Foo(10);
+var f = new unmanaged Foo(10);
 takesAFoo(f);
 delete f;

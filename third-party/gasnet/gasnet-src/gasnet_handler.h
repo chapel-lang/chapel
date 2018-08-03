@@ -166,11 +166,7 @@
 #define LONG_HANDLER_DECL         MEDIUM_HANDLER_DECL
 #define LONG_HANDLER_NOBITS_DECL  MEDIUM_HANDLER_NOBITS_DECL
 
-#if GASNET_USE_STRICT_PROTOTYPES
-typedef void *gasneti_handler_fn_t;
-#else
 typedef void (*gasneti_handler_fn_t)();  /* prototype for generic handler function */
-#endif
 
 /*  handler table construction */
 #define gasneti_handleridx(fnname) _hidx_ ## fnname

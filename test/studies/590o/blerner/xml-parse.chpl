@@ -21,7 +21,7 @@ class XmlTag : XmlElement {
   var attValues: [attNames] string;
   var numChildren: int;
   var childrenValueSpace: domain(1) = {1..2};
-  var childrenValues: [childrenValueSpace] XmlElement;
+  var childrenValues: [childrenValueSpace] unmanaged XmlElement;
   proc printHelp(indent) {
     writeln(indent, "<", name, ">");
     for child in 1..numChildren do

@@ -32,6 +32,7 @@
 #include "beautify.h"
 #include "driver.h"
 #include "llvmVer.h"
+#include "library.h"
 #include "misc.h"
 #include "mysystem.h"
 #include "stlUtil.h"
@@ -338,7 +339,7 @@ void openCFile(fileinfo* fi, const char* name, const char* ext) {
 }
 
 void closeCFile(fileinfo* fi, bool beautifyIt) {
-  fclose(fi->fptr);
+  closefile(fi->fptr);
   //
   // We should beautify if (1) we were asked to and (2) either (a) we
   // were asked to save the C code or (b) we were asked to codegen cpp
@@ -641,10 +642,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   openCFile(&makefile, "Makefile");
   const char* tmpDirName = intDirName;
   const char* strippedExeFilename = stripdirectories(executableFilename);
-  const char* strippedHeadername = stripdirectories(libmodeHeadername);
   const char* exeExt = "";
   const char* tmpbin = "";
-  const char* tmpheader = "";
   std::string chplmakeallvars = "\0";
 
 
@@ -675,11 +674,19 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
     fprintf(makefile.fptr, "SKIP_COMPILE_LINK = skip\n");
   }
 
+  exeExt = getLibraryExtension();
+
   if (fLibraryCompile) {
-    if (fLinkStyle==LS_DYNAMIC) exeExt = ".so";
-    else exeExt = ".a";
+    ensureLibDirExists();
+    // In --library compilation, put the generated library in the library
+    // directory
+    fprintf(makefile.fptr, "BINNAME = %s/%s%s\n\n",
+            libDir,
+            executableFilename,
+            exeExt);
+  } else {
+    fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
   }
-  fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
   // BLC: This munging is done so that cp won't complain if the source
   // and destination are the same file (e.g., myprogram and ./myprogram)
   tmpbin = astr(tmpDirName, "/", strippedExeFilename, ".tmp", exeExt);
@@ -692,12 +699,6 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   // -- after linking is done.  As it turns out, this saves a
   // factor of 5 or so in time in running the test system, as opposed
   // to specifying BINNAME on the C compiler command line.
-
-  if (fLibraryCompile) {
-    fprintf(makefile.fptr, "HEADERNAME = %s%s\n\n", libmodeHeadername, ".h");
-    tmpheader = astr(tmpDirName, "/", strippedHeadername, ".h");
-    fprintf(makefile.fptr, "TMPHEADERNAME = %s\n", tmpheader);
-  }
 
   fprintf(makefile.fptr, "COMP_GEN_WARN = %i\n", ccwarnings);
   fprintf(makefile.fptr, "COMP_GEN_DEBUG = %i\n", debugCCode);

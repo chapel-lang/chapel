@@ -131,6 +131,8 @@ Miscellaneous Options:
       --[no-]task-tracking            Enable [disable] runtime task tracking
       --[no-]warn-const-loops         Enable [disable] warnings for some
                                       'while' loops with constant conditions
+      --[no-]warn-constructors        Enable [disable] warnings for
+                                      constructors
       --[no-]warn-special             Enable [disable] special warnings
       --[no-]warn-domain-literal      Enable [disable] old domain literal
                                       syntax warnings

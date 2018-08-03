@@ -16,7 +16,7 @@ class InLoop {
 proc main() {
   var arr = [3, -5, 2, 7, 1, 2, 5, 8, 3, 0];
 
-  var c: InLoop = new InLoop(arr);
+  var c: unmanaged InLoop = new unmanaged InLoop(arr);
   writeln(c);
   delete c;
 }

@@ -1,3 +1,0 @@
-bug: When a record has a field whose type is another record with const field(s) in it, initialization of such a field within the outer record's constructor are erroneously disallowed.
-
-For now, the workaround is to avoid making the inner record's fields 'const'.

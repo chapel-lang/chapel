@@ -23,7 +23,7 @@ class C {
 
   }
 
-  proc init(other:C(int)) {
+  proc init(other:borrowed C(int)) {
     writeln("copy init for 'int'");
     this.eltType = other.eltType;
     this.x = other.x;

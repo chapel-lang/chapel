@@ -1,1 +1,1 @@
--L. -lreturnArrayTakesArrayArg2 `$CHPL_HOME/util/config/compileline --libraries`
+-Llib/ -lreturnArrayTakesArrayArg2 `$CHPL_HOME/util/config/compileline --libraries`

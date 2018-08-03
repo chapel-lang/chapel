@@ -1,10 +1,8 @@
 
-pragma "use default init"
 class GrandParent {
   var x : int;
 }
 
-pragma "use default init"
 class Parent : GrandParent {
   var y : int;
 }
@@ -18,4 +16,4 @@ class Child : Parent {
   }
 }
 
-var c = new Child();
+var c = new borrowed Child();

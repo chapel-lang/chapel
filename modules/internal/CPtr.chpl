@@ -70,7 +70,6 @@ module CPtr {
   pragma "no object"
   pragma "no default functions"
   pragma "no wide class"
-  pragma "use default init"
   pragma "c_ptr class"
   class c_ptr {
     /* The type that this pointer points to */
@@ -137,11 +136,11 @@ module CPtr {
   }
   pragma "no doc"
   inline proc _cast(type t:string, x:c_void_ptr) {
-    return __primitive("ref to string", x):string;
+    return new string(__primitive("ref to string", x), needToCopy=false);
   }
   pragma "no doc"
   inline proc _cast(type t:string, x:c_ptr) {
-    return __primitive("ref to string", x):string;
+    return new string(__primitive("ref to string", x), needToCopy=false);
   }
   pragma "no doc"
   inline proc _cast(type t:borrowed, x:c_void_ptr) {

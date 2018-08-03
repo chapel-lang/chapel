@@ -62,10 +62,10 @@ proc main() {
   // Create Block-Cyclic distributions for both the Matrix and its
   // transpose:
   //
-  const MatrixDist = new BlockCyclic(startIdx=(1,1),
+  const MatrixDist = new unmanaged BlockCyclic(startIdx=(1,1),
                                      blocksize=(rowBlkSize, colBlkSize));
 
-  const TransposeDist = new BlockCyclic(startIdx=(1,1),
+  const TransposeDist = new unmanaged BlockCyclic(startIdx=(1,1),
                                         blocksize=(colBlkSize, rowBlkSize));
 
   //

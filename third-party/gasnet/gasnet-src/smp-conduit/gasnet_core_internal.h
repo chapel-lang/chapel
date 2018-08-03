@@ -19,7 +19,7 @@ typedef struct {
 #endif
 
 typedef struct {
-  uint8_t  requestBuf[GASNETC_MAX_MEDIUM];
+  uint8_t  requestBuf[((GASNETC_MAX_MEDIUM+7) & ~7)]; // note need to 8-byte align
   uint8_t  replyBuf[GASNETC_MAX_MEDIUM];
 } gasnetc_threadinfo_t;
 
@@ -46,7 +46,7 @@ typedef enum {
 
 /* ------------------------------------------------------------------------------------ */
 #if GASNETI_CLIENT_THREADS
-  #define gasnetc_mythread() ((void**)(gasnete_mythread()))
+  #define gasnetc_mythread() ((void**)(_gasneti_mythread_slow()))
 #else
   extern void *_gasnetc_mythread;
   #define gasnetc_mythread() &_gasnetc_mythread

@@ -9,7 +9,7 @@ class MyClass {
 }
 
 proc run() {
-  var myC = new MyClass();
+  var myC = new unmanaged MyClass();
   myC.tup(1).arr[1].verify();
   assert(myC.tup(1).arr[1].x == 1);
   delete myC;

@@ -137,6 +137,7 @@ inline Expr* ForallStmt::firstIteratedExpr() const { return fIterExprs.head;  }
 
 /// helpers ///
 
+bool        isForallIterVarDef(Expr* expr);
 bool        isForallIterExpr(Expr* expr);
 bool        isForallRecIterHelper(Expr* expr);
 bool        isForallLoopBody(Expr* expr);

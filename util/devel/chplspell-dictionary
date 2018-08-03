@@ -2646,6 +2646,7 @@ nodashes
 usearg
 
 FILEID: 613bf236-1d80-11e6-a3a6-10ddb1d4c3d5
+breakflags
 rungdb
 runlldb
 savec
@@ -2694,6 +2695,7 @@ rtmp
 FILEID: 75f1ecaa-1d83-11e6-a3a6-10ddb1d4c3d5
 cint
 defnfile
+libhdrfile
 strconfig
 vfns
 
@@ -2711,6 +2713,7 @@ FILEID: e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5
 hashset
 outervar
 urse
+usetype
 wout
 yret
 
@@ -2895,6 +2898,7 @@ pdist
 
 FILEID: 3efba760-1f11-11e6-a3a6-10ddb1d4c3d5
 arepl
+distpid
 drepl
 neednl
 origloc
@@ -3103,6 +3107,8 @@ xzob
 
 FILEID: fbc85e3e-1f2e-11e6-a3a6-10ddb1d4c3d5
 fcda
+noflags
+nospace
 
 FILEID: 6ba10a44-1f2f-11e6-a3a6-10ddb1d4c3d5
 arand
@@ -3131,10 +3137,15 @@ FILEID: 1ae55fde-1fb5-11e6-a3a6-10ddb1d4c3d5
 unode
 
 FILEID: cedb8f86-1fb5-11e6-a3a6-10ddb1d4c3d5
+atim
 bavail
 bfree
+blkcnt
 bsize
+mtim
+nlink
 nmemb
+rdev
 takz
 
 FILEID: af6e03d4-2403-11e6-a3a6-10ddb1d4c3d5
@@ -3156,6 +3167,10 @@ FILEID: 3d6b3228-2405-11e6-a3a6-10ddb1d4c3d5
 realignaligned
 
 FILEID: 74ec0768-2405-11e6-a3a6-10ddb1d4c3d5
+atim
+mtim
+nlink
+rdev
 winerr
 
 FILEID: eafb2e70-2405-11e6-a3a6-10ddb1d4c3d5
@@ -3591,6 +3606,8 @@ FILEID: 390fbcc4-4e3c-11e6-907f-843835579daa
 chpluserobj
 libmvec
 pathvec
+tmpheader
+tmpheadername
 tofix
 
 FILEID: 22f875dc-4e3e-11e6-907f-843835579daa
@@ -3603,9 +3620,11 @@ FILEID: b4520e6e-5076-11e6-b83e-bc5ff4765d0d
 adaptative
 binarytrees
 chapcs
+chplgmp
 kace
 paircount
 regexdnaredux
+threadring
 timecomp
 twopt
 
@@ -4356,6 +4375,7 @@ FILEID: 2c37162c-1a84-11e7-980e-10ddb1d4c3d5
 wout
 
 FILEID: e44e8ee8-2015-11e7-980e-10ddb1d4c3d5
+enumcomp
 rhsv
 
 FILEID: e95fef8a-2015-11e7-980e-10ddb1d4c3d5
@@ -4363,6 +4383,7 @@ cthis
 icts
 parg
 pthis
+ptype
 
 FILEID: f8d1f5e4-2015-11e7-980e-10ddb1d4c3d5
 cfns
@@ -4612,7 +4633,27 @@ FILEID: 23858b0c-5b7a-11e8-af7e-10ddb1d4c3d5
 chplgmp
 nalloc
 
+FILEID: a52d3b2e-8644-11e8-ad82-10ddb1d4c3d5
+breakflags
+
+FILEID: f203530c-8644-11e8-ad82-10ddb1d4c3d5
+velt
+
+FILEID: c3e70026-8645-11e8-ad82-10ddb1d4c3d5
+prolly
+
+FILEID: ce35097e-8645-11e8-ad82-10ddb1d4c3d5
+casttmp
+
+FILEID: e22d9978-8645-11e8-ad82-10ddb1d4c3d5
+distpid
+
+FILEID: 203d644e-8648-11e8-ad82-10ddb1d4c3d5
+nbobjs
+schedaffinity
+
 NATURAL:
+aarch
 abcd
 abcdefg
 ablock
@@ -4658,6 +4699,9 @@ angeles
 anonymize
 ansi
 antialias
+anybool
+anyimag
+anyreal
 apache
 appletalk
 apps
@@ -4820,6 +4864,7 @@ canadian
 canonicalizations
 canonicalize
 canonicalized
+canonicalizing
 carian
 carlos
 cartan
@@ -4906,6 +4951,7 @@ codebook
 codegened
 codegenned
 codegenning
+codepoint
 codesign
 coforall
 coforalls
@@ -5029,6 +5075,7 @@ denormalizable
 denormalization
 denormalize
 denormalized
+denormalizes
 denormalizing
 densification
 densifications
@@ -5233,6 +5280,7 @@ enotuniq
 enqueue
 enqueuer
 enqueues
+entrypoints
 enums
 enumsymbol
 enumtype
@@ -5260,6 +5308,7 @@ errmsg
 errno
 errnum
 errorbuffer
+errored
 errqueue
 errstr
 escholarship
@@ -5341,7 +5390,9 @@ fonzi
 foobar
 fopen
 forall
+forallexpr
 foralls
+forexpr
 forloop
 fortran
 fourier
@@ -5474,6 +5525,7 @@ hdfs
 hdrincl
 headerdata
 headerfields
+headername
 hebrew
 heiner
 hemmaplardh
@@ -5631,6 +5683,12 @@ istr
 isuid
 isunmanaged
 isvtx
+iswalpha
+iswdigit
+iswlower
+iswprint
+iswspace
+iswupper
 iten
 iterables
 iterand
@@ -5784,6 +5842,7 @@ libfftw
 libhdfs
 libjvm
 liblapack
+libmode
 libnuma
 libpct
 libpgc
@@ -5841,6 +5900,7 @@ lossy
 louis
 lowell
 lowlevel
+lrint
 lseek
 lstat
 ltrim
@@ -5893,6 +5953,7 @@ matei
 matlab
 matthew
 matvec
+maxbytes
 maxcycles
 maxdepth
 maxerr
@@ -5908,6 +5969,7 @@ maxsplit
 maxsymlinks
 maxweight
 maybefast
+mccoy
 mcdram
 mcmahon
 meanrel
@@ -5982,6 +6044,7 @@ mregs
 msgs
 mtarun
 muchnick
+multibytes
 multicast
 multicore
 multihop
@@ -5998,6 +6061,7 @@ munges
 munging
 munmap
 munshi
+mutexes
 muxed
 myaccountid
 myanmar
@@ -6841,6 +6905,8 @@ topdown
 toraw
 toret
 tounmanaged
+towlower
+towupper
 traceback
 tradeoff
 tradeoffs
@@ -6869,6 +6935,7 @@ tzinfo
 tzname
 ubuntu
 uchar
+uchars
 ugaritic
 ugni
 uintptr
@@ -6883,6 +6950,7 @@ unanchored
 unary
 unbundles
 uncommented
+undefines
 underrun
 unescape
 unescaped
@@ -6986,6 +7054,7 @@ washington
 wavefronts
 wayne
 waypoints
+wctype
 webpage
 webpages
 webserver

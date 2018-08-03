@@ -139,7 +139,6 @@ inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
    A :record:`!Timer` is either running or stopped.
 */
 
-pragma "use default init"
 record Timer {
   pragma "no doc"
   var time:        _timevalue = chpl_null_timevalue();

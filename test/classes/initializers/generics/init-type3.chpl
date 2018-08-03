@@ -15,7 +15,7 @@ class A {
   }
 }
 
-var a = new A(2);
+var a = new unmanaged A(2);
 
 writeln(a);
 

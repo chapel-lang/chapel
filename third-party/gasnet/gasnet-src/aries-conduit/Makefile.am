@@ -17,12 +17,6 @@ gemini_install_hdrs = $(gemini_srcdir)/*.h
 ## generalized PMI support
 pmi_srcdir = $(top_srcdir)/other/pmi-spawner
 
-## Firehose
-if GNI_FIREHOSE_ENABLED
-fh_type=region
-include $(top_builddir)/other/firehose/firehose.mak
-endif
-
 # any conduit-specific subdirectories containing Makefile.am's
 SUBDIRS = contrib
 
@@ -31,14 +25,12 @@ SUBDIRS = contrib
 # and any subdirectories not containing Makefile.am's
 CONDUIT_FILELIST =            \
       gasnet_empty_internal.h \
-      firehose_fwd.h          \
       README                  \
       license.txt
 
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line
 CONDUIT_SOURCELIST =          \
-      $(fh_sourcelist)        \
       $(gemini_srcdir)/gasnet_core.c \
       $(gemini_srcdir)/gasnet_gemini.c \
       $(gemini_srcdir)/gasnet_extended.c \
@@ -46,22 +38,22 @@ CONDUIT_SOURCELIST =          \
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @GNI_CFLAGS@ -I$(gemini_srcdir) -DGASNET_CONDUIT_ARIES -DHAVE_PMI_SPAWNER $(fh_extralibcflags)
+CONDUIT_EXTRALIBCFLAGS = @GNI_CFLAGS@ -I$(gemini_srcdir) -DGASNET_CONDUIT_ARIES -DHAVE_PMI_SPAWNER
 
 # additional conduit header files to install from external, non-standard directories
-CONDUIT_EXTRAHEADERS = $(gemini_install_hdrs) $(fh_extraheaders)
+CONDUIT_EXTRAHEADERS = $(gemini_install_hdrs)
 
 # headers selected by default rules that should NOT be installed
-CONDUIT_PRIVATEHEADERS = gasnet_gemini.h $(fh_privheaders)
+CONDUIT_PRIVATEHEADERS = gasnet_gemini.h
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
-CONDUIT_EXTRADEPS = $(gemini_srcdir)/*.[ch] $(pmi_srcdir)/*.[ch] $(fh_extradeps)
+CONDUIT_EXTRADEPS = $(gemini_srcdir)/*.[ch] $(pmi_srcdir)/*.[ch]
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as
 # forced targets in this file, and should probably use LIBINCLUDES/LIBDEFINES
-CONDUIT_SPECIAL_OBJS = $(fh_special_objs)
+CONDUIT_SPECIAL_OBJS =
 
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:
@@ -113,7 +105,7 @@ libgasnet-aries-parsync.a: $(libgasnet_dependencies)
 
 if USE_ARIES_CONDUIT  
 lib_LIBRARIES = $(libraries) 
-all-local: $(lib_LIBRARIES) $(makefile_fragments)
+all-local: $(lib_LIBRARIES) $(pkgconfig_files)
 clean-local: do-clean-local
 install-data-local: do-install-data-local
 uninstall-local: do-uninstall-local

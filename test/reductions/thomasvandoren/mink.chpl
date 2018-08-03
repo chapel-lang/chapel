@@ -3,7 +3,6 @@
  * eltType.
  */
 
-pragma "use default init"
 class mink : ReduceScanOp {
   type eltType;
   const k: int = 10;
@@ -20,7 +19,7 @@ class mink : ReduceScanOp {
     }
   }
 
-  proc combine(state: mink(eltType)) {
+  proc combine(state: borrowed mink(eltType)) {
     for stateValue in state.v {
       accumulate(stateValue);
     }

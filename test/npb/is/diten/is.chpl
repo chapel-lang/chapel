@@ -48,7 +48,7 @@ var passedVerifications = 0;
 
 proc main() {
   var time = new Timer();
-  var randomStream = new NPBRandomStream(real, seed);
+  var randomStream = new owned NPBRandomStream(real, seed);
   var tempreals: [1..4] real;
   var max = maxKey / 4;
 
@@ -91,8 +91,6 @@ proc main() {
     writeln(" Verification    = SUCCESSFUL");
   else
     writeln(" Verification    = FAILED ", passedVerifications);
-
-  delete randomStream;
 } 
 
 
@@ -133,7 +131,9 @@ proc rank(iteration: int) {
 
   if useBuckets {
     bucketSize.write(0);
-    bucketSize(keyArray >> shift).add(1);
+    // workaround -- see https://github.com/chapel-lang/chapel/issues/10575
+    // bucketSize(keyArray >> shift).add(1);
+    forall k in keyArray do bucketSize(k >> shift).add(1);
 
     bucketPtrs(0) = 0;
     for i in 1..numBuckets-1 do

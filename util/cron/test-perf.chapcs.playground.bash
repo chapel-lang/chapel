@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of removing ref temps
-GITHUB_USER=vasslitvinov
-GITHUB_BRANCH=remove-ref-temps
-SHORT_NAME=noreftemps
-START_DATE=07/12/18
+# Test performance DSI refactor
+GITHUB_USER=ian-bertolacci
+GITHUB_BRANCH=dsi_push_up_attempt
+SHORT_NAME=dsi_push_up_attempt
+START_DATE=07/19/18
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

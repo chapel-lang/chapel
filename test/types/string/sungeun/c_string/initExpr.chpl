@@ -41,7 +41,7 @@ checkType(A1.eltType);
   }
 
  const blah = "blah";
- var c0: C;
+ var c0: borrowed C;
  c0.checkMe();
  var c1 = new borrowed C("hi", "hi", blah.c_str());
  c1.checkMe();

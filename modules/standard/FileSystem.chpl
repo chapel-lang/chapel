@@ -578,7 +578,7 @@ proc locale.cwd(): string throws {
     var tmp:c_string;
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
-    ret = tmp: string;
+    ret = new string(tmp, isowned=true, needToCopy=false);
   }
   if err != ENOERR then try ioerror(err, "in cwd");
   return ret;

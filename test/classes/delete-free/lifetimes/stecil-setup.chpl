@@ -7,7 +7,7 @@ class MyLocDom {
 
 
 class MyStencilDom {
-  var A:[1..10] MyLocDom;
+  var A:[1..10] borrowed MyLocDom;
 }
 
 config const branch = true;

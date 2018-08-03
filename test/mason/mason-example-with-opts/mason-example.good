@@ -1,0 +1,16 @@
+Updating mason-registry
+Downloading dependency: _MasonTest1-0.2.0
+compiled depExample.chpl successfully
+compiled withOpts.chpl successfully
+compiled examplesubdir/subdirExample.chpl successfully
+compiled example.chpl successfully
+--- available examples ---
+ --- depExample.chpl
+ --- withOpts.chpl
+ --- examplesubdir/subdirExample.chpl
+ --- example.chpl
+--------------------------
+Example with dependency Passed!
+Passed!
+Example within subdirectory Passed!
+Example Passed!

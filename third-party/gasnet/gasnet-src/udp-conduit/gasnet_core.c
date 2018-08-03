@@ -217,7 +217,7 @@ static int gasnetc_init(int *argc, char ***argv) {
 
     gasneti_freezeForDebugger();
 
-    AMUDP_VerboseErrors = gasneti_VerboseErrors;
+    AMX_VerboseErrors = gasneti_VerboseErrors;
     AMUDP_SPMDkillmyprocess = gasneti_killmyprocess;
 
 #if GASNETI_CALIBRATE_TSC
@@ -636,7 +636,14 @@ extern int gasnetc_AMPoll(void) {
   gasneti_AMPSHMPoll(0);
 #endif
   AMLOCK();
+  // In single-supernode case never need to poll the network for client AMs.
+  // However, we'll still check for control traffic for orderly exit handling.
+  if (gasneti_mysupernode.grp_count > 1) {
     GASNETI_AM_SAFE_NORETURN(retval,AM_Poll(gasnetc_bundle));
+  } else {
+    // TODO-EX: a lock-free peek would allow elimination of a lock cycle
+    GASNETI_AM_SAFE_NORETURN(retval,AMUDP_SPMDHandleControlTraffic(NULL));
+  }
   AMUNLOCK();
   if_pf (retval) GASNETI_RETURN_ERR(RESOURCE);
   else return GASNET_OK;
@@ -658,6 +665,7 @@ extern int gasnetc_AMRequestShortM(
   va_start(argptr, numargs); /*  pass in last argument */
 #if GASNET_PSHM
   if_pt (gasneti_pshm_in_supernode(dest)) {
+    gasneti_AMPoll(); /* poll at least once, to assure forward progress */
     retval = gasneti_AMPSHM_RequestGeneric(gasnetc_Short, dest, handler,
                                            0, 0, 0,
                                            numargs, argptr);
@@ -686,14 +694,13 @@ extern int gasnetc_AMRequestMediumM(
   va_start(argptr, numargs); /*  pass in last argument */
 #if GASNET_PSHM
   if_pt (gasneti_pshm_in_supernode(dest)) {
+    gasneti_AMPoll(); /* poll at least once, to assure forward progress */
     retval = gasneti_AMPSHM_RequestGeneric(gasnetc_Medium, dest, handler,
                                            source_addr, nbytes, 0,
                                            numargs, argptr);
   } else
 #endif
   {
-    if_pf (!nbytes) source_addr = (void*)(uintptr_t)1; /* Bug 2774 - anything but NULL */
-
     AMLOCK_TOSEND();
       GASNETI_AM_SAFE_NORETURN(retval,
                AMUDP_RequestIVA(gasnetc_endpoint, dest, handler, 
@@ -718,6 +725,7 @@ extern int gasnetc_AMRequestLongM( gasnet_node_t dest,        /* destination nod
   va_start(argptr, numargs); /*  pass in last argument */
 #if GASNET_PSHM
   if_pt (gasneti_pshm_in_supernode(dest)) {
+      gasneti_AMPoll(); /* poll at least once, to assure forward progress */
       retval = gasneti_AMPSHM_RequestGeneric(gasnetc_Long, dest, handler,
                                              source_addr, nbytes, dest_addr,
                                              numargs, argptr);
@@ -726,8 +734,6 @@ extern int gasnetc_AMRequestLongM( gasnet_node_t dest,        /* destination nod
   {
     uintptr_t dest_offset;
     dest_offset = ((uintptr_t)dest_addr) - ((uintptr_t)gasneti_seginfo[dest].addr);
-
-    if_pf (!nbytes) source_addr = (void*)(uintptr_t)1; /* Bug 2774 - anything but NULL */
 
     AMLOCK_TOSEND();
       GASNETI_AM_SAFE_NORETURN(retval,
@@ -784,8 +790,6 @@ extern int gasnetc_AMReplyMediumM(
   } else
 #endif
   {
-    if_pf (!nbytes) source_addr = (void*)(uintptr_t)1; /* Bug 2774 - anything but NULL */
-
     AM_ASSERT_LOCKED();
     GASNETI_AM_SAFE_NORETURN(retval,
               AMUDP_ReplyIVA(token, handler, source_addr, nbytes, numargs, argptr));
@@ -821,8 +825,6 @@ extern int gasnetc_AMReplyLongM(
     GASNETI_SAFE_PROPAGATE(gasnet_AMGetMsgSource(token, &dest));
     dest_offset = ((uintptr_t)dest_addr) - ((uintptr_t)gasneti_seginfo[dest].addr);
 
-    if_pf (!nbytes) source_addr = (void*)(uintptr_t)1; /* Bug 2774 - anything but NULL */
-
     AM_ASSERT_LOCKED();
     GASNETI_AM_SAFE_NORETURN(retval,
               AMUDP_ReplyXferVA(token, handler, source_addr, nbytes, dest_offset, numargs, argptr));
@@ -840,7 +842,7 @@ extern int gasnetc_AMReplyLongM(
   See the GASNet spec and http://gasnet.lbl.gov/dist/docs/gasnet.html for
     philosophy and hints on efficiently implementing no-interrupt sections
   Note: the extended-ref implementation provides a thread-specific void* within the 
-    gasnete_threaddata_t data structure which is reserved for use by the core 
+    gasneti_threaddata_t data structure which is reserved for use by the core 
     (and this is one place you'll probably want to use it)
 */
 #if GASNETC_USE_INTERRUPTS

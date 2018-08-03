@@ -1,4 +1,4 @@
-use BlockDist; 
+use BlockDist;
 config const N = 32;
 
 const ParentDom = {0..#N} dmapped Block({0..#N});
@@ -8,7 +8,7 @@ var SparseDom: sparse subdomain(ParentDom);
 var SparseVec: [SparseDom] int;
 
 //create a small dense chunk somewhere in vector
-var denseChunk = {7..14}; 
+var denseChunk = {7..14};
 
 SparseDom += denseChunk; //not sure if this would work
 
@@ -41,3 +41,42 @@ for (d,a) in zip(SparseDom, SparseVec) do a=d;
 
 for i in ParentDom do writeln(SparseVec[i]);
 
+var containsAll = true;
+var matchingLocalSubdomains = true;
+var localBag : [Locales.domain] domain(SparseDom.idxType);
+var fullBag : domain(SparseDom.idxType);
+var unionBag : domain(SparseDom.idxType);
+var intersectionBag : domain(SparseDom.idxType);
+
+for i in SparseDom do {
+  containsAll &= SparseDom.member( i );
+  fullBag += i;
+}
+writeln( containsAll );
+
+for onLocale in Locales {
+  on onLocale {
+    for localIndex in SparseDom.dsiLocalSubdomain() {
+      localBag[ onLocale.id ] += localIndex;
+    }
+    matchingLocalSubdomains &= ( SparseDom.dsiLocalSubdomain() == SparseVec.dsiLocalSubdomain() );
+  }
+}
+
+writeln( matchingLocalSubdomains );
+
+intersectionBag = fullBag;
+
+for onLocale in Locales {
+  for i in localBag[ onLocale.id ] {
+    unionBag |= localBag[ onLocale.id ];
+    intersectionBag &= localBag[ onLocale.id ];
+  }
+}
+// union of disparate sets is the full set
+writeln( unionBag == fullBag );
+// intersection of disparate sets is the empty set
+// ... but only if there is more than one locale
+if Locales.size > 1
+  then writeln( intersectionBag.size == 0 );
+  else writeln( true );

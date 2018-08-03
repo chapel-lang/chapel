@@ -22,11 +22,9 @@ def get():
             elif platform_val == 'cray-xk':
                 substrate_val = 'gemini'
             elif platform_val == 'cray-xc':
-                    substrate_val = 'aries'
-            elif platform_val == 'marenostrum':
-                substrate_val = 'udp'
-            elif platform_val == 'pwr5':
-                substrate_val = 'lapi'
+                substrate_val = 'aries'
+            elif platform_val == 'cray-cs':
+                substrate_val = 'ibv'
             elif platform_val == 'pwr6':
                 substrate_val = 'ibv'
             else:

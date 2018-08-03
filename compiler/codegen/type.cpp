@@ -111,7 +111,7 @@ void EnumType::codegenDef() {
       info->lvt->addGlobalType(symbol->cname, type);
 
       // Convert enums to constants with the user-specified immediate,
-      // sized appropraitely, when it exists.  When it doesn't, give
+      // sized appropriately, when it exists.  When it doesn't, give
       // it the semi-arbitrary 0-based ordinal value (similar to what
       // the C back-end would do itself).  Note that once some enum
       // has a non-NULL constant->init, all subsequent ones should as

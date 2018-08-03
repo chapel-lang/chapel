@@ -1,4 +1,4 @@
-use BlockDist, HDF5_HL, FileSystem;
+use BlockDist, HDF5, FileSystem;
 
 record MyRec {
   var D: domain(1);

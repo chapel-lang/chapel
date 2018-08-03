@@ -372,7 +372,7 @@ bool astUnderFI(const Expr* ast, ForallIntents* fi) {
 //
 //  * find the target parallel iterator (standalone or leader) and resolve it
 //  * issue an error, if neither is found
-//  * handle forall intents, using implementForallIntentsNew()
+//  * handle forall intents, using setupAndResolveShadowVars()
 //  * partly lower by building leader+follow loop(s) as needed
 //
 // This happens when resolveExpr() encounters the first iterated expression
@@ -778,6 +778,15 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
   INT_ASSERT(fs->numInductionVars() == 1);
 }
 
+static void checkForNonIterator(CallExpr* parCall, FnSymbol* dest) {
+  AggregateType* retType = toAggregateType(dest->retType);
+  if (!retType || !retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    USR_FATAL_CONT(parCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", dest->name);
+    USR_PRINT(dest, "The function '%s' is declared here", dest->name);
+    USR_STOP();
+  }
+}
+
 static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
                                              CallExpr* iterCall,
                                              FnSymbol* origIterator,
@@ -788,6 +797,7 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
   bool alreadyResolved = parIter->isResolved();
 
   resolveFunction(parIter);
+  checkForNonIterator(iterCall, parIter);
 
   // Set QualifiedType of the index variable.
   QualifiedType iType = fsIterYieldType(pfs, parIter,
@@ -836,7 +846,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   BlockStmt*    userBody = toBlockStmt(pfs->loopBody()->body.tail->remove());
   INT_ASSERT(pfs->loopBody()->body.empty());
 
-  BlockStmt* preFS           = new BlockStmt();
+  BlockStmt* preFS           = new BlockStmt(BLOCK_SCOPELESS);
   // cf in build.cpp: new ForLoop(leadIdx, leadIter, NULL, zippered)
   BlockStmt* leadForLoop     = pfs->loopBody();
 
@@ -945,11 +955,9 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   {
     addParIdxVarsAndRestruct(pfs, gotSA);
 
-    implementForallIntentsNew(pfs, iterCall);
-
     resolveParallelIteratorAndIdxVar(pfs, iterCall, origIterFn, gotSA);
 
-    setupShadowVariables(pfs);
+    setupAndResolveShadowVars(pfs);
 
     if (gotSA) {
       if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {

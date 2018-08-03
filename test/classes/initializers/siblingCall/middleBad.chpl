@@ -17,7 +17,6 @@ class Foo {
 }
 
 proc main() {
-  var c: Foo = new Foo(8);
+  var c: shared Foo = new shared Foo(8);
   writeln(c);
-  delete c;
 }

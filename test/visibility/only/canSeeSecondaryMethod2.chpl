@@ -4,7 +4,7 @@ use Extender only Foo;
 // type definition, and by specifying that type in your 'only' list, access
 // it.
 
-var a = new Foo(7);
+var a = new owned Foo(7);
 writeln(a.innerMethod(3)); // Should be 21
 writeln(a.newMethod(1)); // Should be 8
 

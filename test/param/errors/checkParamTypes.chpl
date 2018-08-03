@@ -1,10 +1,8 @@
 enum color { red, green, blue};
 
-pragma "use default init"
 record R {
   var x: int;
 }
-pragma "use default init"
 class C {
   var x: int;
 }

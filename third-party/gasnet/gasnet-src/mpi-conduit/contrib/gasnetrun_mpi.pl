@@ -119,6 +119,7 @@ sub gasnet_encode($) {
                       $mpirun_help =~ m|Usage: srun |);
     my $is_prun    = ($mpirun_help =~ m|railmask|);
     my $is_pam     = ($mpirun_help =~ m|TaskStarter|);
+    my $is_jsrun   = ($mpirun_help =~ m|jsrun --usage|);
     my $envprog = $ENV{'GASNET_ENVCMD'};
     if (! -x $envprog) { # SuperUX has broken "which" implementation, so avoid if possible
       $envprog = `which env`;
@@ -354,6 +355,11 @@ sub gasnet_encode($) {
 	$encode_args = 1;
 	$encode_env = 1;
 	@verbose_opt = ("-v");
+    } elsif ($is_jsrun) {
+	$spawner_desc = "jsrun - IBM Job Step Manager";
+	%envfmt = ( 'pre' => '-E', 'inter' => '-E');
+	$ppn_opt = '-r';
+	$encode_args = 1;
     } else {
 	$spawner_desc = "unknown program (using generic MPI spawner)";
 	# assume the OS will not propagate the environment
@@ -656,8 +662,8 @@ EOF
 	@envargs = ();
      }
 
-# Process LSF host list to ensure it conforms to our request
-if (exists($ENV{'LSB_MCPU_HOSTS'})) {
+# Process LSF host list to ensure it conforms to our request (non-jsrun)
+if (exists($ENV{'LSB_MCPU_HOSTS'}) && !$is_jsrun) {
   my @tmp = split(" ", $ENV{'LSB_MCPU_HOSTS'});
   my %tmp;
   while (@tmp) {
@@ -695,6 +701,23 @@ if (exists($ENV{'LSB_MCPU_HOSTS'})) {
   $dashN_ok = 1;
 }
 
+# With jsrun we (attempt to) default to job size if -N was not given.
+# The "attempt" is a heutistic to exclude the login node which will
+# appear in LSM_MCPU_HOSTS, based on its CPU count of 1.  In the case
+# that *all* hosts are listed as single CPUs this code will not result
+# in any change to $numnode.
+if ($is_jsrun && !defined($numnode)) {
+  my @tmp = split(" ", $ENV{'LSB_MCPU_HOSTS'});
+  my %tmp;
+  while (@tmp) {
+    my $h = shift @tmp; # Host
+    my $n = shift @tmp; # Numcpus
+    $tmp{$h} += $n;
+  }
+  my $count = grep { $tmp{$_} > 1 } keys %tmp;  # counts hosts w/ >1 CPU
+  if ($count) { $numnode = $count; }
+}
+
 # LAM-specific preprocessing of $numproc in the presence of $numnode
 if ($is_lam && $numnode) {
   my @tmp = (0..($numnode-1));
@@ -722,6 +745,8 @@ if ($is_aprun || $is_yod) {
             close(QSTAT);
         } elsif (exists($ENV{'SLURM_JOB_ID'}) && exists($ENV{'SLURM_NNODES'})) {
             $numnode = $ENV{'SLURM_NNODES'};
+        } elsif (exists($ENV{'COBALT_JOBID'}) && exists($ENV{'COBALT_JOBSIZE'})) {
+            $numnode = $ENV{'COBALT_JOBSIZE'};
         }
   }
 

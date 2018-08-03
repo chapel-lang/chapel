@@ -445,7 +445,6 @@ class LocCyclic {
 }
 
 
-pragma "use default init"
 class CyclicDom : BaseRectangularDom {
   const dist: unmanaged Cyclic(rank, idxType);
 
@@ -651,7 +650,6 @@ proc CyclicDom.dsiLocalSlice(param stridable: bool, ranges) {
 }
 
 
-pragma "use default init"
 class LocCyclicDom {
   param rank: int;
   type idxType;
@@ -666,7 +664,6 @@ class LocCyclicDom {
 proc LocCyclicDom.member(i) return myBlock.member(i);
 
 
-pragma "use default init"
 class CyclicArr: BaseRectangularArr {
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: unmanaged CyclicDom(rank, idxType, stridable);
@@ -943,20 +940,18 @@ proc CyclicArr.setRADOpt(val=true) {
   if doRADOpt then setupRADOpt();
 }
 
-pragma "use default init"
 class LocCyclicArr {
   type eltType;
   param rank: int;
   type idxType;
   param stridable: bool;
 
-  const locDom: LocCyclicDom(rank, idxType, stridable);
+  const locDom: unmanaged LocCyclicDom(rank, idxType, stridable);
 
-  var locRAD: LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
-  var locCyclicRAD: LocCyclicRADCache(rank, idxType); // see below for why
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
+  var locCyclicRAD: unmanaged LocCyclicRADCache(rank, idxType); // see below for why
   var myElems: [locDom.myBlock] eltType;
-  var locRADLock: atomicbool; // This will only be accessed locally, so
-                              // force the use of processor atomics
+  var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
 
   // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid

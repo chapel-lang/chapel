@@ -5,6 +5,7 @@
  */
 
 #include <gasnet.h>
+#include <gasnet_coll.h>
 
 #include <test.h>
 
@@ -400,7 +401,8 @@ static void * doTest(void *arg) {
       MSG0("WARNING: pair mismatch tests skipped (only 1 node)");
     }
 
-    if (nodes > 2) {
+    if (nodes > 2 && 
+        i < MAX(2,iters/1000)) { // limit iterations of the node^2 test below
       int j, k;
 
       for (j = 0; j < nodes; ++j) {

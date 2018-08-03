@@ -12,11 +12,10 @@ module M2 {
   proc main {
     var c = bar();
     writeln(baz(c));
-    delete c;
   }
   proc bar() {
     use M1;
-    return new C();
+    return new owned C();
   }
   proc baz(obj) {
     use M1;

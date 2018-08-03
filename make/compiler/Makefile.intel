@@ -25,6 +25,13 @@
 CXX = icpc
 CC = icc
 
+ifeq (, $(MPI_CC))
+MPI_CC = mpiicc
+endif
+ifeq (, $(MPI_CXX))
+MPI_CXX = mpiicpc
+endif
+
 RANLIB = ranlib
 
 

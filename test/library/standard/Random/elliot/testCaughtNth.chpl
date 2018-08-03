@@ -23,6 +23,3 @@ try! {
 } catch (e: IllegalArgumentError) {
   writeln("Successfully caught IllegalArgumentError");
 }
-
-delete npbRand;
-delete pcgRand;

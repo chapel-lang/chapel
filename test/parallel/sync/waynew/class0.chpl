@@ -4,7 +4,7 @@ class D {
   var s: sync int;
 }
 
-var d: D = new D();
+var d: unmanaged D = new unmanaged D();
 var i: int;
 
 d.s = 4;
@@ -16,7 +16,7 @@ class E {
   var sf: sync real;
 }
 
-var e: E = new E();
+var e: unmanaged E = new unmanaged E();
 var f: real;
 
 e.sf = 1.2;

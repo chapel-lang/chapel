@@ -1,2 +1,0 @@
-typeExceptedButReceivedOneToo.chpl:6: In function 'main':
-typeExceptedButReceivedOneToo.chpl:10: error: unresolved call 'Foo.outerMethod(2)'

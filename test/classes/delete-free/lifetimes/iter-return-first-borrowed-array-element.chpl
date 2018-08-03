@@ -6,7 +6,7 @@ module TestReturningIteratorYield {
   }
 
   proc getfirstborrow() {
-    var A:[0..3] MyClass;
+    var A:[0..3] borrowed MyClass;
     A[0] = new borrowed MyClass(0);
     A[1] = new borrowed MyClass(1);
     A[2] = new borrowed MyClass(2);

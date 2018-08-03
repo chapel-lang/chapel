@@ -6,8 +6,8 @@ class Thing {
 
 }
 class Container {
-  var a: Thing;
-  var b: Thing;
+  var a: unmanaged Thing;
+  var b: unmanaged Thing;
   proc deinit() {
     writeln("in Container.deinit");
   }
@@ -24,7 +24,7 @@ proc create_thing() {
   var success = false;
   try {
     writeln("creating Container");
-    var container = new Container();
+    var container = new unmanaged Container();
     defer {
       writeln("in defer for Container");
       if !success then delete container;
@@ -32,7 +32,7 @@ proc create_thing() {
 
     maybeThrows(1);
     writeln("creating Thing 100");
-    container.a = new Thing(100);
+    container.a = new unmanaged Thing(100);
     defer {
       writeln("in defer for Thing 100");
       if !success then delete container.a;
@@ -40,7 +40,7 @@ proc create_thing() {
 
     maybeThrows(2);
     writeln("creating Thing 200");
-    container.b = new Thing(200);
+    container.b = new unmanaged Thing(200);
     defer {
       writeln("in defer for Thing 200");
       if !success then delete container.b;

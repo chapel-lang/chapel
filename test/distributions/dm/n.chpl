@@ -76,7 +76,6 @@ class WrapperRectDom : BaseRectangularDom {
   var pid: int = -1;
 }
 
-pragma "use default init"
 class WrapperArr: BaseArr {
   // required
   type eltType;

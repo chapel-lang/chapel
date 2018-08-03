@@ -27,76 +27,58 @@ use MasonEnv;
 
 
 
-proc masonNew(args) {
-  if args.size < 3 {
-    writeln('error: Invalid arguments.');
-    masonNewHelp();
-    exit();
-  } else {
-    var vcs = true;
-    var show = false;
-    var name = '';
-    for arg in args[2..] {
-      if arg == '-h' || arg == '--help' {
-        masonNewHelp();
-        exit();
+proc masonNew(args) throws {
+  try! {
+    if args.size < 3 {
+      masonNewHelp();
+      exit();
+    } else {
+      var vcs = true;
+      var show = false;
+      var name = '';
+      for arg in args[2..] {
+        if arg == '-h' || arg == '--help' {
+          masonNewHelp();
+          exit();
+        }
+        else if arg == '--no-vcs' {
+          vcs = false;
+        }
+        else if arg == '--show' {
+          show = true;
+        }
+        else {
+          name = arg;
+        }
       }
-      else if arg == '--no-vcs' {
-        vcs = false;
+      
+      if name == '' {
+        throw new MasonError("No package name specified");
       }
-      else if arg == '--show' {
-        show = true;
+      else if !isIdentifier(name) {
+        throw new MasonError("Bad package name '" + name +
+                             "' - only Chapel identifiers are legal package names");
+      }
+      else if name.count("$") > 0 {
+        throw new MasonError("Bad package name '" + name +
+                             "' - $ is not allowed in package names");
+      }
+      else if isDir(name) {
+          throw new MasonError("A directory named '" + name + "' already exists");
       }
       else {
-        name = arg;
+        InitProject(name, vcs, show);
       }
     }
-
-    if name == '' {
-      writeln("No package name specified");
-    } else if !isIdentifier(name) {
-      writeln("Bad package name '", name,
-               "' - only Chapel identifiers are legal package names");
-    } else if name.count("$") > 0 {
-      writeln("Bad package name '", name,
-              "' - $ is not allowed in package names");
-    } else if isDir(name) {
-      writeln("A directory named '", name, "' already exists");
-    } else {
-      InitProject(name, vcs, show);
-    }
+  }
+  catch e: MasonError {
+    writeln(e.message());
+    exit(1);
   }
 }
 
-/* Return 'true' for valid identifiers according to Chapel parser/spec,
-   otherwise 'false' */
-proc isIdentifier(name:string) {
 
-  // Identifiers can't be empty
-  if name == "" then
-    return false;
-
-  // Identifiers can't start with a digit or a $
-  if name[1].isDigit() then
-    return false;
-  if name[1] == "$" then
-    return false;
-
-  // Check all characters are legal identifier characters
-  // - lower case alphabetic
-  // - upper case alphabetic
-  // - digits
-  // - _
-  // - $
-  var ok = true;
-  for ch in name {
-    if !(ch == "$" || ch == "_" || ch.isAlnum()) then
-      ok = false;
-  }
-  return ok;
-}
-
-proc InitProject(name, vcs, show) {
+proc InitProject(name, vcs, show) throws {
   if vcs {
     gitInit(name, show);
     addGitIgnore(name);
@@ -111,18 +93,18 @@ proc InitProject(name, vcs, show) {
     writeln("Created new library project: " + name);
   }
   else {
-    writeln("Failed to create project");
+    throw new MasonError("Failed to create project");
   }
 }
 
 
-proc gitInit(name: string, show: bool) {
+private proc gitInit(name: string, show: bool) {
   var initialize = "git init -q " + name;
   if show then initialize = "git init " + name;
   runCommand(initialize);
 }
 
-proc addGitIgnore(name: string) {
+private proc addGitIgnore(name: string) {
   var toIgnore = "\ntarget/\nMason.lock";
   var gitIgnore = open(name+"/.gitignore", iomode.cw);
   var GIwriter = gitIgnore.writer();
@@ -145,9 +127,10 @@ proc makeBasicToml(name: string) {
 }
 
 
-proc makeProjectFiles(name: string) {
+private proc makeProjectFiles(name: string) {
   mkdir(name + "/src");
   mkdir(name + "/test");
+  mkdir(name + "/example");
   const libTemplate = '/* Documentation for ' + name +
     ' */\nmodule '+ name + ' {\n  writeln("New library: '+ name +'");\n}';
   var lib = open(name+'/src/'+name+'.chpl', iomode.cw);

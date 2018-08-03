@@ -760,11 +760,10 @@ module ChapelBase {
       }
     }
 
-    // need a real `here` since it's used in the range parallel iters
-    if initMethod == ArrayInit.parallelInit {
-      if here == dummyLocale {
-        initMethod = ArrayInit.serialInit;
-      }
+    // The parallel range iter uses 'here`/rootLocale, so fallback to serial
+    // initialization if the root locale hasn't been setup
+    if initMethod == ArrayInit.parallelInit && !rootLocaleInitialized {
+      initMethod = ArrayInit.serialInit;
     }
 
     // Q: why is the declaration of 'y' in the following loops?
@@ -803,7 +802,6 @@ module ChapelBase {
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
-  pragma "use default init"
   class _ddata {
     type eltType;
 
@@ -878,7 +876,6 @@ module ChapelBase {
   pragma "ref"
   pragma "no default functions"
   pragma "no object"
-  pragma "use default init"
   class _ref {
     var _val;
   }
@@ -894,7 +891,6 @@ module ChapelBase {
   // to add non-generic fields here.
   // And to get 'errors' field from any generic instantiation.
   pragma "no default functions"
-  pragma "use default init"
   class _EndCountBase {
     var errors: unmanaged chpl_TaskErrors;
     var taskList: c_void_ptr = _defaultOf(c_void_ptr);
@@ -1926,7 +1922,6 @@ module ChapelBase {
   extern const QIO_TUPLE_FORMAT_JSON:int;
 
   // Support for module deinit functions.
-  pragma "use default init"
   class chpl_ModuleDeinit {
     const moduleName: c_string;          // for debugging; non-null, not owned
     const deinitFun:  c_fn_ptr;          // module deinit function

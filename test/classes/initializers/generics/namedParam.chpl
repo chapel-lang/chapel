@@ -29,6 +29,6 @@ class Child : Parent {
   }
 }
 
-var c = new Child(int, false);
+var c = new unmanaged Child(int, false);
 writeln("c = ", c);
 delete c;

@@ -34,6 +34,7 @@ def main():
     """
     Parse and do some basic validation of the ANNOTATIONS.yaml file
     """
+    os.environ["TZ"] = "America/Los_Angeles"
     chpl_home = get_chpl_home()
     test_dir = os.path.join(chpl_home, 'test')
     ann_path = os.path.join(test_dir, 'ANNOTATIONS.yaml')
@@ -105,7 +106,7 @@ def check_configs(ann_data):
 def compute_pr_to_dates():
     """Helper function to compute a map of PR numbers to commit dates"""
     pr_to_date_dict = {}
-    git_cmd = 'git log --grep "^Merge pull request #" --date=short --pretty=format:"%ad ::: %s"'
+    git_cmd = 'git log --grep "^Merge pull request #" --date=short-local --pretty=format:"%ad ::: %s"'
     p = subprocess.Popen(git_cmd, stdout=subprocess.PIPE, shell=True)
     git_log = p.communicate()[0]
     for line in git_log.splitlines():

@@ -1,3 +1,0 @@
-semantic: can't write copy ctor for generic record
-
-I expect that the new initializers story is the solution here.

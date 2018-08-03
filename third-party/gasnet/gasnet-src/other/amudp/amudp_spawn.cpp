@@ -4,7 +4,7 @@
  */
 
 #undef _PORTABLE_PLATFORM_H
-#include <amudp_portable_platform.h>
+#include <amx_portable_platform.h>
 
 #include <errno.h>
 #if PLATFORM_OS_CYGWIN
@@ -26,7 +26,7 @@ amudp_spawnfn_desc_t const AMUDP_Spawnfn_Desc[] = {
     (amudp_spawnfn_t)AMUDP_SPMDSshSpawn },
   { 'L',  "Spawn jobs using fork()/exec() on the local machine (good for SMP's)", 
     (amudp_spawnfn_t)AMUDP_SPMDLocalSpawn },
-  { 'C',  "Spawn jobs using custom job spawner (" AMUDP_ENV_PREFIX_STR"_CSPAWN_CMD)", 
+  { 'C',  "Spawn jobs using custom job spawner (" AMX_ENV_PREFIX_STR"_CSPAWN_CMD)", 
     (amudp_spawnfn_t)AMUDP_SPMDCustomSpawn },
   { '\0', NULL, (amudp_spawnfn_t)NULL }
 };
@@ -41,13 +41,13 @@ char *quote_for_remote(const char *arg) {
 
   size_t old_len = strlen(arg);
   size_t new_len = old_len + 2 + 3 * c;
-  char *result = (char *)AMUDP_malloc(1 + new_len);
+  char *result = (char *)AMX_malloc(1 + new_len);
   result[0] = '\'';
   result[1] = '\0';
   char *end = result+1;
 
   if (c) {
-    char *dup = (char *)AMUDP_malloc(1 + old_len);
+    char *dup = (char *)AMX_malloc(1 + old_len);
     p = strcpy(dup, arg);
     while (c--) {
       char *q = strchr((char *)p, '\'');
@@ -56,13 +56,13 @@ char *quote_for_remote(const char *arg) {
       strcpy(end, "'\\''"); end += 4;
       p = q + 1;
     }
-    AMUDP_free(dup);
+    AMX_free(dup);
   } else {
     p = arg;
   }
   strcpy(end, p);
 
-  AMUDP_assert(strlen(result) == new_len-1);
+  AMX_assert(strlen(result) == new_len-1);
   result[new_len-1] = '\'';
   result[new_len]   = '\0';
 
@@ -87,10 +87,10 @@ char *quote_for_local(const char *arg) {
 
   size_t old_len = strlen(tmp);
   size_t new_len = old_len + c;
-  char *result = (char *)AMUDP_malloc(1 + new_len);
+  char *result = (char *)AMX_malloc(1 + new_len);
   char *end = result;
 
-  char *q, *dup = (char *)AMUDP_malloc(1 + old_len);
+  char *q, *dup = (char *)AMX_malloc(1 + old_len);
   p = strcpy(dup, tmp);
   while (NULL != (q = strpbrk((char *)p, specials))) {
     size_t len = q-p;
@@ -102,10 +102,10 @@ char *quote_for_local(const char *arg) {
     p = q + 1;
   }
   strcpy(end, p);
-  AMUDP_free(dup);
-  AMUDP_free(tmp);
+  AMX_free(dup);
+  AMX_free(tmp);
 
-  AMUDP_assert(strlen(result) <= new_len);
+  AMX_assert(strlen(result) <= new_len);
 
   return result;
 }
@@ -118,7 +118,7 @@ extern int AMUDP_SPMDLocalSpawn(int nproc, int argc, char **argv, char **extra_e
   int i;
 
   if (!AMUDP_SPMDSpawnRunning) {
-    AMUDP_Err("Spawn functions should never be run directly - only passed to AMUDP_SPMDStartup()"); 
+    AMX_Err("Spawn functions should never be run directly - only passed to AMUDP_SPMDStartup()"); 
     return FALSE;
   }
 
@@ -127,11 +127,11 @@ extern int AMUDP_SPMDLocalSpawn(int nproc, int argc, char **argv, char **extra_e
   int envc = 0;
   if (extra_env && extra_env[0]) {
     for (envc=0; extra_env[envc]; ++envc) {/*empty*/}
-    save_env = (char **)AMUDP_malloc(sizeof(char *)*envc);
+    save_env = (char **)AMX_malloc(sizeof(char *)*envc);
     for (i=0;i<envc;++i) {
       char *var = extra_env[i];
       char *delim = strchr(var,'=');
-      AMUDP_assert(delim);
+      AMX_assert(delim);
       *delim = '\0';
       save_env[i] = getenv(var);
       setenv(var,delim+1,1);
@@ -140,12 +140,12 @@ extern int AMUDP_SPMDLocalSpawn(int nproc, int argc, char **argv, char **extra_e
 
   for (i = 0; i < nproc; i++) {
     #if PLATFORM_ARCH_CRAYX1
-      { char **nargv = (char **)AMUDP_malloc(sizeof(char *)*(argc+2));
+      { char **nargv = (char **)AMX_malloc(sizeof(char *)*(argc+2));
         nargv[0] = argv[0];
         memcpy(nargv+1,argv,argc*sizeof(char *));
         nargv[argc+1] = NULL;
         if (execsp(nargv, environ, NULL) == -1)
-          AMUDP_FatalErr("failed execsp()");
+          AMX_FatalErr("failed execsp()");
       }
     #else
       int forkRet = fork();
@@ -182,7 +182,7 @@ extern int AMUDP_SPMDLocalSpawn(int nproc, int argc, char **argv, char **extra_e
     /* Revert our in-place modification of extra_env[]: */
     name[strlen(name)] = '=';
   }
-  AMUDP_free(save_env);
+  AMX_free(save_env);
 
   return TRUE;
 }
@@ -208,7 +208,7 @@ extern int AMUDP_SPMDLocalSpawn(int nproc, int argc, char **argv, char **extra_e
  * SSH_OPTIONS  ""                          additional options to give ssh
  * SSH_REMOTE_PATH  current working dir.    the directory to use on remote machine
  * (any environment variable may be specified with an optional prefix 
- *  of AMUDP_ or AMUDP_ENV_PREFIX##_)
+ *  of AMUDP_ or AMX_ENV_PREFIX##_)
  */
 
 int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
@@ -224,7 +224,7 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
   int pid;
 
   if (!AMUDP_SPMDSpawnRunning) {
-    AMUDP_Err("Spawn functions should never be run directly - only passed to AMUDP_SPMDStartup()"); 
+    AMX_Err("Spawn functions should never be run directly - only passed to AMUDP_SPMDStartup()"); 
     return FALSE;
   }
 
@@ -232,13 +232,13 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
 
   ssh_servers = AMUDP_getenv_prefixed_withdefault("SSH_SERVERS","");
   if (!strlen(ssh_servers)) {
-    AMUDP_Err("Environment variable SSH_SERVERS is missing.");
+    AMX_Err("Environment variable SSH_SERVERS is missing.");
     return FALSE;
   }
 
 
   if (!getcwd(cwd, 1024)) {
-    AMUDP_Err("Error calling getcwd()");
+    AMX_Err("Error calling getcwd()");
     return FALSE;
   }
   ssh_remote_path = quote_for_local(AMUDP_getenv_prefixed_withdefault("SSH_REMOTE_PATH", cwd));
@@ -266,7 +266,7 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
     while (*p && strchr(SSH_SERVERS_DELIM_CHARS, *p)) p++;
     end = p + strcspn(p, SSH_SERVERS_DELIM_CHARS);
     if (p == end) {
-      AMUDP_Err("Not enough machines in environment variable SSH_SERVERS to satisfy request for (%i).\n"
+      AMX_Err("Not enough machines in environment variable SSH_SERVERS to satisfy request for (%i).\n"
        "Only (%i) machines available: %s", nproc, i, ssh_servers);
       return FALSE;
     }
@@ -283,13 +283,13 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
       cmd1_sz += strlen(extra_env[i]) + 3; // "'%s' "
     }
   }
-  char **quoted_args = (char**)AMUDP_malloc(argc * sizeof(char*));
+  char **quoted_args = (char**)AMX_malloc(argc * sizeof(char*));
   for (i = 0; i < argc; i++) {
-    AMUDP_assert(argv[i]);
+    AMX_assert(argv[i]);
     quoted_args[i] = quote_for_local(argv[i]);
     cmd1_sz += strlen(quoted_args[i]) + 1; // +1 for trailing space
   }
-  cmd1 = (char *)AMUDP_malloc(cmd1_sz);
+  cmd1 = (char *)AMX_malloc(cmd1_sz);
   { char *tmp = cmd1;
     if (extra_env && extra_env[0]) {
       tmp += sprintf(tmp, "%s ", envcmd);
@@ -298,17 +298,17 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
       }
     }
     for (i = 0; i < argc; i++) {
-      AMUDP_assert(quoted_args[i]);
+      AMX_assert(quoted_args[i]);
       tmp += sprintf(tmp, "%s ", quoted_args[i]);
-      AMUDP_free(quoted_args[i]);
+      AMX_free(quoted_args[i]);
     }
-    AMUDP_free(quoted_args);
-    AMUDP_assert(!argv[i]);
+    AMX_free(quoted_args);
+    AMX_assert(!argv[i]);
     *tmp = '\0';
-    AMUDP_assert(strlen(cmd1) == cmd1_sz - 1);
+    AMX_assert(strlen(cmd1) == cmd1_sz - 1);
   }
   cmd2_sz = cmd1_sz + strlen(ssh_remote_path) + 1024; /* estimated */
-  cmd2 =  (char *)AMUDP_malloc(cmd2_sz);
+  cmd2 =  (char *)AMX_malloc(cmd2_sz);
 
   p = ssh_servers;
   for (i = 0; i < nproc; i++) {
@@ -316,7 +316,7 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
     const char *end;
     while (*p && strchr(SSH_SERVERS_DELIM_CHARS, *p)) p++;
     end = p + strcspn(p, SSH_SERVERS_DELIM_CHARS);
-    AMUDP_assert(p != end);
+    AMX_assert(p != end);
 
     strncpy(ssh_server, p, (end-p));
     ssh_server[end-p] = '\0'; 
@@ -343,7 +343,7 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
 
       ssh_options, ssh_server, 
       
-      (AMUDP_SilentMode?"":"echo connected to \\$HOST... ; "),
+      (AMX_SilentMode?"":"echo connected to \\$HOST... ; "),
 
       ssh_remote_path, cmd1, ssh_server, pid,
 
@@ -354,20 +354,20 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
       #endif
     );
 
-    if (!AMUDP_SilentMode) 
-      AMUDP_Info("system(%s)", cmd2);
+    if (!AMX_SilentMode) 
+      AMX_Info("system(%s)", cmd2);
     if (system(cmd2) == -1) {
-      AMUDP_Err("Failed to call system() to spawn");
-      AMUDP_free(cmd1);
-      AMUDP_free(cmd2);
+      AMX_Err("Failed to call system() to spawn");
+      AMX_free(cmd1);
+      AMX_free(cmd2);
       return FALSE;
     }
     if (*end) p = end+1;
     else p = end;
   } 
 
-  AMUDP_free(cmd1);
-  AMUDP_free(cmd2);
+  AMX_free(cmd1);
+  AMX_free(cmd2);
   return TRUE;
 }
 /* ------------------------------------------------------------------------------------ 
@@ -386,7 +386,7 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
  *                              %% => %
  * CSPAWN_ROUTE_OUTPUT 0   set this variable to request stdout/stderr routing of workers
  * (any environment variable may be specified with an optional prefix 
- *  of AMUDP_ or AMUDP_ENV_PREFIX##_)
+ *  of AMUDP_ or AMX_ENV_PREFIX##_)
  */
 
 int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
@@ -405,7 +405,7 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
   int pid;
 
   if (!AMUDP_SPMDSpawnRunning) {
-    AMUDP_Err("Spawn functions should never be run directly - only passed to AMUDP_SPMDStartup()"); 
+    AMX_Err("Spawn functions should never be run directly - only passed to AMUDP_SPMDStartup()"); 
     return FALSE;
   }
 
@@ -413,7 +413,7 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
 
   spawn_cmd = AMUDP_getenv_prefixed_withdefault("CSPAWN_CMD","");
   if (!strlen(spawn_cmd)) {
-    AMUDP_Err("You must set the " AMUDP_ENV_PREFIX_STR"_CSPAWN_CMD environment variable to use the custom spawn function"); 
+    AMX_Err("You must set the " AMX_ENV_PREFIX_STR"_CSPAWN_CMD environment variable to use the custom spawn function"); 
     return FALSE;
   }
   spawn_servers = AMUDP_getenv_prefixed_withdefault("CSPAWN_SERVERS","");
@@ -437,7 +437,7 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
       while (*p && strchr(SSH_SERVERS_DELIM_CHARS, *p)) p++;
       end = p + strcspn(p, SSH_SERVERS_DELIM_CHARS);
       if (p == end) {
-        AMUDP_Err("Not enough machines in environment variable " AMUDP_ENV_PREFIX_STR"_CSPAWN_SERVERS to satisfy request for (%i).\n"
+        AMX_Err("Not enough machines in environment variable " AMX_ENV_PREFIX_STR"_CSPAWN_SERVERS to satisfy request for (%i).\n"
           "Only (%i) machines available: %s", nproc, i, spawn_servers);
         return FALSE;
       }
@@ -454,7 +454,7 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
   sprintf(nproc_str, "%i", nproc);
 
   if (!getcwd(cwd, 1024)) {
-    AMUDP_Err("Error calling getcwd()");
+    AMX_Err("Error calling getcwd()");
     return FALSE;
   }
 
@@ -472,13 +472,13 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
       }
     }
     for (i = 0; i < argc; i++) {
-      AMUDP_assert(argv[i] != NULL);
+      AMX_assert(argv[i] != NULL);
       char *qarg = quote_for_local(argv[i]);
       strcat(temp,qarg);
       strcat(temp," ");
-      AMUDP_free(qarg);
+      AMX_free(qarg);
     }
-    AMUDP_assert(!argv[i]);
+    AMX_assert(!argv[i]);
 
   #if PLATFORM_OS_CYGWIN
     if (spawn_use_create_process) strcpy(workercmd, temp);
@@ -486,7 +486,7 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
   #endif
    {
     sprintf(workercmd, "/bin/sh -c \"%s%s\" || ( echo \"spawn failed.\" ; kill %i ) ",
-      (AMUDP_SilentMode?"":"echo connected to `uname -n`... ; "),
+      (AMX_SilentMode?"":"echo connected to `uname -n`... ; "),
       temp, pid
     );
    }
@@ -500,8 +500,8 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
       switch (*(p+1)) {
         case 'M': case 'm': 
           if (!spawn_servers) { /* user failed to provide servers and now is asking for them */
-            AMUDP_Err("You must set the " AMUDP_ENV_PREFIX_STR"_CSPAWN_SERVERS environment "
-                       "variable to use the %%M option in " AMUDP_ENV_PREFIX_STR"_CSPAWN_CMD");
+            AMX_Err("You must set the " AMX_ENV_PREFIX_STR"_CSPAWN_SERVERS environment "
+                       "variable to use the %%M option in " AMX_ENV_PREFIX_STR"_CSPAWN_CMD");
           }
           replacement = workerservers; 
           break;
@@ -536,8 +536,8 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
     }
     else 
     {  /*  this is the child - exec the new process */
-      if (!AMUDP_SilentMode) 
-        AMUDP_Info("system(%s)\n", cmd);
+      if (!AMX_SilentMode) 
+        AMX_Info("system(%s)\n", cmd);
     #if PLATFORM_OS_CYGWIN
       if (spawn_use_create_process) {
         STARTUPINFO si;
@@ -550,15 +550,15 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
         si.hStdOutput = GetStdHandle(STD_ERROR_HANDLE); 
         si.dwFlags |= STARTF_USESTDHANDLES;
 
-        if (   TRUE != CreateProcess(0, strdup(cmd), 0, 0, TRUE, 0, 0, 0, &si, &pi)
+        if (   TRUE != CreateProcess(0, AMX_strdup(cmd), 0, 0, TRUE, 0, 0, 0, &si, &pi)
             || WAIT_FAILED == WaitForSingleObject(pi.hProcess, INFINITE)
             || 0 == GetExitCodeProcess(pi.hProcess, &code)
             || 0 != code)
-          AMUDP_FatalErr("Failed while calling CreateProcess() with custom spawn command:\n%s", cmd);
+          AMX_FatalErr("Failed while calling CreateProcess() with custom spawn command:\n%s", cmd);
       } else
     #endif
       if (system(cmd) != 0)
-         AMUDP_FatalErr("Failed while calling system() with custom spawn command:\n%s", cmd);
+         AMX_FatalErr("Failed while calling system() with custom spawn command:\n%s", cmd);
       exit(0);
     }
   }

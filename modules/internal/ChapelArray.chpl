@@ -170,7 +170,7 @@ module ChapelArray {
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
   pragma "no doc"
-  var numPrivateObjects: atomic_int64;
+  var numPrivateObjects: chpl__processorAtomicType(int);
   pragma "no doc"
   param nullPid = -1;
 
@@ -896,7 +896,6 @@ module ChapelArray {
   //
   pragma "no doc"
   pragma "syntactic distribution"
-  pragma "use default init"
   record dmap { }
 
   proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
@@ -923,7 +922,6 @@ module ChapelArray {
   pragma "distribution"
   pragma "ignore noinit"
   pragma "no doc"
-  pragma "use default init"
   record _distribution {
     var _pid:int;  // only used when privatized
     pragma "owned"
@@ -1051,7 +1049,6 @@ module ChapelArray {
   }
 
 
-  pragma "use default init"
   record _serialized_domain {
     param rank;
     type idxType;
@@ -1069,7 +1066,6 @@ module ChapelArray {
   pragma "domain"
   pragma "has runtime type"
   pragma "ignore noinit"
-  pragma "use default init"
   record _domain {
     var _pid:int; // only used when privatized
     pragma "owned"
@@ -2141,7 +2137,6 @@ module ChapelArray {
   pragma "array"
   pragma "has runtime type"
   pragma "ignore noinit"
-  pragma "use default init"
   pragma "default intent is ref if modified"
   record _array {
     var _pid:int;  // only used when privatized
@@ -3998,7 +3993,6 @@ module ChapelArray {
   // index for all opaque domains
   //
   pragma "no doc"
-  pragma "use default init"
   record _OpaqueIndex {
     var node:int = 0;
     var i:uint = 0;

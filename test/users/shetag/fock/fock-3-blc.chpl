@@ -13,7 +13,7 @@ var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType;
 
 config const numConsumers = max(1, (+ reduce Locales.maxTaskPar) - 1),
              poolSize = numConsumers;
-const t = new taskpool(poolSize);
+const t = new unmanaged taskpool(poolSize);
 
 proc buildjk() {
   cobegin {

@@ -5,7 +5,7 @@
 # variables added here should also go in Makefile.common, and vice-versa
 
 altincdir = $(srcdir)/..
-testdir = $(srcdir)/../amxtests
+amxdir = $(srcdir)/../amx
 
 # compiler
 CC = @MPI_CC@

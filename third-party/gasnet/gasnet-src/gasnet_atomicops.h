@@ -245,72 +245,72 @@
   } while (0)
 
 #define GASNETI_ATOMIC_FENCED_SET_DEFN_NOT_INLINE(group,func,_func,stem) \
-  void func(stem##t *p, stem##val_t v, const int flags) {           \
-    GASNETI_ATOMIC_FENCED_SET(group,_func,stem,p,v,flags);          \
+  void func(stem##t *_p, stem##val_t _v, const int _flags) {        \
+    GASNETI_ATOMIC_FENCED_SET(group,_func,stem,_p,_v,_flags);       \
   }
 #define GASNETI_ATOMIC_FENCED_INCDEC_DEFN_NOT_INLINE(group,func,_func,stem) \
-  void func(stem##t *p, const int flags) {                          \
-    GASNETI_ATOMIC_FENCED_INCDEC(group,_func,stem,p,flags);         \
+  void func(stem##t *_p, const int _flags) {                        \
+    GASNETI_ATOMIC_FENCED_INCDEC(group,_func,stem,_p,_flags);       \
   }
 #define GASNETI_ATOMIC_FENCED_READ_DEFN_NOT_INLINE(group,func,_func,stem) \
-  stem##val_t func(stem##t *p, const int flags) {                   \
-    _gasneti_##group##_prologue_read(p,flags)                       \
-    GASNETI_ATOMIC_CHECKALIGN(stem,p);                              \
-    _gasneti_##group##_fence_before_read(p,flags)                   \
-    { const stem##val_t retval = _func(p);                          \
-      _gasneti_##group##_fence_after_read(p,flags)                  \
-      return retval;                                                \
+  stem##val_t func(stem##t *_p, const int _flags) {                 \
+    _gasneti_##group##_prologue_read(_p,_flags)                     \
+    GASNETI_ATOMIC_CHECKALIGN(stem,_p);                             \
+    _gasneti_##group##_fence_before_read(_p,_flags)                 \
+    { const stem##val_t _retval = _func(_p);                        \
+      _gasneti_##group##_fence_after_read(_p,_flags)                \
+      return _retval;                                               \
     }                                                               \
   }
 #define GASNETI_ATOMIC_FENCED_DECTEST_DEFN_NOT_INLINE(group,func,_func,stem) \
-  int func(stem##t *p, const int flags) {                           \
-    _gasneti_##group##_prologue_rmw(p,flags)                        \
-    GASNETI_ATOMIC_CHECKALIGN(stem,p);                              \
-    _gasneti_##group##_fence_before_rmw(p,flags)                    \
-    { const int retval = _func(p);                                  \
-      _gasneti_##group##_fence_after_bool(p,flags, retval)          \
-      return retval;                                                \
+  int func(stem##t *_p, const int _flags) {                         \
+    _gasneti_##group##_prologue_rmw(_p,_flags)                      \
+    GASNETI_ATOMIC_CHECKALIGN(stem,_p);                             \
+    _gasneti_##group##_fence_before_rmw(_p,_flags)                  \
+    { const int _retval = _func(_p);                                \
+      _gasneti_##group##_fence_after_bool(_p,_flags, _retval)       \
+      return _retval;                                               \
     }                                                               \
   }
 #define GASNETI_ATOMIC_FENCED_CAS_DEFN_NOT_INLINE(group,func,_func,stem) \
-  int func(stem##t *p, stem##val_t oldval,                          \
-           stem##val_t newval, const int flags) {                   \
-    _gasneti_##group##_prologue_rmw(p,flags)                        \
-    GASNETI_ATOMIC_CHECKALIGN(stem,p);                              \
-    _gasneti_##group##_fence_before_rmw(p,flags)                    \
-    { const int retval = _func(p,oldval,newval);                    \
-      _gasneti_##group##_fence_after_bool(p,flags, retval)          \
-      return retval;                                                \
+  int func(stem##t *_p, stem##val_t _oldval,                        \
+           stem##val_t _newval, const int _flags) {                 \
+    _gasneti_##group##_prologue_rmw(_p,_flags)                      \
+    GASNETI_ATOMIC_CHECKALIGN(stem,_p);                             \
+    _gasneti_##group##_fence_before_rmw(_p,_flags)                  \
+    { const int _retval = _func(_p,_oldval,_newval);                \
+      _gasneti_##group##_fence_after_bool(_p,_flags, _retval)       \
+      return _retval;                                               \
     }                                                               \
   }
 #define GASNETI_ATOMIC_FENCED_SWAP_DEFN_NOT_INLINE(group,func,_func,stem) \
-  stem##val_t func(stem##t *p, stem##val_t val, const int flags) {  \
-    _gasneti_##group##_prologue_rmw(p,flags)                        \
-    GASNETI_ATOMIC_CHECKALIGN(stem,p);                              \
-    _gasneti_##group##_fence_before_rmw(p,flags)                    \
-    { const stem##val_t retval = _func(p, val);                     \
-      _gasneti_##group##_fence_after_rmw(p,flags)                   \
-      return retval;                                                \
+  stem##val_t func(stem##t *_p, stem##val_t _val, const int _flags) { \
+    _gasneti_##group##_prologue_rmw(_p,_flags)                      \
+    GASNETI_ATOMIC_CHECKALIGN(stem,_p);                             \
+    _gasneti_##group##_fence_before_rmw(_p,_flags)                  \
+    { const stem##val_t _retval = _func(_p, _val);                  \
+      _gasneti_##group##_fence_after_rmw(_p,_flags)                 \
+      return _retval;                                               \
     }                                                               \
   }
 #define GASNETI_ATOMIC_FENCED_ADDSUB_DEFN_NOT_INLINE(group,func,_func,stem) \
-  stem##val_t func(stem##t *p, stem##val_t op, const int flags) {   \
-    _gasneti_##group##_prologue_rmw(p,flags)                        \
-    GASNETI_ATOMIC_CHECKALIGN(stem,p);                              \
-    _gasneti_##group##_fence_before_rmw(p,flags)                    \
-    { const stem##val_t retval = _func(p, op);                      \
-      _gasneti_##group##_fence_after_rmw(p,flags)                   \
-      return retval;                                                \
+  stem##val_t func(stem##t *_p, stem##val_t _op, const int _flags) { \
+    _gasneti_##group##_prologue_rmw(_p,_flags)                      \
+    GASNETI_ATOMIC_CHECKALIGN(stem,_p);                             \
+    _gasneti_##group##_fence_before_rmw(_p,_flags)                  \
+    { const stem##val_t _retval = _func(_p, _op);                   \
+      _gasneti_##group##_fence_after_rmw(_p,_flags)                 \
+      return _retval;                                               \
     }                                                               \
   }
 #define GASNETI_ATOMIC_FENCED_ADDFETCH_DEFN_NOT_INLINE(group,func,_func,stem) \
-  stem##val_t func(stem##t *p, stem##val_t op, const int flags) {   \
-    _gasneti_##group##_prologue_rmw(p,flags)                        \
-    GASNETI_ATOMIC_CHECKALIGN(stem,p);                              \
-    _gasneti_##group##_fence_before_rmw(p,flags)                    \
-    { const stem##val_t retval = _func(p, op);                      \
-      _gasneti_##group##_fence_after_rmw(p,flags)                   \
-      return retval;                                                \
+  stem##val_t func(stem##t *_p, stem##val_t _op, const int _flags) {\
+    _gasneti_##group##_prologue_rmw(_p,_flags)                      \
+    GASNETI_ATOMIC_CHECKALIGN(stem,_p);                             \
+    _gasneti_##group##_fence_before_rmw(_p,_flags)                  \
+    { const stem##val_t _retval = _func(_p, _op);                   \
+      _gasneti_##group##_fence_after_rmw(_p,_flags)                 \
+      return _retval;                                               \
     }                                                               \
   }
 
@@ -356,8 +356,8 @@
 
 /* Swap, as above, but not typless due to need for a temporary */
 #define GASNETI_SCALAR_ATOMIC_SWAP_DEFN(func,stem)                      \
-  GASNETI_INLINE(func) stem##val_t func(stem##t *p, stem##val_t val) {  \
-    const stem##val_t retval = *p; *p = val; return retval;             \
+  GASNETI_INLINE(func) stem##val_t func(stem##t *_p, stem##val_t _val) {\
+    const stem##val_t _retval = *_p; *_p = _val; return _retval;        \
   }
 
 /* ------------------------------------------------------------------------------------ */
@@ -429,25 +429,25 @@
       typedef volatile uint##_sz##_t gasneti_genatomic##_sz##_t;                             \
       typedef uint##_sz##_t gasneti_genatomic##_sz##_val_t;                                  \
       typedef int##_sz##_t gasneti_genatomic##_sz##_sval_t;                                  \
-      extern void gasneti_genatomic##_sz##_set(gasneti_genatomic##_sz##_t *p,                \
-                                               gasneti_genatomic##_sz##_val_t v,             \
-                                               const int flags);                             \
-      extern void gasneti_genatomic##_sz##_increment(gasneti_genatomic##_sz##_t *p,          \
-                                                     const int flags);                       \
-      extern void gasneti_genatomic##_sz##_decrement(gasneti_genatomic##_sz##_t *p,          \
-                                                     const int flags);                       \
-      extern int gasneti_genatomic##_sz##_decrement_and_test(gasneti_genatomic##_sz##_t *p,  \
-                                                             const int flags);               \
-      extern int gasneti_genatomic##_sz##_compare_and_swap(gasneti_genatomic##_sz##_t *p,    \
-                                                           uint##_sz##_t oldval,             \
-                                                           uint##_sz##_t newval,             \
-                                                           const int flags);                 \
-      extern uint##_sz##_t gasneti_genatomic##_sz##_swap(gasneti_genatomic##_sz##_t *p,      \
-                                                         uint##_sz##_t val,                  \
-                                                         const int flags);                   \
-      extern uint##_sz##_t gasneti_genatomic##_sz##_addfetch(gasneti_genatomic##_sz##_t *p,  \
-                                                             uint##_sz##_t op,               \
-                                                             const int flags);               
+      extern void gasneti_genatomic##_sz##_set(gasneti_genatomic##_sz##_t *_p,               \
+                                               gasneti_genatomic##_sz##_val_t _v,            \
+                                               const int _flags);                            \
+      extern void gasneti_genatomic##_sz##_increment(gasneti_genatomic##_sz##_t *_p,         \
+                                                     const int _flags);                      \
+      extern void gasneti_genatomic##_sz##_decrement(gasneti_genatomic##_sz##_t *_p,         \
+                                                     const int _flags);                      \
+      extern int gasneti_genatomic##_sz##_decrement_and_test(gasneti_genatomic##_sz##_t *_p, \
+                                                             const int _flags);              \
+      extern int gasneti_genatomic##_sz##_compare_and_swap(gasneti_genatomic##_sz##_t *_p,   \
+                                                           uint##_sz##_t _oldval,            \
+                                                           uint##_sz##_t _newval,            \
+                                                           const int _flags);                \
+      extern uint##_sz##_t gasneti_genatomic##_sz##_swap(gasneti_genatomic##_sz##_t *_p,     \
+                                                         uint##_sz##_t _val,                 \
+                                                         const int _flags);                  \
+      extern uint##_sz##_t gasneti_genatomic##_sz##_addfetch(gasneti_genatomic##_sz##_t *_p, \
+                                                             uint##_sz##_t _op,              \
+                                                             const int _flags);               
     #define _GASNETI_GENATOMIC_DEFN(_sz)                                                         \
       GASNETI_ATOMIC_FENCED_SET_DEFN_NOT_INLINE(genatomic,                                       \
                                                 gasneti_genatomic##_sz##_set,                    \
@@ -507,16 +507,16 @@
        * Note that we use the "rmw" fencing macros here, since the "read" fencing macros
        * assume no lock is taken and thus would potentially double fence.
        */
-      extern uint64_t gasneti_genatomic64_read(gasneti_genatomic64_t *p, const int flags);
+      extern uint64_t gasneti_genatomic64_read(gasneti_genatomic64_t *_p, const int _flags);
       #define _GASNETI_GENATOMIC64_DEFN_EXTRA \
-	uint64_t gasneti_genatomic64_read(gasneti_genatomic64_t *p, const int flags) { \
-          _gasneti_genatomic_prologue_rmw(p,flags)      /* rmw is NOT a typo here */ \
-          GASNETI_ATOMIC_CHECKALIGN(gasneti_genatomic64_,p);                         \
-	  _gasneti_genatomic_fence_before_rmw(p,flags)  /* rmw is NOT a typo here */ \
-	  { const uint64_t retval = _gasneti_scalar_atomic_read(p);                  \
-	    _gasneti_genatomic_fence_after_rmw(p,flags) /* rmw is NOT a typo here */ \
-	    return retval;                                                           \
-	  }                                                                          \
+	uint64_t gasneti_genatomic64_read(gasneti_genatomic64_t *_p, const int _flags) { \
+          _gasneti_genatomic_prologue_rmw(_p,_flags)      /* rmw is NOT a typo here */   \
+          GASNETI_ATOMIC_CHECKALIGN(gasneti_genatomic64_,_p);                            \
+	  _gasneti_genatomic_fence_before_rmw(_p,_flags)  /* rmw is NOT a typo here */   \
+	  { const uint64_t _retval = _gasneti_scalar_atomic_read(_p);                    \
+	    _gasneti_genatomic_fence_after_rmw(_p,_flags) /* rmw is NOT a typo here */   \
+	    return _retval;                                                              \
+	  }                                                                              \
 	}
     #else
       /* Read is assumed naturally atomic due to word size, or it doesn't matter in a serial build. */
@@ -545,19 +545,21 @@ typedef int32_t gasneti_atomic32_sval_t;	/* For consistency in fencing macros */
   #define gasneti_genatomic32_add(p,op,f)      ((uint32_t)gasneti_genatomic32_addfetch((p),(op),(f)))
   #define gasneti_genatomic32_subtract(p,op,f) ((uint32_t)gasneti_genatomic32_addfetch((p),(uint32_t)-(op),(f)))
   #define _gasneti_atomic32_cons(_id)          gasneti_genatomic32_##_id
-#elif defined(GASNETI_USING_SLOW_ATOMICS)
-  /* Since this is an indirection, rather than a full implementation, the
-   * platform-specifc code provides gasneti_atomic32_t and gasneti_atomic32_init
-   */
-  extern uint32_t gasneti_slow_atomic32_read(gasneti_atomic32_t *p, const int flags);
-  extern void gasneti_slow_atomic32_set(gasneti_atomic32_t *p, uint32_t v, const int flags);
-  extern void gasneti_slow_atomic32_increment(gasneti_atomic32_t *p, const int flags);
-  extern void gasneti_slow_atomic32_decrement(gasneti_atomic32_t *p, const int flags);
-  extern int gasneti_slow_atomic32_decrement_and_test(gasneti_atomic32_t *p, const int flags);
-  extern int gasneti_slow_atomic32_compare_and_swap(gasneti_atomic32_t *p, uint32_t oldval, uint32_t newval, const int flags);
-  extern uint32_t gasneti_slow_atomic32_swap(gasneti_atomic32_t *p, uint32_t val, const int flags);
-  extern uint32_t gasneti_slow_atomic32_add(gasneti_atomic32_t *p, uint32_t op, const int flags);
-  extern uint32_t gasneti_slow_atomic32_subtract(gasneti_atomic32_t *p, uint32_t op, const int flags);
+#elif defined(GASNETI_USING_SLOW_ATOMIC32)
+  typedef struct { volatile uint32_t gasneti_ctr; } gasneti_atomic32_t;
+  #define gasneti_atomic32_init(v) { (v) }
+  #define gasneti_slow_atomic32_t     gasneti_atomic32_t
+  #define gasneti_slow_atomic32_init  gasneti_atomic32_init
+  #define gasneti_slow_atomic32_align gasneti_atomic32_align
+  extern uint32_t gasneti_slow_atomic32_read(gasneti_atomic32_t *_p, const int _flags);
+  extern void gasneti_slow_atomic32_set(gasneti_atomic32_t *_p, uint32_t _v, const int _flags);
+  extern void gasneti_slow_atomic32_increment(gasneti_atomic32_t *_p, const int _flags);
+  extern void gasneti_slow_atomic32_decrement(gasneti_atomic32_t *_p, const int _flags);
+  extern int gasneti_slow_atomic32_decrement_and_test(gasneti_atomic32_t *_p, const int _flags);
+  extern int gasneti_slow_atomic32_compare_and_swap(gasneti_atomic32_t *_p, uint32_t _oldval, uint32_t _newval, const int _flags);
+  extern uint32_t gasneti_slow_atomic32_swap(gasneti_atomic32_t *_p, uint32_t _val, const int _flags);
+  extern uint32_t gasneti_slow_atomic32_add(gasneti_atomic32_t *_p, uint32_t _op, const int _flags);
+  extern uint32_t gasneti_slow_atomic32_subtract(gasneti_atomic32_t *_p, uint32_t _op, const int _flags);
   #define _gasneti_atomic32_cons(_id)    gasneti_slow_atomic32_##_id
 #else
   /* Define 32-bit fixed-width atomics in terms of un-fenced native atomics */
@@ -573,8 +575,8 @@ typedef int32_t gasneti_atomic32_sval_t;	/* For consistency in fencing macros */
                                         gasneti_atomic32_)
   #elif defined(gasneti_atomic32_fetchadd)
     GASNETI_INLINE(gasneti_atomic32_addfetch)
-    uint32_t gasneti_atomic32_addfetch(gasneti_atomic32_t *p, uint32_t op, int f) {
-      return (uint32_t)(gasneti_atomic32_fetchadd(p,op,f) + op);
+    uint32_t gasneti_atomic32_addfetch(gasneti_atomic32_t *_p, uint32_t _op, int _f) {
+      return (uint32_t)(gasneti_atomic32_fetchadd(_p,_op,_f) + _op);
     }
   #endif
 
@@ -638,19 +640,21 @@ typedef int64_t gasneti_atomic64_sval_t;	/* For consistency in fencing macros */
   #define gasneti_genatomic64_add(p,op,f)      ((uint64_t)gasneti_genatomic64_addfetch((p),(uint64_t)(op),(f)))
   #define gasneti_genatomic64_subtract(p,op,f) ((uint64_t)gasneti_genatomic64_addfetch((p),(uint64_t)-(op),(f)))
   #define _gasneti_atomic64_cons(_id)          gasneti_genatomic64_##_id
-#elif defined(GASNETI_USING_SLOW_ATOMICS)
-  /* Since this is an indirection, rather than a full implementation, the
-   * platform-specifc code provides gasneti_atomic64_t and gasneti_atomic64_init
-   */
-  extern uint64_t gasneti_slow_atomic64_read(gasneti_atomic64_t *p, const int flags);
-  extern void gasneti_slow_atomic64_set(gasneti_atomic64_t *p, uint64_t v, const int flags);
-  extern void gasneti_slow_atomic64_increment(gasneti_atomic64_t *p, const int flags);
-  extern void gasneti_slow_atomic64_decrement(gasneti_atomic64_t *p, const int flags);
-  extern int gasneti_slow_atomic64_decrement_and_test(gasneti_atomic64_t *p, const int flags);
-  extern int gasneti_slow_atomic64_compare_and_swap(gasneti_atomic64_t *p, uint64_t oldval, uint64_t newval, const int flags);
-  extern uint64_t gasneti_slow_atomic64_swap(gasneti_atomic64_t *p, uint64_t val, const int flags);
-  extern uint64_t gasneti_slow_atomic64_add(gasneti_atomic64_t *p, uint64_t op, const int flags);
-  extern uint64_t gasneti_slow_atomic64_subtract(gasneti_atomic64_t *p, uint64_t op, const int flags);
+#elif defined(GASNETI_USING_SLOW_ATOMIC64)
+  typedef struct { volatile uint64_t gasneti_ctr; } gasneti_atomic64_t;
+  #define gasneti_atomic64_init(v) { (v) }
+  #define gasneti_slow_atomic64_t     gasneti_atomic64_t
+  #define gasneti_slow_atomic64_init  gasneti_atomic64_init
+  #define gasneti_slow_atomic64_align gasneti_atomic64_align
+  extern uint64_t gasneti_slow_atomic64_read(gasneti_atomic64_t *_p, const int _flags);
+  extern void gasneti_slow_atomic64_set(gasneti_atomic64_t *_p, uint64_t _v, const int _flags);
+  extern void gasneti_slow_atomic64_increment(gasneti_atomic64_t *_p, const int _flags);
+  extern void gasneti_slow_atomic64_decrement(gasneti_atomic64_t *_p, const int _flags);
+  extern int gasneti_slow_atomic64_decrement_and_test(gasneti_atomic64_t *_p, const int _flags);
+  extern int gasneti_slow_atomic64_compare_and_swap(gasneti_atomic64_t *_p, uint64_t _oldval, uint64_t _newval, const int _flags);
+  extern uint64_t gasneti_slow_atomic64_swap(gasneti_atomic64_t *_p, uint64_t _val, const int _flags);
+  extern uint64_t gasneti_slow_atomic64_add(gasneti_atomic64_t *_p, uint64_t _op, const int _flags);
+  extern uint64_t gasneti_slow_atomic64_subtract(gasneti_atomic64_t *_p, uint64_t _op, const int _flags);
   #define _gasneti_atomic64_cons(_id)    gasneti_slow_atomic64_##_id
 #elif defined(GASNETI_HYBRID_ATOMIC64)
   /* Hybrid: need to runtime select between native and generic, based on alignment.
@@ -675,52 +679,52 @@ typedef int64_t gasneti_atomic64_sval_t;	/* For consistency in fencing macros */
     } while (0)
   GASNETI_ATOMIC_FENCED_READ_DEFN(atomic64,__gasneti_atomic64_read,_gasneti_atomic64_read,gasneti_atomic64_)
   GASNETI_INLINE(gasneti_atomic64_read)
-  uint64_t gasneti_atomic64_read(gasneti_atomic64_t *p, const int flags) {
-    if_pt (!((uintptr_t)p & 0x7)) {
-      return __gasneti_atomic64_read(p, flags);
+  uint64_t gasneti_atomic64_read(gasneti_atomic64_t *_p, const int _flags) {
+    if_pt (!((uintptr_t)_p & 0x7)) {
+      return __gasneti_atomic64_read(_p, _flags);
     } else {
-      return gasneti_genatomic64_read((gasneti_genatomic64_t *)p, flags);
+      return gasneti_genatomic64_read((gasneti_genatomic64_t *)_p, _flags);
     }
   }
   GASNETI_ATOMIC_FENCED_CAS_DEFN(atomic64,__gasneti_atomic64_compare_and_swap,_gasneti_atomic64_compare_and_swap,gasneti_atomic64_)
   GASNETI_INLINE(gasneti_atomic64_compare_and_swap)
-  int gasneti_atomic64_compare_and_swap(gasneti_atomic64_t *p, uint64_t oldval,
-					uint64_t newval, const int flags) {
-    if_pt (!((uintptr_t)p & 0x7)) {
-      return __gasneti_atomic64_compare_and_swap(p,oldval,newval,flags);
+  int gasneti_atomic64_compare_and_swap(gasneti_atomic64_t *_p, uint64_t _oldval,
+					uint64_t _newval, const int _flags) {
+    if_pt (!((uintptr_t)_p & 0x7)) {
+      return __gasneti_atomic64_compare_and_swap(_p,_oldval,_newval,_flags);
     } else {
-      return gasneti_genatomic64_compare_and_swap((gasneti_genatomic64_t *)p,oldval,newval,flags);
+      return gasneti_genatomic64_compare_and_swap((gasneti_genatomic64_t *)_p,_oldval,_newval,_flags);
     }
   }
   GASNETI_ATOMIC_FENCED_SWAP_DEFN(atomic64,__gasneti_atomic64_swap,_gasneti_atomic64_swap,gasneti_atomic64_)
   GASNETI_INLINE(gasneti_atomic64_swap)
-  uint64_t gasneti_atomic64_swap(gasneti_atomic64_t *p, uint64_t op, const int flags) {
-    if_pt (!((uintptr_t)p & 0x7)) {
-      return __gasneti_atomic64_swap(p,op,flags);
+  uint64_t gasneti_atomic64_swap(gasneti_atomic64_t *_p, uint64_t _op, const int _flags) {
+    if_pt (!((uintptr_t)_p & 0x7)) {
+      return __gasneti_atomic64_swap(_p,_op,_flags);
     } else {
-      return gasneti_genatomic64_swap((gasneti_genatomic64_t *)p,op,flags);
+      return gasneti_genatomic64_swap((gasneti_genatomic64_t *)_p,_op,_flags);
     }
   }
   GASNETI_ATOMIC_FENCED_ADDFETCH_DEFN(atomic64,__gasneti_atomic64_fetchadd,_gasneti_atomic64_fetchadd,gasneti_atomic64_)
   GASNETI_INLINE(gasneti_atomic64_addfetch)
-  uint64_t gasneti_atomic64_addfetch(gasneti_atomic64_t *p, uint64_t op, const int flags) {
-    if_pt (!((uintptr_t)p & 0x7)) {
-      return op + __gasneti_atomic64_fetchadd(p,op,flags);
+  uint64_t gasneti_atomic64_addfetch(gasneti_atomic64_t *_p, uint64_t _op, const int _flags) {
+    if_pt (!((uintptr_t)_p & 0x7)) {
+      return _op + __gasneti_atomic64_fetchadd(_p,_op,_flags);
     } else {
-      return gasneti_genatomic64_addfetch((gasneti_genatomic64_t *)p,op,flags);
+      return gasneti_genatomic64_addfetch((gasneti_genatomic64_t *)_p,_op,_flags);
     }
   }
   GASNETI_INLINE(gasneti_atomic64_decrement_and_test)
-  int gasneti_atomic64_decrement_and_test(gasneti_atomic64_t *p, const int flags) {
-    const int mask = (GASNETI_ATOMIC_RMB_POST_IF_TRUE|GASNETI_ATOMIC_RMB_POST_IF_FALSE);
-    if_pt (!((uintptr_t)p & 0x7)) {
-      const int result = (1 == __gasneti_atomic64_fetchadd(p,(uint64_t)-1,flags));
-      _gasneti_atomic64_fence_after_bool(p,(flags&mask),result);
-      return result;
+  int gasneti_atomic64_decrement_and_test(gasneti_atomic64_t *_p, const int _flags) {
+    const int _mask = (GASNETI_ATOMIC_RMB_POST_IF_TRUE|GASNETI_ATOMIC_RMB_POST_IF_FALSE);
+    if_pt (!((uintptr_t)_p & 0x7)) {
+      const int _result = (1 == __gasneti_atomic64_fetchadd(_p,(uint64_t)-1,_flags));
+      _gasneti_atomic64_fence_after_bool(_p,(_flags&_mask),_result);
+      return _result;
     } else {
-      const int result = (0 == gasneti_genatomic64_addfetch((gasneti_genatomic64_t *)p,(uint64_t)-1,flags));
-      _gasneti_atomic_fence_after_bool(p,(flags&mask),result);
-      return result;
+      const int _result = (0 == gasneti_genatomic64_addfetch((gasneti_genatomic64_t *)_p,(uint64_t)-1,_flags));
+      _gasneti_atomic_fence_after_bool(_p,(_flags&_mask),_result);
+      return _result;
     }
   }
   #define gasneti_atomic64_increment(p,f) ((void)gasneti_atomic64_addfetch((p),1,(f)))
@@ -741,8 +745,8 @@ typedef int64_t gasneti_atomic64_sval_t;	/* For consistency in fencing macros */
                                         gasneti_atomic64_)
   #elif defined(gasneti_atomic64_fetchadd)
     GASNETI_INLINE(gasneti_atomic64_addfetch)
-    uint64_t gasneti_atomic64_addfetch(gasneti_atomic64_t *p, uint64_t op, int f) {
-      return (uint64_t)(gasneti_atomic64_fetchadd(p,op,f) + op);
+    uint64_t gasneti_atomic64_addfetch(gasneti_atomic64_t *_p, uint64_t _op, int _f) {
+      return (uint64_t)(gasneti_atomic64_fetchadd(_p,_op,_f) + _op);
     }
   #endif
 
@@ -860,7 +864,11 @@ typedef int64_t gasneti_atomic64_sval_t;	/* For consistency in fencing macros */
   #define GASNETI_HAVE_ATOMIC_CAS               1
   #define GASNETI_HAVE_ATOMIC_ADD_SUB           1
 
-  #define _gasneti_atomic_cons(_id)    gasneti_atomic32_##_id
+  #if defined(GASNETI_USING_SLOW_ATOMIC32)
+    #define _gasneti_atomic_cons(_id)    gasneti_slow_atomic32_##_id
+  #else
+    #define _gasneti_atomic_cons(_id)    gasneti_atomic32_##_id
+  #endif
 #elif defined(GASNETI_USE_64BIT_ATOMICS)
   typedef uint64_t			gasneti_atomic_val_t;
   typedef int64_t			gasneti_atomic_sval_t;
@@ -880,23 +888,24 @@ typedef int64_t gasneti_atomic64_sval_t;	/* For consistency in fencing macros */
   #define GASNETI_HAVE_ATOMIC_CAS               1
   #define GASNETI_HAVE_ATOMIC_ADD_SUB           1
 
-  #define _gasneti_atomic_cons(_id)    gasneti_atomic64_##_id
-#elif defined(GASNETI_USING_SLOW_ATOMICS)
-  /* Slow function-call based atomics
-   * Used at client compile time for any compiler w/o inline asm support
-   */
-  extern gasneti_atomic_val_t gasneti_slow_atomic_read(gasneti_atomic_t *p, const int flags);
-  extern void gasneti_slow_atomic_set(gasneti_atomic_t *p, gasneti_atomic_val_t v, const int flags);
-  extern void gasneti_slow_atomic_increment(gasneti_atomic_t *p, const int flags);
-  extern void gasneti_slow_atomic_decrement(gasneti_atomic_t *p, const int flags);
-  extern int gasneti_slow_atomic_decrement_and_test(gasneti_atomic_t *p, const int flags);
+  #if defined(GASNETI_USING_SLOW_ATOMIC64)
+    #define _gasneti_atomic_cons(_id)    gasneti_slow_atomic64_##_id
+  #else
+    #define _gasneti_atomic_cons(_id)    gasneti_atomic64_##_id
+  #endif
+#elif defined(GASNETI_USING_SLOW_ATOMICOPS) // GASNETI_HAVE_PRIVATE_ATOMIC_T case
+  extern gasneti_atomic_val_t gasneti_slow_atomic_read(gasneti_atomic_t *_p, const int _flags);
+  extern void gasneti_slow_atomic_set(gasneti_atomic_t *_p, gasneti_atomic_val_t _v, const int _flags);
+  extern void gasneti_slow_atomic_increment(gasneti_atomic_t *_p, const int _flags);
+  extern void gasneti_slow_atomic_decrement(gasneti_atomic_t *_p, const int _flags);
+  extern int gasneti_slow_atomic_decrement_and_test(gasneti_atomic_t *_p, const int _flags);
   #if defined(GASNETI_HAVE_ATOMIC_CAS)
-    extern int gasneti_slow_atomic_compare_and_swap(gasneti_atomic_t *p, gasneti_atomic_val_t oldval, gasneti_atomic_val_t newval, const int flags);
-    extern gasneti_atomic_val_t gasneti_slow_atomic_swap(gasneti_atomic_t *p, gasneti_atomic_val_t val, const int flags);
+    extern int gasneti_slow_atomic_compare_and_swap(gasneti_atomic_t *_p, gasneti_atomic_val_t _oldval, gasneti_atomic_val_t _newval, const int _flags);
+    extern gasneti_atomic_val_t gasneti_slow_atomic_swap(gasneti_atomic_t *_p, gasneti_atomic_val_t _val, const int _flags);
   #endif
   #if defined(GASNETI_HAVE_ATOMIC_ADD_SUB)
-    extern gasneti_atomic_val_t gasneti_slow_atomic_add(gasneti_atomic_t *p, gasneti_atomic_val_t op, const int flags);
-    extern gasneti_atomic_val_t gasneti_slow_atomic_subtract(gasneti_atomic_t *p, gasneti_atomic_val_t op, const int flags);
+    extern gasneti_atomic_val_t gasneti_slow_atomic_add(gasneti_atomic_t *_p, gasneti_atomic_val_t _op, const int _flags);
+    extern gasneti_atomic_val_t gasneti_slow_atomic_subtract(gasneti_atomic_t *_p, gasneti_atomic_val_t _op, const int _flags);
   #endif
 
   #define _gasneti_atomic_cons(_id)    gasneti_slow_atomic_##_id
@@ -1112,11 +1121,11 @@ typedef _gasneti_weakatomic_id(64_t)           gasneti_weakatomic64_t;
   #define GASNETI_ATOMIC_CONFIG   atomics_forced_os
 #elif defined(GASNETI_FORCE_COMPILER_ATOMICOPS)
   #define GASNETI_ATOMIC_CONFIG   atomics_forced_compiler
-#elif defined(GASNETI_USE_GENERIC_ATOMICOPS)
+#elif (GASNETI_ATOMIC_IMPL_CONFIGURE == GASNETI_ATOMIC_IMPL_GENERIC)
   #define GASNETI_ATOMIC_CONFIG   atomics_mutex
-#elif defined(GASNETI_USE_COMPILER_ATOMICOPS)
+#elif (GASNETI_ATOMIC_IMPL_CONFIGURE == GASNETI_ATOMIC_IMPL_COMPILER)
   #define GASNETI_ATOMIC_CONFIG   atomics_compiler
-#elif defined(GASNETI_USE_OS_ATOMICOPS)
+#elif (GASNETI_ATOMIC_IMPL_CONFIGURE == GASNETI_ATOMIC_IMPL_OS)
   #define GASNETI_ATOMIC_CONFIG   atomics_os
 #else
   #define GASNETI_ATOMIC_CONFIG   atomics_native
@@ -1128,11 +1137,11 @@ typedef _gasneti_weakatomic_id(64_t)           gasneti_weakatomic64_t;
   #define GASNETI_ATOMIC32_CONFIG   atomic32_forced_os
 #elif defined(GASNETI_FORCE_COMPILER_ATOMICOPS)
   #define GASNETI_ATOMIC32_CONFIG   atomic32_forced_compiler
-#elif defined(GASNETI_USE_GENERIC_ATOMIC32)
+#elif (GASNETI_ATOMIC32_IMPL_CONFIGURE == GASNETI_ATOMIC_IMPL_GENERIC)
   #define GASNETI_ATOMIC32_CONFIG   atomic32_mutex
-#elif defined(GASNETI_USE_COMPILER_ATOMICOPS)
+#elif (GASNETI_ATOMIC32_IMPL_CONFIGURE == GASNETI_ATOMIC_IMPL_COMPILER)
   #define GASNETI_ATOMIC32_CONFIG   atomic32_compiler
-#elif defined(GASNETI_USE_OS_ATOMICOPS)
+#elif (GASNETI_ATOMIC32_IMPL_CONFIGURE == GASNETI_ATOMIC_IMPL_OS)
   #define GASNETI_ATOMIC32_CONFIG   atomic32_os
 #else
   #define GASNETI_ATOMIC32_CONFIG   atomic32_native
@@ -1144,13 +1153,13 @@ typedef _gasneti_weakatomic_id(64_t)           gasneti_weakatomic64_t;
   #define GASNETI_ATOMIC64_CONFIG   atomic64_forced_os
 #elif defined(GASNETI_FORCE_COMPILER_ATOMICOPS) && PLATFORM_ARCH_64
   #define GASNETI_ATOMIC64_CONFIG   atomic64_forced_compiler
-#elif defined(GASNETI_USE_GENERIC_ATOMIC64)
+#elif (GASNETI_ATOMIC64_IMPL_CONFIGURE == GASNETI_ATOMIC_IMPL_GENERIC)
   #define GASNETI_ATOMIC64_CONFIG   atomic64_mutex
-#elif defined(GASNETI_USE_COMPILER_ATOMICOPS)
+#elif (GASNETI_ATOMIC64_IMPL_CONFIGURE == GASNETI_ATOMIC_IMPL_COMPILER)
   #define GASNETI_ATOMIC64_CONFIG   atomic64_compiler
-#elif defined(GASNETI_HYBRID_ATOMIC64)
+#elif (GASNETI_ATOMIC64_IMPL_CONFIGURE == GASNETI_ATOMIC_IMPL_HYBRID)
   #define GASNETI_ATOMIC64_CONFIG   atomic64_hybrid
-#elif defined(GASNETI_USE_OS_ATOMICOPS)
+#elif (GASNETI_ATOMIC64_IMPL_CONFIGURE == GASNETI_ATOMIC_IMPL_OS)
   #define GASNETI_ATOMIC64_CONFIG   atomic64_os
 #else
   #define GASNETI_ATOMIC64_CONFIG   atomic64_native

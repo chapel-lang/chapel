@@ -35,5 +35,3 @@ Older Platforms
    :maxdepth: 1
 
    ibm
-   marenostrum
-   sgi

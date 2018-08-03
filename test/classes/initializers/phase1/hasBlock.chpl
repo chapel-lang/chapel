@@ -11,7 +11,7 @@ class Scoping {
 }
 
 proc main() {
-  var s: Scoping = new unmanaged Scoping(9, 12);
+  var s: unmanaged Scoping = new unmanaged Scoping(9, 12);
   writeln(s);
   delete s;
 }

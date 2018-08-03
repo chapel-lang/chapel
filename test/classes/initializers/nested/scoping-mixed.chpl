@@ -8,19 +8,17 @@ class Node {
   var x : int;
 }
 
-var n = new Node();
+var n = new unmanaged Node();
 writeln(n);
 
-pragma "use default init"
 class C {
-  var n : Node = new Node();
-  pragma "use default init"
+  var n : unmanaged Node = new unmanaged Node();
   class Node {
     var x : int;
   }
 }
 
-var c = new C();
+var c = new unmanaged C();
 writeln(c);
 
 delete n;

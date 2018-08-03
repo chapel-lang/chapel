@@ -411,7 +411,7 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
 #define USE_TBAA 1
 
 static
-void codegenInvariantStart(llvm::Value *val, llvm::Value *addr)
+void codegenInvariantStart(llvm::Type *valType, llvm::Value *addr)
 {
   GenInfo *info = gGenInfo;
 
@@ -425,8 +425,8 @@ void codegenInvariantStart(llvm::Value *val, llvm::Value *addr)
   const llvm::DataLayout& dataLayout = info->module->getDataLayout();
 
   uint64_t sizeInBytes;
-  if(val->getType()->isSized())
-    sizeInBytes = dataLayout.getTypeSizeInBits(val->getType())/8;
+  if(valType->isSized())
+    sizeInBytes = dataLayout.getTypeSizeInBits(valType)/8;
   else
     return;
 
@@ -477,7 +477,7 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
   }
 
   if(addInvariantStart)
-    codegenInvariantStart(val, ptr);
+    codegenInvariantStart(val->getType(), ptr);
 
   return ret;
 }
@@ -3494,6 +3494,25 @@ GenRet CallExpr::codegen() {
           ret.val = converted;
         }
       }
+
+      // Handle setting LLVM invariant on const records after
+      // they are initialized
+      if (fn->isInitializer()) {
+        if (isUserDefinedRecord(get(1)->typeInfo())) {
+          if (SymExpr* initedSe = toSymExpr(get(1))) {
+            if (initedSe->symbol()->isConstValWillNotChange()) {
+              GenRet genSe = args[0];
+              llvm::Value* ptr = genSe.val;
+              INT_ASSERT(ptr);
+              llvm::Type* ptrTy = ptr->getType();
+              INT_ASSERT(ptrTy && ptrTy->isPointerTy());
+              llvm::Type* eltTy = ptrTy->getPointerElementType();
+              codegenInvariantStart(eltTy, ptr);
+            }
+          }
+        }
+      }
+
 #endif
     }
   }
@@ -5233,7 +5252,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       SymExpr* se = toSymExpr(call->get(2));
 
       // Invalid AST to use PRIM_GET_MEMBER with a ref field
-      INT_ASSERT(!call->get(2)->isRef());
+      INT_ASSERT(!call->get(2)->isRefOrWideRef());
 
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
           call->get(1)->isWideRef()   ||

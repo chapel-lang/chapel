@@ -669,7 +669,7 @@ iter LocBlockCyclicDom.dsiPartialThese(param onlyDim, otherIdx,
 }
 
 proc LocBlockCyclicArr.clone() {
-  return new LocBlockCyclicArr(eltType,rank,idxType,stridable,
+  return new unmanaged LocBlockCyclicArr(eltType,rank,idxType,stridable,
       allocDom,indexDom);
 }
 

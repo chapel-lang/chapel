@@ -1,27 +1,15 @@
-record-borrows-and-owns.chpl:36: In function 'badMyFun':
-record-borrows-and-owns.chpl:40: error: Scoped variable lhs would outlive the value it is set to
-record-borrows-and-owns.chpl:37: note: consider scope of tmp
-record-borrows-and-owns.chpl:43: In function 'badF1':
-record-borrows-and-owns.chpl:45: error: Scoped variable cannot be returned
-record-borrows-and-owns.chpl:44: note: consider scope of r
-record-borrows-and-owns.chpl:49: In function 'badF2':
-record-borrows-and-owns.chpl:51: error: Scoped variable cannot be returned
-record-borrows-and-owns.chpl:50: note: consider scope of r
-record-borrows-and-owns.chpl:55: In function 'badF3':
-record-borrows-and-owns.chpl:61: error: Scoped variable r2 cannot be returned
-record-borrows-and-owns.chpl:56: note: consider scope of own
-record-borrows-and-owns.chpl:65: In function 'badF4':
-record-borrows-and-owns.chpl:67: error: Scoped variable cannot be returned
-record-borrows-and-owns.chpl:66: note: consider scope of a
-record-borrows-and-owns.chpl:71: In function 'badF5':
-record-borrows-and-owns.chpl:73: error: Scoped variable cannot be returned
-record-borrows-and-owns.chpl:72: note: consider scope of a
-record-borrows-and-owns.chpl:76: In function 'badF6':
-record-borrows-and-owns.chpl:78: error: Scoped variable cannot be returned
-record-borrows-and-owns.chpl:77: note: consider scope of a
-record-borrows-and-owns.chpl:82: In function 'badF7':
-record-borrows-and-owns.chpl:87: error: Scoped variable cannot be returned
-record-borrows-and-owns.chpl:83: note: consider scope of a
-record-borrows-and-owns.chpl:90: In function 'badF8':
-record-borrows-and-owns.chpl:95: error: Scoped variable cannot be returned
-record-borrows-and-owns.chpl:91: note: consider scope of a
+record-borrows-and-owns.chpl:34: In function 'badMyFun':
+record-borrows-and-owns.chpl:38: error: Scoped variable lhs would outlive the value it is set to
+record-borrows-and-owns.chpl:35: note: consider scope of tmp
+record-borrows-and-owns.chpl:41: In function 'badF2':
+record-borrows-and-owns.chpl:43: error: Scoped variable cannot be returned
+record-borrows-and-owns.chpl:42: note: consider scope of r
+record-borrows-and-owns.chpl:47: In function 'badF3':
+record-borrows-and-owns.chpl:53: error: Scoped variable r2 cannot be returned
+record-borrows-and-owns.chpl:48: note: consider scope of own
+record-borrows-and-owns.chpl:63: In function 'badF6':
+record-borrows-and-owns.chpl:65: error: Scoped variable cannot be returned
+record-borrows-and-owns.chpl:64: note: consider scope of a
+record-borrows-and-owns.chpl:70: In function 'badF8':
+record-borrows-and-owns.chpl:75: error: Scoped variable cannot be returned
+record-borrows-and-owns.chpl:71: note: consider scope of a

@@ -257,6 +257,15 @@ ForallStmt* enclosingForallStmt(Expr* expr) {
   return NULL;
 }
 
+// Is 'expr' the DefExpr of an induction variable in some ForallStmt?
+bool isForallIterVarDef(Expr* expr) {
+  if (expr->list != NULL)
+    if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+      if (expr->list == &pfs->inductionVariables())
+        return true;
+  return false;
+}
+
 // Is 'expr' an iterable-expression for some ForallStmt?
 bool isForallIterExpr(Expr* expr) {
   if (expr->list != NULL)

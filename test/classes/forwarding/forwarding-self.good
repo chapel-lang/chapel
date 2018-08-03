@@ -1,0 +1,2 @@
+forwarding-self.chpl:3: error: forwarding cycle detected
+forwarding-self.chpl:2: note: for the type A

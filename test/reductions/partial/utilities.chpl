@@ -107,7 +107,6 @@ proc partRedHelpCheckDimensions(resDims, srcDims) throws {
 }
 
 /* This class implements the reduction of partial results. */
-pragma "use default init"
 class PartRedOp: ReduceScanOp {
   type eltType;
   const perElemOp;

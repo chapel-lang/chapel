@@ -1,1 +1,0 @@
-canSeeSecondaryMethod.chpl:8: error: unresolved call 'Foo.outerMethod(1)'

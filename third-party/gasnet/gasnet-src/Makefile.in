@@ -321,6 +321,9 @@ DEBUGMALLOC_VAL = @DEBUGMALLOC_VAL@
 DEBUGMALLOC_VAR = @DEBUGMALLOC_VAR@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEVWARN_CFLAGS = @DEVWARN_CFLAGS@
+DEVWARN_CXXFLAGS = @DEVWARN_CXXFLAGS@
+DEVWARN_MPI_CFLAGS = @DEVWARN_MPI_CFLAGS@
 DIRNAME = @DIRNAME@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
@@ -376,7 +379,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 INTTYPES_DEFINES = @INTTYPES_DEFINES@
 KEEPTMP_CFLAGS = @KEEPTMP_CFLAGS@
-LADEBUG_PATH = @LADEBUG_PATH@
 LDFLAGS = @LDFLAGS@
 LIBGCC = @LIBGCC@
 LIBM = @LIBM@
@@ -440,9 +442,6 @@ READLINK = @READLINK@
 SEPARATE_CC = @SEPARATE_CC@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SHMEM_INCLUDES = @SHMEM_INCLUDES@
-SHMEM_LDFLAGS = @SHMEM_LDFLAGS@
-SHMEM_LIBS = @SHMEM_LIBS@
 SIZEOF_CHAR = @SIZEOF_CHAR@
 SIZEOF_DOUBLE = @SIZEOF_DOUBLE@
 SIZEOF_FLOAT = @SIZEOF_FLOAT@
@@ -451,7 +450,9 @@ SIZEOF_INT = @SIZEOF_INT@
 SIZEOF_LONG = @SIZEOF_LONG@
 SIZEOF_LONG_DOUBLE = @SIZEOF_LONG_DOUBLE@
 SIZEOF_LONG_LONG = @SIZEOF_LONG_LONG@
+SIZEOF_PTRDIFF_T = @SIZEOF_PTRDIFF_T@
 SIZEOF_SHORT = @SIZEOF_SHORT@
+SIZEOF_SIZE_T = @SIZEOF_SIZE_T@
 SIZEOF_VOID_P = @SIZEOF_VOID_P@
 SIZEOF__BOOL = @SIZEOF__BOOL@
 SMP_LIBS = @SMP_LIBS@
@@ -542,7 +543,6 @@ SUBDIRS = \
 
 CONDUITMODE_DIST_SUBDIRS = \
 	mpi-conduit  		\
-	shmem-conduit  		\
 	smp-conduit  		\
 	udp-conduit  		\
 	ibv-conduit 		\
@@ -557,15 +557,14 @@ CONDUITMODE_DIST_SUBDIRS = \
 CONDUITMODE_headers = \
 	gasnet.h           	\
 	gasnet_ammacros.h  	\
-	gasnet_coll.h      	\
 	gasnet_handler.h   	\
 	gasnet_trace.h     	\
-	gasnet_vis.h      
+	extended-ref/coll/gasnet_coll.h \
+	extended-ref/vis/gasnet_vis.h      
 
 CONDUITMODE_EXTRA_DIST = \
 	docs              	\
 	extended-ref      	\
-	template-conduit  	\
 	gasnet_internal.h 	\
 	gasnet_internal.c 	\
 	gasnet_mmap.c  	  	\
@@ -586,6 +585,7 @@ headers = \
 	gasnet_asm.h       	\
 	gasnet_atomicops.h 	\
 	gasnet_atomic_bits.h 	\
+	gasnet_atomic_fwd.h 	\
         gasnet_basic.h     	\
         gasnet_help.h      	\
 	gasnet_membar.h    	\
@@ -594,6 +594,7 @@ headers = \
 	gasnet_toolhelp.h  	
 
 EXTRA_DIST = \
+	$(CONDUITMODE_EXTRA_DIST)       \
 	README				\
  	README-tools 			\
 	ChangeLog	  		\
@@ -604,9 +605,7 @@ EXTRA_DIST = \
         configure.in      		\
         acconfig.h        		\
         acinclude.m4      		\
-        $(headers)        		\
-        gasnet_tools.c    		\
-	$(CONDUITMODE_EXTRA_DIST)
+        gasnet_tools.c    		
 
 #       tests handled below
 include_HEADERS = $(headers)
@@ -653,7 +652,7 @@ lib_LIBRARIES = $(libraries)
 recurse_local = $(CONDUITS:%=%-recurse) recurse_local_dummy
 # conduit subdirectories that should be made, even when the conduit is disabled
 SPECIAL_SUBDIRS = mpi-conduit/contrib
-@TOOLSONLY_MODE_FALSE@TESTDIST = `find . -print`
+@TOOLSONLY_MODE_FALSE@TESTDIST = `find . -print | grep -v ^./mpi`
 @TOOLSONLY_MODE_TRUE@TESTDIST = README testtools.c test.h Makefile.in
 @USE_PSHM_FALSE@PSHM_CONFIG_FLAG = 
 
@@ -1221,8 +1220,7 @@ uninstall-am: uninstall-configDATA uninstall-includeHEADERS \
 # GASNET_TOOLSONLY_TRUE_BEGIN
 # CONDUITMODE_DIST_SUBDIRS = 
 # CONDUITMODE_headers = 
-# CONDUITMODE_EXTRA_DIST = 	\
-# 	.gasnet_toolsonly_mode 
+# CONDUITMODE_EXTRA_DIST = .gasnet_toolsonly_mode 
 # GASNET_TOOLSONLY_TRUE_END
 # GASNET_TOOLSONLY_FALSE_BEGIN
   # Directories we manually recurse into:
@@ -1428,7 +1426,7 @@ dist-hook:
         fi
 	if test -d $(srcdir)/.git ; then \
 	  GASNET_DESC=`$${GIT=git} --git-dir=$(srcdir)/.git describe` || exit $$? ; \
-	  $(PERL) -pi -e "s:no-version-control-info:$$GASNET_DESC:;" -- $(distdir)/configure || exit $$? ; \
+	  $(PERL) -pi -e "s:no-version-control-info:$$GASNET_DESC:;" -- $(distdir)/configure $(distdir)/gasnet_tools.c || exit $$? ; \
 	  echo $$GASNET_DESC > $(distdir)/version.git || exit $$? ; \
 	fi
 	if test -f $(distdir)/docs/Makefile ; then \

@@ -11,7 +11,7 @@ module TestInfiniteLifetime {
   }
 
   proc test() {
-    var x = new MyClass(1);
+    var x = new borrowed MyClass(1);
     var y = f(x);
   }
   test();

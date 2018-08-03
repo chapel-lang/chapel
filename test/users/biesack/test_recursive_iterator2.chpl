@@ -22,7 +22,7 @@ proc node(a, b:unmanaged Node) : unmanaged Branch {
   return new unmanaged Branch(a, b);
 }
 
-iter leaves(tree : Node) : int {
+iter leaves(tree : unmanaged Node) : int {
   select tree.nodeType() {
     when NodeType.value do {
       yield (tree:ValueNode).val;

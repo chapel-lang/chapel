@@ -65,7 +65,6 @@ module ChapelError {
      If a `nil` :class:`Error` is thrown, :class:`NilThrownError`
      will be thrown instead.
    */
-  pragma "use default init"
   class NilThrownError : Error {
     pragma "no doc"
     override proc message() {
@@ -106,7 +105,7 @@ module ChapelError {
   pragma "no doc"
   record chpl_TaskErrors {
     var _head: unmanaged Error;
-    var _errorsLock: atomicbool;
+    var _errorsLock: chpl__processorAtomicType(bool);
     // this atomic controls:
     //  - _head
     //  - all list elements ->_next

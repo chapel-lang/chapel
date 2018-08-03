@@ -1,30 +1,25 @@
 use OwnedObject;
 use SharedObject;
 
-pragma "use default init"
 class MyClass {
   var x:int;
 }
 
-pragma "use default init"
 record R5 {
   var fo:Owned(MyClass) = new Owned(nil:MyClass);
   var fs:Shared(MyClass) = new Shared(nil:MyClass);
 }
 
-pragma "use default init"
 record R6 {
   var fo:Owned(MyClass);
   var fs:Shared(MyClass);
 }
 
-pragma "use default init"
 class C5 {
   var fo:Owned(MyClass) = new Owned(nil:MyClass);
   var fs:Shared(MyClass) = new Shared(nil:MyClass);
 }
 
-pragma "use default init"
 class C6 {
   var fo:Owned(MyClass);
   var fs:Shared(MyClass);

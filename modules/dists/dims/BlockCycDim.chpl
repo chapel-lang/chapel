@@ -73,7 +73,6 @@ The arguments are as follows:
       is used internally by the implementation and
       should not be specified by the user code
 */
-pragma "use default init"
 class BlockCyclicDim {
   // distribution parameters
   const numLocales: int;
@@ -89,7 +88,6 @@ class BlockCyclicDim {
   const cycleSizePos: bcdPosInt = (blockSize:bcdPosInt) * (numLocales:bcdPosInt);
 }
 
-pragma "use default init"
 class BlockCyclic1dom {
   type idxType;
   type stoIndexT;
@@ -116,7 +114,6 @@ class BlockCyclic1dom {
   var dsiSetIndicesUnimplementedCase: bool;
 }
 
-pragma "use default init"
 class BlockCyclic1locdom {
   type idxType;
   type stoIndexT;
