@@ -178,6 +178,7 @@ else
 
         # legacy
         unload_module perftools-base acml totalview atp cray-libsci xt-libsci
+        load_module cray-libsci
 
         case "$1" in ( "" ) log_error "load_target_cpu missing arg 1"; exit 2;; esac
         local target=$1
