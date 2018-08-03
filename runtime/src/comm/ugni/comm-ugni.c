@@ -6832,6 +6832,8 @@ int amo_cmd_2_nic_op(fork_amo_cmd_t cmd, int fetching)
 static gni_post_descriptor_t* amo_pdc[1024];
 static c_nodeid_t* amo_node_v[1024];
 static int64_t* amo_vi_v[1024];
+static atomic_bool* amo_lock_v[1024];
+static atomic_uint_least32_t amo_pdc_sz;
 
 static atomic_uint_least32_t amo_pdc_sz;
 void chpl_comm_atomic_buff_flush() {
@@ -6839,8 +6841,12 @@ void chpl_comm_atomic_buff_flush() {
    sz = atomic_load_uint_least32_t(&amo_pdc_sz);
    for(i=0; i<sz; i++) {
     if (*amo_vi_v[i] != -1) {
-      post_fma_ct_and_wait(amo_node_v[i], amo_pdc[i]);
-      *amo_vi_v[i] = -1;
+      while (atomic_exchange_bool(amo_lock_v[i], true)) { local_yield(); }
+      if (*amo_vi_v[i] != -1) {
+        post_fma_ct_and_wait(amo_node_v[i], amo_pdc[i]);
+        *amo_vi_v[i] = -1;
+      }
+      atomic_store_bool(amo_lock_v[i], false);
     }
   }
 }
@@ -6858,19 +6864,26 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
   static __thread int64_t vi = -1;
 
   static __thread chpl_bool inited = false;
-  if (!inited) {
+  static __thread atomic_bool lock;
+
+  if (inited == false) {
     uint32_t idx;
+    atomic_init_bool(&lock, false);
     idx = atomic_fetch_add_uint_least32_t(&amo_pdc_sz, 1);
     amo_pdc[idx] = &post_desc;
     amo_node_v[idx] = &node_v[0];
     amo_vi_v[idx] = &vi;
+    amo_lock_v[idx] = &lock;
     inited = true;
   }
 
   if (remote_mr == NULL)
     CHPL_INTERNAL_ERROR("do_nic_amo(): "
                         "remote address is not NIC-registered");
-   //
+
+  while (atomic_exchange_bool(&lock, true)) { local_yield(); }
+
+  //
   // Fill in the POST descriptor.
   //
   if (vi == -1) {
@@ -6907,6 +6920,8 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     post_fma_ct_and_wait(node_v, &post_desc);
     vi = -1;
   }
+  atomic_store_bool(&lock, false);
+
 }
 
 static
