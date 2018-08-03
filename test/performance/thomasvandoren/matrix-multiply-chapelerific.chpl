@@ -11,8 +11,6 @@ proc main() {
 
   timer.stop();
   printResults();
-
-  delete randStream;
 }
 
 proc dotProduct(ref C: [?DC] int, ref A: [?DA] int, ref B: [?DB] int)
