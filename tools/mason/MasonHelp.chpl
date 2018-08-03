@@ -183,14 +183,56 @@ proc masonExternalHelp() {
   writeln();
   writeln("Options:");  
   writeln("    search                      Search for a specific external package");
-  writeln("    compiler                    Find and Search for compilers on system");
+  writeln("    compiler                    List and search for compilers on system");
   writeln("    install                     Install an external package");
+  writeln("    uninstall                   Uninstall an external package");
+  writeln("    info                        Show information about an external package");
+  writeln("    find                        Find information about installed external packages");
   writeln("    -h, --help                  Display this message");
-  writeln("        --installed             Check that an external package is installed");
-  writeln("        --info                  Show information about an external package");
+  writeln("        --setup                 Download and install Spack backend");
+  writeln();
+  writeln("Please see Mason documentation for more instructions on using external packages");
+}
+
+proc masonExternalFindHelp() {
+  writeln("Find external packages on your system and get information about them");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason external find [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message"); 
+  writeln();
+  writeln("Display Options:");
+  writeln("    -s, --short                 Show only specs (default)");
+  writeln("    -p, --paths                 Show paths to package install directories");
+  writeln("    -d, --deps                  Show full dependency DAG of installed packages");
+  writeln("    -l, --long                  Show dependency hashes as well as versions");
+  writeln("    -L, --very-long             Show full dependency hashes as well as versions");
+  writeln("    -t TAGS, --tags TAGS        Filter a package query by tags");
+  writeln("    -f, --show-flags            Show spec compiler flags");
+  writeln("    --show-full-compiler        Show full compiler specs");
+  writeln("    -e, --explicit              Show only specs that were installed explicitly");
+  writeln("    -E, --implicit              Show only specs that were installed as dependencies");
+  writeln("    -u, --unknown               Show only specs Spack does not have a package for");
+  writeln("    -m, --missing               Show missing dependencies as well as installed specs");
+  writeln("    -v, --variants              Show variants in output (can be long)");
+  writeln("    -M, --only-missing          Show only missing dependencies");
+  writeln("    -N, --namespace             Show fully qualified package names");
+  writeln();
+  writeln("When no package is listed, all installed external packages will be listed.");
+}
+
+proc masonExternalInfoHelp() {
+  writeln("Get information about external packages and system architechture");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason external info [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
   writeln("        --arch                  Print architechture information about current system");
   writeln();
-  writeln("Please see Mason documentation for instructions on using external packages");
 }
 
 proc masonExternalSearchHelp() {
@@ -201,15 +243,15 @@ proc masonExternalSearchHelp() {
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
-  writeln("        --desc                  Parse descriptions of package to include more search results");
+  writeln("    -d, --desc                  Parse descriptions of package to include more search results");
   writeln();
 }
 
-proc masonUnInstallHelp() {
-  writeln("Install external packages through Mason onto your system");
+proc masonInstallHelp() {
+  writeln("Install external packages onto your system");
   writeln();
   writeln("Usage:");
-  writeln("    mason external install <package> [options]");
+  writeln("    mason external install [options] <package> ");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
@@ -218,10 +260,31 @@ proc masonUnInstallHelp() {
   writeln("    mason external install <package>         ");
   writeln("    mason external install <package> <version> ");
   writeln("    mason external install <package> <version> <compiler> ");
+  writeln("    mason external install <package> <version> <compiler> <variants>");
   writeln("    mason external install <full Spack spec expression");
   writeln();
- }
+  writeln("If a full spec expression is given there must be no spaces within the expression");
+}
 
+
+proc masonUninstallHelp() {
+  writeln("Uninstall external packages on your system");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason external uninstall [options] <package> ");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln();
+  writeln("External Mason packages can be downloaded in a few ways:");
+  writeln("    mason external uninstall <package>         ");
+  writeln("    mason external uninstall <package> <version> ");
+  writeln("    mason external uninstall <package> <version> <compiler> ");
+  writeln("    mason external uninstall <package> <version> <compiler> <variants>");
+  writeln("    mason external uninstall <full Spack spec expression");
+  writeln();
+  writeln("If a full spec expression is given there must be no spaces within the expression");
+}
 
 proc masonCompilerHelp() {
   writeln("Find and view compilers on your system");

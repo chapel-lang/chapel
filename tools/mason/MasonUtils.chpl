@@ -86,7 +86,6 @@ proc runCommand(cmd, quiet=false) : string throws {
     
     var splitCmd = cmd.split();
     var process = spawn(splitCmd, stdout=PIPE);
-    process.wait();
 
     for line in process.stdout.lines() {
       ret += line;
@@ -94,13 +93,13 @@ proc runCommand(cmd, quiet=false) : string throws {
         write(line);
       }
     }
+    process.wait();
   }
   catch {
     throw new MasonError("Internal mason error");
   }
   return ret;
 }
-
 
 /* Same as runCommand but for situations where an
    exit status is needed */
@@ -121,6 +120,50 @@ proc runWithStatus(command, show=true): int {
     return -1;
   }
 }
+
+
+/* uses spawnshell and the prefix to setup Spack before
+   calling the spack command. This also returns the stdout
+   of the spack call.*/
+proc getSpackResult(cmd, quiet=false) : string throws {
+  var ret : string;
+  try {
+    
+    var prefix = "export SPACK_ROOT=/Users/spartee/.mason/spack" +
+    " && export PATH=$SPACK_ROOT/bin:$PATH" +
+    " && source $SPACK_ROOT/share/spack/setup-env.sh && ";
+    var splitCmd = prefix + cmd;
+    var process = spawnshell(splitCmd, stdout=PIPE);
+
+    for line in process.stdout.lines() {
+      ret += line;
+      if quiet == false {
+        write(line);
+      }
+    }
+    process.wait();
+  }
+  catch {
+    throw new MasonError("Internal mason error");
+  }
+  return ret;
+}
+
+
+/* Sets up spack by prefixing command with spack env vars
+   Only returns the exit status of the command */
+proc runSpackCommand(command, executable="/bin/bash") {
+
+  var prefix = "export SPACK_ROOT=/Users/spartee/.mason/spack" +
+    " && export PATH=$SPACK_ROOT/bin:$PATH" +
+    " && source $SPACK_ROOT/share/spack/setup-env.sh && ";
+
+  var cmd = (prefix + command);
+  var sub = spawnshell(cmd);
+  sub.wait();
+  return sub.exit_status;
+}
+
 
 proc hasOptions(args : [] string, const opts : string ...) {
   var ret = false;
