@@ -2269,7 +2269,6 @@ static void handleIn(ForallStmt* fs, ShadowVarSymbol* svar, bool isConst) {
   } else {
     svar->qual = QUAL_VAL;
   }
-  svar->type = svar->type->getValType();
   INT_ASSERT(!svar->isRef());
 
   ShadowVarSymbol* INOV = create_IN_OUTERVAR(fs, svar);
@@ -2289,6 +2288,7 @@ static void handleRef(ForallStmt* fs, ShadowVarSymbol* svar, bool isConst) {
     svar->qual = QUAL_REF;
   }
   svar->addFlag(FLAG_REF_VAR);
+  INT_ASSERT(svar->isRef());
   if (ovar->isConstValWillNotChange())
     svar->addFlag(FLAG_REF_TO_IMMUTABLE);
 }
@@ -2396,6 +2396,24 @@ static void resolveShadowVarTypeIntent(Type*& type, ForallIntentTag& intent,
       break;
   }
 
+  // Enforce val type for in- and ref-intents.
+  switch (intent) {
+    case TFI_IN:
+    case TFI_CONST_IN:
+    case TFI_REF:
+    case TFI_CONST_REF:      type = type->getValType(); break;
+
+    case TFI_REDUCE:         // Nothing to do for now.
+    case TFI_TASK_PRIVATE:   break;
+
+    case TFI_DEFAULT:        // We just eliminated these.
+    case TFI_CONST:          INT_ASSERT(false); break;
+
+    case TFI_IN_OUTERVAR:    // These have not been created yet.
+    case TFI_REDUCE_OP:      INT_ASSERT(false); break;
+  }
+
+  // Prune, as discussed in the above comment.
   if (intent == TFI_REF)
     prune = true;
 }
