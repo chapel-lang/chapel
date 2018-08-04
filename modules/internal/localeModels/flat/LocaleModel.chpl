@@ -233,7 +233,7 @@ module LocaleModel {
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
-          delete loc;
+          delete _to_unmanaged(loc);
         }
       }
     }

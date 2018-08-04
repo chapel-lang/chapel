@@ -300,8 +300,8 @@ module LocaleModel {
     }
 
     proc deinit() {
-      delete ddr;
-      delete hbm;
+      delete _to_unmanaged(ddr);
+      delete _to_unmanaged(hbm);
     }
 
     proc writeThis(f) {
@@ -454,9 +454,9 @@ module LocaleModel {
 
     proc deinit() {
       for loc in childLocales do
-        delete loc;
-      delete ddr;
-      delete hbm;
+        delete _to_unmanaged(loc);
+      delete _to_unmanaged(ddr);
+      delete _to_unmanaged(hbm);
     }
  }
 
@@ -538,7 +538,7 @@ module LocaleModel {
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
-          delete loc;
+          delete _to_unmanaged(loc);
         }
       }
     }

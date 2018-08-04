@@ -26,7 +26,7 @@ class Sub2: Base {
 }
 
 proc main {
-  var s1: Base;
-  s1 = new Sub1(); s1.method(new C1(int)); delete s1;
-  s1 = new Sub2(); s1.method(new C2()); delete s1;
+  var s1: borrowed Base;
+  s1 = new borrowed Sub1(); s1.method(new C1(int));
+  s1 = new borrowed Sub2(); s1.method(new C2());
 }

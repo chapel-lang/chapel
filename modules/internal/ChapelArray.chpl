@@ -265,7 +265,7 @@ module ChapelArray {
     proc _freePrivatizedClassHelp(pid, original) {
       var prv = chpl_getPrivatizedCopy(object, pid);
       if prv != original then
-        delete prv;
+        delete _to_unmanaged(prv);
 
       extern proc chpl_clearPrivatizedClass(pid:int);
       chpl_clearPrivatizedClass(pid);

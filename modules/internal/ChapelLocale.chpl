@@ -713,6 +713,6 @@ module ChapelLocale {
   //
   pragma "no doc"
   proc deinit() {
-    delete origRootLocale;
+    delete _to_unmanaged(origRootLocale);
   }
 }

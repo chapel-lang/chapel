@@ -25,6 +25,6 @@ class C : B {
   }
 }
 
-var c = new C(6.2, true, 3);
+var c = new unmanaged C(6.2, true, 3);
 writeln(c);
 delete c;

@@ -875,10 +875,16 @@ proc deferInFunction() {
 deferInFunction();
 \end{chapel}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapeloutput}
+defer1.chpl:4: In function 'deferInFunction':
+defer1.chpl:9: warning: 'delete' can only be applied to unmanaged classes
 created {x = 1}
 defer action: deleting {x = 1}
-\end{chapelprintoutput}
+\end{chapeloutput}
+\begin{commandline}
+created {x = 1}
+defer action: deleting {x = 1}
+\end{commandline}
 \end{chapelexample}
 
 
@@ -909,13 +915,23 @@ proc deferInNestedBlock() {
 deferInNestedBlock();
 \end{chapel}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapeloutput}
+defer2.chpl:4: In function 'deferInNestedBlock':
+defer2.chpl:12: warning: 'delete' can only be applied to unmanaged classes
 before inner block
 created {x = 1}
 in inner block
 defer action: deleting {x = 1}
 after inner block
-\end{chapelprintoutput}
+\end{chapeloutput}
+\begin{commandline}
+before inner block
+created {x = 1}
+in inner block
+defer action: deleting {x = 1}
+after inner block
+\end{commandline}
+
 \end{chapelexample}
 
 Lastly, this example shows that when \chpl{defer} is used in a loop, the
@@ -943,14 +959,24 @@ proc deferInLoop() {
 deferInLoop();
 \end{chapel}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapeloutput}
+defer3.chpl:4: In function 'deferInLoop':
+defer3.chpl:10: warning: 'delete' can only be applied to unmanaged classes
 created {x = 1}
 {x = 1}
 defer action: deleting {x = 1}
 created {x = 2}
 {x = 2}
 defer action: deleting {x = 2}
-\end{chapelprintoutput}
+\end{chapeloutput}
+\begin{commandline}
+created {x = 1}
+{x = 1}
+defer action: deleting {x = 1}
+created {x = 2}
+{x = 2}
+defer action: deleting {x = 2}
+\end{commandline}
 \end{chapelexample}
 
 

@@ -1,7 +1,7 @@
 // This test case represents a bug originally reported in issue #7783
 
 class A{
-  forwarding var driver: borrowed B;
+  forwarding var driver: unmanaged B;
 }
 
 class B{
@@ -31,27 +31,24 @@ class C:B{
   var cfield:int;
 }
 
-var c1d = new unmanaged C();
-var c1 = new unmanaged A(c1d);
+
+var c1 = new unmanaged A(new unmanaged C());
 writeln(c1.foo1());
 
-var c2d = new unmanaged C();
-var c2 = new unmanaged A(c2d);
+var c2 = new unmanaged A(new unmanaged C());
 writeln(c2.foo2("Test"));
 
-var c3d = new unmanaged C();
-var c3 = new unmanaged A(c3d);
+var c3 = new unmanaged A(new unmanaged C());
 writeln(c3.foo3("Test", "Test"));
 
-var c4d = new unmanaged C();
-var c4 = new unmanaged A(c4d);
+var c4 = new unmanaged A(new unmanaged C());
 writeln(c4.foo4("Test"));
 
-delete c4d;
+delete c4.driver;
 delete c4;
-delete c3d;
+delete c3.driver;
 delete c3;
-delete c2d;
+delete c2.driver;
 delete c2;
-delete c1d;
+delete c1.driver;
 delete c1;

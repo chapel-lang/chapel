@@ -231,8 +231,8 @@ module LocaleModel {
       if (debugAPULocale) {
         chpl_debug_writeln("** Destructing CPU/GPU locales and shutting down HSA.");
       }
-      delete CPU;
-      delete GPU;
+      delete _to_unmanaged(CPU);
+      delete _to_unmanaged(GPU);
     }
  }
 
@@ -311,7 +311,7 @@ module LocaleModel {
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
-          delete loc;
+          delete _to_unmanaged(loc);
         }
       }
     }
