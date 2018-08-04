@@ -606,15 +606,15 @@ private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultComparat
     return;
   }
   const mid = (hi-lo)/2+lo;
-  var A1 = Data[lo..mid];
-  var A2 = Data[mid+1..hi];
+  ref A1 = Data[lo..mid];
+  ref A2 = Data[mid+1..hi];
   cobegin {
     { _MergeSort(A1, minlen, comparator); }
     { _MergeSort(A2, minlen, comparator); }
   }
 
   // TODO -- This iterator causes unnecessary overhead - we can do without it
-  for (a, _a) in zip(Data[lo..hi], _MergeIterator(A1, A2, comparator=comparator)) do a = _a;
+  for (a, _a) in zip(Data, _MergeIterator(A1, A2, comparator=comparator)) do a = _a;
 }
 
 
@@ -638,8 +638,8 @@ private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=def
   }
   if a1 == a1hi then yield A1(a1);
   else if a2 == a2hi then yield A2(a2);
-  if a1 < a1hi then for a in A1[a1..a1hi] do yield a;
-  else if a2 < a2hi then for a in A2[a2..a2hi] do yield a;
+  if a1 < a1hi then for i in a1..a1hi do yield A1[i];
+  else if a2 < a2hi then for i in a2..a2hi do yield A2[i];
 }
 
 
