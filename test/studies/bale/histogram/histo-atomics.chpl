@@ -4,7 +4,8 @@ use Random;
 use Time;
 
 config const printStats = true,
-             printArrays = false;
+             printArrays = false,
+             verify = true;
 
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
@@ -43,6 +44,7 @@ proc main() {
   }
 
   t.stop();
+
   if printStats {
     writeln("Time: " + t.elapsed());
 
@@ -50,6 +52,10 @@ proc main() {
     const mbPerTask = bytesPerTask:real / (1<<20):real;
     writeln("MB/s per task: " + mbPerTask / t.elapsed());
     writeln("MB/s per node: " + mbPerTask * numTasksPerLocale / t.elapsed());
+  }
+
+  if verify {
+    assert(numUpdates == +reduce A.read());
   }
 
   if printArrays {
