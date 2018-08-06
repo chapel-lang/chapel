@@ -6829,14 +6829,17 @@ int amo_cmd_2_nic_op(fork_amo_cmd_t cmd, int fetching)
   return nic_cmd;
 }
 
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 static gni_post_descriptor_t* amo_pdc[1024];
 static c_nodeid_t* amo_node_v[1024];
 static int64_t* amo_vi_v[1024];
 static atomic_bool* amo_lock_v[1024];
 static atomic_uint_least32_t amo_pdc_sz;
-
 static atomic_uint_least32_t amo_pdc_sz;
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
 void chpl_comm_atomic_buff_flush() {
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
   uint32_t sz, i;
    sz = atomic_load_uint_least32_t(&amo_pdc_sz);
    for(i=0; i<sz; i++) {
@@ -6849,6 +6852,7 @@ void chpl_comm_atomic_buff_flush() {
       atomic_store_bool(amo_lock_v[i], false);
     }
   }
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 }
 
 static
@@ -6858,6 +6862,7 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
                         gni_fma_cmd_type_t cmd,
                         mem_region_t* remote_mr)
 {
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
   static __thread gni_post_descriptor_t post_desc;
   static __thread gni_ct_amo_post_descriptor_t pdc[MAX_CHAINED_AMO_LEN - 1];
   static __thread c_nodeid_t node_v[MAX_CHAINED_AMO_LEN];
@@ -6922,6 +6927,9 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
   }
   atomic_store_bool(&lock, false);
 
+#else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+  do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 }
 
 static
