@@ -272,6 +272,10 @@ myinstallfile util/config/compileline "$DEST_CHPL_HOME"/util/config/
 # (needed by setchplenv*)
 myinstallfile util/config/fixpath.py  "$DEST_CHPL_HOME"/util/config/
 
+# copy util/config/replace-paths.py
+# (needed by --library --library-makefile compilations)
+myinstallfile util/config/replace-paths.py  "$DEST_CHPL_HOME"/util/config/
+
 
 if [ ! -z "$DEST_DIR" ]
 then

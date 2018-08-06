@@ -80,13 +80,27 @@ static std::string getCompilelineOption(std::string option) {
   std::string fullCommand = "$CHPL_HOME/util/config/compileline --" + option;
   fullCommand += "> cmd.out.tmp";
   runCommand(fullCommand);
+
   std::string replace = "$CHPL_HOME/util/config/replace-paths.py ";
+
+  replace += "--fixpath '$(CHPL_RUNTIME_LIB)' $CHPL_RUNTIME_LIB ";
+  replace += "--fixpath '$(CHPL_RUNTIME_INCL)' $CHPL_RUNTIME_INCL ";
+  replace += "--fixpath '$(CHPL_THIRD_PARTY)' $CHPL_THIRD_PARTY ";
   replace += "--fixpath '$(CHPL_HOME)' $CHPL_HOME < cmd.out.tmp";
 
   std::string res = runCommand(replace);
   std::string cleanup = "rm cmd.out.tmp";
   runCommand(cleanup);
   return res;
+}
+
+// Save the value of the environment variable "var" into the makefile, so it
+// can be referenced in the other variables for legibility purposes.
+static void setupMakeEnvVars(std::string var, fileinfo makefile) {
+  std::string cmd = "echo $";
+  cmd += var;
+  std::string cmdRes = runCommand(cmd);
+  fprintf(makefile.fptr, "%s = %s\n", var.c_str(), cmdRes.c_str());
 }
 
 void codegen_library_makefile() {
@@ -105,9 +119,10 @@ void codegen_library_makefile() {
 
   // Save the CHPL_HOME location so it can be used in the other makefile
   // variables instead of letting them be cluttered with its value
-  std::string cmd = "echo $CHPL_HOME";
-  std::string chplHome = runCommand(cmd);
-  fprintf(makefile.fptr, "CHPL_HOME = %s\n", chplHome.c_str());
+  setupMakeEnvVars("CHPL_RUNTIME_LIB", makefile);
+  setupMakeEnvVars("CHPL_RUNTIME_INCL", makefile);
+  setupMakeEnvVars("CHPL_THIRD_PARTY", makefile);
+  setupMakeEnvVars("CHPL_HOME", makefile);
 
   // TODO: compileline --includes-and-defines adds -I. to the list
   // automatically.  If the library is in a different directory from the
@@ -135,7 +150,7 @@ void codegen_library_makefile() {
     libname += getLibraryExtension();
   }
   // TODO: adjust for different location for the library, see earlier TODO
-  fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s %s \n",
+  fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s %s\n",
           libDir,
           libname.c_str(),
           libraries.c_str());
