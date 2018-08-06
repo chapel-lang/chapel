@@ -6,12 +6,12 @@ config param bucketBits=8;
 
  module MSBmodule{
 
-  proc radixSortMSB(array:[] int, place: int, startIndex: int, endIndex: int){
+  proc radixSortMSBWrapper(array:[] int, place: int, startIndex: int, endIndex: int){
     var auxArray:[1..array.size] int ;
-    radix_sort_msd(array,place,1,array.size,auxArray);
+    radixSortMSB(array,place,1,array.size,auxArray);
   }
   
-  proc radix_sort_msd(array:[] int, place: int, startIndex: int, endIndex: int, auxArray:[] int) {
+  proc radixSortMSB(array:[] int, place: int, startIndex: int, endIndex: int, auxArray:[] int) {
 
     param numBuckets = (1 << bucketBits);
     var counts:[1..numBuckets+1] int;  
@@ -48,7 +48,7 @@ config param bucketBits=8;
 
     //recursive call for subparts of array
     for m in 1..numBuckets {
-      radix_sort_msd(array, place-bucketBits, startIndex + counts[m] , startIndex + counts[m+1] - 1, auxArray);
+      radixSortMSB(array, place-bucketBits, startIndex + counts[m] , startIndex + counts[m+1] - 1, auxArray);
     }	
   	
   }
@@ -93,7 +93,7 @@ config param bucketBits=8;
    }  
    var place = MSBmodule.findPlace(array);
 
-   MSBmodule.radixSortMSB(array,place,1,array.size);
+   MSBmodule.radixSortMSBWrapper(array,place,1,array.size);
    writeln(array);
    //writeln("sorted array: ",isSorted(array));
 
