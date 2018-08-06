@@ -462,7 +462,7 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
   // e.g.
   //   var x = <immediate>;
   //   var y = <identifier>;
-  if (SymExpr* initSym = toSymExpr(initExpr)) {
+  if (isSymExpr(initExpr)) {
     if (mFn->isDefaultInit()) {
       Symbol*    name     = new_CStringSymbol(field->sym->name);
       Symbol*    _this    = mFn->_this;
