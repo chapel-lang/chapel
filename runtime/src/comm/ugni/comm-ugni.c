@@ -3188,9 +3188,10 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
 
     static atomic_int_least8_t spoke;
     if (atomic_compare_exchange_strong_int_least8_t(&spoke, 0, 1)) {
-      char buf[100];
+      char buf[200];
       snprintf(buf, sizeof(buf),
-               "no more registered memory region table entries (max is %d)!",
+               "no more registered memory region table entries (max is %d).\n"
+               "         Change using CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS.",
                max_mem_regions);
       chpl_warning(buf, 0, 0);
     }

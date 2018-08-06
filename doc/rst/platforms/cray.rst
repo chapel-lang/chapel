@@ -514,7 +514,8 @@ message like the following will be printed:
 
   .. code-block:: sh
 
-    warning: no more registered memory region table entries (max is 4096)!
+    warning: no more registered memory region table entries (max is 4096).
+             Change using CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS.
 
 To provide for more registered regions, set the
 ``CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS`` environment variable to a number
