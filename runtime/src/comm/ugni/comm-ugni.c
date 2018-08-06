@@ -6834,8 +6834,8 @@ static gni_post_descriptor_t* amo_pdc[1024];
 static c_nodeid_t* amo_node_v[1024];
 static int64_t* amo_vi_v[1024];
 static atomic_bool* amo_lock_v[1024];
-static atomic_uint_least32_t amo_pdc_sz;
-static atomic_uint_least32_t amo_pdc_sz;
+static atomic_bool amo_init_lock = false;
+static atomic_uint_least32_t amo_pdc_sz = 0;
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 
 void chpl_comm_atomic_buff_flush() {
@@ -6873,13 +6873,16 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
 
   if (inited == false) {
     uint32_t idx;
+    while (atomic_exchange_bool(&amo_init_lock, true)) { local_yield(); }
     atomic_init_bool(&lock, false);
-    idx = atomic_fetch_add_uint_least32_t(&amo_pdc_sz, 1);
+    idx = atomic_load_uint_least32_t(&amo_pdc_sz);
     amo_pdc[idx] = &post_desc;
     amo_node_v[idx] = &node_v[0];
     amo_vi_v[idx] = &vi;
     amo_lock_v[idx] = &lock;
     inited = true;
+    (void) atomic_fetch_add_uint_least32_t(&amo_pdc_sz, 1);
+    atomic_store_bool(&amo_init_lock, false);
   }
 
   if (remote_mr == NULL)
