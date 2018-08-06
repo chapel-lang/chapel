@@ -1573,7 +1573,7 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
       se->setSymbol(newError);
       fixGoto->gotoTag = GOTO_ERROR_HANDLING;
       fixGoto->label->replace(new SymExpr(newLabel));
-    } else if(isTaskFun(inFn)) {
+    } else if(canFunctionImplicitlyThrow(inFn)) {
       // 1. Make sure that the task function has an error argument.
       // 2. Set that out argument instead of the invalid one.
       ArgSymbol* errorArg = findErrorFormalForFn(inFn);

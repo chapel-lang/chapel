@@ -311,6 +311,10 @@ static inline bool isTaskFun(FnSymbol* fn) {
          fn->hasFlag(FLAG_ON);
 }
 
+static inline bool isLoopExprFun(FnSymbol* fn) {
+  return 0 == strncmp(fn->name, astr_loopexpr_iter, strlen(astr_loopexpr_iter));
+}
+
 // Does this function require "capture for parallelism"?
 // Yes, if it comes from a begin/cobegin/coforall block in Chapel source.
 static inline bool needsCapture(FnSymbol* taskFn) {

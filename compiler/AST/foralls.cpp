@@ -1088,7 +1088,7 @@ static void convertIteratorForLoopexpr(ForallStmt* fs) {
   if (CallExpr* iterCall = toCallExpr(fs->iteratedExpressions().head))
     if (SymExpr* calleeSE = toSymExpr(iterCall->baseExpr))
       if (FnSymbol* calleeFn = toFnSymbol(calleeSE->symbol()))
-        if (!strncmp(calleeFn->name, astr_loopexpr_iter, strlen(astr_loopexpr_iter))) {
+        if (isLoopExprFun(calleeFn)) {
           // In this case, we have a _toLeader call and no side effects.
           // Just use the iterator corresponding to the iterator record.
           FnSymbol* iterator = getTheIteratorFnFromIteratorRec(calleeFn->retType);
