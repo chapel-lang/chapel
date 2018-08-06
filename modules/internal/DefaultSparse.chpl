@@ -240,7 +240,7 @@ module DefaultSparse {
       }
     }
 
-    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), dataSorted=false,
+    override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), dataSorted=false,
         isUnique=false){
 
       bulkAdd_prepareInds(inds, dataSorted, isUnique, Sort.defaultComparator);

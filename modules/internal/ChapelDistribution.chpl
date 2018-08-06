@@ -397,7 +397,7 @@ module ChapelDistribution {
       // this is a bug workaround
     }
 
-    proc dsiBulkAdd(inds: [] index(rank, idxType),
+    override proc dsiBulkAdd(inds: [] index(rank, idxType),
         dataSorted=false, isUnique=false, preserveInds=true){
 
       if !dataSorted && preserveInds {
@@ -849,7 +849,7 @@ module ChapelDistribution {
     // existing items in data array and initialize new indices with irv.
     // oldnnz is the number of elements in the array. As the function is called
     // at the end of bulkAdd, it is almost certain that oldnnz!=data.size
-    proc sparseBulkShiftArray(shiftMap, oldnnz){
+    override proc sparseBulkShiftArray(shiftMap, oldnnz){
       var newIdx: int;
       var prevNewIdx = 1;
 

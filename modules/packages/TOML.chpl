@@ -114,7 +114,7 @@ class TomlError : Error {
   proc init(msg:string) {
     this.msg = msg;
   }
-  proc message() {
+  override proc message() {
     return msg;
   }
 }
@@ -644,7 +644,7 @@ used to recursively hold tables and respective values
     }
 
     /* Write a Table to channel f in TOML format */
-    proc writeThis(f) {
+    override proc writeThis(f) {
       writeTOML(f);
     }
 

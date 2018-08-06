@@ -522,7 +522,7 @@ override proc Block.dsiDestroyDist() {
   }
 }
 
-proc Block.dsiDisplayRepresentation() {
+override proc Block.dsiDisplayRepresentation() {
   writeln("boundingBox = ", boundingBox);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocales = ", for tl in targetLocales do tl.id);
@@ -657,7 +657,7 @@ proc LocBlock.init(param rank: int,
 
 override proc BlockDom.dsiMyDist() return dist;
 
-proc BlockDom.dsiDisplayRepresentation() {
+override proc BlockDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
   for tli in dist.targetLocDom do
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
@@ -886,7 +886,7 @@ proc BlockDom.dsiIndexOrder(i) {
 //
 proc LocBlockDom.member(i) return myBlock.member(i);
 
-proc BlockArr.dsiDisplayRepresentation() {
+override proc BlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
     if doRADOpt then

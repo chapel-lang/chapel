@@ -137,7 +137,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     return max reduce ([l in locDoms] l.mySparseBlock.last);
   }
 
-  proc bulkAdd_help(inds: [] index(rank,idxType),
+  override proc bulkAdd_help(inds: [] index(rank,idxType),
       dataSorted=false, isUnique=false) {
     use Sort;
     use Search;
@@ -266,7 +266,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     return _retval;
   }
 
-  proc dsiClear() {
+  override proc dsiClear() {
     nnz = 0;
     coforall locDom in locDoms do
       on locDom do
@@ -461,7 +461,7 @@ class SparseBlockArr: BaseSparseArr {
 
 
 
-  proc dsiGetBaseDom() return dom;
+  override proc dsiGetBaseDom() return dom;
 
 }
 
