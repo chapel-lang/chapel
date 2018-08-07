@@ -28,6 +28,7 @@
 
 #include <bitset>
 #include <iostream>
+#include <string>
 #include <vector>
 #include <map>
 
@@ -367,6 +368,8 @@ public:
   const char*     intentDescrString();
 
   GenRet          codegenType();
+
+  std::string     getPXDType();
 
   IntentTag       intent;
   IntentTag       originalIntent; // stores orig intent after resolve intents

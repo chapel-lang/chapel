@@ -772,7 +772,7 @@ bool ArgSymbol::requiresCPtr(void) {
   return argMustUseCPtr(type);
 }
 
-static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
+Type* getArgSymbolCodegenType(ArgSymbol* arg) {
   QualifiedType q = arg->qualType();
   Type* useType = q.type();
 
@@ -792,7 +792,7 @@ static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
 // return type of exported functions, or arguments of those functions.
 //
 // TODO: apply to _ddata as well?
-static std::string
+std::string
 transformTypeForPointer(Type* type) {
   std::string typeName = type->codegen().c;
   if (type->symbol->hasFlag(FLAG_REF)) {

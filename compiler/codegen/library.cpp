@@ -19,7 +19,9 @@
 
 #include "library.h"
 
+#include <map>
 #include <string>
+#include <utility>
 
 #include "FnSymbol.h"
 #include "beautify.h"
@@ -30,6 +32,9 @@
 #include "stringutil.h"
 
 char libDir[FILENAME_MAX + 1]  = "";
+
+// TypeSymbol -> (pxdName, pyxName)  Will be "" if the cname should be used
+std::map<TypeSymbol*, std::pair<std::string, std::string>> pythonNames;
 
 //
 // Generates a .h file to complement the library file created using --library
@@ -194,9 +199,9 @@ void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
 static void pxdEnd() {
   FILE* pxd = gGenInfo->cfile;
 
-  // TODO: indentation is lost.  Probably from cleanup when file is closed.
-  // Figure out what to do about it, it will be necessary because python
-  fprintf(pxd, "cdef extern from \"chpltypes.h\":\n");
+  // Do not "clean up" this file, as it removes leading tabs and those are
+  // necessary.
+  fprintf(pxd, "\ncdef extern from \"chpltypes.h\":\n");
   fprintf(pxd, "\tctypedef void* c_fn_ptr\n\n");
 
   fprintf(pxd, "cdef extern from \"chpl-init.h\":\n");
@@ -204,8 +209,54 @@ static void pxdEnd() {
   fprintf(pxd, "\tvoid chpl_library_finalize()\n");
 }
 
+// Populate the pythonNames map with the translation for bools, differently sized
+// integers, etc.
+void setupPythonTypeMap() {
+  pythonNames[dtInt[INT_SIZE_8]->symbol] = std::make_pair("", "numpy.int8");
+  pythonNames[dtInt[INT_SIZE_16]->symbol] = std::make_pair("", "numpy.int16");
+  pythonNames[dtInt[INT_SIZE_32]->symbol] = std::make_pair("", "numpy.int32");
+  pythonNames[dtInt[INT_SIZE_64]->symbol] = std::make_pair("", "numpy.int64");
+  pythonNames[dtUInt[INT_SIZE_8]->symbol] = std::make_pair("", "numpy.uint8");
+  pythonNames[dtUInt[INT_SIZE_16]->symbol] = std::make_pair("", "numpy.uint16");
+  pythonNames[dtUInt[INT_SIZE_32]->symbol] = std::make_pair("", "numpy.uint32");
+  pythonNames[dtUInt[INT_SIZE_64]->symbol] = std::make_pair("", "numpy.uint64");
+  pythonNames[dtReal[FLOAT_SIZE_32]->symbol] = std::make_pair("", "numpy.float32");
+  pythonNames[dtReal[FLOAT_SIZE_64]->symbol] = std::make_pair("double", "float");
+  pythonNames[dtBool->symbol] = std::make_pair("bint", "bint");
+  pythonNames[dtStringC->symbol] = std::make_pair("char *", "bytes");
+
+  // TODO: handle complex(64) and complex(128)
+
+  /* TODO: // Handle bigint
+  forv_Vec(TypeSymbol, t, gTypeSymbols) {
+    if (
+  }
+  */
+
+}
+
+// If there is a known .pxd file translation for this type, use that.
+// Otherwise, use the normal cname
+static std::string getPXDTypeName(Type* type) {
+  std::pair<std::string, std::string> tNames = pythonNames[type->symbol];
+  if (tNames.first != "") {
+    return tNames.first;
+  } else {
+    return transformTypeForPointer(type);
+  }
+}
+
+std::string ArgSymbol::getPXDType() {
+  Type* t = getArgSymbolCodegenType(this);
+
+  return getPXDTypeName(t);
+  // TODO: LLVM stuff
+}
+
 void codegen_library_python(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile && fLibraryPython) {
+    setupPythonTypeMap();
+
     fileinfo pxd = { NULL, NULL, NULL };
 
     openLibraryHelperFile(&pxd, libmodeHeadername, "pxd");
@@ -214,6 +265,8 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
       FILE* save_cfile = gGenInfo->cfile;
 
       gGenInfo->cfile = pxd.fptr;
+
+      fprintf(pxd.fptr, "from libc.stdint cimport *\n\n");
 
       fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
 
@@ -228,7 +281,8 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
       pxdEnd();
       gGenInfo->cfile = save_cfile;
     }
-    closeLibraryHelperFile(&pxd);
+    // Don't "beautify", it will remove the tabs
+    closeLibraryHelperFile(&pxd, false);
   }
 }
 
@@ -246,7 +300,7 @@ void FnSymbol::codegenPXD() {
     if (fGenIDS)
       fprintf(outfile, "%s", idCommentTemp(this));
 
-    fprintf(outfile, "%s;\n", codegenPXDType().c.c_str());
+    fprintf(outfile, "\t%s;\n", codegenPXDType().c.c_str());
   } else {
     // TODO: LLVM stuff
   }
@@ -262,7 +316,7 @@ GenRet FnSymbol::codegenPXDType() {
     // Cast to right function type.
     std::string str;
 
-    std::string retString = ""/* TODO: get return type here */;
+    std::string retString = getPXDTypeName(retType);
     str += retString.c_str();
     str += " ";
     str += cname;
@@ -274,8 +328,8 @@ GenRet FnSymbol::codegenPXDType() {
         if (formal->hasFlag(FLAG_NO_CODEGEN))
           continue; // do not print locale argument, end count, dummy class
         if (count > 0)
-          str += ",\n";
-        str += ""/* TODO: formal type */;
+          str += ", ";
+        str += formal->getPXDType();
         str += " ";
         str += formal->cname;
         if (fGenIDS) {

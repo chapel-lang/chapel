@@ -135,6 +135,11 @@ void setupClang(GenInfo* info, std::string rtmain);
 
 bool isBuiltinExternCFunction(const char* cname);
 
+class ArgSymbol;
+
+std::string transformTypeForPointer(Type* type);
+Type* getArgSymbolCodegenType(ArgSymbol* arg);
+
 std::string numToString(int64_t num);
 std::string int64_to_string(int64_t i);
 std::string uint64_to_string(uint64_t i);
