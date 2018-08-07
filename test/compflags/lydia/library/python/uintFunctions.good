@@ -1,12 +1,14 @@
+from libc.stdint cimport *
+
 cdef extern from "uintFunctions.h":
-  void chpl__init_uintFunctions(int _ln, int _fn)
-  void takesUint(unsigned int x)
-  unsigned int getUint()
-  unsigned int takeAndReturn(unsigned int x)
+	void chpl__init_uintFunctions(int64_t _ln, int32_t _fn);
+	void takesUint(uint64_t x);
+	uint64_t getUint();
+	uint64_t takeAndReturn(uint64_t x);
 
 cdef extern from "chpltypes.h":
-  ctypedef void* c_fn_ptr
+	ctypedef void* c_fn_ptr
 
 cdef extern from "chpl-init.h":
-  void chpl_library_init(int argc, char* argv[])
-  void chpl_library_finalize()
+	void chpl_library_init(int argc, char* argv[])
+	void chpl_library_finalize()

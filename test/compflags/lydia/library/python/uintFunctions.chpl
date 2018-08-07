@@ -5,7 +5,7 @@ export proc takesUint(x: uint) {
 
 /* Tests returning a uint */
 export proc getUint(): uint {
-  var ret: uint = "whee";
+  var ret: uint = 4;
   return ret;
 }
 
