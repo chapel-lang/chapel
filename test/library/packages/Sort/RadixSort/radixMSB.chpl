@@ -1,17 +1,17 @@
 use BitOps;
 use Sort;
 use Random;
-
 config param bucketBits=8; 
 
- module MSBmodule{
+module MSBmodule {
 
-  proc radixSortMSBWrapper(array:[] int, place: int, startIndex: int, endIndex: int){
-    var auxArray:[1..array.size] int ;
-    radixSortMSB(array,place,1,array.size,auxArray);
+  proc radixSortMSB(array:[?dom] int) {
+    var auxArray:[1..array.size] int;
+    var place = findPlace(array);
+    __radixSortMSB(array,place,dom.low,dom.high,auxArray);
   }
   
-  proc radixSortMSB(array:[] int, place: int, startIndex: int, endIndex: int, auxArray:[] int) {
+  private proc __radixSortMSB(array:[] int, place: int, startIndex: int, endIndex: int, auxArray:[] int) {
 
     param numBuckets = (1 << bucketBits);
     var counts:[1..numBuckets+1] int;  
@@ -48,25 +48,25 @@ config param bucketBits=8;
 
     //recursive call for subparts of array
     for m in 1..numBuckets {
-      radixSortMSB(array, place-bucketBits, startIndex + counts[m] , startIndex + counts[m+1] - 1, auxArray);
+      __radixSortMSB(array, place-bucketBits, startIndex + counts[m] , startIndex + counts[m+1] - 1, auxArray);
     }	
   	
   }
 
    // To find a position where an element's count is to be updated in the counts array.
-  proc findPosition(place:int, element:int, numBuckets:int) {
+  private proc findPosition(place:int, element:int, numBuckets:int) {
     var position: int;
     position = ((element>>place) & (numBuckets-1));
     return position;
   }
 
   // To find maximum element in an array
-  proc findMaxElement(array:[] int) {
+  private proc findMaxElement(array:[] int) {
     return max reduce array;
   }
 
   // To find the place value from which msb sorting starts
-  proc findPlace(array:[] int) {
+  private proc findPlace(array:[] int) {
     var place: int;
     var lz: int;
     var maxEl: int;
@@ -75,7 +75,7 @@ config param bucketBits=8;
     maxEl = findMaxElement(array);    
     lz = clz(maxEl);
     numBits = 64 - lz ;
-    place = ((numBits)>> 3)<<3;
+    place = ((numBits)>>3)<<3;
 
     return place;
   } 
@@ -91,9 +91,8 @@ config param bucketBits=8;
    for i in array.domain {
      array[i] = abs(array[i]);
    }  
-   var place = MSBmodule.findPlace(array);
-
-   MSBmodule.radixSortMSBWrapper(array,place,1,array.size);
+   
+   MSBmodule.radixSortMSB(array);
    writeln(array);
    //writeln("sorted array: ",isSorted(array));
 
