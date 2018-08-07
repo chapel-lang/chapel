@@ -1,0 +1,4 @@
+unexpected-AST.chpl:17: In iterator 'myIter':
+unexpected-AST.chpl:23: error: 'tasksPerLocale' undeclared (first use this function)
+unexpected-AST.chpl:26: error: 'ignoreRunning' undeclared (first use this function)
+unexpected-AST.chpl:27: error: 'minIndicesPerTask' undeclared (first use this function)
