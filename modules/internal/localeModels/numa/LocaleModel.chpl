@@ -61,7 +61,7 @@ module LocaleModel {
       return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
                                 sid);
     }
-    proc chpl_name() return ndName;
+    override proc chpl_name() return ndName;
 
     proc init() {
     }
@@ -134,7 +134,7 @@ module LocaleModel {
     proc chpl_localeid() {
       return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
     }
-    proc chpl_name() return local_name;
+    override proc chpl_name() return local_name;
 
     //
     // Support for different types of memory:
@@ -241,7 +241,7 @@ module LocaleModel {
     proc chpl_localeid() {
       return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
-    proc chpl_name() return local_name();
+    override proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
     proc writeThis(f) {
