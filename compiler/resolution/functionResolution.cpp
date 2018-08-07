@@ -313,17 +313,27 @@ hasUserAssign(Type* type) {
   // (instead of causing a compile error).
   if( type->symbol->hasFlag(FLAG_TUPLE) ) return false;
 
+
   SET_LINENO(type->symbol);
   Symbol* tmp = newTemp(type);
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("=", tmp, tmp);
-  FnSymbol* fn = resolveUninsertedCall(type, call);
+
+  // Permit not finding an assignment function at all. This may happen if
+  // the type was instantiated in a scope where its module wasn't used. E.g.:
+  //   var x = new A.R(int);
+  //
+  FnSymbol* fn = resolveUninsertedCall(type, call, false);
   // Don't think we need to resolve the whole function
   // since we're just looking for a flag.
   //resolveFunction(fn);
   tmp->defPoint->remove();
-  bool compilerAssign = fn->hasFlag(FLAG_COMPILER_GENERATED);
-  return !compilerAssign;
+
+  if (fn == NULL) {
+    return false;
+  } else {
+    return !fn->hasFlag(FLAG_COMPILER_GENERATED);
+  }
 }
 
 /************************************* | **************************************
@@ -2823,7 +2833,7 @@ void trimVisibleCandidates(CallInfo&       info,
   bool maybeCopyInit = isInit && call->numActuals() == 3 &&
                        call->get(2)->getValType() == call->get(3)->getValType();
 
-  if (!(isInit || isNew || isDeinit)) {
+  if (!(isInit || isNew || isDeinit) || info.call->isResolved()) {
     mostApplicable = visibleFns;
   } else {
     forv_Vec(FnSymbol, fn, visibleFns) {
@@ -4619,6 +4629,7 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
   if (t == dtUnknown)
     INT_FATAL(call, "Unable to resolve field type");
 
+  // Note: intentionally skips this branch for refs to sync vars
   if (isSyncType(t) || isSingleType(t)) {
     // Sync and single fields should be initialized with just a PRIM_SET_MEMBER
     // using the original initial expression.
@@ -5020,10 +5031,10 @@ static void resolveInitVar(CallExpr* call) {
 
     // Ignore the target type if it's the same & not a runtime type
     // and not sync/single (since sync/single initCopy returns a different type)
-    if (targetType == srcType &&
+    if (targetType->getValType() == srcType->getValType() &&
         !targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
-        !isSyncType(srcType) &&
-        !isSingleType(srcType)) {
+        !isSyncType(srcType->getValType()) &&
+        !isSingleType(srcType->getValType())) {
       targetType = srcType;
       targetTypeExpr = NULL;
     }
@@ -5062,11 +5073,13 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isRecordWithInitializers(srcType) == true &&
+  } else if (isRecord(srcType) == true &&
              isParamString == false &&
              isSyncType(srcType) == false &&
              isSingleType(srcType) == false &&
-             isRecordWrappedType(srcType) == false)  {
+             isRecordWrappedType(srcType) == false &&
+             srcType->symbol->hasFlag(FLAG_TUPLE) == false &&
+             srcType->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
@@ -5089,6 +5102,15 @@ static void resolveInitVar(CallExpr* call) {
 
       call->primitive = primitives[PRIM_MOVE];
 
+      resolveMove(call);
+    } else if (isRecordWithInitializers(srcType) == false) {
+      Expr*     initExpr = srcExpr->remove();
+      CallExpr* initCopy = new CallExpr("chpl__initCopy", initExpr);
+
+      call->insertAtTail(initCopy);
+      call->primitive = primitives[PRIM_MOVE];
+
+      resolveExpr(initCopy);
       resolveMove(call);
 
     } else if (findCopyInit(ct) != NULL) {
@@ -5527,6 +5549,15 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
 
   } else if (rhs->isPrimitive(PRIM_INIT) == true) {
     moveFinalize(call);
+    Symbol* LHS = toSymExpr(call->get(1))->symbol();
+
+    // Skip for runtime types, otherwise we would print this message twice...
+    if (LHS->hasFlag(FLAG_PARAM) &&
+        LHS->hasFlag(FLAG_TEMP) == false &&
+        isLegalParamType(rhs->typeInfo()) == false &&
+        rhs->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+      USR_FATAL_CONT(LHS, "'%s' is not of a supported param type", LHS->name);
+    }
 
     if (SymExpr* se = toSymExpr(rhs->get(1))) {
       Type* seType = se->symbol()->getValType();
@@ -6315,6 +6346,15 @@ static void resolveNewHandleNonGenericClass(CallExpr* newExpr, Type* manager) {
 static void resolveNewHandleNonGenericRecord(CallExpr* newExpr) {
   AggregateType* at     = resolveNewFindType(newExpr);
   VarSymbol*     newTmp = newTemp("new_temp", at);
+  Expr* modToken = NULL;
+  Expr* modValue = NULL;
+
+  if (SymExpr* se = toSymExpr(newExpr->get(1))) {
+    if (se->symbol() == gModuleToken) {
+      modValue = newExpr->get(2)->remove();
+      modToken = newExpr->get(1)->remove();
+    }
+  }
 
   resolveNewRecordPrologue(newExpr, newTmp);
 
@@ -6323,6 +6363,11 @@ static void resolveNewHandleNonGenericRecord(CallExpr* newExpr) {
 
   newExpr->insertAtHead(new SymExpr(newTmp));
   newExpr->insertAtHead(new SymExpr(gMethodToken));
+
+  if (modToken != NULL) {
+    newExpr->insertAtHead(modValue);
+    newExpr->insertAtHead(modToken);
+  }
 
   resolveCall(newExpr);
 
@@ -6355,7 +6400,7 @@ static void resolveNewHandleGenericClass(CallExpr* newExpr, Type* manager) {
   moveStmt->insertAfter(initCall);
   moveStmt->insertAfter(new DefExpr(initTemp));
 
-  for (int i = newExpr->numActuals(); i > 1; i--) {
+  for (int i = newExpr->numActuals(); i > 0; i--) {
     initCall->insertAtHead(newExpr->get(i)->remove());
   }
 
@@ -6377,7 +6422,7 @@ static void resolveNewHandleGenericClass(CallExpr* newExpr, Type* manager) {
   moveStmt->get(1)->replace(new SymExpr(sizeTmp));
 
   newExpr->primitive = primitives[PRIM_SIZEOF];
-  newExpr->get(1)->replace(new SymExpr(typeSym));
+  newExpr->insertAtHead(new SymExpr(typeSym));
 
   moveDst->symbol()->type = initTmp->type;
 
@@ -6421,7 +6466,6 @@ static void resolveNewHandleGenericRecord(CallExpr* newExpr) {
   resolveNewRecordPrologue(newExpr, initTemp);
 
   newExpr->setUnresolvedFunction("init");
-  newExpr->get(1)->remove();
 
   resolveNewGenericInit(newExpr, at, initTemp);
 
@@ -6454,11 +6498,27 @@ static void resolveNewGenericInit(CallExpr*      newExpr,
                                   AggregateType* at,
                                   VarSymbol*     initTmp) {
   FnSymbol* initFn = NULL;
+  Expr* modToken = NULL;
+  Expr* modValue = NULL;
+
+  if (SymExpr* se = toSymExpr(newExpr->get(1))) {
+    if (se->symbol() == gModuleToken) {
+      modValue = newExpr->get(2)->remove();
+      modToken = newExpr->get(1)->remove();
+    }
+  }
+
+  newExpr->get(1)->remove(); // Type symbol
 
   initTmp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
   newExpr->insertAtHead(new NamedExpr("this", new SymExpr(initTmp)));
   newExpr->insertAtHead(new SymExpr(gMethodToken));
+
+  if (modToken) {
+    newExpr->insertAtHead(modValue);
+    newExpr->insertAtHead(modToken);
+  }
 
   temporaryInitializerFixup(newExpr);
 
