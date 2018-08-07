@@ -151,6 +151,10 @@ module String {
     var shortData : chpl__inPlaceBuffer;
   }
 
+  record codePointIndex {
+    var cpidx     : int;
+  }
+
   //
   // String Implementation
   //
@@ -338,14 +342,34 @@ module String {
     }
 
     /*
-      :returns: The number of characters in the string.
+      :returns: The number of bytes in the string.
       */
     inline proc length return len;
 
     /*
-      :returns: The number of characters in the string.
+      :returns: The number of bytes in the string.
       */
     inline proc size return len;
+
+    /*
+      :returns: The number of Unicode codepoints in the string.
+      */
+    proc ulength {
+      var localThis: string = this.localize();
+
+      var i = 0;
+      var n = 0;
+      while i < localThis.len {
+        var codepoint: int(32);
+        var nbytes: c_int;
+        var multibytes = (localThis.buff + i): c_string;
+        var maxbytes = (localThis.len - i): ssize_t;
+        qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        n += 1;
+        i += nbytes;
+      }
+      return n;
+    }
 
     /*
        Gets a version of the :record:`string` that is on the currently
@@ -489,6 +513,29 @@ module String {
       ret.len = nbytes;
 
       return ret;
+    }
+
+    /*
+      Index into a string
+
+      :returns: A Unicode codepoint starting at the
+                specified codepoint index from `1..string.ulength`
+     */
+    proc this(cpi: codePointIndex) : int(32) {
+      const idx = cpi.cpidx;
+      if boundsChecking && idx <= 0 then
+        halt("index out of bounds of string: ", idx);
+
+      var i = 1;
+      for codepoint in this.uchars() {
+        if i == idx then
+          return codepoint;
+	i = i + 1;
+      }
+      // We have reached the end of the string without finding our index.
+      if boundsChecking then
+        halt("index out of bounds of string: ", idx);
+      return 0: int(32);
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
@@ -1908,6 +1955,20 @@ module String {
     buffer[0] = i;
     buffer[1] = 0;
     var s = new string(buffer, 1, 2, isowned=true, needToCopy=false);
+    return s;
+  }
+
+  /*
+     :returns: A string with complete multibyte character
+               with the codepoint value `i`.
+  */
+  inline proc codePointToString(i: int(32)) {
+    var newSize = chpl_here_good_alloc_size(4 + 1);
+    newSize = max(chpl_string_min_alloc_size, newSize);
+    var buffer = chpl_here_calloc(newSize, 1, offset_STR_COPY_DATA): bufferType;
+    qio_encode_char_buf(buffer, i);
+    extern proc strlen(const str: c_string) : size_t;
+    var s = new string(buffer, strlen(buffer: c_string): int, newSize, isowned=true, needToCopy=false);
     return s;
   }
 
