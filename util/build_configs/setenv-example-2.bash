@@ -49,7 +49,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     # CHPL_HOME from the environment, or default to this Chapel workspace
 
-    CHPL_HOME=${CHPL_HOME:-$( cd $cwd/../.. && pwd )}
+    export CHPL_HOME=${CHPL_HOME:-$( cd $cwd/../.. && pwd )}
     log_debug "with CHPL_HOME=$CHPL_HOME"
     ck_chpl_home "$CHPL_HOME"
 

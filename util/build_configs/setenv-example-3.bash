@@ -36,7 +36,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     log_info "Begin project $setenv"
 
-    CHPL_HOME=${CHPL_HOME:-$( cd $cwd/../.. && pwd )}
+    export CHPL_HOME=${CHPL_HOME:-$( cd $cwd/../.. && pwd )}
     log_debug "with CHPL_HOME=$CHPL_HOME"
     ck_chpl_home "$CHPL_HOME"
 
