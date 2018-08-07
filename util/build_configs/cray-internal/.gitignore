@@ -1,0 +1,13 @@
+# This hides users work files in this subdir
+/*
+!/common.bash
+!/generate-dev-releaseinfo.bash
+!/generate-modulefile.bash
+!/generate-rpmspec.bash
+!/generate-set_default.bash
+!/modulefile
+!/README*
+#
+# This hides users subdirectories
+#
+/*/
