@@ -56,10 +56,10 @@ public:
   void            completePhase1(CallExpr* insertBefore);
   void            completePhase0(CallExpr* initStmt);
 
-  void            initializeFieldsAtTail(BlockStmt*          block);
-  void            initializeFieldsThroughField(BlockStmt*    block,
-                                               DefExpr*      field);
-  void            initializeFieldsBefore(Expr*               insertBefore);
+  void            initializeFieldsAtTail(BlockStmt*          block,
+                                         DefExpr*            endField = NULL);
+  void            initializeFieldsBefore(Expr*               insertBefore,
+                                         DefExpr*            endField = NULL);
 
   bool            isFieldReinitialized(DefExpr* field)                   const;
   bool            isFieldImplicitlyInitialized(DefExpr* field)           const;
