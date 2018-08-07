@@ -36,6 +36,8 @@ char libDir[FILENAME_MAX + 1]  = "";
 // TypeSymbol -> (pxdName, pyxName)  Will be "" if the cname should be used
 std::map<TypeSymbol*, std::pair<std::string, std::string>> pythonNames;
 
+static bool isFunctionToSkip(FnSymbol* fn);
+
 //
 // Generates a .h file to complement the library file created using --library
 // This .h file will contain necessary #includes, any explicitly exported
@@ -68,8 +70,7 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
       // functions
       for_vector(FnSymbol, fn, functions) {
         if (fn->hasFlag(FLAG_EXPORT) &&
-            fn->getModule()->modTag != MOD_INTERNAL &&
-            fn->hasFlag(FLAG_GEN_MAIN_FUNC) == false) {
+            !isFunctionToSkip(fn)) {
           fn->codegenPrototype();
         }
       }
@@ -271,9 +272,7 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
       fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
 
       for_vector(FnSymbol, fn, functions) {
-        if (fn->getModule()->modTag != MOD_INTERNAL &&
-            fn->hasFlag(FLAG_GEN_MAIN_FUNC) == false) {
-          // TODO: make that check a function?
+        if (!isFunctionToSkip(fn)) {
           fn->codegenPXD();
         }
       }
@@ -347,4 +346,11 @@ GenRet FnSymbol::codegenPXDType() {
   }
 
   return ret;
+}
+
+// Skip this function if it is defined in an internal module, or if it is
+// the generated main function
+static bool isFunctionToSkip(FnSymbol* fn) {
+  return fn->getModule()->modTag == MOD_INTERNAL ||
+    fn->hasFlag(FLAG_GEN_MAIN_FUNC);
 }
