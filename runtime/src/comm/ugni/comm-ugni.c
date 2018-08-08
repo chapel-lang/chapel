@@ -6879,22 +6879,32 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
   static __thread c_nodeid_t node_v[MAX_CHAINED_AMO_LEN];
   static __thread int64_t vi = -1;
 
-  static __thread chpl_bool inited = false;
+  // init_status -- (0=first-call, -1=out-of-entries, 1=have-entry)
+  static __thread int init_status = 0;
   static __thread atomic_bool lock;
 
-  if (inited == false) {
+  if (init_status == 1) {
+    // no-op
+  } else if (init_status == -1) {
+    do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+    return;
+  } else {
     uint32_t idx;
     while (atomic_exchange_bool(&amo_init_lock, true)) { local_yield(); }
     atomic_init_bool(&lock, false);
     idx = atomic_load_uint_least32_t(&amo_pdc_sz);
     if (idx >= MAX_BUFF_AMO_THREADS) {
+      chpl_warning("Exceeded MAX_BUFF_AMO_THREADS, buffered atomic performance degraded", 0, 0);
+      init_status = -1;
+      atomic_store_bool(&amo_init_lock, false);
       do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+      return;
     }
     amo_pdc[idx] = &post_desc;
     amo_node_v[idx] = &node_v[0];
     amo_vi_v[idx] = &vi;
     amo_lock_v[idx] = &lock;
-    inited = true;
+    init_status = 1;
     (void) atomic_fetch_add_uint_least32_t(&amo_pdc_sz, 1);
     atomic_store_bool(&amo_init_lock, false);
   }
