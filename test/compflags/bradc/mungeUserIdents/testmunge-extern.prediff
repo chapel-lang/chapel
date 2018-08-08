@@ -1,64 +1,43 @@
 #!/usr/bin/env python
 
 #
-# This test ensures that the generated code contains instances of foo,
-# bar, and baz (variables that the test does not expect to see munged)
-# and does not contain instances of foo_chpl, bar_chpl, and baz_chpl
-# (which would imply that they have been munged).  The test also
-# verifies that other variables have been renamed, by using reserved
-# and unprotected names, like socket and connect which will conflict
-# with standard library identifiers if not renamed.
+# This test ensures that the generated code contains instances of certain
+# identifiers that should not be munged, and that their '_chpl' counterparts
+# are not present.
 #
 
 import sys, os, shutil
 
-expectedGenCodeFile = sys.argv[1]+'.expectedGenCode'
 genCodeDir = 'genCode'
 actualGenCodeFile = os.path.join(genCodeDir, sys.argv[1]+'.c')
+genHeader         = os.path.join(genCodeDir, 'chpl__header.h')
 testOutputFile = sys.argv[2]
 
-searchString = "thisNameProbablyWontConflictWithOthers"
-
-if (testOutputFile.find("1") != -1):
-    searchString += "_chpl"
-searchString += " "
-
-foo = 0;
-bar = 0;
-baz = 0;
-foo_chpl = 0;
-bar_chpl = 0;
-baz_chpl = 0;
+names = ["foo", "bar", "baz", "globStruct"]
+names = names + [n + "_chpl" for n in names]
+counts = {n:0 for n in names}
 
 for line in open(actualGenCodeFile):
-    if "foo_chpl" in line:
-        foo_chpl += 1;
-    elif "foo" in line:
-        foo += 1;
-    if "bar_chpl" in line:
-        bar_chpl += 1;
-    elif "bar" in line:
-        bar += 1;
-    if "baz_chpl" in line:
-        baz_chpl += 1;
-    elif "baz" in line:
-        baz += 1;
+    for key in counts:
+        if key in line:
+            counts[key] += 1
+
+for line in open(genHeader):
+    for key in counts:
+        if key in line:
+            counts[key] += 1
 
 with open(testOutputFile, 'a') as f:
-    if ((foo != 0) and (bar != 0) and (baz != 0) and (foo_chpl == 0) and (bar_chpl == 0) and (baz_chpl == 0)):
+    success = True
+    for key in counts:
+        if key.endswith("_chpl"):
+            if counts[key] != 0:
+                f.write("ERROR: Found {}'s in output\n".format(key))
+                success = False
+        elif counts[key] == 0:
+            f.write("ERROR: Didn't find {}'s in output\n".format(key))
+            success = False
+    if success:
         f.write("Success!\n");
-    else:
-        if foo == 0:
-            f.write("ERROR: Didn't find foo's in output\n");
-        if bar == 0:
-            f.write("ERROR: Didn't find bar's in output\n");
-        if baz == 0:
-            f.write("ERROR: Didn't find baz's in output\n");
-        if foo_chpl != 0:
-            f.write("ERROR: Found foo_chpl's in output\n");
-        if bar_chpl != 0:
-            f.write("ERROR: Found bar_chpl's in output\n");
-        if baz_chpl != 0:
-            f.write("ERROR: Found baz_chpl's in output\n");
 
 shutil.rmtree(genCodeDir)
