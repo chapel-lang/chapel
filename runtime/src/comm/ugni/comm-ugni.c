@@ -6550,7 +6550,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
-                   "IFACE chpl_comm_atomic_"#_o"_"#_f                   \
+                   "IFACE chpl_comm_atomic_"#_o"_buff_"#_f              \
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
@@ -6682,7 +6682,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
-                   "IFACE chpl_comm_atomic_add_"#_f                     \
+                   "IFACE chpl_comm_atomic_add_buff_"#_f                \
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
@@ -6774,7 +6774,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
           _t nopnd = - *(_t*) opnd;                                     \
                                                                         \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
-                   "IFACE chpl_comm_atomic_sub_"#_f                     \
+                   "IFACE chpl_comm_atomic_sub_buff_"#_f                \
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
