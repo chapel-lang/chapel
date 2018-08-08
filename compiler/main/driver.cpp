@@ -99,6 +99,7 @@ static bool fBaseline = false;
 
 bool fLibraryCompile = false;
 bool fLibraryMakefile = false;
+bool fLibraryPython = false;
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool fVerify = false;
@@ -997,6 +998,7 @@ static ArgumentDescription arg_desc[] = {
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, NULL},
  {"library-makefile", ' ', NULL, "Generate a makefile to help use the generated library", "F", &fLibraryMakefile, NULL, NULL},
+ {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},

@@ -103,6 +103,9 @@ public:
   void                       codegenPrototype();
   void                       codegenDef();
 
+  void                       codegenPXD();
+  GenRet                     codegenPXDType();
+
   void                       insertAtHead(Expr* ast);
   void                       insertAtHead(const char* format, ...);
 
