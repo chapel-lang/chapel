@@ -322,3 +322,5 @@ statements/lydia/moduleVersusFunction.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
 Samples/Performance/cleanCopy/foobar.graph
+# suite: Sample Radix Sort
+library/packages/Sort/RadixSort/radixsortMSB.graph
