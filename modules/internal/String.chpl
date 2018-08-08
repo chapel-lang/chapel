@@ -1966,7 +1966,7 @@ module String {
   inline proc codePointToString(i: int(32)) {
     const mblength = qio_nbytes_char(i): int;
     const mbsize = max(chpl_string_min_alloc_size,
-		       chpl_here_good_alloc_size(mblength + 1));
+                       chpl_here_good_alloc_size(mblength + 1));
     var buffer = chpl_here_alloc(mbsize, offset_STR_COPY_DATA): bufferType;
     qio_encode_char_buf(buffer, i);
     buffer[mblength] = 0;
