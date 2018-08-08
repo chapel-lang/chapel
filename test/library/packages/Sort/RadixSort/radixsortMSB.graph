@@ -1,5 +1,5 @@
 perfkeys: Time:
-files: radixSortMSB.dat
+files: radixsortMSB.dat
 graphkeys: Radix Sort MSB
 ylabel: Time (seconds)
 graphtitle: Sample MSB Radix Sort Performance Test
