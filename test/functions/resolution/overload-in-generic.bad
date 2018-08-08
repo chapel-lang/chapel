@@ -1,0 +1,2 @@
+overload-in-generic.chpl:13: error: D.foo override keyword present but no superclass method matches signature to override
+overload-in-generic.chpl:13: error: D.foo override keyword present but no superclass method matches signature to override
