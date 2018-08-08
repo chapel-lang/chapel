@@ -20,13 +20,19 @@
 #ifndef LIBRARY_H
 #define LIBRARY_H
 
+#include <map>
+#include <string>
 #include <vector>
+#include <utility>
 
 #include "files.h"
+#include "symbol.h"
 
 class FnSymbol;
+class TypeSymbol;
 
 extern char libDir[FILENAME_MAX + 1];
+extern std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
 
 void codegen_library_header(std::vector<FnSymbol*> functions);
 void codegen_library_makefile();

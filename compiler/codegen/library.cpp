@@ -19,10 +19,6 @@
 
 #include "library.h"
 
-#include <map>
-#include <string>
-#include <utility>
-
 #include "FnSymbol.h"
 #include "beautify.h"
 #include "codegen.h"
@@ -230,30 +226,8 @@ static void setupPythonTypeMap() {
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
               std::make_pair("double complex", "numpy.complex128");
 
-  /* TODO: // Handle bigint
-  forv_Vec(TypeSymbol, t, gTypeSymbols) {
-    if (
-  }
-  */
+  // TODO: Handle bigint (which should naturally match to Python's int)
 
-}
-
-// If there is a known .pxd file translation for this type, use that.
-// Otherwise, use the normal cname
-static std::string getPXDTypeName(Type* type) {
-  std::pair<std::string, std::string> tNames = pythonNames[type->symbol];
-  if (tNames.first != "") {
-    return tNames.first;
-  } else {
-    return transformTypeForPointer(type);
-  }
-}
-
-std::string ArgSymbol::getPXDType() {
-  Type* t = getArgSymbolCodegenType(this);
-
-  return getPXDTypeName(t);
-  // TODO: LLVM stuff
 }
 
 void codegen_library_python(std::vector<FnSymbol*> functions) {
@@ -287,68 +261,6 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
   }
 }
 
-void FnSymbol::codegenPXD() {
-  GenInfo *info = gGenInfo;
-
-  if (!hasFlag(FLAG_EXPORT)) return;
-  if (hasFlag(FLAG_NO_PROTOTYPE)) return;
-  if (hasFlag(FLAG_NO_CODEGEN)) return;
-
-  // Should I add the break-on-codegen-id stuff here?
-
-  if (info->cfile) {
-    FILE* outfile = info->cfile;
-    if (fGenIDS)
-      fprintf(outfile, "%s", idCommentTemp(this));
-
-    fprintf(outfile, "\t%s;\n", codegenPXDType().c.c_str());
-  } else {
-    // TODO: LLVM stuff
-  }
-}
-
-GenRet FnSymbol::codegenPXDType() {
-  GenInfo* info = gGenInfo;
-  GenRet ret;
-
-  ret.chplType = typeInfo();
-
-  if (info->cfile) {
-    // Cast to right function type.
-    std::string str;
-
-    std::string retString = getPXDTypeName(retType);
-    str += retString.c_str();
-    str += " ";
-    str += cname;
-    str += "(";
-
-    if (numFormals() != 0) {
-      int count = 0;
-      for_formals(formal, this) {
-        if (formal->hasFlag(FLAG_NO_CODEGEN))
-          continue; // do not print locale argument, end count, dummy class
-        if (count > 0)
-          str += ", ";
-        str += formal->getPXDType();
-        str += " ";
-        str += formal->cname;
-        if (fGenIDS) {
-          str += " ";
-          str += idCommentTemp(formal);
-        }
-        count++;
-      }
-    } // pxd files do not take void as an argument list, just close the parens
-    str += ")";
-    ret.c = str;
-
-  } else {
-    // TODO: LLVM stuff
-  }
-
-  return ret;
-}
 
 // Skip this function if it is defined in an internal module, or if it is
 // the generated main function

@@ -38,6 +38,7 @@
 #include "intlimits.h"
 #include "iterator.h"
 #include "LayeredValueTable.h"
+#include "library.h"
 #include "llvmDebug.h"
 #include "llvmExtractIR.h"
 #include "llvmUtil.h"
@@ -772,7 +773,7 @@ bool ArgSymbol::requiresCPtr(void) {
   return argMustUseCPtr(type);
 }
 
-Type* getArgSymbolCodegenType(ArgSymbol* arg) {
+static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
   QualifiedType q = arg->qualType();
   Type* useType = q.type();
 
@@ -792,7 +793,7 @@ Type* getArgSymbolCodegenType(ArgSymbol* arg) {
 // return type of exported functions, or arguments of those functions.
 //
 // TODO: apply to _ddata as well?
-std::string
+static std::string
 transformTypeForPointer(Type* type) {
   std::string typeName = type->codegen().c;
   if (type->symbol->hasFlag(FLAG_REF)) {
@@ -872,6 +873,24 @@ GenRet ArgSymbol::codegen() {
   //ret.chplType = this->type;
 
   return ret;
+}
+
+// If there is a known .pxd file translation for this type, use that.
+// Otherwise, use the normal cname
+static std::string getPXDTypeName(Type* type) {
+  std::pair<std::string, std::string> tNames = pythonNames[type->symbol];
+  if (tNames.first != "") {
+    return tNames.first;
+  } else {
+    return transformTypeForPointer(type);
+  }
+}
+
+std::string ArgSymbol::getPXDType() {
+  Type* t = getArgSymbolCodegenType(this);
+
+  return getPXDTypeName(t);
+  // TODO: LLVM stuff
 }
 
 /******************************** | *********************************
@@ -1629,6 +1648,71 @@ GenRet FnSymbol::codegen() {
     }
 #endif
   }
+  return ret;
+}
+
+// Supports the creation of a python module with --library-python
+void FnSymbol::codegenPXD() {
+  GenInfo *info = gGenInfo;
+
+  if (!hasFlag(FLAG_EXPORT)) return;
+  if (hasFlag(FLAG_NO_PROTOTYPE)) return;
+  if (hasFlag(FLAG_NO_CODEGEN)) return;
+
+  // Should I add the break-on-codegen-id stuff here?
+
+  if (info->cfile) {
+    FILE* outfile = info->cfile;
+    if (fGenIDS)
+      fprintf(outfile, "%s", idCommentTemp(this));
+
+    fprintf(outfile, "\t%s;\n", codegenPXDType().c.c_str());
+  } else {
+    // TODO: LLVM stuff
+  }
+}
+
+// Supports the creation of a python module with --library-python
+GenRet FnSymbol::codegenPXDType() {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+
+  ret.chplType = typeInfo();
+
+  if (info->cfile) {
+    // Cast to right function type.
+    std::string str;
+
+    std::string retString = getPXDTypeName(retType);
+    str += retString.c_str();
+    str += " ";
+    str += cname;
+    str += "(";
+
+    if (numFormals() != 0) {
+      int count = 0;
+      for_formals(formal, this) {
+        if (formal->hasFlag(FLAG_NO_CODEGEN))
+          continue; // do not print locale argument, end count, dummy class
+        if (count > 0)
+          str += ", ";
+        str += formal->getPXDType();
+        str += " ";
+        str += formal->cname;
+        if (fGenIDS) {
+          str += " ";
+          str += idCommentTemp(formal);
+        }
+        count++;
+      }
+    } // pxd files do not take void as an argument list, just close the parens
+    str += ")";
+    ret.c = str;
+
+  } else {
+    // TODO: LLVM stuff
+  }
+
   return ret;
 }
 
