@@ -53,7 +53,7 @@ module LocaleModel {
     const name: string;
 
     override proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
-    proc chpl_localeid() {
+    override proc chpl_localeid() {
       return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
                                 sid);
     }
@@ -68,7 +68,7 @@ module LocaleModel {
       name = _parent.chpl_name() + "-CPU" + sid;
     }
 
-    proc writeThis(f) {
+    override proc writeThis(f) {
       parent.writeThis(f);
       f <~> '.'+name;
     }
@@ -89,7 +89,7 @@ module LocaleModel {
     const name: string;
 
     override proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
-    proc chpl_localeid() {
+    override proc chpl_localeid() {
       return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
                                 sid);
     }
@@ -112,7 +112,7 @@ module LocaleModel {
       name = _parent.chpl_name() + "-GPU" + sid;
     }
 
-    proc writeThis(f) {
+    override proc writeThis(f) {
       parent.writeThis(f);
       f <~> '.'+name;
     }
@@ -171,13 +171,13 @@ module LocaleModel {
     }
 
     override proc chpl_id() return _node_id;     // top-level locale (node) number
-    proc chpl_localeid() {
+    override proc chpl_localeid() {
       return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
     }
     override proc chpl_name() return local_name;
 
 
-    proc writeThis(f) {
+    override proc writeThis(f) {
       // Most classes will define it like this:
       //      f <~> name;
       // but here it is defined thus for backward compatibility.
@@ -269,13 +269,13 @@ module LocaleModel {
     // numbered less than this.
     // -1 is used in the abstract locale class to specify an invalid node ID.
     override proc chpl_id() return numLocales;
-    proc chpl_localeid() {
+    override proc chpl_localeid() {
       return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
     override proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    proc writeThis(f) {
+    override proc writeThis(f) {
       f <~> name;
     }
 
