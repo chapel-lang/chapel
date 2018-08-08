@@ -6832,10 +6832,11 @@ int amo_cmd_2_nic_op(fork_amo_cmd_t cmd, int fetching)
 }
 
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
-static gni_post_descriptor_t* amo_pdc[1024];
-static c_nodeid_t* amo_node_v[1024];
-static int64_t* amo_vi_v[1024];
-static atomic_bool* amo_lock_v[1024];
+#define MAX_BUFF_AMO_THREADS 1024
+static gni_post_descriptor_t* amo_pdc[MAX_BUFF_AMO_THREADS];
+static c_nodeid_t* amo_node_v[MAX_BUFF_AMO_THREADS];
+static int64_t* amo_vi_v[MAX_BUFF_AMO_THREADS];
+static atomic_bool* amo_lock_v[MAX_BUFF_AMO_THREADS];
 static atomic_bool amo_init_lock = false;
 static atomic_uint_least32_t amo_pdc_sz = 0;
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
@@ -6886,6 +6887,9 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     while (atomic_exchange_bool(&amo_init_lock, true)) { local_yield(); }
     atomic_init_bool(&lock, false);
     idx = atomic_load_uint_least32_t(&amo_pdc_sz);
+    if (idx >= MAX_BUFF_AMO_THREADS) {
+      do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+    }
     amo_pdc[idx] = &post_desc;
     amo_node_v[idx] = &node_v[0];
     amo_vi_v[idx] = &vi;
