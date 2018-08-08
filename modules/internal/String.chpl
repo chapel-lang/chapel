@@ -114,6 +114,7 @@ module String {
 
   private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
   private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):syserr;
+  private extern proc qio_nbytes_char(chr:int(32)):c_int;
 
   pragma "no doc"
   extern const CHPL_SHORT_STRING_SIZE : c_int;
@@ -1963,12 +1964,13 @@ module String {
                with the codepoint value `i`.
   */
   inline proc codePointToString(i: int(32)) {
-    var newSize = chpl_here_good_alloc_size(4 + 1);
-    newSize = max(chpl_string_min_alloc_size, newSize);
-    var buffer = chpl_here_calloc(newSize, 1, offset_STR_COPY_DATA): bufferType;
+    const mblength = qio_nbytes_char(i): int;
+    const mbsize = max(chpl_string_min_alloc_size,
+		       chpl_here_good_alloc_size(mblength + 1));
+    var buffer = chpl_here_alloc(mbsize, offset_STR_COPY_DATA): bufferType;
     qio_encode_char_buf(buffer, i);
-    extern proc strlen(const str: c_string) : size_t;
-    var s = new string(buffer, strlen(buffer: c_string): int, newSize, isowned=true, needToCopy=false);
+    buffer[mblength] = 0;
+    var s = new string(buffer, mblength, mbsize, isowned=true, needToCopy=false);
     return s;
   }
 
