@@ -34,7 +34,7 @@
 char libDir[FILENAME_MAX + 1]  = "";
 
 // TypeSymbol -> (pxdName, pyxName)  Will be "" if the cname should be used
-std::map<TypeSymbol*, std::pair<std::string, std::string>> pythonNames;
+std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
 
 static bool isFunctionToSkip(FnSymbol* fn);
 
@@ -212,7 +212,7 @@ static void pxdEnd() {
 
 // Populate the pythonNames map with the translation for bools, differently sized
 // integers, etc.
-void setupPythonTypeMap() {
+static void setupPythonTypeMap() {
   pythonNames[dtInt[INT_SIZE_8]->symbol] = std::make_pair("", "numpy.int8");
   pythonNames[dtInt[INT_SIZE_16]->symbol] = std::make_pair("", "numpy.int16");
   pythonNames[dtInt[INT_SIZE_32]->symbol] = std::make_pair("", "numpy.int32");
