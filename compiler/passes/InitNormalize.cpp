@@ -280,10 +280,11 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore,
 }
 
 void InitNormalize::initializeField(Expr* insertBefore,
-                                    DefExpr* field,
-                                    Expr* userInit) const {
+                                     DefExpr* field,
+                                     Expr* userInit) const {
   Expr* initExpr = userInit;
   Expr* typeExpr = field->exprType;
+  Expr* ret      = NULL;
 
   if (initExpr == NULL && field->init != NULL) {
     initExpr = field->init->copy();
@@ -298,26 +299,32 @@ void InitNormalize::initializeField(Expr* insertBefore,
 
   if (field->sym->hasEitherFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE)) {
     if (typeExpr != NULL && initExpr == NULL) {
-      genericFieldInitTypeWoutInit(insertBefore, field);
+      ret = genericFieldInitTypeWoutInit(insertBefore, field);
+
     } else if (typeExpr != NULL && initExpr != NULL) {
-      genericFieldInitTypeWithInit(insertBefore, field, initExpr);
+      ret = genericFieldInitTypeWithInit(insertBefore, field, initExpr);
+
     } else if (typeExpr == NULL && initExpr != NULL) {
-      genericFieldInitTypeInference(insertBefore, field, initExpr);
+      ret = genericFieldInitTypeInference(insertBefore, field, initExpr);
+
     } else {
       INT_ASSERT(false);
     }
   } else if (typeExpr == NULL && field->init == NULL) {
     // Special case: initializing 'var x;' field from 'userInit'
     INT_ASSERT(userInit != NULL);
-    genericFieldInitTypeInference(insertBefore, field, initExpr);
+    ret = genericFieldInitTypeInference(insertBefore, field, initExpr);
 
   } else if (typeExpr != NULL && initExpr == NULL) {
-    fieldInitTypeWoutInit(insertBefore, field);
+    ret = fieldInitTypeWoutInit(insertBefore, field);
+
   } else if (typeExpr != NULL && initExpr != NULL) {
-    fieldInitTypeWithInit(insertBefore, field, initExpr);
+    ret = fieldInitTypeWithInit(insertBefore, field, initExpr);
+
   } else if (typeExpr == NULL && initExpr != NULL) {
     //INT_ASSERT(field->sym->type == dtUnknown);
-    fieldInitTypeInference(insertBefore, field, initExpr);
+    ret = fieldInitTypeInference(insertBefore, field, initExpr);
+
   } else {
     INT_ASSERT(false);
   }
@@ -329,8 +336,8 @@ void InitNormalize::initializeField(Expr* insertBefore,
 *                                                                             *
 ************************************** | *************************************/
 
-void InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
-                                                 DefExpr* field) const {
+Expr* InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
+                                                  DefExpr* field) const {
   INT_ASSERT(field->sym->hasFlag(FLAG_PARAM));
 
   SET_LINENO(insertBefore);
@@ -352,7 +359,7 @@ void InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
   insertBefore->insertBefore(tmpInit);
   insertBefore->insertBefore(fieldSet);
 
-  updateFieldsMember(tmpExpr);
+  return tmpExpr;
 }
 
 /************************************* | **************************************
@@ -361,9 +368,9 @@ void InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
 *                                                                             *
 ************************************** | *************************************/
 
-void InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
-                                                 DefExpr* field,
-                                                 Expr*    initExpr) const {
+Expr* InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
+                                                  DefExpr* field,
+                                                  Expr*    initExpr) const {
   INT_ASSERT(field->sym->hasFlag(FLAG_PARAM));
 
   SET_LINENO(insertBefore);
@@ -378,7 +385,7 @@ void InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
 
   insertBefore->insertBefore(fieldSet);
 
-  updateFieldsMember(initExpr);
+  return cast;
 }
 
 /************************************* | **************************************
@@ -387,9 +394,9 @@ void InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
 *                                                                             *
 ************************************** | *************************************/
 
-void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
-                                                  DefExpr* field,
-                                                  Expr*    initExpr) const {
+Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
+                                                   DefExpr* field,
+                                                   Expr*    initExpr) const {
   bool isParam   = field->sym->hasFlag(FLAG_PARAM);
   bool isTypeVar = field->sym->hasFlag(FLAG_TYPE_VARIABLE);
 
@@ -405,7 +412,7 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, initExpr);
 
       insertBefore->insertBefore(fieldSet);
-      updateFieldsMember(initExpr);
+
     } else {
       VarSymbol* tmp      = newTemp("tmp");
       DefExpr*   tmpDefn  = new DefExpr(tmp);
@@ -425,8 +432,6 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       insertBefore->insertBefore(tmpDefn);
       insertBefore->insertBefore(tmpInit);
       insertBefore->insertBefore(fieldSet);
-
-      updateFieldsMember(initExpr);
     }
 
   // e.g.
@@ -470,9 +475,9 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
     insertBefore->insertBefore(tmpInit);
     insertBefore->insertBefore(fieldSet);
 
-    updateFieldsMember(initExpr);
-
   }
+
+  return initExpr;
 }
 
 /************************************* | **************************************
@@ -481,8 +486,8 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 *                                                                             *
 ************************************** | *************************************/
 
-void InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
-                                          DefExpr* field) const {
+Expr* InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
+                                           DefExpr* field) const {
   SET_LINENO(insertBefore);
 
   Type* type = field->sym->type;
@@ -500,7 +505,7 @@ void InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
   insertBefore->insertBefore(tmpInit);
   insertBefore->insertBefore(fieldSet);
 
-  updateFieldsMember(tmpExpr);
+  return tmpExpr;
 }
 
 /************************************* | **************************************
@@ -509,9 +514,9 @@ void InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
 *                                                                             *
 ************************************** | *************************************/
 
-void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
-                                          DefExpr* field,
-                                          Expr*    initExpr) const {
+Expr* InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
+                                           DefExpr* field,
+                                           Expr*    initExpr) const {
   SET_LINENO(insertBefore);
 
   Type* type = field->sym->type;
@@ -528,7 +533,7 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
 
     insertBefore->insertBefore(fieldSet);
 
-    updateFieldsMember(initExpr);
+    return initExpr;
 
   } else if (theFn()->hasFlag(FLAG_COMPILER_GENERATED) == true &&
              field->init                               == NULL &&
@@ -550,7 +555,7 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
 
     insertBefore->insertBefore(fieldSet);
 
-    updateFieldsMember(initExpr);
+    return initExpr;
 
   } else {
     // Do not set type of 'tmp' so that resolution will infer it later
@@ -579,8 +584,7 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     insertBefore->insertBefore(tmpInit);
     insertBefore->insertBefore(fieldSet);
 
-    updateFieldsMember(tmpInit);
-
+    return tmpInit;
   }
 }
 
@@ -590,9 +594,9 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
 *                                                                             *
 ************************************** | *************************************/
 
-void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
-                                           DefExpr* field,
-                                           Expr*    initExpr) const {
+Expr* InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
+                                            DefExpr* field,
+                                            Expr*    initExpr) const {
   SET_LINENO(insertBefore);
 
   if (mFn->isDefaultInit()) {
@@ -601,7 +605,6 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
     CallExpr* fieldSet = new CallExpr(PRIM_SET_MEMBER, _this, name, initExpr);
 
     insertBefore->insertBefore(fieldSet);
-    updateFieldsMember(initExpr);
 
   } else {
     VarSymbol* tmp      = newTemp("tmp");
@@ -615,9 +618,9 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
     insertBefore->insertBefore(tmpDefn);
     insertBefore->insertBefore(tmpInit);
     insertBefore->insertBefore(fieldSet);
-
-    updateFieldsMember(initExpr);
   }
+
+  return initExpr;
 }
 
 /************************************* | **************************************

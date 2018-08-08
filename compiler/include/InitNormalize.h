@@ -111,27 +111,27 @@ private:
   bool            isOuterField(DefExpr* field)                           const;
   void            makeOuterArg();
 
-  void            genericFieldInitTypeWoutInit(Expr*    insertBefore,
-                                               DefExpr* field)           const;
+  Expr*            genericFieldInitTypeWoutInit(Expr*    insertBefore,
+                                                DefExpr* field)           const;
 
-  void            genericFieldInitTypeWithInit(Expr*    insertBefore,
-                                               DefExpr* field,
-                                               Expr*    initExpr)        const;
-
-  void            genericFieldInitTypeInference(Expr*    insertBefore,
+  Expr*            genericFieldInitTypeWithInit(Expr*    insertBefore,
                                                 DefExpr* field,
-                                                Expr*    initExpr)       const;
+                                                Expr*    initExpr)        const;
 
-  void            fieldInitTypeWoutInit(Expr*    insertBefore,
-                                        DefExpr* field)                  const;
+  Expr*            genericFieldInitTypeInference(Expr*    insertBefore,
+                                                 DefExpr* field,
+                                                 Expr*    initExpr)       const;
 
-  void            fieldInitTypeWithInit(Expr*    insertBefore,
-                                        DefExpr* field,
-                                        Expr*    initExpr)               const;
+  Expr*            fieldInitTypeWoutInit(Expr*    insertBefore,
+                                         DefExpr* field)                  const;
 
-  void            fieldInitTypeInference(Expr*    insertBefore,
+  Expr*            fieldInitTypeWithInit(Expr*    insertBefore,
                                          DefExpr* field,
-                                         Expr*    initExpr)              const;
+                                         Expr*    initExpr)               const;
+
+  Expr*            fieldInitTypeInference(Expr*    insertBefore,
+                                          DefExpr* field,
+                                          Expr*    initExpr)              const;
 
   void            updateFieldsMember(Expr* expr)                         const;
 
