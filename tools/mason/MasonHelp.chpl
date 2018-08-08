@@ -254,17 +254,41 @@ proc masonInstallHelp() {
   writeln("    mason external install [options] <package> ");
   writeln();
   writeln("Options:");
-  writeln("    -h, --help                  Display this message");
+  writeln("    -h, --help                     Display this message");
+  writeln("    --only {package,dependencies}  Select the mode of installation. the default is to");
+  writeln("                                   install the package along with all its dependencies.");
+  writeln("                                   alternatively one can decide to install only the");
+  writeln("                                   package or only the dependencies");
+  writeln("    --jobs JOBS                    Explicitly set number of make jobs. default is #cpus");
+  writeln("    --overwrite                    reinstall an existing spec, even if it has dependents");
+  writeln("    --keep-prefix                  Don't remove the install prefix if installation fails");
+  writeln("    --keep-stage                   Don't remove the build stage if installation succeeds");
+  writeln("    --restage                      If a partial install is detected, delete prior state");
+  writeln("    --use-cache                    Check for pre-built packages in mirrors");
+  writeln("    --show-log-on-error            Print full build log to stderr if build fails");
+  writeln("    --source                       Install source files in prefix");
+  writeln("    --no-checksum                  Do not check packages against checksum");
+  // writeln("    -v, --verbose               Display verbose build output while installing"); #10622
+  writeln("    --fake                         Fake install for debug purposes.");
+  writeln("    --file                         Install from file. Read specs to install from .yaml");
+  writeln("    --clean                        Sanitize the environment from variables that can");
+  writeln("                                   affect how packages find libraries or headers");
+  writeln("    --dirty                        Maintain the current environment without trying to");
+  writeln("                                   sanitize it");
+  writeln("    --test {root,all}              If 'root' is chosen, run package tests during");
+  writeln("                                   installation for top-level packages (but skip tests");
+  writeln("                                   for dependencies). if 'all' is chosen, run package");
+  writeln("                                   tests during installation for all packages. If neither");
+  writeln("                                   are chosen, don't run tests for any packages.");
+  writeln("    --run-tests                    Run package tests during installation (same as --test=all)");
+  writeln("    --log-format {junit}           Format to be used for log files");
+  writeln("    --log-file LOG_FILE            Filename for the log file. if not passed a default will be used");
+  writeln("    --yes-to-all                   Assume 'yes' is the answer to every confirmation request");
   writeln();
-  writeln("External Mason packages can be downloaded in a few ways:");
-  writeln("    mason external install <package>         ");
-  writeln("    mason external install <package> <version> ");
-  writeln("    mason external install <package> <version> <compiler> ");
-  writeln("    mason external install <package> <version> <compiler> <variants>");
-  writeln("    mason external install <full Spack spec expression");
+  writeln("External Mason packages can be installed as follows:");
+  writeln("    mason external install <full Spack spec expression>");
   writeln();
-  writeln("If a full spec expression is given there must be no spaces within the expression");
-}
+  }
 
 
 proc masonUninstallHelp() {
@@ -275,15 +299,13 @@ proc masonUninstallHelp() {
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
+  writeln("    --force                     Remove regardless of dependents");
+  writeln("    --all                       USE CAREFULLY. remove ALL installed packages that match supplied spec");
+  writeln("    --dependents                Also uninstall any dependent pacakges");
   writeln();
-  writeln("External Mason packages can be downloaded in a few ways:");
-  writeln("    mason external uninstall <package>         ");
-  writeln("    mason external uninstall <package> <version> ");
-  writeln("    mason external uninstall <package> <version> <compiler> ");
-  writeln("    mason external uninstall <package> <version> <compiler> <variants>");
-  writeln("    mason external uninstall <full Spack spec expression");
+  writeln("External Mason packages can be uninstalled as follows:");
+  writeln("    mason external uninstall <full Spack spec expression>");
   writeln();
-  writeln("If a full spec expression is given there must be no spaces within the expression");
 }
 
 proc masonCompilerHelp() {

@@ -352,43 +352,16 @@ proc installSpkg(args: [?d] string) throws {
   }
   else {
     var command = "spack install";
-    var pkgName: string;
-    var installArgs = "";
-    if args[3].find('-') > 0 {
-      installArgs = args[3];
-      pkgName = args[3];
-    }
-    else if args[3] == "-h" || args[3] == "--help" {
+    var spec: string;
+    if args[3] == "-h" || args[3] == "--help" {
       masonInstallHelp();
       exit(1);
     }
     else {
-      pkgName = args[3];
+      spec = " ".join(args[3..]);
     }
 
-    var toInstall = pkgName;
-    var compiler = "";
-    var version = "";
-    var variants = "";
-    
-    // pkg and version
-    if args.size == 5 {
-      version = args[5];
-      toInstall = "".join(pkgName, "@", version);
-    }
-    // pkg, version, and compiler
-    else if args.size == 6 {
-      version = args[5];
-      compiler = args[6];
-      toInstall = "".join(pkgName, "@", version, "%", compiler);
-    }
-    else if args.size > 6 {
-      version = args[5];
-      compiler = args[6];
-      variants = "".join(args[7..]);
-      toInstall = "".join(pkgName, "@", version, "%", compiler, " ", variants);
-    }
-    const status = runSpackCommand(" ".join(command, toInstall));
+    const status = runSpackCommand(" ".join(command, spec));
     if status != 0 {
       throw new MasonError("Package could not be installed");
     }
@@ -406,49 +379,34 @@ proc uninstallSpkg(args: [?d] string) throws {
     var pkgName: string;
     var command = "spack uninstall -y";    
     var confirm: string;
-    writeln("Are you sure you want to uninstall " + args[3] +"? [y/n]");
+    var uninstallArgs = "";
+    if args[3] == "-h" || args[3] == "--help" {
+      masonUninstallHelp();
+      exit(1);
+    }
+    else if args[3].startsWith("-") > 0 {
+      for arg in args[3..] {
+        if arg.startsWith("-") {
+          uninstallArgs = " ".join(uninstallArgs, arg);
+        }
+        else {
+          pkgName = "".join(pkgName, arg);
+        }
+      }
+    }
+    else {
+      pkgName = "".join(args[3..]);
+    }
+
+    writeln("Are you sure you want to uninstall " + pkgName +"? [y/n]");
     read(confirm);
     if confirm != "y" {
       writeln("Aborting...");
       exit(0);
     }
-    var installArgs = "";
-    if args[3].find('-') > 0 {
-      installArgs = args[3];
-      pkgName = args[3];
-    }
-    else if args[3] == "-h" || args[3] == "--help" {
-      masonUninstallHelp();
-      exit(1);
-    }
-    else {
-      pkgName = args[3];
-    }
+   
 
-    var toUninstall = pkgName;
-    var compiler = "";
-    var version = "";
-    var variants = "";
-
-    // pkg and version
-    if args.size == 5 {
-      version = args[5];
-      toUninstall = "".join(pkgName, "@", version);
-    }
-    // pkg, version, and compiler
-    else if args.size == 6 {
-      version = args[5];
-      compiler = args[6];
-      toUninstall = "".join(pkgName, "@", version, "%", compiler);
-    }
-    // pkg, version, compiler, and variants
-    else if args.size > 6 {
-      version = args[5];
-      compiler = args[6];
-      variants = "".join(args[7..]);
-      toUninstall = "".join(pkgName, "@", version, "%", compiler, " ", variants);
-    }
-    const status = runSpackCommand(" ".join(command, toUninstall));
+    const status = runSpackCommand(" ".join(command, uninstallArgs, pkgName));
     if status != 0 {
       throw new MasonError("Package could not be uninstalled");
     }
