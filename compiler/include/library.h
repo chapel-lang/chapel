@@ -28,9 +28,6 @@
 #include "files.h"
 #include "symbol.h"
 
-class FnSymbol;
-class TypeSymbol;
-
 extern char libDir[FILENAME_MAX + 1];
 extern std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
 
