@@ -133,13 +133,9 @@ private:
                                          DefExpr* field,
                                          Expr*    initExpr)              const;
 
-  bool            isFieldAccessible(Expr* expr)                          const;
-
   void            updateFieldsMember(Expr* expr)                         const;
 
   bool            isFieldAccess(CallExpr* callExpr)                      const;
-
-  void            handleInsertedMethodCall(CallExpr* call)               const;
 
 
   DefExpr*        toLocalField(SymExpr*  expr)                           const;
