@@ -633,12 +633,15 @@ static void verifySaveCDir(const ArgumentDescription* desc, const char* unused) 
   }
 }
 
+static void setLibmode(const ArgumentDescription* desc, const char* unused);
+
 static void verifySaveLibDir(const ArgumentDescription* desc, const char* unused) {
   if (libDir[0] == '-') {
     USR_FATAL("--library-dir takes a directory name as its argument\n"
               "       (you specified '%s', assumed to be another flag)",
               libDir);
   }
+  setLibmode(desc, unused);
 }
 
 static void turnOffChecks(const ArgumentDescription* desc, const char* unused) {
@@ -782,6 +785,10 @@ static void setLocal (const ArgumentDescription* desc, const char* unused) {
 static void setStackChecks (const ArgumentDescription* desc, const char* unused) {
   // Used in postStackChecks() to set fNoStackChecks if user threw flag
   fUserSetStackChecks= true;
+}
+
+static void setLibmode(const ArgumentDescription* desc, const char* unused) {
+  fLibraryCompile = true;
 }
 
 /*
@@ -996,9 +1003,9 @@ static ArgumentDescription arg_desc[] = {
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
- {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, NULL},
- {"library-makefile", ' ', NULL, "Generate a makefile to help use the generated library", "F", &fLibraryMakefile, NULL, NULL},
- {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, NULL},
+ {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
+ {"library-makefile", ' ', NULL, "Generate a makefile to help use the generated library", "F", &fLibraryMakefile, NULL, setLibmode},
+ {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
