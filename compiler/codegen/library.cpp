@@ -225,8 +225,10 @@ static void setupPythonTypeMap() {
   pythonNames[dtReal[FLOAT_SIZE_64]->symbol] = std::make_pair("double", "float");
   pythonNames[dtBool->symbol] = std::make_pair("bint", "bint");
   pythonNames[dtStringC->symbol] = std::make_pair("char *", "bytes");
-
-  // TODO: handle complex(64) and complex(128)
+  pythonNames[dtComplex[COMPLEX_SIZE_64]->symbol] =
+              std::make_pair("float complex", "numpy.complex64");
+  pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
+              std::make_pair("double complex", "numpy.complex128");
 
   /* TODO: // Handle bigint
   forv_Vec(TypeSymbol, t, gTypeSymbols) {
