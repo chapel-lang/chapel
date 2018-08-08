@@ -382,6 +382,24 @@ static void perfstats_init(void)
 
 #define PERFSTATS_INIT() perfstats_init();
 
+static inline void perfstats_add_post(gni_post_descriptor_t* post_desc) {
+  switch (post_desc->type) {
+    case GNI_POST_FMA_PUT:
+    case GNI_POST_RDMA_PUT:
+      PERFSTATS_ADD(sent_bytes, post_desc->length);
+      break;
+    case GNI_POST_FMA_GET:
+    case GNI_POST_RDMA_GET:
+      PERFSTATS_ADD(rcvd_bytes, post_desc->length);
+      break;
+    default:
+      // no-op
+      break;
+  }
+}
+
+#define PERFSTATS_ADD_POST(post_desc) perfstats_add_post(post_desc);
+
 #else
 #define PERFSTATS_ADD(cnt, val)
 #define PERFSTATS_INC(cnt)
@@ -390,6 +408,7 @@ static void perfstats_init(void)
 #define PERFSTATS_TGET(ts)
 #define PERFSTATS_TSTAMP(ts)
 #define PERFSTATS_INIT()
+#define PERFSTATS_ADD_POST(post_desc)
 #endif
 
 
@@ -7588,10 +7607,7 @@ int post_fma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
 {
   int cdi;
 
-  if (post_desc->type == GNI_POST_FMA_PUT)
-    PERFSTATS_ADD(sent_bytes, post_desc->length);
-  else
-    PERFSTATS_ADD(rcvd_bytes, post_desc->length);
+  PERFSTATS_ADD_POST(post_desc);
 
   if (cd == NULL)
     acquire_comm_dom();
@@ -7672,11 +7688,7 @@ int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
   if (cd == NULL)
     acquire_comm_dom();
   cdi = cd_idx;
-
-  if (post_desc->type == GNI_POST_FMA_PUT)
-    PERFSTATS_ADD(sent_bytes, post_desc->length);
-  else
-    PERFSTATS_ADD(rcvd_bytes, post_desc->length);
+  PERFSTATS_ADD_POST(post_desc);
 
   {
     gni_ct_put_post_descriptor_t* pdc;
@@ -7686,10 +7698,7 @@ int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
          pdc != NULL;
          pdc = pdc->next_descr, i++) {
       pdc->ep_hndl = cd->remote_eps[locale_v[i]];
-      if (post_desc->type == GNI_POST_FMA_PUT)
-        PERFSTATS_ADD(sent_bytes, pdc->length);
-      else
-        PERFSTATS_ADD(rcvd_bytes, pdc->length);
+      PERFSTATS_ADD_POST(post_desc);
     }
   }
 
@@ -7734,10 +7743,7 @@ int post_rdma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
 {
   int cdi;
 
-  if (post_desc->type == GNI_POST_RDMA_PUT)
-    PERFSTATS_ADD(sent_bytes, post_desc->length);
-  else
-    PERFSTATS_ADD(rcvd_bytes, post_desc->length);
+  PERFSTATS_ADD_POST(post_desc);
 
   if (cd == NULL)
     acquire_comm_dom();
