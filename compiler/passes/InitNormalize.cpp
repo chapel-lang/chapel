@@ -273,50 +273,53 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore,
   while (mCurrField != NULL && mCurrField != endField) {
     DefExpr* field = mCurrField;
 
-    if (field->exprType == NULL && field->init == NULL) {
-      USR_FATAL_CONT(insertBefore,
-                     "can't omit initialization of field \"%s\", "
-                     "no type or default value provided",
-                     field->sym->name);
-
-    } else if (field->sym->hasFlag(FLAG_PARAM)         == true ||
-               field->sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      if        (field->exprType != NULL && field->init == NULL) {
-        genericFieldInitTypeWoutInit (insertBefore, field);
-
-      } else if (field->exprType != NULL && field->init != NULL) {
-        genericFieldInitTypeWithInit (insertBefore,
-                                      field,
-                                      field->init->copy());
-
-      } else if (field->exprType == NULL && field->init != NULL) {
-        genericFieldInitTypeInference(insertBefore,
-                                      field,
-                                      field->init->copy());
-
-      } else {
-        INT_ASSERT(false);
-      }
-
-    } else if (field->init != NULL) {
-      Expr* initCopy    = field->init->copy();
-      bool  isTypeKnown = mCurrField->sym->type != dtUnknown;
-
-      if (isTypeKnown == true) {
-        fieldInitTypeWithInit (insertBefore, field, initCopy);
-
-      } else if (field->exprType != NULL) {
-        fieldInitTypeWithInit (insertBefore, field, initCopy);
-
-      } else {
-        fieldInitTypeInference(insertBefore, field, initCopy);
-      }
-
-    } else {
-      fieldInitTypeWoutInit(insertBefore, field);
-    }
+    initializeField(insertBefore, field);
 
     mCurrField = toDefExpr(mCurrField->next);
+  }
+}
+
+void InitNormalize::initializeField(Expr* insertBefore,
+                                    DefExpr* field,
+                                    Expr* userInit) const {
+  Expr* initExpr = userInit;
+  Expr* typeExpr = field->exprType;
+
+  if (initExpr == NULL && field->init != NULL) {
+    initExpr = field->init->copy();
+  }
+
+  if (typeExpr == NULL && initExpr == NULL) {
+    USR_FATAL_CONT(insertBefore,
+                   "can't omit initialization of field \"%s\", "
+                   "no type or default value provided",
+                   field->sym->name);
+  }
+
+  if (field->sym->hasEitherFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE)) {
+    if (typeExpr != NULL && initExpr == NULL) {
+      genericFieldInitTypeWoutInit(insertBefore, field);
+    } else if (typeExpr != NULL && initExpr != NULL) {
+      genericFieldInitTypeWithInit(insertBefore, field, initExpr);
+    } else if (typeExpr == NULL && initExpr != NULL) {
+      genericFieldInitTypeInference(insertBefore, field, initExpr);
+    } else {
+      INT_ASSERT(false);
+    }
+  } else if (typeExpr == NULL && field->init == NULL) {
+    // Special case: initializing 'var x;' field from 'userInit'
+    INT_ASSERT(userInit != NULL);
+    genericFieldInitTypeInference(insertBefore, field, initExpr);
+
+  } else if (typeExpr != NULL && initExpr == NULL) {
+    fieldInitTypeWoutInit(insertBefore, field);
+  } else if (typeExpr != NULL && initExpr != NULL) {
+    fieldInitTypeWithInit(insertBefore, field, initExpr);
+  } else if (typeExpr == NULL && initExpr != NULL) {
+    //INT_ASSERT(field->sym->type == dtUnknown);
+    fieldInitTypeInference(insertBefore, field, initExpr);
+  } else {
+    INT_ASSERT(false);
   }
 }
 
@@ -1383,7 +1386,7 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
     INT_ASSERT(isFieldReinitialized(field) == false);
 
     while (field != mCurrField) {
-      fieldInitFromField(initStmt);
+      initializeField(initStmt, mCurrField);
       mImplicitFields.insert(mCurrField);
 
       mCurrField = toDefExpr(mCurrField->next);
@@ -1392,92 +1395,17 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
 
   processThisUses(initStmt);
 
-  retval     = fieldInitFromStmt(initStmt, field);
+  Expr* initExpr = initStmt->get(2)->remove();
+  retval         = initStmt->next;
+
+  initializeField(initStmt, field, initExpr);
+  initStmt->remove();
+
   mCurrField = toDefExpr(mCurrField->next);
 
   return retval;
 }
 
-
-Expr* InitNormalize::fieldInitFromStmt(CallExpr* stmt, DefExpr* field) const {
-  Expr* insertBefore = stmt;
-  Expr* initExpr     = stmt->get(2)->remove();
-  Expr* retval       = stmt->next;
-
-  // Initialize the field using the RHS of the source stmt
-  if (field->sym->hasFlag(FLAG_PARAM)) {
-    if (field->exprType != NULL) {
-      genericFieldInitTypeWithInit(insertBefore, field, initExpr);
-
-    } else {
-      genericFieldInitTypeInference(insertBefore, field, initExpr);
-
-    }
-
-  } else if (field->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
-    genericFieldInitTypeInference(insertBefore, field, initExpr);
-
-  } else if (field->exprType == NULL && field->init == NULL) {
-    // Field is a generic var or const
-    genericFieldInitTypeInference(insertBefore, field, initExpr);
-
-  } else if (field->exprType != NULL) {
-    // Field is concrete
-    fieldInitTypeWithInit (insertBefore, field, initExpr);
-
-  } else {
-    // Field is concrete
-    fieldInitTypeInference(insertBefore, field, initExpr);
-  }
-
-  // Remove the (degenerate) source version of the field assignment
-  stmt->remove();
-
-  return retval;
-}
-
-void InitNormalize::fieldInitFromField(Expr* insertBefore) {
-  DefExpr* field = mCurrField;
-
-  if        (field->exprType == NULL && field->init == NULL) {
-    USR_FATAL_CONT(insertBefore,
-                   "can't omit initialization of field \"%s\", "
-                   "no type or default value provided",
-                   field->sym->name);
-
-  } else if (field->sym->hasFlag(FLAG_PARAM) ||
-             field->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
-
-    if (field->exprType != NULL && field->init == NULL) {
-      genericFieldInitTypeWoutInit (insertBefore, field);
-
-    } else if ((field->exprType != NULL  && field->init != NULL)) {
-      genericFieldInitTypeWithInit (insertBefore, field, field->init->copy());
-
-    } else if (field->exprType == NULL && field->init != NULL) {
-      genericFieldInitTypeInference(insertBefore, field, field->init->copy());
-
-    } else {
-      INT_ASSERT(false);
-    }
-
-  } else if (field->exprType != NULL && field->init == NULL) {
-    fieldInitTypeWoutInit (insertBefore, field);
-
-  } else if (field->exprType != NULL && field->init != NULL) {
-    Expr* initCopy = field->init->copy();
-
-    fieldInitTypeWithInit (insertBefore, field, initCopy);
-
-  } else if (field->exprType == NULL && field->init != NULL) {
-    Expr* initCopy = field->init->copy();
-
-    fieldInitTypeInference(insertBefore, field, initCopy);
-
-  } else {
-    INT_ASSERT(false);
-  }
-}
 
 void InitNormalize::describe(int offset) const {
   char pad[512];

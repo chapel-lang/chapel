@@ -60,6 +60,9 @@ public:
                                          DefExpr*            endField = NULL);
   void            initializeFieldsBefore(Expr*               insertBefore,
                                          DefExpr*            endField = NULL);
+  void            initializeField(Expr*                      insertBefore,
+                                  DefExpr*                   field,
+                                  Expr*                      userInit = NULL) const;
 
   bool            isFieldReinitialized(DefExpr* field)                   const;
   bool            isFieldImplicitlyInitialized(DefExpr* field)           const;
@@ -137,10 +140,6 @@ private:
   bool            isFieldAccess(CallExpr* callExpr)                      const;
 
   void            handleInsertedMethodCall(CallExpr* call)               const;
-
-  Expr*           fieldInitFromStmt(CallExpr* stmt, DefExpr* field)      const;
-
-  void            fieldInitFromField(Expr* insertBefore);
 
 
   DefExpr*        toLocalField(SymExpr*  expr)                           const;
