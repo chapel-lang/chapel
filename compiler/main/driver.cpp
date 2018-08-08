@@ -110,7 +110,6 @@ int  fcg = 0;
 bool fCacheRemote = false;
 bool fFastFlag = false;
 bool fUseNoinit = true;
-bool fNoUserConstructors = false;
 bool fNoCopyPropagation = false;
 bool fNoDeadCodeElimination = false;
 bool fNoScalarReplacement = false;
@@ -1011,7 +1010,6 @@ static ArgumentDescription arg_desc[] = {
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
- {"user-constructor-error", ' ', NULL, "Enable [disable] errors for user code constructors", "N", &fNoUserConstructors, NULL, NULL},
  {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", NULL},
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
