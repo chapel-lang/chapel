@@ -1507,6 +1507,7 @@ static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
                             gni_fma_cmd_type_t, void*, mem_region_t*);
 static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
+static void      buff_amo_init(void);
 static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                     gni_fma_cmd_type_t, mem_region_t*);
 static void      amo_add_real32_cpu_cmpxchg(void*, void*, void*);
@@ -1991,6 +1992,7 @@ void chpl_comm_post_task_init(void)
   nb_desc_init();
   rf_done_init();
   amo_res_init();
+  buff_amo_init();
 
   //
   // Create all the communication domains, including their GNI NIC
@@ -6837,6 +6839,14 @@ static atomic_bool* amo_lock_v[1024];
 static atomic_bool amo_init_lock = false;
 static atomic_uint_least32_t amo_pdc_sz = 0;
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+static
+void buff_amo_init(void) {
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+  atomic_init_bool(&amo_init_lock, false);
+  atomic_init_uint_least32_t(&amo_pdc_sz, 0);
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+}
 
 void chpl_comm_atomic_buff_flush() {
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
