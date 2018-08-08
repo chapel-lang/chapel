@@ -530,7 +530,7 @@ module String {
       for codepoint in this.uchars() {
         if i == idx then
           return codepoint;
-	i = i + 1;
+        i = i + 1;
       }
       // We have reached the end of the string without finding our index.
       if boundsChecking then
