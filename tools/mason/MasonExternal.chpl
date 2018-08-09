@@ -43,6 +43,7 @@ proc masonExternal(args: [] string) {
         when 'uninstall' do uninstallSpkg(args);
         when 'info' do spkgInfo(args);
         when 'find' do findSpkg(args);
+        when '--spec' do specHelp();
         when '--help' do masonExternalHelp();
         when '-h' do masonExternalHelp();
         otherwise {
@@ -59,6 +60,10 @@ proc masonExternal(args: [] string) {
   }
 }
 
+private proc specHelp() {
+  const command = "spack help --spec";
+  const status = runSpackCommand(command);
+}
 
 private proc spackInstalled() throws {
   if !isDir(MASON_HOME + "/spack") {

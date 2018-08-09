@@ -190,6 +190,7 @@ proc masonExternalHelp() {
   writeln("    find                        Find information about installed external packages");
   writeln("    -h, --help                  Display this message");
   writeln("        --setup                 Download and install Spack backend");
+  writeln("        --spec                  Display Spack specification help");
   writeln();
   writeln("Please see Mason documentation for more instructions on using external packages");
 }
@@ -299,9 +300,9 @@ proc masonUninstallHelp() {
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
-  writeln("    --force                     Remove regardless of dependents");
-  writeln("    --all                       USE CAREFULLY. remove ALL installed packages that match supplied spec");
-  writeln("    --dependents                Also uninstall any dependent pacakges");
+  writeln("        --force                 Remove regardless of dependents");
+  writeln("        --all                   USE CAREFULLY. remove ALL installed packages that match supplied spec");
+  writeln("        --dependents            Also uninstall any dependent pacakges");
   writeln();
   writeln("External Mason packages can be uninstalled as follows:");
   writeln("    mason external uninstall <full Spack spec expression>");
