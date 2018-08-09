@@ -7696,7 +7696,7 @@ int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
          pdc != NULL;
          pdc = pdc->next_descr, i++) {
       pdc->ep_hndl = cd->remote_eps[locale_v[i]];
-      PERFSTATS_ADD_POST(post_desc);
+      PERFSTATS_ADD(sent_bytes, pdc->length);
     }
   }
 
