@@ -1,0 +1,1 @@
+error: a program with multiple user modules must specify its library name via -o
