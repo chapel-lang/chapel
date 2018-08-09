@@ -297,9 +297,7 @@ void InitNormalize::initializeField(Expr* insertBefore,
                    "can't omit initialization of field \"%s\", "
                    "no type or default value provided",
                    field->sym->name);
-  }
-
-  if (field->sym->hasEitherFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE)) {
+  } else if (field->sym->hasEitherFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE)) {
     if (typeExpr != NULL && initExpr == NULL) {
       ret = genericFieldInitTypeWoutInit(insertBefore, field);
 
@@ -331,7 +329,9 @@ void InitNormalize::initializeField(Expr* insertBefore,
     INT_ASSERT(false);
   }
 
-  processThisUses(ret);
+  if (ret != NULL) {
+    processThisUses(ret);
+  }
 }
 
 /************************************* | **************************************
@@ -1072,6 +1072,7 @@ class ProcessThisUses : public AstVisitorTraverse
 
     virtual void visitSymExpr(SymExpr* node);
     virtual bool enterCallExpr(CallExpr* node);
+    virtual bool enterFnSym(FnSymbol* node);
 
   private:
     const InitNormalize* state;
@@ -1185,6 +1186,11 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
   }
 
   return true;
+}
+
+bool ProcessThisUses::enterFnSym(FnSymbol* node) {
+  // Skip nested functions for now
+  return false;
 }
 
 void InitNormalize::processThisUses(Expr* expr) const {
