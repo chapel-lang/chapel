@@ -11,8 +11,10 @@ Work-in-progress
 * setenv-example-*.bash:
   Example setenv script files
   - setenv-example-1: The simplest tutorial illustrating a trivial Chapel configuration.
+    (With and without Gasnet; Gasnet with two comm substrates)
   - setenv-example-2: Same trivial Chapel configuration, but a more elaborate scripting style.
   - setenv-example-3: Realistic Chapel configuration for a Cray-XC.
+    (With and without Cray ugni; Slurm launcher; two target compilers)
 
 * chapel_build.bash:
   Example high-level wrapper script to run a complete build process
@@ -52,16 +54,13 @@ Work-in-progress
 
   You could then try your new setenv script file in an existing Chapel build
   workspace:
-
 ```
     export CHPL_HOME=/your/chapel-home-directory
     ./slurm.bash
 ```
-
   Or you could use the existing chapel_build.bash script to create a new Chapel
   build workspace from a Chapel source tar file, and then run your new setenv
   script:
-
 ```
     ./chapel_build.bash -s slurm.bash -t /your/chapel-release.tar.gz
 ```
