@@ -382,6 +382,24 @@ static void perfstats_init(void)
 
 #define PERFSTATS_INIT() perfstats_init();
 
+static inline void perfstats_add_post(gni_post_descriptor_t* post_desc) {
+  switch (post_desc->type) {
+    case GNI_POST_FMA_PUT:
+    case GNI_POST_RDMA_PUT:
+      PERFSTATS_ADD(sent_bytes, post_desc->length);
+      break;
+    case GNI_POST_FMA_GET:
+    case GNI_POST_RDMA_GET:
+      PERFSTATS_ADD(rcvd_bytes, post_desc->length);
+      break;
+    default:
+      // no-op
+      break;
+  }
+}
+
+#define PERFSTATS_ADD_POST(post_desc) perfstats_add_post(post_desc);
+
 #else
 #define PERFSTATS_ADD(cnt, val)
 #define PERFSTATS_INC(cnt)
@@ -390,6 +408,7 @@ static void perfstats_init(void)
 #define PERFSTATS_TGET(ts)
 #define PERFSTATS_TSTAMP(ts)
 #define PERFSTATS_INIT()
+#define PERFSTATS_ADD_POST(post_desc)
 #endif
 
 
@@ -2424,6 +2443,27 @@ void register_memory(void)
   }
 
   //
+  // Figure out how many memory region descriptors we will need to
+  // exchange in the next step.  The number of memory regions active
+  // at this point can vary from node to node, but the allgather needs
+  // to exchange the same amount of data from each.  We could exchange
+  // all max_mem_regions (default 4k) of them instead, but we probably
+  // have only a couple dozen active and 2 much smaller allgathers are
+  // way faster than one much larger one.
+  //
+  uint32_t max_mreg_cnt = mem_regions->mreg_cnt;
+
+  {
+    uint32_t all_mc[chpl_numNodes];
+    if (PMI_Allgather(&max_mreg_cnt, all_mc, sizeof(*all_mc)) != PMI_SUCCESS)
+      CHPL_INTERNAL_ERROR("PMI_Allgather(mreg_cnt) failed");
+    for (int i = 0; i < chpl_numNodes; i++) {
+      if (all_mc[i] > max_mreg_cnt)
+        max_mreg_cnt = all_mc[i];
+    }
+  }
+
+  //
   // Share the per-locale memory descriptors around the job.
   //
 
@@ -2462,8 +2502,7 @@ void register_memory(void)
     } gdata_t;
 
     gdata_t* my_gdata;
-    size_t gdata_mregs_size = mem_regions->mreg_cnt
-                              * sizeof(my_gdata->mregs[0]);
+    size_t gdata_mregs_size = max_mreg_cnt * sizeof(my_gdata->mregs[0]);
     size_t gdata_size = sizeof(my_gdata[0]) + gdata_mregs_size;
     my_gdata =
       (gdata_t*) chpl_mem_alloc(gdata_size,
@@ -7588,10 +7627,7 @@ int post_fma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
 {
   int cdi;
 
-  if (post_desc->type == GNI_POST_FMA_PUT)
-    PERFSTATS_ADD(sent_bytes, post_desc->length);
-  else
-    PERFSTATS_ADD(rcvd_bytes, post_desc->length);
+  PERFSTATS_ADD_POST(post_desc);
 
   if (cd == NULL)
     acquire_comm_dom();
@@ -7672,11 +7708,7 @@ int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
   if (cd == NULL)
     acquire_comm_dom();
   cdi = cd_idx;
-
-  if (post_desc->type == GNI_POST_FMA_PUT)
-    PERFSTATS_ADD(sent_bytes, post_desc->length);
-  else
-    PERFSTATS_ADD(rcvd_bytes, post_desc->length);
+  PERFSTATS_ADD_POST(post_desc);
 
   {
     gni_ct_put_post_descriptor_t* pdc;
@@ -7686,10 +7718,7 @@ int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
          pdc != NULL;
          pdc = pdc->next_descr, i++) {
       pdc->ep_hndl = cd->remote_eps[locale_v[i]];
-      if (post_desc->type == GNI_POST_FMA_PUT)
-        PERFSTATS_ADD(sent_bytes, pdc->length);
-      else
-        PERFSTATS_ADD(rcvd_bytes, pdc->length);
+      PERFSTATS_ADD_POST(post_desc);
     }
   }
 
@@ -7734,10 +7763,7 @@ int post_rdma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
 {
   int cdi;
 
-  if (post_desc->type == GNI_POST_RDMA_PUT)
-    PERFSTATS_ADD(sent_bytes, post_desc->length);
-  else
-    PERFSTATS_ADD(rcvd_bytes, post_desc->length);
+  PERFSTATS_ADD_POST(post_desc);
 
   if (cd == NULL)
     acquire_comm_dom();

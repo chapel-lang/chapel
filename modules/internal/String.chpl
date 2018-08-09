@@ -1008,6 +1008,20 @@ module String {
       return _join(S);
     }
 
+    pragma "no doc"
+    proc join(ir: _iteratorRecord) {
+      var s: string;
+      var first: bool = true;
+      for i in ir {
+        if first then
+          first = false;
+        else
+          s += this;
+        s += i;
+      }
+      return s;
+    }
+
     proc _join(const ref S) : string where isTuple(S) || isArray(S) {
       if S.size == 0 {
         return '';
