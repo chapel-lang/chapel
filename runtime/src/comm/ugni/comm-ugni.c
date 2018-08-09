@@ -4353,8 +4353,10 @@ void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   // This gets nearly all the benefit of not waiting for completions,
   // while avoiding concurrency control entirely.
   //
-  if (cd == NULL || !cd->firmly_bound) {
-    do_remote_put(src_addr, locale, tgt_addr, size, &gnr_mreg_map[locale],
+  // TODO I'm not what to do for the the polling task response, so just force
+  // it to go through the blocking put case, so I can test fft perf.
+  if (true || cd == NULL || !cd->firmly_bound) {
+    do_remote_put(src_addr, locale, tgt_addr, size, NULL, // &gnr_mreg_map[locale],
                   may_proxy_false);
     return;
   }
@@ -7519,15 +7521,24 @@ void do_fork_post(c_nodeid_t locale,
                   uint64_t f_size, fork_base_info_t* const p_rf_req,
                   int* cdi_p, int* rbi_p)
 {
+  rf_done_t             rf_done;
   gni_post_descriptor_t post_desc;
   int                   rbi;
 
   if (blocking) {
+    mem_region_t* rf_done_mr;
+
     //
     // Our completion flag has to be in registered memory so the
     // remote locale can PUT directly back here to it.
     //
-    p_rf_req->rf_done = rf_done_alloc();
+
+    p_rf_req->rf_done = &rf_done;
+    rf_done_mr = mreg_for_local_addr(p_rf_req->rf_done);
+    if (rf_done_mr == NULL) {
+      p_rf_req->rf_done = rf_done_alloc();
+    }
+
     *p_rf_req->rf_done = 0;
     atomic_thread_fence(memory_order_release);
   }
@@ -7580,7 +7591,8 @@ void do_fork_post(c_nodeid_t locale,
       local_yield();
     }
 
-    rf_done_free(p_rf_req->rf_done);
+    if (p_rf_req->rf_done != &rf_done)
+      rf_done_free(p_rf_req->rf_done);
   }
 }
 
