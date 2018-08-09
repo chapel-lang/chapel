@@ -853,10 +853,8 @@ static gni_mem_handle_t* rf_mdh_map;    // all locales' remote fork space mdhs
 // Blocking remote forks need a "remote fork done" (rf_done) flag, for
 // the remote side to set when it completes.  Such flags have to be in
 // memory registered with the NIC so that the remote side can PUT to
-// them directly.  When the initiating side's stack is in registered
-// memory we can use an rf_done flag local to the fork function.  But
-// if not, we allocate an rf_done flag out of these pools, which we
-// have arranged to be always in registered memory.
+// them directly.  We allocate rf_done flags out of these pools, which
+// we have arranged to be always in registered memory.
 //
 // To ensure that these are in registered memory we allocate them up
 // front, with a fixed size, through the registered-memory manager.
@@ -877,37 +875,14 @@ static gni_mem_handle_t* rf_mdh_map;    // all locales' remote fork space mdhs
 //     "large".  Fortunately they're small, so over-provisioning isn't
 //     particularly costly.
 //
-#define RF_DONE_NUM_POOLS 128
-#define RF_DONE_NUM_PER_POOL 128
+#define RF_DONE_NUM_POOLS 512
+#define RF_DONE_NUM_PER_POOL 32
 
-typedef mpool_idx_base_t rf_done_t;
-typedef mpool_idx_base_t rf_done_pool_t;
+typedef int8_t rf_done_t;
 
-static rf_done_pool_t (*rf_done_pool)[RF_DONE_NUM_PER_POOL];
-static mpool_idx_t rf_done_pool_head[RF_DONE_NUM_POOLS];
-static atomic_bool rf_done_pool_lock[RF_DONE_NUM_POOLS];
+static rf_done_t (*rf_done_pool)[RF_DONE_NUM_PER_POOL];
+static atomic_bool rf_done_pool_lock[RF_DONE_NUM_POOLS][RF_DONE_NUM_PER_POOL];
 
-static __thread mpool_idx_base_t rf_done_prt_lo = -1;
-static __thread mpool_idx_base_t rf_done_prt_hi = -1;
-
-static inline
-void rf_done_ensure_pool_partition(void) {
-#define CEIL_X_DIV_Y(x, y) (1 + ((x) - 1) / (y))
-
-  if (rf_done_prt_lo == -1) {
-    const int_least64_t nPrts = chpl_task_getMaxPar();
-    const int_least64_t prt = my_thread_idx() % nPrts;
-
-    rf_done_prt_lo = ((prt == 0)
-                      ? 0
-                      : CEIL_X_DIV_Y(prt * RF_DONE_NUM_POOLS, nPrts));
-    rf_done_prt_hi = ((prt == nPrts - 1)
-                      ? RF_DONE_NUM_POOLS - 1
-                      : CEIL_X_DIV_Y((prt + 1) * RF_DONE_NUM_POOLS, nPrts) - 1);
-  }
-
-#undef CEIL_X_DIV_Y
-}
 
 //
 // Each locale has an array of spaces for fork requests targeted to
@@ -4580,12 +4555,6 @@ static
 void rf_done_pre_init(void)
 {
   //
-  // We overload rf_done indicators as pool "next" links, so the
-  // latter have to fit in the former.
-  //
-  assert(sizeof(rf_done_pool_t) <= sizeof(rf_done_t));
-
-  //
   // The fork request buffers and their is-free flags aren't part of
   // the rf_done flags as such, but both have to do with remote forks
   // and the former have to be in NIC-registered memory just as the
@@ -4615,7 +4584,7 @@ void rf_done_init(void)
                  0, 0);
 
   // Must be directly communicable without proxy.
-  rf_done_pool = (rf_done_pool_t (*)[RF_DONE_NUM_PER_POOL])
+  rf_done_pool = (rf_done_t (*)[RF_DONE_NUM_PER_POOL])
                  chpl_comm_mem_reg_allocMany(RF_DONE_NUM_POOLS,
                                              sizeof(rf_done_pool[0]),
                                              CHPL_RT_MD_COMM_PER_LOC_INFO,
@@ -4623,13 +4592,9 @@ void rf_done_init(void)
 
   for (i = 0; i < RF_DONE_NUM_POOLS; i++) {
     for (j = 0; j < RF_DONE_NUM_PER_POOL - 1; j++) {
-      rf_done_pool[i][j] = j + 1;
+      rf_done_pool[i][j] = 0;
+      atomic_init_bool(&rf_done_pool_lock[i][j], false);
     }
-    rf_done_pool[i][j] = -1;
-
-    mpool_idx_init(&rf_done_pool_head[i], 0);
-
-    atomic_init_bool(&rf_done_pool_lock[i], false);
   }
 }
 
@@ -4638,7 +4603,27 @@ static
 inline
 rf_done_t* rf_done_alloc(void)
 {
-  rf_done_pool_t* rf_done_p;
+  static __thread int prt_lo = -1;
+  static __thread int prt_hi = -1;
+  static __thread int last_i = -1;
+  static __thread int last_j = -1;
+
+#define CEIL_X_DIV_Y(x, y) (1 + ((x) - 1) / (y))
+
+  if (prt_lo == -1) {
+    const int nPrts = chpl_task_getMaxPar();
+    const int prt = my_thread_idx() % nPrts;
+    prt_lo = ((prt == 0)
+              ? 0
+              : CEIL_X_DIV_Y(prt * RF_DONE_NUM_POOLS, nPrts));
+    prt_hi = ((prt == nPrts - 1)
+              ? RF_DONE_NUM_POOLS - 1
+              : CEIL_X_DIV_Y((prt + 1) * RF_DONE_NUM_POOLS, nPrts) - 1);
+    last_i = prt_lo;
+    last_j = 0;
+  }
+
+#undef CEIL_X_DIV_Y
 
   //
   // Cycle through our partition of the pools and find one that contains
@@ -4647,26 +4632,27 @@ rf_done_t* rf_done_alloc(void)
   // We don't expect to run out of these in any reasonable program.  If
   // we ever do, we'll have to revisit how we've approached this.
   //
-  rf_done_ensure_pool_partition();
+  int i = last_i;
+  int j = last_j;
 
-  rf_done_p = NULL;
-  for (int i = rf_done_prt_lo; i <= rf_done_prt_hi && rf_done_p == NULL; i++) {
-    if (mpool_idx_load(&rf_done_pool_head[i]) >= 0 &&
-        !atomic_exchange_bool(&rf_done_pool_lock[i], true)) {
-      int j;
-      if ((j = mpool_idx_load(&rf_done_pool_head[i])) >= 0) {
-        rf_done_p = &rf_done_pool[i][j];
-        mpool_idx_store(&rf_done_pool_head[i], *rf_done_p);
-      }
-
-      atomic_store_bool(&rf_done_pool_lock[i], false);
+  do {
+    if (++j >= RF_DONE_NUM_PER_POOL) {
+      j = 0;
+      if (++i >= prt_hi)
+        i = prt_lo;
     }
-  }
 
-  if (rf_done_p == NULL)
-    CHPL_INTERNAL_ERROR("rf_done_pool empty");
+    if (i == last_i && j == last_j) {
+      CHPL_INTERNAL_ERROR("rf_done_pool empty");
+    }
+  } while (atomic_exchange_bool(&rf_done_pool_lock[i][j], true));
 
-  return (rf_done_t*) rf_done_p;
+  last_i = i;
+  last_j = j;
+
+  rf_done_pool[i][j] = 0;
+
+  return &rf_done_pool[i][j];
 }
 
 
@@ -4674,17 +4660,10 @@ static
 inline
 void rf_done_free(rf_done_t* rf_done_p)
 {
-  rf_done_pool_t* rfdpp = (rf_done_pool_t*) rf_done_p;
-  int i = (rfdpp - (rf_done_pool_t*) rf_done_pool) / RF_DONE_NUM_PER_POOL;
-  int j = (rfdpp - (rf_done_pool_t*) rf_done_pool) % RF_DONE_NUM_PER_POOL;
-
-  //
-  // Add this flag back to its pool.
-  //
-  while (atomic_exchange_bool(&rf_done_pool_lock[i], true))
-    ;
-  rf_done_pool[i][j] = mpool_idx_exchange(&rf_done_pool_head[i], j);
-  atomic_store_bool(&rf_done_pool_lock[i], false);
+  const int linearized_ij = rf_done_p - &rf_done_pool[0][0];
+  const int i = linearized_ij / RF_DONE_NUM_PER_POOL;
+  const int j = linearized_ij % RF_DONE_NUM_PER_POOL;
+  atomic_store_bool(&rf_done_pool_lock[i][j], false);
 }
 
 
