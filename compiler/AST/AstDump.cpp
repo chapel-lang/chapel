@@ -838,6 +838,8 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
         case INTENT_TYPE:      write("type arg");      break;
         case INTENT_BLANK:     write("arg");           break;
       }
+      if (arg->variableExpr)
+        write("...");
     }
   }
 
