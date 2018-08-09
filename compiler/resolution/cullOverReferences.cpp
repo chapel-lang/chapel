@@ -663,8 +663,9 @@ void cullOverReferences() {
       if (move->isPrimitive(PRIM_MOVE)) {
         SymExpr* aggregateSe = toSymExpr(call->get(1));
         SymExpr* lhsSe = toSymExpr(move->get(1));
-        if (aggregateSe->symbol()->qualType().isConst())
-          markSymbolConst(lhsSe->symbol());
+        AggregateType* at = toAggregateType(aggregateSe->getValType());
+        if (!at->isClass() && aggregateSe->symbol()->qualType().isConst())
+            markSymbolConst(lhsSe->symbol());
       }
     }
   }
