@@ -83,7 +83,7 @@ module BufferedAtomics {
     this.xor(value);
   }
 
-  inline proc atomicBuffFlush(): void {
+  inline proc flushAtomicBuff(): void {
     if CHPL_NETWORK_ATOMICS != "none" {
       extern proc chpl_comm_atomic_buff_flush();
       coforall loc in Locales do on loc {
