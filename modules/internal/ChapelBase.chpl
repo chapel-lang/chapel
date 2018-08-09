@@ -2018,6 +2018,7 @@ module ChapelBase {
     return __primitive("cast", t, x);
   }
 
+  pragma "no borrow convert"
   inline proc _removed_cast(in x) {
     return x;
   }
