@@ -86,10 +86,12 @@ public:
 
   void            describe(int offset = 0)                               const;
 
-  void            processThisUses(Expr* expr);
+  void            processThisUses(Expr* expr) const;
   void            processThisUses(CallExpr* call);
 
   void            makeThisAsParent(CallExpr* initCall);
+
+  VarSymbol*      getThisAsParent() const;
 
 private:
   enum BlockType {

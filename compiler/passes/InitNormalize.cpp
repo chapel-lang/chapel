@@ -19,6 +19,8 @@
 
 #include "InitNormalize.h"
 
+#include "AstVisitor.h"
+#include "AstVisitorTraverse.h"
 #include "ForallStmt.h"
 #include "IfExpr.h"
 #include "initializerRules.h"
@@ -328,6 +330,8 @@ void InitNormalize::initializeField(Expr* insertBefore,
   } else {
     INT_ASSERT(false);
   }
+
+  processThisUses(ret);
 }
 
 /************************************* | **************************************
@@ -1001,6 +1005,10 @@ void InitNormalize::makeThisAsParent(CallExpr* call) {
   this->mThisAsParent = thisAsParent;
 }
 
+VarSymbol* InitNormalize::getThisAsParent() const {
+  return mThisAsParent;
+}
+
 static bool isThisDot(CallExpr* call) {
   bool retval = false;
 
@@ -1111,13 +1119,135 @@ static bool typeHasMethod(AggregateType* type, const char* methodName) {
   return retval;
 }
 
-void InitNormalize::processThisUses(Expr* expr) {
-  if (isPhase2() != true) {
-    if (CallExpr* call = toCallExpr(expr)) {
-      processThisUses(call);
-    } else if (DefExpr* def = toDefExpr(expr)) {
-      processThisUses(def->init);
+class ProcessThisUses : public AstVisitorTraverse
+{
+  public:
+    ProcessThisUses(const InitNormalize* state) {
+      this->state = state;
     }
+    virtual ~ProcessThisUses() { }
+
+    virtual void visitSymExpr(SymExpr* node);
+    virtual bool enterCallExpr(CallExpr* node);
+
+  private:
+    const InitNormalize* state;
+};
+
+void ProcessThisUses::visitSymExpr(SymExpr* node) {
+  DefExpr* field = NULL;
+
+  if (node->symbol()->hasFlag(FLAG_ARG_THIS)) {
+    CallExpr* call = NULL;
+    Expr* cur = node;
+    while (call == NULL && cur->parentExpr != NULL) {
+      if (CallExpr* parent = toCallExpr(cur->parentExpr)) {
+        call = parent;
+      } else {
+        cur = cur->parentExpr;
+      }
+    }
+
+    if (call->isPrimitive() == false) {
+      if (state->isPhase0()) {
+        USR_FATAL_CONT(node, "cannot pass \"this\" to a function before calling super.init() or this.init()");
+      } else if (state->type()->isRecord()) {
+        USR_FATAL_CONT(node, "cannot pass a record to a function before this.complete()");
+      }
+    }
+
+    if (isClass(state->type())) {
+      node->setSymbol(state->getThisAsParent());
+    }
+  } else if (DefExpr* local = state->type()->toLocalField(node)) {
+    field = local;
+    if (state->isFieldInitialized(field) == false) {
+      USR_FATAL_CONT(node,
+                     "field \"%s\" used before it is initialized",
+                     field->sym->name);
+    }
+  } else if (DefExpr* super = state->type()->toSuperField(node)) {
+    field = super;
+    if (state->isPhase0()) {
+      USR_FATAL_CONT(node,
+                     "cannot access parent field \"%s\" before super.init() or this.init()",
+                     field->sym->name);
+    }
+  }
+
+  if (field != NULL) {
+    PrimitiveTag tag = PRIM_GET_MEMBER;
+    if (field->sym->hasEitherFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE)) {
+      tag = PRIM_GET_MEMBER_VALUE;
+    }
+
+    node->replace(new CallExpr(tag,
+                               state->theFn()->_this,
+                               new_CStringSymbol(field->sym->name)));
+
+  }
+}
+
+bool ProcessThisUses::enterCallExpr(CallExpr* node) {
+  AggregateType* type = state->type();
+  if (DefExpr* field = type->toLocalField(node)) {
+    if (state->isFieldInitialized(field) == false) {
+      USR_FATAL_CONT(node,
+                     "field \"%s\" used before it is initialized",
+                     field->sym->name);
+    }
+    return false;
+  } else if (DefExpr* field = type->toSuperField(node)) {
+    if (state->isPhase0()) {
+      USR_FATAL_CONT(node,
+                     "cannot access parent field \"%s\" before super.init() or this.init()",
+                     field->sym->name);
+    }
+    return false;
+  } else if (isAssignment(node)) {
+    if (CallExpr* LHS = toCallExpr(node->get(1))) {
+      if (isThisDot(LHS)) {
+        if (LHS->square == false) {
+          // Regular 'this.x = ' , just look at the RHS
+          node->get(2)->accept(this);
+          return false;
+        }
+      }
+    }
+  } else if (isThisDot(node) && isMethodCall(node)) {
+    if (state->isPhase0()) {
+      USR_FATAL_CONT(node, "cannot call a method before super.init() or this.init()");
+      return false;
+    } else if (type->isRecord()) {
+      USR_FATAL_CONT(node, "cannot call a method on a record before this.complete()");
+      return false;
+    } else {
+      Immediate*     imm        = getSymbolImmediate(toSymExpr(node->get(2))->symbol());
+      const char*    methodName = imm->string_value();
+      AggregateType* parentType = type->dispatchParents.v[0];
+
+      if (typeHasMethod(parentType, methodName) == false) {
+        USR_FATAL_CONT(node, "cannot call method \"%s\" on type \"%s\" before this.complete()", methodName, type->symbol->name);
+        USR_PRINT(node, "before this.complete() \"this\" is treated as parent type \"%s\" for method calls", parentType->symbol->name);
+        return false;
+      }
+    }
+  } else if (node->isPrimitive(PRIM_CAST) || node->isNamedAstr(astr_cast)) {
+    if (SymExpr* se = toSymExpr(node->get(2))) {
+      if (se->symbol()->hasFlag(FLAG_ARG_THIS)) {
+        USR_FATAL_CONT(node, "cannot cast \"this\" before this.complete()");
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+void InitNormalize::processThisUses(Expr* expr) const {
+  if (isPhase2() != true) {
+    ProcessThisUses ptu(this);
+    expr->accept(&ptu);
   }
 }
 
@@ -1218,8 +1348,6 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
       mCurrField = toDefExpr(mCurrField->next);
     }
   }
-
-  processThisUses(initStmt);
 
   Expr* initExpr = initStmt->get(2)->remove();
   retval         = initStmt->next;
