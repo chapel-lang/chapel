@@ -5,7 +5,6 @@ writeln("Byte length = ", mystring1.length);
 writeln("Codepoint length = ", ulen1);
 
 for i in 1..ulen1 {
-  var cpi: codePointIndex;
-  cpi.cpidx = i;
-  writeln("Codepoint index ", i, " = '", codePointToString(mystring1[cpi]), "'");
+  writeln("Codepoint index ", i, " = '",
+	  codePointToString(mystring1[i: codePointIndex]), "'");
 }

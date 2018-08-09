@@ -153,7 +153,8 @@ module String {
   }
 
   record codePointIndex {
-    var cpidx     : int;
+    pragma "no doc"
+    var _cpindex  : int;
   }
 
   //
@@ -356,19 +357,9 @@ module String {
       :returns: The number of Unicode codepoints in the string.
       */
     proc ulength {
-      var localThis: string = this.localize();
-
-      var i = 0;
       var n = 0;
-      while i < localThis.len {
-        var codepoint: int(32);
-        var nbytes: c_int;
-        var multibytes = (localThis.buff + i): c_string;
-        var maxbytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+      for codepoint in this.uchars() do
         n += 1;
-        i += nbytes;
-      }
       return n;
     }
 
@@ -523,7 +514,7 @@ module String {
                 specified codepoint index from `1..string.ulength`
      */
     proc this(cpi: codePointIndex) : int(32) {
-      const idx = cpi.cpidx;
+      const idx = cpi: int;
       if boundsChecking && idx <= 0 then
         halt("index out of bounds of string: ", idx);
 
@@ -531,7 +522,7 @@ module String {
       for codepoint in this.uchars() {
         if i == idx then
           return codepoint;
-        i = i + 1;
+        i += 1;
       }
       // We have reached the end of the string without finding our index.
       if boundsChecking then
@@ -1974,8 +1965,8 @@ module String {
   }
 
   /*
-     :returns: A string with complete multibyte character
-               with the codepoint value `i`.
+     :returns: A string storing the complete multibyte character sequence
+               that corresponds to the codepoint value `i`.
   */
   inline proc codePointToString(i: int(32)) {
     const mblength = qio_nbytes_char(i): int;
@@ -2010,6 +2001,20 @@ module String {
     ret.isowned = true;
 
     return ret;
+  }
+
+  // Cast from codePointIndex to int
+  pragma "no doc"
+  inline proc _cast(type t: int, r: codePointIndex) {
+    return r._cpindex;
+  }
+
+  // Cast from in to codePointIndex
+  pragma "no doc"
+  inline proc _cast(type t: codePointIndex, i: int) {
+    var cpi: codePointIndex;
+    cpi._cpindex = i;
+    return cpi;
   }
 
   //
