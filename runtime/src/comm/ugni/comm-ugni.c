@@ -6503,7 +6503,6 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
-          remote_mr = mreg_for_remote_addr(obj, loc);                   \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6537,7 +6536,6 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
-          remote_mr = mreg_for_remote_addr(obj, loc);                   \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
