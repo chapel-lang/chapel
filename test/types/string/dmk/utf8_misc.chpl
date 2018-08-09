@@ -6,5 +6,5 @@ writeln("Codepoint length = ", ulen1);
 
 for i in 1..ulen1 {
   writeln("Codepoint index ", i, " = '",
-	  codePointToString(mystring1[i: codePointIndex]), "'");
+          codePointToString(mystring1[i: codePointIndex]), "'");
 }

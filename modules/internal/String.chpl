@@ -2005,8 +2005,8 @@ module String {
 
   // Cast from codePointIndex to int
   pragma "no doc"
-  inline proc _cast(type t: int, r: codePointIndex) {
-    return r._cpindex;
+  inline proc _cast(type t: int, cpi: codePointIndex) {
+    return cpi._cpindex;
   }
 
   // Cast from in to codePointIndex
