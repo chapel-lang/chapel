@@ -1,7 +1,7 @@
 module A {
-  export proc bar() { }
+  export proc bar() { writeln("in A.bar"); }
 }
 module B {
-  export proc baz() { }
+  export proc baz() { writeln("in B.baz"); }
 
 }
