@@ -654,6 +654,21 @@ void cullOverReferences() {
       }
     }
   }
+  // forward-flow constness for getting refs to tuples
+  // this would be handled by a FLAG_REF_TO_CONST_WHEN_CONST_THIS accessor
+  // but for whatever reason the compiler doesn't always use that for tuples.
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_GET_MEMBER)) {
+      CallExpr* move = toCallExpr(call->parentExpr);
+      if (move->isPrimitive(PRIM_MOVE)) {
+        SymExpr* aggregateSe = toSymExpr(call->get(1));
+        SymExpr* lhsSe = toSymExpr(move->get(1));
+        if (aggregateSe->symbol()->qualType().isConst())
+          markSymbolConst(lhsSe->symbol());
+      }
+    }
+  }
+
 
   // Determine const-ness of ArgSymbols with INTENT_REF_MAYBE_CONST
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
