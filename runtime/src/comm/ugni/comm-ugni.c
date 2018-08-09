@@ -2443,6 +2443,27 @@ void register_memory(void)
   }
 
   //
+  // Figure out how many memory region descriptors we will need to
+  // exchange in the next step.  The number of memory regions active
+  // at this point can vary from node to node, but the allgather needs
+  // to exchange the same amount of data from each.  We could exchange
+  // all max_mem_regions (default 4k) of them instead, but we probably
+  // have only a couple dozen active and 2 much smaller allgathers are
+  // way faster than one much larger one.
+  //
+  uint32_t max_mreg_cnt = mem_regions->mreg_cnt;
+
+  {
+    uint32_t all_mc[chpl_numNodes];
+    if (PMI_Allgather(&max_mreg_cnt, all_mc, sizeof(*all_mc)) != PMI_SUCCESS)
+      CHPL_INTERNAL_ERROR("PMI_Allgather(mreg_cnt) failed");
+    for (int i = 0; i < chpl_numNodes; i++) {
+      if (all_mc[i] > max_mreg_cnt)
+        max_mreg_cnt = all_mc[i];
+    }
+  }
+
+  //
   // Share the per-locale memory descriptors around the job.
   //
 
@@ -2481,8 +2502,7 @@ void register_memory(void)
     } gdata_t;
 
     gdata_t* my_gdata;
-    size_t gdata_mregs_size = mem_regions->mreg_cnt
-                              * sizeof(my_gdata->mregs[0]);
+    size_t gdata_mregs_size = max_mreg_cnt * sizeof(my_gdata->mregs[0]);
     size_t gdata_size = sizeof(my_gdata[0]) + gdata_mregs_size;
     my_gdata =
       (gdata_t*) chpl_mem_alloc(gdata_size,
