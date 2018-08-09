@@ -664,7 +664,8 @@ void cullOverReferences() {
         SymExpr* aggregateSe = toSymExpr(call->get(1));
         SymExpr* lhsSe = toSymExpr(move->get(1));
         AggregateType* at = toAggregateType(aggregateSe->getValType());
-        if (!at->isClass() && aggregateSe->symbol()->qualType().isConst())
+        // note, at might be NULL for unmanaged SomeClass
+        if (at && !at->isClass() && aggregateSe->symbol()->qualType().isConst())
             markSymbolConst(lhsSe->symbol());
       }
     }
