@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
 # Example setenv script to build a customized Chapel Cray module
-# as envisioned in GitHub #9551
+# as envisioned in GitHub #9551:
+#   with and without CHPL_COMM=ugni;
+#   with and without CHPL_LAUNCHER=slurm-srun;
+#   all built with two CHPL_TARGET_COMPILERs:
+#     the Cray Programming Environment for GNU (gcc), and
+#     the Cray Programming Environment for Intel compiler
 
 set +x -e
 
@@ -65,8 +70,9 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         $CHPL_HOME/util/printchplenv --all --no-tidy || echo >&2 ignore error
     fi
 
-    # NOTE: The --target-compiler values used in this setenv project are never seen by Chapel make.
-    # Instead, they drive module load commands in the setenv callback
+    # NOTE: The --target-compiler values used in this setenv project will never be
+    #       seen by Chapel make. They will be recognized (and discarded) in the
+    #       setenv callback script in the lower section of this file.
 
 
     # Chapel compiler
@@ -87,6 +93,21 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
         --target-compiler=$compilers --comm=$comms --launcher=$launchers
+
+        # The following matrix of eight Chapel runtime configurations are defined by the
+        # arguments passed to build_configs.py, above. All eight runtimes will be built.
+        # NOTE: The above "--target-compiler" values will be discarded in the setenv callback.
+
+        # CHPL_TARGET_COMPILER  CHPL_COMM   CHPL_LAUNCHER
+        # --------------------  ---------   -------------
+        # cray-prgenv-gnu       none        none
+        # cray-prgenv-gnu       none        slurm-srun
+        # cray-prgenv-gnu       ugni        none
+        # cray-prgenv-gnu       ugni        slurm-srun
+        # cray-prgenv-intel     none        none
+        # cray-prgenv-intel     none        slurm-srun
+        # cray-prgenv-intel     ugni        none
+        # cray-prgenv-intel     ugni        slurm-srun
 
 
     # Chapel tools (ie, mason, chpldoc, test-venv)
@@ -139,7 +160,7 @@ else
 
     if [ -n "$verbose" ] ; then
         log_debug "Module list (sorted), after build_configs, before setenv:"
-        module list -t 2>&1 | tail -n +2 | sort
+        list_loaded_modules
     fi
 
     gen_version_gcc=6.1.0
@@ -229,6 +250,9 @@ else
         ;;
     esac
 
+    # Discard the artificial CHPL_TARGET_COMPILER value.
+    # Chapel make will select cray-prgenv-gnu or cray-prgenv-intel by itself.
+
     unset CHPL_TARGET_COMPILER
     load_target_cpu $target_cpu_module
 
@@ -240,7 +264,7 @@ else
 
     if [ -n "$verbose" ] ; then
         log_debug "Module list (sorted), after build_configs and setenv:"
-        module list -t 2>&1 | tail -n +2 | sort
+        list_loaded_modules
     fi
 
     log_info "End callback $setenv"

@@ -1,6 +1,6 @@
 ## New scripts to build customizable Chapel module from source
 
-Work-in-progress (2018-07-31)
+Work-in-progress
 
 ### Files in this directory:
 
@@ -26,6 +26,46 @@ Work-in-progress (2018-07-31)
   For convenience, users may keep their own setenv script files, make
   logs, CHPL_HOME workspaces, etc in this directory, without adding
   them to Git.
+
+  Let's say your host machine has Slurm; you want a Chapel multi-config
+  build with and without Gasnet (where Gasnet may use either of two widely-
+  supported comm layers); and you also want the option to use the native
+  Slurm launcher slurm-srun as well as Chapel's default Gasnet launcher(s).
+  Let's call your new project "slurm".
+
+  The existing setenv-example-1.bash script seems quite similar, except for
+  using Slurm.
+
+  To get started, copy setenv-example-1.bash to a new file "slurm.bash" and
+  add an additional command line parameter "--launcher=UNSET,slurm-srun" to
+  the first build_configs.py command in the file.
+
+  This will add another Chapel make (with CHPL_LAUNCHER=slurm-srun) to each
+  existing Gasnet config. It will also add another Chapel make (with slurm-srun)
+  to the existing non-Gasnet (CHPL_COMM=none) config- a small waste of time!
+  You might want to add something to the setenv callback to skip useless builds
+  with CHPL_COMM=none and CHPL_LAUNCHER=<any non-null value>. But, its optional.
+
+  Finally, replace all references to "setenv-example-1.bash" in your file with
+  "slurm.bash", so that build_configs.py will use the callback scripts from your
+  file instead of the original setenv-example-1.bash.
+
+  You could then try your new setenv script file in an existing Chapel build
+  workspace:
+
+```
+    export CHPL_HOME=/your/chapel-home-directory
+    ./slurm.bash
+```
+
+  Or you could use the existing chapel_build.bash script to create a new Chapel
+  build workspace from a Chapel source tar file, and then run your new setenv
+  script:
+
+```
+    ./chapel_build.bash -s slurm.bash -t /your/chapel-release.tar.gz
+```
+
 
 ### Discussion
 

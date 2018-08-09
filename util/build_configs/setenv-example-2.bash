@@ -4,8 +4,10 @@
 # build script, as in a Jenkins CI job.
 
 # This file builds the same trivial Chapel configuration as setenv-example-1,
-# but uses a more elaborate bash style that provides more features.
-# This file also skips the tutorial-style bash comments used in
+# with and without Gasnet (Gasnet with two different comm substrates).
+
+# However, this example uses a more elaborate bash style that provides more
+# features.  This file also skips the tutorial-style bash comments used in
 # setenv-example-1, yet includes comments on new features introduced here.
 
 set +x -e   # exit if any errors
@@ -57,7 +59,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     export CHPL_REGEXP=re2  # to support mason
 
-    substrate=smp,udp   # desired gasnet substrate(s).
+    substrates=smp,udp  # desired gasnet substrate(s).
 
     # Show the initial/default Chapel build config with printchplenv
 
@@ -88,7 +90,20 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     log_info "Start build_configs $dry_run $verbose # (runtime == no make target)"
 
     $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
-        --tasks=UNSET --comm=none,gasnet --launcher=UNSET --auxfs=UNSET --substrate=none,$substrate
+        --tasks=UNSET --comm=none,gasnet --launcher=UNSET --auxfs=UNSET --substrate=none,$substrates
+
+        # The following matrix of six Chapel runtime configurations are defined by the
+        # "--comm" and "--substrate" arguments passed to build_configs.py, above.
+        #
+        #                           CHPL_COMM=none    CHPL_COMM=gasnet
+        #                           ----------------  ----------------
+        # CHPL_COMM_SUBSTRATE=none         Make
+        # CHPL_COMM_SUBSTRATE=mpi                            Make
+        # CHPL_COMM_SUBSTRATE=udp                            Make
+        #
+        # Only three of those configurations will be built ("Make").
+        # The rest will be skipped by an "exit 0" in the setenv callback script found
+        # in the lower part of this file.
 
     # Use build_configs.py to make cleanall, the build config should not matter
 

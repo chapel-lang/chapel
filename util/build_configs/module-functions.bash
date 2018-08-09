@@ -28,6 +28,13 @@ function ck_module_list() {
     esac
 }
 
+function list_loaded_modules() {
+
+    # Sorted module list (currently loaded modules) to stdout
+
+    module list -t 2>&1 | tail -n +2 | sort
+}
+
 function get_module_re() {
 
     # Returns the full name of the loaded module that matches the given regex, if any
