@@ -110,6 +110,10 @@ void deadBlockElimination();
 void flattenNestedFunction(FnSymbol* nestedFunction);
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
+// implementForallIntents.cpp
+bool preserveShadowVar(Symbol* var);
+void adjustVoidShadowVariables();
+
 // inlineFunctions.cpp
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
 
