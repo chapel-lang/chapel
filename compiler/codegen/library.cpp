@@ -99,11 +99,9 @@ static std::string getCompilelineOption(std::string option) {
 
 // Save the value of the environment variable "var" into the makefile, so it
 // can be referenced in the other variables for legibility purposes.
-static void setupMakeEnvVars(std::string var, fileinfo makefile) {
-  std::string cmd = "echo $";
-  cmd += var;
-  std::string cmdRes = runCommand(cmd);
-  fprintf(makefile.fptr, "%s = %s\n", var.c_str(), cmdRes.c_str());
+static void setupMakeEnvVars(std::string var, const char* value,
+                             fileinfo makefile) {
+  fprintf(makefile.fptr, "%s = %s\n\n", var.c_str(), value);
 }
 
 void codegen_library_makefile() {
@@ -122,10 +120,10 @@ void codegen_library_makefile() {
 
   // Save the CHPL_HOME location so it can be used in the other makefile
   // variables instead of letting them be cluttered with its value
-  setupMakeEnvVars("CHPL_RUNTIME_LIB", makefile);
-  setupMakeEnvVars("CHPL_RUNTIME_INCL", makefile);
-  setupMakeEnvVars("CHPL_THIRD_PARTY", makefile);
-  setupMakeEnvVars("CHPL_HOME", makefile);
+  setupMakeEnvVars("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, makefile);
+  setupMakeEnvVars("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, makefile);
+  setupMakeEnvVars("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, makefile);
+  setupMakeEnvVars("CHPL_HOME", CHPL_HOME, makefile);
 
   // TODO: compileline --includes-and-defines adds -I. to the list
   // automatically.  If the library is in a different directory from the
