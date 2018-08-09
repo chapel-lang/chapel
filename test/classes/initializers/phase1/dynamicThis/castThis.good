@@ -1,2 +1,2 @@
 castThis.chpl:17: In initializer:
-castThis.chpl:20: error: cannot cast "this" in phase one
+castThis.chpl:20: error: cannot cast "this" before this.complete()
