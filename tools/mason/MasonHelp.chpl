@@ -211,13 +211,13 @@ proc masonExternalFindHelp() {
   writeln("    -l, --long                  Show dependency hashes as well as versions");
   writeln("    -L, --very-long             Show full dependency hashes as well as versions");
   writeln("    -t TAGS, --tags TAGS        Filter a package query by tags");
-  writeln("    -f, --show-flags            Show spec compiler flags");
-  writeln("    --show-full-compiler        Show full compiler specs");
+  writeln("        --show-flags            Show spec compiler flags");
+  writeln("        --show-full-compiler    Show full compiler specs");
+  writeln("        --variants              Show variants in output (can be long)");
   writeln("    -e, --explicit              Show only specs that were installed explicitly");
   writeln("    -E, --implicit              Show only specs that were installed as dependencies");
   writeln("    -u, --unknown               Show only specs Spack does not have a package for");
   writeln("    -m, --missing               Show missing dependencies as well as installed specs");
-  writeln("    -v, --variants              Show variants in output (can be long)");
   writeln("    -M, --only-missing          Show only missing dependencies");
   writeln("    -N, --namespace             Show fully qualified package names");
   writeln();

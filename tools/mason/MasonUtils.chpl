@@ -159,8 +159,19 @@ proc runSpackCommand(command, executable="/bin/bash") {
     " && source $SPACK_ROOT/share/spack/setup-env.sh && ";
 
   var cmd = (prefix + command);
-  var sub = spawnshell(cmd);
+  var sub = spawnshell(cmd, stderr=PIPE);
   sub.wait();
+
+  for line in sub.stderr.lines() {
+    if line.find("spack") > 0 {
+      var edited = line.replace("spack", "mason external");
+      write(edited);
+    }
+    else {
+      write(line);
+    }
+  }
+
   return sub.exit_status;
 }
 

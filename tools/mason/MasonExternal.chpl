@@ -102,7 +102,6 @@ private proc listSpkgs() {
 }
 
 /* Queries spack for package existance */
-//TODO: add --desc to search descriptions
 private proc searchSpkgs(args: [?d] string) {
   if args.size < 4 {
     listSpkgs();
@@ -111,11 +110,15 @@ private proc searchSpkgs(args: [?d] string) {
   else {
     var command = "spack list";
     var pkgName: string;
-    if args[3] == "-h" || args[3] == "--help" {
-      masonExternalSearchHelp();
-      exit(0);
+    if args[3].find('-') > 0 {
+      for arg in args[3..] {
+        if arg.find('h') {
+          masonExternalSearchHelp();
+          exit(0);
+        }
+      }
     }
-    else if args[3] == "-d" || args[3] == "--desc" {
+    if args[3] == "-d" || args[3] == "--desc" {
       command = " ".join(command, "--search-description");
       pkgName = args[4];
     }
@@ -138,16 +141,19 @@ private proc listInstalled() {
 private proc findSpkg(args: [?d] string) {
   if args.size == 3 {
     listInstalled();
-  }
-  else if args[3] == "-h" || args[3] == "--help" {
-    masonExternalFindHelp();
     exit(0);
   }
-  else {
-    var command = "spack find";
-    var packageWithArgs = " ".join(args[3..]);
-    const status = runSpackCommand(" ".join(command, packageWithArgs));
+  if args[3].find('-') {
+    for arg in args[3..] {
+      if arg == "-h" || arg == "--help" {  
+        masonExternalFindHelp();
+        exit(0);
+      }
+    }
   }
+  var command = "spack find";
+  var packageWithArgs = " ".join(args[3..]);
+  const status = runSpackCommand(" ".join(command, packageWithArgs));
 }
 
 /* Entry point into the various info subcommands */
