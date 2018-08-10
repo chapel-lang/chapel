@@ -56,10 +56,9 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size);
 //
 // Network atomic operations.
 //
-// We support 32- and 64-bit signed integers and reals, although we
+// We support 32- and 64-bit signed ints, uints and reals, although we
 // don't necessarily support all of these types for all operations.
-// In the future we might like to add other types, such as unsigned
-// integers.
+// In the future we might like to add other types
 //
 
 //
@@ -158,6 +157,10 @@ DECL_CHPL_COMM_ATOMIC_CMPXCHG(real64)
         void chpl_comm_atomic_ ## op ## _ ## type                       \
                 (void* operand, int32_t locale, void* object,           \
                  int ln, int32_t fn);
+#define DECL_CHPL_COMM_ATOMIC_NONFETCH_BUFF_BINARY(op, type)            \
+        void chpl_comm_atomic_ ## op ## _buff_ ## type                  \
+                (void* operand, int32_t locale, void* object,           \
+                 int ln, int32_t fn);
 #define DECL_CHPL_COMM_ATOMIC_FETCH_BINARY(op, type)                    \
         void chpl_comm_atomic_fetch_ ## op ## _ ## type                 \
                 (void* operand, int32_t locale, void* object,           \
@@ -165,6 +168,7 @@ DECL_CHPL_COMM_ATOMIC_CMPXCHG(real64)
                  int ln, int32_t fn);
 #define DECL_CHPL_COMM_ATOMIC_BINARY(op, type)                          \
         DECL_CHPL_COMM_ATOMIC_NONFETCH_BINARY(op, type)                 \
+        DECL_CHPL_COMM_ATOMIC_NONFETCH_BUFF_BINARY(op, type)            \
         DECL_CHPL_COMM_ATOMIC_FETCH_BINARY(op, type)
 
 DECL_CHPL_COMM_ATOMIC_BINARY(and, int32)
@@ -195,6 +199,8 @@ DECL_CHPL_COMM_ATOMIC_BINARY(sub, uint32)
 DECL_CHPL_COMM_ATOMIC_BINARY(sub, uint64)
 DECL_CHPL_COMM_ATOMIC_BINARY(sub, real32)
 DECL_CHPL_COMM_ATOMIC_BINARY(sub, real64)
+
+void chpl_comm_atomic_buff_flush(void);
 
 //
 // Internal statistics gathering and reporting.

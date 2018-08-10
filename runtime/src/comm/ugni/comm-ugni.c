@@ -771,11 +771,12 @@ static size_t rdma_threshold = DEFAULT_RDMA_THRESHOLD;
 #define UI64_TO_VP(x)     ((void*) (intptr_t) (x))
 
 //
-// Maximum number of PUTs in a chained transaction list.  This number
-// was determined empirically (on XC/Aries).  Doing more than this at
-// once didn't seem to improve performance.
+// Maximum number of PUTs/AMOs in a chained transaction list.  This
+// number was determined empirically (on XC/Aries).  Doing more than
+// this at once didn't seem to improve performance.
 //
 #define MAX_CHAINED_PUT_LEN 64
+#define MAX_CHAINED_AMO_LEN 64
 
 
 //
@@ -1506,6 +1507,9 @@ static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
                             gni_fma_cmd_type_t, void*, mem_region_t*);
 static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
+static void      buff_amo_init(void);
+static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
+                                    gni_fma_cmd_type_t, mem_region_t*);
 static void      amo_add_real32_cpu_cmpxchg(void*, void*, void*);
 static void      amo_add_real64_cpu_cmpxchg(void*, void*, void*);
 static void      fork_call_common(int, c_sublocid_t,
@@ -1988,6 +1992,7 @@ void chpl_comm_post_task_init(void)
   nb_desc_init();
   rf_done_init();
   amo_res_init();
+  buff_amo_init();
 
   //
   // Create all the communication domains, including their GNI NIC
@@ -5234,6 +5239,7 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
   //
   // This GNI is too old to support chained transactions.  Just do
   // normal ones.
+  // TODO -- do NB puts and wait for them to complete?
   //
   for (int vi = 0; vi < v_len; vi++) {
     do_remote_put(src_addr_v[vi], locale_v[vi], tgt_addr_v[vi], size_v[vi],
@@ -6537,6 +6543,37 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
         }                                                               \
                                                                         \
         /*==============================*/                              \
+        void chpl_comm_atomic_##_o##_buff_##_f(void* opnd,              \
+                                               int32_t loc,             \
+                                               void* obj,               \
+                                               int ln, int32_t fn)      \
+        {                                                               \
+          mem_region_t* remote_mr;                                      \
+          DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
+                   "IFACE chpl_comm_atomic_"#_o"_buff_"#_f              \
+                   "(%p, %d, %p)",                                      \
+                   opnd, (int) loc, obj);                               \
+                                                                        \
+          if (chpl_numNodes == 1) {                                     \
+            (void) atomic_fetch_##_o##_##_t((atomic_##_t*) obj,         \
+                                            *(_t*) opnd);               \
+            return;                                                     \
+          }                                                             \
+                                                                        \
+          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+              || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
+            if (loc == chpl_nodeID)                                     \
+              (void) do_amo_on_cpu(_c, NULL, obj, opnd, NULL);          \
+            else                                                        \
+              do_fork_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);      \
+          }                                                             \
+          else {                                                        \
+            do_nic_amo_nf_buff(opnd, loc, obj, sizeof(_t),              \
+                               amo_cmd_2_nic_op(_c, 0), remote_mr);     \
+          }                                                             \
+        }                                                               \
+                                                                        \
+        /*==============================*/                              \
         void chpl_comm_atomic_fetch_##_o##_##_f(void* opnd,             \
                                                 int32_t loc,            \
                                                 void* obj,              \
@@ -6638,6 +6675,37 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
         }                                                               \
                                                                         \
         /*==============================*/                              \
+        void chpl_comm_atomic_add_buff_##_f(void* opnd,                 \
+                                            int32_t loc,                \
+                                            void* obj,                  \
+                                            int ln, int32_t fn)         \
+        {                                                               \
+          mem_region_t* remote_mr;                                      \
+          DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
+                   "IFACE chpl_comm_atomic_add_buff_"#_f                \
+                   "(%p, %d, %p)",                                      \
+                   opnd, (int) loc, obj);                               \
+                                                                        \
+          if (chpl_numNodes == 1) {                                     \
+            amo_add_##_f##_cpu_cmpxchg(NULL, obj, opnd);                \
+            return;                                                     \
+          }                                                             \
+                                                                        \
+          if (sizeof(_t) == sizeof(int_least32_t)                       \
+              && nic_type == GNI_DEVICE_ARIES                           \
+              && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
+            do_nic_amo_nf_buff(opnd, loc, obj, sizeof(_t),              \
+                               amo_cmd_2_nic_op(_c, 0), remote_mr);     \
+          }                                                             \
+          else {                                                        \
+            if (loc == chpl_nodeID)                                     \
+              (void) do_amo_on_cpu(_c, NULL, obj, opnd, NULL);          \
+            else                                                        \
+              do_fork_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);      \
+          }                                                             \
+        }                                                               \
+                                                                        \
+        /*==============================*/                              \
         void chpl_comm_atomic_fetch_add_##_f(void* opnd,                \
                                              int32_t loc,               \
                                              void* obj,                 \
@@ -6697,6 +6765,22 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
           chpl_comm_atomic_add_##_f(&nopnd, loc, obj, ln, fn);          \
         }                                                               \
                                                                         \
+         /*==============================*/                             \
+        void chpl_comm_atomic_sub_buff_##_f(void* opnd,                 \
+                                            int32_t loc,                \
+                                            void* obj,                  \
+                                            int ln, int32_t fn)         \
+        {                                                               \
+          _t nopnd = - *(_t*) opnd;                                     \
+                                                                        \
+          DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
+                   "IFACE chpl_comm_atomic_sub_buff_"#_f                \
+                   "(%p, %d, %p)",                                      \
+                   opnd, (int) loc, obj);                               \
+                                                                        \
+          chpl_comm_atomic_add_buff_##_f(&nopnd, loc, obj, ln, fn);     \
+        }                                                               \
+                                                                        \
         /*==============================*/                              \
         void chpl_comm_atomic_fetch_sub_##_f(void* opnd,                \
                                              int32_t loc,               \
@@ -6747,6 +6831,133 @@ int amo_cmd_2_nic_op(fork_amo_cmd_t cmd, int fetching)
   return nic_cmd;
 }
 
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+#define MAX_BUFF_AMO_THREADS 1024
+static gni_post_descriptor_t* amo_pdc[MAX_BUFF_AMO_THREADS];
+static c_nodeid_t* amo_node_v[MAX_BUFF_AMO_THREADS];
+static int64_t* amo_vi_v[MAX_BUFF_AMO_THREADS];
+static atomic_bool* amo_lock_v[MAX_BUFF_AMO_THREADS];
+static atomic_bool amo_init_lock = false;
+static atomic_uint_least32_t amo_pdc_sz = 0;
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+static
+void buff_amo_init(void) {
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+  atomic_init_bool(&amo_init_lock, false);
+  atomic_init_uint_least32_t(&amo_pdc_sz, 0);
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+}
+
+void chpl_comm_atomic_buff_flush() {
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+  uint32_t sz, i;
+   sz = atomic_load_uint_least32_t(&amo_pdc_sz);
+   for(i=0; i<sz; i++) {
+    if (*amo_vi_v[i] != -1) {
+      while (atomic_exchange_bool(amo_lock_v[i], true)) { local_yield(); }
+      if (*amo_vi_v[i] != -1) {
+        post_fma_ct_and_wait(amo_node_v[i], amo_pdc[i]);
+        *amo_vi_v[i] = -1;
+      }
+      atomic_store_bool(amo_lock_v[i], false);
+    }
+  }
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+}
+
+static
+inline
+void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
+                        void* object, size_t size,
+                        gni_fma_cmd_type_t cmd,
+                        mem_region_t* remote_mr)
+{
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+  static __thread gni_post_descriptor_t post_desc;
+  static __thread gni_ct_amo_post_descriptor_t pdc[MAX_CHAINED_AMO_LEN - 1];
+  static __thread c_nodeid_t node_v[MAX_CHAINED_AMO_LEN];
+  static __thread int64_t vi = -1;
+
+  // init_status -- (0=first-call, -1=out-of-entries, 1=have-entry)
+  static __thread int init_status = 0;
+  static __thread atomic_bool lock;
+
+  if (init_status == 1) {
+    // no-op
+  } else if (init_status == -1) {
+    do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+    return;
+  } else {
+    uint32_t idx;
+    while (atomic_exchange_bool(&amo_init_lock, true)) { local_yield(); }
+    atomic_init_bool(&lock, false);
+    idx = atomic_load_uint_least32_t(&amo_pdc_sz);
+    if (idx >= MAX_BUFF_AMO_THREADS) {
+      chpl_warning("Exceeded MAX_BUFF_AMO_THREADS, buffered atomic performance degraded", 0, 0);
+      init_status = -1;
+      atomic_store_bool(&amo_init_lock, false);
+      do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+      return;
+    }
+    amo_pdc[idx] = &post_desc;
+    amo_node_v[idx] = &node_v[0];
+    amo_vi_v[idx] = &vi;
+    amo_lock_v[idx] = &lock;
+    init_status = 1;
+    (void) atomic_fetch_add_uint_least32_t(&amo_pdc_sz, 1);
+    atomic_store_bool(&amo_init_lock, false);
+  }
+
+  if (remote_mr == NULL)
+    CHPL_INTERNAL_ERROR("do_nic_amo(): "
+                        "remote address is not NIC-registered");
+
+  while (atomic_exchange_bool(&lock, true)) { local_yield(); }
+
+  //
+  // Fill in the POST descriptor.
+  //
+  if (vi == -1) {
+    post_desc.next_descr      = NULL;
+    post_desc.type            = GNI_POST_AMO;
+    post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
+    post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
+    post_desc.rdma_mode       = 0;
+    post_desc.src_cq_hndl     = 0;
+    post_desc.remote_addr     = (uint64_t) (intptr_t) object;
+    post_desc.remote_mem_hndl = remote_mr->mdh;
+    post_desc.length          = size;
+    post_desc.amo_cmd         = cmd;
+    post_desc.first_operand = *(uint64_t*) opnd1;
+  } else {
+    if (vi == 0)
+      post_desc.next_descr = &pdc[0];
+    else
+      pdc[vi-1].next_descr = &pdc[vi];
+    pdc[vi].next_descr      = NULL;
+    pdc[vi].remote_addr     = (uint64_t) (intptr_t) object;
+    pdc[vi].remote_mem_hndl = remote_mr->mdh;
+    pdc[vi].length          = size;
+    pdc[vi].amo_cmd         = cmd;
+    pdc[vi].first_operand = *(uint64_t*) opnd1;
+  }
+  node_v[vi+1] = locale;
+  vi++;
+  //
+  // Initiate the transaction and wait for it to complete.
+  //
+  PERFSTATS_INC(amo_cnt);
+  if (vi == MAX_CHAINED_AMO_LEN-1) {
+    post_fma_ct_and_wait(node_v, &post_desc);
+    vi = -1;
+  }
+  atomic_store_bool(&lock, false);
+
+#else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+  do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+}
 
 static
 inline
@@ -7708,7 +7919,7 @@ int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
   cdi = cd_idx;
   PERFSTATS_ADD_POST(post_desc);
 
-  {
+  if (post_desc->type == GNI_POST_FMA_PUT) {
     gni_ct_put_post_descriptor_t* pdc;
     int i;
 
@@ -7717,6 +7928,15 @@ int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
          pdc = pdc->next_descr, i++) {
       pdc->ep_hndl = cd->remote_eps[locale_v[i]];
       PERFSTATS_ADD(sent_bytes, pdc->length);
+    }
+  } else if (post_desc->type == GNI_POST_AMO) {
+    gni_ct_amo_post_descriptor_t* pdc;
+    int i;
+
+    for (pdc = post_desc->next_descr, i = 1;
+         pdc != NULL;
+         pdc = pdc->next_descr, i++) {
+      pdc->ep_hndl = cd->remote_eps[locale_v[i]];
     }
   }
 
