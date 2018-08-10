@@ -76,8 +76,8 @@ proc main() {
   //
   const MatVectSpace: domain(2)
     dmapped DimensionalDist2D(targetLocales,
-                              new unmanaged BlockCyclicDim(gridRows, lowIdx=1, blkSize),
-                              new unmanaged BlockCyclicDim(gridCols, lowIdx=1, blkSize))
+                              new owned BlockCyclicDim(gridRows, lowIdx=1, blkSize),
+                              new owned BlockCyclicDim(gridCols, lowIdx=1, blkSize))
                     = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
@@ -190,8 +190,10 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
   //
-  const ref replA = replicateD2(Ab, AD),
-            replB = replicateD1(Ab, BD);
+  var RDim = new owned ReplicatedDim(gridRows);
+  var BCDim = new owned BlockCyclicDim(gridCols, lowIdx=1, blkSize);
+  const ref replA = replicateD2(Ab, AD, RDim, BCDim),
+            replB = replicateD1(Ab, BD, BCDim, RDim);
 
   // do local matrix-multiply on a block-by-block basis
   forall (row,col) in Rest by (blkSize, blkSize) {
@@ -211,11 +213,9 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 //
 // Replicate a row of Ab along the first dimension
 //
-proc replicateD1(Ab, BD) {
+proc replicateD1(Ab, BD, di1, di2) {
   const replBD = {1..blkSize, 1..n+1}
-    dmapped DimensionalDist2D(targetLocales,
-                              new unmanaged ReplicatedDim(gridRows),
-                              new unmanaged BlockCyclicDim(gridCols, lowIdx=1, blkSize));
+    dmapped DimensionalDist2D(targetLocales, di1, di2);
   var replB: [replBD] elemType;
 
   coforall dest in targetLocales[.., 0] do
@@ -228,11 +228,9 @@ proc replicateD1(Ab, BD) {
 //
 // Replicate a column of Ab along the second dimension
 //
-proc replicateD2(Ab, AD) {
+proc replicateD2(Ab, AD, di1, di2) {
   const replAD = {1..n, 1..blkSize}
-    dmapped DimensionalDist2D(targetLocales,
-                              new unmanaged BlockCyclicDim(gridRows, lowIdx=1, blkSize),
-                              new unmanaged ReplicatedDim(gridCols));
+    dmapped DimensionalDist2D(targetLocales, di1, di2);
   var replA: [replAD] elemType;
 
   coforall dest in targetLocales[0, ..] do
