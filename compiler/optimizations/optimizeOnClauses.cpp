@@ -573,6 +573,17 @@ removeUnnecessaryFences(FnSymbol* fn)
   return ret;
 }
 
+static CallExpr* findRealOnCall(FnSymbol* wrapperFn) {
+  std::vector<CallExpr*> calls;
+  collectFnCalls(wrapperFn, calls);
+  for_vector(CallExpr, call, calls) {
+    if (call->resolvedFunction()->hasFlag(FLAG_ON)) {
+      return call;
+    }
+  }
+  INT_ASSERT(false);
+  return NULL;
+}
 
 // Insert runningTaskCounter increment and decrement calls for on-stmts.
 //
@@ -587,9 +598,10 @@ static void addRunningTaskModifiers(void) {
       // executing the body. Fast on's run directly in the comm-handler and
       // will not spawn a task.
       if (fn->hasFlag(FLAG_FAST_ON) == false) {
-        SET_LINENO(fn);
-        fn->insertAtHead(new CallExpr(gChplIncRunningTask));
-        fn->insertBeforeEpilogue(new CallExpr(gChplDecRunningTask));
+        CallExpr* call = findRealOnCall(fn);
+        SET_LINENO(call);
+        call->insertBefore(new CallExpr(gChplIncRunningTask));
+        call->insertAfter(new CallExpr(gChplDecRunningTask));
       }
 
       // For on stmts that aren't fast or non-blocking, decrement the local
