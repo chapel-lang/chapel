@@ -89,7 +89,7 @@ class Vector {
     this.factor = factor;
   }
 
-  proc init( that : Vector(?eltType) ){
+  proc init( that : unmanaged Vector(?eltType) ){
     this.eltType = eltType;
     this.listDomain = that.listDomain;
     this.listArray = that.listArray;
@@ -105,7 +105,7 @@ class Vector {
     this.size += 1;
   }
 
-  proc push_back( values : Vector(eltType) ){
+  proc push_back( values : unmanaged Vector(eltType) ){
     while this.size + values.size > this.listDomain.size {
       this.listDomain = {1..#( this.factor * this.listDomain.size )};
     }
@@ -127,6 +127,12 @@ class Vector {
     this.listDomain = {1..#this.size};
   }
 
+  iter these(){
+    for i in 1..#size {
+      yield this.listArray[i];
+    }
+  }
+
   proc writeThis( f ){
     f <~> this.listArray[this.listDomain.low..#this.size];
   }
@@ -135,54 +141,72 @@ class Vector {
 class ParallelWorkQueue {
   type eltType;
   type lockType;
-  var lock : unmanaged lockType;
-  var queue : unmanaged list(eltType);
+
+  const maxTasks : uint;
+  const startTaskID : uint = 0;
+  const taskDomain : domain(1,uint);
+
+  var locks : [taskDomain] unmanaged lockType;
+  var queues : [taskDomain] unmanaged Vector(eltType);
+
+  var addCounter : atomic uint;
 
   var terminated : atomic bool;
   const terminatedRetries : int;
 
-  proc init( type eltType, type lockType = SyncLock, retries : int = 5 ){
+  proc init( type eltType, type lockType = unmanaged SyncLock, retries : int = 5, maxTasks : uint = here.maxTaskPar ){
     this.eltType = eltType;
     this.lockType = lockType;
-    this.lock = new unmanaged lockType();
-    this.queue = new list( eltType );
+
+    this.maxTasks = maxTasks;
+    assert( maxTasks >= 1 );
+    this.taskDomain = {this.startTaskID..#maxTasks};
+
+    this.terminatedRetries = retries;
+
     this.complete();
 
-    terminated.write(false);
+    for taskID in this.taskDomain {
+      this.locks[taskID] = new unmanaged lockType();
+      this.queues[taskID] = new unmanaged Vector(this.eltType);
+    }
+
+    this.addCounter.write(startTaskID);
+
+    this.terminated.write(false);
   }
 
   proc deinit(){
-    delete this.lock;
-    /* delete this.queue; */
+    for taskID in this.taskDomain {
+      delete this.locks[taskID];
+      delete this.queues[taskID];
+    }
   }
 
   proc size : int {
-    this.lock.lock();
-    var retval = this.queue.size;
-    this.lock.unlock();
-    return retval;
+    var size : int = 0;
+    for taskID in this.taskDomain {
+      this.locks[taskID].lock();
+      size += this.queues[taskID].size;
+      this.locks[taskID].unlock();
+    }
+    return size;
   }
 
   proc add( value : eltType ){
-    this.lock.lock();
-    this.queue.push_back( value );
-    this.lock.unlock();
+    // Get a taskID to give work to in a round-robbin manner
+    // No need to mod counter, since we can safely do the modular arithmatic
+    // on our end.
+    var taskID = this.addCounter.fetchAdd(1) % this.maxTasks;
+    this.locks[taskID].lock();
+    this.queues[taskID].push_back( value );
+    this.locks[taskID].unlock();
   }
 
-  /* iter theseChunkedLoopWait( maxTasks = here.maxTaskPar ) : eltType
-  { } */
+  iter theseChunkedLoopWait(  ) : eltType
+  { }
 
-  iter theseLoopWait(maxTasks = here.maxTaskPar ) : eltType
-  {
-    /* compilerError("ParallelWorkQueue.theseLoopWait serial being called"); */
-  }
-
-  iter theseSyncWait(maxTasks = here.maxTaskPar, reloopCycles : int = 3 ) : eltType
-  {
-    /* compilerError("ParallelWorkQueue.theseSyncWait serial being called"); */
-  }
-
-  /* iter theseChunkedLoopWait(param tag : iterKind, maxTasks = here.maxTaskPar ) : eltType
+  iter theseChunkedLoopWait(param tag : iterKind ) : eltType
   where tag == iterKind.standalone
   {
     if warnParallelWorkQueueTheseMethod then compilerWarning( "theseChunkedLoopWait standalone");
@@ -190,10 +214,10 @@ class ParallelWorkQueue {
     // reset termination
     this.terminated.write(false);
 
-    coforall taskId in 1..#maxTasks {
+    coforall taskID in this.taskDomain {
       var continueLooping = true;
       var countdown = this.terminatedRetries;
-      var unlockedQueue = new list(eltType);
+      var unlockedQueue = new unmanaged Vector(eltType);
 
       // main yield loop.
       while continueLooping {
@@ -201,30 +225,38 @@ class ParallelWorkQueue {
         continueLooping = !terminated || countdown > 0;
         if terminated then countdown -= 1;
 
-        // get current chunk of work by quickly swaping out the unlocked queue
-        // with the instance queue
-        this.lock.lock();
-        unlockedQueue <=> this.queue;
-        this.lock.unlock();
+        // get task's queue with quick swap of empty local queue
+        this.locks[taskID].lock();
+        unlockedQueue <=> this.queues[taskID];
+        this.locks[taskID].unlock();
 
-        // yield all in local chunk
+        // yield all in local queue
         if unlockedQueue.size > 0 {
-          unlockedQueue.compact();
-          forall work in unlockedQueue.listArray._value.these( tasksPerLocale = maxTasks ) {
+          //unlockedQueue.compact();
+          //forall work in unlockedQueue.listArray._value.these( tasksPerLocale = maxTasks ) {
+          for work in unlockedQueue {
             yield work;
           }
-        } else  {
+          unlockedQueue.clear();
+        } else {
           chpl_task_yield();
         }
-
       }
+
+      delete unlockedQueue;
     }
 
     // clear terminated flag
     this.terminated.write(false);
+  }
+
+
+  /* iter theseLoopWait(maxTasks = here.maxTaskPar ) : eltType
+  {
+    //compilerError("ParallelWorkQueue.theseLoopWait serial being called");
   } */
 
-  iter theseLoopWait(param tag : iterKind, maxTasks = here.maxTaskPar ) : eltType
+  /* iter theseLoopWait(param tag : iterKind, maxTasks = here.maxTaskPar ) : eltType
   where tag == iterKind.standalone
   {
     if warnParallelWorkQueueTheseMethod then compilerWarning( "theseLoopWait standalone");
@@ -256,9 +288,15 @@ class ParallelWorkQueue {
 
     // clear terminated flag
     this.terminated.write(false);
-  }
+  } */
 
-  iter theseSyncWait(param tag : iterKind, maxTasks = here.maxTaskPar, reloopCycles : int = 3 ) : eltType
+
+  /* iter theseSyncWait(maxTasks = here.maxTaskPar, reloopCycles : int = 3 ) : eltType
+  {
+    // compilerError("ParallelWorkQueue.theseSyncWait serial being called");
+  }*/
+
+  /* iter theseSyncWait(param tag : iterKind, maxTasks = here.maxTaskPar, reloopCycles : int = 3 ) : eltType
   where tag == iterKind.standalone
   {
     if warnParallelWorkQueueTheseMethod then compilerWarning("theseSyncWait theseChunkedLoopWait");
@@ -363,16 +401,18 @@ class ParallelWorkQueue {
 
     // clear terminated flag
     this.terminated.write(false);
-  }
+  } */
 
   proc terminate(){
     this.terminated.write(true);
   }
 
   proc writeThis( f ){
-    this.lock.lock();
-    f <~> this.queue;
-    this.lock.unlock();
+    for taskID in this.taskDomain {
+      this.locks[taskID].lock();
+      f <~> taskID <~> ": " <~> this.queues[taskID] <~> "\n";
+      this.locks[taskID].unlock();
+    }
   }
 }
 
@@ -389,12 +429,12 @@ class DistributedWorkQueue {
   pragma "no doc"
   inline proc _value {
     if pid == -1 then halt("DistributedWorkQueue is uninitialized.");
-    return chpl_getPrivatizedCopy(LocalDistributedWorkQueue(eltType,lockType), pid);
+    return chpl_getPrivatizedCopy(unmanaged LocalDistributedWorkQueue(eltType,lockType), pid);
   }
 
   forwarding _value;
 
-  proc init( type eltType, targetLocales : [] locale, type lockType = AtomicLock ){
+  proc init( type eltType, targetLocales : [] locale, type lockType = unmanaged AtomicLock ){
     this.eltType = eltType;
     this.lockType = lockType;
 
@@ -455,7 +495,7 @@ class LocalDistributedWorkQueue {
     this.pid = _newPrivatizedClass(this);
   }
 
-  proc init( that : LocalDistributedWorkQueue(?eltType, ?lockType), pid : int) {
+  proc init( that : unmanaged LocalDistributedWorkQueue(?eltType, ?lockType), pid : int) {
     this.eltType = eltType;
     this.lockType = lockType;
     this.localeDomain = that.localeDomain;
@@ -481,7 +521,7 @@ class LocalDistributedWorkQueue {
   }
 
   proc dsiPrivatize(pid) {
-    return new unmanaged LocalDistributedWorkQueue(this, pid);
+    return new unmanaged LocalDistributedWorkQueue(unmanaged this, pid);
   }
 
   inline proc getPrivatizedThis {
@@ -777,7 +817,7 @@ proc createSparseUpperTriangluarIndexList(
     }
     // If *very* sparse, use insertion fill (not effecient even at relatively low densities)
     else {
-      var random : RandomStream(D.idxType) = new owned RandomStream(D.idxType, seed);
+      var random = new owned RandomStream(D.idxType, seed);
 
       // number of non-zero columns in each row in the strict UT region
       var rowCount : [low..high-1] int;
@@ -812,7 +852,7 @@ proc createSparseUpperTriangluarIndexList(
         // create a new local random number generator
         // note: seed is still deterministic. Should get same behavior regardless
         // of tasking (including number of tasks and scheduling)
-        var localRandom : RandomStream(D.idxType) = new owned RandomStream(D.idxType, (seed ^ (row << 1) | 1) );
+        var localRandom = new owned RandomStream(D.idxType, (seed ^ (row << 1) | 1) );
         // our index into sDRandomDom
         var i = startOffset[row];
         // set of indices we already have
@@ -1021,7 +1061,7 @@ where D.rank == 2
 
   var rowSum : [rows] atomic int;
   var rowCount : [rows] atomic int;
-  var workQueue = new  ParallelWorkQueue(D.idxType, AtomicLock);
+  var workQueue = new owned ParallelWorkQueue(D.idxType, unmanaged AtomicLock, maxTasks = numTasks : uint);
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
@@ -1070,7 +1110,7 @@ where D.rank == 2
   result.timers["toposort"].start();
 
   // For each queued row (and rows that will be queued)...
-  forall swapRow in workQueue.theseLoopWait(maxTasks=numTasks) {
+  forall swapRow in workQueue.theseChunkedLoopWait() {
     if enableRuntimeDebugging && debugTopo {
       writeln(
         "========================",
