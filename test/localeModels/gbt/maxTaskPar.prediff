@@ -6,7 +6,15 @@ target=$($CHPL_HOME/util/chplenv/chpl_platform.py --target)
 locModel=$($CHPL_HOME/util/chplenv/chpl_locale_model.py)
 tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
 
-function cores_from_proc_cpuinfo() {
+function cores_from_lscpu_or_proc_cpuinfo() {
+  numCoresPerSocket=$( lscpu 2>/dev/null | grep -m 1 '^Core(s) per socket:' |
+                       sed 's/^[^0-9]*\([0-9]\+\).*$/\1/' )
+  numSockets=$( lscpu 2>/dev/null | grep -m 1 '^Socket(s):' |
+                sed 's/^[^0-9]*\([0-9]\+\).*$/\1/' )
+  if [[ -n $numCoresPerSocket && -n $numSockets ]] ; then
+    numCores=$(( $numCoresPerSocket * $numSockets ))
+    return
+  fi
   if [[ -f /proc/cpuinfo ]] ; then
     #
     # Assumptions about /proc/cpuinfo:
@@ -55,7 +63,7 @@ case $target in
           echo Could not find hwloc lstopo utility > $1.good
         fi;;
       *)
-        cores_from_proc_cpuinfo
+        cores_from_lscpu_or_proc_cpuinfo
         echo $numCores > $1.good;;
     esac;;
 
@@ -63,6 +71,6 @@ case $target in
     echo $( sysctl -n hw.physicalcpu ) > $1.good;;
 
   *)
-    cores_from_proc_cpuinfo
+    cores_from_lscpu_or_proc_cpuinfo
     echo $numCores > $1.good;;
 esac
