@@ -123,7 +123,7 @@ module DataFrames {
         yield tup;
     }
 
-    proc this(lab: idxType) ref : int {
+    override proc this(lab: idxType) ref : int {
       return labelToOrd[lab];
     }
 
@@ -543,8 +543,7 @@ module DataFrames {
       return valid_bits[ord];
     }
 
-    override
-    proc reindex(idx: shared Index) {
+    override proc reindex(idx: shared Index) {
       this.idx = idx;
     }
 
