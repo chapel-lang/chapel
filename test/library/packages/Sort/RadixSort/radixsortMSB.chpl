@@ -1,26 +1,32 @@
  use BitOps;
  use Sort;
  use Random;
- use radixMSBModule;
+ use RadixMSB;
  use Time;
+
  config const printStats = true;
+ config const size = 100000;
 
  proc main() {
-  
-   var array:[1..10000] int; 
-   fillRandom(array); 
-   var t: Timer;   
-
+   
+   var array:[1..size] int; 
+   fillRandom(array);
+   
    for i in array.domain {
      array[i] = abs(array[i]);
-   }  
-   
+   }
+
+   var t: Timer;
 	 t.start();
-   MSBmodule.radixSortMSB(array);
+
+   RadixMSB.radixSortMSB(array);
+
    t.stop();
+ 
    if printStats {
      writeln("Time: ", t.elapsed());
    }
+
    t.clear();
 
    //writeln(array);
