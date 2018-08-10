@@ -4,8 +4,10 @@
 #   https://github.com/chapel-lang/chapel/issues/9943,
 # using build_configs.py with a custom setenv script (ie, this file).
 
-# This file builds a trivial array of Chapel configurations, and
-# uses a very simple style of bash scripting.
+# This setenv builds a trivial array of Chapel configurations:
+# with and without Gasnet (Gasnet with two comm substrates).
+
+# This example uses a very simple style of bash scripting.
 # It is meant as a setenv tutorial only.
 
 # How to use this example:
@@ -45,7 +47,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     # CHPL_HOME from the environment, or default to this Chapel workspace
 
-    CHPL_HOME=${CHPL_HOME:-$( cd $cwd/../.. && pwd )}
+    export CHPL_HOME=${CHPL_HOME:-$( cd $( dirname "$0" )/../.. && pwd )}
 
     # Default Chapel build config values may be defined here
 
@@ -53,10 +55,28 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     substrates=smp,udp      # two widely-supported gasnet substrates for this example
 
+
     # Use build_configs.py to make Chapel with and without gasnet
 
     ./build_configs.py -p $dry_run $verbose -s setenv-example-1.bash -l setenv-example-1.make.log \
         --comm=none,gasnet --substrate=none,$substrates  # no make target
+
+        # The following 2x3 matrix of Chapel runtime configurations are defined by the
+        # "--comm" and "--substrate" arguments passed to build_configs.py, above.
+        #
+        # CHPL_COMM   CHPL_COMM_SUBSTRATE   Make Chapel?
+        # ---------   -------------------   ----------------
+        # none        none                  Yes
+        # none        mpi                   No  (skip)
+        # none        udp                   No  (skip)
+        # gasnet      none                  No  (skip)
+        # gasnet      mpi                   Yes
+        # gasnet      udp                   Yes
+        #
+        # Only three of the six possible configurations will be built.
+        # The rest will be skipped by an "exit 0" in the setenv callback script found
+        # in the lower part of this file.
+
 
     # We can use build_configs.py to make mason, though we need only one Chapel config.
 

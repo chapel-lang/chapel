@@ -105,8 +105,8 @@ function bashDebugPush()
 
     # set to the new state, and return
     state=$( _bash_debug_get_flags $state "$@" )
-    echo >&2 + \
-    set $state \[${#_bash_debug_stack[@]}\]
+    #### echo >&2 + \
+    #### set $state \[${#_bash_debug_stack[@]}\]
     set $state
     return 0
 }
@@ -129,8 +129,8 @@ function bashDebugPop()
     esac
 
     # reset to the saved state, and return
-    echo >&2 + \
-    set $state \[${#_bash_debug_stack[@]}\]
+    #### echo >&2 + \
+    #### set $state \[${#_bash_debug_stack[@]}\]
     set $state
     return 0
 }

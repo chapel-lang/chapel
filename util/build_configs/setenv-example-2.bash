@@ -4,8 +4,10 @@
 # build script, as in a Jenkins CI job.
 
 # This file builds the same trivial Chapel configuration as setenv-example-1,
-# but uses a more elaborate bash style that provides more features.
-# This file also skips the tutorial-style bash comments used in
+# with and without Gasnet (Gasnet with two different comm substrates).
+
+# However, this example uses a more elaborate bash style that provides more
+# features.  This file also skips the tutorial-style bash comments used in
 # setenv-example-1, yet includes comments on new features introduced here.
 
 set +x -e   # exit if any errors
@@ -49,7 +51,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     # CHPL_HOME from the environment, or default to this Chapel workspace
 
-    CHPL_HOME=${CHPL_HOME:-$( cd $cwd/../.. && pwd )}
+    export CHPL_HOME=${CHPL_HOME:-$( cd $cwd/../.. && pwd )}
     log_debug "with CHPL_HOME=$CHPL_HOME"
     ck_chpl_home "$CHPL_HOME"
 
@@ -57,7 +59,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     export CHPL_REGEXP=re2  # to support mason
 
-    substrate=smp,udp   # desired gasnet substrate(s).
+    substrates=smp,udp  # desired gasnet substrate(s).
 
     # Show the initial/default Chapel build config with printchplenv
 
@@ -88,7 +90,23 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     log_info "Start build_configs $dry_run $verbose # (runtime == no make target)"
 
     $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
-        --tasks=UNSET --comm=none,gasnet --launcher=UNSET --auxfs=UNSET --substrate=none,$substrate
+        --tasks=UNSET --auxfs=UNSET --comm=none,gasnet --launcher=UNSET --substrate=none,$substrates
+
+        # The following 2x3 matrix of Chapel runtime configurations are defined by the
+        # "--comm" and "--substrate" arguments passed to build_configs.py, above.
+        #
+        # CHPL_COMM   CHPL_COMM_SUBSTRATE   Make Chapel?
+        # ---------   -------------------   ----------------
+        # none        none                  Yes
+        # none        mpi                   No  (skip)
+        # none        udp                   No  (skip)
+        # gasnet      none                  No  (skip)
+        # gasnet      mpi                   Yes
+        # gasnet      udp                   Yes
+        #
+        # Only three of the six possible configurations will be built.
+        # The rest will be skipped by an "exit 0" in the setenv callback script found
+        # in the lower part of this file.
 
     # Use build_configs.py to make cleanall, the build config should not matter
 
@@ -145,5 +163,5 @@ else
         $BUILD_CONFIGS_CHPLENV_EXE --all --no-tidy
     fi
 
-    log_info "End $setenv"
+    log_info "End callback $setenv"
 fi

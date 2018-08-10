@@ -5,4 +5,6 @@
 !/chapel_build.bash
 !/setenv-example-1.bash
 !/setenv-example-2.bash
+!/setenv-example-3.bash
+!/module-functions.bash
 !/README*
