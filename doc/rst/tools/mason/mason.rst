@@ -454,39 +454,13 @@ Now lets run our example. To check the name of all the examples available in you
   --------------------------
 
 Calling ``mason run --build --example hdf5Example.chpl`` will update the project's ``Mason.lock``
-and build and run ``hdf5Example.chpl``. For reference, the ``Mason.lock`` will look as follows where
-``MASON_HOME`` will be replaced with the path to the local ``mason-registry`` installation:
+and build and run ``hdf5Example.chpl``.
 
-``Mason.lock``
-
-.. code-block:: text
-
-   [root]
-   name = "masonHDF5"
-   compopts = "-lhdf5 -lhdf5_hl"
-   version = "0.1.0"
-   chplVersion = "1.18.0..1.18.0"
-
-   [external]
-
-   [external.hdf5]
-   name = "hdf5"
-   compiler = "clang"
-   dependencies = ["zlib"]
-   version = "1.10.1"
-   libs = "MASON_HOME/spack/opt/spack/darwin-sierra-x86_64/clang-9.0.0-apple/hdf5-1.10.1-apav2xtpuvp4y4wpbdcetmgzzhhleyux/lib"
-   include = "/Users/spartee/.mason/spack/opt/spack/darwin-sierra-x86_64/clang-9.0.0-apple/hdf5-1.10.1-apav2xtpuvp4y4wpbdcetmgzzhhleyux/include"
-
-   [external.hdf5.zlib]
-   name = "zlib"
-   compiler = "clang"
-   version = "1.2.11"
-   libs = "MASON_HOME/spack/opt/spack/darwin-sierra-x86_64/clang-9.0.0-apple/zlib-1.2.11-cpdvq4e7otjepbwdtxmgk5bzszze27fj/lib"
-   include = MASON_HOME/spack/opt/spack/darwin-sierra-x86_64/clang-9.0.0-apple/zlib-1.2.11-cpdvq4e7otjepbwdtxmgk5bzszze27fj/include"
-
-As shown above, ``HDF5`` depends on ``Zlib``. This is another great feature of the integration. Mason
-can install and retrieve all dependencies necessary for any package from Spack to run without ever
-interfering with a previous package installation.
+When constructing the lock file (see below section), Mason will work with Spack to gather dependencies.
+In the case of ``HDF5``, at the time of this writing, ``zlib`` will be added to the lock file since the
+``HDF5`` Spack package depends on it. Any dependency a Spack package has will be handled in this manner.
+This highlights another great feature of the integartion. Mason can install and retrieve all dependencies
+necessary for any package from Spack without ever interfering with a previous package installation.
 
 Using System Packages
 ~~~~~~~~~~~~~~~~~~~~~
