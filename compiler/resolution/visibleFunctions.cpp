@@ -246,7 +246,7 @@ static void getVisibleFunctions(const char*           name,
     // Why does the following statement apply to all blocks,
     // and not just module or function blocks?
     //
-    // e.g. in associative.chpl primer, instatiation occurs in a
+    // e.g. in associative.chpl primer, instantiation occurs in a
     // block that isn't a fn or module block.
     visited.insert(block);
 
