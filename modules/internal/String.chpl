@@ -114,6 +114,7 @@ module String {
 
   private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
   private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):syserr;
+  private extern proc qio_nbytes_char(chr:int(32)):c_int;
 
   pragma "no doc"
   extern const CHPL_SHORT_STRING_SIZE : c_int;
@@ -149,6 +150,11 @@ module String {
     var size      : int;
     var locale_id : chpl_nodeID.type;
     var shortData : chpl__inPlaceBuffer;
+  }
+
+  record codePointIndex {
+    pragma "no doc"
+    var _cpindex  : int;
   }
 
   //
@@ -338,14 +344,24 @@ module String {
     }
 
     /*
-      :returns: The number of characters in the string.
+      :returns: The number of bytes in the string.
       */
     inline proc length return len;
 
     /*
-      :returns: The number of characters in the string.
+      :returns: The number of bytes in the string.
       */
     inline proc size return len;
+
+    /*
+      :returns: The number of Unicode codepoints in the string.
+      */
+    proc ulength {
+      var n = 0;
+      for codepoint in this.uchars() do
+        n += 1;
+      return n;
+    }
 
     /*
        Gets a version of the :record:`string` that is on the currently
@@ -489,6 +505,29 @@ module String {
       ret.len = nbytes;
 
       return ret;
+    }
+
+    /*
+      Index into a string
+
+      :returns: A Unicode codepoint starting at the
+                specified codepoint index from `1..string.ulength`
+     */
+    proc this(cpi: codePointIndex) : int(32) {
+      const idx = cpi: int;
+      if boundsChecking && idx <= 0 then
+        halt("index out of bounds of string: ", idx);
+
+      var i = 1;
+      for codepoint in this.uchars() {
+        if i == idx then
+          return codepoint;
+        i += 1;
+      }
+      // We have reached the end of the string without finding our index.
+      if boundsChecking then
+        halt("index out of bounds of string: ", idx);
+      return 0: int(32);
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
@@ -1925,6 +1964,21 @@ module String {
     return s;
   }
 
+  /*
+     :returns: A string storing the complete multibyte character sequence
+               that corresponds to the codepoint value `i`.
+  */
+  inline proc codePointToString(i: int(32)) {
+    const mblength = qio_nbytes_char(i): int;
+    const mbsize = max(chpl_string_min_alloc_size,
+                       chpl_here_good_alloc_size(mblength + 1));
+    var buffer = chpl_here_alloc(mbsize, offset_STR_COPY_DATA): bufferType;
+    qio_encode_char_buf(buffer, i);
+    buffer[mblength] = 0;
+    var s = new string(buffer, mblength, mbsize, isowned=true, needToCopy=false);
+    return s;
+  }
+
 
   //
   // Casts (casts to & from other primitive types are in StringCasts)
@@ -1947,6 +2001,20 @@ module String {
     ret.isowned = true;
 
     return ret;
+  }
+
+  // Cast from codePointIndex to int
+  pragma "no doc"
+  inline proc _cast(type t: int, cpi: codePointIndex) {
+    return cpi._cpindex;
+  }
+
+  // Cast from in to codePointIndex
+  pragma "no doc"
+  inline proc _cast(type t: codePointIndex, i: int) {
+    var cpi: codePointIndex;
+    cpi._cpindex = i;
+    return cpi;
   }
 
   //

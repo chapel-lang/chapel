@@ -3499,13 +3499,7 @@ static void updateConstructor(FnSymbol* fn) {
   // Replace it with _construct_typename
   fn->name = ct->defaultInitializer->name;
 
-  if (fNoUserConstructors) {
-    ModuleSymbol* mod = fn->getModule();
-    if (mod && mod->modTag != MOD_INTERNAL && mod->modTag != MOD_STANDARD) {
-      USR_FATAL_CONT(fn, "Type '%s' defined a constructor here",
-                     ct->symbol->name);
-    }
-  } else if (fWarnConstructors) {
+  if (fWarnConstructors) {
     if (firstConstructorWarning == true) {
       USR_PRINT(fn, "Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.");
       firstConstructorWarning = false;

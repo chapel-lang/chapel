@@ -166,7 +166,6 @@ extern bool fLibraryCompile;
 extern bool fLibraryMakefile;
 extern bool fLibraryPython;
 extern bool fUseNoinit;
-extern bool fNoUserConstructors;
 extern bool no_codegen;
 extern bool developer;
 extern bool fVerify;
