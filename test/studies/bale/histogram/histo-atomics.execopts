@@ -1,1 +1,2 @@
---N=2000 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --numTasksPerLocale=2
+--N=2000 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --numTasksPerLocale=2 --useBufferedAtomics=false
+--N=2000 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --numTasksPerLocale=2 --useBufferedAtomics=true
