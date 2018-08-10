@@ -950,13 +950,13 @@ where D.rank == 2
   for column in columns {
     if enableRuntimeDebugging && debugTopo then writeln( "accumulating in column ", column );
     if useDimIterRow {
-     if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over rows in init with dimIter");
+     if warnDimIterMethod then compilerWarning("toposortSerial.init iterating over rows in init with dimIter");
       for row in D.dimIter(1,column) {
         rowCount[row] += 1;
         rowSum[row] += column ;
       }
     } else {
-      if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over rows in init with dim");
+      if warnDimIterMethod then compilerWarning("toposortSerial.init iterating over rows in init with dim");
       for row in rows {
         if D.member((row,column)) {
           rowCount[row] += 1;
