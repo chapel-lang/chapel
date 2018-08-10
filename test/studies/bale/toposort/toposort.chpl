@@ -28,7 +28,11 @@ config param useDimIterDistributed = false; //SparseBlockDom.dimIter not support
 config param useDimIterRowDistributed = useDimIterDistributed;
 config param useDimIterColDistributed = useDimIterDistributed;
 
+/*
+Sync variable backed lock.
+*/
 class SyncLock {
+  pragma "no doc"
   var lock$ : sync bool;
 
   proc init(){
@@ -36,24 +40,42 @@ class SyncLock {
     this.lock$.writeEF(true);
   }
 
+  /*
+  Lock.
+  */
   proc lock(){
     lock$.readFE();
   }
 
+  /*
+  Unlock.
+  */
   proc unlock(){
     lock$.writeEF(true);
   }
 
+  /*
+  Non-blocking unlock.
+  */
   proc forceUnlock(){
     lock$.writeXF(true);
   }
 
+  /*
+  Peak at lock state.
+  :returns: true if locked.
+  :rtype: bool
+  */
   proc isLocked() : bool {
     return this.lock$.isFull;
   }
 }
 
+/*
+Atomic backed lock.
+*/
 class AtomicLock {
+  pragma "no doc"
   var lock$: atomic bool;
 
   proc init(){
@@ -61,19 +83,34 @@ class AtomicLock {
     lock$.clear();
   }
 
+  /*
+  Lock
+  */
   proc lock(){
     while lock$.testAndSet() do chpl_task_yield();
   }
 
+  /*
+  Unlock
+  */
   proc unlock(){
     lock$.clear();
   }
 
+  /*
+  Peak at lock state.
+  :returns: true if locked.
+  :rtype: bool
+  */
   proc isLocked() : bool {
     return this.lock$.read();
   }
 }
 
+/*
+Very basic push-back queue.
+Values are not popped from.
+*/
 class Vector {
   type eltType;
   var listDomain : domain(1);
@@ -97,6 +134,9 @@ class Vector {
     this.factor = that.factor;
   }
 
+  /*
+  Push back a single value.
+  */
   proc push_back( value : eltType ){
     if this.size + 1 > this.listDomain.size {
       this.listDomain = {1..#( this.factor * this.listDomain.size )};
@@ -105,6 +145,9 @@ class Vector {
     this.size += 1;
   }
 
+  /*
+  Push back all values from another Vector.
+  */
   proc push_back( values : unmanaged Vector(eltType) ){
     while this.size + values.size > this.listDomain.size {
       this.listDomain = {1..#( this.factor * this.listDomain.size )};
@@ -113,20 +156,35 @@ class Vector {
     this.size += values.size;
   }
 
+  /*
+  Push back all values from a list.
+  */
   proc push_back( values : list(eltType) ){
     for value in values {
       this.push_back( value );
     }
   }
 
+  /*
+  Empty queue.
+  */
   proc clear( ){
     this.size = 0;
   }
 
+  /*
+  Compact underlying array to
+  .. note: This leaves extra no extra capacity for new values.
+    Will cause a reallocation after a push-back.
+  */
   proc compact(){
     this.listDomain = {1..#this.size};
   }
 
+  /*
+  Yield all values from array.
+  :rtype: eltType
+  */
   iter these(){
     for i in 1..#size {
       yield this.listArray[i];
@@ -138,6 +196,9 @@ class Vector {
   }
 }
 
+/*
+Queue for effecient shared-memory parallel work queueing and distributing.
+*/
 class ParallelWorkQueue {
   type eltType;
   type lockType;
@@ -183,6 +244,13 @@ class ParallelWorkQueue {
     }
   }
 
+  /*
+  .. note: this is not globally serialized.
+    It is possible that the size returned is different than what actually exists
+    in the queues.
+  :returns: Size of the queue in its entirety.
+  :rtype: int
+  */
   proc size : int {
     var size : int = 0;
     for taskID in this.taskDomain {
@@ -193,6 +261,10 @@ class ParallelWorkQueue {
     return size;
   }
 
+  /*
+  Add value into the queue.
+  .. note: This distributes work in a round-robbin fashion.
+  */
   proc add( value : eltType ){
     // Get a taskID to give work to in a round-robbin manner
     // No need to mod counter, since we can safely do the modular arithmatic
@@ -203,9 +275,13 @@ class ParallelWorkQueue {
     this.locks[taskID].unlock();
   }
 
-  iter theseChunkedLoopWait(  ) : eltType
-  { }
+  /*
+  Yield work in parallel.
+  In this method, each task has a queue that it swaps out with an empty queue
+  and yields values from that.
 
+  :rtype: eltType
+  */
   iter theseChunkedLoopWait(param tag : iterKind ) : eltType
   where tag == iterKind.standalone
   {
@@ -250,11 +326,17 @@ class ParallelWorkQueue {
     this.terminated.write(false);
   }
 
+  // dummy iterator
+  pragma "no doc"
+  iter theseChunkedLoopWait(  ) : eltType
+  { }
 
-  /* iter theseLoopWait(maxTasks = here.maxTaskPar ) : eltType
-  {
-    //compilerError("ParallelWorkQueue.theseLoopWait serial being called");
-  } */
+  /*
+  Yield work in parallel.
+  In this method, all tasks share a queue, and a task will get one value from the queue.
+  .. note: This is not supported in this queue implementation. TODO should be made it's own
+  queue object.
+  */
 
   /* iter theseLoopWait(param tag : iterKind, maxTasks = here.maxTaskPar ) : eltType
   where tag == iterKind.standalone
@@ -290,11 +372,23 @@ class ParallelWorkQueue {
     this.terminated.write(false);
   } */
 
-
-  /* iter theseSyncWait(maxTasks = here.maxTaskPar, reloopCycles : int = 3 ) : eltType
+  // dummy iterator
+  /*
+  pragma "no doc"
+  iter theseLoopWait(maxTasks = here.maxTaskPar ) : eltType
   {
-    // compilerError("ParallelWorkQueue.theseSyncWait serial being called");
-  }*/
+    //compilerError("ParallelWorkQueue.theseLoopWait serial being called");
+  }
+  */
+
+  /*
+  Yield work in parallel.
+  In this method, each tasks has a sync variable containing that it waits on.
+  A manager task doles out work from a single queue round-robbin to those variables.
+  When it's task-local queue is exhausted, it swaps the global queue with the empty one.
+  .. note: This is not supported in this queue implementation. TODO should be made it's own
+    queue object.
+  */
 
   /* iter theseSyncWait(param tag : iterKind, maxTasks = here.maxTaskPar, reloopCycles : int = 3 ) : eltType
   where tag == iterKind.standalone
@@ -403,6 +497,18 @@ class ParallelWorkQueue {
     this.terminated.write(false);
   } */
 
+  // dummy iterator
+  /*
+  pragma "no doc"
+  iter theseSyncWait(maxTasks = here.maxTaskPar, reloopCycles : int = 3 ) : eltType
+  {
+    // compilerError("ParallelWorkQueue.theseSyncWait serial being called");
+  }*/
+
+  /*
+  Signal to the iterator loop that no more work is incomming and should be terminated
+  when the queue(s) are exhaused.
+  */
   proc terminate(){
     this.terminated.write(true);
   }
@@ -416,6 +522,9 @@ class ParallelWorkQueue {
   }
 }
 
+/*
+Queue for effecient distributed-memory parallel work queueing and distributing.
+*/
 class DistributedWorkQueue {
   type eltType;
   type lockType;
@@ -466,6 +575,9 @@ class DistributedWorkQueue {
   }
 }
 
+/*
+Acutal/Local implementation of DistributedWorkQueue.
+*/
 class LocalDistributedWorkQueue {
   type eltType;
   type lockType;
@@ -516,18 +628,34 @@ class LocalDistributedWorkQueue {
     delete this.queue;
   }
 
+  /*
+  :returns: PID of local queue.
+  */
   proc dsiGetPrivatizeData() {
     return pid;
   }
 
+  /*
+  :arg pid: PID of local queue that should be returned
+  :returns: local queue given by PID
+  :rtype: unmanaged LocalDistributedWorkQueue
+  */
   proc dsiPrivatize(pid) {
     return new unmanaged LocalDistributedWorkQueue(unmanaged this, pid);
   }
 
+  /*
+  Get self local copy (?)
+  */
   inline proc getPrivatizedThis {
     return chpl_getPrivatizedCopy(this.type, this.pid);
   }
 
+  /*
+  Add work onto owner's queue.
+  :arg value: value to be enqueued.
+  :arg owner: locale who should execute that work.
+  */
   proc add( value : eltType, owner : locale ) {
     on owner {
       var instance = getPrivatizedThis;
@@ -546,6 +674,12 @@ class LocalDistributedWorkQueue {
     return this.these(tag=tag, maxTasks);
   }
 
+  /*
+  Yield work in parallel over all locales.
+  In this method, each locale has a queue. That queue is swapped with an empty queue
+  for other tasks to add to, and yields values in parallel from the full queue.
+  Does this in a loop wait fashion.
+  */
   iter these(param tag : iterKind, maxTasksPerLocale : [] int) : eltType
   where tag == iterKind.standalone {
     coforall onLocale in localeArray do on onLocale {
@@ -595,6 +729,10 @@ class LocalDistributedWorkQueue {
     }
   }
 
+  /*
+  Signal to the iterator loop that no more work is incomming and should be terminated
+  when the queue(s) are exhaused.
+  */
   proc terminate(){
     coforall onLocale in this.localeArray {
       on onLocale {
