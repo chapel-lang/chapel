@@ -314,13 +314,17 @@ static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
 
 static bool checkOverrides(FnSymbol* fn) {
   ModuleSymbol* parentMod = fn->getModule();
-  // check overrides if any of these are true...
-          // (a) the flag is on and the function is not compiler-generated
-  return ((fOverrideChecking && !fn->isCompilerGenerated()) ||
-          // (b) developer is on (avoids printing developer cases to users)
-          developer == true ||
-          // (c) the function is in the modules/ hierarchy (which we manage
-          //     and want to keep clean)
+  // check overrides for a given function if any of these are true...
+          // (1) the flag is on and either
+          //     (a) the function is not compiler-generated or
+          //     (b) --devel is on
+          //  or...
+  return (((fOverrideChecking &&
+            (!fn->isCompilerGenerated() ||
+             (fn->isCompilerGenerated() && developer == true)))) ||
+          // (2) the function is in the modules/ hierarchy (which we manage
+          //     and want to keep clean); oncer override checking is on by
+          //     default, we'd likely only check these when --devel is on?
           (parentMod && parentMod->modTag != MOD_USER));
 }
 
