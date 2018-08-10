@@ -185,8 +185,8 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromCommandLine() {
                 // But we need to know the name to use for the generated library
                 // So if the user hasn't set the executableFilename via -o,
                 // generate an error message
-                USR_FATAL("a program with multiple user modules must specify "
-                          "its library name via -o");
+                USR_FATAL("You must use -o to specify the library name when "
+                          "building a library with multiple modules");
               }
             } else {
               USR_FATAL_CONT("a program with multiple user modules "

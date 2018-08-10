@@ -1,1 +1,1 @@
-error: a program with multiple user modules must specify its library name via -o
+error: You must use -o to specify the library name when building a library with multiple modules
