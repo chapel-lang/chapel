@@ -164,6 +164,7 @@ extern int  debugParserLevel;
 extern int  debugShortLoc;
 extern bool fLibraryCompile;
 extern bool fLibraryMakefile;
+extern bool fLibraryPython;
 extern bool fUseNoinit;
 extern bool no_codegen;
 extern bool developer;

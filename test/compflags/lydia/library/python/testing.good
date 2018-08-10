@@ -1,0 +1,15 @@
+from libc.stdint cimport *
+
+cdef extern from "testing.h":
+	void chpl__init_testing(int64_t _ln, int32_t _fn);
+	void foo();
+	int64_t takesAndReturns(int64_t x);
+	void parallelProg(int64_t numTasksToRun);
+	void threadring(int64_t passes, int64_t tasks);
+
+cdef extern from "chpltypes.h":
+	ctypedef void* c_fn_ptr
+
+cdef extern from "chpl-init.h":
+	void chpl_library_init(int argc, char* argv[])
+	void chpl_library_finalize()

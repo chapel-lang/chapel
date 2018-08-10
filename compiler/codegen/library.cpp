@@ -19,16 +19,20 @@
 
 #include "library.h"
 
-#include <string>
-
 #include "FnSymbol.h"
 #include "beautify.h"
 #include "codegen.h"
 #include "driver.h"
+#include "expr.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 
 char libDir[FILENAME_MAX + 1]  = "";
+
+// TypeSymbol -> (pxdName, pyxName)  Will be "" if the cname should be used
+std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
+
+static bool isFunctionToSkip(FnSymbol* fn);
 
 //
 // Generates a .h file to complement the library file created using --library
@@ -62,8 +66,7 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
       // functions
       for_vector(FnSymbol, fn, functions) {
         if (fn->hasFlag(FLAG_EXPORT) &&
-            fn->getModule()->modTag != MOD_INTERNAL &&
-            fn->hasFlag(FLAG_GEN_MAIN_FUNC) == false) {
+            !isFunctionToSkip(fn)) {
           fn->codegenPrototype();
         }
       }
@@ -96,11 +99,9 @@ static std::string getCompilelineOption(std::string option) {
 
 // Save the value of the environment variable "var" into the makefile, so it
 // can be referenced in the other variables for legibility purposes.
-static void setupMakeEnvVars(std::string var, fileinfo makefile) {
-  std::string cmd = "echo $";
-  cmd += var;
-  std::string cmdRes = runCommand(cmd);
-  fprintf(makefile.fptr, "%s = %s\n", var.c_str(), cmdRes.c_str());
+static void setupMakeEnvVars(std::string var, const char* value,
+                             fileinfo makefile) {
+  fprintf(makefile.fptr, "%s = %s\n\n", var.c_str(), value);
 }
 
 void codegen_library_makefile() {
@@ -119,10 +120,10 @@ void codegen_library_makefile() {
 
   // Save the CHPL_HOME location so it can be used in the other makefile
   // variables instead of letting them be cluttered with its value
-  setupMakeEnvVars("CHPL_RUNTIME_LIB", makefile);
-  setupMakeEnvVars("CHPL_RUNTIME_INCL", makefile);
-  setupMakeEnvVars("CHPL_THIRD_PARTY", makefile);
-  setupMakeEnvVars("CHPL_HOME", makefile);
+  setupMakeEnvVars("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, makefile);
+  setupMakeEnvVars("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, makefile);
+  setupMakeEnvVars("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, makefile);
+  setupMakeEnvVars("CHPL_HOME", CHPL_HOME, makefile);
 
   // TODO: compileline --includes-and-defines adds -I. to the list
   // automatically.  If the library is in a different directory from the
@@ -203,4 +204,80 @@ void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
   //
   if (beautifyIt)
     beautify(fi);
+}
+
+static void pxdEnd() {
+  FILE* pxd = gGenInfo->cfile;
+
+  // Do not "clean up" this file, as it removes leading tabs and those are
+  // necessary.
+  fprintf(pxd, "\ncdef extern from \"chpltypes.h\":\n");
+  fprintf(pxd, "\tctypedef void* c_fn_ptr\n\n");
+
+  fprintf(pxd, "cdef extern from \"chpl-init.h\":\n");
+  fprintf(pxd, "\tvoid chpl_library_init(int argc, char* argv[])\n");
+  fprintf(pxd, "\tvoid chpl_library_finalize()\n");
+}
+
+// Populate the pythonNames map with the translation for bools, differently sized
+// integers, etc.
+static void setupPythonTypeMap() {
+  pythonNames[dtInt[INT_SIZE_8]->symbol] = std::make_pair("", "numpy.int8");
+  pythonNames[dtInt[INT_SIZE_16]->symbol] = std::make_pair("", "numpy.int16");
+  pythonNames[dtInt[INT_SIZE_32]->symbol] = std::make_pair("", "numpy.int32");
+  pythonNames[dtInt[INT_SIZE_64]->symbol] = std::make_pair("", "numpy.int64");
+  pythonNames[dtUInt[INT_SIZE_8]->symbol] = std::make_pair("", "numpy.uint8");
+  pythonNames[dtUInt[INT_SIZE_16]->symbol] = std::make_pair("", "numpy.uint16");
+  pythonNames[dtUInt[INT_SIZE_32]->symbol] = std::make_pair("", "numpy.uint32");
+  pythonNames[dtUInt[INT_SIZE_64]->symbol] = std::make_pair("", "numpy.uint64");
+  pythonNames[dtReal[FLOAT_SIZE_32]->symbol] = std::make_pair("", "numpy.float32");
+  pythonNames[dtReal[FLOAT_SIZE_64]->symbol] = std::make_pair("double", "float");
+  pythonNames[dtBool->symbol] = std::make_pair("bint", "bint");
+  pythonNames[dtStringC->symbol] = std::make_pair("char *", "bytes");
+  pythonNames[dtComplex[COMPLEX_SIZE_64]->symbol] =
+              std::make_pair("float complex", "numpy.complex64");
+  pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
+              std::make_pair("double complex", "numpy.complex128");
+
+  // TODO: Handle bigint (which should naturally match to Python's int)
+
+}
+
+void codegen_library_python(std::vector<FnSymbol*> functions) {
+  if (fLibraryCompile && fLibraryPython) {
+    setupPythonTypeMap();
+
+    fileinfo pxd = { NULL, NULL, NULL };
+
+    openLibraryHelperFile(&pxd, libmodeHeadername, "pxd");
+
+    if (pxd.fptr != NULL) {
+      FILE* save_cfile = gGenInfo->cfile;
+
+      gGenInfo->cfile = pxd.fptr;
+
+      fprintf(pxd.fptr, "from libc.stdint cimport *\n\n");
+
+      fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
+
+      for_vector(FnSymbol, fn, functions) {
+        if (!isFunctionToSkip(fn)) {
+          fn->codegenPXD();
+        }
+      }
+
+      pxdEnd();
+      gGenInfo->cfile = save_cfile;
+    }
+    // Don't "beautify", it will remove the tabs
+    closeLibraryHelperFile(&pxd, false);
+  }
+}
+
+
+// Skip this function if it is defined in an internal module, or if it is
+// the generated main function
+static bool isFunctionToSkip(FnSymbol* fn) {
+  return fn->getModule()->modTag == MOD_INTERNAL ||
+    fn->hasFlag(FLAG_GEN_MAIN_FUNC);
 }

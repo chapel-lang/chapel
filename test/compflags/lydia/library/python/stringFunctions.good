@@ -1,0 +1,14 @@
+from libc.stdint cimport *
+
+cdef extern from "stringFunctions.h":
+	void chpl__init_stringFunctions(int64_t _ln, int32_t _fn);
+	void takesString(char * x);
+	char * getString();
+	char * takeAndReturn(char * x);
+
+cdef extern from "chpltypes.h":
+	ctypedef void* c_fn_ptr
+
+cdef extern from "chpl-init.h":
+	void chpl_library_init(int argc, char* argv[])
+	void chpl_library_finalize()

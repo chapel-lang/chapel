@@ -16,7 +16,7 @@ class StringError : Error {
     this.msg = msg;
   }
 
-  proc message() {
+  override proc message() {
     return msg;
   }
 }
