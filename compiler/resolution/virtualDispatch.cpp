@@ -966,7 +966,8 @@ static void checkMethodsOverride() {
             }
           }
 
-          if (okKnown && ok == false) {
+          if (okKnown && ok == false &&
+              (developer == true || fn->isUserDefined())) {
             if (fn->hasFlag(FLAG_OVERRIDE)) {
               USR_FATAL_CONT(fn, "%s.%s override keyword present but no "
                                   "superclass method matches signature "
