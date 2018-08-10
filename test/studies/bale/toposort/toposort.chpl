@@ -197,9 +197,10 @@ class Vector {
 }
 
 /*
-Queue for effecient shared-memory parallel work queueing and distributing.
+Queue for effecient shared-memory parallel work queueing and distributing using
+a chuncked loop wait method.
 */
-class ParallelWorkQueue {
+class ParallelWorkQueueChunkedLoopWait {
   type eltType;
   type lockType;
 
@@ -213,9 +214,9 @@ class ParallelWorkQueue {
   var addCounter : atomic uint;
 
   var terminated : atomic bool;
-  const terminatedRetries : int;
+  const terminatedRetries : uint;
 
-  proc init( type eltType, type lockType = unmanaged SyncLock, retries : int = 5, maxTasks : uint = here.maxTaskPar ){
+  proc init( type eltType, type lockType = unmanaged SyncLock, retries : uint = 0, maxTasks : uint = here.maxTaskPar ){
     this.eltType = eltType;
     this.lockType = lockType;
 
@@ -245,17 +246,19 @@ class ParallelWorkQueue {
   }
 
   /*
-  .. note: this is not globally serialized.
-    It is possible that the size returned is different than what actually exists
-    in the queues.
   :returns: Size of the queue in its entirety.
   :rtype: int
   */
   proc size : int {
-    var size : int = 0;
+    // lock all queues then sum. Should provide a consistant view of queue?
     for taskID in this.taskDomain {
       this.locks[taskID].lock();
+    }
+    var size : int = 0;
+    for taskID in this.taskDomain {
       size += this.queues[taskID].size;
+    }
+    for taskID in this.taskDomain {
       this.locks[taskID].unlock();
     }
     return size;
@@ -282,7 +285,7 @@ class ParallelWorkQueue {
 
   :rtype: eltType
   */
-  iter theseChunkedLoopWait(param tag : iterKind ) : eltType
+  iter these( param tag : iterKind ) : eltType
   where tag == iterKind.standalone
   {
     if warnParallelWorkQueueTheseMethod then compilerWarning( "theseChunkedLoopWait standalone");
@@ -328,58 +331,98 @@ class ParallelWorkQueue {
 
   // dummy iterator
   pragma "no doc"
-  iter theseChunkedLoopWait(  ) : eltType
+  iter these( ) : eltType
   { }
 
   /*
-  Yield work in parallel.
-  In this method, all tasks share a queue, and a task will get one value from the queue.
-  .. note: This is not supported in this queue implementation. TODO should be made it's own
-  queue object.
+  Signal to the iterator loop that no more work is incomming and should be terminated
+  when the queue(s) are exhaused.
   */
-
-  /* iter theseLoopWait(param tag : iterKind, maxTasks = here.maxTaskPar ) : eltType
-  where tag == iterKind.standalone
-  {
-    if warnParallelWorkQueueTheseMethod then compilerWarning( "theseLoopWait standalone");
-    // reset termination
-    this.terminated.write(false);
-
-    coforall taskId in 1..#maxTasks {
-      var continueLooping = true;
-      var countdown = this.terminatedRetries;
-
-      // main yield loop.
-      while continueLooping {
-        var terminated = this.terminated.read();
-        continueLooping = !terminated || countdown > 0;
-        if terminated then countdown -= 1;
-
-        this.lock.lock();
-        if this.queue.size > 0 {
-          var value = this.queue.pop_front();
-          this.lock.unlock();
-          yield value;
-        } else {
-          this.lock.unlock();
-          chpl_task_yield();
-        }
-
-      }
-    }
-
-    // clear terminated flag
-    this.terminated.write(false);
-  } */
-
-  // dummy iterator
-  /*
-  pragma "no doc"
-  iter theseLoopWait(maxTasks = here.maxTaskPar ) : eltType
-  {
-    //compilerError("ParallelWorkQueue.theseLoopWait serial being called");
+  proc terminate(){
+    this.terminated.write(true);
   }
+
+  proc writeThis( f ){
+    // lock all queues then print. Should provide a consistant view of queue?
+    for taskID in this.taskDomain {
+      this.locks[taskID].lock();
+    }
+    var notfirst = false;
+    for taskID in this.taskDomain {
+      if notfirst then f <~> "\n";
+      else notfirst = true;
+      f <~> taskID <~> ": " <~> this.queues[taskID];
+    }
+    for taskID in this.taskDomain {
+      this.locks[taskID].unlock();
+    }
+  }
+}
+
+/*
+Queue for effecient shared-memory parallel work queueing and distributing using
+a sync wait method.
+*/
+class ParallelWorkQueueSyncWait {
+  type eltType;
+  type lockType;
+
+  const maxTasks : uint;
+  const startTaskID : uint = 0;
+  const taskDomain : domain(1,uint);
+
+  var lock : unmanaged lockType;
+  var queue : unmanaged list(eltType);
+
+  var terminated : atomic bool;
+  const terminatedRetries : uint;
+  const reloopCycles : uint;
+
+  proc init( type eltType, type lockType = unmanaged SyncLock, retries : uint = 0, reloopCycles : uint = 3, maxTasks : uint = here.maxTaskPar ){
+    this.eltType = eltType;
+    this.lockType = lockType;
+
+    this.maxTasks = maxTasks;
+    assert( maxTasks >= 1 );
+    this.taskDomain = {this.startTaskID..#maxTasks};
+
+    this.lock = new unmanaged lockType();
+
+    this.terminatedRetries = retries;
+    this.reloopCycles = reloopCycles;
+
+    this.complete();
+
+    this.terminated.write(false);
+  }
+
+  proc deinit(){
+    delete this.lock;
+  }
+
+  /*
+  .. note: this is not globally serialized.
+    It is possible that the size returned is different than what actually exists
+    in the queues.
+  :returns: Size of the queue in its entirety.
+  :rtype: int
   */
+  proc size : int {
+    this.lock.lock();
+    const retval = this.queue.size;
+    this.lock.unlock();
+    return retval;
+  }
+
+  /*
+  Add value into the queue.
+  .. note: This distributes work in a round-robbin fashion.
+  */
+  proc add( value : eltType ){
+    this.lock.lock();
+    this.queue.push_back( value );
+    this.lock.unlock();
+  }
 
   /*
   Yield work in parallel.
@@ -390,16 +433,15 @@ class ParallelWorkQueue {
     queue object.
   */
 
-  /* iter theseSyncWait(param tag : iterKind, maxTasks = here.maxTaskPar, reloopCycles : int = 3 ) : eltType
+  iter these(param tag : iterKind ) : eltType
   where tag == iterKind.standalone
   {
     if warnParallelWorkQueueTheseMethod then compilerWarning("theseSyncWait theseChunkedLoopWait");
     // reset termination
     this.terminated.write(false);
     enum WorkSignal { Work, Die };
-    const minTaskId = 0;
-    var signals : [minTaskId..#maxTasks] WorkSignal;
-    var work : [minTaskId..#maxTasks] sync eltType;
+    var signals : [startTaskID..#maxTasks] WorkSignal;
+    var work : [startTaskID..#maxTasks] sync eltType;
 
     // setup work signals (only changed when killed)
     for signal in signals {
@@ -414,7 +456,7 @@ class ParallelWorkQueue {
         var countdown = this.terminatedRetries;
         const reloops = reloopCycles*maxTasks;
         var unlockedQueue = new list(eltType);
-        var workerTaskId = minTaskId;
+        var workertaskID = this.startTaskID;
 
         // yield loop.
         while continueLooping {
@@ -440,16 +482,16 @@ class ParallelWorkQueue {
                giveWork = false;
               } else {
                 // if cannot dole work to this task, decrement loops,
-                if work[workerTaskId].isFull {
+                if work[workertaskID].isFull {
                   loops -= 1;
                 } else {
                   // Get work from queue
                   var value = unlockedQueue.pop_front();
                   // give work (non-blocking by arrangement);
-                  work[workerTaskId].writeEF( value );
+                  work[workertaskID].writeEF( value );
                 }
                 // go to next task
-                workerTaskId = (workerTaskId + 1) % maxTasks;
+                workertaskID = (workertaskID + 1) % maxTasks;
               }
             }
           }
@@ -459,23 +501,23 @@ class ParallelWorkQueue {
 
         // kill tasks loop
         const dummyValue : eltType;
-        for taskId in minTaskId..#maxTasks {
+        for taskID in startTaskID..#maxTasks {
           // set kill signal
-          signals[taskId] = ( WorkSignal.Die );
+          signals[taskID] = ( WorkSignal.Die );
           // give dummy value to wake task, which immediately check signal and dies.
-          work[taskId].writeEF(dummyValue);
+          work[taskID].writeEF(dummyValue);
         }
       } // begin manager task
 
       // Worker Tasks
       {
-        coforall taskId in minTaskId..#maxTasks {
+        coforall taskID in startTaskID..#maxTasks {
           var continueLooping = true;
           while continueLooping {
             // wait for work (blocking)
-            var value = work[taskId].readFE();
+            var value = work[taskID].readFE();
             // check signal (non-blocking)
-            var signal = signals[taskId];
+            var signal = signals[taskID];
             select signal {
               when WorkSignal.Work do {
                 yield value;
@@ -484,7 +526,7 @@ class ParallelWorkQueue {
                 continueLooping = false;
               }
               otherwise do {
-                halt("Task ", taskId, " got bad signal: ", signal );
+                halt("Task ", taskID, " got bad signal: ", signal );
               }
             }
           } // while continueLooping
@@ -495,15 +537,14 @@ class ParallelWorkQueue {
 
     // clear terminated flag
     this.terminated.write(false);
-  } */
+  }
 
   // dummy iterator
-  /*
   pragma "no doc"
-  iter theseSyncWait(maxTasks = here.maxTaskPar, reloopCycles : int = 3 ) : eltType
+  iter these( ) : eltType
   {
     // compilerError("ParallelWorkQueue.theseSyncWait serial being called");
-  }*/
+  }
 
   /*
   Signal to the iterator loop that no more work is incomming and should be terminated
@@ -514,11 +555,131 @@ class ParallelWorkQueue {
   }
 
   proc writeThis( f ){
-    for taskID in this.taskDomain {
-      this.locks[taskID].lock();
-      f <~> taskID <~> ": " <~> this.queues[taskID] <~> "\n";
-      this.locks[taskID].unlock();
-    }
+    this.lock.lock();
+    f <~> this.queue;
+    this.lock.unlock();
+  }
+}
+
+/*
+Queue for effecient shared-memory parallel work queueing and distributing using
+a loop wait method.
+*/
+class ParallelWorkQueueLoopWait {
+  type eltType;
+  type lockType;
+
+  const maxTasks : uint;
+  const startTaskID : uint = 0;
+  const taskDomain : domain(1,uint);
+
+  var lock : unmanaged lockType;
+  var queue : unmanaged list(eltType);
+
+  var terminated : atomic bool;
+  const terminatedRetries : uint;
+
+  proc init( type eltType, type lockType = unmanaged SyncLock, retries : uint = 0, maxTasks : uint = here.maxTaskPar ){
+    this.eltType = eltType;
+    this.lockType = lockType;
+
+    this.maxTasks = maxTasks;
+    assert( maxTasks >= 1 );
+    this.taskDomain = {this.startTaskID..#maxTasks};
+
+    this.lock = new unmanaged lockType();
+
+    this.terminatedRetries = retries;
+
+    this.complete();
+
+    this.terminated.write(false);
+  }
+
+  proc deinit(){
+    delete this.lock;
+  }
+
+  /*
+  .. note: this is not globally serialized.
+    It is possible that the size returned is different than what actually exists
+    in the queues.
+  :returns: Size of the queue in its entirety.
+  :rtype: int
+  */
+  proc size : int {
+    this.lock.lock();
+    const retval = this.queue.size;
+    this.lock.unlock();
+    return retval;
+  }
+
+  /*
+  Add value into the queue.
+  .. note: This distributes work in a round-robbin fashion.
+  */
+  proc add( value : eltType ){
+    this.lock.lock();
+    this.queue.push_back( value );
+    this.lock.unlock();
+  }
+
+  /*
+  Yield work in parallel.
+  In this method, all tasks share a queue, and a task will get one value from the queue.
+  */
+  iter these( param tag : iterKind ) : eltType
+  where tag == iterKind.standalone
+  {
+    if warnParallelWorkQueueTheseMethod then compilerWarning( "theseLoopWait standalone");
+    // reset termination
+    this.terminated.write(false);
+
+    coforall taskID in taskDomain {
+      var continueLooping = true;
+      var countdown = this.terminatedRetries;
+
+      // main yield loop.
+      while continueLooping {
+        var terminated = this.terminated.read();
+        continueLooping = !terminated || countdown > 0;
+        if terminated then countdown -= 1;
+
+        this.lock.lock();
+        if this.queue.size > 0 {
+          var value = this.queue.pop_front();
+          this.lock.unlock();
+          yield value;
+        } else {
+          this.lock.unlock();
+          chpl_task_yield();
+        }
+      } // while
+    } // coforall taskID
+
+    // clear terminated flag
+    this.terminated.write(false);
+  }
+
+  // dummy iterator
+  pragma "no doc"
+  iter these( ) : eltType
+  {
+    //compilerError("ParallelWorkQueue.theseLoopWait serial being called");
+  }
+
+  /*
+  Signal to the iterator loop that no more work is incomming and should be terminated
+  when the queue(s) are exhaused.
+  */
+  proc terminate(){
+    this.terminated.write(true);
+  }
+
+  proc writeThis( f ){
+    this.lock.lock();
+    f <~> this.queue;
+    this.lock.unlock();
   }
 }
 
@@ -1182,7 +1343,7 @@ where D.rank == 2
   return result;
 }
 
-proc toposortParallel( D : domain, numTasks : int = here.maxTaskPar ) : shared TopoSortResult(D.idxType)
+proc toposortParallel( D : domain, workQueue : ?queueType, numTasks : int = here.maxTaskPar ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   if numTasks < 1 then halt("Must run with numTaks >= 1");
@@ -1199,7 +1360,6 @@ where D.rank == 2
 
   var rowSum : [rows] atomic int;
   var rowCount : [rows] atomic int;
-  var workQueue = new owned ParallelWorkQueue(D.idxType, unmanaged AtomicLock, maxTasks = numTasks : uint);
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
@@ -1248,7 +1408,7 @@ where D.rank == 2
   result.timers["toposort"].start();
 
   // For each queued row (and rows that will be queued)...
-  forall swapRow in workQueue.theseChunkedLoopWait() {
+  forall swapRow in workQueue {
     if enableRuntimeDebugging && debugTopo {
       writeln(
         "========================",
@@ -1488,8 +1648,8 @@ config const printPermutations: bool = false;
 config const padPrintedMatrixElements = true;
 config const seed : int = SeedGenerator.oddCurrentTime;
 
-enum ToposortImplementation { Serial, Parallel, Distributed };
-config const implementation : ToposortImplementation = ToposortImplementation.Parallel;
+enum ToposortImplementation { Serial, ParallelChunkedLoopWait, ParallelSyncWait, ParallelLoopWait, Distributed };
+config const implementation : ToposortImplementation = ToposortImplementation.ParallelChunkedLoopWait;
 
 proc main(){
   if density < minDensity then halt("Specified density (%n) is less than min density (%n) for N (%n)".format( density, minDensity, N));
@@ -1525,15 +1685,50 @@ proc main(){
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Serial implementation.");
       topoResult = toposortSerial( dmappedPermutedSparseD );
     }
-    when ToposortImplementation.Parallel {
+
+    when ToposortImplementation.ParallelChunkedLoopWait {
        if !silentMode then writeln("Converting to CSC domain");
 
       var dmappedPermutedSparseD : sparse subdomain(D) dmapped CS(compressRows=false);
       dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
 
-      if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation.");
-      topoResult = toposortParallel( dmappedPermutedSparseD, numTasks );
+      var workQueue = new unmanaged ParallelWorkQueueChunkedLoopWait( eltType = dmappedPermutedSparseD.idxType, lockType = unmanaged AtomicLock, retries = 0, maxTasks = numTasks : uint );
+      //var workQueue = new unmanaged ParallelWorkQueueSyncWait( eltType = dmappedPermutedSparseD.idxType, lockType = unmanaged AtomicLock, retries = 0, maxTasks = numTasks : uint );
+
+      if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation with Chunked-Loop-Wait work queue.");
+      topoResult = toposortParallel( dmappedPermutedSparseD, workQueue, numTasks );
+
+      delete workQueue;
     }
+
+    when ToposortImplementation.ParallelSyncWait {
+       if !silentMode then writeln("Converting to CSC domain");
+
+      var dmappedPermutedSparseD : sparse subdomain(D) dmapped CS(compressRows=false);
+      dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
+
+      var workQueue = new unmanaged ParallelWorkQueueSyncWait( eltType = dmappedPermutedSparseD.idxType, lockType = unmanaged AtomicLock, retries = 0, reloopCycles = 3, maxTasks = numTasks : uint );
+
+      if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation with Sync-Wait work queue.");
+      topoResult = toposortParallel( dmappedPermutedSparseD, workQueue, numTasks );
+
+      delete workQueue;
+    }
+
+    when ToposortImplementation.ParallelLoopWait {
+       if !silentMode then writeln("Converting to CSC domain");
+
+      var dmappedPermutedSparseD : sparse subdomain(D) dmapped CS(compressRows=false);
+      dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
+
+      var workQueue = new unmanaged ParallelWorkQueueLoopWait( eltType = dmappedPermutedSparseD.idxType, lockType = unmanaged AtomicLock, retries = 0, maxTasks = numTasks : uint );
+
+      if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation with Loop-Wait work queue.");
+      topoResult = toposortParallel( dmappedPermutedSparseD, workQueue, numTasks );
+
+      delete workQueue;
+    }
+
     when ToposortImplementation.Distributed {
        if !silentMode then writeln("Converting to Sparse Block domain");
       var distributedD : D.type dmapped Block(D, targetLocales=reshape(Locales, {Locales.domain.dim(1),1..#1}) ) = D;
@@ -1544,6 +1739,7 @@ proc main(){
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Distributed implementation.");
       topoResult = toposortDistributed( distributedPermutedSparseD );
     }
+
     otherwise {
       writeln( "Unknown implementation: ", implementation );
       exit(-1);

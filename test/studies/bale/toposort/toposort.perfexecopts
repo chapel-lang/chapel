@@ -1,1 +1,1 @@
---silentMode --printPerfStats --seed 123456789 --N 10000 --additionalDensity=0.3 --implementation Parallel
+--silentMode --printPerfStats --seed 123456789 --N 10000 --additionalDensity=0.3 --implementation ParallelChunkedLoopWait
