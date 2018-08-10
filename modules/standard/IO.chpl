@@ -3214,7 +3214,7 @@ proc channel.readIt(ref x) {
 }
 
 pragma "no doc"
-proc channel.writeIt(x) {
+proc channel.writeIt(const x) {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
@@ -3235,7 +3235,7 @@ proc channel.writeIt(x) {
    For a reading channel, reads as with :proc:`channel.read`.
    Stores any error encountered in the channel. Does not return anything.
  */
-inline proc channel.readwrite(x) where this.writing {
+inline proc channel.readwrite(const x) where this.writing {
   this.writeIt(x);
 }
 // documented in the writing version.
