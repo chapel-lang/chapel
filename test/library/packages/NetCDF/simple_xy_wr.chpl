@@ -35,8 +35,8 @@ proc main {
 
   /* The dimids array is used to pass the IDs of the dimensions of
    * the variable. */
-   dimids[0] = x_dimid;
-   dimids[1] = y_dimid;
+  dimids[0] = x_dimid;
+  dimids[1] = y_dimid;
 
   /* Define the variable. The type of the variable in this case is
    * NC_INT (4-byte integer). */

@@ -67,8 +67,7 @@ proc main {
      many netCDF variables, dimensions, and global attributes are in
      the file; also the dimension id of the unlimited dimension, if
      there is one. */
-  cdfError(nc_inq(ncid, ndims_in, nvars_in, ngatts_in, 
-                  unlimdimid_in));
+  cdfError(nc_inq(ncid, ndims_in, nvars_in, ngatts_in, unlimdimid_in));
 
   /* In this case we know that there are 2 netCDF dimensions, 4
      netCDF variables, no global attributes, and no unlimited
@@ -119,7 +118,7 @@ proc main {
         return 2;
       }
 
-extern proc nc_get_att_text_void_ptr(ncid: c_int, varid: c_int, field: c_string, p: c_void_ptr): c_int;
+  extern proc nc_get_att_text_void_ptr(ncid: c_int, varid: c_int, field: c_string, p: c_void_ptr): c_int;
 
   /* Each of the netCDF variables has a "units" attribute. Let's read
      them and check them. */
