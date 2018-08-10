@@ -917,6 +917,11 @@ bool FnSymbol::isSecondaryMethod() const {
   return isMethod() == true && isPrimaryMethod() == false;
 }
 
+bool FnSymbol::isUserDefined() const {
+  return (!hasFlag(FLAG_COMPILER_GENERATED) &&
+          !hasFlag(FLAG_AUTO_II));
+}
+
 bool FnSymbol::isInitializer() const {
   return isMethod() == true && strcmp(name, "init")     == 0;
 }
