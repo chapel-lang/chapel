@@ -48,7 +48,8 @@ proc main {
   var tempIn:[0..#nlat, 0..#nlon] real(32);
 
   /* For the lat lon coordinate variables. */
-  var latsIn: [0..#nlat] real(32), lonsIn: [0..#nlon] real(32);
+  var latsIn: [0..#nlat] real(32),
+      lonsIn: [0..#nlon] real(32);
 
   /* To check the units attributes. */
   var presUnitsIn = new bytes(maxAttLen), tempUnitsIn = new bytes(maxAttLen);
@@ -72,8 +73,10 @@ proc main {
   /* In this case we know that there are 2 netCDF dimensions, 4
      netCDF variables, no global attributes, and no unlimited
      dimension. */
-  if (ndims_in != 2 || nvars_in != 4 || ngatts_in != 0 || 
-      unlimdimid_in != -1) then return 2;
+  if ndims_in != 2 || nvars_in != 4 || ngatts_in != 0 || unlimdimid_in != -1 {
+    writeln("one of the inputs was not as expected");
+    return 2;
+  }
 
   /* Get the varids of the latitude and longitude coordinate
      variables. */
@@ -86,11 +89,15 @@ proc main {
 
   /* Check the coordinate variable data. */
   for lat in 0..#nlat do
-    if latsIn[lat] != startLat + 5.0*lat then
+    if latsIn[lat] != startLat + 5.0*lat {
+      writeln("Found a mismatched lattitued at #", lat);
       return 2;
+    }
   for lon in 0..#nlon do
-    if lonsIn[lon] != startLon + 5.0*lon then
+    if lonsIn[lon] != startLon + 5.0*lon {
+      writeln("Found a mismatched longitude at #", lon);
       return 2;
+    }
 
   /* Get the varids of the pressure and temperature netCDF
      variables. */
@@ -106,29 +113,38 @@ proc main {
   /* Check the data. */
   for lat in 0..#nlat do
     for lon in 0..#nlon do
-      if (presIn[lat, lon] != samplePressure + (lon * nlat + lat) ||
-          tempIn[lat, lon] != sampleTemp + .25 * (lon * nlat + lat)) then
+      if presIn[lat, lon] != samplePressure + (lon * nlat + lat) ||
+         tempIn[lat, lon] != sampleTemp + .25 * (lon * nlat + lat) {
+        writeln("Found a bad pressure or temperature at ", (lat, lon));
         return 2;
+      }
 
 extern proc nc_get_att_text_void_ptr(ncid: c_int, varid: c_int, field: c_string, p: c_void_ptr): c_int;
 
   /* Each of the netCDF variables has a "units" attribute. Let's read
      them and check them. */
   cdfError(nc_get_att_text_void_ptr(ncid, lat_varid, units, latUnitsIn.ptr()));
-  if latUnitsIn.ptr(): c_string: string != latUnits then
+  if latUnitsIn.ptr(): c_string: string != latUnits {
+    writeln("Bad units for latUnits");
     return 2;
+  }
 
   cdfError(nc_get_att_text_void_ptr(ncid, lon_varid, units, lonUnitsIn.ptr()));
-  if lonUnitsIn.ptr(): c_string: string != lonUnits then
+  if lonUnitsIn.ptr(): c_string: string != lonUnits {
+    writeln("Bad units for lonUnits");
     return 2;
+  }
 
   cdfError(nc_get_att_text_void_ptr(ncid, pres_varid, units, presUnitsIn.ptr()));
-  if presUnitsIn.ptr(): c_string: string != presUnits then
+  if presUnitsIn.ptr(): c_string: string != presUnits {
+    writeln("Bad units for presUnits");
     return 2;
-
+  }
   cdfError(nc_get_att_text_void_ptr(ncid, temp_varid, units, tempUnitsIn.ptr()));
-  if tempUnitsIn.ptr(): c_string: string != tempUnits then
+  if tempUnitsIn.ptr(): c_string: string != tempUnits {
+    writeln("Bad units for tempUnits");
     return 2;
+  }
 
   /* Close the file. */
   cdfError(nc_close(ncid));

@@ -46,7 +46,8 @@ proc main {
    var pres_in, temp_in: [0..#nlvl, 0..#nlat, 0..#nlon] real(32);
 
    /* These program variables hold the latitudes and longitudes. */
-   var lats: [0..#nlat] real(32), lons: [0..#nlon] real(32);
+   var lats: [0..#nlat] real(32),
+       lons: [0..#nlon] real(32);
 
    /* Loop indexes. */
    var lvl, lat, lon, rec, i = 0;
@@ -65,11 +66,15 @@ proc main {
 
    /* Check the coordinate variable data. */
    for lat in 0..#nlat do
-      if (lats[lat] != startLat + 5.0*lat) then
+      if lats[lat] != startLat + 5.0*lat {
+         writeln("Found a mismatched lattitued at #", lat);
 	 return 2;
+      }
    for lon in 0..#nlon do
-      if (lons[lon] != startLon + 5.0*lon) then
+      if lons[lon] != startLon + 5.0*lon {
+         writeln("Found a mismatched longitude at #", lon);
 	 return 2;
+      }
 
    /* Get the varids of the pressure and temperature netCDF
     * variables. */
@@ -101,10 +106,14 @@ proc main {
       for lvl in 0..#nlvl do
 	 for lat in 0..#nlat do
            for lon in 0..#nlon {
-	       if (pres_in[lvl, lat, lon] != samplePressure + i) then
+	       if pres_in[lvl, lat, lon] != samplePressure + i {
+                  writeln("Found a bad pressure at ", (lvl, lat, lon));
 		  return 2;
-	       if (temp_in[lvl, lat, lon] != sampleTemp + i) then
+               }
+	       if temp_in[lvl, lat, lon] != sampleTemp + i {
+                  writeln("Found a bad temperature at ", (lvl, lat, lon));
 		  return 2;
+               }
 	       i += 1;
 	    }
    } /* next record */

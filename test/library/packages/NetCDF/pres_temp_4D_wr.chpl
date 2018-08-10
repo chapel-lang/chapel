@@ -58,7 +58,8 @@ proc main {
    var temp_out: [0..#nlvl, 0..#nlat, 0..#nlon] real(32);
 
    /* These program variables hold the latitudes and longitudes. */
-   var lats: [0..#nlat] real(32), lons: [0..#nlon] real(32);
+   var lats: [0..#nlat] real(32),
+       lons: [0..#nlon] real(32);
 
    /* Loop indexes. */
    var lvl, lat, lon, rec, i: c_int = 0;

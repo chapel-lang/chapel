@@ -35,7 +35,9 @@ proc main {
   var dimids: [0..#ndims] c_int;
 
   var presOut, tempOut: [0..#nlat, 0..#nlon] real(32);
-  var lats: [0..#nlat] real(32), lons: [0..#nlon] real(32);
+
+  var lats: [0..#nlat] real(32),
+      lons: [0..#nlon] real(32);
 
   const presUnits = "hPa", tempUnits = "celsius";
 
