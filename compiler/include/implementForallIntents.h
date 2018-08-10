@@ -36,19 +36,10 @@
 
 // functions currently defined/used across implementForallIntents*.cpp
 
-extern Map<FnSymbol*,FnSymbol*> pristineLeaderIterators;
-
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
-
-IntentTag argIntentForForallIntent(ForallIntentTag tfi);
-bool      callingParallelIterator(CallExpr* call);
-void      addArgsToToLeaderCallForPromotionWrapper(FnSymbol* fn,
-                                                   int numExtraArgs,
-                                                   Symbol* extraFormals[]);
-VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref);
-FnSymbol*  copyLeaderFn(FnSymbol* origFn, bool ignore_isResolved);
-ArgSymbol* newExtraFormal(ShadowVarSymbol* svar, int ix, Symbol* eActual,
-                          bool nested);
+bool  callingParallelIterator(CallExpr* call);
+void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
+                     ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
 
 static inline const char* intentArgName(int ix, const char* base) {
   return astr("_x", istr(ix+1), "_", base);

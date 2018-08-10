@@ -36,13 +36,15 @@ const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
     case TFI_DEFAULT:       return "default";
     case TFI_CONST:         return "const";
-    case TFI_IN_OUTERVAR:   return "in-outervar";
+    case TFI_IN_PARENT:     return "parent-in";
     case TFI_IN:            return "in";
     case TFI_CONST_IN:      return "const in";
     case TFI_REF:           return "ref";
     case TFI_CONST_REF:     return "const ref";
     case TFI_REDUCE:        return "reduce";
-    case TFI_REDUCE_OP:     return "reduceOp";
+    case TFI_REDUCE_OP:        return "reduce-Op";
+    case TFI_REDUCE_PARENT_AS: return "parent-reduce-AS";
+    case TFI_REDUCE_PARENT_OP: return "parent-reduce-Op";
     case TFI_TASK_PRIVATE:  return "task-private";
   }
   INT_ASSERT(false);
@@ -440,7 +442,7 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymb
     switch (svar->intent) {
       case TFI_DEFAULT:
       case TFI_CONST:
-      case TFI_IN_OUTERVAR:
+      case TFI_IN_PARENT:
       case TFI_IN:
       case TFI_CONST_IN:
       case TFI_REF:
@@ -448,13 +450,18 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymb
         ovar = svar->outerVarSym();
         break;
 
-      case TFI_REDUCE:     // _OP probably gets here first
-      case TFI_REDUCE_OP:
+      case TFI_REDUCE:
         // ... except for reduce intents - they are TODO.
         USR_FATAL_CONT(svar, "Reduce intents are currently not implemented"
           " for forall- or for-loops over recursive parallel iterators");
         USR_PRINT(iterFn, "the parallel iterator is here");
         USR_STOP();
+        break;
+
+      case TFI_REDUCE_OP:
+      case TFI_REDUCE_PARENT_AS:
+      case TFI_REDUCE_PARENT_OP:
+        // The error should have been issued above upon TFI_REDUCE.
         break;
 
       case TFI_TASK_PRIVATE:

@@ -1364,9 +1364,10 @@ static bool hasOuterVariable(ShadowVarSymbol* svar) {
 
     case TFI_TASK_PRIVATE:  return false;
 
-    case TFI_IN_OUTERVAR:
-    case TFI_REDUCE_OP:     INT_ASSERT(false); // should not happen
-                            return false;      // dummy
+    case TFI_IN_PARENT:         // these have not been created yet
+    case TFI_REDUCE_OP:
+    case TFI_REDUCE_PARENT_AS:
+    case TFI_REDUCE_PARENT_OP:  INT_ASSERT(false); return false;
   }
   INT_FATAL(svar, "garbage intent");
   return false;  //dummy

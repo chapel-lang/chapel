@@ -8923,9 +8923,10 @@ static void cleanupVoidVarsAndFields() {
           def->sym->type == dtVoid->refType) {
         if (VarSymbol* var = toVarSymbol(def->sym)) {
           // Avoid removing the "_val" field from refs
-          // and forall statements' induction variables.
+          // and forall statements' induction/shadow variables.
           if (! def->parentSymbol->hasFlag(FLAG_REF) &&
-              ! isForallIterVarDef(def)              ) {
+              ! isForallIterVarDef(def)              &&
+              ! preserveShadowVar(var)               ) {
             if (var != gVoid) {
               def->remove();
             }
@@ -8934,6 +8935,8 @@ static void cleanupVoidVarsAndFields() {
       }
     }
   }
+
+  adjustVoidShadowVariables();
 
   // Problem case introduced by postFoldNormal where a statement-level call
   // returning void can be replaced by a '_void' SymExpr. Such SymExprs will
