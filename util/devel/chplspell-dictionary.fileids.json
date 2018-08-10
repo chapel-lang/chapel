@@ -68,6 +68,9 @@
   "75f1ecaa-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/codegen/codegen.cpp"
   ],
+  "6de8d7ca-9c7b-11e8-b963-10ddb1d4c3d5": [
+    "compiler/codegen/library.cpp"
+  ],
   "d20c5afc-1d7e-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/ifa/num.cpp"
   ],
@@ -440,6 +443,9 @@
   "c3e70026-8645-11e8-ad82-10ddb1d4c3d5": [
     "modules/internal/ExternalArray.chpl"
   ],
+  "e6ecf3ae-9c7b-11e8-b963-10ddb1d4c3d5": [
+    "modules/internal/String.chpl"
+  ],
   "5cb0944a-0c15-11e7-980e-10ddb1d4c3d5": [
     "modules/internal/localeModels/knl/LocaleModel.chpl"
   ],
@@ -528,6 +534,9 @@
   ],
   "d41572f2-1f2c-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/SysBasic.chpl"
+  ],
+  "f5a43844-9c7b-11e8-b963-10ddb1d4c3d5": [
+    "modules/standard/Time.chpl"
   ],
   "e9347814-1f30-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Types.chpl"

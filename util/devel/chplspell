@@ -87,7 +87,7 @@ FILTEROUT="compiler/include/bison-chapel.h  \
            doc/rst/modules                  \
            doc/rst/primers                  \
            doc/rst/examples                 \
-           modules/packages/HDF5_HL.chpl    \
+           modules/packages/HDF5.chpl       \
            modules/packages/LAPACK.chpl"
 
 
