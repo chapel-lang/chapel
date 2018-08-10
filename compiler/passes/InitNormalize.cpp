@@ -1053,7 +1053,7 @@ static bool typeHasMethod(AggregateType* type, const char* methodName) {
       }
     }
 
-    if (retval == false) {
+    if (retval == false && isClass(type)) {
       AggregateType* parent = type->dispatchParents.v[0];
       retval = typeHasMethod(parent, methodName);
     }
@@ -1139,6 +1139,15 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
       USR_FATAL_CONT(node,
                      "field \"%s\" used before it is initialized",
                      field->sym->name);
+    } else if (CallExpr* parent = toCallExpr(node->parentExpr)) {
+      // this.myField.something
+      if (typeHasMethod(type, field->sym->name)) {
+        USR_FATAL_CONT(node, "cannot call field-accessor method \"%s\" before this.complete()", field->sym->name);
+      }
+      node->baseExpr->remove();
+      node->baseExpr = NULL;
+      node->primitive = primitives[PRIM_GET_MEMBER];
+
     }
     return false;
   } else if (DefExpr* field = type->toSuperField(node)) {
