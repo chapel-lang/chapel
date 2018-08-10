@@ -94,9 +94,9 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
         --target-compiler=$compilers --comm=$comms --launcher=$launchers
 
-        # The following matrix of eight Chapel runtime configurations are defined by the
+        # The following 2x2x2 matrix of Chapel runtime configurations are defined by the
         # arguments passed to build_configs.py, above. All eight runtimes will be built.
-        # NOTE: The above "--target-compiler" values will be discarded in the setenv callback.
+        # NOTE: "--target-compiler" values shown above will be discarded by the setenv callback.
 
         # CHPL_TARGET_COMPILER  CHPL_COMM   CHPL_LAUNCHER
         # --------------------  ---------   -------------

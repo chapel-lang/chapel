@@ -92,16 +92,19 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
         --tasks=UNSET --comm=none,gasnet --launcher=UNSET --auxfs=UNSET --substrate=none,$substrates
 
-        # The following matrix of six Chapel runtime configurations are defined by the
+        # The following 2x3 matrix of Chapel runtime configurations are defined by the
         # "--comm" and "--substrate" arguments passed to build_configs.py, above.
         #
-        #                           CHPL_COMM=none    CHPL_COMM=gasnet
-        #                           ----------------  ----------------
-        # CHPL_COMM_SUBSTRATE=none         Make
-        # CHPL_COMM_SUBSTRATE=mpi                            Make
-        # CHPL_COMM_SUBSTRATE=udp                            Make
+        # CHPL_COMM   CHPL_COMM_SUBSTRATE   Make Chapel?
+        # ---------   -------------------   ----------------
+        # none        none                  Yes
+        # none        mpi                   No  (skip)
+        # none        udp                   No  (skip)
+        # gasnet      none                  No  (skip)
+        # gasnet      mpi                   Yes
+        # gasnet      udp                   Yes
         #
-        # Only three of those configurations will be built ("Make").
+        # Only three of the six possible configurations will be built.
         # The rest will be skipped by an "exit 0" in the setenv callback script found
         # in the lower part of this file.
 
