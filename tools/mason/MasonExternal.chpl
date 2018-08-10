@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+config const spackVersion = "releases/v0.11.2";
 
 use MasonUtils;
 use FileSystem;
@@ -60,6 +61,7 @@ proc masonExternal(args: [] string) {
   }
 }
 
+/* Prints Spack spec help menu */
 private proc specHelp() {
   const command = "spack help --spec";
   const status = runSpackCommand(command);
@@ -67,17 +69,17 @@ private proc specHelp() {
 
 private proc spackInstalled() throws {
   if !isDir(MASON_HOME + "/spack") {
-    throw new MasonError("To use `mason external` call mason external --setup");
+    throw new MasonError("To use `mason external` call `mason external --setup`");
   }
   return true;
 }
 
+/* Spack installed to MASON_HOME/spack */
 private proc setupSpack() throws {
   writeln("Installing Spack backend ...");
-  const spackVers = "releases/v0.11.2";
   const destination = MASON_HOME + "/spack/";
   const clone = "git clone -q https://github.com/spack/spack " + destination;
-  const checkout = "git checkout -q " + spackVers;
+  const checkout = "git checkout -q " + spackVersion;
   const status = runWithStatus(clone);
   gitC(destination, checkout);
   if status != 0 {
@@ -423,3 +425,4 @@ proc uninstallSpkg(args: [?d] string) throws {
     }
   }
 }
+

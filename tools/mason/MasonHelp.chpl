@@ -200,6 +200,9 @@ proc masonExternalFindHelp() {
   writeln();
   writeln("Usage:");
   writeln("    mason external find [options]");
+  writeln("    mason external find [options] <package>");
+  writeln();
+  writeln("    <package>: a Spack spec expression indicating the package to find");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message"); 
@@ -225,14 +228,16 @@ proc masonExternalFindHelp() {
 }
 
 proc masonExternalInfoHelp() {
-  writeln("Get information about external packages and system architechture");
+  writeln("Get information about external packages and system architecture");
   writeln();
   writeln("Usage:");
-  writeln("    mason external info [options]");
+  writeln("    mason external info [options] <package>");
+  writeln();
+  writeln("    <package>: a Spack spec expression indicating the package to retrieve information on");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
-  writeln("        --arch                  Print architechture information about current system");
+  writeln("        --arch                  Print architecture information about current system");
   writeln();
 }
 
@@ -240,7 +245,7 @@ proc masonExternalSearchHelp() {
   writeln("Search for external packages");
   writeln();
   writeln("Usage:");
-  writeln("    mason external search [options]");
+  writeln("    mason external search [options] <search string>");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
@@ -253,6 +258,8 @@ proc masonInstallHelp() {
   writeln();
   writeln("Usage:");
   writeln("    mason external install [options] <package> ");
+  writeln();
+  writeln("    <package>: a Spack spec expression indicating the package to install");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                     Display this message");
@@ -297,6 +304,8 @@ proc masonUninstallHelp() {
   writeln();
   writeln("Usage:");
   writeln("    mason external uninstall [options] <package> ");
+  writeln();
+  writeln("    <package>: a Spack spec expression indicating the package to install");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");

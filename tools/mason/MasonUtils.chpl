@@ -24,6 +24,7 @@ use Spawn;
 use FileSystem;
 use TOML;
 use Path;
+use MasonEnv;
 
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
@@ -128,8 +129,9 @@ proc runWithStatus(command, show=true): int {
 proc getSpackResult(cmd, quiet=false) : string throws {
   var ret : string;
   try {
-    
-    var prefix = "export SPACK_ROOT=/Users/spartee/.mason/spack" +
+
+
+    var prefix = "export SPACK_ROOT=" + MASON_HOME + "/spack" +
     " && export PATH=$SPACK_ROOT/bin:$PATH" +
     " && source $SPACK_ROOT/share/spack/setup-env.sh && ";
     var splitCmd = prefix + cmd;
@@ -154,7 +156,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
    Only returns the exit status of the command */
 proc runSpackCommand(command, executable="/bin/bash") {
 
-  var prefix = "export SPACK_ROOT=/Users/spartee/.mason/spack" +
+  var prefix = "export SPACK_ROOT=" + MASON_HOME + "/spack" +
     " && export PATH=$SPACK_ROOT/bin:$PATH" +
     " && source $SPACK_ROOT/share/spack/setup-env.sh && ";
 
