@@ -717,7 +717,8 @@ static IteratorInfo*  makeIteratorInfo(AggregateType* iClass,
 
 static FnSymbol*      makeIteratorMethod(IteratorInfo* ii,
                                          const char*   name,
-                                         Type*         retType);
+                                         Type*         retType,
+                                         bool          override=false);
 
 static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
   INT_ASSERT(yieldedType != NULL);
@@ -854,13 +855,17 @@ static IteratorInfo*  makeIteratorInfo(AggregateType* iClass,
 
 static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
                                     const char*   name,
-                                    Type*         retType) {
+                                    Type*         retType,
+                                    bool          override) {
   FnSymbol* fn = new FnSymbol(name);
 
   fn->addFlag(FLAG_AUTO_II);
 
   if (strcmp(name, "advance") != 0) {
     fn->addFlag(FLAG_INLINE);
+  }
+  if (ii->iterator->hasFlag(FLAG_OVERRIDE)) {
+    fn->addFlag(FLAG_OVERRIDE);
   }
 
   fn->setMethod(true);
