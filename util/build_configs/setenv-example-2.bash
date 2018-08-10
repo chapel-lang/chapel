@@ -90,7 +90,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     log_info "Start build_configs $dry_run $verbose # (runtime == no make target)"
 
     $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
-        --tasks=UNSET --comm=none,gasnet --launcher=UNSET --auxfs=UNSET --substrate=none,$substrates
+        --tasks=UNSET --auxfs=UNSET --comm=none,gasnet --launcher=UNSET --substrate=none,$substrates
 
         # The following 2x3 matrix of Chapel runtime configurations are defined by the
         # "--comm" and "--substrate" arguments passed to build_configs.py, above.
