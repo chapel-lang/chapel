@@ -10,6 +10,8 @@ config const printStats = true,
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 
+config const useBufferedAtomics = false;
+
 config const numTasksPerLocale = here.maxTaskPar;
 const numTasks = numLocales * numTasksPerLocale;
 config const N = 2000000; // number of updates per task
@@ -38,8 +40,13 @@ proc main() {
   var t: Timer;
   t.start();
 
-  /* main loop */
-  forall r in rindex {
+  if useBufferedAtomics {
+    use BufferedAtomics;
+    forall r in rindex do
+      A[r].addBuff(1);
+    flushAtomicBuff();
+  } else {
+   forall r in rindex do
     A[r].add(1);
   }
 
