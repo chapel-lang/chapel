@@ -17,7 +17,7 @@
    }
 
    var t: Timer;
-	 t.start();
+   t.start();
 
    RadixMSB.radixSortMSB(array);
 
