@@ -2009,7 +2009,7 @@ module String {
     return cpi._cpindex;
   }
 
-  // Cast from in to codePointIndex
+  // Cast from int to codePointIndex
   pragma "no doc"
   inline proc _cast(type t: codePointIndex, i: int) {
     var cpi: codePointIndex;
