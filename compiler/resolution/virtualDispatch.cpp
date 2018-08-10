@@ -314,7 +314,14 @@ static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
 
 static bool checkOverrides(FnSymbol* fn) {
   ModuleSymbol* parentMod = fn->getModule();
-  return (fOverrideChecking || (parentMod && parentMod->modTag != MOD_USER));
+  // check overrides if any of these are true...
+          // (a) the flag is on and the function is not compiler-generated
+  return ((fOverrideChecking && !fn->isCompilerGenerated()) ||
+          // (b) developer is on (avoids printing developer cases to users)
+          developer == true ||
+          // (c) the function is in the modules/ hierarchy (which we manage
+          //     and want to keep clean)
+          (parentMod && parentMod->modTag != MOD_USER));
 }
 
 static void checkIntentsMatch(FnSymbol* pfn, FnSymbol* cfn) {
@@ -1010,8 +1017,7 @@ static void checkMethodsOverride() {
             }
           }
 
-          if (okKnown && ok == false &&
-              (developer == true || fn->isUserDefined())) {
+          if (okKnown && ok == false) {
             if (fn->hasFlag(FLAG_OVERRIDE)) {
               USR_FATAL_CONT(fn, "%s.%s override keyword present but no "
                                   "superclass method matches signature "
