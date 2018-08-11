@@ -582,7 +582,7 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
 
 
 /*
-   Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
+   Sort the 1D array `Data` using a parallel merge sort algorithm.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
