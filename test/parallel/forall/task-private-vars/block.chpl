@@ -22,8 +22,7 @@ proc nextLocalTaskCounter(hereId:int) {
 
 const MessageDom = {1..numMessages};
 const MessageSpace = MessageDom dmapped Block(MessageDom,
-                                            dataParTasksPerLocale = dptpl,
-     /* ensure determinism w.r.t. #10729 */ dataParIgnoreRunningTasks = true);
+                                              dataParTasksPerLocale = dptpl);
 
 var MessageVisited: [MessageSpace] bool;
 
