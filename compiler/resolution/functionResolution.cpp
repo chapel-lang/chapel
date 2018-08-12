@@ -8871,12 +8871,19 @@ static void cleanupVoidVarsAndFields() {
           call->remove();
         }
       }
-      if (call->isResolved()) {
+      if (FnSymbol* fn = call->resolvedFunction()) {
+        bool seenVoid = false;
         // Remove actual arguments that are void from function calls
         for_actuals(actual, call) {
           if (isVoidOrVoidTupleType(actual->typeInfo())) {
             actual->remove();
+            seenVoid = true;
           }
+        }
+        if (seenVoid && fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+          INT_ASSERT(call->numActuals() == 0);
+          // A 0-arg call to autoDestroy would upset later passes.
+          call->remove();
         }
       }
     }

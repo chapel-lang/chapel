@@ -439,6 +439,10 @@ static VarSymbol* createCurrTPV(ShadowVarSymbol* TPV) {
 static void addDefAndMap(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar,
                          VarSymbol* currVar)
 {
+  if (currVar->type == dtVoid) {
+    INT_ASSERT(currVar->firstSymExpr() == NULL);
+    return;
+  }
   aInit->insertBefore(new DefExpr(currVar));
   map.put(svar, currVar);
 }

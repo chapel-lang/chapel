@@ -1974,11 +1974,6 @@ static void insertInitialization(BlockStmt* destBlock,
   insertInitialization(destBlock, destVar, initTemp);
 }
 
-// unused
-//static void insertInitialization(ShadowVarSymbol* destVar, Expr* srcExpr) {
-//  insertInitialization(destVar->initBlock(), destVar, srcExpr);
-//}
-
 // insertDeinitialization() flavors: as (a1) or (a2) above
 
 static void insertDeinitialization(BlockStmt* destBlock, Symbol* destVar) {
