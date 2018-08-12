@@ -1,0 +1,3 @@
+No longer compiles due to shape preservation.
+'arr' in writeFreqs() is now an associative array,
+not suitable for sorting.

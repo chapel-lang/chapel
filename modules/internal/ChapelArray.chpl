@@ -4189,11 +4189,16 @@ module ChapelArray {
     //  * initialization upon the array declaration,
     //  * assignment within the forall loop.
     // TODO: we want to have just a single move, as is done with 'eltCopy'
-    // in the other case. Ex. users/vass/km/array-of-records-crash-1.chpl
+    // in the other case. Ex. users/vass/km/array-of-records-crash-1.*
 
     var result: [shape] iteratorToArrayElementType(ir.type);
-    forall (r, src) in zip(result, ir) do
-      r = src;
+    if chpl_iteratorFromForExpr(ir) {
+      for (r, src) in zip(result, ir) do
+        r = src;
+    } else {
+      forall (r, src) in zip(result, ir) do
+        r = src;
+    }
     return result;
   }
 
@@ -4212,16 +4217,7 @@ module ChapelArray {
     // include creating a no-inited array with the static type that the
     // iterator yields.
     //
-    // Of course, in the future, we'd like this to support
-    // creating multidimensional arrays - but that requires storing
-    // the yielded shape in the iterator record which doesn't seem close
-    // at hand...
-    //
-    // The resulting array grows dynamically. That wouldn't always be
-    // necessary if we had better shape information in iterator records.
-    // Additionally, the dynamic growing limits parallelism here, so
-    // adding better shape information would allow it to be parallel and
-    // thus enable better performance.
+    // The resulting array grows dynamically. That limits parallelism here.
 
     var i  = 0;
     var size:size_t = 0;
