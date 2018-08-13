@@ -58,10 +58,8 @@
  
 
      //recursive call for subparts of array
+     __radixSortMSB(array, place-bucketBits, startIndex, startIndex + curOffsets[0] -1, auxArray);
      for m in 0..numBuckets-1 {        
-       if m==0 {
-         __radixSortMSB(array, place-bucketBits, startIndex, startIndex + curOffsets[m] -1, auxArray);
-       }
        __radixSortMSB(array, place-bucketBits, startIndex + curOffsets[m] , startIndex + curOffsets[m+1] - 1, auxArray);
          
      }	
