@@ -321,18 +321,16 @@ packages respectively.
 Using Spack Packages
 ~~~~~~~~~~~~~~~~~~~~
 Mason users can interface with ``Spack``, a package manager geared towards high performance
-computing, through the ``mason external`` command. Though this integration, Mason users have
-access to over 2800 `packages <https://spack.readthedocs.io/en/latest/package_list.html#package-list>`_.
+computing, through the ``mason external`` command. Though this integration, Mason users now have
+access to a large ecosystem of `packages <https://spack.readthedocs.io/en/latest/package_list.html#package-list>`_.
 Non-destructive installs, custom version and configurations, and simple package installation
 and uninstallation are a few of the features Mason gains through this integration.
 
-The following example shows how to create a Chapel library from a C library. This example uses the ``HDF5``
-library which is a C library wrapped with extern procedures using :mod:`C2Chapel`. By wrapping
-these calls and including the original C library, Chapel can harness all of the functionality
-of the ``HDF5`` library without ever having to write library code. Before Mason, Chapel users
-were required to download and install the libraries themselves and use Make to include and use them
-in their projects. These requirements have been removed and now only a few Mason commands
-are required to include external dependencies such as ``HDF5``.
+The following example uses the ``HDF5`` library which is used for high performance data I/O.
+The ``HDF5.chpl`` wrapper used in the example can be found in ``CHPL_HOME/modules/packages".
+Before Mason, Chapel users were required to download and install the libraries themselves
+and use Make to include and use them in their projects. These requirements have been removed
+and now only a few Mason commands are required to include external dependencies such as ``HDF5``.
 
 
 First a Mason project is created using ``mason new masonHDF5`` and the ``HDF5.chpl`` library
