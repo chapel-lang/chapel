@@ -2066,8 +2066,11 @@ static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
     }
   }
 
+  Symbol* fromForExpr =
+    checkIteratorFromForExpr(move, shapeSource) ? gTrue : gFalse;
+
   move->insertAfter(new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE,
-                                 irTemp, shapeSource));
+                                 irTemp, shapeSource, fromForExpr));
 }
 
 static bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
