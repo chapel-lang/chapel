@@ -6,7 +6,7 @@ module HDF5Preprocessors {
 
     proc preprocess(A: []) {
       forall a in A {
-        a += 1;
+        a += n;
       }
     }
   }
