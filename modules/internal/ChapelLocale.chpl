@@ -179,10 +179,10 @@ module ChapelLocale {
       :returns: locale number, in the range ``0..numLocales-1``
       :rtype: int
      */
-    proc id : int return chpl_id();  // just the node part
+    proc id : int return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
 
     pragma "no doc"
-    proc localeid : chpl_localeID_t return chpl_localeid(); // full locale id
+    proc localeid : chpl_localeID_t return __primitive("_wide_get_locale", this);
 
     /*
       Get the name of this locale.
