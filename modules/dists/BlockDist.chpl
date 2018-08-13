@@ -435,7 +435,7 @@ proc Block.init(boundingBox: domain,
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
-  if rank != 2 && isCSType(sparseLayoutType) then 
+  if rank != 2 && isCSType(sparseLayoutType) then
     compilerError("CS layout is only supported for 2 dimensional domains");
 
   if boundingBox.size == 0 then
@@ -470,6 +470,57 @@ proc Block.init(boundingBox: domain,
     dsiDisplayRepresentation();
   }
 }
+proc Block.init(forDomain:domain,
+                boundingBox: domain = forDomain,
+                targetLocales: [] locale = Locales,
+                dataParTasksPerLocale=getDataParTasksPerLocale(),
+                dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+                dataParMinGranularity=getDataParMinGranularity(),
+                param rank = forDomain.rank,
+                type idxType = forDomain.idxType,
+                type sparseLayoutType = unmanaged DefaultDist) {
+  this.rank = rank;
+  this.idxType = idxType;
+  if rank != boundingBox.rank then
+    compilerError("specified Block rank != rank of specified bounding box");
+  if idxType != boundingBox.idxType then
+    compilerError("specified Block index type != index type of specified bounding box");
+  if rank != 2 && isCSType(sparseLayoutType) then
+    compilerError("CS layout is only supported for 2 dimensional domains");
+
+  if boundingBox.size == 0 then
+    halt("Block() requires a non-empty boundingBox");
+
+  this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
+
+  this.sparseLayoutType = sparseLayoutType;
+
+  this.complete();
+
+  setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
+
+  const boundingBoxDims = this.boundingBox.dims();
+  const targetLocDomDims = targetLocDom.dims();
+  coforall locid in targetLocDom do
+    on this.targetLocales(locid) do
+      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBoxDims,
+                                     targetLocDomDims);
+
+  // NOTE: When these knobs stop using the global defaults, we will need
+  // to add checks to make sure dataParTasksPerLocale<0 and
+  // dataParMinGranularity<0
+  this.dataParTasksPerLocale = if dataParTasksPerLocale==0
+                               then here.maxTaskPar
+                               else dataParTasksPerLocale;
+  this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
+  this.dataParMinGranularity = dataParMinGranularity;
+
+  if debugBlockDist {
+    writeln("Creating new Block distribution:");
+    dsiDisplayRepresentation();
+  }
+}
+
 
 proc Block.dsiAssign(other: this.type) {
   coforall locid in targetLocDom do

@@ -243,6 +243,74 @@ class Cyclic: BaseDist {
       for loc in locDist do writeln(loc);
   }
 
+  proc init(forDomain:domain,
+            startIdx=forDomain.low,
+            targetLocales: [] locale = Locales,
+            dataParTasksPerLocale=getDataParTasksPerLocale(),
+            dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+            dataParMinGranularity=getDataParMinGranularity(),
+            param rank: int = forDomain.rank,
+            type idxType = forDomain.idxType)
+    where isTuple(startIdx) || isIntegralType(startIdx.type) {
+    var tupleStartIdx: rank*idxType;
+    if isTuple(startIdx) then tupleStartIdx = startIdx;
+                         else tupleStartIdx(1) = startIdx;
+
+    this.rank = rank;
+    this.idxType = idxType;
+
+    // MPF - why isn't it:
+    //setupTargetLocalesArray(targetLocDom, targetLocs, targetLocales);
+
+    this.complete();
+
+    if rank == 1  {
+      targetLocDom = {0..#targetLocales.numElements};
+      targetLocs = targetLocales;
+    } else if targetLocales.rank == 1 {
+      const factors = _factor(rank, targetLocales.numElements);
+      var ranges: rank*range;
+      for param i in 1..rank {
+        ranges(i) = 0..#factors(i);
+      }
+      targetLocDom = {(...ranges)};
+      for (loc1, loc2) in zip(targetLocs, targetLocales) {
+        loc1 = loc2;
+      }
+    } else {
+      if targetLocales.rank != rank then
+        compilerError("locales array rank must be one or match distribution rank");
+      var ranges: rank*range;
+      for param i in 1..rank do {
+        var thisRange = targetLocales.domain.dim(i);
+        ranges(i) = 0..#thisRange.length;
+      }
+      targetLocDom = {(...ranges)};
+      targetLocs = reshape(targetLocales, targetLocDom);
+    }
+
+    for param i in 1..rank do
+      this.startIdx(i) = chpl__mod(tupleStartIdx(i), targetLocDom.dim(i).length);
+
+    // NOTE: When these knobs stop using the global defaults, we will need
+    // to add checks to make sure dataParTasksPerLocale<0 and
+    // dataParMinGranularity<0
+    this.dataParTasksPerLocale = if dataParTasksPerLocale==0
+                                 then here.maxTaskPar
+                                 else dataParTasksPerLocale;
+    this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
+    this.dataParMinGranularity = dataParMinGranularity;
+
+    coforall locid in targetLocDom {
+      on targetLocs(locid) {
+        locDist(locid) = new unmanaged LocCyclic(rank, idxType, locid, this);
+      }
+    }
+    if debugCyclicDist then
+      for loc in locDist do writeln(loc);
+  }
+
+
   proc dsiAssign(other: this.type) {
     coforall locid in targetLocDom do
       on targetLocs(locid) do

@@ -987,17 +987,42 @@ static void processSyntacticDistributions(CallExpr* call) {
   }
 
   if (call->isNamed("chpl__distributed")) {
-    if (CallExpr* distCall = toCallExpr(call->get(1))) {
-      if (SymExpr* distClass = toSymExpr(distCall->baseExpr)) {
-        if (TypeSymbol* ts = expandTypeAlias(distClass)) {
-          if (isDistClass(ts->type) == true) {
-            CallExpr* newExpr = new CallExpr(PRIM_NEW,
-                new CallExpr(PRIM_TO_UNMANAGED_CLASS, distCall->remove()));
+    INT_ASSERT(call->numActuals() >= 2);
+    Expr* distribution = call->get(1);
+    Expr* domain = call->get(2);
 
-            call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
+    SymExpr* distClass = NULL;
+    CallExpr* distCall = NULL;
 
-            processManagedNew(newExpr);
+    if (isCallExpr(distribution)) {
+      distCall = toCallExpr(distribution);
+      distClass = toSymExpr(distCall->baseExpr);
+    } else if (SymExpr* distSe = toSymExpr(distribution)) {
+      distCall = new CallExpr(distSe->copy());
+      distClass = toSymExpr(distCall->baseExpr);
+    }
+    if (distClass != NULL) {
+      if (TypeSymbol* ts = expandTypeAlias(distClass)) {
+        if (isDistClass(ts->type)) {
+          if (CallExpr* domainCall = toCallExpr(domain)) {
+            insertCallTemps(domainCall);
+            // Get the SymExpr that replaced domainCall.
+            domain = call->get(2);
           }
+
+          // Either way remove it, we'll put it back in a moment
+          distribution->remove();
+
+          if (SymExpr* domainSe = toSymExpr(domain)) {
+            distCall->insertAtTail(new NamedExpr("forDomain", domainSe->copy()));
+          }
+
+          CallExpr* newExpr = new CallExpr(PRIM_NEW,
+              new CallExpr(PRIM_TO_UNMANAGED_CLASS, distCall));
+
+          call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
+
+          processManagedNew(newExpr);
         }
       }
     }
