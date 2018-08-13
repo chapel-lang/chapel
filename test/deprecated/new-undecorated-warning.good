@@ -1,0 +1,2 @@
+new-undecorated-warning.chpl:2: In function 'main':
+new-undecorated-warning.chpl:3: warning: this new call changes meaning

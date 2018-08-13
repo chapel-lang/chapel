@@ -5908,11 +5908,14 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // where t is e.g Owned(MyClass)
       // or for t is unmanaged(MyClass)
       if (manager == NULL) {
-        if (isManagedPtrType(type))
+        if (isManagedPtrType(type)) {
           manager = type;
-
-        if (isUnmanagedClassType(type))
+        } else if (isUnmanagedClassType(type)) {
           manager = dtUnmanaged;
+        } else if (isClass(type)) {
+          USR_WARN(newExpr, "this new call changes meaning");
+          manager = dtBorrowed;
+        }
       }
 
       // if manager is set, and we're not calling the manager's init function,
