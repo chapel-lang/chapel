@@ -878,7 +878,7 @@ static gni_mem_handle_t* rf_mdh_map;    // all locales' remote fork space mdhs
 #define RF_DONE_NUM_POOLS 512
 #define RF_DONE_NUM_PER_POOL 32
 
-typedef int8_t rf_done_t;
+typedef int64_t rf_done_t;
 
 static rf_done_t (*rf_done_pool)[RF_DONE_NUM_PER_POOL];
 static atomic_bool rf_done_pool_lock[RF_DONE_NUM_POOLS][RF_DONE_NUM_PER_POOL];
@@ -4599,6 +4599,8 @@ void rf_done_init(void)
 }
 
 
+static __thread int rf_done_private_prt;
+
 static
 inline
 rf_done_t* rf_done_alloc(void)
@@ -4611,14 +4613,31 @@ rf_done_t* rf_done_alloc(void)
 #define CEIL_X_DIV_Y(x, y) (1 + ((x) - 1) / (y))
 
   if (prt_lo == -1) {
-    const int nPrts = chpl_task_getMaxPar();
-    const int prt = my_thread_idx() % nPrts;
+    const int nPrts = chpl_task_getMaxPar() + 1;
+    const int tidx = my_thread_idx();
+    int prt;
+    if (tidx < nPrts - 1) {
+      prt = tidx;
+      rf_done_private_prt = 1;
+    } else {
+      prt = nPrts - 1;
+      rf_done_private_prt = 0;
+    }
     prt_lo = ((prt == 0)
               ? 0
               : CEIL_X_DIV_Y(prt * RF_DONE_NUM_POOLS, nPrts));
     prt_hi = ((prt == nPrts - 1)
               ? RF_DONE_NUM_POOLS - 1
               : CEIL_X_DIV_Y((prt + 1) * RF_DONE_NUM_POOLS, nPrts) - 1);
+
+    if (rf_done_private_prt) {
+      for (int i = prt_lo; i < prt_hi; i++) {
+        for (int j = 0; j < RF_DONE_NUM_PER_POOL; j ++) {
+          rf_done_pool[i][j] = -1;
+        }
+      }
+    }
+
     last_i = prt_lo;
     last_j = 0;
   }
@@ -4635,17 +4654,31 @@ rf_done_t* rf_done_alloc(void)
   int i = last_i;
   int j = last_j;
 
-  do {
-    if (++j >= RF_DONE_NUM_PER_POOL) {
-      j = 0;
-      if (++i >= prt_hi)
-        i = prt_lo;
-    }
+  if (rf_done_private_prt) {
+    do {
+      if (++j >= RF_DONE_NUM_PER_POOL) {
+        j = 0;
+        if (++i >= prt_hi)
+          i = prt_lo;
+      }
 
-    if (i == last_i && j == last_j) {
-      CHPL_INTERNAL_ERROR("rf_done_pool empty");
-    }
-  } while (atomic_exchange_bool(&rf_done_pool_lock[i][j], true));
+      if (i == last_i && j == last_j) {
+        CHPL_INTERNAL_ERROR("rf_done_pool empty");
+      }
+    } while (rf_done_pool[i][j] != -1);
+  } else {
+    do {
+      if (++j >= RF_DONE_NUM_PER_POOL) {
+        j = 0;
+        if (++i >= prt_hi)
+          i = prt_lo;
+      }
+
+      if (i == last_i && j == last_j) {
+        CHPL_INTERNAL_ERROR("rf_done_pool empty");
+      }
+    } while (atomic_exchange_bool(&rf_done_pool_lock[i][j], true));
+  }
 
   last_i = i;
   last_j = j;
@@ -4663,7 +4696,10 @@ void rf_done_free(rf_done_t* rf_done_p)
   const int linearized_ij = rf_done_p - &rf_done_pool[0][0];
   const int i = linearized_ij / RF_DONE_NUM_PER_POOL;
   const int j = linearized_ij % RF_DONE_NUM_PER_POOL;
-  atomic_store_bool(&rf_done_pool_lock[i][j], false);
+  if (rf_done_private_prt)
+    rf_done_pool[i][j] = -1;
+  else
+    atomic_store_bool(&rf_done_pool_lock[i][j], false);
 }
 
 
