@@ -323,10 +323,6 @@ static void checkIntentsMatch(FnSymbol* pfn, FnSymbol* cfn) {
   INT_ASSERT(pfn->numFormals() == cfn->numFormals());
   INT_ASSERT(ct);
 
-
-  if (0 == strcmp(pfn->name, "inout_in"))
-    gdbShouldBreakHere();
-
   int nFormals = pfn->numFormals();
 
   for (int i = 3; i <= nFormals; i++) {
