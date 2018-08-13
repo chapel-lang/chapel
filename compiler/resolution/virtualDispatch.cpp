@@ -330,11 +330,12 @@ static void checkIntentsMatch(FnSymbol* pfn, FnSymbol* cfn) {
     ArgSymbol* ca = cfn->getFormal(i);
 
     if (pa->originalIntent != ca->originalIntent) {
-      USR_FATAL_CONT(cfn, "%s.%s conflicting intent for argument '%s'",
+      USR_FATAL_CONT(cfn, "%s.%s conflicting intent for argument '%s' "
+                          "in overriding method",
                            ct->symbol->name, cfn->name, ca->name);
-      USR_FATAL_CONT(pa, "this function uses %s",
+      USR_FATAL_CONT(pa, "base method uses %s",
                           intentDescrString(pa->originalIntent));
-      USR_FATAL_CONT(ca, "this function uses %s",
+      USR_FATAL_CONT(ca, "overriding method uses %s",
                           intentDescrString(ca->originalIntent));
 
       // "fix" the intent to report errors only once.
