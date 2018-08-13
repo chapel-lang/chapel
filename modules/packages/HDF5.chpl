@@ -19,6 +19,11 @@
 
 module HDF5 {
 
+  // This interface was generated with HDF5 1.10.1. Due to a change of the
+  // `hid_t` type from 32-bit to 64-bit in this version, versions prior
+  // to 1.10.0 cannot be safely used.
+  verifyMinimumHDF5Version(1, 10, 0);
+
   coforall loc in Locales do on loc {
     // Check that the HDF5 version matches what is expected
     // and initialize the HDF5 library on all locales.
@@ -3398,6 +3403,19 @@ module HDF5 {
     }
   }
   */
+  // Verify that the HDF5 version in use is at least as high as the
+  // (major, minor, release) arguments.
+  private proc verifyMinimumHDF5Version(major, minor, release) {
+    const HDF5Version = (C_HDF5.H5_VERS_MAJOR,
+                         C_HDF5.H5_VERS_MINOR,
+                         C_HDF5.H5_VERS_RELEASE),
+          requiredVersion = (major, minor, release);
+
+    if HDF5Version < requiredVersion {
+      halt("HDF5 version ", HDF5Version,
+           " is below the required version ", requiredVersion);
+    }
+  }
 
   /* Read the dataset named `dsetName` from all HDF5 files in the
      directory `dirName` with filenames that begin with `filenameStart`.
