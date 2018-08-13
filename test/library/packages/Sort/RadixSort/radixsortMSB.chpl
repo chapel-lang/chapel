@@ -5,7 +5,7 @@
  use Time;
 
  config const printStats = true;
- config const size = 100000;
+ config const size = 10000;
 
  proc main() {
    
@@ -17,7 +17,7 @@
    }
 
    var t: Timer;
-   t.start();
+	 t.start();
 
    RadixMSB.radixSortMSB(array);
 

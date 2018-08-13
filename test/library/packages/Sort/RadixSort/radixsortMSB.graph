@@ -2,4 +2,4 @@ perfkeys: Time:
 files: radixsortMSB.dat
 graphkeys: Radix Sort MSB
 ylabel: Time (seconds)
-graphtitle: Sample MSB Radix Sort Performance Test
+graphtitle: Radix sorts on 2^24 bytes of shuffled data
