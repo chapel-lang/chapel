@@ -892,6 +892,7 @@ static void checkMethodsOverride() {
           forv_Vec(AggregateType, pt, ct->dispatchParents) {
             findFunctionsProbablyMatching(map, fn, pt, matches);
           }
+
           bool ok = false;
           bool okKnown = false;
 
@@ -939,15 +940,24 @@ static void checkMethodsOverride() {
                   foundMatch = true;
                 }
               } else if (!fn->isResolved() && pfn->isResolved()) {
-                // fn is generic
-                FnSymbol* ins = getInstantiatedFunction(pfn, ct, fn);
-                if (signatureMatch(pfn, ins) &&
-                    evaluateWhereClause(pfn) &&
-                    evaluateWhereClause(ins)) {
-                  foundMatch = true;
+                if (ct->isGeneric()) {
+                  // If the receiver is generic, not much we can do
+                  // (because we don't know which instantiation will be made)
+                  // We might present other errors when checking instantiations
+                  // made in the program.
+                  foundUncertainty = true;
+                } else {
+                  FnSymbol* ins = getInstantiatedFunction(pfn, ct, fn);
+                  if (signatureMatch(pfn, ins) &&
+                      evaluateWhereClause(pfn) &&
+                      evaluateWhereClause(ins)) {
+                    foundMatch = true;
+                  }
                 }
               } else {
                 // What would we instantiate them to?
+                // We might present other errors when checking instantiations
+                // made in the program.
                 foundUncertainty = true;
               }
             }
