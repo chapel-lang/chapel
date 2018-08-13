@@ -32,6 +32,10 @@ proc masonExternal(args: [] string) {
       masonExternalHelp();
       exit(0);
     }
+    else if args[2] == "-h" || args[2] == "--help" {
+      masonExternalHelp();
+      exit(0);
+    }
     else if args[2] == "--setup" {
       setupSpack();
       exit(0);
@@ -45,8 +49,6 @@ proc masonExternal(args: [] string) {
         when 'info' do spkgInfo(args);
         when 'find' do findSpkg(args);
         when '--spec' do specHelp();
-        when '--help' do masonExternalHelp();
-        when '-h' do masonExternalHelp();
         otherwise {
           writeln('error: no such subcommand');
           writeln('try mason external --help');
@@ -75,7 +77,7 @@ private proc spackInstalled() throws {
 }
 
 /* Spack installed to MASON_HOME/spack */
-private proc setupSpack() throws {
+proc setupSpack() throws {
   writeln("Installing Spack backend ...");
   const destination = MASON_HOME + "/spack/";
   const clone = "git clone -q https://github.com/spack/spack " + destination;
@@ -425,4 +427,5 @@ proc uninstallSpkg(args: [?d] string) throws {
     }
   }
 }
+
 
