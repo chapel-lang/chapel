@@ -617,8 +617,9 @@ static InitNormalize preNormalize(AggregateType* at,
             cond->elseStmt = new BlockStmt();
             insert_help(cond->elseStmt, cond, cond->parentSymbol);
 
-            state.initializeFieldsThroughField(cond->elseStmt,
-                                               stateThen.currField());
+            state.initializeFieldsAtTail(cond->elseStmt,
+                                         stateThen.currField());
+
             INT_ASSERT(stateThen.currField() == state.currField());
           }
         }
@@ -682,8 +683,9 @@ void unifyConditionalBranchLastField(AggregateType* at,
                                      InitNormalize* stateElse) {
   DefExpr* thenFieldDef = stateThen->currField();
   DefExpr* elseFieldDef = stateElse->currField();
-  int thenFieldPos = -1;
-  int elseFieldPos = -1;
+  int  thenFieldPos = -1;
+  int  elseFieldPos = -1;
+  bool updateElse   = false;
 
   if (thenFieldDef != NULL) {
     thenFieldPos = at->getFieldPosition(thenFieldDef->name());
@@ -695,31 +697,18 @@ void unifyConditionalBranchLastField(AggregateType* at,
 
   if (thenFieldPos != -1 && elseFieldPos != -1) {
     // Both branches still have fields left to initialize
-    if (thenFieldPos > elseFieldPos) {
-      // The then branch is further along, so update the else branch
-      stateElse->initializeFieldsThroughField(cond->elseStmt,
-                                              thenFieldDef);
-
-    } else if (elseFieldPos > thenFieldPos) {
-      // The else branch is further along, so update the then branch
-      stateThen->initializeFieldsThroughField(cond->thenStmt,
-                                              elseFieldDef);
-
-    } else {
-      // Should never happen, as this function should only be called with
-      // different field positions.
-      INT_ASSERT(false);
-    }
-  } else if (thenFieldPos == -1) {
-    // The then branch initialized the last field, update the else branch
-    stateElse->initializeFieldsThroughField(cond->elseStmt,
-                                            thenFieldDef);
+    updateElse = (thenFieldPos > elseFieldPos);
+    INT_ASSERT(thenFieldPos != elseFieldPos);
   } else {
-    // elseFieldPos == -1
-    // The else branch initialized the last field, update the then branch
-    stateThen->initializeFieldsThroughField(cond->thenStmt,
-                                            elseFieldDef);
+    // then == -1 or else == -1, someone initialized the last field
+    updateElse = (thenFieldPos == -1);
   }
+
+  InitNormalize* mutState = updateElse ? stateElse      : stateThen;
+  BlockStmt*     mutBlock = updateElse ? cond->elseStmt : cond->thenStmt;
+  DefExpr*       endField = updateElse ? thenFieldDef   : elseFieldDef;
+
+  mutState->initializeFieldsAtTail(mutBlock, endField);
 }
 
 /************************************* | **************************************
