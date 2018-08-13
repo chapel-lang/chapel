@@ -22,6 +22,8 @@
 
 #include "AstVisitor.h"
 #include "docsDriver.h"
+#include "driver.h"
+#include "files.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -177,12 +179,23 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromCommandLine() {
       if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
         if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) == true) {
           if (retval != NULL) {
-            USR_FATAL_CONT("a program with multiple user modules "
-                           "requires a main function");
-            USR_PRINT("alternatively, specify a main module with "
-                      "--main-module");
+            if (fLibraryCompile) {
+              // "Main module" is not a valid concept in library compilation
+              if (executableFilename[0] == '\0') {
+                // But we need to know the name to use for the generated library
+                // So if the user hasn't set the executableFilename via -o,
+                // generate an error message
+                USR_FATAL("You must use -o to specify the library name when "
+                          "building a library with multiple modules");
+              }
+            } else {
+              USR_FATAL_CONT("a program with multiple user modules "
+                             "requires a main function");
+              USR_PRINT("alternatively, specify a main module with "
+                        "--main-module");
 
-            USR_STOP();
+              USR_STOP();
+            }
           }
 
           retval = mod;
