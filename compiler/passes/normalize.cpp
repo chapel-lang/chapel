@@ -1703,10 +1703,11 @@ static void applyGetterTransform(CallExpr* call) {
 static bool shouldInsertCallTemps(CallExpr* call);
 static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp);
 static bool moveMakesTypeAlias(CallExpr* call);
+static Expr* getCallTempInsertPoint(Expr* expr);
 
 static void insertCallTemps(CallExpr* call) {
-  if (shouldInsertCallTemps(call) == true) {
-    insertCallTempsWithStmt(call, call->getStmtExpr());
+  if (shouldInsertCallTemps(call)) {
+    insertCallTempsWithStmt(call, getCallTempInsertPoint(call));
   }
 }
 
@@ -1773,6 +1774,27 @@ static bool shouldInsertCallTemps(CallExpr* call) {
     return false;
 
   return true;
+}
+
+// If we're inserting a call-temp for expr, where should we put it?
+static Expr* getCallTempInsertPoint(Expr* expr) {
+  Expr* stmt = expr->getStmtExpr();
+  if (CallExpr* call = toCallExpr(stmt)) {
+    if (call->isPrimitive(PRIM_INIT_VAR)) {
+      SymExpr* se = toSymExpr(call->get(1));
+      INT_ASSERT(se);
+      Symbol* sym = se->symbol();
+      // Put the call temps before the DefExpr for se->symbol()
+      // This allows callDestructors to use a simple strategy
+      // of destroying anything if the DefExpr for it has been
+      // reached. The case to think about is a function returning
+      // a record that throws (or a throwing initializer).
+      if (DefExpr* def = toDefExpr(stmt->prev))
+        if (def->sym == sym)
+          return def;
+    }
+  }
+  return stmt;
 }
 
 static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
