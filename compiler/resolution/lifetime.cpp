@@ -356,10 +356,10 @@ static void markArgumentsReturnScope(FnSymbol* fn) {
       // OK
     } else {
       // Set it to the default
-      if (anyReturnScope)
-        formal->addFlag(FLAG_SCOPE);
-      else
+      if (anyReturnScope == false || formal->originalIntent == INTENT_IN)
         formal->addFlag(FLAG_RETURN_SCOPE);
+      else
+        formal->addFlag(FLAG_SCOPE);
     }
   }
 
