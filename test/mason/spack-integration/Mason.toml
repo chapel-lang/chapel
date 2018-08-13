@@ -1,0 +1,11 @@
+
+[brick]
+name = "masonLA"
+version = "0.1.0"
+chplVersion = "1.18.0"
+compopts = """--ccflags -Wno-enum-conversion --ccflags -Wno-strict-prototypes --ccflags -Wno-incompatible-pointer-types -lopenblas -llapack"""
+
+[dependencies]
+
+[external]
+openblas = "openblas@0.2.20%gcc"

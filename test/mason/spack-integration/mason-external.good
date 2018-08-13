@@ -1,0 +1,15 @@
+==> Installing openblas
+==> Fetching http://github.com/xianyi/OpenBLAS/archive/vn.n.n.tar.gz
+==> Staging archive: /Users/spartee/chapel/test/mason/masonLA/.mason/spack/var/spack/stage/openblas-n.n.n-btofrthinuvbkrnnxihkseshnspbnn/vn.n.n.tar.gz
+==> Created stage in /Users/spartee/chapel/test/mason/masonLA/.mason/spack/var/spack/stage/openblas-n.n.n-btofrthinuvbkrnnxihkseshnspbnn
+==> Applied patch make.patch
+==> Building openblas [MakefilePackage]
+==> Executing phase: 'edit'
+==> Executing phase: 'build'
+==> Executing phase: 'install'
+==> Successfully installed openblas
+  Fetch: nm n.ns.  Build: nm n.ns.  Total: nm n.ns.
+[+] /Users/spartee/chapel/test/mason/masonLA/.mason/spack/opt/spack/darwin-sierra-xn_n/gcc-n.n.n/openblas-n.n.n-btofrthinuvbkrnnxihkseshnspbnn
+Installing Spack backend ...
+Updating mason-registry
+compiled eigen.chpl successfully
