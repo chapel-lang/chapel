@@ -5823,6 +5823,8 @@ static void resolveNewManaged(CallExpr* move, CallExpr* newExpr, Expr* last, Agg
 
 static void handleUnstableNewError(CallExpr* newExpr);
 
+static bool isUndecoratedClassNew(CallExpr* newExpr);
+
 static void resolveNew(CallExpr* newExpr) {
 
   if (newExpr->id == breakOnResolveID) {
@@ -5912,7 +5914,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
           manager = type;
         } else if (isUnmanagedClassType(type)) {
           manager = dtUnmanaged;
-        } else if (isClass(type)) {
+        } else if (isClass(type) && isUndecoratedClassNew(newExpr)) {
+          gdbShouldBreakHere();
           USR_WARN(newExpr, "this new call changes meaning");
           manager = dtBorrowed;
         }
@@ -6091,6 +6094,19 @@ static void resolveNewManaged(CallExpr* move, CallExpr* newExpr, Expr* last,
 }
 
 static void handleUnstableNewError(CallExpr* newExpr) {
+  Type* newType = newExpr->typeInfo();
+  if (isUndecoratedClassNew(newExpr)) {
+    USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
+    USR_PRINT(newExpr, "use 'new unmanaged %s' "
+                       "'new owned %s' or "
+                       "'new shared %s'",
+                       newType->symbol->name,
+                       newType->symbol->name,
+                       newType->symbol->name);
+  }
+}
+
+static bool isUndecoratedClassNew(CallExpr* newExpr) {
   INT_ASSERT(newExpr->parentSymbol);
   Type* newType = newExpr->typeInfo();
   if (isClass(newType) &&
@@ -6124,18 +6140,14 @@ static void handleUnstableNewError(CallExpr* newExpr) {
           } else if (parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
             // OK e.g. new raw MyClass() / new owned MyClass()
           } else {
-            USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
-            USR_PRINT(newExpr, "use 'new unmanaged %s' "
-                               "'new owned %s' or "
-                               "'new shared %s'",
-                               newType->symbol->name,
-                               newType->symbol->name,
-                               newType->symbol->name);
+            return true;
           }
         }
       }
     }
   }
+
+  return false;
 }
 
 static bool isManagedPointerInit(SymExpr* typeExpr) {
