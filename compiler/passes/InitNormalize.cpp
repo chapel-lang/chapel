@@ -282,8 +282,8 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore,
 }
 
 void InitNormalize::initializeField(Expr* insertBefore,
-                                     DefExpr* field,
-                                     Expr* userInit) const {
+                                    DefExpr* field,
+                                    Expr* userInit) const {
   Expr* initExpr = userInit;
   Expr* typeExpr = field->exprType;
   Expr* ret      = NULL;
