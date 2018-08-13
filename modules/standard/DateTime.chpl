@@ -1679,7 +1679,7 @@ module DateTime {
     }
 
     /* Convert a `time` in UTC to this time zone */
-    proc fromutc(in dt: datetime): datetime {
+    proc fromutc(dt: datetime): datetime {
       HaltWrappers.pureVirtualMethodHalt();
       return new datetime(0,0,0);
     }
