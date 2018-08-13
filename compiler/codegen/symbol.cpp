@@ -877,19 +877,21 @@ GenRet ArgSymbol::codegen() {
 
 // If there is a known .pxd file translation for this type, use that.
 // Otherwise, use the normal cname
-static std::string getPXDTypeName(Type* type) {
+static std::string getPythonTypeName(Type* type, bool pxd) {
   std::pair<std::string, std::string> tNames = pythonNames[type->symbol];
-  if (tNames.first != "") {
+  if (pxd && tNames.first != "") {
     return tNames.first;
+  } else if (!pxd && tNames.second != "") {
+    return tNames.second;
   } else {
     return transformTypeForPointer(type);
   }
 }
 
-std::string ArgSymbol::getPXDType() {
+std::string ArgSymbol::getPythonType(bool pxd) {
   Type* t = getArgSymbolCodegenType(this);
 
-  return getPXDTypeName(t);
+  return getPythonTypeName(t, pxd);
   // TODO: LLVM stuff
 }
 
@@ -1652,7 +1654,7 @@ GenRet FnSymbol::codegen() {
 }
 
 // Supports the creation of a python module with --library-python
-void FnSymbol::codegenPXD() {
+void FnSymbol::codegenPython(bool pxd) {
   GenInfo *info = gGenInfo;
 
   if (!hasFlag(FLAG_EXPORT)) return;
@@ -1666,7 +1668,11 @@ void FnSymbol::codegenPXD() {
     if (fGenIDS)
       fprintf(outfile, "%s", idCommentTemp(this));
 
-    fprintf(outfile, "\t%s;\n", codegenPXDType().c.c_str());
+    if (pxd) {
+      fprintf(outfile, "\t%s;\n", codegenPXDType().c.c_str());
+    } else {
+      fprintf(outfile, "\n%s", codegenPYXType().c.c_str());
+    }
   } else {
     // TODO: LLVM stuff
   }
@@ -1683,7 +1689,7 @@ GenRet FnSymbol::codegenPXDType() {
     // Cast to right function type.
     std::string str;
 
-    std::string retString = getPXDTypeName(retType);
+    std::string retString = getPythonTypeName(retType, true);
     str += retString.c_str();
     str += " ";
     str += cname;
@@ -1696,7 +1702,7 @@ GenRet FnSymbol::codegenPXDType() {
           continue; // do not print locale argument, end count, dummy class
         if (count > 0)
           str += ", ";
-        str += formal->getPXDType();
+        str += formal->getPythonType(true);
         str += " ";
         str += formal->cname;
         if (fGenIDS) {
@@ -1708,6 +1714,61 @@ GenRet FnSymbol::codegenPXDType() {
     } // pxd files do not take void as an argument list, just close the parens
     str += ")";
     ret.c = str;
+
+  } else {
+    // TODO: LLVM stuff
+  }
+
+  return ret;
+}
+
+// Supports the creation of a python module with --library-python
+GenRet FnSymbol::codegenPYXType() {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+
+  ret.chplType = typeInfo();
+
+  if (info->cfile) {
+    // Cast to right function type.
+    std::string header = "def ";
+    header += cname;
+    header += "(";
+
+    std::string argTranslate = "";
+    // TODO: do something about the return type in the funcCall line
+    std::string funcCall = "\tchpl_";
+    funcCall += cname;
+    funcCall += "(";
+
+    if (numFormals() != 0) {
+      int count = 0;
+      for_formals(formal, this) {
+        if (formal->hasFlag(FLAG_NO_CODEGEN))
+          continue; // do not print locale argument, end count, dummy class
+        if (count > 0) {
+          header += ", ";
+          funcCall += ", ";
+        }
+        // TODO: save argument type.  Check if one of a specific type that needs
+        // a translation to the C version.  Add that translation to argTranslate
+        // if so.
+        header += formal->getPythonType(false);
+        header += " ";
+        header += formal->cname;
+        if (fGenIDS) {
+          header += " ";
+          header += idCommentTemp(formal);
+        }
+
+        funcCall += formal->cname;
+        count++;
+      }
+
+    } // pyx files do not take void as an argument list, just close the parens
+    header += "):\n";
+    funcCall += ")\n";
+    ret.c = header + argTranslate + funcCall;
 
   } else {
     // TODO: LLVM stuff

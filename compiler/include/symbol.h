@@ -387,7 +387,7 @@ public:
 
   GenRet          codegenType();
 
-  std::string     getPXDType();
+  std::string     getPythonType(bool pxd);
 
   IntentTag       intent;
   IntentTag       originalIntent; // stores orig intent after resolve intents

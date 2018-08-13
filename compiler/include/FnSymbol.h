@@ -103,8 +103,9 @@ public:
   void                       codegenPrototype();
   void                       codegenDef();
 
-  void                       codegenPXD();
+  void                       codegenPython(bool pxd);
   GenRet                     codegenPXDType();
+  GenRet                     codegenPYXType();
 
   void                       insertAtHead(Expr* ast);
   void                       insertAtHead(const char* format, ...);
