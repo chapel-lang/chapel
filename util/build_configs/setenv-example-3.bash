@@ -53,14 +53,14 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     export CHPL_HOST_PLATFORM=cray-xc
     export CHPL_TARGET_PLATFORM=cray-xc
-##  export CHPL_REGEXP=re2      # re2 required for mason
+    export CHPL_REGEXP=re2      # re2 required for mason
     export CHPL_LOCAL_MODEL=flat
     export CHPL_COMM=none
-##  export CHPL_COMM_SUBSTRATE=none
-##  export CHPL_TASKS=qthreads
+    export CHPL_COMM_SUBSTRATE=none
+    export CHPL_TASKS=qthreads
     export CHPL_LAUNCHER=none
-##  export CHPL_LLVM=none       # llvm requires py27 and cmake
-##  export CHPL_AUX_FILESYS=none
+    export CHPL_LLVM=none       # llvm requires py27 and cmake
+    export CHPL_AUX_FILESYS=none
 
     # More CPUs --> faster make. Or, unset CHPL_MAKE_MAX_CPU_COUNT to use all CPUs.
 
