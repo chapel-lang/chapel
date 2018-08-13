@@ -12,3 +12,24 @@ cdef extern from "chpltypes.h":
 cdef extern from "chpl-init.h":
 	void chpl_library_init(int argc, char* argv[])
 	void chpl_library_finalize()
+from realFunctions cimport chpl_library_init, chpl_library_finalize
+from realFunctions cimport chpl__init_realFunctions, takesReal as chpl_takesReal, getReal as chpl_getReal, takeAndReturn as chpl_takeAndReturn
+
+def chpl_setup():
+	cdef char** args = ['realFunctions']
+	chpl_library_init(1, args)
+	chpl__init_realFunctions(1, 1)
+
+def chpl_cleanup():
+	chpl_library_finalize()
+
+def takesReal(float x):
+	chpl_takesReal(x)
+
+def getReal():
+	ret = chpl_getReal()
+	return ret
+
+def takeAndReturn(float x):
+	ret = chpl_takeAndReturn(x)
+	return ret

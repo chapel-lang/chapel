@@ -1,1 +1,2 @@
 lib/stringFunctions.pxd
+lib/stringFunctions.pyx

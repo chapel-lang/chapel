@@ -1,1 +1,2 @@
 lib/uintFunctions.pxd
+lib/uintFunctions.pyx
