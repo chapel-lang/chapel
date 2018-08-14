@@ -247,7 +247,7 @@ proc AccumStencil.dsiAssign(other: _to_unmanaged(this.type)) {
 // AccumStencil distributions are equivalent if they share the same bounding
 // box and target locale set.
 //
-proc AccumStencil.dsiEqualDMaps(that: AccumStencil(?)) {
+proc AccumStencil.dsiEqualDMaps(that: unmanaged AccumStencil(?)) {
   return (this.boundingBox == that.boundingBox &&
           this.targetLocales.equals(that.targetLocales) &&
           this.fluff == that.fluff &&
@@ -451,7 +451,7 @@ proc AccumStencil.dsiCreateReindexDist(newSpace, oldSpace) {
     }
   }
   var d = {(...myNewBbox)};
-  var newDist = new AccumStencil(d, targetLocales,
+  var newDist = new unmanaged AccumStencil(d, targetLocales,
                           dataParTasksPerLocale, dataParIgnoreRunningTasks,
                           dataParMinGranularity, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
   return newDist;
@@ -1432,7 +1432,7 @@ inline proc LocAccumStencilArr.this(i) ref {
 //
 // Privatization
 //
-proc AccumStencil.init(other: AccumStencil, privateData,
+proc AccumStencil.init(other: unmanaged AccumStencil, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType,
                 param ignoreFluff = other.ignoreFluff) {
@@ -1554,7 +1554,7 @@ proc AccumStencilArr.dsiLocalSubdomain() {
 proc AccumStencilDom.dsiLocalSubdomain() {
   // TODO -- could be replaced by a privatized myLocDom in AccumStencilDom
   // as it is with AccumStencilArr
-  var myLocDom:LocAccumStencilDom(rank, idxType, stridable) = nil;
+  var myLocDom:unmanaged LocAccumStencilDom(rank, idxType, stridable) = nil;
   for (loc, locDom) in zip(dist.targetLocales, locDoms) {
     if loc == here then
       myLocDom = locDom;

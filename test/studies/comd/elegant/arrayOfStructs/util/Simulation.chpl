@@ -56,10 +56,10 @@ Timers["total"].start();
 
 timestampMessage("Starting Initialization");
 
-const Pot : BasePotential = if doeam then (new PotentialEAM()):BasePotential
-                            else (new PotentialLJ):BasePotential;
+const Pot : unmanaged BasePotential = if doeam then (new unmanaged PotentialEAM()):unmanaged BasePotential
+                            else (new unmanaged PotentialLJ):unmanaged BasePotential;
 
-const Species = new SpeciesData(Pot.name, Pot.atomicNo, Pot.mass);
+const Species = new unmanaged SpeciesData(Pot.name, Pot.atomicNo, Pot.mass);
 
 const (globalExtent, numBoxes, boxSize, latticeConstant) = computeBoxInfo(Pot.lat, Pot.cutoff);
 const invBoxSize = 1.0/boxSize;
