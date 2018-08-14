@@ -1748,15 +1748,22 @@ GenRet FnSymbol::codegenPYXType() {
   ret.chplType = typeInfo();
 
   if (info->cfile) {
-    // Cast to right function type.
+    // Function header
     std::string header = "def ";
     header += cname;
     header += "(";
 
+    // Translation of any arguments with Python-specific types
     std::string argTranslate = "";
-    // TODO: do something about the return type in the funcCall line
-    // Do something additionally interesting if it is a specific type?
-    std::string funcCall = "\tchpl_";
+    // Call to the wrapped function
+    std::string funcCall = "\t";
+    // Return statement, if applicable
+    std::string returnStmt = "";
+    if (retType != dtVoid) {
+      funcCall += "ret = ";
+      returnStmt += "\treturn ret\n";
+    }
+    funcCall += "chpl_";
     funcCall += cname;
     funcCall += "(";
 
@@ -1791,7 +1798,7 @@ GenRet FnSymbol::codegenPYXType() {
     } // pyx files do not take void as an argument list, just close the parens
     header += "):\n";
     funcCall += ")\n";
-    ret.c = header + argTranslate + funcCall;
+    ret.c = header + argTranslate + funcCall + returnStmt;
 
   } else {
     // TODO: LLVM stuff
