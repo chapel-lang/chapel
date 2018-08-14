@@ -14,6 +14,20 @@ proc testBlockDom() {
 
 testBlockDom();
 
+proc testBlockArg() {
+  var D = {0..9};
+  var D4 = D dmapped Block(targetLocales=Locales);
+
+  writeln("testBlockArg ", D4.type:string);
+
+  forall a in D4 {
+    writeln("testBlockArg ", a, " on ", here.id);
+  }
+}
+
+testBlockArg();
+
+
 proc testCyclicArr() {
   var A1 : [{0..9} dmapped Cyclic] int = 0..9;
 
@@ -38,3 +52,16 @@ proc testCyclicDom() {
 }
 
 testCyclicDom();
+
+proc testCyclicArg() {
+  var D = {0..9};
+  var D4 = D dmapped Cyclic(targetLocales=Locales);
+
+  writeln("testCyclicArg ", D4.type:string);
+
+  forall a in D4 {
+    writeln("testCyclicArg ", a, " on ", here.id);
+  }
+}
+
+testCyclicArg();

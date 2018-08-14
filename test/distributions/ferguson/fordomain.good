@@ -1,0 +1,55 @@
+testBlockArg 0 on 0
+testBlockArg 1 on 0
+testBlockArg 2 on 0
+testBlockArg 3 on 0
+testBlockArg 4 on 0
+testBlockArg 5 on 1
+testBlockArg 6 on 1
+testBlockArg 7 on 1
+testBlockArg 8 on 1
+testBlockArg 9 on 1
+testBlockArg BlockDom(1,int(64),false,unmanaged DefaultDist)
+testBlockDom 0 on 0
+testBlockDom 1 on 0
+testBlockDom 2 on 0
+testBlockDom 3 on 0
+testBlockDom 4 on 0
+testBlockDom 5 on 1
+testBlockDom 6 on 1
+testBlockDom 7 on 1
+testBlockDom 8 on 1
+testBlockDom 9 on 1
+testBlockDom BlockDom(1,int(64),false,unmanaged DefaultDist)
+testCyclicArg 0 on 0
+testCyclicArg 1 on 1
+testCyclicArg 2 on 0
+testCyclicArg 3 on 1
+testCyclicArg 4 on 0
+testCyclicArg 5 on 1
+testCyclicArg 6 on 0
+testCyclicArg 7 on 1
+testCyclicArg 8 on 0
+testCyclicArg 9 on 1
+testCyclicArg CyclicDom(1,int(64),false)
+testCyclicArr 0 on 0
+testCyclicArr 1 on 1
+testCyclicArr 2 on 0
+testCyclicArr 3 on 1
+testCyclicArr 4 on 0
+testCyclicArr 5 on 1
+testCyclicArr 6 on 0
+testCyclicArr 7 on 1
+testCyclicArr 8 on 0
+testCyclicArr 9 on 1
+testCyclicArr CyclicDom(1,int(64),false)
+testCyclicDom 0 on 0
+testCyclicDom 1 on 1
+testCyclicDom 2 on 0
+testCyclicDom 3 on 1
+testCyclicDom 4 on 0
+testCyclicDom 5 on 1
+testCyclicDom 6 on 0
+testCyclicDom 7 on 1
+testCyclicDom 8 on 0
+testCyclicDom 9 on 1
+testCyclicDom CyclicDom(1,int(64),false)
