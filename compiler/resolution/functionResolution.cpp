@@ -5915,9 +5915,11 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         } else if (isUnmanagedClassType(type)) {
           manager = dtUnmanaged;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr)) {
-          gdbShouldBreakHere();
-          USR_WARN(newExpr, "this new call changes meaning");
-          manager = dtBorrowed;
+          if (fLegacyNew == false && fDefaultUnmanaged == false) {
+            gdbShouldBreakHere();
+            USR_WARN(newExpr, "this new call changes meaning");
+            manager = dtBorrowed;
+          }
         }
       }
 
