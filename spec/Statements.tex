@@ -875,6 +875,9 @@ proc deferInFunction() {
 deferInFunction();
 \end{chapel}
 produces the output
+\begin{chapelcompopts}
+--legacy-new
+\end{chapelcompopts}
 \begin{chapeloutput}
 defer1.chpl:4: In function 'deferInFunction':
 defer1.chpl:9: warning: 'delete' can only be applied to unmanaged classes
@@ -915,6 +918,9 @@ proc deferInNestedBlock() {
 deferInNestedBlock();
 \end{chapel}
 produces the output
+\begin{chapelcompopts}
+--legacy-new
+\end{chapelcompopts}
 \begin{chapeloutput}
 defer2.chpl:4: In function 'deferInNestedBlock':
 defer2.chpl:12: warning: 'delete' can only be applied to unmanaged classes
@@ -959,6 +965,9 @@ proc deferInLoop() {
 deferInLoop();
 \end{chapel}
 produces the output
+\begin{chapelcompopts}
+--legacy-new
+\end{chapelcompopts}
 \begin{chapeloutput}
 defer3.chpl:4: In function 'deferInLoop':
 defer3.chpl:10: warning: 'delete' can only be applied to unmanaged classes

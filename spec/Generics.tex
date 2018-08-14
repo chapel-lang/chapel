@@ -509,6 +509,9 @@ writeln(n.next);
 writeln(n.next.type:string);
 delete n;
 \end{chapelpost}
+\begin{chapelcompopts}
+--legacy-new
+\end{chapelcompopts}
 \begin{chapeloutput}
 NodeClass.chpl:10: warning: 'delete' can only be applied to unmanaged classes
 3.14
@@ -626,6 +629,9 @@ writeln(list.next.data);
 delete list.next;
 delete list;
 \end{chapelpost}
+\begin{chapelcompopts}
+--legacy-new
+\end{chapelcompopts}
 \begin{chapeloutput}
 fieldWithoutType.chpl:9: warning: 'delete' can only be applied to unmanaged classes
 fieldWithoutType.chpl:10: warning: 'delete' can only be applied to unmanaged classes
@@ -773,7 +779,7 @@ delete g1;
 delete g2;
 \end{chapelpost}
 \begin{chapelcompopts}
---no-warn-constructors
+--no-warn-constructors --legacy-new
 \end{chapelcompopts}
 \begin{chapeloutput}
 constructorsForGenericFields.chpl:28: warning: 'delete' can only be applied to unmanaged classes
@@ -1004,6 +1010,9 @@ s.push(3);
 while !s.isEmpty do
   writeln(s.pop());
 \end{chapelpost}
+\begin{chapelcompopts}
+--legacy-new
+\end{chapelcompopts}
 \begin{chapeloutput}
 genericStack.chpl:15: In function 'pop':
 genericStack.chpl:21: warning: 'delete' can only be applied to unmanaged classes

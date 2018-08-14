@@ -138,6 +138,9 @@ c = new D();    // Now c refers to an object of type D.
 delete c;   // This deletes the new D.
 delete c2;  // This deletes the new C.
 \end{chapelpost}
+\begin{chapelcompopts}
+--legacy-new
+\end{chapelcompopts}
 \begin{chapeloutput}
 declaration.chpl:8: warning: 'delete' can only be applied to unmanaged classes
 declaration.chpl:9: warning: 'delete' can only be applied to unmanaged classes
@@ -444,7 +447,7 @@ delete mp1;
 delete mp2;
 \end{chapelpost}
 \begin{chapelcompopts}
---no-warn-constructors
+--no-warn-constructors --legacy-new
 \end{chapelcompopts}
 \begin{chapeloutput}
 simpleConstructors.chpl:23: warning: 'delete' can only be applied to unmanaged classes
@@ -669,6 +672,9 @@ writeln(c.x);
 writeln(c.setCount);
 delete c;
 \end{chapelpost}
+\begin{chapelcompopts}
+--legacy-new
+\end{chapelcompopts}
 \begin{chapeloutput}
 getterSetter.chpl:21: warning: 'delete' can only be applied to unmanaged classes
 1
@@ -775,6 +781,9 @@ delete c;        // Deletes that object.
 \begin{chapelexecopts}
 --memLeaksByType
 \end{chapelexecopts}
+\begin{chapelcompopts}
+--legacy-new
+\end{chapelcompopts}
 \begin{chapeloutput}
 delete.chpl:5: warning: 'delete' can only be applied to unmanaged classes
 delete.chpl:8: warning: 'delete' can only be applied to unmanaged classes
@@ -826,6 +835,9 @@ c = new C();     // Creates a new object.
 delete c;        // Deletes that object: Writes out "Bye, bye."
                  // and reclaims the memory that was held by c.
 \end{chapel}
+\begin{chapelcompopts}
+--legacy-new
+\end{chapelcompopts}
 \begin{chapeloutput}
 classDeinitializer.chpl:7: warning: 'delete' can only be applied to unmanaged classes
 classDeinitializer.chpl:10: warning: 'delete' can only be applied to unmanaged classes

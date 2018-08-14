@@ -183,6 +183,9 @@ By contrast, using calls \chpl{postorder(tree.left)}
 and \chpl{postorder(tree.right)} as stand-alone statements would
 result in generating temporary arrays containing the outcomes of these
 recursive calls, which would then be discarded.
+\begin{chapelcompopts}
+--legacy-new
+\end{chapelcompopts}
 \begin{chapeloutput}
 recursive.chpl:4: In function 'deinit':
 recursive.chpl:5: warning: 'delete' can only be applied to unmanaged classes
