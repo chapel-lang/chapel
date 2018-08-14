@@ -1139,7 +1139,7 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
       USR_FATAL_CONT(node,
                      "field \"%s\" used before it is initialized",
                      field->sym->name);
-    } else if (CallExpr* parent = toCallExpr(node->parentExpr)) {
+    } else if (isCallExpr(node->parentExpr)) {
       // this.myField.something
       if (typeHasMethod(type, field->sym->name)) {
         USR_FATAL_CONT(node, "cannot call field-accessor method \"%s\" before this.complete()", field->sym->name);
