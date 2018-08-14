@@ -838,8 +838,6 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
         case INTENT_TYPE:      write("type arg");      break;
         case INTENT_BLANK:     write("arg");           break;
       }
-      if (arg->variableExpr)
-        write("...");
     }
   }
 
@@ -859,6 +857,11 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
 
   if (sym->hasFlag(FLAG_GENERIC))
     write(false, "?", false);
+
+  if (def)
+    if (ArgSymbol* arg = toArgSymbol(sym))
+      if (arg->variableExpr)
+        write("...");
 
   mNeedSpace = true;
 }
