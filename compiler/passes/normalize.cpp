@@ -1014,7 +1014,7 @@ static void processSyntacticDistributions(CallExpr* call) {
           distribution->remove();
 
           if (SymExpr* domainSe = toSymExpr(domain)) {
-            distCall->insertAtTail(new NamedExpr("forDomain", domainSe->copy()));
+            distCall->insertAtHead(domainSe->copy());
           }
 
           CallExpr* newExpr = new CallExpr(PRIM_NEW,
