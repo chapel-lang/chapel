@@ -161,6 +161,14 @@ static void legalizeName(Symbol* sym) {
   {
     sym->cname = astr("chpl__", sym->cname);
   }
+
+  // Append number of array dimensions to polly_array_index
+  // It helps Polly Optimizer to select the correct function
+  if (strcmp("polly_array_index",sym->name) == 0){
+    int numDims = (toFnSymbol(sym)->numFormals() - 1) / 2;
+    sym->cname = astr("polly_array_index_",istr(numDims));
+  }
+
 }
 
 static void
