@@ -46,6 +46,7 @@ x 14.10 "Utopic Unicorn"   is EOL as of July 2015
 x 15.04 "Vivid Vervet"     is EOL as of Feb 2016
 x 15.10 "Wily Werewolf"    is EOL as of July 2016
   16.04 "Xenial Xerus"     LTS until Apr 2021
-x 16.10 "Yakkety Yak"      until July 2017
+x 16.10 "Yakkety Yak"      is EOL as of July 2017
 x 17.04 "Zesty Zapus"      until Jan 2018
-  17.10 "Artful Aardvark"  until July 2018
+x 17.10 "Artful Aardvark"  until July 2018
+  18.04 "Bionic Beaver"    LTS until April 2023
