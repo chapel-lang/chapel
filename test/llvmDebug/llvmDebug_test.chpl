@@ -29,7 +29,7 @@ module My_foo {
   }
 
   proc main() {
-    var My_localActor = new My_Actor();
+    var My_localActor = new unmanaged My_Actor();
     My_localActor.My_name = "Bruce Wayne";
     My_localActor.My_age = 6;
     var My_Number = My_localActor.My_age: int;
