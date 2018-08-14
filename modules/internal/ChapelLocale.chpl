@@ -527,6 +527,9 @@ module ChapelLocale {
   // object.
   pragma "no doc"
   proc chpl_init_rootLocale() {
+    if numLocales > 1 && _local then
+      halt("Cannot run a program compiled with --local in more than 1 locale");
+
     origRootLocale = new unmanaged RootLocale();
     (origRootLocale:borrowed RootLocale).setup();
   }
