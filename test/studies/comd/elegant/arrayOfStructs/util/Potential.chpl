@@ -9,7 +9,7 @@ class BasePotential {
   proc init() {
   }
 
-  proc init(info : BasePotential) {
+  proc init(info : unmanaged BasePotential) {
     this.cutoff      = info.cutoff;
     this.mass        = info.mass;
     this.lat         = info.lat;
