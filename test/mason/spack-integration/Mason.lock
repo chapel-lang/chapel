@@ -1,7 +1,7 @@
 
 [root]
 name = "masonLA"
-compopts = "--ccflags -Wno-enum-conversion --ccflags -Wno-strict-prototypes --ccflags -Wno-incompatible-pointer-types -lopenblas -llapack"
+compopts = "--ccflags -openblas --ccflags -llapack --ccflags -w"
 version = "0.1.0"
 chplVersion = "1.18.0..1.18.0"
 
@@ -11,7 +11,7 @@ chplVersion = "1.18.0..1.18.0"
 name = "openblas"
 compiler = "gcc"
 version = "0.2.20"
-libs = "/Users/spartee/chapel/test/mason/masonLA/.mason/spack/opt/spack/darwin-sierra-x86_64/gcc-8.1.0/openblas-0.2.20-btofrthi6uvbkr6nxihksesh337spbn6/lib"
-include = "/Users/spartee/chapel/test/mason/masonLA/.mason/spack/opt/spack/darwin-sierra-x86_64/gcc-8.1.0/openblas-0.2.20-btofrthi6uvbkr6nxihksesh337spbn6/include"
+libs = "/Users/spartee/.mason/spack/opt/spack/darwin-sierra-x86_64/gcc-8.1.0/openblas-0.2.20-btofrthi6uvbkr6nxihksesh337spbn6/lib"
+include = "/Users/spartee/.mason/spack/opt/spack/darwin-sierra-x86_64/gcc-8.1.0/openblas-0.2.20-btofrthi6uvbkr6nxihksesh337spbn6/include"
 
 

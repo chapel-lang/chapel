@@ -1,5 +1,5 @@
 
-use MasonExample;
+use MasonBuild;
 use MasonExternal;
 
 proc main() {
@@ -11,10 +11,8 @@ proc main() {
   var args: [0..3] string = ["mason", "external", "install", "openblas@0.2.20%gcc"];
   installSpkg(args);
 
-  // build the examples
-  masonExample(["--no-run", "--force"]);
-
-  // run each example
-  masonExample(["eigen.chpl", "--no-build"]);
+  // build library
+  var buildArgs: [0..2] string = ["mason", "build", "--force"];
+  masonBuild(buildArgs);
 
 }
