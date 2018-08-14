@@ -301,7 +301,6 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
     // Make import statement at top of .pyx file for chpl_library_init and
     // chpl_library_finalize
     // TODO: use updated .pxd name
-    // TODO: import numpy?
     fprintf(pyx.fptr, "from %s cimport chpl_library_init, ", libmodeHeadername);
     fprintf(pyx.fptr, "chpl_library_finalize\n");
 
@@ -337,6 +336,10 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
       }
     }
     fprintf(pyx.fptr, "\n\n");
+
+    // Necessary for using numpy types
+    fprintf(pyx.fptr, "import numpy\n");
+    fprintf(pyx.fptr, "cimport numpy\n\n");
 
     makePYXSetupFunctions(moduleInits);
 
