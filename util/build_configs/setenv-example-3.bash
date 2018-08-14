@@ -97,20 +97,25 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
         --target-compiler=$compilers --comm=$comms --launcher=$launchers
 
-        # The following 2x2x2 matrix of Chapel runtime configurations are defined by the
-        # arguments passed to build_configs.py, above. All eight runtimes will be built.
         # NOTE: "--target-compiler" values shown above will be discarded by the setenv callback.
 
-        # CHPL_TARGET_COMPILER  CHPL_COMM   CHPL_LAUNCHER
-        # --------------------  ---------   -------------
-        # cray-prgenv-gnu       none        none
-        # cray-prgenv-gnu       none        slurm-srun
-        # cray-prgenv-gnu       ugni        none
-        # cray-prgenv-gnu       ugni        slurm-srun
-        # cray-prgenv-intel     none        none
-        # cray-prgenv-intel     none        slurm-srun
-        # cray-prgenv-intel     ugni        none
-        # cray-prgenv-intel     ugni        slurm-srun
+        # The following 2x2x2 matrix of Chapel runtime configurations are defined by the
+        # arguments passed to build_configs.py, above.
+
+        # CHPL_TARGET_COMPILER  CHPL_COMM   CHPL_LAUNCHER   Make Chapel?
+        # --------------------  ---------   -------------   -----------
+        # cray-prgenv-gnu       none        none            Yes
+        # cray-prgenv-gnu       none        slurm-srun      No (skip)
+        # cray-prgenv-gnu       ugni        none            No (skip)
+        # cray-prgenv-gnu       ugni        slurm-srun      Yes
+        # cray-prgenv-intel     none        none            Yes
+        # cray-prgenv-intel     none        slurm-srun      No (skip)
+        # cray-prgenv-intel     ugni        none            No (skip)
+        # cray-prgenv-intel     ugni        slurm-srun      Yes
+
+        # Only four of the eight possible runtime configurations will be built.
+        # The rest will be skipped by an "exit 0" in the setenv callback script found
+        # in the lower part of this file.
 
 
     # Chapel tools (ie, mason, chpldoc, test-venv)
@@ -259,9 +264,24 @@ else
 
     # ---
 
-    if [ "$CHPL_COMM" == ugni ]; then
+    if [ "$CHPL_COMM" == none ]; then
+        if [ "$CHPL_LAUNCHER" != none ]; then
+
+            # skip Chapel make because comm == none does not need a Chapel launcher
+            log_info "Skip Chapel make for comm=$CHPL_COMM, launcher=$CHPL_LAUNCHER"
+            exit 0
+        fi
+    elif [ "$CHPL_COMM" == ugni ]; then
+        if [ "$CHPL_LAUNCHER" == none ]; then
+
+            # skip Chapel make because comm == ugni needs a Chapel launcher
+            log_info "Skip Chapel make for comm=$CHPL_COMM, launcher=$CHPL_LAUNCHER"
+            exit 0
+        fi
         unset CHPL_COMM_SUBSTRATE
     fi
+
+    # ---
 
     if [ -n "$verbose" ] ; then
         log_debug "Module list (sorted), after build_configs and setenv:"
