@@ -24,7 +24,7 @@ def chpl_cleanup():
 	chpl_library_finalize()
 
 def takesString(bytes x):
-	cdef char* chpl_x = x;
+	cdef char* chpl_x = x
 	chpl_takesString(chpl_x)
 
 def getString():
@@ -32,6 +32,6 @@ def getString():
 	return ret
 
 def takeAndReturn(bytes x):
-	cdef char* chpl_x = x;
+	cdef char* chpl_x = x
 	ret = chpl_takeAndReturn(chpl_x)
 	return ret
