@@ -366,7 +366,7 @@ module Crypto {
 
     OpenSSL_add_all_digests();
 
-    var ctx: EVP_MD_CTX;
+    var ctx = CHPL_EVP_MD_CTX_new();
 
     var hash: [0..#hashLen] uint(8); ;
     var retHashLen: c_uint = 0;
@@ -374,11 +374,11 @@ module Crypto {
     var md: CONST_EVP_MD_PTR;
     md = EVP_get_digestbyname(digestName.c_str());
 
-    EVP_MD_CTX_init(ctx);
-    EVP_DigestInit_ex(ctx, md, c_nil: ENGINE_PTR);
-    EVP_DigestUpdate(ctx, c_ptrTo(inputBuffer.buff): c_void_ptr, inputBuffer._len: size_t);
-    EVP_DigestFinal_ex(ctx, c_ptrTo(hash): c_ptr(c_uchar), retHashLen);
+    EVP_DigestInit_ex(CHPL_EVP_MD_CTX_ptr(ctx), md, c_nil: ENGINE_PTR);
+    EVP_DigestUpdate(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(inputBuffer.buff): c_void_ptr, inputBuffer._len: size_t);
+    EVP_DigestFinal_ex(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(hash): c_ptr(c_uchar), retHashLen);
 
+    CHPL_EVP_MD_CTX_free(ctx);
     return hash;
   }
 
@@ -474,8 +474,7 @@ module Crypto {
   pragma "no doc"
   proc aesEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
-    var ctx: EVP_CIPHER_CTX;
-    EVP_CIPHER_CTX_init(ctx);
+    var ctx = CHPL_EVP_CIPHER_CTX_new();
 
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
@@ -487,29 +486,30 @@ module Crypto {
     var updatedCipherLen: c_int = 0;
     var ciphertext: [cipherDomain] uint(8);
 
-    EVP_EncryptInit_ex(ctx,
+    EVP_EncryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
                        c_nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
-    EVP_EncryptUpdate(ctx,
+    EVP_EncryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                       c_ptrTo(ciphertext): c_ptr(c_uchar),
                       c_ptrTo(ciphertextLen): c_ptr(c_int),
                       c_ptrTo(plaintextData): c_ptr(c_uchar),
                       plaintextLen: c_int);
-    EVP_EncryptFinal_ex(ctx,
+    EVP_EncryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(ciphertext): c_ptr(c_uchar),
                         c_ptrTo(updatedCipherLen): c_ptr(c_int));
 
     cipherDomain = {0..#(ciphertextLen + updatedCipherLen)};
+
+    CHPL_EVP_CIPHER_CTX_free(ctx);
     return ciphertext;
   }
 
   pragma "no doc"
   proc aesDecrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
-    var ctx: EVP_CIPHER_CTX;
-    EVP_CIPHER_CTX_init(ctx);
+    var ctx = CHPL_EVP_CIPHER_CTX_new();
 
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
@@ -521,21 +521,23 @@ module Crypto {
     var plainDomain: domain(1) = {0..plaintextLen};
     var plaintext: [plainDomain] uint(8);
 
-    EVP_DecryptInit_ex(ctx,
+    EVP_DecryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
                        c_nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
-    EVP_DecryptUpdate(ctx,
+    EVP_DecryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                       c_ptrTo(plaintext): c_ptr(c_uchar),
                       c_ptrTo(plaintextLen): c_ptr(c_int),
                       c_ptrTo(ciphertextData): c_ptr(c_uchar),
                       ciphertextLen: c_int);
-    EVP_DecryptFinal_ex(ctx,
+    EVP_DecryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(plaintext): c_ptr(c_uchar),
                         c_ptrTo(updatedPlainLen): c_ptr(c_int));
 
    plainDomain = {0..#(plaintextLen + updatedPlainLen)};
+
+   CHPL_EVP_CIPHER_CTX_free(ctx);
    return plaintext;
   }
 
@@ -675,8 +677,7 @@ module Crypto {
 pragma "no doc"
 proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
-    var ctx: EVP_CIPHER_CTX;
-    EVP_CIPHER_CTX_init(ctx);
+    var ctx = CHPL_EVP_CIPHER_CTX_new();
 
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
@@ -688,30 +689,31 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     var updatedCipherLen: c_int = 0;
     var ciphertext: [cipherDomain] uint(8);
 
-    EVP_EncryptInit_ex(ctx,
+    EVP_EncryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
                        c_nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
 
-    EVP_EncryptUpdate(ctx,
+    EVP_EncryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                       c_ptrTo(ciphertext): c_ptr(c_uchar),
                       c_ptrTo(ciphertextLen): c_ptr(c_int),
                       c_ptrTo(plaintextData): c_ptr(c_uchar),
                       plaintextLen: c_int);
 
-    EVP_EncryptFinal_ex(ctx,
+    EVP_EncryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(ciphertext[ciphertextLen..]): c_ptr(c_uchar),
                         c_ptrTo(updatedCipherLen): c_ptr(c_int));
     cipherDomain = {0..#(ciphertextLen + updatedCipherLen)};
+
+    CHPL_EVP_CIPHER_CTX_free(ctx);
     return ciphertext;
   }
 
   pragma "no doc"
   proc bfDecrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
-    var ctx: EVP_CIPHER_CTX;
-    EVP_CIPHER_CTX_init(ctx);
+    var ctx = CHPL_EVP_CIPHER_CTX_new();
 
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
@@ -723,21 +725,23 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     var plainDomain: domain(1) = {0..plaintextLen};
     var plaintext: [plainDomain] uint(8);
 
-    EVP_DecryptInit_ex(ctx,
+    EVP_DecryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
                        c_nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
-    EVP_DecryptUpdate(ctx,
+    EVP_DecryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                       c_ptrTo(plaintext): c_ptr(c_uchar),
                       c_ptrTo(plaintextLen): c_ptr(c_int),
                       c_ptrTo(ciphertextData): c_ptr(c_uchar),
                       ciphertextLen: c_int);
-    EVP_DecryptFinal_ex(ctx,
+    EVP_DecryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(plaintext[plaintextLen..]): c_ptr(c_uchar),
                         c_ptrTo(updatedPlainLen): c_ptr(c_int));
 
     plainDomain = {0..#(plaintextLen + updatedPlainLen)};
+
+    CHPL_EVP_CIPHER_CTX_free(ctx);
     return plaintext;
   }
 
@@ -996,7 +1000,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     proc rsaEncrypt(keys: [] RSAKey, plaintext: CryptoBuffer, ref iv: [] uint(8), ref encSymmKeys: [] CryptoBuffer) {
 
       var ctx: EVP_CIPHER_CTX;
-      EVP_CIPHER_CTX_init(ctx);
+      EVP_CIPHER_CTX_init(ctx); // TODO
 
       var numKeys = keys.size;
       for i in keys.domain do {
@@ -1045,7 +1049,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     proc rsaDecrypt(key: RSAKey, iv: [] uint(8), ciphertext: [] uint(8), encKeys: [] CryptoBuffer) throws {
 
       var ctx: EVP_CIPHER_CTX;
-      EVP_CIPHER_CTX_init(ctx);
+      EVP_CIPHER_CTX_init(ctx); // TODO
 
       var numEncKeys = encKeys.size;
       var openErrCode = 0;
@@ -1184,7 +1188,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     // The RSA module include needs special treatment since it uses
     // I as an argument even though Chapel will have already included
     // complex.h which defines I. See issue #6824.
-    require "CryptoHandlers/rsa_complex_bypass_handler.h";
+    require "CryptoHandlers/openssl_c_support.h";
 
     require "openssl/pem.h", "openssl/bn.h", "openssl/bio.h", "openssl/evp.h",
             "openssl/aes.h", "openssl/rand.h", "openssl/sha.h", "-lcrypto", "-lssl";
@@ -1221,6 +1225,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
     extern type EVP_MD;
     extern type EVP_MD_CTX;
+    extern type CHPL_EVP_MD_CTX;
     extern type ENGINE;
 
     extern type EVP_MD_PTR = c_ptr(EVP_MD);
@@ -1230,16 +1235,16 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc OpenSSL_add_all_digests();
     extern proc EVP_get_digestbyname(name: c_string): CONST_EVP_MD_PTR;
 
-    // EVP_MD_CTX_init is documented to have void return type
-    // but in some versions of OpenSSL it becomes a #define that returns int.
-    // For other versions, it actually returns void.
-    extern proc EVP_MD_CTX_init(ref ctx: EVP_MD_CTX): void;
-    extern proc EVP_DigestInit_ex(ref ctx: EVP_MD_CTX, types: CONST_EVP_MD_PTR, impl: ENGINE_PTR): c_int;
-    extern proc EVP_DigestUpdate(ref ctx: EVP_MD_CTX, const d: c_void_ptr, cnt: size_t): c_int;
-    extern proc EVP_DigestFinal_ex(ref ctx: EVP_MD_CTX, md: c_ptr(c_uchar), ref s: c_uint): c_int;
+    extern proc CHPL_EVP_MD_CTX_new(): CHPL_EVP_MD_CTX;
+    extern proc CHPL_EVP_MD_CTX_free(ref c: CHPL_EVP_MD_CTX);
+    extern proc CHPL_EVP_MD_CTX_ptr(ref c: CHPL_EVP_MD_CTX):EVP_MD_CTX_PTR;
+    extern proc EVP_DigestInit_ex(ctx: EVP_MD_CTX_PTR, types: CONST_EVP_MD_PTR, impl: ENGINE_PTR): c_int;
+    extern proc EVP_DigestUpdate(ctx: EVP_MD_CTX_PTR, const d: c_void_ptr, cnt: size_t): c_int;
+    extern proc EVP_DigestFinal_ex(ctx: EVP_MD_CTX_PTR, md: c_ptr(c_uchar), ref s: c_uint): c_int;
 
     extern type EVP_CIPHER;
     extern type EVP_CIPHER_CTX;
+    extern type CHPL_EVP_CIPHER_CTX;
 
     extern type EVP_CIPHER_PTR = c_ptr(EVP_CIPHER);
     extern type EVP_CIPHER_CTX_PTR = c_ptr(EVP_CIPHER_CTX);
@@ -1257,36 +1262,34 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
                                   keylen: c_int,
                                   outx: c_ptr(c_uchar)): c_int;
 
-    extern proc EVP_CIPHER_CTX_free(ref c: EVP_CIPHER_CTX);
 
-    // EVP_CIPHER_CTX_init is documented to have void return type
-    // but in some versions of OpenSSL it becomes a #define that returns int.
-    // For other versions, it actually returns void.
-    extern proc EVP_CIPHER_CTX_init(ref c: EVP_CIPHER_CTX): void;
-    extern proc EVP_EncryptInit_ex(ref ctx: EVP_CIPHER_CTX,
+    extern proc CHPL_EVP_CIPHER_CTX_new(): CHPL_EVP_CIPHER_CTX;
+    extern proc CHPL_EVP_CIPHER_CTX_free(ref c: CHPL_EVP_CIPHER_CTX);
+    extern proc CHPL_EVP_CIPHER_CTX_ptr(ref c: CHPL_EVP_CIPHER_CTX):EVP_CIPHER_CTX_PTR;
+    extern proc EVP_EncryptInit_ex(ctx: EVP_CIPHER_CTX_PTR,
                                   cipher: CONST_EVP_CIPHER_PTR,
                                   impl: ENGINE_PTR,
                                   const key: c_ptr(c_uchar),
                                   const iv: c_ptr(c_uchar)): c_int;
-    extern proc EVP_EncryptUpdate(ref ctx: EVP_CIPHER_CTX,
+    extern proc EVP_EncryptUpdate(ctx: EVP_CIPHER_CTX_PTR,
                                   outm: c_ptr(c_uchar),
                                   outl: c_ptr(c_int),
                                   const ins: c_ptr(c_uchar),
                                   inl: c_int): c_int;
-    extern proc EVP_EncryptFinal_ex(ref ctx: EVP_CIPHER_CTX,
+    extern proc EVP_EncryptFinal_ex(ctx: EVP_CIPHER_CTX_PTR,
                                     outm: c_ptr(c_uchar),
                                     outl: c_ptr(c_int)): c_int;
-    extern proc EVP_DecryptInit_ex(ref ctx: EVP_CIPHER_CTX,
+    extern proc EVP_DecryptInit_ex(ctx: EVP_CIPHER_CTX_PTR,
                                   cipher: CONST_EVP_CIPHER_PTR,
                                   impl: ENGINE_PTR,
                                   const key: c_ptr(c_uchar),
                                   const iv: c_ptr(c_uchar)): c_int;
-    extern proc EVP_DecryptUpdate(ref ctx: EVP_CIPHER_CTX,
+    extern proc EVP_DecryptUpdate(ctx: EVP_CIPHER_CTX_PTR,
                                   outm: c_ptr(c_uchar),
                                   outl: c_ptr(c_int),
                                   const ins: c_ptr(c_uchar),
                                   inl: c_int): c_int;
-    extern proc EVP_DecryptFinal_ex(ref ctx: EVP_CIPHER_CTX,
+    extern proc EVP_DecryptFinal_ex(ctx: EVP_CIPHER_CTX_PTR,
                                     outm: c_ptr(c_uchar),
                                     outl: c_ptr(c_int)): c_int;
 
