@@ -1,1 +1,1 @@
---warn-unstable
+--warn-unstable --legacy-new
