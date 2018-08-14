@@ -12,8 +12,8 @@ cdef extern from "chpltypes.h":
 cdef extern from "chpl-init.h":
 	void chpl_library_init(int argc, char* argv[])
 	void chpl_library_finalize()
-from boolFunctions cimport chpl_library_init, chpl_library_finalize
-from boolFunctions cimport chpl__init_boolFunctions, takesBool as chpl_takesBool, getBool as chpl_getBool, takeAndReturn as chpl_takeAndReturn
+from chpl_boolFunctions cimport chpl_library_init, chpl_library_finalize
+from chpl_boolFunctions cimport chpl__init_boolFunctions, takesBool as chpl_takesBool, getBool as chpl_getBool, takeAndReturn as chpl_takeAndReturn
 
 import numpy
 cimport numpy

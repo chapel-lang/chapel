@@ -1,2 +1,2 @@
-lib/realFunctions.pxd
+lib/chpl_realFunctions.pxd
 lib/realFunctions.pyx

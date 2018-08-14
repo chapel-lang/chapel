@@ -12,8 +12,8 @@ cdef extern from "chpltypes.h":
 cdef extern from "chpl-init.h":
 	void chpl_library_init(int argc, char* argv[])
 	void chpl_library_finalize()
-from realFunctions cimport chpl_library_init, chpl_library_finalize
-from realFunctions cimport chpl__init_realFunctions, takesReal as chpl_takesReal, getReal as chpl_getReal, takeAndReturn as chpl_takeAndReturn
+from chpl_realFunctions cimport chpl_library_init, chpl_library_finalize
+from chpl_realFunctions cimport chpl__init_realFunctions, takesReal as chpl_takesReal, getReal as chpl_getReal, takeAndReturn as chpl_takeAndReturn
 
 import numpy
 cimport numpy

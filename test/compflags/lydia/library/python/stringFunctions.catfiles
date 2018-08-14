@@ -1,2 +1,2 @@
-lib/stringFunctions.pxd
+lib/chpl_stringFunctions.pxd
 lib/stringFunctions.pyx

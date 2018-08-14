@@ -13,8 +13,8 @@ cdef extern from "chpltypes.h":
 cdef extern from "chpl-init.h":
 	void chpl_library_init(int argc, char* argv[])
 	void chpl_library_finalize()
-from testing cimport chpl_library_init, chpl_library_finalize
-from testing cimport chpl__init_testing, foo as chpl_foo, takesAndReturns as chpl_takesAndReturns, parallelProg as chpl_parallelProg, threadring as chpl_threadring
+from chpl_testing cimport chpl_library_init, chpl_library_finalize
+from chpl_testing cimport chpl__init_testing, foo as chpl_foo, takesAndReturns as chpl_takesAndReturns, parallelProg as chpl_parallelProg, threadring as chpl_threadring
 
 import numpy
 cimport numpy

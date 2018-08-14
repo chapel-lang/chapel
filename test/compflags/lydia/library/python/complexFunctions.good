@@ -12,8 +12,8 @@ cdef extern from "chpltypes.h":
 cdef extern from "chpl-init.h":
 	void chpl_library_init(int argc, char* argv[])
 	void chpl_library_finalize()
-from complexFunctions cimport chpl_library_init, chpl_library_finalize
-from complexFunctions cimport chpl__init_complexFunctions, takesComplex as chpl_takesComplex, getComplex as chpl_getComplex, takeAndReturn as chpl_takeAndReturn
+from chpl_complexFunctions cimport chpl_library_init, chpl_library_finalize
+from chpl_complexFunctions cimport chpl__init_complexFunctions, takesComplex as chpl_takesComplex, getComplex as chpl_getComplex, takeAndReturn as chpl_takeAndReturn
 
 import numpy
 cimport numpy
