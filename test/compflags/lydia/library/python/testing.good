@@ -16,6 +16,9 @@ cdef extern from "chpl-init.h":
 from testing cimport chpl_library_init, chpl_library_finalize
 from testing cimport chpl__init_testing, foo as chpl_foo, takesAndReturns as chpl_takesAndReturns, parallelProg as chpl_parallelProg, threadring as chpl_threadring
 
+import numpy
+cimport numpy
+
 def chpl_setup():
 	cdef char** args = ['testing']
 	chpl_library_init(1, args)

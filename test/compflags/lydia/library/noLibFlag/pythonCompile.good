@@ -16,6 +16,9 @@ cdef extern from "chpl-init.h":
 from pythonCompile cimport chpl_library_init, chpl_library_finalize
 from pythonCompile cimport chpl__init_pythonCompile, foo as chpl_foo, takesAndReturns as chpl_takesAndReturns, parallelProg as chpl_parallelProg, threadring as chpl_threadring
 
+import numpy
+cimport numpy
+
 def chpl_setup():
 	cdef char** args = ['pythonCompile']
 	chpl_library_init(1, args)
