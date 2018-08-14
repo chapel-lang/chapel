@@ -895,6 +895,24 @@ std::string ArgSymbol::getPythonType(bool pxd) {
   // TODO: LLVM stuff
 }
 
+// Some Python type instances need to be translated into C level type instances.
+// Generate code to perform that translation when this is the case
+std::string ArgSymbol::getPythonArgTranslation() {
+  Type* t = getArgSymbolCodegenType(this);
+
+  if (t == dtStringC) {
+    std::string res = "\tcdef char* chpl_";
+    res += cname;
+    res += " = ";
+    res += cname;
+    res += "\n";
+    return res;
+  } /*else if () {
+    // Handle arrays
+    }*/
+  return "";
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -1737,6 +1755,7 @@ GenRet FnSymbol::codegenPYXType() {
 
     std::string argTranslate = "";
     // TODO: do something about the return type in the funcCall line
+    // Do something additionally interesting if it is a specific type?
     std::string funcCall = "\tchpl_";
     funcCall += cname;
     funcCall += "(";
@@ -1750,15 +1769,19 @@ GenRet FnSymbol::codegenPYXType() {
           header += ", ";
           funcCall += ", ";
         }
-        // TODO: save argument type.  Check if one of a specific type that needs
-        // a translation to the C version.  Add that translation to argTranslate
-        // if so.
+
         header += formal->getPythonType(false);
         header += " ";
         header += formal->cname;
         if (fGenIDS) {
           header += " ";
           header += idCommentTemp(formal);
+        }
+
+        std::string curArgTranslate = formal->getPythonArgTranslation();
+        if (curArgTranslate != "") {
+          argTranslate += curArgTranslate;
+          funcCall += "chpl_";
         }
 
         funcCall += formal->cname;
