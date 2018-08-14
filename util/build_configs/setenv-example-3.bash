@@ -105,17 +105,17 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         # CHPL_TARGET_COMPILER  CHPL_COMM   CHPL_LAUNCHER   Make Chapel?
         # --------------------  ---------   -------------   -----------
         # cray-prgenv-gnu       none        none            Yes
-        # cray-prgenv-gnu       none        slurm-srun      No (skip)
+        # cray-prgenv-gnu       none        slurm-srun      Yes
         # cray-prgenv-gnu       ugni        none            No (skip)
         # cray-prgenv-gnu       ugni        slurm-srun      Yes
         # cray-prgenv-intel     none        none            Yes
-        # cray-prgenv-intel     none        slurm-srun      No (skip)
+        # cray-prgenv-intel     none        slurm-srun      Yes
         # cray-prgenv-intel     ugni        none            No (skip)
         # cray-prgenv-intel     ugni        slurm-srun      Yes
 
-        # Only four of the eight possible runtime configurations will be built.
-        # The rest will be skipped by an "exit 0" in the setenv callback script found
-        # in the lower part of this file.
+        # Only six of the eight possible runtime configurations will be built.
+        # The other two will be skipped by an "exit 0" in the setenv callback script
+        # found in the lower part of this file.
 
 
     # Chapel tools (ie, mason, chpldoc, test-venv)
@@ -264,14 +264,7 @@ else
 
     # ---
 
-    if [ "$CHPL_COMM" == none ]; then
-        if [ "$CHPL_LAUNCHER" != none ]; then
-
-            # skip Chapel make because comm == none does not need a Chapel launcher
-            log_info "Skip Chapel make for comm=$CHPL_COMM, launcher=$CHPL_LAUNCHER"
-            exit 0
-        fi
-    elif [ "$CHPL_COMM" == ugni ]; then
+    if [ "$CHPL_COMM" == ugni ]; then
         if [ "$CHPL_LAUNCHER" == none ]; then
 
             # skip Chapel make because comm == ugni needs a Chapel launcher
