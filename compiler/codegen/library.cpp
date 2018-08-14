@@ -28,6 +28,7 @@
 #include "stringutil.h"
 
 char libDir[FILENAME_MAX + 1]  = "";
+char pxdName[FILENAME_MAX + 1] = "";
 
 // TypeSymbol -> (pxdName, pyxName)  Will be "" if the cname should be used
 std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
@@ -250,6 +251,10 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile && fLibraryPython) {
     setupPythonTypeMap();
 
+    strcpy(pxdName, "chpl_");
+    strncat(pxdName, libmodeHeadername,
+            sizeof(libmodeHeadername)-strlen(pxdName)-1);
+
     makePXDFile(functions);
     makePYXFile(functions);
   }
@@ -260,7 +265,7 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
 static void makePXDFile(std::vector<FnSymbol*> functions) {
   fileinfo pxd = { NULL, NULL, NULL };
 
-  openLibraryHelperFile(&pxd, libmodeHeadername, "pxd"); // TODO: change name?
+  openLibraryHelperFile(&pxd, pxdName, "pxd");
 
   if (pxd.fptr != NULL) {
     FILE* save_cfile = gGenInfo->cfile;
@@ -291,7 +296,7 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits);
 static void makePYXFile(std::vector<FnSymbol*> functions) {
   fileinfo pyx = { NULL, NULL, NULL };
 
-  openLibraryHelperFile(&pyx, libmodeHeadername, "pyx");
+  openLibraryHelperFile(&pyx, pythonModulename, "pyx");
 
   if (pyx.fptr != NULL) {
     FILE* save_cfile = gGenInfo->cfile;
@@ -300,15 +305,13 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
 
     // Make import statement at top of .pyx file for chpl_library_init and
     // chpl_library_finalize
-    // TODO: use updated .pxd name
-    fprintf(pyx.fptr, "from %s cimport chpl_library_init, ", libmodeHeadername);
+    fprintf(pyx.fptr, "from %s cimport chpl_library_init, ", pxdName);
     fprintf(pyx.fptr, "chpl_library_finalize\n");
 
     std::vector<FnSymbol*> moduleInits;
     std::vector<FnSymbol*> exported;
 
-    // TODO: use updated .pxd name
-    fprintf(pyx.fptr, "from %s cimport ", libmodeHeadername);
+    fprintf(pyx.fptr, "from %s cimport ", pxdName);
     bool first = true;
     // Make import statement at top of .pyx file for exported functions
     for_vector(FnSymbol, fn, functions) {

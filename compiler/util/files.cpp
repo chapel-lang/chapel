@@ -57,6 +57,7 @@
 
 char               executableFilename[FILENAME_MAX + 1] = "";
 char               libmodeHeadername[FILENAME_MAX + 1]  = "";
+char               pythonModulename[FILENAME_MAX + 1]   = "";
 char               saveCDir[FILENAME_MAX + 1]           = "";
 
 std::string ccflags;

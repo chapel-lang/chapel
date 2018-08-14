@@ -2161,6 +2161,18 @@ static void setupDefaultFilenames() {
       strncat(executableFilename, lastSlash,
               sizeof(executableFilename)-strlen(executableFilename)-1);
 
+      if (fLibraryPython) {
+        strncpy(pythonModulename, lastSlash, sizeof(pythonModulename)-1);
+        pythonModulename[sizeof(pythonModulename)-1] = '\0';
+        char* lastDot = strrchr(pythonModulename, '.');
+        if (lastDot == NULL) {
+          INT_FATAL(mainMod,
+                    "main module filename is missing its extension: %s\n",
+                    libmodeHeadername);
+        }
+        *lastDot = '\0';
+      }
+
     } else {
       // copy from that slash onwards into the executableFilename,
       // saving space for a `\0` terminator
