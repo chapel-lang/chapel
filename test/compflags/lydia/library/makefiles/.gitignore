@@ -6,3 +6,8 @@ lib/headerName.h
 lib/myLib.a
 renamedTest
 lib/Makefile.myLib
+lib/librequireStmt.a
+lib/requireStmt.h
+lib/Makefile.requireStmt
+libfoo.a
+checkRequire
