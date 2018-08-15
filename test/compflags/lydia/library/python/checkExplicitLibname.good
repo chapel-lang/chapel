@@ -1,7 +1,7 @@
 from libc.stdint cimport *
 
-cdef extern from "pythonCompile.h":
-	void chpl__init_pythonCompile(int64_t _ln, int32_t _fn);
+cdef extern from "checkExplicitLibname.h":
+	void chpl__init_checkExplicitLibname(int64_t _ln, int32_t _fn);
 	void foo();
 	int64_t takesAndReturns(int64_t x);
 	void parallelProg(int64_t numTasksToRun);
@@ -13,16 +13,16 @@ cdef extern from "chpltypes.h":
 cdef extern from "chpl-init.h":
 	void chpl_library_init(int argc, char* argv[])
 	void chpl_library_finalize()
-from chpl_pythonCompile cimport chpl_library_init, chpl_library_finalize
-from chpl_pythonCompile cimport chpl__init_pythonCompile, foo as chpl_foo, takesAndReturns as chpl_takesAndReturns, parallelProg as chpl_parallelProg, threadring as chpl_threadring
+from chpl_checkExplicitLibname cimport chpl_library_init, chpl_library_finalize
+from chpl_checkExplicitLibname cimport chpl__init_checkExplicitLibname, foo as chpl_foo, takesAndReturns as chpl_takesAndReturns, parallelProg as chpl_parallelProg, threadring as chpl_threadring
 
 import numpy
 cimport numpy
 
 def chpl_setup():
-	cdef char** args = ['pythonCompile']
+	cdef char** args = ['checkExplicitLibname']
 	chpl_library_init(1, args)
-	chpl__init_pythonCompile(1, 1)
+	chpl__init_checkExplicitLibname(1, 1)
 
 def chpl_cleanup():
 	chpl_library_finalize()

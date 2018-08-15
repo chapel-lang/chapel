@@ -1,1 +1,2 @@
-lib/testing.pxd
+lib/chpl_testing.pxd
+lib/testing.pyx

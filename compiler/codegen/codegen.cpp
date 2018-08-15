@@ -2135,10 +2135,11 @@ static void setupDefaultFilenames() {
 
     // find the last slash in the filename's path, if there is one
     const char* lastSlash = strrchr(mainModFilename, '/');
+    const char* filename = NULL;
     if (lastSlash == NULL) {
-      lastSlash = mainModFilename;
+      filename = mainModFilename;
     } else {
-      lastSlash++;
+      filename = lastSlash + 1;
     }
 
     // "Executable" name should be given a "lib" prefix in library compilation,
@@ -2148,10 +2149,10 @@ static void setupDefaultFilenames() {
       if (libmodeHeadername[0] == '\0') {
         // copy from that slash onwards into the libmodeHeadername,
         // saving space for a `\0` terminator
-        if (strlen(lastSlash) >= sizeof(libmodeHeadername)) {
+        if (strlen(filename) >= sizeof(libmodeHeadername)) {
           INT_FATAL("input filename exceeds header filename buffer size");
         }
-        strncpy(libmodeHeadername, lastSlash, sizeof(libmodeHeadername)-1);
+        strncpy(libmodeHeadername, filename, sizeof(libmodeHeadername)-1);
         libmodeHeadername[sizeof(libmodeHeadername)-1] = '\0';
         // remove the filename extension from the library header name.
         char* lastDot = strrchr(libmodeHeadername, '.');
@@ -2162,20 +2163,32 @@ static void setupDefaultFilenames() {
         }
         *lastDot = '\0';
       }
-      if (strlen(lastSlash) >= sizeof(executableFilename) - 3) {
+      if (strlen(filename) >= sizeof(executableFilename) - 3) {
         INT_FATAL("input filename exceeds executable filename buffer size");
       }
       strcpy(executableFilename, "lib");
-      strncat(executableFilename, lastSlash,
+      strncat(executableFilename, filename,
               sizeof(executableFilename)-strlen(executableFilename)-1);
+
+      if (fLibraryPython) {
+        strncpy(pythonModulename, filename, sizeof(pythonModulename)-1);
+        pythonModulename[sizeof(pythonModulename)-1] = '\0';
+        char* lastDot = strrchr(pythonModulename, '.');
+        if (lastDot == NULL) {
+          INT_FATAL(mainMod,
+                    "main module filename is missing its extension: %s\n",
+                    pythonModulename);
+        }
+        *lastDot = '\0';
+      }
 
     } else {
       // copy from that slash onwards into the executableFilename,
       // saving space for a `\0` terminator
-      if (strlen(lastSlash) >= sizeof(executableFilename)) {
+      if (strlen(filename) >= sizeof(executableFilename)) {
         INT_FATAL("input filename exceeds executable filename buffer size");
       }
-      strncpy(executableFilename, lastSlash, sizeof(executableFilename)-1);
+      strncpy(executableFilename, filename, sizeof(executableFilename)-1);
       executableFilename[sizeof(executableFilename)-1] = '\0';
     }
 
@@ -2194,6 +2207,13 @@ static void setupDefaultFilenames() {
   if (fLibraryCompile && libmodeHeadername[0] == '\0') {
     strncpy(libmodeHeadername, executableFilename, sizeof(libmodeHeadername)-1);
     libmodeHeadername[sizeof(libmodeHeadername)-1] = '\0';
+  }
+
+  // If we're in library mode and the library name was explicitly set, use that
+  // name for the python module.
+  if (fLibraryCompile && fLibraryPython && pythonModulename[0] == '\0') {
+    strncpy(pythonModulename, executableFilename, sizeof(pythonModulename)-1);
+    pythonModulename[sizeof(pythonModulename)-1] = '\0';
   }
 }
 
