@@ -267,6 +267,7 @@ library/packages/Sort/performance/sorts-quadratic.graph
 library/packages/LinearAlgebra/performance/linearalgebra-perf.graph
 sparse/CS/multiplication/cs-multiplication.graph
 sparse/CS/resize/cs-resize.graph
+library/packages/Sort/RadixSort/radixsortMSB.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph

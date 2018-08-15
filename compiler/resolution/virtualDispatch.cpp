@@ -317,6 +317,36 @@ static bool checkOverrides(FnSymbol* fn) {
   return (fOverrideChecking || (parentMod && parentMod->modTag != MOD_USER));
 }
 
+static void checkIntentsMatch(FnSymbol* pfn, FnSymbol* cfn) {
+  AggregateType* ct = toAggregateType(cfn->_this->getValType());
+  // these are really a preconditions for the following code
+  INT_ASSERT(pfn->numFormals() == cfn->numFormals());
+  INT_ASSERT(ct);
+
+  int nFormals = pfn->numFormals();
+
+  for (int i = 3; i <= nFormals; i++) {
+    ArgSymbol* pa = pfn->getFormal(i);
+    ArgSymbol* ca = cfn->getFormal(i);
+
+    if (pa->originalIntent != ca->originalIntent) {
+      USR_FATAL_CONT(cfn, "%s.%s conflicting intent for argument '%s' "
+                          "in overriding method",
+                           ct->symbol->name, cfn->name, ca->name);
+      USR_FATAL_CONT(pa, "base method uses %s",
+                          intentDescrString(pa->originalIntent));
+      USR_FATAL_CONT(ca, "overriding method uses %s",
+                          intentDescrString(ca->originalIntent));
+
+      // "fix" the intent to report errors only once.
+      // This would be totally unreasonable if the compiler were
+      // to continue compiling beyond this pass.
+      ca->originalIntent = pa->originalIntent;
+    }
+  }
+}
+
+
 static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
   resolveSignature(cfn);
 
@@ -377,6 +407,10 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
       USR_STOP();
 
     } else {
+
+      // check that the intents match
+      checkIntentsMatch(pfn, cfn);
+
       virtualDispatchUpdate(pfn, cfn);
     }
   }

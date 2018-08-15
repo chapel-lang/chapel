@@ -36,6 +36,39 @@ module DefaultRectangular {
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
   config param earlyShiftData = true;
+  config param usePollyArrayIndex = false;
+
+  // A function which help to compute the final index
+  // to be used for DefaultRectangularArr access. This function
+  // helps Polly to effectively communicate the array dimension
+  // sizes and the index subscripts to Polly.
+  pragma "lineno ok"
+  pragma "llvm readnone"
+  proc polly_array_index(arguments:int ...):int {
+    param rank = (arguments.size - 1) / 2;
+    param blkStart = 2;
+    param blkEnd = 2 + rank - 1;
+    param indStart = blkEnd + 1;
+    param indEnd = indStart + rank - 1;
+    var offset = arguments(1);
+    var blk:rank*int;
+    var ind:rank*int;
+
+    blk(rank) = 1;
+    for param i in 1..(rank-1) by -1 do
+      blk(i) = blk(i+1) * arguments(blkStart+i);
+
+    for param j in 1..rank {
+      ind(j) = arguments(indStart+j-1);
+    }
+
+    var ret:int = offset;
+    for param i in 1..rank {
+      ret += ind(i) * blk(i);
+    }
+
+    return ret;
+  }
 
   class DefaultDist: BaseDist {
     override proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
@@ -916,6 +949,7 @@ module DefaultRectangular {
                                            stridable=stridable);
     var off: rank*idxType;
     var blk: rank*chpl__idxTypeToIntIdxType(idxType);
+    var sizesPerDim: rank*chpl__idxTypeToIntIdxType(idxType);
     var str: rank*idxSignedType;
     var factoredOffs: chpl__idxTypeToIntIdxType(idxType);
 
@@ -1088,6 +1122,12 @@ module DefaultRectangular {
       computeFactoredOffs();
       const size = blk(1) * dom.dsiDim(1).length;
 
+      if usePollyArrayIndex {
+        for param dim in 1..rank {
+         sizesPerDim(dim) = dom.dsiDim(dim).length;
+        }
+      }
+
       // Allow DR array initialization to pass in existing data
       if data == nil {
         if !localeModelHasSublocales {
@@ -1125,14 +1165,31 @@ module DefaultRectangular {
           return chpl__idxToInt(ind(1));
         } else {
           var sum = 0:intIdxType;
+          var useInd = ind;
+          var useOffset:int = 0;
+          var useSizesPerDim = sizesPerDim;
 
-          for param i in 1..rank-1 {
-            sum += chpl__idxToInt(ind(i)) * blk(i);
+          if usePollyArrayIndex {
+            // Polly works better if we provide 0-based indices from the start.
+            // So instead of using factoredOffs at the end, we initially subtract
+            // the dimension offsets from the index subscripts beforehand.
+            if !wantShiftedIndex {
+             for param i in 1..rank do {
+                useInd(i) = chpl__idxToInt(useInd(i)) - chpl__idxToInt(off(i));
+             }
+
+           }
+           return polly_array_index(useOffset, (...useSizesPerDim), (...useInd));
           }
-          sum += chpl__idxToInt(ind(rank));
+          else {
+            for param i in 1..rank-1 {
+              sum += chpl__idxToInt(ind(i)) * blk(i);
+            }
+            sum += chpl__idxToInt(ind(rank));
 
-          if !wantShiftedIndex then sum -= factoredOffs;
-          return sum;
+            if !wantShiftedIndex then sum -= factoredOffs;
+            return sum;
+          }
         }
       }
     }

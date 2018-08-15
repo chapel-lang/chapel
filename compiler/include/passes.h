@@ -118,8 +118,10 @@ void adjustVoidShadowVariables();
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
 
 // iterator.cpp
-CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec);
+CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
+                                 bool fromForExpr);
 void setIteratorRecordShape(CallExpr* call);
+bool checkIteratorFromForExpr(Expr* ref, Symbol* shape);
 
 // lowerIterators.cpp, lowerForalls.cpp
 void lowerForallStmtsInline();

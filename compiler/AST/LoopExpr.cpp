@@ -172,7 +172,8 @@ GenRet LoopExpr::codegen() {
 static int loopexpr_uid = 1;
 
 static CallExpr* buildLoopExprFunctions(LoopExpr* faExpr);
-static void addIterRecShape(CallExpr* forallExprCall, bool zippered);
+static void addIterRecShape(CallExpr* forallExprCall,
+                            bool parallel, bool zippered);
 
 class LowerLoopExprVisitor : public AstVisitorTraverse
 {
@@ -213,9 +214,9 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
     iterExpr->accept(this);
 
     // Do not preserve the shape if there is a filtering predicate.
-    if (node->forall && noFilter) {
+    if (noFilter) {
       normalize(replacement); // for addIterRecShape()
-      addIterRecShape(replacement, node->zippered);
+      addIterRecShape(replacement, node->forall, node->zippered);
     }
   }
 
@@ -241,14 +242,16 @@ static Expr* getShapeForZippered(Expr* tupleRef) {
 
 // 'forallExprCall', during resolution, returns an iterator record
 // for the forall expression. Ensure it will get a shape.
-static void addIterRecShape(CallExpr* forallExprCall, bool zippered) {
+static void addIterRecShape(CallExpr* forallExprCall,
+                            bool parallel, bool zippered) {
   if (CallExpr* move = toCallExpr(forallExprCall->parentExpr)) {
     if (move->isPrimitive(PRIM_MOVE)) {
       Expr* dest = move->get(1)->copy();
       Expr* shape = forallExprCall->get(1);
       if (zippered) shape = getShapeForZippered(shape);
       move->getStmtExpr()->insertAfter(
-        new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE, dest, shape->copy()));
+        new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE, dest,
+                     shape->copy(), parallel ? gFalse : gTrue));
     }
   }
 }

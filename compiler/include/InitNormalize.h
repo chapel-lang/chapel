@@ -56,10 +56,13 @@ public:
   void            completePhase1(CallExpr* insertBefore);
   void            completePhase0(CallExpr* initStmt);
 
-  void            initializeFieldsAtTail(BlockStmt*          block);
-  void            initializeFieldsThroughField(BlockStmt*    block,
-                                               DefExpr*      field);
-  void            initializeFieldsBefore(Expr*               insertBefore);
+  void            initializeFieldsAtTail(BlockStmt*          block,
+                                         DefExpr*            endField = NULL);
+  void            initializeFieldsBefore(Expr*               insertBefore,
+                                         DefExpr*            endField = NULL);
+  void            initializeField(Expr*                      insertBefore,
+                                  DefExpr*                   field,
+                                  Expr*                      userInit = NULL) const;
 
   bool            isFieldReinitialized(DefExpr* field)                   const;
   bool            isFieldImplicitlyInitialized(DefExpr* field)           const;
@@ -83,10 +86,11 @@ public:
 
   void            describe(int offset = 0)                               const;
 
-  void            processThisUses(Expr* expr);
-  void            processThisUses(CallExpr* call);
+  void            processThisUses(Expr* expr) const;
 
   void            makeThisAsParent(CallExpr* initCall);
+
+  VarSymbol*      getThisAsParent() const;
 
 private:
   enum BlockType {
@@ -108,39 +112,31 @@ private:
   bool            isOuterField(DefExpr* field)                           const;
   void            makeOuterArg();
 
-  void            genericFieldInitTypeWoutInit(Expr*    insertBefore,
-                                               DefExpr* field)           const;
+  Expr*            genericFieldInitTypeWoutInit(Expr*    insertBefore,
+                                                DefExpr* field)           const;
 
-  void            genericFieldInitTypeWithInit(Expr*    insertBefore,
-                                               DefExpr* field,
-                                               Expr*    initExpr)        const;
-
-  void            genericFieldInitTypeInference(Expr*    insertBefore,
+  Expr*            genericFieldInitTypeWithInit(Expr*    insertBefore,
                                                 DefExpr* field,
-                                                Expr*    initExpr)       const;
+                                                Expr*    initExpr)        const;
 
-  void            fieldInitTypeWoutInit(Expr*    insertBefore,
-                                        DefExpr* field)                  const;
+  Expr*            genericFieldInitTypeInference(Expr*    insertBefore,
+                                                 DefExpr* field,
+                                                 Expr*    initExpr)       const;
 
-  void            fieldInitTypeWithInit(Expr*    insertBefore,
-                                        DefExpr* field,
-                                        Expr*    initExpr)               const;
+  Expr*            fieldInitTypeWoutInit(Expr*    insertBefore,
+                                         DefExpr* field)                  const;
 
-  void            fieldInitTypeInference(Expr*    insertBefore,
+  Expr*            fieldInitTypeWithInit(Expr*    insertBefore,
                                          DefExpr* field,
-                                         Expr*    initExpr)              const;
+                                         Expr*    initExpr)               const;
 
-  bool            isFieldAccessible(Expr* expr)                          const;
+  Expr*            fieldInitTypeInference(Expr*    insertBefore,
+                                          DefExpr* field,
+                                          Expr*    initExpr)              const;
 
   void            updateFieldsMember(Expr* expr)                         const;
 
   bool            isFieldAccess(CallExpr* callExpr)                      const;
-
-  void            handleInsertedMethodCall(CallExpr* call)               const;
-
-  Expr*           fieldInitFromStmt(CallExpr* stmt, DefExpr* field)      const;
-
-  void            fieldInitFromField(Expr* insertBefore);
 
 
   DefExpr*        toLocalField(SymExpr*  expr)                           const;

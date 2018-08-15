@@ -11,9 +11,9 @@ use VisualDebug;
 use rand;
 
 var vSim  : Validate;
-var f : Force;
+var f : unmanaged Force;
 
-proc initGrid(latticeConstant: real, const ref force: Force) {
+proc initGrid(latticeConstant: real, const ref force: unmanaged Force) {
   simLow  = (0.0,0.0,0.0);
   const simSize = (nx:real, ny:real, nz:real) * latticeConstant;
   simHigh = simSize;
@@ -54,7 +54,7 @@ proc initGrid(latticeConstant: real, const ref force: Force) {
       const domSize = domHigh - domLow;
 
       const invBoxSize = (1/boxSize(1), 1/boxSize(2), 1/boxSize(3));
-      var MyDom = new Domain(localDom=MyLocDom,
+      var MyDom = new unmanaged Domain(localDom=MyLocDom,
                          invBoxSize=invBoxSize, boxSpace=boxSpace, numBoxes=numBoxes,
                          domHigh=domHigh, domLow=domLow,
                          force=if(replicateForce) then force.replicate() else force);
@@ -96,7 +96,7 @@ local {
         src = dest;
         var neighbor = ijk + nOff;
         var srcOff = (0,0,0);
-        t1 = new FaceArr(d=dest);
+        t1 = new unmanaged FaceArr(d=dest);
         for i in 1..3 {
           if(neighbor(i) < 0) {
             //neighbor(i) = locDom.high(i);
@@ -115,7 +115,7 @@ local {
           }
         }
         src = src.translate(srcOff);
-        t2 = new FaceArr(d=src);
+        t2 = new unmanaged FaceArr(d=src);
         neigh = neighbor;
       }
 }
@@ -352,7 +352,7 @@ local {
   }
 }
 
-proc gatherAtoms(const ref MyDom:Domain, const in face : int) : int(32) {
+proc gatherAtoms(const ref MyDom:unmanaged Domain, const in face : int) : int(32) {
   // haloExchange finished sending its data over, wait until another
   // locale fills our recvBuf.
   if face % 2 then MyDom.nM$; else MyDom.nP$;
@@ -373,7 +373,7 @@ proc gatherAtoms(const ref MyDom:Domain, const in face : int) : int(32) {
   return numLocalAtoms;
 }
 
-proc haloExchange(const ref MyDom : Domain, const in face:int) {
+proc haloExchange(const ref MyDom : unmanaged Domain, const in face:int) {
   const src = MyDom.destSlice[face];
   const ref neighs = MyDom.neighs;
   ref faceArr = MyDom.temps1[face].a;
@@ -410,7 +410,7 @@ proc haloExchange(const ref MyDom : Domain, const in face:int) {
 
 // if only one cells in this dimension, then read in parallel
 // but add atoms serially
-proc exchangeData(const ref MyDom:Domain, const in i : int) {
+proc exchangeData(const ref MyDom:unmanaged Domain, const in i : int) {
   var nAtoms : int(32) = 0;
   cobegin {
     { haloExchange(MyDom, i); }
@@ -423,7 +423,7 @@ proc exchangeData(const ref MyDom:Domain, const in i : int) {
 
 // if 2 or more cells in this dimension, then read 
 // and add atoms in parallel
-proc exchangeDataTwo(const ref MyDom:Domain, const in i : int) {
+proc exchangeDataTwo(const ref MyDom:unmanaged Domain, const in i : int) {
   var nAtomsM : int(32) = 0;
   var nAtomsP : int(32) = 0;
   cobegin with (ref nAtomsM, ref nAtomsP) {
@@ -477,10 +477,10 @@ tArray[timerEnum.FORCE].stop();
 proc initSimulation() {
 tArray[timerEnum.FCREATE].start();
   if(doeam) {
-    f = new ForceEAM(potDir, potName, potType);
+    f = new unmanaged ForceEAM(potDir, potName, potType);
   }
   else {
-    f = new ForceLJ();
+    f = new unmanaged ForceLJ();
   }
 tArray[timerEnum.FCREATE].stop();
 

@@ -53,15 +53,18 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     export CHPL_HOST_PLATFORM=cray-xc
     export CHPL_TARGET_PLATFORM=cray-xc
-##  export CHPL_REGEXP=re2      # re2 required for mason
+    export CHPL_REGEXP=re2      # re2 required for mason
     export CHPL_LOCAL_MODEL=flat
     export CHPL_COMM=none
-##  export CHPL_COMM_SUBSTRATE=none
-##  export CHPL_TASKS=qthreads
+    export CHPL_COMM_SUBSTRATE=none
+    export CHPL_TASKS=qthreads
     export CHPL_LAUNCHER=none
-##  export CHPL_LLVM=none       # llvm requires py27 and cmake
-##  export CHPL_AUX_FILESYS=none
+    export CHPL_LLVM=none       # llvm requires py27 and cmake
+    export CHPL_AUX_FILESYS=none
 
+    # More CPUs --> faster make. Or, unset CHPL_MAKE_MAX_CPU_COUNT to use all CPUs.
+
+    export CHPL_MAKE_MAX_CPU_COUNT=${CHPL_MAKE_MAX_CPU_COUNT:-4}
 
     # Show the initial/default Chapel build config with printchplenv
 
@@ -94,20 +97,25 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
         --target-compiler=$compilers --comm=$comms --launcher=$launchers
 
-        # The following 2x2x2 matrix of Chapel runtime configurations are defined by the
-        # arguments passed to build_configs.py, above. All eight runtimes will be built.
         # NOTE: "--target-compiler" values shown above will be discarded by the setenv callback.
 
-        # CHPL_TARGET_COMPILER  CHPL_COMM   CHPL_LAUNCHER
-        # --------------------  ---------   -------------
-        # cray-prgenv-gnu       none        none
-        # cray-prgenv-gnu       none        slurm-srun
-        # cray-prgenv-gnu       ugni        none
-        # cray-prgenv-gnu       ugni        slurm-srun
-        # cray-prgenv-intel     none        none
-        # cray-prgenv-intel     none        slurm-srun
-        # cray-prgenv-intel     ugni        none
-        # cray-prgenv-intel     ugni        slurm-srun
+        # The following 2x2x2 matrix of Chapel runtime configurations are defined by the
+        # arguments passed to build_configs.py, above.
+
+        # CHPL_TARGET_COMPILER  CHPL_COMM   CHPL_LAUNCHER   Make Chapel?
+        # --------------------  ---------   -------------   -----------
+        # cray-prgenv-gnu       none        none            Yes
+        # cray-prgenv-gnu       none        slurm-srun      Yes
+        # cray-prgenv-gnu       ugni        none            No (skip)
+        # cray-prgenv-gnu       ugni        slurm-srun      Yes
+        # cray-prgenv-intel     none        none            Yes
+        # cray-prgenv-intel     none        slurm-srun      Yes
+        # cray-prgenv-intel     ugni        none            No (skip)
+        # cray-prgenv-intel     ugni        slurm-srun      Yes
+
+        # Only six of the eight possible runtime configurations will be built.
+        # The other two will be skipped by an "exit 0" in the setenv callback script
+        # found in the lower part of this file.
 
 
     # Chapel tools (ie, mason, chpldoc, test-venv)
@@ -209,8 +217,6 @@ else
         load_module $target
     }
 
-    export CHPL_MAKE_MAX_CPU_COUNT=24
-
     # ---
 
     # NOTE: The CHPL_TARGET_COMPILER env values from build_configs are not passed to Chapel.
@@ -259,8 +265,16 @@ else
     # ---
 
     if [ "$CHPL_COMM" == ugni ]; then
+        if [ "$CHPL_LAUNCHER" == none ]; then
+
+            # skip Chapel make because comm == ugni needs a Chapel launcher
+            log_info "Skip Chapel make for comm=$CHPL_COMM, launcher=$CHPL_LAUNCHER"
+            exit 0
+        fi
         unset CHPL_COMM_SUBSTRATE
     fi
+
+    # ---
 
     if [ -n "$verbose" ] ; then
         log_debug "Module list (sorted), after build_configs and setenv:"

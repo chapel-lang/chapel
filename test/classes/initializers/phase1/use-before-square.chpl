@@ -12,7 +12,6 @@ record A {
 
   proc init() {
     b[1] = 1;
-    super.init();
   }
 }
 

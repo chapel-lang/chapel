@@ -1472,7 +1472,8 @@ static void      fork_amo_wrapper(fork_amo_info_t*);
 static void      release_req_buf(uint32_t, int, int);
 static void      indicate_done(fork_base_info_t* b);
 static void      indicate_done2(int, rf_done_t *);
-static void      send_polling_response(void*, c_nodeid_t, void*, size_t);
+static void      send_polling_response(void*, c_nodeid_t, void*, size_t,
+                                       mem_region_t*);
 static nb_desc_idx_t nb_desc_idx_encode(int, int);
 static void      nb_desc_idx_decode(int*, int*, nb_desc_idx_t);
 static nb_desc_t* nb_desc_idx_2_ptr(nb_desc_idx_t);
@@ -4319,7 +4320,7 @@ void release_req_buf(uint32_t li, int cdi, int rbi)
   static chpl_bool32 free_flag = true;
   send_polling_response(&free_flag, li,
                         RECV_SIDE_FORK_REQ_FREE_ADDR(li, cdi, rbi),
-                        sizeof(free_flag));
+                        sizeof(free_flag), &gnr_mreg_map[li]);
 }
 
 
@@ -4336,13 +4337,13 @@ inline
 void indicate_done2(int caller, rf_done_t *ack)
 {
   static rf_done_t done = 1;
-  send_polling_response(&done, caller, ack, sizeof(done));
+  send_polling_response(&done, caller, ack, sizeof(done), NULL);
 }
 
 
 static
 void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
-                           size_t size)
+                           size_t size, mem_region_t* mr)
 {
   gni_post_descriptor_t* post_desc;
 
@@ -4354,8 +4355,7 @@ void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   // while avoiding concurrency control entirely.
   //
   if (cd == NULL || !cd->firmly_bound) {
-    do_remote_put(src_addr, locale, tgt_addr, size, &gnr_mreg_map[locale],
-                  may_proxy_false);
+    do_remote_put(src_addr, locale, tgt_addr, size, mr, may_proxy_false);
     return;
   }
 
@@ -4407,6 +4407,12 @@ void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   //
   // Fill in the POST descriptor.
   //
+  if (mr == NULL
+      && (mr = mreg_for_remote_addr(tgt_addr, locale)) == NULL) {
+    CHPL_INTERNAL_ERROR("send_polling_response(): "
+                        "remote address is not NIC-registered");
+  }
+
   post_desc->type            = GNI_POST_FMA_PUT;
   post_desc->cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
   post_desc->dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
@@ -4414,7 +4420,7 @@ void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   post_desc->src_cq_hndl     = 0;
   post_desc->local_addr      = (uint64_t) (intptr_t) src_addr;
   post_desc->remote_addr     = (uint64_t) (intptr_t) tgt_addr;
-  post_desc->remote_mem_hndl = gnr_mreg_map[locale].mdh;
+  post_desc->remote_mem_hndl = mr->mdh;
   post_desc->length          = size;
 
   //
@@ -7519,15 +7525,24 @@ void do_fork_post(c_nodeid_t locale,
                   uint64_t f_size, fork_base_info_t* const p_rf_req,
                   int* cdi_p, int* rbi_p)
 {
+  rf_done_t             rf_done;
   gni_post_descriptor_t post_desc;
   int                   rbi;
 
   if (blocking) {
+    mem_region_t* rf_done_mr;
+
     //
     // Our completion flag has to be in registered memory so the
     // remote locale can PUT directly back here to it.
     //
-    p_rf_req->rf_done = rf_done_alloc();
+
+    p_rf_req->rf_done = &rf_done;
+    rf_done_mr = mreg_for_local_addr(p_rf_req->rf_done);
+    if (rf_done_mr == NULL) {
+      p_rf_req->rf_done = rf_done_alloc();
+    }
+
     *p_rf_req->rf_done = 0;
     atomic_thread_fence(memory_order_release);
   }
@@ -7580,7 +7595,8 @@ void do_fork_post(c_nodeid_t locale,
       local_yield();
     }
 
-    rf_done_free(p_rf_req->rf_done);
+    if (p_rf_req->rf_done != &rf_done)
+      rf_done_free(p_rf_req->rf_done);
   }
 }
 

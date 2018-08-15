@@ -104,8 +104,10 @@ module ChapelIteratorSupport {
   inline proc chpl_computeIteratorShape(arg: _iteratorRecord) {
     if chpl_iteratorHasShape(arg) then
       return arg._shape_;
-    else
-      return _void;
+    else {
+      const myvoid = _void; // workaround for #9152
+      return myvoid;
+    }
   }
   pragma "no doc"
   inline proc chpl_computeIteratorShape(arg) {
@@ -119,6 +121,21 @@ module ChapelIteratorSupport {
       return ir._shape_.type != void;
     else
       return false;
+  }
+  pragma "no doc"
+  inline proc chpl_iteratorFromForExpr(ir: _iteratorRecord) param {
+    use Reflection;
+    if canResolveMethod(ir, "_fromForExpr_") then
+      return ir._fromForExpr_;
+    else
+      return false;
+  }
+  pragma "no doc"
+  inline proc chpl_iteratorFromForExpr(arg) param {
+    // non-iterator-record cases are always parallel
+    // Todo: what if it is an array or domain whose domain map
+    // that does not provide parallel iterators?
+    return false;
   }
 
   proc _iteratorRecord.writeThis(f) {
