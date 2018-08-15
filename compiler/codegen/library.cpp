@@ -150,11 +150,26 @@ void codegen_library_makefile() {
     libname += name;
     libname += getLibraryExtension();
   }
+
+  std::string requires = "";
+  // Adds the locations of the libraries specified using require statements
+  for_vector(const char, dirName, libDirs) {
+    requires += " -L";
+    requires += dirName;
+  }
+  for_vector(const char, libName, libFiles) {
+    requires += " -l";
+    requires += libName;
+  }
+
   // TODO: adjust for different location for the library, see earlier TODO
-  fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s %s\n",
+  fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s",
           libDir,
-          libname.c_str(),
-          libraries.c_str());
+          libname.c_str());
+  if (requires != "") {
+    fprintf(makefile.fptr, "%s", requires.c_str());
+  }
+  fprintf(makefile.fptr, " %s\n", libraries.c_str());
 
   std::string compiler = getCompilelineOption("compiler");
   fprintf(makefile.fptr, "CHPL_COMPILER = %s\n", compiler.c_str());
