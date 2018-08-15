@@ -1122,8 +1122,10 @@ module DefaultRectangular {
       computeFactoredOffs();
       const size = blk(1) * dom.dsiDim(1).length;
 
-      for param dim in 1..rank {
-       sizesPerDim(dim) = dom.dsiDim(dim).length;
+      if usePollyArrayIndex {
+        for param dim in 1..rank {
+         sizesPerDim(dim) = dom.dsiDim(dim).length;
+        }
       }
 
       // Allow DR array initialization to pass in existing data
@@ -1167,11 +1169,11 @@ module DefaultRectangular {
           var useOffset:int = 0;
           var useSizesPerDim = sizesPerDim;
 
-          if (usePollyArrayIndex) {
+          if usePollyArrayIndex {
             // Polly works better if we provide 0-based indices from the start.
             // So instead of using factoredOffs at the end, we initially subtract
             // the dimension offsets from the index subscripts beforehand.
-            if (!wantShiftedIndex) {
+            if !wantShiftedIndex {
              for param i in 1..rank do {
                 useInd(i) = chpl__idxToInt(useInd(i)) - chpl__idxToInt(off(i));
              }
