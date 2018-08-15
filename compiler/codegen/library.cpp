@@ -28,7 +28,7 @@
 #include "stringutil.h"
 
 char libDir[FILENAME_MAX + 1]  = "";
-char pxdName[FILENAME_MAX + 1] = "";
+std::string pxdName = "";
 
 // TypeSymbol -> (pxdName, pyxName)  Will be "" if the cname should be used
 std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
@@ -251,9 +251,8 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile && fLibraryPython) {
     setupPythonTypeMap();
 
-    strcpy(pxdName, "chpl_");
-    strncat(pxdName, libmodeHeadername,
-            sizeof(libmodeHeadername)-strlen(pxdName)-1);
+    pxdName = "chpl_";
+    pxdName += libmodeHeadername;
 
     makePXDFile(functions);
     makePYXFile(functions);
@@ -265,7 +264,7 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
 static void makePXDFile(std::vector<FnSymbol*> functions) {
   fileinfo pxd = { NULL, NULL, NULL };
 
-  openLibraryHelperFile(&pxd, pxdName, "pxd");
+  openLibraryHelperFile(&pxd, pxdName.c_str(), "pxd");
 
   if (pxd.fptr != NULL) {
     FILE* save_cfile = gGenInfo->cfile;
@@ -278,7 +277,7 @@ static void makePXDFile(std::vector<FnSymbol*> functions) {
 
     for_vector(FnSymbol, fn, functions) {
       if (!isFunctionToSkip(fn)) {
-        fn->codegenPython(true);
+        fn->codegenPython(PYTHON_PXD);
       }
     }
 
@@ -305,13 +304,13 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
 
     // Make import statement at top of .pyx file for chpl_library_init and
     // chpl_library_finalize
-    fprintf(pyx.fptr, "from %s cimport chpl_library_init, ", pxdName);
+    fprintf(pyx.fptr, "from %s cimport chpl_library_init, ", pxdName.c_str());
     fprintf(pyx.fptr, "chpl_library_finalize\n");
 
     std::vector<FnSymbol*> moduleInits;
     std::vector<FnSymbol*> exported;
 
-    fprintf(pyx.fptr, "from %s cimport ", pxdName);
+    fprintf(pyx.fptr, "from %s cimport ", pxdName.c_str());
     bool first = true;
     // Make import statement at top of .pyx file for exported functions
     for_vector(FnSymbol, fn, functions) {
@@ -349,7 +348,7 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
     // Add Python wrapper for the exported functions, to translate the types
     // appropriately
     for_vector(FnSymbol, fn, exported) {
-      fn->codegenPython(false);
+      fn->codegenPython(PYTHON_PYX);
     }
 
     gGenInfo->cfile = save_cfile;

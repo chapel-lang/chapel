@@ -24,6 +24,7 @@
 
 #include "astutil.h"
 #include "flags.h"
+#include "library.h"
 #include "type.h"
 
 #include <bitset>
@@ -387,7 +388,7 @@ public:
 
   GenRet          codegenType();
 
-  std::string     getPythonType(bool pxd);
+  std::string     getPythonType(PythonFileType pxd);
   std::string     getPythonArgTranslation();
 
   IntentTag       intent;

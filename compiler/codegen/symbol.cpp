@@ -877,18 +877,18 @@ GenRet ArgSymbol::codegen() {
 
 // If there is a known .pxd file translation for this type, use that.
 // Otherwise, use the normal cname
-static std::string getPythonTypeName(Type* type, bool pxd) {
+static std::string getPythonTypeName(Type* type, PythonFileType pxd) {
   std::pair<std::string, std::string> tNames = pythonNames[type->symbol];
-  if (pxd && tNames.first != "") {
+  if (pxd == PYTHON_PXD && tNames.first != "") {
     return tNames.first;
-  } else if (!pxd && tNames.second != "") {
+  } else if (pxd == PYTHON_PYX && tNames.second != "") {
     return tNames.second;
   } else {
     return transformTypeForPointer(type);
   }
 }
 
-std::string ArgSymbol::getPythonType(bool pxd) {
+std::string ArgSymbol::getPythonType(PythonFileType pxd) {
   Type* t = getArgSymbolCodegenType(this);
 
   return getPythonTypeName(t, pxd);
@@ -901,7 +901,7 @@ std::string ArgSymbol::getPythonArgTranslation() {
   Type* t = getArgSymbolCodegenType(this);
 
   if (t == dtStringC) {
-    std::string res = "\tcdef char* chpl_";
+    std::string res = "\tcdef const char* chpl_";
     res += cname;
     res += " = ";
     res += cname;
@@ -1672,7 +1672,7 @@ GenRet FnSymbol::codegen() {
 }
 
 // Supports the creation of a python module with --library-python
-void FnSymbol::codegenPython(bool pxd) {
+void FnSymbol::codegenPython(PythonFileType pxd) {
   GenInfo *info = gGenInfo;
 
   if (!hasFlag(FLAG_EXPORT)) return;
@@ -1686,10 +1686,12 @@ void FnSymbol::codegenPython(bool pxd) {
     if (fGenIDS)
       fprintf(outfile, "%s", idCommentTemp(this));
 
-    if (pxd) {
+    if (pxd == PYTHON_PXD) {
       fprintf(outfile, "\t%s;\n", codegenPXDType().c.c_str());
-    } else {
+    } else if (pxd == PYTHON_PYX) {
       fprintf(outfile, "\n%s", codegenPYXType().c.c_str());
+    } else {
+      INT_FATAL("python file type not handled");
     }
   } else {
     // TODO: LLVM stuff
@@ -1707,7 +1709,7 @@ GenRet FnSymbol::codegenPXDType() {
     // Cast to right function type.
     std::string str;
 
-    std::string retString = getPythonTypeName(retType, true);
+    std::string retString = getPythonTypeName(retType, PYTHON_PXD);
     str += retString.c_str();
     str += " ";
     str += cname;
@@ -1720,7 +1722,7 @@ GenRet FnSymbol::codegenPXDType() {
           continue; // do not print locale argument, end count, dummy class
         if (count > 0)
           str += ", ";
-        str += formal->getPythonType(true);
+        str += formal->getPythonType(PYTHON_PXD);
         str += " ";
         str += formal->cname;
         if (fGenIDS) {
@@ -1742,67 +1744,61 @@ GenRet FnSymbol::codegenPXDType() {
 
 // Supports the creation of a python module with --library-python
 GenRet FnSymbol::codegenPYXType() {
-  GenInfo* info = gGenInfo;
   GenRet ret;
 
   ret.chplType = typeInfo();
 
-  if (info->cfile) {
-    // Function header
-    std::string header = "def ";
-    header += cname;
-    header += "(";
+  // Function header
+  std::string header = "def ";
+  header += cname;
+  header += "(";
 
-    // Translation of any arguments with Python-specific types
-    std::string argTranslate = "";
-    // Call to the wrapped function
-    std::string funcCall = "\t";
-    // Return statement, if applicable
-    std::string returnStmt = "";
-    if (retType != dtVoid) {
-      funcCall += "ret = ";
-      returnStmt += "\treturn ret\n";
-    }
-    funcCall += "chpl_";
-    funcCall += cname;
-    funcCall += "(";
+  // Translation of any arguments with Python-specific types
+  std::string argTranslate = "";
+  // Call to the wrapped function
+  std::string funcCall = "\t";
+  // Return statement, if applicable
+  std::string returnStmt = "";
+  if (retType != dtVoid) {
+    funcCall += "ret = ";
+    returnStmt += "\treturn ret\n";
+  }
+  funcCall += "chpl_";
+  funcCall += cname;
+  funcCall += "(";
 
-    if (numFormals() != 0) {
-      int count = 0;
-      for_formals(formal, this) {
-        if (formal->hasFlag(FLAG_NO_CODEGEN))
-          continue; // do not print locale argument, end count, dummy class
-        if (count > 0) {
-          header += ", ";
-          funcCall += ", ";
-        }
-
-        header += formal->getPythonType(false);
-        header += " ";
-        header += formal->cname;
-        if (fGenIDS) {
-          header += " ";
-          header += idCommentTemp(formal);
-        }
-
-        std::string curArgTranslate = formal->getPythonArgTranslation();
-        if (curArgTranslate != "") {
-          argTranslate += curArgTranslate;
-          funcCall += "chpl_";
-        }
-
-        funcCall += formal->cname;
-        count++;
+  if (numFormals() != 0) {
+    int count = 0;
+    for_formals(formal, this) {
+      if (formal->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
+      if (count > 0) {
+        header += ", ";
+        funcCall += ", ";
       }
 
-    } // pyx files do not take void as an argument list, just close the parens
-    header += "):\n";
-    funcCall += ")\n";
-    ret.c = header + argTranslate + funcCall + returnStmt;
+      header += formal->getPythonType(PYTHON_PYX);
+      header += " ";
+      header += formal->cname;
+      if (fGenIDS) {
+        header += " ";
+        header += idCommentTemp(formal);
+      }
 
-  } else {
-    // TODO: LLVM stuff
-  }
+      std::string curArgTranslate = formal->getPythonArgTranslation();
+      if (curArgTranslate != "") {
+        argTranslate += curArgTranslate;
+        funcCall += "chpl_";
+      }
+
+      funcCall += formal->cname;
+      count++;
+    }
+
+  } // pyx files do not take void as an argument list, just close the parens
+  header += "):\n";
+  funcCall += ")\n";
+  ret.c = header + argTranslate + funcCall + returnStmt;
 
   return ret;
 }

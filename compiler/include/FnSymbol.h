@@ -20,6 +20,7 @@
 #ifndef _FN_SYMBOL_H_
 #define _FN_SYMBOL_H_
 
+#include "library.h"
 #include "symbol.h"
 
 enum RetTag {
@@ -103,7 +104,7 @@ public:
   void                       codegenPrototype();
   void                       codegenDef();
 
-  void                       codegenPython(bool pxd);
+  void                       codegenPython(PythonFileType pxd);
   GenRet                     codegenPXDType();
   GenRet                     codegenPYXType();
 

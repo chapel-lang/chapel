@@ -26,7 +26,14 @@
 #include <utility>
 
 #include "files.h"
-#include "symbol.h"
+
+class FnSymbol;
+class TypeSymbol;
+
+enum PythonFileType {
+  PYTHON_PXD, // used for C extern declarations in Cython
+  PYTHON_PYX  // used for Python translations in Cython
+};
 
 extern char libDir[FILENAME_MAX + 1];
 extern std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
