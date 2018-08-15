@@ -8,4 +8,6 @@ compopts = "--ccflags -openblas --ccflags -llapack --ccflags -w"
 [dependencies]
 
 [external]
-openblas = "openblas@0.2.20%gcc"
+openblas = "0.2.20%gcc"
+
+

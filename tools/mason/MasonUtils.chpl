@@ -125,7 +125,8 @@ proc runWithStatus(command, show=true): int {
 
 /* uses spawnshell and the prefix to setup Spack before
    calling the spack command. This also returns the stdout
-   of the spack call.*/
+   of the spack call.
+   TODO: get to work with Spawn */
 proc getSpackResult(cmd, quiet=false) : string throws {
   var ret : string;
   try {
@@ -136,7 +137,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     " && source $SPACK_ROOT/share/spack/setup-env.sh && ";
     var splitCmd = prefix + cmd;
     var process = spawnshell(splitCmd, stdout=PIPE);
-
+    
     for line in process.stdout.lines() {
       ret += line;
       if quiet == false {
@@ -153,8 +154,9 @@ proc getSpackResult(cmd, quiet=false) : string throws {
 
 
 /* Sets up spack by prefixing command with spack env vars
-   Only returns the exit status of the command */
-proc runSpackCommand(command, executable="/bin/bash") {
+   Only returns the exit status of the command
+   TODO: get to work with Spawn */
+proc runSpackCommand(command) {
 
   var prefix = "export SPACK_ROOT=" + MASON_HOME + "/spack" +
     " && export PATH=$SPACK_ROOT/bin:$PATH" +

@@ -22,6 +22,7 @@ config const spackVersion = "releases/v0.11.2";
 use MasonUtils;
 use FileSystem;
 use MasonHelp;
+use SpecParser;
 use MasonEnv;
 use Path;
 use TOML;
@@ -89,15 +90,6 @@ proc setupSpack() throws {
   }
 }
 
-/* Queries spack for package existance */
-proc spkgExists(spec: string) : bool {
-  const command = "spack list " + spec;
-  const status = runSpackCommand(command);
-  if status != 0 {
-    return false;
-  }
-  return true;
-}
 
 /* lists available spack packages */
 private proc listSpkgs() {
@@ -189,12 +181,12 @@ private proc printArch() {
 
 /* Queries system to see if package is installed on system */
 proc spkgInstalled(spec: string) {
-  const command = "spack find -df " + spec;
+  const command = "spack find -df --show-full-compiler " + spec;
   const pkgInfo = getSpackResult(command, quiet=true);
   var found = false;
   var dependencies: [1..0] string; // a list of pkg dependencies
   for item in pkgInfo.split() {  
-    if item == spec {
+    if item.rfind(spec) != 0 {
       return true;
     }
   }
@@ -247,8 +239,21 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
       select spec.tag {
           when fieldToml do continue;
           otherwise {
-            var dependencies = getSpkgDependencies(spec.s);
-            const pkgInfo = getSpkgInfo(spec.s, dependencies);
+            // Take key from toml file if not present in spec
+            var tempSpec = spec.s;
+            if !spec.s.startsWith(name) {
+              tempSpec = "@".join(name, spec.s);
+            }
+            const specFields = getSpecFields(tempSpec);
+            var version = specFields[2];
+            var compiler = specFields[3];
+            //var variants = specFields[4];
+
+            // TODO: allow dependency search to include variants
+            var fullSpec = "%".join("@".join(name, version), compiler);
+            
+            var dependencies = getSpkgDependencies(fullSpec);
+            const pkgInfo = getSpkgInfo(fullSpec, dependencies);
             exDepTree[name] = pkgInfo;
           }
         }
@@ -261,6 +266,7 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
   return exDepTree;
 }
 
+
 /* Retrieves build information for MasonUpdate */
 proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throws {
 
@@ -271,16 +277,12 @@ proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throw
   var spkgInfo: unmanaged Toml = spkgToml;
 
   try {
+    const specFields = getSpecFields(spec);
+    var pkgName = specFields[1];
+    var version = specFields[2];
+    var compiler = specFields[3];
 
-    // TODO: create a parser for returning what the user has inputted in
-    // terms of name, version, compiler etc..
-    var split = spec.split("@");
-    var pkgName = split[1];
-    var versplit = split[2].split("%");
-    var version = versplit[1];
-    var compiler = versplit[2];
-
-    if spkgInstalled(spec) {
+    if spkgInstalled(spec) {      
       const spkgPath = getSpkgPath(spec);
       const libs = joinPath(spkgPath, "lib");
       const include = joinPath(spkgPath, "include");
@@ -297,7 +299,7 @@ proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throw
 
       while dependencies.domain.size > 0 {
         var dep = dependencies[dependencies.domain.first];
-        var depSpec = dep.split("@");
+        var depSpec = dep.split("@", 1);
         var name = depSpec[1];
 
         // put dep into current packages dep list
@@ -337,14 +339,15 @@ proc getSpkgPath(spec: string) throws {
   return pkgPath.strip();
 }
 
+// TODO: allow for versions to be of the form 6.0 (without bug fix)
 proc getSpkgDependencies(spec: string) throws {
-  const command = "spack find -df " + spec;
+  const command = "spack find -df --show-full-compiler " + spec;
   const pkgInfo = getSpackResult(command, quiet=true);
   var found = false;
   var dependencies: [1..0] string; // a list of pkg dependencies
   for item in pkgInfo.split() {
-    
-    if item == spec {
+
+    if item.rfind(spec) != 0 {
       found = true;
     }
     else if found == true {
