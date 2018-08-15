@@ -1,0 +1,41 @@
+from libc.stdint cimport *
+
+cdef extern from "checkExplicitLibname.h":
+	void chpl__init_checkExplicitLibname(int64_t _ln, int32_t _fn);
+	void foo();
+	int64_t takesAndReturns(int64_t x);
+	void parallelProg(int64_t numTasksToRun);
+	void threadring(int64_t passes, int64_t tasks);
+
+cdef extern from "chpltypes.h":
+	ctypedef void* c_fn_ptr
+
+cdef extern from "chpl-init.h":
+	void chpl_library_init(int argc, char* argv[])
+	void chpl_library_finalize()
+from chpl_checkExplicitLibname cimport chpl_library_init, chpl_library_finalize
+from chpl_checkExplicitLibname cimport chpl__init_checkExplicitLibname, foo as chpl_foo, takesAndReturns as chpl_takesAndReturns, parallelProg as chpl_parallelProg, threadring as chpl_threadring
+
+import numpy
+cimport numpy
+
+def chpl_setup():
+	cdef char** args = ['checkExplicitLibname']
+	chpl_library_init(1, args)
+	chpl__init_checkExplicitLibname(1, 1)
+
+def chpl_cleanup():
+	chpl_library_finalize()
+
+def foo():
+	chpl_foo()
+
+def takesAndReturns(numpy.int64 x):
+	ret = chpl_takesAndReturns(x)
+	return ret
+
+def parallelProg(numpy.int64 numTasksToRun):
+	chpl_parallelProg(numTasksToRun)
+
+def threadring(numpy.int64 passes, numpy.int64 tasks):
+	chpl_threadring(passes, tasks)

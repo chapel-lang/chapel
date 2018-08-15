@@ -1,0 +1,2 @@
+lib/chpl_checkExplicitLibname.pxd
+lib/checkExplicitLibname.pyx
