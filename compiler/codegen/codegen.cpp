@@ -2168,7 +2168,7 @@ static void setupDefaultFilenames() {
         if (lastDot == NULL) {
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
-                    libmodeHeadername);
+                    pythonModulename);
         }
         *lastDot = '\0';
       }
@@ -2198,6 +2198,13 @@ static void setupDefaultFilenames() {
   if (fLibraryCompile && libmodeHeadername[0] == '\0') {
     strncpy(libmodeHeadername, executableFilename, sizeof(libmodeHeadername)-1);
     libmodeHeadername[sizeof(libmodeHeadername)-1] = '\0';
+  }
+
+  // If we're in library mode and the library name was explicitly set, use that
+  // name for the python module.
+  if (fLibraryCompile && fLibraryPython && pythonModulename[0] == '\0') {
+    strncpy(pythonModulename, executableFilename, sizeof(pythonModulename)-1);
+    pythonModulename[sizeof(pythonModulename)-1] = '\0';
   }
 }
 
