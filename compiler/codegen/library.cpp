@@ -257,7 +257,20 @@ static void pxdEnd() {
 
   fprintf(pxd, "cdef extern from \"chpl-init.h\":\n");
   fprintf(pxd, "\tvoid chpl_library_init(int argc, char* argv[])\n");
-  fprintf(pxd, "\tvoid chpl_library_finalize()\n");
+  fprintf(pxd, "\tvoid chpl_library_finalize()\n\n");
+
+  // Arrays implementation
+  fprintf(pxd, "cdef extern from \"chpl-external-array.h\":\n");
+  // The array type
+  fprintf(pxd, "\tctypedef struct chpl_external_array:\n");
+  fprintf(pxd, "\t\tvoid* elts\n");
+  fprintf(pxd, "\t\tuint64_t size\n\n");
+  // The array helper functions
+  fprintf(pxd, "\tchpl_external_array chpl_make_external_array(uint64_t ");
+  fprintf(pxd, "elt_size, uint64_t num_elts)\n");
+  fprintf(pxd, "\tchpl_external_array chpl_make_external_array_ptr(void* ");
+  fprintf(pxd, "elts, uint64_t size)\n");
+  fprintf(pxd, "\tvoid chpl_free_external_array(chpl_external_array x)\n");
 }
 
 // Populate the pythonNames map with the translation for bools, differently sized
