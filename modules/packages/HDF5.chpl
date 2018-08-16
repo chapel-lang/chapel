@@ -3473,17 +3473,14 @@ module HDF5 {
    */
   proc readNamedHDF5FilesInto1DArrayInt(filenames: [] string,
                                         fnCols: int, fnRows: int,
-                                        dsetName: string) {
-    // Would like to add an argument:
-    // `preprocessor: HDF5Preprocessor=nil`
-    // and forward it along to the `readAllNamedHDF5Files` call, but the
-    // Python->Chapel interface is not currently able to handle Chapel types
+                                        dsetName: string,
+                                        preprocessor: HDF5Preprocessor = nil) {
     use BlockDist;
 
     var filenames2D = reshape(filenames, {1..fnCols, 1..fnRows});
 
     var data = readAllNamedHDF5Files(Locales, filenames2D, dsetName,
-                                     int, rank=2);
+                                     int, rank=2, preprocessor=preprocessor);
     const rows = + reduce [subset in data[.., 1]] subset.D.dim(1).length;
     const cols = + reduce [subset in data[1, ..]] subset.D.dim(2).length;
 
