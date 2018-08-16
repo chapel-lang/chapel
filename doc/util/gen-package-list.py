@@ -11,7 +11,7 @@ user = info[0].strip()
 token = info[1].strip()
 secret.close()
 
-f = open("package-list.rst", "w+")
+f = open("../rst/tools/mason/package-list.rst", "w+")
 
 f.write(".. _package-list:\n\n")
 
