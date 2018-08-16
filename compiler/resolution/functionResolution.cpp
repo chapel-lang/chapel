@@ -5917,7 +5917,17 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         } else if (isClass(type) && isUndecoratedClassNew(newExpr)) {
           if (fLegacyNew == false && fDefaultUnmanaged == false) {
             gdbShouldBreakHere();
-            USR_WARN(newExpr, "this new call changes meaning");
+            USR_WARN(newExpr, "result of new %s is now managed by default",
+                              type->symbol->name);
+            USR_PRINT(newExpr, "'new unmanaged %s' gives old behavior",
+                               type->symbol->name);
+            USR_PRINT(newExpr, "'new borrowed %s' is the new default",
+                               type->symbol->name);
+            USR_PRINT(newExpr, "'new owned %s', 'new shared %s' also available",
+                               type->symbol->name, type->symbol->name);
+            USR_PRINT(newExpr, "get more help with --warn-unstable",
+                               type->symbol->name);
+
             manager = dtBorrowed;
           }
         }
@@ -6100,8 +6110,10 @@ static void handleUnstableNewError(CallExpr* newExpr) {
   if (isUndecoratedClassNew(newExpr)) {
     USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
     USR_PRINT(newExpr, "use 'new unmanaged %s' "
-                       "'new owned %s' or "
-                       "'new shared %s'",
+                       "'new owned %s' "
+                       "'new shared %s' or "
+                       "'new borrowed %s'",
+                       newType->symbol->name,
                        newType->symbol->name,
                        newType->symbol->name,
                        newType->symbol->name);
