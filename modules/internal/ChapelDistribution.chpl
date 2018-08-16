@@ -779,6 +779,15 @@ module ChapelDistribution {
       halt("reallocating not supported for this array type");
     }
 
+    proc dsiReallocate(allocBounds:rank*range(idxType,
+                                              BoundedRangeType.bounded,
+                                              stridable),
+                       arrayBounds:rank*range(idxType,
+                                              BoundedRangeType.bounded,
+                                              stridable)) {
+      halt("reallocating not supported for this array type");
+    }
+
     override proc dsiPostReallocate() {
     }
 
