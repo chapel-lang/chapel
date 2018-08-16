@@ -592,6 +592,11 @@ fastaredux:
 fft-timecomp:
   <<: *timecomp-base
 
+fft.ml-perf:
+  08/15/18:
+    - Revert to stack-allocated rfDone indicators. (#10728)
+
+
 forall-dom-range:
   01/22/15:
     - optimize range follower so it can be directly inlined (#1160)
@@ -1086,6 +1091,8 @@ ra:
 ra.ml-perf:
   09/19/17:
     - machine changes, cannot reproduce old numbers
+  08/15/18:
+    - Revert to stack-allocated rfDone indicators. (#10728)
 
 ra-atomics.ml-perf:
   10/03/17:
