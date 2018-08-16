@@ -1281,47 +1281,56 @@ module DefaultRectangular {
       }
     }
 
-    // TODO
     override proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
-      //if (d._value.type == dom.type) {
+      dsiReallocate(bounds, bounds);
+    }
+
+    // Reallocate the array to have space for elements specified by
+    // `allocBounds` while maintaining the elements specified by `arrayBounds`
+    override proc dsiReallocate(allocBounds:rank*range(idxType,
+                                                       BoundedRangeType.bounded,
+                                                       stridable),
+                                arrayBounds:rank*range(idxType,
+                                                       BoundedRangeType.bounded,
+                                                       stridable)) {
 
       on this {
-        var d = {(...bounds)};
-        var copy = new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
+        var allocD = {(...allocBounds)};
+        var arrayD = {(...arrayBounds)};
+        var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
+                                            rank=rank,
                                             idxType=idxType,
-                                            stridable=d._value.stridable,
-                                            dom=d._value);
+                                            stridable=allocD._value.stridable,
+                                            dom=allocD._value);
 
-        forall i in d((...dom.ranges)) do
+        forall i in arrayD((...dom.ranges)) do
           copy.dsiAccess(i) = dsiAccess(i);
+
         off = copy.off;
         blk = copy.blk;
         str = copy.str;
         factoredOffs = copy.factoredOffs;
+
         dsiDestroyArr();
         data = copy.data;
         // We can't call initShiftedData here because the new domain
         // has not yet been updated (this is called from within the
         // = function for domains.
-        if earlyShiftData && !d._value.stridable {
+        if earlyShiftData && !allocD._value.stridable {
           // Lydia note 11/04/15: a question was raised as to whether this
           // check on numIndices added any value.  Performance results
           // from removing this line seemed inconclusive, which may indicate
           // that the check is not necessary, but it seemed like unnecessary
           // work for something with no immediate reward.
-          if d.numIndices > 0 {
+          if allocD.numIndices > 0 {
             shiftedData = copy.shiftedData;
           }
         }
-        // also set dataAllocRange
         dataAllocRange = copy.dataAllocRange;
-        //numelm = copy.numelm;
         delete copy;
       }
-      //} else {
-      //  halt("illegal reallocation");
-      //}
     }
+
     override proc dsiPostReallocate() {
       // No action necessary here
     }
