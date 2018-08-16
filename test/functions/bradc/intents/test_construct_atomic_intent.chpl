@@ -9,7 +9,7 @@ class C {
 
 var b: atomic int;
 
-var myC = new C(b);
+var myC = new owned C(b);
 writeln("b is: ", b.read());
 writeln("myC is: ", myC);
 

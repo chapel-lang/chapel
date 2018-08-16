@@ -147,6 +147,7 @@ bool fLLVMWideOpt = false;
 bool fWarnConstLoops = true;
 bool fWarnUnstable = false;
 bool fDefaultUnmanaged = false;
+bool fLegacyNew = false;
 bool fWarnConstructors = true;
 
 // Enable all extra special warnings
@@ -984,6 +985,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
  {"warn-unstable", ' ', NULL, "Enable [disable] warnings code that is about to change or recently changed behavior", "N", &fWarnUnstable, "CHPL_WARN_UNSTABLE", NULL},
  {"default-unmanaged", ' ', NULL, "Enable [disable] class type defaulting to unmanaged", "N", &fDefaultUnmanaged, "CHPL_DEFAULT_UNMANAGED", NULL},
+ {"legacy-new", ' ', NULL, "Enable [disable] 'new SomeClass' legacy behavior", "N", &fLegacyNew, "CHPL_LEGACY_NEW", NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
  DRIVER_ARG_BREAKFLAGS_COMMON,

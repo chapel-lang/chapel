@@ -28,6 +28,7 @@
 #include "stringutil.h"
 
 char libDir[FILENAME_MAX + 1]  = "";
+std::string pxdName = "";
 
 // TypeSymbol -> (pxdName, pyxName)  Will be "" if the cname should be used
 std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
@@ -283,37 +284,142 @@ static void setupPythonTypeMap() {
 
 }
 
+static void makePXDFile(std::vector<FnSymbol*> functions);
+static void makePYXFile(std::vector<FnSymbol*> functions);
+
 void codegen_library_python(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile && fLibraryPython) {
     setupPythonTypeMap();
 
-    fileinfo pxd = { NULL, NULL, NULL };
+    pxdName = "chpl_";
+    pxdName += libmodeHeadername;
 
-    openLibraryHelperFile(&pxd, libmodeHeadername, "pxd");
-
-    if (pxd.fptr != NULL) {
-      FILE* save_cfile = gGenInfo->cfile;
-
-      gGenInfo->cfile = pxd.fptr;
-
-      fprintf(pxd.fptr, "from libc.stdint cimport *\n\n");
-
-      fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
-
-      for_vector(FnSymbol, fn, functions) {
-        if (!isFunctionToSkip(fn)) {
-          fn->codegenPXD();
-        }
-      }
-
-      pxdEnd();
-      gGenInfo->cfile = save_cfile;
-    }
-    // Don't "beautify", it will remove the tabs
-    closeLibraryHelperFile(&pxd, false);
+    makePXDFile(functions);
+    makePYXFile(functions);
   }
 }
 
+// Generate the .pxd file for the library.  This will be used when creating
+// the Python module
+static void makePXDFile(std::vector<FnSymbol*> functions) {
+  fileinfo pxd = { NULL, NULL, NULL };
+
+  openLibraryHelperFile(&pxd, pxdName.c_str(), "pxd");
+
+  if (pxd.fptr != NULL) {
+    FILE* save_cfile = gGenInfo->cfile;
+
+    gGenInfo->cfile = pxd.fptr;
+
+    fprintf(pxd.fptr, "from libc.stdint cimport *\n\n");
+
+    fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
+
+    for_vector(FnSymbol, fn, functions) {
+      if (!isFunctionToSkip(fn)) {
+        fn->codegenPython(PYTHON_PXD);
+      }
+    }
+
+    pxdEnd();
+    gGenInfo->cfile = save_cfile;
+  }
+  // Don't "beautify", it will remove the tabs
+  closeLibraryHelperFile(&pxd, false);
+}
+
+static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits);
+
+// Generate the .pyx file for the library.  This will also be used when
+// creating the Python module.
+static void makePYXFile(std::vector<FnSymbol*> functions) {
+  fileinfo pyx = { NULL, NULL, NULL };
+
+  openLibraryHelperFile(&pyx, pythonModulename, "pyx");
+
+  if (pyx.fptr != NULL) {
+    FILE* save_cfile = gGenInfo->cfile;
+
+    gGenInfo->cfile = pyx.fptr;
+
+    // Make import statement at top of .pyx file for chpl_library_init and
+    // chpl_library_finalize
+    fprintf(pyx.fptr, "from %s cimport chpl_library_init, ", pxdName.c_str());
+    fprintf(pyx.fptr, "chpl_library_finalize\n");
+
+    std::vector<FnSymbol*> moduleInits;
+    std::vector<FnSymbol*> exported;
+
+    fprintf(pyx.fptr, "from %s cimport ", pxdName.c_str());
+    bool first = true;
+    // Make import statement at top of .pyx file for exported functions
+    for_vector(FnSymbol, fn, functions) {
+      if (!isFunctionToSkip(fn)) {
+        if (fn->hasFlag(FLAG_EXPORT)) {
+          if (first) {
+            first = false;
+          } else {
+            fprintf(pyx.fptr, ", ");
+          }
+
+          // Module initialization functions get handled together, other
+          // exported functions will have their own definition.
+          if (fn->hasFlag(FLAG_MODULE_INIT)) {
+            // No need to rename the module init function, the user won't see it
+            fprintf(pyx.fptr, "%s", fn->cname);
+            moduleInits.push_back(fn);
+          } else {
+            // On import, rename the exported function so that we can use its
+            // original name in the Python module to avoid confusion.
+            fprintf(pyx.fptr, "%s as chpl_%s", fn->cname, fn->cname);
+            exported.push_back(fn);
+          }
+        }
+      }
+    }
+    fprintf(pyx.fptr, "\n\n");
+
+    // Necessary for using numpy types
+    fprintf(pyx.fptr, "import numpy\n");
+    fprintf(pyx.fptr, "cimport numpy\n\n");
+
+    makePYXSetupFunctions(moduleInits);
+
+    // Add Python wrapper for the exported functions, to translate the types
+    // appropriately
+    for_vector(FnSymbol, fn, exported) {
+      fn->codegenPython(PYTHON_PYX);
+    }
+
+    gGenInfo->cfile = save_cfile;
+  }
+  // Don't "beautify", it will remove the tabs
+  closeLibraryHelperFile(&pyx, false);
+}
+
+// Create definitions for chpl_setup and chpl_cleanup in the generated .pyx
+// file
+static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
+  GenInfo* info = gGenInfo;
+  FILE* outfile = info->cfile;
+
+  // Initialize the runtime.  chpl_setup should get called prior to using
+  // any of the exported functions
+  fprintf(outfile, "def chpl_setup():\n");
+  fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername);
+  fprintf(outfile, "\tchpl_library_init(1, args)\n");
+
+  // Initialize the included modules (continuation of chpl_setup definition)
+  for_vector(FnSymbol, fn, moduleInits) {
+    fprintf(outfile, "\t%s(1, 1)\n", fn->cname);
+  }
+  fprintf(outfile, "\n");
+
+  // Shut down the runtime and libraries.  chpl_cleanup should get called when
+  // the exported Chapel code is no longer needed
+  fprintf(outfile, "def chpl_cleanup():\n");
+  fprintf(outfile, "\tchpl_library_finalize()\n");
+}
 
 // Skip this function if it is defined in an internal module, or if it is
 // the generated main function

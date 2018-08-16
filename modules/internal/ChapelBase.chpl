@@ -923,11 +923,11 @@ module ChapelBase {
     type taskCntType = if !forceLocalTypes && useAtomicTaskCnt then atomic int
                                            else int;
     if forceLocalTypes {
-      return new _EndCount(iType=chpl__processorAtomicType(int),
-                           taskType=taskCntType);
+      return new unmanaged _EndCount(iType=chpl__processorAtomicType(int),
+                                     taskType=taskCntType);
     } else {
-      return new _EndCount(iType=chpl__atomicType(int),
-                           taskType=taskCntType);
+      return new unmanaged _EndCount(iType=chpl__atomicType(int),
+                                     taskType=taskCntType);
     }
   }
 

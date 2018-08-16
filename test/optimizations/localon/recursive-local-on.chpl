@@ -1,8 +1,8 @@
 
 class Foo { var x : int = 5; }
 
-var f : Foo;
-on Locales[numLocales-1] do f = new Foo();
+var f : unmanaged Foo;
+on Locales[numLocales-1] do f = new unmanaged Foo();
 
 local do on here do writeln(f);
 

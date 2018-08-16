@@ -14,7 +14,7 @@ class Child: Parent {
 
 var A: [1..10] int;
 
-var child: Parent = new Child();
+var child: borrowed Parent = new borrowed Child();
 
 for c in child do A[c] = c; writeln(A); A = 0;
 forall c in child do A[c] = c; writeln(A); A = 0;

@@ -6,6 +6,6 @@ class C {
 }
 
 var A:[1..2] int;
-var B = new C(A);
+var B = new unmanaged C(A);
 
 writeln(B);

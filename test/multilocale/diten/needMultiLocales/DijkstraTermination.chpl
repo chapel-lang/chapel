@@ -25,13 +25,13 @@ class WakeupSyncVarHack {
   var wakeup: sync WakeupType;
 }
 
-pragma "locale private" var wakeup: WakeupSyncVarHack;
-pragma "locale private" var endCount: MyEndCount;
+pragma "locale private" var wakeup: unmanaged WakeupSyncVarHack;
+pragma "locale private" var endCount: unmanaged MyEndCount;
 
 proc setupTerminationDetection() {
   for loc in Locales do on loc {
-    endCount = new MyEndCount();
-    wakeup = new WakeupSyncVarHack();
+    endCount = new unmanaged MyEndCount();
+    wakeup = new unmanaged WakeupSyncVarHack();
     if here.id == 0 {
       endCount.count = 1;
       endCount.localColor = TerminationColor.white;
