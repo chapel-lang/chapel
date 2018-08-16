@@ -268,6 +268,8 @@ A registry will be downloaded to ``$MASON_HOME/<name>`` by ``mason update``
 for each registry named in ``$MASON_REGISTRY`` if a registry at that location
 does not already exist.
 
+For information regarding current Mason packages, see the :ref:`package-list`.
+
 The registry consists of a hierarchy like the following:
 
 .. code-block:: text

@@ -16,3 +16,4 @@ Contents:
    chpldoc/chpldoc
    chplvis/chplvis
    mason/mason
+   mason/package-list
