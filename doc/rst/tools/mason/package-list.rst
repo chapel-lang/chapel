@@ -1,35 +1,57 @@
 .. _package-list:
 
-
 ============
 Package List
 ============
 
 The following is a list of packages currently available in Mason through the mason-registry.
 
-
 LinearAlgebraJama
 ~~~~~~~~~~~~~~~~~
- Versions
-    - 0.1.0
-
- Repository
-    - https://github.com/ct-clmsn/LinearAlgebraJama
-
- Chapel Verison
-    - 1.16.0
-
- 
-
+Author: 
+     | ct-clmsn
+Repository: 
+     | https://github.com/ct-clmsn/LinearAlgebraJama
+Chapel Version: 
+     | 1.16.0
+Versions: 
+     | 0.1.0
 
 
 MatrixMarket
 ~~~~~~~~~~~~
- Versions
-    - 0.1.0
+Author: 
+     | ct-clmsn
+Repository: 
+     | https://github.com/ct-clmsn/MatrixMarket
+Chapel Version: 
+     | 1.16.0
+Versions: 
+     | 0.1.0
 
- Repository
-    - https://github.com/ct-clmsn/MatrixMarket
 
- Chapel Verison
-    - 1.16.0
+_MasonTest1
+~~~~~~~~~~~
+Author: 
+     | Sam
+Repository: 
+     | https://github.com/Spartee/_MasonTest1
+Chapel Version: 
+     | 1.16.0
+Versions: 
+     | 0.1.0
+     | 0.2.0
+
+
+_MasonTest2
+~~~~~~~~~~~
+Author: 
+     | Sam
+Repository: 
+     | https://github.com/Spartee/_MasonTest2
+Chapel Version: 
+     | 1.16.0
+Versions: 
+     | 0.1.0
+
+
