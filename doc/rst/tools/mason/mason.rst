@@ -327,7 +327,7 @@ Non-destructive installs, custom version and configurations, and simple package 
 and uninstallation are a few of the features Mason gains through this integration.
 
 The following example uses the ``HDF5`` library which is used for high performance data I/O.
-The ``HDF5.chpl`` wrapper used in the example can be found in ``CHPL_HOME/modules/packages".
+The ``HDF5.chpl`` wrapper used in the example can be found in ``CHPL_HOME/modules/packages``.
 Before Mason, Chapel users were required to download and install the libraries themselves
 and use Make to include and use them in their projects. These requirements have been removed
 and now only a few Mason commands are required to include external dependencies such as ``HDF5``.
