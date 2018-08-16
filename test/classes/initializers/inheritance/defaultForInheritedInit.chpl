@@ -14,6 +14,6 @@ class C {
 class D : C {
 }
 
-var myD = new D(3, "hi", 4.6);
+var myD = new unmanaged D(3, "hi", 4.6);
 writeln(myD);
 delete myD;

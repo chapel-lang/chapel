@@ -27,9 +27,9 @@ class Rect : Base {
   }
 }
 
-var one = new Rect(1);
-var three = new Rect(3);
-var v = new View(three);
+var one = new borrowed Rect(1);
+var three = new borrowed Rect(3);
+var v = new borrowed View(three);
 
 one.action(one);
 v.action(three);

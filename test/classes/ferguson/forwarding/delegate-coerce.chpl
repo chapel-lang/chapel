@@ -15,7 +15,7 @@ class C {
   proc foo(x:int(8)) { writeln("in C.foo int(8) (", x, ")"); }
 }
 
-var r = new Wrapper(new C());
+var r = new Wrapper(new unmanaged C());
 
 writeln("int(8)");
 r.foo(1:int(8));

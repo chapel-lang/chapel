@@ -11,12 +11,12 @@ class LocC {
 }
 
 class C {
-  var locCs: [LocaleSpace] LocC;
+  var locCs: [LocaleSpace] unmanaged LocC;
 
   proc postinit() {
     for loc in LocaleSpace {
       on Locales(loc) {
-        locCs(loc) = new LocC(loc);
+        locCs(loc) = new unmanaged LocC(loc);
       }
     }
   }
@@ -39,7 +39,7 @@ class C {
 // working.
 cobegin {
   {
-    var myC = new C();
+    var myC = new unmanaged C();
     writeln("C is: ", myC);
   }
   {

@@ -46,7 +46,7 @@ class ForceEAM : Force  {
 
   var FP: [DistSpace] [perBinSpace] real;
               
-  var funcfl : Funcfl;
+  var funcfl : unmanaged Funcfl;
 
   proc init(cf : real) {
     this.complete();
@@ -57,7 +57,7 @@ class ForceEAM : Force  {
   }
 
   proc coeff(fname : string) {
-    funcfl = new Funcfl();
+    funcfl = new unmanaged Funcfl();
     funcfl.eamFile = fname;
     var fchan = open(fname, iomode.r);
     var rd = fchan.reader();

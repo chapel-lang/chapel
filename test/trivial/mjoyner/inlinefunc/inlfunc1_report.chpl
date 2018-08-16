@@ -6,7 +6,7 @@ class Foo {
 }
 
 proc main() {
-  var f : Foo = new Foo();
+  var f : unmanaged Foo = new unmanaged Foo();
 
   f.x = 1;
   f.y = 2;

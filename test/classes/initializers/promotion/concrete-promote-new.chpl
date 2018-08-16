@@ -4,6 +4,6 @@ class C {
 }
 
 var A:[1..2] int;
-var B = new C(A);
+var B = new borrowed C(A);
 
 writeln(B);

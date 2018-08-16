@@ -1,2 +1,2 @@
---no-default-unmanaged --no-warn-unstable # default-unmanaged.default.good
+--no-default-unmanaged --no-warn-unstable --legacy-new # default-unmanaged.default.good
 --default-unmanaged --no-warn-unstable    # default-unmanaged.unmanaged.good
