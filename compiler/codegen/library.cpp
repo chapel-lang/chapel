@@ -61,6 +61,13 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 
       fprintf(libhdrfile.fptr, "#include \"stdchpl.h\"\n");
 
+      int filenum = 0;
+      while (const char* inputFilename = nthFilename(filenum++)) {
+        if (isCHeader(inputFilename)) {
+          fprintf(libhdrfile.fptr, "#include \"%s\"\n", inputFilename);
+        }
+      }
+
       // Maybe need something here to support LLVM extern blocks?
 
       // Print out the module initialization function headers and the exported
@@ -105,6 +112,10 @@ static void setupMakeEnvVars(std::string var, const char* value,
   fprintf(makefile.fptr, "%s = %s\n\n", var.c_str(), value);
 }
 
+static void printMakefileIncludes(fileinfo makefile);
+static void printMakefileLibraries(fileinfo makefile, std::string name,
+                                   bool startsWithLib);
+
 void codegen_library_makefile() {
   std::string name = "";
   int libLength = strlen("lib");
@@ -126,18 +137,44 @@ void codegen_library_makefile() {
   setupMakeEnvVars("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, makefile);
   setupMakeEnvVars("CHPL_HOME", CHPL_HOME, makefile);
 
-  // TODO: compileline --includes-and-defines adds -I. to the list
-  // automatically.  If the library is in a different directory from the
-  // Makefile that is using this one, that won't be sufficient to find the
-  // header file.  I will handle this with the output directory change
+  printMakefileIncludes(makefile);
+  printMakefileLibraries(makefile, name, startsWithLib);
+
+  std::string compiler = getCompilelineOption("compiler");
+  fprintf(makefile.fptr, "CHPL_COMPILER = %s\n", compiler.c_str());
+
+  std::string linker = getCompilelineOption("linker");
+  fprintf(makefile.fptr, "CHPL_LINKER = %s\n", linker.c_str());
+
+  std::string linkerShared = getCompilelineOption("linkershared");
+  fprintf(makefile.fptr, "CHPL_LINKERSHARED = %s", linkerShared.c_str());
+
+  closeLibraryHelperFile(&makefile, false);
+}
+
+static void printMakefileIncludes(fileinfo makefile) {
   std::string cflags = getCompilelineOption("cflags");
   cflags.erase(cflags.length() - 1); // remove trailing newline
-  std::string includes = getCompilelineOption("includes-and-defines");
-  fprintf(makefile.fptr, "CHPL_CFLAGS = -I%s %s %s\n",
-          libDir,
-          cflags.c_str(),
-          includes.c_str());
 
+  std::string requireIncludes = "";
+  for_vector(const char, dirName, incDirs) {
+    requireIncludes += " -I";
+    requireIncludes += dirName;
+  }
+
+  std::string includes = getCompilelineOption("includes-and-defines");
+  fprintf(makefile.fptr, "CHPL_CFLAGS = -I%s %s",
+          libDir,
+          cflags.c_str());
+
+  if (requireIncludes != "") {
+    fprintf(makefile.fptr, "%s", requireIncludes.c_str());
+  }
+  fprintf(makefile.fptr, " %s\n", includes.c_str());
+}
+
+static void printMakefileLibraries(fileinfo makefile, std::string name,
+                                   bool startsWithLib) {
   std::string libraries = getCompilelineOption("libraries");
   std::string libname = "-l";
   if (startsWithLib) {
@@ -151,22 +188,25 @@ void codegen_library_makefile() {
     libname += name;
     libname += getLibraryExtension();
   }
-  // TODO: adjust for different location for the library, see earlier TODO
-  fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s %s\n",
+
+  std::string requires = "";
+  // Adds the locations of the libraries specified using require statements
+  for_vector(const char, dirName, libDirs) {
+    requires += " -L";
+    requires += dirName;
+  }
+  for_vector(const char, libName, libFiles) {
+    requires += " -l";
+    requires += libName;
+  }
+
+  fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s",
           libDir,
-          libname.c_str(),
-          libraries.c_str());
-
-  std::string compiler = getCompilelineOption("compiler");
-  fprintf(makefile.fptr, "CHPL_COMPILER = %s\n", compiler.c_str());
-
-  std::string linker = getCompilelineOption("linker");
-  fprintf(makefile.fptr, "CHPL_LINKER = %s\n", linker.c_str());
-
-  std::string linkerShared = getCompilelineOption("linkershared");
-  fprintf(makefile.fptr, "CHPL_LINKERSHARED = %s", linkerShared.c_str());
-
-  closeLibraryHelperFile(&makefile, false);
+          libname.c_str());
+  if (requires != "") {
+    fprintf(makefile.fptr, "%s", requires.c_str());
+  }
+  fprintf(makefile.fptr, " %s\n", libraries.c_str());
 }
 
 const char* getLibraryExtension() {

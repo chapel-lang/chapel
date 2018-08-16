@@ -17,3 +17,23 @@ else
 renamedTest:
 	@echo "weird"
 endif
+
+ifeq ($(MAKECMDGOALS),checkRequire)
+include lib/Makefile.requireStmt
+checkRequire: checkRequire.c lib/librequireStmt.a
+	@$(CHPL_COMPILER) $(CHPL_CFLAGS) -o checkRequire checkRequire.c $(CHPL_LDFLAGS)
+	@./checkRequire
+else
+checkRequire:
+	@echo "weird"
+endif
+
+ifeq ($(MAKECMDGOALS),checkRequire2)
+include lib/Makefile.requireHeader
+checkRequire2: checkRequire2.c lib/librequireHeader.a
+	@$(CHPL_COMPILER) $(CHPL_CFLAGS) -o checkRequire2 checkRequire2.c $(CHPL_LDFLAGS)
+	@./checkRequire2
+else
+checkRequire2:
+	@echo "weird"
+endif
