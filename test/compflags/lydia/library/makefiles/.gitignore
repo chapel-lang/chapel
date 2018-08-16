@@ -11,3 +11,7 @@ lib/requireStmt.h
 lib/Makefile.requireStmt
 libfoo.a
 checkRequire
+lib/librequireHeader.a
+lib/requireHeader.h
+lib/Makefile.requireHeader
+checkRequire2
