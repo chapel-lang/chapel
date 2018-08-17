@@ -22,7 +22,7 @@ cdef extern from "chpl-external-array.h":
 	chpl_external_array chpl_make_external_array(uint64_t elt_size, uint64_t num_elts)
 	chpl_external_array chpl_make_external_array_ptr(void* elts, uint64_t size)
 	void chpl_free_external_array(chpl_external_array x)
-from chpl_checkExplicitLibname cimport chpl_library_init, chpl_library_finalize
+from chpl_checkExplicitLibname cimport chpl_library_init, chpl_library_finalize, chpl_external_array, chpl_make_external_array, chpl_make_external_array_ptr, chpl_free_external_array
 from chpl_checkExplicitLibname cimport chpl__init_checkExplicitLibname, foo as chpl_foo, takesAndReturns as chpl_takesAndReturns, parallelProg as chpl_parallelProg, threadring as chpl_threadring
 
 import numpy
