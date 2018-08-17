@@ -7,7 +7,7 @@ use LayoutCS;
 config const N = 10;
 config type layoutType = DefaultDist;
 
-const layout = new layoutType;
+const layout = new unmanaged layoutType;
 const ParentDom = {0..#N, 0..#2*N};
 var SparseDom: sparse subdomain(ParentDom) dmapped new dmap(layout);
 var SparseMat: [SparseDom] int;
