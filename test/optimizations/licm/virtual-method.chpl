@@ -5,7 +5,7 @@ class D {
 }
 
 class C : D {
-  proc fn() : (bool, int) {
+  override proc fn() : (bool, int) {
     return (false, 1);
   }
 }

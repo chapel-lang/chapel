@@ -10,7 +10,7 @@ module M2 {
   class D: C {
     type t;
     var y: t;
-    proc foo() {
+    override proc foo() {
       writeln("D.foo = ", this);
       y.goo();
     }

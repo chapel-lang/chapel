@@ -9,11 +9,11 @@ module Strassen
     {
         var n : int;
 
-        proc getInstance() : unmanaged Strassen  // Error message line# wrong
+        override proc getInstance() : unmanaged Strassen  // Error message line# wrong
         {
             return new unmanaged Strassen("name", false, n);
         }
-        proc writeThis(w)
+        override proc writeThis(w)
         {
           w <~> "StrassenFactory " <~> n;
         }
@@ -27,7 +27,7 @@ module Strassen
         {
           w <~> "Strassen " <~> n;
         }
-        proc runKernel()
+        override proc runKernel()
         {
         }
     }

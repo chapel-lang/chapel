@@ -13,7 +13,7 @@ class XmlElement {
 }
 class XmlPCData : XmlElement {
   var data: string;
-  proc printHelp(indent) { writeln(indent, "PCData(", data, ")"); }
+  override proc printHelp(indent) { writeln(indent, "PCData(", data, ")"); }
 }
 class XmlTag : XmlElement {
   var name: string;
@@ -22,7 +22,7 @@ class XmlTag : XmlElement {
   var numChildren: int;
   var childrenValueSpace: domain(1) = {1..2};
   var childrenValues: [childrenValueSpace] unmanaged XmlElement;
-  proc printHelp(indent) {
+  override proc printHelp(indent) {
     writeln(indent, "<", name, ">");
     for child in 1..numChildren do
        childrenValues[child].printHelp(indent + "  ");

@@ -8,7 +8,7 @@ class SuperPrinter {
 }
 
 class SubPrinter : SuperPrinter {
-  proc print(ref data) {
+  override proc print(ref data) {
     writeln("Subprinter: ", data.x);
   }
 }

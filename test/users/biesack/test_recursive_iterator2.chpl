@@ -6,12 +6,12 @@ class Node {
 
 class ValueNode : Node {
   const val : int;
-  proc nodeType() : NodeType { return NodeType.value; }
+  override proc nodeType() : NodeType { return NodeType.value; }
 }
 
 class Branch : Node {
   const left, right: unmanaged Node;
-  proc nodeType() : NodeType { return NodeType.branch; }
+  override proc nodeType() : NodeType { return NodeType.branch; }
 }
 
 proc node(a:int, b:int) : unmanaged Branch {

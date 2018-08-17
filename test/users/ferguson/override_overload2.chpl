@@ -8,7 +8,7 @@ class BaseReader {
 }
 
 class SubReader : BaseReader {
-  proc readPrimitive(inout x) {
+  override proc readPrimitive(inout x) {
     writeln("Sub Primitive ", x.type:string);
   }
 }

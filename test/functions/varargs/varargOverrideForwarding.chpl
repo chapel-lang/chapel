@@ -13,11 +13,11 @@ class B {
 }
 
 class C: B {
-  proc print(){
+  override proc print(){
     writeln("Hallo from C");
   }
 
-  proc printv(x...?n){
+  override proc printv(x...?n){
     writeln("Hallo from varidic method in C");
   }
 }

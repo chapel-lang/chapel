@@ -7,7 +7,7 @@ class Foo
 
 class Bar : Foo
 {
-  proc doStuff(ref myList : list(int))
+  override proc doStuff(ref myList : list(int))
   {
     writeln("doStuff: myList.length = " + myList.length);
 

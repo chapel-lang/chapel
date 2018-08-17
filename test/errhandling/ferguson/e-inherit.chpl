@@ -12,7 +12,7 @@ class C {
 }
 
 class D : C {
-  proc foo() throws {
+  override proc foo() throws {
     writeln("D.foo()");
     if dthrow then
       throw new StringError("test error D");

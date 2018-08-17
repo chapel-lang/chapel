@@ -45,7 +45,7 @@ class Vector {
     d = {1..n};
   }
 
-  proc writeThis(f) {
+  override proc writeThis(f) {
     f.write("{n = ", n, ", a = ", a, "}");
   }
 

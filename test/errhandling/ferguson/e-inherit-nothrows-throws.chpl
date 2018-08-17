@@ -3,7 +3,7 @@ class C {
 }
 
 class D : C {
-  proc foo() throws { writeln("D.foo()"); }
+  override proc foo() throws { writeln("D.foo()"); }
 }
 
 var c = new unmanaged C();

@@ -4,7 +4,7 @@ module CannotThrow {
   class MyError : Error {
     var x:int;
     var y:int;
-    proc message() {
+    override proc message() {
       return x + " " + y;
     }
   }

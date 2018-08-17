@@ -17,13 +17,13 @@ class FixedOffset: TZInfo {
     this.dstoffset = new timedelta(minutes=dstoffset);
   }
 
-  proc utcoffset(dt) {
+  override proc utcoffset(dt) {
     return offset;
   }
-  proc tzname(dt) {
+  override proc tzname(dt) {
     return name;
   }
-  proc dst(dt) {
+  override proc dst(dt) {
     return dstoffset;
   }
 }
@@ -157,14 +157,14 @@ proc test_mixed_compare() {
     proc init() {
       offset = new timedelta(minutes=22);
     }
-    proc utcoffset(dt: datetime) {
+    override proc utcoffset(dt: datetime) {
       offset += new timedelta(minutes=1);
       return offset;
     }
-    proc dst(dt: datetime) {
+    override proc dst(dt: datetime) {
       return new timedelta(0);
     }
-    proc tzname(dt: datetime) {
+    override proc tzname(dt: datetime) {
       return name;
     }
   }

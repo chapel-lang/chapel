@@ -16,7 +16,7 @@
     use LibraryZ4;
 
     class Widget : Base {
-      proc helpSetup(x:real) {
+      override proc helpSetup(x:real) {
         writeln("In Application.Widget.helpSetup");
       }
     }
