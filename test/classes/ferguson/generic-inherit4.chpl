@@ -13,7 +13,7 @@ class Parent {
 class Child : Parent {
   type u;
   var y:u;
-  proc overridden_method() {
+  override proc overridden_method() {
     writeln(x,y);
   }
   proc child_method() {

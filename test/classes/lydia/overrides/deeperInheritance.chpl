@@ -6,14 +6,14 @@ class A {
 }
 
 class B: A {
-  proc foo() {
+  override proc foo() {
     super.foo();
     writeln("in B.foo()");
   }
 }
 
 class C: B {
-  proc foo() {
+  override proc foo() {
     super.super.foo();
     writeln("in C.foo()");
   }

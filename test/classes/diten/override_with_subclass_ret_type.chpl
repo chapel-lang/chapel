@@ -7,7 +7,7 @@ class ic_A {
 
 class ic_B: ic_A {
   var s: real;
-  proc bar() {
+  override proc bar() {
     writeln("ic_B.bar()");
   }
 }
@@ -22,7 +22,7 @@ class A {
 
 class B: A {
   var r: real;
-  proc foo() {
+  override proc foo() {
     return new unmanaged ic_B(1, 2.0);
   }
 }

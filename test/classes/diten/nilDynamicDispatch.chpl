@@ -5,7 +5,7 @@ class C {
 }
 
 class D:C {
-  proc foo() {
+  override proc foo() {
     writeln("D.foo()");
   }
 }
