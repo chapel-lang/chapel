@@ -7,7 +7,7 @@ class C {
 
 class D: C {
   var y: int;
-  proc foo() { writeln("D: ", this); }
+  override proc foo() { writeln("D: ", this); }
 }
 
 var s: list(borrowed C) = makeList( new borrowed C(1), new borrowed D(2,3), new borrowed C(4), new borrowed D(5,6) );

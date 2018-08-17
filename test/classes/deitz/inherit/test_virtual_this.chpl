@@ -6,7 +6,7 @@ class C {
 }
 
 class D : C {
-  proc this() {
+  override proc this() {
     writeln("D: x");
   }
 }

@@ -5,7 +5,7 @@ class A {
 }
 
 class B: A {
-  proc fcn() {
+  override proc fcn() {
     return "In B";
   }
 }

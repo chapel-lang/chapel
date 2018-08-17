@@ -50,13 +50,13 @@ class Dense : AbsDense {
 }
 
 class Sparse : AbsSparse {
-  proc clear() {
+  override proc clear() {
     writeln("Clearing a sparse domain");
   }
 }
 
 class Assoc : AbsAssoc {
-  proc clear() {
+  override proc clear() {
     writeln("Clearing an associative domain");
   }
 }

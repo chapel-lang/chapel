@@ -14,10 +14,10 @@ class D : C {
   var DsC: unmanaged C;
   var y = DsC.baz();
 
-  proc foo() {
+  override proc foo() {
     writeln("In D.foo(), y is ", y);
   }
-  proc baz() {
+  override proc baz() {
     return y;
   }
   proc buildNew() {
