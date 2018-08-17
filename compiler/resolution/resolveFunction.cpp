@@ -862,9 +862,6 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
   if (strcmp(name, "advance") != 0) {
     fn->addFlag(FLAG_INLINE);
   }
-  if (ii->iterator->hasFlag(FLAG_OVERRIDE)) {
-    fn->addFlag(FLAG_OVERRIDE);
-  }
 
   fn->setMethod(true);
 
