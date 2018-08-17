@@ -167,13 +167,7 @@ proc runSpackCommand(command) {
   sub.wait();
 
   for line in sub.stderr.lines() {
-    if line.find("spack") > 0 {
-      var edited = line.replace("spack", "mason external");
-      write(edited);
-    }
-    else {
-      write(line);
-    }
+    write(line);
   }
 
   return sub.exit_status;
