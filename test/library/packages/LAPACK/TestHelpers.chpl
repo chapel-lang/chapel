@@ -191,7 +191,7 @@ module TestHelpers {
     return (matrix_order == lapack_memory_order.row_major);
   }
   
-  proc *( A: LAPACK_Matrix(?t), B: LAPACK_Matrix(t) ): LAPACK_Matrix(t) {
+  proc *( A: LAPACK_Matrix(?t), B: LAPACK_Matrix(t) ): owned LAPACK_Matrix(t) {
     assert( A.columns == B.rows );
     var row_ordered = if ( A.isRowMajor &&  B.isRowMajor)
                       || (!A.isRowMajor && !B.isRowMajor) 
@@ -199,7 +199,7 @@ module TestHelpers {
                     else
                       true;
     
-    var retmatrix = new LAPACK_Matrix( t, A.rows, B.columns, row_ordered, error = min( A.epsilon, B.epsilon ) );
+    var retmatrix = new owned LAPACK_Matrix( t, A.rows, B.columns, row_ordered, error = min( A.epsilon, B.epsilon ) );
     
     for i in A.rowRange do
       for j in B.columnRange do

@@ -7,10 +7,10 @@ proc LAPACKE_dgesvd_row_major_test(){
     writeln( "LAPACKE_dgesvd_row_major_test\n===============================" );
     
   var order: lapack_memory_order = lapack_memory_order.row_major;
-  var A = new LAPACK_Matrix( real(64), 4, 5, order );
-  var U = new LAPACK_Matrix( real(64), 4, 4, order ); 
-  var S = new LAPACK_Matrix( real(64), 4, 5, order ); 
-  var V = new LAPACK_Matrix( real(64), 5, 5, order );
+  var A = new owned LAPACK_Matrix( real(64), 4, 5, order );
+  var U = new owned LAPACK_Matrix( real(64), 4, 4, order ); 
+  var S = new owned LAPACK_Matrix( real(64), 4, 5, order ); 
+  var V = new owned LAPACK_Matrix( real(64), 5, 5, order );
   
   A.populateFromArray( 
                       [ 1.0, 0.0, 0.0, 0.0, 2.0,
@@ -45,10 +45,10 @@ proc LAPACKE_dgesvd_row_major_test(){
                        lapack_memory_order.row_major
                       );
 
-  var A_work = new LAPACK_Matrix( A );
-  var U_work = new LAPACK_Matrix( U );
-  var S_work = new LAPACK_Matrix( S );
-  var V_work = new LAPACK_Matrix( V );
+  var A_work = new owned LAPACK_Matrix( A );
+  var U_work = new owned LAPACK_Matrix( U );
+  var S_work = new owned LAPACK_Matrix( S );
+  var V_work = new owned LAPACK_Matrix( V );
   
   if verbose_test then
     writeln(  "A\n", A_work.toString(), 
@@ -95,10 +95,10 @@ proc LAPACKE_dgesvd_col_major_test(){
     writeln( "LAPACKE_dgesvd_col_major_test\n===============================" );
     
   var order: lapack_memory_order = lapack_memory_order.column_major;
-  var A = new LAPACK_Matrix( real(64), 4, 5, order );
-  var U = new LAPACK_Matrix( real(64), 4, 4, order ); 
-  var S = new LAPACK_Matrix( real(64), 4, 5, order ); 
-  var V = new LAPACK_Matrix( real(64), 5, 5, order );
+  var A = new owned LAPACK_Matrix( real(64), 4, 5, order );
+  var U = new owned LAPACK_Matrix( real(64), 4, 4, order ); 
+  var S = new owned LAPACK_Matrix( real(64), 4, 5, order ); 
+  var V = new owned LAPACK_Matrix( real(64), 5, 5, order );
   
   A.populateFromArray( 
                       [ 1.0, 0.0, 0.0, 0.0, 2.0,
@@ -133,10 +133,10 @@ proc LAPACKE_dgesvd_col_major_test(){
                        lapack_memory_order.row_major
                       );
 
-  var A_work = new LAPACK_Matrix( A );
-  var U_work = new LAPACK_Matrix( U );
-  var S_work = new LAPACK_Matrix( S );
-  var V_work = new LAPACK_Matrix( V );
+  var A_work = new owned LAPACK_Matrix( A );
+  var U_work = new owned LAPACK_Matrix( U );
+  var S_work = new owned LAPACK_Matrix( S );
+  var V_work = new owned LAPACK_Matrix( V );
   
   if verbose_test then
     writeln(  "A\n", A_work.toString(), 
@@ -184,10 +184,10 @@ proc gesvd_row_major_test(){
     writeln( "gesvd_row_major_test\n===============================" );
     
   var order: lapack_memory_order = lapack_memory_order.row_major;
-  var A = new LAPACK_Matrix( real(64), 4, 5, order );
-  var U = new LAPACK_Matrix( real(64), 4, 4, order ); 
-  var S = new LAPACK_Matrix( real(64), 4, 5, order ); 
-  var V = new LAPACK_Matrix( real(64), 5, 5, order );
+  var A = new owned LAPACK_Matrix( real(64), 4, 5, order );
+  var U = new owned LAPACK_Matrix( real(64), 4, 4, order ); 
+  var S = new owned LAPACK_Matrix( real(64), 4, 5, order ); 
+  var V = new owned LAPACK_Matrix( real(64), 5, 5, order );
   
   A.populateFromArray( 
                       [ 1.0, 0.0, 0.0, 0.0, 2.0,
@@ -222,10 +222,10 @@ proc gesvd_row_major_test(){
                        lapack_memory_order.row_major
                       );
 
-  var A_work = new LAPACK_Matrix( A );
-  var U_work = new LAPACK_Matrix( U );
-  var S_work = new LAPACK_Matrix( S );
-  var V_work = new LAPACK_Matrix( V );
+  var A_work = new owned LAPACK_Matrix( A );
+  var U_work = new owned LAPACK_Matrix( U );
+  var S_work = new owned LAPACK_Matrix( S );
+  var V_work = new owned LAPACK_Matrix( V );
   
   if verbose_test then
     writeln(  "A\n", A_work.toString(), 
@@ -268,10 +268,10 @@ proc gesvd_col_major_test(){
     writeln( "gesvd_col_major_test\n===============================" );
     
   var order: lapack_memory_order = lapack_memory_order.column_major;
-  var A = new LAPACK_Matrix( real(64), 4, 5, order );
-  var U = new LAPACK_Matrix( real(64), 4, 4, order ); 
-  var S = new LAPACK_Matrix( real(64), 4, 5, order ); 
-  var V = new LAPACK_Matrix( real(64), 5, 5, order );
+  var A = new owned LAPACK_Matrix( real(64), 4, 5, order );
+  var U = new owned LAPACK_Matrix( real(64), 4, 4, order ); 
+  var S = new owned LAPACK_Matrix( real(64), 4, 5, order ); 
+  var V = new owned LAPACK_Matrix( real(64), 5, 5, order );
   
   A.populateFromArray( 
                       [ 1.0, 0.0, 0.0, 0.0, 2.0,
@@ -306,10 +306,10 @@ proc gesvd_col_major_test(){
                        lapack_memory_order.row_major
                       );
 
-  var A_work = new LAPACK_Matrix( A );
-  var U_work = new LAPACK_Matrix( U );
-  var S_work = new LAPACK_Matrix( S );
-  var V_work = new LAPACK_Matrix( V );
+  var A_work = new owned LAPACK_Matrix( A );
+  var U_work = new owned LAPACK_Matrix( U );
+  var S_work = new owned LAPACK_Matrix( S );
+  var V_work = new owned LAPACK_Matrix( V );
   
   if verbose_test then
     writeln(  "A\n", A_work.toString(), 
