@@ -1651,7 +1651,17 @@ config const seed : int = SeedGenerator.oddCurrentTime;
 enum ToposortImplementation { Serial, ParallelChunkedLoopWait, ParallelSyncWait, ParallelLoopWait, Distributed };
 config const implementation : ToposortImplementation = ToposortImplementation.ParallelChunkedLoopWait;
 
+config const printImplementations : bool = false;
+
 proc main(){
+  if printImplementations then {
+    writeln("Available implementation options:");
+    for i in ToposortImplementation {
+      writeln( i );
+    }
+    return;
+  }
+
   if density < minDensity then halt("Specified density (%n) is less than min density (%n) for N (%n)".format( density, minDensity, N));
   if density > maxDensity then halt("Specified density (%n) is greater than max density (%n) for N (%n)".format( density, maxDensity, N));
 
@@ -1693,7 +1703,6 @@ proc main(){
       dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
 
       var workQueue = new unmanaged ParallelWorkQueueChunkedLoopWait( eltType = dmappedPermutedSparseD.idxType, lockType = unmanaged AtomicLock, retries = 0, maxTasks = numTasks : uint );
-      //var workQueue = new unmanaged ParallelWorkQueueSyncWait( eltType = dmappedPermutedSparseD.idxType, lockType = unmanaged AtomicLock, retries = 0, maxTasks = numTasks : uint );
 
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation with Chunked-Loop-Wait work queue.");
       topoResult = toposortParallel( dmappedPermutedSparseD, workQueue, numTasks );
