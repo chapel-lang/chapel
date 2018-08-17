@@ -164,6 +164,7 @@ public:
 
   bool                       isPrimaryMethod()                           const;
   bool                       isSecondaryMethod()                         const;
+  bool                       isCompilerGenerated()                       const;
 
   bool                       isInitializer()                             const;
   bool                       isPostInitializer()                         const;
