@@ -452,7 +452,16 @@ module String {
     /*
       Iterates over the string Unicode character by Unicode character.
     */
-    iter uchars(): int(32) {
+    inline iter uchars(): int(32) {
+      for (codepoint, i) in this.ucharsIndexed() do
+	yield codepoint;
+    }
+
+    /*
+      Iterates over the string Unicode character by Unicode character,
+      and includes the byte index of each character.
+    */
+    iter ucharsIndexed() {
       var localThis: string = this.localize();
 
       var i = 0;
@@ -462,7 +471,7 @@ module String {
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
         qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
-        yield codepoint;
+        yield (codepoint:int(32), i + 1);
         i += nbytes;
       }
     }
