@@ -11,7 +11,7 @@ class Parent {
 }
 
 class Child : Parent {
-  iter foo(k:int) {
+  override iter foo(k:int) {
     for l in myiter() {
       yield k+l+100;
     }

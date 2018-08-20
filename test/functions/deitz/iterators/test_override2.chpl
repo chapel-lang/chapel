@@ -6,7 +6,7 @@ class C {
 }
 
 class D: C {
-  iter foo(n: int) {
+  override iter foo(n: int) {
     for i in 1..n do
       yield i;
     for i in 1..n by -1 do

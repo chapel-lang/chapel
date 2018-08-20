@@ -5,7 +5,7 @@ class C
 
 class SubC : C
 {
-  proc writeThis(w) { w.write("SubC"); }
+  override proc writeThis(w) { w.write("SubC"); }
 }
 
 class OverrideMe
@@ -24,12 +24,12 @@ class OverrideMe
 
 class OverridesIt : OverrideMe
 {
-  proc getC()
+  override proc getC()
   {
     return new unmanaged SubC();
   }
 
-  iter manyC()
+  override iter manyC()
   {
     yield new unmanaged SubC();
     yield new unmanaged SubC();
