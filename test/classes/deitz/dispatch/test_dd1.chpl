@@ -4,7 +4,7 @@ class C {
 
 class D : C {
   var x, y: int;
-  proc foo(z: int) { writeln("D.foo (z, this) = ", (z, this)); }
+  override proc foo(z: int) { writeln("D.foo (z, this) = ", (z, this)); }
   proc foo(z: bool) { writeln("D.foo bool (z, this) = ", (z, this)); }
 }
 

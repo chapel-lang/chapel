@@ -14,7 +14,7 @@ class E : C {
       ranges(i) = 1..i by -1;
   }
 
-  proc bbox(x: int) {
+  override proc bbox(x: int) {
     return ranges(x);
   }
 }

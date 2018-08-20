@@ -4,7 +4,7 @@ class C {
 }
 
 class D: C {
-  proc foo(x: int) { writeln("D.foo = ", x); }
+  override proc foo(x: int) { writeln("D.foo = ", x); }
   proc bar(y: int) { writeln("D.bar = ", y); }
 }
 

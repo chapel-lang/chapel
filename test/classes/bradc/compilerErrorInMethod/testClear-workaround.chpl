@@ -19,7 +19,7 @@ class Arithmetic : Abstract {
 }
 
 class AbsDense: Arithmetic {
-  proc clear() {
+  override proc clear() {
     halt("Can't clear a dense domain");
   }
 
@@ -46,13 +46,13 @@ class Dense : AbsDense {
 }
 
 class Sparse : AbsSparse {
-  proc clear() {
+  override proc clear() {
     writeln("Clearing a sparse domain");
   }
 }
 
 class Assoc : AbsAssoc {
-  proc clear() {
+  override proc clear() {
     writeln("Clearing an associative domain");
   }
 }

@@ -12,7 +12,7 @@ class D : C {
 }
 
 class E : D {
-  proc goo() {
+  override proc goo() {
     writeln("E.goo");
   }
 }

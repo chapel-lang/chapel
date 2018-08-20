@@ -1,36 +1,36 @@
 class A {
   var name: string = "A";
-  proc ddName() { return name; }
+  override proc ddName() { return name; }
 }
 
 class B:A {
   var name: string = "B";
-  proc ddName() { return name; }
+  override proc ddName() { return name; }
 }
 
 class C:B {
   var name: string = "C";
-  proc ddName() { return name; }
+  override proc ddName() { return name; }
 }
 
 class C2:C {
   var name: string = "C2";
-  proc ddName() { return name; }
+  override proc ddName() { return name; }
 }
 
 class D:C {
   var name: string = "D";
-  proc ddName() { return name; }
+  override proc ddName() { return name; }
 }
 
 class E:C {
   var name: string = "E";
-  proc ddName() { return name; }
+  override proc ddName() { return name; }
 }
 
 class F {
   var name: string = "F";
-  proc ddName() { return name; }
+  override proc ddName() { return name; }
 }
 
 proc object.name: string return "object";
