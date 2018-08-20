@@ -453,15 +453,15 @@ module String {
       Iterates over the string Unicode character by Unicode character.
     */
     inline iter uchars(): int(32) {
-      for (codepoint, i) in this.ucharsIndexed() do
+      for (codepoint, i, nbytes) in this.ucharsIndexLen() do
         yield codepoint;
     }
 
     /*
       Iterates over the string Unicode character by Unicode character,
-      and includes the byte index of each character.
+      and includes the byte index and byte length of each character.
     */
-    inline iter ucharsIndexed() {
+    inline iter ucharsIndexLen() {
       var localThis: string = this.localize();
 
       var i = 0;
@@ -471,7 +471,7 @@ module String {
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
         qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
-        yield (codepoint:int(32), i + 1);
+        yield (codepoint:int(32), i + 1, nbytes:int);
         i += nbytes;
       }
     }
@@ -914,7 +914,7 @@ module String {
         var inChunk : bool = false;
         var chunkStart : int;
 
-        for (c, i) in localThis.ucharsIndexed() {
+        for (c, i, nbytes) in localThis.ucharsIndexLen() {
           // emit whole string, unless all whitespace
           if noSplits {
             done = true;
@@ -928,7 +928,7 @@ module String {
             if !(inChunk || cSpace) {
               chunkStart = i;
               inChunk = true;
-              if i - 1 + qio_nbytes_char(c) > iEnd {
+              if i - 1 + nbytes > iEnd {
                 chunk = localThis[chunkStart..];
                 yieldChunk = true;
                 done = true;
@@ -949,7 +949,7 @@ module String {
                   inChunk = false;
                 }
               // out of chars
-              } else if i - 1 + qio_nbytes_char(c) > iEnd {
+              } else if i - 1 + nbytes > iEnd {
                 chunk = localThis[chunkStart..];
                 yieldChunk = true;
                 done = true;
@@ -1095,10 +1095,10 @@ module String {
       var end = localThis.len;
 
       if leading {
-        label outer for i in 0..#localThis.len {
-          for j in 0..#localChars.len {
-            if localThis.buff[i] == localChars.buff[j] {
-              start += 1;
+        label outer for (thisChar, i, nbytes) in localThis.ucharsIndexLen() {
+          for removeChar in localChars.uchars() {
+            if thisChar == removeChar {
+              start = i + nbytes;
               continue outer;
             }
           }
@@ -1107,14 +1107,19 @@ module String {
       }
 
       if trailing {
-        label outer for i in 0..#localThis.len by -1 {
-          for j in 0..#localChars.len {
-            if localThis.buff[i] == localChars.buff[j] {
-              end -= 1;
+        // Because we are working with codepoints whose starting byte index
+        // is not initially known, it is faster to work forward, assuming we
+        // are already past the end of the string, and then update the end
+        // point as we are proven wrong.
+        end = 0;
+        label outer for (thisChar, i, nbytes) in localThis[start..].ucharsIndexLen() {
+          for removeChar in localChars.uchars() {
+            if thisChar == removeChar {
               continue outer;
             }
           }
-          break;
+          // This was not a character to be removed, so update tentative end.
+          end = start-1 + i + nbytes-1;
         }
       }
 
