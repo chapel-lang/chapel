@@ -1004,22 +1004,44 @@ static void checkMethodsOverride() {
           if (okKnown == false) {
             bool foundMatch = false;
             bool foundUncertainty = false;
+
             for_vector(FnSymbol, pfn, matches) {
               if (fn->isResolved() && pfn->isResolved()) {
-                if (signatureMatch(fn, pfn) &&
-                    evaluateWhereClause(fn) &&
+                // fn and pfn both concrete
+                bool typeParamDiffers = false;
+
+                // If they're both instantiated functions,
+                // check they're instantiated with the same types/params.
+                // If not, it's not a match.
+                if (fn->instantiatedFrom != NULL &&
+                    pfn->instantiatedFrom != NULL) {
+
+                  int numFormals = fn->numFormals();
+                  for (int i=3; i <= numFormals; i++) {
+                    ArgSymbol* fnArg = fn->getFormal(i);
+                    ArgSymbol* pfnArg = pfn->getFormal(i);
+                    if (fnArg->getValType() != pfnArg->getValType() ||
+                        (fnArg->originalIntent == INTENT_PARAM &&
+                         pfnArg->originalIntent == INTENT_PARAM &&
+                         paramMap.get(fnArg) != paramMap.get(pfnArg)))
+                      typeParamDiffers = true;
+                  }
+                }
+
+                if (typeParamDiffers == false &&
+                    signatureMatch(fn, pfn) &&
                     evaluateWhereClause(pfn)) {
                   foundMatch = true;
                 }
               } else if (fn->isResolved() && !pfn->isResolved()) {
                 // pfn generic
-                FnSymbol* ins = getInstantiatedFunction(fn, ct, pfn);
-                if (signatureMatch(fn, ins) &&
-                    evaluateWhereClause(fn) &&
-                    evaluateWhereClause(ins)) {
+                FnSymbol* pInst = getInstantiatedFunction(fn, ct, pfn);
+                if (signatureMatch(fn, pInst) &&
+                    evaluateWhereClause(pInst)) {
                   foundMatch = true;
                 }
               } else if (!fn->isResolved() && pfn->isResolved()) {
+                // fn generic
                 if (ct->isGeneric()) {
                   // If the receiver is generic, not much we can do
                   // (because we don't know which instantiation will be made)
@@ -1027,10 +1049,9 @@ static void checkMethodsOverride() {
                   // made in the program.
                   foundUncertainty = true;
                 } else {
-                  FnSymbol* ins = getInstantiatedFunction(pfn, ct, fn);
-                  if (signatureMatch(pfn, ins) &&
-                      evaluateWhereClause(pfn) &&
-                      evaluateWhereClause(ins)) {
+                  FnSymbol* fnIns = getInstantiatedFunction(pfn, ct, fn);
+                  if (signatureMatch(pfn, fnIns) &&
+                           evaluateWhereClause(pfn)) {
                     foundMatch = true;
                   }
                 }
@@ -1050,6 +1071,8 @@ static void checkMethodsOverride() {
               } else {
                 // If it is not marked override, check that there is not
                 // a parent method with the same signature.
+                // Ignore this check if this method is not applicable
+                // due to a where clause.
                 ok = !foundMatch;
               }
               okKnown = true;
@@ -1059,15 +1082,17 @@ static void checkMethodsOverride() {
           if (okKnown && ok == false) {
             FnSymbol* eFn = getOverrideCandidateGenericFn(fn);
             if (erroredFunctions.count(eFn) == 0) {
-              if (fn->hasFlag(FLAG_OVERRIDE))
+              if (fn->hasFlag(FLAG_OVERRIDE)) {
                 USR_FATAL_CONT(fn, "%s.%s override keyword present but no "
                                     "superclass method matches signature "
                                     "to override",
                                      ct->symbol->name, fn->name);
-              else
+              } else {
+                gdbShouldBreakHere();
                 USR_WARN(fn, "%s.%s override keyword required for method "
                              "matching signature of superclass method",
                              ct->symbol->name, fn->name);
+              }
 
               erroredFunctions.insert(eFn);
             }
