@@ -7,5 +7,5 @@ class foo {
 }
 
 proc bar() {
-  return new unmanaged foo(2);
+  return new owned foo(2);
 }
