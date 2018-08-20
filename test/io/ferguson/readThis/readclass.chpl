@@ -9,7 +9,7 @@ class mything {
 class subthing : mything {
   var y:int;
 
-  proc readWriteThis(rw) {
+  override proc readWriteThis(rw) {
     rw <~> x;
     rw <~> new ioLiteral(",");
     rw <~> y;

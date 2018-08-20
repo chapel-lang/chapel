@@ -5,13 +5,13 @@ class Logger {
 }
 
 class DefaultLogger: Logger {
-  proc  Println(v...?eltType) {
+  override proc  Println(v...?eltType) {
     writeln("DefaultLogger: ", (...v));
   }
 }
 
 class DefaultLogger2: Logger {
-  proc  Println(v...?eltType) {
+  override proc  Println(v...?eltType) {
     writeln("DefaultLogger2: ", (...v));
   }
 }

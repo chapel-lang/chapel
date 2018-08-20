@@ -466,7 +466,7 @@ class PermutationMap {
 
   // TODO leader follower iterator
 
-  proc writeThis( f ){
+  override proc writeThis( f ){
     const maxVal = max( (max reduce rowMap), (max reduce columnMap) ) : string;
     const minVal = min( (min reduce rowMap), (min reduce columnMap) ) : string;
     const padding = max( maxVal.length, minVal.length );

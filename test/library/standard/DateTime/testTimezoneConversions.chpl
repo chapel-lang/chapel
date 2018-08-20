@@ -27,18 +27,18 @@ class USTimeZone: TZInfo {
     return reprname;
   }
 
-  proc tzname(dt: datetime) {
+  override proc tzname(dt: datetime) {
     if dst(dt) != new timedelta(0) then
       return dstname;
     else
       return stdname;
   }
 
-  proc utcoffset(dt: datetime) {
+  override proc utcoffset(dt: datetime) {
     return stdoffset + dst(dt);
   }
 
-  proc dst(dt: datetime) {
+  override proc dst(dt: datetime) {
     if dt.tzinfo.borrow() == nil {
       // An exception instead may be sensible here, in one or more of
       // the cases.
@@ -63,7 +63,7 @@ class USTimeZone: TZInfo {
     }
   }
 
-  proc fromutc(dt: datetime) {
+  override proc fromutc(dt: datetime) {
     var dtoff = dt.utcoffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
@@ -84,19 +84,19 @@ class FixedOffset: TZInfo {
     this.dstoffset = new timedelta(minutes=dstoffset);
   }
 
-  proc utcoffset(dt: datetime) {
+  override proc utcoffset(dt: datetime) {
     return offset;
   }
 
-  proc tzname(dt: datetime) {
+  override proc tzname(dt: datetime) {
     return name;
   }
 
-  proc dst(dt: datetime) {
+  override proc dst(dt: datetime) {
     return dstoffset;
   }
 
-  proc fromutc(dt: datetime) {
+  override proc fromutc(dt: datetime) {
     var dtoff = dt.utcoffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
@@ -307,7 +307,7 @@ proc test_fromutc() {
 
   // Always converts UTC to standard time.
   class FauxUSTimeZone: USTimeZone {
-    proc fromutc(dt: datetime) {
+    override proc fromutc(dt: datetime) {
       return dt + stdoffset;
     }
 

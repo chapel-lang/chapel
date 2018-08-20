@@ -3,7 +3,7 @@ class Parent {
   }
 }
 class Child : Parent {
-  proc runTask() {
+  override proc runTask() {
     begin {
       writeln("IN TASK 1");
       writeln("IN TASK 2");

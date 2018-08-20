@@ -14,11 +14,11 @@ proc (C(int)).foo() {
   writeln("in specific C(int).foo");
 }
 
-proc Child.foo() {
+override proc Child.foo() {
   writeln("in generic Child.foo");
 }
 
-proc (Child(int)).foo() {
+override proc (Child(int)).foo() {
   writeln("in specific Child(int).foo");
 }
 

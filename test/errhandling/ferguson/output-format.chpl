@@ -4,7 +4,7 @@ class MyError : Error {
     this.msg = msg;
 
   }
-  proc message() {
+  override proc message() {
     return "custom message";
   }
 }

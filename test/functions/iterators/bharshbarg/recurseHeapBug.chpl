@@ -26,7 +26,7 @@ class Replicate : Base {
     }
   }
 
-  proc myDestroy() {
+  override proc myDestroy() {
     coforall i in low do on Locales[i] {
       writeln("Destroying ", here);
     }

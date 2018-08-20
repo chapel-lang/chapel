@@ -3,7 +3,7 @@ class C {
 }
 
 class D : C {
-  proc foo() { writeln("D.foo()"); }
+  override proc foo() { writeln("D.foo()"); }
 }
 
 var c = new shared C();

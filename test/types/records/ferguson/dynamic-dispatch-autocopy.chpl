@@ -6,7 +6,7 @@ class Parent {
 }
 
 class Child : Parent {
-  proc clone() : unmanaged Parent {
+  override proc clone() : unmanaged Parent {
     writeln("in Child.clone()");
     return new unmanaged Child();
   }

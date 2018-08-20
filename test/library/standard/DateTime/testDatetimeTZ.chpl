@@ -15,16 +15,16 @@ class FixedOffset: TZInfo {
     this.dstoffset = new timedelta(minutes=dstoffset);
   }
 
-  proc utcoffset(dt: datetime) {
+  override proc utcoffset(dt: datetime) {
     return offset;
   }
-  proc tzname(dt: datetime) {
+  override proc tzname(dt: datetime) {
     return name;
   }
-  proc dst(dt: datetime) {
+  override proc dst(dt: datetime) {
     return dstoffset;
   }
-  proc fromutc(dt: datetime) {
+  override proc fromutc(dt: datetime) {
     var dtoff = dt.utcoffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
@@ -264,7 +264,7 @@ proc test_tzinfo_timetuple() {
     proc init(i) {
       dstvalue = new timedelta(minutes=i);
     }
-    proc dst(dt) {
+    override proc dst(dt) {
       return dstvalue;
     }
   }
@@ -295,7 +295,7 @@ proc test_utctimetuple() {
     proc init(dstvalue) {
       this.dstvalue = new timedelta(minutes=dstvalue);
     }
-    proc dst(dt) {
+    override proc dst(dt) {
       return dstvalue;
     }
   }
@@ -306,7 +306,7 @@ proc test_utctimetuple() {
       super.init(dofs);
       this.uofs = new timedelta(minutes=uofs);
     }
-    proc utcoffset(dt) {
+    override proc utcoffset(dt) {
       return uofs;
     }
   }
@@ -463,7 +463,7 @@ proc test_aware_subtract() {
   // Ensure that utcoffset() is ignored when the operands have the
   // same tzinfo member.
   class OperandDependentOffset: TZInfo {
-    proc utcoffset(dt: datetime) {
+    override proc utcoffset(dt: datetime) {
       if dt.minute < 10 {
         // d0 and d1 equal after adjustment
         return new timedelta(minutes=dt.minute);
@@ -524,7 +524,7 @@ proc test_mixed_compare() {
     proc init() {
       offset = new timedelta(minutes=22);
     }
-    proc utcoffset(dt: datetime) {
+    override proc utcoffset(dt: datetime) {
       offset += new timedelta(minutes=1);
       return offset;
     }
