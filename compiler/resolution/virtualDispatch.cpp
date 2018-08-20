@@ -325,6 +325,16 @@ static bool checkOverrides(FnSymbol* fn) {
           (parentMod && parentMod->modTag != MOD_USER));
 }
 
+static bool ignoreOverrides(FnSymbol* fn) {
+  return
+    // ignore errors with deinit
+    fn->name == astrDeinit ||
+    // ignore errors with init
+    fn->isInitializer() ||
+    // ignore errors with postinit
+    fn->isPostInitializer();
+}
+
 static void checkIntentsMatch(FnSymbol* pfn, FnSymbol* cfn) {
   AggregateType* ct = toAggregateType(cfn->_this->getValType());
   // these are really a preconditions for the following code
@@ -361,9 +371,9 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
   if (signatureMatch(pfn, cfn) == true && evaluateWhereClause(cfn) == true) {
     resolveFunction(cfn);
 
-    if (checkOverrides(cfn) && !cfn->hasFlag(FLAG_OVERRIDE) &&
-        // ignore errors with deinit
-        0 != strcmp("deinit", cfn->name)) {
+    if (checkOverrides(cfn) &&
+        !ignoreOverrides(cfn) &&
+        !cfn->hasFlag(FLAG_OVERRIDE)) {
       const char* ptype = pfn->_this->type->symbol->name;
       const char* ctype = cfn->_this->type->symbol->name;
       USR_WARN(cfn, "%s.%s overrides parent class method %s.%s but "
@@ -931,12 +941,7 @@ static void checkMethodsOverride() {
 
     if (FnSymbol* fn = getOverrideCandidate(aFn)) {
       if (checkOverrides(fn) &&
-          // ignore errors with deinit
-          fn->name != astrDeinit &&
-          // ignore errors for init()
-          !fn->isInitializer() &&
-          // ignore errors for postinit()
-          !fn->isPostInitializer() &&
+          !ignoreOverrides(fn) &&
           // ignore duplicate errors
           erroredFunctions.count(fn) == 0) {
 
