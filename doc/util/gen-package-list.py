@@ -54,20 +54,21 @@ if req.status_code == requests.codes.ok:
 
 
     # write package-list.rst
-    for name, pack in packages.items():
-        f.write(name + "\n")
-        f.write("~"*len(name) + "\n")
-        f.write("Author: \n")
-        f.write("     | " + pack["author"] + "\n")
-        f.write("Repository: \n")
-        f.write("     | " + pack["source"] + "\n")
-        f.write("Chapel Version: \n")
-        f.write("     | " + pack["chpl_version"] + "\n")
-        f.write("Versions: \n")
-        for version in pack["versions"]:
-            f.write("     | " + version + "\n")
-        f.write("\n")
-        f.write("\n")
+    for name, pack in sorted(packages.items()):
+        if not name.startswith("_"):
+            f.write(name + "\n")
+            f.write("~"*len(name) + "\n")
+            f.write("Author: \n")
+            f.write("     | " + pack["author"] + "\n")
+            f.write("Repository: \n")
+            f.write("     | " + pack["source"] + "\n")
+            f.write("Chapel Version: \n")
+            f.write("     | " + pack["chpl_version"] + "\n")
+            f.write("Versions: \n")
+            for version in pack["versions"]:
+                f.write("     | " + version + "\n")
+                f.write("\n")
+                f.write("\n")
 
 else:
     print('Error requesting content from GitHub')
