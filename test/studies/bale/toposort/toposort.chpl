@@ -904,6 +904,9 @@ class LocalDistributedWorkQueue {
   }
 }
 
+/*
+Class for storing and utilizing a permutation map.
+*/
 class PermutationMap {
   type idxType;
   param rank = 2;
@@ -912,6 +915,10 @@ class PermutationMap {
   var rowMap : [rowDom] idxType;
   var columnMap : [columnDom] idxType;
 
+  /*
+  Construct a PermuataionMap given input arrays representing the row map
+  and the column map.
+  */
   proc init( rowMap : [] ?idxType, columnMap : [] idxType ){
     this.idxType = idxType;
     this.rowDom = rowMap.domain;
@@ -920,18 +927,31 @@ class PermutationMap {
     this.columnMap = columnMap;
   }
 
+  /*
+  Permute an index/tuple accoriding to the mapping
+  */
   inline proc map( idx : rank*idxType ) : rank*idxType {
     return (rowMap[idx[1]], columnMap[idx[2]]);
   }
 
+  /*
+  Take a permuted index/tuple and get the original input index/tuple.
+  */
   inline proc inverseMap( idx : rank*idxType ) : rank*idxType {
     return ( linearSearch(rowMap, idx[1]), linearSearch(rowMap, idx[1]) );
   }
 
+  /*
+  Same as map.
+  */
   inline proc this( idx : rank*idxType ) : rank*idxType {
     return map( idx );
   }
 
+  /*
+  Create a new PermutationMap object that maps the inverse of
+  this permutation map.
+  */
   proc createInverseMap() : owned PermutationMap(idxType) {
     var inverseRowMap : [rowMap.domain] rowMap.eltType;
     var inverseColumnMap : [columnMap.domain] columnMap.eltType;
@@ -947,19 +967,30 @@ class PermutationMap {
     return new owned PermutationMap( inverseRowMap, inverseColumnMap );
   }
 
+  /*
+  Given a domain (expects a sparse domain, but can be dense), iterate over
+  the mapped indexes/tuples.
+  */
   iter these( onDomain : domain ) : rank*idxType
   where onDomain.rank == 2
   {
     for idx in onDomain do yield this.map( idx );
   }
 
+  /*
+  Given a domain (expects a sparse domain, but can be dense), iterate over
+  the inversely mapped indexes/tuples.
+  */
   iter inverseThese( onDomain : domain ) : rank*idxType
   where onDomain.rank == 2
   {
     for idx in onDomain do yield inverseMap( idx );
   }
 
-
+  /*
+  Given a domain (expects a sparse domain, but can be dense), iterate over
+  the mapped indexes/tuples.
+  */
   // TODO make parallel
   iter these(param tag : iterKind, onDomain : domain) : rank*idxType
   where tag == iterKind.standalone && onDomain.rank == 2
@@ -969,6 +1000,10 @@ class PermutationMap {
 
   // TODO leader follower iterator
 
+  /*
+  Method accepting a writer object of some kind, and writing this permuatation
+  map's textual representation through it.
+  */
   proc writeThis( f ){
     const maxVal = max( (max reduce rowMap), (max reduce columnMap) ) : string;
     const minVal = min( (min reduce rowMap), (min reduce columnMap) ) : string;
@@ -989,6 +1024,9 @@ class PermutationMap {
     }
   }
 
+  /*
+  Given a sparse domain, return a new sparse domain of those indices permuted.
+  */
   proc permuteDomain( D : domain )
   where D.rank == 2 && isSparseDom( D )
   {
@@ -1012,6 +1050,10 @@ class PermutationMap {
     return sD;
   }
 
+  /*
+  Given an array of indices/tuples, return a new array of indices/tuples
+  of those indices permuted.
+  */
   proc permuateIndexList( array : [?D] rank*idxType ) : [D] rank*idxType {
     var retArray : [array.domain] array.eltType;
     forall i in retArray.domain {
@@ -1021,6 +1063,12 @@ class PermutationMap {
   }
 }
 
+/*
+Encapsulates all the objects that would be returned by any toposort implementation
+In particular, this stores the resulting PermutationMap object, and the various
+timers that are standard to testing ("whole", "initialization", and "toposort")
+along with any new timers that the implementation wishes to add.
+*/
 class TopoSortResult {
   type idxType;
   var permutationMap : shared PermutationMap(idxType);
@@ -1034,6 +1082,9 @@ class TopoSortResult {
   }
 }
 
+/*
+Given a input domain and a random number seed, produce a random PermutationMap instance.
+*/
 proc createRandomPermutationMap( D : domain, seed : int ) : shared PermutationMap(D.idxType)
 where D.rank == 2
 {
@@ -1048,6 +1099,16 @@ where D.rank == 2
   return new shared PermutationMap( rowMap, columnMap );
 }
 
+/*
+Create a array of indices representing a subdomain of D, which is
+Upper Triangular in form (ie for (i,j) in array, i <= j).
+density: Approximate Real NumberNonZero/(N*N) density of resulting index set.
+Must be no more than the maximum density of an UT index set ( N*(N+1)/2)
+and no less than the miniumn density of an UT index set (N).
+seed: Random number seed used to generate the indexes.
+fillModeDensity: density at which to use the more memory hungry, but potentially
+faster index selection method.
+*/
 proc createSparseUpperTriangluarIndexList(
   D : domain(2),
   density : real,
@@ -1186,27 +1247,27 @@ proc createSparseUpperTriangluarIndexList(
   return sparseD;
 }
 
-proc checkIsUperTriangularDomain( D : domain ) : bool
-where D.rank == 2 && isSparseDom( D )
+/*
+Given some iterable collection of indices, return true if the index set conforms
+to an Upper Triangular format, false otherwise.
+*/
+proc checkIsUperTriangularIndexCollection( collection : ?T ) : bool
 {
   var isUT = true;
-  for (i,j) in D {
+  for (i,j) in collection {
     isUT = isUT && (i <= j);
     if !isUT then break;
   }
   return isUT;
 }
 
-proc checkIsUperTriangularIndexList( array : [?D] 2*int ) : bool
-{
-  var isUT = true;
-  for (i,j) in array {
-    isUT = isUT && (i <= j);
-    if !isUT then break;
-  }
-  return isUT;
-}
-
+/*
+Method for writing a sparse matrix/array to stdout.
+M: sparse matrix/array
+printIRV: when writing a 'zero' value, write the IRV value
+(default=false; writes a formatted space)
+separateElements: insert a space between two adjacent values. (default true; writes a single space)
+*/
 proc prettyPrintSparse( M : [?D] ?T, printIRV : bool = false, separateElements : bool = true )
 where D.rank == 2
 {
@@ -1225,6 +1286,10 @@ where D.rank == 2
   }
 }
 
+/*
+Serial implementation of Toposort.
+D: Sparse domain to be toposorted.
+*/
 proc toposortSerial( D : domain ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
@@ -1343,6 +1408,14 @@ where D.rank == 2
   return result;
 }
 
+/*
+Parallel implementation of toposort.
+D: Sparse domain to be toposorted.
+workQueue: An instance of the work queue used for queuing and distributing work
+among tasks. Must support: add(value:int), these(tasksPerLocale:int, iterKind)
+numTasks: the maximum number of tasks that the benchmark is allowed to use in
+parallel sections (default=here.maxTaskPar).
+*/
 proc toposortParallel( D : domain, workQueue : ?queueType, numTasks : int = here.maxTaskPar ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
@@ -1473,6 +1546,13 @@ where D.rank == 2
   return result;
 }
 
+/*
+Distributed implementation of toposort.
+This is a helper method for the real toposortDistributed method that accepts
+a list of each locale's maxTaskPerLocal parameter, which sets that array to
+that locales default (here.maxTaskPar).
+D: sparse domain to be toposorted.
+*/
 proc toposortDistributed( D : domain ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
@@ -1483,6 +1563,12 @@ where D.rank == 2
   return toposortDistributed( D, maxTasksPerLocale );
 }
 
+/*
+Distributed implementation of toposort.
+D: sparse domain to be toposorted.
+maxTaskPerLocal: array of the maximum number of tasks for each locale that the
+benchmark is allowed to use in parallel sections.
+*/
 proc toposortDistributed( D : domain, maxTasksPerLocale : [] int ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
@@ -1648,7 +1734,25 @@ config const printPermutations: bool = false;
 config const padPrintedMatrixElements = true;
 config const seed : int = SeedGenerator.oddCurrentTime;
 
-enum ToposortImplementation { Serial, ParallelChunkedLoopWait, ParallelSyncWait, ParallelLoopWait, Distributed };
+/*
+Enumeration representing each implementation.
+This includes which queue to use.
+*/
+enum ToposortImplementation {
+  // Use serial implementation
+  Serial,
+  // Use parallel implementation with ParallelWorkQueueChunkedLoopWait as queue
+  ParallelChunkedLoopWait,
+  // Use parallel implementation with ParallelWorkQueueSyncWait as queue
+  ParallelSyncWait,
+  // Use parallel implementation with ParallelWorkQueueLoopWait as queue
+  ParallelLoopWait,
+  // Use distributed implementation
+  Distributed
+};
+/*
+Flag for user to specify which toposort implementation they would like.
+*/
 config const implementation : ToposortImplementation = ToposortImplementation.ParallelChunkedLoopWait;
 
 config const printImplementations : bool = false;
@@ -1811,6 +1915,6 @@ proc main(){
     prettyPrintSparse( solvedPermuatedPermutedM, printIRV = printNonZeros, separateElements = padPrintedMatrixElements );
   }
 
-  var isUpperTriangular = checkIsUperTriangularIndexList( solvedPermutedIndexList );
+  var isUpperTriangular = checkIsUperTriangularIndexCollection( solvedPermutedIndexList );
   if !isUpperTriangular then halt("Solved-permuted permuted upper triangluar domain is not upper triangular!");
 }
