@@ -11,7 +11,7 @@ class Runner {
 
 class PushBack: Runner {
   const n: int;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     for i in 1..n {
       A.push_back(i);
     }
@@ -20,7 +20,7 @@ class PushBack: Runner {
 
 class SumElements: Runner {
   const n: int;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     var sum = 0;
     for a in A {
       sum += a;
@@ -31,7 +31,7 @@ class SumElements: Runner {
 
 class PushFront: Runner {
   const n: int;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     for i in 1..n {
       A.push_front(i);
     }
@@ -39,7 +39,7 @@ class PushFront: Runner {
 }
 
 class PopBack: Runner {
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     while !A.isEmpty() {
       A.pop_back();
     }
@@ -47,7 +47,7 @@ class PopBack: Runner {
 }
 
 class PopFront: Runner {
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     while !A.isEmpty() {
       A.pop_front();
     }
@@ -57,7 +57,7 @@ class PopFront: Runner {
 // time inserting into a random index in the array
 class InsertRandom: Runner {
   const n: int;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     extern proc srand(int);
     extern proc rand(): int;
     srand(randSeed);
@@ -70,7 +70,7 @@ class InsertRandom: Runner {
 // generate random numbers and put them in order in the array
 class InsertSorted: Runner {
   const n: int;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     extern proc srand(int);
     extern proc rand(): int;
     srand(randSeed);
@@ -85,7 +85,7 @@ class InsertSorted: Runner {
 class Remove: Runner {
   const n: int;
   const front: bool;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     if front {
       for i in 1..linearN {
         A.remove(1);
@@ -103,7 +103,7 @@ class Remove: Runner {
 // try a few similar operation on a list to compare
 class ListAppend: Runner {
   const n: int;
-  proc runList(ref L: list(int)) {
+  override proc runList(ref L: list(int)) {
     for i in 1..n {
       L.append(i);
     }
@@ -112,7 +112,7 @@ class ListAppend: Runner {
 
 class SumReduceList: Runner {
   const n: int;
-  proc runList(ref L: list(int)) {
+  override proc runList(ref L: list(int)) {
     var sum = 0;
     for val in L {
       sum += val;
@@ -122,7 +122,7 @@ class SumReduceList: Runner {
 }
 
 class ListDestroy: Runner {
-  proc runList(ref L: list(int)) {
+  override proc runList(ref L: list(int)) {
     L.destroy();
   }
 }
