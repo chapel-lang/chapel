@@ -5,13 +5,13 @@ class Parent {
 }
 
 class Child : Parent {
-  proc foo(param x) where x == 1 || x == 2 {
+  override proc foo(param x) where x == 1 || x == 2 {
     writeln("Child ", x);
   }
 }
 
 class ChildSub : Child {
-  proc foo(param x) where x == 2 {
+  override proc foo(param x) where x == 2 {
     writeln("ChildSub ", x);
   }
 }

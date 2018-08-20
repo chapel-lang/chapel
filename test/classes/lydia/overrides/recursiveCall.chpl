@@ -7,7 +7,7 @@ class A {
 }
 
 class B: A {
-  proc foo(x) {
+  override proc foo(x) {
     if (x > 5) {
       super.foo(x);
     } else {

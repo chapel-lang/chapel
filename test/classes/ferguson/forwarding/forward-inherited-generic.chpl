@@ -6,7 +6,7 @@ class Collection {
 }
 
 class Deque : Collection {
-    proc add(elt : eltType) : bool {
+    override proc add(elt : eltType) : bool {
         writeln("Called");
         return true;
     }

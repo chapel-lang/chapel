@@ -7,7 +7,7 @@ class Base {
 
 class Extension : Base {
   const total = 1;
-  proc printTotal() {
+  override proc printTotal() {
     writeln("Total is: ", total);
   }
 }

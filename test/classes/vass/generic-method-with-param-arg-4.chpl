@@ -6,7 +6,7 @@ class C {
 }
 
 class D: C {
-  proc a(param rank): rank * range(int(64), stridable=true) {
+  override proc a(param rank): rank * range(int(64), stridable=true) {
     var dummy: rank * range(int(64), stridable=true);
     return dummy;
   }

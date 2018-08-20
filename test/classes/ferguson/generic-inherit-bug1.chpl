@@ -65,13 +65,13 @@ module Impl {
   class Child : SubParent {
     var x:eltType;
     
-    proc foo( arg: rank*range(idxType, BoundedRangeType.bounded,stridable) ) {
+    override proc foo( arg: rank*range(idxType, BoundedRangeType.bounded,stridable) ) {
       writeln("in Child(", rank, ") foo ", arg, " " , x);
     }
-    proc bar() {
+    override proc bar() {
       writeln("in Child(", rank, ") bar ", x);
     }
-    proc baz() {
+    override proc baz() {
       writeln("in Child(", rank, ") baz ", x);
     }
 

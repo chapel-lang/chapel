@@ -33,7 +33,7 @@ class Child : Parent {
     inheritedMethod();
   }
 
-  proc inheritedMethod() {
+  override proc inheritedMethod() {
     writeln(this.type:string, ".inheritedMethod()");
   }
 }

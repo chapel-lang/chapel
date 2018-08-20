@@ -14,7 +14,7 @@ class Outer {
 
 class ExtendOuter: Outer {
   var s = "ExtendOuter";
-  proc get_my_s() { return s; }
+  override proc get_my_s() { return s; }
 }
 
 proc main {
