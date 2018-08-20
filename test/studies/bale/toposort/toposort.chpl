@@ -1675,7 +1675,7 @@ proc main(){
 
   const sparseUpperTriangularIndexList = createSparseUpperTriangluarIndexList( D, density, seed, defaultFillModeDensity );
 
-  if !silentMode then writeln( "Actual Density: density: %dr%%\nTotal Number NonZeros: %n".format((sparseUpperTriangularIndexList.size / (1.0*N*N))*100, sparseUpperTriangularIndexList.size) );
+  if !silentMode then writeln( "Actual Density: %dr%%\nTotal Number NonZeros: %n".format((sparseUpperTriangularIndexList.size / (1.0*N*N))*100, sparseUpperTriangularIndexList.size) );
 
   var permutationMap = createRandomPermutationMap( D, seed );
   if printPermutations then writeln("Permutation Map:\n", permutationMap);
