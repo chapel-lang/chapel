@@ -184,18 +184,19 @@ record list {
      Remove the first element from the list and return it.
      It is an error to call this function on an empty list.
    */
- proc pop_front():eltType {
-   if boundsChecking && length < 1 {
-     HaltWrappers.boundsCheckHalt("pop_front on empty list");
+   proc pop_front():eltType {
+     if boundsChecking && length < 1 {
+       HaltWrappers.boundsCheckHalt("pop_front on empty list");
+     }
+     var oldfirst = first;
+     var newfirst = first.next;
+     var ret = oldfirst.data;
+     first = newfirst;
+     if last == oldfirst then last = newfirst;
+     length -= 1;
+     delete oldfirst;
+     return ret;
    }
-   var oldfirst = first;
-   var newfirst = first.next;
-   var ret = oldfirst.data;
-   first = newfirst;
-   if last == oldfirst then last = newfirst;
-   length -= 1;
-   return ret;
- }
 
   /*
     Delete every node in the list.
