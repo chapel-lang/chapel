@@ -136,6 +136,8 @@ class Vector {
 
   /*
   Push back a single value.
+  :arg value: Value to be pushed onto to end of list.
+  :type value: eltType.
   */
   proc push_back( value : eltType ){
     if this.size + 1 > this.listDomain.size {
@@ -147,6 +149,8 @@ class Vector {
 
   /*
   Push back all values from another Vector.
+  :arg values: Vector of values to copied and pushed onto end of this Vector.
+  :type values: unmanaged Vector(eltType).
   */
   proc push_back( values : unmanaged Vector(eltType) ){
     while this.size + values.size > this.listDomain.size {
@@ -158,6 +162,8 @@ class Vector {
 
   /*
   Push back all values from a list.
+  :arg values: list of values to copied and pushed onto end of this Vector.
+  :type values: list(eltType).
   */
   proc push_back( values : list(eltType) ){
     for value in values {
@@ -173,7 +179,7 @@ class Vector {
   }
 
   /*
-  Compact underlying array to
+  Compact underlying array to minimal size.
   .. note: This leaves extra no extra capacity for new values.
     Will cause a reallocation after a push-back.
   */
@@ -183,7 +189,7 @@ class Vector {
 
   /*
   Yield all values from array.
-  :rtype: eltType
+  :ytype: eltType
   */
   iter these(){
     for i in 1..#size {
@@ -267,6 +273,8 @@ class ParallelWorkQueueChunkedLoopWait {
   /*
   Add value into the queue.
   .. note: This distributes work in a round-robbin fashion.
+  :arg value: Value to be enqued.
+  :type value: eltType.
   */
   proc add( value : eltType ){
     // Get a taskID to give work to in a round-robbin manner
@@ -283,7 +291,7 @@ class ParallelWorkQueueChunkedLoopWait {
   In this method, each task has a queue that it swaps out with an empty queue
   and yields values from that.
 
-  :rtype: eltType
+  :ytype: eltType
   */
   iter these( param tag : iterKind ) : eltType
   where tag == iterKind.standalone
@@ -417,6 +425,8 @@ class ParallelWorkQueueSyncWait {
   /*
   Add value into the queue.
   .. note: This distributes work in a round-robbin fashion.
+  :arg value: Value to be enqued.
+  :type value: eltType.
   */
   proc add( value : eltType ){
     this.lock.lock();
@@ -431,8 +441,8 @@ class ParallelWorkQueueSyncWait {
   When it's task-local queue is exhausted, it swaps the global queue with the empty one.
   .. note: This is not supported in this queue implementation. TODO should be made it's own
     queue object.
+  :ytype: eltType.
   */
-
   iter these(param tag : iterKind ) : eltType
   where tag == iterKind.standalone
   {
@@ -617,6 +627,8 @@ class ParallelWorkQueueLoopWait {
   /*
   Add value into the queue.
   .. note: This distributes work in a round-robbin fashion.
+  :arg value: Value to be enqued.
+  :type value: eltType.
   */
   proc add( value : eltType ){
     this.lock.lock();
@@ -627,6 +639,7 @@ class ParallelWorkQueueLoopWait {
   /*
   Yield work in parallel.
   In this method, all tasks share a queue, and a task will get one value from the queue.
+  :ytype: eltType.
   */
   iter these( param tag : iterKind ) : eltType
   where tag == iterKind.standalone
@@ -792,6 +805,7 @@ class LocalDistributedWorkQueue {
   /*
   :returns: PID of local queue.
   */
+  pragma "no doc"
   proc dsiGetPrivatizeData() {
     return pid;
   }
@@ -801,6 +815,7 @@ class LocalDistributedWorkQueue {
   :returns: local queue given by PID
   :rtype: unmanaged LocalDistributedWorkQueue
   */
+  pragma "no doc"
   proc dsiPrivatize(pid) {
     return new unmanaged LocalDistributedWorkQueue(unmanaged this, pid);
   }
@@ -808,6 +823,7 @@ class LocalDistributedWorkQueue {
   /*
   Get self local copy (?)
   */
+  pragma "no doc"
   inline proc getPrivatizedThis {
     return chpl_getPrivatizedCopy(this.type, this.pid);
   }
@@ -815,7 +831,9 @@ class LocalDistributedWorkQueue {
   /*
   Add work onto owner's queue.
   :arg value: value to be enqueued.
+  :type value: eltType.
   :arg owner: locale who should execute that work.
+  :type owner: Locale.
   */
   proc add( value : eltType, owner : locale ) {
     on owner {
@@ -918,6 +936,14 @@ class PermutationMap {
   /*
   Construct a PermuataionMap given input arrays representing the row map
   and the column map.
+  :arg rowMap: array representing the mapping from rows (represented by the domain of this array)
+  to new rows in the permutation map (represented by the values of this array)
+  (e.g. rowMap[i] = j means row i is mapped to row j)
+  :type rowMap: [] ?idxType.
+  :arg rowMap: array representing the mapping from columns (represented by the domain of this array)
+  to new columns in the permutation map (represented by the values of this array)
+  (e.g. columnMap[i] = j means column i is mapped to column j)
+  :type columnMap: [] idxType.
   */
   proc init( rowMap : [] ?idxType, columnMap : [] idxType ){
     this.idxType = idxType;
@@ -928,14 +954,22 @@ class PermutationMap {
   }
 
   /*
-  Permute an index/tuple accoriding to the mapping
+  Permute an index-tuple accoriding to the mapping
+  :arg idx: index to be permuted.
+  :type idx: rank*idxType.
+  :returns: Permuted index tuple.
+  rtype: rank*idxType.
   */
   inline proc map( idx : rank*idxType ) : rank*idxType {
     return (rowMap[idx[1]], columnMap[idx[2]]);
   }
 
   /*
-  Take a permuted index/tuple and get the original input index/tuple.
+  Take a permuted index-tuple and get the original input index-tuple.
+  :arg idx: index to be 'unpermuted'
+  :type idx: rank*idxType.
+  :returns: 'unpermuted' index tuple.
+  rtype: rank*idxType.
   */
   inline proc inverseMap( idx : rank*idxType ) : rank*idxType {
     return ( linearSearch(rowMap, idx[1]), linearSearch(rowMap, idx[1]) );
@@ -951,6 +985,7 @@ class PermutationMap {
   /*
   Create a new PermutationMap object that maps the inverse of
   this permutation map.
+  :rtype: owned PermutationMap(idxType)
   */
   proc createInverseMap() : owned PermutationMap(idxType) {
     var inverseRowMap : [rowMap.domain] rowMap.eltType;
@@ -968,8 +1003,11 @@ class PermutationMap {
   }
 
   /*
-  Given a domain (expects a sparse domain, but can be dense), iterate over
-  the mapped indexes/tuples.
+  Given a domain iterate over the mapped indexes/tuples.
+  :arg onDomain: input domain to be iterated over.
+  :type onDomain: domain(rank), usually sparse, but could be dense.
+  :yields: permuted indices.
+  :ytype: rank*idxType
   */
   iter these( onDomain : domain ) : rank*idxType
   where onDomain.rank == 2
@@ -978,8 +1016,11 @@ class PermutationMap {
   }
 
   /*
-  Given a domain (expects a sparse domain, but can be dense), iterate over
-  the inversely mapped indexes/tuples.
+  Given a domain iterate over the inversely mapped indexes/tuples.
+  :arg onDomain: permuted domain to be iterated over.
+  :type onDomain: domain(rank), usually sparse, but could be dense.
+  :yields: 'unpermuted' indices.
+  :ytype: rank*idxType
   */
   iter inverseThese( onDomain : domain ) : rank*idxType
   where onDomain.rank == 2
@@ -988,8 +1029,11 @@ class PermutationMap {
   }
 
   /*
-  Given a domain (expects a sparse domain, but can be dense), iterate over
-  the mapped indexes/tuples.
+  Given a domain iterate over the mapped indexes/tuples.
+  :arg onDomain: input domain to be iterated over.
+  :type onDomain: domain(rank), usually sparse, but could be dense.
+  :yields: permuted indices.
+  :ytype: rank*idxType
   */
   // TODO make parallel
   iter these(param tag : iterKind, onDomain : domain) : rank*idxType
@@ -1000,10 +1044,6 @@ class PermutationMap {
 
   // TODO leader follower iterator
 
-  /*
-  Method accepting a writer object of some kind, and writing this permuatation
-  map's textual representation through it.
-  */
   proc writeThis( f ){
     const maxVal = max( (max reduce rowMap), (max reduce columnMap) ) : string;
     const minVal = min( (min reduce rowMap), (min reduce columnMap) ) : string;
@@ -1026,6 +1066,10 @@ class PermutationMap {
 
   /*
   Given a sparse domain, return a new sparse domain of those indices permuted.
+  :arg D: Input domain whose indices will be permuted and form the output domain
+  :type D: sparse domain(rank)
+  :returns: sparse domain of permuted indices.
+  :rtype: sparse domain(rank)
   */
   proc permuteDomain( D : domain )
   where D.rank == 2 && isSparseDom( D )
@@ -1053,8 +1097,12 @@ class PermutationMap {
   /*
   Given an array of indices/tuples, return a new array of indices/tuples
   of those indices permuted.
+  :arg array: Input array whose indices will be the output domain
+  :type array: [?arrayDomain] rank*idxType
+  :returns: array of permuted indices
+  :rtype: [arrayDomain] rank*idxType
   */
-  proc permuateIndexList( array : [?D] rank*idxType ) : [D] rank*idxType {
+  proc permuateIndexList( array : [?arrayDomain] rank*idxType ) : [arrayDomain] rank*idxType {
     var retArray : [array.domain] array.eltType;
     forall i in retArray.domain {
       retArray[i] = this( array[i] );
@@ -1071,8 +1119,11 @@ along with any new timers that the implementation wishes to add.
 */
 class TopoSortResult {
   type idxType;
+  // Solved PermutationMap
   var permutationMap : shared PermutationMap(idxType);
+  // Domain of timer names.
   var timerDom : domain(string);
+  // Array of timers.
   var timers : [timerDom] Timer;
 
   proc init(type idxType){
@@ -1084,6 +1135,11 @@ class TopoSortResult {
 
 /*
 Given a input domain and a random number seed, produce a random PermutationMap instance.
+:arg D: Domain that permutation map will work in.
+:type D: domain(2) (could be sparse or dense).
+:arg seed: Seed for random number generator.
+:returns: PermutationMap with a permutation generated randomly from seed over the domain D.
+:rtype: shared PermtuationMap(D.idxType)
 */
 proc createRandomPermutationMap( D : domain, seed : int ) : shared PermutationMap(D.idxType)
 where D.rank == 2
@@ -1102,12 +1158,17 @@ where D.rank == 2
 /*
 Create a array of indices representing a subdomain of D, which is
 Upper Triangular in form (ie for (i,j) in array, i <= j).
-density: Approximate Real NumberNonZero/(N*N) density of resulting index set.
+:arg density: Approximate Real NumberNonZero/(N*N) density of resulting index set.
 Must be no more than the maximum density of an UT index set ( N*(N+1)/2)
 and no less than the miniumn density of an UT index set (N).
-seed: Random number seed used to generate the indexes.
-fillModeDensity: density at which to use the more memory hungry, but potentially
+:type density: real
+:arg seed: Random number seed used to generate the indexes.
+:type seed: int
+:arg fillModeDensity: density at which to use the more memory hungry, but potentially
 faster index selection method.
+:type fillModeDensity: real
+:returns: Array of indices representing a sparse subdomain of of D with given density.
+:rtype: [] D.rank*D.idxType
 */
 proc createSparseUpperTriangluarIndexList(
   D : domain(2),
@@ -1250,8 +1311,11 @@ proc createSparseUpperTriangluarIndexList(
 /*
 Given some iterable collection of indices, return true if the index set conforms
 to an Upper Triangular format, false otherwise.
+:arg collection: Some iterable collection of 2*T values (usually T==int)
+:type collection: ?collectionType (generic). Must support `these` which yields `2*T` type values
+:rtype: bool
 */
-proc checkIsUperTriangularIndexCollection( collection : ?T ) : bool
+proc checkIsUperTriangularIndexCollection( collection : ?collectionType ) : bool
 {
   var isUT = true;
   for (i,j) in collection {
@@ -1288,7 +1352,10 @@ where D.rank == 2
 
 /*
 Serial implementation of Toposort.
-D: Sparse domain to be toposorted.
+:arg D: Sparse domain to be toposorted.
+:type D: sparse domain(2)
+:returns: Filled TopoSortResult instance.
+:rtype: shared TopoSortResult(D.idxType)
 */
 proc toposortSerial( D : domain ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
@@ -1410,11 +1477,16 @@ where D.rank == 2
 
 /*
 Parallel implementation of toposort.
-D: Sparse domain to be toposorted.
-workQueue: An instance of the work queue used for queuing and distributing work
-among tasks. Must support: add(value:int), these(tasksPerLocale:int, iterKind)
-numTasks: the maximum number of tasks that the benchmark is allowed to use in
+:arg D: Sparse domain to be toposorted.
+:type D: sparse domain(2)
+:arg workQueue: An instance of the work queue used for queuing and distributing work
+among tasks.
+:type workQueue: ?queueType (generic). Must support: add(value:int), these(tasksPerLocale:int, iterKind)
+:arg numTasks: the maximum number of tasks that the benchmark is allowed to use in
 parallel sections (default=here.maxTaskPar).
+:type numTasks: int.
+:returns: Filled TopoSortResult instance.
+:rtype: shared TopoSortResult(D.idxType)
 */
 proc toposortParallel( D : domain, workQueue : ?queueType, numTasks : int = here.maxTaskPar ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
@@ -1551,7 +1623,10 @@ Distributed implementation of toposort.
 This is a helper method for the real toposortDistributed method that accepts
 a list of each locale's maxTaskPerLocal parameter, which sets that array to
 that locales default (here.maxTaskPar).
-D: sparse domain to be toposorted.
+:arg D: sparse domain to be toposorted.
+:type D: sparse domain(2)
+:returns: Filled TopoSortResult instance.
+:rtype: shared TopoSortResult(D.idxType)
 */
 proc toposortDistributed( D : domain ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
@@ -1565,9 +1640,13 @@ where D.rank == 2
 
 /*
 Distributed implementation of toposort.
-D: sparse domain to be toposorted.
-maxTaskPerLocal: array of the maximum number of tasks for each locale that the
+:arg D: sparse domain to be toposorted.
+:type D: sparse domain(2)
+:arg maxTaskPerLocael: maximum number of tasks for each locale that the
 benchmark is allowed to use in parallel sections.
+:type maxTasksPerLocale: [0..#Locales.size] int
+:returns: Filled TopoSortResult instance.
+:rtype: shared TopoSortResult(D.idxType)
 */
 proc toposortDistributed( D : domain, maxTasksPerLocale : [] int ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
