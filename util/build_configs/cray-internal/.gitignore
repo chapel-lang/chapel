@@ -1,12 +1,12 @@
 # This hides users work files in this subdir
 /*
+!/README*
+!/chapel_package-cray.bash
 !/common.bash
 !/generate-dev-releaseinfo.bash
 !/generate-modulefile.bash
 !/generate-rpmspec.bash
 !/generate-set_default.bash
-!/modulefile
-!/README*
 #
 # This hides users subdirectories
 #
