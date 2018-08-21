@@ -53,6 +53,12 @@ proc masonExample(args) {
     else if arg == '--force' {
       force = true;
     }
+    else if arg == '--example' {
+      continue;
+    }
+    else if arg == '--build' {
+      continue;
+    }
     else {
       examples.push_back(arg);
     }
@@ -191,14 +197,14 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
         const exampleName = basename(stripExt(example, ".chpl"));
 
         // retrieves compopts and execopts found per example in the toml file
-        const options = perExampleOptions[exampleName];
-        var exampleCompopts = options[1];
-        var exampleExecopts = options[2];
+        // Adds in cmd line options found after `--`
+        const optsFromToml = perExampleOptions[exampleName];
+        var exampleCompopts = optsFromToml[1];
+        var exampleExecopts = optsFromToml[2];
 
         if release then exampleCompopts += " --fast";
 
-        if build {
-          
+        if build {  
           if exampleModified(projectHome, projectName, example) || force { 
 
             // remove old binary
@@ -222,10 +228,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
             else {
               if show || !run then writeln("compiled ", example, " successfully");
               if run {
-                var result = runExampleBinary(projectHome, exampleName, show, exampleExecopts);
-                if result != 0 {
-                  throw new MasonError("Mason could not find compiled example: " + example);
-                }
+                runExampleBinary(projectHome, exampleName, show, exampleExecopts);
               }
             }
           }
@@ -233,19 +236,13 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
           else {
             writeln("Skipping "+ example + ": no changes made to project or example");
             if run {
-              var result = runExampleBinary(projectHome, exampleName, show, exampleExecopts);
-              if result != 0 {
-                throw new MasonError("Mason could not find compiled example: " + example);
-              }
+              runExampleBinary(projectHome, exampleName, show, exampleExecopts);
             }
           }
         }
         // just running the example
         else {
-          var result = runExampleBinary(projectHome, exampleName, show, exampleExecopts);
-          if result != 0 {
-            throw new MasonError("Mason could not find compiled example: " + example);
-          }
+          runExampleBinary(projectHome, exampleName, show, exampleExecopts);
         }
       }
     }
@@ -264,7 +261,9 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
                               show: bool, execopts: string) throws {
   const command = "".join(projectHome,'/target/example/', exampleName, " ", execopts);
   const exampleResult = runWithStatus(command, true);
-  return exampleResult;
+  if exampleResult != 0 {
+    throw new MasonError("Mason failed to find and run compiled example: " + exampleName + ".chpl");
+  }
 }  
 
 
@@ -330,13 +329,23 @@ proc getExamplePath(fullPath: string, examplePath = "") : string {
 }
 
 // used when user calls `mason run --example` without argument
-proc printAvailableExamples(toml: Toml, projectHome: string) {
-  const examples = getExamples(toml, projectHome);
-  writeln("--- available examples ---");
-  for example in examples {
-    writeln(" --- " + example);
+proc printAvailableExamples() {
+  try! {
+    const cwd = getEnv("PWD");
+    const projectHome = getProjectHome(cwd);
+    const toParse = open(projectHome + "/Mason.toml", iomode.r);
+    const toml = new Owned(parseToml(toParse));
+    const examples = getExamples(toml, projectHome);
+    writeln("--- available examples ---");
+    for example in examples {
+      writeln(" --- " + example);
+    }
+    writeln("--------------------------");
   }
-  writeln("--------------------------");
+  catch e: MasonError {
+    stderr.writeln(e.message());
+    exit(1);
+  }
 }
 
 // Checks to see if an example, source code, or Mason.toml has been modified
