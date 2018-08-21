@@ -28,17 +28,75 @@ function log_error()
     echo >&2 "[ERROR] $@"
 }
 
-# check CHPL_HOME
+function log_warn()
+{
+    log_date
+    echo >&2 "[WARNING] $@"
+}
+
+# sanity check CHPL_HOME
 function ck_chpl_home()
 {
+    local thisfunc=ck_chpl_home
+
+    case "$1" in
+    ( "" )  log_error "$thisfunc: Missing argv1 (CHPL_HOME)"; exit 2;;
+    ( /* )  ;;
+    ( * )   log_error "$thisfunc: Invalid argv1 (CHPL_HOME)='$1'"; exit 2;;
+    esac
+    local chpl_home="$1"
+
     if [ ! -d "$1/util" ] || [ ! -d "$1/compiler" ] || [ ! -d "$1/runtime" ] || [ ! -d "$1/modules" ]; then
-        log_error "$1 does not look like a ${2:-CHPL_HOME} directory"
-        return 1
+        log_error "ck_chpl_home: $1 does not look like a CHPL_HOME directory"
+        exit 2
     fi
 }
 
+# return Chapel version number from source (version_num.h)
+function get_src_version()
+{
+    local thisfunc=get_src_version
+
+    local version_file="$1/compiler/main/version_num.h"
+    ls >/dev/null "$version_file" || {
+        log_error "$thisfunc: Missing source file $version_file"
+        exit 2
+    }
+
+    local major=$( grep MAJOR_VERSION < "$version_file" | cut -f3 -d\  )
+    local minor=$( grep MINOR_VERSION < "$version_file" | cut -f3 -d\  | sed -e 's,",,g' )
+    local update=$( grep UPDATE_VERSION < "$version_file" | cut -f3 -d\  | sed -e 's,",,g' )
+    case "$major" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file=$version_file (major=$major)"; exit 2;; esac
+    case "$minor" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file=$version_file (minor=$minor)"; exit 2;; esac
+    case "$update" in   ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file=$version_file (update=$update)"; exit 2;; esac
+
+    echo $major.$minor.$update
+}
+
+# verify a given directory location which must exist, and echo the full path
+function ck_output_dir {
+    local thisfunc=ck_output_dir
+
+    case "$1" in
+    ( "" )  log_error "$thisfunc: Missing argv1='$1'"; exit 2;;
+    esac
+    case "$2" in
+    ( "" )  log_error "$thisfunc: Missing argv2='$2'"; exit 2;;
+    esac
+    local dir=$1
+    local msg=$2
+
+    local retval=$( cd "$dir" && pwd ) || : ok
+    case "$retval" in ( "" ) log_error "'$msg' directory missing or invalid: '$dir'"; exit 2;; esac
+    if [ ! -w "$retval" ]; then
+        log_error "'$msg' directory not writable: '$dir'"
+        exit 2
+    fi
+    echo "$retval"
+}
+
 # project name, from setenv file name
-case "$setenv" in
+case "${setenv:=}" in
 ( "" )      project= ;;
 ( *.sh )    project=${setenv%.sh} ;;
 ( *.bash )  project=${setenv%.bash} ;;
@@ -46,13 +104,13 @@ case "$setenv" in
 esac
 
 # verbosity option, from build_configs env
-case "$BUILD_CONFIGS_VERBOSE" in
+case "${BUILD_CONFIGS_VERBOSE:-}" in
 ( True )    verbose=-v ;;
 ( * )       verbose= ;;
 esac
 
 # dryrun option, from build_configs env
-case "$BUILD_CONFIGS_DRY_RUN" in
+case "${BUILD_CONFIGS_DRY_RUN:-}" in
 ( True )    dry_run=-n ;;
 ( * )       dry_run= ;;
 esac
