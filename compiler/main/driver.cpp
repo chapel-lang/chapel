@@ -177,7 +177,7 @@ bool fLocal;   // initialized in postLocal()
 bool fIgnoreLocalClasses = false;
 bool fUserDefaultInitializers = true;
 bool fLifetimeChecking = true;
-bool fOverrideChecking = false;
+bool fOverrideChecking = true;
 bool fHeterogeneous = false;
 bool fieeefloat = false;
 int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
