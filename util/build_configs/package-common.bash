@@ -1,10 +1,18 @@
 
 # Source this to derive and/or sanity-check some common shell variables useful for building a Chapel package
 
-thiscomm=$( basename ${BASH_SOURCE[0]} )
-
 # This expects bash functions log_debug, log_error, etc to be defined
 # (see functions.bash and package-functions.bash)
+
+thiscomm=$( basename ${BASH_SOURCE[0]} )
+log_debug "Begin $thiscomm"
+
+if [ -n "${verbose:-}" ]; then
+    log_info "Using -v (verbose)"
+fi
+if [ -n "${dry_run:-}" ]; then
+    log_info "Using -n (dry-run)"
+fi
 
 # Generic Chapel packaging variables
 # - meant to be generally applicable to most or all Chapel packaging formats
@@ -14,8 +22,8 @@ thiscomm=$( basename ${BASH_SOURCE[0]} )
 # major,
 #   minor,
 #       update  : The numeric fields in src_version # see above
-# version_tag   : An optional string like "_1" possibly added to the src_version for packaging.
-#                 Must include a leading "_". Alphanumeric only. No dashes or periods allowed.
+# version_tag   : An optional string like "local_1". If non-null, it will be added to src_version
+#                   to create pkg_version. Alphanumeric only. No dashes or periods allowed.
 # pkg_version   : $src_version plus $version_tag, plus something else visible in the package name
 #                   to distinguish different source snapshots taken from the same branch;
 #                   e.g. "1.17.1.20181016" for a nightly build
@@ -45,13 +53,9 @@ case "${src_version:=}" in
     ;;
 esac
 
+# version_tag may be null; if non-null, it must not begin with a _ character
 case "${version_tag:=}" in
-( *[!0-9a-zA-Z_]* | _ )
-    log_error "$thiscomm: Invalid version_tag=$version_tag"; exit 2
-    ;;
-( _* | "" )
-    ;;
-( * )
+( *[!0-9a-zA-Z_]* | _* | *_ )
     log_error "$thiscomm: Invalid version_tag=$version_tag"; exit 2
     ;;
 esac
@@ -59,17 +63,26 @@ esac
 case "${release_type:=}" in
 ( [nN]* | -n | nightly )
     release_type=nightly
-    pkg_version=$src_version$version_tag.$date_ymd
+    pkg_version=$src_version${version_tag:+_}$version_tag.$date_ymd
     ;;
 ( [rR]* | -r | release )
     release_type=release
-    pkg_version=$src_version$version_tag
+    pkg_version=$src_version${version_tag:+_}$version_tag
     ;;
 ( * )
     log_error "$thiscomm: Invalid release_type=$release_type"
     exit 2
     ;;
 esac
+
+log_debug "Using chpl_platform  = '$chpl_platform'"
+log_debug "Using src_version    = '$src_version'"
+log_debug "Using version_tag    = '$version_tag'"
+log_debug "Using pkg_version    = '$pkg_version'"
+log_debug "Using release_type   = '$release_type'"
+log_debug "Using rc_number      = '$rc_number'"
+log_debug "Using date_ymd       = '$date_ymd'"
+log_debug "Using date_hms       = '$date_hms'"
 
 export chpl_platform
 export src_version major minor update
@@ -80,3 +93,4 @@ export rc_number
 export date_ymd
 export date_hms
 
+log_debug "End $thiscomm"

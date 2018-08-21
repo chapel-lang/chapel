@@ -2,6 +2,7 @@
 # Source this for Cray-module-specific shell setups
 
 thiscomm=$( basename ${BASH_SOURCE[0]} )
+log_debug "Begin $thiscomm"
 
 # This expects bash functions log_debug, log_error, etc to be defined
 # (see functions.bash and package-functions.bash),
@@ -79,6 +80,14 @@ pkg_filename="chapel-$pkg_version-$rpm_release"
 rpm_filename="chapel-$pkg_version-$rpm_release.$CPU.rpm"
 rpmbuild_filename="chapel-$pkg_version-$rpm_version-$rpm_release.$CPU.rpm"
 
+log_debug "Using rc_prefix      = '$rc_prefix'"
+log_debug "Using rpm_release    = '$rpm_release'"
+log_debug "Using rpm_name       = '$rpm_name'"
+log_debug "Using rpm_version    = '$rpm_version'"
+log_debug "Using pkg_filename   = '$pkg_filename'"
+log_debug "Using rpm_filename   = '$rpm_filename'"
+log_debug "Using rpmbuild_filename  = '$rpmbuild_filename'"
+
 export rc_prefix
 export rpm_release
 export rpm_name
@@ -86,3 +95,5 @@ export rpm_version
 export pkg_filename
 export rpm_filename
 export rpmbuild_filename
+
+log_debug "End $thiscomm"

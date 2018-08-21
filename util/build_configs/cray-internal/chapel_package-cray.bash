@@ -25,6 +25,10 @@ Usage $thisfile" '[options]
     -p chpl_platform    : Chpl target platform, as in $CHPL_HOME/bin/$chpl_platform
                           ("cray-xc" or "cray-xe")
                           Default: cray-xc
+    -T version_tag      : If given, version_tag will become part of the Chapel
+                            package version string to be generated in this script.
+                          Alphanumeric/underscore chars only.
+                          Default value: current hostname. See NOTES below.
     -r rc_number        : Release candidate number (0,1,2,...9)
                           Default: 0
     -o outputs  : Where to deliver the Chapel RPM file created by this script.
@@ -46,6 +50,11 @@ Usage $thisfile" '[options]
     CHPL_RPM is a working subtree created by this script for use by rpmbuild.
     CHPL_RPM will be removed without warning if it exists when this script is run.
     The directory name will be "$CHPL_HOME-" plus the generated version.
+
+    An empty version_tag may be given on the command line (-T "").
+    If not, the default version_tag is the local hostname. This is to avoid
+    accidentally replacing an official Cray Chapel release with a locally-
+    built RPM.
 '
     exit "${1:-1}"
 }
@@ -53,6 +62,7 @@ Usage $thisfile" '[options]
 chpl_platform=cray-xc
 release_type=
 rc_number=0
+version_tag=$( hostname | sed -e 's,[^0-9a-zA-Z_],,g' )
 src_version=
 workdir=
 outputs=
@@ -62,14 +72,15 @@ keepdir=
 date_ymd=$( date '+%Y%m%d' )
 date_hms=$( date '+%H%M%S' )
 
-while getopts :vnC:o:b:p:r:h opt; do
+while getopts :vnkC:T:o:b:p:r:h opt; do
     case $opt in
+    ( k ) keepdir=-k ;;
     ( C ) workdir=$OPTARG ;;
+    ( T ) version_tag=$OPTARG ;;
     ( o ) outputs=$OPTARG ;;
     ( b ) release_type=$OPTARG ;;
     ( p ) chpl_platform=$OPTARG ;;
     ( r ) rc_num=$OPTARG ;;
-    ( k ) keepdir=-k ;;
     ( v ) verbose=-v ;;
     ( n ) dry_run=-n ;;
     ( h ) usage 0;;
@@ -78,12 +89,12 @@ while getopts :vnC:o:b:p:r:h opt; do
     esac
 done
 
+log_info "Begin $thisfile"
+
 # Try to use the generic parameter checking as much as possible,
 #   by sourcing the "common" scripts (see below).
 
 # Sanity-check CHPL_HOME env variable error before doing anything else
-
-log_info "Begin $thisfile"
 
 case "${CHPL_HOME:-}" in
 ( "" | [!/]* )
@@ -91,7 +102,7 @@ case "${CHPL_HOME:-}" in
     usage
     ;;
 esac
-log_info "Using CHPL_HOME=$CHPL_HOME"
+log_info "Using CHPL_HOME   ='$CHPL_HOME'"
 ck_chpl_home "$CHPL_HOME"
 export CHPL_HOME
 
@@ -99,15 +110,18 @@ export CHPL_HOME
 
 outputs=${outputs:-$yourcwd}
 outputs=$( ck_output_dir "$outputs" '-o outputs' )
+log_debug "Using -o outputs ='$outputs'"
 
 # Sanity-check the given -C workdir, if any, or set to the users CWD
 
 workdir=${workdir:-$yourcwd}
 workdir=$( ck_output_dir "$workdir" '-C workdir' )
+log_debug "Using -C workdir ='$workdir'"
 
 # Get Chapel version numbers from source
 
 src_version=$( get_src_version "$CHPL_HOME" )
+log_debug "Using src_version    ='$src_version'"
 
 # Sanity-check some common shell variables used for Chapel packages (parent directory)
 
@@ -117,10 +131,14 @@ source $cwd/../package-common.bash
 
 source $cwd/common.bash
 
+if [ -n "$keepdir" ]; then
+    log_info "Using -k (keepdir)"
+fi
+
 # Create CHPL_RPM, the packaging counterpart to CHPL_HOME, in workdir
 
 export CHPL_RPM="$workdir/$pkg_filename"
-log_info "Creating CHPL_RPM=$CHPL_RPM"
+log_info "Creating CHPL_RPM ='$CHPL_RPM'"
 
 rm -rf "$CHPL_RPM"
 mkdir "$CHPL_RPM"
@@ -196,11 +214,10 @@ else
     mv -f "$CHPL_RPM/RPMS/$CPU/$rpmbuild_filename" "$outputs/$rpm_filename"
 
     # Remove CHPL_RPM dir, in background
-    if [ -n "$keepdir" ]; then
-        log_info "Keeping CHPL_RPM."
-    else
+    if [ -z "$keepdir" ]; then
         log_info "Removing CHPL_RPM in background."
         nohup rm -rf "$CHPL_RPM" >/dev/null 2>/dev/null </dev/null &
     fi
 fi
+
 log_info "End $thisfile"
