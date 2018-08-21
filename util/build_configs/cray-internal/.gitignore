@@ -1,6 +1,7 @@
 # This hides users work files in this subdir
 /*
 !/README*
+!/chapel-1.17.1_build_example.bash
 !/chapel_package-cray.bash
 !/common.bash
 !/generate-dev-releaseinfo.bash
