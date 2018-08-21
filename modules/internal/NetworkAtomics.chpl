@@ -21,6 +21,27 @@ pragma "atomic module"
 module NetworkAtomics {
   use ChapelStandard;
 
+  config const maxNetAtomicYields = 10;
+  config const minNetAtomicSleep = 1; // microseconds
+  config const maxNetatomicAtomicSleep = 1024; // microseconds
+
+  /* Hybrid waitFor implementation that works on a generic atomic type.
+     Separated out to avoid code duplication */
+  private inline proc hybridWaitFor(const aThis, value, order:memory_order): void {
+    var numtries = 0;
+    var backoff = minNetAtomicSleep;
+    while aThis.read(order) != value {
+      numtries += 1;
+      if numtries <= maxNetAtomicYields {
+        chpl_task_yield();
+      } else {
+        use Time;
+        sleep(backoff, TimeUnits.microseconds);
+        backoff = min(backoff * 2, maxNetatomicAtomicSleep);
+      }
+    }
+  }
+
   private proc externFunc(param s: string, type T) param {
     if isInt(T)  then return "chpl_comm_atomic_" + s + "_int"  + numBits(T):string;
     if isUint(T) then return "chpl_comm_atomic_" + s + "_uint" + numBits(T):string;
@@ -91,12 +112,7 @@ module NetworkAtomics {
     }
 
     inline proc const waitFor(value:bool, order:memory_order = memory_order_seq_cst): void {
-      on this {
-        while (this.read(order=memory_order_relaxed) != value) {
-          chpl_task_yield();
-        }
-        atomic_thread_fence(order);
-      }
+      hybridWaitFor(this, value, order);
     }
 
     inline proc const peek(): bool {
@@ -265,12 +281,7 @@ module NetworkAtomics {
     }
 
     inline proc const waitFor(value:T, order:memory_order = memory_order_seq_cst): void {
-      on this {
-        while (this.read(order=memory_order_relaxed) != value) {
-          chpl_task_yield();
-        }
-        atomic_thread_fence(order);
-      }
+      hybridWaitFor(this, value, order);
     }
 
     inline proc const peek(): T {
