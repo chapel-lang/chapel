@@ -21,24 +21,23 @@ pragma "atomic module"
 module NetworkAtomics {
   use ChapelStandard;
 
+  config const maxNetAtomicYields = 10;
+  config const minNetAtomicSleep = 1; // microseconds
+  config const maxNetatomicAtomicSleep = 1024; // microseconds
 
-  config const maxNetAtomicRemoteSpins = 1000;
   /* Hybrid waitFor implementation that works on a generic atomic type.
      Separated out to avoid code duplication */
   private inline proc hybridWaitFor(const aThis, value, order:memory_order): void {
-    var numTries = 0;
-    var readVal = aThis.read(order=memory_order_relaxed);
-    while (numTries < maxNetAtomicRemoteSpins && readVal != value) {
-      numTries += 1;
-      chpl_task_yield();
-      readVal = aThis.read(order=memory_order_relaxed);
-    }
-    if (readVal != value) {
-      on aThis {
-        while (aThis.read(order=memory_order_relaxed) != value) {
-          chpl_task_yield();
-        }
-        atomic_thread_fence(order);
+    var numtries = 0;
+    var backoff = minNetAtomicSleep;
+    while aThis.read(order) != value {
+      numtries += 1;
+      if numtries <= maxNetAtomicYields {
+        chpl_task_yield();
+      } else {
+        use Time;
+        sleep(backoff, TimeUnits.microseconds);
+        backoff = min(backoff * 2, maxNetatomicAtomicSleep);
       }
     }
   }
