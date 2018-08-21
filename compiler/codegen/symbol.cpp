@@ -907,9 +907,45 @@ std::string ArgSymbol::getPythonArgTranslation() {
     res += cname;
     res += "\n";
     return res;
-  } /*else if () {
+  } else if (t == dtExternalArray) {
     // Handle arrays
-    }*/
+    if (Symbol* eltType = elementType[this]) {
+      // The element type will be recorded in the elementType map if this arg's
+      // type was originally a Chapel array instead of explicitly an external
+      // array.  If we have the element type, that means we need to do a
+      // translation in the python wrapper.
+      std::string typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
+      std::string typeStrCDefs = typeStr;
+      if (strncmp(typeStr, "numpy", strlen("numpy")) == 0) {
+        typeStrCDefs += "_t";
+      }
+
+      // Create the memory needed to store the contents of what was passed to us
+      // E.g. cdef chpl_external_array chpl_foo =
+      //          chpl_make_external_array(sizeof(element type), len(foo))
+      std::string res = "\tcdef chpl_external_array chpl_";
+      res += cname;
+      res += " = chpl_make_external_array(sizeof(";
+      res += typeStrCDefs;
+      res += "), len(";
+      res += cname;
+      res += "))\n";
+
+      // Copy the contents over.
+      // E.g. for i in range(len(foo)):
+      //         (<element type*>chpl_foo.elts)[i] = foo[i]
+      res += "\tfor i in range(len(";
+      res += cname;
+      res += ")):\n";
+      res += "\t\t(<" + typeStrCDefs + "*>chpl_";
+      res += cname;
+      res += ".elts)[i] = ";
+      res += cname;
+      res += "[i]\n";
+
+      return res;
+    }
+  }
   return "";
 }
 

@@ -31,6 +31,7 @@
 #include "ForallStmt.h"
 #include "IfExpr.h"
 #include "initializerRules.h"
+#include "library.h"
 #include "LoopExpr.h"
 #include "stlUtil.h"
 #include "stringutil.h"
@@ -2724,6 +2725,16 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
         USR_FATAL(formal, "array argument '%s' in exported function '%s'"
                   " must specify its type", formal->name, fn->name);
         continue;
+      }
+
+      if (SymExpr* eltSym = toSymExpr(eltExpr)) {
+        if (TypeSymbol* eltType = toTypeSymbol(eltSym->symbol())) {
+          elementType[formal] = eltType;
+        } else {
+          // TODO: handle things like type variables (not supported yet)
+        }
+      } else {
+        // TODO: handle call expression stuff.
       }
 
       // Create a representation of the array argument that is accessible

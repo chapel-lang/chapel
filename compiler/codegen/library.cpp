@@ -27,6 +27,8 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 
+std::map<Symbol*, TypeSymbol*> elementType;
+
 char libDir[FILENAME_MAX + 1]  = "";
 std::string pxdName = "";
 
