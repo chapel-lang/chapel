@@ -21,14 +21,25 @@ pragma "atomic module"
 module NetworkAtomics {
   use ChapelStandard;
 
+
+  config const maxNetAtomicRemoteSpins = 1000;
   /* Hybrid waitFor implementation that works on a generic atomic type.
      Separated out to avoid code duplication */
   private inline proc hybridWaitFor(const aThis, value, order:memory_order): void {
-    on aThis {
-      while (aThis.read(order=memory_order_relaxed) != value) {
-        chpl_task_yield();
+    var numTries = 0;
+    var readVal = aThis.read(order=memory_order_relaxed);
+    while (numTries < maxNetAtomicRemoteSpins && readVal != value) {
+      numTries += 1;
+      chpl_task_yield();
+      readVal = aThis.read(order=memory_order_relaxed);
+    }
+    if (readVal != value) {
+      on aThis {
+        while (aThis.read(order=memory_order_relaxed) != value) {
+          chpl_task_yield();
+        }
+        atomic_thread_fence(order);
       }
-      atomic_thread_fence(order);
     }
   }
 
