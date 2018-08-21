@@ -1,9 +1,12 @@
 ## New scripts to build customizable Chapel modules from source
 
-Work-in-progress. As of this writing, this directory contains scripts
-to build customizable Chapel binaries in multiple configurations.
-Later additions will add scripts to package these binaries as RPMs
-suitable for installation on a Cray-XC.
+This directory contains scripts to build customizable Chapel binaries
+in multiple configurations.
+
+The "cray-internal" subdirectory adds scripts to package Chapel binaries
+(already pre-built with "setenv-example3.bash" from this directory) into an
+RPM suitable for installation on a Cray-XC. See ./cray-internal/README
+for more info.
 
 ### Files in this directory:
 
@@ -24,7 +27,13 @@ suitable for installation on a Cray-XC.
 
 * functions.bash: General-purpose shell functions for use in bash scripts
 
-* module_functions.bash: Shell functions to manipulate Cray system modules
+* module-functions.bash: Shell functions to manipulate Cray system modules
+
+* package-functions.bash: General-purpose shell functions for use in Chapel
+    packaging scripts; see for example ./cray-internal/chapel_package-cray.bash.
+
+* package-common.bash: General-purpose bash code for use in Chapel
+    packaging scripts; see for example ./cray-internal/chapel_package-cray.bash.
 
 ### Users local Chapel projects:
 
@@ -138,9 +147,11 @@ Components
       for each Chapel build config, to customize the host environment seen by
       each Chapel make. It can also skip the Chapel make command entirely.
 
-* Cray module packaging script. (2018-07-31: not available yet)
+* Cray module packaging script:
   Given an existing build workspace with the makes completed, create the
   Chapel RPM and collateral.
+
+  - 2018-08-21: Now implemented in subdirectory ./cray-internal
 
 * High-level wrappers.
 
@@ -148,7 +159,7 @@ Components
     A script to unroll a Chapel release tarball, call a setenv project, and
     possibly the Cray module packaging script.
 
-    WIP example: chapel_build.sh
+    Example: cray-internal/chapel_build.sh
 
   * For Cray-internal Jenkins build script replacement:
     A script to build a new (or unroll a previously-built) Chapel release tarball;
