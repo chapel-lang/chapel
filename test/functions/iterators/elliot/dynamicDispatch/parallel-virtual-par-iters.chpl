@@ -6,10 +6,10 @@ class Parent {
 }
 
 class Child: Parent {
-  iter these(): int { for i in 1..10 do yield i; }
-  iter these(param tag: iterKind): int where tag == iterKind.standalone { coforall i in 1..10 do yield i; }
-  iter these(param tag: iterKind): int where tag == iterKind.leader { coforall i in 1..10 do yield i; }
-  iter these(param tag: iterKind, followThis): int where tag == iterKind.follower { yield followThis; }
+  override iter these(): int { for i in 1..10 do yield i; }
+  override iter these(param tag: iterKind): int where tag == iterKind.standalone { coforall i in 1..10 do yield i; }
+  override iter these(param tag: iterKind): int where tag == iterKind.leader { coforall i in 1..10 do yield i; }
+  override iter these(param tag: iterKind, followThis): int where tag == iterKind.follower { yield followThis; }
 }
 
 var A: [1..10] int;

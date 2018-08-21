@@ -16,7 +16,7 @@
     use LibraryZ4;
 
     class Widget : Base {
-      proc run(x:int) {
+      override proc run(x:int) {
         writeln("In Application.Widget.run");
       }
     }
