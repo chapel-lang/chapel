@@ -28,6 +28,11 @@ config param useDimIterDistributed = false; //SparseBlockDom.dimIter not support
 config param useDimIterRowDistributed = useDimIterDistributed;
 config param useDimIterColDistributed = useDimIterDistributed;
 
+// configures number of bytes to pad elements in the ParallelWorkQueueChunkedLoopWaitPadding
+// array of queues and locks
+// Default value assumes a x86 cache line (64 bytes) - 2 pointers (8 bytes each)
+config param ParallelWorkQueueChunkedLoopWaitPaddingBytes : int = 64-(2*8);
+
 /*
 Sync variable backed lock.
 */
@@ -214,6 +219,8 @@ class ParallelWorkQueueChunkedLoopWait {
   const startTaskID : uint = 0;
   const taskDomain : domain(1,uint);
 
+  //NOTE: Observed by Louis Jenkins, there is a possibility of False Sharing.
+  // One way of possibly addressing this is implemented in ParallelWorkQueueChunkedLoopWaitPadding
   var locks : [taskDomain] unmanaged lockType;
   var queues : [taskDomain] unmanaged Vector(eltType);
 
@@ -290,7 +297,6 @@ class ParallelWorkQueueChunkedLoopWait {
   Yield work in parallel.
   In this method, each task has a queue that it swaps out with an empty queue
   and yields values from that.
-
   :ytype: eltType
   */
   iter these( param tag : iterKind ) : eltType
@@ -366,6 +372,186 @@ class ParallelWorkQueueChunkedLoopWait {
     }
   }
 }
+
+/*
+Queue for effecient shared-memory parallel work queueing and distributing using
+a chuncked loop wait method. In this implementation, the locks and queues are
+unified into one array that uses padding as an approach to reduce the possiblity
+of false-sharing.
+*/
+class ParallelWorkQueueChunkedLoopWaitPadding {
+  type eltType;
+  type lockType;
+
+  // tuple that will pad the record through the cache line
+  type paddingType = ParallelWorkQueueChunkedLoopWaitPaddingBytes*uint(64);
+
+  record arrayType {
+    type arrayTypeEltType;
+    type arrayTypeLockType;
+    type arrayTypePaddingType;
+
+    var queue : unmanaged Vector(arrayTypeEltType);
+    var lock : unmanaged arrayTypeLockType;
+    var padding : arrayTypePaddingType;
+  }
+
+  const maxTasks : uint;
+  const startTaskID : uint = 0;
+  const taskDomain : domain(1,uint);
+
+  var queuesLocksPaddingArray : [taskDomain] arrayType(eltType, lockType, paddingType);
+
+  var addCounter : atomic uint;
+
+  var terminated : atomic bool;
+  const terminatedRetries : uint;
+
+  proc init( type eltType, type lockType = unmanaged SyncLock, retries : uint = 0, maxTasks : uint = here.maxTaskPar ){
+    this.eltType = eltType;
+    this.lockType = lockType;
+
+    this.maxTasks = maxTasks;
+    assert( maxTasks >= 1 );
+    this.taskDomain = {this.startTaskID..#maxTasks};
+
+    this.terminatedRetries = retries;
+
+    this.complete();
+
+    for taskID in this.taskDomain {
+      this.queuesLocksPaddingArray[taskID].lock = new unmanaged lockType();
+      this.queuesLocksPaddingArray[taskID].queue = new unmanaged Vector(this.eltType);
+    }
+
+    this.addCounter.write(startTaskID);
+
+    this.terminated.write(false);
+  }
+
+  proc deinit(){
+    for taskID in this.taskDomain {
+      delete this.queuesLocksPaddingArray[taskID].lock;
+      delete this.queuesLocksPaddingArray[taskID].queue;
+    }
+  }
+
+  /*
+  :returns: Size of the queue in its entirety.
+  :rtype: int
+  */
+  proc size : int {
+    // lock all queues then sum. Should provide a consistant view of queue?
+    for taskID in this.taskDomain {
+      this.queuesLocksPaddingArray[taskID].lock.lock();
+    }
+    var size : int = 0;
+    for taskID in this.taskDomain {
+      size += this.queuesLocksPaddingArray[taskID].queue.size;
+    }
+    for taskID in this.taskDomain {
+      this.queuesLocksPaddingArray[taskID].lock.unlock();
+    }
+    return size;
+  }
+
+  /*
+  Add value into the queue.
+  .. note: This distributes work in a round-robbin fashion.
+  :arg value: Value to be enqued.
+  :type value: eltType.
+  */
+  proc add( value : eltType ){
+    // Get a taskID to give work to in a round-robbin manner
+    // No need to mod counter, since we can safely do the modular arithmatic
+    // on our end.
+    var taskID = this.addCounter.fetchAdd(1) % this.maxTasks;
+    this.queuesLocksPaddingArray[taskID].lock.lock();
+    this.queuesLocksPaddingArray[taskID].queue.push_back( value );
+    this.queuesLocksPaddingArray[taskID].lock.unlock();
+  }
+
+  /*
+  Yield work in parallel.
+  In this method, each task has a queue that it swaps out with an empty queue
+  and yields values from that.
+
+  :ytype: eltType
+  */
+  iter these( param tag : iterKind ) : eltType
+  where tag == iterKind.standalone
+  {
+    if warnParallelWorkQueueTheseMethod then compilerWarning( "theseChunkedLoopWait standalone");
+
+    // reset termination
+    this.terminated.write(false);
+
+    coforall taskID in this.taskDomain {
+      var continueLooping = true;
+      var countdown = this.terminatedRetries;
+      var unlockedQueue = new unmanaged Vector(eltType);
+
+      // main yield loop.
+      while continueLooping {
+        var terminated = this.terminated.read();
+        continueLooping = !terminated || countdown > 0;
+        if terminated then countdown -= 1;
+
+        // get task's queue with quick swap of empty local queue
+        this.queuesLocksPaddingArray[taskID].lock.lock();
+        unlockedQueue <=> this.queuesLocksPaddingArray[taskID].queue;
+        this.queuesLocksPaddingArray[taskID].lock.unlock();
+
+        // yield all in local queue
+        if unlockedQueue.size > 0 {
+          //unlockedQueue.compact();
+          //forall work in unlockedQueue.listArray._value.these( tasksPerLocale = maxTasks ) {
+          for work in unlockedQueue {
+            yield work;
+          }
+          unlockedQueue.clear();
+        } else {
+          chpl_task_yield();
+        }
+      }
+
+      delete unlockedQueue;
+    }
+
+    // clear terminated flag
+    this.terminated.write(false);
+  }
+
+  // dummy iterator
+  pragma "no doc"
+  iter these( ) : eltType
+  { }
+
+  /*
+  Signal to the iterator loop that no more work is incomming and should be terminated
+  when the queue(s) are exhaused.
+  */
+  proc terminate(){
+    this.terminated.write(true);
+  }
+
+  proc writeThis( f ){
+    // lock all queues then print. Should provide a consistant view of queue?
+    for taskID in this.taskDomain {
+      this.queuesLocksPaddingArray[taskID].lock.lock();
+    }
+    var notfirst = false;
+    for taskID in this.taskDomain {
+      if notfirst then f <~> "\n";
+      else notfirst = true;
+      f <~> taskID <~> ": " <~> this.queuesLocksPaddingArray[taskID].queue;
+    }
+    for taskID in this.taskDomain {
+      this.queuesLocksPaddingArray[taskID].lock.unlock();
+    }
+  }
+}
+
 
 /*
 Queue for effecient shared-memory parallel work queueing and distributing using
@@ -699,7 +885,8 @@ class ParallelWorkQueueLoopWait {
 /*
 Queue for effecient distributed-memory parallel work queueing and distributing.
 */
-class DistributedWorkQueue {
+pragma "always RVF"
+record DistributedWorkQueue {
   type eltType;
   type lockType;
 
@@ -1666,7 +1853,7 @@ where D.rank == 2
 
   var rowSum : [rows] atomic int;
   var rowCount : [rows] atomic int;
-  var workQueue = new owned DistributedWorkQueue(D.idxType, Locales);
+  var workQueue = new DistributedWorkQueue(D.idxType, Locales);
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
@@ -1822,6 +2009,8 @@ enum ToposortImplementation {
   Serial,
   // Use parallel implementation with ParallelWorkQueueChunkedLoopWait as queue
   ParallelChunkedLoopWait,
+  // Use parallel implementation with ParallelWorkQueueChunkedLoopWaitPadding as queue
+  ParallelChunkedLoopWaitPadding,
   // Use parallel implementation with ParallelWorkQueueSyncWait as queue
   ParallelSyncWait,
   // Use parallel implementation with ParallelWorkQueueLoopWait as queue
@@ -1888,6 +2077,20 @@ proc main(){
       var workQueue = new unmanaged ParallelWorkQueueChunkedLoopWait( eltType = dmappedPermutedSparseD.idxType, lockType = unmanaged AtomicLock, retries = 0, maxTasks = numTasks : uint );
 
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation with Chunked-Loop-Wait work queue.");
+      topoResult = toposortParallel( dmappedPermutedSparseD, workQueue, numTasks );
+
+      delete workQueue;
+    }
+
+    when ToposortImplementation.ParallelChunkedLoopWaitPadding  {
+       if !silentMode then writeln("Converting to CSC domain");
+
+      var dmappedPermutedSparseD : sparse subdomain(D) dmapped CS(compressRows=false);
+      dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
+
+      var workQueue = new unmanaged ParallelWorkQueueChunkedLoopWaitPadding( eltType = dmappedPermutedSparseD.idxType, lockType = unmanaged AtomicLock, retries = 0, maxTasks = numTasks : uint );
+
+      if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation with Chunked-Loop-Wait padded work queue.");
       topoResult = toposortParallel( dmappedPermutedSparseD, workQueue, numTasks );
 
       delete workQueue;
