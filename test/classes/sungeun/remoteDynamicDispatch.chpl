@@ -5,13 +5,13 @@ class C {
 }
 
 class C0: C {
-  proc foo() {
+  override proc foo() {
     writeln((here.id, "C0"));
   }
 }
 
 class C1: C {
-  proc foo() {
+  override proc foo() {
     writeln((here.id, "C1"));
   }
 }
