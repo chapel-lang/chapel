@@ -1,4 +1,3 @@
-
 .. _readme-mason:
 
 =====
@@ -16,7 +15,7 @@ Installation Instructions
 In ``$CHPL_HOME`` run the following:
 
 .. code-block:: sh
-   
+
    make mason
 
 It builds the mason binary so that the command line interface can be used.
@@ -66,14 +65,14 @@ Setting up Your Project
 ``mason new [ project name ] [ options ]`` is the command that initializes
 a new project. It also creates a git repository unless ``--no-vcs`` is included.
 
-For example, after ``mason new MyPackage`` is run in an empty directory it will have the 
+For example, after ``mason new MyPackage`` is run in an empty directory it will have the
 following hierarchy::
 
-	MyPackage/
-  	  Mason.toml
-  	  test/
-  	  src/
-    	    MyPackage.chpl
+  MyPackage/
+      Mason.toml
+      test/
+      src/
+          MyPackage.chpl
 
 
 Mason will ensure that the main file be named after the package to enforce namespacing.
@@ -87,7 +86,7 @@ Building and Running Your Project
 When invoked, ``mason build [ options ]`` will do the following:
 
     - Run update to make sure any manual manifest edits are reflected in the dependency code.
-    - Build ``MyPackage.chpl`` in the ``src/`` directory. 
+    - Build ``MyPackage.chpl`` in the ``src/`` directory.
     - All packages are compiled into binaries and placed into ``target/``
     - All options not recognized by ``mason`` will be forwarded to the chapel compiler(``chpl``)
 
@@ -111,11 +110,11 @@ For example, after ``mason build && mason run [ options ]``, the project directo
            MyPackage
 
 
-For projects that span multiple files, the main module is designated by the module that 
+For projects that span multiple files, the main module is designated by the module that
 shares the name with the package directory and the name field in the ``Mason.toml``.
 
 
-For projects that span multiple sub-directories within ``src``, sub-directories must be passed 
+For projects that span multiple sub-directories within ``src``, sub-directories must be passed
 to Mason with the ``-M  <src/subdirectory>`` flag which is forwarded to the chapel compiler. For example, lets say
 MyPackage's structure is as follows::
 
@@ -137,13 +136,13 @@ MyPackage's structure is as follows::
 
 If MyPackage needs multiple files in different directories like the example above,
 then call ``mason build`` with the ``-M`` flag followed by the local dependencies.
-A full command of this example would be:: 
+A full command of this example would be::
 
   mason build -M src/util/MyPackageUtils.chpl
 
 
 
-For an example of forwarding arguments in a call to ``mason run``, a chapel program built in 
+For an example of forwarding arguments in a call to ``mason run``, a chapel program built in
 mason might have a ``config const number`` that corresponds to a value used in ``MyPackage.chpl``.
 To try out different values at runtime, pass the values for ``number`` to ``mason run`` as follows::
 
@@ -151,10 +150,10 @@ To try out different values at runtime, pass the values for ``number`` to ``maso
       mason run --number=1000
 
 
-.. note:: 
+.. note::
 
-   For the case when a flag intended for the ``chpl`` compiler or executable is recognized by 
-   ``mason build`` or ``mason run``, respectively, the flag can be thrown after ``--`` 
+   For the case when a flag intended for the ``chpl`` compiler or executable is recognized by
+   ``mason build`` or ``mason run``, respectively, the flag can be thrown after ``--``
    to override this conflict. For example, ``mason run -- -nl 4``. Instead of mason recognizing
    this argument, this command will run the executable over 4 locales.
 
@@ -219,7 +218,7 @@ The Manifest File
 
 The ``Mason.toml`` manifest file is written in TOML(for more information see TOML section below).
 Each time a new project is created in Mason a standard TOML file is included in the top-level
-directory of the project. 
+directory of the project.
 
 For example, ``Mason.toml``:
 
@@ -253,7 +252,7 @@ TOML
 
 TOML is the configuration language chosen by the chapel team for
 configuring programs written in chapel. A TOML file contains the
-necessary information to build a chapel program using mason. 
+necessary information to build a chapel program using mason.
 `TOML Spec <https://github.com/toml-lang/toml>`_.
 
 
@@ -313,9 +312,160 @@ If no query is provided, all packages in the registry will be listed.
 
 Non-Chapel Dependencies
 =======================
-Mason allows for specification of external, non-Chapel dependencies through ``pkg-config``.
-For this reason, Mason must have access to a ``pkg-config`` installation. An example of
-using the :mod:`LinearAlgebra` library that requires both BLAS and LAPACK:
+Mason allows for specification of external, non-Chapel dependencies through two
+mediums, ``Spack`` and ``pkg-config``. The following two sections document how to
+use ``mason external`` and ``mason system`` to interface with ``Spack`` and ``pkg-config``
+packages respectively.
+
+
+Using Spack Packages
+~~~~~~~~~~~~~~~~~~~~
+Mason users can interface with ``Spack``, a package manager geared towards high performance
+computing, through the ``mason external`` command. Though this integration, Mason users now have
+access to a large ecosystem of `packages <https://spack.readthedocs.io/en/latest/package_list.html#package-list>`_.
+Non-destructive installs, custom version and configurations, and simple package installation
+and uninstallation are a few of the features Mason gains through this integration.
+
+The following example uses the ``HDF5`` library which is used for high performance data I/O.
+The ``HDF5.chpl`` wrapper used in the example can be found in ``CHPL_HOME/modules/packages``.
+Before Mason, Chapel users were required to download and install the libraries themselves
+and use Make to include and use them in their projects. These requirements have been removed
+and now only a few Mason commands are required to include external dependencies such as ``HDF5``.
+
+
+First a Mason project is created using ``mason new masonHDF5`` and the ``HDF5.chpl`` library
+is placed within the ``src/`` folder of the project and renamed ``masonHDF5.chpl``.
+A few examples with ``.h5`` data are placed in the ``examples/`` directory so that
+we can check out our new Mason package in action. After these steps, the project directory
+hierarchy is as follows::
+
+
+    masonHDF5/
+      Mason.toml
+      Mason.lock
+      src/
+        masonHDF5.chpl
+      test/
+      example/
+        data/
+          sample_data.h5
+        hdf5Example.chpl
+
+However, at this point, we have the wrapped function calls to the ``HDF5`` library included in
+the project but not the ``HDF5`` actual library itself. To search for and install packages such
+as ``HDF5``, simply use ``mason external search <package>`` and ``mason external install <package>``.
+Mason uses the ``Spack`` package specification.
+
+.. code-block:: text
+
+   spec expression syntax:
+
+  package [constraints] [^dependency [constraints] ...]
+
+  package                           any package from 'spack list'
+
+  constraints:
+    versions:
+      @version                      single version
+      @min:max                      version range (inclusive)
+      @min:                         version <min> or higher
+      @:max                         up to version <max> (inclusive)
+
+    compilers:
+      %compiler                     build with <compiler>
+      %compiler@version             build with specific compiler version
+      %compiler@min:max             specific version range (see above)
+
+    variants:
+      +variant                      enable <variant>
+      -variant or ~variant          disable <variant>
+      variant=value                 set non-boolean <variant> to <value>
+      variant=value1,value2,value3  set multi-value <variant> values
+
+    architecture variants:
+      target=target                 specific <target> processor
+      os=operating_system           specific <operating_system>
+      platform=platform             linux, darwin, cray, bgq, etc.
+      arch=platform-os-target       shortcut for all three above
+
+    cross-compiling:
+      os=backend or os=be           build for compute node (backend)
+      os=frontend or os=fe          build for login node (frontend)
+
+    dependencies:
+      ^dependency [constraints]     specify constraints on dependencies
+
+  examples:
+      hdf5                          any hdf5 configuration
+      hdf5 @1.10.1                  hdf5 version 1.10.1
+      hdf5 @1.8:                    hdf5 1.8 or higher
+      hdf5 @1.8: %gcc               hdf5 1.8 or higher built with gcc
+      hdf5 +mpi                     hdf5 with mpi enabled
+      hdf5 ~mpi                     hdf5 with mpi disabled
+      hdf5 +mpi ^mpich              hdf5 with mpi, using mpich
+      hdf5 +mpi ^openmpi@1.7        hdf5 with mpi, using openmpi 1.7
+      boxlib dim=2                  boxlib built for 2 dimensions
+      libdwarf %intel ^libelf%gcc
+          libdwarf, built with intel compiler, linked to libelf built with gcc
+      mvapich2 %pgi fabrics=psm,mrail,sock
+          mvapich2, built with pgi compiler, with support for multiple fabrics
+
+
+So, to install ``HDF5`` version 1.10.1 built with gcc including a high level interface and without
+MPI, the following spec expression would be used::
+
+  mason external install hdf5@1.10.1%gcc+hl~mpi
+
+After the download, to ensure the package was downloaded, use ``mason external find`` which
+will list all installed external packages.
+
+The next step in creating the library is to add ``HDF5`` to our ``Mason.toml`` to inform Mason that
+we want the library included when our project is compiled. Use ``mason add --external hdf5@1.10.1%gcc``
+to add the external dependency to your ``Mason.toml`` without ever having to open up your editor.
+
+.. note:: Currently the name of the package, version, and compiler must all be included
+          in the value of the ``Mason.toml`` for external dependencies only. See ``Mason.toml``
+          below for details.
+
+``Mason.toml``
+
+.. code-block:: text
+
+   [brick]
+   name = "masonHDF5"
+   version = "0.1.0"
+   chplVersion = "1.18.0"
+   # linker flags for the library
+   compopts = "-lhdf5 -lhdf5_hl"
+
+   # must give name, version, compiler
+   [external]
+   hdf5 = "hdf5@1.10.1%clang"
+
+Now lets run our example. To check the name of all the examples available in your project use
+``mason run --example``. The output will represent whatever ``.chpl`` files are located in your
+``example/`` folder as follows::
+
+  $ mason run --example
+  --- available examples ---
+  --- hdf5Example.chpl
+  --------------------------
+
+Calling ``mason run --build --example hdf5Example.chpl`` will update the project's ``Mason.lock``
+and build and run ``hdf5Example.chpl``.
+
+When constructing the lock file (see below section), Mason will work with Spack to gather dependencies.
+In the case of ``HDF5``, at the time of this writing, ``zlib`` will be added to the lock file since the
+``HDF5`` Spack package depends on it. Any dependency a Spack package has will be handled in this manner.
+This highlights another great feature of the integartion. Mason can install and retrieve all dependencies
+necessary for any package from Spack without ever interfering with a previous package installation.
+
+Using System Packages
+~~~~~~~~~~~~~~~~~~~~~
+
+To use this feature of Mason users must have access to a ``pkg-config`` installation.
+The following is an example of using the :mod:`LinearAlgebra` package that requires
+both BLAS and LAPACK:
 
 ``Mason.toml``
 
@@ -328,7 +478,7 @@ using the :mod:`LinearAlgebra` library that requires both BLAS and LAPACK:
     compopts = "--ccflags -Wno-enum-conversion --ccflags -Wno-strict-prototypes"
 
     [dependencies]
-    
+
     [system]
     lapack = "3.8.0"
     openblas = "*"
@@ -378,7 +528,7 @@ To contribute a package to the mason-registry a chapel developer will need to ho
 project and submit a pull request to the mason-registry with the toml file pointing
 to their project. For a more detailed description follow the steps below.
 
-Steps: 
+Steps:
       1) Write a library or binary project in chapel using mason
       2) Host that project in a git repository. (e.g. GitHub)
       3) Create a tag of your package that corresponds to the version number prefixed with a 'v'. (e.g. v0.1.0)
@@ -389,7 +539,7 @@ Steps:
       8) Wait for mason-registry gatekeepers to approve the PR.
 
 Once your package is uploaded, maintain the integrity of your package, and please notify the
-chapel team if your package should be taken down. 
+chapel team if your package should be taken down.
 
 
 Local Registries
@@ -488,7 +638,7 @@ The format for all versions will be a.b.c.
   versions will be zeroed out. (ex. 1.13.1 -> 2.0.0)
 
 - The minor version must be advanced if and only if the update adds functionality to the API
-  while maintaining backward compatibility with the current major version. The bug fix 
+  while maintaining backward compatibility with the current major version. The bug fix
   version will be zeroed out. (ex. 1.13.1 -> 1.14.0)
 
 - The bug fix must be advanced for any update correcting functionality within a minor revision.
@@ -512,8 +662,8 @@ The Lock File
 =============
 
 The lock file ``Mason.lock`` is generated after running a ``mason update`` command. The user should
-never manually edit the lock file as it is intended to "lock" in the settings of a certain 
-project build iteration. ``Mason.lock`` is added by default to the .gitignore when a new project 
+never manually edit the lock file as it is intended to "lock" in the settings of a certain
+project build iteration. ``Mason.lock`` is added by default to the .gitignore when a new project
 is created. If your intention is to create a binary application package that does not need to
 be re-compiled by mason then take the ``Mason.lock`` out of your .gitignore. An example of
 a lock file is written below as if generated from the earlier example of a ``Mason.toml``:

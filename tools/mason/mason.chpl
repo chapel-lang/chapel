@@ -32,6 +32,8 @@ use MasonTest;
 use MasonRun;
 use FileSystem;
 use MasonSystem;
+use MasonExternal;
+
 
 /*
 
@@ -82,6 +84,7 @@ proc main(args: [] string) throws {
       when 'run' do masonRun(args);
       when 'search' do masonSearch(args);
       when 'system' do masonSystem(args);
+      when 'external' do masonExternal(args);
       when 'test' do masonTest(args);
       when 'env' do masonEnv(args);
       when 'doc' do masonDoc(args);

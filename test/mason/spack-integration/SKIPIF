@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+"""
+mason requires CHPL_COMM=none (local)
+This test should only run on the CentOS VM
+"""
+
+from __future__ import print_function
+from os import environ
+
+try:
+    print(environ['CHPL_COMM'] != 'none' or environ['CHPL_REGEXP'] != 're2'
+          or environ['HOSTNAME'] != 'chapel-centos7-02.americas.cray.com')
+except KeyError:
+    print(True)
+

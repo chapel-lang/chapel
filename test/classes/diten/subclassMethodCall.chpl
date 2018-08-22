@@ -14,13 +14,13 @@ record C2 {
 }
 
 class Sub1: Base {
-  proc method(c: C1) {
+  override proc method(c: C1) {
     c.foo();
   }
 }
 
 class Sub2: Base {
-  proc method(c: C2) {
+  override proc method(c: C2) {
     c.bar();
   }
 }

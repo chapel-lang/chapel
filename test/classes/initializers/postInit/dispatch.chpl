@@ -29,7 +29,7 @@ class E : C {
     writeln("In E.foo()");
   }
 
-  override proc baz() {
+  proc baz() {
     writeln("In E.baz()");
   }
 

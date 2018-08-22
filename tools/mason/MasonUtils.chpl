@@ -24,6 +24,7 @@ use Spawn;
 use FileSystem;
 use TOML;
 use Path;
+use MasonEnv;
 
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
@@ -80,23 +81,26 @@ proc stripExt(toStrip: string, ext: string) : string {
 
 
 /* Uses the Spawn module to create a subprocess */
-proc runCommand(cmd, quiet=false) : string {
+proc runCommand(cmd, quiet=false) : string throws {
   var ret : string;
+  try {
+    
+    var splitCmd = cmd.split();
+    var process = spawn(splitCmd, stdout=PIPE);
 
-  var splitCmd = cmd.split();
-  var process = spawn(splitCmd, stdout=PIPE);
-  process.wait();
-
-  for line in process.stdout.lines() {
-    ret += line;
-    if quiet == false {
-      write(line);
+    for line in process.stdout.lines() {
+      ret += line;
+      if quiet == false {
+        write(line);
+      }
     }
+    process.wait();
   }
-
+  catch {
+    throw new MasonError("Internal mason error");
+  }
   return ret;
 }
-
 
 /* Same as runCommand but for situations where an
    exit status is needed */
@@ -117,6 +121,58 @@ proc runWithStatus(command, show=true): int {
     return -1;
   }
 }
+
+
+/* uses spawnshell and the prefix to setup Spack before
+   calling the spack command. This also returns the stdout
+   of the spack call.
+   TODO: get to work with Spawn */
+proc getSpackResult(cmd, quiet=false) : string throws {
+  var ret : string;
+  try {
+
+
+    var prefix = "export SPACK_ROOT=" + MASON_HOME + "/spack" +
+    " && export PATH=$SPACK_ROOT/bin:$PATH" +
+    " && source $SPACK_ROOT/share/spack/setup-env.sh && ";
+    var splitCmd = prefix + cmd;
+    var process = spawnshell(splitCmd, stdout=PIPE);
+    
+    for line in process.stdout.lines() {
+      ret += line;
+      if quiet == false {
+        write(line);
+      }
+    }
+    process.wait();
+  }
+  catch {
+    throw new MasonError("Internal mason error");
+  }
+  return ret;
+}
+
+
+/* Sets up spack by prefixing command with spack env vars
+   Only returns the exit status of the command
+   TODO: get to work with Spawn */
+proc runSpackCommand(command) {
+
+  var prefix = "export SPACK_ROOT=" + MASON_HOME + "/spack" +
+    " && export PATH=$SPACK_ROOT/bin:$PATH" +
+    " && source $SPACK_ROOT/share/spack/setup-env.sh && ";
+
+  var cmd = (prefix + command);
+  var sub = spawnshell(cmd, stderr=PIPE);
+  sub.wait();
+
+  for line in sub.stderr.lines() {
+    write(line);
+  }
+
+  return sub.exit_status;
+}
+
 
 proc hasOptions(args : [] string, const opts : string ...) {
   var ret = false;
@@ -348,4 +404,14 @@ proc isIdentifier(name:string) {
   return ok;
 }
 
+
+/* Iterator to collect fields from a toml
+   TODO custom fields returned */
+iter allFields(tomlTbl: unmanaged Toml) {
+  for (k,v) in zip(tomlTbl.D, tomlTbl.A) {
+    if v.tag == fieldToml then
+      continue;
+    else yield(k,v);
+  }
+}
 

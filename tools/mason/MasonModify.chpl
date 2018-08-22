@@ -69,7 +69,7 @@ proc masonModify(args) throws {
   }
 }
 
-proc modifyToml(add: bool, dep: string, external: bool, system: bool,
+proc modifyToml(add: bool, spec: string, external: bool, system: bool,
                 projectHome: string, tf="Mason.toml") throws {
 
   const tomlPath = projectHome + "/" + tf;    
@@ -81,25 +81,25 @@ proc modifyToml(add: bool, dep: string, external: bool, system: bool,
     
     // Adding a dependency
     if add {
-      if dep.find("@") == 0 {
+      if spec.find("@") == 0 {
         throw new MasonError("Dependency formatted incorrectly.\nFormat: package@version");
       }
-      const split = dep.split('@');
+      const split = spec.split('@');
       const dependency = split[1];
       const version = split[2];
       checkDepName(dependency);
       checkVersion(version);
 
       if system && add {
-        writeln("Adding system dependency " + dependency + " version " + version);
+        writeln(" ".join("Adding system dependency", dependency, "version", version));
         newToml = masonSystemAdd(toml, dependency, version);
       }
       else if external && add {
-        writeln("Adding external dependency " + dependency + " version " + version);
-        newToml = masonExternalAdd(toml, dependency, version);
+        writeln(" ".join("Adding external dependency with spec", spec));
+        newToml = masonExternalAdd(toml, dependency, spec);
       }
       else {
-        writeln("Adding Mason dependency " + dependency + " version " + version);
+        writeln(" ".join("Adding Mason dependency", dependency, "version", version));
         newToml = masonAdd(toml, dependency, version);
       }    
     }
@@ -107,11 +107,11 @@ proc modifyToml(add: bool, dep: string, external: bool, system: bool,
     // Removing a dependency
     else {
       var depName: string;
-      if dep.find('@') != 0 {
-        const split = dep.split('@');
+      if spec.find('@') != 0 {
+        const split = spec.split('@');
         depName = split[1];
       }
-      else depName = dep;
+      else depName = spec;
       const dependency = depName;
       checkDepName(depName);
       
@@ -209,20 +209,20 @@ private proc masonSystemRemove(toml: unmanaged Toml, toRm: string) throws {
 }
 
 /* Add an external dependency to Mason.toml */
-private proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
+private proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, spec: string) throws {
   if toml.pathExists("external") {
     if toml.pathExists("external." + toAdd) {
       throw new MasonError("An external dependency by that name already exists in Mason.toml");
     }
     else {
-      toml["external"][toAdd] = version;
+      toml["external"][toAdd] = spec;
     }
   }
   else {
     var exdom: domain(string);
     var exdeps: [exdom] unmanaged Toml;
     toml["external"] = exdeps;
-    toml["external"][toAdd] = version;
+    toml["external"][toAdd] = spec;
   }
   return toml;
 }
@@ -253,6 +253,7 @@ private proc generateToml(toml: borrowed Toml, tomlPath: string) {
 }
 
 private proc checkVersion(version: string) throws {
+
   const pattern = compile("([0-9].[0-9].[0-9][a-zA-Z]?)");
   if !pattern.match(version) {
     throw new MasonError("Version formatting incorrect. ex. 1.2.3");

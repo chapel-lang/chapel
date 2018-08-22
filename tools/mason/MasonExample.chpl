@@ -128,8 +128,7 @@ private proc removeExampleBinary(projectHome: string, exampleName: string) {
 
   const exampleDir = joinPath(projectHome, "target/example/");
   if isDir(exampleDir) {
-    const exampleBin = stripExt(exampleName, ".chpl");
-    const exampleBinPath = joinPath(exampleDir, exampleBin);
+    const exampleBinPath = joinPath(exampleDir, exampleName);
     if isFile(exampleBinPath) {
       remove(exampleBinPath);
     }
@@ -203,7 +202,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
           if exampleModified(projectHome, projectName, example) || force { 
 
             // remove old binary
-            removeExampleBinary(projectHome, example);
+            removeExampleBinary(projectHome, exampleName);
 
             // get the string of dependencies for compilation
             // also names example as --main-module

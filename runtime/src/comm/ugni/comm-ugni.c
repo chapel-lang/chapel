@@ -120,20 +120,9 @@ static chpl_bool debug_exiting = false;
 
 static pthread_t proc_thread_id;
 
-static __thread uint32_t thread_idx      = ~(uint32_t) 0;
-static atomic_uint_least32_t next_thread_idx;
-#define _DBG_NEXT_THREAD_IDX() \
-        atomic_fetch_add_uint_least32_t(&next_thread_idx, 1)
-
 #define _DBG_P(dbg_do, f, ...)                                          \
         do {                                                            \
           if (dbg_do) {                                                 \
-            if (thread_idx == ~(uint32_t) 0) {                          \
-              thread_idx = _DBG_NEXT_THREAD_IDX();                      \
-              fprintf(debug_file,                                       \
-                      "DBG: %s:%d (%d): thread_id %" PRIu32 "\n",       \
-                      __FILE__, __LINE__, chpl_nodeID, thread_idx);     \
-            }                                                           \
             fprintf(debug_file, "DBG: %s:%d" f "\n",                    \
                     __FILE__, __LINE__, ## __VA_ARGS__);                \
           }                                                             \
@@ -147,12 +136,12 @@ static atomic_uint_least32_t next_thread_idx;
         _DBG_P(_DBG_DO(flg),                                            \
                " (%d/%s/%d): " f,                                       \
                chpl_nodeID, task_id(cd != NULL && cd->firmly_bound),    \
-               (int) thread_idx, ## __VA_ARGS__)
+               (int) my_thread_idx(), ## __VA_ARGS__)
 #define DBG_P_LPS(flg, f, li, cdi, rbi, seq, ...)                       \
         _DBG_P(_DBG_DO(flg),                                            \
                " (%d/%s/%d) %d/%d/%d <%" PRIu64 ">: " f,                \
                chpl_nodeID, task_id(cd != NULL && cd->firmly_bound),    \
-               (int) thread_idx,                                        \
+               (int) my_thread_idx(),                                   \
                (int) li, cdi, rbi, seq, ## __VA_ARGS__)
 
 #define CHPL_INTERNAL_ERROR(msg)                                        \
@@ -448,6 +437,20 @@ static inline void perfstats_add_post(gni_post_descriptor_t* post_desc) {
                    what, (int) rc, _cqeBuf);                            \
           CHPL_INTERNAL_ERROR(_gcefBuf);                                \
         } while (0)
+
+
+//
+// Threads.
+//
+static atomic_int_least64_t next_thread_idx;
+
+static inline
+int_least64_t my_thread_idx(void) {
+  static __thread int_least64_t tidx = -1;
+  if (tidx == -1)
+    tidx = atomic_fetch_add_int_least64_t(&next_thread_idx, 1);
+  return tidx;
+}
 
 
 //
@@ -850,47 +853,33 @@ static gni_mem_handle_t* rf_mdh_map;    // all locales' remote fork space mdhs
 // Blocking remote forks need a "remote fork done" (rf_done) flag, for
 // the remote side to set when it completes.  Such flags have to be in
 // memory registered with the NIC so that the remote side can PUT to
-// them directly.  When the initiating side's stack is in registered
-// memory we can use an rf_done flag local to the fork function.  But
-// if not, we allocate an rf_done flag out of these pools, which we
-// have arranged to be always in registered memory.
+// them directly.  We allocate rf_done flags out of these pools, which
+// we have arranged to be always in registered memory.
 //
 // To ensure that these are in registered memory we allocate them up
 // front, with a fixed size, through the registered-memory manager.
-// There are RF_DONE_NUM_POOLS pools, with RF_DONE_NUM_PER_POOL in
-// each one.  The requirements/constraints on these values are as
-// follows.
-//   - RF_DONE_NUM_POOLS limits the allocate/free concurrency, so it
-//     should be at least as large as the number of hardware threads
-//     in use.
-//   - We emulate an unsigned mod by RF_DONE_NUM_POOLS by means of
-//     & (RF_DONE_NUM_POOLS - 1), so that has to be a power of 2.
-//   - The code does divides and mods with RF_DONE_NUM_PER_POOL, so
-//     for performance that should be a power of 2.
+// There are RF_DONE_NUM_PER_THREAD * (chpl_task_getMaxPar()+1) of
+// them.  The only requirement/constraint this value is:
 //   - It's possible (though highly unlikely) that every task in the
 //     program could need one of these at the same time, and we can't
 //     get more dynamically, so we potentially need a lot of them: the
-//     product of RF_DONE_NUM_POOLS and RF_DONE_NUM_PER_POOL should be
-//     "large".  Fortunately they're small, so over-provisioning isn't
-//     particularly costly.
+//     value of RF_DONE_NUM_PER_THREAD should be "large" with respect
+//     to the likely maximum number of tasks with active on-stmts.
+//     Fortunately these are small, so over-provisioning isn't very
+//     costly.
 //
-#define RF_DONE_NUM_POOLS 128
-#define RF_DONE_NUM_PER_POOL 128
+#define RF_DONE_NUM_PER_THREAD 1024
 
-typedef mpool_idx_base_t rf_done_t;
-typedef mpool_idx_base_t rf_done_pool_t;
+typedef int64_t rf_done_t;
 
-static rf_done_pool_t (*rf_done_pool)[RF_DONE_NUM_PER_POOL];
-static mpool_idx_t rf_done_pool_head[RF_DONE_NUM_POOLS];
-static atomic_bool rf_done_pool_lock[RF_DONE_NUM_POOLS];
+static int rf_done_num;
+static rf_done_t* rf_done_pool;
+static __thread int rf_done_private_prt;
+static __thread int rf_done_prt_lo = -1;
+static __thread int rf_done_prt_hi = -1;
 
-static mpool_idx_t rf_done_pool_i;
+static atomic_bool* rf_done_pool_lock;
 
-static inline
-mpool_idx_base_t rf_done_next_pool_i(void) 
-{
-  return mpool_idx_finc(&rf_done_pool_i) & (RF_DONE_NUM_POOLS - 1);
-}
 
 //
 // Each locale has an array of spaces for fork requests targeted to
@@ -1552,7 +1541,6 @@ static void dbg_init(void)
 {
   const char* ev;
 
-  atomic_init_uint_least32_t(&next_thread_idx, 0);
   proc_thread_id = pthread_self();
 
   debug_flag = (uint64_t) chpl_env_rt_get_int("COMM_UGNI_DEBUG", 0);
@@ -1777,6 +1765,8 @@ int32_t chpl_comm_getMaxThreads(void)
 
 void chpl_comm_init(int *argc_p, char ***argv_p)
 {
+  atomic_init_int_least64_t(&next_thread_idx, 0);
+
   // Sanity check: a maximal small call fits into a fork_t
   assert(sizeof(fork_small_call_info_t)+MAX_SMALL_CALL_PAYLOAD
          <= sizeof(fork_t));
@@ -4562,12 +4552,6 @@ static
 void rf_done_pre_init(void)
 {
   //
-  // We overload rf_done indicators as pool "next" links, so the
-  // latter have to fit in the former.
-  //
-  assert(sizeof(rf_done_pool_t) <= sizeof(rf_done_t));
-
-  //
   // The fork request buffers and their is-free flags aren't part of
   // the rf_done flags as such, but both have to do with remote forks
   // and the former have to be in NIC-registered memory just as the
@@ -4579,42 +4563,50 @@ void rf_done_pre_init(void)
   chpl_comm_mem_reg_add_request(FORK_REQ_BUFS_PER_LOCALE
                                 * sizeof(fork_reqs_free[0]));
 
-  chpl_comm_mem_reg_add_request(RF_DONE_NUM_POOLS
-                                * sizeof(rf_done_pool[0]));
+  rf_done_num = RF_DONE_NUM_PER_THREAD * (chpl_task_getMaxPar() + 1);
+  chpl_comm_mem_reg_add_request(rf_done_num * sizeof(rf_done_pool[0]));
 }
 
 
 static
 void rf_done_init(void)
 {
-  int i, j;
+  int i;
 
-  if (RF_DONE_NUM_POOLS * RF_DONE_NUM_PER_POOL
-      < comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD)
-    chpl_warning("(RF_DONE_NUM_POOLS * RF_DONE_NUM_PER_POOL "
-                 "< comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD) "
+  if (rf_done_num < comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD)
+    chpl_warning("(RF_DONE_NUM < comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD) "
                  "may lead to hangs",
                  0, 0);
 
   // Must be directly communicable without proxy.
-  rf_done_pool = (rf_done_pool_t (*)[RF_DONE_NUM_PER_POOL])
-                 chpl_comm_mem_reg_allocMany(RF_DONE_NUM_POOLS,
+  rf_done_pool = (rf_done_t*)
+                 chpl_comm_mem_reg_allocMany(rf_done_num,
                                              sizeof(rf_done_pool[0]),
                                              CHPL_RT_MD_COMM_PER_LOC_INFO,
                                              0, 0);
 
-  for (i = 0; i < RF_DONE_NUM_POOLS; i++) {
-    for (j = 0; j < RF_DONE_NUM_PER_POOL - 1; j++) {
-      rf_done_pool[i][j] = j + 1;
-    }
-    rf_done_pool[i][j] = -1;
+  for (i = 0; i < rf_done_num; i++) {
+    rf_done_pool[i] = -1;
+  }
+}
 
-    mpool_idx_init(&rf_done_pool_head[i], 0);
 
+static
+pthread_once_t rf_done_init_locks_once = PTHREAD_ONCE_INIT;
+
+static
+void rf_done_init_locks(void)
+{
+  const int num_locks = rf_done_prt_hi - rf_done_prt_lo;
+
+  rf_done_pool_lock = ((atomic_bool*)
+                       chpl_mem_allocMany(num_locks,
+                                          sizeof(rf_done_pool_lock[0]),
+                                          CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                          0, 0));
+  for (int i = 0; i < num_locks; i++) {
     atomic_init_bool(&rf_done_pool_lock[i], false);
   }
-
-  mpool_idx_init(&rf_done_pool_i, 0);
 }
 
 
@@ -4622,40 +4614,59 @@ static
 inline
 rf_done_t* rf_done_alloc(void)
 {
-  int pool_tries;
-  int i, j;
-  rf_done_pool_t* rf_done_p;
+  static __thread int last_i = -1;
 
-  //
-  // Cycle through the pools and find one that contains a free rf_done
-  // flag we can use.  We give up when we've looked at all the pools
-  // twice without finding anything.
-  //
-  // We need a termination test because we can actually run out of
-  // these, if for example RF_DONE_NUM_POOLS*RF_DONE_NUM_IN_POOL tasks
-  // do remote on-stmts all at once, and each of those tries to do
-  // another on-stmt.  If we ever see that happen in a program that
-  // isn't specifically designed to achieve it, we'll have to revisit
-  // how we've approached this.
-  //
-  for (pool_tries = 0, i = rf_done_next_pool_i(), rf_done_p = NULL;
-       pool_tries < 2 * RF_DONE_NUM_POOLS && rf_done_p == NULL;
-       pool_tries++, i = (i + 1) % RF_DONE_NUM_POOLS) {
-    if (mpool_idx_load(&rf_done_pool_head[i]) >= 0 &&
-        !atomic_exchange_bool(&rf_done_pool_lock[i], true)) {
-      if ((j = mpool_idx_load(&rf_done_pool_head[i])) >= 0) {
-        rf_done_p = &rf_done_pool[i][j];
-        mpool_idx_store(&rf_done_pool_head[i], *rf_done_p);
-      }
+  if (rf_done_prt_lo == -1) {
+    const int nPrts = chpl_task_getMaxPar() + 1;
+    const int tidx = my_thread_idx();
+    int prt;
 
-      atomic_store_bool(&rf_done_pool_lock[i], false);
+    rf_done_private_prt = 1;
+    if ((prt = tidx) >= nPrts) {
+      prt = nPrts - 1;
+      rf_done_private_prt = 0;
+    }
+
+    rf_done_prt_lo = prt * RF_DONE_NUM_PER_THREAD;
+    rf_done_prt_hi = rf_done_prt_lo + RF_DONE_NUM_PER_THREAD - 1;
+    last_i = rf_done_prt_lo;
+
+    if (!rf_done_private_prt) {
+      pthread_once(&rf_done_init_locks_once, rf_done_init_locks);
     }
   }
 
-  if (rf_done_p == NULL)
-    CHPL_INTERNAL_ERROR("rf_done_pool empty");
+  //
+  // Cycle through our partition of the pools and find one that contains
+  // a free rf_done flag we can use.
+  //
+  // We don't expect to run out of these in any reasonable program.  If
+  // we ever do, we'll have to revisit how we've approached this.
+  //
+  int i = last_i;
 
-  return (rf_done_t*) rf_done_p;
+  if (rf_done_private_prt) {
+    do {
+      if (++i > rf_done_prt_hi) {
+        i = rf_done_prt_lo;
+        if (i == last_i)
+          CHPL_INTERNAL_ERROR("rf_done_pool empty");
+      }
+    } while (rf_done_pool[i] != -1);
+  } else {
+    do {
+      if (++i > rf_done_prt_hi) {
+        i = rf_done_prt_lo;
+        if (i == last_i)
+          CHPL_INTERNAL_ERROR("rf_done_pool empty");
+      }
+    } while (atomic_exchange_bool(&rf_done_pool_lock[i - rf_done_prt_lo],
+                                  true));
+  }
+
+  last_i = i;
+
+  return &rf_done_pool[i];
 }
 
 
@@ -4663,17 +4674,11 @@ static
 inline
 void rf_done_free(rf_done_t* rf_done_p)
 {
-  rf_done_pool_t* rfdpp = (rf_done_pool_t*) rf_done_p;
-  int i = (rfdpp - (rf_done_pool_t*) rf_done_pool) / RF_DONE_NUM_PER_POOL;
-  int j = (rfdpp - (rf_done_pool_t*) rf_done_pool) % RF_DONE_NUM_PER_POOL;
-
-  //
-  // Add this flag back to its pool.
-  //
-  while (atomic_exchange_bool(&rf_done_pool_lock[i], true))
-    ;
-  rf_done_pool[i][j] = mpool_idx_exchange(&rf_done_pool_head[i], j);
-  atomic_store_bool(&rf_done_pool_lock[i], false);
+  const int i = rf_done_p - &rf_done_pool[0];
+  if (rf_done_private_prt)
+    rf_done_pool[i] = -1;
+  else
+    atomic_store_bool(&rf_done_pool_lock[i - rf_done_prt_lo], false);
 }
 
 
@@ -6837,6 +6842,27 @@ int amo_cmd_2_nic_op(fork_amo_cmd_t cmd, int fetching)
   return nic_cmd;
 }
 
+// Sanity checks on amo operations. Ensure valid size and alignment and that
+// the remote memory region is registered
+static
+inline
+void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
+  if (size == 4) {
+    if (!IS_ALIGNED_32(VP_TO_UI64(object)))
+      CHPL_INTERNAL_ERROR("remote AMO object must be 4-byte aligned");
+  } else if (size == 8) {
+    if (!IS_ALIGNED_64(VP_TO_UI64(object)))
+      CHPL_INTERNAL_ERROR("remote AMO object must be 8-byte aligned");
+  } else {
+    CHPL_INTERNAL_ERROR("unexpected AMO size");
+  }
+
+  if (remote_mr == NULL)
+    CHPL_INTERNAL_ERROR("do_nic_amo(): "
+                        "remote address is not NIC-registered");
+}
+
+
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 #define MAX_BUFF_AMO_THREADS 1024
 static gni_post_descriptor_t* amo_pdc[MAX_BUFF_AMO_THREADS];
@@ -6915,9 +6941,8 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     atomic_store_bool(&amo_init_lock, false);
   }
 
-  if (remote_mr == NULL)
-    CHPL_INTERNAL_ERROR("do_nic_amo(): "
-                        "remote address is not NIC-registered");
+  check_nic_amo(size, object, remote_mr);
+  PERFSTATS_INC(amo_cnt);
 
   while (atomic_exchange_bool(&lock, true)) { local_yield(); }
 
@@ -6935,7 +6960,8 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     post_desc.remote_mem_hndl = remote_mr->mdh;
     post_desc.length          = size;
     post_desc.amo_cmd         = cmd;
-    post_desc.first_operand = *(uint64_t*) opnd1;
+    post_desc.first_operand   = size == 4 ? *(uint32_t*) opnd1:
+                                            *(uint64_t*) opnd1;
   } else {
     if (vi == 0)
       post_desc.next_descr = &pdc[0];
@@ -6946,14 +6972,16 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     pdc[vi].remote_mem_hndl = remote_mr->mdh;
     pdc[vi].length          = size;
     pdc[vi].amo_cmd         = cmd;
-    pdc[vi].first_operand = *(uint64_t*) opnd1;
+    pdc[vi].first_operand   = size == 4 ? *(uint32_t*) opnd1:
+                                          *(uint64_t*) opnd1;
+
   }
   node_v[vi+1] = locale;
   vi++;
+
   //
   // Initiate the transaction and wait for it to complete.
   //
-  PERFSTATS_INC(amo_cnt);
   if (vi == MAX_CHAINED_AMO_LEN-1) {
     post_fma_ct_and_wait(node_v, &post_desc);
     vi = -1;
@@ -6974,20 +7002,8 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
 {
   gni_post_descriptor_t post_desc;
 
-  if (size == 4) {
-    if (!IS_ALIGNED_32(VP_TO_UI64(object)))
-      CHPL_INTERNAL_ERROR("remote AMO object must be 4-byte aligned");
-  }
-  else if (size == 8) {
-    if (!IS_ALIGNED_64(VP_TO_UI64(object)))
-      CHPL_INTERNAL_ERROR("remote AMO object must be 8-byte aligned");
-  }
-  else
-    CHPL_INTERNAL_ERROR("unexpected AMO size");
-
-  if (remote_mr == NULL)
-    CHPL_INTERNAL_ERROR("do_nic_amo(): "
-                        "remote address is not NIC-registered");
+  check_nic_amo(size, object, remote_mr);
+  PERFSTATS_INC(amo_cnt);
 
   //
   // Fill in the POST descriptor.
@@ -6997,25 +7013,16 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
   post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
   post_desc.rdma_mode       = 0;
   post_desc.src_cq_hndl     = 0;
-
   post_desc.remote_addr     = (uint64_t) (intptr_t) object;
   post_desc.remote_mem_hndl = remote_mr->mdh;
   post_desc.length          = size;
-
   post_desc.amo_cmd         = cmd;
-
-  if (size == 4) {
-    post_desc.first_operand = *(uint32_t*) opnd1;
-  }
-  else {
-    post_desc.first_operand = *(uint64_t*) opnd1;
-  }
+  post_desc.first_operand   = size == 4 ? *(uint32_t*) opnd1:
+                                          *(uint64_t*) opnd1;
 
   //
   // Initiate the transaction and wait for it to complete.
   //
-  PERFSTATS_INC(amo_cnt);
-
   post_fma_and_wait_amo(locale, &post_desc);
 }
 
@@ -7031,16 +7038,8 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   fork_amo_data_t       tmp_result;
   gni_post_descriptor_t post_desc;
 
-  if (size == 4) {
-    if (!IS_ALIGNED_32(VP_TO_UI64(object)))
-      CHPL_INTERNAL_ERROR("remote AMO object must be 4-byte aligned");
-  }
-  else if (size == 8) {
-    if (!IS_ALIGNED_64(VP_TO_UI64(object)))
-      CHPL_INTERNAL_ERROR("remote AMO object must be 8-byte aligned");
-  }
-  else
-    CHPL_INTERNAL_ERROR("unexpected AMO size");
+  check_nic_amo(size, object, remote_mr);
+  PERFSTATS_INC(amo_cnt);
 
   //
   // Make sure that, if we need a result, it is in memory known to the
@@ -7063,35 +7062,27 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
     }
   }
 
-  if (remote_mr == NULL)
-    CHPL_INTERNAL_ERROR("do_nic_amo(): "
-                        "remote address is not NIC-registered");
-
   //
   // Fill in the POST descriptor.
   //
-  post_desc.type            = GNI_POST_AMO;
-  post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
-  post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
-  post_desc.rdma_mode       = 0;
-  post_desc.src_cq_hndl     = 0;
-
-  post_desc.local_addr      = (uint64_t) (intptr_t) p_result;
+  post_desc.type               = GNI_POST_AMO;
+  post_desc.cq_mode            = GNI_CQMODE_GLOBAL_EVENT;
+  post_desc.dlvr_mode          = GNI_DLVMODE_PERFORMANCE;
+  post_desc.rdma_mode          = 0;
+  post_desc.src_cq_hndl        = 0;
+  post_desc.local_addr         = (uint64_t) (intptr_t) p_result;
   if (p_result != NULL)
-    post_desc.local_mem_hndl = local_mr->mdh;
-  post_desc.remote_addr     = (uint64_t) (intptr_t) object;
-  post_desc.remote_mem_hndl = remote_mr->mdh;
-  post_desc.length          = size;
-
-  post_desc.amo_cmd         = cmd;
-
+    post_desc.local_mem_hndl   = local_mr->mdh;
+  post_desc.remote_addr        = (uint64_t) (intptr_t) object;
+  post_desc.remote_mem_hndl    = remote_mr->mdh;
+  post_desc.length             = size;
+  post_desc.amo_cmd            = cmd;
   if (size == 4) {
-    post_desc.first_operand = *(uint32_t*) opnd1;
+    post_desc.first_operand    = *(uint32_t*) opnd1;
     if (opnd2 != NULL)
       post_desc.second_operand = *(uint32_t*) opnd2;
-  }
-  else {
-    post_desc.first_operand = *(uint64_t*) opnd1;
+  } else {
+    post_desc.first_operand    = *(uint64_t*) opnd1;
     if (opnd2 != NULL)
       post_desc.second_operand = *(uint64_t*) opnd2;
   }
@@ -7099,8 +7090,6 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   //
   // Initiate the transaction and wait for it to complete.
   //
-  PERFSTATS_INC(amo_cnt);
-
   post_fma_and_wait(locale, &post_desc, true);
 
   if (p_result != result) {
