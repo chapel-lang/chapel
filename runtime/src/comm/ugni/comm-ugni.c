@@ -6988,7 +6988,31 @@ void do_remote_amo_V(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
   // This GNI is too old to support chained transactions. Just do
   // non-blocking operations instead
   //
+
+  cq_cnt_t free_cq;
+
+  // acquire a cd and mark it as firmly bound so it's not released
+  acquire_comm_dom();
+  cd->firmly_bound = true;
+
+  // calculate how many free cq entries there are and block up the work into
+  // chunks so that we won't run out of cq entries.
+  free_cq = cd->cq_cnt_max - CQ_CNT_LOAD(cd);
+  while (v_len > free_cq) {
+    do_remote_amo_nb(free_cq, opnd1_v, locale_v, object_v, size_v, cmd_v, remote_mr_v);
+    v_len       -= free_cq;
+    opnd1_v     += free_cq;
+    locale_v    += free_cq;
+    object_v    += free_cq;
+    size_v      += free_cq;
+    cmd_v       += free_cq;
+    remote_mr_v += free_cq;
+  }
   do_remote_amo_nb(v_len, opnd1_v, locale_v, object_v, size_v, cmd_v, remote_mr_v);
+
+  // release the cd
+  cd->firmly_bound = false;
+  release_comm_dom();
 
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 }
