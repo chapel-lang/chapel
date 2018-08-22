@@ -6888,6 +6888,47 @@ void buff_amo_init(void) {
   atomic_init_uint_least32_t(&amo_thread_counter, 0);
 }
 
+static
+void do_remote_amo_nb(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
+                      void** object_v, size_t* size_v,
+                      gni_fma_cmd_type_t* cmd_v, mem_region_t** remote_mr_v) {
+
+  gni_post_descriptor_t post_desc_v[MAX_CHAINED_AMO_LEN];
+  atomic_bool post_done_v[MAX_CHAINED_AMO_LEN];
+  int cdi_v[MAX_CHAINED_AMO_LEN];
+  int vi;
+
+  for (vi=0; vi<v_len; vi++) {
+    // build up the post descriptor
+    post_desc_v[vi].type            = GNI_POST_AMO;
+    post_desc_v[vi].cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
+    post_desc_v[vi].dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
+    post_desc_v[vi].rdma_mode       = 0;
+    post_desc_v[vi].src_cq_hndl     = 0;
+    post_desc_v[vi].remote_addr     = (uint64_t) (intptr_t) object_v[vi];
+    post_desc_v[vi].remote_mem_hndl = remote_mr_v[vi]->mdh;
+    post_desc_v[vi].length          = size_v[vi];
+    post_desc_v[vi].amo_cmd         = cmd_v[vi];
+    post_desc_v[vi].first_operand   = size_v[vi] == 4 ? *(uint32_t*) opnd1_v[vi]:
+                                                        *(uint64_t*) opnd1_v[vi];
+
+    atomic_init_bool(&post_done_v[vi], false);
+    post_desc_v[vi].post_id = (uint64_t) (intptr_t) &post_done_v[vi];
+
+    // initiate the transaction
+    cdi_v[vi] = post_fma(locale_v[vi], &post_desc_v[vi]);
+  }
+
+  // Wait for all the transactions to complete
+  for (vi=0; vi<v_len; vi++) {
+    consume_all_outstanding_cq_events(cdi_v[vi]);
+    while (!atomic_load_explicit_bool(&post_done_v[vi], memory_order_acquire)) {
+      local_yield();
+      consume_all_outstanding_cq_events(cdi_v[vi]);
+    }
+    CQ_CNT_DEC(&comm_doms[cdi_v[vi]]);
+  }
+}
 
 static
 void do_remote_amo_V(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
@@ -6944,44 +6985,10 @@ void do_remote_amo_V(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
 #else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 
   //
-  // This GNI is too old to support chained transactions.  Just do
+  // This GNI is too old to support chained transactions. Just do
   // non-blocking operations instead
   //
-  gni_post_descriptor_t post_desc_v[MAX_CHAINED_AMO_LEN];
-  atomic_bool post_done_v[MAX_CHAINED_AMO_LEN];
-  int cdi_v[MAX_CHAINED_AMO_LEN];
-  int vi;
-
-  for (vi=0; vi<v_len; vi++) {
-    // build up the post descriptor
-    post_desc_v[vi].type            = GNI_POST_AMO;
-    post_desc_v[vi].cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
-    post_desc_v[vi].dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
-    post_desc_v[vi].rdma_mode       = 0;
-    post_desc_v[vi].src_cq_hndl     = 0;
-    post_desc_v[vi].remote_addr     = (uint64_t) (intptr_t) object_v[vi];
-    post_desc_v[vi].remote_mem_hndl = remote_mr_v[vi]->mdh;
-    post_desc_v[vi].length          = size_v[vi];
-    post_desc_v[vi].amo_cmd         = cmd_v[vi];
-    post_desc_v[vi].first_operand   = size_v[vi] == 4 ? *(uint32_t*) opnd1_v[vi]:
-                                                        *(uint64_t*) opnd1_v[vi];
-
-    atomic_init_bool(&post_done_v[vi], false);
-    post_desc_v[vi].post_id = (uint64_t) (intptr_t) &post_done_v[vi];
-
-    // initiate the transaction
-    cdi_v[vi] = post_fma(locale_v[vi], &post_desc_v[vi]);
-  }
-
-  // Wait for all the transactions to complete
-  for (vi=0; vi<v_len; vi++) {
-    consume_all_outstanding_cq_events(cdi_v[vi]);
-    while (!atomic_load_explicit_bool(&post_done_v[vi], memory_order_acquire)) {
-      local_yield();
-      consume_all_outstanding_cq_events(cdi_v[vi]);
-    }
-    CQ_CNT_DEC(&comm_doms[cdi_v[vi]]);
-  }
+  do_remote_amo_nb(v_len, opnd1_v, locale_v, object_v, size_v, cmd_v, remote_mr_v);
 
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 }
