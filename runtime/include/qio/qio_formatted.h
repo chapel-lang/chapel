@@ -514,10 +514,13 @@ int qio_nbytes_char(int32_t chr)
     }
   } else {
 #ifdef HAS_WCTYPE_H
+    char buf[MB_CUR_MAX];
     mbstate_t ps;
     size_t got;
     memset(&ps, 0, sizeof(mbstate_t));
-    got = wcrtomb(NULL, chr, &ps);
+    // The buf argument is never used, but if we put NULL there,
+    // wcrtomb ignores chr and assumes L'\0' per the C standard.
+    got = wcrtomb(buf, chr, &ps);
     if( got == (size_t) -1 ) {
       return 0;
     } else {
