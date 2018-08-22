@@ -6864,40 +6864,111 @@ void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
 
 
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+// Max number of threads that can do buffered atomics
 #define MAX_BUFF_AMO_THREADS 1024
-static gni_post_descriptor_t* amo_pdc[MAX_BUFF_AMO_THREADS];
-static c_nodeid_t* amo_node_v[MAX_BUFF_AMO_THREADS];
-static int64_t* amo_vi_v[MAX_BUFF_AMO_THREADS];
-static atomic_bool* amo_lock_v[MAX_BUFF_AMO_THREADS];
-static atomic_bool amo_init_lock = false;
-static atomic_uint_least32_t amo_pdc_sz = 0;
+
+// pointers to thread local buffered AMO indexes and locks
+static int* amo_vi_p[MAX_BUFF_AMO_THREADS];
+static atomic_bool* amo_lock_p[MAX_BUFF_AMO_THREADS];
+
+// pointers to thread local buffered AMO argument buffers
+static void** amo_opnd1_vp[MAX_BUFF_AMO_THREADS];
+static c_nodeid_t* amo_locale_vp[MAX_BUFF_AMO_THREADS];
+static void** amo_object_vp[MAX_BUFF_AMO_THREADS];
+static size_t* amo_size_vp[MAX_BUFF_AMO_THREADS];
+static gni_fma_cmd_type_t* amo_cmd_vp[MAX_BUFF_AMO_THREADS];
+static mem_region_t** amo_remote_mr_vp[MAX_BUFF_AMO_THREADS];
+
+// buffered AMO initialization lock and thread counter
+static atomic_bool amo_init_lock;
+static atomic_uint_least32_t amo_thread_counter;
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 
 static
 void buff_amo_init(void) {
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
   atomic_init_bool(&amo_init_lock, false);
-  atomic_init_uint_least32_t(&amo_pdc_sz, 0);
+  atomic_init_uint_least32_t(&amo_thread_counter, 0);
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 }
 
+
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+static
+void do_remote_amo_V(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
+                     void** object_v, size_t* size_v,
+                     gni_fma_cmd_type_t* cmd_v, mem_region_t** remote_mr_v) {
+  gni_post_descriptor_t post_desc;
+  gni_ct_amo_post_descriptor_t pdc[MAX_CHAINED_AMO_LEN - 1];
+  int vi, ci;
+
+  if (v_len <= 0)
+    return;
+
+  //
+  // Build up the base post descriptor
+  //
+  post_desc.next_descr      = NULL;
+  post_desc.type            = GNI_POST_AMO;
+  post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
+  post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
+  post_desc.rdma_mode       = 0;
+  post_desc.src_cq_hndl     = 0;
+  post_desc.remote_addr     = (uint64_t) (intptr_t) object_v[0];
+  post_desc.remote_mem_hndl = remote_mr_v[0]->mdh;
+  post_desc.length          = size_v[0];
+  post_desc.amo_cmd         = cmd_v[0];
+  post_desc.first_operand   = size_v[0] == 4 ? *(uint32_t*) opnd1_v[0]:
+                                               *(uint64_t*) opnd1_v[0];
+
+  //
+  // Build up the chain of descriptors
+  //
+  for (vi=1, ci=0; vi<v_len; vi++, ci++) {
+    if (ci == 0)
+      post_desc.next_descr  = &pdc[0];
+    else
+      pdc[ci-1].next_descr  = &pdc[ci];
+    pdc[ci].next_descr      = NULL;
+    pdc[ci].remote_addr     = (uint64_t) (intptr_t) object_v[vi];
+    pdc[ci].remote_mem_hndl = remote_mr_v[vi]->mdh;
+    pdc[ci].length          = size_v[vi];
+    pdc[ci].amo_cmd         = cmd_v[vi];
+    pdc[ci].first_operand   = size_v[vi] == 4 ? *(uint32_t*) opnd1_v[vi]:
+                                                *(uint64_t*) opnd1_v[vi];
+  }
+
+  //
+  // Initiate the transaction and wait for it to complete.
+  //
+  post_fma_ct_and_wait(locale_v, &post_desc);
+}
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+
+// for each thread that has done buffered atomics, grab the lock for that
+// thread and if there are built up operations flush them and reset the index
 void chpl_comm_atomic_buff_flush() {
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
   uint32_t sz, i;
-   sz = atomic_load_uint_least32_t(&amo_pdc_sz);
-   for(i=0; i<sz; i++) {
-    if (*amo_vi_v[i] != -1) {
-      while (atomic_exchange_bool(amo_lock_v[i], true)) { local_yield(); }
-      if (*amo_vi_v[i] != -1) {
-        post_fma_ct_and_wait(amo_node_v[i], amo_pdc[i]);
-        *amo_vi_v[i] = -1;
+  sz = atomic_load_uint_least32_t(&amo_thread_counter);
+  for(i=0; i<sz; i++) {
+    if (*amo_vi_p[i] != 0) {
+      while (atomic_exchange_bool(amo_lock_p[i], true)) { local_yield(); }
+      if (*amo_vi_p[i] != 0) {
+        do_remote_amo_V(*amo_vi_p[i], amo_opnd1_vp[i], amo_locale_vp[i],
+                        amo_object_vp[i], amo_size_vp[i], amo_cmd_vp[i],
+                        amo_remote_mr_vp[i]);
+        *amo_vi_p[i] = 0;
       }
-      atomic_store_bool(amo_lock_v[i], false);
+      atomic_store_bool(amo_lock_p[i], false);
     }
   }
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 }
 
+// builds thread local buffers of operations and when the buffer is full,
+// initiates them all at once for increased transaction rate
 static
 inline
 void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
@@ -6906,14 +6977,20 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
                         mem_region_t* remote_mr)
 {
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
-  static __thread gni_post_descriptor_t post_desc;
-  static __thread gni_ct_amo_post_descriptor_t pdc[MAX_CHAINED_AMO_LEN - 1];
-  static __thread c_nodeid_t node_v[MAX_CHAINED_AMO_LEN];
-  static __thread int64_t vi = -1;
-
-  // init_status -- (0=first-call, -1=out-of-entries, 1=have-entry)
-  static __thread int init_status = 0;
+  // thread local index and lock
+  static __thread int vi = 0;
   static __thread atomic_bool lock;
+
+  // thread local buffers for all arguments
+  static __thread void* opnd1_v[MAX_CHAINED_AMO_LEN];
+  static __thread c_nodeid_t locale_v[MAX_CHAINED_AMO_LEN];
+  static __thread void* object_v[MAX_CHAINED_AMO_LEN];
+  static __thread size_t size_v[MAX_CHAINED_AMO_LEN];
+  static __thread gni_fma_cmd_type_t cmd_v[MAX_CHAINED_AMO_LEN];
+  static __thread mem_region_t* remote_mr_v[MAX_CHAINED_AMO_LEN];
+
+  // thread local init status (0=first-call, -1=out-of-entries, 1=have-entry)
+  static __thread int init_status = 0;
 
   if (init_status == 1) {
     // no-op
@@ -6922,9 +6999,15 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     return;
   } else {
     uint32_t idx;
+
+    // grab initialization lock
     while (atomic_exchange_bool(&amo_init_lock, true)) { local_yield(); }
+
+    // initialize the lock for this thread and figure out our index into the
+    // buffer of AMO operation pointers. If we've exceeded the buffer length,
+    // warn and do blocking operations instead
     atomic_init_bool(&lock, false);
-    idx = atomic_load_uint_least32_t(&amo_pdc_sz);
+    idx = atomic_load_uint_least32_t(&amo_thread_counter);
     if (idx >= MAX_BUFF_AMO_THREADS) {
       chpl_warning("Exceeded MAX_BUFF_AMO_THREADS, buffered atomic performance degraded", 0, 0);
       init_status = -1;
@@ -6932,62 +7015,50 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
       do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
       return;
     }
-    amo_pdc[idx] = &post_desc;
-    amo_node_v[idx] = &node_v[0];
-    amo_vi_v[idx] = &vi;
-    amo_lock_v[idx] = &lock;
+
+    // store pointers to our thread local index, lock, and buffers so
+    // operations can be flushed from outside of this routine
+    amo_vi_p[idx]         = &vi;
+    amo_lock_p[idx]       = &lock;
+    amo_opnd1_vp[idx]     = &opnd1_v[0];
+    amo_locale_vp[idx]    = &locale_v[0];
+    amo_object_vp[idx]    = &object_v[0];
+    amo_size_vp[idx]      = &size_v[0];
+    amo_cmd_vp[idx]       = &cmd_v[0];
+    amo_remote_mr_vp[idx] = &remote_mr_v[0];
+
     init_status = 1;
-    (void) atomic_fetch_add_uint_least32_t(&amo_pdc_sz, 1);
+    // actually update the thread counter (needs to be done after the buffer
+    // pointers are setup, otherwise we have a race with flushing)
+    (void) atomic_fetch_add_uint_least32_t(&amo_thread_counter, 1);
+
+    // release initialization lock
     atomic_store_bool(&amo_init_lock, false);
   }
 
   check_nic_amo(size, object, remote_mr);
   PERFSTATS_INC(amo_cnt);
 
+  // grab lock for this thread
   while (atomic_exchange_bool(&lock, true)) { local_yield(); }
 
-  //
-  // Fill in the POST descriptor.
-  //
-  if (vi == -1) {
-    post_desc.next_descr      = NULL;
-    post_desc.type            = GNI_POST_AMO;
-    post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
-    post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
-    post_desc.rdma_mode       = 0;
-    post_desc.src_cq_hndl     = 0;
-    post_desc.remote_addr     = (uint64_t) (intptr_t) object;
-    post_desc.remote_mem_hndl = remote_mr->mdh;
-    post_desc.length          = size;
-    post_desc.amo_cmd         = cmd;
-    post_desc.first_operand   = size == 4 ? *(uint32_t*) opnd1:
-                                            *(uint64_t*) opnd1;
-  } else {
-    if (vi == 0)
-      post_desc.next_descr = &pdc[0];
-    else
-      pdc[vi-1].next_descr = &pdc[vi];
-    pdc[vi].next_descr      = NULL;
-    pdc[vi].remote_addr     = (uint64_t) (intptr_t) object;
-    pdc[vi].remote_mem_hndl = remote_mr->mdh;
-    pdc[vi].length          = size;
-    pdc[vi].amo_cmd         = cmd;
-    pdc[vi].first_operand   = size == 4 ? *(uint32_t*) opnd1:
-                                          *(uint64_t*) opnd1;
-
-  }
-  node_v[vi+1] = locale;
+  // store arguments in buffers
+  opnd1_v[vi]     = opnd1;
+  locale_v[vi]    = locale;
+  object_v[vi]    = object;
+  size_v[vi]      = size;
+  cmd_v[vi]       = cmd;
+  remote_mr_v[vi] = remote_mr;
   vi++;
 
-  //
-  // Initiate the transaction and wait for it to complete.
-  //
-  if (vi == MAX_CHAINED_AMO_LEN-1) {
-    post_fma_ct_and_wait(node_v, &post_desc);
-    vi = -1;
+  // flush if buffers are full
+  if (vi == MAX_CHAINED_AMO_LEN) {
+    do_remote_amo_V(vi, opnd1_v, locale_v, object_v, size_v, cmd_v, remote_mr_v);
+    vi = 0;
   }
-  atomic_store_bool(&lock, false);
 
+  // release lock for this thread
+  atomic_store_bool(&lock, false);
 #else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
   do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
