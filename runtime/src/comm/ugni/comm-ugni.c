@@ -6842,6 +6842,27 @@ int amo_cmd_2_nic_op(fork_amo_cmd_t cmd, int fetching)
   return nic_cmd;
 }
 
+// Sanity checks on amo operations. Ensure valid size and alignment and that
+// the remote memory region is registered
+static
+inline
+void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
+  if (size == 4) {
+    if (!IS_ALIGNED_32(VP_TO_UI64(object)))
+      CHPL_INTERNAL_ERROR("remote AMO object must be 4-byte aligned");
+  } else if (size == 8) {
+    if (!IS_ALIGNED_64(VP_TO_UI64(object)))
+      CHPL_INTERNAL_ERROR("remote AMO object must be 8-byte aligned");
+  } else {
+    CHPL_INTERNAL_ERROR("unexpected AMO size");
+  }
+
+  if (remote_mr == NULL)
+    CHPL_INTERNAL_ERROR("do_nic_amo(): "
+                        "remote address is not NIC-registered");
+}
+
+
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 #define MAX_BUFF_AMO_THREADS 1024
 static gni_post_descriptor_t* amo_pdc[MAX_BUFF_AMO_THREADS];
@@ -6920,9 +6941,7 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     atomic_store_bool(&amo_init_lock, false);
   }
 
-  if (remote_mr == NULL)
-    CHPL_INTERNAL_ERROR("do_nic_amo(): "
-                        "remote address is not NIC-registered");
+  check_nic_amo(size, object, remote_mr);
 
   while (atomic_exchange_bool(&lock, true)) { local_yield(); }
 
@@ -6979,20 +6998,7 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
 {
   gni_post_descriptor_t post_desc;
 
-  if (size == 4) {
-    if (!IS_ALIGNED_32(VP_TO_UI64(object)))
-      CHPL_INTERNAL_ERROR("remote AMO object must be 4-byte aligned");
-  }
-  else if (size == 8) {
-    if (!IS_ALIGNED_64(VP_TO_UI64(object)))
-      CHPL_INTERNAL_ERROR("remote AMO object must be 8-byte aligned");
-  }
-  else
-    CHPL_INTERNAL_ERROR("unexpected AMO size");
-
-  if (remote_mr == NULL)
-    CHPL_INTERNAL_ERROR("do_nic_amo(): "
-                        "remote address is not NIC-registered");
+  check_nic_amo(size, object, remote_mr);
 
   //
   // Fill in the POST descriptor.
@@ -7036,16 +7042,7 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   fork_amo_data_t       tmp_result;
   gni_post_descriptor_t post_desc;
 
-  if (size == 4) {
-    if (!IS_ALIGNED_32(VP_TO_UI64(object)))
-      CHPL_INTERNAL_ERROR("remote AMO object must be 4-byte aligned");
-  }
-  else if (size == 8) {
-    if (!IS_ALIGNED_64(VP_TO_UI64(object)))
-      CHPL_INTERNAL_ERROR("remote AMO object must be 8-byte aligned");
-  }
-  else
-    CHPL_INTERNAL_ERROR("unexpected AMO size");
+  check_nic_amo(size, object, remote_mr);
 
   //
   // Make sure that, if we need a result, it is in memory known to the
@@ -7067,10 +7064,6 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
       }
     }
   }
-
-  if (remote_mr == NULL)
-    CHPL_INTERNAL_ERROR("do_nic_amo(): "
-                        "remote address is not NIC-registered");
 
   //
   // Fill in the POST descriptor.
