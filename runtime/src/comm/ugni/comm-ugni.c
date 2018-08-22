@@ -6942,6 +6942,7 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
   }
 
   check_nic_amo(size, object, remote_mr);
+  PERFSTATS_INC(amo_cnt);
 
   while (atomic_exchange_bool(&lock, true)) { local_yield(); }
 
@@ -6959,7 +6960,8 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     post_desc.remote_mem_hndl = remote_mr->mdh;
     post_desc.length          = size;
     post_desc.amo_cmd         = cmd;
-    post_desc.first_operand = *(uint64_t*) opnd1;
+    post_desc.first_operand   = size == 4 ? *(uint32_t*) opnd1:
+                                            *(uint64_t*) opnd1;
   } else {
     if (vi == 0)
       post_desc.next_descr = &pdc[0];
@@ -6970,14 +6972,16 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     pdc[vi].remote_mem_hndl = remote_mr->mdh;
     pdc[vi].length          = size;
     pdc[vi].amo_cmd         = cmd;
-    pdc[vi].first_operand = *(uint64_t*) opnd1;
+    pdc[vi].first_operand   = size == 4 ? *(uint32_t*) opnd1:
+                                          *(uint64_t*) opnd1;
+
   }
   node_v[vi+1] = locale;
   vi++;
+
   //
   // Initiate the transaction and wait for it to complete.
   //
-  PERFSTATS_INC(amo_cnt);
   if (vi == MAX_CHAINED_AMO_LEN-1) {
     post_fma_ct_and_wait(node_v, &post_desc);
     vi = -1;
@@ -6999,6 +7003,7 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
   gni_post_descriptor_t post_desc;
 
   check_nic_amo(size, object, remote_mr);
+  PERFSTATS_INC(amo_cnt);
 
   //
   // Fill in the POST descriptor.
@@ -7008,25 +7013,16 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
   post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
   post_desc.rdma_mode       = 0;
   post_desc.src_cq_hndl     = 0;
-
   post_desc.remote_addr     = (uint64_t) (intptr_t) object;
   post_desc.remote_mem_hndl = remote_mr->mdh;
   post_desc.length          = size;
-
   post_desc.amo_cmd         = cmd;
-
-  if (size == 4) {
-    post_desc.first_operand = *(uint32_t*) opnd1;
-  }
-  else {
-    post_desc.first_operand = *(uint64_t*) opnd1;
-  }
+  post_desc.first_operand   = size == 4 ? *(uint32_t*) opnd1:
+                                          *(uint64_t*) opnd1;
 
   //
   // Initiate the transaction and wait for it to complete.
   //
-  PERFSTATS_INC(amo_cnt);
-
   post_fma_and_wait_amo(locale, &post_desc);
 }
 
@@ -7043,6 +7039,7 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   gni_post_descriptor_t post_desc;
 
   check_nic_amo(size, object, remote_mr);
+  PERFSTATS_INC(amo_cnt);
 
   //
   // Make sure that, if we need a result, it is in memory known to the
@@ -7068,28 +7065,24 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   //
   // Fill in the POST descriptor.
   //
-  post_desc.type            = GNI_POST_AMO;
-  post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
-  post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
-  post_desc.rdma_mode       = 0;
-  post_desc.src_cq_hndl     = 0;
-
-  post_desc.local_addr      = (uint64_t) (intptr_t) p_result;
+  post_desc.type               = GNI_POST_AMO;
+  post_desc.cq_mode            = GNI_CQMODE_GLOBAL_EVENT;
+  post_desc.dlvr_mode          = GNI_DLVMODE_PERFORMANCE;
+  post_desc.rdma_mode          = 0;
+  post_desc.src_cq_hndl        = 0;
+  post_desc.local_addr         = (uint64_t) (intptr_t) p_result;
   if (p_result != NULL)
-    post_desc.local_mem_hndl = local_mr->mdh;
-  post_desc.remote_addr     = (uint64_t) (intptr_t) object;
-  post_desc.remote_mem_hndl = remote_mr->mdh;
-  post_desc.length          = size;
-
-  post_desc.amo_cmd         = cmd;
-
+    post_desc.local_mem_hndl   = local_mr->mdh;
+  post_desc.remote_addr        = (uint64_t) (intptr_t) object;
+  post_desc.remote_mem_hndl    = remote_mr->mdh;
+  post_desc.length             = size;
+  post_desc.amo_cmd            = cmd;
   if (size == 4) {
-    post_desc.first_operand = *(uint32_t*) opnd1;
+    post_desc.first_operand    = *(uint32_t*) opnd1;
     if (opnd2 != NULL)
       post_desc.second_operand = *(uint32_t*) opnd2;
-  }
-  else {
-    post_desc.first_operand = *(uint64_t*) opnd1;
+  } else {
+    post_desc.first_operand    = *(uint64_t*) opnd1;
     if (opnd2 != NULL)
       post_desc.second_operand = *(uint64_t*) opnd2;
   }
@@ -7097,8 +7090,6 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   //
   // Initiate the transaction and wait for it to complete.
   //
-  PERFSTATS_INC(amo_cnt);
-
   post_fma_and_wait(locale, &post_desc, true);
 
   if (p_result != result) {
