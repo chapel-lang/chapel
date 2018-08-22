@@ -47,7 +47,7 @@ case "${rc_prefix:-}" in
     rc_prefix=$( sed -e 's,-,,' <<<"$chpl_platform" )
     ;;
 ( *[!0-9a-zA-Z_]* )
-    log_error "$thiscomm: Invalid rc_prefix=$rc_prefix"; exit 2
+    log_error "$thiscomm: Invalid rc_prefix='$rc_prefix'"; exit 2
     ;;
 ( * )
     # strip out any "dash" in the given value
@@ -60,7 +60,7 @@ esac
 case "$rc_prefix" in
 ( *[0-9] )
     case "${rc_number:=0}" in
-        ( [0-9]* ) log_warn "$thiscomm: rc_prefix=$rc_prefix, rc_number=$rc_number (too many digits?)";;
+        ( [0-9]* ) log_warn "$thiscomm: rc_prefix='$rc_prefix', rc_number='$rc_number' (too many digits?)";;
     esac
     ;;
 esac
@@ -80,13 +80,13 @@ pkg_filename="chapel-$pkg_version-$rpm_release"
 rpm_filename="chapel-$pkg_version-$rpm_release.$CPU.rpm"
 rpmbuild_filename="chapel-$pkg_version-$rpm_version-$rpm_release.$CPU.rpm"
 
-log_debug "Using rc_prefix      = '$rc_prefix'"
-log_debug "Using rpm_release    = '$rpm_release'"
-log_debug "Using rpm_name       = '$rpm_name'"
-log_debug "Using rpm_version    = '$rpm_version'"
-log_debug "Using pkg_filename   = '$pkg_filename'"
-log_debug "Using rpm_filename   = '$rpm_filename'"
-log_debug "Using rpmbuild_filename  = '$rpmbuild_filename'"
+log_debug "Using rc_prefix='$rc_prefix'"
+log_debug "Using rpm_release='$rpm_release'"
+log_debug "Using rpm_name='$rpm_name'"
+log_debug "Using rpm_version='$rpm_version'"
+log_debug "Using pkg_filename='$pkg_filename'"
+log_debug "Using rpm_filename='$rpm_filename'"
+log_debug "Using rpmbuild_filename='$rpmbuild_filename'"
 
 export rc_prefix
 export rpm_release

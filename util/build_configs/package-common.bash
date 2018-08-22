@@ -34,29 +34,29 @@ fi
 # date_ymd,         
 #   date_hms    : date and time for use within the pkg, in YYYYMMDD and HHMMSS
 
-case "${chpl_platform:=}"   in ( "" | *\ * | */* )  log_error "$thiscomm: Invalid chpl_platform=$chpl_platform";    exit 2;; esac
-case "${date_ymd:=}"        in ( "" | *[!0-9]* )    log_error "$thiscomm: Invalid date_ymd=$date_ymd";              exit 2;; esac
-case "${date_hms:=}"        in ( "" | *[!0-9]* )    log_error "$thiscomm: Invalid date_hms=$date_hms";              exit 2;; esac
-case "${rc_number:=0}"      in ( *[!0-9]* )         log_error "$thiscomm: Invalid rc_number=$rc_number";            exit 2;; esac
+case "${chpl_platform:=}"   in ( "" | *\ * | */* )  log_error "$thiscomm: Invalid chpl_platform='$chpl_platform'";  exit 2;; esac
+case "${date_ymd:=}"        in ( "" | *[!0-9]* )    log_error "$thiscomm: Invalid date_ymd='$date_ymd'";            exit 2;; esac
+case "${date_hms:=}"        in ( "" | *[!0-9]* )    log_error "$thiscomm: Invalid date_hms='$date_hms'";            exit 2;; esac
+case "${rc_number:=0}"      in ( *[!0-9]* )         log_error "$thiscomm: Invalid rc_number='$rc_number'";          exit 2;; esac
 
 ck_chpl_home_bin "$CHPL_HOME" $chpl_platform
 
 case "${src_version:=}" in
 ( "" | *[!0-9.]* | *.*.*.* | *..* | .* | *. )
-    log_error "$thiscomm: Invalid src_version=$src_version"; exit 2
+    log_error "$thiscomm: Invalid src_version='$src_version'"; exit 2
     ;;
 ( *.*.* )
     read major minor update junk <<<$( tr '.' ' ' <<<$src_version )
     ;;
 ( * )
-    log_error "$thiscomm: Invalid src_version=$src_version"; exit 2
+    log_error "$thiscomm: Invalid src_version='$src_version'"; exit 2
     ;;
 esac
 
 # version_tag may be null; if non-null, it must not begin with a _ character
 case "${version_tag:=}" in
 ( *[!0-9a-zA-Z_]* | _* | *_ )
-    log_error "$thiscomm: Invalid version_tag=$version_tag"; exit 2
+    log_error "$thiscomm: Invalid version_tag='$version_tag'"; exit 2
     ;;
 esac
 
@@ -70,19 +70,19 @@ case "${release_type:=}" in
     pkg_version=$src_version${version_tag:+_}$version_tag
     ;;
 ( * )
-    log_error "$thiscomm: Invalid release_type=$release_type"
+    log_error "$thiscomm: Invalid release_type='$release_type'"
     exit 2
     ;;
 esac
 
-log_debug "Using chpl_platform  = '$chpl_platform'"
-log_debug "Using src_version    = '$src_version'"
-log_debug "Using version_tag    = '$version_tag'"
-log_debug "Using pkg_version    = '$pkg_version'"
-log_debug "Using release_type   = '$release_type'"
-log_debug "Using rc_number      = '$rc_number'"
-log_debug "Using date_ymd       = '$date_ymd'"
-log_debug "Using date_hms       = '$date_hms'"
+log_debug "Using chpl_platform='$chpl_platform'"
+log_debug "Using src_version='$src_version'"
+log_debug "Using version_tag='$version_tag'"
+log_debug "Using pkg_version='$pkg_version'"
+log_debug "Using release_type='$release_type'"
+log_debug "Using rc_number='$rc_number'"
+log_debug "Using date_ymd='$date_ymd'"
+log_debug "Using date_hms='$date_hms'"
 
 export chpl_platform
 export src_version major minor update

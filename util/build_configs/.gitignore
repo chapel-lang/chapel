@@ -1,7 +1,8 @@
-# This hides users work files in this subdir
+# This hides users working files in this directory
 /*
 !/README*
 !/build_configs.py
+!/build-common.bash
 !/chapel_build.bash
 !/functions.bash
 !/module-functions.bash

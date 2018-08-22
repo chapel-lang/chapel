@@ -3,9 +3,9 @@
 This directory contains scripts to build customizable Chapel binaries
 in multiple configurations.
 
-The "cray-internal" subdirectory adds scripts to package Chapel binaries
-(already pre-built with "setenv-example3.bash" from this directory) into an
-RPM suitable for installation on a Cray-XC. See ./cray-internal/README
+The `cray-internal` subdirectory adds scripts to package Chapel binaries
+(already pre-built with `setenv-example3.bash` from this directory) into an
+RPM suitable for installation on a Cray-XC. See `./cray-internal/README.md`
 for more info.
 
 ### Files in this directory:
@@ -13,6 +13,7 @@ for more info.
 * build_configs.py:
   Provides a CLI for building Chapel binaries in multiple configurations.
   Moved here from CHPL_HOME/util and adapted for this application.
+  Run with "-h" option for Help.
 
 * setenv-example-\*.bash:
   Example setenv script files
@@ -23,7 +24,8 @@ for more info.
     (With and without Cray ugni; Slurm launcher; two target compilers).
 
 * chapel_build.bash:
-  Example high-level wrapper script to run a complete build process
+  Example high-level wrapper script to run a complete Chapel build.
+  Run with "-h" option for Help.
 
 * functions.bash: General-purpose shell functions for use in bash scripts
 
@@ -32,8 +34,12 @@ for more info.
 * package-functions.bash: General-purpose shell functions for use in Chapel
     packaging scripts; see for example ./cray-internal/chapel_package-cray.bash.
 
-* package-common.bash: General-purpose bash code for use in Chapel
-    packaging scripts; see for example ./cray-internal/chapel_package-cray.bash.
+* build-common.bash: Reusable bash code to find existing CHPL_HOME directory
+    or create a new one from a given Chapel release tarball.
+    See for example chapel_build.bash.
+
+* package-common.bash: Reusable bash code for use in Chapel packaging scripts;
+    see for example ./cray-internal/chapel_package-cray.bash.
 
 ### Users local Chapel projects:
 
@@ -96,7 +102,7 @@ build workspace from a Chapel source tar file you have downloaded (e.g., from
 The following command will create the new CHPL_HOME under your current
 working directory, and then run your "slurm.bash" setenv project:
 ```
-  ./chapel_build.bash -s slurm.bash -t /your/chapel-release.tar.gz
+  ./chapel_build.bash -s slurm.bash -t /your/chapel-x.y.z.tar.gz
 ```
 
 ### Discussion

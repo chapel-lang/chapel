@@ -19,18 +19,23 @@ packages. Start by creating a new subdirectory (under build_configs) for each sp
 Chapel package; copy and rename the main script `chapel_package-cray.bash` from here
 to the new subdir; edit that file; and go from there, copy-editing additional files from
 this directory as needed. When appropriate, add to the existing `package-*.bash` support
-files in the parent directory.
+files in the parent directory. Finally, copy-edit the `.gitignore` file from here to the
+new subdir.
 
 ### Files in this directory:
 
 * chapel_build.bash:
   Example high-level wrapper script to run a complete Chapel build from source and
-  create a Cray-compatible Chapel RPM.
+  create a Cray-compatible Chapel RPM.  Run with "-h" option for Help.
 
 * chapel_package-cray.bash:
   The primary script to build a Chapel RPM in this subdirectory.
+  Run with "-h" option for Help.
 
-* generate-*.bash:
+* common.bash: Cray-module-specific bash code snippets.
+  See for example chapel_package-cray.bash.
+
+* generate-\*.bash:
   Scripts to generate various files used in Cray RPMs.
   - generate-dev-releaseinfo.bash: Release_info is a human readable text file found in
     Cray software releases. This generater produces a release_info file suitable as a draft
@@ -42,11 +47,6 @@ files in the parent directory.
     A Cray system management tool, this script sets the default Chapel version obtained
     when a user runs `module load chapel` without specifying a specific version.
 
-* package-functions.bash: General-purpose shell functions for use in Chapel
-    packaging scripts; see for example ./cray-internal/chapel_package-cray.bash.
-
-* common.bash: Cray-module-specific bash code snippets.
-    See for example chapel_package-cray.bash.
 
 ### Users local Chapel projects:
 
@@ -60,18 +60,37 @@ Users on your Cray-XC system should only need to `module load chapel` to access 
 locally-built Chapel version, same as other supported computing languages.
 
 Start in the parent directory (build_configs) with file `setenv-example-3.bash`. Copy 
-setenv-example-3.bash to a new file and run it with changes, until you get the set of Chapel
-binaries you want. See the README, `setenv-example-3.bash` and `chapel_build.bash` files
-in the parent directory for more information.
+`setenv-example-3.bash` to a new file and run it (with changes as needed) until it
+produces the set of Chapel binaries that you want. See the README, `setenv-example-3.bash`
+and `chapel_build.bash` files in the parent directory for more information.
 
 When satisfied with your locally-built Chapel binaries, cd back to this directory and run
 `chapel_package-cray.bash`, with the CHPL_HOME environment variable pointing to the Chapel
 build workspace you created above, and with -s pointing to your final setenv script.
 
-For example, if the existing `setenv-example-3` script produced the desired Chapel binaries,
-and the Chapel source was saved locally in `/your/chapel-release.tar.gz`:
-```
-./chapel_build.bash -s ../setenv-example-3.bash -t /your/chapel-release.tar.gz
-```
+Finally, to execute a complete end-to-end Chapel build and package in one command, you
+would switch from `chapel_package-cray.bash` to `chapel_build.bash` in this directory.
 
+For example, if the existing `setenv-example-3` script file produced the Chapel binaries
+that you want, and if the Chapel source tarball was saved locally in
+`/your/chapel-release.tar.gz`, you could cd to this directory and run:
+```
+./chapel_build.bash -s ../setenv-example-3.bash -t /your/chapel-x.y.z.tar.gz -b nightly
+```
+The resulting RPM file (created in this directory) would be the same as from these commands:
+```
+../chapel_build.bash -s ../setenv-example-3.bash -t /your/chapel-x.y.z.tar.gz
+
+./chapel_package-cray.bash -b nightly
+```
+... or from these commands:
+```
+rm -rf chapel-x.y.z
+tar -xf /your/chapel-x.y.z.tar.gz
+export CHPL_HOME=$PWD/chapel-x.y.z
+
+../chapel_build.bash -s ../setenv-example-3.bash
+
+./chapel_package-cray.bash -b nightly
+```
 

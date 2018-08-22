@@ -15,6 +15,8 @@ thisfile=$( basename "$cwd" )/$thisfile
 source $cwd/../functions.bash
 source $cwd/../package-functions.bash
 
+log_info "Begin $thisfile"
+
 usage() {
     echo 2>&1 "
 Usage $thisfile" '[options]
@@ -67,6 +69,8 @@ src_version=
 workdir=
 outputs=
 keepdir=
+verbose=
+dry_run=
 
 # Timestamp values
 date_ymd=$( date '+%Y%m%d' )
@@ -80,7 +84,7 @@ while getopts :vnkC:T:o:b:p:r:h opt; do
     ( o ) outputs=$OPTARG ;;
     ( b ) release_type=$OPTARG ;;
     ( p ) chpl_platform=$OPTARG ;;
-    ( r ) rc_num=$OPTARG ;;
+    ( r ) rc_number=$OPTARG ;;
     ( v ) verbose=-v ;;
     ( n ) dry_run=-n ;;
     ( h ) usage 0;;
@@ -89,7 +93,21 @@ while getopts :vnkC:T:o:b:p:r:h opt; do
     esac
 done
 
-log_info "Begin $thisfile"
+# release_type says how to package
+case "$release_type" in
+( "" )
+    log_error "'-b release_type' is required."
+    usage
+    ;;
+( [nN]* | -n | nightly )
+    ;;
+( [rR]* | -r | release )
+    ;;
+( * )
+    log_error "-b release_type='$release_type' is invalid."
+    usage
+    ;;
+esac
 
 # Try to use the generic parameter checking as much as possible,
 #   by sourcing the "common" scripts (see below).
@@ -102,7 +120,7 @@ case "${CHPL_HOME:-}" in
     usage
     ;;
 esac
-log_info "Using CHPL_HOME   ='$CHPL_HOME'"
+log_info "Using CHPL_HOME='$CHPL_HOME'"
 ck_chpl_home "$CHPL_HOME"
 export CHPL_HOME
 
@@ -110,18 +128,18 @@ export CHPL_HOME
 
 outputs=${outputs:-$yourcwd}
 outputs=$( ck_output_dir "$outputs" '-o outputs' )
-log_debug "Using -o outputs ='$outputs'"
+log_debug "Using -o outputs='$outputs'"
 
 # Sanity-check the given -C workdir, if any, or set to the users CWD
 
 workdir=${workdir:-$yourcwd}
 workdir=$( ck_output_dir "$workdir" '-C workdir' )
-log_debug "Using -C workdir ='$workdir'"
+log_debug "Using -C workdir='$workdir'"
 
 # Get Chapel version numbers from source
 
 src_version=$( get_src_version "$CHPL_HOME" )
-log_debug "Using src_version    ='$src_version'"
+log_debug "Using src_version='$src_version'"
 
 # Sanity-check some common shell variables used for Chapel packages (parent directory)
 
@@ -138,7 +156,7 @@ fi
 # Create CHPL_RPM, the packaging counterpart to CHPL_HOME, in workdir
 
 export CHPL_RPM="$workdir/$pkg_filename"
-log_info "Creating CHPL_RPM ='$CHPL_RPM'"
+log_info "Creating CHPL_RPM='$CHPL_RPM'"
 
 rm -rf "$CHPL_RPM"
 mkdir "$CHPL_RPM"
@@ -207,7 +225,7 @@ else
 
     rpmbuild -bb $quiet --buildroot "$CHPL_RPM/BUILDROOT" --define "_tmppath $CHPL_RPM/tmp" --define "_topdir $CHPL_RPM" "$CHPL_RPM/chapel.spec"
 
-    log_info "End rpmbuild."
+    log_info "Finished rpmbuild."
 
     # Save and rename the RPM file
     log_info "Save $rpmbuild_filename as '$outputs/$rpm_filename'"
