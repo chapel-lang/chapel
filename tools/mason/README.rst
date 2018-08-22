@@ -1,13 +1,11 @@
 
-=====
-mason
-=====
+
+.. image:: mason.png
+    :align: center
 
 Mason is Chapel's package manager
 
-For more detail about mason and about submitting a package see -> doc/{rst,html}/tools/mason/mason.{rst,html}
-
-
+For more detail about mason see the [documentation](https://chapel-lang.org/docs/master/tools/mason/mason.html)
 
 
 Installation Instructions
