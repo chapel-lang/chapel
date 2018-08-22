@@ -927,6 +927,8 @@ std::string ArgSymbol::getPythonArgTranslation() {
       std::string typeStrCDefs = typeStr;
       if (strncmp(typeStr.c_str(), "numpy", strlen("numpy")) == 0) {
         typeStrCDefs += "_t";
+      } else {
+        typeStrCDefs = getPythonTypeName(eltType->type, PYTHON_PXD);
       }
 
       // Create the memory needed to store the contents of what was passed to us
@@ -1870,6 +1872,8 @@ std::string FnSymbol::getPythonArrayReturnStmts() {
   std::string typeStrCDefs = typeStr;
   if (strncmp(typeStr.c_str(), "numpy", strlen("numpy")) == 0) {
     typeStrCDefs += "_t";
+  } else {
+    typeStrCDefs = getPythonTypeName(eltType->type, PYTHON_PXD);
   }
   // Create the numpy array to return
   // E.g. cdef numpy.ndarray [C element type, ndim=1] ret =

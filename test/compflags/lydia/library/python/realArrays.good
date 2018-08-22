@@ -34,9 +34,17 @@ def chpl_setup():
 def chpl_cleanup():
 	chpl_library_finalize()
 
-def takesArray( x):
-	chpl_takesArray(chpl_x)
+def takesArray(x):
+	cdef chpl_external_array chpl_x = chpl_make_external_array(sizeof(double), len(x))
+	for i in range(len(x)):
+		(<double*>chpl_x.elts)[i] = x[i]
+	chpl_takesArray(&chpl_x)
+	chpl_free_external_array(chpl_x)
 
 def returnsArray():
-	ret = chpl_returnsArray()
+	cdef chpl_external_array ret_arr = chpl_returnsArray()
+	cdef numpy.ndarray [double, ndim=1] ret = numpy.zeros(shape = ret_arr.size, dtype = float)
+	for i in range(ret_arr.size):
+		ret[i] = (<double*>ret_arr.elts)[i]
+	chpl_free_external_array(ret_arr)
 	return ret
