@@ -384,7 +384,7 @@ class ParallelWorkQueueChunkedLoopWaitPadding {
   type lockType;
 
   // tuple that will pad the record through the cache line
-  type paddingType = ParallelWorkQueueChunkedLoopWaitPaddingBytes*uint(64);
+  type paddingType = ParallelWorkQueueChunkedLoopWaitPaddingBytes*uint(8);
 
   record arrayType {
     type arrayTypeEltType;
