@@ -891,8 +891,16 @@ static std::string getPythonTypeName(Type* type, PythonFileType pxd) {
 std::string ArgSymbol::getPythonType(PythonFileType pxd) {
   Type* t = getArgSymbolCodegenType(this);
 
-  return getPythonTypeName(t, pxd);
-  // TODO: LLVM stuff
+  if (t->symbol->hasFlag(FLAG_REF) &&
+      t->getValType() == dtExternalArray &&
+      pxd == PYTHON_PYX
+      && elementType[this] != NULL) {
+    // Allow python declarations to accept anything iterable to translate to
+    // an array, instead of limiting to a specific Python type
+    return "";
+  } else {
+    return getPythonTypeName(t, pxd) + " ";
+  }
 }
 
 // Some Python type instances need to be translated into C level type instances.
@@ -907,7 +915,8 @@ std::string ArgSymbol::getPythonArgTranslation() {
     res += cname;
     res += "\n";
     return res;
-  } else if (t == dtExternalArray) {
+  } else if (t->symbol->hasFlag(FLAG_REF) &&
+             t->getValType() == dtExternalArray) {
     // Handle arrays
     if (Symbol* eltType = elementType[this]) {
       // The element type will be recorded in the elementType map if this arg's
@@ -916,7 +925,7 @@ std::string ArgSymbol::getPythonArgTranslation() {
       // translation in the python wrapper.
       std::string typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
       std::string typeStrCDefs = typeStr;
-      if (strncmp(typeStr, "numpy", strlen("numpy")) == 0) {
+      if (strncmp(typeStr.c_str(), "numpy", strlen("numpy")) == 0) {
         typeStrCDefs += "_t";
       }
 
@@ -1759,7 +1768,6 @@ GenRet FnSymbol::codegenPXDType() {
         if (count > 0)
           str += ", ";
         str += formal->getPythonType(PYTHON_PXD);
-        str += " ";
         str += formal->cname;
         if (fGenIDS) {
           str += " ";
@@ -1796,7 +1804,14 @@ GenRet FnSymbol::codegenPYXType() {
   // Return statement, if applicable
   std::string returnStmt = "";
   if (retType != dtVoid) {
-    funcCall += "ret = ";
+    if (retType->symbol->hasFlag(FLAG_REF) &&
+        retType->getValType() == dtExternalArray &&
+        elementType[this] != NULL) {
+      funcCall += "\tcdef chpl_external_array ret_arr = ";
+      returnStmt += getPythonArrayReturnStmts();
+    } else {
+      funcCall += "ret = ";
+    }
     returnStmt += "\treturn ret\n";
   }
   funcCall += "chpl_";
@@ -1813,8 +1828,8 @@ GenRet FnSymbol::codegenPYXType() {
         funcCall += ", ";
       }
 
-      header += formal->getPythonType(PYTHON_PYX);
-      header += " ";
+      std::string argType = formal->getPythonType(PYTHON_PYX);
+      header += argType;
       header += formal->cname;
       if (fGenIDS) {
         header += " ";
@@ -1824,6 +1839,16 @@ GenRet FnSymbol::codegenPYXType() {
       std::string curArgTranslate = formal->getPythonArgTranslation();
       if (curArgTranslate != "") {
         argTranslate += curArgTranslate;
+        if (argType == "") {
+          // Happens when the argument type is an array
+          // We need to send in the wrapper we created by reference
+          funcCall += "&";
+          // And we need to clean it up when we are done with it
+          std::string oldRetStmt = returnStmt;
+          returnStmt = "\tchpl_free_external_array(chpl_";
+          returnStmt += formal->cname;
+          returnStmt += ")\n" + oldRetStmt;
+        }
         funcCall += "chpl_";
       }
 
@@ -1837,6 +1862,30 @@ GenRet FnSymbol::codegenPYXType() {
   ret.c = header + argTranslate + funcCall + returnStmt;
 
   return ret;
+}
+
+std::string FnSymbol::getPythonArrayReturnStmts() {
+  INT_ASSERT(retType == dtExternalArray);
+  Symbol* eltType = elementType[this];
+  std::string typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
+  std::string typeStrCDefs = typeStr;
+  if (strncmp(typeStr.c_str(), "numpy", strlen("numpy")) == 0) {
+    typeStrCDefs += "_t";
+  }
+  // Create the numpy array to return
+  // E.g. cdef numpy.ndarray [C element type, ndim=1] ret =
+  //          numpy.zeros(shape = ret_arr.size, dtype = Python element type)
+  std::string res = "\tcdef numpy.ndarray [" + typeStrCDefs + ", ndim=1] ret";
+  res += " = numpy.zeros(shape = ret_arr.size, dtype = " + typeStr + ")\n";
+
+  // Populate it with the contents we return (which translated C types into
+  // Python types)
+  res += "\tfor i in range(ret_arr.size):\n";
+  res += "\t\tret[i] = (<" + typeStrCDefs + "*>ret_arr.elts)[i]\n";
+
+  // Free the returned array now that its contents have been stored elsewhere
+  res += "\tchpl_free_external_array(ret_arr)\n";
+  return res;
 }
 
 /******************************** | *********************************
