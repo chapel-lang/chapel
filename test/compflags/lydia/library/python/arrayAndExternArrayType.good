@@ -20,11 +20,23 @@ cdef extern from "chpl-external-array.h":
 	chpl_external_array chpl_make_external_array(uint64_t elt_size, uint64_t num_elts)
 	chpl_external_array chpl_make_external_array_ptr(void* elts, uint64_t size)
 	void chpl_free_external_array(chpl_external_array x)
-from chpl_arrayAndExternArrayType cimport chpl_library_init, chpl_library_finalize, chpl_external_array, chpl_make_external_array, chpl_make_external_array_ptr, chpl_free_external_array
+from chpl_arrayAndExternArrayType cimport chpl_library_init, chpl_library_finalize, chpl_external_array, chpl_make_external_array, chpl_make_external_array_ptr, chpl_free_external_array, chpl_external_array
 from chpl_arrayAndExternArrayType cimport chpl__init_arrayAndExternArrayType, takesArrays as chpl_takesArrays, returnsExternArray as chpl_returnsExternArray
 
 import numpy
 cimport numpy
+
+cdef class ExternalArray:
+	cdef chpl_external_array _extern_arr
+
+	def __cinit__(self, numpy.uint64_t eltSize, numpy.uint64_t numElts):
+		self._extern_arr = chpl_make_external_array(eltSize, numElts)
+
+	def __cinit__(self):
+		self
+
+	def freeExternalArray(self):
+		chpl_free_external_array(self._extern_arr)
 
 def chpl_setup():
 	cdef char** args = ['arrayAndExternArrayType']
@@ -34,10 +46,15 @@ def chpl_setup():
 def chpl_cleanup():
 	chpl_library_finalize()
 
-def takesArrays( x, chpl_external_array * otherVal):
-	<something>
-	chpl_takesArrays(x_chpl, otherVal)
+def takesArrays(x, ExternalArray otherVal):
+	cdef chpl_external_array chpl_x = chpl_make_external_array(sizeof(numpy.int64_t), len(x))
+	for i in range(len(x)):
+		(<numpy.int64_t*>chpl_x.elts)[i] = x[i]
+	chpl_takesArrays(&chpl_x, &(otherVal._extern_arr))
+	chpl_free_external_array(chpl_x)
 
 def returnsExternArray():
-	ret = chpl_returnsExternArray()
+	cdef chpl_external_array ret_arr = chpl_returnsExternArray()
+	ret = ExternalArray()
+	ret._extern_arr = ret_arr
 	return ret
