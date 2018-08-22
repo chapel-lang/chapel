@@ -486,8 +486,10 @@ static Expr* postFoldPrimop(CallExpr* call) {
   return retval;
 }
 
+// This function implements PRIM_IS_SUBTYPE
 static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
   bool retval = false;
+  bool promotes = false;
 
   if (sub == super) {
     retval = true;
@@ -518,6 +520,11 @@ static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
         }
       }
     }
+  } else if (canCoerce(sub, NULL, super, NULL, &promotes)) {
+
+    // don't consider promotion for this purpose
+    if (promotes == false)
+      retval = true;
   }
 
   return retval;
