@@ -6863,7 +6863,6 @@ void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
 }
 
 
-#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 // Max number of threads that can do buffered atomics
 #define MAX_BUFF_AMO_THREADS 1024
 
@@ -6882,22 +6881,19 @@ static mem_region_t** amo_remote_mr_vp[MAX_BUFF_AMO_THREADS];
 // buffered AMO initialization lock and thread counter
 static atomic_bool amo_init_lock;
 static atomic_uint_least32_t amo_thread_counter;
-#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 
 static
 void buff_amo_init(void) {
-#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
   atomic_init_bool(&amo_init_lock, false);
   atomic_init_uint_least32_t(&amo_thread_counter, 0);
-#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 }
 
 
-#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 static
 void do_remote_amo_V(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
                      void** object_v, size_t* size_v,
                      gni_fma_cmd_type_t* cmd_v, mem_region_t** remote_mr_v) {
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
   gni_post_descriptor_t post_desc;
   gni_ct_amo_post_descriptor_t pdc[MAX_CHAINED_AMO_LEN - 1];
   int vi, ci;
@@ -6942,14 +6938,20 @@ void do_remote_amo_V(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
   // Initiate the transaction and wait for it to complete.
   //
   post_fma_ct_and_wait(locale_v, &post_desc);
-}
+
+#else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+  int vi;
+  for (vi=0; vi<v_len; vi++) {
+    do_nic_amo_nf(opnd1_v[vi], locale_v[vi], object_v[vi], size_v[vi],
+                  cmd_v[vi], remote_mr_v[vi]);
+  }
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+}
 
 
 // for each thread that has done buffered atomics, grab the lock for that
 // thread and if there are built up operations flush them and reset the index
 void chpl_comm_atomic_buff_flush() {
-#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
   uint32_t sz, i;
   sz = atomic_load_uint_least32_t(&amo_thread_counter);
   for(i=0; i<sz; i++) {
@@ -6964,7 +6966,6 @@ void chpl_comm_atomic_buff_flush() {
       atomic_store_bool(amo_lock_p[i], false);
     }
   }
-#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 }
 
 // builds thread local buffers of operations and when the buffer is full,
@@ -6976,7 +6977,6 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
                         gni_fma_cmd_type_t cmd,
                         mem_region_t* remote_mr)
 {
-#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
   // thread local index and lock
   static __thread int vi = 0;
   static __thread atomic_bool lock;
@@ -7059,9 +7059,6 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
 
   // release lock for this thread
   atomic_store_bool(&lock, false);
-#else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
-  do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
-#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 }
 
 static
