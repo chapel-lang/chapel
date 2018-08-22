@@ -39,3 +39,16 @@ def parallelProg(numpy.int64 numTasksToRun):
 
 def threadring(numpy.int64 passes, numpy.int64 tasks):
 	chpl_threadring(passes, tasks)
+from distutils.core import setup
+from distutils.core import Extension
+from Cython.Build import cythonize
+import numpy
+
+import compileline
+chpl_libraries=[l[len('-l'):] for l in compileline.libraries.split() if l.startswith('-l')]
+setup(name = 'checkExplicitLibname library',
+	ext_modules = cythonize(
+		Extension("checkExplicitLibname",
+			include_dirs=[numpy.get_include()],
+			sources=["checkExplicitLibname.pyx"],
+			libraries=["checkExplicitLibname"] + chpl_libraries)))

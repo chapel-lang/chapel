@@ -1,2 +1,3 @@
 lib/chpl_testing.pxd
 lib/testing.pyx
+lib/testing.py
