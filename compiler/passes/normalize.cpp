@@ -1217,6 +1217,17 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_EXPORT) &&
       fn->hasFlag(FLAG_COMPILER_GENERATED) &&
       returnsArray(fn)) {
+    // Save the element type for use at code generation, specifically for Python
+    // modules
+    CallExpr* call = toCallExpr(fn->retExprType->body.tail);
+    int nArgs = call->numActuals();
+    Expr* eltExpr = nArgs == 2 ? call->get(2) : NULL;
+    if (SymExpr* eltSym = toSymExpr(eltExpr)) {
+      if (TypeSymbol* eltType = toTypeSymbol(eltSym->symbol())) {
+        elementType[fn] = eltType;
+      }
+    }
+
     fn->retExprType->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
 
     CallExpr* retCall = toCallExpr(fn->body->body.tail);

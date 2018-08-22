@@ -1804,10 +1804,9 @@ GenRet FnSymbol::codegenPYXType() {
   // Return statement, if applicable
   std::string returnStmt = "";
   if (retType != dtVoid) {
-    if (retType->symbol->hasFlag(FLAG_REF) &&
-        retType->getValType() == dtExternalArray &&
+    if (retType == dtExternalArray &&
         elementType[this] != NULL) {
-      funcCall += "\tcdef chpl_external_array ret_arr = ";
+      funcCall += "cdef chpl_external_array ret_arr = ";
       returnStmt += getPythonArrayReturnStmts();
     } else {
       funcCall += "ret = ";
