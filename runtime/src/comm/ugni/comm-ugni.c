@@ -6842,6 +6842,27 @@ int amo_cmd_2_nic_op(fork_amo_cmd_t cmd, int fetching)
   return nic_cmd;
 }
 
+// Sanity checks on amo operations. Ensure valid size and alignment and that
+// the remote memory region is registered
+static
+inline
+void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
+  if (size == 4) {
+    if (!IS_ALIGNED_32(VP_TO_UI64(object)))
+      CHPL_INTERNAL_ERROR("remote AMO object must be 4-byte aligned");
+  } else if (size == 8) {
+    if (!IS_ALIGNED_64(VP_TO_UI64(object)))
+      CHPL_INTERNAL_ERROR("remote AMO object must be 8-byte aligned");
+  } else {
+    CHPL_INTERNAL_ERROR("unexpected AMO size");
+  }
+
+  if (remote_mr == NULL)
+    CHPL_INTERNAL_ERROR("do_nic_amo(): "
+                        "remote address is not NIC-registered");
+}
+
+
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 #define MAX_BUFF_AMO_THREADS 1024
 static gni_post_descriptor_t* amo_pdc[MAX_BUFF_AMO_THREADS];
@@ -6920,9 +6941,8 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     atomic_store_bool(&amo_init_lock, false);
   }
 
-  if (remote_mr == NULL)
-    CHPL_INTERNAL_ERROR("do_nic_amo(): "
-                        "remote address is not NIC-registered");
+  check_nic_amo(size, object, remote_mr);
+  PERFSTATS_INC(amo_cnt);
 
   while (atomic_exchange_bool(&lock, true)) { local_yield(); }
 
@@ -6940,7 +6960,8 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     post_desc.remote_mem_hndl = remote_mr->mdh;
     post_desc.length          = size;
     post_desc.amo_cmd         = cmd;
-    post_desc.first_operand = *(uint64_t*) opnd1;
+    post_desc.first_operand   = size == 4 ? *(uint32_t*) opnd1:
+                                            *(uint64_t*) opnd1;
   } else {
     if (vi == 0)
       post_desc.next_descr = &pdc[0];
@@ -6951,14 +6972,16 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     pdc[vi].remote_mem_hndl = remote_mr->mdh;
     pdc[vi].length          = size;
     pdc[vi].amo_cmd         = cmd;
-    pdc[vi].first_operand = *(uint64_t*) opnd1;
+    pdc[vi].first_operand   = size == 4 ? *(uint32_t*) opnd1:
+                                          *(uint64_t*) opnd1;
+
   }
   node_v[vi+1] = locale;
   vi++;
+
   //
   // Initiate the transaction and wait for it to complete.
   //
-  PERFSTATS_INC(amo_cnt);
   if (vi == MAX_CHAINED_AMO_LEN-1) {
     post_fma_ct_and_wait(node_v, &post_desc);
     vi = -1;
@@ -6979,20 +7002,8 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
 {
   gni_post_descriptor_t post_desc;
 
-  if (size == 4) {
-    if (!IS_ALIGNED_32(VP_TO_UI64(object)))
-      CHPL_INTERNAL_ERROR("remote AMO object must be 4-byte aligned");
-  }
-  else if (size == 8) {
-    if (!IS_ALIGNED_64(VP_TO_UI64(object)))
-      CHPL_INTERNAL_ERROR("remote AMO object must be 8-byte aligned");
-  }
-  else
-    CHPL_INTERNAL_ERROR("unexpected AMO size");
-
-  if (remote_mr == NULL)
-    CHPL_INTERNAL_ERROR("do_nic_amo(): "
-                        "remote address is not NIC-registered");
+  check_nic_amo(size, object, remote_mr);
+  PERFSTATS_INC(amo_cnt);
 
   //
   // Fill in the POST descriptor.
@@ -7002,25 +7013,16 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
   post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
   post_desc.rdma_mode       = 0;
   post_desc.src_cq_hndl     = 0;
-
   post_desc.remote_addr     = (uint64_t) (intptr_t) object;
   post_desc.remote_mem_hndl = remote_mr->mdh;
   post_desc.length          = size;
-
   post_desc.amo_cmd         = cmd;
-
-  if (size == 4) {
-    post_desc.first_operand = *(uint32_t*) opnd1;
-  }
-  else {
-    post_desc.first_operand = *(uint64_t*) opnd1;
-  }
+  post_desc.first_operand   = size == 4 ? *(uint32_t*) opnd1:
+                                          *(uint64_t*) opnd1;
 
   //
   // Initiate the transaction and wait for it to complete.
   //
-  PERFSTATS_INC(amo_cnt);
-
   post_fma_and_wait_amo(locale, &post_desc);
 }
 
@@ -7036,16 +7038,8 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   fork_amo_data_t       tmp_result;
   gni_post_descriptor_t post_desc;
 
-  if (size == 4) {
-    if (!IS_ALIGNED_32(VP_TO_UI64(object)))
-      CHPL_INTERNAL_ERROR("remote AMO object must be 4-byte aligned");
-  }
-  else if (size == 8) {
-    if (!IS_ALIGNED_64(VP_TO_UI64(object)))
-      CHPL_INTERNAL_ERROR("remote AMO object must be 8-byte aligned");
-  }
-  else
-    CHPL_INTERNAL_ERROR("unexpected AMO size");
+  check_nic_amo(size, object, remote_mr);
+  PERFSTATS_INC(amo_cnt);
 
   //
   // Make sure that, if we need a result, it is in memory known to the
@@ -7068,35 +7062,27 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
     }
   }
 
-  if (remote_mr == NULL)
-    CHPL_INTERNAL_ERROR("do_nic_amo(): "
-                        "remote address is not NIC-registered");
-
   //
   // Fill in the POST descriptor.
   //
-  post_desc.type            = GNI_POST_AMO;
-  post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
-  post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
-  post_desc.rdma_mode       = 0;
-  post_desc.src_cq_hndl     = 0;
-
-  post_desc.local_addr      = (uint64_t) (intptr_t) p_result;
+  post_desc.type               = GNI_POST_AMO;
+  post_desc.cq_mode            = GNI_CQMODE_GLOBAL_EVENT;
+  post_desc.dlvr_mode          = GNI_DLVMODE_PERFORMANCE;
+  post_desc.rdma_mode          = 0;
+  post_desc.src_cq_hndl        = 0;
+  post_desc.local_addr         = (uint64_t) (intptr_t) p_result;
   if (p_result != NULL)
-    post_desc.local_mem_hndl = local_mr->mdh;
-  post_desc.remote_addr     = (uint64_t) (intptr_t) object;
-  post_desc.remote_mem_hndl = remote_mr->mdh;
-  post_desc.length          = size;
-
-  post_desc.amo_cmd         = cmd;
-
+    post_desc.local_mem_hndl   = local_mr->mdh;
+  post_desc.remote_addr        = (uint64_t) (intptr_t) object;
+  post_desc.remote_mem_hndl    = remote_mr->mdh;
+  post_desc.length             = size;
+  post_desc.amo_cmd            = cmd;
   if (size == 4) {
-    post_desc.first_operand = *(uint32_t*) opnd1;
+    post_desc.first_operand    = *(uint32_t*) opnd1;
     if (opnd2 != NULL)
       post_desc.second_operand = *(uint32_t*) opnd2;
-  }
-  else {
-    post_desc.first_operand = *(uint64_t*) opnd1;
+  } else {
+    post_desc.first_operand    = *(uint64_t*) opnd1;
     if (opnd2 != NULL)
       post_desc.second_operand = *(uint64_t*) opnd2;
   }
@@ -7104,8 +7090,6 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   //
   // Initiate the transaction and wait for it to complete.
   //
-  PERFSTATS_INC(amo_cnt);
-
   post_fma_and_wait(locale, &post_desc, true);
 
   if (p_result != result) {
