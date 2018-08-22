@@ -1,0 +1,2 @@
+lib/chpl_intArrays.pxd
+lib/intArrays.pyx

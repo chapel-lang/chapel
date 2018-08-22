@@ -1,0 +1,2 @@
+lib/chpl_realArrays.pxd
+lib/realArrays.pyx

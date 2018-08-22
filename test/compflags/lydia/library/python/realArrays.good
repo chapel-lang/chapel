@@ -1,0 +1,42 @@
+from libc.stdint cimport *
+
+cdef extern from "realArrays.h":
+	void chpl__init_realArrays(int64_t _ln, int32_t _fn);
+	void takesArray(chpl_external_array * x);
+	chpl_external_array returnsArray();
+
+cdef extern from "chpltypes.h":
+	ctypedef void* c_fn_ptr
+
+cdef extern from "chpl-init.h":
+	void chpl_library_init(int argc, char* argv[])
+	void chpl_library_finalize()
+
+cdef extern from "chpl-external-array.h":
+	ctypedef struct chpl_external_array:
+		void* elts
+		uint64_t size
+
+	chpl_external_array chpl_make_external_array(uint64_t elt_size, uint64_t num_elts)
+	chpl_external_array chpl_make_external_array_ptr(void* elts, uint64_t size)
+	void chpl_free_external_array(chpl_external_array x)
+from chpl_realArrays cimport chpl_library_init, chpl_library_finalize, chpl_external_array, chpl_make_external_array, chpl_make_external_array_ptr, chpl_free_external_array
+from chpl_realArrays cimport chpl__init_realArrays, takesArray as chpl_takesArray, returnsArray as chpl_returnsArray
+
+import numpy
+cimport numpy
+
+def chpl_setup():
+	cdef char** args = ['realArrays']
+	chpl_library_init(1, args)
+	chpl__init_realArrays(1, 1)
+
+def chpl_cleanup():
+	chpl_library_finalize()
+
+def takesArray( x):
+	chpl_takesArray(chpl_x)
+
+def returnsArray():
+	ret = chpl_returnsArray()
+	return ret
