@@ -7,7 +7,7 @@ found in the Mason Registry so that a package list can be
 automatically generated.
 
 An authentication token is needed from github in order to
-make more than a few requests ever hour.
+make more than a few requests every hour.
 
 Dependencies
   Python3,
