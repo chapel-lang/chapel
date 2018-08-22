@@ -31,7 +31,6 @@ proc masonRun(args) throws {
   var exec = false;
   var execopts: [1..0] string;
 
-  writeln(" ".join(args));
   if args.size > 2 {
     for arg in args[2..] {
       if exec == true {

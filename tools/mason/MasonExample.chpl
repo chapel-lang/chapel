@@ -260,6 +260,8 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 private proc runExampleBinary(projectHome: string, exampleName: string,
                               show: bool, execopts: string) throws {
   const command = "".join(projectHome,'/target/example/', exampleName, " ", execopts);
+  if show then writeln("Executing binary: " + command);
+
   const exampleResult = runWithStatus(command, true);
   if exampleResult != 0 {
     throw new MasonError("Mason failed to find and run compiled example: " + exampleName + ".chpl");

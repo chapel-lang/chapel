@@ -4,13 +4,7 @@ compiled depExample.chpl successfully
 compiled example.chpl successfully
 compiled nomodule.chpl successfully
 compiled examplesubdir/subdirExample.chpl successfully
---- available examples ---
- --- depExample.chpl
- --- example.chpl
- --- nomodule.chpl
- --- examplesubdir/subdirExample.chpl
---------------------------
 Example with dependency Passed!
+Example Passed!
 Example with dependency outside module Passed!
 Example within subdirectory Passed!
-Example Passed!
