@@ -364,6 +364,11 @@ static void changeCastInWhere(FnSymbol* fn) {
           to->remove();
           from->remove();
 
+          // Note, this deprecation warning along with the rest of
+          // changeCastInWhere should be removed after 1.18.
+          USR_WARN(call, "Special handling for : in where clauses has "
+                         "been deprecated. Please use isSubtype instead.");
+
           call->replace(new CallExpr(PRIM_IS_SUBTYPE, to, from));
         }
       }
