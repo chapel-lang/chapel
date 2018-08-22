@@ -286,6 +286,7 @@ static void setupPythonTypeMap() {
 
 static void makePXDFile(std::vector<FnSymbol*> functions);
 static void makePYXFile(std::vector<FnSymbol*> functions);
+static void makePYFile();
 
 void codegen_library_python(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile && fLibraryPython) {
@@ -296,6 +297,7 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
 
     makePXDFile(functions);
     makePYXFile(functions);
+    makePYFile();
   }
 }
 
@@ -419,6 +421,53 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
   // the exported Chapel code is no longer needed
   fprintf(outfile, "def chpl_cleanup():\n");
   fprintf(outfile, "\tchpl_library_finalize()\n");
+}
+
+// create the Python file which will be used to compile the .pyx, .pxd, library,
+// and header files into a Python module.
+static void makePYFile() {
+  fileinfo py = { NULL, NULL, NULL };
+
+  openLibraryHelperFile(&py, pythonModulename, "py");
+
+  if (py.fptr != NULL) {
+    FILE* save_cfile = gGenInfo->cfile;
+
+    gGenInfo->cfile = py.fptr;
+
+    std::string libname = "";
+    int libLength = strlen("lib");
+    bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+    if (startsWithLib) {
+      libname += &executableFilename[libLength];
+    } else {
+      libname = executableFilename;
+    }
+
+    // Imports
+    fprintf(py.fptr, "from distutils.core import setup\n");
+    fprintf(py.fptr, "from distutils.core import Extension\n");
+    fprintf(py.fptr, "from Cython.Build import cythonize\n");
+    fprintf(py.fptr, "import numpy\n\n");
+
+    // Get the static Chapel runtime and third-party libraries
+    fprintf(py.fptr, "import compileline\n");
+    fprintf(py.fptr, "chpl_libraries=[l[len('-l'):] for l in compileline.");
+    fprintf(py.fptr, "libraries.split() if l.startswith('-l')]\n");
+
+    // Cythonize me, Captain!
+    fprintf(py.fptr, "setup(name = '%s library',\n", pythonModulename);
+    fprintf(py.fptr, "\text_modules = cythonize(\n");
+    fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename);
+    fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
+    fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename);
+    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries)))\n",
+            libname.c_str());
+
+    gGenInfo->cfile = save_cfile;
+  }
+  // Don't "beautify", it will remove the tabs
+  closeLibraryHelperFile(&py, false);
 }
 
 // Skip this function if it is defined in an internal module, or if it is
