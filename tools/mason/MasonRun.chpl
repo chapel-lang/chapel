@@ -44,8 +44,7 @@ proc masonRun(args) throws {
         masonBuildRun(args);
         exit(1);
       }
-      else if arg == '==' {
-        
+      else if arg == '-' {        
         exec = true;
       }
       else if arg == '--show' {
@@ -104,7 +103,10 @@ proc runProjectBinary(show: bool, release: bool, execopts: [?d] string) throws {
       // add execopts
       command += " " + execs;
 
-      if show then writeln("Executing binary: " + command);
+      if show {
+        if release then writeln("Executing [release] target: " + command);
+        else writeln("Executing [debug] target: " + command);
+      }
 
       // Build if not built, throwing error if Mason.toml doesnt exist
       if isFile(joinPath(projectHome, "Mason.lock")) && built then {
@@ -143,14 +145,15 @@ private proc masonBuildRun(args: [?d] string) {
     var force = false;
     var exec = false;
     var buildExample = false;
+    var updateRegistry = true;
     var execopts: [1..0] string;  
     for arg in args[2..] {
       if exec == true {
         execopts.push_back(arg);
       }
-      else if arg == "==" {
-        if example == true then
-          throw new MasonError("Examples do not support `==` syntax");
+      else if arg == "-" {
+        if example then
+          throw new MasonError("Examples do not support `-` syntax");
         exec = true;
       }
       else if arg == "--example" {
@@ -168,6 +171,9 @@ private proc masonBuildRun(args: [?d] string) {
       else if arg == "--release" {
         release = true;
       }
+      else if arg == '--no-update' {
+        updateRegistry = false;
+      }
       else {
         // could be examples or execopts
         execopts.push_back(arg);
@@ -182,6 +188,7 @@ private proc masonBuildRun(args: [?d] string) {
     }
     else {
       var buildArgs: [0..1] string = ["mason", "build"];
+      if !updateRegistry then buildArgs.push_back("--no-update");
       if release then buildArgs.push_back("--release");
       if force then buildArgs.push_back("--force");
       if show then buildArgs.push_back("--show");

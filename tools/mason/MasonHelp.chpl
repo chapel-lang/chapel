@@ -84,12 +84,16 @@ proc masonRunHelp() {
   writeln('        --show                   Increase verbosity');
   writeln('        --example <example>      Run an example');
   writeln();
-  writeln('Runtime arguments can also be included after the run arguments ');
   writeln('When --example is thrown without an example, all available examples will be listed');
   writeln();
   writeln('When no options are provided, the following will take place:');
   writeln('   - Execute binary from mason project if target/ is present');
   writeln('   - If no target directory, build and run is Mason.toml is present');
+  writeln();
+  writeln('Runtime arguments can be inluded after mason arguments.');
+  writeln('To ensure that runtime arguments and mason arguments to not conflict, seperate them');
+  writeln('with a single dash(`-`). For example');
+  writeln('   e.g. mason run --build - --runtimeArg=true');
 }
 
 proc masonBuildHelp() {
@@ -104,10 +108,16 @@ proc masonBuildHelp() {
   writeln('        --release                Compile to target/release with optimizations (--fast)');
   writeln('        --force                  Force Mason to build the project');
   writeln('        --example <example>      Build an example from the example/ directory');
+  writeln('        --no-update              Do not update the mason registry before building');
   writeln();
   writeln('When --example is thrown without an example, all examples will be built');
   writeln('When no options are provided, the following will take place:');
-  writeln('   - Build from mason project if Mason.lock present');  
+  writeln('   - Build from mason project if Mason.lock present');
+  writeln();
+  writeln('Compilation flags and arguments can be inluded after mason arguments.');
+  writeln('To ensure compilation flags and mason arguments to not conlict, seperate them with a');
+  writeln('single dash(`-`). For example');
+  writeln('   e.g. mason build --force - --savec tmpdir');
 }
 
 proc masonNewHelp() {

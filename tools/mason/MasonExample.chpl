@@ -228,7 +228,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
             else {
               if show || !run then writeln("compiled ", example, " successfully");
               if run {
-                runExampleBinary(projectHome, exampleName, show, exampleExecopts);
+                runExampleBinary(projectHome, exampleName, release, show, exampleExecopts);
               }
             }
           }
@@ -236,13 +236,13 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
           else {
             writeln("Skipping "+ example + ": no changes made to project or example");
             if run {
-              runExampleBinary(projectHome, exampleName, show, exampleExecopts);
+              runExampleBinary(projectHome, exampleName, release, show, exampleExecopts);
             }
           }
         }
         // just running the example
         else {
-          runExampleBinary(projectHome, exampleName, show, exampleExecopts);
+          runExampleBinary(projectHome, exampleName, release, show, exampleExecopts);
         }
       }
     }
@@ -258,9 +258,12 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
 
 private proc runExampleBinary(projectHome: string, exampleName: string,
-                              show: bool, execopts: string) throws {
+                              release: bool, show: bool, execopts: string) throws {
   const command = "".join(projectHome,'/target/example/', exampleName, " ", execopts);
-  if show then writeln("Executing binary: " + command);
+  if show {
+    if release then writeln("Executing [release] target: " + command);
+    else writeln("Executing [debug] target: " + command);
+  }
 
   const exampleResult = runWithStatus(command, true);
   if exampleResult != 0 {
