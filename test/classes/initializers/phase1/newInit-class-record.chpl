@@ -11,7 +11,7 @@ class Container {
 record Stored {
   var x: bool;
 
-  proc init(xVal) where !xVal: Stored {
+  proc init(xVal) where !isSubtype(xVal, Stored) {
     x = xVal;
   }
 }
