@@ -1750,6 +1750,10 @@ expr:
     { $$ = new CallExpr(PRIM_TUPLE_EXPAND, $3); }
 | expr TCOLON expr
     { $$ = createCast($1, $3); }
+| expr TCOLON TBORROWED
+    { $$ = new CallExpr("_to_borrowed", $1); }
+| expr TCOLON TUNMANAGED
+    { $$ = new CallExpr("_to_unmanaged", $1); }
 | expr TDOTDOT expr
     { $$ = new CallExpr("chpl_build_bounded_range", $1, $3); }
 | expr TDOTDOT

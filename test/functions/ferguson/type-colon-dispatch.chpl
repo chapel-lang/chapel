@@ -49,6 +49,7 @@ proc foo(type t:borrowed object) {
 writeln("foo");
 foo(int);
 foo(int(8));
+foo(uint);
 foo(real);
 foo(R(complex));
 foo(borrowed Parent);
@@ -93,6 +94,7 @@ proc bar(type t) where (isSubtype(t,borrowed object) &&
 writeln("bar");
 bar(int);
 bar(int(8));
+bar(uint);
 bar(real);
 bar(R(complex));
 bar(borrowed Parent);

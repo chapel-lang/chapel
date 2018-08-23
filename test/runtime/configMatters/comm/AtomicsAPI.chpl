@@ -59,3 +59,18 @@ proc testAtomicT(a, ref i, ref b, type basetype) {
   asyncAdd(a);      a.waitFor(6);                   writea ("waitFor ", a);
   writeln();
 }
+
+proc testBuffAtomicT(a, ref i, ref b, type basetype) {
+  use BufferedAtomics;
+  inline proc flush() { flushAtomicBuff(); }
+  param isInt = isIntegral(basetype);
+
+  writeln("Testing 'atomic " + basetype:string + "':");
+                                                    writea ("init    ", a);
+                    a.addBuff(8); flush();          writea ("add     ", a);
+                    a.subBuff(1); flush();          writea ("sub     ", a);
+  if isInt {        a.orBuff(10); flush();          writea ("or      ", a);      }
+  if isInt {        a.andBuff(5); flush();          writea ("and     ", a);      }
+  if isInt {        a.xorBuff(5); flush();          writea ("xor     ", a);      }
+  writeln();
+}

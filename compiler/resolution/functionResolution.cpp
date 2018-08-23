@@ -2008,6 +2008,8 @@ void resolveDestructor(AggregateType* at) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool resolveTypeComparisonCall(CallExpr* call);
+
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
     switch (call->primitive->tag) {
@@ -2055,7 +2057,10 @@ void resolveCall(CallExpr* call) {
     }
 
   } else {
-    resolveNormalCall(call);
+
+    if (resolveTypeComparisonCall(call) == false) {
+      resolveNormalCall(call);
+    }
   }
 }
 
@@ -2063,6 +2068,52 @@ void resolveCall(CallExpr* call) {
 FnSymbol* tryResolveCall(CallExpr* call) {
   return resolveNormalCall(call, true);
 }
+
+static bool resolveTypeComparisonCall(CallExpr* call) {
+
+  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
+    if (call->numActuals() == 2) {
+      const char* name = urse->unresolved;
+
+      bool lt  = name == astrSlt;
+      bool lte = name == astrSlte;
+      bool gt  = name == astrSgt;
+      bool gte = name == astrSgte;
+
+      if (lt || lte || gt || gte) {
+        SymExpr* lhs = toSymExpr(call->get(1));
+        SymExpr* rhs = toSymExpr(call->get(2));
+
+        if (lhs && rhs &&
+            lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
+            rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+
+          rhs->remove();
+          lhs->remove();
+          call->baseExpr->remove();
+
+          if (lte || gte)
+            call->primitive = primitives[PRIM_IS_SUBTYPE];
+          else
+            call->primitive = primitives[PRIM_IS_PROPER_SUBTYPE];
+
+          if (lt || lte) {
+            call->insertAtTail(rhs);
+            call->insertAtTail(lhs);
+          } else {
+            call->insertAtTail(lhs);
+            call->insertAtTail(rhs);
+          }
+
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 
 /************************************* | **************************************
 *                                                                             *

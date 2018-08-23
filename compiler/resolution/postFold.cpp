@@ -261,7 +261,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
       }
     }
 
-  } else if (call->isPrimitive(PRIM_IS_SUBTYPE) == true) {
+  } else if (call->isPrimitive(PRIM_IS_SUBTYPE) ||
+             call->isPrimitive(PRIM_IS_PROPER_SUBTYPE)) {
     SymExpr* parentExpr = toSymExpr(call->get(1));
     SymExpr* subExpr    = toSymExpr(call->get(2));
 
@@ -288,7 +289,12 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
           st->symbol->hasFlag(FLAG_GENERIC) == false) {
 
-        if (isSubTypeOrInstantiation(st, pt) == true) {
+        bool result = isSubTypeOrInstantiation(st, pt);
+
+        if (call->isPrimitive(PRIM_IS_PROPER_SUBTYPE))
+          result = result && (st != pt);
+
+        if (result == true) {
           retval = new SymExpr(gTrue);
 
         } else {
@@ -486,41 +492,20 @@ static Expr* postFoldPrimop(CallExpr* call) {
   return retval;
 }
 
+// This function implements PRIM_IS_SUBTYPE
 static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
-  bool retval = false;
 
-  if (sub == super) {
-    retval = true;
+  // Consider instantiation
+  if (super->symbol->hasFlag(FLAG_GENERIC))
+    super = getInstantiationType(sub, super);
 
-  } else if (canInstantiate(sub, super)) {
-    // handles special cases like dtIntegral, which aren't covered
-    // by at->instantiatedFrom
-    retval = true;
+  bool promotes = false;
+  bool dispatch = false;
 
-  } else if (isAggregateType(sub) || isUnmanagedClassType(sub)) {
-    // handle unmanaged / class types
-    AggregateType* subAt = toAggregateType(sub);
-    Type* useSuper = super;
+  if (sub && super)
+    dispatch = canDispatch(sub, NULL, super, NULL, &promotes);
 
-    if (classesWithSameKind(sub, super)) {
-      subAt = toAggregateType(canonicalClassType(sub));
-      useSuper = canonicalClassType(super);
-    }
-
-    if (subAt) {
-      for (int i = 0; i < subAt->dispatchParents.n && retval == false; i++) {
-        retval = isSubTypeOrInstantiation(subAt->dispatchParents.v[i], useSuper);
-      }
-
-      if (retval == false) {
-        if (subAt->instantiatedFrom != NULL) {
-          retval = isSubTypeOrInstantiation(subAt->instantiatedFrom, useSuper);
-        }
-      }
-    }
-  }
-
-  return retval;
+  return dispatch && !promotes;
 }
 
 static void insertValueTemp(Expr* insertPoint, Expr* actual) {

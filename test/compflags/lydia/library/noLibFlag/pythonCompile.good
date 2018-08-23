@@ -48,3 +48,14 @@ def parallelProg(numpy.int64 numTasksToRun):
 
 def threadring(numpy.int64 passes, numpy.int64 tasks):
 	chpl_threadring(passes, tasks)
+from distutils.core import setup
+from distutils.core import Extension
+from Cython.Build import cythonize
+import numpy
+
+setup(name = 'pythonCompile library',
+	ext_modules = cythonize(
+		Extension("pythonCompile",
+			include_dirs=[numpy.get_include()],
+			sources=["pythonCompile.pyx"],
+			libraries=["pythonCompile"] + chpl_libraries)))

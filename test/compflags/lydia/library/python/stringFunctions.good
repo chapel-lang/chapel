@@ -47,3 +47,14 @@ def takeAndReturn(bytes x):
 	cdef const char* chpl_x = x
 	ret = chpl_takeAndReturn(chpl_x)
 	return ret
+from distutils.core import setup
+from distutils.core import Extension
+from Cython.Build import cythonize
+import numpy
+
+setup(name = 'stringFunctions library',
+	ext_modules = cythonize(
+		Extension("stringFunctions",
+			include_dirs=[numpy.get_include()],
+			sources=["stringFunctions.pyx"],
+			libraries=["stringFunctions"] + chpl_libraries)))

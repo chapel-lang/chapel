@@ -3793,6 +3793,20 @@ static void addChar(char c) {
 // Escapes
 static void addCharEscapeNonprint(char c) {
   int escape  = !(isascii(c) && isprint(c));
+  //
+  // If the previous character sequence was a hex escape and the current
+  // character is a hex digit, escape it also.  Otherwise, conforming
+  // target C compilers interpret this character as a continuation of
+  // the previous hex escape.
+  //
+  if (isxdigit(c)) {
+    size_t len = stringBuffer.length();
+    if (len >= 4 && stringBuffer[len - 4] == '\\' &&
+        (stringBuffer[len - 3] == 'x' || stringBuffer[len - 3] == 'X') &&
+        isxdigit(stringBuffer[len - 2]) && isxdigit(stringBuffer[len - 1])) {
+      escape = 1;
+    }
+  }
 
   if (escape) {
     stringBuffer.push_back('\\');

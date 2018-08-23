@@ -128,8 +128,41 @@ module UtilMisc_forDocs {
     __primitive("chpl_exit_any", status);
   }
 
-  /* Returns `true` if the type `sub` is a subtype of the type `super`. */
+  /* Returns `true` if the type `sub` is a subtype of the type `super`.
+     In particular, returns `true` in any of these cases:
+
+       * `sub` is the same type as `super`
+       * `sub` is an instantiation of a generic type `super`
+       * `sub` is a class type inheriting from `super`
+       * `sub` is a type that coerces to `super`
+     */
   proc isSubtype(type sub, type super) param {
     __primitive("is_subtype", super, sub);
   }
+
+   /* As with :proc:`isSubtype` but returns `false` if
+      `sub` and `super` refer to the same type.
+     */
+  proc isProperSubtype(type sub, type super) param {
+    __primitive("is_proper_subtype", super, sub);
+  }
+
+  /* :returns: isProperSubtype(a,b) */
+  proc <(type a, type b) param {
+    return isProperSubtype(a,b);
+  }
+  /* :returns: isSubtype(a,b) */
+  proc <=(type a, type b) param {
+    return isSubtype(a,b);
+  }
+  /* :returns: isProperSubtype(b,a) */
+  proc >(type a, type b) param {
+    return isProperSubtype(b,a);
+  }
+  /* :returns: isSubtype(b,a) */
+  proc <=(type a, type b) param {
+    return isSubtype(b,a);
+  }
+
+
 }
