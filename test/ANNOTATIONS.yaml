@@ -345,6 +345,9 @@ all:
   08/01/18:
     - text: cannot reproduce old numbers for gn+aries
       config: 16 node XC
+  08/15/18:
+    - text: Revert to stack-allocated rfDone indicators. (#10728)
+      config: 16 node XC
 
 
 AllCompTime:
@@ -499,6 +502,12 @@ create-views:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
   04/19/18:
     - Use zero-arg initializer in BaseDom (#9250)
+  06/30/18:
+    - text: Could not repro old numbers (later "fixed" by reboot)
+      config: chapcs
+  08/04/18:
+    - text: Machine rebooted
+      config: chapcs
 
 dgemm.128:
   09/06/13:
@@ -591,11 +600,6 @@ fastaredux:
 
 fft-timecomp:
   <<: *timecomp-base
-
-fft.ml-perf:
-  08/15/18:
-    - Revert to stack-allocated rfDone indicators. (#10728)
-
 
 forall-dom-range:
   01/22/15:
@@ -1091,8 +1095,6 @@ ra:
 ra.ml-perf:
   09/19/17:
     - machine changes, cannot reproduce old numbers
-  08/15/18:
-    - Revert to stack-allocated rfDone indicators. (#10728)
 
 ra-atomics.ml-perf:
   10/03/17:
@@ -1313,6 +1315,8 @@ timeVectorArray:
     - Enforce qualified refs after inlining (#7906)
   06/22/18:
     - Make 'for' loop in dsiReallocate parallel (#9895)
+  08/17/18:
+    - Add a new dsiReallocate that is aware of allocated size (#10793)
 
 views-forall-iter:
   10/12/17:
