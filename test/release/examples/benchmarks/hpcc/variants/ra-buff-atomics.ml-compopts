@@ -11,4 +11,4 @@ nu = 10000000
 if ugni:
   nu = 1000000000
 
-print('-sn=33:indexType -sN_U={0}:indexType -sverify=false # ra.atomic-n33'.format(nu))
+print('-sn=33:indexType -sN_U={0}:indexType -sverify=false # ra.buff-atomic-n33'.format(nu))
