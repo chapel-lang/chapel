@@ -455,6 +455,7 @@ static void makePYFile() {
     // Get the static Chapel runtime and third-party libraries
     fprintf(py.fptr, "chpl_libraries=[");
     bool first = true;
+    // Get the libraries listed in require statements
     for_vector(const char, libName, libFiles) {
       if (first) {
         first = false;
@@ -468,6 +469,8 @@ static void makePYFile() {
     libraries.copy(copyOfLib, libraries.length(), 0);
     int prefixLen = strlen("-l");
     char* curSection = strtok(copyOfLib, " \n");
+    // Get the libraries from compileline --libraries, taking the `name`
+    // portion from all `-lname` parts of that command's output
     while (curSection != NULL) {
       if (strncmp(curSection, "-l", prefixLen) == 0) {
         if (first) {
