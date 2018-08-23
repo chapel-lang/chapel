@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# The value in that variable will vary depending on the system, so don't check
+# its contents
+sed -i '' '/^chpl_libraries/d' $2

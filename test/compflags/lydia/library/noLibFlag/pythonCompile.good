@@ -44,8 +44,6 @@ from distutils.core import Extension
 from Cython.Build import cythonize
 import numpy
 
-import compileline
-chpl_libraries=[l[len('-l'):] for l in compileline.libraries.split() if l.startswith('-l')]
 setup(name = 'pythonCompile library',
 	ext_modules = cythonize(
 		Extension("pythonCompile",
