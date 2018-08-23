@@ -1922,6 +1922,10 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
 
 const char* astrSdot = NULL;
 const char* astrSequals = NULL;
+const char* astrSgt = NULL;
+const char* astrSgte = NULL;
+const char* astrSlt = NULL;
+const char* astrSlte = NULL;
 const char* astr_cast = NULL;
 const char* astr_defaultOf = NULL;
 const char* astrInit = NULL;
@@ -1939,6 +1943,10 @@ const char* astr_loopexpr_iter = NULL;
 void initAstrConsts() {
   astrSdot    = astr(".");
   astrSequals = astr("=");
+  astrSgt = astr(">");
+  astrSgte = astr(">=");
+  astrSlt = astr("<");
+  astrSlte = astr("<=");
   astr_cast   = astr("_cast");
   astr_defaultOf = astr("_defaultOf");
   astrInit    = astr("init");
