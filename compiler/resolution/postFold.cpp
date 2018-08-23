@@ -488,46 +488,18 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
 // This function implements PRIM_IS_SUBTYPE
 static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
-  bool retval = false;
+
+  // Consider instantiation
+  if (super->symbol->hasFlag(FLAG_GENERIC))
+    super = getInstantiationType(sub, super);
+
   bool promotes = false;
+  bool dispatch = false;
 
-  if (sub == super) {
-    retval = true;
+  if (sub && super)
+    dispatch = canDispatch(sub, NULL, super, NULL, &promotes);
 
-  } else if (canInstantiate(sub, super)) {
-    // handles special cases like dtIntegral, which aren't covered
-    // by at->instantiatedFrom
-    retval = true;
-
-  } else if (isAggregateType(sub) || isUnmanagedClassType(sub)) {
-    // handle unmanaged / class types
-    AggregateType* subAt = toAggregateType(sub);
-    Type* useSuper = super;
-
-    if (classesWithSameKind(sub, super)) {
-      subAt = toAggregateType(canonicalClassType(sub));
-      useSuper = canonicalClassType(super);
-    }
-
-    if (subAt) {
-      for (int i = 0; i < subAt->dispatchParents.n && retval == false; i++) {
-        retval = isSubTypeOrInstantiation(subAt->dispatchParents.v[i], useSuper);
-      }
-
-      if (retval == false) {
-        if (subAt->instantiatedFrom != NULL) {
-          retval = isSubTypeOrInstantiation(subAt->instantiatedFrom, useSuper);
-        }
-      }
-    }
-  } else if (canCoerce(sub, NULL, super, NULL, &promotes)) {
-
-    // don't consider promotion for this purpose
-    if (promotes == false)
-      retval = true;
-  }
-
-  return retval;
+  return dispatch && !promotes;
 }
 
 static void insertValueTemp(Expr* insertPoint, Expr* actual) {
