@@ -48,3 +48,14 @@ def returnsArray():
 		ret[i] = (<double*>ret_arr.elts)[i]
 	chpl_free_external_array(ret_arr)
 	return ret
+from distutils.core import setup
+from distutils.core import Extension
+from Cython.Build import cythonize
+import numpy
+
+setup(name = 'realArrays library',
+	ext_modules = cythonize(
+		Extension("realArrays",
+			include_dirs=[numpy.get_include()],
+			sources=["realArrays.pyx"],
+			libraries=["realArrays"] + chpl_libraries)))

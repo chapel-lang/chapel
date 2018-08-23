@@ -58,3 +58,14 @@ def returnsExternArray():
 	ret = ExternalArray()
 	ret._extern_arr = ret_arr
 	return ret
+from distutils.core import setup
+from distutils.core import Extension
+from Cython.Build import cythonize
+import numpy
+
+setup(name = 'arrayAndExternArrayType library',
+	ext_modules = cythonize(
+		Extension("arrayAndExternArrayType",
+			include_dirs=[numpy.get_include()],
+			sources=["arrayAndExternArrayType.pyx"],
+			libraries=["arrayAndExternArrayType"] + chpl_libraries)))
