@@ -414,6 +414,48 @@ proc DimensionalDist2D.init(
                      this.targetLocales, true, this.targetLocales.domain.low);
 }
 
+proc DimensionalDist2D.init(
+  forDomain: domain,
+  targetLocales: [] locale,
+  di1,
+  di2,
+  name: string = "dimensional distribution",
+  type idxType = int,
+  dataParTasksPerLocale: int      = getDataParTasksPerLocale(),
+  dataParIgnoreRunningTasks: bool = getDataParIgnoreRunningTasks(),
+  dataParMinGranularity: int      = getDataParMinGranularity()
+) {
+  this.init(targetLocales=targetLocales,
+            di1=di1,
+            di2=di2,
+            name=name,
+            idxType=idxType,
+            dataParTasksPerLocale=dataParTasksPerLocale,
+            dataParIgnoreRunningTasks=dataParIgnoreRunningTasks,
+            dataParMinGranularity=dataParMinGranularity);
+}
+
+proc DimensionalDist2D.init(
+  type forDomainType,
+  targetLocales: [] locale,
+  di1,
+  di2,
+  name: string = "dimensional distribution",
+  type idxType = int,
+  dataParTasksPerLocale: int      = getDataParTasksPerLocale(),
+  dataParIgnoreRunningTasks: bool = getDataParIgnoreRunningTasks(),
+  dataParMinGranularity: int      = getDataParMinGranularity()
+) {
+  this.init(targetLocales=targetLocales,
+            di1=di1,
+            di2=di2,
+            name=name,
+            idxType=idxType,
+            dataParTasksPerLocale=dataParTasksPerLocale,
+            dataParIgnoreRunningTasks=dataParIgnoreRunningTasks,
+            dataParMinGranularity=dataParMinGranularity);
+}
+
 //
 // Having targetLocales be a constant means we have to reshape Locales
 // before invoking the initializer. This method does that.
