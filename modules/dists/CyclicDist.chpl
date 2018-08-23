@@ -27,6 +27,17 @@ proc _determineIdxTypeFromStartIdx(startIdx) type {
   return if isTuple(startIdx) then startIdx(1).type else startIdx.type;
 }
 
+proc _defaultStartIdx(type forDomainType:domain) {
+  var D:forDomainType; // this shouldn't be necessary
+  if D.rank == 1 {
+    var ret: D.idxType;
+    return ret;
+  } else {
+    var ret: D.rank * D.idxType;
+    return ret;
+  }
+}
+
 config param debugCyclicDist = false;
 config param verboseCyclicDistWriters = false;
 config param debugCyclicDistBulkTransfer = false;
@@ -261,6 +272,26 @@ class Cyclic: BaseDist {
               rank=rank,
               idxType=idxType);
   }
+
+  proc init(type forDomainType:domain,
+            startIdx=_defaultStartIdx(forDomainType),
+            targetLocales: [] locale = Locales,
+            dataParTasksPerLocale=getDataParTasksPerLocale(),
+            dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+            dataParMinGranularity=getDataParMinGranularity(),
+            param rank: int = _determineRankFromStartIdx(_defaultStartIdx(forDomainType)),
+            type idxType = _determineIdxTypeFromStartIdx(_defaultStartIdx(forDomainType)))
+    where isTuple(startIdx) || isIntegralType(startIdx.type) {
+
+    this.init(startIdx=startIdx,
+              targetLocales=targetLocales,
+              dataParTasksPerLocale=dataParTasksPerLocale,
+              dataParIgnoreRunningTasks=dataParIgnoreRunningTasks,
+              dataParMinGranularity=dataParMinGranularity,
+              rank=rank,
+              idxType=idxType);
+  }
+
 
 
   proc dsiAssign(other: this.type) {
