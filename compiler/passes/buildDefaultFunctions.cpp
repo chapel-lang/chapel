@@ -1128,7 +1128,7 @@ static void build_record_assignment_function(AggregateType* ct) {
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
   arg1->addFlag(FLAG_MARKED_GENERIC);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_REF_MAYBE_CONST, "_arg2", ct);
   arg2->addFlag(FLAG_MARKED_GENERIC);
 
   fn->insertFormalAtTail(arg1);
