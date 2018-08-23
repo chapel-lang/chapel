@@ -27,7 +27,7 @@ cat <<PART_1
 %define real_name chapel
 %define version $rpm_version
 %define pkg_version $pkg_version
-%define src_version $src_version
+%define chpl_home_basename $( basename "$CHPL_HOME" )
 %define pkg_release $rpm_release
 %define build_type $chpl_platform
 %define _binary_payload w9.gzdio
@@ -35,7 +35,7 @@ PART_1
 
 # Notes:
 #
-#   "Source: %{real_name}-%{src_version}.tar.gz" (below) is bogus.
+#   "Source: %{chpl_home_basename}.tar.gz" (below) is bogus.
 #   There is no such file. We do not use the usual RPM %setup macro.
 #   Instead, we provide a _builddir (RPM_BUILD_DIR) already
 #   pre-populated, to save the time of tarring/un-tarring the big
@@ -55,7 +55,7 @@ Prefix:  /opt
 License: Copyright 2018, Cray Inc. All Rights Reserved.
 Packager: Cray, Inc
 Group:   Development/Languages/Other
-Source:  %{real_name}-%{src_version}.tar.gz
+Source:  %{chpl_home_basename}.tar.gz
 AutoReqProv: no
 Requires:   modulefile-utils_1
 Requires:   set_default_2
@@ -76,7 +76,7 @@ Chapel language compiler and libraries
 
 %prep
 
-cd $RPM_BUILD_DIR/%{real_name}-%{src_version}
+cd $RPM_BUILD_DIR/%{chpl_home_basename}
 chmod -Rf a+rX,u+w,g-w,o-w .
 
 %build
@@ -91,7 +91,7 @@ rm -f                                                   $RPM_BUILD_ROOT/%{prefix
 cp -p       modulefile-%{pkg_version}                   $RPM_BUILD_ROOT/%{prefix}/modulefiles/%{real_name}/%{pkg_version}
 mkdir -p                                                $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type}
 
-cd          $RPM_BUILD_DIR/%{real_name}-%{src_version}
+cd          $RPM_BUILD_DIR/%{chpl_home_basename}
 find . -mindepth 1 -maxdepth 1 -exec mv -f {}           $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type} \;
 # Clean up *.o files
 #rm -rf     $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/*/*/gen
