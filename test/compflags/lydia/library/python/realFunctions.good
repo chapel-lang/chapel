@@ -36,3 +36,14 @@ def getReal():
 def takeAndReturn(float x):
 	ret = chpl_takeAndReturn(x)
 	return ret
+from distutils.core import setup
+from distutils.core import Extension
+from Cython.Build import cythonize
+import numpy
+
+setup(name = 'realFunctions library',
+	ext_modules = cythonize(
+		Extension("realFunctions",
+			include_dirs=[numpy.get_include()],
+			sources=["realFunctions.pyx"],
+			libraries=["realFunctions"] + chpl_libraries)))

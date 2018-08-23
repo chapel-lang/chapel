@@ -36,3 +36,14 @@ def getComplex():
 def takeAndReturn(numpy.complex128 x):
 	ret = chpl_takeAndReturn(x)
 	return ret
+from distutils.core import setup
+from distutils.core import Extension
+from Cython.Build import cythonize
+import numpy
+
+setup(name = 'complexFunctions library',
+	ext_modules = cythonize(
+		Extension("complexFunctions",
+			include_dirs=[numpy.get_include()],
+			sources=["complexFunctions.pyx"],
+			libraries=["complexFunctions"] + chpl_libraries)))
