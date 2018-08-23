@@ -2316,7 +2316,7 @@ module BLAS {
 
   */
   proc amax(X: [?D]?eltType, incX: c_int = 1)
-  where D.rank == 1: D.idxType {
+  where D.rank == 1 {
 
     const N = D.size: c_int;
 
