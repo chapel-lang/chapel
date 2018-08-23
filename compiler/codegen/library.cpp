@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include <cstring>
+
 #include "library.h"
 
 #include "FnSymbol.h"
@@ -451,9 +453,33 @@ static void makePYFile() {
     fprintf(py.fptr, "import numpy\n\n");
 
     // Get the static Chapel runtime and third-party libraries
-    fprintf(py.fptr, "import compileline\n");
-    fprintf(py.fptr, "chpl_libraries=[l[len('-l'):] for l in compileline.");
-    fprintf(py.fptr, "libraries.split() if l.startswith('-l')]\n");
+    fprintf(py.fptr, "chpl_libraries=[");
+    bool first = true;
+    for_vector(const char, libName, libFiles) {
+      if (first) {
+        first = false;
+      } else {
+        fprintf(py.fptr, ", ");
+      }
+      fprintf(py.fptr, "\"%s\"", libName);
+    }
+    std::string libraries = getCompilelineOption("libraries");
+    char copyOfLib[libraries.length() + 1];
+    libraries.copy(copyOfLib, libraries.length(), 0);
+    int prefixLen = strlen("-l");
+    char* curSection = strtok(copyOfLib, " \n");
+    while (curSection != NULL) {
+      if (strncmp(curSection, "-l", prefixLen) == 0) {
+        if (first) {
+          first = false;
+        } else {
+          fprintf(py.fptr, ", ");
+        }
+        fprintf(py.fptr, "\"%s\"", &curSection[prefixLen]);
+      }
+      curSection = strtok(NULL, " \n");
+    }
+    fprintf(py.fptr, "]\n");
 
     // Cythonize me, Captain!
     fprintf(py.fptr, "setup(name = '%s library',\n", pythonModulename);
