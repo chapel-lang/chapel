@@ -84,6 +84,13 @@ class Private: BaseDist {
   override proc dsiTrackDomains()    return false;
 
   proc singleton() param return true;
+
+  proc init() {
+  }
+  proc init(forDomain:domain) {
+  }
+  proc init(type forDomainType) {
+  }
 }
 
 class PrivateDom: BaseRectangularDom {

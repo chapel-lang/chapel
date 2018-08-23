@@ -131,6 +131,23 @@ proc Replicated.init(targetLocales: [] locale = Locales,
     writeln("Replicated initializer over ", targetLocales);
 }
 
+proc Replicated.init(forDomain: domain,
+                     targetLocales: [] locale = Locales,
+                     purposeMessage: string = "used to create a Replicated")
+{
+  this.init(targetLocales=targetLocales,
+            purposeMessage=purposeMessage);
+}
+
+proc Replicated.init(type forDomainType,
+                     targetLocales: [] locale = Locales,
+                     purposeMessage: string = "used to create a Replicated")
+{
+  this.init(targetLocales=targetLocales,
+            purposeMessage=purposeMessage);
+}
+
+
 proc Replicated.dsiEqualDMaps(that: Replicated(?)) {
   return this.targetLocales.equals(that.targetLocales);
 }

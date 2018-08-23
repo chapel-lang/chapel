@@ -256,6 +256,34 @@ class BlockCyclic : BaseDist {
     if debugBlockCyclicDist then
       for loc in locDist do writeln(loc);
   }
+  proc init(forDomain:domain,
+            startIdx,  // ?nd*?idxType
+            blocksize,     // nd*int
+            targetLocales: [] locale = Locales,
+            dataParTasksPerLocale    = getDataParTasksPerLocale(),
+            param rank: int          = _determineRankFromArg(startIdx),
+            type idxType             = _determineIdxTypeFromArg(startIdx)) {
+    this.init(startIdx=startIdx,
+              blocksize=blocksize,
+              targetLocales=targetLocales,
+              dataParTasksPerLocale=dataParTasksPerLocale,
+              rank=rank,
+              idxType=idxType);
+  }
+  proc init(type forDomainType,
+            startIdx,  // ?nd*?idxType
+            blocksize,     // nd*int
+            targetLocales: [] locale = Locales,
+            dataParTasksPerLocale    = getDataParTasksPerLocale(),
+            param rank: int          = _determineRankFromArg(startIdx),
+            type idxType             = _determineIdxTypeFromArg(startIdx)) {
+    this.init(startIdx=startIdx,
+              blocksize=blocksize,
+              targetLocales=targetLocales,
+              dataParTasksPerLocale=dataParTasksPerLocale,
+              rank=rank,
+              idxType=idxType);
+  }
 
   // copy initializer for privatization
   proc init(param rank: int, type idxType, other: unmanaged BlockCyclic(rank, idxType)) {

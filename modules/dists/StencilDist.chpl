@@ -382,6 +382,7 @@ private proc makeZero(param rank : int, type idxType) {
 //
 // Stencil initializer for clients of the Stencil distribution
 //
+// Note -- compiler might pass default domain as boundingBox.
 proc Stencil.init(boundingBox: domain,
                   targetLocales: [] locale = Locales,
                   dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -431,6 +432,29 @@ proc Stencil.init(boundingBox: domain,
     writeln("Creating new Stencil distribution:");
     dsiDisplayRepresentation();
   }
+}
+
+proc Stencil.init(type forDomain,
+                  boundingBox: domain,
+                  targetLocales: [] locale = Locales,
+                  dataParTasksPerLocale=getDataParTasksPerLocale(),
+                  dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+                  dataParMinGranularity=getDataParMinGranularity(),
+                  param rank = boundingBox.rank,
+                  type idxType = boundingBox.idxType,
+                  fluff: rank*idxType = makeZero(rank, idxType),
+                  periodic: bool = false,
+                  param ignoreFluff = false) {
+  this.init(boundingBox=boundingBox,
+            targetLocales=targetLocales,
+            dataParTasksPerLocale=dataParTasksPerLocale,
+            dataParIgnoreRunningTasks=dataParIgnoreRunningTasks,
+            dataParMinGranularity=dataParMinGranularity,
+            rank=rank,
+            idxType=idxType,
+            fluff=fluff,
+            periodic=periodic,
+            ignoreFluff=ignoreFluff);
 }
 
 proc Stencil.dsiAssign(other: this.type) {
