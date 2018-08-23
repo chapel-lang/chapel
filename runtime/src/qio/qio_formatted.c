@@ -486,10 +486,6 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
   ssize_t maxlen_chars = SSIZE_MAX - 1;
   int found_term = 0;
 
-  if( qio_glocale_utf8 == 0 ) {
-    qio_set_glocale();
-  }
-
   if( maxlen_bytes <= 0 ) maxlen_bytes = SSIZE_MAX - 1;
 
   if( threadsafe ) {
@@ -1203,10 +1199,6 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
     // undesirable.
     ptr = "";
     len = 0;
-  }
-
-  if( qio_glocale_utf8 == 0 ) {
-    qio_set_glocale();
   }
 
   if( threadsafe ) {

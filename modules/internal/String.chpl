@@ -468,6 +468,28 @@ module String {
     }
 
     /*
+      Iterates over the string Unicode character by Unicode character,
+      and includes the byte index and byte length of each character.
+      Skip characters that begin prior to the specified starting byte index.
+    */
+    pragma "no doc"
+    iter _ucharsIndexLen(start: int = 1) {
+      var localThis: string = this.localize();
+
+      var i = 0;
+      while i < localThis.len {
+        var codepoint: int(32);
+        var nbytes: c_int;
+        var multibytes = (localThis.buff + i): c_string;
+        var maxbytes = (localThis.len - i): ssize_t;
+        qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        if i + 1 >= start then
+          yield (codepoint:int(32), i + 1, nbytes:int);
+        i += nbytes;
+      }
+    }
+
+    /*
       Index into a string
 
       :returns: A string with the complete multibyte character starting at the
@@ -905,7 +927,7 @@ module String {
         var inChunk : bool = false;
         var chunkStart : int;
 
-        for i in 0..iEnd {
+        for (c, i, nbytes) in localThis._ucharsIndexLen() {
           // emit whole string, unless all whitespace
           if noSplits {
             done = true;
@@ -914,20 +936,19 @@ module String {
               yieldChunk = true;
             }
           } else {
-            var b = localThis.buff[i];
-            var bSpace = byte_isWhitespace(b);
+            var cSpace = codepoint_isWhitespace(c);
             // first char of a chunk
-            if !(inChunk || bSpace) {
-              chunkStart = i + 1; // 0-based buff -> 1-based range
+            if !(inChunk || cSpace) {
+              chunkStart = i;
               inChunk = true;
-              if i == iEnd {
+              if i - 1 + nbytes > iEnd {
                 chunk = localThis[chunkStart..];
                 yieldChunk = true;
                 done = true;
               }
             } else if inChunk {
               // first char out of a chunk
-              if bSpace {
+              if cSpace {
                 splitCount += 1;
                 // last split under limit
                 if limitSplits && splitCount > maxsplit {
@@ -936,12 +957,12 @@ module String {
                   done = true;
                 // no limit
                 } else {
-                  chunk = localThis[chunkStart..i];
+                  chunk = localThis[chunkStart..i-1];
                   yieldChunk = true;
                   inChunk = false;
                 }
               // out of chars
-              } else if i == iEnd {
+              } else if i - 1 + nbytes > iEnd {
                 chunk = localThis[chunkStart..];
                 yieldChunk = true;
                 done = true;
@@ -1087,10 +1108,10 @@ module String {
       var end = localThis.len;
 
       if leading {
-        label outer for i in 0..#localThis.len {
-          for j in 0..#localChars.len {
-            if localThis.buff[i] == localChars.buff[j] {
-              start += 1;
+        label outer for (thisChar, i, nbytes) in localThis._ucharsIndexLen() {
+          for removeChar in localChars.uchars() {
+            if thisChar == removeChar {
+              start = i + nbytes;
               continue outer;
             }
           }
@@ -1099,14 +1120,19 @@ module String {
       }
 
       if trailing {
-        label outer for i in 0..#localThis.len by -1 {
-          for j in 0..#localChars.len {
-            if localThis.buff[i] == localChars.buff[j] {
-              end -= 1;
+        // Because we are working with codepoints whose starting byte index
+        // is not initially known, it is faster to work forward, assuming we
+        // are already past the end of the string, and then update the end
+        // point as we are proven wrong.
+        end = 0;
+        label outer for (thisChar, i, nbytes) in localThis._ucharsIndexLen(start) {
+          for removeChar in localChars.uchars() {
+            if thisChar == removeChar {
               continue outer;
             }
           }
-          break;
+          // This was not a character to be removed, so update tentative end.
+          end = i + nbytes-1;
         }
       }
 
@@ -1854,38 +1880,6 @@ module String {
   //
   // Helper routines
   //
-  private const uint_A = ascii('A');
-  private const uint_Z = ascii('Z');
-  private const uint_a = ascii('a');
-  private const uint_z = ascii('z');
-  private const uint_0 = ascii('0');
-  private const uint_9 = ascii('9');
-  private const uint_space    = ascii(' ');
-  private const uint_tab      = ascii('\t');
-  private const uint_newline  = ascii('\n');
-  private const uint_return   = ascii('\r');
-
-  private inline proc byte_isUpper(b: uint(8)) : bool {
-    return b >= uint_A && b <= uint_Z;
-  }
-
-  private inline proc byte_isLower(b: uint(8)) : bool {
-    return b >= uint_a && b <= uint_z;
-  }
-
-  private inline proc byte_isAlpha(b: uint(8)) : bool {
-    return byte_isLower(b) || byte_isUpper(b);
-  }
-
-  private inline proc byte_isDigit(b: uint(8)) : bool {
-    return b >= uint_0  && b <= uint_9;
-  }
-
-  private inline proc byte_isWhitespace(b: uint(8)) : bool {
-    return b == uint_space
-        || b == uint_tab
-        || (b >= uint_newline && b <= uint_return);
-  }
 
   require "wctype.h";
 

@@ -1,5 +1,7 @@
 x: Hello, hello, hello
+y: Allô, allô, allô
 c: cccccccccccccccccccccccccccc
+d: çççççççççççççççççççççççççççç
 
 x.___("Hello")
 count: 1
@@ -17,6 +19,26 @@ find: 8
 rfind: 15
 
 x.___("hello", 14..)
+count: 1
+find: 15
+rfind: 15
+
+y.___("Allô")
+count: 1
+find: 1
+rfind: 1
+
+y.___("Allô", 2..)
+count: 0
+find: 0
+rfind: 0
+
+y.___("allô")
+count: 2
+find: 8
+rfind: 15
+
+y.___("allô", 14..)
 count: 1
 find: 15
 rfind: 15
@@ -41,6 +63,26 @@ count: 0
 find: 0
 rfind: 0
 
+d.___("ç")
+count: 28
+find: 1
+rfind: 55
+
+d.___("ç", ..18)
+count: 9
+find: 1
+rfind: 17
+
+d.___("Ç")
+count: 0
+find: 0
+rfind: 0
+
+d.___("Ç", 9..18)
+count: 0
+find: 0
+rfind: 0
+
 x.___("")
 count: 20
 find: 0
@@ -52,6 +94,21 @@ find: 0
 rfind: 8
 
 "".___(x)
+count: 0
+find: 0
+rfind: 0
+
+y.___("")
+count: 20
+find: 0
+rfind: 20
+
+y.___("", 9..15)
+count: 8
+find: 0
+rfind: 8
+
+"".___(y)
 count: 0
 find: 0
 rfind: 0

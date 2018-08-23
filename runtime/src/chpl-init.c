@@ -141,6 +141,7 @@ void chpl_rt_init(int argc, char* argv[]) {
   // UTF-8 functions (e.g. wcrtomb) work as
   // indicated by the locale environment variables.
   setlocale(LC_CTYPE,"");
+  qio_set_glocale();
   // So that use of localtime_r is portable.
   tzset();
 
