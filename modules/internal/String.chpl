@@ -470,7 +470,7 @@ module String {
     /*
       Iterates over the string Unicode character by Unicode character,
       and includes the byte index and byte length of each character.
-      Skip characters that begin prior to the specified start index.
+      Skip characters that begin prior to the specified starting byte index.
     */
     pragma "no doc"
     iter _ucharsIndexLen(start: int = 1) {

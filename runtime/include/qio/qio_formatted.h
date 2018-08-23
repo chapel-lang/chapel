@@ -435,10 +435,6 @@ static inline
 qioerr qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, int32_t* restrict chr) {
   qioerr err;
   uint32_t codepoint=0, state;
-  
-  if( qio_glocale_utf8 == 0 ) {
-    qio_set_glocale();
-  }
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -673,10 +669,6 @@ qioerr qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, 
 {
   qioerr err;
 
-  if( qio_glocale_utf8 == 0 ) {
-    qio_set_glocale();
-  }
-
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
     if( err ) return err;
@@ -731,10 +723,6 @@ qioerr qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, 
 
 static inline
 int qio_unicode_supported(void) {
-  if( qio_glocale_utf8 == 0 ) {
-    qio_set_glocale();
-  }
-
   return qio_glocale_utf8 == QIO_GLOCALE_UTF8;
 }
 
