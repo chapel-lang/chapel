@@ -2,4 +2,5 @@
 
 # The value in that variable will vary depending on the system, so don't check
 # its contents
-sed -i '' '/^chpl_libraries/d' $2
+sed '/^chpl_libraries/d' $2 > $2.tmp
+mv $2.tmp $2
