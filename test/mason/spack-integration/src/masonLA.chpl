@@ -1099,14 +1099,19 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 //
 // Type helpers
 //
-private proc isDefaultRectangularDom (D: domain) param where _to_borrowed(D._value): DefaultRectangularDom { return true; }
-private proc isDefaultRectangularDom (D: domain) param { return false; }
-private proc isDefaultRectangularArr (A: []) param { return isDefaultRectangularDom(A.domain); }
+private proc isDefaultRectangularDom (D: domain) param {
+  return D._value.isDefaultRectangular();
+}
+private proc isDefaultRectangularArr (A: []) param {
+  return isDefaultRectangularDom(A.domain);
+}
 
-private proc isDefaultSparseDom(D: domain) param where _to_borrowed(D._value): DefaultSparseDom { return true; }
-private proc isDefaultSparseDom(D: domain) param { return false; }
-private proc isDefaultSparseArr(A: []) param { return isDefaultSparseDom(A.domain); }
-
+private proc isDefaultSparseDom(D: domain) param {
+  return isSubtype(_to_borrowed(D._value), DefaultSparseDom);
+}
+private proc isDefaultSparseArr(A: []) param {
+  return isDefaultSparseDom(A.domain);
+}
 
 
 /* Linear Algebra Sparse Submodule
@@ -1124,8 +1129,8 @@ with sparse domains and arrays in Chapel.
 Sparse Linear Algebra Interface
 -------------------------------
 
-``masonLA.Sparse`` follows the same conventions and interface choices
-as the parent module, ``masonLA``, with few exceptions. These
+``LinearAlgebra.Sparse`` follows the same conventions and interface choices
+as the parent module, ``LinearAlgebra``, with few exceptions. These
 exceptions are detailed below.
 
 
@@ -1700,7 +1705,7 @@ module Sparse {
   pragma "no doc"
   proc isCSDom(D: domain) param { return isCSType(D._value.dist.type); }
 
-} // submodule masonLA.Sparse
+} // submodule LinearAlgebra.Sparse
 
 
 } // module masonLA
