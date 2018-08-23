@@ -437,17 +437,8 @@ proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
 // isSubtype is directly handled by compiler
 
 // Is 'sub' a proper subtype of 'super'?
-/* Returns `true` if the type `sub` is a subtype of the type `super`
-   and is not `super`. */
-proc isProperSubtype(type sub, type super) param
-  where isSubtype(sub, super) && sub != super
-  return true;
-pragma "no doc"
-proc isProperSubtype(type sub, type super) param
-  return false;
-
-
-
+// isProperSubtype returns true if so
+// isProperSubtype is directly handled by compiler.
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 pragma "no doc"
