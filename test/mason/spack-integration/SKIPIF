@@ -1,16 +1,29 @@
-#!/usr/bin/env python
+#!/usr/bin/env bash
 
-"""
-mason requires CHPL_COMM=none (local)
-This test should only run on the CentOS VM
-"""
+# mason requires CHPL_COMM=none CHPL_REGEXP=re2
 
-from __future__ import print_function
-from os import environ
+if [ "$CHPL_COMM" != none -o "$CHPL_REGEXP" != re2 -o "$CHPL_HOST_PLATFORM" != linux64 -o "$CHPL_HOST_COMPILER" != gnu ]; then
+    echo True
+    exit 0
+fi
 
-try:
-    print(environ['CHPL_COMM'] != 'none' or environ['CHPL_REGEXP'] != 're2'
-          or environ['HOSTNAME'] != 'chapel-centos7-02.americas.cray.com')
-except KeyError:
-    print(True)
+# This test should only run on CentOS or similar
+# Examine /etc/os-release
+(
+    # this subshell is like an exception handler
+    set -e
+    if [ -f /etc/os-release ]; then
+        source /etc/os-release
+        case "$ID $ID_LIKE" in
+        ( *centos* | *rhel* | *fedora* ) echo False;;
+        ( * ) echo True;;
+        esac
+    else
+        echo True
+    fi
+)
 
+case "$?" in
+( 0 )   exit 0;;
+( * )   echo True; exit 2;;
+esac
