@@ -2008,6 +2008,8 @@ void resolveDestructor(AggregateType* at) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool resolveTypeComparisonCall(CallExpr* call);
+
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
     switch (call->primitive->tag) {
@@ -2055,7 +2057,10 @@ void resolveCall(CallExpr* call) {
     }
 
   } else {
-    resolveNormalCall(call);
+
+    if (resolveTypeComparisonCall(call) == false) {
+      resolveNormalCall(call);
+    }
   }
 }
 
@@ -2063,6 +2068,55 @@ void resolveCall(CallExpr* call) {
 FnSymbol* tryResolveCall(CallExpr* call) {
   return resolveNormalCall(call, true);
 }
+
+static bool resolveTypeComparisonCall(CallExpr* call) {
+
+  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
+    if (call->numActuals() == 2) {
+      const char* name = urse->unresolved;
+
+      if (name[0] == '<' || name[0] == '>') {
+
+        bool lt = name[0] == '<' && name[1] == '\0';
+        bool lte = name[0] == '<' && name[1] == '=' && name[2] == '\0';
+        bool gt = name[0] == '>' && name[1] == '\0';
+        bool gte = name[0] == '>' && name[1] == '=' && name[2] == '\0';
+
+        if (lt || lte || gt || gte) {
+          SymExpr* lhs = toSymExpr(call->get(1));
+          SymExpr* rhs = toSymExpr(call->get(2));
+
+          if (lhs && rhs &&
+              lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
+              rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+
+            rhs->remove();
+            lhs->remove();
+            call->baseExpr->remove();
+
+            if (lte || gte)
+              call->primitive = primitives[PRIM_IS_SUBTYPE];
+            else
+              call->primitive = primitives[PRIM_IS_PROPER_SUBTYPE];
+
+            if (lt || lte) {
+              call->insertAtTail(rhs);
+              call->insertAtTail(lhs);
+            } else {
+              call->insertAtTail(lhs);
+              call->insertAtTail(rhs);
+            }
+
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 
 /************************************* | **************************************
 *                                                                             *
