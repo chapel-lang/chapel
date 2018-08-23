@@ -227,26 +227,36 @@ proc isEnumValue(e)      param  return isEnumType(e.type);
 // isHomogeneousTupleValue
 pragma "no doc"
 proc isClassValue(e)              param return isClassType(e.type);
+
 pragma "no doc"
-proc isOwnedClassType(type t)     param return isSubtype(t, _owned);
+proc isOwnedClassType(type t:_owned)         param return true;
+pragma "no doc"
+proc isOwnedClassType(type t)                param return false;
+pragma "no doc"
+proc isSharedClassType(type t:_shared)       param return true;
+pragma "no doc"
+proc isSharedClassType(type t)               param return false;
+pragma "no doc"
+proc isUnmanagedClassType(type t:_unmanaged) param return true;
+pragma "no doc"
+proc isUnmanagedClassType(type t)            param return false;
+pragma "no doc"
+proc isBorrowedClassType(type t:_borrowed)   param return true;
+pragma "no doc"
+proc isBorrowedClassType(type t)             param return false;
+
 pragma "no doc"
 pragma "no borrow convert"
-proc isOwnedClassValue(e)         param return isOwnedClassType(e.type);
-pragma "no doc"
-proc isSharedClassType(type t)    param return isSubtype(t, _shared);
+proc isOwnedClassValue(e)     param return isOwnedClassType(e.type);
 pragma "no doc"
 pragma "no borrow convert"
-proc isSharedClassValue(e)        param return isSharedClassType(e.type);
-pragma "no doc"
-proc isUnmanagedClassType(type t) param return isSubtype(t, _unmanaged);
+proc isSharedClassValue(e)    param return isSharedClassType(e.type);
 pragma "no doc"
 pragma "no borrow convert"
-proc isUnmanagedClassValue(e)     param return isUnmanagedClassType(e.type);
-pragma "no doc"
-proc isBorrowedClassType(type t)  param return isSubtype(t, _borrowed);
+proc isUnmanagedClassValue(e) param return isUnmanagedClassType(e.type);
 pragma "no doc"
 pragma "no borrow convert"
-proc isBorrowedClassValue(e)      param return isBorrowedClassType(e.type);
+proc isBorrowedClassValue(e)  param return isBorrowedClassType(e.type);
 
 pragma "no doc"
 proc isRecordValue(e)    param  return isRecordType(e.type);
