@@ -6871,7 +6871,7 @@ static int* amo_vi_p[MAX_BUFF_AMO_THREADS];
 static atomic_bool* amo_lock_p[MAX_BUFF_AMO_THREADS];
 
 // pointers to thread local buffered AMO argument buffers
-static void** amo_opnd1_vp[MAX_BUFF_AMO_THREADS];
+static uint64_t* amo_opnd1_vp[MAX_BUFF_AMO_THREADS];
 static c_nodeid_t* amo_locale_vp[MAX_BUFF_AMO_THREADS];
 static void** amo_object_vp[MAX_BUFF_AMO_THREADS];
 static size_t* amo_size_vp[MAX_BUFF_AMO_THREADS];
@@ -6889,7 +6889,7 @@ void buff_amo_init(void) {
 }
 
 static
-void do_remote_amo_nb(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
+void do_remote_amo_nb(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
                       void** object_v, size_t* size_v,
                       gni_fma_cmd_type_t* cmd_v, mem_region_t** remote_mr_v) {
 
@@ -6909,8 +6909,7 @@ void do_remote_amo_nb(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
     post_desc_v[vi].remote_mem_hndl = remote_mr_v[vi]->mdh;
     post_desc_v[vi].length          = size_v[vi];
     post_desc_v[vi].amo_cmd         = cmd_v[vi];
-    post_desc_v[vi].first_operand   = size_v[vi] == 4 ? *(uint32_t*) opnd1_v[vi]:
-                                                        *(uint64_t*) opnd1_v[vi];
+    post_desc_v[vi].first_operand   = opnd1_v[vi];
 
     atomic_init_bool(&post_done_v[vi], false);
     post_desc_v[vi].post_id = (uint64_t) (intptr_t) &post_done_v[vi];
@@ -6931,7 +6930,7 @@ void do_remote_amo_nb(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
 }
 
 static
-void do_remote_amo_V(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
+void do_remote_amo_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
                      void** object_v, size_t* size_v,
                      gni_fma_cmd_type_t* cmd_v, mem_region_t** remote_mr_v) {
 
@@ -6957,8 +6956,7 @@ void do_remote_amo_V(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
   post_desc.remote_mem_hndl = remote_mr_v[0]->mdh;
   post_desc.length          = size_v[0];
   post_desc.amo_cmd         = cmd_v[0];
-  post_desc.first_operand   = size_v[0] == 4 ? *(uint32_t*) opnd1_v[0]:
-                                               *(uint64_t*) opnd1_v[0];
+  post_desc.first_operand   = opnd1_v[0];
 
   //
   // Build up the chain of descriptors
@@ -6973,8 +6971,7 @@ void do_remote_amo_V(int v_len, void** opnd1_v, c_nodeid_t* locale_v,
     pdc[ci].remote_mem_hndl = remote_mr_v[vi]->mdh;
     pdc[ci].length          = size_v[vi];
     pdc[ci].amo_cmd         = cmd_v[vi];
-    pdc[ci].first_operand   = size_v[vi] == 4 ? *(uint32_t*) opnd1_v[vi]:
-                                                *(uint64_t*) opnd1_v[vi];
+    pdc[ci].first_operand   = opnd1_v[vi];
   }
 
   //
@@ -7050,7 +7047,7 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
   static __thread atomic_bool lock;
 
   // thread local buffers for all arguments
-  static __thread void* opnd1_v[MAX_CHAINED_AMO_LEN];
+  static __thread uint64_t opnd1_v[MAX_CHAINED_AMO_LEN];
   static __thread c_nodeid_t locale_v[MAX_CHAINED_AMO_LEN];
   static __thread void* object_v[MAX_CHAINED_AMO_LEN];
   static __thread size_t size_v[MAX_CHAINED_AMO_LEN];
@@ -7111,7 +7108,8 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
   while (atomic_exchange_bool(&lock, true)) { local_yield(); }
 
   // store arguments in buffers
-  opnd1_v[vi]     = opnd1;
+  opnd1_v[vi]     = size == 4 ? *(uint32_t*) opnd1:
+                                *(uint64_t*) opnd1;
   locale_v[vi]    = locale;
   object_v[vi]    = object;
   size_v[vi]      = size;
