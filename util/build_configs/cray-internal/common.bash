@@ -73,6 +73,9 @@ case "${release_type:-}" in
 ( release )
     rpm_version=$date_ymd.$date_hms
     ;;
+( developer )
+    rpm_version=$date_ymd.$date_hms
+    ;;
 esac
 rpm_name="chapel-$pkg_version"
 

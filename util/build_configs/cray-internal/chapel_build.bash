@@ -43,7 +43,8 @@ Usage: $thisfile" '[options]
 
   CHAPEL_PACKAGE OPTIONS:
 
-    -b release_type     : Build/release type (required) == "nightly" or "release".
+    -b release_type     : Build/release type (required)
+                          == "nightly", "release", or "developer".
     -p chpl_platform    : Chpl target platform, as in $CHPL_HOME/bin/$chpl_platform
                           ("cray-xc" or "cray-xe")
                           Default: cray-xc
@@ -143,6 +144,8 @@ case "$release_type" in
 ( [nN]* | -n | nightly )
     ;;
 ( [rR]* | -r | release )
+    ;;
+( [dD]* | developer )
     ;;
 ( * )
     log_error "-b release_type='$release_type' is invalid."
