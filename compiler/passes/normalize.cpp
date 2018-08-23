@@ -1224,7 +1224,7 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
     Expr* eltExpr = nArgs == 2 ? call->get(2) : NULL;
     if (SymExpr* eltSym = toSymExpr(eltExpr)) {
       if (TypeSymbol* eltType = toTypeSymbol(eltSym->symbol())) {
-        elementType[fn] = eltType;
+        exportedArrayElementType[fn] = eltType;
       }
     }
 
@@ -2740,7 +2740,7 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
 
       if (SymExpr* eltSym = toSymExpr(eltExpr)) {
         if (TypeSymbol* eltType = toTypeSymbol(eltSym->symbol())) {
-          elementType[formal] = eltType;
+          exportedArrayElementType[formal] = eltType;
         } else {
           // TODO: handle things like type variables (not supported yet)
         }

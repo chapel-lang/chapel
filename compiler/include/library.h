@@ -39,7 +39,7 @@ enum PythonFileType {
 
 // Stores arg/function symbol to element type for the arg's array or function's
 // array return type
-extern std::map<Symbol*, TypeSymbol*> elementType;
+extern std::map<Symbol*, TypeSymbol*> exportedArrayElementType;
 
 extern char libDir[FILENAME_MAX + 1];
 extern std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;

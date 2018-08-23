@@ -894,7 +894,7 @@ std::string ArgSymbol::getPythonType(PythonFileType pxd) {
   if (t->symbol->hasFlag(FLAG_REF) &&
       t->getValType() == dtExternalArray &&
       pxd == PYTHON_PYX
-      && elementType[this] != NULL) {
+      && exportedArrayElementType[this] != NULL) {
     // Allow python declarations to accept anything iterable to translate to
     // an array, instead of limiting to a specific Python type
     return "";
@@ -918,11 +918,11 @@ std::string ArgSymbol::getPythonArgTranslation() {
   } else if (t->symbol->hasFlag(FLAG_REF) &&
              t->getValType() == dtExternalArray) {
     // Handle arrays
-    if (Symbol* eltType = elementType[this]) {
-      // The element type will be recorded in the elementType map if this arg's
-      // type was originally a Chapel array instead of explicitly an external
-      // array.  If we have the element type, that means we need to do a
-      // translation in the python wrapper.
+    if (Symbol* eltType = exportedArrayElementType[this]) {
+      // The element type will be recorded in the exportedArrayElementType map
+      // if this arg's type was originally a Chapel array instead of explicitly
+      // an external array.  If we have the element type, that means we need to
+      // do a translation in the python wrapper.
       std::string typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
       std::string typeStrCDefs = typeStr;
       if (strncmp(typeStr.c_str(), "numpy", strlen("numpy")) == 0) {
@@ -1807,7 +1807,7 @@ GenRet FnSymbol::codegenPYXType() {
   std::string returnStmt = "";
   if (retType != dtVoid) {
     if (retType == dtExternalArray &&
-        elementType[this] != NULL) {
+        exportedArrayElementType[this] != NULL) {
       funcCall += "cdef chpl_external_array ret_arr = ";
       returnStmt += getPythonArrayReturnStmts();
     } else {
@@ -1867,7 +1867,7 @@ GenRet FnSymbol::codegenPYXType() {
 
 std::string FnSymbol::getPythonArrayReturnStmts() {
   INT_ASSERT(retType == dtExternalArray);
-  Symbol* eltType = elementType[this];
+  Symbol* eltType = exportedArrayElementType[this];
   std::string typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
   std::string typeStrCDefs = typeStr;
   if (strncmp(typeStr.c_str(), "numpy", strlen("numpy")) == 0) {
