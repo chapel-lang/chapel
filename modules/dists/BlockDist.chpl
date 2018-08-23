@@ -473,6 +473,25 @@ proc Block.init(boundingBox: domain,
   }
 }
 
+proc Block.init(forDomain: domain,
+                boundingBox: domain,
+                targetLocales: [] locale = Locales,
+                dataParTasksPerLocale=getDataParTasksPerLocale(),
+                dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+                dataParMinGranularity=getDataParMinGranularity(),
+                param rank = boundingBox.rank,
+                type idxType = boundingBox.idxType,
+                type sparseLayoutType = unmanaged DefaultDist) {
+  this.init(boundingBox=boundingBox,
+            targetLocales=targetLocales,
+            dataParTasksPerLocale=dataParTasksPerLocale,
+            dataParIgnoreRunningTasks=dataParIgnoreRunningTasks,
+            dataParMinGranularity=dataParMinGranularity,
+            rank=rank,
+            idxType=idxType,
+            sparseLayoutType=sparseLayoutType);
+}
+
 proc Block.init(type forDomainType,
                 boundingBox: domain,
                 targetLocales: [] locale = Locales,

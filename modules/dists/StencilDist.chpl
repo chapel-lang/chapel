@@ -434,7 +434,31 @@ proc Stencil.init(boundingBox: domain,
   }
 }
 
-proc Stencil.init(type forDomain,
+proc Stencil.init(forDomain: domain,
+                  boundingBox: domain,
+                  targetLocales: [] locale = Locales,
+                  dataParTasksPerLocale=getDataParTasksPerLocale(),
+                  dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+                  dataParMinGranularity=getDataParMinGranularity(),
+                  param rank = boundingBox.rank,
+                  type idxType = boundingBox.idxType,
+                  fluff: rank*idxType = makeZero(rank, idxType),
+                  periodic: bool = false,
+                  param ignoreFluff = false) {
+  this.init(boundingBox=boundingBox,
+            targetLocales=targetLocales,
+            dataParTasksPerLocale=dataParTasksPerLocale,
+            dataParIgnoreRunningTasks=dataParIgnoreRunningTasks,
+            dataParMinGranularity=dataParMinGranularity,
+            rank=rank,
+            idxType=idxType,
+            fluff=fluff,
+            periodic=periodic,
+            ignoreFluff=ignoreFluff);
+}
+
+
+proc Stencil.init(type forDomainType,
                   boundingBox: domain,
                   targetLocales: [] locale = Locales,
                   dataParTasksPerLocale=getDataParTasksPerLocale(),
