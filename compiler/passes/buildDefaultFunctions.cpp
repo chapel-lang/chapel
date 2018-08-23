@@ -678,6 +678,7 @@ static void build_record_equality_function(AggregateType* ct) {
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   arg1->addFlag(FLAG_MARKED_GENERIC);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
+  arg2->addFlag(FLAG_MARKED_GENERIC);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
@@ -706,6 +707,7 @@ static void build_record_inequality_function(AggregateType* ct) {
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   arg1->addFlag(FLAG_MARKED_GENERIC);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
+  arg2->addFlag(FLAG_MARKED_GENERIC);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
@@ -753,16 +755,13 @@ static void build_enum_size_function(EnumType* et) {
 
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
 
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtAny);
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", et);
   fn->_this->addFlag(FLAG_ARG_THIS);
-  fn->_this->addFlag(FLAG_MARKED_GENERIC);
   fn->_this->addFlag(FLAG_TYPE_VARIABLE);
 
   fn->insertFormalAtTail(fn->_this);
 
   fn->retTag = RET_PARAM;
-  //use this function only where the argument is an enum
-  fn->where = new BlockStmt(new CallExpr("==", fn->_this, et->symbol));
 
   VarSymbol*  varS = new_IntSymbol(et->constants.length);
   fn->insertAtTail(new CallExpr(PRIM_RETURN, varS));
@@ -792,13 +791,10 @@ static void build_enum_first_function(EnumType* et) {
   // _defaultOf function for the enum to obtain this functionality (and
   // that is the encouraged path to take).
   fn->addFlag(FLAG_INLINE);
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  arg->addFlag(FLAG_MARKED_GENERIC);
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", et);
   arg->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(arg);
   fn->retTag = RET_PARAM;
-
-  fn->where = new BlockStmt(new CallExpr("==", arg, et->symbol));
 
   DefExpr* defExpr = toDefExpr(et->constants.head);
   if (defExpr)
@@ -824,10 +820,9 @@ static void build_enum_enumerate_function(EnumType* et) {
   FnSymbol* fn = new FnSymbol("chpl_enum_enumerate");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", et);
   arg->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(arg);
-  fn->where = new BlockStmt(new CallExpr("==", arg, et->symbol));
 
   baseModule->block->insertAtTail(new DefExpr(fn));
 
@@ -975,7 +970,7 @@ static void build_enum_cast_function(EnumType* et) {
   fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  arg1 = new ArgSymbol(INTENT_BLANK, "t", et);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
   arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
   fn->insertFormalAtTail(arg1);
@@ -1011,7 +1006,6 @@ static void build_enum_cast_function(EnumType* et) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                 toDefExpr(et->constants.first())->sym));
 
-  fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
   def = new DefExpr(fn);
   //
   // these cast functions need to go in the base module because they
@@ -1125,28 +1119,20 @@ static void build_record_assignment_function(AggregateType* ct) {
   if (function_exists("=", ct, ct))
     return;
 
+  bool externRecord = ct->symbol->hasFlag(FLAG_EXTERN);
+
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
-  arg1->addFlag(FLAG_MARKED_GENERIC); // TODO: Check if we really want this.
+  arg1->addFlag(FLAG_MARKED_GENERIC);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_REF_MAYBE_CONST, "_arg2", ct);
+  arg2->addFlag(FLAG_MARKED_GENERIC);
 
-  bool externRecord = ct->symbol->hasFlag(FLAG_EXTERN);
-  // If the LHS is extern, the RHS must be of matching type; otherwise
-  // Chapel permits matches that have the same names
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2",
-                                  (externRecord ? ct : dtAny));
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
-
-  // This is required because coercion from a subtype to a base record type
-  // inserts a cast.  Such a cast is implemented using assignment.  The
-  // resolution errors out because the return type of the cast is recursively
-  // defined.  (See classes/marybeth/test_dispatch_record.chpl)
-  if (! externRecord)
-    fn->where = new BlockStmt(new CallExpr(PRIM_IS_SUBTYPE, ct->symbol, arg2));
 
   fn->retType = dtVoid;
 
@@ -1250,12 +1236,11 @@ static void build_record_cast_function(AggregateType* ct) {
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
   fn->addFlag(FLAG_INLINE);
-  ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", ct);
   t->addFlag(FLAG_TYPE_VARIABLE);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "arg", dtAny);
   fn->insertFormalAtTail(t);
   fn->insertFormalAtTail(arg);
-  fn->where = new BlockStmt(new CallExpr(PRIM_IS_SUBTYPE, ct->symbol, t));
   VarSymbol* ret = newTemp();
   fn->insertAtTail(new DefExpr(ret));
   fn->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_INIT, t)));
@@ -1509,6 +1494,7 @@ static void buildDefaultOfFunction(AggregateType* ct) {
     DefExpr*   def = new DefExpr(fn);
 
     arg->addFlag(FLAG_MARKED_GENERIC);
+
     arg->addFlag(FLAG_TYPE_VARIABLE);
 
     fn->addFlag(FLAG_COMPILER_GENERATED);
@@ -1854,13 +1840,12 @@ static void buildStringCastFunction(EnumType* et) {
   FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtString);
   t->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(t);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "this", et);
   arg->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(arg);
-  fn->where = new BlockStmt(new CallExpr("==", t, dtString->symbol));
 
   for_enums(constant, et) {
     fn->insertAtTail(
