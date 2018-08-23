@@ -90,6 +90,25 @@ class CS: BaseDist {
   proc dsiEqualDMaps(that) param {
     return false;
   }
+
+  proc init(param compressRows: bool = true,
+            param sortedIndices: bool = LayoutCSDefaultToSorted) {
+    this.compressRows = compressRows;
+    this.sortedIndices = sortedIndices;
+  }
+  proc init(forDomain: domain,
+            param compressRows: bool = true,
+            param sortedIndices: bool = LayoutCSDefaultToSorted) {
+    this.init(compressRows=compressRows,
+              sortedIndices=sortedIndices);
+  }
+  proc init(type forDomainType,
+            param compressRows: bool = true,
+            param sortedIndices: bool = LayoutCSDefaultToSorted) {
+    this.init(compressRows=compressRows,
+              sortedIndices=sortedIndices);
+  }
+
 } // CS
 
 
