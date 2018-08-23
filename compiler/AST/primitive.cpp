@@ -667,6 +667,8 @@ initPrimitive() {
   // PRIM_IS_SUBTYPE arguments are (parent, sub) and it checks
   // if sub is a sub-type of parent.
   prim_def(PRIM_IS_SUBTYPE, "is_subtype", returnInfoBool);
+  // same as above but excludes same type
+  prim_def(PRIM_IS_PROPER_SUBTYPE, "is_proper_subtype", returnInfoBool);
   // PRIM_CAST arguments are (type to cast to, value to cast)
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false);
