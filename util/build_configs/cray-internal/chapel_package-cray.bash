@@ -23,7 +23,8 @@ Usage $thisfile" '[options]
   where:
     -v  : verbose/debug output.
     -n  : Do not actually run rpmbuild (dry_run).
-    -b release_type     : Build/release type (required) == "nightly" or "release".
+    -b release_type     : Build/release type (required)
+                          == "nightly", "release", or "developer".
     -p chpl_platform    : Chpl target platform, as in $CHPL_HOME/bin/$chpl_platform
                           ("cray-xc" or "cray-xe")
                           Default: cray-xc
@@ -103,6 +104,8 @@ case "$release_type" in
     ;;
 ( [rR]* | -r | release )
     ;;
+( [dD]* | developer )
+    ;;
 ( * )
     log_error "-b release_type='$release_type' is invalid."
     usage
@@ -138,7 +141,7 @@ log_debug "Using -C workdir='$workdir'"
 
 # Get Chapel version numbers from source
 
-src_version=$( get_src_version "$CHPL_HOME" )
+src_version=$( get_src_version "$CHPL_HOME" "$release_type" )
 log_debug "Using src_version='$src_version'"
 
 # Sanity-check some common shell variables used for Chapel packages (parent directory)
