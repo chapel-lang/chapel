@@ -261,7 +261,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
       }
     }
 
-  } else if (call->isPrimitive(PRIM_IS_SUBTYPE) == true) {
+  } else if (call->isPrimitive(PRIM_IS_SUBTYPE) ||
+             call->isPrimitive(PRIM_IS_PROPER_SUBTYPE)) {
     SymExpr* parentExpr = toSymExpr(call->get(1));
     SymExpr* subExpr    = toSymExpr(call->get(2));
 
@@ -288,7 +289,12 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
           st->symbol->hasFlag(FLAG_GENERIC) == false) {
 
-        if (isSubTypeOrInstantiation(st, pt) == true) {
+        bool result = isSubTypeOrInstantiation(st, pt);
+
+        if (call->isPrimitive(PRIM_IS_PROPER_SUBTYPE))
+          result = result && (st != pt);
+
+        if (result == true) {
           retval = new SymExpr(gTrue);
 
         } else {

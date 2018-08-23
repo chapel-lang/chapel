@@ -139,4 +139,30 @@ module UtilMisc_forDocs {
   proc isSubtype(type sub, type super) param {
     __primitive("is_subtype", super, sub);
   }
+
+   /* As with :proc:`isSubtype` but returns `false` if
+      `sub` and `super` refer to the same type.
+     */
+  proc isProperSubtype(type sub, type super) param {
+    __primitive("is_proper_subtype", super, sub);
+  }
+
+  /* :returns: isProperSubtype(a,b) */
+  proc <(type a, type b) param {
+    return isProperSubtype(a,b);
+  }
+  /* :returns: isSubtype(a,b) */
+  proc <=(type a, type b) param {
+    return isSubtype(a,b);
+  }
+  /* :returns: isProperSubtype(b,a) */
+  proc >(type a, type b) param {
+    return isProperSubtype(b,a);
+  }
+  /* :returns: isSubtype(b,a) */
+  proc <=(type a, type b) param {
+    return isSubtype(b,a);
+  }
+
+
 }

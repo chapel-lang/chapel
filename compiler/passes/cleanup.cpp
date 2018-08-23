@@ -40,7 +40,7 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn);
 
 static void destructureTupleAssignment(CallExpr* call);
 
-static void replaceIsSubtypeWithPrimitive(CallExpr* call);
+static void replaceIsSubtypeWithPrimitive(CallExpr* call, bool proper);
 
 static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
@@ -95,8 +95,10 @@ static void cleanup(ModuleSymbol* module) {
     } else if (CallExpr* call = toCallExpr(ast)) {
       if (call->isNamed("_build_tuple"))
         destructureTupleAssignment(call);
-      if (call->isNamed("isSubtype"))
-        replaceIsSubtypeWithPrimitive(call);
+      else if (call->isNamed("isSubtype"))
+        replaceIsSubtypeWithPrimitive(call, false);
+      else if (call->isNamed("isProperSubtype"))
+        replaceIsSubtypeWithPrimitive(call, true);
 
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -195,12 +197,14 @@ static void destructureTupleAssignment(CallExpr* call) {
 }
 
 
-static void replaceIsSubtypeWithPrimitive(CallExpr* call) {
+static void replaceIsSubtypeWithPrimitive(CallExpr* call, bool proper) {
   Expr* sub = call->get(1);
   Expr* sup = call->get(2);
   sub->remove();
   sup->remove();
-  call->replace(new CallExpr(PRIM_IS_SUBTYPE, sup, sub));
+
+  PrimitiveTag prim = proper ? PRIM_IS_PROPER_SUBTYPE : PRIM_IS_SUBTYPE;
+  call->replace(new CallExpr(prim, sup, sub));
 }
 
 //
