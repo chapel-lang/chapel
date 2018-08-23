@@ -408,17 +408,15 @@ module ChapelArray {
     return _newDomain(d.newAssociativeDom(idxType, parSafe));
 
   pragma "runtime type init fn"
-  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
+  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType:_OpaqueIndex,
                                     param parSafe: bool = true)
-   where idxType == _OpaqueIndex
     return _newDomain(d.newOpaqueDom(idxType, parSafe));
 
   // This function has no 'runtime type init fn' pragma since the idxType of
   // opaque domains is _OpaqueIndex, not opaque.  This function is
   // essentially a wrapper around the function that actually builds up
   // the runtime type.
-  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
-   where idxType == opaque
+  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType:opaque) type
     return chpl__buildDomainRuntimeType(d, _OpaqueIndex);
 
   pragma "runtime type init fn"
@@ -426,20 +424,20 @@ module ChapelArray {
     return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where isSubtype(_to_borrowed(dom._value.type),BaseRectangularDom)
+   where isSubtype(dom._value.type, BaseRectangularDom)
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
                               dom._value.idxType, dom._value.stridable);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where isSubtype(_to_borrowed(dom._value.type),BaseAssociativeDom)
+   where isSubtype(dom._value.type, BaseAssociativeDom)
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where isSubtype(_to_borrowed(dom._value.type),BaseOpaqueDom)
+   where isSubtype(dom._value.type, BaseOpaqueDom)
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where isSubtype(_to_borrowed(dom._value.type),BaseSparseDom)
+   where isSubtype(_to_borrowed(dom._value.type), BaseSparseDom)
     return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type {
@@ -695,20 +693,28 @@ module ChapelArray {
   }
 
   //
-  // Return true if 'arr' is a DefaultRectangular array or is an ArrayView
-  // over a DefaultRectangular array.
+  // Return true if 'arg' is a DefaultRectangular array or domain
+  // or is an ArrayView over a DefaultRectangular array or domain.
   //
-  // 'arr' can be a full-fledged array type or a class that inherits from
-  // BaseArr
+  // 'arg' can be a full-fledged array/domain type or a class that inherits
+  // from BaseArr or BaseDom
   //
-  proc chpl__isDROrDRView(arr) param
-    where isArray(arr) || isSubtype(_to_borrowed(arr.type), BaseArr) {
-
-    const value = if isArray(arr) then arr._value else arr;
-    param isDR = value.isDefaultRectangular();
-    param isDRView = chpl__isArrayView(value) && chpl__getActualArray(value).isDefaultRectangular();
-    return isDR || isDRView;
+  proc chpl__isDROrDRView(arg) param {
+    if isDomain(arg) || isSubtype(arg.type, BaseDom) {
+      const value = if isDomain(arg) then arg._value else arg;
+      param isDR  = value.isDefaultRectangular();
+      param isDRView = chpl__isDomainView(value) && chpl__getActualDomain(value).isDefaultRectangular();
+      return isDR || isDRView;
+    } else if isArray(arg) || isSubtype(arg.type, BaseArr) {
+      const value = if isArray(arg) then arg._value else arg;
+      param isDR = value.isDefaultRectangular();
+      param isDRView = chpl__isArrayView(value) && chpl__getActualArray(value).isDefaultRectangular();
+      return isDR || isDRView;
+    } else {
+      compilerError("Invalid argument for chpl__isDROrDRView");
+    }
   }
+
   //
   // End of array-view utility functions
   //
@@ -732,14 +738,7 @@ module ChapelArray {
     return ret;
   }
 
-  proc chpl__isDROrDRView(dom) param
-    where isDomain(dom) || isSubtype(_to_borrowed(dom.type), BaseDom) {
-
-    const value = if isDomain(dom) then dom._value else dom;
-    param isDR  = value.isDefaultRectangular();
-    param isDRView = chpl__isDomainView(value) && chpl__getActualDomain(value).isDefaultRectangular();
-    return isDR || isDRView;
-  }
+  // note: chpl__isDROrDRView defined above also applies to domains
 
   //
   // End of DomainView utility functions
@@ -796,7 +795,7 @@ module ChapelArray {
   proc chpl__buildIndexType(d: domain) type
     return chpl__buildIndexType(d.rank, d._value.idxType);
 
-  proc chpl__buildIndexType(type idxType) type where idxType == opaque
+  proc chpl__buildIndexType(type idxType:opaque) type
     return _OpaqueIndex;
 
   /* Return true if the argument ``d`` is a rectangular domain.
@@ -898,7 +897,7 @@ module ChapelArray {
   pragma "syntactic distribution"
   record dmap { }
 
-  proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
+  proc chpl__buildDistType(type t) type where isSubtype(t, BaseDist) {
     var x: t;
     var y = _newDistribution(_to_unmanaged(x));
     return y.type;
@@ -908,7 +907,7 @@ module ChapelArray {
     compilerError("illegal domain map type specifier - must be a subclass of BaseDist");
   }
 
-  proc chpl__buildDistValue(x) where isSubtype(_to_borrowed(x.type), BaseDist) {
+  proc chpl__buildDistValue(x) where isSubtype(x.type, BaseDist) {
     return _newDistribution(_to_unmanaged(x));
   }
 
@@ -1029,17 +1028,6 @@ module ChapelArray {
     return !d1._value.dsiEqualDMaps(d2._value);
   }
 
-  // The following method is called by the compiler to determine the default
-  // value of a given type.
-  /* Need new <alias>() for this to function
-  proc _defaultOf(type t) where t:_distribution {
-    var ret: t = noinit;
-    type valType = __primitive("query type field", t, "_valueType");
-    var typeInstance = new <valType>();
-    ret = chpl__buildDistValue(typeInstance);
-    return ret;
-  }
-  */ /* */
 
   // This alternative declaration of Sort.defaultComparator
   // prevents transitive use of module Sort.
@@ -1090,7 +1078,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc chpl__serialize()
-      where isSubtype(_to_borrowed(this._value.type), DefaultRectangularDom) {
+      where this._value.isDefaultRectangular() {
 
       return new _serialized_domain(rank, idxType, stridable, dims(), true);
     }
@@ -1100,8 +1088,8 @@ module ChapelArray {
     pragma "no doc"
     proc chpl__serialize()
       where (_to_borrowed(this._value.type) : BaseRectangularDom) &&
-            !(_to_borrowed(this._value.type) : DefaultRectangularDom) &&
-            this._value.dsiSupportsPrivatization {
+             !this._value.isDefaultRectangular() &&
+             this._value.dsiSupportsPrivatization {
 
         return new _serialized_domain(rank, idxType, stridable, dims(),
                                       false, dist, _value.dsiGetPrivatizeData());
@@ -1802,7 +1790,7 @@ module ChapelArray {
     pragma "no doc"
     proc localSlice(r... rank)
     where chpl__isTupleOfRanges(r) &&
-          isSubtype(_to_borrowed(_value.type), DefaultRectangularDom)
+          _value.isDefaultRectangular()
     {
       if (_value.locale != here) then
         halt("Attempting to take a local slice of a domain on locale ",
@@ -1819,7 +1807,7 @@ module ChapelArray {
     */
     proc localSlice(r... rank)
     where chpl__isTupleOfRanges(r) &&
-          !isSubtype(_to_borrowed(_value.type), DefaultRectangularDom)
+          !_value.isDefaultRectangular()
     {
       return _value.dsiLocalSlice(chpl__anyStridable(r), r);
     }
@@ -1864,7 +1852,7 @@ module ChapelArray {
        If the old type is stridable and the new type is not stridable,
        ensure that the stride was 1.
      */
-    proc safeCast(type t)
+    proc safeCast(type t:_domain)
       where chpl__isRectangularDomType(t) && isRectangularDom(this) {
       const tmpD: t;
       if tmpD.rank != this.rank then
@@ -1930,7 +1918,7 @@ module ChapelArray {
      results in the domain '{1..10}'
    */
   pragma "no doc"
-  proc _cast(type t, d: domain) where chpl__isRectangularDomType(t) && isRectangularDom(d) {
+  proc _cast(type t:_domain, d: _domain) where chpl__isRectangularDomType(t) && isRectangularDom(d) {
     const tmpD: t;
     if tmpD.rank != d.rank then
       compilerError("rank mismatch in cast");
@@ -2398,7 +2386,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc localSlice(r... rank)
-    where isSubtype(_to_borrowed(_value.type), DefaultRectangularArr) &&
+    where isSubtype(_value.type, DefaultRectangularArr) &&
           chpl__isTupleOfRanges(r) {
       if boundsChecking then
         checkSlice((...r));
@@ -2410,7 +2398,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc localSlice(d: domain)
-    where isSubtype(_to_borrowed(_value.type), DefaultRectangularArr) {
+    where isSubtype(_value.type, DefaultRectangularArr) {
       if boundsChecking then
         checkSlice((...d.getIndices()));
 
@@ -2429,7 +2417,7 @@ module ChapelArray {
     pragma "fn returns aliasing array"
     proc localSlice(r... rank)
     where chpl__isTupleOfRanges(r) &&
-          !isSubtype(_to_borrowed(_value.type), DefaultRectangularArr) {
+          !isSubtype(_value.type, DefaultRectangularArr) {
       if boundsChecking then
         checkSlice((...r));
       return _value.dsiLocalSlice(r);
@@ -2876,7 +2864,7 @@ module ChapelArray {
      */
     pragma "unsafe"
     // TODO - once we can annotate, vals argument should outlive 'this'
-    proc push_back(vals) where isArray(vals) {
+    proc push_back(vals:_array) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
 
@@ -2971,7 +2959,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     pragma "unsafe"
-    proc push_front(vals) where isArray(vals) {
+    proc push_front(vals:_array) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
 
@@ -3071,7 +3059,7 @@ module ChapelArray {
           A.insert(3, A); // Will result in runtime error
 
     */
-    proc insert(pos: this.idxType, vals) where isArray(vals) {
+    proc insert(pos: this.idxType, vals: []) {
       if (!chpl__isDense1DArray()) then
         compilerError("insert() is only supported on dense 1D arrays");
 
@@ -3316,9 +3304,7 @@ module ChapelArray {
 
   /* Return true if ``t`` is a domain type. Otherwise return false. */
   proc isDomainType(type t) param {
-    proc isDomainHelp(type t: _domain) param  return true;
-    proc isDomainHelp(type t)          param  return false;
-    return isDomainHelp(t);
+    return isSubtype(t, _domain);
   }
 
   pragma "no doc"
@@ -3328,9 +3314,7 @@ module ChapelArray {
 
   /* Return true if ``t`` is an array type. Otherwise return false. */
   proc isArrayType(type t) param {
-    proc isArrayHelp(type t: _array) param  return true;
-    proc isArrayHelp(type t)         param  return false;
-    return isArrayHelp(t);
+    return isSubtype(t, _array);
   }
 
   pragma "no doc"
@@ -3941,10 +3925,16 @@ module ChapelArray {
     chpl__tupleInit(j, a.rank, b);
   }
 
-  proc _desync(type t) type where isSyncType(t) || isSingleType(t) {
+  proc _desync(type t:_syncvar) type {
     var x: t;
     return x.valType;
   }
+
+  proc _desync(type t:_singlevar) type {
+    var x: t;
+    return x.valType;
+  }
+
 
   proc _desync(type t) type {
     return t;
@@ -4308,7 +4298,6 @@ module ChapelArray {
 
     }
   }
-
   /* ================================================
      Set Operations on Associative Domains and Arrays
      ================================================
