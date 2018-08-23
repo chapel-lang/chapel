@@ -678,6 +678,7 @@ static void build_record_equality_function(AggregateType* ct) {
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   arg1->addFlag(FLAG_MARKED_GENERIC);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
+  arg2->addFlag(FLAG_MARKED_GENERIC);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
@@ -706,6 +707,7 @@ static void build_record_inequality_function(AggregateType* ct) {
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   arg1->addFlag(FLAG_MARKED_GENERIC);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
+  arg2->addFlag(FLAG_MARKED_GENERIC);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
@@ -1117,28 +1119,20 @@ static void build_record_assignment_function(AggregateType* ct) {
   if (function_exists("=", ct, ct))
     return;
 
+  bool externRecord = ct->symbol->hasFlag(FLAG_EXTERN);
+
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
-  arg1->addFlag(FLAG_MARKED_GENERIC); // TODO: Check if we really want this.
+  arg1->addFlag(FLAG_MARKED_GENERIC);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
+  arg2->addFlag(FLAG_MARKED_GENERIC);
 
-  bool externRecord = ct->symbol->hasFlag(FLAG_EXTERN);
-  // If the LHS is extern, the RHS must be of matching type; otherwise
-  // Chapel permits matches that have the same names
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2",
-                                  (externRecord ? ct : dtAny));
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
-
-  // This is required because coercion from a subtype to a base record type
-  // inserts a cast.  Such a cast is implemented using assignment.  The
-  // resolution errors out because the return type of the cast is recursively
-  // defined.  (See classes/marybeth/test_dispatch_record.chpl)
-  if (! externRecord)
-    fn->where = new BlockStmt(new CallExpr(PRIM_IS_SUBTYPE, ct->symbol, arg2));
 
   fn->retType = dtVoid;
 
@@ -1242,12 +1236,11 @@ static void build_record_cast_function(AggregateType* ct) {
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
   fn->addFlag(FLAG_INLINE);
-  ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", ct);
   t->addFlag(FLAG_TYPE_VARIABLE);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "arg", dtAny);
   fn->insertFormalAtTail(t);
   fn->insertFormalAtTail(arg);
-  fn->where = new BlockStmt(new CallExpr(PRIM_IS_SUBTYPE, ct->symbol, t));
   VarSymbol* ret = newTemp();
   fn->insertAtTail(new DefExpr(ret));
   fn->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_INIT, t)));
@@ -1501,6 +1494,7 @@ static void buildDefaultOfFunction(AggregateType* ct) {
     DefExpr*   def = new DefExpr(fn);
 
     arg->addFlag(FLAG_MARKED_GENERIC);
+
     arg->addFlag(FLAG_TYPE_VARIABLE);
 
     fn->addFlag(FLAG_COMPILER_GENERATED);
