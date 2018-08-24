@@ -4,9 +4,8 @@
 # Writes to stdout
 
 set -e
-thisfile=$( basename "$0" )
 
-cwd=$( cd $(dirname "$0" ) && pwd )
+cwd=$( cd $(dirname "${BASH_SOURCE[0]}" ) && pwd )
 source $cwd/../functions.bash
 
 # Accept command line parameters of the form NAME=Value. Or use environment variables.
