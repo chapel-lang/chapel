@@ -58,7 +58,6 @@
 class FnSymbol;
 
 // some prototypes
-static GenRet codegenCallExpr(const char* fnName);
 static void codegenAssign(GenRet to_ptr, GenRet from);
 static GenRet codegenCast(Type* t, GenRet value, bool Cparens = true);
 static GenRet codegenCastToVoidStar(GenRet value);
@@ -93,9 +92,7 @@ static GenRet codegenAddrOf(GenRet r);
  */
 static GenRet codegenCallExpr(GenRet function, std::vector<GenRet> & args, FnSymbol* fSym, bool defaultToValues);
 static GenRet codegenCallExpr(const char* fnName, std::vector<GenRet> & args, bool defaultToValues = true);
-static GenRet codegenCallExpr(const char* fnName);
-static GenRet codegenCallExpr(const char* fnName, GenRet a1);
-static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
+// some codegenCallExpr are declared in codegen.h
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6, GenRet a7);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8);
@@ -2484,20 +2481,17 @@ void codegenCall(const char* fnName, std::vector<GenRet> & args, bool defaultToV
  * but they make it much easier to write the primitive call
  * generation in Expr::codegen
  */
-static
 GenRet codegenCallExpr(const char* fnName)
 {
   std::vector<GenRet> args;
   return codegenCallExpr(fnName, args);
 }
-static
 GenRet codegenCallExpr(const char* fnName, GenRet a1)
 {
   std::vector<GenRet> args;
   args.push_back(a1);
   return codegenCallExpr(fnName, args);
 }
-static
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2)
 {
   std::vector<GenRet> args;

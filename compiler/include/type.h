@@ -504,7 +504,7 @@ bool isPOD(Type* t);
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);
 
-
+Immediate getDefaultImmediate(Type* t);
 
 
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]

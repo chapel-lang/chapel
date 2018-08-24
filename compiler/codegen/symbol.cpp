@@ -397,26 +397,35 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         ret.c = cname; // in C, all floating point literals are (double)
       } else if (immediate->const_kind == NUM_KIND_COMPLEX) {
 
+        IF1_float_type flType = FLOAT_SIZE_32;
+        const char* chplComplexN = NULL;
+
         switch(immediate->num_index) {
-          case COMPLEX_SIZE_64: {
-            VarSymbol* r = new_RealSymbol(...);
-            VarSymbol* i = new_RealSymbol(...);
-            ret = codegenCallExpr("_chpl_complex64",
-                                 new SymExpr(r),
-                                 new SymExpr(i));
+          case COMPLEX_SIZE_64:
+            flType = FLOAT_SIZE_32;
+            chplComplexN = "_chpl_complex64";
             break;
-          }
-          case COMPLEX_SIZE_128: {
-            VarSymbol* r = new_RealSymbol(...);
-            VarSymbol* i = new_RealSymbol(...);
-            ret = codegenCallExpr("_chpl_complex128",
-                                 new SymExpr(r),
-                                 new SymExpr(i));
+          case COMPLEX_SIZE_128:
+            flType = FLOAT_SIZE_64;
+            chplComplexN = "_chpl_complex128";
             break;
-          }
           default:
             INT_ASSERT("unsupported complex floating point width");
         }
+
+        Immediate r_imm = getDefaultImmediate(dtReal[flType]);
+        Immediate i_imm = getDefaultImmediate(dtImag[flType]);
+
+        coerce_immediate(immediate, &r_imm);
+        coerce_immediate(immediate, &i_imm);
+
+        VarSymbol* r = new_ImmediateSymbol(&r_imm);
+        VarSymbol* i = new_ImmediateSymbol(&i_imm);
+
+        ret = codegenCallExpr(chplComplexN,
+                              new SymExpr(r),
+                              new SymExpr(i));
+
         ret.chplType = typeInfo();
 
       } else {
