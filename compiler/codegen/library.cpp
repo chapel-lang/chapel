@@ -156,15 +156,35 @@ void codegen_library_makefile() {
   closeLibraryHelperFile(&makefile, false);
 }
 
+static std::string getRequireIncludes() {
+  std::string res = "";
+  for_vector(const char, dirName, incDirs) {
+    res += " -I";
+    res += dirName;
+  }
+  return res;
+}
+
+static std::string getRequireLibraries() {
+  std::string res = "";
+  // Adds the locations of the libraries specified using require statements
+  for_vector(const char, dirName, libDirs) {
+    requires += " -L";
+    requires += dirName;
+  }
+  for_vector(const char, libName, libFiles) {
+    requires += " -l";
+    requires += libName;
+  }
+
+  return res;
+}
+
 static void printMakefileIncludes(fileinfo makefile) {
   std::string cflags = getCompilelineOption("cflags");
   cflags.erase(cflags.length() - 1); // remove trailing newline
 
-  std::string requireIncludes = "";
-  for_vector(const char, dirName, incDirs) {
-    requireIncludes += " -I";
-    requireIncludes += dirName;
-  }
+  std::string requireIncludes = getRequireIncludes();
 
   std::string includes = getCompilelineOption("includes-and-defines");
   fprintf(makefile.fptr, "CHPL_CFLAGS = -I%s %s",
@@ -193,16 +213,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name,
     libname += getLibraryExtension();
   }
 
-  std::string requires = "";
-  // Adds the locations of the libraries specified using require statements
-  for_vector(const char, dirName, libDirs) {
-    requires += " -L";
-    requires += dirName;
-  }
-  for_vector(const char, libName, libFiles) {
-    requires += " -l";
-    requires += libName;
-  }
+  std::string requires = getRequireLibraries();
 
   fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s",
           libDir,
@@ -278,6 +289,7 @@ static void setupPythonTypeMap() {
 static void makePXDFile(std::vector<FnSymbol*> functions);
 static void makePYXFile(std::vector<FnSymbol*> functions);
 static void makePYFile();
+static void makePythonModule();
 
 void codegen_library_python(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile && fLibraryPython) {
@@ -289,6 +301,8 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
     makePXDFile(functions);
     makePYXFile(functions);
     makePYFile();
+
+    makePythonModule();
   }
 }
 
@@ -490,6 +504,40 @@ static void makePYFile() {
   }
   // Don't "beautify", it will remove the tabs
   closeLibraryHelperFile(&py, false);
+}
+
+static void makePythonModule() {
+  std::string getOldPythonPath = "echo $PYTHONPATH";
+  std::string pythonPath = runCommand(getOldPythonPath);
+  pythonPath += ":";
+  pythonPath += CHPL_RUNTIME_INCLUDE;
+  pythonPath += "/python";
+
+  // TODO: is getCompilelineOptions going to give me something I can't use?
+
+  std::string cFlags = getCompilelineOption("cflags");
+  // Erase the trailing \n from getting the cFlags
+  cFlags.erase(cFlags.length() - 1);
+  std::string requireIncludes = getRequireIncludes();
+  std::string includes = getCompilelineOption("includes-and-defines");
+  // Erase the trailing \n from getting the includes
+  includes.erase(includes.length() - 1);
+
+  std::string requireLibraries = getRequireLibraries();
+  std::string libraries = getCompilelineOption("libraries");
+  // Erase the trailing \n from getting the libraries
+  libraries.erase(libraries.length() - 1);
+
+  std::string cythonPortion = "python3 ";
+  cythonPortion += pythonModulename;
+  cythonPortion += ".py build_ext -i";
+
+  std::string fullCommand = "PYTHONPATH=" + pythonPath;
+  fullCommand += " CFLAGS=\"" + cFlags + requireIncludes + " " + includes;
+  fullCommand += "\" LDFLAGS=\"" + requireLibraries + " " + libraries + "\" ";
+  fullCommand += cythonPortion;
+  // TODO: run the full command from the directory where all the library files
+  // live
 }
 
 // Skip this function if it is defined in an internal module, or if it is
