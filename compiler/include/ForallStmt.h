@@ -39,7 +39,6 @@ public:
 
   // when originating from a ForLoop
   bool       createdFromForLoop()    const;  // is converted from a for-loop
-  bool       iterCallAlreadyTagged() const;  // already has 'tag' actual
   bool       needToHandleOuterVars() const;  // yes, convert to shadow vars
 
   DECLARE_COPY(ForallStmt);
@@ -82,7 +81,6 @@ private:
 public:
   LabelSymbol*   fContinueLabel;     // update_symbols() needs the labels
   LabelSymbol*   fErrorHandlerLabel;
-  bool           fFromResolvedForLoop;
 
   // for recursive iterators during lowerIterators
   DefExpr*       fRecIterIRdef;
@@ -113,7 +111,6 @@ inline AList& ForallStmt::iteratedExpressions()    { return fIterExprs;  }
 inline AList& ForallStmt::shadowVariables()        { return fShadowVars; }
 inline BlockStmt* ForallStmt::loopBody()     const { return fLoopBody;   }
 
-inline bool ForallStmt::iterCallAlreadyTagged() const { return  fFromForLoop; }
 inline bool ForallStmt::needToHandleOuterVars() const { return !fFromForLoop; }
 inline bool ForallStmt::createdFromForLoop()    const { return  fFromForLoop; }
 
