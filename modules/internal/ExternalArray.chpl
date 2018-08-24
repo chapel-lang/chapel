@@ -72,6 +72,8 @@ module ExternalArray {
     override proc dsiTrackDomains() return false;
 
     proc singleton() param return true;
+
+    proc dsiIsLayout() param return true;
   }
 
   var defaultExternDist = new unmanaged ExternDist();
