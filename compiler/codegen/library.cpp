@@ -467,6 +467,7 @@ static void makePYFile() {
     std::string libraries = getCompilelineOption("libraries");
     char copyOfLib[libraries.length() + 1];
     libraries.copy(copyOfLib, libraries.length(), 0);
+    copyOfLib[libraries.length()] = '\0';
     int prefixLen = strlen("-l");
     char* curSection = strtok(copyOfLib, " \n");
     // Get the libraries from compileline --libraries, taking the `name`
