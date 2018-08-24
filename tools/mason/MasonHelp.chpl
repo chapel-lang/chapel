@@ -49,7 +49,7 @@ proc masonHelp() {
   writeln('    doc         Build this project\'s documentation');
   writeln('    system      Integrate with system packages found via pkg-config');
   writeln('    test        Compile and run tests found in /test');
-  writeln('    external    Integrate external dependencies into mason pacakges');
+  writeln('    external    Integrate external dependencies into mason packages');
 }
 
 proc masonList() {
@@ -84,12 +84,16 @@ proc masonRunHelp() {
   writeln('        --show                   Increase verbosity');
   writeln('        --example <example>      Run an example');
   writeln();
-  writeln('Runtime arguments can also be included after the run arguments ');
   writeln('When --example is thrown without an example, all available examples will be listed');
   writeln();
   writeln('When no options are provided, the following will take place:');
   writeln('   - Execute binary from mason project if target/ is present');
   writeln('   - If no target directory, build and run is Mason.toml is present');
+  writeln();
+  writeln('Runtime arguments can be included after mason arguments.');
+  writeln('To ensure that runtime arguments and mason arguments to not conflict, separate them');
+  writeln('with a single dash(`-`). For example');
+  writeln('   e.g. mason run --build - --runtimeArg=true');
 }
 
 proc masonBuildHelp() {
@@ -104,10 +108,16 @@ proc masonBuildHelp() {
   writeln('        --release                Compile to target/release with optimizations (--fast)');
   writeln('        --force                  Force Mason to build the project');
   writeln('        --example <example>      Build an example from the example/ directory');
+  writeln('        --no-update              Do not update the mason registry before building');
   writeln();
   writeln('When --example is thrown without an example, all examples will be built');
   writeln('When no options are provided, the following will take place:');
-  writeln('   - Build from mason project if Mason.lock present');  
+  writeln('   - Build from mason project if Mason.lock present');
+  writeln();
+  writeln('Compilation flags and arguments can be included after mason arguments.');
+  writeln('To ensure compilation flags and mason arguments to not conflict, separate them with a');
+  writeln('single dash(`-`). For example');
+  writeln('   e.g. mason build --force - --savec tmpdir');
 }
 
 proc masonNewHelp() {
@@ -311,7 +321,7 @@ proc masonUninstallHelp() {
   writeln("    -h, --help                  Display this message");
   writeln("        --force                 Remove regardless of dependents");
   writeln("        --all                   USE CAREFULLY. remove ALL installed packages that match supplied spec");
-  writeln("        --dependents            Also uninstall any dependent pacakges");
+  writeln("        --dependents            Also uninstall any dependent packages");
   writeln();
   writeln("External Mason packages can be uninstalled as follows:");
   writeln("    mason external uninstall <full Spack spec expression>");

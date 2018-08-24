@@ -5,13 +5,11 @@ use MasonRun;
 proc main() {
 
   // build the examples
-  masonExample(["--no-run", "--force"]);
-
-  // run info list of tests to run
-  masonRun(["mason", "run", "--example"]);
+  masonBuild(["mason", "--build", "--example", "--force"]);
 
   // run each example
-  masonExample(["depExample.chpl", "withOpts.chpl", "examplesubdir/subdirExample.chpl",
-                "example.chpl", "--no-build"]);
+  // over 3 arguments runs all examples
+  var runArgs: [0..3] string = ["mason", "run", "--example", "--force"];
+  masonRun(runArgs);
 
 }

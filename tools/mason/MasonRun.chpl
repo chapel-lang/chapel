@@ -25,6 +25,55 @@ use TOML;
 
 proc masonRun(args) throws {
 
+  var show = false;
+  var example = false;
+  var release = false;
+  var exec = false;
+  var execopts: [1..0] string;
+
+  if args.size > 2 {
+    for arg in args[2..] {
+      if exec == true {
+        execopts.push_back(arg);
+      }
+      else if arg == '-h' || arg == '--help' {
+        masonRunHelp();
+        exit(0);
+      }
+      else if arg == '--build' {
+        masonBuildRun(args);
+        exit(1);
+      }
+      else if arg == '--' {        
+        exec = true;
+      }
+      else if arg == '--show' {
+        show=true;
+      }
+      else if arg == 'run' {
+        continue;
+      }
+      else if arg == '--release' {
+        release=true;
+      }
+      else if arg == '--example' {        
+        if args.size > 3 {
+          masonBuildRun(args);
+        }
+        // mason run --example
+        else printAvailableExamples();
+        exit(0);
+      }
+      else {
+        execopts.push_back(arg);
+      }
+    }
+  }
+  runProjectBinary(show, release, execopts);
+}
+
+proc runProjectBinary(show: bool, release: bool, execopts: [?d] string) throws {
+
   try! {
 
     const cwd = getEnv("PWD");
@@ -32,74 +81,51 @@ proc masonRun(args) throws {
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
     const tomlFile = new Owned(parseToml(toParse));
     const project = tomlFile["brick"]["name"].s;
-    var show = false;
-    var example = false;
-    var execopts: [1..0] string;
-
-    if args.size > 2 {
-      for arg in args[2..] {
-        if arg == '-h' || arg == '--help' {
-          masonRunHelp();
-          exit(0);
-        }
-        else if arg == '--build' {
-          masonBuildRun(args[2..]);
-          exit(1);
-        }
-        else if arg == '--show' {
-          show=true;
-       }
-       else if arg == 'run' {
-          continue;
-       }
-       else if arg == '--example' {
-         example=true;
-         if args.size > 3 {
-           var exampleArgs = args[3..];
-           exampleArgs.push_back("--no-build");
-           masonExample(exampleArgs);
-         }         
-         else printAvailableExamples(tomlFile, projectHome); 
-       }
-       else {
-          execopts.push_back(arg);
-       }
-      }
-    }
-    if !example {
-      // Find the Binary and execute
-      if isDir(joinPath(projectHome, 'target')) {
-        var execs = ' '.join(execopts);
-        var command: string;
-        if isDir(joinPath(projectHome, 'target/release')) then
+ 
+    // Find the Binary and execute
+    if isDir(joinPath(projectHome, 'target')) {
+      var execs = ' '.join(execopts);
+    
+      // decide which binary(release or debug) to run
+      var command: string;
+      if release {
+        if isDir(joinPath(projectHome, 'target/release')) {
           command = joinPath(projectHome, "target/release", project);
-        else {
-          command = joinPath(projectHome, "target/debug", project);
         }
-
-        var built = false;
-        if isFile(command) then built = true;
-
-        // add execopts
-        command += " " + execs;
-
-        if show then writeln("Executing binary: " + command);
-
-        if isFile(joinPath(projectHome, "Mason.lock")) && built then // If built
-          runCommand(command);
-        else if isFile(joinPath(projectHome, "Mason.toml")) { // If not built
-          masonBuild(args);
-          runCommand(command);
-        }
-        else {
-          throw new MasonError("Mason could not find your Mason.toml file");
-        }
-        // Close memory
-        toParse.close();
       }
       else {
-        throw new MasonError("Mason could not find the compiled program");
+        command = joinPath(projectHome, "target/debug", project);
       }
+
+      var built = false;
+      if isFile(command) then built = true;
+
+      // add execopts
+      command += " " + execs;
+
+      if show {
+        if release then writeln("Executing [release] target: " + command);
+        else writeln("Executing [debug] target: " + command);
+      }
+
+      // Build if not built, throwing error if Mason.toml doesnt exist
+      if isFile(joinPath(projectHome, "Mason.lock")) && built then {
+        runCommand(command);
+      }
+      else if isFile(joinPath(projectHome, "Mason.toml")) {
+        const msg = "Mason could not find your Mason.lock.\n";
+        const help = "To build and run your project use: mason run --build";
+        throw new MasonError(msg + help);
+      }
+      else {
+        throw new MasonError("Mason could not find your Mason.toml file");
+      }
+
+      // Close memory
+      toParse.close();
+    }
+    else {
+      throw new MasonError("Mason could not find the compiled program");
     }
   }
   catch e: MasonError {
@@ -108,52 +134,70 @@ proc masonRun(args) throws {
   }
 }
 
-// Builds before running
+
+/* Builds program before running. */
 private proc masonBuildRun(args: [?d] string) {
-  var example = false;
-  var show = false;
-  var release = false;
-  var force = false;
-  var examples: [1..0] string;  
-  for arg in args {
-    if arg == "--example" {
-      example = true;
+
+  try! {
+    var example = false;
+    var show = false;
+    var release = false;
+    var force = false;
+    var exec = false;
+    var buildExample = false;
+    var updateRegistry = true;
+    var execopts: [1..0] string;  
+    for arg in args[2..] {
+      if exec == true {
+        execopts.push_back(arg);
+      }
+      else if arg == "--" {
+        if example then
+          throw new MasonError("Examples do not support `--` syntax");
+        exec = true;
+      }
+      else if arg == "--example" {
+        example = true;
+      }
+      else if arg == "--show" {
+        show = true;
+      }
+      else if arg == "--build" {
+        buildExample = true;
+      }
+      else if arg == "--force" {
+        force = true;
+      }
+      else if arg == "--release" {
+        release = true;
+      }
+      else if arg == '--no-update' {
+        updateRegistry = false;
+      }
+      else {
+        // could be examples or execopts
+        execopts.push_back(arg);
+      }
     }
-    else if arg == "--show" {
-      show = true;
-    }
-    else if arg == "--build" {
-      continue;
-    }
-    else if arg == "--force" {
-      force = true;
-    }
-    else if arg == "--release" {
-      release = true;
+    if example {
+      if !buildExample then execopts.push_back("--no-build");
+      if release then execopts.push_back("--release");
+      if force then execopts.push_back("--force");
+      if show then execopts.push_back("--show");
+      masonExample(execopts);
     }
     else {
-      examples.push_back(arg);
+      var buildArgs: [0..1] string = ["mason", "build"];
+      if !updateRegistry then buildArgs.push_back("--no-update");
+      if release then buildArgs.push_back("--release");
+      if force then buildArgs.push_back("--force");
+      if show then buildArgs.push_back("--show");
+      masonBuild(buildArgs);
+      runProjectBinary(show, release, execopts);
     }
   }
-  if example {
-    if show then examples.push_back("--show");
-    if release then examples.push_back("--release");
-    if force then examples.push_back("--force");
-    masonExample(examples);
-  }
-  else {
-    var buildArgs = ["mason", "build"];
-    if show then buildArgs.push_back("--show");
-    if release then buildArgs.push_back("--release");
-    if force then buildArgs.push_back("--force");
-    masonBuild(buildArgs);
-    //masonRun(["mason", "run", buildArgs[2..]); when #10622 is completed
-    if show {
-      masonRun(["mason", "run", "--show"]);
-    }
-    else {
-      masonRun(["mason", "run"]);
-    }
+  catch e: MasonError {
+    stderr.writeln(e.message());
   }
 }
 
