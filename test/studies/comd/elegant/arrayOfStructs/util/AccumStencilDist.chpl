@@ -224,6 +224,51 @@ proc AccumStencil.init(boundingBox: domain,
   }
 }
 
+proc AccumStencil.init(forDomain: domain,
+                boundingBox: domain,
+                targetLocales: [] locale = Locales,
+                dataParTasksPerLocale=getDataParTasksPerLocale(),
+                dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+                dataParMinGranularity=getDataParMinGranularity(),
+                param rank = boundingBox.rank,
+                type idxType = boundingBox.idxType,
+                fluff: rank*idxType = makeZero(rank, idxType),
+                periodic: bool = false,
+                param ignoreFluff = false) {
+  this.init(boundingBox=boundingBox,
+            targetLocales=targetLocales,
+            dataParTasksPerLocale=dataParTasksPerLocale,
+            dataParIgnoreRunningTasks=dataParIgnoreRunningTasks,
+            dataParMinGranularity=dataParMinGranularity,
+            rank=rank,
+            idxType=idxType,
+            fluff=fluff,
+            periodic=periodic,
+            ignoreFluff=ignoreFluff);
+}
+proc AccumStencil.init(type forDomainType,
+                boundingBox: domain,
+                targetLocales: [] locale = Locales,
+                dataParTasksPerLocale=getDataParTasksPerLocale(),
+                dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+                dataParMinGranularity=getDataParMinGranularity(),
+                param rank = boundingBox.rank,
+                type idxType = boundingBox.idxType,
+                fluff: rank*idxType = makeZero(rank, idxType),
+                periodic: bool = false,
+                param ignoreFluff = false) {
+  this.init(boundingBox=boundingBox,
+            targetLocales=targetLocales,
+            dataParTasksPerLocale=dataParTasksPerLocale,
+            dataParIgnoreRunningTasks=dataParIgnoreRunningTasks,
+            dataParMinGranularity=dataParMinGranularity,
+            rank=rank,
+            idxType=idxType,
+            fluff=fluff,
+            periodic=periodic,
+            ignoreFluff=ignoreFluff);
+}
+
 proc AccumStencil.dsiAssign(other: _to_unmanaged(this.type)) {
   coforall locid in targetLocDom do
     on targetLocales(locid) do
