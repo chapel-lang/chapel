@@ -44,7 +44,7 @@ proc masonRun(args) throws {
         masonBuildRun(args);
         exit(1);
       }
-      else if arg == '-' {        
+      else if arg == '--' {        
         exec = true;
       }
       else if arg == '--show' {
@@ -151,9 +151,9 @@ private proc masonBuildRun(args: [?d] string) {
       if exec == true {
         execopts.push_back(arg);
       }
-      else if arg == "-" {
+      else if arg == "--" {
         if example then
-          throw new MasonError("Examples do not support `-` syntax");
+          throw new MasonError("Examples do not support `--` syntax");
         exec = true;
       }
       else if arg == "--example" {

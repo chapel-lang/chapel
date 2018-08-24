@@ -44,9 +44,9 @@ proc masonBuild(args) throws {
         masonBuildHelp();
         exit(0);
       }
-      else if arg == '-' {
+      else if arg == '--' {
         if example then
-          throw new MasonError("Examples do not support `-` syntax");
+          throw new MasonError("Examples do not support `--` syntax");
         opt = true;
       }
       else if arg == '--release' {

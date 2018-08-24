@@ -196,8 +196,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
         const examplePath = "".join(projectHome, '/example/', example);
         const exampleName = basename(stripExt(example, ".chpl"));
 
-        // retrieves compopts and execopts found per example in the toml file
-        // Adds in cmd line options found after `--`
+        // retrieves compopts and execopts found per example in the toml file      
         const optsFromToml = perExampleOptions[exampleName];
         var exampleCompopts = optsFromToml[1];
         var exampleExecopts = optsFromToml[2];
