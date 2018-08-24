@@ -1,8 +1,7 @@
 
 # Source this for Cray-module-specific shell setups
 
-thiscomm=$( basename ${BASH_SOURCE[0]} )
-log_debug "Begin $thiscomm"
+log_debug "Begin $( basename "${BASH_SOURCE[0]}" )"
 
 # This expects bash functions log_debug, log_error, etc to be defined
 # (see functions.bash and package-functions.bash),
@@ -47,7 +46,7 @@ case "${rc_prefix:-}" in
     rc_prefix=$( sed -e 's,-,,' <<<"$chpl_platform" )
     ;;
 ( *[!0-9a-zA-Z_]* )
-    log_error "$thiscomm: Invalid rc_prefix='$rc_prefix'"; exit 2
+    log_error "$( basename "${BASH_SOURCE[0]}" ): Invalid rc_prefix='$rc_prefix'"; exit 2
     ;;
 ( * )
     # strip out any "dash" in the given value
@@ -60,7 +59,7 @@ esac
 case "$rc_prefix" in
 ( *[0-9] )
     case "${rc_number:=0}" in
-        ( [0-9]* ) log_warn "$thiscomm: rc_prefix='$rc_prefix', rc_number='$rc_number' (too many digits?)";;
+        ( [0-9]* ) log_warn "$( basename "${BASH_SOURCE[0]}" ): rc_prefix='$rc_prefix', rc_number='$rc_number' (too many digits?)";;
     esac
     ;;
 esac
@@ -99,4 +98,4 @@ export pkg_filename
 export rpm_filename
 export rpmbuild_filename
 
-log_debug "End $thiscomm"
+log_debug "End $( basename "${BASH_SOURCE[0]}" )"

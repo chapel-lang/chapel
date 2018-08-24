@@ -4,8 +4,7 @@
 # This expects bash functions log_debug, log_error, etc to be defined
 # (see functions.bash and package-functions.bash)
 
-thiscomm=$( basename ${BASH_SOURCE[0]} )
-log_debug "Begin $thiscomm"
+log_debug "Begin $( basename "${BASH_SOURCE[0]}" )"
 
 if [ -n "${verbose:-}" ]; then
     log_info "Using -v (verbose)"
@@ -35,10 +34,10 @@ fi
 # date_ymd,
 #   date_hms    : date and time for use within the pkg, in YYYYMMDD and HHMMSS
 
-case "${chpl_platform:=}"   in ( "" | *\ * | */* )  log_error "$thiscomm: Invalid chpl_platform='$chpl_platform'";  exit 2;; esac
-case "${date_ymd:=}"        in ( "" | *[!0-9]* )    log_error "$thiscomm: Invalid date_ymd='$date_ymd'";            exit 2;; esac
-case "${date_hms:=}"        in ( "" | *[!0-9]* )    log_error "$thiscomm: Invalid date_hms='$date_hms'";            exit 2;; esac
-case "${rc_number:=0}"      in ( *[!0-9]* )         log_error "$thiscomm: Invalid rc_number='$rc_number'";          exit 2;; esac
+case "${chpl_platform:=}"   in ( "" | *\ * | */* )  log_error "$( basename "${BASH_SOURCE[0]}" ): Invalid chpl_platform='$chpl_platform'";  exit 2;; esac
+case "${date_ymd:=}"        in ( "" | *[!0-9]* )    log_error "$( basename "${BASH_SOURCE[0]}" ): Invalid date_ymd='$date_ymd'";            exit 2;; esac
+case "${date_hms:=}"        in ( "" | *[!0-9]* )    log_error "$( basename "${BASH_SOURCE[0]}" ): Invalid date_hms='$date_hms'";            exit 2;; esac
+case "${rc_number:=0}"      in ( *[!0-9]* )         log_error "$( basename "${BASH_SOURCE[0]}" ): Invalid rc_number='$rc_number'";          exit 2;; esac
 
 ck_chpl_home_bin "$CHPL_HOME" $chpl_platform
 
@@ -53,26 +52,26 @@ case "${release_type:=}" in
 ( [dD]* | developer )
     case "${src_version:=}" in
     ( "" | *[!0-9a-z.]* | *.*.*.*.* | *..* | .* | *. )
-        log_error "$thiscomm: Invalid src_version='$src_version' for release_type '$release_type'"; exit 2
+        log_error "$( basename "${BASH_SOURCE[0]}" ): Invalid src_version='$src_version' for release_type '$release_type'"; exit 2
         ;;
     ( *.*.*.* )
         read major minor update gitrev junk <<<$( tr '.' ' ' <<<$src_version )
         ;;
     ( * )
-        log_error "$thiscomm: Invalid src_version='$src_version' for release_type '$release_type'"; exit 2
+        log_error "$( basename "${BASH_SOURCE[0]}" ): Invalid src_version='$src_version' for release_type '$release_type'"; exit 2
         ;;
     esac
     ;;
 ( * )
     case "${src_version:=}" in
     ( "" | *[!0-9.]* | *.*.*.* | *..* | .* | *. )
-        log_error "$thiscomm: Invalid src_version='$src_version' for release_type '$release_type'"; exit 2
+        log_error "$( basename "${BASH_SOURCE[0]}" ): Invalid src_version='$src_version' for release_type '$release_type'"; exit 2
         ;;
     ( *.*.* )
         read major minor update junk <<<$( tr '.' ' ' <<<$src_version )
         ;;
     ( * )
-        log_error "$thiscomm: Invalid src_version='$src_version' for release_type '$release_type'"; exit 2
+        log_error "$( basename "${BASH_SOURCE[0]}" ): Invalid src_version='$src_version' for release_type '$release_type'"; exit 2
         ;;
     esac
     ;;
@@ -81,7 +80,7 @@ esac
 # version_tag may be null; if non-null, it must not begin with a _ character
 case "${version_tag:=}" in
 ( *[!0-9a-zA-Z_]* | _* | *_ )
-    log_error "$thiscomm: Invalid version_tag='$version_tag'"; exit 2
+    log_error "$( basename "${BASH_SOURCE[0]}" ): Invalid version_tag='$version_tag'"; exit 2
     ;;
 esac
 
@@ -99,7 +98,7 @@ case "${release_type:=}" in
     pkg_version=$major.$minor.$update${version_tag:+_}$version_tag.$gitrev
     ;;
 ( * )
-    log_error "$thiscomm: Invalid release_type='$release_type'"
+    log_error "$( basename "${BASH_SOURCE[0]}" ): Invalid release_type='$release_type'"
     exit 2
     ;;
 esac
@@ -122,4 +121,4 @@ export rc_number
 export date_ymd
 export date_hms
 
-log_debug "End $thiscomm"
+log_debug "End $( basename "${BASH_SOURCE[0]}" )"
