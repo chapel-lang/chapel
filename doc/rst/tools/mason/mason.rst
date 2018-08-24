@@ -29,59 +29,43 @@ To remove mason, change directory to ``$CHPL_HOME/tools/mason`` and run:
    make clean
 
 
-Environment Variables
-=====================
+Basic Usage
+===========
 
-Mason can be configured by setting the following environment variables:
-
-- ``MASON_HOME`` : Path to a directory where mason will store cached registry
-  and package data. Defaults to ``$HOME/.mason``.
-- ``MASON_REGISTRY`` : A comma separated list of ``name|location`` pairs, where
-  ``name`` is a local name for the registry at ``location``. Defaults to
-  ``mason-registry|https://github.com/chapel-lang/mason-registry``. If the
-  ``name|`` part of a pair is omitted it is inferred to be the word following
-  the final slash in ``location`` with any ".git" suffix removed.
-
-The ``mason env`` command will print the inferred or set values of these
-environment variables. If a variable was set by the user, an asterisk will be
-printed at the end of the line. For example, if ``$MASON_HOME`` was set:
-
-.. code-block:: text
-
-   > mason env
-   MASON_HOME: /path/to/something *
-   MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
-
-.. warning::
-
-   If MASON_REGISTRY changes after invoking a mason command that updates the
-   local copy of the registry (e.g. ``mason update``), the local copies of the
-   registry and dependency sources will be removed.
-
-
-Setting up Your Project
-=======================
+Starting a New Project
+~~~~~~~~~~~~~~~~~~~~~~
 
 ``mason new [ project name ] [ options ]`` is the command that initializes
 a new project. It also creates a git repository unless ``--no-vcs`` is included.
 
-For example, after ``mason new MyPackage`` is run in an empty directory it will have the
-following hierarchy::
+For example, after ``mason new MyProject`` is run, the project will have the following hierarchy::
 
-  MyPackage/
-      Mason.toml
-      test/
-      src/
-          MyPackage.chpl
 
+  MyProject
+   │
+   ├── Mason.toml
+   ├── example
+   ├── src
+   │   └── MyProject.chpl
+   └── test
+
+
+The first file listed is the ``Mason.toml``. This is the manifest file
+for the project. All dependencies for the project are listed in this file
+as well as additional metadata about the project.
+
+The ``src/`` folder is where the source code of the project should reside.
+As you might expect, the ``test/`` folder and the ``example`` folder hold
+tests and examples for your project, respectively. We will get to the
+additional functionality that comes with these folders later.
 
 Mason will ensure that the main file be named after the package to enforce namespacing.
 While it is common practice for package names to be PascalCase and chpl files to be lowercase,
-it is an acceptable tradeoff for reliability. ``MyPackage.chpl`` will be the first file listed in ``src/``.
+it is an acceptable tradeoff for reliability. ``MyProject.chpl`` will be the first file listed in ``src/``.
 
 
-Building and Running Your Project
-=================================
+Building and Running a Project 
+==============================
 
 When invoked, ``mason build [ options ]`` will do the following:
 
@@ -95,19 +79,67 @@ When invoked, ``mason build [ options ]`` will do the following:
     - Run the executable built above out of ``target/``, if it exists.
     - All options not recognized by ``mason`` will be forwarded to the executable.
 
-For example, after ``mason build && mason run [ options ]``, the project directory appears as so::
+For example, after ``mason run --build [ options ]``, the project directory appears as follows::
+
+  MyProject
+   │
+   ├── Mason.lock
+   ├── Mason.toml
+   ├── example
+   ├── src
+   │   └── myProject.chpl
+   ├── target
+   │   ├── debug
+   │   │   └── myProject
+   │   ├── example
+   │   └── test
+   └── test
 
 
-    MyPackage/
-      Mason.toml
-      Mason.lock
-      src/
-        MyPackage.chpl
-      test/
-      target/
-        debug/
-        (release/)
-           MyPackage
+As you can see, new files have been added to the project, the first of which
+is the ``Mason.lock``. You can think of this file as a snapshot of a single
+run of the program. This file "locks" in the settings in which the program
+ran upon invocation of ``mason run``. This file can be generated manually
+with the ``mason update`` command. ``mason update`` will read the ``Mason.toml``
+and generate the ``Mason.lock`` based on it's contents.
+
+A new directory has also been added. The ``target/`` directory is where Mason
+stores all the binaries related to your project. These could be binaries for
+the main source code as well as examples and tests. There are two types of
+targets for building. The example above places the project binary into
+``target/debug/`` because that is the default location of project binary given
+no other arguments. However, if a final version of an application or library is
+being produced, the ``--release`` flag can be thrown as follows:
+
+.. code-block:: sh
+
+   mason run --build --release --force
+
+The argument ``--force`` is included as Mason will only build the project if
+the project has been modified. Throwing the ``--release`` flag will result in
+the following project structure::
+
+  MyProject
+   │
+   ├── Mason.lock
+   ├── Mason.toml
+   ├── example
+   ├── src
+   │   └── myProject.chpl
+   ├── target
+   │   ├── debug
+   │   │   └── myProject
+   │   ├── example
+   │   ├── release
+   │   │   └── myProject
+   │   └── test
+   └── test
+
+As you can see there are now two binaries of my project, one under ``debug/`` and
+one under ``release``. There are a number of ways to build a project. To build the
+project without running the project, use the ``mason build`` command. To remove the
+``target/`` directory along with all of the binaries for your project, use the
+``mason clean`` command.
 
 
 For projects that span multiple files, the main module is designated by the module that
@@ -118,20 +150,21 @@ For projects that span multiple sub-directories within ``src``, sub-directories 
 to Mason with the ``-M  <src/subdirectory>`` flag which is forwarded to the chapel compiler. For example, lets say
 MyPackage's structure is as follows::
 
-
-    MyPackage/
-      Mason.toml
-      Mason.lock
-      src/
-        MyPackage.chpl
-        MySubPackage.chpl
-      util/
-        MyPackageUtils.chpl
-      test/
-      target/
-        debug/
-          MyPackage
-
+  MyProject
+   │
+   ├── Mason.lock
+   ├── Mason.toml
+   ├── example
+   ├── src
+   │   └── myProject.chpl
+   ├── util
+   │   └── myProjectUtils.chpl
+   ├── target
+   │   ├── debug
+   │   │   └── myProject
+   │   ├── example
+   │   └── test
+   └── test
 
 
 If MyPackage needs multiple files in different directories like the example above,
@@ -146,215 +179,364 @@ For an example of forwarding arguments in a call to ``mason run``, a chapel prog
 mason might have a ``config const number`` that corresponds to a value used in ``MyPackage.chpl``.
 To try out different values at runtime, pass the values for ``number`` to ``mason run`` as follows::
 
-      mason run --number=100
-      mason run --number=1000
+      mason run - --number=100
+      mason run - --number=1000
 
 
 .. note::
 
    For the case when a flag intended for the ``chpl`` compiler or executable is recognized by
-   ``mason build`` or ``mason run``, respectively, the flag can be thrown after ``--``
-   to override this conflict. For example, ``mason run -- -nl 4``. Instead of mason recognizing
+   ``mason build`` or ``mason run``, respectively, the flag can be thrown after ``-``
+   to override this conflict. For example, ``mason run - -nl 4``. Instead of mason recognizing
    this argument, this command will run the executable over 4 locales.
 
 
 Testing your Project
 ====================
 
-Testing a Mason project is easy! Start by adding test files to the ``test/`` directory and specifying
-them in your Mason.toml as follows:
+Mason makes it easy to test projects. First, lets add a test to out project that
+makes a boolean comparison based on a config const as follows:
+
+.. code-block:: chpl
+
+   config const testParam: bool = true;
+
+   if testParam {
+     writeln("Test Passed!");
+   }
+   else {
+     exit(1);
+   }
+
+Our project structure will be as follows::
+
+  MyProject
+   │  
+   ├── Mason.lock
+   ├── Mason.toml
+   ├── example
+   ├── src
+   │   └── myProject.chpl
+   ├── target
+   │   ├── debug
+   │   │   └── myProject
+   │   ├── example
+   │   ├── release
+   │   │   └── myProject
+   │   └── test
+   └── test
+   └── myProjectTest.chpl
+
+Mason testing is based on exit code which means that if your project's tests compile
+and run successfully, despite the "result" of the program, your test's pass. For this
+reason, Mason users should configure thier tests such that a failure produces an
+exit code other than 0. Using ``exit()`` is the easiest way to do this, but throwing
+errors is another way to accomplish the same thing.
+
+To run the test(s), use the command ``mason test``. Mason will gather all the tests
+found in ``test/``, compile them with the dependencies listed in your ``Mason.toml``
+and run them producing the following output::
+
+  --- Results ---
+  Test: myProjectTest Passed
+  
+  --- Summary:  1 tests run ---
+  -----> 1 Passed
+  -----> 0 Failed
+
+If the standard output of the tests is desired, simply throw the ``--show`` flag.
+The output of ``mason test --show`` in this case would be::
+
+  Test Passed!
+
+  --------------------
+
+  --- Results ---
+  Test: myProjectTest Passed
+
+  --- Summary:  1 tests run ---
+  -----> 1 Passed
+  -----> 0 Failed
+
+Mason will find tests either by searching through the ``test/`` directory, or by
+reading them from the ``Mason.toml`` where they can be specified.
+
+
+Examples
+========
+
+Examples are a great way of showing off what a project can do. Examples are easy
+to run and configure. To start, lets put an example like the one below into our
+mason project.
+
+.. code-block:: chpl
+
+   config const count: int = 10;
+
+   for i in 0..count {
+     writeln("This is an example!!");
+   }
+
+
+To build the example without running it, use the command ``mason build --example``.
+This command will build ALL examples found either in the ``example/`` directory or
+listed in the Mason.toml.
+
+.. note:: If examples or tests are listed in the Mason.toml, Mason will not search
+          for any examples or tests not listed.
+
+To view what examples are available, type ``mason run --example`` without any other
+arguments. This will produce the names of all examples that are currently available
+to Mason::
+
+  --- available examples ---
+  --- myProjectExample.chpl
+  --------------------------
+
+To run the example, use the command ``mason run --example myProjectExample.chpl``.
+
+After the program is run via the command above, the project structure will look as
+follows::
+
+  ├── Mason.lock
+  ├── Mason.toml
+  ├── example
+  │   └── myProjectExample.chpl
+  ├── src
+  │   └── myProject.chpl
+  ├── target
+  │   ├── debug
+  │   │   └── myProject
+  │   ├── example
+  │   │   └── myProjectExample
+  │   ├── release
+  │   │   └── myProject
+  │   └── test
+  └── test
+  └── myProjectTest.chpl
+
+
+Examples can either be specified in the Mason.toml, or found automatically by Mason. However,
+to include compile time or runtime arguments for examples. One must explicitly declare them
+in their ``Mason.toml`` as follows::
+
+.. code-block::
+
+
+  [brick]
+  name = "myProject"
+  version = "0.1.0"
+  chplVersion = "1.18.0"
+
+  [dependencies]
+
+  [examples]
+  examples = ["myProjectExample.chpl"]
+
+     [examples.myProjectExample]
+     execopts = ["--count=20"]
+     compopts = ["--savec tmp"]
+ 
+
+
+Using Chapel Dependencies
+=========================
+
+There are multiple types of dependencies in Mason. First, there are Mason dependencies.
+Mason dependencies are other Mason projects that you want to use in your Mason project.
+
+To search through all the current available Mason packages, use ``mason search``.
+
+Mason Dependencies are listed under the ``[dependencies]`` table in the ``Mason.toml``
+file of the project as follows:
 
 .. code-block:: text
 
-    [brick]
-    name = "MyPackage"
-    version = "0.1.0"
-    chplVersion = "1.16.0"
-    authors = ["Sam Partee <Sam@Partee.com>"]
-    tests = ["sampleTest.chpl"]
 
-    [dependencies]
-    curl = '1.0.0'
+   [brick]
+   name = "myProject"
+   version = "0.1.0"
+   chplVersion = "1.18.0"
 
+   [dependencies]
+   MatrixMarket = 0.1.0
 
-When the ``mason test [options]`` command is invoked, mason will find and download the necessary dependencies
-for your project that you listed in your Mason.toml and compile them with your main module found in
-``src/``. For example, after listing ``sampleTest.chpl`` as a test, the project structure would be
-as follows::
+To add a Mason dependency without editing the ``Mason.toml`` manually, use the ``mason add``
+command as follows::
 
-    MyPackage/
-      Mason.toml
-      Mason.lock
-      src/
-        MyPackage.chpl
-      test/
-        sampleTest.chpl
-      target/
-        debug/
-        (release/)
-           MyPackage
-
-To test the project, run ``mason test [options]``, which will update the lock file, compile the tests,
-and produce the binary within ``target/test/`` as follows::
-
-    MyPackage/
-      Mason.toml
-      Mason.lock
-      src/
-        MyPackage.chpl
-      test/
-        sampleTest.chpl
-      target/
-        test/
-          sampleTest
-        debug/
-        (release/)
-          MyPackage
+  mason add MatrixMarket@0.1.0
 
 
-
-The Manifest File
-=================
-
-The ``Mason.toml`` manifest file is written in TOML(for more information see TOML section below).
-Each time a new project is created in Mason a standard TOML file is included in the top-level
-directory of the project.
-
-For example, ``Mason.toml``:
-
-.. code-block:: text
-
-    [brick]
-    name = "MyPackage"
-    version = "0.1.0"
-    chplVersion = "1.16.0"
-    authors = ["Sam Partee <Sam@Partee.com>"]
-
-    [dependencies]
-    curl = '1.0.0'
-
-The ``chplVersion`` field indicates Chapel releases compatible with this
-package. There are a number of accepted formats:
-
-.. code-block:: text
-
-    "1.16.0"         # 1.16.0 or later
-    "1.16"           # 1.16.0 or later
-    "1.16.0..1.19.0" # 1.16 through 1.19, inclusive
-
-By default, ``chplVersion`` is set to represent the current Chapel release or
-later. For example, if you are using the 1.16 release, chplVersion will be
-``1.16.0``.
-
-
-TOML
-====
-
-TOML is the configuration language chosen by the chapel team for
-configuring programs written in chapel. A TOML file contains the
-necessary information to build a chapel program using mason.
-`TOML Spec <https://github.com/toml-lang/toml>`_.
-
-
-Mason-Registry
-==============
-
-The default mason registry is a GitHub repository containing a list of versioned manifest files.
-
-`Mason-Registry <https://github.com/chapel-lang/mason-registry>`_.
-
-A registry will be downloaded to ``$MASON_HOME/<name>`` by ``mason update``
-for each registry named in ``$MASON_REGISTRY`` if a registry at that location
-does not already exist.
-
-The registry consists of a hierarchy like the following:
-
-.. code-block:: text
-
- mason-registry/
-    Bricks/
-       Curl/
-          1.0.0.toml
-          2.0.0.toml
-       RecordParser/
-          1.0.0.toml
-          1.1.0.toml
-          1.2.0.toml
-       VisualDebug/
-          2.2.0.toml
-          2.2.1.toml
-
-Each versioned manifest file is identical to the manifest file in the top-level directory
-of the package repository, with one exception, a file path or URL pointing to the repository and revision
-in which the version is located.
-
-Continuing the example from before, the 'registry' ``0.1.0.toml`` would include the additional source field:
-
-.. code-block:: text
-
-     [brick]
-     name = "MyPackage"
-     version = "0.1.0"
-     chplVersion = "1.16.0"
-     authors = ["Sam Partee <Sam@Partee.com>"]
-     source = "https://github.com/Spartee/MyPackage"
-
-     [dependencies]
-     curl = '1.0.0'
-
-Search the registry with ``mason search <query>``, which will list all packages
-(and their latest version) that contain ``<query>`` in their names (case-insensitive).
-If no query is provided, all packages in the registry will be listed.
-
-.. note::
-
-    Packages will be listed regardless of their chplVersion compatibility.
-
-Non-Chapel Dependencies
-=======================
+Using Non-Chapel Dependencies
+=============================
 Mason allows for specification of external, non-Chapel dependencies through two
 mediums, ``Spack`` and ``pkg-config``. The following two sections document how to
 use ``mason external`` and ``mason system`` to interface with ``Spack`` and ``pkg-config``
 packages respectively.
 
 
-Using Spack Packages
-~~~~~~~~~~~~~~~~~~~~
+
+Using System Dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+System dependencies are packages that are found on your system through ``pkg-config``. To use
+this functionality of Mason, users must have ``pkg-config`` installed.
+
+Mason interfaces with ``pkg-config`` through the ``mason system`` command. ``mason system search``
+will print all the current packages listed and available for use in a Mason project. To examine
+the ``.pc`` file of a particular package, use ``mason system pc <package>`` where ``<package>``
+is replaced with the particular package you are looking for. Here is an example of a workflow
+for creating a Mason project with ``openSSL``.
+
+First I search to see that it is installed on my system with ``mason system search openSSl``
+which prints
+
+.. code-block:: sh
+
+   $ mason system search openSSL
+   openssl               OpenSSL - Secure Sockets Layer and cryptography libraries and tools
+
+To find out more about the package, since it is in fact installed on my system, I use the
+``mason system pc`` command as follows
+
+.. code-block:: sh
+
+   $ mason system pc openSSL
+
+   ------- openSSL.pc -------
+
+   prefix=/usr
+   exec_prefix=${prefix}
+   libdir=${exec_prefix}/lib
+   includedir=${prefix}/include
+
+   Name: OpenSSL
+   Description: Secure Sockets Layer and cryptography libraries and tools
+   Version: 0.9.8zh
+   Requires:
+   Libs: -L${libdir} -lssl -lcrypto -lz
+   Cflags: -I${includedir}
+
+   -------------------
+
+This will tell me everything I need to know about using openSSL in a project manually, but Mason will
+find and use all of this information for us.
+
+Since I want to use it in my project, I use the ``mason add --system`` command which adds the dependency
+to my Mason.toml.
+
+.. code-block:: sh
+
+   $ mason add --system openSSL@0.9.8zh
+   Adding system dependency openSSL version 0.9.8zh
+
+My ``Mason.toml`` now looks like.
+
+.. code-block:: text
+
+   [brick]
+   name = "myProject"
+   version = "0.1.0"
+   chplVersion = "1.18.0"
+
+   [system]
+   openSSL = "0.9.8zh"
+
+Now, upon calling ``mason build`` or ``mason run --build``, mason will go get ``openSSL`` and include it
+in the project so that it can be used as a dependency.
+
+
+Using Spack Dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~
+
 Mason users can interface with ``Spack``, a package manager geared towards high performance
-computing, through the ``mason external`` command. Though this integration, Mason users now have
+computing. Though this integration, Mason users now have
 access to a large ecosystem of `packages <https://spack.readthedocs.io/en/latest/package_list.html#package-list>`_.
 Non-destructive installs, custom version and configurations, and simple package installation
 and uninstallation are a few of the features Mason gains through this integration.
 
-The following example uses the ``HDF5`` library which is used for high performance data I/O.
-The ``HDF5.chpl`` wrapper used in the example can be found in ``CHPL_HOME/modules/packages``.
-Before Mason, Chapel users were required to download and install the libraries themselves
-and use Make to include and use them in their projects. These requirements have been removed
-and now only a few Mason commands are required to include external dependencies such as ``HDF5``.
+Mason users can access Spack through the ``mason external`` command. Spack provides mason users with the ability
+to install and use any package in the Spack registry. This interface is analogous to the previous example except
+when a package is missing user's can download that package through the Spack integration.
+The following is a workflow of finding, installed, and adding a Spack dependency to a Mason Project.
+
+First, the Spack backend must be installed::
+
+  mason external --setup
+
+This command will install Spack and set it up so that it can be used easily through Mason.
+
+Let's use ``openSSL`` as an example since we used it in the system example. ``mason external search openSSL``
+will search for the package and produce the following output::
+
+  $ mason external search openSSL
+  ==> 2 packages.
+  openssl  r-openssl
+
+Obiously there are two types of the package listed, so we need to figure out which one to use in our project.
+To find out more about a package, use ``mason external info <package>`` as follows::
+
+  $ mason external info openssl
+  Package:   openssl
+
+  Description:
+  OpenSSL is an open source project that provides a robust, commercial-
+  grade, and full-featured toolkit for the Transport Layer Security (TLS)
+  and Secure Sockets Layer (SSL) protocols. It is also a general-purpose
+  cryptography library.
+
+  Homepage: http://www.openssl.org
+
+  Tags:
+    None
+
+  Preferred version:
+    1.0.2k    http://www.openssl.org/source/openssl-1.0.2k.tar.gz
+
+  Safe versions:
+    1.1.0e    http://www.openssl.org/source/openssl-1.1.0e.tar.gz
+    1.1.0d    http://www.openssl.org/source/openssl-1.1.0d.tar.gz
+    1.1.0c    http://www.openssl.org/source/openssl-1.1.0c.tar.gz
+    1.0.2k    http://www.openssl.org/source/openssl-1.0.2k.tar.gz
+    1.0.2j    http://www.openssl.org/source/openssl-1.0.2j.tar.gz
+
+  Variants:
+   None
+
+  Installation Phases:
+   install
+
+  Build Dependencies:
+   zlib
+
+  Link Dependencies:
+   zlib
+
+  Run Dependencies:
+   None
+
+  Virtual Packages:
+   None
 
 
-First a Mason project is created using ``mason new masonHDF5`` and the ``HDF5.chpl`` library
-is placed within the ``src/`` folder of the project and renamed ``masonHDF5.chpl``.
-A few examples with ``.h5`` data are placed in the ``examples/`` directory so that
-we can check out our new Mason package in action. After these steps, the project directory
-hierarchy is as follows::
+There is alot of information here, but don't worry, Mason will take care of most of this for us. The correct package
+has been found, but not yet installed. Let's fix that. We know that we want the Preferred version which is ``1.0.2k``.
+The command to install ``openssl`` version ``1.0.2k`` would be::
 
+  mason external install openssl
 
-    masonHDF5/
-      Mason.toml
-      Mason.lock
-      src/
-        masonHDF5.chpl
-      test/
-      example/
-        data/
-          sample_data.h5
-        hdf5Example.chpl
+Since the version was left out, in this case, Mason will always take the preferred version. This is a case where Spack's
+spec expression syntax to specify exactly which package is desired. For example, other ways to install openSSL would be::
 
-However, at this point, we have the wrapped function calls to the ``HDF5`` library included in
-the project but not the ``HDF5`` actual library itself. To search for and install packages such
-as ``HDF5``, simply use ``mason external search <package>`` and ``mason external install <package>``.
-Mason uses the ``Spack`` package specification.
+  mason external install openssl@1.0.2k
+
+which simply specifies the exact version that we want. If we wanted to specify which compiler the package was built with::
+
+  mason external install openssl@1.0.2k%gcc
+
+Mason will infer which compiler, in the case that the compiler is left out of the spec, by looking at the envoirnment variable
+``CHPL_TARGET_COMPILER``. For more information on how to use spec expressions, use the command ``mason external --spec`` which
+would output the following
 
 .. code-block:: text
 
@@ -416,108 +598,121 @@ MPI, the following spec expression would be used::
 
   mason external install hdf5@1.10.1%gcc+hl~mpi
 
-After the download, to ensure the package was downloaded, use ``mason external find`` which
-will list all installed external packages.
 
-The next step in creating the library is to add ``HDF5`` to our ``Mason.toml`` to inform Mason that
-we want the library included when our project is compiled. Use ``mason add --external hdf5@1.10.1%gcc``
-to add the external dependency to your ``Mason.toml`` without ever having to open up your editor.
+Resuming the example, the result of the install given ``openssl`` as the sole argument would output the following::
 
-.. note:: Currently the name of the package, version, and compiler must all be included
-          in the value of the ``Mason.toml`` for external dependencies only. See ``Mason.toml``
-          below for details.
+  $ mason external install openssl
+  ==> Installing zlib
+  ==> Fetching http://zlib.net/fossils/zlib-1.2.11.tar.gz
+  ==> Staging archive: /$HOME/.mason/spack/var/spack/stage/zlib-1.2.11-cpdvq4e7otjepbwdtxmgk5bzszze27fj/zlib-1.2.11.tar.gz
+  ==> Created stage in /$HOME/.mason/spack/var/spack/stage/zlib-1.2.11-cpdvq4e7otjepbwdtxmgk5bzszze27fj
+  ==> No patches needed for zlib
+  ==> Building zlib [Package]
+  ==> Executing phase: 'install'
+  ==> Successfully installed zlib
+  Fetch: 4.84s.  Build: 4.24s.  Total: 9.08s.
+  
+  ==> Installing openssl
+  ==> Fetching http://www.openssl.org/source/openssl-1.0.2k.tar.gz
+  ==> Staging archive: /$HOME/.mason/spack/var/spack/stage/openssl-1.0.2k-fwnsee6qcvbbgvmgp3f5hio6dwg6nh2d/openssl-1.0.2k.tar.gz
+  ==> Created stage in /$HOME/.mason/spack/var/spack/stage/openssl-1.0.2k-fwnsee6qcvbbgvmgp3f5hio6dwg6nh2d
+  ==> No patches needed for openssl
+  ==> Building openssl [Package]
+  ==> Executing phase: 'install'
+  ==> Successfully installed openssl
+  Fetch: 3.37s.  Build: 3m 11.76s.  Total: 3m 15.13s.
+  ######################################################################## 100.0%
+  ######################################################################## 100.0%
 
-``Mason.toml``
+As you can see, Mason not only goes and gets the package specified, but also all of the dependencies
+of the package specified. Packages are installed into their own directories down paths that make it
+impossible for two packages have namespaces that collide. Each dependency is downloaded distinctly for
+a package so no previous installs will be broken by installing new packages. This way, multiple versions
+and builds of a package can be installed on a system and used without breaking anything.
+
+Now that we have installed the correct package, we need to add it to the ``Mason.toml`` as follows::
+
+  $ mason add --external openssl@1.0.2k
+  Adding external dependency with spec openssl@1.0.2k
+
+
+
+The ``Mason.toml`` now looks like.
 
 .. code-block:: text
 
    [brick]
-   name = "masonHDF5"
+   name = "myProject"
    version = "0.1.0"
    chplVersion = "1.18.0"
-   # linker flags for the library
-   compopts = "-lhdf5 -lhdf5_hl"
 
-   # must give name, version, compiler
    [external]
-   hdf5 = "hdf5@1.10.1%clang"
+   openSSL = "1.0.2k"
 
-Now lets run our example. To check the name of all the examples available in your project use
-``mason run --example``. The output will represent whatever ``.chpl`` files are located in your
-``example/`` folder as follows::
+Just to make sure that the package is installed on system, run ``mason external find`` which will list all of the
+current Spack packages installed on system. For example::
 
-  $ mason run --example
-  --- available examples ---
-  --- hdf5Example.chpl
-  --------------------------
+  ==> 2 installed packages.
+  -- darwin-sierra-x86_64 / clang@9.0.0-apple ---------------------
+  openssl@1.0.2k  zlib@1.2.11
 
-Calling ``mason run --build --example hdf5Example.chpl`` will update the project's ``Mason.lock``
-and build and run ``hdf5Example.chpl``.
+We have now done everything necessary to use ``openssl`` in a Mason project. Upon building, Mason will retrieve the necessary
+files and file locations for building ``myProject`` with ``openssl``.
 
-When constructing the lock file (see below section), Mason will work with Spack to gather dependencies.
-In the case of ``HDF5``, at the time of this writing, ``zlib`` will be added to the lock file since the
-``HDF5`` Spack package depends on it. Any dependency a Spack package has will be handled in this manner.
-This highlights another great feature of the integartion. Mason can install and retrieve all dependencies
-necessary for any package from Spack without ever interfering with a previous package installation.
+ 
+Mason-Registry
+==============
 
-Using System Packages
-~~~~~~~~~~~~~~~~~~~~~
+The default mason registry is a GitHub repository containing a list of versioned manifest files.
 
-To use this feature of Mason users must have access to a ``pkg-config`` installation.
-The following is an example of using the :mod:`LinearAlgebra` package that requires
-both BLAS and LAPACK:
+`Mason-Registry <https://github.com/chapel-lang/mason-registry>`_.
 
-``Mason.toml``
+A registry will be downloaded to ``$MASON_HOME/<name>`` by ``mason update``
+for each registry named in ``$MASON_REGISTRY`` if a registry at that location
+does not already exist.
+
+The registry consists of a hierarchy like the following:
 
 .. code-block:: text
 
-    [brick]
-    name = "cholesky"
-    version = "0.1.0"
-    chplVersion = "1.18.0"
-    compopts = "--ccflags -Wno-enum-conversion --ccflags -Wno-strict-prototypes"
+ mason-registry/
+    Bricks/
+       Curl/
+          1.0.0.toml
+          2.0.0.toml
+       RecordParser/
+          1.0.0.toml
+          1.1.0.toml
+          1.2.0.toml
+       VisualDebug/
+          2.2.0.toml
+          2.2.1.toml
 
-    [dependencies]
+Each versioned manifest file is identical to the manifest file in the top-level directory
+of the package repository, with one exception, a file path or URL pointing to the repository and revision
+in which the version is located.
 
-    [system]
-    lapack = "3.8.0"
-    openblas = "*"
-
-
-This ``Mason.toml`` is updated to reflect the necessary dependency information for Mason
-to build the package in the ``Mason.lock``. Mason gets external dependency information,
-in this case, from the ``.pc`` files found via the ``PKG_CONFIG_PATH``. The ``*`` means
-that Mason will grab the latest package available known to ``pkg-config`` in your system.
-
-
-``Mason.lock``
+Continuing the example from before, the 'registry' ``0.1.0.toml`` would include the additional source field:
 
 .. code-block:: text
 
-   [root]
-   name = "cholesky"
-   compopts = "--ccflags -Wno-enum-conversion --ccflags -Wno-strict-prototypes"
-   version = "0.1.0"
-   chplVersion = "1.18.0..1.18.0"
+     [brick]
+     name = "MyPackage"
+     version = "0.1.0"
+     chplVersion = "1.16.0"
+     authors = ["Sam Partee <Sam@Partee.com>"]
+     source = "https://github.com/Spartee/MyPackage"
 
-   [system]
-        [system.lapack]
-        name = "lapack"
-        version = "3.8.0"
-        libs = "-L/usr/local/Cellar/lapack/3.8.0_1/lib -lapack"
-        include = "/usr/local/Cellar/lapack/3.8.0_1/include"
+     [dependencies]
+     curl = '1.0.0'
 
-        [system.openblas]
-        name = "openblas"
-        version = "0.3.1"
-        libs = "-L/usr/local/Cellar/openblas/0.3.1/lib -openblas"
-        include = "/usr/local/Cellar/openblas/0.3.1/include"
+Search the registry with ``mason search <query>``, which will list all packages
+(and their latest version) that contain ``<query>`` in their names (case-insensitive).
+If no query is provided, all packages in the registry will be listed.
 
+.. note::
 
-Use the ``mason system`` command for help with developing Mason packages with system
-package dependencies. Use ``mason system search <package>`` to lookup packages that are available
-on your system via ``pkg-config``. To view a package's ``.pc`` file, use the ``mason system pc <package>``
-command.
+    Packages will be listed regardless of their chplVersion compatibility.
 
 
 Submit a Package
@@ -611,6 +806,79 @@ of its .toml file.
 
    ProjectA = "0.1.0"
    ProjectB = "0.1.0"
+
+
+The Manifest File
+=================
+
+The ``Mason.toml`` manifest file is written in TOML(for more information see TOML section below).
+Each time a new project is created in Mason a standard TOML file is included in the top-level
+directory of the project.
+
+For example, ``Mason.toml``:
+
+.. code-block:: text
+
+    [brick]
+    name = "MyPackage"
+    version = "0.1.0"
+    chplVersion = "1.16.0"
+    authors = ["Sam Partee <Sam@Partee.com>"]
+
+    [dependencies]
+    curl = '1.0.0'
+
+The ``chplVersion`` field indicates Chapel releases compatible with this
+package. There are a number of accepted formats:
+
+.. code-block:: text
+
+    "1.16.0"         # 1.16.0 or later
+    "1.16"           # 1.16.0 or later
+    "1.16.0..1.19.0" # 1.16 through 1.19, inclusive
+
+By default, ``chplVersion`` is set to represent the current Chapel release or
+later. For example, if you are using the 1.16 release, chplVersion will be
+``1.16.0``.
+
+
+Environment Variables
+=====================
+
+Mason can be configured by setting the following environment variables:
+
+- ``MASON_HOME`` : Path to a directory where mason will store cached registry
+  and package data. Defaults to ``$HOME/.mason``.
+- ``MASON_REGISTRY`` : A comma separated list of ``name|location`` pairs, where
+  ``name`` is a local name for the registry at ``location``. Defaults to
+  ``mason-registry|https://github.com/chapel-lang/mason-registry``. If the
+  ``name|`` part of a pair is omitted it is inferred to be the word following
+  the final slash in ``location`` with any ".git" suffix removed.
+
+The ``mason env`` command will print the inferred or set values of these
+environment variables. If a variable was set by the user, an asterisk will be
+printed at the end of the line. For example, if ``$MASON_HOME`` was set:
+
+.. code-block:: text
+
+   > mason env
+   MASON_HOME: /path/to/something *
+   MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
+
+.. warning::
+
+   If MASON_REGISTRY changes after invoking a mason command that updates the
+   local copy of the registry (e.g. ``mason update``), the local copies of the
+   registry and dependency sources will be removed.
+
+
+TOML
+====
+
+TOML is the configuration language chosen by the chapel team for
+configuring programs written in chapel. A TOML file contains the
+necessary information to build a chapel program using mason.
+`TOML Spec <https://github.com/toml-lang/toml>`_.
 
 
 Namespacing
