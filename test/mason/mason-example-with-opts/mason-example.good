@@ -4,7 +4,6 @@ compiled depExample.chpl successfully
 compiled withOpts.chpl successfully
 compiled examplesubdir/subdirExample.chpl successfully
 compiled example.chpl successfully
-Updating mason-registry
 Example with dependency Passed!
 Passed!
 Example within subdirectory Passed!
