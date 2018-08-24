@@ -64,7 +64,7 @@ proc masonExample(args) {
     }
   }
   var uargs: [1..0] string;
-  if !build then uargs.push_back("--no-update-registry");  
+  if !build then uargs.push_back("--no-update");  
   UpdateLock(uargs);
   runExamples(show, run, build, release, force, examples);
 }
