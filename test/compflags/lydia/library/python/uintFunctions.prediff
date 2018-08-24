@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd lib/
+PYTHONPATH=$PYTHONPATH:/Users/lydia/Documents/Repositories/chapel/runtime/include/python/ CFLAGS="-I. `$CHPL_HOME/util/config/compileline --cflags` `$CHPL_HOME/util/config/compileline --includes-and-defines`" LDFLAGS="-L. `$CHPL_HOME/util/config/compileline --libraries`" python3 uintFunctions.py build_ext -i
+cd ../
+python3 use_uintFunctions.py >> $2
