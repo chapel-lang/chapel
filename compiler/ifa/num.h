@@ -58,14 +58,18 @@ enum IF1_bool_type {
   BOOL_SIZE_64, BOOL_SIZE_NUM
 };
 
+// when updating these, be sure to also update int_type_precision!
 enum IF1_int_type {
   INT_SIZE_8, INT_SIZE_16, INT_SIZE_32, INT_SIZE_64, INT_SIZE_NUM
 };
 
+// when updating these, be sure to also update float_type_precision!
 enum IF1_float_type {
   FLOAT_SIZE_32, FLOAT_SIZE_64, FLOAT_SIZE_NUM
 };
 
+// these should correspond to double the IF1_float_types.
+// i.e. float_type_precision[i] here should refer to the real size of i
 enum IF1_complex_type {
   COMPLEX_SIZE_64, COMPLEX_SIZE_128, COMPLEX_SIZE_NUM
 };
@@ -290,7 +294,7 @@ class ImmHashFns { public:
 IFA_EXTERN int int_type_precision[5] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
-#define CPP_IS_LAME {16,32,48,64,80,96,112,128}
+#define CPP_IS_LAME {32,64}
 IFA_EXTERN int float_type_precision[8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 

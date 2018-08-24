@@ -662,6 +662,22 @@ coerce_immediate(Immediate *from, Immediate *to) {
           break; \
       }
 
+static int
+max(int a, int b) {
+  if (a >= b)
+    return a;
+  else
+    return b;
+}
+
+static int
+num_kind_int_to_float(int num_index) {
+  if (int_type_precision[num_index] <= 32)
+    return FLOAT_SIZE_32;
+  else
+    return FLOAT_SIZE_64;
+}
+
 void
 fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
   if (im1->const_kind == im2->const_kind) {
@@ -677,46 +693,74 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
   }
 
   // if non-complex and complex -> complex
-  if ((im1->const_kind == NUM_KIND_COMPLEX) ||
-      (im2->const_kind == NUM_KIND_COMPLEX)) {
-    if (im2->const_kind == NUM_KIND_COMPLEX) {   // swap im1 to the complex
+  if (im1->const_kind == NUM_KIND_COMPLEX ||
+      im2->const_kind == NUM_KIND_COMPLEX) {
+    if (im2->const_kind == NUM_KIND_COMPLEX) {
+      // swap im1 to the complex
       Immediate *t = im1;
       im1 = im2;
       im2 = t;
     }
-    // WAW: the following needs some fixing (e.g., 128-bit int/uint?)
-    if ((im2->const_kind == NUM_KIND_UINT) ||
-        (im2->const_kind == NUM_KIND_INT)) {
-      if (float_type_precision[im1->num_index] >= int_type_precision[im2->num_index]) {
-        imm->num_index = im1->num_index;
-      } else { // else, int/uint has greater width?
-        imm->num_index =  (int_type_precision[im2->num_index] <= 32) ? FLOAT_SIZE_32 : FLOAT_SIZE_64;
-      }
+    if (im2->const_kind == NUM_KIND_UINT ||
+        im2->const_kind == NUM_KIND_INT) {
+      int index2 = num_kind_int_to_float(im2->num_index);
+      imm->num_index = max(im1->num_index, index2);
     } else {  // else, im2 must be float?
-      imm->num_index = (im1->num_index >= im2->num_index) ? im1->num_index : im2->num_index;
-      }
-    im1->const_kind = NUM_KIND_COMPLEX;
+      INT_ASSERT(im2->const_kind == NUM_KIND_REAL ||
+                 im2->const_kind == NUM_KIND_IMAG);
+      imm->num_index = max(im1->num_index, im2->num_index);
+    }
+    imm->const_kind = NUM_KIND_COMPLEX;
     return;
   }
 
-  if (im2->const_kind == NUM_KIND_REAL) {
-    Immediate *t = im2; im2 = im1; im1 = t;
-  }
-  if (im1->const_kind == NUM_KIND_REAL) {
-    if (int_type_precision[im2->const_kind] <= float_type_precision[im1->const_kind]) {
-      imm->const_kind = im1->const_kind;
-      imm->num_index = im1->num_index;
-      return;
+  // non-imag and imag -> complex
+  // note if one was complex, it would have been handled in the above case.
+  if (im1->const_kind == NUM_KIND_IMAG ||
+      im2->const_kind == NUM_KIND_IMAG) {
+    if (im2->const_kind == NUM_KIND_IMAG) {
+      // swap im1 to the imag
+      Immediate *t = im1;
+      im1 = im2;
+      im2 = t;
     }
-    if (int_type_precision[im2->const_kind] <= 32) {
-      imm->const_kind = NUM_KIND_REAL;
-      imm->num_index = FLOAT_SIZE_32;
-      return;
+ 
+    if (im2->const_kind == NUM_KIND_UINT ||
+        im2->const_kind == NUM_KIND_INT) {
+      int index2 = num_kind_int_to_float(im2->num_index);
+      imm->num_index = max(im1->num_index, index2);
+    } else {  // else, im2 must be float?
+      imm->num_index = max(im1->num_index, im2->num_index);
     }
-    imm->const_kind = NUM_KIND_REAL;
-    imm->num_index = FLOAT_SIZE_64;
+    imm->const_kind = NUM_KIND_COMPLEX;
     return;
   }
+
+  if (im1->const_kind == NUM_KIND_REAL ||
+      im2->const_kind == NUM_KIND_REAL) {
+
+    if (im2->const_kind == NUM_KIND_REAL) {
+      // swap im1 to the real
+      Immediate *t = im2; im2 = im1; im1 = t;
+    }
+
+    if (im2->const_kind == NUM_KIND_UINT ||
+        im2->const_kind == NUM_KIND_INT) {
+      int index2 = num_kind_int_to_float(im2->num_index);
+      imm->num_index = max(im1->num_index, index2);
+    } else {  // else, im2 must be float?
+      INT_ASSERT(im2->const_kind == NUM_KIND_REAL ||
+                 im2->const_kind == NUM_KIND_IMAG);
+      imm->num_index = max(im1->num_index, im2->num_index);
+    }
+ 
+    imm->const_kind = NUM_KIND_REAL;
+    return;
+  }
+
+  // TODO -- check this function after this point!
+  // probably problems with int_type_precision called on bool num_index
+
   if (im1->const_kind != NUM_KIND_BOOL && im2->const_kind != NUM_KIND_BOOL) {
     // mixed signed and unsigned
     if (im1->num_index >= INT_SIZE_64 || im2->num_index >= INT_SIZE_64) {
