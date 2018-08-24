@@ -251,32 +251,6 @@ void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
     beautify(fi);
 }
 
-static void pxdEnd() {
-  FILE* pxd = gGenInfo->cfile;
-
-  // Do not "clean up" this file, as it removes leading tabs and those are
-  // necessary.
-  fprintf(pxd, "\ncdef extern from \"chpltypes.h\":\n");
-  fprintf(pxd, "\tctypedef void* c_fn_ptr\n\n");
-
-  fprintf(pxd, "cdef extern from \"chpl-init.h\":\n");
-  fprintf(pxd, "\tvoid chpl_library_init(int argc, char* argv[])\n");
-  fprintf(pxd, "\tvoid chpl_library_finalize()\n\n");
-
-  // Arrays implementation
-  fprintf(pxd, "cdef extern from \"chpl-external-array.h\":\n");
-  // The array type
-  fprintf(pxd, "\tctypedef struct chpl_external_array:\n");
-  fprintf(pxd, "\t\tvoid* elts\n");
-  fprintf(pxd, "\t\tuint64_t size\n\n");
-  // The array helper functions
-  fprintf(pxd, "\tchpl_external_array chpl_make_external_array(uint64_t ");
-  fprintf(pxd, "elt_size, uint64_t num_elts)\n");
-  fprintf(pxd, "\tchpl_external_array chpl_make_external_array_ptr(void* ");
-  fprintf(pxd, "elts, uint64_t size)\n");
-  fprintf(pxd, "\tvoid chpl_free_external_array(chpl_external_array x)\n");
-}
-
 // Populate the pythonNames map with the translation for bools, differently sized
 // integers, etc.
 static void setupPythonTypeMap() {
@@ -330,7 +304,9 @@ static void makePXDFile(std::vector<FnSymbol*> functions) {
 
     gGenInfo->cfile = pxd.fptr;
 
-    fprintf(pxd.fptr, "from libc.stdint cimport *\n\n");
+    fprintf(pxd.fptr, "from libc.stdint cimport *\n");
+    // Get the permanent runtime definitions
+    fprintf(pxd.fptr, "from chplrt cimport *\n\n");
 
     fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
 
@@ -340,7 +316,6 @@ static void makePXDFile(std::vector<FnSymbol*> functions) {
       }
     }
 
-    pxdEnd();
     gGenInfo->cfile = save_cfile;
   }
   // Don't "beautify", it will remove the tabs
@@ -363,7 +338,7 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
 
     // Make import statement at top of .pyx file for chpl_library_init and
     // chpl_library_finalize
-    fprintf(pyx.fptr, "from %s cimport chpl_library_init, ", pxdName.c_str());
+    fprintf(pyx.fptr, "from chplrt cimport chpl_library_init, ");
     fprintf(pyx.fptr, "chpl_library_finalize, chpl_external_array, ");
     fprintf(pyx.fptr, "chpl_make_external_array, chpl_make_external_array_ptr");
     fprintf(pyx.fptr, ", chpl_free_external_array\n");
