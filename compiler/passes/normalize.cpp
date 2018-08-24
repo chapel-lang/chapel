@@ -1218,7 +1218,8 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
       fn->hasFlag(FLAG_COMPILER_GENERATED) &&
       returnsArray(fn)) {
     // Save the element type for use at code generation, specifically for Python
-    // modules
+    // modules.  Eventually, these operations will probably want to be moved
+    // after type resolution in order to handle more complicated types.
     CallExpr* call = toCallExpr(fn->retExprType->body.tail);
     int nArgs = call->numActuals();
     Expr* eltExpr = nArgs == 2 ? call->get(2) : NULL;
@@ -2738,6 +2739,9 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
         continue;
       }
 
+      // Save the element type we shuffle away, so that it can be referenced at
+      // codegen.  We may want to move these operations after type resolution to
+      // handle move complicated types
       if (SymExpr* eltSym = toSymExpr(eltExpr)) {
         if (TypeSymbol* eltType = toTypeSymbol(eltSym->symbol())) {
           exportedArrayElementType[formal] = eltType;
