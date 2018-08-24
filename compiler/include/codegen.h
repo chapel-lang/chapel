@@ -144,6 +144,10 @@ const char* idCommentTemp(BaseAST* ast);
 void genComment(const char* comment, bool push=false);
 void flushStatements(void);
 
+GenRet codegenCallExpr(const char* fnName);
+GenRet codegenCallExpr(const char* fnName, GenRet a1);
+GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
+
 void registerPrimitiveCodegens();
 
 #endif //CODEGEN_H

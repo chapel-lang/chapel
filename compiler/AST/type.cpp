@@ -874,6 +874,7 @@ bool isLegalParamType(Type* t) {
           is_uint_type(t) ||
           is_real_type(t) ||
           is_imag_type(t) ||
+          is_complex_type(t) ||
           is_enum_type(t) ||
           isString(t) ||
           t == dtStringC ||
@@ -1516,4 +1517,14 @@ bool needsGenericRecordInitializer(Type* type) {
   }
 
   return retval;
+}
+
+Immediate getDefaultImmediate(Type* t) {
+  VarSymbol* defaultVar = toVarSymbol(t->defaultValue);
+  // (or anything handled by coerce_immediate)
+  if (defaultVar == NULL || defaultVar->immediate == NULL)
+    INT_FATAL(t->symbol, "does not have a default value");
+
+  Immediate ret = *defaultVar->immediate;
+  return ret;
 }
