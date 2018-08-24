@@ -509,6 +509,9 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         Immediate r_imm = getDefaultImmediate(dtReal[flType]);
         Immediate i_imm = getDefaultImmediate(dtImag[flType]);
 
+        gdbShouldBreakHere();
+
+        // get the real and imaginary parts
         coerce_immediate(immediate, &r_imm);
         coerce_immediate(immediate, &i_imm);
 

@@ -28,29 +28,31 @@
 #include "prim_data.h"
 #include "stringutil.h"
 
-static int 
-sprint_float_val(char* str, double val) {
-  int numchars = sprintf(str, "%g", val);
-  if (strchr(str, '.') == NULL && strchr(str, 'e') == NULL) {
-    strcat(str, ".0");
+static int
+snprint_float_val(char* str, size_t max, double val, bool hex) {
+  int numchars = snprintf(str, max, "%g", val);
+  if (strchr(str, '.') == NULL &&
+      strchr(str, 'e') == NULL &&
+      strchr(str, 'p') == NULL) {
+    strncat(str, ".0", max-numchars);
     return numchars + 2;
   } else {
     return numchars;
   }
 }
 
-static int 
-sprint_complex_val(char* str, double real, double imm) {
+static int
+snprint_complex_val(char* str, size_t max, double real, double imm) {
   int numchars = 0;
-  numchars += sprintf(str+numchars, "(");
-  numchars += sprint_float_val(str+numchars, real);
-  numchars += sprintf(str+numchars, ",");
-  numchars += sprint_float_val(str+numchars, imm);
-  numchars += sprintf(str+numchars, "i)");
+  numchars += snprintf(str+numchars, max-numchars, "(");
+  numchars += snprint_float_val(str+numchars, max-numchars, real, false);
+  numchars += snprintf(str+numchars, max-numchars, ",");
+  numchars += snprint_float_val(str+numchars, max-numchars, imm, false);
+  numchars += snprintf(str+numchars, max-numchars, "i)");
   return numchars;
 }
-
-int 
+/*
+int
 snprint_imm(char *str, size_t max, char *control_string, const Immediate &imm) {
   int res = -1;
   switch (imm.const_kind) {
@@ -61,7 +63,7 @@ snprint_imm(char *str, size_t max, char *control_string, const Immediate &imm) {
     }
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           res = snprintf(str, max, control_string, imm.v_uint8); break;
         case INT_SIZE_16:
           res = snprintf(str, max, control_string, imm.v_uint16); break;
@@ -75,7 +77,7 @@ snprint_imm(char *str, size_t max, char *control_string, const Immediate &imm) {
     }
     case NUM_KIND_INT: {
       switch (imm.num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           res = snprintf(str, max, control_string, imm.v_int8); break;
         case INT_SIZE_16:
           res = snprintf(str, max, control_string, imm.v_int16); break;
@@ -99,12 +101,12 @@ snprint_imm(char *str, size_t max, char *control_string, const Immediate &imm) {
     case NUM_KIND_COMPLEX:
       switch (imm.num_index) {
         case COMPLEX_SIZE_64:
-          res = snprintf(str, max, control_string, 
+          res = snprintf(str, max, control_string,
                         imm.v_complex64.r, imm.v_complex64.i);
           break;
         case COMPLEX_SIZE_128:
-          res = snprintf(str, max, control_string, 
-                        imm.v_complex128.r, imm.v_complex128.i); 
+          res = snprintf(str, max, control_string,
+                        imm.v_complex128.r, imm.v_complex128.i);
           break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
@@ -115,8 +117,8 @@ snprint_imm(char *str, size_t max, char *control_string, const Immediate &imm) {
   }
   return res;
 }
-
-int 
+*/
+int
 snprint_imm(char *str, size_t max, const Immediate &imm) {
   int res = -1;
   switch (imm.const_kind) {
@@ -129,7 +131,7 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
     }
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           res = snprintf(str, max, "%u", (unsigned)imm.v_uint8); break;
         case INT_SIZE_16:
           res = snprintf(str, max, "%u", (unsigned)imm.v_uint16); break;
@@ -143,7 +145,7 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
     }
     case NUM_KIND_INT: {
       switch (imm.num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           res = snprintf(str, max, "%d", imm.v_int8); break;
         case INT_SIZE_16:
           res = snprintf(str, max, "%d", imm.v_int16); break;
@@ -158,19 +160,21 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
     case NUM_KIND_REAL: case NUM_KIND_IMAG:
       switch (imm.num_index) {
         case FLOAT_SIZE_32:
-          res = sprint_float_val(str, imm.v_float32); break;
+          res = snprint_float_val(str, max, imm.v_float32, true); break;
         case FLOAT_SIZE_64:
-          res = sprint_float_val(str, imm.v_float64); break;
+          res = snprint_float_val(str, max, imm.v_float64, true); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
     case NUM_KIND_COMPLEX:
       switch (imm.num_index) {
         case COMPLEX_SIZE_64:
-          res = sprint_complex_val(str,imm.v_complex64.r,imm.v_complex64.i); 
+          res = snprint_complex_val(str, max,
+                                    imm.v_complex64.r, imm.v_complex64.i);
           break;
         case COMPLEX_SIZE_128:
-          res = sprint_complex_val(str,imm.v_complex128.r,imm.v_complex128.i); 
+          res = snprint_complex_val(str, max,
+                                    imm.v_complex128.r, imm.v_complex128.i);
           break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
@@ -188,7 +192,7 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
   return res;
 }
 
-int 
+int
 fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
   int res = -1;
   switch (imm.const_kind) {
@@ -204,7 +208,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
     }
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           res = fprintf(fp, "%u", (unsigned)imm.v_uint8);
           if (showType) res += fputs(" :uint(8)", fp);
           break;
@@ -226,7 +230,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
     }
     case NUM_KIND_INT: {
       switch (imm.num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           res = fprintf(fp, "%d", imm.v_int8);
           if (showType) res += fputs(" :int(8)", fp);
           break;
@@ -250,12 +254,12 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
       char str[80];
       const char* size = NULL;
       switch (imm.num_index) {
-        case FLOAT_SIZE_32:  
-          res = sprint_float_val(str, imm.v_float32);
+        case FLOAT_SIZE_32: 
+          res = snprint_float_val(str, sizeof(str), imm.v_float32, false);
           size = "(32)";
           break;
         case FLOAT_SIZE_64: {
-          res = sprint_float_val(str, imm.v_float64); 
+          res = snprint_float_val(str, sizeof(str), imm.v_float64, false);
           size = "(64)";
           break;
         }
@@ -271,16 +275,17 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
     case NUM_KIND_COMPLEX:
       switch (imm.num_index) {
         case COMPLEX_SIZE_64: {
-          char str[80];
-          res = sprint_complex_val(str, imm.v_complex64.r, imm.v_complex64.i); 
+          char str[160];
+          res = snprint_complex_val(str, sizeof(str),
+                                    imm.v_complex64.r, imm.v_complex64.i);
           fputs(str, fp);
           if (showType) res += fputs(" :complex(64)", fp);
           break;
         }
         case COMPLEX_SIZE_128: {
           char str[160];
-          res = sprint_complex_val(str, 
-                                   imm.v_complex128.r, imm.v_complex128.i); 
+          res = snprint_complex_val(str, sizeof(str),
+                                    imm.v_complex128.r, imm.v_complex128.i);
           fputs(str, fp);
           if (showType) res += fputs(" :complex(128)", fp);
           break;
@@ -393,7 +398,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
       i /= 2;                                            \
     }                                                    \
   }
-    
+
 #define COMPUTE_UINT_POW(type, b, e)                 \
   type base = b;                                     \
   type exp = e;                                      \
@@ -867,7 +872,7 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
     }
     case NUM_KIND_UINT: {
       switch (imm->num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           if (str[0] != '\'')
             imm->v_uint8 = str2uint8(str);
           else {
@@ -889,7 +894,7 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
     }
     case NUM_KIND_INT: {
       switch (imm->num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           if (str[0] != '\'')
             imm->v_int8 = str2int8(str);
           else {
@@ -921,16 +926,32 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
   }
 }
 
+
+// these support coerce_immediate (param casts)
 const char* istrFromUserUint(long long unsigned int i) {
   char s[64];
-  if (sprintf(s, "%llu", i) > 63)
+  if (snprintf(s, sizeof(s), "%llu", i) >= (int) sizeof(s))
     INT_FATAL("istr buffer overflow");
   return astr(s);
 }
 
 const char* istrFromUserInt(long long int i) {
   char s[64];
-  if (sprintf(s, "%lld", i) > 63)
+  if (snprintf(s, sizeof(s), "%lld", i) >= (int) sizeof(s))
+    INT_FATAL("istr buffer overflow");
+  return astr(s);
+}
+
+const char* istrFromUserDouble(double i) {
+  char s[64];
+  if (snprint_float_val(s, sizeof(s), i, false) > (int) sizeof(s))
+    INT_FATAL("istr buffer overflow");
+  return astr(s);
+}
+
+const char* istrFromUserComplex(double re, double im) {
+  char s[140];
+  if (snprint_complex_val(s, sizeof(s), re, im) > (int) sizeof(s))
     INT_FATAL("istr buffer overflow");
   return astr(s);
 }

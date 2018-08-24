@@ -326,13 +326,15 @@ ImmHashFns::equal(Immediate *imm1, Immediate *imm2) {
 
 int fprint_imm(FILE *fp, const Immediate &imm, bool showType = false);
 int snprint_imm(char *s, size_t max, const Immediate &imm);
-int snprint_imm(char *str, size_t max, char *control_string, const Immediate &imm);
+//int snprint_imm(char *str, size_t max, char *control_string, const Immediate &imm);
 void coerce_immediate(Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
 void fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm);
 void convert_string_to_immediate(const char *str, Immediate *imm);
 const char* istrFromUserUint(long long unsigned int i);
 const char* istrFromUserInt(long long int i);
+const char* istrFromUserDouble(double i);
+const char* istrFromUserComplex(double re, double im);
 
 #endif
 
