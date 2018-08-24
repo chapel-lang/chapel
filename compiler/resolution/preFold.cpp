@@ -1239,17 +1239,7 @@ static Expr* preFoldNamed(CallExpr* call) {
 
           // Handle casting between numeric types
           if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
-            VarSymbol* typeVar  = toVarSymbol(newType->defaultValue);
-            // Numeric types should have a default of the right type
-            INT_ASSERT(typeVar && typeVar->type == newType);
-
-            // handle numeric casts
-            // (or anything handled by coerce_immediate)
-            if (typeVar == NULL || typeVar->immediate == NULL) {
-              INT_FATAL("unexpected case in cast_fold");
-            }
-
-            Immediate coerce = *typeVar->immediate;
+            Immediate coerce = getDefaultImmediate(newType);
 
             coerce_immediate(imm, &coerce);
 

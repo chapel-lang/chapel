@@ -1504,3 +1504,17 @@ bool needsGenericRecordInitializer(Type* type) {
 
   return retval;
 }
+
+Immediate getDefaultImmediate(Type* t) {
+  VarSymbol* defaultVar = toVarSymbol(t->defaultValue);
+  // (or anything handled by coerce_immediate)
+  if (defaultVar == NULL || defaultVar->immediate == NULL)
+    INT_FATAL(t->symbol, "does not have a default value");
+
+  // Numeric types should have a default of the right type
+  if (defaultVar->type != t)
+    INT_FATAL(t->symbol, "does not have a default of the same type");
+
+  Immediate ret = *defaultVar->immediate;
+  return ret;
+}
