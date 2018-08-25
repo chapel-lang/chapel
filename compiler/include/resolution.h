@@ -56,17 +56,11 @@ extern char                             primCoerceTmpName[];
 
 extern Map<Type*,     FnSymbol*>        autoDestroyMap;
 
-extern Map<FnSymbol*, FnSymbol*>        iteratorLeaderMap;
-
-extern Map<FnSymbol*, FnSymbol*>        iteratorFollowerMap;
-
 extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
 
 extern std::map<Type*,     Serializers> serializeMap;
 
 extern std::map<CallExpr*, CallExpr*>   eflopiMap;
-
-
 
 
 
