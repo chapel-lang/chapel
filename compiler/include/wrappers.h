@@ -31,4 +31,6 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*               fn,
                                 std::vector<ArgSymbol*> actualIdxToFormal,
                                 bool                    fastFollowerChecks);
 
+const char* unwrapFnName(FnSymbol* fn);
+
 #endif

@@ -805,9 +805,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     FnSymbol* iterator     = getTheIteratorFn(call);
     CallExpr* followerCall = NULL;
 
-    if (FnSymbol* follower = iteratorFollowerMap.get(iterator)) {
-      followerCall = new CallExpr(follower);
-    } else if (FnSymbol* f2 = findForallexprFollower(iterator)) {
+    if (FnSymbol* f2 = findForallexprFollower(iterator)) {
       followerCall = new CallExpr(f2);
     } else {
       followerCall = new CallExpr(iterator->name);
@@ -845,13 +843,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_TO_LEADER)) {
     FnSymbol* iterator   = getTheIteratorFn(call);
-    CallExpr* leaderCall = NULL;
-
-    if (FnSymbol* leader = iteratorLeaderMap.get(iterator)) {
-      leaderCall = new CallExpr(leader);
-    } else {
-      leaderCall = new CallExpr(iterator->name);
-    }
+    CallExpr* leaderCall = new CallExpr(iterator->name);
 
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function
