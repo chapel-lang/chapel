@@ -92,6 +92,7 @@ known_dimensions = [
     ( 'unwind',             'CHPL_UNWIND', ),
     ( 'mem',                'CHPL_MEM', ),
     ( 'atomics',            'CHPL_ATOMICS', ),
+    ( 'gmp',                'CHPL_GMP', ),
     ( 'hwloc',              'CHPL_HWLOC', ),
     ( 'regexp',             'CHPL_REGEXP', ),
     ( 'llvm',               'CHPL_LLVM', ),
