@@ -1,6 +1,10 @@
 use NetCDF.C_NetCDF;
 require "compOcean.h";
 
+// This is a Chapel port of an ocean modeling example in Python from
+// Andrew Shao located at:
+// https://github.com/ashao/chapel_cmip/blob/master/python-examples/enso_sst_covariance.ipynb
+
 const dataPath = "./",
       filename = "tos_Omon_GFDL-ESM2G_historical_r1i1p1_200101-200512.nc",
       fullPath = dataPath + filename;
