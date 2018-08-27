@@ -154,9 +154,9 @@ esac
 
 source "$cwd/../build-common.bash"
 
-# Run the designated setenv build script
+# Run the designated setenv build script, adding a "clean" step at the end.
 
-bash "$setenv" $verbose $dry_run
+bash "$setenv" $verbose $dry_run -B +clean
 
 # Create the Chapel package
 
