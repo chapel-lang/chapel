@@ -22,17 +22,47 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     # cmdline options
 
+    # current list of selected components initially empty
+    components=
+    valid_components="compiler,runtime,tools,clean"
+    default_components="compiler,runtime"
+        ## clean is not default; more developer-friendly
+        ## tools could be default, except that would makes this example script less portable
+
     usage() {
-        echo "Usage:  $setenv [-v] [-n]"
+        echo "Usage:  $setenv [-v] [-n] [-B COMPONENT [-B COMPONENT] ...]"
         echo "  where"
         echo "    -v : verbose/debug output"
         echo "    -n : dry-run: show make commands but do not actually run them"
+        echo "    -B COMPONENT : Chapel component to build (optional, repeatable)"
+        echo "               Valid components: '$valid_components'"
+        echo "          Default if -B omitted: '$default_components'"
+        echo "          Selected components are always built in the order shown above."
+        echo "          COMPONENT may be prefixed with a plus sign or a minus sign."
+        echo "          For example, if '-B +clean' is given (as the only -B parameter),"
+        echo "          then the default list of components will be built, followed by"
+        echo "          'make cleanall'. If '-B clean' was given instead, then"
+        echo "          'make cleanall' would be the ONLY thing done by this script."
         exit 1
     }
-    while getopts :vnh opt; do
+    while getopts :vnB:h opt; do
         case $opt in
         ( v ) verbose=-v ;;
         ( n ) dry_run=-n ;;
+        ( B )
+            # ck valid component
+            case "$OPTARG" in
+            ( *compiler* | *runtime* | *tools* | *clean* ) ;;
+            ( * )   log_error "Invalid -B COMPONENT='$OPTARG'"; usage ;;
+            esac
+            # if + or - prefix, modify the current list of selected components
+            case "$OPTARG" in
+            ( +* )  components="${components:-$default_components}" ;;
+            ( -* )  components= ;;
+            esac
+            # add option to current list of selected components
+            components="${components:+$components,}$OPTARG"
+            ;;
         ( h ) usage;;
         ( \?) log_error "Invalid option: -$OPTARG"; usage;;
         ( : ) log_error "Option -$OPTARG requires an argument."; usage;;
@@ -44,6 +74,13 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     export CHPL_HOME=${CHPL_HOME:-$( cd $cwd/../.. && pwd )}
     log_debug "with CHPL_HOME=$CHPL_HOME"
     ck_chpl_home "$CHPL_HOME"
+
+    # if no components were given on cmdline, then use the default list
+    if [ -z "$components" ]; then
+        components=$default_components
+    fi
+    log_info "Selected Chapel components: $components"
+    log_info "Valid Chapel components:    $valid_components"
 
     # Default config
 
@@ -78,24 +115,32 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     #       setenv callback script in the lower section of this file.
 
 
-    # Chapel compiler
+    case "$components" in
+    ( *compiler* )
+        log_info "Building Chapel component: compiler"
 
-    log_info "Start build_configs $dry_run $verbose compiler"
+        log_info "Start build_configs $dry_run $verbose compiler"
 
-    $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.compiler.log" \
-        --target-compiler=compiler compiler
+        $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.compiler.log" \
+            --target-compiler=compiler compiler
+        ;;
+    ( * )
+        log_info "NO building Chapel component: compiler"
+        ;;
+    esac
 
+    case "$components" in
+    ( *runtime* )
+        log_info "Building Chapel component: runtime"
 
-    # Chapel runtimes
+        compilers="gnu,intel"
+        comms="none,ugni"
+        launchers="none,slurm-srun"
 
-    compilers="gnu,intel"
-    comms="none,ugni"
-    launchers="none,slurm-srun"
+        log_info "Start build_configs $dry_run $verbose # no make target"
 
-    log_info "Start build_configs $dry_run $verbose # no make target"
-
-    $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
-        --target-compiler=$compilers --comm=$comms --launcher=$launchers
+        $cwd/build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
+            --target-compiler=$compilers --comm=$comms --launcher=$launchers
 
         # NOTE: "--target-compiler" values shown above will be discarded by the setenv callback.
 
@@ -116,32 +161,45 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         # Only six of the eight possible runtime configurations will be built.
         # The other two will be skipped by an "exit 0" in the setenv callback script
         # found in the lower part of this file.
+        ;;
+    ( * )
+        log_info "NO building Chapel component: runtime"
+        ;;
+    esac
 
+    tools_targets="test-venv chpldoc mason"
+    case "$components" in
+    ( *tools* )
+        log_info "Building Chapel component: tools ($tools_targets)"
 
-    # Chapel tools (ie, mason, chpldoc, test-venv)
-
-##  # Building Chapel tools requires a working internet connection and either:
-##  # - modern version of libssl that supports TLS 1.1
-##  # - local workarounds such as the variables shown in the "tools" callback, below.
-##  #
-##  # Commented out here to make this setenv example more portable.
-##
-##  tools_targets="test-venv chpldoc mason"
-##
-##  log_info "Start build_configs $dry_run $verbose $tools_targets"
-##
-##  $cwd/build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.tools.log" \
-##      --target-compiler=tools $tools_targets
-
-
-    # make clean
+        # Building Chapel tools requires a working internet connection and either:
+        # - modern version of libssl that supports TLS 1.1
+        # - local workarounds such as the variables shown in the "tools" callback, below.
+  
+        log_info "Start build_configs $dry_run $verbose $tools_targets"
+  
+        $cwd/build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.tools.log" \
+            --target-compiler=tools $tools_targets
+        ;;
+    ( * )
+        log_info "NO building Chapel component: tools"
+        ;;
+    esac
 
     clean_targets="cleanall"
+    case "$components" in
+    ( *clean* )
+        log_info "Building Chapel component: clean (make $clean_targets)"
 
-    log_info "Start build_configs $dry_run $verbose $clean_targets"
+        log_info "Start build_configs $dry_run $verbose $clean_targets"
 
-    $cwd/build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.clean.log" \
-        --target-compiler=compiler $clean_targets
+        $cwd/build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.clean.log" \
+            --target-compiler=compiler $clean_targets
+        ;;
+    ( * )
+        log_info "NO building Chapel component: clean"
+        ;;
+    esac
 
     log_info "End $setenv"
 else
