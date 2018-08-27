@@ -70,7 +70,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     if [ -n "$verbose" ]; then
         log_debug "Chapel printchplenv, with initial env:"
-        $CHPL_HOME/util/printchplenv --all --no-tidy || echo >&2 ignore error
+        $CHPL_HOME/util/printchplenv --all --no-tidy --anonymize || echo >&2 ignore error
     fi
 
     # NOTE: The --target-compiler values used in this setenv project will never be
