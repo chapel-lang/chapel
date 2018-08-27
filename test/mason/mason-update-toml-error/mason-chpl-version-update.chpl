@@ -7,7 +7,7 @@ use FileSystem;
 config const toml = "";
 
 proc main() {
-  const args = ["foo", "update", "--no-update-registry"];
+  const args = ["foo", "update", "--no-update"];
 
   UpdateLock(args, toml);
 
