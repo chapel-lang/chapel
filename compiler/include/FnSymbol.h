@@ -107,6 +107,7 @@ public:
   void                       codegenPython(PythonFileType pxd);
   GenRet                     codegenPXDType();
   GenRet                     codegenPYXType();
+  std::string                getPythonArrayReturnStmts();
 
   void                       insertAtHead(Expr* ast);
   void                       insertAtHead(const char* format, ...);

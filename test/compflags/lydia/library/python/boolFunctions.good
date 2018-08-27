@@ -1,18 +1,12 @@
 from libc.stdint cimport *
+from chplrt cimport *
 
 cdef extern from "boolFunctions.h":
 	void chpl__init_boolFunctions(int64_t _ln, int32_t _fn);
 	void takesBool(bint x);
 	bint getBool();
 	bint takeAndReturn(bint x);
-
-cdef extern from "chpltypes.h":
-	ctypedef void* c_fn_ptr
-
-cdef extern from "chpl-init.h":
-	void chpl_library_init(int argc, char* argv[])
-	void chpl_library_finalize()
-from chpl_boolFunctions cimport chpl_library_init, chpl_library_finalize
+from chplrt cimport chpl_library_init, chpl_library_finalize, chpl_external_array, chpl_make_external_array, chpl_make_external_array_ptr, chpl_free_external_array
 from chpl_boolFunctions cimport chpl__init_boolFunctions, takesBool as chpl_takesBool, getBool as chpl_getBool, takeAndReturn as chpl_takeAndReturn
 
 import numpy

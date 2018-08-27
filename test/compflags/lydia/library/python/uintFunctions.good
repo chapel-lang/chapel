@@ -1,18 +1,12 @@
 from libc.stdint cimport *
+from chplrt cimport *
 
 cdef extern from "uintFunctions.h":
 	void chpl__init_uintFunctions(int64_t _ln, int32_t _fn);
 	void takesUint(uint64_t x);
 	uint64_t getUint();
 	uint64_t takeAndReturn(uint64_t x);
-
-cdef extern from "chpltypes.h":
-	ctypedef void* c_fn_ptr
-
-cdef extern from "chpl-init.h":
-	void chpl_library_init(int argc, char* argv[])
-	void chpl_library_finalize()
-from chpl_uintFunctions cimport chpl_library_init, chpl_library_finalize
+from chplrt cimport chpl_library_init, chpl_library_finalize, chpl_external_array, chpl_make_external_array, chpl_make_external_array_ptr, chpl_free_external_array
 from chpl_uintFunctions cimport chpl__init_uintFunctions, takesUint as chpl_takesUint, getUint as chpl_getUint, takeAndReturn as chpl_takeAndReturn
 
 import numpy

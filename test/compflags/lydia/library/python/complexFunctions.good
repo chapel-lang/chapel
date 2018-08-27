@@ -1,18 +1,12 @@
 from libc.stdint cimport *
+from chplrt cimport *
 
 cdef extern from "complexFunctions.h":
 	void chpl__init_complexFunctions(int64_t _ln, int32_t _fn);
 	void takesComplex(double complex x);
 	double complex getComplex();
 	double complex takeAndReturn(double complex x);
-
-cdef extern from "chpltypes.h":
-	ctypedef void* c_fn_ptr
-
-cdef extern from "chpl-init.h":
-	void chpl_library_init(int argc, char* argv[])
-	void chpl_library_finalize()
-from chpl_complexFunctions cimport chpl_library_init, chpl_library_finalize
+from chplrt cimport chpl_library_init, chpl_library_finalize, chpl_external_array, chpl_make_external_array, chpl_make_external_array_ptr, chpl_free_external_array
 from chpl_complexFunctions cimport chpl__init_complexFunctions, takesComplex as chpl_takesComplex, getComplex as chpl_getComplex, takeAndReturn as chpl_takeAndReturn
 
 import numpy

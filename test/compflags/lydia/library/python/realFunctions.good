@@ -1,18 +1,12 @@
 from libc.stdint cimport *
+from chplrt cimport *
 
 cdef extern from "realFunctions.h":
 	void chpl__init_realFunctions(int64_t _ln, int32_t _fn);
 	void takesReal(double x);
 	double getReal();
 	double takeAndReturn(double x);
-
-cdef extern from "chpltypes.h":
-	ctypedef void* c_fn_ptr
-
-cdef extern from "chpl-init.h":
-	void chpl_library_init(int argc, char* argv[])
-	void chpl_library_finalize()
-from chpl_realFunctions cimport chpl_library_init, chpl_library_finalize
+from chplrt cimport chpl_library_init, chpl_library_finalize, chpl_external_array, chpl_make_external_array, chpl_make_external_array_ptr, chpl_free_external_array
 from chpl_realFunctions cimport chpl__init_realFunctions, takesReal as chpl_takesReal, getReal as chpl_getReal, takeAndReturn as chpl_takeAndReturn
 
 import numpy

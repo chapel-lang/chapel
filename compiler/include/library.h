@@ -28,12 +28,18 @@
 #include "files.h"
 
 class FnSymbol;
+class Symbol;
+class Type;
 class TypeSymbol;
 
 enum PythonFileType {
   PYTHON_PXD, // used for C extern declarations in Cython
   PYTHON_PYX  // used for Python translations in Cython
 };
+
+// Stores arg/function symbol to element type for the arg's array or function's
+// array return type
+extern std::map<Symbol*, TypeSymbol*> exportedArrayElementType;
 
 extern char libDir[FILENAME_MAX + 1];
 extern std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
