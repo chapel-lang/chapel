@@ -169,12 +169,12 @@ static std::string getRequireLibraries() {
   std::string res = "";
   // Adds the locations of the libraries specified using require statements
   for_vector(const char, dirName, libDirs) {
-    requires += " -L";
-    requires += dirName;
+    res += " -L";
+    res += dirName;
   }
   for_vector(const char, libName, libFiles) {
-    requires += " -l";
-    requires += libName;
+    res += " -l";
+    res += libName;
   }
 
   return res;
@@ -509,22 +509,28 @@ static void makePYFile() {
 static void makePythonModule() {
   std::string getOldPythonPath = "echo $PYTHONPATH";
   std::string pythonPath = runCommand(getOldPythonPath);
-  pythonPath += ":";
-  pythonPath += CHPL_RUNTIME_INCLUDE;
+  if (pythonPath == "\n") {
+    pythonPath = CHPL_RUNTIME_INCL;
+  } else {
+    pythonPath += ":";
+    pythonPath += CHPL_RUNTIME_INCL;
+  }
   pythonPath += "/python";
 
-  // TODO: is getCompilelineOptions going to give me something I can't use?
-
-  std::string cFlags = getCompilelineOption("cflags");
+  std::string getCFlags = "$CHPL_HOME/util/config/compileline --cflags";
+  std::string cFlags = runCommand(getCFlags);
   // Erase the trailing \n from getting the cFlags
   cFlags.erase(cFlags.length() - 1);
   std::string requireIncludes = getRequireIncludes();
-  std::string includes = getCompilelineOption("includes-and-defines");
+  std::string getIncludes =
+    "$CHPL_HOME/util/config/compileline --includes-and-defines";
+  std::string includes = runCommand(getIncludes);
   // Erase the trailing \n from getting the includes
   includes.erase(includes.length() - 1);
 
   std::string requireLibraries = getRequireLibraries();
-  std::string libraries = getCompilelineOption("libraries");
+  std::string getLibraries = "$CHPL_HOME/util/config/compileline --libraries";
+  std::string libraries = runCommand(getLibraries);
   // Erase the trailing \n from getting the libraries
   libraries.erase(libraries.length() - 1);
 
@@ -532,12 +538,16 @@ static void makePythonModule() {
   cythonPortion += pythonModulename;
   cythonPortion += ".py build_ext -i";
 
-  std::string fullCommand = "PYTHONPATH=" + pythonPath;
-  fullCommand += " CFLAGS=\"" + cFlags + requireIncludes + " " + includes;
-  fullCommand += "\" LDFLAGS=\"" + requireLibraries + " " + libraries + "\" ";
-  fullCommand += cythonPortion;
-  // TODO: run the full command from the directory where all the library files
-  // live
+  std::string fullCythonCall = "PYTHONPATH=" + pythonPath;
+  fullCythonCall += " CFLAGS=\"" + cFlags + requireIncludes + " " + includes;
+  fullCythonCall += "\" LDFLAGS=\"" + requireLibraries + " " + libraries;
+  fullCythonCall +=  "\" " + cythonPortion;
+
+  std::string chdirIn = "cd ";
+  chdirIn += libDir;
+  chdirIn += "; ";
+  std::string fullCommand = chdirIn + fullCythonCall;
+  runCommand(fullCommand);
 }
 
 // Skip this function if it is defined in an internal module, or if it is
