@@ -103,7 +103,7 @@ rm -rf      $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type}/
 
 %post
 cd $RPM_INSTALL_PREFIX/modulefiles/%{real_name}
-if [ ${CRAY_INSTALL_DEFAULT:-0} -eq 1 ] 
+if [ ${CRAY_INSTALL_DEFAULT:-0} -eq 1 ]
 then
 /bin/rm -f .version
 fi

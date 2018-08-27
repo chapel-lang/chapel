@@ -175,9 +175,9 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         # Building Chapel tools requires a working internet connection and either:
         # - modern version of libssl that supports TLS 1.1
         # - local workarounds such as the variables shown in the "tools" callback, below.
-  
+
         log_info "Start build_configs $dry_run $verbose $tools_targets"
-  
+
         $cwd/build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.tools.log" \
             --target-compiler=tools $tools_targets
         ;;

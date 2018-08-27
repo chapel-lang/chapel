@@ -81,8 +81,8 @@ existing Gasnet config:
         # gasnet      udp                   <default>       Yes
         # gasnet      udp                   slurm-srun      Yes
 ```
-It will also add another Chapel make (with slurm-srun) to the existing 
-non-Gasnet (CHPL_COMM=none) config. 
+It will also add another Chapel make (with slurm-srun) to the existing
+non-Gasnet (CHPL_COMM=none) config.
 You might want to add something to the setenv callback to skip the relatively-
 useless CHPL_COMM=none and CHPL_LAUNCHER=slurm-srun config. But, its optional.
 

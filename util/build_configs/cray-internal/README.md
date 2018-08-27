@@ -59,7 +59,7 @@ create a Chapel RPM from those binaries; and install that RPM on your Cray-XC sy
 Users on your Cray-XC system should only need to `module load chapel` to access your
 locally-built Chapel version, same as other supported computing languages.
 
-Start in the parent directory (build_configs) with file `setenv-example-3.bash`. Copy 
+Start in the parent directory (build_configs) with file `setenv-example-3.bash`. Copy
 `setenv-example-3.bash` to a new file and run it (with changes as needed) until it
 produces the set of Chapel binaries that you want. See the README, `setenv-example-3.bash`
 and `chapel_build.bash` files in the parent directory for more information.

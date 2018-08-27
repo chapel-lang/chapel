@@ -27,11 +27,11 @@ fi
 # pkg_version   : $src_version plus $version_tag, plus something else visible in the package name
 #                   to distinguish different source snapshots taken from the same branch;
 #                   e.g. "1.17.1.20181016" for a nightly build
-# release_type  : nightly or release                
+# release_type  : nightly or release
 # chpl_platform : linux64, cray-xc, etc             # as in, $CHPL_HOME/bin/$chpl_platform
 # rc_number     : Release candidate number (0,1,2..); something to distinguish different instances of
 #                 otherwise-identical packages. May be applied in different ways dep. on package-format.
-# date_ymd,         
+# date_ymd,
 #   date_hms    : date and time for use within the pkg, in YYYYMMDD and HHMMSS
 
 case "${chpl_platform:=}"   in ( "" | *\ * | */* )  log_error "$thiscomm: Invalid chpl_platform='$chpl_platform'";  exit 2;; esac
