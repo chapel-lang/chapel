@@ -2,6 +2,11 @@
 
 # Gather important arguments provided to PrgEnv C compilers
 
+# $1 = compile | link
+# $2 = CHPL_COMM
+# $3 = CHPL_COMM_SUBSTRATE
+# $4 = CHPL_AUXFS
+
 COMPILE=0
 LINK=0
 case $1 in
@@ -18,6 +23,12 @@ case $1 in
     exit 1
     ;;
 esac
+
+# Set up the environment to amke the proper libraries and include
+# files available.
+export PE_PKGCONFIG_PRODUCTS="PE_CHAPEL:$PE_PKGCONFIG_PRODUCTS"
+export PE_CHAPEL_MODULE_NAME="chapel"
+export PE_CHAPEL_PKGCONFIG_LIBS=`$CHPL_HOME/util/config/gather-pe-chapel-pkgconfig-libs.bash "$2" "$3" "$4"`
 
 COMMANDS=`cc -craype-verbose 2>/dev/null`
 

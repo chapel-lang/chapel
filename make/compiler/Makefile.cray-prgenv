@@ -75,26 +75,4 @@ SPECIALIZE_CFLAGS =
 
 export PE_PKGCONFIG_PRODUCTS := PE_CHAPEL:$(PE_PKGCONFIG_PRODUCTS)
 export PE_CHAPEL_MODULE_NAME := chapel
-
-# ugni, ofi-gni and gasnet-{aries, gemini} require pmi and ugni
-ifeq ($(CHPL_MAKE_COMM), ugni)
-export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
-endif
-ifeq ($(CHPL_MAKE_COMM), ofi)
-# Don't need to add ugni, because it will be added by libfabric
-export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
-endif
-ifeq ($(CHPL_MAKE_COMM), gasnet)
-ifneq (,$(filter $(CHPL_MAKE_COMM_SUBSTRATE),gemini aries))
-export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-udreg:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
-endif
-endif
-
-# on login/compute nodes, lustre requires the devel api to make
-# lustre/lustreapi.h available (it's implicitly available on esl nodes)
-ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))
-HAVE_LUSTRE_API_DEVEL_STATUS=$(shell pkg-config --libs cray-lustre-api-devel &>/dev/null; echo $$?)
-ifeq ($(HAVE_LUSTRE_API_DEVEL_STATUS), 0)
-export PE_CHAPEL_PKGCONFIG_LIBS := cray-lustre-api-devel:$(PE_CHAPEL_PKGCONFIG_LIBS)
-endif
-endif
+export PE_CHAPEL_PKGCONFIG_LIBS := $(shell $(CHPL_MAKE_HOME)/util/config/gather-pe-chapel-pkgconfig-libs.bash "$(CHPL_MAKE_COMM)" "$(CHPL_MAKE_COMM_SUBSTRATE)" "$(CHPL_MAKE_AUXFS)")
