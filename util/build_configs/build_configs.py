@@ -92,6 +92,7 @@ known_dimensions = [
     ( 'unwind',             'CHPL_UNWIND', ),
     ( 'mem',                'CHPL_MEM', ),
     ( 'atomics',            'CHPL_ATOMICS', ),
+    ( 'gmp',                'CHPL_GMP', ),
     ( 'hwloc',              'CHPL_HWLOC', ),
     ( 'regexp',             'CHPL_REGEXP', ),
     ( 'llvm',               'CHPL_LLVM', ),
@@ -258,7 +259,7 @@ def get_chpl_misc(opts, args, build_env):
         sys.exit(2)
 
     # run "printchplenv" without any commandline config options or setenv, check for errors
-    chplenv_cmd = chplenv_exe + ' --simple --all --no-tidy'
+    chplenv_cmd = chplenv_exe + ' --all --no-tidy --anonymize'
     result, output, error = check_output(chplenv_cmd, chpl_home, build_env)
     if result:
         logging.error('From {0}\n{1}\n{2}\nexit code {3}'.format(chplenv_cmd, error, output, result))

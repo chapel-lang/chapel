@@ -64,7 +64,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     # Show the initial/default Chapel build config with printchplenv
 
     log_info "Chapel printchplenv, with initial env:"
-    $CHPL_HOME/util/printchplenv --all --no-tidy || echo >&2 ignore error
+    $CHPL_HOME/util/printchplenv --all --no-tidy --anonymize || echo >&2 ignore error
 
     # Use build_configs.py to make Chapel compiler
 
