@@ -3,6 +3,11 @@
 # Gather the list of libraries required for a PrgEnv compilation,
 # or an LLVM compilation when on a Cray XC system.
 
+if [[ -z $1 || -z $2 || -z $3 ]]; then
+  echo "Usage: $0 \$CHPL_COMM \$CHPL_COMM_SUBSTRATE \$CHPL_AUXFS"
+  exit 1
+fi
+
 chpl_comm="$1"
 chpl_comm_substrate="$2"
 chpl_auxfs="$3"

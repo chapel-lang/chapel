@@ -17,12 +17,15 @@ case $1 in
     LINK=1
     ;;
   *)
-    echo "Usage: $0 [compile|link]"
+    FAIL=1
+    ;;
+esac
+if [[ $FAIL == 1 || -z $2 || -z $3 || -z $4 ]]; then
+    echo "Usage: $0 [compile|link] \$CHPL_COMM \$CHPL_COMM_SUBSTRATE \$CHPL_AUXFS"
     echo " <compile> returns key flags provided to PrgEnv C compilers"
     echo " <link> returns key flags provided to PrgEnv C compilers during linking"
     exit 1
-    ;;
-esac
+fi
 
 # Set up the environment to amke the proper libraries and include
 # files available.
