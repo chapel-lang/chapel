@@ -3,14 +3,16 @@
 # Gather the list of libraries required for a PrgEnv compilation,
 # or an LLVM compilation when on a Cray XC system.
 
-if [[ -z $1 || -z $2 || -z $3 ]]; then
-  echo "Usage: $0 \$CHPL_COMM \$CHPL_COMM_SUBSTRATE \$CHPL_AUXFS"
+chpl_comm="${CHPL_MAKE_COMM:-$1}"
+chpl_comm_substrate="${CHPL_MAKE_COMM_SUBSTRATE:-$2}"
+chpl_auxfs="${CHPL_MAKE_AUXFS:-$3}"
+
+if [[ -z $chpl_comm || -z $chpl_comm_substrate || -z $chpl_auxfs ]]; then
+  echo "Usage: $0 [\$CHPL_COMM \$CHPL_COMM_SUBSTRATE \$CHPL_AUXFS]"
+  echo "  CHPL_MAKE_* must be present if args are empty"
   exit 1
 fi
 
-chpl_comm="$1"
-chpl_comm_substrate="$2"
-chpl_auxfs="$3"
 pe_chapel_pkgconfig_libs="$PE_CHAPEL_PKGCONFIG_LIBS"
 
 # ugni, ofi-gni, and gasnet-{aries,gemini} require pmi and ugni
