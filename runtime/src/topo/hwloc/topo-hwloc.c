@@ -345,7 +345,7 @@ c_sublocid_t chpl_topo_getThreadLocality(void) {
   CHK_ERR_ERRNO((nodeset = hwloc_bitmap_alloc()) != NULL);
 
   flags = HWLOC_CPUBIND_THREAD;
-  CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
+  CHK_ERR_ERRNO(hwloc_get_cpubind(topology, cpuset, flags) == 0);
 
   hwloc_cpuset_to_nodeset(topology, cpuset, nodeset);
 
