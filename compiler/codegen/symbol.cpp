@@ -903,7 +903,7 @@ std::string ArgSymbol::getPythonType(PythonFileType pxd) {
 
   if (t->symbol->hasFlag(FLAG_REF) &&
       t->getValType() == dtExternalArray &&
-      pxd == PYTHON_PYX
+      (pxd == PYTHON_PYX || pxd == C_PYX)
       && exportedArrayElementType[this] != NULL) {
     // Allow python declarations to accept anything iterable to translate to
     // an array, instead of limiting to a specific Python type
