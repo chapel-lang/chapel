@@ -33,8 +33,9 @@ class Type;
 class TypeSymbol;
 
 enum PythonFileType {
-  PYTHON_PXD, // used for C extern declarations in Cython
-  PYTHON_PYX  // used for Python translations in Cython
+  C_PXD, // used for C extern declarations in Cython
+  PYTHON_PYX,  // used for Python translations in Cython
+  C_PYX // use for C code in the .pyx file
 };
 
 // Stores arg/function symbol to element type for the arg's array or function's

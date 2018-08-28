@@ -197,9 +197,8 @@ static void printMakefileIncludes(fileinfo makefile) {
   fprintf(makefile.fptr, " %s\n", includes.c_str());
 }
 
-static void printMakefileLibraries(fileinfo makefile, std::string name,
-                                   bool startsWithLib) {
-  std::string libraries = getCompilelineOption("libraries");
+static std::string getLibname(std::string name,
+                              bool startsWithLib) {
   std::string libname = "-l";
   if (startsWithLib) {
     // libname = "-l<name>" when executableFilename = "lib<name>"
@@ -212,6 +211,13 @@ static void printMakefileLibraries(fileinfo makefile, std::string name,
     libname += name;
     libname += getLibraryExtension();
   }
+  return libname;
+}
+
+static void printMakefileLibraries(fileinfo makefile, std::string name,
+                                   bool startsWithLib) {
+  std::string libraries = getCompilelineOption("libraries");
+  std::string libname = getLibname(name, startsWithLib);
 
   std::string requires = getRequireLibraries();
 
@@ -326,7 +332,7 @@ static void makePXDFile(std::vector<FnSymbol*> functions) {
 
     for_vector(FnSymbol, fn, functions) {
       if (!isFunctionToSkip(fn)) {
-        fn->codegenPython(PYTHON_PXD);
+        fn->codegenPython(C_PXD);
       }
     }
 
@@ -512,6 +518,7 @@ static void makePythonModule() {
   if (pythonPath == "\n") {
     pythonPath = CHPL_RUNTIME_INCL;
   } else {
+    pythonPath.erase(pythonPath.length() - 1);
     pythonPath += ":";
     pythonPath += CHPL_RUNTIME_INCL;
   }
@@ -534,13 +541,26 @@ static void makePythonModule() {
   // Erase the trailing \n from getting the libraries
   libraries.erase(libraries.length() - 1);
 
+  std::string name = "";
+  int libLength = strlen("lib");
+  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  if (startsWithLib) {
+    name += &executableFilename[libLength];
+  } else {
+    // libname = executableFilename when executableFilename does not start with
+    // "lib"
+    name = executableFilename;
+  }
+  std::string libname = getLibname(name, startsWithLib);
+
   std::string cythonPortion = "python3 ";
   cythonPortion += pythonModulename;
   cythonPortion += ".py build_ext -i";
 
   std::string fullCythonCall = "PYTHONPATH=" + pythonPath;
   fullCythonCall += " CFLAGS=\"" + cFlags + requireIncludes + " " + includes;
-  fullCythonCall += "\" LDFLAGS=\"" + requireLibraries + " " + libraries;
+  fullCythonCall += "\" LDFLAGS=\"-L. " + libname + requireLibraries;
+  fullCythonCall += " " + libraries;
   fullCythonCall +=  "\" " + cythonPortion;
 
   std::string chdirIn = "cd ";
