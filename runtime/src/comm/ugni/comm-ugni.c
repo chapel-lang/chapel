@@ -6888,6 +6888,9 @@ void buff_amo_init(void) {
   atomic_init_uint_least32_t(&amo_thread_counter, 0);
 }
 
+
+#if !HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
 static
 void do_remote_amo_nb(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
                       void** object_v, size_t* size_v,
@@ -6928,6 +6931,8 @@ void do_remote_amo_nb(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
     CQ_CNT_DEC(&comm_doms[cdi_v[vi]]);
   }
 }
+
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 
 static
 void do_remote_amo_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
