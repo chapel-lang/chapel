@@ -1542,6 +1542,13 @@ static void buildInitializerCall(AggregateType* ct,
   bool named = ct->wantsDefaultInitializer();
 
   for_fields(field, ct) {
+    bool isGenericField = false;
+    if (field->type->symbol->hasFlag(FLAG_GENERIC)) {
+      isGenericField = true;
+    } else if (AggregateType* at = toAggregateType(field->type)) {
+      isGenericField = at->isGeneric();
+    }
+
     if (field->isParameter() == true) {
       Flag         flag = FLAG_PARAM;
       PrimitiveTag tag  = PRIM_QUERY_PARAM_FIELD;
@@ -1554,8 +1561,9 @@ static void buildInitializerCall(AggregateType* ct,
 
       buildRecordQuery(fn, arg, call, field, flag, tag, named);
 
-    } else if (field->defPoint->exprType == NULL &&
-               field->defPoint->init     == NULL) {
+    } else if ((field->defPoint->exprType == NULL &&
+               field->defPoint->init     == NULL) ||
+               isGenericField) {
 
       // Can only use a NamedExpr if using a default initializer. Otherwise the
       // user can use an arbitrary identifier.
