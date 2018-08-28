@@ -48,6 +48,7 @@ extern std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
 void codegen_library_header(std::vector<FnSymbol*> functions);
 void codegen_library_makefile();
 void codegen_library_python(std::vector<FnSymbol*> functions);
+void codegen_make_python_module();
 
 void ensureLibDirExists();
 void openLibraryHelperFile(fileinfo* fi,

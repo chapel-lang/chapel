@@ -295,7 +295,6 @@ static void setupPythonTypeMap() {
 static void makePXDFile(std::vector<FnSymbol*> functions);
 static void makePYXFile(std::vector<FnSymbol*> functions);
 static void makePYFile();
-static void makePythonModule();
 
 void codegen_library_python(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile && fLibraryPython) {
@@ -307,8 +306,6 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
     makePXDFile(functions);
     makePYXFile(functions);
     makePYFile();
-
-    makePythonModule();
   }
 }
 
@@ -512,7 +509,7 @@ static void makePYFile() {
   closeLibraryHelperFile(&py, false);
 }
 
-static void makePythonModule() {
+void codegen_make_python_module() {
   std::string getOldPythonPath = "echo $PYTHONPATH";
   std::string pythonPath = runCommand(getOldPythonPath);
   if (pythonPath == "\n") {
