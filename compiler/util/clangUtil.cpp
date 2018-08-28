@@ -1610,7 +1610,13 @@ void runClang(const char* just_parse_filename) {
 
   if (compilingWithPrgEnv()) {
     std::string gather_prgenv(CHPL_HOME);
-    gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash compile";
+    gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash compile '";
+    gather_prgenv += CHPL_COMM;
+    gather_prgenv += "' '";
+    gather_prgenv += CHPL_COMM_SUBSTRATE;
+    gather_prgenv += "' '";
+    gather_prgenv += CHPL_AUX_FILESYS;
+    gather_prgenv += "'";
     readArgsFromCommand(gather_prgenv, args);
   }
 
@@ -2726,7 +2732,13 @@ void makeBinaryLLVM(void) {
 
   if (compilingWithPrgEnv()) {
     std::string gather_prgenv(CHPL_HOME);
-    gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash link";
+    gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash link '";
+    gather_prgenv += CHPL_COMM;
+    gather_prgenv += "' '";
+    gather_prgenv += CHPL_COMM_SUBSTRATE;
+    gather_prgenv += "' '";
+    gather_prgenv += CHPL_AUX_FILESYS;
+    gather_prgenv += "'";
     readArgsFromCommand(gather_prgenv, clangLDArgs);
   }
 
