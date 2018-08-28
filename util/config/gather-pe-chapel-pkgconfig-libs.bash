@@ -30,7 +30,7 @@ fi
 # on login/compute nodes, lustre requires the devel api to make
 # lustre/lustreapi.h available (it's implicitly available on esl nodes)
 if [[ "$chpl_auxfs" == *lustre* ]]; then
-  if pkg-config --libs cray-lustre-api-devel 2>/dev/null; then
+  if pkg-config --exists cray-lustre-api-devel; then
     pe_chapel_pkgconfig_libs="cray-lustre-api-devel:$pe_chapel_pkgconfig_libs"
   fi
 fi
