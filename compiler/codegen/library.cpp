@@ -282,7 +282,7 @@ static void setupPythonTypeMap() {
   pythonNames[dtReal[FLOAT_SIZE_32]->symbol] = std::make_pair("", "numpy.float32");
   pythonNames[dtReal[FLOAT_SIZE_64]->symbol] = std::make_pair("double", "float");
   pythonNames[dtBool->symbol] = std::make_pair("bint", "bint");
-  pythonNames[dtStringC->symbol] = std::make_pair("char *", "bytes");
+  pythonNames[dtStringC->symbol] = std::make_pair("const char *", "bytes");
   pythonNames[dtComplex[COMPLEX_SIZE_64]->symbol] =
               std::make_pair("float complex", "numpy.complex64");
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =

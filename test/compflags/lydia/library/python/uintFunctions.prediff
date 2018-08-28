@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd lib/
-PYTHONPATH=$PYTHONPATH:/Users/lydia/Documents/Repositories/chapel/runtime/include/python/ CFLAGS="-I. `$CHPL_HOME/util/config/compileline --cflags` `$CHPL_HOME/util/config/compileline --includes-and-defines`" LDFLAGS="-L. `$CHPL_HOME/util/config/compileline --libraries`" python3 uintFunctions.py build_ext -i
-cd ../
+sed 's/^In file included from uintFunctions.c:[0-9]*:$//1' $2 > $2.tmp
+sed '/^$/d' $2.tmp > $2
+export PYTHONPATH=lib/
 python3 use_uintFunctions.py >> $2

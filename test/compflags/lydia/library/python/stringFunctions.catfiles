@@ -1,3 +1,0 @@
-lib/chpl_stringFunctions.pxd
-lib/stringFunctions.pyx
-lib/stringFunctions.py
