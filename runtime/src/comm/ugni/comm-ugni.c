@@ -1892,6 +1892,36 @@ void chpl_comm_post_task_init(void)
     return;
 
   //
+  // Do various hugepage-related checks.  These are delayed until this
+  // point in order to allow command line argument processing to happen
+  // first, so that the warnings here can be turned off via --quiet.
+  //
+  if (getenv("HUGETLB_DEFAULT_PAGE_SIZE") == NULL) {
+    if (chpl_nodeID == 0) {
+      chpl_warning("without hugepages, communication performance will suffer",
+                   0, 0);
+    }
+  } else {
+    if (chpl_nodeID == 0
+        && getenv("HUGETLB_NO_RESERVE") == NULL) {
+      chpl_warning("HUGETLB_NO_RESERVE should be set to something "
+                   "when using hugepages",
+                   0, 0);
+    }
+
+    if (strcmp(CHPL_MEM, "jemalloc") == 0
+        && getenv(chpl_comm_ugni_jemalloc_conf_ev_name()) == NULL) {
+      if (chpl_nodeID == 0) {
+        char buf[100];
+        (void) snprintf(buf, sizeof(buf),
+                        "%s should be set when using hugepages",
+                        chpl_comm_ugni_jemalloc_conf_ev_name());
+        chpl_warning(buf, 0, 0);
+      }
+    }
+  }
+
+  //
   // Now that the memory layer and tasking have been set up, we can
   // allocate the various data we need and fill it in.  Some of this
   // need not be shared and so we could have allocated it earlier, but
