@@ -1,0 +1,2 @@
+#! /usr/bin/env bash
+exec ./${0}_real $*

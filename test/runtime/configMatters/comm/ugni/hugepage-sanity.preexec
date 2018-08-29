@@ -1,0 +1,13 @@
+#! /usr/bin/env bash
+
+if [[ ! -a ${1}_real_real ]] ; then
+  mv ${1}_real ${1}_real_real
+  cp -p ${1}.wrap_real ${1}_real
+fi
+
+# Pluck the execoptsnum out of the exec.out.tmp filename.
+case $(echo $2 | sed "s/^.*\.0-\([0-9]\)\.exec\.out\.tmp/\1/") in
+1) unset HUGETLB_DEFAULT_PAGE_SIZE;;
+2) unset HUGETLB_NO_RESERVE;;
+3) unset CHPL_JEMALLOC_MALLOC_CONF;;
+esac
