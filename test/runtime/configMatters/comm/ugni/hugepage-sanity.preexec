@@ -1,0 +1,6 @@
+#! /usr/bin/env bash
+
+if [[ ! -a ${1}_real_real ]] ; then
+  mv ${1}_real ${1}_real_real
+  cp -p ${1}.wrap_real ${1}_real
+fi

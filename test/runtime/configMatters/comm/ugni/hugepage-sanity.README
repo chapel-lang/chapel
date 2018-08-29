@@ -1,0 +1,4 @@
+The ugni comm layer does some sanity checks on certain hugepage-related
+environment variables it expects to have set.  This test interposes a
+wrapper for the _real executable to unset each of those environment
+variables and thus test the corresponding warning messages.

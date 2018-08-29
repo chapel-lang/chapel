@@ -24,9 +24,48 @@
 // System and heap page sizes, for the uGNI communication interface.
 //
 
+#include <ctype.h>
 #include <stdint.h>
+#include <stdio.h>
+
+#include "chplrt.h"
+#include "error.h"
 
 size_t chpl_comm_ugni_getSysPageSize(void);
 size_t chpl_comm_ugni_getHeapPageSize(void);
+
+#ifdef CHPL_JEMALLOC_PREFIX
+static inline
+char* chpl_comm_ugni_jemalloc_conf_ev_name(void) {
+#define _STRFY(s)                    #s
+#define _EXPAND_THEN_STRFY(s)        _STRFY(s)
+#define _STRFY_CHPL_JEMALLOC_PREFIX  _EXPAND_THEN_STRFY(CHPL_JEMALLOC_PREFIX)
+
+  static char evn[100] = "";
+
+  // safe because always called serially
+  if (evn[0] != '\0')
+    return evn;
+
+  if (snprintf(evn, sizeof(evn), "%sMALLOC_CONF", _STRFY_CHPL_JEMALLOC_PREFIX)
+      >= (int) sizeof(evn)) {
+    chpl_internal_error("jemalloc conf env var name buffer is too small");
+  }
+
+  for (int i = 0; evn[i] != '\0'; i++) {
+    if (islower(evn[i]))
+      evn[i] = toupper(evn[i]);
+  }
+
+  return evn;
+
+#undef _STRFY_CHPL_JEMALLOC_PREFIX
+#undef _EXPAND_THEN_STRFY
+#undef _STRFY
+}
+#else
+static inline
+char* chpl_comm_ugni_jemalloc_conf_ev_name(void) { return "MALLOC_CONF"; }
+#endif
 
 #endif // _comm_ugni_heap_pages_h_
