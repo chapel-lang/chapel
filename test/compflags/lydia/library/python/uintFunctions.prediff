@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sed 's/^In file included from uintFunctions.c:[0-9]*:$//1' $2 > $2.tmp
-sed '/^$/d' $2.tmp > $2
+sed '/from uintFunctions.c:[0-9]*[:]*$/d' $2 > $2.tmp
+sed '/^ *$/d' $2.tmp > $2
 export PYTHONPATH=lib/
 python3 use_uintFunctions.py >> $2
