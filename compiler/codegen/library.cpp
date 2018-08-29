@@ -156,6 +156,8 @@ void codegen_library_makefile() {
   closeLibraryHelperFile(&makefile, false);
 }
 
+// Returns a string containing -I includes for every directory in the incDirs
+// vector (which is populated by require statements)
 static std::string getRequireIncludes() {
   std::string res = "";
   for_vector(const char, dirName, incDirs) {
@@ -165,6 +167,9 @@ static std::string getRequireIncludes() {
   return res;
 }
 
+// Returns a string containing -L includes for every directory containing
+// library files specified in require statements, and -l references to those
+// libraries
 static std::string getRequireLibraries() {
   std::string res = "";
   // Adds the locations of the libraries specified using require statements
@@ -180,6 +185,7 @@ static std::string getRequireLibraries() {
   return res;
 }
 
+// Helper to output the CHPL_CFLAGS variable into the generated makefile
 static void printMakefileIncludes(fileinfo makefile) {
   std::string cflags = getCompilelineOption("cflags");
   cflags.erase(cflags.length() - 1); // remove trailing newline
@@ -197,6 +203,9 @@ static void printMakefileIncludes(fileinfo makefile) {
   fprintf(makefile.fptr, " %s\n", includes.c_str());
 }
 
+// Helper to transform the provided name into library form for a compile line
+// (-lname in the where the library starts with lib, loc/name.ext for when
+// the library does not start with lib)
 static std::string getLibname(std::string name,
                               bool startsWithLib) {
   std::string libname = "-l";
@@ -214,6 +223,7 @@ static std::string getLibname(std::string name,
   return libname;
 }
 
+// Helper to output the CHPL_LDFLAGS variable into the generated makefile
 static void printMakefileLibraries(fileinfo makefile, std::string name,
                                    bool startsWithLib) {
   std::string libraries = getCompilelineOption("libraries");
@@ -499,6 +509,11 @@ static void makePYFile() {
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
     fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename);
     if (startsWithLib) {
+      // Cython includes anything listed in the libraries variable in the
+      // compileline with a -l prefix.  The -l prefix only works if the library
+      // is named `libname.*`; `name.a` will not be found for `-lname`, so
+      // only include the generated library file here if its name starts with
+      // lib
       fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries)))\n",
               libname.c_str());
     } else {
@@ -511,6 +526,8 @@ static void makePYFile() {
   closeLibraryHelperFile(&py, false);
 }
 
+// Once all the python files have been generated and the .a/.so has been made,
+// make the Python module!
 void codegen_make_python_module() {
   std::string getOldPythonPath = "echo $PYTHONPATH";
   std::string pythonPath = runCommand(getOldPythonPath);
