@@ -887,10 +887,8 @@ static std::string getPythonTypeName(Type* type, PythonFileType pxd) {
     std::string res = tNames.second;
     if (strncmp(res.c_str(), "numpy", strlen("numpy")) == 0) {
       res += "_t";
-    } else if (tNames.first != "") {
-      res = tNames.first;
     } else {
-      res = transformTypeForPointer(type);
+      res = getPythonTypeName(type, C_PXD);
     }
     return res;
   } else {
