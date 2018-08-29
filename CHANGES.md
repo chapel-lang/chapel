@@ -1,6 +1,126 @@
 Release Changes List
 ====================
 
+version 1.18.0
+==============
+
+Twenty-first public release of Chapel, September 20, 2018
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+File / Directory Structure
+--------------------------
+
+New Tools / Tool Changes
+------------------------
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+
+New Features
+------------
+
+Feature Improvements
+--------------------
+
+Removed Features
+----------------
+
+Standard Modules / Library
+--------------------------
+
+Package Modules
+---------------
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+
+Interoperability Improvements
+-----------------------------
+
+Performance Optimizations/Improvements
+--------------------------------------
+
+Memory Improvements
+-------------------
+
+Compiler Flags
+--------------
+
+Documentation
+-------------
+
+Example Codes
+-------------
+
+Locale Models
+-------------
+
+Portability
+-----------
+
+Cray-specific Changes
+---------------------
+
+Platform-specific Changes
+-------------------------
+
+Syntax Highlighting
+-------------------
+
+Error Messages / Semantic Checks
+--------------------------------
+
+Execution-time Checks
+---------------------
+
+Bug Fixes
+---------
+
+Launchers
+---------
+
+Compiler Performance
+--------------------
+
+Third-Party Software Changes
+----------------------------
+
+Testing System
+--------------
+
+Developer-oriented changes: Configuration changes
+-------------------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Makefile improvements
+-------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+
+Developer-oriented changes: Documentation improvements
+------------------------------------------------------
+
+Developer-oriented changes: Module improvements
+-----------------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
+Developer-oriented changes: Third-party improvements
+----------------------------------------------------
+
+
 version 1.17.1
 ==============
 
