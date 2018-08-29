@@ -13,4 +13,6 @@ sed '/Using deprecated NumPy API/d' $2.tmp > $2
 sed '/^ \^/d' $2 > $2.tmp
 sed '/^1 warning generated./d' $2.tmp > $2
 sed '/^$/d' $2 > $2.tmp
-mv $2.tmp $2
+# avoid sporadic ld: warning errors (I'm sometimes seeing just that on a line,
+# or just multiple copies of it)
+sed '/^ld: warning/d' $2.tmp > $2
