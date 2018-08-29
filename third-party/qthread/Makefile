@@ -74,7 +74,9 @@ CHPL_QTHREAD_CFG_OPTIONS += --enable-oversubscription
 endif
 
 # enable guard pages for stack overflow detection, unless directed not to
+HAVE_GUARD_PAGES = 0
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_GUARD_PAGES)))
+HAVE_GUARD_PAGES = 1
 CHPL_QTHREAD_CFG_OPTIONS += --enable-guard-pages
 endif
 
@@ -186,6 +188,9 @@ qthread-chapel-h: FORCE
 	     > $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 	echo "#define CHPL_QTHREAD_SCHEDULER_ONE_WORKER_PER_SHEPHERD" \
 	     $(ONE_WORKER_PER_SHEPHERD) \
+	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+	echo "#define CHPL_QTHREAD_HAVE_GUARD_PAGES" \
+	     $(HAVE_GUARD_PAGES) \
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 
 qthread: qthread-config qthread-build qthread-chapel-h
