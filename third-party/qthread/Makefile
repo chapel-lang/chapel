@@ -52,13 +52,20 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # do not want -DNDEBUG; if we have that set when building Qthreads it
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
-  CFLAGS += \
+  INCS_DEFS := \
     $(shell $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
+            || echo compilelineFAILURE)
+  ifneq (, $(findstring compilelineFAILURE,$(INCS_DEFS)))
+    $(error compileline failed!)
+  endif
+  INCS_DEFS_PROCESSED := \
+    $(shell echo $(INCS_DEFS) \
             | tr ' ' '\n' \
             | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install' \
             | grep -v '/third-party/qthread/install' \
             | tr '\n' ' ' \
             | sed 's/ $$//')
+  CFLAGS += $(INCS_DEFS_PROCESSED)
 endif
 
 # enable oversubscription for testing
