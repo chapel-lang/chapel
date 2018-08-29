@@ -1,1 +1,1 @@
-warning: performance will be better with hugepages
+warning: without hugepages, communication performance will suffer

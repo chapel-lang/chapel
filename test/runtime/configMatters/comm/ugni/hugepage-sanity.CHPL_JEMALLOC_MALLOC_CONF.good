@@ -1,1 +1,0 @@
-warning: with hugepages, CHPL_JEMALLOC_MALLOC_CONF should be set
