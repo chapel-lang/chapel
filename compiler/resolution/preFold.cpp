@@ -1812,7 +1812,8 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
                                        new CallExpr(PRIM_CAST,
                                                     parent->symbol,
-                                                    new CallExpr("_new",
+                                                    new CallExpr(PRIM_NEW,
+                                                                 new NamedExpr(astr_chpl_manager, new SymExpr(dtUnmanaged->symbol)),
                                                                  new SymExpr(ct->symbol)))));
   } else {
     wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
