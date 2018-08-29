@@ -451,8 +451,6 @@ static void makePYFile() {
     bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
     if (startsWithLib) {
       libname += &executableFilename[libLength];
-    } else {
-      libname = executableFilename;
     }
 
     // Imports
@@ -500,8 +498,12 @@ static void makePYFile() {
     fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename);
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
     fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename);
-    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries)))\n",
-            libname.c_str());
+    if (startsWithLib) {
+      fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries)))\n",
+              libname.c_str());
+    } else {
+      fprintf(py.fptr, "\t\t\tlibraries=chpl_libraries)))\n");
+    }
 
     gGenInfo->cfile = save_cfile;
   }
@@ -542,13 +544,14 @@ void codegen_make_python_module() {
   int libLength = strlen("lib");
   bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
   if (startsWithLib) {
+    name = "-l";
     name += &executableFilename[libLength];
   } else {
     // libname = executableFilename when executableFilename does not start with
     // "lib"
     name = executableFilename;
+    name += getLibraryExtension();
   }
-  std::string libname = getLibname(name, startsWithLib);
 
   std::string cythonPortion = "python3 ";
   cythonPortion += pythonModulename;
@@ -556,7 +559,7 @@ void codegen_make_python_module() {
 
   std::string fullCythonCall = "PYTHONPATH=" + pythonPath;
   fullCythonCall += " CFLAGS=\"" + cFlags + requireIncludes + " " + includes;
-  fullCythonCall += "\" LDFLAGS=\"-L. " + libname + requireLibraries;
+  fullCythonCall += "\" LDFLAGS=\"-L. " + name + requireLibraries;
   fullCythonCall += " " + libraries;
   fullCythonCall +=  "\" " + cythonPortion;
 
