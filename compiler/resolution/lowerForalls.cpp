@@ -669,7 +669,7 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
          PRP+PAS svars --> the PRP+PAS formals
          RP+AS svars --> the curr RP+AS vars
 
-      [Curently there is no PAS/AS formal/actual. They are upcoming.]
+      [Currently there is no PAS/AS formal/actual. They are upcoming.]
       */
 
       addArgAndMap(cloneTaskFn, callToTFn, numOrigAct, iMap,
