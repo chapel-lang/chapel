@@ -1,2 +1,2 @@
-defaultForInheritedInit.chpl:17: error: unresolved call '_new(type D, 3, "hi", 4.6)'
-defaultForInheritedInit.chpl:14: note: candidates are: _new(type chpl_t)
+defaultForInheritedInit.chpl:17: error: unresolved call 'D.init(3, "hi", 4.6)'
+defaultForInheritedInit.chpl:14: note: candidates are: D.init()
