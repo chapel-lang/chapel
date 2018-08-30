@@ -552,7 +552,9 @@ static void setupCallStacks(void) {
     char newenv_stack[QT_ENV_S];
 
     chpl_bool guardPagesEnabled;
-    size_t reservedPages = 1;
+    size_t pagesize;
+    size_t reservedPages;
+    size_t qt_rtds_size;
 
     size_t maxPoolAllocSize;
     char newenv_alloc[QT_ENV_S];
@@ -576,10 +578,14 @@ static void setupCallStacks(void) {
     // size envelope. The main motivation for this is for systems with
     // hugepages, we don't want to waste an entire hugepage just for the
     // runtime structure.
+    pagesize = chpl_getSysPageSize();
+    qt_rtds_size = qthread_readstate(RUNTIME_DATA_SIZE);
+    qt_rtds_size += pagesize - (qt_rtds_size % pagesize); // pagesize align up
+    reservedPages = qt_rtds_size / pagesize;
     if (guardPagesEnabled) {
         reservedPages += 2;
     }
-    actualStackSize = stackSize - (reservedPages * chpl_getSysPageSize());
+    actualStackSize = stackSize - (reservedPages * pagesize);
 
     snprintf(newenv_stack, sizeof(newenv_stack), "%zu", actualStackSize);
     chpl_qt_setenv("STACK_SIZE", newenv_stack, 1);
