@@ -88,8 +88,8 @@ static void       coerceActuals(FnSymbol* fn,
 static void       handleInIntents(FnSymbol* fn,
                                   CallInfo& info);
 
-static bool       isPromotionRequired(FnSymbol* fn, CallInfo& info,
-                                std::vector<ArgSymbol*>& actualIdxToFormal);
+bool       isPromotionRequired(FnSymbol* fn, CallInfo& info,
+                               std::vector<ArgSymbol*>& actualIdxToFormal);
 
 static FnSymbol*  promotionWrap(FnSymbol* fn,
                                 CallInfo& info,
@@ -2061,7 +2061,13 @@ static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
   int i = 0;
   for_actuals(actual, call) {
     if (promotion.promotedType[i++] != NULL) {
-      shapeSource = toSymExpr(actual)->symbol();
+      SymExpr* se = NULL;
+      if (NamedExpr* ne = toNamedExpr(actual)) {
+        se = toSymExpr(ne->actual);
+      } else {
+        se = toSymExpr(actual);
+      }
+      shapeSource = se->symbol();
       break;
     }
   }
@@ -2073,8 +2079,8 @@ static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
                                  irTemp, shapeSource, fromForExpr));
 }
 
-static bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
-                                std::vector<ArgSymbol*>& actualFormals) {
+bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
+                         std::vector<ArgSymbol*>& actualFormals) {
   bool retval = false;
 
   if (fn->name != astrSequals && fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false) {

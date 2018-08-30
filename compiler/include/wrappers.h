@@ -33,4 +33,8 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*               fn,
 
 const char* unwrapFnName(FnSymbol* fn);
 
+bool isPromotionRequired(FnSymbol* fn,
+                         CallInfo& info,
+                         std::vector<ArgSymbol*>& actualIdxToFormal);
+
 #endif
