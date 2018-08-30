@@ -1808,6 +1808,13 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 resolveExpr(moveInit);
                 resolveExpr(assign);
 
+                // Enable error messages assignment between local
+                // and distributed domains. It would be better if this
+                // could be handled by some flavor of initializer.
+                CallExpr* check = new CallExpr("chpl_checkCopyInit", to, from);
+                call->insertBefore(check);
+                resolveExpr(check);
+
                 // We've replaced the move with no-init/assign, so remove it.
                 call->remove();
 

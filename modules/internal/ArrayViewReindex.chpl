@@ -90,6 +90,10 @@ module ArrayViewReindex {
       _delete_dom(updom, false);
       //      _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
+
+    proc dsiIsLayout() param {
+      return downDistInst.dsiIsLayout();
+    }
   }
 
   //
