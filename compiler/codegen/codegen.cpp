@@ -2170,7 +2170,7 @@ static void setupDefaultFilenames() {
       strncat(executableFilename, filename,
               sizeof(executableFilename)-strlen(executableFilename)-1);
 
-      if (fLibraryPython) {
+      if (fLibraryPython && pythonModulename[0] == '\0') {
         strncpy(pythonModulename, filename, sizeof(pythonModulename)-1);
         pythonModulename[sizeof(pythonModulename)-1] = '\0';
         char* lastDot = strrchr(pythonModulename, '.');
