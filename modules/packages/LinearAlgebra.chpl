@@ -131,6 +131,10 @@ use Norm; // TODO -- merge Norm into LinearAlgebra
 use BLAS;
 use LAPACK;
 
+/* Determines if using native Chapel implementations */
+private param usingBLAS = BLAS.header != '';
+private param usingLAPACK = LAPACK.header != '';
+
 // TODO: compilerError if matrices are distributed
 
 //
@@ -500,7 +504,7 @@ private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 pragma "no doc"
 /* matrix-vector multiplication */
 private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
-  where isBLASType(eltType)
+  where isBLASType(eltType) && usingBLAS
 {
   if Adom.rank != 2 || Xdom.rank != 1 then
     compilerError("Rank sizes are not 2 and 1");
@@ -528,7 +532,7 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
 pragma "no doc"
 /* matrix-matrix multiplication */
 private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
-  where isBLASType(eltType)
+  where isBLASType(eltType) && usingBLAS
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
     compilerError("Rank sizes are not 2");
@@ -567,7 +571,7 @@ proc outer(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 pragma "no doc"
 /* Generic matrix-vector multiplication */
 proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
-  where !isBLASType(eltType)
+  where !usingBLAS
 {
   if Adom.rank != 2 || Xdom.rank != 1 then
     compilerError("Rank sizes are not 2 and 1");
@@ -597,7 +601,7 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
 pragma "no doc"
 /* Generic matrix-matrix multiplication */
 proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
-  where !isBLASType(eltType)
+  where !usingBLAS
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
     compilerError("Rank sizes are not 2 and 2");
@@ -949,9 +953,9 @@ proc trace(A: [?D] ?eltType) {
    the same shape as argument ``A`` with the lower or upper triangular
    Cholesky factorization of ``A``.
  */
-proc cholesky(A: [] ?t, lower = true) where A.rank == 2 &&
-                                            (isRealType(t) ||
-                                             isComplexType(t)) {
+proc cholesky(A: [] ?t, lower = true)
+  where A.rank == 2 && isLAPACKType(t) && usingLAPACK
+{
   if !isSquare(A) then
     halt("Matrix passed to cholesky must be square");
 
@@ -962,6 +966,13 @@ proc cholesky(A: [] ?t, lower = true) where A.rank == 2 &&
   // tril and triu make/return an extra copy.  Should we zero the unused
   // triangle of the array manually instead to avoid the copy?
   return if lower then tril(copy) else triu(copy);
+}
+
+pragma "no doc"
+proc cholesky(A: [] ?t, lower = true)
+  where A.rank == 2 && isLAPACKType(t) && !usingLAPACK
+{
+  compilerError("cholesky() requires LAPACK");
 }
 
 
@@ -984,7 +995,7 @@ proc cholesky(A: [] ?t, lower = true) where A.rank == 2 &&
 
  */
 proc eigvals(A: [] ?t, param left = false, param right = false)
-  where isRealType(t) && A.domain.rank == 2 {
+  where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
 
   proc convertToCplx(wr: [] t, wi: [] t) {
     const n = wi.numElements;
@@ -1064,6 +1075,11 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
 
     return (eigVals, vlcplx, vrcplx);
   }
+}
+
+proc eigvals(A: [] ?t, param left = false, param right = false)
+  where isRealType(t) && A.domain.rank == 2 && !usingLAPACK {
+  compilerError("eigvals() requires LAPACK");
 }
 
 
