@@ -1,8 +1,5 @@
 from libc.stdint cimport *
 
-cdef extern from "chplcgfns.h":
-	const char* chpl_filenameTable[];
-
 cdef extern from "chpltypes.h":
 	ctypedef void* c_fn_ptr
 
