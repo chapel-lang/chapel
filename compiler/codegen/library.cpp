@@ -529,12 +529,12 @@ static void makePYFile() {
 // Once all the python files have been generated and the .a/.so has been made,
 // make the Python module!
 void codegen_make_python_module() {
-  std::string getOldPythonPath = "echo $PYTHONPATH";
-  std::string pythonPath = runCommand(getOldPythonPath);
-  if (pythonPath == "\n") {
+  const char* oldPath = getenv("PYTHONPATH");
+  std::string pythonPath = "";
+  if (oldPath == NULL) {
     pythonPath = CHPL_RUNTIME_INCL;
   } else {
-    pythonPath.erase(pythonPath.length() - 1);
+    pythonPath += oldPath;
     pythonPath += ":";
     pythonPath += CHPL_RUNTIME_INCL;
   }
