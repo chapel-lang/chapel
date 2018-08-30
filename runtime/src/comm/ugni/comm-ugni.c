@@ -1910,6 +1910,7 @@ void chpl_comm_post_task_init(void)
     }
 
     if (strcmp(CHPL_MEM, "jemalloc") == 0
+        && chpl_comm_getenvMaxHeapSize() == 0
         && getenv(chpl_comm_ugni_jemalloc_conf_ev_name()) == NULL) {
       if (chpl_nodeID == 0) {
         char buf[100];
