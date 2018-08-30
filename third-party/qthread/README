@@ -35,3 +35,5 @@ as follows:
   functional and performance benefits.
 * Added missing `no` affinity shim (src/affinity/no.c) that was omitted
   from the official qthreads release. Only used when CHPL_HWLOC=none
+* Provide a way to determine the size of the runtime data structure for
+  each qthread for the purpose of selecting a better stack size.
