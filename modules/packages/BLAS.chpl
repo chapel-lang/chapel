@@ -63,11 +63,9 @@ BLAS Implementations:
 
     * The compilation command above likely requires the additional flag: ``-latlas``
 
-.. coment:: TODO update usage of isBLAS_MKL
-
   * **MKL**
 
-    * Compile with :param:`isBLAS_MKL` if using MKL BLAS.
+    * Compile with :param:`blasImpl=BlasImpl.mkl` if using MKL BLAS.
 
   * **OpenBLAS**
 
@@ -175,22 +173,35 @@ in memory.
 */
 module BLAS {
 
-  // TODO: Document
+  /* Available BLAS implementations for ``blasImpl`` */
+  enum BlasImpl {blas, mkl, none};
+  use BlasImpl;
+
+  /* Specifies which header filename to include, based on the BLAS implementation.
+
+      - ``BlasImpl.blas`` includes ``cblas.h`` (default)
+      - ``BlasImpl.blas`` includes ``mkl_cblas.h``
+      - ``BlasImpl.none`` includes nothing
+
+  */
+  config param blasImpl = BlasImpl.blas;
+
+  /* Manually specifies the header filename to include, overriding the header
+     determined by ``blasImpl``.
+   */
   config param blasHeader = '';
 
-  // TODO: Would this be better as an enum?
-  config param blasImpl = 'blas';
-
-  /* Deprecated */
+  /* Deprecated - use ``--set blasImpl=mkl`` instead */
   config param isBLAS_MKL = false;
 
   if isBLAS_MKL {
     compilerWarning('"isBLAS_MKL" flag is deprecated.');
-    compilerWarning('Use "blasImpl" instead: --set blasImpl=\\"mkl\\"');
+    compilerWarning('Use "blasImpl" instead: --set blasImpl=mkl');
   }
 
   param header = if blasHeader == '' then
-                   if blasImpl == 'mkl' || isBLAS_MKL then 'mkl_cblas.h'
+                   if blasImpl == BlasImpl.none then ''
+                   else if blasImpl == BlasImpl.mkl || isBLAS_MKL then 'mkl_cblas.h'
                    else 'cblas.h'
                  else blasHeader;
 
@@ -200,7 +211,6 @@ module BLAS {
 
   /* Return `true` if type is supported by BLAS */
   proc isBLASType(type t) param: bool {
-    require header;
     return isRealType(t) || isComplexType(t);
   }
 
@@ -2386,7 +2396,7 @@ module BLAS {
 
   */
   proc amax(X: [?D]?eltType, incX: c_int = 1)
-    where D.rank == 1 {
+    where D.rank == 1
   {
     require header;
 

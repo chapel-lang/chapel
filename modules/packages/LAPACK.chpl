@@ -119,18 +119,36 @@ We anticipate the following additions:
 */
 module LAPACK {
 
-// TODO: Document
-config param lapackHeader = '';
+  /* Available LAPACK implementations for ``lapackImpl`` */
+  enum LapackImpl {lapack, mkl, none};
+  use LapackImpl;
 
-// TODO: Would this be better as an enum?
-config param lapackImpl = 'lapack';
+  /* Specifies which header filename to include, based on the lapack implementation.
 
-param header = if lapackHeader == '' then
-                 if lapackImpl == 'mkl' then 'mkl_lapacke.h'
-                 else 'lapacke.h'
-               else lapackHeader;
+      - ``LapackImpl.blas`` includes ``lapacke.h`` (default)
+      - ``LapackImpl.blas`` includes ``mkl_lapacke.h``
+      - ``LapackImpl.none`` includes nothing
 
-use SysCTypes;
+  */
+  config param lapackHeader = '';
+
+  /* Manually specifies the header filename to include, overriding the header
+     determined by ``lapackImpl``.
+   */
+  config param lapackImpl = LapackImpl.lapack;
+
+  param header = if lapackHeader == '' then
+                   if lapackImpl == LapackImpl.none then ''
+                   else if lapackImpl == LapackImpl.mkl  then 'mkl_lapacke.h'
+                   else 'lapacke.h'
+                 else lapackHeader;
+
+  use SysCTypes;
+
+  /* Return `true` if type is supported by LAPACK */
+  proc isLAPACKType(type t) param: bool {
+    return isRealType(t) || isComplexType(t);
+  }
 
 /*External function pointer type LAPACK_C_SELECT1.*/
 extern type LAPACK_C_SELECT1 ;
