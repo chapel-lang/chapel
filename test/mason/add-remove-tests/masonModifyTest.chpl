@@ -17,4 +17,5 @@ proc main() {
   const result = modifyToml(add, "test@1.2.3", external, system, projectHome, tf=tf);
   writeln(result[1]);
 
+  delete result(1);
 }
