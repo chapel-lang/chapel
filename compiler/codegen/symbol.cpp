@@ -879,10 +879,18 @@ GenRet ArgSymbol::codegen() {
 // Otherwise, use the normal cname
 static std::string getPythonTypeName(Type* type, PythonFileType pxd) {
   std::pair<std::string, std::string> tNames = pythonNames[type->symbol];
-  if (pxd == PYTHON_PXD && tNames.first != "") {
+  if (pxd == C_PXD && tNames.first != "") {
     return tNames.first;
   } else if (pxd == PYTHON_PYX && tNames.second != "") {
     return tNames.second;
+  } else if (pxd == C_PYX && (tNames.second != "" || tNames.first != "")) {
+    std::string res = tNames.second;
+    if (strncmp(res.c_str(), "numpy", strlen("numpy")) == 0) {
+      res += "_t";
+    } else {
+      res = getPythonTypeName(type, C_PXD);
+    }
+    return res;
   } else {
     return transformTypeForPointer(type);
   }
@@ -893,7 +901,7 @@ std::string ArgSymbol::getPythonType(PythonFileType pxd) {
 
   if (t->symbol->hasFlag(FLAG_REF) &&
       t->getValType() == dtExternalArray &&
-      pxd == PYTHON_PYX
+      (pxd == PYTHON_PYX || pxd == C_PYX)
       && exportedArrayElementType[this] != NULL) {
     // Allow python declarations to accept anything iterable to translate to
     // an array, instead of limiting to a specific Python type
@@ -924,12 +932,7 @@ std::string ArgSymbol::getPythonArgTranslation() {
       // an external array.  If we have the element type, that means we need to
       // do a translation in the python wrapper.
       std::string typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
-      std::string typeStrCDefs = typeStr;
-      if (strncmp(typeStr.c_str(), "numpy", strlen("numpy")) == 0) {
-        typeStrCDefs += "_t";
-      } else {
-        typeStrCDefs = getPythonTypeName(eltType->type, PYTHON_PXD);
-      }
+      std::string typeStrCDefs = getPythonTypeName(eltType->type, C_PYX);
 
       // Create the memory needed to store the contents of what was passed to us
       // E.g. cdef chpl_external_array chpl_foo =
@@ -1733,7 +1736,7 @@ void FnSymbol::codegenPython(PythonFileType pxd) {
     if (fGenIDS)
       fprintf(outfile, "%s", idCommentTemp(this));
 
-    if (pxd == PYTHON_PXD) {
+    if (pxd == C_PXD) {
       fprintf(outfile, "\t%s;\n", codegenPXDType().c.c_str());
     } else if (pxd == PYTHON_PYX) {
       fprintf(outfile, "\n%s", codegenPYXType().c.c_str());
@@ -1756,7 +1759,7 @@ GenRet FnSymbol::codegenPXDType() {
     // Cast to right function type.
     std::string str;
 
-    std::string retString = getPythonTypeName(retType, PYTHON_PXD);
+    std::string retString = getPythonTypeName(retType, C_PXD);
     str += retString.c_str();
     str += " ";
     str += cname;
@@ -1769,7 +1772,7 @@ GenRet FnSymbol::codegenPXDType() {
           continue; // do not print locale argument, end count, dummy class
         if (count > 0)
           str += ", ";
-        str += formal->getPythonType(PYTHON_PXD);
+        str += formal->getPythonType(C_PXD);
         str += formal->cname;
         if (fGenIDS) {
           str += " ";
@@ -1829,7 +1832,7 @@ GenRet FnSymbol::codegenPYXType() {
         funcCall += ", ";
       }
 
-      std::string argType = formal->getPythonType(PYTHON_PYX);
+      std::string argType = formal->getPythonType(C_PYX);
       header += argType;
       header += formal->cname;
       if (fGenIDS) {
@@ -1869,12 +1872,7 @@ std::string FnSymbol::getPythonArrayReturnStmts() {
   INT_ASSERT(retType == dtExternalArray);
   Symbol* eltType = exportedArrayElementType[this];
   std::string typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
-  std::string typeStrCDefs = typeStr;
-  if (strncmp(typeStr.c_str(), "numpy", strlen("numpy")) == 0) {
-    typeStrCDefs += "_t";
-  } else {
-    typeStrCDefs = getPythonTypeName(eltType->type, PYTHON_PXD);
-  }
+  std::string typeStrCDefs = getPythonTypeName(eltType->type, C_PYX);
   // Create the numpy array to return
   // E.g. cdef numpy.ndarray [C element type, ndim=1] ret =
   //          numpy.zeros(shape = ret_arr.size, dtype = Python element type)

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+sed '/from testing.c:[0-9]*/d' $2 > $2.tmp
+sed '/^ *$/d' $2.tmp > $2
+export PYTHONPATH=lib/
+python3 use_testing.py >> $2
