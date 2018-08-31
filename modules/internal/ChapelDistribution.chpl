@@ -981,7 +981,7 @@ module ChapelDistribution {
       on e {
         var eCast = e:arrType;
         if eCast == nil then
-          halt("internal error: ", t.type:string,
+          halt("internal error: ", t:string,
                " contains an bad array type ", arrType:string);
 
         var inds = rhs.getIndices();

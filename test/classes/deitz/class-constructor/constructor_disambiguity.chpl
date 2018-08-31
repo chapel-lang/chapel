@@ -4,7 +4,7 @@ class C {
 }
 
 var c = (new unmanaged C(
-           t=(unmanaged C(int)).type,
+           t=(unmanaged C(int)),
            x=new unmanaged C(int)));
 writeln(c);
 delete c.x;
