@@ -457,7 +457,7 @@ and build and run ``hdf5Example.chpl``.
 When constructing the lock file (see below section), Mason will work with Spack to gather dependencies.
 In the case of ``HDF5``, at the time of this writing, ``zlib`` will be added to the lock file since the
 ``HDF5`` Spack package depends on it. Any dependency a Spack package has will be handled in this manner.
-This highlights another great feature of the integartion. Mason can install and retrieve all dependencies
+This highlights another great feature of the integration. Mason can install and retrieve all dependencies
 necessary for any package from Spack without ever interfering with a previous package installation.
 
 Using System Packages
