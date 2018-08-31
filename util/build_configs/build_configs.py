@@ -434,30 +434,50 @@ def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_
     build_env['BUILD_CONFIGS_MAKE_TARGETS'] = chpl_misc['make_targets']
 
     if dry_run:
-        logging.info('dry-run command:\n\t{0}'.format(dryrun_cmd))
         build_env['BUILD_CONFIGS_DRYRUN_CMD']  = dryrun_cmd
-        if make_logfile:
-            print('[BUILD_CONFIGS] command:\n\t{0}\n'.format(dryrun_cmd), file=make_logfile)
-            result, output, error = check_output(dryrun_cmd, chpl_home, build_env, file=make_logfile)
+
+        # dry-run: basically, dry-run runs printchplenv instead of Chapel make.
+        #   Non-zero printchplenv exit status means "error", this Chapel config failed
+        #   Anything on stderr provokes a "warning" message but is not an error
+        #   Printchplenv is run twice if logfile is used, to see Chapel env on both console and logfile
+
+        logging.info('DRY-RUN: printchplenv command:\n\t{0}'.format(dryrun_cmd))
         with elapsed_time(build_config_name):
             result, output, error = check_output(dryrun_cmd, chpl_home, build_env)
         if result or error:
-            logging.warn('Errors/Warnings from dry-run config {0}\n{1}\n{2}\nExit code {3}'.format(
+            logging.warn('Errors/Warnings from printchplenv, config {0}\n{1}\n{2}\nExit code {3}'.format(
                 build_config_name, output, error, result))
         elif verbose:
-            logging.debug('Results from dry-run config {0}\n{1}\n{2}\nExit code {3}'.format(
+            logging.debug('Results from printchplenv, config {0}\n{1}\n{2}\nExit code {3}'.format(
                 build_config_name, output, error, result))
-    else:
-        logging.info('Chapel make command:\n\t{0}'.format(make_cmd))
-        build_env['BUILD_CONFIGS_MAKE_CMD'] = make_cmd
+        make_result = result
+
         if make_logfile:
-            print('[BUILD_CONFIGS] command:\n\t{0}\n'.format(make_cmd), file=make_logfile)
+            logging.debug('Printchplenv for logfile:\n\t{0}'.format(dryrun_cmd))
+            print('[BUILD_CONFIGS] DRY-RUN: printchplenv command:\n\t{0}\n'.format(dryrun_cmd), file=make_logfile)
+            result, output, error = check_output(dryrun_cmd, chpl_home, build_env, file=make_logfile)
+    else:
+        build_env['BUILD_CONFIGS_MAKE_CMD'] = make_cmd
+
+        # default: Chapel make. If no logfile is used then Chapel make output is lost!
+        #   Non-zero make exit status means "error", this Chapel config failed
+        #   Printchplenv may be run after the make, to add Chapel env to the logfile
+
+        logging.info('Chapel make command:\n\t{0}'.format(make_cmd))
+        if make_logfile:
+            print('[BUILD_CONFIGS] Chapel make command:\n\t{0}\n'.format(make_cmd), file=make_logfile)
         with elapsed_time(build_config_name):
             result, output, error = check_output(make_cmd, chpl_home, build_env, file=make_logfile)
         if result:
             logging.error('Non-zero exit code {0}'.format(result))
+        make_result = result
 
-    return result
+        if make_logfile:
+            logging.info('Printchplenv for logfile:\n\t{0}'.format(dryrun_cmd))
+            print('[BUILD_CONFIGS] printchplenv command:\n\t{0}\n'.format(dryrun_cmd), file=make_logfile)
+            result, output, error = check_output(dryrun_cmd, chpl_home, build_env, file=make_logfile)
+
+    return make_result
 
 
 def check_output(command, chpl_home, env, stdin=None, file=None):
