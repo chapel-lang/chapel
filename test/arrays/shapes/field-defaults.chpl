@@ -11,7 +11,7 @@ record RRR {
 }
 
 var r0 = new RRR(-4..7);
-writeln(r0.ARR.domain);   // currently the indices start at 1, not -4
+writeln(r0.ARR.domain);
 
 var r1 = new RRR({-3..8});
 writeln(r1.ARR.domain);

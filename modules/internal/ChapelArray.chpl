@@ -4148,25 +4148,14 @@ module ChapelArray {
     }
   }
 
-  //
-  // Noakes 2015/11/05
-  //
-  // This function is invoked to implement for expressions and
-  // forall expressions. An iterator is invoked that generates
-  // the elements of the resulting array.
-  //
-  // Although it appears to be a copy constructor, it is in fact
-  // an Array constructor.  It appears to me that this implementation
-  // is due to an artifact in the interaction between normalize and
-  // function resolution; the former inserts calls to initCopy() without
-  // understanding the types involved.  This in turn leads to some
-  // confusion for the compiler is resolved by the liberal use of
-  // pragmas.
-  //
+  // chpl__initCopy(ir: _iteratorRecord) is used to create an array
+  // out of for-expressions, forall-expressions, promoted expressions.
+  // The 'ir' iterator - or its standalone/leader/follower counterpart -
+  // is invoked to generate the desired array elements.
 
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord)
-    where chpl_iteratorHasShape(ir)
+    where chpl_iteratorHasDomainShape(ir)
   {
     var shape = _newDomain(ir._shape_);
 
@@ -4174,6 +4163,23 @@ module ChapelArray {
     // that is owned by the forall-expression or the leader in the
     // promoted expression.
     shape._unowned = true;
+
+    return chpl__initCopy_shapeHelp(shape, ir);
+  }
+
+  pragma "init copy fn"
+  proc chpl__initCopy(ir: _iteratorRecord)
+    where chpl_iteratorHasRangeShape(ir)
+  {
+    // Need this pragma in the range case to avoid leaking 'shape'.
+    // If we use it in the domain case, we get one autoDestroy too many.
+    pragma "insert auto destroy"
+    var shape = {ir._shape_};
+
+    return chpl__initCopy_shapeHelp(shape, ir);
+  }
+
+  proc chpl__initCopy_shapeHelp(shape: domain, ir: _iteratorRecord) {
 
     // Right now there are two distinct events for each array element:
     //  * initialization upon the array declaration,

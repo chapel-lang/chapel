@@ -101,6 +101,10 @@ module ChapelIteratorSupport {
     return arg._instance;
   }
   pragma "no doc"
+  inline proc chpl_computeIteratorShape(arg: range(?)) {
+    return arg;
+  }
+  pragma "no doc"
   inline proc chpl_computeIteratorShape(arg: _iteratorRecord) {
     if chpl_iteratorHasShape(arg) then
       return arg._shape_;
@@ -119,6 +123,22 @@ module ChapelIteratorSupport {
     use Reflection;
     if hasField(ir.type, "_shape_") then
       return ir._shape_.type != void;
+    else
+      return false;
+  }
+  pragma "no doc"
+  inline proc chpl_iteratorHasDomainShape(ir: _iteratorRecord) param {
+    use Reflection;
+    if hasField(ir.type, "_shape_") then
+      return isSubtype(ir._shape_.type, BaseDom);
+    else
+      return false;
+  }
+  pragma "no doc"
+  inline proc chpl_iteratorHasRangeShape(ir: _iteratorRecord) param {
+    use Reflection;
+    if hasField(ir.type, "_shape_") then
+      return isRange(ir._shape_.type);
     else
       return false;
   }
