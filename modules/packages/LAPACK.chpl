@@ -123,20 +123,25 @@ module LAPACK {
   enum LapackImpl {lapack, mkl, none};
   use LapackImpl;
 
-  /* Specifies which header filename to include, based on the lapack implementation.
+  /* Specifies which header filename to include, based on the lapack
+     implementation.
+
+     Most LAPACK implementations rely on ``lapacke.h``, which is used when
+     ``lapackImpl = lapack``, the default setting.
 
       - ``LapackImpl.blas`` includes ``lapacke.h`` (default)
       - ``LapackImpl.blas`` includes ``mkl_lapacke.h``
       - ``LapackImpl.none`` includes nothing
 
   */
-  config param lapackHeader = '';
-
-  /* Manually specifies the header filename to include, overriding the header
-     determined by ``lapackImpl``.
-   */
   config param lapackImpl = LapackImpl.lapack;
 
+  /* Manually specifies the header filename to include. This flag overrides
+     the header determined by ``lapackImpl``.
+   */
+  config param lapackHeader = '';
+
+  pragma "no doc"
   param header = if lapackHeader == '' then
                    if lapackImpl == LapackImpl.none then ''
                    else if lapackImpl == LapackImpl.mkl  then 'mkl_lapacke.h'

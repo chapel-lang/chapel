@@ -28,7 +28,8 @@ reference version of BLAS, this documentation refers to the
 `MKL BLAS <https://software.intel.com/en-us/node/520725>`_ documentation, due
 to interface similarities.
 
-This module is intended to work with non-distributed dense rectangular arrays.
+This module is intended to work with non-distributed dense rectangular
+(``DefaultRectangular``) arrays.
 
 
 Compiling with BLAS
@@ -61,27 +62,31 @@ BLAS Implementations:
 
   * **ATLAS**
 
-    * The compilation command above likely requires the additional flag: ``-latlas``
+    * Compilation (linking) requires the additional flag: ``-latlas``
 
   * **MKL**
 
-    * Compile with :param:`blasImpl=BlasImpl.mkl` if using MKL BLAS.
+    * Compilation requires the additional flag in order to use the MKL header 
+      instead: ``--set blasImpl=mkl``
 
   * **OpenBLAS**
 
-    * The header files that are included with OpenBLAS differ from the reference
-      C_BLAS prototypes for complex arguments by using ``float*`` and ``double*``
-      pointers, instead of ``void*`` pointers.  Using this will likely result in
-      warnings about incompatible pointer types. These may be ignored.
+    * Compilation will generate warnings about incompatible pointer types,
+      which may be ignored.
+      These warnings are due to the header files of OpenBLAS differing from the
+      reference C_BLAS prototypes for complex arguments by using ``float*`` and
+      ``double*`` pointers, instead of ``void*`` pointers.
 
-Cray Systems:
-  No compiler flags should be necessary when compiling BLAS programs on
-  Crays. The **CrayBLAS** implementation is made available through Cray's libsci,
-  which comes installed on all Cray systems. This is typically loaded by
-  default, but can be manually loaded with ``module load cray-libsci`` as well.
-  Chapel programs compiled on Crays utilize the ``cc`` wrapper as the backend
-  compiler, which implicitly links against the libsci library. Therefore, no
-  additional steps are required of the user.
+  * **Cray LibSci**
+
+    * On Cray systems with the ``cray-libsci`` module loaded, no compiler flags
+      should be necessary when compiling programs that use BLAS. This is
+      typically loaded by default, but can be manually loaded with ``module
+      load cray-libsci`` as well.  Chapel programs compiled on Crays utilize
+      the ``cc`` wrapper as the backend compiler, which implicitly links
+      against the libsci library. Therefore, no additional steps are required
+      of the user.
+
 
 Chapel BLAS API
 ---------------
@@ -97,7 +102,7 @@ except that the type prefix is dropped. For instance, ``gemm`` is the
 wrapper for the ``[sdcz]gemm`` routines.
 
 The native BLAS interface can still be accessed by calling routines from the
-``C_BLAS`` submodule.
+:mod:`C_BLAS` submodule.
 
 The ``ldA`` argument is omitted from the Chapel BLAS API. Chapel determines the
 dimensions of the matrices from the arrays that are passed in, even when one is
@@ -164,10 +169,6 @@ in memory.
 .. _CABS1:  https://software.intel.com/en-us/node/64961e94-92d0-4671-90e6-86995e259a85
 
 .. BLAS Module TODO:
-  - Clearer compiler errors instead of using where-clauses
-  - Support more implementations using config param-wrapped require statements
-    - related: general RequireMKL module
-  - More consistent documentation
   - Support banded/packed matrix routines
 
 */
@@ -177,21 +178,25 @@ module BLAS {
   enum BlasImpl {blas, mkl, none};
   use BlasImpl;
 
-  /* Specifies which header filename to include, based on the BLAS implementation.
+  /* Specifies which header filename to include, based on the BLAS
+     implementation.
 
-      - ``BlasImpl.blas`` includes ``cblas.h`` (default)
-      - ``BlasImpl.blas`` includes ``mkl_cblas.h``
-      - ``BlasImpl.none`` includes nothing
+     Most BLAS implementations rely on ``cblas.h``, which is used when
+     ``blasImpl = blas``, the default setting.
+
+      - ``blas`` includes ``cblas.h`` (default)
+      - ``mkl`` includes ``mkl_cblas.h``
+      - ``none`` includes nothing
 
   */
   config param blasImpl = BlasImpl.blas;
 
-  /* Manually specifies the header filename to include, overriding the header
-     determined by ``blasImpl``.
+  /* Manually specifies the header filename to include. This flag overrides
+     the header determined by ``blasImpl``.
    */
   config param blasHeader = '';
 
-  /* Deprecated - use ``--set blasImpl=mkl`` instead */
+  /* *Deprecated.* Use ``--set blasImpl=mkl`` instead */
   config param isBLAS_MKL = false;
 
   if isBLAS_MKL {
@@ -199,6 +204,7 @@ module BLAS {
     compilerWarning('Use "blasImpl" instead: --set blasImpl=mkl');
   }
 
+  pragma "no doc"
   param header = if blasHeader == '' then
                    if blasImpl == BlasImpl.none then ''
                    else if blasImpl == BlasImpl.mkl || isBLAS_MKL then 'mkl_cblas.h'

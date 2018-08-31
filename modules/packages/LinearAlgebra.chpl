@@ -28,10 +28,21 @@ A high-level interface to linear algebra operations and procedures.
 Compiling with Linear Algebra
 -----------------------------
 
-The linear algebra module uses the :mod:`BLAS` module.
-In order to compile a Chapel program with this module, be sure
-to have a BLAS implementation available on your system. See the :mod:`BLAS`
-documentation for further details.
+Some of the linear algebra module procedures rely on the :mod:`BLAS` and
+:mod:`LAPACK` modules.  If using routines that rely on these modules,
+be sure to have a BLAS and LAPACK implementation available on your system. See
+the :mod:`BLAS` and :mod:`LAPACK` documentation for further details.
+
+To explicitly opt out of using the :mod:`BLAS` and :mod:`LAPACK` procedures, compile
+your Chapel program with the flags:
+
+.. code-block:: bash
+
+  chpl --set blasImpl=none --set lapackImpl=none myProgram.chpl
+
+This will result in a cleaner compiler error when using a procedure that is
+only available with :mod:`BLAS` or :mod:`LAPACK`.
+
 
 .. _LinearAlgebraInterface:
 
