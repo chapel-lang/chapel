@@ -89,7 +89,98 @@ module ChapelIteratorSupport {
   pragma "no doc"
   proc iteratorToArrayElementType(type t:_iteratorRecord) type {
     return chpl__unref(
-             iteratorToArrayType(__primitive("scalar promotion type", t)));
+             iteratorToArrayType(
+               chpl_buildStandInRTT(
+                 __primitive("scalar promotion type", t))));
+  }
+
+  //
+  // The two chpl_buildStandInRTT(type) functions accept, at run time,
+  // the _RuntimeTypeInfo for domType/arrType that is **uninitialized**.
+  // They returns a fresh domain/array type of the same kind, whose
+  // RTT is **initiaized**. Important: no accessing the uninitialized RTTs.
+  //
+  // It took some acrobatics to get the domain's distribution type,
+  // rank, idxType, stridable from 'domType', and the same plus
+  // (even more acrobatics) eltType from 'arrType'.
+  // Ideally we'd get them **directly** from domType/arrType.
+  //
+
+  proc chpl_buildStandInRTT(type domType: domain) type {
+
+    // Proc instanceType does not return a runtime type, so does not
+    // execute any code at run time. So it done not access any contents
+    // of domType's _RuntimeTypeInfo, which is uninitialized.
+    proc instanceType type { var dom: domType;
+                             return dom._instance.type; }
+
+    var instanceObj: instanceType;
+
+    return chpl_buildStandInRTT(instanceObj);
+  }
+
+  proc chpl_buildStandInRTT(type arrType: []) type {
+
+    // Analogously to proc instanceType in chpl_buildStandInRTT(domain).
+    proc domInstanceType type { var arr: arrType;
+                                return arr.domain._instance.type;  }
+
+    // No runtime types - no code is executed at run time here.
+    var domInstance: domInstanceType(arrType);
+
+    // This is a domain built from properly-initialized _RuntimeTypeInfo.
+    var standinDomain: chpl_buildStandInRTT(domInstance);
+
+    // Same as proc instanceType in chpl_buildStandInRTT(domain).
+    proc arrInstanceType type { var arr: arrType;
+                                return arr._instance.type; }
+
+    var instanceObj: arrInstanceType;
+
+    // Luckily, "static typeof" shields us from accessing the field
+    // instanceObj.eltType at run time - even when it is a run-time type.
+    // Without "static typeof", it would access a field of instanceObj
+    // and crash because the latter, by design, is nil.
+    //
+    // If 'instanceEltType' is a runtime type, its _RuntimeTypeInfo
+    // is uninitialized.
+    type instanceEltType = __primitive("static typeof", instanceObj.eltType);
+
+    return chpl__buildArrayRuntimeType(standinDomain,
+                                       chpl_buildStandInRTT(instanceEltType));
+  }
+
+  //
+  // If the type is neither an array nor a domain, then there is no run-time
+  // content - nothing that can be uninitialized. Use the type directly.
+  //
+  proc chpl_buildStandInRTT(type nonRTtype) type {
+    return nonRTtype;
+  }
+
+  //
+  // The following overloads accept BaseDom subclasses.
+  // The argument is always 'nil', so we cannot get any
+  // run-time types from it. So we create them from scratch.
+  //
+  proc chpl_buildStandInRTT(domInst) type
+    where domInst.type <= unmanaged DefaultRectangularDom
+  {
+    // The only _RuntimeTypeInfo component for a domain type is
+    // a BaseDist subclass. We use 'defaultDist' for that.
+    // The other args are always compile-time only.
+    return chpl__buildDomainRuntimeType(defaultDist, domInst.rank,
+                                        domInst.idxType, domInst.stridable);
+  }
+
+  // Other kinds of arrays/domains are not supported.
+  proc chpl_buildStandInRTT(domInst) type
+  {
+    if domInst.type <= unmanaged BaseDom then
+      compilerError("for/forall/promoted expressions are supported only with Default Rectangular arrays, domains");
+    else
+      compilerError("unexpected argument of type ", domInst.type:string,
+                    " for chpl_buildStandInRTT()");
   }
 
   pragma "no doc"
