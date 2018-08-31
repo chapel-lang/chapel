@@ -126,7 +126,7 @@ module ChapelIteratorSupport {
                                 return arr.domain._instance.type;  }
 
     // No runtime types - no code is executed at run time here.
-    var domInstance: domInstanceType(arrType);
+    var domInstance: domInstanceType;
 
     // This is a domain built from properly-initialized _RuntimeTypeInfo.
     var standinDomain: chpl_buildStandInRTT(domInstance);
@@ -177,10 +177,9 @@ module ChapelIteratorSupport {
   proc chpl_buildStandInRTT(domInst) type
   {
     if domInst.type <= unmanaged BaseDom then
-      compilerError("for/forall/promoted expressions are supported only with Default Rectangular arrays, domains");
+      compilerError("for/forall/promoted expressions are not implemented when the elements are or contain non-DefaultRectangular domains or arrays");
     else
-      compilerError("unexpected argument of type ", domInst.type:string,
-                    " for chpl_buildStandInRTT()");
+      compilerError("unexpected argument of type ", domInst.type:string, " for chpl_buildStandInRTT()");
   }
 
   pragma "no doc"
