@@ -133,7 +133,8 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     ( *runtime* )
         log_info "Building Chapel component: runtime"
 
-        compilers="gnu,intel"
+    ##  compilers="gnu,intel"   # Temporarily skip "intel" configs, to make this setenv example more portable
+        compilers="gnu"         # However, keep the support for intel configs in this file.
         comms="none,ugni"
         launchers="none,slurm-srun"
 
@@ -153,6 +154,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         # cray-prgenv-gnu       none        slurm-srun      Yes
         # cray-prgenv-gnu       ugni        none            No (skip)
         # cray-prgenv-gnu       ugni        slurm-srun      Yes
+    ##  #   (If compilers>=intel):
         # cray-prgenv-intel     none        none            Yes
         # cray-prgenv-intel     none        slurm-srun      Yes
         # cray-prgenv-intel     ugni        none            No (skip)
@@ -214,6 +216,18 @@ else
 
     log_info "Begin callback $setenv"
     log_debug "with config=$BUILD_CONFIGS_CALLBACK"
+
+    # Exit immediately to skip (avoid building) unwanted Chapel configs
+
+    if [ "$CHPL_COMM" == ugni ]; then
+        if [ "$CHPL_LAUNCHER" == none ]; then
+
+            # skip Chapel make because comm == ugni needs a Chapel launcher
+            log_info "Skip comm=$CHPL_COMM, launcher=$CHPL_LAUNCHER"
+            exit 0
+        fi
+        unset CHPL_COMM_SUBSTRATE
+    fi
 
 # =========================
 # setenv callback functions
@@ -315,22 +329,11 @@ else
     esac
 
     # Discard the artificial CHPL_TARGET_COMPILER value.
-    # Chapel make will select cray-prgenv-gnu or cray-prgenv-intel by itself.
+    # Chapel make will select cray-prgenv-gnu or cray-prgenv-intel, based on
+    # the presence of module PrgEnv-gnu or PrgEnv-intel in the environment
 
     unset CHPL_TARGET_COMPILER
     load_target_cpu $target_cpu_module
-
-    # ---
-
-    if [ "$CHPL_COMM" == ugni ]; then
-        if [ "$CHPL_LAUNCHER" == none ]; then
-
-            # skip Chapel make because comm == ugni needs a Chapel launcher
-            log_info "Skip Chapel make for comm=$CHPL_COMM, launcher=$CHPL_LAUNCHER"
-            exit 0
-        fi
-        unset CHPL_COMM_SUBSTRATE
-    fi
 
     # ---
 
