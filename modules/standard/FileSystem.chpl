@@ -614,6 +614,13 @@ proc locale.cwd(out error: syserr): string {
 proc exists(name: string): bool throws {
   extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
 
+  if (name == "") {
+    // chpl_fs_exists uses stat to determine if a file exists, which throws an
+    // error when "" is passed to it.  Check it here early and return false
+    // like Python does
+    return false;
+  }
+
   var ret:c_int;
   var err = chpl_fs_exists(ret, name.localize().c_str());
   if err then try ioerror(err, "in exists");
@@ -1039,6 +1046,13 @@ proc isFile(out error:syserr, name:string):bool {
 */
 proc isLink(name: string): bool throws {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
+
+  if (name == "") {
+    // chpl_fs_is_link uses lstat to determine if a path is a link, which throws
+    // an error when "" is passed to it.  Check it here early and return false
+    // like Python does
+    return false;
+  }
 
   var ret:c_int;
   var err = chpl_fs_is_link(ret, name.localize().c_str());
