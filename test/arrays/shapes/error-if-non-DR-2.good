@@ -1,0 +1,1 @@
+error-if-non-DR-2.chpl:6: error: for/forall/promoted expressions are not implemented when the elements are or contain non-DefaultRectangular domains or arrays

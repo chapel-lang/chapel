@@ -4,9 +4,7 @@ outfile=$2
 mv $outfile $outfile.tmp
 
 # grep for specific items in valgrind output
-grep 'Conditional jump or move depends on uninitialised value(s)' $outfile.tmp | head -2 \
-| sed 's@^==.*Conditional jump@Conditional jump@' \
-> $outfile
+grep -l 'Invalid read of size' $outfile.tmp > $outfile
 
 # also grep for the desired output
 grep ^2 $outfile.tmp >> $outfile
