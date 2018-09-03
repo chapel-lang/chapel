@@ -129,8 +129,8 @@ module LAPACK {
      Most LAPACK implementations rely on ``lapacke.h``, which is used when
      ``lapackImpl = lapack``, the default setting.
 
-      - ``LapackImpl.blas`` includes ``lapacke.h`` (default)
-      - ``LapackImpl.blas`` includes ``mkl_lapacke.h``
+      - ``LapackImpl.lapack`` includes ``lapacke.h`` (default)
+      - ``LapackImpl.mkl`` includes ``mkl_lapacke.h``
       - ``LapackImpl.none`` includes nothing
 
   */
