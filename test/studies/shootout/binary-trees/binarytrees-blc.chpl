@@ -20,17 +20,18 @@ proc main() {
   //
   // Create the "stretch" tree, checksum it, print its stats, and free it.
   //
-  const strTree = new unmanaged Tree(strDepth);
-  writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
-  delete strTree;
+  {
+    const strTree = new Tree(strDepth);
+    writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
+  }
 
   //
   // Build the long-lived tree.
   //
-  var llTree: unmanaged Tree;
+  var llTree: owned Tree;
 
   cobegin with (ref llTree) {
-    llTree = new unmanaged Tree(maxDepth);
+    llTree = new owned Tree(maxDepth);
 
     {
       //
@@ -43,9 +44,8 @@ proc main() {
         var sum = 0;
 
         for i in 1..iterations {
-          const t = new unmanaged Tree(depth);
+          const t = new Tree(depth);
           sum += t.sum();
-          delete t;
         }
         stats[depth] = (iterations, sum);
       }
@@ -63,7 +63,6 @@ proc main() {
   // Checksum the long-lived tree, print its stats, and free it.
   //
   writeln("long lived tree of depth ", maxDepth, "\t check: ", llTree.sum());
-  delete llTree;
 }
 
 

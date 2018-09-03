@@ -20,14 +20,15 @@ proc main() {
   //
   // Create the "stretch" tree, checksum it, print its stats, and free it.
   //
-  const strTree = new unmanaged Tree(strDepth);
-  writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
-  delete strTree;
+  {
+    const strTree = new Tree(strDepth);
+    writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
+  }
 
   //
   // Build the long-lived tree.
   //
-  const llTree = new unmanaged Tree(maxDepth);
+  const llTree = new Tree(maxDepth);
 
   //
   // Iterate over the depths in parallel, dynamically assigning them
@@ -39,9 +40,8 @@ proc main() {
     var sum = 0;
 
     for i in 1..iterations {
-      const t = new unmanaged Tree(depth);
+      const t = new Tree(depth);
       sum += t.sum();
-      delete t;
     }
     stats[depth] = (iterations, sum);
   }
@@ -57,7 +57,6 @@ proc main() {
   // Checksum the long-lived tree, print its stats, and free it.
   //
   writeln("long lived tree of depth ", maxDepth, "\t check: ", llTree.sum());
-  delete llTree;
 }
 
 
@@ -65,15 +64,15 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  var left, right: unmanaged Tree;
+  var left, right: owned Tree;
 
   //
   // A Tree-building initializer
   //
   proc init(depth) {
     if depth > 0 {
-      left  = new unmanaged Tree(depth-1);
-      right = new unmanaged Tree(depth-1);
+      left  = new owned Tree(depth-1);
+      right = new owned Tree(depth-1);
     }
   }
 
@@ -84,8 +83,6 @@ class Tree {
     var sum = 1;
     if left {
       sum += left.sum() + right.sum();
-      delete left;
-      delete right;
     }
     return sum;
   }
