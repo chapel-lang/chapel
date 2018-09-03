@@ -582,7 +582,7 @@ proc outer(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 pragma "no doc"
 /* Generic matrix-vector multiplication */
 proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
-  where !usingBLAS
+  where !usingBLAS || !isBLASType(eltType)
 {
   if Adom.rank != 2 || Xdom.rank != 1 then
     compilerError("Rank sizes are not 2 and 1");
@@ -612,7 +612,7 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
 pragma "no doc"
 /* Generic matrix-matrix multiplication */
 proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
-  where !usingBLAS
+  where !usingBLAS || !isBLASType(eltType)
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
     compilerError("Rank sizes are not 2 and 2");
