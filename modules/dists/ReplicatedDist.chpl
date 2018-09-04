@@ -547,7 +547,7 @@ proc ReplicatedArr.dsiSerialRead(f, loc): void {
 }
 
 proc isReplicatedArr(arr) param {
-  return isSubtype(_to_borrowed(chpl__getActualArray(arr)), ReplicatedArr);
+  return isSubtype(_to_borrowed(chpl__getActualArray(arr)).type, ReplicatedArr);
 }
 
 proc chpl_serialReadWriteRectangular(f, arr, dom) where isReplicatedArr(arr) {

@@ -723,7 +723,7 @@ module ChapelTuple {
   }
 
   inline proc *(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(x, (y(1).type)) {
+                                        isSubtype(t, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x * y(d);

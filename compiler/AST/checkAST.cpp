@@ -125,6 +125,9 @@ void checkPrimitives()
      case PRIM_IS_ATOMIC_TYPE:
      case PRIM_IS_TUPLE_TYPE:
      case PRIM_IS_STAR_TUPLE_TYPE:
+     case PRIM_IS_SUBTYPE:
+     case PRIM_IS_SUBTYPE_ALLOW_VALUES:
+     case PRIM_IS_PROPER_SUBTYPE:
      case PRIM_NEW:                 // new keyword
      case PRIM_ERROR:
      case PRIM_WARNING:
@@ -241,7 +244,6 @@ void checkPrimitives()
      case PRIM_INIT_FIELDS:             // initialize fields of a temporary record
      case PRIM_PTR_EQUAL:
      case PRIM_PTR_NOTEQUAL:
-     case PRIM_IS_SUBTYPE:
      case PRIM_CAST:
      case PRIM_DYNAMIC_CAST:
      case PRIM_TYPEOF:
