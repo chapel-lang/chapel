@@ -10,22 +10,24 @@
 use LinearAlgebra;
 
 /*
-  Compiling
-  ---------
 
-  The :mod:`LinearAlgebra` module uses the :mod:`BLAS` module, so it requires
-  a BLAS implementation to be available on the system and additional compiler
-  flags to specify paths to that implementation.
+  Compiling with Linear Algebra
+  -----------------------------
 
-  Compiling a Chapel program using the :mod:`LinearAlgebra` module should look
-  something like this:
+  Some of the linear algebra module procedures rely on the :mod:`BLAS` and
+  :mod:`LAPACK` modules.  If using routines that rely on these modules,
+  be sure to have a BLAS and LAPACK implementation available on your system.
+  See the :mod:`BLAS` and :mod:`LAPACK` documentation for further details.
 
-  .. code-block:: sh
+  To explicitly opt out of using the :mod:`BLAS` and :mod:`LAPACK` procedures,
+  compile your Chapel program with the flags:
 
-      chpl -I$PATH_TO_CBLAS_DIR \
-           -L$PATH_TO_BLAS_LIBS -lblas LinearAlgebralib.chpl
+  .. code-block:: bash
 
-  See the :mod:`BLAS` documentation for further details.
+    chpl --set blasImpl=none --set lapackImpl=none myProgram.chpl
+
+  This will result in a cleaner compiler error when using a procedure that is
+  only available with :mod:`BLAS` or :mod:`LAPACK`.
 
 */
 
