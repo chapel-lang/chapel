@@ -120,9 +120,20 @@ static chpl_bool debug_exiting = false;
 
 static pthread_t proc_thread_id;
 
+static __thread uint32_t thread_idx      = ~(uint32_t) 0;
+static atomic_uint_least32_t next_thread_idx;
+#define _DBG_NEXT_THREAD_IDX() \
+        atomic_fetch_add_uint_least32_t(&next_thread_idx, 1)
+
 #define _DBG_P(dbg_do, f, ...)                                          \
         do {                                                            \
           if (dbg_do) {                                                 \
+            if (thread_idx == ~(uint32_t) 0) {                          \
+              thread_idx = _DBG_NEXT_THREAD_IDX();                      \
+              fprintf(debug_file,                                       \
+                      "DBG: %s:%d (%d): thread_id %" PRIu32 "\n",       \
+                      __FILE__, __LINE__, chpl_nodeID, thread_idx);     \
+            }                                                           \
             fprintf(debug_file, "DBG: %s:%d" f "\n",                    \
                     __FILE__, __LINE__, ## __VA_ARGS__);                \
           }                                                             \
@@ -136,12 +147,12 @@ static pthread_t proc_thread_id;
         _DBG_P(_DBG_DO(flg),                                            \
                " (%d/%s/%d): " f,                                       \
                chpl_nodeID, task_id(cd != NULL && cd->firmly_bound),    \
-               (int) my_thread_idx(), ## __VA_ARGS__)
+               (int) thread_idx, ## __VA_ARGS__)
 #define DBG_P_LPS(flg, f, li, cdi, rbi, seq, ...)                       \
         _DBG_P(_DBG_DO(flg),                                            \
                " (%d/%s/%d) %d/%d/%d <%" PRIu64 ">: " f,                \
                chpl_nodeID, task_id(cd != NULL && cd->firmly_bound),    \
-               (int) my_thread_idx(),                                   \
+               (int) thread_idx,                                        \
                (int) li, cdi, rbi, seq, ## __VA_ARGS__)
 
 #define CHPL_INTERNAL_ERROR(msg)                                        \
@@ -437,20 +448,6 @@ static inline void perfstats_add_post(gni_post_descriptor_t* post_desc) {
                    what, (int) rc, _cqeBuf);                            \
           CHPL_INTERNAL_ERROR(_gcefBuf);                                \
         } while (0)
-
-
-//
-// Threads.
-//
-static atomic_int_least64_t next_thread_idx;
-
-static inline
-int_least64_t my_thread_idx(void) {
-  static __thread int_least64_t tidx = -1;
-  if (tidx == -1)
-    tidx = atomic_fetch_add_int_least64_t(&next_thread_idx, 1);
-  return tidx;
-}
 
 
 //
@@ -1555,6 +1552,7 @@ static void dbg_init(void)
 {
   const char* ev;
 
+  atomic_init_uint_least32_t(&next_thread_idx, 0);
   proc_thread_id = pthread_self();
 
   debug_flag = (uint64_t) chpl_env_rt_get_int("COMM_UGNI_DEBUG", 0);
@@ -1779,8 +1777,6 @@ int32_t chpl_comm_getMaxThreads(void)
 
 void chpl_comm_init(int *argc_p, char ***argv_p)
 {
-  atomic_init_int_least64_t(&next_thread_idx, 0);
-
   // Sanity check: a maximal small call fits into a fork_t
   assert(sizeof(fork_small_call_info_t)+MAX_SMALL_CALL_PAYLOAD
          <= sizeof(fork_t));
