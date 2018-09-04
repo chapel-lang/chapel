@@ -262,56 +262,62 @@ static Expr* postFoldPrimop(CallExpr* call) {
     }
 
   } else if (call->isPrimitive(PRIM_IS_SUBTYPE) ||
+             call->isPrimitive(PRIM_IS_SUBTYPE_ALLOW_VALUES) ||
              call->isPrimitive(PRIM_IS_PROPER_SUBTYPE)) {
     SymExpr* parentExpr = toSymExpr(call->get(1));
     SymExpr* subExpr    = toSymExpr(call->get(2));
 
-    if (isTypeExpr(parentExpr) == true  ||
-        isTypeExpr(subExpr)    == true)  {
-      Type* st = subExpr->getValType();
-      Type* pt = parentExpr->getValType();
+    bool parentIsType = isTypeExpr(parentExpr);
+    bool subIsType = isTypeExpr(subExpr);
 
-      if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
-        AggregateType* ag = toAggregateType(st);
+    if (call->isPrimitive(PRIM_IS_SUBTYPE_ALLOW_VALUES)) {
+      if (parentIsType == false && subIsType == false)
+        USR_FATAL(call, "Subtype query requires a type");
+    } else {
+      if (parentIsType == false || subIsType == false)
+        USR_FATAL(call, "Subtype queries require two types");
+    }
 
-        st = canonicalClassType(ag->getField("_instance")->type);
+    Type* st = subExpr->getValType();
+    Type* pt = parentExpr->getValType();
+
+    if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
+      AggregateType* ag = toAggregateType(st);
+
+      st = canonicalClassType(ag->getField("_instance")->type);
+    } else {
+      // Try to work around some resolution order issues
+      st = resolveTypeAlias(subExpr);
+      pt = resolveTypeAlias(parentExpr);
+    }
+
+    if (st                                != dtUnknown &&
+        pt                                != dtUnknown &&
+
+        st                                != dtAny     &&
+        pt                                != dtAny     &&
+
+        st->symbol->hasFlag(FLAG_GENERIC) == false) {
+
+      bool result = isSubTypeOrInstantiation(st, pt);
+
+      if (call->isPrimitive(PRIM_IS_PROPER_SUBTYPE))
+        result = result && (st != pt);
+
+      if (result == true) {
+        retval = new SymExpr(gTrue);
+
       } else {
-        // Try to work around some resolution order issues
-        st = resolveTypeAlias(subExpr);
-        pt = resolveTypeAlias(parentExpr);
+        retval = new SymExpr(gFalse);
       }
 
-      if (st                                != dtUnknown &&
-          pt                                != dtUnknown &&
-
-          st                                != dtAny     &&
-          pt                                != dtAny     &&
-
-          st->symbol->hasFlag(FLAG_GENERIC) == false) {
-
-        bool result = isSubTypeOrInstantiation(st, pt);
-
-        if (call->isPrimitive(PRIM_IS_PROPER_SUBTYPE))
-          result = result && (st != pt);
-
-        if (result == true) {
-          retval = new SymExpr(gTrue);
-
-        } else {
-          retval = new SymExpr(gFalse);
-        }
-
-        call->replace(retval);
-
-      } else {
-        USR_FATAL(call,
-                  "Unable to perform subtype query: %s:%s",
-                  st->symbol->name,
-                  pt->symbol->name);
-      }
+      call->replace(retval);
 
     } else {
-      USR_FATAL(call, "Subtype query requires a type");
+      USR_FATAL(call,
+                "Unable to perform subtype query: %s:%s",
+                st->symbol->name,
+                pt->symbol->name);
     }
 
   } else if (call->isPrimitive(PRIM_CAST) == true) {
