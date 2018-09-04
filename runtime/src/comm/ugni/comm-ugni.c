@@ -858,27 +858,30 @@ static gni_mem_handle_t* rf_mdh_map;    // all locales' remote fork space mdhs
 //
 // To ensure that these are in registered memory we allocate them up
 // front, with a fixed size, through the registered-memory manager.
-// There are RF_DONE_NUM_PER_THREAD * (chpl_task_getMaxPar()+1) of
-// them.  The only requirement/constraint this value is:
+// There are RF_DONE_NUM_POOLS pools, with RF_DONE_NUM_PER_POOL in
+// each one.  The requirements/constraints on these values are as
+// follows.
+//   - RF_DONE_NUM_POOLS limits the allocate/free concurrency, so it
+//     should be at least as large as the number of hardware threads
+//     in use.
+//   - We emulate an unsigned mod by RF_DONE_NUM_POOLS by means of
+//     & (RF_DONE_NUM_POOLS - 1), so that has to be a power of 2.
+//   - The code does divides and mods with RF_DONE_NUM_PER_POOL, so
+//     for performance that should be a power of 2.
 //   - It's possible (though highly unlikely) that every task in the
 //     program could need one of these at the same time, and we can't
 //     get more dynamically, so we potentially need a lot of them: the
-//     value of RF_DONE_NUM_PER_THREAD should be "large" with respect
-//     to the likely maximum number of tasks with active on-stmts.
-//     Fortunately these are small, so over-provisioning isn't very
-//     costly.
+//     product of RF_DONE_NUM_POOLS and RF_DONE_NUM_PER_POOL should be
+//     "large".  Fortunately they're small, so over-provisioning isn't
+//     particularly costly.
 //
-#define RF_DONE_NUM_PER_THREAD 1024
+#define RF_DONE_NUM_POOLS 512
+#define RF_DONE_NUM_PER_POOL 32
 
 typedef int64_t rf_done_t;
 
-static int rf_done_num;
-static rf_done_t* rf_done_pool;
-static __thread int rf_done_private_prt;
-static __thread int rf_done_prt_lo = -1;
-static __thread int rf_done_prt_hi = -1;
-
-static atomic_bool* rf_done_pool_lock;
+static rf_done_t (*rf_done_pool)[RF_DONE_NUM_PER_POOL];
+static atomic_bool rf_done_pool_lock[RF_DONE_NUM_POOLS][RF_DONE_NUM_PER_POOL];
 
 
 //
@@ -4594,78 +4597,83 @@ void rf_done_pre_init(void)
   chpl_comm_mem_reg_add_request(FORK_REQ_BUFS_PER_LOCALE
                                 * sizeof(fork_reqs_free[0]));
 
-  rf_done_num = RF_DONE_NUM_PER_THREAD * (chpl_task_getMaxPar() + 1);
-  chpl_comm_mem_reg_add_request(rf_done_num * sizeof(rf_done_pool[0]));
+  chpl_comm_mem_reg_add_request(RF_DONE_NUM_POOLS
+                                * sizeof(rf_done_pool[0]));
 }
 
 
 static
 void rf_done_init(void)
 {
-  int i;
+  int i, j;
 
-  if (rf_done_num < comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD)
-    chpl_warning("(RF_DONE_NUM < comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD) "
+  if (RF_DONE_NUM_POOLS * RF_DONE_NUM_PER_POOL
+      < comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD)
+    chpl_warning("(RF_DONE_NUM_POOLS * RF_DONE_NUM_PER_POOL "
+                 "< comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD) "
                  "may lead to hangs",
                  0, 0);
 
   // Must be directly communicable without proxy.
-  rf_done_pool = (rf_done_t*)
-                 chpl_comm_mem_reg_allocMany(rf_done_num,
+  rf_done_pool = (rf_done_t (*)[RF_DONE_NUM_PER_POOL])
+                 chpl_comm_mem_reg_allocMany(RF_DONE_NUM_POOLS,
                                              sizeof(rf_done_pool[0]),
                                              CHPL_RT_MD_COMM_PER_LOC_INFO,
                                              0, 0);
 
-  for (i = 0; i < rf_done_num; i++) {
-    rf_done_pool[i] = -1;
+  for (i = 0; i < RF_DONE_NUM_POOLS; i++) {
+    for (j = 0; j < RF_DONE_NUM_PER_POOL - 1; j++) {
+      rf_done_pool[i][j] = 0;
+      atomic_init_bool(&rf_done_pool_lock[i][j], false);
+    }
   }
 }
 
 
-static
-pthread_once_t rf_done_init_locks_once = PTHREAD_ONCE_INIT;
-
-static
-void rf_done_init_locks(void)
-{
-  const int num_locks = rf_done_prt_hi - rf_done_prt_lo;
-
-  rf_done_pool_lock = ((atomic_bool*)
-                       chpl_mem_allocMany(num_locks,
-                                          sizeof(rf_done_pool_lock[0]),
-                                          CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                          0, 0));
-  for (int i = 0; i < num_locks; i++) {
-    atomic_init_bool(&rf_done_pool_lock[i], false);
-  }
-}
-
+static __thread int rf_done_private_prt;
 
 static
 inline
 rf_done_t* rf_done_alloc(void)
 {
+  static __thread int prt_lo = -1;
+  static __thread int prt_hi = -1;
   static __thread int last_i = -1;
+  static __thread int last_j = -1;
 
-  if (rf_done_prt_lo == -1) {
+#define CEIL_X_DIV_Y(x, y) (1 + ((x) - 1) / (y))
+
+  if (prt_lo == -1) {
     const int nPrts = chpl_task_getMaxPar() + 1;
     const int tidx = my_thread_idx();
     int prt;
-
-    rf_done_private_prt = 1;
-    if ((prt = tidx) >= nPrts) {
+    if (tidx < nPrts - 1) {
+      prt = tidx;
+      rf_done_private_prt = 1;
+    } else {
       prt = nPrts - 1;
       rf_done_private_prt = 0;
     }
+    prt_lo = ((prt == 0)
+              ? 0
+              : CEIL_X_DIV_Y(prt * RF_DONE_NUM_POOLS, nPrts));
+    prt_hi = ((prt == nPrts - 1)
+              ? RF_DONE_NUM_POOLS - 1
+              : CEIL_X_DIV_Y((prt + 1) * RF_DONE_NUM_POOLS, nPrts) - 1);
 
-    rf_done_prt_lo = prt * RF_DONE_NUM_PER_THREAD;
-    rf_done_prt_hi = rf_done_prt_lo + RF_DONE_NUM_PER_THREAD - 1;
-    last_i = rf_done_prt_lo;
-
-    if (!rf_done_private_prt) {
-      pthread_once(&rf_done_init_locks_once, rf_done_init_locks);
+    if (rf_done_private_prt) {
+      for (int i = prt_lo; i < prt_hi; i++) {
+        for (int j = 0; j < RF_DONE_NUM_PER_POOL; j ++) {
+          rf_done_pool[i][j] = -1;
+        }
+      }
     }
+
+    last_i = prt_lo;
+    last_j = 0;
   }
+
+#undef CEIL_X_DIV_Y
 
   //
   // Cycle through our partition of the pools and find one that contains
@@ -4675,29 +4683,40 @@ rf_done_t* rf_done_alloc(void)
   // we ever do, we'll have to revisit how we've approached this.
   //
   int i = last_i;
+  int j = last_j;
 
   if (rf_done_private_prt) {
     do {
-      if (++i > rf_done_prt_hi) {
-        i = rf_done_prt_lo;
-        if (i == last_i)
-          CHPL_INTERNAL_ERROR("rf_done_pool empty");
+      if (++j >= RF_DONE_NUM_PER_POOL) {
+        j = 0;
+        if (++i >= prt_hi)
+          i = prt_lo;
       }
-    } while (rf_done_pool[i] != -1);
+
+      if (i == last_i && j == last_j) {
+        CHPL_INTERNAL_ERROR("rf_done_pool empty");
+      }
+    } while (rf_done_pool[i][j] != -1);
   } else {
     do {
-      if (++i > rf_done_prt_hi) {
-        i = rf_done_prt_lo;
-        if (i == last_i)
-          CHPL_INTERNAL_ERROR("rf_done_pool empty");
+      if (++j >= RF_DONE_NUM_PER_POOL) {
+        j = 0;
+        if (++i >= prt_hi)
+          i = prt_lo;
       }
-    } while (atomic_exchange_bool(&rf_done_pool_lock[i - rf_done_prt_lo],
-                                  true));
+
+      if (i == last_i && j == last_j) {
+        CHPL_INTERNAL_ERROR("rf_done_pool empty");
+      }
+    } while (atomic_exchange_bool(&rf_done_pool_lock[i][j], true));
   }
 
   last_i = i;
+  last_j = j;
 
-  return &rf_done_pool[i];
+  rf_done_pool[i][j] = 0;
+
+  return &rf_done_pool[i][j];
 }
 
 
@@ -4705,11 +4724,13 @@ static
 inline
 void rf_done_free(rf_done_t* rf_done_p)
 {
-  const int i = rf_done_p - &rf_done_pool[0];
+  const int linearized_ij = rf_done_p - &rf_done_pool[0][0];
+  const int i = linearized_ij / RF_DONE_NUM_PER_POOL;
+  const int j = linearized_ij % RF_DONE_NUM_PER_POOL;
   if (rf_done_private_prt)
-    rf_done_pool[i] = -1;
+    rf_done_pool[i][j] = -1;
   else
-    atomic_store_bool(&rf_done_pool_lock[i - rf_done_prt_lo], false);
+    atomic_store_bool(&rf_done_pool_lock[i][j], false);
 }
 
 
