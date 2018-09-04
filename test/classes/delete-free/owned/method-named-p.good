@@ -1,0 +1,4 @@
+method-named-p.chpl:16: warning: _owned(D)
+method-named-p.chpl:20: warning: _shared(D)
+In D.p(1)
+In D.p(1)

@@ -107,9 +107,9 @@ module OwnedObject {
 
     pragma "no doc"
     pragma "owned"
-    var p:t;               // contained pointer (class type)
+    var chpl_p:t;               // contained pointer (class type)
 
-    forwarding p;
+    forwarding chpl_p;
 
     /*
        Default-initialize a :record:`Owned`.
@@ -119,7 +119,7 @@ module OwnedObject {
         compilerError("Owned only works with classes");
 
       this.t = _to_borrowed(a);
-      this.p = nil;
+      this.chpl_p = nil;
     }
 
     /*
@@ -135,14 +135,14 @@ module OwnedObject {
     proc init(p:borrowed) {
       this.t = p.type;
 
-      this.p = p;
+      this.chpl_p = p;
     }
 
     proc init(p:?T) where isClass(T) == false && isSubtype(T, _owned) == false  &&
                     isIterator(p) == false {
       compilerError("Owned only works with classes");
       this.t = T;
-      this.p = p;
+      this.chpl_p = p;
     }
 
     /*
@@ -152,7 +152,7 @@ module OwnedObject {
      */
     proc init(ref src:_owned) {
       this.t = src.t;
-      this.p = src.release();
+      this.chpl_p = src.release();
     }
 
     /*
@@ -160,9 +160,9 @@ module OwnedObject {
        instance it manages when the :record:`Owned` goes out of scope.
      */
     proc deinit() {
-      if isClass(p) { // otherwise, let error happen on init call
-        if p != nil then
-          delete _to_unmanaged(p);
+      if isClass(chpl_p) { // otherwise, let error happen on init call
+        if chpl_p != nil then
+          delete _to_unmanaged(chpl_p);
       }
     }
 
@@ -171,9 +171,9 @@ module OwnedObject {
        Deletes the previously managed object, if any.
      */
     proc ref clear() {
-      if p != nil {
-        delete _to_unmanaged(p);
-        p = nil;
+      if chpl_p != nil {
+        delete _to_unmanaged(chpl_p);
+        chpl_p = nil;
       }
     }
 
@@ -183,9 +183,9 @@ module OwnedObject {
        If this record was already managing a non-nil instance,
        that instance will be deleted.
      */
-    proc ref retain(newPtr:unmanaged p.type) {
-      var oldPtr = p;
-      p = newPtr;
+    proc ref retain(newPtr:unmanaged t) {
+      var oldPtr = chpl_p;
+      chpl_p = newPtr;
       if oldPtr then
         delete _to_unmanaged(oldPtr);
     }
@@ -194,9 +194,9 @@ module OwnedObject {
        Empty this :record:`Owned` so that it manages `nil`.
        Returns the instance previously managed by this :record:`Owned`.
      */
-    proc ref release():unmanaged p.type {
-      var oldPtr = p;
-      p = nil;
+    proc ref release():unmanaged t {
+      var oldPtr = chpl_p;
+      chpl_p = nil;
       return _to_unmanaged(oldPtr);
     }
 
@@ -207,7 +207,7 @@ module OwnedObject {
        goes out of scope.
      */
     proc /*const*/ borrow() {
-      return p;
+      return chpl_p;
     }
   }
 
@@ -221,7 +221,7 @@ module OwnedObject {
   }
   pragma "no doc"
   proc <=>(ref lhs:_owned(?t), ref rhs:_owned(t)) {
-    lhs.p <=> rhs.p;
+    lhs.chpl_p <=> rhs.chpl_p;
   }
 
 
@@ -257,7 +257,7 @@ module OwnedObject {
   // Don't print out 'p' when printing an _owned, just print class pointer
   pragma "no doc"
   proc _owned.readWriteThis(f) {
-    f <~> this.p;
+    f <~> this.chpl_p;
   }
 
   // Note, coercion from _owned -> _owned.t is sometimes directly
