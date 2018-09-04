@@ -161,12 +161,6 @@ writeln(a);
   :proc:`LinearAlgebra.Vector` for a comprehensive list of the available
   factory functions.
 
-  .. note::
-
-     The LinearAlgebra functions create arrays with ``0``-based indices by
-     default.  This default behavior differs from native Chapel array creation,
-     which defaults to ``1``-based arrays.
-
 */
 
 
@@ -408,11 +402,6 @@ writeln(isTriu(upper, k=1));    // false (k=1 does not include diagonal)
   One potential *gotcha* is **Promotion Flattening**, which is described in the
   :ref:`LinearAlgebraInterface` documentation.
 
-  Another is that this module defaults to 0-based indices when no range or
-  domain is specified, while Chapel arrays default to 1-based indices.
-  This can be problematic when using both Chapel array creation syntax
-  :mod:`LinearAlgebra` factory functions.
-
 */
 
 /*
@@ -540,7 +529,7 @@ var M2 = CSRMatrix({0..#3, 0..#3}); // from a dense domain
 var M3 = CSRMatrix(M1);             // From a CSR matrix
 const I = eye(3,3);
 var M4 = CSRMatrix(I);              // From a dense matrix
-                                    // Indices holding non-zero elements are 
+                                    // Indices holding non-zero elements are
                                     // added to M4's sparse domain
 
 

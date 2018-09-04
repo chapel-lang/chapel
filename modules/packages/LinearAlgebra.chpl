@@ -61,10 +61,10 @@ arrays) will work with any other Chapel library that works with arrays.
   This documentation uses the terms `matrix` to refer to `2D arrays`, and
   `vector` to refer to `1D arrays`.
 
-**Indexing**
+**Domain offsets**
 
-All functions that return new arrays will return arrays over 1-based indices,
-unless otherwise specified.
+All functions that return arrays will inherit their domains from the input
+array if possible.  Otherwise they will return arrays with 1-based indices.
 
 **Matrix multiplication**
 
