@@ -1128,6 +1128,10 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
 /*
   Singular Value Decomposition.
 
+  Factorizes the matrix ``A`` into two unitary matrices, ``U`` and ``Vt`` and
+  a vector of singular values ``s``, such that::
+
+    A = U.dot(s).dot(Vt);
 
 */
 proc svd(A: [?Adom] ?t) {
@@ -1148,17 +1152,11 @@ proc svd(A: [?Adom] ?t) {
   // elements of upper bidiagonal matrix B whose diagonal is in s.
   var superb: [1..minDim-1] realType;
 
-  // geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, wi, vl, vr);
   const info = gesvd(lapack_memory_order.row_major, 'A', 'A', A, s, u, vt, superb);
 
-  return (u, s, vt);
-// geev(matrix_order : lapack_memory_order, jobvl : string, jobvr : string, a :
-// [] real(32), wr : [] real(32), wi : [] real(32), vl : [] real(32), vr : []
-// real(32)): c_int{
+  // TODO: Raise error if info != 0 ?
 
-  // gesvd(matrix_order : lapack_memory_order, jobu : string, jobvt : string,
-  // a : [] real(64), s : [] real(64), u : [] real(64), vt : [] real(64), superb
-  // : [] real(64)): c_int
+  return (u, s, vt);
 }
 
 
