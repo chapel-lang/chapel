@@ -66,7 +66,7 @@ BLAS Implementations:
 
   * **MKL**
 
-    * Compilation requires the additional flag in order to use the MKL header 
+    * Compilation requires the additional flag in order to use the MKL header
       instead: ``--set blasImpl=mkl``
 
   * **OpenBLAS**
@@ -215,6 +215,10 @@ module BLAS {
                    else if blasImpl == BlasImpl.mkl || isBLAS_MKL then 'mkl_cblas.h'
                    else 'cblas.h'
                  else blasHeader;
+
+  if header != '' {
+    checkBLAS();
+  }
 
   use C_BLAS;
 
@@ -2653,20 +2657,23 @@ module BLAS {
 
   }
 
-  // These checks are useful, but should be opt-in via a param flag
-  //{
-  //  assert(Order.Row:c_int == CblasRowMajor,"Enum value for Order.Row does not agree with CblasRowMajor");
-  //  assert(Order.Col:c_int == CblasColMajor,"Enum value for Order.Col does not agree with CblasColMajor");
-  //  assert(Op.N:c_int == CblasNoTrans,"Enum value for Op.N does not agree with CblasNoTrans");
-  //  assert(Op.T:c_int == CblasTrans,"Enum value for Op.T does not agree with CblasTrans");
-  //  assert(Op.H:c_int == CblasConjTrans,"Enum value for Op.H does not agree with CblasConjTrans");
-  //  assert(Uplo.Upper:c_int == CblasUpper,"Enum value for Uplo.Upper does not agree with CblasUpper");
-  //  assert(Uplo.Lower:c_int == CblasLower,"Enum value for Uplo.Lower does not agree with CblasLower");
-  //  assert(Diag.NonUnit:c_int == CblasNonUnit,"Enum value for Diag.NonUnit does not agree with CblasNonUnit");
-  //  assert(Diag.Unit:c_int == CblasUnit,"Enum value for Diag.Unit does not agree with CblasUnit");
-  //  assert(Side.Left:c_int == CblasLeft,"Enum value for Side.Left does not agree with CblasLeft");
-  //  assert(Side.Right:c_int == CblasRight,"Enum value for Side.Right does not agree with CblasRight");
-  //}
+  /* Sanity checks for BLAS implementation */
+  pragma "no doc"
+  proc checkBLAS()
+  {
+    require header;
+    assert(Order.Row:c_int == CblasRowMajor,"Enum value for Order.Row does not agree with CblasRowMajor");
+    assert(Order.Col:c_int == CblasColMajor,"Enum value for Order.Col does not agree with CblasColMajor");
+    assert(Op.N:c_int == CblasNoTrans,"Enum value for Op.N does not agree with CblasNoTrans");
+    assert(Op.T:c_int == CblasTrans,"Enum value for Op.T does not agree with CblasTrans");
+    assert(Op.H:c_int == CblasConjTrans,"Enum value for Op.H does not agree with CblasConjTrans");
+    assert(Uplo.Upper:c_int == CblasUpper,"Enum value for Uplo.Upper does not agree with CblasUpper");
+    assert(Uplo.Lower:c_int == CblasLower,"Enum value for Uplo.Lower does not agree with CblasLower");
+    assert(Diag.NonUnit:c_int == CblasNonUnit,"Enum value for Diag.NonUnit does not agree with CblasNonUnit");
+    assert(Diag.Unit:c_int == CblasUnit,"Enum value for Diag.Unit does not agree with CblasUnit");
+    assert(Side.Left:c_int == CblasLeft,"Enum value for Side.Left does not agree with CblasLeft");
+    assert(Side.Right:c_int == CblasRight,"Enum value for Side.Right does not agree with CblasRight");
+  }
 
 
 }
