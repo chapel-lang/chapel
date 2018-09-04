@@ -110,6 +110,9 @@ module SharedObject {
        Default-initialize a :record:`Shared`.
      */
     proc init(type t) {
+      if !isClass(t) then
+        compilerError("Shared only works with classes");
+
       this.t = _to_borrowed(t);
       this.p = nil;
       this.pn = nil;

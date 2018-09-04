@@ -892,7 +892,7 @@ module ChapelBase {
   // And to get 'errors' field from any generic instantiation.
   pragma "no default functions"
   class _EndCountBase {
-    var errors: unmanaged chpl_TaskErrors;
+    var errors: chpl_TaskErrors;
     var taskList: c_void_ptr = _defaultOf(c_void_ptr);
   }
 

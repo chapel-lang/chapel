@@ -5974,6 +5974,17 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       if (manager) {
         AggregateType* at = toAggregateType(type);
 
+        // fail if it's a record
+        if (isRecord(at) && !isManagedPtrType(at)) {
+          const char* name = manager->symbol->name;
+          // skip leading underscore
+          if (name[0] == '_')
+            name = &name[1];
+
+          USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
+                         name, at->symbol->name);
+        }
+
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself
         if (isManagedPtrType(at) && !isManagedPointerInit(typeExpr)) {
