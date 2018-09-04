@@ -38,7 +38,7 @@ record RMyClass {
 
 // Globals
 var globalMyClass:borrowed MyClass;
-var globalRMyClass:borrowed RMyClass;
+var globalRMyClass:RMyClass;
 
 // Test initialization block
 {

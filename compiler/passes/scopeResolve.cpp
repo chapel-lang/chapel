@@ -2323,14 +2323,25 @@ static void resolveUnmanagedBorrows() {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
           TypeSymbol* useTS = ts;
-          if (unmanaged) {
-            if (AggregateType* at = toAggregateType(ts->type)) {
-              if (isClass(at)) {
-                UnmanagedClassType* unm = at->getUnmanagedClass();
-                useTS = unm->symbol;
-              }
+
+          AggregateType* at = toAggregateType(ts->type);
+          if (at && isClass(at)) {
+            if (unmanaged) {
+              UnmanagedClassType* unm = at->getUnmanagedClass();
+              useTS = unm->symbol;
             }
+          } else {
+            const char* type = NULL;
+            if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
+              type = "unmanaged";
+            else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS))
+              type = "borrowed";
+
+            USR_FATAL_CONT(call, "%s can only apply to class types "
+                                 "(%s is not a class type)",
+                                 type, ts->name);
           }
+
           // replace the call with a new symexpr pointing to ts
           call->replace(new SymExpr(useTS));
         }

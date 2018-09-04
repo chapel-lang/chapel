@@ -115,6 +115,9 @@ module OwnedObject {
        Default-initialize a :record:`Owned`.
      */
     proc init(type a) {
+      if !isClass(a) then
+        compilerError("Owned only works with classes");
+
       this.t = _to_borrowed(a);
       this.p = nil;
     }
