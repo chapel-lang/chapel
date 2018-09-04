@@ -1,4 +1,4 @@
-// TODO: note about MKL and lapack routines
+
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
@@ -123,22 +123,35 @@ module LAPACK {
   enum LapackImpl {lapack, mkl, none};
   use LapackImpl;
 
-  /* Specifies which header filename to include, based on the lapack
-     implementation.
+  /*
+    Specifies which header filename to include, based on the lapack
+    implementation.
 
-     Most LAPACK implementations rely on ``lapacke.h``, which is used when
-     ``lapackImpl = lapack``, the default setting.
+    Most LAPACK implementations rely on ``lapacke.h``, which is used when
+    ``lapackImpl = lapack``, the default setting.
 
-      - ``LapackImpl.lapack`` includes ``lapacke.h`` (default)
-      - ``LapackImpl.mkl`` includes ``mkl_lapacke.h``
-      - ``LapackImpl.none`` includes nothing
+     - ``LapackImpl.lapack`` includes ``lapacke.h`` (default)
+     - ``LapackImpl.mkl`` includes ``mkl_lapacke.h``
+     - ``LapackImpl.none`` includes nothing
+
+    .. warning::
+
+      MKL does not currently support the low-level ``LAPACK_*`` interface, due
+      to breaking naming conventions.
 
   */
   config param lapackImpl = LapackImpl.lapack;
 
-  /* Manually specifies the header filename to include. This flag overrides
+  /*
+     Manually specifies the header filename to include. This flag overrides.
      the header determined by ``lapackImpl``.
-   */
+
+     This flag should only be necessary if using an ``LAPACK`` implementation
+     with a unique header name that is not supported by ``lapackImpl``.
+     However, no guarantees can be made about this module working with untested
+     implementations.
+
+  */
   config param lapackHeader = '';
 
   pragma "no doc"

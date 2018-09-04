@@ -193,6 +193,11 @@ module BLAS {
 
   /* Manually specifies the header filename to include. This flag overrides
      the header determined by ``blasImpl``.
+
+     This flag should only be necessary if using an ``BLAS`` implementation
+     with a unique header name that is not supported by ``blasImpl``.
+     However, no guarantees can be made about this module working with untested
+     implementations.
    */
   config param blasHeader = '';
 
