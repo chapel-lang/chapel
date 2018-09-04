@@ -1124,6 +1124,43 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
   }
 }
 
+// TODO: Support gesdd backend as well
+/*
+  Singular Value Decomposition.
+
+
+*/
+proc svd(A: [?Adom] ?t) {
+
+  const (m, n) = A.shape;
+  var minDim = min(m, n);
+  type realType = if t == complex(128) || t == real(64) then real(64) else real(32);
+
+  // Result arrays
+  // Stores singular values, sorted
+  var s: [1..minDim] realType;
+  // Unitary matrix, U
+  var u: [1..m, 1..m] t;
+  // Unitary matrix V^T (or V^H)
+  var vt: [1..n, 1..n] t;
+
+  // if return code 'info' > 0, then this stores unconverged superdiagonal
+  // elements of upper bidiagonal matrix B whose diagonal is in s.
+  var superb: [1..minDim-1] realType;
+
+  // geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, wi, vl, vr);
+  const info = gesvd(lapack_memory_order.row_major, 'A', 'A', A, s, u, vt, superb);
+
+  return (u, s, vt);
+// geev(matrix_order : lapack_memory_order, jobvl : string, jobvr : string, a :
+// [] real(32), wr : [] real(32), wi : [] real(32), vl : [] real(32), vr : []
+// real(32)): c_int{
+
+  // gesvd(matrix_order : lapack_memory_order, jobu : string, jobvt : string,
+  // a : [] real(64), s : [] real(64), u : [] real(64), vt : [] real(64), superb
+  // : [] real(64)): c_int
+}
+
 
 pragma "no doc"
 proc eigvals(A: [] ?t, param left = false, param right = false)
