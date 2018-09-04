@@ -1,4 +1,4 @@
-
+// TODO: note about MKL and lapack routines
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
@@ -88,7 +88,7 @@ Once the details are worked out, compiling is quite simple and nearly identical 
 
   chpl -I$PATH_TO_LAPACKE_INCLUDE_DIR \
        -L$PATH_TO_LIBGFORTRAN -lgfortran \
-       -L$PATH_TO_LAPACK_BINARIES -llapacke -lapack -lrefblas \
+       -L$PATH_TO_LAPACK_BINARIES -llapacke -llapack -lrefblas \
        source.chpl
 
 As an example,
@@ -97,7 +97,7 @@ As an example,
 
   chpl -I$HOME/LAPACK/lapacke/include \
        -L/usr/lib/gcc/stuff -lgfortran \
-       -L$HOME/LAPACK -llapacke -lapack -lrefblas \
+       -L$HOME/LAPACK -llapacke -llapack -lrefblas \
        source.chpl
 
 would be the command to use if Netlibs LAPACK had been built in ``$HOME/LAPACK``, and the libgfortran binary found to be located in ``/usr/lib/gcc/stuff``
