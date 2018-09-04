@@ -270,12 +270,13 @@ static Expr* postFoldPrimop(CallExpr* call) {
     bool parentIsType = isTypeExpr(parentExpr);
     bool subIsType = isTypeExpr(subExpr);
 
+
     if (call->isPrimitive(PRIM_IS_SUBTYPE_ALLOW_VALUES)) {
       if (parentIsType == false && subIsType == false)
-        USR_FATAL(call, "Subtype query requires a type");
+        USR_FATAL_CONT(call, "Subtype query requires a type");
     } else {
       if (parentIsType == false || subIsType == false)
-        USR_FATAL(call, "Subtype queries require two types");
+        USR_FATAL_CONT(call, "Subtype queries require two types");
     }
 
     Type* st = subExpr->getValType();
