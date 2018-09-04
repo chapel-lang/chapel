@@ -1,7 +1,6 @@
 use LinearAlgebra;
 use TestUtils;
 
-// TODO: real(32), real(64), complex(64)
 // TODO: AssertEqual -> AssertApproximate
 
 {
@@ -12,7 +11,7 @@ use TestUtils;
   var (u, s, vt) = svd(A);
 
   var A2 = u.dot(diag(s)).dot(vt);
-  assertEqual(A, A2, 's');
+  assertAlmostEqual(A, A2, 'svd - real(32)');
 }
 
 {
@@ -23,7 +22,7 @@ use TestUtils;
   var (u, s, vt) = svd(A);
 
   var A2 = u.dot(diag(s)).dot(vt);
-  assertEqual(A, A2, 's');
+  assertAlmostEqual(A, A2, 'svd - real(64)');
 }
 
 {
@@ -33,8 +32,9 @@ use TestUtils;
 
   var (u, s, vt) = svd(A);
 
-  var A2 = u.dot(diag(s)).dot(vt);
-  assertEqual(A, A2, 's');
+  var sComplex = s:complex(64);
+  var A2 = u.dot(diag(sComplex)).dot(vt);
+  assertAlmostEqual(A, A2, 'svd - complex(64)');
 }
 
 {
@@ -44,6 +44,7 @@ use TestUtils;
 
   var (u, s, vt) = svd(A);
 
-  var A2 = u.dot(diag(s)).dot(vt);
-  assertEqual(A, A2, 's');
+  var sComplex = s:complex(128);
+  var A2 = u.dot(diag(sComplex)).dot(vt);
+  assertAlmostEqual(A, A2, 'svd - complex(128)');
 }
