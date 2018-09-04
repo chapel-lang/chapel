@@ -3,7 +3,7 @@
 name = "masonLA"
 version = "0.1.0"
 chplVersion = "1.18.0"
-compopts = "--ccflags -openblas --ccflags -llapack --ccflags -w"
+compopts = "-lopenblas --ccflags -w"
 
 [dependencies]
 
