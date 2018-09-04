@@ -461,9 +461,17 @@ proc _array.elementDiv(A: [?Adom]) where isDefaultRectangularArr(A) && isDefault
     Generic matrix multiplication, ``A`` and ``B`` can be a matrix, vector, or
     scalar.
 
-    When ``A`` is a vector and ``B`` is a matrix, this function implicitly
-    computes ``dot(transpose(A), B)``, which may not be as efficient as
-    passing ``A`` and ``B`` in the reverse order.
+    .. note::
+
+      When ``A`` is a vector and ``B`` is a matrix, this function implicitly
+      computes ``dot(transpose(A), B)``, which may not be as efficient as
+      passing ``A`` and ``B`` in the reverse order.
+
+    .. note::
+
+      Dense matrix-matrix and matrix-vector multiplication will utilize the
+      :mod:`BLAS` module for improved performance, if available. Compile with
+      ``--set blasImpl=none`` to opt out of the :mod:`BLAS` implementation.
 */
 proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(B) {
   // vector-vector
@@ -474,7 +482,15 @@ proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(
     return matMult(A, B);
 }
 
-/* Compute the dot-product */
+/* Compute the dot-product
+
+  .. note::
+
+    Dense matrix-matrix and matrix-vector multiplication will utilize the
+    :mod:`BLAS` module for improved performance, if available. Compile with
+    ``--set blasImpl=none`` to opt out of the :mod:`BLAS` implementation.
+
+*/
 proc _array.dot(A: []) where isDefaultRectangularArr(this) && isDefaultRectangularArr(A) {
   return LinearAlgebra.dot(this, A);
 }
@@ -535,7 +551,7 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
              else {Adom.dim(1)};
 
   var Y: [Ydom] eltType;
-  gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
+  BLAS.gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
   return Y;
 }
 
@@ -551,7 +567,7 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
     halt("Mismatched shape in matrix-matrix multiplication");
 
   var C: [Adom.dim(1), Bdom.dim(2)] eltType;
-  gemm(A, B, C, 1:eltType, 0:eltType);
+  BLAS.gemm(A, B, C, 1:eltType, 0:eltType);
   return C;
 }
 
@@ -627,8 +643,16 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 }
 
 
-/* Return the matrix ``A`` to the ``bth`` power, where ``b`` is a positive
-   integral type. */
+/*
+  Return the matrix ``A`` to the ``bth`` power, where ``b`` is a positive
+  integral type.
+
+  .. note::
+
+    ``matPow`` will utilize the :mod:`BLAS` module for improved performance, if
+    available. Compile with ``--set blasImpl=none`` to opt out of the
+    :mod:`BLAS` implementation.
+*/
 proc matPow(A: [], b) where isNumeric(b) {
   // TODO -- flatten recursion into while-loop
   if !isIntegral(b) then
@@ -640,6 +664,7 @@ proc matPow(A: [], b) where isNumeric(b) {
   return _expBySquaring(A, b).value;
 }
 
+pragma "no doc"
 // This is a workaround for undesired use
 // of runtime-type of the input array x below
 // in the return type. See also issue #9438.
@@ -963,6 +988,11 @@ proc trace(A: [?D] ?eltType) {
    triangular factor.  Matrix ``A`` is not modified.  Returns an array with
    the same shape as argument ``A`` with the lower or upper triangular
    Cholesky factorization of ``A``.
+
+    .. note::
+
+      This procedure depends on the :mod:`LAPACK` module, and will generate a
+      compiler error if ``lapackImpl`` is ``none``.
  */
 proc cholesky(A: [] ?t, lower = true)
   where A.rank == 2 && isLAPACKType(t) && usingLAPACK
@@ -972,12 +1002,13 @@ proc cholesky(A: [] ?t, lower = true)
 
   var copy = A;
   const uploStr = if lower then "L" else "U";
-  potrf(lapack_memory_order.row_major, uploStr, copy);
+  LAPACK.potrf(lapack_memory_order.row_major, uploStr, copy);
 
   // tril and triu make/return an extra copy.  Should we zero the unused
   // triangle of the array manually instead to avoid the copy?
   return if lower then tril(copy) else triu(copy);
 }
+
 
 pragma "no doc"
 proc cholesky(A: [] ?t, lower = true)
@@ -1003,6 +1034,11 @@ proc cholesky(A: [] ?t, lower = true)
 
    * If ``left`` and ``right`` are both ``false`` only the eigenvalues are
      computed, and returned as a single array.
+
+    .. note::
+
+      This procedure depends on the :mod:`LAPACK` module, and will generate a
+      compiler error if ``lapackImpl`` is ``none``.
 
  */
 proc eigvals(A: [] ?t, param left = false, param right = false)
@@ -1053,13 +1089,13 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
 
   if !left && !right {
     var vl, vr: [1..1, 1..n] t;
-    geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
+    LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
     var eigVals = convertToCplx(wr, wi);
     return eigVals;
   } else if left && !right {
     var vl: [1..n, 1..n] t;
     var vr: [1..1, 1..n] t;
-    geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, wi, vl, vr);
+    LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, wi, vl, vr);
 
     var eigVals = convertToCplx(wr, wi);
     var vlcplx = flattenCplxEigenVecs(wi, vl);
@@ -1068,7 +1104,7 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
   } else if right && !left {
     var vl: [1..1, 1..n] t;
     var vr: [1..n, 1..n] t;
-    geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, wi, vl, vr);
+    LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, wi, vl, vr);
 
     var eigVals = convertToCplx(wr, wi);
     var vrcplx = flattenCplxEigenVecs(wi, vr);
@@ -1078,7 +1114,7 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
     // left && right
     var vl: [1..n, 1..n] t;
     var vr: [1..n, 1..n] t;
-    geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, wi, vl, vr);
+    LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, wi, vl, vr);
 
     var eigVals = convertToCplx(wr, wi);
     var vlcplx = flattenCplxEigenVecs(wi, vl);
@@ -1088,6 +1124,8 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
   }
 }
 
+
+pragma "no doc"
 proc eigvals(A: [] ?t, param left = false, param right = false)
   where isRealType(t) && A.domain.rank == 2 && !usingLAPACK {
   compilerError("eigvals() requires LAPACK");
@@ -1344,9 +1382,11 @@ module Sparse {
       Generic matrix multiplication, ``A`` and ``B`` can be a scalar, dense
       vector, or sparse matrix.
 
-      When ``A`` is a vector and ``B`` is a matrix, this function implicitly
-      computes ``dot(transpose(A), B)``, which may not be as efficient as
-      passing ``A`` and ``B`` in the reverse order.
+      .. note::
+
+        When ``A`` is a vector and ``B`` is a matrix, this function implicitly
+        computes ``dot(transpose(A), B)``, which may not be as efficient as
+        passing ``A`` and ``B`` in the reverse order.
 
   */
   proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isSparseArr(B) || isSparseArr(A) {
@@ -1468,6 +1508,7 @@ module Sparse {
   }
 
 
+  pragma "no doc"
   /* Populate indPtr and total nnz (last element of indPtr) */
   proc pass1(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr) {
     // TODO: Parallelize - mask -> atomic ints,
@@ -1509,6 +1550,7 @@ module Sparse {
     }
   }
 
+  pragma "no doc"
   /* Populate indices and data */
   proc pass2(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr, ref indices, ref data) {
     // TODO: Parallelize - next, sums -> task-private stacks
