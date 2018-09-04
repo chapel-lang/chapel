@@ -149,6 +149,32 @@ private param usingLAPACK = LAPACK.header != '';
 // TODO: compilerError if matrices are distributed
 
 //
+// Error hierarchy
+//
+
+/* Base :mod:`Error` type for ``LinearAlgebra`` errors. */
+class LinearAlgebraError : Error {
+    /* Stores message to be emitted upon uncaught throw */
+    var info: string;
+
+    pragma "no doc"
+    proc init() { }
+
+    pragma "no doc"
+    proc init(info: string) {
+      this.info = info;
+    }
+
+    pragma "no doc"
+    override proc message() {
+      if info.isEmptyString() then
+        return "LinearAlgebra error";
+      else
+        return "LinearAlgebra error : " + info;
+    }
+}
+
+//
 // Matrix and Vector Initializers
 //
 
@@ -1134,6 +1160,10 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
     A = U * s * Vt
 
   Will throw an error if the SVD computation does not converge.
+
+  .. note::
+
+   The ``A`` array will be copied in this computation.
 */
 proc svd(A: [?Adom] ?t) throws
   where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
@@ -1146,6 +1176,7 @@ proc svd(A: [?Adom] ?t) throws
   type realType = if t == complex(128) || t == real(64) then real(64)
                   else real(32);
 
+  // TODO: Support argument to allow overwriting A as performance optimization
   // Copy over A since it gets destroyed during SVD
   var Acopy: [Adom] t = A;
 
@@ -1159,14 +1190,14 @@ proc svd(A: [?Adom] ?t) throws
   var vt: [1..n, 1..n] t;
 
   // if return code 'info' > 0, then this stores unconverged superdiagonal
-  // elements of upper bidiagonal matrix B whose diagonal is in s.
+  // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.
   var superb: [1..minDim-1] realType;
 
   const info = gesvd(lapack_memory_order.row_major, 'A', 'A', Acopy, s, u, vt, superb);
 
   if info != 0 {
-    writeln('SVD computation did not converge');
-    throw new Error();
+    var msg = 'SVD computation did not converge. Returned non-zero value for "info":' + info:string;
+    throw new LinearAlgebraError(msg);
   }
 
   return (u, s, vt);
