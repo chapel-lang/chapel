@@ -1131,16 +1131,26 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
   Factorizes the matrix ``A`` into two unitary matrices, ``U`` and ``Vt`` and
   a vector of singular values ``s``, such that::
 
-    A = U.dot(s).dot(Vt);
+    A = U * s * Vt
 
+  Will throw an error if the SVD computation does not converge.
 */
-proc svd(A: [?Adom] ?t) {
+proc svd(A: [?Adom] ?t) throws
+  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
+{
 
   const (m, n) = A.shape;
   var minDim = min(m, n);
-  type realType = if t == complex(128) || t == real(64) then real(64) else real(32);
 
-  // Result arrays
+  /* real(32) or real(64) for singular values and superb */
+  type realType = if t == complex(128) || t == real(64) then real(64)
+                  else real(32);
+
+  // Copy over A since it gets destroyed during SVD
+  var Acopy: [Adom] t = A;
+
+  // Results
+
   // Stores singular values, sorted
   var s: [1..minDim] realType;
   // Unitary matrix, U
@@ -1152,9 +1162,12 @@ proc svd(A: [?Adom] ?t) {
   // elements of upper bidiagonal matrix B whose diagonal is in s.
   var superb: [1..minDim-1] realType;
 
-  const info = gesvd(lapack_memory_order.row_major, 'A', 'A', A, s, u, vt, superb);
+  const info = gesvd(lapack_memory_order.row_major, 'A', 'A', Acopy, s, u, vt, superb);
 
-  // TODO: Raise error if info != 0 ?
+  if info != 0 {
+    writeln('SVD computation did not converge');
+    throw new Error();
+  }
 
   return (u, s, vt);
 }
