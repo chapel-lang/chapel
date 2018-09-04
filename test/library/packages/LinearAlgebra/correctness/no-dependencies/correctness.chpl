@@ -1,11 +1,9 @@
 use LinearAlgebra;
 use TestUtils;
 
-/* LinearAlgebra correctness tests
+/* LinearAlgebra correctness tests that do not depend on BLAS/LAPACK
 
    Any output denotes failure
-
-   Many of these tests are trivial and can be expanded upon in the future.
 */
 
 //

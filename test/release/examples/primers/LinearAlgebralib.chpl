@@ -10,22 +10,24 @@
 use LinearAlgebra;
 
 /*
-  Compiling
-  ---------
 
-  The :mod:`LinearAlgebra` module uses the :mod:`BLAS` module, so it requires
-  a BLAS implementation to be available on the system and additional compiler
-  flags to specify paths to that implementation.
+  Compiling with Linear Algebra
+  -----------------------------
 
-  Compiling a Chapel program using the :mod:`LinearAlgebra` module should look
-  something like this:
+  Some of the linear algebra module procedures rely on the :mod:`BLAS` and
+  :mod:`LAPACK` modules.  If using routines that rely on these modules,
+  be sure to have a BLAS and LAPACK implementation available on your system.
+  See the :mod:`BLAS` and :mod:`LAPACK` documentation for further details.
 
-  .. code-block:: sh
+  To explicitly opt out of using the :mod:`BLAS` and :mod:`LAPACK` procedures,
+  compile your Chapel program with the flags:
 
-      chpl -I$PATH_TO_CBLAS_DIR \
-           -L$PATH_TO_BLAS_LIBS -lblas LinearAlgebralib.chpl
+  .. code-block:: bash
 
-  See the :mod:`BLAS` documentation for further details.
+    chpl --set blasImpl=none --set lapackImpl=none myProgram.chpl
+
+  This will result in a cleaner compiler error when using a procedure that is
+  only available with :mod:`BLAS` or :mod:`LAPACK`.
 
 */
 
@@ -158,12 +160,6 @@ writeln(a);
   Below are some examples. See the documentation starting at
   :proc:`LinearAlgebra.Vector` for a comprehensive list of the available
   factory functions.
-
-  .. note::
-
-     The LinearAlgebra functions create arrays with ``0``-based indices by
-     default.  This default behavior differs from native Chapel array creation,
-     which defaults to ``1``-based arrays.
 
 */
 
@@ -406,11 +402,6 @@ writeln(isTriu(upper, k=1));    // false (k=1 does not include diagonal)
   One potential *gotcha* is **Promotion Flattening**, which is described in the
   :ref:`LinearAlgebraInterface` documentation.
 
-  Another is that this module defaults to 0-based indices when no range or
-  domain is specified, while Chapel arrays default to 1-based indices.
-  This can be problematic when using both Chapel array creation syntax
-  :mod:`LinearAlgebra` factory functions.
-
 */
 
 /*
@@ -538,7 +529,7 @@ var M2 = CSRMatrix({0..#3, 0..#3}); // from a dense domain
 var M3 = CSRMatrix(M1);             // From a CSR matrix
 const I = eye(3,3);
 var M4 = CSRMatrix(I);              // From a dense matrix
-                                    // Indices holding non-zero elements are 
+                                    // Indices holding non-zero elements are
                                     // added to M4's sparse domain
 
 
