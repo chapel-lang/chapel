@@ -614,7 +614,7 @@ proc locale.cwd(out error: syserr): string {
 proc exists(name: string): bool throws {
   extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
 
-  if (name == "") {
+  if (name.isEmptyString()) {
     // chpl_fs_exists uses stat to determine if a file exists, which throws an
     // error when "" is passed to it.  Check it here early and return false
     // like Python does
@@ -1047,7 +1047,7 @@ proc isFile(out error:syserr, name:string):bool {
 proc isLink(name: string): bool throws {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
 
-  if (name == "") {
+  if (name.isEmptyString()) {
     // chpl_fs_is_link uses lstat to determine if a path is a link, which throws
     // an error when "" is passed to it.  Check it here early and return false
     // like Python does
