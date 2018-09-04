@@ -1,9 +1,9 @@
 # Development Makefile
-# - assumes MKL BLAS/LAPACK
+# - assumes openblas / lapack
 # - assumes CFLAGS / LDFLAGS are set
 #
 LAPACKFLAGS = $(CFLAGS) $(LDFLAGS) -llapack -lblas
-CHPLFLAGS += --ccflags -Wno-enum-conversion -sisBLAS_MKL=true
+CHPLFLAGS += --ccflags -Wno-enum-conversion
 
 all: correctness test_identities1 testEigen testCholesky
 
