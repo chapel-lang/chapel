@@ -9,7 +9,7 @@ record Foo {
     t = tVal;
   }
 
-  proc init(xVal) where !isSubtype(xVal, Foo) {
+  proc init(xVal) where !isSubtype(xVal.type, Foo) {
     t = xVal.type;
     x = xVal;
   }
