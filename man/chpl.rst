@@ -559,6 +559,11 @@ OPTIONS
     warning is enabled by default and will be triggered for each user-defined
     constructor encountered.
 
+**--[no-]warn-unstable**
+
+    Enable [disable] warnings for code that has recently or will recently
+    change in meaning due to language changes.
+
 **--[no-]warn-special**
 
     Enable [disable] all special compiler warnings issued due to syntax and
