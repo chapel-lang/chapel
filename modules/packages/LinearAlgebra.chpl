@@ -152,7 +152,7 @@ private param usingLAPACK = LAPACK.header != '';
 // Error hierarchy
 //
 
-/* Base :mod:`Error` type for ``LinearAlgebra`` errors. */
+/* Base ``Error`` type for ``LinearAlgebra`` errors. */
 class LinearAlgebraError : Error {
     /* Stores message to be emitted upon uncaught throw */
     var info: string;
@@ -1150,7 +1150,6 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
   }
 }
 
-// TODO: Support gesdd backend as well
 /*
   Singular Value Decomposition.
 
@@ -1159,11 +1158,12 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
 
     A = U * s * Vt
 
-  Will throw an error if the SVD computation does not converge.
+  Will throw a ``LinearAlgebraError`` if the SVD computation does not converge
+  or an illegal argument (such as ``NAN``) is given.
 
   .. note::
 
-   The ``A`` array will be copied in this computation.
+   A temporary copy of ``A`` will be created within this computation.
 */
 proc svd(A: [?Adom] ?t) throws
   where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
@@ -1193,6 +1193,7 @@ proc svd(A: [?Adom] ?t) throws
   // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.
   var superb: [1..minDim-1] realType;
 
+  // TODO: Support gesdd for better performance
   const info = LAPACK.gesvd(lapack_memory_order.row_major, 'A', 'A', Acopy, s, u, vt, superb);
 
   if info > 0 {
