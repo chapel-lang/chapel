@@ -681,16 +681,28 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
     ensureLibDirExists();
     // In --library compilation, put the generated library in the library
     // directory
-    fprintf(makefile.fptr, "BINNAME = %s/%s%s\n\n",
-            libDir,
+    fprintf(makefile.fptr, "BINNAME = %s/", libDir);
+    int libLength = strlen("lib");
+    bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+    if (!startsWithLib) {
+      fprintf(makefile.fptr, "lib");
+    }
+    fprintf(makefile.fptr, "%s%s\n\n",
             executableFilename,
             exeExt);
+    // BLC: This munging is done so that cp won't complain if the source
+    // and destination are the same file (e.g., myprogram and ./myprogram)
+    if (startsWithLib) {
+      tmpbin = astr(tmpDirName, "/", strippedExeFilename, ".tmp", exeExt);
+    } else {
+      tmpbin = astr(tmpDirName, "/lib", strippedExeFilename, ".tmp", exeExt);
+    }
   } else {
     fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
+    // BLC: This munging is done so that cp won't complain if the source
+    // and destination are the same file (e.g., myprogram and ./myprogram)
+    tmpbin = astr(tmpDirName, "/", strippedExeFilename, ".tmp", exeExt);
   }
-  // BLC: This munging is done so that cp won't complain if the source
-  // and destination are the same file (e.g., myprogram and ./myprogram)
-  tmpbin = astr(tmpDirName, "/", strippedExeFilename, ".tmp", exeExt);
   if( tmpbinname ) *tmpbinname = tmpbin;
   fprintf(makefile.fptr, "TMPBINNAME = %s\n", tmpbin);
   // BLC: We generate a TMPBINNAME which is the name that will be used
