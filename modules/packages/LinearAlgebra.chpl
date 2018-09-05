@@ -149,6 +149,32 @@ private param usingLAPACK = LAPACK.header != '';
 // TODO: compilerError if matrices are distributed
 
 //
+// Error hierarchy
+//
+
+/* Base ``Error`` type for ``LinearAlgebra`` errors. */
+class LinearAlgebraError : Error {
+    /* Stores message to be emitted upon uncaught throw */
+    var info: string;
+
+    pragma "no doc"
+    proc init() { }
+
+    pragma "no doc"
+    proc init(info: string) {
+      this.info = info;
+    }
+
+    pragma "no doc"
+    override proc message() {
+      if info.isEmptyString() then
+        return "LinearAlgebra error";
+      else
+        return "LinearAlgebra error : " + info;
+    }
+}
+
+//
 // Matrix and Vector Initializers
 //
 
@@ -1122,6 +1148,64 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
 
     return (eigVals, vlcplx, vrcplx);
   }
+}
+
+/*
+  Singular Value Decomposition.
+
+  Factorizes the matrix ``A`` into two unitary matrices, ``U`` and ``Vt`` and
+  a vector of singular values ``s``, such that::
+
+    A = U * s * Vt
+
+  Will throw a ``LinearAlgebraError`` if the SVD computation does not converge
+  or an illegal argument (such as ``NAN``) is given.
+
+  .. note::
+
+   A temporary copy of ``A`` will be created within this computation.
+*/
+proc svd(A: [?Adom] ?t) throws
+  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
+{
+
+  const (m, n) = A.shape;
+  var minDim = min(m, n);
+
+  /* real(32) or real(64) for singular values and superb */
+  type realType = if t == complex(128) || t == real(64) then real(64)
+                  else real(32);
+
+  // TODO: Support argument to allow overwriting A as performance optimization
+  // Copy over A since it gets destroyed during SVD
+  var Acopy: [Adom] t = A;
+
+  // Results
+
+  // Stores singular values, sorted
+  var s: [1..minDim] realType;
+  // Unitary matrix, U
+  var u: [1..m, 1..m] t;
+  // Unitary matrix V^T (or V^H)
+  var vt: [1..n, 1..n] t;
+
+  // if return code 'info' > 0, then this stores unconverged superdiagonal
+  // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.
+  var superb: [1..minDim-1] realType;
+
+  // TODO: Support gesdd for better performance
+  const info = LAPACK.gesvd(lapack_memory_order.row_major, 'A', 'A', Acopy, s, u, vt, superb);
+
+  if info > 0 {
+    var msg = 'SVD computation did not converge. Number of superdiagonals of the intermediate bidiagonal that did not converge to zero: ' + info:string;
+    throw new LinearAlgebraError(msg);
+  } else if info < 0 {
+    var msg = 'SVD received an illegal argument in LAPACK.gesvd() argument position: ' + info:string;
+    throw new LinearAlgebraError(msg);
+  }
+
+
+  return (u, s, vt);
 }
 
 
