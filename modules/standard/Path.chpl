@@ -236,12 +236,12 @@ proc dirname(name: string): string {
   return splitPath(name)[1];
 }
 
-/* Expands any environment variables in the path of the form `$<name>` or
-   `${<name>}` into their values.  If <name> does not exist, they are left
+/* Expands any environment variables in the path of the form ``$<name>`` or
+   ``${<name>}`` into their values.  If ``<name>`` does not exist, they are left
    in place. Returns the path which includes these expansions.
 
    :arg path: a string representation of a path, which may or may not include
-                   `$<name>` or `${<name>}`.
+                   ``$<name>`` or ``${<name>}``.
    :type path: `string`
 
    :return: `path`, having replaced all references to environment variables with
