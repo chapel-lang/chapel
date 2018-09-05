@@ -153,8 +153,6 @@ module UtilMisc_forDocs {
     __primitive("is_proper_subtype", super, sub);
   }
 
-  // Note, below documentation isn't rendered currently!
-
   /* :returns: isProperSubtype(a,b) */
   proc <(type a, type b) param {
     return isProperSubtype(a,b);
