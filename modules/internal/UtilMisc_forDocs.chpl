@@ -137,17 +137,17 @@ module UtilMisc_forDocs {
        * `sub` is a type that coerces to `super`
 
      Note that :proc:`isSubtype` is also available as
-     `<=` and `>=` on types.
+     :proc:`<=` and :proc:`>=` on types.
      */
   proc isSubtype(type sub, type super) param {
     __primitive("is_subtype", super, sub);
   }
 
-  /* As with :proc:`isSubtype` but returns `false` if
+  /* Similar to :proc:`isSubtype` but returns `false` if
      `sub` and `super` refer to the same type.
 
      Note that :proc:`isProperSubtype` is alse available as
-     `<` and `>` on types;
+     :proc:`<` and :proc:`>` on types;
      */
   proc isProperSubtype(type sub, type super) param {
     __primitive("is_proper_subtype", super, sub);
