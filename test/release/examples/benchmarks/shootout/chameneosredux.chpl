@@ -64,8 +64,8 @@ record Population {
   // an array of chameneos objects representing the population
   //
   var chameneos = [i in 1..size]
-                    new Chameneos(i, if size == 10 then colors10[i]
-                                                   else ((i-1)%3): Color);
+                    new unmanaged Chameneos(i, if size == 10 then colors10[i]
+                                                             else ((i-1)%3): Color);
 
   //
   // Print the colors of the current population.
@@ -101,6 +101,14 @@ record Population {
     
     spellInt(+ reduce chameneos.meetings);
     writeln();
+  }
+
+  //
+  // Delete the chameneos objects.
+  //
+  proc deinit() {
+    for c in chameneos do
+      delete c;
   }
 }
 
