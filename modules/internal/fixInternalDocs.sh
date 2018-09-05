@@ -254,3 +254,21 @@ removeUsage $file
 file=ChapelError.rst
 fixTitle "Errors" $file
 removeUsage $file
+
+## End of ChapelError ##
+
+## OwnedObject ##
+file=OwnedObject.rst
+fixTitle "owned" $file
+replace "_owned" "owned" $file
+replace "chpl_t" "t" $file
+removeUsage $file
+## End of OwnedObject ##
+
+## SharedObject ##
+file=SharedObject.rst
+fixTitle "shared" $file
+replace "_shared" "shared" $file
+replace "chpl_t" "t" $file
+removeUsage $file
+## End of SharedObject ##
