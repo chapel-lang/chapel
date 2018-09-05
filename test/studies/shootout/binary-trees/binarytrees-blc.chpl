@@ -28,36 +28,30 @@ proc main() {
   //
   // Build the long-lived tree.
   //
-  var llTree: owned Tree;
+  const llTree = new Tree(maxDepth);
 
-  cobegin with (ref llTree) {
-    llTree = new owned Tree(maxDepth);
+  //
+  // Iterate over the depths in parallel, dynamically assigning them
+  // to tasks.  At each depth, create the required trees, compute
+  // their sums, and free them.
+  //
+  forall depth in dynamic(depths) {
+    const iterations = 2**(maxDepth - depth + minDepth);
+    var sum = 0;
 
-    {
-      //
-      // Iterate over the depths in parallel, dynamically assigning them
-      // to tasks.  At each depth, create the required trees, compute
-      // their sums, and free them.
-      //
-      forall depth in dynamic(depths) {
-        const iterations = 2**(maxDepth - depth + minDepth);
-        var sum = 0;
-
-        for i in 1..iterations {
-          const t = new Tree(depth);
-          sum += t.sum();
-        }
-        stats[depth] = (iterations, sum);
-      }
-
-      //
-      // Print out the stats for the trees of varying depths.
-      //
-      for depth in depths do
-        writeln(stats[depth](1), "\t trees of depth ", depth, "\t check: ",
-                stats[depth](2));
+    for i in 1..iterations {
+      const t = new Tree(depth);
+      sum += t.sum();
     }
+    stats[depth] = (iterations, sum);
   }
+
+  //
+  // Print out the stats for the trees of varying depths.
+  //
+  for depth in depths do
+    writeln(stats[depth](1), "\t trees of depth ", depth, "\t check: ",
+            stats[depth](2));
 
   //
   // Checksum the long-lived tree, print its stats, and free it.
@@ -70,15 +64,15 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  var left, right: unmanaged Tree;
+  var left, right: owned Tree;
 
   //
   // A Tree-building initializer
   //
   proc init(depth) {
     if depth > 0 {
-      left  = new unmanaged Tree(depth-1);
-      right = new unmanaged Tree(depth-1);
+      left  = new owned Tree(depth-1);
+      right = new owned Tree(depth-1);
     }
   }
 
@@ -89,8 +83,6 @@ class Tree {
     var sum = 1;
     if left {
       sum += left.sum() + right.sum();
-      delete left;
-      delete right;
     }
     return sum;
   }

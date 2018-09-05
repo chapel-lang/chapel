@@ -64,15 +64,15 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  var left, right: owned Tree;
+  var left, right: unmanaged Tree;
 
   //
   // A Tree-building initializer
   //
   proc init(depth) {
     if depth > 0 {
-      left  = new owned Tree(depth-1);
-      right = new owned Tree(depth-1);
+      left  = new unmanaged Tree(depth-1);
+      right = new unmanaged Tree(depth-1);
     }
   }
 
@@ -83,6 +83,7 @@ class Tree {
     var sum = 1;
     if left {
       sum += left.sum() + right.sum();
+      delete left, right;
     }
     return sum;
   }
