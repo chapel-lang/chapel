@@ -3290,7 +3290,8 @@ static void expandQueryForActual(FnSymbol*  fn,
       INT_ASSERT(ts);
       Expr* subtype = new SymExpr(ts);
       addToWhereClause(fn, formal,
-                       new CallExpr(PRIM_IS_SUBTYPE, subtype, query->copy()));
+                       new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
+                                    subtype, query->copy()));
     } else {
       INT_ASSERT("case not handled");
     }
@@ -3306,7 +3307,8 @@ static void expandQueryForActual(FnSymbol*  fn,
     }
     // Add check that actual type satisfies
     addToWhereClause(fn, formal,
-                     new CallExpr(PRIM_IS_SUBTYPE, subtype, query->copy()));
+                     new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
+                                  subtype, query->copy()));
     // Recurse to handle any nested DefExprs
     expandQueryForGenericTypeSpecifier(fn, symExprs, formal,
                                        subcall, query);
@@ -3349,7 +3351,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     Type* parentType = borrowed?dtBorrowed:dtUnmanaged;
 
     // Check that whatever it has right borrow / unmanaged nature
-    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_SUBTYPE,
+    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
                                               parentType->symbol, queried));
 
     Type* theType = NULL;

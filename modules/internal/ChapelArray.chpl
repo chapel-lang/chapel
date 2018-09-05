@@ -1988,7 +1988,7 @@ module ChapelArray {
     return d;
   }
 
-  proc +(i, d: domain) where isSubtype(i,index(d)) && isIrregularDom(d) {
+  proc +(i, d: domain) where isSubtype(i.type,index(d)) && isIrregularDom(d) {
     d.add(i);
     return d;
   }

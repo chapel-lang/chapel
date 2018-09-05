@@ -2166,9 +2166,8 @@ static void setupDefaultFilenames() {
       if (strlen(filename) >= sizeof(executableFilename) - 3) {
         INT_FATAL("input filename exceeds executable filename buffer size");
       }
-      strcpy(executableFilename, "lib");
-      strncat(executableFilename, filename,
-              sizeof(executableFilename)-strlen(executableFilename)-1);
+      strncpy(executableFilename, filename,
+              sizeof(executableFilename)-1);
 
       if (fLibraryPython && pythonModulename[0] == '\0') {
         strncpy(pythonModulename, filename, sizeof(pythonModulename)-1);

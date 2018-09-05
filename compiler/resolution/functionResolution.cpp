@@ -5950,19 +5950,21 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
           manager = dtUnmanaged;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
           if (fLegacyNew == false && fDefaultUnmanaged == false) {
-            gdbShouldBreakHere();
-            USR_WARN(newExpr, "result of new %s is now managed by default",
-                              type->symbol->name);
-            USR_PRINT(newExpr, "'new unmanaged %s' gives old behavior",
-                               type->symbol->name);
-            USR_PRINT(newExpr, "'new borrowed %s' is the new default",
-                               type->symbol->name);
-            USR_PRINT(newExpr, "'new owned %s', 'new shared %s' also available",
-                               type->symbol->name, type->symbol->name);
-            USR_PRINT(newExpr, "get more help with --warn-unstable",
-                               type->symbol->name);
-
             manager = dtBorrowed;
+            if (ignore_warnings == false) {
+              // This warning should go away after the 1.18 release.
+              gdbShouldBreakHere();
+              USR_WARN(newExpr, "result of new %s is now managed by default",
+                                type->symbol->name);
+              USR_PRINT(newExpr, "'new unmanaged %s' gives old behavior",
+                                 type->symbol->name);
+              USR_PRINT(newExpr, "'new borrowed %s' is the new default",
+                                 type->symbol->name);
+              USR_PRINT(newExpr, "'new owned %s', 'new shared %s' also available",
+                                 type->symbol->name, type->symbol->name);
+              USR_PRINT(newExpr, "get more help with --warn-unstable",
+                                 type->symbol->name);
+            }
           }
         }
       }
@@ -5973,6 +5975,17 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // only the canonical class types.
       if (manager) {
         AggregateType* at = toAggregateType(type);
+
+        // fail if it's a record
+        if (isRecord(at) && !isManagedPtrType(at)) {
+          const char* name = manager->symbol->name;
+          // skip leading underscore
+          if (name[0] == '_')
+            name = &name[1];
+
+          USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
+                         name, at->symbol->name);
+        }
 
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself

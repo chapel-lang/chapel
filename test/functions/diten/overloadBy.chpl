@@ -1,4 +1,4 @@
-proc by(a, b) where !isSubtype(a,range) {
+proc by(a, b) where !isSubtype(a.type,range) {
   return a * b;
 }
 

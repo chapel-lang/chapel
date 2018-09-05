@@ -21,12 +21,12 @@ var d = new Shared(new Foo(4));
 var copyOfD = d;
 var anotherCopOfD = d;
 
-writeln(c.pn);
-writeln(d.pn);
+writeln(c.chpl_pn);
+writeln(d.chpl_pn);
 
 c <=> d;
 
 writeln(c);
 writeln(d);
-writeln(c.pn);
-writeln(d.pn);
+writeln(c.chpl_pn);
+writeln(d.chpl_pn);

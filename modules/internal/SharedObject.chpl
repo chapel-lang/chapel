@@ -94,25 +94,28 @@ module SharedObject {
   pragma "managed pointer"
   record _shared {
     pragma "no doc"
-    type t;              // contained type (class type)
+    type chpl_t;         // contained type (class type)
 
     pragma "no doc"
     pragma "owned"
-    var p:t;             // contained pointer (class type)
+    var chpl_p:chpl_t;   // contained pointer (class type)
 
-    forwarding p;
+    forwarding chpl_p;
 
     pragma "no doc"
     pragma "owned"
-    var pn:unmanaged ReferenceCount; // reference counter
+    var chpl_pn:unmanaged ReferenceCount; // reference counter
 
     /*
        Default-initialize a :record:`Shared`.
      */
     proc init(type t) {
-      this.t = _to_borrowed(t);
-      this.p = nil;
-      this.pn = nil;
+      if !isClass(t) then
+        compilerError("Shared only works with classes");
+
+      this.chpl_t = _to_borrowed(t);
+      this.chpl_p = nil;
+      this.chpl_pn = nil;
     }
 
     /*
@@ -124,7 +127,7 @@ module SharedObject {
        :arg p: the class instance to manage. Must be of class type.
      */
     proc init(p : borrowed) {
-      this.t = p.type;
+      this.chpl_t = p.type;
 
       // Boost version default-initializes px and pn
       // and then swaps in different values.
@@ -134,8 +137,8 @@ module SharedObject {
       if p != nil then
         rc = new unmanaged ReferenceCount();
 
-      this.p = p;
-      this.pn = rc;
+      this.chpl_p = p;
+      this.chpl_pn = rc;
 
       this.complete();
 
@@ -145,11 +148,13 @@ module SharedObject {
       // since it would refer to `this` as a whole here.
     }
 
-    proc init(p: ?T) where isClass(T) == false && isSubtype(T, _shared) == false &&
-                     isIterator(p) == false {
+    proc init(p: ?T)
+    where isClass(T) == false &&
+          isSubtype(T, _shared) == false &&
+          isIterator(p) == false {
       compilerError("Shared only works with classes");
-      this.t = T;
-      this.p = p;
+      this.chpl_t = T;
+      this.chpl_p = p;
     }
 
     /*
@@ -164,7 +169,7 @@ module SharedObject {
      */
     proc init(in take:owned) {
       var p = take.release();
-      this.t = _to_borrowed(p.type);
+      this.chpl_t = _to_borrowed(p.type);
 
       if !isClass(p) then
         compilerError("Shared only works with classes");
@@ -174,8 +179,8 @@ module SharedObject {
       if p != nil then
         rc = new unmanaged ReferenceCount();
 
-      this.p = p;
-      this.pn = rc;
+      this.chpl_p = p;
+      this.chpl_pn = rc;
 
       this.complete();
     }
@@ -186,14 +191,14 @@ module SharedObject {
        These will share responsibility for managing the instance.
      */
     proc init(const ref src:_shared(?)) {
-      this.t = src.t;
-      this.p = src.p;
-      this.pn = src.pn;
+      this.chpl_t = src.chpl_t;
+      this.chpl_p = src.chpl_p;
+      this.chpl_pn = src.chpl_pn;
 
       this.complete();
 
-      if this.pn != nil then
-        this.pn.retain();
+      if this.chpl_pn != nil then
+        this.chpl_pn.retain();
     }
 
     /*
@@ -210,11 +215,11 @@ module SharedObject {
        If this record was the last :record:`Shared` managing a
        non-nil instance, that instance will be deleted.
      */
-    proc ref retain(newPtr:unmanaged p.type) {
+    proc ref retain(newPtr:unmanaged chpl_t) {
       clear();
-      this.p = newPtr;
+      this.chpl_p = newPtr;
       if newPtr != nil {
-        this.pn = new unmanaged ReferenceCount();
+        this.chpl_pn = new unmanaged ReferenceCount();
       }
     }
 
@@ -227,16 +232,16 @@ module SharedObject {
        Equivalent to ``Shared.retain(nil)``.
      */
     proc ref clear() {
-      if isClass(p) { // otherwise, let error happen on init call
-        if p != nil && pn != nil {
-          var count = pn.release();
+      if isClass(chpl_p) { // otherwise, let error happen on init call
+        if chpl_p != nil && chpl_pn != nil {
+          var count = chpl_pn.release();
           if count == 0 {
-            delete _to_unmanaged(p);
-            delete pn;
+            delete _to_unmanaged(chpl_p);
+            delete chpl_pn;
           }
         }
-        p = nil;
-        pn = nil;
+        chpl_p = nil;
+        chpl_pn = nil;
       }
     }
 
@@ -247,7 +252,7 @@ module SharedObject {
        goes out of scope.
      */
     proc /*const*/ borrow() {
-      return p;
+      return chpl_p;
     }
 
     // = should call retain-release
@@ -263,11 +268,11 @@ module SharedObject {
    */
   proc =(ref lhs:_shared, rhs: _shared) {
     // retain-release
-    if rhs.pn != nil then
-      rhs.pn.retain();
+    if rhs.chpl_pn != nil then
+      rhs.chpl_pn.retain();
     lhs.clear();
-    lhs.p = rhs.p;
-    lhs.pn = rhs.pn;
+    lhs.chpl_p = rhs.chpl_p;
+    lhs.chpl_pn = rhs.chpl_pn;
   }
 
   /*
@@ -288,8 +293,8 @@ module SharedObject {
      Swap two :record:`Shared` objects.
    */
   proc <=>(ref lhs: _shared, ref rhs: _shared) {
-    lhs.pn <=> rhs.pn;
-    lhs.p <=> rhs.p;
+    lhs.chpl_pn <=> rhs.chpl_pn;
+    lhs.chpl_p <=> rhs.chpl_p;
   }
 
   // This is a workaround
@@ -299,16 +304,16 @@ module SharedObject {
     __primitive("call destructor", x);
   }
 
-  // Don't print out 'p' when printing an Shared, just print class pointer
+  // Don't print out 'chpl_p' when printing an Shared, just print class pointer
   pragma "no doc"
   proc _shared.readWriteThis(f) {
-    f <~> this.p;
+    f <~> this.chpl_p;
   }
 
-  // Note, coercion from _shared -> _shared.t is sometimes directly
+  // Note, coercion from _shared -> _shared.chpl_t is sometimes directly
   // supported in the compiler via a call to borrow() and
   // sometimes uses this cast.
-  inline proc _cast(type t, const ref x:_shared) where isSubtype(t,x.t) {
+  inline proc _cast(type t, const ref x:_shared) where isSubtype(t,x.chpl_t) {
     return x.borrow();
   }
 
@@ -317,13 +322,14 @@ module SharedObject {
   // It only works in a value context (i.e. when the result of the
   // coercion is a value, not a reference).
   pragma "no doc"
-  inline proc _cast(type t:_shared, in x:_shared) where isSubtype(x.t,t.t) {
+  inline proc _cast(type t:_shared, in x:_shared)
+  where isSubtype(x.chpl_t,t.chpl_t) {
     var ret:t; // default-init the Shared type to return
-    ret.p = x.p:t.t; // cast the class type
-    ret.pn = x.pn;
+    ret.chpl_p = x.chpl_p:t.chpl_t; // cast the class type
+    ret.chpl_pn = x.chpl_pn;
     // steal the reference count increment we did for 'in' intent
-    x.p = nil;
-    x.pn = nil;
+    x.chpl_p = nil;
+    x.chpl_pn = nil;
     return ret;
   }
 
