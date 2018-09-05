@@ -1,3 +1,1 @@
-uncaught LinearAlgebraError: LinearAlgebra error : SVD received an illegal argument in LAPACK.gesvd() argument position: -6
-  testSVD-error.chpl:7: thrown here
-  testSVD-error.chpl:7: uncaught here
+SVD received an illegal argument in LAPACK.gesvd() argument position: -6
