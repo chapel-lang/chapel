@@ -135,13 +135,19 @@ module UtilMisc_forDocs {
        * `sub` is an instantiation of a generic type `super`
        * `sub` is a class type inheriting from `super`
        * `sub` is a type that coerces to `super`
+
+     Note that :proc:`isSubtype` is also available as
+     :proc:`<=` and :proc:`>=` on types.
      */
   proc isSubtype(type sub, type super) param {
     __primitive("is_subtype", super, sub);
   }
 
-   /* As with :proc:`isSubtype` but returns `false` if
-      `sub` and `super` refer to the same type.
+  /* Similar to :proc:`isSubtype` but returns `false` if
+     `sub` and `super` refer to the same type.
+
+     Note that :proc:`isProperSubtype` is alse available as
+     :proc:`<` and :proc:`>` on types;
      */
   proc isProperSubtype(type sub, type super) param {
     __primitive("is_proper_subtype", super, sub);
@@ -160,7 +166,7 @@ module UtilMisc_forDocs {
     return isProperSubtype(b,a);
   }
   /* :returns: isSubtype(b,a) */
-  proc <=(type a, type b) param {
+  proc >=(type a, type b) param {
     return isSubtype(b,a);
   }
 
