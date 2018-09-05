@@ -19,41 +19,81 @@
 
 /*
 
-   :record:`shared` (along with :record:`~OwnedObject.owned`) manage the
-   deallocation of a class instance. :record:`shared` is meant to be used when
-   many different references will exist to the object and these references need
-   to keep the object alive.
+:record:`shared` (along with :record:`~OwnedObject.owned`) manage the
+deallocation of a class instance. :record:`shared` is meant to be used when
+many different references will exist to the object and these references need
+to keep the object alive.
 
-   To use :record:`shared`, allocate a class instance following this
-   pattern:
+Using `shared`
+--------------
 
-   .. code-block:: chapel
+To use :record:`shared`, allocate a class instance following this
+pattern:
 
-     var mySharedObject = new shared MyClass(...));
+.. code-block:: chapel
 
-   When ``mySharedObject`` and any copies of it go out of scope, the class
-   instance it refers to will be deleted.
+ var mySharedObject = new shared MyClass(...));
 
-   Copy initializing or assigning from mySharedObject will make
-   other variables refer to the same class instance. The class instance
-   will be deleted after all of these references go out of scope.
+When ``mySharedObject`` and any copies of it go out of scope, the class
+instance it refers to will be deleted.
 
-   .. code-block:: chapel
+Copy initializing or assigning from mySharedObject will make
+other variables refer to the same class instance. The class instance
+will be deleted after all of these references go out of scope.
 
-     var globalSharedObject:shared MyClass;
+.. code-block:: chapel
 
-     proc makeGlobalSharedObject() {
-       var mySharedObject = new shared new MyClass(...);
-       globalSharedObject = mySharedObject;
-       // now mySharedObject is deinitialized, but the MyClass
-       // instance is not deleted until globalSharedObject is deinitialized.
-     }
+ var globalSharedObject:shared MyClass;
 
-   As with :record:`~OwnedObject.owned`, :record:`shared` supports
-   coercions to the class type as well as
-   coercions from a ``shared(T)`` to ``shared(U)`` where ``T`` is a
-   subclass of ``U``. See :record:`~OwnedObject.owned` for examples
-   of these coercions.
+ proc makeGlobalSharedObject() {
+   var mySharedObject = new shared new MyClass(...);
+   globalSharedObject = mySharedObject;
+   // now mySharedObject is deinitialized, but the MyClass
+   // instance is not deleted until globalSharedObject is deinitialized.
+ }
+
+Borrowing from `shared`
+-----------------------
+
+The :proc:`shared.borrow` method returns the pointer managed by the
+:record:`shared`. This pointer is only valid as long as the :record:`shared` is
+storing that pointer. The compiler includes some checking for errors in this
+case. In thes ways, :record:`shared` is similar to
+:record:`~OwnedObject.owned`.
+
+See :ref:`about-owned-borrowing` for more details and examples.
+
+Coercions for `shared`
+----------------------
+
+As with :record:`~OwnedObject.owned`, :record:`shared` supports
+coercions to the class type as well as
+coercions from a ``shared(T)`` to ``shared(U)`` where ``T`` is a
+subclass of ``U``.
+
+See :ref:`about-owned-coercions` for more details and examples.
+
+`shared` Intents and Instantiation
+----------------------------------
+
+Intents and instantiation for :record:`shared` are similar
+to :record:`~OwnedObject.owned`. Namely:
+
+ * for formal arguments declared with a type, the
+   default intent is `const in`, which updates the
+   reference count and shares the instance.
+ * for generic formal arguments with no type component that are
+   passed actuals of :record:`shared` type,
+   the formal argument will be instantiated with the borrow type,
+   and no reference count changes will occur.
+
+   .. note::
+
+      It is expected that this rule will change in the future with
+      more experience with this language design.
+
+
+See also :ref:`about-owned-intents-and-instantiation` which includes examples.
 
  */
 module SharedObject {

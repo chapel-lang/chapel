@@ -66,6 +66,8 @@ variable before that happens.
  var emptyOwnedObject: owned MyClass;
 
 
+.. _about-owned-borrowing:
+
 Borrowing from `owned`
 ----------------------
 
@@ -88,8 +90,10 @@ that could be deleted before the `borrow`. For example:
    // a is deleted here
  }
 
-Supported coercions
--------------------
+.. _about-owned-coercions:
+
+Coercions for `owned`
+---------------------
 
 The compiler includes support for introducing automatic coercions
 from :record:`owned` to the contained class type. This is equivalent
@@ -119,6 +123,54 @@ For example:
  // relies on coercion from owned Student to owned Person
  // moves the instance from myStudent to myPerson, leaving
  // myStudent containing nil.
+
+
+.. _about-owned-intents-and-instantiation:
+
+`owned` Intents and Instantiation
+---------------------------------
+
+The default intent for :record:`owned` currently depends on whether
+or not the formal argument was declared with a type.
+
+If the formal argument has a declared type, the defaut intent is `in`, meaning
+that ownership will occur.
+
+.. code-block:: chapel
+
+  var global: owned MyClass;
+  proc saveit(arg: owned MyClass) {
+    global = arg; // OK! Transfers ownership from 'arg' to 'global'
+    // now that instance will be deleted at end of program
+  }
+  proc test0() {
+    var x = new owned MyClass();
+    saveit(x);
+    // now x stores `nil` since ownership was transfer to the argument
+  }
+
+If the formal argument had no type (i.e. it is generic) and used `const` or
+default intent, the argument will not cause ownership transfer and the
+function will be instantiated with the borrow type if an owned actual is
+supplied. For example:
+
+.. code-block:: chapel
+
+  proc f(x) {
+    writeln("in f, x.type is ", x.type:string);
+  }
+  proc test1() {
+    writeln("in test1");
+    var x = new owned MyClass();
+    f(x); // f gets a borrow
+    writeln("back in test1");
+    writeln(x); // so x is not 'nil' at this point
+  }
+
+.. note::
+
+  It is expected that this rule will change in the future with
+  more experience with this language design.
 
  */
 module OwnedObject {
