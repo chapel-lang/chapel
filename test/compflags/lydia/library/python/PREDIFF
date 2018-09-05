@@ -16,3 +16,4 @@ sed '/^[ ]*$/d' $2 > $2.tmp
 # avoid sporadic ld: warning errors (I'm sometimes seeing just that on a line,
 # or just multiple copies of it)
 sed '/^ld: warning/d' $2.tmp > $2
+rm $2.tmp
