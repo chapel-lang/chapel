@@ -117,22 +117,11 @@ static void setupMakeEnvVars(std::string var, const char* value,
 }
 
 static void printMakefileIncludes(fileinfo makefile);
-static void printMakefileLibraries(fileinfo makefile, std::string name,
-                                   bool startsWithLib);
+static void printMakefileLibraries(fileinfo makefile, const char* name);
 
 void codegen_library_makefile() {
-  std::string name = "";
-  int libLength = strlen("lib");
-  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
-  if (startsWithLib) {
-    name += &executableFilename[libLength];
-  } else {
-    // libname = executableFilename when executableFilename does not start with
-    // "lib"
-    name = executableFilename;
-  }
   fileinfo makefile;
-  openLibraryHelperFile(&makefile, "Makefile", name.c_str());
+  openLibraryHelperFile(&makefile, "Makefile", executableFilename);
 
   // Save the CHPL_HOME location so it can be used in the other makefile
   // variables instead of letting them be cluttered with its value
@@ -142,7 +131,7 @@ void codegen_library_makefile() {
   setupMakeEnvVars("CHPL_HOME", CHPL_HOME, makefile);
 
   printMakefileIncludes(makefile);
-  printMakefileLibraries(makefile, name, startsWithLib);
+  printMakefileLibraries(makefile, executableFilename);
 
   std::string compiler = getCompilelineOption("compiler");
   fprintf(makefile.fptr, "CHPL_COMPILER = %s\n", compiler.c_str());
@@ -206,28 +195,16 @@ static void printMakefileIncludes(fileinfo makefile) {
 // Helper to transform the provided name into library form for a compile line
 // (-lname in the where the library starts with lib, loc/name.ext for when
 // the library does not start with lib)
-static std::string getLibname(std::string name,
-                              bool startsWithLib) {
+static std::string getLibname(const char* name) {
   std::string libname = "-l";
-  if (startsWithLib) {
-    // libname = "-l<name>" when executableFilename = "lib<name>"
-    libname += name;
-  } else {
-    // libname = executableFilename plus the extension when executableFilename
-    // does not start with "lib"
-    libname = libDir;
-    libname += "/";
-    libname += name;
-    libname += getLibraryExtension();
-  }
+  libname += name;
   return libname;
 }
 
 // Helper to output the CHPL_LDFLAGS variable into the generated makefile
-static void printMakefileLibraries(fileinfo makefile, std::string name,
-                                   bool startsWithLib) {
+static void printMakefileLibraries(fileinfo makefile, const char* name) {
   std::string libraries = getCompilelineOption("libraries");
-  std::string libname = getLibname(name, startsWithLib);
+  std::string libname = getLibname(name);
 
   std::string requires = getRequireLibraries();
 
@@ -456,13 +433,6 @@ static void makePYFile() {
 
     gGenInfo->cfile = py.fptr;
 
-    std::string libname = "";
-    int libLength = strlen("lib");
-    bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
-    if (startsWithLib) {
-      libname += &executableFilename[libLength];
-    }
-
     // Imports
     fprintf(py.fptr, "from distutils.core import setup\n");
     fprintf(py.fptr, "from distutils.core import Extension\n");
@@ -479,7 +449,7 @@ static void makePYFile() {
       } else {
         fprintf(py.fptr, ", ");
       }
-      fprintf(py.fptr, "\"%s\"", libName);
+      fprintf(py.fptr, "\"%s\"", executableFilename);
     }
     std::string libraries = getCompilelineOption("libraries");
     char copyOfLib[libraries.length() + 1];
@@ -508,17 +478,8 @@ static void makePYFile() {
     fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename);
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
     fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename);
-    if (startsWithLib) {
-      // Cython includes anything listed in the libraries variable in the
-      // compileline with a -l prefix.  The -l prefix only works if the library
-      // is named `libname.*`; `name.a` will not be found for `-lname`, so
-      // only include the generated library file here if its name starts with
-      // lib
-      fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries)))\n",
-              libname.c_str());
-    } else {
-      fprintf(py.fptr, "\t\t\tlibraries=chpl_libraries)))\n");
-    }
+    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries)))\n",
+            executableFilename);
 
     gGenInfo->cfile = save_cfile;
   }
@@ -557,18 +518,7 @@ void codegen_make_python_module() {
   // Erase the trailing \n from getting the libraries
   libraries.erase(libraries.length() - 1);
 
-  std::string name = "";
-  int libLength = strlen("lib");
-  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
-  if (startsWithLib) {
-    name = "-l";
-    name += &executableFilename[libLength];
-  } else {
-    // libname = executableFilename when executableFilename does not start with
-    // "lib"
-    name = executableFilename;
-    name += getLibraryExtension();
-  }
+  std::string name = getLibname(executableFilename);
 
   std::string cythonPortion = "python3 ";
   cythonPortion += pythonModulename;
