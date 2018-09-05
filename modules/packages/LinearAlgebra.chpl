@@ -1193,12 +1193,16 @@ proc svd(A: [?Adom] ?t) throws
   // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.
   var superb: [1..minDim-1] realType;
 
-  const info = gesvd(lapack_memory_order.row_major, 'A', 'A', Acopy, s, u, vt, superb);
+  const info = LAPACK.gesvd(lapack_memory_order.row_major, 'A', 'A', Acopy, s, u, vt, superb);
 
-  if info != 0 {
-    var msg = 'SVD computation did not converge. Returned non-zero value for "info":' + info:string;
+  if info > 0 {
+    var msg = 'SVD computation did not converge. Number of superdiagonals of the intermediate bidiagonal that did not converge to zero: ' + info:string;
+    throw new LinearAlgebraError(msg);
+  } else if info < 0 {
+    var msg = 'SVD received an illegal argument in LAPACK.gesvd() argument position: ' + info:string;
     throw new LinearAlgebraError(msg);
   }
+
 
   return (u, s, vt);
 }
