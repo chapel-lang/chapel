@@ -254,7 +254,7 @@ module OwnedObject {
     __primitive("call destructor", x);
   }
 
-  // Don't print out 'p' when printing an _owned, just print class pointer
+  // Don't print out 'chpl_p' when printing an _owned, just print class pointer
   pragma "no doc"
   proc _owned.readWriteThis(f) {
     f <~> this.chpl_p;
