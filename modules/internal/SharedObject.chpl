@@ -94,11 +94,11 @@ module SharedObject {
   pragma "managed pointer"
   record _shared {
     pragma "no doc"
-    type t;              // contained type (class type)
+    type chpl_t;         // contained type (class type)
 
     pragma "no doc"
     pragma "owned"
-    var chpl_p:t;        // contained pointer (class type)
+    var chpl_p:chpl_t;   // contained pointer (class type)
 
     forwarding chpl_p;
 
@@ -113,7 +113,7 @@ module SharedObject {
       if !isClass(t) then
         compilerError("Shared only works with classes");
 
-      this.t = _to_borrowed(t);
+      this.chpl_t = _to_borrowed(t);
       this.chpl_p = nil;
       this.chpl_pn = nil;
     }
@@ -127,7 +127,7 @@ module SharedObject {
        :arg p: the class instance to manage. Must be of class type.
      */
     proc init(p : borrowed) {
-      this.t = p.type;
+      this.chpl_t = p.type;
 
       // Boost version default-initializes px and pn
       // and then swaps in different values.
@@ -148,10 +148,12 @@ module SharedObject {
       // since it would refer to `this` as a whole here.
     }
 
-    proc init(p: ?T) where isClass(T) == false && isSubtype(T, _shared) == false &&
-                     isIterator(p) == false {
+    proc init(p: ?T)
+    where isClass(T) == false &&
+          isSubtype(T, _shared) == false &&
+          isIterator(p) == false {
       compilerError("Shared only works with classes");
-      this.t = T;
+      this.chpl_t = T;
       this.chpl_p = p;
     }
 
@@ -167,7 +169,7 @@ module SharedObject {
      */
     proc init(in take:owned) {
       var p = take.release();
-      this.t = _to_borrowed(p.type);
+      this.chpl_t = _to_borrowed(p.type);
 
       if !isClass(p) then
         compilerError("Shared only works with classes");
@@ -189,7 +191,7 @@ module SharedObject {
        These will share responsibility for managing the instance.
      */
     proc init(const ref src:_shared(?)) {
-      this.t = src.t;
+      this.chpl_t = src.chpl_t;
       this.chpl_p = src.chpl_p;
       this.chpl_pn = src.chpl_pn;
 
@@ -213,7 +215,7 @@ module SharedObject {
        If this record was the last :record:`Shared` managing a
        non-nil instance, that instance will be deleted.
      */
-    proc ref retain(newPtr:unmanaged t) {
+    proc ref retain(newPtr:unmanaged chpl_t) {
       clear();
       this.chpl_p = newPtr;
       if newPtr != nil {
@@ -308,10 +310,10 @@ module SharedObject {
     f <~> this.chpl_p;
   }
 
-  // Note, coercion from _shared -> _shared.t is sometimes directly
+  // Note, coercion from _shared -> _shared.chpl_t is sometimes directly
   // supported in the compiler via a call to borrow() and
   // sometimes uses this cast.
-  inline proc _cast(type t, const ref x:_shared) where isSubtype(t,x.t) {
+  inline proc _cast(type t, const ref x:_shared) where isSubtype(t,x.chpl_t) {
     return x.borrow();
   }
 
@@ -320,9 +322,10 @@ module SharedObject {
   // It only works in a value context (i.e. when the result of the
   // coercion is a value, not a reference).
   pragma "no doc"
-  inline proc _cast(type t:_shared, in x:_shared) where isSubtype(x.t,t.t) {
+  inline proc _cast(type t:_shared, in x:_shared)
+  where isSubtype(x.chpl_t,t.chpl_t) {
     var ret:t; // default-init the Shared type to return
-    ret.chpl_p = x.chpl_p:t.t; // cast the class type
+    ret.chpl_p = x.chpl_p:t.chpl_t; // cast the class type
     ret.chpl_pn = x.chpl_pn;
     // steal the reference count increment we did for 'in' intent
     x.chpl_p = nil;
