@@ -1256,7 +1256,7 @@ private proc isDefaultRectangularArr (A: []) param {
 }
 
 private proc isDefaultSparseDom(D: domain) param {
-  return isSubtype(_to_borrowed(D._value), DefaultSparseDom);
+  return isSubtype(_to_borrowed(D._value.type), DefaultSparseDom);
 }
 private proc isDefaultSparseArr(A: []) param {
   return isDefaultSparseDom(A.domain);
