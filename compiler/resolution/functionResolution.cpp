@@ -5949,20 +5949,22 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         } else if (isUnmanagedClassType(type)) {
           manager = dtUnmanaged;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
-          if (fLegacyNew == false && fDefaultUnmanaged == false && ignore_warnings == false) {
-            gdbShouldBreakHere();
-            USR_WARN(newExpr, "result of new %s is now managed by default",
-                              type->symbol->name);
-            USR_PRINT(newExpr, "'new unmanaged %s' gives old behavior",
-                               type->symbol->name);
-            USR_PRINT(newExpr, "'new borrowed %s' is the new default",
-                               type->symbol->name);
-            USR_PRINT(newExpr, "'new owned %s', 'new shared %s' also available",
-                               type->symbol->name, type->symbol->name);
-            USR_PRINT(newExpr, "get more help with --warn-unstable",
-                               type->symbol->name);
-
+          if (fLegacyNew == false && fDefaultUnmanaged == false) {
             manager = dtBorrowed;
+            if (ignore_warnings == false) {
+              // This warning should go away after the 1.18 release.
+              gdbShouldBreakHere();
+              USR_WARN(newExpr, "result of new %s is now managed by default",
+                                type->symbol->name);
+              USR_PRINT(newExpr, "'new unmanaged %s' gives old behavior",
+                                 type->symbol->name);
+              USR_PRINT(newExpr, "'new borrowed %s' is the new default",
+                                 type->symbol->name);
+              USR_PRINT(newExpr, "'new owned %s', 'new shared %s' also available",
+                                 type->symbol->name, type->symbol->name);
+              USR_PRINT(newExpr, "get more help with --warn-unstable",
+                                 type->symbol->name);
+            }
           }
         }
       }
