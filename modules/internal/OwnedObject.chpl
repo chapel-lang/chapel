@@ -20,25 +20,24 @@
 
 /*
 
-   :record:`Owned` (along with :record:`~SharedObject.Shared`) manage the
-   deallocation of a class instance. :record:`Owned` is meant to be used when
+   `owned` (along with `shared` from :mod:`SharedObject`) manage the
+   deallocation of a class instance. :record:`owned` is meant to be used when
    only one reference to an object needs to manage that object's storage.
 
-   To use :record:`Owned`, store a new class instance in a new Owned
+   To use :record:`owned`, allocate a new class instance in a new owned
    record as is shown in this example:
 
    .. code-block:: chapel
 
-     use OwnedObject;
      class MyClass { }
 
-     var myOwnedObject = new Owned(new MyClass());
+     var myOwnedObject = new owned MyClass();
 
    When myOwnedObject goes out of scope, the class instance
    it refers to will be deleted.
 
    Copy initializing from ``myOwnedObject`` or assigning it to another
-   :record:`Owned` will leave ``myOwnedObject`` storing a nil value
+   :record:`owned` will leave ``myOwnedObject`` storing a nil value
    and transfer the owned class instance to the other value.
 
    .. code-block:: chapel
@@ -55,7 +54,8 @@
      // when myOwnedObject goes out of scope.
 
    The compiler includes support for introducing automatic coercions
-   from :record:`Owned` to the contained class type. For example:
+   from :record:`owned` to the contained class type. This is equivalent
+   to calling the :proc:`owned.borrow` method. For example:
 
    .. code-block:: chapel
 
@@ -64,8 +64,12 @@
        writeln(arg);
      }
 
-     var myOwned = new Owned(new MyClass());
+     var myOwned = new owned MyClass();
      f(myOwned); // compiler coerces to MyClass via borrow()
+
+   The compiler includes a component called the lifetime checker that
+   can, in many cases, check that a `borrow` does not refer to an object
+   that could be deleted before the `borrow`.
 
    Additionally, the compiler includes support for coercing a value
    of type ``Owned(T)`` to ``Owned(U)`` when ``T`` is a subclass of ``U``.
@@ -81,14 +85,6 @@
      // relies on coercion from Owned(Student) to Owned(Person)
      // moves the instance from myStudent to myPerson, leaving
      // myStudent containing nil.
-
-   .. note::
-
-     The ways in which :record:`Owned` may be used are currently limited.
-     Copy-initialization, assignment, and `in` intent are expected to work.
-     However, it is currently an error to use a :record:`Owned` in a way that
-     causes the compiler to add an implicitly copy, such as by returning a
-     :record:`Owned` that was passed by reference.
 
  */
 module OwnedObject {
