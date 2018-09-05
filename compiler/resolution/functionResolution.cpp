@@ -5949,7 +5949,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         } else if (isUnmanagedClassType(type)) {
           manager = dtUnmanaged;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
-          if (fLegacyNew == false && fDefaultUnmanaged == false) {
+          if (fLegacyNew == false && fDefaultUnmanaged == false && ignore_warnings == false) {
             gdbShouldBreakHere();
             USR_WARN(newExpr, "result of new %s is now managed by default",
                               type->symbol->name);
