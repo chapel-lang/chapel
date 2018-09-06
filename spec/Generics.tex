@@ -244,16 +244,16 @@ proc writeTop(s: Stack) {
 
 Types and parameters may be queried from the types of formal
 arguments as well.  In the example above, the formal argument's type
-could also be specified as \chpl{Stack(?type)} in which case the
-symbol \chpl{type} is equivalent to \chpl{s.itemType}.
+could also be specified as \chpl{Stack(?t)} in which case the
+symbol \chpl{t} is equivalent to \chpl{s.itemType}.
 
 \index{integral (generic type)@\chpl{integral} (generic type)}
 \index{numeric (generic type)@\chpl{numeric} (generic type)}
 \index{enumerated (generic type)@\chpl{enumerated} (generic type)}
-The generic types \chpl{integral}, \chpl{numeric} and \chpl{enumerated}
+The types \chpl{integral}, \chpl{numeric} and \chpl{enumerated}
 are generic types that can only be instantiated with, respectively, the
 signed and unsigned integral types, all of the numeric types, and
-enumerated types.
+all enumerated types.
 
 Note that generic types which have default values for all of their
 generic fields, \emph{e.g. range}, are not generic when simply
@@ -291,7 +291,7 @@ Using concrete types or values in this manner makes the argument
 
 \begin{chapelexample}{nested-type-queries.chpl}
 
-Given the class definitions
+Given the code:
 \begin{chapel}
 class C {
   type elementType;
@@ -301,17 +301,17 @@ class C {
 class Container {
   type containedType;
 }
-\end{chapel}
-Here, the function \chpl{f} can only apply when the
-\chpl{c.elementType==real}:
-\begin{chapel}
 proc f(c: C(real,?t,?u)) {
   // ...
 }
 \end{chapel}
 
-And the function \chpl{g} includes a nested generic type and can only apply
-when \chpl{c.containerType} is an instance of \chpl{Container}:
+The function \chpl{f} can only apply when the \chpl{c.elementType==real}.
+
+It's also possible to use a generic type as an argument to \chpl{C}. The
+following function, \chpl{g}, can only apply when \chpl{c.containerType} is
+an instance of \chpl{Container}:
+
 \begin{chapel}
 proc g(c: C(?t,?u,Container)) {
   // ...
@@ -340,7 +340,7 @@ proc f(tuple: (?t,real)) {
 specifies that \chpl{tuple.size == 2 && tuple(2).type == real}.
 \end{example}
 
-Homogenous tuple arguments of queried type are also supported:
+Homogenous tuple arguments of generic type are also supported:
 \begin{chapelexample}{partially-concrete-star-tuple.chpl}
 \begin{chapel}
 record Number {
@@ -354,12 +354,11 @@ f( (new Number(1), new Number(2)) );
 \end{chapelpost}
 \begin{chapeloutput}
 \end{chapeloutput}
-\end{chapelexample}
-
 
 specifies that \chpl{f} accepts a tuple with 2 elements, where each
 element has the same type, and that type is instantiation of
 \chpl{Number}.
+\end{chapelexample}
 
 Note that specifying a tuple consisting entirely of queried types
 does create a \emph{partially concrete argument} because the size
