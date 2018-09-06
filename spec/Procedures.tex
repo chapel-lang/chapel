@@ -399,8 +399,10 @@ The concrete intents are \chpl{in}, \chpl{out}, \chpl{inout},
 \index{in (intent)@\chpl{in} (intent)}
 \index{intents!in@\chpl{in}}
 
-When \chpl{in} is specified as the intent, the actual argument is
-copied into the formal argument when the function is called.
+When \chpl{in} is specified as the intent, the formal argument
+represents a variable that is copy-initialized with the value of the
+actual argument. For example, for integer arguments, the formal
+argument will store a copy of the actual argument.
 An implicit conversion occurs from the actual argument
 to the type of the formal.  The
 formal can be modified within the function, but such changes are local
