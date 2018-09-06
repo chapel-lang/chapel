@@ -7,29 +7,26 @@ Chapel release:
 Contributors to the current release
 -----------------------------------
 * Ben Albrecht, [Cray Inc.]
-* Nimit Bhardwaj, individual contributor
+* Ian Bertolacci, [Cray Inc.] / [University of Arizona] / [Colorado State University]
+* Zixian Cai, individual contributor
 * Paul Cassella, [Cray Inc.]
 * [Brad Chamberlain], [Cray Inc.]
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
 * David Iten, [Cray Inc.]
-* Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC 2016] / [GSoC 2017] mentor
 * Louis Jenkins, individual contributor / [GSoC 2017]
 * David Keaton, [Cray Inc.]
 * Vassily Litvinov, [Cray Inc.]
 * Sarthak Munshi, individual contributor / [GSoC 2017]
-* Michael Noakes, [Cray Inc.]
-* Nikhil Padmanabhan, [Yale University]
-* Unnati Parekh, individual contributor
-* Prithvi Patel, individual contributor
-* Surya Priy, individual contributor
-* David Qian, individual contributor
+* Sam Partee, [Cray Inc.] / [Haverford College]
 * Elliot Ronaghan, [Cray Inc.]
 * Preston Sahabu, [Cray Inc.]
 * Greg Titus, [Cray Inc.]
+* B. Kerim Tshimanga, individual contributor
 * Thomas Van Doren, individual contributor / [Cray Inc.]
 * Tony Wallace, [Cray Inc.]
+* Sahil Yerawar, individual contributor / [GSoC 2018]
 
 Contributors to previous releases
 ---------------------------------
@@ -38,7 +35,7 @@ Contributors to previous releases
 * Matthew Baker, [ORNL]
 * Steve Balensiefer, [University of Washington]
 * Casey Battaglino, [Cray Inc.] / [Georgia Tech]
-* Ian Bertolacci, [Cray Inc.] / [Colorado State University]
+* Nimit Bhardwaj, individual contributor
 * Sean Billig, individual contributor
 * Robert Bocchino, [Cray Inc.] / [University of Illinois, Urbana-Champaign]
 * Dan Bonachea, [UC Berkeley]
@@ -65,6 +62,7 @@ Contributors to previous releases
 * Shannon Hoffswell[*](#footnote), [Cray Inc.]
 * Mary Beth Hribar[*](#footnote), [Cray Inc.]
 * Serghei Iakovlev, individual contributor
+* Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC 2016] / [GSoC 2017] mentor
 * Mackale Joyner, [Cray Inc.] / [Rice University]
 * Jessica Jueckstock, [MITRE]
 * Engin Kayraklioglu, [George Washington University] / [Cray Inc.] / [GSoC 2017] mentor
@@ -87,14 +85,19 @@ Contributors to previous releases
 * Jun Nakashima, [University of Tokyo]
 * Jacob Nelson, [Cray Inc.] / [University of Washington]
 * [Phil Nelson], [Western Washington University] / [Cray Inc.]
+* Michael Noakes, [Cray Inc.]
 * Joshua Olson, individual contributor
+* Nikhil Padmanabhan, [Yale University]
 * Konstantina Panagiotopoulou, individual contributor
+* Unnati Parekh, individual contributor
 * Nicholas Park, [DOD]
-* Sam Partee, [Cray Inc.] / [Haverford College]
+* Prithvi Patel, individual contributor
 * Sriraj Paul, [Rice University]
 * John Plevyak, [Cray Inc.]
 * Kumar Prasun, individual contributor
+* Surya Priy, individual contributor
 * Lee Prokowich, [Cray Inc.]
+* David Qian, individual contributor
 * Brandon Ross, [University at Buffalo]
 * Sara Salem, [Cairo University]
 * Alberto Sanz, [Universidad de Málaga (University of Malaga)]
@@ -169,6 +172,7 @@ implementation.
 [Georgia Tech]: http://www.cc.gatech.edu/
 [GSoC 2016]: https://summerofcode.withgoogle.com/organizations/6608321708556288/
 [GSoC 2017]: https://summerofcode.withgoogle.com/organizations/6472441615351808/
+[GSoC 2018]: https://summerofcode.withgoogle.com/organizations/4743716460298240/
 [Haverford College]: https://www.haverford.edu/
 [Indiana University]: http://www.cs.indiana.edu/
 [Int'l Institute of Information Technology, Hyderabad]: https://www.iiit.ac.in/
@@ -182,6 +186,7 @@ implementation.
 [Rice University]: http://www.cs.rice.edu/
 [Sandia National Laboratories]: http://www.sandia.gov/
 [Unicorn Enterprises SA]: http://www.unicorn-enterprises.com/
+[University of Arizona]: https://www.cs.arizona.edu/
 [University at Buffalo]: https://www.cse.buffalo.edu/
 [UC Berkeley]: http://www.cs.berkeley.edu/
 [University of Illinois, Urbana-Champaign]: https://cs.illinois.edu/
