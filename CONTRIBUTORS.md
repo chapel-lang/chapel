@@ -16,6 +16,7 @@ Contributors to the current release
 * Ben Harshbarger, [Cray Inc.]
 * David Iten, [Cray Inc.]
 * Louis Jenkins, individual contributor / [GSoC 2017]
+* Avneet Kaur, individual contributor / [RGSoC 2018]
 * David Keaton, [Cray Inc.]
 * Vassily Litvinov, [Cray Inc.]
 * Sarthak Munshi, individual contributor / [GSoC 2017]
@@ -183,6 +184,7 @@ implementation.
 [The Ohio State University]: https://cse.osu.edu/
 [ORNL]: https://www.ornl.gov/
 [Pacific Engineering Systems International]: http://www.esi.com.au/
+[RGSoC 2018]: https://railsgirlssummerofcode.org/blog/2018-05-18-rgsoc-2018-teams-part2
 [Rice University]: http://www.cs.rice.edu/
 [Sandia National Laboratories]: http://www.sandia.gov/
 [Unicorn Enterprises SA]: http://www.unicorn-enterprises.com/
