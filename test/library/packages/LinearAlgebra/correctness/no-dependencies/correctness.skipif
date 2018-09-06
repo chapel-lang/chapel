@@ -1,0 +1,3 @@
+# baseline and valgrind timeout - see issue #11027 for more info
+CHPL_TEST_VGRND_EXE == on
+COMPOPTS <= --baseline
