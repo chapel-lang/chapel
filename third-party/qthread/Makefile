@@ -45,6 +45,7 @@ ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
   CFLAGS_NEEDS_RT_INCLUDES = y
 endif
 
+FAILBUILD=
 ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # When building the Chapel allocator file we need all the Chapel runtime
   # defs and include directories, plus the third-party include dirs other
@@ -56,16 +57,17 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
     $(shell $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
             || echo compilelineFAILURE)
   ifneq (, $(findstring compilelineFAILURE,$(INCS_DEFS)))
-    $(error compileline failed!)
+    FAILBUILD=y
+  else
+    INCS_DEFS_PROCESSED := \
+      $(shell echo $(INCS_DEFS) \
+              | tr ' ' '\n' \
+              | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install' \
+              | grep -v '/third-party/qthread/install' \
+              | tr '\n' ' ' \
+              | sed 's/ $$//')
+    CFLAGS += $(INCS_DEFS_PROCESSED)
   endif
-  INCS_DEFS_PROCESSED := \
-    $(shell echo $(INCS_DEFS) \
-            | tr ' ' '\n' \
-            | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install' \
-            | grep -v '/third-party/qthread/install' \
-            | tr '\n' ' ' \
-            | sed 's/ $$//')
-  CFLAGS += $(INCS_DEFS_PROCESSED)
 endif
 
 # enable oversubscription for testing
@@ -133,6 +135,8 @@ clobber: FORCE
 
 
 qthread-config: FORCE
+	@if [ -n "$(FAILBUILD)" ]; then echo 'compileline failed!'; false; fi
+
 #
 # These first few lines touch a bunch of autoconf-oriented files in a
 # certain order to prevent autoconf from running again; otherwise, we
