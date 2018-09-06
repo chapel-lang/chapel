@@ -35,11 +35,11 @@ simple-class-declaration-statement:
   `class' identifier class-inherit-list[OPT] { class-statement-list[OPT] }
 
 class-inherit-list:
-  : class-type-list
+  : basic-class-type-list
 
-class-type-list:
-  class-type
-  class-type , class-type-list
+basic-class-type-list:
+  basic-class-type
+  basic-class-type , basic-class-type-list
 
 class-statement-list:
   class-statement
@@ -92,20 +92,44 @@ instance.
 \index{classes!types}
 \index{class type}
 
-A class type is given simply by the class name for non-generic classes.
+A basic class type is given simply by the class name for non-generic classes.
 Generic classes must be instantiated to serve as a fully-specified
 type, for example to declare a variable.  This is done with
 type constructors, which are defined in Section~\ref{Type_Constructors}.
 
 \begin{syntax}
 class-type:
+  basic-class-type
+  basic-class-type
+  `borrowed' basic-class-type
+  `unmanaged' basic-class-type
+  `owned' basic-class-type
+  `shared' basic-class-type
+
+basic-class-type:
   identifier
   identifier ( named-expression-list )
 \end{syntax}
 
-A class type, including a generic class type that is not
+A basic class type, including a generic class type that is not
 fully specified, may appear in the inheritance lists
 of other class declarations.
+
+A class type is formed by the combination of a basic class type and an
+optional memory management strategy. If no memory management strategy is
+indicated, \chpl{borrowed} will be used.
+
+\begin{itemize}
+  \item \chpl{borrowed} refers to a class instance that has a lifetime
+    managed by another variable.
+  \item \chpl{unmanaged} the instance must have \chpl{delete} called on it explicitly.
+  \item \chpl{owned} the instance be deleted
+    automatically when the \chpl{owned} variable goes out of scope, but
+    only one \chpl{owned} variable can refer to the instance at a time.
+  \item \chpl{shared} will be deleted when all of the \chpl{shared}
+    variables referring to the instance go out of scope.
+\end{itemize}
+
 
 \subsection{Class Values}
 \label{Class_Values}
@@ -715,6 +739,9 @@ of \chpl{C}.
 The value \chpl{nil} can be implicitly converted to any class type.
 These conversions do not change the value.
 
+If \chpl{C} is a class type, a value of type \chpl{shared C},
+\chpl{unmanaged C}, or \chpl C{owned} can be implicitly converted to
+\chpl{borrowed C} which can also be written as \chpl{C}.
 
 %TODO: Move memory management explanation up, closer to class constructors.
 % Perhaps make the memory management part of the introduction, and then let the
