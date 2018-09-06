@@ -233,8 +233,11 @@ writeln(result);
 \section{Forall Intents}
 \label{Forall_Intents}
 \index{forall intents}
+\index{shadow variables}
 \index{data parallelism!forall intents}
+\index{data parallelism!shadow variables}
 \index{statements!forall@\chpl{forall}!forall intents}
+\index{statements!forall@\chpl{forall}!shadow variables}
 
 If a variable is referenced within the lexical scope of a
 forall statement or expression and is declared outside
@@ -244,11 +247,12 @@ for task-parallel constructs. That is, the variable is considered
 to be passed as an actual argument to
 each task function created by the object or iterator leading
 the execution of the loop. If no tasks are created,
-it is considered to be an actual argument to the leader
+it is considered to be an actual argument to the leader or standalone
 iterator itself. All references to the variable
 within the forall statement or expression implicitly refer
-to the corresponding formal argument of the task function
-or the leader iterator.
+to a \emph{shadow variable}, i.e.
+the corresponding formal argument of the task function
+or the leader/standalone iterator.
 
 Each formal argument of a task function or iterator has the default
 intent by default.  For variables of primitive, enum, and class
@@ -262,8 +266,8 @@ with that intent in the optional \sntx{task-intent-clause}.
 For example, for variables of most types, the \chpl{ref} intent allows
 the body of the forall loop to modify the corresponding original
 variable or to read its updated value after concurrent modifications.
-The \chpl{in} intent is a way to obtain task-private variables
-in a forall loop.
+The \chpl{in} intent is an alternative way to obtain task-private
+variables (\rsec{Task_Private_Variables}).
 A \chpl{reduce} intent can be used to reduce values across iterations
 of a forall or coforall loop.
 Reduce intents are described in the \emph{Reduce Intents} technical note
@@ -280,9 +284,114 @@ affect the behavior of a task construct such as a \chpl{coforall} loop.
 \end{rationale}
 
 
+\section{Task-Private Variables}
+\label{Task_Private_Variables}
+\index{task-private variables}
+\index{shadow variables}
+\index{data parallelism!task-private variables}
+\index{data parallelism!shadow variables}
+\index{statements!forall@\chpl{forall}!task-private variables}
+\index{statements!forall@\chpl{forall}!shadow variables}
+
+A \emph{task-private variable} declared in a forall loop results
+in a separate shadow variable in each task created by the forall
+loop's parallel iterator, as well as a "top-level" shadow variable
+created at the top level of the parallel iterator itself.
+In contrast to regular forall intents \rsec{Forall_Intents},
+these shadow variables are unrelated to outer variables
+of the same name, if any.
+
+A given shadow variable is created at the start and destroyed
+at the end of its task.
+Within the lexical scope of the body of the forall statement or expression,
+the variable name refers to the shadow variable created in the task
+that executed the current yield statement.
+
+The "top-level" shadow variable is created at the start and destroyed
+at the end of the parallel iterator. It is referenced in those iterations
+of the forall loop that are due to "top-level" yields, i.e. yields
+that are outside any of the task constructs that the iterator may have.
+
+The syntax of a task-private variable declaration in a forall statement's
+with-clause is:
+
+\begin{syntax}
+task-private-var-decl:
+  task-private-var-kind identifier type-part[OPT] initialization-part[OPT]
+
+task-private-var-kind:
+  `const'
+  `var'
+  `ref'
+\end{syntax}
+
+The declaration of a \chpl{const} or \chpl{var} task-private variable must
+have at least one of \sntx{type-part} and \sntx{initialization-part}.
+A \chpl{ref} task-private variable must have \sntx{initialization-part}
+and cannot have \sntx{type-part}. A \chpl{ref} shadow variable
+is a reference to the \sntx{initialization-part} as calculated at
+the start of the corresponding task or the iterator.
+\chpl{ref} shadow variables are never destroyed.
+
+\begin{craychapel}
+Currently task-private variables are not available for task constructs.
+A regular variable declared at the start of the begin/cobegin/coforall
+block can be used instead.
+\end{craychapel}
+
+\begin{chapelexample}{task-private-variable.chpl}
+In the following example, the \chpl{writeln()} statement will observe
+the first shadow variable 4 times: twice each for the yields
+{\tt "before coforall"} and {\tt "after coforall"}.
+An additional shadow variable will be created and observed twice
+for each of the three \chpl{coforall} tasks.
+\begin{chapel}
+var cnt: atomic int;                     // count our shadow variables
+record R { var id = cnt.fetchAdd(1); }
+
+iter myIter() { yield ""; }              // serial iterator, unused
+
+iter myIter(param tag) where tag == iterKind.standalone {
+  for 1..2 do
+    yield "before coforall";             // shadow var 0 ("top-level")
+  coforall 1..3 do
+    for 1..2 do
+      yield "inside coforall";           // shadow vars 1..3
+  for 1..2 do
+    yield "after coforall";              // shadow var 0, again
+}
+
+forall str in myIter()
+  with (var tpv: R)                      // declare a task-private variable
+do
+  writeln("shadow var: ", tpv.id, "  yield: ", str);
+\end{chapel}
+\begin{chapelprediff}
+\#!/usr/bin/env sh
+testname=$1
+outfile=$2
+sort $outfile > $outfile.2
+mv $outfile.2 $outfile
+\end{chapelprediff}
+\begin{chapeloutput}
+shadow var: 0  yield: after coforall
+shadow var: 0  yield: after coforall
+shadow var: 0  yield: before coforall
+shadow var: 0  yield: before coforall
+shadow var: 1  yield: inside coforall
+shadow var: 1  yield: inside coforall
+shadow var: 2  yield: inside coforall
+shadow var: 2  yield: inside coforall
+shadow var: 3  yield: inside coforall
+shadow var: 3  yield: inside coforall
+\end{chapeloutput}
+\end{chapelexample}
+
+
 \section{Promotion}
 \label{Promotion}
 \index{promotion}
+\index{data parallelism!promotion}
 
 A function that expects one or more scalar arguments but is called
 with one or more arrays, domains, ranges, or iterators is promoted if
