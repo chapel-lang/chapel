@@ -45,27 +45,36 @@ ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
   CFLAGS_NEEDS_RT_INCLUDES = y
 endif
 
+FAILBUILD=
 ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
+  #
   # When building the Chapel allocator file we need all the Chapel runtime
   # defs and include directories, plus the third-party include dirs other
   # than that for Qthreads itself (since we're building it).  Notably, we
   # do not want -DNDEBUG; if we have that set when building Qthreads it
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
+  #
+  # Throw COMPILELINE_STDERR_REDIRECT= if compileline failure is reported
+  # and you want to see the stderr from that.
+  #
+  COMPILELINE_STDERR_REDIRECT=2> /dev/null
   INCS_DEFS := \
     $(shell $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
+               $(COMPILELINE_STDERR_REDIRECT) \
             || echo compilelineFAILURE)
   ifneq (, $(findstring compilelineFAILURE,$(INCS_DEFS)))
-    $(error compileline failed!)
+    FAILBUILD=y
+  else
+    INCS_DEFS_PROCESSED := \
+      $(shell echo $(INCS_DEFS) \
+              | tr ' ' '\n' \
+              | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install' \
+              | grep -v '/third-party/qthread/install' \
+              | tr '\n' ' ' \
+              | sed 's/ $$//')
+    CFLAGS += $(INCS_DEFS_PROCESSED)
   endif
-  INCS_DEFS_PROCESSED := \
-    $(shell echo $(INCS_DEFS) \
-            | tr ' ' '\n' \
-            | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install' \
-            | grep -v '/third-party/qthread/install' \
-            | tr '\n' ' ' \
-            | sed 's/ $$//')
-  CFLAGS += $(INCS_DEFS_PROCESSED)
 endif
 
 # enable oversubscription for testing
@@ -133,6 +142,8 @@ clobber: FORCE
 
 
 qthread-config: FORCE
+	@test -z "$(FAILBUILD)" || ( echo 'compileline failed!' && false )
+
 #
 # These first few lines touch a bunch of autoconf-oriented files in a
 # certain order to prevent autoconf from running again; otherwise, we
