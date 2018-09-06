@@ -1328,13 +1328,12 @@ module DefaultRectangular {
     }
 
 
-    // Reallocate the array to have space for elements specified by
-    // `allocBounds` while maintaining the elements specified by `arrayBounds`
-    override proc dsiReallocate(allocBounds:rank*range(idxType,
-                                                       BoundedRangeType.bounded,
-                                                       stridable)) {
+    // Reallocate the array to have space for elements specified by `bounds`
+    override proc dsiReallocate(bounds: rank*range(idxType,
+                                                   BoundedRangeType.bounded,
+                                                   stridable)) {
       on this {
-        const allocD = {(...allocBounds)};
+        const allocD = {(...bounds)};
 
         var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
                                             rank=rank,
