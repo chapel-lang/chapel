@@ -343,16 +343,13 @@ A queried domain may not be modified via the name to which it is bound
 \label{Function_Visibility_in_Generic_Functions}
 \index{generics!function visibility}
 
-Function visibility in generic functions is altered depending on the
-instantiation.  When resolving function calls made within generic
-functions, the visible functions are taken from any call site at which
+When resolving function calls made within generic
+functions, there is an additional source of visible functions. Besides
+functions visible to the generic function's point of declaration,
+visible functions are also taken from one of the call sites at which
 the generic function is instantiated for each particular
 instantiation.  The specific call site chosen is arbitrary and it is
 referred to as the \emph{point of instantiation}.
-
-For function calls that specify the module
-explicitly~(\rsec{Explicit_Naming}), an implicit use of the specified
-module exists at the call site.
 
 \begin{chapelexample}{point-of-instantiation.chpl}
 Consider the following code which defines a generic
