@@ -47,14 +47,21 @@ endif
 
 FAILBUILD=
 ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
+  #
   # When building the Chapel allocator file we need all the Chapel runtime
   # defs and include directories, plus the third-party include dirs other
   # than that for Qthreads itself (since we're building it).  Notably, we
   # do not want -DNDEBUG; if we have that set when building Qthreads it
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
+  #
+  # Throw COMPILELINE_STDERR_REDIRECT= if compileline failure is reported
+  # and you want to see the stderr from that.
+  #
+  COMPILELINE_STDERR_REDIRECT=2> /dev/null
   INCS_DEFS := \
     $(shell $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
+               $(COMPILELINE_STDERR_REDIRECT) \
             || echo compilelineFAILURE)
   ifneq (, $(findstring compilelineFAILURE,$(INCS_DEFS)))
     FAILBUILD=y
