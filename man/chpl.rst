@@ -555,7 +555,9 @@ OPTIONS
 
 **--[no-]warn-constructors**
 
-    Enable [disable] warnings for constructors
+    Enable [disable] deprecation warnings for user-defined constructors. This
+    warning is enabled by default and will be triggered for each user-defined
+    constructor encountered.
 
 **--[no-]warn-special**
 
