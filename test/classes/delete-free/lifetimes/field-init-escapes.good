@@ -1,0 +1,1 @@
+field-init-escapes.chpl:17: error: Field 'x' would outlive the value used to initialize it
