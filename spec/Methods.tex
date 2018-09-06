@@ -155,8 +155,8 @@ c1.foo();
 Then given an instance of \chpl{C} called \chpl{c1}, the method
 call \chpl{c1.foo()} results in a call to \chpl{bar} where the
 argument is \chpl{c1}.  Within primary method \chpl{C.foo()}, the
-(implicit) receiver formal has static type \chpl{C} and is referred to
-as \chpl{this}.
+(implicit) receiver formal has static type \chpl{C} (otherwise known as
+\chpl{borrowed C}) and is referred to as \chpl{this}.
 \end{chapelexample}
 
 Methods whose receivers are objects are called \emph{instance
