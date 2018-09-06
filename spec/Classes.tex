@@ -309,10 +309,13 @@ base class's method.  Such a method is a candidate for dynamic
 dispatch in the event that a variable that has the base class type
 references an object that has the derived class type.
 
-The identical signature requires that the names, types, and order of
+The identical signature requires that the names, intents, types, and order of
 the formal arguments be identical. The return type of the overriding
 method must be the same as the return type of the base class's method,
 or must be a subclass of the base class method's return type.
+
+Methods that override a base class method must be marked with the
+\chpl{override} keyword in the \sntx{linkage-specifier}.
 
 Methods without parentheses are not candidates for dynamic dispatch.
 \begin{rationale}
