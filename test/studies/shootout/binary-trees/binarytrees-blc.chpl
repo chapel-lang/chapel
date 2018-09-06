@@ -18,7 +18,7 @@ proc main() {
   var stats: [depths] (int,int);           // stores statistics for the trees
 
   //
-  // Create the "stretch" tree, checksum it, print its stats, and free it.
+  // Create the short-lived "stretch" tree, checksum it, and print its stats.
   //
   {
     const strTree = new Tree(strDepth);
