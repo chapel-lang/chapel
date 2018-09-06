@@ -26,6 +26,7 @@ Contributors to the current release
 * Greg Titus, [Cray Inc.]
 * B. Kerim Tshimanga, individual contributor
 * Thomas Van Doren, individual contributor / [Cray Inc.]
+* Varsha Verma, individual contributor
 * Tony Wallace, [Cray Inc.]
 * Sahil Yerawar, individual contributor / [GSoC 2018]
 
