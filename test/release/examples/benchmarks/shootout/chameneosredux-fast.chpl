@@ -25,8 +25,8 @@ const colors10 = [blue, red, yellow, red, yellow, blue, red, yellow, red, blue];
 proc main() {
   printColorEquations();
 
-  const group1 = [i in 1..popSize1] new unmanaged Chameneos(i, ((i-1)%3):Color);
-  const group2 = [i in 1..popSize2] new unmanaged Chameneos(i, colors10[i]);
+  const group1 = [i in 1..popSize1] new owned Chameneos(i, ((i-1)%3):Color);
+  const group2 = [i in 1..popSize2] new owned Chameneos(i, colors10[i]);
 
   cobegin {
     holdMeetings(group1, n);
@@ -35,9 +35,6 @@ proc main() {
 
   print(group1);
   print(group2);
-
-  for c in group1 do delete c;
-  for c in group2 do delete c;
 }
 
 
