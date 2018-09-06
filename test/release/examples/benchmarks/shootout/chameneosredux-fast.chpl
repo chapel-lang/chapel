@@ -35,6 +35,9 @@ proc main() {
 
   print(group1);
   print(group2);
+
+  for c in group1 do delete c;
+  for c in group2 do delete c;
 }
 
 
