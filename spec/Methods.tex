@@ -307,7 +307,7 @@ class ThreeArray {
 }
 \end{chapel}
 \begin{chapelpost}
-var ta = new ThreeArray();
+var ta = new borrowed ThreeArray();
 ta(1) = 1;
 ta(2) = 2;
 ta(3) = 3;
@@ -315,9 +315,6 @@ for i in 1..3 do
   writeln(ta(i));
 ta(4) = 4;
 \end{chapelpost}
-\begin{chapelcompopts}
---legacy-new
-\end{chapelcompopts}
 \begin{chapeloutput}
 1
 2

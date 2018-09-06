@@ -896,7 +896,7 @@ class Integer {
   var x:int;
 }
 proc deferInFunction() {
-  var c = new Integer(1);
+  var c = new unmanaged Integer(1);
   writeln("created ", c);
   defer {
     writeln("defer action: deleting ", c);
@@ -908,12 +908,7 @@ proc deferInFunction() {
 deferInFunction();
 \end{chapel}
 produces the output
-\begin{chapelcompopts}
---legacy-new
-\end{chapelcompopts}
 \begin{chapeloutput}
-defer1.chpl:4: In function 'deferInFunction':
-defer1.chpl:9: warning: 'delete' can only be applied to unmanaged classes
 created {x = 1}
 defer action: deleting {x = 1}
 \end{chapeloutput}
@@ -937,7 +932,7 @@ proc deferInNestedBlock() {
   var i = 1;
   writeln("before inner block");
   {
-    var c = new Integer(i);
+    var c = new unmanaged Integer(i);
     writeln("created ", c);
     defer {
       writeln("defer action: deleting ", c);
@@ -951,12 +946,7 @@ proc deferInNestedBlock() {
 deferInNestedBlock();
 \end{chapel}
 produces the output
-\begin{chapelcompopts}
---legacy-new
-\end{chapelcompopts}
 \begin{chapeloutput}
-defer2.chpl:4: In function 'deferInNestedBlock':
-defer2.chpl:12: warning: 'delete' can only be applied to unmanaged classes
 before inner block
 created {x = 1}
 in inner block
@@ -984,7 +974,7 @@ class Integer {
 }
 proc deferInLoop() {
   for i in 1..10 {
-    var c = new Integer(i);
+    var c = new unmanaged Integer(i);
     writeln("created ", c);
     defer {
       writeln("defer action: deleting ", c);
@@ -998,12 +988,7 @@ proc deferInLoop() {
 deferInLoop();
 \end{chapel}
 produces the output
-\begin{chapelcompopts}
---legacy-new
-\end{chapelcompopts}
 \begin{chapeloutput}
-defer3.chpl:4: In function 'deferInLoop':
-defer3.chpl:10: warning: 'delete' can only be applied to unmanaged classes
 created {x = 1}
 {x = 1}
 defer action: deleting {x = 1}
