@@ -216,10 +216,6 @@ module BLAS {
                    else 'cblas.h'
                  else blasHeader;
 
-  if header != '' {
-    checkBLAS();
-  }
-
   use C_BLAS;
 
   use SysCTypes;
@@ -2657,7 +2653,10 @@ module BLAS {
 
   }
 
-  /* Sanity checks for BLAS implementation */
+  /*
+     Runs some assertions for constants defined in the underlying BLAS
+     implementation to confirm compatibility.
+   */
   pragma "no doc"
   proc checkBLAS()
   {
