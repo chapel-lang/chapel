@@ -135,7 +135,7 @@ clobber: FORCE
 
 
 qthread-config: FORCE
-	@if [ -n "$(FAILBUILD)" ]; then echo 'compileline failed!'; false; fi
+	@test -z "$(FAILBUILD)" || ( echo 'compileline failed!' && false )
 
 #
 # These first few lines touch a bunch of autoconf-oriented files in a
