@@ -1,4 +1,4 @@
-.TH "hwlocality_bitmap" 3 "Tue Mar 20 2018" "Version 1.11.10" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_bitmap" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -167,20 +167,25 @@ hwlocality_bitmap
 .in -1c
 .SH "Detailed Description"
 .PP 
-The \fBhwloc_bitmap_t\fP type represents a set of objects, typically OS processors -- which may actually be hardware threads (represented by \fBhwloc_cpuset_t\fP, which is a typedef for \fBhwloc_bitmap_t\fP) -- or memory nodes (represented by \fBhwloc_nodeset_t\fP, which is also a typedef for \fBhwloc_bitmap_t\fP)\&.
+The \fBhwloc_bitmap_t\fP type represents a set of integers (positive or null)\&. A bitmap may be of infinite size (all bits are set after some point)\&. A bitmap may even be full if all bits are set\&.
 .PP
-\fIBoth CPU and node sets are always indexed by OS physical number\&.\fP
+Bitmaps are used by hwloc for sets of OS processors (which may actually be hardware threads) as by \fBhwloc_cpuset_t\fP (a typedef for \fBhwloc_bitmap_t\fP), or sets of NUMA memory nodes as \fBhwloc_nodeset_t\fP (also a typedef for \fBhwloc_bitmap_t\fP)\&. Those are used for cpuset and nodeset fields in the \fBhwloc_obj\fP structure, see \fBObject Sets (hwloc_cpuset_t and hwloc_nodeset_t)\fP\&.
+.PP
+\fIBoth CPU and node sets are always indexed by OS physical number\&.\fP However users should usually not build CPU and node sets manually (e\&.g\&. with \fBhwloc_bitmap_set()\fP)\&. One should rather use existing object sets and combine them with \fBhwloc_bitmap_or()\fP, etc\&. For instance, binding the current thread on a pair of cores may be performed with: 
+.PP
+.nf
+hwloc_obj_t core1 = \&.\&.\&. , core2 = \&.\&.\&. ;
+hwloc_bitmap_t set = hwloc_bitmap_alloc();
+hwloc_bitmap_or(set, core1->cpuset, core2->cpuset);
+hwloc_set_cpubind(topology, set, HWLOC_CPUBIND_THREAD);
+hwloc_bitmap_free(set);
+
+.fi
+.PP
 .PP
 \fBNote:\fP
 .RS 4
-CPU sets and nodesets are described in \fBObject Sets (hwloc_cpuset_t and hwloc_nodeset_t)\fP\&.
-.RE
-.PP
-A bitmap may be of infinite size (all bits are set after some point)\&. A bitmap may even be full if all bits are set\&.
-.PP
-\fBNote:\fP
-.RS 4
-Several examples of using the bitmap API are available under the doc/examples/ directory in the source tree\&. Regression tests such as tests/hwloc/hwloc_bitmap*\&.c also make intensive use of this API\&. 
+Several examples of using the bitmap API are available under the doc/examples/ directory in the source tree\&. Regression tests such as tests/hwloc_bitmap*\&.c also make intensive use of this API\&. 
 .RE
 .PP
 
@@ -268,6 +273,17 @@ Remove indexes from \fCbegin\fP to \fCend\fP in bitmap \fCbitmap\fP\&. If \fCend
 .PP
 Compare bitmaps \fCbitmap1\fP and \fCbitmap2\fP in lexicographic order\&. Lexicographic comparison of bitmaps, starting for their highest indexes\&. Compare last indexes first, then second, etc\&. The empty bitmap is considered lower than anything\&.
 .PP
+\fBReturns:\fP
+.RS 4
+-1 if \fCbitmap1\fP is considered smaller than \fCbitmap2\fP\&. 
+.PP
+1 if \fCbitmap1\fP is considered larger than \fCbitmap2\fP\&. 
+.PP
+0 if bitmaps are equal (contrary to \fBhwloc_bitmap_compare_first()\fP)\&.
+.RE
+.PP
+For instance comparing binary bitmaps 0011 and 0110 returns -1 (hence 0011 is considered smaller than 0110)\&. Comparing 00101 and 01010 returns -1 too\&.
+.PP
 \fBNote:\fP
 .RS 4
 This is different from the non-existing hwloc_bitmap_compare_last() which would only compare the highest index of each bitmap\&. 
@@ -277,7 +293,23 @@ This is different from the non-existing hwloc_bitmap_compare_last() which would 
 .SS "int hwloc_bitmap_compare_first (\fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
 
 .PP
-Compare bitmaps \fCbitmap1\fP and \fCbitmap2\fP using their lowest index\&. Smaller least significant bit is smaller\&. The empty bitmap is considered higher than anything\&. 
+Compare bitmaps \fCbitmap1\fP and \fCbitmap2\fP using their lowest index\&. A bitmap is considered smaller if its least significant bit is smaller\&. The empty bitmap is considered higher than anything (because its least significant bit does not exist)\&.
+.PP
+\fBReturns:\fP
+.RS 4
+-1 if \fCbitmap1\fP is considered smaller than \fCbitmap2\fP\&. 
+.PP
+1 if \fCbitmap1\fP is considered larger than \fCbitmap2\fP\&.
+.RE
+.PP
+For instance comparing binary bitmaps 0011 and 0110 returns -1 (hence 0011 is considered smaller than 0110) because least significant bit of 0011 (0001) is smaller than least significant bit of 0110 (0010)\&. Comparing 01001 and 00110 would also return -1 for the same reason\&.
+.PP
+\fBReturns:\fP
+.RS 4
+0 if bitmaps are considered equal, even if they are not strictly equal\&. They just need to have the same least significant bit\&. For instance, comparing binary bitmaps 0010 and 0110 returns 0 because they have the same least significant bit\&. 
+.RE
+.PP
+
 .SS "void hwloc_bitmap_copy (\fBhwloc_bitmap_t\fP dst, \fBhwloc_const_bitmap_t\fP src)"
 
 .PP
@@ -317,14 +349,33 @@ Setup bitmap \fCbitmap\fP from unsigned long \fCmask\fP\&.
 
 .PP
 Test whether bitmaps \fCbitmap1\fP and \fCbitmap2\fP intersects\&. 
+.PP
+\fBReturns:\fP
+.RS 4
+1 if bitmaps intersect, 0 otherwise\&. 
+.RE
+.PP
+
 .SS "int hwloc_bitmap_isequal (\fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
 
 .PP
 Test whether bitmap \fCbitmap1\fP is equal to bitmap \fCbitmap2\fP\&. 
+.PP
+\fBReturns:\fP
+.RS 4
+1 if bitmaps are equal, 0 otherwise\&. 
+.RE
+.PP
+
 .SS "int hwloc_bitmap_isfull (\fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP
 Test whether bitmap \fCbitmap\fP is completely full\&. 
+.PP
+\fBReturns:\fP
+.RS 4
+1 if bitmap is full, 0 otherwise\&.
+.RE
 .PP
 \fBNote:\fP
 .RS 4
@@ -337,6 +388,11 @@ A full bitmap is always infinitely set\&.
 .PP
 Test whether bitmap \fCsub_bitmap\fP is part of bitmap \fCsuper_bitmap\fP\&. 
 .PP
+\fBReturns:\fP
+.RS 4
+1 if \fCsub_bitmap\fP is included in \fCsuper_bitmap\fP, 0 otherwise\&.
+.RE
+.PP
 \fBNote:\fP
 .RS 4
 The empty bitmap is considered included in any other bitmap\&. 
@@ -347,10 +403,24 @@ The empty bitmap is considered included in any other bitmap\&.
 
 .PP
 Test whether index \fCid\fP is part of bitmap \fCbitmap\fP\&. 
+.PP
+\fBReturns:\fP
+.RS 4
+1 if the bit at index \fCid\fP is set in bitmap \fCbitmap\fP, 0 otherwise\&. 
+.RE
+.PP
+
 .SS "int hwloc_bitmap_iszero (\fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP
 Test whether bitmap \fCbitmap\fP is empty\&. 
+.PP
+\fBReturns:\fP
+.RS 4
+1 if bitmap is empty, 0 otherwise\&. 
+.RE
+.PP
+
 .SS "int hwloc_bitmap_last (\fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP
@@ -430,7 +500,16 @@ Add indexes from \fCbegin\fP to \fCend\fP in bitmap \fCbitmap\fP\&. If \fCend\fP
 .SS "void hwloc_bitmap_singlify (\fBhwloc_bitmap_t\fP bitmap)"
 
 .PP
-Keep a single index among those set in bitmap \fCbitmap\fP\&. May be useful before binding so that the process does not have a chance of migrating between multiple logical CPUs in the original mask\&. 
+Keep a single index among those set in bitmap \fCbitmap\fP\&. May be useful before binding so that the process does not have a chance of migrating between multiple logical CPUs in the original mask\&. Instead of running the task on any PU inside the given CPU set, the operating system scheduler will be forced to run it on a single of these PUs\&. It avoids a migration overhead and cache-line ping-pongs between PUs\&.
+.PP
+\fBNote:\fP
+.RS 4
+This function is NOT meant to distribute multiple processes within a single CPU set\&. It always return the same single bit when called multiple times on the same input set\&. \fBhwloc_distrib()\fP may be used for generating CPU sets to distribute multiple tasks below a single multi-PU object\&.
+.PP
+This function cannot be applied to an object set directly\&. It should be applied to a copy (which may be obtained with \fBhwloc_bitmap_dup()\fP)\&. 
+.RE
+.PP
+
 .SS "int hwloc_bitmap_snprintf (char *restrict buf, size_t buflen, \fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP

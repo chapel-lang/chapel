@@ -2,7 +2,7 @@
  * Copyright © 2009 CNRS
  * Copyright © 2009-2014 Inria.  All rights reserved.
  * Copyright © 2009-2010 Université Bordeaux
- * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
+ * Copyright © 2009-2018 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -128,18 +128,18 @@ char *
 hwloc_progname(struct hwloc_topology *topology __hwloc_attribute_unused)
 {
 #if HAVE_DECL_GETMODULEFILENAME
-  char name[256], *basename;
+  char name[256], *local_basename;
   unsigned res = GetModuleFileName(NULL, name, sizeof(name));
   if (res == sizeof(name) || !res)
     return NULL;
-  basename = strrchr(name, '\\');
-  if (!basename)
-    basename = name;
+  local_basename = strrchr(name, '\\');
+  if (!local_basename)
+    local_basename = name;
   else
-    basename++;
-  return strdup(basename);
+    local_basename++;
+  return strdup(local_basename);
 #else /* !HAVE_GETMODULEFILENAME */
-  const char *name, *basename;
+  const char *name, *local_basename;
 #if HAVE_DECL_GETPROGNAME
   name = getprogname(); /* FreeBSD, NetBSD, some Solaris */
 #elif HAVE_DECL_GETEXECNAME
@@ -156,11 +156,11 @@ hwloc_progname(struct hwloc_topology *topology __hwloc_attribute_unused)
 #endif
   if (!name)
     return NULL;
-  basename = strrchr(name, '/');
-  if (!basename)
-    basename = name;
+  local_basename = strrchr(name, '/');
+  if (!local_basename)
+    local_basename = name;
   else
-    basename++;
-  return strdup(basename);
+    local_basename++;
+  return strdup(local_basename);
 #endif /* !HAVE_GETMODULEFILENAME */
 }

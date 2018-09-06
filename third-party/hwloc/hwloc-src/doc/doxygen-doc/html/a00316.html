@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.10</span>
+   &#160;<span id="projectnumber">1.11.11</span>
    </div>
   </td>
  </tr>
@@ -58,8 +58,8 @@ Custom string infos</h1>
 <p>Here is a non-exhaustive list of attributes that may be automatically added by hwloc (with the usual corresponding object in parentheses). Note that these attributes heavily depend on the ability of the operating system to report them. Many of them will therefore be missing on some OS. </p><dl>
 <dt>OSName, OSRelease, OSVersion, HostName, Architecture (Machine object) </dt>
 <dd>The operating system name, release, version, the hostname and the architecture name, as reported by the Unix <code>uname</code> command.  </dd>
-<dt>Backend (Machine object or topology root object) </dt>
-<dd>The name of the hwloc backend/component that filled the topology. If several components were combined, multiple Backend keys may exist, with different values, for instance <code>x86</code>, <code>Linux</code> and <code>pci</code>.  </dd>
+<dt>Backend (Machine object, topology root object, or specific object added by that backend) </dt>
+<dd>The name of the hwloc backend/component that filled the topology. If several components were combined, multiple Backend keys may exist, with different values, for instance <code>x86</code> and <code>Linux</code> in the root object and <code>CUDA</code> in CUDA OS device objects.  </dd>
 <dt>LinuxCgroup (Machine object) </dt>
 <dd>The name the Linux control group where the calling process is placed.  </dd>
 <dt>SyntheticDescription (topology root object) </dt>
@@ -86,31 +86,31 @@ Custom string infos</h1>
 <dd>The Solaris kstat processor group name that was used to build this Group object.  </dd>
 <dt>PCIVendor, PCIDevice (PCI devices and bridges) </dt>
 <dd>The vendor and device names of the PCI device.  </dd>
-<dt>PCISlot </dt>
-<dd>The name/number of the physical slot where the PCI device is plugged.  </dd>
-<dt>Vendor, Model, Revision, SerialNumber </dt>
+<dt>PCISlot (PCI devices) </dt>
+<dd>The name/number of the physical slot where the device is plugged.  </dd>
+<dt>Vendor, Model, Revision, SerialNumber (Block OS devices) </dt>
 <dd>The vendor and model names, revision, and serial number of a Block OS device.  </dd>
-<dt>LinuxDeviceID </dt>
-<dd>The major/minor device number such as 8:0 on Linux for a Block OS device.  </dd>
+<dt>LinuxDeviceID (Block OS devices) </dt>
+<dd>The major/minor device number such as 8:0 of Linux device.  </dd>
 <dt>CoProcType (Co-Processor OS devices) </dt>
 <dd>The type of co-processor, for instance <code>"MIC"</code>, <code>"CUDA"</code> or <code>"OpenCL"</code>.  </dd>
 <dt>GPUVendor, GPUModel (GPU or Co-Processor OS devices) </dt>
 <dd>The vendor and model names of the GPU device.  </dd>
 <dt>OpenCLDeviceType, OpenCLPlatformIndex, </dt>
 <dd></dd>
-<dt>OpenCLPlatformName, OpenCLPlatformDeviceIndex (OpenCL GPU OS devices) </dt>
+<dt>OpenCLPlatformName, OpenCLPlatformDeviceIndex (OpenCL OS devices) </dt>
 <dd>The type of OpenCL device, the OpenCL platform index and name, and the index of the device within the platform.  </dd>
-<dt>OpenCLComputeUnits, OpenCLGlobalMemorySize </dt>
-<dd>The number of compute units and global memory size (in kB) of a OpenCL device.  </dd>
+<dt>OpenCLComputeUnits, OpenCLGlobalMemorySize (OpenCL OS devices) </dt>
+<dd>The number of compute units and global memory size (in kB) of an OpenCL device.  </dd>
 <dt>NVIDIAUUID, NVIDIASerial (NVML GPU OS devices) </dt>
 <dd>The UUID and Serial of NVIDIA GPUs.  </dd>
 <dt>CUDAMultiProcessors, CUDACoresPerMP, </dt>
 <dd></dd>
 <dt>CUDAGlobalMemorySize, CUDAL2CacheSize, CUDASharedMemorySizePerMP (CUDA OS devices) </dt>
 <dd>The number of shared multiprocessors, the number of cores per multiprocessor, the global memory size, the (global) L2 cache size, and size of the shared memory in each multiprocessor of a CUDA device. Sizes are in kB.  </dd>
-<dt>MICSerialNumber </dt>
+<dt>MICSerialNumber (MIC coprocessor OS device) </dt>
 <dd>The serial number of an Intel Xeon Phi (MIC) coprocessor. hwloc may run either inside the coprocessor itself, or on the host processor. That attribute is set in both cases, so that the exact same coprocessor may be identified from both point of views, even if there are multiple nodes with multiple MICs. When running hwloc on the host, each hwloc OS device object that corresponds to a Xeon Phi gets such an attribute. When running hwloc inside a Xeon Phi coprocessor, the root object of the topology gets this attribute.  </dd>
-<dt>MICFamily, MICSKU, MICActiveCores, MICMemorySize </dt>
+<dt>MICFamily, MICSKU, MICActiveCores, MICMemorySize (MIC coprocessor OS device) </dt>
 <dd>The family, SKU (model), number of active cores, and memory size (in kB) of an Intel Xeon Phi (MIC) coprocessor.  </dd>
 <dt>DMIBoardVendor, DMIBoardName, etc. (Machine object) </dt>
 <dd>DMI hardware information such as the motherboard and chassis models and vendors, the BIOS revision, etc., as reported by Linux under <code>/sys/class/dmi/id/</code>.  </dd>
@@ -122,10 +122,10 @@ Custom string infos</h1>
 <dd>A better type name than the usual one. This may be used to specify where Groups come from. For instance Linux S/390 <em>books</em> appear as Groups of type <em>Book</em> (see also <a class="el" href="a00323.html#faq_groups">What are these Group objects in my topology?</a>). Block OS devices may have a Type of "Disk", "Tape", "Removable Media Device" or "Other". The Type attribute value is displayed instead of the default object type name in lstopo.  </dd>
 <dt>Vendor, AssetTag, PartNumber, DeviceLocation, BankLocation (MemoryModule Misc objects) </dt>
 <dd>Information about memory modules (DIMMs) extracted from SMBIOS.  </dd>
-<dt>hwlocVersion </dt>
+<dt>hwlocVersion (topology root, Machine object) </dt>
 <dd>The version number of the hwloc library that was used to generate the topology. If the topology was loaded from XML, this is not the hwloc version that loaded it, but rather the first hwloc instance that exported the topology to XML earlier.  </dd>
-<dt>ProcessName </dt>
-<dd>The name of the process that contains the hwloc library that was used to generate the topology. If the topology was from XML, this is not the hwloc version that loaded it, but rather the first process that exported the topology to XML earlier.  </dd>
+<dt>ProcessName (topology root, Machine object) </dt>
+<dd>The name of the process that contains the hwloc library that was used to generate the topology. If the topology was from XML, this is not the hwloc process that loaded it, but rather the first process that exported the topology to XML earlier.  </dd>
 </dl>
 <p>Here is a non-exhaustive list of user-provided info attributes that have a special meaning: </p><dl>
 <dt>lstopoStyle </dt>

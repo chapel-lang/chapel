@@ -59,6 +59,10 @@
    */
 #define HAVE_DECL_FABSF 1
 
+/* Define to 1 if you have the declaration of `modff', and to 0 if you don't.
+   */
+#define HAVE_DECL_MODFF 1
+
 /* Define to 1 if you have the declaration of `HW_NCPU', and to 0 if you
    don't. */
 /* #undef HAVE_DECL_HW_NCPU */
@@ -661,7 +665,7 @@
 
 
 /* Version number of package */
-#define HWLOC_VERSION "1.11.10"
+#define HWLOC_VERSION "1.11.11"
 #define VERSION HWLOC_VERSION
 
 /* Define to 1 if the X Window System is missing or not being used. */

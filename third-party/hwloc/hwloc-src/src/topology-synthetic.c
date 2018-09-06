@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2010 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -945,8 +945,8 @@ static int hwloc_topology_export_synthetic_indexes(struct hwloc_topology * topol
   /* dump all indexes */
   cur = obj;
   while (cur) {
-    res = snprintf(tmp, tmplen, "%u%s", cur->os_index,
-		   cur->next_cousin ? "," : ")");
+    res = hwloc_snprintf(tmp, tmplen, "%u%s", cur->os_index,
+			 cur->next_cousin ? "," : ")");
     if (res < 0)
       return -1;
     ret += res;
@@ -1004,7 +1004,7 @@ static int hwloc_topology_export_synthetic_obj_attr(struct hwloc_topology * topo
     tmplen -= res;
 
     if (needindexes) {
-      res = snprintf(tmp, tmplen, "%sindexes=", prefix);
+      res = hwloc_snprintf(tmp, tmplen, "%sindexes=", prefix);
       if (res < 0)
 	return -1;
       ret += res;
