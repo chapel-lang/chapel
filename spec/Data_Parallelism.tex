@@ -295,18 +295,22 @@ affect the behavior of a task construct such as a \chpl{coforall} loop.
 
 A \emph{task-private variable} declared in a forall loop results
 in a separate shadow variable in each task created by the forall
-loop's parallel iterator, as well as a separate shadow variable
+loop's parallel iterator, as well as a "top-level" shadow variable
 created at the top level of the parallel iterator itself.
-
-The shadow variable is created at the start of the task or the
-iterator and destroyed at the end of the task/iterator.
-Within the lexical scope of the forall statement or expression,
-the variable name references the shadow variable in the task
-that executed the current yield statement, or in the iterator
-if the current yield occurs in the iterator outside any task constructs.
 In contrast to regular forall intents \rsec{Forall_Intents},
-these shadow variables are unrelated to outer variables of the same name,
-if any.
+these shadow variables are unrelated to outer variables
+of the same name, if any.
+
+A given shadow variable is created at the start and destroyed
+at the end of its task.
+Within the lexical scope of the body of the forall statement or expression,
+the variable name refers to the shadow variable created in the task
+that executed the current yield statement.
+
+The "top-level" shadow variable is created at the start and destroyed
+at the end of the parallel iterator. It is referenced in those iterations
+of the forall loop that are due to "top-level" yields, i.e. yields
+that are outside any of the task constructs that the iterator may have.
 
 The syntax of a task-private variable declaration in a forall statement's
 with-clause is:
@@ -349,16 +353,16 @@ iter myIter() { yield ""; }              // serial iterator, unused
 
 iter myIter(param tag) where tag == iterKind.standalone {
   for 1..2 do
-    yield "before coforall";
+    yield "before coforall";             // shadow var 0
   coforall 1..3 do
     for 1..2 do
-      yield "inside coforall";
+      yield "inside coforall";           // shadow vars 1..3
   for 1..2 do
-    yield "after coforall";
+    yield "after coforall";              // shadow var 0, again
 }
 
 forall str in myIter()
-  with (var tpv: R)                      // delcare a task-private variable
+  with (var tpv: R)                      // declare a task-private variable
 do
   writeln("shadow var: ", tpv.id, "  yield: ", str);
 \end{chapel}
