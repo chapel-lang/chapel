@@ -57,12 +57,10 @@ proc printColorEquations() {
 // place, and then creating per-chameneos tasks to have meetings.
 //
 proc holdMeetings(population, numMeetings) {
-  const place = new unmanaged MeetingPlace(numMeetings);
+  const place = new MeetingPlace(numMeetings);
 
   coforall c in population do           // create a task per chameneos
     c.haveMeetings(place, population);
-
-  delete place;
 }
 
 //

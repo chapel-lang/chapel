@@ -65,7 +65,7 @@ record Population {
   //
   var chameneos = [i in 1..size]
                     new unmanaged Chameneos(i, if size == 10 then colors10[i]
-                                                   else ((i-1)%3): Color);
+                                                             else ((i-1)%3): Color);
 
   //
   // Print the colors of the current population.
@@ -81,7 +81,7 @@ record Population {
   // place, and then creating per-chameneos tasks to have meetings.
   //
   proc holdMeetings(numMeetings) {
-    const place = new borrowed MeetingPlace(numMeetings);
+    const place = new MeetingPlace(numMeetings);
 
     coforall c in chameneos do           // create a task per chameneos
       c.haveMeetings(place, chameneos);
