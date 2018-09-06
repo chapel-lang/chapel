@@ -350,8 +350,23 @@ discussed in \rsec{Tuples}.
 
 % TODO: the first sentence does not make strict sense.
 % Overall, it does not feel like this paragraph has any value here.
-The class type defines a type that contains variables and constants,
-called fields, and functions, called methods.  Classes are defined
+A class can contain variables, constants, and methods.
+
+There are several variants of the type for a \chpl{class C}:
+
+\begin{itemize}
+  \item \chpl{C} is equivalent to \chpl{borrowed C}
+  \item \chpl{borrowed C} refers to a class instance that has a lifetime
+    managed by another variable.
+  \item \chpl{unmanaged C} the instance must have \chpl{delete} called on it explicitly.
+  \item \chpl{owned C} the instance be deleted
+    automatically when the \chpl{owned} variable goes out of scope, but
+    only one \chpl{owned} variable can refer to the instance at a time.
+  \item \chpl{shared C} will be deleted when all of the \chpl{shared}
+    variables referring to the instance go out of scope.
+\end{itemize}
+
+Classes are defined
 in~\rsec{Classes}.  The class type can also contain type aliases and
 parameters.  Such a class is generic and is defined
 in~\rsec{Generic_Types}.
@@ -359,8 +374,8 @@ in~\rsec{Generic_Types}.
 \subsection{Record Types}
 \label{Types_Record_Types}
 
-The record type is similar to a class type; the primary difference is
-that a record is a value rather than a reference.  Records are defined
+Records can contain variables, constants, and methods. Unlike class
+types, records are values rather than references. Records are defined
 in~\rsec{Records}.
 
 \subsection{Union Types}
