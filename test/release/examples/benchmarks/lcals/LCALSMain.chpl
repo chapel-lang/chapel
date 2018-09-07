@@ -447,7 +447,7 @@ proc writeTimingSummaryReport(loop_variants: [] bool, outchannel) {
     var ref_mean = ref_variant_stat.mean;
 
     if loop_names[iloop].length != 0 && ref_variant_stat.loop_is_run {
-      if iloop > 1 {
+      if iloop:int > 1 {
         outchannel.write("\n", dash_line_part);
       }
       outchannel.writef("%s (%i) --> ", loop_names[iloop], iloop);
@@ -564,7 +564,7 @@ proc writeChecksumReport(loop_variants: [] bool, outchannel) {
     var ref_variant_stat = suite_run_info.getLoopStats(LoopVariantID.RAW)[iloop];
     var ref_chksum = ref_variant_stat.loop_chksum;
     if loop_names[iloop].length != 0 && ref_variant_stat.loop_is_run {
-      if iloop > 1 then
+      if iloop:int > 1 then
         outchannel.write("\n", dash_line_part);
       outchannel.write(loop_names[iloop], "(", iloop:int, ") --> ");
       for (ilv, variant) in zip(0..#nvariants, loop_variant_names.domain) {
