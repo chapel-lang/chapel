@@ -19,40 +19,83 @@
 
 /*
 
-   :record:`Shared` (along with :record:`~OwnedObject.Owned`) manage the
-   deallocation of a class instance. :record:`Shared` is meant to be used when
-   many different references will exist to the object and these references need
-   to keep the object alive.
+:record:`shared` (along with :record:`~OwnedObject.owned`) manage the
+deallocation of a class instance. :record:`shared` is meant to be used when
+many different references will exist to the object and these references need
+to keep the object alive.
 
-   To use :record:`Shared`, allocate a class instance following this
-   pattern:
+Using `shared`
+--------------
 
-   .. code-block:: chapel
+To use :record:`shared`, allocate a class instance following this
+pattern:
 
-     var mySharedObject = new Shared(new MyClass(...));
+.. code-block:: chapel
 
-   When mySharedObject and any copies of it go out of scope, the class
-   instance it refers to will be deleted.
+ var mySharedObject = new shared MyClass(...));
 
-   Copy initializing or assigning from mySharedObject will make
-   other variables refer to the same class instance. The class instance
-   will be deleted after all of these references go out of scope.
+When ``mySharedObject`` and any copies of it go out of scope, the class
+instance it refers to will be deleted.
 
-   .. code-block:: chapel
+Copy initializing or assigning from mySharedObject will make
+other variables refer to the same class instance. The class instance
+will be deleted after all of these references go out of scope.
 
-     var globalSharedObject:Shared(MyClass);
+.. code-block:: chapel
 
-     proc makeGlobalSharedObject() {
-       var mySharedObject = new Shared(new MyClass(...));
-       globalSharedObject = mySharedObject;
-       // now mySharedObject is deinitialized, but the MyClass
-       // instance is not deleted until globalSharedObject is deinitialized.
-     }
+ var globalSharedObject:shared MyClass;
 
-   :record:`Shared` supports coercions to the class type as well as
-   coercions from a ``Shared(T)`` to ``Shared(U)`` where ``T`` is a
-   subclass of ``U``. See :record:`~OwnedObject.Owned` for examples
-   of these coercions.
+ proc makeGlobalSharedObject() {
+   var mySharedObject = new shared MyClass(...);
+   globalSharedObject = mySharedObject;
+   // the reference count is decremented when mySharedObject
+   // goes out of scope. Since it's not zero after decrementing, the
+   // MyClass instance is not deleted until globalSharedObject
+   // goes out of scope.
+ }
+
+Borrowing from `shared`
+-----------------------
+
+The :proc:`shared.borrow` method returns the pointer managed by the
+:record:`shared`. This pointer is only valid as long as the :record:`shared` is
+storing that pointer. The compiler includes some checking for errors in this
+case. In these ways, :record:`shared` is similar to
+:record:`~OwnedObject.owned`.
+
+See :ref:`about-owned-borrowing` for more details and examples.
+
+Coercions for `shared`
+----------------------
+
+As with :record:`~OwnedObject.owned`, :record:`shared` supports
+coercions to the class type as well as
+coercions from a ``shared(T)`` to ``shared(U)`` where ``T`` is a
+subclass of ``U``.
+
+See :ref:`about-owned-coercions` for more details and examples.
+
+`shared` Intents and Instantiation
+----------------------------------
+
+Intents and instantiation for :record:`shared` are similar
+to :record:`~OwnedObject.owned`. Namely:
+
+ * for formal arguments declared with a type, the
+   default intent is `const in`, which updates the
+   reference count and shares the instance.
+ * for generic formal arguments with no type component that are
+   passed actuals of :record:`shared` type,
+   the formal argument will be instantiated with the borrow type,
+   and no reference count changes will occur.
+
+   .. note::
+
+      It is expected that this rule will change in the future with
+      more experience with this language design.
+
+
+See also :ref:`about-owned-intents-and-instantiation` which includes examples.
 
  */
 module SharedObject {
@@ -85,7 +128,7 @@ module SharedObject {
 
   /*
 
-     The :record:`Shared` manages the deletion of a class instance in a way
+     :record:`shared` manages the deletion of a class instance in a way
      that supports multiple owners of the class instance.
 
      This is currently implemented with task-safe reference counting.
@@ -107,11 +150,11 @@ module SharedObject {
     var chpl_pn:unmanaged ReferenceCount; // reference counter
 
     /*
-       Default-initialize a :record:`Shared`.
+       Default-initialize a :record:`shared`.
      */
     proc init(type t) {
       if !isClass(t) then
-        compilerError("Shared only works with classes");
+        compilerError("shared only works with classes");
 
       this.chpl_t = _to_borrowed(t);
       this.chpl_p = nil;
@@ -119,10 +162,14 @@ module SharedObject {
     }
 
     /*
-       Initialize a :record:`Shared` with a class instance.
-       This :record:`Shared` will take over the deletion of the class
+       Initialize a :record:`shared` with a class instance.
+       This :record:`shared` will take over the deletion of the class
        instance. It is an error to directly delete the class instance
-       while it is managed by :record:`Shared`.
+       while it is managed by :record:`shared`.
+
+       .. note::
+          In the future, the argument `p` will be required to be
+          of `unmanaged` type.
 
        :arg p: the class instance to manage. Must be of class type.
      */
@@ -152,18 +199,18 @@ module SharedObject {
     where isClass(T) == false &&
           isSubtype(T, _shared) == false &&
           isIterator(p) == false {
-      compilerError("Shared only works with classes");
+      compilerError("shared only works with classes");
       this.chpl_t = T;
       this.chpl_p = p;
     }
 
     /*
-       Initialize a :record:`Shared` taking a pointer from
-       a :record:`Owned`.
+       Initialize a :record:`shared` taking a pointer from
+       a :record:`owned`.
 
-       This :record:`Shared` will take over the deletion of the class
+       This :record:`shared` will take over the deletion of the class
        instance. It is an error to directly delete the class instance
-       while it is managed by :record:`Shared`.
+       while it is managed by :record:`shared`.
 
        :arg take: the owned value to take ownership from
      */
@@ -172,7 +219,7 @@ module SharedObject {
       this.chpl_t = _to_borrowed(p.type);
 
       if !isClass(p) then
-        compilerError("Shared only works with classes");
+        compilerError("shared only works with classes");
 
       var rc:unmanaged ReferenceCount = nil;
 
@@ -186,7 +233,7 @@ module SharedObject {
     }
 
     /*
-       Copy-initializer. Creates a new :record:`Shared`
+       Copy-initializer. Creates a new :record:`shared`
        that refers to the same class instance as `src`.
        These will share responsibility for managing the instance.
      */
@@ -202,9 +249,9 @@ module SharedObject {
     }
 
     /*
-       The deinitializer for :record:`Shared` will destroy the class
+       The deinitializer for :record:`shared` will destroy the class
        instance once there are no longer any copies of this
-       :record:`Shared` that refer to it.
+       :record:`shared` that refer to it.
      */
     proc deinit() {
       clear();
@@ -212,7 +259,7 @@ module SharedObject {
 
     /*
        Change the instance managed by this class to `newPtr`.
-       If this record was the last :record:`Shared` managing a
+       If this record was the last :record:`shared` managing a
        non-nil instance, that instance will be deleted.
      */
     proc ref retain(newPtr:unmanaged chpl_t) {
@@ -224,12 +271,12 @@ module SharedObject {
     }
 
     /*
-       Empty this :record:`Shared` so that it stores `nil`.
-       Deletes the managed object if this :record:`Shared` is the
-       last :record:`Shared` managing that object.
+       Empty this :record:`shared` so that it stores `nil`.
+       Deletes the managed object if this :record:`shared` is the
+       last :record:`shared` managing that object.
        Does not return a value.
 
-       Equivalent to ``Shared.retain(nil)``.
+       Equivalent to ``shared.retain(nil)``.
      */
     proc ref clear() {
       if isClass(chpl_p) { // otherwise, let error happen on init call
@@ -246,10 +293,14 @@ module SharedObject {
     }
 
     /*
-       Return the object managed by this :record:`Shared` without
+       Return the object managed by this :record:`shared` without
        impacting its lifetime at all. It is an error to use the
-       value returned by this function after the :record:`Shared`
-       goes out of scope.
+       value returned by this function after the last :record:`shared`
+       goes out of scope or deletes the contained class instance
+       for another reason, including calls to
+       `=`, or :proc:`retain` when this is the last :record:`shared`
+       referring to the instance.
+       In some cases such errors are caught at compile-time.
      */
     proc /*const*/ borrow() {
       return chpl_p;
@@ -261,10 +312,10 @@ module SharedObject {
 
 
   /*
-     Assign one :record:`Shared` to another.
-     Deletes the object managed by `lhs` if there are
-     no other :record:`Shared` referring to it. On return,
-     `lhs` will refer to the same object as `rhs`.
+     Assign one :record:`shared` to another.
+     Deletes the object managed by ``lhs`` if there are
+     no other :record:`shared` referring to it. On return,
+     ``lhs`` will refer to the same object as ``rhs``.
    */
   proc =(ref lhs:_shared, rhs: _shared) {
     // retain-release
@@ -276,9 +327,11 @@ module SharedObject {
   }
 
   /*
-     Set a :record:`Shared` from a :record`Owned`.
-     On return, `lhs` will refer to the object previously
-     managed by `rhs`, and `rhs` will refer to `nil`.
+     Set a :record:`shared` from a :record:`~OwnedObject.owned`.
+     Deletes the object managed by ``lhs`` if there are
+     no other :record:`shared` referring to it.
+     On return, ``lhs`` will refer to the object previously
+     managed by ``rhs``, and ``rhs`` will refer to `nil`.
    */
   proc =(ref lhs:_shared, in rhs:owned) {
     lhs.retain(rhs.release());
@@ -290,7 +343,7 @@ module SharedObject {
   }
 
   /*
-     Swap two :record:`Shared` objects.
+     Swap two :record:`shared` objects.
    */
   proc <=>(ref lhs: _shared, ref rhs: _shared) {
     lhs.chpl_pn <=> rhs.chpl_pn;
@@ -313,6 +366,7 @@ module SharedObject {
   // Note, coercion from _shared -> _shared.chpl_t is sometimes directly
   // supported in the compiler via a call to borrow() and
   // sometimes uses this cast.
+  pragma "no doc"
   inline proc _cast(type t, const ref x:_shared) where isSubtype(t,x.chpl_t) {
     return x.borrow();
   }
@@ -334,10 +388,14 @@ module SharedObject {
   }
 
   // cast from nil to shared
+  pragma "no doc"
   inline proc _cast(type t:_shared, x:_nilType) {
     var tmp:t;
     return tmp;
   }
 
+  /* This type allows code using the pre-1.18 `Shared` record
+     to continue to compile. It will be removed in a future release.
+   */
   type Shared = _shared;
 }
