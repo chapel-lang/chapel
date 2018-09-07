@@ -33,14 +33,10 @@ class-declaration-statement:
   external-class-declaration-statement
 
 simple-class-declaration-statement:
-  `class' identifier class-inherit-list[OPT] { class-statement-list[OPT] }
+  `class' identifier class-inherit[OPT] { class-statement-list[OPT] }
 
-class-inherit-list:
-  : basic-class-type-list
-
-basic-class-type-list:
-  basic-class-type
-  basic-class-type , basic-class-type-list
+class-inherit:
+  : basic-class-type
 
 class-statement-list:
   class-statement
