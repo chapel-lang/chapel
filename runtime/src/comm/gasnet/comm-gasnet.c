@@ -1133,8 +1133,8 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
     }
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: %s:%d: remote put to %d\n", chpl_nodeID,
-             chpl_lookupFilename(fn), ln, node);
+      printf("%d: %s:%d: remote put to %d of size %zu\n", chpl_nodeID,
+             chpl_lookupFilename(fn), ln, node, size);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_comm_diags_incr(&comm_diagnostics.put);
     }
@@ -1213,8 +1213,8 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
     }
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
-             chpl_lookupFilename(fn), ln, node);
+      printf("%d: %s:%d: remote get from %d of size %zu\n", chpl_nodeID,
+             chpl_lookupFilename(fn), ln, node, size);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_comm_diags_incr(&comm_diagnostics.get);
     }
