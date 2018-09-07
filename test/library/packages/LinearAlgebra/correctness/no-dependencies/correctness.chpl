@@ -834,8 +834,8 @@ use TestUtils;
     B[1, ..] =  1.0;
     test_CSRdot(A, B);
 
-    // A big matrix
-    var C = eye(1000, 2000);
+    // A bigger matrix
+    var C = eye(100, 20);
     test_CSRdot(C);
   }
 
