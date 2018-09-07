@@ -46,10 +46,12 @@ will be deleted after all of these references go out of scope.
  var globalSharedObject:shared MyClass;
 
  proc makeGlobalSharedObject() {
-   var mySharedObject = new shared new MyClass(...);
+   var mySharedObject = new shared MyClass(...);
    globalSharedObject = mySharedObject;
-   // now mySharedObject is deinitialized, but the MyClass
-   // instance is not deleted until globalSharedObject is deinitialized.
+   // the reference count is decremented when mySharedObject
+   // goes out of scope. Since it's not zero after decrementing, the
+   // MyClass instance is not deleted until globalSharedObject
+   // goes out of scope.
  }
 
 Borrowing from `shared`
@@ -58,7 +60,7 @@ Borrowing from `shared`
 The :proc:`shared.borrow` method returns the pointer managed by the
 :record:`shared`. This pointer is only valid as long as the :record:`shared` is
 storing that pointer. The compiler includes some checking for errors in this
-case. In thes ways, :record:`shared` is similar to
+case. In these ways, :record:`shared` is similar to
 :record:`~OwnedObject.owned`.
 
 See :ref:`about-owned-borrowing` for more details and examples.

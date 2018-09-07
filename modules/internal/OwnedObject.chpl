@@ -133,7 +133,7 @@ For example:
 The default intent for :record:`owned` currently depends on whether
 or not the formal argument was declared with a type.
 
-If the formal argument has a declared type, the defaut intent is `in`, meaning
+If the formal argument has a declared type, the default intent is `in`, meaning
 that ownership will occur.
 
 .. code-block:: chapel
