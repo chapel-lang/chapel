@@ -149,9 +149,7 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
             fn->name == astr_cast))
         if (ArgSymbol* arg = toArgSymbol(key))
           if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
-            if (arg->intent == INTENT_IN ||
-                arg->intent == INTENT_CONST ||
-                arg->intent == INTENT_CONST_IN ||
+            if (arg->intent == INTENT_CONST ||
                 arg->intent == INTENT_BLANK)
               if (arg->getValType() == dtAny)
                 return getManagedPtrBorrowType(actualTS->getValType())->symbol;

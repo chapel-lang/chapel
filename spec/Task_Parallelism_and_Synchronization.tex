@@ -868,15 +868,19 @@ task-intent-clause:
   `with' ( task-intent-list )
 
 task-intent-list:
+  task-intent-item
+  task-intent-item, task-intent-list
+
+task-intent-item:
   formal-intent identifier
-  formal-intent identifier, task-intent-list
+  task-private-var-decl
 \end{syntax}
 
 where the following intents can be used as a \sntx{formal-intent}:
 \chpl{ref}, \chpl{in}, \chpl{const}, \chpl{const in}, \chpl{const ref}.
-In addition, \chpl{reduce} intents are allowed.
-They are similar to reduce forall intents \rsec{Forall_Intents}
-as described in the \emph{Reduce Intents} technical note
+\sntx{task-private-var-decl} is defined in \rsec{Task_Private_Variables}.
+In addition, \sntx{task-intent-item} may define a \chpl{reduce} intent.
+Reduce intents are described in the \emph{Reduce Intents} technical note
 in the online documentation:
 \\ %formatting
 \mbox{$$ $$ $$} %indent

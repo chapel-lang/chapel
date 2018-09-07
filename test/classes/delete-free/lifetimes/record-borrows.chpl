@@ -1,7 +1,7 @@
 pragma "safe"
 module l5 {
 
-use OwnedObject;
+
 
 record Rint {
   var x:int;
@@ -82,7 +82,7 @@ proc buildR(sub:SubRA) {
 var globalRA:RA;
 
 proc bad() {
-  var c = new Owned(new unmanaged MyClassA(1));
+  var c = new owned MyClassA(1);
   var subr = new SubRA(c.borrow());
   globalRA = buildR(subr);
 }

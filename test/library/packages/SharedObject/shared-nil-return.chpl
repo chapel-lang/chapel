@@ -1,9 +1,7 @@
-use SharedObject;
-
 class C { }
 
 class D {
-  var sc: Shared(C);
+  var sc: shared C;
   proc foo() {
     return sc;
   }

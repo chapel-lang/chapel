@@ -196,10 +196,34 @@ writeln(x.type:string);
 \end{chapeloutput}
 \end{chapelexample}
 
+\begin{chapelexample}{query.chpl}
+Type queries can also be used to constrain the types of other function arguments
+and/or the return type.  In this example, the type query on the first argument
+establishes type constraints on the other arguments and also determines the
+return type.
+
+The code
+\begin{chapel}
+writeln(sumOfThree(1,2,3));
+writeln(sumOfThree(4.0,5.0,3.0));
+
+proc sumOfThree(x: ?t, y:t, z:t):t {
+   var sum: t;
+
+   sum = x + y + z;
+   return sum;
+}
+\end{chapel}
+produces the output
+\begin{chapelprintoutput}{}
+6
+12.0
+\end{chapelprintoutput}
+\end{chapelexample}
+
 \subsection{Formal Arguments of Generic Type}
 \label{Formal_Arguments_of_Generic_Type}
 \index{formal arguments!generic}
-\index{formal arguments!partially concrete}
 
 If the type of a formal argument is a generic type, the type of the
 formal argument is taken to be the type of the actual argument passed
@@ -218,10 +242,18 @@ proc writeTop(s: Stack) {
 \end{chapel}
 \end{example}
 
-Types and parameters may be queried from the top-level types of formal
+Types and parameters may be queried from the types of formal
 arguments as well.  In the example above, the formal argument's type
-could also be specified as \chpl{Stack(?type)} in which case the
-symbol \chpl{type} is equivalent to \chpl{s.itemType}.
+could also be specified as \chpl{Stack(?t)} in which case the
+symbol \chpl{t} is equivalent to \chpl{s.itemType}.
+
+\index{integral (generic type)@\chpl{integral} (generic type)}
+\index{numeric (generic type)@\chpl{numeric} (generic type)}
+\index{enumerated (generic type)@\chpl{enumerated} (generic type)}
+The types \chpl{integral}, \chpl{numeric} and \chpl{enumerated}
+are generic types that can only be instantiated with, respectively, the
+signed and unsigned integral types, all of the numeric types, and
+all enumerated types.
 
 Note that generic types which have default values for all of their
 generic fields, \emph{e.g. range}, are not generic when simply
@@ -246,26 +278,56 @@ proc g(c: C(?)) {
 \end{chapel}
 \end{example}
 
+\subsection{Formal Arguments of Partially Generic Type}
+\label{Formal_Arguments_of_Partially_Generic_Type}
+\index{formal arguments!partially concrete}
+\index{formal arguments!partially generic}
 \index{where@\chpl{where}!implicit}
-The generic type may be specified with some queries and some exact
-values.  Using exact values in this manner makes the argument
+
+The generic type for a formal argument may be specified with some queries
+or generic types and some concrete types or values.
+Using concrete types or values in this manner makes the argument
 \emph{partially concrete} for the purpose of function resolution.
-\begin{example}
-Given the class definition
+
+\begin{chapelexample}{nested-type-queries.chpl}
+
+Given the code:
 \begin{chapel}
 class C {
-  type t;
-  type tt;
+  type elementType;
+  type indexType;
+  type containerType;
+}
+class Container {
+  type containedType;
+}
+proc f(c: C(real,?t,?u)) {
+  // ...
 }
 \end{chapel}
-then the function definition
+
+The function \chpl{f} can only apply when the \chpl{c.elementType==real}.
+
+It's also possible to use a generic type as an argument to \chpl{C}. The
+following function, \chpl{g}, can only apply when \chpl{c.containerType} is
+an instance of \chpl{Container}:
+
 \begin{chapel}
-proc f(c: C(?t,real)) {
-  // body
+proc g(c: C(?t,?u,Container)) {
+  // ...
 }
 \end{chapel}
-specifies that \chpl{f} should be chosen only when \chpl{c.tt==real}.
-\end{example}
+
+\begin{chapelpost}
+var cc = new borrowed Container(int);
+var c = new borrowed C(real, int, cc.type);
+f(c);
+g(c);
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
 Similarly, a tuple type with query arguments
 forms a \emph{partially concrete} argument.
 \begin{example}
@@ -277,10 +339,32 @@ proc f(tuple: (?t,real)) {
 \end{chapel}
 specifies that \chpl{tuple.size == 2 && tuple(2).type == real}.
 \end{example}
+
+Homogenous tuple arguments of generic type are also supported:
+\begin{chapelexample}{partially-concrete-star-tuple.chpl}
+\begin{chapel}
+record Number {
+  var n;
+}
+proc f(tuple: 2*Number) {
+}
+\end{chapel}
+\begin{chapelpost}
+f( (new Number(1), new Number(2)) );
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+
+specifies that \chpl{f} accepts a tuple with 2 elements, where each
+element has the same type, and that type is instantiation of
+\chpl{Number}.
+\end{chapelexample}
+
 Note that specifying a tuple consisting entirely of queried types
 does create a \emph{partially concrete argument} because the size
 of the tuple is constrained.
-\begin{example}
+\begin{chapelexample}{partially-concrete-tuple-ambiguity.chpl}
+
 The following program results in an ambiguity error:
 \begin{chapel}
 proc f(tuple: (?,real)) {
@@ -291,40 +375,20 @@ f( (1.0, 2.0) );
 \end{chapel}
 since the \chpl{tuple} arguments in both versions of \chpl{f} are
 \emph{partially concrete}.
-\end{example}
-
-\begin{chapelexample}{query.chpl}
-Type queries can also be used to constrain the types of other function arguments
-and/or the return type.  In this example, the type query on the first argument
-establishes type constraints on the other arguments and also determines the
-return type.
-
-The code
-\begin{chapel}
-writeln(sumOfThree(1,2,3));
-writeln(sumOfThree(4.0,5.0,3.0));
-
-proc sumOfThree(x: ?t, y:t, z:t):t {
-   var sum: t;
-   
-   sum = x + y + z;
-   return sum;
-}
-\end{chapel}
-produces the output
-\begin{chapelprintoutput}{}
-6
-12.0
-\end{chapelprintoutput}
+\begin{chapelprediff}
+\#!/usr/bin/env sh
+\# This prediff exists to avoid underscores in the output
+\# which confuse tex
+testname=$1
+outfile=$2
+head -n 1 $outfile > $outfile.2
+mv $outfile.2 $outfile
+\end{chapelprediff}
+\begin{chapeloutput}
+partially-concrete-tuple-ambiguity.chpl:5: error: ambiguous call 'f(2*real(64))'
+\end{chapeloutput}
 \end{chapelexample}
 
-\index{integral (generic type)@\chpl{integral} (generic type)}
-\index{numeric (generic type)@\chpl{numeric} (generic type)}
-\index{enumerated (generic type)@\chpl{enumerated} (generic type)}
-The generic types \chpl{integral}, \chpl{numeric} and \chpl{enumerated}
-are generic types that can only be instantiated with, respectively, the
-signed and unsigned integral types, all of the numeric types, and
-enumerated types.
 
 \subsection{Formal Arguments of Generic Array Types}
 \label{Formal_Arguments_of_Generic_Array_Types}
@@ -447,13 +511,13 @@ of types and parameter values, one type or value per generic field.
 %    - what is the semantics;
 %      i.e. how it corresponds to the class/record's genericity
 %    - what is the arg's default, if any
-% 
+%
 % In the presentation below, some of these aspects are discussed
 % in the field-kind-specific subsections, some in the constructor-specific
 % subsections, some in both.  I.e. there is an overlap between
 % field-kind and constructor subsections; that should be OK but feel free
 % to clean up.
-% 
+%
 % It would be cool to summarize that in a table
 % (one dimension: field kinds; the other dimension: aspects).
 
@@ -536,7 +600,7 @@ The field can be accessed from a class or record instance or from the
 instantiated class or record type itself.
 
 % A parameter defined in a class or record is accessed as if it were a
-% field.  This access returns a parameter.  
+% field.  This access returns a parameter.
 The parameter becomes an argument with intent \chpl{param} to the
 compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors})
 for that class or record.  This makes the compiler-generated
@@ -832,7 +896,7 @@ diagnostics to generate warnings and errors:
 \begin{chapel}
 proc foo(x, y) {
   if (x.type != y.type) then
-    compilerError("foo() called with non-matching types: ", 
+    compilerError("foo() called with non-matching types: ",
                   x.type:string, " != ", y.type:string);
   writeln("In 2-argument foo...");
 }
@@ -965,7 +1029,7 @@ generic method to particular cases. Unlike the previous two cases, a
 where clause can be used to declare special implementation of a function
 that works with some set of types - in other words, the special
 implementation can still be a generic function.  See also
-\rsec{Where_Expressions}.
+\rsec{Where_Clauses}.
 
 \section{Example: A Generic Stack}
 \label{Example_Generic_Stack}

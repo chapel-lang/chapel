@@ -1,5 +1,3 @@
-use SharedObject;
-
 class C {
   var x:int;
   proc deinit() {
@@ -7,19 +5,19 @@ class C {
   }
 }
 
-proc shareOwnershipAgain(in arg:Shared(C)) {
+proc shareOwnershipAgain(in arg:shared C) {
   writeln("in shareOwnershipAgain with arg=", arg.borrow());
 }
 
 
-proc shareOwnership(in arg:Shared(C)) {
+proc shareOwnership(in arg:shared C) {
   writeln("in shareOwnership with arg=", arg.borrow());
   shareOwnershipAgain(arg);
   writeln("in shareOwnership, now arg=", arg.borrow());
 }
 
 proc make() {
-  var x = new Shared(new C(1));
+  var x = new shared C(1);
   return x;
 }
 

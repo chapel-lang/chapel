@@ -1285,29 +1285,63 @@ module DefaultRectangular {
       }
     }
 
-    override proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
-      dsiReallocate(bounds, bounds);
+    override proc dsiReallocate(allocBound: range(idxType,
+                                                  BoundedRangeType.bounded,
+                                                  stridable),
+                                arrayBound: range(idxType,
+                                                  BoundedRangeType.bounded,
+                                                  stridable)) where rank == 1 {
+      on this {
+        const allocD = {allocBound};
+        var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
+                                                       rank=rank,
+                                                       idxType=idxType,
+                                                       stridable=allocD._value.stridable,
+                                                       dom=allocD._value);
+
+        forall i in arrayBound(dom.ranges(1)) do
+          copy.dsiAccess(i) = dsiAccess(i);
+
+        off = copy.off;
+        blk = copy.blk;
+        str = copy.str;
+        factoredOffs = copy.factoredOffs;
+
+        dsiDestroyArr();
+        data = copy.data;
+        // We can't call initShiftedData here because the new domain
+        // has not yet been updated (this is called from within the
+        // = function for domains.
+        if earlyShiftData && !allocD._value.stridable {
+          // Lydia note 11/04/15: a question was raised as to whether this
+          // check on numIndices added any value.  Performance results
+          // from removing this line seemed inconclusive, which may indicate
+          // that the check is not necessary, but it seemed like unnecessary
+          // work for something with no immediate reward.
+          if allocD.numIndices > 0 {
+            shiftedData = copy.shiftedData;
+          }
+        }
+        dataAllocRange = copy.dataAllocRange;
+        delete copy;
+      }
     }
 
-    // Reallocate the array to have space for elements specified by
-    // `allocBounds` while maintaining the elements specified by `arrayBounds`
-    override proc dsiReallocate(allocBounds:rank*range(idxType,
-                                                       BoundedRangeType.bounded,
-                                                       stridable),
-                                arrayBounds:rank*range(idxType,
-                                                       BoundedRangeType.bounded,
-                                                       stridable)) {
 
+    // Reallocate the array to have space for elements specified by `bounds`
+    override proc dsiReallocate(bounds: rank*range(idxType,
+                                                   BoundedRangeType.bounded,
+                                                   stridable)) {
       on this {
-        var allocD = {(...allocBounds)};
-        var arrayD = {(...arrayBounds)};
+        const allocD = {(...bounds)};
+
         var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
                                             rank=rank,
                                             idxType=idxType,
                                             stridable=allocD._value.stridable,
                                             dom=allocD._value);
 
-        forall i in arrayD((...dom.ranges)) do
+        forall i in allocD((...dom.ranges)) do
           copy.dsiAccess(i) = dsiAccess(i);
 
         off = copy.off;

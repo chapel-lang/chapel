@@ -104,6 +104,32 @@ OPTIONS
 
     Print the module search path used to resolve module for further details.
 
+*Warning and Language Control Options*
+
+**--[no-]permit-unhandled-module-errors**
+
+    Normally, the compiler ensures that all errors are handled for code
+    inside of a module declaration (unless the module overrides that
+    behavior). This flag overrides this default, so that the compiler
+    will compile code in a module that does not handle its errors. If any
+    error comes up during execution, it will cause the program to halt.
+
+**--[no-]warn-constructors**
+
+    Enable [disable] deprecation warnings for user-defined constructors. This
+    warning is enabled by default and will be triggered for each user-defined
+    constructor encountered.
+
+**--[no-]warn-unstable**
+
+    Enable [disable] warnings for code that has recently or will recently
+    change in meaning due to language changes.
+
+**--[no-]warnings**
+
+    Enable [disable] the printing of compiler warnings. Defaults to printing
+    warnings.
+
 *Parallelism Control Options*
 
 **--[no-]local**
@@ -531,14 +557,6 @@ OPTIONS
     For boolean configuration variables, the value can be omitted, causing
     the default value to be toggled.
 
-**--[no-]permit-unhandled-module-errors**
-
-    Normally, the compiler ensures that all errors are handled for code
-    inside of a module declaration (unless the module overrides that
-    behavior). This flag overrides this default, so that the compiler
-    will compile code in a module that does not handle its errors. If any
-    error comes up during execution, it will cause the program to halt.
-
 **--[no-]task-tracking**
 
     Enable [disable] the Chapel-implemented task tracking table that
@@ -547,40 +565,6 @@ OPTIONS
     adds compilation-time overhead when it will not be used, so is off by
     default.
 
-**--[no-]warn-const-loops**
-
-    Enable [disable] warnings for 'while' loops whose condition is a 'const'
-    variable, because such a loop condition is likely unintended. 'While'
-    loops with 'param' conditions do not trigger this warning.
-
-**--[no-]warn-constructors**
-
-    Enable [disable] deprecation warnings for user-defined constructors. This
-    warning is enabled by default and will be triggered for each user-defined
-    constructor encountered.
-
-**--[no-]warn-special**
-
-    Enable [disable] all special compiler warnings issued due to syntax and
-    other language changes. Currently, these include
-    --[no-]warn-domain-literal and --[no-]warn-tuple-iteration.
-
-**--[no-]warn-domain-literal**
-
-    Enable [disable] compiler warnings regarding the potential use of the
-    old-style domain literal syntax (e.g. [1..2, 3..4]). All array literals
-    with range elements will result in warnings.
-
-**--[no-]warn-tuple-iteration**
-
-    Enable [disable] compiler warnings regarding the potential use of
-    old-style zippering syntax. All uses of tuple iteration will produce
-    warnings.
-
-**--[no-]warnings**
-
-    Enable [disable] the printing of compiler warnings. Defaults to printing
-    warnings.
 
 *Compiler Configuration Options*
 

@@ -1,5 +1,3 @@
-use OwnedObject;
-
 class C {
   proc deinit() {
     writeln("Destroying C");
@@ -7,7 +5,7 @@ class C {
 }
 
 proc foo() {
-  var x = new Owned(new C());
+  var x = new owned C();
 
 }
 

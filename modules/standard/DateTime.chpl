@@ -33,7 +33,6 @@
  */
 
 module DateTime {
-  use SharedObject;
   /* The minimum year allowed in `date` objects */
   param MINYEAR = 1;
   /* The maximum year allowed in `date` objects */
@@ -49,8 +48,8 @@ module DateTime {
   private const DI100Y = daysBeforeYear(101);
   private const DI4Y   = daysBeforeYear(5);
 
-  // This avoids needing to create new Shared objects everywhere we need nil
-  private const nilTZ = new Shared(nil: TZInfo);
+  // This avoids needing to create new shared objects everywhere we need nil
+  private const nilTZ = new shared(nil: unmanaged TZInfo);
 
   // This is here to work around issue #5267
   private const chpl_today = datetime.today();
@@ -512,7 +511,7 @@ module DateTime {
     pragma "no doc"
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
     pragma "no doc"
-    var chpl_tzinfo: Shared(TZInfo);
+    var chpl_tzinfo: shared TZInfo;
 
     /* The hour represented by this `time` value */
     proc hour {
@@ -561,7 +560,7 @@ module DateTime {
      `microsecond`, and `timezone`.  All arguments are optional
    */
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
-                 tzinfo: Shared(TZInfo)=nilTZ) {
+                 tzinfo: shared TZInfo=nilTZ) {
     if hour < 0 || hour >= 24 then
       HaltWrappers.initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
@@ -907,7 +906,7 @@ module DateTime {
    */
   proc datetime.init(year, month, day,
                      hour=0, minute=0, second=0, microsecond=0,
-                     tzinfo: Shared(TZInfo)=new Shared(nil: TZInfo)) {
+                     tzinfo: shared TZInfo = nil) {
     // For some reason, the compiler fails if we use nilTZ for the
     // tzinfo argument above.  Almost everywhere else it works fine.
     // Testcase: test/library/standard/DateTime/testTimezone.chpl
@@ -921,7 +920,7 @@ module DateTime {
   }
 
   /* Return a `datetime` value representing the current time and date */
-  proc type datetime.now(tz: Shared(TZInfo) = nilTZ) {
+  proc type datetime.now(tz: shared TZInfo = nilTZ) {
     if tz.borrow() == nil {
       const timeSinceEpoch = getTimeOfDay();
       const lt = getLocalTime(timeSinceEpoch);
@@ -948,7 +947,7 @@ module DateTime {
   }
 
   /* The `datetime` that is `timestamp` seconds from the epoch */
-  proc type datetime.fromtimestamp(timestamp: real, tz: Shared(TZInfo) = nilTZ) {
+  proc type datetime.fromtimestamp(timestamp: real, tz: shared TZInfo = nilTZ) {
     if tz.borrow() == nil {
       var t = (timestamp: int, ((timestamp - timestamp: int)*1000000): int);
       const lt = getLocalTime(t);
@@ -1020,7 +1019,7 @@ module DateTime {
   }
 
   /* Return the date and time converted into the timezone in the argument */
-  proc datetime.astimezone(tz: Shared(TZInfo)) {
+  proc datetime.astimezone(tz: shared TZInfo) {
     if tzinfo == tz {
       return this;
     }

@@ -1,7 +1,7 @@
 pragma "safe"
 module rawOK {
 
-  use OwnedObject;
+
 
   class MyClass {
     var x:int;
