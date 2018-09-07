@@ -529,10 +529,10 @@ static chpl_bool setupGuardPages(void) {
 
     // Setup guard pages. Default to enabling guard pages, only disabling them
     // under the following conditions (Precedence high-to-low):
-    // 1) Guard pages disabled at configure time
-    // 2) Guard pages not supported because of huge pages
-    // 3) QT_GUARD_PAGES set to a 'false' value
-    // 4) CHPL_STACK_CHECKS set (--no-stack-checks thrown at compilation time)
+    //  - Guard pages disabled at configure time
+    //  - Guard pages not supported because of huge pages
+    //  - QT_GUARD_PAGES set to a 'false' value
+    //  - CHPL_STACK_CHECKS set (--no-stack-checks thrown at compilation time)
     if (!CHPL_QTHREAD_HAVE_GUARD_PAGES) {
         guardPagesEnabled = false;
     } else if (chpl_getHeapPageSize() != chpl_getSysPageSize()) {
