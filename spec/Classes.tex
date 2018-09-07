@@ -6,13 +6,12 @@
 \index{objects}
 Classes are data structures with associated state and functions.
 Variables of class type refer to a class instance, or object. Storage for
-class instances is not always tied to the scope of the variables refering
-to that class instance.
+class instances is not necessarily tied to the scope of the variables refering
+to that class instance and it is possible for multiple variables to refer
+to the same class instance.
 
-An object is created by calling a class constructor
-(\rsec{Class_Constructors}), which allocates storage, initializes it,
-and returns a reference to the newly-created object.
-Storage can be reclaimed by deleting the object (\rsec{Class_Delete}).
+The \sntx{new-expression} can be used to create an instance of a class
+(\rsec{Class_New}).
 
 A class declaration (\rsec{Class_Declarations}) generates a class
 type (\rsec{Class_Types}).  A variable of a class type can refer to an
@@ -60,10 +59,6 @@ from other classes %and/or records
 if the \sntx{inherit-type-list} is specified.
 Inheritance is described in~\rsec{Inheritance}.
 
-\begin{openissue}
-Classes that inherit from records are an area for future work.
-\end{openissue}
-
 The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
 field), a procedure or iterator (called a method), or a type alias.  In addition, empty
@@ -94,10 +89,8 @@ instance.
 \index{classes!types}
 \index{class type}
 
-A basic class type is given simply by the class name for non-generic classes.
-Generic classes must be instantiated to serve as a fully-specified
-type, for example to declare a variable.  This is done with
-type constructors, which are defined in Section~\ref{Type_Constructors}.
+A class type is formed by the combination of a basic class type and a
+memory management strategy.
 
 \begin{syntax}
 class-type:
@@ -107,7 +100,14 @@ class-type:
   `unmanaged' basic-class-type
   `owned' basic-class-type
   `shared' basic-class-type
+\end{syntax}
 
+A basic class type is given simply by the class name for non-generic classes.
+Generic classes must be instantiated to serve as a fully-specified
+type, for example to declare a variable.  This is done with
+type constructors, which are defined in Section~\ref{Type_Constructors}.
+
+\begin{syntax}
 basic-class-type:
   identifier
   identifier ( named-expression-list )
@@ -117,9 +117,8 @@ A basic class type, including a generic class type that is not
 fully specified, may appear in the inheritance lists
 of other class declarations.
 
-A class type is formed by the combination of a basic class type and an
-optional memory management strategy. If no memory management strategy is
-indicated, \chpl{borrowed} will be used.
+If no memory management strategy is indicated, \chpl{borrowed} will be
+used. The memory management strategies have the following meaning:
 
 \begin{itemize}
   \item \chpl{borrowed} refers to a class instance that has a lifetime
@@ -140,8 +139,7 @@ indicated, \chpl{borrowed} will be used.
 
 A class value is either a reference to an instance of a class
 or \chpl{nil} (\rsec{Class_nil_value}). Class instances can be created
-using the \chpl{new} operator (\rsec{Class_New}) and deleted using
-the \chpl{delete} operator (\rsec{Class_Delete}).
+using a \chpl{new} expression (\rsec{Class_New}).
 
 For a given class type, a legal value of that type is a reference to
 an instance of either that class or a class inheriting, directly or
@@ -153,17 +151,15 @@ The default value of a class type is \chpl{nil}.
 \begin{chapelexample}{declaration.chpl}
 \begin{chapel}
 class C { }
-var c : C;             // c has the class type C, initialized with the value nil.
-c = new unmanaged C(); // Now c refers to an object of type C.
-var c2 = c;            // The type of c2 is also C.
-                       // c2 refers to the same object as c.
-class D : C {}         // Class D is derived from C.
-c = new unmanaged D(); // Now c refers to an object of type D.
+var c : C;      // c has the class type C, initialized with the value nil.
+c = new C();    // Now c refers to an object of type C.
+var c2 = c;     // The type of c2 is also C.
+                // c2 refers to the same object as c.
+class D : C {}  // Class D is derived from C.
+c = new D();    // Now c refers to an object of type D.
+// the C and D instances allocated above will be reclaimed
+// at the end of this block.
 \end{chapel}
-\begin{chapelpost}
-delete c;   // This deletes the new D.
-delete c2;  // This deletes the new C.
-\end{chapelpost}
 \begin{chapeloutput}
 \end{chapeloutput}
 When the variable \chpl{c} is declared, it initially has the value
@@ -171,8 +167,7 @@ of \chpl{nil}.  The next statement assigned to it an instance of the
 class \chpl{C}.  The declaration of variable \chpl{c2} shows that these steps can
 be combined.  The type of \chpl{c2} is also \chpl{C}, determined implicitly from
 the the initialization expression.  Finally, an object of type \chpl{D} is created and
-assigned to \chpl{c}.  The object previously referenced by \chpl{c} is no longer
-referenced anywhere. It could be reclaimed by the garbage collector.
+assigned to \chpl{c}.
 \end{chapelexample}
 
 \subsection{Class Fields}
@@ -416,10 +411,8 @@ the class name in a parenthesized list.
 
 Syntactically, the \sntx{type-expression} includes \chpl{borrowed},
 \chpl{unmanaged}, \chpl{owned}, and \chpl{shared}. However these have an
-important consequence for class new expressions.
-
-In particular, suppose \chpl{C} is a \sntx{type-expression} that results in a
-class type. Then:
+important consequence for class new expressions. In particular, suppose
+\chpl{C} is a \sntx{type-expression} that results in a class type. Then:
 
 \begin{itemize}
   \item \chpl{new C()} is the same as \chpl{new borrowed C}
@@ -777,15 +770,14 @@ If \chpl{C} is a class type, a value of type \chpl{shared C},
 % Perhaps make the memory management part of the introduction, and then let the
 % description of deinitializers appear naturally at the same indentation level as
 % constructors.
-\section{Deleting Class Objects}
+\section{Deleting Unmanaged Class Instances}
 \label{Class_Delete}
 \index{classes!delete}
-\index{delete!class objects}
-\index{delete!arrays}
-\index{deallocation!class objects}
+\index{delete!class unmanaged instances}
+\index{deallocation!unmanaged class instances}
 
-Memory associated with class instances can be reclaimed with the \chpl{delete}
-statement:
+Memory associated with \chpl{unmanaged} class instances can be reclaimed
+with the \chpl{delete} statement:
 
 \begin{syntax}
 delete-statement:
@@ -799,7 +791,7 @@ deinitialization routines for these objects will be executed
 expressions, in which case each element of that array will be deleted
 in parallel using a \chpl{forall} loop over the array.  It is legal to
 delete a class variable whose value is \chpl{nil}, though this has no
-effect.  If a class object is referenced after it has been deleted,
+effect.  If a class instance is referenced after it has been deleted,
 the behavior is undefined.
 
 \begin{chapelexample}{delete.chpl}
@@ -841,43 +833,44 @@ Number of leaked allocations
 \end{chapeloutput}
 \end{chapelexample}
 
-\begin{openissue}
-Chapel was originally specified without a \chpl{delete} keyword.  The
-intention was that it would support distributed-memory garbage
-collection~(GC).  This is an open research challenge which has been
-put off (potentially indefinitely) in order to focus on more pressing
-issues.  Some effort has also been put into exploring alternatives to
-GC such as support for owned class references and/or borrow checking.
-\end{openissue}
-
-
 \subsection{Class Deinitializer}
 \label{Class_Deinitializer}
 \index{classes!deinitializer}
 \index{deinitializer!classes}
 
-A class author may specify additional actions to be performed before a class object is
-reclaimed, by defining a class deinitializer.  A class deinitializer is a method
-named \chpl{deinit()}.  A class deinitializer takes no arguments (aside from
-the implicit \chpl{this} argument).  If defined, the deinitializer is called each time
-a \chpl{delete} statement is invoked with a valid instance of that class type.  The
-deinitializer is not called if the argument of \chpl{delete} evaluates to \chpl{nil}.
+A class author may create a deinitializer to specify additional actions
+to be performed before memory for instances of that type are reclaimed.
+A class deinitializer is a method named \chpl{deinit()}.  It must take no
+arguments (aside from the implicit \chpl{this} argument).  If defined,
+the deinitializer is called each time a \chpl{delete} statement is
+invoked with a valid instance of that class type. The deinitializer is
+not called if the argument of \chpl{delete} evaluates to \chpl{nil}.
+Note that when an \chpl{owned} or \chpl{shared} variable goes out of
+scope, it may call \chpl{delete} on a class instance which in turn will
+run the deinitializer and then reclaim the memory.
 
 \begin{chapelexample}{classDeinitializer.chpl}
 \begin{chapel}
 class C {
-  var i,j,k: int;
-  proc deinit() { writeln("Bye, bye."); }
+  var i: int;
+  proc deinit() { writeln("Bye, bye ", i); }
 }
 
 var c : unmanaged C = nil;
 delete c;              // Does nothing: c is nil.
 
-c = new unmanaged C(); // Creates a new object.
-delete c;              // Deletes that object: Writes out "Bye, bye."
-                       // and reclaims the memory that was held by c.
+c = new unmanaged C(1); // Creates a new instance.
+delete c;               // Deletes that instance: Writes out "Bye, bye 1"
+                        // and reclaims the memory that was held by c.
+{
+  var own = new owned C(2); // Creates a new owned instance
+                            // The instance is automatically deleted at
+                            // the end of this block, so "Bye, bye 2" is
+                            // output and then the memory is reclaimed.
+}
 \end{chapel}
 \begin{chapeloutput}
-Bye, bye.
+Bye, bye 1
+Bye, bye 2
 \end{chapeloutput}
 \end{chapelexample}
