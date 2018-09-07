@@ -11,7 +11,7 @@ module RunVectorizeOnlyRawLoops {
         var stat = loop_stats[iloop];
         var len = stat.loop_length[ilength];
         var num_samples = stat.samples_per_pass[ilength];
-        var ltimer = new unmanaged LoopTimer();
+        var ltimer = new owned LoopTimer();
 
         select iloop {
           when LoopKernelID.PRESSURE_CALC {
@@ -547,7 +547,6 @@ module RunVectorizeOnlyRawLoops {
           }
         }
         copyTimer(stat, ilength, ltimer);
-        delete ltimer;
       }
     }
   }

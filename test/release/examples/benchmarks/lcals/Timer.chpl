@@ -69,22 +69,19 @@ module Timer {
 
 
   class LoopTimer {
-    var t: unmanaged TimerImpl;
+    var t: owned TimerImpl;
     var was_run: bool;
 
     proc init(timerType: TimerType = defaultTimerType) {
       if timerType == TimerType.Chapel {
-        t = new unmanaged ChapelTimer();
+        t = new owned ChapelTimer();
       } else if timerType == TimerType.Clock then {
-        t = new unmanaged ClockTimer();
+        t = new owned ClockTimer();
       } else if timerType == TimerType.Cycle then {
-        t = new unmanaged CycleTimer();
+        t = new owned CycleTimer();
       } else {
         halt("Unknown timer type");
       }
-    }
-    proc deinit() {
-      if t != nil then delete t;
     }
 
     proc start() {
@@ -100,7 +97,7 @@ module Timer {
     }
   }
 
-  proc copyTimer(loop_stat: unmanaged LoopStat, ilength: LoopLength, loop_timer: unmanaged LoopTimer) {
+  proc copyTimer(loop_stat: unmanaged LoopStat, ilength: LoopLength, loop_timer: LoopTimer) {
     if loop_timer.was_run {
       const run_time = loop_timer.elapsed();
       loop_stat.loop_run_time[ilength].push_back(run_time);
