@@ -115,14 +115,14 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
       }
 
       // hopefully big enough; PATH_MAX is problematic, but what's better?  
-      const size_t xterm_path_size = PATH_MAX;
-      char *xterm_path = chpl_mem_alloc(xterm_path_size,
+      const size_t term_path_size = PATH_MAX;
+      char *term_path = chpl_mem_alloc(term_path_size,
                                         CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
       static char cmd[16] = "which ";
       strcat(cmd, term);
-      if (chpl_run_cmdstr(cmd, xterm_path, xterm_path_size) > 0) {
-        largv[largc++] = xterm_path;
+      if (chpl_run_cmdstr(cmd, term_path, term_path_size) > 0) {
+        largv[largc++] = term_path;
         largv[largc++] = (char *) "-e";
         if (ev_use_gdb != NULL) {
           largv[largc++] = (char *) "gdb";
