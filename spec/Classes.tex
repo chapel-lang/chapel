@@ -84,6 +84,72 @@ as discussion is needed regarding its impact on inheritance, for
 instance.
 \end{future}
 
+\subsection{Class Lifetime and Borrows}
+\label{Class_Lifetime_and_Borrows}
+\index{classes!lifetime}
+\index{classes!borrows}
+\index{class lifetime}
+\index{borrow}
+
+The lifetime of a class instance is the time after it is allocated and
+before it is deallocated. It is legal to access the class fields or
+methods during its lifetime.
+
+\chpl{owned} and \chpl{shared} class instances always have their lifetime
+managed by the compiler. In other words, the compiler decides when these
+instances should have \chpl{delete} called on them to reclaim their
+memory.
+
+A \chpl{borrowed} class instance refers to the same class instance as
+another variable but has no impact on the lifetime of that instance. The
+process of getting such a reference to the instance managed by an
+\chpl{owned}, \chpl{shared}, or \chpl{unmanaged} variable is called
+\emph{borrowing}.
+
+There are several ways to borrow the instance managed by another variable
+of class type. To explicitly borrow the instance managed by another
+variable, call the \chpl{.borrow()} method. Additionally, coercions
+are available that implicitly call the \chpl{.borrow()} method. For example:
+
+\begin{chapelexample}{borrowing.chpl}
+\begin{chapel}
+class C { }
+proc test() {
+  var own = new owned C(); // 'own' manages the memory of the instance
+  var b = own.borrow();    // 'b' refers to the same instance but has no
+                           // impact on the lifetime.
+
+  var bc: borrowed C = b;  // 'bc' stores the result of b.borrow()
+                           // due to coercion from owned C to C
+
+  var c: C = b;            // same as above
+                           // since 'C' is equivalent to 'borrowed C'
+
+                           // Note that these coercions can also apply
+                           // in the context of procedure calls.
+
+                           // the instance referred to by 'own' is
+                           // deleted here, at the end of the containing
+                           // block.
+}
+\end{chapel}
+\begin{chapelpost}
+test();
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+The \chpl{.borrow()} method is available on all class types (including
+\chpl{unmanaged} and \chpl{borrowed}) in order to support generic
+programming.
+
+When a borrow exists beyond the end of the lifetime of the instance it
+refers to, particularly difficult to debug errors are possible. For this
+reason, the compiler includes a component called the lifetime checker that
+helps to identify cases in which a borrow could exist beyond the lifetime
+of an instance it refers to.
+
 \subsection{Class Types}
 \label{Class_Types}
 \index{classes!types}
@@ -415,11 +481,29 @@ important consequence for class new expressions. In particular, suppose
 \chpl{C} is a \sntx{type-expression} that results in a class type. Then:
 
 \begin{itemize}
+
   \item \chpl{new C()} is the same as \chpl{new borrowed C}
-  \item \chpl{new borrowed C()} allocates and initializes an instance that will be automatically deleted at the end of the current block. Unlike \chpl{new owned C()}, this results in a value of type \chpl{borrowed C} and ownership of the instance cannot be transferred out of the block.
-  \item \chpl{new unmanaged C()} allocates and initializes an instance that must have \chpl{delete} called on it explicitly to avoid a memory leak. It results in something of type \chpl{unmanaged C}.
-  \item \chpl{new owned C()} allocates and initializes an instance that will be deleted at the end of the current block unless it is transferred to another \chpl{owned} variable. It results in something of type \chpl{owned C}.
-  \item \chpl{new shared C()} allocates and initializes the instance that will be deleted when the last \chpl{shared} variable referring to it goes out of scope. Results in something of type \chpl{shared C}.
+
+  \item \chpl{new borrowed C()} allocates and initializes an instance
+    that will be automatically deleted at the end of the current block.
+    This process is managed by an \chpl{owned} temporary.  Unlike
+    \chpl{new owned C()}, this results in a value of type \chpl{borrowed
+    C} and ownership of the instance cannot be transferred out of the
+    block.
+
+  \item \chpl{new unmanaged C()} allocates and initializes an instance
+    that must have \chpl{delete} called on it explicitly to avoid a
+    memory leak. It results in something of type \chpl{unmanaged C}.
+
+  \item \chpl{new owned C()} allocates and initializes an instance that
+    will be deleted at the end of the current block unless it is
+    transferred to another \chpl{owned} variable. It results in something
+    of type \chpl{owned C}.
+
+  \item \chpl{new shared C()} allocates and initializes the instance that
+    will be deleted when the last \chpl{shared} variable referring to it
+    goes out of scope. Results in something of type \chpl{shared C}.
+
 \end{itemize}
 
 \section{Class Constructors}
@@ -757,7 +841,9 @@ These conversions do not change the value.
 
 If \chpl{C} is a class type, a value of type \chpl{shared C},
 \chpl{unmanaged C}, or \chpl C{owned} can be implicitly converted to
-\chpl{borrowed C} which can also be written as \chpl{C}.
+\chpl{borrowed C}. Note that \chpl{C} is equivalent to \chpl{borrowed C}.
+This coercion is equivalent to calling the \chpl{.borrow()} method.
+See~\rsec{Class_Lifetime_and_Borrows}.
 
 %TODO: Move memory management explanation up, closer to class constructors.
 % Perhaps make the memory management part of the introduction, and then let the
