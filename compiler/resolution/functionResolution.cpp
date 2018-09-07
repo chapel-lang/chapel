@@ -8263,6 +8263,31 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
 }
 
 
+static void lowerAutoDestroyRuntimeTypes() {
+  forv_Vec(CallExpr, call, gCallExprs)
+    if (call->inTree() && call->isPrimitive(PRIM_AUTO_DESTROY_RUNTIME_TYPE)) {
+     if (SymExpr* rttSE = toSymExpr(call->get(1)))
+      // toAggregateType() filters out calls in unresolved generic functions.
+      if (AggregateType* rttAG = toAggregateType(rttSE->symbol()->type))
+       if (rttAG->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+        if (Symbol* domField = rttAG->getField("dom", false))
+         if (FnSymbol* destroyFn = autoDestroyMap.get(domField->getValType()))
+          {
+           // Invoke destroyFn on rttSE->dom.
+           INT_ASSERT(call->getStmtExpr() == call);
+           SET_LINENO(call);
+           VarSymbol* domTemp = newTemp("domTemp", domField->getValType());
+           call->insertBefore(new DefExpr(domTemp));
+           call->insertBefore("'move'(%S,'.v'(%E,%S))", domTemp,
+                              rttSE->remove(), domField);
+           call->insertBefore(new CallExpr(destroyFn, domTemp));
+          }
+     // Otherwise this call is a no-op. Remove it.
+     call->remove();
+    }
+}
+
+
 static void insertReturnTemps() {
   //
   // Insert return temps for functions that return values if no
@@ -8385,6 +8410,7 @@ static void handleRuntimeTypes()
   replaceValuesWithRuntimeTypes();
   replaceReturnedValuesWithRuntimeTypes();
   insertRuntimeInitTemps();
+  lowerAutoDestroyRuntimeTypes();
 }
 
 //

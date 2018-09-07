@@ -4211,7 +4211,8 @@ module ChapelArray {
 
     var i  = 0;
     var size:size_t = 0;
-    var data:_ddata(iteratorToArrayElementType(ir.type)) = nil;
+    type elemType = iteratorToArrayElementType(ir.type);
+    var data:_ddata(elemType) = nil;
 
     var callAgain: bool;
     var subloc = c_sublocid_none;
@@ -4275,6 +4276,10 @@ module ChapelArray {
       // That allows them to have different runtime sizes.
       chpl_decRefCountsForDomainsInArrayEltTypes(A._value, data[0].type);
       A._value._decEltRefCounts = false;
+
+      // in lieu of automatic memory management for runtime types
+      __primitive("auto destroy runtime type", elemType);
+
       return A;
 
     } else {
@@ -4292,7 +4297,7 @@ module ChapelArray {
       // returning arrays of arrays but that returned no elements.
       // We need to be able to construct the runtime portion of the type
       // in that event.
-      var A = D.buildArrayWith(data[0].type, data, size:int);
+      var A = D.buildArrayWith(elemType, data, size:int);
 
       return A;
 
