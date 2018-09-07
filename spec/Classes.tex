@@ -458,20 +458,20 @@ When a constructor is called, the usual function resolution mechanism
 (\rsec{Function_Resolution}) is applied to determine which
 user-defined constructor to invoke.
 
-\begin{chapelexample}{simpleConstructors.chpl}
-The following example shows a class with two constructors:
+\begin{chapelexample}{simpleInitializers.chpl}
+The following example shows a class with two initializers:
 \begin{chapel}
 class MessagePoint {
   var x, y: real;
   var message: string;
 
-  proc MessagePoint(x: real, y: real) {
+  proc init(x: real, y: real) {
     this.x = x;
     this.y = y;
     this.message = "a point";
   }
 
-  proc MessagePoint(message: string) {
+  proc init(message: string) {
     this.x = 0;
     this.y = 0;
     this.message = message;
@@ -485,15 +485,8 @@ var mp2 = new MessagePoint("point mp2");
 \begin{chapelpost}
 writeln(mp1);
 writeln(mp2);
-delete mp1;
-delete mp2;
 \end{chapelpost}
-\begin{chapelcompopts}
---no-warn-constructors --legacy-new
-\end{chapelcompopts}
 \begin{chapeloutput}
-simpleConstructors.chpl:23: warning: 'delete' can only be applied to unmanaged classes
-simpleConstructors.chpl:24: warning: 'delete' can only be applied to unmanaged classes
 {x = 1.0, y = 2.0, message = a point}
 {x = 0.0, y = 0.0, message = point mp2}
 \end{chapeloutput}

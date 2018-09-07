@@ -795,7 +795,10 @@ of the compiler-generated constructor during default-initialization (\rsec{Defau
 %such a matching formal argument must be provided in each constructor
 %for that class.
 
-\begin{chapelexample}{constructorsForGenericFields.chpl}
+\begin{chapelexample}{initializersForGenericFields.chpl}
+
+% This example is horrible!
+
 In the following code:
 \begin{chapel}
 class MyGenericClass {
@@ -811,14 +814,30 @@ class MyGenericClass {
   var v5 = 555;
   var x5: t5; // this field is not generic
 
-  proc MyGenericClass(c1, v1, type t1, param p1) { }
-  proc MyGenericClass(type t5, param p5, c5, v5, x5,
-                     type t1, param p1, c1, v1, x1) { }
+  proc init(c1, v1, type t1, param p1) {
+    this.t1 = t1;
+    this.p1 = p1;
+    this.c1 = c1;
+    this.v1 = v1;
+  }
+  proc init(type t5, param p5, c5, v5, x5,
+            type t1, param p1, c1, v1, x1) {
+    this.t1 = t1;
+    this.p1 = p1;
+    this.c1 = c1;
+    this.v1 = v1;
+    this.x1 = x1;
+    this.t5 = t5;
+    this.p5 = p5;
+    this.c5 = c5;
+    this.v5 = v5;
+    this.x5 = x5;
+  }
 }  // class MyGenericClass
 
-var g1 = new MyGenericClass(11, 111, int, 1);
-var g2 = new MyGenericClass(int, "this is g2", 3.3, 333, 3333,
-                            real, 2, 222, 222.2, 22);
+var g1 = new borrowed MyGenericClass(11, 111, int, 1);
+var g2 = new borrowed MyGenericClass(int, "this is g2", 3.3, 333, 3333,
+                                     real, 2, 222, 222.2, 22);
 \end{chapel}
 \begin{chapelpost}
 writeln(g1.p1);
@@ -827,21 +846,14 @@ writeln(g1);
 writeln(g2.p1);
 writeln(g2.p5);
 writeln(g2);
-delete g1;
-delete g2;
 \end{chapelpost}
-\begin{chapelcompopts}
---no-warn-constructors --legacy-new
-\end{chapelcompopts}
 \begin{chapeloutput}
-constructorsForGenericFields.chpl:28: warning: 'delete' can only be applied to unmanaged classes
-constructorsForGenericFields.chpl:29: warning: 'delete' can only be applied to unmanaged classes
 1
 a string
 {c1 = 11, v1 = 111, x1 = 0, c5 = 5.5, v5 = 555, x5 = 0.0}
 2
 this is g2
-{c1 = 222, v1 = 222.2, x1 = 0.0, c5 = 5.5, v5 = 555, x5 = 0}
+{c1 = 222, v1 = 222.2, x1 = 22.0, c5 = 3.3, v5 = 333, x5 = 3333}
 \end{chapeloutput}
 The arguments \chpl{t1}, \chpl{p1}, \chpl{c1}, and \chpl{v1} are
 required in all constructors for \chpl{MyGenericClass}. They can appear
