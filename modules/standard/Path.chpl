@@ -60,9 +60,9 @@ module Path {
 use SysError;
 use Sys;
 
-/* Represents generally the current directory */
+/* Represents generally the current directory. */
 const curDir = ".";
-/* Represents generally the parent directory */
+/* Represents generally the parent directory. */
 const parentDir = "..";
 /* Denotes the separator between a directory and its child. */
 const pathSep = "/";
@@ -83,10 +83,10 @@ proc basename(name: string): string {
 /* Determines and returns the longest common path prefix of
    all the string pathnames provided.
 
-   :arg paths: Any number of paths
+   :arg paths: Any number of paths.
    :type paths: `string`
 
-   :return: The longest common path prefix
+   :return: The longest common path prefix.
    :rtype: `string`
 */
 
