@@ -125,10 +125,8 @@ proc checkRegistryChanged() {
 
 /* Pulls the mason-registry. Cloning if !exist */
 proc updateRegistry(tf: string, args : [] string) {
-  for a in args {
-    if a == "--no-update-registry" {
-      return;
-    }
+  if args.find("--no-update")[1] {
+    return;
   }
 
   checkRegistryChanged();

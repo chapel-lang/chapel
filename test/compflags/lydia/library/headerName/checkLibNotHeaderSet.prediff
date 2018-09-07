@@ -4,6 +4,6 @@ if [ -f lib/noHeaderSet.h ]; then
    echo "found header" >> $2
 fi
 
-if [ -f lib/noHeaderSet.a ]; then
+if [ -f lib/libnoHeaderSet.a ]; then
    echo "found library" >> $2
 fi

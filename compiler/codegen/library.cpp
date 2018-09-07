@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include <cstring>
+
 #include "library.h"
 
 #include "FnSymbol.h"
@@ -26,6 +28,8 @@
 #include "expr.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+
+std::map<Symbol*, TypeSymbol*> exportedArrayElementType;
 
 char libDir[FILENAME_MAX + 1]  = "";
 std::string pxdName = "";
@@ -113,8 +117,7 @@ static void setupMakeEnvVars(std::string var, const char* value,
 }
 
 static void printMakefileIncludes(fileinfo makefile);
-static void printMakefileLibraries(fileinfo makefile, std::string name,
-                                   bool startsWithLib);
+static void printMakefileLibraries(fileinfo makefile, std::string name);
 
 void codegen_library_makefile() {
   std::string name = "";
@@ -138,7 +141,7 @@ void codegen_library_makefile() {
   setupMakeEnvVars("CHPL_HOME", CHPL_HOME, makefile);
 
   printMakefileIncludes(makefile);
-  printMakefileLibraries(makefile, name, startsWithLib);
+  printMakefileLibraries(makefile, name);
 
   std::string compiler = getCompilelineOption("compiler");
   fprintf(makefile.fptr, "CHPL_COMPILER = %s\n", compiler.c_str());
@@ -152,15 +155,41 @@ void codegen_library_makefile() {
   closeLibraryHelperFile(&makefile, false);
 }
 
+// Returns a string containing -I includes for every directory in the incDirs
+// vector (which is populated by require statements)
+static std::string getRequireIncludes() {
+  std::string res = "";
+  for_vector(const char, dirName, incDirs) {
+    res += " -I";
+    res += dirName;
+  }
+  return res;
+}
+
+// Returns a string containing -L includes for every directory containing
+// library files specified in require statements, and -l references to those
+// libraries
+static std::string getRequireLibraries() {
+  std::string res = "";
+  // Adds the locations of the libraries specified using require statements
+  for_vector(const char, dirName, libDirs) {
+    res += " -L";
+    res += dirName;
+  }
+  for_vector(const char, libName, libFiles) {
+    res += " -l";
+    res += libName;
+  }
+
+  return res;
+}
+
+// Helper to output the CHPL_CFLAGS variable into the generated makefile
 static void printMakefileIncludes(fileinfo makefile) {
   std::string cflags = getCompilelineOption("cflags");
   cflags.erase(cflags.length() - 1); // remove trailing newline
 
-  std::string requireIncludes = "";
-  for_vector(const char, dirName, incDirs) {
-    requireIncludes += " -I";
-    requireIncludes += dirName;
-  }
+  std::string requireIncludes = getRequireIncludes();
 
   std::string includes = getCompilelineOption("includes-and-defines");
   fprintf(makefile.fptr, "CHPL_CFLAGS = -I%s %s",
@@ -173,32 +202,21 @@ static void printMakefileIncludes(fileinfo makefile) {
   fprintf(makefile.fptr, " %s\n", includes.c_str());
 }
 
-static void printMakefileLibraries(fileinfo makefile, std::string name,
-                                   bool startsWithLib) {
-  std::string libraries = getCompilelineOption("libraries");
+// Helper to transform the provided name into library form for a compile line
+// (-lname in the where the library starts with lib, loc/name.ext for when
+// the library does not start with lib)
+static std::string getLibname(std::string name) {
   std::string libname = "-l";
-  if (startsWithLib) {
-    // libname = "-l<name>" when executableFilename = "lib<name>"
-    libname += name;
-  } else {
-    // libname = executableFilename plus the extension when executableFilename
-    // does not start with "lib"
-    libname = libDir;
-    libname += "/";
-    libname += name;
-    libname += getLibraryExtension();
-  }
+  libname += name;
+  return libname;
+}
 
-  std::string requires = "";
-  // Adds the locations of the libraries specified using require statements
-  for_vector(const char, dirName, libDirs) {
-    requires += " -L";
-    requires += dirName;
-  }
-  for_vector(const char, libName, libFiles) {
-    requires += " -l";
-    requires += libName;
-  }
+// Helper to output the CHPL_LDFLAGS variable into the generated makefile
+static void printMakefileLibraries(fileinfo makefile, std::string name) {
+  std::string libraries = getCompilelineOption("libraries");
+  std::string libname = getLibname(name);
+
+  std::string requires = getRequireLibraries();
 
   fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s",
           libDir,
@@ -247,19 +265,6 @@ void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
     beautify(fi);
 }
 
-static void pxdEnd() {
-  FILE* pxd = gGenInfo->cfile;
-
-  // Do not "clean up" this file, as it removes leading tabs and those are
-  // necessary.
-  fprintf(pxd, "\ncdef extern from \"chpltypes.h\":\n");
-  fprintf(pxd, "\tctypedef void* c_fn_ptr\n\n");
-
-  fprintf(pxd, "cdef extern from \"chpl-init.h\":\n");
-  fprintf(pxd, "\tvoid chpl_library_init(int argc, char* argv[])\n");
-  fprintf(pxd, "\tvoid chpl_library_finalize()\n");
-}
-
 // Populate the pythonNames map with the translation for bools, differently sized
 // integers, etc.
 static void setupPythonTypeMap() {
@@ -274,7 +279,7 @@ static void setupPythonTypeMap() {
   pythonNames[dtReal[FLOAT_SIZE_32]->symbol] = std::make_pair("", "numpy.float32");
   pythonNames[dtReal[FLOAT_SIZE_64]->symbol] = std::make_pair("double", "float");
   pythonNames[dtBool->symbol] = std::make_pair("bint", "bint");
-  pythonNames[dtStringC->symbol] = std::make_pair("char *", "bytes");
+  pythonNames[dtStringC->symbol] = std::make_pair("const char *", "bytes");
   pythonNames[dtComplex[COMPLEX_SIZE_64]->symbol] =
               std::make_pair("float complex", "numpy.complex64");
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
@@ -286,6 +291,7 @@ static void setupPythonTypeMap() {
 
 static void makePXDFile(std::vector<FnSymbol*> functions);
 static void makePYXFile(std::vector<FnSymbol*> functions);
+static void makePYFile();
 
 void codegen_library_python(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile && fLibraryPython) {
@@ -296,6 +302,7 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
 
     makePXDFile(functions);
     makePYXFile(functions);
+    makePYFile();
   }
 }
 
@@ -311,17 +318,18 @@ static void makePXDFile(std::vector<FnSymbol*> functions) {
 
     gGenInfo->cfile = pxd.fptr;
 
-    fprintf(pxd.fptr, "from libc.stdint cimport *\n\n");
+    fprintf(pxd.fptr, "from libc.stdint cimport *\n");
+    // Get the permanent runtime definitions
+    fprintf(pxd.fptr, "from chplrt cimport *\n\n");
 
     fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
 
     for_vector(FnSymbol, fn, functions) {
       if (!isFunctionToSkip(fn)) {
-        fn->codegenPython(PYTHON_PXD);
+        fn->codegenPython(C_PXD);
       }
     }
 
-    pxdEnd();
     gGenInfo->cfile = save_cfile;
   }
   // Don't "beautify", it will remove the tabs
@@ -344,8 +352,10 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
 
     // Make import statement at top of .pyx file for chpl_library_init and
     // chpl_library_finalize
-    fprintf(pyx.fptr, "from %s cimport chpl_library_init, ", pxdName.c_str());
-    fprintf(pyx.fptr, "chpl_library_finalize\n");
+    fprintf(pyx.fptr, "from chplrt cimport chpl_library_init, ");
+    fprintf(pyx.fptr, "chpl_library_finalize, chpl_external_array, ");
+    fprintf(pyx.fptr, "chpl_make_external_array, chpl_make_external_array_ptr");
+    fprintf(pyx.fptr, ", chpl_free_external_array\n");
 
     std::vector<FnSymbol*> moduleInits;
     std::vector<FnSymbol*> exported;
@@ -419,6 +429,138 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
   // the exported Chapel code is no longer needed
   fprintf(outfile, "def chpl_cleanup():\n");
   fprintf(outfile, "\tchpl_library_finalize()\n");
+}
+
+// create the Python file which will be used to compile the .pyx, .pxd, library,
+// and header files into a Python module.
+static void makePYFile() {
+  fileinfo py = { NULL, NULL, NULL };
+
+  openLibraryHelperFile(&py, pythonModulename, "py");
+
+  if (py.fptr != NULL) {
+    FILE* save_cfile = gGenInfo->cfile;
+
+    gGenInfo->cfile = py.fptr;
+
+    std::string libname = "";
+    int libLength = strlen("lib");
+    bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+    if (startsWithLib) {
+      libname += &executableFilename[libLength];
+    } else {
+      libname = executableFilename;
+    }
+
+    // Imports
+    fprintf(py.fptr, "from distutils.core import setup\n");
+    fprintf(py.fptr, "from distutils.core import Extension\n");
+    fprintf(py.fptr, "from Cython.Build import cythonize\n");
+    fprintf(py.fptr, "import numpy\n\n");
+
+    // Get the static Chapel runtime and third-party libraries
+    fprintf(py.fptr, "chpl_libraries=[");
+    bool first = true;
+    // Get the libraries listed in require statements
+    for_vector(const char, libName, libFiles) {
+      if (first) {
+        first = false;
+      } else {
+        fprintf(py.fptr, ", ");
+      }
+      fprintf(py.fptr, "\"%s\"", libName);
+    }
+    std::string libraries = getCompilelineOption("libraries");
+    char copyOfLib[libraries.length() + 1];
+    libraries.copy(copyOfLib, libraries.length(), 0);
+    copyOfLib[libraries.length()] = '\0';
+    int prefixLen = strlen("-l");
+    char* curSection = strtok(copyOfLib, " \n");
+    // Get the libraries from compileline --libraries, taking the `name`
+    // portion from all `-lname` parts of that command's output
+    while (curSection != NULL) {
+      if (strncmp(curSection, "-l", prefixLen) == 0) {
+        if (first) {
+          first = false;
+        } else {
+          fprintf(py.fptr, ", ");
+        }
+        fprintf(py.fptr, "\"%s\"", &curSection[prefixLen]);
+      }
+      curSection = strtok(NULL, " \n");
+    }
+    fprintf(py.fptr, "]\n");
+
+    // Cythonize me, Captain!
+    fprintf(py.fptr, "setup(name = '%s library',\n", pythonModulename);
+    fprintf(py.fptr, "\text_modules = cythonize(\n");
+    fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename);
+    fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
+    fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename);
+    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries)))\n",
+            libname.c_str());
+
+    gGenInfo->cfile = save_cfile;
+  }
+  // Don't "beautify", it will remove the tabs
+  closeLibraryHelperFile(&py, false);
+}
+
+// Once all the python files have been generated and the .a/.so has been made,
+// make the Python module!
+void codegen_make_python_module() {
+  const char* oldPath = getenv("PYTHONPATH");
+  std::string pythonPath = "";
+  if (oldPath == NULL) {
+    pythonPath = CHPL_RUNTIME_INCL;
+  } else {
+    pythonPath += oldPath;
+    pythonPath += ":";
+    pythonPath += CHPL_RUNTIME_INCL;
+  }
+  pythonPath += "/python";
+
+  std::string getCFlags = "$CHPL_HOME/util/config/compileline --cflags";
+  std::string cFlags = runCommand(getCFlags);
+  // Erase the trailing \n from getting the cFlags
+  cFlags.erase(cFlags.length() - 1);
+  std::string requireIncludes = getRequireIncludes();
+  std::string getIncludes =
+    "$CHPL_HOME/util/config/compileline --includes-and-defines";
+  std::string includes = runCommand(getIncludes);
+  // Erase the trailing \n from getting the includes
+  includes.erase(includes.length() - 1);
+
+  std::string requireLibraries = getRequireLibraries();
+  std::string getLibraries = "$CHPL_HOME/util/config/compileline --libraries";
+  std::string libraries = runCommand(getLibraries);
+  // Erase the trailing \n from getting the libraries
+  libraries.erase(libraries.length() - 1);
+
+  std::string name = "-l";
+  int libLength = strlen("lib");
+  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  if (startsWithLib) {
+    name += &executableFilename[libLength];
+  } else {
+    name += executableFilename;
+  }
+
+  std::string cythonPortion = "python3 ";
+  cythonPortion += pythonModulename;
+  cythonPortion += ".py build_ext -i";
+
+  std::string fullCythonCall = "PYTHONPATH=" + pythonPath;
+  fullCythonCall += " CFLAGS=\"" + cFlags + requireIncludes + " " + includes;
+  fullCythonCall += "\" LDFLAGS=\"-L. " + name + requireLibraries;
+  fullCythonCall += " " + libraries;
+  fullCythonCall +=  "\" " + cythonPortion;
+
+  std::string chdirIn = "cd ";
+  chdirIn += libDir;
+  chdirIn += "; ";
+  std::string fullCommand = chdirIn + fullCythonCall;
+  runCommand(fullCommand);
 }
 
 // Skip this function if it is defined in an internal module, or if it is

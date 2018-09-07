@@ -36,6 +36,5 @@ void      errorOnFieldsInArgList(FnSymbol* fn);
 void      preNormalizeFields(AggregateType* at);
 void      preNormalizeInitMethod(FnSymbol* fn);
 void      preNormalizePostInit(AggregateType* at);
-FnSymbol* buildClassAllocator(FnSymbol* initMethod);
 
 #endif

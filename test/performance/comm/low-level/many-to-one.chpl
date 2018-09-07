@@ -9,6 +9,7 @@ enum op_t {
   opPut,
   opFetchAMO,
   opAMO,
+  opBuffAMO,
   opFastOn,
   opOn
 };
@@ -146,6 +147,10 @@ inline proc doOneOp(nops, ref x, ref xAtomic) {
   }
   else if op == opAMO {
     xAtomic.add(1);
+  }
+  else if op == opBuffAMO {
+    use BufferedAtomics;
+    xAtomic.addBuff(1);
   }
   else if op == opFastOn {
     on Locales(1) do ;

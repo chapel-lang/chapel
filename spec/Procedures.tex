@@ -222,7 +222,7 @@ The \sntx{return-type} is optional and is discussed in~\rsec{Return_Types}.
 A type function may not specify a return type.
 
 The \sntx{where-clause} is optional and is discussed
-in~\rsec{Where_Expressions}.
+in~\rsec{Where_Clauses}.
 
 Function and operator overloading is supported in Chapel and is
 discussed in~\rsec{Function_Overloading}.
@@ -399,8 +399,10 @@ The concrete intents are \chpl{in}, \chpl{out}, \chpl{inout},
 \index{in (intent)@\chpl{in} (intent)}
 \index{intents!in@\chpl{in}}
 
-When \chpl{in} is specified as the intent, the actual argument is
-copied into the formal argument when the function is called.
+When \chpl{in} is specified as the intent, the formal argument
+represents a variable that is copy-initialized with the value of the
+actual argument. For example, for integer arguments, the formal
+argument will store a copy of the actual argument.
 An implicit conversion occurs from the actual argument
 to the type of the formal.  The
 formal can be modified within the function, but such changes are local
@@ -999,10 +1001,9 @@ is allowed between every other type and that type, and that type becomes the
 inferred return type.
 If the above requirements are not satisfied, it is an error.
 
-\section{Where Expressions}
-\label{Where_Expressions}
+\section{Where Clauses}
+\label{Where_Clauses}
 \index{where@\chpl{where}}
-\index{expressions!where@\chpl{where}}
 \index{functions!where@\chpl{where}}
 
 The list of function candidates can be constrained by {\em where clauses}.  A

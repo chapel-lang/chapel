@@ -160,6 +160,10 @@ module ChapelDistribution {
     // effort to free it. DefaultDist is a singleton.
     proc singleton() param return false;
     // We could add dsiSingleton as a dynamically-dispatched counterpart
+
+    // indicates if this distribution is a layout. This helps
+    // with certain warnings.
+    proc dsiIsLayout() param return false;
   }
 
   //
@@ -775,17 +779,17 @@ module ChapelDistribution {
     // the matching tuple of ranges.
 
     // Q. Should this pass in a BaseRectangularDom or ranges?
-    proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+    proc dsiReallocate(bounds: rank*range(idxType,BoundedRangeType.bounded,stridable)) {
       halt("reallocating not supported for this array type");
     }
 
-    proc dsiReallocate(allocBounds:rank*range(idxType,
-                                              BoundedRangeType.bounded,
-                                              stridable),
-                       arrayBounds:rank*range(idxType,
-                                              BoundedRangeType.bounded,
-                                              stridable)) {
-      halt("reallocating not supported for this array type");
+    // This dsiReallocate version is used by array vector operations, which
+    // are supported on 1-D arrays only, so can work directly with ranges
+    // instead of requiring tuples of ranges.  They require two ranges
+    // because the allocated size and logical size can differ.
+    proc dsiReallocate(allocBound: range(idxType, BoundedRangeType.bounded, stridable),
+                       arrayBound: range(idxType, BoundedRangeType.bounded, stridable)) where rank == 1 {
+       halt("reallocating not supported for this array type");
     }
 
     override proc dsiPostReallocate() {
@@ -977,7 +981,7 @@ module ChapelDistribution {
       on e {
         var eCast = e:arrType;
         if eCast == nil then
-          halt("internal error: ", t.type:string,
+          halt("internal error: ", t:string,
                " contains an bad array type ", arrType:string);
 
         var inds = rhs.getIndices();

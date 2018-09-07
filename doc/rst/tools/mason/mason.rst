@@ -665,9 +665,11 @@ The ``Mason.toml`` now looks like:
 To ensure the package is installed on the system, run ``mason external find``
 which will list all of the current Spack packages installed on system. For example::
 
+
   ==> 2 installed packages.
   -- darwin-sierra-x86_64 / clang@9.0.0-apple ---------------------
   openssl@1.0.2k  zlib@1.2.11
+  
 
 Now, everything necessary to use ``openssl`` in a Mason package has been done.
 Upon building, Mason will retrieve the necessary files and file locations

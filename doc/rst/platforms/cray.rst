@@ -530,6 +530,49 @@ the number of registered memory regions, so allowing a very high number of
 them may lead to reduced performance.
 
 
+ugni Hugepage-related Warnings
+______________________________
+
+   Communication performance with ugni is so much better when hugepages
+   are used that if you do not use them, the runtime will print the
+   following warning when a multilocale program starts::
+
+      warning: without hugepages, communication performance will suffer
+
+   If you definitely do not want to use hugepages you can quiet this
+   warning by giving the ``--quiet`` or ``-q`` option when you run the
+   executable.  Otherwise, load a hugepage module as described above in
+   `Using the ugni Communications Layer`_ before running.
+
+   The Chapel runtime expects certain hugepage-related environment
+   variables to be set by the Chapel launchers.  If you do not use a
+   Chapel launcher you have to provide these settings yourself.  Not
+   doing so will result in one or both of the following messages::
+
+      warning: HUGETLB_NO_RESERVE should be set to something when using hugepages
+      warning: CHPL_JE_MALLOC_CONF should be set when using hugepages
+
+   To quiet these warnings, use the following settings:
+
+    .. code-block:: sh
+
+      export HUGETLB_NO_RESERVE=yes
+      export CHPL_JE_MALLOC_CONF=purge:decay,lg_chunk:log2HPS
+
+   where *log2HPS* is the base-2 log of the hugepage size.  For example,
+   with 16 MiB hugepages you would use:
+
+    .. code-block:: sh
+
+      export CHPL_JE_MALLOC_CONF=purge:decay,lg_chunk:24
+
+   As an alternative, you can also quiet these warnings by giving
+   ``--quiet`` or ``-q`` when you run.  However, you should be aware
+   that at least on Cray XE systems, not setting ``CHPL_JE_MALLOC_CONF``
+   can result in internal errors and/or segfaults under certain
+   circumstances.
+
+
 gasnet Communication Layer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

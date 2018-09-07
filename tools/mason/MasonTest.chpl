@@ -28,11 +28,12 @@ use Path;
 use FileSystem;
 
 /* Runs the .chpl files found within the /tests directory */
-proc masonTest(args) {
+proc masonTest(args) throws {
 
   var show = false;
   var run = true;
   var parallel = false;
+  var update = true;
   var compopts: [1..0] string;
 
   if args.size > 2 {
@@ -50,12 +51,19 @@ proc masonTest(args) {
       else if arg == '--parallel' {
         parallel = true;
       }
+      else if arg == '--' {
+        throw new MasonError("Testing does not support -- syntax"); 
+      }
+      else if arg == '--no-update' {
+        update = false;
+      }
       else {
         compopts.push_back(arg);
       }
     }
   }
-  const uargs = [""];
+  var uargs: [0..1] string;
+  if !update then uargs.push_back('--no-update');
   UpdateLock(uargs);
   runTests(show, run, parallel, compopts);
 }

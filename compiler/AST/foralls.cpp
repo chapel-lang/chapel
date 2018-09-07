@@ -492,7 +492,6 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymb
   return result;
 }
 
-
 //
 // Given an iterator function, find the type that it yields.
 // It would be fn->retType, alas protoIteratorClass() messes with that.
@@ -519,6 +518,13 @@ static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
     return fsIterYieldType(fs, iterator, origIterFn, alreadyResolved);
   }
 }
+
+
+static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
+{
+  return pfs->createdFromForLoop();
+}
+
 
 // Like in build.cpp, here for ForallStmt.
 static BlockStmt*
@@ -638,7 +644,7 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE)
       targetName = astr(astr_loopexpr_iter, targetName + forallExprNameLen);
     }
 
-    if (pfs->fFromResolvedForLoop) {
+    if (acceptUnmodifiedIterCall(pfs, origIterCall)) {
       iterCall = origIterCall;
       iterCall->remove();
     } else {
@@ -668,11 +674,6 @@ static void checkForExplicitTagArgs(CallExpr* iterCall) {
       USR_STOP();
     }
   }
-}
-
-static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
-{
-  return pfs->iterCallAlreadyTagged();
 }
 
 static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall)

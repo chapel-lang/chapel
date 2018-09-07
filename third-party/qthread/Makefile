@@ -45,20 +45,36 @@ ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
   CFLAGS_NEEDS_RT_INCLUDES = y
 endif
 
+FAILBUILD=
 ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
+  #
   # When building the Chapel allocator file we need all the Chapel runtime
   # defs and include directories, plus the third-party include dirs other
   # than that for Qthreads itself (since we're building it).  Notably, we
   # do not want -DNDEBUG; if we have that set when building Qthreads it
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
-  CFLAGS += \
+  #
+  # Throw COMPILELINE_STDERR_REDIRECT= if compileline failure is reported
+  # and you want to see the stderr from that.
+  #
+  COMPILELINE_STDERR_REDIRECT=2> /dev/null
+  INCS_DEFS := \
     $(shell $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
-            | tr ' ' '\n' \
-            | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install' \
-            | grep -v '/third-party/qthread/install' \
-            | tr '\n' ' ' \
-            | sed 's/ $$//')
+               $(COMPILELINE_STDERR_REDIRECT) \
+            || echo compilelineFAILURE)
+  ifneq (, $(findstring compilelineFAILURE,$(INCS_DEFS)))
+    FAILBUILD=y
+  else
+    INCS_DEFS_PROCESSED := \
+      $(shell echo $(INCS_DEFS) \
+              | tr ' ' '\n' \
+              | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install' \
+              | grep -v '/third-party/qthread/install' \
+              | tr '\n' ' ' \
+              | sed 's/ $$//')
+    CFLAGS += $(INCS_DEFS_PROCESSED)
+  endif
 endif
 
 # enable oversubscription for testing
@@ -67,7 +83,9 @@ CHPL_QTHREAD_CFG_OPTIONS += --enable-oversubscription
 endif
 
 # enable guard pages for stack overflow detection, unless directed not to
+HAVE_GUARD_PAGES = 0
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_GUARD_PAGES)))
+HAVE_GUARD_PAGES = 1
 CHPL_QTHREAD_CFG_OPTIONS += --enable-guard-pages
 endif
 
@@ -124,6 +142,8 @@ clobber: FORCE
 
 
 qthread-config: FORCE
+	@test -z "$(FAILBUILD)" || ( echo 'compileline failed!' && false )
+
 #
 # These first few lines touch a bunch of autoconf-oriented files in a
 # certain order to prevent autoconf from running again; otherwise, we
@@ -179,6 +199,9 @@ qthread-chapel-h: FORCE
 	     > $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 	echo "#define CHPL_QTHREAD_SCHEDULER_ONE_WORKER_PER_SHEPHERD" \
 	     $(ONE_WORKER_PER_SHEPHERD) \
+	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+	echo "#define CHPL_QTHREAD_HAVE_GUARD_PAGES" \
+	     $(HAVE_GUARD_PAGES) \
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 
 qthread: qthread-config qthread-build qthread-chapel-h

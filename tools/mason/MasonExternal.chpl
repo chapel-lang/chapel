@@ -38,8 +38,12 @@ proc masonExternal(args: [] string) {
       exit(0);
     }
     else if args[2] == "--setup" {
-      setupSpack();
-      exit(0);
+      if isDir(MASON_HOME + "/spack") then
+        throw new MasonError("Spack backend is already installed");
+      else {
+        setupSpack();
+        exit(0);
+      }
     }
     if spackInstalled() {
       select (args[2]) {

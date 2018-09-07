@@ -1988,7 +1988,7 @@ module ChapelArray {
     return d;
   }
 
-  proc +(i, d: domain) where isSubtype(i,index(d)) && isIrregularDom(d) {
+  proc +(i, d: domain) where isSubtype(i.type,index(d)) && isIrregularDom(d) {
     d.add(i);
     return d;
   }
@@ -2912,7 +2912,7 @@ module ChapelArray {
             writeln("pop_back reallocate: ",
                     oldRng, " => ", nextAllocRange,
                     " (", newRange, ")");
-          this._value.dsiReallocate((nextAllocRange,), (newRange,));
+          this._value.dsiReallocate(nextAllocRange, newRange);
           // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
@@ -3007,7 +3007,7 @@ module ChapelArray {
             writeln("pop_front reallocate: ",
                     oldRng, " => ", nextAllocRange,
                     " (", newRange, ")");
-          this._value.dsiReallocate((nextAllocRange,), (newRange,));
+          this._value.dsiReallocate(nextAllocRange, newRange);
           // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
@@ -3108,7 +3108,7 @@ module ChapelArray {
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const nextAllocRange = resizeAllocRange(newRange, grow=-1);
-          this._value.dsiReallocate((nextAllocRange,), (newRange,));
+          this._value.dsiReallocate(nextAllocRange, newRange);
           // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
@@ -3143,7 +3143,7 @@ module ChapelArray {
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const nextAllocRange = resizeAllocRange(newRange, grow=-1);
-          this._value.dsiReallocate((nextAllocRange,), (newRange,));
+          this._value.dsiReallocate(nextAllocRange, newRange);
           // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
@@ -4298,6 +4298,12 @@ module ChapelArray {
 
     }
   }
+
+  proc chpl_checkCopyInit(lhs:domain, rhs:domain) param {
+    if lhs.dist._value.dsiIsLayout() && !rhs.dist._value.dsiIsLayout() then
+      compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
+  }
+
   /* ================================================
      Set Operations on Associative Domains and Arrays
      ================================================

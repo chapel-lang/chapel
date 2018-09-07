@@ -373,7 +373,7 @@ def main():
 
     # Handle --all flag
     if options.all:
-        options.content.extend(['runtime', 'launcher', 'compiler'])
+        options.content.extend(['runtime', 'launcher', 'compiler', 'default'])
 
     # Handle --tidy / --no-tidy flags
     if options.tidy:

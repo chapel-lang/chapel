@@ -1926,6 +1926,9 @@ size_t API_FUNC qthread_readstate(const enum introspective_state type)
         case STACK_SIZE:
             return qlib->qthread_stack_size;
 
+        case RUNTIME_DATA_SIZE:
+            return sizeof(struct qthread_runtime_data_s);
+
         case BUSYNESS:
         {
             qthread_shepherd_t *shep = qthread_internal_getshep();

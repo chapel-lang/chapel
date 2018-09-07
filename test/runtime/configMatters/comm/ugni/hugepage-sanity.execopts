@@ -1,0 +1,3 @@
+--execOptsNum=1 # hugepage-sanity.no-hugepage-module.good
+--execOptsNum=2 # hugepage-sanity.HUGETLB_NO_RESERVE.good
+--execOptsNum=3 # hugepage-sanity.CHPL_JE_MALLOC_CONF.good

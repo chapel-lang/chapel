@@ -1,0 +1,14 @@
+# This hides users working files in this directory
+/*
+!/README*
+!/chapel_build.bash
+!/chapel_package-cray.bash
+!/common.bash
+!/generate-dev-releaseinfo.bash
+!/generate-modulefile.bash
+!/generate-rpmspec.bash
+!/generate-set_default.bash
+#
+# This hides users subdirectories
+#
+/*/

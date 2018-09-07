@@ -1,0 +1,1 @@
+warning: HUGETLB_NO_RESERVE should be set to something when using hugepages

@@ -38,7 +38,6 @@ ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   fFromForLoop(false),
   fContinueLabel(NULL),
   fErrorHandlerLabel(NULL),
-  fFromResolvedForLoop(false),
   fRecIterIRdef(NULL),
   fRecIterICdef(NULL),
   fRecIterGetIterator(NULL),
@@ -62,7 +61,6 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
     _this->fShadowVars.insertAtTail(COPY_INT(expr));
 
   _this->fFromForLoop = fFromForLoop;
-  _this->fFromResolvedForLoop = fFromResolvedForLoop;
   // todo: fContinueLabel, fErrorHandlerLabel
 
   _this->fRecIterIRdef        = COPY_INT(fRecIterIRdef);

@@ -939,7 +939,7 @@ Returns the domain map that implements this domain
 In the code
 \begin{chapel}
 use BlockDist;
-proc foo(d : domain) where isSubtype(d.dist, Block) {
+proc foo(d : domain) where isSubtype(d.dist.type, Block) {
   writeln("Block-distributed domain");
 }
 proc foo(d : domain) {

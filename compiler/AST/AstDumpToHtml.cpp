@@ -63,7 +63,11 @@ void AstDumpToHtml::init() {
   fprintf(sIndexFP, "<HEAD>\n");
   fprintf(sIndexFP, "<TITLE> Compilation Dump </TITLE>\n");
   fprintf(sIndexFP, "<SCRIPT SRC=\"https://chapel-lang.org/developer/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>");
-  fprintf(sIndexFP, "<LINK REL=\"stylesheet\" HREF=\"https://chapel-lang.org/developer/mktree.css\">");
+  fprintf(sIndexFP, "<LINK REL=\"stylesheet\" HREF=\"http://chapel.cray.com/developer/mktree.css\">\n");
+  fprintf(sIndexFP, "<STYLE>\n");
+  fprintf(sIndexFP, "a.userMod:link {color:#00A0FF;}\n");
+  fprintf(sIndexFP, "a.userMod:visited {color:#A000F0;}\n");
+  fprintf(sIndexFP, "</STYLE>\n");
   fprintf(sIndexFP, "</HEAD>\n");
   fprintf(sIndexFP, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
   fprintf(sIndexFP, "Compilation Dump<br><br></span></big></big>\n");
@@ -117,8 +121,13 @@ bool AstDumpToHtml::open(ModuleSymbol* module, const char* passName) {
   mFP = fopen(path, "w");
 
   if (mFP != 0) {
-    fprintf(sIndexFP, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", name, module->name);
+    const char* modClass = "";
 
+    if (module->modTag == MOD_USER)
+      modClass = "class=\"userMod\"";
+
+    fprintf(sIndexFP, "&nbsp;&nbsp;<a %s href=\"%s\">%s</a>\n",
+            modClass, name, module->name);
     fprintf(mFP, "<CHPLTAG=\"%s\">\n", passName);
     fprintf(mFP, "<HTML>\n");
     fprintf(mFP, "<HEAD>\n");

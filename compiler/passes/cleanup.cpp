@@ -373,7 +373,7 @@ static void changeCastInWhere(FnSymbol* fn) {
           USR_WARN(call, "Special handling for : in where clauses has "
                          "been deprecated. Please use isSubtype instead.");
 
-          call->replace(new CallExpr(PRIM_IS_SUBTYPE, to, from));
+          call->replace(new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES, to, from));
         }
       }
     }

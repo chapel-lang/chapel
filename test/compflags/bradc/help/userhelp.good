@@ -8,6 +8,16 @@ Module Processing Options:
       --print-module-files            Print module file locations
       --[no-]print-search-dirs        [Don't] print module search path
 
+Warning and Language Control Options:
+      --[no-]permit-unhandled-module-errors
+                                      Permit unhandled errors in explicit
+                                      modules; such errors halt at runtime
+      --[no-]warn-constructors        Enable [disable] deprecation warnings
+                                      for constructors
+      --[no-]warn-unstable            Enable [disable] warnings for uses of
+                                      language features that are in flux
+      --[no-]warnings                 Enable [disable] output of warnings
+
 Parallelism Control Options:
       --[no-]local                    Target one [many] locale[s]
 
@@ -125,20 +135,7 @@ Miscellaneous Options:
       --[no-]print-unused-functions   [Don't] print the name and location of
                                       unused functions
   -s, --set <name>[=<value>]          Set config param value
-      --[no-]permit-unhandled-module-errors
-                                      Permit unhandled errors in explicit
-                                      modules; such errors halt at runtime
       --[no-]task-tracking            Enable [disable] runtime task tracking
-      --[no-]warn-const-loops         Enable [disable] warnings for some
-                                      'while' loops with constant conditions
-      --[no-]warn-constructors        Enable [disable] warnings for
-                                      constructors
-      --[no-]warn-special             Enable [disable] special warnings
-      --[no-]warn-domain-literal      Enable [disable] old domain literal
-                                      syntax warnings
-      --[no-]warn-tuple-iteration     Enable [disable] warnings for tuple
-                                      iteration
-      --[no-]warnings                 Enable [disable] output of warnings
 
 Compiler Configuration Options:
       --home <path>                   Path to Chapel's home directory

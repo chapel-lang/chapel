@@ -28,17 +28,26 @@ use MasonUpdate;
 use MasonSystem;
 use MasonExample;
 
-proc masonBuild(args) {
+proc masonBuild(args) throws {
   var show = false;
   var release = false;
   var force = false;
   var compopts: [1..0] string;
+  var opt = false;
   var example = false;
   if args.size > 2 {
     for arg in args[2..] {
-      if arg == '-h' || arg == '--help' {
+      if opt == true {
+        compopts.push_back(arg);
+      }
+      else if arg == '-h' || arg == '--help' {
         masonBuildHelp();
         exit(0);
+      }
+      else if arg == '--' {
+        if example then
+          throw new MasonError("Examples do not support `--` syntax");
+        opt = true;
       }
       else if arg == '--release' {
         release = true;
@@ -51,6 +60,10 @@ proc masonBuild(args) {
       }
       else if arg == '--example' {
         example = true;
+      }
+      // passed to UpdateLock
+      else if arg == '--no-update' {
+        continue;
       }
       else {
         compopts.push_back(arg);
@@ -173,8 +186,11 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
     }
 
     // Verbosity control
-    if show then writeln(command);
-    else writeln("Compiling "+ project);
+    if show then writeln("Compilation command: " + command);
+    else {
+      if release then writeln("Compiling [release] target: " + project);
+      else writeln("Compiling [debug] target: " + project);
+    }
 
     // compile Program with deps
     var compilation = runWithStatus(command);

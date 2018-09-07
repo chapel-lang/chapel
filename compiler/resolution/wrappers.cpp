@@ -88,8 +88,8 @@ static void       coerceActuals(FnSymbol* fn,
 static void       handleInIntents(FnSymbol* fn,
                                   CallInfo& info);
 
-static bool       isPromotionRequired(FnSymbol* fn, CallInfo& info,
-                                std::vector<ArgSymbol*>& actualIdxToFormal);
+bool       isPromotionRequired(FnSymbol* fn, CallInfo& info,
+                               std::vector<ArgSymbol*>& actualIdxToFormal);
 
 static FnSymbol*  promotionWrap(FnSymbol* fn,
                                 CallInfo& info,
@@ -2061,7 +2061,13 @@ static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
   int i = 0;
   for_actuals(actual, call) {
     if (promotion.promotedType[i++] != NULL) {
-      shapeSource = toSymExpr(actual)->symbol();
+      SymExpr* se = NULL;
+      if (NamedExpr* ne = toNamedExpr(actual)) {
+        se = toSymExpr(ne->actual);
+      } else {
+        se = toSymExpr(actual);
+      }
+      shapeSource = se->symbol();
       break;
     }
   }
@@ -2073,8 +2079,8 @@ static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
                                  irTemp, shapeSource, fromForExpr));
 }
 
-static bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
-                                std::vector<ArgSymbol*>& actualFormals) {
+bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
+                         std::vector<ArgSymbol*>& actualFormals) {
   bool retval = false;
 
   if (fn->name != astrSequals && fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false) {
@@ -2311,8 +2317,6 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
 
   INT_ASSERT(liFn->hasFlag(FLAG_RESOLVED) == false);
 
-  iteratorLeaderMap.put(wrapFn, liFn);
-
   form_Map(SymbolMapElem, e, leaderMap) {
     if (Symbol* s = paramMap.get(e->key)) {
       paramMap.put(e->value, s);
@@ -2331,6 +2335,7 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
 
   liFn->addFlag(FLAG_INLINE_ITERATOR);
   liFn->addFlag(FLAG_GENERIC);
+  liFn->removeFlag(FLAG_INVISIBLE_FN);
 
   liFn->insertFormalAtTail(liFnTag);
 
@@ -2372,8 +2377,6 @@ static void buildFollowerIterator(PromotionInfo& promotion,
 
   FnSymbol*  fiFn             = wrapFn->copy(&followerMap);
 
-  iteratorFollowerMap.put(wrapFn, fiFn);
-
   form_Map(SymbolMapElem, e, followerMap) {
     if (Symbol* s = paramMap.get(e->key)) {
       paramMap.put(e->value, s);
@@ -2389,6 +2392,7 @@ static void buildFollowerIterator(PromotionInfo& promotion,
   fastFollower = new ArgSymbol(INTENT_PARAM, "fast", dtBool, NULL, symFalse);
 
   fiFn->addFlag(FLAG_GENERIC);
+  fiFn->removeFlag(FLAG_INVISIBLE_FN);
 
   fiFn->insertFormalAtTail(fiFnTag);
   fiFn->insertFormalAtTail(fiFnFollower);
@@ -2479,6 +2483,13 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
                                isCallExpr(iterator) ? true : false);
 }
 
+// The returned string is canonical ie from astr().
+const char* unwrapFnName(FnSymbol* fn) {
+  INT_ASSERT(! strncmp(fn->name, "chpl_promo", 10));
+  const char* uscore = strchr(fn->name+11, '_');
+  return astr(uscore+1);
+}
+
 static void initPromotionWrapper(PromotionInfo& promotion,
                                  BlockStmt* instantiationPoint) {
 
@@ -2486,7 +2497,9 @@ static void initPromotionWrapper(PromotionInfo& promotion,
   FnSymbol* retval = buildEmptyWrapper(fn);
   retval->setInstantiationPoint(instantiationPoint);
 
-  retval->cname = astr("_promotion_wrap_", fn->cname);
+  static int wrapId = 0;
+  retval->name = astr("chpl_promo", istr(++wrapId), "_", fn->name);
+  retval->cname = retval->name;
 
   retval->addFlag(FLAG_PROMOTION_WRAPPER);
   retval->addFlag(FLAG_FN_RETURNS_ITERATOR);
@@ -2838,83 +2851,36 @@ static FnSymbol* buildEmptyWrapper(FnSymbol* fn) {
   FnSymbol* wrapper = new FnSymbol(fn->name);
 
   wrapper->addFlag(FLAG_WRAPPER);
-
   wrapper->addFlag(FLAG_INVISIBLE_FN);
-
   wrapper->addFlag(FLAG_INLINE);
-
-  if (fn->hasFlag(FLAG_INIT_COPY_FN)) {
-    wrapper->addFlag(FLAG_INIT_COPY_FN);
-  }
-
-  if (fn->hasFlag(FLAG_AUTO_COPY_FN)) {
-    wrapper->addFlag(FLAG_AUTO_COPY_FN);
-  }
-
-  if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
-    wrapper->addFlag(FLAG_AUTO_DESTROY_FN);
-  }
-
-  if (fn->hasFlag(FLAG_NO_PARENS)) {
-    wrapper->addFlag(FLAG_NO_PARENS);
-  }
-
-  if (fn->hasFlag(FLAG_CONSTRUCTOR)) {
-    wrapper->addFlag(FLAG_CONSTRUCTOR);
-  }
-
-  if (fn->hasFlag(FLAG_FIELD_ACCESSOR)) {
-    wrapper->addFlag(FLAG_FIELD_ACCESSOR);
-  }
-
-  if (fn->hasFlag(FLAG_REF_TO_CONST)) {
-    wrapper->addFlag(FLAG_REF_TO_CONST);
-  }
-
-  if (!fn->isIterator()) { // getValue is var, not iterator
-    wrapper->retTag = fn->retTag;
-  }
-
-  if (fn->isMethod() == true) {
-    wrapper->setMethod(true);
-  }
-
-  if (fn->hasFlag(FLAG_METHOD_PRIMARY)) {
-    wrapper->addFlag(FLAG_METHOD_PRIMARY);
-  }
-
-  if (fn->hasFlag(FLAG_ASSIGNOP)) {
-    wrapper->addFlag(FLAG_ASSIGNOP);
-  }
-
-  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
-    wrapper->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
-  }
-
-  if (fn->hasFlag(FLAG_LAST_RESORT)) {
-    wrapper->addFlag(FLAG_LAST_RESORT);
-  }
-
-  if (fn->hasFlag(FLAG_COMPILER_GENERATED)) {
-    wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED);
-  }
-
-  if (fn->hasFlag(FLAG_VOID_NO_RETURN_VALUE)) {
-    wrapper->addFlag(FLAG_VOID_NO_RETURN_VALUE);
-  }
-
-  if (fn->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
-    wrapper->addFlag(FLAG_FN_RETURNS_ITERATOR);
-  }
-
-  if (fn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
-    wrapper->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
-  }
-
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
 
-  if (fn->throwsError())
-    wrapper->throwsErrorInit();
+  if (fn->hasFlag(FLAG_INIT_COPY_FN))   wrapper->addFlag(FLAG_INIT_COPY_FN);
+  if (fn->hasFlag(FLAG_AUTO_COPY_FN))   wrapper->addFlag(FLAG_AUTO_COPY_FN);
+  if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))wrapper->addFlag(FLAG_AUTO_DESTROY_FN);
+  if (fn->hasFlag(FLAG_NO_PARENS))      wrapper->addFlag(FLAG_NO_PARENS);
+  if (fn->hasFlag(FLAG_CONSTRUCTOR))    wrapper->addFlag(FLAG_CONSTRUCTOR);
+  if (fn->hasFlag(FLAG_FIELD_ACCESSOR)) wrapper->addFlag(FLAG_FIELD_ACCESSOR);
+  if (fn->hasFlag(FLAG_REF_TO_CONST))   wrapper->addFlag(FLAG_REF_TO_CONST);
+  if (fn->hasFlag(FLAG_METHOD_PRIMARY)) wrapper->addFlag(FLAG_METHOD_PRIMARY);
+  if (fn->hasFlag(FLAG_ASSIGNOP))       wrapper->addFlag(FLAG_ASSIGNOP);
+  if (fn->hasFlag(FLAG_LAST_RESORT))    wrapper->addFlag(FLAG_LAST_RESORT);
+
+  if (   fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
+    wrapper->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
+  if (   fn->hasFlag(FLAG_VOID_NO_RETURN_VALUE))
+    wrapper->addFlag(FLAG_VOID_NO_RETURN_VALUE);
+  if (   fn->hasFlag(FLAG_FN_RETURNS_ITERATOR))
+    wrapper->addFlag(FLAG_FN_RETURNS_ITERATOR);
+  if (   fn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS))
+    wrapper->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+  if (   fn->hasFlag(FLAG_COMPILER_GENERATED))
+    wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED); // note "was"
+
+  // getValue is var, not iterator
+  if (!fn->isIterator()) wrapper->retTag = fn->retTag;
+  if (fn->isMethod())    wrapper->setMethod(true);
+  if (fn->throwsError()) wrapper->throwsErrorInit();
 
   return wrapper;
 }
