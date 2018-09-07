@@ -168,7 +168,6 @@
 module DistributedDeque {
 
   use Collection;
-  use SharedObject;
 
   /*
     Size of each unroll block for each local deque node.
@@ -218,12 +217,12 @@ module DistributedDeque {
     var _pid : int;
     // Reference counting
     pragma "no doc"
-    var _rc : Shared(DistributedDequeRC(eltType));
+    var _rc : shared DistributedDequeRC(eltType);
 
     proc init(type eltType, cap = -1, targetLocales = Locales) {
       this.eltType = eltType;
       this._pid = (new unmanaged DistributedDequeImpl(eltType, cap, targetLocales)).pid;
-      this._rc = new Shared(new DistributedDequeRC(eltType, _pid = _pid));
+      this._rc = new shared DistributedDequeRC(eltType, _pid = _pid);
     }
 
     pragma "no doc"

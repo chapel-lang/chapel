@@ -1,4 +1,4 @@
-use SharedObject;
+
 
 class Impl {
   var field: int;
@@ -13,7 +13,7 @@ class Impl {
 }
 
 proc run() {
-  var x = new Shared(new Impl(1));
+  var x = new shared Impl(1);
 
   // check initCopy
   var y = x;

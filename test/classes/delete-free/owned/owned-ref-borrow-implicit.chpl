@@ -1,16 +1,16 @@
-use OwnedObject;
+
 
 class MyClass {
   var x:int;
 }
 
 proc acceptRef(ref arg:borrowed MyClass) {
-  var other = new Owned(new MyClass(2));
+  var other = new owned MyClass(2);
   arg = other;
 }
 
 proc test() {
-  var x = new Owned(new MyClass(1));
+  var x = new owned MyClass(1);
 
   acceptRef(x);
 
