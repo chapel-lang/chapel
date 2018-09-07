@@ -100,8 +100,15 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
     if (ev_use_gdb != NULL || ev_use_lldb != NULL) {
 
-      //TODO while running the debugged gdb takes precedence. So, first check
-      //LLDB value, then let GDB override it
+      //GDB has precedence over LLDB. So, first check LLDB value, then let GDB
+      //override it
+      if(strcmp(ev_use_lldb, "xterm")!=0 && strcmp(ev_use_lldb, "urxvt")!=0) {
+        // silently default to xterm
+        strcat(term, "xterm");
+      } else {
+        strcat(term, ev_use_lldb);
+      }
+
       if(strcmp(ev_use_gdb, "xterm")!=0 && strcmp(ev_use_gdb, "urxvt")!=0) {
         // silently default to xterm
         strcat(term, "xterm");
