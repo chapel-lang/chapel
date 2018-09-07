@@ -145,7 +145,7 @@ formal:
   formal-intent[OPT] tuple-grouped-identifier-list formal-type[OPT] variable-argument-expression
 
 formal-type:
-  : type-specifier
+  : type-expression
   : ? identifier[OPT]
 
 default-expression:
@@ -175,7 +175,7 @@ return-intent:
   `type'
 
 return-type:
-  : type-specifier
+  : type-expression
 
 where-clause:
   `where' expression

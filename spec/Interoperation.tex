@@ -225,7 +225,7 @@ external-type-alias-declaration-statement:
   `extern' `type' type-alias-declaration-list ;
 \end{syntax}
 
-In each \sntx{type-alias-declaration}, if the \sntx{type-specifier} part is
+In each \sntx{type-alias-declaration}, if the \sntx{type-expression} part is
 supplied, then Chapel uses the supplied type specifier internally.  Otherwise,
 it treats the named type as an opaque type.  The definition for an external type
 must be supplied by a C header file named on the \chpl{chpl} command line.
