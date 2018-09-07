@@ -523,6 +523,7 @@ static void setupAvailableParallelism(int32_t maxThreads) {
 }
 
 static chpl_bool setupGuardPages(void) {
+    const char *armArch = "arm-thunderx";
     chpl_bool guardPagesEnabled = true;
     // default value set by compiler (--[no-]stack-checks)
     chpl_bool defaultVal = (CHPL_STACK_CHECKS == 1);
@@ -531,11 +532,14 @@ static chpl_bool setupGuardPages(void) {
     // under the following conditions (Precedence high-to-low):
     //  - Guard pages disabled at configure time
     //  - Guard pages not supported because of huge pages
+    //  - Guard pages not supported by processor
     //  - QT_GUARD_PAGES set to a 'false' value
     //  - CHPL_STACK_CHECKS set (--no-stack-checks thrown at compilation time)
     if (!CHPL_QTHREAD_HAVE_GUARD_PAGES) {
         guardPagesEnabled = false;
     } else if (chpl_getHeapPageSize() != chpl_getSysPageSize()) {
+        guardPagesEnabled = false;
+    } else if (strncmp(armArch, CHPL_TARGET_ARCH, strlen(armArch)) == 0) {
         guardPagesEnabled = false;
     } else {
         guardPagesEnabled = chpl_qt_getenv_bool("GUARD_PAGES", defaultVal);
