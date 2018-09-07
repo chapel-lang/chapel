@@ -8,7 +8,7 @@ Exporting Chapel as a Library
 
    The features described in this document are still under development.
    If you encounter a bug or limitation not yet documented as a `Github
-   issue <https://github.com/chapel-lang/chapel/issues>`, consider filing
+   issue <https://github.com/chapel-lang/chapel/issues>`_, consider filing
    an issue as described in :ref:`readme-bugs`.
 
 To build a Chapel program as a library, compile with the ``--library`` flag.
