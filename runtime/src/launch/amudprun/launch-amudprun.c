@@ -96,13 +96,27 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
     const char* ev_use_gdb = getenv("CHPL_COMM_USE_GDB");
     const char* ev_use_lldb = getenv("CHPL_COMM_USE_LLDB");
 
+    static char term[256] = "";
+
     if (ev_use_gdb != NULL || ev_use_lldb != NULL) {
+
+      //TODO while running the debugged gdb takes precedence. So, first check
+      //LLDB value, then let GDB override it
+      if(strcmp(ev_use_gdb, "xterm")!=0 && strcmp(ev_use_gdb, "urxvt")!=0) {
+        // silently default to xterm
+        strcat(term, "xterm");
+      } else {
+        strcat(term, ev_use_gdb);
+      }
+
       // hopefully big enough; PATH_MAX is problematic, but what's better?  
       const size_t xterm_path_size = PATH_MAX;
       char *xterm_path = chpl_mem_alloc(xterm_path_size,
                                         CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
-      if (chpl_run_cmdstr("which xterm", xterm_path, xterm_path_size) > 0) {
+      static char cmd[16] = "which ";
+      strcat(cmd, term);
+      if (chpl_run_cmdstr(cmd, xterm_path, xterm_path_size) > 0) {
         largv[largc++] = xterm_path;
         largv[largc++] = (char *) "-e";
         if (ev_use_gdb != NULL) {
