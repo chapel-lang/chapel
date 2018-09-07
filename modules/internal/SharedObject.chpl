@@ -161,20 +161,22 @@ module SharedObject {
       this.chpl_pn = nil;
     }
 
+    pragma "no doc"
+    proc init(p : borrowed) {
+      compilerWarning("initializing shared from a borrow is deprecated");
+      this.init(_to_unmanaged(p));
+    }
+
     /*
        Initialize a :record:`shared` with a class instance.
        This :record:`shared` will take over the deletion of the class
        instance. It is an error to directly delete the class instance
        while it is managed by :record:`shared`.
 
-       .. note::
-          In the future, the argument `p` will be required to be
-          of `unmanaged` type.
-
-       :arg p: the class instance to manage. Must be of class type.
+       :arg p: the class instance to manage. Must be of unmanaged class type.
      */
-    proc init(p : borrowed) {
-      this.chpl_t = p.type;
+    proc init(p : unmanaged) {
+      this.chpl_t = _to_borrowed(p.type);
 
       // Boost version default-initializes px and pn
       // and then swaps in different values.
@@ -184,7 +186,7 @@ module SharedObject {
       if p != nil then
         rc = new unmanaged ReferenceCount();
 
-      this.chpl_p = p;
+      this.chpl_p = _to_borrowed(p);
       this.chpl_pn = rc;
 
       this.complete();
