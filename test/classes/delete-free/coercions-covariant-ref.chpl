@@ -1,3 +1,5 @@
+
+
 class MyClass {
   var x:int;
 }
