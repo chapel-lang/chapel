@@ -194,7 +194,7 @@ The code
 \begin{chapel}
 class Tree {
   var isLeaf: bool;
-  var left, right: Tree;
+  var left, right: unmanaged Tree;
   var value: int;
 
   proc sum():int {

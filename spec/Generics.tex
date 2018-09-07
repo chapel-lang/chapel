@@ -564,7 +564,7 @@ class Node {
 }
 \end{chapel}
 \begin{chapelpost}
-var n: Node(real) = new unmanaged Node(real, 3.14);
+var n: unmanaged Node(real) = new unmanaged Node(real, 3.14);
 writeln(n.data);
 writeln(n.next);
 writeln(n.next.type:string);
@@ -573,7 +573,7 @@ delete n;
 \begin{chapeloutput}
 3.14
 nil
-Node(real(64))
+unmanaged Node(real(64))
 \end{chapeloutput}
 The call \chpl{new Node(real, 3.14)} creates a node in the linked list
 that contains the value \chpl{3.14}.  The \chpl{next} field is set to

@@ -282,7 +282,7 @@ class C { var x: int; } // A class with nonzero size.
 
 // Defines a record implementing simple memory management.
 record R {
-  var c: C;
+  var c: unmanaged C;
   proc init() {
     c = new unmanaged C(0);
   }

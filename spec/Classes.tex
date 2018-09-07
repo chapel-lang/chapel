@@ -228,6 +228,9 @@ c = new D();    // Now c refers to an object of type D.
 // the C and D instances allocated above will be reclaimed
 // at the end of this block.
 \end{chapel}
+\begin{chapelcompopts}
+--no-warnings
+\end{chapelcompopts}
 \begin{chapeloutput}
 \end{chapeloutput}
 When the variable \chpl{c} is declared, it initially has the value
@@ -464,6 +467,9 @@ class C {
 }
 var instance = new C(1);
 \end{chapel}
+\begin{chapelcompopts}
+--no-warnings
+\end{chapelcompopts}
 \end{chapelexample}
 
 The new expression can be defined by the following syntax:
@@ -572,6 +578,9 @@ var mp2 = new MessagePoint("point mp2");
 writeln(mp1);
 writeln(mp2);
 \end{chapelpost}
+\begin{chapelcompopts}
+--no-warnings
+\end{chapelcompopts}
 \begin{chapeloutput}
 {x = 1.0, y = 2.0, message = a point}
 {x = 0.0, y = 0.0, message = point mp2}
