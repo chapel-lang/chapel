@@ -362,24 +362,14 @@ discussed in \rsec{Tuples}.
 % Overall, it does not feel like this paragraph has any value here.
 A class can contain variables, constants, and methods.
 
-There are several variants of the type for a \chpl{class C}:
-
-\begin{itemize}
-  \item \chpl{C} is equivalent to \chpl{borrowed C}
-  \item \chpl{borrowed C} refers to a class instance that has a lifetime
-    managed by another variable.
-  \item \chpl{unmanaged C} the instance must have \chpl{delete} called on it explicitly.
-  \item \chpl{owned C} the instance be deleted
-    automatically when the \chpl{owned} variable goes out of scope, but
-    only one \chpl{owned} variable can refer to the instance at a time.
-  \item \chpl{shared C} will be deleted when all of the \chpl{shared}
-    variables referring to the instance go out of scope.
-\end{itemize}
-
 Classes are defined
 in~\rsec{Classes}.  The class type can also contain type aliases and
 parameters.  Such a class is generic and is defined
 in~\rsec{Generic_Types}.
+
+A class type \chpl{C} has the variants \chpl{borrowed C} (equivalent to
+\chpl{C}), \chpl{unmanaged C}, \chpl{owned C}, and \chpl{shared C}. These
+variants are discussed in~\rsec{Class_Types}.
 
 \subsection{Record Types}
 \label{Types_Record_Types}

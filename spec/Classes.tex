@@ -4,9 +4,11 @@
 
 \index{classes!instances}
 \index{objects}
-Classes are data structures with associated state and functions. Storage for
-a class instance, or object, is allocated independently of the scope of
-the variable that refers to it.
+Classes are data structures with associated state and functions.
+Variables of class type refer to a class instance, or object. Storage for
+class instances is not always tied to the scope of the variables refering
+to that class instance.
+
 An object is created by calling a class constructor
 (\rsec{Class_Constructors}), which allocates storage, initializes it,
 and returns a reference to the newly-created object.
@@ -123,7 +125,7 @@ indicated, \chpl{borrowed} will be used.
   \item \chpl{borrowed} refers to a class instance that has a lifetime
     managed by another variable.
   \item \chpl{unmanaged} the instance must have \chpl{delete} called on it explicitly.
-  \item \chpl{owned} the instance be deleted
+  \item \chpl{owned} the instance will be deleted
     automatically when the \chpl{owned} variable goes out of scope, but
     only one \chpl{owned} variable can refer to the instance at a time.
   \item \chpl{shared} will be deleted when all of the \chpl{shared}
@@ -383,13 +385,53 @@ expression is used to initialize the field.  Otherwise, the field is
 initialized to the default value of its type
 (\rsec{Default_Values_For_Types}).
 
-\section{Class Constructors}
-\label{Class_Constructors}
+\section{Class New}
 \label{Class_New}
-\index{classes!constructors}
 \index{new!classes}
 \index{new@\chpl{new}}
 \index{classes!new@\chpl{new}}
+
+To create an instance of a class, use a \chpl{new} expression. For
+example:
+
+\begin{chapelexample}{class-new.chpl}
+\begin{chapel}
+class C {
+  var x: int;
+}
+var instance = new C(1);
+\end{chapel}
+\end{chapelexample}
+
+The new expression can be defined by the following syntax:
+
+\begin{syntax}
+new-expression:
+  `new' type-expression ( argument-list )
+\end{syntax}
+
+An initializer for a given class is called by placing the \chpl{new}
+operator in front of a type expression. Any initializer arguments follow
+the class name in a parenthesized list.
+
+Syntactically, the \sntx{type-expression} includes \chpl{borrowed},
+\chpl{unmanaged}, \chpl{owned}, and \chpl{shared}. However these have an
+important consequence for class new expressions.
+
+In particular, suppose \chpl{C} is a \sntx{type-expression} that results in a
+class type. Then:
+
+\begin{itemize}
+  \item \chpl{new C()} is the same as \chpl{new borrowed C}
+  \item \chpl{new borrowed C()} allocates and initializes an instance that will be automatically deleted at the end of the current block. Unlike \chpl{new owned C()}, this results in a value of type \chpl{borrowed C} and ownership of the instance cannot be transferred out of the block.
+  \item \chpl{new unmanaged C()} allocates and initializes an instance that must have \chpl{delete} called on it explicitly to avoid a memory leak. It results in something of type \chpl{unmanaged C}.
+  \item \chpl{new owned C()} allocates and initializes an instance that will be deleted at the end of the current block unless it is transferred to another \chpl{owned} variable. It results in something of type \chpl{owned C}.
+  \item \chpl{new shared C()} allocates and initializes the instance that will be deleted when the last \chpl{shared} variable referring to it goes out of scope. Results in something of type \chpl{shared C}.
+\end{itemize}
+
+\section{Class Constructors}
+\label{Class_Constructors}
+\index{classes!constructors}
 \index{constructors}
 
 Class instances are created by invoking class constructors.
@@ -418,18 +460,6 @@ A user-defined constructor is a constructor method explicitly declared
 in the program.  A constructor declaration has the same
 syntax as a method declaration, except that the name of the function matches
 the name of the class, and there is no return type specifier.
-
-A constructor for a given class is called by placing the \chpl{new} operator
-in front of the class name.  Any constructor arguments follow the class name in a
-parenthesized list.
-
-\begin{syntax}
-constructor-call-expression:
-  `new' class-name ( argument-list )
-
-class-name:
-  identifier
-\end{syntax}
 
 When a constructor is called, the usual function resolution mechanism
 (\rsec{Function_Resolution}) is applied to determine which
