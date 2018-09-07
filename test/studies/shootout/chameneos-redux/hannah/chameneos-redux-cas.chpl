@@ -86,9 +86,9 @@ class Chameneos {
      with another Chameneos.  If it does, it will get the other's color and
      use this color and its own to compute the color both will have after the
      meeting has ended, setting both of their colors to this value. */
-  proc start(population : [] unmanaged Chameneos, meetingPlace: unmanaged MeetingPlace) {
+  proc start(population : [] owned Chameneos, meetingPlace: MeetingPlace) {
     var stateTemp : uint(32);
-    var peer : unmanaged Chameneos;
+    var peer : Chameneos;
     var peer_idx : uint(32);
     var xchg : uint(32);
     var is_same : int;
@@ -156,15 +156,15 @@ proc populate (size : int(32)) {
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
   const D : domain(1, int(32)) = {1..size};
-  var population : [D] unmanaged Chameneos;
+  var population : [D] owned Chameneos;
 
   if (size == 10) {
     for i in D {
-      population(i) = new unmanaged Chameneos(i, colorsDefault10(i));
+      population(i) = new owned Chameneos(i, colorsDefault10(i));
     }
   } else {
     for i in D {
-      population(i) = new unmanaged Chameneos(i, ((i-1) % 3):Color);
+      population(i) = new owned Chameneos(i, ((i-1) % 3):Color);
     }
   }
   return population;
@@ -175,7 +175,7 @@ proc populate (size : int(32)) {
    met another Chameneos, spells out the number of times it met with itself,
    then spells out the total number of times all the Chameneos met
    another Chameneos. */
-proc run(population : [] unmanaged Chameneos, meetingPlace : unmanaged MeetingPlace) {
+proc run(population : [] owned Chameneos, meetingPlace : MeetingPlace) {
   for i in population {
     write(" ", i.color);
   }
@@ -187,7 +187,7 @@ proc run(population : [] unmanaged Chameneos, meetingPlace : unmanaged MeetingPl
   meetingPlace.reset();
 }
 
-proc runQuiet(population : [] unmanaged Chameneos, meetingPlace : unmanaged MeetingPlace) {
+proc runQuiet(population : [] owned Chameneos, meetingPlace : MeetingPlace) {
   coforall i in population {
     i.start(population, meetingPlace);
   }
@@ -210,7 +210,7 @@ proc runQuiet(population : [] unmanaged Chameneos, meetingPlace : unmanaged Meet
   writeln();
 }
 
-proc printInfo(population : [] unmanaged Chameneos) {
+proc printInfo(population : [] owned Chameneos) {
   for i in population {
     write(i.meetings);
     spellInt(i.meetingsWithSelf);
@@ -235,7 +235,7 @@ proc main() {
   } else  {
     printColorChanges();
 
-    const forest : unmanaged MeetingPlace = new unmanaged MeetingPlace();
+    const forest : MeetingPlace = new MeetingPlace();
 
     const population1 = populate(numChameneos1);
     const population2 = populate(numChameneos2);
@@ -250,11 +250,6 @@ proc main() {
       runQuiet(population1, forest);
       runQuiet(population2, forest);
     }
-
-    for c in population2 do delete c;
-    for c in population1 do delete c;
-
-    delete forest;
   }
 }
 
