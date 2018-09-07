@@ -295,10 +295,9 @@ module OwnedObject {
        Return the object managed by this :record:`owned` without
        impacting its lifetime at all. It is an error to use the
        value returned by this function after the :record:`owned`
-       goes out of scope, has :proc:`clear` or :proc:`release`
-       called on it, or is given a new pointer to manage with
-       `=`, `<=>`, or :proc:`retain`.
-       Some of these errors are caught at compile-time.
+       goes out of scope or deletes the contained class instance
+       for another reason, such as with `=` or :proc`retain`.
+       In some cases such errors are caught at compile-time.
      */
     proc /*const*/ borrow() {
       return chpl_p;

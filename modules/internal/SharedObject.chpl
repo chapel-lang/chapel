@@ -295,10 +295,12 @@ module SharedObject {
     /*
        Return the object managed by this :record:`shared` without
        impacting its lifetime at all. It is an error to use the
-       value returned by this function after the :record:`shared`
-       goes out of scope, has :proc:`clear` on it, or is given
-       a new pointer to manage with `=`, `<=>`, or :proc:`retain`.
-       Some of these errors are caught at compile-time.
+       value returned by this function after the last :record:`shared`
+       goes out of scope or deletes the contained class instance
+       for another reason, including calls to
+       `=`, or :proc:`retain` when this is the last :record:`shared`
+       referring to the instance.
+       In some cases such errors are caught at compile-time.
      */
     proc /*const*/ borrow() {
       return chpl_p;
