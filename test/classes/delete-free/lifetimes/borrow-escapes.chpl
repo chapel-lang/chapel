@@ -1,7 +1,7 @@
 pragma "safe"
 module borrowescapes {
 
-use OwnedObject;
+
 
 class MyClass {
   var data:int;
@@ -9,7 +9,7 @@ class MyClass {
 
 record R {
   // TODO - get init with owned fields working
-  var c:Owned(MyClass);// = new Owned(nil:MyClass);
+  var c:owned MyClass;// = new Owned(nil:MyClass);
   proc init() {
     //var tmp = new Owned(new MyClass(data));
     //c = tmp;

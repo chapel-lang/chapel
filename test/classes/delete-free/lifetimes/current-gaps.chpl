@@ -1,7 +1,7 @@
 pragma "safe"
 module zzz {
 
-use OwnedObject;
+
 
 class MyClass {
   var x:int;
@@ -25,7 +25,7 @@ proc bad2(arg:borrowed MyClass) {
 }
 
 proc test() {
-  var myowned = new Owned(new MyClass(1));
+  var myowned = new owned MyClass(1);
 
   var borrow = myowned.borrow();
   bad2(borrow);
