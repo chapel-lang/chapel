@@ -9,7 +9,7 @@
  *
  */
 
-// A stack class that is generic over the type of data that it
+// A stack type that is generic over the type of data that it
 // contains.  This implementation uses a linked list implemented using
 // the node class contained within it.
 record ListStack {
@@ -18,15 +18,15 @@ record ListStack {
   class MyNode {
     type itemType;              // type of item
     var item: itemType;         // item in node
-    var next: unmanaged MyNode(itemType); // reference to next node (same type)
+    var next: owned MyNode(itemType); // reference to next node (same type)
   }
 
   type itemType;             // type of items
-  var top: unmanaged MyNode(itemType); // top node on stack linked list
+  var top: owned MyNode(itemType); // top node on stack linked list
 
   // push method: add an item to the top of the stack
   proc push(item: itemType) {
-    top = new unmanaged MyNode(itemType, item, top);
+    top = new owned MyNode(itemType, item, top);
   }
 
   // pop method: remove an item from the top of the stack
@@ -34,10 +34,10 @@ record ListStack {
   proc pop() {
     if isEmpty then
       halt("attempt to pop an item off an empty stack");
-    var oldTop = top;
     var oldItem = top.item;
-    top = top.next;
-    delete oldTop;
+    var oldTop = top;
+    top = oldTop.next;
+    oldTop.next = nil;
     return oldItem;
   }
 
@@ -46,7 +46,7 @@ record ListStack {
 }
 
 
-// A stack class that is generic over the type of data that it
+// A stack type that is generic over the type of data that it
 // contains.  This implementation uses an array to store the elements
 // in the stack.
 record ArrayStack {

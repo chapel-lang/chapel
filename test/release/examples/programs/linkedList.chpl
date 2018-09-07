@@ -17,7 +17,7 @@ config const listSize = 10;  // Used when populating the list
 //
 class List {
   type eltType;
-  var head: unmanaged Node(eltType);
+  var head: owned Node(eltType);
 
   //
   // The Node class contains the list's values and references to the
@@ -27,14 +27,14 @@ class List {
   class Node {
     type eltType;
     var value: eltType;
-    var next: unmanaged Node(eltType);
+    var next: owned Node(eltType);
   }
 
   //
   // Insert value into the front of the list
   //
   proc insert(value: eltType) {
-    head = new unmanaged Node(eltType, value, head);
+    head = new owned Node(eltType, value, head);
   }
  
   
@@ -46,9 +46,9 @@ class List {
     if head == nil then {
       return;
     }
-    var current=head;
-    head=head.next;
-    delete current ;
+    var deleteme=head;
+    head=deleteme.next;
+    deleteme.next = nil;
   }
 
  //
@@ -67,7 +67,7 @@ class List {
     }
 
     var count: int=1;   // assuming 1-based indexing //
-    var current=head;
+    var current: borrowed = head;
     
 
     while(count!=pos-1 && current!=nil) {  
@@ -81,8 +81,8 @@ class List {
   
     var temp=current.next;
     var temp2=temp.next;
+    temp.next = nil;
     current.next=temp2;
-    delete temp;
   }
     
 
@@ -106,14 +106,18 @@ class List {
       return;
 
     if head.value == value {
-      head = head.next;
+      const tmp = head;
+      head = tmp.next;
+      tmp.next = nil;
       return;
     }
 
-    var current = head;
+    var current: borrowed = head;
     while current.next != nil {
       if current.next.value == value {
-        current.next = current.next.next;
+        const steal = current.next;
+        current.next = steal.next;
+        steal.next = nil;
         return;
       }
       current = current.next;
@@ -125,10 +129,11 @@ class List {
   // and yield the values of each node.
   //
   iter these() {
-    var current = head;
+    var current: borrowed = head;
     while current != nil {
+      const next: borrowed = current.next;
       yield current.value;
-      current = current.next;
+      current = next;
     }
   }
   //
@@ -174,7 +179,9 @@ proc main() {
     while(lst.contains(1)) do
       lst.remove(1);
     writeln("No more ones: ", lst);
-  }
+  } else {
+    writeln("No ones in list: ", lst);
+}
 
 
   lst.delete_first();
@@ -195,8 +202,9 @@ writeln("delete element at pos 1 :", lst);
   // Remove everything from the list using the default iterator
   // to find the values that need to be removed.
   //
-  for i in lst do
+  for i in lst do {
     lst.remove(i);
+}
 
   writeln("The list contains: ", lst);
 }
