@@ -102,16 +102,14 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
       //GDB has precedence over LLDB. So, first check LLDB value, then let GDB
       //override it
-      if(strcmp(ev_use_lldb, "xterm")!=0 && strcmp(ev_use_lldb, "urxvt")!=0) {
-        // silently default to xterm
-        strcat(term, "xterm");
+      if(strcmp(ev_use_lldb, "urxvt")!=0) {
+        strcat(term, "xterm");  // silently default to xterm
       } else {
         strcat(term, ev_use_lldb);
       }
 
-      if(strcmp(ev_use_gdb, "xterm")!=0 && strcmp(ev_use_gdb, "urxvt")!=0) {
-        // silently default to xterm
-        strcat(term, "xterm");
+      if(strcmp(ev_use_gdb, "urxvt")!=0) {
+        strcat(term, "xterm");  // silently default to xterm
       } else {
         strcat(term, ev_use_gdb);
       }
