@@ -102,16 +102,20 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
       //GDB has precedence over LLDB. So, first check LLDB value, then let GDB
       //override it
-      if(strcmp(ev_use_lldb, "urxvt")!=0) {
-        strcat(term, "xterm");  // silently default to xterm
-      } else {
-        strcat(term, ev_use_lldb);
+      if (ev_use_lldb != NULL) {
+        if(strcmp(ev_use_lldb, "urxvt")!=0) {
+          strcat(term, "xterm");  // silently default to xterm
+        } else {
+          strcat(term, ev_use_lldb);
+        }
       }
 
-      if(strcmp(ev_use_gdb, "urxvt")!=0) {
-        strcat(term, "xterm");  // silently default to xterm
-      } else {
-        strcat(term, ev_use_gdb);
+      if (ev_use_gdb != NULL) {
+        if(strcmp(ev_use_gdb, "urxvt")!=0) {
+          strcat(term, "xterm");  // silently default to xterm
+        } else {
+          strcat(term, ev_use_gdb);
+        }
       }
 
       // hopefully big enough; PATH_MAX is problematic, but what's better?  
@@ -132,7 +136,9 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
           largv[largc++] = (char *) "--";
         }
       } else {
-        chpl_warning("CHPL_COMM_USE_(G|LL)DB ignored because no xterm", 0, 0);
+        static char err_msg[128] = "";
+        sprintf(err_msg, "CHPL_COMM_USE_(G|LL)DB ignored because no %s", term);
+        chpl_warning(err_msg, 0, 0);
       }
     }
   }
