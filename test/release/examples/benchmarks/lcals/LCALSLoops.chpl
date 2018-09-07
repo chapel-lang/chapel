@@ -39,7 +39,7 @@ module LCALSLoops {
     }
   }
 
-  proc loopInit(iloop:LoopKernelID, stat: unmanaged LoopStat) {
+  proc loopInit(iloop:LoopKernelID, stat: LoopStat) {
     var loop_data = getLoopData();
     flushCache();
     stat.loop_is_run = true;
@@ -378,7 +378,7 @@ module LCALSLoops {
     stat.loop_chksum[ilength] = tchk;
   }
 
-  proc runReferenceLoop0(lstat: unmanaged LoopStat, ilen: LoopLength) {
+  proc runReferenceLoop0(lstat: LoopStat, ilen: LoopLength) {
     var loop_data = getLoopData();
     var len: int = lstat.loop_length[ilen];
     var num_samples = lstat.samples_per_pass[ilen];
@@ -399,7 +399,7 @@ module LCALSLoops {
     copyTimer(lstat, ilen, ltimer);
   }
 
-  proc runReferenceLoop1(lstat: unmanaged LoopStat, ilen: LoopLength) {
+  proc runReferenceLoop1(lstat: LoopStat, ilen: LoopLength) {
     var loop_data = getLoopData();
 
     var len = lstat.loop_length[ilen];

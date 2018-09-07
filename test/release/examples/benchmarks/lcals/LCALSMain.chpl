@@ -183,9 +183,7 @@ proc main {
 
   checkChecksums(run_variants, run_loop, run_loop_length);
 
-  freeLoopData();
   writeln("\n freeLoopSuiteRunInfo...");
-  freeLoopSuiteRunInfo();
   writeln("\n DONE!!! ");
 }
 
@@ -599,14 +597,6 @@ proc generateFOMReport(loop_variants: [] bool,
                        output_dirname: string) {
 }
 
-proc freeLoopData() {
-  delete s_loop_data;
-}
-
-proc freeLoopSuiteRunInfo() {
-  delete getLoopSuiteRunInfo();
-}
-
 proc runLoopVariant(lvid: LoopVariantID, run_loop:[] bool, ilength: LoopLength) {
   var loop_suite_run_info = getLoopSuiteRunInfo();
   var loop_stats = loop_suite_run_info.getLoopStats(lvid);
@@ -707,9 +697,9 @@ proc getVariantNames(lvids: [] bool) {
 
 proc computeReferenceLoopTimes() {
   var suite_info = getLoopSuiteRunInfo();
-  var ref_loop_stat = suite_info.ref_loop_stat;
+  var ref_loop_stat = suite_info.ref_loop_stat.borrow();
 
-  var lstat0: unmanaged LoopStat;
+  var lstat0: LoopStat;
 
   writeln("\n computeReferenceLoopTimes...");
 
@@ -719,7 +709,7 @@ proc computeReferenceLoopTimes() {
     runReferenceLoop0(lstat0, ilen);
   }
 
-  var lstat1: unmanaged LoopStat;
+  var lstat1: LoopStat;
   lstat1 = ref_loop_stat;
 
   for ilen in suite_info.loop_length_dom {
@@ -734,8 +724,8 @@ proc computeReferenceLoopTimes() {
 
 proc defineReferenceLoopRunInfo() {
   var suite_info = getLoopSuiteRunInfo();
-  var ref_loop_stat = new unmanaged LoopStat();
-  suite_info.ref_loop_stat = ref_loop_stat;
+  suite_info.ref_loop_stat = new owned LoopStat();
+  var ref_loop_stat = suite_info.ref_loop_stat.borrow();
 
   ref_loop_stat.loop_length[LoopLength.LONG]        = 24336;
   ref_loop_stat.loop_length[LoopLength.MEDIUM]      = 3844;
@@ -1149,6 +1139,6 @@ proc defineLoopSuiteRunInfo(run_variants, run_loop,
     }
   }
   defineReferenceLoopRunInfo();
-  s_loop_data = new unmanaged LoopData(max(max_loop_length, suite_info.ref_loop_stat.loop_length[LoopLength.LONG]));
+  s_loop_data = new owned LoopData(max(max_loop_length, suite_info.ref_loop_stat.loop_length[LoopLength.LONG]));
 
 }

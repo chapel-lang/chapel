@@ -97,7 +97,7 @@ module Timer {
     }
   }
 
-  proc copyTimer(loop_stat: unmanaged LoopStat, ilength: LoopLength, loop_timer: LoopTimer) {
+  proc copyTimer(loop_stat: LoopStat, ilength: LoopLength, loop_timer: LoopTimer) {
     if loop_timer.was_run {
       const run_time = loop_timer.elapsed();
       loop_stat.loop_run_time[ilength].push_back(run_time);

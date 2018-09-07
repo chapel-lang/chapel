@@ -35,7 +35,7 @@ module LCALSDataTypes {
     var num_suite_passes: int;
     var loop_samp_frac: real;
 
-    var ref_loop_stat: unmanaged LoopStat;
+    var ref_loop_stat: owned LoopStat;
 
     var loop_weights: [weight_group_dom] real;
 
@@ -51,8 +51,6 @@ module LCALSDataTypes {
     }
 
     proc deinit() {
-      if ref_loop_stat != nil then delete ref_loop_stat;
-
       for idx in loop_variant_dom {
         for stat in loop_test_stats[idx] do
           if stat != nil then delete stat;
