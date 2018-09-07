@@ -6,30 +6,28 @@ Exporting Chapel as a Library
 
 .. note::
 
-   This page discusses the implementation of libraries, which are still
-   under development.  The idea is to allow components to be developed in
-   Chapel and linked with other programs and languages.  It has been
-   improved from previous releases, but still has many limitations and likely
-   several bugs.
+   The features described in this document are still under development.
+   If you encounter a bug or limitation not yet documented as a `Github
+   issue <https://github.com/chapel-lang/chapel/issues>`, consider filing
+   an issue as described in :ref:`readme-bugs`.
 
-Normally, Chapel assumes that you are building a main program and produces a
-main routine whether one is explicitly coded or not.  When the ``--library``
-flag is provided on the command line, it tells the Chapel compiler to produce a
-library instead.
+To build a Chapel program as a library, compile with the ``--library`` flag.
+Without this flag, Chapel assumes that you are building a main program and
+produces a main routine, whether one is explicitly defined or not.
 
 Static and Dynamic Libraries
 ============================
 
-The user can specify (through the ``--static`` and ``--dynamic`` flags) which
-type of library to produce.  If neither ``--static`` nor ``--dynamic`` is
-specified, a platform-dependent default library type is produced.
+The type of library produced can be specified through the ``--static`` and
+``--dynamic`` flags.  If neither ``--static`` nor ``--dynamic`` is specified, a
+platform-dependent default library type is produced.
 
 Some platforms support linking against both static and dynamic versions of
 the same library.  On those platforms, the ``--static`` or ``--dynamic``
 flag can be used to select which type of library (and thus which kind of
 linking) is performed by default.  Library files which are named explicitly on
 the ``chpl`` command line take precedence over any found through object
-library paths (``-L``).  Where there is a conflict, the last library
+library paths (``-L``).  When there is a conflict, the last library
 specified takes precedence.
 
 .. _Location of the Generated Library:
@@ -40,7 +38,10 @@ Location of the Generated Library
 The library will be placed by default in a sub-directory named ``lib`` (which
 will be created if it does not already exist).  The location for the generated
 library and associated files can be changed using the compilation flag
-``--library-dir``.
+``--library-dir``::
+
+  # Library built into bar/libfoo.a
+  chpl --library --library-dir=bar foo.chpl
 
 How to Define Your Library
 ==========================
@@ -77,14 +78,35 @@ Library Name
 ============
 
 The generated library name will be the same as the file being compiled, except
-it will start with ``lib`` if the name does not already and it will be followed
+it will start with ``lib`` if the name does not already, and it will be followed
 by a ``.so`` or ``.a`` suffix.  Thus, in the example above, the generated
-library will be named ``libfoo.so`` or ``libfoo.a``.  The basename used (the
-``foo`` portion) can be changed with the ``-o`` or ``--output`` compilation
-flag.
+library will be named ``libfoo.so`` or ``libfoo.a``.
+
+.. code-block:: bash
+
+   # Builds library as lib/libfoo.so
+   chpl --library --static foo.chpl
+
+   # Builds library as lib/libfoo.a
+   chpl --library --dynamic foo.chpl
+
+   # Builds library as lib/libfoo.a (note: file named libfoo.chpl)
+   chpl --library --dynamic libfoo.chpl
+
+The basename used (the ``foo`` portion) can be changed with the ``-o`` or
+``--output`` compilation flag.
 
 This flag is required if multiple top level modules or files are being compiled
 into the same library, as the default name is determined by the top-most module.
+
+.. code-block:: bash
+
+   # Builds library as lib/libbar.a
+   chpl --library --dynamic foo.chpl -o bar
+
+   # -o flag required because of multiple modules
+   # Builds library as lib/libfoo.a
+   chpl --library --dynamic foo.chpl bar.chpl -o foo
 
 Using Your Library in C
 =======================
@@ -94,9 +116,16 @@ The Header File
 
 A header file will be generated for the library by default, using the same base
 name as the library (replacing ``.so`` or ``.a`` with ``.h`` and omitting the
-``lib`` portion).  In the example above, the header generated would be
-``foo.h``.  This name can be changed independently of the generated library name
-using the flag ``--library-header`` at compilation.
+``lib`` portion).  This name can be changed independently of the generated
+library name using the flag ``--library-header`` at compilation.
+
+.. code-block:: bash
+
+   # Builds header as lib/foo.h
+   chpl --library --dynamic foo.chpl
+
+   # Builds header as lib/bar.h, library is still lib/libfoo.a
+   chpl --library --dynamic --library-header=bar foo.chpl
 
 The header file will contain any exported function, including the exported
 module initialization functions (which are generated by default).  It will also
@@ -112,7 +141,7 @@ and standard modules.  This is done by calling the function
 ``chpl_library_finalize()`` after all the Chapel library function calls are
 finished.  These functions are defined in
 ``$CHPL_HOME/runtime/include/chpl-init.h`` and accessible when you ``#include``
-the generated header file, but for reference are included here:
+the generated header file:
 
 .. code-block:: C
 
@@ -147,10 +176,6 @@ module initialization function.  This function will be named
    before calling any of the exported functions in your library.  You do not
    need to do this more than once per program.
 
-   We intend to eventually perform the module initialization when
-   ``chpl_library_init`` is called (or to have ``chpl_library_init`` called
-   automatically), but this support is not yet present.
-
 
 Compiling C Code with the Library
 ---------------------------------
@@ -173,14 +198,24 @@ by running ``$CHPL_HOME/util/printchplenv --runtime --path``.
 Makefile Helper
 ~~~~~~~~~~~~~~~
 
-Finally, compilation of the C program involves some additional command line
-includes and links.  For your convenience, a sample Makefile can be generated
-using ``--library-makefile``.  This will generate a file named ``Makefile.foo``,
-for our earlier example.  This Makefile can then be included and its variables
-referenced in your own Makefile.
+Compilation of the C program involves some additional command line includes and
+links.  For your convenience, a sample Makefile can be generated using
+``--library-makefile``.  This will generate a file named
+``Makefile.<basename>``:
 
-The generated Makefile will contain nine makefile variables.  Five of these
-variables are intended for use in your own Makefile:
+.. code-block:: bash
+
+   # Builds makefile as lib/Makefile.foo
+   chpl --library --dynamic --library-makefile foo.chpl
+
+   # Builds makefile as lib/Makefile.bar
+   chpl --library --dynamic --library-makefile foo.chpl -o bar
+
+This Makefile can then be included and its variables referenced in your own
+Makefile.
+
+The generated Makefile will contain the user-facing and internal variables.  The
+user-facing variables intended for use in your own Makefile are:
 
 - ``CHPL_CFLAGS`` contains the flags and ``-I`` directories needed at compile
   time.
@@ -193,7 +228,7 @@ variables are intended for use in your own Makefile:
   ``CHPL_CFLAGS`` are not applicable in that compiler.
 - ``CHPL_LINKER`` and ``CHPL_LINKERSHARED`` store linker commands.
 
-The other four variables support those five in an attempt to make their contents
+The internal variables support those others in an attempt to make their contents
 slightly more readable.
 
 An example Makefile which uses the generated ``Makefile.foo`` looks like this:
@@ -208,29 +243,31 @@ An example Makefile which uses the generated ``Makefile.foo`` looks like this:
 Makefile-less Compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Alternatively, you can get the right combination by using the ``compileline
---compile`` and ``compileline --libraries`` tools we provide.  The compilation
-command would then look like this (replacing myCProg.c with the name of your C
-program that will use the library):
+You can also generate the compilation flags necessary to compile a C program
+using a Chapel library by using the ``compileline --compile`` and ``compileline
+--libraries`` tools we provide.  The compilation command would then look like
+this (replacing ``myCProg.c`` with the name of your C program that will use the
+library):
 
 .. code-block:: sh
 
    `$CHPL_HOME/util/config/compileline --compile` myCProg.c -Llib/ -lfoo `$CHPL_HOME/util/config/compileline --libraries`
 
-Note that ``compileline --compile-c++`` is also available. It requests a
-compilation command able to compile a C++ program.
+Note that ``compileline --compile-c++`` is also available for compiling a C++
+program.
 
 Using Your Library in Python
 ============================
 
-Pre-requisites
+Prerequisites
 --------------
 
 To make use of your library in Python with minimal work, the Chapel compiler
-requires that you have ``python3`` installed in your ``$PATH``, and that your
-``python3`` installation contains ``numpy`` and ``Cython``.
+requires the following:
 
-We don't anticipate supporting ``python2`` at this time, sorry.
+- ``python3`` installed in your ``$PATH``
+- ``Cython``
+- ``numpy``
 
 Compiling Your Chapel Library
 -----------------------------
@@ -242,12 +279,17 @@ to the normally generated library and header file.
 Python Module Name
 ------------------
 
-By default, the name of the generated Python module will match the base name
-of the generated library.  In the ``foo.chpl`` example, this would mean the
-Python module will be named ``foo``.
+By default, the name of the generated Python module will match the basename
+of the generated library, but can be changed independently of the generated
+library name using the compilation flag ``--library-python-name``:
 
-The name of the generated module can be changed independently of the generated
-library name using the compilation flag ``--library-python-name``.
+.. code-block:: bash
+
+   # Builds python module as lib/foo.py
+   chpl --library --library-python foo.chpl
+
+   # Build python module as lib/bar.py
+   chpl --library --library-python --library-python-name=bar foo.chpl
 
 PYTHONPATH
 ----------
@@ -295,12 +337,12 @@ For example:
 
 .. note::
 
-   Currently the ``chpl_cleanup()`` function will also cause the Python program
-   to exit.  This may change in the future, but for now please ensure your
-   Python functionality is also complete before calling this function.
+   The ``chpl_cleanup()`` function will also cause the Python program to exit.
+   Make sure your Python functionality is also complete before calling this
+   function.
 
-In Case Something Goes Wrong
-----------------------------
+Debugging Issues with --library-python
+--------------------------------------
 
 This compilation strategy uses Cython under the covers, generating a
 ``chpl_foo.pxd`` file, a ``foo.pyx`` file, and a ``foo.py`` file by default for
@@ -311,9 +353,6 @@ the generated library - if compilation fails due to generating one or more of
 these files incorrectly, you may be able to modify the file and re-run the
 Cython command yourself.
 
-Please report such errors to us using the strategies defined in
-:ref:`readme-bugs`, regardless!
-
 Using Your Library in Chapel
 ============================
 
@@ -322,8 +361,8 @@ include the chapel runtime and standard modules for use in a non-Chapel program
 and when the library is linked to a Chapel program this leads to multiple
 definitions of these functions.
 
-Other Caveats
-=============
+Caveats
+=======
 
 Multiple Chapel Libraries
 -------------------------
@@ -339,11 +378,5 @@ this leads to multiple definitions of these functions.
 Exporting Symbols
 -----------------
 
-At this time, only functions can get exported.  We hope to extend this support
-to types and global variables in the future.
-
-Issues?
-=======
-
-As mentioned above, this feature is still under development.  Please refer to
-:ref:`readme-bugs` if any problems are encountered.
+Only functions can be exported currently.  We hope to extend this support to
+types and global variables in the future.
