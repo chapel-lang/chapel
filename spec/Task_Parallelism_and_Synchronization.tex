@@ -209,8 +209,7 @@ class Tree {
 }
 \end{chapel}
 \begin{chapelpost}
-var tree: unmanaged Tree = new unmanaged Tree(false, new unmanaged
-Tree(false, new unmanaged Tree(true, nil, nil, 1),
+var tree: unmanaged Tree = new unmanaged Tree(false, new unmanaged Tree(false, new unmanaged Tree(true, nil, nil, 1),
                                                  new unmanaged Tree(true, nil, nil, 1), 1),
                                  new unmanaged Tree(false, new unmanaged Tree(true, nil, nil, 1),
                                                  new unmanaged Tree(true, nil, nil, 1), 1), 1);

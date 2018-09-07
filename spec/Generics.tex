@@ -835,9 +835,9 @@ class MyGenericClass {
   }
 }  // class MyGenericClass
 
-var g1 = new borrowed MyGenericClass(11, 111, int, 1);
-var g2 = new borrowed MyGenericClass(int, "this is g2", 3.3, 333, 3333,
-                                     real, 2, 222, 222.2, 22);
+var g1 = new MyGenericClass(11, 111, int, 1);
+var g2 = new MyGenericClass(int, "this is g2", 3.3, 333, 3333,
+                            real, 2, 222, 222.2, 22);
 \end{chapel}
 \begin{chapelpost}
 writeln(g1.p1);
@@ -847,6 +847,9 @@ writeln(g2.p1);
 writeln(g2.p5);
 writeln(g2);
 \end{chapelpost}
+\begin{chapelcompopts}
+--no-warnings
+\end{chapelcompopts}
 \begin{chapeloutput}
 1
 a string

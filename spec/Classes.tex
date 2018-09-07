@@ -4,14 +4,18 @@
 
 \index{classes!instances}
 \index{objects}
-Classes are data structures with associated state and functions.
-Variables of class type refer to a class instance, or object. Storage for
-class instances is not necessarily tied to the scope of the variables refering
-to that class instance and it is possible for multiple variables to refer
-to the same class instance.
+
+Classes are data structures with associated state and functions.  A
+variabl of class type either refers to a class instance, or contains a
+special \chpl{nil} value. Note that \emph{object} is another name for a
+class instance.  Storage for a class instance is not necessarily tied to
+the scope of the variable(s) referring to that class instance. It is
+possible for multiple variables to refer to the same class instance.
 
 The \sntx{new-expression} can be used to create an instance of a class
-(\rsec{Class_New}).
+(\rsec{Class_New}). Depending on the memory management strategy, a class
+instance is either deleted automatically or can be deleted using the
+\snxt{delete-statement} (\rsec{Class_Delete}).
 
 A class declaration (\rsec{Class_Declarations}) generates a class
 type (\rsec{Class_Types}).  A variable of a class type can refer to an
@@ -87,25 +91,32 @@ instance.
 \index{class lifetime}
 \index{borrow}
 
-The lifetime of a class instance is the time after it is allocated and
-before it is deallocated. It is legal to access the class fields or
-methods during its lifetime.
+The lifetime of a class instance is the time between its creation and its
+deletion. It is legal to access the class fields or methods only during
+its lifetime.
+
+Each allocation of a class instance specifies a \emph{memory management
+strategy} . Four memory management strategies are available:
+\chpl{owned}, \chpl{shared}, \chpl{borrowed}, and \chpl{unmanaged}.
 
 \chpl{owned} and \chpl{shared} class instances always have their lifetime
 managed by the compiler. In other words, the compiler decides when these
 instances should have \chpl{delete} called on them to reclaim their
 memory.
 
+When \chpl{borrowed} is used as a memory management strategy in a
+\sntx{new-expression}, it also creates an instance that has its lifetime
+managed by the compiler (\rsec{Class_New}).
+
 A \chpl{borrowed} class instance refers to the same class instance as
 another variable but has no impact on the lifetime of that instance. The
-process of getting such a reference to the instance managed by an
-\chpl{owned}, \chpl{shared}, or \chpl{unmanaged} variable is called
+process of getting such a reference to an instance is called
 \emph{borrowing}.
 
-There are several ways to borrow the instance managed by another variable
-of class type. To explicitly borrow the instance managed by another
-variable, call the \chpl{.borrow()} method. Additionally, coercions
-are available that implicitly call the \chpl{.borrow()} method. For example:
+There are several ways to borrow an instance. To borrow explicitly the
+instance managed by another variable, call the \chpl{.borrow()} method.
+Additionally, coercions are available that are equivalent to calling the
+\chpl{.borrow()} method.  For example:
 
 \begin{chapelexample}{borrowing.chpl}
 \begin{chapel}
@@ -140,15 +151,15 @@ The \chpl{.borrow()} method is available on all class types (including
 \chpl{unmanaged} and \chpl{borrowed}) in order to support generic
 programming.
 
-When a borrow exists beyond the end of the lifetime of the instance it
-refers to, particularly difficult to debug errors are possible. For this
-reason, the compiler includes a component called the lifetime checker that
-helps to identify cases in which a borrow could exist beyond the lifetime
-of an instance it refers to.
+Errors due to accessing an instance after the end of its lifetime are
+particularly difficult to debug. For this reason, the compiler includes a
+component called the lifetime checker. It identifies some where a
+borrowing variable can be accessed beyond the lifetime of an instance it
+refers to.
 
 \begin{future}
   The details of lifetime checking are not yet finalized or specified.
-  Additionally syntax to specify the lifetimes of function returns will
+  Additional syntax to specify the lifetimes of function returns will
   probably be needed.
 \end{future}
 
@@ -163,11 +174,10 @@ memory management strategy.
 \begin{syntax}
 class-type:
   basic-class-type
-  basic-class-type
-  `borrowed' basic-class-type
-  `unmanaged' basic-class-type
   `owned' basic-class-type
   `shared' basic-class-type
+  `borrowed' basic-class-type
+  `unmanaged' basic-class-type
 \end{syntax}
 
 A basic class type is given simply by the class name for non-generic classes.
@@ -492,6 +502,15 @@ important consequence for class new expressions. In particular, suppose
 
   \item \chpl{new C()} is the same as \chpl{new borrowed C}
 
+  \item \chpl{new owned C()} allocates and initializes an instance that
+    will be deleted at the end of the current block unless it is
+    transferred to another \chpl{owned} variable. It results in something
+    of type \chpl{owned C}.
+
+  \item \chpl{new shared C()} allocates and initializes the instance that
+    will be deleted when the last \chpl{shared} variable referring to it
+    goes out of scope. Results in something of type \chpl{shared C}.
+
   \item \chpl{new borrowed C()} allocates and initializes an instance
     that will be automatically deleted at the end of the current block.
     This process is managed by an \chpl{owned} temporary.  Unlike
@@ -502,15 +521,6 @@ important consequence for class new expressions. In particular, suppose
   \item \chpl{new unmanaged C()} allocates and initializes an instance
     that must have \chpl{delete} called on it explicitly to avoid a
     memory leak. It results in something of type \chpl{unmanaged C}.
-
-  \item \chpl{new owned C()} allocates and initializes an instance that
-    will be deleted at the end of the current block unless it is
-    transferred to another \chpl{owned} variable. It results in something
-    of type \chpl{owned C}.
-
-  \item \chpl{new shared C()} allocates and initializes the instance that
-    will be deleted when the last \chpl{shared} variable referring to it
-    goes out of scope. Results in something of type \chpl{shared C}.
 
 \end{itemize}
 
@@ -585,8 +595,8 @@ writeln(mp2);
 {x = 1.0, y = 2.0, message = a point}
 {x = 0.0, y = 0.0, message = point mp2}
 \end{chapeloutput}
-The first constructor lets the user specify the initial coordinates
-and the second constructor lets the user specify the initial message
+The first initializer lets the user specify the initial coordinates
+and the second initializer lets the user specify the initial message
 when creating a MessagePoint.
 \end{chapelexample}
 
@@ -792,7 +802,7 @@ class C {
 }
 \end{chapel}
 \begin{chapelpost}
-var c = new owned C();
+var c = new C();
 c.x = 1;
 writeln(c.x);
 c.x = 2;
@@ -801,6 +811,9 @@ c.x = 3;
 writeln(c.x);
 writeln(c.setCount);
 \end{chapelpost}
+\begin{chapelcompopts}
+--no-warnings
+\end{chapelcompopts}
 \begin{chapeloutput}
 1
 2
@@ -850,11 +863,10 @@ of \chpl{C}.
 The value \chpl{nil} can be implicitly converted to any class type.
 These conversions do not change the value.
 
-If \chpl{C} is a class type, a value of type \chpl{shared C},
-\chpl{unmanaged C}, or \chpl C{owned} can be implicitly converted to
-\chpl{borrowed C}. Note that \chpl{C} is equivalent to \chpl{borrowed C}.
-This coercion is equivalent to calling the \chpl{.borrow()} method.
-See~\rsec{Class_Lifetime_and_Borrows}.
+Class types other than \chpl{borrowed C}, for example \chpl{owned C}, can
+be implicitly converted to \chpl{borrowed C}. Note that \chpl{C} is
+equivalent to \chpl{borrowed C}.  This coercion is equivalent to calling
+the \chpl{.borrow()} method.  See~\rsec{Class_Lifetime_and_Borrows}.
 
 %TODO: Move memory management explanation up, closer to class constructors.
 % Perhaps make the memory management part of the introduction, and then let the
@@ -929,7 +941,7 @@ Number of leaked allocations
 \index{deinitializer!classes}
 
 A class author may create a deinitializer to specify additional actions
-to be performed before memory for instances of that type are reclaimed.
+to be performed when a class instance is deleted.
 A class deinitializer is a method named \chpl{deinit()}.  It must take no
 arguments (aside from the implicit \chpl{this} argument).  If defined,
 the deinitializer is called each time a \chpl{delete} statement is
