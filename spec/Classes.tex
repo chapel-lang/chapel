@@ -310,7 +310,7 @@ particular, dynamic dispatch will be used when the method receiver has a
 static type of the base class but refers to an instance of a derived
 class type.
 
-In order to have identical signature, two methods must have the same the
+In order to have identical signatures, two methods must have the same the
 names, intents, types, and order of formal arguments. The return type of
 the overriding method must either be the same as the return type of the base
 class's method or be a subclass of the base class method's return
@@ -319,7 +319,7 @@ type.
 Methods that override a base class method must be marked with the
 \chpl{override} keyword in the \sntx{procedure-kind}. Additionally,
 methods marked with \chpl{override} but for which there is no parent class
-method with an identical signature will cause an error.
+method with an identical signature will result in a compiler error.
 
 \begin{rationale}
   This feature is designed to help avoid cases where class authors
