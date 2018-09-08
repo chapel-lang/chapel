@@ -117,11 +117,14 @@ Calls to methods are defined in Section~\rsec{Class_Method_Calls}.
 Procedures are defined with the following syntax:
 \begin{syntax}
 procedure-declaration-statement:
-  privacy-specifier[OPT] linkage-specifier[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
+  privacy-specifier[OPT] procedure-kind[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
     function-body
 
-linkage-specifier:
+procedure-kind:
   `inline'
+  `export'
+  `extern'
+  `override'
 
 function-name:
   identifier

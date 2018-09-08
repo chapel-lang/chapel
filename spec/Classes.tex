@@ -303,16 +303,31 @@ defined at this time.
 \index{dynamic dispatch}
 \index{methods!base class!overriding}
 
-If a method in a derived class is declared with a
-signature identical to that of a method in a base class, then it is said to override the
-base class's method.  Such a method is a candidate for dynamic
-dispatch in the event that a variable that has the base class type
-references an object that has the derived class type.
+If a method in a derived class is declared with a signature identical to
+that of a method in a base class, then it is said to override the base
+class's method. Such methods are considered for dynamic dispatch.  In
+particular, dynamic dispatch will be used when the method receiver has a
+static type of the base class but refers to an instance of a derived
+class type.
 
-The identical signature requires that the names, types, and order of
-the formal arguments be identical. The return type of the overriding
-method must be the same as the return type of the base class's method,
-or must be a subclass of the base class method's return type.
+In order to have identical signatures, two methods must have the same the
+names, intents, types, and order of formal arguments. The return type of
+the overriding method must either be the same as the return type of the base
+class's method or be a subclass of the base class method's return
+type.
+
+Methods that override a base class method must be marked with the
+\chpl{override} keyword in the \sntx{procedure-kind}. Additionally,
+methods marked with \chpl{override} but for which there is no parent class
+method with an identical signature will result in a compiler error.
+
+\begin{rationale}
+  This feature is designed to help avoid cases where class authors
+  accidentally override a method without knowing it; or fail to override
+  a method that they intended to due to not meeting the identical
+  signature condition.
+\end{rationale}
+
 
 Methods without parentheses are not candidates for dynamic dispatch.
 \begin{rationale}
