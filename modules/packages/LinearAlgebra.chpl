@@ -17,32 +17,98 @@
  * limitations under the License.
  */
 
-/* Linear Algebra Module
+/*
 
 A high-level interface to linear algebra operations and procedures.
-
-.. note::
-  This is an early prototype package module. As a result, interfaces may change
-  over the next release.
 
 Compiling with Linear Algebra
 -----------------------------
 
-Some of the linear algebra module procedures rely on the :mod:`BLAS` and
-:mod:`LAPACK` modules.  If using routines that rely on these modules,
-be sure to have a BLAS and LAPACK implementation available on your system. See
-the :mod:`BLAS` and :mod:`LAPACK` documentation for further details.
+Building programs using the :mod:`LinearAlgebra` module can `optionally` depend
+on :mod:`BLAS` and :mod:`LAPACK`. These dependencies will be required at
+compile-time if a program calls a procedure that uses them.
+Procedure dependencies are annotated in the documentation below. Some
+procedures have implementations with and without dependencies that can be
+selected via the ``blasImpl`` and ``lapackImpl`` flags.
 
-To explicitly opt out of using the :mod:`BLAS` and :mod:`LAPACK` procedures, compile
-your Chapel program with the flags:
+**Building programs with no dependencies**
+
+.. code-block:: chpl
+
+  // example1.chpl
+  var A = Matrix(3,3);
+  var I = eye(3,3);
+  var B = A + I;
+
+The program above has no dependencies and can therefore be compiled without any
+additional flags:
 
 .. code-block:: bash
 
-  chpl --set blasImpl=none --set lapackImpl=none myProgram.chpl
+  chpl example1.chpl
 
-This will result in a cleaner compiler error when using a procedure that is
-only available with :mod:`BLAS` or :mod:`LAPACK`.
+**Building programs with dependencies**
 
+.. code-block:: chpl
+
+  // example2.chpl
+  var A = Matrix(3,3);
+  A = 2;
+  var eigenvalues = eigvals(A);
+
+
+The program above uses :proc:`eigvals`, which depends on :mod:`LAPACK`.
+Compiling without ``LAPACK`` headers and library available on the system and
+specified as command line arguments will result in a compiler error. Following
+the instructions from the :mod:`LAPACK` module documentation, the above program
+could be compiled with the following flags:
+
+.. code-block:: bash
+
+  chpl -I$PATH_TO_LAPACKE_INCLUDE_DIR \
+       -L$PATH_TO_LIBGFORTRAN -lgfortran \
+       -L$PATH_TO_LAPACK_BINARIES -llapacke -llapack -lrefblas \
+       example2.chpl
+
+.. note::
+
+  Users can set environment variables like ``LDFLAGS`` for ``-L`` arguments and
+  ``CFLAGS`` for ``-I`` arguments, to avoid throwing these flags every time.
+
+  Additionally, the required linker flags (``-l``) may vary depending on the
+  ``LAPACK`` implementation being used.
+
+**Building programs with optional dependencies**
+
+.. code-block:: chpl
+
+  // example3.chpl
+  var A = Matrix(3,5);
+  var AA = A.dot(A.T);
+
+
+The program above uses :proc:`dot`, which *optionally* depends on :mod:`BLAS`.
+The program will default to using the more performant ``BLAS`` implementation
+of matrix-matrix multiplication, which will require additional flags to build,
+as noted in the :mod:`BLAS` documentation:
+
+.. code-block:: bash
+
+  chpl -I$PATH_TO_CBLAS_DIR \
+       -L$PATH_TO_BLAS_LIBS -lblas \
+       example3.chpl
+
+
+To opt out of using the ``BLAS`` implementation, throw the ``--set
+blasImpl=none`` flag, so that ``BLAS`` is no longer a dependency::
+
+.. code-block:: bash
+
+  chpl --set blasImpl=none example3.chpl
+
+There is a similar flag for opting out of ``LAPACK`` implementations: ``--set
+lapackImpl=none``. See the documentation of :mod:`BLAS` or :mod:`LAPACK` for
+more details.
 
 .. _LinearAlgebraInterface:
 
