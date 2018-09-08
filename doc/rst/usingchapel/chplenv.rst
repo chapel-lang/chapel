@@ -210,8 +210,8 @@ CHPL_TARGET_ARCH
         ivybridge       bdver2
         haswell         bdver3
         broadwell       bdver4
-        knl
         skylake
+        knl
         =========== ================ ================
 
    These values are defined to be the same as in GCC 7:
