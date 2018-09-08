@@ -200,21 +200,24 @@ CHPL_TARGET_ARCH
 
         **Architecture-specific values**
 
-        =========== ================
-        intel       amd
-        =========== ================
-        core2           k8
-        nehalem         k8sse3
-        westmere        barcelona
+        =========== ================ ================
+        intel       amd              arm
+        =========== ================ ================
+        core2           k8           aarch64
+        nehalem         k8sse3       thunderx
+        westmere        barcelona    thunderx2t99
         sandybridge     bdver1
         ivybridge       bdver2
         haswell         bdver3
         broadwell       bdver4
-        =========== ================
+        skylake
+        knl
+        =========== ================ ================
 
-   These values are defined to be the same as in GCC 4.9:
+   These values are defined to be the same as in GCC 7:
 
-        https://gcc.gnu.org/onlinedocs/gcc-4.9.0/gcc/i386-and-x86-64-Options.html
+        https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/x86-Options.html
+        https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/AArch64-Options.html
 
    If you do not want ``CHPL_TARGET_ARCH`` to have any effect, you can set it
    to either ``unknown`` or ``none``. Both will disable specialization, but the
