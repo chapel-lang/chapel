@@ -71,9 +71,11 @@
 
     For testing, we use the following settings.
 
-    export LANG=en_US.UTF-8
-    export LC_COLLATE=C
-    unset LC_ALL
+    ``export LANG=en_US.UTF-8``
+
+    ``export LC_COLLATE=C``
+
+    ``unset LC_ALL``
 
     LANG sets the default character set.  LC_COLLATE overrides it for
     sorting, so that we get consistent results.  Anything in LC_ALL
