@@ -1,1 +1,1 @@
-literal-indexing.exec.out.tmp.tmp
+literal-indexing.chpl:2: error: halt reached - assigning between arrays of different shapes in dimension 1: 0 vs. 1

@@ -4211,7 +4211,8 @@ module ChapelArray {
 
     var i  = 0;
     var size:size_t = 0;
-    var data:_ddata(iteratorToArrayElementType(ir.type)) = nil;
+    type elemType = iteratorToArrayElementType(ir.type);
+    var data:_ddata(elemType) = nil;
 
     var callAgain: bool;
     var subloc = c_sublocid_none;
@@ -4271,14 +4272,19 @@ module ChapelArray {
 
       // Normally, the sub-arrays share a domain with the
       // parent, but that's not the case for the arrays created
-      // by this routine. Instead, each sub-array owns its own domain.
+      // by this routine. Instead, each sub-array may have its own domain.
       // That allows them to have different runtime sizes.
       chpl_decRefCountsForDomainsInArrayEltTypes(A._value, data[0].type);
       A._value._decEltRefCounts = false;
+
+      // in lieu of automatic memory management for runtime types
+      __primitive("auto destroy runtime type", elemType);
+
       return A;
 
     } else {
-      // Construct an empty array that has a reasonable eltType
+      // Construct and return an empty array.
+
       pragma "insert auto destroy"
       var D = { 1 .. 0 };
 
@@ -4287,15 +4293,9 @@ module ChapelArray {
       if callAgain then
         __primitive("array_alloc", data, 1, subloc, c_nil, data);
 
-      // TODO: this use of data[0].type will result in nil pointer
-      // dereferences in the event that we're converting a iterator
-      // returning arrays of arrays but that returned no elements.
-      // We need to be able to construct the runtime portion of the type
-      // in that event.
-      var A = D.buildArrayWith(data[0].type, data, size:int);
+      var A = D.buildArrayWith(elemType, data, size:int);
 
       return A;
-
     }
   }
 

@@ -129,6 +129,7 @@ module ChapelIteratorSupport {
     var domInstance: domInstanceType;
 
     // This is a domain built from properly-initialized _RuntimeTypeInfo.
+    pragma "no auto destroy"
     var standinDomain: chpl_buildStandInRTT(domInstance);
 
     // Same as proc instanceType in chpl_buildStandInRTT(domain).
