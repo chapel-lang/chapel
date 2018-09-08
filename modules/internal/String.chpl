@@ -39,7 +39,7 @@
   The following documentation shows functions and methods used to
   manipulate and process Chapel strings.
 
-  Besides the functions below, some other modules proved routines that are
+  Besides the functions below, some other modules provide routines that are
   useful for working with strings. The :mod:`IO` module provides
   :proc:`IO.string.format` which creates a string that is the result of
   formatting. It also includes functions for reading and writing strings.
@@ -63,12 +63,23 @@
 
   .. note::
 
-    While :record:`string` is intended to be a Unicode string, there is much
-    left to do. As of Chapel 1.17, only ASCII strings can be expected to work
-    correctly with all functions.
+    As of Chapel 1.18, :record:`string` is a multibyte string whose
+    character set is determined by the user's environment variable
+    settings.  This is normally UTF-8.  ASCII strings are a simple
+    subcase of UTF-8 strings, because every ASCII character is a UTF-8
+    character with the same meaning.
 
-    Future work involves support for both ASCII and unicode strings, and
-    allowing users to specify the encoding for individual strings.
+    For testing, we use the following settings.
+
+    ``export LANG=en_US.UTF-8``
+
+    ``export LC_COLLATE=C``
+
+    ``unset LC_ALL``
+
+    LANG sets the default character set.  LC_COLLATE overrides it for
+    sorting, so that we get consistent results.  Anything in LC_ALL
+    would override everything, so we unset it.
  */
 module String {
   use ChapelStandard;
