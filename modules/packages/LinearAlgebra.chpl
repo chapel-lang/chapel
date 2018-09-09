@@ -492,14 +492,7 @@ proc _array.T where isDefaultRectangularArr(this) && this.domain.rank == 2
   return transpose(this);
 }
 
-/* Add matrices, maintaining dimensions, deprecated for ``_array.plus`` */
-proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(B) {
-  compilerWarning('matPlus has been deprecated for _array.plus, ' +
-                  'try: A.plus(B)');
-  return A.plus(B);
-}
-
-/* Add matrices, maintaining dimensions */
+/* Element-wise addition. Same as ``A + B``. */
 proc _array.plus(A: [?Adom] ?eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
   if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
   if Adom.shape != this.domain.shape then halt("Unmatched shapes");
@@ -507,14 +500,7 @@ proc _array.plus(A: [?Adom] ?eltType) where isDefaultRectangularArr(A) && isDefa
   return C;
 }
 
-/* Subtract matrices, maintaining dimensions, deprecated for ``_array.minus``*/
-proc matMinus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(B) {
-  compilerWarning('matMinus has been deprecated for _array.plus, ' +
-                  'try: A.minus(B)');
-  return A.minus(B);
-}
-
-/* Subtract matrices, maintaining dimensions */
+/* Element-wise subtraction. Same as ``A - B``. */
 proc _array.minus(A: [?Adom] ?eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
   if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
   if Adom.shape != this.domain.shape then halt("Unmatched shapes");
@@ -522,7 +508,7 @@ proc _array.minus(A: [?Adom] ?eltType) where isDefaultRectangularArr(A) && isDef
   return C;
 }
 
-/* Element-wise multiplication, maintaining dimensions */
+/* Element-wise multiplication. Same as ``A * B``. */
 proc _array.times(A: [?Adom]) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
   if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
   if Adom.shape != this.domain.shape then halt("Unmatched shapes");
@@ -530,7 +516,7 @@ proc _array.times(A: [?Adom]) where isDefaultRectangularArr(A) && isDefaultRecta
   return C;
 }
 
-/* Element-wise division, maintaining dimensions */
+/* Element-wise division. Same as ``A / B``. */
 proc _array.elementDiv(A: [?Adom]) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
   if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
   if Adom.shape != this.domain.shape then halt("Unmatched shapes");
@@ -578,7 +564,7 @@ proc _array.dot(A: []) where isDefaultRectangularArr(this) && isDefaultRectangul
 
 
 pragma "no doc"
-/* Element-wise scalar multiplication */
+/* Element-wise scalar multiplication. */
 proc dot(A: [?Adom] ?eltType, b) where isNumeric(b) {
   var C: A.type = A * b;
   return C;
@@ -1122,6 +1108,8 @@ proc cholesky(A: [] ?t, lower = true)
       compiler error if ``lapackImpl`` is ``none``.
 
  */
+// TODO: example
+// TODO: LaTeX
 proc eigvals(A: [] ?t, param left = false, param right = false)
   where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
 
@@ -1220,6 +1208,8 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
 
    A temporary copy of ``A`` will be created within this computation.
 */
+// TODO: example
+// TODO: LaTeX
 proc svd(A: [?Adom] ?t) throws
   where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
 {
@@ -1248,7 +1238,7 @@ proc svd(A: [?Adom] ?t) throws
   // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.
   var superb: [1..minDim-1] realType;
 
-  // TODO: Support gesdd for better performance
+  // TODO: Support option for gesdd (trading memory usage for speed)
   const info = LAPACK.gesvd(lapack_memory_order.row_major, 'A', 'A', Acopy, s, u, vt, superb);
 
   if info > 0 {
@@ -1814,7 +1804,7 @@ module Sparse {
   /* Transpose CSR matrix */
   proc _array.T where isCSArr(this) { return transpose(this); }
 
-  /* Element-wise addition */
+  /* Element-wise addition. */
   proc _array.plus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
@@ -1828,7 +1818,7 @@ module Sparse {
     return S;
   }
 
-  /* Element-wise subtraction */
+  /* Element-wise subtraction. */
   proc _array.minus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
@@ -1842,7 +1832,7 @@ module Sparse {
     return S;
   }
 
-  /* Element-wise multiplication */
+  /* Element-wise multiplication. */
   proc _array.times(A) where isCSArr(this) && isCSArr(A) {
     if this.domain._value.parentDom != A.domain._value.parentDom then
       halt('Cannot subtract sparse arrays with non-matching parent domains');
@@ -1863,7 +1853,7 @@ module Sparse {
     return B;
   }
 
-  /* Element-wise division */
+  /* Element-wise division. */
   proc _array.elementDiv(A) where isCSArr(this) && isCSArr(A) {
     if this.domain._value.parentDom != A.domain._value.parentDom then
       halt('Cannot element-wise divide sparse arrays with non-matching parent domains');
