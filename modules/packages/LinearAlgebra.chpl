@@ -158,48 +158,6 @@ specified in the function's documentation. Other domain maps
 are supported through submodules, such ``LinearAlgebra.Sparse`` for the
 ``CS`` layout.
 
-**Promotion flattening**
-
-Promotion flattening is an unintended consequence of Chapel's
-:ref:`promotion feature <ug-promotion>`, when a multi-dimensional array assignment
-gets type-inferred as a 1-dimensional array of the same size, effectively
-flattening the array dimensionality. This can result in unexpected behavior in
-programs such as this:
-
-.. code-block:: chapel
-
-  var A = Matrix(4, 4),
-      B = Matrix(4, 4);
-  // A + B is a promoted operation, and C becomes a 1D array
-  var C = A + B;
-  // This code would then result in an error due to rank mismatch:
-  C += A;
-
-To avoid this, you can avoid relying on inferred-types for new arrays:
-
-.. code-block:: chapel
-
-  var A = Matrix(4, 4),
-      B = Matrix(4, 4);
-  // C's type is not inferred and promotion flattening is not a problem
-  var C: [A.domain] A.eltType = A + B;
-  // Works as expected
-  C += A;
-
-Alternatively, you can use the LinearAlgebra helper routines, which create
-and return a new array:
-
-.. code-block:: chapel
-
-  var A = Matrix(4, 4),
-      B = Matrix(4, 4);
-  // matPlus will create a new array with an explicit type
-  var C = matPlus(A, B);
-  // Works as expected
-  C += A;
-
-Promotion flattening is not expected to be an issue in future releases.
-
 */
 
 module LinearAlgebra {
