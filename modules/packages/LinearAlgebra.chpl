@@ -493,12 +493,26 @@ proc _array.T where isDefaultRectangularArr(this) && this.domain.rank == 2
   return transpose(this);
 }
 
+/* Element-wise addition. Deprecated for ``A + B`` */
+proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(B) {
+  compilerWarning('matPlus has been deprecated. ' +
+                  'try: A + B');
+  return A.plus(B);
+}
+
 /* Element-wise addition. Same as ``A + B``. */
 proc _array.plus(A: [?Adom] ?eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
   if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
   if Adom.shape != this.domain.shape then halt("Unmatched shapes");
   var C: [Adom] eltType = this + A;
   return C;
+}
+
+/* Element-wise subtraction. Deprecated for ``A - B``*/
+proc matMinus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(B) {
+  compilerWarning('matMinus has been deprecated. ' +
+                  'try: A - B');
+  return A.minus(B);
 }
 
 /* Element-wise subtraction. Same as ``A - B``. */
@@ -640,7 +654,7 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 }
 
 
-/* Inner product of 2 vectors */
+/* Inner product of 2 vectors. */
 proc inner(A: [?Adom], B: [?Bdom]) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
@@ -651,7 +665,7 @@ proc inner(A: [?Adom], B: [?Bdom]) {
 }
 
 
-/* Outer product of 2 vectors */
+/* Outer product of 2 vectors. */
 proc outer(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
@@ -664,7 +678,7 @@ proc outer(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 
 
 pragma "no doc"
-/* Generic matrix-vector multiplication */
+/* Generic matrix-vector multiplication. */
 proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   where !usingBLAS || !isBLASType(eltType)
 {
@@ -752,7 +766,7 @@ private proc _expBySquaring(x: ?t, n): _wrap(t) {
 }
 
 /* Return cross-product of 3-element vectors ``A`` and ``B`` with domain of
-  ``A`` */
+  ``A``. */
 proc cross(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
@@ -1086,6 +1100,7 @@ proc cholesky(A: [] ?t, lower = true)
 }
 
 
+// TODO: add example usage to docs
 /* Find the eigenvalues and eigenvectors of matrix ``A``. ``A`` must be square.
 
    * If ``left`` is ``true`` then the "left" eigenvectors are computed. The
@@ -1109,7 +1124,6 @@ proc cholesky(A: [] ?t, lower = true)
       compiler error if ``lapackImpl`` is ``none``.
 
  */
-// TODO: example
 proc eigvals(A: [] ?t, param left = false, param right = false)
   where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
 
@@ -1236,7 +1250,6 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
     This procedure depends on the :mod:`LAPACK` module, and will generate a
     compiler error if ``lapackImpl`` is ``none``.
 */
-// TODO: example
 proc svd(A: [?Adom] ?t) throws
   where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
 {
