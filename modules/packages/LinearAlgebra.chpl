@@ -66,7 +66,8 @@ headers and libraries available would result in a compilation error.
 
   // example2.chpl
   var A = Matrix([2, 1],
-                 [1, 2], eltType=real);
+                 [1, 2],
+                 eltType=real);
   var (eigenvalues, eigenvectors) = eigvals(A, right=true);
 
 The program above uses :proc:`eigvals`, which depends on :mod:`LAPACK`.
@@ -1109,7 +1110,6 @@ proc cholesky(A: [] ?t, lower = true)
 
  */
 // TODO: example
-// TODO: LaTeX
 proc eigvals(A: [] ?t, param left = false, param right = false)
   where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
 
@@ -1196,20 +1196,47 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
 /*
   Singular Value Decomposition.
 
-  Factorizes the matrix ``A`` into two unitary matrices, ``U`` and ``Vt`` and
-  a vector of singular values ``s``, such that::
+  Factorizes the `m x n` matrix ``A`` such that:
 
-    A = U * s * Vt
 
-  Will throw a ``LinearAlgebraError`` if the SVD computation does not converge
-  or an illegal argument (such as ``NAN``) is given.
+  .. math::
+
+    \mathbf{A} = \textbf{U} \cdot \Sigma \cdot \mathbf{V^H}
+
+  where
+
+    - :math:`\mathbf{U}` is an `m x m` unitary matrix,
+    - :math:`\Sigma` is a diagonal `m x n` matrix,
+    - :math:`\mathbf{V}` is an `n x n` unitary matrix, and
+      :math:`\mathbf{V^H}` is the Hermitian transpose.
+
+  This procedure returns a tuple of ``(U, s, Vh)``, where ``s`` is a vector
+  containing the diagonal elements of :math:`\Sigma`, known as the
+  singular values.
+
+  For example:
+
+  .. code-block:: chapel
+
+    var A = Matrix([3, 2,  2],
+                   [2, 3, -2],
+                   eltType=real);
+    var (U, s, Vh) = svd(A);
+
+  ``LinearAlgebraError`` will be thrown if the SVD computation does not
+  converge or an illegal argument, such as a matrix containing a ``NAN`` value,
+  is given.
 
   .. note::
 
    A temporary copy of ``A`` will be created within this computation.
+
+  .. note::
+
+    This procedure depends on the :mod:`LAPACK` module, and will generate a
+    compiler error if ``lapackImpl`` is ``none``.
 */
 // TODO: example
-// TODO: LaTeX
 proc svd(A: [?Adom] ?t) throws
   where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
 {
