@@ -21,15 +21,29 @@
 
 A high-level interface to linear algebra operations and procedures.
 
+If using a procedure that depends on :mod:`BLAS` or
+
+depend
+on :mod:`BLAS` and :mod:`LAPACK`. These dependencies will be required at
+compile-time if a program calls a procedure that uses them.
+Procedure dependencies are annotated in the documentation below.
+
 Compiling with Linear Algebra
 -----------------------------
 
-Building programs using the :mod:`LinearAlgebra` module can `optionally` depend
-on :mod:`BLAS` and :mod:`LAPACK`. These dependencies will be required at
-compile-time if a program calls a procedure that uses them.
-Procedure dependencies are annotated in the documentation below. Some
-procedures have implementations with and without dependencies that can be
-selected via the ``blasImpl`` and ``lapackImpl`` flags.
+Programs using the :mod:`LinearAlgebra` module can be built with no additional
+dependencies `if` they do not use any procedures that rely on :mod:`BLAS` or
+:mod:`LAPACK`. Procedure dependencies are specified in procedure documentation
+below.
+
+If a program calls a procedure that depends on :mod:`BLAS` or :mod:`LAPACK`, the
+headers and library will need to be available during compilation, typically
+through compiler flags and/or environment variables.
+
+Some procedures have implementations both with `and` without dependencies. By
+default, the implementation with dependencies will be selected. Users can
+explicitly opt out of using the :mod:`BLAS` and :mod:`LAPACK` dependendent
+implentations by setting the ``blasImpl`` and ``lapackImpl`` flags to ``none``.
 
 **Building programs with no dependencies**
 
@@ -40,12 +54,16 @@ selected via the ``blasImpl`` and ``lapackImpl`` flags.
   var I = eye(3,3);
   var B = A + I;
 
-The program above has no dependencies and can therefore be compiled without any
-additional flags:
+The program above has no dependencies and can therefore be compiled without
+the ``BLAS`` or ``LAPACK`` headers and libraries available:
 
 .. code-block:: bash
 
   chpl example1.chpl
+
+If this program had used a procedure with a dependency such as
+:proc:`cholesky` (depends on ``LAPACK``), compilation without ``LAPACK``
+headers and libraries available would result in a compilation error.
 
 **Building programs with dependencies**
 
@@ -58,13 +76,16 @@ additional flags:
 
 
 The program above uses :proc:`eigvals`, which depends on :mod:`LAPACK`.
-Compiling without ``LAPACK`` headers and library available on the system and
-specified as command line arguments will result in a compiler error. Following
-the instructions from the :mod:`LAPACK` module documentation, the above program
-could be compiled with the following flags:
+Compilation without ``LAPACK`` headers and libraries available would result in
+a compilation error.
+
+Following the instructions from the :mod:`LAPACK` module
+documentation, the above program could be compiled if ``LAPACK`` is available
+on the system and specified with the following compilation flags:
 
 .. code-block:: bash
 
+  # Building with LAPACK dependency
   chpl -I$PATH_TO_LAPACKE_INCLUDE_DIR \
        -L$PATH_TO_LIBGFORTRAN -lgfortran \
        -L$PATH_TO_LAPACK_BINARIES -llapacke -llapack -lrefblas \
@@ -87,28 +108,52 @@ could be compiled with the following flags:
   var AA = A.dot(A.T);
 
 
-The program above uses :proc:`dot`, which *optionally* depends on :mod:`BLAS`.
-The program will default to using the more performant ``BLAS`` implementation
-of matrix-matrix multiplication, which will require additional flags to build,
-as noted in the :mod:`BLAS` documentation:
+The program above uses :proc:`dot`, which has two available implementations:
+one that depends on  :mod:`BLAS` and one that is written in Chapel.  The
+program will default to using the more performant ``BLAS`` implementation
+of matrix-matrix multiplication.
+
+Following the instructions from the
+:mod:`BLAS` module documentation, the above program could be compiled if
+``BLAS`` is available on the system and specified with the following
+compilation flags:
 
 .. code-block:: bash
 
+  # Building with BLAS dependency
   chpl -I$PATH_TO_CBLAS_DIR \
        -L$PATH_TO_BLAS_LIBS -lblas \
        example3.chpl
 
+.. note::
 
-To opt out of using the ``BLAS`` implementation, throw the ``--set
-blasImpl=none`` flag, so that ``BLAS`` is no longer a dependency::
+  Users can set environment variables like ``LDFLAGS`` for ``-L`` arguments and
+  ``CFLAGS`` for ``-I`` arguments, to avoid throwing these flags every time.
+
+  Additionally, the required linker flags (``-l``) may vary depending on the
+  ``BLAS`` implementation being used.
+
+
+To opt out of using the ``BLAS`` implementation, users can add the ``--set
+blasImpl=none`` flag, so that ``BLAS`` is no longer a dependency:
 
 .. code-block:: bash
 
+  # Building with BLAS dependency explicitly disabled
   chpl --set blasImpl=none example3.chpl
 
-There is a similar flag for opting out of ``LAPACK`` implementations: ``--set
-lapackImpl=none``. See the documentation of :mod:`BLAS` or :mod:`LAPACK` for
-more details.
+Similarly, users can opt out of of ``LAPACK`` implementations with the ``--set
+lapackImpl=none`` flag. Setting both flags to ``none`` will always choose the
+Chapel implementation when available, and will emit a compiler error
+when no native implementation is available:
+
+.. code-block:: bash
+
+  # Building with all dependencies explicitly disabled
+  chpl --set lapackImpl=none --set blasImpl=none example3.chpl
+
+See the documentation of :mod:`BLAS` or :mod:`LAPACK` for
+more details on these flags.
 
 .. _LinearAlgebraInterface:
 
