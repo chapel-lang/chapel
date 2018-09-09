@@ -177,15 +177,6 @@ arrays) will work with any other Chapel library that works with arrays.
 All functions that return arrays will inherit their domains from the input
 array if possible.  Otherwise they will return arrays with 1-based indices.
 
-**Matrix multiplication**
-
-:proc:`dot` is the general matrix multiplication function provided in this module.
-This function supports any combination of scalars, vectors (1D arrays), and
-matrices (2D arrays). See the :proc:`dot` documentation for more information.
-
-The :proc:`dot` function, along with others may be given a matrix-specific
-operator in future releases.
-
 **Row vs Column vectors**
 
 Row and column vectors are both represented as 1D arrays and are
