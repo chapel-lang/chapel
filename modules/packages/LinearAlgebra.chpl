@@ -21,13 +21,6 @@
 
 A high-level interface to linear algebra operations and procedures.
 
-If using a procedure that depends on :mod:`BLAS` or
-
-depend
-on :mod:`BLAS` and :mod:`LAPACK`. These dependencies will be required at
-compile-time if a program calls a procedure that uses them.
-Procedure dependencies are annotated in the documentation below.
-
 Compiling with Linear Algebra
 -----------------------------
 
@@ -50,7 +43,9 @@ implentations by setting the ``blasImpl`` and ``lapackImpl`` flags to ``none``.
 .. code-block:: chpl
 
   // example1.chpl
-  var A = Matrix(3,3);
+  var A = Matrix([0.0, 1.0, 1.0],
+                 [1.0, 0.0, 1.0],
+                 [1.0, 1.0, 0.0]);
   var I = eye(3,3);
   var B = A + I;
 
@@ -70,10 +65,9 @@ headers and libraries available would result in a compilation error.
 .. code-block:: chpl
 
   // example2.chpl
-  var A = Matrix(3,3);
-  A = 2;
-  var eigenvalues = eigvals(A);
-
+  var A = Matrix([2, 1],
+                 [1, 2], eltType=real);
+  var (eigenvalues, eigenvectors) = eigvals(A, right=true);
 
 The program above uses :proc:`eigvals`, which depends on :mod:`LAPACK`.
 Compilation without ``LAPACK`` headers and libraries available would result in
@@ -105,6 +99,7 @@ on the system and specified with the following compilation flags:
 
   // example3.chpl
   var A = Matrix(3,5);
+  A = 2;
   var AA = A.dot(A.T);
 
 
