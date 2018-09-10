@@ -100,14 +100,29 @@ strategy} . Four memory management strategies are available:
 \chpl{owned}, \chpl{shared}, \chpl{borrowed}, and \chpl{unmanaged}.
 
 \chpl{owned} and \chpl{shared} class instances always have their lifetime
-managed by the compiler. In other words, the compiler decides when these
-instances should have \chpl{delete} called on them to reclaim their
-memory.
+managed by the compiler. In other words, the compiler automatically
+calls \chpl{delete} on these instances to reclaim their memory. For these
+instances, \chpl{=} and copy initialization can result in the transfer or
+sharing of ownership. See
+\\ %formatting
+\mbox{$$ $$ $$ $$ $$} %indent
+\url{https://chapel-lang.org/docs/builtins/internal/OwnedObject.html}
+\\
+and
+\\ %formatting
+\mbox{$$ $$ $$ $$ $$} %indent
+\url{https://chapel-lang.org/docs/builtins/internal/SharedObject.html}
+\\
 
 When \chpl{borrowed} is used as a memory management strategy in a
 \sntx{new-expression}, it also creates an instance that has its lifetime
 managed by the compiler (\rsec{Class_New}).
 
+Class instances that are \chpl{unmanaged} have their lifetime managed
+explicitly and \chpl{delete} must be used to reclaim their memory.
+
+No matter the memory management strategy used, class types support
+\emph{borrowing}.
 A \chpl{borrowed} class instance refers to the same class instance as
 another variable but has no impact on the lifetime of that instance. The
 process of getting such a reference to an instance is called
@@ -196,17 +211,39 @@ fully specified, may appear in the inheritance lists
 of other class declarations.
 
 If no memory management strategy is indicated, \chpl{borrowed} will be
-used. The memory management strategies have the following meaning:
+used.
+
+\begin{rationale}
+  \chpl{borrowed} is the default memory management strategy for a class
+  type because there are likely to be more variables referring to a class
+  instance than managing its memory. A further advantage of this default
+  is that \chpl{borrowed}, along with \chpl{unmanaged}, has minimal
+  performance overhead.
+\end{rationale}
+
+The memory management strategies have the following meaning:
 
 \begin{itemize}
-  \item \chpl{borrowed} refers to a class instance that has a lifetime
-    managed by another variable.
-  \item \chpl{unmanaged} the instance must have \chpl{delete} called on it explicitly.
   \item \chpl{owned} the instance will be deleted
     automatically when the \chpl{owned} variable goes out of scope, but
     only one \chpl{owned} variable can refer to the instance at a time.
+    See
+    \\ %formatting
+    \mbox{$$ $$ $$ $$ $$} %indent
+    \url{https://chapel-lang.org/docs/builtins/internal/OwnedObject.html}
+
   \item \chpl{shared} will be deleted when all of the \chpl{shared}
     variables referring to the instance go out of scope.
+    See
+    \\ %formatting
+    \mbox{$$ $$ $$ $$ $$} %indent
+    \url{https://chapel-lang.org/docs/builtins/internal/SharedObject.html}.
+
+  \item \chpl{borrowed} refers to a class instance that has a lifetime
+    managed by another variable.
+
+  \item \chpl{unmanaged} the instance must have \chpl{delete} called on it explicitly.
+
 \end{itemize}
 
 
@@ -324,7 +361,7 @@ listing those classes in the derived class declaration.
 When inheriting from multiple base classes, only one of the base classes
 may contain fields.  The other classes can only define methods.  Note
 that a class can still be derived from a class that contains fields
-which is itself derived from a class that contains fields.  
+which is itself derived from a class that contains fields.
 
 %REVIEW: vass: the below ("tree") does not match the above ("multiple base classes")
 These restrictions on inheritance induce a class hierarchy which has the form of
@@ -348,7 +385,7 @@ All classes are derived from the \chpl{object} class, either directly or
 indirectly.  If no class name appears in the inheritance list, the class derives
 implicitly from \chpl{object}.  Otherwise, a class derives from \chpl{object}
 indirectly through the class or classes it inherits.  A variable of type \chpl{object}
-can hold a reference to an object of any class type. 
+can hold a reference to an object of any class type.
 
 \subsection{Accessing Base Class Fields}
 \label{Accessing_Base_Class_Fields}
@@ -367,7 +404,7 @@ in~\rsec{Overriding_Base_Class_Methods}.
 \index{classes!derived!constructors}
 
 The default initializer of a derived class automatically calls the default
-initializer of each of its base classes %and records.  
+initializer of each of its base classes %and records.
 The same is not true for constructors:
 To initialize inherited fields to anything other than its default-initialized
 value, a constructor defined in a derived class must either call base class
@@ -387,7 +424,7 @@ of chaining constructor calls will be supported.
 A field in the derived class can be declared with the same name as a
 field in the base class.  Such a field shadows the field in the base
 class in that it is always referenced when it is accessed in the
-context of the derived class.  
+context of the derived class.
 
 \begin{openissue}
 There is an expectation that there will
@@ -413,7 +450,7 @@ or must be a subclass of the base class method's return type.
 
 Methods without parentheses are not candidates for dynamic dispatch.
 \begin{rationale}
-Methods without parentheses are primarily used for field accessors.  
+Methods without parentheses are primarily used for field accessors.
 A default is created if none is specified.  The field accessor
 should not dispatch dynamically since that would make it
 impossible to access a base field within a base method should that
@@ -493,14 +530,14 @@ An initializer for a given class is called by placing the \chpl{new}
 operator in front of a type expression. Any initializer arguments follow
 the class name in a parenthesized list.
 
-Syntactically, the \sntx{type-expression} includes \chpl{borrowed},
-\chpl{unmanaged}, \chpl{owned}, and \chpl{shared}. However these have an
-important consequence for class new expressions. In particular, suppose
+Syntactically, the \sntx{type-expression} includes \chpl{owned},
+\chpl{shared}, \chpl{borrowed}, and \chpl{unmanaged}. However these have
+important consequences for class new expressions. In particular, suppose
 \chpl{C} is a \sntx{type-expression} that results in a class type. Then:
 
 \begin{itemize}
 
-  \item \chpl{new C()} is the same as \chpl{new borrowed C}
+  \item \chpl{new C()} is the same as \chpl{new borrowed C()}
 
   \item \chpl{new owned C()} allocates and initializes an instance that
     will be deleted at the end of the current block unless it is
@@ -516,13 +553,18 @@ important consequence for class new expressions. In particular, suppose
     This process is managed by an \chpl{owned} temporary.  Unlike
     \chpl{new owned C()}, this results in a value of type \chpl{borrowed
     C} and ownership of the instance cannot be transferred out of the
-    block.
+    block. In other words, \chpl{new borrowed C()} is equivalent to
+    \begin{chapel}
+      (new owned C()).borrow()
+    \end{chapel}
 
   \item \chpl{new unmanaged C()} allocates and initializes an instance
     that must have \chpl{delete} called on it explicitly to avoid a
     memory leak. It results in something of type \chpl{unmanaged C}.
 
 \end{itemize}
+
+See also \rsec{Class_Lifetime_and_Borrows} and \rsec{Class_Types}.
 
 \section{Class Constructors}
 \label{Class_Constructors}
@@ -541,7 +583,7 @@ then the constructor method is invoked on this newly-created
 instance.
 
 If the program declares a class constructor method,
-it is a user-defined constructor.  
+it is a user-defined constructor.
 If the program declares no constructors for a class,
 a compiler-generated constructor for that class is created automatically.
 
@@ -623,7 +665,7 @@ before the arguments for the fields declared in current class.
 Generic fields are discussed in Section~\rsec{Generic_Compiler_Generated_Constructors}.
 
 When invoked, the compiler-generated constructor initializes each field in the class to the
-value of the corresponding actual argument.  
+value of the corresponding actual argument.
 
 %
 % BLC: I'm not comfortable enough with this to put it into the release;
@@ -653,7 +695,7 @@ value of the corresponding actual argument.
 % - compiler-generated constructor initializes only the fields for which
 %   its invocation provides actual arguments
 %   (hence it is magic, unlike a function call)
-% 
+%
 % The motivation for this refactoring is:
 % - give the reader a firm understanding that an object is zeroed-out
 %   before they can do anything with it, and
@@ -850,6 +892,28 @@ receivers.
 Classes are assigned by reference.  After an assignment from one
 variable of a class type to another, both variables reference the same
 class instance.
+
+Assignment for \chpl{owned} variable transfers ownership and leaves the
+source variable empty. For example:
+
+\begin{chapelexample}{owned-assignment.chpl}
+Supposing that \chpl{C} is a class type:
+\begin{chapelpre}
+class C { }
+\end{chapelpre}
+\begin{chapel}
+var a = new owned C();
+var b:owned C; // default initialized to store `nil`
+b = a; // transfers ownership from a to b
+writeln(a); // a is left storing `nil`
+\end{chapel}
+\begin{chapeloutput}
+nil
+\end{chapeloutput}
+\end{chapelexample}
+
+In constrast, assignment for \chpl{shared} variables allows both
+variables to refer to the same class instance.
 
 \subsection{Implicit Class Conversions}
 \label{Implicit_Class_Conversions}

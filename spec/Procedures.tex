@@ -617,8 +617,9 @@ generally \chpl{in}.
 
 When a totally generic formal is instantiated for an \chpl{owned} or
 \chpl{shared} actual argument with default or \chpl{const} intent, the
-instantiated formal will have the relevant \chpl{borrowed} type. For
-example:
+instantiated formal will have the relevant \chpl{borrowed} type. This
+does not apply to \chpl{type} arguments or to the default initializer
+generated for a class type.
 
 \begin{chapelexample}{owned-any-intent.chpl}
 \begin{chapel}
