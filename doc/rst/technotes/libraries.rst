@@ -272,9 +272,8 @@ requires the following:
 Compiling Your Chapel Library
 -----------------------------
 
-In addition to compiling with ``--library``, it is recommended to compile with
-``--library-python``.  This will create a Python-compatible module in addition
-to the normally generated library and header file.
+To create a Python-compatible module in addition to the normally generated
+library and header, add ``--library-python`` to the compilation.
 
 Python Module Name
 ------------------
