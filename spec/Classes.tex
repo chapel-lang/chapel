@@ -630,6 +630,9 @@ var p = new PointDoubleX(1.0, 2.0);
 \begin{chapelpost}
 writeln(p);
 \end{chapelpost}
+\begin{chapelcompopts}
+--no-warnings
+\end{chapelcompopts}
 \begin{chapeloutput}
 x = 1.0
 {x = 2.0, y = 2.0}
@@ -666,6 +669,7 @@ The first statement in the initializer reads the value of uninitialized field
 \chpl{x}, so the compiler will issue an error:
 
 \begin{chapelprintoutput}{}
+usedBeforeInitialized.chpl:4: In initializer:
 usedBeforeInitialized.chpl:5: error: field "x" used before it is initialized
 \end{chapelprintoutput}
 
