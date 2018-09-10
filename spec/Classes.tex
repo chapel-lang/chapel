@@ -531,7 +531,7 @@ See also \rsec{Class_Lifetime_and_Borrows} and \rsec{Class_Types}.
 \index{classes!initializers}
 \index{initializers}
 
-The \chpl{new} operator allocates memory for the desired class and invokes
+A \chpl{new} expression allocates memory for the desired class and invokes
 an {\em initializer} method on the uninitialized memory, passing any arguments
 following the class name. An initializer is implemented by a method named
 \chpl{init} and is responsible for initializing the fields of the class.
@@ -1069,7 +1069,7 @@ writeln((c1, c2, c3, c4, c5));
 \begin{chapeloutput}
 ({x = 0, y = 3.14, z = Hello, World!}, {x = 2, y = 3.14, z = Hello, World!}, {x = 0, y = 3.14, z = }, {x = 2, y = 3.14, z = }, {x = 0, y = 0.0, z = })
 \end{chapeloutput}
-there are no user-defined initializers for \chpl{C}, so \chpl{new} operators
+there are no user-defined initializers for \chpl{C}, so \chpl{new} expressions
 will invoke \chpl{C}'s compiler-generated initializer. The \chpl{x} argument
 of the compiler-generated initializer has the default value \chpl{0}.
 The \chpl{y} and \chpl{z} arguments have the default values \chpl{3.14} and
