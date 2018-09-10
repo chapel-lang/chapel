@@ -274,7 +274,7 @@ proc chpl_check_comparator(comparator, type eltType) {
 /* Basic Functions */
 
 /*
-   General purpose sorting interface. This procedure calls :proc:`quickSort`.
+   General purpose sorting interface.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
@@ -528,7 +528,7 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
   for i in low..high by stride {
     var valToInsert = Data[i],
         lo = low,
-        hi = i - stride; 
+        hi = i - stride;
 
     var (found, loc) = _binarySearchForLastOccurrence(Data, valToInsert, comparator, lo, hi);
     loc = if found then loc + stride else loc;              // insert after last occurrence if exists; else insert after expected location
