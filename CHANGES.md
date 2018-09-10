@@ -2,8 +2,7 @@ Release Changes List
 ====================
 
 TODO:
-* Brad's contributions
-* Ian and Preston's contributions
+* Preston's contributions
 * prioritize
 * '' vs ``
 * spellcheck
@@ -128,6 +127,9 @@ Standard Modules / Library
 * added array.front() and array.back() to get the first/last element of an array
 * improved array.pop_front() and array.pop_back() to return the removed element
 * added a new string join() overload that accepts iterator expressions
+* updated the sentinel value returned by Search.linearSearch()
+  (see https://chapel-lang.org/docs/master/modules/packages/Search.html#Search.linearSearch)
+* made LinearAlgebra sparse matrices store indices in an unsorted manner
 
 Package Modules
 ---------------
@@ -142,6 +144,9 @@ Package Modules
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+* added support for storing the indices of sparse CS domains in unsorted order
+  (see TODO)
+* added missing core operations to sparse Block-distributed domains
 
 New Tools / Tool Changes
 ------------------------
@@ -193,6 +198,7 @@ Performance Optimizations/Improvements
 * improved the performance of sparse matrix addition in `LinearAlgebra`
 * optimized the Atomic `Barrier` for network atomics
 * parallelized a loop in array reallocation
+* reduced overheads in the Search.linearSearch() routine
 
 Memory Improvements
 -------------------
