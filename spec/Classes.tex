@@ -559,10 +559,9 @@ A user-defined initializer is responsible for initializing all fields. An
 initializer may omit initialization of fields, but all fields that are
 initialized must be initialized in declaration order.
 
-Initializers for generic classes (\rsec{Generic_Types}) handle \chpl{type} and
-\chpl{param} fields without defaults differently and may need to satisfy
-additional requirements. See Section~\ref{Generic_User_Initializers} for
-details.
+Initializers for generic classes (\rsec{Generic_Types}) handle generic fields
+without default values differently and may need to satisfy additional
+requirements.  See Section~\ref{Generic_User_Initializers} for details.
 
 \begin{chapelexample}{simpleInitializers.chpl}
 The following example shows a class with two initializers:
@@ -765,8 +764,8 @@ var B = new Point3D(1.0, 2.0, 3.0);
 \end{chapelcompopts}
 \begin{chapeloutput}
 fieldsOutOfOrder.chpl:12: In initializer:
-fieldsOutOfOrder.chpl:17: error: Field "y" initialized out of order
-fieldsOutOfOrder.chpl:17: note: initialization of fields before .init() call must be in field declaration order
+fieldsOutOfOrder.chpl:15: error: Field "y" initialized out of order
+fieldsOutOfOrder.chpl:15: note: initialization of fields before .init() call must be in field declaration order
 \end{chapeloutput}
 
 The first initializer leverages the well-defined order of omitted field
@@ -786,8 +785,8 @@ initialization. This subtle difference may be confusing and surprising, and
 is avoided by requiring fields to be initialized in field declaration order.
 \end{rationale}
 
-\subsubsection{The complete Method}
-\label{The_Complete_Method}
+\subsubsection{Limitations on Instance Usage in Initializers}
+\label{Limitations_on_Instance_Usage_in_Initializers}
 \index{classes!initializers!user-defined!complete}
 
 As the initializer makes progress, the class instance is incrementally
@@ -805,13 +804,17 @@ have been initialized, provided their value is not \chpl{nil}.
 \begin{rationale}
   The compiler could conceivably attempt to analyze methods and functions to
   determine which fields are used, and selectively allow method calls on
-  partially-initialized class instances. A simpler rule, which is easier to
-  remember and implement, is to forbid method calls on partially-initialized
-  instances.
+  partially-initialized class instances. Instead, it is simpler for the
+  language to forbid method calls on partially-initialized instances.
 \end{rationale}
 
 Methods may be called and \chpl{this} may be passed to functions only after the
-built-in \chpl{complete} method is invoked.
+built-in \chpl{complete} method is invoked. This method may not be overridden.
+If any fields have not been initialized by the time the \chpl{complete} method
+is invoked, they will be considered omitted and the compiler will insert
+initialization statements as described earlier. If the user does not invoke the
+\chpl{complete} method explicitly, the compiler will insert a call to
+\chpl{complete} at the end of the initializer.
 
 \begin{rationale}
 Due to support for omitted field initialization, there is potential for
@@ -820,13 +823,10 @@ addressed in the design by requiring \chpl{complete} to explicitly mark the
 transition between partially and fully initialized instances.
 \end{rationale}
 
-This method may not be overridden. If any fields have not been initialized by
-the time the \chpl{complete} method is invoked, they will be considered omitted
-and the compiler will insert initialization statements as described earlier. If
-the user does not invoke the \chpl{complete} method explicitly, the compiler
-will insert a call to \chpl{complete} at the end of the initializer. Note that
-even if the user explicitly initializes every field, the \chpl{complete} method
+\begin{note}
+Even if the user explicitly initializes every field, the \chpl{complete} method
 is still required to invoke other methods.
+\end{note}
 
 \begin{chapelexample}{thisDotComplete.chpl}
 In the following code:
@@ -985,8 +985,9 @@ fields \chpl{x}, \chpl{y}, and \chpl{r} are all initialized by the end of the
 conditional.
 \end{chapelexample}
 
-Conditionals may also contain calls to sibling and parent initializers,
-provided that the initialization state is the same at the end of the
+Conditionals may also contain calls to parent initializers
+(\rsec{Initializing_Inherited}) and other initializers defined for the current
+type, provided that the initialization state is the same at the end of the
 conditional statement.
 
 \begin{chapelexample}{thisDotInitConditional.chpl}
@@ -1032,8 +1033,7 @@ the if-branch in order to match the state at the end of the else-branch.
 
 \subsubsection{Miscellaneous Field Initialization Rules}
 
-Fields may not be initialized within loop statements, parallel statements, or
-on statements.
+Fields may not be initialized within loop statements or parallel statements.
 
 \subsection{The Compiler-Generated Initializer}
 \label{The_Compiler_Generated_Initializer}
@@ -1102,7 +1102,7 @@ the compiler-generated initializer while adding their own functionality is to
 implement a method named \chpl{postinit}. The \chpl{postinit} method may also
 be implemented for types with user-defined initializers.
 
-The compiler will insert a call to a \chpl{postinit} method after the
+The compiler will insert a call to the \chpl{postinit} method after the
 initializer invoked by the \chpl{new} expression finishes, if the method
 exists. The \chpl{postinit} method accepts zero arguments and may not return
 anything. Otherwise, this method behaves like any other method.
@@ -1143,6 +1143,10 @@ then invokes the \chpl{verify} method via the \chpl{postinit} method:
   Point out of bounds!
 \end{chapelprintoutput}
 \end{chapelexample}
+
+For classes that inherit, the user may invoke the parent's \chpl{postinit}
+method or let the compiler insert a call automatically
+(\rsec{The_postinit_Method_for_Inheriting_Classes}).
 
 \subsection{Initializing Inherited Classes}
 \label{Initializing_Inherited}
@@ -1217,10 +1221,11 @@ arguments, and then uses the parent's fields to initialize its own fields.
 As stated earlier, the compiler will insert a zero-argument call to the
 parent's initializer if the user has not explicitly written one themselves.
 The exception to this rule is if the initializer body invokes another
-initializer on the current type. This other initializer will either contain an
-implicit or explicit call to the parent initializer, and so the calling
-initializer should not attempt to initialize the parent itself. This also means
-that parent fields may not be accessed before explicit calls to \chpl{init}.
+initializer on the current type (\rsec{Invoking_Other_Initializers}). This
+other initializer will either contain an implicit or explicit call to the
+parent initializer, and so the calling initializer should not attempt to
+initialize the parent itself. This also means that parent fields may not be
+accessed before explicit calls to \chpl{init}.
 
 \begin{chapelexample}{superInitThisInit.chpl}
 In the following code:
@@ -1262,9 +1267,11 @@ initializer because it explicitly invokes another initializer.
 \index{classes!initializers!initializer-inheritance!dynamic-this}
 
 Once \chpl{super.init()} returns, the dynamic type of \chpl{this} is the
-parent's type until the \chpl{complete} method is invoked (except when the
-child's fields are initialized and used). As a result, the parent's methods
-may be called and \chpl{this} may be passed to functions as the parent type.
+parent's type until the \chpl{complete} method
+(\rsec{Limitations_on_Instance_Usage_in_Initializers}) is invoked (except when
+the child's fields are initialized and used). As a result, the parent's methods
+may be called and \chpl{this} may be passed to functions as though it were of
+the parent type.
 
 \begin{rationale}
 After \chpl{super.init()} returns the instance is in some
@@ -1287,7 +1294,7 @@ class Child : Parent {
   var z : real;
 
   proc init(x: real, y: real, z: real) {
-    super.init(x, y); // compiler-generated initializer
+    super.init(x, y); // parent's compiler-generated initializer
     foo(); // Parent.foo()
     this.z = z;
     this.complete();
@@ -1307,9 +1314,10 @@ writeln(c);
 \begin{chapelcompopts}
 --no-warnings
 \end{chapelcompopts}
-Once the parent's initializer is finished, the parent method
-\chpl{foo} may be called. After the \chpl{complete} method is invoked, a call to \chpl{foo}
-resolves to the Child's overriden implementation:
+Once the parent's initializer is finished, the parent method \chpl{foo} may be
+called. After the \chpl{complete} method is invoked, a call to \chpl{foo}
+resolves to the child's overriden (\rsec{Overriding_Base_Class_Methods})
+implementation:
 \begin{chapelprintoutput}{}
 Parent.foo
 Child.foo
@@ -1338,7 +1346,7 @@ class Child : Parent {
 }
 
 var A = new Child();
-var B = new Child(1.0, 2.0, 3.0);
+var B = new Child(1.0, 2.0, 3.0); // x=1.0, y=2.0, z=3.0
 var C = new Child(y=10.0);
 \end{chapel}
 \begin{chapelpost}
@@ -1385,12 +1393,11 @@ class Child : Parent {
   var x, y : real;
   proc postinit() {
     // compiler inserts "super.postinit();"
-    writeln("Child.postinit: ", a, ", ", b);
+    writeln("Child.postinit: ", x, ", ", y);
   }
 }
 
 var c = new Child(1.0, 2.0, 3.0, 4.0);
-writeln(c);
 \end{chapel}
 \begin{chapelcompopts}
 --no-warnings
@@ -1400,8 +1407,7 @@ child's \chpl{postinit} method, and invokes the child's \chpl{postinit} method
 after the compiler-generated initializer finishes:
 \begin{chapelprintoutput}{}
 Parent.postinit: 1.0, 2.0
-Child.postinit: 1.0, 2.0
-{a = 1.0, b = 2.0, x = 3.0, y = 4.0}
+Child.postinit: 3.0, 4.0
 \end{chapelprintoutput}
 \end{chapelexample}
 

@@ -160,8 +160,7 @@ or record type.
 In the context of a function body, a record variable declaration
 causes storage to be allocated sufficient to store all of the fields in that
 record type.  The record variable is initialized with a call to an
-initializer that accepts zero actual arguments. If multiple such initializers
-exist, an ambiguity error is raised.
+initializer (\rsec{Class_Initializers}) that accepts zero actual arguments.
 
 \subsection{Storage Allocation}
 \label{Record_Storage}
@@ -215,7 +214,7 @@ record UniqueID {
   proc init() { idCounter += 1; id = idCounter; }
 }
 
-var firstID : UniqueID(); // invokes zero-argument initializer
+var firstID : UniqueID; // invokes zero-argument initializer
 writeln(firstID);
 writeln(new UniqueID());  // create and use a record value without a variable
 writeln(new UniqueID());
