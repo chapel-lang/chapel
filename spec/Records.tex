@@ -159,10 +159,9 @@ or record type.
 
 In the context of a function body, a record variable declaration
 causes storage to be allocated sufficient to store all of the fields in that
-record type.  The record variable is initialized through a call to its
-default initializer.  The default initializer for a record is defined in the
-same way as the default initializer for a class (\rsec{The_Compiler_Generated_Initializer}).
-For non-generic records, the initializer is invoked with zero arguments.
+record type.  The record variable is initialized with a call to an
+initializer that accepts zero actual arguments. If multiple such initializers
+exist, an ambiguity error is raised.
 
 \subsection{Storage Allocation}
 \label{Record_Storage}
@@ -191,7 +190,7 @@ To create a record as an expression,
 i.e. without binding it to a variable, the \chpl{new} operator is
 required.  In this case, storage is allocated and reclaimed as for a record
 variable declaration (\rsec{Record_Storage}), except that the temporary record
-goes out of scope at the end of the enclosing statement.
+goes out of scope at the end of the enclosing block.
 
 The initializers for a record are defined in the same way as those for a class
 (\rsec{Class_Initializers}). Note that records do not support inheritance and
@@ -216,6 +215,8 @@ record UniqueID {
   proc init() { idCounter += 1; id = idCounter; }
 }
 
+var firstID : UniqueID(); // invokes zero-argument initializer
+writeln(firstID);
 writeln(new UniqueID());  // create and use a record value without a variable
 writeln(new UniqueID());
 \end{chapel}
@@ -225,6 +226,7 @@ produces the output
 (time = 2/2/2022)
 (id = 1)
 (id = 2)
+(id = 3)
 \end{chapelprintoutput}
 The variable \chpl{timestampDefault} is initialized with \chpl{TimeStamp}'s
 default initializer. The expression \chpl{new TimeStamp} creates a record that
@@ -388,6 +390,40 @@ Record method calls are written the same way as other method calls
 always resolved at compile time.
 
 \section{Common Operations}
+
+\subsection{Copy Initialization of Records}
+\label{Copy_Initialization_of_Records}
+\index{records!copy initialization}
+
+When a new record variable is created based upon an
+existing variable, we say that the new variable is
+\emph{copy initialized} from the existing variable. For example:
+\begin{chapel}
+var x: MyRecordType;
+var y = x; // this is called copy initialization
+\end{chapel}
+
+We say that y is \emph{copy initialized} from x. Since
+x and y both exist after y is initialized and they are
+different record variables, they must not be observed
+to alias. That is, modifications to a field in x should not
+cause the corresponding field in y to change.
+
+Initializing a record variable with the result of a call
+returning a record by value simply captures the result
+of the call into the variable and does not cause copy
+initialization. For example:
+\begin{chapel}
+proc returnsRecord() {
+  var ret: MyRecordType;
+  return ret;
+}
+var z = returnsRecord(); // captures result into z without copy initializing
+\end{chapel}
+
+\begin{future}
+Specifying further details of copy initialization is future work.
+\end{future}
 
 \subsection{Record Assignment}
 \label{Record_Assignment}
