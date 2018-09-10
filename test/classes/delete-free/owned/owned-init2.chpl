@@ -1,4 +1,4 @@
-use OwnedObject;
+
 
 class C {
   var x: int;
@@ -12,9 +12,9 @@ class C {
 }
 
 proc main() {
-  var a: [1..3] Owned(C);
+  var a: [1..3] owned C;
   for i in 1..3 do
-    a[i] = new Owned(new C(i));
+    a[i] = new owned C(i);
   
   writeln(a);
 }

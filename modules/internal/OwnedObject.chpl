@@ -204,6 +204,12 @@ module OwnedObject {
       this.chpl_p = nil;
     }
 
+    pragma "no doc"
+    proc init(p:borrowed) {
+      compilerWarning("initializing owned from a borrow is deprecated");
+      this.init(_to_unmanaged(p));
+    }
+
     /*
        Initialize a :record:`owned` with a class instance.
        When this :record:`owned` goes out of scope, it will
@@ -212,18 +218,14 @@ module OwnedObject {
        It is an error to directly delete the class instance
        while it is managed by a :record:`owned`.
 
-       .. note::
-          In the future, the argument `p` will be required to be
-          of `unmanaged` type.
-
-       :arg p: the class instance to manage. Must be of class type.
+       :arg p: the class instance to manage. Must be of unmanaged class type.
 
      */
-    proc init(p:borrowed) {
-      this.chpl_t = p.type;
-
-      this.chpl_p = p;
+    proc init(p:unmanaged) {
+      this.chpl_t = _to_borrowed(p.type);
+      this.chpl_p = _to_borrowed(p);
     }
+
 
     proc init(p:?T) where isClass(T) == false && isSubtype(T, _owned) == false  &&
                     isIterator(p) == false {
@@ -378,7 +380,7 @@ module OwnedObject {
   where isSubtype(x.chpl_t,t.chpl_t) {
     // the :t.chpl_t cast in the next line is what actually changes the
     // returned value to have type t; otherwise it'd have type _owned(x.type).
-    var ret = new _owned(x.release():t.chpl_t);
+    var ret = new _owned(x.release():_to_unmanaged(t.chpl_t));
     return ret;
   }
 

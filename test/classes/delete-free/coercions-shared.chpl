@@ -1,5 +1,3 @@
-use SharedObject;
-
 class MyClass {
   var x:int;
 }
@@ -14,7 +12,7 @@ proc test1() {
 }
 
 proc test2() {
-  var instance:borrowed MyClass = new Shared(new MyClass(1));
+  var instance:borrowed MyClass = new shared MyClass(1);
 }
 
 proc acceptMyClass(c:borrowed MyClass) {
@@ -22,15 +20,15 @@ proc acceptMyClass(c:borrowed MyClass) {
 }
 
 proc test3() {
-  var instance = new Shared(new MyClass(1));
+  var instance = new shared MyClass(1);
 
   acceptMyClass(instance);
 }
 
 proc test5() {
-  var instance = new Shared(new SubClass(1, 2));
+  var instance = new shared SubClass(1, 2);
 
-  var otherInstance: Shared(MyClass) = instance;
+  var otherInstance: shared MyClass = instance;
 
   acceptMyClass(otherInstance);
 }

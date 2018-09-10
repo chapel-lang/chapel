@@ -1,5 +1,3 @@
-use OwnedObject;
-
 class C {
   var x:int;
   proc deinit() {
@@ -15,7 +13,7 @@ proc returnByValue(ref arg)
 
 
 proc foo() {
-  var x = new Owned(new C(1));
+  var x = new owned C(1);
   writeln(" x=", x);
 
   var y = returnByValue(x);

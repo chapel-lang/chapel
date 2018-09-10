@@ -1,4 +1,4 @@
-use OwnedObject;
+
 
 class MyClass {
   var x:int;
@@ -9,12 +9,12 @@ class SubClass : MyClass {
 }
 
 
-proc acceptOwnedMyClassB(ref own:Owned(MyClass)) {
+proc acceptOwnedMyClassB(ref own:owned MyClass) {
   writeln(own);
 }
 
 proc testB() {
-  var instance = new Owned(new SubClass(2,2));
+  var instance = new owned SubClass(2,2);
   acceptOwnedMyClassB(instance);
   writeln(instance);
 }

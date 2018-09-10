@@ -2749,8 +2749,11 @@ urse
 FILEID: 4f065520-1d85-11e6-a3a6-10ddb1d4c3d5
 fivec
 inov
+inptemp
 intented
 orse
+povar
+ptemp
 shadowvar
 sovar
 ssvar
@@ -3745,6 +3748,7 @@ FILEID: c6d25ce8-a183-11e6-91b8-10ddb1d4c3d5
 bdce
 ccfbb
 urse
+uscore
 
 FILEID: b321068e-a888-11e6-91b8-10ddb1d4c3d5
 catfiles
@@ -3799,6 +3803,8 @@ srcwide
 
 FILEID: 80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5
 disubprogram
+dtype
+ndarray
 nfor
 optos
 toctree
@@ -4287,6 +4293,7 @@ nopnd
 opnd
 ppdescs
 ppdi
+prts
 psvv
 pszm
 rfdpp
@@ -4295,6 +4302,7 @@ tdiff
 telapsed
 tget
 themself
+tidx
 tstamp
 xchgval
 
@@ -4469,8 +4477,14 @@ FILEID: 838b0068-8aba-11e7-b3f1-10ddb1d4c3d5
 mpmc
 
 FILEID: f81d91a2-8aba-11e7-b3f1-10ddb1d4c3d5
+boxlib
 ivrs
+libdwarf
+libelf
+mrail
 openblas
+spack
+uninstallation
 
 FILEID: 081f50fc-91e8-11e7-b3f1-10ddb1d4c3d5
 cabsf
@@ -4674,6 +4688,7 @@ fixpath
 libhdrfile
 libname
 linkershared
+lname
 
 FILEID: e6ecf3ae-9c7b-11e8-b963-10ddb1d4c3d5
 codepoints
@@ -4683,6 +4698,12 @@ mbsize
 
 FILEID: f5a43844-9c7b-11e8-b963-10ddb1d4c3d5
 timeunits
+
+FILEID: d91ef3d6-ab57-11e8-b963-10ddb1d4c3d5
+opensslv
+
+FILEID: dc718a6c-ab57-11e8-b963-10ddb1d4c3d5
+myvoid
 
 NATURAL:
 aarch
@@ -5051,6 +5072,8 @@ cygdrive
 cygwin
 cypriot
 cyrillic
+cython
+cythonize
 damian
 dana
 daniel
@@ -5160,6 +5183,7 @@ discontiguous
 discoverability
 distribs
 dists
+distutils
 diten
 divceil
 divceilpos
@@ -5428,6 +5452,7 @@ forallexpr
 foralls
 forexpr
 forloop
+formedness
 fortran
 fourier
 fprint
@@ -6097,6 +6122,7 @@ munmap
 munshi
 mutexes
 muxed
+mvapich
 myaccountid
 myanmar
 mycolor
@@ -6272,6 +6298,7 @@ openfile
 openfp
 opengroup
 openmem
+openmpi
 openreader
 opensocketdata
 opensocketfunction
@@ -6314,6 +6341,7 @@ paratest
 parekh
 parens
 parenthesization
+parentvar
 parsable
 partee
 passlist
@@ -6477,6 +6505,7 @@ readf
 readfunction
 readlink
 readln
+readnone
 readstring
 readthedocs
 readv
@@ -6643,6 +6672,7 @@ setseq
 setsockopt
 setuptools
 seymour
+sgte
 shannon
 shavian
 shellarg
@@ -6705,6 +6735,7 @@ sles
 slicee
 slist
 slong
+slte
 slurm
 smtp
 smtps

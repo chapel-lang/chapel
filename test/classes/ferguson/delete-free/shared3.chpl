@@ -1,4 +1,4 @@
-use SharedObject;
+
 
 class Impl {
   var field: int;
@@ -13,8 +13,8 @@ class Impl {
 }
 
 proc run() {
-  var x = new Shared(new Impl(1));
-  var y: Shared(Impl);
+  var x = new shared Impl(1);
+  var y: shared Impl;
 
   // check assignment
   y = x;
