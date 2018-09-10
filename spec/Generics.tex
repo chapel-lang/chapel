@@ -504,8 +504,8 @@ of types and parameter values, one type or value per generic field.
 % Here are the aspects to be defined for each kind of generic field:
 % - what it makes the class/record generic over
 % - the type constructor arg that gets created
-% - the default constructor arg that gets created
-% - the requirements on the corresponding user-defined constructor arg
+% - the default initializer arg that gets created
+% - the requirements on the corresponding user-defined initializer arg
 % - for each of the above args:
 %    - what kind of actual it accepts (type, param, value)
 %    - what is the semantics;
@@ -513,9 +513,9 @@ of types and parameter values, one type or value per generic field.
 %    - what is the arg's default, if any
 %
 % In the presentation below, some of these aspects are discussed
-% in the field-kind-specific subsections, some in the constructor-specific
+% in the field-kind-specific subsections, some in the initializer-specific
 % subsections, some in both.  I.e. there is an overlap between
-% field-kind and constructor subsections; that should be OK but feel free
+% field-kind and initializer subsections; that should be OK but feel free
 % to clean up.
 %
 % It would be cool to summarize that in a table
@@ -538,8 +538,8 @@ Similar to a parameter field, it cannot be assigned
 except in its declaration.
 
 The type alias becomes an argument with intent \chpl{type} to
-the compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors})
-for its class or record. This makes the compiler-generated constructor generic.
+the compiler-generated initializer (\rsec{Generic_Compiler_Generated_Initializers})
+for its class or record. This makes the compiler-generated initializer generic.
 The type alias also becomes an argument with intent \chpl{type} to
 the type constructor (\rsec{Type_Constructors}).
 If the type alias declaration binds it to a type, that type
@@ -547,8 +547,8 @@ becomes the default for these arguments, otherwise they have no defaults.
 
 The class or record is instantiated by binding the type alias
 to the actual type passed to the corresponding argument of
-a user-defined (\rsec{Generic_User_Constructors})
-or compiler-generated constructor or type constructor.
+a user-defined (\rsec{Generic_User_Initializers})
+or compiler-generated initializer or type constructor.
 If that argument has a default, the actual type can be omitted, in
 which case the default will be used instead.
 
@@ -598,17 +598,17 @@ instantiated class or record type itself.
 % A parameter defined in a class or record is accessed as if it were a
 % field.  This access returns a parameter.
 The parameter becomes an argument with intent \chpl{param} to the
-compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors})
+compiler-generated initializer (\rsec{Generic_Compiler_Generated_Initializers})
 for that class or record.  This makes the compiler-generated
-constructor generic.  The parameter also becomes an argument
+initializer generic.  The parameter also becomes an argument
 with intent \chpl{param} to the type  constructor (\rsec{Type_Constructors}).
 If the parameter declaration has an initialization expression, that expression
 becomes the default for these arguments, otherwise they have no defaults.
 
 The class or record is instantiated by binding the parameter
 to the actual value passed to the corresponding argument of
-a user-defined (\rsec{Generic_User_Constructors})
-or compiler-generated constructor or type constructor.
+a user-defined (\rsec{Generic_User_Initializers})
+or compiler-generated initializer or type constructor.
 If that argument has a default, the actual value can be omitted, in
 which case the default will be used instead.
 
@@ -646,17 +646,17 @@ specified by \chpl{IntegerTuple} is a generic type.
 If a \chpl{var} or \chpl{const} field in a class or record has no specified type or
 initialization expression, the class or record is generic over the
 type of that field.  The field becomes an argument with default intent to
-the compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors}).
+the compiler-generated initializer (\rsec{Generic_Compiler_Generated_Initializers}).
 That argument has no specified type and no default
-value. This makes the compiler-generated constructor generic.
+value. This makes the compiler-generated initializer generic.
 The field also becomes an argument with \chpl{type} intent and no default
 to the type constructor (\rsec{Type_Constructors}).
 Correspondingly, an actual value must always be passed to the default
-constructor argument and an actual type to the type constructor argument.
+initializer argument and an actual type to the type constructor argument.
 
 The class or record is instantiated by binding the type of the field
 to the type of the value passed to the corresponding argument
-of a user-defined (\rsec{Generic_User_Constructors}) or compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors}).
+of a user-defined (\rsec{Generic_User_Initializers}) or compiler-generated initializer (\rsec{Generic_Compiler_Generated_Initializers}).
 When the type constructor is invoked, the class or record is instantiated
 by binding the type of the field to the actual type passed to
 the corresponding argument.
@@ -698,7 +698,7 @@ as \chpl{Node(int)}.
 \subsection{The Type Constructor}
 \label{Type_Constructors}
 \index{generics!type constructor}
-\index{constructors!type constructors}
+\index{initializers!type constructors}
 
 A type constructor is automatically created for each class or record.
 A type constructor is a type function (\rsec{Type_Return_Intent}) that has
@@ -713,7 +713,7 @@ formal argument also has intent \chpl{type}. It accepts the type
 of the field, as opposed to a value as is the case for a parameter field.
 The formal arguments occur in the same order as the fields are
 declared and have the same names as the corresponding fields.
-Unlike the compiler-generated constructor, the type constructor has only
+Unlike the compiler-generated initializer, the type constructor has only
 those arguments that correspond to generic fields.
 
 A call to a type constructor accepts actual types and parameter values
@@ -740,22 +740,23 @@ when invoking the type constructor.
 \index{methods!generic}
 
 All methods bound to generic classes or records, including
-constructors, are generic over the implicit \chpl{this} argument.
+initializers, are generic over the implicit \chpl{this} argument.
 This is in addition to being generic over any other argument that is generic.
 
-\subsection{The Compiler-Generated Constructor}
-\label{Generic_Compiler_Generated_Constructors}
-\index{generics!constructors!compiler-generated}
-\index{constructors!compiler-generated!for generic classes or records}
+\subsection{The Compiler-Generated Initializer}
+\label{Generic_Compiler_Generated_Initializers}
+\index{generics!initializers!compiler-generated}
+\index{initializers!compiler-generated!for generic classes or records}
 
-If no user-defined constructors are supplied for a given generic class, the
+If no user-defined initializers are supplied for a given generic class, the
 compiler generates one following in a manner similar to that for concrete
-classes (\rsec{The_Compiler_Generated_Constructor}).
-However, the compiler-generated constructor for a generic class or record
-(\rsec{The_Compiler_Generated_Constructor}) is generic over each argument that
+classes (\rsec{The_Compiler_Generated_Initializer}).
+However, the compiler-generated initializer for a generic class or record
+(\rsec{The_Compiler_Generated_Initializer}) is generic over each argument that
 corresponds to a generic field, as specified above.
-The argument has intent \chpl{type} for a type alias field and is a
-parameter for a parameter field. It accepts the type to be bound
+
+The argument has intent \chpl{type} for a type alias field and has intent
+\chpl{param} for a parameter field. It accepts the type to be bound
 to the type alias and the value to be bound to the parameter, respectively.
 This is the same as for the type constructor.
 For a generic \chpl{var} or \chpl{const} field, the corresponding
@@ -763,37 +764,20 @@ formal argument has the default intent and accepts the value
 for the field to be initialized with. The type of the field
 is inferred automatically to be the type of the initialization value.
 
-The default values for the generic arguments of the compiler-generated constructor
+The default values for the generic arguments of the compiler-generated initializer
 are the same as for the type constructor (\rsec{Type_Constructors}).
 For example, the arguments corresponding to the generic \chpl{var}
 and \chpl{const} fields, if any, never have defaults, so the corresponding
 actual values must always be provided.
 
-\subsection{User-Defined Constructors}
-\label{Generic_User_Constructors}
-\index{generics!constructors!user-defined}
-\index{constructors!user-defined!for generic classes or records}
+\subsection{User-Defined Initializers}
+\label{Generic_User_Initializers}
+\index{generics!initializers!user-defined}
+\index{initializers!user-defined!for generic classes or records}
 
-If a generic field of a class does not have an initialization expression
-or a type alias is unspecified, each user-defined constructor for that
-class must provide a formal argument whose name
-matches the name of the field.
-
-If the name of a formal argument in a user-defined constructor matches the name
-of a generic field that does not have an initialization
-expression, is a type alias, or is a parameter field, the field is
-automatically initialized at the beginning of the constructor invocation
-to the actual value of that argument.
-This is done by passing that formal argument to the implicit invocation
-of the compiler-generated constructor during default-initialization (\rsec{Default_Initialization}).
-
-%%  The following story is nicer but it's not how it is implemented:
-%If the name of a formal argument in a class constructor
-%matches the name of a generic field, the field is automatically initialized
-%to the actual value for that argument upon the constructor invocation.
-%If the generic field does not have an initialization expression,
-%such a matching formal argument must be provided in each constructor
-%for that class.
+If a generic field of a class or record does not have a default value or type
+alias, each user-defined initializer for that class must explicitly initialize
+that field.
 
 \begin{chapelexample}{initializersForGenericFields.chpl}
 
@@ -819,6 +803,7 @@ class MyGenericClass {
     this.p1 = p1;
     this.c1 = c1;
     this.v1 = v1;
+    // compiler inserts initialization for remaining fields
   }
   proc init(type t5, param p5, c5, v5, x5,
             type t1, param p1, c1, v1, x1) {
@@ -858,22 +843,10 @@ a string
 this is g2
 {c1 = 222, v1 = 222.2, x1 = 22.0, c5 = 3.3, v5 = 333, x5 = 3333}
 \end{chapeloutput}
-The arguments \chpl{t1}, \chpl{p1}, \chpl{c1}, and \chpl{v1} are
-required in all constructors for \chpl{MyGenericClass}. They can appear
-in any order. Both \chpl{MyGenericClass} constructors initialize the
-corresponding fields implicitly because these fields do not have initialization
-expressions. The second constructor also initializes implicitly
-the fields \chpl{t5} and \chpl{p5} because they are a type field
-and a parameter field. It does not initialize the fields \chpl{c5}
-and \chpl{v5} because they have initialization expressions, or
-the fields \chpl{x1} and \chpl{x5} because they are not generic fields
-(even though they are of generic types).
+The initializers are required to initialize fields \chpl{t1}, \chpl{p1},
+\chpl{c1}, and \chpl{v1}. Otherwise, field initializations may be omitted
+according to previously-described initializer semantics.
 \end{chapelexample}
-
-\begin{openissue}
-The design of constructors, especially for generic classes, is
-under development, so the above specification may change.
-\end{openissue}
 
 \pagebreak
 \section{User-Defined Compiler Diagnostics}
