@@ -536,10 +536,10 @@ an {\em initializer} method on the uninitialized memory, passing any arguments
 following the class name. An initializer is implemented by a method named
 \chpl{init} and is responsible for initializing the fields of the class.
 
-If the program declares an initializer method on a class, it is a user-defined
-initializer. If the program declares no initializers for a class, the compiler
-must generate an initializer for that class based on the types and
-initialization expressions of fields defined by that class.
+Any initializers declared in a program are \emph{user-defined} initializers. If
+the program declares no initializers for a class, the compiler must generate an
+initializer for that class based on the types and initialization expressions of
+fields defined by that class.
 
 \subsection{User-Defined Initializers}
 \label{User_Defined_Initializers}
@@ -550,15 +550,19 @@ initialization expressions of fields defined by that class.
 A user-defined initializer is an initializer method explicitly declared in the
 program.  An initializer declaration has the same syntax as a method
 declaration, with the restrictions that the name of the method must be
-\chpl{init} and there must not be a return type specifier.
+\chpl{init} and there must not be a return type specifier. When an initializer
+is called, the usual function resolution mechanism (\rsec{Function_Resolution})
+is applied with the exception that an initializer may not be virtually
+dispatched.
 
-When an initializer is called, the usual function resolution mechanism
-(\rsec{Function_Resolution}) is applied with the exception that an
-initializer may not be virtually dispatched.
+A user-defined initializer is responsible for initializing all fields. An
+initializer may omit initialization of fields, but all fields that are
+initialized must be initialized in declaration order.
 
-Initializers for generic classes (\rsec{Generic_Types}) handle certain
-arguments differently and may need to satisfy additional
-requirements. See Section~\ref{Generic_User_Initializers} for details.
+Initializers for generic classes (\rsec{Generic_Types}) handle \chpl{type} and
+\chpl{param} fields without defaults differently and may need to satisfy
+additional requirements. See Section~\ref{Generic_User_Initializers} for
+details.
 
 \begin{chapelexample}{simpleInitializers.chpl}
 The following example shows a class with two initializers:
@@ -679,10 +683,9 @@ usedBeforeInitialized.chpl:5: error: field "x" used before it is initialized
 \label{Omitting_Field_Initializations}
 \index{classes!initializers!user-defined!omitting}
 
-Some classes have many fields, some of which might have default values. Instead
-of requiring the user to initialize each field explicitly, the language allows
-field initializations to be omitted if the field has a type or if the field
-has an initialization expression. The compiler will insert initialization
+In order to support productive and elegant initializers, the language allows
+field initializations to be omitted if the field has a type or if the field has
+an initialization expression. The compiler will insert initialization
 statements for such fields based on their types and default values.
 
 \begin{chapelexample}{fieldInitOmitted.chpl}
@@ -727,16 +730,11 @@ and the compiler inserts initialization for fields \chpl{x} and \chpl{y}
 based on the type of those fields (\rsec{Default_Values_For_Types}).
 \end{chapelexample}
 
-Unchecked, this language feature could lead to confusing behavior for fields
-initialized out of order. A user may have written a statement that at face
-value looks like initialization, but if written out of order might in fact be
-assignment.
-
 In order to reduce ambiguity and to ensure a well-defined order for
 side-effects, the language requires that all fields be initialized in field
-declaration order. This applies regardless of whether field initializations
-are omitted from the initializer body. If fields are initialized out of order,
-a compile-time error will be issued.
+declaration order. This applies regardless of whether field initializations are
+omitted from the initializer body. If fields are initialized out of order, a
+compile-time error will be issued.
 
 \begin{chapelexample}{fieldsOutOfOrder.chpl}
 In the following code:
@@ -754,10 +752,8 @@ class Point3D {
 
   proc init(x: real, y: real, z: real) {
     this.x = x;
-    // Without in-order rule: compiler inserts "this.y = 1.0;"
     this.z = z;
-    // Without in-order rule: assignment, not initialization!
-    this.y = y;
+    this.y = y; // Error!
   }
 }
 
@@ -778,11 +774,17 @@ initialization to use the default value of field \chpl{y} in order to
 explicitly initialize field \chpl{z}.
 
 The second initializer initializes field \chpl{z} before field \chpl{y},
-causing a compile-time error to be issued. Without this rule the explicit
-initialization of field \chpl{y} would be assignment, which could be confusing
-and surprising (especially for more complicated types than \chpl{real}).
+causing a compile-time error to be issued.
 
 \end{chapelexample}
+
+\begin{rationale}
+Without this rule the compiler could insert default initialization for field
+\chpl{y} before \chpl{z} is explicitly initialized. The following statement
+would then be {\em assignment} to field \chpl{y}, despite appearing to be
+initialization. This subtle difference may be confusing and surprising, and
+is avoided by requiring fields to be initialized in field declaration order.
+\end{rationale}
 
 \subsubsection{The complete Method}
 \label{The_Complete_Method}
@@ -808,11 +810,16 @@ have been initialized, provided their value is not \chpl{nil}.
   instances.
 \end{rationale}
 
-Once the class is initialized, methods may be called and \chpl{this} may be
-passed to functions. Due to the support for omitted field initialization, there
-is potential for confusion regarding the overall status of initialization.
+Methods may be called and \chpl{this} may be passed to functions only after the
+built-in \chpl{complete} method is invoked.
 
-This ambiguity is resolved by calling a built-in method named \chpl{complete}.
+\begin{rationale}
+Due to support for omitted field initialization, there is potential for
+confusion regarding the overall status of initialization. This confusion is
+addressed in the design by requiring \chpl{complete} to explicitly mark the
+transition between partially and fully initialized instances.
+\end{rationale}
+
 This method may not be overridden. If any fields have not been initialized by
 the time the \chpl{complete} method is invoked, they will be considered omitted
 and the compiler will insert initialization statements as described earlier. If
@@ -890,7 +897,7 @@ implemented for the same type. Because the invoked initializer must operate on
 completely uninitialized memory, a compile-time error will be issued for field
 initialization before a call to \chpl{init}. Because each initializer
 either explicitly or implicitly invokes the \chpl{complete} method, all fields
-and methods may be used after a call to \chpl{init}.
+and methods may be used after such a call to \chpl{init}.
 
 \begin{chapelexample}{thisDotInit.chpl}
 In the following code:
@@ -1077,10 +1084,10 @@ The \chpl{y} and \chpl{z} arguments have the default values \chpl{3.14} and
 
 \chpl{C} instances can be created by calling the compiler-generated initializer as follows:
 \begin{itemize}
-\item The call \chpl{new C()} is equivalent to \chpl{C(0,3.14,"Hello, World\!")}.
-\item The call \chpl{new C(2)} is equivalent to \chpl{C(2,3.14,"Hello, World\!")}.
-\item The call \chpl{new C(z="")} is equivalent to \chpl{C(0,3.14,"")}.
-\item The call \chpl{new C(2, z="")} is equivalent to \chpl{C(2,3.14,"")}.
+\item The call \chpl{new C()} is equivalent to \chpl{new C(0,3.14,"Hello, World\!")}.
+\item The call \chpl{new C(2)} is equivalent to \chpl{new C(2,3.14,"Hello, World\!")}.
+\item The call \chpl{new C(z="")} is equivalent to \chpl{new C(0,3.14,"")}.
+\item The call \chpl{new C(2, z="")} is equivalent to \chpl{new C(2,3.14,"")}.
 \item The call \chpl{new C(0,0.0,"")} specifies the initial values for all fields explicitly.
 \end{itemize}
 \end{chapelexample}
@@ -1296,8 +1303,8 @@ writeln(c);
 \begin{chapelcompopts}
 --no-warnings
 \end{chapelcompopts}
-Once the parent's initializer is finished, we can invoke the parent method
-\chpl{foo}. After the \chpl{complete} method is invoked, a call to \chpl{foo}
+Once the parent's initializer is finished, the parent method
+\chpl{foo} may be called. After the \chpl{complete} method is invoked, a call to \chpl{foo}
 resolves to the Child's overriden implementation:
 \begin{chapelprintoutput}{}
 Parent.foo
