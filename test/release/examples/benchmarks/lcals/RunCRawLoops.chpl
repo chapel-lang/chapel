@@ -134,9 +134,9 @@ module RunCRawLoops {
                 du2 = loop_data.RealArray_1D[1],
                 du3 = loop_data.RealArray_1D[2];
 
-            var u1 = loop_data.RealArray_3D_2xNx4[0],
-                u2 = loop_data.RealArray_3D_2xNx4[1],
-                u3 = loop_data.RealArray_3D_2xNx4[2];
+            var u1 = loop_data.RealArray_3D_2xNx4[0].borrow(),
+                u2 = loop_data.RealArray_3D_2xNx4[1].borrow(),
+                u3 = loop_data.RealArray_3D_2xNx4[2].borrow();
 
             const sig = loop_data.RealArray_scalars[0],
                   a11 = loop_data.RealArray_scalars[1],

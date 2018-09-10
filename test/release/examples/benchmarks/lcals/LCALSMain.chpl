@@ -191,7 +191,7 @@ proc computeStats(ilv: LoopVariantID, loop_stats: [] owned LoopStat, do_fom: boo
   for stat in loop_stats {
     for ilen in stat.loop_length_dom {
       if stat.loop_run_count[ilen] > 0 {
-        var time_sample = stat.loop_run_time[ilen];
+        var time_sample = stat.loop_run_time[ilen].borrow();
         var sample_size = time_sample.numElements;
         var mean = 0.0;
         var sdev = 0.0;
