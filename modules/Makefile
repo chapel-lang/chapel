@@ -106,6 +106,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
 	packages/MPI.chpl \
+        packages/NetCDF.chpl \
 	packages/Norm.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
