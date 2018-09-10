@@ -656,18 +656,19 @@ class Point {
     writeln(this.y);
   }
 }
-\end{chapel}
-\begin{chapelpost}
 var p = new Point(1.0, 2.0);
-\end{chapelpost}
+\end{chapel}
 \begin{chapelcompopts}
 --no-warnings
 \end{chapelcompopts}
-\begin{chapeloutput}{}
-fieldUsedBeforeInitialized.chpl:5: error: field "x" used before it is initialized
-\end{chapeloutput}
+
 The first statement in the initializer reads the value of uninitialized field
 \chpl{x}, so the compiler will issue an error.
+
+\begin{chapelprintoutput}
+fieldUsedBeforeInitialized.chpl:5: error: field "x" used before it is initialized
+\end{chapelprintoutput}
+
 \end{chapelexample}
 
 \subsubsection{Omitting Field Initializations}
@@ -762,19 +763,24 @@ var B = new Point3D(1.0, 2.0, 3.0);
 \begin{chapelcompopts}
 --no-warnings
 \end{chapelcompopts}
-\begin{chapeloutput}
-fieldsOutOfOrder.chpl:12: In initializer:
-fieldsOutOfOrder.chpl:17: error: Field "y" initialized out of order
-fieldsOutOfOrder.chpl:17: note: initialization of fields before .init() call must be in field declaration order
-\end{chapeloutput}
 The first initializer leverages the well-defined order of omitted field
 initialization to use the default value of field \chpl{y} in order to
 explicitly initialize field \chpl{z}.
 
 The second initializer initializes field \chpl{z} before field \chpl{y}, so a
-compile-time error will be issued. Without this rule the explicit
-initialization of field \chpl{y} would be assignment, which could be confusing
-and surprising (especially for more complicated types than \chpl{real}).
+compile-time error will be issued:
+
+
+\begin{chapelprintoutput}
+fieldsOutOfOrder.chpl:12: In initializer:
+fieldsOutOfOrder.chpl:17: error: Field "y" initialized out of order
+fieldsOutOfOrder.chpl:17: note: initialization of fields before .init() call must be in field declaration order
+\end{chapelprintoutput}
+
+Without this rule the explicit initialization of field \chpl{y} would be
+assignment, which could be confusing and surprising (especially for more
+complicated types than \chpl{real}).
+
 \end{chapelexample}
 
 \subsubsection{The complete Method}
@@ -931,7 +937,7 @@ order between the conditional branches. If the else branch of a conditional
 statement is omitted, the compiler will generate an empty else branch and
 insert field initialization statements as needed.
 
-\begin{chapelexample}
+\begin{chapelexample}{initFieldConditional.chpl}
 In the following code:
 \begin{chapel}
 class Point {
@@ -976,7 +982,7 @@ Conditionals may also contain calls to sibling and parent initializers,
 provided that the initialization state is the same at the end of the
 conditional statement.
 
-\begin{chapelexample}{conditionalInit.chpl}
+\begin{chapelexample}{thisDotInitConditional.chpl}
 In the following code:
 \begin{chapel}
 class Parent {
@@ -1120,13 +1126,13 @@ var D = new Point3D(50.0, 50.0);
 \begin{chapelcompopts}
 --no-warnings
 \end{chapelcompopts}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 (0.0, 0.0)
 (1.0, 2.0)
 (0.0, 5.0)
 (50.0, 50.0)
   Point out of bounds!
-\end{chapeloutput}
+\end{chapelprintoutput}
 Each of the \chpl{new} expressions invokes the compiler-generated initializer,
 then invokes the \chpl{verify} method via the \chpl{postinit} method.
 \end{chapelexample}
@@ -1184,6 +1190,7 @@ var b2 = new B();
 \begin{chapelpost}
 writeln(b1);
 writeln(b2);
+\end{chapelpost}
 \begin{chapelcompopts}
 --no-warnings
 \end{chapelcompopts}
@@ -1289,11 +1296,11 @@ writeln(c);
 \begin{chapelcompopts}
 --no-warnings
 \end{chapelcompopts}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 Parent.foo
 Child.foo
 {x = 1.0, y = 2.0, z = 3.0}
-\end{chapeloutput}
+\end{chapelprintoutput}
 Once the parent's initializer is finished, we can invoke the parent method
 \chpl{foo}. After the \chpl{complete} method is invoked, a call to \chpl{foo}
 resolves to the Child's overriden implementation.
@@ -1352,7 +1359,7 @@ parent type has a \chpl{postinit} method but the inheriting class does not,
 the compiler will generate a \chpl{postinit} method that simply invokes the
 parent's \chpl{postinit} method.
 
-\begin{chapelexample}
+\begin{chapelexample}{inheritancePostinit.chpl}
 In the following code:
 \begin{chapel}
 class Parent {
@@ -1376,11 +1383,11 @@ writeln(c);
 \begin{chapelcompopts}
 --no-warnings
 \end{chapelcompopts}
-\begin{chapeloutput}{}
+\begin{chapelprintoutput}
 Parent.postinit: 1.0, 2.0
 Child.postinit: 1.0, 2.0
 {a = 1.0, b = 2.0, x = 3.0, y = 4.0}
-\end{chapeloutput}
+\end{chapelprintoutput}
 The compiler inserts a call to the parent's \chpl{postinit} method in the
 child's \chpl{postinit} method, and invokes the child's \chpl{postinit} method
 after the compiler-generated initializer finishes.
