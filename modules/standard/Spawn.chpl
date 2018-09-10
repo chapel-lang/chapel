@@ -20,9 +20,6 @@
 
 /*
 
-.. versionadded:: 1.12
-  Spawn module added.
-
 Support launching and interacting with other programs.
 
 Using functions in this module, one can create a subprocess
@@ -123,7 +120,7 @@ other task is consuming it.
 
 .. note::
 
-  As of Chapel v1.12, creating a subprocess that uses :const:`PIPE` to provide
+  Creating a subprocess that uses :const:`PIPE` to provide
   input or capture output does not work when using the ugni communications layer
   with hugepages enabled and when using more than one locale. In this
   circumstance, the program will halt with an error message. These scenarios do

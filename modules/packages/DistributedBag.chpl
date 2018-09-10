@@ -76,8 +76,7 @@
 
   .. note::
 
-    This package module is new in 1.16 and may contain bugs. The interface may
-    change.  The documentation is being incrementally revised and improved.
+    This module is a work in progress and may change in future releases.
 
   Usage
   _____
