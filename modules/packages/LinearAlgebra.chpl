@@ -65,9 +65,8 @@ headers and libraries available would result in a compilation error.
 .. code-block:: chpl
 
   // example2.chpl
-  var A = Matrix([2, 1],
-                 [1, 2],
-                 eltType=real);
+  var A = Matrix([2.0, 1.0],
+                 [1.0, 2.0]);
   var (eigenvalues, eigenvectors) = eigvals(A, right=true);
 
 The program above uses :proc:`eigvals`, which depends on :mod:`LAPACK`.
@@ -85,14 +84,6 @@ on the system and specified with the following compilation flags:
        -L$PATH_TO_LIBGFORTRAN -lgfortran \
        -L$PATH_TO_LAPACK_BINARIES -llapacke -llapack -lrefblas \
        example2.chpl
-
-.. note::
-
-  Users can set environment variables like ``LDFLAGS`` for ``-L`` arguments and
-  ``CFLAGS`` for ``-I`` arguments, to avoid throwing these flags every time.
-
-  Additionally, the required linker flags (``-l``) may vary depending on the
-  ``LAPACK`` implementation being used.
 
 **Building programs with optional dependencies**
 
@@ -127,7 +118,7 @@ compilation flags:
   ``CFLAGS`` for ``-I`` arguments, to avoid throwing these flags every time.
 
   Additionally, the required linker flags (``-l``) may vary depending on the
-  ``BLAS`` implementation being used.
+  ``BLAS`` and ``LAPACK`` implementations being used.
 
 
 To opt out of using the ``BLAS`` implementation, users can add the ``--set
