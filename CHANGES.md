@@ -1,6 +1,14 @@
 Release Changes List
 ====================
 
+TODO:
+* Brad's contributions
+* Ian and Preston's contributions
+* prioritize
+* '' vs ``
+* spellcheck
+* highlights
+
 12345678901234567890123456789012345678901234567890123456789012345678901234567890
 
 version 1.18.0
@@ -21,7 +29,7 @@ Semantic Changes / Changes to Chapel Language
 * records and classes now use initializers by default
 * deprecated constructors in favor of initializers
 * deprecated support for extern classes
-* for a class C, 'new C(...)' now is equivalent to 'new borrowed C(...)'
+* for a class C, 'new C(...)' is now equivalent to 'new borrowed C(...)'
   (see TODO)
 * deprecated 'Owned(C)' and 'Shared(C)' in favor of 'owned C' and 'shared C'
 * made forall loops borrow outer owned and shared class objects by default
@@ -30,6 +38,8 @@ Semantic Changes / Changes to Chapel Language
   (see (see 'Overriding Base Class Methods' in the spec's 'Classes' chapter)
 * deprecated the interpretation of ':' within where clauses as a subtype query
 * deprecated support for casting from numeric types to 'c_string'
+* removed support for coercions from enums to integers
+* associative domains of enums are no longer fully populated by default
 
 New Features
 ------------
@@ -52,6 +62,12 @@ New Features
   - string methods assume UTF-8, and ASCII falls out as a simple subcase
   - indexing default is currently by byte, as in Rust
   - indexing can also be done by Unicode code point
+* added support for comparison operators ('<', '<=', '>=', '>') on enums
+  (see TODO)
+* added support for ranges with 'enum' and 'bool' indices
+  (see TODO)
+* rectangular domains and arrays can now use ranges of 'enum's as well
+* added support for casts from 'c_void_ptr' to 'c_ptr'
 
 Feature Improvements
 --------------------
@@ -111,6 +127,7 @@ Standard Modules / Library
 * extended string methods to support UTF-8 strings
 * added array.front() and array.back() to get the first/last element of an array
 * improved array.pop_front() and array.pop_back() to return the removed element
+* added a new string join() overload that accepts iterator expressions
 
 Package Modules
 ---------------
@@ -175,6 +192,7 @@ Performance Optimizations/Improvements
 * optimized away communication for queries to a the `id` field of a locale
 * improved the performance of sparse matrix addition in `LinearAlgebra`
 * optimized the Atomic `Barrier` for network atomics
+* parallelized a loop in array reallocation
 
 Memory Improvements
 -------------------
@@ -202,6 +220,8 @@ Documentation
   (see https://chapel-lang.org/docs/master/modules/standard/BigInteger.html#BigInteger.bigint.divexact)
 * added descriptions of managed and unmanaged classes to the classes primer
   (see https://chapel-lang.org/docs/master/primers/classes.html)
+* simplified the version selection button in Chapel's online documentation
+  (see the menu in the upper left at https://chapel-lang.org/docs/)
 
 Example Codes
 -------------
@@ -264,6 +284,10 @@ Error Messages / Semantic Checks
 * added an error message for applying '.type' to a type
 * improved error messages for accessing tuples of types out of bounds
 * added an error for passing too many arguments to a tuple-type index expression
+* added an error message when we can't determine an iterator's yield type
+* made use-before-def error messages print to the symbol's definition point
+* disabled casts from an 'enum' to an integer unless it has an associated value
+  (see TODO)
 
 Execution-time Checks
 ---------------------
@@ -312,6 +336,11 @@ Bug Fixes
 * fixed support for `atomic real(32)` on platforms with network atomics
 * improved our running task counter for remote tasks
 * fixed buffer overflows found by the extra checking built into gcc 8.1
+* fixed support for the swap operator ('<=>') on owned and shared objects
+* fixed 'isClassType()' to return false for 'c_ptr' types
+* fixed bugs with operators and intents in 'BigInteger' library routines
+* fixed a bug with promoted casts from an enum type to itself
+* fixed a bug in mergeSort's documentation claiming it was in-place
 
 Launchers
 ---------
@@ -341,6 +370,7 @@ Developer-oriented changes: Configuration changes
 -------------------------------------------------
 * made `ibv` the default substrate for `cray-cs` systems
 * improved `MPI_CC` and `MPI_CXX` defaults for the Intel compiler
+* reduced the dependence on $CHPL_HOME when computing the compiler's SHA
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -350,7 +380,8 @@ Developer-oriented changes: Module changes
 * updated modules to work with the new class memory management features
 * removed several halts from the I/O module
 * updated standard library and internal modules to utilize `override` keyword
-* Performed miscellaneous housekeeping cleanup of locale models
+* performed miscellaneous housekeeping cleanup of locale models
+* stopped exporting GMP routines
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -369,6 +400,7 @@ Developer-oriented changes: Compiler Flags
 * changed the flag `--break-on-delete-id` to `--break-on-remove-id`
 * added the flag `--default-unmanaged` to make classes unmanaged by default
 * added `--ignore-user-errors` and `--stop-after-pass` compiler flags
+* removed '--user-constructor-error' flag as no longer being necessary
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
@@ -384,6 +416,7 @@ Developer-oriented changes: Compiler improvements/changes
 * added functionality to reissue `compilerError()` messages
 * changed the colors of links for user-modules in --html output to stand out
 * made LLVM alias analysis tests more tolerant of changes in name mangling
+* added an "always RVF" pragma to force remote-value forwarding on a given type
 
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
