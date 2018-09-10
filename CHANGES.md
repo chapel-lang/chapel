@@ -95,6 +95,7 @@ Feature Improvements
   (see 'Function Visibility in Generic Functions' in the 'Generics' chapter)
 * improved the appearance of shared objects printed via writeln()
 * added support for dynamic dispatch on variadic methods
+* added support for infix bool operators to throw
 
 Removed Features
 ----------------
@@ -130,6 +131,7 @@ Standard Modules / Library
 * updated the sentinel value returned by Search.linearSearch()
   (see https://chapel-lang.org/docs/master/modules/packages/Search.html#Search.linearSearch)
 * made LinearAlgebra sparse matrices store indices in an unsorted manner
+* deprecated routines "out error" patterns in favor of throwing versions
 
 Package Modules
 ---------------
