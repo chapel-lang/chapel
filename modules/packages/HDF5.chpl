@@ -17,6 +17,35 @@
  * limitations under the License.
  */
 
+/* HDF5 bindings for Chapel
+
+This module implements the C-API for HDF5 version 1.10.1, as well as some
+functionality for reading and writing HDF5 files built on top of the C-API.
+
+Compiling with HDF5
+-------------------
+
+In order to compile a Chapel program that uses this module, the HDF5 library
+must be installed on the system.  The paths to the ``hdf5_hl.h`` header
+file and HDF5 library must be known to the compiler, either by finding
+them in a default search path, or by using the ``-I`` and ``-L`` compiler
+arguments.
+
+This module currently requires using a version of the Chapel compiler that
+is linked with LLVM.  See :ref:`readme-llvm`.
+
+On Cray systems with the ``cray-hdf5`` module loaded, no compiler flags
+are necessary to use the HDF5 module.
+
+Chapel HDF5 API
+---------------
+This module provides some higher-level functions using the HDF5 API. It
+provides for parallel reads and writes to HDF5 files using multiple
+Chapel locales.
+
+The native HDF5 functions can be called directly by calling into the
+:mod:`C_HDF5` submodule.
+*/
 module HDF5 {
 
   // This interface was generated with HDF5 1.10.1. Due to a change of the
@@ -31,6 +60,11 @@ module HDF5 {
     C_HDF5.H5open();
   }
 
+  /* The C_HDF5 module defines the interface to the HDF5 library.
+     Documentation for its functions, types, and constants can be found
+     at the official HDF5 web site:
+     https://portal.hdfgroup.org/display/HDF5/HDF5
+  */
   module C_HDF5 {
 
     // Header given to c2chapel:
@@ -3316,9 +3350,8 @@ module HDF5 {
       return H5T_UNIX_D64LE_g;
     }
 
-    /*
-     * Types particular to the C language.  String types use `bytes' instead
-     * of `bits' as their size.
+    /* Types particular to the C language.  String types use 'bytes' instead
+       of 'bits' as their size.
      */
     proc H5T_C_S1 {
       return H5T_C_S1_g;
@@ -3327,9 +3360,7 @@ module HDF5 {
       return (-1):size_t;
     }
 
-    /*
-     * Types particular to Fortran.
-     */
+    /* Types particular to Fortran.  */
     proc H5T_FORTRAN_S1 {
       return H5T_FORTRAN_S1_g;
     }
@@ -3338,6 +3369,7 @@ module HDF5 {
        makes difficult/impossible to use otherwise. The workaround wrappers are
        named the same thing as the original HDF5 name, but with a `_WAR` suffix.
        Since this uses an `extern` block, LLVM is required. */
+    pragma "no doc"
     module HDF5_WAR {
       extern {
 #include "hdf5_hl.h"

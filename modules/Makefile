@@ -101,6 +101,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/FFTW.chpl \
 	packages/FFTW_MT.chpl \
 	packages/Futures.chpl \
+	packages/HDF5.chpl \
 	packages/HDFS.chpl \
 	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
