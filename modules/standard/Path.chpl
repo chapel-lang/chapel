@@ -26,8 +26,13 @@
 
    .. note::
 
-      This module is currently under development and will expand significantly
-      in upcoming releases.  Stay tuned!
+      This module is currently missing the implementation for `absPath
+      <https://github.com/chapel-lang/chapel/issues/6005>`, `expandUser
+      <https://github.com/chapel-lang/chapel/issues/6008>`, `normCase
+      <https://github.com/chapel-lang/chapel/issues/6013>`, `normPath
+      <https://github.com/chapel-lang/chapel/issues/6015>`, and `relPath
+      <https://github.com/chapel-lang/chapel/issues/6017>`.  Once those are
+      implemented, it will be considered complete.
 
    Operations which occur on the files or directories referred to by these paths
    may be found in :mod:`FileSystem` (for operations *on* the file) or :mod:`IO`
@@ -60,19 +65,25 @@ module Path {
 use SysError;
 use Sys;
 
-/* Represents generally the current directory. */
+/* Represents generally the current directory.  This starts as the directory
+   where the program is being executed from.
+ */
 const curDir = ".";
 /* Represents generally the parent directory. */
 const parentDir = "..";
 /* Denotes the separator between a directory and its child. */
 const pathSep = "/";
 
-/* Returns the basename of the file name provided.  For instance, in the
-   name `/foo/bar/baz`, this function would return `baz`, while `/foo/bar/`
-   would yield the empty string.  Note that this is different from the Unix
-   basename function.
+/* Returns the basename of the file name provided.  For instance:
 
-   :arg name: a string file name.  Note that this string does not have to be
+   .. code-block:: Chapel
+
+      writeln(basename("/foo/bar/baz")); // Prints "baz"
+      writeln(basename("/foo/bar/")); // Prints "", because of the empty string
+
+   Note that this is different from the Unix basename function.
+
+   :arg name: A string file name.  Note that this string does not have to be
               a valid file name, as the file itself will not be affected.
    :type name: `string`
 */
@@ -149,10 +160,10 @@ proc commonPath(paths: string ...?n): string {
 /* Determines and returns the longest common path prefix of
    all the string pathnames provided.
 
-   :arg paths: Any number of paths as an array
+   :arg paths: Any number of paths as an array.
    :type paths: `array`
 
-   :return: The longest common path prefix
+   :return: The longest common path prefix.
    :rtype: `string`
 */
 
@@ -224,9 +235,12 @@ proc commonPath(paths: []): string {
   return result;
 }
 
-/* Returns the parent directory of the file name provided.  For instance,
-   in the name `/foo/bar/baz`, this function would return `/foo/bar`, as
-   would a call with `/foo/bar/` as the argument.
+/* Returns the parent directory of the file name provided.  For instance:
+
+   .. code-block:: Chapel
+
+      writeln(dirname("/foo/bar/baz")); // Prints "/foo/bar"
+      writeln(dirname("/foo/bar/")); // Also prints "/foo/bar"
 
    :arg name: a string file name.  Note that this string does not have to be
               a valid file name, as the file itself will not be affected.
@@ -241,11 +255,11 @@ proc dirname(name: string): string {
    in place. Returns the path which includes these expansions.
 
    :arg path: a string representation of a path, which may or may not include
-                   ``$<name>`` or ``${<name>}``.
+              ``$<name>`` or ``${<name>}``.
    :type path: `string`
 
    :return: `path`, having replaced all references to environment variables with
-                their values
+            their values.
    :rtype: `string`
 */
  proc expandVars(path: string): string {
@@ -308,12 +322,16 @@ proc dirname(name: string): string {
  }
 
 /*
-  Returns the parent directory of the :type:`~IO.file` record.  For instance,
-  a file with path `/foo/bar/baz` would return `/foo/bar`
+  Returns the parent directory of the :type:`~IO.file` record.  For instance:
 
-  Will throw an error if one occurs.
+  .. code-block:: Chapel
 
-  :return: The parent directory of the file
+     var myFile = open("/foo/bar/baz.txt", iomode.r);
+     writeln(myFile.getParentName()); // Prints "/foo/bar"
+
+  Will throw a SystemError if one occurs.
+
+  :return: The parent directory of the file.
   :rtype: `string`
 */
 proc file.getParentName(): string throws {
@@ -347,10 +365,10 @@ proc file.getParentName(out error:syserr): string {
       This is currently only implemented in a Unix environment.  It will not
       behave correctly in a non-Unix environment.
 
-   :arg name: the path to be checked.
+   :arg name: The path to be checked.
    :type name: `string`
 
-   :return: `true` if `name` is an absolute path, `false` otherwise
+   :return: `true` if `name` is an absolute path, `false` otherwise.
    :rtype: `bool`
 */
 
@@ -372,17 +390,18 @@ proc isAbsPath(name: string): bool {
    directory separator following each non-empty argument except the last.
    Examples:
 
-   `joinPath("/foo/bar", "/baz")` will yield `"/baz"`
+   .. code-block:: chapel
 
-   `joinPath("/foo", "./baz")` will yield `"/foo/./baz"`
+      writeln(joinPath("/foo/bar", "/baz")); // Prints "/baz"
+      writeln(joinPath("/foo", "./baz")); // Prints "/foo/./baz"
+      writeln(joinPath("/foo/", "", "./baz")); // Prints "/foo/./baz"
 
-   `joinPath("/foo/", "", "./baz")` will also yield `"/foo/./baz"`
-
-   :arg paths: Any number of paths
+   :arg paths: Any number of paths.
    :type paths: `string`
 
-   :return: The concatenation of the last absolute path with everything following
-            it, or all the paths provided if no absolute path is present
+   :return: The concatenation of the last absolute path with everything
+            following it, or all the paths provided if no absolute path is
+            present.
    :rtype: `string`
 */
 proc joinPath(paths: string ...?n): string {
@@ -403,11 +422,11 @@ proc joinPath(paths: string ...?n): string {
   return result;
 }
 
-/* Given a path `name`, attempts to determine the canonical path referenced.
+/* Given a path ``name``, attempts to determine the canonical path referenced.
    This resolves and removes any :data:`curDir` and :data:`parentDir` uses
    present, as well as any symbolic links.  Returns the result.
 
-   Will throw an error if one occurs.
+   Will throw a SystemError if one occurs.
 
    :arg name: A path to resolve.  If the path does not refer to a valid file
               or directory, an error will occur.
@@ -442,13 +461,13 @@ proc realPath(out error: syserr, name: string): string {
 /* Determines the canonical path referenced by the :type:`~IO.file` record
    performing this operation.  This resolves and removes any :data:`curDir` and
    :data:`parentDir` uses present, as well as any symbolic links.  Returns the
-   result
+   result.
 
-   Will throw an error if one occurs.
+   Will throw a SystemError if one occurs.
 
    :return: A canonical path to the file referenced by this :type:`~IO.file`
             record.  If the :type:`~IO.file` record is not valid, an error will
-            occur
+            occur.
    :rtype: `string`
 */
 proc file.realPath(): string throws {
@@ -481,27 +500,25 @@ proc file.realPath(out error: syserr): string {
    :proc:`basename`).  The second part of the tuple will never contain a slash.
    Examples:
 
-   `splitPath("foo/bar")` will yield `("foo", "bar")`
+   .. code-block:: Chapel
 
-   `splitPath("bar")` will yield `("", "bar")`
-
-   `splitPath("foo/")` will yield `("foo", "")`
-
-   `splitPath("")` will yield `("", "")`
-
-   `splitPath("/")` will yield `("/", "")`
+      writeln(splitPath("foo/bar")); // Prints "(foo, bar)"
+      writeln(splitPath("bar")); // Prints "(, bar)"
+      writeln(splitPath("foo/")); // Prints "(foo, )"
+      writeln(splitPath("")); // Prints "(, )"
+      writeln(splitPath("/")); // Prints "(/, )"
 
    With the exception of a path of the empty string or just "/", the original
    path can be recreated from this function's returned parts by joining them
    with the path separator character, either explicitly:
 
-   `dirname` + "/" + `basename`
+   ``dirnameVar + "/" + basenameVar``
 
    or by calling :proc:`joinPath`:
 
-   `joinPath(dirname, basename)`
+   ``joinPath(dirnameVar, basenameVar)``
 
-   :arg name: path to be split
+   :arg name: Path to be split.
    :type name: `string`
 */
  proc splitPath(name: string): (string, string) {
