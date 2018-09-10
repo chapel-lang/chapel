@@ -613,13 +613,12 @@ intent overloads (see \rsec{Return_Intent_Overloads}).
 \index{intents!default for shared}
 
 The default intent for \chpl{owned} and \chpl{shared} arguments is
-generally \chpl{in}.
-
-When a totally generic formal is instantiated for an \chpl{owned} or
-\chpl{shared} actual argument with default or \chpl{const} intent, the
-instantiated formal will have the relevant \chpl{borrowed} type. This
-does not apply to \chpl{type} arguments or to the default initializer
-generated for a class type.
+generally \chpl{in}. There is an exception for generic formal arguments
+that use default or \chpl{const} intent and have no type expression.
+When a such a generic formal is instantiated for an \chpl{owned} or
+\chpl{shared} actual argument, the instantiated formal will have the
+relevant \chpl{borrowed} type. This exception does not apply to \chpl{type}
+arguments or to the default initializer generated for a class type.
 
 \begin{chapelexample}{owned-any-intent.chpl}
 \begin{chapel}

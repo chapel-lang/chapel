@@ -168,7 +168,7 @@ programming.
 
 Errors due to accessing an instance after the end of its lifetime are
 particularly difficult to debug. For this reason, the compiler includes a
-component called the lifetime checker. It identifies some where a
+component called the lifetime checker. It identifies some cases where a
 borrowing variable can be accessed beyond the lifetime of an instance it
 refers to.
 
@@ -242,7 +242,8 @@ The memory management strategies have the following meaning:
   \item \chpl{borrowed} refers to a class instance that has a lifetime
     managed by another variable.
 
-  \item \chpl{unmanaged} the instance must have \chpl{delete} called on it explicitly.
+  \item \chpl{unmanaged} the instance must have \chpl{delete} called on
+    it explicitly to reclaim its memory.
 
 \end{itemize}
 
@@ -356,18 +357,18 @@ its immediately enclosing class (or record).
 
 A \emph{derived} class can inherit from one or more other classes by
 listing those classes in the derived class declaration.
-%REVIEW: vass: do we want to allow multiple base classes in the spec?
-%REVIEW: vass: need to define "base" class and add it to index, if useful
-When inheriting from multiple base classes, only one of the base classes
-may contain fields.  The other classes can only define methods.  Note
-that a class can still be derived from a class that contains fields
-which is itself derived from a class that contains fields.
+
+%When inheriting from multiple base classes, only one of the base classes
+%may contain fields.  The other classes can only define methods.  Note
+%that a class can still be derived from a class that contains fields
+%which is itself derived from a class that contains fields.
 
 %REVIEW: vass: the below ("tree") does not match the above ("multiple base classes")
-These restrictions on inheritance induce a class hierarchy which has the form of
-a tree.  A variable referring to an instance of class \chpl{C} can be
-cast to any type that is an ancestor of \chpl{C}.  Note that casts to more- and
-less-derived classes are both permitted.
+
+%These restrictions on inheritance induce a class hierarchy which has the form of
+%a tree.  A variable referring to an instance of class \chpl{C} can be
+%cast to any type that is an ancestor of \chpl{C}.  Note that casts to more- and
+%less-derived classes are both permitted.
 
 It is possible for a class to inherit from a generic class. Suppose for
 example that a class \chpl{C} inherits from class \chpl{ParentC}. In this
@@ -375,6 +376,11 @@ situation, \chpl{C} will have type constructor arguments based upon
 generic fields in the \chpl{ParentC} as described in
 ~\ref{Type_Constructors}. Furthermore, a fully specified \chpl{C} will be
 a subclass of a corresponding fully specified \chpl{ParentC}.
+
+\begin{future}
+Multiple inheritance is not currently specified or implemented.
+It is unclear if it will ever be included in the language.
+\end{future}
 
 \subsection{The object Class}
 \label{The_object_Class}
@@ -384,7 +390,7 @@ a subclass of a corresponding fully specified \chpl{ParentC}.
 All classes are derived from the \chpl{object} class, either directly or
 indirectly.  If no class name appears in the inheritance list, the class derives
 implicitly from \chpl{object}.  Otherwise, a class derives from \chpl{object}
-indirectly through the class or classes it inherits.  A variable of type \chpl{object}
+indirectly through the class it inherits.  A variable of type \chpl{object}
 can hold a reference to an object of any class type.
 
 \subsection{Accessing Base Class Fields}
@@ -893,15 +899,15 @@ Classes are assigned by reference.  After an assignment from one
 variable of a class type to another, both variables reference the same
 class instance.
 
-Assignment for \chpl{owned} variable transfers ownership and leaves the
+Assignment for an \chpl{owned} variable transfers ownership and leaves the
 source variable empty. For example:
 
 \begin{chapelexample}{owned-assignment.chpl}
-Supposing that \chpl{C} is a class type:
 \begin{chapelpre}
 class C { }
 \end{chapelpre}
 \begin{chapel}
+// assume that C is a class
 var a = new owned C();
 var b:owned C; // default initialized to store `nil`
 b = a; // transfers ownership from a to b
