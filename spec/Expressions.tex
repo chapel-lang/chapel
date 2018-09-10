@@ -44,7 +44,7 @@ and additionally as follows:
 \item tuple and tuple expand \rsec{Tuples}
 \item locale access \rsec{Querying_the_Locale_of_a_Variable}
 \item mapped domain \rsec{Domain_Maps}
-\item constructor calls \rsec{Class_New}
+\item initializer calls \rsec{Class_New}
 \item \chpl{nil} \rsec{Class_nil_value}
 \end{itemize}
 
@@ -296,7 +296,7 @@ precedence than those listed later.
 \verb@()@ & & function call or access \\
 \verb@[]@ & & function call or access \\
 \hline
-\verb@new@ & right & constructor call \\
+\verb@new@ & right & initializer call \\
 \hline
 \verb@:@ & left & cast \\
 \hline
@@ -328,7 +328,7 @@ unary \verb@-@ & & negation \\
 \verb@+@ & \multirow{2}{*}{left} & addition \\
 \verb@-@ & & subtraction \\
 \hline
-\verb@..@ & left & range construction \\
+\verb@..@ & left & range initialization \\
 \hline
 \verb@<=@ & \multirow{4}{*}{left} & less-than-or-equal-to comparison \\
 \verb@>=@ & & greater-than-or-equal-to comparison \\
