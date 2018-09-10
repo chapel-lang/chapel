@@ -27,11 +27,11 @@
    .. note::
 
       This module is currently missing the implementation for `absPath
-      <https://github.com/chapel-lang/chapel/issues/6005>`, `expandUser
-      <https://github.com/chapel-lang/chapel/issues/6008>`, `normCase
-      <https://github.com/chapel-lang/chapel/issues/6013>`, `normPath
-      <https://github.com/chapel-lang/chapel/issues/6015>`, and `relPath
-      <https://github.com/chapel-lang/chapel/issues/6017>`.  Once those are
+      <https://github.com/chapel-lang/chapel/issues/6005>`_, `expandUser
+      <https://github.com/chapel-lang/chapel/issues/6008>`_, `normCase
+      <https://github.com/chapel-lang/chapel/issues/6013>`_, `normPath
+      <https://github.com/chapel-lang/chapel/issues/6015>`_, and `relPath
+      <https://github.com/chapel-lang/chapel/issues/6017>`_.  Once those are
       implemented, it will be considered complete.
 
    Operations which occur on the files or directories referred to by these paths
