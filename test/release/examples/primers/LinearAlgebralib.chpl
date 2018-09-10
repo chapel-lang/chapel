@@ -261,21 +261,17 @@ A = 1.0;
 B = 2.0;
 
 
-// Element-wise addition (avoiding promotion flattening)
-var ApB = A.plus(B);
-assert(ApB.rank == 2); // not flattened!
+// Element-wise addition
+var ApB = A + B;
 
-// Element-wise subtraction (avoiding promotion flattening)
-var AmB = A.minus(B);
-assert(AmB.rank == 2); // not flattened!
+// Element-wise subtraction
+var AmB = A - B;
 
-// Element-wise multiplication (avoiding promotion flattening)
-var AtB = A.times(B);
-assert(AtB.rank == 2); // not flattened!
+// Element-wise multiplication
+var AtB = A * B;
 
-// Element-wise division (avoiding promotion flattening)
-var AdB = A.elementDiv(B);
-assert(AdB.rank == 2); // not flattened!
+// Element-wise division
+var AdB = A / B;
 
 // Taking the transpose of a matrix:
 var M0T = transpose(M0);
@@ -390,19 +386,6 @@ writeln(upper);
 // Confirm that a matrix is upper triangular
 writeln(isTriu(upper));         // true
 writeln(isTriu(upper, k=1));    // false (k=1 does not include diagonal)
-
-/*
-
-  Caveats
-  -------
-
-  There are a few pitfalls to be aware of when working with the
-  :mod:`LinearAlgebra` module.
-
-  One potential *gotcha* is **Promotion Flattening**, which is described in the
-  :ref:`LinearAlgebraInterface` documentation.
-
-*/
 
 /*
 
