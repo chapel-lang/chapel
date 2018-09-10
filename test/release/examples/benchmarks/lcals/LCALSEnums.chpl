@@ -64,7 +64,7 @@ module LCALSEnums {
     //
     // These variants define LCALS benchmark
     //
-    RAW,
+    RAW = 1,
     RAW_OMP,
     RAW_SPMD,
     RAW_VECTOR_ONLY,
