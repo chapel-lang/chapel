@@ -510,13 +510,16 @@ proc file.realPath(out error: syserr): string {
 
    With the exception of a path of the empty string or just "/", the original
    path can be recreated from this function's returned parts by joining them
-   with the path separator character, either explicitly:
+   with the path separator character, either explicitly or by calling
+   :proc:`joinPath`:
 
-   ``dirnameVar + "/" + basenameVar``
+   .. code-block:: Chapel
 
-   or by calling :proc:`joinPath`:
-
-   ``joinPath(dirnameVar, basenameVar)``
+      var res = splitPath("foo/bar");
+      var dirnameVar = res(1);
+      var basenameVar = res(2);
+      writeln(dirnameVar + "/" + basenameVar); // Prints "foo/bar"
+      writeln(joinPath(dirnameVar, basenameVar)); // Prints "foo/bar"
 
    :arg name: Path to be split.
    :type name: `string`
