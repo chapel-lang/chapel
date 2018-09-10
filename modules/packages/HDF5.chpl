@@ -31,11 +31,18 @@ file and HDF5 library must be known to the compiler, either by finding
 them in a default search path, or by using the ``-I`` and ``-L`` compiler
 arguments.
 
-This module currently requires using a version of the Chapel compiler that
-is linked with LLVM.  See :ref:`readme-llvm`.
+The compilation command should look something like this:
+
+.. code-block:: sh
+
+  chpl -I$PATH_TO_HDF5_DIR \
+       -L$PATH_TO_HDF5_LIBS -lhdf5 source.chpl
 
 On Cray systems with the ``cray-hdf5`` module loaded, no compiler flags
 are necessary to use the HDF5 module.
+
+This module currently requires using a version of the Chapel compiler that
+is linked with LLVM.  See :ref:`readme-llvm`.
 
 Chapel HDF5 API
 ---------------
