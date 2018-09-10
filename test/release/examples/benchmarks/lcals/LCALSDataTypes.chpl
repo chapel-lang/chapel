@@ -44,17 +44,10 @@ module LCALSDataTypes {
     var cache_flush_data: [cache_flush_data_dom] real;
     var cache_flush_data_sum: real;
 
-    var loop_test_stats: [loop_variant_dom] [loop_kernel_dom] unmanaged LoopStat;
+    var loop_test_stats: [loop_variant_dom] [loop_kernel_dom] owned LoopStat;
 
     proc getLoopStats(loop_variant: LoopVariantID) ref {
       return loop_test_stats[loop_variant];
-    }
-
-    proc deinit() {
-      for idx in loop_variant_dom {
-        for stat in loop_test_stats[idx] do
-          if stat != nil then delete stat;
-      }
     }
   }
 

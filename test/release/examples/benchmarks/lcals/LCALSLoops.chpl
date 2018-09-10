@@ -215,11 +215,11 @@ module LCALSLoops {
     }
   }
 
-  proc initChksum(stat: unmanaged LoopStat, ilength: LoopLength) {
+  proc initChksum(stat: LoopStat, ilength: LoopLength) {
     stat.loop_chksum[ilength] = 0.0;
   }
 
-  proc loopFinalize(iloop: LoopKernelID, stat: unmanaged LoopStat, ilength: LoopLength) {
+  proc loopFinalize(iloop: LoopKernelID, stat: LoopStat, ilength: LoopLength) {
     initChksum(stat, ilength);
     var loop_data = getLoopData();
     select iloop {
@@ -343,7 +343,7 @@ module LCALSLoops {
     }
   }
 
-  proc updateChksum(stat: unmanaged LoopStat, ilength: LoopLength, ra: unmanaged LCALS_Overlapping_Array_3D(real), scale_factor: real = 1.0) {
+  proc updateChksum(stat: LoopStat, ilength: LoopLength, ra: unmanaged LCALS_Overlapping_Array_3D(real), scale_factor: real = 1.0) {
     var len = ra.len;
     var tchk = stat.loop_chksum[ilength];
     for (j, dat) in zip(0..#len, ra) {
@@ -352,7 +352,7 @@ module LCALSLoops {
     stat.loop_chksum[ilength] = tchk;
   }
 
-  proc updateChksum(stat: unmanaged LoopStat, ilength: LoopLength, ra: [] real, scale_factor: real = 1.0) {
+  proc updateChksum(stat: LoopStat, ilength: LoopLength, ra: [] real, scale_factor: real = 1.0) {
     use LongDouble;
 
     ref data = ra;
@@ -365,10 +365,10 @@ module LCALSLoops {
     stat.loop_chksum[ilength] = tchk:real;
   }
 
-  proc updateChksum(stat: unmanaged LoopStat, ilength: LoopLength, val: real) {
+  proc updateChksum(stat: LoopStat, ilength: LoopLength, val: real) {
     stat.loop_chksum[ilength] += val;
   }
-  proc updateChksum(stat: unmanaged LoopStat, ilength: LoopLength, ca: [] complex, scale_factor: real = 1.0) {
+  proc updateChksum(stat: LoopStat, ilength: LoopLength, ca: [] complex, scale_factor: real = 1.0) {
     ref data = ca;
     var len = ca.numElements;
     var tchk = stat.loop_chksum[ilength];

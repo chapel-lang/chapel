@@ -2,13 +2,13 @@ module RunARawLoops {
   use LCALSDataTypes;
   use Timer;
 
-  proc runARawLoops(loop_stats:[] unmanaged LoopStat, run_loop:[] bool, ilength: LoopLength) {
+  proc runARawLoops(loop_stats:[] owned LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
     var loop_data = getLoopData();
 
     for iloop in loop_suite_run_info.loop_kernel_dom {
       if run_loop[iloop] {
-        var stat = loop_stats[iloop];
+        var stat = loop_stats[iloop].borrow();
         var len = stat.loop_length[ilength];
         var num_samples = stat.samples_per_pass[ilength];
         var ltimer = new owned LoopTimer();
