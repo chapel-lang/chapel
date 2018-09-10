@@ -1157,7 +1157,8 @@ for parent fields to be used in the definition of child fields. An initializer
 may invoke a parent's initializer using the \chpl{super} keyword.
 
 If the user does not explicitly call the parent's initializer, the compiler
-will insert a call to the parent initializer with zero arguments.
+will insert a call to the parent initializer with zero arguments at the start
+of the initializer.
 
 \begin{chapelexample}{simpleSuperInit.chpl}
 In the following code:
@@ -1216,10 +1217,10 @@ arguments, and then uses the parent's fields to initialize its own fields.
 As stated earlier, the compiler will insert a zero-argument call to the
 parent's initializer if the user has not explicitly written one themselves.
 The exception to this rule is if the initializer body invokes another
-initializer. This other initializer will either contain an implicit or explicit
-call to the parent initializer, and so the calling initializer should not
-attempt to initialize the parent itself. This also means that parent fields
-may not be accessed before explicit calls to \chpl{init}.
+initializer on the current type. This other initializer will either contain an
+implicit or explicit call to the parent initializer, and so the calling
+initializer should not attempt to initialize the parent itself. This also means
+that parent fields may not be accessed before explicit calls to \chpl{init}.
 
 \begin{chapelexample}{superInitThisInit.chpl}
 In the following code:
@@ -1260,13 +1261,16 @@ initializer because it explicitly invokes another initializer.
 \label{Calling_Methods_on_Parent_Classes}
 \index{classes!initializers!initializer-inheritance!dynamic-this}
 
-Because parent classes are initialized before child classes, the
-partially-initialized memory can be treated as if it were the parent class
-once super.init() returns. The dynamic type of \chpl{this} is the parent's
-type until the \chpl{complete} method is invoked (except when local fields
-are initialized and used). This means that before the \chpl{complete} method
-is invoked, parent methods may be called on \chpl{this} and \chpl{this} may be
-passed to functions as the parent type.
+Once \chpl{super.init()} returns, the dynamic type of \chpl{this} is the
+parent's type until the \chpl{complete} method is invoked (except when the
+child's fields are initialized and used). As a result, the parent's methods
+may be called and \chpl{this} may be passed to functions as the parent type.
+
+\begin{rationale}
+After \chpl{super.init()} returns the instance is in some
+partially-initialized, but valid, state. Allowing \chpl{this} to be treated as
+the parent allows for additional functionality and flexibility for users.
+\end{rationale}
 
 \begin{chapelexample}{dynamicThisInit.chpl}
 In the following code:
@@ -1319,7 +1323,8 @@ Child.foo
 
 The compiler-generated initializer for inheriting classes will have arguments
 with default values and names based on the field declarations in the parent
-class.
+class. Formals for the parent type will be listed before formals for the
+child type.
 
 \begin{chapelexample}{compilerGeneratedInheritanceInit.chpl}
 In the following code:
