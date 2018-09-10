@@ -126,7 +126,7 @@ request code point units.
 
 .. note::
 
-  Support for graphemes units is not yet implemented.
+  Support for graphemes units is not implemented at this time.
 
  */
 module String {
@@ -212,9 +212,9 @@ module String {
   }
 
   /*
-     A value of type :record:`codePointIndex` can be passed to several
+     A value of type :record:`codePointIndex` can be passed to certain
      `string` functions to indicate that the function should operate
-     with units of code points. See for example :proc:`~string.this`.
+     with units of code points. See :proc:`~string.this`.
 
      To create or modify a :record:`codePointIndex`, cast it to or from an
      `int`. For example, For example, the following function returns a string
