@@ -274,10 +274,7 @@ proc chpl_check_comparator(comparator, type eltType) {
 /* Basic Functions */
 
 /*
-   General purpose sorting interface.
-
-   .. note:: Currently this method calls a sequential :proc:`quickSort`, but
-             this may change the future as other algorithms are implemented.
+   General purpose sorting interface. This procedure calls :proc:`quickSort`.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
