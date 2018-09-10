@@ -11,9 +11,10 @@ expression:
   variable-expression
   enum-constant-expression
   call-expression
+  type-expression
   iteratable-call-expression
   member-access-expression
-  constructor-call-expression
+  new-expression
   query-expression
   cast-expression
   lvalue-expression
@@ -237,7 +238,7 @@ places in the future.
 A cast is specified with the following syntax:
 \begin{syntax}
 cast-expression:
-  expression : type-specifier
+  expression : type-expression
 \end{syntax}
 The expression is converted to the specified type.  A cast expression invokes
 the corresponding explicit conversion~(\rsec{Explicit_Conversions}).  A

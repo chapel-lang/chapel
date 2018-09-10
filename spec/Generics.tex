@@ -560,24 +560,20 @@ element contained in the linked list.
 class Node {
   type eltType;
   var data: eltType;
-  var next: Node(eltType);
+  var next: unmanaged Node(eltType);
 }
 \end{chapel}
 \begin{chapelpost}
-var n: Node(real) = new Node(real, 3.14);
+var n: unmanaged Node(real) = new unmanaged Node(real, 3.14);
 writeln(n.data);
 writeln(n.next);
 writeln(n.next.type:string);
 delete n;
 \end{chapelpost}
-\begin{chapelcompopts}
---legacy-new
-\end{chapelcompopts}
 \begin{chapeloutput}
-NodeClass.chpl:10: warning: 'delete' can only be applied to unmanaged classes
 3.14
 nil
-Node(real(64))
+unmanaged Node(real(64))
 \end{chapeloutput}
 The call \chpl{new Node(real, 3.14)} creates a node in the linked list
 that contains the value \chpl{3.14}.  The \chpl{next} field is set to
@@ -674,15 +670,15 @@ rather omits the type from the \chpl{data} field.
 \begin{chapel}
 class Node {
   var data;
-  var next: Node(data.type) = nil;
+  var next: unmanaged Node(data.type) = nil;
 }
 \end{chapel}
 A node with integer element type can be defined in the call to the
 constructor.  The call \chpl{new Node(1)} defines a node with the
 value \chpl{1}.  The code
 \begin{chapel}
-var list = new Node(1);
-list.next = new Node(2);
+var list = new unmanaged Node(1);
+list.next = new unmanaged Node(2);
 \end{chapel}
 \begin{chapelpost}
 writeln(list.data);
@@ -690,12 +686,7 @@ writeln(list.next.data);
 delete list.next;
 delete list;
 \end{chapelpost}
-\begin{chapelcompopts}
---legacy-new
-\end{chapelcompopts}
 \begin{chapeloutput}
-fieldWithoutType.chpl:9: warning: 'delete' can only be applied to unmanaged classes
-fieldWithoutType.chpl:10: warning: 'delete' can only be applied to unmanaged classes
 1
 2
 \end{chapeloutput}
@@ -804,7 +795,10 @@ of the compiler-generated constructor during default-initialization (\rsec{Defau
 %such a matching formal argument must be provided in each constructor
 %for that class.
 
-\begin{chapelexample}{constructorsForGenericFields.chpl}
+\begin{chapelexample}{initializersForGenericFields.chpl}
+
+% This example is horrible!
+
 In the following code:
 \begin{chapel}
 class MyGenericClass {
@@ -820,9 +814,25 @@ class MyGenericClass {
   var v5 = 555;
   var x5: t5; // this field is not generic
 
-  proc MyGenericClass(c1, v1, type t1, param p1) { }
-  proc MyGenericClass(type t5, param p5, c5, v5, x5,
-                     type t1, param p1, c1, v1, x1) { }
+  proc init(c1, v1, type t1, param p1) {
+    this.t1 = t1;
+    this.p1 = p1;
+    this.c1 = c1;
+    this.v1 = v1;
+  }
+  proc init(type t5, param p5, c5, v5, x5,
+            type t1, param p1, c1, v1, x1) {
+    this.t1 = t1;
+    this.p1 = p1;
+    this.c1 = c1;
+    this.v1 = v1;
+    this.x1 = x1;
+    this.t5 = t5;
+    this.p5 = p5;
+    this.c5 = c5;
+    this.v5 = v5;
+    this.x5 = x5;
+  }
 }  // class MyGenericClass
 
 var g1 = new MyGenericClass(11, 111, int, 1);
@@ -836,21 +846,17 @@ writeln(g1);
 writeln(g2.p1);
 writeln(g2.p5);
 writeln(g2);
-delete g1;
-delete g2;
 \end{chapelpost}
 \begin{chapelcompopts}
---no-warn-constructors --legacy-new
+--no-warnings
 \end{chapelcompopts}
 \begin{chapeloutput}
-constructorsForGenericFields.chpl:28: warning: 'delete' can only be applied to unmanaged classes
-constructorsForGenericFields.chpl:29: warning: 'delete' can only be applied to unmanaged classes
 1
 a string
 {c1 = 11, v1 = 111, x1 = 0, c5 = 5.5, v5 = 555, x5 = 0.0}
 2
 this is g2
-{c1 = 222, v1 = 222.2, x1 = 0.0, c5 = 5.5, v5 = 555, x5 = 0}
+{c1 = 222, v1 = 222.2, x1 = 22.0, c5 = 3.3, v5 = 333, x5 = 3333}
 \end{chapeloutput}
 The arguments \chpl{t1}, \chpl{p1}, \chpl{c1}, and \chpl{v1} are
 required in all constructors for \chpl{MyGenericClass}. They can appear
@@ -1039,15 +1045,15 @@ implementation can still be a generic function.  See also
 class MyNode {
   type itemType;              // type of item
   var item: itemType;         // item in node
-  var next: MyNode(itemType); // reference to next node (same type)
+  var next: unmanaged MyNode(itemType); // reference to next node (same type)
 }
 
 record Stack {
   type itemType;             // type of items
-  var top: MyNode(itemType); // top node on stack linked list
+  var top: unmanaged MyNode(itemType); // top node on stack linked list
 
   proc push(item: itemType) {
-    top = new MyNode(itemType, item, top);
+    top = new unmanaged MyNode(itemType, item, top);
   }
 
   proc pop() {
@@ -1071,12 +1077,7 @@ s.push(3);
 while !s.isEmpty do
   writeln(s.pop());
 \end{chapelpost}
-\begin{chapelcompopts}
---legacy-new
-\end{chapelcompopts}
 \begin{chapeloutput}
-genericStack.chpl:15: In function 'pop':
-genericStack.chpl:21: warning: 'delete' can only be applied to unmanaged classes
 3
 2
 1

@@ -282,9 +282,13 @@ class C { var x: int; } // A class with nonzero size.
 
 // Defines a record implementing simple memory management.
 record R {
-  var c: C;
-  proc R() { c = new C(0); }
-  proc deinit() { delete c; c = nil; }
+  var c: unmanaged C;
+  proc init() {
+    c = new unmanaged C(0);
+  }
+  proc deinit() {
+    delete c; c = nil;
+  }
 }
 
 proc foo()
@@ -297,12 +301,7 @@ proc foo()
 
 foo();
 \end{chapel}
-\begin{chapelcompopts}
---no-warn-constructors --legacy-new
-\end{chapelcompopts}
 \begin{chapeloutput}
-recordDeinitializer.chpl:9: In function 'deinit':
-recordDeinitializer.chpl:9: warning: 'delete' can only be applied to unmanaged classes
 (c = {x = 0})
 
 ====================

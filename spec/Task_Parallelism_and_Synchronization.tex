@@ -179,10 +179,10 @@ A synchronization variable is specified with a sync or single type
 given by the following syntax:
 \begin{syntax}
 sync-type:
-  `sync' type-specifier
+  `sync' type-expression
 
 single-type:
-  `single' type-specifier
+  `single' type-expression
 \end{syntax}
 
 If a synchronization variable declaration has an initialization
@@ -194,7 +194,7 @@ The code
 \begin{chapel}
 class Tree {
   var isLeaf: bool;
-  var left, right: Tree;
+  var left, right: unmanaged Tree;
   var value: int;
 
   proc sum():int {
@@ -209,10 +209,10 @@ class Tree {
 }
 \end{chapel}
 \begin{chapelpost}
-var tree: Tree = new Tree(false, new Tree(false, new Tree(true, nil, nil, 1),
-                                                 new Tree(true, nil, nil, 1), 1),
-                                 new Tree(false, new Tree(true, nil, nil, 1),
-                                                 new Tree(true, nil, nil, 1), 1), 1);
+var tree: unmanaged Tree = new unmanaged Tree(false, new unmanaged Tree(false, new unmanaged Tree(true, nil, nil, 1),
+                                                 new unmanaged Tree(true, nil, nil, 1), 1),
+                                 new unmanaged Tree(false, new unmanaged Tree(true, nil, nil, 1),
+                                                 new unmanaged Tree(true, nil, nil, 1), 1), 1);
 writeln(tree.sum());
 proc Tree.deinit() {
   if isLeaf then return;
@@ -221,14 +221,7 @@ proc Tree.deinit() {
 }
 delete tree;
 \end{chapelpost}
-\begin{chapelcompopts}
---legacy-new
-\end{chapelcompopts}
 \begin{chapeloutput}
-beginWithSyncVar.chpl:21: In function 'deinit':
-beginWithSyncVar.chpl:23: warning: 'delete' can only be applied to unmanaged classes
-beginWithSyncVar.chpl:24: warning: 'delete' can only be applied to unmanaged classes
-beginWithSyncVar.chpl:26: warning: 'delete' can only be applied to unmanaged classes
 4
 \end{chapeloutput}
 the sync variable \chpl{x$\mbox{\texttt{\$}}$} is assigned by an
@@ -502,7 +495,7 @@ following syntax:
 
 \begin{syntax}
 atomic-type:
-  `atomic' type-specifier
+  `atomic' type-expression
 \end{syntax}
 
 \subsection{Predefined Atomic Methods}
