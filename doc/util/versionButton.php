@@ -88,13 +88,15 @@ if (pagePath == "") {
 }
 function dropSetup() {
   var currentRelease = "1.17";
+  var nextRelease = "1.18";
   var button = document.getElementById("versionButton");
   // Uses unicode down-pointing triangle
   var arrow = " &#9660;";
   button.innerHTML = "version " + chplTitle + arrow;
 
   // Choose button color
-  if (chplTitle.includes("pre-release")) {
+  if (chplTitle == nextRelease) {
+    button.innerHTML = "version " + chplTitle + " (pre-release)" + arrow;
     button.classList.add("preRelease");
   } else if (chplTitle == currentRelease) {
     button.classList.add("currentVersion");
