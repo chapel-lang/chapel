@@ -3,7 +3,6 @@
 
 #include "lib/returnExternArray.h"
 
-
 // Test of calling an exported function that returns an array
 int main(int argc, char* argv[]) {
   // Initialize the Chapel runtime and standard modules
