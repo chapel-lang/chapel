@@ -874,6 +874,7 @@ initPrimitive() {
   prim_def(PRIM_TO_BORROWED_CLASS, "to borrowed class", returnInfoToBorrowed, false, false);
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
+  prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

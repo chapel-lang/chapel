@@ -25,15 +25,8 @@ This module provides support for parsing and writing toml files.
 
   .. note::
 
-    The TOML library for chapel is a work in progress. Many of the types listed in the `TOML specification <https://github.com/toml-lang/toml>`_ are not supported by this library. A core group of the spec is followed, but the library currently does not support the following types:
-      - Array of tables
-      - Exponent reals
-      - Underscore notation for integers and reals
-      - Date
-      - Time
-      - Datetime with offset
-
-    Other known issues with the library can be found in the `Improve Toml issue <https://github.com/chapel-lang/chapel/issues/7104>`_.
+    The planned features and known limitations of this module can be found in
+    `Improve Toml issue <https://github.com/chapel-lang/chapel/issues/7104>`_.
 
 
 */

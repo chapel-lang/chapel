@@ -840,7 +840,7 @@ class MyClass {
 
   // We can define an operator on our class as well, but
   // the definition has to be outside the class definition.
-  proc +(A : borrowed MyClass, B : borrowed MyClass) : owned MyClass {
+  proc +(A : MyClass, B : MyClass) : owned MyClass {
     return
       new owned MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
                         memberBool = A.getMemberBool() || B.getMemberBool());
@@ -877,7 +877,7 @@ class GenericClass {
 // Note: We include a type argument whose default is the type of the first
 // argument.  This lets our initializer copy classes of different
 // types and cast on the fly.
-  proc init(other : borrowed GenericClass(?),
+  proc init(other : GenericClass(?),
             type classType = other.classType) {
     this.classType = classType;
     this.classDomain = other.classDomain;
@@ -900,9 +900,11 @@ class GenericClass {
   }
 } // end GenericClass
 
+// Allocate an owned instance of our class
+var realList = new owned GenericClass(real, 10);
+
 // We can assign to the member array of the object using the bracket
 // notation that we defined.
-var realList = new borrowed GenericClass(real, 10);
 for i in realList.classDomain do realList[i] = i + 1.0;
 
 // We can iterate over the values in our list with the iterator
@@ -911,12 +913,12 @@ for value in realList do write(value, ", ");
 writeln();
 
 // Make a copy of realList using the copy initializer.
-var copyList = new borrowed GenericClass(realList);
+var copyList = new owned GenericClass(realList);
 for value in copyList do write(value, ", ");
 writeln();
 
 // Make a copy of realList and change the type, also using the copy initializer.
-var copyNewTypeList = new borrowed GenericClass(realList, int);
+var copyNewTypeList = new owned GenericClass(realList, int);
 for value in copyNewTypeList do write(value, ", ");
 writeln();
 

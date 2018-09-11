@@ -101,11 +101,13 @@ PACKAGES_TO_DOCUMENT = \
 	packages/FFTW.chpl \
 	packages/FFTW_MT.chpl \
 	packages/Futures.chpl \
+	packages/HDF5.chpl \
 	packages/HDFS.chpl \
 	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
 	packages/MPI.chpl \
+	packages/NetCDF.chpl \
 	packages/Norm.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
