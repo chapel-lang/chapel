@@ -15,38 +15,38 @@ Highlights (see subsequent sections for further details)
   - made loop expressions and promoted calls preserve shape for domains/arrays
   - added support for task-private variables in forall loops
   - improved `enum`s with respect to casts, coercions, comparisons, and ranges
-  - added prototype support for UTF-8 strings
+  - added initial support for UTF-8 strings
 * standard library / package highlights:
   - added `HDF5` and `NetCDF` modules supporting I/O with those file formats
   - added support for buffered versions of non-fetching atomic operations
   - improved the `LinearAlgebra` module in terms of performance and usability
 * `mason` package manager highlights:
-  - added support for expressing external (non-Chapel) system and Spack packages
-  - added support for tests and examples within `mason`
+  - added support for external system and `Spack` package dependencies
+  - added support for examples and tests within `mason`
   - improved many aspects of `mason` in terms of usability and capability
 * interoperability highlights:
-  - significantly improved support for creating C libraries from Chapel code
-  - added initial support for exporting Chapel code for use as a Python library
+  - significantly improved support for creating libraries for use from C
+  - added initial support for exporting library routines for use with Python
 * performance highlights:
   - optimized `sync` variables and concurrent I/O for `qthreads` tasking
   - optimized big data transfers, non-fetching atomics, and on-clauses on Crays
-  - improved memory utilization and fragmentation for task stacks
-  - fixed several minor instances of memory leaks
+  - improved memory utilization and reduced fragmentation for task stacks
+  - fixed several minor memory leaks
 * additional highlights:
   - reduced compilation time for most programs
   - added a new version of HPCC RA that uses buffered atomics
-  - improved support for ARM systems, Skylake, and KNL
+  - improved support for ARM systems
   - added scripts to help build and maintain Chapel configurations
   - numerous error message improvements, bug fixes, and feature improvements
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * deprecated constructors in favor of initializers which are now used by default
-  (see 'Class Initializers' and 'User-Defined Initializers' in the spec))
+  (see 'Class Initializers' and 'User-Defined Initializers' in the spec)
 * for a class C, `new C(...)` is now equivalent to `new borrowed C(...)`
-  (see 'Class Types' in the 'Classes' chapter of the language specification))
+  (see 'Class Types' in the 'Classes' chapter of the language specification)
 * when overriding a class method, the `override` keyword must now be used
-  (see (see 'Overriding Base Class Methods' in the spec's 'Classes' chapter)
+  (see 'Overriding Base Class Methods' in the spec's 'Classes' chapter)
 * removed support for coercions from `enum`s to integers
 * associative domains of `enum`s are no longer fully populated by default
 * deprecated the interpretation of `:` within where clauses as a subtype query
@@ -60,9 +60,9 @@ Semantic Changes / Changes to Chapel Language
 New Features
 ------------
 * added support for managed class objects via `owned`, `shared`, and `borrowed`
-  (see 'Class Types' in the 'Classes' chapter of the language specification))
+  (see 'Class Types' in the 'Classes' chapter of the language specification)
 * added an `unmanaged` keyword for manually managing class objects
-  (see 'Class Types' in the 'Classes' chapter of the language specification))
+  (see 'Class Types' in the 'Classes' chapter of the language specification)
 * added a compiler lifetime checker to flag borrows that refer to freed objects
 * added a `.borrow()` method to all flavors of classes
   (see 'Class Lifetime and Borrows' in the 'Classes' chapter of the spec)
@@ -88,24 +88,24 @@ Feature Improvements
 * added support for min/max reduce intents on coforall loops
 * added support for reduce intents on coforall+on loops
 * added support for array return types with unspecified domains / element types
-  (e.g., `proc foo(): []` says that foo() returns an array but little else)
+  (e.g., `proc foo(): []` says that `foo()` returns an array but little else)
 * added support for dynamic dispatch on variadic (varargs) methods
 * added support for rectangular domains and arrays of `enum` or `bool` idxType
 * updated `--memStats` to work properly in multi-locale runs
   (see https://chapel-lang.org/docs/master/modules/standard/Memory.html#Memory.printMemAllocStats)
 * added subtyping for owned and shared classes
   (see https://chapel-lang.org/docs/master/builtins/internal/SharedObject.html#coercions-for-shared
-   and https://chapel-lang.org/docs/master/builtins/internal/OwnedObject.html#coercions-for-owned))
+   and https://chapel-lang.org/docs/master/builtins/internal/OwnedObject.html#coercions-for-owned)
 * added support for assigning `nil` to owned and shared classes
 * made the default intent for formals declared with owned/shared type `const in`
 * made forall loops borrow outer owned and shared class objects by default
-* improved the appearance of shared objects printed via writeln()
+* improved the appearance of shared objects printed via `writeln()`
 * added support for argument types containing nested generic or query types
   (see 'Formal Arguments of Partially Generic Type' in the 'Generics' chapter)
 * improved the instantiation of generic arguments when coercions are involved
 * added support for infix bool operators to throw
-* improved isSubtype() and isProperSubtype() to handle cases that can coerce
-* extended isSubtype() and isProperSubtype() to work with generic types
+* improved `isSubtype()` and `isProperSubtype()` to handle cases that can coerce
+* extended `isSubtype()` and `isProperSubtype()` to work with generic types
   (see https://chapel-lang.org/docs/master/builtins/internal/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
 * improved disambiguation and visibility rules when resolving function calls
   (see 'Function Visibility in Generic Functions' in the 'Generics' chapter)
@@ -126,23 +126,23 @@ Standard Modules / Library
 * deprecated 'out error' patterns in libraries in favor of throwing versions
 * converted some non-fatal checks from using `halt()` to `warning()`
 * deprecated `Owned(C)` and `Shared(C)` in favor of `owned C` and `shared C`
-  (see 'Class Types' in the 'Classes' chapter of the language specification))
+  (see 'Class Types' in the 'Classes' chapter of the language specification)
 * added type query routines for `owned`, `shared`, `unmanaged`, and `borrowed`
   (see https://chapel-lang.org/docs/master/modules/standard/Types.html#Types.isOwnedClass)
 * extended string methods and library routines to support UTF-8 strings
   (see https://chapel-lang.org/docs/master/builtins/internal/String.html)
-* added array.front() and array.back() to get the first/last element of an array
+* added `array.front()`/`array.back()` to get the first/last element of an array
   (see https://chapel-lang.org/docs/master/builtins/internal/ChapelArray.html#ChapelArray.back)
-* improved array.pop_front() and array.pop_back() to return the removed element
+* made `array.pop_front()` and `array.pop_back()` return the removed element
   (see https://chapel-lang.org/docs/master/builtins/internal/ChapelArray.html#ChapelArray.pop_back)
-* added a new string join() overload that accepts iterator expressions
-* added expandVars() to the `Path` module
+* added a new string `join()` overload that accepts iterator expressions
+* added `expandVars()` to the `Path` module
   (see https://chapel-lang.org/docs/master/modules/standard/Path.html#Path.expandVars)
-* updated makeRandomStream() to return an owned random stream object
+* updated `makeRandomStream()` to return an owned random stream object
   (see https://chapel-lang.org/docs/master/modules/standard/Random.html#Random.makeRandomStream)
 * update the `Crypto` module to return owned pointers
 * converted blocking calls in `Spawn` to yielding non-blocking loops
-* updated the sentinel value returned by Search.linearSearch()
+* updated the sentinel value returned by `Search.linearSearch()`
   (see https://chapel-lang.org/docs/master/modules/packages/Search.html#Search.linearSearch)
 * made the Sync `Barrier` reusable
 
@@ -151,7 +151,7 @@ Package Modules
 * added an `HDF5` module for reading/writing files using the HDF5 interface
   (see https://chapel-lang.org/docs/master/modules/packages/HDF5.html)
 * added a `NetCDF` module for reading/writing files using the NetCDF interface
-  (see https://chapel-lang.org/docs/master/modules/packages/NetCDF.html))
+  (see https://chapel-lang.org/docs/master/modules/packages/NetCDF.html)
 * added buffered versions of non-fetching atomic operations
   (see https://chapel-lang.org/docs/master/modules/packages/BufferedAtomics.html)
 * added support for singular value decomposition to the `LinearAlgebra` module
@@ -197,7 +197,7 @@ New Tools / Tool Changes
 
 Interoperability Improvements
 -----------------------------
-* significantly improved support for creating C libraries from Chapel code
+* significantly improved support for creating libraries from Chapel code
   (see https://chapel-lang.org/docs/latest/technotes/libraries.html)
 * added initial support for exporting Chapel code for use as a Python library
   (see https://chapel-lang.org/docs/master/technotes/libraries.html#using-your-library-in-python)
@@ -214,7 +214,7 @@ Performance Optimizations/Improvements
 * optimized away communication for queries to the `id` field of a locale
 * optimized sparse matrix addition and multiplication in `LinearAlgebra`
 * parallelized a loop in array reallocation
-* reduced overheads in the Search.linearSearch() routine
+* reduced overheads in the `Search.linearSearch()` routine
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
@@ -228,7 +228,7 @@ Memory Improvements
 -------------------
 * reduced memory leaks related to initializers
 * fixed leaks in the `DateTime` and `Regexp` modules
-* fixed memory leaks in array.pop_front(), array.pop_back(), list.pop_front()
+* fixed memory leaks in `array.pop_front()`/`.pop_back()` and `list.pop_front()`
 * eliminated memory fragmentation for task stacks hosted on hugepages
 * reduced the amount of memory preemptively allocated for task stacks
 
@@ -264,7 +264,7 @@ Example Codes
 * updated example codes with respect to changes to `enum` types
 * updated example codes with respect to shape-preservation semantics
 * clarified how vector operations modify domains in the arrayVectorOps primer
-  (see https://chapel-lang.org/docs/master/primers/arrayVectorOps.html))
+  (see https://chapel-lang.org/docs/master/primers/arrayVectorOps.html)
 * updated our port of LCALS to use relative, rather than absolute, differences
 * fixed an off-by-one bug in a loop bound in our port of LCALS
 
@@ -285,14 +285,11 @@ Cray-specific Changes
 * made `ibv` the default substrate for `cray-cs` systems
 * increased the number of memory regions while allowing for override for 'ugni'
   (see https://chapel-lang.org/docs/master/platforms/cray.html#ugni-communication-layer-registered-memory-regions)
-* improved the handling of unregisterable memory segments for 'ugni'
 * added memory tracking of dynamically registered arrays for 'ugni'
 * added hugepage-related environment consistency checks for 'ugni'
 * fixed support for large non-blocking gets under `ugni`
-* improved OS version detection on Cray XC systems
-* adjusted optimization levels for compatibility with various CCE versions
 * made LLVM work with dynamic linking on Cray XC systems
-* suppressed an error about incompatible casting for ZMQ with PrgEnv-cray
+* suppressed an error about incompatible casting for `ZMQ` with PrgEnv-cray
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -345,8 +342,7 @@ Bug Fixes
 * fixed a bug in mergeSort's documentation claiming it was in-place
 * fixed a bug when spawning a task with stdout set to PIPE and stderr to STDOUT
 * fixed reported line numbers for non-generic class allocations
-* fixed a broken example in the ZMQ documentation
-* fixed a bug with createRandomBuffer() in the `Crypto` module
+* fixed a bug with `createRandomBuffer()` in the `Crypto` module
 * fixed potential `export`/`extern` naming conflicts in the generated code
 * fixed a bug with a function called from forall loop nested in an on-statement
 * fixed a double free with variable initialization and nested throwing calls
@@ -380,8 +376,8 @@ Third-Party Software Changes
 ----------------------------
 * upgraded GASNet to version 1.32.0
 * arranged for Qthreads to use the runtime's hwloc topology when that exists
-* disabled Qthreads guard pages for high core-count systems
 * third-party libraries are now position-independent when `CHPL_LIBMODE=shared`
+* disabled guard pages for `arm-thunderx` under `qthreads`
 * suppressed a package conflict and pip 10 warnings when building virtualenvs
 
 Testing System
@@ -458,18 +454,19 @@ Developer-oriented changes: Documentation improvements
 
 Developer-oriented changes: Module improvements
 -----------------------------------------------
+* simplified the implementation of atomic variables
 * implemented experimental support for Polly optimization of Chapel arrays
 * removed the unused `origin` field from DefaultRectangularArr
 * added `dsiAlign*` methods to `CyclicDom` and `ReplicatedDom`
-* cleaned up `ugni` implementation of network atomics
-* improved performance of comm diagnostic counters when using GASNet
-* removed code to set `GASNET_MAX_SEGSIZE`
-* removed non-functional `qthreads` support for `--blockreport`/`--taskreport`
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * reorganized the topology layer into 'none' and 'hwloc' implementations
 * added support for processing non-local /proc/cpuinfo files in counting CPUs
+* cleaned up `ugni` implementation of network atomics
+* improved the performance of comm diagnostic counters when using GASNet
+* removed non-functional `qthreads` support for `--blockreport`/`--taskreport`
+* removed code to set `GASNET_MAX_SEGSIZE`
 * simplified implementation-specific `.h` file names for tasking and threading
 
 Developer-oriented changes: Testing System
@@ -583,7 +580,7 @@ New Tools / Tool Changes
 * rewrote `printchplenv` and reworked its interface and output
   (see `util/printchplenv --help`)
 * rewrote `compileline`
-  (see `util/config/compileline --help`))
+  (see `util/config/compileline --help`)
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
