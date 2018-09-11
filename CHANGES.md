@@ -1,12 +1,6 @@
 Release Changes List
 ====================
 
-* create highlights
-* 1.17.1 duplicates?
-* spellcheck
-
-12345678901234567890123456789012345678901234567890123456789012345678901234567890
-
 version 1.18.0
 ==============
 
@@ -14,6 +8,36 @@ Twenty-first public release of Chapel, September 20, 2018
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* language highlights:
+  - deprecated constructors in favor of initializers for classes and records
+  - added managed classes and lifetime checking to help with memory management
+  - added an 'override' keyword to avoid mistakes when overriding class methods
+  - made loop expressions and promoted calls preserve shape for domains/arrays
+  - added support for task-private variables in forall loops
+  - improved `enum`s with respect to casts, coercions, comparisons, and ranges
+  - added prototype support for UTF-8 strings
+* standard library / package highlights:
+  - added `HDF5` and `NetCDF` modules supporting I/O with those file formats
+  - added support for buffered versions of non-fetching atomic operations
+  - improved the `LinearAlgebra` module in terms of performance and usability
+* `mason` package manager highlights:
+  - added support for expressing external (non-Chapel) system and Spack packages
+  - added support for tests and examples within `mason`
+  - improved many aspects of `mason` in terms of usability and capability
+* interoperability highlights:
+  - significantly improved support for creating C libraries from Chapel code
+  - added initial support for exporting Chapel code for use as a Python library
+* performance highlights:
+  - optimized `sync` variables and concurrent I/O for `qthreads` tasking
+  - optimized big data transfers, non-fetching atomics, and on-clauses on Crays
+  - improved memory utilization and fragmentation for task stacks
+  - fixed several minor instances of memory leaks
+* additional highlights:
+  - reduced compilation time for most programs
+  - added a new version of HPCC RA that uses buffered atomics
+  - improved support for ARM systems, Skylake, and KNL
+  - added scripts to help build and maintain Chapel configurations
+  - numerous error message improvements, bug fixes, and feature improvements
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -23,12 +47,12 @@ Semantic Changes / Changes to Chapel Language
   (see 'Class Types' in the 'Classes' chapter of the language specification))
 * when overriding a class method, the `override` keyword must now be used
   (see (see 'Overriding Base Class Methods' in the spec's 'Classes' chapter)
-* removed support for coercions from enums to integers
-* associative domains of enums are no longer fully populated by default
+* removed support for coercions from `enum`s to integers
+* associative domains of `enum`s are no longer fully populated by default
 * deprecated the interpretation of `:` within where clauses as a subtype query
 * deprecated support for casting from numeric types to `c_string`
 * deprecated support for extern classes
-* made enums no longer have integer values unless specified by the user
+* made `enum`s no longer have integer values unless specified by the user
   (see `Enumerated Types` in the language specification)
 * disabled casts from `enum`s to integers when they have no associated value
   (e.g., `enum color { red, green, blue};`  ...`red:int`... is no longer valid)
@@ -42,13 +66,13 @@ New Features
 * added a compiler lifetime checker to flag borrows that refer to freed objects
 * added a `.borrow()` method to all flavors of classes
   (see 'Class Lifetime and Borrows' in the 'Classes' chapter of the spec)
-* added support for task-private variables
-  (see 'Forall Intents' in the language spec's 'Data Parallelism' chapter)
+* added support for task-private variables in forall loops
+  (see 'Task-Private Variables' in the 'Data Parallelism' chapter of the spec)
 * extended Chapel strings to support UTF-8 characters
   (see https://chapel-lang.org/docs/master/builtins/internal/String.html)
 * added support for ranges with `enum` and `bool` indices
   (see 'Range Types' in the 'Ranges' chapter of the language specification)
-* added support for comparison operators (`<`, `<=`, `>=`, `>`) on enums
+* added support for comparison operators (`<`, `<=`, `>=`, `>`) on `enum`s
 * added support for variables and fields with generic declared types
   (see 'Variable Declarations' in the language spec's 'Variables' chapter)
 * added support for querying subtype relationships via `<`, `<=`, `>`, `>=`
@@ -70,8 +94,8 @@ Feature Improvements
 * updated `--memStats` to work properly in multi-locale runs
   (see https://chapel-lang.org/docs/master/modules/standard/Memory.html#Memory.printMemAllocStats)
 * added subtyping for owned and shared classes
-  (see https://chapel-lang.org/docs/master/builtins/internal/SharedObject.html#coercions-for-shared and
-   https://chapel-lang.org/docs/master/builtins/internal/OwnedObject.html#coercions-for-owned))
+  (see https://chapel-lang.org/docs/master/builtins/internal/SharedObject.html#coercions-for-shared
+   and https://chapel-lang.org/docs/master/builtins/internal/OwnedObject.html#coercions-for-owned))
 * added support for assigning `nil` to owned and shared classes
 * made the default intent for formals declared with owned/shared type `const in`
 * made forall loops borrow outer owned and shared class objects by default
@@ -105,16 +129,6 @@ Standard Modules / Library
   (see 'Class Types' in the 'Classes' chapter of the language specification))
 * added type query routines for `owned`, `shared`, `unmanaged`, and `borrowed`
   (see https://chapel-lang.org/docs/master/modules/standard/Types.html#Types.isOwnedClass)
-* added support for singular value decomposition to the `LinearAlgebra` module
-  (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.svd)
-* enabled using `LinearAlgebra` without having `BLAS/LAPACK` installed
-  (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#compiling-with-linear-algebra)
-* added configs `blasImpl` and `blasHeader` to `BLAS` to select backend
-  (see https://chapel-lang.org/docs/master/modules/packages/BLAS.html#BLAS.blasImpl)
-* added configs `lapackImpl` and `lapackHeader` to `LAPACK` to select backend
-  (see https://chapel-lang.org/docs/master/modules/packages/LAPACK.html#LAPACK.lapackImpl)
-* deprecated `BLAS` config `isBLAS_MKL` in favor of using `blasImpl`
-* made LinearAlgebra sparse matrices store indices in unsorted order
 * extended string methods and library routines to support UTF-8 strings
   (see https://chapel-lang.org/docs/master/builtins/internal/String.html)
 * added array.front() and array.back() to get the first/last element of an array
@@ -126,7 +140,7 @@ Standard Modules / Library
   (see https://chapel-lang.org/docs/master/modules/standard/Path.html#Path.expandVars)
 * updated makeRandomStream() to return an owned random stream object
   (see https://chapel-lang.org/docs/master/modules/standard/Random.html#Random.makeRandomStream)
-* update the Crypto module to return owned pointers
+* update the `Crypto` module to return owned pointers
 * converted blocking calls in `Spawn` to yielding non-blocking loops
 * updated the sentinel value returned by Search.linearSearch()
   (see https://chapel-lang.org/docs/master/modules/packages/Search.html#Search.linearSearch)
@@ -134,15 +148,25 @@ Standard Modules / Library
 
 Package Modules
 ---------------
-* added an HDF5 module for reading/writing files using the HDF5 interface
+* added an `HDF5` module for reading/writing files using the HDF5 interface
   (see https://chapel-lang.org/docs/master/modules/packages/HDF5.html)
-* added a NetCDF module for reading/writing files using the NetCDF interface
+* added a `NetCDF` module for reading/writing files using the NetCDF interface
   (see https://chapel-lang.org/docs/master/modules/packages/NetCDF.html))
 * added buffered versions of non-fetching atomic operations
   (see https://chapel-lang.org/docs/master/modules/packages/BufferedAtomics.html)
-* replaced strings with enumerations for cipher variations in the Crypto module
-  (see https://chapel-lang.org/docs/master/modules/packages/Crypto.html#Crypto.Digest and
-   https://chapel-lang.org/docs/master/modules/packages/Crypto.html#Crypto.CryptoChainMode)
+* added support for singular value decomposition to the `LinearAlgebra` module
+  (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.svd)
+* enabled using `LinearAlgebra` without having `BLAS/LAPACK` installed
+  (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#compiling-with-linear-algebra)
+* added configs `blasImpl` and `blasHeader` to `BLAS` to select backend
+  (see https://chapel-lang.org/docs/master/modules/packages/BLAS.html#BLAS.blasImpl)
+* added configs `lapackImpl` and `lapackHeader` to `LAPACK` to select backend
+  (see https://chapel-lang.org/docs/master/modules/packages/LAPACK.html#LAPACK.lapackImpl)
+* deprecated `BLAS` config `isBLAS_MKL` in favor of using `blasImpl`
+* made LinearAlgebra sparse matrices store indices in unsorted order
+* replaced string options with enumerations in the `Crypto` module
+  (see https://chapel-lang.org/docs/master/modules/packages/Crypto.html#Crypto.Digest
+   and https://chapel-lang.org/docs/master/modules/packages/Crypto.html#Crypto.CryptoChainMode)
 * converted the `TOML` module over to use error-handling
   (see https://chapel-lang.org/docs/master/modules/packages/TOML.html#TOML.TomlError)
 
@@ -155,13 +179,13 @@ Standard Domain Maps (Layouts and Distributions)
 New Tools / Tool Changes
 ------------------------
 * added support for non-Chapel system and Spack packages in mason
-  (see https://chapel-lang.org/docs/master/tools/mason/mason.html#using-system-dependencies and
-   https://chapel-lang.org/docs/master/tools/mason/mason.html#using-spack-dependencies)
+  (see https://chapel-lang.org/docs/master/tools/mason/mason.html#using-system-dependencies
+   and https://chapel-lang.org/docs/master/tools/mason/mason.html#using-spack-dependencies)
 * added `mason add` and `mason rm` for managing dependencies
   (see https://chapel-lang.org/docs/master/tools/mason/mason.html#using-chapel-dependencies)
 * added support for tests and examples within mason
-  (see https://chapel-lang.org/docs/master/tools/mason/mason.html#testing-your-package and
-  https://chapel-lang.org/docs/master/tools/mason/mason.html#creating-and-running-examples)
+  (see https://chapel-lang.org/docs/master/tools/mason/mason.html#testing-your-package
+   and https://chapel-lang.org/docs/master/tools/mason/mason.html#creating-and-running-examples)
 * added `mason run --release` flag to specify release vs. debug modes
 * added `--no-update` flag for better offline support in mason
 * added support for calling mason commands from any directory within a project
@@ -186,9 +210,8 @@ Interoperability Improvements
 
 Performance Optimizations/Improvements
 --------------------------------------
-* improved the performance of sync variables under `qthreads`
-* improved the performance of concurrent I/O under `qthreads`
-* optimized away communication for queries to a the `id` field of a locale
+* improved the performance of sync variables and concurrent I/O under `qthreads`
+* optimized away communication for queries to the `id` field of a locale
 * optimized sparse matrix addition and multiplication in `LinearAlgebra`
 * parallelized a loop in array reallocation
 * reduced overheads in the Search.linearSearch() routine
@@ -234,13 +257,12 @@ Documentation
 
 Example Codes
 -------------
-* added a new implementation of the HPCC RA benchmark that uses buffered atomics
+* added a new version of the HPCC RA benchmark that uses `BufferedAtomics`
   (see `$CHPL_HOME/examples/benchmarks/hpcc/variants/ra-buff-atomics.chpl`)
 * updated many of the example codes to make use of managed classes
 * updated example codes with respect to using the `override` keyword
-* updated example codes with respect to changes to enum types
+* updated example codes with respect to changes to `enum` types
 * updated example codes with respect to shape-preservation semantics
-* added a version of RA that uses `BufferedAtomics`
 * clarified how vector operations modify domains in the arrayVectorOps primer
   (see https://chapel-lang.org/docs/master/primers/arrayVectorOps.html))
 * updated our port of LCALS to use relative, rather than absolute, differences
@@ -330,7 +352,7 @@ Bug Fixes
 * fixed a double free with variable initialization and nested throwing calls
 * fixed an issue with with the extern block feature
 * fixed compiler crashes when compiling highly nested expressions
-* fixed a bug with promoted casts from an enum type to itself
+* fixed a bug with promoted casts from an `enum` type to itself
 * fixed a bug in `chpldoc` for the rendering of forwarding fields
 * fixed a problem where the compiler lost track of a point of instantiation
 * improved function resolution to resolve return types only for legal candidates
