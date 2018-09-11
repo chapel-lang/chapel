@@ -1514,11 +1514,18 @@ for-expression:
   `for' index-var-declaration `in' iteratable-expression `do' expression
   `for' iteratable-expression `do' expression
 \end{syntax}
-The for expression executes a for loop (\rsec{The_For_Loop}),
+A for expression is an iterator that executes a for loop (\rsec{The_For_Loop}),
 evaluates the body expression on each iteration of the loop,
-and returns the resulting values as a collection.
-The size and shape of that collection
-are determined by the iteratable-expression.
+and yields each resulting value.
+
+When a for expression is used to initialize a variable, such as
+\begin{chapel}
+var X = for iterableExpression() do computeValue();
+\end{chapel}
+the variable will be inferred to have an array type.
+The array's domain is defined by the \sntx{iterable-expression}
+following the same rules as for promotion, both in the regular
+case \rsec{Promotion} and in the zipper case \rsec{Zipper_Promotion}.
 
 \subsection{Filtering Predicates in For Expressions}
 \label{Filtering_Predicates_For}
@@ -1526,9 +1533,13 @@ are determined by the iteratable-expression.
 \index{expressions!for@\chpl{for}!filtering predicates}
 
 A conditional expression that is immediately enclosed in a for
-expression and does not require an else clause filters the iterations of the for expression.
+expression and does not require an else clause filters the iterations
+of the for expression.
 The iterations for which the condition does not hold
 are not reflected in the result of the for expression.
+
+When a for expression with a filtering predicate is captured into
+a variable, the resulting array has a 1-based one-dimensional domain.
 
 \begin{chapelexample}{yieldPredicates.chpl}
 The code
