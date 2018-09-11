@@ -14,7 +14,7 @@ Highlights (see subsequent sections for further details)
   - added an `override` keyword to avoid mistakes when overriding class methods
   - made loop expressions and promoted calls preserve shape for domains/arrays
   - added support for task-private variables in forall loops
-  - improved `enum`s with respect to casts, coercions, comparisons, and ranges
+  - improved enums with respect to casts, coercions, comparisons, and ranges
   - added initial support for UTF-8 strings
 * standard library / package highlights:
   - added `HDF5` and `NetCDF` modules supporting I/O for those file formats
@@ -24,15 +24,15 @@ Highlights (see subsequent sections for further details)
   - optimized `sync` variables and concurrent I/O for `qthreads` tasking
   - optimized big data transfers, non-fetching atomics, and on-clauses on Crays
   - improved memory utilization and reduced fragmentation for task stacks
-  - fixed several minor memory leaks
 * interoperability highlights:
-  - added `mason` support for external system and 'Spack' package dependencies
+  - added `mason` support for external system and `Spack` package dependencies
   - significantly improved support for creating libraries for use from C
   - added initial support for exporting library routines for use with Python
 * additional highlights:
   - reduced compilation times for most programs
-  - added a new version of the HPCC RA benchmark that uses buffered atomics
+  - added several other features and improvements to the `mason` package manager
   - improved support for ARM systems
+  - added a new version of the HPCC RA benchmark that uses buffered atomics
   - added scripts to help build and maintain Chapel configurations
   - numerous error message improvements, bug fixes, and feature improvements
 
@@ -44,14 +44,14 @@ Semantic Changes / Changes to Chapel Language
   (see 'Class Types' in the 'Classes' chapter of the language specification)
 * when overriding a class method, the `override` keyword must now be used
   (see 'Overriding Base Class Methods' in the spec's 'Classes' chapter)
-* removed support for coercions from `enum`s to integers
-* associative domains of `enum`s are no longer fully populated by default
+* removed support for coercions from enums to integers
+* associative domains of enums are no longer fully populated by default
 * deprecated the interpretation of `:` within where clauses as a subtype query
 * deprecated support for casting from numeric types to `c_string`
 * deprecated support for extern classes
-* made `enum`s no longer have integer values unless specified by the user
+* made enums no longer have integer values unless specified by the user
   (see `Enumerated Types` in the language specification)
-* disabled casts from `enum`s to integers when they have no associated value
+* disabled casts from enums to integers when they have no associated value
   (e.g., `enum color { red, green, blue};`  ...`red:int`... is no longer valid)
 
 New Features
@@ -60,16 +60,16 @@ New Features
   (see 'Class Types' in the 'Classes' chapter of the language specification)
 * added an `unmanaged` keyword for manually managing class objects
   (see 'Class Types' in the 'Classes' chapter of the language specification)
-* added a compiler lifetime checker to flag borrows that refer to freed objects
 * added a `.borrow()` method to all flavors of classes
   (see 'Class Lifetime and Borrows' in the 'Classes' chapter of the spec)
+* added a compiler lifetime checker to flag borrows that refer to freed objects
 * added support for task-private variables in forall loops
   (see 'Task-Private Variables' in the 'Data Parallelism' chapter of the spec)
 * extended Chapel strings to support UTF-8 characters
   (see https://chapel-lang.org/docs/master/builtins/internal/String.html)
 * added support for ranges with `enum` and `bool` indices
   (see 'Range Types' in the 'Ranges' chapter of the language specification)
-* added support for comparison operators (`<`, `<=`, `>=`, `>`) on `enum`s
+* added support for comparison operators (`<`, `<=`, `>=`, `>`) on enums
 * added support for variables and fields with generic declared types
   (see 'Variable Declarations' in the language spec's 'Variables' chapter)
 * added support for querying subtype relationships via `<`, `<=`, `>`, `>=`
@@ -217,7 +217,7 @@ Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
 * improved performance of large transfers under `ugni`
 * optimized non-fetching network atomics
-* improved on-stmt performance for 'ugni'
+* improved on-stmt performance for `ugni`
 * optimized the Atomic `Barrier` for network atomics
 * mapped `atomic real(32)` operations to network atomics
 
@@ -271,7 +271,7 @@ Portability
   (see https://chapel-lang.org/docs/master/usingchapel/chplenv.html#chpl-target-arch)
 * added support for the Allinea compiler on ARM systems
 * improved LLVM back-end support for ARM systems
-* improved our counting of compute node CPUs, with and without hwloc
+* improved our counting of compute node CPUs, with and without `hwloc`
 * improved the `Crypto` module to work on platforms with OpenSSL 1.1
 * ported the `Math` module's Bessel functions to `darwin`
 * improved the portability of the code base to gcc 7.x
@@ -280,10 +280,10 @@ Portability
 Cray-specific Changes
 ---------------------
 * made `ibv` the default substrate for `cray-cs` systems
-* increased the number of memory regions while allowing for override for 'ugni'
+* increased the number of memory regions while allowing for override for `ugni`
   (see https://chapel-lang.org/docs/master/platforms/cray.html#ugni-communication-layer-registered-memory-regions)
-* added memory tracking of dynamically registered arrays for 'ugni'
-* added hugepage-related environment consistency checks for 'ugni'
+* added memory tracking of dynamically registered arrays for `ugni`
+* added hugepage-related environment consistency checks for `ugni`
 * fixed support for large non-blocking gets under `ugni`
 * made LLVM work with dynamic linking on Cray XC systems
 * suppressed an error about incompatible casting for `ZMQ` with PrgEnv-cray
@@ -332,7 +332,7 @@ Bug Fixes
 * fixed bugs with operators and intents in `BigInteger` library routines
 * fixed return type of casts from `bigint` to `integral`/`real`
 * fixed bugs in `IO.readline()`
-* fixed a bug with exists(""), isFile(""), isDir(""), isLink(""), isMount("")
+* fixed bugs with exists(""), isFile(""), isDir(""), isLink(""), isMount("")
 * fixed problems in `FileSystem.copyFile` for files not ending in newlines
 * fixed a bug where `Search` sometimes used the wrong bounds for strided arrays
 * fixed `DynamicIterators` for 0-length ranges and domains
@@ -372,7 +372,7 @@ Packaging / Configuration Changes
 Third-Party Software Changes
 ----------------------------
 * upgraded GASNet to version 1.32.0
-* arranged for Qthreads to use the runtime's hwloc topology when that exists
+* arranged for Qthreads to use the runtime's `hwloc` topology when that exists
 * third-party libraries are now position-independent when `CHPL_LIBMODE=shared`
 * disabled guard pages for `arm-thunderx` under `qthreads`
 * suppressed a package conflict and pip 10 warnings when building virtualenvs
@@ -458,7 +458,7 @@ Developer-oriented changes: Module improvements
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
-* reorganized the topology layer into 'none' and 'hwloc' implementations
+* reorganized the topology layer into `none` and `hwloc` implementations
 * added support for processing non-local /proc/cpuinfo files in counting CPUs
 * cleaned up `ugni` implementation of network atomics
 * improved the performance of comm diagnostic counters when using GASNet
