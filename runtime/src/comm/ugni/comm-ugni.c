@@ -5028,7 +5028,7 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
   }
 
   if (chpl_verbose_comm && !comm_diags_disabled_temporarily)
-    printf("%d: %s:%d: remote put to %d\n", chpl_nodeID,
+    printf("%d: %s:%d: remote put to %d, %zu bytes\n", chpl_nodeID,
            chpl_lookupFilename(fn), ln, locale);
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
     chpl_comm_diags_incr(&comm_diagnostics.put);
@@ -5313,7 +5313,7 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
   }
 
   if (chpl_verbose_comm && !comm_diags_disabled_temporarily)
-    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
+    printf("%d: %s:%d: remote get from %d, %zu bytes\n", chpl_nodeID,
            chpl_lookupFilename(fn), ln, locale);
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
     chpl_comm_diags_incr(&comm_diagnostics.get);
@@ -5973,7 +5973,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   }
 
   if (chpl_verbose_comm && !comm_diags_disabled_temporarily)
-    printf("%d: %s:%d: remote non-blocking get from %d\n",
+    printf("%d: %s:%d: remote non-blocking get from %d, %zu bytes\n",
            chpl_nodeID, chpl_lookupFilename(fn), ln, locale);
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
     chpl_comm_diags_incr(&comm_diagnostics.get_nb);
