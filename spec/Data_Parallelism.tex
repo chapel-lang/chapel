@@ -173,21 +173,18 @@ the role of \sntx{task-intent-clause} are defined in \rsec{Forall_Intents}.
 \label{Forall_Expression_Execution}
 \index{expressions!forall!semantics}
 
-The forall expression is an iterator that executes a forall loop (\rsec{Forall}),
+A forall expression is an iterator that executes a forall loop (\rsec{Forall}),
 evaluates the body expression on each iteration of the loop,
 and yields each resulting value.
 
 When a forall expression is used to initialize a variable, such as
-%\begin{chapel}
-%var X = forall /*iteratable-expression*/ do /*expression*/;
-%\end{chapel}
-\\ %formatting
-{\tt \mbox{$$ $$ $$ $$ $$} {\bf var} X = {\bf forall} /*iteratable-expression*/ {\bf do} /*expression*/;}
-\\ %formatting
-the variable is an array. The array's domain is defined by the
-\sntx{iterable-expression} following the same rules as for promotion,
-both in the regular case \rsec{Promotion} and in the
-zipper case \rsec{Zipper_Promotion}.
+\begin{chapel}
+var X = forall iterableExpression() do computeValue();
+\end{chapel}
+the variable will be inferred to have an array type.
+The array's domain is defined by the \sntx{iterable-expression}
+following the same rules as for promotion, both in the regular
+case \rsec{Promotion} and in the zipper case \rsec{Zipper_Promotion}.
 
 \begin{chapelexample}{forallExpr.chpl}
 The code
@@ -419,11 +416,13 @@ and methods. Also note that since class and record field access
 is performed with getter methods~(\rsec{Getter_Methods}), field
 access can also be promoted.
 
-If the original function returns a value, the corresponding promoted
-expression is an iterator yielding each computed value in turn.
+If the original function returns a value or a reference, the
+corresponding promoted expression is an iterator yielding each
+computed value or reference.
 
-When a promoted expression is used to initialize a variable, such as
-\chpl{var X = A.x;} in the above example, the variable is an array.
+When a promoted expression is used to initialize a variable,
+such as \chpl{var X = A.x;} in the above example,
+the variable's type will be inferred to be an array.
 The array's domain is defined by the expression that causes promotion:
 
 \begin{center}
@@ -440,9 +439,15 @@ iterator &  1-based one-dimensional domain \\
 \end{center}
 
 \begin{future}
-If the iterator iterates over an array, a domain or a range,
-we may want the resulting array's domain to be the same as
-if the input expression were that array/domain/range.
+We would like to allow the iterator author to specify the shape
+of the iterator, i.e. the domain of the array that would capture
+the result of the corresponding promoted expression, such as
+\begin{chapel}
+var myArray = myScalarFunction(myIterator());
+\end{chapel}
+This will be helpful, for example, when the iterator yields
+one value per an array or domain element that it iterates over
+internally.
 \end{future}
 
 \begin{chapelexample}{promotion.chpl}
