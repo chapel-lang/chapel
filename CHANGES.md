@@ -11,30 +11,27 @@ Highlights (see subsequent sections for further details)
 * language highlights:
   - deprecated constructors in favor of initializers for classes and records
   - added managed classes and lifetime checking to help with memory management
-  - added an 'override' keyword to avoid mistakes when overriding class methods
+  - added an `override` keyword to avoid mistakes when overriding class methods
   - made loop expressions and promoted calls preserve shape for domains/arrays
   - added support for task-private variables in forall loops
   - improved `enum`s with respect to casts, coercions, comparisons, and ranges
   - added initial support for UTF-8 strings
 * standard library / package highlights:
-  - added `HDF5` and `NetCDF` modules supporting I/O with those file formats
+  - added `HDF5` and `NetCDF` modules supporting I/O for those file formats
   - added support for buffered versions of non-fetching atomic operations
   - improved the `LinearAlgebra` module in terms of performance and usability
-* `mason` package manager highlights:
-  - added support for external system and `Spack` package dependencies
-  - added support for examples and tests within `mason`
-  - improved many aspects of `mason` in terms of usability and capability
-* interoperability highlights:
-  - significantly improved support for creating libraries for use from C
-  - added initial support for exporting library routines for use with Python
 * performance highlights:
   - optimized `sync` variables and concurrent I/O for `qthreads` tasking
   - optimized big data transfers, non-fetching atomics, and on-clauses on Crays
   - improved memory utilization and reduced fragmentation for task stacks
   - fixed several minor memory leaks
+* interoperability highlights:
+  - added `mason` support for external system and 'Spack' package dependencies
+  - significantly improved support for creating libraries for use from C
+  - added initial support for exporting library routines for use with Python
 * additional highlights:
-  - reduced compilation time for most programs
-  - added a new version of HPCC RA that uses buffered atomics
+  - reduced compilation times for most programs
+  - added a new version of the HPCC RA benchmark that uses buffered atomics
   - improved support for ARM systems
   - added scripts to help build and maintain Chapel configurations
   - numerous error message improvements, bug fixes, and feature improvements
@@ -197,9 +194,9 @@ New Tools / Tool Changes
 
 Interoperability Improvements
 -----------------------------
-* significantly improved support for creating libraries from Chapel code
+* significantly improved support for calling exported Chapel routines from C
   (see https://chapel-lang.org/docs/latest/technotes/libraries.html)
-* added initial support for exporting Chapel code for use as a Python library
+* added initial support for exporting library routines for use from Python
   (see https://chapel-lang.org/docs/master/technotes/libraries.html#using-your-library-in-python)
 * `--library` compilations now generate .h files and Makefiles for ease-of-use
   (see https://chapel-lang.org/docs/master/technotes/libraries.html#using-your-library-in-c)
