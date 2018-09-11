@@ -33,7 +33,7 @@ In summary:
 initializers replace constructors
 *********************************
 
-Code that was contained user-defined constructors will need to be updated
+Code that contained user-defined constructors will need to be updated
 to use an initializer. For example:
 
 .. code-block:: chapel
@@ -75,7 +75,8 @@ updated to use initializers:
   var a:Point;
   var b = new Point(1.0, 2.0);
 
-
+The change to initializers is much more than a change in the name of the
+method. See the language specification for further details.
 
 .. _readme-evolution.class-memory-management:
 
