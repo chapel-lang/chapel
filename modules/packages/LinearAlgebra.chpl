@@ -35,8 +35,8 @@ through compiler flags and/or environment variables.
 
 Some procedures have implementations both with `and` without dependencies. By
 default, the implementation with dependencies will be selected. Users can
-explicitly opt out of using the :mod:`BLAS` and :mod:`LAPACK` dependendent
-implentations by setting the ``blasImpl`` and ``lapackImpl`` flags to ``none``.
+explicitly opt out of using the :mod:`BLAS` and :mod:`LAPACK` dependent
+implementations by setting the ``blasImpl`` and ``lapackImpl`` flags to ``none``.
 
 **Building programs with no dependencies**
 
