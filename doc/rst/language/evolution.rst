@@ -175,13 +175,12 @@ If the program does not explicitly use ``owned C``, it can rely on
   }
   proc main() {
     var instance: C = new C(1);
-    // above line could be written as
-    //   var instance: borrowed C = new borrowed C(1);
-    // or as
-    //   var instance: borrowed C = (new owned C(1)).borrow();
 
     // instance will now be automatically deleted at the end of this block
   }
+
+See the *Class New* section in the *Classes* chapter of the language
+specification for more details.
 
 .. _readme-evolution.mark-overriding:
 
