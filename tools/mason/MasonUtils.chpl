@@ -268,7 +268,7 @@ proc getChapelVersionInfo() {
       }
 
       const semverPattern = "(\\d+\\.\\d+\\.\\d+)";
-      var master  = compile(semverPattern + "\\.([a-z0-9]+)");      // post-release
+      var master  = compile(semverPattern + " pre-release (\\([a-z0-9]+\\))");
       var release = compile(semverPattern);
 
       var semver, sha : string;
