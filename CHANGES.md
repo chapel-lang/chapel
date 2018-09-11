@@ -66,14 +66,14 @@ New Features
 * added support for task-private variables in forall loops
   (see 'Task-Private Variables' in the 'Data Parallelism' chapter of the spec)
 * extended Chapel strings to support UTF-8 characters
-  (see https://chapel-lang.org/docs/master/builtins/internal/String.html)
+  (see https://chapel-lang.org/docs/1.18/builtins/internal/String.html)
 * added support for ranges with `enum` and `bool` indices
   (see 'Range Types' in the 'Ranges' chapter of the language specification)
 * added support for comparison operators (`<`, `<=`, `>=`, `>`) on enums
 * added support for variables and fields with generic declared types
   (see 'Variable Declarations' in the language spec's 'Variables' chapter)
 * added support for querying subtype relationships via `<`, `<=`, `>`, `>=`
-  (see https://chapel-lang.org/docs/master/builtins/internal/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype
+  (see https://chapel-lang.org/docs/1.18/builtins/internal/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype
 
 Feature Improvements
 --------------------
@@ -89,10 +89,10 @@ Feature Improvements
 * added support for dynamic dispatch on variadic (varargs) methods
 * added support for rectangular domains and arrays of `enum` or `bool` idxType
 * updated `--memStats` to work properly in multi-locale runs
-  (see https://chapel-lang.org/docs/master/modules/standard/Memory.html#Memory.printMemAllocStats)
+  (see https://chapel-lang.org/docs/1.18/modules/standard/Memory.html#Memory.printMemAllocStats)
 * added subtyping for owned and shared classes
-  (see https://chapel-lang.org/docs/master/builtins/internal/SharedObject.html#coercions-for-shared
-   and https://chapel-lang.org/docs/master/builtins/internal/OwnedObject.html#coercions-for-owned)
+  (see https://chapel-lang.org/docs/1.18/builtins/internal/SharedObject.html#coercions-for-shared
+   and https://chapel-lang.org/docs/1.18/builtins/internal/OwnedObject.html#coercions-for-owned)
 * added support for assigning `nil` to owned and shared classes
 * made the default intent for formals declared with owned/shared type `const in`
 * made forall loops borrow outer owned and shared class objects by default
@@ -103,7 +103,7 @@ Feature Improvements
 * added support for infix bool operators to throw
 * improved `isSubtype()` and `isProperSubtype()` to handle cases that can coerce
 * extended `isSubtype()` and `isProperSubtype()` to work with generic types
-  (see https://chapel-lang.org/docs/master/builtins/internal/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
+  (see https://chapel-lang.org/docs/1.18/builtins/internal/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
 * improved disambiguation and visibility rules when resolving function calls
   (see 'Function Visibility in Generic Functions' in the 'Generics' chapter)
 * made `in` arguments more consistent with variable initialization
@@ -125,64 +125,64 @@ Standard Modules / Library
 * deprecated `Owned(C)` and `Shared(C)` in favor of `owned C` and `shared C`
   (see 'Class Types' in the 'Classes' chapter of the language specification)
 * added type query routines for `owned`, `shared`, `unmanaged`, and `borrowed`
-  (see https://chapel-lang.org/docs/master/modules/standard/Types.html#Types.isOwnedClass)
+  (see https://chapel-lang.org/docs/1.18/modules/standard/Types.html#Types.isOwnedClass)
 * extended string methods and library routines to support UTF-8 strings
-  (see https://chapel-lang.org/docs/master/builtins/internal/String.html)
+  (see https://chapel-lang.org/docs/1.18/builtins/internal/String.html)
 * added `array.front()`/`array.back()` to get the first/last element of an array
-  (see https://chapel-lang.org/docs/master/builtins/internal/ChapelArray.html#ChapelArray.back)
+  (see https://chapel-lang.org/docs/1.18/builtins/internal/ChapelArray.html#ChapelArray.back)
 * made `array.pop_front()` and `array.pop_back()` return the removed element
-  (see https://chapel-lang.org/docs/master/builtins/internal/ChapelArray.html#ChapelArray.pop_back)
+  (see https://chapel-lang.org/docs/1.18/builtins/internal/ChapelArray.html#ChapelArray.pop_back)
 * added a new string `join()` overload that accepts iterator expressions
 * added `expandVars()` to the `Path` module
-  (see https://chapel-lang.org/docs/master/modules/standard/Path.html#Path.expandVars)
+  (see https://chapel-lang.org/docs/1.18/modules/standard/Path.html#Path.expandVars)
 * updated `makeRandomStream()` to return an owned random stream object
-  (see https://chapel-lang.org/docs/master/modules/standard/Random.html#Random.makeRandomStream)
+  (see https://chapel-lang.org/docs/1.18/modules/standard/Random.html#Random.makeRandomStream)
 * update the `Crypto` module to return owned pointers
 * converted blocking calls in `Spawn` to yielding non-blocking loops
 * updated the sentinel value returned by `Search.linearSearch()`
-  (see https://chapel-lang.org/docs/master/modules/packages/Search.html#Search.linearSearch)
+  (see https://chapel-lang.org/docs/1.18/modules/packages/Search.html#Search.linearSearch)
 * made the Sync `Barrier` reusable
 
 Package Modules
 ---------------
 * added an `HDF5` module for reading/writing files using the HDF5 interface
-  (see https://chapel-lang.org/docs/master/modules/packages/HDF5.html)
+  (see https://chapel-lang.org/docs/1.18/modules/packages/HDF5.html)
 * added a `NetCDF` module for reading/writing files using the NetCDF interface
-  (see https://chapel-lang.org/docs/master/modules/packages/NetCDF.html)
+  (see https://chapel-lang.org/docs/1.18/modules/packages/NetCDF.html)
 * added buffered versions of non-fetching atomic operations
-  (see https://chapel-lang.org/docs/master/modules/packages/BufferedAtomics.html)
+  (see https://chapel-lang.org/docs/1.18/modules/packages/BufferedAtomics.html)
 * added support for singular value decomposition to the `LinearAlgebra` module
-  (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.svd)
+  (see https://chapel-lang.org/docs/1.18/modules/packages/LinearAlgebra.html#LinearAlgebra.svd)
 * enabled using `LinearAlgebra` without having `BLAS/LAPACK` installed
-  (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#compiling-with-linear-algebra)
+  (see https://chapel-lang.org/docs/1.18/modules/packages/LinearAlgebra.html#compiling-with-linear-algebra)
 * added configs `blasImpl` and `blasHeader` to `BLAS` to select backend
-  (see https://chapel-lang.org/docs/master/modules/packages/BLAS.html#BLAS.blasImpl)
+  (see https://chapel-lang.org/docs/1.18/modules/packages/BLAS.html#BLAS.blasImpl)
 * added configs `lapackImpl` and `lapackHeader` to `LAPACK` to select backend
-  (see https://chapel-lang.org/docs/master/modules/packages/LAPACK.html#LAPACK.lapackImpl)
+  (see https://chapel-lang.org/docs/1.18/modules/packages/LAPACK.html#LAPACK.lapackImpl)
 * deprecated `BLAS` config `isBLAS_MKL` in favor of using `blasImpl`
 * made LinearAlgebra sparse matrices store indices in unsorted order
 * replaced string options with enumerations in the `Crypto` module
-  (see https://chapel-lang.org/docs/master/modules/packages/Crypto.html#Crypto.Digest
-   and https://chapel-lang.org/docs/master/modules/packages/Crypto.html#Crypto.CryptoChainMode)
+  (see https://chapel-lang.org/docs/1.18/modules/packages/Crypto.html#Crypto.Digest
+   and https://chapel-lang.org/docs/1.18/modules/packages/Crypto.html#Crypto.CryptoChainMode)
 * converted the `TOML` module over to use error-handling
-  (see https://chapel-lang.org/docs/master/modules/packages/TOML.html#TOML.TomlError)
+  (see https://chapel-lang.org/docs/1.18/modules/packages/TOML.html#TOML.TomlError)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 * added support for storing the indices of sparse CS domains in unsorted order
-  (see https://chapel-lang.org/docs/master/modules/layouts/LayoutCS.html#LayoutCS.CS)
+  (see https://chapel-lang.org/docs/1.18/modules/layouts/LayoutCS.html#LayoutCS.CS)
 * added missing core operations to sparse Block-distributed domains
 
 New Tools / Tool Changes
 ------------------------
 * added support for non-Chapel system and Spack packages in mason
-  (see https://chapel-lang.org/docs/master/tools/mason/mason.html#using-system-dependencies
-   and https://chapel-lang.org/docs/master/tools/mason/mason.html#using-spack-dependencies)
+  (see https://chapel-lang.org/docs/1.18/tools/mason/mason.html#using-system-dependencies
+   and https://chapel-lang.org/docs/1.18/tools/mason/mason.html#using-spack-dependencies)
 * added `mason add` and `mason rm` for managing dependencies
-  (see https://chapel-lang.org/docs/master/tools/mason/mason.html#using-chapel-dependencies)
+  (see https://chapel-lang.org/docs/1.18/tools/mason/mason.html#using-chapel-dependencies)
 * added support for tests and examples within mason
-  (see https://chapel-lang.org/docs/master/tools/mason/mason.html#testing-your-package
-   and https://chapel-lang.org/docs/master/tools/mason/mason.html#creating-and-running-examples)
+  (see https://chapel-lang.org/docs/1.18/tools/mason/mason.html#testing-your-package
+   and https://chapel-lang.org/docs/1.18/tools/mason/mason.html#creating-and-running-examples)
 * added `mason run --release` flag to specify release vs. debug modes
 * added `--no-update` flag for better offline support in mason
 * added support for calling mason commands from any directory within a project
@@ -197,9 +197,9 @@ Interoperability Improvements
 * significantly improved support for calling exported Chapel routines from C
   (see https://chapel-lang.org/docs/latest/technotes/libraries.html)
 * added initial support for exporting library routines for use from Python
-  (see https://chapel-lang.org/docs/master/technotes/libraries.html#using-your-library-in-python)
+  (see https://chapel-lang.org/docs/1.18/technotes/libraries.html#using-your-library-in-python)
 * `--library` compilations now generate .h files and Makefiles for ease-of-use
-  (see https://chapel-lang.org/docs/master/technotes/libraries.html#using-your-library-in-c)
+  (see https://chapel-lang.org/docs/1.18/technotes/libraries.html#using-your-library-in-c)
 * `lib` is now prepended to filenames generated by the `--library` flags
 * files generated by `--library` compilations are now stored in a subdirectory
 * `--library` compiles now auto-export module (de)initialization routines
@@ -240,15 +240,15 @@ Compiler Flags
 Documentation
 -------------
 * added descriptions of managed and unmanaged classes to the classes primer
-  (see https://chapel-lang.org/docs/master/primers/classes.html)
+  (see https://chapel-lang.org/docs/1.18/primers/classes.html)
 * improved the mason documentation
-  (see https://chapel-lang.org/docs/master/tools/mason/mason.html)
+  (see https://chapel-lang.org/docs/1.18/tools/mason/mason.html)
 * added documentation for the `TOML` module
-  (see https://chapel-lang.org/docs/master/modules/packages/TOML.html)
+  (see https://chapel-lang.org/docs/1.18/modules/packages/TOML.html)
 * improved the documentation for the `LinearAlgebra` module
-  (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html)
+  (see https://chapel-lang.org/docs/1.18/modules/packages/LinearAlgebra.html)
 * documented `bigint.divexact` in the `BigInteger` module
-  (see https://chapel-lang.org/docs/master/modules/standard/BigInteger.html#BigInteger.bigint.divexact)
+  (see https://chapel-lang.org/docs/1.18/modules/standard/BigInteger.html#BigInteger.bigint.divexact)
 * simplified the version selection button in Chapel's online documentation
   (see the menu in the upper left at https://chapel-lang.org/docs/)
 
@@ -261,14 +261,14 @@ Example Codes
 * updated example codes with respect to changes to `enum` types
 * updated example codes with respect to shape-preservation semantics
 * clarified how vector operations modify domains in the arrayVectorOps primer
-  (see https://chapel-lang.org/docs/master/primers/arrayVectorOps.html)
+  (see https://chapel-lang.org/docs/1.18/primers/arrayVectorOps.html)
 * updated our port of LCALS to use relative, rather than absolute, differences
 * fixed an off-by-one bug in a loop bound in our port of LCALS
 
 Portability
 -----------
 * updated the target compiler interface to handle 64-bit ARM, Skylake, KNL
-  (see https://chapel-lang.org/docs/master/usingchapel/chplenv.html#chpl-target-arch)
+  (see https://chapel-lang.org/docs/1.18/usingchapel/chplenv.html#chpl-target-arch)
 * added support for the Allinea compiler on ARM systems
 * improved LLVM back-end support for ARM systems
 * improved our counting of compute node CPUs, with and without `hwloc`
@@ -281,7 +281,7 @@ Cray-specific Changes
 ---------------------
 * made `ibv` the default substrate for `cray-cs` systems
 * increased the number of memory regions while allowing for override for `ugni`
-  (see https://chapel-lang.org/docs/master/platforms/cray.html#ugni-communication-layer-registered-memory-regions)
+  (see https://chapel-lang.org/docs/1.18/platforms/cray.html#ugni-communication-layer-registered-memory-regions)
 * added memory tracking of dynamically registered arrays for `ugni`
 * added hugepage-related environment consistency checks for `ugni`
 * fixed support for large non-blocking gets under `ugni`
