@@ -589,7 +589,7 @@ proc min(type t) where isComplexType(t) {
 Returns the maximum value the type `t` can store.
 `t` can be one of the following types, of any width:
 `bool`, `int`, `uint`, `real`, `imag`, `complex`.
-When `t` is a `bool` type, it returns `false`.
+When `t` is a `bool` type, it returns `true`.
 When `t` is a `real`, `imag`, or `complex` type,
 it is a non-``param`` function.
 */

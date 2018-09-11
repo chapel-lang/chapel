@@ -1,5 +1,5 @@
 class MyClass { var x:int; }
-proc f( const ref arg:Owned(MyClass) ) {
+proc f( const ref arg:owned MyClass ) {
   return arg;
   // compiler adds copy initialization to this return
   // since it's returning a reference by value
@@ -7,7 +7,7 @@ proc f( const ref arg:Owned(MyClass) ) {
 }
 
 proc main() {
-  const x = new Owned(new MyClass(1));
+  const x = new owned MyClass(1);
   f(x);
   writeln(x); // is it surprising that x now stores nil?
 }

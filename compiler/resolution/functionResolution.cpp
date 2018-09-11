@@ -179,7 +179,6 @@ static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
 static void temporaryInitializerFixup(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
-static void resolveGenericActuals(CallExpr* call);
 static void resolveAutoCopyEtc(AggregateType* at);
 
 static Expr* foldTryCond(Expr* expr);
@@ -5846,25 +5845,6 @@ static void           resolveNewHandleConstructor(CallExpr* newExpr,
 static void           resolveNewWithInitializer(CallExpr* newExpr,
                                                 Type* manager);
 
-static void           resolveNewHandleNonGenericClass(CallExpr* newExpr,
-                                                      Type* manager);
-
-static void           resolveNewHandleNonGenericRecord(CallExpr* newExpr);
-
-static void           resolveNewHandleGenericClass(CallExpr* newExpr,
-                                                   Type* manager);
-
-static void           resolveNewHandleGenericRecord(CallExpr* newExpr);
-
-static void           resolveNewRecordPrologue(CallExpr*  newExpr,
-                                               VarSymbol* newTmp);
-
-static void           resolveNewGenericInit(CallExpr*      newExpr,
-                                            AggregateType* at,
-                                            VarSymbol*     initTemp);
-
-static bool           resolveNewIsNonGeneric(CallExpr* newExpr);
-
 static AggregateType* resolveNewFindType(CallExpr* newExpr);
 
 static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
@@ -5875,9 +5855,9 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager);
 
 static void resolveNewManaged(CallExpr* move, CallExpr* newExpr, Expr* last, AggregateType* at, Type* manager);
 
-static void handleUnstableNewError(CallExpr* newExpr);
+static void handleUnstableNewError(CallExpr* newExpr, Type* newType);
 
-static bool isUndecoratedClassNew(CallExpr* newExpr);
+static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType);
 
 static void resolveNew(CallExpr* newExpr) {
 
@@ -5968,21 +5948,23 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
           manager = type;
         } else if (isUnmanagedClassType(type)) {
           manager = dtUnmanaged;
-        } else if (isClass(type) && isUndecoratedClassNew(newExpr)) {
+        } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
           if (fLegacyNew == false && fDefaultUnmanaged == false) {
-            gdbShouldBreakHere();
-            USR_WARN(newExpr, "result of new %s is now managed by default",
-                              type->symbol->name);
-            USR_PRINT(newExpr, "'new unmanaged %s' gives old behavior",
-                               type->symbol->name);
-            USR_PRINT(newExpr, "'new borrowed %s' is the new default",
-                               type->symbol->name);
-            USR_PRINT(newExpr, "'new owned %s', 'new shared %s' also available",
-                               type->symbol->name, type->symbol->name);
-            USR_PRINT(newExpr, "get more help with --warn-unstable",
-                               type->symbol->name);
-
             manager = dtBorrowed;
+            if (ignore_warnings == false) {
+              // This warning should go away after the 1.18 release.
+              gdbShouldBreakHere();
+              USR_WARN(newExpr, "result of new %s is now managed by default",
+                                type->symbol->name);
+              USR_PRINT(newExpr, "'new unmanaged %s' gives old behavior",
+                                 type->symbol->name);
+              USR_PRINT(newExpr, "'new borrowed %s' is the new default",
+                                 type->symbol->name);
+              USR_PRINT(newExpr, "'new owned %s', 'new shared %s' also available",
+                                 type->symbol->name, type->symbol->name);
+              USR_PRINT(newExpr, "get more help with --warn-unstable",
+                                 type->symbol->name);
+            }
           }
         }
       }
@@ -5993,6 +5975,17 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // only the canonical class types.
       if (manager) {
         AggregateType* at = toAggregateType(type);
+
+        // fail if it's a record
+        if (isRecord(at) && !isManagedPtrType(at)) {
+          const char* name = manager->symbol->name;
+          // skip leading underscore
+          if (name[0] == '_')
+            name = &name[1];
+
+          USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
+                         name, at->symbol->name);
+        }
 
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself
@@ -6021,7 +6014,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       }
       if (manager == NULL && fWarnUnstable)
         // Generate an error on 'new MyClass' with fWarnUnstable
-        handleUnstableNewError(newExpr);
+        handleUnstableNewError(newExpr, type);
     }
   }
 }
@@ -6159,9 +6152,8 @@ static void resolveNewManaged(CallExpr* move, CallExpr* newExpr, Expr* last,
   }
 }
 
-static void handleUnstableNewError(CallExpr* newExpr) {
-  Type* newType = newExpr->typeInfo();
-  if (isUndecoratedClassNew(newExpr)) {
+static void handleUnstableNewError(CallExpr* newExpr, Type* newType) {
+  if (isUndecoratedClassNew(newExpr, newType)) {
     USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
     USR_PRINT(newExpr, "use 'new unmanaged %s' "
                        "'new owned %s' "
@@ -6174,9 +6166,8 @@ static void handleUnstableNewError(CallExpr* newExpr) {
   }
 }
 
-static bool isUndecoratedClassNew(CallExpr* newExpr) {
+static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
   INT_ASSERT(newExpr->parentSymbol);
-  Type* newType = newExpr->typeInfo();
   if (isClass(newType) &&
       !isReferenceType(newType) &&
       !newType->symbol->hasFlag(FLAG_DATA_CLASS) &&
@@ -6356,293 +6347,9 @@ static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
     newExpr->insertAtHead(typeExpr);
   }
 
-  if (at->isClass() == true) {
-    if (isBlockStmt(newExpr->parentExpr) == true) {
-      //
-      // The parent is currently a blockStmt
-      //
-      //   1) a statement that is a standalone new expr
-      //   2) the typeExpr/initExpr for a formal
-      //
-      // Wrap the new expr in a move stmt
-      //
-      VarSymbol* newTmp = newTemp("new_temp");
-      DefExpr*   def    = new DefExpr(newTmp);
-      CallExpr*  move   = NULL;
-
-      newExpr->insertBefore(def);
-
-      move = new CallExpr(PRIM_MOVE, newTmp, newExpr->remove());
-
-      def->insertAfter(move);
-
-      if (isArgSymbol(newExpr->parentSymbol) == true) {
-        move->insertAfter(new SymExpr(newTmp));
-      }
-    }
-
-    if (resolveNewIsNonGeneric(newExpr) == true) {
-      resolveNewHandleNonGenericClass(newExpr, manager);
-
-    } else {
-      resolveNewHandleGenericClass(newExpr, manager);
-    }
-
-  } else {
-    // For record case, manager is ignored.
-
-    if (resolveNewIsNonGeneric(newExpr) == true) {
-      resolveNewHandleNonGenericRecord(newExpr);
-
-    } else {
-      resolveNewHandleGenericRecord(newExpr);
-    }
-  }
+  resolveNewInitializer(newExpr, manager);
 }
 
-static void resolveNewHandleNonGenericClass(CallExpr* newExpr, Type* manager) {
-  AggregateType* at = resolveNewFindType(newExpr);
-  CallExpr* moveStmt = toCallExpr(newExpr->parentExpr);
-
-  Expr* last = newExpr;
-  newExpr->setUnresolvedFunction("_new");
-
-  resolveCall(newExpr);
-
-  if (at->hasPostInitializer() == true) {
-    Symbol*   moveDest = toSymExpr(moveStmt->get(1))->symbol();
-
-    CallExpr* postinit = new CallExpr("postinit", gMethodToken, moveDest);
-    moveStmt->insertAfter(postinit);
-    last = postinit;
-  }
-
-  if (manager) {
-    FnSymbol* _new = newExpr->resolvedFunction();
-    INT_ASSERT(_new);
-    AggregateType* resultingType = toAggregateType(_new->retType);
-
-    resolveNewManaged(moveStmt, newExpr, last, resultingType, manager);
-  }
-}
-
-static void resolveNewHandleNonGenericRecord(CallExpr* newExpr) {
-  AggregateType* at     = resolveNewFindType(newExpr);
-  VarSymbol*     newTmp = newTemp("new_temp", at);
-  Expr* modToken = NULL;
-  Expr* modValue = NULL;
-
-  if (SymExpr* se = toSymExpr(newExpr->get(1))) {
-    if (se->symbol() == gModuleToken) {
-      modValue = newExpr->get(2)->remove();
-      modToken = newExpr->get(1)->remove();
-    }
-  }
-
-  resolveNewRecordPrologue(newExpr, newTmp);
-
-  newExpr->setUnresolvedFunction("init");
-  newExpr->get(1)->remove();
-
-  newExpr->insertAtHead(new SymExpr(newTmp));
-  newExpr->insertAtHead(new SymExpr(gMethodToken));
-
-  if (modToken != NULL) {
-    newExpr->insertAtHead(modValue);
-    newExpr->insertAtHead(modToken);
-  }
-
-  resolveCall(newExpr);
-
-  if (at->hasPostInitializer() == true) {
-    newExpr->insertAfter(new CallExpr("postinit", gMethodToken, newTmp));
-  }
-}
-
-static void resolveNewHandleGenericClass(CallExpr* newExpr, Type* manager) {
-  AggregateType* at       = resolveNewFindType(newExpr);
-
-  CallExpr*      moveStmt = toCallExpr(newExpr->parentExpr);
-  AggregateType* rootType = at->getRootInstantiation();
-
-  VarSymbol*     initTemp = newTemp("initTemp", rootType);
-
-  CallExpr*      initCall = new CallExpr("init");
-
-  // change moveStmt to initialize finalTmp
-  // and then add a move to set the original value
-  VarSymbol* finalTmp = newTemp("class_init_temp");
-  CallExpr*  finalMove = new CallExpr(PRIM_MOVE,
-                                      moveStmt->get(1)->copy(), finalTmp);
-
-  moveStmt->insertBefore(new DefExpr(finalTmp));
-  moveStmt->get(1)->replace(new SymExpr(finalTmp));
-  moveStmt->insertAfter(finalMove);
-
-  // Now produce sizeof / alloc / init
-  moveStmt->insertAfter(initCall);
-  moveStmt->insertAfter(new DefExpr(initTemp));
-
-  for (int i = newExpr->numActuals(); i > 0; i--) {
-    initCall->insertAtHead(newExpr->get(i)->remove());
-  }
-
-  resolveNewGenericInit(initCall, at, initTemp);
-
-  SymExpr*   moveDst  = toSymExpr(moveStmt->get(1));
-
-  DefExpr*   initDef  = toDefExpr(moveStmt->next);
-  VarSymbol* initTmp  = toVarSymbol(initDef->sym);
-
-  VarSymbol* sizeTmp  = newTemp("sizeTemp", dtInt[INT_SIZE_64]);
-  DefExpr*   sizeDef  = new DefExpr(sizeTmp);
-
-  Type*      type     = initTmp->type;
-  Symbol*    typeSym  = type->symbol;
-
-  moveStmt->insertBefore(sizeDef);
-
-  moveStmt->get(1)->replace(new SymExpr(sizeTmp));
-
-  newExpr->primitive = primitives[PRIM_SIZEOF];
-  newExpr->insertAtHead(new SymExpr(typeSym));
-
-  moveDst->symbol()->type = initTmp->type;
-
-  initCall->get(2)->replace(moveDst);
-  initDef->remove();
-
-  VarSymbol* mdExpr    = newMemDesc(type);
-  CallExpr*  allocExpr = new CallExpr("chpl_here_alloc", sizeTmp, mdExpr);
-  SymExpr*   dstCopy   = moveDst->copy();
-  CallExpr*  allocMove = new CallExpr(PRIM_MOVE, dstCopy, allocExpr);
-
-  moveStmt->insertAfter(allocMove);
-
-  FnSymbol* fn = initCall->resolvedFunction();
-  resolveFunction(fn);
-
-  Expr* last = initCall;
-
-  if (at->hasPostInitializer() == true) {
-    Symbol* moveDest = moveDst->symbol();
-
-    CallExpr* postinit = new CallExpr("postinit", gMethodToken, moveDest);
-    initCall->insertAfter(postinit);
-    last = postinit;
-  }
-
-  if (manager) {
-    FnSymbol* init = initCall->resolvedFunction();
-    INT_ASSERT(init);
-    AggregateType* initType = toAggregateType(init->_this->type);
-
-    resolveNewManaged(finalMove, initCall, last, initType, manager);
-  }
-}
-
-static void resolveNewHandleGenericRecord(CallExpr* newExpr) {
-  AggregateType* at       = resolveNewFindType(newExpr);
-  AggregateType* rootType = at->getRootInstantiation();
-  VarSymbol*     initTemp = newTemp("initTemp", rootType);
-
-  resolveNewRecordPrologue(newExpr, initTemp);
-
-  newExpr->setUnresolvedFunction("init");
-
-  resolveNewGenericInit(newExpr, at, initTemp);
-
-  if (at->hasPostInitializer() == true) {
-    newExpr->insertAfter(new CallExpr("postinit", gMethodToken, initTemp));
-  }
-}
-
-static void resolveNewRecordPrologue(CallExpr* newExpr, VarSymbol* newTmp) {
-  DefExpr* def = new DefExpr(newTmp);
-
-  if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr)) {
-    moveStmt->insertBefore(def);
-    moveStmt->insertBefore(newExpr->remove());
-    moveStmt->insertAtTail(newTmp);
-
-  } else {
-    // The parent is a BlockStmt
-    newExpr->insertBefore(def);
-
-    if (isArgSymbol(newExpr->parentSymbol) == true) {
-      if (toBlockStmt(newExpr->parentExpr)->body.tail == newExpr) {
-        newExpr->insertAfter(new SymExpr(newTmp));
-      }
-    }
-  }
-}
-
-static void resolveNewGenericInit(CallExpr*      newExpr,
-                                  AggregateType* at,
-                                  VarSymbol*     initTmp) {
-  FnSymbol* initFn = NULL;
-  Expr* modToken = NULL;
-  Expr* modValue = NULL;
-
-  if (SymExpr* se = toSymExpr(newExpr->get(1))) {
-    if (se->symbol() == gModuleToken) {
-      modValue = newExpr->get(2)->remove();
-      modToken = newExpr->get(1)->remove();
-    }
-  }
-
-  newExpr->get(1)->remove(); // Type symbol
-
-  initTmp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
-
-  newExpr->insertAtHead(new NamedExpr("this", new SymExpr(initTmp)));
-  newExpr->insertAtHead(new SymExpr(gMethodToken));
-
-  if (modToken) {
-    newExpr->insertAtHead(modValue);
-    newExpr->insertAtHead(modToken);
-  }
-
-  temporaryInitializerFixup(newExpr);
-
-  resolveGenericActuals(newExpr);
-
-  initFn = resolveInitializer(newExpr);
-
-  if (at->instantiatedFrom == NULL) {
-    initTmp->type = initFn->_this->getValType();
-
-  } else {
-    if (initFn->_this->type == at) {
-      initTmp->type = initFn->_this->type;
-
-    } else {
-      USR_FATAL_CONT(newExpr,
-                     "Best initializer match doesn't work for generic "
-                     "instantiation %s",
-                     at->symbol->name);
-
-      USR_PRINT(initFn,
-                "Best initializer match was defined here, and generated "
-                "instantiation %s",
-                initFn->_this->type->symbol->name);
-
-      USR_STOP();
-    }
-  }
-}
-
-static bool resolveNewIsNonGeneric(CallExpr* newExpr) {
-  AggregateType* at     = resolveNewFindType(newExpr);
-  bool           retval = false;
-
-  if (at->symbol->hasFlag(FLAG_GENERIC) == false &&
-      at->instantiatedFrom              == NULL) {
-    retval = true;
-  }
-
-  return retval;
-}
 
 static AggregateType* resolveNewFindType(CallExpr* newExpr) {
   SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr);
@@ -6776,7 +6483,7 @@ Type* resolveDefaultGenericTypeSymExpr(SymExpr* se) {
   return resolveGenericActual(se);
 }
 
-static void resolveGenericActuals(CallExpr* call) {
+void resolveGenericActuals(CallExpr* call) {
   SET_LINENO(call);
 
   for_actuals(actual, call) {

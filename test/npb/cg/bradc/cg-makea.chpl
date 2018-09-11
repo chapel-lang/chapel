@@ -11,7 +11,7 @@ module CGMakeA {
     var size = 1.0;
     const ratio = rcond ** (1.0 / n);
 
-    var randStr = new unmanaged NPBRandomStream(eltType=real, seed=314159265);
+    var randStr = new NPBRandomStream(eltType=real, seed=314159265);
     randStr.getNext();   // drop a value on floor to match NPB version
 
     for iouter in 1..n {
@@ -35,8 +35,6 @@ module CGMakeA {
       size *= ratio;
     }
 
-    delete randStr;
-    
     for i in 1..n {
       yield ((i, i), rcond - shift);
     }

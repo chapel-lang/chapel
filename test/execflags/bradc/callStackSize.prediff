@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# In practice, CHPL_RT_CALL_STACK_SIZE is really a minimum task call
-# stack size.  Some tasking layers actually use a higher value.  We
-# adjust for that here.
+# In practice, CHPL_RT_CALL_STACK_SIZE is really an approximate call
+# stack size.  Some tasking layers use a higher value and some
+# lower.  We adjust for that here.
 #
 icss=$( sed -n 's/^CHPL_RT_CALL_STACK_SIZE=\([0-9]*\).*$/\1/p' $1.execenv )
 
@@ -13,8 +13,10 @@ fifo)
   pagesize=$( getconf PAGESIZE )
   ocss=$(( ($icss + $pagesize - 1) & ~($pagesize - 1) ));;
 qthreads)
-  # qthreads rounds the call stack size to the next system page boundary
-  # iff it's using guard pages
+  # qthreads uses 1 system page from the stack for runtime data
+  # structures and an additional 2 pages for guard pages if they are
+  # enabled. if guard pages are enabled, qthreads also rounds the
+  # call stack size to the next system page
   # Note: There are a multitude of ways that guard pages can be enabled or
   #       disabled. They can be disabled at qthreads build time, by compopts,
   #       and by both qthread and chapel level env vars. Instead of checking
@@ -23,11 +25,11 @@ qthreads)
   #       appears if qthreads was built with guard pages, and they are on at
   #       execution time, no matter how they were set.
   guardPages=`grep "QTHREADS: Guard Pages Enabled" $logfile`
+  pagesize=$( getconf PAGESIZE )
   if [ -n "$guardPages" ] ; then
-    pagesize=$( getconf PAGESIZE )
-    ocss=$(( ($icss + $pagesize - 1) & ~($pagesize - 1) ))
+    ocss=$(( (($icss - 3*$pagesize) + $pagesize - 1) & ~($pagesize - 1) ))
   else
-    ocss=$icss
+    ocss=$(( $icss - $pagesize ))
   fi;;
 *)
   ocss=$icss;;

@@ -183,8 +183,10 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
   //var replAbD: domain(2) 
   //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) = AbD[AD];
   //
-  const replAD: domain(2, indexType) = AD,
-        replBD: domain(2, indexType) = BD;
+  var replAD: domain(2, indexType),
+      replBD: domain(2, indexType);
+  replAD = AD;
+  replBD = BD;
     
   const replA : [replAD] elemType = Ab[replAD],
         replB : [replBD] elemType = Ab[replBD];

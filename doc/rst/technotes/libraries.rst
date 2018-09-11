@@ -1,38 +1,54 @@
 .. _readme-libraries:
 
+=============================
 Exporting Chapel as a Library
 =============================
 
 .. note::
 
-   This page discusses the implementation of libraries, which are still
-   under development.  The idea is to allow components to be developed in
-   Chapel and linked with other programs and languages.  It is currently fragile
-   and difficult to work with.
+   The features described in this document are still under development.
+   If you encounter a bug or limitation not yet documented as a `Github
+   issue <https://github.com/chapel-lang/chapel/issues>`_, consider filing
+   an issue as described in :ref:`readme-bugs`.
 
-Normally, Chapel assumes that you are building a main program and produces a
-main routine whether one is explicitly coded or not.  When the ``--library``
-flag is provided on the command line, it tells the Chapel compiler to produce a
-library instead, by default in a sub-directory named ``lib`` (which will be
-created if it does not already exist).  The user can further specify (through
-the ``--static`` and ``--dynamic`` flags) which type of library to produce.  If
-neither ``--static`` nor ``--dynamic`` is specified, a platform-dependent
-default library type is produced.
+To build a Chapel program as a library, compile with the ``--library`` flag.
+Without this flag, Chapel assumes that you are building a main program and
+produces a main routine, whether one is explicitly defined or not.
+
+Static and Dynamic Libraries
+============================
+
+The type of library produced can be specified through the ``--static`` and
+``--dynamic`` flags.  If neither ``--static`` nor ``--dynamic`` is specified, a
+platform-dependent default library type is produced.
 
 Some platforms support linking against both static and dynamic versions of
 the same library.  On those platforms, the ``--static`` or ``--dynamic``
 flag can be used to select which type of library (and thus which kind of
 linking) is performed by default.  Library files which are named explicitly on
 the ``chpl`` command line take precedence over any found through object
-library paths (``-L``).  Where there is a conflict, the last library
+library paths (``-L``).  When there is a conflict, the last library
 specified takes precedence.
 
-The location for the generated library and associated files can be changed
-using the compilation flag ``--library-dir``.
+.. _Location of the Generated Library:
+
+Location of the Generated Library
+=================================
+
+The library will be placed by default in a sub-directory named ``lib`` (which
+will be created if it does not already exist).  The location for the generated
+library and associated files can be changed using the compilation flag
+``--library-dir``::
+
+  # Library built into bar/libfoo.a
+  chpl --library --library-dir=bar foo.chpl
+
+How to Define Your Library
+==========================
 
 When creating a library file from Chapel code, only those symbols with
 ``export`` attached to them will be available from outside the library.  For
-example, if one defines a Chapel file ``foo.chpl`` like this:
+example, one can define a Chapel file ``foo.chpl`` like this:
 
 .. code-block:: Chapel
 
@@ -48,44 +64,95 @@ example, if one defines a Chapel file ``foo.chpl`` like this:
      ...
    }
 
-   // but this function will not be
+   // but this function will not be, though it can be used by the exported
+   // functions
    proc gloop() {
      // Does something else
      ...
    }
 
+See :ref:`Exporting Symbols` for the current limitations on what can be
+exported.
+
+Library Name
+============
+
+The generated library name will be the same as the file being compiled, except
+it will start with ``lib`` if the name does not already, and it will be followed
+by a ``.so`` or ``.a`` suffix.  Thus, in the example above, the generated
+library will be named ``libfoo.so`` or ``libfoo.a``.
+
+.. code-block:: bash
+
+   # Builds library as lib/libfoo.so
+   chpl --library --static foo.chpl
+
+   # Builds library as lib/libfoo.a
+   chpl --library --dynamic foo.chpl
+
+   # Builds library as lib/libfoo.a (note: file named libfoo.chpl)
+   chpl --library --dynamic libfoo.chpl
+
+The basename used (the ``foo`` portion) can be changed with the ``-o`` or
+``--output`` compilation flag.
+
+This flag is required if multiple top level modules or files are being compiled
+into the same library, as the default name is determined by the top-most module.
+
+.. code-block:: bash
+
+   # Builds library as lib/libbar.a
+   chpl --library --dynamic foo.chpl -o bar
+
+   # -o flag required because of multiple modules
+   # Builds library as lib/libfoo.a
+   chpl --library --dynamic foo.chpl bar.chpl -o foo
+
+Using Your Library in C
+=======================
+
+The Header File
+---------------
+
 A header file will be generated for the library by default, using the same base
-name as the library (replacing ``.so`` or ``.a`` with ``.h``).  This name can be
-changed using the flag ``--library-header`` at compilation.
+name as the library (replacing ``.so`` or ``.a`` with ``.h`` and omitting the
+``lib`` portion).  This name can be changed independently of the generated
+library name using the flag ``--library-header`` at compilation.
 
-When using a Chapel library file in C code, a fairly exact incantation is
-required.  If compiling dynamically, update the ``$LD_LIBRARY_PATH`` environment
-variable to include the directory where the new library file lives and the
-directory where the Chapel build lives.  The latter can be found by looking at
-the output of a ``$CHPL_HOME/util/printchplenv`` call and finding the
-appropriate directory under ``$CHPL_HOME/lib``; the directory name can be found
-by running ``$CHPL_HOME/util/printchplenv --runtime --path``.
+.. code-block:: bash
 
-.. code-block:: sh
+   # Builds header as lib/foo.h
+   chpl --library --dynamic foo.chpl
 
-   # Replace $PWD with the appropriate path to your library file if it isn't
-   # in the current directory
-   # Replace libDir with the directory we just found.
-   export LD_LIBRARY_PATH=$PWD:$CHPL_HOME/lib/`$CHPL_HOME/util/printchplenv --runtime --path`:$LD_LIBRARY_PATH
+   # Builds header as lib/bar.h, library is still lib/libfoo.a
+   chpl --library --dynamic --library-header=bar foo.chpl
 
+The header file will contain any exported function, including the exported
+module initialization functions (which are generated by default).  It will also
+contain a ``#include`` for ``stdchpl.h`` and any ``.h`` files specified in the
+program via a ``require`` clause.
+
+Initializing Your Library
+-------------------------
 
 When using a Chapel library from C, one must first initialize the Chapel runtime
-and standard modules.  This is done by the addition of a couple of extern
-declarations, calling the function ``chpl_library_init()`` before the Chapel
-library function calls and by calling ``chpl_library_finalize()`` after all the
-Chapel library function calls are finished.  For example:
+and standard modules.  This is done by calling the function
+``chpl_library_init()`` before the Chapel library function calls and by calling
+``chpl_library_finalize()`` after all the Chapel library function calls are
+finished.  These functions are defined in
+``$CHPL_HOME/runtime/include/chpl-init.h`` and accessible when you ``#include``
+the generated header file:
+
+.. code-block:: C
+
+   void chpl_library_init(int argc, char* argv[]);
+   void chpl_library_finalize(void);
+
+Here is an example program which uses the ``foo`` library:
 
 .. code-block:: C
 
    #include "foo.h"
-
-   extern void chpl_library_init(int argc, char* argv[]);
-   extern void chpl_library_finalize(void);
 
    int main(int argc, char* argv[]) {
        chpl_library_init(argc, argv);
@@ -97,12 +164,74 @@ Chapel library function calls are finished.  For example:
        return 0;
    }
 
-Finally, compilation of the C program involves some additional command line
-includes and links.  For your convenience, a sample Makefile can be generated
-using ``--library-makefile``.  This will generate a file named
-``Makefile.libname``, where libname is the name of the library.  This Makefile
-can then be included and its variables referenced in your own Makefile.  An
-example looks like this:
+If your exported functions rely upon any global variables defined in your module
+(or modules it relies upon), then you must additionally call the generated
+module initialization function.  This function will be named
+``chpl__init_<moduleName>``, and you can find its declaration in your generated
+``.h`` file.
+
+.. note::
+
+   It is recommended that you always call the module initialization function
+   before calling any of the exported functions in your library.  You do not
+   need to do this more than once per program.
+
+
+Compiling C Code with the Library
+---------------------------------
+
+When using a Chapel library file in C code, a fairly exact incantation is
+required.  If compiling dynamically, update the ``$LD_LIBRARY_PATH`` environment
+variable to include the directory where the new library file lives and the
+directory where the Chapel build lives.  The latter can be found by looking at
+the output of a ``$CHPL_HOME/util/printchplenv`` call and finding the
+appropriate directory under ``$CHPL_HOME/lib``; the directory name can be found
+by running ``$CHPL_HOME/util/printchplenv --runtime --path``.
+
+.. code-block:: sh
+
+   # Replace the first lib with the appropriate path to your library file if its
+   # location has been changed by --library-dir, or if you are not in its parent
+   # directory
+   export LD_LIBRARY_PATH=lib/:$CHPL_HOME/lib/`$CHPL_HOME/util/printchplenv --runtime --path`:$LD_LIBRARY_PATH
+
+Makefile Helper
+~~~~~~~~~~~~~~~
+
+Compilation of the C program involves some additional command line includes and
+links.  For your convenience, a sample Makefile can be generated using
+``--library-makefile``.  This will generate a file named
+``Makefile.<basename>``:
+
+.. code-block:: bash
+
+   # Builds makefile as lib/Makefile.foo
+   chpl --library --dynamic --library-makefile foo.chpl
+
+   # Builds makefile as lib/Makefile.bar
+   chpl --library --dynamic --library-makefile foo.chpl -o bar
+
+This Makefile can then be included and its variables referenced in your own
+Makefile.
+
+The generated Makefile will contain the user-facing and internal variables.  The
+user-facing variables intended for use in your own Makefile are:
+
+- ``CHPL_CFLAGS`` contains the flags and ``-I`` directories needed at compile
+  time.
+- ``CHPL_LDFLAGS`` contains the ``-L`` directories and ``-l`` libraries needed
+  at link time, including libraries specified by your program via ``require``
+  statements.
+- ``CHPL_COMPILER`` stores the compiler used when compiling your library.  Using
+  a different compiler when linking to your library from another code may cause
+  ABI incompatibility issues or problems when the flags specified in
+  ``CHPL_CFLAGS`` are not applicable in that compiler.
+- ``CHPL_LINKER`` and ``CHPL_LINKERSHARED`` store linker commands.
+
+The internal variables support those others in an attempt to make their contents
+slightly more readable.
+
+An example Makefile which uses the generated ``Makefile.foo`` looks like this:
 
 .. code-block:: make
 
@@ -111,23 +240,142 @@ example looks like this:
    myCProg: myCProg.c lib/libfoo.a
      $(CHPL_COMPILER) $(CHPL_CFLAGS) -o myCProg myCProg.c $(CHPL_LDFLAGS)
 
+Makefile-less Compilation
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Alternatively, you can get the right combination is by using the ``compileline
---compile`` and ``compileline --libraries`` tools we provide.  The compilation
-command would then look like this (replacing myprog.c with the name of your C
-program):
+You can also generate the compilation flags necessary to compile a C program
+using a Chapel library by using the ``compileline --compile`` and ``compileline
+--libraries`` tools we provide.  The compilation command would then look like
+this (replacing ``myCProg.c`` with the name of your C program that will use the
+library):
 
 .. code-block:: sh
 
-   `$CHPL_HOME/util/config/compileline --compile` myprog.c -L. -lfoo `$CHPL_HOME/util/config/compileline --libraries`
+   `$CHPL_HOME/util/config/compileline --compile` myCProg.c -Llib/ -lfoo `$CHPL_HOME/util/config/compileline --libraries`
 
-Note that ``compileline --compile-c++`` is also available. It requests a
-compilation command able to compile a C++ program.
+Note that ``compileline --compile-c++`` is also available for compiling a C++
+program.
+
+Using Your Library in Python
+============================
+
+Prerequisites
+--------------
+
+To make use of your library in Python with minimal work, the Chapel compiler
+requires the following:
+
+- ``python3`` installed in your ``$PATH``
+- ``Cython``
+- ``numpy``
+
+Compiling Your Chapel Library
+-----------------------------
+
+To create a Python-compatible module in addition to the normally generated
+library and header, add ``--library-python`` to the compilation.
+
+Python Module Name
+------------------
+
+By default, the name of the generated Python module will match the basename
+of the generated library, but can be changed independently of the generated
+library name using the compilation flag ``--library-python-name``:
+
+.. code-block:: bash
+
+   # Builds python module as lib/foo.py
+   chpl --library --library-python foo.chpl
+
+   # Build python module as lib/bar.py
+   chpl --library --library-python --library-python-name=bar foo.chpl
+
+PYTHONPATH
+----------
+
+To use your library in a Python program, you will need to extend your
+``PYTHONPATH`` environment variable to include the directory where your library
+files are generated, e.g.:
+
+.. code-block:: sh
+
+   export PYTHONPATH=lib/:$PYTHONPATH
+
+See :ref:`Location of the Generated Library` for where your library files are
+generated, and how to change this location when compiling your Chapel library.
+
+Initializing and Using Your Library in Python
+---------------------------------------------
+
+Once your ``PYTHONPATH`` is set up and the Python module created, you can
+``import`` the module like a normal Python module.
+
+Similarly to using your library with C, you will need to call a set up function
+to ensure the Chapel runtime and standard modules are initialized, as well as
+a clean up function.
+
+Unlike the C case, the set up function is called ``chpl_setup()`` and will also
+handle initializing your module.   This function will still need to be called
+prior to any Chapel library function calls.
+
+Also unlike the C case, the clean up function is called ``chpl_cleanup()``.
+This function will still need to be called after all the Chapel library function
+calls are finished.
+
+For example:
+
+.. code-block:: Python
+
+   import foo
+
+   foo.chpl_setup()
+
+   foo.baz(7) // Call into a library function
+
+   foo.chpl_cleanup()
+
+.. note::
+
+   The ``chpl_cleanup()`` function will also cause the Python program to exit.
+   Make sure your Python functionality is also complete before calling this
+   function.
+
+Debugging Issues with --library-python
+--------------------------------------
+
+This compilation strategy uses Cython under the covers, generating a
+``chpl_foo.pxd`` file, a ``foo.pyx`` file, and a ``foo.py`` file by default for
+a ``libfoo.a`` / ``libfoo.so``, which are then called using a Cython command
+(this command is rather long due to the need to include the Chapel runtime and
+third-party libraries).  These files are currently left in the same location as
+the generated library - if compilation fails due to generating one or more of
+these files incorrectly, you may be able to modify the file and re-run the
+Cython command yourself.
+
+Using Your Library in Chapel
+============================
 
 Chapel library files cannot be used from Chapel code.  The library files must
 include the chapel runtime and standard modules for use in a non-Chapel program
 and when the library is linked to a Chapel program this leads to multiple
 definitions of these functions.
 
-As mentioned above, this feature is not very sturdy.  Please refer to
-:ref:`readme-bugs` if any problems are encountered.
+Caveats
+=======
+
+Multiple Chapel Libraries
+-------------------------
+
+Multiple Chapel libraries cannot currently be used in the same C or Python
+program.  Each library file must include the chapel runtime and standard modules
+for its own functionality and when two or more libraries are linked to a program
+this leads to multiple definitions of these functions.
+
+
+.. _Exporting Symbols:
+
+Exporting Symbols
+-----------------
+
+Only functions can be exported currently.  We hope to extend this support to
+types and global variables in the future.

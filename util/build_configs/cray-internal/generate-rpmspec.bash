@@ -93,6 +93,8 @@ mkdir -p                                                $RPM_BUILD_ROOT/%{prefix
 
 cd          $RPM_BUILD_DIR/%{chpl_home_basename}
 find . -mindepth 1 -maxdepth 1 -exec mv -f {}           $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type} \;
+cd          %{_topdir}
+cp -p       release_info                                $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type}
 # Clean up *.o files
 #rm -rf     $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/*/*/gen
 rm -rf      $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type}/*/compiler/*/gen

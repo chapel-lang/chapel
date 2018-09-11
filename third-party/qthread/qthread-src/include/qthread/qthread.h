@@ -367,6 +367,7 @@ qthread_worker_id_t   qthread_num_workers_local(qthread_shepherd_id_t shepherd_i
 /* queries the current state */
 enum introspective_state {
     STACK_SIZE,
+    RUNTIME_DATA_SIZE,
     BUSYNESS,
     NODE_BUSYNESS,
     ACTIVE_SHEPHERDS,

@@ -5,9 +5,6 @@ export proc takesArray(x: [] real) {
       writeln("x[" + i + "] in expected range");
     }
   }
-  for i in x.domain {
-    x[i] = x[i] + 1;
-  }
 }
 
 export proc returnsArray(): [0..3] real {

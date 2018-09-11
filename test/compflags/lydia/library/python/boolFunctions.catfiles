@@ -1,3 +1,0 @@
-lib/chpl_boolFunctions.pxd
-lib/boolFunctions.pyx
-lib/boolFunctions.py

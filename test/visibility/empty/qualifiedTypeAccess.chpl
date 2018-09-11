@@ -16,7 +16,7 @@ module M2 {
   use M only; // require all symbols in M to be fully-qualified
 
   proc main() {
-    var foo = new M.Foo();
+    var foo = new borrowed M.Foo();
     if (accessPrimary) then
       foo.primaryMethod();
     else

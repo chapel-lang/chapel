@@ -2166,11 +2166,10 @@ static void setupDefaultFilenames() {
       if (strlen(filename) >= sizeof(executableFilename) - 3) {
         INT_FATAL("input filename exceeds executable filename buffer size");
       }
-      strcpy(executableFilename, "lib");
-      strncat(executableFilename, filename,
-              sizeof(executableFilename)-strlen(executableFilename)-1);
+      strncpy(executableFilename, filename,
+              sizeof(executableFilename)-1);
 
-      if (fLibraryPython) {
+      if (fLibraryPython && pythonModulename[0] == '\0') {
         strncpy(pythonModulename, filename, sizeof(pythonModulename)-1);
         pythonModulename[sizeof(pythonModulename)-1] = '\0';
         char* lastDot = strrchr(pythonModulename, '.');
@@ -2435,6 +2434,10 @@ void makeBinary(void) {
                                makeflags,
                                getIntermediateDirName(), "/Makefile");
     mysystem(command, "compiling generated source");
+
+    if (fLibraryCompile && fLibraryPython) {
+      codegen_make_python_module();
+    }
   }
 }
 

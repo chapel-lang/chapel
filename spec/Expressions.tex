@@ -11,9 +11,10 @@ expression:
   variable-expression
   enum-constant-expression
   call-expression
+  type-expression
   iteratable-call-expression
   member-access-expression
-  constructor-call-expression
+  new-expression
   query-expression
   cast-expression
   lvalue-expression
@@ -43,7 +44,7 @@ and additionally as follows:
 \item tuple and tuple expand \rsec{Tuples}
 \item locale access \rsec{Querying_the_Locale_of_a_Variable}
 \item mapped domain \rsec{Domain_Maps}
-\item constructor calls \rsec{Class_New}
+\item initializer calls \rsec{Class_New}
 \item \chpl{nil} \rsec{Class_nil_value}
 \end{itemize}
 
@@ -237,7 +238,7 @@ places in the future.
 A cast is specified with the following syntax:
 \begin{syntax}
 cast-expression:
-  expression : type-specifier
+  expression : type-expression
 \end{syntax}
 The expression is converted to the specified type.  A cast expression invokes
 the corresponding explicit conversion~(\rsec{Explicit_Conversions}).  A
@@ -295,7 +296,7 @@ precedence than those listed later.
 \verb@()@ & & function call or access \\
 \verb@[]@ & & function call or access \\
 \hline
-\verb@new@ & right & constructor call \\
+\verb@new@ & right & initializer call \\
 \hline
 \verb@:@ & left & cast \\
 \hline
@@ -327,7 +328,7 @@ unary \verb@-@ & & negation \\
 \verb@+@ & \multirow{2}{*}{left} & addition \\
 \verb@-@ & & subtraction \\
 \hline
-\verb@..@ & left & range construction \\
+\verb@..@ & left & range initialization \\
 \hline
 \verb@<=@ & \multirow{4}{*}{left} & less-than-or-equal-to comparison \\
 \verb@>=@ & & greater-than-or-equal-to comparison \\
@@ -1513,11 +1514,18 @@ for-expression:
   `for' index-var-declaration `in' iteratable-expression `do' expression
   `for' iteratable-expression `do' expression
 \end{syntax}
-The for expression executes a for loop (\rsec{The_For_Loop}),
+A for expression is an iterator that executes a for loop (\rsec{The_For_Loop}),
 evaluates the body expression on each iteration of the loop,
-and returns the resulting values as a collection.
-The size and shape of that collection
-are determined by the iteratable-expression.
+and yields each resulting value.
+
+When a for expression is used to initialize a variable, such as
+\begin{chapel}
+var X = for iterableExpression() do computeValue();
+\end{chapel}
+the variable will be inferred to have an array type.
+The array's domain is defined by the \sntx{iterable-expression}
+following the same rules as for promotion, both in the regular
+case \rsec{Promotion} and in the zipper case \rsec{Zipper_Promotion}.
 
 \subsection{Filtering Predicates in For Expressions}
 \label{Filtering_Predicates_For}
@@ -1525,9 +1533,13 @@ are determined by the iteratable-expression.
 \index{expressions!for@\chpl{for}!filtering predicates}
 
 A conditional expression that is immediately enclosed in a for
-expression and does not require an else clause filters the iterations of the for expression.
+expression and does not require an else clause filters the iterations
+of the for expression.
 The iterations for which the condition does not hold
 are not reflected in the result of the for expression.
+
+When a for expression with a filtering predicate is captured into
+a variable, the resulting array has a 1-based one-dimensional domain.
 
 \begin{chapelexample}{yieldPredicates.chpl}
 The code

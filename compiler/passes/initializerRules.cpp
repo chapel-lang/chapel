@@ -339,7 +339,6 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   }
 
   if (at->isGeneric() == false) {
-    buildClassAllocator(fn);
     fn->addFlag(FLAG_INLINE);
 
   } else {
@@ -979,126 +978,6 @@ static bool isCompoundAssignment(CallExpr* callExpr) {
   }
 
   return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-* Consider                                                                    *
-*                                                                             *
-*   var x = new MyClass(10, 20, 30);                                          *
-*                                                                             *
-* and assume MyClass defines an initializer that accepts 3 integers.          *
-*                                                                             *
-* The goal is to allocate an instance of MyClass on the heap and then invoke  *
-* the appropriate init method on this instance.                               *
-*                                                                             *
-* This is implemented by defining an internal "type method" on MyClass that   *
-* performs the allocation and then invokes the init method on the resulting   *
-* instance.  Note that there is a distinct _new method for every init         *
-* method.                                                                     *
-*                                                                             *
-************************************** | *************************************/
-
-FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
-  Symbol*        _this       = initMethod->_this;
-  AggregateType* at          = toAggregateType(_this->type);
-
-  SET_LINENO(at);
-
-  FnSymbol*      fn          = new FnSymbol("_new");
-  BlockStmt*     body        = fn->body;
-  ArgSymbol*     type        = new ArgSymbol(INTENT_BLANK, "chpl_t", at);
-  VarSymbol*     newInstance = newTemp("instance", at);
-  CallExpr*      allocCall   = callChplHereAlloc(at);
-  CallExpr*      initCall    = NULL;
-
-  if (initMethod->hasFlag(FLAG_RESOLVED)) {
-    initCall = new CallExpr(initMethod, gMethodToken, newInstance);
-  } else {
-    initCall = new CallExpr("init", gMethodToken, newInstance);
-  }
-
-  if (initMethod->where != NULL) {
-    fn->where = initMethod->where->copy();
-  }
-
-  type->addFlag(FLAG_TYPE_VARIABLE);
-
-  fn->setMethod(true);
-
-  fn->addFlag(FLAG_NEW_WRAPPER);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-  fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
-
-  if (initMethod->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
-    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
-  }
-
-  fn->retType = at;
-
-  // Add the formal that provides the type for the type method
-  fn->insertFormalAtTail(type);
-
-  //
-  // Walk the formals to the init method
-  // Ignore _mt and _this
-  //   1) add a corresponding formal to the new type method
-  //   2) add that formal to the call to "init"
-  //
-  int       count = 1;
-  SymbolMap initArgToNewArgMap;
-
-  for_formals(formal, initMethod) {
-    // Ignore _mt and this
-    if (count >= 3) {
-      ArgSymbol* arg = formal->copy();
-
-      initArgToNewArgMap.put(formal, arg);
-
-      fn->insertFormalAtTail(arg);
-
-      if (arg->variableExpr != NULL) {
-        // The argument is a vararg.  If we pass it in plainly, it will be
-        // treated as a single argument instead of the multiple arguments that
-        // we want it to be treated as.  Expand the tuple before passing it in.
-        initCall->insertAtTail(new CallExpr(PRIM_TUPLE_EXPAND,
-                                            new SymExpr(arg)));
-      } else {
-        initCall->insertAtTail(new SymExpr(arg));
-      }
-
-      if (arg->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        // Continue the building of the parameter map, since these two args are
-        // linked.
-        paramMap.put(arg, paramMap.get(formal));
-      }
-    }
-
-    count = count + 1;
-  }
-
-  // Don't reference arguments to the initializer in the _new argument list
-  // or where clause.
-  update_symbols(fn, &initArgToNewArgMap);
-
-  // Construct the body
-  body->insertAtTail(new DefExpr(newInstance));
-
-  body->insertAtTail(new CallExpr(PRIM_MOVE,   newInstance, allocCall));
-  body->insertAtTail(new CallExpr(PRIM_SETCID, newInstance));
-
-  body->insertAtTail(initCall);
-
-  body->insertAtTail(new CallExpr(PRIM_RETURN, newInstance));
-
-  // Insert the definition in to the tree
-  at->symbol->defPoint->insertBefore(new DefExpr(fn));
-
-  normalize(fn);
-
-  return fn;
 }
 
 static void addSuperInit(FnSymbol* fn) {

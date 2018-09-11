@@ -274,4 +274,6 @@ void trimVisibleCandidates(CallInfo& call,
 
 bool isNumericParamDefaultType(Type* type);
 
+void resolveGenericActuals(CallExpr* call);
+
 #endif

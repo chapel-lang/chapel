@@ -225,7 +225,7 @@ external-type-alias-declaration-statement:
   `extern' `type' type-alias-declaration-list ;
 \end{syntax}
 
-In each \sntx{type-alias-declaration}, if the \sntx{type-specifier} part is
+In each \sntx{type-alias-declaration}, if the \sntx{type-expression} part is
 supplied, then Chapel uses the supplied type specifier internally.  Otherwise,
 it treats the named type as an opaque type.  The definition for an external type
 must be supplied by a C header file named on the \chpl{chpl} command line.
@@ -304,52 +304,6 @@ in Chapel you would refer to this \chpl{struct} via
 \end{chapel}
 
 
-\subsubsection{Referring to External Structs Through Pointers}
-\label{Referring_to_External_Structs_Through_Pointers}
-\index{interoperability!C Structs!external!pointers to}
-
-An external type which is a pointer to a \chpl{struct} can be referred to from
-Chapel using an external \chpl{class} declaration.  External class declarations
-have the following syntax.
-\begin{syntax}
-external-class-declaration-statement:
-  `extern' external-name[OPT] simple-class-declaration-statement
-\end{syntax}
-External class declarations are similar to external record declarations as
-discussed above, but place additional requirements on the C code.
-
-For example, given the declaration
-\begin{chapel}
-  extern class D {
-    var x: real;
-  }
-\end{chapel}
-\noindent
-the requirements on the corresponding C code are:
-\begin{enumerate}
-\item There must be a struct type that is typedef'd to have the name \chpl{\_D}.
-\item A pointer-to-\chpl{\_D} type must be typedef'd to have the name \chpl{D}.
-\item The \chpl{\_D} struct type must contain a field named \chpl{x} of type \chpl{double}.
-\end{enumerate}
-\noindent
-Like external records/structs, it may also contain other fields
-that will simply be ignored by the Chapel compiler.
-
-The following C typedef would fulfill the external Chapel class
-declaration shown above:
-\begin{chapel}
-   typedef struct __D {
-     double x;
-     int y;
-   } _D, *D;
-\end{chapel}
-where the Chapel compiler would not know about the 'y' field and
-therefore could not refer to it or manipulate it.
-
-If the optional \sntx{external-name} is supplied, then it is used verbatim as
-the exported class symbol.
-
-
 \subsubsection{Opaque Types}
 \label{Opaque_Types}
 \index{interoperability!opaque types}
@@ -361,7 +315,7 @@ used for operations other than argument passing and assignment.
 
 For example, Chapel could be used to call an external C function that
 returns a pointer to a structure (that can't or won't be described as
-an external class) as follows:
+a pointer to an external record) as follows:
 \begin{chapel}
     extern proc returnStructPtr(): opaque;
 

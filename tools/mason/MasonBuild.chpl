@@ -105,7 +105,7 @@ proc buildProgram(release: bool, show: bool, force: bool, cmdLineCompopts: [?d] 
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd, tomlName);
     const toParse = open(projectHome + "/" + lockName, iomode.r);
-    var lockFile = new Owned(parseToml(toParse));
+    var lockFile = new owned(parseToml(toParse));
     const projectName = lockFile["root"]["name"].s;
     
     // --fast

@@ -108,6 +108,10 @@ module ArrayViewRankChange {
 
     override proc dsiDestroyDist() {
     }
+
+    proc dsiIsLayout() param {
+      return downDistInst.dsiIsLayout();
+    }
   }
 
   private proc downDomType(param rank : int,

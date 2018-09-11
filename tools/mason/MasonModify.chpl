@@ -160,7 +160,9 @@ private proc masonAdd(toml: unmanaged Toml, toAdd: string, version: string) thro
 private proc masonRemove(toml: unmanaged Toml, toRm: string) throws {
   if toml.pathExists("dependencies") {
     if toml.pathExists("dependencies." + toRm) {
+      var old = toml["dependencies"][toRm];
       toml["dependencies"].D.remove(toRm);
+      delete old;
     }
     else {
       throw new MasonError("No dependency exists by that name");
@@ -196,7 +198,9 @@ private proc masonSystemAdd(toml: unmanaged Toml, toAdd: string, version: string
 private proc masonSystemRemove(toml: unmanaged Toml, toRm: string) throws {
   if toml.pathExists("system") {
     if toml.pathExists("system." + toRm) {
+      var old = toml["system"][toRm];
       toml["system"].D.remove(toRm);
+      delete old;
     }
     else {
       throw new MasonError("No system dependency exists by " + toRm);
@@ -231,7 +235,9 @@ private proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, spec: string)
 private proc masonExternalRemove(toml: unmanaged Toml, toRm: string) throws {
   if toml.pathExists("external") {
     if toml.pathExists("external." + toRm) {
+      var old = toml["external"][toRm];
       toml["external"].D.remove(toRm);
+      delete old;
     }
     else {
       throw new MasonError("No external dependency exists by that name");

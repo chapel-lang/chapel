@@ -2306,7 +2306,7 @@ static void handleReduce(ForallStmt* fs, ShadowVarSymbol* AS) {
   AS->qual = QUAL_REF;
   AS->type = dtUnknown;
 
-  // PRP, PAS, RP preceed AS in fs->shadowVariables() in this order.
+  // PRP, PAS, RP precede AS in fs->shadowVariables() in this order.
   ShadowVarSymbol* PRP = create_REDUCE_PRP(fs, AS);
   ShadowVarSymbol* PAS = create_REDUCE_PAS(fs, AS);
   ShadowVarSymbol* RP  = create_REDUCE_RP(fs, PRP, AS);

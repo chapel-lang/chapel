@@ -923,9 +923,13 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     call->replace(retval);
 
   } else if (call->isPrimitive(PRIM_TYPEOF)) {
-    Type* type = call->get(1)->getValType();
+    SymExpr* se = toSymExpr(call->get(1));
+    Type* type = se->getValType();
 
-    if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL_CONT(call, "can't apply '.type' to a type (%s)",
+                     toString(se->typeInfo()));
+    } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
       retval = new CallExpr("chpl__convertValueToRuntimeType",
                             call->get(1)->remove());
 
@@ -1812,7 +1816,8 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
                                        new CallExpr(PRIM_CAST,
                                                     parent->symbol,
-                                                    new CallExpr("_new",
+                                                    new CallExpr(PRIM_NEW,
+                                                                 new NamedExpr(astr_chpl_manager, new SymExpr(dtUnmanaged->symbol)),
                                                                  new SymExpr(ct->symbol)))));
   } else {
     wrapper->insertAtTail(new CallExpr(PRIM_RETURN,

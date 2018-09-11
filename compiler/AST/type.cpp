@@ -1049,7 +1049,7 @@ Type* getManagedPtrBorrowType(const Type* t) {
 
   INT_ASSERT(at);
 
-  Type* ret = at->getField("t")->type;
+  Type* ret = at->getField("chpl_t")->type;
   Type* borrow = canonicalClassType(ret);
   return borrow;
 }
