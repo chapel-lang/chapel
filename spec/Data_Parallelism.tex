@@ -169,14 +169,25 @@ convenience.
 The handling of the outer variables within the forall expression and
 the role of \sntx{task-intent-clause} are defined in \rsec{Forall_Intents}.
 
-\subsection{Execution and Serializability}
-\label{Forall_Expression_Execution_and_Serializability}
+\subsection{Execution}
+\label{Forall_Expression_Execution}
 \index{expressions!forall!semantics}
 
-The forall expression executes a forall loop (\rsec{Forall}),
-evaluates the body expression on each iteration of the loop, and
-returns the resulting values as a collection.  The size and shape of
-that collection are determined by the iteratable-expression.
+The forall expression is an iterator that executes a forall loop (\rsec{Forall}),
+evaluates the body expression on each iteration of the loop,
+and yields each resulting value.
+
+When a forall expression is used to initialize a variable, such as
+%\begin{chapel}
+%var X = forall /*iteratable-expression*/ do /*expression*/;
+%\end{chapel}
+\\ %formatting
+{\tt \mbox{$$ $$ $$ $$ $$} {\bf var} X = {\bf forall} /*iteratable-expression*/ {\bf do} /*expression*/;}
+\\ %formatting
+the variable is an array. The array's domain is defined by the
+\sntx{iterable-expression} following the same rules as for promotion,
+both in the regular case \rsec{Promotion} and in the
+zipper case \rsec{Zipper_Promotion}.
 
 \begin{chapelexample}{forallExpr.chpl}
 The code
@@ -209,6 +220,9 @@ by a forall expression and does not have an
 else clause.  Such an if expression filters the iterations of the
 forall expression.  The iterations for which the condition does not
 hold are not reflected in the result of the forall expression.
+
+When a forall expression with a filtering predicate is captured into
+a variable, the resulting array has a 1-based one-dimensional domain.
 
 \begin{chapelexample}{forallFilter.chpl}
 The following expression returns every other element starting with the
@@ -405,6 +419,32 @@ and methods. Also note that since class and record field access
 is performed with getter methods~(\rsec{Getter_Methods}), field
 access can also be promoted.
 
+If the original function returns a value, the corresponding promoted
+expression is an iterator yielding each computed value in turn.
+
+When a promoted expression is used to initialize a variable, such as
+\chpl{var X = A.x;} in the above example, the variable is an array.
+The array's domain is defined by the expression that causes promotion:
+
+\begin{center}
+\begin{tabular}[c]{|l|l|}
+\hline
+input expression & resulting array's domain \\
+\hline
+array    &  that array's domain \\
+domain   &  that domain \\
+range    &  one-dimensional domain built from that range \\
+iterator &  1-based one-dimensional domain \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{future}
+If the iterator iterates over an array, a domain or a range,
+we may want the resulting array's domain to be the same as
+if the input expression were that array/domain/range.
+\end{future}
+
 \begin{chapelexample}{promotion.chpl}
 Given the array
 \begin{chapel}
@@ -461,22 +501,9 @@ writeln(A);
 \end{chapelexample}
 
 
-%%
-%% sungeun: 10/2011
-%% I axed the following paragraph because comments from the peanut
-%% gallery suggested it was confusing, too much implementation
-%% details, etc.  One idea was to add something about defining
-%% iterators to support promotion.  Not sure where that would
-%% eventually go.
-%%
-%% If a promoted function returns a value, the promoted function becomes
-%% an iterator that is controlled by a loop over the iterator (or array,
-%% domain, or range) that it is promoted by.  If the function does not
-%% return a value, the function is controlled by a loop over the iterator
-%% that it is promoted by, but the promotion does not become an iterator.
-
-Whole array operations are a form of promotion as applied to operators
-rather than functions.
+\subsection{Default Arguments}
+\label{Promotion_Default_Arguments}
+\index{promotion!default arguments}
 
 When a call is promoted and that call relied upon default
 arguments~(\rsec{Default_Values}), the default argument expression can
@@ -518,7 +545,6 @@ writeln(A.sorted());
 \end{chapelexample}
 
 
-
 \subsection{Zipper Promotion}
 \label{Zipper_Promotion}
 \index{promotion!zipper iteration}
@@ -540,6 +566,12 @@ is equivalent to
 The usual constraints of zipper iteration apply to zipper promotion so
 the promoted actuals must have the same shape.
 
+A zipper promotion can be captured in a variable, such as
+\chpl{var X = f(s1, s2, ..., a1, a2, ...);} using the above example.
+If so, the domain of the resulting array is defined by the first argument
+that causes promotion. The rules are the same as in the non-zipper case.
+
+
 \begin{chapelexample}{zipper-promotion.chpl}
 Given a function defined as
 \begin{chapel}
@@ -557,14 +589,20 @@ then the output is
 \end{chapelprintoutput}
 \end{chapelexample}
 
-\subsection{Whole Array Assignment}
-\label{Whole_Array_Assignment}
+
+\subsection{Whole Array Operations and Evaluation Order}
+\label{Whole_Array_Operations}
 \index{whole array assignment}
+\index{whole array operations}
 \index{arrays!assignment}
 \index{assignment!whole array}
+\index{data parallelism!evaluation order}
 
-Whole array assignment is a considered a degenerate case of promotion
-and is implicitly parallel.  The assignment statement
+Whole array operations are a form of promotion as applied to operators
+rather than functions.
+
+Whole array assignment is one example. It is is implicitly parallel.
+The array assignment statement:
 \begin{chapel}
 LHS = RHS;
 \end{chapel}
@@ -574,9 +612,6 @@ forall (e1,e2) in zip(LHS,RHS) do
   e1 = e2;
 \end{chapel}
 
-\subsection{Evaluation Order}
-\label{Evaluation_Order}
-\index{data parallelism!evaluation order}
 The semantics of whole array assignment and promotion are different
 from most array programming languages.  Specifically, the compiler
 does not insert array temporaries for such operations if any of the
