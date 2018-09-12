@@ -510,7 +510,7 @@ void yypstate_delete ();
                const char*    str) {
 
     // like USR_FATAL_CONT
-    setupError(__FILE__, __LINE__, 3);
+    setupError("parser", __FILE__, __LINE__, 3);
 
     // TODO -- should this begin with error:
     if (!chplParseString) {
