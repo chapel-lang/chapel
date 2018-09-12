@@ -1037,6 +1037,7 @@ module ChapelArray {
   }
 
 
+  pragma "no doc"
   record _serialized_domain {
     param rank;
     type idxType;
@@ -1051,6 +1052,7 @@ module ChapelArray {
   //
   // Domain wrapper record.
   //
+  /* The domain type */
   pragma "domain"
   pragma "has runtime type"
   pragma "ignore noinit"
@@ -1138,6 +1140,7 @@ module ChapelArray {
         }
       }
     }
+    pragma "no doc"
     proc deinit () {
       _do_destroy();
     }
@@ -1188,17 +1191,20 @@ module ChapelArray {
       compilerError("associative domains do not support .stridable");
     }
 
+    /* Yield the domain indices */
     iter these() {
       for i in _value.these() {
         yield i;
       }
     }
+    pragma "no doc"
     iter these(param tag: iterKind)
       where tag == iterKind.standalone &&
             __primitive("method call resolves", _value, "these", tag=tag) {
       for i in _value.these(tag) do
         yield i;
     }
+    pragma "no doc"
     iter these(param tag: iterKind)
       where tag == iterKind.leader {
       // If I use forall here, it says
@@ -1207,6 +1213,7 @@ module ChapelArray {
       for followThis in _value.these(tag) do
         yield followThis;
     }
+    pragma "no doc"
     iter these(param tag: iterKind, followThis, param fast: bool = false)
       where tag == iterKind.follower {
 
@@ -1408,6 +1415,7 @@ module ChapelArray {
 
     // For other domain types, the implementation probably knows the most
     // efficient way to clear its index set, so make a dsiClear() call.
+    pragma "no doc"
     proc clear() {
       _value.dsiClear();
     }
@@ -2126,6 +2134,7 @@ module ChapelArray {
   pragma "has runtime type"
   pragma "ignore noinit"
   pragma "default intent is ref if modified"
+  /* The array type */
   record _array {
     var _pid:int;  // only used when privatized
     pragma "owned"
@@ -2179,6 +2188,7 @@ module ChapelArray {
       }
     }
 
+    pragma "no doc"
     proc deinit() {
       _do_destroy();
     }
@@ -2430,6 +2440,7 @@ module ChapelArray {
       return localSlice((...d.getIndices()));
     }
 
+    /* Yield the array elements */
     pragma "reference to const when const this"
     iter these() ref {
       for i in _value.these() {
@@ -2437,6 +2448,7 @@ module ChapelArray {
       }
     }
 
+    pragma "no doc"
     pragma "reference to const when const this"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone &&
@@ -2444,11 +2456,13 @@ module ChapelArray {
       for i in _value.these(tag) do
         yield i;
     }
+    pragma "no doc"
     iter these(param tag: iterKind)
       where tag == iterKind.leader {
       for followThis in _value.these(tag) do
         yield followThis;
     }
+    pragma "no doc"
     pragma "reference to const when const this"
     iter these(param tag: iterKind, followThis, param fast: bool = false) ref
       where tag == iterKind.follower {
@@ -2636,12 +2650,13 @@ module ChapelArray {
       _value.dsiSerialRead(f);
     }
 
+    // sparse array interface
+    /* Return the Implicitly Represented Value for sparse arrays */
     proc IRV where !isSparseArr(this) {
       compilerError("only sparse arrays have an IRV");
     }
 
-    // sparse array interface
-    /* Return the Implicitly Represented Value for sparse arrays */
+    pragma "no doc"
     proc IRV ref where isSparseArr(this) {
       return _value.IRV;
     }
