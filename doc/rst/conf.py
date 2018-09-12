@@ -61,8 +61,8 @@ master_doc = 'index'
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '1.19 (pre-release)'    # TODO -- parse from `chpl --version`
-shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen
+chplversion = '1.19'                  # TODO -- parse from `chpl --version`
+shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen, if any
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
