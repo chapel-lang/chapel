@@ -163,10 +163,10 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Copying generated module documentation to ${DOC}"
 	mkdir -p ${DOC}/modules
 	mkdir -p ${DOC}/builtins
-	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC}/modules
-	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC}/modules
-	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC}/modules
-	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC}/modules
+	cp -rf ${MODULE_SPHINX}/source/modules/standard   ${DOC}/modules
+	cp -rf ${MODULE_SPHINX}/source/modules/packages   ${DOC}/modules
+	cp -rf ${MODULE_SPHINX}/source/modules/dists      ${DOC}/modules
+	cp -rf ${MODULE_SPHINX}/source/modules/layouts    ${DOC}/modules
 	cp -rf ${MODULE_SPHINX}/source/modules/internal/* ${DOC}/builtins
 	@echo "Removing generated files and directories"
 	rm -rf ./docs
