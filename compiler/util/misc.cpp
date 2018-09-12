@@ -149,7 +149,7 @@ static void print_user_internal_error() {
   char        version[128]   = { '\0' };
 
   // Fill error with _
-  for (int i = 0; i < sizeof(error) - 1; i++) {
+  for (int i = 0; i < (int)sizeof(error) - 1; i++) {
     error[i] = ' ';
   }
   error[sizeof(error)-1] = '\0';
@@ -190,7 +190,7 @@ static void print_user_internal_error() {
   sprintf(&error[idx], "%04d", err_lineno);
 
   // now make the error string upper case
-  for (int i = 0; i < sizeof(error) && error[i]; i++) {
+  for (int i = 0; i < (int)sizeof(error) && error[i]; i++) {
     if (error[i] >= 'a' && error[i] <= 'z') {
       error[i] += 'A' - 'a';
     }
