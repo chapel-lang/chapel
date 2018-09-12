@@ -37,6 +37,7 @@ SUBDIRS = \
 	codegen \
 	ifa \
 	ipe \
+	llvm \
 	main \
 	optimizations \
 	parser \
@@ -74,6 +75,7 @@ include backend/Makefile.include
 include codegen/Makefile.include
 include ifa/Makefile.include
 include ipe/Makefile.include
+include llvm/Makefile.include
 include main/Makefile.include
 include optimizations/Makefile.include
 include parser/Makefile.include
@@ -90,6 +92,7 @@ CHPL_OBJS = \
 	$(CODEGEN_OBJS) \
 	$(IFA_OBJS) \
 	$(IPE_OBJS) \
+	$(LLVM_OBJS) \
 	$(MAIN_OBJS) \
 	$(OPTIMIZATIONS_OBJS) \
 	$(PARSER_OBJS) \
