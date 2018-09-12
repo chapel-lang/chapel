@@ -6,12 +6,10 @@ module M0 {
     writeln();
 
     var m1a = new borrowed M1.A(20);
-    var m2a = new borrowed M2.A(30);
 
     writeln();
 
-    var m3a = new M3.A(40);
-    var m4a = new M4.A(50);
+    var m2a = new M2.A(40);
   }
 
   class A {
@@ -32,34 +30,12 @@ module M1 {
 }
 
 
-// A module with a class with a  constructor
-pragma "safe"
-module M2 {
-  class A {
-    proc A(a : int) {
-      writeln("M2.A.A(", a, ")");
-    }
-  }
-}
-
-
 // A module with a record with an initializer
 pragma "safe"
-module M3 {
+module M2 {
   record A {
     proc init(a : int) {
-      writeln("M3.A.init(", a, ")");
-    }
-  }
-}
-
-
-// A module with a record with a  constructor
-pragma "safe"
-module M4 {
-  record A {
-    proc A(a : int) {
-      writeln("M2.A.A(", a, ")");
+      writeln("M2.A.init(", a, ")");
     }
   }
 }
