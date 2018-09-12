@@ -157,7 +157,7 @@ Package Modules
 * added configs `lapackImpl` and `lapackHeader` to `LAPACK` to select backend
   (see https://chapel-lang.org/docs/1.18/modules/packages/LAPACK.html#LAPACK.lapackImpl)
 * deprecated `BLAS` config `isBLAS_MKL` in favor of using `blasImpl`
-* made LinearAlgebra sparse matrices store indices in unsorted order
+* made `LinearAlgebra` sparse matrices store indices in unsorted order
 * replaced string options with enumerations in the `Crypto` module
   (see https://chapel-lang.org/docs/1.18/modules/packages/Crypto.html#Crypto.Digest
    and https://chapel-lang.org/docs/1.18/modules/packages/Crypto.html#Crypto.CryptoChainMode)
