@@ -16,10 +16,10 @@ Contributors to the current release
 * Ben Harshbarger, [Cray Inc.]
 * David Iten, [Cray Inc.]
 * Louis Jenkins, individual contributor / [GSoC 2017] student from [Bloomsburg University]
-* Avneet Kaur, [RGSoC 2018] student from [IIIT-Dehli]
+* Avneet Kaur, [RGSoC 2018] student from [Indraprastha Institute of Information Technology, Dehli]
 * David Keaton, [Cray Inc.]
 * Vassily Litvinov, [Cray Inc.]
-* Sarthak Munshi, individual contributor / [GSoC 2017] student from [PICT]
+* Sarthak Munshi, individual contributor / [GSoC 2017] student from [Pune Institute of Computer Technology]
 * Sam Partee, [Cray Inc.] intern from [Haverford College]
 * Elliot Ronaghan, [Cray Inc.]
 * Preston Sahabu, [Cray Inc.]
@@ -28,7 +28,7 @@ Contributors to the current release
 * Thomas Van Doren, individual contributor / [Cray Inc.]
 * Varsha Verma, individual contributor
 * Tony Wallace, [Cray Inc.]
-* Sahil Yerawar, [GSoC 2018] student from [IIIT-Hyderabad]
+* Sahil Yerawar, [GSoC 2018] student from [International Institute of Information Technology, Hyderabad]
 
 Contributors to previous releases
 ---------------------------------
@@ -105,7 +105,7 @@ Contributors to previous releases
 * Alberto Sanz, [Universidad de Málaga (University of Malaga)]
 * Albert Sidelnik, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
 * Marcos Cleison Silva Santana, individual contributor
-* Kushal Singh, [GSoC 2016] student from [IIIT-Hyderabad]
+* Kushal Singh, [GSoC 2016] student from [International Institute of Information Technology, Hyderabad]
 * Darren Smith, [University of Maryland]
 * Rachel Sobel, [Cray Inc.] intern from [University of Washington]
 * Francisco Souza, individual contributor
@@ -166,7 +166,7 @@ implementation.
 [Bloomsburg University]: https://www.bloomu.edu/computer-science
 [Cairo University]: http://cu.edu.eg/Home
 [CalTech]: http://www.cms.caltech.edu/
-[Colorado State University]: http://www.cs.colostate.edu/cstop/index.php
+[Colorado State University]: https://compsci.colostate.edu/
 [Cray Inc.]: http://www.cray.com
 [CU Boulder]: http://www.colorado.edu/cs/
 [DOD]: http://www.defense.gov/
@@ -178,8 +178,8 @@ implementation.
 [GSoC 2018]: https://summerofcode.withgoogle.com/organizations/4743716460298240/
 [Haverford College]: https://www.haverford.edu/
 [Indiana University]: http://www.cs.indiana.edu/
-[IIIT-Dehil]: https://iiitd.ac.in/
-[IIIT-Hyderabad]: https://www.iiit.ac.in/
+[Indraprastha Institute of Information Technology, Dehli]: https://iiitd.ac.in/
+[International Institute of Information Technology, Hyderabad]: https://www.iiit.ac.in/
 [Københavns Universitet (University of Copenhagen)]: http://diku.dk/english/
 [Lawrence Berkeley National Laboratory]: http://crd.lbl.gov/
 [LTS]: https://www.ltsnet.net/
@@ -187,7 +187,7 @@ implementation.
 [The Ohio State University]: https://cse.osu.edu/
 [ORNL]: https://www.ornl.gov/
 [Pacific Engineering Systems International]: http://www.esi.com.au/
-[PICT]: https://pict.edu/
+[Pune Institute of Computer Technology]: https://pict.edu/
 [RGSoC 2018]: https://railsgirlssummerofcode.org/blog/2018-05-18-rgsoc-2018-teams-part2
 [Rice University]: http://www.cs.rice.edu/
 [Sandia National Laboratories]: http://www.sandia.gov/
