@@ -137,10 +137,7 @@ Standard Modules / Library
   (see https://chapel-lang.org/docs/1.18/modules/standard/Path.html#Path.expandVars)
 * updated `makeRandomStream()` to return an owned random stream object
   (see https://chapel-lang.org/docs/1.18/modules/standard/Random.html#Random.makeRandomStream)
-* update the `Crypto` module to return owned pointers
 * converted blocking calls in `Spawn` to yielding non-blocking loops
-* updated the sentinel value returned by `Search.linearSearch()`
-  (see https://chapel-lang.org/docs/1.18/modules/packages/Search.html#Search.linearSearch)
 * made the Sync `Barrier` reusable
 
 Package Modules
@@ -164,6 +161,9 @@ Package Modules
 * replaced string options with enumerations in the `Crypto` module
   (see https://chapel-lang.org/docs/1.18/modules/packages/Crypto.html#Crypto.Digest
    and https://chapel-lang.org/docs/1.18/modules/packages/Crypto.html#Crypto.CryptoChainMode)
+* updated the `Crypto` module to return owned pointers
+* updated the sentinel value returned by `Search.linearSearch()`
+  (see https://chapel-lang.org/docs/1.18/modules/packages/Search.html#Search.linearSearch)
 * converted the `TOML` module over to use error-handling
   (see https://chapel-lang.org/docs/1.18/modules/packages/TOML.html#TOML.TomlError)
 
