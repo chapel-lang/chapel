@@ -5146,6 +5146,7 @@ GenRet CallExpr::codegenPrimMove() {
  * Returns false and doesn't change ret, otherwise
  */
 static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
+  GenInfo* info = gGenInfo;
   bool      retval = false;
   CallExpr* call = toCallExpr(e);
 
@@ -5451,7 +5452,30 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_GET_PRIV_CLASS: {
-      GenRet r = codegenCallExpr("chpl_getPrivatizedClass", call->get(2));
+
+      GenRet r;
+      if (info->cfile) {
+        r = codegenCallExpr("chpl_getPrivatizedClass", call->get(2));
+      } else {
+#ifdef HAVE_LLVM
+        GenRet idx = codegenValue(call->get(2));
+        GenRet tablePtr = info->lvt->getValue("chpl_privateObjects");
+        // this is of type i8***
+        INT_ASSERT(tablePtr.val);
+        // load the table
+        llvm::Instruction* table = info->irBuilder->CreateLoad(tablePtr.val);
+        // create the GEP
+        llvm::Value* GEPLocs[1];
+        GEPLocs[0] = extendToPointerSize(idx, 0);
+
+        llvm::Value* elementPtr;
+        elementPtr = createInBoundsGEP(table, GEPLocs);
+
+        // create the load
+        llvm::Instruction* value = info->irBuilder->CreateLoad(elementPtr);
+        r.val = value;
+#endif
+      }
 
       if (target && (target->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
         r = codegenAddrOf(codegenWideHere(r, target->typeInfo()));

@@ -30,7 +30,11 @@ void chpl_newPrivatizedClass(void*, int64_t);
 // Implementation is here for performance: getPrivatizedClass can be called
 // frequently, so putting it in a header allows the backend to fully optimize.
 extern void** chpl_privateObjects;
-static inline void* chpl_getPrivatizedClass(int64_t i) {
+
+// Compiler can generate accesses like chpl_privateObjects[i];
+// see PRIM_GET_PRIV_CLASS
+// but the following function is still used in some cases.
+static inline void* chpl_getPrivatizedClass(int64_t i)  {
   return chpl_privateObjects[i];
 }
 
