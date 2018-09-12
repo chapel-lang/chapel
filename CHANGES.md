@@ -66,14 +66,14 @@ New Features
 * added support for task-private variables in forall loops
   (see 'Task-Private Variables' in the 'Data Parallelism' chapter of the spec)
 * extended Chapel strings to support UTF-8 characters
-  (see https://chapel-lang.org/docs/1.18/builtins/internal/String.html)
+  (see https://chapel-lang.org/docs/1.18/builtins/String.html)
 * added support for ranges with `enum` and `bool` indices
   (see 'Range Types' in the 'Ranges' chapter of the language specification)
 * added support for comparison operators (`<`, `<=`, `>=`, `>`) on enums
 * added support for variables and fields with generic declared types
   (see 'Variable Declarations' in the language spec's 'Variables' chapter)
 * added support for querying subtype relationships via `<`, `<=`, `>`, `>=`
-  (see https://chapel-lang.org/docs/1.18/builtins/internal/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
+  (see https://chapel-lang.org/docs/1.18/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
 
 Feature Improvements
 --------------------
@@ -91,8 +91,8 @@ Feature Improvements
 * updated `--memStats` to work properly in multi-locale runs
   (see https://chapel-lang.org/docs/1.18/modules/standard/Memory.html#Memory.printMemAllocStats)
 * added subtyping for owned and shared classes
-  (see https://chapel-lang.org/docs/1.18/builtins/internal/SharedObject.html#coercions-for-shared
-   and https://chapel-lang.org/docs/1.18/builtins/internal/OwnedObject.html#coercions-for-owned)
+  (see https://chapel-lang.org/docs/1.18/builtins/SharedObject.html#coercions-for-shared
+   and https://chapel-lang.org/docs/1.18/builtins/OwnedObject.html#coercions-for-owned)
 * added support for assigning `nil` to owned and shared classes
 * made the default intent for formals declared with owned/shared type `const in`
 * made forall loops borrow outer owned and shared class objects by default
@@ -103,7 +103,7 @@ Feature Improvements
 * added support for infix bool operators to throw
 * improved `isSubtype()` and `isProperSubtype()` to handle cases that can coerce
 * extended `isSubtype()` and `isProperSubtype()` to work with generic types
-  (see https://chapel-lang.org/docs/1.18/builtins/internal/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
+  (see https://chapel-lang.org/docs/1.18/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
 * improved disambiguation and visibility rules when resolving function calls
   (see 'Function Visibility in Generic Functions' in the 'Generics' chapter)
 * made `in` arguments more consistent with variable initialization
@@ -127,11 +127,11 @@ Standard Modules / Library
 * added type query routines for `owned`, `shared`, `unmanaged`, and `borrowed`
   (see https://chapel-lang.org/docs/1.18/modules/standard/Types.html#Types.isOwnedClass)
 * extended string methods and library routines to support UTF-8 strings
-  (see https://chapel-lang.org/docs/1.18/builtins/internal/String.html)
+  (see https://chapel-lang.org/docs/1.18/builtins/String.html)
 * added `array.front()`/`array.back()` to get the first/last element of an array
-  (see https://chapel-lang.org/docs/1.18/builtins/internal/ChapelArray.html#ChapelArray.back)
+  (see https://chapel-lang.org/docs/1.18/builtins/ChapelArray.html#ChapelArray.back)
 * made `array.pop_front()` and `array.pop_back()` return the removed element
-  (see https://chapel-lang.org/docs/1.18/builtins/internal/ChapelArray.html#ChapelArray.pop_back)
+  (see https://chapel-lang.org/docs/1.18/builtins/ChapelArray.html#ChapelArray.pop_back)
 * added a new string `join()` overload that accepts iterator expressions
 * added `expandVars()` to the `Path` module
   (see https://chapel-lang.org/docs/1.18/modules/standard/Path.html#Path.expandVars)
