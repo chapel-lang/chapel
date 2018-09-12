@@ -73,7 +73,7 @@ New Features
 * added support for variables and fields with generic declared types
   (see 'Variable Declarations' in the language spec's 'Variables' chapter)
 * added support for querying subtype relationships via `<`, `<=`, `>`, `>=`
-  (see https://chapel-lang.org/docs/1.18/builtins/internal/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype
+  (see https://chapel-lang.org/docs/1.18/builtins/internal/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
 
 Feature Improvements
 --------------------
@@ -137,10 +137,7 @@ Standard Modules / Library
   (see https://chapel-lang.org/docs/1.18/modules/standard/Path.html#Path.expandVars)
 * updated `makeRandomStream()` to return an owned random stream object
   (see https://chapel-lang.org/docs/1.18/modules/standard/Random.html#Random.makeRandomStream)
-* update the `Crypto` module to return owned pointers
 * converted blocking calls in `Spawn` to yielding non-blocking loops
-* updated the sentinel value returned by `Search.linearSearch()`
-  (see https://chapel-lang.org/docs/1.18/modules/packages/Search.html#Search.linearSearch)
 * made the Sync `Barrier` reusable
 
 Package Modules
@@ -160,10 +157,13 @@ Package Modules
 * added configs `lapackImpl` and `lapackHeader` to `LAPACK` to select backend
   (see https://chapel-lang.org/docs/1.18/modules/packages/LAPACK.html#LAPACK.lapackImpl)
 * deprecated `BLAS` config `isBLAS_MKL` in favor of using `blasImpl`
-* made LinearAlgebra sparse matrices store indices in unsorted order
+* made `LinearAlgebra` sparse matrices store indices in unsorted order
 * replaced string options with enumerations in the `Crypto` module
   (see https://chapel-lang.org/docs/1.18/modules/packages/Crypto.html#Crypto.Digest
    and https://chapel-lang.org/docs/1.18/modules/packages/Crypto.html#Crypto.CryptoChainMode)
+* updated the `Crypto` module to return owned pointers
+* updated the sentinel value returned by `Search.linearSearch()`
+  (see https://chapel-lang.org/docs/1.18/modules/packages/Search.html#Search.linearSearch)
 * converted the `TOML` module over to use error-handling
   (see https://chapel-lang.org/docs/1.18/modules/packages/TOML.html#TOML.TomlError)
 
