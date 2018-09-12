@@ -7,7 +7,7 @@ Chapel release:
 Contributors to the current release
 -----------------------------------
 * Ben Albrecht, [Cray Inc.]
-* Ian Bertolacci, [Cray Inc.] / [University of Arizona] / [Colorado State University]
+* Ian Bertolacci, [Cray Inc.] intern from [University of Arizona] / [Colorado State University]
 * Zixian Cai, individual contributor
 * Paul Cassella, [Cray Inc.]
 * [Brad Chamberlain], [Cray Inc.]
@@ -15,12 +15,12 @@ Contributors to the current release
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
 * David Iten, [Cray Inc.]
-* Louis Jenkins, individual contributor / [GSoC 2017]
-* Avneet Kaur, individual contributor / [RGSoC 2018]
+* Louis Jenkins, individual contributor / [GSoC 2017] student from [Bloomsburg University]
+* Avneet Kaur, [RGSoC 2018] student from [IIIT-Dehli]
 * David Keaton, [Cray Inc.]
 * Vassily Litvinov, [Cray Inc.]
-* Sarthak Munshi, individual contributor / [GSoC 2017]
-* Sam Partee, [Cray Inc.] / [Haverford College]
+* Sarthak Munshi, individual contributor / [GSoC 2017] student from [PICT]
+* Sam Partee, [Cray Inc.] intern from [Haverford College]
 * Elliot Ronaghan, [Cray Inc.]
 * Preston Sahabu, [Cray Inc.]
 * Greg Titus, [Cray Inc.]
@@ -28,18 +28,18 @@ Contributors to the current release
 * Thomas Van Doren, individual contributor / [Cray Inc.]
 * Varsha Verma, individual contributor
 * Tony Wallace, [Cray Inc.]
-* Sahil Yerawar, individual contributor / [GSoC 2018]
+* Sahil Yerawar, [GSoC 2018] student from [IIIT-Hyderabad]
 
 Contributors to previous releases
 ---------------------------------
-* Sean Geronimo Anderson, [University of Minnesota] / [Cray Inc.]
+* Sean Geronimo Anderson, [Cray Inc.] intern from [University of Minnesota]
 * Rafael Asenjo, [Universidad de Málaga (University of Malaga)]
 * Matthew Baker, [ORNL]
 * Steve Balensiefer, [University of Washington]
-* Casey Battaglino, [Cray Inc.] / [Georgia Tech]
+* Casey Battaglino, [Cray Inc.] intern from [Georgia Tech]
 * Nimit Bhardwaj, individual contributor
 * Sean Billig, individual contributor
-* Robert Bocchino, [Cray Inc.] / [University of Illinois, Urbana-Champaign]
+* Robert Bocchino, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
 * Dan Bonachea, [UC Berkeley]
 * Kyle Brady, [Cray Inc.]
 * Daniel Buettner, [LTS]
@@ -47,10 +47,10 @@ Contributors to previous releases
 * Sung-Eun Choi, [Cray Inc.]
 * Mike Chu, [Advanced Micro Devices, Inc.]
 * Steve Deitz, [Cray Inc.]
-* Laura Delaney, [Whitworth University] / [Cray Inc.]
+* Laura Delaney, [Cray Inc.] intern from [Whitworth University]
 * Joel Denny, [ETI]
 * Roxana Diaconescu, [CalTech]
-* James Dinan, [Cray Inc.] / [The Ohio State University]
+* James Dinan, [Cray Inc.] intern from [The Ohio State University]
 * Martha Dumler, [Cray Inc.]
 * Saliya Ekanayake, [Indiana University]
 * Samuel Figueroa[*](#footnote), [Cray Inc.]
@@ -58,35 +58,35 @@ Contributors to previous releases
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Paul Hargrove, [Lawrence Berkeley National Laboratory]
 * Akihiro Hayashi, [Rice University]
-* Hannah Hemmaplardh, [Cray Inc.] / [University of Washington]
-* Steven Hemmy, [Cray Inc.] / [University of Wisconsin]
+* Hannah Hemmaplardh, [Cray Inc.] intern from [University of Washington]
+* Steven Hemmy, [Cray Inc.] intern from [University of Wisconsin]
 * Tom Hildebrandt, [Cray Inc.]
 * Shannon Hoffswell[*](#footnote), [Cray Inc.]
 * Mary Beth Hribar[*](#footnote), [Cray Inc.]
 * Serghei Iakovlev, individual contributor
-* Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC 2016] / [GSoC 2017] mentor
-* Mackale Joyner, [Cray Inc.] / [Rice University]
+* Andrea Francesco Iuorio, [GSoC 2017] mentor / [GSoC 2016] student from [Università degli Studi di Milano]
+* Mackale Joyner, [Cray Inc.] intern from [Rice University]
 * Jessica Jueckstock, [MITRE]
-* Engin Kayraklioglu, [George Washington University] / [Cray Inc.] / [GSoC 2017] mentor
+* Engin Kayraklioglu, [GSoC 2017] mentor / [Cray Inc.] intern from [George Washington University]
 * Krishna Keshav, individual contributor
 * Sagar Khatri, individual contributor
 * John Koenig, [Cray Inc.]
 * Rafael Larrosa Jiminez, [Universidad de Málaga (University of Malaga)]
 * Matthew Lentz, [University of Maryland]
-* Przemysław Leśniak, individual contributor / [GSoC 2017]
+* Przemysław Leśniak, individual contributor / [GSoC 2017] student from [Uniwersytet Wrocławski (University of Wroclaw)]
 * John Lewis, [Cray Inc.]
 * Juan Lopez, [Universidad de Málaga (University of Malaga)]
 * Simon Lund, [Københavns Universitet (University of Copenhagen)]
 * Tom MacDonald, [Cray Inc.]
 * Deepak Majeti, individual contributor
 * Prabhanjan Mannari, individual contributor
-* Cory McCartan, [Cray Inc.]
+* Cory McCartan, [Cray Inc.] intern from Sammamish High School
 * Damian McGuckin, [Pacific Engineering Systems International]
 * Barry Moore, [University of Pittsburgh]
 * Maria Angeles Navarro, [Universidad de Málaga (University of Malaga)]
 * Jun Nakashima, [University of Tokyo]
-* Jacob Nelson, [Cray Inc.] / [University of Washington]
-* [Phil Nelson], [Western Washington University] / [Cray Inc.]
+* Jacob Nelson, [Cray Inc.] intern from [University of Washington]
+* [Phil Nelson], [Western Washington University] / [Cray Inc.] contractor
 * Michael Noakes, [Cray Inc.]
 * Joshua Olson, individual contributor
 * Nikhil Padmanabhan, [Yale University]
@@ -95,7 +95,7 @@ Contributors to previous releases
 * Nicholas Park, [DOD]
 * Prithvi Patel, individual contributor
 * Sriraj Paul, [Rice University]
-* John Plevyak, [Cray Inc.]
+* John Plevyak, [Cray Inc.] contractor
 * Kumar Prasun, individual contributor
 * Surya Priy, individual contributor
 * Lee Prokowich, [Cray Inc.]
@@ -103,25 +103,25 @@ Contributors to previous releases
 * Brandon Ross, [University at Buffalo]
 * Sara Salem, [Cairo University]
 * Alberto Sanz, [Universidad de Málaga (University of Malaga)]
-* Albert Sidelnik, [Cray Inc.] / [University of Illinois, Urbana-Champaign]
+* Albert Sidelnik, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
 * Marcos Cleison Silva Santana, individual contributor
-* Kushal Singh, [Int'l Institute of Information Technology, Hyderabad] /[GSoC 2016]
+* Kushal Singh, [GSoC 2016] student from [IIIT-Hyderabad]
 * Darren Smith, [University of Maryland]
-* Rachel Sobel, [Cray Inc.] / [University of Washington]
+* Rachel Sobel, [Cray Inc.] intern from [University of Washington]
 * Francisco Souza, individual contributor
 * Srinivas Sridharan, [University of Notre Dame] / [ORNL]
 * George Stelle, [Sandia National Laboratories]
-* Andy Stone, [Cray Inc.] / [Colorado State University]
+* Andy Stone, [Cray Inc.] intern from [Colorado State University]
 * Chris Swenson, individual contributor
 * [Kenjiro Taura], [University of Tokyo]
 * Chris Taylor, [DOD]
 * Akash Thorat, individual contributor
-* Jonathan Turner, [Cray Inc.] / [CU Boulder]
+* Jonathan Turner, [Cray Inc.] intern from [CU Boulder]
 * Rob Upcraft, individual contributor
 * Chris Wailes, [Indiana University]
 * Wayne Wong, [Cray Inc.]
 * Joe Yan, [University of Maryland]
-* Tim Zakian, [Cray Inc.] / [Indiana University]
+* Tim Zakian, [Cray Inc.] intern from [Indiana University]
 * Hui Zhang, [University of Maryland]
 
 [Logo Design](https://chapel-lang.org/logo.html)
@@ -163,6 +163,7 @@ implementation.
 ---
 
 [Advanced Micro Devices, Inc.]: http://www.amd.com/
+[Bloomsburg University]: https://www.bloomu.edu/computer-science
 [Cairo University]: http://cu.edu.eg/Home
 [CalTech]: http://www.cms.caltech.edu/
 [Colorado State University]: http://www.cs.colostate.edu/cstop/index.php
@@ -177,7 +178,8 @@ implementation.
 [GSoC 2018]: https://summerofcode.withgoogle.com/organizations/4743716460298240/
 [Haverford College]: https://www.haverford.edu/
 [Indiana University]: http://www.cs.indiana.edu/
-[Int'l Institute of Information Technology, Hyderabad]: https://www.iiit.ac.in/
+[IIIT-Dehil]: https://iiitd.ac.in/
+[IIIT-Hyderabad]: https://www.iiit.ac.in/
 [Københavns Universitet (University of Copenhagen)]: http://diku.dk/english/
 [Lawrence Berkeley National Laboratory]: http://crd.lbl.gov/
 [LTS]: https://www.ltsnet.net/
@@ -185,6 +187,7 @@ implementation.
 [The Ohio State University]: https://cse.osu.edu/
 [ORNL]: https://www.ornl.gov/
 [Pacific Engineering Systems International]: http://www.esi.com.au/
+[PICT]: https://pict.edu/
 [RGSoC 2018]: https://railsgirlssummerofcode.org/blog/2018-05-18-rgsoc-2018-teams-part2
 [Rice University]: http://www.cs.rice.edu/
 [Sandia National Laboratories]: http://www.sandia.gov/
@@ -202,6 +205,7 @@ implementation.
 [University of Tokyo]: http://www.i.u-tokyo.ac.jp/index_e.shtml
 [University of Washington]: http://cs.washington.edu/
 [University of Wisconsin]: http://www.cs.wisc.edu/
+[Uniwersytet Wrocławski (University of Wroclaw)]: http://pwr.edu.pl/en/
 [Western Washington University]: https://cse.wwu.edu/computer-science
 [Whitworth University]: http://www.whitworth.edu/cms/
 [Yale University]: http://physics.yale.edu/
