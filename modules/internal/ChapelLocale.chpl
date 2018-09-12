@@ -379,6 +379,7 @@ module ChapelLocale {
   // replication, set replicateRootLocale to false.
   pragma "no doc"
   pragma "locale private" var rootLocale : locale = nil;
+  pragma "no doc"
   pragma "locale private" var rootLocaleInitialized = false;
 
   pragma "no doc"
