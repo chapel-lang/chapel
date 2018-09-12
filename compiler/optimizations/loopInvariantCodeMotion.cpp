@@ -1119,6 +1119,95 @@ static bool canPerformCodeMotion(Loop* loop) {
  * hoisted before the loop(into a preheader of sorts) so long as they definition dominates
  * all uses in the loop, and the block that the definition is located in dominates all exits.
  */
+// This function returns the number of loops LICM'd
+static long licmFn(FnSymbol* fn) {
+  long numLoops = 0;
+  //build the basic blocks, where the first bb is the entry block
+  startTimer(buildBBTimer);
+
+  BasicBlock::buildBasicBlocks(fn);
+
+  std::vector<BasicBlock*> basicBlocks = *fn->basicBlocks;
+
+  BasicBlock* entryBlock = basicBlocks[0];
+
+  unsigned nBlocks = basicBlocks.size();
+
+  stopTimer(buildBBTimer);
+
+  //compute the dominators
+  startTimer(computeDominatorTimer);
+  std::vector<BitVec*> dominators;
+  for(unsigned i = 0; i < nBlocks; i++) {
+    dominators.push_back(new BitVec(nBlocks));
+  }
+  computeDominators(dominators, basicBlocks);
+  stopTimer(computeDominatorTimer);
+
+  //Collect all of the loops
+  startTimer(collectNaturalLoopsTimer);
+  std::vector<Loop*> loops;
+  collectNaturalLoops(loops, basicBlocks, entryBlock, dominators);
+  stopTimer(collectNaturalLoopsTimer);
+
+  //For each loop found
+  for_vector(Loop, curLoop, loops) {
+
+    //check that this loop doesn't have anything that
+    //would prevent code motion from occurring
+    startTimer(canPerformCodeMotionTimer);
+    bool performCodeMotion = canPerformCodeMotion(curLoop);
+    stopTimer(canPerformCodeMotionTimer);
+    if(performCodeMotion == false) {
+      continue;
+    }
+
+    //build the defUseMaps
+    startTimer(buildLocalDefMapsTimer);
+    symToVecSymExprMap localDefMap;
+    symToVecSymExprMap localUseMap;
+    std::map<SymExpr*, int> localMap;
+    buildLocalDefUseMaps(curLoop, localDefMap, localUseMap, localMap);
+    stopTimer(buildLocalDefMapsTimer);
+
+    //and use the defUseMaps to compute loop invariants
+    startTimer(computeLoopInvariantsTimer);
+    std::vector<SymExpr*> loopInvariants;
+    std::set<Symbol*> defsInLoop;
+    computeLoopInvariants(loopInvariants, defsInLoop, curLoop, localDefMap, fn);
+    stopTimer(computeLoopInvariantsTimer);
+
+    //For each invariant, only move it if its def, dominates all uses and all exits
+    for_vector(SymExpr, symExpr, loopInvariants) {
+      if(CallExpr* call = toCallExpr(symExpr->parentExpr)) {
+        if(defDominatesAllUses(curLoop, symExpr, dominators, localMap, localUseMap)) {
+          if(defDominatesAllExits(curLoop, symExpr, dominators, localMap)) {
+            if(defsInLoop.count(symExpr->symbol()) == 1) {
+              curLoop->insertBefore(symExpr->symbol()->defPoint);
+            }
+            curLoop->insertBefore(call);
+          }
+        }
+      }
+    }
+
+    freeLocalDefUseMaps(localDefMap, localUseMap);
+  }
+  numLoops += loops.size();
+
+  for_vector(Loop, loop, loops) {
+    delete loop;
+    loop = 0;
+  }
+
+  for_vector(BitVec, bitVec, dominators) {
+    delete bitVec;
+    bitVec = 0;
+  }
+
+  return numLoops;
+}
+
 void loopInvariantCodeMotion(void) {
 
   if(fNoloopInvariantCodeMotion) {
@@ -1130,89 +1219,7 @@ void loopInvariantCodeMotion(void) {
 
   //TODO use stl routine here
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-
-    //build the basic blocks, where the first bb is the entry block
-    startTimer(buildBBTimer);
-
-    BasicBlock::buildBasicBlocks(fn);
-
-    std::vector<BasicBlock*> basicBlocks = *fn->basicBlocks;
-
-    BasicBlock* entryBlock = basicBlocks[0];
-
-    unsigned nBlocks = basicBlocks.size();
-
-    stopTimer(buildBBTimer);
-
-    //compute the dominators
-    startTimer(computeDominatorTimer);
-    std::vector<BitVec*> dominators;
-    for(unsigned i = 0; i < nBlocks; i++) {
-      dominators.push_back(new BitVec(nBlocks));
-    }
-    computeDominators(dominators, basicBlocks);
-    stopTimer(computeDominatorTimer);
-
-    //Collect all of the loops
-    startTimer(collectNaturalLoopsTimer);
-    std::vector<Loop*> loops;
-    collectNaturalLoops(loops, basicBlocks, entryBlock, dominators);
-    stopTimer(collectNaturalLoopsTimer);
-
-    //For each loop found
-    for_vector(Loop, curLoop, loops) {
-
-      //check that this loop doesn't have anything that
-      //would prevent code motion from occurring
-      startTimer(canPerformCodeMotionTimer);
-      bool performCodeMotion = canPerformCodeMotion(curLoop);
-      stopTimer(canPerformCodeMotionTimer);
-      if(performCodeMotion == false) {
-        continue;
-      }
-
-      //build the defUseMaps
-      startTimer(buildLocalDefMapsTimer);
-      symToVecSymExprMap localDefMap;
-      symToVecSymExprMap localUseMap;
-      std::map<SymExpr*, int> localMap;
-      buildLocalDefUseMaps(curLoop, localDefMap, localUseMap, localMap);
-      stopTimer(buildLocalDefMapsTimer);
-
-      //and use the defUseMaps to compute loop invariants
-      startTimer(computeLoopInvariantsTimer);
-      std::vector<SymExpr*> loopInvariants;
-      std::set<Symbol*> defsInLoop;
-      computeLoopInvariants(loopInvariants, defsInLoop, curLoop, localDefMap, fn);
-      stopTimer(computeLoopInvariantsTimer);
-
-      //For each invariant, only move it if its def, dominates all uses and all exits
-      for_vector(SymExpr, symExpr, loopInvariants) {
-        if(CallExpr* call = toCallExpr(symExpr->parentExpr)) {
-          if(defDominatesAllUses(curLoop, symExpr, dominators, localMap, localUseMap)) {
-            if(defDominatesAllExits(curLoop, symExpr, dominators, localMap)) {
-              if(defsInLoop.count(symExpr->symbol()) == 1) {
-                curLoop->insertBefore(symExpr->symbol()->defPoint);
-              }
-              curLoop->insertBefore(call);
-            }
-          }
-        }
-      }
-
-      freeLocalDefUseMaps(localDefMap, localUseMap);
-    }
-    numLoops += loops.size();
-
-    for_vector(Loop, loop, loops) {
-      delete loop;
-      loop = 0;
-    }
-
-    for_vector(BitVec, bitVec, dominators) {
-      delete bitVec;
-      bitVec = 0;
-    }
+    numLoops += licmFn(fn);
   }
 
   stopTimer(overallTimer);
