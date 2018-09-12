@@ -73,7 +73,7 @@ New Features
 * added support for variables and fields with generic declared types
   (see 'Variable Declarations' in the language spec's 'Variables' chapter)
 * added support for querying subtype relationships via `<`, `<=`, `>`, `>=`
-  (see https://chapel-lang.org/docs/1.18/builtins/internal/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype
+  (see https://chapel-lang.org/docs/1.18/builtins/internal/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
 
 Feature Improvements
 --------------------
