@@ -195,7 +195,7 @@ New Tools / Tool Changes
 Interoperability Improvements
 -----------------------------
 * significantly improved support for calling exported Chapel routines from C
-  (see https://chapel-lang.org/docs/latest/technotes/libraries.html)
+  (see https://chapel-lang.org/docs/1.18/technotes/libraries.html)
 * added initial support for exporting library routines for use from Python
   (see https://chapel-lang.org/docs/1.18/technotes/libraries.html#using-your-library-in-python)
 * `--library` compilations now generate .h files and Makefiles for ease-of-use
