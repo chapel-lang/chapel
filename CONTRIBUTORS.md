@@ -28,7 +28,7 @@ Contributors to the current release
 * Thomas Van Doren, individual contributor / [Cray Inc.]
 * Varsha Verma, individual contributor
 * Tony Wallace, [Cray Inc.]
-* Sahil Yerawar, [GSoC 2018] student from [International Institute of Information Technology, Hyderabad]
+* Sahil Yerawar, [GSoC 2018] student from [Indian Institute of Technology, Hyderabad]
 
 Contributors to previous releases
 ---------------------------------
@@ -177,6 +177,7 @@ implementation.
 [GSoC 2017]: https://summerofcode.withgoogle.com/organizations/6472441615351808/
 [GSoC 2018]: https://summerofcode.withgoogle.com/organizations/4743716460298240/
 [Haverford College]: https://www.haverford.edu/
+[Indian Institute of Technology, Hyderabad]: https://www.iith.ac.in/
 [Indiana University]: http://www.cs.indiana.edu/
 [Indraprastha Institute of Information Technology, Dehli]: https://iiitd.ac.in/
 [International Institute of Information Technology, Hyderabad]: https://www.iiit.ac.in/
