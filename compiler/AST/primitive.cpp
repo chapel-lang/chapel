@@ -875,6 +875,10 @@ initPrimitive() {
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);
+
+  // Corresponds to LLVM's invariant start
+  // takes in a pointer/reference argument that is the invariant thing
+  prim_def(PRIM_INVARIANT_START, "invariant start", returnInfoVoid, false, false);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;
