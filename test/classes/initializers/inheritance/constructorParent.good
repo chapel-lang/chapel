@@ -1,4 +1,0 @@
-constructorParent.chpl:4: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
-constructorParent.chpl:4: warning: Type 'Parent' defines a constructor here
-constructorParent.chpl:12: In initializer:
-constructorParent.chpl:13: error: unresolved call 'Parent.init(13)'

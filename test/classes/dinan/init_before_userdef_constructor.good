@@ -1,4 +1,0 @@
-init_before_userdef_constructor.chpl:10: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
-init_before_userdef_constructor.chpl:10: warning: Type 'C' defines a constructor here
-In user defined constructor: x=2 y=4
-Got back: x=2 y=4

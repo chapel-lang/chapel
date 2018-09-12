@@ -1,5 +1,0 @@
-base-initializer.chpl:5: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
-base-initializer.chpl:5: warning: Type 'Circle' defines a constructor here
-base-initializer.chpl:19: warning: Type 'Oval' defines a constructor here
-circle area:50.2654
-6.28318 r:1.0 r2:2.0

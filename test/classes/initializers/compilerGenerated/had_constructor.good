@@ -1,3 +1,0 @@
-had_constructor.chpl:8: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
-had_constructor.chpl:8: warning: Type 'LotsOFields' defines a constructor here
-{f1 = 2, f2 = 6.3, f3 = true}

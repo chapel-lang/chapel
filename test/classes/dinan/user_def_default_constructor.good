@@ -1,3 +1,0 @@
-user_def_default_constructor.chpl:4: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
-user_def_default_constructor.chpl:4: warning: Type 'C' defines a constructor here
-5
