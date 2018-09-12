@@ -5458,21 +5458,50 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         r = codegenCallExpr("chpl_getPrivatizedClass", call->get(2));
       } else {
 #ifdef HAVE_LLVM
-        GenRet idx = codegenValue(call->get(2));
+
+        llvm::Type *int8Ty = llvm::Type::getInt8Ty(info->llvmContext);
+        llvm::Type *int8PtrTy = int8Ty->getPointerTo(0);             //i8*
+        llvm::Type *int8PtrPtrTy = int8PtrTy->getPointerTo(0);       //i8**
+        llvm::Type *int8PtrPtrPtrTy = int8PtrPtrTy->getPointerTo(0); //i8***
+
         GenRet tablePtr = info->lvt->getValue("chpl_privateObjects");
-        // this is of type i8***
         INT_ASSERT(tablePtr.val);
-        // load the table
-        llvm::Instruction* table = info->irBuilder->CreateLoad(tablePtr.val);
+        INT_ASSERT(tablePtr.val->getType() == int8PtrPtrPtrTy);
+
+        llvm::Value* tableVoidStar =
+          info->irBuilder->CreateBitCast(tablePtr.val, int8PtrTy);
+
+        // this is of type i8***
+        // load the global table pointer
+        codegenInvariantStart(int8PtrPtrTy,
+                              tableVoidStar);
+
+        llvm::Value* tableVoidStarStarStar =
+          info->irBuilder->CreateBitCast(tableVoidStar, int8PtrPtrPtrTy);
+
+        llvm::Instruction* tableVoidStarStar =
+          info->irBuilder->CreateLoad(tableVoidStarStarStar);
+
+        GenRet idx = codegenValue(call->get(2));
         // create the GEP
         llvm::Value* GEPLocs[1];
         GEPLocs[0] = extendToPointerSize(idx, 0);
 
-        llvm::Value* elementPtr;
-        elementPtr = createInBoundsGEP(table, GEPLocs);
+        llvm::Value* elementPtr =
+          createInBoundsGEP(tableVoidStarStar, GEPLocs);
+
+        llvm::Value* elementVoidStar =
+          info->irBuilder->CreateBitCast(elementPtr, int8PtrTy);
 
         // create the load
-        llvm::Instruction* value = info->irBuilder->CreateLoad(elementPtr);
+        codegenInvariantStart(int8PtrTy,
+                              elementVoidStar);
+
+        llvm::Value* elementVoidStarStar =
+          info->irBuilder->CreateBitCast(elementVoidStar, int8PtrPtrTy);
+
+        llvm::Instruction* value =
+          info->irBuilder->CreateLoad(elementVoidStarStar);
         r.val = value;
 #endif
       }
