@@ -55,18 +55,18 @@ master_doc = 'index'
 # built documents.
 #
 # The short X.Y version.
-# version = '1.17'
+# version = '1.18'
 
 # We use a custom version variable (shortversion) instead, because setting
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '1.18 (pre-release)'    # TODO -- parse from `chpl --version`
+chplversion = '1.18'                  # post-release
 shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '1.18.0 (pre-release)'
+release = '1.18.0'                    # post-release
 
 # General information about the project.
 project = u'Chapel Documentation'
