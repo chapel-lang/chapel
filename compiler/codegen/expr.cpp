@@ -5426,6 +5426,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         ret = codegenAddrOf(tmp);
         retval = true;
       }
+      // Should this handle target being wide?
 
       break;
     }

@@ -1439,6 +1439,8 @@ static void insertStringLiteralTemps()
 }
 
 
+// This was added in 4ad6dd212ef0365d5caa4024f5af758e030102ba
+// TODO: remove it
 static void widenGetPrivClass()
 {
   //

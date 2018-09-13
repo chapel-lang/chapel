@@ -634,18 +634,11 @@ module ChapelLocale {
   pragma "no doc"
   pragma "unsafe"
   pragma "fn returns infinite lifetime"
+  // should this use pragma "local args"?
+  // Why is the compiler making the objectType argument wide?
   inline
   proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType {
-    local {
-      // The code below is careful to make the load have objectType TBAA
-      // information.
-      ref prv:chpl_privateObject_t = chpl_privateObjects[objectPid];
-      var cptr:c_ptr(chpl_privateObject_t) = c_ptrTo(prv);
-      var ptr:c_ptr(objectType) = __primitive("cast", c_ptr(objectType), cptr);
-      // the load is here
-      var ret = ptr.deref();
-      return ret;
-    }
+    return __primitive("cast", objectType, chpl_privateObjects[objectPid].obj);
   }
 
 //########################################################################{
