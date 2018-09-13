@@ -624,12 +624,29 @@ module ChapelLocale {
       return dummyLocale;
   }
 
+  // This type is used with --llvm
+  // it is the type of elements in chpl_privateObjects.
+  extern record chpl_privateObject_t {
+    var obj:c_void_ptr;
+  }
+  extern var chpl_privateObjects:c_ptr(chpl_privateObject_t);
+
   pragma "no doc"
   pragma "unsafe"
   pragma "fn returns infinite lifetime"
-  proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
-    return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
-  
+  inline
+  proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType {
+    local {
+      // The code below is careful to make the load have objectType TBAA
+      // information.
+      ref prv:chpl_privateObject_t = chpl_privateObjects[objectPid];
+      var cptr:c_ptr(chpl_privateObject_t) = c_ptrTo(prv);
+      var ptr:c_ptr(objectType) = __primitive("cast", c_ptr(objectType), cptr);
+      // the load is here
+      var ret = ptr.deref();
+      return ret;
+    }
+  }
 
 //########################################################################{
 //# Locale diagnostics

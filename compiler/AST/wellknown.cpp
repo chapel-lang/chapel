@@ -35,6 +35,7 @@ AggregateType* dtLocaleID;
 AggregateType* dtMainArgument;
 AggregateType* dtOnBundleRecord;
 AggregateType* dtOwned;
+AggregateType* dtPrivateObject;
 AggregateType* dtTaskBundleRecord;
 AggregateType* dtTuple;
 
@@ -110,6 +111,7 @@ static WellKnownType sWellKnownTypes[] = {
   { "chpl_main_argument",    &dtMainArgument,     false },
   { "chpl_comm_on_bundle_t", &dtOnBundleRecord,   false },
   { "_owned",                &dtOwned,            false },
+  { "chpl_privateObject_t",  &dtPrivateObject,    false },
   { "chpl_task_bundle_t",    &dtTaskBundleRecord, false },
   { "_tuple",                &dtTuple,            false },
   { "Error",                 &dtError,            true  }

@@ -44,6 +44,7 @@ extern AggregateType* dtLocaleID;
 extern AggregateType* dtMainArgument;
 extern AggregateType* dtOnBundleRecord;
 extern AggregateType* dtOwned;
+extern AggregateType* dtPrivateObject;
 extern AggregateType* dtTaskBundleRecord;
 extern AggregateType* dtTuple;
 

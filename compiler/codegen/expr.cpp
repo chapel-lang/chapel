@@ -5453,20 +5453,29 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
     case PRIM_GET_PRIV_CLASS: {
 
+      INT_FATAL("PRIM_GET_PRIV_CLASS should be unused");
       GenRet r;
-      if (info->cfile) {
-        r = codegenCallExpr("chpl_getPrivatizedClass", call->get(2));
+      r = codegenCallExpr("chpl_getPrivatizedClass", call->get(2));
+      /*if (info->cfile) {
       } else {
 #ifdef HAVE_LLVM
 
-        llvm::Type *int8Ty = llvm::Type::getInt8Ty(info->llvmContext);
-        llvm::Type *int8PtrTy = int8Ty->getPointerTo(0);             //i8*
-        llvm::Type *int8PtrPtrTy = int8PtrTy->getPointerTo(0);       //i8**
-        llvm::Type *int8PtrPtrPtrTy = int8PtrPtrTy->getPointerTo(0); //i8***
+        GenRet genPrivateObjectType = dtPrivateObject;
+        INT_ASSERT(genPrivateObjectType.type);
+
+        llvm::Type *prvObjectType = genPrivateObjectType.type;
+        llvm::Type *prvObjectPtrType = prvObjectType->getPointerTo(0);
 
         GenRet tablePtr = info->lvt->getValue("chpl_privateObjects");
         INT_ASSERT(tablePtr.val);
         INT_ASSERT(tablePtr.val->getType() == int8PtrPtrPtrTy);
+
+        // tablePtr should have GEN_PTR set
+        // but it probably won't have any Chapel type associated with it.
+        tablePtr.type = ...;
+        codegenValue(...);
+        codegenElementPtr
+
 
         llvm::Value* tableVoidStar =
           info->irBuilder->CreateBitCast(tablePtr.val, int8PtrTy);
@@ -5504,7 +5513,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
           info->irBuilder->CreateLoad(elementVoidStarStar);
         r.val = value;
 #endif
-      }
+      }*/
 
       if (target && (target->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
         r = codegenAddrOf(codegenWideHere(r, target->typeInfo()));
