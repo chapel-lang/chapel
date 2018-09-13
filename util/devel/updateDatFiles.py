@@ -141,7 +141,7 @@ class DatFile:
         start_index = end_index = 0
         if start_time in dat_times and end_time in dat_times:
             start_index = dat_times.index(start_time)
-            end_index = dat_times.index(end_time)
+            end_index = len(dat_times) - 1 - dat_times[::-1].index(end_time)
         else:
             raise ValueError('start_date: "{0}" or end_date: "{1}" not found '
                              'in .dat file "{2}"'.format(start_date,
