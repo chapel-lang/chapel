@@ -94,10 +94,11 @@ def git_checkout():
     url = 'https://salsa.debian.org/benchmarksgame-team/benchmarksgame/raw/master/public/download/'
     file = 'benchmarksgame-sourcecode.zip'
     destdir = 'benchmarksgame'
-    stdout, stderr = run_command('rm -f ' + file, True);
-    stdout, stderr = run_command('rm -r ' + destdir, True);
+    stdout, stderr = run_command('rm -f ' + file, True)
+    stdout, stderr = run_command('rm -r ' + destdir, True)
     stdout, stderr = run_command('wget '+ url + file, True)
-    stdout, stderr = run_command('unzip -d'+ destdir + ' ' + file, True);
+    stdout, stderr = run_command('unzip -d'+ destdir + ' ' + file, True)
+    stdout, stderr = run_command('rm ' + file, True)
 
 
 def clbgify_filename(f):
