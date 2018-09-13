@@ -3647,7 +3647,6 @@ DEFINE_PRIM(PRIM_MOVE) {
 DEFINE_PRIM(PRIM_DEREF) { codegenIsSpecialPrimitive(NULL, call, ret); }
 DEFINE_PRIM(PRIM_GET_SVEC_MEMBER_VALUE) { codegenIsSpecialPrimitive(NULL, call, ret); }
 DEFINE_PRIM(PRIM_GET_MEMBER_VALUE) { codegenIsSpecialPrimitive(NULL, call, ret); }
-DEFINE_PRIM(PRIM_GET_PRIV_CLASS) { codegenIsSpecialPrimitive(NULL, call, ret); }
 DEFINE_PRIM(PRIM_ARRAY_GET) { codegenIsSpecialPrimitive(NULL, call, ret); }
 DEFINE_PRIM(PRIM_ARRAY_GET_VALUE) { codegenIsSpecialPrimitive(NULL, call, ret); }
 DEFINE_PRIM(PRIM_ON_LOCALE_NUM) { codegenIsSpecialPrimitive(NULL, call, ret); }
@@ -5146,7 +5145,6 @@ GenRet CallExpr::codegenPrimMove() {
  * Returns false and doesn't change ret, otherwise
  */
 static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
-  GenInfo* info = gGenInfo;
   bool      retval = false;
   CallExpr* call = toCallExpr(e);
 
@@ -5449,80 +5447,6 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         retval = true;
       }
 
-      break;
-    }
-
-    case PRIM_GET_PRIV_CLASS: {
-
-      INT_FATAL("PRIM_GET_PRIV_CLASS should be unused");
-      GenRet r;
-      r = codegenCallExpr("chpl_getPrivatizedClass", call->get(2));
-      /*if (info->cfile) {
-      } else {
-#ifdef HAVE_LLVM
-
-        GenRet genPrivateObjectType = dtPrivateObject;
-        INT_ASSERT(genPrivateObjectType.type);
-
-        llvm::Type *prvObjectType = genPrivateObjectType.type;
-        llvm::Type *prvObjectPtrType = prvObjectType->getPointerTo(0);
-
-        GenRet tablePtr = info->lvt->getValue("chpl_privateObjects");
-        INT_ASSERT(tablePtr.val);
-        INT_ASSERT(tablePtr.val->getType() == int8PtrPtrPtrTy);
-
-        // tablePtr should have GEN_PTR set
-        // but it probably won't have any Chapel type associated with it.
-        tablePtr.type = ...;
-        codegenValue(...);
-        codegenElementPtr
-
-
-        llvm::Value* tableVoidStar =
-          info->irBuilder->CreateBitCast(tablePtr.val, int8PtrTy);
-
-        // this is of type i8***
-        // load the global table pointer
-        codegenInvariantStart(int8PtrPtrTy,
-                              tableVoidStar);
-
-        llvm::Value* tableVoidStarStarStar =
-          info->irBuilder->CreateBitCast(tableVoidStar, int8PtrPtrPtrTy);
-
-        llvm::Instruction* tableVoidStarStar =
-          info->irBuilder->CreateLoad(tableVoidStarStarStar);
-
-        GenRet idx = codegenValue(call->get(2));
-        // create the GEP
-        llvm::Value* GEPLocs[1];
-        GEPLocs[0] = extendToPointerSize(idx, 0);
-
-        llvm::Value* elementPtr =
-          createInBoundsGEP(tableVoidStarStar, GEPLocs);
-
-        llvm::Value* elementVoidStar =
-          info->irBuilder->CreateBitCast(elementPtr, int8PtrTy);
-
-        // create the load
-        codegenInvariantStart(int8PtrTy,
-                              elementVoidStar);
-
-        llvm::Value* elementVoidStarStar =
-          info->irBuilder->CreateBitCast(elementVoidStar, int8PtrPtrTy);
-
-        llvm::Instruction* value =
-          info->irBuilder->CreateLoad(elementVoidStarStar);
-        r.val = value;
-#endif
-      }*/
-
-      if (target && (target->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
-        r = codegenAddrOf(codegenWideHere(r, target->typeInfo()));
-      }
-
-      ret = r;
-
-      retval = true;
       break;
     }
 

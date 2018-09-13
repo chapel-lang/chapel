@@ -261,7 +261,6 @@ static void narrowWideClassesThroughCalls();
 static void insertWideClassTempsForNil();
 static void insertWideCastTemps();
 static void derefWideRefsToWideClasses();
-static void widenGetPrivClass();
 static void moveAddressSourcesToTemp();
 static void fixAST();
 static void handleIsWidePointer();
@@ -1438,26 +1437,6 @@ static void insertStringLiteralTemps()
   }
 }
 
-
-// This was added in 4ad6dd212ef0365d5caa4024f5af758e030102ba
-// TODO: remove it
-static void widenGetPrivClass()
-{
-  //
-  // widen class types in certain primitives, e.g., GET_PRIV_CLASS
-  //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_GET_PRIV_CLASS)) {
-      SET_LINENO(call);
-      if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        call->get(1)->replace(new SymExpr(wideClassMap.get(call->get(1)->typeInfo())->symbol));
-      else
-        call->get(1)->replace(new SymExpr(call->get(1)->typeInfo()->symbol));
-    }
-  }
-}
-
-
 static void narrowWideClassesThroughCalls()
 {
   //
@@ -2506,7 +2485,6 @@ insertWideReferences(void) {
 
   // IWR
   insertStringLiteralTemps();
-  widenGetPrivClass(); // widens class type in PRIM_GET_PRIV_CLASS
   narrowWideClassesThroughCalls();
   insertWideClassTempsForNil();
   insertWideCastTemps();

@@ -810,7 +810,6 @@ initPrimitive() {
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
 
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid);
-  prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
 
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);
   prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoInt32, true, true);
