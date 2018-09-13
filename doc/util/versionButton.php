@@ -89,19 +89,22 @@ if (pagePath == "") {
 function dropSetup() {
   var currentRelease = "1.17";
   var nextRelease = "1.18";
+  var nextNextRelease = "1.19";
   var button = document.getElementById("versionButton");
   // Uses unicode down-pointing triangle
   var arrow = " &#9660;";
   button.innerHTML = "version " + chplTitle + arrow;
 
   // Choose button color
-  if (chplTitle == nextRelease) {
-    button.innerHTML = "version " + chplTitle + " (pre-release)" + arrow;
+  if (chplTitle == nextRelease || chplTitle == nextNextRelease) {
+    # add pre-release label using a non-breaking hyphen
+    button.innerHTML = "version " + chplTitle + " (pre&#8209;release)" + arrow;
     button.classList.add("preRelease");
   } else if (chplTitle == currentRelease) {
     button.classList.add("currentVersion");
   } else {
-    button.innerHTML = "version " + chplTitle + " (old release)" + arrow;
+    # add old release label using a non-blocking space
+    button.innerHTML = "version " + chplTitle + " (old&nbsp;release)" + arrow;
     button.classList.add("oldVersion");
   }
 
