@@ -37,12 +37,9 @@ typedef struct chpl_privateObject_s {
 // This is a dynamically-allocated array of chpl_privateObject_t.
 extern chpl_privateObject_t* chpl_privateObjects;
 
-// Compiler can generate accesses like chpl_privateObjects[i];
-// see PRIM_GET_PRIV_CLASS
-// but the following function is still used in some cases.
-static inline void* chpl_getPrivatizedClass(int64_t i)  {
-  return chpl_privateObjects[i].obj;
-}
+// Compiler generates accesses like chpl_privateObjects[i];
+// see chpl_getPrivatizedCopy.
+// This allows TBAA information for chpl_privateObjects to be used.
 
 void chpl_clearPrivatizedClass(int64_t);
 
