@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Lydia Duncan, Albert Sidelnik, and Brad Chamberlain
    derived from the GNU C version by Sebastien Loisel and the C# version

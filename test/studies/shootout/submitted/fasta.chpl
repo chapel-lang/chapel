@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Preston Sahabu
    derived from the Chapel fastaredux version by Casey Battaglino et al.
@@ -24,7 +24,7 @@ use nucleotide;
 //
 // Sequence to be repeated
 //
-const ALU: [0..286] int(8) = [
+const ALU: [0..286] nucleotide = [
   G, G, C, C, G, G, G, C, G, C, G, G, T, G, G, C, T, C, A, C,
   G, C, C, T, G, T, A, A, T, C, C, C, A, G, C, A, C, T, T, T,
   G, G, G, A, G, G, C, C, G, A, G, G, C, G, G, G, C, G, G, A,
@@ -119,7 +119,7 @@ proc randomMake(desc, a, n) {
   proc addLine(bytes) {
     for (r, i) in zip(getRands(bytes), 0..) {
       if r < a[1](prob) {
-        line_buff[i] = a[1](nucl);
+        line_buff[i] = a[1](nucl):int(8);
       } else {
         var lo = a.domain.low,
             hi = a.domain.high;
@@ -130,7 +130,7 @@ proc randomMake(desc, a, n) {
           else
             lo = ai;
         }
-        line_buff[i] = a[hi](nucl);
+        line_buff[i] = a[hi](nucl):int(8);
       }
     }
     line_buff[bytes] = newline;

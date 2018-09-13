@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Albert Sidelnik and Brad Chamberlain
    derived from the Java version by Mark C. Lewis and Chad Whipkey
