@@ -97,12 +97,14 @@ function dropSetup() {
 
   // Choose button color
   if (chplTitle == nextRelease || chplTitle == nextNextRelease) {
-    button.innerHTML = "version " + chplTitle + " (pre-release)" + arrow;
+    # add pre-release label using a non-breaking hyphen
+    button.innerHTML = "version " + chplTitle + " (pre&#8209;release)" + arrow;
     button.classList.add("preRelease");
   } else if (chplTitle == currentRelease) {
     button.classList.add("currentVersion");
   } else {
-    button.innerHTML = "version " + chplTitle + " (old release)" + arrow;
+    # add old release label using a non-blocking space
+    button.innerHTML = "version " + chplTitle + " (old&nbsp;release)" + arrow;
     button.classList.add("oldVersion");
   }
 
