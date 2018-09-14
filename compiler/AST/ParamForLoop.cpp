@@ -387,11 +387,7 @@ CallExpr* ParamForLoop::foldForResolve()
 
   CallExpr*  noop      = new CallExpr(PRIM_NOOP);
 
-  if (!lvar            || !hvar            || !svar)
-    USR_FATAL(this, "param for loop must be defined over a bounded param range");
-
-  if (!lvar->immediate || !hvar->immediate || !svar->immediate)
-    USR_FATAL(this, "param for loop must be defined over a bounded param range");
+  validateLoop(lvar, hvar, svar);
 
   Symbol*      idxSym  = idxExpr->symbol();
   Symbol*      continueSym = continueLabelGet();
@@ -476,6 +472,59 @@ CallExpr* ParamForLoop::foldForResolve()
   replace(noop);
 
   return noop;
+}
+
+// Checks things like bounding and paramness of the range, as well as that the
+// high, low, and stride of the range are 1) of the same type, and 2) one of
+// int, uint, or bool, as expected by the code that follows this function call
+void ParamForLoop::validateLoop(VarSymbol* lvar,
+                                VarSymbol* hvar,
+                                VarSymbol* svar) {
+  if (!lvar            || !hvar            || !svar)
+    USR_FATAL(this,
+              "param for loop must be defined over a bounded param range");
+
+  if (!lvar->immediate || !hvar->immediate || !svar->immediate)
+    USR_FATAL(this,
+              "param for loop must be defined over a bounded param range");
+
+  if (!is_int_type(lvar->type) && !is_uint_type(lvar->type) &&
+      !is_bool_type(lvar->type)) {
+    USR_FATAL_CONT(this, "lower bound of param for loop must be an int, uint, "
+                   "or bool");
+  }
+  if (!is_int_type(hvar->type) && !is_uint_type(hvar->type) &&
+      !is_bool_type(hvar->type)) {
+    USR_FATAL_CONT(this, "upper bound of param for loop must be an int, uint, "
+                   "or bool");
+  }
+  if (!is_int_type(svar->type) && !is_uint_type(svar->type) &&
+      !is_bool_type(svar->type)) {
+    USR_FATAL_CONT(this,
+                   "stride of param for loop must be an int, uint, or bool");
+  }
+
+  if (is_int_type(lvar->type) != is_int_type(hvar->type) ||
+      is_uint_type(lvar->type) != is_uint_type(hvar->type) ||
+      is_bool_type(lvar->type) != is_bool_type(hvar->type)) {
+    USR_FATAL_CONT(this, "lower bound and upper bound of param for loop "
+                   "expected to be of the same type");
+  }
+
+  if (is_int_type(lvar->type) != is_int_type(svar->type) ||
+      is_uint_type(lvar->type) != is_uint_type(svar->type) ||
+      is_bool_type(lvar->type) != is_bool_type(svar->type)) {
+    USR_FATAL_CONT(this, "lower bound and stride of param for loop expected to"
+                   " be of the same type");
+  }
+
+  if (is_int_type(hvar->type) != is_int_type(svar->type) ||
+      is_uint_type(hvar->type) != is_uint_type(svar->type) ||
+      is_bool_type(hvar->type) != is_bool_type(svar->type)) {
+    USR_FATAL_CONT(this, "upper bound and stride of param for loop expected to"
+                   " be of the same type");
+  }
+  USR_STOP();
 }
 
 //
