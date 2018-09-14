@@ -31,15 +31,13 @@ typedef struct chpl_privateObject_s {
   void* obj;
 } chpl_privateObject_t;
 
-// Implementation is here for performance: getPrivatizedClass can be called
-// frequently, so putting it in a header allows the backend to fully optimize.
-
 // This is a dynamically-allocated array of chpl_privateObject_t.
 extern chpl_privateObject_t* chpl_privateObjects;
 
 // Compiler generates accesses like chpl_privateObjects[i];
 // see chpl_getPrivatizedCopy.
 // This allows TBAA information for chpl_privateObjects to be used.
+// At the very least, inlining it would be important for performance.
 
 void chpl_clearPrivatizedClass(int64_t);
 
