@@ -1,0 +1,4 @@
+badRange-string-upper.chpl:1: In function 'main':
+badRange-string-upper.chpl:2: error: upper bound of param for loop must be an int, uint, or bool
+badRange-string-upper.chpl:2: error: lower bound and upper bound of param for loop expected to be of the same type
+badRange-string-upper.chpl:2: error: upper bound and stride of param for loop expected to be of the same type
