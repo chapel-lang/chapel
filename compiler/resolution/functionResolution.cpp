@@ -8387,7 +8387,10 @@ static void handleRuntimeTypes()
   insertRuntimeInitTemps();
 
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
+    FnSymbol* parent = toFnSymbol(call->parentSymbol);
+    if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD) &&
+        parent != NULL &&
+        parent->isResolved()) {
       SymExpr* rt = toSymExpr(call->get(2));
       gdbShouldBreakHere();
       if (rt->typeInfo()->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
