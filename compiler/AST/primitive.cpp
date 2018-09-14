@@ -446,16 +446,7 @@ returnInfoToBorrowed(CallExpr* call) {
 
 static QualifiedType
 returnInfoRuntimeTypeField(CallExpr* call) {
-  AggregateType* at = toAggregateType(call->get(1)->getValType());
-  UnmanagedClassType* uct = toUnmanagedClassType(at->getField("_instance")->getValType());
-  AggregateType* it = uct->getCanonicalClass();
-
-  VarSymbol* fieldName = toVarSymbol(toSymExpr(call->get(2))->symbol());
-  Immediate* imm = fieldName->immediate;
-  INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
-  const char* name = imm->v_string;
-
-  return it->getField(name)->qualType();
+  return call->get(1)->qualType();
 }
 
 

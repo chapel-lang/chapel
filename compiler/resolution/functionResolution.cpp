@@ -8388,7 +8388,7 @@ static void handleRuntimeTypes()
 
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
-      SymExpr* rt = toSymExpr(call->get(1));
+      SymExpr* rt = toSymExpr(call->get(2));
       gdbShouldBreakHere();
       if (rt->typeInfo()->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
         SET_LINENO(call);
@@ -8398,7 +8398,7 @@ static void handleRuntimeTypes()
         const char* name = imm->v_string;
 
         Symbol* field = toAggregateType(rt->typeInfo())->getField(name);
-        call->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(1)->remove(), field));
+        call->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, rt->remove(), field));
       }
     }
   }

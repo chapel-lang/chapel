@@ -768,7 +768,11 @@ module ChapelArray {
       // otherwise the parentDom gets destroyed in the sparse case; see
       // sparse/bradc/CSR/sparse.chpl as an example
       //
-      return chpl__buildSparseDomainRuntimeType(d, __primitive("get runtime type field", domainType, "parentDom", "dom"));
+      proc getParentDomType() type {
+        var dom : domainType;
+        return __primitive("static typeof", dom._value.parentDom.type);
+      }
+      return chpl__buildSparseDomainRuntimeType(d, __primitive("get runtime type field", getParentDomType(), domainType, "dom"));
     } else {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);
