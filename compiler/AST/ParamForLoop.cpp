@@ -480,6 +480,7 @@ CallExpr* ParamForLoop::foldForResolve()
 void ParamForLoop::validateLoop(VarSymbol* lvar,
                                 VarSymbol* hvar,
                                 VarSymbol* svar) {
+  bool hadError = false;
   if (!lvar            || !hvar            || !svar)
     USR_FATAL(this,
               "param for loop must be defined over a bounded param range");
@@ -490,16 +491,19 @@ void ParamForLoop::validateLoop(VarSymbol* lvar,
 
   if (!is_int_type(lvar->type) && !is_uint_type(lvar->type) &&
       !is_bool_type(lvar->type)) {
+    hadError = true;
     USR_FATAL_CONT(this, "lower bound of param for loop must be an int, uint, "
                    "or bool");
   }
   if (!is_int_type(hvar->type) && !is_uint_type(hvar->type) &&
       !is_bool_type(hvar->type)) {
+    hadError = true;
     USR_FATAL_CONT(this, "upper bound of param for loop must be an int, uint, "
                    "or bool");
   }
   if (!is_int_type(svar->type) && !is_uint_type(svar->type) &&
       !is_bool_type(svar->type)) {
+    hadError = true;
     USR_FATAL_CONT(this,
                    "stride of param for loop must be an int, uint, or bool");
   }
@@ -514,6 +518,7 @@ void ParamForLoop::validateLoop(VarSymbol* lvar,
   if (is_int_type(lvar->type) != is_int_type(svar->type) ||
       is_uint_type(lvar->type) != is_uint_type(svar->type) ||
       is_bool_type(lvar->type) != is_bool_type(svar->type)) {
+    hadError = true;
     USR_FATAL_CONT(this, "lower bound and stride of param for loop expected to"
                    " be of the same type");
   }
@@ -521,10 +526,13 @@ void ParamForLoop::validateLoop(VarSymbol* lvar,
   if (is_int_type(hvar->type) != is_int_type(svar->type) ||
       is_uint_type(hvar->type) != is_uint_type(svar->type) ||
       is_bool_type(hvar->type) != is_bool_type(svar->type)) {
+    hadError = true;
     USR_FATAL_CONT(this, "upper bound and stride of param for loop expected to"
                    " be of the same type");
   }
-  USR_STOP();
+  if (hadError) {
+    USR_STOP();
+  }
 }
 
 //
