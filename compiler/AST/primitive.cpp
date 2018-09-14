@@ -444,6 +444,20 @@ returnInfoToBorrowed(CallExpr* call) {
   return QualifiedType(t, QUAL_VAL);
 }
 
+static QualifiedType
+returnInfoRuntimeTypeField(CallExpr* call) {
+  AggregateType* at = toAggregateType(call->get(1)->getValType());
+  UnmanagedClassType* uct = toUnmanagedClassType(at->getField("_instance")->getValType());
+  AggregateType* it = uct->getCanonicalClass();
+
+  VarSymbol* fieldName = toVarSymbol(toSymExpr(call->get(2))->symbol());
+  Immediate* imm = fieldName->immediate;
+  INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
+  const char* name = imm->v_string;
+
+  return it->getField(name)->qualType();
+}
+
 
 
 // print the number of each type of primitive present in the AST
@@ -875,6 +889,7 @@ initPrimitive() {
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);
+  prim_def(PRIM_GET_RUNTIME_TYPE_FIELD, "get runtime type field", returnInfoRuntimeTypeField, false, false);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

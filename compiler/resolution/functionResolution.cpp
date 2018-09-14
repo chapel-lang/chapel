@@ -8385,6 +8385,23 @@ static void handleRuntimeTypes()
   replaceValuesWithRuntimeTypes();
   replaceReturnedValuesWithRuntimeTypes();
   insertRuntimeInitTemps();
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
+      SymExpr* rt = toSymExpr(call->get(1));
+      gdbShouldBreakHere();
+      if (rt->typeInfo()->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+        SET_LINENO(call);
+        VarSymbol* fieldName = toVarSymbol(toSymExpr(call->get(3))->symbol());
+        Immediate* imm = fieldName->immediate;
+        INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
+        const char* name = imm->v_string;
+
+        Symbol* field = toAggregateType(rt->typeInfo())->getField(name);
+        call->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(1)->remove(), field));
+      }
+    }
+  }
 }
 
 //

@@ -325,6 +325,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_TO_BORROWED_CLASS:
   case PRIM_NEEDS_AUTO_DESTROY:
   case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
+  case PRIM_GET_RUNTIME_TYPE_FIELD:
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
