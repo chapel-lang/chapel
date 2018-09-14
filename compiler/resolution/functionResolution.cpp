@@ -8392,7 +8392,6 @@ static void handleRuntimeTypes()
         parent != NULL &&
         parent->isResolved()) {
       SymExpr* rt = toSymExpr(call->get(2));
-      gdbShouldBreakHere();
       if (rt->typeInfo()->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
         SET_LINENO(call);
         VarSymbol* fieldName = toVarSymbol(toSymExpr(call->get(3))->symbol());
