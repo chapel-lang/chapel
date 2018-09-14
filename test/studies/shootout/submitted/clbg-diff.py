@@ -92,13 +92,13 @@ def main():
 def git_checkout():
     """Grab git source tarball"""
     url = 'https://salsa.debian.org/benchmarksgame-team/benchmarksgame/raw/master/public/download/'
-    file = 'benchmarksgame-sourcecode.zip'
+    zip_file = 'benchmarksgame-sourcecode.zip'
     destdir = 'benchmarksgame'
-    stdout, stderr = run_command('rm -f ' + file, True)
-    stdout, stderr = run_command('rm -r ' + destdir, True)
-    stdout, stderr = run_command('wget '+ url + file, True)
-    stdout, stderr = run_command('unzip -d'+ destdir + ' ' + file, True)
-    stdout, stderr = run_command('rm ' + file, True)
+    stdout, stderr = run_command('rm -f ' + zip_file, True)
+    stdout, stderr = run_command('rm -rf ' + destdir, True)
+    stdout, stderr = run_command('wget '+ url + zip_file, True)
+    stdout, stderr = run_command('unzip -d'+ destdir + ' ' + zip_file, True)
+    stdout, stderr = run_command('rm ' + zip_file, True)
 
 
 def clbgify_filename(f):
