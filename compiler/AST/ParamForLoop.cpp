@@ -492,44 +492,25 @@ void ParamForLoop::validateLoop(VarSymbol* lvar,
   if (!is_int_type(lvar->type) && !is_uint_type(lvar->type) &&
       !is_bool_type(lvar->type)) {
     hadError = true;
-    USR_FATAL_CONT(this, "lower bound of param for loop must be an int, uint, "
-                   "or bool");
+    USR_FATAL_CONT(this, "Range bounds must be of compatible types (lower "
+                   "bound is not)");
   }
   if (!is_int_type(hvar->type) && !is_uint_type(hvar->type) &&
       !is_bool_type(hvar->type)) {
     hadError = true;
-    USR_FATAL_CONT(this, "upper bound of param for loop must be an int, uint, "
-                   "or bool");
+    USR_FATAL_CONT(this, "Range bounds must be of compatible types (upper "
+                   "bound is not)");
   }
-  if (!is_int_type(svar->type) && !is_uint_type(svar->type) &&
-      !is_bool_type(svar->type)) {
+  if (!is_int_type(svar->type) && !is_uint_type(svar->type)) {
     hadError = true;
     USR_FATAL_CONT(this,
-                   "stride of param for loop must be an int, uint, or bool");
+                   "Range stride must be an int");
   }
 
-  if (is_int_type(lvar->type) != is_int_type(hvar->type) ||
-      is_uint_type(lvar->type) != is_uint_type(hvar->type) ||
-      is_bool_type(lvar->type) != is_bool_type(hvar->type)) {
-    USR_FATAL_CONT(this, "lower bound and upper bound of param for loop "
-                   "expected to be of the same type");
+  if (is_bool_type(lvar->type) != is_bool_type(hvar->type)) {
+    USR_FATAL_CONT(this, "Range bounds should not mix bools with other types");
   }
 
-  if (is_int_type(lvar->type) != is_int_type(svar->type) ||
-      is_uint_type(lvar->type) != is_uint_type(svar->type) ||
-      is_bool_type(lvar->type) != is_bool_type(svar->type)) {
-    hadError = true;
-    USR_FATAL_CONT(this, "lower bound and stride of param for loop expected to"
-                   " be of the same type");
-  }
-
-  if (is_int_type(hvar->type) != is_int_type(svar->type) ||
-      is_uint_type(hvar->type) != is_uint_type(svar->type) ||
-      is_bool_type(hvar->type) != is_bool_type(svar->type)) {
-    hadError = true;
-    USR_FATAL_CONT(this, "upper bound and stride of param for loop expected to"
-                   " be of the same type");
-  }
   if (hadError) {
     USR_STOP();
   }

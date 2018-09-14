@@ -1,4 +1,4 @@
 badRange-string-stride.chpl:1: In function 'main':
-badRange-string-stride.chpl:2: error: stride of param for loop must be an int, uint, or bool
+badRange-string-stride.chpl:2: error: Range stride must be an int
 badRange-string-stride.chpl:2: error: lower bound and stride of param for loop expected to be of the same type
 badRange-string-stride.chpl:2: error: upper bound and stride of param for loop expected to be of the same type
