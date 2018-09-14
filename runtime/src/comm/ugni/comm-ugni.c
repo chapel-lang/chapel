@@ -7706,7 +7706,6 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
   int cdi;
   atomic_bool post_done;
   uint64_t iters = 0;
-  uint64_t yield_freq = 0x3F;
 
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;
@@ -7716,24 +7715,13 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
   //
   // Wait for the transaction to complete.  Yield initially; the
   // minimum round-trip time on the network isn't small and maybe
-  // we can find something else to do in the meantime. However,
-  // yielding isn't free either, so after the initial yield, only
-  // yield every so often (but yield more often the longer we've
-  // waited.)
-  //
-  // The idea here is that we want to yield initially in case some
-  // other task is waiting, but if the original task has been
-  // rescheduled then it's likely no other task is running and the
-  // current transaction is likely to be done (or be done soon)
-  // since we use FMA primarily for small transactions.  We
-  // yield more frequently over time since there's no real latency
-  // benefit for slower operations (on the off chance it's a big
-  // transaction.)
+  // we can find something else to do in the meantime.  FMA is only
+  // used for small tranasctions which will be relatively fast, so
+  // after the initial yield, only yield every 64 attempts.
   //
   do {
-    if (do_yield && (iters & yield_freq) == 0) {
+    if (do_yield && (iters & 0x3F) == 0) {
       local_yield();
-      yield_freq >>= 1;
     }
     consume_all_outstanding_cq_events(cdi);
     iters++;
