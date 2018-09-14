@@ -1579,51 +1579,6 @@ makeHeapAllocations() {
 
 
 //
-// re-privatize privatized object fields in iterator classes
-//
-static void
-reprivatizeIterators() {
-  if (fLocal)
-    return; // no need for privatization
-
-  std::vector<Symbol*> privatizedFields;
-
-  forv_Vec(AggregateType, ct, gAggregateTypes) {
-    for_fields(field, ct) {
-      if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-          field->type->symbol->hasFlag(FLAG_PRIVATIZED_CLASS)) {
-        privatizedFields.push_back(field);
-      }
-    }
-  }
-
-
-  for_vector(Symbol, sym, privatizedFields) {
-    for_SymbolSymExprs(se, sym) {
-      SET_LINENO(se);
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
-        if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-          INT_FATAL("code removed");
-        } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
-          INT_FATAL("code removed");
-        } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-          INT_FATAL("code removed");
-        } else
-          INT_FATAL(se, "unexpected case in re-privatization in iterator");
-      } else
-        INT_FATAL(se, "unexpected case in re-privatization in iterator");
-    }
-  }
-
-  for_vector(Symbol, sym, privatizedFields) {
-    if (sym) {
-      sym->type = dtInt[INT_SIZE_DEFAULT];
-      INT_FATAL("code removed");
-    }
-  }
-}
-
-//
 // A helper function for replaceRecordWrappedRefs that updates the type and
 // Qualifier for the LHS of the move and adds it to a list of Symbols whose
 // uses may need updating.
@@ -1747,8 +1702,6 @@ void parallel() {
   replaceRecordWrappedRefs();
 
   remoteValueForwarding();
-
-  reprivatizeIterators();
 
   if (requireOutlinedOn()) {
     makeHeapAllocations();
