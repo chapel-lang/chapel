@@ -1,4 +1,4 @@
-FROM debian:stretch
+FROM debian:9.5
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
@@ -21,12 +21,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-ENV CHPL_VERSION master
+ENV CHPL_VERSION 1.18.0
 ENV CHPL_HOME    /opt/chapel/$CHPL_VERSION
 ENV CHPL_GMP     system
 
 RUN mkdir -p /opt/chapel \
-    && wget -q -O - https://github.com/chapel-lang/chapel/archive/$CHPL_VERSION.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
+    && wget -q -O - https://github.com/chapel-lang/chapel/releases/download/$CHPL_VERSION/chapel-$CHPL_VERSION.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
     && make -C $CHPL_HOME \
     && make -C $CHPL_HOME chpldoc test-venv mason \
     && make -C $CHPL_HOME cleanall
