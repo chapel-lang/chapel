@@ -763,11 +763,6 @@ module ChapelArray {
       return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
                                           dom._value.stridable);
     } else if chpl__isSparseDomType(domainType) {
-      //
-      // this "no auto destroy" pragma is necessary as of 1/20 because
-      // otherwise the parentDom gets destroyed in the sparse case; see
-      // sparse/bradc/CSR/sparse.chpl as an example
-      //
       proc getParentDomType() type {
         var dom : domainType;
         return __primitive("static typeof", dom._value.parentDom.type);
