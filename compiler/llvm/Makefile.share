@@ -15,17 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-UTIL_SRCS = \
-	exprAnalysis.cpp \
-	files.cpp \
-	misc.cpp \
-	mysystem.cpp \
-	stringutil.cpp \
-	timer.cpp \
-	tmpdirname.cpp
+LLVM_SRCS = \
+	clangUtil.cpp \
+	llvmAggregateGlobalOps.cpp \
+	llvmDumpIR.cpp \
+        llvmExtractIR.cpp \
+	llvmGlobalToWide.cpp \
+	llvmUtil.cpp \
+	llvmDebug.cpp \
 
-SVN_SRCS = $(UTIL_SRCS)
+
+SVN_SRCS = $(LLVM_SRCS)
 SRCS = $(SVN_SRCS)
 
-UTIL_OBJS = \
-	$(UTIL_SRCS:%.cpp=$(UTIL_OBJDIR)/%.$(OBJ_SUFFIX))
+LLVM_OBJS = \
+	$(LLVM_SRCS:%.cpp=$(LLVM_OBJDIR)/%.$(OBJ_SUFFIX))

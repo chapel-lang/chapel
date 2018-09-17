@@ -136,6 +136,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_STACK_ALLOCATE_CLASS:
 
   case PRIM_CLASS_NAME_BY_ID:
+
+  case PRIM_INVARIANT_START:
     return FAST_AND_LOCAL;
 
   case PRIM_MOVE:

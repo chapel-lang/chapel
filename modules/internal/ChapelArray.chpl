@@ -198,7 +198,6 @@ module ChapelArray {
   pragma "no doc"
   config param debugArrayAsVec = false;
 
-  pragma "privatized class"
   proc _isPrivatized(value) param
     return !_local && ((_privatization && value.dsiSupportsPrivatization()) || value.dsiRequiresPrivatization());
     // Note - _local=true means --local / single locale
