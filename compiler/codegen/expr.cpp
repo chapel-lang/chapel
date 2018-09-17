@@ -4978,6 +4978,21 @@ DEFINE_PRIM(PRIM_LOOKUP_FILENAME) {
     ret = call->codegenBasicPrimitiveExpr();
 }
 
+DEFINE_PRIM(PRIM_INVARIANT_START) {
+
+  GenInfo* info = gGenInfo;
+  if (info->cfile) {
+    // do nothing for the C backend
+  } else {
+#ifdef HAVE_LLVM
+    GenRet ptr = codegenValue(call->get(1));
+    llvm::Value* val = ptr.val;
+    llvm::Type* ty = val->getType()->getPointerElementType();
+    codegenInvariantStart(ty, val);
+#endif
+  }
+}
+
 void CallExpr::registerPrimitivesForCodegen() {
   // The following macros call registerPrimitiveCodegen for
   // the DEFINE_PRIM routines above for each primitive labelled
