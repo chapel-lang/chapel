@@ -1,7 +1,0 @@
-error message: confusing error for mismatched generic type assignment
-
-This test is complaining about an assignment from real to integer,
-apparently from within a compiler-generated assignment operator,
-suggesting that we're using assignment where we should simply be using
-initialization.  I believe the error message should be complaining
-about an (initialization) assignment between A(real) and A(int).

@@ -574,7 +574,7 @@ iter LocCyclicDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
 proc LocCyclicArr.dsiGetBaseDom() { return locDom; }
 
 proc LocCyclicArr.clone() {
-  return new unmanaged LocCyclicArr(eltType,rank,idxType,stridable,
+  return new unmanaged LocCyclicArr(eltType,rank,idxType,
       locDom,locRAD,locCyclicRAD,myElems,locRADLock);
 }
 
