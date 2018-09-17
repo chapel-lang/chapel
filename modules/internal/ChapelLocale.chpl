@@ -624,8 +624,7 @@ module ChapelLocale {
       return dummyLocale;
   }
 
-  // This type is used with --llvm
-  // it is the type of elements in chpl_privateObjects.
+  // the type of elements in chpl_privateObjects.
   extern record chpl_privateObject_t {
     var obj:c_void_ptr;
   }
