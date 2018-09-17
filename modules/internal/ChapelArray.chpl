@@ -767,7 +767,14 @@ module ChapelArray {
         var dom : domainType;
         return __primitive("static typeof", dom._value.parentDom.type);
       }
-      return chpl__buildSparseDomainRuntimeType(d, __primitive("get runtime type field", getParentDomType(), domainType, "dom"));
+
+      pragma "no copy"
+      pragma "no auto destroy"
+      var parentDom = __primitive("get runtime type field", getParentDomType(),
+                                                            domainType,
+                                                            "dom");
+
+      return chpl__buildSparseDomainRuntimeType(d, parentDom);
     } else {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);
