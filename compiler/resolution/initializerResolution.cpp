@@ -544,7 +544,7 @@ static void filterInitCandidate(CallInfo&                  info,
 * Copied from resolveFunction(FnSymbol* fn) in functionResolution.            *
 *                                                                             *
 * Removed code for extern functions (since I don't think it will apply),      *
-* iterators, type constructors, and FLAG_PRIVATIZED_CLASS.                    *
+* iterators, type constructors.                                               *
 *                                                                             *
 ************************************** | *************************************/
 
