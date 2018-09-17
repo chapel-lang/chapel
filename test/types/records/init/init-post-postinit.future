@@ -1,0 +1,2 @@
+bug: Explicit calls to .init and .postinit should not be allowed
+#8991
