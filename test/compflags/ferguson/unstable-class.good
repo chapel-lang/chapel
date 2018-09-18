@@ -1,3 +1,6 @@
+unstable-class.chpl:20: warning: undecorated class type MyClass is unstable
+unstable-class.chpl:20: note: in declared type for next
+unstable-class.chpl:20: note: use 'unmanaged MyClass' 'owned MyClass', 'borrowed MyClass', or 'shared MyClass'
 unstable-class.chpl:23: In function 'errorsInArgs':
 unstable-class.chpl:23: warning: undecorated class type MyClass is unstable
 unstable-class.chpl:23: note: use 'unmanaged MyClass' 'owned MyClass', 'borrowed MyClass', or 'shared MyClass'
@@ -22,5 +25,3 @@ unstable-class.chpl:45: warning: Owned is deprecated, use owned instead
 unstable-class.chpl:46: warning: Shared is deprecated, use shared instead
 unstable-class.chpl:52: warning: Owned is deprecated, use owned instead
 unstable-class.chpl:53: warning: Shared is deprecated, use shared instead
-unstable-class.chpl:20: warning: undecorated class type MyClass is unstable
-unstable-class.chpl:20: note: use 'unmanaged MyClass' 'owned MyClass', 'borrowed MyClass', or 'shared MyClass'
