@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Ben Harshbarger and Brad Chamberlain
    derived from the Swift implementation by Ralph Ganszky
