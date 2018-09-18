@@ -40,12 +40,12 @@ proc main() {
   var t: Timer;
   t.start();
 
-  // TODO investigate perf of other ways to write this
-  // - tmp.localAccess[i] = A[rindex[i]];
+  // TODO investigate perf of cleaner ways to write this
+  // - forall (t, r) in zip(tmp, rindex) do t = A[r];
+  // - forall i in D2 do tmp[i] = A[rindex[i]];
   // - tmp[rindex] = A[rindex];
-  // - others?
-  forall (t, r) in zip(tmp, rindex) {
-    t = A[r];
+  forall i in D2 {
+    tmp.localAccess[i] = A[rindex.localAccess[i]];
   }
 
   t.stop();
