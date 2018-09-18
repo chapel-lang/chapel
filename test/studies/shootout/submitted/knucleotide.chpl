@@ -53,12 +53,11 @@ proc main(args: [] string) {
 proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
-  // sort by frequencies
-  var arr = for (k,v) in zip(freqs.domain, freqs) do (v,k);
+  // create an array of (frequency, sequence) tuples
+  var arr = for (s,f) in zip(freqs.domain, freqs) do (f,s);
 
-  quickSort(arr, comparator=reverseComparator);
-
-  for (f, s) in arr do
+  // print the array, sorted by decreasing frequency
+  for (f, s) in arr.sorted(reverseComparator) do
    writef("%s %.3dr\n", decode(s, nclSize), 
            (100.0 * f) / (data.size - nclSize));
   writeln();
@@ -74,13 +73,13 @@ proc writeCount(data, param str) {
 
 
 proc calculate(data, param nclSize) {
-  var freqDom: domain(int, parSafe=false),
+  var freqDom: domain(int),
       freqs: [freqDom] int;
 
   var lock$: sync bool = true;
   const numTasks = here.maxTaskPar;
   coforall tid in 1..numTasks {
-    var myDom: domain(int, parSafe=false),
+    var myDom: domain(int),
         myArr: [myDom] int;
 
     for i in tid..(data.size-nclSize) by numTasks do
