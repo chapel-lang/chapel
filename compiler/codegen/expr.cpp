@@ -2806,7 +2806,7 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     llArgs[1] = convertValueToType(src.val, types[1], false);
     llArgs[2] = convertValueToType(size.val, types[2], false);
 
-    // LLVM memcpy intrinsic has additional arguments alignment, isvolatile
+    // LLVM memcpy intrinsic has additional argument isvolatile
     // isVolatile?
     llArgs[3] = llvm::ConstantInt::get(llvm::Type::getInt1Ty(info->module->getContext()), 0, false);
 
