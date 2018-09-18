@@ -616,11 +616,13 @@ function captureScreenshot(g, graphInfo) {
   var restoreOpts = {
     showRoller: true,
     ylabel: label,
+    valueRange: g.yAxisRange(0),
   };
 
   var tempOpts = {
     showRoller: false,
     ylabel: '',
+    valueRange: g.yAxisRange(0),
   };
 
   // html2canvas doesn't render transformed ccs3 text (like our ylabel.) We
