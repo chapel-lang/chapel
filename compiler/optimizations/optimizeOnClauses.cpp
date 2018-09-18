@@ -264,7 +264,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_SCALAR_PROMOTION_TYPE:
   case PRIM_TYPE_TO_STRING:
   case PRIM_IS_CLASS_TYPE:
-  case PRIM_IS_EXTERN_CLASS_TYPE:
   case PRIM_IS_RECORD_TYPE:
   case PRIM_IS_UNION_TYPE:
   case PRIM_IS_ATOMIC_TYPE:

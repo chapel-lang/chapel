@@ -839,7 +839,6 @@ initPrimitive() {
   prim_def(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, "iterator record field value by formal", returnInfoIteratorRecordFieldValueByFormal);
   prim_def(PRIM_ITERATOR_RECORD_SET_SHAPE, "iterator record set shape", returnInfoVoid);
   prim_def(PRIM_IS_CLASS_TYPE, "is class type", returnInfoBool);
-  prim_def(PRIM_IS_EXTERN_CLASS_TYPE, "is extern class type", returnInfoBool);
   prim_def(PRIM_IS_RECORD_TYPE, "is record type", returnInfoBool);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
