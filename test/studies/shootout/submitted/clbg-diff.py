@@ -24,9 +24,7 @@ def main():
     print('Updating CLBG repository')
     print('------------------------')
     print()
-    CLBG_repo = ':pserver:anonymous@cvs.debian.org:/cvs/benchmarksgame'
-    CLBG_dir = 'benchmarksgame/bench/'
-    cvs_checkout(CLBG_repo, CLBG_dir)
+    git_checkout()
 
     print()
     print('---------------')
@@ -37,7 +35,7 @@ def main():
     # List of Chapel-implementations
     submitted = glob.glob('*.chpl')
     # List of CLBG-implementations
-    clbg = glob.glob('benchmarksgame/bench/*/*.chapel')
+    clbg = glob.glob('benchmarksgame/*/*.chapel')
     # List of CLBG-implementations without path
     clbgbase = [os.path.basename(c) for c in clbg]
 
@@ -71,16 +69,36 @@ def main():
             print(s)
 
     print()
+    print('-------------------------------')
+    print('Checking for disabled shootouts')
+    print('-------------------------------')
+    print()
+    notested = glob.glob('*.notest')
+    futurized = glob.glob('*.future')
+    if notested or futurized:
+        print('Disabled tests found:')
+        for t in notested:
+            print(t)
+        for t in futurized:
+            print(t)
+
+    print()
     print('----')
     print('Done')
     print('----')
     print()
 
 
-def cvs_checkout(r, d):
-    """Checkout cvs repository"""
-    cmd = 'cvs -d {0} checkout {1}'.format(r, d)
-    stdout, stderr = run_command(cmd, True)
+def git_checkout():
+    """Grab git source tarball"""
+    url = 'https://salsa.debian.org/benchmarksgame-team/benchmarksgame/raw/master/public/download/'
+    zip_file = 'benchmarksgame-sourcecode.zip'
+    destdir = 'benchmarksgame'
+    stdout, stderr = run_command('rm -f ' + zip_file, True)
+    stdout, stderr = run_command('rm -rf ' + destdir, True)
+    stdout, stderr = run_command('wget '+ url + zip_file, True)
+    stdout, stderr = run_command('unzip -d'+ destdir + ' ' + zip_file, True)
+    stdout, stderr = run_command('rm ' + zip_file, True)
 
 
 def clbgify_filename(f):
