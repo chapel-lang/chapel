@@ -126,7 +126,11 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 
 
 $(LLVM_HEADER_FILE):
-	cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-headers
+	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
+	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-llvm-headers ; \
+	else \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-headers ; \
+	fi
 
 # note: the conditional below allows parallel make to continue
 # if cmake us also using Make.
@@ -142,8 +146,12 @@ $(LLVM_SUPPORT_FILE):
 	fi
 
 $(LLVM_CONFIG_FILE):
-	cd $(LLVM_BUILD_DIR) && cmake --build . --target llvm-config ; \
-	mkdir -p $(LLVM_INSTALL_DIR)/bin ; \
+	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
+	  cd $(LLVM_BUILD_DIR) && $(MAKE) llvm-config ; \
+	else \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target llvm-config ; \
+	fi
+	mkdir -p $(LLVM_INSTALL_DIR)/bin
 	cp $(LLVM_BUILD_DIR)/bin/llvm-config $(LLVM_INSTALL_DIR)/bin/llvm-config
 
 # note: install target for config doesn't seem to exist
