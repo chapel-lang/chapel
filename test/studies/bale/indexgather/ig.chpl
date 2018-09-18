@@ -11,10 +11,10 @@ config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 
 
-config const numTasksPerLocale = here.maxTaskPar;
+const numTasksPerLocale = here.maxTaskPar;
 const numTasks = numLocales * numTasksPerLocale;
 config const N = 1000000; // number of updates per task
-config const M = 10000; // number of entries in the table perf task
+config const M = 10000; // number of entries in the table per task
 
 const numUpdates = N * numTasks;
 const tableSize = M * numTasks;
@@ -24,7 +24,7 @@ const tableSize = M * numTasks;
 proc main() {
   const Mspace = {0..tableSize-1};
   const D = Mspace dmapped Cyclic(startIdx=Mspace.low);
-  var A: [D] int;
+  var A: [D] int = 0..tableSize-1;
 
   const Nspace = {0..numUpdates-1};
   const D2 = Nspace dmapped Block(Nspace);
@@ -36,12 +36,11 @@ proc main() {
   }
 
   var tmp: [D2] int;
-  A = {0..tableSize-1};
 
   var t: Timer;
   t.start();
 
-  // TODO investiage perf of other ways to write this
+  // TODO investigate perf of other ways to write this
   // - tmp.localAccess[i] = A[rindex[i]];
   // - tmp[rindex] = A[rindex];
   // - others?
