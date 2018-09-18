@@ -19,7 +19,7 @@ declare i32 @.gf.node.2(%mystruct addrspace(100)*) readnone
 declare %struct.c_localeid_t @.gf.loc.2(%mystruct addrspace(100)*) readnone
 declare %mystruct addrspace(100)* @.gf.make.2(%struct.c_localeid_t, %mystruct*) readnone
 
-; A function to keep those types from dissapearing 
+; A function to keep those types from dissapearing
 define void @test(%mystruct %a) {
 ; CHECK: void @test(%mystruct %a)
 entry:

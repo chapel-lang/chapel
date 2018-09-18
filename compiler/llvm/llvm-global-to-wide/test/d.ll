@@ -16,7 +16,7 @@ target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f3
 %type_two = type { %type_one addrspace(100)* }
 ; CHECK: %type_two = type { { %struct.c_localeid_t, %type_one* } }
 
-; A function to keep those types from dissapearing 
+; A function to keep those types from dissapearing
 define void @test(%recurs %a, %type_one %b, %type_two %c) {
 ; CHECK: void @test(%recurs %a, %type_one %b, %type_two %c)
 entry:
