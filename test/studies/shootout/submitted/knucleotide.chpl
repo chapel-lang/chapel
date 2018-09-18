@@ -53,9 +53,10 @@ proc main(args: [] string) {
 proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
-  var arr = for (k,v) in zip(freqs.domain, freqs) do (v,k);
+  // create an array of (frequency, sequence) tuples
+  var arr = for (s,f) in zip(freqs.domain, freqs) do (f,s);
 
-  // sort by frequencies
+  // print the array, sorted by decreasing frequency
   for (f, s) in arr.sorted(reverseComparator) do
    writef("%s %.3dr\n", decode(s, nclSize), 
            (100.0 * f) / (data.size - nclSize));
