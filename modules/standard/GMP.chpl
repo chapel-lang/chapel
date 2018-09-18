@@ -1223,6 +1223,7 @@ module GMP {
       gmp_randinit_lc_2exp_size(this.state, size.safeCast(c_ulong));
     }
 
+    pragma "no doc"
     proc deinit() {
       on this {
         gmp_randclear(this.state);
