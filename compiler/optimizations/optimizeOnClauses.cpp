@@ -101,7 +101,6 @@ classifyPrimitive(CallExpr *call) {
 
   case PRIM_GET_MEMBER:
   case PRIM_GET_SVEC_MEMBER:
-  case PRIM_GET_PRIV_CLASS:
   case PRIM_NEW_PRIV_CLASS:
 
   case PRIM_CHECK_NIL:

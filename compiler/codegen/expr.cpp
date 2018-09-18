@@ -3647,7 +3647,6 @@ DEFINE_PRIM(PRIM_MOVE) {
 DEFINE_PRIM(PRIM_DEREF) { codegenIsSpecialPrimitive(NULL, call, ret); }
 DEFINE_PRIM(PRIM_GET_SVEC_MEMBER_VALUE) { codegenIsSpecialPrimitive(NULL, call, ret); }
 DEFINE_PRIM(PRIM_GET_MEMBER_VALUE) { codegenIsSpecialPrimitive(NULL, call, ret); }
-DEFINE_PRIM(PRIM_GET_PRIV_CLASS) { codegenIsSpecialPrimitive(NULL, call, ret); }
 DEFINE_PRIM(PRIM_ARRAY_GET) { codegenIsSpecialPrimitive(NULL, call, ret); }
 DEFINE_PRIM(PRIM_ARRAY_GET_VALUE) { codegenIsSpecialPrimitive(NULL, call, ret); }
 DEFINE_PRIM(PRIM_ON_LOCALE_NUM) { codegenIsSpecialPrimitive(NULL, call, ret); }
@@ -5425,6 +5424,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         ret = codegenAddrOf(tmp);
         retval = true;
       }
+      // Should this handle target being wide?
 
       break;
     }
@@ -5447,19 +5447,6 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         retval = true;
       }
 
-      break;
-    }
-
-    case PRIM_GET_PRIV_CLASS: {
-      GenRet r = codegenCallExpr("chpl_getPrivatizedClass", call->get(2));
-
-      if (target && (target->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
-        r = codegenAddrOf(codegenWideHere(r, target->typeInfo()));
-      }
-
-      ret = r;
-
-      retval = true;
       break;
     }
 

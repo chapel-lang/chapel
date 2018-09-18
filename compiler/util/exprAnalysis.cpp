@@ -277,7 +277,6 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_IS_WIDE_PTR:
     case PRIM_CAPTURE_FN_FOR_CHPL:
     case PRIM_CAPTURE_FN_FOR_C:
-    case PRIM_GET_PRIV_CLASS:
     case PRIM_GET_SVEC_MEMBER:
     case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_STACK_ALLOCATE_CLASS:

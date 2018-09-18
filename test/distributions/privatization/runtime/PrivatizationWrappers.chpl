@@ -10,7 +10,7 @@ proc insertPrivatized(o: object, pid: int) {
 }
 
 proc getPrivatized(pid:int): unmanaged C {
-  return __primitive("chpl_getPrivatizedClass", nil:unmanaged C, pid);
+  return chpl_getPrivatizedCopy(unmanaged C, pid);
 }
 
 proc clearPrivatized(pid:int) {
