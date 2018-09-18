@@ -10,44 +10,42 @@ config const printStats = true,
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 
-config const useBufferedAtomics = false;
 
 const numTasksPerLocale = here.maxTaskPar;
 const numTasks = numLocales * numTasksPerLocale;
-config const N = 2000000; // number of updates per task
-config const M = 1000; // number of entries in the table per task
+config const N = 1000000; // number of updates per task
+config const M = 10000; // number of entries in the table per task
 
 const numUpdates = N * numTasks;
 const tableSize = M * numTasks;
 
-// The intuitive implementation of histogram that uses global atomics
+// The intuitive implementation of indexgather that uses fine-grained GETs
 
 proc main() {
   const Mspace = {0..tableSize-1};
   const D = Mspace dmapped Cyclic(startIdx=Mspace.low);
-  var A: [D] atomic int;
+  var A: [D] int = 0..tableSize-1;
 
   const Nspace = {0..numUpdates-1};
   const D2 = Nspace dmapped Block(Nspace);
   var rindex: [D2] int;
 
-  /* set up loop */
   fillRandom(rindex, seed);
   forall r in rindex {
     r = mod(r, tableSize);
   }
 
+  var tmp: [D2] int;
+
   var t: Timer;
   t.start();
 
-  if useBufferedAtomics {
-    use BufferedAtomics;
-    forall r in rindex do
-      A[r].addBuff(1);
-    flushAtomicBuff();
-  } else {
-   forall r in rindex do
-    A[r].add(1);
+  // TODO investigate perf of cleaner ways to write this
+  // - forall (t, r) in zip(tmp, rindex) do t = A[r];
+  // - forall i in D2 do tmp[i] = A[rindex[i]];
+  // - tmp[rindex] = A[rindex];
+  forall i in D2 {
+    tmp.localAccess[i] = A[rindex.localAccess[i]];
   }
 
   t.stop();
@@ -62,10 +60,10 @@ proc main() {
   }
 
   if verify {
-    assert(numUpdates == +reduce A.read());
+    // TODO not really sure what to do for verification here
   }
 
   if printArrays {
-    writeln(A);
+    writeln(tmp);
   }
 }
