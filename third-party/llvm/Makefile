@@ -27,6 +27,10 @@ ifeq ($(CHPL_LLVM_ASSERTS),1)
   CHPL_LLVM_DEBUG += -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_DUMP=ON
 endif
 
+ifdef CHPL_RV
+CHPL_RV_CMAKE = -DRV_ENABLE_CRT=on -DLLVM_ENABLE_CXX1Y=on
+endif
+
 LLVM_SRC_FILE := llvm/CMakeLists.txt
 LLVM_CMAKE_FILE := $(LLVM_BUILD_DIR)/CMakeCache.txt
 LLVM_CONFIGURED_HEADER_FILE := $(LLVM_BUILD_DIR)/include/llvm/Config/llvm-config.h
@@ -95,10 +99,6 @@ $(LLVM_SRC_FILE):
 # -DPOLLY_ENABLE_GPGPU_CODEGEN=ON
 # to the flags supplied below.
 
-# Note, for Region Vectorizer (RV), we'd need to add
-# -DRV_ENABLE_CRT=on
-# to the flags supplied below.
-
 $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	mkdir -p $(LLVM_BUILD_DIR)
 	@if ./cmake-ok.sh $(CMAKE); then \
@@ -117,6 +117,7 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    -DLLVM_TARGETS_TO_BUILD="host;X86;AArch64" \
 	    -DLLVM_INSTALL_UTILS=ON \
 	    $(CHPL_LLVM_DYNAMIC_OPTS) \
+            $(CHPL_RV_CMAKE) \
 	    -Wno-dev \
 	    $(LLVM_SRC_DIR) ; \
 	else \
