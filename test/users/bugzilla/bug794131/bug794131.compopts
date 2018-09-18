@@ -1,2 +1,1 @@
-bug794131.c bug794131.h --no-force-initializers # bug794131.ctor.good
-bug794131.c bug794131.h --force-initializers # bug794131.init.good
+bug794131.c bug794131.h
