@@ -128,10 +128,10 @@ forall_explanation_start(BaseAST* ast, BaseAST* parentAst) {
 static void forallPreamble(Expr* expr, BaseAST* parentAst, int indent) {
   if (ForallStmt* pfs = toForallStmt(parentAst)) {
     if (expr == pfs->fRecIterIRdef) {
-      print_on_its_own_line(indent, "fRecIterIRdef et al.\n", false);
+      print_on_its_own_line(indent, "fRecIterIRdef et al.\n", pfs->zippered());
     } else if (expr == pfs->loopBody()) {
       if (pfs->numShadowVars() == 0)
-        print_on_its_own_line(indent, "with() do\n");
+        print_on_its_own_line(indent, "with() do\n", !pfs->fRecIterIRdef);
       else
         print_on_its_own_line(indent, "do\n", false);
     }

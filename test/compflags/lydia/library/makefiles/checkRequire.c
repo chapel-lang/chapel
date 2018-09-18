@@ -2,9 +2,6 @@
 
 #include "lib/requireStmt.h"
 
-extern void chpl_library_init(int argc, char* argv[]);
-extern void chpl_library_finalize(void);
-
 // Test of calling an exported function involving require statements
 int main(int argc, char* argv[]) {
   // Initialize the Chapel runtime and standard modules
