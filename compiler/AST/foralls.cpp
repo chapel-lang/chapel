@@ -1090,6 +1090,32 @@ void resolveForallStmts1() {
 //                           //
 ///////////////////////////////
 
+// These actuals have been added to handle outer variables in LoopExpr's body.
+// The leader iterator neither accepts nor handles them. So drop them.
+static void removeOuterVarArgs(CallExpr* iterCall, FnSymbol* oldCallee,
+                               FnSymbol* newCallee) {
+  int numFormals = newCallee->numFormals();
+  int numActuals = iterCall->numActuals();
+  INT_ASSERT(numActuals == oldCallee->numFormals());
+
+  if (numFormals == numActuals)
+    return; // there were no outer variables, nothing to do
+
+  std::vector<Symbol*> symbols;
+  if (fVerify) collectSymbols(oldCallee->body, symbols);
+
+  for (int xtraIdx = numFormals + 1; xtraIdx <= numActuals; xtraIdx++) {
+    // Remove the next extra actual.
+    iterCall->get(numFormals+1)->remove();
+
+    if (fVerify) {
+      // Ensure oldCallee did not use it.
+      Symbol* xtraFormal = oldCallee->getFormal(xtraIdx);
+      for_vector(Symbol, sym, symbols) INT_ASSERT(sym != xtraFormal);
+    }
+  }
+}
+
 //
 // Handle the case where the leader iterator is astr_loopexpr_iter.
 // Not doing so confuses ReturnByRef and lowering of ForallStmts.
@@ -1111,6 +1137,7 @@ static void convertIteratorForLoopexpr(ForallStmt* fs) {
           calleeSE->replace(new SymExpr(iterator));
           if (calleeFn->firstSymExpr() == NULL)
             calleeFn->defPoint->remove(); // not needed any more
+          removeOuterVarArgs(iterCall, calleeFn, iterator);
         }
 }
 

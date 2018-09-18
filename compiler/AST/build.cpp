@@ -25,6 +25,7 @@
 #include "CatchStmt.h"
 #include "config.h"
 #include "DeferStmt.h"
+#include "docsDriver.h"
 #include "driver.h"
 #include "files.h"
 #include "ForLoop.h"
@@ -642,7 +643,26 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
 
 BlockStmt*
 buildExternBlockStmt(const char* c_code) {
-  return buildChapelStmt(new ExternBlockStmt(c_code));
+  BlockStmt* ret = NULL;
+  ret = buildChapelStmt(new ExternBlockStmt(c_code));
+
+  // Check that the compiler supports extern blocks
+  // but skip these checks for chpldoc.
+  if (fDocs == false) {
+#ifdef HAVE_LLVM
+    // Chapel was built with LLVM
+    // Just bring up an error if extern blocks are disabled
+    if (externC == false)
+      USR_FATAL(ret, "extern block syntax is turned off. Use "
+                     "--extern-c flag to turn on.");
+#else
+    // If Chapel wasn't built with LLVM, we can't handle extern blocks
+    USR_FATAL(ret, "Chapel must be built with llvm in order to "
+                    "use the extern block syntax");
+#endif
+  }
+
+  return ret;
 }
 
 ModuleSymbol* buildModule(const char* name,

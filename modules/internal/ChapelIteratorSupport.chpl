@@ -98,7 +98,7 @@ module ChapelIteratorSupport {
   // The two chpl_buildStandInRTT(type) functions accept, at run time,
   // the _RuntimeTypeInfo for domType/arrType that is **uninitialized**.
   // They returns a fresh domain/array type of the same kind, whose
-  // RTT is **initiaized**. Important: no accessing the uninitialized RTTs.
+  // RTT is **initialized**. Important: no accessing the uninitialized RTTs.
   //
   // It took some acrobatics to get the domain's distribution type,
   // rank, idxType, stridable from 'domType', and the same plus

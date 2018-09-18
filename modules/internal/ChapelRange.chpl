@@ -2509,6 +2509,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // a single underscore where the standalone versions use double
   // underscores.  Reason: otherwise, the calls in range.init() try
   // to call the method version, which isn't currently legal.
+  pragma "no doc"
   inline proc range.chpl_intToIdx(i) {
     return chpl__intToIdx(this.idxType, i);
   }

@@ -216,6 +216,7 @@ record list {
   /*
     Destructor
    */
+  pragma "no doc"
   proc deinit(){
     destroy();
   }
