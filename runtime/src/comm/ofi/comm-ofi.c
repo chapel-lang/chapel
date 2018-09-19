@@ -36,14 +36,20 @@
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
 
-#include <pthread.h>
+#include <assert.h>
 #include <errno.h>
+#include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <assert.h>
 #include <sys/uio.h> /* for struct iovec */
+
+#include <rdma/fabric.h>
+#include <rdma/fi_domain.h>
+#include <rdma/fi_endpoint.h>
+#include <rdma/fi_cm.h>
+#include <rdma/fi_errno.h>
 
 #include "comm-ofi-internal.h"
 
@@ -76,16 +82,19 @@ static pthread_mutex_t progress_thread_entEx_cond_mutex =
 
 static struct ofi_stuff ofi;
 
-int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
-{
-  // No way to know if the page is mapped on the remote (without a round trip)
-  return 0;
-}
 
-int32_t chpl_comm_getMaxThreads(void) {
-  // no limit
-  return 0;
-}
+////////////////////////////////////////
+//
+// Interface: initialization
+//
+
+static void libfabric_init(void);
+static int get_comm_concurrency(void);
+static void libfabric_init_addrvec(int, int);
+
+static void init_am(void);
+static void init_rdma(void);
+
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   atomic_init_bool(&progress_threads_please_exit, false);
@@ -95,7 +104,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_resetCommDiagnosticsHere();
 }
 
+
 void chpl_comm_post_mem_init(void) { }
+
 
 //
 // No support for gdb for now
@@ -104,8 +115,6 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 0;
 }
 
-static int get_comm_concurrency(void);
-static void libfabric_init(void);
 
 void chpl_comm_post_task_init(void) {
   int i;
@@ -115,8 +124,8 @@ void chpl_comm_post_task_init(void) {
   }
 
   libfabric_init();
-  chpl_comm_ofi_put_get_init(&ofi);
-  chpl_comm_ofi_am_init(&ofi);
+  init_rdma();
+  init_am();
 
   if (num_progress_threads > 0) {
     // Start progress thread(s).  Don't proceed from here until at
@@ -141,40 +150,6 @@ void chpl_comm_post_task_init(void) {
 
 }
 
-static int get_comm_concurrency() {
-  const char* s;
-  int val;
-  uint32_t lcpus;
-
-  if ((s = getenv("CHPL_RT_COMM_CONCURRENCY")) != NULL
-      && sscanf(s, "%d", &val) == 1) {
-    if (val > 0) {
-      return val;
-    } else if (val == 0) {
-      return 1;
-    } else {
-      chpl_warning("CHPL_RT_COMM_CONCURRENCY < 0, ignored", 0, 0);
-    }
-  }
-
-  if ((s = getenv("CHPL_RT_NUM_HARDWARE_THREADS")) != NULL
-      && sscanf(s, "%d", &val) == 1) {
-    if (val > 0) {
-      return val;
-    } else {
-      chpl_warning("CHPL_RT_NUM_HARDWARE_THREADS <= 0, ignored", 0, 0);
-    }
-  }
-
-  if ((lcpus = chpl_topo_getNumCPUsLogical(true)) > 0) {
-    return lcpus;
-  }
-
-  chpl_warning("Could not determine comm concurrency, using 1", 0, 0);
-  return 1;
-}
-
-static void libfabric_init_addrvec(int, int);
 
 static void libfabric_init() {
   int i;
@@ -355,6 +330,41 @@ static void libfabric_init() {
   chpl_msg(2, "%d: completed libfabric initialization\n", chpl_nodeID);
 }
 
+
+static int get_comm_concurrency() {
+  const char* s;
+  int val;
+  uint32_t lcpus;
+
+  if ((s = getenv("CHPL_RT_COMM_CONCURRENCY")) != NULL
+      && sscanf(s, "%d", &val) == 1) {
+    if (val > 0) {
+      return val;
+    } else if (val == 0) {
+      return 1;
+    } else {
+      chpl_warning("CHPL_RT_COMM_CONCURRENCY < 0, ignored", 0, 0);
+    }
+  }
+
+  if ((s = getenv("CHPL_RT_NUM_HARDWARE_THREADS")) != NULL
+      && sscanf(s, "%d", &val) == 1) {
+    if (val > 0) {
+      return val;
+    } else {
+      chpl_warning("CHPL_RT_NUM_HARDWARE_THREADS <= 0, ignored", 0, 0);
+    }
+  }
+
+  if ((lcpus = chpl_topo_getNumCPUsLogical(true)) > 0) {
+    return lcpus;
+  }
+
+  chpl_warning("Could not determine comm concurrency, using 1", 0, 0);
+  return 1;
+}
+
+
 static void libfabric_init_addrvec(int rx_ctx_cnt, int rx_ctx_bits) {
   struct gather_info* my_addr_info;
   void* addr_infos;
@@ -416,12 +426,14 @@ static void libfabric_init_addrvec(int rx_ctx_cnt, int rx_ctx_bits) {
   chpl_mem_free(addrs, 0, 0);
 }
 
+
 void chpl_comm_rollcall(void) {
   // Do this again to clear out any comms that happened during initialization
   chpl_resetCommDiagnosticsHere();
   chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID, 
            chpl_numNodes, chpl_nodeName());
 }
+
 
 void chpl_comm_broadcast_global_vars(int numGlobals) {
   // TODO: this won't work in the presence of address space randomization
@@ -435,6 +447,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   }
 }
 
+
 void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
   // TODO: this won't work in the presence of address space randomization
   int i;
@@ -447,22 +460,11 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
   }
 }
 
-void chpl_comm_barrier(const char *msg) {
-  chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
 
-  if (chpl_numNodes == 1) {
-    return;
-  }
-
-  if (!progress_threads_running()) {
-    // Comm layer setup is not complete yet; use OOB barrier
-    chpl_comm_ofi_oob_barrier();
-  } else {
-    // Use OOB barrier for now, but we can do better in the future
-    chpl_comm_ofi_oob_barrier();
-  }
-
-}
+////////////////////////////////////////
+//
+// Interface: shutdown
+//
 
 void chpl_comm_pre_task_exit(int all) {
   if (all) {
@@ -478,8 +480,10 @@ void chpl_comm_pre_task_exit(int all) {
   }
 }
 
+
 static void exit_all(int status);
 static void exit_any(int status);
+
 void chpl_comm_exit(int all, int status) {
   if (all) {
     exit_all(status);
@@ -487,6 +491,7 @@ void chpl_comm_exit(int all, int status) {
     exit_any(status);
   }
 }
+
 
 static void exit_all(int status) {
   int i;
@@ -538,12 +543,30 @@ static void exit_any(int status) {
   // Should we tear down the progress thread?
 }
 
+
+////////////////////////////////////////
+//
+// Interface: Active Message support
+//
+
+static void handle_am(struct fi_cq_data_entry*);
+
+static void execute_on_common(c_nodeid_t, c_sublocid_t,
+                              chpl_fn_int_t,
+                              chpl_comm_on_bundle_t*, size_t,
+                              chpl_bool, chpl_bool);
+
+
+void init_am(void) {
+  // empty for now
+}
+
+
 int chpl_comm_numPollingTasks(void) { return 1; }
+
 
 void chpl_comm_make_progress(void) { }
 
-// In comm-ofi-am.c
-void chpl_comm_ofi_am_handler(struct fi_cq_data_entry* cqe);
 
 /*
  * Set up the progress thread
@@ -591,7 +614,7 @@ static void progress_thread(void *args) {
     num_read = fi_cq_read(ofi.am_rx_cq[id], cqes, num_cqes);
     if (num_read > 0) {
       for (i = 0; i < num_read; i++) {
-        chpl_comm_ofi_am_handler(&cqes[i]);
+        handle_am(&cqes[i]);
         // send ack
       }
     } else {
@@ -609,4 +632,320 @@ static void progress_thread(void *args) {
     CALL_CHECK_ZERO(pthread_cond_signal(&progress_thread_exit_cond));
     CALL_CHECK_ZERO(pthread_mutex_unlock(&progress_thread_entEx_cond_mutex));
   }
+}
+
+
+void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
+                          chpl_fn_int_t fid,
+                          chpl_comm_on_bundle_t *arg, size_t arg_size) {
+  assert(node != chpl_nodeID); // handled by the locale model
+
+  CHPL_COMM_DIAGS_INC(execute_on);
+
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
+    chpl_comm_cb_info_t cb_data = 
+      {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
+       .iu.executeOn={subloc, fid, arg, arg_size}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+
+  execute_on_common(node, subloc, fid, arg, arg_size, false, true);
+}
+
+
+#ifdef BLAH
+static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
+  chpl_ftable_call(f->task_bundle.requested_fid, f);
+}
+#endif
+
+
+void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
+                             chpl_fn_int_t fid,
+                             chpl_comm_on_bundle_t *arg, size_t arg_size) {
+  assert(node != chpl_nodeID); // handled by the locale model
+
+  CHPL_COMM_DIAGS_INC(execute_on_nb);
+
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
+    chpl_comm_cb_info_t cb_data = 
+      {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
+       .iu.executeOn={subloc, fid, arg, arg_size}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+
+  execute_on_common(node, subloc, fid, arg, arg_size, false, false);
+}
+
+
+void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
+                               chpl_fn_int_t fid,
+                               chpl_comm_on_bundle_t *arg, size_t arg_size) {
+  assert(node != chpl_nodeID); // handled by the locale model
+
+  CHPL_COMM_DIAGS_INC(execute_on_fast);
+
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
+    chpl_comm_cb_info_t cb_data = 
+      {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
+       .iu.executeOn={subloc, fid, arg, arg_size}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+
+  execute_on_common(node, subloc, fid, arg, arg_size, true, true);
+}
+
+
+static void execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
+                              chpl_fn_int_t fid,
+                              chpl_comm_on_bundle_t* arg, size_t arg_size,
+                              chpl_bool fast, chpl_bool blocking)
+{
+  chpl_internal_error("Remote ons not yet implemented");
+
+  // bundle args
+  // send to remote AM port
+}
+
+
+static void handle_am(struct fi_cq_data_entry* cqe) {
+
+}
+
+
+////////////////////////////////////////
+//
+// Interface: RDMA support
+//
+
+static void init_rdma(void) {
+}
+
+
+static __thread int sep_index = -1;
+static inline int get_sep_index(int num_ctxs) {
+  if (sep_index == -1) {
+    sep_index = chpl_task_getId() % num_ctxs;
+  }
+  return sep_index;
+}
+
+
+// Consider making the contexts and cqs thread local variables
+static inline struct fid_ep* get_rx_ep(void);
+static inline struct fid_ep* get_tx_ep(void);
+
+static inline struct fid_ep* get_rx_ep() {
+  return ofi.rx_ep[get_sep_index(ofi.num_rx_ctx)];
+}
+
+
+static inline struct fid_ep* get_tx_ep() {
+  return ofi.tx_ep[get_sep_index(ofi.num_tx_ctx)];
+}
+
+
+static inline chpl_comm_nb_handle_t ofi_put(chpl_comm_cb_event_kind_t etype,
+                                            void *addr, c_nodeid_t node,
+                                            void* raddr, size_t size,
+                                            int32_t typeIndex, int32_t commID,
+                                            int ln, int32_t fn);
+
+static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
+                                            void *addr, c_nodeid_t node,
+                                            void* raddr, size_t size,
+                                            int32_t typeIndex, int32_t commID,
+                                            int ln, int32_t fn);
+
+
+chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node,
+                                       void* raddr, size_t size,
+                                       int32_t typeIndex, int32_t commID,
+                                       int ln, int32_t fn) {
+  chpl_comm_put(addr, node, raddr, size, typeIndex, commID, ln, fn);
+  return NULL;
+}
+
+
+chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
+                                       void* raddr, size_t size,
+                                       int32_t typeIndex, int32_t commID,
+                                       int ln, int32_t fn) {
+  chpl_comm_get(addr, node, raddr, size, typeIndex, commID, ln, fn);
+  return NULL;
+}
+
+
+int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
+{
+  // fi_cq_readfrom?
+  return ((void*) h) == NULL;
+}
+
+
+void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+{
+  size_t i;
+  // fi_cq_readfrom?
+  for( i = 0; i < nhandles; i++ ) {
+    assert(h[i] == NULL);
+  }
+}
+
+
+int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+{
+  size_t i;
+  // fi_cq_readfrom?
+  for( i = 0; i < nhandles; i++ ) {
+    assert(h[i] == NULL);
+  }
+  return 0;
+}
+
+
+void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
+                   size_t size, int32_t typeIndex, int32_t commID,
+                   int ln, int32_t fn) {
+  chpl_comm_nb_handle_t handle;
+
+  if (node == chpl_nodeID) {
+    memmove(raddr, addr, size);
+    return;
+  }
+
+  CHPL_COMM_DIAGS_INC(put);
+
+  handle = ofi_put(chpl_comm_cb_event_kind_put,
+                   addr, node, raddr, size, typeIndex, commID, ln, fn);
+  if (handle) {
+    // fi_cq_read
+  }
+}
+
+
+void chpl_comm_get(void* addr, int32_t node, void* raddr,
+                   size_t size, int32_t typeIndex, int32_t commID,
+                   int ln, int32_t fn) {
+  chpl_comm_nb_handle_t handle;
+
+  if (node == chpl_nodeID) {
+    memmove(addr, raddr, size);
+    return;
+  }
+
+  CHPL_COMM_DIAGS_INC(get);
+
+  handle = ofi_get(chpl_comm_cb_event_kind_get,
+                   addr, node, raddr, size, typeIndex, commID, ln, fn);
+  if (handle) {
+    // fi_cq_read
+  }
+}
+
+
+void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
+                        c_nodeid_t dstnode,
+                        void* srcaddr_arg, size_t* srcstrides,
+                        size_t* count, int32_t stridelevels, size_t elemSize,
+                        int32_t typeIndex, int32_t commID,
+                        int ln, int32_t fn) {
+  chpl_comm_put_strd_common(dstaddr_arg, dststrides,
+                            dstnode,
+                            srcaddr_arg, srcstrides,
+                            count, stridelevels, elemSize,
+                            1, NULL,
+                            typeIndex, commID, ln, fn);
+}
+
+
+void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
+                        c_nodeid_t srcnode,
+                        void* srcaddr_arg, size_t* srcstrides, size_t* count,
+                        int32_t stridelevels, size_t elemSize,
+                        int32_t typeIndex, int32_t commID,
+                        int ln, int32_t fn) {
+  chpl_comm_get_strd_common(dstaddr_arg, dststrides,
+                            srcnode,
+                            srcaddr_arg, srcstrides,
+                            count, stridelevels, elemSize,
+                            1, NULL,
+                            typeIndex, commID, ln, fn);
+}
+
+
+static inline chpl_comm_nb_handle_t ofi_put(chpl_comm_cb_event_kind_t etype,
+                                            void *addr, c_nodeid_t node,
+                                            void* raddr, size_t size,
+                                            int32_t typeIndex, int32_t commID,
+                                            int ln, int32_t fn) {
+
+  if (chpl_comm_have_callbacks(etype)) {
+    chpl_comm_cb_info_t cb_data = {etype, chpl_nodeID, node,
+                                   .iu.comm={addr, raddr, size,
+                                             typeIndex, commID, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+
+  // fi_write
+
+  chpl_internal_error("Remote puts not yet implemented");
+
+  return NULL;
+}
+
+
+static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
+                                            void *addr, c_nodeid_t node,
+                                            void* raddr, size_t size,
+                                            int32_t typeIndex, int32_t commID,
+                                            int ln, int32_t fn) {
+  if (chpl_comm_have_callbacks(etype)) {
+    chpl_comm_cb_info_t cb_data = {etype, chpl_nodeID, node,
+                                   .iu.comm={addr, raddr, size,
+                                             typeIndex, commID, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+
+  // fi_read
+
+  chpl_internal_error("Remote gets not yet implemented");
+
+  return NULL;
+}
+
+
+////////////////////////////////////////
+//
+// Interface: utility
+//
+
+int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
+{
+  // No way to know if the page is mapped on the remote (without a round trip)
+  return 0;
+}
+
+
+int32_t chpl_comm_getMaxThreads(void) {
+  // no limit
+  return 0;
+}
+
+
+void chpl_comm_barrier(const char *msg) {
+  chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
+
+  if (chpl_numNodes == 1) {
+    return;
+  }
+
+  if (!progress_threads_running()) {
+    // Comm layer setup is not complete yet; use OOB barrier
+    chpl_comm_ofi_oob_barrier();
+  } else {
+    // Use OOB barrier for now, but we can do better in the future
+    chpl_comm_ofi_oob_barrier();
+  }
+
 }

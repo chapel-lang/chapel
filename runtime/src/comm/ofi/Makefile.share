@@ -21,10 +21,8 @@ COMM_LAUNCHER_SRCS = \
 COMM_SRCS = \
 	$(COMM_LAUNCHER_SRCS) \
 	comm-ofi.c \
-	comm-ofi-am.c \
 	comm-ofi-diagnostics.c \
-	comm-ofi-oob.c \
-	comm-ofi-put-get.c \
+	comm-ofi-oob.c
 
 SRCS = $(COMM_SRCS)
 
