@@ -5592,7 +5592,7 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                             dstlocale,
                             srcaddr_arg, srcstrides,
                             count, stridelevels, elemSize,
-                            strd_maxHandles,
+                            strd_maxHandles, local_yield,
                             typeIndex, commID, ln, fn);
 }
 
@@ -5609,7 +5609,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                             srclocale,
                             srcaddr_arg, srcstrides,
                             count, stridelevels, elemSize,
-                            strd_maxHandles,
+                            strd_maxHandles, local_yield,
                             typeIndex, commID, ln, fn);
 }
 

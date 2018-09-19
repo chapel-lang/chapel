@@ -42,6 +42,10 @@
 
 
 //
+//
+// Common versions of the strided bulk transfer functions, for comm
+// layer implementations that do not have native strided transfers.
+//
 // We use non-blocking transactions for the multiple GETs/PUTs of a
 // strided transfer.  We can only track so many of these in flight at
 // once, obviously.  Our caller will tell us the appropriate number
@@ -62,19 +66,16 @@ void strd_nb_helper(chpl_comm_nb_handle_t (*xferFn)(void*, int32_t, void*,
                     void* localAddr, int32_t remoteLocale, void* remoteAddr,
                     size_t cnt,
                     chpl_comm_nb_handle_t* handles, size_t* pCurrHandles,
-                    size_t strd_maxHandles,
+                    size_t maxOutstandingXfers,
+                    void (yieldFn)(void),
                     int32_t typeIndex, int32_t commID, int ln, int32_t fn)
 {
   size_t currHandles = *pCurrHandles;
 
-  if (currHandles >= strd_maxHandles) {
+  if (currHandles >= maxOutstandingXfers) {
     // reached max in flight -- retire some to make room
     while (!chpl_comm_try_nb_some(handles, currHandles)) {
-#ifdef CHPL_COMM_YIELD_TASK_WHILE_POLLING
-        chpl_task_yield();
-#else
-        sched_yield();
-#endif
+      (yieldFn)();
     }
 
     // compress retired transactions out of the list
@@ -106,7 +107,8 @@ void chpl_comm_put_strd_common(void* dstaddr_arg, size_t* dststrides,
                                void* srcaddr_arg, size_t* srcstrides,
                                size_t* count, int32_t stridelevels,
                                size_t elemSize,
-                               size_t strd_maxHandles,
+                               size_t maxOutstandingXfers,
+                               void (yieldFn)(void),
                                int32_t typeIndex, int32_t commID,
                                int ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
@@ -121,7 +123,7 @@ void chpl_comm_put_strd_common(void* dstaddr_arg, size_t* dststrides,
   size_t srcstr[strlvls];
   size_t cnt[strlvls+1];
 
-  chpl_comm_nb_handle_t handles[strd_maxHandles];
+  chpl_comm_nb_handle_t handles[maxOutstandingXfers];
   size_t currHandles = 0;
 
   // Communications callback support
@@ -159,7 +161,7 @@ void chpl_comm_put_strd_common(void* dstaddr_arg, size_t* dststrides,
     for(i=0; i<cnt[1]; i++) {
       strd_nb_helper(chpl_comm_put_nb,
                      srcaddr, dstlocale, dstaddr, cnt[0],
-                     handles, &currHandles, strd_maxHandles,
+                     handles, &currHandles, maxOutstandingXfers, yieldFn,
                      typeIndex, commID, ln, fn);
       srcaddr+=srcstr[0];
       dstaddr+=dststr[0];
@@ -173,7 +175,7 @@ void chpl_comm_put_strd_common(void* dstaddr_arg, size_t* dststrides,
       for(j=0; j<cnt[1]; j++) {
         strd_nb_helper(chpl_comm_put_nb,
                        srcaddr, dstlocale, dstaddr, cnt[0],
-                       handles, &currHandles, strd_maxHandles,
+                       handles, &currHandles, maxOutstandingXfers, yieldFn,
                        typeIndex, commID, ln, fn);
         srcaddr+=srcstr[0];
         dstaddr+=dststr[0];
@@ -191,7 +193,7 @@ void chpl_comm_put_strd_common(void* dstaddr_arg, size_t* dststrides,
         for(k=0; k<cnt[1]; k++) {
           strd_nb_helper(chpl_comm_put_nb,
                          srcaddr, dstlocale, dstaddr, cnt[0],
-                         handles, &currHandles, strd_maxHandles,
+                         handles, &currHandles, maxOutstandingXfers, yieldFn,
                          typeIndex, commID, ln, fn);
           srcaddr+=srcstr[0];
           dstaddr+=dststr[0];
@@ -230,7 +232,7 @@ void chpl_comm_put_strd_common(void* dstaddr_arg, size_t* dststrides,
           strd_nb_helper(chpl_comm_put_nb,
                          srcaddr+srcdisp[j], dstlocale, dstaddr+dstdisp[j],
                          cnt[0],
-                         handles, &currHandles, strd_maxHandles,
+                         handles, &currHandles, maxOutstandingXfers, yieldFn,
                          typeIndex, commID, ln, fn);
           break;
 
@@ -255,7 +257,8 @@ void chpl_comm_get_strd_common(void* dstaddr_arg, size_t* dststrides,
                                void* srcaddr_arg, size_t* srcstrides,
                                size_t* count, int32_t stridelevels,
                                size_t elemSize,
-                               size_t strd_maxHandles,
+                               size_t maxOutstandingXfers,
+                               void (yieldFn)(void),
                                int32_t typeIndex, int32_t commID,
                                int ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
@@ -269,7 +272,7 @@ void chpl_comm_get_strd_common(void* dstaddr_arg, size_t* dststrides,
   size_t srcstr[strlvls];
   size_t cnt[strlvls+1];
 
-  chpl_comm_nb_handle_t handles[strd_maxHandles];
+  chpl_comm_nb_handle_t handles[maxOutstandingXfers];
   size_t currHandles = 0;
 
 
@@ -310,7 +313,7 @@ void chpl_comm_get_strd_common(void* dstaddr_arg, size_t* dststrides,
     for(i=0; i<cnt[1]; i++) {
       strd_nb_helper(chpl_comm_get_nb,
                      dstaddr, srclocale, srcaddr, cnt[0],
-                     handles, &currHandles, strd_maxHandles,
+                     handles, &currHandles, maxOutstandingXfers, yieldFn,
                      typeIndex, commID, ln, fn);
       srcaddr+=srcstr[0];
       dstaddr+=dststr[0];
@@ -324,7 +327,7 @@ void chpl_comm_get_strd_common(void* dstaddr_arg, size_t* dststrides,
       for(j=0; j<cnt[1]; j++) {
         strd_nb_helper(chpl_comm_get_nb,
                        dstaddr, srclocale, srcaddr, cnt[0],
-                       handles, &currHandles, strd_maxHandles,
+                       handles, &currHandles, maxOutstandingXfers, yieldFn,
                        typeIndex, commID, ln, fn);
         srcaddr+=srcstr[0];
         dstaddr+=dststr[0];
@@ -342,7 +345,7 @@ void chpl_comm_get_strd_common(void* dstaddr_arg, size_t* dststrides,
         for(k=0; k<cnt[1]; k++) {
           strd_nb_helper(chpl_comm_get_nb,
                          dstaddr, srclocale, srcaddr, cnt[0],
-                         handles, &currHandles, strd_maxHandles,
+                         handles, &currHandles, maxOutstandingXfers, yieldFn,
                          typeIndex, commID, ln, fn);
           srcaddr+=srcstr[0];
           dstaddr+=dststr[0];
@@ -381,7 +384,7 @@ void chpl_comm_get_strd_common(void* dstaddr_arg, size_t* dststrides,
           strd_nb_helper(chpl_comm_get_nb,
                          dstaddr+dstdisp[j], srclocale, srcaddr+srcdisp[j],
                          cnt[0],
-                         handles, &currHandles, strd_maxHandles,
+                         handles, &currHandles, maxOutstandingXfers, yieldFn,
                          typeIndex, commID, ln, fn);
           break;
 

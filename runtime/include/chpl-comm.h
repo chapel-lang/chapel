@@ -442,7 +442,8 @@ void chpl_comm_put_strd_common(void* dstaddr, size_t* dststrides,
                                void* srcaddr, size_t* srcstrides,
                                size_t* count,
                                int32_t stridelevels, size_t elemSize,
-                               size_t strd_maxHandles,
+                               size_t maxOutstandingXfers,
+                               void (yieldFn)(void),
                                int32_t typeIndex, int32_t commID,
                                int ln, int32_t fn);
 
@@ -451,7 +452,8 @@ void chpl_comm_get_strd_common(void* dstaddr, size_t* dststrides,
                                void* srcaddr, size_t* srcstrides,
                                size_t* count,
                                int32_t stridelevels, size_t elemSize,
-                               size_t strd_maxHandles,
+                               size_t maxOutstandingXfers,
+                               void (yieldFn)(void),
                                int32_t typeIndex, int32_t commID,
                                int ln, int32_t fn);
 
