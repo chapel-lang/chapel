@@ -224,11 +224,9 @@ static uint64_t debug_stats_flag = 0;
         MACRO(put_cnt)                                                  \
         MACRO(put_byte_cnt)                                             \
         MACRO(put_strd_cnt)                                             \
-        MACRO(put_strd_byte_cnt)                                        \
         MACRO(get_cnt)                                                  \
         MACRO(get_byte_cnt)                                             \
         MACRO(get_strd_cnt)                                             \
-        MACRO(get_strd_byte_cnt)                                        \
         MACRO(get_nb_cnt)                                               \
         MACRO(get_nb_b_cnt)                                             \
         MACRO(test_nb_cnt)                                              \
@@ -5582,354 +5580,37 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
 static const size_t strd_maxHandles
                     = (20 < CD_ACTIVE_TRANS_MAX) ? 20 : CD_ACTIVE_TRANS_MAX;
 
-static inline
-void strd_nb_helper(chpl_comm_nb_handle_t (*xferFn)(void*, int32_t, void*,
-                                                    size_t,
-                                                    int32_t, int32_t,
-                                                    int, int32_t),
-                    void* localAddr, int32_t remoteLocale, void* remoteAddr,
-                    size_t cnt,
-                    chpl_comm_nb_handle_t* handles, size_t* pCurrHandles,
-                    int32_t typeIndex, int32_t commID, int ln, int32_t fn)
+void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
+                        int32_t dstlocale,
+                        void* srcaddr_arg, size_t* srcstrides,
+                        size_t* count, int32_t stridelevels, size_t elemSize,
+                        int32_t typeIndex, int32_t commID, int ln, int32_t fn)
 {
-  size_t currHandles = *pCurrHandles;
-
-  if (currHandles >= strd_maxHandles) {
-    // reached max in flight -- retire some to make room
-    while (!chpl_comm_try_nb_some(handles, currHandles)) {
-      local_yield();
-    }
-
-    // compress retired transactions out of the list
-    {
-      size_t iOut, iIn;
-
-      for (iOut = iIn = 0; iIn < currHandles; ) {
-        if (handles[iIn] == NULL)
-          iIn++;
-        else
-          handles[iOut++] = handles[iIn++];
-      }
-
-      currHandles = iOut;
-    }
-  }
-
-  handles[currHandles] = (*xferFn)(localAddr, remoteLocale, remoteAddr, cnt,
-                                   typeIndex, commID, ln, fn);
-  if (handles[currHandles] != NULL)
-    currHandles++;
-
-  *pCurrHandles = currHandles;
-}
-
-
-void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
-                         int32_t dstlocale,
-                         void* srcaddr_arg, size_t* srcstrides,
-                         size_t* count, int32_t stridelevels, size_t elemSize,
-                         int32_t typeIndex, int32_t commID, int ln, int32_t fn)
-{
-  const size_t strlvls=(size_t)stridelevels;
-  size_t i,j,k,t,total,off,x,carry;
-
-  int8_t* dstaddr,*dstaddr1;
-  int8_t* srcaddr,*srcaddr1;
-
-  int *srcdisp, *dstdisp;
-
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
-  size_t cnt[strlvls+1];
-
-  chpl_comm_nb_handle_t handles[strd_maxHandles];
-  size_t currHandles = 0;
-
   PERFSTATS_INC(put_strd_cnt);
 
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put_strd)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_put_strd, chpl_nodeID, dstlocale,
-         .iu.comm_strd={srcaddr_arg, srcstrides, dstaddr_arg, dststrides, count,
-                        stridelevels, elemSize, typeIndex, commID, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  //Only count[0] and strides are measured in number of bytes.
-  cnt[0]= count[0] * elemSize;
-  if (strlvls>0) {
-    srcstr[0] = srcstrides[0] * elemSize;
-    dststr[0] = dststrides[0] * elemSize;
-    for (i=1;i<strlvls;i++)
-      {
-        srcstr[i] = srcstrides[i] * elemSize;
-        dststr[i] = dststrides[i] * elemSize;
-        cnt[i]=count[i];
-      }
-    cnt[strlvls]=count[strlvls];
-  }
-
-  switch (strlvls) {
-  case 0:
-    PERFSTATS_ADD(put_strd_byte_cnt, cnt[0]);
-    chpl_comm_put(srcaddr_arg, dstlocale, dstaddr_arg, cnt[0],
-                  typeIndex, commID, ln, fn);
-    break;
-
-  case 1:
-    dstaddr=(int8_t*)dstaddr_arg;
-    srcaddr=(int8_t*)srcaddr_arg;
-    for(i=0; i<cnt[1]; i++) {
-      PERFSTATS_ADD(put_strd_byte_cnt, cnt[0]);
-      strd_nb_helper(chpl_comm_put_nb,
-                     srcaddr, dstlocale, dstaddr, cnt[0],
-                     handles, &currHandles,
-                     typeIndex, commID, ln, fn);
-      srcaddr+=srcstr[0];
-      dstaddr+=dststr[0];
-    }
-    break;
-
-  case 2:
-    for(i=0; i<cnt[2]; i++) {
-      srcaddr = (int8_t*)srcaddr_arg + srcstr[1]*i;
-      dstaddr = (int8_t*)dstaddr_arg + dststr[1]*i;
-      for(j=0; j<cnt[1]; j++) {
-        PERFSTATS_ADD(put_strd_byte_cnt, cnt[0]);
-        strd_nb_helper(chpl_comm_put_nb,
-                       srcaddr, dstlocale, dstaddr, cnt[0],
-                       handles, &currHandles,
-                       typeIndex, commID, ln, fn);
-        srcaddr+=srcstr[0];
-        dstaddr+=dststr[0];
-      }
-    }
-    break;
-
-  case 3:
-    for(i=0; i<cnt[3]; i++) {
-      srcaddr1 = (int8_t*)srcaddr_arg + srcstr[2]*i;
-      dstaddr1 = (int8_t*)dstaddr_arg + dststr[2]*i;
-      for(j=0; j<cnt[2]; j++) {
-        srcaddr = srcaddr1 + srcstr[1]*j;
-        dstaddr = dstaddr1 + dststr[1]*j;
-        for(k=0; k<cnt[1]; k++) {
-          PERFSTATS_ADD(put_strd_byte_cnt, cnt[0]);
-          strd_nb_helper(chpl_comm_put_nb,
-                         srcaddr, dstlocale, dstaddr, cnt[0],
-                         handles, &currHandles,
-                         typeIndex, commID, ln, fn);
-          srcaddr+=srcstr[0];
-          dstaddr+=dststr[0];
-        }
-      }
-    }
-    break;
-
-  default:
-    dstaddr=(int8_t*)dstaddr_arg;
-    srcaddr=(int8_t*)srcaddr_arg;
-
-    //Number of chpl_comm_put operations to do
-    total=1;
-    for (i=0; i<strlvls; i++)
-      total=total*cnt[i+1];
-
-    //displacement from the dstaddr and srcaddr start points
-    srcdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-    dstdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-
-    for (j=0; j<total; j++) {
-      carry=1;
-      for (t=1;t<=strlvls;t++) {
-        if (cnt[t]*carry>=j+1) {  //IF 1
-          x=j/carry;
-          off =j-(carry*x);
-
-          if (carry!=1) {  //IF 2
-            srcdisp[j]=srcstr[t-1]*x+srcdisp[off];
-            dstdisp[j]=dststr[t-1]*x+dstdisp[off];
-          } else {  //ELSE 2
-            srcdisp[j]=srcstr[t-1]*x;
-            dstdisp[j]=dststr[t-1]*x;
-          }
-          PERFSTATS_ADD(put_strd_byte_cnt, cnt[0]);
-          strd_nb_helper(chpl_comm_put_nb,
-                         srcaddr+srcdisp[j], dstlocale, dstaddr+dstdisp[j],
-                         cnt[0],
-                         handles, &currHandles,
-                         typeIndex, commID, ln, fn);
-          break;
-
-        } else { //ELSE 1
-          carry=carry*cnt[t];
-        }
-      }
-    } // for j
-    chpl_mem_free(srcdisp,0,0);
-    chpl_mem_free(dstdisp,0,0);
-    break;
-  }
-
-  if (currHandles > 0) {
-    (void) chpl_comm_wait_nb_some(handles, currHandles);
-  }
+  chpl_comm_put_strd_common(dstaddr_arg, dststrides,
+                            dstlocale,
+                            srcaddr_arg, srcstrides,
+                            count, stridelevels, elemSize,
+                            strd_maxHandles, local_yield,
+                            typeIndex, commID, ln, fn);
 }
 
 
-void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
-                         int32_t srclocale,
-                         void* srcaddr_arg, size_t* srcstrides,
-                         size_t* count, int32_t stridelevels, size_t elemSize,
-                         int32_t typeIndex, int32_t commID, int ln, int32_t fn)
+void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
+                        int32_t srclocale,
+                        void* srcaddr_arg, size_t* srcstrides,
+                        size_t* count, int32_t stridelevels, size_t elemSize,
+                        int32_t typeIndex, int32_t commID, int ln, int32_t fn)
 {
-  const size_t strlvls=(size_t)stridelevels;
-  size_t i,j,k,t,total,off,x,carry;
-
-  int8_t* dstaddr,*dstaddr1;
-  int8_t* srcaddr,*srcaddr1;
-
-  int *srcdisp, *dstdisp;
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
-  size_t cnt[strlvls+1];
-
-  chpl_comm_nb_handle_t handles[strd_maxHandles];
-  size_t currHandles = 0;
-
   PERFSTATS_INC(get_strd_cnt);
 
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get_strd)) {
-    chpl_comm_cb_info_t cb_data =
-      {chpl_comm_cb_event_kind_get_strd, chpl_nodeID, srclocale,
-       .iu.comm_strd={srcaddr_arg, srcstrides, dstaddr_arg, dststrides, count,
-                      stridelevels, elemSize, typeIndex, commID, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-
-  //Only count[0] and strides are measured in number of bytes.
-  cnt[0]=count[0] * elemSize;
-  if(strlvls>0){
-    srcstr[0] = srcstrides[0] * elemSize;
-    dststr[0] = dststrides[0] * elemSize;
-    for (i=1;i<strlvls;i++)
-      {
-        srcstr[i] = srcstrides[i] * elemSize;
-        dststr[i] = dststrides[i] * elemSize;
-        cnt[i]=count[i];
-      }
-    cnt[strlvls]=count[strlvls];
-  }
-
-  switch(strlvls) {
-  case 0:
-    dstaddr=(int8_t*)dstaddr_arg;
-    srcaddr=(int8_t*)srcaddr_arg;
-    PERFSTATS_ADD(get_strd_byte_cnt, cnt[0]);
-    chpl_comm_get(dstaddr, srclocale, srcaddr, cnt[0],
-                  typeIndex, commID, ln, fn);
-    break;
-
-  case 1:
-    dstaddr=(int8_t*)dstaddr_arg;
-    srcaddr=(int8_t*)srcaddr_arg;
-    for(i=0; i<cnt[1]; i++) {
-      PERFSTATS_ADD(get_strd_byte_cnt, cnt[0]);
-      strd_nb_helper(chpl_comm_get_nb,
-                     dstaddr, srclocale, srcaddr, cnt[0],
-                     handles, &currHandles,
-                     typeIndex, commID, ln, fn);
-      srcaddr+=srcstr[0];
-      dstaddr+=dststr[0];
-    }
-    break;
-
-  case 2:
-    for(i=0; i<cnt[2]; i++) {
-      srcaddr = (int8_t*)srcaddr_arg + srcstr[1]*i;
-      dstaddr = (int8_t*)dstaddr_arg + dststr[1]*i;
-      for(j=0; j<cnt[1]; j++) {
-        PERFSTATS_ADD(get_strd_byte_cnt, cnt[0]);
-        strd_nb_helper(chpl_comm_get_nb,
-                       dstaddr, srclocale, srcaddr, cnt[0],
-                       handles, &currHandles,
-                       typeIndex, commID, ln, fn);
-        srcaddr+=srcstr[0];
-        dstaddr+=dststr[0];
-      }
-    }
-    break;
-
-  case 3:
-    for(i=0; i<cnt[3]; i++) {
-      srcaddr1 = (int8_t*)srcaddr_arg + srcstr[2]*i;
-      dstaddr1 = (int8_t*)dstaddr_arg + dststr[2]*i;
-      for(j=0; j<cnt[2]; j++) {
-        srcaddr = srcaddr1 + srcstr[1]*j;
-        dstaddr = dstaddr1 + dststr[1]*j;
-        for(k=0; k<cnt[1]; k++) {
-          PERFSTATS_ADD(get_strd_byte_cnt, cnt[0]);
-          strd_nb_helper(chpl_comm_get_nb,
-                         dstaddr, srclocale, srcaddr, cnt[0],
-                         handles, &currHandles,
-                         typeIndex, commID, ln, fn);
-          srcaddr+=srcstr[0];
-          dstaddr+=dststr[0];
-        }
-      }
-    }
-    break;
-
-  default:
-    dstaddr=(int8_t*)dstaddr_arg;
-    srcaddr=(int8_t*)srcaddr_arg;
-
-    //Number of chpl_comm_get operations to do
-    total=1;
-    for (i=0; i<strlvls; i++)
-      total=total*cnt[i+1];
-
-    //displacement from the dstaddr and srcaddr start points
-    srcdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-    dstdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-
-    for (j=0; j<total; j++) {
-      carry=1;
-      for (t=1;t<=strlvls;t++) {
-        if (cnt[t]*carry>=j+1) {  //IF 1
-          x=j/carry;
-          off =j-(carry*x);
-
-          if (carry!=1) {  //IF 2
-            srcdisp[j]=srcstr[t-1]*x+srcdisp[off];
-            dstdisp[j]=dststr[t-1]*x+dstdisp[off];
-          } else {  //ELSE 2
-            srcdisp[j]=srcstr[t-1]*x;
-            dstdisp[j]=dststr[t-1]*x;
-          }
-          PERFSTATS_ADD(get_strd_byte_cnt, cnt[0]);
-          strd_nb_helper(chpl_comm_get_nb,
-                         dstaddr+dstdisp[j], srclocale, srcaddr+srcdisp[j],
-                         cnt[0],
-                         handles, &currHandles,
-                         typeIndex, commID, ln, fn);
-          break;
-
-        } else {  //ELSE 1
-          carry=carry*cnt[t];
-        }
-      }
-    }
-    chpl_mem_free(srcdisp,0,0);
-    chpl_mem_free(dstdisp,0,0);
-    break;
-  }
-
-  if (currHandles > 0) {
-    (void) chpl_comm_wait_nb_some(handles, currHandles);
-  }
+  chpl_comm_get_strd_common(dstaddr_arg, dststrides,
+                            srclocale,
+                            srcaddr_arg, srcstrides,
+                            count, stridelevels, elemSize,
+                            strd_maxHandles, local_yield,
+                            typeIndex, commID, ln, fn);
 }
 
 
