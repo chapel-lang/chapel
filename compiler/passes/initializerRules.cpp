@@ -1231,6 +1231,7 @@ bool PostinitVisitor::enterCallExpr(CallExpr* node) {
 bool PostinitVisitor::enterBlockStmt(BlockStmt* node) {
   if (CallExpr* info = node->blockInfoGet()) {
     const char* name = NULL;
+    bool isLoweredElseCoforall = false;
     if (info->isPrimitive(PRIM_BLOCK_BEGIN) ||
         info->isPrimitive(PRIM_BLOCK_BEGIN_ON)) {
       name = "begin";
@@ -1238,13 +1239,25 @@ bool PostinitVisitor::enterBlockStmt(BlockStmt* node) {
       name = "cobegin";
     } else if (info->isPrimitive(PRIM_BLOCK_COFORALL) ||
                info->isPrimitive(PRIM_BLOCK_COFORALL_ON)) {
+      // coforalls are lowered really early into a CondStmt where each branch
+      // has a for-loop and a PRIM_BLOCK_COFORALL*. In order to avoid
+      // duplicate messages about coforall-statements, do not issue an error
+      // if the coforall is in the else branch.
+      if (ForLoop* loop = toForLoop(node->parentExpr)) {
+        if (BlockStmt* loopParent = toBlockStmt(loop->parentExpr)) {
+          if (CondStmt* cond = toCondStmt(loopParent->parentExpr)) {
+            isLoweredElseCoforall = cond->elseStmt == loopParent;
+          }
+        }
+      }
+
       name = "coforall";
     }
     if (name != NULL) {
       PostinitVisitor vis;
       for_alist(next_ast, node->body)
         next_ast->accept(&vis);
-      if (vis.found()) {
+      if (vis.found() && isLoweredElseCoforall == false) {
         USR_FATAL_CONT(node, "\"super.postinit()\" is not allowed in a %s satement", name);
       }
       return false;
