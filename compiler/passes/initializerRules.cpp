@@ -31,6 +31,13 @@
 #include "type.h"
 #include "typeSpecifier.h"
 
+#include "LoopStmt.h"
+#include "ForLoop.h"
+#include "WhileDoStmt.h"
+#include "DoWhileStmt.h"
+#include "ParamForLoop.h"
+#include "ForallStmt.h"
+
 #include <stack>
 
 static bool     isInitStmt (CallExpr* stmt);
@@ -1159,32 +1166,28 @@ static bool isSuperPostInit(CallExpr* stmt) {
 
 class PostinitVisitor : public AstVisitorTraverse {
   public:
-    PostinitVisitor() {
-      foundStack.push(false);
-    }
+    PostinitVisitor() { }
     virtual ~PostinitVisitor() { }
 
-    std::stack<bool> foundStack;
+    bool fnd = false;
 
     bool found();
 
     virtual bool enterCondStmt(CondStmt* node);
     virtual bool enterCallExpr(CallExpr* node);
 
-#define declEnterExit(NODE) virtual bool enter##NODE(NODE* node); \
-    virtual void exit##NODE(NODE* node);
+    virtual bool enterForallStmt(ForallStmt* node);
+    virtual bool enterWhileDoStmt(WhileDoStmt* node);
+    virtual bool enterDoWhileStmt(DoWhileStmt* node);
+    virtual bool enterForLoop(ForLoop* node);
+    virtual bool enterParamForLoop(ParamForLoop* node);
+    virtual bool enterBlockStmt(BlockStmt* node);
 
-    declEnterExit(ForallStmt);
-    declEnterExit(WhileDoStmt);
-    declEnterExit(DoWhileStmt);
-    declEnterExit(ForLoop);
-    declEnterExit(ParamForLoop);
-
-#undef declEnterExit
+    void enterLoopStmt(BlockStmt* node);
 };
 
 bool PostinitVisitor::found() {
-  return foundStack.top();
+  return fnd;
 }
 
 bool PostinitVisitor::enterCondStmt(CondStmt* node) {
@@ -1192,7 +1195,7 @@ bool PostinitVisitor::enterCondStmt(CondStmt* node) {
   node->thenStmt->accept(&vis);
 
   bool thenPostinit = vis.found();
-  vis.foundStack.top() = false;
+  vis.fnd = false;
 
   bool elsePostinit = false;
   if (node->elseStmt != NULL) {
@@ -1205,9 +1208,9 @@ bool PostinitVisitor::enterCondStmt(CondStmt* node) {
 
   if (thenPostinit != elsePostinit) {
     USR_FATAL_CONT(node, "\"super.postinit()\" must be called in each branch of a conditional or not at all");
-    this->foundStack.top() = true;
+    this->fnd = true;
   } else if (thenPostinit) {
-    this->foundStack.top() = true;
+    this->fnd = true;
   }
 
   return false;
@@ -1216,7 +1219,7 @@ bool PostinitVisitor::enterCondStmt(CondStmt* node) {
 bool PostinitVisitor::enterCallExpr(CallExpr* node) {
   if (isSuperPostInit(node)) {
     if (found() == false) {
-      foundStack.top() = true;
+      fnd = true;
     } else {
       USR_FATAL_CONT(node, "Multiple calls to \"super.postinit()\"");
       return false;
@@ -1225,27 +1228,63 @@ bool PostinitVisitor::enterCallExpr(CallExpr* node) {
   return true;
 }
 
-#define defBadStmt(NODE) \
-bool PostinitVisitor::enter##NODE(NODE* node) { \
-  this->foundStack.push(false); \
-  return true; \
-} \
-void PostinitVisitor::exit##NODE(NODE* node) { \
-  bool last = foundStack.top(); \
-  foundStack.pop(); \
-  if (last) { \
-    USR_FATAL_CONT((Stmt*)node, "\"super.postinit()\" is not allowed in loop statements"); \
-    foundStack.top() = true; \
-  } \
+bool PostinitVisitor::enterBlockStmt(BlockStmt* node) {
+  if (CallExpr* info = node->blockInfoGet()) {
+    const char* name = NULL;
+    if (info->isPrimitive(PRIM_BLOCK_BEGIN) ||
+        info->isPrimitive(PRIM_BLOCK_BEGIN_ON)) {
+      name = "begin";
+    } else if (info->isPrimitive(PRIM_BLOCK_COBEGIN)) {
+      name = "cobegin";
+    } else if (info->isPrimitive(PRIM_BLOCK_COFORALL) ||
+               info->isPrimitive(PRIM_BLOCK_COFORALL_ON)) {
+      name = "coforall";
+    }
+    if (name != NULL) {
+      PostinitVisitor vis;
+      for_alist(next_ast, node->body)
+        next_ast->accept(&vis);
+      if (vis.found()) {
+        USR_FATAL_CONT(node, "\"super.postinit()\" is not allowed in a %s satement", name);
+      }
+      return false;
+    }
+  }
+
+  return true;
 }
 
-defBadStmt(ForallStmt);
-defBadStmt(WhileDoStmt);
-defBadStmt(DoWhileStmt);
-defBadStmt(ForLoop);
-defBadStmt(ParamForLoop);
+void PostinitVisitor::enterLoopStmt(BlockStmt* node) {
+  PostinitVisitor vis;
+  for_alist(next_ast, node->body)
+    next_ast->accept(&vis);
 
-#undef defBadStmt
+  if (vis.found()) {
+    USR_FATAL_CONT(node, "\"super.postinit()\" is not allowed in loop statements");
+    fnd = true;
+  }
+}
+
+bool PostinitVisitor::enterForallStmt(ForallStmt* node) {
+  enterLoopStmt(node->loopBody());
+  return false;
+}
+bool PostinitVisitor::enterWhileDoStmt(WhileDoStmt* node) {
+  enterLoopStmt(node);
+  return false;
+}
+bool PostinitVisitor::enterDoWhileStmt(DoWhileStmt* node) {
+  enterLoopStmt(node);
+  return false;
+}
+bool PostinitVisitor::enterForLoop(ForLoop* node) {
+  enterLoopStmt(node);
+  return false;
+}
+bool PostinitVisitor::enterParamForLoop(ParamForLoop* node) {
+  enterLoopStmt(node);
+  return false;
+}
 
 static bool hasSuperPostInit(BlockStmt* block) {
   PostinitVisitor vis;
