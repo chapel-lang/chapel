@@ -18,7 +18,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     # current list of selected components initially empty
     components=
-    valid_components="compiler,runtime,venv,venv_py27,mason,clean"
+    valid_components="compiler,runtime,venv,mason,clean"
     default_components="compiler,runtime,venv,mason"
         ## clean is not default; more developer-friendly
 
@@ -45,7 +45,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         ( B )
             # ck valid component
             case ",${OPTARG#[+-]}," in
-            ( *,compiler,* | *,runtime,* | *,venv,* | *,venv_py27,* | *,mason,* | *,clean,* ) ;;
+            ( *,compiler,* | *,runtime,* | *,venv,* | *,mason,* | *,clean,* ) ;;
             ( * )   log_error "Invalid -B COMPONENT='$OPTARG'"; usage ;;
             esac
             # if + or - prefix, modify the current list of selected components
@@ -89,12 +89,12 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     export CHPL_COMM_SUBSTRATE=none
     export CHPL_TASKS=qthreads
     export CHPL_LAUNCHER=none
-    export CHPL_LLVM=llvm       # llvm requires py27 and cmake
+    export CHPL_LLVM=llvm       # llvm requires cmake
     export CHPL_AUX_FILESYS=none
 
     # More CPUs --> faster make. Or, unset CHPL_MAKE_MAX_CPU_COUNT to use all CPUs.
 
-#   export CHPL_MAKE_MAX_CPU_COUNT=${CHPL_MAKE_MAX_CPU_COUNT:-8}
+    export CHPL_MAKE_MAX_CPU_COUNT=${CHPL_MAKE_MAX_CPU_COUNT:-24}
 
     # Show the initial/default Chapel build config with printchplenv
 
@@ -125,11 +125,11 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     ( *runtime* )
         log_info "Building Chapel component: runtime"
 
-        compilers=cray,intel,gnu
-        comms=gasnet,none,ugni
-        launchers=pbs-aprun,aprun,none,slurm-srun
+        compilers=cray,gnu
+        comms=none,ugni
+        launchers=aprun,none,slurm-srun
         substrates=aries,mpi,none
-        locale_models=flat,knl
+        locale_models=flat
         auxfs=none,lustre
 
         log_info "Start build_configs $dry_run $verbose # no make target"
@@ -149,7 +149,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         ;;
     esac
 
-    venv_targets="test-venv chpldoc"
+    venv_targets="chpldoc test-venv"
     case ",$components," in
     ( *,venv,* )
         log_info "Building Chapel component: venv ($venv_targets)"
@@ -165,28 +165,6 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         ;;
     ( * )
         log_info "NO building Chapel component: venv"
-        ;;
-    esac
-
-    case ",$components," in
-    ( *,venv_py27,* )
-        log_info "Building Chapel component: venv_py27 ($venv_targets)"
-
-        # Alternate python version
-
-        log_info "Start build_configs $dry_run $verbose -- $venv_targets"
-
-        $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv_py27.log" \
-            --target-compiler=venv_py27 -- $venv_targets
-
-        use_system_python="-C third-party/chpl-venv use-system-python"
-        log_info "Start build_configs $dry_run $verbose -- $use_system_python"
-
-        $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv_py27-use_system_python.log" \
-            --target-compiler=venv_py27 -- $use_system_python
-        ;;
-    ( * )
-        log_info "NO building Chapel component: venv_py27"
         ;;
     esac
 
@@ -285,10 +263,9 @@ else
         list_loaded_modules
     fi
 
-    gen_version_gcc=6.1.0
-    gen_version_intel=18.0.3.222
-    gen_version_cce=8.6.3
-    target_cpu_module=craype-sandybridge
+    gen_version_gcc=7.3.0
+    gen_version_cce=8.7.3
+    target_cpu_module=craype-arm-thunderx2
 
     function load_prgenv_gnu() {
 
@@ -299,19 +276,8 @@ else
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
 
-        # load target PrgEnv with compiler version
-        load_module $target_prgenv
-        load_module_version $target_compiler $target_version
-    }
-
-    function load_prgenv_intel() {
-
-        local target_prgenv="PrgEnv-intel"
-        local target_compiler="intel"
-        local target_version=$gen_version_intel
-
-        # unload any existing PrgEnv
-        unload_module_re PrgEnv-
+        # Do not build Gasnet for aarch64, so get rid of mpich.
+        unload_module cray-mpich
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv
@@ -327,6 +293,9 @@ else
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
 
+        # Do not build Gasnet for aarch64, so get rid of mpich.
+        unload_module cray-mpich
+
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
@@ -335,24 +304,15 @@ else
     function load_target_cpu() {
 
         # legacy
-        unload_module perftools-base acml totalview atp cray-libsci xt-libsci
-        load_module cray-libsci
+    #   unload_module perftools-base acml totalview atp cray-libsci xt-libsci
+    #   load_module cray-libsci
 
         case "$1" in ( "" ) log_error "load_target_cpu missing arg 1"; exit 2;; esac
         local target=$1
 
         # target CPU: unload existing target-cpu modules, if any, then load our target-cpu
-        unload_module_re -v -network- craype-
+    #   unload_module_re -v -network- craype-
         load_module $target
-    }
-
-    function use_python27() {
-        log_info "Using Python 2.7 from /cray/css/users/chapelu/setup_python27.bash"
-        if [ ! -f /cray/css/users/chapelu/setup_python27.bash ] ; then
-            log_error "Python 2.7 setup script is not accessible at /cray/css/users/chapelu/setup_python27.bash"
-            exit 1
-        fi
-        source /cray/css/users/chapelu/setup_python27.bash
     }
 
     # ---
@@ -364,20 +324,11 @@ else
     ( gnu )
         load_prgenv_gnu
         ;;
-    ( intel )
-        load_prgenv_intel
-        ;;
     ( cray )
         load_prgenv_cray
         ;;
     ( compiler )
         load_prgenv_gnu
-
-        if [ "$CHPL_LLVM" == llvm ]; then
-            # Chapel make compiler with LLVM requires python 2.7 and cmake >= 3.4.1
-            load_module cmake
-            use_python27
-        fi
         ;;
     ( venv )
         load_prgenv_gnu
@@ -389,19 +340,8 @@ else
 
         export CHPL_EASY_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple"
         export CHPL_PIP_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple --trusted-host slemaster.us.cray.com"
-        export CHPL_PIP=/cray/css/users/chapelu/opt/lib/pip/__main__.py
-        export CHPL_PYTHONPATH=/cray/css/users/chapelu/opt/lib
-        ;;
-    ( venv_py27 )
-        load_prgenv_gnu
-
-        # Alternate python version
-        use_python27
-
-        export CHPL_EASY_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple"
-        export CHPL_PIP_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple --trusted-host slemaster.us.cray.com"
-        export CHPL_PIP=/cray/css/users/chapelu/opt/lib/pip/__main__.py
-        export CHPL_PYTHONPATH=/cray/css/users/chapelu/opt/lib
+######  export CHPL_PIP=/cray/css/users/chapelu/opt/lib/pip/__main__.py
+######  export CHPL_PYTHONPATH=/cray/css/users/chapelu/opt/lib
         ;;
     ( "" )
         : ok
@@ -413,8 +353,8 @@ else
     esac
 
     # Discard the artificial CHPL_TARGET_COMPILER value.
-    # Chapel make will select cray-prgenv-gnu, cray-prgenv-intel, or cray-prgenv-cray,
-    # based on which module (PrgEnv-gnu, PrgEnv-intel, or PrgEnv-cray) it finds in the environment
+    # Chapel make will select cray-prgenv-gnu or cray-prgenv-cray,
+    # based on which module (PrgEnv-gnu or PrgEnv-cray) it finds in the environment
 
     unset CHPL_TARGET_COMPILER
     load_target_cpu $target_cpu_module
