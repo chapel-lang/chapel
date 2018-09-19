@@ -439,9 +439,6 @@ void resolveFunction(FnSymbol* fn) {
         } else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
           resolveTypeConstructor(fn);
 
-        } else if (fn->hasFlag(FLAG_PRIVATIZED_CLASS) == true &&
-                   fn->getReturnSymbol()              == gTrue) {
-          fn->getFormal(1)->type->symbol->addFlag(FLAG_PRIVATIZED_CLASS);
         }
 
         if (fn->isMethod() == true && fn->_this != NULL) {

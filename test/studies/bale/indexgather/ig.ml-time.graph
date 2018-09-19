@@ -1,0 +1,5 @@
+perfkeys: Time:
+files: bale-ig.dat
+graphkeys: runtime (naive)
+graphtitle: Bale: Indexgather Time (sec)
+ylabel: Time (seconds)

@@ -127,22 +127,22 @@ Additionally, coercions are available that are equivalent to calling the
 \begin{chapel}
 class C { }
 proc test() {
-  var own = new owned C(); // 'own' manages the memory of the instance
-  var b = own.borrow();    // 'b' refers to the same instance but has no
-                           // impact on the lifetime.
+  var own = new owned C();   // 'own' manages the memory of the instance
+  var b = own.borrow();      // 'b' refers to the same instance but has no
+                             // impact on the lifetime.
 
-  var bc: borrowed C = b;  // 'bc' stores the result of b.borrow()
-                           // due to coercion from owned C to C
+  var bc: borrowed C = own;  // 'bc' stores the result of own.borrow()
+                             // due to coercion from owned C to C
 
-  var c: C = b;            // same as above
-                           // since 'C' is equivalent to 'borrowed C'
+  var c: C = own;            // same as above
+                             // since 'C' is equivalent to 'borrowed C'
 
-                           // Note that these coercions can also apply
-                           // in the context of procedure calls.
+                             // Note that these coercions can also apply
+                             // in the context of procedure calls.
 
-                           // the instance referred to by 'own' is
-                           // deleted here, at the end of the containing
-                           // block.
+                             // the instance referred to by 'own' is
+                             // deleted here, at the end of the containing
+                             // block.
 }
 \end{chapel}
 \begin{chapelpost}

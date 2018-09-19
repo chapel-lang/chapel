@@ -87,16 +87,16 @@ if (pagePath == "") {
   pagePath = "index.html";
 }
 function dropSetup() {
-  var currentRelease = "1.17";
-  var nextRelease = "1.18";
-  var nextNextRelease = "1.19";
+  var currentRelease = "1.17"; // what does the public have?
+  var stagedRelease = "1.18";  // is there a release staged but not yet public?
+  var nextRelease = "1.19";    // what's the next release? (on docs/master)
   var button = document.getElementById("versionButton");
   // Uses unicode down-pointing triangle
   var arrow = " &#9660;";
   button.innerHTML = "version " + chplTitle + arrow;
 
   // Choose button color
-  if (chplTitle == nextRelease || chplTitle == nextNextRelease) {
+  if (chplTitle == stagedRelease || chplTitle == nextRelease) {
     // add pre-release label using a non-breaking hyphen
     button.innerHTML = "version " + chplTitle + " (pre&#8209;release)" + arrow;
     button.classList.add("preRelease");
@@ -121,10 +121,10 @@ function dropSetup() {
     dropDiv.append(link);
   }
 
-  if (!chplTitle.includes("pre-release")) {
+  if (!chplTitle.includes(nextRelease)) {
     // Add links to master version of docs
     var link = document.createElement("a");
-    link.innerHTML = "version 1.18<br>(pre-release)";
+    link.innerHTML = "version " + nextRelease + "<br>(pre-release)";
     link.href = "http://chapel-lang.org/docs/master/" + pagePath + ".html";
     dropDiv.append(link);
   }

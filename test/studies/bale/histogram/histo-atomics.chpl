@@ -12,10 +12,10 @@ config const useRandomSeed = true,
 
 config const useBufferedAtomics = false;
 
-config const numTasksPerLocale = here.maxTaskPar;
+const numTasksPerLocale = here.maxTaskPar;
 const numTasks = numLocales * numTasksPerLocale;
 config const N = 2000000; // number of updates per task
-config const M = 1000; // number of entries in the table perf task
+config const M = 1000; // number of entries in the table per task
 
 const numUpdates = N * numTasks;
 const tableSize = M * numTasks;
