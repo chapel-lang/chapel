@@ -20,6 +20,7 @@
 #include "initializerRules.h"
 
 #include "astutil.h"
+#include "AstVisitorTraverse.h"
 #include "expr.h"
 #include "ForallStmt.h"
 #include "InitNormalize.h"
@@ -29,6 +30,8 @@
 #include "TryStmt.h"
 #include "type.h"
 #include "typeSpecifier.h"
+
+#include <stack>
 
 static bool     isInitStmt (CallExpr* stmt);
 
@@ -1154,40 +1157,105 @@ static bool isSuperPostInit(CallExpr* stmt) {
   return retval;
 }
 
-static bool hasSuperPostInit(BlockStmt* block) {
-  Expr* stmt   = block->body.head;
-  bool  retval = false;
-
-  while (stmt != NULL && retval == false) {
-    if (CallExpr* callExpr = toCallExpr(stmt)) {
-      retval = isSuperPostInit(callExpr);
-
-    } else if (CondStmt* cond = toCondStmt(stmt)) {
-      if (cond->elseStmt == NULL) {
-        retval = hasSuperPostInit(cond->thenStmt);
-
-      } else {
-        retval = hasSuperPostInit(cond->thenStmt) ||
-                 hasSuperPostInit(cond->elseStmt);
-      }
-
-    } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      retval = hasSuperPostInit(block);
-
-    } else if (ForallStmt* block = toForallStmt(stmt)) {
-      retval = hasSuperPostInit(block->loopBody());
+class PostinitVisitor : public AstVisitorTraverse {
+  public:
+    PostinitVisitor() {
+      foundStack.push(false);
     }
+    virtual ~PostinitVisitor() { }
 
-    stmt = stmt->next;
+    std::stack<bool> foundStack;
+
+    bool found();
+
+    virtual bool enterCondStmt(CondStmt* node);
+    virtual bool enterCallExpr(CallExpr* node);
+
+#define declEnterExit(NODE) virtual bool enter##NODE(NODE* node); \
+    virtual void exit##NODE(NODE* node);
+
+    declEnterExit(ForallStmt);
+    declEnterExit(WhileDoStmt);
+    declEnterExit(DoWhileStmt);
+    declEnterExit(ForLoop);
+    declEnterExit(ParamForLoop);
+
+#undef declEnterExit
+};
+
+bool PostinitVisitor::found() {
+  return foundStack.top();
+}
+
+bool PostinitVisitor::enterCondStmt(CondStmt* node) {
+  PostinitVisitor vis;
+  node->thenStmt->accept(&vis);
+
+  bool thenPostinit = vis.found();
+  vis.foundStack.top() = false;
+
+  bool elsePostinit = false;
+  if (node->elseStmt != NULL) {
+    node->elseStmt->accept(&vis);
+    elsePostinit = vis.found();
+  } else if (thenPostinit) {
+    USR_FATAL_CONT(node, "\"super.postinit()\" may not be called in a if-statement without an else-branch");
+    return false;
   }
 
-  return retval;
+  if (thenPostinit != elsePostinit) {
+    USR_FATAL_CONT(node, "\"super.postinit()\" must be called in each branch of a conditional or not at all");
+    this->foundStack.top() = true;
+  } else if (thenPostinit) {
+    this->foundStack.top() = true;
+  }
+
+  return false;
+}
+
+bool PostinitVisitor::enterCallExpr(CallExpr* node) {
+  if (isSuperPostInit(node)) {
+    if (found() == false) {
+      foundStack.top() = true;
+    } else {
+      USR_FATAL_CONT(node, "Multiple calls to \"super.postinit()\"");
+      return false;
+    }
+  }
+  return true;
+}
+
+#define defBadStmt(NODE) \
+bool PostinitVisitor::enter##NODE(NODE* node) { \
+  this->foundStack.push(false); \
+  return true; \
+} \
+void PostinitVisitor::exit##NODE(NODE* node) { \
+  bool last = foundStack.top(); \
+  foundStack.pop(); \
+  if (last) { \
+    USR_FATAL_CONT((Stmt*)node, "\"super.postinit()\" is not allowed in loop statements"); \
+    foundStack.top() = true; \
+  } \
+}
+
+defBadStmt(ForallStmt);
+defBadStmt(WhileDoStmt);
+defBadStmt(DoWhileStmt);
+defBadStmt(ForLoop);
+defBadStmt(ParamForLoop);
+
+#undef defBadStmt
+
+static bool hasSuperPostInit(BlockStmt* block) {
+  PostinitVisitor vis;
+  block->accept(&vis);
+  return vis.found();
 }
 
 //
 // Inserts a call to super.postinit if none exists anywhere in 'fn'
 //
-// TODO: what should we do with super.postinits in conditionals?
 // TODO: merge with addSuperInit
 //
 static void insertSuperPostInit(FnSymbol* fn) {
