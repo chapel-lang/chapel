@@ -664,7 +664,14 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
     Function *func = Intrinsic::getDeclaration(M, Intrinsic::memcpy, types);
 
+#if HAVE_LLVM_VER >= 70
+    // LLVM 7 and later: memcpy has no alignment argument
+    Value* args[4]; // dst src len isvolatile
+#else
+    // LLVM 6 and earlier: memcpy had alignment argument
     Value* args[5]; // dst src len alignment isvolatile
+#endif
+
     if( isStore ) {
       // it's a store (ie put)
       args[0] = globalPtr;
@@ -675,10 +682,20 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       args[1] = globalPtr;
     }
     args[2] = len;
+
+#if HAVE_LLVM_VER >= 70
+    // LLVM 7 and later: memcpy has no alignment argument
+
+    // isvolatile
+    args[3] = ConstantInt::get(Type::getInt1Ty(Context), 0, false);
+#else
+    // LLVM 6 and earlier: memcpy had alignment argument
+
     // alignment
     args[3] = ConstantInt::get(Type::getInt32Ty(Context), 0, false);
     // isvolatile
     args[4] = ConstantInt::get(Type::getInt1Ty(Context), 0, false);
+#endif
 
     Instruction* aMemCpy = irBuilder.CreateCall(func, args);
 
