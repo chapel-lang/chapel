@@ -1169,9 +1169,7 @@ class PostinitVisitor : public AstVisitorTraverse {
     PostinitVisitor() { }
     virtual ~PostinitVisitor() { }
 
-    bool fnd = false;
-
-    bool found();
+    bool found = false;
 
     virtual bool enterCondStmt(CondStmt* node);
     virtual bool enterCallExpr(CallExpr* node);
@@ -1186,21 +1184,17 @@ class PostinitVisitor : public AstVisitorTraverse {
     void enterLoopStmt(BlockStmt* node);
 };
 
-bool PostinitVisitor::found() {
-  return fnd;
-}
-
 bool PostinitVisitor::enterCondStmt(CondStmt* node) {
   PostinitVisitor vis;
   node->thenStmt->accept(&vis);
 
-  bool thenPostinit = vis.found();
-  vis.fnd = false;
+  bool thenPostinit = vis.found;
+  vis.found = false;
 
   bool elsePostinit = false;
   if (node->elseStmt != NULL) {
     node->elseStmt->accept(&vis);
-    elsePostinit = vis.found();
+    elsePostinit = vis.found;
   } else if (thenPostinit) {
     USR_FATAL_CONT(node, "\"super.postinit()\" may not be called in a if-statement without an else-branch");
     return false;
@@ -1208,9 +1202,9 @@ bool PostinitVisitor::enterCondStmt(CondStmt* node) {
 
   if (thenPostinit != elsePostinit) {
     USR_FATAL_CONT(node, "\"super.postinit()\" must be called in each branch of a conditional or not at all");
-    this->fnd = true;
+    this->found = true;
   } else if (thenPostinit) {
-    this->fnd = true;
+    this->found = true;
   }
 
   return false;
@@ -1218,8 +1212,8 @@ bool PostinitVisitor::enterCondStmt(CondStmt* node) {
 
 bool PostinitVisitor::enterCallExpr(CallExpr* node) {
   if (isSuperPostInit(node)) {
-    if (found() == false) {
-      fnd = true;
+    if (found == false) {
+      found = true;
     } else {
       USR_FATAL_CONT(node, "Multiple calls to \"super.postinit()\"");
       return false;
@@ -1257,7 +1251,7 @@ bool PostinitVisitor::enterBlockStmt(BlockStmt* node) {
       PostinitVisitor vis;
       for_alist(next_ast, node->body)
         next_ast->accept(&vis);
-      if (vis.found() && isLoweredElseCoforall == false) {
+      if (vis.found && isLoweredElseCoforall == false) {
         USR_FATAL_CONT(node, "\"super.postinit()\" is not allowed in a %s satement", name);
       }
       return false;
@@ -1272,9 +1266,9 @@ void PostinitVisitor::enterLoopStmt(BlockStmt* node) {
   for_alist(next_ast, node->body)
     next_ast->accept(&vis);
 
-  if (vis.found()) {
+  if (vis.found) {
     USR_FATAL_CONT(node, "\"super.postinit()\" is not allowed in loop statements");
-    fnd = true;
+    found = true;
   }
 }
 
@@ -1302,7 +1296,7 @@ bool PostinitVisitor::enterParamForLoop(ParamForLoop* node) {
 static bool hasSuperPostInit(BlockStmt* block) {
   PostinitVisitor vis;
   block->accept(&vis);
-  return vis.found();
+  return vis.found;
 }
 
 //
