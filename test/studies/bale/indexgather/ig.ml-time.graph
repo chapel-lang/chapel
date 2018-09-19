@@ -1,5 +1,5 @@
-perfkeys: Time:, Time:
-files: bale-hist-atomic.dat, bale-hist-buff-atomic.dat
-graphkeys: runtime (naive), runtime (buffered)
-graphtitle: Bale: Histogram Time (sec)
+perfkeys: Time:
+files: bale-ig.dat
+graphkeys: runtime (naive)
+graphtitle: Bale: Indexgather Time (sec)
 ylabel: Time (seconds)
