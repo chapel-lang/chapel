@@ -1784,17 +1784,6 @@ bool AggregateType::wantsDefaultInitializer() const {
   } else if (symbol->hasFlag(FLAG_ITERATOR_CLASS) ||
              symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     retval = false;
-
-  } else {
-    // No default initializer for types that have an initialize() method
-    forv_Vec(FnSymbol, method, nonConstHole->methods) {
-      if (method != NULL && strcmp(method->name, "initialize") == 0) {
-        if (method->numFormals() == 2) {
-          retval = false;
-          break;
-        }
-      }
-    }
   }
 
   return retval;

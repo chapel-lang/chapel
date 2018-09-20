@@ -1664,8 +1664,7 @@ static void findNonTaskFnParent(CallExpr* call,
 }
 
 static bool isConstructorLikeFunction(FnSymbol* fn) {
-  return strcmp(fn->name, "init")       ==    0  ||
-         strcmp(fn->name, "initialize") ==    0;
+  return strcmp(fn->name, "init")       ==    0;
 }
 
 // Is 'call' in a constructor or in initialize()?
