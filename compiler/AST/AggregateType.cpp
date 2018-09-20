@@ -1737,24 +1737,6 @@ void AggregateType::buildCopyInitializer() {
   }
 }
 
-bool AggregateType::parentDefinesInitializer() const {
-  bool retval = false;
-
-  if (dispatchParents.n > 0) {
-    if (AggregateType* pt = dispatchParents.v[0]) {
-      if (pt->initializerStyle == DEFINES_INITIALIZER ||
-          pt->wantsDefaultInitializer()) {
-        retval = true;
-
-      } else {
-        retval = pt->parentDefinesInitializer();
-      }
-    }
-  }
-
-  return retval;
-}
-
 // Returns true for the cases where we want to generate a default initializer.
 // Some cases are temporarily false, while others are permanently so: we never
 // want to generate a default initializer for a type that has defined an

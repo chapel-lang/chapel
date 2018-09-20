@@ -144,8 +144,6 @@ public:
 
   void                        addClassToHierarchy();
 
-  bool                        parentDefinesInitializer()                 const;
-
   bool                        wantsDefaultInitializer()                  const;
 
   void                        buildDefaultInitializer();
