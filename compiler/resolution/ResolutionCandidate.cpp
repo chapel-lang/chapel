@@ -75,11 +75,6 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
     resolveTypedefedArgTypes();
 
     if (computeAlignment(info) == true) {
-      // Ensure that type constructor is resolved before other constructors.
-      if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
-        resolveTypeConstructor(info);
-      }
-
       retval = checkResolveFormalsWhereClauses(info);
     }
   }
@@ -313,9 +308,8 @@ bool ResolutionCandidate::verifyGenericFormal(ArgSymbol* formal) const {
   if (formal->intent                      != INTENT_PARAM &&
       formal->hasFlag(FLAG_TYPE_VARIABLE) == false        &&
       formal->type                        != dtAny) {
-    if (strcmp(formal->name, "outer") != 0     &&
-        (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true ||
-         fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true)) {
+    if (strcmp(formal->name, "outer") != 0 &&
+        fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
       retval = false;
 
     } else if (fn->isMethod()                       == true  &&

@@ -137,7 +137,6 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
             fn->hasFlag(FLAG_AUTO_COPY_FN) ||
             fn->hasFlag(FLAG_BUILD_TUPLE) ||
             fn->hasFlag(FLAG_NO_BORROW_CONVERT) ||
-            fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
             fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
             (fn->name == astrInit && fn->hasFlag(FLAG_COMPILER_GENERATED)) ||
             fn->name == astr_cast))

@@ -279,7 +279,6 @@ static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
 
          fn->name                              != astrSequals  &&
 
-         fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == false        &&
          fn->hasFlag(FLAG_BUILD_TUPLE)         == false;
 }
 
@@ -1368,16 +1367,11 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
 
 bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
   if (isRecord(formal->getValType())) {
-    // For now, rule out default ctor/init/_new
-    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
-      return false; // old strategy for old-path in wrapAndCleanUpActuals
-    else {
-      if (formal->intent == INTENT_IN ||
-          formal->intent == INTENT_CONST_IN ||
-          formal->originalIntent == INTENT_IN ||
-          formal->originalIntent == INTENT_CONST_IN)
-        return true;
-    }
+    if (formal->intent == INTENT_IN ||
+        formal->intent == INTENT_CONST_IN ||
+        formal->originalIntent == INTENT_IN ||
+        formal->originalIntent == INTENT_CONST_IN)
+      return true;
   }
 
   return false;

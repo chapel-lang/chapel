@@ -1321,10 +1321,6 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
   // common-case check to see if functions have equal visibility
   //
   if (fn1->defPoint->parentExpr == fn2->defPoint->parentExpr) {
-    // Special check which makes cg-initializers inferior to user-defined constructors
-    // with the same args.
-    if (fn2->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
-      return true;
     return false;
   }
 

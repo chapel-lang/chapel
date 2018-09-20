@@ -159,8 +159,7 @@ void normalize() {
       makeExportWrapper(fn);
     }
 
-    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == false &&
-        fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == false) {
+    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false) {
       fixupArrayFormals(fn);
     }
 
