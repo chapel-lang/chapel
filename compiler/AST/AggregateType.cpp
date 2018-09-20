@@ -1745,16 +1745,10 @@ void AggregateType::buildCopyInitializer() {
 // the pragma "use default init" has been applied
 //
 bool AggregateType::wantsDefaultInitializer() const {
-  AggregateType* nonConstHole = (AggregateType*) this;
   bool           retval       = true;
 
   if (symbol->hasFlag(FLAG_TUPLE)) {
     return false;
-
-  // Allow constructors in user code if --no-force-initializers is thrown
-  } else if (fUserDefaultInitializers == false &&
-             nonConstHole->getModule()->modTag == MOD_USER) {
-    retval = false;
 
   // Only want a default initializer when no
   // initializer or constructor is defined
