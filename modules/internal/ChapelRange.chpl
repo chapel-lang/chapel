@@ -384,6 +384,11 @@ module ChapelRange {
     compilerError("Range bounds must be of compatible types");
   }
 
+  pragma "last resort"
+  proc chpl_compute_low_param_loop_bound(low, high) {
+    compilerError("param for loop must be defined over a bounded param range");
+  }
+
   //################################################################################
   //# Predicates
   //#

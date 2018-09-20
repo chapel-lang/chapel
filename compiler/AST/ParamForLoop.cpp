@@ -386,9 +386,6 @@ CallExpr* ParamForLoop::foldForResolve()
   SymExpr*   hse       = highExprGet();
   SymExpr*   sse       = strideExprGet();
 
-  if (!lse             || !hse             || !sse)
-    USR_FATAL(this, "param for loop must be defined over a bounded param range");
-
   VarSymbol* lvar      = toVarSymbol(lse->symbol());
   VarSymbol* hvar      = toVarSymbol(hse->symbol());
   VarSymbol* svar      = toVarSymbol(sse->symbol());
