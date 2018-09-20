@@ -49,7 +49,6 @@ AggregateType::AggregateType(AggregateTag initTag) :
   defaultInitializer  = NULL;
   initializerStyle    = DEFINES_NONE_USE_DEFAULT;
   initializerResolved = false;
-  outer               = NULL;
   iteratorInfo        = NULL;
   doc                 = NULL;
 
@@ -89,7 +88,6 @@ AggregateType* AggregateType::copyInner(SymbolMap* map) {
   AggregateType* copy_type = new AggregateType(aggregateTag);
 
   copy_type->initializerStyle = initializerStyle;
-  copy_type->outer            = outer;
 
   for_alist(expr, fields) {
     copy_type->fields.insertAtTail(COPY_INT(expr));
@@ -1180,24 +1178,6 @@ std::string AggregateType::docsDirective() {
   return "";
 }
 
-void AggregateType::createOuterWhenRelevant() {
-  if (hasInitializers() == false) {
-    SET_LINENO(this);
-    Symbol* parSym = symbol->defPoint->parentSymbol;
-
-    if (AggregateType* outerType = toAggregateType(parSym->type)) {
-
-      // Create an "outer" pointer to the outer class in the inner class
-      VarSymbol* tmpOuter = new VarSymbol("outer", outerType);
-
-      // Save the pointer to the outer class
-      fields.insertAtTail(new DefExpr(tmpOuter));
-
-      outer = tmpOuter;
-    }
-  }
-}
-
 /************************************* | **************************************
 *                                                                             *
 * Create the (default) type constructor for this class.                       *
@@ -1303,10 +1283,9 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
                                         CallExpr* superCall) const {
   Vec<const char*> fieldNamesSet;
 
-  Symbol* _outer = NULL;
   if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
     AggregateType* outerType = toAggregateType(ts->type);
-    _outer    = outerType->moveConstructorToOuter(fn);
+    outerType->moveConstructorToOuter(fn);
   }
 
   for_fields(tmp, this) {
@@ -1319,12 +1298,6 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
 
           typeConstrSetField(fn, field, call);
         }
-
-      } else if (field == this->outer) {
-        Symbol*        _this     = fn->_this;
-        Symbol*        name      = new_CStringSymbol("outer");
-
-        fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER, _this, name, _outer));
 
       } else {
         fieldNamesSet.set_add(field->name);
@@ -1486,8 +1459,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
     SET_LINENO(fieldDefExpr);
 
     if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-      if (field->hasFlag(FLAG_SUPER_CLASS) == false &&
-             strcmp(field->name, "outer")) {
+      if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
 
         DefExpr*    defPoint = field->defPoint;
         const char* name     = field->name;
@@ -1710,8 +1682,7 @@ void AggregateType::buildCopyInitializer() {
     // so we should mark the "other" arg as generic.
     for_fields(fieldDefExpr, this) {
       if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-        if (field->hasFlag(FLAG_SUPER_CLASS) == false &&
-            strcmp(field->name, "outer")     != 0) {
+        if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
           if (field->hasFlag(FLAG_PARAM) ||
               field->isType() == true    ||
               (field->defPoint->init     == NULL &&
@@ -1733,8 +1704,7 @@ void AggregateType::buildCopyInitializer() {
     for_fields(fieldDefExpr, this) {
       // TODO: outer (nested types), promotion type?
       if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-        if (field->hasFlag(FLAG_SUPER_CLASS) == false &&
-            strcmp(field->name, "outer")     != 0) {
+        if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
           const char* name       = field->name;
 
           CallExpr*   thisField  = new CallExpr(".",
@@ -1857,7 +1827,7 @@ void AggregateType::insertImplicitThis(FnSymbol*         fn,
   }
 }
 
-ArgSymbol* AggregateType::moveConstructorToOuter(FnSymbol* fn) {
+void AggregateType::moveConstructorToOuter(FnSymbol* fn) {
   Expr*      insertPoint = symbol->defPoint;
 
   while (isTypeSymbol(insertPoint->parentSymbol) == true) {
@@ -1865,29 +1835,6 @@ ArgSymbol* AggregateType::moveConstructorToOuter(FnSymbol* fn) {
   }
 
   insertPoint->insertBefore(fn->defPoint->remove());
-
-  AggregateType* nestedType = toAggregateType(fn->_this->type);
-
-  if (nestedType->hasInitializers() == false) {
-    methods.add(fn);
-
-    fn->setMethod(true);
-    fn->addFlag(FLAG_METHOD_PRIMARY);
-
-    ArgSymbol* _mt         = new ArgSymbol(INTENT_BLANK, "_mt",   dtMethodToken);
-    ArgSymbol* retval      = new ArgSymbol(INTENT_BLANK, "outer", this);
-
-    retval->addFlag(FLAG_GENERIC);
-
-    fn->insertFormalAtHead(new DefExpr(retval));
-    fn->insertFormalAtHead(new DefExpr(_mt));
-
-    fn->_outer = retval;
-
-    return retval;
-  }
-
-  return NULL;
 }
 
 /************************************* | **************************************

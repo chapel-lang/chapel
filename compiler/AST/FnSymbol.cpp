@@ -52,7 +52,6 @@ FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
   retTag             = RET_VALUE;
   iteratorInfo       = NULL;
   _this              = NULL;
-  _outer             = NULL;
   instantiatedFrom   = NULL;
   _instantiationPoint = NULL;
   _backupInstantiationPoint = NULL;
@@ -145,7 +144,6 @@ void FnSymbol::verify() {
   verifyInTree(retType,            "FnSymbol::retType");
 
   verifyInTree(_this,              "FnSymbol::_this");
-  verifyInTree(_outer,             "FnSymbol::_outer");
   verifyInTree(instantiatedFrom,   "FnSymbol::instantiatedFrom");
   verifyInTree(_instantiationPoint, "FnSymbol::instantiationPoint");
   verifyInTree(_backupInstantiationPoint, "FnSymbol::backupInstantiationPoint");
@@ -194,7 +192,6 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
   newFn->retType            = this->retType;
   newFn->thisTag            = this->thisTag;
   newFn->cname              = this->cname;
-  newFn->_outer             = this->_outer;
   newFn->retTag             = this->retTag;
   newFn->instantiatedFrom   = this->instantiatedFrom;
   newFn->_instantiationPoint = this->_instantiationPoint;

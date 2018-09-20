@@ -683,7 +683,6 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
     SUB_TYPE(ps->type);
     SUB_TYPE(ps->retType);
     SUB_SYMBOL(ps->_this);
-    SUB_SYMBOL(ps->_outer);
 
   } else if (ArgSymbol* ps = toArgSymbol(ast)) {
     SUB_TYPE(ps->type);

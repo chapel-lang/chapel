@@ -138,8 +138,6 @@ public:
 
   int                         getMemberGEP(const char* name);
 
-  void                        createOuterWhenRelevant();
-
   FnSymbol*                   buildTypeConstructor();
 
   void                        addRootType();
@@ -191,9 +189,6 @@ public:
 
   // used from parsing, sets dispatchParents
   AList                       inherits;
-
-  // pointer to an outer class if this is an inner class
-  Symbol*                     outer;
 
   // Attached only to iterator class/records
   IteratorInfo*               iteratorInfo;
@@ -255,7 +250,7 @@ private:
 
 private:
 
-  ArgSymbol*                  moveConstructorToOuter(FnSymbol* fn);
+  void                        moveConstructorToOuter(FnSymbol* fn);
 
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,

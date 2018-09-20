@@ -946,24 +946,6 @@ DefExpr* InitNormalize::firstField(FnSymbol* fn) const {
   return retval;
 }
 
-void InitNormalize::makeOuterArg() {
-  AggregateType* at        = type();
-  Type*          outerType = at->outer->type;
-
-  outerType->methods.add(mFn);
-
-  mFn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
-
-  mFn->_outer->addFlag(FLAG_GENERIC);
-
-  mFn->_this->defPoint->insertAfter(new DefExpr(mFn->_outer));
-
-  mFn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
-                                 mFn->_this,
-                                 new_CStringSymbol("outer"),
-                                 mFn->_outer));
-}
-
 //
 // Initialize the 'mThisAsParent' field
 //
