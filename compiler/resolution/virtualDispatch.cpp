@@ -220,26 +220,15 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
   } else {
     FnSymbol* fn = instantiate(cfn, subs);
 
-    if (ct->hasInitializers() == false) {
-      FnSymbol*  typeConstr         = ct->typeConstructor;
-      BlockStmt* instantiationPoint = typeConstr->instantiationPoint();
-
-      if (instantiationPoint == NULL) {
-        instantiationPoint = toBlockStmt(typeConstr->defPoint->parentExpr);
-      }
-
-      fn->setInstantiationPoint(instantiationPoint);
-    } else {
-      //
-      // BHARSH 2018-04-06:
-      //
-      // Essential for arrays to be able to use initializers.
-      //
-      // A smaller test case:
-      //   types/type_variables/deitz/test_point_of_instantiation3.chpl
-      //
-      fn->setInstantiationPoint(ct->symbol->instantiationPoint);
-    }
+    //
+    // BHARSH 2018-04-06:
+    //
+    // Essential for arrays to be able to use initializers.
+    //
+    // A smaller test case:
+    //   types/type_variables/deitz/test_point_of_instantiation3.chpl
+    //
+    fn->setInstantiationPoint(ct->symbol->instantiationPoint);
 
     return fn;
   }

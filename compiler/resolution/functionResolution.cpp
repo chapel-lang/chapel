@@ -6312,8 +6312,6 @@ static void resolveNewHandleConstructor(CallExpr* newExpr, Type* manager) {
 static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
   SET_LINENO(newExpr);
 
-  AggregateType* at = resolveNewFindType(newExpr);
-
   //
   // Normalize the allocation for a nested type (constructors only)
   //
@@ -6321,13 +6319,8 @@ static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
   //
   if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
     SymExpr* typeExpr = toSymExpr(partial->baseExpr);
-    SymExpr* thisExpr = toSymExpr(partial->get(2));
 
     partial->remove();
-
-    if (at->hasInitializers() == false) {
-      newExpr->insertAtHead(thisExpr->remove());
-    }
 
     newExpr->insertAtHead(typeExpr);
   }
