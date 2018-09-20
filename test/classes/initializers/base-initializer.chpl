@@ -1,5 +1,3 @@
-// Modified from
-// test/classes/constructors/base-initializer.chpl
 
 // Contributed by Rafael Larrosa Jimenez (rlarrosa@uma.es)
 
