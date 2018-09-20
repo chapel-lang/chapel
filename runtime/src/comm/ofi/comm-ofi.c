@@ -53,34 +53,57 @@
 
 #include "comm-ofi-internal.h"
 
+
+////////////////////////////////////////
 //
-// Progress thread support
+// Global types and data
 //
 
-// same as ofi.num_am_ctx, for now
-#define num_progress_threads 1
-struct progress_thread_info {
-  int id;
+struct ofi_stuff {
+  struct fid_fabric* fabric;
+  struct fid_domain* domain;
+  struct fid_av* av;
+  fi_addr_t* fi_addrs;
+  fi_addr_t** rx_addrs;
+  struct fid_mr* mr;
+
+  struct fid_ep* ep; /* scalable endpoint */
+  int rx_ctx_bits;
+
+  /* For async puts/gets */
+  int num_tx_ctx;
+  struct fid_ep** tx_ep;
+  struct fid_cq** tx_cq;
+  /* FI_CQ_FORMAT_CONTEXT?, FI_WAIT_UNSPEC, signaling_vector? */
+  int num_rx_ctx;
+  struct fid_ep** rx_ep;
+  struct fid_cq** rx_cq;
+
+  /* For active messages */
+  int num_am_ctx;
+  struct fid_ep** am_tx_ep;
+  struct fid_cq** am_tx_cq;
+  struct fid_ep** am_rx_ep;
+  struct fid_cq** am_rx_cq;
+
 };
 
-static struct progress_thread_info pti[num_progress_threads];
-
-static void progress_thread(void *);
-
-static atomic_uint_least32_t progress_thread_count;
-static inline chpl_bool progress_threads_running(void);
-static inline chpl_bool progress_threads_running() {
-  return atomic_load_uint_least32_t(&progress_thread_count) > 0;
-}
-
-static atomic_bool progress_threads_please_exit;
-
-static pthread_cond_t progress_thread_enter_cond = PTHREAD_COND_INITIALIZER;
-static pthread_cond_t progress_thread_exit_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t progress_thread_entEx_cond_mutex =
-                         PTHREAD_MUTEX_INITIALIZER;
-
 static struct ofi_stuff ofi;
+
+
+////////////////////////////////////////
+//
+// Error checking
+//
+
+#define OFICHKRET(fncall, err) do {              \
+    int retval;                                  \
+    if ((retval = (fncall)) != err) {             \
+      chpl_internal_error(fi_strerror(-retval));  \
+    }                                            \
+  } while (0)
+
+#define OFICHKERR(fncall) OFICHKRET(fncall, FI_SUCCESS)
 
 
 ////////////////////////////////////////
@@ -93,13 +116,12 @@ static int get_comm_concurrency(void);
 static void libfabric_init_addrvec(int, int);
 
 static void init_am(void);
+static void shutdown_am(void);
+
 static void init_rdma(void);
 
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
-  atomic_init_bool(&progress_threads_please_exit, false);
-  atomic_init_uint_least32_t(&progress_thread_count, 0);
-
   chpl_comm_ofi_oob_init();
   chpl_resetCommDiagnosticsHere();
 }
@@ -117,33 +139,13 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
 
 void chpl_comm_post_task_init(void) {
-  int i;
-
   if (chpl_numNodes == 1) {
     // return;
   }
 
   libfabric_init();
-  init_rdma();
   init_am();
-
-  if (num_progress_threads > 0) {
-    // Start progress thread(s).  Don't proceed from here until at
-    // least one is running.
-    CALL_CHECK_ZERO(pthread_mutex_lock(&progress_thread_entEx_cond_mutex));
-
-    for (i = 0; i < num_progress_threads; i++) {
-      pti[i]. id = i;
-      if (chpl_task_createCommTask(progress_thread, (void *) &pti[i]) != 0) {
-        chpl_internal_error("unable to start progress thread");
-      }
-    }
-
-    // Some progress thread we created will release us.
-    CALL_CHECK_ZERO(pthread_cond_wait(&progress_thread_enter_cond,
-                                      &progress_thread_entEx_cond_mutex));
-    CALL_CHECK_ZERO(pthread_mutex_unlock(&progress_thread_entEx_cond_mutex));
-  }
+  init_rdma();
 
   // Initialize the caching layer, if it is active.
   // chpl_cache_init();
@@ -469,14 +471,7 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
 void chpl_comm_pre_task_exit(int all) {
   if (all) {
     chpl_comm_barrier("chpl_comm_pre_task_exit");
-
-    // Tear down the progress thread(s).  On node 0, don't proceed from
-    // here until the last one has finished.
-    CALL_CHECK_ZERO(pthread_mutex_lock(&progress_thread_entEx_cond_mutex));
-    atomic_store_bool(&progress_threads_please_exit, true);
-    CALL_CHECK_ZERO(pthread_cond_wait(&progress_thread_exit_cond,
-                                      &progress_thread_entEx_cond_mutex));
-    CALL_CHECK_ZERO(pthread_mutex_unlock(&progress_thread_entEx_cond_mutex));
+    shutdown_am();
   }
 }
 
@@ -534,9 +529,6 @@ static void exit_all(int status) {
   chpl_mem_free(ofi.am_rx_cq, 0, 0);
 
   chpl_comm_ofi_oob_fini();
-
-  atomic_destroy_bool(&progress_threads_please_exit);
-  atomic_destroy_uint_least32_t(&progress_thread_count);
 }
 
 static void exit_any(int status) {
@@ -549,6 +541,40 @@ static void exit_any(int status) {
 // Interface: Active Message support
 //
 
+#define num_progress_threads 1
+
+struct progress_thread_info {
+  int id;
+};
+
+static struct progress_thread_info pti[num_progress_threads];
+
+static void progress_thread(void *);
+
+static atomic_uint_least32_t progress_thread_count;
+static inline chpl_bool progress_threads_running(void);
+static inline chpl_bool progress_threads_running() {
+  return atomic_load_uint_least32_t(&progress_thread_count) > 0;
+}
+
+static atomic_bool progress_threads_please_exit;
+
+static pthread_cond_t progress_thread_enter_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t progress_thread_exit_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t progress_thread_entEx_cond_mutex =
+                         PTHREAD_MUTEX_INITIALIZER;
+
+struct ofi_am_info {
+  c_nodeid_t node;
+  c_sublocid_t subloc;
+  chpl_bool serial_state; // To prevent creation of new tasks
+  chpl_bool fast;
+  chpl_bool blocking;
+  chpl_fn_int_t fid;
+  void* ack;
+};
+
+
 static void handle_am(struct fi_cq_data_entry*);
 
 static void execute_on_common(c_nodeid_t, c_sublocid_t,
@@ -558,7 +584,42 @@ static void execute_on_common(c_nodeid_t, c_sublocid_t,
 
 
 void init_am(void) {
-  // empty for now
+  atomic_init_bool(&progress_threads_please_exit, false);
+  atomic_init_uint_least32_t(&progress_thread_count, 0);
+
+  if (num_progress_threads > 0) {
+    // Start progress thread(s).  Don't proceed from here until at
+    // least one is running.
+    CALL_CHECK_ZERO(pthread_mutex_lock(&progress_thread_entEx_cond_mutex));
+
+    for (int i = 0; i < num_progress_threads; i++) {
+      pti[i].id = i;
+      if (chpl_task_createCommTask(progress_thread, (void *) &pti[i]) != 0) {
+        chpl_internal_error("unable to start progress thread");
+      }
+    }
+
+    // Some progress thread we created will release us.
+    CALL_CHECK_ZERO(pthread_cond_wait(&progress_thread_enter_cond,
+                                      &progress_thread_entEx_cond_mutex));
+    CALL_CHECK_ZERO(pthread_mutex_unlock(&progress_thread_entEx_cond_mutex));
+  }
+}
+
+
+void shutdown_am(void) {
+  //
+  // Tear down the progress thread(s).  On node 0, don't proceed from
+  // here until the last one has finished (TODO).
+  //
+  CALL_CHECK_ZERO(pthread_mutex_lock(&progress_thread_entEx_cond_mutex));
+  atomic_store_bool(&progress_threads_please_exit, true);
+  CALL_CHECK_ZERO(pthread_cond_wait(&progress_thread_exit_cond,
+                                    &progress_thread_entEx_cond_mutex));
+  CALL_CHECK_ZERO(pthread_mutex_unlock(&progress_thread_entEx_cond_mutex));
+
+  atomic_destroy_bool(&progress_threads_please_exit);
+  atomic_destroy_uint_least32_t(&progress_thread_count);
 }
 
 
