@@ -1335,8 +1335,6 @@ static void buildClassBorrowMethod(AggregateType* ct) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool hasUserDefinedConstructor(AggregateType* at);
-
 static void build_record_copy_function(AggregateType* at) {
   if (function_exists("chpl__initCopy", at) == NULL) {
     if (isRecordWithInitializers(at) == true) {
@@ -1360,14 +1358,7 @@ static void build_record_copy_function(AggregateType* at) {
 
       fn->insertFormalAtTail(arg);
 
-      if (hasUserDefinedConstructor(at) == true) {
-        CallExpr* call = new CallExpr(PRIM_NEW, at->symbol, new SymExpr(arg));
-
-        at->symbol->addFlag(FLAG_NOT_POD);
-
-        fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
-
-      } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
+      if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
         fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(arg)));
 
       } else {
@@ -1397,20 +1388,6 @@ static void build_record_copy_function(AggregateType* at) {
       normalize(fn);
     }
   }
-}
-
-static bool hasUserDefinedConstructor(AggregateType* at) {
-  bool retval = false;
-
-  if (at->initializerStyle == DEFINES_CONSTRUCTOR) {
-    const char* copyCtorName = astr("_construct_", at->symbol->name);
-
-    if (FnSymbol* ctor = function_exists(copyCtorName, at)) {
-      retval = true;
-    }
-  }
-
-  return retval;
 }
 
 /************************************* | **************************************

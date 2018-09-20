@@ -8978,8 +8978,7 @@ static bool do_isUnusedClass(Type* t) {
 
   // FALSE if the type uses an initializer and that initializer was
   // resolved
-  } else if (at && at->initializerStyle != DEFINES_CONSTRUCTOR &&
-             at->initializerResolved) {
+  } else if (at && at->initializerResolved) {
     retval = false;
 
   } else if (at) {
@@ -9205,18 +9204,15 @@ static void removeParamArgs()
 static void removeAggTypeFieldInfo() {
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (at->symbol->defPoint && at->symbol->defPoint->parentSymbol) {
-      // Still in the tree
-      if (at->initializerStyle != DEFINES_CONSTRUCTOR) {
-        // Defined an initializer (so we left its init
-        // and exprType information in the tree)
-        for_fields(field, at) {
-          if (field->defPoint->exprType) {
-            field->defPoint->exprType->remove();
-          }
+      // Defined an initializer (so we left its init
+      // and exprType information in the tree)
+      for_fields(field, at) {
+        if (field->defPoint->exprType) {
+          field->defPoint->exprType->remove();
+        }
 
-          if (field->defPoint->init) {
-            field->defPoint->init->remove();
-          }
+        if (field->defPoint->init) {
+          field->defPoint->init->remove();
         }
       }
     }

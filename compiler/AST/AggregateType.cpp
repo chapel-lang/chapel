@@ -1618,78 +1618,65 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
       dispatchParents.n            >      0 &&
       symbol->hasFlag(FLAG_EXTERN) == false) {
     if (AggregateType* parent = dispatchParents.v[0]) {
-      if (parent->initializerStyle != DEFINES_CONSTRUCTOR) {
-        CallExpr* superPortion = new CallExpr(".",
-                                              new SymExpr(fn->_this),
-                                              new_CStringSymbol("super"));
+      CallExpr* superPortion = new CallExpr(".",
+                                            new SymExpr(fn->_this),
+                                            new_CStringSymbol("super"));
 
-        SymExpr*  initPortion  = new SymExpr(new_CStringSymbol("init"));
-        CallExpr* base         = new CallExpr(".", superPortion, initPortion);
-        CallExpr* superCall    = new CallExpr(base);
+      SymExpr*  initPortion  = new SymExpr(new_CStringSymbol("init"));
+      CallExpr* base         = new CallExpr(".", superPortion, initPortion);
+      CallExpr* superCall    = new CallExpr(base);
 
-        if (parent->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-          // We want to call the compiler-generated all-fields initializer
+      if (parent->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+        // We want to call the compiler-generated all-fields initializer
 
-          // First, ensure we have a default initializer for the parent
-          if (parent->defaultInitializer == NULL) {
-            // ... but only if it is valid to do so
-            if (parent->wantsDefaultInitializer() == true) {
-              parent->buildDefaultInitializer();
-            }
+        // First, ensure we have a default initializer for the parent
+        if (parent->defaultInitializer == NULL) {
+          // ... but only if it is valid to do so
+          if (parent->wantsDefaultInitializer() == true) {
+            parent->buildDefaultInitializer();
           }
-
-          if (parent->defaultInitializer == NULL) {
-            // The parent might have inherited from a class that defines
-            // any initializer but not one without arguments.
-            // In this case, we shouldn't define a default initializer
-            // for this class either.
-            retval = false;
-
-          } else {
-            // Otherwise, we are good to go!
-
-            // Add an argument per argument in the parent initializer
-            for_formals(formal, parent->defaultInitializer) {
-              if (formal->type                   == dtMethodToken ||
-                  formal->hasFlag(FLAG_ARG_THIS) == true) {
-
-              // Skip arguments shadowed by this class' fields
-              } else if (names.find(formal->name) != names.end()) {
-
-              } else {
-                DefExpr* superArg = formal->defPoint->copy();
-
-                VarSymbol* field = toVarSymbol(parent->getField(superArg->sym->name));
-                fieldArgMap.put(field, superArg->sym);
-                fieldArgMap.put(formal, superArg->sym);
-
-                fn->insertFormalAtTail(superArg);
-
-                superCall->insertAtTail(superArg->sym);
-              }
-            }
-          }
-
-        } else {
-          INT_ASSERT(parent->initializerStyle == DEFINES_INITIALIZER);
-
-          // We want to call a user-defined no-argument initializer.
-          // Insert no arguments
         }
 
-        fn->body->insertAtHead(superCall);
+        if (parent->defaultInitializer == NULL) {
+          // The parent might have inherited from a class that defines
+          // any initializer but not one without arguments.
+          // In this case, we shouldn't define a default initializer
+          // for this class either.
+          retval = false;
+
+        } else {
+          // Otherwise, we are good to go!
+
+          // Add an argument per argument in the parent initializer
+          for_formals(formal, parent->defaultInitializer) {
+            if (formal->type                   == dtMethodToken ||
+                formal->hasFlag(FLAG_ARG_THIS) == true) {
+
+            // Skip arguments shadowed by this class' fields
+            } else if (names.find(formal->name) != names.end()) {
+
+            } else {
+              DefExpr* superArg = formal->defPoint->copy();
+
+              VarSymbol* field = toVarSymbol(parent->getField(superArg->sym->name));
+              fieldArgMap.put(field, superArg->sym);
+              fieldArgMap.put(formal, superArg->sym);
+
+              fn->insertFormalAtTail(superArg);
+
+              superCall->insertAtTail(superArg->sym);
+            }
+          }
+        }
 
       } else {
-        USR_FATAL(this,
-                  "Cannot create default initializer on type '%s', "
-                  "which inherits from type '%s' that defines a constructor",
-                  symbol->name,
-                  parent->symbol->name);
+        INT_ASSERT(parent->initializerStyle == DEFINES_INITIALIZER);
 
-        // The parent has defined a constructor, we cannot have a
-        // default initializer call that constructor via super.init();
-        retval = false;
+        // We want to call a user-defined no-argument initializer.
+        // Insert no arguments
       }
+
+      fn->body->insertAtHead(superCall);
     }
   }
 
@@ -2029,12 +2016,9 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
 }
 
 void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
-  bool isCtor = (strcmp(t->name,  fn->name) == 0);
   bool isInit = (strcmp(fn->name, "init")   == 0);
 
-  isCtor = isCtor || (strcmp(fn->name, "initialize") == 0);
-
-  if (isCtor == true || isInit == true) {
+  if (isInit) {
     AggregateType* ct = toAggregateType(t->type);
 
     if (ct == NULL) {
@@ -2042,9 +2026,7 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
     }
 
     if (fn->hasFlag(FLAG_NO_PARENS)) {
-      USR_FATAL(fn,
-                "a%s cannot be declared without parentheses",
-                isCtor ? " constructor" : "n initializer");
+      USR_FATAL(fn, "an initializer cannot be declared without parentheses");
     }
 
     if (fn->hasFlag(FLAG_METHOD_PRIMARY) == false &&
@@ -2058,38 +2040,17 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
     }
 
     if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-      // We hadn't previously seen a constructor or initializer definition.
+      // We hadn't previously seen an initializer definition.
       // Update the field on the type appropriately.
-      if (isInit) {
-        if (fn->hasFlag(FLAG_METHOD_PRIMARY) == true ||
-            fn->getModule() == t->getModule()) {
-          // Only mark the type as defining an initializer if the initializer
-          // we found was in the same module as the type itself.  If there is
-          // no such initializer, we would need to define a default constructor
-          // or initializer for the scopes where the secondary initializer is
-          // not visible.
-          ct->initializerStyle = DEFINES_INITIALIZER;
-        }
-
-      } else if (isCtor) {
-        ct->initializerStyle = DEFINES_CONSTRUCTOR;
-
-      } else {
-        // Should never reach here, but just in case...
-        INT_FATAL(fn, "Function was neither a constructor nor an initializer");
+      if (fn->hasFlag(FLAG_METHOD_PRIMARY) == true ||
+          fn->getModule() == t->getModule()) {
+        // Only mark the type as defining an initializer if the initializer
+        // we found was in the same module as the type itself.  If there is
+        // no such initializer, we would need to define a default constructor
+        // or initializer for the scopes where the secondary initializer is
+        // not visible.
+        ct->initializerStyle = DEFINES_INITIALIZER;
       }
-
-    } else if ((ct->initializerStyle == DEFINES_CONSTRUCTOR && !isCtor) ||
-               (ct->initializerStyle == DEFINES_INITIALIZER && !isInit)) {
-      // We've previously seen a constructor but this new method
-      // is an initializer or we've previously seen an initializer
-      // but this new method is a constructor.
-      // We don't allow both to be defined on a type.
-
-      USR_FATAL_CONT(fn,
-                     "Definition of both constructor '%s' and "
-                     "initializer 'init'.  Please choose one.",
-                     ct->symbol->name);
     }
   }
 }

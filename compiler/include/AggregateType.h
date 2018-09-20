@@ -35,7 +35,6 @@ enum AggregateTag {
 };
 
 enum InitializerStyle {
-  DEFINES_CONSTRUCTOR,
   DEFINES_INITIALIZER,
   DEFINES_NONE_USE_DEFAULT
 };

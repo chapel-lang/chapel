@@ -757,17 +757,7 @@ bool FnSymbol::tagIfGeneric() {
 int FnSymbol::hasGenericFormals() const {
   bool hasGenericFormal   = false;
   bool hasGenericDefaults =  true;
-  bool resolveInit        = false;
   int  retval             =     0;
-
-  if (isMethod() == true && _this != NULL) {
-    if (AggregateType* at = toAggregateType(_this->type)) {
-      if (at->initializerStyle != DEFINES_CONSTRUCTOR  &&
-          strcmp(name, "init") == 0) {
-        resolveInit = true;
-      }
-    }
-  }
 
   for_formals(formal, this) {
     bool isGeneric = false;
@@ -783,7 +773,7 @@ int FnSymbol::hasGenericFormals() const {
       if (typeHasGenericDefaults               == false ||
           formal->hasFlag(FLAG_MARKED_GENERIC) == true ||
           formal                               == _this) {
-        if (!(formal == _this && resolveInit)) {
+        if (!(formal == _this && isInitializer())) {
           isGeneric = true;
         }
       }
