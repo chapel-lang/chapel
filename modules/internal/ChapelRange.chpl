@@ -842,11 +842,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                           other.alignment,
                           true);
 
-    return (boundedOther.length == 0) || member(boundedOther);
+    return (boundedOther.length == 0) || contains(boundedOther);
   }
-  /* Return true if ``other`` is a member of this range and false otherwise */
+  /* Return true if ``other`` is a contained in this range and false otherwise */
   inline proc range.boundsCheck(other: idxType)
-    return member(other);
+    return contains(other);
 
 
   //################################################################################
@@ -898,7 +898,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"indexOrder -- Undefined on a range with ambiguous alignment.");
 
-    if ! member(ind) then return (-1):intIdxType;
+    if ! contains(ind) then return (-1):intIdxType;
     if ! stridable {
       if this.hasLowBound() then
         return chpl__idxToInt(ind) - _low;

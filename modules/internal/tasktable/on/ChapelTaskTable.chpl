@@ -108,7 +108,7 @@ module ChapelTaskTable {
   {
     if (chpldev_taskTable == nil) then return;
   
-    if (!chpldev_taskTable.dom.member(taskID)) then
+    if (!chpldev_taskTable.dom.contains(taskID)) then
       // This must be serial, because if add() results in parallelism
       // (due to _resize), it may lead to deadlock (due to reentry
       // into the runtime tasking layer for task table operations).
@@ -122,7 +122,7 @@ module ChapelTaskTable {
   export proc chpldev_taskTable_remove(taskID : chpl_taskID_t)
   {
     if (chpldev_taskTable == nil ||
-        !chpldev_taskTable.dom.member(taskID)) then return;
+        !chpldev_taskTable.dom.contains(taskID)) then return;
   
     // This must be serial, because if remove() results in parallelism
     // (due to _resize), it may lead to deadlock (due to reentry into
@@ -134,7 +134,7 @@ module ChapelTaskTable {
   export proc chpldev_taskTable_set_active(taskID : chpl_taskID_t)
   {
     if (chpldev_taskTable == nil ||
-        !chpldev_taskTable.dom.member(taskID)) then return;
+        !chpldev_taskTable.dom.contains(taskID)) then return;
   
     chpldev_taskTable.map[taskID].state = taskState.active;
   }
@@ -142,7 +142,7 @@ module ChapelTaskTable {
   export proc chpldev_taskTable_set_suspended(taskID : chpl_taskID_t)
   {
     if (chpldev_taskTable == nil ||
-        !chpldev_taskTable.dom.member(taskID)) then return;
+        !chpldev_taskTable.dom.contains(taskID)) then return;
   
     chpldev_taskTable.map[taskID].state = taskState.suspended;
   }
@@ -150,7 +150,7 @@ module ChapelTaskTable {
   export proc chpldev_taskTable_get_tl_info(taskID : chpl_taskID_t)
   {
     if (chpldev_taskTable == nil ||
-        !chpldev_taskTable.dom.member(taskID)) then return 0:uint(64);
+        !chpldev_taskTable.dom.contains(taskID)) then return 0:uint(64);
   
     return chpldev_taskTable.map[taskID].tl_info;
   }
