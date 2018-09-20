@@ -1416,10 +1416,6 @@ static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
 
 
-static chpl_atomic_commDiagnostics comm_diagnostics;
-static chpl_bool comm_diags_disabled_temporarily = false;
-
-
 //
 // Specialized argument type and values for the may_remote_proxy
 // argument to do_remote_put() and ..._get().
@@ -2921,7 +2917,7 @@ void set_up_for_polling(void)
 void chpl_comm_rollcall(void)
 {
   // Initialize diags
-  chpl_comm_diags_init(&comm_diagnostics);
+  chpl_comm_diags_init();
 
   chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID,
            chpl_numNodes, chpl_nodeName());
@@ -3650,8 +3646,7 @@ void chpl_comm_barrier(const char *msg)
   if (chpl_numNodes == 1)
     return;
 
-  if (chpl_verbose_comm && !comm_diags_disabled_temporarily)
-    printf("%d: barrier for '%s'\n", chpl_nodeID, msg);
+  chpl_comm_diags_verbose_printf("barrier for '%s'", msg);
 
   //
   // If we can't communicate yet, just do a PMI barrier.
@@ -5025,11 +5020,9 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  if (chpl_verbose_comm && !comm_diags_disabled_temporarily)
-    printf("%d: %s:%d: remote put to %d\n", chpl_nodeID,
-           chpl_lookupFilename(fn), ln, locale);
-  if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    chpl_comm_diags_incr(&comm_diagnostics.put);
+  chpl_comm_diags_verbose_printf("%s:%d: remote put to %d",
+                                 chpl_lookupFilename(fn), ln, locale);
+  chpl_comm_diags_incr(put);
 
   do_remote_put(addr, locale, raddr, size, NULL, may_proxy_true);
 }
@@ -5310,11 +5303,9 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  if (chpl_verbose_comm && !comm_diags_disabled_temporarily)
-    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
-           chpl_lookupFilename(fn), ln, locale);
-  if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    chpl_comm_diags_incr(&comm_diagnostics.get);
+  chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
+                                 chpl_lookupFilename(fn), ln, locale);
+  chpl_comm_diags_incr(get);
 
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
 }
@@ -5653,11 +5644,9 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  if (chpl_verbose_comm && !comm_diags_disabled_temporarily)
-    printf("%d: %s:%d: remote non-blocking get from %d\n",
-           chpl_nodeID, chpl_lookupFilename(fn), ln, locale);
-  if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    chpl_comm_diags_incr(&comm_diagnostics.get_nb);
+  chpl_comm_diags_verbose_printf("%s:%d: remote non-blocking get from %d",
+                                 chpl_lookupFilename(fn), ln, locale);
+  chpl_comm_diags_incr(get_nb);
 
   //
   // For now, if the local address isn't in a memory region known to the
@@ -5769,13 +5758,12 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
 
 int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 {
-  if (chpl_verbose_comm && !comm_diags_disabled_temporarily) {
+  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
     int i, j;
     nb_desc_idx_decode(&i, &j, nb_desc_handle_2_idx(h));
-    printf("%d: test nb complete (%d, %d)\n", chpl_nodeID, i, j);
+    chpl_comm_diags_verbose_printf("test nb complete (%d, %d)", i, j);
   }
-  if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    chpl_comm_diags_incr(&comm_diagnostics.test_nb);
+  chpl_comm_diags_incr(test_nb);
 
   PERFSTATS_INC(test_nb_cnt);
 
@@ -5785,17 +5773,16 @@ int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 
 void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
-  if (chpl_verbose_comm && !comm_diags_disabled_temporarily) {
+  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
     if (nhandles == 1) {
       int i, j;
       nb_desc_idx_decode(&i, &j, nb_desc_handle_2_idx(h[0]));
-      printf("%d: wait nb (%d, %d)\n", chpl_nodeID, i, j);
+      chpl_comm_diags_verbose_printf("wait nb (%d, %d)", i, j);
     }
     else
-      printf("%d: wait nb (%zd handles)\n", chpl_nodeID, nhandles);
+      chpl_comm_diags_verbose_printf("wait nb (%zd handles)", nhandles);
   }
-  if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    chpl_comm_diags_incr(&comm_diagnostics.wait_nb);
+  chpl_comm_diags_incr(wait_nb);
 
   PERFSTATS_INC(wait_nb_cnt);
 
@@ -5836,17 +5823,16 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
   int rv = 0;
 
-  if (chpl_verbose_comm && !comm_diags_disabled_temporarily) {
+  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
     if (nhandles == 1) {
       int i, j;
       nb_desc_idx_decode(&i, &j, nb_desc_handle_2_idx(h[0]));
-      printf("%d: try nb (%d, %d)\n", chpl_nodeID, i, j);
+      chpl_comm_diags_verbose_printf("try nb (%d, %d)", i, j);
     }
     else
-      printf("%d: try nb (%zd handles)\n", chpl_nodeID, nhandles);
+      chpl_comm_diags_verbose_printf("try nb (%zd handles)", nhandles);
   }
-  if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    chpl_comm_diags_incr(&comm_diagnostics.try_nb);
+  chpl_comm_diags_incr(try_nb);
 
   PERFSTATS_INC(try_nb_cnt);
 
@@ -7014,10 +7000,8 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  if (chpl_verbose_comm && !comm_diags_disabled_temporarily)
-    printf("%d: remote task created on %d\n", chpl_nodeID, locale);
-  if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    chpl_comm_diags_incr(&comm_diagnostics.execute_on);
+  chpl_comm_diags_verbose_printf("remote task created on %d", locale);
+  chpl_comm_diags_incr(execute_on);
 
   PERFSTATS_INC(fork_call_cnt);
   fork_call_common(locale, subloc, fid, arg, arg_size, false, true);
@@ -7042,11 +7026,9 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  if (chpl_verbose_comm && !comm_diags_disabled_temporarily)
-    printf("%d: remote non-blocking task created on %d\n", chpl_nodeID,
-           locale);
-  if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    chpl_comm_diags_incr(&comm_diagnostics.execute_on_nb);
+  chpl_comm_diags_verbose_printf("remote non-blocking task created on %d",
+                                 locale);
+  chpl_comm_diags_incr(execute_on_nb);
 
   PERFSTATS_INC(fork_call_nb_cnt);
   fork_call_common(locale, subloc, fid, arg, arg_size, false, false);
@@ -7071,11 +7053,9 @@ void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  if (chpl_verbose_comm && !comm_diags_disabled_temporarily)
-    printf("%d: remote (no-fork) task created on %d\n",
-           chpl_nodeID, locale);
-  if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
-    chpl_comm_diags_incr(&comm_diagnostics.execute_on_fast);
+  chpl_comm_diags_verbose_printf("remote (no-fork) task created on %d",
+                                 locale);
+  chpl_comm_diags_incr(execute_on_fast);
 
   //
   // Note: the rf_handler() logic assumes that fast implies blocking.
@@ -7918,20 +7898,20 @@ void local_yield(void)
 void chpl_startVerboseComm()
 {
   chpl_verbose_comm = 1;
-  comm_diags_disabled_temporarily = true;
+  chpl_comm_diags_disable();
   chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
                               -1 /*typeIndex: unused*/);
-  comm_diags_disabled_temporarily = false;
+  chpl_comm_diags_enable();
 }
 
 
 void chpl_stopVerboseComm()
 {
   chpl_verbose_comm = 0;
-  comm_diags_disabled_temporarily = true;
+  chpl_comm_diags_disable();
   chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
                               -1 /*typeIndex: unused*/);
-  comm_diags_disabled_temporarily = false;
+  chpl_comm_diags_enable();
 }
 
 
@@ -7950,20 +7930,20 @@ void chpl_stopVerboseCommHere()
 void chpl_startCommDiagnostics()
 {
   chpl_comm_diagnostics = 1;
-  comm_diags_disabled_temporarily = true;
+  chpl_comm_diags_disable();
   chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
                               -1 /*typeIndex: unused*/);
-  comm_diags_disabled_temporarily = false;
+  chpl_comm_diags_enable();
 }
 
 
 void chpl_stopCommDiagnostics()
 {
   chpl_comm_diagnostics = 0;
-  comm_diags_disabled_temporarily = true;
+  chpl_comm_diags_disable();
   chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
                               -1 /*typeIndex: unused*/);
-  comm_diags_disabled_temporarily = false;
+  chpl_comm_diags_enable();
 }
 
 
@@ -7981,7 +7961,7 @@ void chpl_stopCommDiagnosticsHere()
 
 void chpl_resetCommDiagnosticsHere()
 {
-  chpl_comm_diags_reset(&comm_diagnostics);
+  chpl_comm_diags_reset();
 
 #define _PSZM(psv) PERFSTATS_STZ(psv);
   PERFSTATS_DO_ALL(_PSZM);
@@ -7991,7 +7971,7 @@ void chpl_resetCommDiagnosticsHere()
 
 void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd)
 {
-  chpl_comm_diags_copy(cd, &comm_diagnostics);
+  chpl_comm_diags_copy(cd);
 }
 
 void chpl_comm_ugni_help_register_global_var(int i, wide_ptr_t wide)
