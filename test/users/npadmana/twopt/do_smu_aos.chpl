@@ -42,7 +42,7 @@ record WeightedParticle3D {
 
 proc generateRandom(pp : []WeightedParticle3D) {
   var x,y,z : real;
-  var rng = new borrowed RandomStream(eltType=real);
+  var rng = new RandomStream(eltType=real);
   for ip in pp {
     x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z=rng.getNext()*1000.0;
     ip.x = (x,y,z);
@@ -82,7 +82,7 @@ proc readFile(fn : string, pp : []WeightedParticle3D)  {
   }
 }
 
-proc smuAccumulate(hh : borrowed UniformBins, p1, p2 : []WeightedParticle3D, d1,d2 : domain(1), scale : real) {
+proc smuAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, d1,d2 : domain(1), scale : real) {
   forall ii in d1 { // Loop over first set of particles
    
     var x1,y1,z1,w1,r2 : real;
@@ -141,23 +141,17 @@ class KDNode {
   var dom : domain(1);
   var xcen : NDIM*real;
   var rcell : real;
-  var left, right : unmanaged KDNode;
+  var left, right : owned KDNode;
 
   proc isLeaf() : bool {
     return (left==nil) && (right==nil);
   }
-
-  proc deinit() {
-    if left then delete left;
-    if right then delete right;
-  }
-
 }
 
 
-proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) : unmanaged KDNode {
+proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) : owned KDNode {
   gtime1.start();
-  var me = new unmanaged KDNode();
+  var me = new owned KDNode();
   var dom = pp.domain;
   me.lo = dom.low;
   me.hi = dom.high;
@@ -206,7 +200,7 @@ proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) 
   return me;
 }
 
-proc TreeAccumulate(hh : borrowed UniformBins, p1, p2 : []WeightedParticle3D, node1, node2 : unmanaged KDNode) {
+proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node2 : KDNode) {
   // Compute the distance between node1 and node2
   var rr = sqrt (+ reduce(node1.xcen - node2.xcen)**2);
   var rmin = rr - (node1.rcell+node2.rcell);
@@ -293,7 +287,7 @@ proc doPairs() {
 
 
   // Set up the histogram
-  var hh = new unmanaged UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
+  var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
 
   /*
   // Brute force paircounts
@@ -325,13 +319,5 @@ proc doPairs() {
     hh.set((0,0),0.0);
     writeHist(stdout,hh,"%20.5er ");
   }
-
-
-  //
-  // clean up
-  //
-  delete hh;
-  delete root1;
-  delete root2;
 }
 

@@ -201,20 +201,26 @@ writeln();
 
 
 //
-// Class instances are considered to be wherever the fields are
-// stored, rather than where the variable referring to the instance
-// is stored.
-// This rule applies to non-nil variables of borrowed or unmanaged
-// class type.
-
+// Reasoning about the locality of classes is complicated somewhat by
+// the fact that class variables have two components: (1) the object
+// that contains the class fields and (2) the variable storing a
+// reference to the object (where such variables may be 'nil' when
+// they don't refer to an object).  Classes are generally considered
+// to be stored on the locale where the object is stored rather than
+// the one where the reference is stored, and to that end, applying
+// `.locale` to a class variable will typically reflect the object's
+// location.  However, when the class variable is `nil`, it will
+// evaluate to the locale where the reference is stored.
+//
 // Let's explore this idea by creating a class instance and
 // querying its locality.
+//
 
 class Data {
   var x:int;
 }
 
-var myData: unmanaged Data; // myData is a pointer-to-nil stored on Locale 0
+var myData: unmanaged Data; // myData is a class pointer stored on locale 0 whose default value is `nil`
 
 on Locales[1 % numLocales] {
   writeln("at start of 'on', myData is on locale ", myData.locale.id);

@@ -1,5 +1,3 @@
-// Modified from
-// test/classes/constructors/record-var-invokes-user-constructor.chpl
 record R {
   proc init() { writeln("no-arg R initializer"); }
 }

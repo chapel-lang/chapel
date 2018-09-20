@@ -1,2 +1,1 @@
---warn-unstable --no-force-initializers # unstable-class.good
---warn-unstable --force-initializers # unstable-class.init.good
+--warn-unstable

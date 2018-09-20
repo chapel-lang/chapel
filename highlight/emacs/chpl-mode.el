@@ -86,7 +86,7 @@ not the type face."
          "except" "export" "extern"
          "inline" "iter"
          "module"
-         "only"
+         "only" "override"
          "param" "private" "proc" "public"
          "require"
          "type"
@@ -180,7 +180,7 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-other-kwds
   "Keywords not accounted for by any other `*-kwds' language constant."
-  chpl '("align" "atomic" "begin" "by" "catch" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "inout" "local" "noinit" "on" "out" "prototype" "reduce" "ref" "scan" "serial" "single" "sparse" "sync" "throw" "throws" "try" "where" "while" "with" "zip"))
+  chpl '("align" "atomic" "begin" "borrowed" "by" "catch" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "inout" "local" "noinit" "on" "out" "owned" "prototype" "reduce" "ref" "scan" "serial" "shared" "single" "sparse" "sync" "throw" "throws" "try" "unmanaged" "where" "while" "with" "zip"))
 
 ;;; Chpl.
 

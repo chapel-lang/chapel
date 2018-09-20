@@ -4,14 +4,11 @@ proc main() {
   writeln();
 
   var m1a = new unmanaged M1.A(20);
-  var m2a = new unmanaged M2.A(30);
 
   writeln();
 
-  var m3a = new M3.A(40);
-  var m4a = new M4.A(50);
+  var m2a = new M2.A(40);
 
-  delete m2a;
   delete m1a;
   delete a;
 }
@@ -32,31 +29,11 @@ module M1 {
 }
 
 
-// A module with a class with a  constructor
-module M2 {
-  class A {
-    proc A(a : int) {
-      writeln("M2.A.A(", a, ")");
-    }
-  }
-}
-
-
 // A module with a record with an initializer
-module M3 {
+module M2 {
   record A {
     proc init(a : int) {
-      writeln("M3.A.init(", a, ")");
-    }
-  }
-}
-
-
-// A module with a record with a  constructor
-module M4 {
-  record A {
-    proc A(a : int) {
-      writeln("M2.A.A(", a, ")");
+      writeln("M2.A.init(", a, ")");
     }
   }
 }

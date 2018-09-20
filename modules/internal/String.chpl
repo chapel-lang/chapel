@@ -36,39 +36,98 @@
 // It might be worth moving them here for documentation - KB Feb 2016
 
 /*
-  The following documentation shows functions and methods used to
-  manipulate and process Chapel strings.
+The following documentation shows functions and methods used to
+manipulate and process Chapel strings.
 
-  Besides the functions below, some other modules proved routines that are
-  useful for working with strings. The :mod:`IO` module provides
-  :proc:`IO.string.format` which creates a string that is the result of
-  formatting. It also includes functions for reading and writing strings.
-  The :mod:`Regexp` module also provides some routines for searching
-  within strings.
+Methods Available in Other Modules
+----------------------------------
 
-  .. warning::
+Besides the functions below, some other modules provide routines that are
+useful for working with strings. The :mod:`IO` module provides
+:proc:`IO.string.format` which creates a string that is the result of
+formatting. It also includes functions for reading and writing strings.
+The :mod:`Regexp` module also provides some routines for searching
+within strings.
 
-    Casts from :record:`string` to the following types will throw an error
-    if they are invalid:
+Casts from String to a Numeric Type
+-----------------------------------
 
-      - ``int``
-      - ``uint``
-      - ``real``
-      - ``imag``
-      - ``complex``
-      - ``enum``
+This module supports casts from :record:`string` to numeric types. Such casts
+will convert the string to the numeric type and throw an error if the string
+is invalid. For example:
 
-    To learn more about handling these errors, see the
-    :ref:`Error Handling technical note <readme-errorHandling>`.
+.. code-block:: chapel
 
-  .. note::
+  var number = "a":int;
 
-    While :record:`string` is intended to be a Unicode string, there is much
-    left to do. As of Chapel 1.17, only ASCII strings can be expected to work
-    correctly with all functions.
+throws an error when it is executed, but
 
-    Future work involves support for both ASCII and unicode strings, and
-    allowing users to specify the encoding for individual strings.
+.. code-block:: chapel
+
+  var number = "1":int;
+
+stores the value ``1`` in ``number``.
+
+To learn more about handling these errors, see the
+:ref:`Error Handling technical note <readme-errorHandling>`.
+
+
+Activating Unicode Support
+--------------------------
+
+Chapel strings normally use the UTF-8 encoding. Note that ASCII strings are a
+simple subset of UTF-8 strings, because every ASCII character is a UTF-8
+character with the same meaning.
+
+Certain environment variables may need to be set in order to enable UTF-8
+support. Setting these environment variables may not be necessary at all on
+some systems.
+
+.. note::
+
+  For example, Chapel is currently tested with the following settings:
+
+  ``export LANG=en_US.UTF-8``
+
+  ``export LC_COLLATE=C``
+
+  ``unset LC_ALL``
+
+  LANG sets the default character set.  LC_COLLATE overrides it for
+  sorting, so that we get consistent results.  Anything in LC_ALL
+  would override everything, so we unset it.
+
+.. note::
+
+  Chapel currently relies upon C multibyte character support and may work
+  with other settings of these variables that request non-Unicode multibyte
+  character sets. However such a configuration is not regularly tested and
+  may not work in the future.
+
+Lengths and Offsets in Unicode Strings
+--------------------------------------
+
+For Unicode strings, and in particular UTF-8 strings, there are several possible
+units for offsets or lengths:
+
+ * bytes
+ * code points
+ * graphemes
+
+Most methods on the Chapel string type currently work with byte units by
+default. For example, :proc:`~string.length` returns the length in bytes and
+`int` values passed into :proc:`~string.this` are offsets in byte units.
+
+The string type currently supports code point units as well. In some cases these
+units are indicated by the method name, for example with
+:proc:`~string.ulength`. Other methods, including :proc:`~string.this`, support
+arguments of type :record:`codePointIndex` (instead of `int`) in order to
+request code point units.
+
+.. note::
+
+  Support for graphemes units is not implemented at this time.
+
  */
 module String {
   use ChapelStandard;
@@ -152,6 +211,23 @@ module String {
     var shortData : chpl__inPlaceBuffer;
   }
 
+  /*
+     A value of type :record:`codePointIndex` can be passed to certain
+     `string` functions to indicate that the function should operate
+     with units of code points. See :proc:`~string.this`.
+
+     To create or modify a :record:`codePointIndex`, cast it to or from an
+     `int`. For example, For example, the following function returns a string
+     containing only the second codepoint of the argument:
+
+     .. code-block:: chapel
+
+       proc getSecondCodepoint(arg:string) : int {
+         var offsetInCodepoints = 1:codePointIndex;
+         return arg[offsetInCodepoints];
+       }
+
+   */
   record codePointIndex {
     pragma "no doc"
     var _cpindex  : int;
@@ -1034,6 +1110,7 @@ module String {
       return s;
     }
 
+    pragma "no doc"
     proc _join(const ref S) : string where isTuple(S) || isArray(S) {
       if S.size == 0 {
         return '';
@@ -1886,6 +1963,7 @@ module String {
   // Portability Note:
   // wint_t will normally be a 32-bit int.
   // There may be systems where it is not.
+  pragma "no doc"
   extern type wint_t = int(32);
 
   private inline proc codepoint_isUpper(c: int(32)) : bool {

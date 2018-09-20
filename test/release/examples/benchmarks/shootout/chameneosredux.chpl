@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Hannah Hemmaplardh, Lydia Duncan, and Brad Chamberlain
    derived in part from the GNU C version by Dmitry Vyukov

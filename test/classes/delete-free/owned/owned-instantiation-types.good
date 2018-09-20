@@ -4,10 +4,10 @@ blank_class MyClass
 const_untyped MyClass
 const_owned _owned(MyClass)
 const_class MyClass
-in_untyped MyClass
+in_untyped _owned(MyClass)
 in_owned _owned(MyClass)
 in_class MyClass
-const_in_untyped MyClass
+const_in_untyped _owned(MyClass)
 const_in_owned _owned(MyClass)
 const_in_class MyClass
 ref_untyped _owned(MyClass)

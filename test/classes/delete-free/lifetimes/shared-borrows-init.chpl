@@ -1,7 +1,7 @@
 pragma "safe"
 module l17 {
 
-use SharedObject;
+
 
 class MyClass {
   var x:int;
@@ -11,27 +11,27 @@ class MyClass {
 }
 
 record R {
-  var c:Shared(MyClass);
-  proc init(c:Shared(MyClass)) {
+  var c:shared MyClass;
+  proc init(c:shared MyClass) {
     this.c = c;
   }
 }
 
-proc f(c:Shared(MyClass)) {
+proc f(c:shared MyClass) {
   return new R(c);
 }
 
-proc g(c:Shared(MyClass)) {
+proc g(c:shared MyClass) {
   var r = new R(c);
   return r;
 }
 
 proc h() {
-  return new R(new Shared(new MyClass(10)));
+  return new R(new shared MyClass(10));
 }
 
 proc i() {
-  var r = new R(new Shared(new MyClass(10)));
+  var r = new R(new shared MyClass(10));
   return r;
 }
 
@@ -44,17 +44,17 @@ proc k() {
   return r;
 }
 
-proc l(c:Shared(MyClass)) {
+proc l(c:shared MyClass) {
   var r = f(c);
   return r;
 }
 
-proc m(c:Shared(MyClass)) {
+proc m(c:shared MyClass) {
   return f(c);
 }
 
 proc test() {
-  var myshared = new Shared(new MyClass(1));
+  var myshared = new shared MyClass(1);
 
   var v1 = f(myshared);
   var v2 = g(myshared);

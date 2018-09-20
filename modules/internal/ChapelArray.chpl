@@ -198,7 +198,6 @@ module ChapelArray {
   pragma "no doc"
   config param debugArrayAsVec = false;
 
-  pragma "privatized class"
   proc _isPrivatized(value) param
     return !_local && ((_privatization && value.dsiSupportsPrivatization()) || value.dsiRequiresPrivatization());
     // Note - _local=true means --local / single locale
@@ -763,13 +762,18 @@ module ChapelArray {
       return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
                                           dom._value.stridable);
     } else if chpl__isSparseDomType(domainType) {
-      //
-      // this "no auto destroy" pragma is necessary as of 1/20 because
-      // otherwise the parentDom gets destroyed in the sparse case; see
-      // sparse/bradc/CSR/sparse.chpl as an example
-      //
-      pragma "no auto destroy" var dom: domainType;
-      return chpl__buildSparseDomainRuntimeType(d, dom._value.parentDom);
+      proc getParentDomType() type {
+        var dom : domainType;
+        return __primitive("static typeof", dom._value.parentDom.type);
+      }
+
+      pragma "no copy"
+      pragma "no auto destroy"
+      var parentDom = __primitive("get runtime type field", getParentDomType(),
+                                                            domainType,
+                                                            "dom");
+
+      return chpl__buildSparseDomainRuntimeType(d, parentDom);
     } else {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);
@@ -1037,6 +1041,7 @@ module ChapelArray {
   }
 
 
+  pragma "no doc"
   record _serialized_domain {
     param rank;
     type idxType;
@@ -1051,6 +1056,7 @@ module ChapelArray {
   //
   // Domain wrapper record.
   //
+  /* The domain type */
   pragma "domain"
   pragma "has runtime type"
   pragma "ignore noinit"
@@ -1138,6 +1144,7 @@ module ChapelArray {
         }
       }
     }
+    pragma "no doc"
     proc deinit () {
       _do_destroy();
     }
@@ -1188,17 +1195,20 @@ module ChapelArray {
       compilerError("associative domains do not support .stridable");
     }
 
+    /* Yield the domain indices */
     iter these() {
       for i in _value.these() {
         yield i;
       }
     }
+    pragma "no doc"
     iter these(param tag: iterKind)
       where tag == iterKind.standalone &&
             __primitive("method call resolves", _value, "these", tag=tag) {
       for i in _value.these(tag) do
         yield i;
     }
+    pragma "no doc"
     iter these(param tag: iterKind)
       where tag == iterKind.leader {
       // If I use forall here, it says
@@ -1207,6 +1217,7 @@ module ChapelArray {
       for followThis in _value.these(tag) do
         yield followThis;
     }
+    pragma "no doc"
     iter these(param tag: iterKind, followThis, param fast: bool = false)
       where tag == iterKind.follower {
 
@@ -1408,6 +1419,7 @@ module ChapelArray {
 
     // For other domain types, the implementation probably knows the most
     // efficient way to clear its index set, so make a dsiClear() call.
+    pragma "no doc"
     proc clear() {
       _value.dsiClear();
     }
@@ -2126,6 +2138,7 @@ module ChapelArray {
   pragma "has runtime type"
   pragma "ignore noinit"
   pragma "default intent is ref if modified"
+  /* The array type */
   record _array {
     var _pid:int;  // only used when privatized
     pragma "owned"
@@ -2179,6 +2192,7 @@ module ChapelArray {
       }
     }
 
+    pragma "no doc"
     proc deinit() {
       _do_destroy();
     }
@@ -2430,6 +2444,7 @@ module ChapelArray {
       return localSlice((...d.getIndices()));
     }
 
+    /* Yield the array elements */
     pragma "reference to const when const this"
     iter these() ref {
       for i in _value.these() {
@@ -2437,6 +2452,7 @@ module ChapelArray {
       }
     }
 
+    pragma "no doc"
     pragma "reference to const when const this"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone &&
@@ -2444,11 +2460,13 @@ module ChapelArray {
       for i in _value.these(tag) do
         yield i;
     }
+    pragma "no doc"
     iter these(param tag: iterKind)
       where tag == iterKind.leader {
       for followThis in _value.these(tag) do
         yield followThis;
     }
+    pragma "no doc"
     pragma "reference to const when const this"
     iter these(param tag: iterKind, followThis, param fast: bool = false) ref
       where tag == iterKind.follower {
@@ -2636,12 +2654,13 @@ module ChapelArray {
       _value.dsiSerialRead(f);
     }
 
+    // sparse array interface
+    /* Return the Implicitly Represented Value for sparse arrays */
     proc IRV where !isSparseArr(this) {
       compilerError("only sparse arrays have an IRV");
     }
 
-    // sparse array interface
-    /* Return the Implicitly Represented Value for sparse arrays */
+    pragma "no doc"
     proc IRV ref where isSparseArr(this) {
       return _value.IRV;
     }
@@ -4211,7 +4230,8 @@ module ChapelArray {
 
     var i  = 0;
     var size:size_t = 0;
-    var data:_ddata(iteratorToArrayElementType(ir.type)) = nil;
+    type elemType = iteratorToArrayElementType(ir.type);
+    var data:_ddata(elemType) = nil;
 
     var callAgain: bool;
     var subloc = c_sublocid_none;
@@ -4271,14 +4291,19 @@ module ChapelArray {
 
       // Normally, the sub-arrays share a domain with the
       // parent, but that's not the case for the arrays created
-      // by this routine. Instead, each sub-array owns its own domain.
+      // by this routine. Instead, each sub-array may have its own domain.
       // That allows them to have different runtime sizes.
       chpl_decRefCountsForDomainsInArrayEltTypes(A._value, data[0].type);
       A._value._decEltRefCounts = false;
+
+      // in lieu of automatic memory management for runtime types
+      __primitive("auto destroy runtime type", elemType);
+
       return A;
 
     } else {
-      // Construct an empty array that has a reasonable eltType
+      // Construct and return an empty array.
+
       pragma "insert auto destroy"
       var D = { 1 .. 0 };
 
@@ -4287,15 +4312,9 @@ module ChapelArray {
       if callAgain then
         __primitive("array_alloc", data, 1, subloc, c_nil, data);
 
-      // TODO: this use of data[0].type will result in nil pointer
-      // dereferences in the event that we're converting a iterator
-      // returning arrays of arrays but that returned no elements.
-      // We need to be able to construct the runtime portion of the type
-      // in that event.
-      var A = D.buildArrayWith(data[0].type, data, size:int);
+      var A = D.buildArrayWith(elemType, data, size:int);
 
       return A;
-
     }
   }
 

@@ -1,0 +1,2 @@
+bug: improper scope-resolution of a LoopExpr's index variable
+#11146

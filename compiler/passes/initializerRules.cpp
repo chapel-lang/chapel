@@ -981,20 +981,22 @@ static bool isCompoundAssignment(CallExpr* callExpr) {
 }
 
 static void addSuperInit(FnSymbol* fn) {
-  BlockStmt* body     = fn->body;
+  if (fn->_this->getValType()->symbol->hasFlag(FLAG_NO_OBJECT) == false) {
+    BlockStmt* body     = fn->body;
 
-  VarSymbol* tmp      = newTemp("super_tmp");
+    VarSymbol* tmp      = newTemp("super_tmp");
 
-  Symbol*    _this    = fn->_this;
-  Symbol*    superSym = new_CStringSymbol("super");
-  CallExpr*  superGet = new CallExpr(PRIM_GET_MEMBER_VALUE, _this, superSym);
+    Symbol*    _this    = fn->_this;
+    Symbol*    superSym = new_CStringSymbol("super");
+    CallExpr*  superGet = new CallExpr(PRIM_GET_MEMBER_VALUE, _this, superSym);
 
-  tmp->addFlag(FLAG_SUPER_TEMP);
+    tmp->addFlag(FLAG_SUPER_TEMP);
 
-  // Adding at head therefore add in reverse order
-  body->insertAtHead(new CallExpr("init",    gMethodToken, tmp));
-  body->insertAtHead(new CallExpr(PRIM_MOVE, tmp,          superGet));
-  body->insertAtHead(new DefExpr(tmp));
+    // Adding at head therefore add in reverse order
+    body->insertAtHead(new CallExpr("init",    gMethodToken, tmp));
+    body->insertAtHead(new CallExpr(PRIM_MOVE, tmp,          superGet));
+    body->insertAtHead(new DefExpr(tmp));
+  }
 }
 
 /************************************* | **************************************

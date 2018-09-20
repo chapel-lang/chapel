@@ -101,11 +101,13 @@ PACKAGES_TO_DOCUMENT = \
 	packages/FFTW.chpl \
 	packages/FFTW_MT.chpl \
 	packages/Futures.chpl \
+	packages/HDF5.chpl \
 	packages/HDFS.chpl \
 	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
 	packages/MPI.chpl \
+	packages/NetCDF.chpl \
 	packages/Norm.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
@@ -162,11 +164,11 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Copying generated module documentation to ${DOC}"
 	mkdir -p ${DOC}/modules
 	mkdir -p ${DOC}/builtins
-	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC}/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC}/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC}/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC}/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/internal/ ${DOC}/builtins/
+	cp -rf ${MODULE_SPHINX}/source/modules/standard   ${DOC}/modules
+	cp -rf ${MODULE_SPHINX}/source/modules/packages   ${DOC}/modules
+	cp -rf ${MODULE_SPHINX}/source/modules/dists      ${DOC}/modules
+	cp -rf ${MODULE_SPHINX}/source/modules/layouts    ${DOC}/modules
+	cp -rf ${MODULE_SPHINX}/source/modules/internal/* ${DOC}/builtins
 	@echo "Removing generated files and directories"
 	rm -rf ./docs
 	rm -rf ${MODULE_SPHINX}

@@ -47,7 +47,6 @@ proc main() {
         + reduce Locales.maxTaskPar, numSteps, numAtoms, 
         totalTime, forceTime, buildTime, commTime);
   }
-  cleanup();
 }
 
 // update positions and velocities based on forces

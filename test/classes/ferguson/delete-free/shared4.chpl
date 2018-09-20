@@ -1,4 +1,4 @@
-use SharedObject;
+
 
 class Impl {
   var field: int;
@@ -12,10 +12,10 @@ class Impl {
   }
 }
 
-var globalSharedObject:Shared(Impl);
+var globalSharedObject:shared Impl;
 
 proc makeGlobalSharedObject() {
-  var x = new Shared(new Impl(1));
+  var x = new shared Impl(1);
 
   globalSharedObject = x;
 }
