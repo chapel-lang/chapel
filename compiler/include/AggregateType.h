@@ -254,8 +254,6 @@ private:
   ArgSymbol*                  insertGenericArg(FnSymbol*  fn,
                                                VarSymbol* field)  const;
 
-public:
-  bool                        needsConstructor() const;
 private:
 
   ArgSymbol*                  moveConstructorToOuter(FnSymbol* fn);

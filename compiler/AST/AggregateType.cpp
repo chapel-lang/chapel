@@ -1362,8 +1362,7 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
 
   insertImplicitThis(fn, fieldNamesSet);
 
-  if (!needsConstructor())
-    resolveUnresolvedSymExprs(fn);
+  resolveUnresolvedSymExprs(fn);
 }
 
 void AggregateType::typeConstrSetField(FnSymbol*  fn,
@@ -1781,75 +1780,6 @@ void AggregateType::buildCopyInitializer() {
   }
 }
 
-// Returns false if we should not generate a default constructor for this
-// AggregateType, true if we still require one.  The result of this function
-// will vary in most cases if --force-initializers is thrown: that flag tells
-// us to only generate default constructors for types that already have defined
-// constructors (as the constructor implementation relies on every user
-// constructor being modified to call the default constructor), and to try to
-// generate default initializers for types where neither an initializer nor a
-// constructor has been defined.
-bool AggregateType::needsConstructor() const {
-
-  if (hasPostInitializer() == true) {
-    return false;
-  }
-
-  AggregateType* thisNC = const_cast<AggregateType*>(this);
-
-  if (initializerStyle == DEFINES_CONSTRUCTOR) {
-    return true;
-  } else if (fUserDefaultInitializers == false) {
-    // Don't allow constructors for internal/standard types, except for object
-    ModuleSymbol* mod = thisNC->getModule();
-    if (this == dtObject) {
-      return true;
-    } else if (mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD) {
-      return false;
-    }
-  } else if (fUserDefaultInitializers && this != dtObject) {
-    // Don't generate a default constructor when --force-initializers is true,
-    // we want to generate a default initializer or fail.
-    return false;
-  }
-
-  if (initializerStyle == DEFINES_INITIALIZER) {
-    // Defining an initializer means we don't need a default constructor
-    return false;
-  } else {
-    // The above three branches are only relevant in the recursive version
-    // of this call, as the outside call site for this function has
-    // already ensured that the type which is the entry point has defined
-    // neither an initializer nor a constructor.
-
-    // Classes that define an initialize() method need a default constructor
-    forv_Vec(FnSymbol, method, thisNC->methods) {
-      if (method && strcmp(method->name, "initialize") == 0) {
-        if (method->numFormals() == 2) {
-          return true;
-        }
-      }
-    }
-
-    // Make a default constructor for extern classes only if we are not forcing
-    // initializers
-    if (symbol->hasFlag(FLAG_EXTERN) && !fUserDefaultInitializers) {
-      return true;
-    }
-
-    // If the parent type needs a default constructor, we need a default
-    // constructor.
-    if (dispatchParents.n > 0) {
-      if (AggregateType* pt = dispatchParents.v[0]) {
-        return pt->needsConstructor();
-      }
-    }
-  }
-
-  // Otherwise, we need a default constructor.
-  return true;
-}
-
 bool AggregateType::parentDefinesInitializer() const {
   bool retval = false;
 
@@ -1875,8 +1805,6 @@ bool AggregateType::parentDefinesInitializer() const {
 // initializer if --force-initializers has not been thrown (currently), unless
 // the pragma "use default init" has been applied
 //
-// Note that this method does not generate the opposite of needsConstructor -
-// when the type has defined an initializer both methods will return false.
 bool AggregateType::wantsDefaultInitializer() const {
   AggregateType* nonConstHole = (AggregateType*) this;
   bool           retval       = true;

@@ -190,12 +190,8 @@ void scopeResolve() {
     do {
       changed = false;
       forv_Vec(AggregateType, at, gAggregateTypes) {
-        // Ignore aggregate types with old-style constructors
-        // since the old constructor code removes the
-        // init expr and the type expr.
-        if (!at->needsConstructor() &&
-            // And don't try to mark generic again
-            !at->isGeneric()) {
+        // don't try to mark generic again
+        if (!at->isGeneric()) {
 
           bool anyGeneric = false;
           bool anyNonDefaultedGeneric = false;
