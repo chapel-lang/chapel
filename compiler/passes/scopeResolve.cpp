@@ -126,20 +126,6 @@ void scopeResolve() {
   }
 
   //
-  // add implicit fields for implementing alias-named-argument passing
-  //
-  forv_Vec(AggregateType, at, gAggregateTypes) {
-    for_fields(field, at) {
-      if (strcmp(field->name, "outer") == 0) {
-        USR_FATAL_CONT(field,
-                       "Cannot have a field named 'outer'. "
-                       "'outer' is used to refer to an outer class "
-                       "from within a nested class.");
-      }
-    }
-  }
-
-  //
   // resolve type of this for methods
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -1165,13 +1151,7 @@ static void insertFieldAccess(FnSymbol*          method,
   checkIdInsideWithClause(expr, usymExpr);
 
   if (nestDepth > 0) {
-    if (toAggregateType(method->_this->getValType())->hasInitializers()) {
-      USR_FATAL_CONT("Illegal use of identifier '%s' from enclosing type", name);
-    } else {
-      for (int i = 0; i < nestDepth; i++) {
-        dot = new CallExpr(".", dot, new_CStringSymbol("outer"));
-      }
-    }
+    USR_FATAL_CONT("Illegal use of identifier '%s' from enclosing type", name);
   }
 
   if (isTypeSymbol(sym) == true) {

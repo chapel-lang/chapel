@@ -105,8 +105,7 @@ void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
         }
 
       } else {
-        if (strcmp(formal->name, "outer") == 0 ||
-            formal->type                  == dtMethodToken) {
+        if (formal->type == dtMethodToken) {
           typeConstructorCall->insertAtTail(formal);
 
         } else if (formal->instantiatedFrom != NULL) {
@@ -308,8 +307,7 @@ bool ResolutionCandidate::verifyGenericFormal(ArgSymbol* formal) const {
   if (formal->intent                      != INTENT_PARAM &&
       formal->hasFlag(FLAG_TYPE_VARIABLE) == false        &&
       formal->type                        != dtAny) {
-    if (strcmp(formal->name, "outer") != 0 &&
-        fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
       retval = false;
 
     } else if (fn->isMethod()                       == true  &&

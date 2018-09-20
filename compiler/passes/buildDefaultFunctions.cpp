@@ -1370,11 +1370,6 @@ static void build_record_copy_function(AggregateType* at) {
             CallExpr* init = new CallExpr(".", arg, sym);
 
             call->insertAtTail(new NamedExpr(tmp->name, init));
-
-            // Calls for nested records need to be methods
-            if (strcmp(tmp->name, "outer") == 0) {
-              call->insertAtHead(gMethodToken);
-            }
           }
         }
 
