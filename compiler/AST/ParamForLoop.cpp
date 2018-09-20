@@ -489,7 +489,6 @@ CallExpr* ParamForLoop::foldForResolve()
 void ParamForLoop::validateLoop(VarSymbol* lvar,
                                 VarSymbol* hvar,
                                 VarSymbol* svar) {
-  bool hadError = false;
   if (!lvar            || !hvar            || !svar)
     USR_FATAL(this,
               "param for loop must be defined over a bounded param range");
@@ -499,7 +498,6 @@ void ParamForLoop::validateLoop(VarSymbol* lvar,
               "param for loop must be defined over a bounded param range");
 
   if (!is_int_type(svar->type) && !is_uint_type(svar->type)) {
-    hadError = true;
     USR_FATAL(this, "Range stride must be an int");
   }
 }
