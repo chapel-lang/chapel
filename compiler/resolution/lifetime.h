@@ -20,6 +20,10 @@
 #ifndef _LIFETIME_H_
 #define _LIFETIME_H_
 
+class FnSymbol;
+
 void checkLifetimes(void);
+void checkLifetimesInFunction(FnSymbol* fn);
+void findNilDereferences(FnSymbol* fn);
 
 #endif
