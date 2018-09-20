@@ -1,5 +1,5 @@
-// Modified from
-// test/classes/dinan/user_def_unique_initializer_const_multipleassign.chpl
+
+
 class C {
   const x: int;
 

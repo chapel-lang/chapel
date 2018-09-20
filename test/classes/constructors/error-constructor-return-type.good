@@ -1,3 +1,0 @@
-error-constructor-return-type.chpl:2: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
-error-constructor-return-type.chpl:2: warning: Type 'C' defines a constructor here
-error-constructor-return-type.chpl:2: error: initializers may not declare a return type

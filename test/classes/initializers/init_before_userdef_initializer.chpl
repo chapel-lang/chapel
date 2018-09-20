@@ -1,5 +1,3 @@
-// Modified from
-// test/classes/dinan/init_before_userdef_constructor.chpl
 proc f(x) {
   return x*2;
 }

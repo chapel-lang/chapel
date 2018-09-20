@@ -1,2 +1,0 @@
-inherits_initializer.chpl:18: In function 'main':
-inherits_initializer.chpl:19: error: could not generate default initializer for type 'Child', please define one

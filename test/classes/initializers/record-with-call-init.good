@@ -1,3 +1,1 @@
-record-with-call-init.chpl:16: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
-record-with-call-init.chpl:16: warning: Type 'SubRec' defines a constructor here
 r: (x = 10, y = (a = 20, b = 30))

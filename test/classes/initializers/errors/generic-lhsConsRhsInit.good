@@ -1,3 +1,0 @@
-generic-lhsConsRhsInit.chpl:14: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
-generic-lhsConsRhsInit.chpl:14: warning: Type 'hasConstruct' defines a constructor here
-generic-lhsConsRhsInit.chpl:20: error: type mismatch in assignment from hasInit to hasConstruct(int(64))
