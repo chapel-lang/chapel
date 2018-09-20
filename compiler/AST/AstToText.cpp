@@ -75,14 +75,6 @@ void AstToText::appendName(FnSymbol* fn)
     mText += (fn->name + 16);
   }
 
-  else if (fn->hasFlag(FLAG_CONSTRUCTOR))
-  {
-    INT_ASSERT(strncmp(fn->name, "_construct_",      11) == 0);
-
-    mText += (fn->name + 11);
-    // todo: should this also include ".init" ?
-  }
-
   else if (fn->isMethod() == true)
   {
     appendThisIntent(fn);

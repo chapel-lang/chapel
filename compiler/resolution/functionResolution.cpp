@@ -1669,8 +1669,7 @@ static void findNonTaskFnParent(CallExpr* call,
 }
 
 static bool isConstructorLikeFunction(FnSymbol* fn) {
-  return fn->hasFlag(FLAG_CONSTRUCTOR)  == true  ||
-         strcmp(fn->name, "init")       ==    0  ||
+  return strcmp(fn->name, "init")       ==    0  ||
          strcmp(fn->name, "initialize") ==    0;
 }
 

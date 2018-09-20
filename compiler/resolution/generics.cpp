@@ -60,11 +60,7 @@ explainInstantiation(FnSymbol* fn) {
     return;
 
   char msg[1024] = "";
-  int len;
-  if (fn->hasFlag(FLAG_CONSTRUCTOR))
-    len = sprintf(msg, "instantiated %s(", fn->_this->type->symbol->name);
-  else
-    len = sprintf(msg, "instantiated %s(", fn->name);
+  int len = sprintf(msg, "instantiated %s(", fn->name);
   bool first = true;
   for_formals(formal, fn) {
     form_Map(SymbolMapElem, e, fn->substitutions) {

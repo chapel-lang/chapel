@@ -280,7 +280,6 @@ static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
          fn->name                              != astrSequals  &&
 
          fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == false        &&
-         fn->hasFlag(FLAG_CONSTRUCTOR)         == false        &&
          fn->hasFlag(FLAG_BUILD_TUPLE)         == false;
 }
 
@@ -633,8 +632,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 }
 
 static bool doNotUnaliasArray(FnSymbol* fn) {
-  return (fn->hasFlag(FLAG_CONSTRUCTOR) ||
-          fn->hasFlag(FLAG_NO_COPY_RETURN) ||
+  return (fn->hasFlag(FLAG_NO_COPY_RETURN) ||
           fn->hasFlag(FLAG_UNALIAS_FN) ||
           fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
           fn->hasFlag(FLAG_INIT_COPY_FN) ||
@@ -649,14 +647,9 @@ static bool doNotUnaliasArray(FnSymbol* fn) {
 // This function returns true for exceptional FnSymbols
 // where tuples containing refs can be returned.
 //
-// The 'FLAG_CONSTRUCTOR' case can prevent additional copies/leaks in the case
-// that a class/field has a tuple field. See the following test:
-//     types/records/ferguson/tuples/class-tuple-record
-//
 static
 bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
-      fn->hasFlag(FLAG_CONSTRUCTOR)              || // any constructor
       fn->hasFlag(FLAG_INIT_TUPLE)               || // chpl__init_tuple
       fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type

@@ -515,13 +515,10 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
 
   SymbolMap copyMap;
 
-  bool isConstructorOrInit = fn->hasFlag(FLAG_CONSTRUCTOR) ||
-                             0 == strcmp(fn->name, "init");
-
   // Set up the arguments
   if (fn->hasFlag(FLAG_METHOD) &&
       fn->_this != NULL &&
-      !isConstructorOrInit) {
+      fn->isInitializer() == false) {
     // Set up mt and this arguments
     Symbol* thisArg = fn->_this;
     ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
@@ -773,13 +770,10 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
   // appropriate actual values.
   CallExpr* newCall = new CallExpr(entry->defaultExprFn);
 
-  bool isConstructorOrInit = fn->hasFlag(FLAG_CONSTRUCTOR) ||
-                             0 == strcmp(fn->name, "init");
-
   // Add method token, this if needed
   if (fn->hasFlag(FLAG_METHOD) &&
       fn->_this != NULL &&
-      !isConstructorOrInit) {
+      fn->isInitializer() == false) {
     // Set up mt and _this arguments
     newCall->insertAtTail(gMethodToken);
     Symbol* usedFormal = fn->_this;
@@ -2837,7 +2831,6 @@ static FnSymbol* buildEmptyWrapper(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_AUTO_COPY_FN))   wrapper->addFlag(FLAG_AUTO_COPY_FN);
   if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))wrapper->addFlag(FLAG_AUTO_DESTROY_FN);
   if (fn->hasFlag(FLAG_NO_PARENS))      wrapper->addFlag(FLAG_NO_PARENS);
-  if (fn->hasFlag(FLAG_CONSTRUCTOR))    wrapper->addFlag(FLAG_CONSTRUCTOR);
   if (fn->hasFlag(FLAG_FIELD_ACCESSOR)) wrapper->addFlag(FLAG_FIELD_ACCESSOR);
   if (fn->hasFlag(FLAG_REF_TO_CONST))   wrapper->addFlag(FLAG_REF_TO_CONST);
   if (fn->hasFlag(FLAG_METHOD_PRIMARY)) wrapper->addFlag(FLAG_METHOD_PRIMARY);

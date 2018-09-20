@@ -1115,9 +1115,7 @@ static void normalizeReturns(FnSymbol* fn) {
   // Check if this function's returns are already normal.
   if (rets.size() == 1 && theRet == fn->body->body.last()) {
     if (SymExpr* se = toSymExpr(theRet->get(1))) {
-      if (fn->hasFlag(FLAG_CONSTRUCTOR)         == true ||
-          fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true ||
-          strncmp("_if_fn", fn->name, 6)        ==    0 ||
+      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true ||
           strcmp ("=",      fn->name)           ==    0 ||
           strcmp ("_init",  fn->name)           ==    0||
           strcmp ("_ret",   se->symbol()->name) ==    0) {

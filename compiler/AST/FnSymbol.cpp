@@ -1112,19 +1112,6 @@ const char* toString(FnSymbol* fn) {
         INT_ASSERT(strncmp("_type_construct_", fn->name, 16) == 0);
         retval = astr(fn->name + 16);
 
-      } else if (fn->hasFlag(FLAG_CONSTRUCTOR) == true) {
-        if (strncmp("_construct_", fn->name, 11) == 0) {
-          retval = astr(fn->name + 11, ".init");
-
-        } else if (strcmp("init", fn->name) == 0) {
-          retval = "init";
-
-        } else {
-          INT_FATAL(fn,
-                    "flagged as constructor but not named "
-                    "_construct_ or init");
-        }
-
       } else if (fn->isPrimaryMethod() == true) {
         Flag flag = FLAG_FIRST_CLASS_FUNCTION_INVOCATION;
 

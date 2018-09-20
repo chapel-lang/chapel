@@ -89,7 +89,6 @@ symbolFlag( FLAG_CONST , npr, "const" , "constant" )
 // this shadow variable is constant, whereas the outer variable is not
 symbolFlag( FLAG_CONST_DUE_TO_TASK_FORALL_INTENT , npr, "const due to task or forall intent", ncm )
 symbolFlag( FLAG_C_PTR_CLASS , ypr, "c_ptr class" , "marks c_ptr class" )
-symbolFlag( FLAG_CONSTRUCTOR , npr, "constructor" , "constructor (but not type constructor); loosely defined to include constructor wrappers" )
 symbolFlag( FLAG_COPY_MUTATES , ypr, "copy mutates" , "the initCopy function / copy initializer takes its argument by ref")
 symbolFlag( FLAG_DATA_CLASS , ypr, "data class" , ncm )
 

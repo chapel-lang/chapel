@@ -46,14 +46,6 @@ static void checkFunctionSignatures() {
         USR_FATAL_CONT(fn, "iterators may not yield or return parameters");
       }
 
-    } else if (fn->hasFlag(FLAG_CONSTRUCTOR)         == true &&
-               fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == false) {
-      if (fn->retExprType != NULL) {
-        USR_FATAL_CONT(fn, "initializers may not declare a return type");
-      }
-
-      errorOnFieldsInArgList(fn);
-
     } else if (fn->hasFlag(FLAG_DESTRUCTOR) == true) {
       if (fn->retExprType != NULL) {
         USR_FATAL_CONT(fn, "destructors may not declare a return type");

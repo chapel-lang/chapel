@@ -377,11 +377,6 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
     return true;
   if (fn->hasFlag(FLAG_COMPILER_GENERATED))
     return false;
-  // This pass has trouble following certain compiler-generated
-  // patterns in constructors. Since they're being deprecated anyway,
-  // don't check lifetimes in constructors.
-  if (fn->hasFlag(FLAG_CONSTRUCTOR))
-    return false;
 
   // this is a workaround for problems with init functions
   // where temporaries are used to store results that are
@@ -685,14 +680,12 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
   if (calledFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME))
     return infiniteLifetimePair();
 
-  // Class constructors and "_new" calls
-  // return infinite lifetime. Why?
+  // "_new" calls return infinite lifetime. Why?
   //  * the result of 'new' is currently user-managed
   //  * ref fields are not supported in classes
   //    so they can't capture a ref argument
   if (isClassLike(call->typeInfo()) &&
-      (calledFn->hasFlag(FLAG_CONSTRUCTOR) ||
-       0 == strcmp("_new", calledFn->name))) {
+      calledFn->hasFlag(FLAG_NEW_WRAPPER)) {
     return infiniteLifetimePair();
   }
 
@@ -1140,16 +1133,14 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
         rhsCall &&
         shouldPropagateLifetimeTo(rhsCall, initSym)) {
       FnSymbol* calledFn = rhsCall->resolvedOrVirtualFunction();
-      // Class constructors and "_new" calls
-      // return infinite lifetime. Why?
+      // "_new" calls return infinite lifetime. Why?
       //  * the result of 'new' is currently user-managed
       //  * ref fields are not supported in classes
       //    so they can't capture a ref argument
       // This code is here to handle the case that the result of
       // the new is stored into a temp.
       if (isClassLike(rhsCall->typeInfo()) && calledFn &&
-          (calledFn->hasFlag(FLAG_CONSTRUCTOR) ||
-           0 == strcmp("_new", calledFn->name))) {
+          calledFn->hasFlag(FLAG_NEW_WRAPPER)) {
 
         // Start with a lifetime already determined, in case we
         // visit the same one more than once due to canonicalizing temps
