@@ -10,7 +10,7 @@
 config const n = 500;
 
 use barrierWF;
-var b: unmanaged BarrierWF;
+var b: owned BarrierWF;
 
 /* Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1; */
 inline proc eval_A(i,j : int) : real
@@ -63,7 +63,7 @@ proc main() {
   const chunk = n / numThreads;
 
   u = 1.0;
-  b = new unmanaged BarrierWF(numThreads);
+  b = new owned BarrierWF(numThreads);
 
   coforall i in 0..#numThreads {
     const r_begin = i * chunk;
@@ -83,6 +83,4 @@ proc main() {
 
   const res = sqrt(vBv/vv);
   writeln(res, new iostyle(precision=10));
-
-  delete b;
 }

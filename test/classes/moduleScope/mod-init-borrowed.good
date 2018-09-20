@@ -1,10 +1,5 @@
-mod-init-borrowed.chpl:34: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
-mod-init-borrowed.chpl:34: warning: Type 'A' defines a constructor here
-mod-init-borrowed.chpl:54: warning: Type 'A' defines a constructor here
 A.init(10)
 
 M1.A.init(20)
-M2.A.A(30)
 
-M3.A.init(40)
-M2.A.A(50)
+M2.A.init(40)

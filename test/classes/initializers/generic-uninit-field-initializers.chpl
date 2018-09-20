@@ -1,5 +1,3 @@
-// Modified from
-// test/classes/constructors/generic-uninit-field-constructors.chpl
 
 /////////////////////////////////
 // user-defined initializers.

@@ -1,5 +1,3 @@
-// modified from test/classes/hilde/inheritance/constructors.chpl
-//
 // Test calling the initializer in a derived class.
 //
 

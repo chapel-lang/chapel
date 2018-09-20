@@ -1,5 +1,3 @@
-// Modified from
-// test/classes/dinan/user_def_unique_constructor_const.chpl
 class C {
   const x: int;
 

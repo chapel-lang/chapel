@@ -434,6 +434,30 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode,
                      int32_t commID, int ln, int32_t fn);
 
 //
+// Common versions of the above, for comm layer implementations that
+// do not have native strided transfers.
+//
+void chpl_comm_put_strd_common(void* dstaddr, size_t* dststrides,
+                               c_nodeid_t dstnode,
+                               void* srcaddr, size_t* srcstrides,
+                               size_t* count,
+                               int32_t stridelevels, size_t elemSize,
+                               size_t maxOutstandingXfers,
+                               void (yieldFn)(void),
+                               int32_t typeIndex, int32_t commID,
+                               int ln, int32_t fn);
+
+void chpl_comm_get_strd_common(void* dstaddr, size_t* dststrides,
+                               c_nodeid_t srcnode,
+                               void* srcaddr, size_t* srcstrides,
+                               size_t* count,
+                               int32_t stridelevels, size_t elemSize,
+                               size_t maxOutstandingXfers,
+                               void (yieldFn)(void),
+                               int32_t typeIndex, int32_t commID,
+                               int ln, int32_t fn);
+
+//
 // Get a local copy of a wide string.
 //
 // The local copy is also a wide string pointer, but its addr field points to 

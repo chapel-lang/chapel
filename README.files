@@ -20,6 +20,7 @@ further information about the files and directories that they contain.
   Makefile             : top-level Makefile for building things
   bin/                 : location of the compiler (chpl) once it's been built
   compiler/            : source code for the compiler
+  configure            : autotools-like configure script, used with make install
   doc/                 : documentation and READMEs
   examples/            : example Chapel codes
   highlight/           : syntax coloring modes for emacs, vim, source-highlight

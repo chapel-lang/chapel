@@ -101,7 +101,6 @@ classifyPrimitive(CallExpr *call) {
 
   case PRIM_GET_MEMBER:
   case PRIM_GET_SVEC_MEMBER:
-  case PRIM_GET_PRIV_CLASS:
   case PRIM_NEW_PRIV_CLASS:
 
   case PRIM_CHECK_NIL:
@@ -136,6 +135,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_STACK_ALLOCATE_CLASS:
 
   case PRIM_CLASS_NAME_BY_ID:
+
+  case PRIM_INVARIANT_START:
     return FAST_AND_LOCAL;
 
   case PRIM_MOVE:
@@ -263,7 +264,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_SCALAR_PROMOTION_TYPE:
   case PRIM_TYPE_TO_STRING:
   case PRIM_IS_CLASS_TYPE:
-  case PRIM_IS_EXTERN_CLASS_TYPE:
   case PRIM_IS_RECORD_TYPE:
   case PRIM_IS_UNION_TYPE:
   case PRIM_IS_ATOMIC_TYPE:
@@ -325,6 +325,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_TO_BORROWED_CLASS:
   case PRIM_NEEDS_AUTO_DESTROY:
   case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
+  case PRIM_GET_RUNTIME_TYPE_FIELD:
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 

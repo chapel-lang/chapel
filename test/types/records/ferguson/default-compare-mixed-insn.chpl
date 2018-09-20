@@ -3,17 +3,27 @@ record R {
   var x:t;
 }
 
+config param case = 1;
+
 proc main() {
-  var r64 = new R(int(64), 1);
-  var r64a = new R(int(64), 1);
-  var r32 = new R(int(32), 1);
-  var r32a = new R(int(32), 1);
+  var r64 = new R(int(64), 64);
+  var r32 = new R(int(32), 32);
+  
+  if case == 1 then
+    writeln(r32 == r64);
+  
+  if case == 2 then
+    writeln(r64 == r32);
 
-  writeln(r64 == r64a);
-  writeln(r32 == r32a);
+  if case == 3 then
+    r64 = r32;
 
-  // These return false because the default == fn
-  // compares the type fields and they differ.
-  writeln(r32 == r64);
-  writeln(r64 == r32);
+  if case == 4 then
+    r32 = r64;
+  
+  if case == 5 then
+    writeln(r32 != r64);
+  
+  if case == 6 then
+    writeln(r64 != r32);
 }
