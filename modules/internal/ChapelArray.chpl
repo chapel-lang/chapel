@@ -1529,16 +1529,32 @@ module ChapelArray {
     proc alignedHigh return _value.dsiAlignedHigh;
 
     pragma "no doc"
-    proc member(i: rank*_value.idxType) {
+    proc contains(i: rank*_value.idxType) {
       if isRectangularDom(this) || isSparseDom(this) then
         return _value.dsiMember(_makeIndexTuple(rank, i));
       else
         return _value.dsiMember(i(1));
     }
-    /* Return true if ``i`` is a member of this domain. Otherwise
-       return false. */
-    proc member(i: _value.idxType ...rank) {
-      return member(i);
+
+    /* Return true if this domain contains ``i``. Otherwise return false.
+       For sparse domains, only indices with a value are considered
+       to be contained in the domain.
+     */
+    inline proc contains(i: _value.idxType ...rank) {
+      return contains(i);
+    }
+
+    pragma "no doc"
+    inline proc member(i: rank*_value.idxType) {
+      compilerWarning("domain.member is deprecated - " +
+                      "please use domain.contains instead");
+      return this.contains(i);
+    }
+    pragma "no doc"
+    inline proc member(i: _value.idxType ...rank) {
+      compilerWarning("domain.member is deprecated - " +
+                      "please use domain.contains instead");
+      return this.contains(i);
     }
 
     /* Return true if this domain is a subset of ``super``. Otherwise
