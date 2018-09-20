@@ -56,6 +56,7 @@
 #include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
+#include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
 #include "chplexit.h"
 #include "chpl-mem.h"
@@ -5587,13 +5588,12 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t typeIndex, int32_t commID, int ln, int32_t fn)
 {
   PERFSTATS_INC(put_strd_cnt);
-
-  chpl_comm_put_strd_common(dstaddr_arg, dststrides,
-                            dstlocale,
-                            srcaddr_arg, srcstrides,
-                            count, stridelevels, elemSize,
-                            strd_maxHandles, local_yield,
-                            typeIndex, commID, ln, fn);
+  put_strd_common(dstaddr_arg, dststrides,
+                  dstlocale,
+                  srcaddr_arg, srcstrides,
+                  count, stridelevels, elemSize,
+                  strd_maxHandles, local_yield,
+                  typeIndex, commID, ln, fn);
 }
 
 
@@ -5604,13 +5604,12 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t typeIndex, int32_t commID, int ln, int32_t fn)
 {
   PERFSTATS_INC(get_strd_cnt);
-
-  chpl_comm_get_strd_common(dstaddr_arg, dststrides,
-                            srclocale,
-                            srcaddr_arg, srcstrides,
-                            count, stridelevels, elemSize,
-                            strd_maxHandles, local_yield,
-                            typeIndex, commID, ln, fn);
+  get_strd_common(dstaddr_arg, dststrides,
+                  srclocale,
+                  srcaddr_arg, srcstrides,
+                  count, stridelevels, elemSize,
+                  strd_maxHandles, local_yield,
+                  typeIndex, commID, ln, fn);
 }
 
 

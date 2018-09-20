@@ -102,15 +102,12 @@ void strd_nb_helper(chpl_comm_nb_handle_t (*xferFn)(void*, int32_t, void*,
 }
 
 
-void chpl_comm_put_strd_common(void* dstaddr_arg, size_t* dststrides,
-                               int32_t dstlocale,
-                               void* srcaddr_arg, size_t* srcstrides,
-                               size_t* count, int32_t stridelevels,
-                               size_t elemSize,
-                               size_t maxOutstandingXfers,
-                               void (yieldFn)(void),
-                               int32_t typeIndex, int32_t commID,
-                               int ln, int32_t fn) {
+static inline
+void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
+                     void* srcaddr_arg, size_t* srcstrides,
+                     size_t* count, int32_t stridelevels, size_t elemSize,
+                     size_t maxOutstandingXfers, void (yieldFn)(void),
+                     int32_t typeIndex, int32_t commID, int ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
   size_t i,j,k,t,total,off,x,carry;
 
@@ -252,15 +249,12 @@ void chpl_comm_put_strd_common(void* dstaddr_arg, size_t* dststrides,
 }
 
 
-void chpl_comm_get_strd_common(void* dstaddr_arg, size_t* dststrides,
-                               int32_t srclocale,
-                               void* srcaddr_arg, size_t* srcstrides,
-                               size_t* count, int32_t stridelevels,
-                               size_t elemSize,
-                               size_t maxOutstandingXfers,
-                               void (yieldFn)(void),
-                               int32_t typeIndex, int32_t commID,
-                               int ln, int32_t fn) {
+static inline
+void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
+                     void* srcaddr_arg, size_t* srcstrides,
+                     size_t* count, int32_t stridelevels, size_t elemSize,
+                     size_t maxOutstandingXfers, void (yieldFn)(void),
+                     int32_t typeIndex, int32_t commID, int ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
   size_t i,j,k,t,total,off,x,carry;
 
@@ -402,3 +396,6 @@ void chpl_comm_get_strd_common(void* dstaddr_arg, size_t* dststrides,
     (void) chpl_comm_wait_nb_some(handles, currHandles);
   }
 }
+
+
+#include "chpl-comm-warning-macros.h"
