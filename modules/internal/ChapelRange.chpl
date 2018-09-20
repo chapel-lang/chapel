@@ -343,6 +343,46 @@ module ChapelRange {
   proc chpl_build_unbounded_range()
     return new range(int, BoundedRangeType.boundedNone);
 
+  /////////////////////////////////////////////////////////////////////
+  // Helper functions for ranges in param loops (and maybe param ranges
+  // later)
+  //
+  // Necessary for coercion support
+  /////////////////////////////////////////////////////////////////////
+  proc chpl_compute_low_param_loop_bound(param low: int(?w),
+                                         param high: int(w)) param {
+    return low;
+  }
+
+  proc chpl_compute_high_param_loop_bound(param low: int(?w),
+                                          param high: int(w)) param {
+    return high;
+  }
+
+  proc chpl_compute_low_param_loop_bound(param low: uint(?w),
+                                         param high: uint(w)) param {
+    return low;
+  }
+
+  proc chpl_compute_high_param_loop_bound(param low: uint(?w),
+                                          param high: uint(w)) param {
+    return high;
+  }
+
+  proc chpl_compute_low_param_loop_bound(param low: bool,
+                                         param high: bool) param {
+    return low;
+  }
+
+  proc chpl_compute_high_param_loop_bound(param low: bool,
+                                          param high: bool) param {
+    return high;
+  }
+
+  pragma "last resort"
+  proc chpl_compute_low_param_loop_bound(param low, param high) param {
+    compilerError("Range bounds must be of compatible types");
+  }
 
   //################################################################################
   //# Predicates

@@ -72,10 +72,18 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
   outer->insertAtTail(new DefExpr(indexVar, new_IntSymbol((int64_t) 0)));
 
   outer->insertAtTail(new DefExpr(lowVar));
-  outer->insertAtTail(new CallExpr(PRIM_MOVE, lowVar,    low));
+  // Allows for proper coercion rules for param loops, and eliminates types like
+  // string from consideration (which had caused internal errors in the past)
+  CallExpr* computeLow = new CallExpr("chpl_compute_low_param_loop_bound", low,
+                                      high);
+  outer->insertAtTail(new CallExpr(PRIM_MOVE, lowVar, computeLow));
 
   outer->insertAtTail(new DefExpr(highVar));
-  outer->insertAtTail(new CallExpr(PRIM_MOVE, highVar,   high));
+  // Allows for proper coercion rules for param loops, and eliminates types like
+  // string from consideration (which had caused internal errors in the past)
+  CallExpr* computeHigh = new CallExpr("chpl_compute_high_param_loop_bound",
+                                       low->copy(), high->copy());
+  outer->insertAtTail(new CallExpr(PRIM_MOVE, highVar, computeHigh));
 
   outer->insertAtTail(new DefExpr(strideVar));
   outer->insertAtTail(new CallExpr(PRIM_MOVE, strideVar, stride));
@@ -474,9 +482,10 @@ CallExpr* ParamForLoop::foldForResolve()
   return noop;
 }
 
-// Checks things like bounding and paramness of the range, as well as that the
-// high, low, and stride of the range are 1) of the same type, and 2) one of
-// int, uint, or bool, as expected by the code that follows this function call
+// Checks things like bounding and paramness of the range.
+// The calls to chpl_compute_low_param_loop_bound and
+// chpl_compute_high_param_loop_bound in buildParamForLoop should ensure that
+// the appropriate type is used for these loops
 void ParamForLoop::validateLoop(VarSymbol* lvar,
                                 VarSymbol* hvar,
                                 VarSymbol* svar) {
@@ -489,30 +498,9 @@ void ParamForLoop::validateLoop(VarSymbol* lvar,
     USR_FATAL(this,
               "param for loop must be defined over a bounded param range");
 
-  if (!is_int_type(lvar->type) && !is_uint_type(lvar->type) &&
-      !is_bool_type(lvar->type)) {
-    hadError = true;
-    USR_FATAL_CONT(this, "Range bounds must be of compatible types (lower "
-                   "bound is not)");
-  }
-  if (!is_int_type(hvar->type) && !is_uint_type(hvar->type) &&
-      !is_bool_type(hvar->type)) {
-    hadError = true;
-    USR_FATAL_CONT(this, "Range bounds must be of compatible types (upper "
-                   "bound is not)");
-  }
   if (!is_int_type(svar->type) && !is_uint_type(svar->type)) {
     hadError = true;
-    USR_FATAL_CONT(this,
-                   "Range stride must be an int");
-  }
-
-  if (is_bool_type(lvar->type) != is_bool_type(hvar->type)) {
-    USR_FATAL_CONT(this, "Range bounds should not mix bools with other types");
-  }
-
-  if (hadError) {
-    USR_STOP();
+    USR_FATAL(this, "Range stride must be an int");
   }
 }
 
