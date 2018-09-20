@@ -334,7 +334,7 @@ module ExternalArray {
     return _newArray(arr);
   }
 
-  proc convertToExternalArray(arr: []) {
+  proc convertToExternalArray(arr: []): chpl_external_array {
     if (!isIntegralType(arr.domain.idxType)) {
       compilerError("cannot return an array with indices that are not " +
                     "integrals");
