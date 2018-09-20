@@ -101,32 +101,30 @@ void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
     CallExpr* typeConstructorCall = new CallExpr(at->typeConstructor);
 
     for_formals(formal, fn) {
-      if (formal->hasFlag(FLAG_IS_MEME) == false) {
-        if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
-          if (formal->instantiatedFrom != NULL) {
-            typeConstructorCall->insertAtTail(formal->type->symbol);
+      if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
+        if (formal->instantiatedFrom != NULL) {
+          typeConstructorCall->insertAtTail(formal->type->symbol);
 
-          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-            typeConstructorCall->insertAtTail(paramMap.get(formal));
-          }
+        } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+          typeConstructorCall->insertAtTail(paramMap.get(formal));
+        }
 
-        } else {
-          if (strcmp(formal->name, "outer") == 0 ||
-              formal->type                  == dtMethodToken) {
-            typeConstructorCall->insertAtTail(formal);
+      } else {
+        if (strcmp(formal->name, "outer") == 0 ||
+            formal->type                  == dtMethodToken) {
+          typeConstructorCall->insertAtTail(formal);
 
-          } else if (formal->instantiatedFrom != NULL) {
-            SymExpr*   se = new SymExpr(formal->type->symbol);
-            NamedExpr* ne = new NamedExpr(formal->name, se);
+        } else if (formal->instantiatedFrom != NULL) {
+          SymExpr*   se = new SymExpr(formal->type->symbol);
+          NamedExpr* ne = new NamedExpr(formal->name, se);
 
-            typeConstructorCall->insertAtTail(ne);
+          typeConstructorCall->insertAtTail(ne);
 
-          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-            SymExpr*   se = new SymExpr(paramMap.get(formal));
-            NamedExpr* ne = new NamedExpr(formal->name, se);
+        } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+          SymExpr*   se = new SymExpr(paramMap.get(formal));
+          NamedExpr* ne = new NamedExpr(formal->name, se);
 
-            typeConstructorCall->insertAtTail(ne);
-          }
+          typeConstructorCall->insertAtTail(ne);
         }
       }
     }
@@ -316,7 +314,6 @@ bool ResolutionCandidate::verifyGenericFormal(ArgSymbol* formal) const {
       formal->hasFlag(FLAG_TYPE_VARIABLE) == false        &&
       formal->type                        != dtAny) {
     if (strcmp(formal->name, "outer") != 0     &&
-        formal->hasFlag(FLAG_IS_MEME) == false &&
         (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true ||
          fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true)) {
       retval = false;

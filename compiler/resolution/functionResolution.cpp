@@ -7587,8 +7587,7 @@ static void unmarkDefaultedGenerics() {
 
         if (formal                               != fn->_this &&
             typeHasGenericDefaults                            &&
-            formal->hasFlag(FLAG_MARKED_GENERIC) == false     &&
-            formal->hasFlag(FLAG_IS_MEME)        == false) {
+            formal->hasFlag(FLAG_MARKED_GENERIC) == false) {
           SET_LINENO(formal);
 
           FnSymbol*      typeConstr = formalAt->typeConstructor;

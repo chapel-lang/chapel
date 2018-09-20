@@ -782,8 +782,7 @@ int FnSymbol::hasGenericFormals() const {
 
       if (typeHasGenericDefaults               == false ||
           formal->hasFlag(FLAG_MARKED_GENERIC) == true ||
-          formal                               == _this ||
-          formal->hasFlag(FLAG_IS_MEME)        == true) {
+          formal                               == _this) {
         if (!(formal == _this && resolveInit)) {
           isGeneric = true;
         }
@@ -1171,48 +1170,46 @@ const char* toString(FnSymbol* fn) {
     for (int i = start; i <= fn->numFormals(); i++) {
       ArgSymbol* arg = fn->getFormal(i);
 
-      if (arg->hasFlag(FLAG_IS_MEME) == false) {
-        if (first == true) {
-          first = false;
+      if (first == true) {
+        first = false;
 
-          if (skipParens == true) {
-            retval = astr(retval, " ");
-          }
-        } else {
-          retval = astr(retval, ", ");
+        if (skipParens == true) {
+          retval = astr(retval, " ");
         }
+      } else {
+        retval = astr(retval, ", ");
+      }
 
-        if (arg->intent                           == INTENT_PARAM ||
-            arg->hasFlag(FLAG_INSTANTIATED_PARAM) == true) {
-          retval = astr(retval, "param ");
-        }
+      if (arg->intent                           == INTENT_PARAM ||
+          arg->hasFlag(FLAG_INSTANTIATED_PARAM) == true) {
+        retval = astr(retval, "param ");
+      }
 
-        if (arg->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-          retval = astr(retval, "type ", arg->name);
+      if (arg->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+        retval = astr(retval, "type ", arg->name);
 
-        } else if (arg->type == dtUnknown) {
-          if (arg->typeExpr != NULL) {
-            if (SymExpr* sym = toSymExpr(arg->typeExpr->body.tail)) {
-              retval = astr(retval, arg->name, ": ", sym->symbol()->name);
-
-            } else {
-              retval = astr(retval, arg->name);
-            }
+      } else if (arg->type == dtUnknown) {
+        if (arg->typeExpr != NULL) {
+          if (SymExpr* sym = toSymExpr(arg->typeExpr->body.tail)) {
+            retval = astr(retval, arg->name, ": ", sym->symbol()->name);
 
           } else {
             retval = astr(retval, arg->name);
           }
 
-        } else if (arg->type == dtAny) {
-          retval = astr(retval, arg->name);
-
         } else {
-          retval = astr(retval, arg->name, ": ", toString(arg->type));
+          retval = astr(retval, arg->name);
         }
 
-        if (arg->variableExpr != NULL) {
-          retval = astr(retval, " ...");
-        }
+      } else if (arg->type == dtAny) {
+        retval = astr(retval, arg->name);
+
+      } else {
+        retval = astr(retval, arg->name, ": ", toString(arg->type));
+      }
+
+      if (arg->variableExpr != NULL) {
+        retval = astr(retval, " ...");
       }
     }
 

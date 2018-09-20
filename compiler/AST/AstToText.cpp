@@ -196,22 +196,17 @@ void AstToText::appendFormals(FnSymbol* fn)
 
   for (int index = 1; index <= count; index++)
   {
-    ArgSymbol* arg = formalGet(fn, index);
-
-    if (arg->hasFlag(FLAG_IS_MEME) == false)
+    if (first == true)
     {
-      if (first == true)
-      {
-        if (skip == true)
-          mText += " ";
+      if (skip == true)
+        mText += " ";
 
-        first = false;
-      }
-      else
-        mText += ", ";
-
-      appendFormal(fn, index);
+      first = false;
     }
+    else
+      mText += ", ";
+
+    appendFormal(fn, index);
   }
 
   if (skip == false)

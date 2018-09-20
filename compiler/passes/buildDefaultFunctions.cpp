@@ -1406,9 +1406,7 @@ static bool hasUserDefinedConstructor(AggregateType* at) {
     const char* copyCtorName = astr("_construct_", at->symbol->name);
 
     if (FnSymbol* ctor = function_exists(copyCtorName, at)) {
-      if (ctor->getFormal(1)->hasFlag(FLAG_IS_MEME) == false) {
-        retval = true;
-      }
+      retval = true;
     }
   }
 
@@ -1599,9 +1597,7 @@ static void buildRecordDefaultOf(AggregateType* ct,
 
   // Insert all required arguments into this call
   for_formals(formal, ct->defaultInitializer) {
-    if (formal->hasFlag(FLAG_IS_MEME) == true) {
-
-    } else if (formal->type == dtMethodToken) {
+    if (formal->type == dtMethodToken) {
       call->insertAtTail(gMethodToken);
 
     } else if (formal->isParameter() == true) {

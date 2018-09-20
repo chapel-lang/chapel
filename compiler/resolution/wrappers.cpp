@@ -876,16 +876,6 @@ static FnSymbol* buildWrapperForDefaultedFormals(FnSymbol*     fn,
 
     retval->insertAtTail(new DefExpr(_this));
 
-    if (defaults->v[defaults->n - 1]->hasFlag(FLAG_IS_MEME) == true) {
-      if (isRecord(fn->_this->type) == false &&
-          isUnion(fn->_this->type)  == false) {
-        CallExpr* hereAlloc = callChplHereAlloc(_this->typeInfo());
-
-        retval->insertAtTail(new CallExpr(PRIM_MOVE,   _this, hereAlloc));
-        retval->insertAtTail(new CallExpr(PRIM_SETCID, _this));
-      }
-    }
-
     retval->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, _this));
   }
 
@@ -897,11 +887,6 @@ static FnSymbol* buildWrapperForDefaultedFormals(FnSymbol*     fn,
 
     } else if (paramMap->get(formal) != NULL) {
       call->insertAtTail(paramMap->get(formal));
-
-    } else if (formal->hasFlag(FLAG_IS_MEME) == true) {
-      formal->type = retval->_this->type;
-
-      call->insertAtTail(retval->_this);
 
     } else {
       formalIsDefaulted(fn, formal, call, retval, copyMap);
@@ -936,13 +921,6 @@ static void formalIsNotDefaulted(FnSymbol*  fn,
 
   if (fn->_this == formal) {
     wrapFn->_this = wrapFnFormal;
-  }
-
-  if (formal->hasFlag(FLAG_IS_MEME) == true &&
-      wrapFn->_this                 != NULL) {
-    Symbol* _this = wrapFn->_this;
-
-    _this->defPoint->insertAfter(new CallExpr(PRIM_MOVE, _this, wrapFnFormal));
   }
 
   if (formal->type->symbol->hasFlag(FLAG_REF) == true) {

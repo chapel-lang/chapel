@@ -1652,8 +1652,7 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
             // Add an argument per argument in the parent initializer
             for_formals(formal, parent->defaultInitializer) {
               if (formal->type                   == dtMethodToken ||
-                  formal->hasFlag(FLAG_ARG_THIS) == true          ||
-                  formal->hasFlag(FLAG_IS_MEME)  == true) {
+                  formal->hasFlag(FLAG_ARG_THIS) == true) {
 
               // Skip arguments shadowed by this class' fields
               } else if (names.find(formal->name) != names.end()) {
