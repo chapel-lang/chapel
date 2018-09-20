@@ -20,6 +20,7 @@
 #include "chplrt.h"
 
 #include "chpl-comm.h"
+#include "chpl-comm-strd-xfer.h"
 #include "chplexit.h"
 #include "error.h"
 #include "chpl-mem.h"
@@ -60,7 +61,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        int32_t commID, int ln, int32_t fn)
 {
   assert(node == 0);
-  chpl_memcpy(raddr, addr, size);
+  chpl_memmove(raddr, addr, size);
   return NULL;
 }
 
@@ -69,7 +70,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        int32_t commID, int ln, int32_t fn)
 {
   assert(node == 0);
-  chpl_memcpy(addr, raddr, size);
+  chpl_memmove(addr, raddr, size);
   return NULL;
 }
 
@@ -163,12 +164,11 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t dstno
                          int32_t commID, int ln, int32_t fn)
 {
   assert(dstnode==0);
-  chpl_comm_put_strd_common(dstaddr_arg, dststrides,
-                            dstnode,
-                            srcaddr_arg, srcstrides,
-                            count, stridelevels, elemSize,
-                            1, NULL, // "nb" xfers block, so no need for yield
-                            typeIndex, commID, ln, fn);
+  put_strd_common(dstaddr_arg, dststrides, dstnode,
+                  srcaddr_arg, srcstrides,
+                  count, stridelevels, elemSize,
+                  1, NULL, // "nb" xfers block, so no need for yield
+                  typeIndex, commID, ln, fn);
 }
 
 void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t srcnode,
@@ -177,12 +177,11 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t srcno
                          int32_t commID, int ln, int32_t fn)
 {
   assert(srcnode==0);
-  chpl_comm_get_strd_common(dstaddr_arg, dststrides,
-                            srcnode,
-                            srcaddr_arg, srcstrides,
-                            count, stridelevels, elemSize,
-                            1, NULL, // "nb" xfers block, so no need for yield
-                            typeIndex, commID, ln, fn);
+  get_strd_common(dstaddr_arg, dststrides, srcnode,
+                  srcaddr_arg, srcstrides,
+                  count, stridelevels, elemSize,
+                  1, NULL, // "nb" xfers block, so no need for yield
+                  typeIndex, commID, ln, fn);
 }
 
 typedef struct {
