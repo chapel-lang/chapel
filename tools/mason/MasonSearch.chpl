@@ -105,7 +105,7 @@ proc consumeArgs(ref args : [] string) {
 
   const options = {"--no-update", "--debug"};
 
-  while args.size > 0 && options.member(args.head()) {
+  while args.size > 0 && options.contains(args.head()) {
     args.pop_front();
   }
 }
