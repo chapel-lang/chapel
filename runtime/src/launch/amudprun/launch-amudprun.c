@@ -96,8 +96,6 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
     const char* ev_use_gdb = getenv("CHPL_COMM_USE_GDB");
     const char* ev_use_lldb = getenv("CHPL_COMM_USE_LLDB");
 
-    static char term[256] = "";
-
     if (ev_use_gdb != NULL || ev_use_lldb != NULL) {
 
       // determine the terminal emulator to use
@@ -137,7 +135,8 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
         }
       } else {
         static char err_msg[128] = "";
-        sprintf(err_msg, "CHPL_COMM_USE_(G|LL)DB ignored because no %s", term);
+        sprintf(err_msg, "CHPL_COMM_USE_(G|LL)DB ignored because no %s",
+                dbg_term);
         chpl_warning(err_msg, 0, 0);
       }
     }
