@@ -477,22 +477,14 @@ void UseStmt::trackMethods() {
           methodsAndFields.push_back(sym->name);
         }
 
-        // TODO: remove constructor portion when constructors are deprecated
-        // The type constructor portion will probably always need to remain
-        unsigned int constrLen = strlen(t->symbol->name) +
-          strlen("_construct_") + 1;
-        unsigned int typeConstrLen = constrLen + strlen("_type");
+        unsigned int typeConstrLen = strlen(t->symbol->name) +
+          strlen("_type_construct_") + 1;
 
-        char*        constrName = (char*) malloc(constrLen);
-        char*        typeConstrName = (char*) malloc(typeConstrLen);
-
-        strcpy(constrName,     "_construct_");
-        strcat(constrName,     t->symbol->name);
+        char* typeConstrName = (char*) malloc(typeConstrLen);
 
         strcpy(typeConstrName, "_type_construct_");
         strcat(typeConstrName, t->symbol->name);
 
-        functionsToAlwaysCheck.push_back(constrName);
         functionsToAlwaysCheck.push_back(typeConstrName);
       }
 

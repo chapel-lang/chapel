@@ -50,9 +50,7 @@ static bool            fixupDefaultInitCopy(FnSymbol* fn,
 
 static void
 explainInstantiation(FnSymbol* fn) {
-  if (strcmp(fn->name, fExplainInstantiation) &&
-      (strncmp(fn->name, "_construct_", 11) ||
-       strcmp(fn->name+11, fExplainInstantiation)))
+  if (strcmp(fn->name, fExplainInstantiation) != 0)
     return;
   if (explainInstantiationModule && explainInstantiationModule != fn->defPoint->getModule())
     return;
