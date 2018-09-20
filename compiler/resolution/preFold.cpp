@@ -1708,8 +1708,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   ct->fields.insertAtHead(new DefExpr(super));
 
-  // Builds type constructor
-  ct->buildConstructors();
+  ct->buildTypeConstructor();
 
   ct->buildDefaultInitializer();
 
@@ -2010,8 +2009,7 @@ static AggregateType* createAndInsertFunParentClass(CallExpr*   call,
 
   parent->fields.insertAtHead(new DefExpr(parentSuper));
 
-  // Builds type constructor
-  parent->buildConstructors();
+  parent->buildTypeConstructor();
 
   parent->buildDefaultInitializer();
 

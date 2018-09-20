@@ -141,8 +141,7 @@ public:
 
   void                        createOuterWhenRelevant();
 
-  // intended to be called during scope resolve
-  void                        buildConstructors();
+  FnSymbol*                   buildTypeConstructor();
 
   void                        addRootType();
 
@@ -239,8 +238,6 @@ private:
 
   AggregateType*              discoverParentAndCheck(Expr* storesName);
 
-  FnSymbol*                   buildTypeConstructor();
-
   CallExpr*                   typeConstrSuperCall(FnSymbol* fn)  const;
 
   bool                        isFieldInThisClass(const char* name)       const;
@@ -256,8 +253,6 @@ private:
 
   ArgSymbol*                  insertGenericArg(FnSymbol*  fn,
                                                VarSymbol* field)  const;
-
-  void                        buildConstructor();
 
 public:
   bool                        needsConstructor() const;
