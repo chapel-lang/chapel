@@ -100,22 +100,22 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
     if (ev_use_gdb != NULL || ev_use_lldb != NULL) {
 
-      //GDB has precedence over LLDB. So, first check LLDB value, then let GDB
-      //override it
-      if (ev_use_lldb != NULL) {
-        if(strcmp(ev_use_lldb, "urxvt")!=0) {
-          strcat(term, "xterm");  // silently default to xterm
-        } else {
-          strcat(term, ev_use_lldb);
-        }
+      // determine the terminal emulator to use
+      char* dbg_term = getenv("CHPL_COMM_DBG_TERM");
+      if(dbg_term == NULL) {
+        dbg_term = "xterm";
       }
-
-      if (ev_use_gdb != NULL) {
-        if(strcmp(ev_use_gdb, "urxvt")!=0) {
-          strcat(term, "xterm");  // silently default to xterm
-        } else {
-          strcat(term, ev_use_gdb);
-        }
+      else if(strcmp(dbg_term, "xterm") != 0  && 
+              strcmp(dbg_term, "urxvt") != 0) {
+        // currently limiting to xterm and urxvt because of lack of
+        // testing/interest. Most other terminal emulators seem to support the
+        // -e flag, but there are some (like tilda) that uses different flags
+        // (-c for tilda). Ideally, there should be a lookup table for those
+        // flags if there is interest in adding support for more terminal
+        // emulators
+        chpl_warning("CHPL_COMM_USE_(G|LL)DB can only be set to xterm or urxvt",
+                     0, 0);
+        dbg_term = "xterm";
       }
 
       // hopefully big enough; PATH_MAX is problematic, but what's better?  
@@ -123,8 +123,8 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
       char *term_path = chpl_mem_alloc(term_path_size,
                                         CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
-      static char cmd[16] = "which ";
-      strcat(cmd, term);
+      static char cmd[16] = "";
+      sprintf(cmd, "which %s", dbg_term);
       if (chpl_run_cmdstr(cmd, term_path, term_path_size) > 0) {
         largv[largc++] = term_path;
         largv[largc++] = (char *) "-e";
