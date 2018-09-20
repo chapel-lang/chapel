@@ -26,8 +26,8 @@ proc testRange(r) {
   writeln("hasLast = ", r.hasLast());
   writeln("isNaturallyAligned = ", r.isNaturallyAligned());
   writeln("isAmbiguous = ", r.isAmbiguous());
-  writeln("member(blue) = ", r.member(color.blue));
-  writeln("member(red) = ", r.member(color.red));
+  writeln("contains(blue) = ", r.contains(color.blue));
+  writeln("contains(red) = ", r.contains(color.red));
   writeln("ident(color.red..color.violet) = ", ident(r, color.red..color.violet));
   writeln("ident(color.yellow..color.indigo) = ", ident(r, color.yellow..color.indigo));
   writeln("indexOrder(color.yellow) = ", r.indexOrder(color.yellow));

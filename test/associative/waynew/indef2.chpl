@@ -11,7 +11,7 @@ tupled.add( ("feet", 3, 4.5));
 tupled.add( ("seat", 6, 7.8));
 
 proc tcheck( s:string, i:int, f:real) {
-  writeln( "member(", (s, i, f), ") = ", tupled.member( (s, i, f)));
+  writeln( "contains(", (s, i, f), ") = ", tupled.contains( (s, i, f)));
 }
 
 tcheck( "meet", 5, 6.7);

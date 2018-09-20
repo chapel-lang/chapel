@@ -306,7 +306,7 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
   const myKeys = myMinKeyVal..#bucketWidth;
   forall i in 0..#myBucketSize {
     const key = allBucketKeys[bucketID][i];
-    if !myKeys.member(key) then
+    if !myKeys.contains(key) then
       halt("got key value outside my range: "+key + " not in " + myKeys:string);
   }
 

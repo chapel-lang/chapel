@@ -182,7 +182,7 @@ class UserMapAssoc : BaseDist {
   proc indexToLocaleIndex(ind: idxType) {
     const locIdx = mapper.indexToLocaleIndex(ind, targetLocales);
     if boundsChecking then
-      if !targetLocDom.member(locIdx) then
+      if !targetLocDom.contains(locIdx) then
         halt("mapper provided invalid locale index: ",
              locIdx,
              " is not in domain ",
@@ -310,7 +310,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   proc dsiMember(i: idxType) {
-    return locDoms(dist.indexToLocaleIndex(i)).member(i);
+    return locDoms(dist.indexToLocaleIndex(i)).contains(i);
   }
 
   proc dsiClear() {
@@ -563,8 +563,8 @@ class LocUserMapAssocDom {
     return myInds.remove(i);
   }
 
-  proc member(i: idxType) {
-    return myInds.member(i);
+  proc contains(i: idxType) {
+    return myInds.contains(i);
   }
 
   proc clear() {

@@ -285,7 +285,7 @@ proc create_and_analyze_graph(Pairs)
   var userIds:domain(int);
 
   forall (id, other_id) in Pairs with (ref userIds) {
-    if Pairs.member( (other_id, id) ) {
+    if Pairs.contains( (other_id, id) ) {
       //writeln("Reciprocal match! ", (id, other_id) );
 
       // add to userIds
@@ -333,7 +333,7 @@ proc create_and_analyze_graph(Pairs)
     writeln("creating triples");
 
   var triples = [(id, other_id) in Pairs]
-                   if id < other_id && Pairs.member( (other_id, id) ) then
+                   if id < other_id && Pairs.contains( (other_id, id) ) then
                      new Triple(idToNode[id], idToNode[other_id]);
 
   if printall {
@@ -481,7 +481,7 @@ proc create_and_analyze_graph(Pairs)
         if printall then
           writeln("with label ", nlabel);
 
-        if ! foundLabels.member(nlabel) {
+        if ! foundLabels.contains(nlabel) {
           foundLabels += nlabel;
         }
         counts[nlabel] += 1;
@@ -507,7 +507,7 @@ proc create_and_analyze_graph(Pairs)
       // Did the existing label correspond to a maximal label?
       // stop when every node has a label a maximum number of neighbors have
       // (e.g. there might be 2 labels each attaining the maximum)
-      if foundLabels.member[mylabel] && counts[mylabel] < maxlabel {
+      if foundLabels.contains[mylabel] && counts[mylabel] < maxlabel {
         go.write(true, memory_order_relaxed);
       }
 

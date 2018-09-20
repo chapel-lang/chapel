@@ -12,14 +12,14 @@ class slowSum: ReduceScanOp {
     var exp: c_int;
     extern proc frexp(value: real, ref exp: c_int): real;
     frexp(value, exp);
-    if (!exps.member(exp)) then
+    if (!exps.contains(exp)) then
       exps += exp;
     vals[exp] += value;
   }
 
   proc combine(other) {
     for (exp, val) in zip(other.exps, other.vals) do {
-      if (!exps.member(exp)) then
+      if (!exps.contains(exp)) then
         exps += exp;
       vals[exp] += val;
     }

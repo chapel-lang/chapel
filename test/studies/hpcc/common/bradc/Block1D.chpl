@@ -637,7 +637,7 @@ class Block1DArr: BaseArray {
   proc this(i: idxType) ref {
     const myLocArr = locArr(here.id);
     local {
-      if myLocArr.locDom.myBlock.member(i) then
+      if myLocArr.locDom.myBlock.contains(i) then
         return myLocArr.this(i);
     }
     return locArr(dom.dist.idxToLocaleInd(i))(i);
@@ -700,7 +700,7 @@ class Block1DArr: BaseArray {
       // elements over.
       proc accessHelper(i) ref {
         local {
-          if myLocArr.locDom.myBlock.member(i) then
+          if myLocArr.locDom.myBlock.contains(i) then
             return myLocArr.this(i);
         }
         return this(i);

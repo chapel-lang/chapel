@@ -11,7 +11,7 @@ class DistributedArray {
 }
 
 proc DistributedArray.this(i: int) ref {
-  if ndata.member(i) {
+  if ndata.contains(i) {
     return data[i];
   } else {
     return others[(i-1)*numLocales/n].data[i];
