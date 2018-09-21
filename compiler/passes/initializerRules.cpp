@@ -1166,10 +1166,10 @@ static bool isSuperPostInit(CallExpr* stmt) {
 
 class PostinitVisitor : public AstVisitorTraverse {
   public:
-    PostinitVisitor() { }
+    PostinitVisitor() : found(false) { }
     virtual ~PostinitVisitor() { }
 
-    bool found = false;
+    bool found;
 
     virtual bool enterCondStmt(CondStmt* node);
     virtual bool enterCallExpr(CallExpr* node);
