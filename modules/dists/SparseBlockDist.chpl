@@ -810,16 +810,8 @@ proc SparseBlockDom.dsiHasSingleLocalSubdomain() param return true;
 proc SparseBlockArr.dsiHasSingleLocalSubdomain() param return true;
 
 proc SparseBlockDom.dsiLocalSubdomain() {
-  // TODO -- could be replaced by a privatized myLocDom in BlockDom
-  // as it is with BlockArr
-  var myLocDom:unmanaged LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType) = nil;
-  for (loc, locDom) in zip(dist.targetLocales, locDoms) {
-    if loc == here {
-      myLocDom = locDom;
-      break;
-    }
-  }
-  return myLocDom.mySparseBlock;
+  const (found, targetIdx) = dist.targetLocales.find(here);
+  return locDoms[targetIdx].mySparseBlock;
 }
 
 proc SparseBlockArr.dsiLocalSubdomain() {
