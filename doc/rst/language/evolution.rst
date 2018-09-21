@@ -429,7 +429,8 @@ const-checking error messages from the compiler.
     writeln(D.member(6)); // outputs `true` !
   }
 
-See GitHub issue #5217 for more examples and discussion.
+See `GitHub issue #5217 <https://github.com/chapel-lang/chapel/issues/5217>`_
+for more examples and discussion.
 
 In order to make such programs less surprising, version 1.15 changes the default
 intent for arrays to `ref` if the formal argument is modified in the function
@@ -470,7 +471,8 @@ record methods was implemented as `ref` but specified as `const ref`. In
 1.15, this changed to `ref` if the formal `this` argument is modified in
 the body of the function and `const ref` if not.
 
-See GitHub issue #5266 for more details and discussion.
+See `GitHub issue #5266 <https://github.com/chapel-lang/chapel/issues/5266>`_
+for more details and discussion.
 
 .. code-block:: chapel
 
@@ -764,7 +766,7 @@ reflect what we think it intuitive to users and correct what is viewed in many
 circles to be a regrettable mistake in C. At the same time, we changed the
 binding of ``in`` and ``..`` to support some other Chapel idioms more naturally,
 like ``1..10 == 1..10``. To see the current operator precedence, refer to the
-:download:Quick Reference <https://chapel-lang.org/spec/quickReference.pdf> sheet.
+`Quick Reference sheet <https://chapel-lang.org/spec/quickReference.pdf>`_.
 
 improved interpretation of {D}
 ******************************
