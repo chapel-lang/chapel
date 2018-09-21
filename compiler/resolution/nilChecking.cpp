@@ -44,12 +44,18 @@ typedef enum {
 } classify_nil_t;
 
 
-static bool isClassMethodCall(CallExpr* call) {
+static bool isCheckedClassMethodCall(CallExpr* call) {
   FnSymbol* fn     = call->resolvedOrVirtualFunction();
   bool      retval = false;
 
   if (fn && fn->isMethod() && fn->_this) {
-    if (AggregateType* ct = toAggregateType(fn->_this->typeInfo())) {
+    if (0 == strcmp(fn->name, "borrow")) {
+      // Ignore .borrow()
+      // (at least until we decide that borrow-from-empty-owned
+      //  is a problem, rather than use of the resulting nil)
+      retval = false;
+
+    } else if (AggregateType* ct = toAggregateType(fn->_this->typeInfo())) {
       if (fn->numFormals()             >  0 &&
           fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {
         if (isClassLike(ct)) {
@@ -88,7 +94,8 @@ static void checkForNilDereferencesInCall(
       call->isPrimitive(PRIM_SET_MEMBER)       ||
       call->isPrimitive(PRIM_GETCID)           ||
       call->isPrimitive(PRIM_TESTCID)          ||
-      isClassMethodCall(call)) {
+      isCheckedClassMethodCall(call)) {
+
     SymExpr* thisSe = toSymExpr(call->get(1));
     Symbol* thisSym = thisSe->symbol();
     if (symToIdx.count(thisSym)) {
@@ -119,6 +126,55 @@ static void printStatus(const char* prefix,
   }
 }
 
+static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOrCtor) {
+
+  if (call->isPrimitive(PRIM_MOVE) ||
+      call->isPrimitive(PRIM_ASSIGN)) {
+    if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
+      if (rhsCallExpr->resolvedOrVirtualFunction()) {
+        if (AggregateType* at = toAggregateType(rhsCallExpr->typeInfo())) {
+          if (isRecord(at)) {
+            SymExpr* se = toSymExpr(call->get(1));
+            INT_ASSERT(se);
+            lhs = se->symbol();
+            initOrCtor = rhsCallExpr;
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
+    if (calledFn->isMethod() && calledFn->name == astrInit) {
+      SymExpr* se = toSymExpr(call->get(1));
+      INT_ASSERT(se);
+      Symbol* sym = se->symbol();
+      if (isRecord(sym->type)) {
+        lhs = sym;
+        initOrCtor = call;
+        return true;
+      }
+    } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
+      for_formals_actuals(formal, actual, call) {
+        if (formal->hasFlag(FLAG_RETARG)) {
+          if (isRecord(formal->getValType())) {
+            SymExpr* se = toSymExpr(actual);
+            INT_ASSERT(se);
+            Symbol* sym = se->symbol();
+            lhs = sym;
+            initOrCtor = call;
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  lhs = NULL;
+  initOrCtor = NULL;
+  return false;
+}
 
 static void findNilDereferencesInBasicBlock(
     FnSymbol* fn,
@@ -166,13 +222,31 @@ static void findNilDereferencesInBasicBlock(
       // Ignore DefExprs
       // instead, find the defaultOf or whatever initializes them.
     } else if (CallExpr* call = toCallExpr(expr)) {
-      if (call->isPrimitive(PRIM_MOVE) ||
-          call->isPrimitive(PRIM_ASSIGN) ||
-          call->isNamedAstr(astrSequals)) {
+      Symbol* lhsSym = NULL;
+      Expr* rhsExpr = NULL;
+      bool moveLike = (call->isPrimitive(PRIM_MOVE) ||
+                       call->isPrimitive(PRIM_ASSIGN) ||
+                       call->isNamedAstr(astrSequals));
+
+      if (moveLike) {
         SymExpr* lhsSe = toSymExpr(call->get(1));
-        Symbol* lhsSym = lhsSe->symbol();
-        Expr* rhsExpr = call->get(2);
-        if (lhsSe->isRef()) {
+        lhsSym = lhsSe->symbol();
+        rhsExpr = call->get(2);
+      }
+
+      {
+        Symbol* initSym = NULL;
+        CallExpr* initCall = NULL;
+        if (isRecordInitOrReturn(call, initSym, initCall)) {
+          lhsSym = initSym;
+          rhsExpr = initCall;
+          moveLike = true;
+        }
+      }
+
+      if (moveLike) {
+        // lhsSym and rhsExpr set above
+        if (lhsSym->isRef()) {
           // TODO -- may-alias sets?
           // var x: MyClass; ref r = x; r = new MyClass(); x.method();
           // TODO: call returning ref
@@ -196,7 +270,24 @@ static void findNilDereferencesInBasicBlock(
                                             bbStatus);
 
             FnSymbol* calledFn = rhsCall->resolvedOrVirtualFunction();
-            if (calledFn->name == astr_defaultOf) {
+            if (calledFn == NULL) {
+              if (rhsCall->isPrimitive(PRIM_DEREF)) {
+                SymExpr* fromSe = toSymExpr(rhsCall->get(1));
+                Symbol* fromSym = fromSe->symbol();
+                if (symToIdx.count(lhsSym) && symToIdx.count(fromSym))
+                  status[symToIdx[lhsSym]] = bbStatus[symToIdx[fromSym]];
+
+              } else if (rhsCall->isPrimitive(PRIM_CAST)) {
+                SymExpr* fromSe = toSymExpr(rhsCall->get(2));
+                Symbol* fromSym = fromSe->symbol();
+                if (symToIdx.count(lhsSym) && symToIdx.count(fromSym))
+                  status[symToIdx[lhsSym]] = bbStatus[symToIdx[fromSym]];
+
+              } else {
+                gaveUp = true;
+                gdbShouldBreakHere();
+              }
+            } else if (calledFn->name == astr_defaultOf) {
               if (symToIdx.count(lhsSym))
                 status[symToIdx[lhsSym]] = IS_NIL;
 
@@ -206,8 +297,8 @@ static void findNilDereferencesInBasicBlock(
                 status[symToIdx[lhsSym]] = NOT_NIL;
 
             } else if (0 == strcmp(calledFn->name, "borrow")) {
-              SymExpr* thisExpr = toSymExpr(rhsCall->get(1));
-              Symbol* thisSym = thisExpr->symbol();
+              SymExpr* thisSe = toSymExpr(rhsCall->get(1));
+              Symbol* thisSym = thisSe->symbol();
               if (symToIdx.count(lhsSym) && symToIdx.count(thisSym))
                 status[symToIdx[lhsSym]] = bbStatus[symToIdx[thisSym]];
 
@@ -365,6 +456,9 @@ void findNilDereferences(FnSymbol* fn) {
             idxToSym.push_back(sym);
             INT_ASSERT((int)(idxToSym.size()-1) == index);
             index++;
+            if (debugging) {
+              printf("Tracking symbol %i %s\n", sym->id, sym->name);
+            }
           }
         }
       }
