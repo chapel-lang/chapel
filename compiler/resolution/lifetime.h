@@ -23,7 +23,10 @@
 class FnSymbol;
 
 void checkLifetimes(void);
+
 void checkLifetimesInFunction(FnSymbol* fn);
+
 void findNilDereferences(FnSymbol* fn);
+void adjustSignatureForNilChecking(FnSymbol* fn);
 
 #endif

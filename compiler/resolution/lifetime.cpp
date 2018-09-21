@@ -275,6 +275,7 @@ void checkLifetimes(void) {
   // loop since it affects how calls are handled.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     markArgumentsReturnScope(fn);
+    adjustSignatureForNilChecking(fn);
   }
 
   // Perform lifetime checking on each function

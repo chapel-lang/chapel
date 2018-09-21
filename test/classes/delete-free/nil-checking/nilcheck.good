@@ -1,0 +1,16 @@
+nilcheck.chpl:8: In function 'bad1':
+nilcheck.chpl:10: error: use of nil variable
+nilcheck.chpl:14: In function 'bad2':
+nilcheck.chpl:17: error: use of nil variable
+nilcheck.chpl:21: In function 'bad3':
+nilcheck.chpl:23: error: use of nil variable
+nilcheck.chpl:27: In function 'bad4':
+nilcheck.chpl:30: error: use of nil variable
+nilcheck.chpl:34: In function 'bad5':
+nilcheck.chpl:36: error: use of nil variable
+nilcheck.chpl:40: In function 'bad6':
+nilcheck.chpl:43: error: use of nil variable
+nilcheck.chpl:47: In function 'bad7':
+nilcheck.chpl:49: error: use of nil variable
+nilcheck.chpl:53: In function 'bad8':
+nilcheck.chpl:56: error: use of nil variable

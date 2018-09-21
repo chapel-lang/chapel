@@ -171,6 +171,12 @@ symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which co
 // a pattern enabling user-supplied replacement of default behavior.
 symbolFlag( FLAG_LAST_RESORT , ypr, "last resort" , "overload of last resort in resolution" )
 
+// These flags help to decorate module code to enable nil-checking
+symbolFlag( FLAG_LEAVES_THIS_NIL, ypr, "leaves this nil", ncm )
+symbolFlag( FLAG_LEAVES_ARG_NIL, ypr, "leaves arg nil", ncm )
+symbolFlag( FLAG_NIL_FROM_ARG, ypr, "nil from arg", ncm )
+symbolFlag( FLAG_NIL_FROM_THIS, ypr, "nil from this", ncm )
+
 // Tells resolution to use this function's line number even if that function
 // has FLAG_COMPILER_GENERATED.
 symbolFlag( FLAG_LINE_NUMBER_OK, ypr, "lineno ok", ncm )

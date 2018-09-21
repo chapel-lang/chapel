@@ -36,10 +36,15 @@
 static const char* debugNilsForFn = "";
 static const int debugNilsForId = 0;
 
+// TODO: alias analysis. Relevant for:
+//  - refs to variables
+//  - borrows that refer to an owned thing
+//    -> may alias vs must alias
+
 typedef enum {
-  UNKNOWN_NIL = 0,
+  UNKNOWN_NIL = 0, // nothing is known information
   IS_NIL = 1,
-  SET_MAYBE_NIL = 2,
+  SET_MAYBE_NIL = 2, // really maybe set, maybe set to nil
   NOT_NIL = 3
 } classify_nil_t;
 
@@ -126,7 +131,7 @@ static void printStatus(const char* prefix,
   }
 }
 
-static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOrCtor) {
+static bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor) {
 
   if (call->isPrimitive(PRIM_MOVE) ||
       call->isPrimitive(PRIM_ASSIGN)) {
@@ -136,7 +141,7 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
           if (isRecord(at)) {
             SymExpr* se = toSymExpr(call->get(1));
             INT_ASSERT(se);
-            lhs = se->symbol();
+            lhsSe = se;
             initOrCtor = rhsCallExpr;
             return true;
           }
@@ -151,7 +156,7 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
       INT_ASSERT(se);
       Symbol* sym = se->symbol();
       if (isRecord(sym->type)) {
-        lhs = sym;
+        lhsSe = se;
         initOrCtor = call;
         return true;
       }
@@ -161,8 +166,7 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
           if (isRecord(formal->getValType())) {
             SymExpr* se = toSymExpr(actual);
             INT_ASSERT(se);
-            Symbol* sym = se->symbol();
-            lhs = sym;
+            lhsSe = se;
             initOrCtor = call;
             return true;
           }
@@ -171,9 +175,17 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
     }
   }
 
-  lhs = NULL;
+  lhsSe = NULL;
   initOrCtor = NULL;
   return false;
+}
+
+static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
+
+  if (sym->defPoint->parentSymbol == fn)
+    return false;
+
+  return true;
 }
 
 static void findNilDereferencesInBasicBlock(
@@ -218,6 +230,9 @@ static void findNilDereferencesInBasicBlock(
     if (expr->id == debugNilsForId)
       gdbShouldBreakHere();
 
+    CallExpr* userCall = NULL;
+    SymExpr* initSe = NULL;
+
     if (isDefExpr(expr)) {
       // Ignore DefExprs
       // instead, find the defaultOf or whatever initializes them.
@@ -229,23 +244,36 @@ static void findNilDereferencesInBasicBlock(
                        call->isNamedAstr(astrSequals));
 
       if (moveLike) {
-        SymExpr* lhsSe = toSymExpr(call->get(1));
-        lhsSym = lhsSe->symbol();
+        initSe = toSymExpr(call->get(1));
+        lhsSym = initSe->symbol();
         rhsExpr = call->get(2);
-      }
-
-      {
-        Symbol* initSym = NULL;
+      } else {
         CallExpr* initCall = NULL;
-        if (isRecordInitOrReturn(call, initSym, initCall)) {
-          lhsSym = initSym;
+        if (isRecordInitOrReturn(call, initSe, initCall)) {
+          lhsSym = initSe->symbol();
           rhsExpr = initCall;
           moveLike = true;
         }
       }
 
+      // set userCall
+      if (moveLike) {
+        userCall = toCallExpr(rhsExpr);
+      } else {
+        userCall = call;
+      }
+
+      // raise errors if the call is problematic somehow
+      if (userCall && raiseErrors) {
+        checkForNilDereferencesInCall(userCall,
+                                      symToIdx,
+                                      idxToSym,
+                                      bbStatus);
+      }
+
       if (moveLike) {
         // lhsSym and rhsExpr set above
+
         if (lhsSym->isRef()) {
           // TODO -- may-alias sets?
           // var x: MyClass; ref r = x; r = new MyClass(); x.method();
@@ -257,18 +285,18 @@ static void findNilDereferencesInBasicBlock(
           gdbShouldBreakHere();
 
         } else {
-          // gather set of possibly aliasing variables from RHS
+          // handle certain cases for PRIM_MOVE that we understand
           if (rhsExpr->typeInfo() == dtNil) {
             if (symToIdx.count(lhsSym))
               status[symToIdx[lhsSym]] = IS_NIL;
 
-          } else if (CallExpr* rhsCall = toCallExpr(rhsExpr)) {
-            if (raiseErrors)
-              checkForNilDereferencesInCall(rhsCall,
-                                            symToIdx,
-                                            idxToSym,
-                                            bbStatus);
+          } else if (SymExpr* se = toSymExpr(rhsExpr)) {
+            Symbol* rhsSym = se->symbol();
+            if (symToIdx.count(lhsSym) && symToIdx.count(rhsSym))
+                status[symToIdx[lhsSym]] = bbStatus[symToIdx[rhsSym]];
 
+          } else if (CallExpr* rhsCall = toCallExpr(rhsExpr)) {
+            bool unhandled = false;
             FnSymbol* calledFn = rhsCall->resolvedOrVirtualFunction();
             if (calledFn == NULL) {
               if (rhsCall->isPrimitive(PRIM_DEREF)) {
@@ -286,6 +314,7 @@ static void findNilDereferencesInBasicBlock(
               } else {
                 gaveUp = true;
                 gdbShouldBreakHere();
+                // Unknown primitive
               }
             } else if (calledFn->name == astr_defaultOf) {
               if (symToIdx.count(lhsSym))
@@ -296,49 +325,71 @@ static void findNilDereferencesInBasicBlock(
               if (symToIdx.count(lhsSym))
                 status[symToIdx[lhsSym]] = NOT_NIL;
 
-            } else if (0 == strcmp(calledFn->name, "borrow")) {
+            } else if (calledFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                       calledFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                       0 == strcmp(calledFn->name, "borrow")) {
+              // set lhs nilness based on the 1st argument
               SymExpr* thisSe = toSymExpr(rhsCall->get(1));
               Symbol* thisSym = thisSe->symbol();
               if (symToIdx.count(lhsSym) && symToIdx.count(thisSym))
                 status[symToIdx[lhsSym]] = bbStatus[symToIdx[thisSym]];
 
             } else {
-              // Think about the formals and the actuals?
-              // check formals for FLAG_NILIFIES_ARG ?
+              unhandled = true;
+            }
+
+            Expr* nilFromActual = NULL;
+            if (calledFn) {
+              for_formals_actuals(formal, actual, rhsCall) {
+                if (formal->hasFlag(FLAG_NIL_FROM_ARG)) {
+                  nilFromActual = actual;
+                }
+              }
+              if (SymExpr* actualSe = toSymExpr(nilFromActual)) {
+                Symbol* actualSym = actualSe->symbol();
+                if (symToIdx.count(lhsSym) && symToIdx.count(actualSym))
+                  status[symToIdx[lhsSym]] = bbStatus[symToIdx[actualSym]];
+              }
+            }
+
+            if (unhandled && nilFromActual == NULL) {
+              // What should it do here?
               gaveUp = true;
               gdbShouldBreakHere();
             }
-
-            // TODO -- check for method calls with nil this
-          } else if (SymExpr* se = toSymExpr(rhsExpr)) {
-            Symbol* rhsSym = se->symbol();
-            if (symToIdx.count(lhsSym) && symToIdx.count(rhsSym))
-                status[symToIdx[lhsSym]] = bbStatus[symToIdx[rhsSym]];
-
           } else {
             INT_FATAL("unhandled case");
           }
         }
-      } else {
-        // Not PRIM_MOVE, PRIM_ASSIGN, or =
+      }
+    }
 
-        FnSymbol* calledFn = call->resolvedOrVirtualFunction();
-        // handle owned.init(pointer)
-        if (calledFn && calledFn->name == astrInit) {
-          if (call->numActuals() == 2) {
-            Symbol* initedSym = toSymExpr(call->get(1))->symbol();
-            Symbol* fromSym = toSymExpr(call->get(2))->symbol();
-            if (initedSym->type->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
-              if (symToIdx.count(initedSym) && symToIdx.count(fromSym))
-                status[symToIdx[initedSym]] = bbStatus[symToIdx[fromSym]];
-            }
+    // Handle FLAG_LEAVES_ARG_NIL, ref arguments
+    if (userCall != NULL) {
+      FnSymbol* calledFn = userCall->resolvedOrVirtualFunction();
+      if (calledFn) {
+
+        // any global variables could possibly be set
+        // by the function call
+        for (size_t i = 0; i < nvars; i++ ) {
+          if (isOuterVar(idxToSym[i], fn))
+	    status[i] = SET_MAYBE_NIL;
+        }
+
+        for_formals_actuals(formal, actual, userCall) {
+          if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
+            Symbol* actualSym = toSymExpr(actual)->symbol();
+            if (symToIdx.count(actualSym))
+              status[symToIdx[actualSym]] = IS_NIL;
+          } else if (formal->intent == INTENT_REF &&
+                     /* e.g. functions returning record by ref handled above */
+                     actual != initSe) {
+            // It could set the actual
+            Symbol* actualSym = toSymExpr(actual)->symbol();
+            if (symToIdx.count(actualSym))
+              status[symToIdx[actualSym]] = SET_MAYBE_NIL;
+
           }
-        } else if (raiseErrors) {
-          // check for calls to nil
-          checkForNilDereferencesInCall(call,
-                                        symToIdx,
-                                        idxToSym,
-                                        bbStatus);
         }
       }
     }
@@ -352,7 +403,7 @@ static void findNilDereferencesInBasicBlock(
     if (trace) {
       if (gaveUp)
         printf("(gave up)\n");
-      printStatus("+- ", status, idxToSym);
+      printStatus("+-", status, idxToSym);
     }
 
 
@@ -503,4 +554,13 @@ void findNilDereferences(FnSymbol* fn) {
   destroyDataFlowSet(KILL);
   destroyDataFlowSet(IN);
   destroyDataFlowSet(OUT);
+}
+
+void adjustSignatureForNilChecking(FnSymbol* fn) {
+  if (fn->_this != NULL) {
+    if (fn->hasFlag(FLAG_NIL_FROM_THIS))
+      fn->_this->addFlag(FLAG_NIL_FROM_ARG);
+    if (fn->hasFlag(FLAG_LEAVES_THIS_NIL))
+      fn->_this->addFlag(FLAG_LEAVES_ARG_NIL);
+  }
 }
