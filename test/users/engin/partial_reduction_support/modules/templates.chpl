@@ -62,6 +62,7 @@ proc bulkPartialReduce(arr, param onlyDim) {
           var __target = ResultArr._value.locArr[l2].clone();
           partialReduceToTarget(arr.locArr[l], onlyDim, __target);
           partialResult += __target.myElems;
+          delete __target;
         }
       }
     }
