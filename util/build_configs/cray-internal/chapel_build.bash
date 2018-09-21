@@ -155,9 +155,9 @@ esac
 
 source "$cwd/../build-common.bash"
 
-# Run the designated setenv build script, adding a "clean" step at the end.
+# Run the designated setenv build script
 
-bash "$setenv" $verbose $dry_run -B +venv_py27 -B +clean 
+bash "$setenv" $verbose $dry_run -B +venv_py27
 
 # Create the Chapel package
 
