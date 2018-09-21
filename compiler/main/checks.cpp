@@ -587,13 +587,6 @@ static void checkIsIterator() {
 //
 static void checkAggregateTypes() {
   for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
-    if (at->defaultInitializer == NULL &&
-        at->initializerStyle   != DEFINES_INITIALIZER) {
-      INT_FATAL(at,
-                "aggregate type did not define an initializer "
-                "and has no default initializer");
-    }
-
     if (at->typeConstructor == NULL) {
       INT_FATAL(at, "aggregate type has no type constructor");
     }
