@@ -57,7 +57,7 @@ module ExternalArray {
       var r = inds(1);
       // Allow empty arrays (which have the domain 1..0)
       if (r.low != 0 && !(r.low == 1 && r.high == 0)) {
-        halt("external arrays always have a lower bound of 0");
+        halt("non-empty external arrays always have a lower bound of 0");
       }
       var newdom = new unmanaged ExternDom(idxType,
                                            r.size,
