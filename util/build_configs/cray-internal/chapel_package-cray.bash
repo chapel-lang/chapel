@@ -188,21 +188,42 @@ $cwd/generate-rpmspec.bash > "$CHPL_RPM/chapel.spec"
 # Prepare the CHPL_RPM subdirectory structure, with hardlinked files from CHPL_HOME/...
 
 log_info "Prepare CHPL_RPM subdirs."
-log_debug "CHPL_HOME will be hardlinked into CHPL_RPM/BUILDROOT/"
-log_debug "cd '$CHPL_RPM'"
-cd "$CHPL_RPM"
 mkdir -p "$CHPL_RPM/SOURCES" "$CHPL_RPM/BUILD" "$CHPL_RPM/RPMS/$CPU" "$CHPL_RPM/tmp"
 (
     set -e
+    chpl_home_base=$( basename "$CHPL_HOME" )
     if [ -n "$verbose" ]; then
         set -x
     fi
     : Begin subshell
+
+    : Hard-link CHPL_HOME subtree into CHPL_RPM/BUILD/$chpl_home_base
     cd "$CHPL_HOME/.."
-    ls >/dev/null -d $( basename "$CHPL_HOME" )
-    find $( basename "$CHPL_HOME" ) -depth -print | cpio -pmdlu "$CHPL_RPM/BUILD"
+    ls >/dev/null -d $chpl_home_base
+    find $chpl_home_base -depth -print | cpio -pmdlu "$CHPL_RPM/BUILD"
+
+    : Temporarily reset CHPL_HOME=CHPL_RPM/BUILD/$chpl_home_base
+    cd "$CHPL_RPM/BUILD/$chpl_home_base"
+    export CHPL_HOME=$PWD
+    . util/setchplenv.bash
+
+    : Chapel make cleanall cleans up intermediate binaries before packaging
+    make cleanall
+
+    : Delete specific files that introduce dependencies we cannot support
+    rm -rf \
+        ./third-party/llvm/llvm/test/ \
+        ./third-party/llvm/llvm/utils/llvm-compilers-check \
+        ./third-party/llvm/install/*/bin/llvm-objdump \
+        ./third-party/llvm/install/*/bin/llvm-rtdyld \
+        ./third-party/llvm/install/*/bin/llvm-dwarfdump \
+        ./third-party/llvm/install/*/bin/llvm-symbolizer \
+    || :
     : End subshell
 )
+
+log_debug "cd '$CHPL_RPM'"
+cd "$CHPL_RPM"
 
 # Dry-run or rpmbuild with post processing
 
