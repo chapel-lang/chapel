@@ -286,7 +286,7 @@ else
     fi
 
     gen_version_gcc=6.1.0
-    gen_version_intel=18.0.3.222
+    gen_version_intel=16.0.3.210
     gen_version_cce=8.6.3
     target_cpu_module=craype-sandybridge
 
