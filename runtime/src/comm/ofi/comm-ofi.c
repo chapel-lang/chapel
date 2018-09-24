@@ -23,6 +23,9 @@
 #include "chpl-comm.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
+#include "chpl-comm-diags.h"
+#include "chpl-comm-strd-xfer.h"
+#include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chpl-mem-sys.h"
 // #include "chpl-cache.h"
@@ -123,7 +126,6 @@ static void init_rdma(void);
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_comm_ofi_oob_init();
-  chpl_resetCommDiagnosticsHere();
 }
 
 
@@ -430,8 +432,9 @@ static void libfabric_init_addrvec(int rx_ctx_cnt, int rx_ctx_bits) {
 
 
 void chpl_comm_rollcall(void) {
-  // Do this again to clear out any comms that happened during initialization
-  chpl_resetCommDiagnosticsHere();
+  // Initialize diags
+  chpl_comm_diags_init();
+
   chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID, 
            chpl_numNodes, chpl_nodeName());
 }
@@ -701,14 +704,15 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_comm_on_bundle_t *arg, size_t arg_size) {
   assert(node != chpl_nodeID); // handled by the locale model
 
-  CHPL_COMM_DIAGS_INC(execute_on);
-
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
     chpl_comm_cb_info_t cb_data = 
       {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
        .iu.executeOn={subloc, fid, arg, arg_size}};
     chpl_comm_do_callbacks (&cb_data);
   }
+
+  chpl_comm_diags_verbose_printf("remote task created on %d", (int) node);
+  chpl_comm_diags_incr(execute_on);
 
   execute_on_common(node, subloc, fid, arg, arg_size, false, true);
 }
@@ -726,14 +730,16 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_comm_on_bundle_t *arg, size_t arg_size) {
   assert(node != chpl_nodeID); // handled by the locale model
 
-  CHPL_COMM_DIAGS_INC(execute_on_nb);
-
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
     chpl_comm_cb_info_t cb_data = 
       {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
        .iu.executeOn={subloc, fid, arg, arg_size}};
     chpl_comm_do_callbacks (&cb_data);
   }
+
+  chpl_comm_diags_verbose_printf("remote non-blocking task created on %d",
+                                 (int) node);
+  chpl_comm_diags_incr(execute_on_nb);
 
   execute_on_common(node, subloc, fid, arg, arg_size, false, false);
 }
@@ -744,14 +750,16 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_comm_on_bundle_t *arg, size_t arg_size) {
   assert(node != chpl_nodeID); // handled by the locale model
 
-  CHPL_COMM_DIAGS_INC(execute_on_fast);
-
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
     chpl_comm_cb_info_t cb_data = 
       {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
        .iu.executeOn={subloc, fid, arg, arg_size}};
     chpl_comm_do_callbacks (&cb_data);
   }
+
+  chpl_comm_diags_verbose_printf("remote (no-fork) task created on %d",
+                                 (int) node);
+  chpl_comm_diags_incr(execute_on_fast);
 
   execute_on_common(node, subloc, fid, arg, arg_size, true, true);
 }
@@ -839,6 +847,11 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
 
 int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 {
+  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
+    chpl_comm_diags_verbose_printf("test nb complete (%p)", h);
+  }
+  chpl_comm_diags_incr(test_nb);
+
   // fi_cq_readfrom?
   return ((void*) h) == NULL;
 }
@@ -846,6 +859,14 @@ int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 
 void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
+  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
+    if (nhandles == 1)
+      chpl_comm_diags_verbose_printf("wait nb complete (%p)", h);
+    else
+      chpl_comm_diags_verbose_printf("wait nb (%zd handles)", nhandles);
+  }
+  chpl_comm_diags_incr(wait_nb);
+
   size_t i;
   // fi_cq_readfrom?
   for( i = 0; i < nhandles; i++ ) {
@@ -856,6 +877,15 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 
 int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
+
+  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
+    if (nhandles == 1)
+      chpl_comm_diags_verbose_printf("try nb (%p)", h);
+    else
+      chpl_comm_diags_verbose_printf("try nb (%zd handles)", nhandles);
+  }
+  chpl_comm_diags_incr(try_nb);
+
   size_t i;
   // fi_cq_readfrom?
   for( i = 0; i < nhandles; i++ ) {
@@ -875,7 +905,17 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
     return;
   }
 
-  CHPL_COMM_DIAGS_INC(put);
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_put, chpl_nodeID, node,
+         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_printf("%s:%d: remote put to %d",
+                                 chpl_lookupFilename(fn), ln, (int) node);
+  chpl_comm_diags_incr(put);
 
   handle = ofi_put(chpl_comm_cb_event_kind_put,
                    addr, node, raddr, size, typeIndex, commID, ln, fn);
@@ -895,7 +935,9 @@ void chpl_comm_get(void* addr, int32_t node, void* raddr,
     return;
   }
 
-  CHPL_COMM_DIAGS_INC(get);
+  chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
+                                 chpl_lookupFilename(fn), ln, (int) node);
+  chpl_comm_diags_incr(get);
 
   handle = ofi_get(chpl_comm_cb_event_kind_get,
                    addr, node, raddr, size, typeIndex, commID, ln, fn);
@@ -911,12 +953,12 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
                         int32_t typeIndex, int32_t commID,
                         int ln, int32_t fn) {
-  chpl_comm_put_strd_common(dstaddr_arg, dststrides,
-                            dstnode,
-                            srcaddr_arg, srcstrides,
-                            count, stridelevels, elemSize,
-                            1, NULL,
-                            typeIndex, commID, ln, fn);
+  put_strd_common(dstaddr_arg, dststrides,
+                  dstnode,
+                  srcaddr_arg, srcstrides,
+                  count, stridelevels, elemSize,
+                  1, NULL,
+                  typeIndex, commID, ln, fn);
 }
 
 
@@ -926,12 +968,12 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t stridelevels, size_t elemSize,
                         int32_t typeIndex, int32_t commID,
                         int ln, int32_t fn) {
-  chpl_comm_get_strd_common(dstaddr_arg, dststrides,
-                            srcnode,
-                            srcaddr_arg, srcstrides,
-                            count, stridelevels, elemSize,
-                            1, NULL,
-                            typeIndex, commID, ln, fn);
+  get_strd_common(dstaddr_arg, dststrides,
+                  srcnode,
+                  srcaddr_arg, srcstrides,
+                  count, stridelevels, elemSize,
+                  1, NULL,
+                  typeIndex, commID, ln, fn);
 }
 
 
