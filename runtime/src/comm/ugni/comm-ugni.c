@@ -1530,7 +1530,6 @@ static chpl_bool reacquire_comm_dom(int);
 static int       post_fma(c_nodeid_t, gni_post_descriptor_t*);
 static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*,
                                    chpl_bool);
-static void      post_fma_and_wait_amo(c_nodeid_t, gni_post_descriptor_t*);
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 static int       post_fma_ct(c_nodeid_t*, gni_post_descriptor_t*);
 static void      post_fma_ct_and_wait(c_nodeid_t*, gni_post_descriptor_t*);
@@ -6868,7 +6867,7 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
   //
   // Initiate the transaction and wait for it to complete.
   //
-  post_fma_and_wait_amo(locale, &post_desc);
+  post_fma_and_wait(locale, &post_desc, true);
 }
 
 
@@ -7705,32 +7704,6 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
 {
   int cdi;
   atomic_bool post_done;
-
-  atomic_init_bool(&post_done, false);
-  post_desc->post_id = (uint64_t) (intptr_t) &post_done;
-
-  cdi = post_fma(locale, post_desc);
-
-  //
-  // Wait for the transaction to complete.  Yield initially; the
-  // minimum round-trip time on the network isn't small and maybe
-  // we can find something else to do in the meantime.
-  //
-  do {
-    if (do_yield) {
-      local_yield();
-    }
-    consume_all_outstanding_cq_events(cdi);
-  } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
-
-  CQ_CNT_DEC(&comm_doms[cdi]);
-}
-
-static
-void post_fma_and_wait_amo(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
-{
-  int cdi;
-  atomic_bool post_done;
   uint64_t iters = 0;
 
   atomic_init_bool(&post_done, false);
@@ -7741,11 +7714,12 @@ void post_fma_and_wait_amo(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
   //
   // Wait for the transaction to complete.  Yield initially; the
   // minimum round-trip time on the network isn't small and maybe
-  // we can find something else to do in the meantime.  AMOs are
-  // fast so after initial yield, only yield every 64 attempts.
+  // we can find something else to do in the meantime.  FMA is only
+  // used for small tranasctions which will be relatively fast, so
+  // after the initial yield, only yield every 64 attempts.
   //
   do {
-    if ((iters & 0x3F) == 0) {
+    if (do_yield && (iters & 0x3F) == 0) {
       local_yield();
     }
     consume_all_outstanding_cq_events(cdi);
@@ -7754,7 +7728,6 @@ void post_fma_and_wait_amo(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
 
   CQ_CNT_DEC(&comm_doms[cdi]);
 }
-
 
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 
