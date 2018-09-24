@@ -644,18 +644,6 @@ void ResolveScope::getFields(const char* fieldName,
   std::set<const ResolveScope*> visited;
 
   getFields(fieldName, visited, symbols);
-
-  if (symbols.size() > 0) {
-    for (std::vector<Symbol*>::iterator it = symbols.begin();
-         it != symbols.end();
-         it++) {
-      if (*it == mAstRef) {
-        // Only and except lists should not return the original module name.
-        symbols.erase(it);
-        break;
-      }
-    }
-  }
 }
 
 void ResolveScope::getFields(const char* fieldName,
@@ -673,6 +661,18 @@ void ResolveScope::getFields(const char* fieldName,
 
     } else {
       INT_ASSERT(false);
+    }
+  }
+
+  if (symbols.size() > 0) {
+    for (std::vector<Symbol*>::iterator it = symbols.begin();
+         it != symbols.end();
+         it++) {
+      if (*it == mAstRef) {
+        // Only and except lists should not return the original module name.
+        symbols.erase(it);
+        break;
+      }
     }
   }
 }
