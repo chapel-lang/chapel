@@ -1,0 +1,1 @@
+bug: membership test hits assertion error for certain unstrided ranges
