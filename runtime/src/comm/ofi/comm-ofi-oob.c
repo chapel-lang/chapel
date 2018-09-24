@@ -45,13 +45,7 @@
 
 #ifdef OOB_USE_PMI
 #include <pmi.h>
-#define PMICHKRET(fncall, expect)                                       \
-  do {                                                                  \
-    if (fncall != expect) {                                             \
-      chpl_internal_error(#fncall);                                     \
-    }                                                                   \
-  } while (0)
-#define PMICHKSUCCESS(fncall) PMICHKRET(fncall, PMI_SUCCESS)
+#define PMI_CHK_SUCCESS(expr) CHK_EQ(expr, PMI_SUCCESS)
 #endif
 
 
@@ -63,7 +57,7 @@ void chpl_comm_ofi_oob_init(void) {
   int spawned, size, rank, appnum;
 
   if (PMI2_Initialized() != PMI_TRUE) {
-    PMICHKSUCCESS(PMI2_Init(&spawned, &size, &rank, &appnum));
+    PMI_CHK_SUCCESS(PMI2_Init(&spawned, &size, &rank, &appnum));
     assert(spawned == 0);
     chpl_nodeID = (int32_t) rank;
     chpl_numNodes = (int32_t) size;
@@ -74,15 +68,15 @@ void chpl_comm_ofi_oob_init(void) {
   PMI_BOOL initialized, spawned;
   int rank, app_size;
 
-  PMICHKSUCCESS(PMI_Initialized(&initialized));
+  PMI_CHK_SUCCESS(PMI_Initialized(&initialized));
   if (initialized != PMI_TRUE) {
-    PMICHKSUCCESS(PMI_Init(&spawned));
+    PMI_CHK_SUCCESS(PMI_Init(&spawned));
   }
 
-  PMICHKSUCCESS(Get_rank_in_app(&rank));
+  PMI_CHK_SUCCESS(Get_rank_in_app(&rank));
   chpl_nodeID = (c_nodeid_t) rank;
 
-  PMICHKSUCCESS(Get_size(&app_size));
+  PMI_CHK_SUCCESS(Get_size(&app_size));
   chpl_numNodes = (int32_t) app_size;
 
 #endif // defined(OOB_USE_PMI2)
@@ -132,16 +126,16 @@ void chpl_comm_ofi_oob_fini(void) {
 #if defined(OOB_USE_PMI2)
 
   if (PMI2_Initialized() == PMI_TRUE) {
-    PMICHKSUCCESS(PMI2_Finalize());
+    PMI_CHK_SUCCESS(PMI2_Finalize());
   }
 
 #else // defined(OOB_USE_PMI2)
 
   PMI_BOOL initialized;
 
-  PMICHKSUCCESS((PMI_Initialized(&initialized));
+  PMI_CHK_SUCCESS((PMI_Initialized(&initialized));
   if (initialized == PMI_TRUE) {
-    PMICHKSUCCESS(PMI_Finalize();
+    PMI_CHK_SUCCESS(PMI_Finalize();
   }
 
 #endif // defined(OOB_USE_PMI2)
@@ -164,7 +158,7 @@ void chpl_comm_ofi_oob_barrier(void) {
 
 #if defined(OOB_USE_PMI)
 
-  PMICHKSUCCESS(PMI_Barrier());
+  PMI_CHK_SUCCESS(PMI_Barrier());
 
 #elif defined(OOB_USE_SOCKETS)
 
@@ -185,7 +179,7 @@ void chpl_comm_ofi_oob_allgather(void* in, void* out, int len) {
 
 #if defined(OOB_USE_PMI)
 
-  PMICHKSUCCESS(PMI_Allgather(in, out, len));
+  PMI_CHK_SUCCESS(PMI_Allgather(in, out, len));
 
 #elif defined(OOB_USE_SOCKETS)
 

@@ -27,14 +27,20 @@
 #include <rdma/fi_errno.h>
 
 
-#define CALL_CHECK(fncall, errcode)                                     \
+//
+// Simplify internal error checking (integer only)
+//
+#define CHK_EQ(expr, wantVal)                                           \
     do {                                                                \
-      if ((fncall) != errcode) {                                        \
-        chpl_internal_error(#fncall);                                   \
+      int _exprVal = (expr);                                            \
+      int _wantVal = wantVal;                                           \
+      if (_exprVal != _wantVal) {                                       \
+        chpl_internal_error_v("%s == %d, expected %d",                  \
+                              #expr, _exprVal, _wantVal);               \
       }                                                                 \
     } while (0)
 
-#define CALL_CHECK_ZERO(fncall) CALL_CHECK(fncall, 0)
+#define CHK_EQ_0(expr) CHK_EQ((expr), 0)
 
 
 //
@@ -51,29 +57,5 @@ void chpl_comm_ofi_oob_fini(void);
 void chpl_comm_ofi_oob_barrier(void);
 void chpl_comm_ofi_oob_allgather(void*, void*, int);
 
-
-//
-// Comm diagnostics
-//
-
-/* Dupe of the version in chpl-comm.h except with atomics */
-struct commDiags_atomic {
-  atomic_uint_least64_t get;
-  atomic_uint_least64_t get_nb;
-  atomic_uint_least64_t put;
-  atomic_uint_least64_t put_nb;
-  atomic_uint_least64_t test_nb;
-  atomic_uint_least64_t wait_nb;
-  atomic_uint_least64_t try_nb;
-  atomic_uint_least64_t execute_on;
-  atomic_uint_least64_t execute_on_fast;
-  atomic_uint_least64_t execute_on_nb;
-};
-
-struct commDiags_atomic *chpl_comm_ofi_getCommDiags(void);
-void chpl_comm_ofi_commDiagsInc(atomic_uint_least64_t *val);
-
-#define CHPL_COMM_DIAGS_INC(comm_type)                                  \
-    chpl_comm_ofi_commDiagsInc(&(chpl_comm_ofi_getCommDiags()->comm_type))
 
 #endif
