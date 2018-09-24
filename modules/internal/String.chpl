@@ -233,6 +233,23 @@ module String {
     var _cpindex  : int;
   }
 
+  // Helper routines in support of being able to use ranges of codePointIndex
+  proc chpl_build_bounded_range(low: codePointIndex, high: codePointIndex)
+    return new range(codePointIndex, _low=low, _high=high);
+  proc chpl__rangeStrideType(type idxType: codePointIndex) type
+    return int;
+  proc chpl__rangeUnsignedType(type idxType: codePointIndex) type
+    return uint;
+  inline proc chpl__idxToInt(i: codePointIndex)
+    return i:int;
+  inline proc chpl__intToIdx(type idxType: codePointIndex, i: int)
+    return i: codePointIndex;
+  proc chpl__idxTypeToIntIdxType(type idxType: codePointIndex) type
+    return int;
+  pragma "no doc"
+  proc >(x: codePointIndex, y: codePointIndex)
+    return x: int > y: int;
+
   //
   // String Implementation
   //
