@@ -32,13 +32,13 @@ typedef struct _chpl_atomic_commDiagnostics {
 #undef _COMM_DIAGS_DECL_ATOMIC
 } chpl_atomic_commDiagnostics;
 
-chpl_atomic_commDiagnostics chpl_comm_diags;
+chpl_atomic_commDiagnostics chpl_comm_diags_counters;
 atomic_int_least16_t chpl_comm_diags_disable_flag;
 
 static inline
 void chpl_comm_diags_init(void) {
 #define _COMM_DIAGS_INIT(cdv) \
-        atomic_init_uint_least64_t(&chpl_comm_diags.cdv, 0);
+        atomic_init_uint_least64_t(&chpl_comm_diags_counters.cdv, 0);
   CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_INIT);
 #undef _COMM_DIAGS_INIT
   atomic_init_int_least16_t(&chpl_comm_diags_disable_flag, 0);
@@ -47,7 +47,7 @@ void chpl_comm_diags_init(void) {
 static inline
 void chpl_comm_diags_reset(void) {
 #define _COMM_DIAGS_RESET(cdv) \
-        atomic_store_uint_least64_t(&chpl_comm_diags.cdv, 0);
+        atomic_store_uint_least64_t(&chpl_comm_diags_counters.cdv, 0);
  CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_RESET);
 #undef _COMM_DIAGS_RESET
 }
@@ -55,7 +55,7 @@ void chpl_comm_diags_reset(void) {
 static inline
 void chpl_comm_diags_copy(chpl_commDiagnostics* cd) {
 #define _COMM_DIAGS_COPY(cdv) \
-        cd->cdv = atomic_load_uint_least64_t(&chpl_comm_diags.cdv);
+        cd->cdv = atomic_load_uint_least64_t(&chpl_comm_diags_counters.cdv);
   CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_COPY);
 #undef _COMM_DIAGS_COPY
 }
@@ -92,8 +92,10 @@ void chpl_comm_diags_verbose_printf(const char* format, ...) {
 
 #define chpl_comm_diags_incr(_ctr)                                      \
   do {                                                                  \
-    if (chpl_comm_diagnostics && chpl_comm_diags_is_enabled())          \
-      (void) atomic_fetch_add_uint_least64_t(&chpl_comm_diags._ctr, 1); \
+    if (chpl_comm_diagnostics && chpl_comm_diags_is_enabled()) {        \
+      atomic_uint_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;  \
+      (void) atomic_fetch_add_uint_least64_t(ctrAddr, 1);               \
+    }                                                                   \
   } while(0)
 
 #endif
