@@ -120,7 +120,7 @@
 3..6 by -2.member(1..10 by -2) = false
 1..10 by -2.member(4..6) = false
 4..6.member(1..10 by -2) = false
-1..10 by -2.member(4..6) = true
+1..10 by -2.member(4..6) = false
 4..6.member(1..10 by -2) = false
 1..10 by -2.member(4..6 by -1) = false
 4..6 by -1.member(1..10 by -2) = false
