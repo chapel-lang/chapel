@@ -839,8 +839,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       __primitive("chpl_error", c"indexOrder -- Undefined on a range with ambiguous alignment.");
 
     if ! member(ind) then return (-1):intIdxType;
-    if ! stridable then return chpl__idxToInt(ind) - _low;
-    else return ((chpl__idxToInt(ind):strType - chpl__idxToInt(this.first):strType) / _stride):intIdxType;
+    if ! stridable {
+      if this.hasLowBound() then
+        return chpl__idxToInt(ind) - _low;
+    } else {
+      if this.hasFirst() then
+        return ((chpl__idxToInt(ind):strType - chpl__idxToInt(this.first):strType) / _stride):intIdxType;
+    }
+    return (-1):intIdxType;
   }
 
   /* Returns the zero-based ``ord``-th element of this range's represented
@@ -859,6 +865,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
    */
   proc range.orderToIndex(ord: integral): idxType
   {
+    if !hasFirst() then
+      halt("invoking orderToIndex on a range that has no first index");
+
     if isAmbiguous() then
       halt("invoking orderToIndex on a range that is ambiguously aligned");
 
