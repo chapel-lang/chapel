@@ -1,10 +1,2 @@
 lib/*.a
-lib/exportFuncWithArrayArg.h
-lib/exportFuncWithRealArr.h
-lib/exportFuncWith1Arr1Not.h
-lib/exportFuncWith1Not1Arr.h
-lib/exportFuncWith2Arrays.h
-lib/exportFuncWithExplicitVoidRet.h
-lib/exportFuncWithExternType.h
-lib/exportFuncWithPtr.h
-lib/returnExternArray.h
+lib/*.h

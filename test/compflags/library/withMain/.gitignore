@@ -1,3 +1,2 @@
-lib-dir/liblib.a
-lib-dir/lib.h
-lib-dir/liblib.h
+lib-dir/*.a
+lib-dir/*.h
