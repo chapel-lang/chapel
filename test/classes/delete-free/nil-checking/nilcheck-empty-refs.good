@@ -1,0 +1,10 @@
+nilcheck-empty-refs.chpl:8: In function 'badRefToNilOwned':
+nilcheck-empty-refs.chpl:11: error: use of nil variable
+nilcheck-empty-refs.chpl:15: In function 'badSetNilByRef':
+nilcheck-empty-refs.chpl:19: error: use of nil variable
+nilcheck-empty-refs.chpl:23: In function 'badSetNilByRefX':
+nilcheck-empty-refs.chpl:27: error: use of nil variable
+nilcheck-empty-refs.chpl:31: In function 'badSetNilByRefAssign':
+nilcheck-empty-refs.chpl:36: error: use of nil variable
+nilcheck-empty-refs.chpl:40: In function 'badSetNilByRefXAssign':
+nilcheck-empty-refs.chpl:45: error: use of nil variable

@@ -36,18 +36,151 @@
 static const char* debugNilsForFn = "";
 static const int debugNilsForId = 0;
 
-// TODO: alias analysis. Relevant for:
-//  - refs to variables
-//  - borrows that refer to an owned thing
-//    -> may alias vs must alias
+/* Flow Sensitive Must Alias Analysis
+   Following Muchnick p 296 "flow-sensitive must information"
+     "In this case, aliasing is best characterized as a function
+      from program points and variables to abstract storage locations
+      (not sets of locations)". Also note that it is
+      a transitive and symmetric relation.
+
+   Note that "must alias" analysis is significantly easier to implement
+   than "may alias" analysis.
+ */
 
 typedef enum {
-  UNKNOWN_NIL = 0, // nothing is known information
-  IS_NIL = 1,
-  SET_MAYBE_NIL = 2, // really maybe set, maybe set to nil
-  NOT_NIL = 3
-} classify_nil_t;
+  MUST_ALIAS_IGNORED = 0, // no information; useful starting point.
+                          // ignored when combining basic blocks
 
+  MUST_ALIAS_NIL,         // it refers to nil
+
+  MUST_ALIAS_UNKNOWN,     // might have been set, might point to nil
+                          // who knows what it points to
+
+  MUST_ALIAS_ALLOCATED,   // refers to the statement allocating (aka 'new')
+
+  MUST_ALIAS_REFVAR,      // reference refers to a particular variable
+
+  //MUST_ALIAS_COPYVAR,     // refers to the same memory as a particular variable
+} AliasType;
+
+struct AliasLocation {
+  AliasType type;
+  // MUST_ALIAS_ALLOCATED -> CallExpr
+  // MUST_ALIAS_REFVAR -> ArgSymbol or VarSymbol being referred to
+  // MUST_ALIAS_COPYVAR -> ArgSymbol or VarSymbol being copied
+  BaseAST* location;
+  AliasLocation() : type(MUST_ALIAS_IGNORED), location(NULL) { }
+};
+
+static inline bool operator==(AliasLocation a, AliasLocation b) {
+  return a.type == b.type && a.location == b.location;
+}
+static inline bool operator!=(AliasLocation a, AliasLocation b) {
+  return a.type != b.type || a.location != b.location;
+}
+
+
+typedef std::map<Symbol*, AliasLocation> AliasMap;
+
+static inline AliasLocation nilAliasLocation() {
+  AliasLocation ret;
+  ret.type = MUST_ALIAS_NIL;
+  ret.location = NULL;
+  return ret;
+}
+
+static inline AliasLocation unknownAliasLocation() {
+  AliasLocation ret;
+  ret.type = MUST_ALIAS_UNKNOWN;
+  ret.location = NULL;
+  return ret;
+}
+
+static inline AliasLocation allocatedAliasLocation(CallExpr* newExpr) {
+  AliasLocation ret;
+  ret.type = MUST_ALIAS_ALLOCATED;
+  ret.location = newExpr;
+  return ret;
+}
+
+static inline AliasLocation refAliasLocation(Symbol* referent) {
+  AliasLocation ret;
+  ret.type = MUST_ALIAS_REFVAR;
+  ret.location = referent;
+  return ret;
+}
+
+/*
+static inline AliasLocation copyAliasLocation(Symbol* copy) {
+  AliasLocation ret;
+  ret.type = MUST_ALIAS_COPYVAR;
+  ret.location = copy;
+  return ret;
+}
+*/
+
+/* Gets whatever the symbol refers to, if known.
+   If it's not known, returns NULL.
+ */
+static Symbol* getReferent(Symbol* sym, const AliasMap& aliasMap) {
+
+  AliasLocation loc = unknownAliasLocation();
+
+  {
+    AliasMap::const_iterator it = aliasMap.find(sym);
+    if (it != aliasMap.end()) {
+      loc = it->second;
+    }
+  }
+
+  if (sym->isRef()) {
+    if (loc.type == MUST_ALIAS_REFVAR) {
+      Symbol* sym = toSymbol(loc.location);
+      INT_ASSERT(sym && !sym->isRef());
+      return sym;
+    }
+  }
+
+  return NULL;
+}
+
+static AliasLocation aliasLocationCopyValueFrom(Symbol* copyFrom,
+                                           const AliasMap& aliasMap) {
+
+  // we might be dereferencing an unknown pointer
+  AliasLocation fromLocation = unknownAliasLocation();
+
+  {
+    AliasMap::const_iterator it = aliasMap.find(copyFrom);
+    if (it != aliasMap.end()) {
+      fromLocation = it->second;
+    }
+  }
+
+  if (copyFrom->type == dtNil)
+    fromLocation = nilAliasLocation();
+
+  if (copyFrom->isRef()) {
+    if (fromLocation.type == MUST_ALIAS_REFVAR) {
+      Symbol* sym = toSymbol(fromLocation.location);
+      INT_ASSERT(sym && !sym->isRef());
+      AliasMap::const_iterator it = aliasMap.find(sym);
+      if (it != aliasMap.end()) {
+        return it->second;
+      }
+    }
+  }
+
+  // otherwise, return the location we found
+  return fromLocation;
+}
+
+
+static bool isClassIshType(Symbol* sym) {
+  TypeSymbol* ts = sym->getValType()->symbol;
+  return (isClassLike(ts->type) ||
+          ts->hasFlag(FLAG_MANAGED_POINTER));
+}
 
 static bool isCheckedClassMethodCall(CallExpr* call) {
   FnSymbol* fn     = call->resolvedOrVirtualFunction();
@@ -90,9 +223,7 @@ static void printDataFlowSet(const char* name, BitVec* set,
 
 static void checkForNilDereferencesInCall(
     CallExpr* call,
-    std::map<Symbol*, int>& symToIdx,
-    std::vector<Symbol*>& idxToSym,
-    std::vector<classify_nil_t>& bbStatus) {
+    const AliasMap& aliasMap) {
 
   if (call->isPrimitive(PRIM_GET_MEMBER)       ||
       call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
@@ -103,31 +234,81 @@ static void checkForNilDereferencesInCall(
 
     SymExpr* thisSe = toSymExpr(call->get(1));
     Symbol* thisSym = thisSe->symbol();
-    if (symToIdx.count(thisSym)) {
-      int idx = symToIdx[thisSym];
+    if (isClassIshType(thisSym)) {
       // Raise an error if it was definately nil
-      if (bbStatus[idx] == IS_NIL) {
-        USR_FATAL_CONT(call, "use of nil variable");
+      AliasMap::const_iterator it = aliasMap.find(thisSym);
+      if (it != aliasMap.end()) {
+        AliasLocation loc = it->second;
+        if (loc.type == MUST_ALIAS_NIL) {
+          USR_FATAL_CONT(call, "use of nil variable");
+        }
       }
     }
   }
 }
 
-static void printStatus(const char* prefix,
-                        std::vector<classify_nil_t>& status,
-                        std::vector<Symbol*>& idxToSym)
+static void printAliasMap(const char* prefix,
+                          const AliasMap& OUT,
+                          const AliasMap* OnlyDifferencesFrom = NULL)
 {
-  for (size_t i = 0; i < idxToSym.size(); i++ ) {
-    Symbol* sym = idxToSym[i];
-    if (sym) {
-      if (status[i] == IS_NIL) {
-        printf("%s nil: %i %s\n", prefix, sym->id, sym->name);
-      } else if (status[i] == NOT_NIL) {
-        printf("%s not: %i %s\n", prefix, sym->id, sym->name);
-      } else if (status[i] == SET_MAYBE_NIL) {
-        printf("%s set: %i %s\n", prefix, sym->id, sym->name);
+  for (AliasMap::const_iterator it = OUT.begin();
+       it != OUT.end();
+       ++it) {
+    Symbol* sym = it->first;
+    AliasLocation loc = it->second;
+
+    if (OnlyDifferencesFrom != NULL) {
+      AliasMap::const_iterator it = OnlyDifferencesFrom->find(sym);
+      if (it != OnlyDifferencesFrom->end()) {
+        AliasLocation was = it->second;
+        if (was.type == loc.type &&
+            was.location == loc.location)
+          // Ignore this one since it's not new
+          continue;
       }
     }
+
+    switch (loc.type) {
+      case MUST_ALIAS_IGNORED:
+        // print nothing
+        break;
+      case MUST_ALIAS_NIL:
+        printf("%s nil: %i %s", prefix, sym->id, sym->name);
+        break;
+      case MUST_ALIAS_UNKNOWN:
+        printf("%s unk: %i %s", prefix, sym->id, sym->name);
+        break;
+      case MUST_ALIAS_ALLOCATED:
+        printf("%s new: %i %s",
+               prefix, sym->id, sym->name);
+        break;
+      case MUST_ALIAS_REFVAR:
+        printf("%s ref: %i %s",
+               prefix, sym->id, sym->name);
+        break;
+      /*
+      case MUST_ALIAS_COPYVAR:
+        printf("%s cpy: %i %s ", prefix, sym->id, sym->name);
+        nprint_view(loc.location);
+        break;
+       */
+      // no default -> get warning if more are added
+    }
+
+    if (loc.location) {
+      int id = loc.location->id;
+      if (Symbol* sym = toSymbol(loc.location)) {
+        printf(" -> sym %i %s", id, sym->name);
+      } else if (CallExpr* call = toCallExpr(loc.location)) {
+        const char* fnName = "primitive";
+        if (FnSymbol* calledFn = call->resolvedOrVirtualFunction())
+          fnName = calledFn->name;
+        printf(" -> call %i to %s", id, fnName);
+      } else {
+        printf(" -> unknown %i", id);
+      }
+    }
+    printf("\n");
   }
 }
 
@@ -182,49 +363,41 @@ static bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& ini
 
 static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
 
+  if (sym == gVoid)
+    return false;
+
   if (sym->defPoint->parentSymbol == fn)
     return false;
 
   return true;
 }
 
-static void findNilDereferencesInBasicBlock(
+static void checkBasicBlock(
     FnSymbol* fn,
-    std::map<Symbol*, int>& symToIdx,
-    std::vector<Symbol*>& idxToSym,
-    size_t nvars,
     BasicBlock* bb,
-    BitVec* GEN,
-    BitVec* KILL,
-    BitVec* IN,
-    BitVec* OUT,
+    const std::vector<Symbol*> symbols,
+    const AliasMap& IN,
+    AliasMap& OUT,
     bool raiseErrors) {
 
-  GEN->reset();
-  KILL->reset();
-
-
-  std::vector<classify_nil_t> bbStatus(nvars);
-  std::vector<classify_nil_t> status(nvars);
-
-  for (size_t i = 0; i < nvars; i++ ) {
-    bbStatus[i] = IN->get(i) ? IS_NIL : UNKNOWN_NIL;
-  }
-
-  bool gaveUp = false;
+  OUT = IN;
 
   for_vector(Expr, expr, bb->exprs) {
 
-    for (size_t i = 0; i < nvars; i++ ) {
-      status[i] = UNKNOWN_NIL;
-    }
+    bool storeToUnknown = false;
+    bool storeToGlobals = false;
 
-    bool trace = 0 == strcmp(fn->name, debugNilsForFn);
+    bool trace = (0 == strcmp(fn->name, debugNilsForFn));
+
+    AliasMap* traceCopy = NULL;
 
     if (trace) {
+      traceCopy = new AliasMap(OUT);
+
+      printf("\nvisiting:");
       nprint_view(expr);
 
-      printStatus("bb", bbStatus, idxToSym);
+      printAliasMap("bb", OUT);
     }
 
     if (expr->id == debugNilsForId)
@@ -239,230 +412,231 @@ static void findNilDereferencesInBasicBlock(
     } else if (CallExpr* call = toCallExpr(expr)) {
       Symbol* lhsSym = NULL;
       Expr* rhsExpr = NULL;
-      bool moveLike = (call->isPrimitive(PRIM_MOVE) ||
-                       call->isPrimitive(PRIM_ASSIGN) ||
-                       call->isNamedAstr(astrSequals));
 
-      if (moveLike) {
+      bool moveLike = false;
+      bool assign = false;
+      CallExpr* initCall = NULL;
+      
+      // set moveLike and userCall
+      if (call->isPrimitive(PRIM_MOVE) ||
+          call->isPrimitive(PRIM_ASSIGN)) {
         initSe = toSymExpr(call->get(1));
         lhsSym = initSe->symbol();
         rhsExpr = call->get(2);
-      } else {
-        CallExpr* initCall = NULL;
-        if (isRecordInitOrReturn(call, initSe, initCall)) {
-          lhsSym = initSe->symbol();
-          rhsExpr = initCall;
-          moveLike = true;
-        }
-      }
-
-      // set userCall
-      if (moveLike) {
+        moveLike = true;
         userCall = toCallExpr(rhsExpr);
+      } else if (call->isNamedAstr(astrSequals)) {
+        initSe = toSymExpr(call->get(1));
+        lhsSym = initSe->symbol();
+        rhsExpr = call->get(2);
+        moveLike = true;
+        assign = true;
+        userCall = call;
+      } else if (isRecordInitOrReturn(call, initSe, initCall)) {
+        lhsSym = initSe->symbol();
+        rhsExpr = initCall;
+        moveLike = true;
+        userCall = call;
       } else {
         userCall = call;
       }
 
+      FnSymbol* userCalledFn = NULL;
+      if (userCall) {
+        userCalledFn = userCall->resolvedOrVirtualFunction();
+      }
+
+      bool ignoreGlobalUpdates = false;
+
       // raise errors if the call is problematic somehow
       if (userCall && raiseErrors) {
-        checkForNilDereferencesInCall(userCall,
-                                      symToIdx,
-                                      idxToSym,
-                                      bbStatus);
+        checkForNilDereferencesInCall(userCall, OUT);
       }
 
       if (moveLike) {
         // lhsSym and rhsExpr set above
 
         if (lhsSym->isRef()) {
-          // TODO -- may-alias sets?
-          // var x: MyClass; ref r = x; r = new MyClass(); x.method();
-          // TODO: call returning ref
-          // TODO: alias case above but ref r = returnsRefArg(x);
+          // move-ish, but lhs is a ref
 
-          // For now just kill everything (disable errors)
-          gaveUp = true;
-          gdbShouldBreakHere();
+          if (assign && isClassIshType(lhsSym)) {
+            // e.g. owned = nil
+            SymExpr* se = toSymExpr(call->get(2));
+            Symbol* rhsSym = se->symbol();
+            Symbol* referent = getReferent(lhsSym, OUT);
+            if (referent)
+              OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT);
+            else
+              storeToUnknown = true;
+
+          } else if (userCalledFn != NULL) {
+            // e.g.
+            //   ref r = returnsRefArg(x);
+            // We can't say what 'r' refers to without analyzing that fn
+            //   - it could refer to a global
+            //   - it could refer to a by-ref argument
+            //   - it could refer to a field in a heap-allocated class
+
+            // This could be another class, ref-to-unknown, if it helps
+            OUT[lhsSym] = unknownAliasLocation();
+          } else {
+            if (userCall == NULL) {
+              // Acts like a move
+              SymExpr* se = toSymExpr(call->get(2));
+              Symbol* rhsSym = se->symbol();
+              if (call->isPrimitive(PRIM_MOVE)) {
+                OUT[lhsSym] = OUT[rhsSym];
+              } else {
+                Symbol* referent = getReferent(lhsSym, OUT);
+                if (referent)
+                  OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT);
+                else
+                  storeToUnknown = true;
+              }
+            } else {
+              if (userCall->isPrimitive(PRIM_ADDR_OF) ||
+                  userCall->isPrimitive(PRIM_SET_REFERENCE)) {
+                SymExpr* se = toSymExpr(userCall->get(1));
+                Symbol* rhs = se->symbol();
+                if (rhs->isRef())
+                  // if rhs is a ref, just propagate any MUST_ALIAS_REFVAR
+                  OUT[lhsSym] = OUT[rhs];
+                else
+                  // otherwise, make a new MUST_ALIAS_REFVAR
+                  OUT[lhsSym] = refAliasLocation(se->symbol());
+              } else {
+                OUT[lhsSym] = unknownAliasLocation();
+              }
+            }
+          }
 
         } else {
+          // move-ish, LHS is not a ref
+
           // handle certain cases for PRIM_MOVE that we understand
           if (rhsExpr->typeInfo() == dtNil) {
-            if (symToIdx.count(lhsSym))
-              status[symToIdx[lhsSym]] = IS_NIL;
+            OUT[lhsSym] = nilAliasLocation();
 
           } else if (SymExpr* se = toSymExpr(rhsExpr)) {
-            Symbol* rhsSym = se->symbol();
-            if (symToIdx.count(lhsSym) && symToIdx.count(rhsSym))
-                status[symToIdx[lhsSym]] = bbStatus[symToIdx[rhsSym]];
+            OUT[lhsSym] = aliasLocationCopyValueFrom(se->symbol(), OUT);
 
-          } else if (CallExpr* rhsCall = toCallExpr(rhsExpr)) {
-            bool unhandled = false;
-            FnSymbol* calledFn = rhsCall->resolvedOrVirtualFunction();
-            if (calledFn == NULL) {
-              if (rhsCall->isPrimitive(PRIM_DEREF)) {
-                SymExpr* fromSe = toSymExpr(rhsCall->get(1));
-                Symbol* fromSym = fromSe->symbol();
-                if (symToIdx.count(lhsSym) && symToIdx.count(fromSym))
-                  status[symToIdx[lhsSym]] = bbStatus[symToIdx[fromSym]];
+          } else if (userCalledFn != NULL) {
 
-              } else if (rhsCall->isPrimitive(PRIM_CAST)) {
-                SymExpr* fromSe = toSymExpr(rhsCall->get(2));
-                Symbol* fromSym = fromSe->symbol();
-                if (symToIdx.count(lhsSym) && symToIdx.count(fromSym))
-                  status[symToIdx[lhsSym]] = bbStatus[symToIdx[fromSym]];
+            if (isClassIshType(lhsSym)) {
+              // defaultOf for classes results in nil
+              if (userCalledFn->name == astr_defaultOf) {
+                OUT[lhsSym] = nilAliasLocation();
+                ignoreGlobalUpdates = true;
 
+              // new for classes is allocation
+              // ( TODO: fix below for new owned(someClassInstance) )
+              } else if (userCalledFn->name == astrNew) {
+                OUT[lhsSym] = allocatedAliasLocation(userCall);
+                ignoreGlobalUpdates = true;
+
+              // for copy-init or borrow, lhs tracks rhs
+              // for owned, initCopy might invalidate RHS; handled below
+              } else if (userCalledFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                         userCalledFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                         0 == strcmp(userCalledFn->name, "borrow")) {
+                OUT[lhsSym] =
+                  aliasLocationCopyValueFrom(
+                      toSymExpr(userCall->get(1))->symbol(), OUT);
+                ignoreGlobalUpdates = true;
               } else {
-                gaveUp = true;
-                gdbShouldBreakHere();
-                // Unknown primitive
-              }
-            } else if (calledFn->name == astr_defaultOf) {
-              if (symToIdx.count(lhsSym))
-                status[symToIdx[lhsSym]] = IS_NIL;
-
-            } else if (calledFn->name == astrNew) {
-              // assume new returns non-nil (we halt otherwise)
-              if (symToIdx.count(lhsSym))
-                status[symToIdx[lhsSym]] = NOT_NIL;
-
-            } else if (calledFn->hasFlag(FLAG_INIT_COPY_FN) ||
-                       calledFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                       0 == strcmp(calledFn->name, "borrow")) {
-              // set lhs nilness based on the 1st argument
-              SymExpr* thisSe = toSymExpr(rhsCall->get(1));
-              Symbol* thisSym = thisSe->symbol();
-              if (symToIdx.count(lhsSym) && symToIdx.count(thisSym))
-                status[symToIdx[lhsSym]] = bbStatus[symToIdx[thisSym]];
-
-            } else {
-              unhandled = true;
-            }
-
-            Expr* nilFromActual = NULL;
-            if (calledFn) {
-              for_formals_actuals(formal, actual, rhsCall) {
-                if (formal->hasFlag(FLAG_NIL_FROM_ARG)) {
-                  nilFromActual = actual;
+                Expr* nilFromActual = NULL;
+                for_formals_actuals(formal, actual, userCall) {
+                  if (formal->hasFlag(FLAG_NIL_FROM_ARG)) {
+                    nilFromActual = actual;
+                  }
+                }
+                if (nilFromActual != NULL) {
+                  SymExpr* actualSe = toSymExpr(nilFromActual);
+                  Symbol* actualSym = actualSe->symbol();
+                  OUT[lhsSym] = aliasLocationCopyValueFrom(actualSym, OUT);
+                  ignoreGlobalUpdates = true;
                 }
               }
-              if (SymExpr* actualSe = toSymExpr(nilFromActual)) {
-                Symbol* actualSym = actualSe->symbol();
-                if (symToIdx.count(lhsSym) && symToIdx.count(actualSym))
-                  status[symToIdx[lhsSym]] = bbStatus[symToIdx[actualSym]];
-              }
+
+            } else {
+              OUT[lhsSym] = unknownAliasLocation();
             }
 
-            if (unhandled && nilFromActual == NULL) {
-              // What should it do here?
-              gaveUp = true;
-              gdbShouldBreakHere();
-            }
           } else {
-            INT_FATAL("unhandled case");
+            // userCalledFn == NULL
+            // handle primitives
+
+            if (userCall->isPrimitive(PRIM_DEREF))
+              OUT[lhsSym] = aliasLocationCopyValueFrom(
+                                  toSymExpr(userCall->get(1))->symbol(),
+                                  OUT);
+
+            else if (userCall->isPrimitive(PRIM_CAST) &&
+                     isClassIshType(lhsSym))
+              OUT[lhsSym] = aliasLocationCopyValueFrom(
+                                  toSymExpr(userCall->get(2))->symbol(),
+                                  OUT);
+            else
+              OUT[lhsSym] = unknownAliasLocation();
+
           }
         }
       }
-    }
 
-    // Handle FLAG_LEAVES_ARG_NIL, ref arguments
-    if (userCall != NULL) {
-      FnSymbol* calledFn = userCall->resolvedOrVirtualFunction();
-      if (calledFn) {
+      // Handle FLAG_LEAVES_ARG_NIL, ref arguments
+      if (userCalledFn != NULL) {
 
         // any global variables could possibly be set
         // by the function call
-        for (size_t i = 0; i < nvars; i++ ) {
-          if (isOuterVar(idxToSym[i], fn))
-	    status[i] = SET_MAYBE_NIL;
-        }
+        if (ignoreGlobalUpdates == false)
+          storeToGlobals = true;
 
         for_formals_actuals(formal, actual, userCall) {
           if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
             Symbol* actualSym = toSymExpr(actual)->symbol();
-            if (symToIdx.count(actualSym))
-              status[symToIdx[actualSym]] = IS_NIL;
+            if (actualSym->isRef()) {
+              Symbol* referent = getReferent(actualSym, OUT);
+              if (referent)
+                OUT[referent] = nilAliasLocation();
+            } else {
+              OUT[actualSym] = nilAliasLocation();
+            }
+
           } else if (formal->intent == INTENT_REF &&
-                     /* e.g. functions returning record by ref handled above */
+                     /* ignoring functions returning record by ref */
                      actual != initSe) {
             // It could set the actual
             Symbol* actualSym = toSymExpr(actual)->symbol();
-            if (symToIdx.count(actualSym))
-              status[symToIdx[actualSym]] = SET_MAYBE_NIL;
+            if (actualSym->isRef()) {
+              Symbol* referent = getReferent(actualSym, OUT);
+              if (referent)
+                OUT[referent] = unknownAliasLocation();
+              else
+                storeToUnknown = true;
 
+            } else {
+              OUT[actualSym] = unknownAliasLocation();
+            }
           }
         }
       }
     }
 
-    if (gaveUp) {
-      for (size_t i = 0; i < nvars; i++ ) {
-        status[i] = SET_MAYBE_NIL;
+    // Handle storeToUnknown, storeToGlobals
+    if (storeToGlobals || storeToUnknown) {
+      for_vector(Symbol, sym, symbols) {
+        if (sym->isConstValWillNotChange() == false) {
+          if (storeToUnknown || isOuterVar(sym, fn))
+            OUT[sym] = unknownAliasLocation();
+        }
       }
     }
 
     if (trace) {
-      if (gaveUp)
-        printf("(gave up)\n");
-      printStatus("+-", status, idxToSym);
+      // TODO -- only show differences
+      printAliasMap("+-", OUT, traceCopy);
+      delete traceCopy;
     }
-
-
-    // TODO: Consider possible aliases for symbols in toGen / toKill
-    // May-alias information
-    //   - propagate to may-aliases for toKill but not toGen
-    //     (since if it didn't alias, we don't know it's set to nil)
-    // Must-alias information
-    //   - propagate to must-aliases for toGen and toKill
-
-    for (size_t i = 0; i < nvars; i++ ) {
-      if (status[i] != UNKNOWN_NIL) {
-        bbStatus[i] = status[i];
-      }
-    }
-  }
-
-  for (size_t i = 0; i < nvars; i++ ) {
-    if (status[i] == IS_NIL)
-      GEN->set(i);
-    else if (status[i] == SET_MAYBE_NIL)
-      KILL->set(i);
-    else if (status[i] == NOT_NIL)
-      KILL->set(i);
-  }
-}
-
-// TODO -- move this (and the version in copyPropagation) to bb.h
-static void makeDataFlowSet(std::vector<BitVec*>& set,
-			    FnSymbol* fn,
-			    size_t size) {
-  size_t nbbs = fn->basicBlocks->size();
-
-  // Create a BitVec of length size for each block.
-  for (size_t i = 0; i < nbbs; ++i)
-    set.push_back(new BitVec(size));
-}
-
-static void destroyDataFlowSet(std::vector<BitVec*> set)
-{
-  for_vector(BitVec, vec, set)
-    delete vec, vec = 0;
-}
-
-
-// TODO -- move this (and the version in copyPropagation) to bb.h
-static void setupInDataFlowSet(std::vector<BitVec*>& IN, FnSymbol* fn)
-{
-  size_t i = 0;
-  for_vector(BasicBlock, bb, *fn->basicBlocks)
-  {
-    if (bb->ins.size() == 0)
-      // This block has no predecessors, so set its initial IN set to zeroes.
-      IN[i]->reset();
-    else
-      // This block has a predecessor, so set its initial IN set to all ones.
-      IN[i]->set();
-
-    ++i;
   }
 }
 
@@ -477,16 +651,9 @@ void findNilDereferences(FnSymbol* fn) {
     gdbShouldBreakHere();
   }
 
-
-  // Let's do some data-flow analysis!
-
-  // GEN(x) means that variable x stores nil
-  // KILL(x) means that variable x might no longer store nil
-
   BasicBlock::buildBasicBlocks(fn);
 
-  // Gather the variables to consider (variables of class type,
-  // including borrows, owned, unmanaged, etc)
+  // Gather the variables to consider
   std::vector<Symbol*> idxToSym;
   std::map<Symbol*, int> symToIdx;
 
@@ -498,62 +665,84 @@ void findNilDereferences(FnSymbol* fn) {
       Symbol* sym = se->symbol();
       if (isArgSymbol(sym) || isVarSymbol(sym)) {
         if (symToIdx.count(sym) == 0) {
-          // Consider adding it to the map.
-          // Is it of class (ish) type?
-          TypeSymbol* ts = sym->getValType()->symbol;
-          if (isClassLike(ts->type) ||
-              ts->hasFlag(FLAG_MANAGED_POINTER)) {
-            symToIdx.insert(std::pair<Symbol*, int>(sym, index));
-            idxToSym.push_back(sym);
-            INT_ASSERT((int)(idxToSym.size()-1) == index);
-            index++;
-            if (debugging) {
-              printf("Tracking symbol %i %s\n", sym->id, sym->name);
-            }
+          // Add it to the map/array
+          symToIdx.insert(std::pair<Symbol*, int>(sym, index));
+          idxToSym.push_back(sym);
+          INT_ASSERT((int)(idxToSym.size()-1) == index);
+          index++;
+          if (debugging) {
+            printf("Tracking symbol %i %s\n", sym->id, sym->name);
           }
         }
       }
     }
   }
 
-  std::vector<BitVec*> GEN;
-  std::vector<BitVec*> KILL;
-  std::vector<BitVec*> IN;
-  std::vector<BitVec*> OUT;
-
-  size_t nvars = idxToSym.size();
-  makeDataFlowSet(GEN, fn, nvars);
-  makeDataFlowSet(KILL,fn, nvars);
-  makeDataFlowSet(IN,  fn, nvars);
-  makeDataFlowSet(OUT, fn, nvars);
-
-  setupInDataFlowSet(IN, fn);
-
   size_t nbbs = fn->basicBlocks->size();
+
+  // allocate the IN and OUT data flow sets
+  std::vector<AliasMap> IN(nbbs);
+  std::vector<AliasMap> OUT(nbbs);
+
+  bool changed = false;
+
+  do {
+
+    changed = false;
+
+    for (size_t i = 0; i < nbbs; i++) {
+      checkBasicBlock(fn, (*fn->basicBlocks)[i], idxToSym, IN[i], OUT[i],
+                      /*raise errors?*/ false);
+    }
+
+    // for each basic block, update IN block based on predecessors OUT blocks
+    for (size_t i = 0; i < nbbs; i++) {
+      BasicBlock* bb = (*fn->basicBlocks)[i];
+
+      AliasMap nextIn;
+
+      for_vector(BasicBlock, bbin, bb->ins) {
+        const AliasMap& from = OUT[bbin->id];
+        for (AliasMap::const_iterator it = from.begin();
+             it != from.end();
+             ++it) {
+          Symbol* sym = it->first;
+          AliasLocation loc = it->second;
+          if (nextIn.count(sym) == 0) {
+            nextIn[sym] = loc;
+          } else {
+            AliasLocation was = nextIn[sym];
+            // combine alias locations
+            if (was.type == loc.type &&
+                was.location == loc.location) {
+              // OK, do nothing
+            } else if (was.type == MUST_ALIAS_IGNORED) {
+              nextIn[sym] = loc;
+            } else {
+              // Conflicting input -> unknown
+              nextIn[sym] = unknownAliasLocation();
+            }
+          }
+        }
+      }
+
+      // Now check if nextIn is different from IN
+      // if it is, re-run the analysis
+      if (nextIn != IN[i]) {
+        if (debugging) {
+          printAliasMap("out->in", nextIn, &IN[i]);
+        }
+        changed = true;
+        IN[i] = nextIn;
+      }
+    }
+  } while (changed);
+
   for (size_t i = 0; i < nbbs; i++) {
-    findNilDereferencesInBasicBlock(fn, symToIdx, idxToSym, nvars,
-                                    (*fn->basicBlocks)[i],
-                                    GEN[i], KILL[i], IN[i], OUT[i],
-                                    /*raise errors?*/ false);
+    checkBasicBlock(fn, (*fn->basicBlocks)[i], idxToSym,
+                    IN[i], OUT[i],
+                    /*raise errors?*/ true);
   }
-
-  // intersect or union?
-  // if something is definately nil in one block that flows to this one,
-  // but maye not nil in another block, the analysis should assume it's
-  // not nil.
-  BasicBlock::forwardFlowAnalysis(fn, GEN, KILL, IN, OUT, /*intersect?*/true);
-
-  for (size_t i = 0; i < nbbs; i++) {
-    findNilDereferencesInBasicBlock(fn, symToIdx, idxToSym, nvars,
-                                    (*fn->basicBlocks)[i],
-                                    GEN[i], KILL[i], IN[i], OUT[i],
-                                    /*raise errors?*/ true);
-  }
-
-  destroyDataFlowSet(GEN);
-  destroyDataFlowSet(KILL);
-  destroyDataFlowSet(IN);
-  destroyDataFlowSet(OUT);
 }
 
 void adjustSignatureForNilChecking(FnSymbol* fn) {
