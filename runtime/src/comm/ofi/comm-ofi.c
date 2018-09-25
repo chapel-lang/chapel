@@ -17,6 +17,10 @@
  * limitations under the License.
  */
 
+//
+// OFI-based implementation of Chapel communication interface.
+//
+
 #include "chplrt.h"
 #include "chpl-env-gen.h"
 

@@ -17,6 +17,10 @@
  * limitations under the License.
  */
 
+//
+// Internal declarations for the OFI-based Chapel comm layer.
+//
+
 #ifndef _comm_ofi_internal_h_
 #define _comm_ofi_internal_h_
 
