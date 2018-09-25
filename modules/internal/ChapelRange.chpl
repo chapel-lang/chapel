@@ -620,11 +620,12 @@ module ChapelRange {
     return other == this(other);
   }
 
-  // This helper takes one arg by 'in', i.e. explicitly creating a copy,
-  // so it can be modified.
-  /* private */ inline proc _memberHelp(arg1: range(?), in arg2: range(?)) {
-    compilerAssert(arg2.stridable);
-    arg2._stride = -arg2._stride;
+  // Negate one of the two args' strides before comparison.
+  private inline proc _memberHelp(in arg1: range(?), in arg2: range(?)) {
+    if arg2.stridable then
+      arg2._stride = -arg2._stride;
+    else
+      arg1._stride = -arg1._stride;
     return arg2 == arg1(arg2);
   }
 
