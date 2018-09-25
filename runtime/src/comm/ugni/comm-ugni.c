@@ -1544,8 +1544,6 @@ static void      local_yield(void);
 static void dbg_init(void);
 static void dbg_init(void)
 {
-  const char* ev;
-
   atomic_init_uint_least32_t(&next_thread_idx, 0);
   proc_thread_id = pthread_self();
 
