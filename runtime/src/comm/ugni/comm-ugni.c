@@ -1593,9 +1593,10 @@ static void dbg_init(void)
 
   debug_stats_flag = chpl_env_rt_get_int("COMM_UGNI_DEBUG_STATS", 0);
 
-  if ((ev = chpl_env_rt_get("COMM_UGNI_FORK_REQ_BUFS_PER_CD", NULL)) != NULL) {
-    FORK_REQ_BUFS_PER_CD = chpl_env_str_to_int(ev, 1);
-  }
+#ifdef DEBUG
+  FORK_REQ_BUFS_PER_CD =
+      chpl_env_rt_get_int("COMM_UGNI_FORK_REQ_BUFS_PER_CD", 1);
+#endif
 }
 
 
