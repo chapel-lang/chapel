@@ -238,7 +238,12 @@ static void checkForNilDereferencesInCall(
 
     SymExpr* thisSe = toSymExpr(call->get(1));
     Symbol* thisSym = thisSe->symbol();
-    if (isClassIshType(thisSym)) {
+    // Doesn't raise errors for methods on managed pointer types (e.g. owned)
+    // since:
+    //   * right now owned etc can store nil
+    //   * borrowing from nil owned isn't an error by itself
+    //     but dereferencing that nil borrow would be
+    if (isClassLike(thisSym->getValType())) {
       // Raise an error if it was definately nil
       AliasMap::const_iterator it = aliasMap.find(thisSym);
       if (it != aliasMap.end()) {
