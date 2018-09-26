@@ -2998,20 +2998,23 @@ void make_registered_heap(void)
   }
 
   //
-  // Go with the user-specified size, but issue a warning from node 0
-  // if we can't fit all the registrations in the NIC TLB.  On Gemini
-  // only, reduce the heap size until we can fit in the NIC TLB, since
-  // otherwise we'll get GNI_RC_ERROR_RESOURCE when we try to register
-  // memory.
+  // As a hedge against silliness, first reduce any request so that it's
+  // no larger than the physical memory.  As a beneficial side effect
+  // when the user request is ridiculously large, this also causes the
+  // reduce-by-5% loop below to run faster and produce a final size
+  // closer to the maximum available.
   //
-
+  size = size_from_env;
+  const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
+  if (size > size_phys)
+    size = size_phys;
+  
   //
   // On Gemini-based systems, if necessary reduce the heap size until
   // we can fit all the registered pages in the NIC TLB.  Otherwise,
   // we'll get GNI_RC_ERROR_RESOURCE when we try to register memory.
   // Warn about doing this.
   //
-  size = size_from_env;
   if (nic_type == GNI_DEVICE_GEMINI && size > max_heap_size) {
     if (chpl_nodeID == 0) {
       char buf1[20], buf2[20], buf3[20], msg[200];
