@@ -152,41 +152,70 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     venv_targets="test-venv chpldoc"
     case ",$components," in
     ( *,venv,* )
+
+        # Build Chapel python-venv tools with the system-installed Python, no matter which version
+
         log_info "Building Chapel component: venv ($venv_targets)"
 
-        # Building Chapel python-venv tools requires a working internet connection and either:
-        # - modern version of libssl that supports TLS 1.1
-        # - local workarounds such as the variables shown in the "venv" callback, below.
+        log_debug "Checking the system-installed Python"
+
+        pyLT27=$( /usr/bin/python -c "import sys; print(sys.version_info[0:2] < (2, 7))" || : ok )
+        whichPy=$( which python || : ok )
+        case "$pyLT27" in
+        ( False | True )
+            case "$whichPy" in
+            ( /usr/bin/python )
+                ;;
+            ( * )
+                log_error "Found unexpected path to default python executable: '$whichPy'"
+                log_error "The expected path was '/usr/bin/python'"
+                exit 2
+                ;;
+            esac
+            ;;
+        ( * )
+            log_error "/usr/bin/python broken or not found"
+            echo >&2 "stdout:'$pyLT27'"
+            ls -ldL >&2 /usr/bin/python || : ok
+            exit 2
+            ;;
+        esac
+
+            # Chapel python-venv tools requires a working internet connection and either:
+            # - modern version of libssl that supports TLS 1.1
+            # - local workarounds such as the variables shown in the "venv" callback, below.
 
         log_info "Start build_configs $dry_run $verbose -- $venv_targets"
 
         $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv.log" \
             --target-compiler=venv -- $venv_targets
+
+        if [ "$pyLT27" = "True" ]; then
+
+            # If the system-installed Python was 2.6, Build a second copy of Chapel
+            # python-venv tools using the alternate Python 2.7 installation,
+            # which must be implemented by the "venv_py27" callback, below.
+
+            log_info "Building Chapel component: venv ($venv_targets with venv_py27 callback)"
+
+            log_info "Start build_configs $dry_run $verbose -- $venv_targets"
+
+            $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv_py27.log" \
+                --target-compiler=venv_py27 -- $venv_targets
+
+            # Custom Chapel make target to rm files or links named "python" from the installed py27
+            # bin dir, forcing users of the installed Chapel RPM to get "python" from the system.
+
+            use_system_python="-C third-party/chpl-venv use-system-python"
+
+            log_info "Start build_configs $dry_run $verbose -- $use_system_python"
+
+            $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv_py27-use_system_python.log" \
+                --target-compiler=venv_py27 -- $use_system_python
+        fi
         ;;
     ( * )
         log_info "NO building Chapel component: venv"
-        ;;
-    esac
-
-    case ",$components," in
-    ( *,venv_py27,* )
-        log_info "Building Chapel component: venv_py27 ($venv_targets)"
-
-        # Alternate python version
-
-        log_info "Start build_configs $dry_run $verbose -- $venv_targets"
-
-        $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv_py27.log" \
-            --target-compiler=venv_py27 -- $venv_targets
-
-        use_system_python="-C third-party/chpl-venv use-system-python"
-        log_info "Start build_configs $dry_run $verbose -- $use_system_python"
-
-        $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv_py27-use_system_python.log" \
-            --target-compiler=venv_py27 -- $use_system_python
-        ;;
-    ( * )
-        log_info "NO building Chapel component: venv_py27"
         ;;
     esac
 
