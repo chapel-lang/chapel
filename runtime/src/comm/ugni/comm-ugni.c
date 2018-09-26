@@ -1449,6 +1449,8 @@ static void      polling_task(void*);
 static void      set_up_for_polling(void);
 static void      ensure_registered_heap_info_set(void);
 static void      make_registered_heap(void);
+static void      printf_KMG_size_t(char*, int, size_t);
+static void      printf_KMG_double(char*, int, double);
 static size_t    get_hugepage_size(void);
 static void      set_hugepage_info(void);
 static void      install_SIGBUS_handler(void);
@@ -2957,9 +2959,8 @@ void make_registered_heap(void)
   // it up.  (If it's to be dynamically extensible, that's handled
   // separately through chpl_comm_impl_regMem*().)
   //
-  const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
-  const size_t nic_max_mem = nic_max_pages * page_size;
-  size_t nic_allowed_mem;
+  size_t nic_mem_map_limit;
+  size_t nic_max_mem;
   size_t max_heap_size;
   size_t size;
   size_t decrement;
@@ -2971,10 +2972,15 @@ void make_registered_heap(void)
   // TLB.  Except on Gemini only, aim for only 95% of what will fit
   // because there we'll get an error if we go over.
   //
-  if (nic_type == GNI_DEVICE_GEMINI)
-    nic_allowed_mem = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
-  else
-    nic_allowed_mem = nic_max_mem;
+  if (nic_type == GNI_DEVICE_GEMINI) {
+    const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
+    nic_max_mem = nic_max_pages * page_size;
+    nic_mem_map_limit = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
+  } else {
+    const size_t nic_TLB_cache_pages = 512; // not publicly defined
+    nic_max_mem = nic_TLB_cache_pages * page_size;
+    nic_mem_map_limit = nic_max_mem;
+  }
 
   {
     uint64_t  addr;
@@ -2985,10 +2991,10 @@ void make_registered_heap(void)
     while (get_next_rw_memory_range(&addr, &len, NULL, 0))
       data_size += ALIGN_UP(len, page_size);
 
-    if (data_size >= nic_allowed_mem)
+    if (data_size >= nic_mem_map_limit)
       max_heap_size = 0;
     else
-      max_heap_size = nic_allowed_mem - data_size;
+      max_heap_size = nic_mem_map_limit - data_size;
   }
 
   //
@@ -2998,45 +3004,25 @@ void make_registered_heap(void)
   // otherwise we'll get GNI_RC_ERROR_RESOURCE when we try to register
   // memory.
   //
-  if ((size = size_from_env) > max_heap_size) {
+
+  //
+  // On Gemini-based systems, if necessary reduce the heap size until
+  // we can fit all the registered pages in the NIC TLB.  Otherwise,
+  // we'll get GNI_RC_ERROR_RESOURCE when we try to register memory.
+  // Warn about doing this.
+  //
+  size = size_from_env;
+  if (nic_type == GNI_DEVICE_GEMINI && size > max_heap_size) {
     if (chpl_nodeID == 0) {
-      char nmmBuf[20];
-      char psBuf[20];
-      char hsBuf[20];
-      char msg[200];
-
-#define P_GMK_BASE(b, f, v, t)                                          \
-        ((v >= ((t) (1UL << 30)))                                       \
-         ? snprintf(b, sizeof(b), "%" f "G", v / ((t) (1UL << 30)))     \
-         : (v >= ((t) (1UL << 20)))                                     \
-         ? snprintf(b, sizeof(b), "%" f "M", v / ((t) (1UL << 20)))     \
-         : snprintf(b, sizeof(b), "%" f "K", v / ((t) (1UL << 10))))
-#define P_ZI_GMK(b, v) P_GMK_BASE(b, "zd", v, size_t)
-#define P_D_GMK(b, v)  P_GMK_BASE(b, ".1f", v, double)
-
-      P_ZI_GMK(nmmBuf, nic_max_mem);
-      P_ZI_GMK(psBuf, page_size);
-
-      if (nic_type == GNI_DEVICE_GEMINI) {
-        P_D_GMK(hsBuf, max_heap_size);
-        (void) snprintf(msg, sizeof(msg),
-                        "Gemini TLB can cover %s with %s pages; heap "
-                        "reduced to %s to fit",
-                        nmmBuf, psBuf, hsBuf);
-      } else {
-        P_ZI_GMK(hsBuf, size);
-        (void) snprintf(msg, sizeof(msg),
-                        "Aries TLB cache can cover %s with %s pages; "
-                        "with %s heap,\n"
-                        "         cache refills may reduce performance",
-                        nmmBuf, psBuf, hsBuf);
-      }
-
+      char buf1[20], buf2[20], buf3[20], msg[200];
+      printf_KMG_size_t(buf1, sizeof(buf1), nic_max_mem);
+      printf_KMG_size_t(buf2, sizeof(buf2), page_size);
+      printf_KMG_double(buf3, sizeof(buf3), max_heap_size);
+      (void) snprintf(msg, sizeof(msg),
+                      "Gemini TLB can cover %s with %s pages; heap "
+                      "reduced to %s to fit",
+                      buf1, buf2, buf3);
       chpl_warning(msg, 0, 0);
-
-#undef P_D_GMK
-#undef P_ZI_GMK
-#undef P_GMK_BASE
     }
 
     if (nic_type == GNI_DEVICE_GEMINI)
@@ -3068,10 +3054,60 @@ void make_registered_heap(void)
   DBG_P_LP(DBGF_HUGEPAGES, "HUGEPAGES allocated heap start=%p size=%#zx\n",
            start, size);
 
+  //
+  // On Aries-based systems, warn if the size is larger than what will
+  // fit in the TLB cache.  But since that may reduce performance but
+  // won't affect function, don't reduce the size to fit.
+  //
+  if (nic_type == GNI_DEVICE_ARIES && size > max_heap_size) {
+    if (chpl_nodeID == 0) {
+      char buf1[20], buf2[20], buf3[20], msg[200];
+      printf_KMG_size_t(buf1, sizeof(buf1), nic_max_mem);
+      printf_KMG_size_t(buf2, sizeof(buf2), page_size);
+      printf_KMG_double(buf3, sizeof(buf3), size);
+      (void) snprintf(msg, sizeof(msg),
+                      "Aries TLB cache can cover %s with %s pages; "
+                      "with %s heap,\n"
+                      "         cache refills may reduce performance",
+                      buf1, buf2, buf3);
+      chpl_warning(msg, 0, 0);
+    }
+  }
+
   registered_heap_size  = size;
   registered_heap_start = start;
   registered_heap_info_set = 1;
   atomic_thread_fence(memory_order_release);
+}
+
+
+static
+void printf_KMG_size_t(char* buf, int len, size_t val)
+{
+  const size_t GiB = (size_t) (1UL << 30);
+  const size_t MiB = (size_t) (1UL << 20);
+  const size_t KiB = (size_t) (1UL << 10);
+  if (val >= GiB)
+    (void) snprintf(buf, len, "%zdG", val / GiB);
+  else if (val >= MiB)
+    (void) snprintf(buf, len, "%zdM", val / MiB);
+  else
+    (void) snprintf(buf, len, "%zdK", val / KiB);
+}
+
+
+static
+void printf_KMG_double(char* buf, int len, double val)
+{
+  const double GiB = (double) (1UL << 30);
+  const double MiB = (double) (1UL << 20);
+  const double KiB = (double) (1UL << 10);
+  if (val >= GiB)
+    (void) snprintf(buf, len, "%.1fG", val / GiB);
+  else if (val >= MiB)
+    (void) snprintf(buf, len, "%.1fM", val / MiB);
+  else
+    (void) snprintf(buf, len, "%.1fK", val / KiB);
 }
 
 
