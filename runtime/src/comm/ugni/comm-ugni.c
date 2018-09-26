@@ -1904,21 +1904,19 @@ void chpl_comm_post_task_init(void)
       chpl_warning("without hugepages, communication performance will suffer",
                    0, 0);
     }
-  } else {
-    if (chpl_nodeID == 0
-        && getenv("HUGETLB_NO_RESERVE") == NULL) {
-      chpl_warning("HUGETLB_NO_RESERVE should be set to something "
-                   "when using hugepages",
-                   0, 0);
-    }
+  } else if (chpl_comm_getenvMaxHeapSize() == 0) {
+    if (chpl_nodeID == 0) {
+      if (getenv("HUGETLB_NO_RESERVE") == NULL) {
+        chpl_warning("dynamic heap on hugepages "
+                     "needs HUGETLB_NO_RESERVE set to something",
+                     0, 0);
+      }
 
-    if (strcmp(CHPL_MEM, "jemalloc") == 0
-        && chpl_comm_getenvMaxHeapSize() == 0
-        && getenv(chpl_comm_ugni_jemalloc_conf_ev_name()) == NULL) {
-      if (chpl_nodeID == 0) {
+      if (strcmp(CHPL_MEM, "jemalloc") == 0
+          && getenv(chpl_comm_ugni_jemalloc_conf_ev_name()) == NULL) {
         char buf[100];
         (void) snprintf(buf, sizeof(buf),
-                        "%s should be set when using hugepages",
+                        "dynamic heap on hugepages needs %s set properly",
                         chpl_comm_ugni_jemalloc_conf_ev_name());
         chpl_warning(buf, 0, 0);
       }
@@ -2653,7 +2651,9 @@ gni_return_t register_mem_region(uint64_t addr, uint64_t len,
   if ((gni_rc = GNI_MemRegister(comm_doms[0].nih, addr, len,
                                 NULL, flags, -1, mdh))
       != GNI_RC_SUCCESS) {
-    if (!allow_failure)
+    if (allow_failure)
+      DBG_P_L(DBGF_MEMREG, "GNI_MemRegister(): %d", (int) gni_rc);
+    else
       GNI_FAIL(gni_rc, "GNI_MemRegister()");
   }
 
