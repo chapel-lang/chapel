@@ -157,7 +157,7 @@ source "$cwd/../build-common.bash"
 
 # Run the designated setenv build script
 
-bash "$setenv" $verbose $dry_run -B +venv_py27
+bash "$setenv" $verbose $dry_run
 
 # Create the Chapel package
 
