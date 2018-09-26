@@ -470,7 +470,7 @@ proc CyclicDom.setup() {
   }
 }
 
-proc CyclicDom.dsiDestroyDom() {
+override proc CyclicDom.dsiDestroyDom() {
     coforall localeIdx in dist.targetLocDom {
       on dist.targetLocs(localeIdx) do
         delete locDoms(localeIdx);

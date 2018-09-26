@@ -971,7 +971,7 @@ proc StencilDom.setup() {
   }
 }
 
-proc StencilDom.dsiDestroyDom() {
+override proc StencilDom.dsiDestroyDom() {
   coforall localeIdx in dist.targetLocDom {
     on locDoms(localeIdx) do
       delete locDoms(localeIdx);
