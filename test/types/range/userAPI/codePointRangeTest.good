@@ -104,3 +104,93 @@ r[subr]           = (_cpindex = 5)..(_cpindex = 13) by 2
 r[subr] == subr[r]= true
 Copying...        = (_cpindex = 1)..(_cpindex = 20) by 2
 
+low bounded codepoint range
+------------
+(_cpindex = 1)..
+idxType          = codePointIndex
+stridable        = false
+boundedType      = boundedLow
+isRangeType()    = true
+isBoundedRange() = false
+hasLowBound()    = true
+hasHighBound()   = false
+stride           = 1
+alignment        = (_cpindex = 1)
+aligned          = true
+first            = (_cpindex = 1)
+last             = (_cpindex = 0)
+low              = (_cpindex = 1)
+high             = (_cpindex = 0)
+alignedLow       = (_cpindex = 1)
+alignedHigh      = (_cpindex = 0)
+isEmpty()        = false
+hasFirst()       = true
+hasLast()        = false
+isNat.Algned()   = true
+isAmbiguous      = false
+member((_cpindex = 4)) = true
+member((_cpindex = 3)..(_cpindex = 6)) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck((_cpindex = 4)) = true
+boundsCheck((_cpindex = 3)..(_cpindex = 6)) = true
+indexOrder((_cpindex = 4)) = 3
+orderToIndex(3)  = (_cpindex = 4)
+translate(2)     = (_cpindex = 3)..
+translate(-2)    = (_cpindex = -1)..
+serial iteration = 
+(_cpindex = 1) 
+(_cpindex = 2) 
+(_cpindex = 3) 
+...
+
+r#2               = (_cpindex = 1)..(_cpindex = 2)
+r == subr         = false
+r != subr         = true
+r[subr]           = (_cpindex = 3)..(_cpindex = 6)
+r[subr] == subr[r]= true
+Copying...        = (_cpindex = 1)..
+
+high bounded codepoint range
+------------
+..(_cpindex = 10)
+idxType          = codePointIndex
+stridable        = false
+boundedType      = boundedHigh
+isRangeType()    = true
+isBoundedRange() = false
+hasLowBound()    = false
+hasHighBound()   = true
+stride           = 1
+alignment        = (_cpindex = 0)
+aligned          = false
+first            = (_cpindex = 1)
+last             = (_cpindex = 10)
+low              = (_cpindex = 1)
+high             = (_cpindex = 10)
+alignedLow       = (_cpindex = 1)
+alignedHigh      = (_cpindex = 10)
+isEmpty()        = false
+hasFirst()       = false
+hasLast()        = true
+isNat.Algned()   = false
+isAmbiguous      = false
+member((_cpindex = 4)) = true
+member((_cpindex = 3)..(_cpindex = 6)) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck((_cpindex = 4)) = true
+boundsCheck((_cpindex = 3)..(_cpindex = 6)) = true
+indexOrder((_cpindex = 4)) = -1
+translate(2)     = ..(_cpindex = 12)
+translate(-2)    = ..(_cpindex = 8)
+serial iteration = 
+<can't be done>
+
+r#-2              = (_cpindex = 9)..(_cpindex = 10)
+r == subr         = false
+r != subr         = true
+r[subr]           = (_cpindex = 3)..(_cpindex = 6)
+r[subr] == subr[r]= true
+Copying...        = ..(_cpindex = 10)
+
