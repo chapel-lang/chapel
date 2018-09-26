@@ -25,6 +25,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "ForallStmt.h"
 #include "loopDetails.h"
 #include "UnmanagedClassType.h"
 #include "stlUtil.h"
@@ -386,6 +387,230 @@ static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
   return true;
 }
 
+static void checkCall(
+    FnSymbol* fn,
+    BasicBlock* bb,
+    CallExpr* call,
+    const std::vector<Symbol*> symbols,
+    AliasMap& OUT,
+    bool raiseErrors,
+    bool & storeToUnknown,
+    bool & storeToGlobals) {
+
+  Symbol* lhsSym = NULL;
+  Expr* rhsExpr = NULL;
+
+  bool moveLike = false;
+  bool assign = false;
+  CallExpr* userCall = NULL;
+  SymExpr* initSe = NULL;
+  CallExpr* initCall = NULL;
+
+  // set moveLike and userCall
+  if (call->isPrimitive(PRIM_MOVE) ||
+      call->isPrimitive(PRIM_ASSIGN)) {
+    initSe = toSymExpr(call->get(1));
+    lhsSym = initSe->symbol();
+    rhsExpr = call->get(2);
+    moveLike = true;
+    userCall = toCallExpr(rhsExpr);
+  } else if (call->isNamedAstr(astrSequals)) {
+    initSe = toSymExpr(call->get(1));
+    lhsSym = initSe->symbol();
+    rhsExpr = call->get(2);
+    moveLike = true;
+    assign = true;
+    userCall = call;
+  } else if (isRecordInitOrReturn(call, initSe, initCall)) {
+    lhsSym = initSe->symbol();
+    rhsExpr = initCall;
+    moveLike = true;
+    userCall = call;
+  } else {
+    userCall = call;
+  }
+
+  FnSymbol* userCalledFn = NULL;
+  if (userCall) {
+    userCalledFn = userCall->resolvedOrVirtualFunction();
+  }
+
+  bool ignoreGlobalUpdates = false;
+
+  // raise errors if the call is problematic somehow
+  if (userCall && raiseErrors) {
+    checkForNilDereferencesInCall(userCall, OUT);
+  }
+
+  if (moveLike) {
+    // lhsSym and rhsExpr set above
+
+    if (lhsSym->isRef()) {
+      // move-ish, but lhs is a ref
+
+      if (assign && isClassIshType(lhsSym)) {
+        // e.g. owned = nil
+        SymExpr* se = toSymExpr(call->get(2));
+        Symbol* rhsSym = se->symbol();
+        Symbol* referent = getReferent(lhsSym, OUT);
+        if (referent)
+          OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT);
+        else if (lhsSym->hasFlag(FLAG_RETARG) == false)
+          storeToUnknown = true;
+
+      } else if (userCalledFn != NULL) {
+        // e.g.
+        //   ref r = returnsRefArg(x);
+        // We can't say what 'r' refers to without analyzing that fn
+        //   - it could refer to a global
+        //   - it could refer to a by-ref argument
+        //   - it could refer to a field in a heap-allocated class
+
+        // This could be another class, ref-to-unknown, if it helps
+        OUT[lhsSym] = unknownAliasLocation();
+      } else {
+        if (userCall == NULL) {
+          // Acts like a move
+          SymExpr* se = toSymExpr(call->get(2));
+          Symbol* rhsSym = se->symbol();
+          if (call->isPrimitive(PRIM_MOVE)) {
+            OUT[lhsSym] = OUT[rhsSym];
+          } else {
+            Symbol* referent = getReferent(lhsSym, OUT);
+            if (referent)
+              OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT);
+            else if (lhsSym->hasFlag(FLAG_RETARG) == false)
+              storeToUnknown = true;
+          }
+        } else {
+          if (userCall->isPrimitive(PRIM_ADDR_OF) ||
+              userCall->isPrimitive(PRIM_SET_REFERENCE)) {
+            SymExpr* se = toSymExpr(userCall->get(1));
+            Symbol* rhs = se->symbol();
+            if (rhs->isRef())
+              // if rhs is a ref, just propagate any MUST_ALIAS_REFVAR
+              OUT[lhsSym] = OUT[rhs];
+            else
+              // otherwise, make a new MUST_ALIAS_REFVAR
+              OUT[lhsSym] = refAliasLocation(se->symbol());
+          } else {
+            OUT[lhsSym] = unknownAliasLocation();
+          }
+        }
+      }
+
+    } else {
+      // move-ish, LHS is not a ref
+
+      // handle certain cases for PRIM_MOVE that we understand
+      if (rhsExpr->typeInfo() == dtNil) {
+        OUT[lhsSym] = nilAliasLocation();
+
+      } else if (SymExpr* se = toSymExpr(rhsExpr)) {
+        OUT[lhsSym] = aliasLocationCopyValueFrom(se->symbol(), OUT);
+
+      } else if (userCalledFn != NULL) {
+
+        if (isClassIshType(lhsSym)) {
+          // defaultOf for classes results in nil
+          if (userCalledFn->name == astr_defaultOf) {
+            OUT[lhsSym] = nilAliasLocation();
+            ignoreGlobalUpdates = true;
+
+          // new for classes is allocation
+          // ( TODO: fix below for new owned(someClassInstance) )
+          } else if (userCalledFn->name == astrNew) {
+            OUT[lhsSym] = allocatedAliasLocation(userCall);
+            ignoreGlobalUpdates = true;
+
+          // for copy-init or borrow, lhs tracks rhs
+          // for owned, initCopy might invalidate RHS; handled below
+          } else if (userCalledFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                     userCalledFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                     0 == strcmp(userCalledFn->name, "borrow")) {
+            OUT[lhsSym] =
+              aliasLocationCopyValueFrom(
+                  toSymExpr(userCall->get(1))->symbol(), OUT);
+            ignoreGlobalUpdates = true;
+          } else {
+            Expr* nilFromActual = NULL;
+            for_formals_actuals(formal, actual, userCall) {
+              if (formal->hasFlag(FLAG_NIL_FROM_ARG)) {
+                nilFromActual = actual;
+              }
+            }
+            if (nilFromActual != NULL) {
+              SymExpr* actualSe = toSymExpr(nilFromActual);
+              Symbol* actualSym = actualSe->symbol();
+              OUT[lhsSym] = aliasLocationCopyValueFrom(actualSym, OUT);
+              ignoreGlobalUpdates = true;
+            }
+          }
+
+        } else {
+          OUT[lhsSym] = unknownAliasLocation();
+        }
+
+      } else {
+        // userCalledFn == NULL
+        // handle primitives
+
+        if (userCall->isPrimitive(PRIM_DEREF))
+          OUT[lhsSym] = aliasLocationCopyValueFrom(
+                              toSymExpr(userCall->get(1))->symbol(),
+                              OUT);
+
+        else if (userCall->isPrimitive(PRIM_CAST) &&
+                 isClassIshType(lhsSym))
+          OUT[lhsSym] = aliasLocationCopyValueFrom(
+                              toSymExpr(userCall->get(2))->symbol(),
+                              OUT);
+        else
+          OUT[lhsSym] = unknownAliasLocation();
+
+      }
+    }
+  }
+
+  // Handle FLAG_LEAVES_ARG_NIL, ref arguments
+  if (userCalledFn != NULL) {
+
+    // any global variables could possibly be set
+    // by the function call
+    if (ignoreGlobalUpdates == false)
+      storeToGlobals = true;
+
+    for_formals_actuals(formal, actual, userCall) {
+      if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
+        Symbol* actualSym = toSymExpr(actual)->symbol();
+        if (actualSym->isRef()) {
+          Symbol* referent = getReferent(actualSym, OUT);
+          if (referent)
+            OUT[referent] = nilAliasLocation();
+        } else {
+          OUT[actualSym] = nilAliasLocation();
+        }
+
+      } else if (formal->intent == INTENT_REF &&
+                 /* ignoring functions returning record by ref */
+                 actual != initSe) {
+        // It could set the actual
+        Symbol* actualSym = toSymExpr(actual)->symbol();
+        if (actualSym->isRef()) {
+          Symbol* referent = getReferent(actualSym, OUT);
+          if (referent)
+            OUT[referent] = unknownAliasLocation();
+          else if (actualSym->hasFlag(FLAG_RETARG) == false)
+            storeToUnknown = true;
+
+        } else {
+          OUT[actualSym] = unknownAliasLocation();
+        }
+      }
+    }
+  }
+}
+
 static void checkBasicBlock(
     FnSymbol* fn,
     BasicBlock* bb,
@@ -417,223 +642,22 @@ static void checkBasicBlock(
     if (expr->id == debugNilsForId)
       gdbShouldBreakHere();
 
-    CallExpr* userCall = NULL;
-    SymExpr* initSe = NULL;
-
     if (isDefExpr(expr)) {
       // Ignore DefExprs
       // instead, find the defaultOf or whatever initializes them.
+    } else if (ForallStmt* forall = toForallStmt(expr)) {
+
+      for_alist(expr, forall->iteratedExpressions()) {
+        if (CallExpr* call = toCallExpr(expr)) {
+          checkCall(fn, bb, call, symbols, OUT, raiseErrors,
+                    storeToUnknown, storeToGlobals);
+        }
+      }
+
     } else if (CallExpr* call = toCallExpr(expr)) {
-      Symbol* lhsSym = NULL;
-      Expr* rhsExpr = NULL;
+      checkCall(fn, bb, call, symbols, OUT, raiseErrors,
+                storeToUnknown, storeToGlobals);
 
-      bool moveLike = false;
-      bool assign = false;
-      CallExpr* initCall = NULL;
-
-      // set moveLike and userCall
-      if (call->isPrimitive(PRIM_MOVE) ||
-          call->isPrimitive(PRIM_ASSIGN)) {
-        initSe = toSymExpr(call->get(1));
-        lhsSym = initSe->symbol();
-        rhsExpr = call->get(2);
-        moveLike = true;
-        userCall = toCallExpr(rhsExpr);
-      } else if (call->isNamedAstr(astrSequals)) {
-        initSe = toSymExpr(call->get(1));
-        lhsSym = initSe->symbol();
-        rhsExpr = call->get(2);
-        moveLike = true;
-        assign = true;
-        userCall = call;
-      } else if (isRecordInitOrReturn(call, initSe, initCall)) {
-        lhsSym = initSe->symbol();
-        rhsExpr = initCall;
-        moveLike = true;
-        userCall = call;
-      } else {
-        userCall = call;
-      }
-
-      FnSymbol* userCalledFn = NULL;
-      if (userCall) {
-        userCalledFn = userCall->resolvedOrVirtualFunction();
-      }
-
-      bool ignoreGlobalUpdates = false;
-
-      // raise errors if the call is problematic somehow
-      if (userCall && raiseErrors) {
-        checkForNilDereferencesInCall(userCall, OUT);
-      }
-
-      if (moveLike) {
-        // lhsSym and rhsExpr set above
-
-        if (lhsSym->isRef()) {
-          // move-ish, but lhs is a ref
-
-          if (assign && isClassIshType(lhsSym)) {
-            // e.g. owned = nil
-            SymExpr* se = toSymExpr(call->get(2));
-            Symbol* rhsSym = se->symbol();
-            Symbol* referent = getReferent(lhsSym, OUT);
-            if (referent)
-              OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT);
-            else if (lhsSym->hasFlag(FLAG_RETARG) == false)
-              storeToUnknown = true;
-
-          } else if (userCalledFn != NULL) {
-            // e.g.
-            //   ref r = returnsRefArg(x);
-            // We can't say what 'r' refers to without analyzing that fn
-            //   - it could refer to a global
-            //   - it could refer to a by-ref argument
-            //   - it could refer to a field in a heap-allocated class
-
-            // This could be another class, ref-to-unknown, if it helps
-            OUT[lhsSym] = unknownAliasLocation();
-          } else {
-            if (userCall == NULL) {
-              // Acts like a move
-              SymExpr* se = toSymExpr(call->get(2));
-              Symbol* rhsSym = se->symbol();
-              if (call->isPrimitive(PRIM_MOVE)) {
-                OUT[lhsSym] = OUT[rhsSym];
-              } else {
-                Symbol* referent = getReferent(lhsSym, OUT);
-                if (referent)
-                  OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT);
-                else if (lhsSym->hasFlag(FLAG_RETARG) == false)
-                  storeToUnknown = true;
-              }
-            } else {
-              if (userCall->isPrimitive(PRIM_ADDR_OF) ||
-                  userCall->isPrimitive(PRIM_SET_REFERENCE)) {
-                SymExpr* se = toSymExpr(userCall->get(1));
-                Symbol* rhs = se->symbol();
-                if (rhs->isRef())
-                  // if rhs is a ref, just propagate any MUST_ALIAS_REFVAR
-                  OUT[lhsSym] = OUT[rhs];
-                else
-                  // otherwise, make a new MUST_ALIAS_REFVAR
-                  OUT[lhsSym] = refAliasLocation(se->symbol());
-              } else {
-                OUT[lhsSym] = unknownAliasLocation();
-              }
-            }
-          }
-
-        } else {
-          // move-ish, LHS is not a ref
-
-          // handle certain cases for PRIM_MOVE that we understand
-          if (rhsExpr->typeInfo() == dtNil) {
-            OUT[lhsSym] = nilAliasLocation();
-
-          } else if (SymExpr* se = toSymExpr(rhsExpr)) {
-            OUT[lhsSym] = aliasLocationCopyValueFrom(se->symbol(), OUT);
-
-          } else if (userCalledFn != NULL) {
-
-            if (isClassIshType(lhsSym)) {
-              // defaultOf for classes results in nil
-              if (userCalledFn->name == astr_defaultOf) {
-                OUT[lhsSym] = nilAliasLocation();
-                ignoreGlobalUpdates = true;
-
-              // new for classes is allocation
-              // ( TODO: fix below for new owned(someClassInstance) )
-              } else if (userCalledFn->name == astrNew) {
-                OUT[lhsSym] = allocatedAliasLocation(userCall);
-                ignoreGlobalUpdates = true;
-
-              // for copy-init or borrow, lhs tracks rhs
-              // for owned, initCopy might invalidate RHS; handled below
-              } else if (userCalledFn->hasFlag(FLAG_INIT_COPY_FN) ||
-                         userCalledFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                         0 == strcmp(userCalledFn->name, "borrow")) {
-                OUT[lhsSym] =
-                  aliasLocationCopyValueFrom(
-                      toSymExpr(userCall->get(1))->symbol(), OUT);
-                ignoreGlobalUpdates = true;
-              } else {
-                Expr* nilFromActual = NULL;
-                for_formals_actuals(formal, actual, userCall) {
-                  if (formal->hasFlag(FLAG_NIL_FROM_ARG)) {
-                    nilFromActual = actual;
-                  }
-                }
-                if (nilFromActual != NULL) {
-                  SymExpr* actualSe = toSymExpr(nilFromActual);
-                  Symbol* actualSym = actualSe->symbol();
-                  OUT[lhsSym] = aliasLocationCopyValueFrom(actualSym, OUT);
-                  ignoreGlobalUpdates = true;
-                }
-              }
-
-            } else {
-              OUT[lhsSym] = unknownAliasLocation();
-            }
-
-          } else {
-            // userCalledFn == NULL
-            // handle primitives
-
-            if (userCall->isPrimitive(PRIM_DEREF))
-              OUT[lhsSym] = aliasLocationCopyValueFrom(
-                                  toSymExpr(userCall->get(1))->symbol(),
-                                  OUT);
-
-            else if (userCall->isPrimitive(PRIM_CAST) &&
-                     isClassIshType(lhsSym))
-              OUT[lhsSym] = aliasLocationCopyValueFrom(
-                                  toSymExpr(userCall->get(2))->symbol(),
-                                  OUT);
-            else
-              OUT[lhsSym] = unknownAliasLocation();
-
-          }
-        }
-      }
-
-      // Handle FLAG_LEAVES_ARG_NIL, ref arguments
-      if (userCalledFn != NULL) {
-
-        // any global variables could possibly be set
-        // by the function call
-        if (ignoreGlobalUpdates == false)
-          storeToGlobals = true;
-
-        for_formals_actuals(formal, actual, userCall) {
-          if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
-            Symbol* actualSym = toSymExpr(actual)->symbol();
-            if (actualSym->isRef()) {
-              Symbol* referent = getReferent(actualSym, OUT);
-              if (referent)
-                OUT[referent] = nilAliasLocation();
-            } else {
-              OUT[actualSym] = nilAliasLocation();
-            }
-
-          } else if (formal->intent == INTENT_REF &&
-                     /* ignoring functions returning record by ref */
-                     actual != initSe) {
-            // It could set the actual
-            Symbol* actualSym = toSymExpr(actual)->symbol();
-            if (actualSym->isRef()) {
-              Symbol* referent = getReferent(actualSym, OUT);
-              if (referent)
-                OUT[referent] = unknownAliasLocation();
-              else if (actualSym->hasFlag(FLAG_RETARG) == false)
-                storeToUnknown = true;
-
-            } else {
-              OUT[actualSym] = unknownAliasLocation();
-            }
-          }
-        }
-      }
     }
 
     // Handle storeToUnknown, storeToGlobals
