@@ -1990,12 +1990,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
 
 pragma "no doc"
 proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
-  // Note that once issue #7960 is resolved, the following could become a
-  // call to this.init(writing, kind, locking)...
-  this.writing = writing;
-  this.kind = kind;
-  this.locking = locking;
-  this.complete();
+  this.init(writing, kind, locking);
   on f.home {
     this.home = f.home;
     if kind != iokind.dynamic {
