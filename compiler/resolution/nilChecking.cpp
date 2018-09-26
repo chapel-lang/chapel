@@ -48,10 +48,12 @@ static const int debugNilsForId = 0;
  */
 
 typedef enum {
+  // Note - the order of these matters for the
+  // part of the algorithm ensuring convergence by
+  // only accepting changes that increase.
+
   MUST_ALIAS_IGNORED = 0, // no information; useful starting point.
                           // ignored when combining basic blocks
-
-  MUST_ALIAS_NIL,         // it refers to nil
 
   MUST_ALIAS_UNKNOWN,     // might have been set, might point to nil
                           // who knows what it points to
@@ -59,6 +61,8 @@ typedef enum {
   MUST_ALIAS_ALLOCATED,   // refers to the statement allocating (aka 'new')
 
   MUST_ALIAS_REFVAR,      // reference refers to a particular variable
+
+  MUST_ALIAS_NIL,         // it refers to nil
 
   //MUST_ALIAS_COPYVAR,     // refers to the same memory as a particular variable
 } AliasType;
@@ -247,6 +251,51 @@ static void checkForNilDereferencesInCall(
   }
 }
 
+static void printAliasEntry(const char* prefix, Symbol* sym, AliasLocation loc)
+{
+  switch (loc.type) {
+    case MUST_ALIAS_IGNORED:
+      // print nothing
+      break;
+    case MUST_ALIAS_NIL:
+      printf("%s nil: %i %s", prefix, sym->id, sym->name);
+      break;
+    case MUST_ALIAS_UNKNOWN:
+      printf("%s unk: %i %s", prefix, sym->id, sym->name);
+      break;
+    case MUST_ALIAS_ALLOCATED:
+      printf("%s new: %i %s",
+             prefix, sym->id, sym->name);
+      break;
+    case MUST_ALIAS_REFVAR:
+      printf("%s ref: %i %s",
+             prefix, sym->id, sym->name);
+      break;
+    /*
+    case MUST_ALIAS_COPYVAR:
+      printf("%s cpy: %i %s ", prefix, sym->id, sym->name);
+      nprint_view(loc.location);
+      break;
+     */
+    // no default -> get warning if more are added
+  }
+
+  if (loc.location) {
+    int id = loc.location->id;
+    if (Symbol* toSym = toSymbol(loc.location)) {
+      printf(" -> sym %i %s", id, toSym->name);
+    } else if (CallExpr* call = toCallExpr(loc.location)) {
+      const char* fnName = "primitive";
+      if (FnSymbol* calledFn = call->resolvedOrVirtualFunction())
+        fnName = calledFn->name;
+      printf(" -> call %i to %s", id, fnName);
+    } else {
+      printf(" -> unknown %i", id);
+    }
+  }
+  printf("\n");
+}
+
 static void printAliasMap(const char* prefix,
                           const AliasMap& OUT,
                           const AliasMap* OnlyDifferencesFrom = NULL)
@@ -268,47 +317,7 @@ static void printAliasMap(const char* prefix,
       }
     }
 
-    switch (loc.type) {
-      case MUST_ALIAS_IGNORED:
-        // print nothing
-        break;
-      case MUST_ALIAS_NIL:
-        printf("%s nil: %i %s", prefix, sym->id, sym->name);
-        break;
-      case MUST_ALIAS_UNKNOWN:
-        printf("%s unk: %i %s", prefix, sym->id, sym->name);
-        break;
-      case MUST_ALIAS_ALLOCATED:
-        printf("%s new: %i %s",
-               prefix, sym->id, sym->name);
-        break;
-      case MUST_ALIAS_REFVAR:
-        printf("%s ref: %i %s",
-               prefix, sym->id, sym->name);
-        break;
-      /*
-      case MUST_ALIAS_COPYVAR:
-        printf("%s cpy: %i %s ", prefix, sym->id, sym->name);
-        nprint_view(loc.location);
-        break;
-       */
-      // no default -> get warning if more are added
-    }
-
-    if (loc.location) {
-      int id = loc.location->id;
-      if (Symbol* sym = toSymbol(loc.location)) {
-        printf(" -> sym %i %s", id, sym->name);
-      } else if (CallExpr* call = toCallExpr(loc.location)) {
-        const char* fnName = "primitive";
-        if (FnSymbol* calledFn = call->resolvedOrVirtualFunction())
-          fnName = calledFn->name;
-        printf(" -> call %i to %s", id, fnName);
-      } else {
-        printf(" -> unknown %i", id);
-      }
-    }
-    printf("\n");
+    printAliasEntry(prefix, sym, loc);
   }
 }
 
@@ -416,7 +425,7 @@ static void checkBasicBlock(
       bool moveLike = false;
       bool assign = false;
       CallExpr* initCall = NULL;
-      
+
       // set moveLike and userCall
       if (call->isPrimitive(PRIM_MOVE) ||
           call->isPrimitive(PRIM_ASSIGN)) {
@@ -466,7 +475,7 @@ static void checkBasicBlock(
             Symbol* referent = getReferent(lhsSym, OUT);
             if (referent)
               OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT);
-            else
+            else if (lhsSym->hasFlag(FLAG_RETARG) == false)
               storeToUnknown = true;
 
           } else if (userCalledFn != NULL) {
@@ -490,7 +499,7 @@ static void checkBasicBlock(
                 Symbol* referent = getReferent(lhsSym, OUT);
                 if (referent)
                   OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT);
-                else
+                else if (lhsSym->hasFlag(FLAG_RETARG) == false)
                   storeToUnknown = true;
               }
             } else {
@@ -611,7 +620,7 @@ static void checkBasicBlock(
               Symbol* referent = getReferent(actualSym, OUT);
               if (referent)
                 OUT[referent] = unknownAliasLocation();
-              else
+              else if (actualSym->hasFlag(FLAG_RETARG) == false)
                 storeToUnknown = true;
 
             } else {
@@ -623,6 +632,7 @@ static void checkBasicBlock(
     }
 
     // Handle storeToUnknown, storeToGlobals
+    // TODO: storeToUnknown should work with types
     if (storeToGlobals || storeToUnknown) {
       for_vector(Symbol, sym, symbols) {
         if (sym->isConstValWillNotChange() == false) {
@@ -691,6 +701,9 @@ void findNilDereferences(FnSymbol* fn) {
     changed = false;
 
     for (size_t i = 0; i < nbbs; i++) {
+      if (debugging) {
+        printf("running checkBasicBlock on bb %i\n", (int)i);
+      }
       checkBasicBlock(fn, (*fn->basicBlocks)[i], idxToSym, IN[i], OUT[i],
                       /*raise errors?*/ false);
     }
@@ -726,16 +739,33 @@ void findNilDereferences(FnSymbol* fn) {
         }
       }
 
-      // Now check if nextIn is different from IN
-      // if it is, re-run the analysis
-      if (nextIn != IN[i]) {
-        if (debugging) {
-          printAliasMap("out->in", nextIn, &IN[i]);
+      // Now, propagate changes from nextIn to IN[i]
+      // To ensure the algorithm converges, we do this
+      // in a way that makes sure AliasLocations for
+      // a given value are monotonically increasing.
+      AliasMap& to = IN[i];
+      for (AliasMap::const_iterator it = nextIn.begin();
+           it != nextIn.end();
+           ++it) {
+        Symbol* sym = it->first;
+        AliasLocation loc = it->second;
+
+        // might default-initialize it with MUST_ALIAS_IGNORED
+        AliasLocation &dst = to[sym];
+
+        if (dst.type < loc.type) {
+          if (debugging) {
+            printAliasEntry("in was", sym, dst);
+            printAliasEntry("in now", sym, loc);
+          }
+          dst = loc;
+          changed = true;
         }
-        changed = true;
-        IN[i] = nextIn;
       }
     }
+
+    // TODO: only need to revisit basic blocks that
+    // had their IN change
   } while (changed);
 
   for (size_t i = 0; i < nbbs; i++) {
