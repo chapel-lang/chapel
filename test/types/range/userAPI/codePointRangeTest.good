@@ -52,7 +52,7 @@ r[subr]           = (_cpindex = 3)..(_cpindex = 6)
 r[subr] == subr[r]= true
 Copying...        = (_cpindex = 1)..(_cpindex = 10)
 
-codepoint range
+strided codepoint range
 ------------
 (_cpindex = 1)..(_cpindex = 20) by 2
 idxType          = codePointIndex
