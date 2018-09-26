@@ -162,11 +162,25 @@ log_info "Creating CHPL_RPM='$CHPL_RPM'"
 rm -rf "$CHPL_RPM"
 mkdir "$CHPL_RPM"
 
-# Generate draft/placeholder release_info file, w versions
 
-log_debug "Generate release_info ..."
-$cwd/generate-dev-releaseinfo.bash > "$CHPL_RPM/release_info"
-chmod 644 "$CHPL_RPM/release_info"
+if [ "$release_type" = release ]; then
+
+    log_debug "Using existing release_info file in CHPL_HOME"
+
+    if [ ! -f "$CHPL_HOME/release_info" ]; then
+        log_error "Expected release_info file not found in CHPL_HOME='$CHPL_HOME'"
+        exit 2
+    fi
+    cat "$CHPL_HOME/release_info" > "$CHPL_RPM/release_info"
+    rm -f "$CHPL_HOME/release_info"
+    chmod 644 "$CHPL_RPM/release_info"
+else
+
+    log_debug "Generate draft/placeholder release_info ..."
+
+    $cwd/generate-dev-releaseinfo.bash > "$CHPL_RPM/release_info"
+    chmod 644 "$CHPL_RPM/release_info"
+fi
 
 # Generate modulefile, w versions
 
