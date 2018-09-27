@@ -39,14 +39,14 @@
 #include "comm-ofi-internal.h"
 
 
-#define PMI_CHK_SUCCESS(expr) CHK_EQ(expr, PMI_SUCCESS)
+#define PMI_CHK(expr) CHK_EQ_TYPED(expr, PMI_SUCCESS, int, "d")
 
 
 void chpl_comm_ofi_oob_init(void) {
   int spawned, size, rank, appnum;
 
   if (PMI2_Initialized() != PMI_TRUE) {
-    PMI_CHK_SUCCESS(PMI2_Init(&spawned, &size, &rank, &appnum));
+    PMI_CHK(PMI2_Init(&spawned, &size, &rank, &appnum));
     assert(spawned == 0);
     chpl_nodeID = (int32_t) rank;
     chpl_numNodes = (int32_t) size;
@@ -56,16 +56,16 @@ void chpl_comm_ofi_oob_init(void) {
 
 void chpl_comm_ofi_oob_fini(void) {
   if (PMI2_Initialized() == PMI_TRUE) {
-    PMI_CHK_SUCCESS(PMI2_Finalize());
+    PMI_CHK(PMI2_Finalize());
   }
 }
 
 
 void chpl_comm_ofi_oob_barrier(void) {
-  PMI_CHK_SUCCESS(PMI_Barrier());
+  PMI_CHK(PMI_Barrier());
 }
 
 
 void chpl_comm_ofi_oob_allgather(void* in, void* out, int len) {
-  PMI_CHK_SUCCESS(PMI_Allgather(in, out, len));
+  PMI_CHK(PMI_Allgather(in, out, len));
 }

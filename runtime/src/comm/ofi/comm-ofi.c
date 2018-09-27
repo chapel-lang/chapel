@@ -103,15 +103,17 @@ static struct ofi_stuff ofi;
 // Error checking
 //
 
-#define OFI_CHK(ofiCall, wantVal)                                       \
+#define OFI_CHK_VAL(expr, wantVal)                                      \
     do {                                                                \
-      int _rc = (ofiCall);                                              \
+      int _rc = (expr);                                                 \
       if (_rc != wantVal) {                                             \
-        chpl_internal_error_v("%s: %s", #ofiCall, fi_strerror(- _rc));  \
+        chpl_internal_error_v("%s: %s", #expr, fi_strerror(- _rc));     \
       }                                                                 \
     } while (0)
 
-#define OFI_CHK_SUCCESS(ofiCall) OFI_CHK(ofiCall, FI_SUCCESS)
+#define OFI_CHK(expr) OFI_CHK_VAL(expr, FI_SUCCESS)
+
+#define PTHREAD_CHK(expr) CHK_EQ_TYPED(expr, 0, int, "d")
 
 
 ////////////////////////////////////////
@@ -216,7 +218,7 @@ static void libfabric_init() {
   hints->tx_attr->op_flags = FI_COMPLETION;
   hints->rx_attr->op_flags = FI_COMPLETION;
 
-  OFI_CHK_SUCCESS(fi_getinfo(FI_VERSION(1,0), NULL, NULL, 0, hints, &info));
+  OFI_CHK(fi_getinfo(FI_VERSION(1,0), NULL, NULL, 0, hints, &info));
 
   if (info == NULL) {
     chpl_internal_error("No fabrics detected.");
@@ -245,18 +247,18 @@ static void libfabric_init() {
   info->ep_attr->tx_ctx_cnt = ofi.num_tx_ctx + ofi.num_am_ctx;
   info->ep_attr->rx_ctx_cnt = ofi.num_rx_ctx + ofi.num_am_ctx;
 
-  OFI_CHK_SUCCESS(fi_fabric(info->fabric_attr, &ofi.fabric, NULL));
-  OFI_CHK_SUCCESS(fi_domain(ofi.fabric, info, &ofi.domain, NULL));
+  OFI_CHK(fi_fabric(info->fabric_attr, &ofi.fabric, NULL));
+  OFI_CHK(fi_domain(ofi.fabric, info, &ofi.domain, NULL));
 
   rx_ctx_cnt = ofi.num_rx_ctx + ofi.num_am_ctx;
   while (rx_ctx_cnt >> ++rx_ctx_bits);
   av_attr.rx_ctx_bits = rx_ctx_bits;
   av_attr.type = FI_AV_TABLE;
   av_attr.count = chpl_numNodes;
-  OFI_CHK_SUCCESS(fi_av_open(ofi.domain, &av_attr, &ofi.av, NULL));
+  OFI_CHK(fi_av_open(ofi.domain, &av_attr, &ofi.av, NULL));
 
-  OFI_CHK_SUCCESS(fi_scalable_ep(ofi.domain, info, &ofi.ep, NULL));
-  OFI_CHK_SUCCESS(fi_scalable_ep_bind(ofi.ep, &ofi.av->fid, 0));
+  OFI_CHK(fi_scalable_ep(ofi.domain, info, &ofi.ep, NULL));
+  OFI_CHK(fi_scalable_ep_bind(ofi.ep, &ofi.av->fid, 0));
 
   /* set up tx and rx contexts */
   cq_attr.format = FI_CQ_FORMAT_CONTEXT;
@@ -271,10 +273,10 @@ static void libfabric_init() {
                                                    CHPL_RT_MD_COMM_PER_LOC_INFO,
                                                    0, 0);
   for (i = 0; i < ofi.num_tx_ctx; i++) {
-    OFI_CHK_SUCCESS(fi_tx_context(ofi.ep, i, NULL, &ofi.tx_ep[i], NULL));
-    OFI_CHK_SUCCESS(fi_cq_open(ofi.domain, &cq_attr, &ofi.tx_cq[i], NULL));
-    OFI_CHK_SUCCESS(fi_ep_bind(ofi.tx_ep[i], &ofi.tx_cq[i]->fid, FI_TRANSMIT));
-    OFI_CHK_SUCCESS(fi_enable(ofi.tx_ep[i]));
+    OFI_CHK(fi_tx_context(ofi.ep, i, NULL, &ofi.tx_ep[i], NULL));
+    OFI_CHK(fi_cq_open(ofi.domain, &cq_attr, &ofi.tx_cq[i], NULL));
+    OFI_CHK(fi_ep_bind(ofi.tx_ep[i], &ofi.tx_cq[i]->fid, FI_TRANSMIT));
+    OFI_CHK(fi_enable(ofi.tx_ep[i]));
   }
 
   ofi.rx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_rx_ctx,
@@ -286,10 +288,10 @@ static void libfabric_init() {
                                                    CHPL_RT_MD_COMM_PER_LOC_INFO,
                                                    0, 0);
   for (i = 0; i < ofi.num_rx_ctx; i++) {
-    OFI_CHK_SUCCESS(fi_rx_context(ofi.ep, i, NULL, &ofi.rx_ep[i], NULL));
-    OFI_CHK_SUCCESS(fi_cq_open(ofi.domain, &cq_attr, &ofi.rx_cq[i], NULL));
-    OFI_CHK_SUCCESS(fi_ep_bind(ofi.rx_ep[i], &ofi.rx_cq[i]->fid, FI_RECV));
-    OFI_CHK_SUCCESS(fi_enable(ofi.rx_ep[i]));
+    OFI_CHK(fi_rx_context(ofi.ep, i, NULL, &ofi.rx_ep[i], NULL));
+    OFI_CHK(fi_cq_open(ofi.domain, &cq_attr, &ofi.rx_cq[i], NULL));
+    OFI_CHK(fi_ep_bind(ofi.rx_ep[i], &ofi.rx_cq[i]->fid, FI_RECV));
+    OFI_CHK(fi_enable(ofi.rx_ep[i]));
   }
 
   ofi.am_tx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_am_ctx,
@@ -303,10 +305,11 @@ static void libfabric_init() {
 
   /* set up AM contexts */
   for (i = 0; i < ofi.num_am_ctx; i++) {
-    OFI_CHK_SUCCESS(fi_tx_context(ofi.ep, i+ofi.num_tx_ctx, NULL, &ofi.am_tx_ep[i], NULL));
-    OFI_CHK_SUCCESS(fi_cq_open(ofi.domain, &cq_attr, &ofi.am_tx_cq[i], NULL));
-    OFI_CHK_SUCCESS(fi_ep_bind(ofi.am_tx_ep[i], &ofi.am_tx_cq[i]->fid, FI_TRANSMIT));
-    OFI_CHK_SUCCESS(fi_enable(ofi.am_tx_ep[i]));
+    OFI_CHK(fi_tx_context(ofi.ep, i+ofi.num_tx_ctx, NULL, &ofi.am_tx_ep[i],
+                          NULL));
+    OFI_CHK(fi_cq_open(ofi.domain, &cq_attr, &ofi.am_tx_cq[i], NULL));
+    OFI_CHK(fi_ep_bind(ofi.am_tx_ep[i], &ofi.am_tx_cq[i]->fid, FI_TRANSMIT));
+    OFI_CHK(fi_enable(ofi.am_tx_ep[i]));
   }
 
   ofi.am_rx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_am_ctx,
@@ -318,20 +321,21 @@ static void libfabric_init() {
                                                       CHPL_RT_MD_COMM_PER_LOC_INFO,
                                                       0, 0);
   for (i = 0; i < ofi.num_am_ctx; i++) {
-    OFI_CHK_SUCCESS(fi_rx_context(ofi.ep, i+ofi.num_rx_ctx, NULL, &ofi.am_rx_ep[i], NULL));
-    OFI_CHK_SUCCESS(fi_cq_open(ofi.domain, &cq_attr, &ofi.am_rx_cq[i], NULL));
-    OFI_CHK_SUCCESS(fi_ep_bind(ofi.am_rx_ep[i], &ofi.am_rx_cq[i]->fid, FI_RECV));
-    OFI_CHK_SUCCESS(fi_enable(ofi.am_rx_ep[i]));
+    OFI_CHK(fi_rx_context(ofi.ep, i+ofi.num_rx_ctx, NULL, &ofi.am_rx_ep[i],
+                          NULL));
+    OFI_CHK(fi_cq_open(ofi.domain, &cq_attr, &ofi.am_rx_cq[i], NULL));
+    OFI_CHK(fi_ep_bind(ofi.am_rx_ep[i], &ofi.am_rx_cq[i]->fid, FI_RECV));
+    OFI_CHK(fi_enable(ofi.am_rx_ep[i]));
   }
 
-  OFI_CHK_SUCCESS(fi_enable(ofi.ep));
+  OFI_CHK(fi_enable(ofi.ep));
 
   libfabric_init_addrvec(rx_ctx_cnt, rx_ctx_bits);
 
-  OFI_CHK_SUCCESS(fi_mr_reg(ofi.domain, 0, SIZE_MAX,
-                      FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE |
-                      FI_SEND | FI_RECV, 0,
-                      (uint64_t) chpl_nodeID, 0, &ofi.mr, NULL));
+  OFI_CHK(fi_mr_reg(ofi.domain, 0, SIZE_MAX,
+                    FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE |
+                    FI_SEND | FI_RECV, 0,
+                    (uint64_t) chpl_nodeID, 0, &ofi.mr, NULL));
 
   fi_freeinfo(info);  /* No error returned */
   fi_freeinfo(hints); /* No error returned */
@@ -385,13 +389,13 @@ static void libfabric_init_addrvec(int rx_ctx_cnt, int rx_ctx_bits) {
 
   // Assumes my_addr_len is the same on all nodes
   my_addr_len = 0;
-  OFI_CHK(fi_getname(&ofi.ep->fid, NULL, &my_addr_len), -FI_ETOOSMALL);
+  OFI_CHK_VAL(fi_getname(&ofi.ep->fid, NULL, &my_addr_len), -FI_ETOOSMALL);
   addr_info_len = sizeof(struct gather_info) + my_addr_len;
   my_addr_info = chpl_mem_alloc(addr_info_len,
                                 CHPL_RT_MD_COMM_UTIL,
                                 0, 0);
   my_addr_info->node = chpl_nodeID;
-  OFI_CHK_SUCCESS(fi_getname(&ofi.ep->fid, &my_addr_info->info, &my_addr_len));
+  OFI_CHK(fi_getname(&ofi.ep->fid, &my_addr_info->info, &my_addr_len));
 
   addr_infos = chpl_mem_allocMany(chpl_numNodes, addr_info_len,
                                   CHPL_RT_MD_COMM_PER_LOC_INFO,
@@ -414,8 +418,9 @@ static void libfabric_init_addrvec(int rx_ctx_cnt, int rx_ctx_bits) {
   ofi.fi_addrs = chpl_mem_allocMany(chpl_numNodes, sizeof(ofi.fi_addrs[0]),
                                     CHPL_RT_MD_COMM_PER_LOC_INFO,
                                     0, 0);
-  OFI_CHK(fi_av_insert(ofi.av, addrs, chpl_numNodes, ofi.fi_addrs, 0, NULL),
-          chpl_numNodes);
+  OFI_CHK_VAL(fi_av_insert(ofi.av, addrs, chpl_numNodes, ofi.fi_addrs, 0,
+                           NULL),
+              chpl_numNodes);
 
   ofi.rx_addrs = chpl_mem_allocMany(chpl_numNodes, sizeof(ofi.rx_addrs[0]),
                                     CHPL_RT_MD_COMM_PER_LOC_INFO,
@@ -500,27 +505,27 @@ static void exit_all(int status) {
   int i;
 
   for (i = 0; i < ofi.num_tx_ctx; i++) {
-    OFI_CHK_SUCCESS(fi_close(&ofi.tx_ep[i]->fid));
-    OFI_CHK_SUCCESS(fi_close(&ofi.tx_cq[i]->fid));
+    OFI_CHK(fi_close(&ofi.tx_ep[i]->fid));
+    OFI_CHK(fi_close(&ofi.tx_cq[i]->fid));
   }
 
   for (i = 0; i < ofi.num_rx_ctx; i++) {
-    OFI_CHK_SUCCESS(fi_close(&ofi.rx_ep[i]->fid));
-    OFI_CHK_SUCCESS(fi_close(&ofi.rx_cq[i]->fid));
+    OFI_CHK(fi_close(&ofi.rx_ep[i]->fid));
+    OFI_CHK(fi_close(&ofi.rx_cq[i]->fid));
   }
 
   for (i = 0; i < ofi.num_am_ctx; i++) {
-    OFI_CHK_SUCCESS(fi_close(&ofi.am_tx_ep[i]->fid));
-    OFI_CHK_SUCCESS(fi_close(&ofi.am_tx_cq[i]->fid));
-    OFI_CHK_SUCCESS(fi_close(&ofi.am_rx_ep[i]->fid));
-    OFI_CHK_SUCCESS(fi_close(&ofi.am_rx_cq[i]->fid));
+    OFI_CHK(fi_close(&ofi.am_tx_ep[i]->fid));
+    OFI_CHK(fi_close(&ofi.am_tx_cq[i]->fid));
+    OFI_CHK(fi_close(&ofi.am_rx_ep[i]->fid));
+    OFI_CHK(fi_close(&ofi.am_rx_cq[i]->fid));
   }
 
-  OFI_CHK_SUCCESS(fi_close(&ofi.ep->fid));
-  OFI_CHK_SUCCESS(fi_close(&ofi.av->fid));
-  OFI_CHK_SUCCESS(fi_close(&ofi.mr->fid));
-  OFI_CHK_SUCCESS(fi_close(&ofi.domain->fid));
-  OFI_CHK_SUCCESS(fi_close(&ofi.fabric->fid));
+  OFI_CHK(fi_close(&ofi.ep->fid));
+  OFI_CHK(fi_close(&ofi.av->fid));
+  OFI_CHK(fi_close(&ofi.mr->fid));
+  OFI_CHK(fi_close(&ofi.domain->fid));
+  OFI_CHK(fi_close(&ofi.fabric->fid));
 
   chpl_mem_free(ofi.fi_addrs, 0, 0);
   for (i = 0; i < chpl_numNodes; i++) {
@@ -589,7 +594,7 @@ void init_am(void) {
   if (num_progress_threads > 0) {
     // Start progress thread(s).  Don't proceed from here until at
     // least one is running.
-    CHK_EQ_0(pthread_mutex_lock(&progress_startStop_mutex));
+    PTHREAD_CHK(pthread_mutex_lock(&progress_startStop_mutex));
 
     for (int i = 0; i < num_progress_threads; i++) {
       pti[i].id = i;
@@ -599,9 +604,9 @@ void init_am(void) {
     }
 
     // Some progress thread we created will release us.
-    CHK_EQ_0(pthread_cond_wait(&progress_startStop_cond,
-                               &progress_startStop_mutex));
-    CHK_EQ_0(pthread_mutex_unlock(&progress_startStop_mutex));
+    PTHREAD_CHK(pthread_cond_wait(&progress_startStop_cond,
+                                  &progress_startStop_mutex));
+    PTHREAD_CHK(pthread_mutex_unlock(&progress_startStop_mutex));
   }
 }
 
@@ -611,11 +616,11 @@ void shutdown_am(void) {
   // Tear down the progress thread(s).  On node 0, don't proceed from
   // here until the last one has finished (TODO).
   //
-  CHK_EQ_0(pthread_mutex_lock(&progress_startStop_mutex));
+  PTHREAD_CHK(pthread_mutex_lock(&progress_startStop_mutex));
   atomic_store_bool(&progress_threads_please_exit, true);
-  CHK_EQ_0(pthread_cond_wait(&progress_startStop_cond,
-                             &progress_startStop_mutex));
-  CHK_EQ_0(pthread_mutex_unlock(&progress_startStop_mutex));
+  PTHREAD_CHK(pthread_cond_wait(&progress_startStop_cond,
+                                &progress_startStop_mutex));
+  PTHREAD_CHK(pthread_mutex_unlock(&progress_startStop_mutex));
 
   atomic_destroy_bool(&progress_threads_please_exit);
 }
@@ -656,16 +661,16 @@ static void progress_thread(void *args) {
     msg[i].addr = FI_ADDR_UNSPEC;
     msg[i].context = (void *) (uint64_t) i;
     msg[i].data = 0x0;
-    OFI_CHK_SUCCESS(fi_recvmsg(ofi.am_rx_ep[id], &msg[i], FI_MULTI_RECV));
+    OFI_CHK(fi_recvmsg(ofi.am_rx_ep[id], &msg[i], FI_MULTI_RECV));
   }
 
   // Count this progress thread as running.  The creator thread wants to
   // be released as soon as at least one progress thread is running, so
   // if we're the first, do that.
-  CHK_EQ_0(pthread_mutex_lock(&progress_startStop_mutex));
+  PTHREAD_CHK(pthread_mutex_lock(&progress_startStop_mutex));
   if (++progress_thread_count == 1)
-    CHK_EQ_0(pthread_cond_signal(&progress_startStop_cond));
-  CHK_EQ_0(pthread_mutex_unlock(&progress_startStop_mutex));
+    PTHREAD_CHK(pthread_cond_signal(&progress_startStop_cond));
+  PTHREAD_CHK(pthread_mutex_unlock(&progress_startStop_mutex));
 
   // Wait for events
   while (!atomic_load_bool(&progress_threads_please_exit)) {
@@ -685,10 +690,10 @@ static void progress_thread(void *args) {
   // Un-count this progress thread.  Whoever told us to exit wants to
   // be released once all the progress threads are done, so if we're
   // the last, do that.
-  CHK_EQ_0(pthread_mutex_lock(&progress_startStop_mutex));
+  PTHREAD_CHK(pthread_mutex_lock(&progress_startStop_mutex));
   if (--progress_thread_count == 0)
-    CHK_EQ_0(pthread_cond_signal(&progress_startStop_cond));
-  CHK_EQ_0(pthread_mutex_unlock(&progress_startStop_mutex));
+    PTHREAD_CHK(pthread_cond_signal(&progress_startStop_cond));
+  PTHREAD_CHK(pthread_mutex_unlock(&progress_startStop_mutex));
 }
 
 

@@ -32,19 +32,32 @@
 
 
 //
-// Simplify internal error checking (integer only)
+// Simplify internal error checking
 //
-#define CHK_EQ(expr, wantVal)                                           \
+#define CHK_EQ_TYPED(expr, wantVal, type, fmtSpec)                      \
     do {                                                                \
-      int _exprVal = (expr);                                            \
-      int _wantVal = wantVal;                                           \
+      type _exprVal = (expr);                                           \
+      type _wantVal = (wantVal);                                        \
       if (_exprVal != _wantVal) {                                       \
-        chpl_internal_error_v("%s == %d, expected %d",                  \
+        chpl_internal_error_v("%s == %" fmtSpec ", expected %" fmtSpec, \
                               #expr, _exprVal, _wantVal);               \
       }                                                                 \
     } while (0)
 
-#define CHK_EQ_0(expr) CHK_EQ((expr), 0)
+
+//
+// Memory allocation
+//
+
+// wish we had typeof() in all target compilers ...
+
+#define CHK_SYS_CALLOC(p, t, n, s)                                      \
+    do {                                                                \
+      if ((p = (t) sys_calloc((n), (s))) == NULL) {                     \
+        chpl_internal_error_v("sys_calloc(%#zx, %#zx): out of memory",  \
+                              (size_t) (n), (size_t) (s));              \
+      }                                                                 \
+    } while (0)
 
 
 //
