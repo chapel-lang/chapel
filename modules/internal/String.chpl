@@ -233,6 +233,44 @@ module String {
     var _cpindex  : int;
   }
 
+  // Helper routines in support of being able to use ranges of codePointIndex
+  pragma "no doc"
+  proc chpl_build_bounded_range(low: codePointIndex, high: codePointIndex)
+    return new range(codePointIndex, _low=low, _high=high);
+
+  pragma "no doc"
+  proc chpl_build_low_bounded_range(low: codePointIndex)
+    return new range(codePointIndex, BoundedRangeType.boundedLow, _low=low);
+
+  pragma "no doc"
+  proc chpl_build_high_bounded_range(high: codePointIndex)
+    return new range(codePointIndex, BoundedRangeType.boundedHigh, _high=high);
+
+  pragma "no doc"
+  proc chpl__rangeStrideType(type idxType: codePointIndex) type
+    return int;
+
+  pragma "no doc"
+  proc chpl__rangeUnsignedType(type idxType: codePointIndex) type
+    return uint;
+
+  pragma "no doc"
+  inline proc chpl__idxToInt(i: codePointIndex)
+    return i:int;
+
+  pragma "no doc"
+  inline proc chpl__intToIdx(type idxType: codePointIndex, i: int)
+    return i: codePointIndex;
+
+  pragma "no doc"
+  proc chpl__idxTypeToIntIdxType(type idxType: codePointIndex) type
+    return int;
+
+  pragma "no doc"
+  proc >(x: codePointIndex, y: codePointIndex)
+    return x: int > y: int;
+  // End range helper support
+
   //
   // String Implementation
   //

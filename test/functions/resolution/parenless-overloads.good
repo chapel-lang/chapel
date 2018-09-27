@@ -1,0 +1,25 @@
+parenless-overloads.chpl:19: In function 'testParen1a':
+parenless-overloads.chpl:25: warning: R("p1a-yes")
+parenless-overloads.chpl:28: In function 'testParen1b':
+parenless-overloads.chpl:34: warning: R("p1b-yes")
+parenless-overloads.chpl:37: In function 'testParen2a':
+parenless-overloads.chpl:43: warning: R("p2a-yes")
+parenless-overloads.chpl:46: In function 'testParen2b':
+parenless-overloads.chpl:52: warning: R("p2b-yes")
+parenless-overloads.chpl:55: In function 'testParen3a':
+parenless-overloads.chpl:61: warning: R("p3a-yes")
+parenless-overloads.chpl:64: In function 'testParen3b':
+parenless-overloads.chpl:70: warning: R("p3b-yes")
+parenless-overloads.chpl:84: In function 'testNops1b':
+parenless-overloads.chpl:90: warning: R("n1b-yes")
+parenless-overloads.chpl:102: In function 'testNops2b':
+parenless-overloads.chpl:108: warning: R("n2b-yes")
+parenless-overloads.chpl:120: In function 'testNops3b':
+parenless-overloads.chpl:126: warning: R("n3b-yes")
+parenless-overloads.chpl:93: In function 'testNops2a':
+parenless-overloads.chpl:99: warning: R("n2a-yes")
+parenless-overloads.chpl:75: In function 'testNops1a':
+parenless-overloads.chpl:81: warning: R("n1a-yes")
+parenless-overloads.chpl:111: In function 'testNops3a':
+parenless-overloads.chpl:117: warning: R("n3a-yes")
+parenless-overloads.chpl:146: error: done

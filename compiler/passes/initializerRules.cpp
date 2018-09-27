@@ -20,6 +20,7 @@
 #include "initializerRules.h"
 
 #include "astutil.h"
+#include "AstVisitorTraverse.h"
 #include "expr.h"
 #include "ForallStmt.h"
 #include "InitNormalize.h"
@@ -29,6 +30,15 @@
 #include "TryStmt.h"
 #include "type.h"
 #include "typeSpecifier.h"
+
+#include "LoopStmt.h"
+#include "ForLoop.h"
+#include "WhileDoStmt.h"
+#include "DoWhileStmt.h"
+#include "ParamForLoop.h"
+#include "ForallStmt.h"
+
+#include <stack>
 
 static bool     isInitStmt (CallExpr* stmt);
 
@@ -1156,40 +1166,144 @@ static bool isSuperPostInit(CallExpr* stmt) {
   return retval;
 }
 
-static bool hasSuperPostInit(BlockStmt* block) {
-  Expr* stmt   = block->body.head;
-  bool  retval = false;
+class PostinitVisitor : public AstVisitorTraverse {
+  public:
+    PostinitVisitor() : found(false) { }
+    virtual ~PostinitVisitor() { }
 
-  while (stmt != NULL && retval == false) {
-    if (CallExpr* callExpr = toCallExpr(stmt)) {
-      retval = isSuperPostInit(callExpr);
+    bool found;
 
-    } else if (CondStmt* cond = toCondStmt(stmt)) {
-      if (cond->elseStmt == NULL) {
-        retval = hasSuperPostInit(cond->thenStmt);
+    virtual bool enterCondStmt(CondStmt* node);
+    virtual bool enterCallExpr(CallExpr* node);
 
-      } else {
-        retval = hasSuperPostInit(cond->thenStmt) ||
-                 hasSuperPostInit(cond->elseStmt);
-      }
+    virtual bool enterForallStmt(ForallStmt* node);
+    virtual bool enterWhileDoStmt(WhileDoStmt* node);
+    virtual bool enterDoWhileStmt(DoWhileStmt* node);
+    virtual bool enterForLoop(ForLoop* node);
+    virtual bool enterParamForLoop(ParamForLoop* node);
+    virtual bool enterBlockStmt(BlockStmt* node);
 
-    } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      retval = hasSuperPostInit(block);
+    void enterLoopStmt(BlockStmt* node);
+};
 
-    } else if (ForallStmt* block = toForallStmt(stmt)) {
-      retval = hasSuperPostInit(block->loopBody());
-    }
+bool PostinitVisitor::enterCondStmt(CondStmt* node) {
+  PostinitVisitor vis;
+  node->thenStmt->accept(&vis);
 
-    stmt = stmt->next;
+  bool thenPostinit = vis.found;
+  vis.found = false;
+
+  bool elsePostinit = false;
+  if (node->elseStmt != NULL) {
+    node->elseStmt->accept(&vis);
+    elsePostinit = vis.found;
+  } else if (thenPostinit) {
+    USR_FATAL_CONT(node, "\"super.postinit()\" may not be called in a if-statement without an else-branch");
+    return false;
   }
 
-  return retval;
+  if (thenPostinit != elsePostinit) {
+    USR_FATAL_CONT(node, "\"super.postinit()\" must be called in each branch of a conditional or not at all");
+    this->found = true;
+  } else if (thenPostinit) {
+    this->found = true;
+  }
+
+  return false;
+}
+
+bool PostinitVisitor::enterCallExpr(CallExpr* node) {
+  if (isSuperPostInit(node)) {
+    if (found == false) {
+      found = true;
+    } else {
+      USR_FATAL_CONT(node, "Multiple calls to \"super.postinit()\"");
+      return false;
+    }
+  }
+  return true;
+}
+
+bool PostinitVisitor::enterBlockStmt(BlockStmt* node) {
+  if (CallExpr* info = node->blockInfoGet()) {
+    const char* name = NULL;
+    bool isLoweredElseCoforall = false;
+    if (info->isPrimitive(PRIM_BLOCK_BEGIN) ||
+        info->isPrimitive(PRIM_BLOCK_BEGIN_ON)) {
+      name = "begin";
+    } else if (info->isPrimitive(PRIM_BLOCK_COBEGIN)) {
+      name = "cobegin";
+    } else if (info->isPrimitive(PRIM_BLOCK_COFORALL) ||
+               info->isPrimitive(PRIM_BLOCK_COFORALL_ON)) {
+      // coforalls are lowered really early into a CondStmt where each branch
+      // has a for-loop and a PRIM_BLOCK_COFORALL*. In order to avoid
+      // duplicate messages about coforall-statements, do not issue an error
+      // if the coforall is in the else branch.
+      if (ForLoop* loop = toForLoop(node->parentExpr)) {
+        if (BlockStmt* loopParent = toBlockStmt(loop->parentExpr)) {
+          if (CondStmt* cond = toCondStmt(loopParent->parentExpr)) {
+            isLoweredElseCoforall = cond->elseStmt == loopParent;
+          }
+        }
+      }
+
+      name = "coforall";
+    }
+    if (name != NULL) {
+      PostinitVisitor vis;
+      for_alist(next_ast, node->body)
+        next_ast->accept(&vis);
+      if (vis.found && isLoweredElseCoforall == false) {
+        USR_FATAL_CONT(node, "\"super.postinit()\" is not allowed in a %s satement", name);
+      }
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void PostinitVisitor::enterLoopStmt(BlockStmt* node) {
+  PostinitVisitor vis;
+  for_alist(next_ast, node->body)
+    next_ast->accept(&vis);
+
+  if (vis.found) {
+    USR_FATAL_CONT(node, "\"super.postinit()\" is not allowed in loop statements");
+    found = true;
+  }
+}
+
+bool PostinitVisitor::enterForallStmt(ForallStmt* node) {
+  enterLoopStmt(node->loopBody());
+  return false;
+}
+bool PostinitVisitor::enterWhileDoStmt(WhileDoStmt* node) {
+  enterLoopStmt(node);
+  return false;
+}
+bool PostinitVisitor::enterDoWhileStmt(DoWhileStmt* node) {
+  enterLoopStmt(node);
+  return false;
+}
+bool PostinitVisitor::enterForLoop(ForLoop* node) {
+  enterLoopStmt(node);
+  return false;
+}
+bool PostinitVisitor::enterParamForLoop(ParamForLoop* node) {
+  enterLoopStmt(node);
+  return false;
+}
+
+static bool hasSuperPostInit(BlockStmt* block) {
+  PostinitVisitor vis;
+  block->accept(&vis);
+  return vis.found;
 }
 
 //
 // Inserts a call to super.postinit if none exists anywhere in 'fn'
 //
-// TODO: what should we do with super.postinits in conditionals?
 // TODO: merge with addSuperInit
 //
 static void insertSuperPostInit(FnSymbol* fn) {

@@ -15,9 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#
-# Assume this variable is set:
-# - LIBFABRIC_INCLUDE_DIR
-#
-
+ifneq ($(LIBFABRIC_INCLUDE_DIR),)
 RUNTIME_INCLS += -I$(LIBFABRIC_INCLUDE_DIR)
+endif

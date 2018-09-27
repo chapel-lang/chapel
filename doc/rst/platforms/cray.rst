@@ -544,13 +544,15 @@ ______________________________
    executable.  Otherwise, load a hugepage module as described above in
    `Using the ugni Communications Layer`_ before running.
 
-   The Chapel runtime expects certain hugepage-related environment
-   variables to be set by the Chapel launchers.  If you do not use a
-   Chapel launcher you have to provide these settings yourself.  Not
-   doing so will result in one or both of the following messages::
+   When you are using hugepages and do not have a fixed heap (that is,
+   the ``CHPL_RT_MAX_HEAP_SIZE`` environment variable is not set), the
+   Chapel runtime expects certain hugepage-related environment variables
+   to have been set by the Chapel launcher.  If you do not use a Chapel
+   launcher you have to provide these settings yourself.  Not doing so
+   will result in one or both of the following messages::
 
-      warning: HUGETLB_NO_RESERVE should be set to something when using hugepages
-      warning: CHPL_JE_MALLOC_CONF should be set when using hugepages
+      warning: dynamic heap on hugepages needs HUGETLB_NO_RESERVE set to something
+      warning: dynamic heap on hugepages needs CHPL_JE_MALLOC_CONF set properly
 
    To quiet these warnings, use the following settings:
 
@@ -569,8 +571,8 @@ ______________________________
    As an alternative, you can also quiet these warnings by giving
    ``--quiet`` or ``-q`` when you run.  However, you should be aware
    that at least on Cray XE systems, not setting ``CHPL_JE_MALLOC_CONF``
-   can result in internal errors and/or segfaults under certain
-   circumstances.
+   in this configuration can result in internal errors and/or segfaults
+   under certain circumstances.
 
 
 gasnet Communication Layer

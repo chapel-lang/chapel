@@ -79,7 +79,6 @@ void chpl_gen_stopCommDiagnosticsHere(void) {
 }
 
 
-static int maxHeapSize_set;
 static pthread_once_t maxHeapSize_once = PTHREAD_ONCE_INIT;
 static size_t maxHeapSize;
 
@@ -91,8 +90,7 @@ void set_maxHeapSize(void)
 
 size_t chpl_comm_getenvMaxHeapSize(void)
 {
-  if (!maxHeapSize_set
-      && pthread_once(&maxHeapSize_once, set_maxHeapSize) != 0) {
+  if (pthread_once(&maxHeapSize_once, set_maxHeapSize) != 0) {
     chpl_internal_error("pthread_once(&maxHeapSize_once) failed");
   }
 
