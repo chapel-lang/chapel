@@ -387,10 +387,14 @@ void UseStmt::validateNamed() {
       scope->getFields(name, symbols);
 
       if (symbols.size() == 0) {
+        SymExpr* srcExpr = toSymExpr(src);
+        INT_ASSERT(srcExpr); // should have been resolved by this point
         USR_FATAL_CONT(this,
-                       "Bad identifier in '%s' clause, no known '%s'",
+                       "Bad identifier in '%s' clause, no known '%s' defined in"
+                       " '%s'",
                        (except == true) ? "except" : "only",
-                       name);
+                       name,
+                       srcExpr->symbol()->name);
 
       } else {
         for_vector(Symbol, sym, symbols) {
