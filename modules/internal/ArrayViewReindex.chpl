@@ -277,7 +277,7 @@ module ArrayViewReindex {
       }
     }
 
-    proc dsiDestroyDom() {
+    override proc dsiDestroyDom() {
       _delete_dom(updom, false);
       _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }

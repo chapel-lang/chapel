@@ -106,7 +106,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     //    writeln("Exiting setup()");
   }
 
-  proc dsiDestroyDom() {
+  override proc dsiDestroyDom() {
     coforall localeIdx in dist.targetLocDom do {
       on locDoms(localeIdx) do
         delete locDoms(localeIdx);
