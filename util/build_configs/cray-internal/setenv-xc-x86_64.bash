@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# setenv script to build a standard Chapel Cray module for release
+# setenv script to build a standard Chapel Cray-XC module for release
 
 set +x -e
 
@@ -18,7 +18,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     # current list of selected components initially empty
     components=
-    valid_components="compiler,runtime,venv,venv_py27,mason,clean"
+    valid_components="compiler,runtime,venv,mason,clean"
     default_components="compiler,runtime,venv,mason"
         ## clean is not default; more developer-friendly
 
@@ -45,7 +45,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         ( B )
             # ck valid component
             case ",${OPTARG#[+-]}," in
-            ( *,compiler,* | *,runtime,* | *,venv,* | *,venv_py27,* | *,mason,* | *,clean,* ) ;;
+            ( *,compiler,* | *,runtime,* | *,venv,* | *,mason,* | *,clean,* ) ;;
             ( * )   log_error "Invalid -B COMPONENT='$OPTARG'"; usage ;;
             esac
             # if + or - prefix, modify the current list of selected components
@@ -121,7 +121,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         ;;
     esac
 
-    case ",$components," in
+    case "$components" in
     ( *runtime* )
         log_info "Building Chapel component: runtime"
 

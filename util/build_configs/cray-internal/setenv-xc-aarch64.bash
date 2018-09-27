@@ -121,7 +121,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         ;;
     esac
 
-    case ",$components," in
+    case "$components" in
     ( *runtime* )
         log_info "Building Chapel component: runtime"
 
@@ -149,7 +149,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         ;;
     esac
 
-    venv_targets="chpldoc test-venv"
+    venv_targets="test-venv chpldoc"
     case ",$components," in
     ( *,venv,* )
         log_info "Building Chapel component: venv ($venv_targets)"
@@ -333,15 +333,10 @@ else
     ( venv )
         load_prgenv_gnu
 
-        # If the installed libssl is too old to support TLS 1.1, some workarounds exist to
-        # enable building Chapel python-venv tools anyway.
-        # For example, the following gives a URL to a local PyPI mirror that accepts http,
-        # and the location of a pre-installed "pip" on the host machine.
+        # The following gives a URL to a local PyPI mirror that accepts http. It is optional for this build.
 
         export CHPL_EASY_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple"
         export CHPL_PIP_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple --trusted-host slemaster.us.cray.com"
-######  export CHPL_PIP=/cray/css/users/chapelu/opt/lib/pip/__main__.py
-######  export CHPL_PYTHONPATH=/cray/css/users/chapelu/opt/lib
         ;;
     ( "" )
         : ok
