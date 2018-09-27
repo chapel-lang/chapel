@@ -64,15 +64,12 @@ typedef enum {
   MUST_ALIAS_REFVAR,      // reference refers to a particular variable
 
   MUST_ALIAS_NIL,         // it refers to nil
-
-  //MUST_ALIAS_COPYVAR,     // refers to the same memory as a particular variable
 } AliasType;
 
 struct AliasLocation {
   AliasType type;
   // MUST_ALIAS_ALLOCATED -> CallExpr
   // MUST_ALIAS_REFVAR -> ArgSymbol or VarSymbol being referred to
-  // MUST_ALIAS_COPYVAR -> ArgSymbol or VarSymbol being copied
   BaseAST* location;
   AliasLocation() : type(MUST_ALIAS_IGNORED), location(NULL) { }
 };
@@ -114,15 +111,6 @@ static inline AliasLocation refAliasLocation(Symbol* referent) {
   ret.location = referent;
   return ret;
 }
-
-/*
-static inline AliasLocation copyAliasLocation(Symbol* copy) {
-  AliasLocation ret;
-  ret.type = MUST_ALIAS_COPYVAR;
-  ret.location = copy;
-  return ret;
-}
-*/
 
 /* Gets whatever the symbol refers to, if known.
    If it's not known, returns NULL.
@@ -196,6 +184,7 @@ static bool isCheckedClassMethodCall(CallExpr* call) {
       // Ignore .borrow()
       // (at least until we decide that borrow-from-empty-owned
       //  is a problem, rather than use of the resulting nil)
+      // Note that .borrow is available on borrows and unmanaged.
       retval = false;
 
     } else if (AggregateType* ct = toAggregateType(fn->_this->typeInfo())) {
@@ -210,21 +199,6 @@ static bool isCheckedClassMethodCall(CallExpr* call) {
 
   return retval;
 }
-/*
-static void printDataFlowSet(const char* name, BitVec* set,
-                             std::vector<Symbol*>& idxToSym)
-{
-  if (set->any()) {
-    printf("dataflow set %s\n", name);
-    for(size_t i = 0; i < idxToSym.size(); i++ ) {
-      Symbol* sym = idxToSym[i];
-      if (sym && set->get(i)) {
-        printf("%i %s\n", sym->id, sym->name);
-      }
-    }
-  }
-}
-*/
 
 static void checkForNilDereferencesInCall(
     CallExpr* call,
@@ -277,12 +251,6 @@ static void printAliasEntry(const char* prefix, Symbol* sym, AliasLocation loc)
       printf("%s ref: %i %s",
              prefix, sym->id, sym->name);
       break;
-    /*
-    case MUST_ALIAS_COPYVAR:
-      printf("%s cpy: %i %s ", prefix, sym->id, sym->name);
-      nprint_view(loc.location);
-      break;
-     */
     // no default -> get warning if more are added
   }
 
@@ -518,7 +486,7 @@ static void checkCall(
             ignoreGlobalUpdates = true;
 
           // new for classes is allocation
-          // ( TODO: fix below for new owned(someClassInstance) )
+          // note that this is adjusted below for 'new owned(instance)'
           } else if (userCalledFn->name == astrNew) {
             OUT[lhsSym] = allocatedAliasLocation(userCall);
             ignoreGlobalUpdates = true;
@@ -661,7 +629,8 @@ static void checkBasicBlock(
     }
 
     // Handle storeToUnknown, storeToGlobals
-    // TODO: storeToUnknown should work with types
+    // TODO: storeToUnknown should only give up on
+    // other variables of compatible types
     if (storeToGlobals || storeToUnknown) {
       for_vector(Symbol, sym, symbols) {
         if (sym->isConstValWillNotChange() == false) {
@@ -672,7 +641,6 @@ static void checkBasicBlock(
     }
 
     if (trace) {
-      // TODO -- only show differences
       printAliasMap("+-", OUT, traceCopy);
       delete traceCopy;
     }
