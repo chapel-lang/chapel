@@ -179,6 +179,22 @@ returnInfoScalarPromotionType(CallExpr* call) {
   return QualifiedType(type, QUAL_VAL);
 }
 
+static QualifiedType
+returnInfoStaticFieldType(CallExpr* call) {
+  // The code below is not very general. It can be extended as needed.
+  // The first argument is the variable or the type whose field is queried.
+  Type* type = call->get(1)->getValType();
+  INT_ASSERT(! type->symbol->hasFlag(FLAG_TUPLE)); // not implemented
+  AggregateType* at = toAggregateType(canonicalClassType(type));
+  INT_ASSERT(at); // caller's responsibility
+  // The second argument is the name of the field.
+  VarSymbol* nameSym = toVarSymbol(toSymExpr(call->get(2))->symbol());
+  // caller's responsibility
+  INT_ASSERT(nameSym->immediate->const_kind == CONST_KIND_STRING);
+  Symbol* field = at->getField(nameSym->immediate->v_string, true);
+  return field->qualType().toVal();
+}
+
 
 static QualifiedType
 returnInfoCast(CallExpr* call) {
@@ -688,13 +704,19 @@ initPrimitive() {
 
   // Return the compile-time component of a type (ignoring runtime types)
   // For an array, returns the compile-time type only.
-  // (there might be uninitialized memory if the run-time type is used).
+  // There might be uninitialized memory if the run-time type is used.
   prim_def(PRIM_STATIC_TYPEOF, "static typeof", returnInfoFirstDeref);
 
   // As with PRIM_STATIC_TYPEOF, returns a compile-time component of
   // a type only. Returns the scalar promotion type (i.e. the type of the
   // elements that iterating over it would yield)
+  // There might be uninitialized memory if the run-time type is used.
   prim_def(PRIM_SCALAR_PROMOTION_TYPE, "scalar promotion type", returnInfoScalarPromotionType);
+
+  // As with PRIM_STATIC_TYPEOF, returns a compile-time component of
+  // the type of the field.
+  // There might be uninitialized memory if the run-time type is used.
+  prim_def(PRIM_STATIC_FIELD_TYPE, "static field type", returnInfoStaticFieldType);
 
   // used modules in BlockStmt::modUses
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);

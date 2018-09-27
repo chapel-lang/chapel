@@ -952,6 +952,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
   } else if (call->isPrimitive(PRIM_STATIC_TYPEOF) ||
+             call->isPrimitive(PRIM_STATIC_FIELD_TYPE) ||
              call->isPrimitive(PRIM_SCALAR_PROMOTION_TYPE)) {
 
     // Replace the type query call with a SymExpr of the type symbol

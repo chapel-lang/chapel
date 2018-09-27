@@ -75,23 +75,9 @@ module ChapelIteratorSupport {
     return i.type;
   }
 
-  // Returns the type of the array that is created
-  // when this iterator is promoted to an array.
-  pragma "no doc"
-  proc iteratorToArrayType(type t) type {
-    return t;
-  }
-  pragma "no doc"
-  proc iteratorToArrayType(type t:_iteratorRecord) type {
-    var A:[1..0] iteratorToArrayType(__primitive("scalar promotion type", t));
-    return A.type;
-  }
-  pragma "no doc"
   proc iteratorToArrayElementType(type t:_iteratorRecord) type {
     return chpl__unref(
-             iteratorToArrayType(
-               chpl_buildStandInRTT(
-                 __primitive("scalar promotion type", t))));
+      chpl_buildStandInRTT(__primitive("scalar promotion type", t)) );
   }
 
   //
@@ -106,8 +92,8 @@ module ChapelIteratorSupport {
   // Ideally we'd get them **directly** from domType/arrType.
   //
 
-  proc chpl_buildStandInRTT(type domType: domain) type {
-
+  proc chpl_buildStandInRTT(type domType: domain) type
+  {
     // Proc instanceType does not return a runtime type, so does not
     // execute any code at run time. So it done not access any contents
     // of domType's _RuntimeTypeInfo, which is uninitialized.
@@ -119,8 +105,8 @@ module ChapelIteratorSupport {
     return chpl_buildStandInRTT(instanceObj);
   }
 
-  proc chpl_buildStandInRTT(type arrType: []) type {
-
+  proc chpl_buildStandInRTT(type arrType: []) type
+  {
     // Analogously to proc instanceType in chpl_buildStandInRTT(domain).
     proc domInstanceType type { var arr: arrType;
                                 return arr.domain._instance.type;  }
@@ -152,10 +138,46 @@ module ChapelIteratorSupport {
   }
 
   //
+  // When the argument is an _iteratorRecord, return the type of the array
+  // that is created when this iterator is promoted to an array.
+  // Its domain is ir._shape_ or an empty 1-d domain if there is no shape.
+  // Its element type is given by the iterator's "scalar promotion type".
+  //
+  proc chpl_buildStandInRTT(type irType: _iteratorRecord) type
+  {
+    type shapeType = chpl_iteratorShapeStaticTypeOrVoid(irType);
+
+    proc standinType() type where shapeType == void { // shapeless case
+      return domain(1);
+    }
+
+    // The rest are pieces from chpl_buildStandInRTT(arrType).
+
+    proc standinType() type where shapeType != void { // shapeful case
+
+      // No runtime types - no code is executed at run time here.
+      var domInstance: shapeType;
+
+      // Verify that there are no runtime types so far.
+      compilerAssert(!isDomain(domInstance) && !isArray(domInstance));
+
+      return chpl_buildStandInRTT(domInstance);
+    }
+
+    // This is a domain built using properly-initialized _RuntimeTypeInfo.
+    pragma "no auto destroy"
+    var standinDomain: standinType();
+
+    return chpl__buildArrayRuntimeType(standinDomain,
+      chpl_buildStandInRTT(__primitive("scalar promotion type", irType)) );
+  }
+
+  //
   // If the type is neither an array nor a domain, then there is no run-time
   // content - nothing that can be uninitialized. Use the type directly.
   //
-  proc chpl_buildStandInRTT(type nonRTtype) type {
+  proc chpl_buildStandInRTT(type nonRTtype) type
+  {
     return nonRTtype;
   }
 
@@ -183,15 +205,12 @@ module ChapelIteratorSupport {
       compilerError("unexpected argument of type ", domInst.type:string, " for chpl_buildStandInRTT()");
   }
 
-  pragma "no doc"
   inline proc chpl_computeIteratorShape(arg: []) {
     return chpl_computeIteratorShape(arg.domain);
   }
-  pragma "no doc"
   inline proc chpl_computeIteratorShape(arg: domain) {
     return arg._instance;
   }
-  pragma "no doc"
   inline proc chpl_computeIteratorShape(arg: _iteratorRecord) {
     if chpl_iteratorHasShape(arg) then
       return arg._shape_;
@@ -200,29 +219,37 @@ module ChapelIteratorSupport {
       return myvoid;
     }
   }
-  pragma "no doc"
   inline proc chpl_computeIteratorShape(arg) {
     // none of the above cases
     return _void;
   }
-  pragma "no doc"
-  inline proc chpl_iteratorHasShape(ir: _iteratorRecord) param {
+
+  proc chpl_iteratorHasShape(ir: _iteratorRecord) param {
     use Reflection;
     if hasField(ir.type, "_shape_") then
       return ir._shape_.type != void;
     else
       return false;
   }
-  pragma "no doc"
-  inline proc chpl_iteratorFromForExpr(ir: _iteratorRecord) param {
+
+  // This is the static type of chpl_computeIteratorShape(ir).
+  proc chpl_iteratorShapeStaticTypeOrVoid(type ir: _iteratorRecord) type
+  {
+    use Reflection;
+    if hasField(ir, "_shape_") then
+      return __primitive("static field type", ir, "_shape_");
+    else
+      return void;
+  }
+
+  proc chpl_iteratorFromForExpr(ir: _iteratorRecord) param {
     use Reflection;
     if canResolveMethod(ir, "_fromForExpr_") then
       return ir._fromForExpr_;
     else
       return false;
   }
-  pragma "no doc"
-  inline proc chpl_iteratorFromForExpr(arg) param {
+  proc chpl_iteratorFromForExpr(arg) param {
     // non-iterator-record cases are always parallel
     // Todo: what if it is an array or domain whose domain map
     // that does not provide parallel iterators?
