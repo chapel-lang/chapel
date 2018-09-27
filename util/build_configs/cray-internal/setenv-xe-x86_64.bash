@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# setenv script to build a standard Chapel Cray module for release
+# setenv script to build a standard Chapel Cray-XE module for release
 
 set +x -e
 
@@ -18,7 +18,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     # current list of selected components initially empty
     components=
-    valid_components="compiler,runtime,venv,venv_py27,mason,clean"
+    valid_components="compiler,runtime,venv,mason,clean"
     default_components="compiler,runtime,venv,mason"
         ## clean is not default; more developer-friendly
 
@@ -45,7 +45,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         ( B )
             # ck valid component
             case ",${OPTARG#[+-]}," in
-            ( *,compiler,* | *,runtime,* | *,venv,* | *,venv_py27,* | *,mason,* | *,clean,* ) ;;
+            ( *,compiler,* | *,runtime,* | *,venv,* | *,mason,* | *,clean,* ) ;;
             ( * )   log_error "Invalid -B COMPONENT='$OPTARG'"; usage ;;
             esac
             # if + or - prefix, modify the current list of selected components
@@ -81,10 +81,9 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 ##  # by build_configs.py cmdline arguments), Chapel make will determine
 ##  # the appropriate default value for the platform / environment it finds.
 
-    export CHPL_HOST_PLATFORM=cray-xc
-    export CHPL_TARGET_PLATFORM=cray-xc
+    export CHPL_HOST_PLATFORM=cray-xe
+    export CHPL_TARGET_PLATFORM=cray-xe
     export CHPL_REGEXP=re2      # re2 required for mason
-    export CHPL_LOCAL_MODEL=flat
     export CHPL_COMM=none
     export CHPL_COMM_SUBSTRATE=none
     export CHPL_TASKS=qthreads
@@ -121,15 +120,14 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         ;;
     esac
 
-    case ",$components," in
+    case "$components" in
     ( *runtime* )
         log_info "Building Chapel component: runtime"
 
         compilers=cray,intel,gnu
         comms=gasnet,none,ugni
         launchers=pbs-aprun,aprun,none,slurm-srun
-        substrates=aries,mpi,none
-        locale_models=flat,knl
+        substrates=gemini,mpi,none
         auxfs=none,lustre
 
         log_info "Start build_configs $dry_run $verbose # no make target"
@@ -139,7 +137,6 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
             --comm=$comms \
             --launcher=$launchers \
             --substrate=$substrates \
-            --locale-model=$locale_models \
             --auxfs=$auxfs
 
         # NOTE: "--target-compiler" values shown above will be discarded by the setenv callback.
@@ -152,67 +149,16 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     venv_targets="test-venv chpldoc"
     case ",$components," in
     ( *,venv,* )
-
-        # Build Chapel python-venv tools with the system-installed Python, no matter which version
-
         log_info "Building Chapel component: venv ($venv_targets)"
 
-        log_debug "Checking the system-installed Python"
-
-        pyLT27=$( /usr/bin/python -c "import sys; print(sys.version_info[0:2] < (2, 7))" || : ok )
-        whichPy=$( which python || : ok )
-        case "$pyLT27" in
-        ( False | True )
-            case "$whichPy" in
-            ( /usr/bin/python )
-                ;;
-            ( * )
-                log_error "Found unexpected path to default python executable: '$whichPy'"
-                log_error "The expected path was '/usr/bin/python'"
-                exit 2
-                ;;
-            esac
-            ;;
-        ( * )
-            log_error "/usr/bin/python broken or not found"
-            echo >&2 "stdout:'$pyLT27'"
-            ls -ldL >&2 /usr/bin/python || : ok
-            exit 2
-            ;;
-        esac
-
-            # Chapel python-venv tools requires a working internet connection and either:
-            # - modern version of libssl that supports TLS 1.1
-            # - local workarounds such as the variables shown in the "venv" callback, below.
+        # Building Chapel python-venv tools requires a working internet connection and either:
+        # - modern version of libssl that supports TLS 1.1
+        # - local workarounds such as the variables shown in the "venv" callback, below.
 
         log_info "Start build_configs $dry_run $verbose -- $venv_targets"
 
         $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv.log" \
             --target-compiler=venv -- $venv_targets
-
-        if [ "$pyLT27" = "True" ]; then
-
-            # If the system-installed Python was 2.6, Build a second copy of Chapel
-            # python-venv tools using the alternate Python 2.7 installation,
-            # which must be implemented by the "venv_py27" callback, below.
-
-            log_info "Building Chapel component: venv ($venv_targets with venv_py27 callback)"
-
-            log_info "Start build_configs $dry_run $verbose -- $venv_targets"
-
-            $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv_py27.log" \
-                --target-compiler=venv_py27 -- $venv_targets
-
-            # Custom Chapel make target to rm files or links named "python" from the installed py27
-            # bin dir, forcing users of the installed Chapel RPM to get "python" from the system.
-
-            use_system_python="-C third-party/chpl-venv use-system-python"
-
-            log_info "Start build_configs $dry_run $verbose -- $use_system_python"
-
-            $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv_py27-use_system_python.log" \
-                --target-compiler=venv_py27 -- $use_system_python
-        fi
         ;;
     ( * )
         log_info "NO building Chapel component: venv"
@@ -317,7 +263,7 @@ else
     gen_version_gcc=6.1.0
     gen_version_intel=16.0.3.210
     gen_version_cce=8.6.3
-    target_cpu_module=craype-sandybridge
+    target_cpu_module=craype-barcelona
 
     function load_prgenv_gnu() {
 
@@ -415,17 +361,6 @@ else
         # enable building Chapel python-venv tools anyway.
         # For example, the following gives a URL to a local PyPI mirror that accepts http,
         # and the location of a pre-installed "pip" on the host machine.
-
-        export CHPL_EASY_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple"
-        export CHPL_PIP_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple --trusted-host slemaster.us.cray.com"
-        export CHPL_PIP=/cray/css/users/chapelu/opt/lib/pip/__main__.py
-        export CHPL_PYTHONPATH=/cray/css/users/chapelu/opt/lib
-        ;;
-    ( venv_py27 )
-        load_prgenv_gnu
-
-        # Alternate python version
-        use_python27
 
         export CHPL_EASY_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple"
         export CHPL_PIP_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple --trusted-host slemaster.us.cray.com"
