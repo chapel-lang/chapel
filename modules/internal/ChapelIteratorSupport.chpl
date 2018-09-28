@@ -93,36 +93,31 @@ module ChapelIteratorSupport {
   //
 
   proc chpl_buildStandInRTT(type domType: domain) type
-  {
-    // Proc instanceType does not return a runtime type, so does not
-    // execute any code at run time. So it done not access any contents
-    // of domType's _RuntimeTypeInfo, which is uninitialized.
-    proc instanceType type { var dom: domType;
-                             return dom._instance.type; }
-
-    var instanceObj: instanceType;
+  { //
+    // domType._instance has no runtime type, so accessing its type
+    // does not execute any code at run time. So it does not access
+    // any contents of domType's _RuntimeTypeInfo. This is good -
+    // because the _RuntimeTypeInfo is uninitialized.
+    //
+    var instanceObj: __primitive("static field type", domType, "_instance");
 
     return chpl_buildStandInRTT(instanceObj);
   }
 
   proc chpl_buildStandInRTT(type arrType: []) type
   {
-    // Analogously to proc instanceType in chpl_buildStandInRTT(domain).
-    proc domInstanceType type { var arr: arrType;
-                                return arr.domain._instance.type;  }
+    // Analogously to instanceObj in chpl_buildStandInRTT(domType).
+    type arrInstType = __primitive("static field type", arrType, "_instance");
+    type domInstType = __primitive("static field type", arrInstType, "dom");
 
     // No runtime types - no code is executed at run time here.
-    var domInstance: domInstanceType;
+    var domInstance: domInstType;
 
     // This is a domain built from properly-initialized _RuntimeTypeInfo.
     pragma "no auto destroy"
     var standinDomain: chpl_buildStandInRTT(domInstance);
 
-    // Same as proc instanceType in chpl_buildStandInRTT(domain).
-    proc arrInstanceType type { var arr: arrType;
-                                return arr._instance.type; }
-
-    var instanceObj: arrInstanceType;
+    var instanceObj: arrInstType;
 
     // Luckily, "static typeof" shields us from accessing the field
     // instanceObj.eltType at run time - even when it is a run-time type.
@@ -147,21 +142,23 @@ module ChapelIteratorSupport {
   {
     type shapeType = chpl_iteratorShapeStaticTypeOrVoid(irType);
 
-    proc standinType() type where shapeType == void { // shapeless case
-      return domain(1);
-    }
+    proc standinType() type {
+      if shapeType == void {
+        // shapeless case
+        return domain(1);
 
     // The rest are pieces from chpl_buildStandInRTT(arrType).
+      } else {
+        // shapeful case
 
-    proc standinType() type where shapeType != void { // shapeful case
+        // No runtime types - no code is executed at run time here.
+        var domInstance: shapeType;
 
-      // No runtime types - no code is executed at run time here.
-      var domInstance: shapeType;
+        // Verify that there are no runtime types so far.
+        compilerAssert(!isDomain(domInstance) && !isArray(domInstance));
 
-      // Verify that there are no runtime types so far.
-      compilerAssert(!isDomain(domInstance) && !isArray(domInstance));
-
-      return chpl_buildStandInRTT(domInstance);
+        return chpl_buildStandInRTT(domInstance);
+      }
     }
 
     // This is a domain built using properly-initialized _RuntimeTypeInfo.
