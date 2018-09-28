@@ -2212,6 +2212,12 @@ static void normRefVar(DefExpr* defExpr) {
                    "References must be initialized when they are defined.");
   }
 
+  if (SymExpr* initSym = toSymExpr(init)) {
+    if (initSym->symbol() == gNil) {
+      USR_FATAL_CONT(var, "References must be non-nil");
+    }
+  }
+
   // If this is a const reference to an immediate, we need to insert a temp
   // variable so we can take the address of it, non-const references to an
   // immediate are not allowed.
