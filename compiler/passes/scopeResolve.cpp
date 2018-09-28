@@ -1748,14 +1748,12 @@ Symbol* lookup(const char* name, BaseAST* context) {
     //   otherwise fail
 
     for_vector(Symbol, sym, symbols) {
-      if (isFnSymbol(sym) == false) {
+      if (! isFnSymbol(sym)) {
         USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
         printConflictingSymbols(symbols, sym);
         break;
       }
     }
-
-    USR_STOP();
 
     retval = NULL;
   }
