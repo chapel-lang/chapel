@@ -43,7 +43,6 @@
 
 #include "ResolveScope.h"
 
-#include "ForallStmt.h"
 #include "LoopExpr.h"
 #include "scopeResolve.h"
 

@@ -1,2 +1,0 @@
-bug: LoopExpr in a field init is not scope-resolved before normalization
-#11147
