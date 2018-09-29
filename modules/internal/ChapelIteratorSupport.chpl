@@ -76,6 +76,8 @@ module ChapelIteratorSupport {
   }
 
   proc iteratorToArrayElementType(type t:_iteratorRecord) type {
+    // Todo: chpl__unref() may be unnecessary. Ensure this test passes:
+    //   test/expressions/loop-expr/zip-arrays.chpl
     return chpl__unref(
       chpl_buildStandInRTT(__primitive("scalar promotion type", t)) );
   }
