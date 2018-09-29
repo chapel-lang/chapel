@@ -291,18 +291,18 @@
 //
 // keywords (alphabetical)
 //
-%token TALIGN TAS TATOMIC TBEGIN TBREAK TBORROWED TBY TCATCH
-%token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
+%token TALIGN TAS TATOMIC TBEGIN TBREAK TBOOL TBORROWED TBY TCATCH
+%token TCLASS TCOBEGIN TCOFORALL TCOMPLEX TCONFIG TCONST TCONTINUE
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFOR TFORALL TFORWARDING
-%token TIF TIN TINDEX TINLINE TINOUT TITER
+%token TIF TIMAG TIN TINDEX TINLINE TINOUT TINT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
-%token TRECORD TREDUCE TREF TREQUIRE TRETURN
-%token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSUBDOMAIN
-%token TSYNC TTHEN TTHROW TTHROWS TTRY TTRYBANG TTYPE TUNDERSCORE
+%token TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
+%token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSTRING TSUBDOMAIN
+%token TSYNC TTHEN TTHROW TTHROWS TTRY TTRYBANG TTYPE TUINT TUNDERSCORE
 %token TUNION TUNMANAGED TUSE TVAR TWHEN TWHERE TWHILE TWITH TYIELD TZIP
 
 //
@@ -420,7 +420,7 @@
 %type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> literal_expr opt_where_part
-%type <pexpr> stmt_level_expr type_level_expr
+%type <pexpr> stmt_level_expr simple_type type_level_expr
 %type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
 %type <pexpr> opt_init_type var_arg_expr
@@ -1429,7 +1429,7 @@ opt_type:
    (3) it also seems strange that the stuff preceding TIN would be an
        'expr_ls' rather than something simpler, like a nested
        parenthesization of identifiers; perhaps this is to support the
-       establishment of an explicit type declaration, though I thought we
+       Establishment of an explicit type declaration, though I thought we
        didn't support that yet
 */
 array_type:
@@ -1538,6 +1538,11 @@ ident_expr:
   ident     { $$ = new UnresolvedSymExpr($1); }
 ;
 
+simple_type:
+  TINT                       { $$ = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
+| TINT TLP opt_actual_ls TRP { $$ = new CallExpr(new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol), $3); }
+;
+
 /* Expressions which represent types.  type_level_exprs can appear within formal
  * function parameter specifications as well as part of variable declarations.
 
@@ -1547,6 +1552,7 @@ ident_expr:
    parameters and variables. */
 type_level_expr:
   nil_expr
+| simple_type
 | lhs_expr                  // var b: a.type || (?,?) || foo()
 | cond_expr                 // type b = if b then uint else int
 | unary_op_expr             // We allow binary exprs as types...why not unary?

@@ -149,6 +149,7 @@ in               return processToken(yyscanner, TIN);
 index            return processToken(yyscanner, TINDEX);
 inline           return processToken(yyscanner, TINLINE);
 inout            return processToken(yyscanner, TINOUT);
+int              return processToken(yyscanner, TINT);
 iter             return processToken(yyscanner, TITER);
 label            return processToken(yyscanner, TLABEL);
 lambda           return processToken(yyscanner, TLAMBDA);
