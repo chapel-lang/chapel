@@ -420,7 +420,7 @@
 %type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> literal_expr opt_where_part
-%type <pexpr> stmt_level_expr simple_type type_level_expr
+%type <pexpr> stmt_level_expr simple_type type_level_expr scalar_type
 %type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
 %type <pexpr> opt_init_type var_arg_expr
@@ -1069,8 +1069,13 @@ fn_decl_stmt_inner:
     }
 ;
 
+scalar_type:
+  TINT  { $$ = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
+;
+
 fn_decl_receiver_expr:
   ident_expr
+| scalar_type  
 | TLP expr TRP        { $$ = $2; }
 ;
 
