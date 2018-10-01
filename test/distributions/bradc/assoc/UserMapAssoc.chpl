@@ -508,6 +508,12 @@ class UserMapAssocDom: BaseAssociativeDom {
   proc dsiReprivatize(other) {
     locDoms = other.locDoms;
   }
+
+  proc dsiDestroyDom() {
+    for localeIdx in dist.targetLocDom do
+      on dist.targetLocales(localeIdx) do
+        delete locDoms(localeIdx);
+  }
 }
 
 
@@ -655,6 +661,12 @@ class UserMapAssocArr: BaseArr {
       //locAssocDoms += locDomImpl;
       //locArrsByAssoc[locDomImpl] = locArrs(localeIdx);
     }
+  }
+
+  proc dsiDestroyArr() {
+    coforall localeIdx in dom.dist.targetLocDom do
+      on dom.dist.targetLocales(localeIdx) do
+        delete locArrs(localeIdx);
   }
 
   proc dsiSupportsPrivatization() param return true;
