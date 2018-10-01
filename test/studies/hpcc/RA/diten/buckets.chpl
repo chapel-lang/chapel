@@ -44,9 +44,9 @@ class Buckets {
 
   const numLocs: int = numLocales;
   var pendingUpdates = 0;
-  var BucketArray: [0..#numLocs] unmanaged Bucket = [0..#numLocs] new unmanaged Bucket(nil, 0);
-  var heap = new unmanaged MaxHeap(numLocs);
-  var updateManager = new unmanaged UpdateManager();
+  var BucketArray: [0..#numLocs] Bucket = [0..#numLocs] new borrowed Bucket(nil, 0);
+  var heap = new borrowed MaxHeap(numLocs);
+  var updateManager = new borrowed UpdateManager();
 
   proc insertUpdate(ran: uint(64), loc: int) {
     local {
