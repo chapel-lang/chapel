@@ -9,7 +9,14 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 ifdef CHPL_LLVM_DEVELOPER
 CHPL_LLVM_DEBUG = -DCMAKE_BUILD_TYPE=Debug -DLLVM_OPTIMIZED_TABLEGEN=1
 else
+
+# activate LLVM asserts if it's a WARNINGS=1 build
+ifeq ($(WARNINGS), 1)
+CHPL_LLVM_DEBUG = -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON
+else
 CHPL_LLVM_DEBUG = -DCMAKE_BUILD_TYPE=Release
+endif
+
 endif
 
 LLVM_SRC_FILE := llvm/CMakeLists.txt
