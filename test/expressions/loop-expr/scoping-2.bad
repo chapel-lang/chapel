@@ -1,1 +1,1 @@
-scoping-2.chpl:14: error: type mismatch in assignment from int(64) to real(64)
+scoping-2.chpl:19: error: zippered iterations have non-equal lengths

@@ -431,7 +431,7 @@ static void codegenGlobalConstArray(const char*          name,
 
 // This uses Schubert Numbering but we could use Cohen's Display,
 // which can be computed more incrementally.
-// See issue ##5887 and/or
+// See
 // "Implementing statically typed object-oriented programming languages",
 // by Roland Ducournau
 static void

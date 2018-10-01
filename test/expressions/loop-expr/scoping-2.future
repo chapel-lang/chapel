@@ -1,2 +1,2 @@
-bug: improper scope-resolution of a LoopExpr's index variable
-#11146
+bug: for/forall expression with arrays as elements does not work
+#11039

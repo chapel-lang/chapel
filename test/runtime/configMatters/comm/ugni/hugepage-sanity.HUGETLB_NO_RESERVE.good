@@ -1,1 +1,1 @@
-warning: HUGETLB_NO_RESERVE should be set to something when using hugepages
+warning: dynamic heap on hugepages needs HUGETLB_NO_RESERVE set to something

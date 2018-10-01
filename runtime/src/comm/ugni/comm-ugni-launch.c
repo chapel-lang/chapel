@@ -28,8 +28,9 @@
 #include <stdlib.h>
 
 #include "chplrt.h"
-#include "comm-ugni-heap-pages.h"
 #include "chpl-comm-launch.h"
+#include "chpl-env.h"
+#include "comm-ugni-heap-pages.h"
 #include "error.h"
 
 
@@ -98,7 +99,11 @@ void maybe_set_jemalloc_lg_chunk(void) {
 void chpl_comm_preLaunch(void) {
   if (setenv("HUGETLB_VERBOSE", "0", 1) != 0)
     chpl_error("cannot setenv HUGETLB_VERBOSE=0", 0, 0);
-  if (setenv("HUGETLB_NO_RESERVE", "yes", 0) != 0)
-    chpl_error("cannot setenv HUGETLB_NO_RESERVE=yes", 0, 0);
+
+  if (chpl_env_rt_get("MAX_HEAP_SIZE", NULL) == NULL) {
+    if (setenv("HUGETLB_NO_RESERVE", "yes", 0) != 0)
+      chpl_error("cannot setenv HUGETLB_NO_RESERVE=yes", 0, 0);
+  }
+
   maybe_set_jemalloc_lg_chunk();
 }

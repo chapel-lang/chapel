@@ -966,7 +966,7 @@ proc DimensionalDom.dsiBuildArray(type eltType)
 }
 
 
-proc DimensionalDom.dsiDestroyDom() {
+override proc DimensionalDom.dsiDestroyDom() {
   coforall desc in localDdescs do
     on desc do
       delete desc;

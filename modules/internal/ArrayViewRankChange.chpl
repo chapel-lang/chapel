@@ -368,7 +368,7 @@ module ArrayViewRankChange {
       }
     }
 
-    proc dsiDestroyDom() {
+    override proc dsiDestroyDom() {
       if upDom != nil then
         _delete_dom(upDom, false);
       if downDomInst != nil then

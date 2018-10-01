@@ -51,8 +51,6 @@
 #include <assert.h>
 #include <time.h>
 
-static chpl_atomic_commDiagnostics comm_diagnostics;
-static int chpl_comm_no_debug_private = 0;
 static gasnet_seginfo_t* seginfo_table = NULL;
 
 // Gasnet AM handler arguments are only 32 bits, so here we have
@@ -641,9 +639,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 
   ret = gasnet_put_nb_bulk(node, raddr, addr, size);
 
-  if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-    chpl_comm_diags_incr(&comm_diagnostics.put_nb);
-  }
+  chpl_comm_diags_incr(put_nb);
 
   return (chpl_comm_nb_handle_t) ret;
 }
@@ -677,9 +673,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
 
   ret = gasnet_get_nb_bulk(addr, node, raddr, size);
 
-  if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-    chpl_comm_diags_incr(&comm_diagnostics.get_nb);
-  }
+  chpl_comm_diags_incr(get_nb);
 
   return (chpl_comm_nb_handle_t) ret;
 }
@@ -914,7 +908,7 @@ void chpl_comm_post_task_init(void) {
 
 void chpl_comm_rollcall(void) {
   // Initialize diags
-  chpl_comm_diags_init(&comm_diagnostics);
+  chpl_comm_diags_init();
 
   chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID, 
            chpl_numNodes, chpl_nodeName());
@@ -1132,12 +1126,9 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: %s:%d: remote put to %d\n", chpl_nodeID,
-             chpl_lookupFilename(fn), ln, node);
-    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      chpl_comm_diags_incr(&comm_diagnostics.put);
-    }
+    chpl_comm_diags_verbose_printf("%s:%d: remote put to %d",
+                                   chpl_lookupFilename(fn), ln, node);
+    chpl_comm_diags_incr(put);
 
     // Handle remote address not in remote segment.
 #ifdef GASNET_SEGMENT_EVERYTHING
@@ -1212,12 +1203,9 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
-             chpl_lookupFilename(fn), ln, node);
-    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      chpl_comm_diags_incr(&comm_diagnostics.get);
-    }
+    chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
+                                   chpl_lookupFilename(fn), ln, node);
+    chpl_comm_diags_incr(get);
 
     // Handle remote address not in remote segment.
 
@@ -1348,23 +1336,6 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
     cnt[strlvls] = count[strlvls];
   }
 
-  if (chpl_verbose_comm && !chpl_comm_no_debug_private) {
-    printf("%d: %s:%d: remote get from %d. strlvls:%ld. elemSize:%ld  "
-           "sizeof(size_t):%ld  sizeof(gasnet_node_t):%ld\n",
-           chpl_nodeID, chpl_lookupFilename(fn), ln, srcnode, (long)strlvls,
-           (long)elemSize, (long)sizeof(size_t), (long)sizeof(gasnet_node_t));
-
-    printf("dststrides in bytes:\n");
-    for (i=0;i<strlvls;i++) printf(" %ld ",(long)dststr[i]);
-    printf("\n");
-    printf("srcstrides in bytes:\n");
-    for (i=0;i<strlvls;i++) printf(" %ld ",(long)srcstr[i]);
-    printf("\n");
-    printf("count (count[0] in bytes):\n");
-    for (i=0;i<=strlvls;i++) printf(" %ld ",(long)cnt[i]);
-    printf("\n");
-  }
-
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get_strd)) {
     chpl_comm_cb_info_t cb_data =
@@ -1375,12 +1346,9 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
   }
   
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
-  if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
-           chpl_lookupFilename(fn), ln, srcnode);
-  if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-    chpl_comm_diags_incr(&comm_diagnostics.get);
-  }
+  chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
+                                 chpl_lookupFilename(fn), ln, srcnode);
+  chpl_comm_diags_incr(get);
 
   // TODO -- handle strided get for non-registered memory
   gasnet_gets_bulk(dstaddr, dststr, srcnode, srcaddr, srcstr, cnt, strlvls); 
@@ -1411,22 +1379,6 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
     }
     cnt[strlvls] = count[strlvls];
   }
-  if (chpl_verbose_comm && !chpl_comm_no_debug_private) {
-    printf("%d: %s:%d: remote get from %d. strlvls:%ld. elemSize:%ld  "
-           "sizeof(size_t):%ld  sizeof(gasnet_node_t):%ld\n",
-           chpl_nodeID, chpl_lookupFilename(fn), ln, dstnode, (long)strlvls,
-           (long)elemSize, (long)sizeof(size_t), (long)sizeof(gasnet_node_t));
-
-    printf("dststrides in bytes:\n");
-    for (i=0;i<strlvls;i++) printf(" %ld ",(long)dststr[i]);
-    printf("\n");
-    printf("srcstrides in bytes:\n");
-    for (i=0;i<strlvls;i++) printf(" %ld ",(long)srcstr[i]);
-    printf("\n");
-    printf("count (count[0] in bytes):\n");
-    for (i=0;i<=strlvls;i++) printf(" %ld ",(long)cnt[i]);
-    printf("\n");
-  }
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put_strd)) {
@@ -1438,12 +1390,10 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
   }
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
-  if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
-           chpl_lookupFilename(fn), ln, dstnode);
-  if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-    chpl_comm_diags_incr(&comm_diagnostics.put);
-  }
+  chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
+                                 chpl_lookupFilename(fn), ln, dstnode);
+  chpl_comm_diags_incr(put);
+
   // TODO -- handle strided put for non-registered memory
   gasnet_puts_bulk(dstnode, dstaddr, dststr, srcaddr, srcstr, cnt, strlvls); 
 }
@@ -1578,11 +1528,8 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote task created on %d\n", chpl_nodeID, node);
-    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      chpl_comm_diags_incr(&comm_diagnostics.execute_on);
-    }
+    chpl_comm_diags_verbose_printf("remote task created on %d", node);
+    chpl_comm_diags_incr(execute_on);
 
     execute_on_common(node, subloc, fid, arg, arg_size,
                      /*fast*/ false, /*blocking*/ true);
@@ -1604,11 +1551,9 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
-    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      chpl_comm_diags_incr(&comm_diagnostics.execute_on_nb);
-    }
+    chpl_comm_diags_verbose_printf("remote non-blocking task created on %d",
+                                   node);
+    chpl_comm_diags_incr(execute_on_nb);
   
     execute_on_common(node, subloc, fid, arg, arg_size,
                       /*fast*/ false, /*blocking*/ false);
@@ -1631,15 +1576,12 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote (no-fork) task created on %d\n",
-             chpl_nodeID, node);
-    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      chpl_comm_diags_incr(&comm_diagnostics.execute_on_fast);
-    }
+    chpl_comm_diags_verbose_printf("remote (no-fork) task created on %d",
+                                   node);
+    chpl_comm_diags_incr(execute_on_fast);
 
-  execute_on_common(node, subloc, fid, arg, arg_size,
-                    /*fast*/ true, /*blocking*/ true);
+    execute_on_common(node, subloc, fid, arg, arg_size,
+                      /*fast*/ true, /*blocking*/ true);
   }
 }
 
@@ -1651,18 +1593,18 @@ void chpl_comm_make_progress(void)
 
 void chpl_startVerboseComm() {
   chpl_verbose_comm = 1;
-  chpl_comm_no_debug_private = 1;
+  chpl_comm_diags_disable();
   chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
                               -1 /*typeIndex: unused*/);
-  chpl_comm_no_debug_private = 0;
+  chpl_comm_diags_enable();
 }
 
 void chpl_stopVerboseComm() {
   chpl_verbose_comm = 0;
-  chpl_comm_no_debug_private = 1;
+  chpl_comm_diags_disable();
   chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
                               -1 /*typeIndex: unused*/);
-  chpl_comm_no_debug_private = 0;
+  chpl_comm_diags_enable();
 }
 
 void chpl_startVerboseCommHere() {
@@ -1675,18 +1617,18 @@ void chpl_stopVerboseCommHere() {
 
 void chpl_startCommDiagnostics() {
   chpl_comm_diagnostics = 1;
-  chpl_comm_no_debug_private = 1;
+  chpl_comm_diags_disable();
   chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
                               -1 /*typeIndex: unused*/);
-  chpl_comm_no_debug_private = 0;
+  chpl_comm_diags_enable();
 }
 
 void chpl_stopCommDiagnostics() {
   chpl_comm_diagnostics = 0;
-  chpl_comm_no_debug_private = 1;
+  chpl_comm_diags_disable();
   chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
                               -1 /*typeIndex: unused*/);
-  chpl_comm_no_debug_private = 0;
+  chpl_comm_diags_enable();
 }
 
 void chpl_startCommDiagnosticsHere() {
@@ -1698,11 +1640,11 @@ void chpl_stopCommDiagnosticsHere() {
 }
 
 void chpl_resetCommDiagnosticsHere() {
-  chpl_comm_diags_reset(&comm_diagnostics);
+  chpl_comm_diags_reset();
 }
 
 void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
-  chpl_comm_diags_copy(cd, &comm_diagnostics);
+  chpl_comm_diags_copy(cd);
 }
 
 void chpl_comm_gasnet_help_register_global_var(int i, wide_ptr_t wide_addr) {

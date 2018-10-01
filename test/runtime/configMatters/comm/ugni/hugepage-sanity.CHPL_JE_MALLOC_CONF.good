@@ -1,1 +1,1 @@
-warning: CHPL_JE_MALLOC_CONF should be set when using hugepages
+warning: dynamic heap on hugepages needs CHPL_JE_MALLOC_CONF set properly

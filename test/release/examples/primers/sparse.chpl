@@ -86,7 +86,7 @@ writeSpsArr();
 // rather as the *IRV* or *Implicitly Replicated Value*.  This value can
 // be changed for a given array by assigning to that array's *IRV*
 // field, allowing a more interesting value/string/class instance to
-// be stored at all the *nonzero* values.
+// be stored at all the *zero* values.
 //
 spsArr.IRV = 7.7;
 writeln("Printing spsArr after changing its IRV:");
@@ -94,7 +94,7 @@ writeSpsArr();
 
 
 //
-// OK, now let's actually add some sparse indices to the ``DaSps`` domain
+// OK, now let's actually add some sparse indices to the ``spsDom`` domain
 // and see what happens:
 //
 spsDom += (1,n);

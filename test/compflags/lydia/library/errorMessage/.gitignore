@@ -1,2 +1,2 @@
-lib/hasMain.a
-lib/hasMain.h
+lib/*.a
+lib/*.h

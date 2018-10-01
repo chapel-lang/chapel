@@ -257,17 +257,27 @@ static void addIterRecShape(CallExpr* forallExprCall,
 }
 
 
+static void copyIndexDefs(LoopExpr* loopExpr, BlockStmt* indicesBlock,
+                          SymbolMap* indicesMap) {
+  for_alist(expr, loopExpr->defIndices)
+    indicesBlock->insertAtTail(expr->copy(indicesMap));
+}
+
 static Expr* removeOrNull(Expr* arg) { return arg ? arg->remove() : NULL; }
 
 static BlockStmt*
-handleArrayTypeCase(FnSymbol* fn, Expr* indices, ArgSymbol* iteratorExprArg, BlockStmt* expr) {
+handleArrayTypeCase(LoopExpr* loopExpr, FnSymbol* fn, Expr* indices,
+                    ArgSymbol* iteratorExprArg, BlockStmt* expr)
+{
   BlockStmt* block         = new BlockStmt();
   bool hasSpecifiedIndices = indices != NULL;
 
   fn->addFlag(FLAG_MAYBE_TYPE);
 
-  if (!hasSpecifiedIndices)
+  if (!hasSpecifiedIndices) {
+    INT_ASSERT(loopExpr->defIndices.length == 0); // no DefExprs to take care of
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
+  }
 
   checkIndices(indices);
 
@@ -309,7 +319,10 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, ArgSymbol* iteratorExprArg, Blo
                                 new CallExpr("iteratorIndex", iteratorSym)));
 
   BlockStmt* indicesBlock = new BlockStmt();
-  destructureIndices(indicesBlock, indices->copy(), new SymExpr(index), false);
+  SymbolMap indicesMap;
+  copyIndexDefs(loopExpr, indicesBlock, &indicesMap);
+  Expr* indicesCopy = indices->copy(&indicesMap);
+  destructureIndices(indicesBlock, indicesCopy, new SymExpr(index), false);
   indicesBlock->blockTag = BLOCK_SCOPELESS;
   isArrayTypeFn->insertAtTail(indicesBlock);
   indicesBlock->flattenAndRemove();
@@ -319,7 +332,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, ArgSymbol* iteratorExprArg, Blo
   isTypeResult->addFlag(FLAG_PARAM);
   isArrayTypeFn->insertAtTail(new DefExpr(isTypeResult));
 
-  BlockStmt* exprCopy = expr->copy();
+  BlockStmt* exprCopy = expr->copy(&indicesMap);
   Expr* lastExpr = exprCopy->body.tail->remove();
   exprCopy->insertAtTail(new CallExpr(PRIM_MOVE, isTypeResult, new CallExpr("isType", lastExpr)));
   isArrayTypeFn->insertAtTail(exprCopy);
@@ -356,6 +369,8 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, ArgSymbol* iteratorExprArg, Blo
     thenStmt->insertAtTail(new CallExpr("compilerError", msg));
     thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType, gNil));
   } else {
+    // Emphasize that there are no indices to substitute in 'expr'.
+    INT_ASSERT(loopExpr->defIndices.length == 0);
     BlockStmt* exprCopy = expr->copy();
     Expr* lastExpr = exprCopy->body.tail->remove();
     exprCopy->insertAtTail(new CallExpr(PRIM_MOVE, arrayType,
@@ -619,6 +634,17 @@ static void addOuterVariableFormals(FnSymbol* ifn,
   update_symbols(ifn, &ovMap);
 }
 
+static void adjustIndexDefPoints(FnSymbol* xifn, AList* indexDefs) {
+  if (indexDefs->length == 0) return; // nothing to do
+
+  // These blocks were created way down in ForLoop::buildForLoop().
+  BlockStmt* loopWrap = toBlockStmt(xifn->body->body.last());
+  BlockStmt* forLoop = toBlockStmt(loopWrap->body.last()->prev);
+
+  for_alist(expr, *indexDefs)
+    forLoop->insertAtHead(expr->remove());
+}
+
 static void scopeResolveAndNormalize(FnSymbol* fn) {
   TransformLogicalShortCircuit vis;
   addToSymbolTable(fn);
@@ -638,20 +664,6 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   // at module scope and pass outer variables to a top-level wrapper (the
   // chpl__loopexpr function).
   bool insideArgSymbol = isArgSymbol(loopExpr->parentSymbol);
-
-  // The indices will have been correctly scope-resolved at this point, but
-  // the loop-creation routines we rely upon (e.g. destructureIndices) are
-  // easier to use if the indices are UnresolvedSymExprs.
-  Expr* ind = loopExpr->defIndices.head;
-  while (ind != NULL) {
-    DefExpr* def = toDefExpr(ind);
-    Symbol* sym = def->sym;
-    for_SymbolSymExprs(se, sym) {
-      se->replace(new UnresolvedSymExpr(sym->name));
-    }
-    ind = def->next;
-    def->remove();
-  }
 
   std::set<Symbol*> outerVars;
   findOuterVars(loopExpr, outerVars);
@@ -692,7 +704,8 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
     // as in test/arrays/deitz/part4/test_array_type_alias.chpl
     // where "[1..3] int" is syntactically a "forall loop expression"
     INT_ASSERT(!cond);
-    block = handleArrayTypeCase(fn, indices, iteratorExprArg, loopBody);
+    block = handleArrayTypeCase(loopExpr, fn, indices,
+                                iteratorExprArg, loopBody);
   }
 
   VarSymbol* iterator = newTemp("_iterator");
@@ -723,14 +736,19 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
 
     // do we need to use this map since symbols have not been resolved?
     SymbolMap map;
+    AList indDefCopies;
+    for_alist(defI, loopExpr->defIndices)
+      indDefCopies.insertAtTail(defI->copy(&map));
     Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
     Expr* bodyCopy = stmt->copy(&map);
     fifn->insertAtTail(ForLoop::buildLoweredForallLoop(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy), false, zippered));
     addOuterVariableFormals(fifn, outerVars);
+    adjustIndexDefPoints(fifn, &indDefCopies);
   }
 
   // Do this after fifn is created - so bodyCopy still references outerVars.
   addOuterVariableFormals(sifn, outerVars);
+  adjustIndexDefPoints(sifn, &loopExpr->defIndices);
 
   if (insideArgSymbol) {
     fn->insertAtHead(new DefExpr(sifn));
