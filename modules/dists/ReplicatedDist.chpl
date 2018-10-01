@@ -398,7 +398,7 @@ proc ReplicatedDom.dsiMember(indexx)
 proc ReplicatedDom.dsiIndexOrder(indexx)
   return redirectee().dsiIndexOrder(indexx);
 
-proc ReplicatedDom.dsiDestroyDom() {
+override proc ReplicatedDom.dsiDestroyDom() {
   coforall localeIdx in dist.targetLocDom {
     on dist.targetLocales(localeIdx) do
       delete localDoms(localeIdx);

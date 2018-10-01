@@ -3533,6 +3533,24 @@ GenRet CallExpr::codegen() {
     }
   }
 
+  // When generating LLVM value, if --gen-ids is on,
+  // add metadata nodes that have the Chapel AST ids
+#ifdef HAVE_LLVM
+  if (gGenInfo->cfile == NULL && ret.val && fGenIDS) {
+    if (llvm::Instruction* insn = llvm::dyn_cast<llvm::Instruction>(ret.val)) {
+      llvm::LLVMContext& ctx = gGenInfo->llvmContext;
+
+      llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
+      llvm::Constant* c = llvm::ConstantInt::get(int64Ty, this->id);
+      llvm::ConstantAsMetadata* aid = llvm::ConstantAsMetadata::get(c);
+
+      llvm::MDNode* node = llvm::MDNode::get(ctx, aid);
+
+      insn->setMetadata("chpl.ast.id", node);
+    }
+  }
+#endif
+
   return ret;
 }
 

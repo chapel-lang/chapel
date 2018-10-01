@@ -1638,6 +1638,19 @@ void FnSymbol::codegenDef() {
       ArgNo++;
     }
 
+    // if --gen-ids is enabled, add metadata mapping the
+    // function back to Chapel AST id
+    if (fGenIDS) {
+      llvm::LLVMContext& ctx = info->llvmContext;
+
+      llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
+      llvm::Constant* c = llvm::ConstantInt::get(int64Ty, this->id);
+      llvm::ConstantAsMetadata* aid = llvm::ConstantAsMetadata::get(c);
+
+      llvm::MDNode* node = llvm::MDNode::get(ctx, aid);
+
+      func->setMetadata("chpl.ast.id", node);
+    }
 #endif
   }
 
