@@ -381,11 +381,14 @@ static void scopeResolve(ForallStmt*         forall,
       stmtScope->extend(sym);
   }
 
+  for_alist(itexpr, forall->iteratedExpressions()) {
+    scopeResolveExpr(itexpr, stmtScope);
+  }
+
   for_shadow_vars_and_defs(svar, sdef, temp, forall) {
     stmtScope->extend(svar);
-    INT_ASSERT(!isBlockStmt(sdef->init));
-    // If the above assert does not hold, need to do something like
-    //   scopeResolve(toBlockStmt(sdef->init, stmtScope)
+    if (sdef->init != NULL)
+      scopeResolveExpr(sdef->init, stmtScope);
   }
 
   scopeResolve(loopBody->body, bodyScope);
@@ -504,6 +507,10 @@ static void scopeResolveExpr(Expr* expr, ResolveScope* scope) {
     scopeResolve(ife, scope);
   } else if (LoopExpr* fe = toLoopExpr(expr)) {
     scopeResolve(fe, scope);
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    scopeResolve(block, scope);
+  } else if (NamedExpr* named = toNamedExpr(expr)) {
+    scopeResolveExpr(named->actual, scope);
   }
 }
 
@@ -540,7 +547,6 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
         }
       }
 
-      // Look for IfExprs
       if (def->init != NULL) {
         scopeResolveExpr(def->init, scope);
       }
