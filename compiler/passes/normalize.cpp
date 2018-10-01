@@ -775,6 +775,8 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 *                                                                             *
 ************************************** | *************************************/
 
+static std::set<VarSymbol*> globalTemps;
+
 static void moveGlobalDeclarationsToModuleScope() {
   bool move = false;
 
@@ -850,6 +852,17 @@ static void moveGlobalDeclarationsToModuleScope() {
         }
       }
     }
+  }
+
+  // TODO: Can this transformation be done earlier without the aid of the
+  // 'globalTemps' set?
+  //
+  // Note: The temporary variable might not be in the module init function.
+  // This can happen if the temporary is in a loopexpr wrapper function that
+  // was hoisted out of the module init function.
+  for_set(VarSymbol, tmp, globalTemps) {
+    ModuleSymbol* mod = tmp->getModule();
+    mod->block->insertAtTail(tmp->defPoint->remove());
   }
 }
 
@@ -1865,7 +1878,7 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
     }
 
     if (cur) {
-      tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+      globalTemps.insert(tmp);
     }
   }
 }
