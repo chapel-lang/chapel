@@ -1709,8 +1709,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   ct->fields.insertAtHead(new DefExpr(super));
 
-  // Builds type constructor
-  ct->buildConstructors();
+  ct->buildTypeConstructor();
 
   ct->buildDefaultInitializer();
 
@@ -1920,8 +1919,6 @@ static bool isNormalField(Symbol* field)
 {
   if( field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) ) return false;
   if( field->hasFlag(FLAG_SUPER_CLASS) ) return false;
-  // TODO -- this will break user fields named outer!
-  if( 0 == strcmp("outer", field->name)) return false;
 
   return true;
 }
@@ -2011,8 +2008,7 @@ static AggregateType* createAndInsertFunParentClass(CallExpr*   call,
 
   parent->fields.insertAtHead(new DefExpr(parentSuper));
 
-  // Builds type constructor
-  parent->buildConstructors();
+  parent->buildTypeConstructor();
 
   parent->buildDefaultInitializer();
 

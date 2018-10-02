@@ -177,7 +177,6 @@ static void resolveInitField(CallExpr* call);
 static void resolveInitVar(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
-static void temporaryInitializerFixup(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static void resolveAutoCopyEtc(AggregateType* at);
 
@@ -1321,10 +1320,6 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
   // common-case check to see if functions have equal visibility
   //
   if (fn1->defPoint->parentExpr == fn2->defPoint->parentExpr) {
-    // Special check which makes cg-initializers inferior to user-defined constructors
-    // with the same args.
-    if (fn2->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
-      return true;
     return false;
   }
 
@@ -1669,9 +1664,7 @@ static void findNonTaskFnParent(CallExpr* call,
 }
 
 static bool isConstructorLikeFunction(FnSymbol* fn) {
-  return fn->hasFlag(FLAG_CONSTRUCTOR)  == true  ||
-         strcmp(fn->name, "init")       ==    0  ||
-         strcmp(fn->name, "initialize") ==    0;
+  return strcmp(fn->name, "init")       ==    0;
 }
 
 // Is 'call' in a constructor or in initialize()?
@@ -2163,8 +2156,6 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
     print_view(call);
     gdbShouldBreakHere();
   }
-
-  temporaryInitializerFixup(call);
 
   resolveGenericActuals(call);
 
@@ -6238,7 +6229,7 @@ static bool resolveNewHasInitializer(AggregateType* at) {
   FnSymbol* di     = at->defaultInitializer;
   bool      retval = false;
 
-  if (at->initializerStyle == DEFINES_INITIALIZER) {
+  if (at->hasUserDefinedInit == true) {
     retval = true;
 
   } else if (at->wantsDefaultInitializer() == true) {
@@ -6256,12 +6247,6 @@ static bool resolveNewHasInitializer(AggregateType* at) {
 //     1) new(Type(_mt, this), arg1, ...)              nested type
 //     2) new(Type, arg1, ...)                         common
 //     3) new(module=, moduleName, Type, arg1, ...)    module-scoped
-//
-// These become
-//
-//     1) "_construct_Type"(_mt, this)(arg1, ...)
-//     2) "_construct_Type"(arg1, ...)
-//     3) "_construct_Type"(module=, moduleName, arg1, ...)
 //
 // respectively
 
@@ -6327,8 +6312,6 @@ static void resolveNewHandleConstructor(CallExpr* newExpr, Type* manager) {
 static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
   SET_LINENO(newExpr);
 
-  AggregateType* at = resolveNewFindType(newExpr);
-
   //
   // Normalize the allocation for a nested type (constructors only)
   //
@@ -6336,13 +6319,8 @@ static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
   //
   if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
     SymExpr* typeExpr = toSymExpr(partial->baseExpr);
-    SymExpr* thisExpr = toSymExpr(partial->get(2));
 
     partial->remove();
-
-    if (at->hasInitializers() == false) {
-      newExpr->insertAtHead(thisExpr->remove());
-    }
 
     newExpr->insertAtHead(typeExpr);
   }
@@ -6376,84 +6354,6 @@ static SymExpr* resolveNewFindTypeExpr(CallExpr* newExpr) {
   } else if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
     if (SymExpr* se = toSymExpr(partial->baseExpr)) {
       retval = partial->partialTag ? se : NULL;
-    }
-  }
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static bool isRefWrapperForNonGenericRecord(AggregateType* at);
-
-static void temporaryInitializerFixup(CallExpr* call) {
-  if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
-    // Support super.init() calls (for instance) when the super type
-    // does not define either an initializer or a constructor.
-    // Also ignores errors from improperly inserted .init() calls
-    // (so be sure to check here if something is behaving oddly
-    // - Lydia, 08/19/16)
-    if (strcmp(usym->unresolved, "init") ==     0 &&
-        call->numActuals()               >=     2 &&
-        isNamedExpr(call->get(2))        == false) {
-      // Arg 2 will be a NamedExpr to "this" if we're in an intentionally
-      // inserted initializer call
-      SymExpr* _mt = toSymExpr(call->get(1));
-      SymExpr* sym = toSymExpr(call->get(2));
-
-      INT_ASSERT(sym != NULL);
-
-      if (AggregateType* ct = toAggregateType(sym->symbol()->getValType())) {
-
-        if (isRefWrapperForNonGenericRecord(ct) == false &&
-            ct->initializerStyle                == DEFINES_NONE_USE_DEFAULT) {
-          // Transitioning to a default initializer world.
-          // Lydia note 03/14/17)
-          if (ct->hasInitializers() == false) {
-            // This code should be removed when the compiler generates
-            // initializers as the default method of construction and
-            // initialization for a type (Lydia note, 08/19/16)
-            usym->unresolved = astr("_construct_", ct->symbol->name);
-
-            _mt->remove();
-          }
-        }
-      }
-    }
-  }
-}
-
-
-//
-// Noakes 2017/03/26
-//   The function temporaryInitializerFixup is designed to update
-//   certain calls to init() while the initializer update matures.
-//
-//   Unfortunately this transformation is triggered incorrectly for uses of
-//           this.init(...);
-//
-//   inside initializers for non-generic records.
-//
-//   For those uses of init() the "this" argument has currently has type
-//   _ref(<Record>) rather than <Record>
-//
-//  This rather unfortunate function catches this case and enables the
-//  transformation to be skipped.
-//
-static bool isRefWrapperForNonGenericRecord(AggregateType* at) {
-  bool retval = false;
-
-  if (isClass(at)                           == true &&
-      strncmp(at->symbol->name, "_ref(", 5) == 0    &&
-      at->fields.length                     == 1) {
-    Symbol* sym = toDefExpr(at->fields.head)->sym;
-
-    if (strcmp(sym->name, "_val") == 0) {
-      retval = isNonGenericRecordWithInitializers(sym->type);
     }
   }
 
@@ -7587,8 +7487,7 @@ static void unmarkDefaultedGenerics() {
 
         if (formal                               != fn->_this &&
             typeHasGenericDefaults                            &&
-            formal->hasFlag(FLAG_MARKED_GENERIC) == false     &&
-            formal->hasFlag(FLAG_IS_MEME)        == false) {
+            formal->hasFlag(FLAG_MARKED_GENERIC) == false) {
           SET_LINENO(formal);
 
           FnSymbol*      typeConstr = formalAt->typeConstructor;
@@ -8984,8 +8883,7 @@ static bool do_isUnusedClass(Type* t) {
 
   // FALSE if the type uses an initializer and that initializer was
   // resolved
-  } else if (at && at->initializerStyle != DEFINES_CONSTRUCTOR &&
-             at->initializerResolved) {
+  } else if (at && at->initializerResolved) {
     retval = false;
 
   } else if (at) {
@@ -9211,18 +9109,15 @@ static void removeParamArgs()
 static void removeAggTypeFieldInfo() {
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (at->symbol->defPoint && at->symbol->defPoint->parentSymbol) {
-      // Still in the tree
-      if (at->initializerStyle != DEFINES_CONSTRUCTOR) {
-        // Defined an initializer (so we left its init
-        // and exprType information in the tree)
-        for_fields(field, at) {
-          if (field->defPoint->exprType) {
-            field->defPoint->exprType->remove();
-          }
+      // Defined an initializer (so we left its init
+      // and exprType information in the tree)
+      for_fields(field, at) {
+        if (field->defPoint->exprType) {
+          field->defPoint->exprType->remove();
+        }
 
-          if (field->defPoint->init) {
-            field->defPoint->init->remove();
-          }
+        if (field->defPoint->init) {
+          field->defPoint->init->remove();
         }
       }
     }

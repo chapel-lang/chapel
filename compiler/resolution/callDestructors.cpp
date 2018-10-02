@@ -770,12 +770,10 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
 
   // Determine if
   //   a) current call is not a PRIMOP
-  //   a) current call is not to a constructor
-  //   c) the subsequent statement is PRIM_MOVE for an initCopy/autoCopy
-  //   d) the initCopy/autoCopy has the same argument and return type
+  //   b) the subsequent statement is PRIM_MOVE for an initCopy/autoCopy
+  //   c) the initCopy/autoCopy has the same argument and return type
   //      (this accounts for tuples containing refs)
   if (fn                            != NULL  &&
-      fn->hasFlag(FLAG_CONSTRUCTOR) == false &&
       nextExpr                      != NULL)
   {
     if (CallExpr* callNext = toCallExpr(nextExpr))

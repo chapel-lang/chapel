@@ -12,8 +12,6 @@ Warning and Language Control Options:
       --[no-]permit-unhandled-module-errors
                                       Permit unhandled errors in explicit
                                       modules; such errors halt at runtime
-      --[no-]warn-constructors        Enable [disable] deprecation warnings
-                                      for constructors
       --[no-]warn-unstable            Enable [disable] warnings for uses of
                                       language features that are in flux
       --[no-]warnings                 Enable [disable] output of warnings

@@ -711,7 +711,6 @@ bool requiresImplicitDestroy(CallExpr* call) {
         fn->isIterator()                                      == false &&
         fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
         fn->hasFlag(FLAG_AUTO_II)                             == false &&
-        fn->hasFlag(FLAG_CONSTRUCTOR)                         == false &&
         fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)                    == false &&
         fn->name != astrSequals                                        &&
         fn->name != astr_defaultOf) {

@@ -1365,7 +1365,7 @@ bool isNonGenericClassWithInitializers(Type* type) {
 
   if (isNonGenericClass(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      if (at->initializerStyle == DEFINES_INITIALIZER) {
+      if (at->hasUserDefinedInit == true) {
         retval = true;
       } else if (at->wantsDefaultInitializer()) {
         retval = true;
@@ -1395,7 +1395,7 @@ bool isGenericClassWithInitializers(Type* type) {
 
   if (isGenericClass(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      if (at->initializerStyle == DEFINES_INITIALIZER) {
+      if (at->hasUserDefinedInit == true) {
         retval = true;
       } else if (at->wantsDefaultInitializer()) {
         retval = true;
@@ -1412,7 +1412,7 @@ bool isClassWithInitializers(Type* type) {
   if (AggregateType* at = toAggregateType(type)) {
     if (at->isClass()                    == true  &&
         at->symbol->hasFlag(FLAG_EXTERN) == false &&
-        (at->initializerStyle == DEFINES_INITIALIZER ||
+        (at->hasUserDefinedInit == true ||
          at->wantsDefaultInitializer())) {
       retval = true;
     }
@@ -1440,7 +1440,7 @@ bool isNonGenericRecordWithInitializers(Type* type) {
 
   if (isNonGenericRecord(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      if (at->initializerStyle == DEFINES_INITIALIZER) {
+      if (at->hasUserDefinedInit == true) {
         retval = true;
       } else if (at->wantsDefaultInitializer()) {
         retval = true;
@@ -1470,7 +1470,7 @@ bool isGenericRecordWithInitializers(Type* type) {
 
   if (isGenericRecord(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      if (at->initializerStyle == DEFINES_INITIALIZER) {
+      if (at->hasUserDefinedInit == true) {
         retval = true;
       } else if (at->wantsDefaultInitializer()) {
         retval = true;
@@ -1486,7 +1486,7 @@ bool isRecordWithInitializers(Type* type) {
 
   if (AggregateType* at = toAggregateType(type)) {
     if (at->isRecord()                   == true  &&
-        (at->initializerStyle == DEFINES_INITIALIZER ||
+        (at->hasUserDefinedInit == true ||
          at->wantsDefaultInitializer())) {
       retval = true;
     }

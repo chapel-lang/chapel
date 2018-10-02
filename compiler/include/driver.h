@@ -138,7 +138,6 @@ extern bool fPrintUnusedInternalFns;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
-extern bool fUserDefaultInitializers;
 extern bool fLifetimeChecking;
 extern bool fOverrideChecking;
 extern bool fHeterogeneous;
@@ -184,7 +183,6 @@ extern bool fWarnConstLoops;
 extern bool fWarnUnstable;
 extern bool fDefaultUnmanaged;
 extern bool fLegacyNew;
-extern bool fWarnConstructors;
 
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportInlinedIterators;
