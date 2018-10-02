@@ -1955,9 +1955,8 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
           fn->getModule() == t->getModule()) {
         // Only mark the type as defining an initializer if the initializer
         // we found was in the same module as the type itself.  If there is
-        // no such initializer, we would need to define a default constructor
-        // or initializer for the scopes where the secondary initializer is
-        // not visible.
+        // no such initializer, we would need to define a default initializer
+        // for the scopes where the secondary initializer is not visible.
         ct->hasUserDefinedInit = true;
       }
     }
