@@ -1,2 +1,2 @@
-bug: valgrind failure
-#10376
+bug: forall-over-forall results in empty array
+#11254

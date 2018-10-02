@@ -1,5 +1,3 @@
-// Modified from
-// test/classes/constructors/base-class-generic-args.chpl
 
 // Contributed by Rafael Larrosa Jimenez (rlarrosa@uma.es)
 

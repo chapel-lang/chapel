@@ -682,6 +682,10 @@ static void build_record_equality_function(AggregateType* ct) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
+  fn->where = new BlockStmt(new CallExpr("==",
+                                         new CallExpr(PRIM_TYPEOF, arg1),
+                                         new CallExpr(PRIM_TYPEOF, arg2)));
+
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
@@ -711,6 +715,10 @@ static void build_record_inequality_function(AggregateType* ct) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
+  fn->where = new BlockStmt(new CallExpr("==",
+                                         new CallExpr(PRIM_TYPEOF, arg1),
+                                         new CallExpr(PRIM_TYPEOF, arg2)));
+
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
@@ -1135,6 +1143,10 @@ static void build_record_assignment_function(AggregateType* ct) {
   fn->insertFormalAtTail(arg2);
 
   fn->retType = dtVoid;
+  fn->where = new BlockStmt(new CallExpr("==",
+                                         new CallExpr(PRIM_TYPEOF, arg1),
+                                         new CallExpr(PRIM_TYPEOF, arg2)));
+
 
   if (externRecord) {
     fn->insertAtTail(new CallExpr(PRIM_ASSIGN, arg1, arg2));

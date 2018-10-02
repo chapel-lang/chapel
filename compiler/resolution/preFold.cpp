@@ -524,17 +524,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_IS_EXTERN_CLASS_TYPE)) {
-    AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
-
-    if (isClass(classtype) && classtype->symbol->hasFlag(FLAG_EXTERN)) {
-      retval = new SymExpr(gTrue);
-    } else {
-      retval = new SymExpr(gFalse);
-    }
-
-    call->replace(retval);
-
   } else if (call->isPrimitive(PRIM_IS_POD)) {
     Type* t = call->get(1)->typeInfo();
 
@@ -963,6 +952,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
   } else if (call->isPrimitive(PRIM_STATIC_TYPEOF) ||
+             call->isPrimitive(PRIM_STATIC_FIELD_TYPE) ||
              call->isPrimitive(PRIM_SCALAR_PROMOTION_TYPE)) {
 
     // Replace the type query call with a SymExpr of the type symbol

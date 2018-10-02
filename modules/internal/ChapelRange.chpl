@@ -343,6 +343,51 @@ module ChapelRange {
   proc chpl_build_unbounded_range()
     return new range(int, BoundedRangeType.boundedNone);
 
+  /////////////////////////////////////////////////////////////////////
+  // Helper functions for ranges in param loops (and maybe param ranges
+  // later)
+  //
+  // Necessary for coercion support
+  /////////////////////////////////////////////////////////////////////
+  proc chpl_compute_low_param_loop_bound(param low: int(?w),
+                                         param high: int(w)) param {
+    return low;
+  }
+
+  proc chpl_compute_high_param_loop_bound(param low: int(?w),
+                                          param high: int(w)) param {
+    return high;
+  }
+
+  proc chpl_compute_low_param_loop_bound(param low: uint(?w),
+                                         param high: uint(w)) param {
+    return low;
+  }
+
+  proc chpl_compute_high_param_loop_bound(param low: uint(?w),
+                                          param high: uint(w)) param {
+    return high;
+  }
+
+  proc chpl_compute_low_param_loop_bound(param low: bool,
+                                         param high: bool) param {
+    return low;
+  }
+
+  proc chpl_compute_high_param_loop_bound(param low: bool,
+                                          param high: bool) param {
+    return high;
+  }
+
+  pragma "last resort"
+  proc chpl_compute_low_param_loop_bound(param low, param high) param {
+    compilerError("Range bounds must be integers of compatible types");
+  }
+
+  pragma "last resort"
+  proc chpl_compute_low_param_loop_bound(low, high) {
+    compilerError("param for loop must be defined over a bounded param range");
+  }
 
   //################################################################################
   //# Predicates
@@ -620,11 +665,12 @@ module ChapelRange {
     return other == this(other);
   }
 
-  // This helper takes one arg by 'in', i.e. explicitly creating a copy,
-  // so it can be modified.
-  /* private */ inline proc _memberHelp(arg1: range(?), in arg2: range(?)) {
-    compilerAssert(arg2.stridable);
-    arg2._stride = -arg2._stride;
+  // Negate one of the two args' strides before comparison.
+  private inline proc _memberHelp(in arg1: range(?), in arg2: range(?)) {
+    if arg2.stridable then
+      arg2._stride = -arg2._stride;
+    else
+      arg1._stride = -arg1._stride;
     return arg2 == arg1(arg2);
   }
 
@@ -839,8 +885,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       __primitive("chpl_error", c"indexOrder -- Undefined on a range with ambiguous alignment.");
 
     if ! member(ind) then return (-1):intIdxType;
-    if ! stridable then return chpl__idxToInt(ind) - _low;
-    else return ((chpl__idxToInt(ind):strType - chpl__idxToInt(this.first):strType) / _stride):intIdxType;
+    if ! stridable {
+      if this.hasLowBound() then
+        return chpl__idxToInt(ind) - _low;
+    } else {
+      if this.hasFirst() then
+        return ((chpl__idxToInt(ind):strType - chpl__idxToInt(this.first):strType) / _stride):intIdxType;
+    }
+    return (-1):intIdxType;
   }
 
   /* Returns the zero-based ``ord``-th element of this range's represented
@@ -859,6 +911,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
    */
   proc range.orderToIndex(ord: integral): idxType
   {
+    if !hasFirst() then
+      halt("invoking orderToIndex on a range that has no first index");
+
     if isAmbiguous() then
       halt("invoking orderToIndex on a range that is ambiguously aligned");
 
@@ -2509,6 +2564,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // a single underscore where the standalone versions use double
   // underscores.  Reason: otherwise, the calls in range.init() try
   // to call the method version, which isn't currently legal.
+  pragma "no doc"
   inline proc range.chpl_intToIdx(i) {
     return chpl__intToIdx(this.idxType, i);
   }

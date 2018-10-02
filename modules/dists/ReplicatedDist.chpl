@@ -398,7 +398,7 @@ proc ReplicatedDom.dsiMember(indexx)
 proc ReplicatedDom.dsiIndexOrder(indexx)
   return redirectee().dsiIndexOrder(indexx);
 
-proc ReplicatedDom.dsiDestroyDom() {
+override proc ReplicatedDom.dsiDestroyDom() {
   coforall localeIdx in dist.targetLocDom {
     on dist.targetLocales(localeIdx) do
       delete localDoms(localeIdx);
@@ -547,7 +547,7 @@ proc ReplicatedArr.dsiSerialRead(f, loc): void {
 }
 
 proc isReplicatedArr(arr) param {
-  return isSubtype(_to_borrowed(chpl__getActualArray(arr)), ReplicatedArr);
+  return isSubtype(_to_borrowed(chpl__getActualArray(arr)).type, ReplicatedArr);
 }
 
 proc chpl_serialReadWriteRectangular(f, arr, dom) where isReplicatedArr(arr) {

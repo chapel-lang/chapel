@@ -326,13 +326,7 @@ module ChapelDistribution {
     proc dsiLinksDistribution() return true;
 
     // Overload to to customize domain destruction
-    //
-    // BHARSH 2017-02-05: Making dsiDestroyDom a virtual method 'tricks' the
-    // compiler into thinking there's recursion for dsiDestroyDom when there is
-    // none. This can result in incorrect generated code if recursive iterators
-    // are inlined. See GitHub issue #5311 for more.
-    //
-    //proc dsiDestroyDom() { }
+    proc dsiDestroyDom() { }
 
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
 
@@ -779,17 +773,17 @@ module ChapelDistribution {
     // the matching tuple of ranges.
 
     // Q. Should this pass in a BaseRectangularDom or ranges?
-    proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+    proc dsiReallocate(bounds: rank*range(idxType,BoundedRangeType.bounded,stridable)) {
       halt("reallocating not supported for this array type");
     }
 
-    proc dsiReallocate(allocBounds:rank*range(idxType,
-                                              BoundedRangeType.bounded,
-                                              stridable),
-                       arrayBounds:rank*range(idxType,
-                                              BoundedRangeType.bounded,
-                                              stridable)) {
-      halt("reallocating not supported for this array type");
+    // This dsiReallocate version is used by array vector operations, which
+    // are supported on 1-D arrays only, so can work directly with ranges
+    // instead of requiring tuples of ranges.  They require two ranges
+    // because the allocated size and logical size can differ.
+    proc dsiReallocate(allocBound: range(idxType, BoundedRangeType.bounded, stridable),
+                       arrayBound: range(idxType, BoundedRangeType.bounded, stridable)) where rank == 1 {
+       halt("reallocating not supported for this array type");
     }
 
     override proc dsiPostReallocate() {
@@ -916,14 +910,7 @@ module ChapelDistribution {
 
   proc _delete_dom(dom, param privatized:bool) {
 
-    // This is a workaround for the recursive iterator bug discussed in
-    // GitHub issue #5311. Implementing 'dsiDestroyDom' on 'BaseDom' leads
-    // the compiler into thinking there's recursion due to virtual methods,
-    // when in fact there is no recursion at all.
-    use Reflection;
-    if canResolveMethod(dom, "dsiDestroyDom") {
-      dom.dsiDestroyDom();
-    }
+    dom.dsiDestroyDom();
 
     if privatized {
       _freePrivatizedClass(dom.pid, dom);

@@ -1,2 +1,0 @@
---no-force-initializers # test_nested2.good
---force-initializers # test_nested2.init.good

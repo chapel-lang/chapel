@@ -678,15 +678,7 @@ forwarding_stmt:
 extern_block_stmt:
   TEXTERN EXTERNCODE
     {
-#ifdef HAVE_LLVM
-      if (externC) {
-        $$ = buildExternBlockStmt(astr($2));
-      } else {
-        USR_FATAL(new BlockStmt(), "extern block syntax is turned off. Use --extern-c flag to turn on.");
-      }
-#else
-      USR_FATAL(new BlockStmt(), "Chapel must be built with llvm in order to use the extern block syntax");
-#endif
+      $$ = buildExternBlockStmt(astr($2));
     }
 ;
 

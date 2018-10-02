@@ -69,7 +69,11 @@ For example:
 
 This domain map is a layout, i.e. it maps all indices to the current locale.
 All elements of a CS-distributed array are stored
-on the locale where the array variable is declared.
+on the locale where the array variable is declared.  By default, the CS
+layout stores sparse indices in sorted order.  However, this default can
+be changed for a program by compiling with ``-sLayoutCSDefaultToSorted=false``, 
+or for a specific domain by passing ``sortedIndices=false`` as an argument
+to the ``CS()`` initializer.
 */
 class CS: BaseDist {
   param compressRows: bool = true;

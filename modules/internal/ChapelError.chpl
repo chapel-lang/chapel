@@ -364,7 +364,7 @@ module ChapelError {
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc chpl_fix_thrown_error(ref err: Owned(Error)): unmanaged Error {
+  proc chpl_fix_thrown_error(ref err: owned Error): unmanaged Error {
     return chpl_fix_thrown_error(err.release());
   }
 

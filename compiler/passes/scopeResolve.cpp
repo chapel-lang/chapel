@@ -381,11 +381,14 @@ static void scopeResolve(ForallStmt*         forall,
       stmtScope->extend(sym);
   }
 
+  for_alist(itexpr, forall->iteratedExpressions()) {
+    scopeResolveExpr(itexpr, stmtScope);
+  }
+
   for_shadow_vars_and_defs(svar, sdef, temp, forall) {
     stmtScope->extend(svar);
-    INT_ASSERT(!isBlockStmt(sdef->init));
-    // If the above assert does not hold, need to do something like
-    //   scopeResolve(toBlockStmt(sdef->init, stmtScope)
+    if (sdef->init != NULL)
+      scopeResolveExpr(sdef->init, stmtScope);
   }
 
   scopeResolve(loopBody->body, bodyScope);
@@ -504,6 +507,10 @@ static void scopeResolveExpr(Expr* expr, ResolveScope* scope) {
     scopeResolve(ife, scope);
   } else if (LoopExpr* fe = toLoopExpr(expr)) {
     scopeResolve(fe, scope);
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    scopeResolve(block, scope);
+  } else if (NamedExpr* named = toNamedExpr(expr)) {
+    scopeResolveExpr(named->actual, scope);
   }
 }
 
@@ -540,7 +547,6 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
         }
       }
 
-      // Look for IfExprs
       if (def->init != NULL) {
         scopeResolveExpr(def->init, scope);
       }
@@ -1036,6 +1042,14 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
     FnSymbol* fn = toFnSymbol(sym);
 
     if (fn == NULL) {
+      // This deprecation should be removed in 1.19
+      if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        if (0 == strcmp(name, "Owned"))
+          USR_WARN(usymExpr, "Owned is deprecated, use owned instead");
+        if (0 == strcmp(name, "Shared"))
+          USR_WARN(usymExpr, "Shared is deprecated, use shared instead");
+      }
+
       SymExpr* symExpr = new SymExpr(sym);
 
       usymExpr->replace(symExpr);
@@ -1740,14 +1754,12 @@ Symbol* lookup(const char* name, BaseAST* context) {
     //   otherwise fail
 
     for_vector(Symbol, sym, symbols) {
-      if (isFnSymbol(sym) == false) {
+      if (! isFnSymbol(sym)) {
         USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
         printConflictingSymbols(symbols, sym);
         break;
       }
     }
-
-    USR_STOP();
 
     retval = NULL;
   }
@@ -2323,14 +2335,25 @@ static void resolveUnmanagedBorrows() {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
           TypeSymbol* useTS = ts;
-          if (unmanaged) {
-            if (AggregateType* at = toAggregateType(ts->type)) {
-              if (isClass(at)) {
-                UnmanagedClassType* unm = at->getUnmanagedClass();
-                useTS = unm->symbol;
-              }
+
+          AggregateType* at = toAggregateType(ts->type);
+          if (at && isClass(at)) {
+            if (unmanaged) {
+              UnmanagedClassType* unm = at->getUnmanagedClass();
+              useTS = unm->symbol;
             }
+          } else {
+            const char* type = NULL;
+            if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
+              type = "unmanaged";
+            else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS))
+              type = "borrowed";
+
+            USR_FATAL_CONT(call, "%s can only apply to class types "
+                                 "(%s is not a class type)",
+                                 type, ts->name);
           }
+
           // replace the call with a new symexpr pointing to ts
           call->replace(new SymExpr(useTS));
         }

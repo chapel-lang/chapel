@@ -51,14 +51,14 @@ record Population {
   // a domain and array representing the chameneos in this population
   //
   const chamSpace: domain(1),
-        chameneos: [chamSpace] unmanaged Chameneos;
+        chameneos: [chamSpace] owned Chameneos;
 
   //
   // construct the population in terms of an array of colors passed in
   //
   proc init(colors: [] Color) {
     chamSpace = colors.domain;
-    chameneos = new unmanaged Chameneos(1..colors.size, colors);
+    chameneos = new owned Chameneos(1..colors.size, colors);
   }
 
   //
@@ -66,12 +66,10 @@ record Population {
   // place, and then creating per-chameneos tasks to have meetings.
   //
   proc holdMeetings(numMeetings) {
-    const place = new unmanaged MeetingPlace(numMeetings);
+    const place = new MeetingPlace(numMeetings);
 
     coforall c in chameneos do           // create a task per chameneos
       c.haveMeetings(place, chameneos);
-
-    delete place;
   }
 
   //
@@ -91,14 +89,6 @@ record Population {
 
     spellInt(+ reduce chameneos.meetings);
     writeln();
-  }
-
-  //
-  // Delete the chameneos objects.
-  //
-  proc deinit() {
-    for c in chameneos do
-      delete c;
   }
 }
 

@@ -368,7 +368,10 @@ static void checkIntentsMatch(FnSymbol* pfn, FnSymbol* cfn) {
 static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
   resolveSignature(cfn);
 
-  if (signatureMatch(pfn, cfn) == true && evaluateWhereClause(cfn) == true) {
+  if (signatureMatch(pfn, cfn) &&
+      evaluateWhereClause(cfn) &&
+      evaluateWhereClause(pfn)) {
+
     resolveFunction(cfn);
 
     if (checkOverrides(cfn) &&

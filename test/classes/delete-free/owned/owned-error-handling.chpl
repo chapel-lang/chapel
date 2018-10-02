@@ -1,5 +1,5 @@
 
-use OwnedObject;
+
 
 class Foo {
   proc foobar() throws {
@@ -8,7 +8,7 @@ class Foo {
 }
 
 proc main() {
-  var f = new Owned(new Foo());
+  var f = new owned Foo();
   try {
     f.foobar();
   } catch e : Error {

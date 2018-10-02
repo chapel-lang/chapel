@@ -1,6 +1,6 @@
 
 
-proc foo(x) where isSubtype(x,integral) {
+proc foo(x) where isSubtype(x.type,integral) {
   writeln("integral");
 }
 proc foo(x) {

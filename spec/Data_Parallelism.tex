@@ -169,14 +169,22 @@ convenience.
 The handling of the outer variables within the forall expression and
 the role of \sntx{task-intent-clause} are defined in \rsec{Forall_Intents}.
 
-\subsection{Execution and Serializability}
-\label{Forall_Expression_Execution_and_Serializability}
+\subsection{Execution}
+\label{Forall_Expression_Execution}
 \index{expressions!forall!semantics}
 
-The forall expression executes a forall loop (\rsec{Forall}),
-evaluates the body expression on each iteration of the loop, and
-returns the resulting values as a collection.  The size and shape of
-that collection are determined by the iteratable-expression.
+A forall expression is an iterator that executes a forall loop (\rsec{Forall}),
+evaluates the body expression on each iteration of the loop,
+and yields each resulting value.
+
+When a forall expression is used to initialize a variable, such as
+\begin{chapel}
+var X = forall iterableExpression() do computeValue();
+\end{chapel}
+the variable will be inferred to have an array type.
+The array's domain is defined by the \sntx{iterable-expression}
+following the same rules as for promotion, both in the regular
+case \rsec{Promotion} and in the zipper case \rsec{Zipper_Promotion}.
 
 \begin{chapelexample}{forallExpr.chpl}
 The code
@@ -210,6 +218,9 @@ else clause.  Such an if expression filters the iterations of the
 forall expression.  The iterations for which the condition does not
 hold are not reflected in the result of the forall expression.
 
+When a forall expression with a filtering predicate is captured into
+a variable, the resulting array has a 1-based one-dimensional domain.
+
 \begin{chapelexample}{forallFilter.chpl}
 The following expression returns every other element starting with the
 first:
@@ -233,8 +244,11 @@ writeln(result);
 \section{Forall Intents}
 \label{Forall_Intents}
 \index{forall intents}
+\index{shadow variables}
 \index{data parallelism!forall intents}
+\index{data parallelism!shadow variables}
 \index{statements!forall@\chpl{forall}!forall intents}
+\index{statements!forall@\chpl{forall}!shadow variables}
 
 If a variable is referenced within the lexical scope of a
 forall statement or expression and is declared outside
@@ -244,11 +258,12 @@ for task-parallel constructs. That is, the variable is considered
 to be passed as an actual argument to
 each task function created by the object or iterator leading
 the execution of the loop. If no tasks are created,
-it is considered to be an actual argument to the leader
+it is considered to be an actual argument to the leader or standalone
 iterator itself. All references to the variable
 within the forall statement or expression implicitly refer
-to the corresponding formal argument of the task function
-or the leader iterator.
+to a \emph{shadow variable}, i.e.
+the corresponding formal argument of the task function
+or the leader/standalone iterator.
 
 Each formal argument of a task function or iterator has the default
 intent by default.  For variables of primitive, enum, and class
@@ -262,8 +277,8 @@ with that intent in the optional \sntx{task-intent-clause}.
 For example, for variables of most types, the \chpl{ref} intent allows
 the body of the forall loop to modify the corresponding original
 variable or to read its updated value after concurrent modifications.
-The \chpl{in} intent is a way to obtain task-private variables
-in a forall loop.
+The \chpl{in} intent is an alternative way to obtain task-private
+variables (\rsec{Task_Private_Variables}).
 A \chpl{reduce} intent can be used to reduce values across iterations
 of a forall or coforall loop.
 Reduce intents are described in the \emph{Reduce Intents} technical note
@@ -280,9 +295,114 @@ affect the behavior of a task construct such as a \chpl{coforall} loop.
 \end{rationale}
 
 
+\section{Task-Private Variables}
+\label{Task_Private_Variables}
+\index{task-private variables}
+\index{shadow variables}
+\index{data parallelism!task-private variables}
+\index{data parallelism!shadow variables}
+\index{statements!forall@\chpl{forall}!task-private variables}
+\index{statements!forall@\chpl{forall}!shadow variables}
+
+A \emph{task-private variable} declared in a forall loop results
+in a separate shadow variable in each task created by the forall
+loop's parallel iterator, as well as a "top-level" shadow variable
+created at the top level of the parallel iterator itself.
+In contrast to regular forall intents \rsec{Forall_Intents},
+these shadow variables are unrelated to outer variables
+of the same name, if any.
+
+A given shadow variable is created at the start and destroyed
+at the end of its task.
+Within the lexical scope of the body of the forall statement or expression,
+the variable name refers to the shadow variable created in the task
+that executed the current yield statement.
+
+The "top-level" shadow variable is created at the start and destroyed
+at the end of the parallel iterator. It is referenced in those iterations
+of the forall loop that are due to "top-level" yields, i.e. yields
+that are outside any of the task constructs that the iterator may have.
+
+The syntax of a task-private variable declaration in a forall statement's
+with-clause is:
+
+\begin{syntax}
+task-private-var-decl:
+  task-private-var-kind identifier type-part[OPT] initialization-part[OPT]
+
+task-private-var-kind:
+  `const'
+  `var'
+  `ref'
+\end{syntax}
+
+The declaration of a \chpl{const} or \chpl{var} task-private variable must
+have at least one of \sntx{type-part} and \sntx{initialization-part}.
+A \chpl{ref} task-private variable must have \sntx{initialization-part}
+and cannot have \sntx{type-part}. A \chpl{ref} shadow variable
+is a reference to the \sntx{initialization-part} as calculated at
+the start of the corresponding task or the iterator.
+\chpl{ref} shadow variables are never destroyed.
+
+\begin{craychapel}
+Currently task-private variables are not available for task constructs.
+A regular variable declared at the start of the begin/cobegin/coforall
+block can be used instead.
+\end{craychapel}
+
+\begin{chapelexample}{task-private-variable.chpl}
+In the following example, the \chpl{writeln()} statement will observe
+the first shadow variable 4 times: twice each for the yields
+{\tt "before coforall"} and {\tt "after coforall"}.
+An additional shadow variable will be created and observed twice
+for each of the three \chpl{coforall} tasks.
+\begin{chapel}
+var cnt: atomic int;                     // count our shadow variables
+record R { var id = cnt.fetchAdd(1); }
+
+iter myIter() { yield ""; }              // serial iterator, unused
+
+iter myIter(param tag) where tag == iterKind.standalone {
+  for 1..2 do
+    yield "before coforall";             // shadow var 0 ("top-level")
+  coforall 1..3 do
+    for 1..2 do
+      yield "inside coforall";           // shadow vars 1..3
+  for 1..2 do
+    yield "after coforall";              // shadow var 0, again
+}
+
+forall str in myIter()
+  with (var tpv: R)                      // declare a task-private variable
+do
+  writeln("shadow var: ", tpv.id, "  yield: ", str);
+\end{chapel}
+\begin{chapelprediff}
+\#!/usr/bin/env sh
+testname=$1
+outfile=$2
+sort $outfile > $outfile.2
+mv $outfile.2 $outfile
+\end{chapelprediff}
+\begin{chapeloutput}
+shadow var: 0  yield: after coforall
+shadow var: 0  yield: after coforall
+shadow var: 0  yield: before coforall
+shadow var: 0  yield: before coforall
+shadow var: 1  yield: inside coforall
+shadow var: 1  yield: inside coforall
+shadow var: 2  yield: inside coforall
+shadow var: 2  yield: inside coforall
+shadow var: 3  yield: inside coforall
+shadow var: 3  yield: inside coforall
+\end{chapeloutput}
+\end{chapelexample}
+
+
 \section{Promotion}
 \label{Promotion}
 \index{promotion}
+\index{data parallelism!promotion}
 
 A function that expects one or more scalar arguments but is called
 with one or more arrays, domains, ranges, or iterators is promoted if
@@ -295,6 +415,40 @@ Functions that can be promoted include procedures, operators, casts,
 and methods. Also note that since class and record field access
 is performed with getter methods~(\rsec{Getter_Methods}), field
 access can also be promoted.
+
+If the original function returns a value or a reference, the
+corresponding promoted expression is an iterator yielding each
+computed value or reference.
+
+When a promoted expression is used to initialize a variable,
+such as \chpl{var X = A.x;} in the above example,
+the variable's type will be inferred to be an array.
+The array's domain is defined by the expression that causes promotion:
+
+\begin{center}
+\begin{tabular}[c]{|l|l|}
+\hline
+input expression & resulting array's domain \\
+\hline
+array    &  that array's domain \\
+domain   &  that domain \\
+range    &  one-dimensional domain built from that range \\
+iterator &  1-based one-dimensional domain \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{future}
+We would like to allow the iterator author to specify the shape
+of the iterator, i.e. the domain of the array that would capture
+the result of the corresponding promoted expression, such as
+\begin{chapel}
+var myArray = myScalarFunction(myIterator());
+\end{chapel}
+This will be helpful, for example, when the iterator yields
+one value per an array or domain element that it iterates over
+internally.
+\end{future}
 
 \begin{chapelexample}{promotion.chpl}
 Given the array
@@ -352,22 +506,9 @@ writeln(A);
 \end{chapelexample}
 
 
-%%
-%% sungeun: 10/2011
-%% I axed the following paragraph because comments from the peanut
-%% gallery suggested it was confusing, too much implementation
-%% details, etc.  One idea was to add something about defining
-%% iterators to support promotion.  Not sure where that would
-%% eventually go.
-%%
-%% If a promoted function returns a value, the promoted function becomes
-%% an iterator that is controlled by a loop over the iterator (or array,
-%% domain, or range) that it is promoted by.  If the function does not
-%% return a value, the function is controlled by a loop over the iterator
-%% that it is promoted by, but the promotion does not become an iterator.
-
-Whole array operations are a form of promotion as applied to operators
-rather than functions.
+\subsection{Default Arguments}
+\label{Promotion_Default_Arguments}
+\index{promotion!default arguments}
 
 When a call is promoted and that call relied upon default
 arguments~(\rsec{Default_Values}), the default argument expression can
@@ -409,7 +550,6 @@ writeln(A.sorted());
 \end{chapelexample}
 
 
-
 \subsection{Zipper Promotion}
 \label{Zipper_Promotion}
 \index{promotion!zipper iteration}
@@ -431,6 +571,12 @@ is equivalent to
 The usual constraints of zipper iteration apply to zipper promotion so
 the promoted actuals must have the same shape.
 
+A zipper promotion can be captured in a variable, such as
+\chpl{var X = f(s1, s2, ..., a1, a2, ...);} using the above example.
+If so, the domain of the resulting array is defined by the first argument
+that causes promotion. The rules are the same as in the non-zipper case.
+
+
 \begin{chapelexample}{zipper-promotion.chpl}
 Given a function defined as
 \begin{chapel}
@@ -448,14 +594,20 @@ then the output is
 \end{chapelprintoutput}
 \end{chapelexample}
 
-\subsection{Whole Array Assignment}
-\label{Whole_Array_Assignment}
+
+\subsection{Whole Array Operations and Evaluation Order}
+\label{Whole_Array_Operations}
 \index{whole array assignment}
+\index{whole array operations}
 \index{arrays!assignment}
 \index{assignment!whole array}
+\index{data parallelism!evaluation order}
 
-Whole array assignment is a considered a degenerate case of promotion
-and is implicitly parallel.  The assignment statement
+Whole array operations are a form of promotion as applied to operators
+rather than functions.
+
+Whole array assignment is one example. It is is implicitly parallel.
+The array assignment statement:
 \begin{chapel}
 LHS = RHS;
 \end{chapel}
@@ -465,9 +617,6 @@ forall (e1,e2) in zip(LHS,RHS) do
   e1 = e2;
 \end{chapel}
 
-\subsection{Evaluation Order}
-\label{Evaluation_Order}
-\index{data parallelism!evaluation order}
 The semantics of whole array assignment and promotion are different
 from most array programming languages.  Specifically, the compiler
 does not insert array temporaries for such operations if any of the

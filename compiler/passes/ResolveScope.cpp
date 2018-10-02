@@ -43,7 +43,6 @@
 
 #include "ResolveScope.h"
 
-#include "ForallStmt.h"
 #include "LoopExpr.h"
 #include "scopeResolve.h"
 
@@ -661,6 +660,18 @@ void ResolveScope::getFields(const char* fieldName,
 
     } else {
       INT_ASSERT(false);
+    }
+  }
+
+  if (symbols.size() > 0) {
+    for (std::vector<Symbol*>::iterator it = symbols.begin();
+         it != symbols.end();
+         it++) {
+      if (*it == mAstRef) {
+        // Only and except lists should not return the original module name.
+        symbols.erase(it);
+        break;
+      }
     }
   }
 }

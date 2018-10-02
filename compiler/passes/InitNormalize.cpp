@@ -973,6 +973,10 @@ void InitNormalize::makeOuterArg() {
 // the parent.
 //
 void InitNormalize::makeThisAsParent(CallExpr* call) {
+  if (type()->symbol->hasFlag(FLAG_NO_OBJECT)) {
+    return;
+  }
+
   // type parentType = this.super.type;
   // var thisAsParent : parentType = (_cast parentType this);
 

@@ -8,12 +8,11 @@ record MyRec {
 }
 
 
-// Note: This does not have an initializer
 record SubRec {
   var a : int;
   var b : int;
 
-  proc SubRec(_a : int, _b : int) {
+  proc init(_a : int, _b : int) {
     a = _a;
     b = _b;
   }

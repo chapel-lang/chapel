@@ -39,8 +39,7 @@
 
   .. note::
 
-    The interface for the Collection modules may change. The documentation for
-    the Collection modules are being incrementally revised and improved.
+    This module is a work in progress and may change in future releases.
 
   Bugs and Known Issues
   _____________________

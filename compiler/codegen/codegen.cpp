@@ -431,7 +431,7 @@ static void codegenGlobalConstArray(const char*          name,
 
 // This uses Schubert Numbering but we could use Cohen's Display,
 // which can be computed more incrementally.
-// See issue ##5887 and/or
+// See
 // "Implementing statically typed object-oriented programming languages",
 // by Roland Ducournau
 static void
@@ -2166,9 +2166,8 @@ static void setupDefaultFilenames() {
       if (strlen(filename) >= sizeof(executableFilename) - 3) {
         INT_FATAL("input filename exceeds executable filename buffer size");
       }
-      strcpy(executableFilename, "lib");
-      strncat(executableFilename, filename,
-              sizeof(executableFilename)-strlen(executableFilename)-1);
+      strncpy(executableFilename, filename,
+              sizeof(executableFilename)-1);
 
       if (fLibraryPython && pythonModulename[0] == '\0') {
         strncpy(pythonModulename, filename, sizeof(pythonModulename)-1);

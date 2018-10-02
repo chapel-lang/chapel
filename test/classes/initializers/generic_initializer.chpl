@@ -1,5 +1,3 @@
-// Modified from
-// test/classes/dinan/generic_constructor.chpl
 class Foo {
   type x_t;
   var  x;

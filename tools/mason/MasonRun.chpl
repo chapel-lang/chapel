@@ -79,7 +79,7 @@ proc runProjectBinary(show: bool, release: bool, execopts: [?d] string) throws {
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
-    const tomlFile = new Owned(parseToml(toParse));
+    const tomlFile = new owned(parseToml(toParse));
     const project = tomlFile["brick"]["name"].s;
  
     // Find the Binary and execute

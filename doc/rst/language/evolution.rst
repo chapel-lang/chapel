@@ -8,6 +8,231 @@ capture significant language changes that have the possibility of breaking
 existing user codes or code samples from old presentations or papers that
 predated the changes.
 
+Note that the compiler flag ``--warn-unstable`` is available and can be
+useful when migrating programs to the current version of the language.
+The purpose of this flag is to identify  portions of a program that use a
+language feature that has changed meaning.
+
+version 1.18, September 2018
+----------------------------
+
+Version 1.18 includes many language changes that address problems with
+classes.
+
+In summary:
+
+ * constructors are deprecated and replaced with initializers
+   See :ref:`readme-evolution.initializers-replace-constructors`
+ * memory management for class types has changed
+   See :ref:`readme-evolution.class-memory-management`
+ * `override` is now required on overriding methods
+   See :ref:`readme-evolution.mark-overriding`
+
+.. _readme-evolution.initializers-replace-constructors:
+
+initializers replace constructors
+*********************************
+
+Code that contained user-defined constructors will need to be updated
+to use an initializer. For example:
+
+.. code-block:: chapel
+
+  record Point {
+    var x, y: real;
+    proc Point() {
+      x = 0;
+      y = 0;
+      writeln("In Point()");
+    }
+    proc Point(x: real, y: real) {
+      this.x = x;
+      this.y = y;
+      writeln("In Point(x,y)");
+    }
+  }
+  var a:Point;
+  var b = new Point(1.0, 2.0);
+
+will now compile with deprecation warnings. Here is the same program
+updated to use initializers:
+
+.. code-block:: chapel
+
+  record Point {
+    var x, y: real;
+    proc init() {
+      x = 0;
+      y = 0;
+      writeln("In Point.init()");
+    }
+    proc init(x: real, y: real) {
+      this.x = x;
+      this.y = y;
+      writeln("In Point.init(x,y)");
+    }
+  }
+  var a:Point;
+  var b = new Point(1.0, 2.0);
+
+The change to initializers is much more than a change in the name of the
+method. See the language specification for further details.
+
+.. _readme-evolution.class-memory-management:
+
+class memory management
+***********************
+
+Before 1.18, if ``C`` is a class type, a variable of type ``C`` needed
+to be deleted in order to prevent a memory leak. For example:
+
+.. code-block:: chapel
+
+  class C {
+    var x: int;
+  }
+  proc main() {
+    var instance: C = new C(1);
+    delete instance;
+  }
+
+Version 1.18 introduced four memory management strategies that form part
+of a class type and are used with `new` expressions:
+
+``owned C``
+  ``owned`` classes will be deleted automatically when the ``owned``
+  variable goes out of scope, but only one ``owned`` variable can refer to
+  the instance at a time.
+  Such instances can be created with ``new owned C()``.
+
+``shared C``
+  ``shared`` classes will be deleted when all of the ``shared`` variables
+  referring to the instance go out of scope.
+  Such instances can be created with ``new shared C()``.
+
+``borrowed C``
+  refers to a class instance that has a lifetime managed by
+  another variable.
+  Values of type ``borrowed C`` can be created with ``new borrowed
+  C()``, by coercion from the other class ``C`` types, or by explicitly
+  calling the ``.borrow()`` method on one of the other class ``C``
+  types.
+  ``new borrowed C()`` creates a temporary instance that will automatically
+  be deleted at the end of the current block.
+
+``unmanaged C``
+  the instance must have `delete` called on it explicitly to
+  reclaim its memory.
+  Such instances can be created with ``new unmanaged C()``.
+
+Further note that the default is ``borrowed``, that is:
+
+``C``
+  is now the same as ``borrowed C``
+
+``new C()``
+  is now the same as ``new borrowed C()``
+
+Now, back to the example above. There are several ways to translate this
+program.
+
+First, the most semantically similar option is to replace uses of ``C``
+with ``unmanaged C``:
+
+.. code-block:: chapel
+
+  class C {
+    var x: int;
+  }
+  proc main() {
+    var instance: unmanaged C = new unmanaged C(1);
+    delete instance;
+  }
+
+Using ``unmanaged`` allows a Chapel programmer to opt in to manually
+managing the memory of the instances.
+
+A reasonable alternative would be to translate the program to use
+``owned C``:
+
+.. code-block:: chapel
+
+  class C {
+    var x: int;
+  }
+  proc main() {
+    var instance: owned C = new owned C(1);
+    // instance will now be automatically deleted at the end of this block
+  }
+
+If the program does not explicitly use ``owned C``, it can rely on
+``new C()`` being equivalent to ``new borrowed C()``:
+
+.. code-block:: chapel
+
+  class C {
+    var x: int;
+  }
+  proc main() {
+    var instance: C = new C(1);
+
+    // instance will now be automatically deleted at the end of this block
+  }
+
+See the *Class New* section in the *Classes* chapter of the language
+specification for more details.
+
+.. _readme-evolution.mark-overriding:
+
+overriding methods must be marked
+*********************************
+
+Before 1.18, a class inheriting from another class can create an
+overriding method that is a candidate for virtual dispatch:
+
+.. code-block:: chapel
+
+  class Person {
+    var name: string;
+    proc greet() {
+      writeln("Hello ", name, "!");
+    }
+  }
+  class Student: Person {
+    var grade: int;
+    proc greet() {
+      writeln("Hello ", name, ", welcome to grade ", grade);
+    }
+  }
+  proc main() {
+    var person: Person = new Student("Jeannie", 5);
+    person.greet(); // uses the run-time type of person (Student)
+                    // and virtually dispatches to Student.greet()
+  }
+
+Now such overriding methods must be marked with the `override` keyword:
+
+.. code-block:: chapel
+
+  class Person {
+    var name: string;
+    proc greet() {
+      writeln("Hello ", name, "!");
+    }
+  }
+  class Student: Person {
+    var grade: int;
+    override proc greet() {
+      writeln("Hello ", name, ", welcome to grade ", grade);
+    }
+  }
+  proc main() {
+    var person: Person = new Student("Jeannie", 5);
+    person.greet(); // uses the run-time type of person (Student)
+                    // and virtually dispatches to Student.greet()
+  }
+
+
 version 1.15, April 2017
 ------------------------
 
@@ -204,7 +429,8 @@ const-checking error messages from the compiler.
     writeln(D.member(6)); // outputs `true` !
   }
 
-See GitHub issue #5217 for more examples and discussion.
+See `GitHub issue #5217 <https://github.com/chapel-lang/chapel/issues/5217>`_
+for more examples and discussion.
 
 In order to make such programs less surprising, version 1.15 changes the default
 intent for arrays to `ref` if the formal argument is modified in the function
@@ -245,7 +471,8 @@ record methods was implemented as `ref` but specified as `const ref`. In
 1.15, this changed to `ref` if the formal `this` argument is modified in
 the body of the function and `const ref` if not.
 
-See GitHub issue #5266 for more details and discussion.
+See `GitHub issue #5266 <https://github.com/chapel-lang/chapel/issues/5266>`_
+for more details and discussion.
 
 .. code-block:: chapel
 
@@ -539,7 +766,7 @@ reflect what we think it intuitive to users and correct what is viewed in many
 circles to be a regrettable mistake in C. At the same time, we changed the
 binding of ``in`` and ``..`` to support some other Chapel idioms more naturally,
 like ``1..10 == 1..10``. To see the current operator precedence, refer to the
-:download:Quick Reference <https://chapel-lang.org/spec/quickReference.pdf> sheet.
+`Quick Reference sheet <https://chapel-lang.org/spec/quickReference.pdf>`_.
 
 improved interpretation of {D}
 ******************************

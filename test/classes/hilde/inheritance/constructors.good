@@ -1,5 +1,0 @@
-constructors.chpl:9: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
-constructors.chpl:9: warning: Type 'base' defines a constructor here
-constructors.chpl:16: warning: Type 'sub' defines a constructor here
-34
-2

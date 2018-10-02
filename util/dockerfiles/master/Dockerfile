@@ -1,4 +1,4 @@
-FROM debian:9.4
+FROM debian:9.5
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     mawk \
     file \
     pkg-config \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 ENV CHPL_VERSION master
@@ -28,12 +29,17 @@ RUN mkdir -p /opt/chapel \
     && wget -q -O - https://github.com/chapel-lang/chapel/archive/master.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
     && make -C $CHPL_HOME \
     && make -C $CHPL_HOME chpldoc \
-    && make -C $CHPL_HOME test-venv 
+    && make -C $CHPL_HOME test-venv \
+    && make -C $CHPL_HOME mason
 
 # Configure locale
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     echo 'LANG="en_US.UTF-8"'>/etc/default/locale && \
     dpkg-reconfigure --frontend=noninteractive locales && \
     update-locale LANG=en_US.UTF-8
+
+# Configure dummy git user
+RUN git config --global user.email "noreply@example.com" && \
+    git config --global user.name  "Chapel user"
 
 ENV PATH $PATH:$CHPL_HOME/bin/linux64:$CHPL_HOME/util

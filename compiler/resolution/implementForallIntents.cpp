@@ -2045,6 +2045,8 @@ static void insertFinalGenerate(Expr* ref, Symbol* fiVarSym, Symbol* globalOp) {
   Expr* next = ref->next; // nicer ordering of the following insertions
   INT_ASSERT(next);
   VarSymbol* genTemp = newTemp("chpl_gentemp");
+  // TODO: Should we try to free chpl_gentemp right after the assignment?
+  genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
   next->insertBefore(new DefExpr(genTemp));
   next->insertBefore("'move'(%S, generate(%S,%S))",
                      genTemp, gMethodToken, globalOp);

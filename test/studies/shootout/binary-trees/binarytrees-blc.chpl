@@ -18,52 +18,45 @@ proc main() {
   var stats: [depths] (int,int);           // stores statistics for the trees
 
   //
-  // Create the "stretch" tree, checksum it, print its stats, and free it.
+  // Create the short-lived "stretch" tree, checksum it, and print its stats.
   //
-  const strTree = new unmanaged Tree(strDepth);
-  writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
-  delete strTree;
+  {
+    const strTree = new Tree(strDepth);
+    writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
+  }
 
   //
   // Build the long-lived tree.
   //
-  var llTree: unmanaged Tree;
+  const llTree = new Tree(maxDepth);
 
-  cobegin with (ref llTree) {
-    llTree = new unmanaged Tree(maxDepth);
+  //
+  // Iterate over the depths in parallel, dynamically assigning them
+  // to tasks.  At each depth, create the required trees, compute
+  // their sums, and free them.
+  //
+  forall depth in dynamic(depths) {
+    const iterations = 2**(maxDepth - depth + minDepth);
+    var sum = 0;
 
-    {
-      //
-      // Iterate over the depths in parallel, dynamically assigning them
-      // to tasks.  At each depth, create the required trees, compute
-      // their sums, and free them.
-      //
-      forall depth in dynamic(depths) {
-        const iterations = 2**(maxDepth - depth + minDepth);
-        var sum = 0;
-
-        for i in 1..iterations {
-          const t = new unmanaged Tree(depth);
-          sum += t.sum();
-          delete t;
-        }
-        stats[depth] = (iterations, sum);
-      }
-
-      //
-      // Print out the stats for the trees of varying depths.
-      //
-      for depth in depths do
-        writeln(stats[depth](1), "\t trees of depth ", depth, "\t check: ",
-                stats[depth](2));
+    for i in 1..iterations {
+      const t = new Tree(depth);
+      sum += t.sum();
     }
+    stats[depth] = (iterations, sum);
   }
+
+  //
+  // Print out the stats for the trees of varying depths.
+  //
+  for depth in depths do
+    writeln(stats[depth](1), "\t trees of depth ", depth, "\t check: ",
+            stats[depth](2));
 
   //
   // Checksum the long-lived tree, print its stats, and free it.
   //
   writeln("long lived tree of depth ", maxDepth, "\t check: ", llTree.sum());
-  delete llTree;
 }
 
 
@@ -90,9 +83,11 @@ class Tree {
     var sum = 1;
     if left {
       sum += left.sum() + right.sum();
-      delete left;
-      delete right;
     }
     return sum;
+  }
+
+  proc deinit() {
+    delete left, right;
   }
 }

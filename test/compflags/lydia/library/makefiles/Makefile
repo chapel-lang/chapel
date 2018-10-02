@@ -10,7 +10,7 @@ endif
 
 ifeq ($(MAKECMDGOALS),renamedTest)
 include lib/Makefile.myLib
-renamedTest: renamedTest.c lib/myLib.a
+renamedTest: renamedTest.c lib/libmyLib.a
 	@$(CHPL_COMPILER) $(CHPL_CFLAGS) -o renamedTest renamedTest.c $(CHPL_LDFLAGS)
 	@./renamedTest
 else

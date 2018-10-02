@@ -18,5 +18,6 @@ sed '/^$/d' $2 > $2.tmp
 sed '/^ld: warning/d' $2.tmp > $2
 sed '/from bar.c:[0-9]*/d' $2 > $2.tmp
 sed '/^[ ]*$/d' $2.tmp > $2
+rm $2.tmp
 export PYTHONPATH=lib/
 python3 use_bar.py >> $2

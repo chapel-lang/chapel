@@ -2250,7 +2250,7 @@ bool AggregateType::wantsDefaultInitializer() const {
   AggregateType* nonConstHole = (AggregateType*) this;
   bool           retval       = true;
 
-  if (this == dtObject || symbol->hasFlag(FLAG_TUPLE)) {
+  if (symbol->hasFlag(FLAG_TUPLE)) {
     return false;
 
   // Allow constructors in user code if --no-force-initializers is thrown

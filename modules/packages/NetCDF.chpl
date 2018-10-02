@@ -17,7 +17,34 @@
  * limitations under the License.
  */
 
+/* NetCDF bindings for Chapel
+
+This module implements the C-API for netCDF version 4.6.1.
+
+Compiling with netCDF
+---------------------
+
+In order to compile a Chapel program that uses this module, the netCDF library
+must be installed on the system.  The paths to the ``netcdf.h`` header file
+and netCDF library must be known to the compiler, either by finding them in
+a default search path, or by using the ``-I`` and ``-L`` compiler arguments.
+
+The compilation command should look something like this:
+
+.. code-block:: sh
+
+    chpl -I$PATH_TO_NETCDF_DIR \
+         -L$PATH_TO_NETCDF_LIBS -lnetcdf source.chpl
+
+On Cray systems with the ``cray-netcdf`` module loaded, no compiler flags
+are necessary to use the HDF5 module.
+*/
 module NetCDF {
+  /* The NetCDF module defines the interface to the netCDF library.
+     Documentation for its functions, types, and constants can be found
+     at the official netCDF web site:
+     https://www.unidata.ucar.edu/software/netcdf/docs
+   */
   module C_NetCDF {
     // Generated with c2chapel version 0.1.0
 

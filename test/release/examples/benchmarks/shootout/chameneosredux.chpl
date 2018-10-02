@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Hannah Hemmaplardh, Lydia Duncan, and Brad Chamberlain
    derived in part from the GNU C version by Dmitry Vyukov
@@ -64,8 +64,8 @@ record Population {
   // an array of chameneos objects representing the population
   //
   var chameneos = [i in 1..size]
-                    new unmanaged Chameneos(i, if size == 10 then colors10[i]
-                                                   else ((i-1)%3): Color);
+                    new owned Chameneos(i, if size == 10 then colors10[i]
+                                                         else ((i-1)%3): Color);
 
   //
   // Print the colors of the current population.
@@ -81,7 +81,7 @@ record Population {
   // place, and then creating per-chameneos tasks to have meetings.
   //
   proc holdMeetings(numMeetings) {
-    const place = new borrowed MeetingPlace(numMeetings);
+    const place = new MeetingPlace(numMeetings);
 
     coforall c in chameneos do           // create a task per chameneos
       c.haveMeetings(place, chameneos);
@@ -101,14 +101,6 @@ record Population {
     
     spellInt(+ reduce chameneos.meetings);
     writeln();
-  }
-
-  //
-  // Delete the chameneos objects.
-  //
-  proc deinit() {
-    for c in chameneos do
-      delete c;
   }
 }
 

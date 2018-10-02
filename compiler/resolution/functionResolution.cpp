@@ -5950,19 +5950,21 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
           manager = dtUnmanaged;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
           if (fLegacyNew == false && fDefaultUnmanaged == false) {
-            gdbShouldBreakHere();
-            USR_WARN(newExpr, "result of new %s is now managed by default",
-                              type->symbol->name);
-            USR_PRINT(newExpr, "'new unmanaged %s' gives old behavior",
-                               type->symbol->name);
-            USR_PRINT(newExpr, "'new borrowed %s' is the new default",
-                               type->symbol->name);
-            USR_PRINT(newExpr, "'new owned %s', 'new shared %s' also available",
-                               type->symbol->name, type->symbol->name);
-            USR_PRINT(newExpr, "get more help with --warn-unstable",
-                               type->symbol->name);
-
             manager = dtBorrowed;
+            if (ignore_warnings == false) {
+              // This warning should go away after the 1.18 release.
+              gdbShouldBreakHere();
+              USR_WARN(newExpr, "result of new %s is now managed by default",
+                                type->symbol->name);
+              USR_PRINT(newExpr, "'new unmanaged %s' gives old behavior",
+                                 type->symbol->name);
+              USR_PRINT(newExpr, "'new borrowed %s' is the new default",
+                                 type->symbol->name);
+              USR_PRINT(newExpr, "'new owned %s', 'new shared %s' also available",
+                                 type->symbol->name, type->symbol->name);
+              USR_PRINT(newExpr, "get more help with --warn-unstable",
+                                 type->symbol->name);
+            }
           }
         }
       }
@@ -5973,6 +5975,17 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // only the canonical class types.
       if (manager) {
         AggregateType* at = toAggregateType(type);
+
+        // fail if it's a record
+        if (isRecord(at) && !isManagedPtrType(at)) {
+          const char* name = manager->symbol->name;
+          // skip leading underscore
+          if (name[0] == '_')
+            name = &name[1];
+
+          USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
+                         name, at->symbol->name);
+        }
 
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself
@@ -9547,91 +9560,107 @@ static void replaceReturnedValuesWithRuntimeTypes()
   }
 }
 
+static void replaceInitPrim(CallExpr* call) {
+  SymExpr* se = toSymExpr(call->get(1));
+  Type*    rt = se->symbol()->type;
 
-static void replaceInitPrims(std::vector<BaseAST*>& asts) {
+  if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+    // ('init' foo), where typeof(foo) has flag "runtime type value"
+    //
+    // ==>
+    //
+    // (var _runtime_type_tmp_1)
+    // ('move' _runtime_type_tmp_1 ('.v' foo "field1"))
+    // (var _runtime_type_tmp_2)
+    // ('move' _runtime_type_tmp_2 ('.v' foo "field2"))
+    // (chpl__convertRuntimeTypeToValue _runtime_type_tmp_1 _rtt_2 ... )
+    SET_LINENO(call);
+    FnSymbol* runtimeTypeToValueFn = runtimeTypeToValueMap.get(rt);
+    INT_ASSERT(runtimeTypeToValueFn);
+    CallExpr* runtimeTypeToValueCall = new CallExpr(runtimeTypeToValueFn);
+    for_formals(formal, runtimeTypeToValueFn) {
+      Symbol* field = rt->getField(formal->name);
+      INT_ASSERT(field);
+      VarSymbol* tmp = newTemp("_runtime_type_tmp_", field->type);
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+      call->getStmtExpr()->insertBefore(
+          new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                                    se->symbol(), field)));
+      if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+        tmp->addFlag(FLAG_TYPE_VARIABLE);
+      runtimeTypeToValueCall->insertAtTail(tmp);
+    }
+
+    VarSymbol* tmp = newTemp("_runtime_type_tmp_", runtimeTypeToValueFn->retType);
+    call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+    call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, runtimeTypeToValueCall));
+    call->replace(new SymExpr(tmp));
+
+  } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+    //
+    // This is probably related to a comment that used to handle
+    // this case elsewhere:
+    //
+    // special handling of tuple constructor to avoid
+    // initialization of array based on an array type symbol
+    // rather than a runtime array type
+    //
+    // this code added during the introduction of the new
+    // keyword; it should be removed when possible
+    //
+    call->getStmtExpr()->remove();
+
+  } else {
+    Expr* expr = resolvePrimInit(call);
+
+    if (! expr) {
+      // This PRIM_INIT could not be resolved.
+
+      // But that's OK if it's an extern type.
+      // (We don't expect extern types to have initializers.)
+      // Also, we don't generate initializers for iterator records.
+      // Maybe we can avoid adding PRIM_INIT for these cases in the first
+      // place....
+      if (rt->symbol->hasFlag(FLAG_EXTERN) ||
+          rt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+        INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
+
+        toCallExpr(call->parentExpr)->convertToNoop();
+      } else {
+        INT_FATAL(call, "PRIM_INIT should have already been handled");
+      }
+    }
+  }
+}
+
+static void replaceRuntimeTypeGetField(CallExpr* call) {
+  SymExpr* rt = toSymExpr(call->get(2));
+  if (rt->typeInfo()->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+    SET_LINENO(call);
+    VarSymbol* fieldName = toVarSymbol(toSymExpr(call->get(3))->symbol());
+    Immediate* imm = fieldName->immediate;
+    INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
+    const char* name = imm->v_string;
+
+    Symbol* field = toAggregateType(rt->typeInfo())->getField(name);
+    call->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, rt->remove(), field));
+  }
+}
+
+static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      // We are only interested in INIT primitives.
+      FnSymbol* parent = toFnSymbol(call->parentSymbol);
+
+      // Call must be in the tree and lie in a resolved function.
+      if (! parent || ! parent->isResolved()) {
+        continue;
+      }
+
       if (call->isPrimitive(PRIM_INIT)) {
-        FnSymbol* parent = toFnSymbol(call->parentSymbol);
-
-        // Call must be in the tree and lie in a resolved function.
-        if (! parent || ! parent->isResolved()) {
-          continue;
-        }
-
-        SymExpr* se = toSymExpr(call->get(1));
-        Type*    rt = se->symbol()->type;
-
-        if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-          // ('init' foo), where typeof(foo) has flag "runtime type value"
-          //
-          // ==>
-          //
-          // (var _runtime_type_tmp_1)
-          // ('move' _runtime_type_tmp_1 ('.v' foo "field1"))
-          // (var _runtime_type_tmp_2)
-          // ('move' _runtime_type_tmp_2 ('.v' foo "field2"))
-          // (chpl__convertRuntimeTypeToValue _runtime_type_tmp_1 _rtt_2 ... )
-          SET_LINENO(call);
-          FnSymbol* runtimeTypeToValueFn = runtimeTypeToValueMap.get(rt);
-          INT_ASSERT(runtimeTypeToValueFn);
-          CallExpr* runtimeTypeToValueCall = new CallExpr(runtimeTypeToValueFn);
-          for_formals(formal, runtimeTypeToValueFn) {
-            Symbol* field = rt->getField(formal->name);
-            INT_ASSERT(field);
-            VarSymbol* tmp = newTemp("_runtime_type_tmp_", field->type);
-            call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-            call->getStmtExpr()->insertBefore(
-                new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                                          se->symbol(), field)));
-            if (formal->hasFlag(FLAG_TYPE_VARIABLE))
-              tmp->addFlag(FLAG_TYPE_VARIABLE);
-            runtimeTypeToValueCall->insertAtTail(tmp);
-          }
-
-          VarSymbol* tmp = newTemp("_runtime_type_tmp_", runtimeTypeToValueFn->retType);
-          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, runtimeTypeToValueCall));
-          call->replace(new SymExpr(tmp));
-
-        } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          //
-          // This is probably related to a comment that used to handle
-          // this case elsewhere:
-          //
-          // special handling of tuple constructor to avoid
-          // initialization of array based on an array type symbol
-          // rather than a runtime array type
-          //
-          // this code added during the introduction of the new
-          // keyword; it should be removed when possible
-          //
-          call->getStmtExpr()->remove();
-
-        } else {
-          Expr* expr = resolvePrimInit(call);
-
-          if (! expr) {
-            // This PRIM_INIT could not be resolved.
-
-            // But that's OK if it's an extern type.
-            // (We don't expect extern types to have initializers.)
-            // Also, we don't generate initializers for iterator records.
-            // Maybe we can avoid adding PRIM_INIT for these cases in the first
-            // place....
-            if (rt->symbol->hasFlag(FLAG_EXTERN) ||
-                rt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
-
-              toCallExpr(call->parentExpr)->convertToNoop();
-
-              continue;
-            }
-
-            INT_FATAL(call, "PRIM_INIT should have already been handled");
-          }
-        }
+        replaceInitPrim(call);
+      } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
+        replaceRuntimeTypeGetField(call);
       }
     }
   }
@@ -9731,7 +9760,7 @@ static Expr* resolvePrimInit(CallExpr* call, Type* type) {
   if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
     INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
 
-  // These are handled in replaceInitPrims().
+  // These are handled in replaceRuntimeTypePrims().
   } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
 
   // Initializers for IteratorRecords cannot be used as constructors
@@ -9858,7 +9887,7 @@ static void insertRuntimeInitTemps() {
     }
   }
 
-  replaceInitPrims(asts);
+  replaceRuntimeTypePrims(asts);
 
   for_vector(BaseAST, ast1, asts) {
     if (SymExpr* se = toSymExpr(ast1)) {

@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Preston Sahabu
    derived from the Chapel fastaredux version by Casey Battaglino et al.
@@ -24,7 +24,7 @@ use nucleotide;
 //
 // Sequence to be repeated
 //
-const ALU: [0..286] int(8) = [
+const ALU: [0..286] nucleotide = [
   G, G, C, C, G, G, G, C, G, C, G, G, T, G, G, C, T, C, A, C,
   G, C, C, T, G, T, A, A, T, C, C, C, A, G, C, A, C, T, T, T,
   G, G, G, A, G, G, C, C, G, A, G, G, C, G, G, G, C, G, G, A,
@@ -85,7 +85,7 @@ proc sumProbs(alphabet: []) {
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newline = ascii("\n"): int(8);
+param newline = ascii("\n");
 
 //
 // Repeat sequence "alu" for n characters
@@ -94,10 +94,10 @@ proc repeatMake(desc, alu, n) {
   stdout.writef("%s", desc);
 
   const r = alu.size,
-        s = [i in 0..(r+lineLength)] alu[i % r];
+        s = [i in {0..r+lineLength}] alu[i % r]: int(8);
 
   for i in 0..n by lineLength {
-    const lo = i % r + 1,
+    const lo = i % r,
           len = min(lineLength, n-i);
     stdout.write(s[lo..#len], newline);
   }
@@ -108,7 +108,7 @@ proc repeatMake(desc, alu, n) {
 //
 proc randomMake(desc, a, n) {
   var line_buff: [0..lineLength] int(8);
-    
+
   stdout.writef("%s", desc);
   for i in 1..n by lineLength do
     addLine(min(lineLength, n-i+1));
@@ -119,7 +119,7 @@ proc randomMake(desc, a, n) {
   proc addLine(bytes) {
     for (r, i) in zip(getRands(bytes), 0..) {
       if r < a[1](prob) {
-        line_buff[i] = a[1](nucl);
+        line_buff[i] = a[1](nucl): int(8);
       } else {
         var lo = a.domain.low,
             hi = a.domain.high;
@@ -130,7 +130,7 @@ proc randomMake(desc, a, n) {
           else
             lo = ai;
         }
-        line_buff[i] = a[hi](nucl);
+        line_buff[i] = a[hi](nucl): int(8);
       }
     }
     line_buff[bytes] = newline;

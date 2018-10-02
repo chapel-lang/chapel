@@ -22,8 +22,8 @@ var maxFlips, checkSums : [0..#NTASKS] int;
 
 var taskCount : atomic int;
 
-var Fanns : [ntasks] unmanaged Fann;
-for f in Fanns do f = new unmanaged Fann();
+var Fanns : [ntasks] owned Fann;
+for f in Fanns do f = new owned Fann();
 
 coforall i in ntasks {
   var task = taskCount.fetchAdd(1);
@@ -35,8 +35,6 @@ coforall i in ntasks {
 const c = + reduce checkSums;
 const r = max reduce maxFlips;
 writeln(c, "\nPfannkuchen(", n, ") = ", r);
-
-for f in Fanns do delete f;
 
 class Fann {
   const D = {0..#n};

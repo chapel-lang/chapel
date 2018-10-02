@@ -65,7 +65,6 @@ static void        fixupQueryFormals(FnSymbol* fn);
 
 static bool        isConstructor(FnSymbol* fn);
 
-static void        updateConstructor(FnSymbol* fn);
 static void        updateInitMethod (FnSymbol* fn);
 
 static void        checkUseBeforeDefs();
@@ -128,6 +127,8 @@ static void        updateVariableAutoDestroy(DefExpr* defExpr);
 
 static TypeSymbol* expandTypeAlias(SymExpr* se);
 
+static bool        firstConstructorWarning = true;
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -170,7 +171,12 @@ void normalize() {
       fixupQueryFormals(fn);
 
       if (isConstructor(fn) == true) {
-        updateConstructor(fn);
+        Type* ct = fn->_this->getValType();
+        if (firstConstructorWarning) {
+          USR_PRINT(fn, "Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.");
+          firstConstructorWarning = false;
+        }
+        USR_FATAL_CONT(fn, "Type '%s' defines a constructor here", ct->symbol->name);
 
       } else if (fn->isInitializer() == true) {
         updateInitMethod(fn);
@@ -3290,7 +3296,8 @@ static void expandQueryForActual(FnSymbol*  fn,
       INT_ASSERT(ts);
       Expr* subtype = new SymExpr(ts);
       addToWhereClause(fn, formal,
-                       new CallExpr(PRIM_IS_SUBTYPE, subtype, query->copy()));
+                       new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
+                                    subtype, query->copy()));
     } else {
       INT_ASSERT("case not handled");
     }
@@ -3306,7 +3313,8 @@ static void expandQueryForActual(FnSymbol*  fn,
     }
     // Add check that actual type satisfies
     addToWhereClause(fn, formal,
-                     new CallExpr(PRIM_IS_SUBTYPE, subtype, query->copy()));
+                     new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
+                                  subtype, query->copy()));
     // Recurse to handle any nested DefExprs
     expandQueryForGenericTypeSpecifier(fn, symExprs, formal,
                                        subcall, query);
@@ -3349,7 +3357,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     Type* parentType = borrowed?dtBorrowed:dtUnmanaged;
 
     // Check that whatever it has right borrow / unmanaged nature
-    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_SUBTYPE,
+    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
                                               parentType->symbol, queried));
 
     Type* theType = NULL;
@@ -3478,85 +3486,6 @@ static bool isConstructor(FnSymbol* fn) {
   }
 
   return retval;
-}
-
-static bool firstConstructorWarning = true;
-
-static void updateConstructor(FnSymbol* fn) {
-  SymbolMap      map;
-  Type*          type = fn->getFormal(2)->type;
-  AggregateType* ct   = toAggregateType(type);
-
-  if (ct == NULL) {
-    if (type == dtUnknown) {
-      INT_FATAL(fn, "'this' argument has unknown type");
-    } else {
-      INT_FATAL(fn, "initializer on non-class type");
-    }
-  }
-
-  if (fn->hasFlag(FLAG_NO_PARENS)) {
-    USR_FATAL(fn, "a constructor cannot be declared without parentheses");
-  }
-
-  // Call the constructor, passing in just the generic arguments.
-  // This call ensures that the object is default-initialized before the
-  // user's constructor body is called.
-  // NOTE: This operation is not necessary for initializers, as Phase 1 of
-  // the initializer body is intended to perform this operation on its own.
-  CallExpr* call = new CallExpr(ct->defaultInitializer);
-
-  for_formals(typeConstructorArg, ct->typeConstructor) {
-    ArgSymbol* arg = NULL;
-
-    for_formals(methodArg, fn) {
-      if (typeConstructorArg->name == methodArg->name) {
-        arg = methodArg;
-      }
-    }
-
-    if (arg == NULL) {
-      if (typeConstructorArg->defaultExpr == NULL) {
-        USR_FATAL_CONT(fn,
-                       "constructor for class '%s' requires a generic "
-                       "argument called '%s'",
-                       ct->symbol->name,
-                       typeConstructorArg->name);
-      }
-    } else {
-      call->insertAtTail(new NamedExpr(arg->name, new SymExpr(arg)));
-    }
-  }
-
-  fn->_this = new VarSymbol("this");
-  fn->_this->addFlag(FLAG_ARG_THIS);
-
-  fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));
-
-  fn->insertAtHead(new DefExpr(fn->_this));
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
-
-  map.put(fn->getFormal(2), fn->_this);
-
-  fn->formals.get(2)->remove();
-  fn->formals.get(1)->remove();
-
-  update_symbols(fn, &map);
-
-  // The constructor's name is the name of the type.
-  // Replace it with _construct_typename
-  fn->name = ct->defaultInitializer->name;
-
-  if (fWarnConstructors) {
-    if (firstConstructorWarning == true) {
-      USR_PRINT(fn, "Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.");
-      firstConstructorWarning = false;
-    }
-
-    USR_WARN(fn, "Type '%s' defines a constructor here", ct->symbol->name);
-  }
-
-  fn->addFlag(FLAG_CONSTRUCTOR);
 }
 
 static void updateInitMethod(FnSymbol* fn) {

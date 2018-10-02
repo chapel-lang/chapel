@@ -117,11 +117,14 @@ Calls to methods are defined in Section~\rsec{Class_Method_Calls}.
 Procedures are defined with the following syntax:
 \begin{syntax}
 procedure-declaration-statement:
-  privacy-specifier[OPT] linkage-specifier[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
+  privacy-specifier[OPT] procedure-kind[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
     function-body
 
-linkage-specifier:
+procedure-kind:
   `inline'
+  `export'
+  `extern'
+  `override'
 
 function-name:
   identifier
@@ -145,7 +148,7 @@ formal:
   formal-intent[OPT] tuple-grouped-identifier-list formal-type[OPT] variable-argument-expression
 
 formal-type:
-  : type-specifier
+  : type-expression
   : ? identifier[OPT]
 
 default-expression:
@@ -175,7 +178,7 @@ return-intent:
   `type'
 
 return-type:
-  : type-specifier
+  : type-expression
 
 where-clause:
   `where' expression
@@ -222,7 +225,7 @@ The \sntx{return-type} is optional and is discussed in~\rsec{Return_Types}.
 A type function may not specify a return type.
 
 The \sntx{where-clause} is optional and is discussed
-in~\rsec{Where_Expressions}.
+in~\rsec{Where_Clauses}.
 
 Function and operator overloading is supported in Chapel and is
 discussed in~\rsec{Function_Overloading}.
@@ -399,8 +402,10 @@ The concrete intents are \chpl{in}, \chpl{out}, \chpl{inout},
 \index{in (intent)@\chpl{in} (intent)}
 \index{intents!in@\chpl{in}}
 
-When \chpl{in} is specified as the intent, the actual argument is
-copied into the formal argument when the function is called.
+When \chpl{in} is specified as the intent, the formal argument
+represents a variable that is copy-initialized with the value of the
+actual argument. For example, for integer arguments, the formal
+argument will store a copy of the actual argument.
 An implicit conversion occurs from the actual argument
 to the type of the formal.  The
 formal can be modified within the function, but such changes are local
@@ -531,7 +536,13 @@ The following table summarizes what these abstract intents mean for each type:
   \chpl{imag}    & \chpl{const in}     & \chpl{const in}  & \\
   \chpl{complex} & \chpl{const in}     & \chpl{const in}  & \\
   \chpl{range}   & \chpl{const in}     & \chpl{const in}  & \\
-  \chpl{class}   & \chpl{const in}     & \chpl{const in} & \\
+\hline
+  \chpl{owned class}     & \chpl{const in}     & \chpl{in}
+   & see \hyperref[Default_Intent_for_owned_and_shared]{"Default Intent for owned and shared"} \\
+  \chpl{shared class}    & \chpl{const in}     & \chpl{in}
+   & see \hyperref[Default_Intent_for_owned_and_shared]{"Default Intent for owned and shared"} \\
+  \chpl{borrowed class}  & \chpl{const in}     & \chpl{const in} & \\
+  \chpl{unmanaged class} & \chpl{const in}     & \chpl{const in} & \\
 \hline
   \chpl{atomic}  & \chpl{const ref}    & \chpl{ref} & \\
   \chpl{single}  & \chpl{const ref}    & \chpl{ref} & \\
@@ -539,12 +550,12 @@ The following table summarizes what these abstract intents mean for each type:
 \hline
   \chpl{string}  & \chpl{const ref}    & \chpl{const ref} & \\
   \chpl{record}  & \chpl{const ref}    & \chpl{const ref}
-   & for \chpl{this}, see \hyperref[The_Default_Intent]{"The Default Intent"} \\
+   & see \hyperref[Default_Intent_for_Arrays_and_Record_this]{"Default Intent for Arrays and Record this"} \\
   \chpl{union}   & \chpl{const ref}    & \chpl{const ref} & \\
   \chpl{dmap}    & \chpl{const ref}    & \chpl{const ref} & \\
   \chpl{domain}  & \chpl{const ref}    & \chpl{const ref} & \\
   array          & \chpl{const ref}    & \chpl{ref} / \chpl{const ref}
-   & see \hyperref[The_Default_Intent]{"The Default Intent"} \\
+   & see \hyperref[Default_Intent_for_Arrays_and_Record_this]{"Default Intent for Arrays and Record this"} \\
 \hline
 \end{tabular}
 \end{center}
@@ -575,6 +586,22 @@ surprising action for the argument, based on its type. The
 earlier in this sub-section lists the meaning of the default
 intent for each type.
 
+Default argument passing for tuples generally matches the default
+argument passing strategy that would be applied if each tuple element was
+passed as a separate argument.
+
+\begin{openissue}
+How tuples should be handled under default intents is an open issue;
+particularly for heterogeneous tuples whose components would fall into
+separate categories in the table above.  One proposed approach is to
+apply the default intent to each component of the tuple independently.
+\end{openissue}
+
+\subsubsection{Default Intent for Arrays and Record 'this'}
+\label{Default_Intent_for_Arrays_and_Record_this}
+\index{intents!array default}
+\index{intents!record \chpl{this} default}
+
 The default intent for arrays and for a \chpl{this} argument of record
 type~(see \rsec{Method_receiver_and_this}) is \chpl{ref} or \chpl{const
 ref}. It is \chpl{ref} if the formal argument is modified inside the
@@ -583,11 +610,43 @@ cause an array or record to be copied by default.  The choice between
 \chpl{ref} and \chpl{const ref} is similar to and interacts with return
 intent overloads (see \rsec{Return_Intent_Overloads}).
 
+\subsubsection{Default Intent for 'owned' and 'shared'}
+\label{Default_Intent_for_owned_and_shared}
+\index{intents!default for owned}
+\index{intents!default for shared}
+
+The default intent for \chpl{owned} and \chpl{shared} arguments is
+generally \chpl{in}. There is an exception for generic formal arguments
+that use default or \chpl{const} intent and have no type expression.
+When a such a generic formal is instantiated for an \chpl{owned} or
+\chpl{shared} actual argument, the instantiated formal will have the
+relevant \chpl{borrowed} type. This exception does not apply to \chpl{type}
+arguments or to the default initializer generated for a class type.
+
+\begin{chapelexample}{owned-any-intent.chpl}
+\begin{chapel}
+proc defaultGeneric(arg) {
+  writeln(arg.type:string);
+}
+class SomeClass { }
+defaultGeneric(new owned SomeClass());
+\end{chapel}
+\begin{chapeloutput}
+SomeClass
+\end{chapeloutput}
+Here, the program will output the type \chpl{borrowed SomeClass} rather
+than \chpl{owned SomeClass}. It would output \chpl{owned SomeClass} if
+the argument were declared with an \chpl{in} intent (e.g. \chpl{in arg}) or if
+the argument included a type specifier (e.g. \chpl{arg: owned}).
+\end{chapelexample}
+
 \begin{openissue}
-How tuples should be handled under default intents is an open issue;
-particularly for heterogeneous tuples whose components would fall into
-separate categories in the table above.  One proposed approach is to
-apply the default intent to each component of the tuple independently.
+The reason for this rule is to make it clearer when ownership transfer will
+happen. In particular, with this rule, ownership transfer can only occur
+for arguments marked with an \chpl{in} intent or with an \chpl{owned} or
+\chpl{shared} argument type.
+
+This rule is likely change based upon further experience in using it.
 \end{openissue}
 
 
@@ -999,10 +1058,9 @@ is allowed between every other type and that type, and that type becomes the
 inferred return type.
 If the above requirements are not satisfied, it is an error.
 
-\section{Where Expressions}
-\label{Where_Expressions}
+\section{Where Clauses}
+\label{Where_Clauses}
 \index{where@\chpl{where}}
-\index{expressions!where@\chpl{where}}
 \index{functions!where@\chpl{where}}
 
 The list of function candidates can be constrained by {\em where clauses}.  A

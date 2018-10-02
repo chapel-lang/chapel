@@ -76,7 +76,7 @@ void set_hps(void)
   if (strcmp(CHPL_MEM, "jemalloc") == 0
       && chpl_env_rt_get("MAX_HEAP_SIZE", NULL) == NULL
       && (ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) != NULL) {
-    hps = chpl_env_str_to_size(ev, hps);
+    hps = chpl_env_str_to_size("HUGETLB_DEFAULT_PAGE_SIZE", ev, hps);
   }
 }
 

@@ -76,8 +76,7 @@
 
   .. note::
 
-    This package module is new in 1.16 and may contain bugs. The interface may
-    change.  The documentation is being incrementally revised and improved.
+    This module is a work in progress and may change in future releases.
 
   Usage
   _____
@@ -125,7 +124,6 @@ module DistributedBag {
 
   use Collection;
   use BlockDist;
-  use SharedObject;
 
   /*
     Below are segment statuses, which is a way to make visible to outsiders the
@@ -237,13 +235,13 @@ module DistributedBag {
 
     // Reference Counting...
     pragma "no doc"
-    var _rc : Shared(DistributedBagRC(eltType));
+    var _rc : shared DistributedBagRC(eltType);
 
     pragma "no doc"
     proc init(type eltType, targetLocales = Locales) {
       this.eltType = eltType;
       this._pid = (new unmanaged DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
-      this._rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
+      this._rc = new shared DistributedBagRC(eltType, _pid = _pid);
     }
 
     pragma "no doc"

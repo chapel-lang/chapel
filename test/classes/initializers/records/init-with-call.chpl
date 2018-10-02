@@ -9,7 +9,7 @@ class Impl {
 }
 
 proc makeit() {
-  return new Shared(new Impl(1));
+  return new shared Impl(1);
 }
 
 record R {
