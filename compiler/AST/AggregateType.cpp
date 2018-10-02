@@ -1702,7 +1702,6 @@ void AggregateType::buildCopyInitializer() {
 
     // Copy the fields from "other" into our fields
     for_fields(fieldDefExpr, this) {
-      // TODO: outer (nested types), promotion type?
       if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
         if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
           const char* name       = field->name;
