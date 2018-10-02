@@ -834,10 +834,7 @@ Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrTypeCall,
                                            bool recursiveCall) {
   // Is this a call to chpl__buildArrayRuntimeType?
   UnresolvedSymExpr* ursym = toUnresolvedSymExpr(buildArrTypeCall->baseExpr);
-  if (!ursym) {
-    INT_FATAL("Unexpected CallExpr format in buildForallLoopExprFromArrayType");
-  }
-  if (strcmp(ursym->unresolved, "chpl__buildArrayRuntimeType") == 0) {
+  if (ursym && strcmp(ursym->unresolved, "chpl__buildArrayRuntimeType") == 0) {
     // If so, let's process it...
 
     // [i in 1..10] <type expr using 'i'>;
