@@ -630,6 +630,9 @@ assignment_stmt:
     { $$ = buildLAndAssignment($1, $3);    }
 | lhs_expr TASSIGNLOR      opt_try_expr TSEMI
     { $$ = buildLOrAssignment($1, $3);     }
+| scalar_type_expr assignop_ident opt_try_expr TSEMI
+    { fprintf(stderr, "Yo, you can't assign to a type!\n");
+      $$ = buildErrorStandin(); }
 ;
 
 opt_ident:
