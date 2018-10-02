@@ -1737,12 +1737,9 @@ void AggregateType::buildCopyInitializer() {
   }
 }
 
+//
 // Returns true for the cases where we want to generate a default initializer.
-// Some cases are temporarily false, while others are permanently so: we never
-// want to generate a default initializer for a type that has defined an
-// explicit initializer or constructor, and we don't want to generate a default
-// initializer if --force-initializers has not been thrown (currently), unless
-// the pragma "use default init" has been applied
+// Some internal types (e.g. tuples) do not currently use initializers.
 //
 bool AggregateType::wantsDefaultInitializer() const {
   bool           retval       = true;
