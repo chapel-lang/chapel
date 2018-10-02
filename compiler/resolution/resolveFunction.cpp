@@ -910,7 +910,7 @@ static void resolveTypeConstructor(FnSymbol* fn) {
   if (at->instantiatedFrom == NULL) {
     instantiateDefaultConstructor(fn);
 
-  } else if (at->initializerStyle          != DEFINES_INITIALIZER &&
+  } else if (at->hasUserDefinedInit        == false &&
              at->wantsDefaultInitializer() == false) {
     instantiateDefaultConstructor(fn);
   }

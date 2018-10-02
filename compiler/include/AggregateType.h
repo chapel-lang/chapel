@@ -34,11 +34,6 @@ enum AggregateTag {
   AGGREGATE_UNION
 };
 
-enum InitializerStyle {
-  DEFINES_INITIALIZER,
-  DEFINES_NONE_USE_DEFAULT
-};
-
 
 class AggregateType : public Type {
 public:
@@ -179,7 +174,7 @@ public:
 
   AggregateType*              instantiatedFrom;
 
-  InitializerStyle            initializerStyle;
+  bool                        hasUserDefinedInit;
 
   bool                        initializerResolved;
 

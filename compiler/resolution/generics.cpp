@@ -509,7 +509,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
         AggregateType* ct = toAggregateType(fn->retType);
 
-        if (ct->initializerStyle          != DEFINES_INITIALIZER &&
+        if (ct->hasUserDefinedInit        == false &&
             ct->wantsDefaultInitializer() == false) {
           newType = instantiateTypeForTypeConstructor(fn, subs, call, ct);
 

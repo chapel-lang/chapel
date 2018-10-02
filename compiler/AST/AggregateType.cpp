@@ -47,7 +47,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
 
   typeConstructor     = NULL;
   defaultInitializer  = NULL;
-  initializerStyle    = DEFINES_NONE_USE_DEFAULT;
+  hasUserDefinedInit  = false;
   initializerResolved = false;
   iteratorInfo        = NULL;
   doc                 = NULL;
@@ -87,7 +87,7 @@ AggregateType::~AggregateType() {
 AggregateType* AggregateType::copyInner(SymbolMap* map) {
   AggregateType* copy_type = new AggregateType(aggregateTag);
 
-  copy_type->initializerStyle = initializerStyle;
+  copy_type->hasUserDefinedInit = hasUserDefinedInit;
 
   for_alist(expr, fields) {
     copy_type->fields.insertAtTail(COPY_INT(expr));
@@ -527,7 +527,7 @@ void AggregateType::accept(AstVisitor* visitor) {
 bool AggregateType::hasInitializers() const {
   bool retval = false;
 
-  if (initializerStyle == DEFINES_INITIALIZER) {
+  if (hasUserDefinedInit == true) {
     retval = true;
 
   } else {
@@ -1598,7 +1598,7 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
       CallExpr* base         = new CallExpr(".", superPortion, initPortion);
       CallExpr* superCall    = new CallExpr(base);
 
-      if (parent->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+      if (parent->hasUserDefinedInit == false) {
         // We want to call the compiler-generated all-fields initializer
 
         // First, ensure we have a default initializer for the parent
@@ -1642,7 +1642,7 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
         }
 
       } else {
-        INT_ASSERT(parent->initializerStyle == DEFINES_INITIALIZER);
+        INT_ASSERT(parent->hasUserDefinedInit == true);
 
         // We want to call a user-defined no-argument initializer.
         // Insert no arguments
@@ -1749,7 +1749,7 @@ bool AggregateType::wantsDefaultInitializer() const {
 
   // Only want a default initializer when no
   // initializer or constructor is defined
-  } else if (initializerStyle != DEFINES_NONE_USE_DEFAULT) {
+  } else if (hasUserDefinedInit == true) {
     retval = false;
 
   // Iterator classes and records want neither default constructors nor
@@ -1948,7 +1948,7 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
                 "are deprecated");
     }
 
-    if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+    if (ct->hasUserDefinedInit == false) {
       // We hadn't previously seen an initializer definition.
       // Update the field on the type appropriately.
       if (fn->hasFlag(FLAG_METHOD_PRIMARY) == true ||
@@ -1958,7 +1958,7 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
         // no such initializer, we would need to define a default constructor
         // or initializer for the scopes where the secondary initializer is
         // not visible.
-        ct->initializerStyle = DEFINES_INITIALIZER;
+        ct->hasUserDefinedInit = true;
       }
     }
   }

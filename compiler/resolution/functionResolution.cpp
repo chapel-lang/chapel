@@ -6229,7 +6229,7 @@ static bool resolveNewHasInitializer(AggregateType* at) {
   FnSymbol* di     = at->defaultInitializer;
   bool      retval = false;
 
-  if (at->initializerStyle == DEFINES_INITIALIZER) {
+  if (at->hasUserDefinedInit == true) {
     retval = true;
 
   } else if (at->wantsDefaultInitializer() == true) {
