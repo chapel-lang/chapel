@@ -529,6 +529,7 @@ void initPrimitiveTypes() {
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
 
   dtString                             = new AggregateType(AGGREGATE_RECORD);
+  dtString->symbol                     = new TypeSymbol("string", dtString);
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
