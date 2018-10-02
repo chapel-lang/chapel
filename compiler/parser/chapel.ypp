@@ -593,6 +593,10 @@ require_stmt:
   TREQUIRE expr_ls TSEMI               { $$ = buildRequireStmt($2); }
 ;
 
+
+// TODO: Could we introduce simple_type TASSIGN versions of the below to
+// restore the old (better) error messages?
+
 assignment_stmt:
   lhs_expr TASSIGN         opt_try_expr TSEMI
     { $$ = buildAssignment($1, $3, "=");   }

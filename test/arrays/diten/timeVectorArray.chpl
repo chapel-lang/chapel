@@ -58,7 +58,7 @@ class PopFront: Runner {
 class InsertRandom: Runner {
   const n: int;
   override proc run(A: [] int) {
-    extern proc srand(int);
+    extern proc srand(seed: int);
     extern proc rand(): int;
     srand(randSeed);
     for i in 1..linearN {
