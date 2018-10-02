@@ -1,9 +1,2 @@
-int is: int
-real is: real
-bool is: bool
-string is: string
-complex is: complex
-imag is: imag
-a is: 3.4
-c is: maybe
-e is: false
+redefineTypeNames.chpl:3: syntax error: near 'int'
+redefineTypeNames.chpl:18: syntax error: near 'int'

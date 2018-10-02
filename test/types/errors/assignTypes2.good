@@ -1,1 +1,1 @@
-assignTypes2.chpl:1: error: illegal assignment to type
+assignTypes2.chpl:1: syntax error: near '='
