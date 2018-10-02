@@ -1075,7 +1075,13 @@ fn_decl_stmt_inner:
 ;
 
 scalar_type:
-  TINT  { $$ = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
+  TBOOL    { $$ = new SymExpr(dtBools[BOOL_SIZE_DEFAULT]->symbol); }
+| TINT     { $$ = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
+| TUINT    { $$ = new SymExpr(dtUInt[INT_SIZE_DEFAULT]->symbol); }
+| TREAL    { $$ = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol); }
+| TIMAG    { $$ = new SymExpr(dtImag[FLOAT_SIZE_DEFAULT]->symbol); }
+| TCOMPLEX { $$ = new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol); }
+| TSTRING  { $$ = new SymExpr(dtString->symbol); }
 ;
 
 fn_decl_receiver_expr:
