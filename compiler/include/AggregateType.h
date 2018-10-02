@@ -243,7 +243,7 @@ private:
 
 private:
 
-  void                        moveConstructorToOuter(FnSymbol* fn);
+  void                        moveTypeConstructorToOuter(FnSymbol* fn);
 
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,

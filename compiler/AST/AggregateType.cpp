@@ -1285,7 +1285,7 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
 
   if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
     AggregateType* outerType = toAggregateType(ts->type);
-    outerType->moveConstructorToOuter(fn);
+    outerType->moveTypeConstructorToOuter(fn);
   }
 
   for_fields(tmp, this) {
@@ -1789,7 +1789,7 @@ void AggregateType::insertImplicitThis(FnSymbol*         fn,
   }
 }
 
-void AggregateType::moveConstructorToOuter(FnSymbol* fn) {
+void AggregateType::moveTypeConstructorToOuter(FnSymbol* fn) {
   Expr*      insertPoint = symbol->defPoint;
 
   while (isTypeSymbol(insertPoint->parentSymbol) == true) {
