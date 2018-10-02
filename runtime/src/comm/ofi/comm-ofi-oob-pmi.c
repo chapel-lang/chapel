@@ -26,6 +26,7 @@
 
 #include "chpl-comm.h"
 #include "chpl-mem.h"
+#include "chpl-mem-sys.h"
 #include "chpl-gen-includes.h"
 #include "chplsys.h"
 #include "error.h"
@@ -66,6 +67,36 @@ void chpl_comm_ofi_oob_barrier(void) {
 }
 
 
-void chpl_comm_ofi_oob_allgather(void* in, void* out, int len) {
-  PMI_CHK(PMI_Allgather(in, out, len));
+void chpl_comm_ofi_oob_allgather(void* mine, void* all, int size) {
+  //
+  // PMI doesn't provide an ordered allGather, so we build one here
+  // by concatenating the node index and the payload and using that
+  // to scatter the unordered PMI_Allgather() results.
+  //
+  typedef struct {
+    int nodeID;
+    uint64_t info[];
+  } gather_t;
+
+  const size_t g_size = offsetof(gather_t, info) + size;
+  gather_t* g_mine;
+  CHK_SYS_CALLOC(g_mine, gather_t*, 1, g_size);
+  g_mine->nodeID = chpl_nodeID;
+  memcpy(&g_mine->info, mine, size);
+
+  gather_t* g_all;
+  CHK_SYS_CALLOC(g_all, gather_t*, chpl_numNodes, g_size);
+
+  PMI_CHK(PMI_Allgather(g_mine, g_all, g_size));
+
+  for (int g_i = 0; g_i < chpl_numNodes; g_i++) {
+    char* g_pa = (char*) g_all + g_i * g_size;
+    int i;
+    memcpy(&i, g_pa + offsetof(gather_t, nodeID), sizeof(i));
+    char* p_a = (char*) all + i * size;
+    memcpy(p_a, g_pa + offsetof(gather_t, info), size);
+  }
+
+  sys_free(g_all);
+  sys_free(g_mine);
 }
