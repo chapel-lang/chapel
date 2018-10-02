@@ -21,6 +21,7 @@
 #define _EXPR_H_
 
 #include "baseAST.h"
+#include "driver.h"
 
 #include "primitive.h"
 #include "symbol.h"
@@ -290,6 +291,7 @@ static inline bool isAlive(Symbol* symbol) {
 }
 
 static inline bool isAlive(Type* type) {
+  if (fMinimalModules && type == dtString) return false;
   return isAlive(type->symbol->defPoint);
 }
 
