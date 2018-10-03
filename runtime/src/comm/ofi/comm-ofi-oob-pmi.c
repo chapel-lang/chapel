@@ -80,12 +80,12 @@ void chpl_comm_ofi_oob_allgather(void* mine, void* all, int size) {
 
   const size_t g_size = offsetof(gather_t, info) + size;
   gather_t* g_mine;
-  CHK_SYS_CALLOC(g_mine, gather_t*, 1, g_size);
+  CHK_SYS_CALLOC_SZ(g_mine, 1, g_size);
   g_mine->nodeID = chpl_nodeID;
   memcpy(&g_mine->info, mine, size);
 
   gather_t* g_all;
-  CHK_SYS_CALLOC(g_all, gather_t*, chpl_numNodes, g_size);
+  CHK_SYS_CALLOC_SZ(g_all, chpl_numNodes, g_size);
 
   PMI_CHK(PMI_Allgather(g_mine, g_all, g_size));
 
