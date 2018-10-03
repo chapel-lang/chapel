@@ -89,7 +89,6 @@ symbolFlag( FLAG_CONST , npr, "const" , "constant" )
 // this shadow variable is constant, whereas the outer variable is not
 symbolFlag( FLAG_CONST_DUE_TO_TASK_FORALL_INTENT , npr, "const due to task or forall intent", ncm )
 symbolFlag( FLAG_C_PTR_CLASS , ypr, "c_ptr class" , "marks c_ptr class" )
-symbolFlag( FLAG_CONSTRUCTOR , npr, "constructor" , "constructor (but not type constructor); loosely defined to include constructor wrappers" )
 symbolFlag( FLAG_COPY_MUTATES , ypr, "copy mutates" , "the initCopy function / copy initializer takes its argument by ref")
 symbolFlag( FLAG_DATA_CLASS , ypr, "data class" , ncm )
 
@@ -102,7 +101,6 @@ symbolFlag( FLAG_DEFAULT_INTENT_IS_REF, ypr, "default intent is ref", "The defau
 // (ie. it is a ref if it is modified in the function body)
 symbolFlag( FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr, "default intent is ref if modified", "The default intent for this type is ref if modified const ref otherwise")
 
-symbolFlag( FLAG_DEFAULT_CONSTRUCTOR , npr, "default constructor" , ncm )
 symbolFlag( FLAG_DEFAULT_COPY_INIT, npr, "default copy initializer", ncm )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , "applied to functions that are destructors" )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
@@ -164,7 +162,6 @@ symbolFlag( FLAG_INSTANTIATED_PARAM , npr, "instantiated param" , "this formal i
 symbolFlag( FLAG_INSTANTIATED_GENERIC , npr, "instantiated generic" , "this is an instantiation of a generic" )
 symbolFlag( FLAG_INSTANTIATED_FROM_ANY , npr, "instantiated from any" , "this is an instantiation from any type" )
 symbolFlag( FLAG_INVISIBLE_FN , npr, "invisible fn" , "invisible function (not a candidate for resolution)" )
-symbolFlag( FLAG_IS_MEME , npr, "is meme" , ncm )
 symbolFlag( FLAG_ITERATOR_CLASS , npr, "iterator class" , ncm )
 symbolFlag( FLAG_ITERATOR_FN , npr, "iterator fn" , ncm )
 symbolFlag( FLAG_ITERATOR_RECORD , npr, "iterator record" , ncm )

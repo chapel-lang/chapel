@@ -1,2 +1,1 @@
-extern-classes.chpl:2: warning: Extern classes have been deprecated
-extern-classes.chpl:2: error: Extern classes are not supported by initializers
+extern-classes.chpl:2: error: Extern classes are not supported.

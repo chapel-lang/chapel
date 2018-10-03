@@ -159,8 +159,7 @@ void normalize() {
       makeExportWrapper(fn);
     }
 
-    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == false &&
-        fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == false) {
+    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false) {
       fixupArrayFormals(fn);
     }
 
@@ -1115,9 +1114,7 @@ static void normalizeReturns(FnSymbol* fn) {
   // Check if this function's returns are already normal.
   if (rets.size() == 1 && theRet == fn->body->body.last()) {
     if (SymExpr* se = toSymExpr(theRet->get(1))) {
-      if (fn->hasFlag(FLAG_CONSTRUCTOR)         == true ||
-          fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true ||
-          strncmp("_if_fn", fn->name, 6)        ==    0 ||
+      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true ||
           strcmp ("=",      fn->name)           ==    0 ||
           strcmp ("_init",  fn->name)           ==    0||
           strcmp ("_ret",   se->symbol()->name) ==    0) {
@@ -3144,11 +3141,8 @@ static bool isGenericActual(Expr* expr) {
   if (SymExpr* se = toSymExpr(expr))
     if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
       if (AggregateType* at = toAggregateType(canonicalClassType(ts->type)))
-        if (!at->needsConstructor())
-          // Ignore aggregate types with old-style constructors since
-          // it computes genericity in resolution (vs in scope resolve)
-          if (at->isGeneric() && !at->isGenericWithDefaults())
-            return true;
+        if (at->isGeneric() && !at->isGenericWithDefaults())
+          return true;
 
   return false;
 }

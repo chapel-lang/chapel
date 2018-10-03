@@ -148,7 +148,6 @@ bool fWarnConstLoops = true;
 bool fWarnUnstable = false;
 bool fDefaultUnmanaged = false;
 bool fLegacyNew = false;
-bool fWarnConstructors = true;
 
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
@@ -175,7 +174,6 @@ int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fUserSetLocal = false;
 bool fLocal;   // initialized in postLocal()
 bool fIgnoreLocalClasses = false;
-bool fUserDefaultInitializers = true;
 bool fLifetimeChecking = true;
 bool fOverrideChecking = true;
 bool fHeterogeneous = false;
@@ -831,7 +829,6 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Warning and Language Control Options", NULL, NULL, NULL, NULL},
  {"permit-unhandled-module-errors", ' ', NULL, "Permit unhandled errors in explicit modules; such errors halt at runtime", "N", &fPermitUnhandledModuleErrors, "CHPL_PERMIT_UNHANDLED_MODULE_ERRORS", NULL},
- {"warn-constructors", ' ', NULL, "Enable [disable] deprecation warnings for constructors", "N", &fWarnConstructors, "CHPL_WARN_CONSTRUCTORS", NULL},
  {"warn-unstable", ' ', NULL, "Enable [disable] warnings for uses of language features that are in flux", "N", &fWarnUnstable, "CHPL_WARN_UNSTABLE", NULL},
  {"warnings", ' ', NULL, "Enable [disable] output of warnings", "n", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
 
@@ -1000,7 +997,6 @@ static ArgumentDescription arg_desc[] = {
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  DRIVER_ARG_DEBUGGERS,
- {"force-initializers", ' ', NULL, "Enable [disable] default initializers", "N", &fUserDefaultInitializers, NULL, NULL},
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "N", &fLifetimeChecking, NULL, NULL},
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},

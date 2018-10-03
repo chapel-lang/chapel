@@ -1335,8 +1335,6 @@ static void buildClassBorrowMethod(AggregateType* ct) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool hasUserDefinedConstructor(AggregateType* at);
-
 static void build_record_copy_function(AggregateType* at) {
   if (function_exists("chpl__initCopy", at) == NULL) {
     if (isRecordWithInitializers(at) == true) {
@@ -1360,14 +1358,7 @@ static void build_record_copy_function(AggregateType* at) {
 
       fn->insertFormalAtTail(arg);
 
-      if (hasUserDefinedConstructor(at) == true) {
-        CallExpr* call = new CallExpr(PRIM_NEW, at->symbol, new SymExpr(arg));
-
-        at->symbol->addFlag(FLAG_NOT_POD);
-
-        fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
-
-      } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
+      if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
         fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(arg)));
 
       } else {
@@ -1379,11 +1370,6 @@ static void build_record_copy_function(AggregateType* at) {
             CallExpr* init = new CallExpr(".", arg, sym);
 
             call->insertAtTail(new NamedExpr(tmp->name, init));
-
-            // Calls for nested records need to be methods
-            if (strcmp(tmp->name, "outer") == 0) {
-              call->insertAtHead(gMethodToken);
-            }
           }
         }
 
@@ -1397,22 +1383,6 @@ static void build_record_copy_function(AggregateType* at) {
       normalize(fn);
     }
   }
-}
-
-static bool hasUserDefinedConstructor(AggregateType* at) {
-  bool retval = false;
-
-  if (at->initializerStyle == DEFINES_CONSTRUCTOR) {
-    const char* copyCtorName = astr("_construct_", at->symbol->name);
-
-    if (FnSymbol* ctor = function_exists(copyCtorName, at)) {
-      if (ctor->getFormal(1)->hasFlag(FLAG_IS_MEME) == false) {
-        retval = true;
-      }
-    }
-  }
-
-  return retval;
 }
 
 /************************************* | **************************************
@@ -1522,7 +1492,7 @@ static void buildDefaultOfFunction(AggregateType* ct) {
     } else if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       fn->insertAtTail(new CallExpr(PRIM_RETURN, arg));
 
-    } else if (ct->initializerStyle == DEFINES_INITIALIZER ||
+    } else if (ct->hasUserDefinedInit == true ||
                ct->wantsDefaultInitializer()) {
       buildInitializerCall(ct, fn, arg);
     } else {
@@ -1599,9 +1569,7 @@ static void buildRecordDefaultOf(AggregateType* ct,
 
   // Insert all required arguments into this call
   for_formals(formal, ct->defaultInitializer) {
-    if (formal->hasFlag(FLAG_IS_MEME) == true) {
-
-    } else if (formal->type == dtMethodToken) {
+    if (formal->type == dtMethodToken) {
       call->insertAtTail(gMethodToken);
 
     } else if (formal->isParameter() == true) {

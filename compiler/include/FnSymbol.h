@@ -51,7 +51,6 @@ public:
   IteratorInfo*              iteratorInfo;
 
   Symbol*                    _this;
-  Symbol*                    _outer;
   FnSymbol*                  instantiatedFrom;
   SymbolMap                  substitutions;
 
