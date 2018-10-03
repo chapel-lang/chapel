@@ -1,5 +1,0 @@
-bug: skyline arrays are buzzed
-
-This simple test shows that an expression which ought to generate a skyline
-array when captured into a variable instead captures an array of arrays where
-the interior arrays all have the same shape.
