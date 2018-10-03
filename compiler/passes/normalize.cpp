@@ -1236,8 +1236,8 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
     }
     if (exportedArrayElementType[fn] == NULL && fLibraryPython) {
       USR_FATAL_CONT(fn,
-                     "Python compilation requires an explicit element type when"
-                     " returning arrays");
+                     "Array return types must include an explicit element type"
+                     " for Python compilation");
     }
 
     fn->retExprType->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
