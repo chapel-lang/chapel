@@ -6,3 +6,4 @@ renamedTest
 libfoo.a
 checkRequire
 checkRequire2
+checkCommandLineLib

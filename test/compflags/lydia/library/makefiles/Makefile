@@ -37,3 +37,13 @@ else
 checkRequire2:
 	@echo "weird"
 endif
+
+ifeq ($(MAKECMDGOALS),checkCommandLineLib)
+include lib/Makefile.commandLineLib
+checkCommandLineLib: checkCommandLineLib.c lib/libcommandLineLib.a
+	@$(CHPL_COMPILER) $(CHPL_CFLAGS) -o checkCommandLineLib checkCommandLineLib.c $(CHPL_LDFLAGS)
+	@./checkCommandLineLib
+else
+checkCommandLineLib:
+	@echo "weird"
+endif
