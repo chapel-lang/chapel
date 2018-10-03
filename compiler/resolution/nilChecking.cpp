@@ -75,14 +75,6 @@ struct AliasLocation {
   AliasLocation() : type(MUST_ALIAS_IGNORED), location(NULL) { }
 };
 
-static inline bool operator==(AliasLocation a, AliasLocation b) {
-  return a.type == b.type && a.location == b.location;
-}
-static inline bool operator!=(AliasLocation a, AliasLocation b) {
-  return a.type != b.type || a.location != b.location;
-}
-
-
 typedef std::map<Symbol*, AliasLocation> AliasMap;
 
 static inline AliasLocation nilAliasLocation(BaseAST* reason) {
