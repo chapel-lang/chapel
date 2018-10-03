@@ -56,20 +56,21 @@ typedef enum {
   MUST_ALIAS_IGNORED = 0, // no information; useful starting point.
                           // ignored when combining basic blocks
 
-  MUST_ALIAS_UNKNOWN,     // might have been set, might point to nil
-                          // who knows what it points to
+  MUST_ALIAS_REFVAR,      // reference refers to a particular variable
 
   MUST_ALIAS_ALLOCATED,   // refers to the statement allocating (aka 'new')
 
-  MUST_ALIAS_REFVAR,      // reference refers to a particular variable
-
   MUST_ALIAS_NIL,         // it refers to nil
+
+  MUST_ALIAS_UNKNOWN,     // might have been set, might point to nil
+                          // who knows what it points to
 } AliasType;
 
 struct AliasLocation {
   AliasType type;
   // MUST_ALIAS_ALLOCATED -> CallExpr
   // MUST_ALIAS_REFVAR -> ArgSymbol or VarSymbol being referred to
+  // MUST_ALIAS_NIL -> a reason it is nil
   BaseAST* location;
   AliasLocation() : type(MUST_ALIAS_IGNORED), location(NULL) { }
 };
@@ -84,10 +85,10 @@ static inline bool operator!=(AliasLocation a, AliasLocation b) {
 
 typedef std::map<Symbol*, AliasLocation> AliasMap;
 
-static inline AliasLocation nilAliasLocation() {
+static inline AliasLocation nilAliasLocation(BaseAST* reason) {
   AliasLocation ret;
   ret.type = MUST_ALIAS_NIL;
-  ret.location = NULL;
+  ret.location = reason;
   return ret;
 }
 
@@ -128,9 +129,9 @@ static Symbol* getReferent(Symbol* sym, const AliasMap& aliasMap) {
 
   if (sym->isRef()) {
     if (loc.type == MUST_ALIAS_REFVAR) {
-      Symbol* sym = toSymbol(loc.location);
-      INT_ASSERT(sym && !sym->isRef());
-      return sym;
+      Symbol* referentSym = toSymbol(loc.location);
+      INT_ASSERT(referentSym && !referentSym->isRef());
+      return referentSym;
     }
   }
 
@@ -138,7 +139,8 @@ static Symbol* getReferent(Symbol* sym, const AliasMap& aliasMap) {
 }
 
 static AliasLocation aliasLocationCopyValueFrom(Symbol* copyFrom,
-                                           const AliasMap& aliasMap) {
+                                                const AliasMap& aliasMap,
+                                                CallExpr* inCall) {
 
   // we might be dereferencing an unknown pointer
   AliasLocation fromLocation = unknownAliasLocation();
@@ -151,7 +153,7 @@ static AliasLocation aliasLocationCopyValueFrom(Symbol* copyFrom,
   }
 
   if (copyFrom->type == dtNil)
-    fromLocation = nilAliasLocation();
+    fromLocation = nilAliasLocation(inCall);
 
   if (copyFrom->isRef()) {
     if (fromLocation.type == MUST_ALIAS_REFVAR) {
@@ -219,12 +221,18 @@ static void checkForNilDereferencesInCall(
     //   * borrowing from nil owned isn't an error by itself
     //     but dereferencing that nil borrow would be
     if (isClassLike(thisSym->getValType())) {
-      // Raise an error if it was definately nil
+      // Raise an error if it was definitely nil
       AliasMap::const_iterator it = aliasMap.find(thisSym);
       if (it != aliasMap.end()) {
         AliasLocation loc = it->second;
         if (loc.type == MUST_ALIAS_NIL) {
-          USR_FATAL_CONT(call, "use of nil variable");
+          USR_FATAL_CONT(call, "attempt to dereference nil");
+          if (!thisSym->hasFlag(FLAG_TEMP)) {
+            USR_PRINT(call, "variable %s is nil at this point", thisSym->name);
+          }
+          if (Expr* fromExpr = toExpr(loc.location)) {
+            USR_PRINT(fromExpr, "this statement may be relevant");
+          }
         }
       }
     }
@@ -422,7 +430,7 @@ static void checkCall(
         Symbol* rhsSym = se->symbol();
         Symbol* referent = getReferent(lhsSym, OUT);
         if (referent)
-          OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT);
+          OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT, call);
         else if (lhsSym->hasFlag(FLAG_RETARG) == false)
           storeToUnknown = true;
 
@@ -446,7 +454,7 @@ static void checkCall(
           } else {
             Symbol* referent = getReferent(lhsSym, OUT);
             if (referent)
-              OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT);
+              OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT, call);
             else if (lhsSym->hasFlag(FLAG_RETARG) == false)
               storeToUnknown = true;
           }
@@ -465,24 +473,24 @@ static void checkCall(
             OUT[lhsSym] = unknownAliasLocation();
           }
         }
-      }
+      } // ending (userCalledFn == NULL)
 
     } else {
       // move-ish, LHS is not a ref
 
       // handle certain cases for PRIM_MOVE that we understand
       if (rhsExpr->typeInfo() == dtNil) {
-        OUT[lhsSym] = nilAliasLocation();
+        OUT[lhsSym] = nilAliasLocation(call);
 
       } else if (SymExpr* se = toSymExpr(rhsExpr)) {
-        OUT[lhsSym] = aliasLocationCopyValueFrom(se->symbol(), OUT);
+        OUT[lhsSym] = aliasLocationCopyValueFrom(se->symbol(), OUT, call);
 
       } else if (userCalledFn != NULL) {
 
         if (isClassIshType(lhsSym)) {
           // defaultOf for classes results in nil
           if (userCalledFn->name == astr_defaultOf) {
-            OUT[lhsSym] = nilAliasLocation();
+            OUT[lhsSym] = nilAliasLocation(call);
             ignoreGlobalUpdates = true;
 
           // new for classes is allocation
@@ -498,7 +506,7 @@ static void checkCall(
                      0 == strcmp(userCalledFn->name, "borrow")) {
             OUT[lhsSym] =
               aliasLocationCopyValueFrom(
-                  toSymExpr(userCall->get(1))->symbol(), OUT);
+                  toSymExpr(userCall->get(1))->symbol(), OUT, call);
             ignoreGlobalUpdates = true;
           } else {
             Expr* nilFromActual = NULL;
@@ -510,7 +518,7 @@ static void checkCall(
             if (nilFromActual != NULL) {
               SymExpr* actualSe = toSymExpr(nilFromActual);
               Symbol* actualSym = actualSe->symbol();
-              OUT[lhsSym] = aliasLocationCopyValueFrom(actualSym, OUT);
+              OUT[lhsSym] = aliasLocationCopyValueFrom(actualSym, OUT, call);
               ignoreGlobalUpdates = true;
             }
           }
@@ -525,14 +533,13 @@ static void checkCall(
 
         if (userCall->isPrimitive(PRIM_DEREF))
           OUT[lhsSym] = aliasLocationCopyValueFrom(
-                              toSymExpr(userCall->get(1))->symbol(),
-                              OUT);
+                              toSymExpr(userCall->get(1))->symbol(), OUT, call);
 
         else if (userCall->isPrimitive(PRIM_CAST) &&
                  isClassIshType(lhsSym))
           OUT[lhsSym] = aliasLocationCopyValueFrom(
                               toSymExpr(userCall->get(2))->symbol(),
-                              OUT);
+                              OUT, call);
         else
           OUT[lhsSym] = unknownAliasLocation();
 
@@ -554,9 +561,9 @@ static void checkCall(
         if (actualSym->isRef()) {
           Symbol* referent = getReferent(actualSym, OUT);
           if (referent)
-            OUT[referent] = nilAliasLocation();
+            OUT[referent] = nilAliasLocation(call);
         } else {
-          OUT[actualSym] = nilAliasLocation();
+          OUT[actualSym] = nilAliasLocation(call);
         }
 
       } else if (formal->intent == INTENT_REF &&
@@ -712,6 +719,9 @@ void findNilDereferences(FnSymbol* fn) {
       AliasMap nextIn;
 
       for_vector(BasicBlock, bbin, bb->ins) {
+        if (debugging) {
+          printf("bb %i is a predecessor for bb %i\n", bbin->id, (int)i);
+        }
         const AliasMap& from = OUT[bbin->id];
         for (AliasMap::const_iterator it = from.begin();
              it != from.end();
@@ -720,17 +730,40 @@ void findNilDereferences(FnSymbol* fn) {
           AliasLocation loc = it->second;
           if (nextIn.count(sym) == 0) {
             nextIn[sym] = loc;
+            if (debugging) {
+              printf("{} here -> get from bb %i\n", (int) bbin->id);
+              printAliasEntry("   ", sym, loc);
+            }
           } else {
             AliasLocation was = nextIn[sym];
+            if (debugging) {
+              printf("combining from bb %i\n", (int) bbin->id);
+              printAliasEntry("    nextIn", sym, was);
+              printAliasEntry("    inbb", sym, loc);
+            }
+
             // combine alias locations
             if (was.type == loc.type &&
                 was.location == loc.location) {
               // OK, do nothing
+            } else if (was.type == MUST_ALIAS_NIL &&
+                       loc.type == MUST_ALIAS_NIL ) {
+              // OK, do nothing
+              // only difference is reason for nil
             } else if (was.type == MUST_ALIAS_IGNORED) {
+              if (debugging) {
+                printf("ignored here -> get from bb %i\n", (int) bbin->id);
+                printAliasEntry("   ", sym, loc);
+              }
               nextIn[sym] = loc;
             } else {
               // Conflicting input -> unknown
               nextIn[sym] = unknownAliasLocation();
+            }
+
+            if (debugging) {
+              printf("result of combining from bb %i\n", (int) bbin->id);
+              printAliasEntry("    nextIn", sym, nextIn[sym]);
             }
           }
         }

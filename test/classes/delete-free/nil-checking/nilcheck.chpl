@@ -57,6 +57,15 @@ proc bad8() {
 }
 bad8();
 
+config param falseParam = false;
+
+proc bad9() {
+  var x:owned MyClass;
+  if falseParam then
+    x = new owned MyClass(1);
+  x.method();
+}
+bad9();
 
 
 

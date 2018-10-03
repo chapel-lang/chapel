@@ -172,9 +172,18 @@ symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which co
 symbolFlag( FLAG_LAST_RESORT , ypr, "last resort" , "overload of last resort in resolution" )
 
 // These flags help to decorate module code to enable nil-checking
+
+// indicates that the function, on return, will leave 'this' argument
+// storing 'nil'
 symbolFlag( FLAG_LEAVES_THIS_NIL, ypr, "leaves this nil", ncm )
+// indicates that the function, on return, will leave the marked
+// argument storing 'nil'
 symbolFlag( FLAG_LEAVES_ARG_NIL, ypr, "leaves arg nil", ncm )
+// indicates that nil-ness of the result should be based
+// upon the nil-ness of the particular argument
 symbolFlag( FLAG_NIL_FROM_ARG, ypr, "nil from arg", ncm )
+// indicates that the nil-ness of the result should be based
+// upon the nil-ness of 'this'
 symbolFlag( FLAG_NIL_FROM_THIS, ypr, "nil from this", ncm )
 
 // Tells resolution to use this function's line number even if that function
