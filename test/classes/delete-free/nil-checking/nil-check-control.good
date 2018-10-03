@@ -10,3 +10,6 @@ nil-check-control.chpl:33: note: this statement may be relevant
 nil-check-control.chpl:39: In function 'badNilInForLoop':
 nil-check-control.chpl:43: error: attempt to dereference nil
 nil-check-control.chpl:42: note: this statement may be relevant
+nil-check-control.chpl:48: In function 'badNilInCoforallLoop':
+nil-check-control.chpl:51: error: attempt to dereference nil
+nil-check-control.chpl:50: note: this statement may be relevant
