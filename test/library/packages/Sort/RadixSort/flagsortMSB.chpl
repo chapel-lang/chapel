@@ -6,7 +6,7 @@ module flagsortMSB {
   use Random;
   config param bucketBits=8;
   param numBuckets = (1 << bucketBits);
-  param DISTRIBUTE_BUFFER = 1;
+  param ElementsToBufferDuringShuffle = 5;
   config const tryUnroll = false;
 
    // To find a position where an element's count is to be updated in the counts array.
@@ -31,7 +31,7 @@ module flagsortMSB {
      return place;
    }
   
-   // MSB initial call - helper function
+   /* MSB helper function */
    proc radixSortMSB(array:[?dom] int) {
 
      var place = findPlace(array);
@@ -41,13 +41,13 @@ module flagsortMSB {
 
    private proc __radixSortMSB(array:[] int, place: int, startIndex: int, endIndex: int) {
 
-     if(endIndex - startIndex < 100) {
-       sort(array[startIndex..endIndex]);
-     }
-
-     //base case, exit condition
+     // base case, exit condition
      if (place<0 || endIndex <= startIndex ) {
        return;
+     }
+
+     if(endIndex - startIndex < 100) {
+       sort(array[startIndex..endIndex]);
      }
 
     var counts:[0..numBuckets] int;
@@ -66,6 +66,8 @@ module flagsortMSB {
  
     var curbin = 0;
 
+    /* Shuffle/re-distribute the elements according to the key part currently under consideration */
+    
     while true {
 
       while curbin <= numBuckets && counts[curbin] == curOffsets[curbin] {
@@ -75,7 +77,7 @@ module flagsortMSB {
         break;
       }
 
-      param max_buf = DISTRIBUTE_BUFFER;
+      param max_buf = ElementsToBufferDuringShuffle;
       var buf: max_buf*array.eltType;
       var used_buf = 0;
       var end = curOffsets[curbin];
@@ -119,24 +121,20 @@ module flagsortMSB {
       }
     }
 
-    //reset offsets as before swapping - for demarcating buckets using offsets array. 
+    /* reset offsets as before swapping: for demarcating buckets using offsets array. */
     counts[0] = startIndex;
     for i in 1..numBuckets {
       counts[i] = curOffsets[i-1];
     }
  
-      for bin in 0..numBuckets {
-        const binStart = counts[bin];
-        const binEnd = if bin+1<=numBuckets then counts[bin+1]-1 else endIndex;
-        const num = 1 + binEnd - binStart;
-        if num > 1 {
-           __radixSortMSB(array,place-bucketBits,binStart, binEnd);
-        }
-         
-        
-      }	
-
+    for bin in 0..numBuckets {
+      const binStart = counts[bin];
+      const binEnd = if bin+1<=numBuckets then counts[bin+1]-1 else endIndex;
+      const num = 1 + binEnd - binStart;
+      if num > 1 {
+         __radixSortMSB(array,place-bucketBits,binStart, binEnd);
+      }       
+    }	
   }
-
 }
 

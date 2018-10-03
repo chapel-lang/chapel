@@ -4,7 +4,7 @@
  use flagsortMSB;
  use Time;
 
- config const printStats = true;
+ config const printStats = false;
  config const size = 1000;
   
 
@@ -22,9 +22,9 @@
    radixSortMSB(array);
    t.stop();
  
-   /*if printStats {
+   if printStats {
      writeln("Time: ", t.elapsed());
-   }*/
+   }
 
    t.clear();
 
