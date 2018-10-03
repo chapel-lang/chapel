@@ -646,6 +646,95 @@ static void checkBasicBlock(
   }
 }
 
+static void gatherVariablesToCheck(FnSymbol* fn,
+                                   std::vector<Symbol*>& idxToSym,
+                                   bool debugging) {
+
+  // Gather the variables to consider
+  std::map<Symbol*, int> symToIdx;
+
+  int index = 0;
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(fn, symExprs);
+  for_vector(SymExpr, se, symExprs) {
+    Symbol* sym = se->symbol();
+    if (isArgSymbol(sym) || isVarSymbol(sym)) {
+      if (symToIdx.count(sym) == 0) {
+        // Add it to the map/array
+        symToIdx.insert(std::pair<Symbol*, int>(sym, index));
+        idxToSym.push_back(sym);
+        INT_ASSERT((int)(idxToSym.size()-1) == index);
+        index++;
+        if (debugging) {
+          printf("Tracking symbol %i %s\n", sym->id, sym->name);
+        }
+      }
+    }
+  }
+}
+
+static AliasMap combineIns(FnSymbol* fn,
+                           int i,
+                           std::vector<AliasMap>& OUT,
+                           bool debugging) {
+
+  BasicBlock* bb = (*fn->basicBlocks)[i];
+  AliasMap nextIn;
+
+  for_vector(BasicBlock, bbin, bb->ins) {
+    if (debugging) {
+      printf("bb %i is a predecessor for bb %i\n", bbin->id, (int)i);
+    }
+    const AliasMap& from = OUT[bbin->id];
+    for (AliasMap::const_iterator it = from.begin();
+         it != from.end();
+         ++it) {
+      Symbol* sym = it->first;
+      AliasLocation loc = it->second;
+      if (nextIn.count(sym) == 0) {
+        nextIn[sym] = loc;
+        if (debugging) {
+          printf("{} here -> get from bb %i\n", (int) bbin->id);
+          printAliasEntry("   ", sym, loc);
+        }
+      } else {
+        AliasLocation was = nextIn[sym];
+        if (debugging) {
+          printf("combining from bb %i\n", (int) bbin->id);
+          printAliasEntry("    nextIn", sym, was);
+          printAliasEntry("    inbb", sym, loc);
+        }
+
+        // combine alias locations
+        if (was.type == loc.type &&
+            was.location == loc.location) {
+          // OK, do nothing
+        } else if (was.type == MUST_ALIAS_NIL &&
+                   loc.type == MUST_ALIAS_NIL ) {
+          // OK, do nothing
+          // only difference is reason for nil
+        } else if (was.type == MUST_ALIAS_IGNORED) {
+          if (debugging) {
+            printf("ignored here -> get from bb %i\n", (int) bbin->id);
+            printAliasEntry("   ", sym, loc);
+          }
+          nextIn[sym] = loc;
+        } else {
+          // Conflicting input -> unknown
+          nextIn[sym] = unknownAliasLocation();
+        }
+
+        if (debugging) {
+          printf("result of combining from bb %i\n", (int) bbin->id);
+          printAliasEntry("    nextIn", sym, nextIn[sym]);
+        }
+      }
+    }
+  }
+
+  return nextIn;
+}
+
 void findNilDereferences(FnSymbol* fn) {
 
   bool debugging = 0 == strcmp(fn->name, debugNilsForFn) ||
@@ -659,30 +748,9 @@ void findNilDereferences(FnSymbol* fn) {
 
   BasicBlock::buildBasicBlocks(fn);
 
-  // Gather the variables to consider
+  // Stores variables we are considering
   std::vector<Symbol*> idxToSym;
-  std::map<Symbol*, int> symToIdx;
-
-  {
-    int index = 0;
-    std::vector<SymExpr*> symExprs;
-    collectSymExprs(fn, symExprs);
-    for_vector(SymExpr, se, symExprs) {
-      Symbol* sym = se->symbol();
-      if (isArgSymbol(sym) || isVarSymbol(sym)) {
-        if (symToIdx.count(sym) == 0) {
-          // Add it to the map/array
-          symToIdx.insert(std::pair<Symbol*, int>(sym, index));
-          idxToSym.push_back(sym);
-          INT_ASSERT((int)(idxToSym.size()-1) == index);
-          index++;
-          if (debugging) {
-            printf("Tracking symbol %i %s\n", sym->id, sym->name);
-          }
-        }
-      }
-    }
-  }
+  gatherVariablesToCheck(fn, idxToSym, debugging);
 
   size_t nbbs = fn->basicBlocks->size();
 
@@ -706,60 +774,8 @@ void findNilDereferences(FnSymbol* fn) {
 
     // for each basic block, update IN block based on predecessors OUT blocks
     for (size_t i = 0; i < nbbs; i++) {
-      BasicBlock* bb = (*fn->basicBlocks)[i];
 
-      AliasMap nextIn;
-
-      for_vector(BasicBlock, bbin, bb->ins) {
-        if (debugging) {
-          printf("bb %i is a predecessor for bb %i\n", bbin->id, (int)i);
-        }
-        const AliasMap& from = OUT[bbin->id];
-        for (AliasMap::const_iterator it = from.begin();
-             it != from.end();
-             ++it) {
-          Symbol* sym = it->first;
-          AliasLocation loc = it->second;
-          if (nextIn.count(sym) == 0) {
-            nextIn[sym] = loc;
-            if (debugging) {
-              printf("{} here -> get from bb %i\n", (int) bbin->id);
-              printAliasEntry("   ", sym, loc);
-            }
-          } else {
-            AliasLocation was = nextIn[sym];
-            if (debugging) {
-              printf("combining from bb %i\n", (int) bbin->id);
-              printAliasEntry("    nextIn", sym, was);
-              printAliasEntry("    inbb", sym, loc);
-            }
-
-            // combine alias locations
-            if (was.type == loc.type &&
-                was.location == loc.location) {
-              // OK, do nothing
-            } else if (was.type == MUST_ALIAS_NIL &&
-                       loc.type == MUST_ALIAS_NIL ) {
-              // OK, do nothing
-              // only difference is reason for nil
-            } else if (was.type == MUST_ALIAS_IGNORED) {
-              if (debugging) {
-                printf("ignored here -> get from bb %i\n", (int) bbin->id);
-                printAliasEntry("   ", sym, loc);
-              }
-              nextIn[sym] = loc;
-            } else {
-              // Conflicting input -> unknown
-              nextIn[sym] = unknownAliasLocation();
-            }
-
-            if (debugging) {
-              printf("result of combining from bb %i\n", (int) bbin->id);
-              printAliasEntry("    nextIn", sym, nextIn[sym]);
-            }
-          }
-        }
-      }
+      AliasMap nextIn = combineIns(fn, i, OUT, debugging);
 
       // Now, propagate changes from nextIn to IN[i]
       // To ensure the algorithm converges, we do this
