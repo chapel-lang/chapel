@@ -1029,9 +1029,8 @@ int32_t chpl_task_getNumBlockedTasks(void)
 // Threads
 
 uint32_t chpl_task_impl_getFixedNumThreads(void) {
-    if (chpl_qthread_done_initializing)
-        return (uint32_t)qthread_num_workers();
-    return 0;
+    assert(chpl_qthread_done_initializing);
+    return (uint32_t)qthread_num_workers();
 }
 
 uint32_t chpl_task_getNumThreads(void)
