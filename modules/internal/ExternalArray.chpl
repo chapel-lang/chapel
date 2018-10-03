@@ -165,7 +165,7 @@ module ExternalArray {
       if (d != rank) {
         halt("domains over external arrays have only one dimension");
       }
-      return dsiGetIndices();
+      return domRange;
     }
 
     proc dsiDims()
@@ -175,10 +175,31 @@ module ExternalArray {
       return 0;
     }
 
+    proc dsiHigh {
+      return size - 1;
+    }
+
+    proc dsiAlignedLow {
+      return domRange.alignedLow;
+    }
+
+    proc dsiAlignedHigh {
+      return domRange.alignedHigh;
+    }
+
     proc dsiAssignDomain(rhs: domain, lhsPrivate: bool) {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
+    proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
+      f <~> new ioLiteral("{") <~> domRange <~> new ioLiteral("}");
+    }
+
+    proc dsiSerialWrite(f) {
+      this.dsiSerialReadWrite(f);
+    }
+
+    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
     // What about _getActualDom?  dsiDestroyDom?
 
     // Prolly want the privatization stuff eventually, but I don't need it right
@@ -275,6 +296,31 @@ module ExternalArray {
       where shouldReturnRvalueByConstRef(eltType)  {
       checkBounds(i);
       return elts(i(1));
+    }
+
+    inline proc dsiLocalAccess(i) ref
+      return dsiAccess(i);
+
+    inline proc dsiLocalAccess(i)
+    where shouldReturnRvalueByValue(eltType)
+      return dsiAccess(i);
+
+    inline proc dsiLocalAccess(i) const ref
+    where shouldReturnRvalueByConstRef(eltType)
+      return dsiAccess(i);
+
+    proc dsiTargetLocales() {
+      return [this.elts.locale, ];
+    }
+
+    proc dsiHasSingleLocalSubdomain() param return true;
+
+    proc dsiLocalSubdomain() {
+      return _getDomain(dom);
+    }
+
+    iter dsiLocalSubdomains() {
+      yield dsiLocalSubdomain();
     }
 
     inline proc checkBounds(i) {
