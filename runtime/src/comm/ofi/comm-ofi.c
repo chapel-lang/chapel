@@ -294,8 +294,6 @@ void init_ofiFabricDomain(void) {
   ret = fi_getinfo(FI_VERSION(1,5), NULL, NULL, 0, hints, &ofi_info);
   if (chpl_nodeID == 0) {
     if (ret == -FI_ENODATA) {
-      DBG_DO_PRINTF("No provider matched for prov_name \"%s\"",
-                    (provider == NULL) ? "<any>" : provider);
       if (DBG_TEST_MASK(DBG_FABFAIL)) {
         DBG_PRINTF(DBG_FABFAIL, "==================== hints:");
         DBG_PRINTF(DBG_FABFAIL, "%s", fi_tostr(hints, FI_TYPE_INFO));
@@ -314,7 +312,9 @@ void init_ofiFabricDomain(void) {
           }
         }
       }
-      exit(1);
+
+      chpl_internal_error_v("No provider matched for prov_name \"%s\"",
+                            (provider == NULL) ? "<any>" : provider);
     }
 
     if (DBG_TEST_MASK(DBG_FAB)) {
