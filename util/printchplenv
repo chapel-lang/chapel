@@ -231,7 +231,7 @@ def filter_overrides(chpl_env):
 def filter_tidy(chpl_env):
     comm = ENV_VALS['CHPL_COMM']
     if chpl_env.name == '  CHPL_COMM_SUBSTRATE':
-        return comm != 'none' and comm != 'ofi' and comm != 'ugni'
+        return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_GASNET_SEGMENT':
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_NETWORK_ATOMICS':
