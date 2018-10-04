@@ -594,30 +594,8 @@ require_stmt:
 ;
 
 assignment_stmt:
-  lhs_expr TASSIGN         opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "=");   }
-| lhs_expr TASSIGNPLUS     opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "+=");  }
-| lhs_expr TASSIGNMINUS    opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "-=");  }
-| lhs_expr TASSIGNMULTIPLY opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "*=");  }
-| lhs_expr TASSIGNDIVIDE   opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "/=");  }
-| lhs_expr TASSIGNMOD      opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "%=");  }
-| lhs_expr TASSIGNEXP      opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "**="); }
-| lhs_expr TASSIGNBAND     opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "&=");  }
-| lhs_expr TASSIGNBOR      opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "|=");  }
-| lhs_expr TASSIGNBXOR     opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "^=");  }
-| lhs_expr TASSIGNSR       opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, ">>="); }
-| lhs_expr TASSIGNSL       opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "<<="); }
+  lhs_expr assignop_ident opt_try_expr TSEMI
+    { $$ = buildAssignment($1, $3, $2);   }
 | lhs_expr TSWAP           opt_try_expr TSEMI
     { $$ = buildAssignment($1, $3, "<=>"); }
 | lhs_expr TASSIGNREDUCE   opt_try_expr TSEMI
