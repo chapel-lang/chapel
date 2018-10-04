@@ -1,0 +1,6 @@
+We would like the "thrown here" line number in .good to be 3, not 7.
+See #11300.
+
+The main point of the test is to ensure the exception is reported,
+not specifically about the line number. So we leave 7 in .good for now,
+until #11300 is resolved.

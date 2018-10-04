@@ -4212,6 +4212,7 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
+  pragma "unchecked throws"
   proc chpl__initCopy(ir: _iteratorRecord) {
 
     // We'd like to know the yielded type of the record, but we can't
@@ -4235,6 +4236,8 @@ module ChapelArray {
 
     var callAgain: bool;
     var subloc = c_sublocid_none;
+
+   try {
 
     for elt in ir {
 
@@ -4276,6 +4279,13 @@ module ChapelArray {
       i += 1;
     }
 
+   } catch exceptn {
+     // Exit early without creating an array below. Clean up first.
+     for j in 0..#i do
+       chpl__autoDestroy(data[j]);
+     _ddata_free(data, size);
+     throw exceptn; // re-throw
+   }
 
     if data != nil {
 
@@ -4323,12 +4333,4 @@ module ChapelArray {
       compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
   }
 
-  /* ================================================
-     Set Operations on Associative Domains and Arrays
-     ================================================
-
-     Associative domains and arrays support a number of operators for
-     set manipulations.
-
-   */
 }
