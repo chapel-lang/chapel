@@ -9,10 +9,10 @@ dereferences. First, at compile-time, the compiler looks for places where
 it can prove a `nil` will be dereferenced or a method called on `nil`.
 When it can find such a case, it raises an error.
 
-The second mechanism is to check each at each method called on an object
-that the object is not `nil`. This works at run-time using checking code
-added by the compiler. These checks are on by default and can be
-disabled by `--fast`, `--no-checks`, or `--no-nil-checks`.
+The second mechanism is a run-time check inserted at each method call on
+an object. It checks that the receiver object is not `nil`.  These checks
+are on by default and can be disabled by `--fast`, `--no-checks`, or
+`--no-nil-checks`.
 
 Limitations of Compile-time Nil Checking
 ========================================
@@ -27,8 +27,3 @@ where a nil is dereferenced. Here are some limitations of the analysis:
 
 Nonetheless we hope that the additional checking provided by this pass
 is useful.
-
- * complex control flow
- * complex alias analysis requirements
- * interprocedural
-   The analysis cannot de be defeated by  makes conservative assumptions about
