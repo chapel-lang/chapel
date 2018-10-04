@@ -2251,8 +2251,12 @@ static void normRefVar(DefExpr* defExpr) {
     }
 
     if (error == true) {
-      USR_FATAL_CONT(sym,
-                     "Cannot set a non-const reference to a const variable.");
+      SymExpr* initSym = toSymExpr(init);
+      if (initSym && initSym->symbol() == gNil)
+        USR_FATAL_CONT(sym, "Cannot create a non-const reference to nil");
+      else
+        USR_FATAL_CONT(sym,
+                       "Cannot set a non-const reference to a const variable.");
     }
   }
 
