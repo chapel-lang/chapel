@@ -125,39 +125,25 @@ static struct am_req_info* comm_amReqLZs;
 
 static struct am_req_info* comm_amReqs;
 
-static int comm_rmaSrcBufSize;
-static int comm_rmaDstBufSize;
 static int comm_amFinFlagsSize;
-
-static int* comm_rmaSrcBuf;
-static int* comm_rmaDstBuf;
 static int* comm_amFinFlags;
-static int comm_amFinSrc;
 
-enum {
-  memSrcIdx = 0,
-  memDstIdx,
-  memAmFinFlagIdx,
-  memAmFinSrcIdx,
-  memNumIdxs
-};
+#define MAX_MEM_REGIONS 10
+static int numMemRegions = 0;
 
-static struct fid_mr* (* comm_mr)[memNumIdxs];
+static struct fid_mr* ofiMrTab[MAX_MEM_REGIONS];
 
 struct memEntry {
-  size_t size;
   void* addr;
+  size_t size;
   void* desc;
   uint64_t key;
 };
 
-typedef struct memEntry (memTab_t)[memNumIdxs];
+typedef struct memEntry (memTab_t)[MAX_MEM_REGIONS];
 
-static memTab_t* comm_mem;
-static memTab_t** comm_memMap;
-
-static int comm_threadPrivateMrSets = 0;
-static int comm_numMrSets;
+static memTab_t memTab;
+static memTab_t* memTabMap;
 
 
 ////////////////////////////////////////
@@ -604,72 +590,47 @@ void init_ofiForMem(void) {
   // address space here; with non-scalable we register each region
   // individually.
   //
-  comm_numMrSets = comm_threadPrivateMrSets ? (numTxCtxs + 1) : 1;
-
   uint64_t bufAcc = FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE;
 
-  CHPL_CALLOC(comm_mr, comm_numMrSets);
-  CHPL_CALLOC(comm_mem, comm_numMrSets);
-  CHPL_CALLOC(comm_memMap, comm_numMrSets);
-
-  for (int i = 0; i < comm_numMrSets; i++) {
-    comm_mem[i][memSrcIdx].size = comm_rmaSrcBufSize;
-    comm_mem[i][memSrcIdx].addr = comm_rmaSrcBuf;
-
-    comm_mem[i][memDstIdx].size = comm_rmaDstBufSize;
-    comm_mem[i][memDstIdx].addr = comm_rmaDstBuf;
-
-    comm_mem[i][memAmFinFlagIdx].size = comm_amFinFlagsSize;
-    comm_mem[i][memAmFinFlagIdx].addr = comm_amFinFlags;
-
-    comm_mem[i][memAmFinSrcIdx].size = sizeof(comm_amFinSrc);
-    comm_mem[i][memAmFinSrcIdx].addr = &comm_amFinSrc;
-
-    if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) == 0) {
-      // scalable MR -- register whole address space
-      OFI_CHK(fi_mr_reg(ofi_domain,
-                        0, UINT64_MAX,
-                        bufAcc, 0, 0, 0, &comm_mr[i][memSrcIdx], NULL));
-      comm_mem[i][memSrcIdx].desc = fi_mr_desc(comm_mr[i][memSrcIdx]);
-      comm_mem[i][memSrcIdx].key  = fi_mr_key(comm_mr[i][memSrcIdx]);
-
-      for (int iMem = memDstIdx; iMem < memNumIdxs; iMem++) {
-        comm_mr[i][iMem] = comm_mr[i][memSrcIdx];
-        comm_mem[i][iMem].desc = comm_mem[i][memSrcIdx].desc;
-        comm_mem[i][iMem].key = comm_mem[i][memSrcIdx].key;
-      }
-    } else {
-      // basic MR -- register everything individually
-      for (int iMem = 0; iMem < memNumIdxs; iMem++) {
-        OFI_CHK(fi_mr_reg(ofi_domain,
-                          comm_mem[i][iMem].addr, comm_mem[i][iMem].size,
-                          bufAcc, 0, 0, 0, &comm_mr[i][iMem], NULL));
-        comm_mem[i][iMem].desc = fi_mr_desc(comm_mr[i][iMem]);
-        comm_mem[i][iMem].key  = fi_mr_key(comm_mr[i][iMem]);
-      }
+  if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) == 0) {
+    // scalable MR -- just one memory region, the whole address space
+    numMemRegions = 1;
+    memTab[0].addr = (void*) 0;
+    memTab[0].size = SIZE_MAX;
+  } else {
+    void* fixedHeapStart;
+    size_t fixedHeapSize;
+    chpl_comm_impl_regMemHeapInfo(&fixedHeapStart, &fixedHeapSize);
+    if (fixedHeapStart != NULL) {
+      numMemRegions = 1;
+      memTab[0].addr = fixedHeapStart;
+      memTab[0].size = fixedHeapSize;
     }
-
-    for (int iMem = 0; iMem < memNumIdxs; iMem++) {
-      DBG_PRINTF(DBG_MR,
-                 "[%d][%d] fi_mr_reg(%p, %#zx): key %#" PRIx64,
-                 i, iMem, comm_mem[i][iMem].addr, comm_mem[i][iMem].size,
-                 comm_mem[i][iMem].key);
-    }
-
-    //
-    // Share the memory regions around the job.
-    //
-    CHPL_CALLOC(comm_memMap[i], chpl_numNodes);
-    chpl_comm_ofi_oob_allgather(&comm_mem[i], comm_memMap[i],
-                                sizeof(comm_memMap[i][0]));
   }
+
+  for (int i = 0; i < numMemRegions; i++) {
+    OFI_CHK(fi_mr_reg(ofi_domain,
+                      memTab[i].addr, memTab[i].size,
+                      bufAcc, 0, 0, 0, &ofiMrTab[i], NULL));
+    memTab[i].desc = fi_mr_desc(ofiMrTab[i]);
+    memTab[i].key  = fi_mr_key(ofiMrTab[i]);
+    DBG_PRINTF(DBG_MR,
+               "[%d] fi_mr_reg(%p, %#zx): key %#" PRIx64,
+               i, memTab[i].addr, memTab[i].size,
+               memTab[i].key);
+  }
+
+  //
+  // Share the memory regions around the job.
+  //
+  CHPL_CALLOC(memTabMap, chpl_numNodes);
+  chpl_comm_ofi_oob_allgather(&memTab, memTabMap, sizeof(memTabMap[0]));
 }
 
 
 #if 0
 static
 void init_ofiPerThread(void) {
-  pti->mrSetIdx = comm_threadPrivateMrSets ? pti->idx : 0;
 }
 #endif
 
@@ -751,24 +712,20 @@ static void exit_any(int status) {
 
 static
 void fini_ofi(void) {
-  for (int i = 0; i < comm_numMrSets; i++) {
-    OFI_CHK(fi_close(&comm_mr[i][memSrcIdx]->fid));
-    if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) != 0) {
-      for (int iMem = memDstIdx; iMem < memNumIdxs; iMem++) {
-        OFI_CHK(fi_close(&comm_mr[i][iMem]->fid));
-      }
+  OFI_CHK(fi_close(&ofiMrTab[0]->fid));
+  if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) != 0) {
+    for (int i = 1; i < numMemRegions; i++) {
+      OFI_CHK(fi_close(&ofiMrTab[i]->fid));
     }
-
-    CHPL_FREE(comm_memMap[i]);
   }
 
-  CHPL_FREE(comm_memMap);
-  CHPL_FREE(comm_mem);
-  CHPL_FREE(comm_mr);
+  CHPL_FREE(memTabMap);
+
+  CHPL_FREE(memTabMap);
+  CHPL_FREE(memTab);
+  CHPL_FREE(ofiMrTab);
 
   CHPL_FREE(comm_amFinFlags);
-  CHPL_FREE(comm_rmaDstBuf);
-  CHPL_FREE(comm_rmaSrcBuf);
 
   CHPL_FREE(comm_amReqs);
   CHPL_FREE(comm_amReqLZs);
