@@ -1,0 +1,3 @@
+#!/bin/bash
+
+gcc -c foo.c && ar -rc libfoo.a foo.o

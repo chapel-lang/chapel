@@ -139,6 +139,7 @@ extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
 extern bool fLifetimeChecking;
+extern bool fCompileTimeNilChecking;
 extern bool fOverrideChecking;
 extern bool fHeterogeneous;
 extern int  ffloatOpt;

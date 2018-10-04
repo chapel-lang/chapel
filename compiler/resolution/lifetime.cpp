@@ -30,6 +30,11 @@
 #include "view.h"
 #include "wellknown.h"
 
+// These enable debug facilities
+static const char* debugLifetimesForFn = "";
+static const int debugLifetimesForId = 0;
+static const bool debugOutputOnError = false;
+
 /* This file implements lifetime checking.
 
    The lifetime checker infers the lifetime of each symbol (how long what it
@@ -88,10 +93,6 @@
        being destroyed in the same block.
  */
 
-// These enable debug facilities
-const char* debugLifetimesForFn = "";
-const int debugLifetimesForId = 0;
-const bool debugOutputOnError = false;
 
 namespace {
 
@@ -264,7 +265,7 @@ void printLifetimeState(LifetimeState* state);
 static void handleDebugOutputOnError(Expr* e, LifetimeState* state);
 static bool shouldCheckLifetimesInFn(FnSymbol* fn);
 static void markArgumentsReturnScope(FnSymbol* fn);
-static void checkLifetimesInFunction(FnSymbol* fn);
+static void checkFunction(FnSymbol* fn);
 
 static bool isCallToFunctionReturningNotOwned(CallExpr* call);
 
@@ -274,61 +275,84 @@ void checkLifetimes(void) {
   // loop since it affects how calls are handled.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     markArgumentsReturnScope(fn);
+    adjustSignatureForNilChecking(fn);
   }
 
   // Perform lifetime checking on each function
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    checkFunction(fn);
+  }
+}
+
+static void checkFunction(FnSymbol* fn) {
+  if (shouldCheckLifetimesInFn(fn)) {
+    // check lifetimes
+    // e.g. borrow can't outlive borrowed-from
     checkLifetimesInFunction(fn);
   }
-}
 
-static void checkLifetimesInFunction(FnSymbol* fn) {
-  if (shouldCheckLifetimesInFn(fn)) {
-    bool debugging = debuggingLifetimesForFn(fn);
+  if (fCompileTimeNilChecking) {
+    // Determine cases where the compiler can prove
+    // a reference-type variable is 'nil'
+    // TODO: enable this for internal modules as well.
+    // It was initially enabled only for user code
+    // as a convenience during development.
+    if (fn->getModule()->modTag == MOD_USER)
+      findNilDereferences(fn);
 
-    if (debugging) {
-      printf("Visiting function %s id %i\n", fn->name, fn->id);
-      nprint_view(fn);
-      gdbShouldBreakHere();
-    }
-
-    LifetimeState state;
-
-    // Gather temps that are just aliases for something else
-    GatherTempsVisitor gather;
-    gather.lifetimes = &state;
-    fn->accept(&gather);
-
-    // Figure out the scope for local variables / arguments
-    IntrinsicLifetimesVisitor intrinsics;
-    intrinsics.lifetimes = &state;
-    intrinsics.visitingFn = fn;
-    fn->accept(&intrinsics);
-
-    // Infer lifetimes
-    InferLifetimesVisitor infer;
-    infer.lifetimes = &state;
-    // Find minimum lifetime for all variables
-    // Uses repeated iteration in order to avoid problems
-    // such as where a lifetime for a temporary is incorrectly inferred
-    // to be infinite, because only settings of a variable have
-    // been infinite so far.
-    do {
-      infer.changed = false;
-      fn->accept(&infer);
-    } while (infer.changed == true);
-
-    if (debugging) {
-      printLifetimeState(&state);
-    }
-
-    // Emit errors
-    EmitLifetimeErrorsVisitor emit;
-    emit.lifetimes = &state;
-    fn->accept(&emit);
-    emit.emitErrors();
+    // TODO:
+    // Determine cases where the compiler can prove
+    // a reference-type variable is not 'nil'
   }
 }
+
+void checkLifetimesInFunction(FnSymbol* fn) {
+
+  bool debugging = debuggingLifetimesForFn(fn);
+
+  if (debugging) {
+    printf("Visiting function %s id %i\n", fn->name, fn->id);
+    nprint_view(fn);
+    gdbShouldBreakHere();
+  }
+
+  LifetimeState state;
+
+  // Gather temps that are just aliases for something else
+  GatherTempsVisitor gather;
+  gather.lifetimes = &state;
+  fn->accept(&gather);
+
+  // Figure out the scope for local variables / arguments
+  IntrinsicLifetimesVisitor intrinsics;
+  intrinsics.lifetimes = &state;
+  intrinsics.visitingFn = fn;
+  fn->accept(&intrinsics);
+
+  // Infer lifetimes
+  InferLifetimesVisitor infer;
+  infer.lifetimes = &state;
+  // Find minimum lifetime for all variables
+  // Uses repeated iteration in order to avoid problems
+  // such as where a lifetime for a temporary is incorrectly inferred
+  // to be infinite, because only settings of a variable have
+  // been infinite so far.
+  do {
+    infer.changed = false;
+    fn->accept(&infer);
+  } while (infer.changed == true);
+
+  if (debugging) {
+    printLifetimeState(&state);
+  }
+
+  // Emit errors
+  EmitLifetimeErrorsVisitor emit;
+  emit.lifetimes = &state;
+  fn->accept(&emit);
+  emit.emitErrors();
+}
+
 
 static void markArgumentsReturnScope(FnSymbol* fn) {
   // Default for methods is to mark 'this' argument with return scope.
