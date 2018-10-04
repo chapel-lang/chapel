@@ -1145,13 +1145,7 @@ bool isArrayClass(Type* type) {
 }
 
 bool isString(Type* type) {
-  bool retval = false;
-
-  if (AggregateType* aggr = toAggregateType(type)) {
-    retval = strcmp(aggr->symbol->name, "string") == 0;
-  }
-
-  return retval;
+  return type == dtString;
 }
 
 //
