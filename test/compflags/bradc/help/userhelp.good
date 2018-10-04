@@ -76,7 +76,7 @@ Run-time Semantic Check Options:
       --[no-]div-by-zero-checks       Enable [disable] divide-by-zero checks
       --[no-]formal-domain-checks     Enable [disable] formal domain checking
       --[no-]local-checks             Enable [disable] local block checking
-      --[no-]nil-checks               Enable [disable] nil checking
+      --[no-]nil-checks               Enable [disable] runtime nil checking
       --[no-]stack-checks             Enable [disable] stack overflow checking
 
 C Code Generation Options:

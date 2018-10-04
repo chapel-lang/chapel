@@ -1,0 +1,9 @@
+nil-check-forall.chpl:12: In function 'badNilInForallLoop':
+nil-check-forall.chpl:18: error: attempt to dereference nil
+nil-check-forall.chpl:17: note: this statement may be relevant
+nil-check-forall.chpl:23: In function 'badNilInCoforallLoop':
+nil-check-forall.chpl:29: error: attempt to dereference nil
+nil-check-forall.chpl:28: note: this statement may be relevant
+nil-check-forall.chpl:35: In function 'badNilInForallLoop2':
+nil-check-forall.chpl:38: error: attempt to dereference nil
+nil-check-forall.chpl:37: note: this statement may be relevant
