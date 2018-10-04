@@ -85,7 +85,7 @@ module ExternalArray {
   }
 
   class ExternDom: BaseRectangularDom {
-    const size: uint; // We don't need a lower bound, it will always be zero
+    var size: uint; // We don't need a lower bound, it will always be zero
 
     const dist;
 
@@ -187,7 +187,11 @@ module ExternalArray {
     }
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate: bool) {
-      chpl_assignDomainWithGetSetIndices(this, rhs);
+      if (rhs.low != 0 && !(rhs.low == 1 && rhs.high == 0)) {
+        halt("Non-empty domains for external arrays must have a lower bound of "
+             + "0");
+      }
+      this.size = rhs.size: uint;
     }
 
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
