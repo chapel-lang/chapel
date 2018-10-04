@@ -149,6 +149,10 @@ module ChapelIteratorSupport {
         // shapeless case
         return domain(1);
 
+      } else if isRange(shapeType) {
+        // the shape is given by a range
+        return domain(1);
+
     // The rest are pieces from chpl_buildStandInRTT(arrType).
       } else {
         // shapeful case
@@ -209,6 +213,9 @@ module ChapelIteratorSupport {
   }
   inline proc chpl_computeIteratorShape(arg: domain) {
     return arg._instance;
+  }
+  inline proc chpl_computeIteratorShape(arg: range(?)) {
+    return arg;
   }
   inline proc chpl_computeIteratorShape(arg: _iteratorRecord) {
     if chpl_iteratorHasShape(arg) then

@@ -4265,6 +4265,20 @@ module ChapelArray {
       i += 1;
     }
 
+    // Create the domain of the array that we will return.
+
+    param shapeful = chpl_iteratorHasRangeShape(ir);
+    var r = if shapeful then ir._shape_ else 1 .. #i;
+
+    // This is a workaround for #11301, whereby we can get here even when
+    // there is an exception in the above 'for elt' loop.
+    // If not for that, we could probably assert(r.size == i).
+    // Todo: what if _shape_ is unbounded? Can we reach this point somehow?
+    if shapeful && i < r.size then
+      r = r #i;
+
+    pragma "insert auto destroy"
+    var D = { r };
 
     if data != nil {
 
@@ -4273,9 +4287,6 @@ module ChapelArray {
         __primitive("array_alloc", data, size, subloc, c_nil, data);
 
       // Now construct a DefaultRectangular array using the data
-      pragma "insert auto destroy"
-      var D = { 1 .. #i };
-
       var A = D.buildArrayWith(data[0].type, data, size:int);
 
       // Normally, the sub-arrays share a domain with the
@@ -4292,9 +4303,6 @@ module ChapelArray {
 
     } else {
       // Construct and return an empty array.
-
-      pragma "insert auto destroy"
-      var D = { 1 .. 0 };
 
       // Create space for 1 element as a placeholder.
       __primitive("array_alloc", data, 1, subloc, c_ptrTo(callAgain), c_nil);
