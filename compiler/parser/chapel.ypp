@@ -1050,6 +1050,10 @@ fn_decl_stmt_inner:
       $$ = buildFunctionSymbol($5, $4, $1, $2);
       $$->addFlag(FLAG_ASSIGNOP);
     }
+| opt_this_intent_tag error opt_formal_ls
+    {
+      $$ = buildFunctionSymbol($3, "dummy", INTENT_BLANK, NULL);
+    }
 ;
 
 scalar_type:
