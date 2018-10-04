@@ -26,6 +26,7 @@
 
 #include "chpl-comm.h"
 #include "chpl-mem.h"
+#include "chpl-mem-sys.h"
 #include "chpl-gen-includes.h"
 #include "chplsys.h"
 #include "error.h"
@@ -39,14 +40,14 @@
 #include "comm-ofi-internal.h"
 
 
-#define PMI_CHK_SUCCESS(expr) CHK_EQ(expr, PMI_SUCCESS)
+#define PMI_CHK(expr) CHK_EQ_TYPED(expr, PMI_SUCCESS, int, "d")
 
 
 void chpl_comm_ofi_oob_init(void) {
   int spawned, size, rank, appnum;
 
   if (PMI2_Initialized() != PMI_TRUE) {
-    PMI_CHK_SUCCESS(PMI2_Init(&spawned, &size, &rank, &appnum));
+    PMI_CHK(PMI2_Init(&spawned, &size, &rank, &appnum));
     assert(spawned == 0);
     chpl_nodeID = (int32_t) rank;
     chpl_numNodes = (int32_t) size;
@@ -56,16 +57,46 @@ void chpl_comm_ofi_oob_init(void) {
 
 void chpl_comm_ofi_oob_fini(void) {
   if (PMI2_Initialized() == PMI_TRUE) {
-    PMI_CHK_SUCCESS(PMI2_Finalize());
+    PMI_CHK(PMI2_Finalize());
   }
 }
 
 
 void chpl_comm_ofi_oob_barrier(void) {
-  PMI_CHK_SUCCESS(PMI_Barrier());
+  PMI_CHK(PMI_Barrier());
 }
 
 
-void chpl_comm_ofi_oob_allgather(void* in, void* out, int len) {
-  PMI_CHK_SUCCESS(PMI_Allgather(in, out, len));
+void chpl_comm_ofi_oob_allgather(void* mine, void* all, int size) {
+  //
+  // PMI doesn't provide an ordered allGather, so we build one here
+  // by concatenating the node index and the payload and using that
+  // to scatter the unordered PMI_Allgather() results.
+  //
+  typedef struct {
+    int nodeID;
+    uint64_t info[];
+  } gather_t;
+
+  const size_t g_size = offsetof(gather_t, info) + size;
+  gather_t* g_mine;
+  CHK_SYS_CALLOC_SZ(g_mine, 1, g_size);
+  g_mine->nodeID = chpl_nodeID;
+  memcpy(&g_mine->info, mine, size);
+
+  gather_t* g_all;
+  CHK_SYS_CALLOC_SZ(g_all, chpl_numNodes, g_size);
+
+  PMI_CHK(PMI_Allgather(g_mine, g_all, g_size));
+
+  for (int g_i = 0; g_i < chpl_numNodes; g_i++) {
+    char* g_pa = (char*) g_all + g_i * g_size;
+    int i;
+    memcpy(&i, g_pa + offsetof(gather_t, nodeID), sizeof(i));
+    char* p_a = (char*) all + i * size;
+    memcpy(p_a, g_pa + offsetof(gather_t, info), size);
+  }
+
+  sys_free(g_all);
+  sys_free(g_mine);
 }
