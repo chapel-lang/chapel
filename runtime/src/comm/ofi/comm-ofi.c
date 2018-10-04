@@ -170,6 +170,15 @@ static void time_init(void);
 
 ////////////////////////////////////////
 //
+// Alignment
+//
+
+#define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
+#define ALIGN_UP(i, size)  ALIGN_DN((i) + (size) - 1, size)
+
+
+////////////////////////////////////////
+//
 // Error checking
 //
 
@@ -184,6 +193,35 @@ static void time_init(void);
 #define OFI_CHK(expr) OFI_CHK_VAL(expr, FI_SUCCESS)
 
 #define PTHREAD_CHK(expr) CHK_EQ_TYPED(expr, 0, int, "d")
+
+
+////////////////////////////////////////
+//
+// Provider name
+//
+
+static pthread_once_t provNameOnce = PTHREAD_ONCE_INIT;
+static const char* provName;
+
+static void setProviderName(void);
+static const char* getProviderName(void);
+
+
+static
+void setProviderName(void) {
+  //
+  // For now, allow specifying the provider via env var.
+  //
+  CHK_TRUE((provName = chpl_env_rt_get("COMM_OFI_PROVIDER", "sockets"))
+           != NULL);
+}
+
+
+static
+const char* getProviderName(void) {
+  PTHREAD_CHK(pthread_once(&provNameOnce, setProviderName));
+  return provName;
+}
 
 
 ////////////////////////////////////////
@@ -249,12 +287,9 @@ void init_ofi(void) {
 static
 void init_ofiFabricDomain(void) {
   //
-  // Build hints describing what we want from the provider.  And for
-  // now, allow specifying the provider via env var.
+  // Build hints describing what we want from the provider.
   //
-  const char* provider;
-  CHK_TRUE((provider = chpl_env_rt_get("COMM_OFI_PROVIDER", "sockets"))
-           != NULL);
+  const char* provider = getProviderName();
 
   struct fi_info* hints;
   CHK_TRUE((hints = fi_allocinfo()) != NULL);
@@ -762,6 +797,222 @@ void fini_ofi(void) {
 
 ////////////////////////////////////////
 //
+// Interface: Registered memory
+//
+
+static pthread_once_t fixedHeapOnce = PTHREAD_ONCE_INIT;
+static size_t fixedHeapSize;
+static void*  fixedHeapStart;
+
+static pthread_once_t hugepageOnce = PTHREAD_ONCE_INIT;
+static size_t hugepageSize;
+
+static void init_fixedHeap(void);
+
+static size_t get_hugepageSize(void);
+static void init_hugepageSize(void);
+
+
+void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
+  PTHREAD_CHK(pthread_once(&fixedHeapOnce, init_fixedHeap));
+  *start_p = fixedHeapStart;
+  *size_p  = fixedHeapSize;
+}
+
+
+static
+void init_fixedHeap(void) {
+  //
+  // We only need a fixed heap if we're using the gni provider.
+  //
+  if (strcmp(getProviderName(), "gni") != 0)
+    return;
+
+  //
+  // On XE systems you have to use hugepages, and on XC systems you
+  // really ought to.
+  //
+  // TODO: differentiate and do the right thing for XE.
+  //
+  size_t page_size;
+  size_t size;
+  void* start;
+
+  if ((page_size = get_hugepageSize()) == 0) {
+    chpl_warning_explicit("not using hugepages may reduce performance",
+                          __LINE__, __FILE__);
+  }
+
+  if ((size = chpl_comm_getenvMaxHeapSize()) == 0) {
+    size = (size_t) 16 << 30;  // TODO: different for XE?
+  }
+
+  //
+  // The heap is supposed to be of fixed size and on hugepages.  Set
+  // it up.
+  //
+#if 0 // TODO
+  size_t nic_mem_map_limit;
+  size_t nic_max_mem;
+  size_t max_heap_size;
+#endif
+
+  //
+  // Considering the data size we'll register, compute the maximum
+  // heap size that will allow all registrations to fit in the NIC
+  // TLB.  Except on Gemini only, aim for only 95% of what will fit
+  // because there we'll get an error if we go over.
+  //
+#if 0
+  if (nic_type == GNI_DEVICE_GEMINI) {
+    const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
+    nic_max_mem = nic_max_pages * page_size;
+    nic_mem_map_limit = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
+  } else {
+    const size_t nic_TLB_cache_pages = 512; // not publicly defined
+    nic_max_mem = nic_TLB_cache_pages * page_size;
+    nic_mem_map_limit = nic_max_mem;
+  }
+#endif
+
+#if 0 // TODO
+  {
+    uint64_t  addr;
+    uint64_t  len;
+    size_t    data_size;
+
+    data_size = 0;
+    while (get_next_rw_memory_range(&addr, &len, NULL, 0))
+      data_size += ALIGN_UP(len, page_size);
+
+    if (data_size >= nic_mem_map_limit)
+      max_heap_size = 0;
+    else
+      max_heap_size = nic_mem_map_limit - data_size;
+  }
+#endif
+
+  //
+  // As a hedge against silliness, first reduce any request so that it's
+  // no larger than the physical memory.  As a beneficial side effect
+  // when the user request is ridiculously large, this also causes the
+  // reduce-by-5% loop below to run faster and produce a final size
+  // closer to the maximum available.
+  //
+  const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
+  if (size > size_phys)
+    size = size_phys;
+  
+#if 0 // TODO
+  //
+  // On Gemini-based systems, if necessary reduce the heap size until
+  // we can fit all the registered pages in the NIC TLB.  Otherwise,
+  // we'll get GNI_RC_ERROR_RESOURCE when we try to register memory.
+  // Warn about doing this.
+  //
+  if (nic_type == GNI_DEVICE_GEMINI && size > max_heap_size) {
+    if (chpl_nodeID == 0) {
+      char buf1[20], buf2[20], buf3[20], msg[200];
+      printf_KMG_size_t(buf1, sizeof(buf1), nic_max_mem);
+      printf_KMG_size_t(buf2, sizeof(buf2), page_size);
+      printf_KMG_double(buf3, sizeof(buf3), max_heap_size);
+      (void) snprintf(msg, sizeof(msg),
+                      "Gemini TLB can cover %s with %s pages; heap "
+                      "reduced to %s to fit",
+                      buf1, buf2, buf3);
+      chpl_warning(msg, 0, 0);
+    }
+
+    if (nic_type == GNI_DEVICE_GEMINI)
+      size = max_heap_size;
+  }
+#endif
+
+  //
+  // Work our way down from the starting size in (roughly) 5% steps
+  // until we can actually get that much from the system.
+  //
+  size = ALIGN_DN(size, page_size);
+
+  size_t decrement;
+
+  if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
+    decrement = page_size;
+  }
+
+  size += decrement;
+  do {
+    size -= decrement;
+
+    start = chpl_comm_ofi_hp_get_huge_pages(size);
+
+    DBG_PRINTF(DBG_HUGEPAGES, "HUGEPAGES get_huge_pages(%#zx) returned %p",
+               size, start);
+  } while (start == NULL && size > decrement);
+
+  if (start == NULL)
+    chpl_error("cannot initialize heap: cannot get hugepage space", 0, 0);
+
+  DBG_PRINTF(DBG_HUGEPAGES, "HUGEPAGES allocated heap start=%p size=%#zx\n",
+             start, size);
+
+#if 0 // TODO
+  //
+  // On Aries-based systems, warn if the size is larger than what will
+  // fit in the TLB cache.  But since that may reduce performance but
+  // won't affect function, don't reduce the size to fit.
+  //
+  if (nic_type == GNI_DEVICE_ARIES && size > max_heap_size) {
+    if (chpl_nodeID == 0) {
+      char buf1[20], buf2[20], buf3[20], msg[200];
+      printf_KMG_size_t(buf1, sizeof(buf1), nic_max_mem);
+      printf_KMG_size_t(buf2, sizeof(buf2), page_size);
+      printf_KMG_double(buf3, sizeof(buf3), size);
+      (void) snprintf(msg, sizeof(msg),
+                      "Aries TLB cache can cover %s with %s pages; "
+                      "with %s heap,\n"
+                      "         cache refills may reduce performance",
+                      buf1, buf2, buf3);
+      chpl_warning(msg, 0, 0);
+    }
+  }
+#endif
+
+  fixedHeapSize  = size;
+  fixedHeapStart = start;
+}
+
+
+size_t chpl_comm_impl_regMemHeapPageSize(void) {
+  size_t sz;
+  if ((sz = get_hugepageSize()) > 0)
+    return sz;
+  return chpl_getSysPageSize();
+}
+
+
+static
+size_t get_hugepageSize(void) {
+  PTHREAD_CHK(pthread_once(&hugepageOnce, init_hugepageSize));
+  return hugepageSize;
+}
+
+
+static
+void init_hugepageSize(void) {
+  if (chpl_numNodes > 1
+      && getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL) {
+    hugepageSize = chpl_comm_ofi_hp_gethugepagesize();
+  }
+
+  DBG_PRINTF(DBG_HUGEPAGES,
+             "setting hugepage info: use hugepages %s, sz %#zx",
+             (hugepageSize > 0) ? "YES" : "NO", hugepageSize);
+}
+
+
+////////////////////////////////////////
+//
 // Interface: Active Message support
 //
 
@@ -981,8 +1232,7 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
 static void execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
                               chpl_fn_int_t fid,
                               chpl_comm_on_bundle_t* arg, size_t arg_size,
-                              chpl_bool fast, chpl_bool blocking)
-{
+                              chpl_bool fast, chpl_bool blocking) {
   chpl_internal_error("Remote ons not yet implemented");
 
   // bundle args
@@ -1003,6 +1253,7 @@ static void handle_am(struct fi_cq_data_entry* cqe) {
 //
 
 
+#if 0
 static __thread int sep_index = -1;
 static inline int get_sep_index(int num_ctxs) {
   if (sep_index == -1) {
@@ -1010,6 +1261,7 @@ static inline int get_sep_index(int num_ctxs) {
   }
   return sep_index;
 }
+#endif
 
 
 static inline chpl_comm_nb_handle_t ofi_put(chpl_comm_cb_event_kind_t etype,
@@ -1043,8 +1295,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
 }
 
 
-int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
-{
+int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h) {
   if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
     chpl_comm_diags_verbose_printf("test nb complete (%p)", h);
   }
@@ -1055,8 +1306,7 @@ int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 }
 
 
-void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
-{
+void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
   if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
     if (nhandles == 1)
       chpl_comm_diags_verbose_printf("wait nb complete (%p)", h);
@@ -1073,8 +1323,7 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 }
 
 
-int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
-{
+int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
 
   if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
     if (nhandles == 1)
@@ -1221,8 +1470,7 @@ static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
 // Interface: utility
 //
 
-int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
-{
+int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len) {
   // No way to know if the page is mapped on the remote (without a round trip)
   return 0;
 }

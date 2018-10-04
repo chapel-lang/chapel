@@ -57,6 +57,7 @@ uint64_t chpl_comm_ofi_dbg_level;
 #define DBG_ACK              0x100000UL
 #define DBG_COMMPROGRESS     0x200000UL
 #define DBG_MR              0x1000000UL
+#define DBG_HUGEPAGES       0x8000000UL
 #define DBG_FAB            0x10000000UL
 #define DBG_FABSALL        0x20000000UL
 #define DBG_FABFAIL        0x40000000UL
@@ -149,6 +150,14 @@ void chpl_comm_ofi_oob_init(void);
 void chpl_comm_ofi_oob_fini(void);
 void chpl_comm_ofi_oob_barrier(void);
 void chpl_comm_ofi_oob_allgather(void*, void*, int);
+
+
+//
+// Hugepage interface
+//
+
+void* chpl_comm_ofi_hp_get_huge_pages(size_t);
+size_t chpl_comm_ofi_hp_gethugepagesize(void);
 
 
 //
