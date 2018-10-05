@@ -928,6 +928,9 @@ initPrimitive() {
   // Result of call can be used as a final argument in a memory instruction,
   // e.g. PRIM_ARRAY_GET.
   prim_def(PRIM_NO_ALIAS_SET, "no alias set", returnInfoUnknown, false, false);
+  // 1st argument is symbol to set alias set
+  // 2nd argument is symbol to base it on
+  prim_def(PRIM_COPIES_NO_ALIAS_SET, "copies no alias set", returnInfoUnknown, false, false);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

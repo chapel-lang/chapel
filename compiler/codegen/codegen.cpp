@@ -2451,6 +2451,10 @@ GenInfo::GenInfo()
              llvmContext(),
              tbaaRootNode(NULL),
              tbaaUnionsNode(NULL),
+             noAliasDomain(NULL),
+             noAliasScopes(),
+             noAliasScopeLists(),
+             noAliasLists(),
              globalToWideInfo(),
              FPM_postgen(NULL),
              clangInfo(NULL)

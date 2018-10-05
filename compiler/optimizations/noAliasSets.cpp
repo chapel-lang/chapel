@@ -43,6 +43,12 @@
 #include <utility>
 
 
+/* TODO: describe at a high level
+
+   tests: array of classes (element pointers may alias)
+          printing out alias information in many cases
+ */
+
 static
 void addNoAliasSetForFormal(ArgSymbol* arg,
                             std::vector<ArgSymbol*> notAliasingThese) {
@@ -99,22 +105,6 @@ bool isNonAliasingArrayType(Type* t) {
 
 static
 void addNoAliasSetsInFn(FnSymbol* fn) {
-  // Then, construct alias sets at each scope defining array
-  // variables, or each function body, and associate these with
-  // PRIM_ARRAY_GET{_VALUE} primitives.
-
-  // After each array declaration, create a PRIM_NO_ALIAS_SET
-  // that indicates what it can't possibly alias.
-
-  // dsiAccess methods
-  // PRIM_ARRAY_GET "array_get"
-
-  /*
-  consider these flags:
-    FLAG_ALIASING_ARRAY
-    FLAG_ALIAS_SCOPE_FROM_THIS
-   */
-
   std::map<Symbol*, CallExpr*> noAliasCallsForSymbol;
 
   // Look for aliasing information about any  array formals
@@ -227,13 +217,9 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
         SET_LINENO(call);
         // Propagate alias scope from fromSym to toSym
         CallExpr* found = noAliasCallsForSymbol[fromSym];
-        CallExpr* c = new CallExpr(PRIM_NO_ALIAS_SET,
-                                   new SymExpr(toSym));
-        for_actuals(actual, found) {
-          Symbol* foundSym = toSymExpr(actual)->symbol();
-          if (foundSym != fromSym && foundSym != toSym)
-            c->insertAtTail(actual->copy());
-        }
+        CallExpr* c = new CallExpr(PRIM_COPIES_NO_ALIAS_SET,
+                                   new SymExpr(toSym),
+                                   new SymExpr(fromSym));
         call->getStmtExpr()->insertAfter(c);
         noAliasCallsForSymbol[toSym] = c;
       }

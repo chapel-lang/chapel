@@ -283,6 +283,7 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_GET_DYNAMIC_END_COUNT:
     case PRIM_INVARIANT_START:
     case PRIM_NO_ALIAS_SET:
+    case PRIM_COPIES_NO_ALIAS_SET:
       return true;
     case PRIM_UNKNOWN:
       if(strcmp(prim->name, "string_length") == 0 ||

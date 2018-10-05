@@ -449,6 +449,8 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
                                   Type* surroundingStruct = NULL,
                                   uint64_t fieldOffset = 0,
                                   llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
+                                  llvm::MDNode* aliasScope = NULL,
+                                  llvm::MDNode* noalias = NULL,
                                   bool addInvariantStart = false)
 {
   GenInfo *info = gGenInfo;
@@ -465,7 +467,13 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
       tbaa = valType->symbol->llvmTbaaAccessTag;
     }
   }
-  if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
+  if( tbaa )
+    ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
+  if( aliasScope )
+    ret->setMetadata(llvm::LLVMContext::MD_alias_scope, aliasScope);
+  if( noalias )
+    ret->setMetadata(llvm::LLVMContext::MD_noalias, noalias);
+
 
   if(!info->loopStack.empty()) {
     const auto &loopData = info->loopStack.top();
@@ -512,6 +520,8 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
   ptr.alreadyStored = true;
   return codegenStoreLLVM(val.val, ptr.val, valType, ptr.surroundingStruct,
                           ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
+                          ptr.aliasScope,
+                          ptr.noalias,
                           ptr.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
@@ -522,6 +532,8 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
                                 Type* surroundingStruct = NULL,
                                 uint64_t fieldOffset = 0,
                                 llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
+                                llvm::MDNode* aliasScope = NULL,
+                                llvm::MDNode* noalias = NULL,
                                 bool isConst = false)
 {
   GenInfo* info = gGenInfo;
@@ -546,7 +558,12 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
       ret->setMetadata(llvm::StringRef("llvm.mem.parallel_loop_access"), loopData.loopMetadata);
   }
 
-  if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
+  if( tbaa )
+    ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
+  if( aliasScope )
+    ret->setMetadata(llvm::LLVMContext::MD_alias_scope, aliasScope);
+  if( noalias )
+    ret->setMetadata(llvm::LLVMContext::MD_noalias, noalias);
   return ret;
 }
 
@@ -561,7 +578,10 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
   }
 
   return codegenLoadLLVM(ptr.val, valType, ptr.surroundingStruct,
-                         ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor, isConst);
+                         ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
+                         ptr.aliasScope,
+                         ptr.noalias,
+                         isConst);
 }
 
 #endif
@@ -922,11 +942,11 @@ static const int field_other = 3;
 //    & x->myfield
 //
 static
-GenRet codegenFieldPtr(
+GenRet doCodegenFieldPtr(
     GenRet base,
     const char *c_field_name,
     const char* chpl_field_name,
-    int special /* field_normal,field_cid, or field_uid */ ) {
+    int special /* field_normal,field_cid, or field_uid */) {
   GenInfo* info = gGenInfo;
   GenRet ret;
   Type* baseType = base.chplType;
@@ -942,7 +962,7 @@ GenRet codegenFieldPtr(
     // to GEN_PTR or GEN_WIDE_PTR cases.
     if (baseType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF)) {
       base = codegenDeref(base);
-      return codegenFieldPtr(base, c_field_name, chpl_field_name, special);
+      return doCodegenFieldPtr(base, c_field_name, chpl_field_name, special);
     }
   }
 
@@ -953,7 +973,7 @@ GenRet codegenFieldPtr(
         (baseType && baseType->symbol->hasFlag(FLAG_WIDE_CLASS)) ) {
       GenRet addr;
       addr = codegenRaddr(base);
-      addr = codegenFieldPtr(addr, c_field_name, chpl_field_name, special);
+      addr = doCodegenFieldPtr(addr, c_field_name, chpl_field_name, special);
       ret = codegenWideAddrWithAddr(base, addr);
       return ret;
     }
@@ -1078,15 +1098,40 @@ GenRet codegenFieldPtr(
           ret.chplType->symbol->llvmTbaaTypeDescriptor;
       }
     }
+
+    // Propagate noalias scopes
+    if (base.aliasScope)
+      ret.aliasScope = base.aliasScope;
+    if (base.noalias)
+      ret.noalias = base.noalias;
+
 #endif
   }
   return ret;
+}
+
+static void addNoAliasMetadata(GenRet &ret, Expr* expr) {
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  if (info->cfile == NULL) {
+    if (SymExpr* se = toSymExpr(expr)) {
+      Symbol* thisSym = se->symbol();
+      // add no-alias information if it's in our map
+      if (info->noAliasScopeLists.count(thisSym) > 0)
+        ret.aliasScope = info->noAliasScopeLists[thisSym];
+      if (info->noAliasLists.count(thisSym) > 0)
+        ret.noalias = info->noAliasLists[thisSym];
+    }
+  }
+#endif
 }
 
 static
 GenRet codegenFieldPtr(GenRet base, Expr* field) {
   const char* cname = NULL;
   const char* name = NULL;
+
+  GenRet genBase = base;
   if(DefExpr *de = toDefExpr(field)) {
     cname = de->sym->cname;
     name = de->sym->name;
@@ -1098,19 +1143,20 @@ GenRet codegenFieldPtr(GenRet base, Expr* field) {
   } else {
     INT_FATAL("Unknown field in codegenFieldPtr");
   }
-  return codegenFieldPtr(base, cname, name, field_normal);
+
+  return doCodegenFieldPtr(genBase, cname, name, field_normal);
 }
 
 static
 GenRet codegenFieldCidPtr(GenRet base) {
-  GenRet ret = codegenFieldPtr(base, "chpl__cid", NULL, field_cid);
+  GenRet ret = doCodegenFieldPtr(base, "chpl__cid", NULL, field_cid);
   //if( ! ret.chplType ) ret.chplType = CLASS_ID_TYPE;
   return ret;
 }
 
 static
 GenRet codegenFieldUidPtr(GenRet base) {
-  GenRet ret = codegenFieldPtr(base, "_uid", NULL, field_uid);
+  GenRet ret = doCodegenFieldPtr(base, "_uid", NULL, field_uid);
   //if( ! ret.chplType ) ret.chplType = UNION_ID_TYPE;
   return ret;
 }
@@ -1220,6 +1266,13 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
     GEPLocs.push_back(extendToPointerSize(index, AS));
 
     ret.val = createInBoundsGEP(base.val, GEPLocs);
+
+    // Propagate noalias scopes
+    if (base.aliasScope)
+      ret.aliasScope = base.aliasScope;
+    if (base.noalias)
+      ret.noalias = base.noalias;
+
 #endif
   }
 
@@ -4272,7 +4325,9 @@ DEFINE_PRIM(PRIM_GET_MEMBER) {
     // Invalid AST to use PRIM_GET_MEMBER with a ref field
     INT_ASSERT(!call->get(2)->isRef());
 
-    ret = codegenFieldPtr(call->get(1), call->get(2));
+    GenRet base = call->get(1);
+    addNoAliasMetadata(base, call->get(1));
+    ret = codegenFieldPtr(base, call->get(2));
 
     // Used to only do addrOf if
     // !get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)
@@ -4283,7 +4338,9 @@ DEFINE_PRIM(PRIM_GET_SVEC_MEMBER) {
     // get tuple base=get(1) at index=get(2)
     Type* tupleType = call->get(1)->getValType();
 
-    ret = codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
+    GenRet base = call->get(1);
+    addNoAliasMetadata(base, call->get(1));
+    ret = codegenElementPtr(base, codegenExprMinusOne(call->get(2)));
 
     if (tupleType->getField("x1")->type->symbol->hasFlag(FLAG_REF) == false)
       ret = codegenAddrOf(ret);
@@ -4295,7 +4352,10 @@ DEFINE_PRIM(PRIM_SET_MEMBER) {
     if (call->get(2)->isRef() && !call->get(3)->isRef())
       INT_FATAL("Invalid PRIM_SET_MEMBER ref field with value");
 
-    GenRet ptr = codegenFieldPtr(call->get(1), call->get(2));
+    GenRet base = call->get(1);
+    addNoAliasMetadata(base, call->get(1));
+
+    GenRet ptr = codegenFieldPtr(base, call->get(2));
     GenRet val = call->get(3);
 
     if (call->get(3)->isRefOrWideRef() && !call->get(2)->isRefOrWideRef()) {
@@ -5026,6 +5086,22 @@ DEFINE_PRIM(PRIM_INVARIANT_START) {
   }
 }
 
+#ifdef HAVE_LLVM
+llvm::MDNode* createMetadataScope(llvm::LLVMContext& ctx,
+                                    llvm::MDNode* domain,
+                                    const char* name) {
+
+  auto scopeName = llvm::MDString::get(ctx, name);
+  auto dummy = llvm::MDNode::getTemporary(ctx, llvm::None);
+  llvm::Metadata* Args[] = {dummy.get(), domain, scopeName};
+  auto scope = llvm::MDNode::get(ctx, Args);
+  // Remove the dummy and replace it with a self-reference.
+  dummy->replaceAllUsesWith(scope);
+  return scope;
+}
+
+#endif
+
 DEFINE_PRIM(PRIM_NO_ALIAS_SET) {
 
   GenInfo* info = gGenInfo;
@@ -5033,11 +5109,74 @@ DEFINE_PRIM(PRIM_NO_ALIAS_SET) {
     // do nothing for the C backend
   } else {
 #ifdef HAVE_LLVM
-    // TODO
+
+    Symbol* sym = toSymExpr(call->get(1))->symbol();
+
+    llvm::LLVMContext &ctx = info->llvmContext;
+
+    if (info->noAliasDomain == NULL) {
+      auto domainName = llvm::MDString::get(ctx, "Chapel no-alias");
+      auto dummy = llvm::MDNode::getTemporary(ctx, llvm::None);
+      llvm::Metadata* Args[] = {dummy.get(), domainName};
+      info->noAliasDomain = llvm::MDNode::get(ctx, Args);
+      // Remove the dummy and replace it with a self-reference.
+      dummy->replaceAllUsesWith(info->noAliasDomain);
+    }
+
+    llvm::MDNode *&scope = info->noAliasScopes[sym];
+    if (scope == NULL)
+      scope = createMetadataScope(ctx, info->noAliasDomain, sym->name);
+
+    // now create a list storing just the scope
+    llvm::MDNode *&scopeList = info->noAliasScopeLists[sym];
+    if (scopeList == NULL)
+      scopeList = llvm::MDNode::get(ctx, scope);
+
+    // now create the no-alias metadata
+    llvm::MDNode *&noAliasList = info->noAliasLists[sym];
+    if (noAliasList == NULL) {
+      llvm::SmallVector<llvm::Metadata*, 6> Args;
+      bool first = true;
+      for_actuals(actual, call) {
+        if (!first) {
+          Symbol* noAliasSym = toSymExpr(actual)->symbol();
+          llvm::MDNode *&otherScope = info->noAliasScopes[noAliasSym];
+          if (otherScope == NULL)
+            otherScope = createMetadataScope(ctx, info->noAliasDomain,
+                                             noAliasSym->name);
+
+          Args.push_back(otherScope);
+        }
+        first = false;
+      }
+      noAliasList = llvm::MDNode::get(ctx, Args);
+    }
 #endif
   }
 }
 
+DEFINE_PRIM(PRIM_COPIES_NO_ALIAS_SET) {
+  GenInfo* info = gGenInfo;
+  if (info->cfile) {
+    // do nothing for the C backend
+  } else {
+#ifdef HAVE_LLVM
+    Symbol* sym = toSymExpr(call->get(1))->symbol();
+    Symbol* otherSym = toSymExpr(call->get(1))->symbol();
+    llvm::LLVMContext &ctx = info->llvmContext;
+
+    llvm::MDNode *&scopeList = info->noAliasScopeLists[sym];
+    if (scopeList == NULL)
+      if (info->noAliasScopeLists.count(otherSym) > 0)
+        scopeList = info->noAliasScopeLists[otherSym];
+
+    llvm::MDNode *&noAliasList = info->noAliasLists[sym];
+    if (noAliasList == NULL)
+      if (info->noAliasLists.count(otherSym) > 0)
+        scopeList = info->noAliasLists[otherSym];
+#endif
+  }
+}
 
 void CallExpr::registerPrimitivesForCodegen() {
   // The following macros call registerPrimitiveCodegen for
@@ -5280,18 +5419,26 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
           ret = ref;
         } else {
-          ret = codegenFieldPtr(call->get(1), se);
+          GenRet base = call->get(1);
+          addNoAliasMetadata(base, call->get(1));
+          ret = codegenFieldPtr(base, se);
         }
 
       } else if (call->get(1)->isWideRef()) {
-        ret = codegenFieldPtr(call->get(1), se);
+        GenRet base = call->get(1);
+        addNoAliasMetadata(base, call->get(1));
+        ret = codegenFieldPtr(base, se);
 
       } else if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-        ret = codegenFieldPtr(call->get(1), se);
+        GenRet base = call->get(1);
+        addNoAliasMetadata(base, call->get(1));
+        ret = codegenFieldPtr(base, se);
 
       } else if (se->symbol()->hasFlag(FLAG_SUPER_CLASS)) {
         // We're getting the super class pointer.
-        GenRet ref = codegenFieldPtr(call->get(1), se);
+        GenRet base = call->get(1);
+        addNoAliasMetadata(base, call->get(1));
+        GenRet ref = codegenFieldPtr(base, se);
 
         // Now we have a field pointer to object->super, but
         // the pointer to super *is* actually the value of
@@ -5301,7 +5448,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         ret = ref;
 
       } else {
-        ret = codegenFieldPtr(call->get(1), se);
+        GenRet base = call->get(1);
+        addNoAliasMetadata(base, call->get(1));
+        ret = codegenFieldPtr(base, se);
       }
 
       retval = true;
@@ -5319,18 +5468,24 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
           call->get(1)->isWideRef()   ||
           call->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
 
-        ret = codegenAddrOf(codegenFieldPtr(call->get(1), se));
+        GenRet base = call->get(1);
+        addNoAliasMetadata(base, call->get(1));
+        ret = codegenAddrOf(codegenFieldPtr(base, se));
 
         retval = true;
       } else if (target && ((target->isRef() && call->get(2)->isRef()) ||
                  (target->isWideRef() && call->get(2)->isWideRef()))) {
-        ret = codegenFieldPtr(call->get(1), se);
+        GenRet base = call->get(1);
+        addNoAliasMetadata(base, call->get(1));
+        ret = codegenFieldPtr(base, se);
         retval = true;
 
       } else if (target && (target->getValType() != call->get(2)->typeInfo())) {
         // get a narrow reference to the actual 'addr' field
         // of the wide pointer
-        GenRet getField = codegenFieldPtr(call->get(1), se);
+        GenRet base = call->get(1);
+        addNoAliasMetadata(base, call->get(1));
+        GenRet getField = codegenFieldPtr(base, se);
 
         ret = codegenAddrOf(codegenWideThingField(getField, WIDE_GEP_ADDR));
 
@@ -5343,7 +5498,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_GET_SVEC_MEMBER: {
       if (call->get(1)->isWideRef()) {
         /* Get a pointer to the i'th element of a homogeneous tuple */
-        GenRet elemPtr = codegenElementPtr(call->get(1),
+        GenRet base = call->get(1);
+        addNoAliasMetadata(base, call->get(1));
+        GenRet elemPtr = codegenElementPtr(base,
                                            codegenExprMinusOne(call->get(2)));
 
         INT_ASSERT( elemPtr.isLVPtr == GEN_WIDE_PTR );
@@ -5356,7 +5513,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         retval = true;
 
       } else if (target && (target->getValType() != call->getValType())) {
-        GenRet getElem = codegenElementPtr(call->get(1),
+        GenRet base = call->get(1);
+        addNoAliasMetadata(base, call->get(1));
+        GenRet getElem = codegenElementPtr(base,
                                            codegenExprMinusOne(call->get(2)));
 
 
@@ -5373,7 +5532,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
       //there was an if/else block checking if call->get(1) is wide or narrow,
       //however if/else blocks were identical. It may not be in the future.
-      ret =  codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
+      GenRet base = call->get(1);
+      addNoAliasMetadata(base, call->get(1));
+      ret =  codegenElementPtr(base, codegenExprMinusOne(call->get(2)));
 
       retval = true;
       break;
@@ -5382,7 +5543,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_ARRAY_GET: {
       /* Get a pointer to the i'th array element */
       // ('_array_get' array idx)
-      GenRet elem = codegenElementPtr(call->get(1), call->get(2));
+      GenRet base = call->get(1);
+      addNoAliasMetadata(base, call->get(1));
+      GenRet elem = codegenElementPtr(base, call->get(2));
       GenRet ref  = codegenAddrOf(elem);
 
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -5402,7 +5565,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_ARRAY_GET_VALUE: {
-      ret =  codegenElementPtr(call->get(1), call->get(2));
+      GenRet base = call->get(1);
+      addNoAliasMetadata(base, call->get(1));
+      ret =  codegenElementPtr(base, call->get(2));
 
       retval = true;
       break;
