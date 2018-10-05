@@ -359,8 +359,8 @@ module OwnedObject {
   // chpl__autoDestroy(x:object) from internal coercions.
   pragma "no doc"
   pragma "auto destroy fn"
-  proc chpl__autoDestroy(x: _owned) {
-    __primitive("call destructor", x);
+  proc chpl__autoDestroy(ref x: _owned) {
+    __primitive("call destructor", __primitive("deref", x));
   }
 
   // Don't print out 'chpl_p' when printing an _owned, just print class pointer
