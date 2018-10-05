@@ -4167,25 +4167,14 @@ module ChapelArray {
     }
   }
 
-  //
-  // Noakes 2015/11/05
-  //
-  // This function is invoked to implement for expressions and
-  // forall expressions. An iterator is invoked that generates
-  // the elements of the resulting array.
-  //
-  // Although it appears to be a copy constructor, it is in fact
-  // an Array constructor.  It appears to me that this implementation
-  // is due to an artifact in the interaction between normalize and
-  // function resolution; the former inserts calls to initCopy() without
-  // understanding the types involved.  This in turn leads to some
-  // confusion for the compiler is resolved by the liberal use of
-  // pragmas.
-  //
+  // chpl__initCopy(ir: _iteratorRecord) is used to create an array
+  // out of for-expressions, forall-expressions, promoted expressions.
+  // The 'ir' iterator - or its standalone/leader/follower counterpart -
+  // is invoked to generate the desired array elements.
 
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord)
-    where chpl_iteratorHasShape(ir)
+    where chpl_iteratorHasDomainShape(ir)
   {
     var shape = _newDomain(ir._shape_);
 
@@ -4276,6 +4265,20 @@ module ChapelArray {
       i += 1;
     }
 
+    // Create the domain of the array that we will return.
+
+    param shapeful = chpl_iteratorHasRangeShape(ir);
+    var r = if shapeful then ir._shape_ else 1 .. #i;
+
+    // This is a workaround for #11301, whereby we can get here even when
+    // there is an exception in the above 'for elt' loop.
+    // If not for that, we could probably assert(r.size == i).
+    // Todo: what if _shape_ is unbounded? Can we reach this point somehow?
+    if shapeful && i < r.size then
+      r = r #i;
+
+    pragma "insert auto destroy"
+    var D = { r };
 
     if data != nil {
 
@@ -4284,9 +4287,6 @@ module ChapelArray {
         __primitive("array_alloc", data, size, subloc, c_nil, data);
 
       // Now construct a DefaultRectangular array using the data
-      pragma "insert auto destroy"
-      var D = { 1 .. #i };
-
       var A = D.buildArrayWith(data[0].type, data, size:int);
 
       // Normally, the sub-arrays share a domain with the
@@ -4303,9 +4303,6 @@ module ChapelArray {
 
     } else {
       // Construct and return an empty array.
-
-      pragma "insert auto destroy"
-      var D = { 1 .. 0 };
 
       // Create space for 1 element as a placeholder.
       __primitive("array_alloc", data, 1, subloc, c_ptrTo(callAgain), c_nil);
