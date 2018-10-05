@@ -339,6 +339,8 @@ module ChapelArray {
       return new _array(nullPid, value);
   }
 
+  /* This method is commented out because using it would have
+     implications for alias analysis of arrays.
   pragma "no copy return"
   proc _getArray(value) {
     if _isPrivatized(value) then
@@ -346,6 +348,7 @@ module ChapelArray {
     else
       return new _array(nullPid, value, _unowned=true);
   }
+  */
 
   pragma "unsafe"
   proc _newDomain(value) {

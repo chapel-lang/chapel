@@ -34,6 +34,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "timer.h"
+#include "optimizations.h"
 #include "WhileStmt.h"
 
 #include <algorithm>
@@ -1209,6 +1210,9 @@ static long licmFn(FnSymbol* fn) {
 }
 
 void loopInvariantCodeMotion(void) {
+
+  // compute array element alias sets
+  addNoAliasSets();
 
   if(fNoloopInvariantCodeMotion) {
     return;

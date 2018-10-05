@@ -1125,7 +1125,7 @@ GenRet codegenFieldUidPtr(GenRet base) {
 //  4 base.chplType is a Chapel reference or wide reference
 //    to a data class, wide data class, or homogeneous tuple.
 //
-// In any case, returns a GEN_PTR or GEN_WIDE_PTR to the field.
+// In any case, returns a GEN_PTR or GEN_WIDE_PTR to the element.
 //
 // This is equivalent to C (assuming ptr is a pointer type)
 //   ptr + i
@@ -5025,6 +5025,19 @@ DEFINE_PRIM(PRIM_INVARIANT_START) {
 #endif
   }
 }
+
+DEFINE_PRIM(PRIM_NO_ALIAS_SET) {
+
+  GenInfo* info = gGenInfo;
+  if (info->cfile) {
+    // do nothing for the C backend
+  } else {
+#ifdef HAVE_LLVM
+    // TODO
+#endif
+  }
+}
+
 
 void CallExpr::registerPrimitivesForCodegen() {
   // The following macros call registerPrimitiveCodegen for
