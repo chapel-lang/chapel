@@ -31,7 +31,6 @@
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
-#include "ipe.h"
 #include "iterator.h"
 #include "misc.h"
 #include "passes.h"
@@ -543,13 +542,6 @@ void initPrimitiveTypes() {
   gTrue->immediate->v_bool             = true;
   gTrue->immediate->const_kind         = NUM_KIND_BOOL;
   gTrue->immediate->num_index          = BOOL_SIZE_SYS;
-
-  //
-  // Mark the "high water mark" for types that IPE relies on directly
-  //
-  if (fUseIPE == true) {
-    ipeRootInit();
-  }
 
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);

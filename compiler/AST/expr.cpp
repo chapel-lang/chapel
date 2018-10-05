@@ -71,10 +71,10 @@ bool Expr::isStmt() const {
   return false;
 }
 
-// IPE: Provide the name of the symbol/variable being defined
 const char* DefExpr::name() const {
   const char* retval = 0;
 
+  INT_ASSERT(false);
   if (isLcnSymbol(sym)    == true ||
       isTypeSymbol(sym)   == true ||
       isFnSymbol(sym)     == true ||
