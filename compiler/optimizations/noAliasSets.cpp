@@ -82,8 +82,8 @@ bool fnHasRefFormal(FnSymbol* fn) {
 }
 
 static
-BitVec* makeBitVec(int size) {
-  BitVec* ret = new BitVec(size);
+BitVec makeBitVec(int size) {
+  BitVec ret(size);
   return ret;
 }
 
@@ -94,20 +94,20 @@ BitVec* makeBitVec(int size) {
 //
 // returns true if it changed something
 static
-bool addAlias(std::map<Symbol*, BitVec*> &map,
+bool addAlias(std::map<Symbol*, BitVec> &map,
               int bitVecSize,
               Symbol* sym,
               int index) {
 
   bool changed = false;
-  std::map<Symbol*, BitVec*>::iterator it = map.find(sym);
+  std::map<Symbol*, BitVec>::iterator it = map.find(sym);
 
   if (it == map.end()) {
     it = map.insert(std::make_pair(sym, makeBitVec(bitVecSize))).first;
     changed = true;
   }
 
-  BitVec &bits = *it->second;
+  BitVec &bits = it->second;
   if (bits.get(index) == false) {
     bits.set(index);
     changed = true;
@@ -117,20 +117,20 @@ bool addAlias(std::map<Symbol*, BitVec*> &map,
 }
 
 static
-bool addAliases(std::map<Symbol*, BitVec*> &map,
+bool addAliases(std::map<Symbol*, BitVec> &map,
                 int bitVecSize,
                 Symbol* sym,
                 BitVec& from) {
 
   bool changed = false;
-  std::map<Symbol*, BitVec*>::iterator it = map.find(sym);
+  std::map<Symbol*, BitVec>::iterator it = map.find(sym);
 
   if (it == map.end()) {
     it = map.insert(std::make_pair(sym, makeBitVec(bitVecSize))).first;
     changed = true;
   }
 
-  BitVec &bits = *it->second;
+  BitVec &bits = it->second;
   BitVec toSet = from - bits;
   if (toSet.any()) {
     bits += toSet;
@@ -166,7 +166,7 @@ void markNonAliasingRefArguments() {
 
   // Now compute the global alias sets for procedure arguments
   size_t nAddrTakenGlobals = addrTakenGlobalsToIds.size();
-  std::map<Symbol*, BitVec*> aliasedGlobalsForArg;
+  std::map<Symbol*, BitVec> aliasedGlobalsForArg;
 
   // Compute the map from formal parameters to globals aliased
   forv_Vec(VarSymbol, var, gVarSymbols) {
@@ -190,7 +190,7 @@ void markNonAliasingRefArguments() {
     }
   }
 
-  std::map<Symbol*, BitVec*> formalsAliasingGlobals;
+  std::map<Symbol*, BitVec> formalsAliasingGlobals;
   std::set<ArgSymbol*> formalsAliasingAnything;
 
   // Now consider what arguments a parameter could have
@@ -249,10 +249,10 @@ void markNonAliasingRefArguments() {
                     // propagate aliases to globals
                     {
                       bool newGlobals = false;
-                      std::map<Symbol*, BitVec*>::iterator it =
+                      std::map<Symbol*, BitVec>::iterator it =
                         formalsAliasingGlobals.find(fromFormal);
                       if (it != formalsAliasingGlobals.end()) {
-                        BitVec &fromBits = *it->second;
+                        BitVec &fromBits = it->second;
                         newGlobals = addAliases(formalsAliasingGlobals,
                                                 nAddrTakenGlobals,
                                                 fnFormal, fromBits);
@@ -294,7 +294,7 @@ void markNonAliasingRefArguments() {
   // Now compute the set of formals aliasing other formals
   // This follows Figure 11.8 in Allen & Kennedy
   int nFormalPairs = maxFormals * maxFormals;
-  std::map<Symbol*, BitVec*> fpairs;
+  std::map<Symbol*, BitVec> fpairs;
   std::queue<std::pair<ArgSymbol*, ArgSymbol*> > worklist;
 
   // for each alias introduction site, e.g. f(X, X),
