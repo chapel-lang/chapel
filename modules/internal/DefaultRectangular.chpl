@@ -990,22 +990,16 @@ module DefaultRectangular {
     override proc dsiGetBaseDom() return dom;
 
     proc dsiDestroyDataHelper(dd, ddiNumIndices) {
-      pragma "no copy" pragma "no auto destroy" var dr = dd;
-      pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
+      compilerAssert(chpl_isDdata(dd.type));
       for i in 0..ddiNumIndices-1 {
-        pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, i);
-        pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
-        chpl__autoDestroy(ev);
+        chpl__autoDestroy(dd[i]);
       }
     }
 
     override proc dsiDestroyArr() {
       if dom.dsiNumIndices > 0 {
-        pragma "no copy" pragma "no auto destroy" var dr = data;
-        pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
-        pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, 0);
-        pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
-        param needsDestroy = __primitive("needs auto destroy", ev);
+        param needsDestroy = __primitive("needs auto destroy",
+                                         __primitive("deref", data[0]));
         if needsDestroy {
           var numElts:intIdxType = 0;
           // dataAllocRange may be empty or contain a meaningful value
