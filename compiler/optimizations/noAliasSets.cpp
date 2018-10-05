@@ -44,6 +44,22 @@
 
 
 static
+void addNoAliasSetForFormal(ArgSymbol* arg,
+                            std::vector<ArgSymbol*> notAliasingThese) {
+  FnSymbol* fn = arg->getFunction();
+  if (fn->getModule()->modTag == MOD_USER) {
+    if (notAliasingThese.size() > 0) {
+      printf("in function %s\n", fn->name);
+      printf(" arg %s does not alias args ", arg->name);
+      for_vector(ArgSymbol, other, notAliasingThese) {
+        printf(" %s", other->name);
+      }
+      printf("\n");
+    }
+  }
+}
+
+static
 bool isAddrTaken(Symbol* var) {
   // Only handles values
   INT_ASSERT(!var->isRef());
@@ -51,14 +67,15 @@ bool isAddrTaken(Symbol* var) {
   for_SymbolSymExprs(se, var) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call->isPrimitive(PRIM_SET_REFERENCE) ||
-          call->isPrimitive(PRIM_ADDR_OF))
+          call->isPrimitive(PRIM_ADDR_OF)) {
         return true;
-    } else if (call->isResolved()) {
-      // Return true for non-ref passed by ref
-      for_formals_actuals(formal, actual, call) {
-        if (actual == se) {
-          if (formal->intent & INTENT_FLAG_REF)
-            return true;
+      } else if (call->isResolved()) {
+        // Return true for non-ref passed by ref
+        for_formals_actuals(formal, actual, call) {
+          if (actual == se) {
+            if (formal->intent & INTENT_FLAG_REF)
+              return true;
+          }
         }
       }
     }
@@ -146,6 +163,22 @@ static
 void markNonAliasingRefArguments() {
   // Inspired by Kennedy "Optimizing Compilers for Modern Architectures" p 571
 
+  // These are the main results of this function
+
+  // map from ArgSymbol -> BitVecs of size nAddrTakenGlobals
+  std::map<Symbol*, BitVec> formalsAliasingGlobals;
+
+  // set ArgSymbol where we gave up on analysis
+  std::set<ArgSymbol*> formalsAliasingAnything;
+
+  // map from FnSymbol -> BitVec of size nFormalPairs,
+  //   storing pairs of arguments that can alias
+  std::map<Symbol*, BitVec> fpairs;
+
+
+  // reused a few times in this function
+  std::vector<CallExpr*> calls;
+
   // First, compute global variables that have their address taken.
   // The analysis will establish when these can alias ref arguments.
   std::map<Symbol*, int> addrTakenGlobalsToIds;
@@ -166,21 +199,45 @@ void markNonAliasingRefArguments() {
 
   // Now compute the global alias sets for procedure arguments
   size_t nAddrTakenGlobals = addrTakenGlobalsToIds.size();
-  std::map<Symbol*, BitVec> aliasedGlobalsForArg;
 
-  // Compute the map from formal parameters to globals aliased
-  forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (addrTakenGlobalsToIds.count(var) > 0) {
-      int globalId = addrTakenGlobalsToIds[var];
-      for_SymbolSymExprs(se, var) {
-        if (CallExpr* call = toCallExpr(se->parentExpr)) {
-          if (call->isResolved()) {
-            // Record which formal might alias it
-            for_formals_actuals(formal, actual, call) {
-              if (actual == se) {
-                if (formal->intent & INTENT_FLAG_REF) {
-                  addAlias(aliasedGlobalsForArg, nAddrTakenGlobals,
-                           formal, globalId);
+  // Compute the starting point for the sets,
+  // don't worry about transitivity/propagating yet.
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fnHasRefFormal(fn)) {
+      if (fn->hasFlag(FLAG_EXPORT)) {
+        // Assume exported functions can have formals aliasing each other
+        for_formals(fnFormal, fn) {
+          if (isRefFormal(fnFormal)) {
+            formalsAliasingAnything.insert(fnFormal);
+          }
+        }
+      } else {
+        // Consider call sites to the function to propagate alias information
+        for_SymbolSymExprs(se, fn) {
+          // use of SymExpr(fn) is a call
+          if (CallExpr* call = toCallExpr(se->parentExpr)) {
+            // it's a call to fn
+            if (fn == call->resolvedOrVirtualFunction()) {
+              // Consider the actuals and formals and update.
+              for_formals_actuals(fnFormal, actual, call) {
+                // fnFormal is a formal from fn, which we're investigating
+                if (isRefFormal(fnFormal)) {
+                  // What is the actual?
+                  SymExpr* actualSe = toSymExpr(actual);
+                  if (VarSymbol* fromVar = toVarSymbol(actualSe->symbol())) {
+                    if (fromVar->isRef()) {
+                      // Give up
+                      formalsAliasingAnything.insert(fnFormal);
+                    } else if (isGlobal(fromVar) &&
+                               addrTakenGlobalsToIds.count(fromVar) > 0) {
+                      int globalId = addrTakenGlobalsToIds[fromVar];
+                      // add the global to the set
+                      addAlias(formalsAliasingGlobals,
+                               nAddrTakenGlobals,
+                               fnFormal, globalId);
+                      // local *value* variables don't add to alias sets
+                    }
+                  }
                 }
               }
             }
@@ -190,12 +247,38 @@ void markNonAliasingRefArguments() {
     }
   }
 
-  std::map<Symbol*, BitVec> formalsAliasingGlobals;
-  std::set<ArgSymbol*> formalsAliasingAnything;
+  // Construct the binding graph, which has nodes that are formal parameters,
+  // where there is an edge between f1 of p and f2 of q if
+  // f1 is passed to f2 in a call q(...) inside of the body of p.
+  // See Kennedy p 564
 
-  // Now consider what arguments a parameter could have
-  // This also handles propagation of globals aliased
-  // It gives up for cycles but more could be done there
+  std::map<ArgSymbol*, std::set<ArgSymbol*> > bindingGraph;
+
+  forv_Vec(FnSymbol, p, gFnSymbols) {
+    if (fnHasRefFormal(p)) {
+      calls.clear();
+      collectFnCalls(p, calls);
+
+      for_vector(CallExpr, call, calls) {
+        FnSymbol* q = call->resolvedOrVirtualFunction();
+        INT_ASSERT(q);
+
+        for_formals_actuals(qFormal, actual, call) {
+          if (isRefFormal(qFormal)) {
+            SymExpr* actualSe = toSymExpr(actual);
+            if (ArgSymbol* fFormal = toArgSymbol(actualSe->symbol())) {
+              if (isRefFormal(fFormal)) {
+                bindingGraph[fFormal].insert(qFormal);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Now use the binding graph to compute the transitive closure
+
   bool changed;
   bool lastiter;
   int niters = 1;
@@ -203,70 +286,36 @@ void markNonAliasingRefArguments() {
   do {
     lastiter = niters == maxiters;
     changed = false;
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fnHasRefFormal(fn)) {
-        // Consider call sites to the function to propagate alias information
-        for_SymbolSymExprs(se, fn) {
-          // use of SymExpr(fn) is a call
-          if (CallExpr* call = toCallExpr(se->parentExpr)) {
-            // it's a call to fn
-            if (fn == call->resolvedOrVirtualFunction()) {
-              // Consider the actuals and formals and update.
-              int formalIdx = 1;
-              for_formals_actuals(fnFormal, actual, call) {
-                // fnFormal is a formal from fn, which we're investigating
-                if (isRefFormal(fnFormal)) {
-                  // What is the actual?
-                  SymExpr* actualSe = toSymExpr(actual);
-                  if (VarSymbol* fromVar = toVarSymbol(actualSe->symbol())) {
-                    if (fromVar->isRef()) {
-                      // Give up
-                      if (formalsAliasingAnything.count(fnFormal) == 0) {
-                        formalsAliasingAnything.insert(fnFormal);
-                        changed = true;
-                      }
-                    } else if (isGlobal(fromVar) &&
-                               addrTakenGlobalsToIds.count(fromVar) > 0) {
-                      int globalId = addrTakenGlobalsToIds[fromVar];
-                      // add the global to the set
-                      changed |= addAlias(formalsAliasingGlobals,
-                                          nAddrTakenGlobals,
-                                          fnFormal, globalId);
-                    }
-                    // local *value* variables don't add to alias sets
-                  } else if (ArgSymbol* fromFormal =
-                             toArgSymbol(actualSe->symbol())) {
-                    // Propagate alias information from fromFormal to fnFormal
+    std::map<ArgSymbol*, std::set<ArgSymbol*> >::const_iterator it;
 
-                    // propagate aliases anything
-                    if (formalsAliasingAnything.count(fromFormal)) {
-                      if (formalsAliasingAnything.count(fnFormal) == 0) {
-                        formalsAliasingAnything.insert(fnFormal);
-                        changed = true;
-                      }
-                    }
+    for (it = bindingGraph.begin(); it != bindingGraph.end(); ++it) {
+      ArgSymbol* f1 = it->first;
+      const std::set<ArgSymbol*> &toSet = it->second;
+      for_set(ArgSymbol, f2, toSet) {
+        // Propagate alias information from f1 to f2
 
-                    // propagate aliases to globals
-                    {
-                      bool newGlobals = false;
-                      std::map<Symbol*, BitVec>::iterator it =
-                        formalsAliasingGlobals.find(fromFormal);
-                      if (it != formalsAliasingGlobals.end()) {
-                        BitVec &fromBits = it->second;
-                        newGlobals = addAliases(formalsAliasingGlobals,
-                                                nAddrTakenGlobals,
-                                                fnFormal, fromBits);
-                        if (newGlobals) {
-                          changed = true;
-                          if (lastiter) {
-                            formalsAliasingAnything.insert(fnFormal);
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-                formalIdx++;
+        // propagate aliases anything
+        if (formalsAliasingAnything.count(f1)) {
+          if (formalsAliasingAnything.count(f2) == 0) {
+            formalsAliasingAnything.insert(f2);
+            changed = true;
+          }
+        }
+
+        // propagate aliases to globals
+        {
+          bool newGlobals = false;
+          std::map<Symbol*, BitVec>::iterator it =
+            formalsAliasingGlobals.find(f1);
+          if (it != formalsAliasingGlobals.end()) {
+            BitVec &fromBits = it->second;
+            newGlobals = addAliases(formalsAliasingGlobals,
+                                    nAddrTakenGlobals,
+                                    f2, fromBits);
+            if (newGlobals) {
+              changed = true;
+              if (lastiter) {
+                formalsAliasingAnything.insert(f2);
               }
             }
           }
@@ -289,12 +338,12 @@ void markNonAliasingRefArguments() {
   if (maxFormals > 100) {
     USR_WARN("Too many formal parameters! Optimization is inhibited");
     maxFormals = 100;
+    return;
   }
 
   // Now compute the set of formals aliasing other formals
   // This follows Figure 11.8 in Allen & Kennedy
   int nFormalPairs = maxFormals * maxFormals;
-  std::map<Symbol*, BitVec> fpairs;
   std::queue<std::pair<ArgSymbol*, ArgSymbol*> > worklist;
 
   // for each alias introduction site, e.g. f(X, X),
@@ -309,15 +358,15 @@ void markNonAliasingRefArguments() {
           if (fn == call->resolvedOrVirtualFunction()) {
             // Consider the actuals and formals and update
             // Look for f(X, X)
-            int formalIdx = 1;
-            for_formals_actuals(fnFormal, actual, call) {
+            int formalIdx1 = 1;
+            for_formals_actuals(fnFormal1, actual, call) {
               // fnFormal is a formal from fn, which we're investigating
               SymExpr* actualSe = toSymExpr(actual);
               Symbol* actualSym = actualSe->symbol();
               VarSymbol* actualVar = toVarSymbol(actualSym);
               if (actualVar && actualVar->isRef()) {
                 // don't worry about ref variables; covered above
-              } else {
+              } else if (isRefFormal(fnFormal1)) {
                 // Find cases where the same argument is passed
                 // This could be implemented in a different way
                 // but the nested loops is much clearer
@@ -325,22 +374,22 @@ void markNonAliasingRefArguments() {
                 for_formals_actuals(fnFormal2, actual2, call) {
                   SymExpr* actual2Se = toSymExpr(actual2);
                   Symbol* actual2Sym = actual2Se->symbol();
-                  if (formalIdx < formalIdx2 &&
+                  if (formalIdx1 < formalIdx2 &&
                       actualSym == actual2Sym) {
                     // The same actual was passed in positions
-                    // formalIdx and formalIdx2
+                    // formalIdx1 and formalIdx2
 
                     // add the pair to fpairs
                     addAlias(fpairs, nFormalPairs,
-                             fn, maxFormals*formalIdx + formalIdx2);
+                             fn, maxFormals*formalIdx1 + formalIdx2);
 
                     // add the pair to the worklist
-                    worklist.push(std::make_pair(fnFormal, fnFormal2));
+                    worklist.push(std::make_pair(fnFormal1, fnFormal2));
                   }
                   formalIdx2++;
                 }
               }
-              formalIdx++;
+              formalIdx1++;
             }
           }
         }
@@ -355,7 +404,6 @@ void markNonAliasingRefArguments() {
   //     if (f3,f4) is not in fpairs[q]
   //       add (f3,f4) to fpairs[q]
   //       add (f3,f4) to the worklist
-  std::vector<CallExpr*> calls;
 
   while (!worklist.empty()) {
     std::pair<ArgSymbol*, ArgSymbol*> elt = worklist.front();
@@ -380,15 +428,17 @@ void markNonAliasingRefArguments() {
       // Figure out what f1 is passed to, and what f2 is passed to
       int formalIdx = 1;
       for_formals_actuals(qFormal, actual, call) {
-        SymExpr* actualSe = toSymExpr(actual);
-        if (ArgSymbol* actualArg = toArgSymbol(actualSe->symbol())) {
-          if (actualArg == f1) {
-            f3 = qFormal;
-            f3Idx = formalIdx;
-          }
-          if (actualArg == f2) {
-            f4 = qFormal;
-            f4Idx = formalIdx;
+        if (isRefFormal(qFormal)) {
+          SymExpr* actualSe = toSymExpr(actual);
+          if (ArgSymbol* actualArg = toArgSymbol(actualSe->symbol())) {
+            if (actualArg == f1) {
+              f3 = qFormal;
+              f3Idx = formalIdx;
+            }
+            if (actualArg == f2) {
+              f4 = qFormal;
+              f4Idx = formalIdx;
+            }
           }
         }
         formalIdx++;
@@ -408,6 +458,71 @@ void markNonAliasingRefArguments() {
   }
 
   // OK, now we have computed answers to lots of aliasing questions!
+
+  // in function p, we should consider formal f1 potentially aliasing
+  // formal f2 if:
+  //   - f1 or f2 is in formalsAliasingAnything
+  //   - (f1,f2) is in fpairs[p]
+  //   - formalsAliasingGlobals[f1] intersect formalsAliasingGlobals[f2] != {}
+
+  std::vector<ArgSymbol*> noAliasArgs;
+
+  forv_Vec(FnSymbol, p, gFnSymbols) {
+    if (fnHasRefFormal(p)) {
+      // Are the formals independent? Do they alias each other?
+      int formalIdx1 = 1;
+      for_formals(formal1, p) {
+        if (isRefFormal(formal1)) {
+          if (formalsAliasingAnything.count(formal1)) {
+            // Don't emit any alias sets for this one
+          } else {
+            noAliasArgs.clear();
+            int formalIdx2 = 1;
+            for_formals(formal2, p) {
+              if (formalIdx1 != formalIdx2 && isRefFormal(formal2)) {
+                // normalize the pair to idx1 < idx2
+                int idx1 = formalIdx1 < formalIdx2 ? formalIdx1 : formalIdx2;
+                int idx2 = formalIdx1 < formalIdx2 ? formalIdx2 : formalIdx1;
+                INT_ASSERT(idx1 < idx2);
+                bool pairCanAlias = false;
+
+                // f2 is in formalsAliasingAnything
+                if (formalsAliasingAnything.count(formal2))
+                  pairCanAlias = true;
+
+                // Does (idx1,idx2) appear in fpairs(p) ?
+                std::map<Symbol*, BitVec>::iterator it = fpairs.find(p);
+                if (it != fpairs.end()) {
+                  BitVec &bits = it->second;
+                  if (bits.get(maxFormals*idx1 + idx2))
+                    pairCanAlias = true;
+                }
+                // Is formalsAliasingGlobals non-intersecting?
+                std::map<Symbol*, BitVec>::iterator it2;
+                it = formalsAliasingGlobals.find(formal1);
+                it2 = formalsAliasingGlobals.find(formal2);
+                if (it != formalsAliasingGlobals.end() &&
+                    it2 != formalsAliasingGlobals.end()) {
+                  BitVec &bits1 = it->second;
+                  BitVec &bits2 = it2->second;
+                  BitVec intersect = bits1 & bits2;
+                  if (intersect.any())
+                    pairCanAlias = true;
+                }
+
+                if (pairCanAlias == false) {
+                  noAliasArgs.push_back(formal2);
+                }
+              }
+              formalIdx2++;
+            }
+            addNoAliasSetForFormal(formal1, noAliasArgs);
+          }
+        }
+        formalIdx1++;
+      }
+    }
+  }
 }
 
 static
