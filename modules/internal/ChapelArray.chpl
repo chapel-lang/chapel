@@ -2145,6 +2145,7 @@ module ChapelArray {
   record _array {
     var _pid:int;  // only used when privatized
     pragma "owned"
+    pragma "alias scope from this"
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
 
@@ -2152,6 +2153,7 @@ module ChapelArray {
       return _value.eltType;
     }
 
+    pragma "alias scope from this"
     inline proc _value {
       if _isPrivatized(_instance) {
         return chpl_getPrivatizedCopy(_instance.type, _pid);
@@ -2214,6 +2216,7 @@ module ChapelArray {
     pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "removable array access"
+    pragma "alias scope from this"
     inline proc ref this(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
@@ -2221,6 +2224,7 @@ module ChapelArray {
         return _value.dsiAccess(i(1));
     }
     pragma "no doc" // value version, for POD types
+    pragma "alias scope from this"
     inline proc const this(i: rank*_value.dom.idxType)
     where shouldReturnRvalueByValue(_value.eltType)
     {
@@ -2230,6 +2234,7 @@ module ChapelArray {
         return _value.dsiAccess(i(1));
     }
     pragma "no doc" // const ref version, for not-POD types
+    pragma "alias scope from this"
     inline proc const this(i: rank*_value.dom.idxType) const ref
     where shouldReturnRvalueByConstRef(_value.eltType)
     {
@@ -2244,15 +2249,18 @@ module ChapelArray {
     pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "removable array access"
+    pragma "alias scope from this"
     inline proc ref this(i: _value.dom.idxType ...rank) ref
       return this(i);
 
     pragma "no doc" // value version, for POD types
+    pragma "alias scope from this"
     inline proc const this(i: _value.dom.idxType ...rank)
     where shouldReturnRvalueByValue(_value.eltType)
       return this(i);
 
     pragma "no doc" // const ref version, for not-POD types
+    pragma "alias scope from this"
     inline proc const this(i: _value.dom.idxType ...rank) const ref
     where shouldReturnRvalueByConstRef(_value.eltType)
       return this(i);
@@ -2260,6 +2268,7 @@ module ChapelArray {
 
     pragma "no doc" // ref version
     pragma "reference to const when const this"
+    pragma "alias scope from this"
     inline proc ref localAccess(i: rank*_value.dom.idxType) ref
     {
       if isRectangularArr(this) || isSparseArr(this) then
@@ -2268,6 +2277,7 @@ module ChapelArray {
         return _value.dsiLocalAccess(i(1));
     }
     pragma "no doc" // value version, for POD types
+    pragma "alias scope from this"
     inline proc const localAccess(i: rank*_value.dom.idxType)
     where shouldReturnRvalueByValue(_value.eltType)
     {
@@ -2277,6 +2287,7 @@ module ChapelArray {
         return _value.dsiLocalAccess(i(1));
     }
     pragma "no doc" // const ref version, for not-POD types
+    pragma "alias scope from this"
     inline proc const localAccess(i: rank*_value.dom.idxType) const ref
     where shouldReturnRvalueByConstRef(_value.eltType)
     {
@@ -2290,15 +2301,18 @@ module ChapelArray {
 
     pragma "no doc" // ref version
     pragma "reference to const when const this"
+    pragma "alias scope from this"
     inline proc localAccess(i: _value.dom.idxType ...rank) ref
       return localAccess(i);
 
     pragma "no doc" // value version, for POD types
+    pragma "alias scope from this"
     inline proc localAccess(i: _value.dom.idxType ...rank)
     where shouldReturnRvalueByValue(_value.eltType)
       return localAccess(i);
 
     pragma "no doc" // const ref version, for not-POD types
+    pragma "alias scope from this"
     inline proc localAccess(i: _value.dom.idxType ...rank) const ref
     where shouldReturnRvalueByConstRef(_value.eltType)
       return localAccess(i);

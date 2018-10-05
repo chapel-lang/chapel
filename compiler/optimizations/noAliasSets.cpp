@@ -57,7 +57,190 @@ void addNoAliasSetForFormal(ArgSymbol* arg,
       printf("\n");
     }
   }
+
+  SET_LINENO(arg);
+
+  CallExpr* c = new CallExpr(PRIM_NO_ALIAS_SET, new SymExpr(arg));
+
+  for_vector(ArgSymbol, other, notAliasingThese) {
+    c->insertAtTail(new SymExpr(other));
+  }
+
+  fn->body->insertAtHead(c);
 }
+
+static
+bool isNonAliasingArrayImplType(Type* t) {
+  // Array views are marked with this flag because they
+  // can alias other arrays.
+  if (t->symbol->hasFlag(FLAG_ALIASING_ARRAY))
+    return false;
+
+  // Non-array view array classes
+  if (isArrayImplType(t))
+    return true;
+
+  return false;
+}
+
+static
+bool isNonAliasingArrayType(Type* t) {
+  if (AggregateType* at = toAggregateType(t)) {
+    if (isRecordWrappedType(at)) {
+      Symbol* instanceField = at->getField("_instance", false);
+
+      if (instanceField)
+        return isNonAliasingArrayImplType(instanceField->type);
+    }
+  }
+
+  return false;
+}
+
+static
+void addNoAliasSetsInFn(FnSymbol* fn) {
+  // Then, construct alias sets at each scope defining array
+  // variables, or each function body, and associate these with
+  // PRIM_ARRAY_GET{_VALUE} primitives.
+
+  // After each array declaration, create a PRIM_NO_ALIAS_SET
+  // that indicates what it can't possibly alias.
+
+  // dsiAccess methods
+  // PRIM_ARRAY_GET "array_get"
+
+  /*
+  consider these flags:
+    FLAG_ALIASING_ARRAY
+    FLAG_ALIAS_SCOPE_FROM_THIS
+   */
+
+  std::map<Symbol*, CallExpr*> noAliasCallsForSymbol;
+
+  // Look for aliasing information about any  array formals
+  std::vector<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+  for_vector(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIM_NO_ALIAS_SET)) {
+      SymExpr* se = toSymExpr(call->get(1));
+      if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
+        noAliasCallsForSymbol[arg] = call;
+      }
+    }
+  }
+
+  // Find variables declaring array variables
+  std::vector<DefExpr*> defs;
+  collectDefExprs(fn, defs);
+  for_vector(DefExpr, def, defs) {
+    if (VarSymbol* var = toVarSymbol(def->sym)) {
+      if (!var->isRef() && isNonAliasingArrayType(var->type)) {
+        // Add a no-aliasing call
+        SET_LINENO(def);
+        CallExpr* c = new CallExpr(PRIM_NO_ALIAS_SET, new SymExpr(var));
+        def->insertAfter(c);
+        noAliasCallsForSymbol[var] = c;
+      }
+    }
+  }
+
+  // Now fill out the no-alias sets. Local array variables can't
+  // alias any other local array variable or argument
+  // unless one of the types is an array view.
+  for_vector(DefExpr, def, defs) {
+    if (VarSymbol* var = toVarSymbol(def->sym)) {
+      if (!var->isRef() && isNonAliasingArrayType(var->type)) {
+        // Enhance the no-aliasing call
+        SET_LINENO(def);
+        CallExpr* c = noAliasCallsForSymbol[var];
+        // For every other thing in the map, add an entry
+        //  - includes local array value variables
+        //  - includes array arguments
+        std::map<Symbol*, CallExpr*>::iterator it;
+        for (it = noAliasCallsForSymbol.begin();
+            it != noAliasCallsForSymbol.end();
+            ++it) {
+          Symbol* otherSym = it->first;
+          if (otherSym != var) {
+            c->insertAtTail(new SymExpr(otherSym));
+          }
+        }
+      }
+    }
+  }
+
+  // Now look for calls that return references to array elements
+  // We'll mark these as having the same aliasing scope as the
+  // parent array in noAliasCallsForSymbol.
+  for_vector(CallExpr, call, calls) {
+    // Code below sets these to propagate alias scopes
+    Symbol* fromSym = NULL;
+    Symbol* toSym = NULL;
+
+    // Check for cases where propagation is needed
+    if (call->isPrimitive(PRIM_MOVE) ||
+        call->isPrimitive(PRIM_ASSIGN)) {
+      Symbol* lhs = toSymExpr(call->get(1))->symbol();
+      if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+        // Check for getting the _instance field or data field
+        if (rhsCall->isPrimitive(PRIM_GET_MEMBER) ||
+            rhsCall->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+          Symbol* field = toSymExpr(rhsCall->get(2))->symbol();
+          if (field->hasFlag(FLAG_ALIAS_SCOPE_FROM_THIS)) {
+            fromSym = toSymExpr(rhsCall->get(1))->symbol();
+            toSym = lhs;
+          }
+
+        // Check for getting reference to an element
+        } else if (rhsCall->isPrimitive(PRIM_ARRAY_GET)) {
+          if (lhs->isRef() && call->isPrimitive(PRIM_MOVE)) {
+            fromSym = toSymExpr(rhsCall->get(1))->symbol();
+            toSym = lhs;
+          } else if (FnSymbol* rhsFn = rhsCall->resolvedOrVirtualFunction()) {
+            if (rhsFn->hasFlag(FLAG_ALIAS_SCOPE_FROM_THIS)) {
+              // Find this argument
+              for_formals_actuals(formal, actual, rhsCall) {
+                if (formal == fn->_this) {
+                  fromSym = toSymExpr(actual)->symbol();
+                  toSym = lhs;
+                }
+              }
+            }
+          }
+        }
+        // TODO: check for chpl_privateObjects[objectPid]
+        //  -- this should propagate from the _array record
+        //     from which we got the id, if present
+      } else {
+        // Check for copy the result of ._instance
+        if (isNonAliasingArrayImplType(lhs->type)) {
+          Symbol* rhs = toSymExpr(call->get(2))->symbol();
+          fromSym = rhs;
+          toSym = lhs;
+        }
+      }
+    }
+
+
+    if (fromSym != NULL) {
+      if (noAliasCallsForSymbol.count(fromSym)) {
+        SET_LINENO(call);
+        // Propagate alias scope from fromSym to toSym
+        CallExpr* found = noAliasCallsForSymbol[fromSym];
+        CallExpr* c = new CallExpr(PRIM_NO_ALIAS_SET,
+                                   new SymExpr(toSym));
+        for_actuals(actual, found) {
+          Symbol* foundSym = toSymExpr(actual)->symbol();
+          if (foundSym != fromSym && foundSym != toSym)
+            c->insertAtTail(actual->copy());
+        }
+        call->getStmtExpr()->insertAfter(c);
+        noAliasCallsForSymbol[toSym] = c;
+      }
+    }
+  }
+}
+
 
 static
 bool isAddrTaken(Symbol* var) {
@@ -158,9 +341,7 @@ bool addAliases(std::map<Symbol*, BitVec> &map,
 }
 
 
-
-static
-void markNonAliasingRefArguments() {
+void addNoAliasSets() {
   // Inspired by Kennedy "Optimizing Compilers for Modern Architectures" p 571
 
   // These are the main results of this function
@@ -523,22 +704,20 @@ void markNonAliasingRefArguments() {
       }
     }
   }
-}
 
-static
-void addNoAliasSetsInFn(FnSymbol* fn) {
-}
 
-void addNoAliasSets() {
-
-  // First, mark ref arguments that definately don't alias,
-  // as an interprocedural analysis.
-  markNonAliasingRefArguments();
-
-  // Then, construct alias sets at each scope defining array
-  // variables, or each function body, and associate these with
-  // PRIM_ARRAY_GET{_VALUE} primitives.
+  // Lastly, construct alias sets for local array variables.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    addNoAliasSetsInFn(fn);
+    addNoAliasSetsInFn(fn);  // map from ArgSymbol -> BitVecs of size nAddrTakenGlobals
+  std::map<Symbol*, BitVec> formalsAliasingGlobals;
+
+  // set ArgSymbol where we gave up on analysis
+  std::set<ArgSymbol*> formalsAliasingAnything;
+
+  // map from FnSymbol -> BitVec of size nFormalPairs,
+  //   storing pairs of arguments that can alias
+  std::map<Symbol*, BitVec> fpairs;
+
+
   }
 }

@@ -955,9 +955,11 @@ module DefaultRectangular {
     var str: rank*idxSignedType;
     var factoredOffs: chpl__idxTypeToIntIdxType(idxType);
 
+    pragma "alias scope from this"
     pragma "local field"
     var data : _ddata(eltType) = nil;
 
+    pragma "alias scope from this"
     pragma "local field"
     var shiftedData : _ddata(eltType);
 

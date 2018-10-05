@@ -33,6 +33,13 @@
 #define ncm ""    /* no comment */
 
 
+// Indicates an array implementation class can alias other array implementations
+// e.g. array views
+symbolFlag( FLAG_ALIASING_ARRAY , ypr, "aliasing array" , ncm )
+// alias analysis can assume that the marked field (or return from a function)
+// can alias the same scopes as 'this'
+symbolFlag( FLAG_ALIAS_SCOPE_FROM_THIS , ypr, "alias scope from this" , ncm )
+
 // This flag is used in scalarReplace.cpp to determine if an assignment of a ref
 // has an allocator as the RHS.  If so, then it is not creating an alias, since
 // the allocator function does not retain a reference to the referenced object.
