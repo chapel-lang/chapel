@@ -126,6 +126,19 @@ static int codegen_tmp = 1;
 *                                                                           *
 ************************************* | ************************************/
 
+static void addNoAliasMetadata(GenRet &ret, Symbol* sym) {
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  if (info->cfile == NULL) {
+    // add no-alias information if it's in our map
+    if (info->noAliasScopeLists.count(sym) > 0)
+      ret.aliasScope = info->noAliasScopeLists[sym];
+    if (info->noAliasLists.count(sym) > 0)
+      ret.noalias = info->noAliasLists[sym];
+  }
+#endif
+}
+
 GenRet SymExpr::codegen() {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
@@ -138,8 +151,10 @@ GenRet SymExpr::codegen() {
 #ifdef HAVE_LLVM
     if(isVarSymbol(var)) {
       ret = toVarSymbol(var)->codegen();
+      addNoAliasMetadata(ret, var);
     } else if(isArgSymbol(var)) {
       ret = info->lvt->getValue(var->cname);
+      addNoAliasMetadata(ret, var);
     } else if(isTypeSymbol(var)) {
       ret.type = toTypeSymbol(var)->codegen().type;
     } else if(isFnSymbol(var) ){
@@ -946,7 +961,7 @@ GenRet doCodegenFieldPtr(
     GenRet base,
     const char *c_field_name,
     const char* chpl_field_name,
-    int special /* field_normal,field_cid, or field_uid */) {
+    int special /* field_normal,field_cid, or field_uid */ ) {
   GenInfo* info = gGenInfo;
   GenRet ret;
   Type* baseType = base.chplType;
@@ -1108,22 +1123,6 @@ GenRet doCodegenFieldPtr(
 #endif
   }
   return ret;
-}
-
-static void addNoAliasMetadata(GenRet &ret, Expr* expr) {
-#ifdef HAVE_LLVM
-  GenInfo* info = gGenInfo;
-  if (info->cfile == NULL) {
-    if (SymExpr* se = toSymExpr(expr)) {
-      Symbol* thisSym = se->symbol();
-      // add no-alias information if it's in our map
-      if (info->noAliasScopeLists.count(thisSym) > 0)
-        ret.aliasScope = info->noAliasScopeLists[thisSym];
-      if (info->noAliasLists.count(thisSym) > 0)
-        ret.noalias = info->noAliasLists[thisSym];
-    }
-  }
-#endif
 }
 
 static
@@ -4325,9 +4324,7 @@ DEFINE_PRIM(PRIM_GET_MEMBER) {
     // Invalid AST to use PRIM_GET_MEMBER with a ref field
     INT_ASSERT(!call->get(2)->isRef());
 
-    GenRet base = call->get(1);
-    addNoAliasMetadata(base, call->get(1));
-    ret = codegenFieldPtr(base, call->get(2));
+    ret = codegenFieldPtr(call->get(1), call->get(2));
 
     // Used to only do addrOf if
     // !get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)
@@ -4338,9 +4335,7 @@ DEFINE_PRIM(PRIM_GET_SVEC_MEMBER) {
     // get tuple base=get(1) at index=get(2)
     Type* tupleType = call->get(1)->getValType();
 
-    GenRet base = call->get(1);
-    addNoAliasMetadata(base, call->get(1));
-    ret = codegenElementPtr(base, codegenExprMinusOne(call->get(2)));
+    ret = codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
 
     if (tupleType->getField("x1")->type->symbol->hasFlag(FLAG_REF) == false)
       ret = codegenAddrOf(ret);
@@ -4352,10 +4347,7 @@ DEFINE_PRIM(PRIM_SET_MEMBER) {
     if (call->get(2)->isRef() && !call->get(3)->isRef())
       INT_FATAL("Invalid PRIM_SET_MEMBER ref field with value");
 
-    GenRet base = call->get(1);
-    addNoAliasMetadata(base, call->get(1));
-
-    GenRet ptr = codegenFieldPtr(base, call->get(2));
+    GenRet ptr = codegenFieldPtr(call->get(1), call->get(2));
     GenRet val = call->get(3);
 
     if (call->get(3)->isRefOrWideRef() && !call->get(2)->isRefOrWideRef()) {
@@ -5419,26 +5411,18 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
           ret = ref;
         } else {
-          GenRet base = call->get(1);
-          addNoAliasMetadata(base, call->get(1));
-          ret = codegenFieldPtr(base, se);
+          ret = codegenFieldPtr(call->get(1), se);
         }
 
       } else if (call->get(1)->isWideRef()) {
-        GenRet base = call->get(1);
-        addNoAliasMetadata(base, call->get(1));
-        ret = codegenFieldPtr(base, se);
+        ret = codegenFieldPtr(call->get(1), se);
 
       } else if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-        GenRet base = call->get(1);
-        addNoAliasMetadata(base, call->get(1));
-        ret = codegenFieldPtr(base, se);
+        ret = codegenFieldPtr(call->get(1), se);
 
       } else if (se->symbol()->hasFlag(FLAG_SUPER_CLASS)) {
         // We're getting the super class pointer.
-        GenRet base = call->get(1);
-        addNoAliasMetadata(base, call->get(1));
-        GenRet ref = codegenFieldPtr(base, se);
+        GenRet ref = codegenFieldPtr(call->get(1), se);
 
         // Now we have a field pointer to object->super, but
         // the pointer to super *is* actually the value of
@@ -5448,9 +5432,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         ret = ref;
 
       } else {
-        GenRet base = call->get(1);
-        addNoAliasMetadata(base, call->get(1));
-        ret = codegenFieldPtr(base, se);
+        ret = codegenFieldPtr(call->get(1), se);
       }
 
       retval = true;
@@ -5468,24 +5450,18 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
           call->get(1)->isWideRef()   ||
           call->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
 
-        GenRet base = call->get(1);
-        addNoAliasMetadata(base, call->get(1));
-        ret = codegenAddrOf(codegenFieldPtr(base, se));
+        ret = codegenAddrOf(codegenFieldPtr(call->get(1), se));
 
         retval = true;
       } else if (target && ((target->isRef() && call->get(2)->isRef()) ||
                  (target->isWideRef() && call->get(2)->isWideRef()))) {
-        GenRet base = call->get(1);
-        addNoAliasMetadata(base, call->get(1));
-        ret = codegenFieldPtr(base, se);
+        ret = codegenFieldPtr(call->get(1), se);
         retval = true;
 
       } else if (target && (target->getValType() != call->get(2)->typeInfo())) {
         // get a narrow reference to the actual 'addr' field
         // of the wide pointer
-        GenRet base = call->get(1);
-        addNoAliasMetadata(base, call->get(1));
-        GenRet getField = codegenFieldPtr(base, se);
+        GenRet getField = codegenFieldPtr(call->get(1), se);
 
         ret = codegenAddrOf(codegenWideThingField(getField, WIDE_GEP_ADDR));
 
@@ -5498,9 +5474,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_GET_SVEC_MEMBER: {
       if (call->get(1)->isWideRef()) {
         /* Get a pointer to the i'th element of a homogeneous tuple */
-        GenRet base = call->get(1);
-        addNoAliasMetadata(base, call->get(1));
-        GenRet elemPtr = codegenElementPtr(base,
+        GenRet elemPtr = codegenElementPtr(call->get(1),
                                            codegenExprMinusOne(call->get(2)));
 
         INT_ASSERT( elemPtr.isLVPtr == GEN_WIDE_PTR );
@@ -5513,9 +5487,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         retval = true;
 
       } else if (target && (target->getValType() != call->getValType())) {
-        GenRet base = call->get(1);
-        addNoAliasMetadata(base, call->get(1));
-        GenRet getElem = codegenElementPtr(base,
+        GenRet getElem = codegenElementPtr(call->get(1),
                                            codegenExprMinusOne(call->get(2)));
 
 
@@ -5532,9 +5504,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
       //there was an if/else block checking if call->get(1) is wide or narrow,
       //however if/else blocks were identical. It may not be in the future.
-      GenRet base = call->get(1);
-      addNoAliasMetadata(base, call->get(1));
-      ret =  codegenElementPtr(base, codegenExprMinusOne(call->get(2)));
+      ret =  codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
 
       retval = true;
       break;
@@ -5543,9 +5513,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_ARRAY_GET: {
       /* Get a pointer to the i'th array element */
       // ('_array_get' array idx)
-      GenRet base = call->get(1);
-      addNoAliasMetadata(base, call->get(1));
-      GenRet elem = codegenElementPtr(base, call->get(2));
+      GenRet elem = codegenElementPtr(call->get(1), call->get(2));
       GenRet ref  = codegenAddrOf(elem);
 
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -5565,9 +5533,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_ARRAY_GET_VALUE: {
-      GenRet base = call->get(1);
-      addNoAliasMetadata(base, call->get(1));
-      ret =  codegenElementPtr(base, call->get(2));
+      ret =  codegenElementPtr(call->get(1), call->get(2));
 
       retval = true;
       break;
