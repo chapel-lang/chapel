@@ -107,7 +107,7 @@ static
 void addNoAliasSetsInFn(FnSymbol* fn) {
   std::map<Symbol*, CallExpr*> noAliasCallsForSymbol;
 
-  // Look for aliasing information about any  array formals
+  // Look for aliasing information about any array formals
   std::vector<CallExpr*> calls;
   collectCallExprs(fn, calls);
   for_vector(CallExpr, call, calls) {
@@ -220,7 +220,7 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
         CallExpr* c = new CallExpr(PRIM_COPIES_NO_ALIAS_SET,
                                    new SymExpr(toSym),
                                    new SymExpr(fromSym));
-        call->getStmtExpr()->insertAfter(c);
+        toSym->defPoint->insertAfter(c);
         noAliasCallsForSymbol[toSym] = c;
       }
     }
@@ -328,6 +328,9 @@ bool addAliases(std::map<Symbol*, BitVec> &map,
 
 
 void addNoAliasSets() {
+  // TODO: retArg and in
+  //  these never alias any other arguments.
+
   // Inspired by Kennedy "Optimizing Compilers for Modern Architectures" p 571
 
   // These are the main results of this function
@@ -695,15 +698,5 @@ void addNoAliasSets() {
   // Lastly, construct alias sets for local array variables.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     addNoAliasSetsInFn(fn);  // map from ArgSymbol -> BitVecs of size nAddrTakenGlobals
-  std::map<Symbol*, BitVec> formalsAliasingGlobals;
-
-  // set ArgSymbol where we gave up on analysis
-  std::set<ArgSymbol*> formalsAliasingAnything;
-
-  // map from FnSymbol -> BitVec of size nFormalPairs,
-  //   storing pairs of arguments that can alias
-  std::map<Symbol*, BitVec> fpairs;
-
-
   }
 }

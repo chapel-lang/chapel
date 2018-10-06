@@ -5162,18 +5162,18 @@ DEFINE_PRIM(PRIM_COPIES_NO_ALIAS_SET) {
   } else {
 #ifdef HAVE_LLVM
     Symbol* sym = toSymExpr(call->get(1))->symbol();
-    Symbol* otherSym = toSymExpr(call->get(1))->symbol();
+    Symbol* otherSym = toSymExpr(call->get(2))->symbol();
     llvm::LLVMContext &ctx = info->llvmContext;
 
-    llvm::MDNode *&scopeList = info->noAliasScopeLists[sym];
-    if (scopeList == NULL)
-      if (info->noAliasScopeLists.count(otherSym) > 0)
-        scopeList = info->noAliasScopeLists[otherSym];
+    if (info->noAliasScopeLists.count(otherSym) > 0) {
+      llvm::MDNode *&scopeList = info->noAliasScopeLists[sym];
+      scopeList = info->noAliasScopeLists[otherSym];
+    }
 
     llvm::MDNode *&noAliasList = info->noAliasLists[sym];
-    if (noAliasList == NULL)
-      if (info->noAliasLists.count(otherSym) > 0)
-        scopeList = info->noAliasLists[otherSym];
+    if (info->noAliasLists.count(otherSym) > 0) {
+        noAliasList = info->noAliasLists[otherSym];
+    }
 #endif
   }
 }
