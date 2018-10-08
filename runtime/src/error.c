@@ -22,7 +22,7 @@
 #include "chplcgfns.h"
 
 #include "error.h"
-#include "chplexit.h"
+#include "chpl-exit.h"
 #include "chpl-env.h"
 
 #include <stdarg.h>

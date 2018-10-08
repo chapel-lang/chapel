@@ -21,7 +21,7 @@
 #include <string.h>
 #include <assert.h>
 #include "chpl-bitops.h"
-#include "chpl-align.h"
+#include "chpl-util.h"
 
 // ----------  SUPPORT FUNCTIONS 
 typedef int64_t cache_seqn_t;

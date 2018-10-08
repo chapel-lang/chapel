@@ -17,14 +17,21 @@
  * limitations under the License.
  */
 
-#ifndef _chpl_align_h_
-#define _chpl_align_h_
+#ifndef _chpl_util_h_
+#define _chpl_util_h_
 
-#include <inttypes.h>
-#include <string.h>
 #include <assert.h>
-#include <stdint.h>
+#include <inttypes.h>
 #include <limits.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+
+////////////////////////////////////////
+//
+// alignment
+//
 
 // If we have a mask representing 2^n - 1,
 // round an offset down to a multiple of 2^n.
@@ -53,4 +60,44 @@ unsigned char* round_up_to_mask_ptr(unsigned char* p, uintptr_t mask)
 }
 
 
-#endif // _chpl_align_h_
+////////////////////////////////////////
+//
+// snprintf() a K/M/G size
+//
+
+static inline
+int chpl_snprintf_z_KMG(char* buf, int bufSize, size_t val) {
+  const size_t GiB = (size_t) (1UL << 30);
+  if (val >= GiB)
+    return snprintf(buf, bufSize, "%zdG", val / GiB);
+
+  const size_t MiB = (size_t) (1UL << 20);
+  if (val >= MiB)
+    return snprintf(buf, bufSize, "%zdM", val / MiB);
+
+  const size_t KiB = (size_t) (1UL << 10);
+  if (val >= KiB)
+    return snprintf(buf, bufSize, "%zdK", val / KiB);
+
+  return snprintf(buf, bufSize, "%zd", val);
+}
+
+static inline
+int chpl_snprintf_f_KMG(char* buf, int bufSize, double val) {
+  const double GiB = (double) (1UL << 30);
+  if (val >= GiB)
+    return snprintf(buf, bufSize, "%.1fG", val / GiB);
+
+  const double MiB = (double) (1UL << 20);
+  if (val >= MiB)
+    return snprintf(buf, bufSize, "%.1fM", val / MiB);
+
+  const double KiB = (double) (1UL << 10);
+  if (val >= KiB)
+    return snprintf(buf, bufSize, "%.1fK", val / KiB);
+
+  return snprintf(buf, bufSize, "%.1f", val);
+}
+
+
+#endif // _chpl_util_h_

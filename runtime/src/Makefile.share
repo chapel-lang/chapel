@@ -33,7 +33,7 @@ COMMON_NOGEN_SRCS = \
 	chpl-comm.c \
         chpl-comm-callbacks.c \
 	chpl-init.c \
-	chplexit.c \
+	chpl-exit.c \
 	chpl-external-array.c \
 	chpl-file-utils.c \
 	chplio.c \

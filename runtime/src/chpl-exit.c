@@ -19,9 +19,8 @@
 
 #include "chplrt.h"
 
-#include "chpl_rt_utils_static.h"
 #include "chpl-comm.h"
-#include "chplexit.h"
+#include "chpl-exit.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chpl-topo.h"

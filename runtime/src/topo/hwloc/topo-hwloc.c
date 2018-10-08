@@ -22,12 +22,12 @@
 //
 #include "chplrt.h"
 
-#include "chpl-align.h"
 #include "chpl-env-gen.h"
 #include "chplcgfns.h"
 #include "chplsys.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
+#include "chpl-util.h"
 #include "error.h"
 
 #include <errno.h>

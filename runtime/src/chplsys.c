@@ -27,12 +27,12 @@
 #include "chplsys.h"
 
 // Other Chapel Header
-#include "chpl-align.h"
 #include "chpl-comm.h"
 #include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
+#include "chpl-util.h"
 #include "error.h"
 
 // System headers
