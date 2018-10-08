@@ -4,7 +4,7 @@ This directory contains scripts to build customizable Chapel binaries
 in multiple configurations.
 
 The `cray-internal` subdirectory contains scripts to build and package
-Chapel binaries into RPM modules suitable for installation on a Cray-XC.
+Chapel binaries into RPM modules suitable for installation on a Cray-XC or XE.
 Those scripts are Cray-specific applications of the more general patterns
 presented in this directory. See `./cray-internal/README.md` for more info.
 

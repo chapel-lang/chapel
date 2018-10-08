@@ -6,7 +6,7 @@ one of the setenv scripts in this subdir, setenv-example-3 from the parent direc
 or a new setenv script derived from one of those. See `chapel_build.bash` for illustration.
 
 The Chapel RPM file produced by these scripts is intended to be fully compatible
-with current generation Cray-XC supercomputers and system-management tools.
+with current generation Cray-XC/XE supercomputers and system-management tools.
 As far as the packaging is concerned, these RPMs should be interchangeable with the
 Chapel Cray modules released through Cray, Inc.
 
@@ -52,7 +52,7 @@ new subdir.
   Setenv scripts for Chapel Cray RPMs of various types. These setenv scripts are based on
   the setenv-example-3 script in the parent directory, and their basic structure is the
   same.  However, many details were added to successfully build a complete Chapel Cray
-  module, including Python-venv, chpldoc, mason, 192 runtime configs, etc.
+  module, including Python-venv, chpldoc, mason, over 100 runtime configs, etc.
   These setenv scripts are located here in this `cray-internal` subdir because they
   are Cray-specific implementations of the general build_configs/setenv pattern:
   - setenv-xc-x86_64:  Chapel Cray-XC module for x86_64

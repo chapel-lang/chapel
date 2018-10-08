@@ -91,9 +91,10 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     export CHPL_LLVM=llvm       # llvm requires py27 and cmake
     export CHPL_AUX_FILESYS=none
 
-    # More CPUs --> faster make. Or, unset CHPL_MAKE_MAX_CPU_COUNT to use all CPUs.
+    # As a general rule, more CPUs --> faster make.
+    # To use all available CPUs, export CHPL_MAKE_MAX_CPU_COUNT=0 before running this setenv.
 
-#   export CHPL_MAKE_MAX_CPU_COUNT=${CHPL_MAKE_MAX_CPU_COUNT:-8}
+    export CHPL_MAKE_MAX_CPU_COUNT=${CHPL_MAKE_MAX_CPU_COUNT:-1}
 
     # Show the initial/default Chapel build config with printchplenv
 
