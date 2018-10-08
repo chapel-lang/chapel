@@ -364,8 +364,18 @@ Expr* Symbol::getInitialization() const {
   FnSymbol* fn = toFnSymbol(defPoint->parentSymbol);
   ModuleSymbol* mod = toModuleSymbol(defPoint->parentSymbol);
   if (fn == NULL && mod != NULL ) {
-    // Global variables are initialized in their module init function
-    fn = mod->initFn;
+    // Global variables are initialized in their module init function, unless
+    // it's used in a loopexpr wrapper function for an array type.
+    //
+    // BHARSH 2018-10-03: A temporary at global scope whose first SymExpr
+    // is inside a loopexpr wrapper *should* have been initialized in that
+    // wrapper function.
+    if (firstSymExpr()->getFunction()->hasFlag(FLAG_MAYBE_ARRAY_TYPE) &&
+        this->hasFlag(FLAG_TEMP)) {
+      fn = firstSymExpr()->getFunction();
+    } else {
+      fn = mod->initFn;
+    }
   }
 
   Expr* stmt;
