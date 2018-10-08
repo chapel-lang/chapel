@@ -2450,6 +2450,7 @@ void setupForGlobalToWide(void) {
 
   llvm::verifyFunction(*fn, &errs());
 
+  info->hasPreservingFn = true;
   info->preservingFn = fn;
 }
 static
