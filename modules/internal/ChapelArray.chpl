@@ -4183,6 +4183,23 @@ module ChapelArray {
     // promoted expression.
     shape._unowned = true;
 
+    return chpl__initCopy_shapeHelp(shape, ir);
+  }
+
+  pragma "init copy fn"
+  proc chpl__initCopy(ir: _iteratorRecord)
+    where chpl_iteratorHasRangeShape(ir) && !chpl_iteratorFromForExpr(ir)
+  {
+    // Need this pragma in the range case to avoid leaking 'shape'.
+    // If we use it in the domain case, we get one autoDestroy too many.
+    pragma "insert auto destroy"
+    var shape = {ir._shape_};
+
+    return chpl__initCopy_shapeHelp(shape, ir);
+  }
+
+  proc chpl__initCopy_shapeHelp(shape: domain, ir: _iteratorRecord)
+  {
     // Right now there are two distinct events for each array element:
     //  * initialization upon the array declaration,
     //  * assignment within the forall loop.
@@ -4190,6 +4207,9 @@ module ChapelArray {
     // in the other case. Ex. users/vass/km/array-of-records-crash-1.*
 
     var result: [shape] iteratorToArrayElementType(ir.type);
+    if isArray(result.eltType) then
+      compilerError("creating an array of arrays using a for- or forall-expression is not supported, except when using a for-expression over a range");
+
     if chpl_iteratorFromForExpr(ir) {
       for (r, src) in zip(result, ir) do
         r = src;

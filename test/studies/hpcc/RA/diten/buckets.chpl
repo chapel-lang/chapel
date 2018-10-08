@@ -44,9 +44,18 @@ class Buckets {
 
   const numLocs: int = numLocales;
   var pendingUpdates = 0;
-  var BucketArray: [0..#numLocs] unmanaged Bucket = [0..#numLocs] new unmanaged Bucket(nil, 0);
+  var BucketArray: [0..#numLocs] unmanaged Bucket;// = [0..#numLocs] new unmanaged Bucket(nil, 0);
   var heap = new unmanaged MaxHeap(numLocs);
   var updateManager = new unmanaged UpdateManager();
+
+  // This is a workaround for #11314.
+  // Once that is resolved, remove this and uncomment the default
+  // expression for the field BucketArray above.
+  // That field's explicit type can then be removed, too.
+  proc postinit() {
+    forall bucket in BucketArray do
+      bucket = new unmanaged Bucket(nil, 0);
+  }
 
   proc insertUpdate(ran: uint(64), loc: int) {
     local {
