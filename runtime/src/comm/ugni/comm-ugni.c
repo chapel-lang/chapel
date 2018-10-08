@@ -64,6 +64,7 @@
 #include "chpl-mem-sys.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
+#include "chpl-util.h"
 #include "chpl-atomics.h"
 #include "chplcast.h"
 #include "chpl-linefile-support.h"
@@ -1449,8 +1450,6 @@ static void      polling_task(void*);
 static void      set_up_for_polling(void);
 static void      ensure_registered_heap_info_set(void);
 static void      make_registered_heap(void);
-static void      printf_KMG_size_t(char*, int, size_t);
-static void      printf_KMG_double(char*, int, double);
 static size_t    get_hugepage_size(void);
 static void      set_hugepage_info(void);
 static void      install_SIGBUS_handler(void);
@@ -3018,9 +3017,9 @@ void make_registered_heap(void)
   if (nic_type == GNI_DEVICE_GEMINI && size > max_heap_size) {
     if (chpl_nodeID == 0) {
       char buf1[20], buf2[20], buf3[20], msg[200];
-      printf_KMG_size_t(buf1, sizeof(buf1), nic_max_mem);
-      printf_KMG_size_t(buf2, sizeof(buf2), page_size);
-      printf_KMG_double(buf3, sizeof(buf3), max_heap_size);
+      chpl_snprintf_z_KMG(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_z_KMG(buf2, sizeof(buf2), page_size);
+      chpl_snprintf_f_KMG(buf3, sizeof(buf3), max_heap_size);
       (void) snprintf(msg, sizeof(msg),
                       "Gemini TLB can cover %s with %s pages; heap "
                       "reduced to %s to fit",
@@ -3065,9 +3064,9 @@ void make_registered_heap(void)
   if (nic_type == GNI_DEVICE_ARIES && size > max_heap_size) {
     if (chpl_nodeID == 0) {
       char buf1[20], buf2[20], buf3[20], msg[200];
-      printf_KMG_size_t(buf1, sizeof(buf1), nic_max_mem);
-      printf_KMG_size_t(buf2, sizeof(buf2), page_size);
-      printf_KMG_double(buf3, sizeof(buf3), size);
+      chpl_snprintf_z_KMG(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_z_KMG(buf2, sizeof(buf2), page_size);
+      chpl_snprintf_f_KMG(buf3, sizeof(buf3), size);
       (void) snprintf(msg, sizeof(msg),
                       "Aries TLB cache can cover %s with %s pages; "
                       "with %s heap,\n"
@@ -3081,36 +3080,6 @@ void make_registered_heap(void)
   registered_heap_start = start;
   registered_heap_info_set = 1;
   atomic_thread_fence(memory_order_release);
-}
-
-
-static
-void printf_KMG_size_t(char* buf, int len, size_t val)
-{
-  const size_t GiB = (size_t) (1UL << 30);
-  const size_t MiB = (size_t) (1UL << 20);
-  const size_t KiB = (size_t) (1UL << 10);
-  if (val >= GiB)
-    (void) snprintf(buf, len, "%zdG", val / GiB);
-  else if (val >= MiB)
-    (void) snprintf(buf, len, "%zdM", val / MiB);
-  else
-    (void) snprintf(buf, len, "%zdK", val / KiB);
-}
-
-
-static
-void printf_KMG_double(char* buf, int len, double val)
-{
-  const double GiB = (double) (1UL << 30);
-  const double MiB = (double) (1UL << 20);
-  const double KiB = (double) (1UL << 10);
-  if (val >= GiB)
-    (void) snprintf(buf, len, "%.1fG", val / GiB);
-  else if (val >= MiB)
-    (void) snprintf(buf, len, "%.1fM", val / MiB);
-  else
-    (void) snprintf(buf, len, "%.1fK", val / KiB);
 }
 
 
