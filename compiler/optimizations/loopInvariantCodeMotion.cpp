@@ -790,7 +790,7 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
 
   if (fReportAliases) {
     if (fn->getModule()->modTag == MOD_USER) {
-      printf("LICM alias report for a loop in function %s:\n", fn->name);
+      printf("LICM: may-alias report for a loop in function %s:\n", fn->name);
       // Print out aliases for user variables
       std::map<Symbol*, std::set<Symbol*> >::iterator it;
       for (it = aliases.begin(); it != aliases.end(); ++it) {
