@@ -309,6 +309,8 @@ void collectNaturalLoopForEdge(Loop* loop, BasicBlock* header, BasicBlock* tail)
 static Symbol*
 rhsAlias(CallExpr* call) {
 
+  // TODO: check that this handles reference variables correctly
+
   bool hasRef = false;
   for_alist(expr, call->argList) {
     if(SymExpr* symExpr = toSymExpr(expr)) {
@@ -722,12 +724,15 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
 
   //Compute the aliases for the function's parameters. Any args passed by ref
   //can potentially alias each other.
+  // TODO: pull out this alias analysis
+  // TODO: use results of addNoAliasSets
   for_alist(formal1, fn->formals) {
     for_alist(formal2, fn->formals) {
       if(formal1 == formal2)
         continue;
       if(ArgSymbol* arg1 = toArgSymbol(toDefExpr(formal1)->sym)) {
         if(ArgSymbol* arg2 = toArgSymbol(toDefExpr(formal2)->sym)) {
+          // TODO: should this handle const ref?
           if(arg1->intent == INTENT_REF && arg2->intent == INTENT_REF) {
             aliases[arg1].insert(arg2);
             aliases[arg2].insert(arg1);
@@ -783,6 +788,31 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
   }
   stopTimer(computeAliasTimer);
 
+  if (fReportAliases) {
+    if (fn->getModule()->modTag == MOD_USER) {
+      printf("LICM alias report for a loop in function %s:\n", fn->name);
+      // Print out aliases for user variables
+      std::map<Symbol*, std::set<Symbol*> >::iterator it;
+      for (it = aliases.begin(); it != aliases.end(); ++it) {
+        Symbol* sym = it->first;
+        std::set<Symbol*> &others = it->second;
+        for_set(Symbol, other, others) {
+
+          // Don't report each pair more than once
+          if (sym->id < other->id) {
+            bool symTemp = (sym->hasFlag(FLAG_TEMP) && !isArgSymbol(sym));
+            bool otherTemp = (other->hasFlag(FLAG_TEMP) && !isArgSymbol(other));
+
+            if (developer || (!symTemp && !otherTemp))
+              printf("  %s may alias %s\n", sym->name, other->name);
+
+            // But make sure (a,b) is also recorded as (b,a)
+            INT_ASSERT(aliases[other].count(sym) > 0);
+          }
+        }
+      }
+    }
+  }
   //calculate the actual defs of a symbol including the defs of
   //its aliases. If there are no defs or we have a constant,
   //add it to the list of invariants

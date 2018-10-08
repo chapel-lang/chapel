@@ -197,6 +197,7 @@ char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
 bool fPrintUnusedFns = false;
 bool fPrintUnusedInternalFns = false;
+bool fReportAliases = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportInlinedIterators = false;
 bool fReportOrderIndependentLoops = false;
@@ -977,6 +978,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-module-resolution", ' ', NULL, "Print name of module being resolved", "F", &fPrintModuleResolution, "CHPL_PRINT_MODULE_RESOLUTION", NULL},
  {"print-dispatch", ' ', NULL, "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
  {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
+ {"report-aliases", ' ', NULL, "Report aliases in user code", "N", &fReportAliases, NULL, NULL},
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},

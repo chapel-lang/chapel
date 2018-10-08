@@ -185,6 +185,7 @@ extern bool fWarnUnstable;
 extern bool fDefaultUnmanaged;
 extern bool fLegacyNew;
 
+extern bool fReportAliases;
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportInlinedIterators;
 extern bool fReportOrderIndependentLoops;

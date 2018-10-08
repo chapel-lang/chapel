@@ -52,18 +52,6 @@
 static
 void addNoAliasSetForFormal(ArgSymbol* arg,
                             std::vector<ArgSymbol*> notAliasingThese) {
-  FnSymbol* fn = arg->getFunction();
-  if (fn->getModule()->modTag == MOD_USER) {
-    if (notAliasingThese.size() > 0) {
-      printf("in function %s\n", fn->name);
-      printf(" arg %s does not alias args ", arg->name);
-      for_vector(ArgSymbol, other, notAliasingThese) {
-        printf(" %s", other->name);
-      }
-      printf("\n");
-    }
-  }
-
   SET_LINENO(arg);
 
   CallExpr* c = new CallExpr(PRIM_NO_ALIAS_SET, new SymExpr(arg));
@@ -72,6 +60,7 @@ void addNoAliasSetForFormal(ArgSymbol* arg,
     c->insertAtTail(new SymExpr(other));
   }
 
+  FnSymbol* fn = arg->getFunction();
   fn->body->insertAtHead(c);
 }
 
@@ -104,6 +93,136 @@ bool isNonAliasingArrayType(Type* t) {
 }
 
 static
+bool isRuntimeType(Symbol* sym) {
+  if (sym->hasFlag(FLAG_TEMP) && 0 == strcmp("_runtime_type_tmp_", sym->name))
+    return true;
+
+  return false;
+}
+
+static
+bool shouldAddNoAliasSetForVariable(Symbol* var) {
+  if (!var->isRef() &&
+      isNonAliasingArrayType(var->type) &&
+      !isRuntimeType(var))
+    return true;
+
+  return false;
+}
+
+static
+void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
+  std::map<Symbol*, CallExpr*>::iterator it;
+  std::map<Symbol*, CallExpr*>::iterator it2;
+
+  if (developer) {
+    for (it = noAliasCallsForSymbol.begin();
+         it != noAliasCallsForSymbol.end();
+         ++it) {
+      Symbol* sym = it->first;
+      CallExpr* call = it->second;
+      while (call->isPrimitive(PRIM_COPIES_NO_ALIAS_SET)) {
+        Symbol* fromSym = toSymExpr(call->get(2))->symbol();
+        call = noAliasCallsForSymbol[fromSym];
+        INT_ASSERT(call);
+      }
+
+      Symbol* scope = toSymExpr(call->get(1))->symbol();
+
+      printf(" %s (%i) scope %s (%i)\n",
+             sym->name, sym->id, scope->name, scope->id);
+
+      bool first = true;
+      for_actuals(actual, call) {
+        if (!first) {
+          Symbol* noAliasSym = toSymExpr(actual)->symbol();
+          printf("   noalias scope %s (%i)\n",
+                 noAliasSym->name, noAliasSym->id);
+        }
+        first = false;
+      }
+    }
+  }
+
+  // Print out doesn't-alias pairs
+  for (it = noAliasCallsForSymbol.begin();
+       it != noAliasCallsForSymbol.end();
+       ++it) {
+    Symbol* sym = it->first;
+    CallExpr* call = it->second;
+
+    while (call->isPrimitive(PRIM_COPIES_NO_ALIAS_SET)) {
+      Symbol* fromSym = toSymExpr(call->get(2))->symbol();
+      call = noAliasCallsForSymbol[fromSym];
+      INT_ASSERT(call);
+    }
+
+    for (it2 = noAliasCallsForSymbol.begin();
+         it2 != noAliasCallsForSymbol.end();
+         ++it2) {
+      Symbol* otherSym = it2->first;
+      CallExpr* otherCall = it2->second;
+
+      while (otherCall->isPrimitive(PRIM_COPIES_NO_ALIAS_SET)) {
+        Symbol* fromSym = toSymExpr(otherCall->get(2))->symbol();
+        otherCall = noAliasCallsForSymbol[fromSym];
+        INT_ASSERT(otherCall);
+      }
+
+      // Only consider each pair once, don't consider same pair
+      if (sym != otherSym && sym->id < otherSym->id) {
+        // Can they alias?
+        // Is one scope in the other's no-alias list?
+        Symbol* scope = toSymExpr(call->get(1))->symbol();
+        Symbol* otherScope = toSymExpr(otherCall->get(1))->symbol();
+
+        bool symTemp = (sym->hasFlag(FLAG_TEMP) && !isArgSymbol(sym));
+        bool otherTemp = (otherSym->hasFlag(FLAG_TEMP) &&
+                          !isArgSymbol(otherSym));
+        bool sameScope = (scope == otherScope);
+
+        // Is one in the other's no-alias scope list?
+        bool otherScopeInCall = false;
+        bool scopeInOtherCall = false;
+
+        bool first;
+        first = true;
+        for_actuals(actual, call) {
+          if (!first) {
+            Symbol* noAliasSym = toSymExpr(actual)->symbol();
+            if (otherScope == noAliasSym)
+              otherScopeInCall = true;
+          }
+          first = false;
+        }
+        first = true;
+        for_actuals(actual, otherCall) {
+          if (!first) {
+            Symbol* noAliasSym = toSymExpr(actual)->symbol();
+            if (scope == noAliasSym)
+              scopeInOtherCall = true;
+          }
+          first = false;
+        }
+
+        // shouldn't no-alias when containing same scope
+        if (sameScope)
+          INT_ASSERT(!otherScopeInCall && !scopeInOtherCall);
+
+        // analysis should be symmetric
+        INT_ASSERT(otherScopeInCall == scopeInOtherCall);
+
+        // symTemp otherSymTemp
+        if (otherScopeInCall || scopeInOtherCall)
+          if (developer || (!symTemp && !otherTemp))
+            printf("  %s no alias %s\n", sym->name, otherSym->name);
+      }
+    }
+  }
+}
+
+
+static
 void addNoAliasSetsInFn(FnSymbol* fn) {
   std::map<Symbol*, CallExpr*> noAliasCallsForSymbol;
 
@@ -124,7 +243,7 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
   collectDefExprs(fn, defs);
   for_vector(DefExpr, def, defs) {
     if (VarSymbol* var = toVarSymbol(def->sym)) {
-      if (!var->isRef() && isNonAliasingArrayType(var->type)) {
+      if (shouldAddNoAliasSetForVariable(var)) {
         // Add a no-aliasing call
         SET_LINENO(def);
         CallExpr* c = new CallExpr(PRIM_NO_ALIAS_SET, new SymExpr(var));
@@ -139,10 +258,11 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
   // unless one of the types is an array view.
   for_vector(DefExpr, def, defs) {
     if (VarSymbol* var = toVarSymbol(def->sym)) {
-      if (!var->isRef() && isNonAliasingArrayType(var->type)) {
+      if (shouldAddNoAliasSetForVariable(var)) {
         // Enhance the no-aliasing call
         SET_LINENO(def);
         CallExpr* c = noAliasCallsForSymbol[var];
+        INT_ASSERT(c);
         // For every other thing in the map, add an entry
         //  - includes local array value variables
         //  - includes array arguments
@@ -223,6 +343,13 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
         toSym->defPoint->insertAfter(c);
         noAliasCallsForSymbol[toSym] = c;
       }
+    }
+  }
+
+  if (fReportAliases) {
+    if (fn->getModule()->modTag == MOD_USER) {
+      printf("noAliasSets alias report for function %s:\n", fn->name);
+      reportAliases(noAliasCallsForSymbol);
     }
   }
 }
