@@ -30,15 +30,15 @@
 #include "chpl-comm-diags.h"
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
+#include "chpl-exit.h"
+#include "chpl-gen-includes.h"
 #include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chpl-mem-sys.h"
 // #include "chpl-cache.h"
+#include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
-#include "chpl-gen-includes.h"
-#include "chplsys.h"
-#include "chplexit.h"
 #include "error.h"
 
 // Don't get warning macros for chpl_comm_get etc

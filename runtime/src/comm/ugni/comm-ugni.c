@@ -58,7 +58,7 @@
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
-#include "chplexit.h"
+#include "chpl-exit.h"
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-sys.h"
@@ -3836,7 +3836,7 @@ void chpl_comm_pre_task_exit(int all)
   // Here we would like to shut everything down and free up all the
   // memory we've allocated.  But we can't do that yet, because we may
   // do a little bit more communication in support of internal things
-  // like memory reporting.  (See the shutdown logic in chplexit.c.)
+  // like memory reporting.  (See the shutdown logic in chpl-exit.c.)
   // So, although at this point we can't do remote forks because we've
   // stopped the polling thread, we still have to wait until later to
   // get rid of the rest of our uGNI infrastructure and free all our

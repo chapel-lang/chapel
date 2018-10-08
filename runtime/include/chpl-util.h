@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _chpl_align_h_
-#define _chpl_align_h_
+#ifndef _chpl_util_h_
+#define _chpl_util_h_
 
 #include <inttypes.h>
 #include <string.h>
@@ -53,4 +53,4 @@ unsigned char* round_up_to_mask_ptr(unsigned char* p, uintptr_t mask)
 }
 
 
-#endif // _chpl_align_h_
+#endif // _chpl_util_h_

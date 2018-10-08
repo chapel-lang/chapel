@@ -20,6 +20,8 @@
 #ifndef _CHPL_INIT_H_
 #define _CHPL_INIT_H_
 
+#include "chpltypes.h"
+
 #ifndef LAUNCHER
 
 void chpl_rt_preUserCodeHook(void);

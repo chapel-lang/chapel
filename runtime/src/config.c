@@ -21,7 +21,7 @@
 
 #include "arg.h"
 #include "chplcgfns.h"
-#include "chplexit.h"
+#include "chpl-exit.h"
 #include "chplio.h"
 #include "chpl-mem.h"
 #include "chpl-linefile-support.h"

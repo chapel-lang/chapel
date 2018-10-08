@@ -22,10 +22,9 @@
 //
 
 #include "chplrt.h"
-#include "chpl_rt_utils_static.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
-#include "chplexit.h"
+#include "chpl-exit.h"
 #include "chpl-locale-model.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"

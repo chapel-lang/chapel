@@ -22,7 +22,7 @@
 #include "arg.h"
 #include "chplcast.h"
 #include "chplcgfns.h"
-#include "chplexit.h"
+#include "chpl-exit.h"
 #include "chplio.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"

@@ -38,7 +38,7 @@ def main():
     ret = look_for_calls.check_for_calls(alloc_funcs, runtime_dir, alloc_exclude_paths)
 
     # Check runtime for exit calls
-    exit_exclude_paths = ['error.h', 'chplexit.c', 'chplexit.h']
+    exit_exclude_paths = ['error.h', 'chpl-exit.c', 'chpl-exit.h']
     exit_funcs = look_for_calls.get_exit_funcs()
     ret = ret or look_for_calls.check_for_calls(exit_funcs, runtime_dir, exit_exclude_paths)
     return ret

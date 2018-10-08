@@ -18,9 +18,9 @@
  */
 
 #include "chplrt.h"
-#include "chpl_rt_utils_static.h"
 #include "chpl-init.h"
-#include "chplexit.h"
+#include "chpl-exit.h"
+#include "chpl-tasks.h"
 #include "config.h"
 
 int main(int argc, char* argv[]) {

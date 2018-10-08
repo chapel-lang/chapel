@@ -40,7 +40,7 @@
 #include "chplcgfns.h"
 #include "chpl-comm.h"
 #include "chpl-env.h"
-#include "chplexit.h"
+#include "chpl-exit.h"
 #include "chpl-locale-model.h"
 #include "chpl-mem.h"
 #include "chplsys.h"

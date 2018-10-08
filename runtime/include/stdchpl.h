@@ -43,7 +43,7 @@
 #include "chpl-bitops.h"
 #include "chpl-comm.h"
 #include "chpldirent.h"
-#include "chplexit.h"
+#include "chpl-exit.h"
 #include "chpl-external-array.h"
 #include "chpl-file-utils.h"
 #include <chplfp.h>
