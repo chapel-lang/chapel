@@ -132,21 +132,7 @@ var urand: [0..#nran] vec3,
 // The program's entry point
 //
 proc main() {
-
-  //
-  // STEP 0: Compile and run the code as it is.  You should get a
-  // small black rectangular image in the resulting image.bmp file.
-  // View the image file in your favorite image viewer.
-  //
-  // STEP 1: Declare an array (and optionally a domain for it) here to
-  // describe the image of pixels to render.  The array should store
-  // 'yres' x 'xres' pixel elements of type 'pixelType' (a
-  // configurable type alias defined above).
-  //
-  // STEP 2: Pass your array into the writeImage() call towards the
-  // end of this routine, replacing the 'dummy' array (which is
-  // provided simply to make the code compile out of the box).
-  //
+  var pixels: [0..#yres, 0..#xres] pixelType;
 
   loadScene();
   initRands();
@@ -155,37 +141,32 @@ proc main() {
   var t: Timer;
   t.start();
 
+  use DynamicIters;  // Bring in the dynamic load-balancing iterators
+
+  forall (y, x) in dynamic(pixels.domain) do
+    pixels[y, x] = computePixel(y, x);
+
   //
-  // STEP 3: Within these timer calls, fill in your array's values via
-  // calls to 'computePixel()' (pre-defined below).  Start by trying a
-  // serial loop.  Do you get a reasonable image?  Use the --scene config
-  // const to try reading in a more interesting sccene like 'sphfract'.
+  // TIMINGS (gathered on my Mac, not particularly scientifically):
   //
-  // Step 4: Try experimenting with setting other configuration
-  // options on the command-line to see if things work as expected.
-  // See the list of options by searching on 'config' above, or by
-  // running the program with the --usage flag.
+  // default scene
+  // =============
+  //              normal       --fast
+  //             ---------    ---------
+  // serial:     ~3.1  sec    ~0.38 sec
+  // parallel:   ~0.95 sec    ~0.12 sec
+  // promoted:   ~0.99 sec    ~0.12 sec
+  // dynamic:    ~0.82 sec    ~0.10 sec
   //
-  // Step 5: Time how long the rendering takes.  Recompile with the
-  // --fast flag (intended for performance runs, once a program is
-  // working) and re-time.  Note these timings for future reference.
-  //
-  // STEP 6: Now try switching to a parallel loop and make sure your
-  // code still produces the right image.  What kind of speed
-  // improvements do you see over the serial loop?  With or without
-  // --fast?
-  //
-  // STEP 7 (optional): As a challenge, can you write this computation
-  // with promotion?  Does it affect the speed at all?
-  //
-  // STEP 8 (optional): Ray tracing can be notoriously poorly load
-  // balanced since some pixels result in far more ray bounces than
-  // others.  Can you achieve a speed improvement by applying the
-  // dynamic() iterator from the DynamicIters module:
-  // https://chapel-lang.org/docs/modules/standard/DynamicIters.html
-  // Do you need to create a more load-imbalanced scene (or increase
-  // the degree of parallelism?) in order to see a noticeable
-  // difference?
+  // sphfract scene
+  // ==============
+  //              normal       --fast
+  //             ---------    ---------
+  // serial:     ~65.3 sec    ~5.1 sec
+  // parallel:   ~19.8 sec    ~1.5 sec
+  // promoted:   ~20.3 sec    ~1.4 sec
+  // dynamic:    ~19.9 sec    ~1.5 sec
+  
   //
   // STEP 9 (intended for the afternoon session): Make your array a
   // distributed array (if you implemented STEP 8, note that the
@@ -202,8 +183,7 @@ proc main() {
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
 
-  var dummy: [1..100, 1..200] int;
-  writeImage(image, imgType, dummy);
+  writeImage(image, imgType, pixels);
 }
 
 //

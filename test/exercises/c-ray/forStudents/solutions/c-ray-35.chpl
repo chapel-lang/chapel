@@ -132,21 +132,7 @@ var urand: [0..#nran] vec3,
 // The program's entry point
 //
 proc main() {
-
-  //
-  // STEP 0: Compile and run the code as it is.  You should get a
-  // small black rectangular image in the resulting image.bmp file.
-  // View the image file in your favorite image viewer.
-  //
-  // STEP 1: Declare an array (and optionally a domain for it) here to
-  // describe the image of pixels to render.  The array should store
-  // 'yres' x 'xres' pixel elements of type 'pixelType' (a
-  // configurable type alias defined above).
-  //
-  // STEP 2: Pass your array into the writeImage() call towards the
-  // end of this routine, replacing the 'dummy' array (which is
-  // provided simply to make the code compile out of the box).
-  //
+  var pixels: [0..#yres, 0..#xres] pixelType;
 
   loadScene();
   initRands();
@@ -155,20 +141,43 @@ proc main() {
   var t: Timer;
   t.start();
 
+  for (y, x) in pixels.domain do
+    pixels[y, x] = computePixel(y, x);
+
+  /* OR, using a 2-tuple index 'yx'
+
+  for yx in pixels.domain do
+    pixels[yx] = computePixel(yx);
+
+  */
+
+  /* OR, using zippered iteration with either of the above:
+
+  for ((y,x), p) in zip(pixels.domain, pixels) do
+    p = computePixel(y, x);
+
+  OR:
+
+  for (yx, p) in zip(pixels.domain, pixels) do
+    p = computePixel(yx);
+
+  */
+
   //
-  // STEP 3: Within these timer calls, fill in your array's values via
-  // calls to 'computePixel()' (pre-defined below).  Start by trying a
-  // serial loop.  Do you get a reasonable image?  Use the --scene config
-  // const to try reading in a more interesting sccene like 'sphfract'.
+  // TIMINGS (gathered on my Mac, not particularly scientifically):
   //
-  // Step 4: Try experimenting with setting other configuration
-  // options on the command-line to see if things work as expected.
-  // See the list of options by searching on 'config' above, or by
-  // running the program with the --usage flag.
+  // default scene
+  // =============
+  //              normal       --fast
+  //             ---------    ---------
+  // serial:     ~3.1  sec    ~0.38 sec
   //
-  // Step 5: Time how long the rendering takes.  Recompile with the
-  // --fast flag (intended for performance runs, once a program is
-  // working) and re-time.  Note these timings for future reference.
+  // sphfract scene
+  // ==============
+  //              normal       --fast
+  //             ---------    ---------
+  // serial:     ~65.3 sec    ~5.1 sec
+  
   //
   // STEP 6: Now try switching to a parallel loop and make sure your
   // code still produces the right image.  What kind of speed
@@ -202,8 +211,7 @@ proc main() {
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
 
-  var dummy: [1..100, 1..200] int;
-  writeImage(image, imgType, dummy);
+  writeImage(image, imgType, pixels);
 }
 
 //

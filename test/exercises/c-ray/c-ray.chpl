@@ -11,7 +11,7 @@
  *     or:     ./c-ray --scene myscene --image myimage.ppm  # override defaults
  *     or:     cat scene | ./c-ray --scene stdin --image stdout > out.ppm
  *     or:     ./c-ray --usage  # for further options
- *   enjoy:    view image.bmp (with any standard image browser)
+ *   enjoy:    open image.bmp (with any standard image browser)
  * ----------------------------------------------------------------------------
  * Scene file format:
  *   # sphere (many)
@@ -47,23 +47,23 @@ config const size = "800x600",            // size of output image
              seed = 0;                    // if non-zero, use as the RNG 'seed'
 
 //
-// Process config-dependent constants.
+// Establish config-dependent constants.
 //
 if usage then printUsage();
 
-const ssize = size.partition("x");        // split size string into components
+const ssize = size.partition("x");    // split size string into 3-tuple (W,x,H)
 
-if (ssize.size != 3 || ssize(2) != "x") then
+if (ssize.size != 3 || ssize[2] != "x") then
   halt("--s option requires argument to be in WxH format");
 
-const xres = ssize(1):int,                // x- and y-resolutions of the image
-      yres = ssize(3):int;
+const xres = ssize[1]:int,                // x- and y-resolutions of the image
+      yres = ssize[3]:int;
 
 const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
       halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
 
 //
-// set params for dimensions
+// set params representing dimensions symbolically
 //
 param X = 1,          // names for accessing vec3 elements
       Y = 2,
@@ -108,9 +108,9 @@ record camera {
 //
 // variables used to store the scene
 //
-var objects: [1..0] owned sphere,  // the scene's spheres; start with an empty array
-    lights: [1..0] vec3,     // the scene's lights;  "
-    cam: camera;             // camera (there will be only one)
+var objects: [1..0] owned sphere,  // the scene's spheres; initially empty
+    lights: [1..0] vec3,           // the scene's lights;  "
+    cam: camera;                   // camera (there will be only one)
 
 //
 // arrays for storing random numbers
@@ -130,18 +130,18 @@ use BlockDist, CyclicDist;
 // The program's entry point
 //
 proc main() {
+  const pixinds = {0..#yres, 0..#xres},
+        pixdom = if !multilocale then pixinds
+              else (if blockdist then pixinds dmapped Block(pixinds)
+                                 else pixinds dmapped Cyclic((0,0)));
+  var pixels: [pixdom] pixelType;
+
   loadScene();
   initRands();
 
   use Time;      // Bring in timers to measure the rendering time
   var t: Timer;
   t.start();
-
-  const pixinds = {0..#yres, 0..#xres},
-        pixdom = if !multilocale then pixinds
-              else (if blockdist then pixinds dmapped Block(pixinds)
-                                 else pixinds dmapped Cyclic((0,0)));
-  var pixels: [pixdom] pixelType;
 
   // render a frame of xsz x ysz pixels into the provided framebuffer
   if loopStyle == 0 {
@@ -514,9 +514,9 @@ proc initRands() {
   } else {
     use Random;
 
-    var rng = new RandomStream(seed=(if seed then seed
-                                             else SeedGenerator.currentTime),
-                               eltType=real);
+    var rng = new owned RandomStream(seed=(if seed then seed
+                                                   else SeedGenerator.currentTime),
+                                     eltType=real);
     for u in urand do
       u(X) = rng.getNext() - 0.5;
     for u in urand do

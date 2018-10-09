@@ -107,7 +107,7 @@ record spoint {     // a surface point
       dist: real;     // parametric distance of intersection along the ray
 }
 
-record camera {
+record cameraType {
   var pos,            // position
       targ: vec3,     // target
       fov: real;      // field-of-view
@@ -116,9 +116,6 @@ record camera {
 //
 // variables used to store the scene
 //
-var objects: [1..0] owned sphere,  // the scene's spheres; initially empty
-    lights: [1..0] vec3,           // the scene's lights;  "
-    cam: camera;                   // camera (there will be only one)
 
 //
 // arrays for storing random numbers
@@ -132,69 +129,70 @@ var urand: [0..#nran] vec3,
 // The program's entry point
 //
 proc main() {
+ use BlockDist;
 
-  //
-  // STEP 0: Compile and run the code as it is.  You should get a
-  // small black rectangular image in the resulting image.bmp file.
-  // View the image file in your favorite image viewer.
-  //
-  // STEP 1: Declare an array (and optionally a domain for it) here to
-  // describe the image of pixels to render.  The array should store
-  // 'yres' x 'xres' pixel elements of type 'pixelType' (a
-  // configurable type alias defined above).
-  //
-  // STEP 2: Pass your array into the writeImage() call towards the
-  // end of this routine, replacing the 'dummy' array (which is
-  // provided simply to make the code compile out of the box).
-  //
+  const imageSize = {0..#yres, 0..#xres};
+  const pixelPlane = imageSize dmapped Block(imageSize);
+  var pixels: [pixelPlane] pixelType;
 
-  loadScene();
+  var (lights, camera, objects) = loadScene();
   initRands();
 
   use Time;      // Bring in timers to measure the rendering time
   var t: Timer;
   t.start();
 
+  use DynamicIters;  // Bring in the dynamic load-balancing iterators
+
+  forall (y, x) in pixelPlane {
+    // Uncomment to see where each iteration is running:
+    //    writeln("Computing pixel ", (y,x), " on locale ", here.id);
+    pixels[y, x] = computePixel(y, x, lights, camera, objects);
+  }
+
   //
-  // STEP 3: Within these timer calls, fill in your array's values via
-  // calls to 'computePixel()' (pre-defined below).  Start by trying a
-  // serial loop.  Do you get a reasonable image?  Use the --scene config
-  // const to try reading in a more interesting sccene like 'sphfract'.
+  // TIMINGS (gathered on my Mac, not particularly scientifically):
   //
-  // Step 4: Try experimenting with setting other configuration
-  // options on the command-line to see if things work as expected.
-  // See the list of options by searching on 'config' above, or by
-  // running the program with the --usage flag.
+  // default scene
+  // =============
+  //              normal       --fast
+  //             ---------    ---------
+  // serial:     ~3.1  sec    ~0.38 sec
+  // parallel:   ~0.95 sec    ~0.12 sec
+  // promoted:   ~0.99 sec    ~0.12 sec
+  // dynamic:    ~0.82 sec    ~0.10 sec
+  // block/loc:  ~0.96 sec    ~0.12 sec
+  // block-nl1:               ~0.22 sec
   //
-  // Step 5: Time how long the rendering takes.  Recompile with the
-  // --fast flag (intended for performance runs, once a program is
-  // working) and re-time.  Note these timings for future reference.
+  // sphfract scene
+  // ==============
+  //              normal       --fast
+  //             ---------    ---------
+  // serial:     ~65.3 sec    ~5.1 sec
+  // parallel:   ~19.8 sec    ~1.5 sec
+  // promoted:   ~20.3 sec    ~1.4 sec
+  // dynamic:    ~19.9 sec    ~1.5 sec
+  // block/loc:  ~20.2 sec    ~1.6 sec
+  // block/-nl1:              ~3.6 sec
+  
   //
-  // STEP 6: Now try switching to a parallel loop and make sure your
-  // code still produces the right image.  What kind of speed
-  // improvements do you see over the serial loop?  With or without
-  // --fast?
+  // STEP 9 (intended for the afternoon session): Starting from STEP 6
+  // or 7, make your array a distributed array by making its domain a
+  // distributed domain.  Do you see overhead relative to your
+  // previous timings due to the additional complexity of distributed
+  // arrays?  If you're working from a laptop, with CHPL_COMM set (or
+  // defaulted) to 'none', how does the performance compare if you
+  // compile with '--no-local' (as though targeting multiple locales)?
   //
-  // STEP 7 (optional): As a challenge, can you write this computation
-  // with promotion?  Does it affect the speed at all?
+  // STEP 10: Get set up to run using multiple locales with an account
+  // on a Cray or cluster, or by setting up to run in an
+  // oversubscribed manner on your laptop as described here:
   //
-  // STEP 8 (optional): Ray tracing can be notoriously poorly load
-  // balanced since some pixels result in far more ray bounces than
-  // others.  Can you achieve a speed improvement by applying the
-  // dynamic() iterator from the DynamicIters module:
-  // https://chapel-lang.org/docs/modules/standard/DynamicIters.html
-  // Do you need to create a more load-imbalanced scene (or increase
-  // the degree of parallelism?) in order to see a noticeable
-  // difference?
+  //   https://chapel-lang.org/docs/platforms/udp.html
   //
-  // STEP 9 (intended for the afternoon session): Make your array a
-  // distributed array (if you implemented STEP 8, note that the
-  // dynamic iterators don't yet work well with distributed
-  // domains/arrays).  Do you see overhead relative to your previous
-  // timings due to the additional complexity of distributed arrays?
-  // Run using multiple locales using the provided Cray accounts.  Do
-  // you see speedups as you increase the number of locales?
-  //
+  // How could you modify your program to "prove" to yourself that
+  // different iterations of the parallel loop are running on
+  // different locales?  Does performance improve as you add locales?
 
   const rendTime = t.elapsed();
 
@@ -202,8 +200,7 @@ proc main() {
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
 
-  var dummy: [1..100, 1..200] int;
-  writeImage(image, imgType, dummy);
+  writeImage(image, imgType, pixels);
 }
 
 //
@@ -216,15 +213,15 @@ proc main() {
 // colors of the subpixels of each pixel, then pack the color and put
 // it into the framebuffer.
 //
-proc computePixel(yx: 2*int): pixelType {
-  return computePixel((...yx));  // expand the tuple 'yx'
+proc computePixel(yx: 2*int, lights, camera, objects): pixelType {
+  return computePixel((...yx), lights, camera, objects);  // expand the tuple 'yx'
 }
 
-proc computePixel(y: int, x: int): pixelType {
+proc computePixel(y: int, x: int, lights, camera, objects): pixelType {
   var rgb: vec3;
 
   for s in 0..#samples do
-    rgb += trace(getPrimaryRay((x,y), s));
+    rgb += trace(getPrimaryRay((x,y), s, camera), lights, objects);
 
   rgb *= rcpSamples;
 
@@ -239,8 +236,8 @@ proc computePixel(y: int, x: int): pixelType {
 //
 // determine the primary ray corresponding to the specified pixel xy
 //
-proc getPrimaryRay(xy, sample) {
-  var k = cam.targ - cam.pos;
+proc getPrimaryRay(xy, sample, camera) {
+  var k = camera.targ - camera.pos;
   normalize(k);
   const i = crossProduct((0.0, 1.0, 0.0), k),
         j = crossProduct(k, i);
@@ -254,7 +251,7 @@ proc getPrimaryRay(xy, sample) {
 
   const dir = pRay.dir + pRay.orig;
 
-  pRay.orig = dot(pRay.orig, m) + cam.pos;
+  pRay.orig = dot(pRay.orig, m) + camera.pos;
   pRay.dir = dot(dir, m) + pRay.orig;
 
   return pRay;
@@ -264,7 +261,7 @@ proc getPrimaryRay(xy, sample) {
 // trace a ray through the scene recursively (the recursion happens
 // through shade() to calculate reflection rays if necessary).
 //
-proc trace(ray, depth=0): vec3 {
+proc trace(ray, lights, objects, depth=0): vec3 {
   // if we've reached the recursion limit, bail out
   if depth >= maxRayDepth then
     return (0.0, 0.0, 0.0);
@@ -283,7 +280,7 @@ proc trace(ray, depth=0): vec3 {
 
   // and perform shading calculations as needed by calling shade()
   if nearestObj then
-    return shade(nearestObj, nearestSp, depth);
+    return shade(nearestObj, nearestSp, depth, lights, objects);
   else
     return (0.0, 0.0, 0.0);
 }
@@ -368,7 +365,7 @@ proc raySphere(sph, ray) {
 // Calculates direct illumination with the phong reflectance model.
 // Also handles reflections by calling trace again, if necessary.
 //
-proc shade(obj, sp, depth) {
+proc shade(obj, sp, depth, lights, objects) {
   var col: vec3;
 
   // for all lights...
@@ -404,7 +401,7 @@ proc shade(obj, sp, depth) {
   // direction.
   if obj.mat.refl > 0.0 {
     const rRay = new ray(orig = sp.pos, dir = sp.vref * rayMagnitude),
-          rcol = trace(rRay, depth + 1);
+          rcol = trace(rRay, lights, objects, depth + 1);
     col += rcol * obj.mat.refl;
   }
 
@@ -444,6 +441,10 @@ proc printUsage() {
 // Load the scene from an extremely simple scene description file
 //
 proc loadScene() {
+  var objects: [1..0] owned sphere,  // the scene's spheres; initially empty
+      lights: [1..0] vec3,           // the scene's lights;  "
+      camera: cameraType;            // camera (there will be only one)
+
   //
   // Support a built-in scene in order to avoid file input, should it
   // be problematic in any way.
@@ -459,8 +460,9 @@ proc loadScene() {
                                  new material((1.0, 0.5, 0.1), 60.0, 0.7)));
     lights.push_back((-50, 100, -50));
     lights.push_back((40, 40, 150));
-    cam = new camera((0, 6, -17), (0, -1, 0), 45);
-    return;
+    camera = new cameraType((0, 6, -17), (0, -1, 0), 45);
+
+    return (lights, camera, objects);
   }
 
   //
@@ -511,9 +513,9 @@ proc loadScene() {
 
     // if this is the camera, store it
     if inType == 'c' {
-      cam.pos = pos;
-      cam.targ = col;
-      cam.fov = rad;
+      camera.pos = pos;
+      camera.targ = col;
+      camera.fov = rad;
       continue;
     }
 
@@ -530,6 +532,7 @@ proc loadScene() {
       exit(1);
     }
   }
+  return (lights, camera, objects);
 }
 
 //

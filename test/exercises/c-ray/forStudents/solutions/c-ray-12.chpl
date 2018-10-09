@@ -132,21 +132,7 @@ var urand: [0..#nran] vec3,
 // The program's entry point
 //
 proc main() {
-
-  //
-  // STEP 0: Compile and run the code as it is.  You should get a
-  // small black rectangular image in the resulting image.bmp file.
-  // View the image file in your favorite image viewer.
-  //
-  // STEP 1: Declare an array (and optionally a domain for it) here to
-  // describe the image of pixels to render.  The array should store
-  // 'yres' x 'xres' pixel elements of type 'pixelType' (a
-  // configurable type alias defined above).
-  //
-  // STEP 2: Pass your array into the writeImage() call towards the
-  // end of this routine, replacing the 'dummy' array (which is
-  // provided simply to make the code compile out of the box).
-  //
+  var pixels: [0..#yres, 0..#xres] pixelType;
 
   loadScene();
   initRands();
@@ -202,8 +188,7 @@ proc main() {
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
 
-  var dummy: [1..100, 1..200] int;
-  writeImage(image, imgType, dummy);
+  writeImage(image, imgType, pixels);
 }
 
 //
