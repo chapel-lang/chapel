@@ -796,18 +796,35 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
       for (it = aliases.begin(); it != aliases.end(); ++it) {
         Symbol* sym = it->first;
         std::set<Symbol*> &others = it->second;
-        for_set(Symbol, other, others) {
+        for_set(Symbol, otherSym, others) {
 
           // Don't report each pair more than once
-          if (sym->id < other->id) {
+          if (sym->id < otherSym->id) {
             bool symTemp = (sym->hasFlag(FLAG_TEMP) && !isArgSymbol(sym));
-            bool otherTemp = (other->hasFlag(FLAG_TEMP) && !isArgSymbol(other));
+            bool otherTemp = (otherSym->hasFlag(FLAG_TEMP) && !isArgSymbol(otherSym));
+	    const char* symName = NULL;
+	    const char* otherSymName = NULL;
 
-            if (developer || (!symTemp && !otherTemp))
-              printf("  %s may alias %s\n", sym->name, other->name);
+	    if (developer) {
+	      symName = sym->name;
+	      otherSymName = otherSym->name;
+	    } else {
+	      if (sym->hasFlag(FLAG_RETARG))
+		symName = "return argument";
+	      else if (!symTemp)
+		symName = sym->name;
+
+	      if (otherSym->hasFlag(FLAG_RETARG))
+		otherSymName = "return argument";
+	      else if (!otherTemp)
+		otherSymName = otherSym->name;
+	    }
+
+            if (symName && otherSymName)
+              printf("  %s may alias %s\n", symName, otherSymName);
 
             // But make sure (a,b) is also recorded as (b,a)
-            INT_ASSERT(aliases[other].count(sym) > 0);
+            INT_ASSERT(aliases[otherSym].count(sym) > 0);
           }
         }
       }
