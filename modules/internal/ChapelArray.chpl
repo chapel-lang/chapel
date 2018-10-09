@@ -339,16 +339,9 @@ module ChapelArray {
       return new _array(nullPid, value);
   }
 
-  /* This method is commented out because using it would have
-     implications for alias analysis of arrays.
-  pragma "no copy return"
-  proc _getArray(value) {
-    if _isPrivatized(value) then
-      return new _array(_newPrivatizedClass(value), value, _unowned=true);
-    else
-      return new _array(nullPid, value, _unowned=true);
-  }
-  */
+  // It is intentional that there is no _getArray.
+  // It would have implications for alias analysis
+  // of arrays.
 
   pragma "unsafe"
   proc _newDomain(value) {
