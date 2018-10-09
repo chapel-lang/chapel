@@ -5,7 +5,7 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_arch, chpl_compiler, chpl_locale_model, chpl_platform
+import chpl_arch, chpl_compiler, chpl_locale_model, chpl_platform, chpl_libmode
 from chpl_home_utils import get_chpl_home, get_chpl_third_party, using_chapel_module
 from utils import error, memoize, run_command
 
@@ -15,10 +15,13 @@ from utils import error, memoize, run_command
 #
 @memoize
 def default_uniq_cfg_path():
-    return '{0}-{1}-{2}'.format(chpl_platform.get('target'),
-                                chpl_compiler.get('target'),
-                                chpl_arch.get('target', map_to_compiler=True,
-                                         get_lcd=using_chapel_module()).arch)
+    arch_val = chpl_arch.get('target',
+                             map_to_compiler=True,
+                             get_lcd=using_chapel_module()).arch
+    return '{0}-{1}-{2}-{3}'.format(chpl_platform.get('target'),
+                                    chpl_compiler.get('target'),
+                                    arch_val,
+                                    chpl_libmode.get())
 
 #
 # Returns the path to the packages install directory
