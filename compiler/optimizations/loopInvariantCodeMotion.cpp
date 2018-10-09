@@ -725,7 +725,7 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
   //Compute the aliases for the function's parameters. Any args passed by ref
   //can potentially alias each other.
   // TODO: pull out this alias analysis
-  // TODO: use results of addNoAliasSets
+  // TODO: use results of computeNoAliasSets
   for_alist(formal1, fn->formals) {
     for_alist(formal2, fn->formals) {
       if(formal1 == formal2)
@@ -1259,7 +1259,7 @@ static long licmFn(FnSymbol* fn) {
 void loopInvariantCodeMotion(void) {
 
   // compute array element alias sets
-  addNoAliasSets();
+  computeNoAliasSets();
 
   if(fNoLoopInvariantCodeMotion) {
     return;

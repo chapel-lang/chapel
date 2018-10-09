@@ -1,5 +1,4 @@
 /*
- * Copyright 2017 Advanced Micro Devices, Inc.
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -609,7 +608,7 @@ bool addAliases(std::map<Symbol*, BitVec> &map,
 }
 
 
-void addNoAliasSets() {
+void computeNoAliasSets() {
 
   if (fNoInterproceduralAliasAnalysis)
     return;
