@@ -111,6 +111,19 @@ bool shouldAddNoAliasSetForVariable(Symbol* var) {
 }
 
 static
+bool isUsedInArrayGet(Symbol* sym) {
+  for_SymbolSymExprs(se, sym) {
+    if (CallExpr* call = toCallExpr(se->parentExpr))
+      if (call->isPrimitive(PRIM_ARRAY_GET) ||
+          call->isPrimitive(PRIM_ARRAY_GET_VALUE))
+        if (se == call->get(1))
+          return true;
+  }
+
+  return false;
+}
+
+static
 void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
   std::map<Symbol*, CallExpr*>::iterator it;
   std::map<Symbol*, CallExpr*>::iterator it2;
@@ -179,6 +192,10 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
         bool symTemp = (sym->hasFlag(FLAG_TEMP) && !isArgSymbol(sym));
         bool otherTemp = (otherSym->hasFlag(FLAG_TEMP) &&
                           !isArgSymbol(otherSym));
+
+        bool symInArrayGet = isUsedInArrayGet(sym);
+        bool otherInArrayGet = isUsedInArrayGet(otherSym);
+
         bool sameScope = (scope == otherScope);
 
         // Is one in the other's no-alias scope list?
@@ -213,9 +230,36 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
         INT_ASSERT(otherScopeInCall == scopeInOtherCall);
 
         // symTemp otherSymTemp
-        if (otherScopeInCall || scopeInOtherCall)
-          if (developer || (!symTemp && !otherTemp))
-            printf("  %s no alias %s\n", sym->name, otherSym->name);
+        if (otherScopeInCall || scopeInOtherCall) {
+          const char* symName = NULL;
+          const char* otherSymName = NULL;
+
+          if (developer) {
+            symName = sym->name;
+            otherSymName = otherSym->name;
+          } else {
+            if (sym->hasFlag(FLAG_RETARG))
+              symName = "return argument";
+            else if (!symTemp)
+              symName = sym->name;
+
+            if (otherSym->hasFlag(FLAG_RETARG))
+              otherSymName = "return argument";
+            else if (!otherTemp)
+              otherSymName = otherSym->name;
+
+            if (symName == NULL && otherSymName == NULL)
+              if (symInArrayGet && otherInArrayGet)
+                symName = otherSymName = "<array get pointer>";
+          }
+
+          if (symName && otherSymName) {
+            if (sym->isRef() && otherSym->isRef())
+              printf("  %s no ref alias %s\n", symName, otherSymName);
+            else
+              printf("  %s no alias %s\n", symName, otherSymName);
+          }
+        }
       }
     }
   }
