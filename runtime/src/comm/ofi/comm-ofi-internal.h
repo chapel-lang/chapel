@@ -24,11 +24,16 @@
 #ifndef _comm_ofi_internal_h_
 #define _comm_ofi_internal_h_
 
+#include "chpl-mem.h"
+#include "chpl-mem-sys.h"
+#include "error.h"
+
 #include <rdma/fabric.h>
 #include <rdma/fi_cm.h>
 #include <rdma/fi_domain.h>
 #include <rdma/fi_endpoint.h>
 #include <rdma/fi_errno.h>
+#include <stdint.h>
 
 
 //
@@ -57,6 +62,7 @@ uint64_t chpl_comm_ofi_dbg_level;
 #define DBG_ACK              0x100000UL
 #define DBG_COMMPROGRESS     0x200000UL
 #define DBG_MR              0x1000000UL
+#define DBG_HUGEPAGES       0x8000000UL
 #define DBG_FAB            0x10000000UL
 #define DBG_FABSALL        0x20000000UL
 #define DBG_FABFAIL        0x40000000UL
@@ -126,6 +132,15 @@ char* chpl_comm_ofi_dbg_prefix(void);
 
 #define CHK_SYS_CALLOC(p, n) CHK_SYS_CALLOC_SZ(p, n, sizeof(*(p)))
 
+#define CHK_SYS_MEMALIGN(p, a, s)                                       \
+    do {                                                                \
+      if ((p = sys_memalign((a), (s))) == NULL) {                       \
+        chpl_internal_error_v("sys_memalign(%#zx, %#zx): "              \
+                              "out of memory",                          \
+                              (size_t) (a), (size_t) (s));              \
+      }                                                                 \
+    } while (0)
+
 #define CHPL_CALLOC_SZ(p, n, s)                                         \
   do {                                                                  \
     p = chpl_mem_calloc((n), (s), CHPL_RT_MD_COMM_UTIL, 0, 0);          \
@@ -149,6 +164,14 @@ void chpl_comm_ofi_oob_init(void);
 void chpl_comm_ofi_oob_fini(void);
 void chpl_comm_ofi_oob_barrier(void);
 void chpl_comm_ofi_oob_allgather(void*, void*, int);
+
+
+//
+// Hugepage interface
+//
+
+void* chpl_comm_ofi_hp_get_huge_pages(size_t);
+size_t chpl_comm_ofi_hp_gethugepagesize(void);
 
 
 //
