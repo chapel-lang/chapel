@@ -138,6 +138,7 @@ extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
 extern bool fPrintUnusedFns;
 extern bool fPrintUnusedInternalFns;
+extern bool fRegionVectorizer;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;

@@ -70,8 +70,8 @@ echo Checking out compiler-rt $BRANCH
 git clone $CLONEARGS https://git.llvm.org/git/compiler-rt.git llvm/projects/compiler-rt
 
 echo Applying Chapel patches to LLVM
-patch -p0 < llvm-4.0.1-BasicAliasAnalysis-patch.txt
-patch -p0 < llvm-4.0.1-ValueTracking-patch.txt
+patch -p0 < llvm-6.0.0-BasicAliasAnalysis-patch.txt
+patch -p0 < llvm-6.0.0-ValueTracking-patch.txt
 
 
 fi
