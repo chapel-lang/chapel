@@ -802,23 +802,23 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
           if (sym->id < otherSym->id) {
             bool symTemp = (sym->hasFlag(FLAG_TEMP) && !isArgSymbol(sym));
             bool otherTemp = (otherSym->hasFlag(FLAG_TEMP) && !isArgSymbol(otherSym));
-	    const char* symName = NULL;
-	    const char* otherSymName = NULL;
+            const char* symName = NULL;
+            const char* otherSymName = NULL;
 
-	    if (developer) {
-	      symName = sym->name;
-	      otherSymName = otherSym->name;
-	    } else {
-	      if (sym->hasFlag(FLAG_RETARG))
-		symName = "return argument";
-	      else if (!symTemp)
-		symName = sym->name;
+            if (developer) {
+              symName = sym->name;
+              otherSymName = otherSym->name;
+            } else {
+              if (sym->hasFlag(FLAG_RETARG))
+                symName = "return argument";
+              else if (!symTemp)
+                symName = sym->name;
 
-	      if (otherSym->hasFlag(FLAG_RETARG))
-		otherSymName = "return argument";
-	      else if (!otherTemp)
-		otherSymName = otherSym->name;
-	    }
+              if (otherSym->hasFlag(FLAG_RETARG))
+                otherSymName = "return argument";
+              else if (!otherTemp)
+                otherSymName = otherSym->name;
+            }
 
             if (symName && otherSymName)
               printf("  %s may alias %s\n", symName, otherSymName);
