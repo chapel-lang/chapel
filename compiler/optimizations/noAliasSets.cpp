@@ -43,11 +43,39 @@
 #include <utility>
 
 
-/* TODO: describe at a high level
+/* This file includes analysis that determines non-trivial
+   no-alias relationships. It is particularly focused on:
+     * reference arguments
+     * arrays
 
-   tests: array of classes (element pointers may alias)
-          printing out alias information in many cases
+   The work here consists of two basic parts. First, there is an
+   interprocedural reference alias analysis that follows
+   an algorithm described in
+   Allen & Kennedy "Optimizing Compilers for Modern Architectures".
+   This analysis determines when reference arguments may not alias
+   each other. It concludes by storing the result in PRIM_NO_ALIAS_SET
+   calls at the start of each function where it determined something.
+
+   Second, there is a per-function portion that starts from the above
+   PRIM_NO_ALIAS_SET calls and propagates these, in the case of an
+   array. If two arrays come from separate (value) variables or from
+   references don't alias, this portion infers that the following also
+   don't alias each other (for different arrays):
+     - access to array header fields
+     - result of dsiAccess
+     - result of PRIM_ARRAY_GET
+   These properties are not encoded otherwise (e.g. in TBAA metadata)
+   and are specific to Chapel. It's unlikely that generic alias analysis
+   would determine these not to alias.
+
+   This second portion adds PRIM_NO_ALIAS_SET for local value variables
+   and PRIM_COPIES_NO_ALIAS_SET calls to indicate when a value has the
+   same no-alias annotations as another value.
+
+   Initially these primitives are only used in --llvm code generation
+   in order to generate !alias.scope and !noalias metadata.
  */
+
 
 static
 void addNoAliasSetForFormal(ArgSymbol* arg,
@@ -586,10 +614,10 @@ void addNoAliasSets() {
   if (fNoInterproceduralAliasAnalysis)
     return;
 
-  // TODO: retArg and in
+  // TODO: retArg and in --
   //  these never alias any other arguments.
 
-  // Inspired by Kennedy "Optimizing Compilers for Modern Architectures" p 571
+  // See Allen & Kennedy "Optimizing Compilers for Modern Architectures" p 571
 
   // These are the main results of this function
 
