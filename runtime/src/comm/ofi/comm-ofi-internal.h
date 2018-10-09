@@ -127,6 +127,15 @@ char* chpl_comm_ofi_dbg_prefix(void);
 
 #define CHK_SYS_CALLOC(p, n) CHK_SYS_CALLOC_SZ(p, n, sizeof(*(p)))
 
+#define CHK_SYS_POSIX_MEMALIGN(p, a, s)                                 \
+    do {                                                                \
+        if ((posix_memalign(&(p), (a), (s))) != 0) {                    \
+          chpl_internal_error_v("posix_memalign(%#zx, %#zx): "          \
+                                "out of memory",                        \
+                                (size_t) (a), (size_t) (s));            \
+      }                                                                 \
+    } while (0)
+
 #define CHPL_CALLOC_SZ(p, n, s)                                         \
   do {                                                                  \
     p = chpl_mem_calloc((n), (s), CHPL_RT_MD_COMM_UTIL, 0, 0);          \

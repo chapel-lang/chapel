@@ -24,21 +24,22 @@
 #include "chplrt.h"
 #include "chpl-env-gen.h"
 
+// #include "chpl-cache.h"
 #include "chpl-comm.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-comm-diags.h"
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
+#include "chplexit.h"
+#include "chpl-format.h"
+#include "chpl-gen-includes.h"
 #include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chpl-mem-sys.h"
-// #include "chpl-cache.h"
+#include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
-#include "chpl-gen-includes.h"
-#include "chplsys.h"
-#include "chplexit.h"
 #include "error.h"
 
 // Don't get warning macros for chpl_comm_get etc
@@ -792,27 +793,33 @@ void init_fixedHeap(void) {
   // TODO: differentiate and do the right thing for XE.
   //
   size_t page_size;
+  chpl_bool have_hugepages;
   size_t size;
   void* start;
 
   if ((page_size = get_hugepageSize()) == 0) {
     chpl_warning_explicit("not using hugepages may reduce performance",
                           __LINE__, __FILE__);
+    page_size = chpl_getSysPageSize();
+    have_hugepages = false;
+  } else {
+    have_hugepages = true;
   }
 
   if ((size = chpl_comm_getenvMaxHeapSize()) == 0) {
     size = (size_t) 16 << 30;  // TODO: different for XE?
   }
 
+  size = ALIGN_UP(size, page_size);
+
+
   //
   // The heap is supposed to be of fixed size and on hugepages.  Set
   // it up.
   //
-#if 0 // TODO
   size_t nic_mem_map_limit;
   size_t nic_max_mem;
   size_t max_heap_size;
-#endif
 
   //
   // Considering the data size we'll register, compute the maximum
@@ -820,19 +827,21 @@ void init_fixedHeap(void) {
   // TLB.  Except on Gemini only, aim for only 95% of what will fit
   // because there we'll get an error if we go over.
   //
-#if 0
+#if 0 // TODO: assume Aries; allows deeper testing
   if (nic_type == GNI_DEVICE_GEMINI) {
     const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
     nic_max_mem = nic_max_pages * page_size;
     nic_mem_map_limit = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
   } else {
+#endif
     const size_t nic_TLB_cache_pages = 512; // not publicly defined
     nic_max_mem = nic_TLB_cache_pages * page_size;
     nic_mem_map_limit = nic_max_mem;
+#if 0 // TODO: assume Aries; allows deeper testing
   }
 #endif
 
-#if 0 // TODO
+#if 0 // TODO: assume Aries; allows deeper testing
   {
     uint64_t  addr;
     uint64_t  len;
@@ -847,6 +856,8 @@ void init_fixedHeap(void) {
     else
       max_heap_size = nic_mem_map_limit - data_size;
   }
+#else
+  max_heap_size = nic_mem_map_limit;
 #endif
 
   //
@@ -860,7 +871,7 @@ void init_fixedHeap(void) {
   if (size > size_phys)
     size = size_phys;
   
-#if 0 // TODO
+#if 0 // TODO: assume Aries; allows deeper testing
   //
   // On Gemini-based systems, if necessary reduce the heap size until
   // we can fit all the registered pages in the NIC TLB.  Otherwise,
@@ -870,9 +881,9 @@ void init_fixedHeap(void) {
   if (nic_type == GNI_DEVICE_GEMINI && size > max_heap_size) {
     if (chpl_nodeID == 0) {
       char buf1[20], buf2[20], buf3[20], msg[200];
-      printf_KMG_size_t(buf1, sizeof(buf1), nic_max_mem);
-      printf_KMG_size_t(buf2, sizeof(buf2), page_size);
-      printf_KMG_double(buf3, sizeof(buf3), max_heap_size);
+      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
+      chpl_snprintf_KMG_f(buf3, sizeof(buf3), max_heap_size);
       (void) snprintf(msg, sizeof(msg),
                       "Gemini TLB can cover %s with %s pages; heap "
                       "reduced to %s to fit",
@@ -889,8 +900,6 @@ void init_fixedHeap(void) {
   // Work our way down from the starting size in (roughly) 5% steps
   // until we can actually get that much from the system.
   //
-  size = ALIGN_DN(size, page_size);
-
   size_t decrement;
 
   if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
@@ -900,31 +909,31 @@ void init_fixedHeap(void) {
   size += decrement;
   do {
     size -= decrement;
-
-    start = chpl_comm_ofi_hp_get_huge_pages(size);
-
-    DBG_PRINTF(DBG_HUGEPAGES, "HUGEPAGES get_huge_pages(%#zx) returned %p",
-               size, start);
+    DBG_PRINTF(DBG_HUGEPAGES, "try allocating fixed heap, size %#zx", size);
+    if (have_hugepages) {
+      start = chpl_comm_ofi_hp_get_huge_pages(size);
+    } else {
+      CHK_SYS_POSIX_MEMALIGN(start, page_size, size);
+    }
   } while (start == NULL && size > decrement);
 
   if (start == NULL)
-    chpl_error("cannot initialize heap: cannot get hugepage space", 0, 0);
+    chpl_error("cannot initialize heap: cannot get memory", 0, 0);
 
-  DBG_PRINTF(DBG_HUGEPAGES, "HUGEPAGES allocated heap start=%p size=%#zx\n",
-             start, size);
+  DBG_PRINTF(DBG_MR, "fixed heap on %spages, start=%p size=%#zx\n",
+             have_hugepages ? "huge" : "regular ", start, size);
 
-#if 0 // TODO
   //
   // On Aries-based systems, warn if the size is larger than what will
   // fit in the TLB cache.  But since that may reduce performance but
   // won't affect function, don't reduce the size to fit.
   //
-  if (nic_type == GNI_DEVICE_ARIES && size > max_heap_size) {
+  if (/*nic_type == GNI_DEVICE_ARIES &&*/ size > max_heap_size) { // TODO: assume Aries; allows deeper testing
     if (chpl_nodeID == 0) {
       char buf1[20], buf2[20], buf3[20], msg[200];
-      printf_KMG_size_t(buf1, sizeof(buf1), nic_max_mem);
-      printf_KMG_size_t(buf2, sizeof(buf2), page_size);
-      printf_KMG_double(buf3, sizeof(buf3), size);
+      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
+      chpl_snprintf_KMG_f(buf3, sizeof(buf3), size);
       (void) snprintf(msg, sizeof(msg),
                       "Aries TLB cache can cover %s with %s pages; "
                       "with %s heap,\n"
@@ -933,7 +942,6 @@ void init_fixedHeap(void) {
       chpl_warning(msg, 0, 0);
     }
   }
-#endif
 
   fixedHeapSize  = size;
   fixedHeapStart = start;
