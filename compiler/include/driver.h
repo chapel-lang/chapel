@@ -40,6 +40,7 @@ extern bool fNoGlobalConstOpt;
 extern bool fNoFastFollowers;
 extern bool fNoInlineIterators;
 extern bool fNoLoopInvariantCodeMotion;
+extern bool fNoInterproceduralAliasAnalysis;
 extern bool fNoInline;
 extern bool fNoLiveAnalysis;
 extern bool fNoFormalDomainChecks;

@@ -582,6 +582,10 @@ bool addAliases(std::map<Symbol*, BitVec> &map,
 
 
 void addNoAliasSets() {
+
+  if (fNoInterproceduralAliasAnalysis)
+    return;
+
   // TODO: retArg and in
   //  these never alias any other arguments.
 
@@ -702,7 +706,9 @@ void addNoAliasSets() {
   }
 
   // Now use the binding graph to compute the transitive closure
-
+  // This is inspired by the algorithm in Kennedy but uses a simpler
+  // fixed-point strategy. If it becomes a performance issue looking
+  // back at that book should allow a more efficient version.
   bool changed;
   bool lastiter;
   int niters = 1;

@@ -155,6 +155,7 @@ static bool fNoWarnDomainLiteral = true;
 static bool fNoWarnTupleIteration = true;
 
 bool fNoLoopInvariantCodeMotion = false;
+bool fNoInterproceduralAliasAnalysis = true;
 bool fNoChecks = false;
 bool fNoInline = false;
 bool fNoPrivatization = false;
@@ -666,6 +667,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoDeadCodeElimination = false;
   fNoFastFollowers = false;
   fNoLoopInvariantCodeMotion= false;
+  fNoInterproceduralAliasAnalysis = false;
   fNoInline = false;
   fNoInlineIterators = false;
   fNoOptimizeRangeIteration = false;
@@ -712,6 +714,8 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoDeadCodeElimination = true;      // --no-dead-code-elimination
   fNoFastFollowers = true;            // --no-fast-followers
   fNoLoopInvariantCodeMotion = true;  // --no-loop-invariant-code-motion
+                                      // --no-interprocedural-alias-analysis
+  fNoInterproceduralAliasAnalysis = true;
   fNoInline = true;                   // --no-inline
   fNoInlineIterators = true;          // --no-inline-iterators
   fNoLiveAnalysis = true;             // --no-live-analysis
@@ -1000,6 +1004,7 @@ static ArgumentDescription arg_desc[] = {
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  DRIVER_ARG_DEBUGGERS,
+ {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "N", &fLifetimeChecking, NULL, NULL},
  {"compile-time-nil-checking", ' ', NULL, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_NO_COMPILE_TIME_NIL_CHECKS", NULL},
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
