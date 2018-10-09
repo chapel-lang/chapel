@@ -24,11 +24,16 @@
 #ifndef _comm_ofi_internal_h_
 #define _comm_ofi_internal_h_
 
+#include "chpl-mem.h"
+#include "chpl-mem-sys.h"
+#include "error.h"
+
 #include <rdma/fabric.h>
 #include <rdma/fi_cm.h>
 #include <rdma/fi_domain.h>
 #include <rdma/fi_endpoint.h>
 #include <rdma/fi_errno.h>
+#include <stdint.h>
 
 
 //
@@ -127,12 +132,12 @@ char* chpl_comm_ofi_dbg_prefix(void);
 
 #define CHK_SYS_CALLOC(p, n) CHK_SYS_CALLOC_SZ(p, n, sizeof(*(p)))
 
-#define CHK_SYS_POSIX_MEMALIGN(p, a, s)                                 \
+#define CHK_SYS_MEMALIGN(p, a, s)                                       \
     do {                                                                \
-        if ((posix_memalign(&(p), (a), (s))) != 0) {                    \
-          chpl_internal_error_v("posix_memalign(%#zx, %#zx): "          \
-                                "out of memory",                        \
-                                (size_t) (a), (size_t) (s));            \
+      if ((p = sys_memalign((a), (s))) == NULL) {                       \
+        chpl_internal_error_v("sys_memalign(%#zx, %#zx): "              \
+                              "out of memory",                          \
+                              (size_t) (a), (size_t) (s));              \
       }                                                                 \
     } while (0)
 

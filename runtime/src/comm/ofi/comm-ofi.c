@@ -913,7 +913,7 @@ void init_fixedHeap(void) {
     if (have_hugepages) {
       start = chpl_comm_ofi_hp_get_huge_pages(size);
     } else {
-      CHK_SYS_POSIX_MEMALIGN(start, page_size, size);
+      CHK_SYS_MEMALIGN(start, page_size, size);
     }
   } while (start == NULL && size > decrement);
 
