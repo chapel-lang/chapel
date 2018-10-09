@@ -77,7 +77,7 @@ clobber: clean
 	rm -f chplvis
 
 install: chplvis
-	cp chplvis $(CHPL_MAKE_HOME)/bin/$(CHPL_MAKE_HOST_PLATFORM)
+	cp chplvis $(CHPL_BIN_DIR)
 
 # Dependencies
 chplvis.cxx: chplvis.h  # This rule to get fluid run only once
