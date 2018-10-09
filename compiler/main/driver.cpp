@@ -154,7 +154,7 @@ static bool fNoWarnSpecial = true;
 static bool fNoWarnDomainLiteral = true;
 static bool fNoWarnTupleIteration = true;
 
-bool fNoloopInvariantCodeMotion = false;
+bool fNoLoopInvariantCodeMotion = false;
 bool fNoChecks = false;
 bool fNoInline = false;
 bool fNoPrivatization = false;
@@ -665,7 +665,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoCopyPropagation = false;
   fNoDeadCodeElimination = false;
   fNoFastFollowers = false;
-  fNoloopInvariantCodeMotion= false;
+  fNoLoopInvariantCodeMotion= false;
   fNoInline = false;
   fNoInlineIterators = false;
   fNoOptimizeRangeIteration = false;
@@ -711,7 +711,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoCopyPropagation = true;          // --no-copy-propagation
   fNoDeadCodeElimination = true;      // --no-dead-code-elimination
   fNoFastFollowers = true;            // --no-fast-followers
-  fNoloopInvariantCodeMotion = true;  // --no-loop-invariant-code-motion
+  fNoLoopInvariantCodeMotion = true;  // --no-loop-invariant-code-motion
   fNoInline = true;                   // --no-inline
   fNoInlineIterators = true;          // --no-inline-iterators
   fNoLiveAnalysis = true;             // --no-live-analysis
@@ -850,7 +850,7 @@ static ArgumentDescription arg_desc[] = {
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"inline-iterators-yield-limit", ' ', "<limit>", "Limit number of yields permitted in inlined iterators", "I", &inline_iter_yield_limit, "CHPL_INLINE_ITER_YIELD_LIMIT", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
- {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoloopInvariantCodeMotion, NULL, NULL},
+ {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoLoopInvariantCodeMotion, NULL, NULL},
  {"optimize-range-iteration", ' ', NULL, "Enable [disable] optimization of iteration over anonymous ranges", "n", &fNoOptimizeRangeIteration, "CHPL_DISABLE_OPTIMIZE_RANGE_ITERATION", NULL},
  {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
  {"optimize-on-clauses", ' ', NULL, "Enable [disable] optimization of on clauses", "n", &fNoOptimizeOnClauses, "CHPL_DISABLE_OPTIMIZE_ON_CLAUSES", NULL},

@@ -39,7 +39,7 @@ extern bool fNoDeadCodeElimination;
 extern bool fNoGlobalConstOpt;
 extern bool fNoFastFollowers;
 extern bool fNoInlineIterators;
-extern bool fNoloopInvariantCodeMotion;
+extern bool fNoLoopInvariantCodeMotion;
 extern bool fNoInline;
 extern bool fNoLiveAnalysis;
 extern bool fNoFormalDomainChecks;

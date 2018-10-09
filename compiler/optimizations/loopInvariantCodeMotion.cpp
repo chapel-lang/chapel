@@ -1244,7 +1244,7 @@ void loopInvariantCodeMotion(void) {
   // compute array element alias sets
   addNoAliasSets();
 
-  if(fNoloopInvariantCodeMotion) {
+  if(fNoLoopInvariantCodeMotion) {
     return;
   }
 
