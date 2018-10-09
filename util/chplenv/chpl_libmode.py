@@ -8,8 +8,6 @@ sys.path.insert(0, os.path.abspath(chplenv_dir))
 import overrides
 from utils import memoize
 
-
-
 @memoize
 def get():
     libmode_val = overrides.get('CHPL_LIBMODE')
@@ -19,8 +17,8 @@ def get():
 
 
 def _main():
-    hwloc_val = get()
-    sys.stdout.write("{0}\n".format(hwloc_val))
+    libmode_val = get()
+    sys.stdout.write("{0}\n".format(libmode_val))
 
 
 if __name__ == '__main__':
