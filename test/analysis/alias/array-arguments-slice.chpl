@@ -1,14 +1,11 @@
 config const n = 10;
 
 proc main() {
-  var A: [1..10] int = 1;
+  var A: [1..10] int;
+  A = 1;
 
-  callTest(A, A);
+  test(A, A[1..2]);
   writeln(A);
-}
-
-proc callTest(a, b) {
-  test(a, b);
 }
 
 proc test(a, b) {
