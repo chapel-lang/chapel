@@ -376,6 +376,7 @@ static void fsDestructureWhenSingleIdxVar(ForallStmt* fs, AList& fIterVars,
 
   VarSymbol* idxUser = new VarSymbol(index->unresolved);
   idxUser->addFlag(FLAG_INDEX_VAR);
+  idxUser->addFlag(FLAG_INSERT_AUTO_DESTROY);
   DefExpr* idxDef = new DefExpr(idxUser);
   fs->loopBody()->insertAtHead(idxDef);
   idxDef->insertAfter("'move'(%S,%E)", idxUser, bt);
