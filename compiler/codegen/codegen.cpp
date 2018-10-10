@@ -37,6 +37,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "view.h"
 #include "virtualDispatch.h"
 
 #ifdef HAVE_LLVM
