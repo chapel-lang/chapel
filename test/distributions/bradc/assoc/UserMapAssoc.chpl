@@ -487,7 +487,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   proc setup() {
-    for localeIdx in dist.targetLocDom do
+    coforall localeIdx in dist.targetLocDom do
       on dist.targetLocales(localeIdx) do
         if (locDoms(localeIdx) == nil) then
           locDoms(localeIdx) = new unmanaged LocUserMapAssocDom(idxType=idxType,
@@ -510,7 +510,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   proc dsiDestroyDom() {
-    for localeIdx in dist.targetLocDom do
+    coforall localeIdx in dist.targetLocDom do
       on dist.targetLocales(localeIdx) do
         delete locDoms(localeIdx);
   }
