@@ -941,12 +941,14 @@ void computeNoAliasSets() {
         formalIdx++;
       }
       if (f3 != NULL && f4 != NULL) {
-
-        INT_ASSERT(f3Idx < f4Idx);
+        // compute normalized index pair (idx3 < idx4)
+        int idx3 = f3Idx < f4Idx ? f3Idx : f4Idx;
+        int idx4 = f3Idx < f4Idx ? f4Idx : f3Idx;
+        INT_ASSERT(idx3 < idx4);
 
         // add the pair to fpairs
         bool added = addAlias(fpairs, nFormalPairs,
-                              q, maxFormals*f3Idx + f4Idx);
+                              q, maxFormals*idx3 + idx4);
         if (added) {
           worklist.push(std::make_pair(f3, f4));
         }
