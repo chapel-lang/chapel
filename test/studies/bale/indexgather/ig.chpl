@@ -47,7 +47,7 @@ proc main() {
   forall i in D2 {
     ref LHS = tmp.localAccess[i];
     ref RHS = A[rindex.localAccess[i]];
-    __primitive("chpl_comm_get", LHS, RHS.locale.id, RHS, numBytes(int));
+    __primitive("chpl_comm_buff_get", LHS, RHS.locale.id, RHS, numBytes(int));
     //tmp.localAccess[i] = A[rindex.localAccess[i]];
   }
 
