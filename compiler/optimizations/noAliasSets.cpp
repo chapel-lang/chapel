@@ -75,6 +75,8 @@
    in order to generate !alias.scope and !noalias metadata.
  */
 
+#define MAX_ANALYZED_FORMALS_PER_FUNCTION 100
+
 
 static
 void addNoAliasSetForFormal(ArgSymbol* arg,
@@ -787,14 +789,32 @@ void computeNoAliasSets() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     int nFormals = fn->numFormals();
     if (nFormals > maxFormals) {
-      maxFormals = nFormals;
+      // If there are too many formals, don't do anything
+      if (nFormals >= MAX_ANALYZED_FORMALS_PER_FUNCTION) {
+        int i = 1;
+        bool anyRefs = false;
+        for_formals(fnFormal, fn) {
+          if (i >= MAX_ANALYZED_FORMALS_PER_FUNCTION &&
+              isRefFormal(fnFormal)) {
+            anyRefs = true;
+            formalsAliasingAnything.insert(fnFormal);
+          }
+          i++;
+        }
+        if (developer && anyRefs) {
+          USR_WARN(fn, "Optimization inhibited due to many formal parameters");
+        }
+        maxFormals = MAX_ANALYZED_FORMALS_PER_FUNCTION;
+      } else {
+        maxFormals = nFormals;
+      }
     }
   }
   maxFormals++; // Add 1 so we can count formals from 1
 
-  if (maxFormals > 100) {
+  if (maxFormals > 500) {
     USR_WARN("Too many formal parameters! Optimization is inhibited");
-    maxFormals = 100;
+    maxFormals = 500;
     return;
   }
 
@@ -836,9 +856,14 @@ void computeNoAliasSets() {
                     // The same actual was passed in positions
                     // formalIdx1 and formalIdx2
 
-                    // add the pair to fpairs
-                    addAlias(fpairs, nFormalPairs,
-                             fn, maxFormals*formalIdx1 + formalIdx2);
+                    if (formalIdx1 < maxFormals && formalIdx2 < maxFormals) {
+                      // add the pair to fpairs
+                      addAlias(fpairs, nFormalPairs,
+                               fn, maxFormals*formalIdx1 + formalIdx2);
+                    } else {
+                      INT_ASSERT(maxFormals >=
+                          MAX_ANALYZED_FORMALS_PER_FUNCTION);
+                    }
 
                     // add the pair to the worklist
                     worklist.push(std::make_pair(fnFormal1, fnFormal2));
