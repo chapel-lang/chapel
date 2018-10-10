@@ -1,0 +1,7 @@
+#!/bin/bash
+
+make
+
+./testCallChapel >> $2
+
+make clean

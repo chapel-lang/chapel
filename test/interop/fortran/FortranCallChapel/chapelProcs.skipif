@@ -1,0 +1,12 @@
+#!/bin/bash
+
+launcher=`$CHPL_HOME/util/chplenv/chpl_launcher.py`
+
+`which gfortran 2>&1 >/dev/null`
+gfortranFound=$?
+
+if [[ $gfortranFound == 0 && $launcher == "none" ]] ; then
+  echo 0
+else
+  echo 1
+fi
