@@ -126,8 +126,8 @@ static int codegen_tmp = 1;
 *                                                                           *
 ************************************* | ************************************/
 
-static void addNoAliasMetadata(GenRet &ret, Symbol* sym) {
 #ifdef HAVE_LLVM
+static void addNoAliasMetadata(GenRet &ret, Symbol* sym) {
   GenInfo* info = gGenInfo;
   if (info->cfile == NULL) {
     // add no-alias information if it's in our map
@@ -136,8 +136,8 @@ static void addNoAliasMetadata(GenRet &ret, Symbol* sym) {
     if (info->noAliasLists.count(sym) > 0)
       ret.noalias = info->noAliasLists[sym];
   }
-#endif
 }
+#endif
 
 GenRet SymExpr::codegen() {
   GenInfo* info = gGenInfo;
