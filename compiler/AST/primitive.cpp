@@ -722,6 +722,7 @@ initPrimitive() {
 
   // Direct calls to the Chapel comm layer
   prim_def(PRIM_CHPL_COMM_GET, "chpl_comm_get", returnInfoVoid, true, true);
+  prim_def(PRIM_CHPL_COMM_BUFF_GET, "chpl_comm_buff_get", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT, "chpl_comm_put", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_ARRAY_GET, "chpl_comm_array_get", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_ARRAY_PUT, "chpl_comm_array_put", returnInfoVoid, true, true);

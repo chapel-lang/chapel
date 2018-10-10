@@ -4425,7 +4425,9 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     TypeSymbol* dt;
     bool isget = true;
 
-    if (call->primitive->tag == PRIM_CHPL_COMM_GET ||
+    if (call->primitive->tag == PRIM_CHPL_COMM_BUFF_GET) {
+      fn = "chpl_comm_buff_get";
+    } else if (call->primitive->tag == PRIM_CHPL_COMM_GET ||
         call->primitive->tag == PRIM_CHPL_COMM_ARRAY_GET) {
       fn = "chpl_gen_comm_get";
     } else {
@@ -4538,6 +4540,9 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     }
 }
 DEFINE_PRIM(PRIM_CHPL_COMM_GET) {
+  codegenPutGet(call, ret);
+}
+DEFINE_PRIM(PRIM_CHPL_COMM_BUFF_GET) {
   codegenPutGet(call, ret);
 }
 DEFINE_PRIM(PRIM_CHPL_COMM_PUT) {

@@ -239,6 +239,7 @@ classifyPrimitive(CallExpr *call) {
     return FAST_NOT_LOCAL;
 
   case PRIM_CHPL_COMM_GET:
+  case PRIM_CHPL_COMM_BUFF_GET:
   case PRIM_CHPL_COMM_PUT:
   case PRIM_CHPL_COMM_ARRAY_GET:
   case PRIM_CHPL_COMM_ARRAY_PUT:
