@@ -1282,9 +1282,6 @@ static void setupModule()
   } else if (ffloatOpt == 0) {
     // Target default floating point optimization
     targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Standard;
-    targetOptions.UnsafeFPMath = 1; // e.g. FSIN instruction
-    targetOptions.NoTrappingFPMath = 1;
-    targetOptions.NoSignedZerosFPMath = 1;
   } else if (ffloatOpt == -1) {
     // --ieee-float
     // Should this set targetOptions.HonorSignDependentRoundingFPMathOption ?
@@ -1502,14 +1499,9 @@ void prepareCodegenLLVM()
   } else if (ffloatOpt == 0) {
     // default
     // use a reasonable level of optimization
-    FM.setAllowReciprocal();
 #if HAVE_LLVM_VER >= 50
     FM.setAllowContract(true);
 #endif
-#if HAVE_LLVM_VER >= 60
-    FM.setApproxFunc();
-#endif
-    FM.setNoSignedZeros();
   } else if (ffloatOpt == -1) {
     // --ieee-float
 #if HAVE_LLVM_VER >= 50
