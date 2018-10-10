@@ -1510,6 +1510,7 @@ static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
 static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
 static void      buff_amo_init(void);
+static void      buff_get_init(void);
 static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                     gni_fma_cmd_type_t, mem_region_t*);
 static void      amo_add_real32_cpu_cmpxchg(void*, void*, void*);
@@ -2022,6 +2023,7 @@ void chpl_comm_post_task_init(void)
   rf_done_init();
   amo_res_init();
   buff_amo_init();
+  buff_get_init();
 
   //
   // Create all the communication domains, including their GNI NIC
@@ -5457,20 +5459,53 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
 }
 
-static atomic_bool amo_init_lock;
-static atomic_uint_least32_t amo_thread_counter;
 
-// Max number of threads that can do buffered atomics
-#define MAX_BUFF_AMO_THREADS 1024
+// Max number of threads that can do buffered gets
+#define MAX_BUFF_GET_THREADS 1024
+
+static int* get_vi_p[MAX_BUFF_GET_THREADS];
+static atomic_bool* get_lock_p[MAX_BUFF_GET_THREADS];
+
+// pointers to thread local buffered AMO argument buffers
+static void** get_src_addr_vp[MAX_BUFF_GET_THREADS];
+static void** get_tgt_addr_vp[MAX_BUFF_GET_THREADS];
+static c_nodeid_t* get_locale_vp[MAX_BUFF_GET_THREADS];
+static size_t* get_size_vp[MAX_BUFF_GET_THREADS];
+static mem_region_t** get_local_mr_vp[MAX_BUFF_GET_THREADS];
+static mem_region_t** get_remote_mr_vp[MAX_BUFF_GET_THREADS];
+
+// buffered AMO initialization lock and thread counter
+static atomic_bool get_init_lock;
+static atomic_uint_least32_t get_thread_counter;
+
+static
+void buff_get_init(void) {
+  atomic_init_bool(&get_init_lock, false);
+  atomic_init_uint_least32_t(&get_thread_counter, 0);
+}
+
+void chpl_comm_get_buff_flush() {
+  uint32_t sz, i;
+  sz = atomic_load_uint_least32_t(&get_thread_counter);
+  for(i=0; i<sz; i++) {
+    if (*get_vi_p[i] != 0) {
+      while (atomic_exchange_bool(get_lock_p[i], true)) { local_yield(); }
+      if (*get_vi_p[i] != 0) {
+        do_remote_get_V(*get_vi_p[i], get_tgt_addr_vp[i], get_locale_vp[i],
+                        get_remote_mr_vp[i], get_src_addr_vp[i],
+                        get_size_vp[i], get_local_mr_vp[i]);
+        *get_vi_p[i] = 0;
+      }
+      atomic_store_bool(get_lock_p[i], false);
+    }
+  }
+}
 
 
 static
 void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
                         size_t size, drpg_may_proxy_t may_proxy)
 {
-  //do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
-  //return;
-
   mem_region_t*         local_mr;
   mem_region_t*         remote_mr;
   void*                 tgt_addr_xmit;
@@ -5497,7 +5532,6 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     return;
   }
 
-  // TODO build up lists
   // thread local index and lock
   static __thread int vi = 0;
   static __thread atomic_bool lock;
@@ -5516,51 +5550,47 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   if (init_status == 1) {
     // no-op
   } else if (init_status == -1) {
-    // TODO do nic get
-    do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
+    do_nic_get(tgt_addr, locale, remote_mr, src_addr, size, local_mr);
     return;
   } else {
     uint32_t idx;
 
     // grab initialization lock
-    while (atomic_exchange_bool(&amo_init_lock, true)) { local_yield(); }
+    while (atomic_exchange_bool(&get_init_lock, true)) { local_yield(); }
 
     // initialize the lock for this thread and figure out our index into the
-    // buffer of AMO operation pointers. If we've exceeded the buffer length,
+    // buffer of GET operation pointers. If we've exceeded the buffer length,
     // warn and do blocking operations instead
     atomic_init_bool(&lock, false);
-    idx = atomic_load_uint_least32_t(&amo_thread_counter);
-    if (idx >= MAX_BUFF_AMO_THREADS) {
-      chpl_warning("Exceeded MAX_BUFF_AMO_THREADS, buffered atomic performance degraded", 0, 0);
+    idx = atomic_load_uint_least32_t(&get_thread_counter);
+    if (idx >= MAX_BUFF_GET_THREADS) {
+      chpl_warning("Exceeded MAX_BUFF_GET_THREADS, buffered gets performance degraded", 0, 0);
       init_status = -1;
-      atomic_store_bool(&amo_init_lock, false);
+      atomic_store_bool(&get_init_lock, false);
       do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
       return;
     }
 
     // store pointers to our thread local index, lock, and buffers so
     // operations can be flushed from outside of this routine
-    // TODO 
-    //amo_vi_p[idx]         = &vi;
-    //amo_lock_p[idx]       = &lock;
-    //amo_opnd1_vp[idx]     = &opnd1_v[0];
-    //amo_locale_vp[idx]    = &locale_v[0];
-    //amo_object_vp[idx]    = &object_v[0];
-    //amo_size_vp[idx]      = &size_v[0];
-    //amo_cmd_vp[idx]       = &cmd_v[0];
-    //amo_remote_mr_vp[idx] = &remote_mr_v[0];
+    get_vi_p[idx]         = &vi;
+    get_lock_p[idx]       = &lock;
+
+    get_src_addr_vp[idx]  = &src_addr_v[0];
+    get_tgt_addr_vp[idx]  = &tgt_addr_v[0];
+    get_locale_vp[idx]    = &locale_v[0];
+    get_size_vp[idx]      = &size_v[0];
+    get_local_mr_vp[idx]  = &local_mr_v[0];
+    get_remote_mr_vp[idx] = &remote_mr_v[0];
 
     init_status = 1;
     //// actually update the thread counter (needs to be done after the buffer
     //// pointers are setup, otherwise we have a race with flushing)
-    //(void) atomic_fetch_add_uint_least32_t(&amo_thread_counter, 1);
+    (void) atomic_fetch_add_uint_least32_t(&get_thread_counter, 1);
 
     // release initialization lock
-    atomic_store_bool(&amo_init_lock, false);
+    atomic_store_bool(&get_init_lock, false);
   }
-
-  //check_nic_amo(size, object, remote_mr);
-  //PERFSTATS_INC(amo_cnt);
 
   // grab lock for this thread
   while (atomic_exchange_bool(&lock, true)) { local_yield(); }
@@ -6826,6 +6856,8 @@ void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
                         "remote address is not NIC-registered");
 }
 
+// Max number of threads that can do buffered atomics
+#define MAX_BUFF_AMO_THREADS 1024
 
 // pointers to thread local buffered AMO indexes and locks
 static int* amo_vi_p[MAX_BUFF_AMO_THREADS];
@@ -6840,6 +6872,8 @@ static gni_fma_cmd_type_t* amo_cmd_vp[MAX_BUFF_AMO_THREADS];
 static mem_region_t** amo_remote_mr_vp[MAX_BUFF_AMO_THREADS];
 
 // buffered AMO initialization lock and thread counter
+static atomic_bool amo_init_lock;
+static atomic_uint_least32_t amo_thread_counter;
 
 static
 void buff_amo_init(void) {
