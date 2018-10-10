@@ -979,6 +979,7 @@ static void addKnownWides() {
     }
     else if (call->isPrimitive(PRIM_HEAP_REGISTER_GLOBAL_VAR) ||
              call->isPrimitive(PRIM_CHPL_COMM_ARRAY_GET) ||
+             call->isPrimitive(PRIM_CHPL_COMM_BUFF_GET) ||
              call->isPrimitive(PRIM_CHPL_COMM_GET)) { // TODO: Is this necessary?
       for_actuals(actual, call) {
         if (SymExpr* se = toSymExpr(actual)) {
