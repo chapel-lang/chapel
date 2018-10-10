@@ -1496,6 +1496,10 @@ static void      do_remote_put(void*, c_nodeid_t, void*, size_t,
                                mem_region_t*, drpg_may_proxy_t);
 static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
                                  mem_region_t**, drpg_may_proxy_t);
+static void      do_remote_buff_get(void*, c_nodeid_t , void* , size_t,
+                                    drpg_may_proxy_t );
+static void      do_remote_get_V(int, void**, c_nodeid_t*, mem_region_t**,
+                                 void**, size_t*, mem_region_t**);
 static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
 static void      do_nic_get(void*, c_nodeid_t, mem_region_t*,
@@ -5285,11 +5289,11 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 }
 
+
 static
-void do_remote_get_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
-                     void** tgt_addr_v, size_t* size_v,
-                     mem_region_t** local_mr_v mem_region_t** remote_mr_v,
-                     drpg_may_proxy_t may_proxy) {
+void do_remote_get_V(int v_len,
+                     void** tgt_addr_v, c_nodeid_t* locale_v, mem_region_t** remote_mr_v,
+                     void** src_addr_v, size_t* size_v, mem_region_t** local_mr_v) {
 
   DBG_P_LP(DBGF_GETPUT, "DoRemGetV(%d) %p -> %d:%p (%#zx), proxy %c",
            v_len, src_addr_v[0], (int) locale_v[0], tgt_addr_v[0], size_v[0],
@@ -5305,15 +5309,15 @@ void do_remote_get_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
   // If there are more than we can handle at once, block them up.
   //
   while (v_len > MAX_CHAINED_GET_LEN) {
-    do_remote_put_V(MAX_CHAINED_GET_LEN, src_addr_v, locale_v, tgt_addr_v,
-                    size_v, local_mr_v, remote_mr_v, may_proxy);
+    do_remote_get_V(MAX_CHAINED_GET_LEN, tgt_addr_v, locale_v, remote_mr_v,
+                    src_addr_v, size_v, local_mr_v);
     v_len -= MAX_CHAINED_GET_LEN;
     src_addr_v += MAX_CHAINED_GET_LEN;
     locale_v += MAX_CHAINED_GET_LEN;
     tgt_addr_v += MAX_CHAINED_GET_LEN;
     size_v += MAX_CHAINED_GET_LEN;
     local_mr_v  += MAX_CHAINED_GET_LEN;
-    remote_mr_v += MAX_CHAINED_GET_LEN
+    remote_mr_v += MAX_CHAINED_GET_LEN;
   }
 
   if (v_len <= 0)
@@ -5328,12 +5332,11 @@ void do_remote_get_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
   mem_region_t* local_mr;
   mem_region_t* remote_mr;
   gni_post_descriptor_t pd;
-  gni_ct_put_post_descriptor_t pdc[MAX_CHAINED_GET_LEN - 1];
+  gni_ct_get_post_descriptor_t pdc[MAX_CHAINED_GET_LEN - 1];
 
   for (vi = 0, ci = -1; vi < v_len; vi++) {
-    local_mr = locale_mr_v[vi];
+    local_mr = local_mr_v[vi];
     remote_mr = remote_mr_v[vi];
-
 
     if (ci == -1) {
       pd.next_descr      = NULL;
@@ -5342,8 +5345,8 @@ void do_remote_get_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
       pd.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
       pd.rdma_mode       = 0;
       pd.src_cq_hndl     = 0;
-      pd.local_addr      = (uint64_t) (intptr_t) src_addr_v[vi];
-      pd.remote_addr     = (uint64_t) (intptr_t) tgt_addr_v[vi];
+      pd.local_addr      = (uint64_t) (intptr_t) tgt_addr_v[vi];
+      pd.remote_addr     = (uint64_t) (intptr_t) src_addr_v[vi];
       pd.local_mem_hndl  = local_mr->mdh;
       pd.remote_mem_hndl = remote_mr->mdh;
       pd.length          = size_v[vi];
@@ -5357,8 +5360,8 @@ void do_remote_get_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
         pdc[ci - 1].next_descr = &pdc[ci];
 
       pdc[ci].next_descr      = NULL;
-      pdc[ci].local_addr      = (uint64_t) (intptr_t) src_addr_v[vi];
-      pdc[ci].remote_addr     = (uint64_t) (intptr_t) tgt_addr_v[vi];
+      pdc[ci].local_addr      = (uint64_t) (intptr_t) tgt_addr_v[vi];
+      pdc[ci].remote_addr     = (uint64_t) (intptr_t) src_addr_v[vi];
       pdc[ci].local_mem_hndl  = local_mr->mdh;
       pdc[ci].remote_mem_hndl = remote_mr->mdh;
       pdc[ci].length          = size_v[vi];
@@ -5381,9 +5384,8 @@ void do_remote_get_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
   // TODO -- do NB gets and wait for them to complete?
   //
   for (int vi = 0; vi < v_len; vi++) {
-    // TODO 
-    do_remote_get(src_addr_v[vi], locale_v[vi], tgt_addr_v[vi], size_v[vi],
-                  (remote_mr_v == NULL) ? NULL : remote_mr_v[vi], may_proxy);
+    do_nic_get(tgt_addr_v[vi], locale_v[vi], remote_mr_v[vi],
+               src_addr_v[vi], size_v[vi], local_mr_v[vi]);
   }
 
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
@@ -5455,11 +5457,20 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
 }
 
+static atomic_bool amo_init_lock;
+static atomic_uint_least32_t amo_thread_counter;
+
+// Max number of threads that can do buffered atomics
+#define MAX_BUFF_AMO_THREADS 1024
+
 
 static
 void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
                         size_t size, drpg_may_proxy_t may_proxy)
 {
+  //do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
+  //return;
+
   mem_region_t*         local_mr;
   mem_region_t*         remote_mr;
   void*                 tgt_addr_xmit;
@@ -5481,7 +5492,7 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   remote_mr = mreg_for_remote_addr(src_addr, locale);
   local_mr = mreg_for_local_addr(tgt_addr);
   // TODO check alignment stuff like we do in do_remote_get
-  if (local_mr == NULL || emote_mr == NULL) {
+  if (local_mr == NULL || remote_mr == NULL) {
     do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
     return;
   }
@@ -5492,8 +5503,8 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   static __thread atomic_bool lock;
 
   // thread local buffers for all arguments
-  static __thread void* src_addr_v[MAX_CHAINED_GET_LEN]
-  static __thread void* tgt_addr_v[MAX_CHAINED_GET_LEN]
+  static __thread void* src_addr_v[MAX_CHAINED_GET_LEN];
+  static __thread void* tgt_addr_v[MAX_CHAINED_GET_LEN];
   static __thread c_nodeid_t locale_v[MAX_CHAINED_GET_LEN];
   static __thread size_t size_v[MAX_CHAINED_GET_LEN];
   static __thread mem_region_t* local_mr_v[MAX_CHAINED_GET_LEN];
@@ -5539,7 +5550,7 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     //amo_cmd_vp[idx]       = &cmd_v[0];
     //amo_remote_mr_vp[idx] = &remote_mr_v[0];
 
-    //init_status = 1;
+    init_status = 1;
     //// actually update the thread counter (needs to be done after the buffer
     //// pointers are setup, otherwise we have a race with flushing)
     //(void) atomic_fetch_add_uint_least32_t(&amo_thread_counter, 1);
@@ -5556,15 +5567,15 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 
   src_addr_v[vi] = src_addr;
   tgt_addr_v[vi] = tgt_addr;
-  locale_v[vi] = locale
+  locale_v[vi] = locale;
   size_v[vi] = size;
   local_mr_v[vi] = local_mr;
   remote_mr_v[vi] = remote_mr;
   vi++;
 
   // flush if buffers are full
-  if (vi == MAX_CHAINED_get_LEN) {
-    do_remote_get_V(size_v, src_addr_v, locale_v, tgt_addr_v, size_v, local_mr_v, remote_mr_v, false);
+  if (vi == MAX_CHAINED_GET_LEN) {
+    do_remote_get_V(vi, tgt_addr_v, locale_v, remote_mr_v, src_addr_v, size_v, local_mr_v);
     vi = 0;
   }
 
@@ -6816,9 +6827,6 @@ void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
 }
 
 
-// Max number of threads that can do buffered atomics
-#define MAX_BUFF_AMO_THREADS 1024
-
 // pointers to thread local buffered AMO indexes and locks
 static int* amo_vi_p[MAX_BUFF_AMO_THREADS];
 static atomic_bool* amo_lock_p[MAX_BUFF_AMO_THREADS];
@@ -6832,8 +6840,6 @@ static gni_fma_cmd_type_t* amo_cmd_vp[MAX_BUFF_AMO_THREADS];
 static mem_region_t** amo_remote_mr_vp[MAX_BUFF_AMO_THREADS];
 
 // buffered AMO initialization lock and thread counter
-static atomic_bool amo_init_lock;
-static atomic_uint_least32_t amo_thread_counter;
 
 static
 void buff_amo_init(void) {
@@ -7993,6 +7999,15 @@ int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
          pdc = pdc->next_descr, i++) {
       pdc->ep_hndl = cd->remote_eps[locale_v[i]];
       PERFSTATS_ADD(sent_bytes, pdc->length);
+    }
+  } else if (post_desc->type == GNI_POST_FMA_GET) {
+    gni_ct_get_post_descriptor_t* pdc;
+    int i;
+
+    for (pdc = post_desc->next_descr, i = 1;
+         pdc != NULL;
+         pdc = pdc->next_descr, i++) {
+      pdc->ep_hndl = cd->remote_eps[locale_v[i]];
     }
   } else if (post_desc->type == GNI_POST_AMO) {
     gni_ct_amo_post_descriptor_t* pdc;

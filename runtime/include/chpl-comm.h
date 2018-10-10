@@ -408,6 +408,10 @@ void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
                     size_t size, int32_t typeIndex,
                     int32_t commID, int ln, int32_t fn);
 
+void  chpl_comm_buff_get(void *addr, c_nodeid_t node, void* raddr,
+                    size_t size, int32_t typeIndex,
+                    int32_t commID, int ln, int32_t fn);
+
 //
 // put the number of elements pointed out by count array, with strides pointed
 // out by dststrides and srcstrides arrays. These three arrays have to be int32
