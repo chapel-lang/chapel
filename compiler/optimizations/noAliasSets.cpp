@@ -738,6 +738,21 @@ void computeNoAliasSets() {
   // This is inspired by the algorithm in Kennedy but uses a simpler
   // fixed-point strategy. If it becomes a performance issue looking
   // back at that book should allow a more efficient version.
+  // The algorithm in the book (which the code below attempts to simplify):
+  //    for each formal parameter f, clear A[f]
+  //    for each call site s
+  //      for each global g mapped to parameter f at s
+  //        A[f] = A[f] union {g}
+  //    replace every cycle in the binding graph with a single node,
+  //      reducing the graph to a directed, acyclic form
+  //    for each f in the reduced graph in topological order do
+  //      for each formal f0 where (f0, f) is in the binding graph
+  //        A[f] = A[f] union A[f0]
+  //    for each cycle in the original binding graph
+  //      let C be the reduced binding graph node for the cycle
+  //      for each f in C
+  //        A[f] = A[C]
+
   bool changed;
   bool lastiter;
   int niters = 1;
