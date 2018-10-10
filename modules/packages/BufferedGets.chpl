@@ -24,7 +24,7 @@
    buffered operation can provide a significant speedup for bulk GET operations
    that do not require strict ordering of operations:
 
-   // TODO performance example
+   .. TODO performance example
 
    It's important to be aware that buffered GET operations are not consistent
    with regular operations and updates may not be visible until the buffers are
