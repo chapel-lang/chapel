@@ -5,7 +5,6 @@ FTN=gfortran
 $FTN -c testCallChapel.f90 -fno-underscoring
 $FTN testCallChapel.o -Llib -lchapelProcs `$CHPL_HOME/util/config/compileline --libraries` -o chapelProcs -fno-underscoring
 
-echo $2
 ./chapelProcs >> $2
 
 make clean
