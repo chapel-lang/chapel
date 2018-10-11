@@ -1,24 +1,19 @@
 Data Parallel Hands-on exercise: C-ray ray tracing
 ==================================================
 
+Overview
+--------
+
 This directory contains the framework for writing a ray-tracing
 program in Chapel.  All of the ray tracing complexity that converts a
-pixel coordinate into a color value is provided to you; all you have
-to do is create an array representing the image and compute its pixel
-values.
+pixel coordinate into a color value is provided to you, as are utility
+routines that can write out BMP or PPM files.  All you have to do is
+follow the directions below to create an array representing the image
+and compute its pixel values.
 
-To get started with the project, compile 'c-ray.chpl' which is the
-Chapel source file for the ray tracer.  Running the program without
-changes should produce a black rectangular image named 'image.bmp'
-which you should be able to view in any standard image viewing
-program.  You can also create PPM files by supplying an image filename
-with the '.ppm' extension.  Running the program with --usage will
-print out its help message describing this option and others.
 
-Once you're ready to start ray tracing, browse the source code to your
-heart's content, then jump to the main() procedure where comments
-labeled STEP 0, STEP 1, STEP 2, etc. will guide you through the
-exercise.
+File List
+---------
 
 Important files in this directory are as follows:
 
@@ -42,3 +37,191 @@ CLEANFILES
 c-ray.execopts
 c-ray.good
 Image.notest
+
+
+
+Instructions
+------------
+
+which you should be able to view in any standard image viewing
+program.  You can also create PPM files by supplying an image filename
+with the '.ppm' extension.  Running the program with --usage will
+print out a help message describing this option and others.
+
+Once you're ready to start programming, browse the source code to your
+heart's content, then jump to the main() procedure where comments
+labeled STEP 0, STEP 1, STEP 2, etc. will guide you through the
+exercise.
+
+STEP 0: Compile and run the framework
+-------------------------------------
+
+* Compile 'c-ray.chpl' as it stands (e.g. 'chpl c-ray.chpl').
+
+* Run the resulting program (e.g., './c-ray').
+
+* You should get a new file 'image.bmp' containing a small black
+  rectangular image (which should be viewable using your favorite
+  image viewer).
+
+* Run the program with --usage to print out a help message describing
+  the options that will affect its behavior (most of which won't have
+  any effect until you start ray-tracing.
+
+* Browse the code as much or as little as you'd like.
+
+
+STEP 1: Declare and write your image array
+------------------------------------------
+
+* Find the first "TODO" section in the program and replace it with an
+  array declaration (and optionally a domain for the array) that
+  describes the image of pixels to render.  The array should store
+  'yres' x 'xres' pixel elements of type 'pixelType' (a configurable
+  type alias defined in the 'Image.chpl' module).
+
+  Note: graphics people (and the program's '--size' argument) describe
+  images using Width x Height where Chapel typically uses Rows x Cols,
+  which is why the program often uses (y, x) values rather than (x, y)
+  to represent this transposition.
+
+* Find the call to writeImage() at the end of main() and replace its
+  passing of the 'dummy' array with the one you created.
+
+* When you re-compile and run the program now, you should see a black
+  image whose size corresponds to the --size argument.  Try running it
+  with different values to verify this.
+
+
+STEP 2: Compute the ray tracing using a serial loop
+---------------------------------------------------
+
+* Find the second "TODO" section in the program, bracketed by timer
+  calls, and replace it with a computation of your image array's
+  values via calls to 'computePixel()' (pre-defined further down in
+  the file).  For this step, try using a serial loop.
+
+* After re-compiling and re-running, do you get a reasonable image?
+
+* Use the --scene config const to try reading in a more interesting
+  sccene like 'sphfract'.
+
+* Try experimenting with setting other configuration options on the
+  command-line to see if they work as expected.  See the list of
+  options by searching on 'config' at the top of the file, or by
+  running the program with the --usage flag.
+
+* Time how long the rendering takes.  Recompile with the --fast flag
+  (intended for performance runs, once a program is working, it will
+  turn off various execution-time checks and turn on back-end compiler
+  optimizations).  Note these timings for future reference.
+
+
+STEP 3: Compute the ray tracing using a parallel loop
+-----------------------------------------------------
+
+* Try changing your serial loop to a parallel one and make sure your
+  code still produces the right image.
+
+* What kind of speed improvements do you see over the serial loop?
+  (with or without --fast?)
+
+
+STEP 4: Compute the ray tracing using promotion
+-----------------------------------------------
+
+* Can you write the computation using promotion?  Does it affect the
+  speed at all?
+
+
+STEP 5 (optional): Try the dynamic load balancing iterator
+----------------------------------------------------------
+
+* Ray tracing can be notoriously poorly load balanced since some
+  pixels result in far more ray bounces than others.  Can you achieve
+  a speed improvement by applying the dynamic() iterator from the
+  DynamicIters module:
+
+    https://chapel-lang.org/docs/modules/standard/DynamicIters.html
+
+  Do you need to create a more load-imbalanced scene (or increase the
+  degree of parallelism?) in order to see a noticeable difference?
+
+
+**********************************************************************
+* The following steps are intended for later in the day, though      *
+* you're welcome to work ahead if you breezed through the prior steps*
+**********************************************************************
+
+
+STEP 6: Distribute the computation of the image
+-----------------------------------------------
+
+* Starting from step 3 or 4, make your array a distributed array by
+  making its domain a distributed domain.  Do you still get the
+  correct image?
+
+* Do you see additional overhead relative to your previous timings due
+  to the additional complexity of distributed arrays?
+
+* If you've been working from a laptop, you've probably been compiling
+  in '--local' mode, which is the default when CHPL_COMM=none (which
+  is the default for laptops).  If you've been working from a Cray or
+  cluster, you've likely been compiling in '--no-local' mode, which is
+  the default when CHPL_COMM!=none.  Try compiling in both '--local'
+  and '--no-local' modes to see what kind of overhead is added when
+  compiling the code for a single vs. multiple locales.
+
+
+STEP 7: Get set up to run on multiple locales
+---------------------------------------------
+
+* One way to run using multiple locales is to run on a Cray or
+  cluster.  This is also the way to (potentially) see parallel speedup
+  as you run on an increasing number of locales.
+
+* You can also set up your laptop to run multiple locales in an
+  oversubscribed manner (essentially, each locale will be a distinct
+  process running on your laptop).  The following instructions are
+  designed to help you with this:
+
+    https://chapel-lang.org/docs/platforms/udp.html
+
+  The following instructions are more generally about multi-locale
+  execution, for example on a cluster:
+
+    https://chapel-lang.org/docs/usingchapel/multilocale.html
+
+* Try running your program using two locales (or more) using the
+  '-nl'/'--numLocales' flags.
+
+  Note: Initially, you may need to reduce the image size using the
+  '--size' flag to make this step complete in a tractable amount of
+  time.
+
+* Do you see a performance improvement or slip when running on
+  multiple locales?  (note that on a laptop, the best you should be
+  able to do is break even since all of the "locales" are sharing the
+  same physical resources).
+
+* What could you do within the code to "prove" to yourself that
+  different locales are involved in computing the various pixels?
+
+* Why are things so slow when running on multiple locales?  Are you
+  able to figure this out either by (1) reasoning about the code, or
+  (2) using the CommDiagnostics module:
+
+    https://chapel-lang.org/docs/modules/standard/CommDiagnostics.html
+
+  or (3) using the 'chplvis' tool:
+
+    https://chapel-lang.org/docs/tools/chplvis/chplvis.html
+
+
+STEP 8: Make the program scale
+---------------------------------
+
+* Given the answer to the previous question (check with the
+  instructors if you need help with it), what can you do to make the
+  ray-tracing scalable?  How close can you get to linear speed-up as
+  you add locales?

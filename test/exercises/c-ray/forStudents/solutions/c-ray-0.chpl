@@ -27,11 +27,9 @@
 use Image;    // use helper module related to writing out images
 
 //
-// STUDENTS: Browse through the code below to your heart's content.
-// When you're ready to start coding, jump down to main() and read
-// through the comments labeled STEP 0, STEP 1, STEP 2, etc.  These
-// will lead you through a number of coding steps and transformations
-// that will exercise Chapel data parallel and base language features.
+// =================================================
+// Module-level constant / param / type declarations
+// =================================================
 //
 
 //
@@ -56,37 +54,58 @@ config const size = "800x600",            // size of output image
              seed = 0;                    // if non-zero, use as the RNG 'seed'
 
 //
-// Establish config-dependent constants.
+// Print the usage information, if requested.
 //
 if usage then printUsage();
 
-const ssize = size.partition("x");    // split size string into 3-tuple (W,x,H)
-
-if (ssize.size != 3 || ssize[2] != "x") then
-  halt("--s option requires argument to be in WxH format");
-
-const xres = ssize[1]:int,                // x- and y-resolutions of the image
-      yres = ssize[3]:int;
+//
+// Establish config-dependent constants.
+//
+const (xres, yres) = computeDims(size);
 
 const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
       halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
 
 //
-// set params representing dimensions symbolically
+// Set params that symbolically represent dimensions using 1-based indexing
 //
-param X = 1,          // names for accessing vec3 elements
+param X = 1,
       Y = 2,
       Z = 3,
       numdims = 3;
 
 //
-// establish types
+// Declare types used within the program
 //
-type vec3 = numdims*real;   // a 3-tuple for positions, vectors
+type vec3 = numdims*real;       // a 3-tuple for positions, vectors
 
-record ray {
-  var orig,           // origin
-      dir: vec3;      // direction
+param nran = 1024;
+
+record randNums {  // random numbers used for jittering
+  var urand: [0..#nran] vec3,
+      irand: [0..#nran] int;
+}
+
+record sceneType {
+  var lightDom = {1..0},
+      lights: [lightDom] vec3,  // a domain and array of light positions
+
+      camera: cameraType,       // the camera
+
+      objDom = {1..0},
+      objects: [objDom] sphere; // a domain and array of sphere objects
+}
+
+record cameraType {
+  var pos,            // position
+      targ: vec3,     // target
+      fov: real;      // field-of-view
+}
+
+record sphere {
+  var pos: vec3,      // position
+      rad: real,      // radius
+      mat: material;  // material
 }
 
 record material {
@@ -95,10 +114,9 @@ record material {
       refl: real;     // reflection intensity
 }
 
-record sphere {
-  var pos: vec3,      // position
-      rad: real,      // radius
-      mat: material;  // material
+record ray {
+  var orig,           // origin
+      dir: vec3;      // direction
 }
 
 record spoint {     // a surface point
@@ -108,118 +126,59 @@ record spoint {     // a surface point
       dist: real;     // parametric distance of intersection along the ray
 }
 
-record cameraType {
-  var pos,            // position
-      targ: vec3,     // target
-      fov: real;      // field-of-view
-}
-
-record sceneType {
-  var lightDom = {1..0},
-      lights: [lightDom] vec3,
-      camera: cameraType,
-      objDom = {1..0},
-      objects: [objDom] sphere;
-}
-
 //
-// arrays for storing random numbers
-//
-param nran = 1024;
-
-record randNums {
-  var urand: [0..#nran] vec3,
-      irand: [0..#nran] int;
-}  
-
-//
-// variables used to store the scene
-//
-
-
-
-//
-// The program's entry point
+// =================================
+// main(): The program's entry point
+// =================================
 //
 proc main() {
- use BlockDist;
 
-  const imageSize = {0..#yres, 0..#xres};
-  const pixelPlane = imageSize dmapped Block(imageSize);
-  var pixels: [pixelPlane] pixelType;
+  // ***************************************
+  // * TODO: Declare the image array here  *
+  // ***************************************
 
-  var scene: sceneType;
-  loadScene(scene);
+  //
+  // Set up the random numbers and scene
+  //
   var rands = initRands();
+  var scene = loadScene();
 
-  use Time;      // Bring in timers to measure the rendering time
+  //
+  // Timers to measure the rendering time
+  //
+  use Time;
   var t: Timer;
   t.start();
 
-  use CommDiagnostics;
-
-  startCommDiagnostics();
-  forall (y, x) in pixelPlane with (in scene, in rands) {
-    // Uncomment to see where each iteration is running:
-    //    writeln("Computing pixel ", (y,x), " on locale ", here.id);
-    pixels[y, x] = computePixel(y, x, scene, rands);
-  }
-  stopCommDiagnostics();
-  writeln(getCommDiagnostics());
-
-  //
-  // TIMINGS (gathered on my Mac, not particularly scientifically):
-  //
-  // default scene
-  // =============
-  //              normal       --fast
-  //             ---------    ---------
-  // serial:     ~3.1  sec    ~0.38 sec
-  // parallel:   ~0.95 sec    ~0.12 sec
-  // promoted:   ~0.99 sec    ~0.12 sec
-  // dynamic:    ~0.82 sec    ~0.10 sec
-  // block/loc:  ~0.96 sec    ~0.12 sec
-  // block-nl1:               ~0.22 sec
-  //
-  // sphfract scene
-  // ==============
-  //              normal       --fast
-  //             ---------    ---------
-  // serial:     ~65.3 sec    ~5.1 sec
-  // parallel:   ~19.8 sec    ~1.5 sec
-  // promoted:   ~20.3 sec    ~1.4 sec
-  // dynamic:    ~19.9 sec    ~1.5 sec
-  // block/loc:  ~20.2 sec    ~1.6 sec
-  // block/-nl1:              ~3.6 sec
+  // ***************************************
+  // * TODO: Compute the image pixels here *
+  // ***************************************
   
   //
-  // STEP 9 (intended for the afternoon session): Starting from STEP 6
-  // or 7, make your array a distributed array by making its domain a
-  // distributed domain.  Do you see overhead relative to your
-  // previous timings due to the additional complexity of distributed
-  // arrays?  If you're working from a laptop, with CHPL_COMM set (or
-  // defaulted) to 'none', how does the performance compare if you
-  // compile with '--no-local' (as though targeting multiple locales)?
+  // Check the timer
   //
-  // STEP 10: Get set up to run using multiple locales with an account
-  // on a Cray or cluster, or by setting up to run in an
-  // oversubscribed manner on your laptop as described here:
-  //
-  //   https://chapel-lang.org/docs/platforms/udp.html
-  //
-  // How could you modify your program to "prove" to yourself that
-  // different iterations of the parallel loop are running on
-  // different locales?  Does performance improve as you add locales?
-
   const rendTime = t.elapsed();
-
-  if !noTiming then
+  
+  //
+  // Print the elapsed time and communications to 'stderr' (just in
+  // case the user is printing the image to 'stdout').
+  //
+  if !noTiming {
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
+  }
 
-  writeImage(image, imgType, pixels);
+  //
+  // Write out the image
+  //
+  var dummy: [1..100, 1..200] int;  // a dummy array until you provide your own
+  writeImage(image, imgType, dummy);
 }
 
+//
+// ==============
+// computePixel()
+// ==============
 //
 // Given the (y, x) coordinates of a pixel, computePixel() returns the
 // color value computed for the pixel as a 'pixelType'.  Given the two
@@ -251,7 +210,13 @@ proc computePixel(y: int, x: int, scene, rands): pixelType {
 }
 
 //
-// determine the primary ray corresponding to the specified pixel xy
+// =============================
+// Helper routines for rendering
+// =============================
+//
+
+//
+// Determine the primary ray corresponding to the specified pixel xy
 //
 proc getPrimaryRay(xy, sample, camera, rands) {
   var k = camera.targ - camera.pos;
@@ -275,7 +240,7 @@ proc getPrimaryRay(xy, sample, camera, rands) {
 }
 
 //
-// trace a ray through the scene recursively (the recursion happens
+// Trace a ray through the scene recursively (the recursion happens
 // through shade() to calculate reflection rays if necessary).
 //
 proc trace(ray, scene, depth=0): vec3 {
@@ -324,7 +289,7 @@ proc getSamplePos(xy, sample, rands) {
 }
 
 //
-// compute jitter values for subsequent samples to the same pixel.
+// Compute jitter values for subsequent samples to the same pixel.
 //
 proc jitter((x, y), s, rands) {
   param mask = nran - 1;
@@ -379,9 +344,8 @@ proc raySphere(sph, ray) {
   }
 }
 
-
 //
-// Calculates direct illumination with the phong reflectance model.
+// Calculate direct illumination with the phong reflectance model.
 // Also handles reflections by calling trace again, if necessary.
 //
 proc shade(obj, sp, depth, scene) {
@@ -427,9 +391,14 @@ proc shade(obj, sp, depth, scene) {
   return col;
 }
 
+//
+// =======================
+// General helper routines
+// =======================
+//
 
 //
-// print usage information
+// Print usage information
 //
 proc printUsage() {
   writeln("Usage: c-ray [options]");
@@ -457,9 +426,61 @@ proc printUsage() {
 }
 
 //
+// Turn a "WxH" string into a 2-tuple of integers: (W, H)
+//
+proc computeDims(sizeString) {
+  const sizeTup = sizeString.partition("x"); // make into 3-tuple ("W","x","H")
+
+  if (sizeTup.size != 3 || sizeTup[2] != "x") then
+    halt("--s option requires argument to be in WxH format");
+
+  return (sizeTup[1]:int, sizeTup[3]:int);
+}
+
+//
+// Initialize the random number tables for the jitter using either C
+// rand() (because the reference version does) or Chapel rand (because
+// its results are portable, and it can optionally be used in parallel).
+//
+proc initRands() {
+  var rands: randNums;
+  
+  if useCRand {
+    // extern declarations of C's random number generators.
+    extern const RAND_MAX: c_int;
+    extern proc rand(): c_int;
+    extern proc srand(seed: c_uint);
+
+    if seed then
+      srand(seed.safeCast(c_uint));
+    for u in rands.urand do
+      u(X) = rand():real / RAND_MAX - 0.5;
+    for u in rands.urand do
+      u(Y) = rand():real / RAND_MAX - 0.5;
+    for r in rands.irand do
+      r = (nran * (rand():real / RAND_MAX)): int;
+  } else {
+    use Random;
+
+    var rng = new owned RandomStream(seed=(if seed then seed
+                                                   else SeedGenerator.currentTime),
+                                     eltType=real);
+    for u in rands.urand do
+      u(X) = rng.getNext() - 0.5;
+    for u in rands.urand do
+      u(Y) = rng.getNext() - 0.5;
+    for r in rands.irand do
+      r = (nran * rng.getNext()): int;
+  }
+
+  return rands;
+}
+
+//
 // Load the scene from an extremely simple scene description file
 //
-proc loadScene(ref newScene: sceneType) {
+proc loadScene() {
+  var newScene: sceneType;
   //
   // Support a built-in scene in order to avoid file input, should it
   // be problematic in any way.
@@ -481,7 +502,7 @@ proc loadScene(ref newScene: sceneType) {
     newScene.lights.push_back((40, 40, 150));
     newScene.camera = new cameraType((0, 6, -17), (0, -1, 0), 45);
 
-    return;
+    return newScene;
   }
 
   //
@@ -552,45 +573,8 @@ proc loadScene(ref newScene: sceneType) {
       exit(1);
     }
   }
-}
 
-//
-// initialize the random number tables for the jitter using either C
-// rand() (because the reference version does) or Chapel rand (because
-// its results are portable, and it can optionally be used in parallel).
-//
-proc initRands() {
-  var rands: randNums;
-  
-  if useCRand {
-    // extern declarations of C's random number generators.
-    extern const RAND_MAX: c_int;
-    extern proc rand(): c_int;
-    extern proc srand(seed: c_uint);
-
-    if seed then
-      srand(seed.safeCast(c_uint));
-    for u in rands.urand do
-      u(X) = rand():real / RAND_MAX - 0.5;
-    for u in rands.urand do
-      u(Y) = rand():real / RAND_MAX - 0.5;
-    for r in rands.irand do
-      r = (nran * (rand():real / RAND_MAX)): int;
-  } else {
-    use Random;
-
-    var rng = new owned RandomStream(seed=(if seed then seed
-                                                   else SeedGenerator.currentTime),
-                                     eltType=real);
-    for u in rands.urand do
-      u(X) = rng.getNext() - 0.5;
-    for u in rands.urand do
-      u(Y) = rng.getNext() - 0.5;
-    for r in rands.irand do
-      r = (nran * rng.getNext()): int;
-  }
-
-  return rands;
+  return newScene;
 }
 
 //
