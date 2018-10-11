@@ -132,14 +132,10 @@ record spoint {     // a surface point
 // =================================
 //
 proc main() {
-  use BlockDist;
-
   //
-  // A local domain, distributed domain, and array representing the image
+  // A local array representing the image
   //
-  const imageSize = {0..#yres, 0..#xres};
-  const pixelPlane = imageSize dmapped Block(imageSize);
-  var pixels: [pixelPlane] pixelType;
+  var pixels: [0..#yres, 0..#xres] pixelType;
 
   //
   // Set up the random numbers and scene
@@ -148,52 +144,28 @@ proc main() {
   var scene = loadScene();
 
   //
-  // A way to visualize the amount of communication within the
-  // parallel loop using 'chplvis'
-  //
-  use VisualDebug;
-  startVdebug("c-ray-chplvis");
-  
-  //
-  // A way to count the amount of communication within the parallel
-  // loop
-  //
-  use CommDiagnostics;
-  startCommDiagnostics();
-
-  //
   // Timers to measure the rendering time
   //
   use Time;
   var t: Timer;
   t.start();
 
-  //
-  // The main loop that computes the image in parallel.  Note the use
-  // of 'in' intents to create task-local copies of the scene and
-  // random numbers.  This avoids communication back to locale #0
-  // (where they were allocated) to access them from other locales.
-  //
-  forall (y, x) in pixelPlane with (in scene, in rands) {
-    pixels[y, x] = computePixel(y, x, scene, rands);
-  }
+  // ***************************************
+  // * TODO: Compute the image pixels here *
+  // ***************************************
 
   //
-  // Check the timer and stop the communication counters
+  // Check the timer
   //
   const rendTime = t.elapsed();
-  stopCommDiagnostics();
-  stopVdebug();
   
   //
   // Print the elapsed time and communications to 'stderr' (just in
   // case the user is printing the image to 'stdout').
   //
-  if !noTiming {
+  if !noTiming then
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
-    stderr.writeln("Communications were:", getCommDiagnostics());
-  }
 
   //
   // Write out the image

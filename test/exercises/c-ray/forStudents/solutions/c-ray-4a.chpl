@@ -132,13 +132,10 @@ record spoint {     // a surface point
 // =================================
 //
 proc main() {
-  use BlockDist;
-
   //
-  // A local domain, distributed domain, and array representing the image
+  // A local domain and array representing the image
   //
-  const imageSize = {0..#yres, 0..#xres};
-  const pixelPlane = imageSize dmapped Block(imageSize);
+  const pixelPlane = {0..#yres, 0..#xres};
   var pixels: [pixelPlane] pixelType;
 
   //
@@ -148,20 +145,6 @@ proc main() {
   var scene = loadScene();
 
   //
-  // A way to visualize the amount of communication within the
-  // parallel loop using 'chplvis'
-  //
-  use VisualDebug;
-  startVdebug("c-ray-chplvis");
-  
-  //
-  // A way to count the amount of communication within the parallel
-  // loop
-  //
-  use CommDiagnostics;
-  startCommDiagnostics();
-
-  //
   // Timers to measure the rendering time
   //
   use Time;
@@ -169,36 +152,22 @@ proc main() {
   t.start();
 
   //
-  // The main loop that computes the image in parallel.  Note the use
-  // of 'in' intents to create task-local copies of the scene and
-  // random numbers.  This avoids communication back to locale #0
-  // (where they were allocated) to access them.
+  // A promoted call that computes the pixels in parallel
   //
-  forall (y, x) in pixelPlane with (in scene, in rands) {
-    //
-    // Uncomment this line to see where each iteration is running:
-    //
-    //    writeln("Computing pixel ", (y,x), " on locale ", here.id);
-    //
-    pixels[y, x] = computePixel(y, x, scene, rands);
-  }
+  pixels = computePixel(pixelPlane, scene, rands);
 
   //
-  // Check the timer and stop the communication counters
+  // Check the timer
   //
   const rendTime = t.elapsed();
-  stopCommDiagnostics();
-  stopVdebug();
   
   //
   // Print the elapsed time and communications to 'stderr' (just in
   // case the user is printing the image to 'stdout').
   //
-  if !noTiming {
+  if !noTiming then
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
-    stderr.writeln("Communications were:", getCommDiagnostics());
-  }
 
   //
   // Write out the image

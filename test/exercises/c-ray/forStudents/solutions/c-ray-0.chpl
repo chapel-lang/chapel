@@ -153,7 +153,7 @@ proc main() {
   // ***************************************
   // * TODO: Compute the image pixels here *
   // ***************************************
-  
+
   //
   // Check the timer
   //
@@ -163,10 +163,9 @@ proc main() {
   // Print the elapsed time and communications to 'stderr' (just in
   // case the user is printing the image to 'stdout').
   //
-  if !noTiming {
+  if !noTiming then
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
-  }
 
   //
   // Write out the image
