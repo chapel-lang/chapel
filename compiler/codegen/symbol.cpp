@@ -549,10 +549,6 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
   if (this->hasFlag(FLAG_EXTERN) && !this->hasFlag(FLAG_GENERATE_SIGNATURE))
     return;
 
-  if (this->hasFlag(FLAG_GENERATE_SIGNATURE)) {
-    printf("");
-  }
-
   if (type == dtVoid)
     return;
 
