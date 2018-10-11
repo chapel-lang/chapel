@@ -197,6 +197,32 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
 }
 
 //
+// This function inserts NamedExprs into 'initCall' for each instantiated
+// field in 'at'.
+//
+static void insertNamedInstantiationInfo(CallExpr* newExpr,
+                                         CallExpr* initCall,
+                                         AggregateType* at) {
+  AggregateType* rootType = at->getRootInstantiation();
+  if (at != rootType) {
+    // Insert super class instantiations first
+    if (at->isClass() && at != dtObject && at->dispatchParents.v[0] != dtObject) {
+      insertNamedInstantiationInfo(newExpr, initCall, at->dispatchParents.v[0]);
+    }
+
+    for_fields(field, at) {
+      if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
+        initCall->insertAtTail(new NamedExpr(field->name, new SymExpr(field->type->symbol)));
+      } else if (field->hasFlag(FLAG_PARAM)) {
+        initCall->insertAtTail(new NamedExpr(field->name, new SymExpr(at->getSubstitution(field->name))));
+      } else if (Symbol* sub = at->getSubstitution(field->name)) {
+        USR_FATAL(newExpr, "A type alias of '%s' may not be used in a new-expression because it contains a typeless field ('%s')", rootType->symbol->name, field->name);
+      }
+    }
+  }
+}
+
+//
 // Builds and returns a call to an initializer based on the arguments in
 // 'newExpr'. The call will be inserted at the end of 'block'. The call and its
 // resolved function will both be resolved.
@@ -221,6 +247,9 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
 
   VarSymbol* tmp = newTemp("initTemp", rootType);
   CallExpr* call = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(tmp)));
+
+  insertNamedInstantiationInfo(newExpr, call, at);
+
   for (int i = 1; i <= newExpr->numActuals(); i++) {
     call->insertAtTail(newExpr->get(i)->copy());
   }
