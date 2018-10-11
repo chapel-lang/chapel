@@ -17,11 +17,7 @@ config const treeHeight: uint = 4;
 //
 class node {
   var id: int;
-  var left, right: unmanaged node;
-  proc deinit() {
-    if left then delete left;
-    if right then delete right;
-  }
+  var left, right: owned node;
 }
 
 
@@ -31,7 +27,6 @@ class node {
 proc main() {
   var root = buildTree();
   writeln("sum=", sum(root));
-  delete root;
 }
 
 //
@@ -39,8 +34,8 @@ proc main() {
 // node's children in parallel.  It uses the monotonically decreasing
 // height variable to control the recursion.
 //
-proc buildTree(height: uint = treeHeight, id: int = 1): unmanaged node {
-  var newNode = new unmanaged node(id);
+proc buildTree(height: uint = treeHeight, id: int = 1): owned node {
+  var newNode = new owned node(id);
 
   if height > 1 {
     cobegin {
@@ -57,7 +52,7 @@ proc buildTree(height: uint = treeHeight, id: int = 1): unmanaged node {
 // sum() walks the tree in parallel using a cobegin, computing the sum
 // of the node IDs using a postorder traversal.
 //
-proc sum(n: unmanaged node): int {
+proc sum(n: node): int {
   var total = n.id;
 
   if n.left != nil {
