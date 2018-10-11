@@ -42,6 +42,8 @@
 #include "chpl-topo.h"
 #include "error.h"
 
+#include "comm-ofi-internal.h"
+
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
 
@@ -56,12 +58,11 @@
 #include <time.h>
 
 #include <rdma/fabric.h>
+#include <rdma/fi_cm.h>
 #include <rdma/fi_domain.h>
 #include <rdma/fi_endpoint.h>
-#include <rdma/fi_cm.h>
 #include <rdma/fi_errno.h>
-
-#include "comm-ofi-internal.h"
+#include <rdma/fi_rma.h>
 
 
 ////////////////////////////////////////
@@ -114,11 +115,10 @@ struct perTxCtxInfo_t {
   int numTxsOut;
 };
 
+static int ptiTabLen;
 static struct perTxCtxInfo_t* ptiTab;
-#if 0
-static __thread struct perTxCtxInfo_t* pti;
-#endif
-
+static pthread_mutex_t pti_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int ptiTabIdx = 0;
 
 static struct iovec ofi_iov_reqs;
 static struct fi_msg ofi_msg_reqs;
@@ -173,7 +173,7 @@ static void time_init(void);
     do {                                                                \
       int _rc = (expr);                                                 \
       if (_rc != wantVal) {                                             \
-        chpl_internal_error_v("%s: %s", #expr, fi_strerror(- _rc));     \
+        INTERNAL_ERROR_V("%s: %s", #expr, fi_strerror(- _rc));          \
       }                                                                 \
     } while (0)
 
@@ -230,8 +230,8 @@ static void init_am_handler(void);
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   time_init();
-  DBG_INIT();
   chpl_comm_ofi_oob_init();
+  DBG_INIT();
 }
 
 
@@ -292,8 +292,8 @@ void init_ofiFabricDomain(void) {
   hints->ep_attr->type = FI_EP_RDM;
 
   hints->domain_attr->threading = FI_THREAD_UNSPEC;
-  hints->domain_attr->control_progress = FI_PROGRESS_MANUAL;
-  hints->domain_attr->data_progress = FI_PROGRESS_MANUAL;
+  hints->domain_attr->control_progress = FI_PROGRESS_AUTO/*FI_PROGRESS_MANUAL*/;
+  hints->domain_attr->data_progress = FI_PROGRESS_AUTO/*FI_PROGRESS_MANUAL*/;
   hints->domain_attr->av_type = FI_AV_TABLE;
   hints->domain_attr->mr_mode = ((strcmp(provider, "gni") == 0)
                                  ? FI_MR_BASIC
@@ -335,8 +335,8 @@ void init_ofiFabricDomain(void) {
         }
       }
 
-      chpl_internal_error_v("No provider matched for prov_name \"%s\"",
-                            (provider == NULL) ? "<any>" : provider);
+      INTERNAL_ERROR_V("No provider matched for prov_name \"%s\"",
+                       (provider == NULL) ? "<any>" : provider);
     }
 
     if (DBG_TEST_MASK(DBG_FAB)) {
@@ -431,7 +431,8 @@ int compute_comm_concurrency(void) {
 
 static
 void init_ofiEp(void) {
-  CHPL_CALLOC(ptiTab, numTxCtxs + 1);
+  ptiTabLen = numTxCtxs + 1;
+  CHPL_CALLOC(ptiTab, ptiTabLen);
 
   //
   // Transmit.
@@ -459,9 +460,9 @@ void init_ofiEp(void) {
   //
   // Worker TX contexts use CQs; AM handler just needs a counter.
   //
-  for (int i = 0; i < numTxCtxs + 1; i++) {
+  for (int i = 0; i < ptiTabLen; i++) {
     OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &ptiTab[i].txCtx, NULL));
-    if (i < numTxCtxs) {
+    if (i < ptiTabLen - 1) {
       OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &ptiTab[i].txCQ, NULL));
       OFI_CHK(fi_ep_bind(ptiTab[i].txCtx, &ptiTab[i].txCQ->fid, FI_TRANSMIT));
     } else {
@@ -573,7 +574,7 @@ void init_ofiForAms(void) {
   comm_amFinFlagsSize = numAmBufs * sizeof(comm_amFinFlags[0]);
   CHPL_CALLOC(comm_amFinFlags, numAmBufs);
 
-  for (int i = 0; i < numTxCtxs + 1; i++) {
+  for (int i = 0; i < ptiTabLen; i++) {
     ptiTab[i].tbIdx = i;
   }
 }
@@ -736,9 +737,9 @@ void fini_ofi(void) {
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
 
-  for (int i = 0; i < numTxCtxs + 1; i++) {
+  for (int i = 0; i < ptiTabLen; i++) {
     OFI_CHK(fi_close(&ptiTab[i].txCtx->fid));
-    if (i < numTxCtxs)
+    if (i < ptiTabLen - 1)
       OFI_CHK(fi_close(&ptiTab[i].txCQ->fid));
     else
       OFI_CHK(fi_close(&ptiTab[i].txCntr->fid));
@@ -976,6 +977,49 @@ void init_hugepageSize(void) {
 }
 
 
+static inline
+struct memEntry* getMemEntry(memTab_t* tab, void* addr, int len) {
+  char* myAddr = (char*) addr;
+
+  for (int i = 0; i < numMemRegions; i++) {
+    char* tabAddr = (char*) (*tab)[i].addr;
+    char* tabAddrEnd = tabAddr + (*tab)[i].size;
+    if (myAddr >= tabAddr && myAddr + len <= tabAddrEnd)
+      return &(*tab)[i];
+  }
+
+  return NULL;
+}
+
+
+static inline
+int mrGetLocalDesc(void** pDesc, void* addr, int len) {
+  if ((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) == 0) {
+    //
+    // ??? Docs not clear; this may not work for prov=gni FI_MR_BASIC.
+    //
+    *pDesc = NULL;
+    return 0;
+  }
+
+  struct memEntry* mr;
+  if ((mr = getMemEntry(&memTab, addr, len)) == NULL)
+    return -1;
+  *pDesc = mr->desc;
+  return 0;
+}
+
+
+static inline
+int mrGetRemoteKey(uint64_t* pKey, int iNode, void* addr, int len) {
+  struct memEntry* mr;
+  if ((mr = getMemEntry(&memTabMap[iNode], addr, len)) == NULL)
+    return -1;
+  *pKey = mr->key;
+  return 0;
+}
+
+
 ////////////////////////////////////////
 //
 // Interface: Active Message support
@@ -1013,7 +1057,7 @@ void init_am_handler(void) {
 
     for (int i = 0; i < num_am_handlers; i++) {
       if (chpl_task_createCommTask(am_handler, NULL) != 0) {
-        chpl_internal_error("unable to start AM handler thread");
+        INTERNAL_ERROR_V("unable to start AM handler thread");
       }
     }
 
@@ -1110,7 +1154,7 @@ static void am_handler(void *argNil) {
       }
     } else {
       if (num_read != -FI_EAGAIN) {
-        chpl_internal_error(fi_strerror(-num_read));
+        INTERNAL_ERROR_V("%s", fi_strerror(-num_read));
       }
     }
 #else
@@ -1198,7 +1242,7 @@ static void execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
                               chpl_fn_int_t fid,
                               chpl_comm_on_bundle_t* arg, size_t arg_size,
                               chpl_bool fast, chpl_bool blocking) {
-  chpl_internal_error("Remote ons not yet implemented");
+  INTERNAL_ERROR_V("Remote ons not yet implemented");
 
   // bundle args
   // send to remote AM port
@@ -1214,32 +1258,18 @@ static void handle_am(struct fi_cq_data_entry* cqe) {
 
 ////////////////////////////////////////
 //
-// Interface: RDMA support
+// Interface: RMA support
 //
 
+static inline chpl_comm_nb_handle_t ofi_put(void*, c_nodeid_t, void*, size_t);
+static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t, void*, size_t);
 
-#if 0
-static __thread int sep_index = -1;
-static inline int get_sep_index(int num_ctxs) {
-  if (sep_index == -1) {
-    sep_index = chpl_task_getId() % num_ctxs;
-  }
-  return sep_index;
-}
-#endif
+static void waitForTxCQ(struct perTxCtxInfo_t*, int);
+static struct perTxCtxInfo_t* getTxCtxInfo(void);
+static void releaseTxCtxInfo(struct perTxCtxInfo_t*);
 
-
-static inline chpl_comm_nb_handle_t ofi_put(chpl_comm_cb_event_kind_t etype,
-                                            void *addr, c_nodeid_t node,
-                                            void* raddr, size_t size,
-                                            int32_t typeIndex, int32_t commID,
-                                            int ln, int32_t fn);
-
-static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
-                                            void *addr, c_nodeid_t node,
-                                            void* raddr, size_t size,
-                                            int32_t typeIndex, int32_t commID,
-                                            int ln, int32_t fn);
+static void* allocBounceBuf(size_t);
+static void freeBounceBuf(void*);
 
 
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node,
@@ -1310,12 +1340,13 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
 void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                    size_t size, int32_t typeIndex, int32_t commID,
                    int ln, int32_t fn) {
-  chpl_comm_nb_handle_t handle;
-
-  if (node == chpl_nodeID) {
-    memmove(raddr, addr, size);
-    return;
-  }
+  //
+  // addr and raddr are sanity checks; node==chpl_nodeID is supposed
+  // to be handled by our caller.
+  //
+  assert(addr != NULL
+         && raddr != NULL
+         && node != chpl_nodeID);
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
@@ -1329,33 +1360,34 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                                  chpl_lookupFilename(fn), ln, (int) node);
   chpl_comm_diags_incr(put);
 
-  handle = ofi_put(chpl_comm_cb_event_kind_put,
-                   addr, node, raddr, size, typeIndex, commID, ln, fn);
-  if (handle) {
-    // fi_cq_read
-  }
+  (void) ofi_put(addr, node, raddr, size);
 }
 
 
 void chpl_comm_get(void* addr, int32_t node, void* raddr,
                    size_t size, int32_t typeIndex, int32_t commID,
                    int ln, int32_t fn) {
-  chpl_comm_nb_handle_t handle;
+  //
+  // addr and raddr are sanity checks; node==chpl_nodeID is supposed
+  // to be handled by our caller.
+  //
+  assert(addr != NULL
+         && raddr != NULL
+         && node != chpl_nodeID);
 
-  if (node == chpl_nodeID) {
-    memmove(addr, raddr, size);
-    return;
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_get, chpl_nodeID, node,
+         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
   }
 
   chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
                                  chpl_lookupFilename(fn), ln, (int) node);
   chpl_comm_diags_incr(get);
 
-  handle = ofi_get(chpl_comm_cb_event_kind_get,
-                   addr, node, raddr, size, typeIndex, commID, ln, fn);
-  if (handle) {
-    // fi_cq_read
-  }
+  (void) ofi_get(addr, node, raddr, size);
 }
 
 
@@ -1389,44 +1421,137 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 }
 
 
-static inline chpl_comm_nb_handle_t ofi_put(chpl_comm_cb_event_kind_t etype,
-                                            void *addr, c_nodeid_t node,
-                                            void* raddr, size_t size,
-                                            int32_t typeIndex, int32_t commID,
-                                            int ln, int32_t fn) {
+static inline
+chpl_comm_nb_handle_t ofi_put(void* addr, c_nodeid_t node,
+                              void* raddr, size_t size) {
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = getTxCtxInfo()) != NULL);
 
-  if (chpl_comm_have_callbacks(etype)) {
-    chpl_comm_cb_info_t cb_data = {etype, chpl_nodeID, node,
-                                   .iu.comm={addr, raddr, size,
-                                             typeIndex, commID, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
+  void* mrDesc;
+  void* myAddr = addr;
+  if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
+    myAddr = allocBounceBuf(size);
+    CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
+    memcpy(myAddr, addr, size);
   }
 
-  // fi_write
+  uint64_t mrKey;
+  CHK_TRUE(mrGetRemoteKey(&mrKey, node, raddr, size) == 0);
 
-  chpl_internal_error("Remote puts not yet implemented");
+  OFI_CHK(fi_write(tcip->txCtx, myAddr, size,
+                   mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+             "tx write: %d:%p <= %p%s, size %zd, key 0x%" PRIx64,
+             (int) node, raddr, addr, (myAddr == addr) ? "" : "(B)", size,
+             mrKey);
+
+  waitForTxCQ(tcip, 1);
+
+  releaseTxCtxInfo(tcip);
+
+  if (myAddr != addr) {
+    freeBounceBuf(myAddr);
+  }
 
   return NULL;
 }
 
 
-static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
-                                            void *addr, c_nodeid_t node,
-                                            void* raddr, size_t size,
-                                            int32_t typeIndex, int32_t commID,
-                                            int ln, int32_t fn) {
-  if (chpl_comm_have_callbacks(etype)) {
-    chpl_comm_cb_info_t cb_data = {etype, chpl_nodeID, node,
-                                   .iu.comm={addr, raddr, size,
-                                             typeIndex, commID, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
+static inline
+chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
+                              void* raddr, size_t size) {
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = getTxCtxInfo()) != NULL);
+
+  void* mrDesc;
+  void* myAddr = addr;
+  if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
+    myAddr = allocBounceBuf(size);
+    CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
   }
 
-  // fi_read
+  uint64_t mrKey;
+  CHK_TRUE(mrGetRemoteKey(&mrKey, node, raddr, size) == 0);
 
-  chpl_internal_error("Remote gets not yet implemented");
+  OFI_CHK(fi_read(tcip->txCtx, addr, size,
+                  mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+             "tx read: %p <= %d:%p, len %zd, key 0x%" PRIx64,
+             addr, (int) node, raddr, size, mrKey);
+
+  waitForTxCQ(tcip, 1);
+
+  releaseTxCtxInfo(tcip);
+
+  if (myAddr != addr) {
+    memcpy(addr, myAddr, size);
+    freeBounceBuf(myAddr);
+  }
 
   return NULL;
+}
+
+
+static
+void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut) {
+  if (numOut > 0) {
+    struct fi_cq_entry cqes[numOut];
+    int numRetired = 0;
+
+    do {
+      int ret;
+      CHK_TRUE((ret = fi_cq_read(tcip->txCQ, cqes, numOut)) > 0
+               || ret == -FI_EAGAIN);
+
+      if (ret > 0) {
+        const int numEvents = ret;
+        numRetired += numEvents;
+        for (int i = 0; i < numEvents; i++) {
+          DBG_PRINTF(DBG_ACK, "CQ ack tx");
+        }
+      }
+    } while (numRetired < numOut);
+  }
+}
+
+
+static inline
+struct perTxCtxInfo_t* getTxCtxInfo(void) {
+  static __thread struct perTxCtxInfo_t* tcip;
+
+  if (tcip == NULL) {
+    PTHREAD_CHK(pthread_mutex_lock(&pti_mutex));
+    if (ptiTabIdx >= ptiTabLen - 1) {
+      INTERNAL_ERROR_V("out of ptiTab[] entries");
+    }
+    tcip = &ptiTab[ptiTabIdx++];
+    PTHREAD_CHK(pthread_mutex_unlock(&pti_mutex));
+    DBG_PRINTF(DBG_THREADS, "I have ptiTab[%td]", tcip - ptiTab);
+  }
+
+  return tcip;
+}
+
+
+static inline
+void releaseTxCtxInfo(struct perTxCtxInfo_t* tcip) {
+  //
+  // There is nothing to do here unless and until we support threads
+  // overloaded on ptiTab[] entries.
+  //
+}
+
+
+static
+void* allocBounceBuf(size_t size) {
+  void* p;
+  CHPL_CALLOC_SZ(p, 1, size);
+  return p;
+}
+
+
+static void freeBounceBuf(void* p) {
+  CHPL_FREE(p);
 }
 
 
@@ -1454,6 +1579,8 @@ void chpl_comm_barrier(const char *msg) {
     return;
   }
 
+  DBG_PRINTF(DBG_BARRIER, "barrier '%s'", (msg == NULL) ? "" : msg);
+
   if (am_handler_count == 0) {
     // Comm layer setup is not complete yet; use OOB barrier
     chpl_comm_ofi_oob_barrier();
@@ -1462,6 +1589,7 @@ void chpl_comm_barrier(const char *msg) {
     chpl_comm_ofi_oob_barrier();
   }
 
+  DBG_PRINTF(DBG_BARRIER, "barrier '%s' done", (msg == NULL) ? "" : msg);
 }
 
 
@@ -1566,6 +1694,18 @@ double chpl_comm_ofi_time_get(void) {
 
 void chpl_comm_ofi_dbg_init(void) {
   chpl_comm_ofi_dbg_level = chpl_env_rt_get_int("COMM_OFI_DEBUG", 0);
+
+  const char* ev;
+  if ((ev = chpl_env_rt_get("COMM_OFI_DEBUG_FNAME", NULL)) == NULL) {
+    chpl_comm_ofi_dbg_file = stdout;
+  } else {
+    char fname[strlen(ev) + 6 + 1];
+    int fnameLen;
+    fnameLen = snprintf(fname, sizeof(fname), "%s.%d", ev, (int) chpl_nodeID);
+    CHK_TRUE(fnameLen < sizeof(fname));
+    CHK_TRUE((chpl_comm_ofi_dbg_file = fopen(fname, "w")) != NULL);
+    setbuf(chpl_comm_ofi_dbg_file, NULL);
+  }
 }
 
 
