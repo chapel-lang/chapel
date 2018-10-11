@@ -1,4 +1,4 @@
-// This version is perhaps the most obvious / easiest to parallelize
+// This version is like duplicates.chpl but uses a record instead of a tuple
 
 use FileHashing;
 use FileSystem;
@@ -6,6 +6,32 @@ use Sort;
 use Time;
 
 config const timing = false;
+
+record HashAndPath {
+  var hash: SHA256Hash;
+  var path: string;
+}
+
+// stumbling block: no < for record
+// stumbling block: comparator increases complexity
+// stumbling block: need to know SHA256Hash has compare and/or <
+record HashAndPathComparator {
+  proc compare(a: HashAndPath, b: HashAndPath) {
+    if a.hash < b.hash {
+      return -1;
+    }
+    if a.hash > b.hash {
+      return 1;
+    }
+    if a.path < b.path {
+      return -1;
+    }
+    if a.path > b.path {
+      return 1;
+    }
+    return 0;
+  }
+}
 
 proc main(args: [] string) {
   var clock:Timer;
@@ -36,15 +62,13 @@ proc main(args: [] string) {
   //   computeFileHash(path: string): SHA256Hash throws
   // so it accepts a string argument and returns a SHA256Hash
 
-  // stumbling block: tuples
-
   // hashAndPath is an array of tuples
-  var hashAndPath:[1..paths.size] (SHA256Hash, string);
+  var hashAndPath:[1..paths.size] HashAndPath;
 
   // Set the path component in the array
   // stumbling block: can't forall over domain and convert to array
-  for (tup, path) in zip(hashAndPath, paths) {
-    tup(2) = path;
+  for (rec, path) in zip(hashAndPath, paths) {
+    rec.path = path;
   }
 
   if timing {
@@ -52,8 +76,8 @@ proc main(args: [] string) {
   }
   clock.clear();
   clock.start();
-  forall (hash, path) in hashAndPath {
-    hash = computeFileHash(path);
+  for rec in hashAndPath {
+    rec.hash = computeFileHash(rec.path);
   }
   clock.stop();
   if timing {
@@ -67,27 +91,26 @@ proc main(args: [] string) {
   clock.start();
 
   // stumbling block: need to know sort exists
-  sort(hashAndPath);
+  sort(hashAndPath, comparator=new HashAndPathComparator());
 
   clock.stop();
   if timing {
     writeln("Sorting by hash took ", clock.elapsed(), " seconds");
   }
 
-  // stumbling block: this look is kindof hard
   var i = 1;
   while i < paths.size {
     // Look for the group matching
     var next = i + 1;
-    while next <= paths.size && hashAndPath[i](1) == hashAndPath[next](1) {
+    while next <= paths.size && hashAndPath[i].hash == hashAndPath[next].hash {
       next += 1;
     }
     // Now i..next-1 is the group matching
     if i < next-1 {
-      writeln(hashAndPath[i](1));
+      writeln(hashAndPath[i].hash);
       for j in i..next-1 {
-        assert(hashAndPath[i](1) == hashAndPath[j](1));
-        writeln("  ", hashAndPath[j](2));
+        assert(hashAndPath[i].hash == hashAndPath[j].hash);
+        writeln("  ", hashAndPath[j].path);
       }
     }
     i = next;

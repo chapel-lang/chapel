@@ -53,7 +53,10 @@ module FileHashing {
   }
 
   proc chpl__defaultHash(h: SHA256Hash) {
-    return chpl__defaultHash(h.hash.buff);
+    if h.hash == nil then
+      return 0;
+    else
+      return chpl__defaultHash(h.hash.buff);
   }
 
   proc compare(a: SHA256Hash, b: SHA256Hash): int {
