@@ -121,7 +121,7 @@ module FileHashing {
                      start=0, end=len);
     var bytes: [0..#len] uint(8);
     r.read(bytes);
-    
+
     var buf = new owned Crypto.CryptoBuffer(bytes);
 
     var SHA256 = new owned Crypto.Hash(Crypto.Digest.SHA256);
@@ -129,7 +129,7 @@ module FileHashing {
     var hash = new SHA256Hash(SHA256.getDigest(buf));
     return hash;
   }
-  
+
   /*
     Given a path argument, computes the realPath (that
     is the path after symbolic links are processed),
@@ -139,14 +139,13 @@ module FileHashing {
   proc relativeRealPath(path: string): string throws {
     var currentDirectory = Path.realPath(".");
     var fullPath = Path.realPath(path);
-    var prefix = Path.commonPath(currentDirectory, fullPath);
-    var normalized = fullPath[prefix.length+1..];
-    // If there was a meaningful prefix, that means
-    // fullPath is within currentDirectory. In that event,
-    // make sure normalized doesn't start with a "/".
-    if prefix.length > 0 && prefix != "/" {
-      normalized = normalized.strip("/", leading=true, trailing=false);
+    if !currentDirectory.endsWith("/") {
+      currentDirectory += "/";
     }
-    return normalized;
+    // If fullPath starts with currentDirectory, remove it
+    if fullPath.startsWith(currentDirectory) {
+      fullPath = fullPath[currentDirectory.length+1..];
+    }
+    return fullPath;
   }
 }

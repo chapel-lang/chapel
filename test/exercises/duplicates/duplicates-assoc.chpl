@@ -36,7 +36,7 @@ proc main(args: [] string) {
   // stumbling block: declaring associative arrays
   var hashes:domain(SHA256Hash);
   var hashesToPaths:[hashes] domain(string);
- 
+
   if timing {
     writeln("Reading and hashing files");
   }
@@ -50,7 +50,7 @@ proc main(args: [] string) {
     var hash = computeFileHash(path);
     hashesToPaths[hash] += path;
   }
- 
+
   clock.stop();
   if timing {
     writeln("Reading and hashing files took ", clock.elapsed(), " seconds");

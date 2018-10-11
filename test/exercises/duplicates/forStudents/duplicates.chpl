@@ -27,9 +27,7 @@ proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
   //   computeFileHash(path: string): SHA256Hash throws
   // so it accepts a string argument and returns a SHA256Hash
 
-  forall (hash, path) in hashAndPath {
-    hash = computeFileHash(path);
-  }
+
 }
 
 proc handleArguments(args: [] string, ref paths: domain(string)) {
