@@ -1,0 +1,4 @@
+errorNewExpr.chpl:18: In function 'main':
+errorNewExpr.chpl:28: error: unresolved call 'BadUserInit.init(T=type int(64), 5)'
+errorNewExpr.chpl:12: note: candidates are: BadUserInit.init(x: ?T)
+errorNewExpr.chpl:8: note:                 BadUserInit.init(other: BadUserInit)
