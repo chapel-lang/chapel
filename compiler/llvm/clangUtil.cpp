@@ -1403,14 +1403,7 @@ static void registerRVPasses(const llvm::PassManagerBuilder &Builder,
   if (developer)
     printf("Adding RV passes\n");
 
-  // Get IR ready for RV
-  rv::addPreparatoryPasses(PM);
-  // if we want whole function vectorization
-  rv::addWholeFunctionVectorizer(PM);
-  // if we want loop vectorization
-  rv::addOuterLoopVectorizer(PM);
-  // Clean up IR after RV
-  rv::addCleanupPasses(PM);
+  rv::addRVPasses(PM);
 }
 #endif
 
