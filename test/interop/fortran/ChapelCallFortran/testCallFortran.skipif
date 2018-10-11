@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+[[ $COMPOPTS == *"--llvm"* ]]
+llvm=$?
+
+`which gfortran 2>&1 >/dev/null`
+gfortranFound=$?
+
+if [[ $gfortranFound == 0 && $llvm != 0 ]] ; then
+  echo False
+else
+  echo True
+fi
