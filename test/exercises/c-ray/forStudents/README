@@ -17,16 +17,14 @@ File List
 
 Important files in this directory are as follows:
 
+README       : This file
 c-ray.chpl   : The main Chapel ray-tracing source file
 Image.chpl   : A helper module for creating image files
 Makefile     : A trivial Makefile showing how to compile the program
 scene        : A simple, default scene file describing four spheres
 sphfract     : A more complex scene file describing a fractal pattern
 scene.bmp    : The expected BMP file for the default scene
-scene.ppm    : The expected PPM file for the default scene
 sphfract.bmp : The expected BMP file for 'sphfract'
-sphfract.ppm : The expected PPM file for 'sphfract'
-README       : This file
 
 If present, the following files are related to the Chapel testing
 system, which we use to maintain this code.  They can be ignored for
