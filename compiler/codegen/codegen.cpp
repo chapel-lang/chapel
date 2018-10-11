@@ -2537,7 +2537,6 @@ void nprint_view(GenRet& gen) {
     llvm::outs().flush();
     printf("\n");
   }
-#endif
   if (gen.surroundingStruct) {
     TypeSymbol* ts = gen.surroundingStruct->symbol;
     printf("surroundingStruct=%s (%i)\n", ts->name, ts->id);
@@ -2545,7 +2544,6 @@ void nprint_view(GenRet& gen) {
   if (gen.fieldOffset) {
     printf("fieldOffset=%i\n", (int) gen.fieldOffset);
   }
-#ifdef HAVE_LLVM
   if (gen.fieldTbaaTypeDescriptor) {
     printf("fieldTbaaTypeDescriptor= ");
     fflush(stdout);
