@@ -1,12 +1,18 @@
 #!/bin/bash
 
+# Skip this test if using a launcher, or if using --llvm, or if gfortran is not
+# available.
+
 launcher=`$CHPL_HOME/util/chplenv/chpl_launcher.py`
 
-`which gfortran 2>&1 >/dev/null`
+[[ $COMPOPTS == *"--llvm"* ]]
+llvm=$?
+
+`command -v gfortran 2>&1 >/dev/null`
 gfortranFound=$?
 
-if [[ $gfortranFound == 0 && $launcher == "none" ]] ; then
-  echo 0
+if [[ $gfortranFound == 0 && $launcher == "none" && $llvm != 0 ]] ; then
+  echo False
 else
-  echo 1
+  echo True
 fi
