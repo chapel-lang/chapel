@@ -76,6 +76,7 @@ find duplicate .chpl files in Chapel's test suite.
   ./duplicates --filter=".chpl" <path-to-chapel-tests>
 
 Is it faster to compute the SHA256 sums in multiple tasks?
+Make sure to compile with --fast when doing performance comparisons!
 
 Task 4: Add Error Handling
 --------------------------
