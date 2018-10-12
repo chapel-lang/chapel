@@ -268,7 +268,8 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
   }
 
   // Find the correct 'init' function without wrapping/promoting
-  resolveInitCall(call, at);
+  AggregateType* alias = at == rootType ? NULL : at;
+  resolveInitCall(call, alias);
   resolveInitializerMatch(call->resolvedFunction());
   tmp->type = call->resolvedFunction()->_this->getValType();
   resolveTypeWithInitializer(toAggregateType(tmp->type), call->resolvedFunction());
