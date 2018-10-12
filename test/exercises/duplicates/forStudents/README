@@ -33,6 +33,13 @@ Task 1: Getting Started
 To get started with this project, compile 'duplicates.chpl'.  Note that this
 program uses the OpenSSL library to compute SHA256 hashes and might need
 additional compilation flags to find that library on your system.
+For example, on Mac OS X, you might `brew install openssl` and then set
+LDFLAGS and CPPFLAGS to convey the location of the library to the Chapel
+compiler:
+
+  export LDFLAGS="-L/usr/local/opt/openssl/lib"
+  export CPPFLAGS="-I/usr/local/opt/openssl/include"
+
 
 Try compiling 'duplicates.chpl' and running it with the example-files
 directory. It should (incorrectly) report that all the files are duplicates.
