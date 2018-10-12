@@ -13,6 +13,7 @@ Language Basics
    Procedures <procedures>
    Classes <classes>
    Generic Classes <genericClasses>
+   Tuples <tuples>
    Variadic Arguments (var args) <varargs>
    Modules <modules>
    Void Variables <voidVariables>
