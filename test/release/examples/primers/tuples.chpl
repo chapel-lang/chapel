@@ -22,7 +22,7 @@
 
 var myTuple = (1, "two");
 
-// Now myTuple stores a tuple with two elements:
+// Now ``myTuple`` stores a tuple with two elements:
 //   ``myTuple(1) == 1`` and
 //   ``myTuple(2) == 2``
 assert(myTuple(1) == 1);
@@ -40,7 +40,7 @@ myTuple(2) = "four";
 writeln(myTuple); // output: (1, four)
 
 // Sometimes it's useful in generic code to query the size of a tuple.
-// The .size method returns the size of a tuple.
+// The ``.size`` method returns the size of a tuple.
 writeln(myTuple.size); // output: 2
 
 
@@ -64,6 +64,9 @@ writeln(threeReals); // output: (0.0, 0.0, 0.0)
 threeReals += 1.0;
 writeln(threeReals); // output: (1.0, 1.0, 1.0)
 
+// Tuples with only one component type are also called
+// homogenous tuples.
+
 // Tuple Iteration
 // ***************
 
@@ -74,18 +77,18 @@ for r in threeReals {
 }
 writeln(sum);
 
-// Want to iterate over a tuple with multiple component types?
-// Use a `for param` loop. This kind of loop is always unrolled
-// by the compiler so the loop body can use different types in
-// different iterations.
+// To iterate over a tuple with multiple component types, use a
+// ``for param`` loop.
+// This kind of loop is always unrolled by the compiler so the loop body can
+// use different types in different iterations.
 for param i in 1..myTuple.size {
   writeln("myTuple(", i, ") = ", myTuple(i));
 }
 
-// Tuple Destructuring
-// *******************
+// Tuple Unpacking
+// ***************
 // 
-// Tuple values can be pulled apart variables during
+// Tuple values can be unpacked apart variables during
 // variable initialization:
 
 var (myInt, myString) = otherTuple;
@@ -110,6 +113,19 @@ proc magnitude( (x,y,z):3*real ) {
 threeReals = (1.0, 2.0, 2.0);
 var m = magnitude(threeReals);
 writeln(m);
+
+// Additionally, tuples can be unpacked in the process
+// of making a function call. For example, suppose we
+// have a function accepting individual arguments:
+proc add(x, y, z) {
+  return x + y + z;
+}
+
+// If we want to pass threeReals to it, we could write
+add(threeReals(1), threeReals(2), threeReals(3));
+// but the tuple can be unpacked at the call site like this:
+var total = add( (...threeReals) );
+writeln(total);
 
 // One-Element Tuples
 // ******************
