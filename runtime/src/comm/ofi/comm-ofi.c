@@ -70,19 +70,6 @@
 // Global types and data
 //
 
-typedef enum {
-  am_opFree = 0,                        // descriptor is free in table
-  am_opNil,                             // no-op
-  am_opWhatever,                        // whatever
-} am_op_t;
-
-struct am_req_info {
-  am_op_t op;
-  int id;
-  int nodeID;
-  int* finVal;
-};
-
 static struct fi_info* ofi_info;        // fabric interface info
 static struct fid_fabric* ofi_fabric;   // fabric domain
 static struct fid_domain* ofi_domain;   // fabric access domain
@@ -96,8 +83,6 @@ static int txCQSize;                    // txCQ size
 
 static int numTxCtxs;
 
-static int numAmLZs;                    // #AM landing zones per node
-
 struct perTxCtxInfo_t {
   int inited;
   int idx;
@@ -107,7 +92,6 @@ struct perTxCtxInfo_t {
   struct fid_cq* txCQ;
   struct fid_cntr* txCntr;
   int mrSetIdx;
-  int tbIdx;
   int numAmReqsTxed;
   int numAmReqsRxed;
   int numReadsTxed;
@@ -118,16 +102,6 @@ struct perTxCtxInfo_t {
 static int ptiTabLen;
 static struct perTxCtxInfo_t* ptiTab;
 static pthread_mutex_t pti_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int ptiTabIdx = 0;
-
-static struct iovec ofi_iov_reqs;
-static struct fi_msg ofi_msg_reqs;
-static struct am_req_info* comm_amReqLZs;
-
-static struct am_req_info* comm_amReqs;
-
-static int comm_amFinFlagsSize;
-static int* comm_amFinFlags;
 
 #define MAX_MEM_REGIONS 10
 static int numMemRegions = 0;
@@ -146,11 +120,27 @@ typedef struct memEntry (memTab_t)[MAX_MEM_REGIONS];
 static memTab_t memTab;
 static memTab_t* memTabMap;
 
+static int numAmHandlers = 1;
+
+static void* amLZs;
+static struct iovec ofi_iov_reqs;
+static struct fi_msg ofi_msg_reqs;
+
 
 ////////////////////////////////////////
 //
 // Forward decls
 //
+
+static inline struct perTxCtxInfo_t* getTxCtxInfo(chpl_bool);
+static inline void releaseTxCtxInfo(struct perTxCtxInfo_t*);
+static /*inline*/ chpl_comm_nb_handle_t ofi_put(void*, c_nodeid_t,
+                                                void*, size_t);
+static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
+                                                void*, size_t);
+static void waitForTxCQ(struct perTxCtxInfo_t*, int);
+static void* allocBounceBuf(size_t);
+static void freeBounceBuf(void*);
 
 static void time_init(void);
 
@@ -221,11 +211,9 @@ static void init_ofiFabricDomain(void);
 static int compute_comm_concurrency(void);
 static void init_ofiEp(void);
 static void init_ofiExchangeAvInfo(void);
-static void init_ofiForAms(void);
-static void init_ofiForRma(void);
 static void init_ofiForMem(void);
-
-static void init_am_handler(void);
+static void init_ofiForRma(void);
+static void init_ofiForAms(void);
 
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
@@ -249,14 +237,8 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 void chpl_comm_post_task_init(void) {
   if (chpl_numNodes == 1)
     return;
-
   init_ofi();
-
-  init_am_handler();
-
-  // Initialize the caching layer, if it is active.
   // chpl_cache_init();
-
 }
 
 
@@ -265,9 +247,9 @@ void init_ofi(void) {
   init_ofiFabricDomain();
   init_ofiEp();
   init_ofiExchangeAvInfo();
-  init_ofiForAms();
-  init_ofiForRma();
   init_ofiForMem();
+  init_ofiForRma();
+  init_ofiForAms();
 }
 
 
@@ -367,23 +349,26 @@ void init_ofiFabricDomain(void) {
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
 
   //
-  // Compute numbers of outbound and inbound contexts and then create
-  // our scalable endpoint.  Each worker thread should get its own
-  // transmit context, plus the AM handler needs one to send 'finished'
-  // indicators on.  We only need 1 receive context, for requests sent
-  // to our our AM handler.
+  // Compute number of transmit contexts and create our scalable
+  // transmit endpoint.  Each worker thread needs its own transmit
+  // context, plus each AM handler needs one to send 'finished'
+  // indicators on.  We only need one receive context for now, for
+  // requests sent to our single AM handler.
   //
-  numTxCtxs = compute_comm_concurrency();
+  CHK_TRUE(numAmHandlers == 1); // force rework here if #AM handlers changes
+
+  const int commConcurrency = compute_comm_concurrency();
+  numTxCtxs = commConcurrency + numAmHandlers;
 
   {
     const struct fi_domain_attr* dom_attr = ofi_info->domain_attr;
-    if (numTxCtxs + 1 > dom_attr->max_ep_tx_ctx)
-      numTxCtxs = dom_attr->max_ep_tx_ctx - 1;
+    if (numTxCtxs > dom_attr->max_ep_tx_ctx)
+      numTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
     CHK_TRUE(numTxCtxs > 0);
-    ofi_info->ep_attr->tx_ctx_cnt = numTxCtxs + 1;
+    ofi_info->ep_attr->tx_ctx_cnt = numTxCtxs + numAmHandlers;
 
-    CHK_TRUE(dom_attr->max_ep_rx_ctx >= 1);
-    ofi_info->ep_attr->rx_ctx_cnt = 1;
+    CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
+    ofi_info->ep_attr->rx_ctx_cnt = numAmHandlers;
   }
 
   //
@@ -431,7 +416,7 @@ int compute_comm_concurrency(void) {
 
 static
 void init_ofiEp(void) {
-  ptiTabLen = numTxCtxs + 1;
+  ptiTabLen = numTxCtxs;
   CHPL_CALLOC(ptiTab, ptiTabLen);
 
   //
@@ -462,10 +447,12 @@ void init_ofiEp(void) {
   //
   for (int i = 0; i < ptiTabLen; i++) {
     OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &ptiTab[i].txCtx, NULL));
-    if (i < ptiTabLen - 1) {
+    if (i < ptiTabLen - numAmHandlers) {
+      // Regular worker thread tx context.
       OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &ptiTab[i].txCQ, NULL));
       OFI_CHK(fi_ep_bind(ptiTab[i].txCtx, &ptiTab[i].txCQ->fid, FI_TRANSMIT));
     } else {
+      // AM handler tx context.
       OFI_CHK(fi_cntr_open(ofi_domain, &txCntrAttr, &ptiTab[i].txCntr, NULL));
       OFI_CHK(fi_ep_bind(ptiTab[i].txCtx, &ptiTab[i].txCntr->fid, FI_WRITE));
     }
@@ -524,68 +511,6 @@ void init_ofiExchangeAvInfo(void) {
 
 
 static
-void init_ofiForAms(void) {
-  //
-  // If the user didn't specify it, compute the number of AM landing
-  // zones per thread.  We should have enough that we needn't re-post
-  // the multi-receive buffer more often than, say, once per second.
-  // We know from the Chapel performance/comm/low-level/many-to-one test
-  // that a single Chapel task (a core) cannot initiate more than about
-  // 150k "fast" AM requests per second.  So a reasonable low limit is
-  // that times the number of nodes in the job.  We also know from that
-  // same test that the Chapel runtime comm=ugni AM handler can only
-  // handle just over 1.5m "fast" AM requests per second.  Ours cannot
-  // achieve that rate yet, but it's a reasonable upper limit.
-  //
-  {
-    const int maxAmsPerSecPerInitiator = 150000;
-    numAmLZs = chpl_numNodes * maxAmsPerSecPerInitiator;
-
-    const int maxAmsPerSecPerHandler = 1500000;
-    if (numAmLZs > maxAmsPerSecPerHandler)
-      numAmLZs = maxAmsPerSecPerHandler;
-  }
-
-  //
-  // Create space for inbound AM request landing zones.
-  //
-  CHPL_CALLOC(comm_amReqLZs, numAmLZs);
-
-  //
-  // Pre-post multi-receive buffer for inbound AM requests.
-  //
-  ofi_iov_reqs.iov_base = comm_amReqLZs;
-  ofi_iov_reqs.iov_len = numAmLZs * sizeof(*comm_amReqLZs);
-  ofi_msg_reqs.msg_iov = &ofi_iov_reqs;
-  ofi_msg_reqs.desc = NULL;
-  ofi_msg_reqs.iov_count = 1;
-  ofi_msg_reqs.addr = FI_ADDR_UNSPEC;
-  ofi_msg_reqs.context = NULL;
-  ofi_msg_reqs.data = 0x0;
-  OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
-  DBG_PRINTF(DBG_AM | DBG_AMRECV, "pre-post fi_recvmsg(AMReqs)");
-
-  //
-  // Create initiator-side AM request and 'finished' space.
-  //
-  const int numAmBufs = numTxCtxs;
-  CHPL_CALLOC(comm_amReqs, numAmBufs);
-
-  comm_amFinFlagsSize = numAmBufs * sizeof(comm_amFinFlags[0]);
-  CHPL_CALLOC(comm_amFinFlags, numAmBufs);
-
-  for (int i = 0; i < ptiTabLen; i++) {
-    ptiTab[i].tbIdx = i;
-  }
-}
-
-
-static
-void init_ofiForRma(void) {
-}
-
-
-static
 void init_ofiForMem(void) {
   //
   // With scalable memory registration we just register the whole
@@ -627,6 +552,60 @@ void init_ofiForMem(void) {
   //
   CHPL_CALLOC(memTabMap, chpl_numNodes);
   chpl_comm_ofi_oob_allgather(&memTab, memTabMap, sizeof(memTabMap[0]));
+}
+
+
+static
+void init_ofiForRma(void) {
+}
+
+
+static void init_amHandling(void);
+
+static
+void init_ofiForAms(void) {
+  //
+  // Compute the amount of space we should allow for AM landing zones.
+  // We should have enough that we needn't re-post the multi-receive
+  // buffer more often than, say, every tenth of a second.  We know from
+  // the Chapel performance/comm/low-level/many-to-one test that the
+  // comm=ugni AM handler can handle just over 150k "fast" AM requests
+  // in 0.1 sec.  Assuming an average AM request size of 256 bytes, a 40
+  // MiB buffer is enough to give us the desired 0.1 sec lifetime before
+  // it needs renewing.
+  //
+  const size_t amLZSize = (size_t) 40 << 20;
+
+
+  //
+  // Set the minimum multi-receive buffer space.  Some providers don't
+  // have fi_setopt() for some ep types, so allow this to fail in that
+  // case.
+  //
+  {
+    const size_t sz = 256;
+    const int ret = fi_setopt(&ofi_rxEp->fid, FI_OPT_ENDPOINT,
+                              FI_OPT_MIN_MULTI_RECV, &sz, sizeof(sz));
+    CHK_TRUE(ret == FI_SUCCESS || ret == -FI_ENOSYS);
+  }
+
+  //
+  // Pre-post multi-receive buffer for inbound AM requests.
+  //
+  CHPL_CALLOC_SZ(amLZs, 1, amLZSize);
+
+  ofi_iov_reqs.iov_base = amLZs;
+  ofi_iov_reqs.iov_len = amLZSize;
+  ofi_msg_reqs.msg_iov = &ofi_iov_reqs;
+  ofi_msg_reqs.desc = NULL;
+  ofi_msg_reqs.iov_count = 1;
+  ofi_msg_reqs.addr = FI_ADDR_UNSPEC;
+  ofi_msg_reqs.context = NULL;
+  ofi_msg_reqs.data = 0x0;
+  OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
+  DBG_PRINTF(DBG_AM | DBG_AMRECV, "pre-post fi_recvmsg(AMReqs)");
+
+  init_amHandling();
 }
 
 
@@ -680,14 +659,14 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
 static void exit_all(int);
 static void exit_any(int);
 
-static void fini_am_handler(void);
+static void fini_amHandling(void);
 static void fini_ofi(void);
 
 
 void chpl_comm_pre_task_exit(int all) {
   if (all) {
     chpl_comm_barrier("chpl_comm_pre_task_exit");
-    fini_am_handler();
+    fini_amHandling();
   }
 }
 
@@ -727,10 +706,7 @@ void fini_ofi(void) {
   CHPL_FREE(memTab);
   CHPL_FREE(ofiMrTab);
 
-  CHPL_FREE(comm_amFinFlags);
-
-  CHPL_FREE(comm_amReqs);
-  CHPL_FREE(comm_amReqLZs);
+  CHPL_FREE(amLZs);
 
   CHPL_FREE(ofi_rxAddrs);
 
@@ -739,7 +715,7 @@ void fini_ofi(void) {
 
   for (int i = 0; i < ptiTabLen; i++) {
     OFI_CHK(fi_close(&ptiTab[i].txCtx->fid));
-    if (i < ptiTabLen - 1)
+    if (i < ptiTabLen - numAmHandlers)
       OFI_CHK(fi_close(&ptiTab[i].txCQ->fid));
     else
       OFI_CHK(fi_close(&ptiTab[i].txCntr->fid));
@@ -998,14 +974,16 @@ int mrGetLocalDesc(void** pDesc, void* addr, int len) {
     //
     // ??? Docs not clear; this may not work for prov=gni FI_MR_BASIC.
     //
-    *pDesc = NULL;
+    if (pDesc != NULL)
+      *pDesc = NULL;
     return 0;
   }
 
   struct memEntry* mr;
   if ((mr = getMemEntry(&memTab, addr, len)) == NULL)
     return -1;
-  *pDesc = mr->desc;
+  if (pDesc != NULL)
+    *pDesc = mr->desc;
   return 0;
 }
 
@@ -1015,179 +993,76 @@ int mrGetRemoteKey(uint64_t* pKey, int iNode, void* addr, int len) {
   struct memEntry* mr;
   if ((mr = getMemEntry(&memTabMap[iNode], addr, len)) == NULL)
     return -1;
-  *pKey = mr->key;
+  if (pKey != NULL)
+    *pKey = mr->key;
   return 0;
 }
 
 
 ////////////////////////////////////////
 //
-// Interface: Active Message support
+// Interface: Active Messages
 //
 
-#define num_am_handlers 1
 
-static int am_handler_count;
-static atomic_bool am_handlers_please_exit;
-static pthread_cond_t amh_startStop_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t amh_startStop_mutex = PTHREAD_MUTEX_INITIALIZER;
+typedef enum {
+  am_opNil = 0,                         // no-op
+  am_opCall,                            // call a function table function
+} amOp_t;
 
-struct ofi_am_info {
-  c_nodeid_t node;
-  c_sublocid_t subloc;
-  chpl_bool serial_state; // To prevent creation of new tasks
-  chpl_bool fast;
-  chpl_bool blocking;
-  chpl_fn_int_t fid;
-  void* ack;
+//
+// Members are packed, potentially differently, in each AM request type
+// to reduce space requirements.  The 'op' member must come first in all
+// cases.
+//
+struct amReqOp {
+  amOp_t op: 3;                 // operation
+};
+
+struct amReqCall {
+  amOp_t op: 3;                 // operation
+  int fast: 1;                  // do in AM handler?  (no task)
+  chpl_fn_int_t fid;            // function table index to call
+  uint16_t argSize;             // #bytes of arg bundle following descriptor
+  c_nodeid_t nodeID;            // source node
+  c_sublocid_t subloc;          // target sublocale
+  char* done;                   // PUT !=0 here when done (NULL: nonblocking)
+  chpl_task_ChapelData_t state; // for tasking layer
+  int args[0];
 };
 
 
-static void am_handler(void *);
+static void execOnCallCommon(c_nodeid_t, c_sublocid_t,
+                             chpl_fn_int_t,
+                             chpl_comm_on_bundle_t*, size_t,
+                             chpl_bool, chpl_bool);
 
 
-static
-void init_am_handler(void) {
-  atomic_init_bool(&am_handlers_please_exit, false);
-
-  if (num_am_handlers > 0) {
-    // Start AM handler thread(s).  Don't proceed from here until at
-    // least one is running.
-    PTHREAD_CHK(pthread_mutex_lock(&amh_startStop_mutex));
-
-    for (int i = 0; i < num_am_handlers; i++) {
-      if (chpl_task_createCommTask(am_handler, NULL) != 0) {
-        INTERNAL_ERROR_V("unable to start AM handler thread");
-      }
-    }
-
-    // Some AM handler thread we created will release us.
-    PTHREAD_CHK(pthread_cond_wait(&amh_startStop_cond,
-                                  &amh_startStop_mutex));
-    PTHREAD_CHK(pthread_mutex_unlock(&amh_startStop_mutex));
-  }
+int chpl_comm_numPollingTasks(void) {
+  return 1;
 }
 
 
-static
-void fini_am_handler(void) {
-  //
-  // Tear down the AM handler thread(s).  On node 0, don't proceed from
-  // here until the last one has finished (TODO).
-  //
-  PTHREAD_CHK(pthread_mutex_lock(&amh_startStop_mutex));
-  atomic_store_bool(&am_handlers_please_exit, true);
-  PTHREAD_CHK(pthread_cond_wait(&amh_startStop_cond,
-                                &amh_startStop_mutex));
-  PTHREAD_CHK(pthread_mutex_unlock(&amh_startStop_mutex));
-
-  atomic_destroy_bool(&am_handlers_please_exit);
-}
-
-
-#if 0
-static void handle_am(struct fi_cq_data_entry*);
-#endif
-
-static void execute_on_common(c_nodeid_t, c_sublocid_t,
-                              chpl_fn_int_t,
-                              chpl_comm_on_bundle_t*, size_t,
-                              chpl_bool, chpl_bool);
-
-
-int chpl_comm_numPollingTasks(void) { return 1; }
-
-
-void chpl_comm_make_progress(void) { }
-
-
-/*
- * The AM handler runs this.
- */
-static void am_handler(void *argNil) {
-#if 0
-  struct progress_thread_info* pti = args;
-  const int id = pti->id;
-  const int num_rbufs = 2;
-  struct iovec iov[num_rbufs];
-  struct fi_msg msg[num_rbufs];
-  struct ofi_am_info* dst_buf[num_rbufs];
-  const int rbuf_len = 10;
-  const size_t rbuf_size = rbuf_len*sizeof(dst_buf[0][0]);
-  const int num_cqes = rbuf_len;
-  struct fi_cq_data_entry cqes[num_cqes];
-  int num_read;
-
-  int i;
-
-  for (i = 0; i < num_rbufs; i++) {
-    dst_buf[i] = chpl_mem_allocMany(rbuf_len, sizeof(dst_buf[i][0]),
-                                    CHPL_RT_MD_COMM_UTIL, 0, 0);
-    iov[i].iov_base = dst_buf[i];
-    iov[i].iov_len = rbuf_size;
-    msg[i].msg_iov = &iov[i];
-    msg[i].desc = (void **) fi_mr_desc(ofi.mr);
-    msg[i].iov_count = 1;
-    msg[i].addr = FI_ADDR_UNSPEC;
-    msg[i].context = (void *) (uint64_t) i;
-    msg[i].data = 0x0;
-    OFI_CHK(fi_recvmsg(ofi.am_rx_ep[id], &msg[i], FI_MULTI_RECV));
-  }
-#endif
-
-  // Count this AM handler thread as running.  The creator thread
-  // wants to be released as soon as at least one AM handler thread
-  // is running, so if we're the first, do that.
-  PTHREAD_CHK(pthread_mutex_lock(&amh_startStop_mutex));
-  if (++am_handler_count == 1)
-    PTHREAD_CHK(pthread_cond_signal(&amh_startStop_cond));
-  PTHREAD_CHK(pthread_mutex_unlock(&amh_startStop_mutex));
-
-  // Wait for events
-  while (!atomic_load_bool(&am_handlers_please_exit)) {
-#if 0
-    num_read = fi_cq_read(ofi.am_rx_cq[id], cqes, num_cqes);
-    if (num_read > 0) {
-      for (i = 0; i < num_read; i++) {
-        handle_am(&cqes[i]);
-        // send ack
-      }
-    } else {
-      if (num_read != -FI_EAGAIN) {
-        INTERNAL_ERROR_V("%s", fi_strerror(-num_read));
-      }
-    }
-#else
-    sched_yield();
-#endif
-  }
-
-  // Un-count this AM handler thread.  Whoever told us to exit wants to
-  // be released once all the AM handler threads are done, so if we're
-  // the last, do that.
-  PTHREAD_CHK(pthread_mutex_lock(&amh_startStop_mutex));
-  if (--am_handler_count == 0)
-    PTHREAD_CHK(pthread_cond_signal(&amh_startStop_cond));
-  PTHREAD_CHK(pthread_mutex_unlock(&amh_startStop_mutex));
+void chpl_comm_make_progress(void) {
 }
 
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t arg_size) {
+                          chpl_comm_on_bundle_t *arg, size_t argSize) {
   assert(node != chpl_nodeID); // handled by the locale model
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, arg_size}};
+       .iu.executeOn={subloc, fid, arg, argSize}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
   chpl_comm_diags_verbose_printf("remote task created on %d", (int) node);
   chpl_comm_diags_incr(execute_on);
 
-  execute_on_common(node, subloc, fid, arg, arg_size, false, true);
+  execOnCallCommon(node, subloc, fid, arg, argSize, false, true);
 }
 
 
@@ -1200,13 +1075,13 @@ static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
 
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t arg_size) {
+                             chpl_comm_on_bundle_t *arg, size_t argSize) {
   assert(node != chpl_nodeID); // handled by the locale model
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, arg_size}};
+       .iu.executeOn={subloc, fid, arg, argSize}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -1214,19 +1089,19 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                                  (int) node);
   chpl_comm_diags_incr(execute_on_nb);
 
-  execute_on_common(node, subloc, fid, arg, arg_size, false, false);
+  execOnCallCommon(node, subloc, fid, arg, argSize, false, false);
 }
 
 
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t *arg, size_t arg_size) {
+                               chpl_comm_on_bundle_t *arg, size_t argSize) {
   assert(node != chpl_nodeID); // handled by the locale model
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, arg_size}};
+       .iu.executeOn={subloc, fid, arg, argSize}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -1234,43 +1109,233 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                  (int) node);
   chpl_comm_diags_incr(execute_on_fast);
 
-  execute_on_common(node, subloc, fid, arg, arg_size, true, true);
+  execOnCallCommon(node, subloc, fid, arg, argSize, true, true);
 }
 
 
-static void execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
-                              chpl_fn_int_t fid,
-                              chpl_comm_on_bundle_t* arg, size_t arg_size,
-                              chpl_bool fast, chpl_bool blocking) {
-  INTERNAL_ERROR_V("Remote ons not yet implemented");
+static void execOnCallCommon(c_nodeid_t node, c_sublocid_t subloc,
+                             chpl_fn_int_t fid,
+                             chpl_comm_on_bundle_t* arg, size_t argSize,
+                             chpl_bool fast, chpl_bool blocking) {
+  //
+  // If blocking, make sure target can RMA PUT the indicator to us.
+  //
+  blocking = true; // TODO: for now
+  char myDone;
+  char* pDone = NULL;
+  if (blocking) {
+    pDone = &myDone;
+    if (mrGetLocalDesc(NULL, pDone, sizeof(*pDone)) != 0) {
+      pDone = allocBounceBuf(sizeof(myDone));
+      CHK_TRUE(mrGetLocalDesc(NULL, pDone, sizeof(*pDone)) == 0);
+    }
+    *pDone = 0;
+  }
 
-  // bundle args
-  // send to remote AM port
+  union {
+    struct amReqCall hdr;
+    char space[1024];
+  } req;
+
+  argSize -= sizeof(chpl_comm_on_bundle_t); // just count user args
+  CHK_TRUE(argSize < sizeof(req.space) - sizeof(req.hdr));
+  memcpy(&req.hdr.args, arg, argSize);
+
+  const size_t reqSize = offsetof(struct amReqCall, args) + argSize;
+
+  req.hdr = (struct amReqCall) { .op = am_opCall,
+                                 .fast = false,
+                                 .fid = fid,
+                                 .argSize = argSize,
+                                 .nodeID = chpl_nodeID,
+                                 .subloc = subloc,
+                                 .done = pDone,
+                                 .state = arg->task_bundle.state };
+
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+
+  OFI_CHK(fi_send(tcip->txCtx, &req, reqSize, NULL, ofi_rxAddrs[node], &req));
+  DBG_PRINTF(DBG_AM | DBG_AMSEND,
+             "tx AM req to %d, done %p",
+             node, req.hdr.done);
+  tcip->numAmReqsTxed++;
+  tcip->numTxsOut++;
+
+  //
+  // Wait for network completion.
+  //
+  waitForTxCQ(tcip, 1);
+
+  releaseTxCtxInfo(tcip);
+ 
+  if (blocking) {
+    //
+    // Wait for executeOn completion indicator.
+    //
+    while (!*(char* volatile) pDone)
+      sched_yield();
+    if (pDone != &myDone)
+      freeBounceBuf(pDone);
+  }
 }
-
-
-#if 0
-static void handle_am(struct fi_cq_data_entry* cqe) {
-
-}
-#endif
 
 
 ////////////////////////////////////////
 //
-// Interface: RMA support
+// Internal active message support
 //
 
-static inline chpl_comm_nb_handle_t ofi_put(void*, c_nodeid_t, void*, size_t);
-static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t, void*, size_t);
+static int numAmHandlersActive;
+static atomic_bool amHandlersExit;
+static pthread_cond_t amStartStopCond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t amStartStopMutex = PTHREAD_MUTEX_INITIALIZER;
 
-static void waitForTxCQ(struct perTxCtxInfo_t*, int);
-static struct perTxCtxInfo_t* getTxCtxInfo(void);
-static void releaseTxCtxInfo(struct perTxCtxInfo_t*);
 
-static void* allocBounceBuf(size_t);
-static void freeBounceBuf(void*);
+static void amHandler(void*);
+static void processRxAmReq(struct perTxCtxInfo_t*);
 
+
+static
+void init_amHandling(void) {
+  //
+  // Start AM handler thread(s).  Don't proceed from here until at
+  // least one is running.
+  //
+  atomic_init_bool(&amHandlersExit, false);
+
+  PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
+  for (int i = 0; i < numAmHandlers; i++) {
+    CHK_TRUE(chpl_task_createCommTask(amHandler, NULL) == 0);
+  }
+  PTHREAD_CHK(pthread_cond_wait(&amStartStopCond, &amStartStopMutex));
+  PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
+}
+
+
+static
+void fini_amHandling(void) {
+  //
+  // Tear down the AM handler thread(s).  On node 0, don't proceed from
+  // here until the last one has finished (TODO).
+  //
+  PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
+  atomic_store_bool(&amHandlersExit, true);
+  PTHREAD_CHK(pthread_cond_wait(&amStartStopCond, &amStartStopMutex));
+  PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
+
+  atomic_destroy_bool(&amHandlersExit);
+}
+
+
+//
+// The AM handler runs this.
+//
+static
+void amHandler(void* argNil) {
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = getTxCtxInfo(false /*isWorker*/)) != NULL);
+
+  DBG_PRINTF(DBG_THREADS, "AM handler running");
+
+  //
+  // Count this AM handler thread as running.  The creator thread
+  // wants to be released as soon as at least one AM handler thread
+  // is running, so if we're the first, do that.
+  //
+  PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
+  if (++numAmHandlersActive == 1)
+    PTHREAD_CHK(pthread_cond_signal(&amStartStopCond));
+  PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
+
+  //
+  // Process AM requests.
+  //
+  while (!atomic_load_bool(&amHandlersExit)) {
+    processRxAmReq(tcip);
+    tcip->numTxsOut -= fi_cntr_read(tcip->txCntr);
+  }
+
+  //
+  // Un-count this AM handler thread.  Whoever told us to exit wants to
+  // be released once all the AM handler threads are done, so if we're
+  // the last, do that.
+  //
+  PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
+  if (--numAmHandlersActive == 0)
+    PTHREAD_CHK(pthread_cond_signal(&amStartStopCond));
+  PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
+
+  DBG_PRINTF(DBG_THREADS, "AM handler done");
+}
+
+
+static
+void processRxAmReq(struct perTxCtxInfo_t* tcip) {
+  //
+  // Process requests received on the AM request endpoint.
+  //
+  const int maxAmsToDo = 10;
+  struct fi_cq_data_entry cqes[maxAmsToDo];
+
+  int ret;
+  CHK_TRUE((ret = fi_cq_read(ofi_rxCQ, cqes, maxAmsToDo)) > 0
+           || ret == -FI_EAGAIN);
+
+  if (ret > 0) {
+    const int numEvents = ret;
+    for (int i = 0; i < numEvents; i++) {
+      if ((cqes[i].flags & FI_RECV) != 0) {
+        //
+        // This event is for an inbound AM request.  Handle it.
+        //
+        struct amReqOp* reqOp = (struct amReqOp*) cqes[i].buf;
+
+        DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                   "CQ rx AM req");
+        tcip->numAmReqsRxed++;
+#if 0 // TODO: really support
+#else
+        chpl_warning("AM ops are not really supported", 0, 0);
+        switch (reqOp->op) {
+        case am_opCall: {
+          struct amReqCall* reqCall = (struct amReqCall*) reqOp;
+          if (reqCall->done != NULL) {
+            char done = 1;
+            (void) ofi_put(&done, reqCall->nodeID, reqCall->done,
+                           sizeof(*reqCall->done));
+          }
+          break;
+        }
+
+        default:
+          INTERNAL_ERROR_V("unexpected AM op %d", (int) reqOp->op);
+          break;
+        }
+#endif
+      }
+
+      if ((cqes[i].flags & FI_MULTI_RECV) != 0) {
+        //
+        // Multi-receive buffer filled; post another one.
+        //
+        OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
+        DBG_PRINTF(DBG_AM | DBG_AMRECV, "re-post fi_recvmsg(AMReqs)");
+      }
+
+      CHK_TRUE((cqes[i].flags & ~(FI_MSG | FI_RECV | FI_MULTI_RECV)) == 0);
+    }
+
+    DBG_PRINTF(DBG_THREADDETAILS, "processRxAmReq(): received %d AMs",
+               numEvents);
+  }
+}
+
+
+////////////////////////////////////////
+//
+// Interface: RMA
+//
 
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node,
                                        void* raddr, size_t size,
@@ -1421,11 +1486,57 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 }
 
 
+////////////////////////////////////////
+//
+// Internal communication support
+//
+
 static inline
+struct perTxCtxInfo_t* getTxCtxInfo(chpl_bool isWorker) {
+  static __thread struct perTxCtxInfo_t* tcip;
+
+  if (tcip == NULL) {
+    PTHREAD_CHK(pthread_mutex_lock(&pti_mutex));
+
+    if (isWorker) {
+      static int tciiw;
+      if (tciiw >= ptiTabLen - numAmHandlers) {
+        INTERNAL_ERROR_V("out of ptiTab[] entries for workers");
+      }
+      tcip = &ptiTab[tciiw++];
+    } else {
+      static int tciia = -1; // needs execution-time init
+      if (tciia < 0)
+        tciia = numTxCtxs - 1;
+      if (tciia < ptiTabLen - numAmHandlers) {
+        INTERNAL_ERROR_V("out of ptiTab[] entries for AM handlers");
+      }
+      tcip = &ptiTab[tciia--];
+    }
+
+    PTHREAD_CHK(pthread_mutex_unlock(&pti_mutex));
+
+    DBG_PRINTF(DBG_THREADS, "I have ptiTab[%td]", tcip - ptiTab);
+  }
+
+  return tcip;
+}
+
+
+static inline
+void releaseTxCtxInfo(struct perTxCtxInfo_t* tcip) {
+  //
+  // There is nothing to do here unless and until we support threads
+  // overloaded on ptiTab[] entries.
+  //
+}
+
+
+static /*inline*/
 chpl_comm_nb_handle_t ofi_put(void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
   struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = getTxCtxInfo()) != NULL);
+  CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
 
   void* mrDesc;
   void* myAddr = addr;
@@ -1457,11 +1568,11 @@ chpl_comm_nb_handle_t ofi_put(void* addr, c_nodeid_t node,
 }
 
 
-static inline
+static /*inline*/
 chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
                               void* raddr, size_t size) {
   struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = getTxCtxInfo()) != NULL);
+  CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
 
   void* mrDesc;
   void* myAddr = addr;
@@ -1515,33 +1626,6 @@ void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut) {
 }
 
 
-static inline
-struct perTxCtxInfo_t* getTxCtxInfo(void) {
-  static __thread struct perTxCtxInfo_t* tcip;
-
-  if (tcip == NULL) {
-    PTHREAD_CHK(pthread_mutex_lock(&pti_mutex));
-    if (ptiTabIdx >= ptiTabLen - 1) {
-      INTERNAL_ERROR_V("out of ptiTab[] entries");
-    }
-    tcip = &ptiTab[ptiTabIdx++];
-    PTHREAD_CHK(pthread_mutex_unlock(&pti_mutex));
-    DBG_PRINTF(DBG_THREADS, "I have ptiTab[%td]", tcip - ptiTab);
-  }
-
-  return tcip;
-}
-
-
-static inline
-void releaseTxCtxInfo(struct perTxCtxInfo_t* tcip) {
-  //
-  // There is nothing to do here unless and until we support threads
-  // overloaded on ptiTab[] entries.
-  //
-}
-
-
 static
 void* allocBounceBuf(size_t size) {
   void* p;
@@ -1581,7 +1665,7 @@ void chpl_comm_barrier(const char *msg) {
 
   DBG_PRINTF(DBG_BARRIER, "barrier '%s'", (msg == NULL) ? "" : msg);
 
-  if (am_handler_count == 0) {
+  if (numAmHandlersActive == 0) {
     // Comm layer setup is not complete yet; use OOB barrier
     chpl_comm_ofi_oob_barrier();
   } else {
