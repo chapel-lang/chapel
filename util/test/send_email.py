@@ -23,10 +23,10 @@ def main():
     body = sys.stdin.read()
 
     # Send the email!
-    send_email(args.recipients, body, args.subject, args.header, args.sender, args.smtp_host)
+    send_email(args.recipients, body, args.subject, args.header, args.sender, args.smtp_host, args.smtp_user, args.smtp_password)
 
 
-def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_host=None):
+def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_host=None, smtp_user=None, smtp_password=None):
     """Send email!
 
     :arg recipients: list of recipients. If only one, may be a string.
@@ -35,6 +35,8 @@ def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_h
     :arg headers: Optional dict of headers to add.
     :arg sender: Optional sender address. Defaults to <user>@<fqdn>
     :arg smtp_host: Optional SMTP host. Defaults to 'localhost'.
+    :arg smtp_user: Optional SMTP user for login over TLS.
+    :arg smtp_password: password for smtp_user, if used.
     """
     if isinstance(recipients, basestring):
         recipients = [recipients]
@@ -54,8 +56,16 @@ def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_h
 
     if not os.environ.get('CHPL_TEST_NOMAIL', ''):
         logging.debug('Opening connection to: {0}'.format(smtp_host))
-        smtp = smtplib.SMTP(smtp_host)
         try:
+            if smtp_user:
+                smtp = smtplib.SMTP(smtp_host,465)
+                logging.debug('Login with user={0}'.format(smtp_user))
+                if not smtp_password:
+                    raise ValueError('--smtp-user={0} requires an --smtp-password'.format(smtp_user))
+                smtp.starttls()
+                smtp.login(smtp_user, smtp_password)
+            else:
+                smtp = smtplib.SMTP(smtp_host)
             logging.info('Sending email to: {0} from: {1} subject: {2}'.format(
                 ','.join(recipients), sender, subject))
             logging.debug('Email headers: {0}'.format(headers))
@@ -100,6 +110,16 @@ def _default_smtp_host():
     """
     return os.environ.get('CHPL_UTIL_SMTP_HOST', 'localhost')
 
+def _default_smtp_user():
+    """Return default smtp user from environment variable CHPL_UTIL_SMTP_USER.
+    """
+    return os.environ.get('CHPL_UTIL_SMTP_USER')
+
+def _default_smtp_password():
+    """Return default password for smtp user from environment variable CHPL_UTIL_SMTP_PASSWORD.
+    """
+    return os.environ.get('CHPL_UTIL_SMTP_PASSWORD')
+
 def _parse_args():
     """Parse and return command line arguments."""
     class NoWrapHelpFormatter(optparse.IndentedHelpFormatter):
@@ -107,6 +127,9 @@ def _parse_args():
 
         def _format_text(self, text):
             return text
+
+    show_default_text = lambda value: ' (default: %default)' if value else ''
+    hide_default_text = lambda value: ' (default: ********)' if value else ''
 
     parser = optparse.OptionParser(
         usage='usage: %prog [options] recipient_email [...]',
@@ -141,8 +164,21 @@ def _parse_args():
     )
     mail_group.add_option(
         '--smtp-host',
+        metavar='CHPL_UTIL_SMTP_HOST',
         default=_default_smtp_host(),
         help='SMTP host to use when sending email. (default: %default)'
+    )
+    mail_group.add_option(
+        '-u', '--smtp-user', metavar='CHPL_UTIL_SMTP_USER',
+        default=_default_smtp_user(),
+        help='Optional user for SMTP login. Also requests TLS connection.' +
+            show_default_text(_default_smtp_user())
+    )
+    mail_group.add_option(
+        '-p', '--smtp-password', metavar='CHPL_UTIL_SMTP_PASSWORD',
+        default=_default_smtp_password(),
+        help='Password for --smtp-user.' +
+            hide_default_text(_default_smtp_password())
     )
 
     parser.add_option_group(mail_group)
