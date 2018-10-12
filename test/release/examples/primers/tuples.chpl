@@ -88,7 +88,7 @@ for param i in 1..myTuple.size {
 // Tuple Unpacking
 // ***************
 // 
-// Tuple values can be unpacked apart variables during
+// Tuple values can be unpacked into variables during
 // variable initialization:
 
 var (myInt, myString) = otherTuple;
