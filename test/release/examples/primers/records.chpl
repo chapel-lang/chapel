@@ -5,20 +5,20 @@
 //
 
 /*
-  
+
    A record is a type that can contain variables and constants,
    called fields, as well as functions and iterators called methods.
-   Records have many similaties to classes, but there are several important
+   Records have many similarities to classes, but there are several important
    differences:
-  
+
    * classes support inheritance and virtual dispatch while records do not
    * different class variables can refer to the same instance,
      while record variables refer to distinct memory
    * copy-initialization and assignment can be implemented for records
      but not for classes.
-  
+
    A record type can be declared using the ``record`` keyword:
-*/ 
+*/
 record Color {
   var red: uint(8);
   var green: uint(8);
@@ -35,7 +35,7 @@ var taupe = new Color(179, 139, 109);
 writeln(taupe); // output: (red = 179, green = 139, blue = 109)
 
 // Alternatively, a variable can be declared using the record type
-// without initializing it.
+// without explicitly initializing it.
 // In that event the variable is default-initialized.
 // The compiler-generated initializer allows default initialization.
 // It simply default-initializes each field in turn.
@@ -53,7 +53,7 @@ writeln(taupe.luminance());
 
 // Here is an example of a record to store a point where
 // a method is declared inside of the record declaration.
-// This record also demonstrates a a few initializers.
+// This record also demonstrates a few initializers.
 
 record Point {
   var x: real;
@@ -88,7 +88,7 @@ record Point {
 }
 
 // Let's create a default-initialized Point
-var emptyPoint:Point; // outputs Point default-init
+var emptyPoint:Point; // outputs: Point default-init
 
 // Let's create a point by calling the useful initializer
 // and then call the magnitude method on it.
