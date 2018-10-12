@@ -4926,7 +4926,8 @@ static void resolveInitField(CallExpr* call) {
   if (!fs)
     INT_FATAL(call, "bad initializer set field primitive");
 
-  Type* srcType = srcExpr->symbol()->type;
+  Symbol* srcSym = srcExpr->symbol();
+  Type* srcType = srcSym->type;
   if (srcType == dtUnknown)
     INT_FATAL(call, "Unable to resolve field type");
 
@@ -4934,7 +4935,12 @@ static void resolveInitField(CallExpr* call) {
     if (isLegalParamType(srcType) == false) {
       USR_FATAL_CONT(fs, "'%s' is not of a supported param type", fs->name);
     }
-    if (srcExpr->symbol()->isParameter() == false) {
+
+    // Check against the symbol's Immediate is required because the symbol is
+    // likely a temporary, which generally will suppress an error if
+    // initialized from a non-param.
+    if (srcSym->isParameter() == false ||
+        (isVarSymbol(srcSym) && getImmediate(srcSym) == NULL)) {
       USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", fs->name);
     }
   }
@@ -4967,7 +4973,7 @@ static void resolveInitField(CallExpr* call) {
         (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) ||
         (fs->defPoint->init == NULL && fs->defPoint->exprType != NULL &&
          ct->fieldIsGeneric(fs, ignoredHasDefault))) {
-      AggregateType* instantiate = ct->getInstantiation(srcExpr->symbol(), index);
+      AggregateType* instantiate = ct->getInstantiation(srcSym, index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
         INT_ASSERT(parentFn->_this);
