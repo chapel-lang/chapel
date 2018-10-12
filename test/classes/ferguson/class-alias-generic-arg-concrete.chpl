@@ -1,5 +1,6 @@
 class A {
-  var x;
+  type T;
+  var x : T;
 }
 
 proc doit(type C)
