@@ -291,6 +291,11 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
 }
 
 void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
+  // Get root instantiation so we can easily check against e.g. dtOwned
+  if (AggregateType* mat = toAggregateType(manager)) {
+    manager = mat->getRootInstantiation();
+  }
+
   INT_ASSERT(newExpr->isPrimitive(PRIM_NEW));
   AggregateType* at = resolveNewFindType(newExpr);
 

@@ -74,6 +74,21 @@ proc main() {
   }
 
   {
+    type AI = A(int);
+    type AIO = owned AI;
+    type AIS = shared AI;
+    type AIU = unmanaged AI;
+
+    var b = new AIO(2);
+    var c = new AIS(3);
+    var d = new AIU(4);
+    defer delete d;
+
+    writeln(b,c,d);
+  }
+
+
+  {
     type BIR = B(int, real);
     var a = new borrowed BIR(1, 10.0);
     var b = new owned BIR(2, 20.0);
