@@ -144,6 +144,10 @@ which tuple component is the hash and which is the file path.
 So, in this task, you'll modify your program to use an array of records
 instead of an array of tuples.
 
+The records primer is a good starting point for learning more about records:
+
+  https://chapel-lang.org/docs/master/primers/records.html
+
 Note that you'll need to change the sort call. Records don't currently
 get comparison operators by default. While that might change in the
 future, this is a good opportunity to learn about how to sort with a
