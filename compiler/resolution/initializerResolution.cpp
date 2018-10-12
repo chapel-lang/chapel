@@ -39,7 +39,7 @@
 #include "wellknown.h"
 #include "wrappers.h"
 
-static void resolveInitCall(CallExpr* call);
+static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias = NULL);
 
 static void gatherInitCandidates(CallInfo&                  info,
                                  Vec<FnSymbol*>&            visibleFns,
@@ -268,24 +268,10 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
   }
 
   // Find the correct 'init' function without wrapping/promoting
-  resolveInitCall(call);
+  resolveInitCall(call, at);
   resolveInitializerMatch(call->resolvedFunction());
   tmp->type = call->resolvedFunction()->_this->getValType();
   resolveTypeWithInitializer(toAggregateType(tmp->type), call->resolvedFunction());
-
-  if (at->instantiatedFrom != NULL) {
-    if (tmp->type != at) {
-      USR_FATAL_CONT(newExpr,
-                     "Best initializer match doesn't work for generic "
-                     "instantiation %s",
-                     at->symbol->name);
-      USR_PRINT(call->resolvedFunction(),
-                "Best initializer match was defined here, and generated "
-                "instantiation %s",
-                tmp->type->symbol->name);
-      USR_STOP();
-    }
-  }
 
   return call;
 }
@@ -435,7 +421,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveInitCall(CallExpr* call) {
+static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias) {
   CallInfo info;
 
   if (call->id == breakOnResolveID) {
@@ -461,6 +447,9 @@ static void resolveInitCall(CallExpr* call) {
 
     if (best == NULL) {
       if (call->partialTag == false) {
+        if (newExprAlias != NULL) {
+          USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
+        }
         if (candidates.n == 0) {
           printResolutionErrorUnresolved(info, mostApplicable);
         } else {
