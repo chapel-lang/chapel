@@ -29,9 +29,12 @@ proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
   //   computeFileHash(path: string): SHA256Hash throws
   // so it accepts a string argument and returns a SHA256Hash
 
-  // The Tuples and Arrays primers might be useful starting points:
-  //   https://chapel-lang.org/docs/master/primers/tuples.html
-  //   https://chapel-lang.org/docs/primers/arrays.html
+  // STEP 2: Can you make the loop you created above parallel?
+
+  // STEP 3: computeFileHash can throw, so add some error handling
+  // constructs to continue processing if a particular file is not
+  // readable. For this exercise, it's sufficient to print out the
+  // error.
 
   forall (hash, path) in hashAndPath {
     hash = computeFileHash(path);
