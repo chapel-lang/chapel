@@ -5155,7 +5155,6 @@ DEFINE_PRIM(PRIM_COPIES_NO_ALIAS_SET) {
 #ifdef HAVE_LLVM
     Symbol* sym = toSymExpr(call->get(1))->symbol();
     Symbol* otherSym = toSymExpr(call->get(2))->symbol();
-    llvm::LLVMContext &ctx = info->llvmContext;
 
     if (info->noAliasScopeLists.count(otherSym) > 0) {
       llvm::MDNode *&scopeList = info->noAliasScopeLists[sym];
