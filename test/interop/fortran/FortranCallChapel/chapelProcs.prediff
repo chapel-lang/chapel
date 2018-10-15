@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-make
+make CHPL=$3
 
 ./testCallChapel >> $2
 

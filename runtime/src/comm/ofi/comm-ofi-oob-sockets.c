@@ -46,13 +46,13 @@ void chpl_comm_ofi_oob_init(void) {
     int ev_i;
 
     if (sscanf(ev, "%i", &ev_i) != 1) {
-      chpl_internal_error("SLURM_PROCID");
+      INTERNAL_ERROR_V("SLURM_PROCID");
     }
     chpl_nodeID = ev_i;
 
     if ((ev = getenv("SLURM_NTASKS")) == NULL
         || sscanf(ev, "%i", &ev_i) != 1) {
-      chpl_internal_error("SLURM_NTASKS");
+      INTERNAL_ERROR_V("SLURM_NTASKS");
     }
     chpl_numNodes = ev_i;
 
@@ -66,21 +66,21 @@ void chpl_comm_ofi_oob_init(void) {
     }
 #endif
   } else {
-    chpl_internal_error("need slurm system launcher");
+    INTERNAL_ERROR_V("need slurm system launcher");
   }
 }
 
 
 void chpl_comm_ofi_oob_fini(void) {
   if (chpl_numNodes != 1) {
-    chpl_internal_error("multi-locale fini not supported");
+    INTERNAL_ERROR_V("multi-locale fini not supported");
   }
 }
 
 
 void chpl_comm_ofi_oob_barrier(void) {
   if (chpl_numNodes != 1) {
-    chpl_internal_error("multi-locale barrier not supported");
+    INTERNAL_ERROR_V("multi-locale barrier not supported");
   }
 }
 
@@ -89,6 +89,6 @@ void chpl_comm_ofi_oob_allgather(void* in, void* out, int len) {
   if (chpl_numNodes == 1) {
     chpl_memcpy(out, in, len);
   } else {
-    chpl_internal_error("multi-locale allgather not supported");
+    INTERNAL_ERROR_V("multi-locale allgather not supported");
   }
 }
