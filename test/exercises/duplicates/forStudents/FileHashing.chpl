@@ -1,90 +1,48 @@
 module FileHashing {
-  use Crypto only;
-  use Path only ;
 
   record SHA256Hash {
-    var hash: owned Crypto.CryptoBuffer;
+    var hash: 8*uint(32);
 
     // ought to be throws, see issue #7261
     proc writeThis(f) {
-      if hash == nil {
-        f <~> " "*64;
-      } else {
-        var len = hash.getBuffSize();
-        var ptr = hash.getBuffPtr();
-        for i in 0..#len {
-          var s = try! "%02xu".format(ptr[i]);
-          f <~> s;
-        }
+      for component in hash {
+        var s = try! "%08xu".format(component);
+        f <~> s;
       }
     }
     proc init() {
-      this.hash = nil;
+      // compiler adds initialization of hash to 0s
     }
     proc init(from: SHA256Hash) {
-      if from.hash {
-        this.hash = new owned Crypto.CryptoBuffer(from.hash.getBuffData());
-      } else {
-        this.hash = nil;
-      }
+      this.hash = from.hash;
     }
-    proc init(taking: owned Crypto.CryptoBuffer) {
-      this.hash = taking;
+    proc init(hash: 8*uint(32)) {
+      this.hash = hash;
     }
   }
 
   proc =(ref lhs: SHA256Hash, rhs: SHA256Hash) {
-    // If the sizes are the same, copy the bytes
-    if lhs.hash != nil && rhs.hash != nil &&
-       lhs.hash.getBuffSize() == rhs.hash.getBuffSize() {
-
-      for (lhsByte,rhsByte) in zip(lhs.hash.buff, rhs.hash.buff) {
-        lhsByte = rhsByte;
-      }
-
-    // Otherwise, replace lhs.hash with a new one
-    } else {
-      if rhs.hash == nil {
-        lhs.hash = nil;
-      } else {
-        lhs.hash = new owned Crypto.CryptoBuffer(rhs.hash.buff);
-      }
-    }
+    lhs.hash = rhs.hash;
   }
 
+  /* no longer necessary
   proc chpl__defaultHash(h: SHA256Hash) {
-    if h.hash == nil then
-      return 0;
-    else
-      return chpl__defaultHash(h.hash.buff);
-  }
+    return chpl__defaultHash(h.hash);
+  }*/
 
   proc compare(a: SHA256Hash, b: SHA256Hash): int {
 
-    // First, establish that the hashes aren't nil
-    // we sort nil before all other hashes
-    if a.hash == nil || b.hash == nil {
-      if a.hash == nil && b.hash == nil {
-        return 0;
-      } else if a.hash == nil {
+    for i in 1..8 {
+      var aa = a.hash[i];
+      var bb = b.hash[i];
+      if aa < bb {
         return -1;
-      } else {
+      }
+      if aa > bb {
         return 1;
       }
     }
-
-    var ret = 0;
-    for (aa,bb) in zip(a.hash.buff, b.hash.buff) {
-      if ret == 0 {
-        if aa < bb {
-          ret = -1;
-        }
-        if aa > bb {
-          ret = 1;
-        }
-      }
-    }
-    return ret;
+    return 0;
   }
 
   proc <(a: SHA256Hash, b: SHA256Hash) {
@@ -111,23 +69,67 @@ module FileHashing {
      Returns the SHA256Hash for the file stored at `path`.
    */
   proc computeFileHash(path: string): SHA256Hash throws {
+    use SHA256Implementation;
+
     var f = open(path, iomode.r);
     var len = f.length();
-    if len == 0 {
-      return new SHA256Hash();
+    var r = f.reader(kind=iokind.big, locking=false,
+                     start=0, end=len);
+
+
+    var msg:16*uint(32); // aka 64 bytes
+    var offset = 0;
+    var state:SHA256State;
+
+    // Read as many full blocks as we can
+    // but don't ever read the last block in this loop
+    // since we need to pass that to state.lastblock
+    while offset+64 < len {
+      r.read(msg);
+      state.fullblock(msg);
+      offset += 64;
     }
 
-    var r = f.reader(kind=iokind.native, locking=false,
-                     start=0, end=len);
-    var bytes: [0..#len] uint(8);
-    r.read(bytes);
 
-    var buf = new owned Crypto.CryptoBuffer(bytes);
+    // clear msg before last block, so unused data are zeros
+    for i in 1..16 {
+      msg[i] = 0;
+    }
 
-    var SHA256 = new owned Crypto.Hash(Crypto.Digest.SHA256);
+    var nbits:uint = 0;
+    var msgi = 1;
+    // Now handle the last 4-byte words
+    while offset+4 <= len {
+      r.read(msg[msgi]);
+      msgi += 1;
+      offset += 4;
+      nbits += 32;
+    }
+    
+    if offset < len {
+      var lastword:uint(32);
+      var byte:uint(8);
+      var bytei = 0;
+      // Now handle the last 1-byte portions
+      while offset < len {
+        r.read(byte);
+        lastword <<= 8;
+        lastword |= byte;
+        bytei += 1;
+        offset += 1;
+        nbits += 8;
+      }
+      // Shift left so the data is in the high order bits of lastword.
+      while bytei != 4 {
+        lastword <<= 8;
+        bytei += 1;
+      }
+      msg[msgi] = lastword;
+    }
 
-    var hash = new SHA256Hash(SHA256.getDigest(buf));
-    return hash;
+    var hash:8*uint(32) = state.lastblock(msg, nbits);
+
+    return new SHA256Hash(hash);
   }
 
   /*
@@ -137,6 +139,7 @@ module FileHashing {
     current directory. Returns the result.
    */
   proc relativeRealPath(path: string): string throws {
+    use Path only ;
     var currentDirectory = Path.realPath(".");
     var fullPath = Path.realPath(path);
     if !currentDirectory.endsWith("/") {
