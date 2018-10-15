@@ -436,6 +436,7 @@ module ArrayViewRankChange {
   // other array class implementations, it supports the standard dsi
   // interface.
   //
+  pragma "aliasing array"
   class ArrayViewRankChangeArr: BaseArr {
     type eltType;  // see note on commented-out proc eltType below...
 

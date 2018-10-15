@@ -126,6 +126,19 @@ static int codegen_tmp = 1;
 *                                                                           *
 ************************************* | ************************************/
 
+#ifdef HAVE_LLVM
+static void addNoAliasMetadata(GenRet &ret, Symbol* sym) {
+  GenInfo* info = gGenInfo;
+  if (info->cfile == NULL) {
+    // add no-alias information if it's in our map
+    if (info->noAliasScopeLists.count(sym) > 0)
+      ret.aliasScope = info->noAliasScopeLists[sym];
+    if (info->noAliasLists.count(sym) > 0)
+      ret.noalias = info->noAliasLists[sym];
+  }
+}
+#endif
+
 GenRet SymExpr::codegen() {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
@@ -138,8 +151,10 @@ GenRet SymExpr::codegen() {
 #ifdef HAVE_LLVM
     if(isVarSymbol(var)) {
       ret = toVarSymbol(var)->codegen();
+      addNoAliasMetadata(ret, var);
     } else if(isArgSymbol(var)) {
       ret = info->lvt->getValue(var->cname);
+      addNoAliasMetadata(ret, var);
     } else if(isTypeSymbol(var)) {
       ret.type = toTypeSymbol(var)->codegen().type;
     } else if(isFnSymbol(var) ){
@@ -449,6 +464,8 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
                                   Type* surroundingStruct = NULL,
                                   uint64_t fieldOffset = 0,
                                   llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
+                                  llvm::MDNode* aliasScope = NULL,
+                                  llvm::MDNode* noalias = NULL,
                                   bool addInvariantStart = false)
 {
   GenInfo *info = gGenInfo;
@@ -465,7 +482,13 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
       tbaa = valType->symbol->llvmTbaaAccessTag;
     }
   }
-  if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
+  if( tbaa )
+    ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
+  if( aliasScope )
+    ret->setMetadata(llvm::LLVMContext::MD_alias_scope, aliasScope);
+  if( noalias )
+    ret->setMetadata(llvm::LLVMContext::MD_noalias, noalias);
+
 
   if(!info->loopStack.empty()) {
     const auto &loopData = info->loopStack.top();
@@ -512,6 +535,8 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
   ptr.alreadyStored = true;
   return codegenStoreLLVM(val.val, ptr.val, valType, ptr.surroundingStruct,
                           ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
+                          ptr.aliasScope,
+                          ptr.noalias,
                           ptr.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
@@ -522,6 +547,8 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
                                 Type* surroundingStruct = NULL,
                                 uint64_t fieldOffset = 0,
                                 llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
+                                llvm::MDNode* aliasScope = NULL,
+                                llvm::MDNode* noalias = NULL,
                                 bool isConst = false)
 {
   GenInfo* info = gGenInfo;
@@ -546,7 +573,12 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
       ret->setMetadata(llvm::StringRef("llvm.mem.parallel_loop_access"), loopData.loopMetadata);
   }
 
-  if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
+  if( tbaa )
+    ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
+  if( aliasScope )
+    ret->setMetadata(llvm::LLVMContext::MD_alias_scope, aliasScope);
+  if( noalias )
+    ret->setMetadata(llvm::LLVMContext::MD_noalias, noalias);
   return ret;
 }
 
@@ -561,7 +593,10 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
   }
 
   return codegenLoadLLVM(ptr.val, valType, ptr.surroundingStruct,
-                         ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor, isConst);
+                         ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
+                         ptr.aliasScope,
+                         ptr.noalias,
+                         isConst);
 }
 
 #endif
@@ -922,7 +957,7 @@ static const int field_other = 3;
 //    & x->myfield
 //
 static
-GenRet codegenFieldPtr(
+GenRet doCodegenFieldPtr(
     GenRet base,
     const char *c_field_name,
     const char* chpl_field_name,
@@ -942,7 +977,7 @@ GenRet codegenFieldPtr(
     // to GEN_PTR or GEN_WIDE_PTR cases.
     if (baseType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF)) {
       base = codegenDeref(base);
-      return codegenFieldPtr(base, c_field_name, chpl_field_name, special);
+      return doCodegenFieldPtr(base, c_field_name, chpl_field_name, special);
     }
   }
 
@@ -953,7 +988,7 @@ GenRet codegenFieldPtr(
         (baseType && baseType->symbol->hasFlag(FLAG_WIDE_CLASS)) ) {
       GenRet addr;
       addr = codegenRaddr(base);
-      addr = codegenFieldPtr(addr, c_field_name, chpl_field_name, special);
+      addr = doCodegenFieldPtr(addr, c_field_name, chpl_field_name, special);
       ret = codegenWideAddrWithAddr(base, addr);
       return ret;
     }
@@ -1078,6 +1113,13 @@ GenRet codegenFieldPtr(
           ret.chplType->symbol->llvmTbaaTypeDescriptor;
       }
     }
+
+    // Propagate noalias scopes
+    if (base.aliasScope)
+      ret.aliasScope = base.aliasScope;
+    if (base.noalias)
+      ret.noalias = base.noalias;
+
 #endif
   }
   return ret;
@@ -1087,6 +1129,8 @@ static
 GenRet codegenFieldPtr(GenRet base, Expr* field) {
   const char* cname = NULL;
   const char* name = NULL;
+
+  GenRet genBase = base;
   if(DefExpr *de = toDefExpr(field)) {
     cname = de->sym->cname;
     name = de->sym->name;
@@ -1098,19 +1142,20 @@ GenRet codegenFieldPtr(GenRet base, Expr* field) {
   } else {
     INT_FATAL("Unknown field in codegenFieldPtr");
   }
-  return codegenFieldPtr(base, cname, name, field_normal);
+
+  return doCodegenFieldPtr(genBase, cname, name, field_normal);
 }
 
 static
 GenRet codegenFieldCidPtr(GenRet base) {
-  GenRet ret = codegenFieldPtr(base, "chpl__cid", NULL, field_cid);
+  GenRet ret = doCodegenFieldPtr(base, "chpl__cid", NULL, field_cid);
   //if( ! ret.chplType ) ret.chplType = CLASS_ID_TYPE;
   return ret;
 }
 
 static
 GenRet codegenFieldUidPtr(GenRet base) {
-  GenRet ret = codegenFieldPtr(base, "_uid", NULL, field_uid);
+  GenRet ret = doCodegenFieldPtr(base, "_uid", NULL, field_uid);
   //if( ! ret.chplType ) ret.chplType = UNION_ID_TYPE;
   return ret;
 }
@@ -1125,7 +1170,7 @@ GenRet codegenFieldUidPtr(GenRet base) {
 //  4 base.chplType is a Chapel reference or wide reference
 //    to a data class, wide data class, or homogeneous tuple.
 //
-// In any case, returns a GEN_PTR or GEN_WIDE_PTR to the field.
+// In any case, returns a GEN_PTR or GEN_WIDE_PTR to the element.
 //
 // This is equivalent to C (assuming ptr is a pointer type)
 //   ptr + i
@@ -1220,6 +1265,13 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
     GEPLocs.push_back(extendToPointerSize(index, AS));
 
     ret.val = createInBoundsGEP(base.val, GEPLocs);
+
+    // Propagate noalias scopes
+    if (base.aliasScope)
+      ret.aliasScope = base.aliasScope;
+    if (base.noalias)
+      ret.noalias = base.noalias;
+
 #endif
   }
 
@@ -5022,6 +5074,98 @@ DEFINE_PRIM(PRIM_INVARIANT_START) {
     llvm::Value* val = ptr.val;
     llvm::Type* ty = val->getType()->getPointerElementType();
     codegenInvariantStart(ty, val);
+#endif
+  }
+}
+
+#ifdef HAVE_LLVM
+llvm::MDNode* createMetadataScope(llvm::LLVMContext& ctx,
+                                    llvm::MDNode* domain,
+                                    const char* name) {
+
+  auto scopeName = llvm::MDString::get(ctx, name);
+  auto dummy = llvm::MDNode::getTemporary(ctx, llvm::None);
+  llvm::Metadata* Args[] = {dummy.get(), domain, scopeName};
+  auto scope = llvm::MDNode::get(ctx, Args);
+  // Remove the dummy and replace it with a self-reference.
+  dummy->replaceAllUsesWith(scope);
+  return scope;
+}
+
+#endif
+
+DEFINE_PRIM(PRIM_NO_ALIAS_SET) {
+
+  GenInfo* info = gGenInfo;
+  if (info->cfile) {
+    // do nothing for the C backend
+  } else {
+#ifdef HAVE_LLVM
+
+    Symbol* sym = toSymExpr(call->get(1))->symbol();
+
+    llvm::LLVMContext &ctx = info->llvmContext;
+
+    if (info->noAliasDomain == NULL) {
+      auto domainName = llvm::MDString::get(ctx, "Chapel no-alias");
+      auto dummy = llvm::MDNode::getTemporary(ctx, llvm::None);
+      llvm::Metadata* Args[] = {dummy.get(), domainName};
+      info->noAliasDomain = llvm::MDNode::get(ctx, Args);
+      // Remove the dummy and replace it with a self-reference.
+      dummy->replaceAllUsesWith(info->noAliasDomain);
+    }
+
+    llvm::MDNode *&scope = info->noAliasScopes[sym];
+    if (scope == NULL)
+      scope = createMetadataScope(ctx, info->noAliasDomain, sym->name);
+
+    // now create a list storing just the scope
+    llvm::MDNode *&scopeList = info->noAliasScopeLists[sym];
+    if (scopeList == NULL)
+      scopeList = llvm::MDNode::get(ctx, scope);
+
+    // now create the no-alias metadata
+    llvm::MDNode *&noAliasList = info->noAliasLists[sym];
+    if (noAliasList == NULL) {
+      llvm::SmallVector<llvm::Metadata*, 6> Args;
+      bool first = true;
+      for_actuals(actual, call) {
+        if (!first) {
+          Symbol* noAliasSym = toSymExpr(actual)->symbol();
+          llvm::MDNode *&otherScope = info->noAliasScopes[noAliasSym];
+          if (otherScope == NULL)
+            otherScope = createMetadataScope(ctx, info->noAliasDomain,
+                                             noAliasSym->name);
+
+          Args.push_back(otherScope);
+        }
+        first = false;
+      }
+      noAliasList = llvm::MDNode::get(ctx, Args);
+    }
+#endif
+  }
+}
+
+DEFINE_PRIM(PRIM_COPIES_NO_ALIAS_SET) {
+  GenInfo* info = gGenInfo;
+  if (info->cfile) {
+    // do nothing for the C backend
+  } else {
+#ifdef HAVE_LLVM
+    Symbol* sym = toSymExpr(call->get(1))->symbol();
+    Symbol* otherSym = toSymExpr(call->get(2))->symbol();
+    llvm::LLVMContext &ctx = info->llvmContext;
+
+    if (info->noAliasScopeLists.count(otherSym) > 0) {
+      llvm::MDNode *&scopeList = info->noAliasScopeLists[sym];
+      scopeList = info->noAliasScopeLists[otherSym];
+    }
+
+    llvm::MDNode *&noAliasList = info->noAliasLists[sym];
+    if (info->noAliasLists.count(otherSym) > 0) {
+        noAliasList = info->noAliasLists[otherSym];
+    }
 #endif
   }
 }
