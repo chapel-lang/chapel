@@ -132,6 +132,7 @@ symbolFlag( FLAG_FORMAL_TEMP,     npr, "formal temp", "a formal temp to back an 
 symbolFlag( FLAG_FORWARDING_FN , npr, "forwarding function" , ncm )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
 symbolFlag( FLAG_FUNCTION_TERMINATES_PROGRAM, ypr, "function terminates program", "function that causes the program to exit" )
+symbolFlag( FLAG_GENERATE_SIGNATURE, ypr, "generate signature", "compiler should codegen a function signature" )
 // When applied to an argument, this flag means that the arg accepts a value
 // but has unspecified type.
 symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )
