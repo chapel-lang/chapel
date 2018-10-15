@@ -6,14 +6,65 @@
 use FileHashing;
 use FileSystem;
 use Sort;
+use Time;
 
 config const filter = "";
+config const timing = false;
+
+record HashedPath {
+  // Could use a tuple, as long as they appear in this order
+  // (so default comparison works)
+  var size: int;
+  var hash: SHA256Hash;
+  var path: string;
+}
+
+record HashedPathComparator {
+  proc compare(a: HashedPath, b: HashedPath) {
+    if a.size < b.size {
+      return -1;
+    }
+    if a.size > b.size {
+      return 1;
+    }
+    if a.hash < b.hash {
+      return -1;
+    }
+    if a.hash > b.hash {
+      return 1;
+    }
+    if a.path < b.path {
+      return -1;
+    }
+    if a.path > b.path {
+      return 1;
+    }
+    return 0;
+  }
+}
 
 /* For each array element, compute the hash for the
    file stored at that path and save the result in that
    array element.
  */
-proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
+proc computeHashes(hashAndPath:[] HashedPath) {
+
+  var clock: Timer;
+  clock.start();
+
+  forall rec in hashAndPath {
+    try {
+      rec.size = getFileSize(rec.path);
+      rec.hash = computeFileHash(rec.path);
+    } catch e {
+      writeln(e);
+    }
+  }
+
+  clock.stop();
+  if timing {
+    writeln("Reading and hashing files took ", clock.elapsed(), " seconds");
+  }
 
   // computeHashes is called by the below code to
   // fill in the hash components of the array hashAndPath.
@@ -84,7 +135,7 @@ proc handleArguments(args: [] string, ref paths: domain(string)) {
  than one element, it outputs the hash and then each filename
  with that hash.
  */
-proc outputDuplicates(hashAndPath:[] (SHA256Hash, string)) {
+proc outputDuplicates(hashAndPath:[] HashedPath) {
 
   writeln("Duplicate files found:");
 
@@ -93,15 +144,15 @@ proc outputDuplicates(hashAndPath:[] (SHA256Hash, string)) {
     // Look for the group matching
     var next = i + 1;
     while next <= hashAndPath.size &&
-          hashAndPath[i](1) == hashAndPath[next](1) {
+          hashAndPath[i].hash == hashAndPath[next].hash {
       next += 1;
     }
     // Now i..next-1 is the group matching
     if i < next-1 {
-      writeln(hashAndPath[i](1));
+      writeln(hashAndPath[i].hash, " ", hashAndPath[i].size, " bytes");
       for j in i..next-1 {
-        assert(hashAndPath[i](1) == hashAndPath[j](1));
-        writeln("  ", hashAndPath[j](2));
+        assert(hashAndPath[i].hash == hashAndPath[j].hash);
+        writeln("  ", hashAndPath[j].path);
       }
     }
     i = next;
@@ -121,7 +172,7 @@ proc main(args: [] string) {
   // has two tuple components:
   //   component 1 is the hash
   //   component 2 is the path
-  var hashAndPath:[1..paths.size] (SHA256Hash, string);
+  var hashAndPath:[1..paths.size] HashedPath;
 
   // This loop stores each of the values in `paths` into
   // the path component of an element in hashAndPath.
@@ -131,8 +182,8 @@ proc main(args: [] string) {
   // `for` loop.
   //
   // See issues #11344 and #9437.
-  for (tup, path) in zip(hashAndPath, paths) {
-    tup(2) = path;
+  for (rec, path) in zip(hashAndPath, paths) {
+    rec.path = path;
   }
 
   // Call the computeHashes function to fill in the SHA256Hash
@@ -144,7 +195,8 @@ proc main(args: [] string) {
   // available for tuples. The default comparison function for tuples
   // compares the elements in order, so the result is to sort
   // by hash and then by path.
-  sort(hashAndPath);
+  sort(hashAndPath, comparator=new HashedPathComparator());
+
 
   // Print out the duplicate files that we discovered by hashing
   // and sorting.

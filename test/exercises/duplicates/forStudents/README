@@ -144,7 +144,7 @@ You'll want to look at the I/O primer and module documentation:
 Here are some hints of specific features you might use:
  * `open`
  * `file.writer` with `kind=iokind.native`
- * the `%|u` format string
+ * the `%|1u` format string
 
 Bonus Task B2: Use Records Instead of Tuples
 --------------------------------------------

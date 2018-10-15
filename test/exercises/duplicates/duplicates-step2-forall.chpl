@@ -6,8 +6,10 @@
 use FileHashing;
 use FileSystem;
 use Sort;
+use Time;
 
 config const filter = "";
+config const timing = false;
 
 /* For each array element, compute the hash for the
    file stored at that path and save the result in that
@@ -29,6 +31,18 @@ proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
 
   // STEP 1: Call computeFileHash to compute the hashes for each
   // path, and store the resulting hash in the hashAndPath array.
+
+  var clock: Timer;
+  clock.start();
+
+  forall (hash, path) in hashAndPath {
+    hash = computeFileHash(path);
+  }
+
+  clock.stop();
+  if timing {
+    writeln("Reading and hashing files took ", clock.elapsed(), " seconds");
+  }
 
   // Note that computeFileHash is declared like this:
   //   computeFileHash(path: string): SHA256Hash throws

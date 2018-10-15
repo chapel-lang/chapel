@@ -9,15 +9,20 @@ use Sort;
 
 config const filter = "";
 
-// computeHashes is called by the below code to
-// fill in the hash components of the array hashAndPath.
-//
-// hashAndPath is an array of tuples. Each array element
-// has two tuple components:
-//   component 1 is the hash
-//   component 2 is the path
-//
+/* For each array element, compute the hash for the
+   file stored at that path and save the result in that
+   array element.
+ */
 proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
+
+  // computeHashes is called by the below code to
+  // fill in the hash components of the array hashAndPath.
+  //
+  // hashAndPath is an array of tuples. Each array element
+  // has two tuple components:
+  //   component 1 is the hash
+  //   component 2 is the path
+  //
 
   // STEP 0: Compile and run the code as it is.
   // The program should report all files as duplicates.
@@ -25,27 +30,39 @@ proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
   // STEP 1: Call computeFileHash to compute the hashes for each
   // path, and store the resulting hash in the hashAndPath array.
 
+  for (hash, path) in hashAndPath {
+    hash = computeFileHash(path);
+  }
+  // This would be also reasonable:
+  /*
+  for tup in hashAndPath {
+   tup(1) = computeFileHash(tup(2));
+  }
+  */
+
   // Note that computeFileHash is declared like this:
   //   computeFileHash(path: string): SHA256Hash throws
   // so it accepts a string argument and returns a SHA256Hash
 
   // STEP 2: Can you make the loop you created above parallel?
+  // Use the Time module to time this function and investigate
+  // the performance of running it in parallel.
 
   // STEP 3: computeFileHash can throw, so add some error handling
   // constructs to continue processing if a particular file is not
   // readable. For this exercise, it's sufficient to print out the
   // error.
-
-  forall (hash, path) in hashAndPath {
-    hash = computeFileHash(path);
-  }
-
 }
 
+/* Print out a help message */
 proc printHelp() {
   writeln("usage:  ./duplicates <file-or-directory> <file-or-directory> ...");
 }
 
+/* Process command-line arguments.
+   When files or directories are encountered, the candidate
+   files are added to the `paths` set.
+ */
 proc handleArguments(args: [] string, ref paths: domain(string)) {
 
   if args.size == 1 {

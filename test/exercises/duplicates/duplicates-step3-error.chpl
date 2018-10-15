@@ -9,15 +9,20 @@ use Sort;
 
 config const filter = "";
 
-// computeHashes is called by the below code to
-// fill in the hash components of the array hashAndPath.
-//
-// hashAndPath is an array of tuples. Each array element
-// has two tuple components:
-//   component 1 is the hash
-//   component 2 is the path
-//
+/* For each array element, compute the hash for the
+   file stored at that path and save the result in that
+   array element.
+ */
 proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
+
+  // computeHashes is called by the below code to
+  // fill in the hash components of the array hashAndPath.
+  //
+  // hashAndPath is an array of tuples. Each array element
+  // has two tuple components:
+  //   component 1 is the hash
+  //   component 2 is the path
+  //
 
   // STEP 0: Compile and run the code as it is.
   // The program should report all files as duplicates.
@@ -29,9 +34,14 @@ proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
   //   computeFileHash(path: string): SHA256Hash throws
   // so it accepts a string argument and returns a SHA256Hash
 
-  // The Tuples and Arrays primers might be useful starting points:
-  //   https://chapel-lang.org/docs/master/primers/tuples.html
-  //   https://chapel-lang.org/docs/primers/arrays.html
+  // STEP 2: Can you make the loop you created above parallel?
+  // Use the Time module to time this function and investigate
+  // the performance of running it in parallel.
+
+  // STEP 3: computeFileHash can throw, so add some error handling
+  // constructs to continue processing if a particular file is not
+  // readable. For this exercise, it's sufficient to print out the
+  // error.
 
   forall (hash, path) in hashAndPath {
     try {
@@ -42,10 +52,15 @@ proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
   }
 }
 
+/* Print out a help message */
 proc printHelp() {
   writeln("usage:  ./duplicates <file-or-directory> <file-or-directory> ...");
 }
 
+/* Process command-line arguments.
+   When files or directories are encountered, the candidate
+   files are added to the `paths` set.
+ */
 proc handleArguments(args: [] string, ref paths: domain(string)) {
 
   if args.size == 1 {
