@@ -87,7 +87,7 @@ struct perTxCtxInfo_t {
   int inited;
   int idx;
   char name[5];
-  int isAmHandler;
+  chpl_bool txCtxHasCQ;
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
   struct fid_cntr* txCntr;
@@ -451,10 +451,12 @@ void init_ofiEp(void) {
       // Regular worker thread tx context.
       OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &ptiTab[i].txCQ, NULL));
       OFI_CHK(fi_ep_bind(ptiTab[i].txCtx, &ptiTab[i].txCQ->fid, FI_TRANSMIT));
+      ptiTab[i].txCtxHasCQ = true;
     } else {
       // AM handler tx context.
       OFI_CHK(fi_cntr_open(ofi_domain, &txCntrAttr, &ptiTab[i].txCntr, NULL));
       OFI_CHK(fi_ep_bind(ptiTab[i].txCtx, &ptiTab[i].txCntr->fid, FI_WRITE));
+      ptiTab[i].txCtxHasCQ = false;
     }
     OFI_CHK(fi_enable(ptiTab[i].txCtx));
   }
@@ -693,6 +695,9 @@ static void exit_any(int status) {
 
 static
 void fini_ofi(void) {
+  if (chpl_numNodes <= 1)
+    return;
+
   OFI_CHK(fi_close(&ofiMrTab[0]->fid));
   if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) != 0) {
     for (int i = 1; i < numMemRegions; i++) {
@@ -1215,6 +1220,9 @@ void init_amHandling(void) {
 
 static
 void fini_amHandling(void) {
+  if (chpl_numNodes <= 1)
+    return;
+
   //
   // Tear down the AM handler thread(s).  On node 0, don't proceed from
   // here until the last one has finished (TODO).
@@ -1253,7 +1261,6 @@ void amHandler(void* argNil) {
   //
   while (!atomic_load_bool(&amHandlersExit)) {
     processRxAmReq(tcip);
-    tcip->numTxsOut -= fi_cntr_read(tcip->txCntr);
   }
 
   //
@@ -1556,7 +1563,11 @@ chpl_comm_nb_handle_t ofi_put(void* addr, c_nodeid_t node,
              (int) node, raddr, addr, (myAddr == addr) ? "" : "(B)", size,
              mrKey);
 
-  waitForTxCQ(tcip, 1);
+  if (tcip->txCtxHasCQ) {
+    waitForTxCQ(tcip, 1);
+  } else {
+    tcip->numTxsOut -= fi_cntr_read(tcip->txCntr);
+  }
 
   releaseTxCtxInfo(tcip);
 
