@@ -17,8 +17,8 @@
 
 ifneq ($(LIBFABRIC_DIR),)
 GEN_LFLAGS += -L$(LIBFABRIC_DIR)/lib -Wl,-rpath,$(LIBFABRIC_DIR)/lib
-LIBS += -lfabric -ldl
 endif
+LIBS += -lfabric -ldl
 
 #
 # Conservatively use CXX as the linker, in case regexp (or other C++
