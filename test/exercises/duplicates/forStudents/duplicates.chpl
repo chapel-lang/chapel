@@ -1,4 +1,7 @@
-// This version is perhaps the most obvious / easiest to parallelize
+// STUDENTS: Browse through the code below to you heart's content.
+// When you're ready to start coding, jump down to computeHashes
+// and read the comments labeled STEP 0, STEP 1, etc. These will
+// lead you through a number of coding steps and transformations.
 
 use FileHashing;
 use FileSystem;
@@ -16,21 +19,32 @@ config const filter = "";
 //
 proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
 
-  // The Tuples and Arrays primers might be useful
-  // if you're not sure how to write this:
+  // STEP 0: Compile and run the code as it is.
+  // The program should report all files as duplicates.
 
-  // https://chapel-lang.org/docs/master/primers/tuples.html
-  // https://chapel-lang.org/docs/master/primers/arrays.html
+  // STEP 1: Call computeFileHash to compute the hashes for each
+  // path, and store the resulting hash in the hashAndPath array.
 
-  // call computeFileHash to gather the hashes
-  // computeFileHash is declared like this:
+  // Note that computeFileHash is declared like this:
   //   computeFileHash(path: string): SHA256Hash throws
   // so it accepts a string argument and returns a SHA256Hash
 
+  // The Tuples and Arrays primers might be useful starting points:
+  //   https://chapel-lang.org/docs/master/primers/tuples.html
+  //   https://chapel-lang.org/docs/primers/arrays.html
+}
 
+proc printHelp() {
+  writeln("usage:  ./duplicates <file-or-directory> <file-or-directory> ...");
 }
 
 proc handleArguments(args: [] string, ref paths: domain(string)) {
+
+  if args.size == 1 {
+    // No arguments were given, so print help
+    printHelp();
+  }
+
   for arg in args[1..] {
     if isFile(arg) {
       if filter == "" || arg.endsWith(filter) {
@@ -44,6 +58,7 @@ proc handleArguments(args: [] string, ref paths: domain(string)) {
       }
     } else {
       writeln("Error: argument not handled ", arg);
+      printHelp();
     }
   }
 }
@@ -55,6 +70,9 @@ proc handleArguments(args: [] string, ref paths: domain(string)) {
  with that hash.
  */
 proc outputDuplicates(hashAndPath:[] (SHA256Hash, string)) {
+
+  writeln("Duplicate files found:");
+
   var i = 1;
   while i < hashAndPath.size {
     // Look for the group matching
@@ -106,9 +124,11 @@ proc main(args: [] string) {
   // component in each array element in hashAndPath.
   computeHashes(hashAndPath);
 
-  // Use the sort library routine to sort these by hash by name.
+  // Use the sort library routine to sort these by hash then by path.
   // This sort call relies on the default comparison function being
-  // available for tuples.
+  // available for tuples. The default comparison function for tuples
+  // compares the elements in order, so the result is to sort
+  // by hash and then by path.
   sort(hashAndPath);
 
   // Print out the duplicate files that we discovered by hashing

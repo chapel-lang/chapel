@@ -98,6 +98,7 @@ proc main(args: [] string) {
     writeln("Sorting by hash took ", clock.elapsed(), " seconds");
   }
 
+  writeln("Duplicate files found:");
   var i = 1;
   while i < paths.size {
     // Look for the group matching

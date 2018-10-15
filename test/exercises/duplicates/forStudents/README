@@ -11,7 +11,7 @@ FileHashing.chpl:
   This module defines:
   * a type SHA256Hash supporting the usual comparison and assignment operators
     as well as writeln
-  * a function computeFileHash that returns a path
+  * a function computeFileHash that returns a hash for a file
   * a function relativeRealPath used to normalize paths
 
 duplicates.chpl:
@@ -27,46 +27,50 @@ expected-output:
 Hands-On Tasks
 **************
 
-Task 1: Getting Started
+Step 0: Getting Started
 -----------------------
 
-To get started with this project, compile 'duplicates.chpl'.  Note that this
-program uses the OpenSSL library to compute SHA256 hashes and might need
-additional compilation flags to find that library on your system.
-For example, on Mac OS X, you might `brew install openssl` and then set
-LDFLAGS and CPPFLAGS to convey the location of the library to the Chapel
-compiler:
+To get started with this project, compile 'duplicates.chpl':
 
-  export LDFLAGS="-L/usr/local/opt/openssl/lib"
-  export CPPFLAGS="-I/usr/local/opt/openssl/include"
+  chpl duplicates.chpl
 
+Then, try running it with the example-files directory:
 
-Try compiling 'duplicates.chpl' and running it with the example-files
-directory. It should (incorrectly) report that all the files are duplicates.
+  ./duplicates example-files
 
-Feel free to look over the provided source code in duplicates.chpl and
-FileHashing.chpl.
+It should (incorrectly) report that all the files are duplicates.
 
-Task 2: Compute Hashes to Detect Duplicates
+Feel free to look over the provided source code in duplicates.chpl
+and in the provided modules FileHashing.chpl and
+SHA256Implementation.chpl.
+
+Step 1: Compute Hashes to Detect Duplicates
 -------------------------------------------
 
-Your next task is to get it reporting only actual duplicates. To do so, you'll
-need to adjust the program to compute the hashes of the files.  To do so, edit
-`computeHashes` near the top of the program. You'll want to call the provided
-function `computeFileHash` from the FileHashing module.
+Your next task is to get it reporting only actual duplicates. To do so,
+you'll need to adjust the program to compute the hashes of the files.
+Edit `computeHashes` near the top of the program. This function should
+compute the hash for each path and store it in the hashAndPath array.
+You'll want to call the provided function `computeFileHash` from the
+FileHashing module to compute the file hashes.
 
 The Tuples and Arrays primers might be useful resources for this step:
 
   https://chapel-lang.org/docs/master/primers/tuples.html
   https://chapel-lang.org/docs/primers/arrays.html
 
-Run your program on the example-files directory and compare the output with the
-contents of the file expected-output. Additionally, you can check that your
-program is computing the correct SHA256 hashes for the files in that directory
-by running `sha256sum` and giving it the file to hash as an argument.
+Run your program on the example-files directory and compare the output
+with the contents of the file expected-output. Additionally, your
+system might support one (or both) of these commands:
 
+ sha256sum <file-to-hash>
+ openssl sha256 <file-to-hash>
 
-Task 3: Compute Hashes in Parallel
+If so, you can check that your program is computing the correct SHA256
+hashes for a particular file by comparing hashes with the results from the
+above commands.
+
+Step 2: Compute Hashes in Parallel
 ----------------------------------
 
 Adjust your implementation of `computeHashes` to compute file hashes
@@ -85,7 +89,7 @@ find duplicate .chpl files in Chapel's test suite.
 Is it faster to compute the SHA256 sums in multiple tasks?
 Make sure to compile with --fast when doing performance comparisons!
 
-Task 4: Add Error Handling
+Step 3: Add Error Handling
 --------------------------
 
 We'd like our duplicate file detector to fail gracefully if it finds a
