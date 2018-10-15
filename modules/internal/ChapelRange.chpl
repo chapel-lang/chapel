@@ -665,14 +665,14 @@ module ChapelRange {
     return other == this(other);
   }
 
-  pragma "no doc"
+  /* Deprecated - please use :proc:`range.contains`. */
   inline proc range.member(ind: idxType) {
     compilerWarning("range.member is deprecated - " +
                     "please use range.contains instead");
     return this.contains(ind);
   }
 
-  pragma "no doc"
+  /* Deprecated - please use :proc:`range.contains`. */
   inline proc range.member(other: range(?)) {
     compilerWarning("range.member is deprecated - " +
                     "please use range.contains instead");
@@ -844,7 +844,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     return (boundedOther.length == 0) || contains(boundedOther);
   }
-  /* Return true if ``other`` is a contained in this range and false otherwise */
+  /* Return true if ``other`` is contained in this range and false otherwise */
   inline proc range.boundsCheck(other: idxType)
     return contains(other);
 

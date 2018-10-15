@@ -1550,7 +1550,8 @@ module ChapelArray {
                       "please use domain.contains instead");
       return this.contains(i);
     }
-    pragma "no doc"
+
+    /* Deprecated - please use :proc:`domain.contains`. */
     inline proc member(i: _value.idxType ...rank) {
       compilerWarning("domain.member is deprecated - " +
                       "please use domain.contains instead");
