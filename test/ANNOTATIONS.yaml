@@ -368,6 +368,10 @@ AllCompTime:
     - Loop over Defs and Uses with SymbolSymExprs (#5285)
   05/23/18:
     - Fix problems with tuples (#9572)
+  06/01/18:
+    - Represent if-expressions with IfExpr node instead of if-functions (#9649)
+  10/05/18:
+    - Compiler error for dereferencing a nil value (#11238)
 
 arguments:
   09/20/17:
@@ -852,6 +856,8 @@ memleaks:
     - Enable usage of LinearAlgebra without BLAS/LAPACK (#10929)
   09/19/18:
     - Use runtime type field in chpl__distributed for sparse domains (#11140)
+  10/09/18:
+    - Resolve some global array-of-array leaks (#11307)
 
 memleaksfull:
   07/08/14:
@@ -947,6 +953,10 @@ memleaksfull:
     - Enable usage of LinearAlgebra without BLAS/LAPACK (#10929)
   09/19/18:
     - Use runtime type field in chpl__distributed for sparse domains (#11140)
+  09/27/18:
+    - Fix some SparseBlockDist leaks (#11227)
+  10/09/18:
+    - Resolve some global array-of-array leaks (#11307)
 
 meteor:
   12/18/13:

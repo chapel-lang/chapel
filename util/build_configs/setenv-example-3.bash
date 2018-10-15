@@ -16,8 +16,8 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 # setenv project
 # ==============
 
-    setenv=$( basename "$0" )
-    cwd=$( cd $(dirname "$0") && pwd )
+    setenv=$( basename "${BASH_SOURCE[0]}" )
+    cwd=$( cd $(dirname "${BASH_SOURCE[0]}") && pwd )
     source $cwd/functions.bash
 
     # cmdline options

@@ -1,6 +1,6 @@
 use UserMapAssoc;
 
-class MyMapper {
+record MyMapper {
   proc indexToLocaleIndex(ind, targetLocs: [] locale) : int {
     const numlocs = targetLocs.domain.size;
     const indAsInt = ind: int;
@@ -9,7 +9,7 @@ class MyMapper {
 }
 
 proc doit() {
-  var newDist = new dmap(new unmanaged UserMapAssoc(idxType=real, mapper=new unmanaged MyMapper()));
+  var newDist = new dmap(new unmanaged UserMapAssoc(idxType=real, mapper=new MyMapper()));
 
   var D: domain(real) dmapped newDist;
 

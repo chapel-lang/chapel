@@ -24,22 +24,25 @@
 #include "chplrt.h"
 #include "chpl-env-gen.h"
 
+// #include "chpl-cache.h"
 #include "chpl-comm.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-comm-diags.h"
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
+#include "chplexit.h"
+#include "chpl-format.h"
+#include "chpl-gen-includes.h"
 #include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chpl-mem-sys.h"
-// #include "chpl-cache.h"
+#include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
-#include "chpl-gen-includes.h"
-#include "chplsys.h"
-#include "chplexit.h"
 #include "error.h"
+
+#include "comm-ofi-internal.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -55,12 +58,11 @@
 #include <time.h>
 
 #include <rdma/fabric.h>
+#include <rdma/fi_cm.h>
 #include <rdma/fi_domain.h>
 #include <rdma/fi_endpoint.h>
-#include <rdma/fi_cm.h>
 #include <rdma/fi_errno.h>
-
-#include "comm-ofi-internal.h"
+#include <rdma/fi_rma.h>
 
 
 ////////////////////////////////////////
@@ -113,11 +115,10 @@ struct perTxCtxInfo_t {
   int numTxsOut;
 };
 
+static int ptiTabLen;
 static struct perTxCtxInfo_t* ptiTab;
-#if 0
-static __thread struct perTxCtxInfo_t* pti;
-#endif
-
+static pthread_mutex_t pti_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int ptiTabIdx = 0;
 
 static struct iovec ofi_iov_reqs;
 static struct fi_msg ofi_msg_reqs;
@@ -125,39 +126,25 @@ static struct am_req_info* comm_amReqLZs;
 
 static struct am_req_info* comm_amReqs;
 
-static int comm_rmaSrcBufSize;
-static int comm_rmaDstBufSize;
 static int comm_amFinFlagsSize;
-
-static int* comm_rmaSrcBuf;
-static int* comm_rmaDstBuf;
 static int* comm_amFinFlags;
-static int comm_amFinSrc;
 
-enum {
-  memSrcIdx = 0,
-  memDstIdx,
-  memAmFinFlagIdx,
-  memAmFinSrcIdx,
-  memNumIdxs
-};
+#define MAX_MEM_REGIONS 10
+static int numMemRegions = 0;
 
-static struct fid_mr* (* comm_mr)[memNumIdxs];
+static struct fid_mr* ofiMrTab[MAX_MEM_REGIONS];
 
 struct memEntry {
-  size_t size;
   void* addr;
+  size_t size;
   void* desc;
   uint64_t key;
 };
 
-typedef struct memEntry (memTab_t)[memNumIdxs];
+typedef struct memEntry (memTab_t)[MAX_MEM_REGIONS];
 
-static memTab_t* comm_mem;
-static memTab_t** comm_memMap;
-
-static int comm_threadPrivateMrSets = 0;
-static int comm_numMrSets;
+static memTab_t memTab;
+static memTab_t* memTabMap;
 
 
 ////////////////////////////////////////
@@ -170,6 +157,15 @@ static void time_init(void);
 
 ////////////////////////////////////////
 //
+// Alignment
+//
+
+#define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
+#define ALIGN_UP(i, size)  ALIGN_DN((i) + (size) - 1, size)
+
+
+////////////////////////////////////////
+//
 // Error checking
 //
 
@@ -177,13 +173,42 @@ static void time_init(void);
     do {                                                                \
       int _rc = (expr);                                                 \
       if (_rc != wantVal) {                                             \
-        chpl_internal_error_v("%s: %s", #expr, fi_strerror(- _rc));     \
+        INTERNAL_ERROR_V("%s: %s", #expr, fi_strerror(- _rc));          \
       }                                                                 \
     } while (0)
 
 #define OFI_CHK(expr) OFI_CHK_VAL(expr, FI_SUCCESS)
 
 #define PTHREAD_CHK(expr) CHK_EQ_TYPED(expr, 0, int, "d")
+
+
+////////////////////////////////////////
+//
+// Provider name
+//
+
+static pthread_once_t provNameOnce = PTHREAD_ONCE_INIT;
+static const char* provName;
+
+static void setProviderName(void);
+static const char* getProviderName(void);
+
+
+static
+void setProviderName(void) {
+  //
+  // For now, allow specifying the provider via env var.
+  //
+  CHK_TRUE((provName = chpl_env_rt_get("COMM_OFI_PROVIDER", "sockets"))
+           != NULL);
+}
+
+
+static
+const char* getProviderName(void) {
+  PTHREAD_CHK(pthread_once(&provNameOnce, setProviderName));
+  return provName;
+}
 
 
 ////////////////////////////////////////
@@ -205,8 +230,8 @@ static void init_am_handler(void);
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   time_init();
-  DBG_INIT();
   chpl_comm_ofi_oob_init();
+  DBG_INIT();
 }
 
 
@@ -249,12 +274,9 @@ void init_ofi(void) {
 static
 void init_ofiFabricDomain(void) {
   //
-  // Build hints describing what we want from the provider.  And for
-  // now, allow specifying the provider via env var.
+  // Build hints describing what we want from the provider.
   //
-  const char* provider;
-  CHK_TRUE((provider = chpl_env_rt_get("COMM_OFI_PROVIDER", "sockets"))
-           != NULL);
+  const char* provider = getProviderName();
 
   struct fi_info* hints;
   CHK_TRUE((hints = fi_allocinfo()) != NULL);
@@ -270,8 +292,8 @@ void init_ofiFabricDomain(void) {
   hints->ep_attr->type = FI_EP_RDM;
 
   hints->domain_attr->threading = FI_THREAD_UNSPEC;
-  hints->domain_attr->control_progress = FI_PROGRESS_MANUAL;
-  hints->domain_attr->data_progress = FI_PROGRESS_MANUAL;
+  hints->domain_attr->control_progress = FI_PROGRESS_AUTO/*FI_PROGRESS_MANUAL*/;
+  hints->domain_attr->data_progress = FI_PROGRESS_AUTO/*FI_PROGRESS_MANUAL*/;
   hints->domain_attr->av_type = FI_AV_TABLE;
   hints->domain_attr->mr_mode = ((strcmp(provider, "gni") == 0)
                                  ? FI_MR_BASIC
@@ -313,8 +335,8 @@ void init_ofiFabricDomain(void) {
         }
       }
 
-      chpl_internal_error_v("No provider matched for prov_name \"%s\"",
-                            (provider == NULL) ? "<any>" : provider);
+      INTERNAL_ERROR_V("No provider matched for prov_name \"%s\"",
+                       (provider == NULL) ? "<any>" : provider);
     }
 
     if (DBG_TEST_MASK(DBG_FAB)) {
@@ -409,7 +431,8 @@ int compute_comm_concurrency(void) {
 
 static
 void init_ofiEp(void) {
-  CHPL_CALLOC(ptiTab, numTxCtxs + 1);
+  ptiTabLen = numTxCtxs + 1;
+  CHPL_CALLOC(ptiTab, ptiTabLen);
 
   //
   // Transmit.
@@ -437,9 +460,9 @@ void init_ofiEp(void) {
   //
   // Worker TX contexts use CQs; AM handler just needs a counter.
   //
-  for (int i = 0; i < numTxCtxs + 1; i++) {
+  for (int i = 0; i < ptiTabLen; i++) {
     OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &ptiTab[i].txCtx, NULL));
-    if (i < numTxCtxs) {
+    if (i < ptiTabLen - 1) {
       OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &ptiTab[i].txCQ, NULL));
       OFI_CHK(fi_ep_bind(ptiTab[i].txCtx, &ptiTab[i].txCQ->fid, FI_TRANSMIT));
     } else {
@@ -551,7 +574,7 @@ void init_ofiForAms(void) {
   comm_amFinFlagsSize = numAmBufs * sizeof(comm_amFinFlags[0]);
   CHPL_CALLOC(comm_amFinFlags, numAmBufs);
 
-  for (int i = 0; i < numTxCtxs + 1; i++) {
+  for (int i = 0; i < ptiTabLen; i++) {
     ptiTab[i].tbIdx = i;
   }
 }
@@ -569,72 +592,47 @@ void init_ofiForMem(void) {
   // address space here; with non-scalable we register each region
   // individually.
   //
-  comm_numMrSets = comm_threadPrivateMrSets ? (numTxCtxs + 1) : 1;
-
   uint64_t bufAcc = FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE;
 
-  CHPL_CALLOC(comm_mr, comm_numMrSets);
-  CHPL_CALLOC(comm_mem, comm_numMrSets);
-  CHPL_CALLOC(comm_memMap, comm_numMrSets);
-
-  for (int i = 0; i < comm_numMrSets; i++) {
-    comm_mem[i][memSrcIdx].size = comm_rmaSrcBufSize;
-    comm_mem[i][memSrcIdx].addr = comm_rmaSrcBuf;
-
-    comm_mem[i][memDstIdx].size = comm_rmaDstBufSize;
-    comm_mem[i][memDstIdx].addr = comm_rmaDstBuf;
-
-    comm_mem[i][memAmFinFlagIdx].size = comm_amFinFlagsSize;
-    comm_mem[i][memAmFinFlagIdx].addr = comm_amFinFlags;
-
-    comm_mem[i][memAmFinSrcIdx].size = sizeof(comm_amFinSrc);
-    comm_mem[i][memAmFinSrcIdx].addr = &comm_amFinSrc;
-
-    if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) == 0) {
-      // scalable MR -- register whole address space
-      OFI_CHK(fi_mr_reg(ofi_domain,
-                        0, UINT64_MAX,
-                        bufAcc, 0, 0, 0, &comm_mr[i][memSrcIdx], NULL));
-      comm_mem[i][memSrcIdx].desc = fi_mr_desc(comm_mr[i][memSrcIdx]);
-      comm_mem[i][memSrcIdx].key  = fi_mr_key(comm_mr[i][memSrcIdx]);
-
-      for (int iMem = memDstIdx; iMem < memNumIdxs; iMem++) {
-        comm_mr[i][iMem] = comm_mr[i][memSrcIdx];
-        comm_mem[i][iMem].desc = comm_mem[i][memSrcIdx].desc;
-        comm_mem[i][iMem].key = comm_mem[i][memSrcIdx].key;
-      }
-    } else {
-      // basic MR -- register everything individually
-      for (int iMem = 0; iMem < memNumIdxs; iMem++) {
-        OFI_CHK(fi_mr_reg(ofi_domain,
-                          comm_mem[i][iMem].addr, comm_mem[i][iMem].size,
-                          bufAcc, 0, 0, 0, &comm_mr[i][iMem], NULL));
-        comm_mem[i][iMem].desc = fi_mr_desc(comm_mr[i][iMem]);
-        comm_mem[i][iMem].key  = fi_mr_key(comm_mr[i][iMem]);
-      }
+  if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) == 0) {
+    // scalable MR -- just one memory region, the whole address space
+    numMemRegions = 1;
+    memTab[0].addr = (void*) 0;
+    memTab[0].size = SIZE_MAX;
+  } else {
+    void* fixedHeapStart;
+    size_t fixedHeapSize;
+    chpl_comm_impl_regMemHeapInfo(&fixedHeapStart, &fixedHeapSize);
+    if (fixedHeapStart != NULL) {
+      numMemRegions = 1;
+      memTab[0].addr = fixedHeapStart;
+      memTab[0].size = fixedHeapSize;
     }
-
-    for (int iMem = 0; iMem < memNumIdxs; iMem++) {
-      DBG_PRINTF(DBG_MR,
-                 "[%d][%d] fi_mr_reg(%p, %#zx): key %#" PRIx64,
-                 i, iMem, comm_mem[i][iMem].addr, comm_mem[i][iMem].size,
-                 comm_mem[i][iMem].key);
-    }
-
-    //
-    // Share the memory regions around the job.
-    //
-    CHPL_CALLOC(comm_memMap[i], chpl_numNodes);
-    chpl_comm_ofi_oob_allgather(&comm_mem[i], comm_memMap[i],
-                                sizeof(comm_memMap[i][0]));
   }
+
+  for (int i = 0; i < numMemRegions; i++) {
+    OFI_CHK(fi_mr_reg(ofi_domain,
+                      memTab[i].addr, memTab[i].size,
+                      bufAcc, 0, 0, 0, &ofiMrTab[i], NULL));
+    memTab[i].desc = fi_mr_desc(ofiMrTab[i]);
+    memTab[i].key  = fi_mr_key(ofiMrTab[i]);
+    DBG_PRINTF(DBG_MR,
+               "[%d] fi_mr_reg(%p, %#zx): key %#" PRIx64,
+               i, memTab[i].addr, memTab[i].size,
+               memTab[i].key);
+  }
+
+  //
+  // Share the memory regions around the job.
+  //
+  CHPL_CALLOC(memTabMap, chpl_numNodes);
+  chpl_comm_ofi_oob_allgather(&memTab, memTabMap, sizeof(memTabMap[0]));
 }
 
 
 #if 0
 static
 void init_ofiPerThread(void) {
-  pti->mrSetIdx = comm_threadPrivateMrSets ? pti->idx : 0;
 }
 #endif
 
@@ -716,24 +714,20 @@ static void exit_any(int status) {
 
 static
 void fini_ofi(void) {
-  for (int i = 0; i < comm_numMrSets; i++) {
-    OFI_CHK(fi_close(&comm_mr[i][memSrcIdx]->fid));
-    if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) != 0) {
-      for (int iMem = memDstIdx; iMem < memNumIdxs; iMem++) {
-        OFI_CHK(fi_close(&comm_mr[i][iMem]->fid));
-      }
+  OFI_CHK(fi_close(&ofiMrTab[0]->fid));
+  if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) != 0) {
+    for (int i = 1; i < numMemRegions; i++) {
+      OFI_CHK(fi_close(&ofiMrTab[i]->fid));
     }
-
-    CHPL_FREE(comm_memMap[i]);
   }
 
-  CHPL_FREE(comm_memMap);
-  CHPL_FREE(comm_mem);
-  CHPL_FREE(comm_mr);
+  CHPL_FREE(memTabMap);
+
+  CHPL_FREE(memTabMap);
+  CHPL_FREE(memTab);
+  CHPL_FREE(ofiMrTab);
 
   CHPL_FREE(comm_amFinFlags);
-  CHPL_FREE(comm_rmaDstBuf);
-  CHPL_FREE(comm_rmaSrcBuf);
 
   CHPL_FREE(comm_amReqs);
   CHPL_FREE(comm_amReqLZs);
@@ -743,9 +737,9 @@ void fini_ofi(void) {
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
 
-  for (int i = 0; i < numTxCtxs + 1; i++) {
+  for (int i = 0; i < ptiTabLen; i++) {
     OFI_CHK(fi_close(&ptiTab[i].txCtx->fid));
-    if (i < numTxCtxs)
+    if (i < ptiTabLen - 1)
       OFI_CHK(fi_close(&ptiTab[i].txCQ->fid));
     else
       OFI_CHK(fi_close(&ptiTab[i].txCntr->fid));
@@ -757,6 +751,272 @@ void fini_ofi(void) {
   OFI_CHK(fi_close(&ofi_fabric->fid));
 
   fi_freeinfo(ofi_info);
+}
+
+
+////////////////////////////////////////
+//
+// Interface: Registered memory
+//
+
+static pthread_once_t fixedHeapOnce = PTHREAD_ONCE_INIT;
+static size_t fixedHeapSize;
+static void*  fixedHeapStart;
+
+static pthread_once_t hugepageOnce = PTHREAD_ONCE_INIT;
+static size_t hugepageSize;
+
+static void init_fixedHeap(void);
+
+static size_t get_hugepageSize(void);
+static void init_hugepageSize(void);
+
+
+void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
+  PTHREAD_CHK(pthread_once(&fixedHeapOnce, init_fixedHeap));
+  *start_p = fixedHeapStart;
+  *size_p  = fixedHeapSize;
+}
+
+
+static
+void init_fixedHeap(void) {
+  //
+  // We only need a fixed heap if we're using the gni provider.
+  //
+  if (strcmp(getProviderName(), "gni") != 0)
+    return;
+
+  //
+  // On XE systems you have to use hugepages, and on XC systems you
+  // really ought to.
+  //
+  // TODO: differentiate and do the right thing for XE.
+  //
+  size_t page_size;
+  chpl_bool have_hugepages;
+  size_t size;
+  void* start;
+
+  if ((page_size = get_hugepageSize()) == 0) {
+    chpl_warning_explicit("not using hugepages may reduce performance",
+                          __LINE__, __FILE__);
+    page_size = chpl_getSysPageSize();
+    have_hugepages = false;
+  } else {
+    have_hugepages = true;
+  }
+
+  if ((size = chpl_comm_getenvMaxHeapSize()) == 0) {
+    size = (size_t) 16 << 30;  // TODO: different for XE?
+  }
+
+  size = ALIGN_UP(size, page_size);
+
+
+  //
+  // The heap is supposed to be of fixed size and on hugepages.  Set
+  // it up.
+  //
+  size_t nic_mem_map_limit;
+  size_t nic_max_mem;
+  size_t max_heap_size;
+
+  //
+  // Considering the data size we'll register, compute the maximum
+  // heap size that will allow all registrations to fit in the NIC
+  // TLB.  Except on Gemini only, aim for only 95% of what will fit
+  // because there we'll get an error if we go over.
+  //
+#if 0 // TODO: assume Aries; allows deeper testing
+  if (nic_type == GNI_DEVICE_GEMINI) {
+    const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
+    nic_max_mem = nic_max_pages * page_size;
+    nic_mem_map_limit = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
+  } else {
+#endif
+    const size_t nic_TLB_cache_pages = 512; // not publicly defined
+    nic_max_mem = nic_TLB_cache_pages * page_size;
+    nic_mem_map_limit = nic_max_mem;
+#if 0 // TODO: assume Aries; allows deeper testing
+  }
+#endif
+
+#if 0 // TODO: assume Aries; allows deeper testing
+  {
+    uint64_t  addr;
+    uint64_t  len;
+    size_t    data_size;
+
+    data_size = 0;
+    while (get_next_rw_memory_range(&addr, &len, NULL, 0))
+      data_size += ALIGN_UP(len, page_size);
+
+    if (data_size >= nic_mem_map_limit)
+      max_heap_size = 0;
+    else
+      max_heap_size = nic_mem_map_limit - data_size;
+  }
+#else
+  max_heap_size = nic_mem_map_limit;
+#endif
+
+  //
+  // As a hedge against silliness, first reduce any request so that it's
+  // no larger than the physical memory.  As a beneficial side effect
+  // when the user request is ridiculously large, this also causes the
+  // reduce-by-5% loop below to run faster and produce a final size
+  // closer to the maximum available.
+  //
+  const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
+  if (size > size_phys)
+    size = size_phys;
+  
+#if 0 // TODO: assume Aries; allows deeper testing
+  //
+  // On Gemini-based systems, if necessary reduce the heap size until
+  // we can fit all the registered pages in the NIC TLB.  Otherwise,
+  // we'll get GNI_RC_ERROR_RESOURCE when we try to register memory.
+  // Warn about doing this.
+  //
+  if (nic_type == GNI_DEVICE_GEMINI && size > max_heap_size) {
+    if (chpl_nodeID == 0) {
+      char buf1[20], buf2[20], buf3[20], msg[200];
+      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
+      chpl_snprintf_KMG_f(buf3, sizeof(buf3), max_heap_size);
+      (void) snprintf(msg, sizeof(msg),
+                      "Gemini TLB can cover %s with %s pages; heap "
+                      "reduced to %s to fit",
+                      buf1, buf2, buf3);
+      chpl_warning(msg, 0, 0);
+    }
+
+    if (nic_type == GNI_DEVICE_GEMINI)
+      size = max_heap_size;
+  }
+#endif
+
+  //
+  // Work our way down from the starting size in (roughly) 5% steps
+  // until we can actually get that much from the system.
+  //
+  size_t decrement;
+
+  if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
+    decrement = page_size;
+  }
+
+  size += decrement;
+  do {
+    size -= decrement;
+    DBG_PRINTF(DBG_HUGEPAGES, "try allocating fixed heap, size %#zx", size);
+    if (have_hugepages) {
+      start = chpl_comm_ofi_hp_get_huge_pages(size);
+    } else {
+      CHK_SYS_MEMALIGN(start, page_size, size);
+    }
+  } while (start == NULL && size > decrement);
+
+  if (start == NULL)
+    chpl_error("cannot initialize heap: cannot get memory", 0, 0);
+
+  DBG_PRINTF(DBG_MR, "fixed heap on %spages, start=%p size=%#zx\n",
+             have_hugepages ? "huge" : "regular ", start, size);
+
+  //
+  // On Aries-based systems, warn if the size is larger than what will
+  // fit in the TLB cache.  But since that may reduce performance but
+  // won't affect function, don't reduce the size to fit.
+  //
+  if (/*nic_type == GNI_DEVICE_ARIES &&*/ size > max_heap_size) { // TODO: assume Aries; allows deeper testing
+    if (chpl_nodeID == 0) {
+      char buf1[20], buf2[20], buf3[20], msg[200];
+      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
+      chpl_snprintf_KMG_f(buf3, sizeof(buf3), size);
+      (void) snprintf(msg, sizeof(msg),
+                      "Aries TLB cache can cover %s with %s pages; "
+                      "with %s heap,\n"
+                      "         cache refills may reduce performance",
+                      buf1, buf2, buf3);
+      chpl_warning(msg, 0, 0);
+    }
+  }
+
+  fixedHeapSize  = size;
+  fixedHeapStart = start;
+}
+
+
+size_t chpl_comm_impl_regMemHeapPageSize(void) {
+  size_t sz;
+  if ((sz = get_hugepageSize()) > 0)
+    return sz;
+  return chpl_getSysPageSize();
+}
+
+
+static
+size_t get_hugepageSize(void) {
+  PTHREAD_CHK(pthread_once(&hugepageOnce, init_hugepageSize));
+  return hugepageSize;
+}
+
+
+static
+void init_hugepageSize(void) {
+  if (chpl_numNodes > 1
+      && getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL) {
+    hugepageSize = chpl_comm_ofi_hp_gethugepagesize();
+  }
+
+  DBG_PRINTF(DBG_HUGEPAGES,
+             "setting hugepage info: use hugepages %s, sz %#zx",
+             (hugepageSize > 0) ? "YES" : "NO", hugepageSize);
+}
+
+
+static inline
+struct memEntry* getMemEntry(memTab_t* tab, void* addr, int len) {
+  char* myAddr = (char*) addr;
+
+  for (int i = 0; i < numMemRegions; i++) {
+    char* tabAddr = (char*) (*tab)[i].addr;
+    char* tabAddrEnd = tabAddr + (*tab)[i].size;
+    if (myAddr >= tabAddr && myAddr + len <= tabAddrEnd)
+      return &(*tab)[i];
+  }
+
+  return NULL;
+}
+
+
+static inline
+int mrGetLocalDesc(void** pDesc, void* addr, int len) {
+  if ((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) == 0) {
+    //
+    // ??? Docs not clear; this may not work for prov=gni FI_MR_BASIC.
+    //
+    *pDesc = NULL;
+    return 0;
+  }
+
+  struct memEntry* mr;
+  if ((mr = getMemEntry(&memTab, addr, len)) == NULL)
+    return -1;
+  *pDesc = mr->desc;
+  return 0;
+}
+
+
+static inline
+int mrGetRemoteKey(uint64_t* pKey, int iNode, void* addr, int len) {
+  struct memEntry* mr;
+  if ((mr = getMemEntry(&memTabMap[iNode], addr, len)) == NULL)
+    return -1;
+  *pKey = mr->key;
+  return 0;
 }
 
 
@@ -797,7 +1057,7 @@ void init_am_handler(void) {
 
     for (int i = 0; i < num_am_handlers; i++) {
       if (chpl_task_createCommTask(am_handler, NULL) != 0) {
-        chpl_internal_error("unable to start AM handler thread");
+        INTERNAL_ERROR_V("unable to start AM handler thread");
       }
     }
 
@@ -894,7 +1154,7 @@ static void am_handler(void *argNil) {
       }
     } else {
       if (num_read != -FI_EAGAIN) {
-        chpl_internal_error(fi_strerror(-num_read));
+        INTERNAL_ERROR_V("%s", fi_strerror(-num_read));
       }
     }
 #else
@@ -981,9 +1241,8 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
 static void execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
                               chpl_fn_int_t fid,
                               chpl_comm_on_bundle_t* arg, size_t arg_size,
-                              chpl_bool fast, chpl_bool blocking)
-{
-  chpl_internal_error("Remote ons not yet implemented");
+                              chpl_bool fast, chpl_bool blocking) {
+  INTERNAL_ERROR_V("Remote ons not yet implemented");
 
   // bundle args
   // send to remote AM port
@@ -999,30 +1258,18 @@ static void handle_am(struct fi_cq_data_entry* cqe) {
 
 ////////////////////////////////////////
 //
-// Interface: RDMA support
+// Interface: RMA support
 //
 
+static inline chpl_comm_nb_handle_t ofi_put(void*, c_nodeid_t, void*, size_t);
+static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t, void*, size_t);
 
-static __thread int sep_index = -1;
-static inline int get_sep_index(int num_ctxs) {
-  if (sep_index == -1) {
-    sep_index = chpl_task_getId() % num_ctxs;
-  }
-  return sep_index;
-}
+static void waitForTxCQ(struct perTxCtxInfo_t*, int);
+static struct perTxCtxInfo_t* getTxCtxInfo(void);
+static void releaseTxCtxInfo(struct perTxCtxInfo_t*);
 
-
-static inline chpl_comm_nb_handle_t ofi_put(chpl_comm_cb_event_kind_t etype,
-                                            void *addr, c_nodeid_t node,
-                                            void* raddr, size_t size,
-                                            int32_t typeIndex, int32_t commID,
-                                            int ln, int32_t fn);
-
-static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
-                                            void *addr, c_nodeid_t node,
-                                            void* raddr, size_t size,
-                                            int32_t typeIndex, int32_t commID,
-                                            int ln, int32_t fn);
+static void* allocBounceBuf(size_t);
+static void freeBounceBuf(void*);
 
 
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node,
@@ -1043,8 +1290,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
 }
 
 
-int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
-{
+int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h) {
   if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
     chpl_comm_diags_verbose_printf("test nb complete (%p)", h);
   }
@@ -1055,8 +1301,7 @@ int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 }
 
 
-void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
-{
+void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
   if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
     if (nhandles == 1)
       chpl_comm_diags_verbose_printf("wait nb complete (%p)", h);
@@ -1073,8 +1318,7 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 }
 
 
-int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
-{
+int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
 
   if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
     if (nhandles == 1)
@@ -1096,12 +1340,13 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                    size_t size, int32_t typeIndex, int32_t commID,
                    int ln, int32_t fn) {
-  chpl_comm_nb_handle_t handle;
-
-  if (node == chpl_nodeID) {
-    memmove(raddr, addr, size);
-    return;
-  }
+  //
+  // addr and raddr are sanity checks; node==chpl_nodeID is supposed
+  // to be handled by our caller.
+  //
+  assert(addr != NULL
+         && raddr != NULL
+         && node != chpl_nodeID);
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
@@ -1115,33 +1360,34 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                                  chpl_lookupFilename(fn), ln, (int) node);
   chpl_comm_diags_incr(put);
 
-  handle = ofi_put(chpl_comm_cb_event_kind_put,
-                   addr, node, raddr, size, typeIndex, commID, ln, fn);
-  if (handle) {
-    // fi_cq_read
-  }
+  (void) ofi_put(addr, node, raddr, size);
 }
 
 
 void chpl_comm_get(void* addr, int32_t node, void* raddr,
                    size_t size, int32_t typeIndex, int32_t commID,
                    int ln, int32_t fn) {
-  chpl_comm_nb_handle_t handle;
+  //
+  // addr and raddr are sanity checks; node==chpl_nodeID is supposed
+  // to be handled by our caller.
+  //
+  assert(addr != NULL
+         && raddr != NULL
+         && node != chpl_nodeID);
 
-  if (node == chpl_nodeID) {
-    memmove(addr, raddr, size);
-    return;
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_get, chpl_nodeID, node,
+         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
   }
 
   chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
                                  chpl_lookupFilename(fn), ln, (int) node);
   chpl_comm_diags_incr(get);
 
-  handle = ofi_get(chpl_comm_cb_event_kind_get,
-                   addr, node, raddr, size, typeIndex, commID, ln, fn);
-  if (handle) {
-    // fi_cq_read
-  }
+  (void) ofi_get(addr, node, raddr, size);
 }
 
 
@@ -1175,44 +1421,137 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 }
 
 
-static inline chpl_comm_nb_handle_t ofi_put(chpl_comm_cb_event_kind_t etype,
-                                            void *addr, c_nodeid_t node,
-                                            void* raddr, size_t size,
-                                            int32_t typeIndex, int32_t commID,
-                                            int ln, int32_t fn) {
+static inline
+chpl_comm_nb_handle_t ofi_put(void* addr, c_nodeid_t node,
+                              void* raddr, size_t size) {
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = getTxCtxInfo()) != NULL);
 
-  if (chpl_comm_have_callbacks(etype)) {
-    chpl_comm_cb_info_t cb_data = {etype, chpl_nodeID, node,
-                                   .iu.comm={addr, raddr, size,
-                                             typeIndex, commID, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
+  void* mrDesc;
+  void* myAddr = addr;
+  if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
+    myAddr = allocBounceBuf(size);
+    CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
+    memcpy(myAddr, addr, size);
   }
 
-  // fi_write
+  uint64_t mrKey;
+  CHK_TRUE(mrGetRemoteKey(&mrKey, node, raddr, size) == 0);
 
-  chpl_internal_error("Remote puts not yet implemented");
+  OFI_CHK(fi_write(tcip->txCtx, myAddr, size,
+                   mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+             "tx write: %d:%p <= %p%s, size %zd, key 0x%" PRIx64,
+             (int) node, raddr, addr, (myAddr == addr) ? "" : "(B)", size,
+             mrKey);
+
+  waitForTxCQ(tcip, 1);
+
+  releaseTxCtxInfo(tcip);
+
+  if (myAddr != addr) {
+    freeBounceBuf(myAddr);
+  }
 
   return NULL;
 }
 
 
-static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
-                                            void *addr, c_nodeid_t node,
-                                            void* raddr, size_t size,
-                                            int32_t typeIndex, int32_t commID,
-                                            int ln, int32_t fn) {
-  if (chpl_comm_have_callbacks(etype)) {
-    chpl_comm_cb_info_t cb_data = {etype, chpl_nodeID, node,
-                                   .iu.comm={addr, raddr, size,
-                                             typeIndex, commID, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
+static inline
+chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
+                              void* raddr, size_t size) {
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = getTxCtxInfo()) != NULL);
+
+  void* mrDesc;
+  void* myAddr = addr;
+  if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
+    myAddr = allocBounceBuf(size);
+    CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
   }
 
-  // fi_read
+  uint64_t mrKey;
+  CHK_TRUE(mrGetRemoteKey(&mrKey, node, raddr, size) == 0);
 
-  chpl_internal_error("Remote gets not yet implemented");
+  OFI_CHK(fi_read(tcip->txCtx, addr, size,
+                  mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+             "tx read: %p <= %d:%p, len %zd, key 0x%" PRIx64,
+             addr, (int) node, raddr, size, mrKey);
+
+  waitForTxCQ(tcip, 1);
+
+  releaseTxCtxInfo(tcip);
+
+  if (myAddr != addr) {
+    memcpy(addr, myAddr, size);
+    freeBounceBuf(myAddr);
+  }
 
   return NULL;
+}
+
+
+static
+void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut) {
+  if (numOut > 0) {
+    struct fi_cq_entry cqes[numOut];
+    int numRetired = 0;
+
+    do {
+      int ret;
+      CHK_TRUE((ret = fi_cq_read(tcip->txCQ, cqes, numOut)) > 0
+               || ret == -FI_EAGAIN);
+
+      if (ret > 0) {
+        const int numEvents = ret;
+        numRetired += numEvents;
+        for (int i = 0; i < numEvents; i++) {
+          DBG_PRINTF(DBG_ACK, "CQ ack tx");
+        }
+      }
+    } while (numRetired < numOut);
+  }
+}
+
+
+static inline
+struct perTxCtxInfo_t* getTxCtxInfo(void) {
+  static __thread struct perTxCtxInfo_t* tcip;
+
+  if (tcip == NULL) {
+    PTHREAD_CHK(pthread_mutex_lock(&pti_mutex));
+    if (ptiTabIdx >= ptiTabLen - 1) {
+      INTERNAL_ERROR_V("out of ptiTab[] entries");
+    }
+    tcip = &ptiTab[ptiTabIdx++];
+    PTHREAD_CHK(pthread_mutex_unlock(&pti_mutex));
+    DBG_PRINTF(DBG_THREADS, "I have ptiTab[%td]", tcip - ptiTab);
+  }
+
+  return tcip;
+}
+
+
+static inline
+void releaseTxCtxInfo(struct perTxCtxInfo_t* tcip) {
+  //
+  // There is nothing to do here unless and until we support threads
+  // overloaded on ptiTab[] entries.
+  //
+}
+
+
+static
+void* allocBounceBuf(size_t size) {
+  void* p;
+  CHPL_CALLOC_SZ(p, 1, size);
+  return p;
+}
+
+
+static void freeBounceBuf(void* p) {
+  CHPL_FREE(p);
 }
 
 
@@ -1221,8 +1560,7 @@ static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
 // Interface: utility
 //
 
-int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
-{
+int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len) {
   // No way to know if the page is mapped on the remote (without a round trip)
   return 0;
 }
@@ -1241,6 +1579,8 @@ void chpl_comm_barrier(const char *msg) {
     return;
   }
 
+  DBG_PRINTF(DBG_BARRIER, "barrier '%s'", (msg == NULL) ? "" : msg);
+
   if (am_handler_count == 0) {
     // Comm layer setup is not complete yet; use OOB barrier
     chpl_comm_ofi_oob_barrier();
@@ -1249,6 +1589,7 @@ void chpl_comm_barrier(const char *msg) {
     chpl_comm_ofi_oob_barrier();
   }
 
+  DBG_PRINTF(DBG_BARRIER, "barrier '%s' done", (msg == NULL) ? "" : msg);
 }
 
 
@@ -1353,6 +1694,18 @@ double chpl_comm_ofi_time_get(void) {
 
 void chpl_comm_ofi_dbg_init(void) {
   chpl_comm_ofi_dbg_level = chpl_env_rt_get_int("COMM_OFI_DEBUG", 0);
+
+  const char* ev;
+  if ((ev = chpl_env_rt_get("COMM_OFI_DEBUG_FNAME", NULL)) == NULL) {
+    chpl_comm_ofi_dbg_file = stdout;
+  } else {
+    char fname[strlen(ev) + 6 + 1];
+    int fnameLen;
+    fnameLen = snprintf(fname, sizeof(fname), "%s.%d", ev, (int) chpl_nodeID);
+    CHK_TRUE(fnameLen < sizeof(fname));
+    CHK_TRUE((chpl_comm_ofi_dbg_file = fopen(fname, "w")) != NULL);
+    setbuf(chpl_comm_ofi_dbg_file, NULL);
+  }
 }
 
 
