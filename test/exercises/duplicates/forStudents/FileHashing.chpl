@@ -1,35 +1,45 @@
 module FileHashing {
 
+  /* SHA256Hash is a record storing a SHA256 hash value.
+     It supports comparison and writeln.
+   */
   record SHA256Hash {
+    /* The actual hash value */
     var hash: 8*uint(32);
 
-    // ought to be throws, see issue #7261
+    /* Help `writeln` and other calls output SHA256Hash value
+       in a good format.
+       */
+    // Note, this ought to be throws, see issue #7261
     proc writeThis(f) {
       for component in hash {
         var s = try! "%08xu".format(component);
         f <~> s;
       }
     }
+
+    /* How to initialize an empty SHA256Hash */
     proc init() {
       // compiler adds initialization of hash to 0s
     }
+    /* How to initialize a SHA256Hash from another SHA256Hash */
     proc init(from: SHA256Hash) {
       this.hash = from.hash;
     }
+    /* How to initialize a SHA256Hash from a hash tuple */
     proc init(hash: 8*uint(32)) {
       this.hash = hash;
     }
   }
 
+  /* Called when assigning between SHA256Hash values */
   proc =(ref lhs: SHA256Hash, rhs: SHA256Hash) {
     lhs.hash = rhs.hash;
   }
 
-  /* no longer necessary
-  proc chpl__defaultHash(h: SHA256Hash) {
-    return chpl__defaultHash(h.hash);
-  }*/
-
+  /* Helps to implement comparisons between SHA256Hash values.
+     Returns -1 if a < b, 1 if a > b, or 0 if a == b.
+   */
   proc compare(a: SHA256Hash, b: SHA256Hash): int {
 
     for i in 1..8 {
@@ -67,6 +77,7 @@ module FileHashing {
 
   /*
      Returns the SHA256Hash for the file stored at `path`.
+     May throw an error if the file could not be openned, for example.
    */
   proc computeFileHash(path: string): SHA256Hash throws {
     use SHA256Implementation;
@@ -105,7 +116,7 @@ module FileHashing {
       offset += 4;
       nbits += 32;
     }
-    
+
     if offset < len {
       var lastword:uint(32);
       var byte:uint(8);

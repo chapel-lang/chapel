@@ -9,14 +9,18 @@ module SHA256Implementation {
   // hints from other implementations for reducing the number
   // of instructions in the basic functions.
 
+  /* This record stores the state of the hash. */
   record SHA256State {
     var length:uint(64); // length of hashed message, in bits
     var H:8*uint(32);    // current hash
   };
 
+  /* This function simply casts the passed integer to a uint(32) */
   inline proc ul(x) {
     return x:uint(32);
   }
+  /* This function casts each portion of the passed tuple
+     to uint(32) and returns the result. */
   inline proc ul(x:8*int) {
     var ret:8*uint(32);
     for i in 1..8 {
@@ -26,6 +30,7 @@ module SHA256Implementation {
   }
 
 
+  // The K constants
   private
   var K:64*uint(32) =
 (ul(0x428a2f98), ul(0x71374491), ul(0xb5c0fbcf), ul(0xe9b5dba5), ul(0x3956c25b),
@@ -42,6 +47,9 @@ module SHA256Implementation {
  ul(0x682e6ff3), ul(0x748f82ee), ul(0x78a5636f), ul(0x84c87814), ul(0x8cc70208),
  ul(0x90befffa), ul(0xa4506ceb), ul(0xbef9a3f7), ul(0xc67178f2));
 
+  // The logical functions
+
+  // Rotate right
   private inline
   proc ROTR(x:uint(32), y:uint(32)):uint(32) {
     use BitOps;
@@ -58,6 +66,7 @@ module SHA256Implementation {
     return ((x | y) & z) | (x & y);
   }
 
+  // Shift right
   private inline
   proc SHR(x:uint(32), n:uint(32)):uint(32) {
     return (x & ul(0xffffffff)) >> n;
@@ -133,6 +142,9 @@ module SHA256Implementation {
 
   }
 
+  // Set the bit numbered `bit` in `msg`.
+  // Bit numbering starts with 0. Bit numbers 0-31 are in msg(1)
+  // and bit 0 is the most-significant.
   private
   proc set_bit(ref msg:16*uint(32), bit:uint) {
     assert(bit < 512);
@@ -141,13 +153,17 @@ module SHA256Implementation {
     whichword += 1; // use 1-based indexing
     msg[whichword] |= ul(1) << (31 - inword);
   }
+
+  // Clear the bits after bit `nbits` in `msg`.
+  // Bit numbering starts with 0. Bit numbers 0-31 are in msg(1)
+  // and bit 0 is the most-significant.
   private
   proc clear_bits_after(ref msg:16*uint(32), nbits:uint) {
     assert(nbits < 512);
     var whichword = ul(nbits / 32);
     var inword = ul(nbits % 32);
     whichword += 1; // use 1-based indexing
-    
+
     var word:uint(32) = msg[whichword];
     // Clear the bits after inword in word
     var zero:uint(32) = 0;
@@ -160,13 +176,13 @@ module SHA256Implementation {
     word &= mask;
     msg[whichword] = word;
 
-    // Clear the remaining words 
+    // Clear the remaining words
     for i in whichword+1..16 {
       msg[i] = 0;
     }
   }
 
-  // setting the initial hash value
+  /* Initialize a SHA256State so that it can perform hash computations. */
   proc SHA256State.init() {
     this.length = 0;
 
@@ -174,17 +190,28 @@ module SHA256Implementation {
                   0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19) );
   }
 
-  // processes 512 bits of message
-  // Note, these should already be in native byte order.
-  // That means the caller probably needed to already run big-endian-to-host
-  // on the message.
+  /* Processes 512 bits of message.
+     This function can be called an arbitrary number of times
+     to compute the hash for a long message.
+
+     Note, the `msg` words should already be in native byte order.
+     That means the caller probably needed to already run big-endian-to-host
+     on the message.
+   */
   proc ref SHA256State.fullblock(msg:16*uint(32)) {
     this.length += 512;
     sha256_compute(this, msg);
   }
 
-  // nbits is the number of bits in msg to use
-  // msg is in native byte order
+  /* Process the final <= 512 bits of message.
+     Computes and returns the final hash.
+
+     As with SHA256State.fullblock, the msg words should already be
+     in native byte order. That means the caller probably needed to already run
+     big-endian-to-host on the message.
+
+     nbits is the number of bits in msg to use
+   */
   proc ref SHA256State.lastblock(in msg:16*uint(32), in nbits:uint):8*uint(32)
   {
     this.length += nbits;
@@ -209,7 +236,7 @@ module SHA256Implementation {
 
     // Now store the 64-bit length quantity in the last two words
     // of the message.
-    msg[15] = ul((this.length >> 32) & ul(0xffffffff)); 
+    msg[15] = ul((this.length >> 32) & ul(0xffffffff));
     msg[16] = ul(this.length & ul(0xffffffff));
 
     // hash the final block
@@ -218,6 +245,8 @@ module SHA256Implementation {
     return this.H;
   }
 
+  /* This function exists to test private methods in this module and can
+     be called to run a sequence of unit tests. */
   proc unittest() {
     var zeros:16*uint(32);
     var ones:16*uint(32);
@@ -260,7 +289,7 @@ module SHA256Implementation {
     msg = zeros;
     set_bit(msg, 0);
     assert(msg[1] == 0x80000000 && msg[2] == 0);
-    
+
     msg = zeros;
     set_bit(msg, 1);
     assert(msg[1] == 0x40000000 && msg[2] == 0);
@@ -268,7 +297,7 @@ module SHA256Implementation {
     msg = zeros;
     set_bit(msg, 2);
     assert(msg[1] == 0x20000000 && msg[2] == 0);
-    
+
     msg = zeros;
     set_bit(msg, 31);
     assert(msg[1] == 0x00000001 && msg[2] == 0);
@@ -302,42 +331,42 @@ module SHA256Implementation {
 
     assert(hash==ul( (0xe3b0c442, 0x98fc1c14, 0x9afbf4c8, 0x996fb924,
 		      0x27ae41e4, 0x649b934c, 0xa495991b, 0x7852b855) ));
- 
-   
+
+
     // 55 bytes
     state = startingState;
     hash = state.lastblock(zeros, 55*8);
 
     assert(hash==ul( (0x02779466, 0xcdec1638, 0x11d07881, 0x5c633f21,
                       0x90141308, 0x1449002f, 0x24aa3e80, 0xf0b88ef7) ));
- 
+
     // 56 bytes
     state = startingState;
     hash = state.lastblock(zeros, 56*8);
     assert(hash==ul( (0xd4817aa5, 0x497628e7, 0xc77e6b60, 0x6107042b,
                       0xbba31308, 0x88c5f47a, 0x375e6179, 0xbe789fbb) ));
- 
+
     // 119 bytes
     state = startingState;
     state.fullblock(zeros); // 64 bytes
     hash = state.lastblock(zeros, 55*8);
     assert(hash==ul((0xf616b0d5, 0x4e78571a, 0x9611f343, 0xc9f8e022,
                      0xe859e920, 0x381ab0e4, 0xd3da01e1, 0x93a7bd7e) ));
- 
+
     // 120 bytes
     state = startingState;
     state.fullblock(zeros); // 64 bytes
     hash = state.lastblock(zeros, 56*8);
     assert(hash==ul((0x6edd9f6f, 0x9cc92cde, 0xd36e6c4a, 0x580933f9,
                      0xc9f1b905, 0x62b46903, 0xb806f219, 0x02a1a54f) ));
-    
+
     // 128 bytes
     state = startingState;
     state.fullblock(zeros);
     hash = state.lastblock(zeros, 64*8);
     assert(hash==ul( (0x38723a2e, 0x5e8a17aa, 0x7950dc00, 0x8209944e,
                       0x898f69a7, 0xbd10a23c, 0x839d341e, 0x935fd5ca) ));
- 
+
     // 129 bytes
     state = startingState;
     state.fullblock(zeros);
