@@ -20,7 +20,7 @@ __all__ = [
     'chpl_timers',
     'chpl_unwind',
     'chpl_wide_pointers',
-    'chpl_libmode',
+    'chpl_lib_pic',
     # third-party package configuration helpers
     'chpl_3p_gmp_configs',
     'chpl_3p_hwloc_configs',

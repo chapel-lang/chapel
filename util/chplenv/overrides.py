@@ -38,7 +38,7 @@ chplvars = [
              'CHPL_WIDE_POINTERS',
              'CHPL_LLVM',
              'CHPL_AUX_FILESYS',
-             'CHPL_LIBMODE',
+             'CHPL_LIB_PIC',
            ]
 
 
