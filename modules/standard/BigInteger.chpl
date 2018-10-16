@@ -381,6 +381,9 @@ module BigInteger {
   //
   // Cast operators
   //
+  proc _cast(type toType: bigint, src) {
+    return new bigint(src);
+  }
 
   pragma "no doc"
   inline proc _cast(type t, const ref x: bigint) where isIntType(t) {
