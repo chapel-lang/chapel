@@ -200,6 +200,11 @@ proc locale.chdir(out error: syserr, name: string) {
               See description of :const:`S_IRUSR`, for instance, for potential
               values.
    :type mode: `int`
+
+   :throws FileNotFoundError: Thrown when the name specified does not correspond
+                              to a file or directory that exists.
+   :throws PermissionError: Thrown when the current user does not have
+                            permission to change the permissions
 */
 proc chmod(name: string, mode: int) throws {
   extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
