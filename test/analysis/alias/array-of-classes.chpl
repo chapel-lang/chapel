@@ -61,6 +61,7 @@ proc acceptsClasses(a, b) {
 
 proc acceptsIntRefs(ref a, ref b) {
   var sum = 0;
+  b += 0;
   for k in 1..n {
     sum += a + b;
     a += 1;

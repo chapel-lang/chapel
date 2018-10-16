@@ -8,6 +8,7 @@ proc main() {
 }
 
 proc test(ref a, ref b) {
+  b += 0;
   for i in 1..n {
     a += b;
   }
