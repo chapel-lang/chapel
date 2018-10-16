@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Skip this test if using a launcher, or if using --llvm, or if gfortran is not
-# available.
+# Skip this test in incompatible environments. The environment needs to be
+# fairly simple and either gnu or clang based.
 
 launcher=`$CHPL_HOME/util/chplenv/chpl_launcher.py`
 
@@ -11,7 +11,10 @@ llvm=$?
 `command -v gfortran 2>&1 >/dev/null`
 gfortranFound=$?
 
-if [[ $gfortranFound == 0 && $launcher == "none" && $llvm != 0 && $CHPL_TARGET_PLATFORM != "cray-xc" ]] ; then
+if [[ $gfortranFound == 0 && $launcher == "none" && $llvm != 0 && \
+      $CHPL_TARGET_PLATFORM != "cray-xc" &&
+      ($CHPL_TARGET_COMPILER == "gnu" ||
+       $CHPL_TARGET_COMPILER == "clang") ]] ; then
   echo False
 else
   echo True
