@@ -29,8 +29,8 @@ proc testRangeAPI(lbl, r: range(?), idx, subr) {
   writeln("hasLast()        = ", r.hasLast());
   writeln("isNat.Algned()   = ", r.isNaturallyAligned());
   writeln("isAmbiguous      = ", r.isAmbiguous());
-  writeln("member(", idx, ") = ", r.member(idx));
-  writeln("member(", subr, ") = ", r.member(subr));
+  writeln("contains(", idx, ") = ", r.contains(idx));
+  writeln("contains(", subr, ") = ", r.contains(subr));
   writeln("ident(self)      = ", ident(r, r));
   writeln("ident(other)     = ", ident(r, subr));
   writeln("boundsCheck(", idx, ") = ", r.boundsCheck(idx));

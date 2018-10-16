@@ -26,8 +26,8 @@ hasFirst()       = true
 hasLast()        = true
 isNat.Algned()   = true
 isAmbiguous      = false
-member((_cpindex = 4)) = true
-member((_cpindex = 3)..(_cpindex = 6)) = true
+contains((_cpindex = 4)) = true
+contains((_cpindex = 3)..(_cpindex = 6)) = true
 ident(self)      = true
 ident(other)     = false
 boundsCheck((_cpindex = 4)) = true
@@ -78,8 +78,8 @@ hasFirst()       = true
 hasLast()        = true
 isNat.Algned()   = true
 isAmbiguous      = false
-member((_cpindex = 7)) = true
-member((_cpindex = 5)..(_cpindex = 13) by 2) = true
+contains((_cpindex = 7)) = true
+contains((_cpindex = 5)..(_cpindex = 13) by 2) = true
 ident(self)      = true
 ident(other)     = false
 boundsCheck((_cpindex = 7)) = true
@@ -128,8 +128,8 @@ hasFirst()       = true
 hasLast()        = false
 isNat.Algned()   = true
 isAmbiguous      = false
-member((_cpindex = 4)) = true
-member((_cpindex = 3)..(_cpindex = 6)) = true
+contains((_cpindex = 4)) = true
+contains((_cpindex = 3)..(_cpindex = 6)) = true
 ident(self)      = true
 ident(other)     = false
 boundsCheck((_cpindex = 4)) = true
@@ -175,8 +175,8 @@ hasFirst()       = false
 hasLast()        = true
 isNat.Algned()   = false
 isAmbiguous      = false
-member((_cpindex = 4)) = true
-member((_cpindex = 3)..(_cpindex = 6)) = true
+contains((_cpindex = 4)) = true
+contains((_cpindex = 3)..(_cpindex = 6)) = true
 ident(self)      = true
 ident(other)     = false
 boundsCheck((_cpindex = 4)) = true
