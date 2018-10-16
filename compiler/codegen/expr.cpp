@@ -5079,6 +5079,7 @@ DEFINE_PRIM(PRIM_INVARIANT_START) {
 }
 
 #ifdef HAVE_LLVM
+static
 llvm::MDNode* createMetadataScope(llvm::LLVMContext& ctx,
                                     llvm::MDNode* domain,
                                     const char* name) {
