@@ -116,6 +116,7 @@ bool fNoDeadCodeElimination = false;
 bool fNoScalarReplacement = false;
 bool fNoTupleCopyOpt = false;
 bool fNoRemoteValueForwarding = false;
+bool fNoInferConstRefs = false;
 bool fNoRemoteSerialization = false;
 bool fNoRemoveCopyCalls = false;
 bool fNoOptimizeRangeIteration = false;
@@ -673,6 +674,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoOptimizeRangeIteration = false;
   fNoOptimizeLoopIterators = false;
   fNoLiveAnalysis = false;
+  fNoInferConstRefs = false;
   fNoRemoteValueForwarding = false;
   fNoRemoteSerialization = false;
   fNoRemoveCopyCalls = false;
@@ -722,6 +724,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoOptimizeRangeIteration = true;   // --no-optimize-range-iteration
   fNoOptimizeLoopIterators = true;    // --no-optimize-loop-iterators
   fNoVectorize = true;                // --no-vectorize
+  fNoInferConstRefs = true;           // --no-infer-const-refs
   fNoRemoteValueForwarding = true;    // --no-remote-value-forwarding
   fNoRemoteSerialization = true;      // --no-remote-serialization
   fNoRemoveCopyCalls = true;          // --no-remove-copy-calls
@@ -1011,6 +1014,7 @@ static ArgumentDescription arg_desc[] = {
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"ignore-user-errors", ' ', NULL, "[Don't] attempt to ignore user errors", "N", &ignore_user_errors, "CHPL_IGNORE_USER_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
+ {"infer-const-refs", ' ', NULL, "Enable [disable] inferring const refs", "n", &fNoInferConstRefs, NULL, NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
