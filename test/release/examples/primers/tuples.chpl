@@ -65,7 +65,7 @@ threeReals += 1.0;
 writeln(threeReals); // output: (1.0, 1.0, 1.0)
 
 // Tuples with only one component type are also called
-// homogenous tuples.
+// homogeneous tuples.
 
 // Tuple Iteration
 // ***************
