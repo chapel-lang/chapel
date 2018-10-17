@@ -4940,7 +4940,7 @@ static void resolveInitField(CallExpr* call) {
     // likely a temporary, which generally will suppress an error if
     // initialized from a non-param.
     else if (srcSym->isParameter() == false ||
-        (isVarSymbol(srcSym) && getImmediate(srcSym) == NULL)) {
+            (isVarSymbol(srcSym) && getImmediate(srcSym) == NULL)) {
       USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", fs->name);
     }
   }
