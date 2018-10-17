@@ -63,6 +63,11 @@ proc testOps(x, y:bigint) {
 
   writeln(1:x.type, " >= ", y, " = ", 1:x.type>=y);
   writeln(y, " >= ", 1:x.type, " = ", y>=1:x.type);
+
+  // Casts to bigint
+  writeln(1:x.type:bigint:string, " == ", new bigint(1:x.type), " = ", 1:x.type:bigint == new bigint(1:x.type));
+  writeln((1:x.type:bigint).type:string, " == ", (new bigint(1:x.type)).type:string, " = ", (1:x.type:bigint).type == (new bigint(1:x.type)).type);
+
   writeln();
 }
 
