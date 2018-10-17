@@ -4939,7 +4939,7 @@ static void resolveInitField(CallExpr* call) {
     // Check against the symbol's Immediate is required because the symbol is
     // likely a temporary, which generally will suppress an error if
     // initialized from a non-param.
-    if (srcSym->isParameter() == false ||
+    else if (srcSym->isParameter() == false ||
         (isVarSymbol(srcSym) && getImmediate(srcSym) == NULL)) {
       USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", fs->name);
     }
