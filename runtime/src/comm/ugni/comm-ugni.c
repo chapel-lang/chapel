@@ -7702,7 +7702,7 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
   // Wait for the transaction to complete.  Yield initially; the
   // minimum round-trip time on the network isn't small and maybe
   // we can find something else to do in the meantime.  FMA is only
-  // used for small tranasctions which will be relatively fast, so
+  // used for small transactions which will be relatively fast, so
   // after the initial yield, only yield every 64 attempts.
   //
   do {
