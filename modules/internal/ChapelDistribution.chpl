@@ -575,7 +575,7 @@ module ChapelDistribution {
 
     proc boundsCheck(ind: index(rank, idxType)):void {
       if boundsChecking then
-        if !(parentDom.member(ind)) then
+        if !(parentDom.contains(ind)) then
           halt("Sparse domain/array index out of bounds: ", ind,
               " (expected to be within ", parentDom, ")");
     }
@@ -1011,7 +1011,7 @@ module ChapelDistribution {
     // dsiAssignDomain instead of using this method.
 
     for i in lhs.dsiIndsIterSafeForRemoving() {
-      if !rhs.member(i) {
+      if !rhs.contains(i) {
         lhs.dsiRemove(i);
       }
     }

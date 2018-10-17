@@ -508,7 +508,7 @@ module DefaultRectangular {
 
     proc dsiMember(ind: rank*idxType) {
       for param i in 1..rank do
-        if !ranges(i).member(ind(i)) then
+        if !ranges(i).contains(ind(i)) then
           return false;
       return true;
     }

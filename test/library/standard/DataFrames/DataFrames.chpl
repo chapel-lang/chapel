@@ -129,7 +129,7 @@ module DataFrames {
 
     override
     proc contains(lab: idxType) {
-      return labels.member(lab);
+      return labels.contains(lab);
     }
 
     // TODO: enforce same index type with another dispatch

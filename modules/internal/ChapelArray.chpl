@@ -1290,7 +1290,7 @@ module ChapelArray {
       // If idx isn't in the original domain, we need to generate an
       // empty upward facing domain (intersection is empty)
       //
-      if !member(idx) {
+      if !contains(idx) {
         for param d in 1..uprank do
           upranges(d) = emptyrange;
       }
@@ -1529,16 +1529,33 @@ module ChapelArray {
     proc alignedHigh return _value.dsiAlignedHigh;
 
     pragma "no doc"
-    proc member(i: rank*_value.idxType) {
+    proc contains(i: rank*_value.idxType) {
       if isRectangularDom(this) || isSparseDom(this) then
         return _value.dsiMember(_makeIndexTuple(rank, i));
       else
         return _value.dsiMember(i(1));
     }
-    /* Return true if ``i`` is a member of this domain. Otherwise
-       return false. */
-    proc member(i: _value.idxType ...rank) {
-      return member(i);
+
+    /* Return true if this domain contains ``i``. Otherwise return false.
+       For sparse domains, only indices with a value are considered
+       to be contained in the domain.
+     */
+    inline proc contains(i: _value.idxType ...rank) {
+      return contains(i);
+    }
+
+    pragma "no doc"
+    inline proc member(i: rank*_value.idxType) {
+      compilerWarning("domain.member is deprecated - " +
+                      "please use domain.contains instead");
+      return this.contains(i);
+    }
+
+    /* Deprecated - please use :proc:`domain.contains`. */
+    inline proc member(i: _value.idxType ...rank) {
+      compilerWarning("domain.member is deprecated - " +
+                      "please use domain.contains instead");
+      return this.contains(i);
     }
 
     /* Return true if this domain is a subset of ``super``. Otherwise
@@ -1557,7 +1574,7 @@ module ChapelArray {
       if super.type != this.type then
         compilerError("isSubset called with different associative domain types");
 
-      return && reduce forall i in this do super.member(i);
+      return && reduce forall i in this do super.contains(i);
     }
 
     /* Return true if this domain is a superset of ``sub``. Otherwise
@@ -1576,7 +1593,7 @@ module ChapelArray {
       if sub.type != this.type then
         compilerError("isSuper called with different associative domain types");
 
-      return && reduce forall i in sub do this.member(i);
+      return && reduce forall i in sub do this.contains(i);
     }
 
     // 1/5/10: do we want to support order() and position()?
@@ -2071,7 +2088,7 @@ module ChapelArray {
     if d1.numIndices != d2.numIndices then return false;
     // Should eventually be a forall+reduction
     for idx in d1 do
-      if !d2.member(idx) then return false;
+      if !d2.contains(idx) then return false;
     return true;
   }
 
@@ -2081,7 +2098,7 @@ module ChapelArray {
     if d1.numIndices != d2.numIndices then return true;
     // Should eventually be a forall+reduction
     for idx in d1 do
-      if !d2.member(idx) then return true;
+      if !d2.contains(idx) then return true;
     return false;
   }
 
@@ -2092,7 +2109,7 @@ module ChapelArray {
     if d1._value.parentDom != d2._value.parentDom then return false;
     // Should eventually be a forall+reduction
     for idx in d1 do
-      if !d2.member(idx) then return false;
+      if !d2.contains(idx) then return false;
     return true;
   }
 
@@ -2103,7 +2120,7 @@ module ChapelArray {
     if d1._value.parentDom != d2._value.parentDom then return true;
     // Should eventually be a forall+reduction
     for idx in d1 do
-      if !d2.member(idx) then return true;
+      if !d2.contains(idx) then return true;
     return false;
   }
 
@@ -2824,7 +2841,7 @@ module ChapelArray {
     {
       on this._value {
         const check = if direction > 0 then newRange.high else newRange.low;
-        if !this._value.dataAllocRange.member(check) {
+        if !this._value.dataAllocRange.contains(check) {
           /* The new index is not in the allocated space.  We'll need to
              realloc it. */
           if this._value.dataAllocRange.length < this.domain.numIndices {
@@ -3061,7 +3078,7 @@ module ChapelArray {
       const prevHigh = this.domain.high;
       const newRange = this.domain.low..(this.domain.high + 1);
 
-      if boundsChecking && !newRange.member(pos) then
+      if boundsChecking && !newRange.contains(pos) then
         halt("insert at position " + pos + " out of bounds");
 
       reallocateArray(newRange, debugMsg="insert reallocate");
@@ -3099,7 +3116,7 @@ module ChapelArray {
             newRange = this.domain.low..(this.domain.high + vals.size),
             validInsertRange = this.domain.low..(this.domain.high + 1);
 
-      if boundsChecking && !validInsertRange.member(pos) then
+      if boundsChecking && !validInsertRange.contains(pos) then
         halt("insert at position " + pos + " out of bounds");
 
       reallocateArray(newRange, debugMsg="insert reallocate");
@@ -3122,7 +3139,7 @@ module ChapelArray {
         compilerError("remove() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("remove");
 
-      if boundsChecking && !this.domain.member(pos) then
+      if boundsChecking && !this.domain.contains(pos) then
         halt("remove at position " + pos + " out of bounds");
 
       const lo = this.domain.low,
@@ -3397,7 +3414,7 @@ module ChapelArray {
     a.chpl__assertSingleArrayDomain("&=");
     serial !a.domain._value.parSafe {
       forall k in a.domain {
-        if !b.domain.member(k) then a.domain.remove(k);
+        if !b.domain.contains(k) then a.domain.remove(k);
       }
     }
   }
@@ -3416,7 +3433,7 @@ module ChapelArray {
     a.chpl__assertSingleArrayDomain("-=");
     serial !a.domain._value.parSafe do
       forall k in a.domain do
-        if b.domain.member(k) then a.domain.remove(k);
+        if b.domain.contains(k) then a.domain.remove(k);
   }
 
 
@@ -3426,9 +3443,9 @@ module ChapelArray {
 
     serial !newDom._value.parSafe {
       forall k in a.domain do
-        if !b.domain.member(k) then ret[k] = a[k];
+        if !b.domain.contains(k) then ret[k] = a[k];
       forall k in b.domain do
-        if !a.domain.member(k) then ret[k] = b[k];
+        if !a.domain.contains(k) then ret[k] = b[k];
     }
 
     return ret;
@@ -3438,11 +3455,11 @@ module ChapelArray {
     a.chpl__assertSingleArrayDomain("^=");
     serial !a.domain._value.parSafe {
       forall k in b.domain {
-        if a.domain.member(k) then a.domain.remove(k);
+        if a.domain.contains(k) then a.domain.remove(k);
         else a.domain.add(k);
       }
       forall k in b.domain {
-        if a.domain.member(k) then a[k] = b[k];
+        if a.domain.contains(k) then a[k] = b[k];
       }
     }
   }
@@ -3451,7 +3468,7 @@ module ChapelArray {
     var newDom : a.type;
     serial !newDom._value.parSafe do
       forall e in a do
-        if !b.member(e) then newDom.add(e);
+        if !b.contains(e) then newDom.add(e);
     return newDom;
   }
 
@@ -3462,7 +3479,7 @@ module ChapelArray {
   */
   proc -=(ref a :domain, b :domain) where (a.type == b.type) && isAssociativeDom(a) {
     for e in b do
-      if a.member(e) then
+      if a.contains(e) then
         a.remove(e);
   }
 
@@ -3489,14 +3506,14 @@ module ChapelArray {
 
     serial !newDom._value.parSafe do
       forall k in a with (ref newDom) do // no race - in 'serial'
-        if b.member(k) then newDom += k;
+        if b.contains(k) then newDom += k;
     return newDom;
   }
 
   proc &=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
     var removeSet: domain(a.idxType);
     for e in a do
-      if !b.member(e) then
+      if !b.contains(e) then
         removeSet += e;
     for e in removeSet do
       a.remove(e);
@@ -3507,9 +3524,9 @@ module ChapelArray {
 
     serial !newDom._value.parSafe {
       forall k in a do
-        if !b.member(k) then newDom.add(k);
+        if !b.contains(k) then newDom.add(k);
       forall k in b do
-        if !a.member(k) then newDom.add(k);
+        if !a.contains(k) then newDom.add(k);
     }
 
     return newDom;
@@ -3522,7 +3539,7 @@ module ChapelArray {
   */
   proc ^=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
     for e in a do
-      if b.member(e) then
+      if b.contains(e) then
         a.remove(e);
       else
         a.add(e);

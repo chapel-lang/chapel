@@ -153,16 +153,16 @@ coforall (lr,lc) in LocaleGridDom {
     // see if we own one or more of the points; if so, initialize A
     // at that point
     //
-    if WithFluff.member(p1) then
+    if WithFluff.contains(p1) then
       A[p1] =  1.0;
 
-    if WithFluff.member(p2) then
+    if WithFluff.contains(p2) then
       A[p2] =  1.0;
 
-    if WithFluff.member(p3) then
+    if WithFluff.contains(p3) then
       A[p3] =  -1.0;
 
-    if WithFluff.member(p4) then
+    if WithFluff.contains(p4) then
       A[p4] =  -1.0;
 
     //

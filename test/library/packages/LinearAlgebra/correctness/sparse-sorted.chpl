@@ -33,7 +33,7 @@ proc main() {
 
   var fails = 0;
   forall bb in B.domain with (+ reduce fails) {
-    if B.domain.member(bb) == false {
+    if B.domain.contains(bb) == false {
       fails += 1;
       if debug then writeln("NOT FOUND: ", bb);
     }

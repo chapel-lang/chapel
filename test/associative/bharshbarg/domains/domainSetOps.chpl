@@ -10,7 +10,7 @@ for i in 1..n/2 do c.add(i);
 // contains all in 1..n
 var q = a + b;
 for i in 1..n do
-  assert(q.member(i));
+  assert(q.contains(i));
 
 // a and b are disjoint, so r == a
 var r = a - b;

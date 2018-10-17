@@ -3685,7 +3685,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
                       amount = arg.domain.high - start + 1) : bool throws
                       where arg.rank == 1 && isRectangularArr(arg) {
 
-  if arg.size == 0 || !arg.domain.member(start) ||
+  if arg.size == 0 || !arg.domain.contains(start) ||
      amount <= 0 || (start + amount - 1 > arg.domain.high) then return false;
 
   var err:syserr = ENOERR;

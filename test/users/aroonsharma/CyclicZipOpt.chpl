@@ -382,7 +382,7 @@ proc CyclicZipOptDom.dsiHigh return whole.high;
 
 proc CyclicZipOptDom.dsiStride return whole.stride;
 
-proc CyclicZipOptDom.dsiMember(i) return whole.member(i);
+proc CyclicZipOptDom.dsiMember(i) return whole.contains(i);
 
 proc CyclicZipOptDom.dsiIndexOrder(i) return whole.indexOrder(i);
 
@@ -551,7 +551,7 @@ class LocCyclicZipOptDom {
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocCyclicZipOptDom.member(i) return myBlock.member(i);
+proc LocCyclicZipOptDom.contains(i) return myBlock.contains(i);
 
 
 class CyclicZipOptArr: BaseArr {
@@ -755,7 +755,7 @@ proc CyclicZipOptArr.dsiPrivatize(privatizeData) {
 
 proc CyclicZipOptArr.dsiAccess(i:rank*idxType) var {
   local {
-    if myLocArr != nil && myLocArr.locDom.member(i) then
+    if myLocArr != nil && myLocArr.locDom.contains(i) then
       return myLocArr.this(i);
   }
   if doRADOpt && !stridable {
@@ -844,7 +844,7 @@ iter CyclicZipOptArr.these(param tag: iterKind, followThis, param fast: bool = f
   
   proc accessHelper(i) var {
     if myLocArr then local {
-      if myLocArr.locDom.member(i) then
+      if myLocArr.locDom.contains(i) then
         return myLocArr.this(i);
     }
     return dsiAccess(i);
@@ -948,7 +948,7 @@ iter CyclicZipOptArr.these(param tag: iterKind, followThis, param fast: bool = f
   }
     /*proc accessHelper(i) var {
       if myLocArr then local {
-        if myLocArr.locDom.member(i) then
+        if myLocArr.locDom.contains(i) then
           return myLocArr.this(i);
       }
       return dsiAccess(i);

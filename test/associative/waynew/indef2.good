@@ -1,6 +1,6 @@
-member((meet, 5, 6.7)) = false
-member((pete, 1, 2.0)) = true
-member((pete, 1, 0.0)) = false
-member((pete, 2, 2.0)) = false
-member((feet, 3, 4.5)) = true
-member((seat, 6, 7.8)) = true
+contains((meet, 5, 6.7)) = false
+contains((pete, 1, 2.0)) = true
+contains((pete, 1, 0.0)) = false
+contains((pete, 2, 2.0)) = false
+contains((feet, 3, 4.5)) = true
+contains((seat, 6, 7.8)) = true

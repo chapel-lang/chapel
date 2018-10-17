@@ -98,7 +98,7 @@ module CGMakeA {
       do {
         vecelt = randStr.getNext();
         ind = (randStr.getNext() * nn1):int + 1;
-      } while (ind > n || indices.member(ind));
+      } while (ind > n || indices.contains(ind));
 
       //
       // store the random values

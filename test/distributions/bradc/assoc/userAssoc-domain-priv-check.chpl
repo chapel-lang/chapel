@@ -32,8 +32,8 @@ proc doit() {
       // Access the array.
       // This statement succeeds if there is no communication.
       // Check that idxTemp is in the domain
-      assert(D.member(idxTemp));
-      assert(A.domain.member(idxTemp));
+      assert(D.contains(idxTemp));
+      assert(A.domain.contains(idxTemp));
     }
   }
   
@@ -45,8 +45,8 @@ proc doit() {
     local {
       // Access the array.
       // This statement succeeds if there is no communication.
-      assert(D.member(idxTemp));
-      assert(A.domain.member(idxTemp));
+      assert(D.contains(idxTemp));
+      assert(A.domain.contains(idxTemp));
     }
   }
 

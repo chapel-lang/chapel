@@ -123,7 +123,7 @@ proc GlobalData.init(nameArg: string) {
 
     proc storecache(ref cache, dx, dy, slicex, slicey) {
       const ind = (ix+dx, iy+dy);
-      if !gridDist.member(ind) {
+      if !gridDist.contains(ind) {
         msg1("  ", ind, "  no neighbor");
         return;
       }
