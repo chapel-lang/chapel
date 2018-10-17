@@ -527,6 +527,92 @@ void BasicBlock::buildLocalsVectorMap(FnSymbol*          fn,
   }
 }
 
+static
+void computeOrders(FnSymbol* fn,
+                   std::set<int>& visited,
+                   BasicBlock* bb,
+                   // mapping bb->id -> order in pre-order
+                   std::vector<int>& Pre,
+                   // mapping bb->id -> order in post-order
+                   std::vector<int>& Post,
+                   int & preJ,
+                   int & postI) {
+
+  // Following Muchnick p 180 Depth_First_search_PP
+
+  int x = bb->id;
+  visited.insert(x);
+  Pre[x] = preJ;
+  preJ += 1;
+
+  for_vector(BasicBlock, bbout, bb->outs) {
+    int y = bbout->id;
+    if (visited.count(y) == 0) {
+      computeOrders(fn, visited, bbout, Pre, Post, preJ, postI);
+    }
+  }
+
+  Post[x] = postI;
+  postI += 1;
+}
+
+void BasicBlock::computeForwardOrder(FnSymbol* fn,
+                                     std::vector<int> & order) {
+
+  size_t nbbs = fn->basicBlocks->size();
+  std::set<int> visited;
+  std::vector<int> Pre(nbbs);
+  std::vector<int> Post(nbbs);
+
+  int preJ = 0;
+  int postI = 0;
+
+  BasicBlock* root = (*fn->basicBlocks)[0];
+  computeOrders(fn, visited, root, Pre, Post, preJ, postI);
+
+  // This will fail for unreachable blocks
+  INT_ASSERT(Pre.size() == nbbs && Post.size() == nbbs);
+
+  order.resize(nbbs);
+
+  // Pre and Post map bb ids -> order, but the order to return
+  // is the inverse of that permutation. Plus we want reverse
+  // postorder...
+  for (size_t ii = 0; ii < nbbs; ii++) {
+    int index = Post[ii];
+    int reverseIndex = nbbs-index-1;
+    order[reverseIndex] = ii;
+  }
+}
+
+void BasicBlock::computeBackwardOrder(FnSymbol* fn,
+                                      std::vector<int> & order) {
+
+  size_t nbbs = fn->basicBlocks->size();
+  std::set<int> visited;
+  std::vector<int> Pre(nbbs);
+  std::vector<int> Post(nbbs);
+
+  int preJ = 0;
+  int postI = 0;
+
+  BasicBlock* root = (*fn->basicBlocks)[0];
+  computeOrders(fn, visited, root, Pre, Post, preJ, postI);
+
+  // This will fail for unreachable blocks
+  INT_ASSERT(Pre.size() == nbbs && Post.size() == nbbs);
+
+  order.resize(nbbs);
+
+  // Pre and Post map bb ids -> order, but the order to return
+  // is the inverse of that permutation. Plus we want reverse
+  // preorder...
+  for (size_t ii = 0; ii < nbbs; ii++) {
+    int index = Pre[ii];
+    int reverseIndex = nbbs-index-1;
+    order[reverseIndex] = ii;
+  }
+}
 
 //#define DEBUG_FLOW
 void BasicBlock::backwardFlowAnalysis(FnSymbol*             fn,
