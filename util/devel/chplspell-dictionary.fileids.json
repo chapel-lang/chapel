@@ -24,6 +24,9 @@
   "641fb78e-4110-11e8-af7e-10ddb1d4c3d5": [
     "compiler/AST/ForallStmt.cpp"
   ],
+  "d551f4f6-d1a9-11e8-954d-10ddb1d4c3d5": [
+    "compiler/AST/LoopExpr.cpp"
+  ],
   "77ab2706-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/baseAST.cpp"
   ],
@@ -117,6 +120,21 @@
   "7e01f6c6-4110-11e8-af7e-10ddb1d4c3d5": [
     "compiler/include/symbol.h"
   ],
+  "f765ca54-d1a9-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/clangUtil.cpp"
+  ],
+  "27d3b052-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmAggregateGlobalOps.cpp"
+  ],
+  "2c837c22-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmDebug.cpp"
+  ],
+  "1de0f71c-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmGlobalToWide.cpp"
+  ],
+  "253a6d0e-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmUtil.cpp"
+  ],
   "5a669f74-1d80-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/main/arg.cpp"
   ],
@@ -139,6 +157,9 @@
   ],
   "86988e94-1d81-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/optimizations/loopInvariantCodeMotion.cpp"
+  ],
+  "eb10d276-d1a9-11e8-954d-10ddb1d4c3d5": [
+    "compiler/optimizations/noAliasSets.cpp"
   ],
   "26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5": [
     "compiler/optimizations/refPropagation.cpp"
@@ -206,6 +227,9 @@
   "5bfd40ae-ca86-11e7-8b8c-10ddb1d4c3d5": [
     "compiler/resolution/implementForallIntents2.cpp"
   ],
+  "d5351900-d1c0-11e8-954d-10ddb1d4c3d5": [
+    "compiler/resolution/initializerResolution.cpp"
+  ],
   "1873381c-2cbe-11e8-aa67-10ddb1d4c3d5": [
     "compiler/resolution/lifetime.cpp"
   ],
@@ -214,6 +238,9 @@
   ],
   "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/lowerIterators.cpp"
+  ],
+  "3bdbc4ea-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/resolution/nilChecking.cpp"
   ],
   "e44e8ee8-2015-11e7-980e-10ddb1d4c3d5": [
     "compiler/resolution/postFold.cpp"
@@ -446,6 +473,9 @@
   "c3e70026-8645-11e8-ad82-10ddb1d4c3d5": [
     "modules/internal/ExternalArray.chpl"
   ],
+  "5e553c42-d1c1-11e8-954d-10ddb1d4c3d5": [
+    "modules/internal/OwnedObject.chpl"
+  ],
   "e6ecf3ae-9c7b-11e8-b963-10ddb1d4c3d5": [
     "modules/internal/String.chpl"
   ],
@@ -553,6 +583,9 @@
   "1ae55fde-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/chpl-wide-ptr-fns.h"
   ],
+  "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
+    "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
+  ],
   "cedb8f86-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/qio/sys.h"
   ],
@@ -575,6 +608,9 @@
     "runtime/src/comm/ofi/comm-ofi-internal.h",
     "runtime/src/comm/ofi/comm-ofi-oob.c",
     "runtime/src/comm/ofi/comm-ofi.c"
+  ],
+  "91c58b86-d1c1-11e8-954d-10ddb1d4c3d5": [
+    "runtime/src/comm/ofi/comm-ofi-oob-pmi.c"
   ],
   "0502b256-07ea-11e8-bed3-10ddb1d4c3d5": [
     "runtime/src/comm/ofi/comm-ofi-put-get.c"
@@ -611,6 +647,9 @@
   ],
   "e2b2b296-8068-11e6-ab60-00a0cc3ee663": [
     "runtime/src/tasks/massivethreads/tasks-massivethreads.c"
+  ],
+  "75ed892c-d1c1-11e8-954d-10ddb1d4c3d5": [
+    "runtime/src/tasks/qthreads/tasks-qthreads.c"
   ],
   "c9f78ff4-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/threads/pthreads/threads-pthreads.c"
