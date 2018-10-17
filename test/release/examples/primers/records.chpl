@@ -153,7 +153,7 @@ proc Point.this(i: int): real {
 // Now we can access the coordinates numerically instead of by name:
 writeln(myPoint(1)); // outputs: 1.0
 
-// The ``this`` method enables both paretheses-style access and square
+// The ``this`` method enables both parenthesis-style access and square
 // brace style:
 writeln(myPoint[1]);
 

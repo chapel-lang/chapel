@@ -923,7 +923,7 @@ initPrimitive() {
   // Remaining arguments are SymExprs referring to Symbols that this one
   // does not alias.
   // Translates to llvm alias.scope and noalias metadata:
-  //    - alias.scope with metadata corresonding to the 1st symbol
+  //    - alias.scope with metadata corresponding to the 1st symbol
   //    - noalias with metadata corresponding to the remaining symbols
   // Result of call can be used as a final argument in a memory instruction,
   // e.g. PRIM_ARRAY_GET.
