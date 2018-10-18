@@ -5239,11 +5239,11 @@ static bool  moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
 
 static void  moveHaltForUnacceptableTypes(CallExpr* call);
 
-static void  resolveMoveForRhsSymExpr(CallExpr* call);
+static void  resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs);
 
 static void  resolveMoveForRhsCallExpr(CallExpr* call);
 
-static void  moveSetConstFlagsAndCheck(CallExpr* call);
+static void  moveSetConstFlagsAndCheck(CallExpr* call, CallExpr* rhs);
 
 static void  moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
                                                 CallExpr* rhs,
@@ -5287,8 +5287,8 @@ static void resolveMove(CallExpr* call) {
       // NB: This call will not return
       moveHaltForUnacceptableTypes(call);
 
-    } else if (isSymExpr(rhs)  == true) {
-      resolveMoveForRhsSymExpr(call);
+    } else if (SymExpr* rhsSymExpr = toSymExpr(rhs)) {
+      resolveMoveForRhsSymExpr(call, rhsSymExpr);
 
     } else if (isCallExpr(rhs) == true) {
       resolveMoveForRhsCallExpr(call);
@@ -5480,10 +5480,6 @@ static Type* moveDetermineLhsType(CallExpr* call) {
   return lhsSym->type;
 }
 
-
-
-
-
 //
 //
 //
@@ -5530,25 +5526,24 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
   }
 }
 
-
 //
 //
 //
 
-static void resolveMoveForRhsSymExpr(CallExpr* call) {
-  SymExpr* rhs = toSymExpr(call->get(2));
+static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
+  Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
+  Symbol* rhsSym = rhs->symbol();
 
   // If this assigns into a loop index variable from a non-var iterator,
   // mark the variable constant.
   // If RHS is this special variable...
-  if (rhs->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST) == true) {
-    Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
+  if (rhsSym->hasFlag(FLAG_INDEX_OF_INTEREST) == true) {
     Type*   rhsType = rhs->typeInfo();
 
     if (lhsSym->hasFlag(FLAG_INDEX_VAR) ||
         // non-zip forall over a standalone iterator
         (lhsSym->hasFlag(FLAG_TEMP) &&
-         rhs->symbol()->hasFlag(FLAG_INDEX_VAR))) {
+         rhsSym->hasFlag(FLAG_INDEX_VAR))) {
 
       // ... and not of a reference type
       // ... and not an array (arrays are always yielded by reference)
@@ -5562,9 +5557,12 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
         lhsSym->addFlag(FLAG_CONST);
       }
     }
-  } else if (rhs->symbol()->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
-    Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
+  } else if (rhsSym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
     lhsSym->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
+  } else if (rhsSym->hasFlag(FLAG_REF_TO_CONST)) {
+    lhsSym->addFlag(FLAG_REF_TO_CONST);
+
   }
 
   moveFinalize(call);
@@ -5573,7 +5571,7 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
 static void resolveMoveForRhsCallExpr(CallExpr* call) {
   CallExpr* rhs = toCallExpr(call->get(2));
 
-  moveSetConstFlagsAndCheck(call);
+  moveSetConstFlagsAndCheck(call, rhs);
 
   if (rhs->resolvedFunction() == gChplHereAlloc) {
     Symbol*  lhsType = call->get(1)->typeInfo()->symbol;
@@ -5689,10 +5687,10 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
 }
 
 
-static void moveSetConstFlagsAndCheck(CallExpr* call) {
-  CallExpr* rhs    = toCallExpr(call->get(2));
-
-  if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
+static void moveSetConstFlagsAndCheck(CallExpr* call, CallExpr* rhs) {
+  if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
+      rhs->isPrimitive(PRIM_ADDR_OF))
+  {
     if (SymExpr* rhsBase = toSymExpr(rhs->get(1))) {
       if (rhsBase->symbol()->hasFlag(FLAG_CONST)        == true  ||
           rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST) == true) {
