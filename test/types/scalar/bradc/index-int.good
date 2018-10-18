@@ -1,1 +1,1 @@
-index-int.chpl:1: syntax error: near '('
+index-int.chpl:1: error: illegal type index expression
