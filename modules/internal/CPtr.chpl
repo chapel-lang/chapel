@@ -378,6 +378,31 @@ module CPtr {
   }
 
   /*
+    Return the offset of elements in a record.
+
+    .. warning::
+
+      This method is intended for C interoperability.  To enhance flexibility,
+      it is possible to request the offset of elements within a Chapel record.
+      However, be aware:
+
+      * Chapel types are not necessary stored in contiguous memory
+      * Behavior of ``c_offsetof`` may change
+      * Behavior given a Chapel class type field is not well-defined
+   */
+  proc c_offsetof(type t, param fieldname : string) where isRecordType(t) {
+    use Reflection;
+    var x: t;
+
+    return c_ptrTo(getFieldRef(x, fieldname)):uint - c_ptrTo(x):uint;
+  }
+
+  pragma "no doc"
+  proc c_offsetof(type t, param fieldname: string) where !isRecordType(t) {
+    compilerError("Cannot call c_offsetof on type that is not a record");
+  }
+
+  /*
     Allocate memory and initialize all bits to 0. Note that this simply zeros
     memory, it does not call Chapel initializers (it is meant for primitive
     types and C interoperability only.) This memory should eventually be freed
