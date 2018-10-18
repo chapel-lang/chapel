@@ -660,6 +660,24 @@ CHPL_UNWIND
 
    If unset, ``CHPL_UNWIND`` defaults to ``none``
 
+.. _readme-chplenv.CHPL_LIB_PIC:
+
+CHPL_LIB_PIC
+~~~~~~~~~~~~
+   Optionally, the ``CHPL_LIB_PIC`` environment variable can be used to build
+   position independent or position dependent code.  This is intended for use
+   when :ref:`readme-libraries`, especially when :ref:`readme-libraries.Python`
+   or when building with ``--dynamic``. Current options are:
+
+       ===== ================================
+       Value Description
+       ===== ================================
+       pic   build position independent code
+       none  build position dependent code
+       ===== ================================
+
+   If unset, ``CHPL_LIB_PIC`` defaults to ``none``
+
 Compiler Command Line Option Defaults
 -------------------------------------
 

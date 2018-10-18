@@ -30,6 +30,15 @@ the ``chpl`` command line take precedence over any found through object
 library paths (``-L``).  When there is a conflict, the last library
 specified takes precedence.
 
+.. note::
+   When building a dynamic library, building position independent code is
+   recommended.  To do this, set the environment variable ``CHPL_LIB_PIC`` to
+   ``pic`` and ensure this configuration is built by performing a ``make``
+   command from ``$CHPL_HOME``.  Note that position independent code will likely
+   encounter some performance degradataion as opposed to normal Chapel code.
+   For this reason, we recommend only using ``CHPL_LIB_PIC`` when position
+   independent code is required.
+
 .. _Location of the Generated Library:
 
 Location of the Generated Library
@@ -256,6 +265,8 @@ library):
 Note that ``compileline --compile-c++`` is also available for compiling a C++
 program.
 
+.. _readme-libraries.Python:
+
 Using Your Library in Python
 ============================
 
@@ -273,9 +284,9 @@ If you are on a system where libraries are built to be position dependent by
 default (e.g.  not OSx), you will need to set the environment variable
 ``CHPL_LIB_PIC`` to ``pic`` and perform a ``make`` command from ``$CHPL_HOME``.
 This will cause the Chapel runtime and third-party libraries to be built with
-position independent code, which Python requires.  Note that position
-independent code will likely encounter some performance degradation as opposed
-to normal Chapel code.  For this reason, we recommend only using
+position independent code, which Python interoperability requires.  Note that
+position independent code will likely encounter some performance degradation as
+opposed to normal Chapel code.  For this reason, we recommend only using
 ``CHPL_LIB_PIC=pic`` when position independent code is required (e.g. when
 calling Chapel code from Python).
 
