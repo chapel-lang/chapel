@@ -1,0 +1,7 @@
+reserved-shared.chpl:1: variable declaration uses reserved word: near 'shared'
+reserved-shared.chpl:3: variable declaration uses reserved word: near 'shared'
+reserved-shared.chpl:6: variable declaration uses reserved word: near 'shared'
+reserved-shared.chpl:7: variable declaration uses reserved word: near 'shared'
+reserved-shared.chpl:10: variable declaration uses reserved word: near 'shared'
+reserved-shared.chpl:12: variable declaration uses reserved word: near 'shared'
+reserved-shared.chpl:17: variable declaration uses reserved word: near 'shared'

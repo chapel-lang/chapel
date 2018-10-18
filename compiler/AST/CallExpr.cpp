@@ -50,12 +50,12 @@ CallExpr::CallExpr(BaseAST* base,
     INT_FATAL(this, "Bad baseExpr in CallExpr constructor");
   }
 
-  callExprFixBase(this);
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   callExprHelper(this, arg5);
+  callExprFixBase(this);
 
   argList.parent = this;
 
@@ -124,12 +124,12 @@ CallExpr::CallExpr(const char* name,
   square     = false;
   tryTag     = TRY_TAG_NONE;
 
-  callExprFixBase(this);
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   callExprHelper(this, arg5);
+  callExprFixBase(this);
 
   argList.parent = this;
 

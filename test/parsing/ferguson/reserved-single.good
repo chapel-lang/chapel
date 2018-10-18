@@ -1,0 +1,7 @@
+reserved-single.chpl:1: variable declaration uses reserved word: near 'single'
+reserved-single.chpl:3: variable declaration uses reserved word: near 'single'
+reserved-single.chpl:6: variable declaration uses reserved word: near 'single'
+reserved-single.chpl:7: variable declaration uses reserved word: near 'single'
+reserved-single.chpl:10: variable declaration uses reserved word: near 'single'
+reserved-single.chpl:12: variable declaration uses reserved word: near 'single'
+reserved-single.chpl:17: variable declaration uses reserved word: near 'single'

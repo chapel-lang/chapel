@@ -1,0 +1,7 @@
+reserved-domain.chpl:1: variable declaration uses reserved word: near 'domain'
+reserved-domain.chpl:3: variable declaration uses reserved word: near 'domain'
+reserved-domain.chpl:6: variable declaration uses reserved word: near 'domain'
+reserved-domain.chpl:7: variable declaration uses reserved word: near 'domain'
+reserved-domain.chpl:10: variable declaration uses reserved word: near 'domain'
+reserved-domain.chpl:12: variable declaration uses reserved word: near 'domain'
+reserved-domain.chpl:17: variable declaration uses reserved word: near 'domain'
