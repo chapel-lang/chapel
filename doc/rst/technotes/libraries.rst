@@ -84,13 +84,13 @@ library will be named ``libfoo.so`` or ``libfoo.a``.
 
 .. code-block:: bash
 
-   # Builds library as lib/libfoo.so
+   # Builds library as lib/libfoo.a
    chpl --library --static foo.chpl
 
-   # Builds library as lib/libfoo.a
+   # Builds library as lib/libfoo.so
    chpl --library --dynamic foo.chpl
 
-   # Builds library as lib/libfoo.a (note: file named libfoo.chpl)
+   # Builds library as lib/libfoo.so (note: file named libfoo.chpl)
    chpl --library --dynamic libfoo.chpl
 
 The basename used (the ``foo`` portion) can be changed with the ``-o`` or
@@ -101,11 +101,11 @@ into the same library, as the default name is determined by the top-most module.
 
 .. code-block:: bash
 
-   # Builds library as lib/libbar.a
+   # Builds library as lib/libbar.so
    chpl --library --dynamic foo.chpl -o bar
 
    # -o flag required because of multiple modules
-   # Builds library as lib/libfoo.a
+   # Builds library as lib/libfoo.so
    chpl --library --dynamic foo.chpl bar.chpl -o foo
 
 Using Your Library in C
@@ -124,7 +124,7 @@ library name using the flag ``--library-header`` at compilation.
    # Builds header as lib/foo.h
    chpl --library --dynamic foo.chpl
 
-   # Builds header as lib/bar.h, library is still lib/libfoo.a
+   # Builds header as lib/bar.h, library is still lib/libfoo.so
    chpl --library --dynamic --library-header=bar foo.chpl
 
 The header file will contain any exported function, including the exported
