@@ -4244,13 +4244,27 @@ module ChapelArray {
     //
     // The resulting array grows dynamically. That limits parallelism here.
 
+    param shapeful = chpl_iteratorHasRangeShape(ir);
+    var r = if shapeful then ir._shape_ else 1..0;
+
     var i  = 0;
-    var size:size_t = 0;
+    var size = r.size : size_t;
     type elemType = iteratorToArrayElementType(ir.type);
     var data:_ddata(elemType) = nil;
 
     var callAgain: bool;
     var subloc = c_sublocid_none;
+
+    // can be 'inline' once we fix #11312
+    proc allocateData(param initialAlloc, allocSize) {
+      // data allocation should match DefaultRectangular
+      if initialAlloc then
+        __primitive("array_alloc", data, allocSize, subloc, c_ptrTo(callAgain), c_nil);
+      else
+        __primitive("array_alloc", data, allocSize, subloc, c_nil, data);
+    }
+
+    if size > 0 then allocateData(true, size);
 
     for elt in ir {
 
@@ -4271,9 +4285,7 @@ module ChapelArray {
         else
           size = 2 * size;
 
-        // data allocation should match DefaultRectangular
-        __primitive("array_alloc", data, size, subloc,
-                    c_ptrTo(callAgain), c_nil);
+        allocateData(true, size);
 
         // Now copy the data over
         for i in 0..#oldSize {
@@ -4294,9 +4306,6 @@ module ChapelArray {
 
     // Create the domain of the array that we will return.
 
-    param shapeful = chpl_iteratorHasRangeShape(ir);
-    var r = if shapeful then ir._shape_ else 1 .. #i;
-
     // This is a workaround for #11301, whereby we can get here even when
     // there is an exception in the above 'for elt' loop.
     // If not for that, we could probably assert(r.size == i).
@@ -4304,14 +4313,16 @@ module ChapelArray {
     if shapeful && i < r.size then
       r = r #i;
 
+    if !shapeful then
+      r = 1 .. #i;
+
     pragma "insert auto destroy"
     var D = { r };
 
     if data != nil {
 
       // let the comm layer adjust array allocation
-      if callAgain then
-        __primitive("array_alloc", data, size, subloc, c_nil, data);
+      if callAgain then allocateData(false, size);
 
       // Now construct a DefaultRectangular array using the data
       var A = D.buildArrayWith(data[0].type, data, size:int);
@@ -4332,9 +4343,8 @@ module ChapelArray {
       // Construct and return an empty array.
 
       // Create space for 1 element as a placeholder.
-      __primitive("array_alloc", data, 1, subloc, c_ptrTo(callAgain), c_nil);
-      if callAgain then
-        __primitive("array_alloc", data, 1, subloc, c_nil, data);
+      allocateData(true, 1);
+      if callAgain then allocateData(false, 1);
 
       var A = D.buildArrayWith(elemType, data, size:int);
 
@@ -4347,12 +4357,4 @@ module ChapelArray {
       compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
   }
 
-  /* ================================================
-     Set Operations on Associative Domains and Arrays
-     ================================================
-
-     Associative domains and arrays support a number of operators for
-     set manipulations.
-
-   */
 }
