@@ -49,7 +49,7 @@ Expr* buildNamedActual(const char* name, Expr* expr);
 
 Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index = NULL);
 
-Expr* buildIntLiteral(const char* pch);
+Expr* buildIntLiteral(const char* pch, const char* file = NULL, int line = -1);
 Expr* buildRealLiteral(const char* pch);
 Expr* buildImagLiteral(const char* pch);
 Expr* buildStringLiteral(const char* pch);

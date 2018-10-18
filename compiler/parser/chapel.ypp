@@ -1808,7 +1808,7 @@ parenthesized_expr:
 ;
 
 literal_expr:
-  INTLITERAL            { $$ = buildIntLiteral($1);    }
+  INTLITERAL            { $$ = buildIntLiteral($1, yyfilename, chplLineno);    }
 | REALLITERAL           { $$ = buildRealLiteral($1);   }
 | IMAGLITERAL           { $$ = buildImagLiteral($1);   }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }

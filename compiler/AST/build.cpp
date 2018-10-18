@@ -254,18 +254,19 @@ Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index) {
   }
 }
 
-Expr* buildIntLiteral(const char* pch) {
+Expr* buildIntLiteral(const char* pch, const char* file, int line) {
   uint64_t ull;
   if (!strncmp("0b", pch, 2) || !strncmp("0B", pch, 2))
-    ull = binStr2uint64(pch);
+    ull = binStr2uint64(pch, true, file, line);
   else if (!strncmp("0o", pch, 2) || !strncmp("0O", pch, 2))
     // The second case is difficult to read, but is zero followed by a capital
     // letter 'o'
-    ull = octStr2uint64(pch);
+    ull = octStr2uint64(pch, true, file, line);
   else if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2))
-    ull = hexStr2uint64(pch);
+    ull = hexStr2uint64(pch, true, file, line);
   else
-    ull = str2uint64(pch);
+    ull = str2uint64(pch, true, file, line);
+
   if (ull <= 9223372036854775807ull)
     return new SymExpr(new_IntSymbol(ull, INT_SIZE_64));
   else
