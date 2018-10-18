@@ -1,6 +1,10 @@
 reserved-real.chpl:1: error: Variable name 'real' is a reserved word
 reserved-real.chpl:7: error: Variable name 'real' is a reserved word
 reserved-real.chpl:10: error: Variable name 'real' is a reserved word
+reserved-real.chpl:15: In function 'test':
+reserved-real.chpl:17: error: Variable name 'real' is a reserved word
+reserved-real.chpl:20: error: Variable name 'real' is a reserved word
 reserved-real.chpl:3: In function 'f':
 reserved-real.chpl:3: error: Formal argument name 'real' is a reserved word
+reserved-real.chpl:12: error: Function name 'real' is a reserved word
 reserved-real.chpl:6: error: Type name 'real' is a reserved word

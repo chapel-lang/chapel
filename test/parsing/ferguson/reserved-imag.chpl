@@ -8,3 +8,15 @@ class imag {
 }
 
 type imag = string;
+
+proc imag() {
+}
+
+proc test() {
+  try {
+  } catch imag {
+  }
+
+  for imag in 1..10 {
+  }
+}

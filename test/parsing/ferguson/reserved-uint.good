@@ -1,6 +1,10 @@
 reserved-uint.chpl:1: error: Variable name 'uint' is a reserved word
 reserved-uint.chpl:7: error: Variable name 'uint' is a reserved word
 reserved-uint.chpl:10: error: Variable name 'uint' is a reserved word
+reserved-uint.chpl:15: In function 'test':
+reserved-uint.chpl:17: error: Variable name 'uint' is a reserved word
+reserved-uint.chpl:20: error: Variable name 'uint' is a reserved word
 reserved-uint.chpl:3: In function 'f':
 reserved-uint.chpl:3: error: Formal argument name 'uint' is a reserved word
+reserved-uint.chpl:12: error: Function name 'uint' is a reserved word
 reserved-uint.chpl:6: error: Type name 'uint' is a reserved word

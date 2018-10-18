@@ -321,6 +321,9 @@ checkFunction(FnSymbol* fn) {
     USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
   }
 
+  if (isReservedWord(fn->name))
+    USR_FATAL_CONT(fn, "Function name '%s' is a reserved word", fn->name);
+
   for_formals(formal, fn) {
     if (isReservedWord(formal->name))
       USR_FATAL_CONT(formal->defPoint,

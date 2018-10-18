@@ -8,3 +8,15 @@ class complex {
 }
 
 type complex = string;
+
+proc complex() {
+}
+
+proc test() {
+  try {
+  } catch complex {
+  }
+
+  for complex in 1..10 {
+  }
+}

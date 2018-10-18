@@ -1,6 +1,10 @@
 reserved-complex.chpl:1: error: Variable name 'complex' is a reserved word
 reserved-complex.chpl:7: error: Variable name 'complex' is a reserved word
 reserved-complex.chpl:10: error: Variable name 'complex' is a reserved word
+reserved-complex.chpl:15: In function 'test':
+reserved-complex.chpl:17: error: Variable name 'complex' is a reserved word
+reserved-complex.chpl:20: error: Variable name 'complex' is a reserved word
 reserved-complex.chpl:3: In function 'f':
 reserved-complex.chpl:3: error: Formal argument name 'complex' is a reserved word
+reserved-complex.chpl:12: error: Function name 'complex' is a reserved word
 reserved-complex.chpl:6: error: Type name 'complex' is a reserved word

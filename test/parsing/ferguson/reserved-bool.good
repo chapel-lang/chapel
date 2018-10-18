@@ -1,6 +1,10 @@
 reserved-bool.chpl:1: error: Variable name 'bool' is a reserved word
 reserved-bool.chpl:7: error: Variable name 'bool' is a reserved word
 reserved-bool.chpl:10: error: Variable name 'bool' is a reserved word
+reserved-bool.chpl:15: In function 'test':
+reserved-bool.chpl:17: error: Variable name 'bool' is a reserved word
+reserved-bool.chpl:20: error: Variable name 'bool' is a reserved word
 reserved-bool.chpl:3: In function 'f':
 reserved-bool.chpl:3: error: Formal argument name 'bool' is a reserved word
+reserved-bool.chpl:12: error: Function name 'bool' is a reserved word
 reserved-bool.chpl:6: error: Type name 'bool' is a reserved word

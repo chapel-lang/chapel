@@ -8,3 +8,15 @@ class index {
 }
 
 type index = int;
+
+proc index() {
+}
+
+proc test() {
+  try {
+  } catch index {
+  }
+
+  for index in 1..10 {
+  }
+}

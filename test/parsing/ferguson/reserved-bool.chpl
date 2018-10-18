@@ -8,3 +8,15 @@ class bool {
 }
 
 type bool = string;
+
+proc bool() {
+}
+
+proc test() {
+  try {
+  } catch bool {
+  }
+
+  for bool in 1..10 {
+  }
+}

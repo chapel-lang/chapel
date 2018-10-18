@@ -8,3 +8,15 @@ class string {
 }
 
 type string = int;
+
+proc string() {
+}
+
+proc test() {
+  try {
+  } catch string {
+  }
+
+  for string in 1..10 {
+  }
+}

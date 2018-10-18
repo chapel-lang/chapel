@@ -8,3 +8,15 @@ class real {
 }
 
 type real = string;
+
+proc real() {
+}
+
+proc test() {
+  try {
+  } catch real {
+  }
+
+  for real in 1..10 {
+  }
+}
