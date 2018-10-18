@@ -381,7 +381,8 @@ module BigInteger {
   //
   // Cast operators
   //
-  proc _cast(type toType: bigint, src) {
+  pragma "no doc"
+  inline proc _cast(type toType: bigint, src: integral): bigint {
     return new bigint(src);
   }
 
