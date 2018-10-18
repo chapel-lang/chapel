@@ -1,0 +1,6 @@
+reserved-int.chpl:1: error: Variable name 'int' is a reserved word
+reserved-int.chpl:7: error: Variable name 'int' is a reserved word
+reserved-int.chpl:10: error: Variable name 'int' is a reserved word
+reserved-int.chpl:3: In function 'f':
+reserved-int.chpl:3: error: Formal argument name 'int' is a reserved word
+reserved-int.chpl:6: error: Type name 'int' is a reserved word

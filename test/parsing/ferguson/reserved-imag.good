@@ -1,0 +1,6 @@
+reserved-imag.chpl:1: error: Variable name 'imag' is a reserved word
+reserved-imag.chpl:7: error: Variable name 'imag' is a reserved word
+reserved-imag.chpl:10: error: Variable name 'imag' is a reserved word
+reserved-imag.chpl:3: In function 'f':
+reserved-imag.chpl:3: error: Formal argument name 'imag' is a reserved word
+reserved-imag.chpl:6: error: Type name 'imag' is a reserved word

@@ -1,0 +1,6 @@
+reserved-string.chpl:1: error: Variable name 'string' is a reserved word
+reserved-string.chpl:7: error: Variable name 'string' is a reserved word
+reserved-string.chpl:10: error: Variable name 'string' is a reserved word
+reserved-string.chpl:3: In function 'f':
+reserved-string.chpl:3: error: Formal argument name 'string' is a reserved word
+reserved-string.chpl:6: error: Type name 'string' is a reserved word

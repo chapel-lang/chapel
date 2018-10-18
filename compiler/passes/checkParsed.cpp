@@ -39,6 +39,7 @@ static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
 static void nestedName(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
+static void checkTypeName(TypeSymbol* ts);
 static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
 
@@ -115,6 +116,7 @@ checkParsed() {
   }
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
+    checkTypeName(at->symbol);
     checkRecordInheritance(at);
   }
 
@@ -294,6 +296,11 @@ checkParsedVar(VarSymbol* var) {
     USR_FATAL_CONT(var->defPoint,
                    "Configuration %s are allowed only at module scope.", varType);
   }
+
+  // check that name is not a reserved word
+  if (isReservedWord(var->name))
+    USR_FATAL_CONT(var->defPoint,
+                   "Variable name '%s' is a reserved word", var->name);
 }
 
 
@@ -312,6 +319,13 @@ checkFunction(FnSymbol* fn) {
 
   if (fn->thisTag != INTENT_BLANK && fn->isMethod() == false) {
     USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
+  }
+
+  for_formals(formal, fn) {
+    if (isReservedWord(formal->name))
+      USR_FATAL_CONT(formal->defPoint,
+                     "Formal argument name '%s' is a reserved word",
+                     formal->name);
   }
 
 #if 0 // Do not issue the warning yet.
@@ -406,6 +420,15 @@ checkModule(ModuleSymbol* mod) {
       }
     }
   }
+}
+
+static void checkTypeName(TypeSymbol* ts) {
+  // Internal modules are allowed to define internal types.
+  // No other code can do so.
+  if (ts->defPoint->getModule()->modTag != MOD_INTERNAL)
+    if (isReservedWord(ts->name))
+      USR_FATAL_CONT(ts->defPoint,
+                     "Type name '%s' is a reserved word", ts->name);
 }
 
 // outputs an error message if we encountered a record that tried to inherit
