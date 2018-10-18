@@ -2047,7 +2047,7 @@ DefExpr* buildClassDefExpr(const char*  name,
   // Hook the string type in the modules
   // to avoid duplication with dtString created in initPrimitiveTypes().
   // gatherWellKnownTypes runs too late to help.
-  if (strcmp("_string", name) == 0) {
+  if (strcmp("string", name) == 0) {
     // grab the existing symbol from the placeholder "dtString"
     ts = dtString->symbol;
     ct->addSymbol(ts);
