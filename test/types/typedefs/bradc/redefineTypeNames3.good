@@ -1,9 +1,6 @@
 redefineTypeNames3.chpl:1: In function 'main':
-redefineTypeNames3.chpl:3: error: 'real' used before defined
-redefineTypeNames3.chpl:4: note: defined here
-redefineTypeNames3.chpl:4: error: 'imag' used before defined
-redefineTypeNames3.chpl:5: note: defined here
-redefineTypeNames3.chpl:5: error: 'string' used before defined
-redefineTypeNames3.chpl:6: note: defined here
-redefineTypeNames3.chpl:6: error: 'complex' used before defined
-redefineTypeNames3.chpl:7: note: defined here
+redefineTypeNames3.chpl:3: error: Variable name 'int' is a reserved word
+redefineTypeNames3.chpl:4: error: Variable name 'real' is a reserved word
+redefineTypeNames3.chpl:5: error: Variable name 'imag' is a reserved word
+redefineTypeNames3.chpl:6: error: Variable name 'string' is a reserved word
+redefineTypeNames3.chpl:7: error: Variable name 'complex' is a reserved word

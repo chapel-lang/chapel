@@ -1,3 +1,3 @@
 redefineTypeNames2.chpl:1: In function 'main':
-redefineTypeNames2.chpl:3: error: 'real' used before defined
-redefineTypeNames2.chpl:4: note: defined here
+redefineTypeNames2.chpl:3: error: Variable name 'int' is a reserved word
+redefineTypeNames2.chpl:4: error: Variable name 'real' is a reserved word
