@@ -130,9 +130,9 @@ static Symbol* getReferent(Symbol* sym, const AliasMap& aliasMap) {
   return NULL;
 }
 
-static AliasLocation aliasLocationCopyValueFrom(Symbol* copyFrom,
-                                                const AliasMap& aliasMap,
-                                                CallExpr* inCall) {
+static AliasLocation aliasLocationFromValue(Symbol* copyFrom,
+                                            const AliasMap& aliasMap,
+                                            CallExpr* inCall) {
 
   // we might be dereferencing an unknown pointer
   AliasLocation fromLocation = unknownAliasLocation();
@@ -162,12 +162,38 @@ static AliasLocation aliasLocationCopyValueFrom(Symbol* copyFrom,
   return fromLocation;
 }
 
+static AliasLocation aliasLocationFrom(Symbol* copyFrom,
+                                       const AliasMap& aliasMap,
+                                       CallExpr* inCall) {
+
+  AliasLocation fromLocation = unknownAliasLocation();
+
+  {
+    AliasMap::const_iterator it = aliasMap.find(copyFrom);
+    if (it != aliasMap.end()) {
+      fromLocation = it->second;
+    }
+  }
+
+  if (copyFrom->type == dtNil)
+    fromLocation = nilAliasLocation(inCall);
+
+  // otherwise, return the location we found
+  return fromLocation;
+}
+
+
 
 static bool isClassIshType(Symbol* sym) {
   TypeSymbol* ts = sym->getValType()->symbol;
   return (isClassLike(ts->type) ||
           ts->hasFlag(FLAG_MANAGED_POINTER));
 }
+
+static bool isSymbolAnalyzed(Symbol* sym) {
+  return sym->isRef() || isClassIshType(sym);
+}
+
 
 static bool isCheckedClassMethodCall(CallExpr* call) {
   FnSymbol* fn     = call->resolvedOrVirtualFunction();
@@ -355,6 +381,11 @@ static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
   return true;
 }
 
+static void update(AliasMap& OUT, Symbol* lhs, AliasLocation loc) {
+  if (isSymbolAnalyzed(lhs))
+    OUT[lhs] = loc;
+}
+
 static void checkCall(
     FnSymbol* fn,
     BasicBlock* bb,
@@ -422,7 +453,7 @@ static void checkCall(
         Symbol* rhsSym = se->symbol();
         Symbol* referent = getReferent(lhsSym, OUT);
         if (referent)
-          OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT, call);
+          update(OUT, referent, aliasLocationFromValue(rhsSym, OUT, call));
         else if (lhsSym->hasFlag(FLAG_RETARG) == false)
           storeToUnknown = true;
 
@@ -435,18 +466,18 @@ static void checkCall(
         //   - it could refer to a field in a heap-allocated class
 
         // This could be another class, ref-to-unknown, if it helps
-        OUT[lhsSym] = unknownAliasLocation();
+        update(OUT, lhsSym, unknownAliasLocation());
       } else {
         if (userCall == NULL) {
           // Acts like a move
           SymExpr* se = toSymExpr(call->get(2));
           Symbol* rhsSym = se->symbol();
           if (call->isPrimitive(PRIM_MOVE)) {
-            OUT[lhsSym] = OUT[rhsSym];
+            update(OUT, lhsSym, aliasLocationFrom(rhsSym, OUT, call));
           } else {
             Symbol* referent = getReferent(lhsSym, OUT);
             if (referent)
-              OUT[referent] = aliasLocationCopyValueFrom(rhsSym, OUT, call);
+              update(OUT, referent, aliasLocationFromValue(rhsSym, OUT, call));
             else if (lhsSym->hasFlag(FLAG_RETARG) == false)
               storeToUnknown = true;
           }
@@ -457,12 +488,12 @@ static void checkCall(
             Symbol* rhs = se->symbol();
             if (rhs->isRef())
               // if rhs is a ref, just propagate any MUST_ALIAS_REFVAR
-              OUT[lhsSym] = OUT[rhs];
+              update(OUT, lhsSym, aliasLocationFrom(rhs, OUT, call));
             else
               // otherwise, make a new MUST_ALIAS_REFVAR
-              OUT[lhsSym] = refAliasLocation(se->symbol());
+              update(OUT, lhsSym, refAliasLocation(se->symbol()));
           } else {
-            OUT[lhsSym] = unknownAliasLocation();
+            update(OUT, lhsSym, unknownAliasLocation());
           }
         }
       } // ending (userCalledFn == NULL)
@@ -472,23 +503,23 @@ static void checkCall(
 
       // handle certain cases for PRIM_MOVE that we understand
       if (rhsExpr->typeInfo() == dtNil) {
-        OUT[lhsSym] = nilAliasLocation(call);
+        update(OUT, lhsSym, nilAliasLocation(call));
 
       } else if (SymExpr* se = toSymExpr(rhsExpr)) {
-        OUT[lhsSym] = aliasLocationCopyValueFrom(se->symbol(), OUT, call);
+        update(OUT, lhsSym, aliasLocationFromValue(se->symbol(), OUT, call));
 
       } else if (userCalledFn != NULL) {
 
         if (isClassIshType(lhsSym)) {
           // defaultOf for classes results in nil
           if (userCalledFn->name == astr_defaultOf) {
-            OUT[lhsSym] = nilAliasLocation(call);
+            update(OUT, lhsSym, nilAliasLocation(call));
             ignoreGlobalUpdates = true;
 
           // new for classes is allocation
           // note that this is adjusted below for 'new owned(instance)'
           } else if (userCalledFn->name == astrNew) {
-            OUT[lhsSym] = allocatedAliasLocation(userCall);
+            update(OUT, lhsSym, allocatedAliasLocation(userCall));
             ignoreGlobalUpdates = true;
 
           // for copy-init or borrow, lhs tracks rhs
@@ -496,9 +527,8 @@ static void checkCall(
           } else if (userCalledFn->hasFlag(FLAG_INIT_COPY_FN) ||
                      userCalledFn->hasFlag(FLAG_AUTO_COPY_FN) ||
                      0 == strcmp(userCalledFn->name, "borrow")) {
-            OUT[lhsSym] =
-              aliasLocationCopyValueFrom(
-                  toSymExpr(userCall->get(1))->symbol(), OUT, call);
+            Symbol* rhsSym = toSymExpr(userCall->get(1))->symbol();
+            update(OUT, lhsSym, aliasLocationFromValue(rhsSym, OUT, call));
             ignoreGlobalUpdates = true;
           } else {
             Expr* nilFromActual = NULL;
@@ -510,13 +540,13 @@ static void checkCall(
             if (nilFromActual != NULL) {
               SymExpr* actualSe = toSymExpr(nilFromActual);
               Symbol* actualSym = actualSe->symbol();
-              OUT[lhsSym] = aliasLocationCopyValueFrom(actualSym, OUT, call);
+              update(OUT, lhsSym, aliasLocationFromValue(actualSym, OUT, call));
               ignoreGlobalUpdates = true;
             }
           }
 
         } else {
-          OUT[lhsSym] = unknownAliasLocation();
+          update(OUT, lhsSym, unknownAliasLocation());
         }
 
       } else {
@@ -524,16 +554,17 @@ static void checkCall(
         // handle primitives
 
         if (userCall->isPrimitive(PRIM_DEREF))
-          OUT[lhsSym] = aliasLocationCopyValueFrom(
-                              toSymExpr(userCall->get(1))->symbol(), OUT, call);
+          update(OUT, lhsSym,
+                 aliasLocationFromValue(toSymExpr(userCall->get(1))->symbol(),
+                                        OUT, call));
 
         else if (userCall->isPrimitive(PRIM_CAST) &&
                  isClassIshType(lhsSym))
-          OUT[lhsSym] = aliasLocationCopyValueFrom(
-                              toSymExpr(userCall->get(2))->symbol(),
-                              OUT, call);
+          update(OUT, lhsSym,
+                 aliasLocationFromValue(toSymExpr(userCall->get(2))->symbol(),
+                                        OUT, call));
         else
-          OUT[lhsSym] = unknownAliasLocation();
+          update(OUT, lhsSym, unknownAliasLocation());
 
       }
     }
@@ -553,9 +584,9 @@ static void checkCall(
         if (actualSym->isRef()) {
           Symbol* referent = getReferent(actualSym, OUT);
           if (referent)
-            OUT[referent] = nilAliasLocation(call);
+            update(OUT, referent, nilAliasLocation(call));
         } else {
-          OUT[actualSym] = nilAliasLocation(call);
+          update(OUT, actualSym, nilAliasLocation(call));
         }
 
       } else if (formal->intent == INTENT_REF &&
@@ -566,12 +597,12 @@ static void checkCall(
         if (actualSym->isRef()) {
           Symbol* referent = getReferent(actualSym, OUT);
           if (referent)
-            OUT[referent] = unknownAliasLocation();
+            update(OUT, referent, unknownAliasLocation());
           else if (actualSym->hasFlag(FLAG_RETARG) == false)
             storeToUnknown = true;
 
-        } else {
-          OUT[actualSym] = unknownAliasLocation();
+        } else if (isSymbolAnalyzed(actualSym)) {
+          update(OUT, actualSym, unknownAliasLocation());
         }
       }
     }
@@ -659,80 +690,83 @@ static void gatherVariablesToCheck(FnSymbol* fn,
   for_vector(SymExpr, se, symExprs) {
     Symbol* sym = se->symbol();
     if (isArgSymbol(sym) || isVarSymbol(sym)) {
-      if (symToIdx.count(sym) == 0) {
-        // Add it to the map/array
-        symToIdx.insert(std::pair<Symbol*, int>(sym, index));
-        idxToSym.push_back(sym);
-        INT_ASSERT((int)(idxToSym.size()-1) == index);
-        index++;
-        if (debugging) {
-          printf("Tracking symbol %i %s\n", sym->id, sym->name);
+      if (isSymbolAnalyzed(sym)) {
+        if (symToIdx.count(sym) == 0) {
+          // Add it to the map/array
+          symToIdx.insert(std::pair<Symbol*, int>(sym, index));
+          idxToSym.push_back(sym);
+          INT_ASSERT((int)(idxToSym.size()-1) == index);
+          index++;
+          if (debugging) {
+            printf("Tracking symbol %i %s\n", sym->id, sym->name);
+          }
         }
       }
     }
   }
 }
 
-static AliasMap combineIns(FnSymbol* fn,
-                           int i,
-                           std::vector<AliasMap>& OUT,
-                           bool debugging) {
+static bool combine(FnSymbol* fn,
+                    BasicBlock* bb,
+                    AliasMap& nextIn,
+                    const AliasMap& from,
+                    bool debugging) {
 
-  BasicBlock* bb = (*fn->basicBlocks)[i];
-  AliasMap nextIn;
+  bool changed = false;
 
-  for_vector(BasicBlock, bbin, bb->ins) {
-    if (debugging) {
-      printf("bb %i is a predecessor for bb %i\n", bbin->id, (int)i);
-    }
-    const AliasMap& from = OUT[bbin->id];
-    for (AliasMap::const_iterator it = from.begin();
-         it != from.end();
-         ++it) {
-      Symbol* sym = it->first;
-      AliasLocation loc = it->second;
-      if (nextIn.count(sym) == 0) {
-        nextIn[sym] = loc;
+  for (AliasMap::const_iterator it = from.begin();
+       it != from.end();
+       ++it) {
+    Symbol* sym = it->first;
+    AliasLocation loc = it->second;
+
+    if (loc.type == MUST_ALIAS_IGNORED)
+      continue;
+
+    if (nextIn.count(sym) == 0) {
+      nextIn[sym] = loc;
+      if (debugging) {
+        printf("{} here -> get from bb %i\n", (int) bb->id);
+        printAliasEntry("   ", sym, loc);
+      }
+      changed = true;
+    } else {
+      AliasLocation was = nextIn[sym];
+      if (debugging) {
+        printf("combining from bb %i\n", (int) bb->id);
+        printAliasEntry("    nextIn", sym, was);
+        printAliasEntry("    inbb", sym, loc);
+      }
+
+      // combine alias locations
+      if (was.type == loc.type &&
+          was.location == loc.location) {
+        // OK, do nothing
+      } else if (was.type == MUST_ALIAS_NIL &&
+                 loc.type == MUST_ALIAS_NIL ) {
+        // OK, do nothing
+        // only difference is reason for nil
+      } else if (was.type == MUST_ALIAS_IGNORED) {
         if (debugging) {
-          printf("{} here -> get from bb %i\n", (int) bbin->id);
+          printf("ignored here -> get from bb %i\n", (int) bb->id);
           printAliasEntry("   ", sym, loc);
         }
+        nextIn[sym] = loc;
+        changed = true;
       } else {
-        AliasLocation was = nextIn[sym];
-        if (debugging) {
-          printf("combining from bb %i\n", (int) bbin->id);
-          printAliasEntry("    nextIn", sym, was);
-          printAliasEntry("    inbb", sym, loc);
-        }
+        // Conflicting input -> unknown
+        nextIn[sym] = unknownAliasLocation();
+        changed = true;
+      }
 
-        // combine alias locations
-        if (was.type == loc.type &&
-            was.location == loc.location) {
-          // OK, do nothing
-        } else if (was.type == MUST_ALIAS_NIL &&
-                   loc.type == MUST_ALIAS_NIL ) {
-          // OK, do nothing
-          // only difference is reason for nil
-        } else if (was.type == MUST_ALIAS_IGNORED) {
-          if (debugging) {
-            printf("ignored here -> get from bb %i\n", (int) bbin->id);
-            printAliasEntry("   ", sym, loc);
-          }
-          nextIn[sym] = loc;
-        } else {
-          // Conflicting input -> unknown
-          nextIn[sym] = unknownAliasLocation();
-        }
-
-        if (debugging) {
-          printf("result of combining from bb %i\n", (int) bbin->id);
-          printAliasEntry("    nextIn", sym, nextIn[sym]);
-        }
+      if (debugging) {
+        printf("result of combining from bb %i\n", (int) bb->id);
+        printAliasEntry("    nextIn", sym, nextIn[sym]);
       }
     }
   }
 
-  return nextIn;
+  return changed;
 }
 
 void findNilDereferences(FnSymbol* fn) {
@@ -752,59 +786,66 @@ void findNilDereferences(FnSymbol* fn) {
   std::vector<Symbol*> idxToSym;
   gatherVariablesToCheck(fn, idxToSym, debugging);
 
+  // If there were no variables to check, don't continue
+  if (idxToSym.size() == 0)
+    return;
+
   size_t nbbs = fn->basicBlocks->size();
 
   // allocate the IN and OUT data flow sets
   std::vector<AliasMap> IN(nbbs);
   std::vector<AliasMap> OUT(nbbs);
 
-  bool changed = false;
+  std::vector<int> forwardOrder;
+  BasicBlock::computeForwardOrder(fn, forwardOrder);
 
-  do {
+  INT_ASSERT(forwardOrder.size() == nbbs);
 
-    changed = false;
+  // these arrays help track which basic blocks need visiting
+  std::vector<int> visit(nbbs);
+  std::vector<int> changed(nbbs);
+  for (size_t i = 0; i < nbbs; i++) {
+    visit[i] = true;
+    changed[i] = false;
+  }
+
+  bool anychanged = true;
+
+  while (anychanged) {
+    if (debugging)
+      printf("In fixed point loop for %s\n", fn->name);
 
     for (size_t i = 0; i < nbbs; i++) {
-      if (debugging) {
-        printf("running checkBasicBlock on bb %i\n", (int)i);
-      }
-      checkBasicBlock(fn, (*fn->basicBlocks)[i], idxToSym, IN[i], OUT[i],
-                      /*raise errors?*/ false);
+      changed[i] = false;
     }
 
-    // for each basic block, update IN block based on predecessors OUT blocks
-    for (size_t i = 0; i < nbbs; i++) {
+    for (size_t ii = 0; ii < nbbs; ii++) {
+      int i = forwardOrder[ii]; // visit basic block i
+      if (visit[i]) {
+        BasicBlock* bb = (*fn->basicBlocks)[i];
+        if (debugging) {
+          printf("running checkBasicBlock on bb %i\n", i);
+        }
+        checkBasicBlock(fn, bb, idxToSym, IN[i], OUT[i],
+                        /*raise errors?*/ false);
 
-      AliasMap nextIn = combineIns(fn, i, OUT, debugging);
-
-      // Now, propagate changes from nextIn to IN[i]
-      // To ensure the algorithm converges, we do this
-      // in a way that makes sure AliasLocations for
-      // a given value are monotonically increasing.
-      AliasMap& to = IN[i];
-      for (AliasMap::const_iterator it = nextIn.begin();
-           it != nextIn.end();
-           ++it) {
-        Symbol* sym = it->first;
-        AliasLocation loc = it->second;
-
-        // might default-initialize it with MUST_ALIAS_IGNORED
-        AliasLocation &dst = to[sym];
-
-        if (dst.type < loc.type) {
-          if (debugging) {
-            printAliasEntry("in was", sym, dst);
-            printAliasEntry("in now", sym, loc);
-          }
-          dst = loc;
-          changed = true;
+        // We just computed OUT. That might impact the IN values
+        // for successor blocks. If it does, update them now.
+        // If any of them change, update changed.
+        for_vector(BasicBlock, bbout, bb->outs) {
+          int j = bbout->id;
+          changed[j] = combine(fn, bbout, IN[j], OUT[i], debugging);
         }
       }
     }
 
-    // TODO: only need to revisit basic blocks that
-    // had their IN change
-  } while (changed);
+    anychanged = false;
+    for (size_t i = 0; i < nbbs; i++) {
+      if (changed[i])
+        anychanged = true;
+      visit[i] = changed[i];
+    }
+  }
 
   for (size_t i = 0; i < nbbs; i++) {
     checkBasicBlock(fn, (*fn->basicBlocks)[i], idxToSym,
