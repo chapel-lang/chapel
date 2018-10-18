@@ -1,0 +1,6 @@
+notAnErrorSubtype-thrown.chpl:5: In function 'main':
+notAnErrorSubtype-thrown.chpl:7: error: unresolved call 'chpl_fix_thrown_error(unmanaged Foo)'
+$CHPL_HOME/modules/internal/ChapelError.chpl:339: note: candidates are: chpl_fix_thrown_error(err: borrowed Error)
+$CHPL_HOME/modules/internal/ChapelError.chpl:345: note:                 chpl_fix_thrown_error(type errType)
+$CHPL_HOME/modules/internal/ChapelError.chpl:352: note:                 chpl_fix_thrown_error(err: unmanaged Error)
+$CHPL_HOME/modules/internal/ChapelError.chpl:367: note:                 chpl_fix_thrown_error(ref err: owned Error)

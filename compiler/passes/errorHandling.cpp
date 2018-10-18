@@ -420,9 +420,26 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         VarSymbol* handledError = toVarSymbol(catchFilter->sym);
 
         VarSymbol* throwingHandledVar = newTemp("throwingHandledError", dtBool);
-        CallExpr*  throwingHandled    = new CallExpr(PRIM_EQUAL, thrownError, handledError);
-
         throwBlock->insertAtTail(new DefExpr(throwingHandledVar));
+
+        CallExpr* throwingHandled = NULL;
+
+        if (handledError->type != dtError) {
+          // We need to cast these to the same base type before comparing using
+          // pointer comparison if the type is a subtype of error
+          VarSymbol* castVar = newTemp("handledErrorCast", dtError);
+          CallExpr* castExpr = new CallExpr(PRIM_MOVE, castVar,
+                                            new CallExpr(PRIM_CAST,
+                                                         dtError->symbol,
+                                                         handledError));
+          throwingHandled = new CallExpr(PRIM_EQUAL, thrownError, castVar);
+
+          throwBlock->insertAtTail(new DefExpr(castVar));
+          throwBlock->insertAtTail(castExpr);
+        } else {
+          throwingHandled = new CallExpr(PRIM_EQUAL, thrownError, handledError);
+        }
+
         throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, throwingHandledVar, throwingHandled));
         throwBlock->insertAtTail(new CondStmt(new SymExpr(throwingHandledVar),
                                               new CallExpr(PRIM_MOVE, handledError, gNil)));

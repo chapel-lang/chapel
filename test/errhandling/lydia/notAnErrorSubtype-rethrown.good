@@ -1,0 +1,2 @@
+notAnErrorSubtype-rethrown.chpl:5: In function 'main':
+notAnErrorSubtype-rethrown.chpl:10: error: cannot throw something that is not a subtype of Error
