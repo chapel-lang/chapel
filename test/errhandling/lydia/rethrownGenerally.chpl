@@ -1,4 +1,4 @@
-// Code from issue opened by BryantLam on Github
+// Code from issue #10224 opened by BryantLam on Github
 module ExceptionWarning {
   proc main() throws {
     try {
