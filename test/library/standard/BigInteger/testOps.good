@@ -39,6 +39,8 @@ Testing ops between int(64) and bigint
 1 >= 1 = true
 1 == 1 = true
 bigint == bigint = true
+1 == 1 = true
+1 == 1 = true
 
 Testing ops between int(64) and bigint
 1 + 2 = 3
@@ -81,6 +83,8 @@ Testing ops between int(64) and bigint
 2 >= 1 = true
 1 == 1 = true
 bigint == bigint = true
+1 == 1 = true
+1 == 1 = true
 
 Testing ops between uint(64) and bigint
 1 + 1 = 2
@@ -123,6 +127,8 @@ Testing ops between uint(64) and bigint
 1 >= 1 = true
 1 == 1 = true
 bigint == bigint = true
+1 == 1 = true
+1 == 1 = true
 
 Testing ops between uint(64) and bigint
 1 + 2 = 3
@@ -165,6 +171,8 @@ Testing ops between uint(64) and bigint
 2 >= 1 = true
 1 == 1 = true
 bigint == bigint = true
+1 == 1 = true
+1 == 1 = true
 
 Testing ops between bigint and bigint
 1 + 1 = 2
@@ -207,6 +215,8 @@ Testing ops between bigint and bigint
 1 >= 1 = true
 1 == 1 = true
 bigint == bigint = true
+1 == 1 = true
+1 == 1 = true
 
 Testing ops between bigint and bigint
 1 + 2 = 3
@@ -249,4 +259,6 @@ Testing ops between bigint and bigint
 2 >= 1 = true
 1 == 1 = true
 bigint == bigint = true
+1 == 1 = true
+1 == 1 = true
 
