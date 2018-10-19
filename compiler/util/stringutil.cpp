@@ -159,7 +159,12 @@ void deleteStrings() {
     if (numitems != 1) {                                          \
       INT_FATAL("Illegal string passed to strTo_" #type "()");    \
     }                                                             \
-    if (strcmp(str, checkStr) != 0) {                             \
+    /* Remove leading 0s */                                       \
+    int startPos = 0;                                             \
+    while (str[startPos] == '0' && startPos < len-1) {            \
+      startPos++;                                                 \
+    }                                                             \
+    if (strcmp(str+startPos, checkStr) != 0) {                    \
       if (userSupplied) {                                         \
         USR_FATAL("%s:%d: Integer literal overflow: %s is too "   \
                   "big for type " #type, filename, line, str);    \
@@ -191,8 +196,12 @@ uint64_t binStr2uint64(const char* str, bool userSupplied,
   if (len < 3 || str[0] != '0' || (str[1] != 'b' && str[1] != 'B')) {
     INT_FATAL("Illegal string passed to binStrToUint64()");
   }
-
-  if (strlen(str+2) > 64) {
+  /* Remove leading 0s */
+  int startPos = 2;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+  if (strlen(str+startPos) > 64) {
     if (userSupplied) {
       USR_FATAL("%s:%d: Integer literal overflow: '%s' is too big "
                 "for type uint64", filename, line, str);
@@ -202,7 +211,7 @@ uint64_t binStr2uint64(const char* str, bool userSupplied,
     }
   }
   uint64_t val = 0;
-  for (int i=2; i<len; i++) {
+  for (int i=startPos; i<len; i++) {
     val <<= 1;
     switch (str[i]) {
     case '0':
@@ -226,8 +235,14 @@ uint64_t octStr2uint64(const char* str, bool userSupplied,
   if (len < 3 || str[0] != '0' || (str[1] != 'o' && str[1] != 'O')) {
     INT_FATAL("Illegal string passed to octStrToUint64()");
   }
-  if (len-2 > 22 || (len-2 == 22 &&
-                             str[2] != '1' && str[2] != '0')) {
+
+  /* Remove leading 0s */
+  int startPos = 2;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+
+  if (len-startPos > 22 || (len-startPos == 22 && str[startPos] != '1')) {
     if (userSupplied) {
       USR_FATAL("%s:%d: Integer literal overflow: '%s' is too big "
                 "for type uint64", filename, line, str);
@@ -253,8 +268,13 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
   if (len < 3 || str[0] != '0' || (str[1] != 'x' && str[1] != 'X')) {
     INT_FATAL("Illegal string passed to hexStrToUint64()");
   }
-  uint64_t val;
-  if (strlen(str+2) > 16) {
+  /* Remove leading 0s */
+  int startPos = 2;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+
+  if (strlen(str+startPos) > 16) {
     if (userSupplied) {
       USR_FATAL("%s:%d: Integer literal overflow: '%s' is too big "
                 "for type uint64", filename, line, str);
@@ -263,6 +283,8 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
                 "for type uint64", str);
     }
   }
+
+  uint64_t val;
   int numitems = sscanf(str+2, "%" SCNx64, &val);
   if (numitems != 1) {
     INT_FATAL("Illegal string passed to hexStrToUint64");
