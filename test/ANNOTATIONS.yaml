@@ -486,6 +486,8 @@ compSampler-timecomp: &timecomp-base
     - Refactor codegenPrimitive, add limit to denormalize (#10187)
   07/14/18:
     - Improve the speed of codegenPrimitive (#10321)
+  10/19/18:
+    - Fix compiler performance issues in nilChecking (#11396)
 
 
 cg:
@@ -957,6 +959,8 @@ memleaksfull:
     - Fix some SparseBlockDist leaks (#11227)
   10/09/18:
     - Resolve some global array-of-array leaks (#11307)
+  10/16/18:
+    - Adding an exercise about finding duplicate files (#11358)
 
 meteor:
   12/18/13:
