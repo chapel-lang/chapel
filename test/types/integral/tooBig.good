@@ -1,1 +1,1 @@
-tooBig.chpl:1: integer literal is too large to be represented as a 'uint'
+error: tooBig.chpl:1: Integer literal overflow: 1000000000000000000000000000000 is too big for type uint64
