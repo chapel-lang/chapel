@@ -486,6 +486,10 @@ static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
 static bool isGlobalVar(Symbol* sym) {
   Symbol* parent = sym->defPoint->parentSymbol;
 
+  if (sym->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+    return true;
+  }
+
   if (ModuleSymbol* moduleParent = toModuleSymbol(parent)) {
     // Until normalized, only system symbols are under a ModuleSymbol.
     INT_ASSERT(normalized || moduleParent == rootModule);
