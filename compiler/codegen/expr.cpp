@@ -3656,6 +3656,7 @@ DEFINE_PRIM(PRIM_ARRAY_SHIFT_BASE_POINTER) {
 static Expr* destExprForPrimArrayAlloc(CallExpr* call) {
   Expr* dst = call->get(1);
   if (! dst->isRefOrWideRef()) return dst; // nothing to do
+  INT_ASSERT(! dst->isWideRef()); // how to handle a wide ref?
 
   CallExpr* deref = new CallExpr(PRIM_DEREF);
   dst->replace(deref);
