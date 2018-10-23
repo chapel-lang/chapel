@@ -378,7 +378,7 @@ module CPtr {
   }
 
   /*
-    Return the offset of elements in a record.
+    Return the offset of a field in a record.
 
     .. warning::
 
@@ -390,11 +390,11 @@ module CPtr {
       * Behavior of ``c_offsetof`` may change
       * Behavior given a Chapel class type field is not well-defined
    */
-  proc c_offsetof(type t, param fieldname : string) where isRecordType(t) {
+  proc c_offsetof(type t, param fieldname : string): size_t where isRecordType(t) {
     use Reflection;
     var x: t;
 
-    return c_ptrTo(getFieldRef(x, fieldname)):uint - c_ptrTo(x):uint;
+    return c_ptrTo(getFieldRef(x, fieldname)):size_t - c_ptrTo(x):size_t;
   }
 
   pragma "no doc"
