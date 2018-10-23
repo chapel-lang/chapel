@@ -23,8 +23,10 @@
 
 #include "stringutil.h"
 
+#include "baseAST.h"
 #include "map.h"
 #include "misc.h"
+#include "symbol.h"
 
 #include <algorithm>
 #include <climits>
@@ -166,8 +168,14 @@ void deleteStrings() {
     }                                                             \
     if (strcmp(str+startPos, checkStr) != 0) {                    \
       if (userSupplied) {                                         \
-        USR_FATAL("%s:%d: Integer literal overflow: %s is too "   \
-                  "big for type " #type, filename, line, str);    \
+        /* Need an ast with the correct line number */            \
+        /* information for the error */                           \
+        astlocT astloc(line, filename);                           \
+        astlocMarker markAstLoc(astloc);                          \
+        VarSymbol* lineTemp = newTemp();                          \
+        USR_FATAL(lineTemp, "Integer literal overflow: %s is too" \
+                  " big for type " #type, str);                   \
+        delete lineTemp;                                          \
       } else {                                                    \
         INT_FATAL("Integer literal overflow: %s is too "          \
                   "big for type " #type, str);                    \
@@ -203,8 +211,14 @@ uint64_t binStr2uint64(const char* str, bool userSupplied,
   }
   if (strlen(str+startPos) > 64) {
     if (userSupplied) {
-      USR_FATAL("%s:%d: Integer literal overflow: '%s' is too big "
-                "for type uint64", filename, line, str);
+      /* Need an ast with the correct line number */
+      /* information for the error */
+      astlocT astloc(line, filename);
+      astlocMarker markAstLoc(astloc);
+      VarSymbol* lineTemp = newTemp();
+      USR_FATAL(lineTemp, "Integer literal overflow: '%s' is too big "
+                "for type uint64", str);
+      delete lineTemp;
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
                 "for type uint64", str);
@@ -244,8 +258,14 @@ uint64_t octStr2uint64(const char* str, bool userSupplied,
 
   if (len-startPos > 22 || (len-startPos == 22 && str[startPos] != '1')) {
     if (userSupplied) {
-      USR_FATAL("%s:%d: Integer literal overflow: '%s' is too big "
-                "for type uint64", filename, line, str);
+      /* Need an ast with the correct line number */
+      /* information for the error */
+      astlocT astloc(line, filename);
+      astlocMarker markAstLoc(astloc);
+      VarSymbol* lineTemp = newTemp();
+      USR_FATAL(lineTemp, "Integer literal overflow: '%s' is too big "
+                "for type uint64", str);
+      delete lineTemp;
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
                 "for type uint64", str);
@@ -276,8 +296,14 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
 
   if (strlen(str+startPos) > 16) {
     if (userSupplied) {
-      USR_FATAL("%s:%d: Integer literal overflow: '%s' is too big "
-                "for type uint64", filename, line, str);
+      /* Need an ast with the correct line number */
+      /* information for the error */
+      astlocT astloc(line, filename);
+      astlocMarker markAstLoc(astloc);
+      VarSymbol* lineTemp = newTemp();
+      USR_FATAL(lineTemp, "Integer literal overflow: '%s' is too big "
+                "for type uint64", str);
+      delete lineTemp;
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
                 "for type uint64", str);
