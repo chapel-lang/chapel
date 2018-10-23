@@ -156,7 +156,7 @@ namespace {
 
 // Static class helper functions
 static bool catchesNotExhaustive(TryStmt* tryStmt);
-static bool shouldEnforceStrict(CallExpr* node);
+static bool shouldEnforceStrict(CallExpr* node, int taskFunctionDepth);
 static AList castToError(Symbol* error, SymExpr* &castedError);
 
 class ErrorHandlingVisitor : public AstVisitorTraverse {
@@ -684,12 +684,15 @@ static bool catchesNotExhaustive(TryStmt* tryStmt) {
 
 // Returns true if we should raise strict-mode errors
 // for this call.
-static bool shouldEnforceStrict(CallExpr* node) {
+static bool shouldEnforceStrict(CallExpr* node, int taskFunctionDepth) {
   if (FnSymbol* calledFn = node->resolvedFunction()) {
     bool inCompilerGeneratedFn = false;
     if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
-      // Don't check wrapper functions in strict mode.
-      inCompilerGeneratedFn = isCompilerGeneratedFunction(parentFn);
+      // Don't check wrapper functions in strict mode, unless they are task
+      // functions and we know the caller of the task function is not declared
+      // as throws.
+      inCompilerGeneratedFn = isCompilerGeneratedFunction(parentFn) &&
+        !(isTaskFun(parentFn) && taskFunctionDepth > 0);
     }
     bool callsUncheckedThrowsFn = isUncheckedThrowsFunction(calledFn);
     bool strictError = !(inCompilerGeneratedFn || callsUncheckedThrowsFn);
@@ -782,7 +785,7 @@ void ImplicitThrowsVisitor::handleCallToFunction(FnSymbol* calledFn,
       // OK
     } else {
 
-      if (call && shouldEnforceStrict(call)) {
+      if (call && shouldEnforceStrict(call, /*taskFunctionDepth=*/0)) {
         if (reasonThrows == NULL)
           reasonThrows = forExpr;
       }
@@ -869,6 +872,8 @@ private:
   bool fnCanThrow;
   error_checking_mode_t mode;
 
+  int taskFunctionDepth;
+
   implicitThrowsReasons_t* reasons;
 
   void checkCatches(TryStmt* tryStmt);
@@ -880,6 +885,7 @@ ErrorCheckingVisitor::ErrorCheckingVisitor(bool inThrowingFn,
   tryDepth = 0;
   fnCanThrow = inThrowingFn;
   mode = inMode;
+  taskFunctionDepth = 0;
   reasons = inReasons;
 }
 
@@ -937,6 +943,24 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
       bool inThrowingFunction = false;
       if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
         inThrowingFunction = parentFn->throwsError();
+
+        if (!inThrowingFunction && isTaskFun(calledFn)) {
+          taskFunctionDepth = 1;
+          calledFn->body->accept(this);
+
+          taskFunctionDepth = 0;
+          return true;
+        } else if (taskFunctionDepth > 0) {
+          if (isTaskFun(calledFn)) {
+            taskFunctionDepth++;
+            calledFn->body->accept(this);
+
+            taskFunctionDepth--;
+            return true;
+          } else {
+            inThrowingFunction = false;
+          }
+        }
       }
 
       if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
@@ -956,7 +980,7 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
         // Otherwise, OK, a try in a throwing function
 
       } else {
-        if (shouldEnforceStrict(node)) {
+        if (shouldEnforceStrict(node, taskFunctionDepth)) {
           if (mode == ERROR_MODE_STRICT) {
             USR_FATAL_CONT(node, "call to throwing function %s "
                                  "without try or try! (strict mode)",
