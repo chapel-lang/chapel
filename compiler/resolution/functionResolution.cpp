@@ -2654,7 +2654,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
         const char* retKind =
           info.actuals.v[0]->hasFlag(FLAG_RVV) ? "return" : "yield";
         USR_FATAL_CONT(call,
-                       "cannot %s %s when the declared return type is %s",
+                       "cannot %s '%s' when the declared return type is '%s'",
                        retKind,
                        toString(info.actuals.v[1]->type),
                        toString(info.actuals.v[0]->type));
