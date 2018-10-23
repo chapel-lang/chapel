@@ -168,14 +168,10 @@ void deleteStrings() {
     }                                                             \
     if (strcmp(str+startPos, checkStr) != 0) {                    \
       if (userSupplied) {                                         \
-        /* Need an ast with the correct line number */            \
-        /* information for the error */                           \
-        astlocT astloc(line, filename);                           \
-        astlocMarker markAstLoc(astloc);                          \
-        VarSymbol* lineTemp = newTemp();                          \
+        VarSymbol* lineTemp = createASTforLineNumber(filename,    \
+                                                     line);       \
         USR_FATAL(lineTemp, "Integer literal overflow: %s is too" \
                   " big for type " #type, str);                   \
-        delete lineTemp;                                          \
       } else {                                                    \
         INT_FATAL("Integer literal overflow: %s is too "          \
                   "big for type " #type, str);                    \
@@ -211,14 +207,9 @@ uint64_t binStr2uint64(const char* str, bool userSupplied,
   }
   if (strlen(str+startPos) > 64) {
     if (userSupplied) {
-      /* Need an ast with the correct line number */
-      /* information for the error */
-      astlocT astloc(line, filename);
-      astlocMarker markAstLoc(astloc);
-      VarSymbol* lineTemp = newTemp();
+      VarSymbol* lineTemp = createASTforLineNumber(filename, line);
       USR_FATAL(lineTemp, "Integer literal overflow: '%s' is too big "
                 "for type uint64", str);
-      delete lineTemp;
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
                 "for type uint64", str);
@@ -258,14 +249,9 @@ uint64_t octStr2uint64(const char* str, bool userSupplied,
 
   if (len-startPos > 22 || (len-startPos == 22 && str[startPos] != '1')) {
     if (userSupplied) {
-      /* Need an ast with the correct line number */
-      /* information for the error */
-      astlocT astloc(line, filename);
-      astlocMarker markAstLoc(astloc);
-      VarSymbol* lineTemp = newTemp();
+      VarSymbol* lineTemp = createASTforLineNumber(filename, line);
       USR_FATAL(lineTemp, "Integer literal overflow: '%s' is too big "
                 "for type uint64", str);
-      delete lineTemp;
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
                 "for type uint64", str);
@@ -296,14 +282,9 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
 
   if (strlen(str+startPos) > 16) {
     if (userSupplied) {
-      /* Need an ast with the correct line number */
-      /* information for the error */
-      astlocT astloc(line, filename);
-      astlocMarker markAstLoc(astloc);
-      VarSymbol* lineTemp = newTemp();
+      VarSymbol* lineTemp = createASTforLineNumber(filename, line);
       USR_FATAL(lineTemp, "Integer literal overflow: '%s' is too big "
                 "for type uint64", str);
-      delete lineTemp;
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
                 "for type uint64", str);
