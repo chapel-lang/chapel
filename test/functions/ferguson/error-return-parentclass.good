@@ -1,2 +1,2 @@
 error-return-parentclass.chpl:14: In function 'f':
-error-return-parentclass.chpl:15: error: type mismatch in assignment from Parent to Child
+error-return-parentclass.chpl:15: error: cannot return 'Parent' when the declared return type is 'Child'

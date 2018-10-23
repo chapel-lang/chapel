@@ -2649,6 +2649,16 @@ void printResolutionErrorUnresolved(CallInfo&       info,
                        "type mismatch in assignment from nil to %s",
                        toString(info.actuals.v[0]->type));
 
+      } else if (info.actuals.v[0]->hasFlag(FLAG_RVV) ||
+                 info.actuals.v[0]->hasFlag(FLAG_YVV)) {
+        const char* retKind =
+          info.actuals.v[0]->hasFlag(FLAG_RVV) ? "return" : "yield";
+        USR_FATAL_CONT(call,
+                       "cannot %s '%s' when the declared return type is '%s'",
+                       retKind,
+                       toString(info.actuals.v[1]->type),
+                       toString(info.actuals.v[0]->type));
+
       } else {
         USR_FATAL_CONT(call,
                        "type mismatch in assignment from %s to %s",
