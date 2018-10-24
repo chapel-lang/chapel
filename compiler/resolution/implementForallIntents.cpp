@@ -1967,11 +1967,10 @@ static void insertInitialization(ShadowVarSymbol* destVar, Symbol* srcVar) {
 
 static void insertInitialization(BlockStmt* destBlock,
                                  Symbol* destVar, Expr* srcExpr) {
-  VarSymbol* initTemp = new VarSymbol("initTemp");
-  destBlock->insertAtTail(new DefExpr(initTemp));
-  destBlock->insertAtTail(new CallExpr(PRIM_MOVE,
-                                                  initTemp, srcExpr));
-  insertInitialization(destBlock, destVar, initTemp);
+
+  Expr* initCall = new_Expr("'init var'(%S,%E)", destVar, srcExpr);
+  destBlock->insertAtTail(initCall);
+  normalize(initCall);
 }
 
 // insertDeinitialization() flavors: as (a1) or (a2) above
