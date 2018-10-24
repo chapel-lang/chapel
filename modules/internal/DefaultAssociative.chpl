@@ -636,7 +636,19 @@ module DefaultAssociative {
         return data(0);
       }
     }
-  
+
+    inline proc dsiLocalAccess(i) ref
+      return dsiAccess(i);
+
+    inline proc dsiLocalAccess(i)
+    where shouldReturnRvalueByValue(eltType)
+      return dsiAccess(i);
+
+    inline proc dsiLocalAccess(i) const ref
+    where shouldReturnRvalueByConstRef(eltType)
+      return dsiAccess(i);
+
+
     iter these() ref {
       for slot in dom {
         yield dsiAccess(slot);
@@ -705,13 +717,26 @@ module DefaultAssociative {
     }
   
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
+      var binary = f.binary();
+      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+      var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
+      var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+
+      if isjson || ischpl {
+        f <~> new ioLiteral("[");
+      }
+
       var first = true;
-      for val in this {
-        if (first) then
-          first = false;
-        else
-          f <~> new ioLiteral(" ");
+      for (key, val) in zip(this.dom, this) {
+	if first then first = false;
+	else if isspace then f <~> new ioLiteral(" ");
+	else if isjson || ischpl then f <~> new ioLiteral(", ");
         f <~> val;
+      }
+
+      if isjson || ischpl {
+        f <~> new ioLiteral("]");
       }
     }
     proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
@@ -752,13 +777,18 @@ module DefaultAssociative {
     }
 
     proc dsiTargetLocales() {
-      compilerError("targetLocales is unsupported by associative domains");
+      return [this.locale, ];
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      return _newDomain(dom);
+      if this.data.locale == here {
+        return _getDomain(dom);
+      } else {
+        var a: domain(dom.idxType, parSafe=dom.parSafe);
+        return a;
+      }
     }
 
     override proc dsiDestroyArr() {
