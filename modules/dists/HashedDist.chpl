@@ -746,7 +746,39 @@ class UserMapAssocArr: BaseArr {
     return locArr[i];
   }
 
+  inline proc dsiLocalAccess(i) ref {
+    const localeIndex = dom.dist.indexToLocaleIndex(i);
+    const locArr = locArrs[localeIndex];
+    return locArr[i];
+  }
 
+  inline proc dsiLocalAccess(i)
+  where shouldReturnRvalueByValue(eltType) {
+    const localeIndex = dom.dist.indexToLocaleIndex(i);
+    const locArr = locArrs[localeIndex];
+    return locArr[i];
+  }
+
+  inline proc dsiLocalAccess(i) const ref
+  where shouldReturnRvalueByConstRef(eltType) {
+    const localeIndex = dom.dist.indexToLocaleIndex(i);
+    const locArr = locArrs[localeIndex];
+    return locArr[i];
+  }
+
+  proc dsiTargetLocales() {
+    return dom.dist.targetLocales;
+  }
+
+  proc dsiHasSingleLocalSubdomain() param return false;
+
+  iter dsiLocalSubdomains() {
+    for (idx,loc) in zip(dom.dist.targetLocDom, dom.dist.targetLocales) {
+      if loc == here {
+	yield dom.locDoms[idx].myInds;
+      }
+    }
+  }
 
   //
   // sequential iterator over the array's elements
