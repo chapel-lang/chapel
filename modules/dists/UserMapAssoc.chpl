@@ -17,19 +17,6 @@
  * limitations under the License.
  */
 
-// TODO: Convert to Steve's leader/follower scheme (implemented in compiler)
-
-// TODO: Make multidimensional
-
-// TODO: Make this work for a strided domain of locales; for a strided
-// domain implemented using this distribution.
-
-// TODO: Have the global class leader/follower iterators defer to the
-// local class leader/followers once we're within a locale?
-
-// TODO: Make these into an official distribution?
-
-// TODO: implement the slicing interface?
 
 config param debugUserMapAssoc = false;
 
@@ -62,7 +49,70 @@ record DefaultMapper {
 // The distribution class
 //
 
-/* Documentation TODO
+/*
+
+The UserMapAssoc distribution stores an associative domain or array
+across many locales. Each index (or key) in the domain is stored
+in a locale based upon that key. When constructing a UserMapAssoc
+distribution, provide a `mapper` which meets the following interface:
+
+.. code-block:: chapel
+
+  interface AbstractMapper {
+    proc this(ind: indexType, targetLocales: [] locale) : targetLocales.domain.idxType;
+  }
+
+The `mapper` provided can be a class or a record or a first class function. It needs to implement the
+method `indexToLocaleIndex` described above. `ind` will be the index/key type of
+the associative domain.
+
+If a mapper is not provided, the default mapper will be used. Thed fealtum pper
+computes a locale based upon the hash of the index.
+
+TODO: check first class functions work.
+
+UserMapAssoc is not yet interface stable.
+
+Example
+
+Initializer Arguments
+
+Data-Parallel Iteration
+
+
+TODO: think about whether mapper should return `locale` rather than an index
+     -> no
+
+Q: What else needs to be done right away before merging?
+  - choose a better name
+  - write some chpldoc
+  - circulate the chpldoc among the team
+  - try using the array API test
+     - list things that do/don't work in docs
+  - write a test to ensure that it's parallel-safe
+     - add to a distributed assoc domain in parallel
+     - make sure all the indices added got in
+
+module: _Dist
+
+D dmapped Block
+D dmapped Cyclic
+
+use HashedDist;
+D dmapped Hashed
+
+use GranularDist;
+D dmapped Granular
+
+use IndexToLocaleDist;
+D dmapped IndexToLocale
+
+  -> worry that this means index 0 always goes to locale 0
+
+  {1..10} dmapped IndexToLocale;
+    -> implemented as associative array
+
+
  */
 class UserMapAssoc : BaseDist {
 
@@ -201,6 +251,9 @@ class UserMapAssoc : BaseDist {
     return indexToLocale(ind);
   }
 
+// indexToLocaleIndex is used below to efficiently compute
+// the local domain implementation, so the locDoms array can be
+// simple (1-D, not associative).
   proc indexToLocaleIndex(ind: idxType) {
     const locIdx = mapper.indexToLocaleIndex(ind, targetLocales);
     if boundsChecking then
