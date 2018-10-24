@@ -1,4 +1,4 @@
-forall-over-zip-over-arrays.chpl:3: internal error: CHEnnnn chpl version mmmm
+forall-over-zip-over-arrays.chpl:3: internal error: MAI-CHE-CKS-0760 chpl version 1.19.0 pre-release (cfeb6592b3)
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 

@@ -1,4 +1,4 @@
-class-alias-generic-arg.chpl:12: internal error: CAL0124 chpl version 1.18.0 pre-release (8e7e52cff4)
+class-alias-generic-arg.chpl:12: internal error: RES-CAL-NFO-0124 chpl version 1.19.0 pre-release (cfeb6592b3)
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
