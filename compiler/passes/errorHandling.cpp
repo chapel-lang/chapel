@@ -945,10 +945,10 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
         inThrowingFunction = parentFn->throwsError();
 
         if (!inThrowingFunction && isTaskFun(calledFn)) {
-          taskFunctionDepth = 1;
+          taskFunctionDepth++;
           calledFn->body->accept(this);
 
-          taskFunctionDepth = 0;
+          taskFunctionDepth--;
           return true;
         } else if (taskFunctionDepth > 0) {
           if (isTaskFun(calledFn)) {
