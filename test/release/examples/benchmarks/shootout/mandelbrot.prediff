@@ -33,7 +33,7 @@ if not os.path.isfile(expect):
   error = "Error - could not find expected output " + expect
 else:
 
-  if hostname.startswith("chapel-shootout"):
+  if 'shootout' in hostname:
     diffs_to_allow=0
     if os.path.isfile(clbg_expect):
       expect = clbg_expect
