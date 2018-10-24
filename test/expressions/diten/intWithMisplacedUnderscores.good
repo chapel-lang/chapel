@@ -1,0 +1,1 @@
+intWithMisplacedUnderscores.chpl:1: error: underscores in integer literals are allowed only after groups of three digits
