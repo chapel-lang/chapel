@@ -1734,6 +1734,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   thisMethod->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   thisMethod->addFlag(FLAG_COMPILER_GENERATED);
+  thisMethod->addFlag(FLAG_OVERRIDE);
 
   thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
                                                "_mt",
