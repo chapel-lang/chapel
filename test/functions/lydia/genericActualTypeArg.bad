@@ -1,4 +1,4 @@
-genericActualTypeArg.chpl:6: internal error: CAL0124 chpl version 1.19.0 pre-release (ac8b4804db)
+genericActualTypeArg.chpl:6: internal error: RES-CAL-NFO-0124 chpl version 1.19.0 pre-release (faf38ceffe)
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
