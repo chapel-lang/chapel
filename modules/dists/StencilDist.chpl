@@ -869,8 +869,16 @@ proc StencilDom.setup() {
 
           // if L is a tuple of zeroes then we are in the center, which needs
           // no updating.
-          if !isZeroTuple(L) {
-            const to = chpl__tuplify(L);
+          const to = chpl__tuplify(L);
+
+          // If halo(i) is zero then there cannot be any fluff along that
+          // dimension, meaning that neigh(i) cannot be '1' or '-1'. If neigh(i)
+          // is not zero, then we should skip the computation of send/recv
+          // slices, which will prevent updateFluff from attempting to use
+          // those slices later.
+          var skipNeigh = || reduce for (f,t) in zip(fluff, to) do (f == 0 && t != 0);
+
+          if !isZeroTuple(to) && !skipNeigh {
             var dr : rank*whole.dim(1).type;
             for i in 1..rank {
               const fa = fluff(i) * abstr(i);
@@ -954,7 +962,7 @@ proc StencilDom.setup() {
         forall (recvS, recvD, sendS, sendD, N, L) in zip(myLocDom.recvSrc, myLocDom.recvDest,
                                                          myLocDom.sendSrc, myLocDom.sendDest,
                                                          myLocDom.Neighs, ND) {
-          if !zeroTuple(L) && recvS.size != 0 {
+          if !isZeroTuple(L) && recvS.size != 0 {
             var other = -1 * L;
 
             proc checker(me, myDom, them, themDom) {
