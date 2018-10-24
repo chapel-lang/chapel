@@ -23,10 +23,12 @@ def main():
     body = sys.stdin.read()
 
     # Send the email!
-    send_email(args.recipients, body, args.subject, args.header, args.sender, args.smtp_host, args.smtp_user, args.smtp_password)
+    send_email(args.recipients, body, args.subject, args.header, args.sender, args.smtp_host,
+        args.smtp_user, args.smtp_password, args.smtp_password_file)
 
 
-def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_host=None, smtp_user=None, smtp_password=None):
+def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_host=None,
+        smtp_user=None, smtp_password=None, smtp_password_file=None):
     """Send email!
 
     :arg recipients: list of recipients. If only one, may be a string.
@@ -37,6 +39,7 @@ def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_h
     :arg smtp_host: Optional SMTP host. Defaults to 'localhost'.
     :arg smtp_user: Optional SMTP user for login over TLS.
     :arg smtp_password: password for smtp_user, if used.
+    :arg smtp_password_file: path to a file containing the password for smtp_user, if used.
     """
     if isinstance(recipients, basestring):
         recipients = [recipients]
@@ -60,10 +63,8 @@ def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_h
             if smtp_user:
                 smtp = smtplib.SMTP(smtp_host,465)
                 logging.debug('Login with user={0}'.format(smtp_user))
-                if not smtp_password:
-                    raise ValueError('--smtp-user={0} requires an --smtp-password'.format(smtp_user))
                 smtp.starttls()
-                smtp.login(smtp_user, smtp_password)
+                smtp.login(smtp_user, _get_smtp_password(smtp_user, smtp_password, smtp_password_file))
             else:
                 smtp = smtplib.SMTP(smtp_host)
             logging.info('Sending email to: {0} from: {1} subject: {2}'.format(
@@ -119,6 +120,41 @@ def _default_smtp_password():
     """Return default password for smtp user from environment variable CHPL_UTIL_SMTP_PASSWORD.
     """
     return os.environ.get('CHPL_UTIL_SMTP_PASSWORD')
+
+def _default_smtp_password_file():
+    """Return default password file for smtp user from env var CHPL_UTIL_SMTP_PASSWORD_FILE.
+    """
+    password_file = os.environ.get('CHPL_UTIL_SMTP_PASSWORD_FILE')
+    if not password_file:
+        password_file = os.path.expanduser(os.path.join('~', '.ssh', 'chpl_util_smtp_password.txt'))
+    return password_file
+
+def _get_smtp_password(smtp_user=None, smtp_password=None, smtp_password_file=None):
+    """Return the smtp password based on available info.
+
+    :arg smtp_user: smtp_user to login to smtp_host
+    :arg smtp_password: password for smtp_user
+    :arg smtp_password_file: path to a file containing the password for smtp_user
+    """
+
+    if smtp_password:
+        logging.debug('Using --smtp-password')
+        return smtp_password
+
+    password = None
+    if smtp_password_file:
+        logging.debug('Reading --smtp-password-file={0}'.format(smtp_password_file))
+        if os.path.isfile(smtp_password_file):
+            with open(smtp_password_file, 'r') as fp:
+                password = fp.readline(80)
+        else:
+            raise ValueError('--smtp-password-file={0} not found'.format(smtp_password_file))
+
+    if password:
+        logging.debug('Using password from file')
+        return password.strip()
+    else:
+        raise ValueError('--smtp-user={0} requires valid --smtp-password or --smtp-password-file'.format(smtp_user))
 
 def _parse_args():
     """Parse and return command line arguments."""
@@ -179,6 +215,12 @@ def _parse_args():
         default=_default_smtp_password(),
         help='Password for --smtp-user.' +
             hide_default_text(_default_smtp_password())
+    )
+    mail_group.add_option(
+        '-P', '--smtp-password-file', metavar='CHPL_UTIL_SMTP_PASSWORD_FILE',
+        default=_default_smtp_password_file(),
+        help='Path to a file containing the password for --smtp-user.' +
+            show_default_text(_default_smtp_password_file())
     )
 
     parser.add_option_group(mail_group)
