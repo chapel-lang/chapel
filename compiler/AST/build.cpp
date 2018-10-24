@@ -264,8 +264,34 @@ Expr* buildIntLiteral(const char* pch, const char* file, int line) {
     ull = octStr2uint64(pch, true, file, line);
   else if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2))
     ull = hexStr2uint64(pch, true, file, line);
-  else
-    ull = str2uint64(pch, true, file, line);
+  else {
+    int j = 0;
+    int len = strlen(pch);
+    char noUnderscores[len+1];
+
+    // check that underscores only occur after groups of three digits
+    for (int i=len-1; i>=0; i--) {
+      if (pch[i] == '_') {
+        if (j == 0 || j % 3 != 0) {
+          VarSymbol* temp = createASTforLineNumber(file, line);
+          USR_FATAL(temp, "underscores in integer literals are allowed "
+                          "only after groups of three digits");
+        }
+      } else {
+        j++;
+      }
+    }
+
+    // remove all underscores from the number
+    j = 0;
+    for (int i=0; i<len; i++) {
+      if (pch[i] != '_') {
+        noUnderscores[j++] = pch[i];
+      }
+    }
+    noUnderscores[j] = '\0';
+    ull = str2uint64(noUnderscores, true, file, line);
+  }
 
   if (ull <= 9223372036854775807ull)
     return new SymExpr(new_IntSymbol(ull, INT_SIZE_64));

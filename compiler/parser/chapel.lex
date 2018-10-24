@@ -91,8 +91,9 @@ ident            {letter}({letter}|{digit}|"$")*
 
 binaryLiteral    0[bB]{bit}+
 octalLiteral     0[oO]{octDigit}+
+decimalLiteral   {digit}(_|{digit})*
 hexLiteral       0[xX]{hexDigit}+
-intLiteral       {digit}+|{binaryLiteral}|{octalLiteral}|{hexLiteral}
+intLiteral       {binaryLiteral}|{octalLiteral}|{decimalLiteral}|{hexLiteral}
 
 exponent         [Ee][\+\-]?{digit}+
 floatLiteral1    {digit}*"."{digit}+({exponent})?
