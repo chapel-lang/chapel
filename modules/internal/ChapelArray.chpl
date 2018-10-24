@@ -4255,8 +4255,7 @@ module ChapelArray {
     var callAgain: bool;
     var subloc = c_sublocid_none;
 
-    // can be 'inline' once we fix #11312
-    proc allocateData(param initialAlloc, allocSize) {
+    inline proc allocateData(param initialAlloc, allocSize) {
       // data allocation should match DefaultRectangular
       if initialAlloc then
         __primitive("array_alloc", data, allocSize, subloc, c_ptrTo(callAgain), c_nil);

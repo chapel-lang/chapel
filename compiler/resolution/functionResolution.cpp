@@ -2649,6 +2649,16 @@ void printResolutionErrorUnresolved(CallInfo&       info,
                        "type mismatch in assignment from nil to %s",
                        toString(info.actuals.v[0]->type));
 
+      } else if (info.actuals.v[0]->hasFlag(FLAG_RVV) ||
+                 info.actuals.v[0]->hasFlag(FLAG_YVV)) {
+        const char* retKind =
+          info.actuals.v[0]->hasFlag(FLAG_RVV) ? "return" : "yield";
+        USR_FATAL_CONT(call,
+                       "cannot %s '%s' when the declared return type is '%s'",
+                       retKind,
+                       toString(info.actuals.v[1]->type),
+                       toString(info.actuals.v[0]->type));
+
       } else {
         USR_FATAL_CONT(call,
                        "type mismatch in assignment from %s to %s",
@@ -5256,6 +5266,15 @@ static void  moveSetFlagsForConstAccess(Symbol*   lhs,
 
 static void  moveFinalize(CallExpr* call);
 
+// Helper: is this a move from the result of main()?
+static bool isMoveFromMain(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE)); // caller responsibility
+  if (CallExpr* rhs = toCallExpr(call->get(2)))
+    if (FnSymbol* target = rhs->resolvedFunction())
+      if (target == chplUserMain)
+        return true;
+  return false;
+}
 
 
 static void resolveMove(CallExpr* call) {
@@ -5787,7 +5806,10 @@ static void moveFinalize(CallExpr* call) {
 
   } else {
     if (rhsValType != lhsValType) {
-      if (rhsType != dtNil) {
+      if (isMoveFromMain(call)) {
+        USR_FATAL(chplUserMain, "main() returns a non-integer (%s)",
+                  rhsValType->name());
+      } else if (rhsType != dtNil) {
         USR_FATAL(userCall(call),
                   "type mismatch in assignment from %s to %s",
                   toString(rhsType),

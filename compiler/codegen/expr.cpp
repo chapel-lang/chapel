@@ -3651,13 +3651,25 @@ DEFINE_PRIM(PRIM_ARRAY_SHIFT_BASE_POINTER) {
       codegenWideAddrWithAddr(rv, shifted, ret.chplType);
     }
 }
+
+// Workaround for troubles with allocateData() in ChapelArray.chpl.
+static Expr* destExprForPrimArrayAlloc(CallExpr* call) {
+  Expr* dst = call->get(1);
+  if (! dst->isRefOrWideRef()) return dst; // nothing to do
+  INT_ASSERT(! dst->isWideRef()); // how to handle a wide ref?
+
+  CallExpr* deref = new CallExpr(PRIM_DEREF);
+  dst->replace(deref);
+  deref->insertAtTail(dst);
+  return deref;
+}
 DEFINE_PRIM(PRIM_ARRAY_ALLOC) {
     // get(1): return symbol
     // get(2): number of elements
     // get(3): desired sublocale
     // get(4): (temporary) make 2nd call?
     // get(5): (temporary) 2nd call: repeat previously returned ptr
-    GenRet dst = call->get(1);
+    GenRet dst = destExprForPrimArrayAlloc(call);
     GenRet alloced;
 
     INT_ASSERT(dst.isLVPtr);

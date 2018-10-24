@@ -307,6 +307,8 @@ void   trace_remove(BaseAST* ast, char flag);
 void verifyInTree(BaseAST* ast, const char* msg);
 
 
+VarSymbol* createASTforLineNumber(const char* filename, int line);
+
 //
 // macro to update the global line number used to set the line number
 // of an AST node when it is constructed - or to print out the line

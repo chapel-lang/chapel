@@ -1605,6 +1605,8 @@ static bool isInstantiatedField(Symbol* field) {
   return retval;
 }
 
+static VarSymbol* dummyFcfError = NULL;
+
 /*
   Captures a function as a first-class value by creating an object that will
   represent the function.  The class is created at the same scope as the
@@ -1646,6 +1648,18 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   }
 
   resolveSignature(captured_fn);
+
+  for_formals(formal, captured_fn) {
+    if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+      USR_FATAL_CONT(call, "'%s' cannot be captured as a value because it is a generic function", captured_fn->name);
+      if (dummyFcfError == NULL) {
+        AggregateType* parent = createAndInsertFunParentClass(call, "_fcf_error");
+        dummyFcfError = newTemp(parent);
+        theProgram->block->body.insertAtTail(new DefExpr(dummyFcfError));
+      }
+      return new SymExpr(dummyFcfError);
+    }
+  }
 
   resolveFnForCall(captured_fn, call);
 
@@ -1745,10 +1759,6 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
     DefExpr*   dExp = toDefExpr(formalExpr);
     ArgSymbol* fArg = toArgSymbol(dExp->sym);
-
-    if (fArg->type->symbol->hasFlag(FLAG_GENERIC)) {
-      USR_FATAL_CONT("Generic functions can't be captured as values");
-    }
 
     ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
 
