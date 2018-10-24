@@ -1,8 +1,8 @@
-use UserMapAssoc;
+use HashedDist;
 
 config const verbose = false;
 
-var newDist = new dmap(new UserMapAssoc(idxType=real));
+var newDist = new dmap(new Hashed(idxType=real));
 
 var D: domain(real) dmapped newDist;
 
