@@ -48,7 +48,8 @@
 #include "chpl-mem-sys.h"
 #define deque_calloc(nmemb, size) sys_calloc(nmemb,size)
 #define deque_free(ptr) sys_free(ptr)
-#define deque_memcpy(dest, src, num) memcpy(dest, src, num)
+#define chpl_no_overlap_memcpy memcpy
+#define deque_memcpy(dest, src, num) chpl_no_overlap_memcpy(dest, src, num)
 #endif
 
 #ifdef __cplusplus

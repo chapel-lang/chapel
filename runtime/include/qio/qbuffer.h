@@ -472,7 +472,8 @@ typedef chpl_bool qio_bool;
 #define qio_realloc(ptr, size) sys_realloc(ptr, size)
 #define qio_memalign(boundary, size) sys_memalign(boundary, size)
 #define qio_free(ptr) sys_free(ptr)
-#define qio_memcpy(dest, src, num) memcpy(dest, src, num)
+#define chpl_no_overlap_memcpy memcpy
+#define qio_memcpy(dest, src, num) chpl_no_overlap_memcpy(dest, src, num)
 
 typedef bool qio_bool;
 
