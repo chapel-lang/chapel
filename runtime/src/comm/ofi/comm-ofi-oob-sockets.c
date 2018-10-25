@@ -87,7 +87,7 @@ void chpl_comm_ofi_oob_barrier(void) {
 
 void chpl_comm_ofi_oob_allgather(void* in, void* out, int len) {
   if (chpl_numNodes == 1) {
-    chpl_memcpy(out, in, len);
+    chpl_memmove(out, in, len);
   } else {
     INTERNAL_ERROR_V("multi-locale allgather not supported");
   }

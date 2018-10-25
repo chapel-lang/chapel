@@ -136,9 +136,18 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   chpl_free(memAlloc);
 }
 
-// Provide handles to instrument Chapel calls to memcpy and memmove
 static inline
 void* chpl_memcpy(void* dest, const void* src, size_t num)
+{
+  assert(dest != src || num == 0);
+  return memcpy(dest, src, num);
+}
+
+// Provide handles to instrument Chapel calls to memcpy and memmove. For memcpy
+// we've named it to explicit indicate overlap isn't permitted since we've
+// historically been pretty careless about that.
+static inline
+void* chpl_no_overlap_memcpy(void* dest, const void* src, size_t num)
 {
   assert(dest != src || num == 0);
   return memcpy(dest, src, num);

@@ -504,7 +504,7 @@ static void AM_signal_long(gasnet_token_t token, void *buf, size_t nbytes,
 
 static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_t* pbp = buf;
-  chpl_memcpy(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
+  chpl_memmove(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
@@ -513,7 +513,7 @@ static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_large_t* pblp = buf;
-  chpl_memcpy((char*)chpl_private_broadcast_table[pblp->id]+pblp->offset, pblp->data, pblp->size);
+  chpl_memmove((char*)chpl_private_broadcast_table[pblp->id]+pblp->offset, pblp->data, pblp->size);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
@@ -555,7 +555,7 @@ static void AM_shutdown(gasnet_token_t token) {
 static int bcast_seginfo_done = 0;
 static void AM_bcast_seginfo(gasnet_token_t token, void *buf, size_t nbytes) {
   assert(nbytes == sizeof(gasnet_seginfo_t)*gasnet_nodes());
-  chpl_memcpy(seginfo_table, buf, nbytes);
+  chpl_memmove(seginfo_table, buf, nbytes);
   gasnett_local_wmb();
   bcast_seginfo_done = 1;
 }
@@ -949,7 +949,7 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
                                           0, 0);
   if (payloadSize <= gasnet_AMMaxMedium()) {
     priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_COMM_PRV_BCAST_DATA, 0, 0);
-    chpl_memcpy(pbp->data, chpl_private_broadcast_table[id], size);
+    chpl_memmove(pbp->data, chpl_private_broadcast_table[id], size);
     pbp->id = id;
     pbp->size = size;
     for (node = 0; node < chpl_numNodes; node++) {
@@ -976,7 +976,7 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
         thissize = maxsize;
       pblp->offset = offset;
       pblp->size = thissize;
-      chpl_memcpy(pblp->data, (char*)chpl_private_broadcast_table[id]+offset, thissize);
+      chpl_memmove(pblp->data, (char*)chpl_private_broadcast_table[id]+offset, thissize);
       for (node = 0; node < chpl_numNodes; node++) {
         if (node != chpl_nodeID) {
           pblp->ack = &done[node];
@@ -1482,7 +1482,7 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
 
         use_arg = chpl_mem_allocMany(1, arg_size,
                                      CHPL_RT_MD_COMM_FRK_SND_ARG, 0, 0);
-        chpl_memcpy(use_arg, arg, arg_size);
+        chpl_no_overlap_memcpy(use_arg, arg, arg_size);
       }
 
       // Copy in the header

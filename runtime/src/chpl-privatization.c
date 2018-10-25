@@ -61,8 +61,8 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
       tmp = chpl_mem_allocManyZero(chpl_capPrivateObjects,
                                    sizeof(chpl_privateObject_t),
                                    CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
-      chpl_memcpy((void*)tmp, (void*)chpl_privateObjects,
-                  (oldCap)*sizeof(chpl_privateObject_t));
+      chpl_no_overlap_memcpy((void*)tmp, (void*)chpl_privateObjects,
+                             (oldCap)*sizeof(chpl_privateObject_t));
       chpl_privateObjects = tmp;
       // purposely leak old copies of chpl_privateObject to avoid the need to
       // lock chpl_getPrivatizedClass; TODO: fix with lock free data structure
