@@ -22,6 +22,7 @@
 
 #include "chpltypes.h"
 #include "chpl-comp-detect-macros.h"
+#include "chpl-mem.h"
 #include <assert.h>
 
 //
@@ -205,7 +206,7 @@ static inline chpl_bool atomic_is_lock_free_ ## type(atomic_ ## type * obj) { \
 } \
 static inline void atomic_init_ ## type(atomic_ ## type * obj, type value) { \
   assert(sizeof(type) == sizeof(uinttype)); \
-  memcpy(obj, &value, sizeof(*obj)); \
+  chpl_no_overlap_memcpy(obj, &value, sizeof(*obj)); \
 } \
 static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
 } \
@@ -213,7 +214,7 @@ static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, type va
   uinttype ret_uint = *obj; \
   uinttype val_uint; \
   uinttype old_uint; \
-  memcpy(&val_uint, &value, sizeof(val_uint)); \
+  chpl_no_overlap_memcpy(&val_uint, &value, sizeof(val_uint)); \
   do { \
     old_uint = ret_uint; \
     ret_uint = __sync_val_compare_and_swap(obj, old_uint, val_uint); \
@@ -225,7 +226,7 @@ static inline void atomic_store_ ## type(atomic_ ## type * obj, type value) { \
 static inline type atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
   type ret; \
   uinttype ret_uint = __sync_val_compare_and_swap(obj, (uinttype)0, (uinttype)0); \
-  memcpy(&ret, &ret_uint, sizeof(ret)); \
+  chpl_no_overlap_memcpy(&ret, &ret_uint, sizeof(ret)); \
   return ret; \
 } \
 static inline type atomic_load_ ## type(atomic_ ## type * obj) { \
@@ -242,12 +243,12 @@ static inline type atomic_exchange_explicit_ ## type(atomic_ ## type * obj, type
   uinttype value_as_uint; \
   uinttype ret_as_uint = *obj; \
   uinttype old_val_as_uint; \
-  memcpy(&value_as_uint, &value, sizeof(value_as_uint)); \
+  chpl_no_overlap_memcpy(&value_as_uint, &value, sizeof(value_as_uint)); \
   do { \
     old_val_as_uint = ret_as_uint; \
     ret_as_uint = __sync_val_compare_and_swap(obj, old_val_as_uint, value_as_uint); \
   } while(ret_as_uint != old_val_as_uint); \
-  memcpy(&ret, &ret_as_uint, sizeof(ret)); \
+  chpl_no_overlap_memcpy(&ret, &ret_as_uint, sizeof(ret)); \
   return ret; \
 } \
 static inline type atomic_exchange_ ## type(atomic_ ## type * obj, type value) { \
@@ -256,8 +257,8 @@ static inline type atomic_exchange_ ## type(atomic_ ## type * obj, type value) {
 static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
   uinttype expected_as_uint; \
   uinttype desired_as_uint; \
-  memcpy(&expected_as_uint, &expected, sizeof(expected_as_uint)); \
-  memcpy(&desired_as_uint, &desired, sizeof(desired_as_uint)); \
+  chpl_no_overlap_memcpy(&expected_as_uint, &expected, sizeof(expected_as_uint)); \
+  chpl_no_overlap_memcpy(&desired_as_uint, &desired, sizeof(desired_as_uint)); \
   return my__sync_bool_compare_and_swap(obj, expected_as_uint, desired_as_uint); \
 } \
 static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type expected, type desired) { \
@@ -284,12 +285,12 @@ static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, typ
   uinttype desired_as_uint; \
   do { \
     old_as_uint = ret_as_uint; \
-    memcpy(&old, &old_as_uint, sizeof(old)); \
+    chpl_no_overlap_memcpy(&old, &old_as_uint, sizeof(old)); \
     desired = old + operand; \
-    memcpy(&desired_as_uint, &desired, sizeof(desired_as_uint)); \
+    chpl_no_overlap_memcpy(&desired_as_uint, &desired, sizeof(desired_as_uint)); \
     ret_as_uint = __sync_val_compare_and_swap(obj, old_as_uint, desired_as_uint); \
   } while (ret_as_uint != old_as_uint); \
-  memcpy(&ret, &ret_as_uint, sizeof(ret)); \
+  chpl_no_overlap_memcpy(&ret, &ret_as_uint, sizeof(ret)); \
   return ret; \
 } \
 static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
@@ -304,12 +305,12 @@ static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, typ
   uinttype desired_as_uint; \
   do { \
     old_as_uint = ret_as_uint; \
-    memcpy(&old, &old_as_uint, sizeof(old)); \
+    chpl_no_overlap_memcpy(&old, &old_as_uint, sizeof(old)); \
     desired = old - operand; \
-    memcpy(&desired_as_uint, &desired, sizeof(desired_as_uint)); \
+    chpl_no_overlap_memcpy(&desired_as_uint, &desired, sizeof(desired_as_uint)); \
     ret_as_uint = __sync_val_compare_and_swap(obj, old_as_uint, desired_as_uint); \
   } while (ret_as_uint != old_as_uint); \
-  memcpy(&ret, &ret_as_uint, sizeof(ret)); \
+  chpl_no_overlap_memcpy(&ret, &ret_as_uint, sizeof(ret)); \
   return ret; \
 } \
 static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \
