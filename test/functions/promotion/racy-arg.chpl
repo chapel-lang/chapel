@@ -25,7 +25,7 @@ proc test1() {
     writeln(B);
 
   noop(x, A);
-  increment(x, A); // "works" but should arguably generate an error
+  increment(x, A); // racy!
   writeln("1C expect ", 43 + (+ reduce A));
   writeln("1C    got ", x);
 }
@@ -55,7 +55,7 @@ proc test2() {
   var result:R;
 
   noop(result, A, B);
-  addem(result, A, B); // almost always a race condition!
+  addem(result, A, B); // racy!
   writeln("2B expect ", 2 * (+ reduce A.value));
   writeln("2B    got ", result.value);
 }
