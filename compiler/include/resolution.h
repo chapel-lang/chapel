@@ -254,6 +254,10 @@ bool evaluateWhereClause(FnSymbol* fn);
 
 bool isAutoDestroyedVariable(Symbol* sym);
 
+static inline bool isUnresolvedOrGenericReturnType(Type* retType) {
+  return retType == dtUnknown || retType->symbol->hasFlag(FLAG_GENERIC);
+}
+
 SymExpr* findSourceOfYield(CallExpr* yield);
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);
