@@ -313,4 +313,23 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
     // For now, don't check primitives. Compiler can be loose
     // with const-ness on its own internal temporaries.
   }
+
+  // Additionally check that promotion wrappers using a scalar this
+  // don't take it in by `ref`
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+      for_formals(formal, fn) {
+        if (formal->intent == INTENT_REF) {
+          Type* vt = formal->getValType();
+          bool  scalar = vt->scalarPromotionType == NULL;
+          if (scalar) {
+            const char* err = "Racy promotion of scalar value";
+            if (formal == fn->_this)
+              err = "Racy promotion of scalar method receiver";
+            USR_FATAL_CONT(fn, err);
+          }
+        }
+      }
+    }
+  }
 }
