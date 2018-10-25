@@ -132,10 +132,14 @@ record spoint {     // a surface point
 // =================================
 //
 proc main() {
+  use BlockDist;
 
-  // ***************************************
-  // * TODO: Declare the image array here  *
-  // ***************************************
+  //
+  // A local domain, distributed domain, and array representing the image
+  //
+  const imageSize = {0..#yres, 0..#xres};
+  const pixelPlane = imageSize dmapped Block(imageSize);
+  var pixels: [pixelPlane] pixelType;
 
   //
   // Set up the random numbers and scene
@@ -150,9 +154,12 @@ proc main() {
   var t: Timer;
   t.start();
 
-  // ***************************************
-  // * TODO: Compute the image pixels here *
-  // ***************************************
+  //
+  // The main loop that computes the image in parallel.
+  //
+  forall (y, x) in pixelPlane {
+    pixels[y, x] = computePixel(y, x, scene, rands);
+  }
 
   //
   // Check the timer
@@ -170,8 +177,7 @@ proc main() {
   //
   // Write out the image
   //
-  var dummy: [1..100, 1..200] int;  // a dummy array until you provide your own
-  writeImage(image, imgType, dummy);
+  writeImage(image, imgType, pixels);
 }
 
 //
@@ -530,7 +536,7 @@ proc loadScene() {
     const inType = columns[1];
 
     // handle error conditions
-    if !expectedArgs.domain.contains(inType) then
+    if !expectedArgs.domain.member(inType) then
       inputError("unexpected input type: " + inType);
     else if columns.size < expectedArgs(inType) then
       inputError("not enough arguments for input of type '" + inType + "'");

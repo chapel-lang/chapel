@@ -132,10 +132,10 @@ record spoint {     // a surface point
 // =================================
 //
 proc main() {
-
-  // ***************************************
-  // * TODO: Declare the image array here  *
-  // ***************************************
+  //
+  // A local array representing the image
+  //
+  var pixels: [0..#yres, 0..#xres] pixelType;
 
   //
   // Set up the random numbers and scene
@@ -150,9 +150,32 @@ proc main() {
   var t: Timer;
   t.start();
 
-  // ***************************************
-  // * TODO: Compute the image pixels here *
-  // ***************************************
+  //
+  // The main loop that computes the image in parallel.
+  //
+  forall (y, x) in pixels.domain do
+    pixels[y, x] = computePixel(y, x, scene, rands);
+
+  /* OR, using a 2-tuple index 'yx'
+
+  forall yx in pixels.domain do
+    pixels[yx] = computePixel(yx, scene, rands);
+
+  */
+
+  /* OR, using zippered iteration with either of the above
+     **BUT** note that multidimensional zippered iteration results in
+     a big performance hit today that our team needs to address.
+
+  forall ((y,x), p) in zip(pixels.domain, pixels) do
+    p = computePixel(y, x, scene, rands);
+
+  OR:
+
+  forall (yx, p) in zip(pixels.domain, pixels) do
+    p = computePixel(yx, scene, rands);
+
+  */
 
   //
   // Check the timer
@@ -170,8 +193,7 @@ proc main() {
   //
   // Write out the image
   //
-  var dummy: [1..100, 1..200] int;  // a dummy array until you provide your own
-  writeImage(image, imgType, dummy);
+  writeImage(image, imgType, pixels);
 }
 
 //
@@ -530,7 +552,7 @@ proc loadScene() {
     const inType = columns[1];
 
     // handle error conditions
-    if !expectedArgs.domain.contains(inType) then
+    if !expectedArgs.domain.member(inType) then
       inputError("unexpected input type: " + inType);
     else if columns.size < expectedArgs(inType) then
       inputError("not enough arguments for input of type '" + inType + "'");

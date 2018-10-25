@@ -132,10 +132,14 @@ record spoint {     // a surface point
 // =================================
 //
 proc main() {
+  use BlockDist;
 
-  // ***************************************
-  // * TODO: Declare the image array here  *
-  // ***************************************
+  //
+  // A local domain, distributed domain, and array representing the image
+  //
+  const imageSize = {0..#yres, 0..#xres};
+  const pixelPlane = imageSize dmapped Block(imageSize);
+  var pixels: [pixelPlane] pixelType;
 
   //
   // Set up the random numbers and scene
@@ -144,34 +148,60 @@ proc main() {
   var scene = loadScene();
 
   //
+  // A way to visualize the amount of communication within the
+  // parallel loop using 'chplvis'
+  //
+  use VisualDebug;
+  startVdebug("c-ray-chplvis");
+  
+  //
+  // A way to count the amount of communication within the parallel
+  // loop
+  //
+  use CommDiagnostics;
+  startCommDiagnostics();
+
+  //
   // Timers to measure the rendering time
   //
   use Time;
   var t: Timer;
   t.start();
 
-  // ***************************************
-  // * TODO: Compute the image pixels here *
-  // ***************************************
+  //
+  // The main loop that computes the image in parallel.
+  //
+  forall (y, x) in pixelPlane {
+    // If uncommented, the following line will print out where each
+    // iteration is running to sanity check that the work is
+    // distributed:
+    //
+    // writeln("Computing pixel ", (y,x), " on locale ", here.id);
+    //
+    pixels[y, x] = computePixel(y, x, scene, rands);
+  }
 
   //
-  // Check the timer
+  // Check the timer and stop the communication counters
   //
   const rendTime = t.elapsed();
+  stopCommDiagnostics();
+  stopVdebug();
   
   //
   // Print the elapsed time and communications to 'stderr' (just in
   // case the user is printing the image to 'stdout').
   //
-  if !noTiming then
+  if !noTiming {
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
+    stderr.writeln("Communications were:", getCommDiagnostics());
+  }
 
   //
   // Write out the image
   //
-  var dummy: [1..100, 1..200] int;  // a dummy array until you provide your own
-  writeImage(image, imgType, dummy);
+  writeImage(image, imgType, pixels);
 }
 
 //
@@ -530,7 +560,7 @@ proc loadScene() {
     const inType = columns[1];
 
     // handle error conditions
-    if !expectedArgs.domain.contains(inType) then
+    if !expectedArgs.domain.member(inType) then
       inputError("unexpected input type: " + inType);
     else if columns.size < expectedArgs(inType) then
       inputError("not enough arguments for input of type '" + inType + "'");
