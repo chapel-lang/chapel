@@ -86,7 +86,7 @@ class MultiMap {
 
   proc add( key: keyType, d: eltType ) : bool {
     var list_head=nil;
-    if(keySpD.member(key) == false){
+    if(keySpD.contains(key) == false){
       keySpD.add(key);
       list_head = list(eltType);
     } else {
@@ -105,7 +105,7 @@ class MultiMap {
   proc get( key: keyType ) : list(eltType) {
     var list_head = list(eltType);
 
-    if(keySpD.member(key)){
+    if(keySpD.contains(key)){
       list_head = bins[key];
       return list_head;
     }
@@ -528,7 +528,7 @@ proc readGraph(filename) {
     reader.read(s,arrow,d);
 
     // Create a Node for the source if needed
-    if(!ND.member(s)){
+    if(!ND.contains(s)){
       writeln("New source node ",s);
       ND.add(s);
       NameMap(s) = new unmanaged Node(j,s);
@@ -536,7 +536,7 @@ proc readGraph(filename) {
     }
 
     // Create a Node for the dest if needed
-    if(!ND.member(d)){
+    if(!ND.contains(d)){
       writeln("New dest node ",d);
       ND.add(d);
       NameMap(d) = new unmanaged Node(j,d);
@@ -544,7 +544,7 @@ proc readGraph(filename) {
     }
 
     // Create an Edge if needed
-    if(!ED.member((s,d))){
+    if(!ED.contains((s,d))){
       ED.add((s,d));
       EdgeMap((s,d)) = new unmanaged Edge(i,NameMap(s),NameMap(d));
       writeln("Added edge ",s," ",arrow," ",d);

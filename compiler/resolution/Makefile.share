@@ -33,6 +33,7 @@ RESOLUTION_SRCS =                                              \
                   loopDetails.cpp                              \
                   lowerForalls.cpp                             \
                   lowerIterators.cpp                           \
+                  nilChecking.cpp                              \
                   postFold.cpp                                 \
                   preFold.cpp                                  \
                   ResolutionCandidate.cpp                      \

@@ -159,8 +159,7 @@ void normalize() {
       makeExportWrapper(fn);
     }
 
-    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == false &&
-        fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == false) {
+    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false) {
       fixupArrayFormals(fn);
     }
 
@@ -775,6 +774,8 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 *                                                                             *
 ************************************** | *************************************/
 
+static std::set<VarSymbol*> globalTemps;
+
 static void moveGlobalDeclarationsToModuleScope() {
   bool move = false;
 
@@ -850,6 +851,17 @@ static void moveGlobalDeclarationsToModuleScope() {
         }
       }
     }
+  }
+
+  // TODO: Can this transformation be done earlier without the aid of the
+  // 'globalTemps' set?
+  //
+  // Note: The temporary variable might not be in the module init function.
+  // This can happen if the temporary is in a loopexpr wrapper function that
+  // was hoisted out of the module init function.
+  for_set(VarSymbol, tmp, globalTemps) {
+    ModuleSymbol* mod = tmp->getModule();
+    mod->block->insertAtTail(tmp->defPoint->remove());
   }
 }
 
@@ -1115,9 +1127,7 @@ static void normalizeReturns(FnSymbol* fn) {
   // Check if this function's returns are already normal.
   if (rets.size() == 1 && theRet == fn->body->body.last()) {
     if (SymExpr* se = toSymExpr(theRet->get(1))) {
-      if (fn->hasFlag(FLAG_CONSTRUCTOR)         == true ||
-          fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true ||
-          strncmp("_if_fn", fn->name, 6)        ==    0 ||
+      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true ||
           strcmp ("=",      fn->name)           ==    0 ||
           strcmp ("_init",  fn->name)           ==    0||
           strcmp ("_ret",   se->symbol()->name) ==    0) {
@@ -1233,6 +1243,11 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
       if (TypeSymbol* eltType = toTypeSymbol(eltSym->symbol())) {
         exportedArrayElementType[fn] = eltType;
       }
+    }
+    if (exportedArrayElementType[fn] == NULL && fLibraryPython) {
+      USR_FATAL_CONT(fn,
+                     "Array return types must include an explicit element type"
+                     " for Python compilation");
     }
 
     fn->retExprType->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
@@ -1831,19 +1846,21 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 
-  // MPF 2016-10-20
-  // This is a workaround for a problem in
-  //   types/typedefs/bradc/arrayTypedef
-  //
-  // I'm sure that there is a better way to handle this either in the
-  // module init function or in a sequence of forall-expr functions
-  // computing an array type that are in a module init fn
+  FnSymbol* initFn = fn->getModule()->initFn;
 
-  while (fn->hasFlag(FLAG_MAYBE_ARRAY_TYPE) == true) {
-    fn = fn->defPoint->getFunction();
-  }
+  // Sometimes an array type is represented with a loop-expression, so we
+  // need to hoist the resulting runtime type into global scope so that it
+  // isn't destroyed at the end of the loop-expr wrapper function.
+  bool isGlobalLoopExpr = fn->hasFlag(FLAG_MAYBE_ARRAY_TYPE) &&
+                          fn->defPoint->getFunction() == initFn;
 
-  if (fn == fn->getModule()->initFn) {
+  // This code used to look at any call in the initFn, and could trigger for
+  // temporaries in nested scopes (e.g. a param for-loop). We should only look
+  // for top-level calls/temps.
+  bool isCandidateGlobal = fn == initFn &&
+                           fn->body == call->getStmtExpr()->parentExpr;
+
+  if (isGlobalLoopExpr || isCandidateGlobal) {
     CallExpr* cur = parentCall;
     CallExpr* sub = call;
 
@@ -1865,7 +1882,9 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
     }
 
     if (cur) {
-      tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+      // Add to a set of temps to be hoisted into module scope, and later
+      // auto-destroyed in the module deinit.
+      globalTemps.insert(tmp);
     }
   }
 }
@@ -2249,8 +2268,12 @@ static void normRefVar(DefExpr* defExpr) {
     }
 
     if (error == true) {
-      USR_FATAL_CONT(sym,
-                     "Cannot set a non-const reference to a const variable.");
+      SymExpr* initSym = toSymExpr(init);
+      if (initSym && initSym->symbol() == gNil)
+        USR_FATAL_CONT(sym, "Cannot create a non-const reference to nil");
+      else
+        USR_FATAL_CONT(sym,
+                       "Cannot set a non-const reference to a const variable.");
     }
   }
 
@@ -3144,11 +3167,8 @@ static bool isGenericActual(Expr* expr) {
   if (SymExpr* se = toSymExpr(expr))
     if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
       if (AggregateType* at = toAggregateType(canonicalClassType(ts->type)))
-        if (!at->needsConstructor())
-          // Ignore aggregate types with old-style constructors since
-          // it computes genericity in resolution (vs in scope resolve)
-          if (at->isGeneric() && !at->isGenericWithDefaults())
-            return true;
+        if (at->isGeneric() && !at->isGenericWithDefaults())
+          return true;
 
   return false;
 }

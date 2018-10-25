@@ -31,12 +31,12 @@ COMMON_NOGEN_SRCS = \
 	chpl-bitops.c \
 	chpl-cache.c \
 	chpl-comm.c \
-	chpl-comm-strd-xfer.c \
         chpl-comm-callbacks.c \
 	chpl-init.c \
 	chplexit.c \
 	chpl-external-array.c \
 	chpl-file-utils.c \
+	chpl-format.c \
 	chplio.c \
 	chpl-mem.c \
 	chpl-mem-desc.c \

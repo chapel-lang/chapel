@@ -1,0 +1,15 @@
+nilcheck-empty-refs.chpl:8: In function 'badRefToNilOwned':
+nilcheck-empty-refs.chpl:11: error: attempt to dereference nil
+nilcheck-empty-refs.chpl:9: note: this statement may be relevant
+nilcheck-empty-refs.chpl:15: In function 'badSetNilByRef':
+nilcheck-empty-refs.chpl:19: error: attempt to dereference nil
+nilcheck-empty-refs.chpl:18: note: this statement may be relevant
+nilcheck-empty-refs.chpl:23: In function 'badSetNilByRefX':
+nilcheck-empty-refs.chpl:27: error: attempt to dereference nil
+nilcheck-empty-refs.chpl:26: note: this statement may be relevant
+nilcheck-empty-refs.chpl:31: In function 'badSetNilByRefAssign':
+nilcheck-empty-refs.chpl:36: error: attempt to dereference nil
+nilcheck-empty-refs.chpl:35: note: this statement may be relevant
+nilcheck-empty-refs.chpl:40: In function 'badSetNilByRefXAssign':
+nilcheck-empty-refs.chpl:45: error: attempt to dereference nil
+nilcheck-empty-refs.chpl:44: note: this statement may be relevant

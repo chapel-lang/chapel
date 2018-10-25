@@ -4,6 +4,5 @@ class C {
   proc init() { }
 }
 
-var c = new C();
+var c = new owned C();
 writeln(c);
-delete c;

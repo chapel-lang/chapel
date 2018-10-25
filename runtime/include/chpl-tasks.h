@@ -339,6 +339,21 @@ int32_t chpl_task_getNumBlockedTasks(void);
 // Threads
 
 //
+// If the tasking layer runs tasks on a fixed number of threads, this
+// returns the number of such threads.  Otherwise it returns 0 (zero).
+// As examples, for CHPL_TASKS=qthreads it returns the number of worker
+// threads, while for CHPL_TASKS=fifo it returns 0.  If this is called
+// prior to tasking layer initialization the result is unpredictable.
+//
+#ifndef CHPL_TASK_IMPL_GET_FIXED_NUM_THREADS
+#define CHPL_TASK_IMPL_GET_FIXED_NUM_THREADS() 0
+#endif
+static inline
+uint32_t chpl_task_getFixedNumThreads(void) {
+  return CHPL_TASK_IMPL_GET_FIXED_NUM_THREADS();
+}
+
+//
 // returns the total number of threads that currently exist, whether running,
 // blocked, or idle
 //

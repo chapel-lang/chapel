@@ -51,7 +51,7 @@ echocompilerdir:
 #
 
 $(OBJ_SUBDIR)/%.o: %.cpp $(OBJ_SUBDIR_MADE) $(OBJ_PREREQS)
-	$(CXX) -c $(COMP_CXXFLAGS) -o $@ $<
+	$(CXX) -c $(COMP_CXXFLAGS) -DCOMPILER_SUBDIR=$(COMPILER_SUBDIR) -o $@ $<
 
 FORCE:
 

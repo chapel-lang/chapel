@@ -220,26 +220,15 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
   } else {
     FnSymbol* fn = instantiate(cfn, subs);
 
-    if (ct->hasInitializers() == false) {
-      FnSymbol*  typeConstr         = ct->typeConstructor;
-      BlockStmt* instantiationPoint = typeConstr->instantiationPoint();
-
-      if (instantiationPoint == NULL) {
-        instantiationPoint = toBlockStmt(typeConstr->defPoint->parentExpr);
-      }
-
-      fn->setInstantiationPoint(instantiationPoint);
-    } else {
-      //
-      // BHARSH 2018-04-06:
-      //
-      // Essential for arrays to be able to use initializers.
-      //
-      // A smaller test case:
-      //   types/type_variables/deitz/test_point_of_instantiation3.chpl
-      //
-      fn->setInstantiationPoint(ct->symbol->instantiationPoint);
-    }
+    //
+    // BHARSH 2018-04-06:
+    //
+    // Essential for arrays to be able to use initializers.
+    //
+    // A smaller test case:
+    //   types/type_variables/deitz/test_point_of_instantiation3.chpl
+    //
+    fn->setInstantiationPoint(ct->symbol->instantiationPoint);
 
     return fn;
   }
@@ -368,7 +357,10 @@ static void checkIntentsMatch(FnSymbol* pfn, FnSymbol* cfn) {
 static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
   resolveSignature(cfn);
 
-  if (signatureMatch(pfn, cfn) == true && evaluateWhereClause(cfn) == true) {
+  if (signatureMatch(pfn, cfn) &&
+      evaluateWhereClause(cfn) &&
+      evaluateWhereClause(pfn)) {
+
     resolveFunction(cfn);
 
     if (checkOverrides(cfn) &&

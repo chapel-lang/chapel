@@ -31,9 +31,6 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 FLTK_CONFIG=$(FLTK_INSTALL_DIR)/bin/fltk-config
 FLTK_FLUID=$(FLTK_INSTALL_DIR)/bin/fluid
 
-CHPL_HOME= $(shell printenv CHPL_HOME)
-CHPL_HOST_PLATFORM= $(shell printenv CHPL_HOST_PLATFORM)
-
 CXXFLAGS=  -Wall -I. -g
 
 # Suffix rule for compiling .cxx files
@@ -80,7 +77,7 @@ clobber: clean
 	rm -f chplvis
 
 install: chplvis
-	cp chplvis $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
+	cp chplvis $(CHPL_BIN_DIR)
 
 # Dependencies
 chplvis.cxx: chplvis.h  # This rule to get fluid run only once

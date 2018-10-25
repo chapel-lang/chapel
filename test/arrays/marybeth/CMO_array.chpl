@@ -65,14 +65,14 @@ class CMODom: BaseRectangularDom {
     return ranges(dim);
 
   proc dsiMember(ind: idxType) where rank == 1 {
-    if !ranges(1).member(ind) then
+    if !ranges(1).contains(ind) then
       return false;
     return true;
   }
 
   proc dsiMember(ind: rank*idxType) {
     for param i in 1..rank do
-      if !ranges(i).member(ind(i)) then
+      if !ranges(i).contains(ind(i)) then
         return false;
     return true;
   }
@@ -288,7 +288,7 @@ class CMOArr:BaseArr {
   proc dsiCheckSlice(d) {
     for param i in 1..rank {
       if d(i).boundedType == BoundedRangeType.bounded then
-        if !dom.dim(i).member(d(i)) then
+        if !dom.dim(i).contains(d(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", d(i));
     }
   }
@@ -316,7 +316,7 @@ class CMOArr:BaseArr {
     for param i in 1..args.size do
       if isRange(args(i)) then
         if args(i).boundedType == BoundedRangeType.bounded then
-          if !dom.dsiDim(i).member(args(i)) then
+          if !dom.dsiDim(i).contains(args(i)) then
             halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 

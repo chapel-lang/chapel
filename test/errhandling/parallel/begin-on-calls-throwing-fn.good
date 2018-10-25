@@ -1,0 +1,3 @@
+begin-on-calls-throwing-fn.chpl:10: In function 'badFn':
+begin-on-calls-throwing-fn.chpl:12: error: call to throwing function throwingFn without throws, try, or try! (relaxed mode)
+begin-on-calls-throwing-fn.chpl:6: note: throwing function throwingFn defined here

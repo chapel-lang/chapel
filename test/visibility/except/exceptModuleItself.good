@@ -1,0 +1,2 @@
+exceptModuleItself.chpl:5: In function 'main':
+exceptModuleItself.chpl:6: error: Bad identifier in 'except' clause, no known 'Toolbox' defined in 'Toolbox'

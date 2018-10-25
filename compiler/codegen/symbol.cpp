@@ -546,7 +546,7 @@ GenRet VarSymbol::codegen() {
 
 void VarSymbol::codegenDefC(bool global, bool isHeader) {
   GenInfo* info = gGenInfo;
-  if (this->hasFlag(FLAG_EXTERN))
+  if (this->hasFlag(FLAG_EXTERN) && !this->hasFlag(FLAG_GENERATE_SIGNATURE))
     return;
 
   if (type == dtVoid)
@@ -578,7 +578,8 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
   //
   std::string str;
 
-  if(fIncrementalCompilation) {
+  if(fIncrementalCompilation || (this->hasFlag(FLAG_EXTERN) &&
+                                 this->hasFlag(FLAG_GENERATE_SIGNATURE))) {
     bool addExtern =  global && isHeader;
     str = (addExtern ? "extern " : "") + typestr + " " + cname;
   } else {
@@ -1464,7 +1465,7 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
 void FnSymbol::codegenPrototype() {
   GenInfo *info = gGenInfo;
 
-  if (hasFlag(FLAG_EXTERN))       return;
+  if (hasFlag(FLAG_EXTERN) && !hasFlag(FLAG_GENERATE_SIGNATURE)) return;
   if (hasFlag(FLAG_NO_PROTOTYPE)) return;
   if (hasFlag(FLAG_NO_CODEGEN))   return;
 
@@ -1638,6 +1639,19 @@ void FnSymbol::codegenDef() {
       ArgNo++;
     }
 
+    // if --gen-ids is enabled, add metadata mapping the
+    // function back to Chapel AST id
+    if (fGenIDS) {
+      llvm::LLVMContext& ctx = info->llvmContext;
+
+      llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
+      llvm::Constant* c = llvm::ConstantInt::get(int64Ty, this->id);
+      llvm::ConstantAsMetadata* aid = llvm::ConstantAsMetadata::get(c);
+
+      llvm::MDNode* node = llvm::MDNode::get(ctx, aid);
+
+      func->setMetadata("chpl.ast.id", node);
+    }
 #endif
   }
 

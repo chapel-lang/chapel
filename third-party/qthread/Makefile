@@ -121,7 +121,7 @@ ifneq (, $(findstring pgi,$(CHPL_MAKE_TARGET_COMPILER)))
 CHPL_QTHREAD_CFG_OPTIONS += --disable-internal-spinlock
 endif
 
-ifeq ($(CHPL_LIBMODE),shared)
+ifeq ($(CHPL_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 

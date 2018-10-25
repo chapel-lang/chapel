@@ -19,5 +19,5 @@ const retval = intd.remove(53);
 writeln("# ind removed: ", retval);
 
 proc icheck( i:int) {
-  writeln( "member(", i, ") = ", intd.member( i));
+  writeln( "contains(", i, ") = ", intd.contains( i));
 }

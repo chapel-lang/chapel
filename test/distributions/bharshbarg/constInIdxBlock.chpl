@@ -16,7 +16,7 @@ proc main() {
   //
   on Locales.tail() {
     assert(idx.locale != here);
-    assert(A.localSubdomain().member(idx) == false);
+    assert(A.localSubdomain().contains(idx) == false);
     A.dsiAccess(idx) = 100;
   }
 

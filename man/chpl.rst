@@ -114,12 +114,6 @@ OPTIONS
     will compile code in a module that does not handle its errors. If any
     error comes up during execution, it will cause the program to halt.
 
-**--[no-]warn-constructors**
-
-    Enable [disable] deprecation warnings for user-defined constructors. This
-    warning is enabled by default and will be triggered for each user-defined
-    constructor encountered.
-
 **--[no-]warn-unstable**
 
     Enable [disable] warnings for code that has recently or will recently

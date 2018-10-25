@@ -1,0 +1,2 @@
+error message: throwing something that is not an Error subtype
+#11403

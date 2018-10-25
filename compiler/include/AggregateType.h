@@ -34,12 +34,6 @@ enum AggregateTag {
   AGGREGATE_UNION
 };
 
-enum InitializerStyle {
-  DEFINES_CONSTRUCTOR,
-  DEFINES_INITIALIZER,
-  DEFINES_NONE_USE_DEFAULT
-};
-
 
 class AggregateType : public Type {
 public:
@@ -139,16 +133,11 @@ public:
 
   int                         getMemberGEP(const char* name);
 
-  void                        createOuterWhenRelevant();
-
-  // intended to be called during scope resolve
-  void                        buildConstructors();
+  FnSymbol*                   buildTypeConstructor();
 
   void                        addRootType();
 
   void                        addClassToHierarchy();
-
-  bool                        parentDefinesInitializer()                 const;
 
   bool                        wantsDefaultInitializer()                  const;
 
@@ -185,7 +174,7 @@ public:
 
   AggregateType*              instantiatedFrom;
 
-  InitializerStyle            initializerStyle;
+  bool                        hasUserDefinedInit;
 
   bool                        initializerResolved;
 
@@ -193,9 +182,6 @@ public:
 
   // used from parsing, sets dispatchParents
   AList                       inherits;
-
-  // pointer to an outer class if this is an inner class
-  Symbol*                     outer;
 
   // Attached only to iterator class/records
   IteratorInfo*               iteratorInfo;
@@ -239,8 +225,6 @@ private:
 
   AggregateType*              discoverParentAndCheck(Expr* storesName);
 
-  FnSymbol*                   buildTypeConstructor();
-
   CallExpr*                   typeConstrSuperCall(FnSymbol* fn)  const;
 
   bool                        isFieldInThisClass(const char* name)       const;
@@ -257,13 +241,9 @@ private:
   ArgSymbol*                  insertGenericArg(FnSymbol*  fn,
                                                VarSymbol* field)  const;
 
-  void                        buildConstructor();
-
-public:
-  bool                        needsConstructor() const;
 private:
 
-  ArgSymbol*                  moveConstructorToOuter(FnSymbol* fn);
+  void                        moveTypeConstructorToOuter(FnSymbol* fn);
 
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,

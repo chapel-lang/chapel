@@ -34,9 +34,9 @@ const char* chpl_env_rt_get(const char*, const char*);
 // These convert string values, presumably from environment variables,
 // to typed values (boolean, int, or size), with a default.
 //
-chpl_bool chpl_env_str_to_bool(const char*, chpl_bool);
-int64_t chpl_env_str_to_int(const char*, int64_t);
-size_t chpl_env_str_to_size(const char*, size_t);
+chpl_bool chpl_env_str_to_bool(const char*, const char*, chpl_bool);
+int64_t chpl_env_str_to_int(const char*, const char*, int64_t);
+size_t chpl_env_str_to_size(const char*, const char*, size_t);
 
 //
 // These combine getting the environment variable and converting to a
@@ -44,17 +44,17 @@ size_t chpl_env_str_to_size(const char*, size_t);
 //
 static inline
 chpl_bool chpl_env_rt_get_bool(const char* ev, chpl_bool dflt) {
-  return chpl_env_str_to_bool(chpl_env_rt_get(ev, NULL), dflt);
+  return chpl_env_str_to_bool(ev, chpl_env_rt_get(ev, NULL), dflt);
 }
 
 static inline
 int64_t chpl_env_rt_get_int(const char* ev, int64_t dflt) {
-  return chpl_env_str_to_int(chpl_env_rt_get(ev, NULL), dflt);
+  return chpl_env_str_to_int(ev, chpl_env_rt_get(ev, NULL), dflt);
 }
 
 static inline
 size_t chpl_env_rt_get_size(const char* ev, size_t dflt) {
-  return chpl_env_str_to_size(chpl_env_rt_get(ev, NULL), dflt);
+  return chpl_env_str_to_size(ev, chpl_env_rt_get(ev, NULL), dflt);
 }
 
 #endif

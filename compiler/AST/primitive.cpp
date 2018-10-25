@@ -179,6 +179,22 @@ returnInfoScalarPromotionType(CallExpr* call) {
   return QualifiedType(type, QUAL_VAL);
 }
 
+static QualifiedType
+returnInfoStaticFieldType(CallExpr* call) {
+  // The code below is not very general. It can be extended as needed.
+  // The first argument is the variable or the type whose field is queried.
+  Type* type = call->get(1)->getValType();
+  INT_ASSERT(! type->symbol->hasFlag(FLAG_TUPLE)); // not implemented
+  AggregateType* at = toAggregateType(canonicalClassType(type));
+  INT_ASSERT(at); // caller's responsibility
+  // The second argument is the name of the field.
+  VarSymbol* nameSym = toVarSymbol(toSymExpr(call->get(2))->symbol());
+  // caller's responsibility
+  INT_ASSERT(nameSym->immediate->const_kind == CONST_KIND_STRING);
+  Symbol* field = at->getField(nameSym->immediate->v_string, true);
+  return field->qualType().toVal();
+}
+
 
 static QualifiedType
 returnInfoCast(CallExpr* call) {
@@ -688,13 +704,19 @@ initPrimitive() {
 
   // Return the compile-time component of a type (ignoring runtime types)
   // For an array, returns the compile-time type only.
-  // (there might be uninitialized memory if the run-time type is used).
+  // There might be uninitialized memory if the run-time type is used.
   prim_def(PRIM_STATIC_TYPEOF, "static typeof", returnInfoFirstDeref);
 
   // As with PRIM_STATIC_TYPEOF, returns a compile-time component of
   // a type only. Returns the scalar promotion type (i.e. the type of the
   // elements that iterating over it would yield)
+  // There might be uninitialized memory if the run-time type is used.
   prim_def(PRIM_SCALAR_PROMOTION_TYPE, "scalar promotion type", returnInfoScalarPromotionType);
+
+  // As with PRIM_STATIC_TYPEOF, returns a compile-time component of
+  // the type of the field.
+  // There might be uninitialized memory if the run-time type is used.
+  prim_def(PRIM_STATIC_FIELD_TYPE, "static field type", returnInfoStaticFieldType);
 
   // used modules in BlockStmt::modUses
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
@@ -713,6 +735,12 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_SHIFT_BASE_POINTER, "shift_base_pointer", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_ALLOC, "array_alloc", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
+
+  // PRIM_ARRAY_GET{_VALUE} arguments
+  //  base pointer
+  //  index
+  //  no alias set
+  // This is similar to A[i] in C
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false);
   prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false);
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
@@ -888,6 +916,21 @@ initPrimitive() {
   // Corresponds to LLVM's invariant start
   // takes in a pointer/reference argument that is the invariant thing
   prim_def(PRIM_INVARIANT_START, "invariant start", returnInfoVoid, false, false);
+
+  // variable number of arguments
+  // 1st argument is a SymExpr referring to a Symbol indicating which
+  //  alias set this is (e.g. the owning array).
+  // Remaining arguments are SymExprs referring to Symbols that this one
+  // does not alias.
+  // Translates to llvm alias.scope and noalias metadata:
+  //    - alias.scope with metadata corresponding to the 1st symbol
+  //    - noalias with metadata corresponding to the remaining symbols
+  // Result of call can be used as a final argument in a memory instruction,
+  // e.g. PRIM_ARRAY_GET.
+  prim_def(PRIM_NO_ALIAS_SET, "no alias set", returnInfoUnknown, false, false);
+  // 1st argument is symbol to set alias set
+  // 2nd argument is symbol to base it on
+  prim_def(PRIM_COPIES_NO_ALIAS_SET, "copies no alias set", returnInfoUnknown, false, false);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

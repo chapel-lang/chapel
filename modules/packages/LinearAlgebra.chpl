@@ -329,7 +329,7 @@ pragma "no doc"
 proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   where Dom.rank == 2 && Sparse.isCSArr(A)
 {
-  var M: [Dom._value.parentDom] eltType;
+  var M: [Dom.parentDom] eltType;
 
   forall (i,j) in Dom {
     M[i, j] = A[i, j]: eltType;
@@ -343,7 +343,7 @@ pragma "no doc"
 proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   where Dom.rank == 2 && isDefaultSparseArr(A)
 {
-  var M: [Dom._value.parentDom] eltType;
+  var M: [Dom.parentDom] eltType;
   forall (i,j) in Dom {
     M[i,j] = A[i,j]: eltType;
   }
@@ -1325,14 +1325,14 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 // Type helpers
 //
 private proc isDefaultRectangularDom (D: domain) param {
-  return D._value.isDefaultRectangular();
+  return D.isDefaultRectangular();
 }
 private proc isDefaultRectangularArr (A: []) param {
   return isDefaultRectangularDom(A.domain);
 }
 
 private proc isDefaultSparseDom(D: domain) param {
-  return isSubtype(_to_borrowed(D._value.type), DefaultSparseDom);
+  return isSubtype(_to_borrowed(D.dist.type), DefaultDist) && isSparseDom(D);
 }
 private proc isDefaultSparseArr(A: []) param {
   return isDefaultSparseDom(A.domain);
@@ -1436,7 +1436,7 @@ module Sparse {
     nonzeros as ``Dom``
   */
   proc CSRDomain(Dom: domain) where Dom.rank == 2 && isCSDom(Dom) {
-    var csrDom: sparse subdomain(Dom._value.parentDom) dmapped CS(sortedIndices=false);
+    var csrDom: sparse subdomain(Dom.parentDom) dmapped CS(sortedIndices=false);
     csrDom += Dom;
     return csrDom;
   }
@@ -1659,8 +1659,7 @@ module Sparse {
 
     var C = CSRMatrix((M, N), data, indices, indPtr);
 
-    // TODO remove _value when issue #9926 gets fixed
-    if C.domain._value.sortedIndices {
+    if C.domain.sortedIndices {
       sortIndices(C);
     }
 
@@ -1813,7 +1812,7 @@ module Sparse {
       }
     }
 
-    const parentDT = transpose(D._value.parentDom);
+    const parentDT = transpose(D.parentDom);
     var Dom: sparse subdomain(parentDT) dmapped CS(sortedIndices=false);
     Dom += indices;
     return Dom;
@@ -1865,7 +1864,7 @@ module Sparse {
 
   /* Element-wise multiplication. */
   proc _array.times(A) where isCSArr(this) && isCSArr(A) {
-    if this.domain._value.parentDom != A.domain._value.parentDom then
+    if this.domain.parentDom != A.domain.parentDom then
       halt('Cannot subtract sparse arrays with non-matching parent domains');
 
     // Create copy of 'this'
@@ -1886,7 +1885,7 @@ module Sparse {
 
   /* Element-wise division. */
   proc _array.elementDiv(A) where isCSArr(this) && isCSArr(A) {
-    if this.domain._value.parentDom != A.domain._value.parentDom then
+    if this.domain.parentDom != A.domain.parentDom then
       halt('Cannot element-wise divide sparse arrays with non-matching parent domains');
 
     // Create copy of 'this'
@@ -1930,9 +1929,9 @@ module Sparse {
   // Type helpers
   //
   pragma "no doc"
-  proc isCSArr(A: []) param { return isCSType(A.domain._value.dist.type); }
+  proc isCSArr(A: []) param { return isCSType(A.domain.dist.type); }
   pragma "no doc"
-  proc isCSDom(D: domain) param { return isCSType(D._value.dist.type); }
+  proc isCSDom(D: domain) param { return isCSType(D.dist.type); }
 
 } // submodule LinearAlgebra.Sparse
 

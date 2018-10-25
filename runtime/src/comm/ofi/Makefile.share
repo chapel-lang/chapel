@@ -20,11 +20,19 @@ COMM_LAUNCHER_SRCS = \
 
 COMM_SRCS = \
 	$(COMM_LAUNCHER_SRCS) \
-	comm-ofi.c \
-	comm-ofi-am.c \
-	comm-ofi-diagnostics.c \
-	comm-ofi-oob.c \
-	comm-ofi-put-get.c \
+	comm-ofi.c
+
+#
+# Use PMI out-of-band support on Cray X*, "sockets" everywhere else.
+# Use hugepages only on Cray X*, so far.
+#
+ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
+  COMM_SRCS += comm-ofi-oob-pmi.c
+  COMM_SRCS += comm-ofi-hugepages.c
+else
+  COMM_SRCS += comm-ofi-oob-sockets.c
+  COMM_SRCS += comm-ofi-no-hugepages.c
+endif
 
 SRCS = $(COMM_SRCS)
 

@@ -1,4 +1,4 @@
-detupleFieldDecl.chpl:10: internal error: AGG0411 chpl version 1.18.0 pre-release (b50c8c7)
+detupleFieldDecl.chpl:10: internal error: AST-AGG-YPE-0422 chpl version 1.19.0 pre-release (cfeb6592b3)
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 

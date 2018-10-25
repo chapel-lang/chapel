@@ -196,6 +196,7 @@ module OwnedObject {
     /*
        Default-initialize a :record:`owned` to store type `t`
      */
+    pragma "leaves this nil"
     proc init(type t) {
       if !isClass(t) then
         compilerError("owned only works with classes");
@@ -221,7 +222,7 @@ module OwnedObject {
        :arg p: the class instance to manage. Must be of unmanaged class type.
 
      */
-    proc init(p:unmanaged) {
+    proc init(pragma "nil from arg" p:unmanaged) {
       this.chpl_t = _to_borrowed(p.type);
       this.chpl_p = _to_borrowed(p);
     }
@@ -239,7 +240,7 @@ module OwnedObject {
        that takes over ownership from `src`. `src` will
        refer to `nil` after this call.
      */
-    proc init(ref src:_owned) {
+    proc init(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
       this.chpl_t = src.chpl_t;
       this.chpl_p = src.release();
     }
@@ -259,6 +260,7 @@ module OwnedObject {
        Empty this :record:`owned` so that it stores `nil`.
        Deletes the previously managed object, if any.
      */
+    pragma "leaves this nil"
     proc ref clear() {
       if chpl_p != nil {
         delete _to_unmanaged(chpl_p);
@@ -274,7 +276,7 @@ module OwnedObject {
 
        Here `t` refers to the object type managed by this :record:`owned`.
      */
-    proc ref retain(newPtr:unmanaged chpl_t) {
+    proc ref retain(pragma "nil from arg" newPtr:unmanaged chpl_t) {
       var oldPtr = chpl_p;
       chpl_p = newPtr;
       if oldPtr then
@@ -287,6 +289,8 @@ module OwnedObject {
 
        Here `t` refers to the object type managed by this :record:`owned`.
      */
+    pragma "leaves this nil"
+    pragma "nil from this"
     proc ref release():unmanaged chpl_t {
       var oldPtr = chpl_p;
       chpl_p = nil;
@@ -301,6 +305,7 @@ module OwnedObject {
        for another reason, such as with `=` or :proc`retain`.
        In some cases such errors are caught at compile-time.
      */
+    pragma "nil from this"
     proc /*const*/ borrow() {
       return chpl_p;
     }
@@ -311,7 +316,9 @@ module OwnedObject {
     ``lhs``, if any. Transfers ownership of the object managed by ``rhs``
     to ``lhs``, leaving ``lhs`` storing `nil`.
   */
-  proc =(ref lhs:_owned, ref rhs: _owned) {
+  proc =(ref lhs:_owned,
+         pragma "leaves arg nil"
+         ref rhs: _owned) {
     lhs.retain(rhs.release());
   }
 
@@ -328,23 +335,23 @@ module OwnedObject {
 
 
   // initCopy is defined explicitly as a workaround
-  // for problems with generic initializers
+  // for problems with initializers in this case
   pragma "init copy fn"
   pragma "no doc"
   pragma "unsafe"
-  proc chpl__initCopy(ref src: _owned) {
+  proc chpl__initCopy(pragma "leaves arg nil" pragma "nil from arg"
+                      ref src: _owned) {
     var ret = new _owned(src);
     return ret;
   }
 
-  // autoCopy is defined explicitly to create a
-  // compilation error if it is invoked
-  // (if we decided it was OK, we'd need to do const-checking
-  //  on the argument to this autoCopy call).
+  // autoCopy is defined explicitly as a workaround
+  // for problems with initializers in this case
   pragma "no doc"
   pragma "auto copy fn"
   pragma "unsafe"
-  proc chpl__autoCopy(ref src: _owned) {
+  proc chpl__autoCopy(pragma "leaves arg nil" pragma "nil from arg"
+                      ref src: _owned) {
     var ret = new _owned(src);
     return ret;
   }
@@ -352,8 +359,8 @@ module OwnedObject {
   // chpl__autoDestroy(x:object) from internal coercions.
   pragma "no doc"
   pragma "auto destroy fn"
-  proc chpl__autoDestroy(x: _owned) {
-    __primitive("call destructor", x);
+  proc chpl__autoDestroy(ref x: _owned) {
+    __primitive("call destructor", __primitive("deref", x));
   }
 
   // Don't print out 'chpl_p' when printing an _owned, just print class pointer
@@ -366,7 +373,7 @@ module OwnedObject {
   // supported in the compiler via a call to borrow() and
   // sometimes uses this cast.
   pragma "no doc"
-  inline proc _cast(type t, const ref x:_owned)
+  inline proc _cast(type t, pragma "nil from arg" const ref x:_owned)
   where isSubtype(t,x.chpl_t) {
     return x.borrow();
   }
@@ -376,7 +383,7 @@ module OwnedObject {
   // It only works in a value context (i.e. when the result of the
   // coercion is a value, not a reference).
   pragma "no doc"
-  inline proc _cast(type t:_owned, in x:_owned)
+  inline proc _cast(type t:_owned, pragma "nil from arg" in x:_owned)
   where isSubtype(x.chpl_t,t.chpl_t) {
     // the :t.chpl_t cast in the next line is what actually changes the
     // returned value to have type t; otherwise it'd have type _owned(x.type).
@@ -386,7 +393,7 @@ module OwnedObject {
 
   // cast from nil to owned
   pragma "no doc"
-  inline proc _cast(type t:_owned, x:_nilType) {
+  inline proc _cast(type t:_owned, pragma "nil from arg" x:_nilType) {
     var tmp:t;
     return tmp;
   }

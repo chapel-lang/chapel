@@ -196,7 +196,7 @@ class ReplicatedDom : BaseRectangularDom {
   pragma "no doc"
   proc chpl_myLocDom() {
     if boundsChecking then
-      if (!dist.targetLocDom.member(here.id)) then
+      if (!dist.targetLocDom.contains(here.id)) then
         halt("locale ", here.id, " has no local replicand");
     return localDoms[here.id];
   }
@@ -393,12 +393,12 @@ proc ReplicatedDom.dsiNumIndices
   return redirectee().numIndices;
 
 proc ReplicatedDom.dsiMember(indexx)
-  return redirectee().member(indexx);
+  return redirectee().contains(indexx);
 
 proc ReplicatedDom.dsiIndexOrder(indexx)
   return redirectee().dsiIndexOrder(indexx);
 
-proc ReplicatedDom.dsiDestroyDom() {
+override proc ReplicatedDom.dsiDestroyDom() {
   coforall localeIdx in dist.targetLocDom {
     on dist.targetLocales(localeIdx) do
       delete localDoms(localeIdx);
@@ -433,7 +433,7 @@ class ReplicatedArr : BaseArr {
   pragma "no doc"
   proc chpl_myLocArr() {
     if boundsChecking then
-      if (!dom.dist.targetLocDom.member(here.id)) then
+      if (!dom.dist.targetLocDom.contains(here.id)) then
         halt("locale ", here.id, " has no local replicand");
     return localArrs[here.id];
   }

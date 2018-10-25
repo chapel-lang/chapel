@@ -66,8 +66,11 @@ static void computeUsesDotLocale();
 ************************************** | *************************************/
 
 void remoteValueForwarding() {
-  if (fNoRemoteValueForwarding == false && requireOutlinedOn()) {
+
+  if (fNoInferConstRefs == false)
     inferConstRefs();
+
+  if (fNoRemoteValueForwarding == false && requireOutlinedOn()) {
     computeUsesDotLocale();
     Map<Symbol*, Vec<SymExpr*>*> defMap;
     Map<Symbol*, Vec<SymExpr*>*> useMap;

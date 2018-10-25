@@ -1990,12 +1990,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
 
 pragma "no doc"
 proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
-  // Note that once issue #7960 is resolved, the following could become a
-  // call to this.init(writing, kind, locking)...
-  this.writing = writing;
-  this.kind = kind;
-  this.locking = locking;
-  this.complete();
+  this.init(writing, kind, locking);
   on f.home {
     this.home = f.home;
     if kind != iokind.dynamic {
@@ -3690,7 +3685,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
                       amount = arg.domain.high - start + 1) : bool throws
                       where arg.rank == 1 && isRectangularArr(arg) {
 
-  if arg.size == 0 || !arg.domain.member(start) ||
+  if arg.size == 0 || !arg.domain.contains(start) ||
      amount <= 0 || (start + amount - 1 > arg.domain.high) then return false;
 
   var err:syserr = ENOERR;

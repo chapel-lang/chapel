@@ -1,0 +1,55 @@
+unimplemented feature: creating an array using a loop expression
+#11299
+
+For the record, here is a working/workaround version listed in #11299.
+The current .good is obtained from its output, after removing
+the three undesirable init+deinit pairs.
+
+---------------------------------
+class CCC {
+  const yyy: int;
+
+  proc init(idy: int) {
+    writeln("CCC.init ", idy);
+    yyy = idy;
+  }
+
+  proc deinit() {
+    writeln("CCC.deinit ", yyy);
+  }
+}
+
+record RRR {
+  var xxx: int;
+  var cls: unmanaged CCC;
+
+  proc init() { }
+
+  proc init(ref other:RRR) {
+    writeln("RRR.copy ", other.xxx);
+    this.xxx = other.xxx;
+    this.cls = other.cls;
+    other.cls = nil;
+  }
+
+  proc init(idx: int) {
+    writeln("RRR.init ", idx);
+    xxx = idx;
+    cls = new unmanaged CCC(idx);
+  }
+
+  proc deinit() {
+    delete cls; // not needed when it is 'owned'
+    writeln("RRR.deinit ", xxx);
+  }
+}
+
+proc helper(x: int) {
+  return new RRR(x);
+}
+
+proc main {
+  const array = for i in 1..3 do helper(i);
+  writeln(array);
+}
+---------------------------------

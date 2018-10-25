@@ -646,7 +646,7 @@ proc BlockCyclicDom.setup() {
     enumerateBlocks();
 }
 
-proc BlockCyclicDom.dsiDestroyDom() {
+override proc BlockCyclicDom.dsiDestroyDom() {
   coforall localeIdx in dist.targetLocDom do
     on dist.targetLocales(localeIdx) do
       delete locDoms(localeIdx);
@@ -678,7 +678,7 @@ proc BlockCyclicDom.dsiReprivatize(other, reprivatizeData) {
 }
 
 proc BlockCyclicDom.dsiMember(i) {
-  return whole.member(i);
+  return whole.contains(i);
 }
 
 proc BlockCyclicDom.dsiIndexOrder(i) {
@@ -854,7 +854,7 @@ proc BlockCyclicArr.dsiPrivatize(privatizeData) {
 //
 proc BlockCyclicArr.dsiAccess(i: idxType) ref where rank == 1 {
   if myLocArr then /* TODO: reenable */ /* local */ {
-    if myLocArr.indexDom.myStarts.member(i) then  // TODO: This could be beefed up; true for indices other than starts
+    if myLocArr.indexDom.myStarts.contains(i) then  // TODO: This could be beefed up; true for indices other than starts
       return myLocArr.this(i);
   }
   //  var loci = dom.dist.idxToLocaleInd(i);
@@ -867,7 +867,7 @@ proc BlockCyclicArr.dsiAccess(i: idxType) ref where rank == 1 {
 proc BlockCyclicArr.dsiAccess(i: rank*idxType) ref {
 //   const myLocArr = locArr(here.id);
 //   local {
-//     if myLocArr.locDom.myStarts.member(i) then
+//     if myLocArr.locDom.myStarts.contains(i) then
 //       return myLocArr.this(i);
 //   }
   if rank == 1 {

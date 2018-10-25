@@ -16,7 +16,7 @@ Contributors to the current release
 * Ben Harshbarger, [Cray Inc.]
 * David Iten, [Cray Inc.]
 * Louis Jenkins, individual contributor / [GSoC 2017] student from [Bloomsburg University]
-* Avneet Kaur, [RGSoC 2018] student from [Indraprastha Institute of Information Technology, Dehli]
+* Avneet Kaur, [RGSoC 2018] student from [Indraprastha Institute of Information Technology, Delhi]
 * David Keaton, [Cray Inc.]
 * Vassily Litvinov, [Cray Inc.]
 * Sarthak Munshi, individual contributor / [GSoC 2017] student from [Pune Institute of Computer Technology]
@@ -179,7 +179,7 @@ implementation.
 [Haverford College]: https://www.haverford.edu/
 [Indian Institute of Technology, Hyderabad]: https://www.iith.ac.in/
 [Indiana University]: http://www.cs.indiana.edu/
-[Indraprastha Institute of Information Technology, Dehli]: https://iiitd.ac.in/
+[Indraprastha Institute of Information Technology, Delhi]: https://iiitd.ac.in/
 [International Institute of Information Technology, Hyderabad]: https://www.iiit.ac.in/
 [Københavns Universitet (University of Copenhagen)]: http://diku.dk/english/
 [Lawrence Berkeley National Laboratory]: http://crd.lbl.gov/

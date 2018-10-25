@@ -182,7 +182,7 @@ class UserMapAssoc : BaseDist {
   proc indexToLocaleIndex(ind: idxType) {
     const locIdx = mapper.indexToLocaleIndex(ind, targetLocales);
     if boundsChecking then
-      if !targetLocDom.member(locIdx) then
+      if !targetLocDom.contains(locIdx) then
         halt("mapper provided invalid locale index: ",
              locIdx,
              " is not in domain ",
@@ -310,7 +310,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   proc dsiMember(i: idxType) {
-    return locDoms(dist.indexToLocaleIndex(i)).member(i);
+    return locDoms(dist.indexToLocaleIndex(i)).contains(i);
   }
 
   proc dsiClear() {
@@ -487,7 +487,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   proc setup() {
-    for localeIdx in dist.targetLocDom do
+    coforall localeIdx in dist.targetLocDom do
       on dist.targetLocales(localeIdx) do
         if (locDoms(localeIdx) == nil) then
           locDoms(localeIdx) = new unmanaged LocUserMapAssocDom(idxType=idxType,
@@ -507,6 +507,12 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
   proc dsiReprivatize(other) {
     locDoms = other.locDoms;
+  }
+
+  proc dsiDestroyDom() {
+    coforall localeIdx in dist.targetLocDom do
+      on dist.targetLocales(localeIdx) do
+        delete locDoms(localeIdx);
   }
 }
 
@@ -557,8 +563,8 @@ class LocUserMapAssocDom {
     return myInds.remove(i);
   }
 
-  proc member(i: idxType) {
-    return myInds.member(i);
+  proc contains(i: idxType) {
+    return myInds.contains(i);
   }
 
   proc clear() {
@@ -655,6 +661,12 @@ class UserMapAssocArr: BaseArr {
       //locAssocDoms += locDomImpl;
       //locArrsByAssoc[locDomImpl] = locArrs(localeIdx);
     }
+  }
+
+  proc dsiDestroyArr() {
+    coforall localeIdx in dom.dist.targetLocDom do
+      on dom.dist.targetLocales(localeIdx) do
+        delete locArrs(localeIdx);
   }
 
   proc dsiSupportsPrivatization() param return true;
