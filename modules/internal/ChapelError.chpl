@@ -370,7 +370,8 @@ module ChapelError {
 
   pragma "no doc"
   proc chpl_fix_thrown_error(err: ?t) where !isSubtype(t, Error) {
-    compilerError("cannot throw something that is not a subtype of Error");
+    compilerError("Cannot throw an instance of type \'", (t: borrowed): string,
+                  "\', not a subtype of Error");
   }
 
   pragma "no doc"
