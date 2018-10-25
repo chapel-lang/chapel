@@ -372,6 +372,8 @@ AllCompTime:
     - Represent if-expressions with IfExpr node instead of if-functions (#9649)
   10/05/18:
     - Compiler error for dereferencing a nil value (#11238)
+  10/19/18:
+    - Fix compiler performance issues in nilChecking (#11396)
 
 arguments:
   09/20/17:
@@ -724,6 +726,8 @@ jacobi:
     - use isSubtype in preference to ':' in where clauses (#10143)
   07/19/18:
     - Do not introduce ref temps (#10010)
+  10/16/18:
+    - No-alias hints for LLVM (#11324)
 
 knucleotide:
   10/17/15:
