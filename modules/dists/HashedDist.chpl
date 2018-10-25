@@ -775,7 +775,7 @@ class UserMapAssocArr: BaseArr {
   iter dsiLocalSubdomains() {
     for (idx,loc) in zip(dom.dist.targetLocDom, dom.dist.targetLocales) {
       if loc == here {
-	yield dom.locDoms[idx].myInds;
+        yield dom.locDoms[idx].myInds;
       }
     }
   }
