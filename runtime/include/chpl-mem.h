@@ -178,13 +178,6 @@ void chpl_mem_layerFree(void*, int32_t lineno, int32_t filename);
 
 #endif // LAUNCHER
 
-static inline
-void* chpl_memcpy(void* dest, const void* src, size_t num)
-{
-  assert(dest != src || num == 0);
-  return memcpy(dest, src, num);
-}
-
 // Provide handles to instrument Chapel calls to memcpy and memmove. For memcpy
 // we've named it to explicit indicate overlap isn't permitted since we've
 // historically been pretty careless about that.
