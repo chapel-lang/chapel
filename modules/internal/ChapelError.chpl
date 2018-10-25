@@ -369,6 +369,11 @@ module ChapelError {
   }
 
   pragma "no doc"
+  proc chpl_fix_thrown_error(err: ?t) where !isSubtype(t, Error) {
+    compilerError("cannot throw something that is not a subtype of Error");
+  }
+
+  pragma "no doc"
   proc chpl_delete_error(err: unmanaged Error) {
     if err != nil then delete err;
   }
