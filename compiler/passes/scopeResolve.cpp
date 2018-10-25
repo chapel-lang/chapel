@@ -126,20 +126,6 @@ void scopeResolve() {
   }
 
   //
-  // add implicit fields for implementing alias-named-argument passing
-  //
-  forv_Vec(AggregateType, at, gAggregateTypes) {
-    for_fields(field, at) {
-      if (strcmp(field->name, "outer") == 0) {
-        USR_FATAL_CONT(field,
-                       "Cannot have a field named 'outer'. "
-                       "'outer' is used to refer to an outer class "
-                       "from within a nested class.");
-      }
-    }
-  }
-
-  //
   // resolve type of this for methods
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -176,23 +162,6 @@ void scopeResolve() {
     adjustMethodThisForDefaultUnmanaged(fn);
   }
 
-  //
-  // build constructors (type and value versions)
-  // (initializers are built during normalize)
-  //
-  bool warnExternClass = true;
-  forv_Vec(AggregateType, ct, gAggregateTypes) {
-    if (isClass(ct) && ct->symbol->hasFlag(FLAG_EXTERN) && warnExternClass) {
-      warnExternClass = false;
-      USR_WARN(ct, "Extern classes have been deprecated");
-    }
-
-    ct->createOuterWhenRelevant();
-    if (ct->needsConstructor()) {
-      ct->buildConstructors();
-    }
-  }
-
   resolveGotoLabels();
 
   resolveUnresolvedSymExprs();
@@ -207,12 +176,8 @@ void scopeResolve() {
     do {
       changed = false;
       forv_Vec(AggregateType, at, gAggregateTypes) {
-        // Ignore aggregate types with old-style constructors
-        // since the old constructor code removes the
-        // init expr and the type expr.
-        if (!at->needsConstructor() &&
-            // And don't try to mark generic again
-            !at->isGeneric()) {
+        // don't try to mark generic again
+        if (!at->isGeneric()) {
 
           bool anyGeneric = false;
           bool anyNonDefaultedGeneric = false;
@@ -238,13 +203,10 @@ void scopeResolve() {
 
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     // Build the type constructor now that we know which fields are generic
-    // We do it here only for types with initializers
-    if (!ct->needsConstructor()) {
-      if (isClass(ct) && ct->symbol->hasFlag(FLAG_EXTERN)) {
-        USR_FATAL_CONT(ct, "Extern classes are not supported by initializers");
-      }
-      ct->buildConstructors();
+    if (isClass(ct) && ct->symbol->hasFlag(FLAG_EXTERN)) {
+      USR_FATAL_CONT(ct, "Extern classes are not supported.");
     }
+    ct->buildTypeConstructor();
   }
 
   ResolveScope::destroyAstMap();
@@ -381,11 +343,14 @@ static void scopeResolve(ForallStmt*         forall,
       stmtScope->extend(sym);
   }
 
+  for_alist(itexpr, forall->iteratedExpressions()) {
+    scopeResolveExpr(itexpr, stmtScope);
+  }
+
   for_shadow_vars_and_defs(svar, sdef, temp, forall) {
     stmtScope->extend(svar);
-    INT_ASSERT(!isBlockStmt(sdef->init));
-    // If the above assert does not hold, need to do something like
-    //   scopeResolve(toBlockStmt(sdef->init, stmtScope)
+    if (sdef->init != NULL)
+      scopeResolveExpr(sdef->init, stmtScope);
   }
 
   scopeResolve(loopBody->body, bodyScope);
@@ -504,6 +469,10 @@ static void scopeResolveExpr(Expr* expr, ResolveScope* scope) {
     scopeResolve(ife, scope);
   } else if (LoopExpr* fe = toLoopExpr(expr)) {
     scopeResolve(fe, scope);
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    scopeResolve(block, scope);
+  } else if (NamedExpr* named = toNamedExpr(expr)) {
+    scopeResolveExpr(named->actual, scope);
   }
 }
 
@@ -540,7 +509,6 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
         }
       }
 
-      // Look for IfExprs
       if (def->init != NULL) {
         scopeResolveExpr(def->init, scope);
       }
@@ -1189,13 +1157,7 @@ static void insertFieldAccess(FnSymbol*          method,
   checkIdInsideWithClause(expr, usymExpr);
 
   if (nestDepth > 0) {
-    if (toAggregateType(method->_this->getValType())->hasInitializers()) {
-      USR_FATAL_CONT("Illegal use of identifier '%s' from enclosing type", name);
-    } else {
-      for (int i = 0; i < nestDepth; i++) {
-        dot = new CallExpr(".", dot, new_CStringSymbol("outer"));
-      }
-    }
+    USR_FATAL_CONT("Illegal use of identifier '%s' from enclosing type", name);
   }
 
   if (isTypeSymbol(sym) == true) {
@@ -1600,7 +1562,7 @@ static bool tryCResolve(ModuleSymbol*                     module,
               SET_LINENO(ct->symbol);
               // If this is a class DefExpr,
               //  make sure its initializer gets created.
-              ct->buildConstructors();
+              ct->buildTypeConstructor();
             }
           }
         }
@@ -1748,14 +1710,12 @@ Symbol* lookup(const char* name, BaseAST* context) {
     //   otherwise fail
 
     for_vector(Symbol, sym, symbols) {
-      if (isFnSymbol(sym) == false) {
+      if (! isFnSymbol(sym)) {
         USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
         printConflictingSymbols(symbols, sym);
         break;
       }
     }
-
-    USR_STOP();
 
     retval = NULL;
   }

@@ -79,6 +79,9 @@ private:
                          ParamForLoop();
 
   Type*                  indexType();
+  void                   validateLoop(VarSymbol* lvar,
+                                      VarSymbol* hvar,
+                                      VarSymbol* svar);
 
   //
   // NOAKES 2014/12/11

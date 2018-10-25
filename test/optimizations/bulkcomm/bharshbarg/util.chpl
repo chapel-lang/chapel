@@ -24,17 +24,17 @@ proc stridedAssign(A : [], sa, B : [], sb, debug=false) {
   proc isMember(idx) {
     if isTuple(idx) {
       if isDomain(sa) {
-        return ldom.member(idx);
+        return ldom.contains(idx);
       } else {
         var ret = true;
         for param i in 1..sa.size {
-          if isRange(sa(i)) then ret &&= sa(i).member(idx(i));
+          if isRange(sa(i)) then ret &&= sa(i).contains(idx(i));
           else ret &&= (idx(i) == sa(i));
         }
         return ret;
       }
     } else {
-      return ldom.member(idx);
+      return ldom.contains(idx);
     }
   }
 

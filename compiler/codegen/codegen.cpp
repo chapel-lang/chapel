@@ -37,12 +37,14 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "view.h"
 #include "virtualDispatch.h"
 
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
+#include "llvm/Support/raw_ostream.h"
 #endif
 
 #ifndef __STDC_FORMAT_MACROS
@@ -431,7 +433,7 @@ static void codegenGlobalConstArray(const char*          name,
 
 // This uses Schubert Numbering but we could use Cohen's Display,
 // which can be computed more incrementally.
-// See issue ##5887 and/or
+// See
 // "Implementing statically typed object-oriented programming languages",
 // by Roland Ducournau
 static void
@@ -2451,6 +2453,10 @@ GenInfo::GenInfo()
              llvmContext(),
              tbaaRootNode(NULL),
              tbaaUnionsNode(NULL),
+             noAliasDomain(NULL),
+             noAliasScopes(),
+             noAliasScopeLists(),
+             noAliasLists(),
              globalToWideInfo(),
              FPM_postgen(NULL),
              clangInfo(NULL)
@@ -2507,3 +2513,75 @@ void flushStatements(void)
   }
 }
 
+void nprint_view(GenRet& gen) {
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  llvm::Module* M = info->module;
+#endif
+
+  printf("GenRet {\n");
+  if (!gen.c.empty())
+    printf("c=%s\n", gen.c.c_str());
+#ifdef HAVE_LLVM
+  if (gen.val) {
+    printf("val= ");
+    fflush(stdout);
+    gen.val->print(llvm::outs(), true);
+    llvm::outs().flush();
+    printf("\n");
+  }
+  if (gen.type) {
+    printf("type= ");
+    fflush(stdout);
+    gen.type->print(llvm::outs(), true);
+    llvm::outs().flush();
+    printf("\n");
+  }
+  if (gen.surroundingStruct) {
+    TypeSymbol* ts = gen.surroundingStruct->symbol;
+    printf("surroundingStruct=%s (%i)\n", ts->name, ts->id);
+  }
+  if (gen.fieldOffset) {
+    printf("fieldOffset=%i\n", (int) gen.fieldOffset);
+  }
+  if (gen.fieldTbaaTypeDescriptor) {
+    printf("fieldTbaaTypeDescriptor= ");
+    fflush(stdout);
+    gen.fieldTbaaTypeDescriptor->print(llvm::outs(), M, true);
+    llvm::outs().flush();
+    printf("\n");
+  }
+  if (gen.aliasScope) {
+    printf("aliasScope= ");
+    fflush(stdout);
+    gen.aliasScope->print(llvm::outs(), M, true);
+    llvm::outs().flush();
+    printf("\n");
+  }
+  if (gen.noalias) {
+    printf("noalias= ");
+    fflush(stdout);
+    gen.noalias->print(llvm::outs(), M, true);
+    llvm::outs().flush();
+    printf("\n");
+  }
+#endif
+  printf("canBeMarkedAsConstAfterStore=%i\n",
+         (int) gen.canBeMarkedAsConstAfterStore);
+  printf("alreadyStored %i\n", (int) gen.alreadyStored);
+  if (gen.chplType) {
+    TypeSymbol* ts = gen.chplType->symbol;
+    printf("chplType=%s (%i)\n", ts->name, ts->id);
+  }
+  if (gen.isLVPtr == GEN_VAL) {
+    printf("isLVPtr=GEN_VAL\n");
+  }
+  if (gen.isLVPtr == GEN_PTR) {
+    printf("isLVPtr=GEN_PTR\n");
+  }
+  if (gen.isLVPtr == GEN_WIDE_PTR) {
+    printf("isLVPtr=GEN_WIDE_PTR\n");
+  }
+  printf("isUnsigned %i\n", (int) gen.isUnsigned);
+  printf("}\n");
+}

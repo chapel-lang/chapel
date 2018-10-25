@@ -744,6 +744,8 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
+extern FnSymbol* chplUserMain;
+
 #define FUNC_NAME_MAX 256
 extern char llvmPrintIrName[FUNC_NAME_MAX+1];
 extern char llvmPrintIrStage[FUNC_NAME_MAX+1];

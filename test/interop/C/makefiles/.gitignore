@@ -1,0 +1,9 @@
+lib/*.h
+lib/*.a
+lib/Makefile.*
+mytest
+renamedTest
+libfoo.a
+checkRequire
+checkRequire2
+checkCommandLineLib

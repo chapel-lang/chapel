@@ -32,7 +32,7 @@ class ForallStmt : public Stmt
 public:
   bool       zippered()       const; // 'zip' keyword used and >1 index var
   AList&     inductionVariables();   // DefExprs, one per iterated expr
-  AList&     iteratedExpressions();  // SymExprs, one per iterated expr
+  AList&     iteratedExpressions();  // Exprs, one per iterated expr
   AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
   BlockStmt* loopBody()       const; // the body of the forall loop
   LabelSymbol* continueLabel();      // create it if not already

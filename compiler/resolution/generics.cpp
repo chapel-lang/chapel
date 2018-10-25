@@ -50,9 +50,7 @@ static bool            fixupDefaultInitCopy(FnSymbol* fn,
 
 static void
 explainInstantiation(FnSymbol* fn) {
-  if (strcmp(fn->name, fExplainInstantiation) &&
-      (strncmp(fn->name, "_construct_", 11) ||
-       strcmp(fn->name+11, fExplainInstantiation)))
+  if (strcmp(fn->name, fExplainInstantiation) != 0)
     return;
   if (explainInstantiationModule && explainInstantiationModule != fn->defPoint->getModule())
     return;
@@ -60,18 +58,12 @@ explainInstantiation(FnSymbol* fn) {
     return;
 
   char msg[1024] = "";
-  int len;
-  if (fn->hasFlag(FLAG_CONSTRUCTOR))
-    len = sprintf(msg, "instantiated %s(", fn->_this->type->symbol->name);
-  else
-    len = sprintf(msg, "instantiated %s(", fn->name);
+  int len = sprintf(msg, "instantiated %s(", fn->name);
   bool first = true;
   for_formals(formal, fn) {
     form_Map(SymbolMapElem, e, fn->substitutions) {
       ArgSymbol* arg = toArgSymbol(e->key);
       if (!strcmp(formal->name, arg->name)) {
-        if (arg->hasFlag(FLAG_IS_MEME)) // do not show meme argument
-          continue;
         if (first)
           first = false;
         else
@@ -143,7 +135,6 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
             fn->hasFlag(FLAG_AUTO_COPY_FN) ||
             fn->hasFlag(FLAG_BUILD_TUPLE) ||
             fn->hasFlag(FLAG_NO_BORROW_CONVERT) ||
-            fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
             fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
             (fn->name == astrInit && fn->hasFlag(FLAG_COMPILER_GENERATED)) ||
             fn->name == astr_cast))
@@ -518,7 +509,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
         AggregateType* ct = toAggregateType(fn->retType);
 
-        if (ct->initializerStyle          != DEFINES_INITIALIZER &&
+        if (ct->hasUserDefinedInit        == false &&
             ct->wantsDefaultInitializer() == false) {
           newType = instantiateTypeForTypeConstructor(fn, subs, call, ct);
 

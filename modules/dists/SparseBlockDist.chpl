@@ -106,7 +106,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     //    writeln("Exiting setup()");
   }
 
-  proc dsiDestroyDom() {
+  override proc dsiDestroyDom() {
     coforall localeIdx in dist.targetLocDom do {
       on locDoms(localeIdx) do
         delete locDoms(localeIdx);
@@ -298,15 +298,16 @@ class LocSparseBlockDom {
   param stridable: bool;
   type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
-  var sparseDist = new unmanaged sparseLayoutType; //unresolved call workaround
-  var mySparseBlock: sparse subdomain(parentDom) dmapped new dmap(sparseDist);
+  var sparseDist = if _to_borrowed(sparseLayoutType) == DefaultDist then defaultDist
+                   else new dmap(new unmanaged sparseLayoutType); //unresolved call workaround
+  var mySparseBlock: sparse subdomain(parentDom) dmapped sparseDist;
 
   proc dsiAdd(ind: rank*idxType) {
     return mySparseBlock.add(ind);
   }
 
   proc dsiMember(ind: rank*idxType) {
-    return mySparseBlock.member(ind);
+    return mySparseBlock.contains(ind);
   }
 
   proc dsiClear() {
@@ -422,7 +423,7 @@ class SparseBlockArr: BaseSparseArr {
 
   proc dsiAccess(i: rank*idxType) ref {
     local {
-      if myLocArr != nil && myLocArr.locDom.parentDom.member(i) {
+      if myLocArr != nil && myLocArr.locDom.parentDom.contains(i) {
         return myLocArr.dsiAccess(i);
       }
     }
@@ -431,7 +432,7 @@ class SparseBlockArr: BaseSparseArr {
   proc dsiAccess(i: rank*idxType)
   where shouldReturnRvalueByValue(eltType) {
     local {
-      if myLocArr != nil && myLocArr.locDom.parentDom.member(i) {
+      if myLocArr != nil && myLocArr.locDom.parentDom.contains(i) {
         return myLocArr.dsiAccess(i);
       }
     }
@@ -440,7 +441,7 @@ class SparseBlockArr: BaseSparseArr {
   proc dsiAccess(i: rank*idxType) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     local {
-      if myLocArr != nil && myLocArr.locDom.parentDom.member(i) {
+      if myLocArr != nil && myLocArr.locDom.parentDom.contains(i) {
         return myLocArr.dsiAccess(i);
       }
     }
@@ -592,7 +593,7 @@ proc SparseBlockDom.dsiIndexOrder(i) {
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocSparseBlockDom.member(i) return mySparseBlock.member(i);
+proc LocSparseBlockDom.contains(i) return mySparseBlock.contains(i);
 
 proc SparseBlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
@@ -810,16 +811,8 @@ proc SparseBlockDom.dsiHasSingleLocalSubdomain() param return true;
 proc SparseBlockArr.dsiHasSingleLocalSubdomain() param return true;
 
 proc SparseBlockDom.dsiLocalSubdomain() {
-  // TODO -- could be replaced by a privatized myLocDom in BlockDom
-  // as it is with BlockArr
-  var myLocDom:unmanaged LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType) = nil;
-  for (loc, locDom) in zip(dist.targetLocales, locDoms) {
-    if loc == here {
-      myLocDom = locDom;
-      break;
-    }
-  }
-  return myLocDom.mySparseBlock;
+  const (found, targetIdx) = dist.targetLocales.find(here);
+  return locDoms[targetIdx].mySparseBlock;
 }
 
 proc SparseBlockArr.dsiLocalSubdomain() {

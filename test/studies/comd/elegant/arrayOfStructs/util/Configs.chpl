@@ -18,7 +18,7 @@ config const nx   = nxyz,
              ny   = nxyz,
              nz   = nxyz;
 
-config const xproc = 1,
+config var   xproc = 1,
              yproc = 1,
              zproc = 1;
 

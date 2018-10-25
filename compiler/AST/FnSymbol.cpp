@@ -52,7 +52,6 @@ FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
   retTag             = RET_VALUE;
   iteratorInfo       = NULL;
   _this              = NULL;
-  _outer             = NULL;
   instantiatedFrom   = NULL;
   _instantiationPoint = NULL;
   _backupInstantiationPoint = NULL;
@@ -145,7 +144,6 @@ void FnSymbol::verify() {
   verifyInTree(retType,            "FnSymbol::retType");
 
   verifyInTree(_this,              "FnSymbol::_this");
-  verifyInTree(_outer,             "FnSymbol::_outer");
   verifyInTree(instantiatedFrom,   "FnSymbol::instantiatedFrom");
   verifyInTree(_instantiationPoint, "FnSymbol::instantiationPoint");
   verifyInTree(_backupInstantiationPoint, "FnSymbol::backupInstantiationPoint");
@@ -194,7 +192,6 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
   newFn->retType            = this->retType;
   newFn->thisTag            = this->thisTag;
   newFn->cname              = this->cname;
-  newFn->_outer             = this->_outer;
   newFn->retTag             = this->retTag;
   newFn->instantiatedFrom   = this->instantiatedFrom;
   newFn->_instantiationPoint = this->_instantiationPoint;
@@ -757,17 +754,7 @@ bool FnSymbol::tagIfGeneric() {
 int FnSymbol::hasGenericFormals() const {
   bool hasGenericFormal   = false;
   bool hasGenericDefaults =  true;
-  bool resolveInit        = false;
   int  retval             =     0;
-
-  if (isMethod() == true && _this != NULL) {
-    if (AggregateType* at = toAggregateType(_this->type)) {
-      if (at->initializerStyle != DEFINES_CONSTRUCTOR  &&
-          strcmp(name, "init") == 0) {
-        resolveInit = true;
-      }
-    }
-  }
 
   for_formals(formal, this) {
     bool isGeneric = false;
@@ -782,9 +769,8 @@ int FnSymbol::hasGenericFormals() const {
 
       if (typeHasGenericDefaults               == false ||
           formal->hasFlag(FLAG_MARKED_GENERIC) == true ||
-          formal                               == _this ||
-          formal->hasFlag(FLAG_IS_MEME)        == true) {
-        if (!(formal == _this && resolveInit)) {
+          formal                               == _this) {
+        if (!(formal == _this && isInitializer())) {
           isGeneric = true;
         }
       }
@@ -1113,19 +1099,6 @@ const char* toString(FnSymbol* fn) {
         INT_ASSERT(strncmp("_type_construct_", fn->name, 16) == 0);
         retval = astr(fn->name + 16);
 
-      } else if (fn->hasFlag(FLAG_CONSTRUCTOR) == true) {
-        if (strncmp("_construct_", fn->name, 11) == 0) {
-          retval = astr(fn->name + 11, ".init");
-
-        } else if (strcmp("init", fn->name) == 0) {
-          retval = "init";
-
-        } else {
-          INT_FATAL(fn,
-                    "flagged as constructor but not named "
-                    "_construct_ or init");
-        }
-
       } else if (fn->isPrimaryMethod() == true) {
         Flag flag = FLAG_FIRST_CLASS_FUNCTION_INVOCATION;
 
@@ -1171,48 +1144,46 @@ const char* toString(FnSymbol* fn) {
     for (int i = start; i <= fn->numFormals(); i++) {
       ArgSymbol* arg = fn->getFormal(i);
 
-      if (arg->hasFlag(FLAG_IS_MEME) == false) {
-        if (first == true) {
-          first = false;
+      if (first == true) {
+        first = false;
 
-          if (skipParens == true) {
-            retval = astr(retval, " ");
-          }
-        } else {
-          retval = astr(retval, ", ");
+        if (skipParens == true) {
+          retval = astr(retval, " ");
         }
+      } else {
+        retval = astr(retval, ", ");
+      }
 
-        if (arg->intent                           == INTENT_PARAM ||
-            arg->hasFlag(FLAG_INSTANTIATED_PARAM) == true) {
-          retval = astr(retval, "param ");
-        }
+      if (arg->intent                           == INTENT_PARAM ||
+          arg->hasFlag(FLAG_INSTANTIATED_PARAM) == true) {
+        retval = astr(retval, "param ");
+      }
 
-        if (arg->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-          retval = astr(retval, "type ", arg->name);
+      if (arg->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+        retval = astr(retval, "type ", arg->name);
 
-        } else if (arg->type == dtUnknown) {
-          if (arg->typeExpr != NULL) {
-            if (SymExpr* sym = toSymExpr(arg->typeExpr->body.tail)) {
-              retval = astr(retval, arg->name, ": ", sym->symbol()->name);
-
-            } else {
-              retval = astr(retval, arg->name);
-            }
+      } else if (arg->type == dtUnknown) {
+        if (arg->typeExpr != NULL) {
+          if (SymExpr* sym = toSymExpr(arg->typeExpr->body.tail)) {
+            retval = astr(retval, arg->name, ": ", sym->symbol()->name);
 
           } else {
             retval = astr(retval, arg->name);
           }
 
-        } else if (arg->type == dtAny) {
-          retval = astr(retval, arg->name);
-
         } else {
-          retval = astr(retval, arg->name, ": ", toString(arg->type));
+          retval = astr(retval, arg->name);
         }
 
-        if (arg->variableExpr != NULL) {
-          retval = astr(retval, " ...");
-        }
+      } else if (arg->type == dtAny) {
+        retval = astr(retval, arg->name);
+
+      } else {
+        retval = astr(retval, arg->name, ": ", toString(arg->type));
+      }
+
+      if (arg->variableExpr != NULL) {
+        retval = astr(retval, " ...");
       }
     }
 

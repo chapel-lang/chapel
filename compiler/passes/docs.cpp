@@ -161,13 +161,12 @@ void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
   }
 }
 
-// Returns true if the provided fn is a module initializer, class constructor,
-// type constructor, or module copy of a class method.  These functions are
-// only printed in developer mode.  Is not applicable to printing class
-// functions.
+// Returns true if the provided fn is a module initializer, type constructor,
+// or module copy of a class method.  These functions are only printed in
+// developer mode.  Is not applicable to printing class functions.
 bool devOnlyFunction(FnSymbol *fn) {
   return (fn->hasFlag(FLAG_MODULE_INIT) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) 
-          || fn->hasFlag(FLAG_CONSTRUCTOR) || fn->isPrimaryMethod());
+          || fn->isPrimaryMethod());
 }
 
 // Returns true if the provide module is one of the internal or standard 

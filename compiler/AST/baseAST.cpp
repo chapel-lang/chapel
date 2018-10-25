@@ -683,7 +683,6 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
     SUB_TYPE(ps->type);
     SUB_TYPE(ps->retType);
     SUB_SYMBOL(ps->_this);
-    SUB_SYMBOL(ps->_outer);
 
   } else if (ArgSymbol* ps = toArgSymbol(ast)) {
     SUB_TYPE(ps->type);
@@ -773,6 +772,16 @@ bool isCForLoop(const BaseAST* a)
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isCForLoop()) ? true : false;
+}
+
+/* Create a throw-away ast with a given filename and line number.
+   This can be used e.g. to pass a line and filename to USR_FATAL
+   since it only takes those from an AST, not directly. */
+VarSymbol* createASTforLineNumber(const char* filename, int line){
+  astlocT astloc(line, filename);
+  astlocMarker markAstLoc(astloc);
+  VarSymbol* lineTemp = newTemp();
+  return lineTemp;
 }
 
 /************************************* | **************************************

@@ -34,8 +34,6 @@
 
 #include <vector>
 
-static void cullForDefaultConstructor(FnSymbol* fn);
-
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
@@ -44,10 +42,6 @@ static void walkBlock(FnSymbol*         fn,
 
 void addAutoDestroyCalls() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
-      cullForDefaultConstructor(fn);
-    }
-
     std::set<VarSymbol*> empty;
     walkBlock(fn, NULL, fn->body, empty);
   }
@@ -55,39 +49,6 @@ void addAutoDestroyCalls() {
   // Finally, remove all defer statements, since they have been lowered.
   forv_Vec(DeferStmt, defer, gDeferStmts) {
     defer->remove();
-  }
-}
-
-//
-// Retain current approach for pruning auto-destroy flags in constructors.
-// We do not destroy variables that are written in to the fields of the
-// object being initialized.
-//
-
-static void cullForDefaultConstructor(FnSymbol* fn) {
-  if (isVarSymbol(fn->getReturnSymbol()) == true) {
-    std::vector<DefExpr*>        defs;
-
-    collectDefExprs(fn, defs);
-
-    for_vector(DefExpr, def, defs) {
-      if (VarSymbol* var = toVarSymbol(def->sym)) {
-        if (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true) {
-          // Look for a use in a PRIM_SET_MEMBER where the field is a record
-          // type, and remove the flag. (We don't actually check that var is
-          // of record type, because chpl__autoDestroy() is a NO-OP when
-          // applied to all other types.
-          for_SymbolUses(se, var) {
-            CallExpr* call = toCallExpr(se->parentExpr);
-
-            if (call->isPrimitive(PRIM_SET_MEMBER) == true &&
-                toSymExpr(call->get(3))->symbol()  == var) {
-              var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-            }
-          }
-        }
-      }
-    }
   }
 }
 

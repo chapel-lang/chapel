@@ -8,6 +8,9 @@
 !/generate-modulefile.bash
 !/generate-rpmspec.bash
 !/generate-set_default.bash
+!/setenv-xc-x86_64.bash
+!/setenv-xc-aarch64.bash
+!/setenv-xe-x86_64.bash
 #
 # This hides users subdirectories
 #

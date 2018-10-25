@@ -5,6 +5,8 @@ a.out_real
 *~
 output
 gen
+.mason
+Mason.lock
 *.ntoks
 *.o
 *.pyc
@@ -199,8 +201,6 @@ tags
 
 /test/localeModels/gbt/maxTaskPar.good
 
-/test/mason/.mason
-
 /test/memory/gbt/test-memLog.memLog.*
 /test/memory/shannon/jacobi.log
 /test/memory/shannon/configVarFile.log
@@ -259,11 +259,6 @@ tags
 /test/library/standard/Memory/countMemory/countMemory.*.good
 
 /test/localeModels/dmk/locale_name.good
-
-/test/mason/mason-test/.mason/
-/test/mason/pkgconfig-tests/.mason/
-/test/mason/run/.mason
-/test/mason/subdir-commands/.mason/
 
 /test/multilocale/deitz/needMultiLocales/test_remote_file_read_class.txt
 /test/multilocale/numLocales/bradc/testVerboseFlag.good

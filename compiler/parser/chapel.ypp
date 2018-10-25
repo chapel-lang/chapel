@@ -234,7 +234,7 @@
                const char*    str) {
 
     // like USR_FATAL_CONT
-    setupError(__FILE__, __LINE__, 3);
+    setupError("parser", __FILE__, __LINE__, 3);
 
     // TODO -- should this begin with error:
     if (!chplParseString) {
@@ -1808,7 +1808,7 @@ parenthesized_expr:
 ;
 
 literal_expr:
-  INTLITERAL            { $$ = buildIntLiteral($1);    }
+  INTLITERAL            { $$ = buildIntLiteral($1, yyfilename, chplLineno);    }
 | REALLITERAL           { $$ = buildRealLiteral($1);   }
 | IMAGLITERAL           { $$ = buildImagLiteral($1);   }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }

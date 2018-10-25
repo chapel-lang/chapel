@@ -55,8 +55,9 @@ module ExternalArray {
         halt("there should only be one set of indices, not multiple dimensions");
       }
       var r = inds(1);
-      if (r.low != 0) {
-        halt("external arrays always have a lower bound of 0");
+      // Allow empty arrays (which have the domain 1..0)
+      if (r.low != 0 && !(r.low == 1 && r.high == 0)) {
+        halt("non-empty external arrays always have a lower bound of 0");
       }
       var newdom = new unmanaged ExternDom(idxType,
                                            r.size,
@@ -334,7 +335,7 @@ module ExternalArray {
     return _newArray(arr);
   }
 
-  proc convertToExternalArray(arr: []) {
+  proc convertToExternalArray(arr: []): chpl_external_array {
     if (!isIntegralType(arr.domain.idxType)) {
       compilerError("cannot return an array with indices that are not " +
                     "integrals");

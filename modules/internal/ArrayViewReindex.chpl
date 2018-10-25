@@ -277,7 +277,7 @@ module ArrayViewReindex {
       }
     }
 
-    proc dsiDestroyDom() {
+    override proc dsiDestroyDom() {
       _delete_dom(updom, false);
       _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
@@ -341,6 +341,7 @@ module ArrayViewReindex {
   // The class representing a slice of an array.  Like other array
   // class implementations, it supports the standard dsi interface.
   //
+  pragma "aliasing array"
   class ArrayViewReindexArr: BaseArr {
     type eltType;  // see note on commented-out proc eltType below...
 

@@ -137,6 +137,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_CLASS_NAME_BY_ID:
 
   case PRIM_INVARIANT_START:
+  case PRIM_NO_ALIAS_SET:
+  case PRIM_COPIES_NO_ALIAS_SET:
     return FAST_AND_LOCAL;
 
   case PRIM_MOVE:
@@ -262,6 +264,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_TYPEOF:
   case PRIM_STATIC_TYPEOF:
   case PRIM_SCALAR_PROMOTION_TYPE:
+  case PRIM_STATIC_FIELD_TYPE:
   case PRIM_TYPE_TO_STRING:
   case PRIM_IS_CLASS_TYPE:
   case PRIM_IS_RECORD_TYPE:

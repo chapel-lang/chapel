@@ -4,16 +4,15 @@
 # using build_configs.py with a given setenv project script.
 
 set -e
-thisfile=$( basename "$0" )
 yourcwd=$PWD
 
-cwd=$( cd $(dirname "$0" ) && pwd )
+cwd=$( cd $(dirname "{BASH_SOURCE[0]}" ) && pwd )
 source $cwd/functions.bash
-log_info "Begin $thisfile"
+log_info "Begin $( basename ${BASH_SOURCE[0]} )"
 
 usage() {
     echo >&2 "
-Usage: $thisfile" '[options]
+Usage: $( basename ${BASH_SOURCE[0]} )" '[options]
 
   where:
     -v : verbose/debug output
@@ -82,4 +81,4 @@ source "$cwd/build-common.bash"
 
 bash "$setenv" $verbose $dry_run
 
-log_info "End $thisfile"
+log_info "End $( basename ${BASH_SOURCE[0]} )"

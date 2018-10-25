@@ -63,5 +63,6 @@ void remoteValueForwarding();
 
 void inferConstRefs();
 
+void computeNoAliasSets();
 
 #endif

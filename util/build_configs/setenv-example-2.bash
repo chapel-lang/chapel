@@ -20,8 +20,8 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     # setenv, cwd == name and directory location of this script file
 
-    setenv=$( basename "$0" )
-    cwd=$( cd $(dirname "$0") && pwd )
+    setenv=$( basename "${BASH_SOURCE[0]}" )
+    cwd=$( cd $(dirname "${BASH_SOURCE[0]}") && pwd )
 
     # functions.bash provides local bash functions like log_info, and
     #   sets shell variable project from the filename of this setenv file

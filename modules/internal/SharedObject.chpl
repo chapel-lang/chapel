@@ -152,6 +152,7 @@ module SharedObject {
     /*
        Default-initialize a :record:`shared`.
      */
+    pragma "leaves this nil"
     proc init(type t) {
       if !isClass(t) then
         compilerError("shared only works with classes");
@@ -175,7 +176,7 @@ module SharedObject {
 
        :arg p: the class instance to manage. Must be of unmanaged class type.
      */
-    proc init(p : unmanaged) {
+    proc init(pragma "nil from arg" p : unmanaged) {
       this.chpl_t = _to_borrowed(p.type);
 
       // Boost version default-initializes px and pn
@@ -216,7 +217,7 @@ module SharedObject {
 
        :arg take: the owned value to take ownership from
      */
-    proc init(in take:owned) {
+    proc init(pragma "nil from arg" in take:owned) {
       var p = take.release();
       this.chpl_t = _to_borrowed(p.type);
 
@@ -239,7 +240,7 @@ module SharedObject {
        that refers to the same class instance as `src`.
        These will share responsibility for managing the instance.
      */
-    proc init(const ref src:_shared(?)) {
+    proc init(pragma "nil from arg" const ref src:_shared(?)) {
       this.chpl_t = src.chpl_t;
       this.chpl_p = src.chpl_p;
       this.chpl_pn = src.chpl_pn;
@@ -264,7 +265,7 @@ module SharedObject {
        If this record was the last :record:`shared` managing a
        non-nil instance, that instance will be deleted.
      */
-    proc ref retain(newPtr:unmanaged chpl_t) {
+    proc ref retain(pragma "nil from arg" newPtr:unmanaged chpl_t) {
       clear();
       this.chpl_p = newPtr;
       if newPtr != nil {
@@ -280,6 +281,7 @@ module SharedObject {
 
        Equivalent to ``shared.retain(nil)``.
      */
+    pragma "leaves this nil"
     proc ref clear() {
       if isClass(chpl_p) { // otherwise, let error happen on init call
         if chpl_p != nil && chpl_pn != nil {
@@ -304,6 +306,7 @@ module SharedObject {
        referring to the instance.
        In some cases such errors are caught at compile-time.
      */
+    pragma "nil from this"
     proc /*const*/ borrow() {
       return chpl_p;
     }
@@ -355,8 +358,8 @@ module SharedObject {
   // This is a workaround
   pragma "no doc"
   pragma "auto destroy fn"
-  proc chpl__autoDestroy(x: _shared) {
-    __primitive("call destructor", x);
+  proc chpl__autoDestroy(ref x: _shared) {
+    __primitive("call destructor", __primitive("deref", x));
   }
 
   // Don't print out 'chpl_p' when printing an Shared, just print class pointer
@@ -369,7 +372,7 @@ module SharedObject {
   // supported in the compiler via a call to borrow() and
   // sometimes uses this cast.
   pragma "no doc"
-  inline proc _cast(type t, const ref x:_shared) where isSubtype(t,x.chpl_t) {
+  inline proc _cast(type t, pragma "nil from arg" const ref x:_shared) where isSubtype(t,x.chpl_t) {
     return x.borrow();
   }
 
@@ -378,7 +381,7 @@ module SharedObject {
   // It only works in a value context (i.e. when the result of the
   // coercion is a value, not a reference).
   pragma "no doc"
-  inline proc _cast(type t:_shared, in x:_shared)
+  inline proc _cast(type t:_shared, pragma "nil from arg" in x:_shared)
   where isSubtype(x.chpl_t,t.chpl_t) {
     var ret:t; // default-init the Shared type to return
     ret.chpl_p = x.chpl_p:t.chpl_t; // cast the class type
@@ -391,7 +394,7 @@ module SharedObject {
 
   // cast from nil to shared
   pragma "no doc"
-  inline proc _cast(type t:_shared, x:_nilType) {
+  inline proc _cast(type t:_shared, pragma "nil from arg" x:_nilType) {
     var tmp:t;
     return tmp;
   }

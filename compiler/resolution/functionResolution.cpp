@@ -177,7 +177,6 @@ static void resolveInitField(CallExpr* call);
 static void resolveInitVar(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
-static void temporaryInitializerFixup(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static void resolveAutoCopyEtc(AggregateType* at);
 
@@ -1321,10 +1320,6 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
   // common-case check to see if functions have equal visibility
   //
   if (fn1->defPoint->parentExpr == fn2->defPoint->parentExpr) {
-    // Special check which makes cg-initializers inferior to user-defined constructors
-    // with the same args.
-    if (fn2->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
-      return true;
     return false;
   }
 
@@ -1669,9 +1664,7 @@ static void findNonTaskFnParent(CallExpr* call,
 }
 
 static bool isConstructorLikeFunction(FnSymbol* fn) {
-  return fn->hasFlag(FLAG_CONSTRUCTOR)  == true  ||
-         strcmp(fn->name, "init")       ==    0  ||
-         strcmp(fn->name, "initialize") ==    0;
+  return strcmp(fn->name, "init")       ==    0;
 }
 
 // Is 'call' in a constructor or in initialize()?
@@ -2164,8 +2157,6 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
     gdbShouldBreakHere();
   }
 
-  temporaryInitializerFixup(call);
-
   resolveGenericActuals(call);
 
   if (isGenericRecordInit(call) == true) {
@@ -2656,6 +2647,16 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       } else if (info.actuals.v[1]->type == dtNil) {
         USR_FATAL_CONT(call,
                        "type mismatch in assignment from nil to %s",
+                       toString(info.actuals.v[0]->type));
+
+      } else if (info.actuals.v[0]->hasFlag(FLAG_RVV) ||
+                 info.actuals.v[0]->hasFlag(FLAG_YVV)) {
+        const char* retKind =
+          info.actuals.v[0]->hasFlag(FLAG_RVV) ? "return" : "yield";
+        USR_FATAL_CONT(call,
+                       "cannot %s '%s' when the declared return type is '%s'",
+                       retKind,
+                       toString(info.actuals.v[1]->type),
                        toString(info.actuals.v[0]->type));
 
       } else {
@@ -4935,7 +4936,8 @@ static void resolveInitField(CallExpr* call) {
   if (!fs)
     INT_FATAL(call, "bad initializer set field primitive");
 
-  Type* srcType = srcExpr->symbol()->type;
+  Symbol* srcSym = srcExpr->symbol();
+  Type* srcType = srcSym->type;
   if (srcType == dtUnknown)
     INT_FATAL(call, "Unable to resolve field type");
 
@@ -4943,7 +4945,16 @@ static void resolveInitField(CallExpr* call) {
     if (isLegalParamType(srcType) == false) {
       USR_FATAL_CONT(fs, "'%s' is not of a supported param type", fs->name);
     }
-    if (srcExpr->symbol()->isParameter() == false) {
+
+    // Check against the symbol's Immediate is required because the symbol is
+    // likely a temporary, which generally will suppress an error if
+    // initialized from a non-param.
+    //
+    // Note: This unfortunately relies on not checking the error when
+    // initializing the temporary, where it would be more difficult to
+    // determine the context of the initialization.
+    else if (srcSym->isParameter() == false ||
+            (isVarSymbol(srcSym) && getImmediate(srcSym) == NULL)) {
       USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", fs->name);
     }
   }
@@ -4976,7 +4987,7 @@ static void resolveInitField(CallExpr* call) {
         (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) ||
         (fs->defPoint->init == NULL && fs->defPoint->exprType != NULL &&
          ct->fieldIsGeneric(fs, ignoredHasDefault))) {
-      AggregateType* instantiate = ct->getInstantiation(srcExpr->symbol(), index);
+      AggregateType* instantiate = ct->getInstantiation(srcSym, index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
         INT_ASSERT(parentFn->_this);
@@ -5238,11 +5249,11 @@ static bool  moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
 
 static void  moveHaltForUnacceptableTypes(CallExpr* call);
 
-static void  resolveMoveForRhsSymExpr(CallExpr* call);
+static void  resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs);
 
 static void  resolveMoveForRhsCallExpr(CallExpr* call);
 
-static void  moveSetConstFlagsAndCheck(CallExpr* call);
+static void  moveSetConstFlagsAndCheck(CallExpr* call, CallExpr* rhs);
 
 static void  moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
                                                 CallExpr* rhs,
@@ -5255,6 +5266,15 @@ static void  moveSetFlagsForConstAccess(Symbol*   lhs,
 
 static void  moveFinalize(CallExpr* call);
 
+// Helper: is this a move from the result of main()?
+static bool isMoveFromMain(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE)); // caller responsibility
+  if (CallExpr* rhs = toCallExpr(call->get(2)))
+    if (FnSymbol* target = rhs->resolvedFunction())
+      if (target == chplUserMain)
+        return true;
+  return false;
+}
 
 
 static void resolveMove(CallExpr* call) {
@@ -5286,8 +5306,8 @@ static void resolveMove(CallExpr* call) {
       // NB: This call will not return
       moveHaltForUnacceptableTypes(call);
 
-    } else if (isSymExpr(rhs)  == true) {
-      resolveMoveForRhsSymExpr(call);
+    } else if (SymExpr* rhsSymExpr = toSymExpr(rhs)) {
+      resolveMoveForRhsSymExpr(call, rhsSymExpr);
 
     } else if (isCallExpr(rhs) == true) {
       resolveMoveForRhsCallExpr(call);
@@ -5479,10 +5499,6 @@ static Type* moveDetermineLhsType(CallExpr* call) {
   return lhsSym->type;
 }
 
-
-
-
-
 //
 //
 //
@@ -5529,25 +5545,24 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
   }
 }
 
-
 //
 //
 //
 
-static void resolveMoveForRhsSymExpr(CallExpr* call) {
-  SymExpr* rhs = toSymExpr(call->get(2));
+static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
+  Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
+  Symbol* rhsSym = rhs->symbol();
 
   // If this assigns into a loop index variable from a non-var iterator,
   // mark the variable constant.
   // If RHS is this special variable...
-  if (rhs->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST) == true) {
-    Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
+  if (rhsSym->hasFlag(FLAG_INDEX_OF_INTEREST) == true) {
     Type*   rhsType = rhs->typeInfo();
 
     if (lhsSym->hasFlag(FLAG_INDEX_VAR) ||
         // non-zip forall over a standalone iterator
         (lhsSym->hasFlag(FLAG_TEMP) &&
-         rhs->symbol()->hasFlag(FLAG_INDEX_VAR))) {
+         rhsSym->hasFlag(FLAG_INDEX_VAR))) {
 
       // ... and not of a reference type
       // ... and not an array (arrays are always yielded by reference)
@@ -5561,9 +5576,12 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
         lhsSym->addFlag(FLAG_CONST);
       }
     }
-  } else if (rhs->symbol()->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
-    Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
+  } else if (rhsSym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
     lhsSym->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
+  } else if (rhsSym->hasFlag(FLAG_REF_TO_CONST)) {
+    lhsSym->addFlag(FLAG_REF_TO_CONST);
+
   }
 
   moveFinalize(call);
@@ -5572,7 +5590,7 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
 static void resolveMoveForRhsCallExpr(CallExpr* call) {
   CallExpr* rhs = toCallExpr(call->get(2));
 
-  moveSetConstFlagsAndCheck(call);
+  moveSetConstFlagsAndCheck(call, rhs);
 
   if (rhs->resolvedFunction() == gChplHereAlloc) {
     Symbol*  lhsType = call->get(1)->typeInfo()->symbol;
@@ -5688,10 +5706,10 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
 }
 
 
-static void moveSetConstFlagsAndCheck(CallExpr* call) {
-  CallExpr* rhs    = toCallExpr(call->get(2));
-
-  if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
+static void moveSetConstFlagsAndCheck(CallExpr* call, CallExpr* rhs) {
+  if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
+      rhs->isPrimitive(PRIM_ADDR_OF))
+  {
     if (SymExpr* rhsBase = toSymExpr(rhs->get(1))) {
       if (rhsBase->symbol()->hasFlag(FLAG_CONST)        == true  ||
           rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST) == true) {
@@ -5788,7 +5806,10 @@ static void moveFinalize(CallExpr* call) {
 
   } else {
     if (rhsValType != lhsValType) {
-      if (rhsType != dtNil) {
+      if (isMoveFromMain(call)) {
+        USR_FATAL(chplUserMain, "main() returns a non-integer (%s)",
+                  rhsValType->name());
+      } else if (rhsType != dtNil) {
         USR_FATAL(userCall(call),
                   "type mismatch in assignment from %s to %s",
                   toString(rhsType),
@@ -6238,7 +6259,7 @@ static bool resolveNewHasInitializer(AggregateType* at) {
   FnSymbol* di     = at->defaultInitializer;
   bool      retval = false;
 
-  if (at->initializerStyle == DEFINES_INITIALIZER) {
+  if (at->hasUserDefinedInit == true) {
     retval = true;
 
   } else if (at->wantsDefaultInitializer() == true) {
@@ -6256,12 +6277,6 @@ static bool resolveNewHasInitializer(AggregateType* at) {
 //     1) new(Type(_mt, this), arg1, ...)              nested type
 //     2) new(Type, arg1, ...)                         common
 //     3) new(module=, moduleName, Type, arg1, ...)    module-scoped
-//
-// These become
-//
-//     1) "_construct_Type"(_mt, this)(arg1, ...)
-//     2) "_construct_Type"(arg1, ...)
-//     3) "_construct_Type"(module=, moduleName, arg1, ...)
 //
 // respectively
 
@@ -6327,8 +6342,6 @@ static void resolveNewHandleConstructor(CallExpr* newExpr, Type* manager) {
 static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
   SET_LINENO(newExpr);
 
-  AggregateType* at = resolveNewFindType(newExpr);
-
   //
   // Normalize the allocation for a nested type (constructors only)
   //
@@ -6336,13 +6349,8 @@ static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
   //
   if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
     SymExpr* typeExpr = toSymExpr(partial->baseExpr);
-    SymExpr* thisExpr = toSymExpr(partial->get(2));
 
     partial->remove();
-
-    if (at->hasInitializers() == false) {
-      newExpr->insertAtHead(thisExpr->remove());
-    }
 
     newExpr->insertAtHead(typeExpr);
   }
@@ -6376,84 +6384,6 @@ static SymExpr* resolveNewFindTypeExpr(CallExpr* newExpr) {
   } else if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
     if (SymExpr* se = toSymExpr(partial->baseExpr)) {
       retval = partial->partialTag ? se : NULL;
-    }
-  }
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static bool isRefWrapperForNonGenericRecord(AggregateType* at);
-
-static void temporaryInitializerFixup(CallExpr* call) {
-  if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
-    // Support super.init() calls (for instance) when the super type
-    // does not define either an initializer or a constructor.
-    // Also ignores errors from improperly inserted .init() calls
-    // (so be sure to check here if something is behaving oddly
-    // - Lydia, 08/19/16)
-    if (strcmp(usym->unresolved, "init") ==     0 &&
-        call->numActuals()               >=     2 &&
-        isNamedExpr(call->get(2))        == false) {
-      // Arg 2 will be a NamedExpr to "this" if we're in an intentionally
-      // inserted initializer call
-      SymExpr* _mt = toSymExpr(call->get(1));
-      SymExpr* sym = toSymExpr(call->get(2));
-
-      INT_ASSERT(sym != NULL);
-
-      if (AggregateType* ct = toAggregateType(sym->symbol()->getValType())) {
-
-        if (isRefWrapperForNonGenericRecord(ct) == false &&
-            ct->initializerStyle                == DEFINES_NONE_USE_DEFAULT) {
-          // Transitioning to a default initializer world.
-          // Lydia note 03/14/17)
-          if (ct->hasInitializers() == false) {
-            // This code should be removed when the compiler generates
-            // initializers as the default method of construction and
-            // initialization for a type (Lydia note, 08/19/16)
-            usym->unresolved = astr("_construct_", ct->symbol->name);
-
-            _mt->remove();
-          }
-        }
-      }
-    }
-  }
-}
-
-
-//
-// Noakes 2017/03/26
-//   The function temporaryInitializerFixup is designed to update
-//   certain calls to init() while the initializer update matures.
-//
-//   Unfortunately this transformation is triggered incorrectly for uses of
-//           this.init(...);
-//
-//   inside initializers for non-generic records.
-//
-//   For those uses of init() the "this" argument has currently has type
-//   _ref(<Record>) rather than <Record>
-//
-//  This rather unfortunate function catches this case and enables the
-//  transformation to be skipped.
-//
-static bool isRefWrapperForNonGenericRecord(AggregateType* at) {
-  bool retval = false;
-
-  if (isClass(at)                           == true &&
-      strncmp(at->symbol->name, "_ref(", 5) == 0    &&
-      at->fields.length                     == 1) {
-    Symbol* sym = toDefExpr(at->fields.head)->sym;
-
-    if (strcmp(sym->name, "_val") == 0) {
-      retval = isNonGenericRecordWithInitializers(sym->type);
     }
   }
 
@@ -7587,8 +7517,7 @@ static void unmarkDefaultedGenerics() {
 
         if (formal                               != fn->_this &&
             typeHasGenericDefaults                            &&
-            formal->hasFlag(FLAG_MARKED_GENERIC) == false     &&
-            formal->hasFlag(FLAG_IS_MEME)        == false) {
+            formal->hasFlag(FLAG_MARKED_GENERIC) == false) {
           SET_LINENO(formal);
 
           FnSymbol*      typeConstr = formalAt->typeConstructor;
@@ -8984,8 +8913,7 @@ static bool do_isUnusedClass(Type* t) {
 
   // FALSE if the type uses an initializer and that initializer was
   // resolved
-  } else if (at && at->initializerStyle != DEFINES_CONSTRUCTOR &&
-             at->initializerResolved) {
+  } else if (at && at->initializerResolved) {
     retval = false;
 
   } else if (at) {
@@ -9211,18 +9139,15 @@ static void removeParamArgs()
 static void removeAggTypeFieldInfo() {
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (at->symbol->defPoint && at->symbol->defPoint->parentSymbol) {
-      // Still in the tree
-      if (at->initializerStyle != DEFINES_CONSTRUCTOR) {
-        // Defined an initializer (so we left its init
-        // and exprType information in the tree)
-        for_fields(field, at) {
-          if (field->defPoint->exprType) {
-            field->defPoint->exprType->remove();
-          }
+      // Defined an initializer (so we left its init
+      // and exprType information in the tree)
+      for_fields(field, at) {
+        if (field->defPoint->exprType) {
+          field->defPoint->exprType->remove();
+        }
 
-          if (field->defPoint->init) {
-            field->defPoint->init->remove();
-          }
+        if (field->defPoint->init) {
+          field->defPoint->init->remove();
         }
       }
     }

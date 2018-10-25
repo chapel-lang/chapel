@@ -326,13 +326,7 @@ module ChapelDistribution {
     proc dsiLinksDistribution() return true;
 
     // Overload to to customize domain destruction
-    //
-    // BHARSH 2017-02-05: Making dsiDestroyDom a virtual method 'tricks' the
-    // compiler into thinking there's recursion for dsiDestroyDom when there is
-    // none. This can result in incorrect generated code if recursive iterators
-    // are inlined. See GitHub issue #5311 for more.
-    //
-    //proc dsiDestroyDom() { }
+    proc dsiDestroyDom() { }
 
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
 
@@ -581,7 +575,7 @@ module ChapelDistribution {
 
     proc boundsCheck(ind: index(rank, idxType)):void {
       if boundsChecking then
-        if !(parentDom.member(ind)) then
+        if !(parentDom.contains(ind)) then
           halt("Sparse domain/array index out of bounds: ", ind,
               " (expected to be within ", parentDom, ")");
     }
@@ -916,14 +910,7 @@ module ChapelDistribution {
 
   proc _delete_dom(dom, param privatized:bool) {
 
-    // This is a workaround for the recursive iterator bug discussed in
-    // GitHub issue #5311. Implementing 'dsiDestroyDom' on 'BaseDom' leads
-    // the compiler into thinking there's recursion due to virtual methods,
-    // when in fact there is no recursion at all.
-    use Reflection;
-    if canResolveMethod(dom, "dsiDestroyDom") {
-      dom.dsiDestroyDom();
-    }
+    dom.dsiDestroyDom();
 
     if privatized {
       _freePrivatizedClass(dom.pid, dom);
@@ -1024,7 +1011,7 @@ module ChapelDistribution {
     // dsiAssignDomain instead of using this method.
 
     for i in lhs.dsiIndsIterSafeForRemoving() {
-      if !rhs.member(i) {
+      if !rhs.contains(i) {
         lhs.dsiRemove(i);
       }
     }

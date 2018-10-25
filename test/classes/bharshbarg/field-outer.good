@@ -1,1 +1,1 @@
-field-outer.chpl:2: error: Cannot have a field named 'outer'. 'outer' is used to refer to an outer class from within a nested class.
+(outer = 0)

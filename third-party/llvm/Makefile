@@ -7,9 +7,24 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 # decide whether to do a debug or no-debug build
 ifdef CHPL_LLVM_DEVELOPER
-CHPL_LLVM_DEBUG = -DCMAKE_BUILD_TYPE=Debug -DLLVM_OPTIMIZED_TABLEGEN=1
+  CHPL_LLVM_DEBUG := -DCMAKE_BUILD_TYPE=Debug -DLLVM_OPTIMIZED_TABLEGEN=1
 else
-CHPL_LLVM_DEBUG = -DCMAKE_BUILD_TYPE=Release
+  CHPL_LLVM_DEBUG := -DCMAKE_BUILD_TYPE=Release
+endif
+
+# activate LLVM asserts if it's from `make ASSERTS=1`
+# or if CHPL_DEVELOPER is set
+CHPL_LLVM_ASSERTS := 0
+ifdef CHPL_DEVELOPER
+  CHPL_LLVM_ASSERTS := 1
+endif
+
+ifeq ($(ASSERTS),1)
+  CHPL_LLVM_ASSERTS := 1
+endif
+
+ifeq ($(CHPL_LLVM_ASSERTS),1)
+  CHPL_LLVM_DEBUG += -DLLVM_ENABLE_ASSERTIONS=ON
 endif
 
 LLVM_SRC_FILE := llvm/CMakeLists.txt

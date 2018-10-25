@@ -1967,11 +1967,10 @@ static void insertInitialization(ShadowVarSymbol* destVar, Symbol* srcVar) {
 
 static void insertInitialization(BlockStmt* destBlock,
                                  Symbol* destVar, Expr* srcExpr) {
-  VarSymbol* initTemp = new VarSymbol("initTemp");
-  destBlock->insertAtTail(new DefExpr(initTemp));
-  destBlock->insertAtTail(new CallExpr(PRIM_MOVE,
-                                                  initTemp, srcExpr));
-  insertInitialization(destBlock, destVar, initTemp);
+
+  Expr* initCall = new_Expr("'init var'(%S,%E)", destVar, srcExpr);
+  destBlock->insertAtTail(initCall);
+  normalize(initCall);
 }
 
 // insertDeinitialization() flavors: as (a1) or (a2) above
@@ -2045,6 +2044,8 @@ static void insertFinalGenerate(Expr* ref, Symbol* fiVarSym, Symbol* globalOp) {
   Expr* next = ref->next; // nicer ordering of the following insertions
   INT_ASSERT(next);
   VarSymbol* genTemp = newTemp("chpl_gentemp");
+  // TODO: Should we try to free chpl_gentemp right after the assignment?
+  genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
   next->insertBefore(new DefExpr(genTemp));
   next->insertBefore("'move'(%S, generate(%S,%S))",
                      genTemp, gMethodToken, globalOp);

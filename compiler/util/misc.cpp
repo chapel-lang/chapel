@@ -43,6 +43,7 @@ static bool        exit_immediately = true;
 static bool        exit_eventually  = false;
 static bool        exit_end_of_pass = false;
 
+static const char* err_subdir       = NULL;
 static const char* err_filename     = NULL;
 
 static int         err_lineno       =    0;
@@ -60,7 +61,8 @@ void gdbShouldBreakHere() {
 
 }
 
-void setupError(const char* filename, int lineno, int tag) {
+void setupError(const char* subdir, const char* filename, int lineno, int tag) {
+  err_subdir        = subdir;
   err_filename      = filename;
   err_lineno        = lineno;
   err_fatal         = tag == 1 || tag == 2 || tag == 3;
@@ -139,10 +141,18 @@ static bool forceWidePtrs() {
 }
 
 static void print_user_internal_error() {
-  static char error[8];
+  char error[20];
 
   const char* filename_start = strrchr(err_filename, '/');
+  const char* filename_end = NULL;
+  const char* directory_start = err_subdir;
   char        version[128]   = { '\0' };
+
+  // Fill error with _
+  for (int i = 0; i < (int)sizeof(error) - 1; i++) {
+    error[i] = ' ';
+  }
+  error[sizeof(error)-1] = '\0';
 
   if (filename_start) {
     filename_start++;
@@ -150,11 +160,37 @@ static void print_user_internal_error() {
     filename_start = err_filename;
   }
 
-  strncpy(error, filename_start, 3);
+  filename_end = strrchr(filename_start, '.');
+  if (filename_end - filename_start >= 6)
+    filename_end = filename_end - 3;
+  else
+    filename_end = NULL;
 
-  sprintf(error + 3, "%04d", err_lineno);
+  int idx = 0;
+  // first 3 characters are from directory
+  if (directory_start && strlen(directory_start) >= 3) {
+    strncpy(&error[idx], directory_start, 3);
+    idx += 3;
+    error[idx++] = '-';
+  }
 
-  for (int i = 0; i < 7; i++) {
+  // next 3 characters are start of filename
+  strncpy(&error[idx], filename_start, 3);
+  idx += 3;
+
+  // next 3 characters are end of the filename
+  if (filename_end) {
+    error[idx++] = '-';
+    strncpy(&error[idx], filename_end, 3);
+    idx += 3;
+  }
+
+  error[idx++] = '-';
+  // next 4 characters are the line number
+  sprintf(&error[idx], "%04d", err_lineno);
+
+  // now make the error string upper case
+  for (int i = 0; i < (int)sizeof(error) && error[i]; i++) {
     if (error[i] >= 'a' && error[i] <= 'z') {
       error[i] += 'A' - 'a';
     }
@@ -247,10 +283,7 @@ static bool printErrorHeader(const BaseAST* ast) {
                     cleanFilename(err_fn),
                     err_fn->linenum());
 
-            if (strncmp(err_fn->name, "_construct_", 11) == 0) {
-              fprintf(stderr, "initializer '%s':\n", err_fn->name+11);
-
-            } else if (strcmp(err_fn->name, "init") == 0) {
+            if (strcmp(err_fn->name, "init") == 0) {
               fprintf(stderr, "initializer:\n");
 
             } else {
@@ -320,7 +353,7 @@ static void printErrorFooter(bool guess) {
   // internal error was generated.
   //
   if (developer && !err_user)
-    fprintf(stderr, " [%s:%d]", err_filename, err_lineno);
+    fprintf(stderr, " [%s/%s:%d]", err_subdir, err_filename, err_lineno);
 
   //
   // For users and developers, if the source line was a guess (i.e., an

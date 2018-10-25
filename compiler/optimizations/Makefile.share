@@ -24,6 +24,7 @@ OPTIMIZATIONS_SRCS = \
 	liveVariableAnalysis.cpp \
 	localizeGlobals.cpp \
 	loopInvariantCodeMotion.cpp \
+	noAliasSets.cpp \
 	optimizeOnClauses.cpp \
 	refPropagation.cpp \
 	remoteValueForwarding.cpp \

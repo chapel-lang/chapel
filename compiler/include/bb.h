@@ -64,6 +64,18 @@ public:
                                           Vec<Symbol*>&      locals,
                                           Map<Symbol*, int>& localMap);
 
+  // Stores the basic block ids in order in according to reverse postorder.
+  // Reverse postorder is useful for forward flow analysis
+  // to visit a node before any successors
+  static void        computeForwardOrder(FnSymbol* fn,
+                                         std::vector<int> & order);
+
+  // Stores the basic block ids in order according to reverse preorder.
+  // Reverse preorder is useful for backward flow analysis
+  // to visit a node after any successors
+  static void        computeBackwardOrder(FnSymbol* fn,
+                                          std::vector<int> & order);
+
   static void        backwardFlowAnalysis(FnSymbol*     fn,
                                           BitVecVector& GEN,
                                           BitVecVector& KILL,

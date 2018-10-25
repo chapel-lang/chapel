@@ -1,0 +1,3 @@
+init-post-postinit.chpl:12: error: can't call postinit() here
+init-post-postinit.chpl:13: error: can't call init() here
+init-post-postinit.chpl:14: error: can't call postinit() here

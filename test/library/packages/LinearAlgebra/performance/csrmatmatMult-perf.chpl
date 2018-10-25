@@ -95,7 +95,7 @@ proc main() {
 proc memberCheck(A) {
   var fails = 0;
   forall (i,j) in A.domain with (+ reduce fails) {
-    if A.domain.member((i,j)) == false {
+    if A.domain.contains((i,j)) == false {
       fails += 1;
       writeln("NOT FOUND: ", (i,j));
     }

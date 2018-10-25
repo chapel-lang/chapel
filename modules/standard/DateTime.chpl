@@ -51,9 +51,6 @@ module DateTime {
   // This avoids needing to create new shared objects everywhere we need nil
   private const nilTZ = new shared(nil: unmanaged TZInfo);
 
-  // This is here to work around issue #5267
-  private const chpl_today = datetime.today();
-
   /* Days in the week, starting with `Monday` = 0 */
   enum DayOfWeek {
     Monday =    0,

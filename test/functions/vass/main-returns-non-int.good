@@ -1,0 +1,1 @@
+main-returns-non-int.chpl:4: error: main() returns a non-integer (real(64))

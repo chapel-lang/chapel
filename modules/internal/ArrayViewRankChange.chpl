@@ -368,7 +368,7 @@ module ArrayViewRankChange {
       }
     }
 
-    proc dsiDestroyDom() {
+    override proc dsiDestroyDom() {
       if upDom != nil then
         _delete_dom(upDom, false);
       if downDomInst != nil then
@@ -436,6 +436,7 @@ module ArrayViewRankChange {
   // other array class implementations, it supports the standard dsi
   // interface.
   //
+  pragma "aliasing array"
   class ArrayViewRankChangeArr: BaseArr {
     type eltType;  // see note on commented-out proc eltType below...
 

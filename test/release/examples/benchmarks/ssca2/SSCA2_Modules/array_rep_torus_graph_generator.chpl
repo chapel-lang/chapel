@@ -2,7 +2,7 @@ module array_rep_torus_graph_generator
 
 //  +==========================================================================+
 //  |  Generate graphs corresponding to 1, 2, 3 and 4D regular tori,           |
-//  |  using dense arithmetic arrays to represent the neighbor lists and       |
+//  |  using dense rectangular arrays to represent the neighbor lists and      |
 //  |  edge weights.                                                           |
 //  +==========================================================================+
 

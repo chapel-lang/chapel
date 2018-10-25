@@ -470,7 +470,7 @@ proc CyclicDom.setup() {
   }
 }
 
-proc CyclicDom.dsiDestroyDom() {
+override proc CyclicDom.dsiDestroyDom() {
     coforall localeIdx in dist.targetLocDom {
       on dist.targetLocs(localeIdx) do
         delete locDoms(localeIdx);
@@ -504,7 +504,7 @@ proc CyclicDom.dsiAlignment return whole.alignment;
 
 proc CyclicDom.dsiStride return whole.stride;
 
-proc CyclicDom.dsiMember(i) return whole.member(i);
+proc CyclicDom.dsiMember(i) return whole.contains(i);
 
 proc CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);
 
@@ -662,7 +662,7 @@ class LocCyclicDom {
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocCyclicDom.member(i) return myBlock.member(i);
+proc LocCyclicDom.contains(i) return myBlock.contains(i);
 
 
 class CyclicArr: BaseRectangularArr {
@@ -777,7 +777,7 @@ inline proc _remoteAccessData.getDataIndex(
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   local {
-    if myLocArr != nil && myLocArr.locDom.member(i) then
+    if myLocArr != nil && myLocArr.locDom.contains(i) then
       return myLocArr.this(i);
   }
   if doRADOpt && !stridable {
@@ -886,7 +886,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   } else {
     proc accessHelper(i) ref {
       if myLocArr then local {
-        if myLocArr.locDom.member(i) then
+        if myLocArr.locDom.contains(i) then
           return myLocArr.this(i);
       }
       return dsiAccess(i);

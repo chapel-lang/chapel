@@ -387,10 +387,14 @@ void UseStmt::validateNamed() {
       scope->getFields(name, symbols);
 
       if (symbols.size() == 0) {
+        SymExpr* srcExpr = toSymExpr(src);
+        INT_ASSERT(srcExpr); // should have been resolved by this point
         USR_FATAL_CONT(this,
-                       "Bad identifier in '%s' clause, no known '%s'",
+                       "Bad identifier in '%s' clause, no known '%s' defined in"
+                       " '%s'",
                        (except == true) ? "except" : "only",
-                       name);
+                       name,
+                       srcExpr->symbol()->name);
 
       } else {
         for_vector(Symbol, sym, symbols) {
@@ -477,22 +481,14 @@ void UseStmt::trackMethods() {
           methodsAndFields.push_back(sym->name);
         }
 
-        // TODO: remove constructor portion when constructors are deprecated
-        // The type constructor portion will probably always need to remain
-        unsigned int constrLen = strlen(t->symbol->name) +
-          strlen("_construct_") + 1;
-        unsigned int typeConstrLen = constrLen + strlen("_type");
+        unsigned int typeConstrLen = strlen(t->symbol->name) +
+          strlen("_type_construct_") + 1;
 
-        char*        constrName = (char*) malloc(constrLen);
-        char*        typeConstrName = (char*) malloc(typeConstrLen);
-
-        strcpy(constrName,     "_construct_");
-        strcat(constrName,     t->symbol->name);
+        char* typeConstrName = (char*) malloc(typeConstrLen);
 
         strcpy(typeConstrName, "_type_construct_");
         strcat(typeConstrName, t->symbol->name);
 
-        functionsToAlwaysCheck.push_back(constrName);
         functionsToAlwaysCheck.push_back(typeConstrName);
       }
 

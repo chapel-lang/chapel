@@ -343,6 +343,51 @@ module ChapelRange {
   proc chpl_build_unbounded_range()
     return new range(int, BoundedRangeType.boundedNone);
 
+  /////////////////////////////////////////////////////////////////////
+  // Helper functions for ranges in param loops (and maybe param ranges
+  // later)
+  //
+  // Necessary for coercion support
+  /////////////////////////////////////////////////////////////////////
+  proc chpl_compute_low_param_loop_bound(param low: int(?w),
+                                         param high: int(w)) param {
+    return low;
+  }
+
+  proc chpl_compute_high_param_loop_bound(param low: int(?w),
+                                          param high: int(w)) param {
+    return high;
+  }
+
+  proc chpl_compute_low_param_loop_bound(param low: uint(?w),
+                                         param high: uint(w)) param {
+    return low;
+  }
+
+  proc chpl_compute_high_param_loop_bound(param low: uint(?w),
+                                          param high: uint(w)) param {
+    return high;
+  }
+
+  proc chpl_compute_low_param_loop_bound(param low: bool,
+                                         param high: bool) param {
+    return low;
+  }
+
+  proc chpl_compute_high_param_loop_bound(param low: bool,
+                                          param high: bool) param {
+    return high;
+  }
+
+  pragma "last resort"
+  proc chpl_compute_low_param_loop_bound(param low, param high) param {
+    compilerError("Range bounds must be integers of compatible types");
+  }
+
+  pragma "last resort"
+  proc chpl_compute_low_param_loop_bound(low, high) {
+    compilerError("param for loop must be defined over a bounded param range");
+  }
 
   //################################################################################
   //# Predicates
@@ -578,7 +623,7 @@ module ChapelRange {
     return !aligned && (stride > 1 || stride < -1);
 
   /* Returns true if ``ind`` is in this range, false otherwise */
-  inline proc range.member(ind: idxType)
+  inline proc range.contains(ind: idxType)
   {
     if this.isAmbiguous() then return false;
 
@@ -604,7 +649,7 @@ module ChapelRange {
   /* Returns true if the range ``other`` is contained within this one,
      false otherwise
    */
-  inline proc range.member(other: range(?))
+  inline proc range.contains(other: range(?))
   {
     if this.isAmbiguous() || other.isAmbiguous() then return false;
 
@@ -612,19 +657,34 @@ module ChapelRange {
     // to negate one of the strides (shouldn't matter which).
     if stridable {
       if (stride > 0 && other.stride < 0) || (stride < 0 && other.stride > 0)
-        then return _memberHelp(this, other);
+        then return _containsHelp(this, other);
     } else {
       if other.stride < 0
-        then return _memberHelp(this, other);
+        then return _containsHelp(this, other);
     }
     return other == this(other);
   }
 
-  // This helper takes one arg by 'in', i.e. explicitly creating a copy,
-  // so it can be modified.
-  /* private */ inline proc _memberHelp(arg1: range(?), in arg2: range(?)) {
-    compilerAssert(arg2.stridable);
-    arg2._stride = -arg2._stride;
+  /* Deprecated - please use :proc:`range.contains`. */
+  inline proc range.member(ind: idxType) {
+    compilerWarning("range.member is deprecated - " +
+                    "please use range.contains instead");
+    return this.contains(ind);
+  }
+
+  /* Deprecated - please use :proc:`range.contains`. */
+  inline proc range.member(other: range(?)) {
+    compilerWarning("range.member is deprecated - " +
+                    "please use range.contains instead");
+    return this.contains(other);
+  }
+
+  // Negate one of the two args' strides before comparison.
+  private inline proc _containsHelp(in arg1: range(?), in arg2: range(?)) {
+    if arg2.stridable then
+      arg2._stride = -arg2._stride;
+    else
+      arg1._stride = -arg1._stride;
     return arg2 == arg1(arg2);
   }
 
@@ -782,11 +842,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                           other.alignment,
                           true);
 
-    return (boundedOther.length == 0) || member(boundedOther);
+    return (boundedOther.length == 0) || contains(boundedOther);
   }
-  /* Return true if ``other`` is a member of this range and false otherwise */
+  /* Return true if ``other`` is contained in this range and false otherwise */
   inline proc range.boundsCheck(other: idxType)
-    return member(other);
+    return contains(other);
 
 
   //################################################################################
@@ -838,9 +898,15 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"indexOrder -- Undefined on a range with ambiguous alignment.");
 
-    if ! member(ind) then return (-1):intIdxType;
-    if ! stridable then return chpl__idxToInt(ind) - _low;
-    else return ((chpl__idxToInt(ind):strType - chpl__idxToInt(this.first):strType) / _stride):intIdxType;
+    if ! contains(ind) then return (-1):intIdxType;
+    if ! stridable {
+      if this.hasLowBound() then
+        return chpl__idxToInt(ind) - _low;
+    } else {
+      if this.hasFirst() then
+        return ((chpl__idxToInt(ind):strType - chpl__idxToInt(this.first):strType) / _stride):intIdxType;
+    }
+    return (-1):intIdxType;
   }
 
   /* Returns the zero-based ``ord``-th element of this range's represented
@@ -859,6 +925,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
    */
   proc range.orderToIndex(ord: integral): idxType
   {
+    if !hasFirst() then
+      halt("invoking orderToIndex on a range that has no first index");
+
     if isAmbiguous() then
       halt("invoking orderToIndex on a range that is ambiguously aligned");
 

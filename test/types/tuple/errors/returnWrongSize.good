@@ -1,2 +1,2 @@
 returnWrongSize.chpl:1: In function 'foo':
-returnWrongSize.chpl:3: error: type mismatch in assignment from 2*int(64) to 3*int(64)
+returnWrongSize.chpl:3: error: cannot return '2*int(64)' when the declared return type is '3*int(64)'

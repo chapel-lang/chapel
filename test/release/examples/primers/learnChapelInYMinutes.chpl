@@ -338,7 +338,7 @@ writeln(rangeCountBy);
 // In this example, printing the first index, last index, number of indices,
 // stride, and if 2 is include in the range.
 writeln((rangeCountBy.first, rangeCountBy.last, rangeCountBy.length,
-           rangeCountBy.stride, rangeCountBy.member(2)));
+           rangeCountBy.stride, rangeCountBy.contains(2)));
 
 for i in rangeCountBy {
   write(i, if i == rangeCountBy.last then "\n" else ", ");

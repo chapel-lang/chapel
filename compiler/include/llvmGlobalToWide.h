@@ -155,11 +155,13 @@ struct GlobalToWideInfo {
   // so that they are not removed by the inliner.
   // This function should be removed from the module
   // once GlobalToWide completes.
+  bool hasPreservingFn;
   runtime_fn_t preservingFn;
 
   GlobalToWideInfo()
     : globalSpace(0), wideSpace(0), globalPtrBits(0),
-      localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions() { }
+      localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions(),
+      hasPreservingFn(false) { }
 };
 
 llvm::ModulePass *createGlobalToWide(GlobalToWideInfo* info,

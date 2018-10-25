@@ -756,7 +756,7 @@ proc DimensionalDom.dsiLow                return whole.low;
 proc DimensionalDom.dsiHigh               return whole.high;
 proc DimensionalDom.dsiStride             return whole.stride;
 proc DimensionalDom.dsiNumIndices         return whole.numIndices;
-proc DimensionalDom.dsiMember(indexx)     return whole.member(indexx);
+proc DimensionalDom.dsiMember(indexx)     return whole.contains(indexx);
 proc DimensionalDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
 
 proc DimensionalDom.dimSpecifier(param dim: int) {
@@ -966,7 +966,7 @@ proc DimensionalDom.dsiBuildArray(type eltType)
 }
 
 
-proc DimensionalDom.dsiDestroyDom() {
+override proc DimensionalDom.dsiDestroyDom() {
   coforall desc in localDdescs do
     on desc do
       delete desc;

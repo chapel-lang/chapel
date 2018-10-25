@@ -338,7 +338,7 @@ static chpl_bool chpl_qt_getenv_bool(const char* var,
     chpl_bool ret_val = default_val;
 
     if ((ev = chpl_qt_getenv_str(var)) != NULL) {
-        ret_val = chpl_env_str_to_bool(ev, default_val);
+        ret_val = chpl_env_str_to_bool(var, ev, default_val);
     }
 
     return ret_val;
@@ -1027,6 +1027,11 @@ int32_t chpl_task_getNumBlockedTasks(void)
 }
 
 // Threads
+
+uint32_t chpl_task_impl_getFixedNumThreads(void) {
+    assert(chpl_qthread_done_initializing);
+    return (uint32_t)qthread_num_workers();
+}
 
 uint32_t chpl_task_getNumThreads(void)
 {

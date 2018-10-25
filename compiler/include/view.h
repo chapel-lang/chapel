@@ -24,6 +24,8 @@
 #include "vec.h"
 #include <vector>
 
+class GenRet;
+
 BaseAST* aid(int id);
 BaseAST* aid09(int id);
 Expr*    aidExpr(int id);
@@ -34,6 +36,9 @@ Expr*    aidExpr(BaseAST* ast);
 
 void        list_view_noline(BaseAST* ast);
 void        nprint_view(BaseAST* ast);
+
+// defined in codegen/codegen.cpp
+void        nprint_view(GenRet& gen);
 
 // These are not used by the compiler but are available for use in GDB
 //
