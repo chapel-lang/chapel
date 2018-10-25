@@ -276,13 +276,13 @@ use.
 #include "chpl-tasks.h"
 #include "chpl-mem.h"
 #include "chpl-atomics.h"
-#include "chpl-thread-local-storage.h" // CHPL_TLS_DECL etc
+#include "chpl-thread-local-storage.h"
 #include "chpl-cache.h"
 #include "chpl-linefile-support.h"
-#include "sys.h" // sys_page_size()
+#include "sys.h"
 #include "chpl-comm-compiler-macros.h"
-#include "chpl-comm-no-warning-macros.h" // No warnings for chpl_comm_get etc.
-#include <string.h> // memcpy, memset, etc.
+#include "chpl-comm-no-warning-macros.h"
+#include <string.h>
 #include <assert.h>
 
 

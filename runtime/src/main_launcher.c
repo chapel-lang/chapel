@@ -174,7 +174,7 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
 
     if (numRead != 0) {
       if (strstr(buf, "internal error: ") == NULL) {
-        memcpy(outbuf, buf, numRead);
+        chpl_memmove(outbuf, buf, numRead);
       } else {
         // The utility program ran, but failed with an internal error
         // from child's branch above (dup2 or exevp)
@@ -250,7 +250,7 @@ char** chpl_bundle_exec_args(int argc, char *const argv[],
 
   // add any launcher args
   if (largc > 0) {
-    memcpy(newargv, largv, largc*sizeof(char *));
+    chpl_memmove(newargv, largv, largc*sizeof(char *));
     newargc = largc;
   }
   if (argc > 0) {
@@ -264,7 +264,7 @@ char** chpl_bundle_exec_args(int argc, char *const argv[],
     newargv[newargc++] = (char *) chpl_get_real_binary_name();
     if (argc > 1) {
       // add args passed to main (skip original binary) after _real binary
-      memcpy(newargv+newargc, argv+1, (argc-1)*sizeof(char *));
+      chpl_memmove(newargv+newargc, argv+1, (argc-1)*sizeof(char *));
     }
   }
 

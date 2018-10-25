@@ -280,7 +280,7 @@ size_t setup_small_fork_task(small_fork_task_t* dst, small_fork_hdr_t* f, size_t
   dst->bundle = bundle;
 
   // Copy the payload into the special task
-  memcpy(bptr + 1, f + 1, payload_size);
+  chpl_no_overlap_memcpy(bptr + 1, f + 1, payload_size);
 
   return sizeof(chpl_comm_on_bundle_t) + payload_size;
 }
@@ -581,7 +581,7 @@ void AM_copy_payload(gasnet_token_t token, void* buf, size_t nbytes,
 {
   void* dst = get_ptr_from_args(dst0, dst1);
 
-  memcpy(dst, buf, nbytes);
+  chpl_no_overlap_memcpy(dst, buf, nbytes);
 
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, ack0, ack1));
 }
@@ -1293,7 +1293,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 
         // Now copy from local_buf back to addr if necessary.
         if( local_buf ) {
-          memcpy(addr_chunk, local_buf, this_size);
+          chpl_no_overlap_memcpy(addr_chunk, local_buf, this_size);
         }
       }
 
@@ -1462,7 +1462,7 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
       *f = hdr;
 
       // Copy in the payload
-      memcpy(f + 1, arg + 1, payload_size);
+      chpl_no_overlap_memcpy(f + 1, arg + 1, payload_size);
     
       // Send the AM
       GASNET_Safe(gasnet_AMRequestMedium0(node, op, f, small_msg_size));

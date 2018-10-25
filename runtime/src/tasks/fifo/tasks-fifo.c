@@ -1322,7 +1322,7 @@ task_pool_p add_to_task_pool(chpl_fn_int_t fid, chpl_fn_p fp,
                                        CHPL_RT_MD_TASK_ARG_AND_POOL_DESC,
                                        lineno, filename);
 
-  memcpy(&ptask->bundle, a, a_size);
+  chpl_no_overlap_memcpy(&ptask->bundle, a, a_size);
 
   ptask->p_list_head            = NULL;
   ptask->list_next              = NULL;

@@ -136,29 +136,6 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   chpl_free(memAlloc);
 }
 
-static inline
-void* chpl_memcpy(void* dest, const void* src, size_t num)
-{
-  assert(dest != src || num == 0);
-  return memcpy(dest, src, num);
-}
-
-// Provide handles to instrument Chapel calls to memcpy and memmove. For memcpy
-// we've named it to explicit indicate overlap isn't permitted since we've
-// historically been pretty careless about that.
-static inline
-void* chpl_no_overlap_memcpy(void* dest, const void* src, size_t num)
-{
-  assert(dest != src || num == 0);
-  return memcpy(dest, src, num);
-}
-
-static inline
-void* chpl_memmove(void* dest, const void* src, size_t num)
-{
-  return memmove(dest, src, num);
-}
-
 // Query the allocator to ask for a good size to allocate that is at least
 // minSize. One example where this is useful is to grow a vector while
 // minimizing memory wasted by overallocation.
@@ -200,5 +177,28 @@ void chpl_mem_layerFree(void*, int32_t lineno, int32_t filename);
   sys_free(ptr)
 
 #endif // LAUNCHER
+
+static inline
+void* chpl_memcpy(void* dest, const void* src, size_t num)
+{
+  assert(dest != src || num == 0);
+  return memcpy(dest, src, num);
+}
+
+// Provide handles to instrument Chapel calls to memcpy and memmove. For memcpy
+// we've named it to explicit indicate overlap isn't permitted since we've
+// historically been pretty careless about that.
+static inline
+void* chpl_no_overlap_memcpy(void* dest, const void* src, size_t num)
+{
+  assert(dest != src || num == 0);
+  return memcpy(dest, src, num);
+}
+
+static inline
+void* chpl_memmove(void* dest, const void* src, size_t num)
+{
+  return memmove(dest, src, num);
+}
 
 #endif

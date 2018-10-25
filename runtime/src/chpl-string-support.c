@@ -114,9 +114,9 @@ string_concat(c_string x, c_string y, int32_t lineno, int32_t filename) {
   // look for terminating NUL characters.  We are guaranteed that the source
   // and destination strings do not overlap so we don't need the (very slight)
   // extra complexity of memmove.
-  memcpy(z, x, xlen);
+  chpl_no_overlap_memcpy(z, x, xlen);
   // Using "ylen+1" copies the terminating NUL from the second string.
-  memcpy(z + xlen, y, ylen+1);
+  chpl_no_overlap_memcpy(z + xlen, y, ylen+1);
 
   return z;
 }
@@ -148,7 +148,7 @@ string_select(c_string x, int low, int high, int stride, int32_t lineno, int32_t
   src = stride > 0 ? x + low - 1 : x + high - 1;
   dst = result;
   if (stride == 1) {
-    memcpy(result, src, size);
+    chpl_no_overlap_memcpy(result, src, size);
     dst = result + size;
   } else if (stride > 0) {
     while (src - x <= high - 1) {

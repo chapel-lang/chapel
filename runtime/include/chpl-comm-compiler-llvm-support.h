@@ -51,7 +51,7 @@ void chpl_gen_comm_put_ctl(c_nodeid_t dst_node, void* dst_addr,
   chpl_gen_comm_put(src_addr, dst_node, dst_addr, sizeof(uint8_t)*n, CHPL_TYPE_uint8_t, CHPL_COMM_UNKNOWN_ID, -1, 0);
 }
 
-// This function implements memcpy/memmove when both the source and destination
+// This function implements memmove when both the source and destination
 // are possibly remote. The Chapel compiler does not normally generate
 // such code, but it could appear during optimization. Note that the
 // dst and src regions could overlap.

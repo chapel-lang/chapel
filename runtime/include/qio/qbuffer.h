@@ -459,7 +459,7 @@ qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 #define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
 #define qio_memalign(boundary, size)  chpl_memalign(boundary, size)
 #define qio_free(ptr) chpl_mem_free(ptr, __LINE__, 0)
-#define qio_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
+#define qio_memcpy(dest, src, num) chpl_no_overlap_memcpy(dest, src, num)
 
 typedef chpl_bool qio_bool;
 

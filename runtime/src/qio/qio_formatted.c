@@ -2897,9 +2897,9 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
     // Move the number to its destination
     // if it's not in the right place already.
     if( sign_base_width + left_pad_width != skip ) {
-      memmove(&dst[sign_base_width + left_pad_width],
-              &dst[skip],
-              number_width);
+      chpl_memmove(&dst[sign_base_width + left_pad_width],
+                   &dst[skip],
+                   number_width);
     }
 
     pad_char = style->pad_char;

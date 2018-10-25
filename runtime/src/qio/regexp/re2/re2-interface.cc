@@ -357,7 +357,7 @@ int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_
     }
   }
   output = (char*) qio_malloc(s.length()+1);
-  memcpy(output, s.data(), s.length());
+  qio_memcpy(output, s.data(), s.length());
   output[s.length()] = '\0';
   *str_out = output;
   *len_out = s.length();

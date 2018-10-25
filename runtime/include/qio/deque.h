@@ -43,7 +43,7 @@
 #include "chpl-mem.h"
 #define deque_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, 0, 0)
 #define deque_free(ptr) chpl_mem_free(ptr, 0, 0)
-#define deque_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
+#define deque_memcpy(dest, src, num) chpl_no_overlap_memcpy(dest, src, num)
 #else
 #include "chpl-mem-sys.h"
 #define deque_calloc(nmemb, size) sys_calloc(nmemb,size)

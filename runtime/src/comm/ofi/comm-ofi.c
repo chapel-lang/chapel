@@ -1671,7 +1671,7 @@ chpl_comm_nb_handle_t ofi_put(void* addr, c_nodeid_t node,
     myAddr = allocBounceBuf(size);
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE, "PUT BB: %p", myAddr);
     CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
-    memcpy(myAddr, addr, size);
+    chpl_no_overlap_memcpy(myAddr, addr, size);
   }
 
   uint64_t mrKey;
@@ -1760,7 +1760,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
   }
 
   if (myAddr != addr) {
-    memcpy(addr, myAddr, size);
+    chpl_no_overlap_memcpy(addr, myAddr, size);
     freeBounceBuf(myAddr);
   }
 

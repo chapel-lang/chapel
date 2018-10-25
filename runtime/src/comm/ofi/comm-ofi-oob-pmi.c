@@ -82,7 +82,7 @@ void chpl_comm_ofi_oob_allgather(void* mine, void* all, int size) {
   gather_t* g_mine;
   CHK_SYS_CALLOC_SZ(g_mine, 1, g_size);
   g_mine->nodeID = chpl_nodeID;
-  memcpy(&g_mine->info, mine, size);
+  chpl_memmove(&g_mine->info, mine, size);
 
   gather_t* g_all;
   CHK_SYS_CALLOC_SZ(g_all, chpl_numNodes, g_size);
@@ -92,9 +92,9 @@ void chpl_comm_ofi_oob_allgather(void* mine, void* all, int size) {
   for (int g_i = 0; g_i < chpl_numNodes; g_i++) {
     char* g_pa = (char*) g_all + g_i * g_size;
     int i;
-    memcpy(&i, g_pa + offsetof(gather_t, nodeID), sizeof(i));
+    chpl_memmove(&i, g_pa + offsetof(gather_t, nodeID), sizeof(i));
     char* p_a = (char*) all + i * size;
-    memcpy(p_a, g_pa + offsetof(gather_t, info), size);
+    chpl_memmove(p_a, g_pa + offsetof(gather_t, info), size);
   }
 
   sys_free(g_all);

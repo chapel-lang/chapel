@@ -1543,7 +1543,7 @@ qioerr qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, 
       // carry on.
       if( qio_ptr_align(ch->cached_cur, sizeof(qio_bitbuffer_t)) == 0 ) {
         // We have 8-byte alignment
-        memcpy(ch->cached_cur, &part_one_bits_be, sizeof(qio_bitbuffer_t));
+        qio_memcpy(ch->cached_cur, &part_one_bits_be, sizeof(qio_bitbuffer_t));
         ch->cached_cur = qio_ptr_add(ch->cached_cur, sizeof(qio_bitbuffer_t));
         ch->bit_buffer = tmp_bits;
         ch->bit_buffer_bits = tmp_live;

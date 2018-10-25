@@ -57,7 +57,7 @@ const char* qio_spawn_strdup(const char* str)
   size_t len = strlen(str);
   char* ret = sys_malloc(len + 1);
   // note: also copies '\0' at end of string.
-  memcpy(ret, str, len + 1);
+  qio_memcpy(ret, str, len + 1);
   return ret;
 }
 

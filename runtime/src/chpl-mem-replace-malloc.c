@@ -191,7 +191,7 @@ void* realloc(void* ptr, size_t size)
       copy_size = allocated_len;
       if( size < copy_size ) copy_size = size;
 
-      memcpy(ret, ptr, copy_size);
+      chpl_no_overlap_memcpy(ret, ptr, copy_size);
 
       // free the old pointer from the system heap.
       __libc_free(ptr);

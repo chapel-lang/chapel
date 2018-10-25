@@ -2541,7 +2541,7 @@ void register_memory(void)
     my_gdata->mem_regions_all = mem_regions_all;
     my_gdata->gnr_mreg = *gnr_mreg;
     my_gdata->mreg_cnt = mem_regions->mreg_cnt;
-    memcpy(my_gdata->mregs, mem_regions->mregs, gdata_mregs_size);
+    chpl_memmove(my_gdata->mregs, mem_regions->mregs, gdata_mregs_size);
 
     gdata_t* gdata;
     gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, gdata_size,
@@ -2556,8 +2556,8 @@ void register_memory(void)
 
       gnr_mreg_map[node] = gdp->gnr_mreg;
       mem_regions_all_entries[node]->mreg_cnt = gdp->mreg_cnt;
-      memcpy(&mem_regions_all_entries[node]->mregs, &gdp->mregs,
-             mem_regions_size);
+      chpl_memmove(&mem_regions_all_entries[node]->mregs, &gdp->mregs,
+                   mem_regions_size);
       mem_regions_all_my_entry_map[node] =
           (mem_region_table_t*)
           ((char*) gdp->mem_regions_all + chpl_nodeID * mem_regions_size);
@@ -3564,9 +3564,9 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
       // Update our own map in place.
       //
       if (mr_cnt > 0) {
-        memcpy((char*) &mem_regions_all_my_entry_map[ni]->mregs[mr_i],
-               (char*) &mem_regions->mregs[mr_i],
-               mr_cnt * sizeof(mem_region_t));
+        chpl_memmove((char*) &mem_regions_all_my_entry_map[ni]->mregs[mr_i],
+                     (char*) &mem_regions->mregs[mr_i],
+                     mr_cnt * sizeof(mem_region_t));
       }
 
       if (send_mreg_cnt) {
@@ -3901,7 +3901,7 @@ void rf_handler(gni_cq_entry_t* ev)
       // and it refers to the memory just after that structure.
       // Also note that we could copy to space.buf directly, but
       // it's possible for the C compiler to add padding before the buf field.
-      memcpy(on_bundle + 1, f_c + 1, payload_size);
+      chpl_no_overlap_memcpy(on_bundle + 1, f_c + 1, payload_size);
       bundle_size = sizeof(chpl_comm_on_bundle_t) + payload_size;
 
       if (f_c->fast) {
@@ -4123,7 +4123,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
             _t my_res;                                                  \
             my_res = atomic_fetch_##_o##_##_t((atomic_##_t*) obj,       \
                                               *(_t*) opnd1);            \
-            memcpy(res, &my_res, sizeof(my_res));                       \
+            chpl_no_overlap_memcpy(res, &my_res, sizeof(my_res));       \
             res_size = sizeof(my_res);                                  \
           }                                                             \
         } while (0)
@@ -4149,7 +4149,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     {
       int_least32_t my_res;
       my_res = atomic_load_int_least32_t((atomic_int_least32_t*) obj);
-      memcpy(res, &my_res, sizeof(my_res));
+      chpl_no_overlap_memcpy(res, &my_res, sizeof(my_res));
       res_size = sizeof(my_res);
     }
     break;
@@ -4158,7 +4158,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     {
       int_least64_t my_res;
       my_res = atomic_load_int_least64_t((atomic_int_least64_t*) obj);
-      memcpy(res, &my_res, sizeof(my_res));
+      chpl_no_overlap_memcpy(res, &my_res, sizeof(my_res));
       res_size = sizeof(my_res);
     }
     break;
@@ -4168,7 +4168,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
       int_least32_t my_res;
       my_res = atomic_exchange_int_least32_t((atomic_int_least32_t*) obj,
                                              *(int_least32_t*) opnd1);
-      memcpy(res, &my_res, sizeof(my_res));
+      chpl_no_overlap_memcpy(res, &my_res, sizeof(my_res));
       res_size = sizeof(my_res);
     }
     break;
@@ -4178,7 +4178,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
       int_least64_t my_res;
       my_res = atomic_exchange_int_least64_t((atomic_int_least64_t*) obj,
                                              *(int_least64_t*) opnd1);
-      memcpy(res, &my_res, sizeof(my_res));
+      chpl_no_overlap_memcpy(res, &my_res, sizeof(my_res));
       res_size = sizeof(my_res);
     }
     break;
@@ -4190,7 +4190,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
                  ((atomic_int_least32_t*) obj,
                   *(int_least32_t*) opnd1,
                   *(int_least32_t*) opnd2);
-      memcpy(res, &my_res, sizeof(my_res));
+      chpl_no_overlap_memcpy(res, &my_res, sizeof(my_res));
       res_size = sizeof(my_res);
     }
     break;
@@ -4216,7 +4216,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
                    amo_cmd_2_nic_op(cmpxchg_64, 1), &nic_res, mr);
         my_res = (nic_res == *(int_least64_t*) opnd1) ? true : false;
       }
-      memcpy(res, &my_res, sizeof(my_res));
+      chpl_no_overlap_memcpy(res, &my_res, sizeof(my_res));
       res_size = sizeof(my_res);
     }
     break;
@@ -4270,7 +4270,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
       } while (!done);
 
       if (res != NULL) {
-        memcpy(res, &expected, sizeof(expected));
+        chpl_no_overlap_memcpy(res, &expected, sizeof(expected));
         res_size = sizeof(expected);
       }
     }
@@ -4313,7 +4313,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
       }
 
       if (res != NULL) {
-        memcpy(res, &expected, sizeof(expected));
+        chpl_no_overlap_memcpy(res, &expected, sizeof(expected));
         res_size = sizeof(expected);
       }
     }
@@ -5089,7 +5089,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
         // The transfer will fit in a single trampoline buffer.
         // 
         src_addr_xmit = get_buf_alloc(size);
-        memcpy(src_addr_xmit, src_addr, size);
+        chpl_no_overlap_memcpy(src_addr_xmit, src_addr, size);
         fork_get(src_addr_xmit, locale, tgt_addr, size);
         get_buf_free(src_addr_xmit);
       }
@@ -5101,14 +5101,14 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
         src_addr_xmit = get_buf_alloc(gbp_max_size);
 
         do {
-          memcpy(src_addr_xmit, src_addr, gbp_max_size);
+          chpl_no_overlap_memcpy(src_addr_xmit, src_addr, gbp_max_size);
           fork_get(src_addr_xmit, locale, tgt_addr, gbp_max_size);
           src_addr = (char*) src_addr + gbp_max_size;
           tgt_addr = (char*) tgt_addr + gbp_max_size;
           size -= gbp_max_size;
         } while (size > gbp_max_size);
 
-        memcpy(src_addr_xmit, src_addr, size);
+        chpl_no_overlap_memcpy(src_addr_xmit, src_addr, size);
         fork_get(src_addr_xmit, locale, tgt_addr, size);
         get_buf_free(src_addr_xmit);
       }
@@ -5366,7 +5366,7 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
         //
         tgt_addr_xmit = get_buf_alloc(size);
         fork_put(tgt_addr_xmit, locale, src_addr, size);
-        memcpy(tgt_addr, tgt_addr_xmit, size);
+        chpl_no_overlap_memcpy(tgt_addr, tgt_addr_xmit, size);
         get_buf_free(tgt_addr_xmit);
       }
       else {
@@ -5378,14 +5378,14 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 
         do {
           fork_put(tgt_addr_xmit, locale, src_addr, gbp_max_size);
-          memcpy(tgt_addr, tgt_addr_xmit, gbp_max_size);
+          chpl_no_overlap_memcpy(tgt_addr, tgt_addr_xmit, gbp_max_size);
           tgt_addr = (char*) tgt_addr + gbp_max_size;
           src_addr = (char*) src_addr + gbp_max_size;
           size -= gbp_max_size;
         } while (size > gbp_max_size);
 
         fork_put(tgt_addr_xmit, locale, src_addr, size);
-        memcpy(tgt_addr, tgt_addr_xmit, size);
+        chpl_no_overlap_memcpy(tgt_addr, tgt_addr_xmit, size);
         get_buf_free(tgt_addr_xmit);
       }
     }
@@ -5448,7 +5448,7 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 
     do_nic_get(tgt_addr_xmit, locale, remote_mr,
                src_addr_xmit, xmit_size, gnr_mreg);
-    memcpy(tgt_addr, (char*) tgt_addr_xmit + src_addr_xmit_off, size);
+    chpl_no_overlap_memcpy(tgt_addr, (char*) tgt_addr_xmit + src_addr_xmit_off, size);
 
     get_buf_free(tgt_addr_xmit);
   }
@@ -5462,8 +5462,8 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     // In the first chunk we handle src start address misalignment.
     do_nic_get(tgt_addr_xmit, locale, remote_mr,
                src_addr_xmit, gbp_max_size, gnr_mreg);
-    memcpy(tgt_addr, (char*) tgt_addr_xmit + src_addr_xmit_off,
-           gbp_max_size - src_addr_xmit_off);
+    chpl_no_overlap_memcpy(tgt_addr, (char*) tgt_addr_xmit + src_addr_xmit_off,
+                           gbp_max_size - src_addr_xmit_off);
     tgt_addr = (char*) tgt_addr + gbp_max_size - src_addr_xmit_off;
     src_addr_xmit = (char*) src_addr_xmit + gbp_max_size;
     xmit_size -= gbp_max_size;
@@ -5472,7 +5472,7 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     while (xmit_size > gbp_max_size) {
       do_nic_get(tgt_addr_xmit, locale, remote_mr,
                  src_addr_xmit, gbp_max_size, gnr_mreg);
-      memcpy(tgt_addr, tgt_addr_xmit, xmit_size);
+      chpl_no_overlap_memcpy(tgt_addr, tgt_addr_xmit, xmit_size);
       tgt_addr = (char*) tgt_addr + gbp_max_size;
       src_addr_xmit = (char*) src_addr_xmit + gbp_max_size;
       xmit_size -= gbp_max_size;
@@ -5481,7 +5481,8 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     // In the last chunk chunk we handle length misalignment.
     do_nic_get(tgt_addr_xmit, locale, remote_mr,
                src_addr_xmit, xmit_size, gnr_mreg);
-    memcpy(tgt_addr, tgt_addr_xmit, (size + src_addr_xmit_off) % gbp_max_size);
+    chpl_no_overlap_memcpy(tgt_addr, tgt_addr_xmit,
+                           (size + src_addr_xmit_off) % gbp_max_size);
 
     get_buf_free(tgt_addr_xmit);
   }
@@ -5966,13 +5967,13 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
                                              int32_t loc) {             \
     fork_t rf_req = { .a={.cmd=_c, .obj=obj} };                         \
     if (opnd1 != NULL)                                                  \
-      memcpy(&rf_req.a.opnd1, opnd1, sizeof(_t));                       \
+      chpl_no_overlap_memcpy(&rf_req.a.opnd1, opnd1, sizeof(_t));       \
     if (opnd2 != NULL)                                                  \
-      memcpy(&rf_req.a.opnd2, opnd2, sizeof(_t));                       \
+      chpl_no_overlap_memcpy(&rf_req.a.opnd2, opnd2, sizeof(_t));       \
     if (res != NULL && mreg_for_local_addr(res) == NULL) {              \
       rf_req.a.res = amo_res_alloc();                                   \
       fork_amo(&rf_req, loc);                                           \
-      memcpy(res, rf_req.a.res, sizeof(_t));                            \
+      chpl_no_overlap_memcpy(res, rf_req.a.res, sizeof(_t));            \
       amo_res_free(rf_req.a.res);                                       \
     }                                                                   \
     else {                                                              \
@@ -6930,7 +6931,7 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   post_fma_and_wait(locale, &post_desc, true);
 
   if (p_result != result) {
-    memcpy(result, p_result, size);
+    chpl_no_overlap_memcpy(result, p_result, size);
     if (p_result != &tmp_result)
       amo_res_free(p_result);
   }
@@ -6950,15 +6951,15 @@ void amo_add_real32_cpu_cmpxchg(void* result, void* object, void* operand)
 
   do {
     val = *(volatile float*) object;
-    memcpy(&expected, &val, sizeof(val));
+    chpl_no_overlap_memcpy(&expected, &val, sizeof(val));
     val += *(float*) operand;
-    memcpy(&desired, &val, sizeof(val));
+    chpl_no_overlap_memcpy(&desired, &val, sizeof(val));
     cxr = atomic_compare_exchange_strong_int_least32_t
             ((atomic_int_least32_t*) object, expected, desired);
   } while (!cxr);
 
   if (result != NULL)
-    memcpy(result, &expected, sizeof(val));
+    chpl_no_overlap_memcpy(result, &expected, sizeof(val));
 }
 
 
@@ -6975,15 +6976,15 @@ void amo_add_real64_cpu_cmpxchg(void* result, void* object, void* operand)
 
   do {
     val = *(volatile double*) object;
-    memcpy(&expected, &val, sizeof(val));
+    chpl_no_overlap_memcpy(&expected, &val, sizeof(val));
     val += *(double*) operand;
-    memcpy(&desired, &val, sizeof(val));
+    chpl_no_overlap_memcpy(&desired, &val, sizeof(val));
     cxr = atomic_compare_exchange_strong_int_least64_t
             ((atomic_int_least64_t*) object, expected, desired);
   } while (!cxr);
 
   if (result != NULL)
-    memcpy(result, &expected, sizeof(val));
+    chpl_no_overlap_memcpy(result, &expected, sizeof(val));
 }
 
 
@@ -7141,7 +7142,7 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
       large_arg = chpl_mem_allocMany(arg_size, sizeof(char),
                                      CHPL_RT_MD_COMM_FRK_SND_ARG, 0, 0);
 
-      memcpy(large_arg, arg, arg_size);
+      chpl_no_overlap_memcpy(large_arg, arg, arg_size);
     } else {
       large_arg = arg;
     }
@@ -7157,9 +7158,7 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
     // Now copy the payload after it
     // Note ptr+1 here is the same as (unsigned char*)ptr + sizeof(*ptr)
     // and it refers to the memory just after that structure.
-    memcpy(f_sc + 1,
-           arg + 1,
-           payload_size);
+    chpl_no_overlap_memcpy(f_sc + 1, arg + 1, payload_size);
     f_size = small_msg_size;
   } else {
     // Copy the header into the fork_t
