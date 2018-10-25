@@ -321,8 +321,9 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
       for_formals(formal, fn) {
         if (formal->intent == INTENT_REF) {
           Type* vt = formal->getValType();
-          bool  scalar = vt->scalarPromotionType == NULL;
-          if (scalar) {
+          if (vt->scalarPromotionType == NULL &&
+              !(isAtomicType(vt) || isSyncType(vt) || isSingleType(vt)) &&
+              !formal->hasFlag(FLAG_ERROR_VARIABLE)) {
             const char* err = "Racy promotion of scalar value";
             if (formal == fn->_this)
               err = "Racy promotion of scalar method receiver";
