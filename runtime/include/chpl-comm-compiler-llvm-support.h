@@ -61,7 +61,7 @@ void chpl_gen_comm_getput(c_nodeid_t dst_node, void* dst_addr,
                           uintptr_t n)
 {
   if (chpl_nodeID == dst_node && chpl_nodeID == src_node) {
-    memmove(dst_addr, src_addr, n);
+    chpl_memmove(dst_addr, src_addr, n);
   } else if( chpl_nodeID == dst_node ) {
     chpl_gen_comm_get_ctl(dst_addr, src_node, src_addr, n, 0);
   } else if( chpl_nodeID == src_node ) {

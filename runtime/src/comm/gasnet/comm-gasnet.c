@@ -1116,7 +1116,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
-    memmove(raddr, addr, size);
+    chpl_memmove(raddr, addr, size);
   } else {
     // Communications callback support
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
@@ -1193,7 +1193,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
-    memmove(addr, raddr, size);
+    chpl_memmove(addr, raddr, size);
   } else {
     // Communications callback support
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {

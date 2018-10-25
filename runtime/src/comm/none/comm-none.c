@@ -147,7 +147,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     int32_t commID, int ln, int32_t fn) {
   assert(node==0);
 
-  memmove(raddr, addr, size);
+  chpl_memmove(raddr, addr, size);
 }
 
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
@@ -155,7 +155,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                     int32_t commID, int ln, int32_t fn) {
   assert(node==0);
 
-  memmove(addr, raddr, size);
+  chpl_memmove(addr, raddr, size);
 }
 
 void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t dstnode,

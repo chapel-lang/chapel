@@ -5015,7 +5015,7 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
     return;
 
   if (locale == chpl_nodeID) {
-    memmove(raddr, addr, size);
+    chpl_memmove(raddr, addr, size);
     return;
   }
 
@@ -5298,7 +5298,7 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
     return;
 
   if (locale == chpl_nodeID) {
-    memmove(addr, raddr, size);
+    chpl_memmove(addr, raddr, size);
     return;
   }
 
@@ -5637,7 +5637,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
     CHPL_INTERNAL_ERROR("chpl_comm_get_nb(): remote locale out of range");
 
   if (locale == chpl_nodeID) {
-    memmove(addr, raddr, size);
+    chpl_memmove(addr, raddr, size);
     return NULL;
   }
 
