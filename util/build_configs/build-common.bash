@@ -4,8 +4,7 @@
 # This expects bash functions log_debug, log_error, etc to be defined
 # (see functions.bash)
 
-thiscomm=$( basename ${BASH_SOURCE[0]} )
-log_debug "Begin $thiscomm"
+log_debug "Begin $( basename ${BASH_SOURCE[0]} )"
 
 if [ -n "${verbose:-}" ]; then
     log_info "Using -v (verbose)"
@@ -102,4 +101,4 @@ case "$tarball" in
     ;;
 esac
 
-log_debug "End $thiscomm"
+log_debug "End $( basename ${BASH_SOURCE[0]} )"

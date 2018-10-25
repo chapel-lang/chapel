@@ -6,24 +6,23 @@
 # scripts in the parent directory (build_configs).
 
 set -e
-thisfile=$( basename "$0" )
 yourcwd=$PWD
 
-cwd=$( cd $(dirname "$0" ) && pwd )
-thisfile=$( basename "$cwd" )/$thisfile
+cwd=$( cd $(dirname "${BASH_SOURCE[0]}" ) && pwd )
 
 source $cwd/../functions.bash
 source $cwd/../package-functions.bash
 
-log_info "Begin $thisfile"
+log_info "Begin $( basename "${BASH_SOURCE[0]}" )"
 
 usage() {
     echo 2>&1 "
-Usage $thisfile" '[options]
+Usage $( basename "${BASH_SOURCE[0]}" )" '[options]
   where:
     -v  : verbose/debug output.
     -n  : Do not actually run rpmbuild (dry_run).
-    -b release_type     : Build/release type (required) == "nightly" or "release".
+    -b release_type     : Build/release type (required)
+                          == "nightly", "release", or "developer".
     -p chpl_platform    : Chpl target platform, as in $CHPL_HOME/bin/$chpl_platform
                           ("cray-xc" or "cray-xe")
                           Default: cray-xc
@@ -103,6 +102,8 @@ case "$release_type" in
     ;;
 ( [rR]* | -r | release )
     ;;
+( [dD]* | developer )
+    ;;
 ( * )
     log_error "-b release_type='$release_type' is invalid."
     usage
@@ -138,7 +139,7 @@ log_debug "Using -C workdir='$workdir'"
 
 # Get Chapel version numbers from source
 
-src_version=$( get_src_version "$CHPL_HOME" )
+src_version=$( get_src_version "$CHPL_HOME" "$release_type" )
 log_debug "Using src_version='$src_version'"
 
 # Sanity-check some common shell variables used for Chapel packages (parent directory)
@@ -161,11 +162,25 @@ log_info "Creating CHPL_RPM='$CHPL_RPM'"
 rm -rf "$CHPL_RPM"
 mkdir "$CHPL_RPM"
 
-# Generate draft/placeholder release_info file, w versions
 
-log_debug "Generate release_info ..."
-$cwd/generate-dev-releaseinfo.bash > "$CHPL_RPM/release_info"
-chmod 644 "$CHPL_RPM/release_info"
+if [ "$release_type" = release ]; then
+
+    log_debug "Using existing release_info file in CHPL_HOME"
+
+    if [ ! -f "$CHPL_HOME/release_info" ]; then
+        log_error "Expected release_info file not found in CHPL_HOME='$CHPL_HOME'"
+        exit 2
+    fi
+    cat "$CHPL_HOME/release_info" > "$CHPL_RPM/release_info"
+    rm -f "$CHPL_HOME/release_info"
+    chmod 644 "$CHPL_RPM/release_info"
+else
+
+    log_debug "Generate draft/placeholder release_info ..."
+
+    $cwd/generate-dev-releaseinfo.bash > "$CHPL_RPM/release_info"
+    chmod 644 "$CHPL_RPM/release_info"
+fi
 
 # Generate modulefile, w versions
 
@@ -187,21 +202,42 @@ $cwd/generate-rpmspec.bash > "$CHPL_RPM/chapel.spec"
 # Prepare the CHPL_RPM subdirectory structure, with hardlinked files from CHPL_HOME/...
 
 log_info "Prepare CHPL_RPM subdirs."
-log_debug "CHPL_HOME will be hardlinked into CHPL_RPM/BUILDROOT/"
-log_debug "cd '$CHPL_RPM'"
-cd "$CHPL_RPM"
 mkdir -p "$CHPL_RPM/SOURCES" "$CHPL_RPM/BUILD" "$CHPL_RPM/RPMS/$CPU" "$CHPL_RPM/tmp"
 (
     set -e
+    chpl_home_base=$( basename "$CHPL_HOME" )
     if [ -n "$verbose" ]; then
         set -x
     fi
     : Begin subshell
+
+    : Hard-link CHPL_HOME subtree into CHPL_RPM/BUILD/$chpl_home_base
     cd "$CHPL_HOME/.."
-    ls >/dev/null -d $( basename "$CHPL_HOME" )
-    find $( basename "$CHPL_HOME" ) -depth -print | cpio -pmdlu "$CHPL_RPM/BUILD"
+    ls >/dev/null -d $chpl_home_base
+    find $chpl_home_base -depth -print | cpio -pmdlu "$CHPL_RPM/BUILD"
+
+    : Temporarily reset CHPL_HOME=CHPL_RPM/BUILD/$chpl_home_base
+    cd "$CHPL_RPM/BUILD/$chpl_home_base"
+    export CHPL_HOME=$PWD
+    . util/setchplenv.bash
+
+    : Chapel make cleanall cleans up intermediate binaries before packaging
+    make cleanall
+
+    : Delete specific files that introduce dependencies we cannot support
+    rm -rf \
+        ./third-party/llvm/llvm/test/ \
+        ./third-party/llvm/llvm/utils/llvm-compilers-check \
+        ./third-party/llvm/install/*/bin/llvm-objdump \
+        ./third-party/llvm/install/*/bin/llvm-rtdyld \
+        ./third-party/llvm/install/*/bin/llvm-dwarfdump \
+        ./third-party/llvm/install/*/bin/llvm-symbolizer \
+    || :
     : End subshell
 )
+
+log_debug "cd '$CHPL_RPM'"
+cd "$CHPL_RPM"
 
 # Dry-run or rpmbuild with post processing
 
@@ -238,4 +274,4 @@ else
     fi
 fi
 
-log_info "End $thisfile"
+log_info "End $( basename "${BASH_SOURCE[0]}" )"

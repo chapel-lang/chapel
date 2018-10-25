@@ -44,7 +44,6 @@ function ck_chpl_home()
     ( /* )  ;;
     ( * )   log_error "$thisfunc: Invalid argv1 (CHPL_HOME)='$1'"; exit 2;;
     esac
-    local chpl_home="$1"
 
     if [ ! -d "$1/util" ] || [ ! -d "$1/compiler" ] || [ ! -d "$1/runtime" ] || [ ! -d "$1/modules" ]; then
         log_error "ck_chpl_home: $1 does not look like a CHPL_HOME directory"
@@ -57,20 +56,47 @@ function get_src_version()
 {
     local thisfunc=get_src_version
 
+    case "$1" in
+    ( "" )  log_error "$thisfunc: Missing argv1 (CHPL_HOME)"; exit 2;;
+    ( /* )  ;;
+    ( * )   log_error "$thisfunc: Invalid argv1 (CHPL_HOME)='$1'"; exit 2;;
+    esac
+
+    # get major.minor.update version from version_num.h file
     local version_file="$1/compiler/main/version_num.h"
     ls >/dev/null "$version_file" || {
-        log_error "$thisfunc: Missing source file $version_file"
+        log_error "$thisfunc: Missing source file '$version_file'"
         exit 2
     }
 
     local major=$( grep MAJOR_VERSION < "$version_file" | cut -f3 -d\  )
     local minor=$( grep MINOR_VERSION < "$version_file" | cut -f3 -d\  | sed -e 's,",,g' )
     local update=$( grep UPDATE_VERSION < "$version_file" | cut -f3 -d\  | sed -e 's,",,g' )
-    case "$major" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file=$version_file (major=$major)"; exit 2;; esac
-    case "$minor" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file=$version_file (minor=$minor)"; exit 2;; esac
-    case "$update" in   ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file=$version_file (update=$update)"; exit 2;; esac
+    case "$major" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' (MAJOR_VERSION='$major')"; exit 2;; esac
+    case "$minor" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' (MINOR_VERSION='$minor')"; exit 2;; esac
+    case "$update" in   ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' (UPDATE_VERSION='$update')"; exit 2;; esac
 
-    echo $major.$minor.$update
+    # if release_type (argv2) is nightly or release, return src_version as major.minor.update (from version_num.h)
+    case "$2" in
+    ( [dD]* | developer ) ;;
+    ( * )   echo "$major.$minor.$update"; return;;
+    esac
+
+    # release_type is developer, get the contents of BUILD_VERSION file
+    local build_version_file="$1/compiler/main/BUILD_VERSION"
+    ls >/dev/null "$build_version_file" || {
+        log_error "$thisfunc: Missing source file '$build_version_file'"
+        exit 2
+    }
+
+    local gitrev=$( sed -e 's,",,g' < "$build_version_file" )
+
+    # and return src_version as major.minor.update.gitrev
+    case "$gitrev" in
+    ( "" )  log_error "$thisfunc: '$build_version_file' is empty" exit 2;;
+    ( *[!0-9a-z]* ) log_error "$thisfunc: Invalid '$build_version_file' contains '$gitrev'"; exit 2;;
+    ( * )   echo "$major.$minor.$update.$gitrev";;
+    esac
 }
 
 # verify a given directory location which must exist, and echo the full path
