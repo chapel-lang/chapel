@@ -735,6 +735,12 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_SHIFT_BASE_POINTER, "shift_base_pointer", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_ALLOC, "array_alloc", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
+
+  // PRIM_ARRAY_GET{_VALUE} arguments
+  //  base pointer
+  //  index
+  //  no alias set
+  // This is similar to A[i] in C
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false);
   prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false);
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
@@ -910,6 +916,21 @@ initPrimitive() {
   // Corresponds to LLVM's invariant start
   // takes in a pointer/reference argument that is the invariant thing
   prim_def(PRIM_INVARIANT_START, "invariant start", returnInfoVoid, false, false);
+
+  // variable number of arguments
+  // 1st argument is a SymExpr referring to a Symbol indicating which
+  //  alias set this is (e.g. the owning array).
+  // Remaining arguments are SymExprs referring to Symbols that this one
+  // does not alias.
+  // Translates to llvm alias.scope and noalias metadata:
+  //    - alias.scope with metadata corresponding to the 1st symbol
+  //    - noalias with metadata corresponding to the remaining symbols
+  // Result of call can be used as a final argument in a memory instruction,
+  // e.g. PRIM_ARRAY_GET.
+  prim_def(PRIM_NO_ALIAS_SET, "no alias set", returnInfoUnknown, false, false);
+  // 1st argument is symbol to set alias set
+  // 2nd argument is symbol to base it on
+  prim_def(PRIM_COPIES_NO_ALIAS_SET, "copies no alias set", returnInfoUnknown, false, false);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

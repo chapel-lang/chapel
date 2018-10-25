@@ -39,7 +39,8 @@ extern bool fNoDeadCodeElimination;
 extern bool fNoGlobalConstOpt;
 extern bool fNoFastFollowers;
 extern bool fNoInlineIterators;
-extern bool fNoloopInvariantCodeMotion;
+extern bool fNoLoopInvariantCodeMotion;
+extern bool fNoInterproceduralAliasAnalysis;
 extern bool fNoInline;
 extern bool fNoLiveAnalysis;
 extern bool fNoFormalDomainChecks;
@@ -53,6 +54,7 @@ extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
 
 extern bool fNoRemoteValueForwarding;
+extern bool fNoInferConstRefs;
 extern bool fNoRemoteSerialization;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
@@ -185,6 +187,7 @@ extern bool fWarnUnstable;
 extern bool fDefaultUnmanaged;
 extern bool fLegacyNew;
 
+extern bool fReportAliases;
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportInlinedIterators;
 extern bool fReportOrderIndependentLoops;

@@ -1,19 +1,19 @@
-/* A Bison parser, made by GNU Bison 2.7.  */
+/* A Bison parser, made by GNU Bison 3.1.  */
 
 /* Bison interface for Yacc-like parsers in C
-   
-      Copyright (C) 1984, 1989-1990, 2000-2012 Free Software Foundation, Inc.
-   
+
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018 Free Software Foundation, Inc.
+
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
@@ -26,13 +26,13 @@
    special exception, which will cause the skeleton and the resulting
    Bison output files to be licensed under the GNU General Public
    License without this special exception.
-   
+
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
 #ifndef YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED
 # define YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED
-/* Enabling traces.  */
+/* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 1
 #endif
@@ -40,15 +40,12 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-/* Line 2058 of yacc.c  */
-#line 32 "chapel.ypp"
+#line 32 "chapel.ypp" /* yacc.c:1919  */
 
   #include <string>
   extern int         captureTokens;
   extern std::string captureString;
-
-/* Line 2058 of yacc.c  */
-#line 45 "chapel.ypp"
+#line 45 "chapel.ypp" /* yacc.c:1919  */
 
   #ifndef _BISON_CHAPEL_DEFINES_0_
   #define _BISON_CHAPEL_DEFINES_0_
@@ -63,9 +60,7 @@ extern int yydebug;
   void stringBufferInit();
 
   #endif
-
-/* Line 2058 of yacc.c  */
-#line 65 "chapel.ypp"
+#line 65 "chapel.ypp" /* yacc.c:1919  */
 
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
@@ -126,9 +121,7 @@ extern int yydebug;
   };
 
   #endif
-
-/* Line 2058 of yacc.c  */
-#line 131 "chapel.ypp"
+#line 131 "chapel.ypp" /* yacc.c:1919  */
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
   #define _BISON_CHAPEL_DEFINES_2_
@@ -145,9 +138,7 @@ extern int yydebug;
   #define YYLTYPE_IS_TRIVIAL  1
 
   #endif
-
-/* Line 2058 of yacc.c  */
-#line 153 "chapel.ypp"
+#line 153 "chapel.ypp" /* yacc.c:1919  */
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
   #define _BISON_CHAPEL_DEFINES_3_
@@ -175,187 +166,181 @@ extern int yydebug;
 
   #endif
 
+#line 170 "../include/bison-chapel.h" /* yacc.c:1919  */
 
-/* Line 2058 of yacc.c  */
-#line 181 "../include/bison-chapel.h"
-
-/* Tokens.  */
+/* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
-   /* Put the tokens into the symbol table, so that GDB and other debuggers
-      know about them.  */
-   enum yytokentype {
-     TIDENT = 258,
-     INTLITERAL = 259,
-     REALLITERAL = 260,
-     IMAGLITERAL = 261,
-     STRINGLITERAL = 262,
-     CSTRINGLITERAL = 263,
-     EXTERNCODE = 264,
-     TALIGN = 265,
-     TAS = 266,
-     TATOMIC = 267,
-     TBEGIN = 268,
-     TBREAK = 269,
-     TBORROWED = 270,
-     TBY = 271,
-     TCATCH = 272,
-     TCLASS = 273,
-     TCOBEGIN = 274,
-     TCOFORALL = 275,
-     TCONFIG = 276,
-     TCONST = 277,
-     TCONTINUE = 278,
-     TDEFER = 279,
-     TDELETE = 280,
-     TDMAPPED = 281,
-     TDO = 282,
-     TDOMAIN = 283,
-     TELSE = 284,
-     TENUM = 285,
-     TEXCEPT = 286,
-     TEXPORT = 287,
-     TEXTERN = 288,
-     TFOR = 289,
-     TFORALL = 290,
-     TFORWARDING = 291,
-     TIF = 292,
-     TIN = 293,
-     TINDEX = 294,
-     TINLINE = 295,
-     TINOUT = 296,
-     TITER = 297,
-     TLABEL = 298,
-     TLAMBDA = 299,
-     TLET = 300,
-     TLOCAL = 301,
-     TMINUSMINUS = 302,
-     TMODULE = 303,
-     TNEW = 304,
-     TNIL = 305,
-     TNOINIT = 306,
-     TON = 307,
-     TONLY = 308,
-     TOTHERWISE = 309,
-     TOUT = 310,
-     TOVERRIDE = 311,
-     TOWNED = 312,
-     TPARAM = 313,
-     TPLUSPLUS = 314,
-     TPRAGMA = 315,
-     TPRIMITIVE = 316,
-     TPRIVATE = 317,
-     TPROC = 318,
-     TPROTOTYPE = 319,
-     TPUBLIC = 320,
-     TRECORD = 321,
-     TREDUCE = 322,
-     TREF = 323,
-     TREQUIRE = 324,
-     TRETURN = 325,
-     TSCAN = 326,
-     TSELECT = 327,
-     TSERIAL = 328,
-     TSHARED = 329,
-     TSINGLE = 330,
-     TSPARSE = 331,
-     TSUBDOMAIN = 332,
-     TSYNC = 333,
-     TTHEN = 334,
-     TTHROW = 335,
-     TTHROWS = 336,
-     TTRY = 337,
-     TTRYBANG = 338,
-     TTYPE = 339,
-     TUNDERSCORE = 340,
-     TUNION = 341,
-     TUNMANAGED = 342,
-     TUSE = 343,
-     TVAR = 344,
-     TWHEN = 345,
-     TWHERE = 346,
-     TWHILE = 347,
-     TWITH = 348,
-     TYIELD = 349,
-     TZIP = 350,
-     TALIAS = 351,
-     TAND = 352,
-     TASSIGN = 353,
-     TASSIGNBAND = 354,
-     TASSIGNBOR = 355,
-     TASSIGNBXOR = 356,
-     TASSIGNDIVIDE = 357,
-     TASSIGNEXP = 358,
-     TASSIGNLAND = 359,
-     TASSIGNLOR = 360,
-     TASSIGNMINUS = 361,
-     TASSIGNMOD = 362,
-     TASSIGNMULTIPLY = 363,
-     TASSIGNPLUS = 364,
-     TASSIGNSL = 365,
-     TASSIGNSR = 366,
-     TBAND = 367,
-     TBNOT = 368,
-     TBOR = 369,
-     TBXOR = 370,
-     TCOLON = 371,
-     TCOMMA = 372,
-     TDIVIDE = 373,
-     TDOT = 374,
-     TDOTDOT = 375,
-     TDOTDOTDOT = 376,
-     TEQUAL = 377,
-     TEXP = 378,
-     TGREATER = 379,
-     TGREATEREQUAL = 380,
-     THASH = 381,
-     TLESS = 382,
-     TLESSEQUAL = 383,
-     TMINUS = 384,
-     TMOD = 385,
-     TNOT = 386,
-     TNOTEQUAL = 387,
-     TOR = 388,
-     TPLUS = 389,
-     TQUESTION = 390,
-     TSEMI = 391,
-     TSHIFTLEFT = 392,
-     TSHIFTRIGHT = 393,
-     TSTAR = 394,
-     TSWAP = 395,
-     TASSIGNREDUCE = 396,
-     TIO = 397,
-     TLCBR = 398,
-     TRCBR = 399,
-     TLP = 400,
-     TRP = 401,
-     TLSBR = 402,
-     TRSBR = 403,
-     TNOELSE = 404,
-     TUMINUS = 405,
-     TUPLUS = 406
-   };
+  enum yytokentype
+  {
+    TIDENT = 258,
+    INTLITERAL = 259,
+    REALLITERAL = 260,
+    IMAGLITERAL = 261,
+    STRINGLITERAL = 262,
+    CSTRINGLITERAL = 263,
+    EXTERNCODE = 264,
+    TALIGN = 265,
+    TAS = 266,
+    TATOMIC = 267,
+    TBEGIN = 268,
+    TBREAK = 269,
+    TBORROWED = 270,
+    TBY = 271,
+    TCATCH = 272,
+    TCLASS = 273,
+    TCOBEGIN = 274,
+    TCOFORALL = 275,
+    TCONFIG = 276,
+    TCONST = 277,
+    TCONTINUE = 278,
+    TDEFER = 279,
+    TDELETE = 280,
+    TDMAPPED = 281,
+    TDO = 282,
+    TDOMAIN = 283,
+    TELSE = 284,
+    TENUM = 285,
+    TEXCEPT = 286,
+    TEXPORT = 287,
+    TEXTERN = 288,
+    TFOR = 289,
+    TFORALL = 290,
+    TFORWARDING = 291,
+    TIF = 292,
+    TIN = 293,
+    TINDEX = 294,
+    TINLINE = 295,
+    TINOUT = 296,
+    TITER = 297,
+    TLABEL = 298,
+    TLAMBDA = 299,
+    TLET = 300,
+    TLOCAL = 301,
+    TMINUSMINUS = 302,
+    TMODULE = 303,
+    TNEW = 304,
+    TNIL = 305,
+    TNOINIT = 306,
+    TON = 307,
+    TONLY = 308,
+    TOTHERWISE = 309,
+    TOUT = 310,
+    TOVERRIDE = 311,
+    TOWNED = 312,
+    TPARAM = 313,
+    TPLUSPLUS = 314,
+    TPRAGMA = 315,
+    TPRIMITIVE = 316,
+    TPRIVATE = 317,
+    TPROC = 318,
+    TPROTOTYPE = 319,
+    TPUBLIC = 320,
+    TRECORD = 321,
+    TREDUCE = 322,
+    TREF = 323,
+    TREQUIRE = 324,
+    TRETURN = 325,
+    TSCAN = 326,
+    TSELECT = 327,
+    TSERIAL = 328,
+    TSHARED = 329,
+    TSINGLE = 330,
+    TSPARSE = 331,
+    TSUBDOMAIN = 332,
+    TSYNC = 333,
+    TTHEN = 334,
+    TTHROW = 335,
+    TTHROWS = 336,
+    TTRY = 337,
+    TTRYBANG = 338,
+    TTYPE = 339,
+    TUNDERSCORE = 340,
+    TUNION = 341,
+    TUNMANAGED = 342,
+    TUSE = 343,
+    TVAR = 344,
+    TWHEN = 345,
+    TWHERE = 346,
+    TWHILE = 347,
+    TWITH = 348,
+    TYIELD = 349,
+    TZIP = 350,
+    TALIAS = 351,
+    TAND = 352,
+    TASSIGN = 353,
+    TASSIGNBAND = 354,
+    TASSIGNBOR = 355,
+    TASSIGNBXOR = 356,
+    TASSIGNDIVIDE = 357,
+    TASSIGNEXP = 358,
+    TASSIGNLAND = 359,
+    TASSIGNLOR = 360,
+    TASSIGNMINUS = 361,
+    TASSIGNMOD = 362,
+    TASSIGNMULTIPLY = 363,
+    TASSIGNPLUS = 364,
+    TASSIGNSL = 365,
+    TASSIGNSR = 366,
+    TBAND = 367,
+    TBNOT = 368,
+    TBOR = 369,
+    TBXOR = 370,
+    TCOLON = 371,
+    TCOMMA = 372,
+    TDIVIDE = 373,
+    TDOT = 374,
+    TDOTDOT = 375,
+    TDOTDOTDOT = 376,
+    TEQUAL = 377,
+    TEXP = 378,
+    TGREATER = 379,
+    TGREATEREQUAL = 380,
+    THASH = 381,
+    TLESS = 382,
+    TLESSEQUAL = 383,
+    TMINUS = 384,
+    TMOD = 385,
+    TNOT = 386,
+    TNOTEQUAL = 387,
+    TOR = 388,
+    TPLUS = 389,
+    TQUESTION = 390,
+    TSEMI = 391,
+    TSHIFTLEFT = 392,
+    TSHIFTRIGHT = 393,
+    TSTAR = 394,
+    TSWAP = 395,
+    TASSIGNREDUCE = 396,
+    TIO = 397,
+    TLCBR = 398,
+    TRCBR = 399,
+    TLP = 400,
+    TRP = 401,
+    TLSBR = 402,
+    TRSBR = 403,
+    TNOELSE = 404,
+    TUPLUS = 405,
+    TUMINUS = 406
+  };
 #endif
 
+/* Value type.  */
 
-#if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-
-# define yystype YYSTYPE /* obsolescent; will be withdrawn */
-# define YYSTYPE_IS_DECLARED 1
-#endif
-
+/* Location type.  */
 #if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
-typedef struct YYLTYPE
+typedef struct YYLTYPE YYLTYPE;
+struct YYLTYPE
 {
   int first_line;
   int first_column;
   int last_line;
   int last_column;
-} YYLTYPE;
-# define yyltype YYLTYPE /* obsolescent; will be withdrawn */
+};
 # define YYLTYPE_IS_DECLARED 1
 # define YYLTYPE_IS_TRIVIAL 1
 #endif
+
 
 
 #ifndef YYPUSH_MORE_DEFINED
@@ -365,25 +350,12 @@ enum { YYPUSH_MORE = 4 };
 
 typedef struct yypstate yypstate;
 
-#if defined __STDC__ || defined __cplusplus
 int yypush_parse (yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, YYLTYPE *pushed_loc, ParserContext* context);
-#else
-int yypush_parse ();
-#endif
 
-#if defined __STDC__ || defined __cplusplus
 yypstate * yypstate_new (void);
-#else
-yypstate * yypstate_new ();
-#endif
-#if defined __STDC__ || defined __cplusplus
 void yypstate_delete (yypstate *ps);
-#else
-void yypstate_delete ();
-#endif
 /* "%code provides" blocks.  */
-/* Line 2058 of yacc.c  */
-#line 184 "chapel.ypp"
+#line 184 "chapel.ypp" /* yacc.c:1919  */
 
   extern int yydebug;
 
@@ -391,8 +363,6 @@ void yypstate_delete ();
                ParserContext* context,
                const char*    str);
 
-
-/* Line 2058 of yacc.c  */
-#line 397 "../include/bison-chapel.h"
+#line 367 "../include/bison-chapel.h" /* yacc.c:1919  */
 
 #endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */

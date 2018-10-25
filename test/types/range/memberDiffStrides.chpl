@@ -17,8 +17,8 @@ var t4 = 4..6 by  2;
 var t5 = 4..6 by -2;
 
 proc test(x, y) {
-  writeln(x, ".member(", y, ") = ", x.member(y));
-  writeln(y, ".member(", x, ") = ", y.member(x));
+  writeln(x, ".contains(", y, ") = ", x.contains(y));
+  writeln(y, ".contains(", x, ") = ", y.contains(x));
 }
 
 test(r1, r1);

@@ -357,7 +357,7 @@ module DefaultSparse {
     proc dsiAccess(ind: idxType) ref where rank == 1 {
       // make sure we're in the dense bounding box
       if boundsChecking then
-        if !(dom.parentDom.member(ind)) {
+        if !(dom.parentDom.contains(ind)) {
           if debugDefaultSparse {
             writeln("On locale ", here.id);
             writeln("In dsiAccess, got index ", ind);
@@ -379,7 +379,7 @@ module DefaultSparse {
     proc dsiAccess(ind: idxType) const ref where rank == 1 {
       // make sure we're in the dense bounding box
       if boundsChecking then
-        if !(dom.parentDom.member(ind)) then
+        if !(dom.parentDom.contains(ind)) then
           halt("array index out of bounds: ", ind);
 
       // lookup the index and return the data or IRV
@@ -395,7 +395,7 @@ module DefaultSparse {
     proc dsiAccess(ind: rank*idxType) ref {
       // make sure we're in the dense bounding box
       if boundsChecking then
-        if !(dom.parentDom.member(ind)) then
+        if !(dom.parentDom.contains(ind)) then
           halt("array index out of bounds: ", ind);
 
       // lookup the index and return the data or IRV
@@ -410,7 +410,7 @@ module DefaultSparse {
     where shouldReturnRvalueByValue(eltType) {
       // make sure we're in the dense bounding box
       if boundsChecking then
-        if !(dom.parentDom.member(ind)) then
+        if !(dom.parentDom.contains(ind)) then
           halt("array index out of bounds: ", ind);
 
       // lookup the index and return the data or IRV
@@ -425,7 +425,7 @@ module DefaultSparse {
     where shouldReturnRvalueByConstRef(eltType) {
       // make sure we're in the dense bounding box
       if boundsChecking then
-        if !(dom.parentDom.member(ind)) then
+        if !(dom.parentDom.contains(ind)) then
           halt("array index out of bounds: ", ind);
 
       // lookup the index and return the data or IRV

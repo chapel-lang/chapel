@@ -503,7 +503,7 @@ proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
   var result: rank * idxType;
   for param i in 1..rank {
     const ar = AD(i), br = BD(i);
-    if boundsChecking then assert(br.member(b(i)));
+    if boundsChecking then assert(br.contains(b(i)));
     result(i) = ar.orderToIndex(br.indexOrder(b(i)));
   }
   return result;

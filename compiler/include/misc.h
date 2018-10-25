@@ -36,6 +36,13 @@
 #define chpl_noreturn
 #endif
 
+#ifndef COMPILER_SUBDIR
+#define COMPILER_SUBDIR
+#endif
+
+#define DO_TOSTRING(tok) #tok
+#define TOSTRING(tok) DO_TOSTRING(tok)
+
 // INT_FATAL(ast, format, ...)
 //   where ast         == BaseAST* or NULL
 //         format, ... == normal printf stuff
@@ -43,17 +50,17 @@
 // INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
 
 #define INT_FATAL      gdbShouldBreakHere(), \
-                       setupError(__FILE__, __LINE__, 1), handleError
+                       setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 1), handleError
 
 #define USR_FATAL      gdbShouldBreakHere(), \
-                       setupError(__FILE__, __LINE__, 2), handleError
+                       setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 2), handleError
 
 #define USR_FATAL_CONT gdbShouldBreakHere(), \
-                       setupError(__FILE__, __LINE__, 3), handleError
+                       setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 3), handleError
 
-#define USR_WARN       setupError(__FILE__, __LINE__, 4), handleError
+#define USR_WARN       setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 4), handleError
 
-#define USR_PRINT      setupError(__FILE__, __LINE__, 5), handleError
+#define USR_PRINT      setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 5), handleError
 
 #define USR_STOP       exitIfFatalErrorsEncountered
 
@@ -77,7 +84,7 @@ bool        requireOutlinedOn();
 const char* cleanFilename(const BaseAST* ast);
 const char* cleanFilename(const char*    name);
 
-void        setupError(const char* filename, int lineno, int tag);
+void        setupError(const char* subdir, const char* filename, int lineno, int tag);
 
 void        handleError(const char* fmt, ...);
 void        handleError(const BaseAST* ast, const char* fmt, ...);

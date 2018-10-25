@@ -33,6 +33,13 @@
 #define ncm ""    /* no comment */
 
 
+// Indicates an array implementation class can alias other array implementations
+// e.g. array views
+symbolFlag( FLAG_ALIASING_ARRAY , ypr, "aliasing array" , ncm )
+// alias analysis can assume that the marked field (or return from a function)
+// can alias the same scopes as 'this'
+symbolFlag( FLAG_ALIAS_SCOPE_FROM_THIS , ypr, "alias scope from this" , ncm )
+
 // This flag is used in scalarReplace.cpp to determine if an assignment of a ref
 // has an allocator as the RHS.  If so, then it is not creating an alias, since
 // the allocator function does not retain a reference to the referenced object.
@@ -132,6 +139,7 @@ symbolFlag( FLAG_FORMAL_TEMP,     npr, "formal temp", "a formal temp to back an 
 symbolFlag( FLAG_FORWARDING_FN , npr, "forwarding function" , ncm )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
 symbolFlag( FLAG_FUNCTION_TERMINATES_PROGRAM, ypr, "function terminates program", "function that causes the program to exit" )
+symbolFlag( FLAG_GENERATE_SIGNATURE, ypr, "generate signature", "compiler should codegen a function signature" )
 // When applied to an argument, this flag means that the arg accepts a value
 // but has unspecified type.
 symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )

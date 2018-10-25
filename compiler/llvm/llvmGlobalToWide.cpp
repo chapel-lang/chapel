@@ -379,53 +379,11 @@ namespace {
       assert(wideVoidPtrTy);
 
       getFn = info->getFn;
-      if( ! getFn ) {
-        getFn = M.getOrInsertFunction("chpl_gen_comm_get_ctl_sym", voidTy,
-                                      voidPtrTy, nodeTy, voidPtrTy,
-                                      sizeTy, i64Ty
-#if HAVE_LLVM_VER < 50
-                                      , NULL
-#endif
-                                      );
-      }
-      checkFunctionExistAndHasArgs(getFn, 5);
-
       putFn = info->putFn;
-      if( ! putFn ) {
-        putFn = M.getOrInsertFunction("chpl_gen_comm_put_ctl_sym", voidTy,
-                                      nodeTy, voidPtrTy, voidPtrTy,
-                                      sizeTy, i64Ty
-#if HAVE_LLVM_VER < 50
-                                      , NULL
-#endif
-                                      );
-      }
-      checkFunctionExistAndHasArgs(putFn, 5);
 
       getPutFn = info->getPutFn;
-      if( ! getPutFn ) {
-        getPutFn = M.getOrInsertFunction("chpl_gen_comm_getput_sym", voidTy,
-                                         nodeTy, voidPtrTy,
-                                         nodeTy, voidPtrTy,
-                                         sizeTy
-#if HAVE_LLVM_VER < 50
-                                         , NULL
-#endif
-                                         );
-      }
-      checkFunctionExistAndHasArgs(getPutFn, 5);
 
       memsetFn = info->memsetFn;
-      if( ! memsetFn ) {
-        memsetFn = M.getOrInsertFunction("chpl_gen_comm_memset_sym", voidTy,
-                                         nodeTy, voidPtrTy,
-                                         i8Ty, sizeTy
-#if HAVE_LLVM_VER < 50
-                                         , NULL
-#endif
-                                         );
-      }
-      checkFunctionExistAndHasArgs(memsetFn, 4);
     }
 
     Function* getGlobalToWideFn(Type* globalPtrTy) {
@@ -1233,6 +1191,13 @@ namespace {
       // information, but if not we set some defaults here so
       // that tests can be created and bugpoint can be run.
       if( !info ) {
+        Type* voidTy = llvm::Type::getVoidTy(M.getContext());
+        Type* voidPtrTy = llvm::Type::getInt8PtrTy(M.getContext(), 0);
+        Type* i64Ty = llvm::Type::getInt64Ty(M.getContext());
+        Type* i8Ty = llvm::Type::getInt8Ty(M.getContext());
+        const DataLayout& DL = M.getDataLayout();
+        Type* sizeTy = DL.getIntPtrType(M.getContext(), 0);
+
         errs() << "Warning: GlobalToWide using default configuration\n";
         info = new GlobalToWideInfo();
         madeInfo = true;
@@ -1251,6 +1216,49 @@ namespace {
           info->localeIdType = t;
         }
         info->nodeIdType = Type::getInt32Ty(M.getContext());
+
+        Type* nodeTy = info->nodeIdType;
+
+        // TODO -- update these
+        // gdb /home/mppf/w/llvm-debug/third-party/llvm/install/linux64-gnu/bin/opt
+        // run --load /home/mppf/w/llvm-debug/compiler/llvm/llvm-global-to-wide/build/lib/llvm-pgas.so  -global-to-wide -S < /home/mppf/w/llvm-debug/compiler/llvm/llvm-global-to-wide/test/e.ll
+
+        info->getFn = M.getOrInsertFunction("chpl_gen_comm_get_ctl_sym", voidTy,
+                                        voidPtrTy, nodeTy, voidPtrTy,
+                                        sizeTy, i64Ty
+#if HAVE_LLVM_VER < 50
+                                        , NULL
+#endif
+                                        );
+        checkFunctionExistAndHasArgs(info->getFn, 5);
+
+        info->putFn = M.getOrInsertFunction("chpl_gen_comm_put_ctl_sym", voidTy,
+                                        nodeTy, voidPtrTy, voidPtrTy,
+                                        sizeTy, i64Ty
+#if HAVE_LLVM_VER < 50
+                                        , NULL
+#endif
+                                        );
+        checkFunctionExistAndHasArgs(info->putFn, 5);
+
+        info->getPutFn = M.getOrInsertFunction("chpl_gen_comm_getput_sym", voidTy,
+                                           nodeTy, voidPtrTy,
+                                           nodeTy, voidPtrTy,
+                                           sizeTy
+#if HAVE_LLVM_VER < 50
+                                           , NULL
+#endif
+                                           );
+        checkFunctionExistAndHasArgs(info->getPutFn, 5);
+
+        info->memsetFn = M.getOrInsertFunction("chpl_gen_comm_memset_sym", voidTy,
+                                           nodeTy, voidPtrTy,
+                                           i8Ty, sizeTy
+#if HAVE_LLVM_VER < 50
+                                           , NULL
+#endif
+                                           );
+        checkFunctionExistAndHasArgs(info->memsetFn, 4);
 
         // Now go identify special functions in the module by name.
         for (Module::iterator next_func = M.begin(); next_func!= M.end(); )
@@ -1909,8 +1917,8 @@ namespace {
       }
 
       // Delete the dummy dependencies preserving function
-      Constant* cf = info->preservingFn;
-      if( cf ) {
+      if (info->hasPreservingFn) {
+        Constant* cf = info->preservingFn;
         Function* f = dyn_cast<Function>(cf);
         if( f ) {
 #if HAVE_LLVM_VER >= 50

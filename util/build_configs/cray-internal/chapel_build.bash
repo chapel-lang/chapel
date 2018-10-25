@@ -7,19 +7,17 @@
 # from this directory.
 
 set -e
-thisfile=$( basename "$0" )
 yourcwd=$PWD
 
-cwd=$( cd $(dirname "$0" ) && pwd )
-thisfile=$( basename "$cwd" )/$thisfile
+cwd=$( cd $(dirname "${BASH_SOURCE[0]}" ) && pwd )
 
 source $cwd/../functions.bash
 
-log_info "Begin $thisfile"
+log_info "Begin $( basename "${BASH_SOURCE[0]}" )"
 
 usage() {
     echo >&2 "
-Usage: $thisfile" '[options]
+Usage: $( basename "${BASH_SOURCE[0]}" )" '[options]
 
   where:
     -v : verbose/debug output
@@ -43,7 +41,8 @@ Usage: $thisfile" '[options]
 
   CHAPEL_PACKAGE OPTIONS:
 
-    -b release_type     : Build/release type (required) == "nightly" or "release".
+    -b release_type     : Build/release type (required)
+                          == "nightly", "release", or "developer".
     -p chpl_platform    : Chpl target platform, as in $CHPL_HOME/bin/$chpl_platform
                           ("cray-xc" or "cray-xe")
                           Default: cray-xc
@@ -144,6 +143,8 @@ case "$release_type" in
     ;;
 ( [rR]* | -r | release )
     ;;
+( [dD]* | developer )
+    ;;
 ( * )
     log_error "-b release_type='$release_type' is invalid."
     usage
@@ -154,12 +155,12 @@ esac
 
 source "$cwd/../build-common.bash"
 
-# Run the designated setenv build script, adding a "clean" step at the end.
+# Run the designated setenv build script
 
-bash "$setenv" $verbose $dry_run -B +clean
+bash "$setenv" $verbose $dry_run
 
 # Create the Chapel package
 
 "$cwd/chapel_package-cray.bash" $verbose $dry_run $keepdir -C "$workdir" -T "$version_tag" -o "$outputs" -b "$release_type" -p "$chpl_platform" -r "$rc_number"
 
-log_info "End $thisfile"
+log_info "End $( basename "${BASH_SOURCE[0]}" )"

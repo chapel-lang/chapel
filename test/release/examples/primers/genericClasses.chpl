@@ -1,7 +1,7 @@
-// Generic Classes
+// Generic Classes and Records
 
 /*
-   This primer covers generic class types.
+   This primer covers generic classes and records.
 */
 
 //
@@ -20,7 +20,7 @@ class ParamField {
   var tup: p*int;
 }
 
-class UntypedField {
+record UntypedField {
   var a;
 }
 
@@ -40,8 +40,8 @@ var pf  = new owned ParamField(3);
 var pf2 = new owned ParamField(2);
 writeln("pf = ", pf, ", pf2 = ", pf2);
 
-var uf  = new owned UntypedField(3.14 + 2.72i);
-var uf2 = new owned UntypedField(new owned ParamField(2));
+var uf  = new UntypedField(3.14 + 2.72i);
+var uf2 = new UntypedField(new owned ParamField(2));
 writeln("uf = ", uf, ", uf2 = ", uf2);
 
 //
@@ -52,7 +52,7 @@ writeln("uf = ", uf, ", uf2 = ", uf2);
 //
 var taf3: borrowed TypeAliasField(real);
 var pf3: borrowed ParamField(3);
-var uf3: borrowed UntypedField(complex);
+var uf3: UntypedField(complex);
 
 taf3 = taf;
 pf3 = pf;

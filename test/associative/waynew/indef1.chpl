@@ -6,7 +6,7 @@ intd.add(4);
 intd.add(5);
 
 proc icheck( i:int) {
-  writeln( "member(", i, ") = ", intd.member( i));
+  writeln( "contains(", i, ") = ", intd.contains( i));
 }
 
 icheck(0);
@@ -29,7 +29,7 @@ stringd.add( "greet");
 stringd.add( "meat");
 
 proc scheck( s:string) {
-  writeln( "member(", s, ") = ", stringd.member( s));
+  writeln( "contains(", s, ") = ", stringd.contains( s));
 }
 
 scheck( "meet");

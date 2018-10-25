@@ -29,13 +29,16 @@ public:
 
   static BlockStmt*   build(bool tryBang, Expr*      expr);
   static BlockStmt*   build(bool tryBang, BlockStmt* body);
-  static BlockStmt*   build(bool tryBang, BlockStmt* body, BlockStmt* catches);
+  static BlockStmt*   build(bool tryBang, BlockStmt* body, BlockStmt* catches,
+                            bool isSyncTry = false);
   static BlockStmt*   buildWithCatchall(BlockStmt* body, BlockStmt* onErr);
 
-                      TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches);
+  TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches,
+          bool isSyncTry = false);
                       ~TryStmt();
   BlockStmt*          body() const;
   bool                tryBang() const;
+  bool                isSyncTry() const;
 
   void                accept(AstVisitor* visitor);
   void                replaceChild(Expr* old_ast, Expr* new_ast);
@@ -51,6 +54,7 @@ public:
 
 private:
   bool                _tryBang;
+  bool                _isSyncTry;
 
   static BlockStmt*   buildChplStmt(Expr* expr);
                       TryStmt();

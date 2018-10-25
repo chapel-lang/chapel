@@ -116,8 +116,12 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             // Should that turn into (= call_tmp bar)?
           } else if (parent && parent->isPrimitive(PRIM_ASSIGN) && parent->get(1) == se) {
             // for_defs should handle this case
-          } else
+          } else if (parent && parent->isResolved()) {
             stillAlive = true;
+            // TODO -- a reference argument can be passed directly
+          } else {
+            stillAlive = true;
+          }
         }
         for_defs(se, defMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);

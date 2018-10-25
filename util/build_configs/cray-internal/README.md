@@ -1,11 +1,12 @@
-## New scripts to package pre-built Chapel binaries into a Cray-compatible RPM.
+## New scripts to build and package Chapel binaries into a Cray-compatible RPM.
 
-This directory adds scripts to package pre-built Chapel binaries as an RPM file.
-The recommended way to build Chapel binaries is to run `chapel_build.bash` from
-the parent directory, with setenv-example-3. See chapel_build.bash for illustration.
+This directory adds scripts to build and package Chapel binaries as an RPM file.
+The recommended way to build Chapel binaries is to run `chapel_build.bash` with
+one of the setenv scripts in this subdir, setenv-example-3 from the parent directory,
+or a new setenv script derived from one of those. See `chapel_build.bash` for illustration.
 
 The Chapel RPM file produced by these scripts is intended to be fully compatible
-with current generation Cray-XC supercomputers and system-management tools.
+with current generation Cray-XC/XE supercomputers and system-management tools.
 As far as the packaging is concerned, these RPMs should be interchangeable with the
 Chapel Cray modules released through Cray, Inc.
 
@@ -15,10 +16,10 @@ a subdirectory like this one (cray-internal), while generic things that should b
 applicable in many kinds of Chapel packages are implemented in the parent directory.
 
 This directory should be used as a model for new scripts to build other kinds of Chapel
-packages. Start by creating a new subdirectory (under build_configs) for each specific
-Chapel package; copy and rename the main script `chapel_package-cray.bash` from here
-to the new subdir; edit that file; and go from there, copy-editing additional files from
-this directory as needed. When appropriate, add to the existing `package-*.bash` support
+packages. Start by creating a new subdirectory (under build_configs) for each new type
+of package; copy and rename the main script `chapel_package-cray.bash` from here to the
+new subdir; edit that file; and go from there, copy-editing additional files from this
+directory as needed. When appropriate, add to the existing `package-*.bash` support
 files in the parent directory. Finally, copy-edit the `.gitignore` file from here to the
 new subdir.
 
@@ -47,6 +48,16 @@ new subdir.
     A Cray system management tool, this script sets the default Chapel version obtained
     when a user runs `module load chapel` without specifying a specific version.
 
+* setenv-\*-\*.bash:
+  Setenv scripts for Chapel Cray RPMs of various types. These setenv scripts are based on
+  the setenv-example-3 script in the parent directory, and their basic structure is the
+  same.  However, many details were added to successfully build a complete Chapel Cray
+  module, including Python-venv, chpldoc, mason, over 100 runtime configs, etc.
+  These setenv scripts are located here in this `cray-internal` subdir because they
+  are Cray-specific implementations of the general build_configs/setenv pattern:
+  - setenv-xc-x86_64:  Chapel Cray-XC module for x86_64
+  - setenv-xc-aarch64: Chapel Cray-XC module for aarch64 (ARM)
+  - setenv-xe-x86_64:  Chapel Cray-XE module for x86_64
 
 ### Users local Chapel projects:
 
@@ -94,3 +105,9 @@ export CHPL_HOME=$PWD/chapel-x.y.z
 ./chapel_package-cray.bash -b nightly
 ```
 
+Instead of starting from `setenv-example-3`, a user with more sophisticated requirements
+could start from one of the setenv scripts in this subdirectory: `setenv-xc-x86_64`, for
+example. This would be more challenging, as these setenv scripts are necessarily more
+complicated and site-specific than `setenv-example-3`.
+However, the same basic approach would be used: copy the existing setenv script to a new
+filename; modify as needed; test-build-test; add packaging; etc.

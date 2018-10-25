@@ -32,7 +32,8 @@
 #include "TryStmt.h"
 #include "wellknown.h"
 
-static bool mainReturnsInt;
+FnSymbol* chplUserMain = NULL;
+static bool mainReturnsSomething;
 
 static void build_chpl_entry_points();
 static void build_accessors(AggregateType* ct, Symbol* field);
@@ -482,11 +483,7 @@ static FnSymbol* chpl_gen_main_exists() {
           INT_FATAL(fn, "function is not normalized");
         }
 
-        if (sym->symbol() != gVoid) {
-          mainReturnsInt = true;
-        } else {
-          mainReturnsInt = false;
-        }
+        mainReturnsSomething = (sym->symbol() != gVoid);
 
         ModuleSymbol* fnMod = fn->getModule();
 
@@ -533,7 +530,7 @@ static void build_chpl_entry_points() {
   // chpl_user_main is the (user) programmatic portion of the app
   //
   ModuleSymbol* mainModule   = ModuleSymbol::mainModule();
-  FnSymbol*     chplUserMain = chpl_gen_main_exists();
+  chplUserMain = chpl_gen_main_exists();
 
   if (fLibraryCompile == true && chplUserMain != NULL) {
     USR_WARN(chplUserMain,
@@ -552,10 +549,13 @@ static void build_chpl_entry_points() {
     normalize(chplUserMain);
 
   } else {
-    if (isModuleSymbol(chplUserMain->defPoint->parentSymbol) == false) {
-      USR_FATAL(chplUserMain,
+    if (! isModuleSymbol(chplUserMain->defPoint->parentSymbol))
+      USR_FATAL_CONT(chplUserMain,
                 "main function must be defined at module scope");
-    }
+
+    if (chplUserMain->retTag == RET_TYPE || chplUserMain->retTag == RET_PARAM)
+      USR_FATAL_CONT(chplUserMain,
+                "main function cannot return a type or a param");
   }
 
   SET_LINENO(chplUserMain);
@@ -623,7 +623,7 @@ static void build_chpl_entry_points() {
                                                converted_args,
                                                new CallExpr("chpl_convert_args", arg)));
 
-      if (mainReturnsInt) {
+      if (mainReturnsSomething) {
         chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
                                                  main_ret,
                                                  new CallExpr("main", converted_args)));
@@ -634,7 +634,7 @@ static void build_chpl_entry_points() {
       }
 
     } else {
-      if (mainReturnsInt) {
+      if (mainReturnsSomething) {
         chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
                                                  main_ret,
                                                  new CallExpr("main")));

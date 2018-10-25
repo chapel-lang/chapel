@@ -20,7 +20,7 @@ proc compare(D, R, a, s=2) {
 
   {
     var failures : int;
-    for i in dd do if !tracker.member(i) then failures += 1;
+    for i in dd do if !tracker.contains(i) then failures += 1;
 
     write("\tserial iter: ");
     if failures == 0 then writeln("SUCCESS");
@@ -29,7 +29,7 @@ proc compare(D, R, a, s=2) {
 
   {
     var failures : atomic int;
-    forall i in dd do if !tracker.member(i) then failures.add(1);
+    forall i in dd do if !tracker.contains(i) then failures.add(1);
 
     const f = failures.read();
     write("\tleader/follower: ");

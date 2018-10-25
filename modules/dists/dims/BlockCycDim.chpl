@@ -377,7 +377,7 @@ where storagePerCycle is determined to ensure uniqueness of storageIdx(i)
 
  storagePerCycle
    = 1 + max(locOff(i) div |wSt|) for any i s.t.
-                                  whole.member(i)==true and locNo(i) is fixed
+                                  whole.contains(i)==true and locNo(i) is fixed
    approximated as: 1 + ( (max locOff(i) for any i) div |wSt| )
    = 1 + ((blockSize-1) div |wSt|)
 

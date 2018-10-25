@@ -284,7 +284,7 @@ class CSDom: BaseSparseDomImpl {
   }
 
   proc dsiMember(ind: rank*idxType) {
-    if parentDom.member(ind) {
+    if parentDom.contains(ind) {
       const (found, loc) = find(ind);
       return found;
     }

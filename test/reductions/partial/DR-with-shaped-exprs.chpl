@@ -111,6 +111,11 @@ proc PR(const perElemOp, const resultDom, const sourceArr : []) {
 }
 
 proc PR(const perElemOp, const resultDom, const sourceExp : _iteratorRecord) {
+  if ! chpl_iteratorHasDomainShape(sourceExp) then
+   compilerError("cannot compute a partial reduction over an expression without a domain shape");
+  if chpl_iteratorFromForExpr(sourceExp) then
+   compilerError("cannot compute a partial reduction over a  for-expression");
+
   var sourceDom = _newDomain(sourceExp._shape_);
   sourceDom._unowned = true;
   return dsiPartialReduce(perElemOp, resultDom, sourceExp, sourceDom);

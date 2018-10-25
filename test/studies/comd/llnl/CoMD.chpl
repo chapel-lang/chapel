@@ -328,7 +328,7 @@ local {
           // if another box
           if(boxIdx != dBoxIdx) then {
             // check if dest box is valid and has space for another atom
-            // assert(halo.member(dBoxIdx));
+            // assert(halo.contains(dBoxIdx));
             // assert(MyDom.cells[dBoxIdx].count < MAXATOMS);
 
             // add to new box
@@ -342,7 +342,7 @@ local {
               box.atoms[ii] = box.atoms[oldCount];
 
             // decrement number of atoms if dest box not local
-            if(!MyDom.localDom.member(dBoxIdx)) then MyDom.numLocalAtoms -= 1; 
+            if(!MyDom.localDom.contains(dBoxIdx)) then MyDom.numLocalAtoms -= 1; 
           }
           else ii += 1;
         }
@@ -363,11 +363,11 @@ proc gatherAtoms(const ref MyDom:unmanaged Domain, const in face : int) : int(32
       a.r += MyDom.pbc[face];
       var idx = getBoxFromCoords(a.r, MyDom.invBoxSize);
       ref box = MyDom.cells[idx];
-      //assert(MyDom.halo.member(idx), MyDom.halo, " vs. ", idx);
+      //assert(MyDom.halo.contains(idx), MyDom.halo, " vs. ", idx);
       ref count = box.count;
       count += 1;
       box.atoms[count] = a;
-      if MyDom.localDom.member(idx) then numLocalAtoms += 1;
+      if MyDom.localDom.contains(idx) then numLocalAtoms += 1;
     }
   }
   return numLocalAtoms;
@@ -599,12 +599,12 @@ local {
               var r = (rx, ry, rz);
               var box : int3 = getBoxFromCoords(r, invBoxSize);
 
-              // assert(MyDom.halo.member(box));
+              // assert(MyDom.halo.contains(box));
               // assert(MyDom.cells[box].count < MAXATOMS);
 
               MyDom.cells[box].count += 1;
               MyDom.cells[box].atoms[MyDom.cells[box].count] = new Atom(gid, mass, 1 : int(32), (rx, ry, rz));
-              if(MyDom.localDom.member(box)) then MyDom.numLocalAtoms += 1; 
+              if(MyDom.localDom.contains(box)) then MyDom.numLocalAtoms += 1; 
 
             }
           }

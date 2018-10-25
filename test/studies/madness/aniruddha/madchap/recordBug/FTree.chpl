@@ -48,7 +48,7 @@ record LocTree {
 
      */
     proc this(lvl: int, idx: int) ref {
-        if !locIndices.member((lvl, idx)) {
+        if !locIndices.contains((lvl, idx)) {
             locIndices += ((lvl, idx));
             locNodes[(lvl, idx)] = new Coeff(coeffDom);
         }
@@ -56,7 +56,7 @@ record LocTree {
         return locNodes[(lvl, idx)].data;
     }
     proc this(lvl: int, idx: int) {
-        if !locIndices.member((lvl, idx)) {
+        if !locIndices.contains((lvl, idx)) {
             // This is a getter so it shouldn't be modifying what
             // we return, should be safe to return the zero vector.
             // FIXME: Zeroes should really be a const, but can'ti
@@ -92,22 +92,22 @@ record LocTree {
         to this type of iteration vs. the associative domain used here.
      */
     iter lvl_iter(lvl: int) {
-        // AGS - Why are we doing indices.member(i)?
+        // AGS - Why are we doing indices.contains(i)?
         for i in locIndices do
-            if i(1) == lvl && locIndices.member(i) then yield locNodes[i].data;
+            if i(1) == lvl && locIndices.contains(i) then yield locNodes[i].data;
     }
 
     /** Check if there are coefficients in box (lvl, idx)
      */
     proc has_coeffs(lvl: int, idx: int) {
-        return locIndices.member((lvl, idx));
+        return locIndices.contains((lvl, idx));
     }
 
     /** Remove an element from the associative domain.  If the element
         does not exist, it is ignored.
      */
     proc remove(lvl: int, idx: int) {
-        if locIndices.member((lvl, idx)) then locIndices.remove((lvl, idx));
+        if locIndices.contains((lvl, idx)) then locIndices.remove((lvl, idx));
     }
 
     iter idx_iter(lvl: int) {

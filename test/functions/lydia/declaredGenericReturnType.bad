@@ -1,2 +1,0 @@
-declaredGenericReturnType.chpl:5: In function 'retsGen':
-declaredGenericReturnType.chpl:6: error: type mismatch in assignment from Gen(int(64)) to Gen

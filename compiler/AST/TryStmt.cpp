@@ -31,8 +31,9 @@ BlockStmt* TryStmt::build(bool tryBang, BlockStmt* body) {
   return buildChplStmt(new TryStmt(tryBang, body, NULL));
 }
 
-BlockStmt* TryStmt::build(bool tryBang, BlockStmt* body, BlockStmt* catches) {
-  return buildChplStmt(new TryStmt(tryBang, body, catches));
+BlockStmt* TryStmt::build(bool tryBang, BlockStmt* body, BlockStmt* catches,
+                          bool isSyncTry) {
+  return buildChplStmt(new TryStmt(tryBang, body, catches, isSyncTry));
 }
 
 BlockStmt* TryStmt::buildChplStmt(Expr* expr) {
@@ -40,9 +41,11 @@ BlockStmt* TryStmt::buildChplStmt(Expr* expr) {
 }
 
 // catches are stored in a BlockStmt for convenient parsing
-TryStmt::TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches) : Stmt(E_TryStmt) {
+TryStmt::TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches,
+                 bool isSyncTry) : Stmt(E_TryStmt) {
   _tryBang = tryBang;
   _body    = body;
+  _isSyncTry = isSyncTry;
 
   _catches.parent = this;
   if (catches) {
@@ -65,6 +68,12 @@ BlockStmt* TryStmt::body() const {
 
 bool TryStmt::tryBang() const {
   return _tryBang;
+}
+
+// Indicates if the try/catch statement was inserted due to the presence of a
+// sync block instead of explicit user code.
+bool TryStmt::isSyncTry() const {
+  return _isSyncTry;
 }
 
 void TryStmt::accept(AstVisitor* visitor) {
