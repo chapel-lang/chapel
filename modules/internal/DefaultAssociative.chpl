@@ -729,9 +729,9 @@ module DefaultAssociative {
 
       var first = true;
       for (key, val) in zip(this.dom, this) {
-	if first then first = false;
-	else if isspace then f <~> new ioLiteral(" ");
-	else if isjson || ischpl then f <~> new ioLiteral(", ");
+        if first then first = false;
+        else if isspace then f <~> new ioLiteral(" ");
+        else if isjson || ischpl then f <~> new ioLiteral(", ");
         f <~> val;
       }
 
