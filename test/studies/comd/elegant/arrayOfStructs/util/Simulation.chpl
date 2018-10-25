@@ -291,13 +291,13 @@ iter allAtoms() ref {
 }
 
 iter allAtoms(param tag : iterKind) ref where tag == iterKind.leader {
-  for follow in Boxes._value.these(iterKind.leader) {
+  for follow in Boxes.these(iterKind.leader) {
     yield follow;
   }
 }
 
 iter allAtoms(param tag : iterKind, followThis) ref where tag == iterKind.follower {
-  for box in Boxes._value.these(iterKind.follower, followThis) {
+  for box in Boxes.these(iterKind.follower, followThis) {
     for a in box.liveAtoms() do yield a;
   }
 }

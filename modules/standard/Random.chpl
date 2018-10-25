@@ -1116,7 +1116,7 @@ module Random {
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                                start: int(64), param tag: iterKind)
           where tag == iterKind.leader {
-      for block in D._value.these(tag=iterKind.leader) do
+      for block in D.these(tag=iterKind.leader) do
         yield block;
     }
 
@@ -2356,7 +2356,7 @@ module Random {
                          start: int(64), param tag: iterKind)
           where tag == iterKind.leader {
       // forward to the domain D's iterator
-      for block in D._value.these(tag=iterKind.leader) do
+      for block in D.these(tag=iterKind.leader) do
         yield block;
     }
 

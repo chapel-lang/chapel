@@ -22,7 +22,7 @@ config const dptpl = 3;
 
 const MessageSpace = {1..numMessages};
 
-forall msg in MessageSpace._value.these(tasksPerLocale = dptpl)
+forall msg in MessageSpace.these(tasksPerLocale = dptpl)
   with (var cnt: Count, var itr = cnt.counter * 100)
 {
   itr += 1;
@@ -32,7 +32,7 @@ forall msg in MessageSpace._value.these(tasksPerLocale = dptpl)
   writef("%i %i\n", cnt.counter, itr);
 }
 
-forall msg in MessageSpace._value.these(tasksPerLocale = dptpl)
+forall msg in MessageSpace.these(tasksPerLocale = dptpl)
   with (var wrap: Wrapper,
         // make sure that other ways to declare a TPV
         // are usable, too

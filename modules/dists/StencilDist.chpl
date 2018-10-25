@@ -705,9 +705,8 @@ iter StencilDom.these(param tag: iterKind) where tag == iterKind.leader {
     for param i in 1..tmpStencil.rank do
       locOffset(i) = tmpStencil.dim(i).first/tmpStencil.dim(i).stride:strType;
     // Forward to defaultRectangular
-    for followThis in tmpStencil._value.these(iterKind.leader, maxTasks,
-                                            myIgnoreRunning, minSize,
-                                            locOffset) do
+    for followThis in tmpStencil.these(iterKind.leader, maxTasks,
+                                       myIgnoreRunning, minSize, locOffset) do
       yield followThis;
   }
 }

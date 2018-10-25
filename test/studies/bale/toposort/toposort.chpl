@@ -193,7 +193,7 @@ class ParallelWorkQueue {
       // yield all in local chunk
       if unlockedQueue.size > 0 {
         unlockedQueue.compact();
-        forall work in unlockedQueue.listArray._value.these( tasksPerLocale = maxTasks ) {
+        forall work in unlockedQueue.listArray.these( tasksPerLocale = maxTasks ) {
           yield work;
         }
       } else  {
@@ -372,7 +372,7 @@ class LocalDistributedWorkQueue {
         // yield all in local chunk
         if unlockedQueue.size > 0 {
           unlockedQueue.compact();
-          forall work in unlockedQueue.listArray._value.these( tasksPerLocale = maxTasks ) {
+          forall work in unlockedQueue.listArray.these( tasksPerLocale = maxTasks ) {
             yield work;
           }
         } else  {
