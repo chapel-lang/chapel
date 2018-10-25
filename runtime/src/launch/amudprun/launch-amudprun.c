@@ -122,7 +122,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
                                         CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
       static char cmd[16] = "";
-      sprintf(cmd, "which %s", dbg_term);
+      snprintf(cmd, sizeof(cmd), "which %s", dbg_term);
       if (chpl_run_cmdstr(cmd, term_path, term_path_size) > 0) {
         largv[largc++] = term_path;
         largv[largc++] = (char *) "-e";
@@ -135,8 +135,8 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
         }
       } else {
         static char err_msg[128] = "";
-        sprintf(err_msg, "CHPL_COMM_USE_(G|LL)DB ignored because no %s",
-                dbg_term);
+        snprintf(err_msg, sizeof(err_msg), 
+                 "CHPL_COMM_USE_(G|LL)DB ignored because no %s", dbg_term);
         chpl_warning(err_msg, 0, 0);
       }
     }
