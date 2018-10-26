@@ -1909,7 +1909,7 @@ module String {
   //  "1000" < "101" < "1010".
   //
 
-  private inline proc _strcmp(a: string, b:string) : int {
+  private inline proc _strcmp_local(a: string, b:string) : int {
     // Assumes a and b are on same locale and not empty.
     const size = min(a.len, b.len);
     const result =  c_memcmp(a.buff, b.buff, size);
@@ -1922,16 +1922,19 @@ module String {
     return result;
   }
 
+  private inline proc _strcmp(a: string, b:string) : int {
+    if a.locale_id == chpl_nodeID && b.locale_id == chpl_nodeID {
+      // it's local
+      return _strcmp_local(a, b);
+    } else {
+      var localA: string = a.localize();
+      var localB: string = b.localize();
+      return _strcmp_local(localA, localB);
+    }
+  }
+
   pragma "no doc"
   proc ==(a: string, b: string) : bool {
-    inline proc doEq(a: string, b:string) {
-      // TODO: is it better to have these outside of the do* fns?
-      //       probably would be 2 extra gets worst case, but avoids doing a
-      //       local copy if b is remote
-      if a.len != b.len then return false;
-      return _strcmp(a, b) == 0;
-    }
-
     // At the moment, this commented out section will not work correctly. If a
     // and b are on the same locale, we will go to that locale, but an autoCopy
     // will localize a and b, before they are placed into the on bundle,
@@ -1947,48 +1950,31 @@ module String {
       return ret;
     } else { */
 
-    var localA: string = a.localize();
-    var localB: string = b.localize();
-
-    return doEq(localA, localB);
+    return _strcmp(a, b) == 0;
   }
 
   pragma "no doc"
   inline proc !=(a: string, b: string) : bool {
-    return !(a == b);
+    return _strcmp(a, b) != 0;
   }
 
   pragma "no doc"
   inline proc <(a: string, b: string) : bool {
-    inline proc doLt(a: string, b:string) {
-      return _strcmp(a, b) < 0;
-    }
-
-    var localA: string = a.localize();
-    var localB: string = b.localize();
-
-    return doLt(localA, localB);
+    return _strcmp(a, b) < 0;
   }
 
   pragma "no doc"
   inline proc >(a: string, b: string) : bool {
-    inline proc doGt(a: string, b:string) {
-      return _strcmp(a, b) > 0;
-    }
-
-    var localA: string = a.localize();
-    var localB: string = b.localize();
-
-    return doGt(localA, localB);
+    return _strcmp(a, b) > 0;
   }
 
   pragma "no doc"
   inline proc <=(a: string, b: string) : bool {
-    return !(a > b);
+    return _strcmp(a, b) <= 0;
   }
   pragma "no doc"
   inline proc >=(a: string, b: string) : bool {
-    return !(a < b);
+    return _strcmp(a, b) >= 0;
   }
 
 
