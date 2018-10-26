@@ -419,7 +419,7 @@ Type* getInstantiationType(Type* actualType, Type* formalType) {
   // with the promotion type.
   if (ret == NULL) {
     if (Type* st = actualType->getValType()->scalarPromotionType) {
-      ret = getBasicInstantiationType(st, formalType);
+      ret = getBasicInstantiationType(st->getValType(), formalType);
     }
   }
 
