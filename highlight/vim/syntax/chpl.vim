@@ -82,13 +82,18 @@ syn case ignore
 syn match	cNumbers	display transparent "\<\d\|\.\d" contains=cNumber,cFloat,cOctalError,cOctal
 " Same, but without octal error (for comments)
 syn match	cNumbersCom	display contained transparent "\<\d\|\.\d" contains=cNumber,cFloat,cOctal
+" decimal number
 syn match	cNumber		display contained "\d\+\>"
+syn match	cNumber		display contained "\d\(_\|\d\)*\>"
 " hex number
 syn match	cNumber		display contained "0x\x\+\>"
+syn match	cNumber		display contained "0x\x\(_\|\x\)*\>"
 " octal number
 syn match	cOctal		display contained "0o\o\+\>"
+syn match	cOctal		display contained "0o\o\(_\|\o\)*\>"
 " binary number
-syn match       cNumber         display contained "0b[0-1]\+\>"
+syn match	cNumber         display contained "0b[0-1]\+\>"
+syn match	cNumber         display contained "0b[0-1]\(_\|[0-1]\)*\>"
 syn match	cFloat		display contained "\d\+f"
 "floating point number, with dot, optional exponent
 "syn match	cFloat		display contained "\d\+\.\d*\(e[-+]\=\d\+\)\=[fl]\="
