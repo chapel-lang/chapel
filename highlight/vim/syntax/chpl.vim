@@ -83,11 +83,12 @@ syn match	cNumbers	display transparent "\<\d\|\.\d" contains=cNumber,cFloat,cOct
 " Same, but without octal error (for comments)
 syn match	cNumbersCom	display contained transparent "\<\d\|\.\d" contains=cNumber,cFloat,cOctal
 syn match	cNumber		display contained "\d\+\>"
-"hex number
+" hex number
 syn match	cNumber		display contained "0x\x\+\>"
-" Flag the first zero of an octal number as something special
-syn match	cOctal		display contained "0\o\+\>" contains=cOctalZero
-syn match	cOctalZero	display contained "\<0"
+" octal number
+syn match	cOctal		display contained "0o\o\+\>"
+" binary number
+syn match       cNumber         display contained "0b[0-1]\+\>"
 syn match	cFloat		display contained "\d\+f"
 "floating point number, with dot, optional exponent
 "syn match	cFloat		display contained "\d\+\.\d*\(e[-+]\=\d\+\)\=[fl]\="
