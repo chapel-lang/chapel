@@ -553,7 +553,7 @@ proc loadScene() {
     const inType = columns[1];
 
     // handle error conditions
-    if !expectedArgs.domain.member(inType) then
+    if !expectedArgs.domain.contains(inType) then
       inputError("unexpected input type: " + inType);
     else if columns.size < expectedArgs(inType) then
       inputError("not enough arguments for input of type '" + inType + "'");
