@@ -307,7 +307,7 @@ module String {
       of a shallow copy.
      */
     proc init(s: string, isowned: bool = true) {
-      const sRemote = s.locale_id != chpl_nodeID;
+      const sRemote = _local == false && s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.isowned = isowned;
       this.complete();
@@ -522,7 +522,7 @@ module String {
         return __primitive("cast", t, x);
       }
 
-      if this.locale_id != chpl_nodeID then
+      if _local == false && this.locale_id != chpl_nodeID then
         halt("Cannot call .c_str() on a remote string");
 
       return this.buff:c_string;
@@ -623,7 +623,7 @@ module String {
                                 offset_STR_COPY_DATA): bufferType;
       ret.isowned = true;
 
-      const remoteThis = this.locale_id != chpl_nodeID;
+      const remoteThis = _local == false && this.locale_id != chpl_nodeID;
       var multibytes: bufferType;
       if remoteThis {
         chpl_string_comm_get(ret.buff, this.locale_id, this.buff + i - 1, maxbytes);
@@ -717,7 +717,7 @@ module String {
                                   offset_STR_COPY_DATA): bufferType;
 
         var thisBuff: bufferType;
-        const remoteThis = this.locale_id != chpl_nodeID;
+        const remoteThis = _local == false && this.locale_id != chpl_nodeID;
         if remoteThis {
           // TODO: Could do an optimization here and only pull down the data
           // between r2.low and r2.high. Indexing for the copy below gets a bit
