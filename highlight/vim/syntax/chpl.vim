@@ -112,7 +112,9 @@ if !exists("c_no_c99")
 endif
 
 " flag an octal number with wrong digits
-syn match	cOctalError	display contained "0\o*[89]\d*"
+syn match	cOctalError	display contained "0o\o*[89a-f]\x*"
+" let binary errors tag along with octal
+syn match	cOctalError	display contained "0b[01]*[2-9a-f]\x*"
 syn case match
 
 if exists("c_comment_strings")
