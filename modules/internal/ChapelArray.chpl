@@ -4063,6 +4063,14 @@ module ChapelArray {
   }
 
   pragma "no doc"
+  proc reshape(A: _iteratorRecord, D: domain) {
+    if !isRectangularDom(D) then
+      compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
+    var B = for (i,a) in zip(D, A) do a;
+    return B;
+  }
+
+  pragma "no doc"
   iter linearize(Xs) {
     for x in Xs do yield x;
   }
