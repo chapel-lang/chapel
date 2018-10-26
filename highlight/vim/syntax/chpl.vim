@@ -82,11 +82,11 @@ syn case ignore
 syn match	cNumbers	display transparent "\<\d\|\.\d" contains=cNumber,cFloat,cOctalError,cOctal
 " Same, but without octal error (for comments)
 syn match	cNumbersCom	display contained transparent "\<\d\|\.\d" contains=cNumber,cFloat,cOctal
-syn match	cNumber		display contained "\d\+\(u\=l\{0,2}\|ll\=u\)\>"
+syn match	cNumber		display contained "\d\+\>"
 "hex number
-syn match	cNumber		display contained "0x\x\+\(u\=l\{0,2}\|ll\=u\)\>"
+syn match	cNumber		display contained "0x\x\+\>"
 " Flag the first zero of an octal number as something special
-syn match	cOctal		display contained "0\o\+\(u\=l\{0,2}\|ll\=u\)\>" contains=cOctalZero
+syn match	cOctal		display contained "0\o\+\>" contains=cOctalZero
 syn match	cOctalZero	display contained "\<0"
 syn match	cFloat		display contained "\d\+f"
 "floating point number, with dot, optional exponent
