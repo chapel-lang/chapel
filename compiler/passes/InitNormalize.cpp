@@ -28,8 +28,6 @@
 #include "stmt.h"
 #include "astutil.h"
 
-static bool mightBeSyncSingleExpr(DefExpr* field);
-
 static bool isAssignment(CallExpr* callExpr);
 static bool isSimpleAssignment(CallExpr* callExpr);
 static bool isCompoundAssignment(CallExpr* callExpr);
@@ -529,11 +527,7 @@ Expr* InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     // For default-initializers, copy happens at the callsite
     Symbol* _this = mFn->_this;
     Symbol* name = new_CStringSymbol(field->sym->name);
-    PrimitiveTag tag = PRIM_SET_MEMBER;
-    if (mightBeSyncSingleExpr(field)) {
-      tag = PRIM_INIT_FIELD;
-    }
-    CallExpr* fieldSet = new CallExpr(tag, _this, name, initExpr);
+    CallExpr* fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, initExpr);
 
     insertBefore->insertBefore(fieldSet);
 
@@ -1264,41 +1258,6 @@ InitNormalize::phaseToString(InitNormalize::InitPhase phase) const {
     case cPhase2:
       retval = "Phase2";
       break;
-  }
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-// The type of the field is not yet determined either due to being entirely a
-// type alias, or due to being a call to a function that returns a type.
-// Therefore, we must be cautious and marking this field initialization as
-// potentially a sync or single, so that when we know its type at resolution,
-// we can respond appropriately.
-static bool mightBeSyncSingleExpr(DefExpr* field) {
-  bool retval = false;
-
-  if (SymExpr* typeSym = toSymExpr(field->exprType)) {
-    if (typeSym->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      retval = true;
-    }
-
-  } else if (CallExpr* typeCall = toCallExpr(field->exprType)) {
-    /*if (typeCall->isPrimitive(PRIM_QUERY_TYPE_FIELD)) { // might be necessary
-      retval = true;
-    } else */
-
-    if (typeCall->isPrimitive() == false) {
-      // The call is not a known primitive.
-      // We have to assume that it is a type function being called,
-      // and type functions could return a sync or single type.
-      retval = true;
-    }
   }
 
   return retval;
