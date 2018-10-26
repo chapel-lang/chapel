@@ -369,8 +369,26 @@ module ChapelError {
   }
 
   pragma "no doc"
-  proc chpl_fix_thrown_error(err: ?t) where !isSubtype(t, Error) {
+  pragma "last resort"
+  proc chpl_fix_thrown_error(err: ?t) where !isSubtype(t, Error) &&
+    isRecordType(t) {
+    compilerError("Cannot throw an instance of type \'", t: string,
+                  "\', not a subtype of Error");
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc chpl_fix_thrown_error(err: ?t) where !isSubtype(t, Error) &&
+    isClassType(t) {
     compilerError("Cannot throw an instance of type \'", (t: borrowed): string,
+                  "\', not a subtype of Error");
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc chpl_fix_thrown_error(err: ?t) where !isSubtype(t, Error) &&
+    !isRecordType(t) && !isClassType(t) {
+    compilerError("Cannot throw an instance of type \'", t: string,
                   "\', not a subtype of Error");
   }
 
