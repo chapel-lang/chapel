@@ -539,28 +539,6 @@ Expr* InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
 
     return initExpr;
 
-  } else if (theFn()->hasFlag(FLAG_COMPILER_GENERATED) == true &&
-             field->init                               == NULL &&
-             mightBeSyncSingleExpr(field)              == true) {
-    // The type of the field depends on something that hasn't been determined
-    // yet.  It is entirely possible that the type will end up as a sync or
-    // single and so we need to flag this field initialization for resolution
-    // to handle
-
-    // TODO -- is this necessary anymore? It came from PR #7913.
-    // try the test named syncFieldTypeOnlyTypeFunc2.chpl
-
-    Symbol*   _this    = mFn->_this;
-    Symbol*   name     = new_CStringSymbol(field->sym->name);
-    CallExpr* fieldSet = new CallExpr(PRIM_INIT_MAYBE_SYNC_SINGLE_FIELD,
-                                      _this,
-                                      name,
-                                      initExpr);
-
-    insertBefore->insertBefore(fieldSet);
-
-    return initExpr;
-
   } else {
     // Do not set type of 'tmp' so that resolution will infer it later
     VarSymbol* tmp       = newTemp("tmp");
