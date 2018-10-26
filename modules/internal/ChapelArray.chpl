@@ -3918,6 +3918,12 @@ module ChapelArray {
     } else if chpl__tryToken { // try to parallelize using leader and follower iterators
       forall (aa,bb) in zip(a,b) do
         aa = bb;
+    } else if chpl__tryToken { // try to parallelize using leader and follower iterators
+      forall (aa,bb) in zip(a,b) do
+        aa = bb:aa.type;
+    } else if chpl__tryToken { // try to parallelize using leader and follower iterators
+      for (aa,bb) in zip(a,b) do
+        aa = bb:aa.type;
     } else {
       for (aa,bb) in zip(a,b) do
         aa = bb;
