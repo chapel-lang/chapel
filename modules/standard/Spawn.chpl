@@ -375,6 +375,7 @@ module Spawn {
      without heroic effort on our part.  Boo.
    */
 
+  // TODO: Document throws when is #11374 merged
   /*
      Create a subprocess.
 
@@ -449,6 +450,9 @@ module Spawn {
     else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
     if isIntegralType(stderr.type) then stderr_fd = stderr;
     else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
+
+    if args.size == 0 then
+      throw new IllegalArgumentError('args cannot be an empty array');
 
     // When memory is registered with the NIC under ugni, a fork will currently
     // segfault. Here we halt before such a call is made to provide an
@@ -589,6 +593,7 @@ module Spawn {
     return ret;
   }
 
+  // TODO: Document throws when is #11374 merged
   /*
      Create a subprocess by invoking a shell.
 
@@ -650,6 +655,9 @@ module Spawn {
                   executable="/bin/sh", shellarg="-c",
                   param kind=iokind.dynamic, param locking=true) throws
   {
+    if command.isEmptyString() then
+      throw new IllegalArgumentError('command cannot be an empty string');
+
     var args = [command];
     if shellarg != "" then args.push_front(shellarg);
     args.push_front(executable);
