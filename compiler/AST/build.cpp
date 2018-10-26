@@ -2689,7 +2689,8 @@ buildSyncStmt(Expr* stmt) {
   BlockStmt* body = toBlockStmt(stmt);
   INT_ASSERT(body);
 
-  TryStmt* t = new TryStmt(/* try! */ false, body, catches);
+  TryStmt* t = new TryStmt(/* try! */ false, body, catches,
+                           /* isSyncTry */ true);
 
   block->insertAtTail(t);
 

@@ -5389,6 +5389,7 @@ static void moveHaltMoveIsUnacceptable(CallExpr* call) {
 //
 // Return true if the move supports a return from a function.
 // NB this does not include a constructor
+// or a function with a known concrete return type.
 //
 static bool moveSupportsUnresolvedFunctionReturn(CallExpr* call) {
   bool retval = false;
@@ -5396,7 +5397,7 @@ static bool moveSupportsUnresolvedFunctionReturn(CallExpr* call) {
   if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) {
     Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
 
-    if (fn->retType           == dtUnknown       && // Return type unresolved
+    if (isUnresolvedOrGenericReturnType(fn->retType) &&
         fn->getReturnSymbol() == lhsSym          && // LHS is the RVV
         fn->_this             != lhsSym          && // Not a constructor
         call->parentExpr      != fn->where       &&

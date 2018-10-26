@@ -890,13 +890,17 @@ ErrorCheckingVisitor::ErrorCheckingVisitor(bool inThrowingFn,
 }
 
 bool ErrorCheckingVisitor::enterTryStmt(TryStmt* node) {
-  tryDepth++;
+  if (!node->isSyncTry()) {
+    tryDepth++;
+  }
 
   return true;
 }
 
 void ErrorCheckingVisitor::exitTryStmt(TryStmt* node) {
-  tryDepth--;
+  if (!node->isSyncTry()) {
+    tryDepth--;
+  }
 
   checkCatches(node);
 
