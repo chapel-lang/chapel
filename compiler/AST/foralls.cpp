@@ -1116,8 +1116,27 @@ static void removeOuterVarArgs(CallExpr* iterCall, FnSymbol* oldCallee,
   }
 }
 
+// If the first iterable is a zippered loop expr, convertIteratorForLoopexpr()
+// will plug in the leader. Which accepts just the first comp of the tuple.
+// Adjust the call correspondingly.
+static void adjustForZipperedLoopexpr(CallExpr* iterCall, FnSymbol* iterator) {
+  Expr* firstArg = iterCall->get(1);
+  if (firstArg->getValType() == iterator->getFormal(1)->getValType())
+    return; // no adjustments are needed
+
+  Expr* stmt = iterCall->getStmtExpr();
+  AggregateType* ag = toAggregateType(firstArg->getValType());
+  INT_ASSERT(ag->symbol->hasFlag(FLAG_TUPLE));
+  // We need to pass only the first component of the tuple.
+  Symbol* firstField = ag->getField(1);
+  VarSymbol* temp = newTemp("firstField", firstField->type);
+  firstArg->replace(new SymExpr(temp));
+  stmt->insertBefore(new DefExpr(temp));
+  stmt->insertBefore("'move'(%S,'.v'(%E,%S))", temp, firstArg, firstField);
+}
+
 //
-// Handle the case where the leader iterator is astr_loopexpr_iter.
+// Handle the case where the leader iterator is _iterator_for_loopexpr.
 // Not doing so confuses ReturnByRef and lowering of ForallStmts.
 //
 // Tests:
@@ -1138,6 +1157,7 @@ static void convertIteratorForLoopexpr(ForallStmt* fs) {
           if (calleeFn->firstSymExpr() == NULL)
             calleeFn->defPoint->remove(); // not needed any more
           removeOuterVarArgs(iterCall, calleeFn, iterator);
+          adjustForZipperedLoopexpr(iterCall, iterator);
         }
 }
 
