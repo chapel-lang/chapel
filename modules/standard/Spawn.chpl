@@ -375,7 +375,6 @@ module Spawn {
      without heroic effort on our part.  Boo.
    */
 
-  // TODO: Document throws when is #11374 merged
   /*
      Create a subprocess.
 
@@ -430,6 +429,7 @@ module Spawn {
      :returns: a :record:`subprocess` with kind and locking set according
                to the arguments.
 
+     :throws IllegalArgumentError: Thrown when ``args`` is an empty array.
      */
   proc spawn(args:[] string, env:[] string=Spawn.empty_env, executable="",
              stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
@@ -593,7 +593,6 @@ module Spawn {
     return ret;
   }
 
-  // TODO: Document throws when is #11374 merged
   /*
      Create a subprocess by invoking a shell.
 
@@ -649,6 +648,7 @@ module Spawn {
      :returns: a :record:`subprocess` with kind and locking set according
                to the arguments.
 
+     :throws IllegalArgumentError: Thrown when ``command`` is an empty string.
   */
   proc spawnshell(command:string, env:[] string=Spawn.empty_env,
                   stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
