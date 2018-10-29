@@ -32,8 +32,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-static bool isCandidateFn(ResolutionCandidate* res, CallInfo& info);
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -71,7 +69,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
 
   fn = expandIfVarArgs(fn, info);
 
-  if (fn != NULL && isCandidateFn(this, info)) {
+  if (fn != NULL) {
     resolveTypedefedArgTypes();
 
     if (computeAlignment(info) == true) {
@@ -535,54 +533,6 @@ static bool looksLikeCopyInit(ResolutionCandidate* rc) {
   }
 
   return retval;
-}
-
-static bool isCandidateInit(ResolutionCandidate* res, CallInfo& info) {
-  bool retval = false;
-
-  AggregateType* ft = toAggregateType(res->fn->_this->getValType());
-  AggregateType* at = toAggregateType(info.call->get(2)->getValType());
-
-  if (ft == at) {
-    retval = true;
-  } else if (ft->getRootInstantiation() == at->getRootInstantiation()) {
-    retval = true;
-  }
-
-  return retval;
-}
-
-static bool isCandidateNew(ResolutionCandidate* res, CallInfo& info) {
-  bool retval = false;
-
-  AggregateType* ft = toAggregateType(res->fn->getFormal(1)->getValType());
-  AggregateType* at = toAggregateType(info.call->get(1)->getValType());
-
-  if (ft == at) {
-    retval = true;
-  } else if (ft->getRootInstantiation() == at->getRootInstantiation()) {
-    retval = true;
-  }
-
-  return retval;
-}
-
-static bool isCandidateFn(ResolutionCandidate* res, CallInfo& info) {
-  // Exclude initializers on other types before we attempt to resolve the
-  // signature.
-  //
-  // TODO: Expand this check for all methods
-  if (info.call->numActuals() >= 2 &&
-      res->fn->isInitializer() &&
-      isCandidateInit(res, info) == false) {
-    return false;
-  } else if (info.call->numActuals() >= 1 &&
-             res->fn->hasFlag(FLAG_NEW_WRAPPER) &&
-             isCandidateNew(res, info) == false) {
-    return false;
-  }
-
-  return true;
 }
 
 /************************************* | **************************************
