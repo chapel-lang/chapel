@@ -101,9 +101,10 @@ def _parse_headers(option, opt, value, parser, *args, **kwargs):
 
 
 def _default_sender():
-    """Return default sender address, which is <user>@<hostname>."""
-    return '{0}@{1}'.format(getpass.getuser(), socket.getfqdn())
-
+    """Return default sender address, which is <user>@<hostname> unless
+    CHPL_UTIL_SMTP_SENDER is set in environment.
+    """
+    return os.environ.get('CHPL_UTIL_SMTP_SENDER', '{0}@{1}'.format(getpass.getuser(), socket.getfqdn()))
 
 def _default_smtp_host():
     """Return default smtp host, which is localhost unless CHPL_UTIL_SMTP_HOST is
@@ -195,6 +196,7 @@ def _parse_args():
     )
     mail_group.add_option(
         '-S', '--sender',
+        metavar='CHPL_UTIL_SMTP_SENDER',
         default=_default_sender(),
         help='Sender email address. (default: %default)'
     )
