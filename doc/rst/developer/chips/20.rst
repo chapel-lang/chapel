@@ -100,8 +100,8 @@ What's going wrong? The isMoreVisible rule in function resolution uses
 point-of-instantiation to determine visibility.
 
 Solution: remove point-of-instantiation from consideration in
-determination of more visible function in disambiguation. This behavior
-is no longer present on master today.
+determination of more visible function in disambiguation. This solution has
+been adopted as of Chapel 1.18.
 
 Hijacking a Generic Fn Called in a Generic
 ++++++++++++++++++++++++++++++++++++++++++
@@ -664,8 +664,8 @@ Solutions: require an 'override' keyword to mark functions that should be
 overriding a base class method. In that event, ``Widget.run`` would not have an
 override when the library is updated and a compiler error would alert the user
 to the issue. It might also be reasonable to be able to mark functions as
-non-overrideable - but that one is probably harder to rely upon.  The 'override'
-keyword has now been implemented in the language.
+non-overrideable - but that one is probably harder to rely upon.  As of 1.18,
+Chapel now requires the 'override' keyword.
 
 Unexpected new Overload for an Overridden method
 ++++++++++++++++++++++++++++++++++++++++++++++++
