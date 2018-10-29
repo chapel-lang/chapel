@@ -1,2 +1,0 @@
-bug: compiler crashes upon a forall loop over a forall expression
-#10282
