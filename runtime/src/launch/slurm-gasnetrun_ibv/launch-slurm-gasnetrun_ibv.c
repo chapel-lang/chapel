@@ -229,7 +229,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     genNumLocalesOptions(slurmFile, determineSlurmVersion(), numLocales, getNumCoresPerLocale());
     if (projectString && strlen(projectString) > 0)
       fprintf(slurmFile, "#SBATCH -A %s\n", projectString);
-    //fprintf(slurmFile, "#SBATCH -joe\n");  
+    //fprintf(slurmFile, "#SBATCH -joe\n");
     if (outputfn!=NULL) 
       fprintf(slurmFile, "#SBATCH -o %s\n", outputfn);
     else
@@ -257,11 +257,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     //fprintf(expectFile, "spawn sbatch ");
     fprintf(expectFile, "spawn -noecho salloc ");
-    fprintf(expectFile, "-J %.10s ",basenamePtr); // pass 
-    fprintf(expectFile, "-N %d ",numLocales); 
+    fprintf(expectFile, "-J %.10s ",basenamePtr); // pass
+    fprintf(expectFile, "-N %d ",numLocales);
     fprintf(expectFile, "--ntasks-per-node=1 ");
     fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
-    fprintf(expectFile, "--time=%s ",walltime); 
+    fprintf(expectFile, "--time=%s ",walltime);
     if(partition)
       fprintf(expectFile, "--partition=%s ",partition);
     if(exclude)
