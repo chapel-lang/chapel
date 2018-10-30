@@ -860,12 +860,6 @@
   "eb31abc0-8068-11e6-ab60-00a0cc3ee663": [
     "test/release/examples/primers/taskParallel.chpl"
   ],
-  "d72609f8-b850-11e6-9740-843835579daa": [
-    "test/release/examples/programs/beer.chpl"
-  ],
-  "eb249ff0-b850-11e6-9740-843835579daa": [
-    "test/release/examples/programs/quicksort.chpl"
-  ],
   "80066972-2f20-11e8-aa67-10ddb1d4c3d5": [
     "test/release/examples/spec/Expressions/condexp.chpl"
   ],
