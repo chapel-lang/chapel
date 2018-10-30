@@ -1373,6 +1373,47 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
   return true;
 }
 
+static bool isDevOnly(BaseAST* ast) {
+  FnSymbol* fn = ast->getFunction();
+  ModuleSymbol* mod = ast->getModule();
+
+  if (mod->modTag == MOD_INTERNAL) {
+    return true;
+  } else if (fn &&
+             fn->hasFlag(FLAG_LINE_NUMBER_OK) == false &&
+             fn->hasFlag(FLAG_COMPILER_GENERATED)) {
+    return true;
+  }
+
+  return false;
+}
+static bool isUser(BaseAST* ast) {
+  return !isDevOnly(ast);
+}
+
+static BaseAST* findUserPlace(BaseAST* ast) {
+  if (developer)
+    return ast;
+
+  // Otherwise, look at the call sites to find
+  // the user call.
+  // Note that instantiation points are not available
+  // at this point in compilation.
+  // This only goes 1 level up. Doing more than that
+  // would have to detect recursion, and at that point
+  // there's probably a better approach.
+  if (FnSymbol* inFn = ast->getFunction()) {
+    for_SymbolSymExprs(se, inFn) {
+      if (isUser(se)) {
+        ast = se;
+      }
+    }
+  }
+
+  // If we can't do any better, just return the internal place.
+  return ast;
+}
+
 static void emitError(Expr* inExpr,
                       const char* msg1, const char* msg2,
                       Symbol* relevantSymbol,
@@ -1380,19 +1421,22 @@ static void emitError(Expr* inExpr,
                       LifetimeState* lifetimes) {
 
   char buf[256];
+
+  BaseAST* place = findUserPlace(inExpr);
+
   if (relevantSymbol && !relevantSymbol->hasFlag(FLAG_TEMP)) {
     snprintf(buf, sizeof(buf), "%s %s %s", msg1, relevantSymbol->name, msg2);
-    USR_FATAL_CONT(inExpr, buf);
+    USR_FATAL_CONT(place, buf);
   } else {
     snprintf(buf, sizeof(buf), "%s %s", msg1, msg2);
-    USR_FATAL_CONT(inExpr, buf);
+    USR_FATAL_CONT(place, buf);
   }
 
   Symbol* fromSym = relevantLifetime.fromSymbolScope;
   Expr* fromExpr = relevantLifetime.relevantExpr;
-  if (fromSym && !fromSym->hasFlag(FLAG_TEMP))
+  if (fromSym && !fromSym->hasFlag(FLAG_TEMP) && isUser(fromSym))
     USR_PRINT(fromSym, "consider scope of %s", fromSym->name);
-  else if (fromExpr && inExpr->astloc != fromExpr->astloc)
+  else if (fromExpr && inExpr->astloc != fromExpr->astloc && isUser(fromExpr))
     USR_PRINT(fromExpr, "consider result here");
 
   handleDebugOutputOnError(inExpr, lifetimes);
