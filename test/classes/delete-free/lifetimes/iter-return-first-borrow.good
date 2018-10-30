@@ -1,1 +1,3 @@
-{x = 1}
+iter-return-first-borrow.chpl:14: In function 'getfirstborrow':
+iter-return-first-borrow.chpl:16: error: Scoped variable i cannot be returned
+iter-return-first-borrow.chpl:15: note: consider scope of i

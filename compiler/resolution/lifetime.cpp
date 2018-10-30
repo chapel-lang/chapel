@@ -25,6 +25,7 @@
 #include "ForLoop.h"
 #include "loopDetails.h"
 #include "UnmanagedClassType.h"
+#include "resolution.h"
 #include "stlUtil.h"
 #include "symbol.h"
 #include "view.h"
@@ -66,6 +67,8 @@ static const bool debugOutputOnError = false;
    * pointer/ref arguments are inferred to be return scope
      generally, but for methods, the default is that only 'this'
      is return scope.
+   * for non-method iterators, the return scope is the loop
+     invoking the iterator
 
    When considering the lifetime of the result of a call,
    this pass assumes that the lifetime is the minimum of the
@@ -302,7 +305,7 @@ static void checkFunction(FnSymbol* fn) {
 
     // TODO:
     // Determine cases where the compiler can prove
-    // a reference-type variable is not 'nil'
+    // a class-type variable is not 'nil'
   }
 }
 
@@ -399,6 +402,8 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
     return false;
   if (fn->hasFlag(FLAG_SAFE))
     return true;
+
+  // TODO
   if (fn->hasFlag(FLAG_COMPILER_GENERATED))
     return false;
 
@@ -1267,6 +1272,12 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
   // correspondence between what was iterated over
   // and the index variables.
 
+  //  1. default: the lifetime of a method that is an iterator
+  //     is the lifetime of the receiver
+  //  2. default: the lifetime of a non-method iterator
+  //     is the loop itself.
+  //     TODO: Or check if the iterator may own?
+
   FnSymbol* inFn = forLoop->getFunction();
   bool isForall = false;
   IteratorDetails leaderDetails;
@@ -1283,13 +1294,30 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
 
     INT_ASSERT(index);
 
+    bool method = true;
+
     // Also check if we are iterating using these() method
     // ex. functions/ferguson/ref-pair/const-error-iterated*
-    if (!iterableSe)
-      if (CallExpr* iterableCall = toCallExpr(iterable))
-        if (iterableCall->isNamed("these"))
-          if (iterableCall->numActuals() >= 1)
+    if (!iterableSe) {
+      if (CallExpr* iterableCall = toCallExpr(iterable)) {
+        if (iterableCall->isNamed("these")) {
+          if (iterableCall->numActuals() >= 1) {
             iterableSe = toSymExpr(iterableCall->get(1));
+            iterable = iterableSe;
+          }
+        }
+      }
+    }
+
+    // Figure out if the iterator is a method or not.
+    // gatherLoopDetails currently can return a user type (e.g. a record)
+    // as the iterable in the event that 'these' is called.
+    // For that reason, if we can't find the iterator anywhere, we
+    // assume it's a method.
+    if (AggregateType* at = toAggregateType(iterable->getValType()))
+      if (at->iteratorInfo != NULL)
+        if (FnSymbol* fn = getTheIteratorFnFromIteratorRec(at))
+          method = (fn->_this != NULL);
 
     bool usedAsRef = index->isRef();
     bool usedAsBorrow = isOrContainsBorrowedClass(index->type);
@@ -1333,6 +1361,12 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     // Set lifetime of iteration variable to lifetime of the iterable (expr).
     lp.referent.relevantExpr = forLoop;
     lp.borrowed.relevantExpr = forLoop;
+
+    if (method == false) {
+      LifetimePair loopScope = lifetimes->intrinsicLifetimeForSymbol(index);
+      lp = minimumLifetimePair(lp, loopScope);
+    }
+
     changed |= lifetimes->setInferredLifetimeToMin(index, lp);
   }
 
