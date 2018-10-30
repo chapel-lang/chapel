@@ -1828,9 +1828,6 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
         isRecordContainingFieldsSubjectToAnalysis))
     return false;
 
-  if (typeHasInfiniteBorrowLifetime(type))
-    return false;
-
   return true;
 }
 
