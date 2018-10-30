@@ -92,7 +92,7 @@ ident            {letter}({letter}|{digit}|"$")*
 binaryLiteral    0[bB]{bit}(_|{bit})*
 octalLiteral     0[oO]{octDigit}(_|{octDigit})*
 decimalLiteral   {digit}(_|{digit})*
-hexLiteral       0[xX]{hexDigit}(_|{hexDigit})+
+hexLiteral       0[xX]{hexDigit}(_|{hexDigit})*
 intLiteral       {binaryLiteral}|{octalLiteral}|{decimalLiteral}|{hexLiteral}
 
 digitsOrSeps     {digit}(_|{digit})*
