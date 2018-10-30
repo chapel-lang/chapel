@@ -1662,8 +1662,10 @@ void insertAndResolveCasts(FnSymbol* fn) {
 }
 
 static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
+  if (isSymbol(ast) && ! isShadowVarSymbol(ast))
+    return; // do not descend into nested symbols
+
   if (CallExpr* call = toCallExpr(ast)) {
-    if (call->parentSymbol == fn) {
       if (call->isPrimitive(PRIM_MOVE)) {
         if (SymExpr* lhs = toSymExpr(call->get(1))) {
           Type* lhsType = lhs->symbol()->type;
@@ -1915,7 +1917,6 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
           }
         }
       }
-    }
   }
 
   AST_CHILDREN_CALL(ast, insertCasts, fn, casts);
