@@ -1314,10 +1314,11 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     // as the iterable in the event that 'these' is called.
     // For that reason, if we can't find the iterator anywhere, we
     // assume it's a method.
-    if (AggregateType* at = toAggregateType(iterable->getValType()))
-      if (at->iteratorInfo != NULL)
-        if (FnSymbol* fn = getTheIteratorFnFromIteratorRec(at))
-          method = (fn->_this != NULL);
+    if (iterable != NULL)
+      if (AggregateType* at = toAggregateType(iterable->getValType()))
+        if (at->iteratorInfo != NULL)
+          if (FnSymbol* fn = getTheIteratorFnFromIteratorRec(at))
+            method = (fn->_this != NULL);
 
     bool usedAsRef = index->isRef();
     bool usedAsBorrow = isOrContainsBorrowedClass(index->type);
@@ -1393,6 +1394,9 @@ static bool isUser(BaseAST* ast) {
 
 static BaseAST* findUserPlace(BaseAST* ast) {
   if (developer)
+    return ast;
+
+  if (isUser(ast))
     return ast;
 
   // Otherwise, look at the call sites to find
