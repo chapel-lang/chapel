@@ -89,22 +89,24 @@ letter           [_a-zA-Z]
 
 ident            {letter}({letter}|{digit}|"$")*
 
-binaryLiteral    0[bB]{bit}+
-octalLiteral     0[oO]{octDigit}+
+binaryLiteral    0[bB]{bit}(_|{bit})*
+octalLiteral     0[oO]{octDigit}(_|{octDigit})*
 decimalLiteral   {digit}(_|{digit})*
-hexLiteral       0[xX]{hexDigit}+
+hexLiteral       0[xX]{hexDigit}(_|{hexDigit})+
 intLiteral       {binaryLiteral}|{octalLiteral}|{decimalLiteral}|{hexLiteral}
 
-exponent         [Ee][\+\-]?{digit}+
-floatLiteral1    {digit}*"."{digit}+({exponent})?
-floatLiteral2    {digit}+"."{exponent}
-floatLiteral3    {digit}+{exponent}
+digitsOrSeps     {digit}(_|{digit})*
+exponent         [Ee][\+\-]?{digitsOrSeps}
+floatLiteral1    ({digit}*|{digitsOrSeps})"."{digitsOrSeps}({exponent})?
+floatLiteral2    {digitsOrSeps}"."{exponent}
+floatLiteral3    {digitsOrSeps}+{exponent}
 
 /* hex float literals, have decimal exponents indicating the power of 2 */
-hexDecExponent   [Pp][\+\-]?{digit}+
-floatLiteral4    0[xX]{hexDigit}*"."{hexDigit}+({hexDecExponent})?
-floatLiteral5    0[xX]{hexDigit}+"."{hexDecExponent}
-floatLiteral6    0[xX]{hexDigit}+{hexDecExponent}
+hexDigitsOrSeps  {hexDigit}(_|{hexDigit})*
+hexDecExponent   [Pp][\+\-]?{digitsOrSeps}
+floatLiteral4    0[xX]({hexDigit}*|{hexDigitsOrSeps})"."{hexDigitsOrSeps}+({hexDecExponent})?
+floatLiteral5    0[xX]{hexDigitsOrSeps}"."{hexDecExponent}
+floatLiteral6    0[xX]{hexDigitsOrSeps}{hexDecExponent}
 
 decFloatLiteral  {floatLiteral1}|{floatLiteral2}|{floatLiteral3}
 hexFloatLiteral  {floatLiteral4}|{floatLiteral5}|{floatLiteral6}
