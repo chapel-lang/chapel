@@ -169,20 +169,12 @@ static void propagate_environment(FILE *f)
   if (lang || lc_all || lc_collate) {
     fprintf(f, " env");
 
-    // All the undefines have to come first.
-    if (!lang)
-      fprintf(f, " -u LANG");
-    if (!lc_all)
-      fprintf(f, " -u LC_ALL");
-    if (!lc_collate)
-      fprintf(f, " -u LC_COLLATE");
-
     if (lang)
-      fprintf(f, " LANG=%s", lang);
+      fprintf(f, " 'LANG=%s'", lang ? lang : "");
     if (lc_all)
-      fprintf(f, " LC_ALL=%s", lc_all);
+      fprintf(f, " 'LC_ALL=%s'", lc_all ? lc_all : "");
     if (lc_collate)
-      fprintf(f, " LC_COLLATE=%s", lc_collate);
+      fprintf(f, " 'LC_COLLATE=%s'", lc_collate ? lc_collate : "");
   }
 }
 
