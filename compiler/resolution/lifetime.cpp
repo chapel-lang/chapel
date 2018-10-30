@@ -407,22 +407,11 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_COMPILER_GENERATED))
     return false;
 
-  // this is a workaround for problems with init functions
-  // where temporaries are used to store results that are
-  // move'd into global variables.
-  // It could conceivably also/alternatively check for
-  // a lack of FLAG_INSERT_AUTO_DESTROY on the symbol
-  // (but then the workaround would need to be elsewhere).
-  if (fn->hasFlag(FLAG_MODULE_INIT))
-    return false;
-
-
   ModuleSymbol* inMod = fn->getModule();
   if (inMod->hasFlag(FLAG_UNSAFE))
     return false;
   if (inMod->hasFlag(FLAG_SAFE))
     return true;
-
 
   return fLifetimeChecking;
 }
@@ -892,12 +881,22 @@ static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
   group->elements.push_back(sym);
 
   Symbol* oldFavorite = group->favorite;
-  if (!sym->hasFlag(FLAG_TEMP) ||
-      !oldFavorite ||
-      (!sym->isRef() && oldFavorite->isRef()) ||
-      strlen(sym->name) < strlen(oldFavorite->name)) {
+
+  bool preferSym = false;
+  // Should we prefer sym to oldFavorite?
+  if (oldFavorite == NULL)
+    preferSym = true;
+  else if (isGlobal(sym) != isGlobal(oldFavorite))
+    preferSym = isGlobal(sym);
+  else if (sym->hasFlag(FLAG_TEMP) != oldFavorite->hasFlag(FLAG_TEMP))
+    preferSym = !sym->hasFlag(FLAG_TEMP);
+  else if (sym->isRef() != oldFavorite->isRef())
+    preferSym = !sym->isRef();
+  else
+    preferSym = (strlen(sym->name) < strlen(oldFavorite->name));
+
+  if (preferSym)
     group->favorite = sym;
-  }
 }
 
 static void addPairToDetempMap(Symbol* a, Symbol* b,
