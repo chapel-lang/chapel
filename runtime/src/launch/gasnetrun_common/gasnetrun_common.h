@@ -24,6 +24,10 @@
 #include "chpl-mem.h"
 #include "error.h"
 
+#ifndef GASNETRUN_LAUNCHER
+#error GASNETRUN_LAUNCHER must be defined
+#endif
+
 #define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
@@ -46,9 +50,9 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 }
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  int len = strlen(CHPL_THIRD_PARTY) + strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("gasnetrun_mpi") + 2;
+  int len = strlen(CHPL_THIRD_PARTY) + strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(GASNETRUN_LAUNCHER) + 2;
   char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  sprintf(cmd, "%s/%sgasnetrun_mpi", CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH));
+  sprintf(cmd, "%s/%s%s", CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), GASNETRUN_LAUNCHER);
 
   return chpl_launch_using_exec(cmd,
                                 chpl_launch_create_argv(cmd, argc, argv,
