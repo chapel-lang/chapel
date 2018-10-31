@@ -111,7 +111,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
         // (-c for tilda). Ideally, there should be a lookup table for those
         // flags if there is interest in adding support for more terminal
         // emulators
-        chpl_warning("CHPL_COMM_USE_(G|LL)DB can only be set to xterm or urxvt",
+        chpl_warning("CHPL_COMM_DBG_TERM can only be set to xterm or urxvt",
                      0, 0);
         dbg_term = "xterm";
       }
