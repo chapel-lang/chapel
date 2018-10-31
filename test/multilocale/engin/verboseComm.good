@@ -1,0 +1,3 @@
+0: remote task created on 1
+1: verboseComm.chpl:6: remote put to 0, 8 bytes
+1

@@ -2799,8 +2799,8 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
   if (chpl_verbose_comm)
-    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
-           chpl_lookupFilename(fn), ln, node);
+    printf("%d: %s:%d: remote get from %d, %zu bytes\n", chpl_nodeID,
+           chpl_lookupFilename(fn), ln, node, size);
 
 #ifdef DUMP
   chpl_cache_print();
@@ -2825,8 +2825,8 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
   if (chpl_verbose_comm)
-    printf("%d: %s:%d: remote put to %d\n", chpl_nodeID,
-           chpl_lookupFilename(fn), ln, node);
+    printf("%d: %s:%d: remote put to %d, %zu bytes\n", chpl_nodeID,
+           chpl_lookupFilename(fn), ln, node, size);
 
 #ifdef DUMP
   chpl_cache_print();
@@ -2847,8 +2847,8 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: in chpl_cache_comm_prefetch\n", chpl_nodeID));
   if (chpl_verbose_comm)
-    printf("%d: %s:%d: remote prefetch from %d\n", chpl_nodeID,
-           chpl_lookupFilename(fn), ln, node);
+    printf("%d: %s:%d: remote prefetch from %d, %zu bytes\n", chpl_nodeID,
+           chpl_lookupFilename(fn), ln, node, size);
   // Always use the cache for prefetches.
   //saturating_increment(&info->prefetch_since_acquire);
   cache_get(cache, NULL, node, (raddr_t)raddr, size, task_local->last_acquire,

@@ -5027,8 +5027,8 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("%s:%d: remote put to %d",
-                                 chpl_lookupFilename(fn), ln, locale);
+  chpl_comm_diags_verbose_printf("%s:%d: remote put to %d, %zu bytes",
+                                 chpl_lookupFilename(fn), ln, locale, size);
   chpl_comm_diags_incr(put);
 
   do_remote_put(addr, locale, raddr, size, NULL, may_proxy_true);
@@ -5310,8 +5310,8 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
-                                 chpl_lookupFilename(fn), ln, locale);
+  chpl_comm_diags_verbose_printf("%s:%d: remote get from %d, %zu bytes",
+                                 chpl_lookupFilename(fn), ln, locale, size);
   chpl_comm_diags_incr(get);
 
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
@@ -5649,8 +5649,8 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("%s:%d: remote non-blocking get from %d",
-                                 chpl_lookupFilename(fn), ln, locale);
+  chpl_comm_diags_verbose_printf("%s:%d: remote non-blocking get from %d, %zu bytes",
+                                 chpl_lookupFilename(fn), ln, locale, size);
   chpl_comm_diags_incr(get_nb);
 
   //

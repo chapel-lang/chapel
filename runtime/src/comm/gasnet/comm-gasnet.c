@@ -1126,8 +1126,8 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_printf("%s:%d: remote put to %d",
-                                   chpl_lookupFilename(fn), ln, node);
+    chpl_comm_diags_verbose_printf("%s:%d: remote put to %d, %zu bytes",
+                                   chpl_lookupFilename(fn), ln, node, size);
     chpl_comm_diags_incr(put);
 
     // Handle remote address not in remote segment.
@@ -1203,8 +1203,8 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
-                                   chpl_lookupFilename(fn), ln, node);
+    chpl_comm_diags_verbose_printf("%s:%d: remote get from %d, %zu bytes",
+                                   chpl_lookupFilename(fn), ln, node, size);
     chpl_comm_diags_incr(get);
 
     // Handle remote address not in remote segment.
