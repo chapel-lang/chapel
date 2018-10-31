@@ -175,9 +175,10 @@ static void propagate_environment(FILE *f)
   char *lc_all = getenv("LC_ALL");
   char *lc_collate = getenv("LC_COLLATE");
   if (lang || lc_all || lc_collate) {
-    fprintf(f, " -E LANG=%s", lang ? lang : "");
-    fprintf(f, " -E LC_ALL=%s", lc_all ? lc_all : "");
-    fprintf(f, " -E LC_COLLATE=%s", lc_collate ? lc_collate : "");
+    fprintf(f, " env");
+    fprintf(f, " LANG=%s", lang ? lang : "");
+    fprintf(f, " LC_ALL=%s", lc_all ? lc_all : "");
+    fprintf(f, " LC_COLLATE=%s", lc_collate ? lc_collate : "");
   }
 }
 
