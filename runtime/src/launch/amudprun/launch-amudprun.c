@@ -99,7 +99,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
     if (ev_use_gdb != NULL || ev_use_lldb != NULL) {
 
       // determine the terminal emulator to use
-      char* dbg_term = getenv("CHPL_COMM_DBG_TERM");
+      const char* dbg_term = getenv("CHPL_COMM_DBG_TERM");
       if(dbg_term == NULL) {
         dbg_term = "xterm";
       }
