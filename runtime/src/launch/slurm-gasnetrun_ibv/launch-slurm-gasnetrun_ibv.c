@@ -160,12 +160,20 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
 
 static void propagate_environment(FILE *f)
 {
+  // Indiscriminately propagate all environment variables.
+  // We could do this more selectively, but we would be likely
+  // to leave out something important.
+  char *enviro_keys = chpl_get_enviro_keys(',');
+  if (enviro_keys)
+    fprintf(f, " -E '%s'", enviro_keys);
+
+  // If any of the relevant character set environment variables
+  // are set, replicate the state of all of them.  This needs to
+  // be done separately from the -E mechanism because the launcher
+  // is written in Perl, which mangles the character set environment.
   char *lang = getenv("LANG");
   char *lc_all = getenv("LC_ALL");
   char *lc_collate = getenv("LC_COLLATE");
-
-  // If any of the relevant character set environment variables
-  // are set, replicate the state of all of them.
   if (lang || lc_all || lc_collate) {
     fprintf(f, " env");
     fprintf(f, " 'LANG=%s'", lang ? lang : "");
