@@ -91,7 +91,6 @@ struct perTxCtxInfo_t {
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
   struct fid_cntr* txCntr;
-  int mrSetIdx;
   int numAmReqsTxed;
   int numAmReqsRxed;
   int numReadsTxed;
@@ -217,6 +216,8 @@ static void init_ofiForAms(void);
 
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
+  chpl_comm_ofi_abort_on_error =
+    (chpl_env_rt_get("COMM_OFI_ABORT_ON_ERROR", NULL) != NULL);
   time_init();
   chpl_comm_ofi_oob_init();
   DBG_INIT();
@@ -274,8 +275,8 @@ void init_ofiFabricDomain(void) {
   hints->ep_attr->type = FI_EP_RDM;
 
   hints->domain_attr->threading = FI_THREAD_UNSPEC;
-  hints->domain_attr->control_progress = FI_PROGRESS_AUTO/*FI_PROGRESS_MANUAL*/;
-  hints->domain_attr->data_progress = FI_PROGRESS_AUTO/*FI_PROGRESS_MANUAL*/;
+  hints->domain_attr->control_progress = FI_PROGRESS_MANUAL/*FI_PROGRESS_AUTO*/;
+  hints->domain_attr->data_progress = FI_PROGRESS_MANUAL/*FI_PROGRESS_AUTO*/;
   hints->domain_attr->av_type = FI_AV_TABLE;
   hints->domain_attr->mr_mode = ((strcmp(provider, "gni") == 0)
                                  ? FI_MR_BASIC
@@ -585,7 +586,7 @@ void init_ofiForAms(void) {
   // case.
   //
   {
-    const size_t sz = 256;
+    const size_t sz = 2048; // TODO
     const int ret = fi_setopt(&ofi_rxEp->fid, FI_OPT_ENDPOINT,
                               FI_OPT_MIN_MULTI_RECV, &sz, sizeof(sz));
     CHK_TRUE(ret == FI_SUCCESS || ret == -FI_ENOSYS);
@@ -959,13 +960,13 @@ void init_hugepageSize(void) {
 
 
 static inline
-struct memEntry* getMemEntry(memTab_t* tab, void* addr, int len) {
+struct memEntry* getMemEntry(memTab_t* tab, void* addr, size_t size) {
   char* myAddr = (char*) addr;
 
   for (int i = 0; i < numMemRegions; i++) {
     char* tabAddr = (char*) (*tab)[i].addr;
     char* tabAddrEnd = tabAddr + (*tab)[i].size;
-    if (myAddr >= tabAddr && myAddr + len <= tabAddrEnd)
+    if (myAddr >= tabAddr && myAddr + size <= tabAddrEnd)
       return &(*tab)[i];
   }
 
@@ -974,19 +975,24 @@ struct memEntry* getMemEntry(memTab_t* tab, void* addr, int len) {
 
 
 static inline
-int mrGetLocalDesc(void** pDesc, void* addr, int len) {
-  if ((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) == 0) {
-    //
-    // ??? Docs not clear; this may not work for prov=gni FI_MR_BASIC.
-    //
+int mrGetDesc(void** pDesc, int iNode, void* addr, size_t size) {
+  if ((ofi_info->domain_attr->mr_mode & (FI_MR_BASIC | FI_MR_LOCAL)) == 0) {
+    DBG_PRINTF(DBG_MRDESC, "mrGet%sDesc(%p, %zd): scalable",
+               (iNode == -1) ? "Local" : "", addr, size);
     if (pDesc != NULL)
       *pDesc = NULL;
     return 0;
   }
 
+  memTab_t* tab = (iNode == -1) ? &memTab : &memTabMap[iNode];
   struct memEntry* mr;
-  if ((mr = getMemEntry(&memTab, addr, len)) == NULL)
+  if ((mr = getMemEntry(tab, addr, size)) == NULL) {
+    DBG_PRINTF(DBG_MRDESC, "mrGet%sDesc(%p, %zd): no entry",
+               (iNode == -1) ? "Local" : "", addr, size);
     return -1;
+  }
+  DBG_PRINTF(DBG_MRDESC, "mrGet%sDesc(%p, %zd): desc %p",
+             (iNode == -1) ? "Local" : "", addr, size, mr->desc);
   if (pDesc != NULL)
     *pDesc = mr->desc;
   return 0;
@@ -994,13 +1000,30 @@ int mrGetLocalDesc(void** pDesc, void* addr, int len) {
 
 
 static inline
-int mrGetRemoteKey(uint64_t* pKey, int iNode, void* addr, int len) {
+int mrGetLocalDesc(void** pDesc, void* addr, size_t size) {
+  return mrGetDesc(pDesc, -1, addr, size);
+}
+
+
+static inline
+int mrGetKey(uint64_t* pKey, int iNode, void* addr, size_t size) {
   struct memEntry* mr;
-  if ((mr = getMemEntry(&memTabMap[iNode], addr, len)) == NULL)
+  if ((mr = getMemEntry(&memTabMap[iNode], addr, size)) == NULL) {
+    DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): no entry",
+               iNode, addr, size);
     return -1;
+  }
+  DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): key %" PRIx64,
+             iNode, addr, size, mr->key);
   if (pKey != NULL)
     *pKey = mr->key;
   return 0;
+}
+
+
+static inline
+int mrGetLocalKey(uint64_t* pKey, void* addr, size_t size) {
+  return mrGetKey(pKey, chpl_nodeID, addr, size);
 }
 
 
@@ -1013,34 +1036,16 @@ int mrGetRemoteKey(uint64_t* pKey, int iNode, void* addr, int len) {
 typedef enum {
   am_opNil = 0,                         // no-op
   am_opCall,                            // call a function table function
+  am_opGet,                             // do an RMA GET
+  am_opPut,                             // do an RMA PUT
 } amOp_t;
 
-//
-// Members are packed, potentially differently, in each AM request type
-// to reduce space requirements.  The 'op' member must come first in all
-// cases.
-//
-struct amReqOp {
-  amOp_t op: 3;                 // operation
-};
-
-struct amReqCall {
-  amOp_t op: 3;                 // operation
-  int fast: 1;                  // do in AM handler?  (no task)
-  chpl_fn_int_t fid;            // function table index to call
-  uint16_t argSize;             // #bytes of arg bundle following descriptor
-  c_nodeid_t nodeID;            // source node
-  c_sublocid_t subloc;          // target sublocale
-  char* done;                   // PUT !=0 here when done (NULL: nonblocking)
-  chpl_task_ChapelData_t state; // for tasking layer
-  int args[0];
-};
-
-
-static void execOnCallCommon(c_nodeid_t, c_sublocid_t,
-                             chpl_fn_int_t,
-                             chpl_comm_on_bundle_t*, size_t,
-                             chpl_bool, chpl_bool);
+static void amRequestExecOn(c_nodeid_t, c_sublocid_t, chpl_fn_int_t,
+                            chpl_comm_on_bundle_t*, size_t,
+                            chpl_bool, chpl_bool);
+static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
+static void amRequestCommon(c_nodeid_t, chpl_comm_on_bundle_t*, size_t,
+                            chpl_comm_amDone_t**);
 
 
 int chpl_comm_numPollingTasks(void) {
@@ -1055,7 +1060,7 @@ void chpl_comm_make_progress(void) {
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
                           chpl_comm_on_bundle_t *arg, size_t argSize) {
-  assert(node != chpl_nodeID); // handled by the locale model
+  CHK_TRUE(node != chpl_nodeID); // handled by the locale model
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
     chpl_comm_cb_info_t cb_data =
@@ -1067,7 +1072,7 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
   chpl_comm_diags_verbose_printf("remote task created on %d", (int) node);
   chpl_comm_diags_incr(execute_on);
 
-  execOnCallCommon(node, subloc, fid, arg, argSize, false, true);
+  amRequestExecOn(node, subloc, fid, arg, argSize, false, true);
 }
 
 
@@ -1081,7 +1086,7 @@ static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
                              chpl_comm_on_bundle_t *arg, size_t argSize) {
-  assert(node != chpl_nodeID); // handled by the locale model
+  CHK_TRUE(node != chpl_nodeID); // handled by the locale model
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
     chpl_comm_cb_info_t cb_data =
@@ -1094,14 +1099,14 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                                  (int) node);
   chpl_comm_diags_incr(execute_on_nb);
 
-  execOnCallCommon(node, subloc, fid, arg, argSize, false, false);
+  amRequestExecOn(node, subloc, fid, arg, argSize, false, false);
 }
 
 
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_fn_int_t fid,
                                chpl_comm_on_bundle_t *arg, size_t argSize) {
-  assert(node != chpl_nodeID); // handled by the locale model
+  CHK_TRUE(node != chpl_nodeID); // handled by the locale model
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
     chpl_comm_cb_info_t cb_data =
@@ -1114,56 +1119,78 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                  (int) node);
   chpl_comm_diags_incr(execute_on_fast);
 
-  execOnCallCommon(node, subloc, fid, arg, argSize, true, true);
+  amRequestExecOn(node, subloc, fid, arg, argSize, true, true);
 }
 
 
-static void execOnCallCommon(c_nodeid_t node, c_sublocid_t subloc,
-                             chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t* arg, size_t argSize,
-                             chpl_bool fast, chpl_bool blocking) {
+static inline
+void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
+                     chpl_fn_int_t fid,
+                     chpl_comm_on_bundle_t* arg, size_t argSize,
+                     chpl_bool fast, chpl_bool blocking) {
+  arg->comm.xo = (struct chpl_comm_bundleData_execOn_t)
+                   { .op = am_opCall,
+                     .fast = false,
+                     .fid = fid,
+                     .argSize = argSize,
+                     .nodeID = chpl_nodeID,
+                     .subloc = subloc,
+                     .pDone = NULL };
+  amRequestCommon(node, arg, argSize, blocking ? &arg->comm.xo.pDone : NULL);
+}
+
+
+static inline
+void amRequestRMA(c_nodeid_t node, amOp_t op,
+                  void* addr, void* raddr, size_t size) {
+  chpl_comm_on_bundle_t arg;
+  arg.comm.rma = (struct chpl_comm_bundleData_RMA_t)
+                   { .op = op,
+                     .addr = raddr,
+                     .nodeID = chpl_nodeID,
+                     .raddr = addr,
+                     .size = size,
+                     .pDone = NULL };
+  amRequestCommon(node, &arg,
+                  (offsetof(chpl_comm_on_bundle_t, comm)
+                   + sizeof(arg.comm.rma)),
+                  &arg.comm.rma.pDone);
+}
+
+
+static inline
+void amRequestCommon(c_nodeid_t node,
+                     chpl_comm_on_bundle_t* arg, size_t argSize,
+                     chpl_comm_amDone_t** ppDone) {
   //
   // If blocking, make sure target can RMA PUT the indicator to us.
   //
-  blocking = true; // TODO: for now
-  char myDone;
-  char* pDone = NULL;
-  if (blocking) {
+  chpl_comm_amDone_t myDone;
+  chpl_comm_amDone_t* pDone = NULL;
+  if (ppDone != NULL) {
     pDone = &myDone;
-    if (mrGetLocalDesc(NULL, pDone, sizeof(*pDone)) != 0) {
-      pDone = allocBounceBuf(sizeof(myDone));
-      CHK_TRUE(mrGetLocalDesc(NULL, pDone, sizeof(*pDone)) == 0);
+    if (mrGetLocalKey(NULL, pDone, sizeof(*pDone)) != 0) {
+      pDone = allocBounceBuf(sizeof(*pDone));
+      CHK_TRUE(mrGetLocalKey(NULL, pDone, sizeof(*pDone)) == 0);
     }
     *pDone = 0;
+    atomic_thread_fence(memory_order_release);
+
+    *ppDone = pDone;
   }
-
-  union {
-    struct amReqCall hdr;
-    char space[1024];
-  } req;
-
-  argSize -= sizeof(chpl_comm_on_bundle_t); // just count user args
-  CHK_TRUE(argSize < sizeof(req.space) - sizeof(req.hdr));
-  memcpy(&req.hdr.args, arg, argSize);
-
-  const size_t reqSize = offsetof(struct amReqCall, args) + argSize;
-
-  req.hdr = (struct amReqCall) { .op = am_opCall,
-                                 .fast = false,
-                                 .fid = fid,
-                                 .argSize = argSize,
-                                 .nodeID = chpl_nodeID,
-                                 .subloc = subloc,
-                                 .done = pDone,
-                                 .state = arg->task_bundle.state };
 
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
 
-  OFI_CHK(fi_send(tcip->txCtx, &req, reqSize, NULL, ofi_rxAddrs[node], &req));
+  void* mrDesc = NULL;
+#if 1 // TODO: needed for gni provider?
+  CHK_TRUE(mrGetLocalDesc(&mrDesc, arg, argSize) == 0);
+#endif
+
+  OFI_CHK(fi_send(tcip->txCtx, arg, argSize, mrDesc, ofi_rxAddrs[node], NULL));
   DBG_PRINTF(DBG_AM | DBG_AMSEND,
-             "tx AM req to %d, done %p",
-             node, req.hdr.done);
+             "tx AM req to %d, op %d, size %zd, pDone %p",
+             node, (int) arg->comm.op.op, argSize, pDone);
   tcip->numAmReqsTxed++;
   tcip->numTxsOut++;
 
@@ -1174,14 +1201,17 @@ static void execOnCallCommon(c_nodeid_t node, c_sublocid_t subloc,
 
   releaseTxCtxInfo(tcip);
  
-  if (blocking) {
+  if (pDone != NULL) {
     //
     // Wait for executeOn completion indicator.
     //
-    while (!*(char* volatile) pDone)
+    DBG_PRINTF(DBG_AM | DBG_AMSEND,
+               "waiting for done indication in %p", pDone);
+    while (!*(volatile chpl_comm_amDone_t*) pDone)
       sched_yield();
     if (pDone != &myDone)
       freeBounceBuf(pDone);
+    DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw done indication");
   }
 }
 
@@ -1199,6 +1229,10 @@ static pthread_mutex_t amStartStopMutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void amHandler(void*);
 static void processRxAmReq(struct perTxCtxInfo_t*);
+static void amHandleExecOn(chpl_comm_on_bundle_t*);
+static void amExecOnWrapper(void*);
+static void amGetWrapper(void*);
+static void amPutWrapper(void*);
 
 
 static
@@ -1296,30 +1330,52 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         //
         // This event is for an inbound AM request.  Handle it.
         //
-        struct amReqOp* reqOp = (struct amReqOp*) cqes[i].buf;
-
+        chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) cqes[i].buf;
         DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                   "CQ rx AM req");
+                   "CQ rx AM req %p, op %d, len %zd",
+                   req, req->comm.op.op, cqes[i].len);
         tcip->numAmReqsRxed++;
-#if 0 // TODO: really support
-#else
-        chpl_warning("AM ops are not really supported", 0, 0);
-        switch (reqOp->op) {
-        case am_opCall: {
-          struct amReqCall* reqCall = (struct amReqCall*) reqOp;
-          if (reqCall->done != NULL) {
-            char done = 1;
-            (void) ofi_put(&done, reqCall->nodeID, reqCall->done,
-                           sizeof(*reqCall->done));
-          }
+        switch (req->comm.op.op) {
+        case am_opCall:
+          amHandleExecOn(req);
           break;
-        }
+
+        case am_opGet:
+          //
+          // We use a task here mainly to ensure that the GET this AM
+          // performs completes before we send the 'done' indicator.  If
+          // the AM handler did the GET directly, its contextless RMA
+          // completion counter would make it hard to tell when that GET
+          // had completed.
+          //
+          DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                     "AM req startMovedTask(amGetWrapper())");
+          chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amGetWrapper,
+                                   chpl_comm_on_bundle_task_bundle(req),
+                                   sizeof(*req), c_sublocid_any,
+                                   chpl_nullTaskID);
+          break;
+
+        case am_opPut:
+          //
+          // We use a task here mainly to ensure that the PUT this AM
+          // performs completes before we send the 'done' indicator.  If
+          // the AM handler did the PUT directly, its contextless RMA
+          // completion counter would make it hard to tell when that PUT
+          // had completed.
+          //
+          DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                     "AM req startMovedTask(amPutWrapper())");
+          chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amPutWrapper,
+                                   chpl_comm_on_bundle_task_bundle(req),
+                                   sizeof(*req), c_sublocid_any,
+                                   chpl_nullTaskID);
+          break;
 
         default:
-          INTERNAL_ERROR_V("unexpected AM op %d", (int) reqOp->op);
+          INTERNAL_ERROR_V("unexpected AM op %d", req->comm.op.op);
           break;
         }
-#endif
       }
 
       if ((cqes[i].flags & FI_MULTI_RECV) != 0) {
@@ -1332,10 +1388,73 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
 
       CHK_TRUE((cqes[i].flags & ~(FI_MSG | FI_RECV | FI_MULTI_RECV)) == 0);
     }
-
-    DBG_PRINTF(DBG_THREADDETAILS, "processRxAmReq(): received %d AMs",
-               numEvents);
   }
+}
+
+
+static
+void amHandleExecOn(chpl_comm_on_bundle_t* req) {
+  struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "node %d: AM req execOn ftable[%d]",
+             (int) xo->nodeID, (int) xo->fid);
+  chpl_comm_on_bundle_t* reqCopy;
+  CHPL_CALLOC_SZ(reqCopy, 1, xo->argSize);
+  chpl_memcpy(reqCopy, req, xo->argSize);
+  chpl_task_startMovedTask(xo->fid, (chpl_fn_p) amExecOnWrapper,
+                           chpl_comm_on_bundle_task_bundle(reqCopy),
+                           xo->argSize, xo->subloc, chpl_nullTaskID);
+}
+
+
+static
+void amExecOnWrapper(void* p) {
+  chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
+  struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
+  chpl_ftable_call(xo->fid, p);
+  if (xo->pDone != NULL) {
+    chpl_comm_amDone_t done = 1;
+    (void) ofi_put(&done, xo->nodeID, xo->pDone, sizeof(*xo->pDone));
+  }
+}
+
+
+static inline
+void amHandleGet(chpl_comm_on_bundle_t* req) {
+}
+
+
+static
+void amGetWrapper(void* p) {
+  chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
+  struct chpl_comm_bundleData_RMA_t* rma = &req->comm.rma;
+
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "AM req GET %p <-- %d:%p (%zd bytes)",
+             rma->addr, (int) rma->nodeID, rma->raddr, rma->size);
+  CHK_TRUE(mrGetKey(NULL, rma->nodeID, rma->raddr, rma->size) == 0); // sanity
+  (void) ofi_get(rma->addr, rma->nodeID, rma->raddr, rma->size);
+
+  CHK_TRUE(mrGetKey(NULL, rma->nodeID, rma->pDone, sizeof(*rma->pDone)) == 0);
+  chpl_comm_amDone_t done = 1;
+  (void) ofi_put(&done, rma->nodeID, rma->pDone, sizeof(*rma->pDone));
+}
+
+
+static
+void amPutWrapper(void* p) {
+  chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
+  struct chpl_comm_bundleData_RMA_t* rma = &req->comm.rma;
+
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "AM req PUT %d:%p <-- %p (%zd bytes)",
+             (int) rma->nodeID, rma->raddr, rma->addr, rma->size);
+  CHK_TRUE(mrGetKey(NULL, rma->nodeID, rma->raddr, rma->size) == 0); // sanity
+  (void) ofi_put(rma->addr, rma->nodeID, rma->raddr, rma->size);
+
+  CHK_TRUE(mrGetKey(NULL, rma->nodeID, rma->pDone, sizeof(*rma->pDone)) == 0);
+  chpl_comm_amDone_t done = 1;
+  (void) ofi_put(&done, rma->nodeID, rma->pDone, sizeof(*rma->pDone));
 }
 
 
@@ -1385,7 +1504,7 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
   size_t i;
   // fi_cq_readfrom?
   for( i = 0; i < nhandles; i++ ) {
-    assert(h[i] == NULL);
+    CHK_TRUE(h[i] == NULL);
   }
 }
 
@@ -1403,7 +1522,7 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
   size_t i;
   // fi_cq_readfrom?
   for( i = 0; i < nhandles; i++ ) {
-    assert(h[i] == NULL);
+    CHK_TRUE(h[i] == NULL);
   }
   return 0;
 }
@@ -1416,9 +1535,9 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
   // addr and raddr are sanity checks; node==chpl_nodeID is supposed
   // to be handled by our caller.
   //
-  assert(addr != NULL
-         && raddr != NULL
-         && node != chpl_nodeID);
+  CHK_TRUE(addr != NULL);
+  CHK_TRUE(raddr != NULL);
+  CHK_TRUE(node != chpl_nodeID);
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
@@ -1443,9 +1562,9 @@ void chpl_comm_get(void* addr, int32_t node, void* raddr,
   // addr and raddr are sanity checks; node==chpl_nodeID is supposed
   // to be handled by our caller.
   //
-  assert(addr != NULL
-         && raddr != NULL
-         && node != chpl_nodeID);
+  CHK_TRUE(addr != NULL);
+  CHK_TRUE(raddr != NULL);
+  CHK_TRUE(node != chpl_nodeID);
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
@@ -1542,34 +1661,52 @@ void releaseTxCtxInfo(struct perTxCtxInfo_t* tcip) {
 static /*inline*/
 chpl_comm_nb_handle_t ofi_put(void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
-  struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+             "PUT %d:%p <= %p, size %zd",
+             (int) node, raddr, addr, size);
 
   void* mrDesc;
   void* myAddr = addr;
   if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
     myAddr = allocBounceBuf(size);
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE, "PUT BB: %p", myAddr);
     CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
     memcpy(myAddr, addr, size);
   }
 
   uint64_t mrKey;
-  CHK_TRUE(mrGetRemoteKey(&mrKey, node, raddr, size) == 0);
+  if (mrGetKey(&mrKey, node, raddr, size) == 0) {
+    //
+    // The remote address is RMA-accessible; PUT directly to it.
+    //
+    struct perTxCtxInfo_t* tcip;
+    CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
 
-  OFI_CHK(fi_write(tcip->txCtx, myAddr, size,
-                   mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
-  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
-             "tx write: %d:%p <= %p%s, size %zd, key 0x%" PRIx64,
-             (int) node, raddr, addr, (myAddr == addr) ? "" : "(B)", size,
-             mrKey);
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64,
+               (int) node, raddr, myAddr, size, mrKey);
+    OFI_CHK(fi_write(tcip->txCtx, myAddr, size,
+                     mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
 
-  if (tcip->txCtxHasCQ) {
-    waitForTxCQ(tcip, 1);
+    if (tcip->txCtxHasCQ) {
+      waitForTxCQ(tcip, 1);
+    } else {
+      const int count = fi_cntr_read(tcip->txCntr);
+      DBG_PRINTF(DBG_ACK, "tx ack counter %d", count);
+      tcip->numTxsOut -= count;
+    }
+
+    releaseTxCtxInfo(tcip);
   } else {
-    tcip->numTxsOut -= fi_cntr_read(tcip->txCntr);
+    //
+    // The remote address is not RMA-accessible.  We have arranged
+    // that the local one is, so go there and do the opposite RMA.
+    //
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "PUT %d:%p <= %p, size %zd, via AM GET",
+               (int) node, raddr, myAddr, size);
+    amRequestRMA(node, am_opGet, myAddr, raddr, size);
   }
-
-  releaseTxCtxInfo(tcip);
 
   if (myAddr != addr) {
     freeBounceBuf(myAddr);
@@ -1582,28 +1719,45 @@ chpl_comm_nb_handle_t ofi_put(void* addr, c_nodeid_t node,
 static /*inline*/
 chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
                               void* raddr, size_t size) {
-  struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+  DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
+             "GET %p <= %d:%p, size %zd",
+             addr, (int) node, raddr, size);
 
   void* mrDesc;
   void* myAddr = addr;
   if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
     myAddr = allocBounceBuf(size);
+    DBG_PRINTF(DBG_RMA | DBG_RMAREAD, "GET BB: %p", myAddr);
     CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
   }
 
   uint64_t mrKey;
-  CHK_TRUE(mrGetRemoteKey(&mrKey, node, raddr, size) == 0);
+  if (mrGetKey(&mrKey, node, raddr, size) == 0) {
+    //
+    // The remote address is RMA-accessible; GET directly from it.
+    //
+    struct perTxCtxInfo_t* tcip;
+    CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+    DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
+               "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64,
+               myAddr, (int) node, raddr, size, mrKey);
+    OFI_CHK(fi_read(tcip->txCtx, myAddr, size,
+                    mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
 
-  OFI_CHK(fi_read(tcip->txCtx, addr, size,
-                  mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
-  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
-             "tx read: %p <= %d:%p, len %zd, key 0x%" PRIx64,
-             addr, (int) node, raddr, size, mrKey);
+    CHK_TRUE(tcip->txCtxHasCQ);
+    waitForTxCQ(tcip, 1);
 
-  waitForTxCQ(tcip, 1);
-
-  releaseTxCtxInfo(tcip);
+    releaseTxCtxInfo(tcip);
+  } else {
+    //
+    // The remote address is not RMA-accessible.  We have arranged
+    // that the local one is, so go there and do the opposite RMA.
+    //
+    DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
+               "GET %p <= %d:%p, size %zd, via AM PUT",
+               myAddr, (int) node, raddr, size);
+    amRequestRMA(node, am_opPut, myAddr, raddr, size);
+  }
 
   if (myAddr != addr) {
     memcpy(addr, myAddr, size);
@@ -1655,7 +1809,7 @@ static void freeBounceBuf(void* p) {
 // Interface: utility
 //
 
-int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len) {
+int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t size) {
   // No way to know if the page is mapped on the remote (without a round trip)
   return 0;
 }
