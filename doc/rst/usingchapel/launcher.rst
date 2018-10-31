@@ -264,6 +264,5 @@ that are not actively maintained but may still work.
 =============  ==========================================================
 Launcher Name  Description
 =============  ==========================================================
-loadleveler    launch using IBM loadleveler (still needs refining)
 mpirun         launch using mpirun (no mpi comm currently) 
 =============  ==========================================================

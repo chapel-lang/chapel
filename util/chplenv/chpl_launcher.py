@@ -49,13 +49,7 @@ def get():
             elif substrate_val == 'mpi':
                 launcher_val = 'gasnetrun_mpi'
             elif substrate_val == 'ibv':
-                if platform_val == 'pwr6':
-                    # our loadleveler launcher is not yet portable/stable/
-                    # flexible enough to serve as a good default
-                    #launcher_val = 'loadleveler'
-                    launcher_val = 'none'
-                else:
-                    launcher_val = 'gasnetrun_ibv'
+                launcher_val = 'gasnetrun_ibv'
             elif substrate_val == 'mxm':
                 launcher_val = 'gasnetrun_ibv'
             elif substrate_val == 'ofi':
