@@ -28,8 +28,6 @@
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
 
-// TODO: Un-hard-code this stuff:
-
 static char _nlbuf[16];
 static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
@@ -46,7 +44,6 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
   return chpl_bundle_exec_args(argc, argv, largc, largv);
 }
-
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   int len = strlen(CHPL_THIRD_PARTY) + strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("gasnetrun_ofi") + 2;
