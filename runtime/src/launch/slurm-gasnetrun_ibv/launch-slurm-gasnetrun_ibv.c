@@ -171,6 +171,10 @@ static void propagate_environment(FILE *f)
   // are set, replicate the state of all of them.  This needs to
   // be done separately from the -E mechanism because the launcher
   // is written in Perl, which mangles the character set environment.
+  //
+  // Note that if one or more of these variables is empty, we must
+  // set it with explicitly empty contents (e.g. LC_ALL= instead of
+  // -u LC_ALL) so that the launcher will not overwrite it.
   char *lang = getenv("LANG");
   char *lc_all = getenv("LC_ALL");
   char *lc_collate = getenv("LC_COLLATE");
@@ -233,66 +237,71 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     genNumLocalesOptions(slurmFile, determineSlurmVersion(), numLocales, getNumCoresPerLocale());
     if (projectString && strlen(projectString) > 0)
       fprintf(slurmFile, "#SBATCH -A %s\n", projectString);
-    //fprintf(slurmFile, "#SBATCH -joe\n");
+    if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
+//    fprintf(slurmFile, "#SBATCH -joe\n");  
     if (outputfn!=NULL) 
       fprintf(slurmFile, "#SBATCH -o %s\n", outputfn);
     else
       fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", argv[0]);
-    //fprintf(slurmFile, "cd $SBATCH_O_WORKDIR\n");
-    fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d",
-            CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales);
-    propagate_environment(slurmFile);
-    fprintf(slurmFile, " %s ", chpl_get_real_binary_name());
-    for (i=1; i<argc; i++) {
-      fprintf(slurmFile, " '%s'", argv[i]);
+//    fprintf(slurmFile, "cd $SBATCH_O_WORKDIR\n");
+      fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d",
+              CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales);
+      propagate_environment(slurmFile);
+      fprintf(slurmFile, " %s ", chpl_get_real_binary_name());
+      for (i=1; i<argc; i++) {
+        fprintf(slurmFile, " '%s'", argv[i]);
+      }
+      fprintf(slurmFile, "\n");
     }
-    fprintf(slurmFile, "\n");
-    fclose(slurmFile);
-    chmod( slurmFilename, 0755);
-    sprintf(baseCommand, "sbatch %s\n", slurmFilename);
-  } else /* getenv("CHPL_LAUNCHER_USE_SBATCH") == NULL */ {
-    expectFile = fopen(expectFilename, "w");
-    if (verbosity < 2) {
-      //fprintf(expectFile, "log_user 0\n");
-    }
-    fprintf(expectFile, "set timeout -1\n");
-    //fprintf(expectFile, "chmod +x %s\n",slurmFilename);
-    fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
+  fclose(slurmFile);
+  chmod( slurmFilename, 0755);
+  }
+  if (getenv("CHPL_LAUNCHER_USE_SBATCH") == NULL) {
+  expectFile = fopen(expectFilename, "w");
+  if (verbosity < 2) {
+//    fprintf(expectFile, "log_user 0\n");
+  }
+  fprintf(expectFile, "set timeout -1\n");
+//  fprintf(expectFile, "chmod +x %s\n",slurmFilename);
+  fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
 
-    //fprintf(expectFile, "spawn sbatch ");
-    fprintf(expectFile, "spawn -noecho salloc ");
-    fprintf(expectFile, "-J %.10s ",basenamePtr); // pass
-    fprintf(expectFile, "-N %d ",numLocales);
-    fprintf(expectFile, "--ntasks-per-node=1 ");
-    fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
-    fprintf(expectFile, "--time=%s ",walltime);
-    if(partition)
-      fprintf(expectFile, "--partition=%s ",partition);
-    if(exclude)
-      fprintf(expectFile, "--exclude=%s ",exclude);
-    if (constraint) {
-      fprintf(expectFile, " -C %s", constraint);
-    }
-    //fprintf(expectFile, "-I %s ", slurmFilename);
-    fprintf(expectFile, " %s/%s/gasnetrun_ibv -n %d",
-            CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales);
-    propagate_environment(expectFile);
-    fprintf(expectFile, " %s ", chpl_get_real_binary_name());
-    for (i=1; i<argc; i++) {
-      fprintf(expectFile, " %s", argv[i]);
-    }
-    //fprintf(expectFile, "\\n\"\n");
-    fprintf(expectFile, "\n\n");
-    //fprintf(expectFile, "expect -re $prompt\n");
-    //fprintf(expectFile, "send \"cd \\$SBATCH_O_WORKDIR\\n\"\n");
-    //fprintf(expectFile, "expect -re $prompt\n");
-    //fprintf(expectFile, "sleep 10\n");
-    //fprintf(expectFile, "interact -o -re $prompt {return}\n");
-    //fprintf(expectFile, "send_user \"\\n\"\n");
-    //fprintf(expectFile, "send \"exit\\n\"\n");
-    fprintf(expectFile, "interact -o -re $prompt {return}\n");
-    fclose(expectFile);
-    sprintf(baseCommand, "expect %s", expectFilename);
+//  fprintf(expectFile, "spawn sbatch ");
+  fprintf(expectFile, "spawn -noecho salloc ");
+  fprintf(expectFile, "-J %.10s ",basenamePtr); // pass 
+  fprintf(expectFile, "-N %d ",numLocales); 
+  fprintf(expectFile, "--ntasks-per-node=1 ");
+  fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
+  fprintf(expectFile, "--time=%s ",walltime); 
+  if(partition)
+    fprintf(expectFile, "--partition=%s ",partition);
+  if(exclude)
+    fprintf(expectFile, "--exclude=%s ",exclude);
+  if (constraint) {
+    fprintf(expectFile, " -C %s", constraint);
+  }
+//  fprintf(expectFile, "-I %s ", slurmFilename);
+  fprintf(expectFile, " %s/%s/gasnetrun_ibv -n %d",
+          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales);
+  propagate_environment(expectFile);
+  fprintf(expectFile, " %s ", chpl_get_real_binary_name());
+  for (i=1; i<argc; i++) {
+    fprintf(expectFile, " %s", argv[i]);
+  }
+//  fprintf(expectFile, "\\n\"\n");
+  fprintf(expectFile, "\n\n");
+//  fprintf(expectFile, "expect -re $prompt\n");
+//  fprintf(expectFile, "send \"cd \\$SBATCH_O_WORKDIR\\n\"\n");
+//  fprintf(expectFile, "expect -re $prompt\n");
+//  fprintf(expectFile, "sleep 10\n");
+//  fprintf(expectFile, "interact -o -re $prompt {return}\n");
+//  fprintf(expectFile, "send_user \"\\n\"\n");
+//  fprintf(expectFile, "send \"exit\\n\"\n");
+  fprintf(expectFile, "interact -o -re $prompt {return}\n");
+  fclose(expectFile);
+  sprintf(baseCommand, "expect %s", expectFilename);
+  } else {
+//    sprintf(baseCommand, "sbatch %s\n", slurmFilename);
+    sprintf(baseCommand, "sbatch %s\n", slurmFilename);
   }
 
   size = strlen(baseCommand) + 1;
