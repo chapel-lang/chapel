@@ -41,7 +41,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
   largv[0] = (char *) launch_cmd;
   largv[1] = (char *) "-n";
-  sprintf(_nlbuf, "%d", numLocales);
+  snprintf(_nlbuf, sizeof(_nlbuf), "%d", numLocales);
   largv[2] = _nlbuf;
   largv[3] = (char*) "-E";
   largv[4] = chpl_get_enviro_keys(',');
@@ -52,7 +52,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   int len = strlen(CHPL_THIRD_PARTY) + strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(GASNETRUN_LAUNCHER) + 2;
   char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  sprintf(cmd, "%s/%s%s", CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), GASNETRUN_LAUNCHER);
+  snprintf(cmd, len, "%s/%s%s", CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), GASNETRUN_LAUNCHER);
 
   return chpl_launch_using_exec(cmd,
                                 chpl_launch_create_argv(cmd, argc, argv,
