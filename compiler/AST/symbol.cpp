@@ -1723,11 +1723,23 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
   return s;
 }
 
-static VarSymbol* new_FloatSymbol(const char* n,
+static VarSymbol* new_FloatSymbol(const char* num,
                                   IF1_float_type size, IF1_num_kind kind,
                                   Type* type) {
   Immediate imm;
+  int len = strlen(num);
   const char* normalized = NULL;
+  char* n = (char*)malloc(len+1);
+
+  /* Remove '_' separators from the number */
+  int j = 0;
+  for (int i=0; i<len; i++) {
+    if (num[i] != '_') {
+      n[j] = num[i];
+      j++;
+    }
+  }
+  n[j] = '\0';
 
   switch (size) {
     case FLOAT_SIZE_32:
@@ -1771,6 +1783,7 @@ static VarSymbol* new_FloatSymbol(const char* n,
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
+  free(n);
   return s;
 }
 

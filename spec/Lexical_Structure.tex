@@ -248,25 +248,49 @@ integer-literal:
 
 digits:
   digit
-  digit digits
+  digit separator-digits
+
+separator-digits:
+  digit
+  `_'
+  digit separator-digits
+  `_' separator-digits
 
 hexadecimal-digits:
   hexadecimal-digit
-  hexadecimal-digit hexadecimal-digits
+  hexadecimal-digit separator-hexadecimal-digits
+
+separator-hexadecimal-digits:
+  hexadecimal-digit
+  `_'
+  hexadecimal-digit separator-hexadecimal-digits
+  `_' separator-hexadecimal-digits
 
 hexadecimal-digit: one of
   `0' `1' `2' `3' `4' `5' `6' `7' `8' `9' `A' `B' `C' `D' `E' `F' `a' `b' `c' `d' `e' `f'
 
 octal-digits:
   octal-digit
-  octal-digit octal-digits
+  octal-digit separator-octal-digits
+
+separator-octal-digits:
+  octal-digit
+  `_'
+  octal-digit separator-octal-digits
+  `_' separator-octal-digits
 
 octal-digit: one of
   `0' `1' `2' `3' `4' `5' `6' `7'
 
 binary-digits:
   binary-digit
-  binary-digit binary-digits
+  binary-digit separator-binary-digits
+
+separator-binary-digits:
+  binary-digit
+  `_'
+  binary-digit separator-binary-digits
+  `_' separator-binary-digits
 
 binary-digit: one of
   `0' `1'
@@ -280,6 +304,14 @@ Why are there no suffixes on integral literals?  Suffixes, like those
 in C, are not necessary.  Explicit
 conversions can then be used to change the type of the literal to
 another integer size.
+\end{rationale}
+
+\begin{rationale}
+Underscores can be used to group the digits of numbers for legibility. For example:
+\begin{chapel}
+var i = 1_234_567_890;
+var x = 0xFF_FF_12_34;
+\end{chapel}
 \end{rationale}
 
 Real literals are designated by the following syntax:
