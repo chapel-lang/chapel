@@ -168,13 +168,9 @@ static void propagate_environment(FILE *f)
   // are set, replicate the state of all of them.
   if (lang || lc_all || lc_collate) {
     fprintf(f, " env");
-
-    if (lang)
-      fprintf(f, " 'LANG=%s'", lang ? lang : "");
-    if (lc_all)
-      fprintf(f, " 'LC_ALL=%s'", lc_all ? lc_all : "");
-    if (lc_collate)
-      fprintf(f, " 'LC_COLLATE=%s'", lc_collate ? lc_collate : "");
+    fprintf(f, " 'LANG=%s'", lang ? lang : "");
+    fprintf(f, " 'LC_ALL=%s'", lc_all ? lc_all : "");
+    fprintf(f, " 'LC_COLLATE=%s'", lc_collate ? lc_collate : "");
   }
 }
 
