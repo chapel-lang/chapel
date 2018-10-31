@@ -183,6 +183,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "build.h"
 #include "driver.h"
 #include "expr.h"
 #include "optimizations.h"
@@ -1449,9 +1450,10 @@ static void narrowWideClassesThroughCalls()
   // TODO: Can we use this for local functions?
   //
   forv_Vec(CallExpr, call, gCallExprs) {
+    FnSymbol* fn = call->resolvedFunction();
 
     // Find calls to functions expecting local arguments.
-    if (call->isResolved() && call->resolvedFunction()->hasFlag(FLAG_LOCAL_ARGS)) {
+    if (call->isResolved() && fn->hasFlag(FLAG_LOCAL_ARGS)) {
       SET_LINENO(call);
       Expr* stmt = call->getStmtExpr();
 
@@ -1489,6 +1491,11 @@ static void narrowWideClassesThroughCalls()
             stmt->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           }
           else if (narrowType.isRef() || narrowType.type()->symbol->hasFlag(FLAG_DATA_CLASS)) {
+            // Insert a local check because we cannot pass narrow references to
+            // remote data to external routines
+            if (!fNoLocalChecks)
+              stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy(), buildCStringLiteral(astr("references to remote data cannot be passed to external routines like '", fn->name, "'"))));
+
             // Also if the narrow type is a ref or data class type,
             // we must treat it like a (narrow) reference.
             stmt->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));

@@ -4384,20 +4384,13 @@ DEFINE_PRIM(PRIM_LOCAL_CHECK) {
     // arguments are (wide ptr, line, function/file, error string)
     GenRet lhs = call->get(1);
     Symbol* lhsType = lhs.chplType->symbol;
+    bool hasErrorMsg = (call->numActuals() > 3);
+    const char* error = (hasErrorMsg ?
+                         toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate->v_string :
+                         "cannot access remote data in local block");
 
     if (lhsType->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
-      const char* error = NULL;
-      Symbol*     addr  = lhsType->type->getField("addr");
-
-      if (lhsType->hasFlag(FLAG_WIDE_CLASS)              == true &&
-          addr->typeInfo()->symbol->hasFlag(FLAG_EXTERN) == true) {
-        error = "cannot pass non-local extern class to extern procedure";
-
-      } else {
-        error = "cannot access remote data in local block";
-      }
-
-      GenRet filename = GenRet(call->get(3));
+      GenRet filename = GenRet(call->get(3+hasErrorMsg));
 
       GenRet lhs = call->get(1);
       if (call->get(1)->isRef()) {
@@ -4406,7 +4399,7 @@ DEFINE_PRIM(PRIM_LOCAL_CHECK) {
 
       codegenCall("chpl_check_local",
                   codegenRnode(lhs),
-                  call->get(2),
+                  call->get(2+hasErrorMsg),
                   filename,
                   error);
     }
