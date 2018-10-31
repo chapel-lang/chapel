@@ -165,7 +165,7 @@ static void propagate_environment(FILE *f)
   // to leave out something important.
   char *enviro_keys = chpl_get_enviro_keys(',');
   if (enviro_keys)
-    fprintf(f, " -E '%s'", enviro_keys);
+    fprintf(f, " -E %s", enviro_keys);
 
   // If any of the relevant character set environment variables
   // are set, replicate the state of all of them.  This needs to
