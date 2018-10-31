@@ -1,0 +1,2 @@
+foo got: 42
+externRemoteRecord2.chpl:14: error: remote records (like 'myR') cannot be passed to external routines (like 'bar')
