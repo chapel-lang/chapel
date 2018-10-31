@@ -45,6 +45,7 @@
 #include "WhileStmt.h"
 
 #include <set>
+#include <sstream>
 
 static void resolveFormals(FnSymbol* fn);
 
@@ -142,6 +143,59 @@ static void resolveFormals(FnSymbol* fn) {
       IntentTag useIntent = concreteIntentForArg(formal);
       if ((useIntent & INTENT_FLAG_IN))
         formal->intent = useIntent;
+    }
+
+    if (formal->defaultExpr != NULL && fn->hasFlag(FLAG_EXPORT)) {
+      if (fLibraryPython) {
+        Expr* end = formal->defaultExpr->body.tail;
+        if (SymExpr* sym = toSymExpr(end)) {
+          VarSymbol* var = sym->symbol();
+          if (var->isImmediate()) {
+            Immediate* imm = var->immediate;
+            switch (imm->const_kind) {
+              case NUM_KIND_INT:
+                std::stringstream ss;
+                ss << imm->int_value();
+                exportedDefaultValues[formal] = ss.str();
+
+              case NUM_KIND_BOOL:
+                std::stringstream ss;
+                ss << imm->bool_value();
+                exportedDefaultValues[formal] = ss.str();
+
+              case CONST_KIND_STRING:
+                std::string defaultVal = imm->string_value();
+                exportedDefaultValues[formal] = defaultVal;
+
+              case NUM_KIND_UINT:
+                std::stringstream ss;
+                ss << imm->bool_value();
+                exportedDefaultValues[formal] = ss.str();
+
+              case NUM_KIND_REAL:
+                std::stringstream ss;
+                ss << imm->bool_value();
+                exportedDefaultValues[formal] = ss.str();
+
+              case NUM_KIND_COMPLEX:
+              default:
+
+            }
+          } else {
+            USR_WARN(formal, "Non-literal default values are ignored in "
+                     "exported functions, argument '%s' must always be "
+                     "provided", formal->name);
+          }
+        } else {
+          USR_WARN(formal, "Non-literal default values are ignored in exported"
+                   " functions, argument '%s' must always be provided",
+                   formal->name);
+        }
+      } else {
+        USR_WARN(formal, "Default values aren't applicable in C, argument '%s'"
+                 " for exported function '%s' must always be provided",
+                 formal->name, fn->name);
+      }
     }
   }
 }
