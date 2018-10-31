@@ -97,14 +97,14 @@ intLiteral       {binaryLiteral}|{octalLiteral}|{decimalLiteral}|{hexLiteral}
 
 digitsOrSeps     {digit}(_|{digit})*
 exponent         [Ee][\+\-]?{digitsOrSeps}
-floatLiteral1    ({digit}*|{digitsOrSeps})"."{digitsOrSeps}({exponent})?
+floatLiteral1    {digitsOrSeps}?"."{digitsOrSeps}({exponent})?
 floatLiteral2    {digitsOrSeps}"."{exponent}
-floatLiteral3    {digitsOrSeps}+{exponent}
+floatLiteral3    {digitsOrSeps}{exponent}
 
 /* hex float literals, have decimal exponents indicating the power of 2 */
 hexDigitsOrSeps  {hexDigit}(_|{hexDigit})*
 hexDecExponent   [Pp][\+\-]?{digitsOrSeps}
-floatLiteral4    0[xX]({hexDigit}*|{hexDigitsOrSeps})"."{hexDigitsOrSeps}+({hexDecExponent})?
+floatLiteral4    0[xX]{hexDigitsOrSeps}?"."{hexDigitsOrSeps}({hexDecExponent})?
 floatLiteral5    0[xX]{hexDigitsOrSeps}"."{hexDecExponent}
 floatLiteral6    0[xX]{hexDigitsOrSeps}{hexDecExponent}
 
