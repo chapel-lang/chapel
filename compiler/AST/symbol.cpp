@@ -1733,7 +1733,7 @@ static VarSymbol* new_FloatSymbol(const char* num,
 
   /* Remove '_' separators from the number */
   int j = 0;
-  for (int i=0; i<=len; i++) {
+  for (int i=0; i<len; i++) {
     if (num[i] != '_') {
       n[j] = num[i];
       j++;
