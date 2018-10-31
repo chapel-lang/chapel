@@ -176,7 +176,7 @@ static void propagate_environment(FILE *f)
   // Note that if we are setting these variables, and one or more
   // of them is empty, we must set it with explicitly empty
   // contents (e.g. LC_ALL= instead of -u LC_ALL) so that the
-  // launcher will not overwrite it.
+  // Chapel launch mechanism will not overwrite it.
   char *lang = getenv("LANG");
   char *lc_all = getenv("LC_ALL");
   char *lc_collate = getenv("LC_COLLATE");
