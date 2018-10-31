@@ -170,11 +170,13 @@ static void propagate_environment(FILE *f)
   // If any of the relevant character set environment variables
   // are set, replicate the state of all of them.  This needs to
   // be done separately from the -E mechanism because the launcher
-  // is written in Perl, which mangles the character set environment.
+  // is written in Perl, which mangles the character set
+  // environment.
   //
-  // Note that if one or more of these variables is empty, we must
-  // set it with explicitly empty contents (e.g. LC_ALL= instead of
-  // -u LC_ALL) so that the launcher will not overwrite it.
+  // Note that if we are setting these variables, and one or more
+  // of them is empty, we must set it with explicitly empty
+  // contents (e.g. LC_ALL= instead of -u LC_ALL) so that the
+  // launcher will not overwrite it.
   char *lang = getenv("LANG");
   char *lc_all = getenv("LC_ALL");
   char *lc_collate = getenv("LC_COLLATE");
