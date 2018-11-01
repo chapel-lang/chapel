@@ -246,8 +246,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     else
       fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", argv[0]);
 //    fprintf(slurmFile, "cd $SBATCH_O_WORKDIR\n");
-      fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d",
-              CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales);
+      fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d -N %d",
+              CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
       propagate_environment(slurmFile);
       fprintf(slurmFile, " %s ", chpl_get_real_binary_name());
       for (i=1; i<argc; i++) {
@@ -282,8 +282,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(expectFile, " -C %s", constraint);
   }
 //  fprintf(expectFile, "-I %s ", slurmFilename);
-  fprintf(expectFile, " %s/%s/gasnetrun_ibv -n %d",
-          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales);
+  fprintf(expectFile, " %s/%s/gasnetrun_ibv -n %d -N %d",
+          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
   propagate_environment(expectFile);
   fprintf(expectFile, " %s ", chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
