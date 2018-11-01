@@ -364,7 +364,7 @@
 %type <aggrTag> class_tag
 
 %type <pch> ident_use ident_def
-%type <pch> internal_type_ident /*reserved_type_error_ident*/
+%type <pch> internal_type_ident
 %type <pch> reserved_type_ident_use reserved_type_ident_def
 %type <pch> fn_ident assignop_ident opt_ident_use
 %type <pch> opt_string
@@ -634,14 +634,14 @@ ident_def:
                       }
 
 internal_type_ident:
-  /* The following tokens are reserved words. However we parse them
-     the same as other identifiers in order to generate better errors.
-     We can report an error like "Variable name int is a reserved word"
-     rather than just emitting "Syntax error".
+ /* These reserved words can be used as types, so we return their
+    names so normal resolution can work.
+    If an attempt is made to redefine them, we report an error.
 
-     This strategy applies to tokens that are reserved but parse
-     similarly to other identifiers.
-   */
+    Some types are in reserved_type_ident_use/def instead, in the
+    event that special parsing for them would lead to parser conflicts
+    if they were put here.
+  */
   TBOOL    { $$ = "bool"; }
 | TINT     { $$ = "int"; }
 | TUINT    { $$ = "uint"; }
@@ -653,6 +653,9 @@ internal_type_ident:
 ;
 
 reserved_type_ident_use:
+  /* These reserved words can also be used as types but in fewer
+     places in the parser. Additionally their type versions have
+     different names. */
   TSYNC      { $$ = "_syncvar"; }
 | TSINGLE    { $$ = "_singlevar"; }
 | TOWNED     { $$ = "_owned"; }
@@ -663,6 +666,8 @@ reserved_type_ident_use:
 ;
 
 reserved_type_ident_def:
+  /* These reserved words cannot be redefined and doing so should
+     generate an error. */
   TSYNC      { $$ = "sync"; }
 | TSINGLE    { $$ = "single"; }
 | TOWNED     { $$ = "owned"; }
@@ -671,21 +676,6 @@ reserved_type_ident_def:
 | TUNMANAGED { $$ = "unmanaged"; }
 | TDOMAIN    { $$ = "domain"; }
 ;
-
-
-/* reserved_type_error_ident exists solely to provide better error messages.
-   If it is involved in any difficult to sort out parser conflicts,
-   it can be removed from some of the cases in which it currently applies.
-   Tokens are in reserved_type_error_ident rather than internal_type_ident
-   exactly when putting those tokens in ident: would cause too many
-   parser complications.
-reserved_type_error_ident:
-  reserved_type_ident
-    { $$ = $1;
-      yyerror(NULL, context, "variable declaration uses reserved word");
-    }
-;
- */
 
 opt_string:
                 { $$ = NULL; }
@@ -834,9 +824,6 @@ catch_stmt:
 catch_expr:
   ident_def           { $$ = new DefExpr(new VarSymbol($1), NULL, new UnresolvedSymExpr("Error")); }
 | ident_def TCOLON expr { $$ = new DefExpr(new VarSymbol($1), NULL, $3);   }
-/*| reserved_type_error_ident    { $$ = new DefExpr(new VarSymbol($1), NULL, new UnresolvedSymExpr("Error")); }
-| reserved_type_error_ident TCOLON expr { $$ = new DefExpr(new
-VarSymbol($1), NULL, $3);   }*/
 ;
 
 throw_stmt:
@@ -876,26 +863,6 @@ class_decl_stmt:
                                              FLAG_UNKNOWN,
                                              @1.comment));
     }
-/*| class_tag reserved_type_error_ident opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      $$ = buildChapelStmt(buildClassDefExpr($2,
-                                             NULL,
-                                             $1,
-                                             $3,
-                                             $5,
-                                             FLAG_UNKNOWN,
-                                             @1.comment));
-    }
-| TEXTERN opt_string class_tag reserved_type_error_ident opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      $$ = buildChapelStmt(buildClassDefExpr($4,
-                                             $2,
-                                             $3,
-                                             $5,
-                                             $7,
-                                             FLAG_EXTERN,
-                                             @3.comment));
-    }*/
 | TEXTERN opt_string class_tag ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($4,
@@ -1153,7 +1120,6 @@ fn_decl_receiver_expr:
 
 fn_ident:
   ident_def      { $$ = $1; }
-/*| reserved_type_error_ident { $$ = $1; }*/
 | TBNOT ident_def { $$ = astr("~", $2); }
 | TBAND          { $$ = "&"; }
 | TBOR           { $$ = "|"; }
@@ -1222,8 +1188,6 @@ formal:
     { $$ = buildTupleArgDefExpr($1, $3, $5, $6); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
     { USR_FATAL("variable-length argument may not be grouped in a tuple"); }
-/*| opt_intent_tag reserved_type_error_ident opt_formal_type opt_init_expr
-    { $$ = buildArgDefExpr($1, $2, $3, $4, NULL); }*/
 ;
 
 opt_intent_tag:
@@ -1325,20 +1289,6 @@ type_alias_decl_stmt_inner:
 
       $$ = buildChapelStmt(def);
     }
-/*| reserved_type_error_ident opt_init_type
-    {
-      VarSymbol* var = new VarSymbol($1);
-
-      var->addFlag(FLAG_TYPE_VARIABLE);
-
-      var->doc               = context->latestComment;
-      context->latestComment = NULL;
-
-      DefExpr* def = new DefExpr(var, $2);
-
-      $$ = buildChapelStmt(def);
-    }*/
-
 | ident_def opt_init_type TCOMMA type_alias_decl_stmt_inner
     {
       VarSymbol* var = new VarSymbol($1);
@@ -1426,8 +1376,6 @@ var_decl_stmt_inner:
     { $$ = buildChapelStmt(new DefExpr(new VarSymbol($1), $3, $2)); }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     { $$ = buildTupleVarDeclStmt($2, $4, $5); }
-/*| reserved_type_error_ident opt_type opt_init_expr
-    { $$ = buildChapelStmt(new DefExpr(new VarSymbol($1), $3, $2)); }*/
 ;
 
 tuple_var_decl_component:
