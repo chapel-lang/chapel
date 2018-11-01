@@ -2541,7 +2541,7 @@ void register_memory(void)
     my_gdata->mem_regions_all = mem_regions_all;
     my_gdata->gnr_mreg = *gnr_mreg;
     my_gdata->mreg_cnt = mem_regions->mreg_cnt;
-    chpl_memmove(my_gdata->mregs, mem_regions->mregs, gdata_mregs_size);
+    chpl_no_overlap_memcpy(my_gdata->mregs, mem_regions->mregs, gdata_mregs_size);
 
     gdata_t* gdata;
     gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, gdata_size,
@@ -2556,8 +2556,8 @@ void register_memory(void)
 
       gnr_mreg_map[node] = gdp->gnr_mreg;
       mem_regions_all_entries[node]->mreg_cnt = gdp->mreg_cnt;
-      chpl_memmove(&mem_regions_all_entries[node]->mregs, &gdp->mregs,
-                   mem_regions_size);
+      chpl_no_overlap_memcpy(&mem_regions_all_entries[node]->mregs,
+                             &gdp->mregs, mem_regions_size);
       mem_regions_all_my_entry_map[node] =
           (mem_region_table_t*)
           ((char*) gdp->mem_regions_all + chpl_nodeID * mem_regions_size);
@@ -3564,9 +3564,9 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
       // Update our own map in place.
       //
       if (mr_cnt > 0) {
-        chpl_memmove((char*) &mem_regions_all_my_entry_map[ni]->mregs[mr_i],
-                     (char*) &mem_regions->mregs[mr_i],
-                     mr_cnt * sizeof(mem_region_t));
+        chpl_no_overlap_memcpy((char*) &mem_regions_all_my_entry_map[ni]->mregs[mr_i],
+                               (char*) &mem_regions->mregs[mr_i],
+                               mr_cnt * sizeof(mem_region_t));
       }
 
       if (send_mreg_cnt) {
