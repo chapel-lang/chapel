@@ -504,7 +504,7 @@ static void AM_signal_long(gasnet_token_t token, void *buf, size_t nbytes,
 
 static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_t* pbp = buf;
-  chpl_memmove(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
+  chpl_no_overlap_memcpy(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
@@ -513,7 +513,7 @@ static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_large_t* pblp = buf;
-  chpl_memmove((char*)chpl_private_broadcast_table[pblp->id]+pblp->offset, pblp->data, pblp->size);
+  chpl_no_overlap_memcpy((char*)chpl_private_broadcast_table[pblp->id]+pblp->offset, pblp->data, pblp->size);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
@@ -555,7 +555,7 @@ static void AM_shutdown(gasnet_token_t token) {
 static int bcast_seginfo_done = 0;
 static void AM_bcast_seginfo(gasnet_token_t token, void *buf, size_t nbytes) {
   assert(nbytes == sizeof(gasnet_seginfo_t)*gasnet_nodes());
-  chpl_memmove(seginfo_table, buf, nbytes);
+  chpl_no_overlap_memcpy(seginfo_table, buf, nbytes);
   gasnett_local_wmb();
   bcast_seginfo_done = 1;
 }
@@ -864,7 +864,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   //
   if (chpl_nodeID == 0) {
     int i;
-    for (i=0; i < chpl_numNodes; i++) {
+    for (i=1; i < chpl_numNodes; i++) {
       GASNET_Safe(gasnet_AMRequestMedium0(i, BCAST_SEGINFO, seginfo_table, 
                                           chpl_numNodes*sizeof(gasnet_seginfo_t)));
     }
@@ -949,7 +949,7 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
                                           0, 0);
   if (payloadSize <= gasnet_AMMaxMedium()) {
     priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_COMM_PRV_BCAST_DATA, 0, 0);
-    chpl_memmove(pbp->data, chpl_private_broadcast_table[id], size);
+    chpl_no_overlap_memcpy(pbp->data, chpl_private_broadcast_table[id], size);
     pbp->id = id;
     pbp->size = size;
     for (node = 0; node < chpl_numNodes; node++) {
@@ -976,7 +976,7 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
         thissize = maxsize;
       pblp->offset = offset;
       pblp->size = thissize;
-      chpl_memmove(pblp->data, (char*)chpl_private_broadcast_table[id]+offset, thissize);
+      chpl_no_overlap_memcpy(pblp->data, (char*)chpl_private_broadcast_table[id]+offset, thissize);
       for (node = 0; node < chpl_numNodes; node++) {
         if (node != chpl_nodeID) {
           pblp->ack = &done[node];
