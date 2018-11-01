@@ -84,9 +84,6 @@ static int txCQSize;                    // txCQ size
 static int numTxCtxs;
 
 struct perTxCtxInfo_t {
-  int inited;
-  int idx;
-  char name[5];
   chpl_bool txCtxHasCQ;
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
@@ -133,13 +130,14 @@ static struct fi_msg ofi_msg_reqs;
 
 static inline struct perTxCtxInfo_t* getTxCtxInfo(chpl_bool);
 static inline void releaseTxCtxInfo(struct perTxCtxInfo_t*);
-static /*inline*/ chpl_comm_nb_handle_t ofi_put(void*, c_nodeid_t,
+static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                                 void*, size_t);
 static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                                 void*, size_t);
 static void waitForTxCQ(struct perTxCtxInfo_t*, int);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
+static inline void local_yield(void);
 
 static void time_init(void);
 
@@ -205,6 +203,8 @@ const char* getProviderName(void) {
 // Interface: initialization
 //
 
+pthread_t pthread_that_inited;
+
 static void init_ofi(void);
 static void init_ofiFabricDomain(void);
 static int compute_comm_concurrency(void);
@@ -214,6 +214,8 @@ static void init_ofiForMem(void);
 static void init_ofiForRma(void);
 static void init_ofiForAms(void);
 
+static void init_bar(void);
+
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_comm_ofi_abort_on_error =
@@ -221,6 +223,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   time_init();
   chpl_comm_ofi_oob_init();
   DBG_INIT();
+
+  pthread_that_inited = pthread_self();
 }
 
 
@@ -239,6 +243,8 @@ void chpl_comm_post_task_init(void) {
   if (chpl_numNodes == 1)
     return;
   init_ofi();
+  init_bar();
+
   // chpl_cache_init();
 }
 
@@ -331,11 +337,12 @@ void init_ofiFabricDomain(void) {
           DBG_PRINTF(DBG_FABSALL, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
           DBG_PRINTF(DBG_FABSALL, "----------");
         }
-    } else 
-      DBG_PRINTF(DBG_FAB, "====================\n"
-                 "fi_getinfo() matched fabric:");
-      DBG_PRINTF(DBG_FAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
-      DBG_PRINTF(DBG_FAB, "----------");
+      } else {
+        DBG_PRINTF(DBG_FAB, "====================\n"
+                   "fi_getinfo() matched fabric:");
+        DBG_PRINTF(DBG_FAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
+        DBG_PRINTF(DBG_FAB, "----------");
+      }
     }
   }
 
@@ -853,7 +860,7 @@ void init_fixedHeap(void) {
   const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
   if (size > size_phys)
     size = size_phys;
-  
+
 #if 0 // TODO: assume Aries; allows deeper testing
   //
   // On Gemini-based systems, if necessary reduce the heap size until
@@ -1200,7 +1207,7 @@ void amRequestCommon(c_nodeid_t node,
   waitForTxCQ(tcip, 1);
 
   releaseTxCtxInfo(tcip);
- 
+
   if (pDone != NULL) {
     //
     // Wait for executeOn completion indicator.
@@ -1208,7 +1215,7 @@ void amRequestCommon(c_nodeid_t node,
     DBG_PRINTF(DBG_AM | DBG_AMSEND,
                "waiting for done indication in %p", pDone);
     while (!*(volatile chpl_comm_amDone_t*) pDone)
-      sched_yield();
+      local_yield();
     if (pDone != &myDone)
       freeBounceBuf(pDone);
     DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw done indication");
@@ -1411,16 +1418,14 @@ static
 void amExecOnWrapper(void* p) {
   chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
   struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
+
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "amExecOnWrapper(): chpl_ftable_call(%d, %p)", (int) xo->fid, p);
   chpl_ftable_call(xo->fid, p);
   if (xo->pDone != NULL) {
-    chpl_comm_amDone_t done = 1;
+    const chpl_comm_amDone_t done = 1;
     (void) ofi_put(&done, xo->nodeID, xo->pDone, sizeof(*xo->pDone));
   }
-}
-
-
-static inline
-void amHandleGet(chpl_comm_on_bundle_t* req) {
 }
 
 
@@ -1430,13 +1435,13 @@ void amGetWrapper(void* p) {
   struct chpl_comm_bundleData_RMA_t* rma = &req->comm.rma;
 
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "AM req GET %p <-- %d:%p (%zd bytes)",
+             "amGetWrapper(): %p <-- %d:%p (%zd bytes)",
              rma->addr, (int) rma->nodeID, rma->raddr, rma->size);
   CHK_TRUE(mrGetKey(NULL, rma->nodeID, rma->raddr, rma->size) == 0); // sanity
   (void) ofi_get(rma->addr, rma->nodeID, rma->raddr, rma->size);
 
   CHK_TRUE(mrGetKey(NULL, rma->nodeID, rma->pDone, sizeof(*rma->pDone)) == 0);
-  chpl_comm_amDone_t done = 1;
+  const chpl_comm_amDone_t done = 1;
   (void) ofi_put(&done, rma->nodeID, rma->pDone, sizeof(*rma->pDone));
 }
 
@@ -1447,7 +1452,7 @@ void amPutWrapper(void* p) {
   struct chpl_comm_bundleData_RMA_t* rma = &req->comm.rma;
 
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "AM req PUT %d:%p <-- %p (%zd bytes)",
+             "amPutWrapper() %d:%p <-- %p (%zd bytes)",
              (int) rma->nodeID, rma->raddr, rma->addr, rma->size);
   CHK_TRUE(mrGetKey(NULL, rma->nodeID, rma->raddr, rma->size) == 0); // sanity
   (void) ofi_put(rma->addr, rma->nodeID, rma->raddr, rma->size);
@@ -1659,17 +1664,17 @@ void releaseTxCtxInfo(struct perTxCtxInfo_t* tcip) {
 
 
 static /*inline*/
-chpl_comm_nb_handle_t ofi_put(void* addr, c_nodeid_t node,
+chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
              "PUT %d:%p <= %p, size %zd",
              (int) node, raddr, addr, size);
 
-  void* mrDesc;
-  void* myAddr = addr;
+  void* mrDesc = NULL;
+  void* myAddr = (void*) addr;
   if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
     myAddr = allocBounceBuf(size);
-    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE, "PUT BB: %p", myAddr);
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE, "PUT via BB: %p", myAddr);
     CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
     memcpy(myAddr, addr, size);
   }
@@ -1723,11 +1728,11 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
              "GET %p <= %d:%p, size %zd",
              addr, (int) node, raddr, size);
 
-  void* mrDesc;
+  void* mrDesc = NULL;
   void* myAddr = addr;
   if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
     myAddr = allocBounceBuf(size);
-    DBG_PRINTF(DBG_RMA | DBG_RMAREAD, "GET BB: %p", myAddr);
+    DBG_PRINTF(DBG_RMA | DBG_RMAREAD, "GET via BB: %p", myAddr);
     CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
   }
 
@@ -1799,8 +1804,25 @@ void* allocBounceBuf(size_t size) {
 }
 
 
-static void freeBounceBuf(void* p) {
+static
+void freeBounceBuf(void* p) {
   CHPL_FREE(p);
+}
+
+
+static inline
+void local_yield(void) {
+  //
+  // Our task cannot make progress.  Yield, to allow some other task to
+  // free up whatever resource we need.
+  //
+  // DANGER: Don't call this function on a worker thread while holding
+  //         a ptiTab[] entry, that is, between tcip=getTxCtxInfo() and
+  //         releaseTxCtxInfo(tcip).  If you do and your task switches
+  //         threads due to the chpl_task_yield(), we can end up with
+  //         two threads using the same ptiTab[] entry simultaneously.
+  //
+  chpl_task_yield();
 }
 
 
@@ -1821,6 +1843,71 @@ int32_t chpl_comm_getMaxThreads(void) {
 }
 
 
+////////////////////////////////////////
+//
+// Interface: barriers
+//
+
+//
+// We do a simple tree-based split-phase barrier, with locale 0 as the
+// root of the tree.  Each of the locales has a barrier_info_t struct,
+// and knows the address of that struct in its child locales (locales
+// num_children*my_idx+1 - num_children*my_idx+num_children) and its
+// parent (locale (my_idx-1)/num_children).  Notify and release flags on
+// all locales start out 0.  The notify step consists of each locale
+// waiting for its children, if it has any, to set the child_notify
+// flags in its own barrier info struct to 1, and then if it is not
+// locale 0, setting the child_notify flag corresponding to itself in
+// its parent's barrier info struct to 1.  Thus notification propagates
+// up from the leaves of the tree to the root.  In the wait phase each
+// locale except locale 0 waits for the parent_release flag in its own
+// barrier info struct to become 1.  Once a locale sees that, it clears
+// all of the flags in its own struct and then sets the parent_release
+// flags in both of its existing children to 1.  Thus releases propagate
+// down from locale 0 to the leaves.  Once waiting is complete at the
+// leaves, all of the flags throughout the job are back to 0 and the
+// process can repeat.
+//
+// Note that we can (and do) do other things while waiting for notify
+// and release flags to be set.  In fact we have to task-yield while
+// doing so, in case the PUTs need to be done via AM for some reason
+// (unregistered memory, e.g.).
+//
+// TODO: vectorize the child PUTs.
+//
+#define BAR_TREE_NUM_CHILDREN 64
+
+typedef struct {
+  volatile int child_notify[BAR_TREE_NUM_CHILDREN];
+  volatile int parent_release;
+}  bar_info_t;
+
+static c_nodeid_t bar_childFirst;
+static c_nodeid_t bar_numChildren;
+static c_nodeid_t bar_parent;
+
+static bar_info_t bar_info;
+static bar_info_t** bar_infoMap;
+
+
+static
+void init_bar(void) {
+  bar_childFirst = BAR_TREE_NUM_CHILDREN * chpl_nodeID + 1;
+  if (bar_childFirst >= chpl_numNodes)
+    bar_numChildren = 0;
+  else {
+    bar_numChildren = BAR_TREE_NUM_CHILDREN;
+    if (bar_childFirst + bar_numChildren >= chpl_numNodes)
+      bar_numChildren = chpl_numNodes - bar_childFirst;
+  }
+  bar_parent = (chpl_nodeID - 1) / BAR_TREE_NUM_CHILDREN;
+
+  CHPL_CALLOC(bar_infoMap, chpl_numNodes);
+  const bar_info_t* p = &bar_info;
+  chpl_comm_ofi_oob_allgather(&p, bar_infoMap, sizeof(p));
+}
+
+
 void chpl_comm_barrier(const char *msg) {
   chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
 
@@ -1830,15 +1917,73 @@ void chpl_comm_barrier(const char *msg) {
 
   DBG_PRINTF(DBG_BARRIER, "barrier '%s'", (msg == NULL) ? "" : msg);
 
-  if (numAmHandlersActive == 0) {
-    // Comm layer setup is not complete yet; use OOB barrier
+  if (pthread_equal(pthread_self(), pthread_that_inited)
+      || numAmHandlersActive == 0) {
+    //
+    // Either this is the main (chpl_comm_init()ing) thread or
+    // comm layer setup is not complete yet.  Use OOB barrier.
+    //
     chpl_comm_ofi_oob_barrier();
-  } else {
-    // Use OOB barrier for now, but we can do better in the future
-    chpl_comm_ofi_oob_barrier();
+    DBG_PRINTF(DBG_BARRIER, "barrier '%s' done via out-of-band",
+               (msg == NULL) ? "" : msg);
+    return;
   }
 
-  DBG_PRINTF(DBG_BARRIER, "barrier '%s' done", (msg == NULL) ? "" : msg);
+  //
+  // Wait for our child locales to notify us that they have reached the
+  // barrier.
+  //
+  DBG_PRINTF(DBG_BARRIER, "BAR wait for %d children", (int) bar_numChildren);
+  for (uint32_t i = 0; i < bar_numChildren; i++) {
+    while (bar_info.child_notify[i] == 0) {
+      local_yield();
+    }
+  }
+
+  const int one = 1;
+
+  if (chpl_nodeID != 0) {
+    //
+    // Notify our parent locale that we have reached the barrier.
+    //
+    c_nodeid_t parChild = (chpl_nodeID - 1) % BAR_TREE_NUM_CHILDREN;
+
+    DBG_PRINTF(DBG_BARRIER, "BAR notify parent %d", (int) bar_parent);
+    ofi_put(&one, bar_parent,
+            (void*) &bar_infoMap[bar_parent]->child_notify[parChild],
+            sizeof(one));
+
+    //
+    // Wait for our parent locale to release us from the barrier.
+    //
+    DBG_PRINTF(DBG_BARRIER, "BAR wait for parental release");
+    while (bar_info.parent_release == 0) {
+      local_yield();
+    }
+  }
+
+  //
+  // Clear all our barrier flags.
+  //
+  for (int i = 0; i < bar_numChildren; i++)
+    bar_info.child_notify[i] = 0;
+  bar_info.parent_release = 0;
+
+  //
+  // Release our children.
+  //
+  if (bar_numChildren > 0) {
+    for (int i = 0; i < bar_numChildren; i++) {
+      c_nodeid_t child = bar_childFirst + i;
+      DBG_PRINTF(DBG_BARRIER, "BAR release child %d", (int) child);
+      ofi_put(&one, child,
+              (void*) &bar_infoMap[child]->parent_release,
+              sizeof(one));
+    }
+  }
+
+  DBG_PRINTF(DBG_BARRIER, "barrier '%s' done via PUTs",
+             (msg == NULL) ? "" : msg);
 }
 
 
