@@ -16,7 +16,4 @@ proc test() {
   try {
   } catch int {
   }
-
-  for int in 1..10 {
-  }
 }

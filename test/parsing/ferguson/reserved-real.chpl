@@ -16,7 +16,4 @@ proc test() {
   try {
   } catch real {
   }
-
-  for real in 1..10 {
-  }
 }

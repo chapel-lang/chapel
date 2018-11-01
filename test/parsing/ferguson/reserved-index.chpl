@@ -16,7 +16,4 @@ proc test() {
   try {
   } catch index {
   }
-
-  for index in 1..10 {
-  }
 }

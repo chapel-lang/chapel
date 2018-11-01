@@ -16,7 +16,4 @@ proc test() {
   try {
   } catch complex {
   }
-
-  for complex in 1..10 {
-  }
 }

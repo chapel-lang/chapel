@@ -16,7 +16,4 @@ proc test() {
   try {
   } catch string {
   }
-
-  for string in 1..10 {
-  }
 }

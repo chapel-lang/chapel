@@ -16,7 +16,4 @@ proc test() {
   try {
   } catch uint {
   }
-
-  for uint in 1..10 {
-  }
 }

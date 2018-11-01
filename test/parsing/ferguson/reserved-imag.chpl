@@ -16,7 +16,4 @@ proc test() {
   try {
   } catch imag {
   }
-
-  for imag in 1..10 {
-  }
 }

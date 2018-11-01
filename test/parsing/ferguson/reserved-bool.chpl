@@ -16,7 +16,4 @@ proc test() {
   try {
   } catch bool {
   }
-
-  for bool in 1..10 {
-  }
 }
