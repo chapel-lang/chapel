@@ -26,7 +26,6 @@
 #include "wellknown.h"
 
 
-static void callExprFixBase(CallExpr* call);
 static void callExprHelper(CallExpr* call, BaseAST* arg);
 
 CallExpr::CallExpr(BaseAST* base,
@@ -55,7 +54,6 @@ CallExpr::CallExpr(BaseAST* base,
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   callExprHelper(this, arg5);
-  callExprFixBase(this);
 
   argList.parent = this;
 
@@ -129,7 +127,6 @@ CallExpr::CallExpr(const char* name,
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   callExprHelper(this, arg5);
-  callExprFixBase(this);
 
   argList.parent = this;
 
@@ -143,29 +140,6 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
     } else {
       INT_FATAL(call, "Bad argList in CallExpr constructor");
     }
-  }
-}
-
-static void callExprFixBase(CallExpr* call) {
-  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
-    const char* base = urse->unresolved;
-
-    if (base == astrBool)
-      call->baseExpr = new SymExpr(dtBools[BOOL_SIZE_DEFAULT]->symbol);
-    else if (base == astrInt)
-      call->baseExpr = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol);
-    else if (base == astrUint)
-      call->baseExpr = new SymExpr(dtUInt[INT_SIZE_DEFAULT]->symbol);
-    else if (base == astrReal)
-      call->baseExpr = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol);
-    else if (base == astrImag)
-      call->baseExpr = new SymExpr(dtImag[FLOAT_SIZE_DEFAULT]->symbol);
-    else if (base == astrComplex)
-      call->baseExpr = new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol);
-    else if (base == astrString)
-      call->baseExpr = new SymExpr(dtString->symbol);
-    else if (base == astrIndex)
-      urse->unresolved = astr("chpl__buildIndexType");
   }
 }
 

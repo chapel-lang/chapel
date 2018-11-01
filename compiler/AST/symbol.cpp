@@ -1954,15 +1954,6 @@ const char* astr_forallexpr = NULL;
 const char* astr_forexpr = NULL;
 const char* astr_loopexpr_iter = NULL;
 
-const char* astrBool = NULL;
-const char* astrComplex = NULL;
-const char* astrImag = NULL;
-const char* astrIndex = NULL;
-const char* astrInt = NULL;
-const char* astrReal = NULL;
-const char* astrString = NULL;
-const char* astrUint = NULL;
-
 void initAstrConsts() {
   astrSdot    = astr(".");
   astrSequals = astr("=");
@@ -1984,27 +1975,6 @@ void initAstrConsts() {
   astr_forallexpr    = astr("chpl__forallexpr");
   astr_forexpr       = astr("chpl__forexpr");
   astr_loopexpr_iter = astr("chpl__loopexpr_iter");
-
-  astrBool    = astr("bool");
-  astrComplex = astr("complex");
-  astrImag    = astr("imag");
-  astrIndex   = astr("index");
-  astrInt     = astr("int");
-  astrReal    = astr("real");
-  astrString  = astr("string");
-  astrUint    = astr("uint");
-}
-
-bool isReservedWord(const char* astr)
-{
-  return (astr == astrBool ||
-          astr == astrComplex ||
-          astr == astrImag ||
-          astr == astrIndex ||
-          astr == astrInt ||
-          astr == astrReal ||
-          astr == astrString ||
-          astr == astrUint);
 }
 
 /************************************* | **************************************

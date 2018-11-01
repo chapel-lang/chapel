@@ -695,20 +695,7 @@ extern const char* astr_forallexpr;
 extern const char* astr_forexpr;
 extern const char* astr_loopexpr_iter;
 
-// strings for reserved words
-extern const char* astrBool;
-extern const char* astrComplex;
-extern const char* astrImag;
-extern const char* astrIndex;
-extern const char* astrInt;
-extern const char* astrReal;
-extern const char* astrString;
-extern const char* astrUint;
-
 void initAstrConsts();
-
-// Returns true if the passed astr is a reserved word
-bool isReservedWord(const char* astr);
 
 // Return true if the arg must use a C pointer whether or not
 // pass-by-reference intents are used.
