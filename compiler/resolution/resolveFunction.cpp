@@ -107,6 +107,8 @@ static bool recordContainingCopyMutatesField(Type* at);
 
 static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal);
 
+static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal);
+
 static void resolveFormals(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (formal->type == dtUnknown) {
@@ -146,57 +148,82 @@ static void resolveFormals(FnSymbol* fn) {
     }
 
     if (formal->defaultExpr != NULL && fn->hasFlag(FLAG_EXPORT)) {
-      if (fLibraryPython) {
-        Expr* end = formal->defaultExpr->body.tail;
-        if (SymExpr* sym = toSymExpr(end)) {
-          VarSymbol* var = sym->symbol();
-          if (var->isImmediate()) {
-            Immediate* imm = var->immediate;
-            switch (imm->const_kind) {
-              case NUM_KIND_INT:
-                std::stringstream ss;
-                ss << imm->int_value();
-                exportedDefaultValues[formal] = ss.str();
+      storeDefaultValuesForPython(fn, formal);
+    }
+  }
+}
 
-              case NUM_KIND_BOOL:
-                std::stringstream ss;
-                ss << imm->bool_value();
-                exportedDefaultValues[formal] = ss.str();
+// When compiling for Python interoperability, default values for arguments
+// should get propagated to the generated Python files.
+static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal) {
+  if (fLibraryPython) {
+    Expr* end = formal->defaultExpr->body.tail;
 
-              case CONST_KIND_STRING:
-                std::string defaultVal = imm->string_value();
-                exportedDefaultValues[formal] = defaultVal;
+    if (SymExpr* sym = toSymExpr(end)) {
+      VarSymbol* var = sym->symbol();
 
-              case NUM_KIND_UINT:
-                std::stringstream ss;
-                ss << imm->bool_value();
-                exportedDefaultValues[formal] = ss.str();
+      if (var->isImmediate()) {
+        Immediate* imm = var->immediate;
+        switch (imm->const_kind) {
+        case NUM_KIND_INT:
+          std::stringstream ss;
+          ss << imm->int_value();
+          exportedDefaultValues[formal] = ss.str();
 
-              case NUM_KIND_REAL:
-                std::stringstream ss;
-                ss << imm->bool_value();
-                exportedDefaultValues[formal] = ss.str();
+        case NUM_KIND_BOOL:
+          std::stringstream ss;
+          ss << imm->bool_value();
+          exportedDefaultValues[formal] = ss.str();
 
-              case NUM_KIND_COMPLEX:
-              default:
+        case NUM_KIND_UINT:
+          std::stringstream ss;
+          ss << imm->uint_value();
+          exportedDefaultValues[formal] = ss.str();
 
-            }
-          } else {
-            USR_WARN(formal, "Non-literal default values are ignored in "
-                     "exported functions, argument '%s' must always be "
-                     "provided", formal->name);
+        case CONST_KIND_STRING:
+          // Strings are stored differently than other immediates
+          std::string defaultVal = imm->string_value();
+          exportedDefaultValues[formal] = defaultVal;
+
+        case NUM_KIND_REAL:
+          // Reals don't have a corresponding *_value() function (not sure why)
+          std::stringstream ss;
+          if (imm->num_index == FLOAT_SIZE_32) {
+            ss << imm->v_float32;
+          } else if (imm->num_index == FLOAT_SIZE_64) {
+            ss << imm->v_float64;
           }
-        } else {
-          USR_WARN(formal, "Non-literal default values are ignored in exported"
-                   " functions, argument '%s' must always be provided",
-                   formal->name);
+          exportedDefaultValues[formal] = ss.str();
+
+        case NUM_KIND_COMPLEX:
+          // Complex immediates don't have a corresponding *_value() function,
+          // likely due to differences in how we would want to access its
+          // contents
+          std::stringstream ss;
+          if (imm->num_index == COMPLEX_SIZE_64) {
+            ss << imm->v_complex64.r << "+ " << imm->v_complex64.i;
+          } else if (imm->num_index == COMPLEX_SIZE_128) {
+            ss << imm->v_complex128.r << "+ " << imm->v_complex128.i;
+          }
+          ss << "j";
+          exportedDefaultValues[formal] == ss.str();
+        default:
+
         }
       } else {
-        USR_WARN(formal, "Default values aren't applicable in C, argument '%s'"
-                 " for exported function '%s' must always be provided",
-                 formal->name, fn->name);
+        USR_WARN(formal, "Non-literal default values are ignored in "
+                 "exported functions, argument '%s' must always be "
+                 "provided", formal->name);
       }
+    } else {
+      USR_WARN(formal, "Non-literal default values are ignored in exported"
+               " functions, argument '%s' must always be provided",
+               formal->name);
     }
+  } else {
+      USR_WARN(formal, "Default values aren't applicable in C, argument '%s'"
+               " for exported function '%s' must always be provided",
+               formal->name, fn->name);
   }
 }
 
