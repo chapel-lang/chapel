@@ -912,6 +912,15 @@ std::string ArgSymbol::getPythonType(PythonFileType pxd) {
   }
 }
 
+std::string ArgSymbol::getPythonDefaultValue() {
+  std::string defaultVal = exportedDefaultValues[this];
+  if (defaultVal != "") {
+    return "= " + defaultVal;
+  } else {
+    return "";
+  }
+}
+
 // Some Python type instances need to be translated into C level type instances.
 // Generate code to perform that translation when this is the case
 std::string ArgSymbol::getPythonArgTranslation() {
@@ -1853,6 +1862,8 @@ GenRet FnSymbol::codegenPYXType() {
         header += " ";
         header += idCommentTemp(formal);
       }
+
+      header += formal->getPythonDefaultValue();
 
       std::string curArgTranslate = formal->getPythonArgTranslation();
       if (curArgTranslate != "") {

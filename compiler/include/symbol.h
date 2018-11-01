@@ -389,6 +389,7 @@ public:
   GenRet          codegenType();
 
   std::string     getPythonType(PythonFileType pxd);
+  std::string     getPythonDefaultValue();
   std::string     getPythonArgTranslation();
 
   IntentTag       intent;

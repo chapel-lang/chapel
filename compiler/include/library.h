@@ -27,6 +27,7 @@
 
 #include "files.h"
 
+class ArgSymbol;
 class FnSymbol;
 class Symbol;
 class Type;

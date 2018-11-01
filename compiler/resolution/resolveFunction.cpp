@@ -49,6 +49,8 @@
 
 static void resolveFormals(FnSymbol* fn);
 
+std::map<ArgSymbol*, std::string> exportedDefaultValues;
+
 static void markIterator(FnSymbol* fn);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn);
@@ -160,56 +162,72 @@ static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal) {
     Expr* end = formal->defaultExpr->body.tail;
 
     if (SymExpr* sym = toSymExpr(end)) {
-      VarSymbol* var = sym->symbol();
+      VarSymbol* var = toVarSymbol(sym->symbol());
+      INT_ASSERT(var); // It would be odd for this to be any other symbol type
 
       if (var->isImmediate()) {
         Immediate* imm = var->immediate;
+        std::stringstream ss;
         switch (imm->const_kind) {
-        case NUM_KIND_INT:
-          std::stringstream ss;
+        case NUM_KIND_INT: {
           ss << imm->int_value();
           exportedDefaultValues[formal] = ss.str();
+          break;
+        }
 
-        case NUM_KIND_BOOL:
-          std::stringstream ss;
+        case NUM_KIND_BOOL: {
           ss << imm->bool_value();
           exportedDefaultValues[formal] = ss.str();
+          break;
+        }
 
-        case NUM_KIND_UINT:
-          std::stringstream ss;
+        case NUM_KIND_UINT: {
           ss << imm->uint_value();
           exportedDefaultValues[formal] = ss.str();
+          break;
+        }
 
-        case CONST_KIND_STRING:
+        case CONST_KIND_STRING: {
           // Strings are stored differently than other immediates
           std::string defaultVal = imm->string_value();
-          exportedDefaultValues[formal] = defaultVal;
+          exportedDefaultValues[formal] = "\"" + defaultVal + "\"";
+          break;
+        }
 
-        case NUM_KIND_REAL:
+        case NUM_KIND_REAL: {
           // Reals don't have a corresponding *_value() function (not sure why)
-          std::stringstream ss;
           if (imm->num_index == FLOAT_SIZE_32) {
             ss << imm->v_float32;
           } else if (imm->num_index == FLOAT_SIZE_64) {
             ss << imm->v_float64;
+          } else {
+            INT_FATAL("Unexpected real size");
           }
           exportedDefaultValues[formal] = ss.str();
+          break;
+        }
 
-        case NUM_KIND_COMPLEX:
+        case NUM_KIND_COMPLEX: {
           // Complex immediates don't have a corresponding *_value() function,
           // likely due to differences in how we would want to access its
           // contents
-          std::stringstream ss;
           if (imm->num_index == COMPLEX_SIZE_64) {
             ss << imm->v_complex64.r << "+ " << imm->v_complex64.i;
           } else if (imm->num_index == COMPLEX_SIZE_128) {
             ss << imm->v_complex128.r << "+ " << imm->v_complex128.i;
+          } else {
+            INT_FATAL("Unexpected complex size");
           }
           ss << "j";
-          exportedDefaultValues[formal] == ss.str();
-        default:
-
+          exportedDefaultValues[formal] = ss.str();
+          break;
         }
+
+        default: {
+          INT_FATAL("Unexpected literal type for default value");
+          break;
+        }
+        } // closes switch statement
       } else {
         USR_WARN(formal, "Non-literal default values are ignored in "
                  "exported functions, argument '%s' must always be "
