@@ -20,12 +20,13 @@
 #ifndef _chpl_mem_H_
 #define _chpl_mem_H_
 
-#ifndef LAUNCHER
-
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
+
+#ifndef LAUNCHER
+
 #include "arg.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-hook.h"
