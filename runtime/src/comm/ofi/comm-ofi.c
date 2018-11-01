@@ -1665,7 +1665,7 @@ chpl_comm_nb_handle_t ofi_put(void* addr, c_nodeid_t node,
              "PUT %d:%p <= %p, size %zd",
              (int) node, raddr, addr, size);
 
-  void* mrDesc;
+  void* mrDesc = NULL;
   void* myAddr = addr;
   if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
     myAddr = allocBounceBuf(size);
@@ -1723,7 +1723,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
              "GET %p <= %d:%p, size %zd",
              addr, (int) node, raddr, size);
 
-  void* mrDesc;
+  void* mrDesc = NULL;
   void* myAddr = addr;
   if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
     myAddr = allocBounceBuf(size);
