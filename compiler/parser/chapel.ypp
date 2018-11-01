@@ -423,7 +423,7 @@
 %type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> literal_expr opt_where_part
-%type <pexpr> stmt_level_expr type_level_expr
+%type <pexpr> stmt_level_expr type_level_expr scalar_type
 %type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
 %type <pexpr> opt_init_type var_arg_expr
@@ -649,8 +649,18 @@ internal_type_ident:
 | TIMAG    { $$ = "imag"; }
 | TCOMPLEX { $$ = "complex"; }
 | TSTRING  { $$ = "string"; }
-| TINDEX   { $$ = "index"; }
 ;
+
+scalar_type:
+  TBOOL    { $$ = new SymExpr(dtBools[BOOL_SIZE_DEFAULT]->symbol); }
+| TINT     { $$ = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
+| TUINT    { $$ = new SymExpr(dtUInt[INT_SIZE_DEFAULT]->symbol); }
+| TREAL    { $$ = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol); }
+| TIMAG    { $$ = new SymExpr(dtImag[FLOAT_SIZE_DEFAULT]->symbol); }
+| TCOMPLEX { $$ = new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol); }
+| TSTRING  { $$ = new SymExpr(dtString->symbol); }
+;
+
 
 reserved_type_ident_use:
   /* These reserved words can also be used as types but in fewer
@@ -663,6 +673,7 @@ reserved_type_ident_use:
 | TBORROWED  { $$ = "_borrowed"; }
 | TUNMANAGED { $$ = "_unmanaged"; }
 | TDOMAIN    { $$ = "_domain"; }
+| TINDEX     { $$ = "_index"; }
 ;
 
 reserved_type_ident_def:
@@ -675,6 +686,7 @@ reserved_type_ident_def:
 | TBORROWED  { $$ = "borrowed"; }
 | TUNMANAGED { $$ = "unmanaged"; }
 | TDOMAIN    { $$ = "domain"; }
+| TINDEX     { $$ = "index"; }
 ;
 
 opt_string:
@@ -1245,7 +1257,7 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUESTION ident_use
+  TQUESTION ident_def
     { $$ = new DefExpr(new VarSymbol($2)); }
 | TQUESTION
     { $$ = new DefExpr(new VarSymbol(astr("chpl__query", istr(query_uid++)))); }
@@ -1554,14 +1566,15 @@ actual_ls:
 ;
 
 actual_expr:
-  ident_use TASSIGN query_expr   { $$ = buildNamedActual($1, $3); }
-| ident_use TASSIGN opt_try_expr { $$ = buildNamedActual($1, $3); }
+  TIDENT TASSIGN query_expr   { $$ = buildNamedActual($1, $3); }
+| TIDENT TASSIGN opt_try_expr { $$ = buildNamedActual($1, $3); }
 | query_expr                 { $$ = $1; }
 | opt_try_expr               { $$ = $1; }
 ;
 
 ident_expr:
-  ident_use     { $$ = new UnresolvedSymExpr($1); }
+  TIDENT      { $$ = new UnresolvedSymExpr($1); }
+| scalar_type { $$ = $1; }
 ;
 
 /* Expressions which represent types.  type_level_exprs can appear within formal
@@ -1579,8 +1592,8 @@ type_level_expr:
 | binary_op_expr            // tuples, expr dmapped expr, overloaded binary ops
 | TSINGLE expr
     { $$ = new CallExpr( "_singlevar", $2); }
-/*| TINDEX TLP opt_actual_ls TRP
-    { $$ = new CallExpr("chpl__buildIndexType", $3); }*/
+| TINDEX TLP opt_actual_ls TRP
+    { $$ = new CallExpr("chpl__buildIndexType", $3); }
 | TDOMAIN TLP opt_actual_ls TRP
     { $$ = new CallExpr("chpl__buildDomainRuntimeType", new UnresolvedSymExpr("defaultDist"), $3); }
 | TSUBDOMAIN TLP opt_actual_ls TRP
