@@ -14,4 +14,7 @@ defaultValues.intDefault()
 d = b"not the default"
 defaultValues.cstringDefault(d)
 defaultValues.cstringDefault()
+e = 2 + 3j
+defaultValues.complexDefault(e)
+defaultValues.complexDefault()
 defaultValues.chpl_cleanup()
