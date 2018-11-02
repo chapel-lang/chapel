@@ -1289,6 +1289,7 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
   taskBlk->insertAtHead(body);
 
   VarSymbol* coforallCount = newTempConst("_coforallCount");
+  coforallCount->addFlag(FLAG_END_COUNT);
   VarSymbol* numTasks = newTemp("numTasks");
   VarSymbol* useLocalEndCount = gTrue;
   VarSymbol* countRunningTasks = gTrue;
@@ -2650,6 +2651,7 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   } else {
     BlockStmt* block = buildChapelStmt();
     VarSymbol* endCount = newTempConst("_endCount");
+    endCount->addFlag(FLAG_END_COUNT);
     block->insertAtTail(new DefExpr(endCount));
     block->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
     block->insertAtTail(new CallExpr("_upEndCount", endCount));
@@ -2669,9 +2671,11 @@ buildSyncStmt(Expr* stmt) {
   checkControlFlow(stmt, "sync statement");
   BlockStmt* block = new BlockStmt();
   VarSymbol* endCountSave = newTempConst("_endCountSave");
+  endCountSave->addFlag(FLAG_END_COUNT);
   block->insertAtTail(new DefExpr(endCountSave));
   block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
   VarSymbol* endCount = newTempConst("_endCount");
+  endCount->addFlag(FLAG_END_COUNT);
   block->insertAtTail(new DefExpr(endCount));
   block->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
   block->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
@@ -2743,7 +2747,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   }
 
   VarSymbol* cobeginCount = newTempConst("_cobeginCount");
-
+  cobeginCount->addFlag(FLAG_END_COUNT);
   VarSymbol* numTasks = new_IntSymbol(block->length());
 
   for_alist(stmt, block->body) {

@@ -793,7 +793,11 @@ static void moveGlobalDeclarationsToModuleScope() {
       } else if (DefExpr* def = toDefExpr(expr)) {
         // Non-temporary variable declarations are moved out to module scope.
         if (VarSymbol* vs = toVarSymbol(def->sym)) {
-          // All var symbols are moved out to module scope.
+          // All var symbols are moved out to module scope,
+          // except for end counts (just so that parallel.cpp
+          // can find them)
+          if (vs->hasFlag(FLAG_END_COUNT))
+            continue;
 
           // If the var declaration is an extern, we want to move its
           // initializer block with it.
