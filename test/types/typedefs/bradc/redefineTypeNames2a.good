@@ -1,3 +1,2 @@
-redefineTypeNames2a.chpl:1: In function 'main':
-redefineTypeNames2a.chpl:4: error: Variable name 'int' is a reserved word
-redefineTypeNames2a.chpl:5: error: Variable name 'real' is a reserved word
+redefineTypeNames2a.chpl:4: error: attempt to redefine reserved type 'int'
+redefineTypeNames2a.chpl:5: error: attempt to redefine reserved type 'real'
