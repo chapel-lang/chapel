@@ -1438,10 +1438,6 @@ static void build_record_hash_function(AggregateType *ct) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void buildInitializerCall(AggregateType* ct,
-                                 FnSymbol*      fn,
-                                 ArgSymbol*     arg);
-
 static void buildRecordDefaultOf(AggregateType* ct,
                                  FnSymbol*      fn,
                                  ArgSymbol*     arg);
@@ -1469,7 +1465,7 @@ static void buildDefaultOfFunction(AggregateType* ct) {
 
   } else if (function_exists("_defaultOf", ct)        == NULL  &&
              ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false &&
-             (ct->symbol->hasEitherFlag(FLAG_TUPLE, FLAG_ITERATOR_RECORD) || isUnion(ct)) &&
+             (ct->symbol->hasEitherFlag(FLAG_TUPLE, FLAG_ITERATOR_RECORD)) &&
              ct->defaultValue                         != gNil) {
 
     FnSymbol*  fn  = new FnSymbol("_defaultOf");
@@ -1495,7 +1491,6 @@ static void buildDefaultOfFunction(AggregateType* ct) {
 
     } else if (ct->hasUserDefinedInit == true ||
                ct->wantsDefaultInitializer()) {
-      buildInitializerCall(ct, fn, arg);
     } else {
       buildRecordDefaultOf(ct, fn, arg);
     }
@@ -1507,60 +1502,6 @@ static void buildDefaultOfFunction(AggregateType* ct) {
     // Do not normalize until the definition has been inserted
     normalize(fn);
   }
-}
-
-static void buildInitializerCall(AggregateType* ct,
-                                 FnSymbol*      fn,
-                                 ArgSymbol*     arg) {
-  VarSymbol* _this = newTemp("_this", ct);
-  CallExpr*  call  = new CallExpr("init");
-
-  _this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
-
-  fn->insertAtHead(new DefExpr(_this));
-
-  call->insertAtTail(new SymExpr(gMethodToken));
-  call->insertAtTail(new NamedExpr("this", new SymExpr(_this)));
-
-  bool named = ct->wantsDefaultInitializer();
-
-  for_fields(field, ct) {
-    bool isGenericField = false;
-    if (field->type->symbol->hasFlag(FLAG_GENERIC)) {
-      isGenericField = true;
-    } else if (AggregateType* at = toAggregateType(field->type)) {
-      isGenericField = at->isGeneric();
-    }
-
-    if (field->isParameter() == true) {
-      Flag         flag = FLAG_PARAM;
-      PrimitiveTag tag  = PRIM_QUERY_PARAM_FIELD;
-
-      buildRecordQuery(fn, arg, call, field, flag, tag, named);
-
-    } else if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      Flag         flag = FLAG_TYPE_VARIABLE;
-      PrimitiveTag tag  = PRIM_QUERY_TYPE_FIELD;
-
-      buildRecordQuery(fn, arg, call, field, flag, tag, named);
-
-    } else if ((field->defPoint->exprType == NULL &&
-               field->defPoint->init     == NULL) ||
-               isGenericField) {
-
-      // Can only use a NamedExpr if using a default initializer. Otherwise the
-      // user can use an arbitrary identifier.
-      //
-      // BHARSH INIT TODO: Try to write a test that fails because we cannot
-      // correctly generate a _defaultOf for something with an explicit init.
-      buildRecordQueryVarField(fn, arg, call, field, named);
-
-    }
-  }
-
-  fn->insertAtTail(call);
-
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(_this)));
 }
 
 static void buildRecordDefaultOf(AggregateType* ct,

@@ -9409,7 +9409,8 @@ static Expr* resolvePrimInit(CallExpr* call, Type* type) {
              at->instantiatedFrom                         == NULL &&
              isNonGenericRecordWithInitializers(at)       == true) {
     // Parent PRIM_MOVE will be updated to init() later in resolution
-  } else if (at != NULL && at->isRecord() && at->symbol->hasFlag(FLAG_TUPLE) == false) {
+  } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE) == false &&
+            (at->isRecord() || at->isUnion())) {
     AggregateType* root = at->getRootInstantiation();
     VarSymbol* default_temp = newTemp("default_init_temp", root);
     Expr* stmt = call->getStmtExpr();
