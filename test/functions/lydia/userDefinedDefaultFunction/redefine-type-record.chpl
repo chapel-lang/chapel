@@ -1,12 +1,13 @@
 record bar {
   type t;
   var aField: t;
-}
 
-inline proc _defaultOf(type t:bar(int(8))) {
-  var res: t = noinit;
-  res.aField = -1;
-  return res;
+  proc init(type t) {
+    this.t = t;
+    if t == int(8) {
+      this.aField = -1;
+    }
+  }
 }
 
 var foo: bar(int(32));

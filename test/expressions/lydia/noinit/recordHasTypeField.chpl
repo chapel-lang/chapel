@@ -1,13 +1,12 @@
 record foo {
   type t;
   var i: t;
-}
 
-inline proc _defaultOf (type t) where t == foo(int) {
-  writeln("I default initialized!");
-  var res: t = noinit;
-  res.i = 3;
-  return res;
+  proc init(type t) {
+    writeln("I default initialized!");
+    this.t = t;
+    this.i = 3;
+  }
 }
 
 var bar: foo(int) = noinit; // Should not print message
