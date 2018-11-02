@@ -9422,8 +9422,30 @@ static Expr* resolvePrimInit(CallExpr* call, Type* type) {
       bool isGenericField = root->fieldIsGeneric(field, hasDefault);
 
       Expr* appendExpr = NULL;
-      if (field->isParameter() || field->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (field->isParameter()) {
         appendExpr = new SymExpr(e->value);
+      } else if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
+        if (e->value->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+          // BHARSH 2018-11-02: This technically generates code that would
+          // crash at runtime because aggregate types don't contain the runtime
+          // type information for their fields, so this temporary will go
+          // uninitialized. At the moment we fortunately do not access such
+          // fields for default-initialized records, and avoid crashing.
+          VarSymbol* tmp = newTemp("default_runtime_temp");
+          tmp->addFlag(FLAG_TYPE_VARIABLE);
+          CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD, at->symbol, new_CStringSymbol(e->key->name));
+          CallExpr* move = new CallExpr(PRIM_MOVE, tmp, query);
+
+          stmt->insertBefore(new DefExpr(tmp));
+          stmt->insertBefore(move);
+
+          resolveExpr(query);
+          resolveExpr(move);
+
+          appendExpr = new SymExpr(tmp);
+        } else {
+          appendExpr = new SymExpr(e->value);
+        }
       } else if (isGenericField && hasDefault == false) {
         // Create a temporary to pass for the fully-generic field (e.g. "var x;")
         VarSymbol* temp = newTemp("default_field_temp", e->value->typeInfo());
