@@ -2042,7 +2042,7 @@ DefExpr* buildClassDefExpr(const char*  name,
                            Flag         isExtern,
                            const char*  docs) {
   AggregateType* ct = new AggregateType(tag);
-  TypeSymbol* ts;
+  TypeSymbol* ts = NULL;
 
   // Hook the string type in the modules
   // to avoid duplication with dtString created in initPrimitiveTypes().
@@ -2052,7 +2052,6 @@ DefExpr* buildClassDefExpr(const char*  name,
     ts = dtString->symbol;
     ct->addSymbol(ts);
     *dtString = *ct;
-    //    *dtString = *ct;
 
     // These fields get overwritten with `ct` by the assignment.
     // These fields are set to `this` by the AggregateType constructor
