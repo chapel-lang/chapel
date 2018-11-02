@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance DSI refactor
-GITHUB_USER=ian-bertolacci
-GITHUB_BRANCH=dsi_push_up_attempt
-SHORT_NAME=dsi_push_up_attempt
-START_DATE=07/19/18
+# Test performance of using memmove over memcpy in the runtime
+GITHUB_USER=ronawho
+GITHUB_BRANCH=memmove-everywhere
+SHORT_NAME=memmove-everywhere
+START_DATE=11/02/18
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
