@@ -5,7 +5,7 @@ module M1 {
 
 module M2 {
   use M1;
-  proc main() { 
+  proc main() {
     writeln(global);
   }
 }
