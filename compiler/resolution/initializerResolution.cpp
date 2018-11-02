@@ -341,7 +341,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 
         BlockStmt* inBlock = toBlockStmt(block->parentExpr);
         FnSymbol* inFn = toFnSymbol(inBlock->parentSymbol);
-        if (inFn->hasFlag(FLAG_MODULE_INIT) && inFn->body == inBlock) {
+        if (inFn && inFn->hasFlag(FLAG_MODULE_INIT) && inFn->body == inBlock) {
           // make it a global variable
           inFn->defPoint->insertAfter(new DefExpr(tmpM));
         } else {
