@@ -127,6 +127,7 @@ static void resolveFormals(FnSymbol* fn) {
     if (formal->name == astr_chpl_cname) {
       handleParamCNameFormal(fn, formal);
       formal->defPoint->remove();
+      continue;
     }
 
     if (formal->type->symbol->hasFlag(FLAG_REF) == false) {
@@ -229,7 +230,7 @@ static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal) {
                " functions, argument '%s' must always be provided",
                formal->name);
     }
-  } else {
+  } else if (fLibraryCompile) {
       USR_WARN(formal, "Default values aren't applicable in C, argument '%s'"
                " for exported function '%s' must always be provided",
                formal->name, fn->name);
