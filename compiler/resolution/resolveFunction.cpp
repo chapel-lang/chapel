@@ -163,9 +163,9 @@ static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal) {
 
     if (SymExpr* sym = toSymExpr(end)) {
       VarSymbol* var = toVarSymbol(sym->symbol());
-      INT_ASSERT(var); // It would be odd for this to be any other symbol type
 
-      if (var->isImmediate()) {
+      // Might be an ArgSymbol instead of a VarSymbol
+      if (var && var->isImmediate()) {
         Immediate* imm = var->immediate;
         std::stringstream ss;
         switch (imm->const_kind) {
