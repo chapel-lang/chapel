@@ -9409,6 +9409,54 @@ static Expr* resolvePrimInit(CallExpr* call, Type* type) {
              at->instantiatedFrom                         == NULL &&
              isNonGenericRecordWithInitializers(at)       == true) {
     // Parent PRIM_MOVE will be updated to init() later in resolution
+  } else if (at != NULL && at->isRecord() && at->symbol->hasFlag(FLAG_TUPLE) == false) {
+    AggregateType* root = at->getRootInstantiation();
+    VarSymbol* default_temp = newTemp("default_init_temp", root);
+    Expr* stmt = call->getStmtExpr();
+    stmt->insertBefore(new DefExpr(default_temp));
+
+    CallExpr* initCall = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(default_temp)));
+    form_Map(SymbolMapElem, e, at->substitutions) {
+      Symbol* field = root->getField(e->key->name);
+      bool hasDefault = false;
+      bool isGenericField = root->fieldIsGeneric(field, hasDefault);
+
+      Expr* appendExpr = NULL;
+      if (field->isParameter() || field->hasFlag(FLAG_TYPE_VARIABLE)) {
+        appendExpr = new SymExpr(e->value);
+      } else if (isGenericField && hasDefault == false) {
+        // Create a temporary to pass for the fully-generic field (e.g. "var x;")
+        VarSymbol* temp = newTemp("default_field_temp", e->value->typeInfo());
+        CallExpr* tempCall = new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, e->value));
+
+        stmt->insertBefore(new DefExpr(temp));
+        stmt->insertBefore(tempCall);
+        resolveExpr(tempCall->get(2));
+        resolveExpr(tempCall);
+        appendExpr = new SymExpr(temp);
+
+      } else {
+        INT_FATAL("Unhandled case for default-init");
+      }
+
+      if (at->wantsDefaultInitializer()) {
+        appendExpr = new NamedExpr(e->key->name, appendExpr);
+      }
+
+      initCall->insertAtTail(appendExpr);
+    }
+
+    stmt->insertBefore(initCall);
+    resolveCallAndCallee(initCall);
+    retval = new SymExpr(default_temp);
+    call->replace(retval);
+
+    if (at && at->isRecord() && at->hasPostInitializer()) {
+      CallExpr* move = toCallExpr(stmt);
+      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+      SymExpr*  var  = toSymExpr(move->get(1));
+      move->insertAfter(new CallExpr("postinit", gMethodToken, var->copy()));
+    }
 
   } else {
     SET_LINENO(call);

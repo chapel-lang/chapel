@@ -1469,6 +1469,7 @@ static void buildDefaultOfFunction(AggregateType* ct) {
 
   } else if (function_exists("_defaultOf", ct)        == NULL  &&
              ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false &&
+             (ct->symbol->hasEitherFlag(FLAG_TUPLE, FLAG_ITERATOR_RECORD) || isUnion(ct)) &&
              ct->defaultValue                         != gNil) {
 
     FnSymbol*  fn  = new FnSymbol("_defaultOf");
