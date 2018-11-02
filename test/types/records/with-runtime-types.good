@@ -1,0 +1,12 @@
+with-runtime-types.chpl:10: error: classes and records with runtime types are not supported
+with-runtime-types.chpl:10: note: the field DDD or record type TTT:RRR has the runtime type domain(1,int(64),false)
+with-runtime-types.chpl:28: note: invoked from here
+with-runtime-types.chpl:10: error: classes and records with runtime types are not supported
+with-runtime-types.chpl:10: note: the field DDD or record type TTT:RRR has the runtime type domain(1,int(64),false)
+with-runtime-types.chpl:29: note: invoked from here
+with-runtime-types.chpl:19: error: classes and records with runtime types are not supported
+with-runtime-types.chpl:19: note: the field ARR or record type UUU:QQQ has the runtime type [domain(1,int(64),false)] int(64)
+with-runtime-types.chpl:33: note: invoked from here
+with-runtime-types.chpl:19: error: classes and records with runtime types are not supported
+with-runtime-types.chpl:19: note: the field ARR or record type UUU:QQQ has the runtime type [domain(1,int(64),false)] int(64)
+with-runtime-types.chpl:34: note: invoked from here
