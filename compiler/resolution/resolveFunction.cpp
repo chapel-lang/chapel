@@ -208,19 +208,10 @@ static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal) {
         }
 
         case NUM_KIND_COMPLEX: {
-          // Complex immediates don't have a corresponding *_value() function,
-          // likely due to differences in how we would want to access its
-          // contents
-          if (imm->num_index == COMPLEX_SIZE_64) {
-            ss << imm->v_complex64.r << "+ " << imm->v_complex64.i;
-          } else if (imm->num_index == COMPLEX_SIZE_128) {
-            ss << imm->v_complex128.r << "+ " << imm->v_complex128.i;
-          } else {
-            INT_FATAL("Unexpected complex size");
-          }
-          ss << "j";
-          exportedDefaultValues[formal] = ss.str();
-          break;
+          // Complex immediates don't have a corresponding *_value() function.
+          // They also only come up for the type's default value, since all
+          // other bits that could be literals also could be computations
+          // involving variables named i (so we need to resolve it).
         }
 
         default: {
