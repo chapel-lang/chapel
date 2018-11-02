@@ -17,11 +17,6 @@ export proc boolDefault(x: bool = true) {
 export proc uintDefault(x: uint = 7) {
   writeln(x);
 }
-/* Can't use until call expressions can be present (if that is possible)
-export proc complexDefault(x: complex = 4 + 3i) {
-  writeln(x);
-}
-*/
 /* Can't use this due to #11530
 export proc arrayDefault(x: [0..2] int = [1, 2, 3]) {
   writeln(x);
