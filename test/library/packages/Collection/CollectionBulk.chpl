@@ -16,7 +16,7 @@ var co = (
   else if isBag then new owned DistBag(int)
   else compilerError("Require 'isBoundedDeque', 'isDeque', or 'isBag' to be set...")
 );
-var c = c.borrow();
+var c = co.borrow();
 
 // Add Bulk Test
 // We simply add a range of elements.
