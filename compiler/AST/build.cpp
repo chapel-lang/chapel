@@ -927,7 +927,7 @@ static void adjustMinMaxReduceOp(Expr* reduceOp) {
     else if (!strcmp(sym->unresolved, "min"))
       sym->unresolved = astr("MinReduceScanOp");
   }
-}  
+}
 
 // Do whatever is needed for a reduce intent.
 // Return the globalOp symbol.
@@ -2939,4 +2939,10 @@ Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b)
 
   // Either way, continue compiling with ==
   return new CallExpr("==", a, b);
+}
+
+void redefiningReservedTypeError(const char* name)
+{
+  USR_FATAL_CONT(buildErrorStandin(),
+                 "attempt to redefine reserved type '%s'", name);
 }

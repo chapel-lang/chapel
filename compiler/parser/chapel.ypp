@@ -632,13 +632,8 @@ opt_label_ident:
 ;
 
 ident_def:
-  TIDENT              { $$ = $1; }
-| internal_type_ident_def {
-                       $$ = $1;
-                       USR_FATAL_CONT(buildErrorStandin(),
-                                      "attempt to redefine reserved type '%s'",
-                                      $1);
-                      }
+  TIDENT                   { $$ = $1; }
+| internal_type_ident_def  { $$ = $1; redefiningReservedTypeError($1); }
 ;
 
 internal_type_ident_def:
