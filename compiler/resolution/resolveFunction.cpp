@@ -45,7 +45,6 @@
 #include "WhileStmt.h"
 
 #include <set>
-#include <sstream>
 
 static void resolveFormals(FnSymbol* fn);
 
@@ -168,51 +167,27 @@ static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal) {
       // Might be an ArgSymbol instead of a VarSymbol
       if (var && var->isImmediate()) {
         Immediate* imm = var->immediate;
-        std::stringstream ss;
         switch (imm->const_kind) {
-        case NUM_KIND_INT: {
-          ss << imm->int_value();
-          exportedDefaultValues[formal] = ss.str();
-          break;
-        }
-
-        case NUM_KIND_BOOL: {
-          ss << imm->bool_value();
-          exportedDefaultValues[formal] = ss.str();
-          break;
-        }
-
-        case NUM_KIND_UINT: {
-          ss << imm->uint_value();
-          exportedDefaultValues[formal] = ss.str();
+        case NUM_KIND_INT:
+        case NUM_KIND_BOOL:
+        case NUM_KIND_UINT:
+        case NUM_KIND_REAL:
+          {
+          exportedDefaultValues[formal] = imm->to_string();
           break;
         }
 
         case CONST_KIND_STRING: {
-          // Strings are stored differently than other immediates
-          std::string defaultVal = imm->string_value();
-          exportedDefaultValues[formal] = "\"" + defaultVal + "\"";
-          break;
-        }
-
-        case NUM_KIND_REAL: {
-          // Reals don't have a corresponding *_value() function (not sure why)
-          if (imm->num_index == FLOAT_SIZE_32) {
-            ss << imm->v_float32;
-          } else if (imm->num_index == FLOAT_SIZE_64) {
-            ss << imm->v_float64;
-          } else {
-            INT_FATAL("Unexpected real size");
-          }
-          exportedDefaultValues[formal] = ss.str();
+          // Want to maintain the appearance of string-ness
+          exportedDefaultValues[formal] = "\"" + imm->to_string() + "\"";
           break;
         }
 
         case NUM_KIND_COMPLEX: {
-          // Complex immediates don't have a corresponding *_value() function.
-          // They also only come up for the type's default value, since all
-          // other bits that could be literals also could be computations
+          // Complex immediates only come up for the type's default value, since
+          // all other bits that could be literals also could be computations
           // involving variables named i (so we need to resolve it).
+          INT_FATAL("Complex literals were not expected as a default value");
         }
 
         default: {
