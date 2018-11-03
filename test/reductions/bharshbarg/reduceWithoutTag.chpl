@@ -21,8 +21,8 @@ iter good(n : int) {
 
 iter good(param tag: iterKind, n : int) where tag == iterKind.leader {
   var dom = {1..n};
-  for follow in dom._value.these(iterKind.leader) {
-    for i in dom._value.these(iterKind.follower, follow) {
+  for follow in dom.these(iterKind.leader) {
+    for i in dom.these(iterKind.follower, follow) {
       yield i;
     }
   }

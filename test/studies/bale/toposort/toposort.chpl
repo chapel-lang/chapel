@@ -193,7 +193,7 @@ class ParallelWorkQueue {
       // yield all in local chunk
       if unlockedQueue.size > 0 {
         unlockedQueue.compact();
-        forall work in unlockedQueue.listArray._value.these( tasksPerLocale = maxTasks ) {
+        forall work in unlockedQueue.listArray.these( tasksPerLocale = maxTasks ) {
           yield work;
         }
       } else  {
@@ -243,22 +243,6 @@ class DistributedWorkQueue {
 
   proc deinit(){
     delete this.localInstance;
-  }
-
-  pragma "fn returns iterator"
-  inline proc these(param tag ) where (tag == iterKind.standalone)
-    && __primitive("method call resolves", _value, "these", tag=tag){
-    var maxTasks : [0..#Locales.size] int;
-    forall onLocale in Locales {
-      maxTasks[ onLocale.id ] = onLocale.maxTaskPar;
-    }
-    return _value.these(tag=tag, maxTasks);
-  }
-
-  pragma "fn returns iterator"
-  inline proc these(param tag, maxTasksPerLocale : [?d] int ) where (tag == iterKind.standalone)
-    && __primitive("method call resolves", _value, "these", tag=tag){
-    return _value.these(tag=tag, maxTasksPerLocale);
   }
 }
 
@@ -372,7 +356,7 @@ class LocalDistributedWorkQueue {
         // yield all in local chunk
         if unlockedQueue.size > 0 {
           unlockedQueue.compact();
-          forall work in unlockedQueue.listArray._value.these( tasksPerLocale = maxTasks ) {
+          forall work in unlockedQueue.listArray.these( tasksPerLocale = maxTasks ) {
             yield work;
           }
         } else  {
