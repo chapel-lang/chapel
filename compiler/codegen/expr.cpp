@@ -4384,13 +4384,10 @@ DEFINE_PRIM(PRIM_LOCAL_CHECK) {
     // arguments are (wide ptr, line, function/file, error string)
     GenRet lhs = call->get(1);
     Symbol* lhsType = lhs.chplType->symbol;
-    bool hasErrorMsg = (call->numActuals() > 3);
-    const char* error = (hasErrorMsg ?
-                         toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate->v_string :
-                         "cannot access remote data in local block");
+    const char* error = toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate->v_string;
 
     if (lhsType->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
-      GenRet filename = GenRet(call->get(3+hasErrorMsg));
+      GenRet filename = GenRet(call->get(4));
 
       GenRet lhs = call->get(1);
       if (call->get(1)->isRef()) {
@@ -4399,7 +4396,7 @@ DEFINE_PRIM(PRIM_LOCAL_CHECK) {
 
       codegenCall("chpl_check_local",
                   codegenRnode(lhs),
-                  call->get(2+hasErrorMsg),
+                  call->get(3),
                   filename,
                   error);
     }
