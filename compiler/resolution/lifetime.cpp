@@ -25,6 +25,7 @@
 #include "ForLoop.h"
 #include "loopDetails.h"
 #include "UnmanagedClassType.h"
+#include "resolution.h"
 #include "stlUtil.h"
 #include "symbol.h"
 #include "view.h"
@@ -66,6 +67,8 @@ static const bool debugOutputOnError = false;
    * pointer/ref arguments are inferred to be return scope
      generally, but for methods, the default is that only 'this'
      is return scope.
+   * for non-method iterators, the return scope is the loop
+     invoking the iterator
 
    When considering the lifetime of the result of a call,
    this pass assumes that the lifetime is the minimum of the
@@ -302,7 +305,7 @@ static void checkFunction(FnSymbol* fn) {
 
     // TODO:
     // Determine cases where the compiler can prove
-    // a reference-type variable is not 'nil'
+    // a class-type variable is not 'nil'
   }
 }
 
@@ -399,6 +402,8 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
     return false;
   if (fn->hasFlag(FLAG_SAFE))
     return true;
+
+  // TODO
   if (fn->hasFlag(FLAG_COMPILER_GENERATED))
     return false;
 
@@ -1267,6 +1272,12 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
   // correspondence between what was iterated over
   // and the index variables.
 
+  //  1. default: the lifetime of a method that is an iterator
+  //     is the lifetime of the receiver
+  //  2. default: the lifetime of a non-method iterator
+  //     is the loop itself.
+  //     TODO: Or check if the iterator may own?
+
   FnSymbol* inFn = forLoop->getFunction();
   bool isForall = false;
   IteratorDetails leaderDetails;
@@ -1283,13 +1294,31 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
 
     INT_ASSERT(index);
 
+    bool method = true;
+
     // Also check if we are iterating using these() method
     // ex. functions/ferguson/ref-pair/const-error-iterated*
-    if (!iterableSe)
-      if (CallExpr* iterableCall = toCallExpr(iterable))
-        if (iterableCall->isNamed("these"))
-          if (iterableCall->numActuals() >= 1)
+    if (!iterableSe) {
+      if (CallExpr* iterableCall = toCallExpr(iterable)) {
+        if (iterableCall->isNamed("these")) {
+          if (iterableCall->numActuals() >= 1) {
             iterableSe = toSymExpr(iterableCall->get(1));
+            iterable = iterableSe;
+          }
+        }
+      }
+    }
+
+    // Figure out if the iterator is a method or not.
+    // gatherLoopDetails currently can return a user type (e.g. a record)
+    // as the iterable in the event that 'these' is called.
+    // For that reason, if we can't find the iterator anywhere, we
+    // assume it's a method.
+    if (iterable != NULL)
+      if (AggregateType* at = toAggregateType(iterable->getValType()))
+        if (at->iteratorInfo != NULL)
+          if (FnSymbol* fn = getTheIteratorFnFromIteratorRec(at))
+            method = (fn->_this != NULL);
 
     bool usedAsRef = index->isRef();
     bool usedAsBorrow = isOrContainsBorrowedClass(index->type);
@@ -1333,10 +1362,60 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     // Set lifetime of iteration variable to lifetime of the iterable (expr).
     lp.referent.relevantExpr = forLoop;
     lp.borrowed.relevantExpr = forLoop;
+
+    if (method == false) {
+      LifetimePair loopScope = lifetimes->intrinsicLifetimeForSymbol(index);
+      lp = minimumLifetimePair(lp, loopScope);
+    }
+
     changed |= lifetimes->setInferredLifetimeToMin(index, lp);
   }
 
   return true;
+}
+
+static bool isDevOnly(BaseAST* ast) {
+  FnSymbol* fn = ast->getFunction();
+  ModuleSymbol* mod = ast->getModule();
+
+  if (mod->modTag == MOD_INTERNAL) {
+    return true;
+  } else if (fn &&
+             fn->hasFlag(FLAG_LINE_NUMBER_OK) == false &&
+             fn->hasFlag(FLAG_COMPILER_GENERATED)) {
+    return true;
+  }
+
+  return false;
+}
+static bool isUser(BaseAST* ast) {
+  return !isDevOnly(ast);
+}
+
+static BaseAST* findUserPlace(BaseAST* ast) {
+  if (developer)
+    return ast;
+
+  if (isUser(ast))
+    return ast;
+
+  // Otherwise, look at the call sites to find
+  // the user call.
+  // Note that instantiation points are not available
+  // at this point in compilation.
+  // This only goes 1 level up. Doing more than that
+  // would have to detect recursion, and at that point
+  // there's probably a better approach.
+  if (FnSymbol* inFn = ast->getFunction()) {
+    for_SymbolSymExprs(se, inFn) {
+      if (isUser(se)) {
+        ast = se;
+      }
+    }
+  }
+
+  // If we can't do any better, just return the internal place.
+  return ast;
 }
 
 static void emitError(Expr* inExpr,
@@ -1346,19 +1425,22 @@ static void emitError(Expr* inExpr,
                       LifetimeState* lifetimes) {
 
   char buf[256];
+
+  BaseAST* place = findUserPlace(inExpr);
+
   if (relevantSymbol && !relevantSymbol->hasFlag(FLAG_TEMP)) {
     snprintf(buf, sizeof(buf), "%s %s %s", msg1, relevantSymbol->name, msg2);
-    USR_FATAL_CONT(inExpr, buf);
+    USR_FATAL_CONT(place, buf);
   } else {
     snprintf(buf, sizeof(buf), "%s %s", msg1, msg2);
-    USR_FATAL_CONT(inExpr, buf);
+    USR_FATAL_CONT(place, buf);
   }
 
   Symbol* fromSym = relevantLifetime.fromSymbolScope;
   Expr* fromExpr = relevantLifetime.relevantExpr;
-  if (fromSym && !fromSym->hasFlag(FLAG_TEMP))
+  if (fromSym && !fromSym->hasFlag(FLAG_TEMP) && isUser(fromSym))
     USR_PRINT(fromSym, "consider scope of %s", fromSym->name);
-  else if (fromExpr && inExpr->astloc != fromExpr->astloc)
+  else if (fromExpr && inExpr->astloc != fromExpr->astloc && isUser(fromExpr))
     USR_PRINT(fromExpr, "consider result here");
 
   handleDebugOutputOnError(inExpr, lifetimes);
@@ -1748,9 +1830,6 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   //    (or an iterator record)
   if (!(isClassLike(type) ||
         isRecordContainingFieldsSubjectToAnalysis))
-    return false;
-
-  if (typeHasInfiniteBorrowLifetime(type))
     return false;
 
   return true;
