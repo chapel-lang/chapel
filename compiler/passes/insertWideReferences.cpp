@@ -1498,7 +1498,7 @@ static void narrowWideClassesThroughCalls()
               if (fn->hasFlag(FLAG_EXTERN))
                 stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy(), buildCStringLiteral(astr("references to remote data cannot be passed to external routines like '", fn->name, "'"))));
               else if (fn->hasFlag(FLAG_EXPORT))
-                stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy(), buildCStringLiteral(astr("references to remote data cannot currently be passed to exported routines like '", fn->name, "' (though this is a bug)"))));
+                stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy(), buildCStringLiteral(astr("references to remote data cannot currently be passed to exported routines like '", fn->name, "'"))));
             }
 
             // Also if the narrow type is a ref or data class type,
