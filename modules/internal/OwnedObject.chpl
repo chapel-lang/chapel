@@ -194,14 +194,14 @@ module OwnedObject {
     forwarding chpl_p;
 
     /*
-       Default-initialize a :record:`owned` to store type `t`
+       Default-initialize a :record:`owned` to store type `chpl_t`
      */
     pragma "leaves this nil"
-    proc init(type t) {
-      if !isClass(t) then
+    proc init(type chpl_t) {
+      if !isClass(chpl_t) then
         compilerError("owned only works with classes");
 
-      this.chpl_t = _to_borrowed(t);
+      this.chpl_t = _to_borrowed(chpl_t);
       this.chpl_p = nil;
     }
 

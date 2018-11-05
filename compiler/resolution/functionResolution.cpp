@@ -9462,9 +9462,7 @@ static Expr* resolvePrimInit(CallExpr* call, Type* type) {
         INT_FATAL("Unhandled case for default-init");
       }
 
-      if (at->wantsDefaultInitializer()) {
-        appendExpr = new NamedExpr(e->key->name, appendExpr);
-      }
+      appendExpr = new NamedExpr(e->key->name, appendExpr);
 
       initCall->insertAtTail(appendExpr);
     }
