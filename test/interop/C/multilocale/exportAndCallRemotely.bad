@@ -1,0 +1,3 @@
+foo() got: 42
+foo() got: 43
+exportAndCallRemotely.chpl:17: error: references to remote data cannot currently be passed to exported routines like 'foo'
