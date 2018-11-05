@@ -26,7 +26,6 @@
 #include <assert.h>
 
 #ifndef LAUNCHER
-#ifdef _chplrt_H_
 
 #include "arg.h"
 #include "chpl-mem-desc.h"
@@ -179,7 +178,6 @@ void chpl_mem_layerFree(void*, int32_t lineno, int32_t filename);
   sys_free(ptr)
 
 #endif // LAUNCHER
-#endif
 
 // Provide handles to instrument Chapel calls to memcpy and memmove. For memcpy
 // we've named it to explicit indicate overlap isn't permitted since we've
