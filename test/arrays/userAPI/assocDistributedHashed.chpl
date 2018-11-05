@@ -4,9 +4,9 @@ use HashedDist;
 record MyMapper {
   proc this(ind, targetLocs: [] locale) {
     if ind == "zero" || ind == "pointone" || ind == "half" || ind == "one" {
-      return 0;
+      return targetLocs.domain.low;
     } else {
-      return 1;
+      return targetLocs.domain.high;
     }
   }
 }
