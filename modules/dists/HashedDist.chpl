@@ -51,11 +51,11 @@ record DefaultMapper {
 
 /*
 
-The Hashed distribution stores an associative domain or array across many
-locales. Each index (or key) in the domain is stored in a locale based upon that
-index. When constructing a Hashed distribution, you can optionally provide
-provide a `mapper` function or function object to compute the destination
-locale for each index.
+The Hashed distribution maps an associative domain and its array to a set of
+target locales. Each index (or key) in the domain is mapped to a locale based
+upon its value. When constructing a Hashed distribution, you can optionally
+provide a `mapper` function or function object to compute the destination locale
+for each index.
 
 The `mapper` provided can be a class, record, or first class function.  When
 called, it will be passed the index and the targetLocales array that the Hashed
