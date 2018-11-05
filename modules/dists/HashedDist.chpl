@@ -26,7 +26,7 @@ config param debugUserMapAssoc = false;
 // b/c this matches best with the expected use and it is
 // easy to guarantee that the returned locale is in the target set.
 record AbstractMapper {
-  proc this(ind, targetLocales: [?D] locale) : D.idxType {
+  proc this(const ref ind, const ref targetLocales: [?D] locale) : D.idxType {
     return 0;
   }
 }
