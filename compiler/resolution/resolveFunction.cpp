@@ -48,6 +48,8 @@
 
 static void resolveFormals(FnSymbol* fn);
 
+std::map<ArgSymbol*, std::string> exportedDefaultValues;
+
 static void markIterator(FnSymbol* fn);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn);
@@ -106,6 +108,8 @@ static bool recordContainingCopyMutatesField(Type* at);
 
 static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal);
 
+static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal);
+
 static void resolveFormals(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (formal->type == dtUnknown) {
@@ -122,6 +126,7 @@ static void resolveFormals(FnSymbol* fn) {
     if (formal->name == astr_chpl_cname) {
       handleParamCNameFormal(fn, formal);
       formal->defPoint->remove();
+      continue;
     }
 
     if (formal->type->symbol->hasFlag(FLAG_REF) == false) {
@@ -143,6 +148,67 @@ static void resolveFormals(FnSymbol* fn) {
       if ((useIntent & INTENT_FLAG_IN))
         formal->intent = useIntent;
     }
+
+    if (formal->defaultExpr != NULL && fn->hasFlag(FLAG_EXPORT)) {
+      storeDefaultValuesForPython(fn, formal);
+    }
+  }
+}
+
+// When compiling for Python interoperability, default values for arguments
+// should get propagated to the generated Python files.
+static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal) {
+  if (fLibraryPython) {
+    Expr* end = formal->defaultExpr->body.tail;
+
+    if (SymExpr* sym = toSymExpr(end)) {
+      VarSymbol* var = toVarSymbol(sym->symbol());
+
+      // Might be an ArgSymbol instead of a VarSymbol
+      if (var && var->isImmediate()) {
+        Immediate* imm = var->immediate;
+        switch (imm->const_kind) {
+        case NUM_KIND_INT:
+        case NUM_KIND_BOOL:
+        case NUM_KIND_UINT:
+        case NUM_KIND_REAL:
+          {
+          exportedDefaultValues[formal] = imm->to_string();
+          break;
+        }
+
+        case CONST_KIND_STRING: {
+          // Want to maintain the appearance of string-ness
+          exportedDefaultValues[formal] = "\"" + imm->to_string() + "\"";
+          break;
+        }
+
+        case NUM_KIND_COMPLEX: {
+          // Complex immediates only come up for the type's default value, since
+          // all other bits that could be literals also could be computations
+          // involving variables named i (so we need to resolve it).
+          INT_FATAL("Complex literals were not expected as a default value");
+        }
+
+        default: {
+          INT_FATAL("Unexpected literal type for default value");
+          break;
+        }
+        } // closes switch statement
+      } else {
+        USR_WARN(formal, "Non-literal default values are ignored in "
+                 "exported functions, argument '%s' must always be "
+                 "provided", formal->name);
+      }
+    } else {
+      USR_WARN(formal, "Non-literal default values are ignored in exported"
+               " functions, argument '%s' must always be provided",
+               formal->name);
+    }
+  } else if (fLibraryCompile) {
+      USR_WARN(formal, "Default values aren't applicable in C, argument '%s'"
+               " for exported function '%s' must always be provided",
+               formal->name, fn->name);
   }
 }
 

@@ -277,9 +277,6 @@ else
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
 
-        # Do not build Gasnet for aarch64, so get rid of mpich.
-        unload_module cray-mpich
-
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
@@ -293,9 +290,6 @@ else
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
-
-        # Do not build Gasnet for aarch64, so get rid of mpich.
-        unload_module cray-mpich
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv

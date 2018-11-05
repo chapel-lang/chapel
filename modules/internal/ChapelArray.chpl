@@ -937,7 +937,7 @@ module ChapelArray {
       }
     }
 
-    forwarding _value except these, targetLocales;
+    forwarding _value except targetLocales;
 
     inline proc _do_destroy() {
       if ! _unowned && ! _instance.singleton() {
@@ -1076,7 +1076,7 @@ module ChapelArray {
       }
     }
 
-    forwarding _value except these;
+    forwarding _value;
 
     pragma "no doc"
     proc chpl__serialize()
@@ -2172,9 +2172,8 @@ module ChapelArray {
       }
     }
 
-    forwarding _value except these,
-                      doiBulkTransferFromKnown, doiBulkTransferToKnown,
-                      doiBulkTransferFromAny,  doiBulkTransferToAny;
+    forwarding _value except doiBulkTransferFromKnown, doiBulkTransferToKnown,
+                             doiBulkTransferFromAny,  doiBulkTransferToAny;
 
     inline proc _do_destroy() {
       if ! _unowned {

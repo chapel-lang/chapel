@@ -21,6 +21,9 @@
 #define _num_h_
 
 #include <cstring>
+#include <sstream>
+#include <string>
+
 #include "chpltypes.h"
 #include "map.h"
 #include "misc.h"
@@ -88,7 +91,7 @@ class Immediate { public:
     // Unions are initialized based off the first element, so we need to have
     // the largest thing first to make sure it is all zero initialized
 
-    // complex values
+    // complex values - only used for the type's default value
     complex128 v_complex128;
     complex64  v_complex64;
 
@@ -125,6 +128,7 @@ class Immediate { public:
   // calls int_value, uint_value, or bool_value as appropriate.
   int64_t  to_int( void)        const;
   uint64_t to_uint( void)       const;
+  std::string to_string(void)   const;
 
   Immediate& operator=(const Immediate&);
   Immediate& operator=(bool b) {
@@ -240,6 +244,41 @@ Immediate::to_uint( void) const {
     INT_FATAL("kind not handled in to_uint");
   }
   return val;
+}
+
+inline std::string Immediate::to_string(void) const {
+  std::stringstream ss;
+  switch(const_kind) {
+  case NUM_KIND_INT: ss << int_value(); break;
+  case NUM_KIND_BOOL: ss << bool_value(); break;
+  case NUM_KIND_UINT: ss << uint_value(); break;
+  case CONST_KIND_STRING: return string_value();
+  case NUM_KIND_REAL: {
+    if (num_index == FLOAT_SIZE_32) {
+      ss << v_float32;
+    } else if (num_index == FLOAT_SIZE_64) {
+      ss << v_float64;
+    } else {
+      INT_FATAL("Unexpected real size");
+    }
+    break;
+  }
+  case NUM_KIND_COMPLEX: {
+    // Not expected to execute except for the type's
+    // default value
+    if (num_index == COMPLEX_SIZE_64) {
+      ss << v_complex64.r << "+ " << v_complex64.i;
+    } else if (num_index == COMPLEX_SIZE_128) {
+      ss << v_complex128.r << "+ " << v_complex128.i;
+    } else {
+      INT_FATAL("Unexpected complex size");
+    }
+    ss << "i";
+    break;
+  }
+  default: INT_FATAL("Unexpected type to convert to string"); break;
+  } // Closes switch statement
+  return ss.str();
 }
 
 class ImmHashFns { public:
