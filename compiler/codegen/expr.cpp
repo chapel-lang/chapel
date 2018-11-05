@@ -4381,7 +4381,7 @@ DEFINE_PRIM(PRIM_CHECK_NIL) {
                 call->get(3));
 }
 DEFINE_PRIM(PRIM_LOCAL_CHECK) {
-    // arguments are (wide ptr, error strong, line, function/file)
+    // arguments are (wide ptr, error string, line, function/file)
     GenRet lhs = call->get(1);
     Symbol* lhsType = lhs.chplType->symbol;
     const char* error = toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate->v_string;

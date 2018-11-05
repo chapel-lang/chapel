@@ -191,7 +191,7 @@ module Atomics {
       extern externFunc("destroy", bool, explicit=false)
         proc atomic_destroy(ref obj:externT(bool)): void;
 
-      atomic_destroy(_v);
+      on _v do atomic_destroy(_v);
     }
 
     /*
@@ -333,7 +333,7 @@ module Atomics {
       extern externFunc("destroy", T, explicit=false)
         proc atomic_destroy(ref obj:externT(T)): void;
 
-      atomic_destroy(_v);
+      on _v do atomic_destroy(_v);
     }
 
     /*
