@@ -1,0 +1,3 @@
+dist-assoc-assign.chpl:9: error: unresolved call 'unmanaged UserMapAssocDom(true,real(64),DefaultMapper).dsiGetReprivatizeData()'
+$CHPL_HOME/modules/internal/ArrayViewRankChange.chpl:400: note: candidates are: ArrayViewRankChangeDom.dsiGetReprivatizeData()
+$CHPL_HOME/modules/internal/ArrayViewReindex.chpl:306: note:                 ArrayViewReindexDom.dsiGetReprivatizeData()
