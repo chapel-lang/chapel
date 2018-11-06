@@ -65,50 +65,11 @@ enum qloop_handle_type {
 struct qqloop_step_handle_s {
     struct qqloop_step_wrapper_args *qwa;
     struct qqloop_step_static_args   stat;
-#ifdef QTHREAD_USE_ROSE_EXTENSIONS
-    aligned_t                        workers;
-    aligned_t                        departed_workers;
-    aligned_t                        expected_workers; // used to decide when the data structure can be reused (expected_workers == departed_workers) AKP 1/26/12
-    aligned_t                       *current_workers;  // actually allocated at end of work_array
-    aligned_t                        allowed_workers;
-    struct qqloop_step_handle_s     *next;
-    enum qloop_handle_type           type;
-    aligned_t                        assignNext;
-    aligned_t                        assignStart;
-    aligned_t                        assignStop;
-    aligned_t                        assignStep;
-    aligned_t                        chunkSize;
-    aligned_t                        assignDone; // start+offset
-    aligned_t                        iterations;
-    aligned_t                        whichLoop; // value used to pair workers with correct loop structure
-    aligned_t                        ready;     // what is the last whichLoop that has been initialized (usable)
-#endif /* QTHREAD_USE_ROSE_EXTENSIONS */
     aligned_t                        work_array_size;
     aligned_t                        work_array; // really an address to reach an array
                                                  // with one aligned_t per worker/shepherd
 };
 
-#ifdef QTHREAD_USE_ROSE_EXTENSIONS
-#include "qt_visibility.h"
-
-int qloop_internal_computeNextBlock(qqloop_step_handle_t *loop);
-
-double *cnbTimeMin_(void);
-int *   cnbWorkers_(void);
-
-qqloop_step_handle_t *qt_loop_rose_queue_create(int64_t start,
-                                                int64_t stop,
-                                                int64_t incr);
-void qt_loop_rose_queue_free(qqloop_step_handle_t *);
-
-/* functions added by akp to handle OpenMP task completion
- */
-extern int __qthreads_temp;
-void INTERNAL qthread_reset_forCount(void);
-
-int INTERNAL qthread_forCount(int inc);
-
-#endif /* QTHREAD_USE_ROSE_EXTENSIONS */
 
 #endif // ifndef QLOOP_INNARDS_H
 /* vim:set expandtab: */
