@@ -288,7 +288,8 @@ static bool IsMatch(Prog* prog, Prog::Inst* ip) {
   }
 }
 
-uint32_t Prog::EmptyFlags(const StringPiece& text, const char* p) {
+template<typename StrPiece>
+uint32_t Prog::EmptyFlags(const StrPiece& text, typename StrPiece::ptr_rd_type p) {
   int flags = 0;
 
   // ^ and \A
@@ -321,6 +322,12 @@ uint32_t Prog::EmptyFlags(const StringPiece& text, const char* p) {
 
   return flags;
 }
+
+template
+uint32_t Prog::EmptyFlags<StringPiece>(const StringPiece& text, const char* p);
+
+template
+uint32_t Prog::EmptyFlags<FilePiece>(const FilePiece& text, FilePiece::ptr_rd_type p);
 
 // ByteMapBuilder implements a coloring algorithm.
 //
