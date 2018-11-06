@@ -65,17 +65,18 @@ well:
 .. warning::
 
   Creating a ``bigint`` from an integer literal that is larger than
-  ``max(int(64))`` will result in integer overflow before the
-  ``bigint`` is created. Strings should be used instead of integer
-  literals for cases like this:
+  ``max(uint(64))`` would cause integer overflow before the
+  ``bigint`` is created, and so results in a compile-time error.
+  Strings should be used instead of integer literals for cases
+  like this:
 
   .. code-block:: chapel
 
-    // These result in integer overflow and give value of 18446744073709551615
+    // These would result in integer overflow and cause compile-time errors
     var bad1 = 4847382292989382987395534934347: bigint;
     var bad2 = new bigint(4847382292989382987395534934347);
 
-    // These result in the expected result
+    // These give the desired result
     var good1 = "4847382292989382987395534934347": bigint;
     var good2 = new bigint("4847382292989382987395534934347");
 

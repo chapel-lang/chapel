@@ -396,11 +396,11 @@ class UserMapAssocDom: BaseAssociativeDom {
         // redirect to the DefaultAssociative's leader
         // note that DefaultAssociative's leader returns (lo..hi, this)
         // ie. a range of table slots and then the DefaultAssociativeDom.
-        for follow in locDom.myInds._value.these(tag) do
+        for follow in locDom.myInds.these(tag) do
           yield (follow, localeIndex);
-        //  for followThis in tmpBlock._value.these(iterKind.leader, maxTasks,
-        //                                           myIgnoreRunning, minSize,
-        //                                           locOffset)
+        //  for followThis in tmpBlock.these(iterKind.leader, maxTasks,
+        //                                   myIgnoreRunning, minSize,
+        //                                   locOffset)
         //yield locDom;
       }
     }
@@ -412,14 +412,14 @@ class UserMapAssocDom: BaseAssociativeDom {
 
     var locDom = locDoms[localeIndex];
 
-    for i in locDom.myInds._value.these(tag, locFollowThis) do
+    for i in locDom.myInds.these(tag, locFollowThis) do
       yield i;
   }
 
   iter these(param tag: iterKind) where tag == iterKind.standalone {
     coforall locDom in locDoms do on locDom {
       // Forward to associative domain standalone iterator
-      for i in locDom.myInds._value.these(tag) {
+      for i in locDom.myInds.these(tag) {
         yield i;
       }
     }
@@ -753,14 +753,14 @@ class UserMapAssocArr: BaseArr {
     var locArr = locArrs[localeIndex];
 
     // forward to locArr
-    for i in locArr.myElems._value.these(tag, locFollowThis) do
+    for i in locArr.myElems.these(tag, locFollowThis) do
       yield i;
   }
 
   iter these(param tag: iterKind) ref where tag == iterKind.standalone {
     coforall locArr in locArrs do on locArr {
       // Forward to associative array standalone iterator
-      for i in locArr.myElems._value.these(tag) {
+      for i in locArr.myElems.these(tag) {
         yield i;
       }
     }

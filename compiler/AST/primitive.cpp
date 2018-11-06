@@ -558,8 +558,6 @@ initPrimitive() {
 
   // fn->_this, the name of the field, value/type, optional declared type
   prim_def(PRIM_INIT_FIELD, "init field", returnInfoVoid, false);
-  prim_def(PRIM_INIT_MAYBE_SYNC_SINGLE_FIELD, "init maybe sync/single field",
-           returnInfoVoid, false);
 
   // dst, init-expr, optional declared type
   prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);

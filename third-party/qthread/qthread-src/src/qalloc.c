@@ -528,7 +528,7 @@ static inline size_t qalloc_findmark_bits(unsigned char *array,
             char mask = (0xff00 >> count) & 0xff;
             char bit  = 0;
 
-            while (!mask & 0x1) {
+            while ((!mask) & 0x1) {
                 char xorbyte = mask ^ array[byte];
 
                 if ((array[byte] & xorbyte) == array[byte]) {

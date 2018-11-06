@@ -1455,7 +1455,7 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      if (this.data.locale == here) {
+      if this.data.locale == here {
         return _getDomain(dom);
       } else {
         var a: domain(rank, idxType, stridable);

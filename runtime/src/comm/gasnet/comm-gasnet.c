@@ -864,12 +864,14 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   //
   if (chpl_nodeID == 0) {
     int i;
-    for (i=0; i < chpl_numNodes; i++) {
+    // Skip loc 0, since that would end up memcpy'ing seginfo_table to itself
+    for (i=1; i < chpl_numNodes; i++) {
       GASNET_Safe(gasnet_AMRequestMedium0(i, BCAST_SEGINFO, seginfo_table, 
                                           chpl_numNodes*sizeof(gasnet_seginfo_t)));
     }
+  } else {
+    GASNET_BLOCKUNTIL(bcast_seginfo_done);
   }
-  GASNET_BLOCKUNTIL(bcast_seginfo_done);
   chpl_comm_barrier("making sure everyone's done with the broadcast");
 #endif
 
@@ -891,6 +893,9 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 void chpl_comm_post_task_init(void) {
+  if (chpl_numNodes == 1)
+    return;
+
   //
   // Start a polling task on each locale.
   //
@@ -942,6 +947,9 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
   int  payloadSize = size + sizeof(priv_bcast_t);
   done_t* done;
   int numOffsets=1;
+
+  if (chpl_numNodes == 1)
+    return;
 
   // This can use the system allocator because it involves internode communication.
   done = (done_t*) chpl_mem_allocManyZero(chpl_numNodes, sizeof(*done),
@@ -998,6 +1006,9 @@ void chpl_comm_barrier(const char *msg) {
   int id = (int) msg[0];
   int retval;
 
+  if (chpl_numNodes == 1)
+    return;
+
 #ifdef CHPL_COMM_DEBUG
   chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
 #endif
@@ -1019,6 +1030,9 @@ void chpl_comm_barrier(const char *msg) {
 }
 
 void chpl_comm_pre_task_exit(int all) {
+  if (chpl_numNodes == 1)
+    return;
+
   if (all) {
 
     if (chpl_nodeID == 0) {
@@ -1126,8 +1140,8 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_printf("%s:%d: remote put to %d",
-                                   chpl_lookupFilename(fn), ln, node);
+    chpl_comm_diags_verbose_printf("%s:%d: remote put to %d, %zu bytes",
+                                   chpl_lookupFilename(fn), ln, node, size);
     chpl_comm_diags_incr(put);
 
     // Handle remote address not in remote segment.
@@ -1203,8 +1217,8 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
-                                   chpl_lookupFilename(fn), ln, node);
+    chpl_comm_diags_verbose_printf("%s:%d: remote get from %d, %zu bytes",
+                                   chpl_lookupFilename(fn), ln, node, size);
     chpl_comm_diags_incr(get);
 
     // Handle remote address not in remote segment.

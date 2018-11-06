@@ -17,6 +17,16 @@ bug fixes (and other actions) for each version of hwloc since version
 in v0.9.1).
 
 
+Version 1.11.11 (also included in 2.0.2)
+---------------
+* Add support for Hygon Dhyana processors in the x86 backend,
+  thanks to Pu Wen for the patch.
+* Fix symbol renaming to also rename internal components,
+  thanks to Evan Ramos for the patch.
+* Fix build on HP-UX, thanks to Richard Lloyd for reporting the issues.
+* Detect PCI link speed without being root on Linux >= 4.13.
+
+
 Version 1.11.10 (also included in 2.0.1)
 ---------------
 * Fix detection of cores and hyperthreads on Mac OS X.

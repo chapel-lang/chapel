@@ -92,7 +92,7 @@ To use the NUMA locale model:
 
 .. code-block:: sh
 
-    chpl -o jacobi $CHPL_HOME/examples/programs/jacobi.chpl
+    chpl $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

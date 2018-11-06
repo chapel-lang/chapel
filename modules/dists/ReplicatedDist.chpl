@@ -344,13 +344,13 @@ iter ReplicatedDom.these() {
 
 iter ReplicatedDom.these(param tag: iterKind) where tag == iterKind.leader {
   // redirect to DefaultRectangular's leader
-  for follow in chpl_myLocDom().domLocalRep._value.these(tag) do
+  for follow in chpl_myLocDom().domLocalRep.these(tag) do
     yield follow;
 }
 
 iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   // redirect to DefaultRectangular
-  for i in redirectee()._value.these(tag, followThis) do
+  for i in redirectee().these(tag, followThis) do
     yield i;
 }
 
@@ -579,7 +579,7 @@ iter ReplicatedArr.these(param tag: iterKind) where tag == iterKind.leader {
 
 iter ReplicatedArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   // redirect to DefaultRectangular
-  for a in chpl_myLocArr().arrLocalRep._value.these(tag, followThis) do
+  for a in chpl_myLocArr().arrLocalRep.these(tag, followThis) do
     yield a;
 }
 

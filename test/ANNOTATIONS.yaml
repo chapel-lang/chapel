@@ -465,6 +465,8 @@ chameneos-redux:
     - altered output order for chameneos data, old data incompatible
   09/15/17:
     - Chameneos initializer updates (#7328)
+  10/31/18:
+    - Enable parallelism for shape-ful expressions over ranges (#11501)
 
 CoMD:
   07/26/17:
@@ -1192,6 +1194,8 @@ revcomp:
     - Update revcomp problem size; filenames for fasta-based inputs (#9043)
   04/19/18:
     - Use zero-arg initializer in BaseDom (#9250)
+  10/30/18:
+    - Improve string comparisons (#11479)
 
 sad:
   05/03/16:

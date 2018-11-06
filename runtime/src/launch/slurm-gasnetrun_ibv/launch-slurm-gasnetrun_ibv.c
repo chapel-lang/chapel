@@ -160,29 +160,31 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
 
 static void propagate_environment(FILE *f)
 {
+  // Indiscriminately propagate all environment variables.
+  // We could do this more selectively, but we would be likely
+  // to leave out something important.
+  char *enviro_keys = chpl_get_enviro_keys(',');
+  if (enviro_keys)
+    fprintf(f, " -E %s", enviro_keys);
+
+  // If any of the relevant character set environment variables
+  // are set, replicate the state of all of them.  This needs to
+  // be done separately from the -E mechanism because the launcher
+  // is written in Perl, which mangles the character set
+  // environment.
+  //
+  // Note that if we are setting these variables, and one or more
+  // of them is empty, we must set it with explicitly empty
+  // contents (e.g. LC_ALL= instead of -u LC_ALL) so that the
+  // Chapel launch mechanism will not overwrite it.
   char *lang = getenv("LANG");
   char *lc_all = getenv("LC_ALL");
   char *lc_collate = getenv("LC_COLLATE");
-
-  // If any of the relevant character set environment variables
-  // are set, replicate the state of all of them.
   if (lang || lc_all || lc_collate) {
     fprintf(f, " env");
-
-    // All the undefines have to come first.
-    if (!lang)
-      fprintf(f, " -u LANG");
-    if (!lc_all)
-      fprintf(f, " -u LC_ALL");
-    if (!lc_collate)
-      fprintf(f, " -u LC_COLLATE");
-
-    if (lang)
-      fprintf(f, " LANG=%s", lang);
-    if (lc_all)
-      fprintf(f, " LC_ALL=%s", lc_all);
-    if (lc_collate)
-      fprintf(f, " LC_COLLATE=%s", lc_collate);
+    fprintf(f, " LANG=%s", lang ? lang : "");
+    fprintf(f, " LC_ALL=%s", lc_all ? lc_all : "");
+    fprintf(f, " LC_COLLATE=%s", lc_collate ? lc_collate : "");
   }
 }
 
@@ -244,8 +246,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     else
       fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", argv[0]);
 //    fprintf(slurmFile, "cd $SBATCH_O_WORKDIR\n");
-      fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d",
-              CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales);
+      fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d -N %d",
+              CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
       propagate_environment(slurmFile);
       fprintf(slurmFile, " %s ", chpl_get_real_binary_name());
       for (i=1; i<argc; i++) {
@@ -280,8 +282,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(expectFile, " -C %s", constraint);
   }
 //  fprintf(expectFile, "-I %s ", slurmFilename);
-  fprintf(expectFile, " %s/%s/gasnetrun_ibv -n %d",
-          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales);
+  fprintf(expectFile, " %s/%s/gasnetrun_ibv -n %d -N %d",
+          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
   propagate_environment(expectFile);
   fprintf(expectFile, " %s ", chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {

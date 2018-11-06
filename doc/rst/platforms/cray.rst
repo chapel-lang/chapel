@@ -98,7 +98,6 @@ Building Chapel for a Cray System from Source
       ...run jobs interactively on your system  gasnetrun_ibv
       ...queue jobs using PBSPro (qsub)         pbs-gasnetrun_ibv
       ...queue jobs using SLURM (sbatch)        slurm-gasnetrun_ibv
-      ...queue jobs using LSF (bsub)            lsf-gasnetrun_ibv
       ========================================  =========================
 
       ========================================  =========================

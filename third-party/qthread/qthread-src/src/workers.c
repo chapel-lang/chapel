@@ -16,18 +16,6 @@
 #include "qt_shepherd_innards.h"
 // #include "qt_qthread_struct.h"
 
-#ifdef QTHREAD_USE_ROSE_EXTENSIONS
-void API_FUNC qthread_pack_workerid(const qthread_worker_id_t w,
-                                    const qthread_worker_id_t newId)
-{   /*{{{*/
-    int shep   = w % qlib->nshepherds;
-    int worker = w / qlib->nshepherds;
-
-    assert((shep < qlib->nshepherds));
-    assert((worker < qlib->nworkerspershep));
-    qlib->shepherds[shep].workers[worker].packed_worker_id = newId;
-} /*}}}*/
-#endif /* ifdef QTHREAD_USE_ROSE_EXTENSIONS */
 
 int API_FUNC qthread_disable_worker(const qthread_worker_id_t w)
 {   /*{{{*/
@@ -125,16 +113,7 @@ qthread_worker_id_t API_FUNC qthread_num_workers_local(qthread_shepherd_id_t she
 {                      /*{{{ */
     assert(qthread_library_initialized);
 
-#ifdef QTHREAD_RCRTOOL
-    if(shepherd_id == NO_SHEPHERD) {
-       qthread_worker_t *worker = (qthread_worker_t *)TLS_GET(shepherd_structs);
-       if(worker != NULL) {
-          shepherd_id = worker->shepherd->shepherd_id;
-    }
-    qlib->shepherds[shepherd_id].active_workers;
-#else
     return qlib->nworkerspershep;
-#endif
 }
 
 /* vim:set expandtab: */

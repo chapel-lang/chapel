@@ -1,4 +1,4 @@
-# Copyright © 2009-2016 Inria.  All rights reserved.
+# Copyright © 2009-2018 Inria.  All rights reserved.
 # Copyright © 2009-2012, 2014, 2016 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 #
@@ -74,9 +74,9 @@ TESTS += test-fake-plugin.sh
 endif HWLOC_HAVE_PLUGINS
 endif !HWLOC_HAVE_MINGW32
 
-SEDMAN = $(SED) -e 's/\#PACKAGE_NAME\#/@PACKAGE_NAME@/g' \
-	  -e 's/\#PACKAGE_VERSION\#/@PACKAGE_VERSION@/g' \
-	  -e 's/\#HWLOC_DATE\#/@HWLOC_RELEASE_DATE@/g'
+SEDMAN = $(SED) -e 's/%PACKAGE_NAME%/@PACKAGE_NAME@/g' \
+	  -e 's/%PACKAGE_VERSION%/@PACKAGE_VERSION@/g' \
+	  -e 's/%HWLOC_DATE%/@HWLOC_RELEASE_DATE@/g'
 
 # Only install man pages if we're building in standalone mode
 man7_pages = hwloc.7
@@ -125,7 +125,7 @@ nodist_man_MANS += $(hdh_page)
 hwloc-dump-hwdata.1: hwloc-dump-hwdata.1in
 	@ echo Creating $@ man page...
 	@ $(SEDMAN) \
-	  -e 's/#RUNSTATEDIR#/$(subst /,\/,$(HWLOC_runstatedir))/g' \
+	  -e 's/%RUNSTATEDIR%/$(subst /,\/,$(HWLOC_runstatedir))/g' \
 	  > $@ < $<
 endif HWLOC_HAVE_X86
 endif HWLOC_HAVE_LINUX

@@ -5803,8 +5803,22 @@ hwloc_look_linuxfs_pci(struct hwloc_backend *backend)
 
       /* try to get the link speed */
       offset = hwloc_pci_find_cap(config_space_cache, HWLOC_PCI_CAP_ID_EXP);
-      if (offset > 0 && offset + 20 /* size of PCI express block up to link status */ <= CONFIG_SPACE_CACHESIZE)
+      if (offset > 0 && offset + 20 /* size of PCI express block up to link status */ <= CONFIG_SPACE_CACHESIZE) {
 	hwloc_pci_find_linkspeed(config_space_cache, offset, &attr->linkspeed);
+      } else {
+	/* if not available from config-space (extended part is root-only), look in sysfs files added in 4.13 */
+	float speed = 0.f;
+	unsigned width = 0;
+	err = snprintf(path, sizeof(path), "/sys/bus/pci/devices/%s/current_link_speed", dirent->d_name);
+	if ((size_t) err < sizeof(path)
+	    && !hwloc_read_path_by_length(path, value, sizeof(value), root_fd))
+	  speed = hwloc_linux_pci_link_speed_from_string(value);
+	err = snprintf(path, sizeof(path), "/sys/bus/pci/devices/%s/current_link_width", dirent->d_name);
+	if ((size_t) err < sizeof(path)
+	    && !hwloc_read_path_by_length(path, value, sizeof(value), root_fd))
+	  width = atoi(value);
+	attr->linkspeed = speed*width/8;
+      }
      }
     }
 

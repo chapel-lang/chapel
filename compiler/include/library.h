@@ -27,6 +27,7 @@
 
 #include "files.h"
 
+class ArgSymbol;
 class FnSymbol;
 class Symbol;
 class Type;
@@ -44,6 +45,8 @@ extern std::map<Symbol*, TypeSymbol*> exportedArrayElementType;
 
 extern char libDir[FILENAME_MAX + 1];
 extern std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
+
+extern std::map<ArgSymbol*, std::string> exportedDefaultValues;
 
 void codegen_library_header(std::vector<FnSymbol*> functions);
 void codegen_library_makefile();

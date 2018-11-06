@@ -97,13 +97,34 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
     const char* ev_use_lldb = getenv("CHPL_COMM_USE_LLDB");
 
     if (ev_use_gdb != NULL || ev_use_lldb != NULL) {
+
+      // determine the terminal emulator to use
+      const char* dbg_term = getenv("CHPL_COMM_DBG_TERM");
+      if(dbg_term == NULL) {
+        dbg_term = "xterm";
+      }
+      else if(strcmp(dbg_term, "xterm") != 0  && 
+              strcmp(dbg_term, "urxvt") != 0) {
+        // currently limiting to xterm and urxvt because of lack of
+        // testing/interest. Most other terminal emulators seem to support the
+        // -e flag, but there are some (like tilda) that uses different flags
+        // (-c for tilda). Ideally, there should be a lookup table for those
+        // flags if there is interest in adding support for more terminal
+        // emulators
+        chpl_warning("CHPL_COMM_DBG_TERM can only be set to xterm or urxvt",
+                     0, 0);
+        dbg_term = "xterm";
+      }
+
       // hopefully big enough; PATH_MAX is problematic, but what's better?  
-      const size_t xterm_path_size = PATH_MAX;
-      char *xterm_path = chpl_mem_alloc(xterm_path_size,
+      const size_t term_path_size = PATH_MAX;
+      char *term_path = chpl_mem_alloc(term_path_size,
                                         CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
-      if (chpl_run_cmdstr("which xterm", xterm_path, xterm_path_size) > 0) {
-        largv[largc++] = xterm_path;
+      static char cmd[16] = "";
+      snprintf(cmd, sizeof(cmd), "which %s", dbg_term);
+      if (chpl_run_cmdstr(cmd, term_path, term_path_size) > 0) {
+        largv[largc++] = term_path;
         largv[largc++] = (char *) "-e";
         if (ev_use_gdb != NULL) {
           largv[largc++] = (char *) "gdb";
@@ -113,7 +134,10 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
           largv[largc++] = (char *) "--";
         }
       } else {
-        chpl_warning("CHPL_COMM_USE_(G|LL)DB ignored because no xterm", 0, 0);
+        static char err_msg[128] = "";
+        snprintf(err_msg, sizeof(err_msg), 
+                 "CHPL_COMM_USE_(G|LL)DB ignored because no %s", dbg_term);
+        chpl_warning(err_msg, 0, 0);
       }
     }
   }

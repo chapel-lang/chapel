@@ -307,7 +307,7 @@ module String {
       of a shallow copy.
      */
     proc init(s: string, isowned: bool = true) {
-      const sRemote = s.locale_id != chpl_nodeID;
+      const sRemote = _local == false && s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.isowned = isowned;
       this.complete();
@@ -522,7 +522,7 @@ module String {
         return __primitive("cast", t, x);
       }
 
-      if this.locale_id != chpl_nodeID then
+      if _local == false && this.locale_id != chpl_nodeID then
         halt("Cannot call .c_str() on a remote string");
 
       return this.buff:c_string;
@@ -623,7 +623,7 @@ module String {
                                 offset_STR_COPY_DATA): bufferType;
       ret.isowned = true;
 
-      const remoteThis = this.locale_id != chpl_nodeID;
+      const remoteThis = _local == false && this.locale_id != chpl_nodeID;
       var multibytes: bufferType;
       if remoteThis {
         chpl_string_comm_get(ret.buff, this.locale_id, this.buff + i - 1, maxbytes);
@@ -717,7 +717,7 @@ module String {
                                   offset_STR_COPY_DATA): bufferType;
 
         var thisBuff: bufferType;
-        const remoteThis = this.locale_id != chpl_nodeID;
+        const remoteThis = _local == false && this.locale_id != chpl_nodeID;
         if remoteThis {
           // TODO: Could do an optimization here and only pull down the data
           // between r2.low and r2.high. Indexing for the copy below gets a bit
@@ -1909,7 +1909,7 @@ module String {
   //  "1000" < "101" < "1010".
   //
 
-  private inline proc _strcmp(a: string, b:string) : int {
+  private inline proc _strcmp_local(a: string, b:string) : int {
     // Assumes a and b are on same locale and not empty.
     const size = min(a.len, b.len);
     const result =  c_memcmp(a.buff, b.buff, size);
@@ -1922,16 +1922,19 @@ module String {
     return result;
   }
 
+  private inline proc _strcmp(a: string, b:string) : int {
+    if a.locale_id == chpl_nodeID && b.locale_id == chpl_nodeID {
+      // it's local
+      return _strcmp_local(a, b);
+    } else {
+      var localA: string = a.localize();
+      var localB: string = b.localize();
+      return _strcmp_local(localA, localB);
+    }
+  }
+
   pragma "no doc"
   proc ==(a: string, b: string) : bool {
-    inline proc doEq(a: string, b:string) {
-      // TODO: is it better to have these outside of the do* fns?
-      //       probably would be 2 extra gets worst case, but avoids doing a
-      //       local copy if b is remote
-      if a.len != b.len then return false;
-      return _strcmp(a, b) == 0;
-    }
-
     // At the moment, this commented out section will not work correctly. If a
     // and b are on the same locale, we will go to that locale, but an autoCopy
     // will localize a and b, before they are placed into the on bundle,
@@ -1947,48 +1950,31 @@ module String {
       return ret;
     } else { */
 
-    var localA: string = a.localize();
-    var localB: string = b.localize();
-
-    return doEq(localA, localB);
+    return _strcmp(a, b) == 0;
   }
 
   pragma "no doc"
   inline proc !=(a: string, b: string) : bool {
-    return !(a == b);
+    return _strcmp(a, b) != 0;
   }
 
   pragma "no doc"
   inline proc <(a: string, b: string) : bool {
-    inline proc doLt(a: string, b:string) {
-      return _strcmp(a, b) < 0;
-    }
-
-    var localA: string = a.localize();
-    var localB: string = b.localize();
-
-    return doLt(localA, localB);
+    return _strcmp(a, b) < 0;
   }
 
   pragma "no doc"
   inline proc >(a: string, b: string) : bool {
-    inline proc doGt(a: string, b:string) {
-      return _strcmp(a, b) > 0;
-    }
-
-    var localA: string = a.localize();
-    var localB: string = b.localize();
-
-    return doGt(localA, localB);
+    return _strcmp(a, b) > 0;
   }
 
   pragma "no doc"
   inline proc <=(a: string, b: string) : bool {
-    return !(a > b);
+    return _strcmp(a, b) <= 0;
   }
   pragma "no doc"
   inline proc >=(a: string, b: string) : bool {
-    return !(a < b);
+    return _strcmp(a, b) >= 0;
   }
 
 
