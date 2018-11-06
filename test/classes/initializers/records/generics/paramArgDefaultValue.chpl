@@ -4,8 +4,8 @@
 record Foo {
   param p: int;
 
-  proc init(param pVal = 3) {
-    p = pVal;
+  proc init(param p = 3) {
+    this.p = p;
   }
 }
 
