@@ -99,8 +99,8 @@ static RE2::ErrorCode RegexpErrorToRE2(re2::RegexpStatusCode code) {
 
 static string trunc(const StringPiece& pattern) {
   if (pattern.size() < 100)
-    return pattern.ToString();
-  return pattern.substr(0, 100).ToString() + "...";
+    return string(pattern);
+  return string(pattern.substr(0, 100)) + "...";
 }
 
 
@@ -172,7 +172,7 @@ void RE2::Init(const StringPiece& pattern, const Options& options) {
     empty_group_names = new std::map<int, string>;
   });
 
-  pattern_ = pattern.ToString();
+  pattern_ = string(pattern);
   options_.Copy(options);
   entire_regexp_ = NULL;
   suffix_regexp_ = NULL;
@@ -183,8 +183,6 @@ void RE2::Init(const StringPiece& pattern, const Options& options) {
   num_captures_ = -1;
   named_groups_ = NULL;
   group_names_ = NULL;
-  min_match_length_ = 0;
-  max_match_length_ = -1;
 
   RegexpStatus status;
   entire_regexp_ = Regexp::Parse(
@@ -198,7 +196,7 @@ void RE2::Init(const StringPiece& pattern, const Options& options) {
     }
     error_ = new string(status.Text());
     error_code_ = RegexpErrorToRE2(status.code());
-    error_arg_ = status.error_arg().ToString();
+    error_arg_ = string(status.error_arg());
     return;
   }
 
@@ -207,8 +205,6 @@ void RE2::Init(const StringPiece& pattern, const Options& options) {
     suffix_regexp_ = suffix;
   else
     suffix_regexp_ = entire_regexp_->Incref();
-
-  entire_regexp_->PossibleMatchLength(&min_match_length_, &max_match_length_);
 
   // Two thirds of the memory goes to the forward Prog,
   // one third to the reverse prog, because the forward
@@ -349,28 +345,9 @@ bool RE2::FindAndConsumeN(StringPiece* input, const RE2& re,
   }
 }
 
-// Returns the maximum submatch needed for the rewrite to be done by Replace().
-// E.g. if rewrite == "foo \\2,\\1", returns 2.
-int RE2::MaxSubmatch(const StringPiece& rewrite) {
-  int max = 0;
-  for (const char *s = rewrite.data(), *end = s + rewrite.size();
-       s < end; s++) {
-    if (*s == '\\') {
-      s++;
-      int c = (s < end) ? *s : -1;
-      if (isdigit(c)) {
-        int n = (c - '0');
-        if (n > max)
-          max = n;
-      }
-    }
-  }
-  return max;
-}
-
-bool RE2::Replace(string *str,
-                 const RE2& re,
-                 const StringPiece& rewrite) {
+bool RE2::Replace(string* str,
+                  const RE2& re,
+                  const StringPiece& rewrite) {
   StringPiece vec[kVecSize];
   int nvec = 1 + MaxSubmatch(rewrite);
   if (nvec > arraysize(vec))
@@ -388,9 +365,9 @@ bool RE2::Replace(string *str,
   return true;
 }
 
-int RE2::GlobalReplace(string *str,
-                      const RE2& re,
-                      const StringPiece& rewrite) {
+int RE2::GlobalReplace(string* str,
+                       const RE2& re,
+                       const StringPiece& rewrite) {
   StringPiece vec[kVecSize];
   int nvec = 1 + MaxSubmatch(rewrite);
   if (nvec > arraysize(vec))
@@ -460,10 +437,10 @@ int RE2::GlobalReplace(string *str,
   return count;
 }
 
-bool RE2::Extract(const StringPiece &text,
-                 const RE2& re,
-                 const StringPiece &rewrite,
-                 string *out) {
+bool RE2::Extract(const StringPiece& text,
+                  const RE2& re,
+                  const StringPiece& rewrite,
+                  string* out) {
   StringPiece vec[kVecSize];
   int nvec = 1 + MaxSubmatch(rewrite);
   if (nvec > arraysize(vec))
@@ -523,14 +500,14 @@ bool RE2::PossibleMatchRange(string* min, string* max, int maxlen) const {
     n = maxlen;
 
   // Determine initial min max from prefix_ literal.
-  string pmin, pmax;
-  pmin = prefix_.substr(0, n);
-  pmax = prefix_.substr(0, n);
+  *min = prefix_.substr(0, n);
+  *max = prefix_.substr(0, n);
   if (prefix_foldcase_) {
-    // prefix is ASCII lowercase; change pmin to uppercase.
+    // prefix is ASCII lowercase; change *min to uppercase.
     for (int i = 0; i < n; i++) {
-      if ('a' <= pmin[i] && pmin[i] <= 'z')
-        pmin[i] += 'A' - 'a';
+      char& c = (*min)[i];
+      if ('a' <= c && c <= 'z')
+        c += 'A' - 'a';
     }
   }
 
@@ -538,13 +515,13 @@ bool RE2::PossibleMatchRange(string* min, string* max, int maxlen) const {
   string dmin, dmax;
   maxlen -= n;
   if (maxlen > 0 && prog_->PossibleMatchRange(&dmin, &dmax, maxlen)) {
-    pmin += dmin;
-    pmax += dmax;
-  } else if (!pmax.empty()) {
+    min->append(dmin);
+    max->append(dmax);
+  } else if (!max->empty()) {
     // prog_->PossibleMatchRange has failed us,
     // but we still have useful information from prefix_.
-    // Round up pmax to allow any possible suffix.
-    pmax = PrefixSuccessor(pmax);
+    // Round up *max to allow any possible suffix.
+    PrefixSuccessor(max);
   } else {
     // Nothing useful.
     *min = "";
@@ -552,15 +529,12 @@ bool RE2::PossibleMatchRange(string* min, string* max, int maxlen) const {
     return false;
   }
 
-  *min = pmin;
-  *max = pmax;
   return true;
 }
 
 // Avoid possible locale nonsense in standard strcasecmp.
 // The string a is known to be all lowercase.
-template<typename ptr_type>
-static int ascii_strcasecmp(const char* a, ptr_type b, size_t len) {
+static int ascii_strcasecmp(const char* a, const char* b, size_t len) {
   const char* ae = a + len;
 
   for (; a < ae; a++, b++) {
@@ -583,7 +557,7 @@ bool RE2::Match(const StringPiece& text,
                 Anchor re_anchor,
                 StringPiece* submatch,
                 int nsubmatch) const {
-  if (!ok() || suffix_regexp_ == NULL) {
+  if (!ok()) {
     if (options_.log_errors())
       LOG(ERROR) << "Invalid RE2: " << *error_;
     return false;
@@ -694,9 +668,9 @@ bool RE2::Match(const StringPiece& text,
                            Prog::kLongestMatch, &match, &dfa_failed, NULL)) {
         if (dfa_failed) {
           if (options_.log_errors())
-            LOG(ERROR) << "DFA out of memory: size " << prog_->size() << ", "
-                       << "bytemap range " << prog_->bytemap_range() << ", "
-                       << "list count " << prog_->list_count();
+            LOG(ERROR) << "DFA out of memory: size " << prog->size() << ", "
+                       << "bytemap range " << prog->bytemap_range() << ", "
+                       << "list count " << prog->list_count();
           // Fall back to NFA below.
           skipped_test = true;
           break;
@@ -798,142 +772,20 @@ bool RE2::Match(const StringPiece& text,
   return true;
 }
 
-bool RE2::MatchFile(FilePiece& text,
-                    const StringPiece& buffer,
-                    Anchor re_anchor,
-                    FilePiece* submatch,
-                    int nsubmatch) const {
-  if (!ok() || suffix_regexp_ == NULL) {
-    if (options_.log_errors())
-      LOG(ERROR) << "Invalid RE2: " << *error_;
-    return false;
-  }
-
-  FilePiece subtext = text;
-
-  // First, we can try an in-memory search with whatever is in the
-  // current buffer. To do that, we just call the other
-  // Match function... If we find a match, we will skip to
-  // the position of the match and continue searching with NFA
-  // or one-pass. If we don't find a match, we will skip
-  // to the first possible position that hasn't been ruled out yet.
-  StringPiece vec[1];
-  int nvec = 1;
-
-  if( nsubmatch == 0 ) nvec = 0;
-
-  int skip = 0;
-
-  if( FilePiece::allow_buffer_search() && re_anchor == UNANCHORED ) {
-    bool found = Match(buffer, 0, buffer.size(), re_anchor, vec, nvec);
-    if( found ) {
-      // If we found a match and that's all we wanted to know...
-      if( nsubmatch == 0 ) return true;
-      // Otherwise, we could be doing a greedy search
-      // that could continue past the end of that buffer.
-      // So advance to that position and then continue.
-      skip = vec[0].begin() - buffer.begin();
-      // we have some kind of match here!
-      re_anchor = ANCHOR_START;
-    } else {
-      // There was no match.
-      // Given the minimum and maximum match lengths...
-      // compute a skip.
-      if( max_match_length_ >= 0 &&
-          buffer.size() > (size_t) max_match_length_ ) {
-        skip = buffer.size() - max_match_length_ - 1;
-      }
-    }
-  }
-
-  if( skip < 0 ) skip = 0;
-  subtext.remove_prefix(skip);
-
-  // The rest of this doesn't use DFA search.
-  //
-  FilePiece match;
-
-  int ncap = 1 + NumberOfCapturingGroups();
-  if (ncap > nsubmatch)
-    ncap = nsubmatch;
-
-  // If the regexp is anchored explicitly, update re_anchor
-  // so that we can potentially fall into a faster case below.
-  if (prog_->anchor_start() && prog_->anchor_end())
-    re_anchor = ANCHOR_BOTH;
-  else if (prog_->anchor_start() && re_anchor != ANCHOR_BOTH)
-    re_anchor = ANCHOR_START;
-
-  // Check for the required prefix, if any.
-  int64_t prefixlen = 0;
-  if (!prefix_.empty()) {
-    prefixlen = prefix_.size();
-    if (prefixlen > subtext.size())
-      return false;
-    if (prefix_foldcase_) {
-      if (ascii_strcasecmp(&prefix_[0], subtext.begin_reading(), prefixlen) != 0)
-        return false;
-    } else {
-      if (re2_memcmp(&prefix_[0], subtext.begin_reading(), prefixlen) != 0)
-        return false;
-    }
-    subtext.remove_prefix(prefixlen);
-    // If there is a required prefix, the anchor must be at least ANCHOR_START.
-    if (re_anchor != ANCHOR_BOTH)
-      re_anchor = ANCHOR_START;
-  }
-
-  Prog::Anchor anchor = Prog::kUnanchored;
-  Prog::MatchKind kind = Prog::kFirstMatch;
-  if (options_.longest_match())
-    kind = Prog::kLongestMatch;
-
-  bool can_one_pass = (is_one_pass_ && ncap <= Prog::kMaxOnePassCapture);
-
-  switch (re_anchor) {
-    default:
-    case UNANCHORED:
-      break;
-    case ANCHOR_BOTH:
-    case ANCHOR_START:
-      if (re_anchor == ANCHOR_BOTH)
-        kind = Prog::kFullMatch;
-      anchor = Prog::kAnchored;
-  }
-
-  {
-    FilePiece subtext1 = subtext;
-    if (can_one_pass && anchor != Prog::kUnanchored) {
-      if (!prog_->SearchOnePass(subtext1, text, anchor, kind, submatch, ncap)) {
-        return false;
-      }
-    } else {
-      if (!prog_->SearchNFA(subtext1, text, anchor, kind, submatch, ncap)) {
-        return false;
-      }
-    }
-  }
-
-  // Adjust overall match for required prefix that we stripped off.
-  if (prefixlen > 0 && nsubmatch > 0)
-    submatch[0].set_ptr_end(submatch[0].begin() - prefixlen,
-                            submatch[0].end());
-
-  // Zero submatches that don't exist in the regexp.
-  for (int i = ncap; i < nsubmatch; i++)
-    submatch[i].clear();
-  return true;
-}
-
 // Internal matcher - like Match() but takes Args not StringPieces.
 bool RE2::DoMatch(const StringPiece& text,
-                  Anchor anchor,
+                  Anchor re_anchor,
                   size_t* consumed,
                   const Arg* const* args,
                   int n) const {
   if (!ok()) {
     if (options_.log_errors())
       LOG(ERROR) << "Invalid RE2: " << *error_;
+    return false;
+  }
+
+  if (NumberOfCapturingGroups() < n) {
+    // RE has fewer capturing groups than number of Arg pointers passed in.
     return false;
   }
 
@@ -955,7 +807,7 @@ bool RE2::DoMatch(const StringPiece& text,
     heapvec = vec;
   }
 
-  if (!Match(text, 0, text.size(), anchor, vec, nvec)) {
+  if (!Match(text, 0, text.size(), re_anchor, vec, nvec)) {
     delete[] heapvec;
     return false;
   }
@@ -969,13 +821,6 @@ bool RE2::DoMatch(const StringPiece& text,
     return true;
   }
 
-  int ncap = NumberOfCapturingGroups();
-  if (ncap < n) {
-    // RE has fewer capturing groups than number of arg pointers passed in
-    delete[] heapvec;
-    return false;
-  }
-
   // If we got here, we must have matched the whole pattern.
   for (int i = 0; i < n; i++) {
     const StringPiece& s = vec[i+1];
@@ -987,41 +832,6 @@ bool RE2::DoMatch(const StringPiece& text,
   }
 
   delete[] heapvec;
-  return true;
-}
-
-// Append the "rewrite" string, with backslash subsitutions from "vec",
-// to string "out".
-bool RE2::Rewrite(string *out, const StringPiece &rewrite,
-                 const StringPiece *vec, int veclen) const {
-  for (const char *s = rewrite.data(), *end = s + rewrite.size();
-       s < end; s++) {
-    if (*s != '\\') {
-      out->push_back(*s);
-      continue;
-    }
-    s++;
-    int c = (s < end) ? *s : -1;
-    if (isdigit(c)) {
-      int n = (c - '0');
-      if (n >= veclen) {
-        if (options_.log_errors()) {
-          LOG(ERROR) << "requested group " << n
-                     << " in regexp " << rewrite.data();
-        }
-        return false;
-      }
-      StringPiece snip = vec[n];
-      if (snip.size() > 0)
-        out->append(snip.data(), snip.size());
-    } else if (c == '\\') {
-      out->push_back('\\');
-    } else {
-      if (options_.log_errors())
-        LOG(ERROR) << "invalid rewrite pattern: " << rewrite.data();
-      return false;
-    }
-  }
   return true;
 }
 
@@ -1059,6 +869,62 @@ bool RE2::CheckRewriteString(const StringPiece& rewrite, string* error) const {
                   "but the regexp only has %d parenthesized subexpressions.",
                   max_token, NumberOfCapturingGroups());
     return false;
+  }
+  return true;
+}
+
+// Returns the maximum submatch needed for the rewrite to be done by Replace().
+// E.g. if rewrite == "foo \\2,\\1", returns 2.
+int RE2::MaxSubmatch(const StringPiece& rewrite) {
+  int max = 0;
+  for (const char *s = rewrite.data(), *end = s + rewrite.size();
+       s < end; s++) {
+    if (*s == '\\') {
+      s++;
+      int c = (s < end) ? *s : -1;
+      if (isdigit(c)) {
+        int n = (c - '0');
+        if (n > max)
+          max = n;
+      }
+    }
+  }
+  return max;
+}
+
+// Append the "rewrite" string, with backslash subsitutions from "vec",
+// to string "out".
+bool RE2::Rewrite(string* out,
+                  const StringPiece& rewrite,
+                  const StringPiece* vec,
+                  int veclen) const {
+  for (const char *s = rewrite.data(), *end = s + rewrite.size();
+       s < end; s++) {
+    if (*s != '\\') {
+      out->push_back(*s);
+      continue;
+    }
+    s++;
+    int c = (s < end) ? *s : -1;
+    if (isdigit(c)) {
+      int n = (c - '0');
+      if (n >= veclen) {
+        if (options_.log_errors()) {
+          LOG(ERROR) << "requested group " << n
+                     << " in regexp " << rewrite.data();
+        }
+        return false;
+      }
+      StringPiece snip = vec[n];
+      if (snip.size() > 0)
+        out->append(snip.data(), snip.size());
+    } else if (c == '\\') {
+      out->push_back('\\');
+    } else {
+      if (options_.log_errors())
+        LOG(ERROR) << "invalid rewrite pattern: " << rewrite.data();
+      return false;
+    }
   }
   return true;
 }
