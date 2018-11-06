@@ -1,7 +1,7 @@
 .\" -*- nroff -*-
 .\" Copyright © 2015-2018 Inria.  All rights reserved.
 .\" See COPYING in top-level directory.
-.TH HWLOC-DUMP-HWDATA "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
+.TH HWLOC-DUMP-HWDATA "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
 .SH NAME
 hwloc-dump-hwdata \- Dump topology and locality information from hardware tables
 .
@@ -21,7 +21,7 @@ hwloc-dump-hwdata \- Dump topology and locality information from hardware tables
 .TP 10
 \fB\-o <dir>\fR
 save output files to directory <dir> instead of the default
-\fI#RUNSTATEDIR#/hwloc/\fR that was specified at configure time.
+\fI%RUNSTATEDIR%/hwloc/\fR that was specified at configure time.
 
 You may want to set the HWLOC_DUMPED_HWDATA_DIR environment variable
 as well so that the hwloc library looks for dumped files in that same

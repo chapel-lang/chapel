@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2013, 2015 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -466,14 +466,22 @@ lstopo_prepare_custom_styles(struct lstopo_output *loutput, hwloc_obj_t obj)
 	s->bg.b = forceb & 255;
 	lud->style_set |= LSTOPO_STYLE_BG;
 	loutput->methods->declare_color(loutput, s->bg.r, s->bg.g, s->bg.b);
-	s->t.r = s->t.g = s->t.b = (s->bg.r + s->bg.g + s->bg.b < 0xff) ? 0xff : 0;
+	/* if there's no style for text, make sure it's not dark over dark bg */
+	if (!(lud->style_set & LSTOPO_STYLE_T)) {
+	  s->t.r = s->t.g = s->t.b = (s->bg.r + s->bg.g + s->bg.b < 0xff) ? 0xff : 0;
+	  lud->style_set |= LSTOPO_STYLE_T;
+	}
     } else if (sscanf(stylestr, "Background2=#%02x%02x%02x", &forcer, &forceg, &forceb) == 3) {
 	s->bg2.r = forcer & 255;
 	s->bg2.g = forceg & 255;
 	s->bg2.b = forceb & 255;
 	lud->style_set |= LSTOPO_STYLE_BG2;
 	loutput->methods->declare_color(loutput, s->bg2.r, s->bg2.g, s->bg2.b);
-	s->t2.r = s->t2.g = s->t2.b = (s->bg2.r + s->bg2.g + s->bg2.b < 0xff) ? 0xff : 0;
+	/* if there's no style for text, make sure it's not dark over dark bg */
+	if (!(lud->style_set & LSTOPO_STYLE_T2)) {
+	  s->t2.r = s->t2.g = s->t2.b = (s->bg2.r + s->bg2.g + s->bg2.b < 0xff) ? 0xff : 0;
+	  lud->style_set |= LSTOPO_STYLE_T2;
+	}
       } else if (sscanf(stylestr, "Text=#%02x%02x%02x", &forcer, &forceg, &forceb) == 3) {
 	s->t.r = forcer & 255;
 	s->t.g = forceg & 255;
@@ -1252,7 +1260,7 @@ fig(hwloc_topology_t topology, struct draw_methods *methods, int logical, int le
   unsigned totwidth, totheight, offset, i;
   time_t t;
   char text[128];
-  char hostname[128] = "";
+  char hostname[122] = "";
   const char *forcedhostname = NULL;
   unsigned long hostname_size = sizeof(hostname);
 

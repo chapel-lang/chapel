@@ -1081,7 +1081,7 @@ hwloc___insert_object_by_cpuset(struct hwloc_topology *topology, hwloc_obj_t cur
         if (report_error) {
 	  char childstr[512];
 	  char objstr[512];
-	  char msg[1024];
+	  char msg[1100];
 	  hwloc__report_error_format_obj(objstr, sizeof(objstr), obj);
 	  hwloc__report_error_format_obj(childstr, sizeof(childstr), child);
 	  snprintf(msg, sizeof(msg), "%s intersects with %s without inclusion!", objstr, childstr);
