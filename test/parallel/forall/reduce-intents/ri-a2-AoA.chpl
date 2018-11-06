@@ -1,20 +1,30 @@
 // Timing of in- and reduce-intents for an array-of-arrays.
 // Note that it may somewhat depend on how the loop body is optimized.
 
-use Time;
 
-config var n_bodies = 10000;
+config const n_bodies = 100;
 const pDomain = {0..#n_bodies};
-type vec3 = [0..#3] real;
 
-// The arrays' names are insignificant.
-var forces: [pDomain] vec3;
-var velocities: [pDomain] vec3;
-
+config const printTimings = false;
+use Time;
 var timer: Timer;
 var snapshot, completion: real;
 proc snapTime() { snapshot = timer.elapsed(); }
 timer.start();
+proc reportTimings(message:string) {
+  if printTimings {
+    writeln(message, " - startup: ", snapshot);
+    writeln(message, " - completion: ", completion);
+  }
+}
+
+/////////// arrays of arrays ///////////
+
+// The arrays' names are insignificant.
+
+type vec3 = [0..#3] real;
+var forces: [pDomain] vec3;
+var velocities: [pDomain] vec3;
 
 // in-intent, vec3
 timer.clear();
@@ -23,8 +33,7 @@ forall q in pDomain with (in forces) {
     snapTime();
 }
 completion = timer.elapsed();
-writeln("vec3 in-intent - startup: ", snapshot);
-writeln("vec3 in-intent - completion: ", completion);
+reportTimings("vec3 in-intent");
 
 // reduce intent, vec3
 timer.clear();
@@ -33,10 +42,10 @@ forall q in pDomain with (+ reduce velocities) {
     snapTime();
 }
 completion = timer.elapsed();
-writeln("vec3 reduce intent - startup: ", snapshot);
-writeln("vec3 reduce intent - completion: ", completion);
+reportTimings("vec3 reduce intent");
 
-// The arrays' names are insignificant.
+/////////// arrays of tuples ///////////
+
 type tup3 = 3*real;
 var positions: [pDomain] tup3;
 var masses: [pDomain] tup3;
@@ -48,8 +57,7 @@ forall q in pDomain with (in positions) {
     snapTime();
 }
 completion = timer.elapsed();
-writeln("tup3 in-intent - startup: ", snapshot);
-writeln("tup3 in-intent - completion: ", completion);
+reportTimings("tup3 in-intent");
 
 // reduce intent, tup3
 timer.clear();
@@ -58,5 +66,8 @@ forall q in pDomain with (+ reduce masses) {
     snapTime();
 }
 completion = timer.elapsed();
-writeln("tup3 reduce intent - startup: ", snapshot);
-writeln("tup3 reduce intent - completion: ", completion);
+reportTimings("tup3 reduce intent");
+
+/////////// done ///////////
+
+writeln("done");
