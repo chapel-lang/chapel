@@ -33,33 +33,37 @@ module NetworkAtomics {
     var _v: int(64);
 
     inline proc _localeid(): int(32) {
-      return this.locale.id:int(32);
+      return _v.locale.id:int(32);
+    }
+
+    inline proc _addr(): c_void_ptr {
+      return __primitive("_wide_get_addr", _v);
     }
 
     inline proc const read(order:memory_order = memory_order_seq_cst): bool {
       pragma "insert line file info" extern externFunc("get", int(64))
-        proc atomic_get(ref result:int(64), l:int(32), const ref obj:int(64)): void;
+        proc atomic_get(ref result:int(64), l:int(32), const obj:c_void_ptr): void;
 
       var ret: int(64);
-      atomic_get(ret, _localeid(), _v);
+      atomic_get(ret, _localeid(), _addr());
       return ret:bool;
     }
 
     inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
       pragma "insert line file info" extern externFunc("put", int(64))
-        proc atomic_put(ref desired:int(64), l:int(32), ref obj:int(64)): void;
+        proc atomic_put(ref desired:int(64), l:int(32), obj:c_void_ptr): void;
 
       var v = value:int(64);
-      atomic_put(v, _localeid(), _v);
+      atomic_put(v, _localeid(), _addr());
     }
 
     inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
       pragma "insert line file info" extern externFunc("xchg", int(64))
-        proc atomic_xchg(ref desired:int(64), l:int(32), ref obj:int(64), ref result:int(64)): void;
+        proc atomic_xchg(ref desired:int(64), l:int(32), obj:c_void_ptr, ref result:int(64)): void;
 
       var ret:int(64);
       var v = value:int(64);
-      atomic_xchg(v, _localeid(), _v, ret);
+      atomic_xchg(v, _localeid(), _addr(), ret);
       return ret:bool;
     }
 
@@ -73,12 +77,12 @@ module NetworkAtomics {
 
     inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
       pragma "insert line file info" extern externFunc("cmpxchg", int(64))
-        proc atomic_cmpxchg(ref expected:int(64), ref desired:int(64), l:int(32), ref obj:int(64), ref result:bool(32)): void;
+        proc atomic_cmpxchg(ref expected:int(64), ref desired:int(64), l:int(32), obj:c_void_ptr, ref result:bool(32)): void;
 
       var ret:bool(32);
       var te = expected:int(64);
       var td = desired:int(64);
-      atomic_cmpxchg(te, td, _localeid(), _v, ret);
+      atomic_cmpxchg(te, td, _localeid(), _addr(), ret);
       return ret:bool;
     }
 
@@ -119,33 +123,37 @@ module NetworkAtomics {
     var _v: T;
 
     inline proc _localeid(): int(32) {
-      return this.locale.id:int(32);
+      return _v.locale.id:int(32);
+    }
+
+    inline proc _addr(): c_void_ptr {
+      return __primitive("_wide_get_addr", _v);
     }
 
     inline proc const read(order:memory_order = memory_order_seq_cst): T {
       pragma "insert line file info" extern externFunc("get", T)
-        proc atomic_get(ref result:T, l:int(32), const ref obj:T): void;
+        proc atomic_get(ref result:T, l:int(32), const obj:c_void_ptr): void;
 
       var ret:T;
-      atomic_get(ret, _localeid(), _v);
+      atomic_get(ret, _localeid(), _addr());
       return ret;
     }
 
     inline proc write(value:T, order:memory_order = memory_order_seq_cst): void {
       pragma "insert line file info" extern externFunc("put", T)
-        proc atomic_put(ref desired:T, l:int(32), ref obj:T): void;
+        proc atomic_put(ref desired:T, l:int(32), obj:c_void_ptr): void;
 
       var v = value;
-      atomic_put(v, _localeid(), _v);
+      atomic_put(v, _localeid(), _addr());
     }
 
     inline proc exchange(value:T, order:memory_order = memory_order_seq_cst): T {
       pragma "insert line file info" extern externFunc("xchg", T)
-        proc atomic_xchg(ref desired:T, l:int(32), ref obj:T, ref result:T): void;
+        proc atomic_xchg(ref desired:T, l:int(32), obj:c_void_ptr, ref result:T): void;
 
       var ret:T;
       var v = value;
-      atomic_xchg(v, _localeid(), _v, ret);
+      atomic_xchg(v, _localeid(), _addr(), ret);
       return ret;
     }
 
@@ -159,109 +167,109 @@ module NetworkAtomics {
 
     inline proc compareExchangeStrong(expected:T, desired:T, order:memory_order = memory_order_seq_cst): bool {
       pragma "insert line file info" extern externFunc("cmpxchg", T)
-        proc atomic_cmpxchg(ref expected:T, ref desired:T, l:int(32), ref obj:T, ref result:bool(32)): void;
+        proc atomic_cmpxchg(ref expected:T, ref desired:T, l:int(32), obj:c_void_ptr, ref result:bool(32)): void;
 
       var ret:bool(32);
       var te = expected;
       var td = desired;
-      atomic_cmpxchg(te, td, _localeid(), _v, ret);
+      atomic_cmpxchg(te, td, _localeid(), _addr(), ret);
       return ret:bool;
     }
 
     inline proc fetchAdd(value:T, order:memory_order = memory_order_seq_cst): T {
       pragma "insert line file info" extern externFunc("fetch_add", T)
-        proc atomic_fetch_add(ref op:T, l:int(32), ref obj:T, ref result:T): void;
+        proc atomic_fetch_add(ref op:T, l:int(32), obj:c_void_ptr, ref result:T): void;
 
       var ret:T;
       var v = value;
-      atomic_fetch_add(v, _localeid(), _v, ret);
+      atomic_fetch_add(v, _localeid(), _addr(), ret);
       return ret;
     }
 
     inline proc add(value:T, order:memory_order = memory_order_seq_cst): void {
       pragma "insert line file info" extern externFunc("add", T)
-        proc atomic_add(ref op:T, l:int(32), ref obj:T): void;
+        proc atomic_add(ref op:T, l:int(32), obj:c_void_ptr): void;
 
       var v = value;
-      atomic_add(v, _localeid(), _v);
+      atomic_add(v, _localeid(), _addr());
     }
 
     inline proc fetchSub(value:T, order:memory_order = memory_order_seq_cst): T {
       pragma "insert line file info" extern externFunc("fetch_sub", T)
-        proc atomic_fetch_sub(ref op:T, l:int(32), ref obj:T, ref result:T): void;
+        proc atomic_fetch_sub(ref op:T, l:int(32), obj:c_void_ptr, ref result:T): void;
 
       var ret:T;
       var v = value;
-      atomic_fetch_sub(v, _localeid(), _v, ret);
+      atomic_fetch_sub(v, _localeid(), _addr(), ret);
       return ret;
     }
 
     inline proc sub(value:T, order:memory_order = memory_order_seq_cst): void {
       pragma "insert line file info" extern externFunc("sub", T)
-        proc atomic_sub(ref op:T, l:int(32), ref obj:T): void;
+        proc atomic_sub(ref op:T, l:int(32), obj:c_void_ptr): void;
 
       var v = value;
-      atomic_sub(v, _localeid(), _v);
+      atomic_sub(v, _localeid(), _addr());
     }
 
     inline proc fetchOr(value:T, order:memory_order = memory_order_seq_cst): T {
       if !isIntegral(T) then compilerError("fetchOr is only defined for integer atomic types");
       pragma "insert line file info" extern externFunc("fetch_or", T)
-        proc atomic_fetch_or(ref op:T, l:int(32), ref obj:T, ref result:T): void;
+        proc atomic_fetch_or(ref op:T, l:int(32), obj:c_void_ptr, ref result:T): void;
 
       var ret:T;
       var v = value;
-      atomic_fetch_or(v, _localeid(), _v, ret);
+      atomic_fetch_or(v, _localeid(), _addr(), ret);
       return ret;
     }
 
     inline proc or(value:T, order:memory_order = memory_order_seq_cst): void {
       if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
       pragma "insert line file info" extern externFunc("or", T)
-        proc atomic_or(ref op:T, l:int(32), ref obj:T): void;
+        proc atomic_or(ref op:T, l:int(32), obj:c_void_ptr): void;
 
       var v = value;
-      atomic_or(v, _localeid(), _v);
+      atomic_or(v, _localeid(), _addr());
     }
 
     inline proc fetchAnd(value:T, order:memory_order = memory_order_seq_cst): T {
       if !isIntegral(T) then compilerError("fetchAnd is only defined for integer atomic types");
       pragma "insert line file info" extern externFunc("fetch_and", T)
-        proc atomic_fetch_and(ref op:T, l:int(32), ref obj:T, ref result:T): void;
+        proc atomic_fetch_and(ref op:T, l:int(32), obj:c_void_ptr, ref result:T): void;
 
       var ret:T;
       var v = value;
-      atomic_fetch_and(v, _localeid(), _v, ret);
+      atomic_fetch_and(v, _localeid(), _addr(), ret);
       return ret;
     }
 
     inline proc and(value:T, order:memory_order = memory_order_seq_cst): void {
       if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
       pragma "insert line file info" extern externFunc("and", T)
-        proc atomic_and(ref op:T, l:int(32), ref obj:T): void;
+        proc atomic_and(ref op:T, l:int(32), obj:c_void_ptr): void;
 
       var v = value;
-      atomic_and(v, _localeid(), _v);
+      atomic_and(v, _localeid(), _addr());
     }
 
     inline proc fetchXor(value:T, order:memory_order = memory_order_seq_cst): T {
       if !isIntegral(T) then compilerError("fetchXor is only defined for integer atomic types");
       pragma "insert line file info" extern externFunc("fetch_xor", T)
-        proc atomic_fetch_xor(ref op:T, l:int(32), ref obj:T, ref result:T): void;
+        proc atomic_fetch_xor(ref op:T, l:int(32), obj:c_void_ptr, ref result:T): void;
 
       var ret:T;
       var v = value;
-      atomic_fetch_xor(v, _localeid(), _v, ret);
+      atomic_fetch_xor(v, _localeid(), _addr(), ret);
       return ret;
     }
 
     inline proc xor(value:T, order:memory_order = memory_order_seq_cst): void {
       if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
       pragma "insert line file info" extern externFunc("xor", T)
-        proc atomic_xor(ref op:T, l:int(32), ref obj:T): void;
+        proc atomic_xor(ref op:T, l:int(32), obj:c_void_ptr): void;
 
       var v = value;
-      atomic_xor(v, _localeid(), _v);
+      atomic_xor(v, _localeid(), _addr());
     }
 
     inline proc const waitFor(value:T, order:memory_order = memory_order_seq_cst): void {
