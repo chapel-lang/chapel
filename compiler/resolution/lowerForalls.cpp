@@ -19,6 +19,8 @@
 
 #include "astutil.h"
 #include "AstVisitorTraverse.h"
+#include "CForLoop.h"
+#include "ForLoop.h"
 #include "ForallStmt.h"
 #include "implementForallIntents.h"
 #include "passes.h"
@@ -355,6 +357,19 @@ public:
     // expandForall() takes care of descending into 'node'
     return false;
   }
+
+  virtual bool enterCForLoop(CForLoop* node) {
+    if (forall->vectorizeable() && node->isOrderIndependent()) {
+      node->vectorizeableSet(true);
+    }
+    return true;
+  }
+  virtual bool enterForLoop(ForLoop* node) {
+    if (forall->vectorizeable() && node->isOrderIndependent()) {
+      node->vectorizeableSet(true);
+    }
+    return true;
+  }
 };
 
 // constructor for the outer level
@@ -589,7 +604,7 @@ static ArgSymbol* newExtraFormal(ShadowVarSymbol* svar, int ix,
       if (eActual->isConstValWillNotChange())
         addFlagImm = true;
     }
-    
+
     ArgSymbol* eFormal = new ArgSymbol(efInt, svar->name, efType);
 
     if (eFormal->isRef() &&

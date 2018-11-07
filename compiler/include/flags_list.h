@@ -335,6 +335,7 @@ symbolFlag( FLAG_RUNTIME_TYPE_VALUE , npr, "runtime type value" , "associated ru
 symbolFlag( FLAG_SAFE, ypr, "safe", "safe (activate lifetime checking)")
 symbolFlag( FLAG_SCOPE, npr, "scope", "scoped (lifetime checking like a local variable)")
 symbolFlag( FLAG_SHOULD_NOT_PASS_BY_REF, npr, "should not pass by ref", "this symbol should be passed by value (not by reference) for performance, not for correctness")
+symbolFlag( FLAG_SSA_REGISTER, npr, "llvm ssa register", "this symbol must be represented in LLVM as an SSA register")
 symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
 // Based on how this is used, I suggest renaming it to return_value_has_initializer
 // or something similar <hilde>.
@@ -357,6 +358,7 @@ symbolFlag( FLAG_UNCHECKED_THROWS,  ypr, "unchecked throws" , "function throws b
 symbolFlag( FLAG_UNREF_FN,  ypr, "unref fn" , "function to remove reference fields from tuples or copy array slices when returning")
 symbolFlag( FLAG_UNSAFE,  ypr, "unsafe" , "unsafe (disable lifetime checking)")
 symbolFlag( FLAG_VECTORIZE_YIELDING_LOOPS, ypr, "vectorize yielding loops", "used to explicitly vectorize yielding loops in iterators" )
+symbolFlag( FLAG_VECTORIZATION_HAZARD_IF_NOT_REGISTER, npr, "vectorization hazard if not register", "marks symbols that are vectorization hazards if they do not end up in a register" )
 symbolFlag( FLAG_VIRTUAL , npr, "virtual" , ncm )
 symbolFlag( FLAG_VOID_NO_RETURN_VALUE, npr, "no return value for void", "function does not return a value if the return type is void" )
 // Used to mark where a compiler generated flag was removed (but is desired

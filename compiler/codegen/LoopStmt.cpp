@@ -22,12 +22,64 @@
 #include "codegen.h"
 #include "driver.h"
 
-// If vectorization is enabled and this loop is order independent, codegen
-// CHPL_PRAGMA_IVDEP. This method is a no-op if vectorization is off, or the
-// loop is not order independent.
-void LoopStmt::codegenOrderIndependence()
+void LoopStmt::fixVectorizeable()
 {
-  if (fNoVectorize == false && isOrderIndependent())
+  if (!this->isVectorizeable())
+    return; // nothing more to do!
+
+  // Check for DefExprs in the loop body that would present challenges
+  // for vectorization.
+
+  // DefExprs for values that we expect to be represented as registers
+  // are OK.
+
+  // This runs late in the compiler because we want to do this check
+  // after inlining and other late simplifications have occured.
+  bool addressTaken = false;
+  int ndefs = 0;
+
+  for_alist(expr, body) {
+    if (DefExpr* def = toDefExpr(expr)) {
+      Symbol* sym = def->sym;
+      // Decide if it could be a register
+      // (Note, these rules are accurate for LLVM but
+      //  serve as a reasonable guess for a C compiler)
+      for_SymbolSymExprs(se, sym) {
+        if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          // was the address taken?
+          // TODO: get svec member, get member
+          if (call->isPrimitive(PRIM_ADDR_OF) ||
+              call->isPrimitive(PRIM_SET_REFERENCE)) {
+            addressTaken = true;
+          } else if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
+            ArgSymbol* formal = actual_to_formal(se);
+            if ((formal->intent & FLAG_REF))
+              addressTaken = true;
+          }
+
+          // was the symbol set?
+          // TODO: set svec member, set member
+          if (call->isPrimitive(PRIM_MOVE) && call->get(1) == se)
+            ndefs++;
+          // Assigning to a ref doesn't change the ref itself
+          if (call->isPrimitive(PRIM_ASSIGN) && !se->isRef() && call->get(1) == se)
+            ndefs++;
+        }
+      }
+    }
+  }
+
+  if (addressTaken || ndefs > 1)
+    this->vectorizeableSet(false);
+}
+
+// If vectorization is enabled and this loop is marked for vectorization,
+// codegen CHPL_PRAGMA_IVDEP.
+// This method is a no-op if vectorization is off, or the
+// loop is not marked for vectorization.
+void LoopStmt::codegenVectorHint()
+{
+  if (fNoVectorize == false && isVectorizeable())
   {
     GenInfo* info = gGenInfo;
 

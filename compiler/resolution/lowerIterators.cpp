@@ -18,10 +18,12 @@
  */
 
 #include "astutil.h"
+#include "AstVisitorTraverse.h"
 #include "CForLoop.h"
 #include "driver.h"
 #include "errorHandling.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
 #include "oldCollectors.h"
@@ -214,6 +216,154 @@ static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
       nonLeaderParCheckInt(taskFn, !taskFn->hasFlag(FLAG_ON));
     }
   }
+}
+
+static bool isCallVectorHazard(CallExpr* call,
+                               std::map<FnSymbol*, bool> &fnHasVectorHazard);
+
+namespace {
+  class VectorHazardVisitor : public AstVisitorTraverse {
+    public:
+      VectorHazardVisitor (std::map<FnSymbol*, bool> &fnHasVectorHazard, bool markDefs);
+      virtual bool enterCallExpr (CallExpr*  node);
+      virtual bool enterDefExpr (DefExpr*  node);
+
+      bool hazard;
+      bool markDefs;
+      std::map<FnSymbol*, bool> &fnHasVectorHazard;
+  };
+
+  VectorHazardVisitor::VectorHazardVisitor(std::map<FnSymbol*, bool>
+      &fnHasVectorHazard, bool markDefs) : hazard(false), markDefs(markDefs), fnHasVectorHazard(fnHasVectorHazard)
+  {
+  }
+
+  bool VectorHazardVisitor::enterCallExpr(CallExpr*  node) {
+    hazard |= isCallVectorHazard(node, fnHasVectorHazard);
+    return true;
+  }
+  bool VectorHazardVisitor::enterDefExpr(DefExpr*  node) {
+    Symbol* sym = node->sym;
+
+    /*
+    bool addressTaken = false;
+    for_SymbolSymExprs(se, sym) {
+      // Wishing we could run this after optimization...
+      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        if (call->isPrimitive(PRIM_ADDR_OF) ||
+            call->isPrimitive(PRIM_SET_REFERENCE)) {
+          addressTaken = true;
+        } else if (FnSymbol* fn = resolvedOrVirtualFunction(call)) {
+          ArgSymbol* formal = actual_to_formal(se);
+          if ((formal->intent & FLAG_REF))
+            addressTaken = true;
+        }
+      }
+    }
+
+    notSsaDefs = true;*/
+
+    // TODO: don't do this; instead treat all syms this way
+    // during code generation? Other than the induction variable, at
+    // least?
+    if (markDefs)
+      sym->addFlag(FLAG_VECTORIZATION_HAZARD_IF_NOT_REGISTER);
+    return true;
+  }
+};
+
+static bool doesFnHaveVectorHazard(FnSymbol* fn,
+                                   std::map<FnSymbol*, bool> &fnHasVectorHazard)
+{
+  if (fnHasVectorHazard.count(fn) != 0)
+    return fnHasVectorHazard[fn];
+
+  // Mark it as a hazard if there is recursion
+  fnHasVectorHazard[fn] = true;
+
+  TypeSymbol* thisTypeSymbol = NULL;
+  if (fn->_this != NULL)
+    thisTypeSymbol = fn->_this->getValType()->symbol;
+
+  bool hazard = false;
+  if (fn->hasFlag(FLAG_EXTERN)) {
+    // Who knows what extern functions do!
+    // Note that this could check against a list of OK runtime functions
+    hazard = true;
+  } else if (thisTypeSymbol != NULL &&
+             (thisTypeSymbol->hasFlag(FLAG_ATOMIC_TYPE) ||
+              thisTypeSymbol->hasFlag(FLAG_SYNC) ||
+              thisTypeSymbol->hasFlag(FLAG_SINGLE))) {
+    // methods on synchronization constructs do synchronization!
+    hazard = true;
+  } else {
+    // Check what the function body includes.
+    // Checks marks vectorization hazards for the event it's inlined.
+    VectorHazardVisitor v(fnHasVectorHazard, true);
+    fn->body->accept(&v);
+
+    hazard = v.hazard;
+  }
+
+  fnHasVectorHazard[fn] = hazard;
+  return hazard;
+}
+
+static bool isCallVectorHazard(CallExpr* call,
+                               std::map<FnSymbol*, bool> &fnHasVectorHazard)
+{
+  bool hazard = false;
+  if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+    // Could be supported in the future by investigating all
+    // overrides.
+    hazard = true;
+  } if (FnSymbol* calledFn = call->resolvedFunction()) {
+    hazard |= doesFnHaveVectorHazard(calledFn, fnHasVectorHazard);
+  }
+  return hazard;
+}
+
+void markVectorizeableForallLoops()
+{
+  std::map<FnSymbol*, bool> fnHasVectorHazard;
+
+  forv_Vec(ForallStmt, forall, gForallStmts) {
+    // Consider functions called in the loop body.
+    // Do they present any of the following hazards?
+    //   * synchronization (use of sync variables or atomics)
+    //   * reductions that aren't known to work with the vectorizer
+
+    bool hazard = false;
+
+    // Does the loop body have any calls that are vectorization hazards?
+    VectorHazardVisitor v(fnHasVectorHazard, true);
+    forall->loopBody()->accept(&v);
+    hazard = v.hazard;
+
+    // TODO:
+    // Also consider defs inside the loop as hazards
+    // e.g.
+    //  forall i in 1..10 {
+    //    var x: int;
+    //  }
+    // Such defs would need to be cloned per vector lane and we're not
+    // ready to do that yet.
+    // TODO: Handle this after inlining and other optimization.
+    // For now we mark them with FLAG_VECTORIZATION_HAZARD_IF_NOT_REGISTER
+
+    // Does the loop use a reduction type that is not vectorizeable yet?
+    for_shadow_vars (shadow, temp, forall) {
+      if (shadow->isReduce()) {
+        if (Expr* e = shadow->reduceOpExpr()) {
+          nprint_view(e);
+        }
+      }
+    }
+    if (hazard == false)
+      forall->setVectorizeable();
+  }
+
+  // TODO - handle for loops marked as order independent
 }
 
 
@@ -1291,6 +1441,7 @@ expandIteratorInline(ForLoop* forLoop) {
     std::vector<SymExpr*> symExprs;
 
     bool isOrderIndependent = forLoop->isOrderIndependent();
+    bool isVectorizeable = forLoop->isVectorizeable();
     if (preserveInlinedLineNumbers == false) {
       reset_ast_loc(ibody, forLoop);
     }
@@ -1303,7 +1454,7 @@ expandIteratorInline(ForLoop* forLoop) {
     // after the ibody replaces the forLoop since findEnclosingLoop() requires
     // that its argument be in the AST. It must occur before yields are
     // replaced in the functions below though.
-    if (isOrderIndependent) {
+    if (isOrderIndependent || isVectorizeable) {
       std::vector<CallExpr*> callExprs;
 
       collectCallExprs(ibody, callExprs);
@@ -1313,6 +1464,7 @@ expandIteratorInline(ForLoop* forLoop) {
           if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
             if (loop->isCoforallLoop() == false) {
               loop->orderIndependentSet(isOrderIndependent);
+              loop->vectorizeableSet(isVectorizeable);
             }
           }
         }
@@ -1973,6 +2125,7 @@ expandForLoop(ForLoop* forLoop) {
     setupSimultaneousIterators(iterators, indices, iterator, index, forLoop);
 
     bool allOrderIndependent = true;
+    bool allVectorizeable = true;
     // For each iterator we add the zip* functions in the appropriate place and
     // if bounds checking was on, we insert the code for that. Note that this
     // code handles iterators that have regular loops, c for loops, and
@@ -2073,18 +2226,22 @@ expandForLoop(ForLoop* forLoop) {
       // If inlined, the iterator's loop will be order independent if it was
       // independent prior to inlining or the forLoop is order independent
       bool curOrderIndependent = false;
+      bool curVectorizeable = false;
       if (CallExpr* singleLoopYield = isSingleLoopIterator(iterFn, asts)) {
         if (LoopStmt* loop = LoopStmt::findEnclosingLoop(singleLoopYield)) {
           curOrderIndependent = loop->isOrderIndependent() || forLoop->isOrderIndependent();
+          curVectorizeable = loop->isVectorizeable() || forLoop->isVectorizeable();
         }
       }
       allOrderIndependent = allOrderIndependent && curOrderIndependent;
+      allVectorizeable = allVectorizeable && curVectorizeable;
     }
 
     // The loop will be order independent if all the iters it zips are order
     // independent (all iters will be inlined and were all marked order
     // independent or the forLoop was marked independent prior zippering.)
     forLoop->orderIndependentSet(allOrderIndependent);
+    forLoop->vectorizeableSet(allVectorizeable);
 
     // 2015-02-23 hilde:
     // TODO: I think this wants to be insertBefore, and moved before the call
@@ -2502,6 +2659,8 @@ static void removeUncalledIterators()
 
 void lowerIterators() {
   nonLeaderParCheck();
+
+  markVectorizeableForallLoops();
 
   computeRecursiveIteratorSet();
 

@@ -880,7 +880,7 @@ void AstDump::write(bool spaceBefore, const char* text, bool spaceAfter) {
 }
 
 void AstDump::printBlockID(Expr* expr) {
-  if (fdump_html_print_block_IDs)
+  if (fLogIds)
     fprintf(mFP, " %d", expr->id);
 }
 

@@ -121,7 +121,8 @@ bool fNoRemoteSerialization = false;
 bool fNoRemoveCopyCalls = false;
 bool fNoOptimizeRangeIteration = false;
 bool fNoOptimizeLoopIterators = false;
-bool fNoVectorize = true;
+bool fNoVectorize = false; // adjusted in postVectorize
+static bool fYesVectorize = false;
 bool fNoGlobalConstOpt = false;
 bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
@@ -646,6 +647,14 @@ static void verifySaveLibDir(const ArgumentDescription* desc, const char* unused
   setLibmode(desc, unused);
 }
 
+static void setVectorize(const ArgumentDescription* desc, const char* unused)
+{
+  if (fNoVectorize)
+    fYesVectorize = false;
+  else
+    fYesVectorize = true;
+}
+
 static void turnOffChecks(const ArgumentDescription* desc, const char* unused) {
   fNoNilChecks    = true;
   fNoBoundsChecks = true;
@@ -872,7 +881,7 @@ static ArgumentDescription arg_desc[] = {
  {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", NULL},
  {"use-noinit", ' ', NULL, "Enable [disable] ability to skip default initialization through the keyword noinit", "N", &fUseNoinit, NULL, NULL},
  {"infer-local-fields", ' ', NULL, "Enable [disable] analysis to infer local fields in classes and records (experimental)", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", NULL},
- {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", NULL},
+ {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", setVectorize},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following run-time checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
@@ -1292,6 +1301,24 @@ static void postLocal() {
   if (!fUserSetLocal) fLocal = !strcmp(CHPL_COMM, "none");
 }
 
+static void postVectorize() {
+  // Make sure fYesVectorize and fNoVectorize are respected
+  // but if neither is set, compute the default (based on --llvm or not)
+  if (fNoVectorize) {
+    fYesVectorize = false;
+  } else if (fYesVectorize) {
+    fNoVectorize = false;
+  } else if (llvmCodegen) {
+    // LLVM code generator defaults to enabling vectorization
+    fYesVectorize = true;
+    fNoVectorize = false;
+  } else {
+    // C backend defaults to no vectorization
+    fYesVectorize = false;
+    fNoVectorize = true;
+  }
+}
+
 static void setMaxCIndentLen() {
   bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
@@ -1332,6 +1359,8 @@ static void postprocess_args() {
   setMaxCIndentLen();
 
   postLocal();
+
+  postVectorize();
 
   postTaskTracking();
 

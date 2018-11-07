@@ -90,6 +90,8 @@ GenRet CForLoop::codegen()
 
   codegenStmt(this);
 
+  fixVectorizeable();
+
   if (outfile)
   {
     BlockStmt*  initBlock = initBlockGet();
@@ -109,7 +111,7 @@ GenRet CForLoop::codegen()
     std::string incr      = codegenCForLoopHeader(incrBlock->copy());
     std::string hdr       = "for (" + init + "; " + test + "; " + incr + ") ";
 
-    codegenOrderIndependence();
+    codegenVectorHint();
 
     info->cStatements.push_back(hdr);
 
@@ -188,7 +190,7 @@ GenRet CForLoop::codegen()
     info->lvt->addLayer();
 
     llvm::MDNode* loopMetadata = nullptr;
-    if(fNoVectorize == false && isOrderIndependent()) {
+    if(fNoVectorize == false && isVectorizeable()) {
       bool addVectorizeEnable = false;
 #ifdef HAVE_LLVM_RV
       addVectorizeEnable = true;

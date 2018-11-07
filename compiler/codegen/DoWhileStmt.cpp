@@ -42,9 +42,11 @@ GenRet DoWhileStmt::codegen()
 
   codegenStmt(this);
 
+  fixVectorizeable();
+
   if (outfile)
   {
-    codegenOrderIndependence();
+    codegenVectorHint();
 
     info->cStatements.push_back("do ");
 
