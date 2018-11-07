@@ -38,62 +38,10 @@ module ExternalArray {
 
   extern proc chpl_free_external_array(x: chpl_external_array);
 
-  class ExternDist: BaseDist {
-
-    override proc dsiNewRectangularDom(param rank: int = 1, type idxType = int,
-                                       param stridable: bool = false, inds) {
-      if (rank != 1) {
-        halt("external arrays are only allowed a rank of 1 right now");
-      }
-      if (stridable) {
-        halt("external arrays are not allowed to be stridable right now");
-      }
-      if (!isIntegralType(idxType)) {
-        halt("external arrays only allow integral indices");
-      }
-      if (inds.size != 1) {
-        halt("there should only be one set of indices, not multiple dimensions");
-      }
-      var r = inds(1);
-      // Allow empty arrays (which have the domain 1..0)
-      if (r.low != 0 && !(r.low == 1 && r.high == 0)) {
-        halt("non-empty external arrays always have a lower bound of 0");
-      }
-      var newdom = new unmanaged ExternDom(idxType,
-                                           r.size,
-                                           _to_unmanaged(this));
-      return newdom;
-    }
-
-    proc dsiClone() {
-      return _to_unmanaged(this);
-    }
-
-    proc trackDomains() param return false;
-    override proc dsiTrackDomains() return false;
-
-    proc singleton() param return true;
-
-    proc dsiIsLayout() param return true;
-  }
-
-  var defaultExternDist = new unmanaged ExternDist();
-
-  // Module deinit
-  proc deinit() {
-    delete defaultExternDist;
-  }
-
   class ExternDom: BaseRectangularDom {
     const size: uint; // We don't need a lower bound, it will always be zero
 
     const dist;
-
-    proc init(type idxType, size, dist) {
-      super.init(1, idxType, false);
-      this.size = size: uint;
-      this.dist = dist;
-    }
 
     proc dsiBuildArray(type eltType) {
       var data = chpl_make_external_array(c_sizeof(eltType), this.size);
@@ -105,84 +53,6 @@ module ExternalArray {
       init_elts(data.elts:c_ptr(eltType), this.size, eltType);
       return arr;
     }
-
-    proc domRange return 0..#size;
-
-    proc dsiNumIndices return size;
-
-    proc dsiGetIndices() return (domRange,);
-
-    proc dsiSetIndices(x) {
-      halt("Can't change the indices of an external array");
-    }
-
-    iter these() {
-      for i in domRange do
-        yield i;
-    }
-
-    iter these(param tag: iterKind) where tag == iterKind.standalone {
-      forall i in domRange do
-        yield i;
-    }
-
-    iter these(param tag: iterKind) where tag == iterKind.leader {
-      for followThis in domRange {
-        yield followThis;
-      }
-    }
-
-    iter these(param tag: iterKind, followThis)
-      where tag == iterKind.follower {
-      for i in domRange do
-        yield i;
-    }
-
-    override proc dsiMyDist() {
-      return dist;
-    }
-
-    proc linksDistribution() param return false;
-    override proc dsiLinksDistribution()     return false;
-
-    proc dsiMember(ind: rank*idxType) {
-      if (ind(1) < size && ind(1) >= 0) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    proc dsiDim(d: int) {
-      if (d != rank) {
-        halt("domains over external arrays have only one dimension");
-      }
-      return domRange;
-    }
-
-    // Necessary?
-    proc dsiDim(param d: int) {
-      if (d != rank) {
-        halt("domains over external arrays have only one dimension");
-      }
-      return dsiGetIndices();
-    }
-
-    proc dsiDims()
-      return dsiGetIndices();
-
-    proc dsiLow {
-      return 0;
-    }
-
-    proc dsiAssignDomain(rhs: domain, lhsPrivate: bool) {
-      chpl_assignDomainWithGetSetIndices(this, rhs);
-    }
-
-    // What about _getActualDom?  dsiDestroyDom?
-
-    // Prolly want the privatization stuff eventually, but I don't need it right
-    // now.
   }
 
   class ExternArr: BaseArr {
@@ -325,7 +195,7 @@ module ExternalArray {
 
   pragma "no copy return"
   proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
-    var dom = defaultExternDist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,));
+    var dom = defaultDist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,), true);
     dom._free_when_no_arrs = true;
     var arr = new unmanaged ExternArr(eltType,
                                       dom,
