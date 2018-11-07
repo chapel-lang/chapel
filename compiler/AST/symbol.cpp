@@ -435,12 +435,12 @@ Expr* Symbol::getInitialization() const {
         }
       }
 
-      INT_ASSERT(handled); // did we encounter new AST pattern?
+      if (handled == false)
+        break;
     }
     stmt = stmt->next;
   }
 
-  INT_FATAL(defPoint, "couldn't find initialization");
   return NULL;
 }
 

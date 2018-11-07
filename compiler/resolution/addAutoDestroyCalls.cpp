@@ -460,8 +460,10 @@ bool isAutoDestroyedVariable(Symbol* sym) {
     if (var->hasFlag(FLAG_NO_AUTO_DESTROY)     == false &&
         (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true ||
          var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true)) {
+      if (!var->isParameter() && !var->isType()) {
 
-      retval = (var->isType() == false && autoDestroyMap.get(var->type) != 0);
+        retval = (autoDestroyMap.get(var->type) != NULL);
+      }
     }
   }
 
