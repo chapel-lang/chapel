@@ -5,6 +5,10 @@
 # Old enough to support Ubuntu Trusty.
 cmake_minimum_required(VERSION 2.8.12)
 
+if(POLICY CMP0048)
+  cmake_policy(SET CMP0048 NEW)
+endif()
+
 project(RE2 CXX)
 include(CTest)
 
@@ -18,8 +22,8 @@ option(RE2_BUILD_TESTING "enable testing for RE2" ON)
 set(EXTRA_TARGET_LINK_LIBRARIES)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-  if(MSVC_VERSION LESS 1800)
-    message(FATAL_ERROR "you need Visual Studio 2013 or later")
+  if(MSVC_VERSION LESS 1900)
+    message(FATAL_ERROR "you need Visual Studio 2015 or later")
   endif()
   if(BUILD_SHARED_LIBS)
     # See http://www.kitware.com/blog/home/post/939 for details.
@@ -29,6 +33,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   # CMake defaults to /W3, but some users like /W4 (or /Wall) and /WX,
   # so we disable various warnings that aren't particularly helpful.
   add_compile_options(/wd4100 /wd4201 /wd4456 /wd4457 /wd4702 /wd4815)
+  # Without a byte order mark (BOM), Visual Studio assumes that the source
+  # file is encoded using the current user code page, so we specify UTF-8.
+  add_compile_options(/utf-8)
+elseif(CYGWIN OR MINGW)
+  # See https://stackoverflow.com/questions/38139631 for details.
+  add_compile_options(-std=gnu++11)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   add_compile_options(-std=c++11)
 endif()

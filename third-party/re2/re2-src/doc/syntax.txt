@@ -230,6 +230,7 @@ Zp	paragraph separator
 Zs	space separator
 
 Unicode character class names--scripts:
+Adlam
 Ahom
 Anatolian_Hieroglyphs
 Arabic
@@ -240,6 +241,7 @@ Bamum
 Bassa_Vah
 Batak
 Bengali
+Bhaiksuki
 Bopomofo
 Brahmi
 Braille
@@ -258,6 +260,7 @@ Cypriot
 Cyrillic
 Deseret
 Devanagari
+Dogra
 Duployan
 Egyptian_Hieroglyphs
 Elbasan
@@ -268,9 +271,11 @@ Gothic
 Grantha
 Greek
 Gujarati
+Gunjala_Gondi
 Gurmukhi
 Han
 Hangul
+Hanifi_Rohingya
 Hanunoo
 Hatran
 Hebrew
@@ -298,9 +303,13 @@ Lisu
 Lycian
 Lydian
 Mahajani
+Makasar
 Malayalam
 Mandaic
 Manichaean
+Marchen
+Masaram_Gondi
+Medefaidrin
 Meetei_Mayek
 Mende_Kikakui
 Meroitic_Cursive
@@ -313,7 +322,9 @@ Multani
 Myanmar
 Nabataean
 New_Tai_Lue
+Newa
 Nko
+Nushu
 Ogham
 Ol_Chiki
 Old_Hungarian
@@ -321,9 +332,11 @@ Old_Italic
 Old_North_Arabian
 Old_Permic
 Old_Persian
+Old_Sogdian
 Old_South_Arabian
 Old_Turkic
 Oriya
+Osage
 Osmanya
 Pahawh_Hmong
 Palmyrene
@@ -340,7 +353,9 @@ Shavian
 Siddham
 SignWriting
 Sinhala
+Sogdian
 Sora_Sompeng
+Soyombo
 Sundanese
 Syloti_Nagri
 Syriac
@@ -351,6 +366,7 @@ Tai_Tham
 Tai_Viet
 Takri
 Tamil
+Tangut
 Telugu
 Thaana
 Thai
@@ -361,6 +377,7 @@ Ugaritic
 Vai
 Warang_Citi
 Yi
+Zanabazar_Square
 
 Vim character classes:
 \i	identifier character NOT SUPPORTED vim
