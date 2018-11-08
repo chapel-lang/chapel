@@ -1,0 +1,2 @@
+vec-no-hint.chpl:15: note: Vectorization hazard -- calls synchronizing function accumulateOntoState
+10.0 0.0

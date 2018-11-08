@@ -228,16 +228,21 @@ namespace {
       virtual bool enterCallExpr (CallExpr*  node);
 
       bool hazard;
+      CallExpr* reason;
       std::map<FnSymbol*, bool> &fnHasVectorHazard;
   };
 
   VectorHazardVisitor::VectorHazardVisitor(std::map<FnSymbol*, bool>
-      &fnHasVectorHazard) : hazard(false), fnHasVectorHazard(fnHasVectorHazard)
+      &fnHasVectorHazard) : hazard(false), reason(NULL), fnHasVectorHazard(fnHasVectorHazard)
   {
   }
 
-  bool VectorHazardVisitor::enterCallExpr(CallExpr*  node) {
-    hazard |= isCallVectorHazard(node, fnHasVectorHazard);
+  bool VectorHazardVisitor::enterCallExpr(CallExpr* node) {
+    bool foundHazard = isCallVectorHazard(node, fnHasVectorHazard);
+    if (hazard == false) {
+      reason = node;
+    }
+    hazard |= foundHazard;
     return true;
   }
 };
@@ -259,7 +264,9 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
   if (fn->hasFlag(FLAG_EXTERN)) {
     // Who knows what extern functions do!
     // Note that this could check against a list of OK runtime functions
-    hazard = true;
+
+    hazard = !fn->hasFlag(FLAG_LLVM_READNONE) &&
+             !fn->hasFlag(FLAG_FN_SYNCHRONIZATION_FREE);
   } else if (thisTypeSymbol != NULL &&
              (thisTypeSymbol->hasFlag(FLAG_ATOMIC_TYPE) ||
               thisTypeSymbol->hasFlag(FLAG_SYNC) ||
@@ -274,7 +281,25 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
     hazard = v.hazard;
   }
 
+  /*
+  bool report = false;
+  if (fReportVectorizedLoops) {
+    ModuleSymbol *mod = toModuleSymbol(fn->getModule());
+    INT_ASSERT(mod);
+
+    report = (developer || mod->modTag == MOD_USER);
+  }
+
+  if (report && hazard)
+    USR_PRINT(fn, "call to %s will disable vectorization",
+              fn->name);
+   */
+
   fnHasVectorHazard[fn] = hazard;
+
+  if (hazard == false)
+    fn->addFlag(FLAG_FN_SYNCHRONIZATION_FREE);
+
   return hazard;
 }
 
@@ -292,15 +317,61 @@ static bool isCallVectorHazard(CallExpr* call,
   return hazard;
 }
 
-void markVectorizeableForallLoops()
+static void markVectorizeableForallLoops()
 {
   std::map<FnSymbol*, bool> fnHasVectorHazard;
+
+  // Check for loops over vectorize-only iterators
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (block->isLoopStmt()) {
+      LoopStmt* loop = toLoopStmt(block);
+
+      // Don't try to vectorize coforalls.
+      if (loop->isCoforallLoop()) {
+        loop->setHasVectorizationHazard(true);
+      } else {
+
+        bool hazard = false;
+
+        // Does the loop body have any calls that are vectorization hazards?
+        VectorHazardVisitor v(fnHasVectorHazard);
+        loop->accept(&v);
+        hazard = v.hazard;
+        loop->setHasVectorizationHazard(hazard);
+
+        bool report = false;
+        if (fReportVectorizedLoops) {
+          ModuleSymbol *mod = toModuleSymbol(loop->getModule());
+          INT_ASSERT(mod);
+
+          report = (developer || mod->modTag == MOD_USER);
+        }
+
+        if (report && hazard) {
+          FnSymbol *fn = NULL;
+          if (v.reason)
+            fn = v.reason->resolvedFunction();
+          if (developer && fn)
+            USR_PRINT(loop, "Vectorization hazard -- calls synchronizing function %s [%i]", fn->name, fn->id);
+          else if (fn)
+            USR_PRINT(loop, "Vectorization hazard -- calls synchronizing function %s", fn->name);
+          else if (v.reason->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+            USR_PRINT(loop, "Vectorization hazard -- calls virtual function");
+          else
+            USR_PRINT(loop, "Vectorization hazard -- other");
+        }
+      }
+    }
+  }
 
   forv_Vec(ForallStmt, forall, gForallStmts) {
     // Consider functions called in the loop body.
     // Do they present any of the following hazards?
     //   * synchronization (use of sync variables or atomics)
     //   * reductions that aren't known to work with the vectorizer
+
+    if (forall->id == 847556)
+      gdbShouldBreakHere();
 
     bool hazard = false;
 
@@ -316,16 +387,49 @@ void markVectorizeableForallLoops()
     // Does the loop use a reduction type that is not vectorizeable yet?
     for_shadow_vars (shadow, temp, forall) {
       if (shadow->isReduce()) {
-        if (Expr* e = shadow->reduceOpExpr()) {
-          nprint_view(e);
+        if (ShadowVarSymbol* op = shadow->ReduceOpForAccumState()) {
+          Type* accumType = shadow->type;
+          Type* opType = op->type;
+          bool ok = false;
+          // Only vectorize + reductions on numbers
+          if (is_int_type(accumType) ||
+              is_uint_type(accumType) ||
+              is_imag_type(accumType) ||
+              is_real_type(accumType)
+              // TODO: is_complex_type
+             ) {
+            if (0 == strcmp("SumReduceScanOp", opType->symbol->name))
+              ok = true;
+          }
+          if (ok == false)
+            hazard = true;
         }
       }
     }
-    if (hazard == false)
-      forall->setVectorizeable();
-  }
+    forall->setHasVectorizationHazard(hazard);
 
-  // TODO - handle for loops marked as order independent
+    bool report = false;
+    if (fReportVectorizedLoops) {
+      ModuleSymbol *mod = toModuleSymbol(forall->getModule());
+      INT_ASSERT(mod);
+
+      report = (developer || mod->modTag == MOD_USER);
+    }
+
+    if (report && hazard) {
+      FnSymbol *fn = NULL;
+      if (v.reason)
+        fn = v.reason->resolvedFunction();
+      if (developer && fn)
+        USR_PRINT(forall, "Vectorization hazard -- calls synchronizing function %s [%i]", fn->name, fn->id);
+      else if (fn)
+        USR_PRINT(forall, "Vectorization hazard -- calls synchronizing function %s", fn->name);
+       else if (v.reason->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+        USR_PRINT(forall, "Vectorization hazard -- calls virtual function");
+      else
+        USR_PRINT(forall, "Vectorization hazard -- other");
+    }
+  }
 }
 
 
@@ -1403,7 +1507,7 @@ expandIteratorInline(ForLoop* forLoop) {
     std::vector<SymExpr*> symExprs;
 
     bool isOrderIndependent = forLoop->isOrderIndependent();
-    bool isVectorizeable = forLoop->isVectorizeable();
+    bool hasVectorHazard = forLoop->hasVectorizationHazard();
     if (preserveInlinedLineNumbers == false) {
       reset_ast_loc(ibody, forLoop);
     }
@@ -1416,7 +1520,7 @@ expandIteratorInline(ForLoop* forLoop) {
     // after the ibody replaces the forLoop since findEnclosingLoop() requires
     // that its argument be in the AST. It must occur before yields are
     // replaced in the functions below though.
-    if (isOrderIndependent || isVectorizeable) {
+    if (isOrderIndependent || hasVectorHazard) {
       std::vector<CallExpr*> callExprs;
 
       collectCallExprs(ibody, callExprs);
@@ -1426,7 +1530,7 @@ expandIteratorInline(ForLoop* forLoop) {
           if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
             if (loop->isCoforallLoop() == false) {
               loop->orderIndependentSet(isOrderIndependent);
-              loop->vectorizeableSet(isVectorizeable);
+              loop->setHasVectorizationHazard(hasVectorHazard);
             }
           }
         }
@@ -2087,7 +2191,6 @@ expandForLoop(ForLoop* forLoop) {
     setupSimultaneousIterators(iterators, indices, iterator, index, forLoop);
 
     bool allOrderIndependent = true;
-    bool allVectorizeable = true;
     // For each iterator we add the zip* functions in the appropriate place and
     // if bounds checking was on, we insert the code for that. Note that this
     // code handles iterators that have regular loops, c for loops, and
@@ -2188,22 +2291,18 @@ expandForLoop(ForLoop* forLoop) {
       // If inlined, the iterator's loop will be order independent if it was
       // independent prior to inlining or the forLoop is order independent
       bool curOrderIndependent = false;
-      bool curVectorizeable = false;
       if (CallExpr* singleLoopYield = isSingleLoopIterator(iterFn, asts)) {
         if (LoopStmt* loop = LoopStmt::findEnclosingLoop(singleLoopYield)) {
           curOrderIndependent = loop->isOrderIndependent() || forLoop->isOrderIndependent();
-          curVectorizeable = loop->isVectorizeable() || forLoop->isVectorizeable();
         }
       }
       allOrderIndependent = allOrderIndependent && curOrderIndependent;
-      allVectorizeable = allVectorizeable && curVectorizeable;
     }
 
     // The loop will be order independent if all the iters it zips are order
     // independent (all iters will be inlined and were all marked order
     // independent or the forLoop was marked independent prior zippering.)
     forLoop->orderIndependentSet(allOrderIndependent);
-    forLoop->vectorizeableSet(allVectorizeable);
 
     // 2015-02-23 hilde:
     // TODO: I think this wants to be insertBefore, and moved before the call

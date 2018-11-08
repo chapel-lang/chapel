@@ -27,6 +27,14 @@ void LoopStmt::fixVectorizeable()
   if (!this->isVectorizeable())
     return; // nothing more to do!
 
+  bool report = false;
+  if (fReportVectorizedLoops) {
+    ModuleSymbol *mod = toModuleSymbol(this->getModule());
+    INT_ASSERT(mod);
+
+    report = (developer || mod->modTag == MOD_USER);
+  }
+
   // Check for DefExprs in the loop body that would present challenges
   // for vectorization.
 
@@ -39,49 +47,107 @@ void LoopStmt::fixVectorizeable()
 
   // This runs late in the compiler because we want to do this check
   // after inlining and other late simplifications have occured.
-  bool addressTaken = false;
-  int ndefs = 0;
+
+  bool hazard = false;
 
   for_alist(expr, body) {
     if (DefExpr* def = toDefExpr(expr)) {
       Symbol* sym = def->sym;
+
       // Decide if it could be a register
       // (Note, these rules are accurate for LLVM but
       //  serve as a reasonable guess for a C compiler)
+      bool addressTaken = false;
+      bool needsGets = false;
+      int ndefs = 0;
+
       for_SymbolSymExprs(se, sym) {
         if (CallExpr* call = toCallExpr(se->parentExpr)) {
           // was the address taken?
-          // TODO: get svec member, get member
           if (call->isPrimitive(PRIM_ADDR_OF) ||
-              call->isPrimitive(PRIM_SET_REFERENCE)) {
+              call->isPrimitive(PRIM_SET_REFERENCE) ||
+              call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+              call->isPrimitive(PRIM_GET_MEMBER)) {
             addressTaken = true;
-          } else if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
+          } else if (call->isPrimitive(PRIM_SET_MEMBER) ||
+                     call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+            // These don't technically necessarily use a ref
+            // but they probably do and they could potentially do a GET
+            addressTaken = true;
+            needsGets = true;
+          } else if (call->resolvedOrVirtualFunction()) {
             ArgSymbol* formal = actual_to_formal(se);
             if ((formal->intent & FLAG_REF))
               addressTaken = true;
           }
 
           // was the symbol set?
-          // TODO: set svec member, set member
-          if (call->isPrimitive(PRIM_MOVE) && call->get(1) == se)
+          // Also, would setting the symbol require us to generate a GET?
+          if (call->isPrimitive(PRIM_MOVE) &&
+              call->get(1) == se) {
             ndefs++;
+          }
           // Assigning to a ref doesn't change the ref itself
-          if (call->isPrimitive(PRIM_ASSIGN) && !se->isRef() && call->get(1) == se)
+          if (call->isPrimitive(PRIM_ASSIGN) &&
+              !se->isRef() &&
+              call->get(1) == se) {
             ndefs++;
+            if (call->get(2)->isWideRef())
+              needsGets = true;
+          }
+
+          // Would setting the symbol require a GET?
+          if (call->isPrimitive(PRIM_MOVE) && call->isPrimitive(PRIM_ASSIGN)) {
+            if (CallExpr* rhsCall = toCallExpr(call->get(2)))
+              if (rhsCall->isPrimitive(PRIM_DEREF) ||
+                  rhsCall->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                  rhsCall->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE))
+                if (rhsCall->get(1)->isWideRef())
+                  needsGets = true;
+          }
         }
+      }
+
+      // with --llvm-wide-opt, GETs are just regular loads, so there are
+      // no concerns about needing a temporary for a GET.
+      if (fLLVMWideOpt)
+        needsGets = false;
+
+      if (report) {
+        if (addressTaken)
+          USR_PRINT(sym, "Vectorization disabled -- address taken");
+        else if (ndefs > 1)
+          USR_PRINT(sym, "Vectorization disabled -- multiple defs");
+        else if (needsGets)
+          USR_PRINT(sym, "Vectorization disabled -- could GET");
       }
     }
   }
 
-  if (addressTaken || ndefs > 1) {
+  if (hazard) {
     // Turn off vectorization for this loop, we can't handle it yet
-    this->vectorizeableSet(false);
+    this->setHasVectorizationHazard(true);
   } else {
-    // Enable vectorization but get the code generator to assert
+    // Allow vectorization but get the code generator to assert
     // that the inner symbols are always generated as SSA registers.
     for_alist(expr, body) {
       if (DefExpr* def = toDefExpr(expr))
         def->sym->addFlag(FLAG_LLVM_SSA_REGISTER);
+    }
+
+    if (fReportVectorizedLoops) {
+      ModuleSymbol *mod = toModuleSymbol(this->getModule());
+      INT_ASSERT(mod);
+
+      if (developer || mod->modTag == MOD_USER)
+      {
+        if (developer)
+          USR_PRINT(this, "Vectorization hinted for %s [%i]",
+                    this->astTagAsString(), this->id);
+        else
+          USR_PRINT(this, "Vectorization hinted for %s",
+                    this->astTagAsString());
+      }
     }
   }
 }
@@ -97,19 +163,6 @@ void LoopStmt::codegenVectorHint()
     GenInfo* info = gGenInfo;
 
     // Note: This *must* match the macro definitions provided in the runtime
-    std:: string ivdepStr = "CHPL_PRAGMA_IVDEP";
-    if (fReportOrderIndependentLoops)
-    {
-      ModuleSymbol *mod = toModuleSymbol(this->getModule());
-      INT_ASSERT(mod);
-
-      if (developer || mod->modTag == MOD_USER)
-      {
-        printf("Adding %s to %s for %s:%d\n", ivdepStr.c_str(),
-            this->astTagAsString(), mod->name, this->linenum());
-      }
-    }
-
-    info->cStatements.push_back(ivdepStr+'\n');
+    info->cStatements.push_back("CHPL_PRAGMA_IVDEP\n");
   }
 }

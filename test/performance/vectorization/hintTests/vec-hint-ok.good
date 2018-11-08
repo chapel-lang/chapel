@@ -1,0 +1,16 @@
+vec-hint-ok.chpl:5: note: Vectorization hinted for CForLoop
+vec-hint-ok.chpl:21: note: Vectorization hinted for CForLoop
+vec-hint-ok.chpl:27: note: Vectorization hinted for CForLoop
+vec-hint-ok.chpl:27: note: Vectorization hinted for CForLoop
+vec-hint-ok.chpl:33: note: Vectorization hinted for CForLoop
+vec-hint-ok.chpl:39: note: Vectorization hinted for CForLoop
+vec-hint-ok.chpl:39: note: Vectorization hinted for CForLoop
+vec-hint-ok.chpl:45: note: Vectorization hinted for CForLoop
+vec-hint-ok.chpl:51: note: Vectorization hinted for CForLoop
+vec-hint-ok.chpl:51: note: Vectorization hinted for CForLoop
+1.0 10.0
+1.0 10.0
+1.0 3.16228
+1.0 3.16228
+3.0 12.0
+3.0 12.0

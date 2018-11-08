@@ -36,7 +36,7 @@ ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   fZippered(zippered),
   fLoopBody(body),
   fFromForLoop(false),
-  fVectorizeable(false),
+  fVectorizationHazard(false),
   fContinueLabel(NULL),
   fErrorHandlerLabel(NULL),
   fRecIterIRdef(NULL),
@@ -62,7 +62,7 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
     _this->fShadowVars.insertAtTail(COPY_INT(expr));
 
   _this->fFromForLoop = fFromForLoop;
-  _this->fVectorizeable = fVectorizeable;
+  _this->fVectorizationHazard = fVectorizationHazard;
   // todo: fContinueLabel, fErrorHandlerLabel
 
   _this->fRecIterIRdef        = COPY_INT(fRecIterIRdef);
@@ -519,10 +519,10 @@ ForallStmt* ForallStmt::fromForLoop(ForLoop* forLoop) {
 
 
 // vectorization
-bool ForallStmt::vectorizeable() const {
-  return fVectorizeable;
+bool ForallStmt::hasVectorizationHazard() const {
+  return fVectorizationHazard;
 }
 
-void ForallStmt::setVectorizeable() {
-  fVectorizeable = true;
+void ForallStmt::setHasVectorizationHazard(bool v) {
+  fVectorizationHazard = v;
 }

@@ -68,8 +68,8 @@ public:
   int   reduceIntentIdx(Symbol* var);
   void  setNotZippered();
 
-  bool vectorizeable() const;
-  void setVectorizeable();
+  bool hasVectorizationHazard() const;
+  void setHasVectorizationHazard(bool v);
 private:
   bool           fZippered;
   AList          fIterVars;
@@ -77,7 +77,7 @@ private:
   AList          fShadowVars;  // may be empty
   BlockStmt*     fLoopBody;    // always present
   bool           fFromForLoop; // see comment below
-  bool           fVectorizeable;
+  bool           fVectorizationHazard;
 
   ForallStmt(bool zippered, BlockStmt* body);
 

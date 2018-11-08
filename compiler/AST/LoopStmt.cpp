@@ -25,7 +25,7 @@ LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
   mBreakLabel       = 0;
   mContinueLabel    = 0;
   mOrderIndependent = false;
-  mVectorizeable = false;
+  mVectorizationHazard = false;
 }
 
 LoopStmt::~LoopStmt()
@@ -68,16 +68,20 @@ void LoopStmt::orderIndependentSet(bool orderIndependent)
   mOrderIndependent = orderIndependent;
 }
 
+bool LoopStmt::hasVectorizationHazard() const
+{
+  return mVectorizationHazard;
+}
+
+void LoopStmt::setHasVectorizationHazard(bool v)
+{
+  mVectorizationHazard = v;
+}
+
 bool LoopStmt::isVectorizeable() const
 {
-  return mVectorizeable;
+  return mOrderIndependent && !mVectorizationHazard;
 }
-
-void LoopStmt::vectorizeableSet(bool b)
-{
-  mVectorizeable = b;
-}
-
 
 // what if the nearest enclosing loop is a forall?
 LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr)

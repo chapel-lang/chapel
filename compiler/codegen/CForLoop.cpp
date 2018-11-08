@@ -156,6 +156,12 @@ GenRet CForLoop::codegen()
     // all of these cases, we generate a for loop as the same as
     // if(cond) do { body; step; } while(cond).
 
+    // However it is appealing to generate these low-level loops directly
+    // in LLVM IR:
+    //   * could avoid repeated loads
+    //   * could simplify generated IR
+    //   * could avoid problems identifying induction variables
+
     // Create the init basic block
     blockStmtInit = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_c_for_init"));
 

@@ -353,20 +353,25 @@ public:
   }
 
   virtual bool enterForallStmt(ForallStmt* node) {
+
+    if (forall->hasVectorizationHazard()) {
+      node->setHasVectorizationHazard(true);
+    }
+
     expandForall(this, node);
     // expandForall() takes care of descending into 'node'
     return false;
   }
 
   virtual bool enterCForLoop(CForLoop* node) {
-    if (forall->vectorizeable() && node->isOrderIndependent()) {
-      node->vectorizeableSet(true);
+    if (forall->hasVectorizationHazard()) {
+      node->setHasVectorizationHazard(true);
     }
     return true;
   }
   virtual bool enterForLoop(ForLoop* node) {
-    if (forall->vectorizeable() && node->isOrderIndependent()) {
-      node->vectorizeableSet(true);
+    if (forall->hasVectorizationHazard()) {
+      node->setHasVectorizationHazard(true);
     }
     return true;
   }
