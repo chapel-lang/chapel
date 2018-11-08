@@ -73,47 +73,6 @@ module ExternalArray {
       this._owned = _owned;
     }
 
-    proc idxType type return dom.idxType;
-    proc rank param return dom.rank;
-
-    // do I want a "isExtern" method on BaseArr?
-
-    //
-    // standard iterators
-    //
-
-    iter these() ref {
-      for elem in chpl__serialViewIter(this, privDom) do
-        yield elem;
-    }
-
-    iter these(param tag: iterKind) ref
-      where tag == iterKind.standalone && !localeModelHasSublocales &&
-           __primitive("method call resolves", privDom, "these", tag) {
-      forall i in privDom do yield dsiAccess(i);
-    }
-
-    iter these(param tag: iterKind) where tag == iterKind.leader {
-      for followThis in privDom.these(tag) do {
-        yield followThis;
-      }
-    }
-
-    iter these(param tag: iterKind, followThis) ref
-      where tag == iterKind.follower {
-      for i in privDom.these(tag, followThis) {
-        yield dsiAccess[i];
-      }
-    }
-
-    proc dsiSerialWrite(f) {
-      chpl_serialReadWriteRectangular(f, this, privDom);
-    }
-
-    proc dsiSerialRead(f) {
-      chpl_serialReadWriteRectangular(f, this, privDom);
-    }
-
     // Probably want dsiDisplayRepresentation? (see ArrayViewSlice.chpl:153-161)
 
     inline proc dsiAccess(i: idxType ...rank) ref {
@@ -154,36 +113,11 @@ module ExternalArray {
         }
     }
 
-    override proc dsiGetBaseDom() {
-      return dom;
-    }
-
-    // _getActualArray - useful for returning the array?  Or a dangerous insight
-    // into the implementation?
-
-    // PUNT FOR NOW, WILL NEED EVENTUALLY:
-    // Do I want the locality-oriented queries? (see
-    // ArrayViewSlice.chpl:225-230)
-    // What about the privatization?
-    // doiCanBulkTransferRankChange? doiBulkTransferFromKnown?
-    // doiBulkTransferToKnown?
-
     override proc dsiDestroyArr() {
       if (_owned) {
         chpl_free_external_array(_ArrInstance);
       }
     }
-
-    inline proc privDom {
-      /*if _isPrivatized(dom) {
-        return chpl_getPrivatizedCopy(dom.type, _DomPid);
-        } else {*/
-        return dom;
-        //}
-    }
-
-    // proc dsiReallocate(d: domain) is not supported, so don't override.
-    // proc _resize(length: int, old_map) is not supported, don't override.
   }
 
   // Creates an instance of our new array type
