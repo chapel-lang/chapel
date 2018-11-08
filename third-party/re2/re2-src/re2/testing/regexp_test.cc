@@ -23,7 +23,7 @@ TEST(Regexp, BigRef) {
     re->Incref();
   for (int i = 0; i < 100000; i++)
     re->Decref();
-  ASSERT_EQ(re->Ref(), 1);
+  CHECK_EQ(re->Ref(), 1);
   re->Decref();
 }
 
@@ -35,12 +35,12 @@ TEST(Regexp, BigConcat) {
   std::vector<Regexp*> v(90000, x);  // ToString bails out at 100000
   for (size_t i = 0; i < v.size(); i++)
     x->Incref();
-  ASSERT_EQ(x->Ref(), 1 + static_cast<int>(v.size())) << x->Ref();
+  CHECK_EQ(x->Ref(), 1 + static_cast<int>(v.size())) << x->Ref();
   Regexp* re = Regexp::Concat(v.data(), static_cast<int>(v.size()),
                               Regexp::NoParseFlags);
-  ASSERT_EQ(re->ToString(), string(v.size(), 'x'));
+  CHECK_EQ(re->ToString(), string(v.size(), 'x'));
   re->Decref();
-  ASSERT_EQ(x->Ref(), 1) << x->Ref();
+  CHECK_EQ(x->Ref(), 1) << x->Ref();
   x->Decref();
 }
 

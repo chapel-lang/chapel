@@ -71,6 +71,7 @@ endif
 all: obj/libre2.a obj/so/libre2.$(SOEXT)
 
 INSTALL_HFILES=\
+	re2/file_strings.h\
 	re2/filtered_re2.h\
 	re2/re2.h\
 	re2/set.h\
@@ -83,7 +84,6 @@ HFILES=\
 	util/mix.h\
 	util/mutex.h\
 	util/pcre.h\
-	util/pod_array.h\
 	util/sparse_array.h\
 	util/sparse_set.h\
 	util/strutil.h\
@@ -91,6 +91,7 @@ HFILES=\
 	util/utf.h\
 	util/util.h\
 	re2/bitmap256.h\
+	re2/file_strings.h\
 	re2/filtered_re2.h\
 	re2/prefilter.h\
 	re2/prefilter_tree.h\
@@ -113,6 +114,7 @@ OFILES=\
 	obj/re2/bitstate.o\
 	obj/re2/compile.o\
 	obj/re2/dfa.o\
+	obj/re2/file_strings.o\
 	obj/re2/filtered_re2.o\
 	obj/re2/mimics_pcre.o\
 	obj/re2/nfa.o\
@@ -247,13 +249,22 @@ testofiles: $(TESTOFILES)
 test: $(DTESTS) $(TESTS) $(STESTS) debug-test static-test shared-test
 
 debug-test: $(DTESTS)
+	@echo
+	@echo Running debug binary tests.
+	@echo
 	@./runtests $(DTESTS)
 
 static-test: $(TESTS)
+	@echo
+	@echo Running static binary tests.
+	@echo
 	@./runtests $(TESTS)
 
 shared-test: $(STESTS)
-	@./runtests -shared-library-path obj/so $(STESTS)
+	@echo
+	@echo Running dynamic binary tests.
+	@echo
+	@LD_LIBRARY_PATH=obj/so:$(LD_LIBRARY_PATH) ./runtests $(STESTS)
 
 debug-bigtest: $(DTESTS) $(DBIGTESTS)
 	@./runtests $(DTESTS) $(DBIGTESTS)
@@ -262,7 +273,7 @@ static-bigtest: $(TESTS) $(BIGTESTS)
 	@./runtests $(TESTS) $(BIGTESTS)
 
 shared-bigtest: $(STESTS) $(SBIGTESTS)
-	@./runtests -shared-library-path obj/so $(STESTS) $(SBIGTESTS)
+	@LD_LIBRARY_PATH=obj/so:$(LD_LIBRARY_PATH) ./runtests $(STESTS) $(SBIGTESTS)
 
 benchmark: obj/test/regexp_benchmark
 
@@ -273,6 +284,7 @@ install: obj/libre2.a obj/so/libre2.$(SOEXT)
 	$(INSTALL_DATA) $(INSTALL_HFILES) $(DESTDIR)$(includedir)/re2
 	$(INSTALL) obj/libre2.a $(DESTDIR)$(libdir)/libre2.a
 	$(INSTALL) obj/so/libre2.$(SOEXT) $(DESTDIR)$(libdir)/libre2.$(SOEXTVER00)
+	if [ -n "`command -v install_name_tool`" ]; then install_name_tool -id $(DESTDIR)$(libdir)/libre2.$(SOEXTVER00) $(DESTDIR)$(libdir)/libre2.so.$(SOEXTVER00); fi
 	ln -sf libre2.$(SOEXTVER00) $(DESTDIR)$(libdir)/libre2.$(SOEXTVER)
 	ln -sf libre2.$(SOEXTVER00) $(DESTDIR)$(libdir)/libre2.$(SOEXT)
 	$(INSTALL_DATA) re2.pc $(DESTDIR)$(libdir)/pkgconfig/re2.pc
@@ -306,11 +318,7 @@ shared-testinstall:
 	@mkdir -p obj
 	@cp testinstall.cc obj
 	(cd obj && $(CXX) testinstall.cc -o testinstall $(CXXFLAGS) $(LDFLAGS))
-ifeq ($(shell uname),Darwin)
-	DYLD_LIBRARY_PATH="$(DESTDIR)$(libdir):$(DYLD_LIBRARY_PATH)" obj/testinstall
-else
-	LD_LIBRARY_PATH="$(DESTDIR)$(libdir):$(LD_LIBRARY_PATH)" obj/testinstall
-endif
+	LD_LIBRARY_PATH=$(DESTDIR)$(libdir) obj/testinstall
 
 benchlog: obj/test/regexp_benchmark
 	(echo '==BENCHMARK==' `hostname` `date`; \
@@ -343,3 +351,8 @@ log:
 
 x: x.cc obj/libre2.a
 	g++ -I. -o x x.cc obj/libre2.a
+
+install-static: obj/libre2.a
+	mkdir -p $(DESTDIR)$(includedir)/re2 $(DESTDIR)$(libdir)
+	$(INSTALL_DATA) $(INSTALL_HFILES) $(DESTDIR)$(includedir)/re2
+	$(INSTALL) obj/libre2.a $(DESTDIR)$(libdir)/libre2.a

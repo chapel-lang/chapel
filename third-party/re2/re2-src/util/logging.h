@@ -93,7 +93,7 @@ class LogMessageFatal : public LogMessage {
  public:
   LogMessageFatal(const char* file, int line)
       : LogMessage(file, line) {}
-  ATTRIBUTE_NORETURN ~LogMessageFatal() {
+  ~LogMessageFatal() {
     Flush();
     abort();
   }

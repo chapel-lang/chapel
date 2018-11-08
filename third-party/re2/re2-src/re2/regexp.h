@@ -440,6 +440,9 @@ class Regexp {
   // regardless of the return value.
   bool RequiredPrefix(string* prefix, bool* foldcase, Regexp** suffix);
 
+  // Computes the minimum and maximum match length.
+  // -1 to mean unbounded, and min might be 0.
+  void PossibleMatchLength(int *min, int *max);
  private:
   // Constructor allocates vectors as appropriate for operator.
   explicit Regexp(RegexpOp op, ParseFlags parse_flags);
@@ -494,7 +497,8 @@ class Regexp {
   // Simplifies an alternation of literal strings by factoring out
   // common prefixes.
   static int FactorAlternation(Regexp** sub, int nsub, ParseFlags flags);
-  friend class FactorAlternationImpl;
+  static int FactorAlternationRecursive(Regexp** sub, int nsub,
+                                        ParseFlags flags, int maxdepth);
 
   // Is a == b?  Only efficient on regexps that have not been through
   // Simplify yet - the expansion of a kRegexpRepeat will make this

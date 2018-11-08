@@ -22,9 +22,13 @@
 
 #include "util/util.h"
 #include "util/sparse_array.h"
-#include "re2/prefilter.h"
 
 namespace re2 {
+
+typedef SparseArray<int> IntMap;
+typedef std::map<int, int> StdIntMap;
+
+class Prefilter;
 
 class PrefilterTree {
  public:
@@ -57,10 +61,6 @@ class PrefilterTree {
   // nodes of the prefilter of the regexp.
   void PrintPrefilter(int regexpid);
 
- private:
-  typedef SparseArray<int> IntMap;
-  typedef std::map<int, int> StdIntMap;
-  typedef std::map<string, Prefilter*> NodeMap;
 
   // Each unique node has a corresponding Entry that helps in
   // passing the matching trigger information along the tree.
@@ -84,13 +84,14 @@ class PrefilterTree {
     std::vector<int> regexps;
   };
 
+ private:
   // Returns true if the prefilter node should be kept.
   bool KeepNode(Prefilter* node) const;
 
   // This function assigns unique ids to various parts of the
   // prefilter, by looking at if these nodes are already in the
   // PrefilterTree.
-  void AssignUniqueIds(NodeMap* nodes, std::vector<string>* atom_vec);
+  void AssignUniqueIds(std::vector<string>* atom_vec);
 
   // Given the matching atoms, find the regexps to be triggered.
   void PropagateMatch(const std::vector<int>& atom_ids,
@@ -98,7 +99,7 @@ class PrefilterTree {
 
   // Returns the prefilter node that has the same NodeString as this
   // node. For the canonical node, returns node.
-  Prefilter* CanonicalNode(NodeMap* nodes, Prefilter* node);
+  Prefilter* CanonicalNode(Prefilter* node);
 
   // A string that uniquely identifies the node. Assumes that the
   // children of node has already been assigned unique ids.
@@ -108,11 +109,14 @@ class PrefilterTree {
   string DebugNodeString(Prefilter* node) const;
 
   // Used for debugging.
-  void PrintDebugInfo(NodeMap* nodes);
+  void PrintDebugInfo();
 
   // These are all the nodes formed by Compile. Essentially, there is
   // one node for each unique atom and each unique AND/OR node.
   std::vector<Entry> entries_;
+
+  // Map node string to canonical Prefilter node.
+  std::map<string, Prefilter*> node_map_;
 
   // indices of regexps that always pass through the filter (since we
   // found no required literals in these regexps).
