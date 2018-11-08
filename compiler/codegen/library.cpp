@@ -350,6 +350,8 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
 
     gGenInfo->cfile = pyx.fptr;
 
+    fprintf(pyx.fptr, "#!python\n");
+    fprintf(pyx.fptr, "#cython: language_level=3\n");
     // Make import statement at top of .pyx file for chpl_library_init and
     // chpl_library_finalize
     fprintf(pyx.fptr, "from chplrt cimport chpl_library_init, ");
