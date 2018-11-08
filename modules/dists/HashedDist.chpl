@@ -1,16 +1,22 @@
-// TODO: Convert to Steve's leader/follower scheme (implemented in compiler)
+/*
+ * Copyright 2004-2018 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-// TODO: Make multidimensional
-
-// TODO: Make this work for a strided domain of locales; for a strided
-// domain implemented using this distribution.
-
-// TODO: Have the global class leader/follower iterators defer to the
-// local class leader/followers once we're within a locale?
-
-// TODO: Make these into an official distribution?
-
-// TODO: implement the slicing interface?
 
 config param debugUserMapAssoc = false;
 
@@ -20,13 +26,13 @@ config param debugUserMapAssoc = false;
 // b/c this matches best with the expected use and it is
 // easy to guarantee that the returned locale is in the target set.
 record AbstractMapper {
-  proc indexToLocaleIndex(ind, targetLocales: [] locale) : int {
+  proc this(const ref ind, const ref targetLocales: [?D] locale) : D.idxType {
     return 0;
   }
 }
 
 record DefaultMapper {
-  proc indexToLocaleIndex(ind, targetLocales: [] locale) : int {
+  proc this(ind, targetLocales: [?D] locale) : D.idxType {
     const hash = chpl__defaultHashWrapper(ind);
     // Mix the bits around
     const mixed = _gen_key(hash);
@@ -42,7 +48,69 @@ record DefaultMapper {
 //
 // The distribution class
 //
-class UserMapAssoc : BaseDist {
+
+/*
+
+The Hashed distribution maps an associative domain and its array to a set of
+target locales. Each index (or key) in the domain is mapped to a locale based
+upon its value. When constructing a Hashed distribution, you can optionally
+provide a `mapper` function or function object to compute the destination locale
+for each index.
+
+The `mapper` provided can be a class, record, or first class function.  When
+called, it will be passed the index and the targetLocales array that the Hashed
+distribution was initialized with. For example, the following record
+declares a custom mapper:
+
+.. code-block:: chapel
+
+  record CustomMapper {
+    proc this(ind:string, targetLocs: [?D] locale) : D.idxType {
+      const numlocs = targetLocs.domain.size;
+      // use the first digit of the string to choose the destination locale
+      var byte: int = ascii(ind);
+      return byte % numlocs;
+    }
+  }
+
+If a custom mapper is not provided, a default mapper will be used. The default
+mapper computes the target locale based upon a hash of the index.
+
+.. note::
+
+  Hashed is not yet interface stable.
+
+**Example**
+
+.. code-block:: chapel
+
+  var D: domain(string) dmapped Hashed(idxType=string);
+  // Now D is a distributed associative domain (set) of strings
+  D += "one";
+  D += "two";
+
+  var A: [D] int;
+  // Now A is a distributed associative array (map) from string to int
+  forall a in A do
+    a = a.locale.id;
+
+  forall (key, value) in zip(D, A) {
+    writeln(key, " -> ", value);
+  }
+
+
+**Initializer Arguments**
+
+The `Hashed` domain map initializer is defined as follows:
+
+.. code-block:: chapel
+
+  proc init(type idxType,
+            mapper:?t = new DefaultMapper(),
+            targetLocales: [] locale = Locales)
+
+ */
+class Hashed : BaseDist {
 
   // GENERICS:
 
@@ -50,7 +118,7 @@ class UserMapAssoc : BaseDist {
   // The distribution's index type and domain's global index type
   //
   type idxType = int(64);
-  // Should implement indexToLocale, ...
+  // Should implement `this` to map index to locale
   const mapper;
 
   // STATE:
@@ -80,7 +148,7 @@ class UserMapAssoc : BaseDist {
 
   // CONSTRUCTORS:
 
-  proc init(type idxType = int(64),
+  proc init(type idxType,
             mapper:?t = new DefaultMapper(),
             targetLocales: [] locale = Locales) {
     this.idxType = idxType;
@@ -104,9 +172,9 @@ class UserMapAssoc : BaseDist {
   //
   // builds up a privatized (replicated copy)
   //
-  proc init(type idxType = int(64),
+  proc init(type idxType,
             mapper,
-            other: unmanaged UserMapAssoc(idxType, mapper.type)) {
+            other: unmanaged Hashed(idxType, mapper.type)) {
     this.idxType = idxType;
     this.mapper = mapper; // normally == other.mapper;
     targetLocDom = other.targetLocDom;
@@ -116,7 +184,7 @@ class UserMapAssoc : BaseDist {
   }
 
   proc dsiClone() {
-    return new unmanaged UserMapAssoc(idxType, mapper, targetLocales);
+    return new unmanaged Hashed(idxType, mapper, targetLocales);
   }
 
   // DISTRIBUTION INTERFACE:
@@ -136,7 +204,7 @@ class UserMapAssoc : BaseDist {
   // initial index set if one exists?  If not, we should rewrite the
   // global domain construction to not do anything with whole...
   //
-  proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
+  override proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
     var dom = new unmanaged UserMapAssocDom(idxType=idxType, mapperType=mapper.type, dist=_to_unmanaged(this));
     dom.setup();
     return dom;
@@ -156,7 +224,7 @@ class UserMapAssoc : BaseDist {
   // print out the distribution
   //
   proc writeThis(x) {
-    x <~> "UserMapAssoc\n";
+    x <~> "Hashed\n";
     x <~> "-------\n";
     x <~> "distributed using: " <~> mapper <~> "\n";
     x <~> "across locales: " <~> targetLocales <~> "\n";
@@ -179,8 +247,16 @@ class UserMapAssoc : BaseDist {
     return indexToLocale(ind);
   }
 
+  // Why does indexToLocaleIndex return an index into targetLocales
+  // rather than a locale?
+  //
+  // indexToLocaleIndex is used below to efficiently compute
+  // the local domain implementation, so the locDoms array can be
+  // simple (1-D, not associative), and so targetLocales can be
+  // flexible (e.g. include subdomains).
+
   proc indexToLocaleIndex(ind: idxType) {
-    const locIdx = mapper.indexToLocaleIndex(ind, targetLocales);
+    const locIdx = mapper(ind, targetLocales);
     if boundsChecking then
       if !targetLocDom.contains(locIdx) then
         halt("mapper provided invalid locale index: ",
@@ -190,66 +266,6 @@ class UserMapAssoc : BaseDist {
     return locIdx;
   }
 }
-
-//
-// A per-locale local distribution class
-//
-// commented out b/c not currently used
-/*class LocUserMapAssocDist {
-
-  // GENERICS:
-
-  // 
-  // The distribution's index type and domain's global index type
-  //
-  type idxType;
-
-
-  // STATE:
-
-  //
-  // The locale owning this class
-  //
-  // TODO: This is only used in the writeThis() class -- can we remove it?
-  //
-  const loc: locale;
-
-
-  // CONSTRUCTORS:
-
-  //
-  // Constructor computes what chunk of index(1) is owned by the
-  // current locale
-  //
-  proc LocUserMapAssocDist(type idxType,
-                           type mapperType,
-                          _localeIdx: int, // the locale index from the target domain
-                          dist: UserMapAssoc(idxType,mapperType) // reference to glob dist
-                         ) {
-    const localeIdx = _localeIdx;
-    loc = dist.targetLocales(localeIdx);
-    //
-    // TODO: Create these assertions for other local classes as well
-    //
-    if (loc != here) {
-      halt("Creating a local distribution class on the wrong locale");
-    }
-
-    if debugUserMapAssoc then
-      writeln(this);
-  }
-
-
-  // INTERNAL INTERFACE:
-
-  //
-  // print out the local distribution class
-  //
-  proc writeThis(x) {
-    x.write("locale ", loc.id, " owns some indices");
-  }
-}
-*/
 
 //
 // The global domain class
@@ -270,7 +286,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // LEFT: a pointer to the parent distribution
   //
-  const dist: unmanaged UserMapAssoc(idxType, mapperType);
+  const dist: unmanaged Hashed(idxType, mapperType);
 
   //
   // DOWN: an array of local domain class descriptors -- set up in
@@ -297,7 +313,7 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   // GLOBAL DOMAIN INTERFACE:
 
-  proc dsiMyDist() {
+  override proc dsiMyDist() {
     return dist;
   }
 
@@ -313,7 +329,7 @@ class UserMapAssocDom: BaseAssociativeDom {
     return locDoms(dist.indexToLocaleIndex(i)).contains(i);
   }
 
-  proc dsiClear() {
+  override proc dsiClear() {
     for locDom in locDoms do on locDom {
       locDom.clear();
     }
@@ -321,13 +337,18 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     if !lhsPrivate then
-      halt("UserMapAssoc domain assignment not yet supported");
+      halt("Hashed domain assignment not yet supported");
     for i in rhs do
       dsiAdd(i);
   }
 
   proc dsiRequestCapacity(numKeys:int) {
-    // TODO
+    // Multiplies by 2 to account for some expected load imbalance
+    var nLocales = min(1, locDoms.domain.numIndices);
+    const numKeysPer = 2 * numKeys / nLocales;
+    for locDom in locDoms do on locDom {
+      locDom.capacity(numKeysPer);
+    }
   }
 
   iter dsiSorted(comparator) {
@@ -378,7 +399,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   iter these() {
     for blk in locDoms do
-      // TODO: Would want to do something like:     
+      // TODO: Would want to do something like:
       //on blk do
       // But can't currently have yields in on clauses:
       // invalid use of 'yield' within 'on' in serial iterator
@@ -482,7 +503,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // INTERNAL INTERFACE
   //
-  proc dsiMyDist(): unmanaged UserMapAssoc(idxType, mapperType) {
+  override proc dsiMyDist(): unmanaged Hashed(idxType, mapperType) {
     return dist;
   }
 
@@ -500,7 +521,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   proc dsiSupportsPrivatization() param return true;
   proc dsiGetPrivatizeData() return 0;
   proc dsiPrivatize(privatizeData) {
-    var privateDist = new unmanaged UserMapAssoc(idxType, dist.mapper, dist);
+    var privateDist = new unmanaged Hashed(idxType, dist.mapper, dist);
     var c = new unmanaged UserMapAssocDom(idxType=idxType, mapperType=mapperType, dist=privateDist);
     c.locDoms = locDoms;
     return c;
@@ -509,7 +530,7 @@ class UserMapAssocDom: BaseAssociativeDom {
     locDoms = other.locDoms;
   }
 
-  proc dsiDestroyDom() {
+  override proc dsiDestroyDom() {
     coforall localeIdx in dist.targetLocDom do
       on dist.targetLocales(localeIdx) do
         delete locDoms(localeIdx);
@@ -571,11 +592,15 @@ class LocUserMapAssocDom {
     myInds.clear();
   }
 
+  proc capacity(numKeys:int) {
+    myInds.requestCapacity(numKeys);
+  }
+
   //
   // iterator over this locale's indices
   //
   iter these() {
-    // May want to do something like:     
+    // May want to do something like:
     // on this do
     // But can't currently have yields in on clauses
     for ind in myInds do
@@ -636,7 +661,7 @@ class UserMapAssocArr: BaseArr {
   type eltType;
 
   // LINKAGE:
-  
+
   //
   // LEFT: the global domain descriptor for this array
   //
@@ -650,7 +675,7 @@ class UserMapAssocArr: BaseArr {
 
   var pid: int = -1; // privatized object id
 
-  proc dsiGetBaseDom() return dom;
+  override proc dsiGetBaseDom() return dom;
 
   proc setup() {
     coforall localeIdx in dom.dist.targetLocDom do
@@ -663,7 +688,7 @@ class UserMapAssocArr: BaseArr {
     }
   }
 
-  proc dsiDestroyArr() {
+  override proc dsiDestroyArr() {
     coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocales(localeIdx) do
         delete locArrs(localeIdx);
@@ -721,14 +746,46 @@ class UserMapAssocArr: BaseArr {
     return locArr[i];
   }
 
+  inline proc dsiLocalAccess(i) ref {
+    const localeIndex = dom.dist.indexToLocaleIndex(i);
+    const locArr = locArrs[localeIndex];
+    return locArr[i];
+  }
 
+  inline proc dsiLocalAccess(i)
+  where shouldReturnRvalueByValue(eltType) {
+    const localeIndex = dom.dist.indexToLocaleIndex(i);
+    const locArr = locArrs[localeIndex];
+    return locArr[i];
+  }
+
+  inline proc dsiLocalAccess(i) const ref
+  where shouldReturnRvalueByConstRef(eltType) {
+    const localeIndex = dom.dist.indexToLocaleIndex(i);
+    const locArr = locArrs[localeIndex];
+    return locArr[i];
+  }
+
+  proc dsiTargetLocales() {
+    return dom.dist.targetLocales;
+  }
+
+  proc dsiHasSingleLocalSubdomain() param return false;
+
+  iter dsiLocalSubdomains() {
+    for (idx,loc) in zip(dom.dist.targetLocDom, dom.dist.targetLocales) {
+      if loc == here {
+        yield dom.locDoms[idx].myInds;
+      }
+    }
+  }
 
   //
   // sequential iterator over the array's elements
   //
   iter these() ref {
     for loc in dom.dist.targetLocDom {
-      // TODO: May want to do something like:     
+      // TODO: May want to do something like:
       // on this do
       // But can't currently have yields in on clauses
       for elem in locArrs(loc) {

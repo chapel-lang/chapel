@@ -21,6 +21,7 @@ process("../layouts/LayoutCS.rst");
 process("BlockDist.rst");
 process("CyclicDist.rst");
 process("BlockCycDist.rst");
+process("HashedDist.rst");
 process("ReplicatedDist.rst");
 process("StencilDist.rst");
 process("PrivateDist.rst");
