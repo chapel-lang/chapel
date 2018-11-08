@@ -965,8 +965,13 @@ memleaksfull:
     - Fix some SparseBlockDist leaks (#11227)
   10/09/18:
     - Resolve some global array-of-array leaks (#11307)
+  10/11/18:
+    - Resolve some leaks in user code (#11321)
+    - Free the result of '_build_tuple_always_allow_ref' for index vars (#11334)
   10/16/18:
     - Adding an exercise about finding duplicate files (#11358)
+  10/25/18:
+    - Fix reduction leak for identity() method (#11458)
 
 meteor:
   12/18/13:
