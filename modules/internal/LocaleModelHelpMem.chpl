@@ -78,6 +78,7 @@ module LocaleModelHelpMem {
     return chpl_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());
   }
 
+  pragma "fn synchronization free"
   pragma "always propagate line file info"
   proc chpl_here_good_alloc_size(min_size:integral): min_size.type {
     pragma "insert line file info"

@@ -239,9 +239,8 @@ namespace {
 
   bool VectorHazardVisitor::enterCallExpr(CallExpr* node) {
     bool foundHazard = isCallVectorHazard(node, fnHasVectorHazard);
-    if (hazard == false) {
+    if (foundHazard && !hazard)
       reason = node;
-    }
     hazard |= foundHazard;
     return true;
   }
@@ -260,13 +259,20 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
   if (fn->_this != NULL)
     thisTypeSymbol = fn->_this->getValType()->symbol;
 
+  CallExpr* reason = NULL;
   bool hazard = false;
-  if (fn->hasFlag(FLAG_EXTERN)) {
+  if (fn->hasFlag(FLAG_LLVM_READNONE) ||
+      fn->hasFlag(FLAG_FN_SYNCHRONIZATION_FREE) ||
+      fn->hasFlag(FLAG_ALLOCATOR) ||
+      fn->hasFlag(FLAG_LOCALE_MODEL_ALLOC) ||
+      fn->hasFlag(FLAG_LOCALE_MODEL_FREE) ||
+      fn->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
+    // these methods shouldn't inhibit vectorization
+    // (but of course not all vectorizers will be able to handle them)
+  } else if (fn->hasFlag(FLAG_EXTERN)) {
     // Who knows what extern functions do!
-    // Note that this could check against a list of OK runtime functions
-
-    hazard = !fn->hasFlag(FLAG_LLVM_READNONE) &&
-             !fn->hasFlag(FLAG_FN_SYNCHRONIZATION_FREE);
+    // To allow an extern function, mark it with FLAG_FN_SYNCHRONIZATION_FREE.
+    hazard = true;
   } else if (thisTypeSymbol != NULL &&
              (thisTypeSymbol->hasFlag(FLAG_ATOMIC_TYPE) ||
               thisTypeSymbol->hasFlag(FLAG_SYNC) ||
@@ -279,9 +285,9 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
     fn->body->accept(&v);
 
     hazard = v.hazard;
+    reason = v.reason;
   }
 
-  /*
   bool report = false;
   if (fReportVectorizedLoops) {
     ModuleSymbol *mod = toModuleSymbol(fn->getModule());
@@ -290,10 +296,19 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
     report = (developer || mod->modTag == MOD_USER);
   }
 
-  if (report && hazard)
-    USR_PRINT(fn, "call to %s will disable vectorization",
-              fn->name);
-   */
+  if (report && hazard) {
+    FnSymbol *calledFn = NULL;
+    if (reason)
+      calledFn = reason->resolvedFunction();
+    if (developer && calledFn)
+      USR_PRINT(fn, "fn %s [%i] hazard -- calls synchronizing function %s [%i]", fn->name, fn->id, calledFn->name, calledFn->id);
+    else if (calledFn)
+      USR_PRINT(fn, "fn %s hazard -- calls synchronizing function %s", fn->name, calledFn->name);
+    else if (reason && reason->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+      USR_PRINT(fn, "fn %s hazard -- calls virtual function", fn->name);
+    else
+      USR_PRINT(fn, "fn %s hazard -- other", fn->name);
+  }
 
   fnHasVectorHazard[fn] = hazard;
 
@@ -351,11 +366,11 @@ static void markVectorizeableForallLoops()
           FnSymbol *fn = NULL;
           if (v.reason)
             fn = v.reason->resolvedFunction();
-          if (developer && fn)
+          if (developer && fn && v.hazard)
             USR_PRINT(loop, "Vectorization hazard -- calls synchronizing function %s [%i]", fn->name, fn->id);
-          else if (fn)
+          else if (fn && v.hazard)
             USR_PRINT(loop, "Vectorization hazard -- calls synchronizing function %s", fn->name);
-          else if (v.reason->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+          else if (v.hazard && v.reason && v.reason->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
             USR_PRINT(loop, "Vectorization hazard -- calls virtual function");
           else
             USR_PRINT(loop, "Vectorization hazard -- other");
@@ -369,9 +384,6 @@ static void markVectorizeableForallLoops()
     // Do they present any of the following hazards?
     //   * synchronization (use of sync variables or atomics)
     //   * reductions that aren't known to work with the vectorizer
-
-    if (forall->id == 847556)
-      gdbShouldBreakHere();
 
     bool hazard = false;
 
@@ -398,7 +410,10 @@ static void markVectorizeableForallLoops()
               is_real_type(accumType)
               // TODO: is_complex_type
              ) {
-            if (0 == strcmp("SumReduceScanOp", opType->symbol->name))
+            const char* nom = "SumReduceScanOp";
+            size_t len = strlen(nom);
+
+            if (0 == memcmp(nom, opType->symbol->name, len))
               ok = true;
           }
           if (ok == false)
@@ -420,11 +435,11 @@ static void markVectorizeableForallLoops()
       FnSymbol *fn = NULL;
       if (v.reason)
         fn = v.reason->resolvedFunction();
-      if (developer && fn)
+      if (developer && fn && v.hazard)
         USR_PRINT(forall, "Vectorization hazard -- calls synchronizing function %s [%i]", fn->name, fn->id);
-      else if (fn)
+      else if (fn && v.hazard)
         USR_PRINT(forall, "Vectorization hazard -- calls synchronizing function %s", fn->name);
-       else if (v.reason->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+       else if (v.hazard && v.reason && v.reason->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
         USR_PRINT(forall, "Vectorization hazard -- calls virtual function");
       else
         USR_PRINT(forall, "Vectorization hazard -- other");

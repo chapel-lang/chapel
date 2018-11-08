@@ -1,13 +1,13 @@
-config const n = 10;
+config const n = 10000;
 proc main() {
-  var A:[1..n] real = 0;
-  var B:[1..n] real = 2;
-  var C:[1..n] real = 1..n;
-  kernel3for(A);
-  writeln(A[1], " ", A[n]);
+  var A:[1..n] real;
+  var B:[1..n] real;
+  var C:[1..n] real;
+  for i in 1..n do A[i] = 0;
+  for i in 1..n do B[i] = 2;
+  for i in 1..n do C[i] = i;
+
   kernel3forall(A);
-  writeln(A[1], " ", A[n]);
-  kernel5for(A, B, C);
   writeln(A[1], " ", A[n]);
   kernel5forall(A, B, C);
   writeln(A[1], " ", A[n]);
@@ -15,22 +15,9 @@ proc main() {
   writeln(A[1], " ", A[n]);
 }
 
-
-proc kernel3for(A) {
-  for (i,j) in vectorizeOnly(1..n, 2..) {
-    A[i] = j:real;
-  }
-}
-
 proc kernel3forall(A) {
   forall (i,j) in zip(1..n, 2..) {
     A[i] = j:real;
-  }
-}
-
-proc kernel5for(A, B, C) {
-  for (a,b,c) in vectorizeOnly(A, B, C) {
-    a = b + c;
   }
 }
 

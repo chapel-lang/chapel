@@ -113,6 +113,9 @@ void LoopStmt::fixVectorizeable()
       if (fLLVMWideOpt)
         needsGets = false;
 
+      if (addressTaken || needsGets || ndefs > 1)
+        hazard = true;
+
       if (report) {
         if (addressTaken)
           USR_PRINT(sym, "Vectorization disabled -- address taken");
