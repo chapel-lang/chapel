@@ -224,50 +224,20 @@ static bool isCallVectorHazard(CallExpr* call,
 namespace {
   class VectorHazardVisitor : public AstVisitorTraverse {
     public:
-      VectorHazardVisitor (std::map<FnSymbol*, bool> &fnHasVectorHazard, bool markDefs);
+      VectorHazardVisitor (std::map<FnSymbol*, bool> &fnHasVectorHazard);
       virtual bool enterCallExpr (CallExpr*  node);
-      virtual bool enterDefExpr (DefExpr*  node);
 
       bool hazard;
-      bool markDefs;
       std::map<FnSymbol*, bool> &fnHasVectorHazard;
   };
 
   VectorHazardVisitor::VectorHazardVisitor(std::map<FnSymbol*, bool>
-      &fnHasVectorHazard, bool markDefs) : hazard(false), markDefs(markDefs), fnHasVectorHazard(fnHasVectorHazard)
+      &fnHasVectorHazard) : hazard(false), fnHasVectorHazard(fnHasVectorHazard)
   {
   }
 
   bool VectorHazardVisitor::enterCallExpr(CallExpr*  node) {
     hazard |= isCallVectorHazard(node, fnHasVectorHazard);
-    return true;
-  }
-  bool VectorHazardVisitor::enterDefExpr(DefExpr*  node) {
-    Symbol* sym = node->sym;
-
-    /*
-    bool addressTaken = false;
-    for_SymbolSymExprs(se, sym) {
-      // Wishing we could run this after optimization...
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
-        if (call->isPrimitive(PRIM_ADDR_OF) ||
-            call->isPrimitive(PRIM_SET_REFERENCE)) {
-          addressTaken = true;
-        } else if (FnSymbol* fn = resolvedOrVirtualFunction(call)) {
-          ArgSymbol* formal = actual_to_formal(se);
-          if ((formal->intent & FLAG_REF))
-            addressTaken = true;
-        }
-      }
-    }
-
-    notSsaDefs = true;*/
-
-    // TODO: don't do this; instead treat all syms this way
-    // during code generation? Other than the induction variable, at
-    // least?
-    if (markDefs)
-      sym->addFlag(FLAG_VECTORIZATION_HAZARD_IF_NOT_REGISTER);
     return true;
   }
 };
@@ -298,8 +268,7 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
     hazard = true;
   } else {
     // Check what the function body includes.
-    // Checks marks vectorization hazards for the event it's inlined.
-    VectorHazardVisitor v(fnHasVectorHazard, true);
+    VectorHazardVisitor v(fnHasVectorHazard);
     fn->body->accept(&v);
 
     hazard = v.hazard;
@@ -336,20 +305,13 @@ void markVectorizeableForallLoops()
     bool hazard = false;
 
     // Does the loop body have any calls that are vectorization hazards?
-    VectorHazardVisitor v(fnHasVectorHazard, true);
+    VectorHazardVisitor v(fnHasVectorHazard);
     forall->loopBody()->accept(&v);
     hazard = v.hazard;
 
-    // TODO:
-    // Also consider defs inside the loop as hazards
-    // e.g.
-    //  forall i in 1..10 {
-    //    var x: int;
-    //  }
-    // Such defs would need to be cloned per vector lane and we're not
-    // ready to do that yet.
-    // TODO: Handle this after inlining and other optimization.
-    // For now we mark them with FLAG_VECTORIZATION_HAZARD_IF_NOT_REGISTER
+    // Another potential issue is defs inside the loop.
+    // These are later, since many of these might be folded
+    // away and/or inlined.
 
     // Does the loop use a reduction type that is not vectorizeable yet?
     for_shadow_vars (shadow, temp, forall) {

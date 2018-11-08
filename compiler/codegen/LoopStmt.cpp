@@ -33,6 +33,10 @@ void LoopStmt::fixVectorizeable()
   // DefExprs for values that we expect to be represented as registers
   // are OK.
 
+  // Alternatively we could clone these allocations per vector
+  // lane. We're not quite ready to do that yet though, and ones
+  // that don't need to be cloned should be in registers anyway.
+
   // This runs late in the compiler because we want to do this check
   // after inlining and other late simplifications have occured.
   bool addressTaken = false;
@@ -69,8 +73,17 @@ void LoopStmt::fixVectorizeable()
     }
   }
 
-  if (addressTaken || ndefs > 1)
+  if (addressTaken || ndefs > 1) {
+    // Turn off vectorization for this loop, we can't handle it yet
     this->vectorizeableSet(false);
+  } else {
+    // Enable vectorization but get the code generator to assert
+    // that the inner symbols are always generated as SSA registers.
+    for_alist(expr, body) {
+      if (DefExpr* def = toDefExpr(expr))
+        def->sym->addFlag(FLAG_LLVM_SSA_REGISTER);
+    }
+  }
 }
 
 // If vectorization is enabled and this loop is marked for vectorization,

@@ -199,6 +199,7 @@ symbolFlag( FLAG_NIL_FROM_THIS, ypr, "nil from this", ncm )
 symbolFlag( FLAG_LINE_NUMBER_OK, ypr, "lineno ok", ncm )
 
 symbolFlag( FLAG_LLVM_READNONE , ypr, "llvm readnone" , ncm )
+symbolFlag( FLAG_LLVM_SSA_REGISTER, npr, "code generate as LLVM SSA register", "marks symbols must be code generated as an LLVM register" )
 
 symbolFlag( FLAG_LOCALE_MODEL_ALLOC , ypr, "locale model alloc" , "locale model specific alloc" )
 symbolFlag( FLAG_LOCALE_MODEL_FREE , ypr, "locale model free" , "locale model specific free" )
@@ -358,7 +359,6 @@ symbolFlag( FLAG_UNCHECKED_THROWS,  ypr, "unchecked throws" , "function throws b
 symbolFlag( FLAG_UNREF_FN,  ypr, "unref fn" , "function to remove reference fields from tuples or copy array slices when returning")
 symbolFlag( FLAG_UNSAFE,  ypr, "unsafe" , "unsafe (disable lifetime checking)")
 symbolFlag( FLAG_VECTORIZE_YIELDING_LOOPS, ypr, "vectorize yielding loops", "used to explicitly vectorize yielding loops in iterators" )
-symbolFlag( FLAG_VECTORIZATION_HAZARD_IF_NOT_REGISTER, npr, "vectorization hazard if not register", "marks symbols that are vectorization hazards if they do not end up in a register" )
 symbolFlag( FLAG_VIRTUAL , npr, "virtual" , ncm )
 symbolFlag( FLAG_VOID_NO_RETURN_VALUE, npr, "no return value for void", "function does not return a value if the return type is void" )
 // Used to mark where a compiler generated flag was removed (but is desired
