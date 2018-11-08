@@ -507,7 +507,8 @@ bool NFA<StrPiece>::Search(const StrPiece& text, const StrPiece& const_context,
 
   if (ExtraDebug)
     fprintf(stderr, "NFA::Search %s (context: %s) anchored=%d longest=%d\n",
-            string(text).c_str(), string(context).c_str(), anchored, longest);
+            text.ToString().c_str(), context.ToString().c_str(), anchored,
+            longest);
 
   // Set up search.
   Threadq* runq = &q0_;

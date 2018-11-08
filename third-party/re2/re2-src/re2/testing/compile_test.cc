@@ -128,7 +128,7 @@ TEST(TestRegexpCompileToProg, Simple) {
       failed++;
       continue;
     }
-    ASSERT_TRUE(re->CompileToProg(1) == NULL);
+    CHECK(re->CompileToProg(1) == NULL);
     string s = prog->Dump();
     if (s != t.code) {
       LOG(ERROR) << "Incorrect compiled code for: " << t.regexp;

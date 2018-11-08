@@ -306,8 +306,6 @@ struct FilePiece {
   int64_t end_;
   FileSearchInfo* fi;
 
-  typedef std::char_traits<char> traits_type;
-
   typedef FileSearchPtr ptr_type;
   typedef ReadingFileSearchPtr ptr_rd_type;
 
@@ -389,11 +387,6 @@ struct FilePiece {
   FileSearchPtr find_c(ReadingFileSearchPtr s, FileSearchPtr end, int c) const;
 
   // For debugging.
-  template <typename A>
-  explicit operator std::basic_string<char, traits_type, A>() const {
-    return {};
-  }
-
   std::string as_string() const {
     return std::string();
   }

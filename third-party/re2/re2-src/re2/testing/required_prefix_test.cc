@@ -47,20 +47,20 @@ TEST(RequiredPrefix, SimpleTests) {
       if (j == 0)
         flags = flags | Regexp::Latin1;
       Regexp* re = Regexp::Parse(t.regexp, flags, NULL);
-      ASSERT_TRUE(re != NULL) << " " << t.regexp;
+      CHECK(re) << " " << t.regexp;
 
       string p;
       bool f;
       Regexp* s;
-      ASSERT_EQ(t.return_value, re->RequiredPrefix(&p, &f, &s))
+      CHECK_EQ(t.return_value, re->RequiredPrefix(&p, &f, &s))
         << " " << t.regexp << " " << (j==0 ? "latin1" : "utf")
         << " " << re->Dump();
       if (t.return_value) {
-        ASSERT_EQ(p, string(t.prefix))
+        CHECK_EQ(p, string(t.prefix))
           << " " << t.regexp << " " << (j==0 ? "latin1" : "utf");
-        ASSERT_EQ(f, t.foldcase)
+        CHECK_EQ(f, t.foldcase)
           << " " << t.regexp << " " << (j==0 ? "latin1" : "utf");
-        ASSERT_EQ(s->ToString(), string(t.suffix))
+        CHECK_EQ(s->ToString(), string(t.suffix))
           << " " << t.regexp << " " << (j==0 ? "latin1" : "utf");
         s->Decref();
       }
