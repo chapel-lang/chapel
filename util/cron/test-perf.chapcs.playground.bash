@@ -25,15 +25,17 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of using memmove over memcpy in the runtime
-GITHUB_USER=ronawho
-GITHUB_BRANCH=memmove-everywhere
-SHORT_NAME=memmove-everywhere
-START_DATE=11/02/18
+# Test performance of cstdlib atomics
+#GITHUB_USER=ronawho
+#GITHUB_BRANCH=memmove-everywhere
+SHORT_NAME=cstdlib-atomics
+START_DATE=11/08/18
 
-git branch -D $GITHUB_USER-$GITHUB_BRANCH
-git checkout -b $GITHUB_USER-$GITHUB_BRANCH
-git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
+export CHPL_ATOMICS=cstdlib
+
+#git branch -D $GITHUB_USER-$GITHUB_BRANCH
+#git checkout -b $GITHUB_USER-$GITHUB_BRANCH
+#git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
