@@ -74,7 +74,7 @@
 char llvmPrintIrName[FUNC_NAME_MAX+1] = "";
 char llvmPrintIrStage[FUNC_NAME_MAX+1] = "";
 const char *llvmPrintIrCName;
-llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NOPRINT;
+llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NONE;
 const char* llvmStageName[llvmStageNum::LAST] = {
   "", //llvmStageNum::NOPRINT
   "none", //llvmStageNum::NONE
@@ -1597,8 +1597,9 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     func = getFunctionLLVM(cname);
 
-    if(llvmPrintIrStageNum != llvmStageNum::NOPRINT
-            && strcmp(llvmPrintIrName, name) == 0) {
+    if(llvmPrintIrStageNum != llvmStageNum::NOPRINT &&
+       llvmPrintIrName[0] != '\0' &&
+       strcmp(llvmPrintIrName, name) == 0) {
         func->addFnAttr(llvm::Attribute::NoInline);
         llvmPrintIrCName = cname;
     }
@@ -1698,8 +1699,9 @@ void FnSymbol::codegenDef() {
     }
 
     if((llvmPrintIrStageNum == llvmStageNum::NONE ||
-        llvmPrintIrStageNum == llvmStageNum::EVERY)
-            && strcmp(llvmPrintIrName, name) == 0)
+        llvmPrintIrStageNum == llvmStageNum::EVERY) &&
+       llvmPrintIrName[0] != '\0' &&
+       strcmp(llvmPrintIrName, name) == 0)
         printLlvmIr(func, llvmStageNum::NONE);
 
     // Now run the optimizations on that function.
@@ -1711,8 +1713,9 @@ void FnSymbol::codegenDef() {
     //  populateFunctionPassManager does not include vectorization)
     info->FPM_postgen->run(*func);
     if((llvmPrintIrStageNum == llvmStageNum::BASIC ||
-        llvmPrintIrStageNum == llvmStageNum::EVERY)
-            && strcmp(llvmPrintIrName, name) == 0)
+        llvmPrintIrStageNum == llvmStageNum::EVERY) &&
+       llvmPrintIrName[0] != '\0' &&
+       strcmp(llvmPrintIrName, name) == 0)
         printLlvmIr(func, llvmStageNum::BASIC);
 #endif
   }
