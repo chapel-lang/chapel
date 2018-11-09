@@ -1088,12 +1088,18 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
       arrSection = myLocArr;
 
     //
+    // Forcibly narrow the array section. We know it's narrow because we're in
+    // a fast follower, but the compiler can't determine this currently.
+    //
+    const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type;
+
+    //
     // Slicing arrSection.myElems will require reference counts to be updated.
     // If myElems is an array of arrays, the inner array's domain or dist may
     // live on a different locale and require communication for reference
     // counting. Simply put: don't slice inside a local block.
     //
-    ref chunk = arrSection.myElems(myFollowThisDom);
+    ref chunk = narrowArrSection.myElems(myFollowThisDom);
     local {
       for i in chunk do yield i;
     }
