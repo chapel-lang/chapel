@@ -199,7 +199,6 @@ symbolFlag( FLAG_NIL_FROM_THIS, ypr, "nil from this", ncm )
 symbolFlag( FLAG_LINE_NUMBER_OK, ypr, "lineno ok", ncm )
 
 symbolFlag( FLAG_LLVM_READNONE , ypr, "llvm readnone" , ncm )
-symbolFlag( FLAG_LLVM_SSA_REGISTER, npr, "code generate as LLVM SSA register", "marks symbols must be code generated as an LLVM register" )
 
 symbolFlag( FLAG_LOCALE_MODEL_ALLOC , ypr, "locale model alloc" , "locale model specific alloc" )
 symbolFlag( FLAG_LOCALE_MODEL_FREE , ypr, "locale model free" , "locale model specific free" )
