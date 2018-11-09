@@ -336,7 +336,6 @@ symbolFlag( FLAG_RUNTIME_TYPE_VALUE , npr, "runtime type value" , "associated ru
 symbolFlag( FLAG_SAFE, ypr, "safe", "safe (activate lifetime checking)")
 symbolFlag( FLAG_SCOPE, npr, "scope", "scoped (lifetime checking like a local variable)")
 symbolFlag( FLAG_SHOULD_NOT_PASS_BY_REF, npr, "should not pass by ref", "this symbol should be passed by value (not by reference) for performance, not for correctness")
-symbolFlag( FLAG_SSA_REGISTER, npr, "llvm ssa register", "this symbol must be represented in LLVM as an SSA register")
 symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
 // Based on how this is used, I suggest renaming it to return_value_has_initializer
 // or something similar <hilde>.
