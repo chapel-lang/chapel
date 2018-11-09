@@ -336,6 +336,12 @@ static void markVectorizeableForallLoops()
 {
   std::map<FnSymbol*, bool> fnHasVectorHazard;
 
+  // The --force-vectorize flag exists mainly for testing and
+  // disables this logic. Instead of disabling vectorization for
+  // loops with vectorization hazards, all hazards will be ignored.
+  if (fForceVectorize)
+    return;
+
   // Check for loops over vectorize-only iterators
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->isLoopStmt()) {

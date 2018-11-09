@@ -62,6 +62,7 @@ extern bool fNoTupleCopyOpt;
 extern bool fNoOptimizeRangeIteration;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoVectorize;
+extern bool fForceVectorize;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;

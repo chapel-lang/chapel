@@ -123,6 +123,7 @@ bool fNoOptimizeRangeIteration = false;
 bool fNoOptimizeLoopIterators = false;
 bool fNoVectorize = false; // adjusted in postVectorize
 static bool fYesVectorize = false;
+bool fForceVectorize = false;
 bool fNoGlobalConstOpt = false;
 bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
@@ -1045,6 +1046,7 @@ static ArgumentDescription arg_desc[] = {
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", NULL},
+ {"force-vectorize", ' ', NULL, "Ignore vectorization hazards when vectorizing loops", "N", &fForceVectorize, NULL, NULL},
  {"warn-const-loops", ' ', NULL, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", NULL},
  {"warn-domain-literal", ' ', NULL, "Enable [disable] old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_WARN_DOMAIN_LITERAL", setWarnDomainLiteral},
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
@@ -1304,6 +1306,9 @@ static void postLocal() {
 static void postVectorize() {
   // Make sure fYesVectorize and fNoVectorize are respected
   // but if neither is set, compute the default (based on --llvm or not)
+  if (fForceVectorize)
+    fYesVectorize = true;
+
   if (fNoVectorize) {
     fYesVectorize = false;
   } else if (fYesVectorize) {

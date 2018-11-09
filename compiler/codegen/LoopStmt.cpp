@@ -24,6 +24,9 @@
 
 void LoopStmt::fixVectorizeable()
 {
+  if (fForceVectorize)
+    return; // ignore all hazards, so nothing to do here
+
   if (!this->isVectorizeable())
     return; // nothing more to do!
 
