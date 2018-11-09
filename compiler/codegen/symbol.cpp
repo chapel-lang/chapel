@@ -71,10 +71,12 @@
 *                                                                   *
 ********************************* | ********************************/
 
-char llvmPrintIrName[FUNC_NAME_MAX+1] = "";
-char llvmPrintIrStage[FUNC_NAME_MAX+1] = "";
-const char *llvmPrintIrCName;
-llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NONE;
+// these are sets of astrs
+static std::set<const char*> llvmPrintIrNames;
+static std::set<const char*> llvmPrintIrCNames;
+
+llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NOPRINT;
+
 const char* llvmStageName[llvmStageNum::LAST] = {
   "", //llvmStageNum::NOPRINT
   "none", //llvmStageNum::NONE
@@ -105,16 +107,101 @@ llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName) {
   return llvmStageNum::NOPRINT;
 }
 
+void addNameToPrintLlvmIr(const char* name) {
+  llvmPrintIrNames.insert(astr(name));
+}
+void addCNameToPrintLlvmIr(const char* name) {
+  llvmPrintIrCNames.insert(astr(name));
+}
+
+bool shouldLlvmPrintIrName(const char* name) {
+  if (llvmPrintIrNames.empty())
+    return false;
+
+  return llvmPrintIrNames.count(astr(name));
+}
+
+bool shouldLlvmPrintIrCName(const char* name) {
+  if (llvmPrintIrNames.empty())
+    return false;
+
+  return llvmPrintIrCNames.count(astr(name));
+}
+
+bool shouldLlvmPrintIrFn(FnSymbol* fn) {
+  return shouldLlvmPrintIrName(fn->name) || shouldLlvmPrintIrCName(fn->cname);
+}
+
 #ifdef HAVE_LLVM
-void printLlvmIr(llvm::Function *func, llvmStageNum_t numStage) {
+
+static std::set<const llvm::GlobalValue*> funcsToPrint;
+static llvmStageNum_t partlyPrintedStage = llvmStageNum::NOPRINT;
+
+void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage) {
   if(func) {
-    std::cout << "; " << "LLVM IR representation of " << llvmPrintIrName
+    std::cout << "; " << "LLVM IR representation of " << name
               << " function after " << llvmStageNameFromLlvmStageNum(numStage)
               << " optimization stage\n" << std::flush;
-    extractAndPrintFunctionLLVM(func);
+    if (!(numStage == llvmStageNum::BASIC ||
+          numStage == llvmStageNum::FULL)) {
+      // Basic and full can happen module-at-a-time due to current
+      // compiler structure. For the others, we can't save the Function*,
+      // so just print out multiple modules if there are multiple functions.
+      std::set<const llvm::GlobalValue*> funcs;
+      funcs.insert(func);
+      extractAndPrintFunctionsLLVM(&funcs);
+    } else {
+      funcsToPrint.insert(func);
+      partlyPrintedStage = numStage;
+    }
   }
 }
 #endif
+
+void completePrintLlvmIrStage(llvmStageNum_t numStage) {
+  extractAndPrintFunctionsLLVM(&funcsToPrint);
+  partlyPrintedStage = llvmStageNum_t::NOPRINT;
+  funcsToPrint.clear();
+}
+
+
+void preparePrintLlvmIrForCodegen() {
+  if (llvmPrintIrNames.empty() && llvmPrintIrCNames.empty())
+    return;
+  if (llvmPrintIrStageNum == llvmStageNum::NOPRINT)
+    return;
+
+  // Gather the cnames for the functions in names
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (shouldLlvmPrintIrFn(fn)) {
+      addCNameToPrintLlvmIr(fn->cname);
+    }
+  }
+
+  // Extend cnames with the cnames of task functions
+  bool changed;
+  do {
+    changed = false;
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if (shouldLlvmPrintIrCName(fn->cname)) {
+        std::vector<CallExpr*> calls;
+        collectFnCalls(fn, calls);
+
+        for_vector(CallExpr, call, calls) {
+          if (FnSymbol* calledFn = call->resolvedFunction()) {
+            if (isTaskFun(calledFn) ||
+                calledFn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
+              if (!shouldLlvmPrintIrFn(calledFn)) {
+                addCNameToPrintLlvmIr(calledFn->cname);
+                changed = true;
+              }
+            }
+          }
+        }
+      }
+    }
+  } while (changed);
+}
 
 /******************************** | *********************************
 *                                                                   *
@@ -1597,12 +1684,13 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     func = getFunctionLLVM(cname);
 
+    // Mark functions to dump as no-inline so they actually exist
+    // after optimization
     if(llvmPrintIrStageNum != llvmStageNum::NOPRINT &&
-       llvmPrintIrName[0] != '\0' &&
-       strcmp(llvmPrintIrName, name) == 0) {
+       shouldLlvmPrintIrFn(this)) {
         func->addFnAttr(llvm::Attribute::NoInline);
-        llvmPrintIrCName = cname;
     }
+    // Also mark no-inline if the flag was set
     if (fNoInline)
       func->addFnAttr(llvm::Attribute::NoInline);
 
@@ -1700,9 +1788,8 @@ void FnSymbol::codegenDef() {
 
     if((llvmPrintIrStageNum == llvmStageNum::NONE ||
         llvmPrintIrStageNum == llvmStageNum::EVERY) &&
-       llvmPrintIrName[0] != '\0' &&
-       strcmp(llvmPrintIrName, name) == 0)
-        printLlvmIr(func, llvmStageNum::NONE);
+       shouldLlvmPrintIrFn(this))
+        printLlvmIr(name, func, llvmStageNum::NONE);
 
     // Now run the optimizations on that function.
     // (we handle checking fFastFlag, etc, when we set up FPM_postgen)
@@ -1712,11 +1799,6 @@ void FnSymbol::codegenDef() {
     // (note, in particular, the default pass manager's
     //  populateFunctionPassManager does not include vectorization)
     info->FPM_postgen->run(*func);
-    if((llvmPrintIrStageNum == llvmStageNum::BASIC ||
-        llvmPrintIrStageNum == llvmStageNum::EVERY) &&
-       llvmPrintIrName[0] != '\0' &&
-       strcmp(llvmPrintIrName, name) == 0)
-        printLlvmIr(func, llvmStageNum::BASIC);
 #endif
   }
 

@@ -519,9 +519,17 @@ static void setChapelDebug(const ArgumentDescription* desc, const char* arg_unus
   printCppLineno = true;
 }
 
-static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const char* arg_unused)
+static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
+  if (llvmPrintIrStageNum == llvmStageNum::NOPRINT)
+    llvmPrintIrStageNum = llvmStageNum::BASIC;
+
+  addNameToPrintLlvmIr(arg);
+}
+
+static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const
+    char* arg)
 {
-  llvmStageNum_t stageNum = llvmStageNumFromLlvmStageName(llvmPrintIrStage);
+  llvmStageNum_t stageNum = llvmStageNumFromLlvmStageName(arg);
   if(stageNum == llvmStageNum::NOPRINT)
     USR_FATAL("Unknown llvm-print-ir-stage argument");
 
@@ -985,8 +993,8 @@ static ArgumentDescription arg_desc[] = {
  {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},
  {"log-node", ' ', NULL, "Dump IR using AstDumpToNode", "F", &fLogNode, "CHPL_LOG_NODE", NULL},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
- {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S256", llvmPrintIrName, "CHPL_LLVM_PRINT_IR", NULL},
- {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S256", llvmPrintIrStage, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
+ {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", NULL, "CHPL_LLVM_PRINT_IR", &setPrintIr},
+ {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
