@@ -59,6 +59,8 @@ Comments = {
 
 IgnoreCase=false
 
+Digits=[[ (?:0x|0X|0o|0O|0b|0B)[0-9a-fA-F][0-9a-fA-F\_]*|(?:\d[\d\_]*)?\.?(?:\d[\d\_]*)?(?:[eE][\-\+]?\d[\d\_]*)? ]]
+
 Operators=[[\(|\)|\[|\]|\{|\}|\,|\;|\.|\:|\/|\*|\%|\+|\-|=|\&|\?|<|>|\!|\~|\||\^|!|#]]
 
 EnableIndentation=true
