@@ -4,10 +4,22 @@
 preproc = "use"
 
 # \< \> means all one token.
-number =
-'\<[+-]?((0x[[:xdigit:]]+)|(([[:digit:]]*\.)?
-[[:digit:]]+([eE][+-]?[[:digit:]]+)?))\>'
 
+# binary, octal, decimal, hexadecimal integer
+number = '\<(0[bB][0-1]([0-1]|_)*)\>'
+number = '\<(0[oO][0-7]([0-7]|_)*)\>'
+number = '\<([[:digit:]]([[:digit:]]|_)*)\>'
+number = '\<(0[xX][[:xdigit:]]([[:xdigit:]]|_)*)\>'
+
+# decimal floating point number
+number = '\<(([[:digit:]]([[:digit:]]|_)*)?\.[[:digit:]]([[:digit:]]|_)*([Ee][+-]?[[:digit:]]([[:digit:]]|_)*)?)\>'
+number = '\<(([[:digit:]]([[:digit:]]|_)*)\.([Ee][+-]?[[:digit:]]([[:digit:]]|_)*))\>'
+number = '\<(([[:digit:]]([[:digit:]]|_)*)([Ee][+-]?[[:digit:]]([[:digit:]]|_)*))\>'
+
+# hexadecimal floating point number
+number = '\<(([[:xdigit:]]([[:xdigit:]]|_)*)?\.[[:xdigit:]]([[:xdigit:]]|_)*([Pp][+-]?[[:digit:]]([[:digit:]]|_)*)?)\>'
+number = '\<(([[:xdigit:]]([[:xdigit:]]|_)*)\.([Pp][+-]?[[:digit:]]([[:digit:]]|_)*))\>'
+number = '\<(([[:xdigit:]]([[:xdigit:]]|_)*)([Pp][+-]?[[:digit:]]([[:digit:]]|_)*))\>'
 
 string delim "\"" "\"" escape "\\"
 
