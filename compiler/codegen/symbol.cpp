@@ -159,9 +159,11 @@ void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage
 #endif
 
 void completePrintLlvmIrStage(llvmStageNum_t numStage) {
+#ifdef HAVE_LLVM
   extractAndPrintFunctionsLLVM(&funcsToPrint);
   partlyPrintedStage = llvmStageNum_t::NOPRINT;
   funcsToPrint.clear();
+#endif
 }
 
 
