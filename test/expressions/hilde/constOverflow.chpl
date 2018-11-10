@@ -8,8 +8,9 @@
 // behavior is OK, but Chapel should try to protect users from such
 // platform-dependencies.
 
+config const maxS = max(int(32));
+
 proc main() {
-  const maxS = max(int(32));
   const maxS1 = maxS + 1;
   const m = 10;
 
