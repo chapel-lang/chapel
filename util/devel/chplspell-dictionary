@@ -2584,6 +2584,7 @@ linenum
 modvec
 nasts
 nclean
+tfor
 yyfilename
 yystartlineno
 
@@ -2591,6 +2592,7 @@ FILEID: ce578c98-1d0a-11e6-a3a6-10ddb1d4c3d5
 bbin
 bbout
 nbbq
+nbbs
 
 FILEID: f4c93d2c-1d0a-11e6-a3a6-10ddb1d4c3d5
 fifn
@@ -2765,6 +2767,7 @@ ytemp
 
 FILEID: 803ee256-1d85-11e6-a3a6-10ddb1d4c3d5
 dbaadab
+ftemp
 newresult
 rauto
 
@@ -3813,6 +3816,7 @@ negbv
 srcwide
 
 FILEID: 80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5
+astrs
 disubprogram
 dtype
 ndarray
@@ -4622,6 +4626,8 @@ fabfail
 fabsall
 freeinfo
 lcpus
+mrdesc
+mrkey
 ofichkerr
 ofichkret
 pmichkret
@@ -4637,6 +4643,8 @@ spages
 statsnodes
 statsprogress
 statsthreads
+tciia
+tciiw
 tcip
 threaddetails
 tostr
@@ -4799,7 +4807,9 @@ itype
 slayout
 
 FILEID: 3bdbc4ea-d1aa-11e8-954d-10ddb1d4c3d5
+anychanged
 bbin
+bbout
 inbb
 nbbs
 
@@ -4817,6 +4827,19 @@ rtds
 
 FILEID: 91c58b86-d1c1-11e8-954d-10ddb1d4c3d5
 appnum
+
+FILEID: 82c1d8e6-e581-11e8-954d-10ddb1d4c3d5
+tfor
+
+FILEID: 8e2d4094-e581-11e8-954d-10ddb1d4c3d5
+tostring
+
+FILEID: 9627af8c-e581-11e8-954d-10ddb1d4c3d5
+tfor
+
+FILEID: e4e38696-e581-11e8-954d-10ddb1d4c3d5
+tilda
+urxvt
 
 NATURAL:
 aarch
@@ -5146,6 +5169,7 @@ configs
 conjg
 constness
 consts
+contextless
 cookiefile
 cookielist
 coopting
@@ -5537,6 +5561,7 @@ ferguson
 fflush
 fftw
 fibonacci
+fieldname
 fieldno
 fieldnum
 fieldwise
@@ -6353,6 +6378,7 @@ nonlocal
 nonlocking
 nonnegative
 nonnegligible
+nonpersistent
 nonprimitive
 nonprinting
 nonsequential
@@ -6408,6 +6434,7 @@ nvidia
 nview
 objs
 october
+offsetof
 ofile
 ogham
 ohio
@@ -7247,6 +7274,7 @@ vdebug
 vecs
 vectorizable
 vectorizer
+vectorizers
 vectorizes
 vectorizing
 venv

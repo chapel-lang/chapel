@@ -77,6 +77,9 @@
   "d20c5afc-1d7e-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/ifa/num.cpp"
   ],
+  "82c1d8e6-e581-11e8-954d-10ddb1d4c3d5": [
+    "compiler/include/baseAST.h"
+  ],
   "081f50fc-91e8-11e7-b3f1-10ddb1d4c3d5": [
     "compiler/include/clangBuiltinsWrappedSet.h",
     "runtime/include/llvm/chapel_libc_wrapper.h",
@@ -113,6 +116,9 @@
   ],
   "e4db0dbc-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/map.h"
+  ],
+  "8e2d4094-e581-11e8-954d-10ddb1d4c3d5": [
+    "compiler/include/misc.h"
   ],
   "ed3f86d6-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/parser.h"
@@ -277,6 +283,9 @@
   ],
   "606babf2-1d86-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/util/llvmUtil.cpp"
+  ],
+  "9627af8c-e581-11e8-954d-10ddb1d4c3d5": [
+    "compiler/util/stringutil.cpp"
   ],
   "97641a68-1e44-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/CompilerDebugging.txt"
@@ -620,6 +629,9 @@
   ],
   "aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5": [
     "runtime/src/comm/ugni/comm-ugni.c"
+  ],
+  "e4e38696-e581-11e8-954d-10ddb1d4c3d5": [
+    "runtime/src/launch/amudprun/launch-amudprun.c"
   ],
   "b7c60ac2-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/launch/mpirun/launch-mpirun.c"
