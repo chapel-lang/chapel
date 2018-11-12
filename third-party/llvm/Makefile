@@ -42,7 +42,11 @@ LLVM_CLANG_CONFIG_FILE := $(LLVM_INSTALL_DIR)/configured-clang-sysroot-arguments
 # GCC_INSTALL_PREFIX for GCC builds.
 CHPL_LLVM_GCC_PREFIX := ""
 ifneq (, $(findstring gnu,$(CHPL_MAKE_HOST_COMPILER)))
-  CHPL_LLVM_GCC_PREFIX := -DGCC_INSTALL_PREFIX=$(dir $(shell which $(CC)))
+  CHPL_LLVM_GCC_PREFIX_DIR := $(dir $(shell which $(CC)))
+  ifneq ("/usr/bin", $(CHPL_LLVM_GCC_PREFIX_DIR))
+    CHPL_LLVM_GCC_PREFIX :=
+    -DGCC_INSTALL_PREFIX=$(CHPL_LLVM_GCC_PREFIX_DIR)
+  endif
 endif
 
 CMAKE ?= cmake
@@ -103,7 +107,6 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    -DLLVM_INSTALL_UTILS=ON \
 	    -DLLVM_BUILD_LLVM_DYLIB=ON \
 	    -DLLVM_LINK_LLVM_DYLIB=ON \
-	    -DLLVM_DYLIB_COMPONENTS=all \
 	    -Wno-dev \
 	    $(LLVM_SRC_DIR) ; \
 	else \
