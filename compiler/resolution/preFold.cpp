@@ -831,7 +831,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = followerCall;
 
   } else if (call->isPrimitive(PRIM_TO_LEADER)) {
-    FnSymbol* iterator   = getTheIteratorFn(call);
+    FnSymbol* iterator =
+      getTheIteratorFnFromIteratorRec(call->get(1)->typeInfo());
     CallExpr* leaderCall = new CallExpr(iterator->name);
 
     for_formals(formal, iterator) {

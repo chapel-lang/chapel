@@ -2174,6 +2174,40 @@ static void fixNumericalGetMemberPrims()
 }
 
 
+//
+// For _toLeader fns, convert out-of-scope references to prim calls.
+// cleanupLeaderFollowerIteratorCalls() wouldn't handle such references
+// if a _toLeader call is inlined.
+//
+static void cleanupLeaderIteratorCalls()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->inTree() && !strcmp(fn->name, "_toLeader")) {
+      ArgSymbol* toLeaderArg = fn->getFormal(1);
+      if (! toLeaderArg->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+        continue;
+
+      std::vector<SymExpr*> symExprs;
+      collectSymExprs(fn, symExprs);
+      for_vector(SymExpr, se, symExprs) {
+        ArgSymbol* iteratorArg = toArgSymbol(se->symbol());
+        if (iteratorArg == NULL) continue;
+        if (iteratorArg->defPoint->parentSymbol == fn) continue;
+
+        SET_LINENO(se);
+        VarSymbol* ftemp = newTemp("ftemp", iteratorArg->qualType());
+        PrimitiveTag irf = PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL;
+        Expr*       stmt = se->getStmtExpr();
+        stmt->insertBefore(new DefExpr(ftemp));
+        stmt->insertBefore(new CallExpr(PRIM_MOVE, ftemp,
+                            new CallExpr(irf, toLeaderArg, iteratorArg)));
+        se->replace(new SymExpr(ftemp));
+      }
+    }
+  }
+}
+
+
 static void cleanupLeaderFollowerIteratorCalls()
 {
   //
@@ -2183,14 +2217,14 @@ static void cleanupLeaderFollowerIteratorCalls()
   // Such formals were temporarily added (e.g. in preFold for PRIM_TO_FOLLOWER)
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol) {
+    if (call->inTree()) {
       if (FnSymbol* fn = call->resolvedFunction()) {
         if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
             (isDefExpr(fn->formals.tail) &&
              !strcmp(toDefExpr(fn->formals.tail)->sym->name, "_retArg") &&
              toDefExpr(fn->formals.tail)->sym->getValType() &&
              toDefExpr(fn->formals.tail)->sym->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
-          if (!strcmp(call->parentSymbol->name, "_toLeader") ||
+          if (
               !strcmp(call->parentSymbol->name, "_toFollower") ||
               !strcmp(call->parentSymbol->name, "_toFastFollower") ||
               !strcmp(call->parentSymbol->name, "_toStandalone")) {
@@ -2470,6 +2504,8 @@ void lowerIterators() {
   nonLeaderParCheck();
 
   computeRecursiveIteratorSet();
+
+  cleanupLeaderIteratorCalls();
 
   lowerForallStmtsInline();
 

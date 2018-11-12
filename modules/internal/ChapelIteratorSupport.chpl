@@ -362,17 +362,10 @@ module ChapelIteratorSupport {
       _freeIterator(x(i));
   }
 
+  pragma "fn returns iterator"
   pragma "no implicit copy"
-  pragma "fn returns iterator"
-  inline proc _toLeader(iterator: _iteratorClass)
-    return chpl__autoCopy(__primitive("to leader", iterator));
-
-  pragma "fn returns iterator"
   inline proc _toLeader(ir: _iteratorRecord) {
-    pragma "no copy" var ic = _getIterator(ir);
-    pragma "no copy" var leader = _toLeader(ic);
-    _freeIterator(ic);
-    return leader;
+    return chpl__autoCopy(__primitive("to leader", ir));
   }
 
   pragma "suppress lvalue error"
@@ -418,16 +411,8 @@ module ChapelIteratorSupport {
   pragma "no implicit copy"
   pragma "expand tuples with values"
   pragma "fn returns iterator"
-  inline proc _toLeader(iterator: _iteratorClass, args...)
-    return chpl__autoCopy(__primitive("to leader", iterator, (...args)));
-
-  pragma "expand tuples with values"
-  pragma "fn returns iterator"
   inline proc _toLeader(ir: _iteratorRecord, args...) {
-    pragma "no copy" var ic = _getIterator(ir);
-    pragma "no copy" var leader = _toLeader(ic, (...args));
-    _freeIterator(ic);
-    return leader;
+    return chpl__autoCopy(__primitive("to leader", ir, (...args)));
   }
 
   pragma "suppress lvalue error"
