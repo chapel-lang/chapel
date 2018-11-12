@@ -36,6 +36,15 @@ LLVM_CONFIG_FILE := $(LLVM_INSTALL_DIR)/bin/llvm-config
 LLVM_CLANG_FILE := $(LLVM_INSTALL_DIR)/bin/clang
 LLVM_CLANG_CONFIG_FILE := $(LLVM_INSTALL_DIR)/configured-clang-sysroot-arguments
 
+# Sometimes one is using a custom version of GCC. In that event,
+# we'd like the built clang to use that version's std C++ headers, rather
+# than only finding the versions in /usr/include. To do that, pass
+# GCC_INSTALL_PREFIX for GCC builds.
+CHPL_LLVM_GCC_PREFIX := ""
+ifneq (, $(findstring gnu,$(CHPL_MAKE_HOST_COMPILER)))
+  CHPL_LLVM_GCC_PREFIX := -DGCC_INSTALL_PREFIX=$(dir $(shell which $(CC)))
+endif
+
 CMAKE ?= cmake
 
 default: $(CHPL_MAKE_LLVM)
@@ -85,6 +94,7 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    -DCMAKE_EXE_LINKER_FLAGS='$(LDFLAGS)' \
 	    -DCMAKE_MODULE_LINKER_FLAGS='$(LDFLAGS)' \
 	    $(CHPL_LLVM_DEBUG) \
+	    $(CHPL_LLVM_GCC_PREFIX) \
 	    -DLLVM_ENABLE_WARNINGS=0 \
 	    -DLLVM_ENABLE_PEDANTIC=0 \
 	    -DCLANG_ENABLE_ARCMT=0 \
