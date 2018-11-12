@@ -44,8 +44,7 @@ CHPL_LLVM_GCC_PREFIX := ""
 ifneq (, $(findstring gnu,$(CHPL_MAKE_HOST_COMPILER)))
   CHPL_LLVM_GCC_PREFIX_DIR := $(dir $(shell which $(CC)))
   ifneq ("/usr/bin", $(CHPL_LLVM_GCC_PREFIX_DIR))
-    CHPL_LLVM_GCC_PREFIX :=
-    -DGCC_INSTALL_PREFIX=$(CHPL_LLVM_GCC_PREFIX_DIR)
+    CHPL_LLVM_GCC_PREFIX := -DGCC_INSTALL_PREFIX=$(CHPL_LLVM_GCC_PREFIX_DIR)
   endif
 endif
 
