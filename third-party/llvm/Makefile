@@ -42,8 +42,7 @@ LLVM_CLANG_CONFIG_FILE := $(LLVM_INSTALL_DIR)/configured-clang-sysroot-arguments
 # GCC_INSTALL_PREFIX for GCC builds.
 CHPL_LLVM_GCC_PREFIX := ""
 ifneq (, $(findstring gnu,$(CHPL_MAKE_HOST_COMPILER)))
-  CHPL_LLVM_GCC_PREFIX_WHICH := $(shell which $(CC))
-  CHPL_LLVM_GCC_PREFIX_DIR := $(subst bin/$(CC),,$(CHPL_LLVM_GCC_PREFIX_WHICH))
+  CHPL_LLVM_GCC_PREFIX_DIR := $(shell ./find-gcc-prefix.sh $(CC))
   CHPL_LLVM_GCC_PREFIX := -DGCC_INSTALL_PREFIX=$(CHPL_LLVM_GCC_PREFIX_DIR)
 endif
 
