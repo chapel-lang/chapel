@@ -2224,7 +2224,7 @@ static void cleanupLeaderFollowerIteratorCalls()
              !strcmp(toDefExpr(fn->formals.tail)->sym->name, "_retArg") &&
              toDefExpr(fn->formals.tail)->sym->getValType() &&
              toDefExpr(fn->formals.tail)->sym->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
-          if (
+          if (// "_toLeader" case is handled in cleanupLeaderIteratorCalls()
               !strcmp(call->parentSymbol->name, "_toFollower") ||
               !strcmp(call->parentSymbol->name, "_toFastFollower") ||
               !strcmp(call->parentSymbol->name, "_toStandalone")) {
