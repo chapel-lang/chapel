@@ -520,13 +520,14 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   proc dsiSupportsPrivatization() param return true;
   proc dsiGetPrivatizeData() return 0;
+  proc dsiGetReprivatizeData() return 0;
   proc dsiPrivatize(privatizeData) {
     var privateDist = new unmanaged Hashed(idxType, dist.mapper, dist);
     var c = new unmanaged UserMapAssocDom(idxType=idxType, mapperType=mapperType, dist=privateDist);
     c.locDoms = locDoms;
     return c;
   }
-  proc dsiReprivatize(other) {
+  proc dsiReprivatize(other, privatizeData) {
     locDoms = other.locDoms;
   }
 
