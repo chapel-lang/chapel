@@ -233,6 +233,7 @@ namespace {
       virtual bool enterCallExpr(CallExpr* call);
       void emitBadReturnErrors(CallExpr* call);
       void emitBadAssignErrors(CallExpr* call);
+      void emitBadSetFieldErrors(CallExpr* call);
       void emitErrors();
   };
 
@@ -1469,6 +1470,15 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
         emitBadAssignErrors(call);
       }
     }
+  } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+
+    Symbol* field = toSymExpr(call->get(2))->symbol();
+
+    if (isSubjectToRefLifetimeAnalysis(field) ||
+        isSubjectToBorrowLifetimeAnalysis(field)) {
+
+      emitBadSetFieldErrors(call);
+    }
   }
 
   return false;
@@ -1612,6 +1622,65 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
   }
 }
 
+void EmitLifetimeErrorsVisitor::emitBadSetFieldErrors(CallExpr* call) {
+
+  Symbol* lhs = toSymExpr(call->get(1))->symbol();
+  Symbol* field = toSymExpr(call->get(2))->symbol();
+  Expr* rhsExpr = call->get(3);
+
+  LifetimePair lhsInferred = lifetimes->inferredLifetimeForSymbol(lhs);
+  LifetimePair lhsIntrinsic = lifetimes->intrinsicLifetimeForSymbol(lhs);
+  bool usedAsRef = lhs->isRef() && rhsExpr->isRef();
+  bool usedAsBorrow = isOrContainsBorrowedClass(field->type);
+
+  LifetimePair rhsLt = lifetimes->inferredLifetimeForExpr(rhsExpr,
+                                                          usedAsRef,
+                                                          usedAsBorrow);
+
+  if (field->isRef() && rhsExpr->isRef()) {
+    // Setting a reference so check ref lifetimes
+    if (lhsIntrinsic.referent.unknown) {
+      // OK, not an error
+    } else if (isLifetimeShorter(rhsLt.referent, lhsIntrinsic.referent)) {
+      emitError(call,
+                "Reference field",
+                "would outlive the value it refers to",
+                field, rhsLt.referent, lifetimes);
+      erroredSymbols.insert(lhs);
+    } else if (lhsInferred.referent.unknown ||
+               lhsInferred.referent.infinite) {
+      // OK, not an error
+    } else if (isLifetimeShorter(rhsLt.referent, lhsInferred.referent)) {
+      emitError(call,
+                "Reference field",
+                "would outlive the value it refers to",
+                field, rhsLt.referent, lifetimes);
+      erroredSymbols.insert(lhs);
+    }
+  }
+
+  if (isOrContainsBorrowedClass(field->type)) {
+    // setting a borrow, so check borrow lifetimes
+    if (lhsIntrinsic.borrowed.unknown) {
+      // OK, not an error
+    } else if (isLifetimeShorter(rhsLt.borrowed, lhsIntrinsic.borrowed)) {
+      emitError(call,
+                "Field",
+                "would outlive the value it is set to",
+                field, rhsLt.borrowed, lifetimes);
+      erroredSymbols.insert(lhs);
+    } else if (lhsInferred.borrowed.unknown ||
+               lhsInferred.borrowed.infinite) {
+      // OK, not an error
+    } else if (isLifetimeShorter(rhsLt.borrowed, lhsInferred.borrowed)) {
+      emitError(call,
+                "Field",
+                "would outlive the value it is set to",
+                field, rhsLt.borrowed, lifetimes);
+      erroredSymbols.insert(lhs);
+    }
+  }
+}
 
 
 void EmitLifetimeErrorsVisitor::emitErrors() {
