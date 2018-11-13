@@ -17,6 +17,6 @@ else
   then
     echo $DIR/snos
   else
-    echo "Could not find GCC prefix directory" 1>&1
+    echo "Could not find GCC prefix directory" 1>&2
   fi
 fi
