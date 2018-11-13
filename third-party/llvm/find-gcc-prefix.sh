@@ -9,13 +9,13 @@ CC=$1
 WHICH=`which $CC`
 DIR=${WHICH%%/bin/$CC}
 
-if [ -d $DIR/include ]
+if [ -d "$DIR/include" ]
 then
-  echo $DIR
+  echo "$DIR"
 else
-  if [ -d $DIR/snos/include ]
+  if [ -d "$DIR/snos/include" ]
   then
-    echo $DIR/snos
+    echo "$DIR/snos"
   else
     echo "Could not find GCC prefix directory" 1>&2
   fi
