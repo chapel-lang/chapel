@@ -45,7 +45,11 @@ eval {
 #  $@ == "abort\n" -- there was a keyboard interrupt (ctrl-C).
 #  $@ == "timedexec failed ..." -- fork returned 0.
 if ($@) {
-    die if $@ == 1; # assume no child process is running.
+
+    # assume no child process is running.
+    if ($@ == 1) {
+      die "\$@ is 1";
+    }
 
     # Otherwise, try to halt the running process
     if ($@ eq "alarm\n") {
@@ -60,6 +64,9 @@ if ($@) {
     eval {
         local $SIG{ALRM} = sub { die "alarm\n" };
         alarm @ARGV[0];
+        if ($child_pid == 0) {
+          die "child_pid is 0";
+        }
         # allow proper cleanup if possible
         print "timedexec sending SIGTERM\n";
         kill SIGTERM, -$child_pid;
