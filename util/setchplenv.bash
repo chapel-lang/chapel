@@ -38,11 +38,13 @@ fi
 export CHPL_HOME=$chpl_home
 echo "Setting CHPL_HOME to $CHPL_HOME"
 
+export CHPL_HOST_ARCH=`"$CHPL_HOME"/util/chplenv/chpl_arch.py`
+echo "Setting CHPL_HOST_ARCH to $CHPL_HOST_ARCH"
 export CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py`
 echo "Setting CHPL_HOST_PLATFORM to $CHPL_HOST_PLATFORM"
 
-export PATH="$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util:"$MYPATH"
-echo "Updating PATH to include $CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
+export PATH="$CHPL_HOME"/bin/$CHPL_HOST_ARCH-$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util:"$MYPATH"
+echo "Updating PATH to include $CHPL_HOME/bin/$CHPL_HOST_ARCH-$CHPL_HOST_PLATFORM"
 echo "                     and $CHPL_HOME/util"
 
 export MANPATH="$CHPL_HOME"/man:"$MYMANPATH"

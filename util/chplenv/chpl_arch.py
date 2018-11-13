@@ -432,10 +432,7 @@ def get_module_lcd_arch(platform_val, arch):
     else:
         return 'none'
 
-# get_lcd has no affect on non cray systems and is intended to be used to get
-# the correct runtime and gen directory.
-@memoize
-def get(location, map_to_compiler=False, get_lcd=False):
+def do_get(location, map_to_compiler=False, get_lcd=False):
 
     arch_tuple = collections.namedtuple('arch_tuple', ['flag', 'arch'])
 
@@ -545,6 +542,19 @@ def get(location, map_to_compiler=False, get_lcd=False):
 
     return arch_tuple(flag or 'none', arch or 'unknown')
 
+# get_lcd has no effect on non cray systems and is intended to be used to get
+# the correct runtime and gen directory.
+@memoize
+def get(location, map_to_compiler=False, get_lcd=False):
+
+    arch_tuple = collections.namedtuple('arch_tuple', ['flag', 'arch', 'narch'])
+    (flag, arch) = do_get(location, map_to_compiler, get_lcd)
+
+    normarch = arch
+    if arch in ['none', 'unknown', 'native']:
+        normarch = normarch + '-' + get_native_machine()
+
+    return arch_tuple(flag, arch, normarch)
 
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target] "
@@ -562,13 +572,14 @@ def _main():
                       default=False)
     (options, args) = parser.parse_args()
 
-    (flag, arch) = get(options.location, options.map_to_compiler,
-                       options.get_lcd)
+    (flag, arch, march) = get(options.location, options.map_to_compiler,
+                              options.get_lcd)
 
     if options.compflag:
         stdout.write("{0}=".format(flag))
-    stdout.write("{0}\n".format(arch))
-
+        stdout.write("{0}\n".format(arch))
+    else:
+        stdout.write("{0}\n".format(march))
 
 if __name__ == '__main__':
     _main()
