@@ -48,6 +48,18 @@ ifneq (, $(findstring gnu,$(CHPL_MAKE_HOST_COMPILER)))
   endif
 endif
 
+# Decide if we want to dynamically link or not
+# This sets the default - it could be overridden during the make
+CHPL_LLVM_DYNAMIC := 1
+ifneq (, $(findstring cray,$(CHPL_MAKE_HOST_PLATFORM)))
+  CHPL_LLVM_DYNAMIC := 0
+endif
+
+CHPL_LLVM_DYNAMIC_OPTS:=""
+ifeq ($(CHPL_LLVM_DYNAMIC),1)
+  CHPL_LLVM_DYNAMIC_OPTS:="-DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON"
+endif
+
 CMAKE ?= cmake
 
 default: $(CHPL_MAKE_LLVM)
@@ -104,8 +116,7 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    -DCLANG_ENABLE_STATIC_ANALYZER=0 \
 	    -DLLVM_TARGETS_TO_BUILD="host;X86;AArch64" \
 	    -DLLVM_INSTALL_UTILS=ON \
-	    -DLLVM_BUILD_LLVM_DYLIB=ON \
-	    -DLLVM_LINK_LLVM_DYLIB=ON \
+	    $(CHPL_LLVM_DYNAMIC_OPTS) \
 	    -Wno-dev \
 	    $(LLVM_SRC_DIR) ; \
 	else \
