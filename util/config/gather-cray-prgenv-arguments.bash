@@ -28,7 +28,7 @@ if [[ $FAIL == 1 || -z $2 || -z $3 || -z $4 ]]; then
 fi
 
 # Try loading PrgEnv-gnu if no module is loaded
-module list 2>&1 | grep -q PrgEnv
+module list --terse 2>&1 | grep -q PrgEnv
 if [ $? != 0 ]
 then
   module load PrgEnv-gnu
