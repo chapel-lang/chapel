@@ -35,7 +35,6 @@ LLVM_SUPPORT_FILE := $(LLVM_INSTALL_DIR)/lib/libLLVMSupport.a
 LLVM_CONFIG_FILE := $(LLVM_INSTALL_DIR)/bin/llvm-config
 LLVM_CLANG_FILE := $(LLVM_INSTALL_DIR)/bin/clang
 LLVM_CLANG_CONFIG_FILE := $(LLVM_INSTALL_DIR)/configured-clang-sysroot-arguments
-LLVM_CLANG_GCC_PREFIX := $(LLVM_INSTALL_DIR)/clang-gcc-prefix
 
 # Sometimes one is using a custom version of GCC. In that event,
 # we'd like the built clang to use that version's std C++ headers, rather
@@ -43,8 +42,8 @@ LLVM_CLANG_GCC_PREFIX := $(LLVM_INSTALL_DIR)/clang-gcc-prefix
 # GCC_INSTALL_PREFIX for GCC builds.
 CHPL_LLVM_GCC_PREFIX := ""
 ifneq (, $(findstring gnu,$(CHPL_MAKE_HOST_COMPILER)))
-  CHPL_LLVM_GCC_PREFIX_DIR := $(shell ./fixup-gcc-prefix.sh $(CC) $(LLVM_CLANG_GCC_PREFIX))
-  ifneq ($(CHPL_LLVM_GCC_PREFIX_DIR),)
+  CHPL_LLVM_GCC_PREFIX_DIR := $(shell ./find-gcc-prefix.sh $(CC))
+  ifneq ($(CHPL_COMM_DEBUG),)
     CHPL_LLVM_GCC_PREFIX := -DGCC_INSTALL_PREFIX=$(CHPL_LLVM_GCC_PREFIX_DIR)
   endif
 endif
