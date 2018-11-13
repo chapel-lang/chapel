@@ -1,2 +1,2 @@
-Adding CHPL_PRAGMA_IVDEP to CForLoop for loopsInForallNoVector:10
-Adding CHPL_PRAGMA_IVDEP to CForLoop for loopsInForallNoVector:18
+loopsInForallNoVector.chpl:10: note: Vectorization hinted for CForLoop
+loopsInForallNoVector.chpl:18: note: Vectorization hinted for CForLoop

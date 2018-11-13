@@ -18,10 +18,12 @@
  */
 
 #include "astutil.h"
+#include "AstVisitorTraverse.h"
 #include "CForLoop.h"
 #include "driver.h"
 #include "errorHandling.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
 #include "oldCollectors.h"
@@ -212,6 +214,241 @@ static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
       // This used to be the body of the parallel or 'on' construct
       // so need to descend into it.
       nonLeaderParCheckInt(taskFn, !taskFn->hasFlag(FLAG_ON));
+    }
+  }
+}
+
+static bool isCallVectorHazard(CallExpr* call,
+                               std::map<FnSymbol*, bool> &fnHasVectorHazard);
+
+namespace {
+  class VectorHazardVisitor : public AstVisitorTraverse {
+    public:
+      VectorHazardVisitor (std::map<FnSymbol*, bool> &fnHasVectorHazard);
+      virtual bool enterCallExpr (CallExpr*  node);
+
+      bool hazard;
+      CallExpr* reason;
+      std::map<FnSymbol*, bool> &fnHasVectorHazard;
+  };
+
+  VectorHazardVisitor::VectorHazardVisitor(std::map<FnSymbol*, bool>
+      &fnHasVectorHazard) : hazard(false), reason(NULL), fnHasVectorHazard(fnHasVectorHazard)
+  {
+  }
+
+  bool VectorHazardVisitor::enterCallExpr(CallExpr* node) {
+    bool foundHazard = isCallVectorHazard(node, fnHasVectorHazard);
+    if (foundHazard && !hazard)
+      reason = node;
+    hazard |= foundHazard;
+    return true;
+  }
+};
+
+static bool doesFnHaveVectorHazard(FnSymbol* fn,
+                                   std::map<FnSymbol*, bool> &fnHasVectorHazard)
+{
+  if (fnHasVectorHazard.count(fn) != 0)
+    return fnHasVectorHazard[fn];
+
+  // Mark it as a hazard if there is recursion
+  fnHasVectorHazard[fn] = true;
+
+  TypeSymbol* thisTypeSymbol = NULL;
+  if (fn->_this != NULL)
+    thisTypeSymbol = fn->_this->getValType()->symbol;
+
+  CallExpr* reason = NULL;
+  bool hazard = false;
+  if (fn->hasFlag(FLAG_LLVM_READNONE) ||
+      fn->hasFlag(FLAG_FN_SYNCHRONIZATION_FREE) ||
+      fn->hasFlag(FLAG_ALLOCATOR) ||
+      fn->hasFlag(FLAG_LOCALE_MODEL_ALLOC) ||
+      fn->hasFlag(FLAG_LOCALE_MODEL_FREE) ||
+      fn->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
+    // these methods shouldn't inhibit vectorization
+    // (but of course not all vectorizers will be able to handle them)
+  } else if (fn->hasFlag(FLAG_EXTERN)) {
+    // Who knows what extern functions do!
+    // To allow an extern function, mark it with FLAG_FN_SYNCHRONIZATION_FREE.
+    hazard = true;
+  } else if (thisTypeSymbol != NULL &&
+             (thisTypeSymbol->hasFlag(FLAG_ATOMIC_TYPE) ||
+              thisTypeSymbol->hasFlag(FLAG_SYNC) ||
+              thisTypeSymbol->hasFlag(FLAG_SINGLE))) {
+    // methods on synchronization constructs do synchronization!
+    hazard = true;
+  } else {
+    // Check what the function body includes.
+    VectorHazardVisitor v(fnHasVectorHazard);
+    fn->body->accept(&v);
+
+    hazard = v.hazard;
+    reason = v.reason;
+  }
+
+  bool report = false;
+  if (fReportVectorizedLoops) {
+    ModuleSymbol *mod = toModuleSymbol(fn->getModule());
+    INT_ASSERT(mod);
+
+    report = (developer || mod->modTag == MOD_USER);
+  }
+
+  if (report && hazard) {
+    FnSymbol *calledFn = NULL;
+    if (reason)
+      calledFn = reason->resolvedFunction();
+    if (developer && calledFn)
+      USR_PRINT(fn, "fn %s [%i] hazard -- calls synchronizing function %s [%i]", fn->name, fn->id, calledFn->name, calledFn->id);
+    else if (calledFn)
+      USR_PRINT(fn, "fn %s hazard -- calls synchronizing function %s", fn->name, calledFn->name);
+    else if (reason && reason->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+      USR_PRINT(fn, "fn %s hazard -- calls virtual function", fn->name);
+    else
+      USR_PRINT(fn, "fn %s hazard -- other", fn->name);
+  }
+
+  fnHasVectorHazard[fn] = hazard;
+
+  if (hazard == false)
+    fn->addFlag(FLAG_FN_SYNCHRONIZATION_FREE);
+
+  return hazard;
+}
+
+static bool isCallVectorHazard(CallExpr* call,
+                               std::map<FnSymbol*, bool> &fnHasVectorHazard)
+{
+  bool hazard = false;
+  if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+    // Could be supported in the future by investigating all
+    // overrides.
+    hazard = true;
+  } if (FnSymbol* calledFn = call->resolvedFunction()) {
+    hazard |= doesFnHaveVectorHazard(calledFn, fnHasVectorHazard);
+  }
+  return hazard;
+}
+
+static void markVectorizeableForallLoops()
+{
+  std::map<FnSymbol*, bool> fnHasVectorHazard;
+
+  // The --force-vectorize flag exists mainly for testing and
+  // disables this logic. Instead of disabling vectorization for
+  // loops with vectorization hazards, all hazards will be ignored.
+  if (fForceVectorize)
+    return;
+
+  // Check for loops over vectorize-only iterators
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (block->isLoopStmt()) {
+      LoopStmt* loop = toLoopStmt(block);
+
+      // Don't try to vectorize coforalls.
+      if (loop->isCoforallLoop()) {
+        loop->setHasVectorizationHazard(true);
+      } else {
+
+        bool hazard = false;
+
+        // Does the loop body have any calls that are vectorization hazards?
+        VectorHazardVisitor v(fnHasVectorHazard);
+        loop->accept(&v);
+        hazard = v.hazard;
+        loop->setHasVectorizationHazard(hazard);
+
+        bool report = false;
+        if (fReportVectorizedLoops) {
+          ModuleSymbol *mod = toModuleSymbol(loop->getModule());
+          INT_ASSERT(mod);
+
+          report = (developer || mod->modTag == MOD_USER);
+        }
+
+        if (report && hazard) {
+          FnSymbol *fn = NULL;
+          if (v.reason)
+            fn = v.reason->resolvedFunction();
+          if (developer && fn && v.hazard)
+            USR_PRINT(loop, "Vectorization hazard -- calls synchronizing function %s [%i]", fn->name, fn->id);
+          else if (fn && v.hazard)
+            USR_PRINT(loop, "Vectorization hazard -- calls synchronizing function %s", fn->name);
+          else if (v.hazard && v.reason && v.reason->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+            USR_PRINT(loop, "Vectorization hazard -- calls virtual function");
+          else
+            USR_PRINT(loop, "Vectorization hazard -- other");
+        }
+      }
+    }
+  }
+
+  forv_Vec(ForallStmt, forall, gForallStmts) {
+    // Consider functions called in the loop body.
+    // Do they present any of the following hazards?
+    //   * synchronization (use of sync variables or atomics)
+    //   * reductions that aren't known to work with the vectorizer
+
+    bool hazard = false;
+
+    // Does the loop body have any calls that are vectorization hazards?
+    VectorHazardVisitor v(fnHasVectorHazard);
+    forall->loopBody()->accept(&v);
+    hazard = v.hazard;
+
+    // Another potential issue is defs inside the loop.
+    // These are later, since many of these might be folded
+    // away and/or inlined.
+
+    // Does the loop use a reduction type that is not vectorizeable yet?
+    for_shadow_vars (shadow, temp, forall) {
+      if (shadow->isReduce()) {
+        if (ShadowVarSymbol* op = shadow->ReduceOpForAccumState()) {
+          Type* accumType = shadow->type;
+          Type* opType = op->type;
+          bool ok = false;
+          // Only vectorize + reductions on numbers
+          if (is_int_type(accumType) ||
+              is_uint_type(accumType) ||
+              is_imag_type(accumType) ||
+              is_real_type(accumType)
+              // TODO: is_complex_type
+             ) {
+            const char* nom = "SumReduceScanOp";
+            size_t len = strlen(nom);
+
+            if (0 == memcmp(nom, opType->symbol->name, len))
+              ok = true;
+          }
+          if (ok == false)
+            hazard = true;
+        }
+      }
+    }
+    forall->setHasVectorizationHazard(hazard);
+
+    bool report = false;
+    if (fReportVectorizedLoops) {
+      ModuleSymbol *mod = toModuleSymbol(forall->getModule());
+      INT_ASSERT(mod);
+
+      report = (developer || mod->modTag == MOD_USER);
+    }
+
+    if (report && hazard) {
+      FnSymbol *fn = NULL;
+      if (v.reason)
+        fn = v.reason->resolvedFunction();
+      if (developer && fn && v.hazard)
+        USR_PRINT(forall, "Vectorization hazard -- calls synchronizing function %s [%i]", fn->name, fn->id);
+      else if (fn && v.hazard)
+        USR_PRINT(forall, "Vectorization hazard -- calls synchronizing function %s", fn->name);
+       else if (v.hazard && v.reason && v.reason->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+        USR_PRINT(forall, "Vectorization hazard -- calls virtual function");
+      else
+        USR_PRINT(forall, "Vectorization hazard -- other");
     }
   }
 }
@@ -1291,6 +1528,7 @@ expandIteratorInline(ForLoop* forLoop) {
     std::vector<SymExpr*> symExprs;
 
     bool isOrderIndependent = forLoop->isOrderIndependent();
+    bool hasVectorHazard = forLoop->hasVectorizationHazard();
     if (preserveInlinedLineNumbers == false) {
       reset_ast_loc(ibody, forLoop);
     }
@@ -1303,7 +1541,7 @@ expandIteratorInline(ForLoop* forLoop) {
     // after the ibody replaces the forLoop since findEnclosingLoop() requires
     // that its argument be in the AST. It must occur before yields are
     // replaced in the functions below though.
-    if (isOrderIndependent) {
+    if (isOrderIndependent || hasVectorHazard) {
       std::vector<CallExpr*> callExprs;
 
       collectCallExprs(ibody, callExprs);
@@ -1313,6 +1551,7 @@ expandIteratorInline(ForLoop* forLoop) {
           if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
             if (loop->isCoforallLoop() == false) {
               loop->orderIndependentSet(isOrderIndependent);
+              loop->setHasVectorizationHazard(hasVectorHazard);
             }
           }
         }
@@ -2502,6 +2741,8 @@ static void removeUncalledIterators()
 
 void lowerIterators() {
   nonLeaderParCheck();
+
+  markVectorizeableForallLoops();
 
   computeRecursiveIteratorSet();
 

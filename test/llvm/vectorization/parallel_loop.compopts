@@ -1,1 +1,5 @@
+# --no-interprocedural-alias-analysis
+#   see https://bugs.llvm.org/show_bug.cgi?id=39235
+# --vectorize should be on by default with --llvm --fast though
 --llvm --fast --vectorize --llvm-print-ir loop --llvm-print-ir-stage full --mllvm -force-vector-width=4 --mllvm -force-vector-interleave=1 --no-interprocedural-alias-analysis
+--llvm --fast --llvm-print-ir loop --llvm-print-ir-stage full --mllvm -force-vector-width=4 --mllvm -force-vector-interleave=1 --no-interprocedural-alias-analysis

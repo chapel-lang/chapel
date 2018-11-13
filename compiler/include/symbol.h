@@ -748,10 +748,6 @@ extern Symbol *gSingleVarAuxFields;
 
 extern FnSymbol* chplUserMain;
 
-#define FUNC_NAME_MAX 256
-extern char llvmPrintIrName[FUNC_NAME_MAX+1];
-extern char llvmPrintIrStage[FUNC_NAME_MAX+1];
-
 namespace llvmStageNum {
 typedef enum {
        // The first options here refer to high-level Chapel LLVM optimization
@@ -777,20 +773,23 @@ typedef enum {
 }
 using llvmStageNum::llvmStageNum_t;
 
-//Names representations in LLVM IR and C generated code are
-//different from their names in AST. 'llvmPrintIrCName'
-//is place to keep name in LLVM IR and C version of
-//'llvmPrintIrName' variable.
-extern const char *llvmPrintIrCName;
 extern llvmStageNum_t llvmPrintIrStageNum;
-
-extern const char *llvmStageName[llvmStageNum::LAST];
 
 const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum);
 llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName);
 
+void addNameToPrintLlvmIr(const char* name);
+void addCNameToPrintLlvmIr(const char* name);
+
+bool shouldLlvmPrintIrName(const char* name);
+bool shouldLlvmPrintIrCName(const char* name);
+bool shouldLlvmPrintIrFn(FnSymbol* fn);
+
 #ifdef HAVE_LLVM
-void printLlvmIr(llvm::Function *func, llvmStageNum_t numStage);
+void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);
 #endif
+
+void preparePrintLlvmIrForCodegen();
+void completePrintLlvmIrStage(llvmStageNum_t numStage);
 
 #endif

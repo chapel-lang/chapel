@@ -2556,6 +2556,24 @@ void makeBinaryLLVM(void) {
     output.os().flush();
   }
 
+  // Handle --llvm-print-ir-stage=basic
+#ifdef HAVE_LLVM
+  if((llvmStageNum::BASIC == llvmPrintIrStageNum ||
+      llvmStageNum::EVERY == llvmPrintIrStageNum)) {
+
+    gdbShouldBreakHere();
+
+    for (auto &F : info->module->functions()) {
+      std::string str = F.getName().str();
+      if (shouldLlvmPrintIrCName(str.c_str()))
+        printLlvmIr(str.c_str(), &F, llvmStageNum::BASIC);
+    }
+
+    completePrintLlvmIrStage(llvmStageNum::BASIC);
+  }
+#endif
+
+
   // Open the output file
   std::error_code error;
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
@@ -2573,7 +2591,7 @@ void makeBinaryLLVM(void) {
                   PassManagerBuilder::EP_EarlyAsPossible;
 
     if (getIrDumpExtensionPoint(llvmPrintIrStageNum, point)) {
-      printf("Adding IR dump extension at %i for %s\n", point, llvmPrintIrCName);
+      printf("Adding IR dump extension at %i\n", point);
       PassManagerBuilder::addGlobalExtension(point, addDumpIrPass);
     }
 
@@ -2695,8 +2713,16 @@ void makeBinaryLLVM(void) {
   // Handle --llvm-print-ir-stage=full
 #ifdef HAVE_LLVM
   if((llvmStageNum::FULL == llvmPrintIrStageNum ||
-      llvmStageNum::EVERY == llvmPrintIrStageNum) && llvmPrintIrCName != NULL)
-      printLlvmIr(getFunctionLLVM(llvmPrintIrCName), llvmStageNum::FULL);
+      llvmStageNum::EVERY == llvmPrintIrStageNum)) {
+
+    for (auto &F : info->module->functions()) {
+      std::string str = F.getName().str();
+      if (shouldLlvmPrintIrCName(str.c_str()))
+        printLlvmIr(str.c_str(), &F, llvmStageNum::FULL);
+    }
+
+    completePrintLlvmIrStage(llvmStageNum::FULL);
+  }
 #endif
 
   // Emit the .o file for linking with clang
