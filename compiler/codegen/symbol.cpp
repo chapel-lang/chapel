@@ -876,6 +876,26 @@ GenRet ArgSymbol::codegen() {
   return ret;
 }
 
+static std::string getFortranTypeName(Type* type) {
+  std::string typeName = fortranTypeNames[type->symbol];
+  if (typeName.empty()) {
+    // TODO: Maybe issue an error instead?
+    return type->symbol->cname;
+  } else {
+    return typeName;
+  }
+}
+
+static std::string getFortranKindName(Type* type) {
+  std::string kindName = fortranKindNames[type->symbol];
+  if (kindName.empty()) {
+    // TODO: Maybe issue an error instead?
+    return type->symbol->cname;
+  } else {
+    return kindName;
+  }
+}
+
 // If there is a known .pxd file translation for this type, use that.
 // Otherwise, use the normal cname
 static std::string getPythonTypeName(Type* type, PythonFileType pxd) {
@@ -1733,6 +1753,88 @@ GenRet FnSymbol::codegen() {
 #endif
   }
   return ret;
+}
+
+void FnSymbol::codegenFortran(int indent) {
+  GenInfo *info = gGenInfo;
+  int beginIndent = indent;
+
+  if (!hasFlag(FLAG_EXPORT)) return;
+  if (hasFlag(FLAG_NO_PROTOTYPE)) return;
+  if (hasFlag(FLAG_NO_CODEGEN)) return;
+
+  if (info->cfile) {
+    FILE* outfile = info->cfile;
+    if (fGenIDS)
+      fprintf(outfile, "%*s! %s", indent, "", idCommentTemp(this));
+    const char* subOrProc = retType != dtVoid ? "function" : "subroutine";
+    fprintf(outfile, "%*s%s %s(", indent, "", subOrProc, this->cname);
+    bool first = true;
+
+    // print the list of formal names
+    for_formals(formal, this) {
+      if (formal->hasFlag(FLAG_NO_CODEGEN))
+        continue;
+      if (!first) fprintf(outfile, ", ");
+
+      // My Fortran compiler doesn't like names with leading underscores
+      if (formal->cname[0] == '_')
+        fprintf(outfile, "chpl");
+
+      fprintf(outfile, "%s", formal->cname);
+      first = false;
+    }
+    fprintf(outfile, ") bind(C, name=\"%s\")\n", this->cname);
+
+    indent += 2;
+    // build a unique set of type kinds to import
+    std::set<std::string> uniqueKindNames;
+    for_formals(formal, this) {
+      if (formal->hasFlag(FLAG_NO_CODEGEN))
+        continue;
+      uniqueKindNames.insert(getFortranKindName(formal->type));
+    }
+    if (retType != dtVoid) {
+      uniqueKindNames.insert(getFortranKindName(retType));
+    }
+
+    // print "import <c_type_name>" for each required type
+    if (!uniqueKindNames.empty()) {
+      fprintf(outfile, "%*simport ", indent, "");
+      first = true;
+      for (std::set<std::string>::iterator kindName = uniqueKindNames.begin();
+           kindName != uniqueKindNames.end(); ++kindName) {
+        if (!first) {
+          fprintf(outfile, ", ");
+        }
+        fprintf(outfile, "%s", kindName->c_str());
+        first = false;
+      }
+      fprintf(outfile, "\n");
+    }
+
+    // print type declarations for each formal
+    for_formals(formal, this) {
+      if (formal->hasFlag(FLAG_NO_CODEGEN))
+        continue;
+      const char* prefix = formal->cname[0] == '_' ? "chpl" : "";
+      const bool isRef = formal->intent == INTENT_REF ||
+                         formal->intent == INTENT_CONST_REF ||
+                         formal->intent == INTENT_REF_MAYBE_CONST;
+      const char* valueString = isRef ? "" : ", value";
+      fprintf(outfile, "%*s%s(kind=%s)%s :: %s%s\n", indent, "", getFortranTypeName(formal->type).c_str(), getFortranKindName(formal->type).c_str(), valueString, prefix, formal->cname);
+    }
+
+    // print type declaration for the return type
+    if (retType != dtVoid) {
+      fprintf(outfile, "%*s%s(kind=%s) :: %s\n", indent, "", getFortranTypeName(retType).c_str(), getFortranKindName(retType).c_str(), this->cname);
+    }
+    indent -= 2;
+    fprintf(outfile, "%*send %s %s\n\n", indent, "", subOrProc, this->cname);
+  } else {
+    // handle LLVM
+  }
+  INT_ASSERT(indent == beginIndent);
 }
 
 // Supports the creation of a python module with --library-python

@@ -44,8 +44,11 @@ extern std::map<Symbol*, TypeSymbol*> exportedArrayElementType;
 
 extern char libDir[FILENAME_MAX + 1];
 extern std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
+extern std::map<TypeSymbol*, std::string> fortranKindNames;
+extern std::map<TypeSymbol*, std::string> fortranTypeNames;
 
 void codegen_library_header(std::vector<FnSymbol*> functions);
+void codegen_library_fortran(std::vector<FnSymbol*> functions);
 void codegen_library_makefile();
 void codegen_library_python(std::vector<FnSymbol*> functions);
 void codegen_make_python_module();
