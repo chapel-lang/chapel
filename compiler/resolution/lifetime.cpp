@@ -254,6 +254,7 @@ static bool isAnalyzedMoveOrAssignment(CallExpr* call);
 static bool symbolHasInfiniteLifetime(Symbol* sym);
 static BlockStmt* getDefBlock(Symbol* sym);
 static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b);
+static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b);
 static bool isLifetimeShorter(Lifetime a, Lifetime b);
 static Lifetime minimumLifetime(Lifetime a, Lifetime b);
 static LifetimePair minimumLifetimePair(LifetimePair a, LifetimePair b);
@@ -1587,6 +1588,12 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
                 "would outlive the value it refers to",
                 lhs, rhsLt.referent, lifetimes);
       erroredSymbols.insert(lhs);
+    } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.referent, lhsIntrinsic.referent)) {
+      emitError(call,
+                "Reference to scoped variable",
+                "unspecified formal ordering",
+                lhs, rhsLt.referent, lifetimes);
+      erroredSymbols.insert(lhs);
     } else if (lhsInferred.referent.unknown ||
                lhsInferred.referent.infinite) {
       // OK, not an error
@@ -1594,6 +1601,12 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
       emitError(call,
                 "Reference to scoped variable",
                 "would outlive the value it refers to",
+                lhs, rhsLt.referent, lifetimes);
+      erroredSymbols.insert(lhs);
+    } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.referent, lhsInferred.referent)) {
+      emitError(call,
+                "Reference to scoped variable",
+                "unspecified formal ordering",
                 lhs, rhsLt.referent, lifetimes);
       erroredSymbols.insert(lhs);
     }
@@ -1609,6 +1622,12 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
                 "would outlive the value it is set to",
                 lhs, rhsLt.borrowed, lifetimes);
       erroredSymbols.insert(lhs);
+    } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.borrowed, lhsIntrinsic.borrowed)) {
+      emitError(call,
+                "Scoped variable",
+                "unspecified formal ordering",
+                lhs, rhsLt.borrowed, lifetimes);
+      erroredSymbols.insert(lhs);
     } else if (lhsInferred.borrowed.unknown ||
                lhsInferred.borrowed.infinite) {
       // OK, not an error
@@ -1616,6 +1635,12 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
       emitError(call,
                 "Scoped variable",
                 "would outlive the value it is set to",
+                lhs, rhsLt.borrowed, lifetimes);
+      erroredSymbols.insert(lhs);
+    } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.borrowed, lhsInferred.borrowed)) {
+      emitError(call,
+                "Scoped variable",
+                "unspecified formal ordering",
                 lhs, rhsLt.borrowed, lifetimes);
       erroredSymbols.insert(lhs);
     }
@@ -1657,6 +1682,7 @@ void EmitLifetimeErrorsVisitor::emitBadSetFieldErrors(CallExpr* call) {
                 field, rhsLt.referent, lifetimes);
       erroredSymbols.insert(lhs);
     }
+    // TODO unspecified formal lifetimes?
   }
 
   if (isOrContainsBorrowedClass(field->type)) {
@@ -1679,6 +1705,7 @@ void EmitLifetimeErrorsVisitor::emitBadSetFieldErrors(CallExpr* call) {
                 field, rhsLt.borrowed, lifetimes);
       erroredSymbols.insert(lhs);
     }
+    // TODO unspecified formal lifetimes?
   }
 }
 
@@ -2015,6 +2042,27 @@ static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b) {
       return true;
   }
   return false;
+}
+
+static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b) {
+  if (isLifetimeShorter(a, b)) // a < b
+    return false;
+  else if (isLifetimeShorter(b, a)) // b < a
+    return false;
+  else if (a.fromSymbolScope == b.fromSymbolScope)
+    return false;
+  else if (!isArgSymbol(a.fromSymbolScope) || !isArgSymbol(b.fromSymbolScope))
+    return false;
+  else if (a.fromSymbolScope->defPoint->parentSymbol !=
+           b.fromSymbolScope->defPoint->parentSymbol)
+    return false;
+
+  FnSymbol* fn = a.fromSymbolScope->defPoint->getFunction();
+  // TODO - make this exception more reasonable
+  if (fn->name == astrSequals)
+    return false;
+
+  return true;
 }
 
 /* Consider two variables/arguments a and b.
