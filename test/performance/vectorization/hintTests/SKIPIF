@@ -1,0 +1,2 @@
+# --no-denormalize has slightly different behavior
+COMPOPTS <= --no-denormalize
