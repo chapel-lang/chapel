@@ -777,7 +777,7 @@ bool isCForLoop(const BaseAST* a)
 /* Create a throw-away ast with a given filename and line number.
    This can be used e.g. to pass a line and filename to USR_FATAL
    since it only takes those from an AST, not directly. */
-VarSymbol* createASTforLineNumber(const char* filename, int line){
+VarSymbol* createASTforLineNumber(const char* filename, int line) {
   astlocT astloc(line, filename);
   astlocMarker markAstLoc(astloc);
   VarSymbol* lineTemp = newTemp();

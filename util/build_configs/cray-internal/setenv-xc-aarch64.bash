@@ -264,8 +264,10 @@ else
         list_loaded_modules
     fi
 
+    # Please keep the gen versions in compiler_versions.bash the same as these!
     gen_version_gcc=7.3.0
     gen_version_cce=8.7.3
+
     target_cpu_module=craype-arm-thunderx2
 
     function load_prgenv_gnu() {
@@ -276,9 +278,6 @@ else
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
-
-        # Do not build Gasnet for aarch64, so get rid of mpich.
-        unload_module cray-mpich
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv
@@ -293,9 +292,6 @@ else
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
-
-        # Do not build Gasnet for aarch64, so get rid of mpich.
-        unload_module cray-mpich
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv

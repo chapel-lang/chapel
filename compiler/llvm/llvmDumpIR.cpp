@@ -46,10 +46,11 @@ namespace {
     DumpIR(llvmStageNum_t stage) : FunctionPass(ID), stage(stage) {}
 
     bool runOnFunction(Function &F) override {
-      if (llvmPrintIrCName != NULL && F.getName() == llvmPrintIrCName) {
-        printLlvmIr(&F, stage);
-      } else if (llvmPrintIrName[0] != '\0' && F.getName() == llvmPrintIrName) {
-        printLlvmIr(&F, stage);
+      std::string str = F.getName().str();
+      if (shouldLlvmPrintIrName(str.c_str())) {
+        printLlvmIr(str.c_str(), &F, stage);
+      } else if (shouldLlvmPrintIrCName(str.c_str())) {
+        printLlvmIr(str.c_str(), &F, stage);
       }
       return false;
     }

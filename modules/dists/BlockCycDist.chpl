@@ -522,8 +522,8 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
     // result of the reduction is always 0 (for an array of ints). Looking at
     // the generated code, it seems like the reduction object is not being
     // passed through nested loops correctly (or at all).
-    for follow in locDom.myStarts._value.these(iterKind.leader, maxTasks, ignoreRunning, minSize) {
-      for i in locDom.myStarts._value.these(iterKind.follower, follow, maxTasks, ignoreRunning, minSize) {
+    for follow in locDom.myStarts.these(iterKind.leader, maxTasks, ignoreRunning, minSize) {
+      for i in locDom.myStarts.these(iterKind.follower, follow, maxTasks, ignoreRunning, minSize) {
         var retblock: rank*range(idxType);
         for param j in 1..rank {
           const lo     = if rank == 1 then i else i(j);

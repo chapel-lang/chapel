@@ -43,6 +43,10 @@ public:
   bool                   isOrderIndependent()                            const;
   void                   orderIndependentSet(bool b);
 
+  bool                   hasVectorizationHazard()                        const;
+  void                   setHasVectorizationHazard(bool v);
+
+  bool                   isVectorizeable()                               const;
 protected:
                          LoopStmt(BlockStmt* initBody);
   virtual               ~LoopStmt();
@@ -50,7 +54,9 @@ protected:
   LabelSymbol*           mBreakLabel;
   LabelSymbol*           mContinueLabel;
   bool                   mOrderIndependent;
-  void                   codegenOrderIndependence();
+  bool                   mVectorizationHazard;
+  void                   codegenVectorHint();
+  void                   fixVectorizeable();
 
 
 private:

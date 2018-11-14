@@ -26,6 +26,7 @@ TESTS = \
 		qalloc \
 		arbitrary_blocking_operation \
 		sinc_null \
+		sinc_workers \
 		sinc \
 		tasklocal_data \
 		tasklocal_data_no_default \
@@ -38,6 +39,11 @@ TESTS = \
  		qthread_fork_precond \
 		qthread_migrate_to  \
 		qthread_disable_shepherd 
+
+
+if QTHREAD_PERFORMANCE
+TESTS += performance
+endif
 
 check_PROGRAMS = $(TESTS)
 
@@ -115,6 +121,8 @@ arbitrary_blocking_operation_SOURCES = arbitrary_blocking_operation.c
 
 sinc_null_SOURCES = sinc_null.c
 
+sinc_workers_SOURCES = sinc_workers.c
+
 sinc_SOURCES = sinc.c
 
 tasklocal_data_SOURCES = tasklocal_data.c
@@ -132,3 +140,7 @@ read_SOURCES = read.c
 test_teams_SOURCES = test_teams.c
 
 test_subteams_SOURCES = test_subteams.c
+
+if QTHREAD_PERFORMANCE
+performance_SOURCES = performance.c
+endif

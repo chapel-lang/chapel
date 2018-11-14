@@ -235,7 +235,7 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int, parDim
 where tag == iterKind.follower
 {
   //Invoke the default rectangular domain follower iterator
-  for i in c._value.these(tag=iterKind.follower, followThis=followThis) do
+  for i in c.these(tag=iterKind.follower, followThis=followThis) do
     yield i;
 }
 
@@ -399,7 +399,7 @@ iter guided(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
   // Invoke the default rectangular domain follower iterator.
-  for i in c._value.these(tag=iterKind.follower, followThis=followThis) do {
+  for i in c.these(tag=iterKind.follower, followThis=followThis) do {
     yield i;
   }
 }
@@ -690,7 +690,7 @@ iter adaptive(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis
 where tag == iterKind.follower
 {
   // Invoke the default rectangular domain follower iterator.
-  for i in c._value.these(tag=iterKind.follower, followThis=followThis) do {
+  for i in c.these(tag=iterKind.follower, followThis=followThis) do {
     yield i;
   }
 }

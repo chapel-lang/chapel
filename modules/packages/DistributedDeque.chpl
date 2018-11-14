@@ -232,20 +232,6 @@ module DistributedDeque {
       return chpl_getPrivatizedCopy(DistributedDequeImpl(eltType), _pid);
     }
 
-    pragma "no doc"
-    pragma "fn returns iterator"
-    inline proc these(param order : Ordering = Ordering.NONE) {
-      return _value.these(order);
-    }
-
-    pragma "no doc"
-    pragma "fn returns iterator"
-    inline proc these(param order : Ordering = Ordering.NONE, param tag) where
-        (tag == iterKind.leader || tag == iterKind.standalone)
-        && __primitive("method call resolves", _value, "these", tag=tag) {
-      return _value.these(order, tag=tag);
-    }
-
     forwarding _value;
   }
 

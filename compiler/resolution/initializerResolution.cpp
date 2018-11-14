@@ -338,7 +338,16 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
         // (new owned T(...)).borrow()
         VarSymbol* tmpM = newTemp("new_temp_m");
         tmpM->addFlag(FLAG_INSERT_AUTO_DESTROY);
-        block->insertAtTail(new DefExpr(tmpM));
+
+        BlockStmt* inBlock = toBlockStmt(block->parentExpr);
+        FnSymbol* inFn = toFnSymbol(inBlock->parentSymbol);
+        if (inFn && inFn->hasFlag(FLAG_MODULE_INIT) && inFn->body == inBlock) {
+          // make it a global variable
+          inFn->defPoint->insertAfter(new DefExpr(tmpM));
+        } else {
+          block->insertAtTail(new DefExpr(tmpM));
+        }
+
         block->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmpM, new_temp_rhs));
 
         new_temp_rhs = new CallExpr("borrow", gMethodToken, tmpM);

@@ -20,6 +20,8 @@ as follows:
 * Added preliminary support for 64-bit ARM.  This adds the new file
   third-party/gasnet/gasnet-src/other/contrib/cross-configure-aarch64-linux
   which is the only ARM change beneath gasnet-src in the tree.
+* Pulled in an upstream fix for mpi-spawner -N support for Open MPI 3.x
+   - https://bitbucket.org/berkeleylab/gasnet/commits/e9088bc72
 
 Upgrading GASNet versions
 =========================

@@ -126,13 +126,8 @@ int rng_showtype(char *strBuf, int ind) {
 #pragma intrinsic(memcpy)
 #endif
 
-#if 0 && defined(_MSC_VER)
-#define rotl32  _lrotl
-#define rotr32  _lrotr
-#else
 #define rotl32(x,n)   (((x) << n) | ((x) >> (32 - n)))
 #define rotr32(x,n)   (((x) >> n) | ((x) << (32 - n)))
-#endif
 
 #if !defined(bswap_32)
 #define bswap_32(x) ((rotr32((x), 24) & 0x00ff00ff) | (rotr32((x), 8) & 0xff00ff00))

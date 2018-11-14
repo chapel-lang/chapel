@@ -1,4 +1,4 @@
-# Copyright © 2009-2017 Inria.  All rights reserved.
+# Copyright © 2009-2018 Inria.  All rights reserved.
 # Copyright © 2009-2012, 2014 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 #
@@ -71,9 +71,9 @@ APPLICATIONSdir = @datarootdir@/applications
 dist_APPLICATIONS_DATA = lstopo.desktop
 endif
 
-SEDMAN = $(SED) -e 's/\#PACKAGE_NAME\#/@PACKAGE_NAME@/g' \
-	  -e 's/\#PACKAGE_VERSION\#/@PACKAGE_VERSION@/g' \
-	  -e 's/\#HWLOC_DATE\#/@HWLOC_RELEASE_DATE@/g'
+SEDMAN = $(SED) -e 's/%PACKAGE_NAME%/@PACKAGE_NAME@/g' \
+	  -e 's/%PACKAGE_VERSION%/@PACKAGE_VERSION@/g' \
+	  -e 's/%HWLOC_DATE%/@HWLOC_RELEASE_DATE@/g'
 
 .1in.1:
 	@ echo Creating $@ man page...

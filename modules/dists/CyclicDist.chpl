@@ -146,6 +146,24 @@ They must match the rank and index type of the domains
 "dmapped" using that Cyclic instance.
 
 
+**Convenience Initializer Functions**
+
+It is common for a ``Cyclic`` distribution to distribute its indices
+across all locales. In this case, a convenience function can be used to
+declare variables of cyclic-distributed domain or array type.  These functions
+take a domain or list of ranges as arguments and return a cyclic-distributed
+domain or array.
+
+  .. code-block:: chapel
+
+    use CyclicDist;
+
+    var CyclicDom1 = newCyclicDom({1..5, 1..5});
+    var CyclicArr1 = newCyclicArr({1..5, 1..5}, real);
+    var CyclicDom2 = newCyclicDom(1..5, 1..5);
+    var CyclicArr2 = newCyclicArr(1..5, 1..5, real);
+
+
 **Data-Parallel Iteration**
 
 A `forall` loop over a Cyclic-distributed domain or array
@@ -1165,4 +1183,22 @@ proc CyclicDom.dsiLocalSubdomain() {
       myLocDom = locDom;
   }
   return myLocDom.myBlock;
+}
+
+proc newCyclicDom(dom: domain) {
+  return dom dmapped Cyclic(startIdx=dom.low);
+}
+
+proc newCyclicArr(dom: domain, type eltType) {
+  var D = newCyclicDom(dom);
+  var A: [D] eltType;
+  return A;
+}
+
+proc newCyclicDom(rng: range...) {
+  return newCyclicDom({(...rng)});
+}
+
+proc newCyclicArr(rng: range..., type eltType) {
+  return newCyclicArr({(...rng)}, eltType);
 }

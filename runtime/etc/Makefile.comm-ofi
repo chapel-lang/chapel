@@ -15,12 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#
-# Assume this variable is set:
-# - LIBFABRIC_LIB_DIR
-#
-
-GEN_LFLAGS += -L$(LIBFABRIC_LIB_DIR) -Wl,-rpath,$(LIBFABRIC_LIB_DIR)
+ifneq ($(LIBFABRIC_DIR),)
+GEN_LFLAGS += -L$(LIBFABRIC_DIR)/lib -Wl,-rpath,$(LIBFABRIC_DIR)/lib
+endif
 LIBS += -lfabric -ldl
 
 #

@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
+#include<qthread/performance.h>
 
 /* System Headers */
 #include <limits.h>                    /* for INT_MAX */
@@ -464,6 +465,7 @@ got_m:
         m->FFQ    = X;
         qthread_debug(SYNCVAR_DETAILS, "back to parent\n");
         me->thread_state          = QTHREAD_STATE_FEB_BLOCKED;
+        QTPERF_QTHREAD_ENTER_STATE(me->rdata->performance_data, QTHREAD_STATE_FEB_BLOCKED);
         me->rdata->blockedon.addr = m;
         QTHREAD_WAIT_TIMER_START();
         qthread_back_to_master(me);
@@ -792,6 +794,7 @@ got_m:
         m->FEQ    = X;
         qthread_debug(SYNCVAR_DETAILS, "back to parent\n");
         me->thread_state          = QTHREAD_STATE_FEB_BLOCKED;
+        QTPERF_QTHREAD_ENTER_STATE(me->rdata->performance_data, QTHREAD_STATE_FEB_BLOCKED);
         me->rdata->blockedon.addr = m;
         QTHREAD_WAIT_TIMER_START();
         qthread_back_to_master(me);
@@ -957,6 +960,7 @@ static QINLINE void qthread_syncvar_schedule(qthread_t          *waiter,
     assert(waiter);
     assert(shep);
     waiter->thread_state = QTHREAD_STATE_RUNNING;
+    QTPERF_QTHREAD_ENTER_STATE(waiter->rdata->performance_data, QTHREAD_STATE_RUNNING);
     if (waiter->flags & QTHREAD_UNSTEALABLE) {
         qt_threadqueue_enqueue(waiter->rdata->shepherd_ptr->ready, waiter);
     } else {
@@ -1280,6 +1284,7 @@ got_m:
         m->EFQ    = X;
         qthread_debug(SYNCVAR_DETAILS, ": back to parent\n");
         me->thread_state          = QTHREAD_STATE_FEB_BLOCKED;
+        QTPERF_QTHREAD_ENTER_STATE(me->rdata->performance_data, QTHREAD_STATE_FEB_BLOCKED);
         me->rdata->blockedon.addr = m;
         QTHREAD_WAIT_TIMER_START();
         qthread_back_to_master(me);

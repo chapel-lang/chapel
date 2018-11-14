@@ -51,7 +51,7 @@ void qt_sinc_init(qt_sinc_t *restrict  sinc_,
                   qt_sinc_op_f         op,
                   size_t               expect)
 {   /*{{{*/
-    assert(sinc);
+    assert(sinc_);
     assert((0 == sizeof_value && NULL == initial_value) ||
            (0 != sizeof_value && NULL != initial_value));
     qt_internal_sinc_t *const restrict sinc = (struct qt_sinc_s *)sinc_;
@@ -84,7 +84,7 @@ void qt_sinc_init(qt_sinc_t *restrict  sinc_,
 
         rdata->values = qt_internal_aligned_alloc(num_lines * cacheline, cacheline);
         assert(rdata->values);
-        ALLOC_SCRIBBLE(rdata->values, num_lines * cacheline, cacheline);
+        ALLOC_SCRIBBLE(rdata->values, num_lines * cacheline);
 
         // Initialize values
         for (size_t s = 0; s < num_sheps; s++) {
@@ -224,7 +224,7 @@ static void qt_sinc_internal_collate(qt_sinc_t *sinc_)
 } /*}}}*/
 
 void qt_sinc_submit(qt_sinc_t *restrict sinc_,
-                    void *restrict      value)
+                    const void *restrict      value)
 {   /*{{{*/
     assert(sinc_);
     qt_internal_sinc_t *const restrict sinc = (qt_internal_sinc_t *)sinc_;

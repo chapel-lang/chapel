@@ -505,11 +505,6 @@ qthread_t INTERNAL *qt_init_agg_task() // partly a duplicate from qthread.c
     t->ret             = 0;
     t->rdata           = NULL;
     t->preconds        = NULL;  // use for list of f and arg
-#ifdef QTHREAD_USE_ROSE_EXTENSIONS
-    t->task_counter      = 0;
-    t->parent            = NULL;
-    t->prev_thread_state = QTHREAD_STATE_ILLEGAL;
-#endif
     t->flags &= ~QTHREAD_HAS_ARGCOPY;
     t->flags |= QTHREAD_SIMPLE; // will remain a simple task if all tasks it batches are simple.
     t->flags |= QTHREAD_AGGREGATED;

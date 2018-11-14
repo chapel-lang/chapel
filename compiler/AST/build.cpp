@@ -256,16 +256,31 @@ Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index) {
 
 Expr* buildIntLiteral(const char* pch, const char* file, int line) {
   uint64_t ull;
+  int len = strlen(pch);
+  char* noUnderscores = (char*)malloc(len+1);
+
+  // remove all underscores from the number
+  int j = 0;
+  for (int i=0; i<len; i++) {
+    if (pch[i] != '_') {
+      noUnderscores[j++] = pch[i];
+    }
+  }
+  noUnderscores[j] = '\0';
+
   if (!strncmp("0b", pch, 2) || !strncmp("0B", pch, 2))
-    ull = binStr2uint64(pch, true, file, line);
+    ull = binStr2uint64(noUnderscores, true, file, line);
   else if (!strncmp("0o", pch, 2) || !strncmp("0O", pch, 2))
     // The second case is difficult to read, but is zero followed by a capital
     // letter 'o'
-    ull = octStr2uint64(pch, true, file, line);
+    ull = octStr2uint64(noUnderscores, true, file, line);
   else if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2))
-    ull = hexStr2uint64(pch, true, file, line);
-  else
-    ull = str2uint64(pch, true, file, line);
+    ull = hexStr2uint64(noUnderscores, true, file, line);
+  else {
+    ull = str2uint64(noUnderscores, true, file, line);
+  }
+
+  free(noUnderscores);
 
   if (ull <= 9223372036854775807ull)
     return new SymExpr(new_IntSymbol(ull, INT_SIZE_64));
@@ -1274,6 +1289,7 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
   taskBlk->insertAtHead(body);
 
   VarSymbol* coforallCount = newTempConst("_coforallCount");
+  coforallCount->addFlag(FLAG_END_COUNT);
   VarSymbol* numTasks = newTemp("numTasks");
   VarSymbol* useLocalEndCount = gTrue;
   VarSymbol* countRunningTasks = gTrue;
@@ -2635,6 +2651,7 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   } else {
     BlockStmt* block = buildChapelStmt();
     VarSymbol* endCount = newTempConst("_endCount");
+    endCount->addFlag(FLAG_END_COUNT);
     block->insertAtTail(new DefExpr(endCount));
     block->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
     block->insertAtTail(new CallExpr("_upEndCount", endCount));
@@ -2654,9 +2671,11 @@ buildSyncStmt(Expr* stmt) {
   checkControlFlow(stmt, "sync statement");
   BlockStmt* block = new BlockStmt();
   VarSymbol* endCountSave = newTempConst("_endCountSave");
+  endCountSave->addFlag(FLAG_END_COUNT);
   block->insertAtTail(new DefExpr(endCountSave));
   block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
   VarSymbol* endCount = newTempConst("_endCount");
+  endCount->addFlag(FLAG_END_COUNT);
   block->insertAtTail(new DefExpr(endCount));
   block->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
   block->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
@@ -2728,7 +2747,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   }
 
   VarSymbol* cobeginCount = newTempConst("_cobeginCount");
-
+  cobeginCount->addFlag(FLAG_END_COUNT);
   VarSymbol* numTasks = new_IntSymbol(block->length());
 
   for_alist(stmt, block->body) {

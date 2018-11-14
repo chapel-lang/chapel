@@ -261,9 +261,11 @@ else
         list_loaded_modules
     fi
 
+    # Please keep the gen versions in compiler_versions.bash the same as these!
     gen_version_gcc=6.1.0
     gen_version_intel=16.0.3.210
     gen_version_cce=8.6.3
+
     target_cpu_module=craype-barcelona
 
     function load_prgenv_gnu() {

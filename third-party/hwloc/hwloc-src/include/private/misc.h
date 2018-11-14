@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -378,6 +378,33 @@ static __hwloc_inline int hwloc_strncasecmp(const char *s1, const char *s2, size
   return 0;
 #endif
 }
+
+/* Parse a PCI link speed (GT/s) string from Linux sysfs */
+#ifdef HWLOC_LINUX_SYS
+#include <stdlib.h> /* for atof() */
+static __hwloc_inline float
+hwloc_linux_pci_link_speed_from_string(const char *string)
+{
+  /* don't parse Gen1 with atof() since it expects a localized string
+   * while the kernel sysfs files aren't.
+   */
+  if (!strncmp(string, "2.5 ", 4))
+    /* "2.5 GT/s" is Gen1 with 8/10 encoding */
+    return 2.5 * .8;
+
+  /* also hardwire Gen2 since it also has a specific encoding */
+  if (!strncmp(string, "5 ", 2))
+    /* "5 GT/s" is Gen2 with 8/10 encoding */
+    return 5 * .8;
+
+  /* handle Gen3+ in a generic way */
+  return atof(string) * 128./130; /* Gen3+ encoding is 128/130 */
+}
+#endif
+
+#if !HAVE_DECL_MODFF
+#define modff(x,iptr) (float)modf((double)x,(double *)iptr)
+#endif
 
 #ifdef HWLOC_WIN_SYS
 #  ifndef HAVE_SSIZE_T

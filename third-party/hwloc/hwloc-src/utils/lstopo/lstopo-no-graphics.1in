@@ -3,7 +3,7 @@
 .\" Copyright © 2009-2010 Université of Bordeaux
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
-.TH LSTOPO "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
+.TH LSTOPO "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
 .SH NAME
 lstopo, lstopo-no-graphics, hwloc-ls \- Show the topology of the system
 .
@@ -196,42 +196,40 @@ Set size of margin between elements.
 .TP
 \fB\-\-horiz\fR, \fB\-\-horiz\fR=<type1,...>
 Horizontal graphical layout instead of nearly 4/3 ratio.
-If a comma-separated list of types is given, the layout only
-applies to the corresponding containers.
+If a comma-separated list of object types is given, the layout only
+applies to the corresponding container objects.
 Ignored for bridges since their children are always vertically aligned.
 .TP
 \fB\-\-vert\fR, \fB\-\-vert\fR=<type1,...>
 Vertical graphical layout instead of nearly 4/3 ratio.
-If a comma-separated list of types is given, the layout only
-applies to the corresponding containers.
+If a comma-separated list of object types is given, the layout only
+applies to the corresponding container objects.
 .TP
 \fB\-\-rect\fR, \fB\-\-rect\fR=<type1,...>
 Rectangular graphical layout with nearly 4/3 ratio.
-If a comma-separated list of types is given, the layout only
-applies to the corresponding containers.
+If a comma-separated list of object types is given, the layout only
+applies to the corresponding container objects.
 Ignored for bridges since their children are always vertically aligned.
 .TP
 \fB\-\-no\-index\fR, \fB\-\-no\-index=<type1,...>\fR
 Do not show object indexes in the graphical output.
-If a comma-separated list of types is given, indexes are only
-disabled for the given objects.
+If a comma-separated list of object types is given, indexes are disabled for the corresponding objects.
 .TP
 \fB\-\-index\fR, \fB\-\-index=<type1,...>\fR
 Show object indexes in the graphical output (default).
-If a comma-separated list of types is given, indexes are only
-enabled for the given objects.
+If a comma-separated list of object types is given, indexes are reenabled for the corresponding objects
+(if they were previously disabled with \fB\-\-no\-index\fR).
 .TP
 \fB\-\-no\-attrs\fR, \fB\-\-no\-attrs=<type1,...>\fR
 Do not show object attributes (such as memory size, cache size, PCI link speed, etc.)
 in the graphical output.
-If a comma-separated list of types is given, attributes are only
-disabled for the given objects.
+If a comma-separated list of object types is given, attributes are disabled for the corresponding objects.
 .TP
 \fB\-\-attrs\fR, \fB\-\-attrs=<type1,...>\fR
 Show object attributes (such as memory size, cache size, PCI link speed, etc.)
 in the graphical output (default).
-If a comma-separated list of types is given, attributes are only
-enabled for the given objects.
+If a comma-separated list of object types is given, attributes are reenabled for the corresponding objects
+(if they were previously disabled with \fB\-\-no\-attrs\fR).
 .TP
 \fB\-\-no\-legend\fR
 Remove the text legend at the bottom.

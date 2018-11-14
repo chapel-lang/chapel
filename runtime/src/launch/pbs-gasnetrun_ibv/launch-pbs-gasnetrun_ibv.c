@@ -169,8 +169,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "expect -re $prompt\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"%s/%s/gasnetrun_ibv -n %d %s ",
-          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
+  fprintf(expectFile, "send \"%s/%s/gasnetrun_ibv -n %d -N %d %s ",
+          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales, chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }

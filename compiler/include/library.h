@@ -27,6 +27,7 @@
 
 #include "files.h"
 
+class ArgSymbol;
 class FnSymbol;
 class Symbol;
 class Type;
@@ -46,6 +47,8 @@ extern char libDir[FILENAME_MAX + 1];
 extern std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
 extern std::map<TypeSymbol*, std::string> fortranKindNames;
 extern std::map<TypeSymbol*, std::string> fortranTypeNames;
+
+extern std::map<ArgSymbol*, std::string> exportedDefaultValues;
 
 void codegen_library_header(std::vector<FnSymbol*> functions);
 void codegen_library_fortran(std::vector<FnSymbol*> functions);

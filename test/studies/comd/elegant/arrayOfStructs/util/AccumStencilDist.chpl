@@ -564,7 +564,7 @@ iter AccumStencilDom.these(param tag: iterKind) where tag == iterKind.leader {
     for param i in 1..tmpAccumStencil.rank do
       locOffset(i) = tmpAccumStencil.dim(i).first/tmpAccumStencil.dim(i).stride:strType;
     // Forward to defaultRectangular
-    for followThis in tmpAccumStencil._value.these(iterKind.leader, maxTasks,
+    for followThis in tmpAccumStencil.these(iterKind.leader, maxTasks,
                                             myIgnoreRunning, minSize,
                                             locOffset) do
       yield followThis;

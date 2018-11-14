@@ -89,10 +89,10 @@ module BufferedAtomics {
   pragma "no doc"
   inline proc RAtomicT.addBuff(value:T): void {
     pragma "insert line file info" extern externFunc("add_buff", T)
-      proc atomic_add_buff(ref op:T, l:int(32), ref obj:T): void;
+      proc atomic_add_buff(ref op:T, l:int(32), obj:c_void_ptr): void;
 
     var v = value;
-    atomic_add_buff(v, _localeid(), _v);
+    atomic_add_buff(v, _localeid(), _addr());
   }
 
   /* Buffered atomic sub. */
@@ -102,10 +102,10 @@ module BufferedAtomics {
   pragma "no doc"
   inline proc RAtomicT.subBuff(value:T): void {
     pragma "insert line file info" extern externFunc("sub_buff", T)
-      proc atomic_sub_buff(ref op:T, l:int(32), ref obj:T): void;
+      proc atomic_sub_buff(ref op:T, l:int(32), obj:c_void_ptr): void;
 
     var v = value;
-    atomic_sub_buff(v, _localeid(), _v);
+    atomic_sub_buff(v, _localeid(), _addr());
   }
 
   /* Buffered atomic or. */
@@ -116,10 +116,10 @@ module BufferedAtomics {
   inline proc RAtomicT.orBuff(value:T): void {
     if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
     pragma "insert line file info" extern externFunc("or_buff", T)
-      proc atomic_or_buff(ref op:T, l:int(32), ref obj:T): void;
+      proc atomic_or_buff(ref op:T, l:int(32), obj:c_void_ptr): void;
 
     var v = value;
-    atomic_or_buff(v, _localeid(), _v);
+    atomic_or_buff(v, _localeid(), _addr());
   }
 
   /* Buffered atomic and. */
@@ -130,10 +130,10 @@ module BufferedAtomics {
   inline proc RAtomicT.andBuff(value:T): void {
     if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
     pragma "insert line file info" extern externFunc("and_buff", T)
-      proc atomic_and_buff(ref op:T, l:int(32), ref obj:T): void;
+      proc atomic_and_buff(ref op:T, l:int(32), obj:c_void_ptr): void;
 
     var v = value;
-    atomic_and_buff(v, _localeid(), _v);
+    atomic_and_buff(v, _localeid(), _addr());
   }
 
   /* Buffered atomic xor. */
@@ -144,10 +144,10 @@ module BufferedAtomics {
   inline proc RAtomicT.xorBuff(value:T): void {
     if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
     pragma "insert line file info" extern externFunc("xor_buff", T)
-      proc atomic_xor_buff(ref op:T, l:int(32), ref obj:T): void;
+      proc atomic_xor_buff(ref op:T, l:int(32), obj:c_void_ptr): void;
 
     var v = value;
-    atomic_xor_buff(v, _localeid(), _v);
+    atomic_xor_buff(v, _localeid(), _addr());
   }
 
   /*

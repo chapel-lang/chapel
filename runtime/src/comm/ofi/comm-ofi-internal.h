@@ -60,7 +60,9 @@ FILE* chpl_comm_ofi_dbg_file;
 #define DBG_ACK              0x100000UL
 #define DBG_COMMPROGRESS     0x200000UL
 #define DBG_MR              0x1000000UL
-#define DBG_HUGEPAGES       0x8000000UL
+#define DBG_HUGEPAGES       0x2000000UL
+#define DBG_MRDESC          0x4000000UL
+#define DBG_MRKEY           0x8000000UL
 #define DBG_FAB            0x10000000UL
 #define DBG_FABSALL        0x20000000UL
 #define DBG_FABFAIL        0x40000000UL
@@ -98,9 +100,19 @@ char* chpl_comm_ofi_dbg_prefix(void);
 //
 // Simplify internal error checking
 //
+int chpl_comm_ofi_abort_on_error;
+
 #define INTERNAL_ERROR_V(fmt, ...)                                      \
-  chpl_internal_error_v("%s:%d: " fmt, __FILE__, (int) __LINE__,        \
-                        ## __VA_ARGS__)
+  do {                                                                  \
+    if (chpl_comm_ofi_abort_on_error) {                                 \
+      fprintf(stderr, "%d: %s:%d: " fmt, chpl_nodeID,                   \
+              __FILE__, (int) __LINE__, ## __VA_ARGS__);                \
+      abort();                                                          \
+    } else {                                                            \
+      chpl_internal_error_v("%d: %s:%d: " fmt, chpl_nodeID,             \
+                            __FILE__, (int) __LINE__, ## __VA_ARGS__);  \
+    }                                                                   \
+  } while (0)
 
 #define CHK_TRUE(expr)                                                  \
     do {                                                                \

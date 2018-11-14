@@ -831,7 +831,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = followerCall;
 
   } else if (call->isPrimitive(PRIM_TO_LEADER)) {
-    FnSymbol* iterator   = getTheIteratorFn(call);
+    FnSymbol* iterator =
+      getTheIteratorFnFromIteratorRec(call->get(1)->typeInfo());
     CallExpr* leaderCall = new CallExpr(iterator->name);
 
     for_formals(formal, iterator) {
@@ -1734,6 +1735,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   thisMethod->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   thisMethod->addFlag(FLAG_COMPILER_GENERATED);
+  thisMethod->addFlag(FLAG_OVERRIDE);
 
   thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
                                                "_mt",

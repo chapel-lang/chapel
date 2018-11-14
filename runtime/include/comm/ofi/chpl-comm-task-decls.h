@@ -34,12 +34,43 @@ typedef struct {
 } chpl_comm_taskPrvData_t;
 
 //
-// Comm layer private area within executeOn argument bundles
-// (bundle.comm)
-typedef struct {
-  chpl_fn_int_t fid;
-  int caller;
-  void* ack;
+// Comm layer private area within executeOn argument bundles.
+//
+// Members are packed, potentially differently, in each AM request type
+// to reduce space requirements.  The 'op' member must come first in all
+// cases.
+//
+// TODO: optimize this
+//
+typedef uint8_t chpl_comm_amDone_t;
+
+struct chpl_comm_bundleData_op_t {
+  uint8_t op;                   // operation; must come first
+};
+
+struct chpl_comm_bundleData_execOn_t {
+  uint8_t op;                   // operation; must come first
+  chpl_bool fast;               // do directly in AM handler; no task
+  chpl_fn_int_t fid;            // function table index to call
+  uint16_t argSize;             // #bytes in whole arg bundle
+  c_nodeid_t nodeID;            // source node
+  c_sublocid_t subloc;          // target sublocale
+  chpl_comm_amDone_t* pDone;    // source node 'done' flag (NB, if NULL)
+};
+
+struct chpl_comm_bundleData_RMA_t {
+  uint8_t op;                   // operation; must come first
+  void* addr;                   // address on AM target node
+  c_nodeid_t nodeID;            // initiator's node
+  void* raddr;                  // initiator's address
+  size_t size;                  // number of bytes
+  chpl_comm_amDone_t* pDone;    // initiator's 'done' flag (NB, if NULL)
+};
+
+typedef union {
+  struct chpl_comm_bundleData_op_t op;
+  struct chpl_comm_bundleData_execOn_t xo;
+  struct chpl_comm_bundleData_RMA_t rma;
 } chpl_comm_bundleData_t;
 
 //

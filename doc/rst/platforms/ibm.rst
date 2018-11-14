@@ -99,16 +99,6 @@ the following settings:
    scripts vary greatly from one site to another so check with your
    site's documentation for details.
 
-   There is a prototype loadleveler launcher, which can be utilized
-   by setting the ``CHPL_LAUNCHER`` environment variable to
-   ``loadleveler``. See :ref:`readme-launcher` for a general
-   description of the role of launchers in Chapel.  This launcher is
-   not sufficiently portable, robust, configurable, or interactive
-   to warrant being made the default for Power5 or Power6 machines.
-   If you are an IBM enthusiast who would like to work with us to
-   improve the utility of this launcher we would greatly appreciate
-   the help.
-
 
 Additional Notes for Power5 Clusters
 ------------------------------------

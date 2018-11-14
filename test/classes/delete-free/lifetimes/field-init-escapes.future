@@ -1,8 +1,0 @@
-feature request: lifetime checking not flagging field initialization cases
-
-If a field is initialized with a 'new borrow', the lifetime checker
-isn't flagging that case.  This seems like a potentially easy thinko
-for an user to make since an initializer almost feels as though it's
-establishing a scope similar to the object being initialized, so it'd
-be nice to point out that the borrow is not going to outlive the scope
-of the initializer itself.

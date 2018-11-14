@@ -793,41 +793,11 @@ static void moveGlobalDeclarationsToModuleScope() {
       } else if (DefExpr* def = toDefExpr(expr)) {
         // Non-temporary variable declarations are moved out to module scope.
         if (VarSymbol* vs = toVarSymbol(def->sym)) {
-          // Ignore compiler-inserted temporaries.
-          // Only non-compiler-generated variables in the module init
-          // function are moved out to module scope.
-          //
-          // Make an exception for references to array slices.
-          if (vs->hasFlag(FLAG_TEMP) == true) {
-            // is this a call_tmp that is later stored in a ref variable?
-            // if so, move the call_tmp to global scope as well. E.g.
-            //   var MyArray:[1..20] int;
-            //   ref MySlice = MyArray[1..10];
-
-            // Look for global = PRIM_ADDR_OF var
-            //          global with flag FLAG_REF_VAR.
-            bool refToTempInGlobal = false;
-
-            for_SymbolSymExprs(se, vs) {
-              if (CallExpr* addrOf = toCallExpr(se->parentExpr)) {
-                if (addrOf->isPrimitive(PRIM_ADDR_OF) == true) {
-                  if (CallExpr* move = toCallExpr(addrOf->parentExpr)) {
-                    if (move->isPrimitive(PRIM_MOVE) == true) {
-                      SymExpr* lhs = toSymExpr(move->get(1));
-
-                      if (lhs->symbol()->hasFlag(FLAG_REF_VAR) == true) {
-                        refToTempInGlobal = true;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-
-            if (refToTempInGlobal == false) {
-              continue;
-            }
-          }
+          // All var symbols are moved out to module scope,
+          // except for end counts (just so that parallel.cpp
+          // can find them)
+          if (vs->hasFlag(FLAG_END_COUNT))
+            continue;
 
           // If the var declaration is an extern, we want to move its
           // initializer block with it.
@@ -842,11 +812,10 @@ static void moveGlobalDeclarationsToModuleScope() {
             }
           }
 
+          // move the DefExpr
           mod->block->insertAtTail(def->remove());
-        }
-
-        // All type and function symbols are moved out to module scope.
-        if (isTypeSymbol(def->sym) == true || isFnSymbol(def->sym) == true) {
+        } else if (isTypeSymbol(def->sym) || isFnSymbol(def->sym)) {
+          // All type and function symbols are moved out to module scope.
           mod->block->insertAtTail(def->remove());
         }
       }
@@ -861,7 +830,8 @@ static void moveGlobalDeclarationsToModuleScope() {
   // was hoisted out of the module init function.
   for_set(VarSymbol, tmp, globalTemps) {
     ModuleSymbol* mod = tmp->getModule();
-    mod->block->insertAtTail(tmp->defPoint->remove());
+    if (tmp->defPoint->getFunction())
+      mod->block->insertAtTail(tmp->defPoint->remove());
   }
 }
 
@@ -1860,6 +1830,8 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
   bool isCandidateGlobal = fn == initFn &&
                            fn->body == call->getStmtExpr()->parentExpr;
 
+  // TODO: globalTemps needs updating only for isGlobalLoopExpr
+  // once all temps are hoisted in this way.
   if (isGlobalLoopExpr || isCandidateGlobal) {
     CallExpr* cur = parentCall;
     CallExpr* sub = call;
@@ -2470,33 +2442,9 @@ static void updateVariableAutoDestroy(DefExpr* defExpr) {
       fn->hasFlag(FLAG_INIT_COPY_FN)     == false && // Note 3.
       fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false) {
 
-    // Variables in a module initializer need special attention
-    if (defExpr->parentExpr == fn->getModule()->initFn->body) {
-
-      // Noakes 2016/04/27
-      //
-      // Most variables in a module init function will become global and
-      // should not be auto destroyed.  The challenging case is
-      //
-      // var (a1, a2) = fnReturnTuple();
-      //
-      // The parser expands this as
-      //
-      // var tmp = fnReturnTuple();
-      // var a1  = tmp.x1;
-      // var a2  = tmp.x2;
-      //
-      // This pseudo-tuple must be auto-destroyed to ensure the components
-      // are managed correctly. However the AST doesn't provide us with a
-      // strong/easy way to determine that we're dealing with this case.
-      // In practice it appears to be sufficient to flag any TMP
-      if (var->hasFlag(FLAG_TEMP)) {
-        var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-      }
-
-    } else {
-      var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-    }
+    // Note that if the DefExpr is at module scope, the auto-destroy
+    // for it will end up in the module deinit function.
+    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 }
 

@@ -451,9 +451,6 @@
 /* prints out qarray debugging information at runtime */
 #undef QTHREAD_DEBUG_QARRAY
 
-/* prints out rcrtool debugging information at runtime */
-#undef QTHREAD_DEBUG_RCRTOOL
-
 /* prints out shepherd debugging information at runtime */
 #undef QTHREAD_DEBUG_SHEPHERD
 
@@ -547,6 +544,9 @@
 /* expensive sanity checks */
 #undef QTHREAD_PARANOIA
 
+/* Defined if performance monitoring support desired */
+#undef QTHREAD_PERFORMANCE
+
 /* Define to specify the PPC ABI */
 #undef QTHREAD_PPC_ABI
 
@@ -570,12 +570,6 @@
 
 /* Define for glibc-style qsort_r */
 #undef QTHREAD_QSORT_GLIBC
-
-/* enables RCR logging and scheduling */
-#undef QTHREAD_RCRTOOL
-
-/* logs RCR stats */
-#undef QTHREAD_RCRTOOL_STAT
 
 /* adds code to monitor how much time shepherds spend idle */
 #undef QTHREAD_SHEPHERD_PROFILING
@@ -601,9 +595,6 @@
 
 /* define to 1 if PLPA is available and works */
 #undef QTHREAD_USE_PLPA
-
-/* Define to enable ROSE extensions */
-#undef QTHREAD_USE_ROSE_EXTENSIONS
 
 /* Define to use worker-specific spawn cache */
 #undef QTHREAD_USE_SPAWNCACHE

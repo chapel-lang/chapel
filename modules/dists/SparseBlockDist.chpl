@@ -222,14 +222,14 @@ class SparseBlockDom: BaseSparseDomImpl {
       //on blk do
       // But can't currently have yields in on clauses:
       // invalid use of 'yield' within 'on' in serial iterator
-      for x in locDom.mySparseBlock._value.these() do
+      for x in locDom.mySparseBlock.these() do
         yield x;
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
     coforall (locDom,localeIndex) in zip(locDoms,dist.targetLocDom) {
       on locDom {
-        for followThis in locDom.mySparseBlock._value.these(tag) {
+        for followThis in locDom.mySparseBlock.these(tag) {
           yield (followThis, localeIndex);
         }
       }

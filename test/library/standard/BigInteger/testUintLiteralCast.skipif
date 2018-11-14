@@ -1,0 +1,3 @@
+# GMP initializers convert values from uint to c_ulong or int to c_long
+# so the size of c_ulong or c_long need to be 64 bits if the value is large
+CHPL_TARGET_PLATFORM <= 32
