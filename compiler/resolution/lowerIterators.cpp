@@ -67,35 +67,15 @@ FnSymbol* getTheIteratorFn(Type* icType)
   INT_ASSERT(icTypeAgg);
 
   if (icType->symbol->hasFlag(FLAG_TUPLE)) {
-    // A tuple of iterator classes -> first field is the iterator class
+    // A tuple of iterator classes -> get the first of them.
     Type* firstIcType = icTypeAgg->getField(1)->type;
-    INT_ASSERT(firstIcType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-    AggregateType* firstIcTypeAgg = toAggregateType(firstIcType);
-    FnSymbol* result = firstIcTypeAgg->iteratorInfo->getIterator;
-
-    return result;
-  } else {
-    INT_ASSERT(icType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-    INT_ASSERT(icTypeAgg->iteratorInfo);
-    FnSymbol* getIterFn = icTypeAgg->iteratorInfo->getIterator;
-    // The type of _getIterator's first formal arg is _iteratorRecord.
-    Type* irType = getIterFn->getFormal(1)->type;
-    INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
-
-    return getTheIteratorFnFromIteratorRec(irType);
+    icTypeAgg = toAggregateType(firstIcType);
   }
-}
 
-FnSymbol* getTheIteratorFnFromIteratorRec(Type* irType)
-{
-    AggregateType* irTypeAgg = toAggregateType(irType);
-    INT_ASSERT(irTypeAgg->iteratorInfo);
+  INT_ASSERT(icTypeAgg->symbol->hasFlag(FLAG_ITERATOR_CLASS) ||
+             icTypeAgg->symbol->hasFlag(FLAG_ITERATOR_RECORD) );
 
-    // Return the original iterator function
-    FnSymbol* result = irTypeAgg->iteratorInfo->iterator;
-    INT_ASSERT(result->hasFlag(FLAG_ITERATOR_FN));
-
-    return result;
+  return icTypeAgg->iteratorInfo->iterator;
 }
 
 FnSymbol* debugGetTheIteratorFn(Type* type) {
@@ -2160,7 +2140,9 @@ expandForLoop(ForLoop* forLoop) {
   if (!fNoInlineIterators)
   {
     FnSymbol* iterFn = getTheIteratorFn(iterator->type);
-    if (iterFn->iteratorInfo && canInlineIterator(iterFn) &&
+    if (iterFn->iteratorInfo                          &&
+        !iterator->type->symbol->hasFlag(FLAG_TUPLE)  &&
+        canInlineIterator(iterFn)                     &&
         !isVirtualIterator(iterator)) {
       converted = expandIteratorInline(forLoop);
     }
