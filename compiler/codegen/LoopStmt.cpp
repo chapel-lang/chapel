@@ -27,6 +27,9 @@ void LoopStmt::fixVectorizeable()
   if (!this->isVectorizeable())
     return; // nothing more to do!
 
+  // Note: this routine could also return early if fNoVectorize==true.
+  // However letting it run in that case gives better testing coverage.
+
   bool report = false;
   if (fReportVectorizedLoops) {
     ModuleSymbol *mod = toModuleSymbol(this->getModule());
@@ -78,7 +81,14 @@ void LoopStmt::fixVectorizeable()
               // but they probably do and they could potentially do a GET
               addressTaken = true;
               needsGets = true;
-            } else if (call->resolvedOrVirtualFunction()) {
+            } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+              // Ignore method name and id arguments
+              if (se != call->get(1) && se != call->get(2)) {
+                ArgSymbol* formal = actual_to_formal(se);
+                if ((formal->intent & FLAG_REF))
+                  addressTaken = true;
+              }
+            } else if (call->resolvedFunction()) {
               ArgSymbol* formal = actual_to_formal(se);
               if ((formal->intent & FLAG_REF))
                 addressTaken = true;
