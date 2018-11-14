@@ -1,7 +1,6 @@
 var chplInt: int;
 var chplReal: real;
 
-// Note: These exported functions need to be all lowercase
 export proc chpl_library_init_ftn() {
   extern proc chpl_library_init(argc: c_int, argv: c_ptr(c_ptr(c_char)));
   var filename = c"fake";

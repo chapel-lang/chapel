@@ -306,6 +306,8 @@ static void setupFortranTypeMap() {
   fortranKindNames[dtReal[FLOAT_SIZE_32]->symbol] = "c_float";
   fortranKindNames[dtReal[FLOAT_SIZE_64]->symbol] = "c_double";
   fortranKindNames[dtBool->symbol] = "c_bool";
+
+  // Should any chapel type map to Fortran's `character(kind=c_char)`?
   //fortranKindNames[dtStringC->symbol] = "c_char";
   fortranKindNames[dtComplex[COMPLEX_SIZE_64]->symbol] = "c_float_complex";
   fortranKindNames[dtComplex[COMPLEX_SIZE_128]->symbol] = "c_double_complex";
@@ -321,6 +323,7 @@ static void setupFortranTypeMap() {
   fortranTypeNames[dtReal[FLOAT_SIZE_32]->symbol] = "real";
   fortranTypeNames[dtReal[FLOAT_SIZE_64]->symbol] = "real";
   fortranTypeNames[dtBool->symbol] = "logical";
+  // Should any chapel type map to Fortran's `character(kind=c_char)`?
   //fortranTypeNames[dtStringC->symbol] = "character";
   fortranTypeNames[dtComplex[COMPLEX_SIZE_64]->symbol] = "complex";
   fortranTypeNames[dtComplex[COMPLEX_SIZE_128]->symbol] = "complex";

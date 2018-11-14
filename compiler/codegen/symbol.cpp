@@ -969,6 +969,7 @@ static std::string getFortranTypeName(Type* type) {
   std::string typeName = fortranTypeNames[type->symbol];
   if (typeName.empty()) {
     // TODO: Maybe issue an error instead?
+    USR_WARN("Unknown Fortran type generating interface for C type: %s", type->symbol->cname);
     return type->symbol->cname;
   } else {
     return typeName;
@@ -979,6 +980,7 @@ static std::string getFortranKindName(Type* type) {
   std::string kindName = fortranKindNames[type->symbol];
   if (kindName.empty()) {
     // TODO: Maybe issue an error instead?
+    USR_WARN("Unknown Fortran KIND generating interface for C type: %s", type->symbol->cname);
     return type->symbol->cname;
   } else {
     return kindName;
@@ -1862,7 +1864,7 @@ void FnSymbol::codegenFortran(int indent) {
   if (info->cfile) {
     FILE* outfile = info->cfile;
     if (fGenIDS)
-      fprintf(outfile, "%*s! %s", indent, "", idCommentTemp(this));
+      fprintf(outfile, "%*s! %d", indent, "", this->id);
     const char* subOrProc = retType != dtVoid ? "function" : "subroutine";
     fprintf(outfile, "%*s%s %s(", indent, "", subOrProc, this->cname);
     bool first = true;
@@ -1885,13 +1887,24 @@ void FnSymbol::codegenFortran(int indent) {
     indent += 2;
     // build a unique set of type kinds to import
     std::set<std::string> uniqueKindNames;
+    bool foundUnsignedInt = false;
     for_formals(formal, this) {
       if (formal->hasFlag(FLAG_NO_CODEGEN))
         continue;
       uniqueKindNames.insert(getFortranKindName(formal->type));
+      if (is_uint_type(formal->type)) {
+        foundUnsignedInt = true;
+      }
     }
     if (retType != dtVoid) {
       uniqueKindNames.insert(getFortranKindName(retType));
+      if (is_uint_type(retType)) {
+        foundUnsignedInt = true;
+      }
+    }
+
+    if (foundUnsignedInt) {
+      USR_WARN(this->defPoint, "Fortran does not support unsigned integers. Using signed integer instead.");
     }
 
     // print "import <c_type_name>" for each required type
@@ -1914,9 +1927,7 @@ void FnSymbol::codegenFortran(int indent) {
       if (formal->hasFlag(FLAG_NO_CODEGEN))
         continue;
       const char* prefix = formal->cname[0] == '_' ? "chpl" : "";
-      const bool isRef = formal->intent == INTENT_REF ||
-                         formal->intent == INTENT_CONST_REF ||
-                         formal->intent == INTENT_REF_MAYBE_CONST;
+      const bool isRef = formal->intent & INTENT_FLAG_REF;
       const char* valueString = isRef ? "" : ", value";
       fprintf(outfile, "%*s%s(kind=%s)%s :: %s%s\n", indent, "", getFortranTypeName(formal->type).c_str(), getFortranKindName(formal->type).c_str(), valueString, prefix, formal->cname);
     }
@@ -1928,7 +1939,7 @@ void FnSymbol::codegenFortran(int indent) {
     indent -= 2;
     fprintf(outfile, "%*send %s %s\n\n", indent, "", subOrProc, this->cname);
   } else {
-    // handle LLVM
+    INT_FATAL("no file named to generate Fortran interface into");
   }
   INT_ASSERT(indent == beginIndent);
 }

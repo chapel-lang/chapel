@@ -97,10 +97,15 @@ static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
 static bool fBaseline = false;
 
+// TODO: Should --library automatically generate all supported
+// interfaces (C, Fortran, Python)? Then there'd be no need to
+// specify each one separately.
+//
 bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryPython = false;
+
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool fVerify = false;
