@@ -215,7 +215,7 @@ static void insertNamedInstantiationInfo(CallExpr* newExpr,
         initCall->insertAtTail(new NamedExpr(field->name, new SymExpr(field->type->symbol)));
       } else if (field->hasFlag(FLAG_PARAM)) {
         initCall->insertAtTail(new NamedExpr(field->name, new SymExpr(at->getSubstitution(field->name))));
-      } else if (Symbol* sub = at->getSubstitution(field->name)) {
+      } else if (at->getSubstitution(field->name) != NULL) {
         USR_FATAL(newExpr, "A type alias of '%s' may not be used in a new-expression because it contains a typeless field ('%s')", rootType->symbol->name, field->name);
       }
     }
