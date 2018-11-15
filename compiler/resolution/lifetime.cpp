@@ -1317,7 +1317,7 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     if (iterable != NULL)
       if (AggregateType* at = toAggregateType(iterable->getValType()))
         if (at->iteratorInfo != NULL)
-          if (FnSymbol* fn = getTheIteratorFnFromIteratorRec(at))
+          if (FnSymbol* fn = getTheIteratorFn(at))
             method = (fn->_this != NULL);
 
     bool usedAsRef = index->isRef();

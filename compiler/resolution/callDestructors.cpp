@@ -199,8 +199,7 @@ static inline bool isParIterOrForwarder(FnSymbol* fn) {
 
   if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     // This is a forwarder. Query the iterator itself.
-    return getTheIteratorFnFromIteratorRec(fn->retType)
-             ->hasFlag(FLAG_INLINE_ITERATOR);
+    return getTheIteratorFn(fn->retType)->hasFlag(FLAG_INLINE_ITERATOR);
 
   // Otherwise, no.
   return false;
