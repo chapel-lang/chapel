@@ -771,9 +771,10 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 static
 void init_fixedHeap(void) {
   //
-  // We only need a fixed heap if we're using the gni provider.
+  // We only need a fixed heap if we're multinode and using the
+  // gni provider.
   //
-  if (strcmp(getProviderName(), "gni") != 0)
+  if (chpl_numNodes <= 1 || strcmp(getProviderName(), "gni") != 0)
     return;
 
   //
@@ -1030,6 +1031,14 @@ int mrGetKey(uint64_t* pKey, int iNode, void* addr, size_t size) {
 
 static inline
 int mrGetLocalKey(uint64_t* pKey, void* addr, size_t size) {
+  if (chpl_numNodes <= 1) {
+    //
+    // It okay that we don't have a local key in this case, but
+    // you'd better not want its value.
+    //
+    CHK_TRUE(pKey == NULL);
+    return 0;
+  }
   return mrGetKey(pKey, chpl_nodeID, addr, size);
 }
 
@@ -1045,12 +1054,17 @@ typedef enum {
   am_opCall,                            // call a function table function
   am_opGet,                             // do an RMA GET
   am_opPut,                             // do an RMA PUT
+  am_opAMO,                             // do an AMO
+  am_opFAMO,                            // do a fetching AMO
 } amOp_t;
 
 static void amRequestExecOn(c_nodeid_t, c_sublocid_t, chpl_fn_int_t,
                             chpl_comm_on_bundle_t*, size_t,
                             chpl_bool, chpl_bool);
 static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
+static void amRequestAMO(c_nodeid_t, void*, void*, int, int, size_t);
+static void amRequestFAMO(c_nodeid_t, void*, void*, void*, void*,
+                          int, int, size_t);
 static void amRequestCommon(c_nodeid_t, chpl_comm_on_bundle_t*, size_t,
                             chpl_comm_amDone_t**);
 
@@ -1140,7 +1154,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
                      .fast = false,
                      .fid = fid,
                      .argSize = argSize,
-                     .nodeID = chpl_nodeID,
+                     .node = chpl_nodeID,
                      .subloc = subloc,
                      .pDone = NULL };
   amRequestCommon(node, arg, argSize, blocking ? &arg->comm.xo.pDone : NULL);
@@ -1154,7 +1168,7 @@ void amRequestRMA(c_nodeid_t node, amOp_t op,
   arg.comm.rma = (struct chpl_comm_bundleData_RMA_t)
                    { .op = op,
                      .addr = raddr,
-                     .nodeID = chpl_nodeID,
+                     .node = chpl_nodeID,
                      .raddr = addr,
                      .size = size,
                      .pDone = NULL };
@@ -1162,6 +1176,74 @@ void amRequestRMA(c_nodeid_t node, amOp_t op,
                   (offsetof(chpl_comm_on_bundle_t, comm)
                    + sizeof(arg.comm.rma)),
                   &arg.comm.rma.pDone);
+}
+
+
+static inline
+void amRequestAMO(c_nodeid_t node, void* object, void* operand,
+                  int ofiOp, int ofiType, size_t size) {
+  chpl_comm_on_bundle_t arg;
+  arg.comm.amo = (struct chpl_comm_bundleData_AMO_t)
+                   { .op = am_opAMO,
+                     .ofiOp = ofiOp,
+                     .ofiType = ofiType,
+                     .size = size,
+                     .node = chpl_nodeID,
+                     .obj = object,
+                     .pDone = NULL };
+  if (operand != NULL) {
+    memcpy(&arg.comm.amo.operand, operand, size);
+  }
+  amRequestCommon(node, &arg,
+                  (offsetof(chpl_comm_on_bundle_t, comm)
+                   + sizeof(arg.comm.amo)),
+                  &arg.comm.amo.pDone);
+}
+
+
+static inline
+void amRequestFAMO(c_nodeid_t node, void* object, void* result,
+                   void* operand1, void* operand2,
+                   int ofiOp, int ofiType, size_t size) {
+  void* myResult = result;
+  if (myResult != NULL) {
+    if (mrGetLocalDesc(NULL, myResult, size) != 0) {
+      if (ofiOp == FI_CSWAP)
+        myResult = allocBounceBuf(sizeof(chpl_bool32));
+      else
+        myResult = allocBounceBuf(size);
+      DBG_PRINTF(DBG_AMO, "AMO result BB: %p", myResult);
+      CHK_TRUE(mrGetLocalDesc(NULL, myResult, size) == 0);
+    }
+  }
+
+  chpl_comm_on_bundle_t arg;
+  arg.comm.famo = (struct chpl_comm_bundleData_FAMO_t)
+                    { .op = am_opFAMO,
+                      .ofiOp = ofiOp,
+                      .ofiType = ofiType,
+                      .size = size,
+                      .node = chpl_nodeID,
+                      .obj = object,
+                      .result = myResult,
+                      .pDone = NULL };
+  if (operand1 != NULL) {
+    memcpy(&arg.comm.famo.operand1, operand1, size);
+  }
+  if (operand2 != NULL) {
+    memcpy(&arg.comm.famo.operand2, operand2, size);
+  }
+  amRequestCommon(node, &arg,
+                  (offsetof(chpl_comm_on_bundle_t, comm)
+                   + sizeof(arg.comm.famo)),
+                  &arg.comm.famo.pDone);
+  if (myResult != result) {
+    if (ofiOp == FI_CSWAP)
+      memcpy(result, myResult, sizeof(chpl_bool32));
+    else
+      memcpy(result, myResult, size);
+    freeBounceBuf(myResult);
+  }
 }
 
 
@@ -1216,9 +1298,9 @@ void amRequestCommon(c_nodeid_t node,
                "waiting for done indication in %p", pDone);
     while (!*(volatile chpl_comm_amDone_t*) pDone)
       local_yield();
+    DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw done indication in %p", pDone);
     if (pDone != &myDone)
       freeBounceBuf(pDone);
-    DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw done indication");
   }
 }
 
@@ -1240,6 +1322,12 @@ static void amHandleExecOn(chpl_comm_on_bundle_t*);
 static void amExecOnWrapper(void*);
 static void amGetWrapper(void*);
 static void amPutWrapper(void*);
+static void amHandleAMO(chpl_comm_on_bundle_t*);
+static void amHandleFAMO(chpl_comm_on_bundle_t*);
+static void amSendDone(c_nodeid_t, chpl_comm_amDone_t*);
+
+static inline void doCpuAMO(void*, void*, void*, void*,
+                            enum fi_op, enum fi_datatype, size_t size);
 
 
 static
@@ -1379,6 +1467,14 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
                                    chpl_nullTaskID);
           break;
 
+        case am_opAMO:
+          amHandleAMO(req);
+          break;
+
+        case am_opFAMO:
+          amHandleFAMO(req);
+          break;
+
         default:
           INTERNAL_ERROR_V("unexpected AM op %d", req->comm.op.op);
           break;
@@ -1403,8 +1499,8 @@ static
 void amHandleExecOn(chpl_comm_on_bundle_t* req) {
   struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "node %d: AM req execOn ftable[%d]",
-             (int) xo->nodeID, (int) xo->fid);
+             "amHandleExecOn() for node %d: ftable[%d]",
+             (int) xo->node, (int) xo->fid);
   chpl_comm_on_bundle_t* reqCopy;
   CHPL_CALLOC_SZ(reqCopy, 1, xo->argSize);
   chpl_memcpy(reqCopy, req, xo->argSize);
@@ -1423,8 +1519,7 @@ void amExecOnWrapper(void* p) {
              "amExecOnWrapper(): chpl_ftable_call(%d, %p)", (int) xo->fid, p);
   chpl_ftable_call(xo->fid, p);
   if (xo->pDone != NULL) {
-    const chpl_comm_amDone_t done = 1;
-    (void) ofi_put(&done, xo->nodeID, xo->pDone, sizeof(*xo->pDone));
+    amSendDone(xo->node, xo->pDone);
   }
 }
 
@@ -1436,13 +1531,11 @@ void amGetWrapper(void* p) {
 
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
              "amGetWrapper(): %p <-- %d:%p (%zd bytes)",
-             rma->addr, (int) rma->nodeID, rma->raddr, rma->size);
-  CHK_TRUE(mrGetKey(NULL, rma->nodeID, rma->raddr, rma->size) == 0); // sanity
-  (void) ofi_get(rma->addr, rma->nodeID, rma->raddr, rma->size);
+             rma->addr, (int) rma->node, rma->raddr, rma->size);
+  CHK_TRUE(mrGetKey(NULL, rma->node, rma->raddr, rma->size) == 0); // sanity
+  (void) ofi_get(rma->addr, rma->node, rma->raddr, rma->size);
 
-  CHK_TRUE(mrGetKey(NULL, rma->nodeID, rma->pDone, sizeof(*rma->pDone)) == 0);
-  const chpl_comm_amDone_t done = 1;
-  (void) ofi_put(&done, rma->nodeID, rma->pDone, sizeof(*rma->pDone));
+  amSendDone(rma->node, rma->pDone);
 }
 
 
@@ -1453,13 +1546,99 @@ void amPutWrapper(void* p) {
 
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
              "amPutWrapper() %d:%p <-- %p (%zd bytes)",
-             (int) rma->nodeID, rma->raddr, rma->addr, rma->size);
-  CHK_TRUE(mrGetKey(NULL, rma->nodeID, rma->raddr, rma->size) == 0); // sanity
-  (void) ofi_put(rma->addr, rma->nodeID, rma->raddr, rma->size);
+             (int) rma->node, rma->raddr, rma->addr, rma->size);
+  CHK_TRUE(mrGetKey(NULL, rma->node, rma->raddr, rma->size) == 0); // sanity
+  (void) ofi_put(rma->addr, rma->node, rma->raddr, rma->size);
 
-  CHK_TRUE(mrGetKey(NULL, rma->nodeID, rma->pDone, sizeof(*rma->pDone)) == 0);
-  chpl_comm_amDone_t done = 1;
-  (void) ofi_put(&done, rma->nodeID, rma->pDone, sizeof(*rma->pDone));
+  amSendDone(rma->node, rma->pDone);
+}
+
+
+static
+void amHandleAMO(chpl_comm_on_bundle_t* req) {
+  struct chpl_comm_bundleData_AMO_t* amo = &req->comm.amo;
+  DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
+             "amHandleAMO() for node %d: obj %p, ofiOp %d, size %d",
+             amo->node, amo->obj, amo->ofiOp, amo->size);
+  doCpuAMO(NULL, amo->obj, &amo->operand, NULL,
+           amo->ofiOp, amo->ofiType, amo->size);
+
+  if (amo->node == chpl_nodeID) {
+    //
+    // AMOs can be same-node; short-circuit the response in that case.
+    //
+    *amo->pDone = 1;
+  } else {
+    amSendDone(amo->node, amo->pDone);
+  }
+}
+
+
+static
+void amHandleFAMO(chpl_comm_on_bundle_t* req) {
+  struct chpl_comm_bundleData_FAMO_t* famo = &req->comm.famo;
+  DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
+             "amHandleFAMO() for node %d: obj %p, ofiOp %d, size %d, res %p",
+             famo->node, famo->obj, famo->ofiOp, famo->size, famo->result);
+  chpl_amo_datum_t result;
+  doCpuAMO(&result, famo->obj, &famo->operand1, &famo->operand2,
+           famo->ofiOp, famo->ofiType, famo->size);
+
+  if (famo->node == chpl_nodeID) {
+    //
+    // AMOs can be same-node; short-circuit the response in that case.
+    //
+    if (famo->ofiOp == FI_CSWAP)
+      memcpy(famo->result, &result, sizeof(result.u32));
+    else
+      memcpy(famo->result, &result, famo->size);
+    atomic_thread_fence(memory_order_release);
+    *famo->pDone = 1;
+  } else {
+    CHK_TRUE(mrGetKey(NULL, famo->node, famo->result, famo->size) == 0);
+    if (famo->ofiOp == FI_CSWAP)
+      (void) ofi_put(&result, famo->node, famo->result, sizeof(result.u32));
+    else
+      (void) ofi_put(&result, famo->node, famo->result, famo->size);
+
+    //
+    // TODO:
+    // HACK!!!  We need to make sure the result arrives before
+    //          telling the originator the AMO is done.  For now
+    //          we wait here for the tx counter to clear, but
+    //          there is surely a better way, perhaps a queue of
+    //          outbound writes or some such.
+    //
+    {
+      struct perTxCtxInfo_t* tcip;
+      CHK_TRUE((tcip = getTxCtxInfo(false /*isWorker*/)) != NULL);
+      do {
+        const int count = fi_cntr_read(tcip->txCntr);
+        if (count > 0) {
+          DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
+          tcip->numTxsOut -= count;
+        }
+      } while (tcip->numTxsOut > 0);
+      releaseTxCtxInfo(tcip);
+    }
+
+    amSendDone(famo->node, famo->pDone);
+  }
+}
+
+
+static
+void amSendDone(c_nodeid_t node, chpl_comm_amDone_t* pDone) {
+  static __thread chpl_comm_amDone_t* myDone = NULL;
+  if (myDone == NULL) {
+    myDone = allocBounceBuf(1);
+    CHK_TRUE(mrGetLocalDesc(NULL, myDone, 1) == 0);
+    *myDone = 1;
+  }
+
+  CHK_TRUE(mrGetKey(NULL, node, pDone, sizeof(*pDone)) == 0);
+  DBG_PRINTF(DBG_AM, "AM set pDone %d:%p", node, pDone);
+  (void) ofi_put(myDone, node, pDone, sizeof(*pDone));
 }
 
 
@@ -1692,6 +1871,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                (int) node, raddr, myAddr, size, mrKey);
     OFI_CHK(fi_write(tcip->txCtx, myAddr, size,
                      mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
+    tcip->numTxsOut++;
 
     if (tcip->txCtxHasCQ) {
       waitForTxCQ(tcip, 1);
@@ -1748,6 +1928,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
                myAddr, (int) node, raddr, size, mrKey);
     OFI_CHK(fi_read(tcip->txCtx, myAddr, size,
                     mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
+    tcip->numTxsOut++;
 
     CHK_TRUE(tcip->txCtxHasCQ);
     waitForTxCQ(tcip, 1);
@@ -1792,6 +1973,8 @@ void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut) {
         }
       }
     } while (numRetired < numOut);
+
+    tcip->numTxsOut -= numRetired;
   }
 }
 
@@ -1823,6 +2006,548 @@ void local_yield(void) {
   //         two threads using the same ptiTab[] entry simultaneously.
   //
   chpl_task_yield();
+}
+
+
+////////////////////////////////////////
+//
+// Interface: network atomics
+//
+
+static void doAMO(c_nodeid_t, void*, void*,
+                  int, int, size_t);
+static void doFAMO(c_nodeid_t, void*, void*, void*, void*,
+                   int, int, size_t);
+
+
+//
+// PUT
+//
+#define DEFN_CHPL_COMM_ATOMIC_PUT(fnType, ofiType, Type)                \
+  void chpl_comm_atomic_put_##fnType                                    \
+         (void* desired, c_nodeid_t node, void* object,                 \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_put_%s(%p, %d, %p, %d, %s)",           \
+               #fnType, desired, (int) node, object,                    \
+               ln, chpl_lookupFilename(fn));                            \
+    doAMO(node, object, desired,                                        \
+          FI_ATOMIC_WRITE, ofiType, sizeof(Type));                      \
+  }
+
+DEFN_CHPL_COMM_ATOMIC_PUT(int32, FI_INT32, int32_t)
+DEFN_CHPL_COMM_ATOMIC_PUT(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_PUT(uint32, FI_UINT32, uint32_t)
+DEFN_CHPL_COMM_ATOMIC_PUT(uint64, FI_UINT64, uint64_t)
+DEFN_CHPL_COMM_ATOMIC_PUT(real32, FI_FLOAT, float)
+DEFN_CHPL_COMM_ATOMIC_PUT(real64, FI_DOUBLE, double)
+
+
+//
+// GET
+//
+#define DEFN_CHPL_COMM_ATOMIC_GET(fnType, ofiType, Type)                \
+  void chpl_comm_atomic_get_##fnType                                    \
+         (void* result, c_nodeid_t node, void* object,                  \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_get_%s(%p, %d, %p, %d, %s)",           \
+               #fnType, result, (int) node, object,                     \
+               ln, chpl_lookupFilename(fn));                            \
+    doFAMO(node, object, result, NULL, NULL,                            \
+           FI_ATOMIC_READ, ofiType, sizeof(Type));                      \
+  }
+
+DEFN_CHPL_COMM_ATOMIC_GET(int32, FI_INT32, int32_t)
+DEFN_CHPL_COMM_ATOMIC_GET(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_GET(uint32, FI_UINT32, uint32_t)
+DEFN_CHPL_COMM_ATOMIC_GET(uint64, FI_UINT64, uint64_t)
+DEFN_CHPL_COMM_ATOMIC_GET(real32, FI_FLOAT, float)
+DEFN_CHPL_COMM_ATOMIC_GET(real64, FI_DOUBLE, double)
+
+
+#define DEFN_CHPL_COMM_ATOMIC_XCHG(fnType, ofiType, Type)               \
+  void chpl_comm_atomic_xchg_##fnType                                   \
+         (void* desired, c_nodeid_t node, void* object, void* result,   \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_xchg_%s(%p, %d, %p, %p, %d, %s)",      \
+               #fnType, desired, (int) node, object, result,            \
+               ln, chpl_lookupFilename(fn));                            \
+    doFAMO(node, object, result, desired, NULL,                         \
+           FI_ATOMIC_WRITE, ofiType, sizeof(Type));                     \
+  }
+
+DEFN_CHPL_COMM_ATOMIC_XCHG(int32, FI_INT32, int32_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(uint32, FI_UINT32, uint32_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(uint64, FI_UINT64, uint64_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(real32, FI_FLOAT, float)
+DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, double)
+
+
+#define DEFN_CHPL_COMM_ATOMIC_CMPXCHG(fnType, ofiType, Type)            \
+  void chpl_comm_atomic_cmpxchg_##fnType                                \
+         (void* expected, void* desired, c_nodeid_t node, void* object, \
+          chpl_bool32* result,                                          \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_cmpxchg_%s(%p, %p, %d, %p, %p, "       \
+               "%d, %s)",                                               \
+               #fnType, expected, desired, (int) node, object, result,  \
+               ln, chpl_lookupFilename(fn));                            \
+    doFAMO(node, object, result, expected, desired,                     \
+           FI_CSWAP, ofiType, sizeof(Type));                            \
+  }
+
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int32, FI_INT32, int32_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(uint32, FI_UINT32, uint32_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(uint64, FI_UINT64, uint64_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real32, FI_FLOAT, float)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
+
+
+#define DEFN_IFACE_AMO_SIMPLE_OP(fnOp, ofiOp, fnType, ofiType, Type)    \
+  void chpl_comm_atomic_##fnOp##_##fnType                               \
+         (void* operand, c_nodeid_t node, void* object,                 \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_%s_%s(%p, %d, %p, %d, %s)",            \
+               #fnOp, #fnType, operand, (int) node, object,             \
+               ln, chpl_lookupFilename(fn));                            \
+    doAMO(node, object, operand, ofiOp, ofiType, sizeof(Type));         \
+  }                                                                     \
+                                                                        \
+  void chpl_comm_atomic_##fnOp##_buff_##fnType                          \
+         (void* operand, c_nodeid_t node, void* object,                 \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_%s_buff_%s(%p, %d, %p, %d, %s)",       \
+               #fnOp, #fnType, operand, (int) node, object,             \
+               ln, chpl_lookupFilename(fn));                            \
+    chpl_comm_atomic_##fnOp##_##fnType(operand, node, object, ln, fn);  \
+  }                                                                     \
+                                                                        \
+  void chpl_comm_atomic_fetch_##fnOp##_##fnType                         \
+         (void* operand, c_nodeid_t node, void* object, void* result,   \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_fetch_%s_%s(%p, %d, %p, %p, %d, %s)",  \
+               #fnOp, #fnType, operand, (int) node, object, result,     \
+               ln, chpl_lookupFilename(fn));                            \
+    doFAMO(node, object, result, operand, NULL,                         \
+           ofiOp, ofiType, sizeof(Type));                               \
+  }
+
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, int32, FI_INT32, int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, uint32, FI_UINT32, uint32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, uint64, FI_UINT64, uint64_t)
+
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, int32, FI_INT32, int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, uint32, FI_UINT32, uint32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, uint64, FI_UINT64, uint64_t)
+
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, int32, FI_INT32, int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, uint32, FI_UINT32, uint32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, uint64, FI_UINT64, uint64_t)
+
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, int32, FI_INT32, int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, uint32, FI_UINT32, uint32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, uint64, FI_UINT64, uint64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real32, FI_FLOAT, float)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
+
+
+#define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type)                       \
+  void chpl_comm_atomic_sub_##fnType                                    \
+         (void* operand, c_nodeid_t node, void* object,                 \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_sub_%s(%p, %d, %p, %d, %s)",           \
+               #fnType, operand, (int) node, object,                    \
+               ln, chpl_lookupFilename(fn));                            \
+    Type myOperand = - *(Type*) operand;                                \
+    doAMO(node, object, &myOperand, FI_SUM, ofiType, sizeof(Type));     \
+  }                                                                     \
+                                                                        \
+  void chpl_comm_atomic_sub_buff_##fnType                               \
+         (void* operand, c_nodeid_t node, void* object,                 \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_sub_buff_%s(%p, %d, %p, "              \
+               "%d, %s)",                                               \
+               #fnType, operand, (int) node, object,                    \
+               ln, chpl_lookupFilename(fn));                            \
+    chpl_comm_atomic_sub_##fnType(operand, node, object, ln, fn);       \
+  }                                                                     \
+                                                                        \
+  void chpl_comm_atomic_fetch_sub_##fnType                              \
+         (void* operand, c_nodeid_t node, void* object, void* result,   \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_fetch_sub_%s(%p, %d, %p, %p, %d, %s)", \
+               #fnType, operand, (int) node, object, result,            \
+               ln, chpl_lookupFilename(fn));                            \
+    Type myOperand = - *(Type*) operand;                                \
+    doFAMO(node, object, result, &myOperand, NULL,                      \
+           FI_SUM, ofiType, sizeof(Type));                              \
+  }
+
+DEFN_IFACE_AMO_SUB(int32, FI_INT32, int32_t)
+DEFN_IFACE_AMO_SUB(int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SUB(uint32, FI_UINT32, uint32_t)
+DEFN_IFACE_AMO_SUB(uint64, FI_UINT64, uint64_t)
+DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float)
+DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double)
+
+
+void chpl_comm_atomic_buff_flush(void) {
+  return;
+}
+
+
+//
+// internal AMO utilities
+//
+
+static
+void doAMO(c_nodeid_t node, void* object, void* operand,
+           int ofiOp, int ofiType, size_t size) {
+  if (chpl_numNodes <= 1) {
+    doCpuAMO(NULL, object, operand, NULL, ofiOp, ofiType, size);
+    return;
+  }
+
+  //
+  // TODO: initiate fi_atomic*() here.  But for now, use AMs.
+  //
+  amRequestAMO(node, object, operand, ofiOp, ofiType, size);
+}
+
+
+static
+void doFAMO(c_nodeid_t node, void* object, void* result,
+            void* operand1, void* operand2,
+            int ofiOp, int ofiType, size_t size) {
+  if (chpl_numNodes <= 1) {
+    doCpuAMO(result, object, operand1, operand2, ofiOp, ofiType, size);
+    return;
+  }
+
+  //
+  // TODO: initiate fi_atomic*() here.  But for now, use AMs.
+  //
+  amRequestFAMO(node, object, result, operand1, operand2,
+                ofiOp, ofiType, size);
+}
+
+
+static inline
+void doCpuAMO(void* result, void* obj, void* operand1, void* operand2,
+              enum fi_op ofiOp, enum fi_datatype ofiType, size_t size) {
+  CHK_TRUE(size == 4 || size == 8);
+
+  chpl_amo_datum_t myOpnd1 = { 0 };
+  if (operand1 != NULL)
+    memcpy(&myOpnd1, operand1, size);
+
+  chpl_amo_datum_t myOpnd2 = { 0 };
+  if (operand2 != NULL)
+    memcpy(&myOpnd2, operand2, size);
+
+  chpl_amo_datum_t* myResult = (chpl_amo_datum_t*) result;
+
+#define CPU_INT_ARITH_AMO(_o, _t, _m)                                   \
+  do {                                                                  \
+    _t my_res = atomic_fetch_##_o##_##_t((atomic_##_t*) obj,            \
+                                         myOpnd1._m);                   \
+    if (result != NULL) {                                               \
+      myResult->_m = my_res;                                            \
+    }                                                                   \
+  } while (0)
+
+  //
+  // Here we implement AMOs which the NIC cannot or should not do.
+  //
+  switch (ofiOp) {
+  case FI_ATOMIC_WRITE:
+    if (result == NULL) {
+      //
+      // write
+      //
+      if (size == 4) {
+        atomic_store_uint_least32_t(obj, myOpnd1.u32);
+      } else {
+        atomic_store_uint_least64_t(obj, myOpnd1.u64);
+      }
+    } else {
+      //
+      // exchange
+      //
+      if (size == 4) {
+        myResult->u32 = atomic_exchange_uint_least32_t(obj, myOpnd1.u32);
+      } else {
+        myResult->u64 = atomic_exchange_uint_least64_t(obj, myOpnd1.u64);
+      }
+    }
+    break;
+
+  case FI_ATOMIC_READ:
+    if (size == 4) {
+      myResult->u32 = atomic_load_uint_least32_t(obj);
+    } else {
+      myResult->u64 = atomic_load_uint_least64_t(obj);
+    }
+    break;
+
+  case FI_CSWAP:
+    if (size == 4) {
+      myResult->b32 =
+        atomic_compare_exchange_strong_uint_least32_t(obj,
+                                                      myOpnd1.u32,
+                                                      myOpnd2.u32);
+    } else {
+      myResult->b32 =
+        atomic_compare_exchange_strong_uint_least64_t(obj,
+                                                      myOpnd1.u64,
+                                                      myOpnd2.u64);
+    }
+    break;
+
+  case FI_BAND:
+    if (ofiType == FI_INT32) {
+      CPU_INT_ARITH_AMO(and, int_least32_t, i32);
+    } else if (ofiType == FI_UINT32) {
+      CPU_INT_ARITH_AMO(and, uint_least32_t, u32);
+    } else if (ofiType == FI_INT64) {
+      CPU_INT_ARITH_AMO(and, int_least64_t, i64);
+    } else if (ofiType == FI_UINT64) {
+      CPU_INT_ARITH_AMO(and, uint_least64_t, u64);
+    } else {
+      INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
+                       ofiOp, ofiType);
+    }
+    break;
+
+  case FI_BOR:
+    if (ofiType == FI_INT32) {
+      CPU_INT_ARITH_AMO(or, int_least32_t, i32);
+    } else if (ofiType == FI_UINT32) {
+      CPU_INT_ARITH_AMO(or, uint_least32_t, u32);
+    } else if (ofiType == FI_INT64) {
+      CPU_INT_ARITH_AMO(or, int_least64_t, i64);
+    } else if (ofiType == FI_UINT64) {
+      CPU_INT_ARITH_AMO(or, uint_least64_t, u64);
+    } else {
+      INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
+                       ofiOp, ofiType);
+    }
+    break;
+
+  case FI_BXOR:
+    if (ofiType == FI_INT32) {
+      CPU_INT_ARITH_AMO(xor, int_least32_t, i32);
+    } else if (ofiType == FI_UINT32) {
+      CPU_INT_ARITH_AMO(xor, uint_least32_t, u32);
+    } else if (ofiType == FI_INT64) {
+      CPU_INT_ARITH_AMO(xor, int_least64_t, i64);
+    } else if (ofiType == FI_UINT64) {
+      CPU_INT_ARITH_AMO(xor, uint_least64_t, u64);
+    } else {
+      INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
+                       ofiOp, ofiType);
+    }
+    break;
+
+  case FI_SUM:
+    if (ofiType == FI_INT32) {
+      CPU_INT_ARITH_AMO(add, int_least32_t, i32);
+    } else if (ofiType == FI_UINT32) {
+      CPU_INT_ARITH_AMO(add, uint_least32_t, u32);
+    } else if (ofiType == FI_INT64) {
+      CPU_INT_ARITH_AMO(add, int_least64_t, i64);
+    } else if (ofiType == FI_UINT64) {
+      CPU_INT_ARITH_AMO(add, uint_least64_t, u64);
+    } else if (ofiType == FI_FLOAT) {
+      chpl_amo_datum_t xpctd;
+      chpl_amo_datum_t dsrd;
+      chpl_bool32 done;
+
+      do {
+        xpctd.u32 = atomic_load_int_least32_t(obj);
+        dsrd.r32 = xpctd.r32 + myOpnd1.r32;
+        done = atomic_compare_exchange_strong_uint_least32_t(obj,
+                                                             xpctd.u32,
+                                                             dsrd.u32);
+      } while (!done);
+
+      if (result != NULL) {
+        myResult->r32 = xpctd.r32;
+      }
+    } else if (ofiType == FI_DOUBLE) {
+      chpl_amo_datum_t xpctd;
+      chpl_amo_datum_t dsrd;
+      chpl_bool32 done;
+
+      do {
+        xpctd.u64 = atomic_load_int_least64_t(obj);
+        dsrd.r64 = xpctd.r64 + myOpnd1.r64;
+        done = atomic_compare_exchange_strong_uint_least64_t(obj,
+                                                             xpctd.u64,
+                                                             dsrd.u64);
+      } while (!done);
+
+      if (result != NULL) {
+        myResult->r64 = xpctd.r64;
+      }
+    } else {
+      INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
+                       ofiOp, ofiType);
+    }
+    break;
+
+#if 0
+    //
+    // This was lifted from comm=ugni.  I'm not going to ever use it
+    // directly.  But I'm leaving it here to remind myself to cover the
+    // case where the object is in registered memory, when I add support
+    // for AMOs done directly in the fabric.
+    //
+
+  case cmpxchg_64:
+    //
+    // If the object is not in memory registered with the NIC, use the
+    // processor.  Otherwise, since the other 64-bit AMOs are done on
+    // the NIC, for coherence do this one on the NIC as well.
+    //
+    {
+      chpl_bool32 my_res;
+      mem_region_t* mr;
+      if ((mr = mreg_for_local_addr(obj)) == NULL) {
+        my_res = atomic_compare_exchange_strong_int_least64_t
+                   ((atomic_int_least64_t*) obj,
+                    *(int_least64_t*) operand1,
+                    *(int_least64_t*) operand2);
+      }
+      else {
+        int_least64_t nic_res;
+        do_nic_amo(operand1, operand2, chpl_nodeID, obj, sizeof(nic_res),
+                   amo_cmd_2_nic_op(cmpxchg_64, 1), &nic_res, mr);
+        my_res = (nic_res == *(int_least64_t*) operand1) ? true : false;
+      }
+      memcpy(result, &my_res, sizeof(my_res));
+    }
+    break;
+
+  case add_r32:
+    //
+    // Emulate 32-bit real add using compare-exchange.
+    //
+    {
+      int_least32_t expected;
+      int_least32_t desired;
+      chpl_bool32 done;
+
+      do {
+        expected = atomic_load_int_least32_t((atomic_int_least32_t*) obj);
+        *(float*) &desired  = *(float*) &expected + *(float*) operand1;
+        done = atomic_compare_exchange_strong_int_least32_t
+                 ((atomic_int_least32_t*) obj, expected, desired);
+      } while (!done);
+
+      if (result != NULL) {
+        memcpy(result, &expected, sizeof(expected));
+      }
+    }
+    break;
+
+  case add_r64:
+    //
+    // Emulate 64-bit real add using compare-exchange.  If the object
+    // is not in memory registered with the NIC, use the processor.
+    // Otherwise, since the other 64-bit AMOs are done on the NIC, for
+    // coherence do this one on the NIC as well.
+    //
+    {
+      int_least64_t expected;
+      int_least64_t desired;
+      mem_region_t* mr;
+
+      if ((mr = mreg_for_local_addr(obj)) == NULL) {
+        chpl_bool32 done;
+
+        do {
+          expected =
+            atomic_load_int_least64_t((atomic_int_least64_t*) obj);
+          *(double*) &desired = *(double*) &expected + *(double*) operand1;
+          done = atomic_compare_exchange_strong_int_least64_t
+                   ((atomic_int_least64_t*) obj, expected, desired);
+        } while (!done);
+      }
+      else {
+        int_least64_t nic_res;
+
+        do {
+          do_remote_get(&expected, chpl_nodeID, obj, sizeof(expected),
+                        may_proxy_false);
+          *(double*) &desired = *(double*) &expected + *(double*) operand1;
+          do_nic_amo(&expected, &desired, chpl_nodeID, obj,
+                     sizeof(nic_res), amo_cmd_2_nic_op(cmpxchg_64, 1),
+                     &nic_res, mr);
+        } while (nic_res != expected);
+      }
+
+      if (result != NULL) {
+        memcpy(result, &expected, sizeof(expected));
+      }
+    }
+    break;
+#endif
+
+  default:
+    INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
+                     ofiOp, ofiType);
+  }
+
+  if (DBG_TEST_MASK(DBG_AMO)) {
+    chpl_amo_datum_t myObj = { 0 };
+    if (ofiType == FI_INT32)
+      memcpy(&myObj.i32, obj, sizeof(myObj.i32));
+    else if (ofiType == FI_UINT32)
+      memcpy(&myObj.u32, obj, sizeof(myObj.u32));
+    else if (ofiType == FI_INT64)
+      memcpy(&myObj.i64, obj, sizeof(myObj.i64));
+    else if (ofiType == FI_UINT64)
+      memcpy(&myObj.u64, obj, sizeof(myObj.u64));
+    else if (ofiType == FI_FLOAT)
+      memcpy(&myObj.r32, obj, sizeof(myObj.i32));
+    else
+      memcpy(&myObj.r64, obj, sizeof(myObj.r64));
+
+    if (result == NULL)
+      DBG_PRINTF(DBG_AMO,
+                 "doCpuAMO(%p, %d, %d, %#lx): now %#lx",
+                 obj, ofiOp, ofiType, myOpnd1.u64, myObj.u64);
+    else {
+      chpl_amo_datum_t myRes2 = { 0 };
+      if (ofiType == FI_INT32 || ofiType == FI_UINT32 || ofiType == FI_FLOAT
+          || ofiOp == FI_CSWAP)
+        myRes2.u32 = myResult->u32;
+      else
+        myRes2.u64 = myResult->u64;
+      DBG_PRINTF(DBG_AMO,
+                 "doCpuAMO(%p, %d, %d, %#lx, %#lx): now %#lx, %p = was %#lx",
+                 obj, ofiOp, ofiType, myOpnd1.u64, myOpnd2.u64,
+                 myObj.u64, result, myRes2.u64);
+    }
+  }
+
+#undef CPU_INT_ARITH_AMO
 }
 
 
