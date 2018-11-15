@@ -36,6 +36,8 @@ std::string pxdName = "";
 
 // TypeSymbol -> (pxdName, pyxName)  Will be "" if the cname should be used
 std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
+std::map<TypeSymbol*, std::string> fortranKindNames;
+std::map<TypeSymbol*, std::string> fortranTypeNames;
 
 static bool isFunctionToSkip(FnSymbol* fn);
 
@@ -289,6 +291,45 @@ static void setupPythonTypeMap() {
 
 }
 
+static void setupFortranTypeMap() {
+  fortranKindNames[dtInt[INT_SIZE_8]->symbol] = "c_int8_t";
+  fortranKindNames[dtInt[INT_SIZE_16]->symbol] = "c_int16_t";
+  fortranKindNames[dtInt[INT_SIZE_32]->symbol] = "c_int32_t";
+  fortranKindNames[dtInt[INT_SIZE_64]->symbol] = "c_int64_t";
+
+  // No unsigned integers in Fortran.  Fake it with signed integers.
+  fortranKindNames[dtUInt[INT_SIZE_8]->symbol] = "c_int8_t";
+  fortranKindNames[dtUInt[INT_SIZE_16]->symbol] = "c_int16_t";
+  fortranKindNames[dtUInt[INT_SIZE_32]->symbol] = "c_int32_t";
+  fortranKindNames[dtUInt[INT_SIZE_64]->symbol] = "c_int64_t";
+
+  fortranKindNames[dtReal[FLOAT_SIZE_32]->symbol] = "c_float";
+  fortranKindNames[dtReal[FLOAT_SIZE_64]->symbol] = "c_double";
+  fortranKindNames[dtBool->symbol] = "c_bool";
+
+  // Should any chapel type map to Fortran's `character(kind=c_char)`?
+  //fortranKindNames[dtStringC->symbol] = "c_char";
+  fortranKindNames[dtComplex[COMPLEX_SIZE_64]->symbol] = "c_float_complex";
+  fortranKindNames[dtComplex[COMPLEX_SIZE_128]->symbol] = "c_double_complex";
+
+  fortranTypeNames[dtInt[INT_SIZE_8]->symbol] = "integer";
+  fortranTypeNames[dtInt[INT_SIZE_16]->symbol] = "integer";
+  fortranTypeNames[dtInt[INT_SIZE_32]->symbol] = "integer";
+  fortranTypeNames[dtInt[INT_SIZE_64]->symbol] = "integer";
+  fortranTypeNames[dtUInt[INT_SIZE_8]->symbol] = "integer";
+  fortranTypeNames[dtUInt[INT_SIZE_16]->symbol] = "integer";
+  fortranTypeNames[dtUInt[INT_SIZE_32]->symbol] = "integer";
+  fortranTypeNames[dtUInt[INT_SIZE_64]->symbol] = "integer";
+  fortranTypeNames[dtReal[FLOAT_SIZE_32]->symbol] = "real";
+  fortranTypeNames[dtReal[FLOAT_SIZE_64]->symbol] = "real";
+  fortranTypeNames[dtBool->symbol] = "logical";
+  // Should any chapel type map to Fortran's `character(kind=c_char)`?
+  //fortranTypeNames[dtStringC->symbol] = "character";
+  fortranTypeNames[dtComplex[COMPLEX_SIZE_64]->symbol] = "complex";
+  fortranTypeNames[dtComplex[COMPLEX_SIZE_128]->symbol] = "complex";
+}
+
+static void makeFortranModule(std::vector<FnSymbol*> functions);
 static void makePXDFile(std::vector<FnSymbol*> functions);
 static void makePYXFile(std::vector<FnSymbol*> functions);
 static void makePYFile();
@@ -304,6 +345,46 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
     makePYXFile(functions);
     makePYFile();
   }
+}
+
+void codegen_library_fortran(std::vector<FnSymbol*> functions) {
+  if (fLibraryCompile && fLibraryFortran) {
+    setupFortranTypeMap();
+    makeFortranModule(functions);
+  }
+}
+
+void makeFortranModule(std::vector<FnSymbol*> functions) {
+  const char* filename = fortranModulename[0] != '\0' ? fortranModulename
+                                                      : libmodeHeadername;
+  int indent = 0;
+  fileinfo fort = { NULL, NULL, NULL };
+
+  openLibraryHelperFile(&fort, filename, "f90");
+
+  if (fort.fptr != NULL) {
+    FILE* save_cfile = gGenInfo->cfile;
+    gGenInfo->cfile = fort.fptr;
+    fprintf(fort.fptr, "%*smodule %s\n", indent, "", filename);
+    indent += 2;
+    fprintf(fort.fptr, "%*suse ISO_C_BINDING\n", indent, "");
+    fprintf(fort.fptr, "%*sinterface\n", indent, "");
+    indent += 2;
+    // generate chpl_library_init and chpl_library_finalize here?
+    for_vector(FnSymbol, fn, functions) {
+      if (!isFunctionToSkip(fn)) {
+        fn->codegenFortran(indent);
+      }
+    }
+
+    indent -= 2;
+    fprintf(fort.fptr, "%*send interface\n", indent, "");
+    indent -= 2;
+    fprintf(fort.fptr, "%*send module %s\n", indent, "", filename);
+    gGenInfo->cfile = save_cfile;
+  }
+
+  closeLibraryHelperFile(&fort, false);
 }
 
 // Generate the .pxd file for the library.  This will be used when creating

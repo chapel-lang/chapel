@@ -166,6 +166,7 @@ extern int  fLinkStyle;
 extern int  debugParserLevel;
 extern int  debugShortLoc;
 extern bool fLibraryCompile;
+extern bool fLibraryFortran;
 extern bool fLibraryMakefile;
 extern bool fLibraryPython;
 extern bool fUseNoinit;

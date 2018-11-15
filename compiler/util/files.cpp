@@ -55,10 +55,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-char               executableFilename[FILENAME_MAX + 1] = "";
-char               libmodeHeadername[FILENAME_MAX + 1]  = "";
-char               pythonModulename[FILENAME_MAX + 1]   = "";
-char               saveCDir[FILENAME_MAX + 1]           = "";
+char executableFilename[FILENAME_MAX + 1] = "";
+char libmodeHeadername[FILENAME_MAX + 1]  = "";
+char fortranModulename[FILENAME_MAX + 1]  = "";
+char pythonModulename[FILENAME_MAX + 1]   = "";
+char saveCDir[FILENAME_MAX + 1]           = "";
 
 std::string ccflags;
 std::string ldflags;

@@ -1,0 +1,6 @@
+warning: Unknown Fortran KIND generating interface for C type: c_string
+warning: Unknown Fortran type generating interface for C type: c_string
+warning: Unknown Fortran KIND generating interface for C type: c_string
+warning: Unknown Fortran KIND generating interface for C type: _ref__tuple_2_star_int64_t
+warning: Unknown Fortran type generating interface for C type: _ref__tuple_2_star_int64_t
+warning: Unknown Fortran KIND generating interface for C type: _ref__tuple_2_star_int64_t

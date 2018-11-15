@@ -69,6 +69,8 @@ struct LoopData
  */
 struct GenInfo {
   // If we're generating C, this is the FILE* to print to
+  // TODO: Rename cfile to just 'file' since it's also used when
+  //       generating Fortran and Python interfaces.
   FILE* cfile;
   // When generating C, sometimes the code generator needs
   // to introduce a temporary variable. When it does,

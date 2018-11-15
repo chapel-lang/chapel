@@ -97,9 +97,15 @@ static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
 static bool fBaseline = false;
 
+// TODO: Should --library automatically generate all supported
+// interfaces (C, Fortran, Python)? Then there'd be no need to
+// specify each one separately.
+//
 bool fLibraryCompile = false;
+bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryPython = false;
+
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool fVerify = false;
@@ -816,6 +822,12 @@ static void setLibmode(const ArgumentDescription* desc, const char* unused) {
   fLibraryCompile = true;
 }
 
+static void setFortranAndLibmode(const ArgumentDescription* desc,
+                                 const char* unused) {
+  setLibmode(desc, unused);
+  fLibraryFortran = true;
+}
+
 static void setPythonAndLibmode(const ArgumentDescription* desc,
                                 const char* unused) {
   setLibmode(desc, unused);
@@ -1037,6 +1049,8 @@ static ArgumentDescription arg_desc[] = {
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
  {"library-makefile", ' ', NULL, "Generate a makefile to help use the generated library", "F", &fLibraryMakefile, NULL, setLibmode},
+ {"library-fortran", ' ', NULL, "Generate a module compatible with Fortran", "F", &fLibraryFortran, NULL, setLibmode},
+ {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", fortranModulename, NULL, setFortranAndLibmode},
  {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
  {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, NULL, setPythonAndLibmode},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
