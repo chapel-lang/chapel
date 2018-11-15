@@ -128,7 +128,8 @@ static void propagate_charset_environment(FILE *f)
   // are set, replicate the state of all of them.  This needs to
   // be done separately from both the PBS -V mechanism and the
   // launcher's -E mechanism because the launcher is written in
-  // Perl, which mangles the character set environment.
+  // Perl, which modifies the character set environment, losing
+  // our settings
   //
   // Note that if we are setting these variables, and one or more
   // of them is empty, we must set it with explicitly empty

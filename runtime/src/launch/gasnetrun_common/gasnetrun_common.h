@@ -36,7 +36,7 @@ static char _nlbuf[16];
 static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
                                       int32_t numLocales) {
-  const int maxlargc = 7 + 4;
+  const int maxlargc = 7 + chpl_get_charset_env_nargs();
   char *largv[maxlargc];
 
   snprintf(_nlbuf, sizeof(_nlbuf), "%d", numLocales);
@@ -49,46 +49,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   largv[4] = _nlbuf;
   largv[5] = (char*) "-E";
   largv[6] = chpl_get_enviro_keys(',');
-
-  // If any of the relevant character set environment variables
-  // are set, replicate the state of all of them.  This needs to
-  // be done separately from the -E mechanism because the
-  // launcher is written in Perl, which mangles the character
-  // set environment.
-  //
-  // Note that if we are setting these variables, and one or more
-  // of them is empty, we must set it with explicitly empty
-  // contents (e.g. LC_ALL= instead of -u LC_ALL) so that the
-  // Chapel launch mechanism will not overwrite it.
-  char *lang = getenv("LANG");
-  char *lc_all = getenv("LC_ALL");
-  char *lc_collate = getenv("LC_COLLATE");
-  if (lang || lc_all || lc_collate) {
-    largc += 4;
-    largv[7] = "env";
-    if (lang == NULL)
-      lang = "";
-    char *lang_buf = chpl_mem_allocMany(sizeof("LANG=") + strlen(lang),
-                        sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-    strcpy(lang_buf, "LANG=");
-    strcat(lang_buf, lang);
-    largv[8] = lang_buf;
-    if (lc_all == NULL)
-      lc_all = "";
-    char *lc_all_buf = chpl_mem_allocMany(sizeof("LC_ALL=") + strlen(lc_all),
-                        sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-    strcpy(lc_all_buf, "LC_ALL=");
-    strcat(lc_all_buf, lc_all);
-    largv[9] = lc_all_buf;
-    if (lc_collate == NULL)
-      lc_collate = "";
-    char *lc_collate_buf = chpl_mem_allocMany(
-                        sizeof("LC_COLLATE=") + strlen(lc_collate),
-                        sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-    strcpy(lc_collate_buf, "LC_COLLATE=");
-    strcat(lc_collate_buf, lc_collate);
-    largv[10] = lc_collate_buf;
-  }
+  largc += chpl_get_charset_env_args(&largv[largc]);
 
   return chpl_bundle_exec_args(argc, argv, largc, largv);
 }
