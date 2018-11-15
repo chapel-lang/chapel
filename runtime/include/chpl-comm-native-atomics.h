@@ -113,9 +113,8 @@ DECL_CHPL_COMM_ATOMIC_CMPXCHG(real64)
 // value the target had prior to the operation is returned in *result on
 // the local node.
 //
-// We support AND, OR, and XOR for integers, and ADD and SUB for ints
-// and reals.  In the future we might like to add other operations, such
-// as MIN and MAX.
+// We support AND, OR, and XOR for various int types, and ADD and SUB
+// for both int and real types.
 //
 #define DECL_CHPL_COMM_ATOMIC_NONFETCH_BINARY(op, type)                 \
   void chpl_comm_atomic_ ## op ## _ ## type                             \
