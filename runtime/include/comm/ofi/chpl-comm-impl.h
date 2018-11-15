@@ -32,4 +32,9 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p);
         chpl_comm_impl_regMemHeapPageSize()
 size_t chpl_comm_impl_regMemHeapPageSize(void);
 
+//
+// Network atomic operations.
+//
+#include "chpl-comm-native-atomics.h"
+
 #endif // _chpl_comm_impl_h_
