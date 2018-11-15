@@ -60,6 +60,7 @@ typedef enum {
   unknown
 } sbatchVersion;
 
+static const char* nodeAccessStr = NULL;
 
 // Check what version of slurm is on the system
 static sbatchVersion determineSlurmVersion(void) {
@@ -148,7 +149,8 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     if (constraint) {
       fprintf(slurmFile, "#SBATCH --constraint=%s\n", constraint);
     }
-    fprintf(slurmFile, "#SBATCH --exclusive\n");
+    if (nodeAccessStr != NULL)
+      fprintf(slurmFile, "#SBATCH --%s\n", nodeAccessStr);
 
     break;
   default:
@@ -197,6 +199,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
   char* basenamePtr = strrchr(argv[0], '/');
+  char* nodeAccessEnv = NULL;
   pid_t mypid;
 
   if (basenamePtr == NULL) {
@@ -219,6 +222,22 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // command line exclude list takes precedence over env var
   if (!exclude) {
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
+  }
+
+  // request exclusive node access by default, but allow user to override
+  nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
+  if (nodeAccessEnv == NULL || strcmp(nodeAccessEnv, "exclusive") == 0) {
+    nodeAccessStr = "exclusive";
+  } else if (strcmp(nodeAccessEnv, "shared") == 0 ||
+             strcmp(nodeAccessEnv, "share") == 0 ||
+             strcmp(nodeAccessEnv, "oversubscribed") == 0  ||
+             strcmp(nodeAccessEnv, "oversubscribe") == 0) {
+    nodeAccessStr = "share";
+  } else if (strcmp(nodeAccessEnv, "unset") == 0) {
+    nodeAccessStr = NULL;
+  } else {
+    chpl_warning("unsupported 'CHPL_LAUNCHER_NODE_ACCESS' option", 0, 0);
+    nodeAccessStr = "exclusive";
   }
 
   if (debug) {
@@ -269,7 +288,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "-J %.10s ",basenamePtr); // pass 
   fprintf(expectFile, "-N %d ",numLocales); 
   fprintf(expectFile, "--ntasks-per-node=1 ");
-  fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
+  if (nodeAccessStr != NULL)
+    fprintf(expectFile, "--%s ", nodeAccessStr);
   if (walltime)
     fprintf(expectFile, "--time=%s ",walltime);
   if(partition)
