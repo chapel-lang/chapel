@@ -312,7 +312,7 @@ static bool isCallVectorHazard(CallExpr* call,
   return hazard;
 }
 
-static void markVectorizeableForallLoops()
+static void markVectorizableForallLoops()
 {
   std::map<FnSymbol*, bool> fnHasVectorHazard;
 
@@ -382,7 +382,7 @@ static void markVectorizeableForallLoops()
     // These are later, since many of these might be folded
     // away and/or inlined.
 
-    // Does the loop use a reduction type that is not vectorizeable yet?
+    // Does the loop use a reduction type that is not vectorizable yet?
     for_shadow_vars (shadow, temp, forall) {
       if (shadow->isReduce()) {
         if (ShadowVarSymbol* op = shadow->ReduceOpForAccumState()) {
@@ -2724,7 +2724,7 @@ static void removeUncalledIterators()
 void lowerIterators() {
   nonLeaderParCheck();
 
-  markVectorizeableForallLoops();
+  markVectorizableForallLoops();
 
   computeRecursiveIteratorSet();
 

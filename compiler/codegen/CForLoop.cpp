@@ -90,7 +90,7 @@ GenRet CForLoop::codegen()
 
   codegenStmt(this);
 
-  fixVectorizeable();
+  fixVectorizable();
 
   if (outfile)
   {
@@ -196,7 +196,7 @@ GenRet CForLoop::codegen()
     info->lvt->addLayer();
 
     llvm::MDNode* loopMetadata = nullptr;
-    if(fNoVectorize == false && isVectorizeable()) {
+    if(fNoVectorize == false && isVectorizable()) {
       bool addVectorizeEnable = false;
 #ifdef HAVE_LLVM_RV
       addVectorizeEnable = true;
