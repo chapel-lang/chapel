@@ -43,7 +43,7 @@ GenRet WhileDoStmt::codegen()
   GenRet   ret;
 
   codegenStmt(this);
-  fixVectorizeable();
+  fixVectorizable();
 
   if (outfile)
   {

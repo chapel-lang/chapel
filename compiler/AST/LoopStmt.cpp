@@ -78,7 +78,7 @@ void LoopStmt::setHasVectorizationHazard(bool v)
   mVectorizationHazard = v;
 }
 
-bool LoopStmt::isVectorizeable() const
+bool LoopStmt::isVectorizable() const
 {
   return mOrderIndependent && !mVectorizationHazard;
 }

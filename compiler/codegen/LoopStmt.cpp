@@ -22,9 +22,9 @@
 #include "codegen.h"
 #include "driver.h"
 
-void LoopStmt::fixVectorizeable()
+void LoopStmt::fixVectorizable()
 {
-  if (!this->isVectorizeable())
+  if (!this->isVectorizable())
     return; // nothing more to do!
 
   // Note: this routine could also return early if fNoVectorize==true.
@@ -171,7 +171,7 @@ void LoopStmt::fixVectorizeable()
 // loop is not marked for vectorization.
 void LoopStmt::codegenVectorHint()
 {
-  if (fNoVectorize == false && isVectorizeable())
+  if (fNoVectorize == false && isVectorizable())
   {
     GenInfo* info = gGenInfo;
 

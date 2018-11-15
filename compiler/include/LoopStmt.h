@@ -46,7 +46,7 @@ public:
   bool                   hasVectorizationHazard()                        const;
   void                   setHasVectorizationHazard(bool v);
 
-  bool                   isVectorizeable()                               const;
+  bool                   isVectorizable()                               const;
 protected:
                          LoopStmt(BlockStmt* initBody);
   virtual               ~LoopStmt();
@@ -56,7 +56,7 @@ protected:
   bool                   mOrderIndependent;
   bool                   mVectorizationHazard;
   void                   codegenVectorHint();
-  void                   fixVectorizeable();
+  void                   fixVectorizable();
 
 
 private:
