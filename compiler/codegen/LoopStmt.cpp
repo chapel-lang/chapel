@@ -49,7 +49,7 @@ void LoopStmt::fixVectorizeable()
   // that don't need to be cloned should be in registers anyway.
 
   // This runs late in the compiler because we want to do this check
-  // after inlining and other late simplifications have occured.
+  // after inlining and other late simplifications have occurred.
 
   bool hazard = false;
 
