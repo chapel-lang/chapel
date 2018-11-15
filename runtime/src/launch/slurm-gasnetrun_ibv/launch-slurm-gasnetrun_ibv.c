@@ -36,7 +36,6 @@
 
 #define baseSBATCHFilename ".chpl-slurm-sbatch-"
 #define baseExpectFilename ".chpl-expect-"
-#define baseSysFilename ".chpl-sys-"
 
 #define CHPL_WALLTIME_FLAG "--walltime"
 #define CHPL_PARTITION_FLAG "--partition"
@@ -48,7 +47,6 @@ static char* partition = NULL;
 static char* exclude = NULL;
 char slurmFilename[FILENAME_MAX];
 char expectFilename[FILENAME_MAX];
-char sysFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
 #define procsPerNode 1  
@@ -228,7 +226,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
     mypid = getpid();
   }
-  sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
   sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
   sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
 
@@ -268,12 +265,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
 
 //  fprintf(expectFile, "spawn sbatch ");
-  fprintf(expectFile, "spawn -noecho salloc ");
+  fprintf(expectFile, "spawn -noecho salloc --quiet ");
   fprintf(expectFile, "-J %.10s ",basenamePtr); // pass 
   fprintf(expectFile, "-N %d ",numLocales); 
   fprintf(expectFile, "--ntasks-per-node=1 ");
   fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
-  fprintf(expectFile, "--time=%s ",walltime); 
+  if (walltime)
+    fprintf(expectFile, "--time=%s ",walltime);
   if(partition)
     fprintf(expectFile, "--partition=%s ",partition);
   if(exclude)
@@ -327,8 +325,6 @@ static void chpl_launch_cleanup(void) {
       system(command);
     } else {
       sprintf(command, "rm %s", slurmFilename);
-      system(command);
-      sprintf(command, "rm %s", sysFilename);
       system(command);
     }
   }
