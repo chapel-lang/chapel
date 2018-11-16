@@ -46,3 +46,32 @@ proc bad3() {
   }
 }
 bad3();
+
+proc getGlobalHashtableElementGeneric (key) {
+  return globalValue;
+}
+
+proc bad4() {
+  var bb: borrowed C;
+  {
+    var own = new owned C(2);
+    var b = getGlobalHashtableElementGeneric(own.borrow());
+    bb = b;
+  }
+}
+bad4();
+
+proc returnOneOfThemGeneric (a, b) {
+  return b;
+}
+
+proc bad5() {
+  var bb: borrowed C;
+  var outerOwn = new owned C(1);
+  {
+    var innerOwn = new owned C(2);
+    var b = returnOneOfThemGeneric(innerOwn.borrow(), outerOwn.borrow());
+    bb = b;
+  }
+}
+bad5();
