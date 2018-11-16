@@ -2317,6 +2317,7 @@ static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b) {
     return false;
   else if (a.fromSymbolScope->defPoint->parentSymbol !=
            b.fromSymbolScope->defPoint->parentSymbol)
+    // Not the same function
     return false;
 
   FnSymbol* fn = a.fromSymbolScope->defPoint->getFunction();

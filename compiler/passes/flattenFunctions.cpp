@@ -271,6 +271,8 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   std::vector<SymExpr*> symExprs;
 
   collectSymExprs(fn->body, symExprs);
+  if (fn->lifetimeConstraints)
+    collectSymExprs(fn->lifetimeConstraints, symExprs);
 
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {

@@ -3947,7 +3947,7 @@ module ChapelArray {
 */
 
   proc =(ref a: [], b: _tuple) where isRectangularArr(a) {
-    proc chpl__tupleInit(ref j, param rank: int, b: _tuple) {
+    proc chpl__tupleInit(ref j, param rank: int, b: _tuple) lifetime a < b {
       type idxType = a.domain.idxType,
            strType = chpl__signedType(a.domain.intIdxType);
 
