@@ -361,7 +361,7 @@ class UserMapAssocDom: BaseAssociativeDom {
     //    it would also be possible to iterate through
     //    locDom.sorted() and pipe it through a channel or something.
     //     (such a use of a channel would probably benefit from
-    //      "shallow write/read" or "nonpersistant write/read"
+    //      "shallow write/read" or "nonpersistent write/read"
     //      meaning that the channel would just store the same information
     //      as a GET).
     //  * include in mapper something to indicate if indexToLocaleIndex

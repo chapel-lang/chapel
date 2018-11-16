@@ -35,7 +35,7 @@ specified takes precedence.
    recommended.  To do this, set the environment variable ``CHPL_LIB_PIC`` to
    ``pic`` and ensure this configuration is built by performing a ``make``
    command from ``$CHPL_HOME``.  Note that position independent code will likely
-   encounter some performance degradataion as opposed to normal Chapel code.
+   encounter some performance degradation as opposed to normal Chapel code.
    For this reason, we recommend only using ``CHPL_LIB_PIC`` when position
    independent code is required.
 
