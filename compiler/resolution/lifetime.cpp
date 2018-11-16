@@ -1813,8 +1813,8 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
       erroredSymbols.insert(lhs);
     } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.referent, lhsIntrinsic.referent)) {
       emitError(call,
-                "Reference to scoped variable",
-                "unspecified formal ordering",
+                "Setting reference formal",
+                "illegal without specifying formal lifetime constraint",
                 lhs, rhsLt.referent, lifetimes);
       erroredSymbols.insert(lhs);
     } else if (lhsInferred.referent.unknown ||
@@ -1828,8 +1828,8 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
       erroredSymbols.insert(lhs);
     } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.referent, lhsInferred.referent)) {
       emitError(call,
-                "Reference to scoped variable",
-                "unspecified formal ordering",
+                "Setting reference formal",
+                "illegal without specifying formal lifetime constraint",
                 lhs, rhsLt.referent, lifetimes);
       erroredSymbols.insert(lhs);
     }
@@ -1847,8 +1847,8 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
       erroredSymbols.insert(lhs);
     } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.borrowed, lhsIntrinsic.borrowed)) {
       emitError(call,
-                "Scoped variable",
-                "unspecified formal ordering",
+                "Setting borrowed formal",
+                "illegal without specifying formal lifetime constraint",
                 lhs, rhsLt.borrowed, lifetimes);
       erroredSymbols.insert(lhs);
     } else if (lhsInferred.borrowed.unknown ||
@@ -1862,8 +1862,8 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
       erroredSymbols.insert(lhs);
     } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.borrowed, lhsInferred.borrowed)) {
       emitError(call,
-                "Scoped variable",
-                "unspecified formal ordering",
+                "Setting borrowed formal",
+                "illegal without specifying formal lifetime constraint",
                 lhs, rhsLt.borrowed, lifetimes);
       erroredSymbols.insert(lhs);
     }
