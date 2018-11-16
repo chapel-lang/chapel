@@ -388,6 +388,7 @@ void convertDeclToChpl(ModuleSymbol* module,
                                            chpl_type, // ret type
                                            false,  // throws
                                            NULL, // where
+                                           NULL, // lifetime constraints
                                            NULL, // body
                                            NULL); // docs
 
