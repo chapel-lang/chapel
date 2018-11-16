@@ -39,7 +39,7 @@
 #include "wellknown.h"
 #include "wrappers.h"
 
-static void resolveInitCall(CallExpr* call);
+static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias = NULL);
 
 static void gatherInitCandidates(CallInfo&                  info,
                                  Vec<FnSymbol*>&            visibleFns,
@@ -197,6 +197,32 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
 }
 
 //
+// This function inserts NamedExprs into 'initCall' for each instantiated
+// field in 'at'.
+//
+static void insertNamedInstantiationInfo(CallExpr* newExpr,
+                                         CallExpr* initCall,
+                                         AggregateType* at) {
+  AggregateType* rootType = at->getRootInstantiation();
+  if (at != rootType) {
+    // Insert super class instantiations first
+    if (at->isClass() && at != dtObject && at->dispatchParents.v[0] != dtObject) {
+      insertNamedInstantiationInfo(newExpr, initCall, at->dispatchParents.v[0]);
+    }
+
+    for_fields(field, at) {
+      if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
+        initCall->insertAtTail(new NamedExpr(field->name, new SymExpr(field->type->symbol)));
+      } else if (field->hasFlag(FLAG_PARAM)) {
+        initCall->insertAtTail(new NamedExpr(field->name, new SymExpr(at->getSubstitution(field->name))));
+      } else if (at->getSubstitution(field->name) != NULL) {
+        USR_FATAL(newExpr, "A type alias of '%s' may not be used in a new-expression because it contains a typeless field ('%s')", rootType->symbol->name, field->name);
+      }
+    }
+  }
+}
+
+//
 // Builds and returns a call to an initializer based on the arguments in
 // 'newExpr'. The call will be inserted at the end of 'block'. The call and its
 // resolved function will both be resolved.
@@ -221,6 +247,9 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
 
   VarSymbol* tmp = newTemp("initTemp", rootType);
   CallExpr* call = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(tmp)));
+
+  insertNamedInstantiationInfo(newExpr, call, at);
+
   for (int i = 1; i <= newExpr->numActuals(); i++) {
     call->insertAtTail(newExpr->get(i)->copy());
   }
@@ -239,29 +268,21 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
   }
 
   // Find the correct 'init' function without wrapping/promoting
-  resolveInitCall(call);
+  AggregateType* alias = at == rootType ? NULL : at;
+  resolveInitCall(call, alias);
   resolveInitializerMatch(call->resolvedFunction());
   tmp->type = call->resolvedFunction()->_this->getValType();
   resolveTypeWithInitializer(toAggregateType(tmp->type), call->resolvedFunction());
-
-  if (at->instantiatedFrom != NULL) {
-    if (tmp->type != at) {
-      USR_FATAL_CONT(newExpr,
-                     "Best initializer match doesn't work for generic "
-                     "instantiation %s",
-                     at->symbol->name);
-      USR_PRINT(call->resolvedFunction(),
-                "Best initializer match was defined here, and generated "
-                "instantiation %s",
-                tmp->type->symbol->name);
-      USR_STOP();
-    }
-  }
 
   return call;
 }
 
 void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
+  // Get root instantiation so we can easily check against e.g. dtOwned
+  if (AggregateType* mat = toAggregateType(manager)) {
+    manager = mat->getRootInstantiation();
+  }
+
   INT_ASSERT(newExpr->isPrimitive(PRIM_NEW));
   AggregateType* at = resolveNewFindType(newExpr);
 
@@ -401,7 +422,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveInitCall(CallExpr* call) {
+static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias) {
   CallInfo info;
 
   if (call->id == breakOnResolveID) {
@@ -427,6 +448,9 @@ static void resolveInitCall(CallExpr* call) {
 
     if (best == NULL) {
       if (call->partialTag == false) {
+        if (newExprAlias != NULL) {
+          USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
+        }
         if (candidates.n == 0) {
           printResolutionErrorUnresolved(info, mostApplicable);
         } else {
