@@ -402,23 +402,23 @@ int chpl_get_charset_env_args(char *argv[])
   if (!lang && !lc_all && !lc_collate)
     return 0;
 
-  argv[0] = "env";
+  argv[0] = (char *)"env";
   if (lang == NULL)
-    lang = "";
+    lang = (char *)"";
   char *lang_buf = chpl_mem_allocMany(sizeof("LANG=") + strlen(lang),
                         sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   strcpy(lang_buf, "LANG=");
   strcat(lang_buf, lang);
   argv[1] = lang_buf;
   if (lc_all == NULL)
-    lc_all = "";
+    lc_all = (char *)"";
   char *lc_all_buf = chpl_mem_allocMany(sizeof("LC_ALL=") + strlen(lc_all),
                         sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   strcpy(lc_all_buf, "LC_ALL=");
   strcat(lc_all_buf, lc_all);
   argv[2] = lc_all_buf;
   if (lc_collate == NULL)
-    lc_collate = "";
+    lc_collate = (char *)"";
   char *lc_collate_buf = chpl_mem_allocMany(
                         sizeof("LC_COLLATE=") + strlen(lc_collate),
                         sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
