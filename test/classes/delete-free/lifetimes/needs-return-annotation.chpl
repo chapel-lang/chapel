@@ -31,3 +31,18 @@ proc callBad2() {
   writeln(x);
 }
 callBad2();
+
+proc returnOneOfThem (a: C, b: C) {
+  return b;
+}
+
+proc bad3() {
+  var bb: borrowed C;
+  var outerOwn = new owned C(1);
+  {
+    var innerOwn = new owned C(2);
+    var b = returnOneOfThem(innerOwn, outerOwn);
+    bb = b;
+  }
+}
+bad3();

@@ -32,3 +32,19 @@ proc callOk2() {
   writeln(x);
 }
 callOk2();
+
+proc returnOneOfThem (a: C, b: C) lifetime return b {
+  return b;
+}
+
+proc ok3() {
+  var bb: borrowed C;
+  var outerOwn = new owned C(1);
+  {
+    var innerOwn = new owned C(2);
+    var b = returnOneOfThem(innerOwn, outerOwn);
+    bb = b;
+  }
+  writeln(bb.x);
+}
+ok3();
