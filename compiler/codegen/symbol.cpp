@@ -965,22 +965,32 @@ GenRet ArgSymbol::codegen() {
   return ret;
 }
 
-static std::string getFortranTypeName(Type* type) {
+static std::string getFortranTypeName(Type* type, Symbol* sym) {
+  static std::set<Symbol*> warnedSymbols;
   std::string typeName = fortranTypeNames[type->symbol];
+
   if (typeName.empty()) {
-    // TODO: Maybe issue an error instead?
-    USR_WARN("Unknown Fortran type generating interface for C type: %s", type->symbol->cname);
+    if (warnedSymbols.count(sym) == 0) {
+      // TODO: Maybe issue an error instead?
+      USR_WARN(sym->defPoint, "Unknown Fortran type generating interface for C type: %s", type->symbol->cname);
+      warnedSymbols.insert(sym);
+    }
     return type->symbol->cname;
   } else {
     return typeName;
   }
 }
 
-static std::string getFortranKindName(Type* type) {
+static std::string getFortranKindName(Type* type, Symbol* sym) {
+  static std::set<Symbol*> warnedSymbols;
   std::string kindName = fortranKindNames[type->symbol];
+
   if (kindName.empty()) {
-    // TODO: Maybe issue an error instead?
-    USR_WARN("Unknown Fortran KIND generating interface for C type: %s", type->symbol->cname);
+    if (warnedSymbols.count(sym) == 0) {
+      // TODO: Maybe issue an error instead?
+      USR_WARN(sym->defPoint, "Unknown Fortran KIND generating interface for C type: %s", type->symbol->cname);
+      warnedSymbols.insert(sym);
+    }
     return type->symbol->cname;
   } else {
     return kindName;
@@ -1891,13 +1901,13 @@ void FnSymbol::codegenFortran(int indent) {
     for_formals(formal, this) {
       if (formal->hasFlag(FLAG_NO_CODEGEN))
         continue;
-      uniqueKindNames.insert(getFortranKindName(formal->type));
+      uniqueKindNames.insert(getFortranKindName(formal->type, formal));
       if (is_uint_type(formal->type)) {
         foundUnsignedInt = true;
       }
     }
     if (retType != dtVoid) {
-      uniqueKindNames.insert(getFortranKindName(retType));
+      uniqueKindNames.insert(getFortranKindName(retType, this));
       if (is_uint_type(retType)) {
         foundUnsignedInt = true;
       }
@@ -1929,12 +1939,12 @@ void FnSymbol::codegenFortran(int indent) {
       const char* prefix = formal->cname[0] == '_' ? "chpl" : "";
       const bool isRef = formal->intent & INTENT_FLAG_REF;
       const char* valueString = isRef ? "" : ", value";
-      fprintf(outfile, "%*s%s(kind=%s)%s :: %s%s\n", indent, "", getFortranTypeName(formal->type).c_str(), getFortranKindName(formal->type).c_str(), valueString, prefix, formal->cname);
+      fprintf(outfile, "%*s%s(kind=%s)%s :: %s%s\n", indent, "", getFortranTypeName(formal->type, formal).c_str(), getFortranKindName(formal->type, formal).c_str(), valueString, prefix, formal->cname);
     }
 
     // print type declaration for the return type
     if (retType != dtVoid) {
-      fprintf(outfile, "%*s%s(kind=%s) :: %s\n", indent, "", getFortranTypeName(retType).c_str(), getFortranKindName(retType).c_str(), this->cname);
+      fprintf(outfile, "%*s%s(kind=%s) :: %s\n", indent, "", getFortranTypeName(retType, this).c_str(), getFortranKindName(retType, this).c_str(), this->cname);
     }
     indent -= 2;
     fprintf(outfile, "%*send %s %s\n\n", indent, "", subOrProc, this->cname);
