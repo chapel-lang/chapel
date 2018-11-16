@@ -490,6 +490,39 @@ static int orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b) {
   return orderConstraintFromClause(last, a, b);
 }
 
+static Symbol* returnLifetimeFromClause(Expr* expr) {
+
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isNamed("&&")) {
+      Symbol* v1 = NULL;
+      Symbol* v2 = NULL;
+      v1 = returnLifetimeFromClause(call->get(1));
+      v2 = returnLifetimeFromClause(call->get(2));
+      if (v1 && v2)
+        USR_FATAL(expr,
+                  "Lifetime clause includes multiple return specifications");
+      return v1?v1:v2;
+    } else {
+      if (call->isPrimitive(PRIM_RETURN)) {
+        CallExpr* sub = toCallExpr(call->get(1));
+        INT_ASSERT(sub && sub->isPrimitive(PRIM_LIFETIME_OF));
+        SymExpr* se = toSymExpr(sub->get(1));
+        INT_ASSERT(se);
+        return se->symbol();
+      }
+    }
+  }
+
+  return NULL;
+}
+
+
+static Symbol* returnLifetimeFromClause(FnSymbol* fn) {
+  INT_ASSERT(fn->lifetimeConstraints);
+  Expr* last = fn->lifetimeConstraints->body.last();
+  return returnLifetimeFromClause(last);
+}
+
 static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 {
   if (CallExpr* call = toCallExpr(expr)) {
@@ -863,6 +896,17 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
 
   returnsBorrow = isSubjectToBorrowLifetimeAnalysis(returnType);
 
+  ArgSymbol* theOnlyOneThatMatters = NULL;
+  if (calledFn->lifetimeConstraints) {
+    Symbol* sym = returnLifetimeFromClause(calledFn);
+    // lifetime = outer/global variable -> infinite lifetime
+    if (sym->defPoint->getFunction() != calledFn)
+      return infiniteLifetimePair();
+
+    INT_ASSERT(isArgSymbol(sym));
+    theOnlyOneThatMatters = toArgSymbol(sym);
+  }
+
   for_formals_actuals(formal, actual, call) {
     SymExpr* actualSe = toSymExpr(actual);
     INT_ASSERT(actualSe);
@@ -870,7 +914,8 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
 
     LifetimePair argLifetime = unknownLifetimePair();
 
-    if (formalArgumentDoesNotImpactReturnLifetime(formal))
+    if (formalArgumentDoesNotImpactReturnLifetime(formal) ||
+        (theOnlyOneThatMatters != NULL && theOnlyOneThatMatters != formal))
       continue;
 
     if (returnsRef && formal->isRef() &&

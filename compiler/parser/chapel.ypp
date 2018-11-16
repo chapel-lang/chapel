@@ -1346,10 +1346,10 @@ lifetime_expr:
 | lifetime_ident TEQUAL lifetime_ident { $$ = new CallExpr("==", $1, $3); }
 | lifetime_ident TGREATER lifetime_ident { $$ = new CallExpr(">", $1, $3); }
 | lifetime_ident TGREATEREQUAL lifetime_ident { $$ = new CallExpr(">=", $1, $3); }
+| TRETURN lifetime_ident { $$ = new CallExpr(PRIM_RETURN, $2); }
 
 lifetime_ident:
   TIDENT  { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr($1)); }
-| TRETURN { $$ = new CallExpr(PRIM_RETURN); }
 
 type_alias_decl_stmt:
   TTYPE type_alias_decl_stmt_inner TSEMI

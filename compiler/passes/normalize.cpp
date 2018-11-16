@@ -1100,7 +1100,8 @@ static void normalizeReturns(FnSymbol* fn) {
   collectMyCallExprs(fn, calls, fn);
 
   for_vector(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_RETURN) == true) {
+    if (call->isPrimitive(PRIM_RETURN) == true &&
+        isInLifetimeClause(call) == false) {
       rets.push_back(call);
 
       theRet = call;
