@@ -1619,8 +1619,6 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
   // check that the call site meets those constraints.
   if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
     if (fn->lifetimeConstraints) {
-      FnSymbol* inFn = call->getFunction();
-
       int i, j;
       // Consider all pairs of actuals.
       // I'm sure there's a more efficient way to do this.
@@ -1630,8 +1628,6 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
         SymExpr* actual1se = toSymExpr(actual1expr);
         INT_ASSERT(actual1se);
         Symbol* actual1sym = actual1se->symbol();
-        bool usedAsRef1 = formal1->isRef() && actual1sym->isRef();
-        bool usedAsBorrow1 = isOrContainsBorrowedClass(formal1->type);
 
         j = 0;
         for_formals_actuals(formal2, actual2expr, call) {
@@ -1643,15 +1639,13 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           SymExpr* actual2se = toSymExpr(actual2expr);
           INT_ASSERT(actual2se);
           Symbol* actual2sym = actual2se->symbol();
-          bool usedAsRef2 = formal2->isRef() && actual2sym->isRef();
-          bool usedAsBorrow2 = isOrContainsBorrowedClass(formal2->type);
 
           int order = orderConstraintFromClause(fn, formal1, formal2);
           if (order != 0) {
-            LifetimePair a1lp = lifetimes->lifetimeForActual(actual1sym,
-                usedAsRef1, usedAsBorrow1, inFn);
-            LifetimePair a2lp = lifetimes->lifetimeForActual(actual2sym,
-                usedAsRef2, usedAsBorrow2, inFn);
+            LifetimePair a1lp =
+              lifetimes->combinedLifetimeForSymbol(actual1sym);
+            LifetimePair a2lp =
+              lifetimes->combinedLifetimeForSymbol(actual2sym);
 
             Lifetime relevantLifetime;
             Symbol* relevantSymbol = NULL;
