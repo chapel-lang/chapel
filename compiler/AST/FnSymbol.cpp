@@ -46,6 +46,7 @@ std::vector<FnSymbol*>    ftableVec;
 FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
   retType            = dtUnknown;
   where              = NULL;
+  lifetimeConstraints= NULL;
   retExprType        = NULL;
   body               = new BlockStmt();
   thisTag            = INTENT_BLANK;
@@ -111,6 +112,10 @@ void FnSymbol::verify() {
     INT_FATAL(this, "Bad FnSymbol::where::parentSymbol");
   }
 
+  if (lifetimeConstraints && lifetimeConstraints->parentSymbol != this) {
+    INT_FATAL(this, "Bad FnSymbol::lifetimeConstraints::parentSymbol");
+  }
+
   if (retExprType && retExprType->parentSymbol != this) {
     INT_FATAL(this, "Bad FnSymbol::retExprType::parentSymbol");
   }
@@ -127,6 +132,7 @@ void FnSymbol::verify() {
   }
 
   verifyNotOnList(where);
+  verifyNotOnList(lifetimeConstraints);
   verifyNotOnList(retExprType);
   verifyNotOnList(body);
 
@@ -148,6 +154,7 @@ FnSymbol* FnSymbol::copyInner(SymbolMap* map) {
 
   // Copy members that weren't set by copyInnerCore.
   copy->where       = COPY_INT(this->where);
+  copy->lifetimeConstraints = COPY_INT(this->lifetimeConstraints);
   copy->body        = COPY_INT(this->body);
   copy->retExprType = COPY_INT(this->retExprType);
   copy->_this       = this->_this;
@@ -241,6 +248,13 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
     newFn->where = COPY_INT(this->where);
 
     insert_help(newFn->where, NULL, newFn);
+  }
+
+  // Copy and insert the lifetimeConstraints clause if it is present.
+  if (this->lifetimeConstraints != NULL) {
+    newFn->lifetimeConstraints = COPY_INT(this->lifetimeConstraints);
+
+    insert_help(newFn->lifetimeConstraints, NULL, newFn);
   }
 
   // Copy and insert the retExprType if it is present.
@@ -423,6 +437,9 @@ void FnSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
 
   } else if (oldAst == where) {
     where = toBlockStmt(newAst);
+
+  } else if (oldAst == lifetimeConstraints) {
+    lifetimeConstraints = toBlockStmt(newAst);
 
   } else if (oldAst == retExprType) {
     retExprType = toBlockStmt(newAst);
@@ -824,6 +841,9 @@ void FnSymbol::accept(AstVisitor* visitor) {
 
     if (where)
       where->accept(visitor);
+
+    if (lifetimeConstraints)
+      lifetimeConstraints->accept(visitor);
 
     if (retExprType) {
       retExprType->accept(visitor);

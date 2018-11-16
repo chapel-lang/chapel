@@ -693,6 +693,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST(_a, FnSymbol, formals, call, __VA_ARGS__);            \
     AST_CALL_CHILD(_a, FnSymbol, body, call, __VA_ARGS__);              \
     AST_CALL_CHILD(_a, FnSymbol, where, call, __VA_ARGS__);             \
+    AST_CALL_CHILD(_a, FnSymbol, lifetimeConstraints, call, __VA_ARGS__); \
     AST_CALL_CHILD(_a, FnSymbol, retExprType, call, __VA_ARGS__);       \
     break;                                                              \
   case E_EnumType:                                                      \

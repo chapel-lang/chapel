@@ -805,6 +805,7 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn) {
   checkInstantiationLimit(fn);
 }
 
+// Note: evaluateWhereClause can apply to concrete functions too
 bool evaluateWhereClause(FnSymbol* fn) {
   if (fn->where) {
     whereStack.add(fn);
