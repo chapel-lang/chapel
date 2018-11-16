@@ -1047,7 +1047,7 @@ module DefaultRectangular {
     }
 
     override proc dsiDestroyArr() {
-      if dom.dsiNumIndices > 0 {
+      if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
         param needsDestroy = __primitive("needs auto destroy",
                                          __primitive("deref", data[0]));
         if needsDestroy {
