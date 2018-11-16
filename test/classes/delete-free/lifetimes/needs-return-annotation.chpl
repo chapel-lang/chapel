@@ -1,0 +1,33 @@
+class C { var x: int; } 
+
+
+var globalValue = new borrowed C(1);
+proc getGlobalHashtableElement (key: C) {
+  return globalValue;
+}
+
+proc bad1() {
+  var bb: borrowed C;
+  {
+    var own = new owned C(2);
+    var b = getGlobalHashtableElement(own.borrow());
+    bb = b;
+  }
+}
+bad1();
+
+var globalInt = 0;
+proc getGlobalHashtableElementRef (const ref key: int) const ref {
+  return globalInt;
+}
+
+proc bad2 () const ref {
+  var key = 0;
+  return getGlobalHashtableElementRef(key);
+}
+
+proc callBad2() {
+  const ref x = bad2();
+  writeln(x);
+}
+callBad2();
