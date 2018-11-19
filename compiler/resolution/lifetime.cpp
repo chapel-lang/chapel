@@ -1709,7 +1709,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             if (a2lp.borrowed.unknown)
               a2lp.borrowed = scopeLifetimeForSymbol(actual2sym);
 
-            if (isSubjectToRefLifetimeAnalysis(formal1) &&
+            /*if (isSubjectToRefLifetimeAnalysis(formal1) &&
                 isSubjectToRefLifetimeAnalysis(formal2)) {
               if (order == -1 && // formal1 < formal2
                   isLifetimeShorter(a2lp.referent, a1lp.referent)) {
@@ -1724,7 +1724,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
                 relevantLifetime = a1lp.borrowed;
                 relevantSymbol = actual1sym;
               }
-            }
+            }*/
 
             if(isSubjectToBorrowLifetimeAnalysis(formal1) &&
                isSubjectToBorrowLifetimeAnalysis(formal2)) {
