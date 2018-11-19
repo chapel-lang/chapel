@@ -2156,8 +2156,8 @@ static bool recordContainsBorrowedClassFields(AggregateType* at) {
       return true;
   }
 
-  if (at->symbol->hasFlag(FLAG_ARRAY_OF_BORROWS))
-    return true;
+//  if (at->symbol->hasFlag(FLAG_ARRAY_OF_BORROWS))
+//    return true;
 
   return false;
 }
