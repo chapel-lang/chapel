@@ -247,7 +247,7 @@ static bool recordContainsClassFields(AggregateType* at);
 static bool recordContainsOwnedClassFields(AggregateType* at);
 static bool recordContainsBorrowedClassFields(AggregateType* at);
 static bool containsOwnedClass(Type* type);
-static bool isOrContainsBorrowedClass(Type* type);
+//static bool isOrContainsBorrowedClass(Type* type);
 static bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
 static bool isAnalyzedMoveOrAssignment(CallExpr* call);
 static bool symbolHasInfiniteLifetime(Symbol* sym);
@@ -2152,6 +2152,9 @@ static bool recordContainsBorrowedClassFields(AggregateType* at) {
       return true;
   }
 
+  if (at->symbol->hasFlag(FLAG_ARRAY_OF_BORROWS))
+    return true;
+
   return false;
 }
 
@@ -2164,7 +2167,7 @@ static bool containsOwnedClass(Type* type) {
   return false;
 }
 
-static bool isOrContainsBorrowedClass(Type* type) {
+bool isOrContainsBorrowedClass(Type* type) {
   type = type->getValType();
 
   // First check for it is a borrowed class type
