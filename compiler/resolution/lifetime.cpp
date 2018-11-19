@@ -1697,19 +1697,14 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             bool error = false;
             bool ref = false;
 
-            // For the purposes of this check, use scope lifetime
-            // if above lifetime is unknown.
-            if (a1lp.referent.unknown)
-              a1lp.referent = scopeLifetimeForSymbol(actual1sym);
-            if (a2lp.referent.unknown)
-              a2lp.referent = scopeLifetimeForSymbol(actual2sym);
+            /*
+               if (a1lp.referent.unknown)
+                  a1lp.referent = scopeLifetimeForSymbol(actual1sym);
+                if (a2lp.referent.unknown)
+                  a2lp.referent = scopeLifetimeForSymbol(actual2sym);
 
-            if (a1lp.borrowed.unknown)
-              a1lp.borrowed = scopeLifetimeForSymbol(actual1sym);
-            if (a2lp.borrowed.unknown)
-              a2lp.borrowed = scopeLifetimeForSymbol(actual2sym);
 
-            /*if (isSubjectToRefLifetimeAnalysis(formal1) &&
+               if (isSubjectToRefLifetimeAnalysis(formal1) &&
                 isSubjectToRefLifetimeAnalysis(formal2)) {
               if (order == -1 && // formal1 < formal2
                   isLifetimeShorter(a2lp.referent, a1lp.referent)) {
@@ -1726,8 +1721,16 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
               }
             }*/
 
-            if(isSubjectToBorrowLifetimeAnalysis(formal1) &&
-               isSubjectToBorrowLifetimeAnalysis(formal2)) {
+            // For the purposes of this check, use scope lifetime
+            // if above lifetime is unknown.
+            if (a1lp.borrowed.unknown)
+              a1lp.borrowed = scopeLifetimeForSymbol(actual1sym);
+            if (a2lp.borrowed.unknown)
+              a2lp.borrowed = scopeLifetimeForSymbol(actual2sym);
+
+
+            if(isOrContainsBorrowedClass(formal1->getValType()) &&
+               isOrContainsBorrowedClass(formal2->getValType())) {
               if (order == -1 && // formal1 < formal2
                   isLifetimeShorter(a2lp.borrowed, a1lp.borrowed)) {
                 error = true;
