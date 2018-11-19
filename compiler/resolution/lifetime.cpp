@@ -383,7 +383,7 @@ static void markArgumentsReturnScope(FnSymbol* fn) {
   }
 
   if (fn->isMethod() && fn->_this != NULL && !anyReturnScope &&
-      fn->name != astrInit) {
+      fn->name != astrInit && !fn->lifetimeConstraints) {
     // Methods default to 'this' return scope
     // ('init' functions aren't really methods for this purpose)
     fn->_this->addFlag(FLAG_RETURN_SCOPE);
@@ -1696,6 +1696,18 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             Symbol* relevantSymbol = NULL;
             bool error = false;
             bool ref = false;
+
+            // For the purposes of this check, use scope lifetime
+            // if above lifetime is unknown.
+            if (a1lp.referent.unknown)
+              a1lp.referent = scopeLifetimeForSymbol(actual1sym);
+            if (a2lp.referent.unknown)
+              a2lp.referent = scopeLifetimeForSymbol(actual2sym);
+
+            if (a1lp.borrowed.unknown)
+              a1lp.borrowed = scopeLifetimeForSymbol(actual1sym);
+            if (a2lp.borrowed.unknown)
+              a2lp.borrowed = scopeLifetimeForSymbol(actual2sym);
 
             if (isSubjectToRefLifetimeAnalysis(formal1) &&
                 isSubjectToRefLifetimeAnalysis(formal2)) {
