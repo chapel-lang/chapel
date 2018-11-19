@@ -118,9 +118,11 @@ To use native Slurm, set:
 
   export CHPL_LAUNCHER=slurm-srun
 
-On Cray systems, this will happen automatically if srun is found in your path,
-but not when both srun and aprun are found in your path. Native Slurm is the
-best option where it works, but at the time of this writing, there are problems with it when combined with UDP or InfiniBand conduits. So, for these configurations please see:
+On Cray systems, this will happen automatically if srun is found in your
+path, but not when both srun and aprun are found in your path. Native
+Slurm is the best option where it works, but at the time of this writing,
+there are problems with it when combined with UDP or InfiniBand conduits.
+So, for these configurations please see:
 
   * :ref:`readme-infiniband` for information about using Slurm with
     InfiniBand.
@@ -132,20 +134,13 @@ best option where it works, but at the time of this writing, there are problems 
 Common Slurm Settings
 *********************
 
-Before running, you will need to set the amount of time to request
-from SLURM. For example, the following requests 15 minutes:
+If needed, you can request a specific partition from slurm by putting it
+in the ``CHPL_LAUNCHER_PARTITION`` environment variable. For example, to
+use the 'debug' partition, set:
 
 .. code-block:: bash
 
-  export CHPL_LAUNCHER_WALLTIME=00:15:00
-
-Another Slurm variable that usually needs to be set is the Slurm partition to
-use. For example, set the Slurm partition to 'debug' with the commands:
-
-.. code-block:: bash
-
-  export SALLOC_PARTITION=debug
-  export SLURM_PARTITION=$SALLOC_PARTITION
+  export CHPL_LAUNCHER_PARTITION=debug
 
 If needed, you can request a specific node feature from SLURM by putting
 it in the ``CHPL_LAUNCHER_CONSTRAINT`` environment variable. For example,
