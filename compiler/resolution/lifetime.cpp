@@ -1729,8 +1729,12 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
               a2lp.borrowed = scopeLifetimeForSymbol(actual2sym);
 
 
+            // see also
+            //   arrays/ferguson/pushback-no-leak.chpl
             if(isOrContainsBorrowedClass(formal1->getValType()) &&
                isOrContainsBorrowedClass(formal2->getValType())) {
+            //if (isSubjectToBorrowLifetimeAnalysis(formal1) &&
+            //    isSubjectToBorrowLifetimeAnalysis(formal2)) {
               if (order == -1 && // formal1 < formal2
                   isLifetimeShorter(a2lp.borrowed, a1lp.borrowed)) {
                 error = true;
