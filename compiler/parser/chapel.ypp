@@ -298,14 +298,14 @@
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFOR TFORALL TFORWARDING
 %token TIF TIMAG TIN TINDEX TINLINE TINOUT TINT TITER
-%token TLABEL TLAMBDA TLET TLOCAL
+%token TLABEL TLAMBDA TLET TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT
 %token TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
 %token TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSTRING TSUBDOMAIN TSYNC
-%token TTHEN TTHROW TTHROWS TTRY TTRYBANG TTYPE
+%token TTHEN TTHIS TTHROW TTHROWS TTRY TTRYBANG TTYPE
 %token TUINT TUNDERSCORE TUNION TUNMANAGED TUSE
 %token TVAR
 %token TWHEN TWHERE TWHILE TWITH
@@ -380,7 +380,8 @@
 %type <retTag>  opt_ret_tag
 %type <aggrTag> class_tag
 
-%type <pch> ident_def internal_type_ident_def reserved_type_ident_use
+%type <pch> ident_def ident_fn_def
+%type <pch> internal_type_ident_def reserved_type_ident_use
 %type <pch> fn_ident assignop_ident opt_label_ident
 %type <pch> opt_string
 
@@ -631,8 +632,14 @@ opt_label_ident:
 | TIDENT { $$ = $1; }
 ;
 
+ident_fn_def:
+  TIDENT                   { $$ = $1; }
+| TTHIS                    { $$ = "this"; }
+| internal_type_ident_def  { $$ = $1; redefiningReservedTypeError($1); }
+
 ident_def:
   TIDENT                   { $$ = $1; }
+| TTHIS                    { $$ = "this"; redefiningReservedWordError("this"); }
 | internal_type_ident_def  { $$ = $1; redefiningReservedTypeError($1); }
 ;
 
@@ -659,6 +666,7 @@ internal_type_ident_def:
 | TUNMANAGED { $$ = "unmanaged"; }
 | TDOMAIN    { $$ = "domain"; }
 | TINDEX     { $$ = "index"; }
+| TLOCALE    { $$ = "locale"; }
 ;
 
 scalar_type:
@@ -669,6 +677,7 @@ scalar_type:
 | TIMAG    { $$ = new SymExpr(dtImag[FLOAT_SIZE_DEFAULT]->symbol); }
 | TCOMPLEX { $$ = new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol); }
 | TSTRING  { $$ = new SymExpr(dtString->symbol); }
+| TLOCALE  { $$ = new SymExpr(dtLocale->symbol); }
 ;
 
 reserved_type_ident_use:
@@ -1128,7 +1137,7 @@ fn_decl_receiver_expr:
 ;
 
 fn_ident:
-  ident_def      { $$ = $1; }
+  ident_fn_def    { $$ = $1; }
 | TBNOT ident_def { $$ = astr("~", $2); }
 | TBAND          { $$ = "&"; }
 | TBOR           { $$ = "|"; }
@@ -1571,6 +1580,7 @@ actual_expr:
 
 ident_expr:
   TIDENT      { $$ = new UnresolvedSymExpr($1); }
+| TTHIS       { $$ = new UnresolvedSymExpr("this"); }
 | scalar_type { $$ = $1; }
 ;
 
@@ -1830,6 +1840,8 @@ dot_expr:
   expr TDOT TIDENT     { $$ = buildDotExpr($1, $3); }
 | expr TDOT TTYPE      { $$ = new CallExpr(PRIM_TYPEOF, $1); }
 | expr TDOT TDOMAIN    { $$ = buildDotExpr($1, "_dom"); }
+| expr TDOT TLOCALE    { $$ = buildDotExpr($1, "locale"); }
+| expr TDOT TTHIS      { $$ = buildDotExpr($1, "this"); }
 ;
 
 /* ( <expr> ) -- A parenthesized expression.  The parens are stripped.

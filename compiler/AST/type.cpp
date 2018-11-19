@@ -531,6 +531,9 @@ void initPrimitiveTypes() {
   dtString                             = new AggregateType(AGGREGATE_RECORD);
   dtString->symbol                     = new TypeSymbol("string", dtString);
 
+  dtLocale                             = new AggregateType(AGGREGATE_RECORD);
+  dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
+
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
 

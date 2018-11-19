@@ -2033,6 +2033,28 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* doc
   return stmts;
 }
 
+static
+AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
+  // Hook the string type in the modules
+  // to avoid duplication with dtString created in initPrimitiveTypes().
+  // gatherWellKnownTypes runs too late to help.
+
+  // grab the existing symbol from the placeholder "dtString"
+  ct->addSymbol(dt->symbol);
+  *dt = *ct;
+
+  // These fields get overwritten with `ct` by the assignment.
+  // These fields are set to `this` by the AggregateType constructor
+  // so they should still be `dtString`. Fix them back up.
+  dt->fields.parent   = dt;
+  dt->inherits.parent = dt;
+
+  gAggregateTypes.remove(gAggregateTypes.index(ct));
+
+  delete ct;
+
+  return dt;
+}
 
 DefExpr* buildClassDefExpr(const char*  name,
                            const char*  cname,
@@ -2041,29 +2063,22 @@ DefExpr* buildClassDefExpr(const char*  name,
                            BlockStmt*   decls,
                            Flag         isExtern,
                            const char*  docs) {
-  AggregateType* ct = new AggregateType(tag);
+  AggregateType* ct = NULL;
   TypeSymbol* ts = NULL;
+
+  ct = new AggregateType(tag);
 
   // Hook the string type in the modules
   // to avoid duplication with dtString created in initPrimitiveTypes().
   // gatherWellKnownTypes runs too late to help.
   if (strcmp("_string", name) == 0) {
-    // grab the existing symbol from the placeholder "dtString"
-    ts = dtString->symbol;
-    ct->addSymbol(ts);
-    *dtString = *ct;
-
-    // These fields get overwritten with `ct` by the assignment.
-    // These fields are set to `this` by the AggregateType constructor
-    // so they should still be `dtString`. Fix them back up.
-    dtString->fields.parent   = dtString;
-    dtString->inherits.parent = dtString;
-
-    gAggregateTypes.remove(gAggregateTypes.index(ct));
-
-    delete ct;
-
-    ct = dtString;
+    gdbShouldBreakHere();
+    ct = installInternalType(ct, dtString);
+    ts = ct->symbol;
+  } else if (strcmp("_locale", name) == 0) {
+    gdbShouldBreakHere();
+    ct = installInternalType(ct, dtLocale);
+    ts = ct->symbol;
   } else {
     ts = new TypeSymbol(name, ct);
   }
@@ -2945,4 +2960,10 @@ void redefiningReservedTypeError(const char* name)
 {
   USR_FATAL_CONT(buildErrorStandin(),
                  "attempt to redefine reserved type '%s'", name);
+}
+
+void redefiningReservedWordError(const char* name)
+{
+  USR_FATAL_CONT(buildErrorStandin(),
+                 "attempt to redefine reserved word '%s'", name);
 }

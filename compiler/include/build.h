@@ -183,5 +183,6 @@ Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b);
 // Emits an error for an attempt to redefine an internal type.
 // The string name will be used in the error message.
 void redefiningReservedTypeError(const char* name);
+void redefiningReservedWordError(const char* name);
 
 #endif
