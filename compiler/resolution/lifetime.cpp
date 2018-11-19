@@ -1869,12 +1869,17 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
                 "would outlive the value it refers to",
                 lhs, rhsLt.referent, lifetimes);
       erroredSymbols.insert(lhs);
-    } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.referent, lhsIntrinsic.referent)) {
+    /*
+     causes problems for test/functions/ferguson/ref-pair/ifexpr/ifexpr2-1.chpl
+     note that it's not actually possible to retarget a reference formal.
+
+     } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.referent, lhsIntrinsic.referent)) {
       emitError(call,
                 "Setting reference formal",
                 "illegal without specifying formal lifetime constraint",
                 lhs, rhsLt.referent, lifetimes);
       erroredSymbols.insert(lhs);
+    */
     } else if (lhsInferred.referent.unknown ||
                lhsInferred.referent.infinite) {
       // OK, not an error
@@ -1884,13 +1889,14 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
                 "would outlive the value it refers to",
                 lhs, rhsLt.referent, lifetimes);
       erroredSymbols.insert(lhs);
-    } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.referent, lhsInferred.referent)) {
+    }
+    /*} else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.referent, lhsInferred.referent)) {
       emitError(call,
                 "Setting reference formal",
                 "illegal without specifying formal lifetime constraint",
                 lhs, rhsLt.referent, lifetimes);
       erroredSymbols.insert(lhs);
-    }
+    }*/
   }
 
   if (isOrContainsBorrowedClass(lhs->type)) {
@@ -2345,6 +2351,8 @@ static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b) {
   FnSymbol* fn = a.fromSymbolScope->defPoint->getFunction();
   // TODO - make this exception more reasonable
   if (fn->name == astrSequals)
+    return false;
+  if (fn->name == astrSswap)
     return false;
 
   return true;
