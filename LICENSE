@@ -28,7 +28,6 @@ The Chapel implementation is composed of two categories of code:
 
    third-party/
      chpl-venv        python packages supporting chpldoc & tests
-       subprocess32   Back port of python3 subprocess to python2   Python
        argparse       Back port of argparse to < python2.7         Python
        PyYAML         YAML parser and emitter for Python           MIT
        Sphinx         Python documentation generator               BSD
