@@ -1436,6 +1436,22 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
       lp.referent.relevantExpr = call;
       lp.borrowed.relevantExpr = call;
       changed |= lifetimes->setInferredLifetimeToMin(lhs, lp);
+
+      // Additionally, if LHS is a reference to a known aggregate,
+      // update that thing's borrow lifetime.
+      if (lhs->isRef() && usedAsBorrow) {
+        LifetimePair & intrinsic = lifetimes->intrinsicLifetime[lhs];
+        if (!intrinsic.referent.unknown && intrinsic.referent.fromSymbolScope) {
+          LifetimePair p = lp;
+          p.referent = unknownLifetime();
+          if (!p.borrowed.unknown &&
+              !p.borrowed.infinite &&
+              p.borrowed.returnScope) {
+            Symbol* referredSym = intrinsic.referent.fromSymbolScope;
+            changed |= lifetimes->setInferredLifetimeToMin(referredSym, lp);
+          }
+        }
+      }
     }
   }
 
