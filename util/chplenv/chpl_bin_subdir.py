@@ -33,7 +33,7 @@ def get(location):
     if arch != 'none' and arch != 'unknown':
       result += '-' + arch
     # pic
-    if pic != 'none':
+    if location == 'target' and pic != 'none':
       result += '-' + pic
     return result
 
