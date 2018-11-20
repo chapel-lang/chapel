@@ -8,7 +8,6 @@
 #define _GASNET_CORE_INTERNAL_H
 
 #include <gasnet_internal.h>
-#include <gasnet_handler.h>
 
 #include <pami.h>
 
@@ -27,22 +26,24 @@
 #define GASNETC_HSL_SPINLOCK 0
 
 /* ------------------------------------------------------------------------------------ */
-#define GASNETC_HANDLER_BASE  1 /* reserve 1-63 for the core API */
-#define _hidx_gasnetc_auxseg_reqh             (GASNETC_HANDLER_BASE+0)
+#define _hidx_gasnetc_exchg_reqh              (GASNETC_HANDLER_BASE+0)
 /* add new core API handlers here and to the bottom of gasnet_core.c */
 
 /* ------------------------------------------------------------------------------------ */
-/* handler table (recommended impl) */
-#define GASNETC_MAX_NUMHANDLERS   256
-extern gasneti_handler_fn_t gasnetc_handler[GASNETC_MAX_NUMHANDLERS];
+/* handler table (temporary global impl) */
+extern gex_AM_Entry_t *gasnetc_handler;
 
 /* ------------------------------------------------------------------------------------ */
-/* AM category (recommended impl if supporting PSHM) */
-typedef enum {
-  gasnetc_Short=0,
-  gasnetc_Medium=1,
-  gasnetc_Long=2
-} gasnetc_category_t;
+/* Configure gasnet_event_internal.h and gasnet_event.c */
+// TODO-EX: prefix needs to move from "extended" to "core"
+
+#define GASNETE_HAVE_LC
+
+#if GASNET_DEBUG
+  // Reset between use as two different events type: gasnete_event_type_{lc,lc_now}
+  #define GASNETE_EOP_NEW_EXTRA(eop) \
+            (eop)->event[gasnete_eop_event_alc] = gasnete_event_type_free_eop
+#endif
 
 /* ------------------------------------------------------------------------------------ */
 
@@ -68,8 +69,8 @@ enum {
 #endif
 
 #define GASNETC_MSG_COMMON_HDR                        \
-  gasnet_node_t         srcnode; /* must be first */  \
-  gasnet_handler_t      handler;                      \
+  gex_Rank_t       srcnode; /* must be first */  \
+  gex_AM_Index_t    handler;                      \
   uint8_t               numargs : 5;                  \
   uint8_t               is_req  : 1;                  \
   GASNETC_MSG_DEBUG_HDR
@@ -80,20 +81,20 @@ typedef struct {
 
 typedef struct {
   GASNETC_MSG_COMMON_HDR
-  gasnet_handlerarg_t   args[GASNETC_MAX_ARGS];
+  gex_AM_Arg_t args[GASNETC_MAX_ARGS];
 } gasnetc_shortmsg_t;
 
 typedef struct {
   GASNETC_MSG_COMMON_HDR
   uint16_t              nbytes;
-  gasnet_handlerarg_t   args[GASNETC_MAX_ARGS];
+  gex_AM_Arg_t args[GASNETC_MAX_ARGS];
 } gasnetc_medmsg_t;
 
 typedef struct {
   GASNETC_MSG_COMMON_HDR
   uintptr_t             addr;
   uint32_t              nbytes; /* type limits our MaxLong */
-  gasnet_handlerarg_t   args[GASNETC_MAX_ARGS];
+  gex_AM_Arg_t args[GASNETC_MAX_ARGS];
 } gasnetc_longmsg_t;
 
 #define GASNETC_ARGSEND_AUX(s,nargs) \
@@ -111,6 +112,8 @@ extern pami_endpoint_t    *gasnetc_endpoint_tbl;
 extern size_t             gasnetc_num_contexts;
 extern pami_memregion_t   gasnetc_mymemreg;
 extern pami_memregion_t   *gasnetc_memreg;
+extern pami_memregion_t   gasnetc_myauxreg;
+extern pami_memregion_t   *gasnetc_auxreg;
 extern size_t             gasnetc_send_imm_max;
 extern size_t             gasnetc_recv_imm_max;
 
@@ -133,13 +136,13 @@ extern size_t             gasnetc_recv_imm_max;
 
 /* TODO: how must this change for multiple contexts? */
 GASNETI_INLINE(gasnetc_endpoint)
-pami_endpoint_t gasnetc_endpoint(gasnet_node_t node) {
-  pami_endpoint_t result = gasnetc_endpoint_tbl[node];
-  gasneti_assert(node < gasneti_nodes);
+pami_endpoint_t gasnetc_endpoint(gex_Rank_t rank) {
+  pami_endpoint_t result = gasnetc_endpoint_tbl[rank];
+  gasneti_assert(rank < gasneti_nodes);
   if_pf (result == PAMI_ENDPOINT_NULL) {
     /* NOTE: thread-safety based on fact that type is single word */
-    PAMI_Endpoint_create(gasnetc_pami_client, node, 0, &result);
-    gasnetc_endpoint_tbl[node] = result;
+    PAMI_Endpoint_create(gasnetc_pami_client, rank, 0, &result);
+    gasnetc_endpoint_tbl[rank] = result;
   }
   return result;
 }
@@ -197,47 +200,15 @@ extern void gasnetc_bootstrapExchange(void *src, size_t len, void *dst);
   #define gasnete_coll_team_init_conduit gasnete_coll_team_init_pami
 
   #define gasnete_coll_broadcast  gasnete_coll_broadcast_pami
-  #define gasnete_coll_broadcastM gasnete_coll_broadcastM_pami
 
   #define gasnete_coll_exchange   gasnete_coll_exchange_pami
-  #define gasnete_coll_exchangeM  gasnete_coll_exchangeM_pami
 
   #define gasnete_coll_gather     gasnete_coll_gather_pami
-  #define gasnete_coll_gatherM    gasnete_coll_gatherM_pami
 
   #define gasnete_coll_gather_all  gasnete_coll_gather_all_pami
-  #define gasnete_coll_gather_allM gasnete_coll_gather_allM_pami
 
   #define gasnete_coll_scatter    gasnete_coll_scatter_pami
-  #define gasnete_coll_scatterM   gasnete_coll_scatterM_pami
 
-  #if GASNET_PAR
-    #define GASNETE_COLL_TEAM_EXTRA struct {  \
-        /* collective geom & algorithms: */   \
-        pami_geometry_t geom;                 \
-        pami_algorithm_t allga_alg;           \
-        pami_algorithm_t allto_alg;           \
-        pami_algorithm_t bcast_alg;           \
-        pami_algorithm_t gathr_alg;           \
-        pami_algorithm_t scatt_alg;           \
-        pami_algorithm_t allgavi_alg;         \
-        pami_algorithm_t alltovi_alg;         \
-        pami_algorithm_t gathrvi_alg;         \
-        pami_algorithm_t scattvi_alg;         \
-        /* for multi-image intermediates: */  \
-        size_t scratch_max_nbytes;            \
-        size_t scratch_max_nbytes_allto;      \
-        void * scratch_space;                 \
-        int * counts;                         \
-        int * displs;                         \
-        size_t prev_nbytes;                   \
-        /* for syncronization: */             \
-        void * volatile tmp_addr;             \
-        volatile int barrier_phase;           \
-        char _pad[GASNETI_CACHE_LINE_BYTES];  \
-        gasneti_atomic_t barrier_counter[2];  \
-    } pami;
-  #else
     #define GASNETE_COLL_TEAM_EXTRA struct {  \
         pami_geometry_t geom;                 \
         pami_algorithm_t allga_alg;           \
@@ -246,7 +217,6 @@ extern void gasnetc_bootstrapExchange(void *src, size_t len, void *dst);
         pami_algorithm_t gathr_alg;           \
         pami_algorithm_t scatt_alg;           \
     } pami;
-  #endif
 #endif
 
 #endif

@@ -389,7 +389,7 @@ GASNETI_IDENT(gasnett_IdentString_CompilerID,
              "$GASNetCompilerID: " PLATFORM_COMPILER_IDSTR " $");
 
 GASNETI_IDENT(gasnett_IdentString_GitHash, 
-             "$GASNetGitHash: gasnet-1.32.0 $");
+             "$GASNetGitHash: gex-2018.9.0 $");
 
 int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MAJOR_,GASNET_RELEASE_VERSION_MAJOR)) = 1;
 int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MINOR_,GASNET_RELEASE_VERSION_MINOR)) = 1;

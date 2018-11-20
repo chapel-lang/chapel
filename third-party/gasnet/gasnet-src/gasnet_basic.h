@@ -4,8 +4,8 @@
  * Terms of use are as specified in license.txt
  */
 
-#if !defined(_IN_GASNET_H) && !defined(_IN_GASNET_TOOLS_H)
-  #error This file is not meant to be included directly- clients should include gasnet.h or gasnet_tools.h
+#if !defined(_IN_GASNETEX_H) && !defined(_IN_GASNET_TOOLS_H)
+  #error This file is not meant to be included directly- clients should include gasnetex.h or gasnet_tools.h
 #endif
 
 #ifndef _GASNET_BASIC_H
@@ -208,6 +208,84 @@
 #define MAX(x,y)  ((x)>(y)?(x):(y))
 #endif
 
+//------------------------------------------------------------------------------------
+// Meta-macros for fixed-count text generation
+//
+// The following family of macros (named with a integer suffix in N=0..GASNETI_META_MAX)
+// perform N expansions of the provided macros.
+// They take two 3-argument macros as arguments:
+//  fnb(-1,0,1) is expanded exactly once as the base case
+//  fni(i_minus_1, i, i_plus_1) is expanded exactly N times as the inductive case,
+//     with i=[1..N] and i_minus_1=(i-1) and i_plus_1=(i+1) at each step
+// The ASC[N] variants expand the macros in ascending numerical order,
+// whereas the DES[N] variants expand the macros in descending order
+// Note that due to C preprocessor rules fnb and fni cannot themselves
+// contain an expansion of the same meta-macro (even with different arguments), 
+// but can they can use the "other" meta-macro.
+
+// supported recursion depth
+#define GASNETI_META_MAX 16
+
+// convenience macro, useful for base case
+#define GASNETI_META_EMPTY(a,b,c)
+
+#define GASNETI_META_ASC0(fnb,fni)  fnb(-1,0,1)
+#define GASNETI_META_ASC1(fnb,fni)  GASNETI_META_ASC0(fnb,fni)  fni(0,1,2)
+#define GASNETI_META_ASC2(fnb,fni)  GASNETI_META_ASC1(fnb,fni)  fni(1,2,3)
+#define GASNETI_META_ASC3(fnb,fni)  GASNETI_META_ASC2(fnb,fni)  fni(2,3,4)
+#define GASNETI_META_ASC4(fnb,fni)  GASNETI_META_ASC3(fnb,fni)  fni(3,4,5)
+#define GASNETI_META_ASC5(fnb,fni)  GASNETI_META_ASC4(fnb,fni)  fni(4,5,6)
+#define GASNETI_META_ASC6(fnb,fni)  GASNETI_META_ASC5(fnb,fni)  fni(5,6,7)
+#define GASNETI_META_ASC7(fnb,fni)  GASNETI_META_ASC6(fnb,fni)  fni(6,7,8)
+#define GASNETI_META_ASC8(fnb,fni)  GASNETI_META_ASC7(fnb,fni)  fni(7,8,9)
+#define GASNETI_META_ASC9(fnb,fni)  GASNETI_META_ASC8(fnb,fni)  fni(8,9,10)
+#define GASNETI_META_ASC10(fnb,fni) GASNETI_META_ASC9(fnb,fni)  fni(9,10,11)
+#define GASNETI_META_ASC11(fnb,fni) GASNETI_META_ASC10(fnb,fni) fni(10,11,12)
+#define GASNETI_META_ASC12(fnb,fni) GASNETI_META_ASC11(fnb,fni) fni(11,12,13)
+#define GASNETI_META_ASC13(fnb,fni) GASNETI_META_ASC12(fnb,fni) fni(12,13,14)
+#define GASNETI_META_ASC14(fnb,fni) GASNETI_META_ASC13(fnb,fni) fni(13,14,15)
+#define GASNETI_META_ASC15(fnb,fni) GASNETI_META_ASC14(fnb,fni) fni(14,15,16)
+#define GASNETI_META_ASC16(fnb,fni) GASNETI_META_ASC15(fnb,fni) fni(15,16,17)
+
+#define GASNETI_META_DES0(fnb,fni)  fnb(-1,0,1)
+#define GASNETI_META_DES1(fnb,fni)  fni(0,1,2)    GASNETI_META_DES0(fnb,fni)
+#define GASNETI_META_DES2(fnb,fni)  fni(1,2,3)    GASNETI_META_DES1(fnb,fni)
+#define GASNETI_META_DES3(fnb,fni)  fni(2,3,4)    GASNETI_META_DES2(fnb,fni)
+#define GASNETI_META_DES4(fnb,fni)  fni(3,4,5)    GASNETI_META_DES3(fnb,fni)
+#define GASNETI_META_DES5(fnb,fni)  fni(4,5,6)    GASNETI_META_DES4(fnb,fni)
+#define GASNETI_META_DES6(fnb,fni)  fni(5,6,7)    GASNETI_META_DES5(fnb,fni)
+#define GASNETI_META_DES7(fnb,fni)  fni(6,7,8)    GASNETI_META_DES6(fnb,fni)
+#define GASNETI_META_DES8(fnb,fni)  fni(7,8,9)    GASNETI_META_DES7(fnb,fni)
+#define GASNETI_META_DES9(fnb,fni)  fni(8,9,10)   GASNETI_META_DES8(fnb,fni)
+#define GASNETI_META_DES10(fnb,fni) fni(9,10,11)  GASNETI_META_DES9(fnb,fni)
+#define GASNETI_META_DES11(fnb,fni) fni(10,11,12) GASNETI_META_DES10(fnb,fni)
+#define GASNETI_META_DES12(fnb,fni) fni(11,12,13) GASNETI_META_DES11(fnb,fni)
+#define GASNETI_META_DES13(fnb,fni) fni(12,13,14) GASNETI_META_DES12(fnb,fni)
+#define GASNETI_META_DES14(fnb,fni) fni(13,14,15) GASNETI_META_DES13(fnb,fni)
+#define GASNETI_META_DES15(fnb,fni) fni(14,15,16) GASNETI_META_DES14(fnb,fni)
+#define GASNETI_META_DES16(fnb,fni) fni(15,16,17) GASNETI_META_DES15(fnb,fni)
+
+// Extended variant that also threads three arbitrary arguments though the expansion chain
+#define GASNETI_META3_EMPTY(a,b,c,a1,a2,a3)
+
+#define GASNETI_META3_ASC0(fnb,fni,a1,a2,a3)  fnb(-1,0,1,a1,a2,a3)
+#define GASNETI_META3_ASC1(fnb,fni,a1,a2,a3)  GASNETI_META3_ASC0(fnb,fni,a1,a2,a3)  fni(0,1,2,a1,a2,a3)
+#define GASNETI_META3_ASC2(fnb,fni,a1,a2,a3)  GASNETI_META3_ASC1(fnb,fni,a1,a2,a3)  fni(1,2,3,a1,a2,a3)
+#define GASNETI_META3_ASC3(fnb,fni,a1,a2,a3)  GASNETI_META3_ASC2(fnb,fni,a1,a2,a3)  fni(2,3,4,a1,a2,a3)
+#define GASNETI_META3_ASC4(fnb,fni,a1,a2,a3)  GASNETI_META3_ASC3(fnb,fni,a1,a2,a3)  fni(3,4,5,a1,a2,a3)
+#define GASNETI_META3_ASC5(fnb,fni,a1,a2,a3)  GASNETI_META3_ASC4(fnb,fni,a1,a2,a3)  fni(4,5,6,a1,a2,a3)
+#define GASNETI_META3_ASC6(fnb,fni,a1,a2,a3)  GASNETI_META3_ASC5(fnb,fni,a1,a2,a3)  fni(5,6,7,a1,a2,a3)
+#define GASNETI_META3_ASC7(fnb,fni,a1,a2,a3)  GASNETI_META3_ASC6(fnb,fni,a1,a2,a3)  fni(6,7,8,a1,a2,a3)
+#define GASNETI_META3_ASC8(fnb,fni,a1,a2,a3)  GASNETI_META3_ASC7(fnb,fni,a1,a2,a3)  fni(7,8,9,a1,a2,a3)
+#define GASNETI_META3_ASC9(fnb,fni,a1,a2,a3)  GASNETI_META3_ASC8(fnb,fni,a1,a2,a3)  fni(8,9,10,a1,a2,a3)
+#define GASNETI_META3_ASC10(fnb,fni,a1,a2,a3) GASNETI_META3_ASC9(fnb,fni,a1,a2,a3)  fni(9,10,11,a1,a2,a3)
+#define GASNETI_META3_ASC11(fnb,fni,a1,a2,a3) GASNETI_META3_ASC10(fnb,fni,a1,a2,a3) fni(10,11,12,a1,a2,a3)
+#define GASNETI_META3_ASC12(fnb,fni,a1,a2,a3) GASNETI_META3_ASC11(fnb,fni,a1,a2,a3) fni(11,12,13,a1,a2,a3)
+#define GASNETI_META3_ASC13(fnb,fni,a1,a2,a3) GASNETI_META3_ASC12(fnb,fni,a1,a2,a3) fni(12,13,14,a1,a2,a3)
+#define GASNETI_META3_ASC14(fnb,fni,a1,a2,a3) GASNETI_META3_ASC13(fnb,fni,a1,a2,a3) fni(13,14,15,a1,a2,a3)
+#define GASNETI_META3_ASC15(fnb,fni,a1,a2,a3) GASNETI_META3_ASC14(fnb,fni,a1,a2,a3) fni(14,15,16,a1,a2,a3)
+#define GASNETI_META3_ASC16(fnb,fni,a1,a2,a3) GASNETI_META3_ASC15(fnb,fni,a1,a2,a3) fni(15,16,17,a1,a2,a3)
+
 #include <stddef.h> /* get standard types, esp size_t */
 
 // gasneti_offsetof is our version of C's offsetof() that allows field arguments 
@@ -245,6 +323,40 @@
   #define GASNETI_LOWORD(arg)     ((uint32_t)((uint64_t)(arg) & 0xFFFFFFFF))
 #else
   #define GASNETI_LOWORD(arg)     ((uint32_t)((uint64_t)(arg)))
+#endif
+
+/* assembling "signatures" from 2, 4 or 8 (7-bit ASCII) characters */
+#if PLATFORM_ARCH_LITTLE_ENDIAN
+  #define GASNETI_SIGNATURE2(c0,c1) ((uint16_t)((c0)|((c1)<<8)))
+  #define GASNETI_SIGNATURE4(c0,c1,c2,c3) ((uint32_t)((c0)|((c1)<<8)|((c2)<<16)|((uint32_t)(c3)<<24)))
+  #define GASNETI_SIGNATURE8(c0,c1,c2,c3,c4,c5,c6,c7) \
+          GASNETI_MAKEWORD(GASNETI_SIGNATURE4(c4,c5,c6,c7),GASNETI_SIGNATURE4(c0,c1,c2,c3))
+#else
+  #define GASNETI_SIGNATURE2(c0,c1) ((uint16_t)(((c0)<<8)|(c1)))
+  #define GASNETI_SIGNATURE4(c0,c1,c2,c3) ((uint32_t)(((uint32_t)(c0)<<24)|((c1)<<16)|((c2)<<8)|(c3)))
+  #define GASNETI_SIGNATURE8(c0,c1,c2,c3,c4,c5,c6,c7) \
+          GASNETI_MAKEWORD(GASNETI_SIGNATURE4(c0,c1,c2,c3),GASNETI_SIGNATURE4(c4,c5,c6,c7))
+#endif
+
+/* magic numbers for identifying/protecting types
+ * WARNING: GASNETI_{CHECK,IMPORT}_MAGIC() may evaluate the pointer argument more than once!
+ */
+#define GASNETI_MAKE_MAGIC(c0,c1,c2,c3) GASNETI_SIGNATURE8('g','e','x',':',c0,c1,c2,c3)
+#define GASNETI_MAKE_BAD_MAGIC(c0,c1,c2,c3) GASNETI_SIGNATURE8('B','A','D',':',c0,c1,c2,c3)
+typedef union { uint64_t _u; char _c[8]; } gasneti_magic_t;
+#if GASNET_DEBUG
+  #define GASNETI_INIT_MAGIC(p,m)  ((void)((p)->_magic._u = (m)))
+  #define GASNETI_CHECK_MAGIC(p,m) gasneti_assert(!(p) || ((p)->_magic._u == (m)))
+  #define GASNETI_IMPORT_MAGIC(p,type) do { \
+      if ((p) && ((p)->_magic._u == GASNETI_##type##_BAD_MAGIC)) {              \
+        gasneti_fatalerror("Likely use-after-free error for " #type " object"); \
+      }                                                                         \
+      GASNETI_CHECK_MAGIC(p,GASNETI_##type##_MAGIC);                            \
+    } while (0)
+#else
+  #define GASNETI_INIT_MAGIC(p,m)  ((void)0)
+  #define GASNETI_CHECK_MAGIC(p,m) ((void)0)
+  #define GASNETI_IMPORT_MAGIC(p,t) ((void)0)
 #endif
 
 /* Non-asserting alignment macros

@@ -576,7 +576,7 @@ CONDUIT_RUNCMD = %P %N %A
 #CONDUIT_RUNCMD = $(top_builddir)/other/amudp/amudprun -np %N -spawn $${GASNET_SPAWNFN:-L} %P %A
 
 # conduit-specific tests in ../tests directory
-CONDUIT_TESTS = testcxx testtoolscxx
+CONDUIT_TESTS = testcxx testlegacycxx testtoolscxx
 
 # disable MPI tests for udp-*, because we probably don't have an MPI-capable C++ linker
 CONDUIT_TEST_MAKEARGS = MPI_TESTS="" MPI_TESTS_SEQ="" MPI_TESTS_PAR=""
@@ -958,7 +958,7 @@ libgasnet-udp-parsync.a: $(libgasnet_dependencies)
 @USE_UDP_CONDUIT_TRUE@clean-local: do-clean-local
 @USE_UDP_CONDUIT_TRUE@install-data-local: do-install-data-local
 @USE_UDP_CONDUIT_TRUE@uninstall-local: do-uninstall-local
-@USE_UDP_CONDUIT_FALSE@$(top_srcdir)/gasnet.h: do-error
+@USE_UDP_CONDUIT_FALSE@$(top_srcdir)/gasnetex.h: do-error
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

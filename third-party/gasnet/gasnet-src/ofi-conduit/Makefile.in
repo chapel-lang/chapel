@@ -960,7 +960,7 @@ libgasnet-ofi-parsync.a: $(libgasnet_dependencies)
 @USE_OFI_CONDUIT_TRUE@clean-local: do-clean-local
 @USE_OFI_CONDUIT_TRUE@install-data-local: do-install-data-local
 @USE_OFI_CONDUIT_TRUE@uninstall-local: do-uninstall-local
-@USE_OFI_CONDUIT_FALSE@$(top_srcdir)/gasnet.h: do-error
+@USE_OFI_CONDUIT_FALSE@$(top_srcdir)/gasnetex.h: do-error
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

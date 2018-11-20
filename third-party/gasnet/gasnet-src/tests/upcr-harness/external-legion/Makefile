@@ -89,7 +89,7 @@ legion-unpack-tgz:   force
 .PHONY: legion-download legion-unpack-unzip legion-unpack-p7zip legion-unpack-tgz
 
 # Apply upsteam or local patches, if any
-legion_patches = 
+legion_patches =
 legion-patch: force
 	cd $(LEGION_BLDDIR) && \
 	for p in $(legion_patches); do $(WGET) $$p && patch -p1 < `basename $$p`; done

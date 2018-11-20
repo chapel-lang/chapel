@@ -526,7 +526,6 @@ CONDUIT_FILELIST = \
       gasnet_core_internal.h \
       gasnet_extended.c      \
       gasnet_extended_fwd.h  \
-      gasnet_extended_help_extra.h  \
       gasnet_gemini.h        \
       gasnet_gemini.c
 
@@ -943,7 +942,7 @@ libgasnet-gemini-parsync.a: $(libgasnet_dependencies)
 @USE_GEMINI_CONDUIT_TRUE@clean-local: do-clean-local
 @USE_GEMINI_CONDUIT_TRUE@install-data-local: do-install-data-local
 @USE_GEMINI_CONDUIT_TRUE@uninstall-local: do-uninstall-local
-@USE_GEMINI_CONDUIT_FALSE@$(top_srcdir)/gasnet.h: do-error
+@USE_GEMINI_CONDUIT_FALSE@$(top_srcdir)/gasnetex.h: do-error
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

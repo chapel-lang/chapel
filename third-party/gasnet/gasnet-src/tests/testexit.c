@@ -4,11 +4,16 @@
  * Terms of use are as specified in license.txt
  */
 
-#include <gasnet.h>
+#include <gasnetex.h>
 #include <gasnet_tools.h>
 
 #include <test.h>
 #include <signal.h>
+
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
 
 int mynode, nodes;
 int peer = -1;
@@ -60,26 +65,26 @@ const char *crashtestdesc[] = {
 #define NUMCRASHTEST (sizeof(crashtestdesc)/sizeof(char*))
 void do_crash_test(int crashid);
 
+static char *peerseg;
+
 #define hidx_exit_handler		201
 #define hidx_noop_handler               202
 #define hidx_ping_handler               203
 
-void test_exit_handler(gasnet_token_t token, gasnet_handlerarg_t exitcode) {
+void test_exit_handler(gex_Token_t token, gex_AM_Arg_t exitcode) {
   gasnet_exit((int)exitcode);
 }
 
-void ping_handler(gasnet_token_t token, void *buf, size_t nbytes) {
+void ping_handler(gex_Token_t token, void *buf, size_t nbytes) {
   static int x = 1; 
-  gasnet_node_t src;
-  gasnet_AMGetMsgSource(token, &src);
   x = !x;/* harmless race */
   if (x) 
-    GASNET_Safe(gasnet_AMReplyMedium0(token, hidx_noop_handler, buf, nbytes));
+    gex_AM_ReplyMedium0(token, hidx_noop_handler, buf, nbytes, GEX_EVENT_NOW, 0);
   else
-    GASNET_Safe(gasnet_AMReplyLong0(token, hidx_noop_handler, buf, nbytes, TEST_SEG(src)));
+    gex_AM_ReplyLong0(token, hidx_noop_handler, buf, nbytes, peerseg, GEX_EVENT_NOW, 0);
 }
 
-void noop_handler(gasnet_token_t token, void *buf, size_t nbytes) {
+void noop_handler(gex_Token_t token, void *buf, size_t nbytes) {
 }
 
 #ifdef GASNET_PAR
@@ -120,29 +125,33 @@ void *workerthread(void *args) {
           gasnet_exit(18); 
       } else {
         int junk = 42;
-        int lim = MIN(MIN(MIN(gasnet_AMMaxMedium(), gasnet_AMMaxLongRequest()), gasnet_AMMaxLongReply()), TEST_SEGSZ);
+        int lim = MIN(MIN(MIN(MIN(
+                        gex_AM_MaxRequestMedium(myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0),
+                        gex_AM_MaxReplyMedium  (myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0)),
+                        gex_AM_MaxRequestLong  (myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0)),
+                        gex_AM_MaxReplyLong    (myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0)),
+                        TEST_SEGSZ);
         char *p = malloc(lim);
-        char *peerseg = TEST_SEG(peer);
         while (1) {
           switch (rand() % 18) {
             case 0:  GASNET_Safe(gasnet_AMPoll()); break;
-            case 1:  GASNET_Safe(gasnet_AMRequestMedium0(peer, hidx_noop_handler, p, 4)); break;
-            case 2:  GASNET_Safe(gasnet_AMRequestMedium0(peer, hidx_ping_handler, p, 4)); break;
-            case 3:  GASNET_Safe(gasnet_AMRequestMedium0(peer, hidx_noop_handler, p, lim)); break;
-            case 4:  GASNET_Safe(gasnet_AMRequestMedium0(peer, hidx_ping_handler, p, lim)); break;
-            case 5:  GASNET_Safe(gasnet_AMRequestLong0(peer, hidx_noop_handler, p, 4, peerseg)); break;
-            case 6:  GASNET_Safe(gasnet_AMRequestLong0(peer, hidx_ping_handler, p, 4, peerseg)); break;
-            case 7:  GASNET_Safe(gasnet_AMRequestLong0(peer, hidx_noop_handler, p, lim, peerseg)); break;
-            case 8:  GASNET_Safe(gasnet_AMRequestLong0(peer, hidx_ping_handler, p, lim, peerseg)); break;
-            case 9:  gasnet_put(peer, peerseg, &junk, sizeof(int)); break;
-            case 10: gasnet_get(&junk, peer, peerseg, sizeof(int)); break;
-            case 11: gasnet_put(peer, peerseg, p, lim); break;
-            case 12: gasnet_get(p, peer, peerseg, lim); break;
-            case 13: gasnet_put_nbi(peer, peerseg, &junk, sizeof(int)); break;
-            case 14: gasnet_get_nbi(&junk, peer, peerseg, sizeof(int)); break;
-            case 15: gasnet_put_nbi(peer, peerseg, p, lim); break;
-            case 16: gasnet_get_nbi(p, peer, peerseg, lim); break;
-            case 17: gasnet_wait_syncnbi_all(); break;
+            case 1:  gex_AM_RequestMedium0(myteam, peer, hidx_noop_handler, p, 4, GEX_EVENT_NOW, 0); break;
+            case 2:  gex_AM_RequestMedium0(myteam, peer, hidx_ping_handler, p, 4, GEX_EVENT_NOW, 0); break;
+            case 3:  gex_AM_RequestMedium0(myteam, peer, hidx_noop_handler, p, lim, GEX_EVENT_NOW, 0); break;
+            case 4:  gex_AM_RequestMedium0(myteam, peer, hidx_ping_handler, p, lim, GEX_EVENT_NOW, 0); break;
+            case 5:  gex_AM_RequestLong0(myteam, peer, hidx_noop_handler, p, 4, peerseg, GEX_EVENT_NOW, 0); break;
+            case 6:  gex_AM_RequestLong0(myteam, peer, hidx_ping_handler, p, 4, peerseg, GEX_EVENT_NOW, 0); break;
+            case 7:  gex_AM_RequestLong0(myteam, peer, hidx_noop_handler, p, lim, peerseg, GEX_EVENT_NOW, 0); break;
+            case 8:  gex_AM_RequestLong0(myteam, peer, hidx_ping_handler, p, lim, peerseg, GEX_EVENT_NOW, 0); break;
+            case 9:  gex_RMA_PutBlocking(myteam, peer, peerseg, &junk, sizeof(int), 0); break;
+            case 10: gex_RMA_GetBlocking(myteam, &junk, peer, peerseg, sizeof(int), 0); break;
+            case 11: gex_RMA_PutBlocking(myteam, peer, peerseg, p, lim, 0); break;
+            case 12: gex_RMA_GetBlocking(myteam, p, peer, peerseg, lim, 0); break;
+            case 13: gex_RMA_PutNBI(myteam, peer, peerseg, &junk, sizeof(int), GEX_EVENT_NOW, 0); break;
+            case 14: gex_RMA_GetNBI(myteam, &junk, peer, peerseg, sizeof(int), 0); break;
+            case 15: gex_RMA_PutNBI(myteam, peer, peerseg, p, lim, GEX_EVENT_NOW, 0); break;
+            case 16: gex_RMA_GetNBI(myteam, p, peer, peerseg, lim, 0); break;
+            case 17: gex_NBI_Wait(GEX_EC_ALL,0); break;
           }
         }
       }
@@ -180,13 +189,13 @@ int main(int argc, char **argv) {
   #define MAXLINE 255
   static char usagestr[MAXLINE*(NUMTEST+NUMCRASHTEST)];
   char testdescstr[MAXLINE];
-  gasnet_handlerentry_t htable[] = { 
-    { hidx_exit_handler, test_exit_handler },
-    { hidx_ping_handler, ping_handler },
-    { hidx_noop_handler, noop_handler },
+  gex_AM_Entry_t htable[] = { 
+    { hidx_exit_handler, test_exit_handler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 1 },
+    { hidx_ping_handler, ping_handler,      GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDLONG, 0 },
+    { hidx_noop_handler, noop_handler,      GEX_FLAG_AM_REQREP|GEX_FLAG_AM_MEDLONG, 0 },
   };
 
-  GASNET_Safe(gasnet_init(&argc, &argv));
+  GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testexit", &argc, &argv, 0));
   { int i = 200+NUMCRASHTEST;
     const char *threads="";    
     #ifdef GASNET_PAR
@@ -215,8 +224,8 @@ int main(int argc, char **argv) {
   }
   test_init_early("testexit",0,usagestr);
 
-  mynode = gasnet_mynode();
-  nodes = gasnet_nodes();
+  mynode = gex_TM_QueryRank(myteam);
+  nodes = gex_TM_QuerySize(myteam);
 
   argv++; argc--;
   if (argc > 0 && !strcmp(*argv, "-r")) { mynode = nodes-(mynode+1); argv++; argc--; }
@@ -267,13 +276,13 @@ int main(int argc, char **argv) {
     }
   }
 
-  GASNET_Safe(gasnet_attach(htable,  sizeof(htable)/sizeof(gasnet_handlerentry_t),
-	                    TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
+  GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, sizeof(htable)/sizeof(gex_AM_Entry_t)));
 
   /* register a SIGQUIT handler, as permitted by GASNet spec */
   gasnett_reghandler(SIGQUIT, testSignalHandler);
 
-  TEST_SEG(mynode);
+  peerseg = TEST_SEG(peer);
 
   BARRIER();
   PUTS0(testdescstr);
@@ -311,23 +320,23 @@ int main(int argc, char **argv) {
       else while(1);
       break;
     case 10:
-      GASNET_Safe(gasnet_AMRequestShort1(peer, hidx_exit_handler, testid));
+      gex_AM_RequestShort1(myteam, peer, hidx_exit_handler, 0, testid);
       while(1) GASNET_Safe(gasnet_AMPoll());
       break;
     case 11:
       if (mynode == 0) { 
-        GASNET_Safe(gasnet_AMRequestShort1(nodes-1, hidx_exit_handler, testid));
+        gex_AM_RequestShort1(myteam, nodes-1, hidx_exit_handler, 0, testid);
       }
       while(1) GASNET_Safe(gasnet_AMPoll());
       break;
     case 12:
       if (mynode == nodes-1) { 
-        GASNET_Safe(gasnet_AMRequestShort1(mynode, hidx_exit_handler, testid));
+        gex_AM_RequestShort1(myteam, mynode, hidx_exit_handler, 0, testid);
       }
       while(1) GASNET_Safe(gasnet_AMPoll());
       break;
     case 13:
-      GASNET_Safe(gasnet_AMRequestShort1(nodes-1, hidx_exit_handler, testid));
+      gex_AM_RequestShort1(myteam, nodes-1, hidx_exit_handler, 0, testid);
       while(1) GASNET_Safe(gasnet_AMPoll());
       break;
   #ifdef GASNET_PAR

@@ -27,7 +27,7 @@
 #endif
 
 extern int
-firehose_move_callback(gasnet_node_t node,
+firehose_move_callback(gex_Rank_t node,
                        const firehose_region_t *unpin_list,
                        size_t unpin_num,
                        firehose_region_t *pin_list,
@@ -76,7 +76,7 @@ firehose_move_callback(gasnet_node_t node,
 }
 
 extern int
-firehose_remote_callback(gasnet_node_t node,
+firehose_remote_callback(gex_Rank_t node,
                          const firehose_region_t *pin_list, size_t num_pinned,
                          firehose_remotecallback_args_t *args)
 {

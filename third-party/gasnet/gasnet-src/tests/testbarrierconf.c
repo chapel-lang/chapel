@@ -4,8 +4,7 @@
  * Terms of use are as specified in license.txt
  */
 
-#include <gasnet.h>
-#include <gasnet_coll.h>
+#include <gasnetex.h>
 
 #include <test.h>
 
@@ -13,6 +12,11 @@
 #define PERFORM_MIXED_NAMED_ANON_TESTS 1
 #endif
 
+
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
 
 static int do_try = 0;
 GASNETT_INLINE(my_barrier_wait)
@@ -32,8 +36,10 @@ int my_barrier_wait(int value, int flags) {
 
 #define hidx_done_shorthandler   200
 volatile int done = 0;
-void done_shorthandler(gasnet_token_t token) { done = 1; }
-gasnet_handlerentry_t htable[] = { { hidx_done_shorthandler,  done_shorthandler  } };
+void done_shorthandler(gex_Token_t token) { done = 1; }
+gex_AM_Entry_t htable[] = {
+    { hidx_done_shorthandler,  done_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0, NULL, NULL }
+};
 
 static void * doTest(void *arg);
 
@@ -43,9 +49,9 @@ int main(int argc, char **argv) {
   int pollers = 0;
   int arg;
 
-  GASNET_Safe(gasnet_init(&argc, &argv));
-  GASNET_Safe(gasnet_attach(htable, 1, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
-  TEST_COLL_INIT();
+  GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testbarrierconf", &argc, &argv, 0));
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
+  GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, 1));
 
 #if GASNET_PAR
   test_init("testbarrierconf", 0, "[-t] [-p polling_threads] (iters)\n"
@@ -61,7 +67,7 @@ int main(int argc, char **argv) {
    if (!strcmp(argv[arg], "-p")) {
 #ifdef GASNET_PAR
     if (argc-arg < 2) {
-      if (gasnet_mynode() == 0) {
+      if (mynode == 0) {
         fprintf(stderr, "testbarrierconf %s\n", GASNET_CONFIG_STRING);
         fprintf(stderr, "ERROR: The -p option requires an argument.\n");
         fflush(NULL);
@@ -72,7 +78,7 @@ int main(int argc, char **argv) {
     pollers = test_thread_limit(atoi(argv[arg+1])+1)-1;
     arg += 2;
 #else
-    if (gasnet_mynode() == 0) {
+    if (mynode == 0) {
       fprintf(stderr, "testbarrierconf %s\n", GASNET_CONFIG_STRING);
       fprintf(stderr, "ERROR: The -p option is only available in the PAR configuration.\n");
       fflush(NULL);
@@ -89,8 +95,8 @@ int main(int argc, char **argv) {
   if (iters <= 0) iters = 1000;
   if (argc-arg >= 2) test_usage();
 
-  mynode = gasnet_mynode();
-  nodes = gasnet_nodes();
+  mynode = gex_TM_QueryRank(myteam);
+  nodes = gex_TM_QuerySize(myteam);
 
   if (mynode == 0) {
       const char * mode = do_try ? "try" : "wait";
@@ -462,6 +468,6 @@ static void * doTest(void *arg) {
     BARRIER();
   }
 
-  GASNET_Safe(gasnet_AMRequestShort0(mynode, hidx_done_shorthandler));
+  gex_AM_RequestShort0(myteam, mynode, hidx_done_shorthandler, 0);
   return NULL;
 }

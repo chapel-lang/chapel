@@ -167,7 +167,7 @@ Core API:
    Type: ACTIVE_MESSAGE
    Req/Rep: as specified
    Protocol: AM_SHORT
-   AM argument count: as specied
+   AM argument count: as specified
    handler id: as specified
    payload length: 0
    data:
@@ -177,7 +177,7 @@ Core API:
    Type: ACTIVE_MESSAGE
    Req/Rep: as specified
    Protocol: AM_MEDIUM
-   AM argument count: as specied
+   AM argument count: as speed
    handler id: as specified
    payload length: as specified (nbytes)
    data:
@@ -188,7 +188,7 @@ Core API:
    Type: ACTIVE_MESSAGE
    Req/Rep: as specified
    Protocol: AM_LONG_PACKED
-   AM argument count: as specied
+   AM argument count: as specified
    handler id: as specified
    payload length: as specified (nbytes)
    data:
@@ -200,7 +200,7 @@ Core API:
    Type: ACTIVE_MESSAGE
    Req/Rep: as specified
    Protocol: AM_LONG
-   AM argument count: as specied
+   AM argument count: as specified
    handler id: as specified
    payload length: 0;
    data:
@@ -213,7 +213,7 @@ Core API:
    handler id: 0
    payload length: 0
    data:
-     <nbytes of data delivered direcly to target address>
+     <nbytes of data delivered directly to target address>
 
    Note that the start + offset in the LONG_DATA gives you the remote
    address for the active message callback.

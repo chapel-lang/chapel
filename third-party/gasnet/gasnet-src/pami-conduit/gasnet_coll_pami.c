@@ -328,36 +328,17 @@ pami_xfer_t gasnete_op_template_allto;
 pami_xfer_t gasnete_op_template_bcast;
 pami_xfer_t gasnete_op_template_gathr;
 pami_xfer_t gasnete_op_template_scatt;
-#if GASNET_PAR
-pami_xfer_t gasnete_op_template_allgavi;
-pami_xfer_t gasnete_op_template_alltovi;
-pami_xfer_t gasnete_op_template_gathrvi;
-pami_xfer_t gasnete_op_template_scattvi;
-#endif
-
-static size_t scratch_size;
 
 extern void
 gasnete_coll_init_pami(void)
 {
   if (gasneti_getenv_yesno_withdefault("GASNET_USE_PAMI_COLL", 1)) {
-    scratch_size = gasneti_getenv_int_withdefault("GASNET_PAMI_COLL_SCRATCH", 1024*1024, 1);
-    /* We use the int-type scatterv and gatherv on the assumption of reasonable sizes. */
-    if (scratch_size > (size_t)INT_MAX) scratch_size = INT_MAX;
-
     if (gasneti_getenv_yesno_withdefault("GASNET_USE_PAMI_GATHERALL", 1)) {
       memset(&gasnete_op_template_allga, 0, sizeof(pami_xfer_t));
       gasnete_op_template_allga.cb_done = &gasnetc_cb_inc_uint; /* XXX: do we need release semantics? */
       gasnete_op_template_allga.options.multicontext = PAMI_HINT_DISABLE;
       gasnete_op_template_allga.cmd.xfer_allgather.stype = PAMI_TYPE_BYTE;
       gasnete_op_template_allga.cmd.xfer_allgather.rtype = PAMI_TYPE_BYTE;
-    #if GASNET_PAR
-      memset(&gasnete_op_template_allgavi, 0, sizeof(pami_xfer_t));
-      gasnete_op_template_allgavi.cb_done = &gasnetc_cb_inc_uint; /* XXX: do we need release semantics? */
-      gasnete_op_template_allgavi.options.multicontext = PAMI_HINT_DISABLE;
-      gasnete_op_template_allgavi.cmd.xfer_allgatherv_int.stype = PAMI_TYPE_BYTE;
-      gasnete_op_template_allgavi.cmd.xfer_allgatherv_int.rtype = PAMI_TYPE_BYTE;
-    #endif
       gasnete_use_pami_allga = 1;
     }
 
@@ -367,13 +348,6 @@ gasnete_coll_init_pami(void)
       gasnete_op_template_allto.options.multicontext = PAMI_HINT_DISABLE;
       gasnete_op_template_allto.cmd.xfer_alltoall.stype = PAMI_TYPE_BYTE;
       gasnete_op_template_allto.cmd.xfer_alltoall.rtype = PAMI_TYPE_BYTE;
-    #if GASNET_PAR
-      memset(&gasnete_op_template_alltovi, 0, sizeof(pami_xfer_t));
-      gasnete_op_template_alltovi.cb_done = &gasnetc_cb_inc_uint; /* XXX: do we need release semantics? */
-      gasnete_op_template_alltovi.options.multicontext = PAMI_HINT_DISABLE;
-      gasnete_op_template_alltovi.cmd.xfer_alltoallv_int.stype = PAMI_TYPE_BYTE;
-      gasnete_op_template_alltovi.cmd.xfer_alltoallv_int.rtype = PAMI_TYPE_BYTE;
-    #endif
       gasnete_use_pami_allto = 1;
     }
 
@@ -392,13 +366,6 @@ gasnete_coll_init_pami(void)
       gasnete_op_template_gathr.options.multicontext = PAMI_HINT_DISABLE;
       gasnete_op_template_gathr.cmd.xfer_gather.stype = PAMI_TYPE_BYTE;
       gasnete_op_template_gathr.cmd.xfer_gather.rtype = PAMI_TYPE_BYTE;
-    #if GASNET_PAR
-      memset(&gasnete_op_template_gathrvi, 0, sizeof(pami_xfer_t));
-      gasnete_op_template_gathrvi.cb_done = &gasnetc_cb_inc_uint; /* XXX: do we need release semantics? */
-      gasnete_op_template_gathrvi.options.multicontext = PAMI_HINT_DISABLE;
-      gasnete_op_template_gathrvi.cmd.xfer_gatherv_int.stype = PAMI_TYPE_BYTE;
-      gasnete_op_template_gathrvi.cmd.xfer_gatherv_int.rtype = PAMI_TYPE_BYTE;
-    #endif
       gasnete_use_pami_gathr = 1;
     }
 
@@ -408,13 +375,6 @@ gasnete_coll_init_pami(void)
       gasnete_op_template_scatt.options.multicontext = PAMI_HINT_DISABLE;
       gasnete_op_template_scatt.cmd.xfer_scatter.stype = PAMI_TYPE_BYTE;
       gasnete_op_template_scatt.cmd.xfer_scatter.rtype = PAMI_TYPE_BYTE;
-    #if GASNET_PAR
-      memset(&gasnete_op_template_scattvi, 0, sizeof(pami_xfer_t));
-      gasnete_op_template_scattvi.cb_done = &gasnetc_cb_inc_uint; /* XXX: do we need release semantics? */
-      gasnete_op_template_scattvi.options.multicontext = PAMI_HINT_DISABLE;
-      gasnete_op_template_scattvi.cmd.xfer_scatterv_int.stype = PAMI_TYPE_BYTE;
-      gasnete_op_template_scattvi.cmd.xfer_scatterv_int.rtype = PAMI_TYPE_BYTE;
-    #endif
       gasnete_use_pami_scatt = 1;
     }
 
@@ -445,44 +405,19 @@ extern void gasnete_coll_team_init_pami(gasnet_team_handle_t team) {
 
     if (gasnete_use_pami_allga) {
         gasnetc_dflt_coll_alg(team->pami.geom, PAMI_XFER_ALLGATHER, &team->pami.allga_alg);
-      #if GASNET_PAR
-        gasnetc_dflt_coll_alg(team->pami.geom, PAMI_XFER_ALLGATHERV_INT, &team->pami.allgavi_alg);
-      #endif
     }
     if (gasnete_use_pami_allto) {
         gasnetc_dflt_coll_alg(team->pami.geom, PAMI_XFER_ALLTOALL, &team->pami.allto_alg);
-      #if GASNET_PAR
-        gasnetc_dflt_coll_alg(team->pami.geom, PAMI_XFER_ALLTOALLV_INT, &team->pami.alltovi_alg);
-      #endif
     }
     if (gasnete_use_pami_bcast) {
         gasnetc_dflt_coll_alg(team->pami.geom, PAMI_XFER_BROADCAST, &team->pami.bcast_alg);
     }
     if (gasnete_use_pami_gathr) {
         gasnetc_dflt_coll_alg(team->pami.geom, PAMI_XFER_GATHER, &team->pami.gathr_alg);
-      #if GASNET_PAR
-        gasnetc_dflt_coll_alg(team->pami.geom, PAMI_XFER_GATHERV_INT, &team->pami.gathrvi_alg);
-      #endif
     }
     if (gasnete_use_pami_scatt) {
         gasnetc_dflt_coll_alg(team->pami.geom, PAMI_XFER_SCATTER, &team->pami.scatt_alg);
-      #if GASNET_PAR
-        gasnetc_dflt_coll_alg(team->pami.geom, PAMI_XFER_SCATTERV_INT, &team->pami.scattvi_alg);
-      #endif
     }
-
-  #if GASNET_PAR
-    team->pami.scratch_max_nbytes = scratch_size / team->max_images;
-    team->pami.scratch_max_nbytes_allto = team->pami.scratch_max_nbytes / (2 * team->total_images);
-    team->pami.scratch_space = gasneti_malloc(scratch_size);
-    team->pami.counts = gasneti_malloc(2 * sizeof(int) * team->total_ranks);
-    team->pami.displs = team->pami.counts + team->total_ranks;
-    team->pami.prev_nbytes = 0;
-    team->pami.tmp_addr = NULL;
-    team->pami.barrier_phase = 0;
-    gasneti_atomic_set(&team->pami.barrier_counter[0], team->my_images, 0);
-    gasneti_atomic_set(&team->pami.barrier_counter[1], team->my_images, 0);
-  #endif
 }
 
 #endif /* GASNET_PAMI_NATIVE_COLL */

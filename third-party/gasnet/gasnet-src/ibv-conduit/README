@@ -77,12 +77,12 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   reduction in latencies by allowing some locking operations to
   compile away.
 
-  By default, ibv-conduit will open at most two Host Channel Adapters
-  (HCAs) on a node.  To utilize more than two HCAs in a host, specify
-  '--with-ibv-max-hcas=N' at configure time.  However, if you
-  have only a single HCA per host, then you may be able to get a small
-  performance improvement by disabling multi-rail support with
-  '--disable-ibv-multirail' at configure time.
+  By default, each ibv-conduit process in a GASNet job will open at most
+  one Host Channel Adapter (HCA).  To allow a process to utilize more
+  than one HCA, specify '--enable-ibv-multirail' at configure time,
+  which will enable use of up to two HCAs.  To use more than two,
+  additionally specify '--with-ibv-max-hcas=N' at configure time (where
+  'N' is the number of HCAs to support per process).
   
   When using dynamic connections (see GASNET_CONNECT_DYNAMIC env var,
   below) there is an extra thread spawned to block for the arrival of
@@ -537,7 +537,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     either copy the data into bounce buffers, or block until remote
     completion is signaled by the HCA.  Such transfers up to and including
     size GASNET_NONBULKPUT_BOUNCE_LIMIT are performed using bounce buffers
-    while larger transfers are transfered using blocking PUTs.
+    while larger transfers are transferred using blocking PUTs.
     The default value is 64KB.
     A value of zero disables use of bounce buffers.
     
@@ -567,9 +567,9 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     - GASNET_USE_SRQ unset or explicitly set to -1:
         SRQ is used ONLY if GASNET_RBUF_COUNT is less than the number
         of receive buffers required for the non-SRQ case.
-    - GASNET_USE_SRQ <= gasnet_nodes()  [includes GASNET_USE_SRQ == 1]
+    - GASNET_USE_SRQ <= job size  [includes GASNET_USE_SRQ == 1]
         SRQ is used and GASNET_RBUF_COUNT is enforced as a maximum
-    - GASNET_USE_SRQ > gasnet_nodes()
+    - GASNET_USE_SRQ > job size
         SRQ is NOT used and GASNET_RBUF_COUNT is ignored
     Note that the interpretation of the values 0 and 1 allow one to use
     this setting as a simple boolean if desired.
@@ -590,7 +590,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     operations are required at the Verbs layer.  However, some older Mellanox
     HCAs performed poorly with large pinned regions.  In general there is no
     need to adjust this parameter.
-    The default is to use largest size supportd by the HCA(s).
+    The default is to use largest size supported by the HCA(s).
 
   Resource usage parameters:
   -------------------------
@@ -843,14 +843,14 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
 @ Section: Multi-rail Support @
 
-  Multi-rail support is ON in GASNet ibv-conduit by default.
+  Multi-rail support is OFF in GASNet ibv-conduit by default.
 
-  By default, GASNet ibv-conduit will open up to two InfiniBand Host
-  Channel Adapters (HCAs) per node, and will stripe communications over
-  one active port on each adapter.  See the sections "Build-time
-  Configuration" and "Runtime Configuration" for information on
-  how to open more or fewer HCAs/ports, or to control which HCAs/ports
-  are used.
+  By default, ibv-conduit will use only the first active port on the
+  first active InfiniBand Host Channel Adapter (HCA).  However, if more
+  than one HCA port is enabled for use, ibv-conduit will stripe
+  communications over them.  See the sections "Build-time Configuration"
+  and "Runtime Configuration" for information on how to enable use of
+  more HCAs/ports, or to control which HCAs/ports are used.
 
   To first order, the use of multiple ports or multiple adapters will
   yield increases in both bandwidth (good) and software overhead (bad).
@@ -985,7 +985,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
 + Bug 3428
   In this release the code used to checksum AMRDMA traffic is known to be
-  incorrect under agressive compiler optimization.  However, an alternative
+  incorrect under aggressive compiler optimization.  However, an alternative
   implementation is currently enabled for the only compiler (PathScale)
   known to manifest the problem.
   The most up-to-date information on this bug is maintained at:
@@ -1057,7 +1057,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   and to poll for credits when needed to send a REQUEST.  It is also
   simple to ensure the exactly-one-reply.  We already ensure that
   at-most-one reply is sent by the request handler.  Additionally we
-  must check upon handler return for the case that the request hander
+  must check upon handler return for the case that the request handler
   sent no reply, and send one implicitly.  We just use a special
   "system category" handler, gasnetc_SYS_ack, which doesn't even run
   a handler.
@@ -1115,7 +1115,7 @@ Notes for myself for extended API:
   The second counter is for request completion and should be non-NULL
   for every sbuf for which request completion would be checked (all
   gets & puts, but not the Longs).  For nb and nbi the counter is
-  waited on at sync-time.  Therefore the explicit handle is a struct
+  waited on at sync-time.  Therefore the explicit event is a struct
   containing the counter.
   
 + Similar to the reference implementation's cut-off between Mediums
@@ -1152,8 +1152,6 @@ Notes for myself for extended API:
 	get_nbi		X     S
 	get_nb_bulk	X     S
 	get_nbi_bulk	X     S
-	get_nb_val	X     S
-	get_nbi_val (DOES NOT EXIST)
 	get		X     I
 	get_bulk	X     I
 	get_val		X     I
@@ -1169,7 +1167,7 @@ Notes for myself for extended API:
     an automatic variable).
   - For the implicit-handle forms the request counter is in the
     thread-specific data, possibly in an access-region.
-  - For the explicit handle forms the request counter must be allocated
+  - For the explicit event forms the request counter must be allocated
     from some pool, requiring some memory management work.  This is
     done with a modification to the code from the reference
     implementation, and uses thread-local data to avoid locks.
@@ -1314,7 +1312,7 @@ _body code from a signal handler context if we can avoided it.
 Therefore we inspect the signal handler and skip the raise() call if
 the handler is the gasnet default handler, SIG_DFL or SIG_IGN.  After
 the raise() returns, or is skipped all together, we are certain that
-the user's hander, if any, has executed and has NOT called
+the user's handler, if any, has executed and has NOT called
 gasnet_exit().  If a user handler had called gasnet_exit(), then
 raise() would not have returned.  So, if we reach the code after the
 possible raise(), we proceed to call gasnetc_exit_body() and _tail to

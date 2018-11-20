@@ -15,7 +15,7 @@
 		
 *************************************************************/
 
-#include "gasnet.h"
+#include <gasnetex.h>
 
 uintptr_t maxsz = 0;
 #ifndef TEST_SEGSZ
@@ -23,6 +23,11 @@ uintptr_t maxsz = 0;
 #endif
 
 #include "test.h"
+
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
 
 int myproc;
 int numprocs;
@@ -73,7 +78,7 @@ void do_test(void) {GASNET_BEGIN_FUNCTION();
 		GASNETT_TRACE_SETSOURCELINE(__FILE__,__LINE__);
 		begin = TIME();
 		for (i = 0; i < pages; ++i) {
-		    gasnet_put(peerproc, rem_addr[i], loc_addr[i], nbytes);
+		    gex_RMA_PutBlocking(myteam, peerproc, rem_addr[i], loc_addr[i], nbytes, 0);
 		}
 		end = TIME();
 		printf("Proc %3i - %5i bytes, seed %10u, %7i pages: %12i us total, %9.3f us ave. per page\n",
@@ -88,7 +93,7 @@ void do_test(void) {GASNET_BEGIN_FUNCTION();
 int main(int argc, char **argv) {
 
     /* call startup */
-    GASNET_Safe(gasnet_init(&argc, &argv));
+    GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testrand", &argc, &argv, 0));
 
     /* parse arguments */
     if (argc > 1) nbytes = atoi(argv[1]);
@@ -104,13 +109,13 @@ int main(int argc, char **argv) {
     #ifdef GASNET_SEGMENT_EVERYTHING
       if (maxsz > TEST_SEGSZ) { MSG("maxsz must be <= %"PRIuPTR" on GASNET_SEGMENT_EVERYTHING",(uintptr_t)TEST_SEGSZ); gasnet_exit(1); }
     #endif
-    GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
+    GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
     test_init("testrand",1, "nbytes (segsz) (seed)");
     if ((argc < 2) || (argc > 4)) test_usage();
 
     /* get SPMD info */
-    myproc = gasnet_mynode();
-    numprocs = gasnet_nodes();
+    myproc = gex_TM_QueryRank(myteam);
+    numprocs = gex_TM_QuerySize(myteam);
     
     /* Only allow even number for numprocs */
     if (numprocs % 2 != 0) {

@@ -4,26 +4,19 @@
  * Terms of use are as specified in license.txt
  */
 
-#ifndef _IN_GASNET_H
-  #error This file is not meant to be included directly- clients should include gasnet.h
+#ifndef _IN_GASNETEX_H
+  #error This file is not meant to be included directly- clients should include gasnetex.h
 #endif
 
 #ifndef _GASNET_EXTENDED_FWD_H
 #define _GASNET_EXTENDED_FWD_H
 
-#define GASNET_EXTENDED_VERSION      1.2
+#define GASNET_EXTENDED_VERSION      2.0
 #define GASNET_EXTENDED_VERSION_STR  _STRINGIFY(GASNET_EXTENDED_VERSION)
 #define GASNET_EXTENDED_NAME         SMP
 #define GASNET_EXTENDED_NAME_STR     _STRINGIFY(GASNET_EXTENDED_NAME)
 
-
-#define _GASNET_HANDLE_T
-/*  an opaque type representing a non-blocking operation in-progress initiated using the extended API */
-struct _gasnete_op_t;
-typedef struct _gasnete_op_t *gasnet_handle_t;
-#define GASNET_INVALID_HANDLE ((gasnet_handle_t)0)
 #define GASNETI_EOP_IS_HANDLE 1
-#define GASNETI_DISABLE_EOP_INTERFACE 1
 
   /* if conduit-internal threads may call the Extended API and/or they may run
      progress functions, then define GASNETE_CONDUIT_THREADS_USING_TD to the
@@ -52,17 +45,16 @@ typedef struct _gasnete_op_t *gasnet_handle_t;
 #define GASNETE_CONDUIT_STATS(CNT,VAL,TIME)  \
         GASNETI_VIS_STATS(CNT,VAL,TIME)      \
         GASNETI_COLL_STATS(CNT,VAL,TIME)     \
+        GASNETI_RATOMIC_STATS(CNT,VAL,TIME)  \
         CNT(C, DYNAMIC_THREADLOOKUP, cnt)    
 
 #define GASNETE_AUXSEG_DECLS \
     extern gasneti_auxseg_request_t gasnete_barr_auxseg_alloc(gasnet_seginfo_t *auxseg_info);
 #define GASNETE_AUXSEG_FNS() gasnete_barr_auxseg_alloc, 
 
-/* NOT using the AM-based implementation of get/put/memset */
-#define GASNETE_USING_REF_EXTENDED_GET_BULK 0
-#define GASNETE_USING_REF_EXTENDED_PUT_BULK 0
+/* NOT using the AM-based implementation of get/put */
+#define GASNETE_USING_REF_EXTENDED_GET      0
 #define GASNETE_USING_REF_EXTENDED_PUT      0
-#define GASNETE_USING_REF_EXTENDED_MEMSET   0
 
 /* Compile out VIS algorithms that should never be used in shared memory */
 #define GASNETE_USE_AMPIPELINE 0

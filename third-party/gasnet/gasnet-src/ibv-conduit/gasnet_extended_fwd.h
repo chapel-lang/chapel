@@ -4,8 +4,8 @@
  * Terms of use are as specified in license.txt
  */
 
-#ifndef _IN_GASNET_H
-  #error This file is not meant to be included directly- clients should include gasnet.h
+#ifndef _IN_GASNETEX_H
+  #error This file is not meant to be included directly- clients should include gasnetex.h
 #endif
 
 #ifndef _GASNET_EXTENDED_FWD_H
@@ -13,7 +13,7 @@
 
 #include <firehose_trace.h>
 
-#define GASNET_EXTENDED_VERSION      1.14
+#define GASNET_EXTENDED_VERSION      2.0
 #define GASNET_EXTENDED_VERSION_STR  _STRINGIFY(GASNET_EXTENDED_VERSION)
 #define GASNET_EXTENDED_NAME         IBV
 #define GASNET_EXTENDED_NAME_STR     _STRINGIFY(GASNET_EXTENDED_NAME)
@@ -22,11 +22,6 @@
 #define GASNETE_COLL_CONDUIT_BARRIERS \
         GASNETE_COLL_BARRIER_IBDISSEM
 
-#define _GASNET_HANDLE_T
-/*  an opaque type representing a non-blocking operation in-progress initiated using the extended API */
-struct _gasnete_op_t;
-typedef struct _gasnete_op_t *gasnet_handle_t;
-#define GASNET_INVALID_HANDLE ((gasnet_handle_t)0)
 #define GASNETI_EOP_IS_HANDLE 1
 
   /* if conduit-internal threads may call the Extended API and/or they may run
@@ -47,6 +42,7 @@ typedef struct _gasnete_op_t *gasnet_handle_t;
 #define GASNETE_CONDUIT_STATS(CNT,VAL,TIME)  \
         GASNETI_VIS_STATS(CNT,VAL,TIME)      \
 	GASNETI_COLL_STATS(CNT,VAL,TIME)     \
+        GASNETI_RATOMIC_STATS(CNT,VAL,TIME)  \
 	GASNETI_FIREHOSE_STATS(CNT,VAL,TIME) \
         CNT(C, DYNAMIC_THREADLOOKUP, cnt)           
 
@@ -55,33 +51,36 @@ typedef struct _gasnete_op_t *gasnet_handle_t;
 #define GASNETE_AUXSEG_FNS() gasnete_barr_auxseg_alloc, 
 
 /* We perform these blocking ops w/o the overhead of eop alloc/free: */
-#define GASNETI_DIRECT_GET_BULK 1
-#define GASNETI_DIRECT_PUT_BULK 1
+#define GASNETI_DIRECT_BLOCKING_GET 1
+#define GASNETI_DIRECT_BLOCKING_PUT 1
 
-#define GASNETE_EOP_COUNTED 1
-#define GASNETE_EXTENDED_NEEDS_CORE 1
-
-/* Configure use of AM-based implementation of get/put/memset */
+/* Configure use of AM-based implementation of get/put */
 /* NOTE: Barriers, Collectives, VIS may use GASNETE_USING_REF_* in algorithm selection */
-#define GASNETE_USING_REF_EXTENDED_MEMSET   1
-
-/* in order to use reference memset with our conduit-specific eop */
-#define GASNETE_AMREF_USE_MARKDONE          1
-
-/* Conduit implements memset directly via amref: */
-#define gasnete_amref_memset_nb     gasnete_memset_nb
-#define gasnete_amref_memset_nbi    gasnete_memset_nbi
+// We want to call the amref versions for out-of-segment cases
+#define GASNETE_BUILD_AMREF_GET_HANDLERS 1
+#define GASNETE_BUILD_AMREF_GET 1
+#define GASNETE_BUILD_AMREF_PUT_HANDLERS 1
+#define GASNETE_BUILD_AMREF_PUT 1
 
 #if !defined(GASNET_DISABLE_MUNMAP_DEFAULT) && PLATFORM_ARCH_64
 #define GASNET_DISABLE_MUNMAP_DEFAULT 1 // default to disabling munmap for bug 955
 #endif
 // this VIS algorithm uses put/get with local-side buffers that are dynamically malloced and freed, 
 // thus is only safe if we disabled malloc munmap to avoid running afowl of firehose bug3364/bug955
+#ifdef PLATFORM_OS_SOLARIS // Does not suffer from bug 955
+#define GASNETE_USE_REMOTECONTIG_GATHER_SCATTER_DEFAULT 1
+#else // Linux and others, assume the worst
 #define GASNETE_USE_REMOTECONTIG_GATHER_SCATTER_DEFAULT gasneti_malloc_munmap_disabled
+#endif
 
 // Configure default VIS tuning knobs
 // 12/15/17: Measurements on multiple systems show 256 is a good value
 #define GASNETE_VIS_MAXCHUNK_DEFAULT 256
+
+// Enable inclusion of FCA in support extended-ref/coll/gasnet_coll_internal.h
+#if GASNETI_FCA_ENABLED && GASNET_SEQ
+#define GASNETI_USE_FCA 1
+#endif
 
 #endif
 

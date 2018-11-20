@@ -7,8 +7,8 @@
 #ifndef _GASNET_VIS_INTERNAL_H
 #define _GASNET_VIS_INTERNAL_H
 
+#define GASNETI_NEED_GASNET_VIS_H 1
 #include <gasnet_internal.h>
-#include <gasnet_vis.h>
 
 /*---------------------------------------------------------------------------------*/
 /* ***  VIS state *** */
@@ -18,18 +18,73 @@ typedef struct gasneti_vis_op_S {
   struct gasneti_vis_op_S *next;
   uint8_t type;
   void *addr;
-  #if GASNETI_HAVE_EOP_INTERFACE
-    gasneti_eop_t *eop;
-    gasneti_iop_t *iop;
-  #endif
+  gasneti_eop_t *eop;
+  gasneti_iop_t *iop;
   gasneti_weakatomic_t packetcnt;
   size_t count;
   size_t len;
-  gasnet_handle_t handle;
+  gex_Event_t event;
 } gasneti_vis_op_t;
+
+#define SMD_SELF  0
+#define SMD_PEER 1
+// gasneti_vis_smd_dim_t represents the meta data parameters for a particular dimension
+typedef struct {
+  size_t    count;     // dimensional extent
+  ptrdiff_t stride[2]; // dimensional stride in bytes, [0]=self [1]=peer
+} gasneti_vis_smd_dim_t;
+
+// gasneti_vis_smd_t represents complete information about a strided transfer
+// in a format convenient for applying transformations
+typedef struct {
+  // -----------------------------------------------------------------------
+  // post-analysis stats:
+  #if GASNET_DEBUG
+    int have_stats;             // true iff the fields in this section are valid
+  #endif
+  size_t totalsz;               // the total bytes of data in the transfer
+  size_t elemcnt;               // number of elements in the transfer, aka dual-lcontig_segments
+                                // Note that post-optimization the following properties hold:
+                                //   dual-lcontig_sz == elemsz
+                                //   dual-lcontig_dims == 0
+  size_t lcontig_dims[2];       // highest stridelevel with linear contiguity in this region
+                                // eg. zero if only the bottom level is linear contiguous,
+                                // and stridelevels if the entire region is linear contiguous
+  size_t lcontig_sz[2];         // size of the linear contiguous segments in this region
+  size_t lcontig_segments[2];   // number of linear contiguous segments in this region
+  // -----------------------------------------------------------------------
+  // normative metadata:
+  size_t stridelevels;          // dimensional cardinality
+  size_t elemsz;                // dual-lcontig_sz (post-optimization)
+  void  *addr[2];               // base addresses [0]=self [1]=peer
+  gasneti_vis_smd_dim_t dim[1]; // per-dimension metadata,
+                                // actually [stridelevels] entries (flexible array member)
+  // DO NOT PUT ANYTHING HERE
+} gasneti_vis_smd_t;
+
+// gasneti_strided_op_t "is a" gasneti_vis_op_t that represents a strided operation in flight
+// the embedded metadata may have been optimized/transformed relative to user's input
+typedef struct {
+  gasneti_vis_op_t visop; // must be first
+  void *bouncebuf;        // separate subobject to free on destruction, otherwise NULL
+  void *scratch;          // scratch space at the end of this object
+  gasneti_vis_smd_t smd;  // variable-length strided metadata, must be last!
+  // DO NOT PUT ANYTHING HERE
+} gasneti_strided_op_t;
+
+/* per-EP state for VIS */
+typedef struct {
+  gasneti_mutex_t _poll_lock;
+  gasneti_vis_op_t _active_ops;
+} gasnete_vis_epdata_t;
+extern gasnete_vis_epdata_t gasnete_vis_epdata_THUNK;
 
 /* per-thread state for VIS */
 typedef struct {
+  gasnete_vis_pcinfo_t pcinfo; // must come first for use in public header
+
+  // visop management
+  // TODO-EX: Rework this
   gasneti_vis_op_t *active_ops;
   gasneti_vis_op_t *free_ops;
   int progressfn_active;
@@ -62,10 +117,11 @@ gasnete_vis_threaddata_t *gasnete_vis_new_threaddata(void) {
   return result;
 }
 
-/* gasneti_threaddata_t might not be defined yet, but VIS ptr must be 3rd */
-#define GASNETE_VIS_MYTHREAD (GASNETI_MYTHREAD->gasnete_vis_threaddata ? \
-        GASNETI_MYTHREAD->gasnete_vis_threaddata :                       \
-        (GASNETI_MYTHREAD->gasnete_vis_threaddata = gasnete_vis_new_threaddata()))
+#define _GASNETE_VIS_MYTHREAD(mythread)     \
+        (mythread->gasnete_vis_threaddata ? \
+         mythread->gasnete_vis_threaddata : \
+        (mythread->gasnete_vis_threaddata = gasnete_vis_new_threaddata()))
+#define GASNETE_VIS_MYTHREAD        _GASNETE_VIS_MYTHREAD(GASNETI_MYTHREAD)
 
 #define GASNETI_VIS_CAT_PUTV_GATHER       1
 #define GASNETI_VIS_CAT_GETV_SCATTER      2
@@ -79,10 +135,11 @@ gasnete_vis_threaddata_t *gasnete_vis_new_threaddata(void) {
 #define GASNETI_VIS_CAT_GETI_AMPIPELINE   10
 #define GASNETI_VIS_CAT_PUTS_AMPIPELINE   11
 #define GASNETI_VIS_CAT_GETS_AMPIPELINE   12
+#define GASNETI_VIS_CAT_PUTPC_CHAIN       13
 
 /*---------------------------------------------------------------------------------*/
 /* VISOP manipulation */
-#if GASNETI_HAVE_EOP_INTERFACE
+
 /* create a dummy eop/iop based on synctype, save it in visop */
 #define GASNETE_VISOP_SETUP(visop, synctype, isget) do {              \
     if (synctype == gasnete_synctype_nbi) {                           \
@@ -98,16 +155,16 @@ gasnete_vis_threaddata_t *gasnete_vis_new_threaddata(void) {
 #define GASNETE_VISOP_RETURN_VOLATILE(eop, synctype) do {            \
     switch (synctype) {                                              \
       case gasnete_synctype_b: {                                     \
-        gasnet_handle_t h = gasneti_eop_to_handle(eop);              \
-        gasnete_wait_syncnb(h);                                      \
-        return GASNET_INVALID_HANDLE;                                \
+        gex_Event_t h = gasneti_eop_to_event(eop);                   \
+        gasnete_wait(h GASNETI_THREAD_PASS);                         \
+        return GEX_EVENT_INVALID;                                    \
       }                                                              \
       case gasnete_synctype_nb:                                      \
-        return gasneti_eop_to_handle(eop);                           \
+        return gasneti_eop_to_event(eop);                            \
       case gasnete_synctype_nbi:                                     \
-        return GASNET_INVALID_HANDLE;                                \
-      default: gasneti_fatalerror("bad synctype");                   \
-        return GASNET_INVALID_HANDLE; /* avoid warning on MIPSPro */ \
+        return GEX_EVENT_INVALID;                                    \
+      default: gasneti_unreachable_error(("bad synctype: 0x%x",(int)synctype)); \
+        return GEX_EVENT_INVALID; /* avoid warning on MIPSPro */     \
     }                                                                \
 } while (0)
 
@@ -120,20 +177,33 @@ gasnete_vis_threaddata_t *gasnete_vis_new_threaddata(void) {
     if (visop->eop) gasneti_eop_markdone(visop->eop); \
     else gasneti_iop_markdone(visop->iop, 1, isget);  \
   } while (0)
-#else
-#define GASNETE_ERROR_NO_EOP_INTERFACE() gasneti_fatalerror("Tried to invoke GASNETE_VISOP_SIGNAL without GASNETI_HAVE_EOP_INTERFACE at %s:%i",__FILE__,__LINE__)
-#define GASNETE_VISOP_SIGNAL(visop, isget) GASNETE_ERROR_NO_EOP_INTERFACE()
-#define GASNETE_VISOP_SIGNAL(visop, isget) GASNETE_ERROR_NO_EOP_INTERFACE()
-#define GASNETE_VISOP_SIGNAL(visop, isget) GASNETE_ERROR_NO_EOP_INTERFACE()
-#endif
+
+// ops with a single completion event
+#define GASNETE_START_ONEOP(op, handle, synctype, isget) do {         \
+    if (synctype == gasnete_synctype_nbi) {                           \
+      op = (void *)gasneti_iop_register(1,isget GASNETI_THREAD_PASS); \
+      handle = GEX_EVENT_INVALID;                                     \
+    } else {                                                          \
+      op = (void *)gasneti_eop_create(GASNETI_THREAD_PASS_ALONE);     \
+      handle = gasneti_eop_to_event((gasneti_eop_t *)op);             \
+    }                                                                 \
+  } while (0)
+#define GASNETE_RETURN_ONEOP(handle, synctype) do {                   \
+    if_pf (synctype == gasnete_synctype_b) {                          \
+      gasnete_wait(handle GASNETI_THREAD_PASS);                       \
+      return GEX_EVENT_INVALID;                                       \
+    } else return handle;                                             \
+  } while (0)
+      
 
 /* do GASNETE_VISOP_SETUP, push the visop on the thread-specific list 
    and do GASNETE_VISOP_RETURN */
-#define GASNETE_PUSH_VISOP_RETURN(td, visop, synctype, isget) do {   \
+#define GASNETE_PUSH_VISOP_RETURN(td, visop, synctype, isget, extra) do {   \
     GASNETE_VISOP_SETUP(visop, synctype, isget);                     \
     GASNETI_PROGRESSFNS_ENABLE(gasneti_pf_vis,COUNTED);              \
     visop->next = td->active_ops; /* push on thread-specific list */ \
     td->active_ops = visop;                                          \
+    extra;                                                           \
     GASNETE_VISOP_RETURN(visop, synctype);                           \
 } while (0)
 /*---------------------------------------------------------------------------------*/
@@ -141,50 +211,108 @@ gasnete_vis_threaddata_t *gasnete_vis_new_threaddata(void) {
 /*---------------------------------------------------------------------------------*/
 /* helper for vis functions implemented atop other GASNet operations
    start a recursive NBI access region, if appropriate */
-#define GASNETE_START_NBIREGION(synctype, islocal) do {    \
-  if (synctype != gasnete_synctype_nbi && !islocal)        \
-    gasnete_begin_nbi_accessregion(1 GASNETI_THREAD_PASS); \
+#define GASNETE_START_NBIREGION(synctype) do {               \
+  if (synctype != gasnete_synctype_nbi)                      \
+    gasnete_begin_nbi_accessregion(0,1 GASNETI_THREAD_PASS); \
   } while(0)
 /* finish a region started with GASNETE_START_NBIREGION,
-   block if required, and return the appropriate handle */
-#define GASNETE_END_NBIREGION_AND_RETURN(synctype, islocal) do {                      \
-    if (islocal) return GASNET_INVALID_HANDLE;                                        \
+   block if required, and return the appropriate event */
+#define GASNETE_END_NBIREGION_AND_RETURN(synctype) do {                               \
     switch (synctype) {                                                               \
       case gasnete_synctype_nb:                                                       \
-        return gasnete_end_nbi_accessregion(GASNETI_THREAD_PASS_ALONE);               \
+        return gasnete_end_nbi_accessregion(0 GASNETI_THREAD_PASS);                   \
       case gasnete_synctype_b:                                                        \
-        gasnete_wait_syncnb(gasnete_end_nbi_accessregion(GASNETI_THREAD_PASS_ALONE)); \
-        return GASNET_INVALID_HANDLE;                                                 \
+        gasnete_wait(gasnete_end_nbi_accessregion(0 GASNETI_THREAD_PASS) GASNETI_THREAD_PASS); \
+        return GEX_EVENT_INVALID;                                                     \
       case gasnete_synctype_nbi:                                                      \
-        return GASNET_INVALID_HANDLE;                                                 \
-      default: gasneti_fatalerror("bad synctype");                                    \
-        return GASNET_INVALID_HANDLE; /* avoid warning on MIPSPro */                  \
+        return GEX_EVENT_INVALID;                                                     \
+      default: gasneti_unreachable_error(("bad synctype: 0x%x",(int)synctype));       \
+        return GEX_EVENT_INVALID; /* avoid warning on MIPSPro */                      \
     }                                                                                 \
   } while(0)
 
-#define GASNETE_PUT_INDIV(islocal, dstnode, dstaddr, srcaddr, nbytes) do {      \
-    gasneti_assert(nbytes > 0);                                                 \
-    gasneti_boundscheck_allowoutseg(dstnode, dstaddr, nbytes);                  \
-    gasneti_assert(islocal == (dstnode == gasneti_mynode));                     \
-    if (islocal) GASNETI_MEMCPY((dstaddr), (srcaddr), (nbytes));                \
-    else gasnete_put_nbi_bulk((dstnode), (dstaddr), (srcaddr), (nbytes)         \
-                                GASNETI_THREAD_PASS);                           \
+#define GASNETE_PUT_INDIV(tm, rank, dstaddr, srcaddr, nbytes, lc_opt) do { \
+    gasneti_assert((nbytes) > 0);                                       \
+    gasneti_boundscheck_allowoutseg((tm), (rank), (dstaddr), (nbytes)); \
+    gasnete_put_nbi((tm), (rank), (dstaddr), (srcaddr), (nbytes),       \
+                         (lc_opt), 0 GASNETI_THREAD_PASS);              \
   } while (0)
 
-#define GASNETE_GET_INDIV(islocal, dstaddr, srcnode, srcaddr, nbytes) do {      \
-    gasneti_assert(nbytes > 0);                                                 \
-    gasneti_boundscheck_allowoutseg(srcnode, srcaddr, nbytes);                  \
-    gasneti_assert(islocal == (srcnode == gasneti_mynode));                     \
-    if (islocal) GASNETI_MEMCPY((dstaddr), (srcaddr), (nbytes));                \
-    else gasnete_get_nbi_bulk((dstaddr), (srcnode), (srcaddr), (nbytes)         \
-                                GASNETI_THREAD_PASS);                           \
+#define GASNETE_GET_INDIV(tm, rank, dstaddr, srcaddr, nbytes) do {      \
+    gasneti_assert((nbytes) > 0);                                       \
+    gasneti_boundscheck_allowoutseg((tm), (rank), (srcaddr), (nbytes)); \
+    gasnete_get_nbi((tm), (dstaddr), (rank), (srcaddr), (nbytes),       \
+                         0 GASNETI_THREAD_PASS);                        \
   } while (0)
 
+// Put/get for degenerate case, where this single op represents the entire operation
+// Casts from int -> gex_Event_t in NBI/Blocking cases are valid because they only
+// care about zero versus non-zero.
+// NOTE: cannot use gasnete_* variants here, as they are currently non-functional on smp/nopshm
+
+#define GASNETE_PUT_DEGEN(retval, synctype, tm, rank, dstaddr, srcaddr, nbytes, flags) do { \
+    gasneti_assert((nbytes) > 0);                                                   \
+    gasneti_boundscheck_allowoutseg((tm), (rank), (dstaddr), (nbytes));             \
+    switch (synctype) {                                                             \
+      case gasnete_synctype_nb: {                                                   \
+        gex_Event_t _lc_dummy;                                                      \
+        (retval) = _gex_RMA_PutNB ((tm), (rank), (dstaddr), (srcaddr), (nbytes),    \
+                    (((flags) & GEX_FLAG_ENABLE_LEAF_LC) ? &_lc_dummy : GEX_EVENT_DEFER), \
+                    (flags) GASNETI_THREAD_PASS);                                   \
+        break; }                                                                    \
+      case gasnete_synctype_nbi:                                                    \
+        (retval) = (gex_Event_t)(intptr_t)                                          \
+                   _gex_RMA_PutNBI((tm), (rank), (dstaddr), (srcaddr), (nbytes),    \
+                    (((flags) & GEX_FLAG_ENABLE_LEAF_LC) ? GEX_EVENT_GROUP : GEX_EVENT_DEFER),\
+                    (flags) GASNETI_THREAD_PASS);                                   \
+        break;                                                                      \
+      case gasnete_synctype_b:                                                      \
+        (retval) = (gex_Event_t)(intptr_t)                                          \
+              _gex_RMA_PutBlocking((tm), (rank), (dstaddr), (srcaddr), (nbytes),    \
+                                          (flags) GASNETI_THREAD_PASS);             \
+        break;                                                                      \
+      default: gasneti_unreachable();                                               \
+    }                                                                               \
+  } while (0)
+
+#define GASNETE_GET_DEGEN(retval, synctype, tm, dstaddr, rank, srcaddr, nbytes, flags) do { \
+    gasneti_assert((nbytes) > 0);                                                   \
+    gasneti_boundscheck_allowoutseg((tm), (rank), (srcaddr), (nbytes));             \
+    switch (synctype) {                                                             \
+      case gasnete_synctype_nb:                                                     \
+        (retval) = _gex_RMA_GetNB ((tm), (dstaddr), (rank), (srcaddr), (nbytes),    \
+                                          (flags) GASNETI_THREAD_PASS);             \
+        break;                                                                      \
+      case gasnete_synctype_nbi:                                                    \
+        (retval) = (gex_Event_t)(intptr_t)                                          \
+                   _gex_RMA_GetNBI((tm), (dstaddr), (rank), (srcaddr), (nbytes),    \
+                                          (flags) GASNETI_THREAD_PASS);             \
+        break;                                                                      \
+      case gasnete_synctype_b:                                                      \
+        (retval) = (gex_Event_t)(intptr_t)                                          \
+              _gex_RMA_GetBlocking((tm), (dstaddr), (rank), (srcaddr), (nbytes),    \
+                                          (flags) GASNETI_THREAD_PASS);             \
+        break;                                                                      \
+      default: gasneti_unreachable();                                               \
+    }                                                                               \
+  } while (0)
 
 /*---------------------------------------------------------------------------------*/
 /* packing/unpacking helpers */
 #define _GASNETE_PACK_HELPER(packed, unpacked, sz)   GASNETI_MEMCPY((packed), (unpacked), (sz))
 #define _GASNETE_UNPACK_HELPER(packed, unpacked, sz) GASNETI_MEMCPY((unpacked), (packed), (sz))
+
+// GASNETE_VIS_MIN_PACKBUFFER is used to round up packing buffers to a large enough size
+// so that glibc malloc will hopefully give us memory with better access behavior, noticeably 
+// improving throughput on systems like KNL.
+#ifndef GASNETE_VIS_MIN_PACKBUFFER
+#define GASNETE_VIS_MIN_PACKBUFFER 8192
+#endif
+
+GASNETI_INLINE(gasnete_visbuf_malloc) GASNETI_MALLOC
+void *gasnete_visbuf_malloc(size_t _sz) {
+  return gasneti_malloc(MAX(_sz,GASNETE_VIS_MIN_PACKBUFFER));
+}
 
 /*---------------------------------------------------------------------------------*/
 /* packetization */
@@ -196,38 +324,30 @@ typedef struct {
 } gasnete_packetdesc_t;
 
 extern void gasnete_packetize_verify(gasnete_packetdesc_t *pt, size_t ptidx, int lastpacket,
-                              size_t count, size_t len, gasnet_memvec_t const *list);
+                              size_t count, size_t len, gex_Memvec_t const *list);
 
 /*---------------------------------------------------------------------------------*/
-/* GASNETE_METAMACRO_ASC/DESC##maxval(fn) is a meta-macro that iteratively expands the fn_INT(x,y) macro 
-   with ascending or descending integer arguments. The base case (value zero) is expanded as fn_BASE().
-   maxval must be an integer in the range 0..GASNETE_METAMACRO_DEPTH_MAX
-   This would be cleaner if we could use recursive macro expansion, but it seems at least gcc disallows
-   this - if a macro invocation X(...) is found while expanding a different invocation of X (even with 
-   different arguments), the nested invocation is left unexpanded 
-*/
-
-#define GASNETE_METAMACRO_DEPTH_MAX 8
-
-#define GASNETE_METAMACRO_ASC0(fn) fn##_BASE()
-#define GASNETE_METAMACRO_ASC1(fn) GASNETE_METAMACRO_ASC0(fn) fn##_INT(1,0)
-#define GASNETE_METAMACRO_ASC2(fn) GASNETE_METAMACRO_ASC1(fn) fn##_INT(2,1)
-#define GASNETE_METAMACRO_ASC3(fn) GASNETE_METAMACRO_ASC2(fn) fn##_INT(3,2)
-#define GASNETE_METAMACRO_ASC4(fn) GASNETE_METAMACRO_ASC3(fn) fn##_INT(4,3)
-#define GASNETE_METAMACRO_ASC5(fn) GASNETE_METAMACRO_ASC4(fn) fn##_INT(5,4)
-#define GASNETE_METAMACRO_ASC6(fn) GASNETE_METAMACRO_ASC5(fn) fn##_INT(6,5)
-#define GASNETE_METAMACRO_ASC7(fn) GASNETE_METAMACRO_ASC6(fn) fn##_INT(7,6)
-#define GASNETE_METAMACRO_ASC8(fn) GASNETE_METAMACRO_ASC7(fn) fn##_INT(8,7)
-
-#define GASNETE_METAMACRO_DESC0(fn) fn##_BASE()
-#define GASNETE_METAMACRO_DESC1(fn) fn##_INT(1,0) GASNETE_METAMACRO_DESC0(fn) 
-#define GASNETE_METAMACRO_DESC2(fn) fn##_INT(2,1) GASNETE_METAMACRO_DESC1(fn) 
-#define GASNETE_METAMACRO_DESC3(fn) fn##_INT(3,2) GASNETE_METAMACRO_DESC2(fn) 
-#define GASNETE_METAMACRO_DESC4(fn) fn##_INT(4,3) GASNETE_METAMACRO_DESC3(fn) 
-#define GASNETE_METAMACRO_DESC5(fn) fn##_INT(5,4) GASNETE_METAMACRO_DESC4(fn) 
-#define GASNETE_METAMACRO_DESC6(fn) fn##_INT(6,5) GASNETE_METAMACRO_DESC5(fn) 
-#define GASNETE_METAMACRO_DESC7(fn) fn##_INT(7,6) GASNETE_METAMACRO_DESC6(fn) 
-#define GASNETE_METAMACRO_DESC8(fn) fn##_INT(8,7) GASNETE_METAMACRO_DESC7(fn) 
+// AM helpers
+#if PLATFORM_ARCH_32
+#define HARGS(c32,c64) c32
+#else
+#define HARGS(c32,c64) c64
+#endif
+// GASNETE_VIS_NPAM:
+// 0 = Use FP AM
+// 1 = Use NP AM with a fixed-payload-size algorithm
+// 2 = Use NP AM with a negotiated-payload size
+// Default is 1 for conduits with a "real" NP AM implementation, and 0 elsewhere
+#ifndef GASNETE_VIS_NPAM
+  #if GASNETC_HAVE_NP_REQ_MEDIUM && GASNETC_HAVE_NP_REP_MEDIUM
+    #define GASNETE_VIS_NPAM 1
+  #else
+    #define GASNETE_VIS_NPAM 0
+  #endif
+#endif
+#if !(GASNETE_VIS_NPAM == 0 || GASNETE_VIS_NPAM == 1 || GASNETE_VIS_NPAM == 2)
+#error Incorrect GASNETE_VIS_NPAM definition - must be in {0,1,2}
+#endif
 
 /*---------------------------------------------------------------------------------*/
 

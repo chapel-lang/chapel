@@ -77,7 +77,7 @@ CONDUIT_RUNCMD = %P %N %A
 #CONDUIT_RUNCMD = $(top_builddir)/other/amudp/amudprun -np %N -spawn $${GASNET_SPAWNFN:-L} %P %A
 
 # conduit-specific tests in ../tests directory
-CONDUIT_TESTS = testcxx testtoolscxx
+CONDUIT_TESTS = testcxx testlegacycxx testtoolscxx
 
 # disable MPI tests for udp-*, because we probably don't have an MPI-capable C++ linker
 CONDUIT_TEST_MAKEARGS = MPI_TESTS="" MPI_TESTS_SEQ="" MPI_TESTS_PAR=""
@@ -116,7 +116,7 @@ clean-local: do-clean-local
 install-data-local: do-install-data-local
 uninstall-local: do-uninstall-local
 else
-$(top_srcdir)/gasnet.h: do-error
+$(top_srcdir)/gasnetex.h: do-error
 endif
 
 

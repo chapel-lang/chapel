@@ -4,17 +4,10 @@
  * Terms of use are as specified in license.txt
  */
 
+#include <gasnet_coll_internal.h> // for refbarrier.c
 #include <gasnet_internal.h>
 #include <gasnet_extended_internal.h>
 #include <gasnet_gemini.h>
-#include <gasnet_coll.h>
-
-static const gasnete_eopaddr_t EOPADDR_NIL = { { 0xFF, 0xFF } };
-extern void _gasnete_iop_check(gasnete_iop_t *iop) { gasnete_iop_check(iop); }
-
-#if !GASNETE_EOP_COUNTED
-#error "Build config error: gemini/aries requires GASNETE_EOP_COUNTED"
-#endif
 
 /* ------------------------------------------------------------------------------------ */
 /*
@@ -43,231 +36,6 @@ extern void _gasnete_iop_check(gasnete_iop_t *iop) { gasnete_iop_check(iop); }
 
 /* ------------------------------------------------------------------------------------ */
 /*
-  Op management
-  =============
-*/
-
-/*  allocate more eops */
-GASNETI_NEVER_INLINE(gasnete_eop_alloc,
-static void gasnete_eop_alloc(gasneti_threaddata_t * const thread)) {
-    gasnete_eopaddr_t addr;
-    int bufidx = thread->eop_num_bufs;
-    gasnete_eop_t *buf;
-    int i;
-    gasnete_threadidx_t threadidx = thread->threadidx;
-    if (bufidx == 256) gasneti_fatalerror("GASNet Extended API: Ran out of explicit handles (limit=65535)");
-    thread->eop_num_bufs++;
-    buf = (gasnete_eop_t *)gasneti_calloc(256,sizeof(gasnete_eop_t));
-    gasneti_leak(buf);
-    for (i=0; i < 256; i++) {
-      addr.bufferidx = bufidx;
-      #if GASNETE_SCATTER_EOPS_ACROSS_CACHELINES
-        #ifdef GASNETE_EOP_MOD
-          addr.eopidx = (i+32) % 255;
-        #else
-          { int k = i+32;
-            addr.eopidx = k > 255 ? k - 255 : k;
-          }
-        #endif
-      #else
-        addr.eopidx = i+1;
-      #endif
-      buf[i].threadidx = threadidx;
-      buf[i].addr = addr;
-      #if 0 /* these can safely be skipped when the values are zero */
-        SET_OPSTATE(&(buf[i]),OPSTATE_FREE);
-        SET_OPTYPE(&(buf[i]),OPTYPE_EXPLICIT); 
-       #if GASNETE_EOP_COUNTED
-        buff[i].initiated_cnt = 0;
-       #endif
-      #endif
-      #if GASNETE_EOP_COUNTED
-        gasneti_weakatomic_set(&buf[i].completed_cnt, 0 , 0);
-      #endif
-    }
-     /*  add a list terminator */
-    #if GASNETE_SCATTER_EOPS_ACROSS_CACHELINES
-      #ifdef GASNETE_EOP_MOD
-        buf[223].addr.eopidx = 255; /* modular arithmetic messes up this one */
-      #endif
-      buf[255].addr = EOPADDR_NIL;
-    #else
-      buf[255].addr = EOPADDR_NIL;
-    #endif
-    thread->eop_bufs[bufidx] = buf;
-    addr.bufferidx = bufidx;
-    addr.eopidx = 0;
-    thread->eop_free = addr;
-
-    #if GASNET_DEBUG
-    { /* verify new free list got built correctly */
-      int i;
-      int seen[256];
-      gasnete_eopaddr_t addr = thread->eop_free;
-
-      #if 0
-      if (gasneti_mynode == 0)
-        for (i=0;i<256;i++) {                                   
-          fprintf(stderr,"%i:  %i: next=%i\n",gasneti_mynode,i,buf[i].addr.eopidx);
-          fflush(stderr);
-        }
-        sleep(5);
-      #endif
-
-      gasneti_memcheck(thread->eop_bufs[bufidx]);
-      memset(seen, 0, 256*sizeof(int));
-      for (i=0;i<(bufidx==255?255:256);i++) {                                   
-        gasnete_eop_t *eop;                                   
-        gasneti_assert(!gasnete_eopaddr_isnil(addr));                 
-        eop = GASNETE_EOPADDR_TO_PTR(thread,addr);            
-        gasneti_assert(OPTYPE(eop) == OPTYPE_EXPLICIT);               
-        gasneti_assert(OPSTATE(eop) == OPSTATE_FREE);               
-        gasneti_assert(eop->threadidx == threadidx);                  
-        gasneti_assert(addr.bufferidx == bufidx);
-        gasneti_assert(!seen[addr.eopidx]);/* see if we hit a cycle */
-        seen[addr.eopidx] = 1;
-        addr = eop->addr;                                     
-      }                                                       
-      gasneti_assert(gasnete_eopaddr_isnil(addr)); 
-    }
-    #endif
-}
-
-/*  allocate a new iop */
-GASNETI_NEVER_INLINE(gasnete_iop_alloc,
-static gasnete_iop_t *gasnete_iop_alloc(gasneti_threaddata_t * const thread)) {
-    gasnete_iop_t *iop = (gasnete_iop_t *)gasneti_malloc(sizeof(gasnete_iop_t));
-    gasneti_leak(iop);
-    #if GASNET_DEBUG
-      memset(iop, 0, sizeof(gasnete_iop_t)); /* set pad to known value */
-    #endif
-    SET_OPTYPE((gasnete_op_t *)iop, OPTYPE_IMPLICIT);
-    iop->threadidx = thread->threadidx;
-    iop->initiated_get_cnt = 0;
-    iop->initiated_put_cnt = 0;
-    gasneti_weakatomic_set(&(iop->completed_get_cnt), 0, 0);
-    gasneti_weakatomic_set(&(iop->completed_put_cnt), 0, 0);
-    return iop;
-}
-
-/*  get a new op */
-static
-gasnete_eop_t *_gasnete_eop_new(gasneti_threaddata_t * const thread) {
-  gasnete_eopaddr_t head = thread->eop_free;
-  if_pf (gasnete_eopaddr_isnil(head)) {
-    gasnete_eop_alloc(thread);
-    head = thread->eop_free;
-  }
-  {
-    gasnete_eop_t *eop = GASNETE_EOPADDR_TO_PTR(thread, head);
-    thread->eop_free = eop->addr;
-    eop->addr = head;
-    gasneti_assert(!gasnete_eopaddr_equal(thread->eop_free,head));
-    gasneti_assert(eop->threadidx == thread->threadidx);
-    gasneti_assert(OPTYPE(eop) == OPTYPE_EXPLICIT);
-    gasneti_assert(OPSTATE(eop) == OPSTATE_FREE);
-  #if GASNET_DEBUG || !GASNETE_EOP_COUNTED
-    SET_OPSTATE(eop, OPSTATE_INFLIGHT);
-  #endif
-    return eop;
-  }
-}
-
-/*  get a new op AND mark it in flight */
-GASNETI_INLINE(gasnete_eop_new)
-gasnete_eop_t *gasnete_eop_new(gasneti_threaddata_t * const thread) {
-  gasnete_eop_t *eop = _gasnete_eop_new(thread);
-#if GASNETE_EOP_COUNTED
-  eop->initiated_cnt++;
-#endif
-  return eop;
-}
-
-/*  get a new iop */
-static
-gasnete_iop_t *gasnete_iop_new(gasneti_threaddata_t * const thread) {
-  gasnete_iop_t *iop = thread->iop_free;
-  if_pt (iop) {
-    thread->iop_free = iop->next;
-    gasneti_memcheck(iop);
-    gasneti_assert(OPTYPE(iop) == OPTYPE_IMPLICIT);
-    gasneti_assert(iop->threadidx == thread->threadidx);
-    /* If using trace or stats, want meaningful counts when tracing NBI access regions */
-    #if GASNETI_STATS_OR_TRACE
-      iop->initiated_get_cnt = 0;
-      iop->initiated_put_cnt = 0;
-      gasneti_weakatomic_set(&(iop->completed_get_cnt), 0, 0);
-      gasneti_weakatomic_set(&(iop->completed_put_cnt), 0, 0);
-    #endif
-  } else {
-    iop = gasnete_iop_alloc(thread);
-  }
-  iop->next = NULL;
-  gasnete_iop_check(iop);
-  return iop;
-}
-
-/*  query an eop for completeness */
-static
-int gasnete_eop_isdone(gasnete_eop_t *eop) {
-  gasneti_assert(eop->threadidx == _gasneti_mythread_slow()->threadidx);
-  gasnete_eop_check(eop);
-  return GASNETE_EOP_DONE(eop);
-}
-
-/*  query an iop for completeness - this means both puts and gets */
-static
-int gasnete_iop_isdone(gasnete_iop_t *iop) {
-  gasneti_assert(iop->threadidx == _gasneti_mythread_slow()->threadidx);
-  gasnete_iop_check(iop);
-  return (GASNETE_IOP_CNTDONE(iop,get) && GASNETE_IOP_CNTDONE(iop,put));
-}
-
-/*  mark an op done - isget ignored for explicit ops */
-static
-void gasnete_op_markdone(gasnete_op_t *op, int isget) {
-  if (OPTYPE(op) == OPTYPE_EXPLICIT) {
-    gasnete_eop_t *eop = (gasnete_eop_t *)op;
-    gasnete_eop_check(eop);
-    GASNETE_EOP_MARKDONE(eop);
-  } else {
-    gasnete_iop_t *iop = (gasnete_iop_t *)op;
-    gasnete_iop_check(iop);
-    if (isget) gasneti_weakatomic_increment(&(iop->completed_get_cnt), 0);
-    else gasneti_weakatomic_increment(&(iop->completed_put_cnt), 0);
-  }
-}
-
-/*  free an eop */
-static
-void gasnete_eop_free(gasnete_eop_t *eop) {
-  gasneti_threaddata_t * const thread = gasnete_threadtable[eop->threadidx];
-  gasnete_eopaddr_t addr = eop->addr;
-  gasneti_assert(thread == _gasneti_mythread_slow());
-  gasnete_eop_check(eop);
-  gasneti_assert(GASNETE_EOP_DONE(eop));
-#if GASNET_DEBUG
-  SET_OPSTATE(eop, OPSTATE_FREE);
-#endif
-  eop->addr = thread->eop_free;
-  thread->eop_free = addr;
-}
-
-/*  free an iop */
-static
-void gasnete_iop_free(gasnete_iop_t *iop) {
-  gasneti_threaddata_t * const thread = gasnete_threadtable[iop->threadidx];
-  gasneti_assert(thread == _gasneti_mythread_slow());
-  gasnete_iop_check(iop);
-  gasneti_assert(GASNETE_IOP_CNTDONE(iop,get));
-  gasneti_assert(GASNETE_IOP_CNTDONE(iop,put));
-  gasneti_assert(iop->next == NULL);
-  iop->next = thread->iop_free;
-  thread->iop_free = iop;
-}
-
-/* ------------------------------------------------------------------------------------ */
-/*
   Extended API Common Code
   ========================
   Factored bits of extended API code common to most conduits, overridable when necessary
@@ -277,10 +45,6 @@ void gasnete_iop_free(gasnete_iop_t *iop) {
 #define GASNETE_NEW_THREADDATA_CALLBACK(td) \
     (td)->domain_idx = gasnetc_get_domain_idx((td)->threadidx);
 #endif
-
-/* ensure thread cleanup uses our custom for valget handles */
-#define GASNETE_VALGET_FREEALL(thread) gasnete_valget_freeall(thread)
-static void gasnete_valget_freeall(gasneti_threaddata_t *thread);
 
 #include "gasnet_extended_common.c"
 
@@ -294,7 +58,7 @@ static void gasnete_check_config(void) {
   gasneti_check_config_postattach();
   gasnete_check_config_amref();
 
-  gasneti_assert_always(gasnete_eopaddr_isnil(EOPADDR_NIL));
+  gasneti_assert(sizeof(gasnete_eop_t) >= sizeof(void*));
 }
 
 extern void gasnete_init(void) {
@@ -308,74 +72,44 @@ extern void gasnete_init(void) {
   gasneti_assert(gasneti_nodes >= 1 && gasneti_mynode < gasneti_nodes);
 
   { gasneti_threaddata_t *threaddata = NULL;
-    gasnete_eop_t *eop = NULL;
-    #if GASNETI_MAX_THREADS > 1
-      /* register first thread (optimization) */
-      threaddata = _gasneti_mythread_slow(); 
-    #else
-      /* register only thread (required) */
-      threaddata = gasnete_new_threaddata();
-    #endif
-
+  #if GASNETI_MAX_THREADS > 1
+    /* register first thread (optimization) */
+    threaddata = _gasneti_mythread_slow();
+  #else
+    /* register only thread (required) */
+    threaddata = gasnete_new_threaddata();
+  #endif
+  #if !GASNETI_DISABLE_REFERENCE_EOP
     /* cause the first pool of eops to be allocated (optimization) */
-    eop = gasnete_eop_new(threaddata);
+    GASNET_POST_THREADINFO(threaddata);
+    gasnete_eop_t *eop = gasnete_eop_new(threaddata);
     GASNETE_EOP_MARKDONE(eop);
-    gasnete_eop_free(eop);
+    gasnete_eop_free(eop GASNETI_THREAD_PASS);
+  #endif
   }
 
   /* Initialize barrier resources */
   gasnete_barrier_init();
+
+  /* Initialize team/collectives */
+  gasnete_coll_init_subsystem();
 
   /* Initialize VIS subsystem */
   gasnete_vis_init();
 }
 
 /* ------------------------------------------------------------------------------------ */
-/* GASNET-Internal OP Interface */
-gasneti_eop_t *gasneti_eop_create(GASNETI_THREAD_FARG_ALONE) {
-  gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
-  return (gasneti_eop_t *)op;
-}
-gasneti_iop_t *gasneti_iop_register(unsigned int noperations, int isget GASNETI_THREAD_FARG) {
-  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-  gasnete_iop_t * const op = mythread->current_iop;
-  gasnete_iop_check(op);
-  if (isget) op->initiated_get_cnt += noperations;
-  else       op->initiated_put_cnt += noperations;
-  gasnete_iop_check(op);
-  return (gasneti_iop_t *)op;
-}
-void gasneti_eop_markdone(gasneti_eop_t *eop) {
-  gasnete_eop_t *op = (gasnete_eop_t *)eop;
-  gasnete_eop_check(op);
-  GASNETE_EOP_MARKDONE(op);
-}
-void gasneti_iop_markdone(gasneti_iop_t *iop, unsigned int noperations, int isget) {
-  gasnete_iop_t *op = (gasnete_iop_t *)iop;
-  gasneti_weakatomic_t * const pctr = (isget ? &(op->completed_get_cnt) : &(op->completed_put_cnt));
-  gasnete_iop_check(op);
-  if (gasneti_constant_p(noperations) && (noperations == 1))
-      gasneti_weakatomic_increment(pctr, 0);
-  else {
-    #if defined(GASNETI_HAVE_WEAKATOMIC_ADD_SUB)
-      gasneti_weakatomic_add(pctr, noperations, 0);
-    #else /* yuk */
-      while (noperations) {
-        gasneti_weakatomic_increment(pctr, 0);
-        noperations--;
-      }
-    #endif
-  }
-  gasnete_iop_check(op);
-}
-
-/* ------------------------------------------------------------------------------------ */
 /*
-  Get/Put/Memset:
-  ===============
+  Get/Put:
+  ========
 */
 
-/* Use reference implementation of memset in terms of AMs.
+#define PACK_EOP_DONE(_eop)         PACK(&(_eop)->completed_cnt)
+#define PACK_IOP_DONE(_iop,_getput) PACK(&(_iop)->completed_##_getput##_cnt)
+#define MARK_DONE(_ptr,_isget)      gasneti_weakatomic_increment((gasneti_weakatomic_t *)(_ptr), \
+                                                                 (_isget) ? GASNETI_ATOMIC_REL : 0)
+
+/* Use some or all of the reference implementation of get/put in terms of AMs
  * Configuration appears in gasnet_extended_fwd.h
  */
 #include "gasnet_extended_amref.c"
@@ -392,37 +126,18 @@ void gasneti_iop_markdone(gasneti_iop_t *iop, unsigned int noperations, int isge
       (3 & ((uintptr_t)(_nbytes) | (uintptr_t)(_src)))
 #endif
 
-/* Some common idioms */
-
-GASNETI_INLINE(gasnete_cntr_gpd)
-gasnetc_post_descriptor_t *
-gasnete_cntr_gpd(gasneti_weakatomic_val_t *initiated_p,
-                 gasneti_weakatomic_t *completed_p
-                 GASNETC_DIDX_FARG)
-{
-  gasnetc_post_descriptor_t *gpd = gasnetc_alloc_post_descriptor(GASNETC_DIDX_PASS_ALONE);
-  gpd->flags = GC_POST_COMPLETION_CNTR;
-  gpd->gpd_completion = (uintptr_t) completed_p;
-  (*initiated_p) += 1;
-  return gpd;
-}
-
-#define GASNETE_EOP_CNTRS(_eop) \
-        &(_eop)->initiated_cnt, &(_eop)->completed_cnt
-#define GASNETE_IOP_CNTRS(_iop,_putget) \
-        &(_iop)->initiated_##_putget##_cnt, &(_iop)->completed_##_putget##_cnt
-
 /* Main xfer functions */
 
-static void /* XXX: Inlining left to compiler's discretion */
-gasnete_get_bulk_inner(void *dest, gasnet_node_t node, void *src, size_t nbytes,
-                       gasneti_weakatomic_val_t * const initiated_p,
-                       gasneti_weakatomic_t * const completed_p
-                       GASNETC_DIDX_FARG)
+GASNETI_WARN_UNUSED_RESULT // Returns non-zero in IMMEDIATE case only
+static int /* XXX: Inlining left to compiler's discretion */
+gasnete_get_bulk_inner(void *dest, gex_Rank_t jobrank, void *src, size_t nbytes, gex_Flags_t flags,
+                       gasneti_weakatomic_val_t *initiated_p, gasnete_op_t * const op,
+                       uint32_t gpd_flags GASNETC_DIDX_FARG)
 {
+  gasnetc_post_descriptor_t *gpd;
   size_t chunksz;
 
-  chunksz = gasneti_in_segment(gasneti_mynode, dest, nbytes) ? GC_MAXRDMA_IN : GC_MAXRDMA_OUT;
+  chunksz = gasneti_in_segment(NULL/*tm*/, gasneti_mynode, dest, nbytes) ? GC_MAXRDMA_IN : GC_MAXRDMA_OUT;
 
   if (nbytes > 2*chunksz) {
     /* If need more than 2 chunks, then size first one to achieve page alignment of remainder */
@@ -431,8 +146,10 @@ retry:
     xfer_len = chunksz - ((uintptr_t)src & (GASNETI_PAGESIZE-1));
     gasneti_assert(xfer_len != 0);
     gasneti_assert(xfer_len < nbytes);
-    tmp = gasnetc_rdma_get(node, dest, src, xfer_len,
-                           gasnete_cntr_gpd(initiated_p, completed_p GASNETC_DIDX_PASS));
+    gpd = gasnete_cntr_gpd(initiated_p, op, gpd_flags, flags GASNETC_DIDX_PASS);
+    if_pf (!gpd) return 1;
+    flags &= ~GEX_FLAG_IMMEDIATE;
+    tmp = gasnetc_rdma_get(jobrank, dest, src, xfer_len, gpd);
     dest = (char *) dest + tmp;
     src  = (char *) src  + tmp;
     nbytes -= tmp;
@@ -447,20 +164,25 @@ retry:
   gasneti_assert(nbytes);
   do {
     const size_t xfer_len = MIN(nbytes, chunksz);
-    chunksz = gasnetc_rdma_get(node, dest, src, xfer_len,
-                               gasnete_cntr_gpd(initiated_p, completed_p GASNETC_DIDX_PASS));
+    gpd = gasnete_cntr_gpd(initiated_p, op, gpd_flags, flags GASNETC_DIDX_PASS);
+    if_pf (!gpd) return 1;
+    flags &= ~GEX_FLAG_IMMEDIATE;
+    chunksz = gasnetc_rdma_get(jobrank, dest, src, xfer_len, gpd);
     dest = (char *) dest + chunksz;
     src  = (char *) src  + chunksz;
     nbytes -= chunksz;
   } while (nbytes);
+
+  return 0;
 }
 
-static void /* XXX: Inlining left to compiler's discretion */
-gasnete_get_bulk_unaligned(void *dest, gasnet_node_t node, void *src, size_t nbytes,
-                           gasneti_weakatomic_val_t * const initiated_p,
-                           gasneti_weakatomic_t * const completed_p
-                           GASNETC_DIDX_FARG)
+GASNETI_WARN_UNUSED_RESULT // Returns non-zero in IMMEDIATE case only
+static int /* XXX: Inlining left to compiler's discretion */
+gasnete_get_bulk_unaligned(void *dest, gex_Rank_t jobrank, void *src, size_t nbytes, gex_Flags_t flags,
+                           gasneti_weakatomic_val_t *initiated_p, gasnete_op_t * const op,
+                           uint32_t gpd_flags GASNETC_DIDX_FARG)
 {
+  gasnetc_post_descriptor_t *gpd;
   const size_t max_chunk = gasnetc_max_get_unaligned;
 
 #ifdef GASNET_CONDUIT_GEMINI
@@ -476,13 +198,15 @@ gasnete_get_bulk_unaligned(void *dest, gasnet_node_t node, void *src, size_t nby
   gasneti_assert(src_offset < max_chunk);
   if (src_offset != 0) {
     const size_t chunksz = MIN(nbytes, (max_chunk - src_offset));
-    gasnetc_rdma_get_unaligned(node, dest, src, chunksz,
-                               gasnete_cntr_gpd(initiated_p, completed_p GASNETC_DIDX_PASS));
+    gpd = gasnete_cntr_gpd(initiated_p, op, gpd_flags, flags GASNETC_DIDX_PASS);
+    if_pf (!gpd) return 1;
+    flags &= ~GEX_FLAG_IMMEDIATE;
+    gasnetc_rdma_get_unaligned(jobrank, dest, src, chunksz, gpd);
     dest = (char *) dest + chunksz;
     src  = (char *) src  + chunksz;
     nbytes -= chunksz;
   }
-  if (!nbytes) return;
+  if (!nbytes) return 0;
   gasneti_assert(0 == (3 & (uintptr_t)src));
   
   if (! GASNETE_GET_IS_UNALIGNED(0,0,dest) && (nbytes > max_chunk)) {
@@ -493,7 +217,10 @@ gasnete_get_bulk_unaligned(void *dest, gasnet_node_t node, void *src, size_t nby
     if (chunksz) {
       gasneti_assert(0 == (3 & chunksz));
       gasneti_assert(! GASNETE_GET_IS_UNALIGNED(chunksz,src,dest));
-      gasnete_get_bulk_inner(dest, node, src, chunksz, initiated_p, completed_p GASNETC_DIDX_PASS);
+      int imm = gasnete_get_bulk_inner(dest, jobrank, src, chunksz, flags,
+                                       initiated_p, op, gpd_flags GASNETC_DIDX_PASS);
+      if_pf (imm) return 1;
+      flags &= ~GEX_FLAG_IMMEDIATE;
       dest = (char *) dest + chunksz;
       src  = (char *) src  + chunksz;
       nbytes = tailsz;
@@ -503,26 +230,33 @@ gasnete_get_bulk_unaligned(void *dest, gasnet_node_t node, void *src, size_t nby
   /* dest address and/or nbytes is unaligned - must use bounce buffers for remainder */
   while (nbytes) {
     const size_t chunksz = MIN(nbytes, max_chunk);
-    gasnetc_rdma_get_unaligned(node, dest, src, chunksz,
-                               gasnete_cntr_gpd(initiated_p, completed_p GASNETC_DIDX_PASS));
+    gpd = gasnete_cntr_gpd(initiated_p, op, gpd_flags, flags GASNETC_DIDX_PASS);
+    if_pf (!gpd) return 1;
+    flags &= ~GEX_FLAG_IMMEDIATE;
+    gasnetc_rdma_get_unaligned(jobrank, dest, src, chunksz, gpd);
     dest = (char *) dest + chunksz;
     src  = (char *) src  + chunksz;
     nbytes -= chunksz;
   }
+
+  return 0;
 }
 
-static void /* XXX: Inlining left to compiler's discretion */
-gasnete_put_inner(gasnet_node_t node, void *dest, void *src, size_t nbytes,
-                  unsigned int *initiated_lc,
-                  volatile unsigned int *completed_lc,
-                  gasneti_weakatomic_val_t * const initiated_p,
-                  gasneti_weakatomic_t * const completed_p
-                  GASNETC_DIDX_FARG)
+// gasnete_put_bulk()
+// Non-bulk (everything but GEX_EVENT_DEFER) => requests signalling of LC
+GASNETI_WARN_UNUSED_RESULT // Returns non-zero in IMMEDIATE case only
+static int /* XXX: Inlining left to compiler's discretion */
+gasnete_put_inner(gex_Rank_t jobrank, void *dest, void *src, size_t nbytes, gex_Flags_t flags,
+                  gasneti_weakatomic_val_t *initiated_lc, void *lc_completion,
+                  gasneti_weakatomic_val_t *initiated_p, gasnete_op_t * const op,
+                  uint32_t gpd_flags GASNETC_DIDX_FARG)
 {
   gasnetc_post_descriptor_t *gpd;
   size_t chunksz;
 
-  chunksz = gasneti_in_segment(gasneti_mynode, src, nbytes) ? GC_MAXRDMA_IN : GC_MAXRDMA_OUT;
+  chunksz = gasneti_in_segment(NULL/*tm*/, gasneti_mynode, src, nbytes) ? GC_MAXRDMA_IN : GC_MAXRDMA_OUT;
+
+  gasneti_suspend_spinpollers();
 
   if (nbytes > 2*chunksz) {
     /* If need more than 2 chunks, then size first one to achieve page alignment of remainder */
@@ -531,9 +265,11 @@ retry:
     xfer_len = chunksz - ((uintptr_t)src & (GASNETI_PAGESIZE-1));
     gasneti_assert(xfer_len != 0);
     gasneti_assert(xfer_len < nbytes);
-    gpd = gasnete_cntr_gpd(initiated_p, completed_p GASNETC_DIDX_PASS);
-    gpd->gpd_put_lc = (uint64_t) completed_lc;
-    tmp = gasnetc_rdma_put_lc(node, dest, src, xfer_len, initiated_lc, gpd);
+    gpd = gasnete_cntr_gpd(initiated_p, op, gpd_flags, flags GASNETC_DIDX_PASS);
+    if_pf (!gpd) goto out_immediate;
+    gpd->gpd_put_lc = (uint64_t) lc_completion;
+    flags &= ~GEX_FLAG_IMMEDIATE;
+    tmp = gasnetc_rdma_put_lc(jobrank, dest, src, xfer_len, initiated_lc, 0, gpd);
     dest = (char *) dest + tmp;
     src  = (char *) src  + tmp;
     nbytes -= tmp;
@@ -546,26 +282,42 @@ retry:
   }
 
   gasneti_assert(nbytes);
+  const int is_eop = (gpd_flags & GC_POST_COMPLETION_EOP);
   do {
     const size_t xfer_len = MIN(nbytes, chunksz);
-    gpd = gasnete_cntr_gpd(initiated_p, completed_p GASNETC_DIDX_PASS);
-    gpd->gpd_put_lc = (uint64_t) completed_lc;
-    chunksz = gasnetc_rdma_put_lc(node, dest, src, xfer_len, initiated_lc, gpd);
+    gpd = gasnete_cntr_gpd(initiated_p, op, gpd_flags, flags GASNETC_DIDX_PASS);
+    if_pf (!gpd) goto out_immediate;
+    gpd->gpd_put_lc = (uint64_t) lc_completion;
+    flags &= ~GEX_FLAG_IMMEDIATE;
+    int eop_last_chunk = is_eop && (nbytes == xfer_len);
+    chunksz = gasnetc_rdma_put_lc(jobrank, dest, src, xfer_len, initiated_lc, eop_last_chunk, gpd);
     dest = (char *) dest + chunksz;
     src  = (char *) src  + chunksz;
     nbytes -= chunksz;
   } while (nbytes);
+
+  gasneti_resume_spinpollers();
+  return 0;
+
+out_immediate:
+  gasneti_resume_spinpollers();
+  return 1;
 }
 
-static void /* XXX: Inlining left to compiler's discretion */
-gasnete_put_bulk_inner(gasnet_node_t node, void *dest, void *src, size_t nbytes,
-                       gasneti_weakatomic_val_t * const initiated_p,
-                       gasneti_weakatomic_t * const completed_p
-                       GASNETC_DIDX_FARG)
+// gasnete_put_bulk_inner()
+// Bulk (aka GEX_EVENT_DEFER) => no signalling of LC
+GASNETI_WARN_UNUSED_RESULT // Returns non-zero in IMMEDIATE case only
+static int /* XXX: Inlining left to compiler's discretion */
+gasnete_put_bulk_inner(gex_Rank_t jobrank, void *dest, void *src, size_t nbytes, gex_Flags_t flags,
+                       gasneti_weakatomic_val_t *initiated_p, gasnete_op_t * const op,
+                       uint32_t gpd_flags GASNETC_DIDX_FARG)
 {
+  gasnetc_post_descriptor_t *gpd;
   size_t chunksz;
 
-  chunksz = gasneti_in_segment(gasneti_mynode, src, nbytes) ? GC_MAXRDMA_IN : GC_MAXRDMA_OUT;
+  chunksz = gasneti_in_segment(NULL/*tm*/, gasneti_mynode, src, nbytes) ? GC_MAXRDMA_IN : GC_MAXRDMA_OUT;
+
+  gasneti_suspend_spinpollers();
 
   if (nbytes > 2*chunksz) {
     /* If need more than 2 chunks, then size first one to achieve page alignment of remainder */
@@ -574,8 +326,10 @@ retry:
     xfer_len = chunksz - ((uintptr_t)src & (GASNETI_PAGESIZE-1));
     gasneti_assert(xfer_len != 0);
     gasneti_assert(xfer_len < nbytes);
-    tmp = gasnetc_rdma_put_bulk(node, dest, src, xfer_len,
-                                gasnete_cntr_gpd(initiated_p, completed_p GASNETC_DIDX_PASS));
+    gpd = gasnete_cntr_gpd(initiated_p, op, gpd_flags, flags GASNETC_DIDX_PASS);
+    if_pf (!gpd) goto out_immediate;
+    flags &= ~GEX_FLAG_IMMEDIATE;
+    tmp = gasnetc_rdma_put_bulk(jobrank, dest, src, xfer_len, gpd);
     dest = (char *) dest + tmp;
     src  = (char *) src  + tmp;
     nbytes -= tmp;
@@ -590,315 +344,209 @@ retry:
   gasneti_assert(nbytes);
   do {
     const size_t xfer_len = MIN(nbytes, chunksz);
-    chunksz = gasnetc_rdma_put_bulk(node, dest, src, xfer_len,
-                                    gasnete_cntr_gpd(initiated_p, completed_p GASNETC_DIDX_PASS));
+    gpd = gasnete_cntr_gpd(initiated_p, op, gpd_flags, flags GASNETC_DIDX_PASS);
+    if_pf (!gpd) goto out_immediate;
+    flags &= ~GEX_FLAG_IMMEDIATE;
+    chunksz = gasnetc_rdma_put_bulk(jobrank, dest, src, xfer_len, gpd);
     dest = (char *) dest + chunksz;
     src  = (char *) src  + chunksz;
     nbytes -= chunksz;
   } while (nbytes);
+
+  gasneti_resume_spinpollers();
+  return 0;
+
+out_immediate:
+  gasneti_resume_spinpollers();
+  return 1;
 }
 
 /* ------------------------------------------------------------------------------------ */
 /*
-  Non-blocking memory-to-memory transfers (explicit handle)
+  Non-blocking memory-to-memory transfers (explicit event)
   ==========================================================
 */
 /* ------------------------------------------------------------------------------------ */
 
 /* Conduits not using the gasnete_amref_ versions should implement at least the following:
-     gasnete_get_nb_bulk
+     gasnete_get_nb
      gasnete_put_nb
-     gasnete_put_nb_bulk
-     gasnete_memset_nb
 */
 
-extern gasnet_handle_t gasnete_get_nb_bulk (void *dest, gasnet_node_t node, void *src, size_t nbytes GASNETI_THREAD_FARG) {
-  GASNETI_CHECKPSHM_GET(UNALIGNED,H,dest,node,src,nbytes);
+extern
+gex_Event_t gasnete_get_nb(
+                     gex_TM_t tm,
+                     void *dest,
+                     gex_Rank_t rank, void *src,
+                     size_t nbytes,
+                     gex_Flags_t flags GASNETI_THREAD_FARG)
+{
+  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
   {
+    int imm;
     gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-    gasnete_eop_t *eop = _gasnete_eop_new(mythread);
+    gasnete_eop_t *eop = gasnete_eop_new_cnt(mythread);
+    gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
     GASNETC_DIDX_POST(mythread->domain_idx);
     gasneti_suspend_spinpollers();
     if_pf (GASNETE_GET_IS_UNALIGNED(nbytes, src, dest)) {
-      gasnete_get_bulk_unaligned(dest, node, src, nbytes, GASNETE_EOP_CNTRS(eop) GASNETC_DIDX_PASS);
+      imm = gasnete_get_bulk_unaligned(dest, jobrank, src, nbytes, flags,
+                                       GASNETE_EOP_CNTRS(eop) GASNETC_DIDX_PASS);
     } else {
-      gasnete_get_bulk_inner(dest, node, src, nbytes, GASNETE_EOP_CNTRS(eop) GASNETC_DIDX_PASS);
+      imm = gasnete_get_bulk_inner(dest, jobrank, src, nbytes, flags,
+                                   GASNETE_EOP_CNTRS(eop) GASNETC_DIDX_PASS);
     }
     gasneti_resume_spinpollers();
-    return (gasnet_handle_t) eop;
+    if_pf (imm) return (gasnete_consume_eop(eop GASNETI_THREAD_PASS), GEX_EVENT_NO_OP);
+    GASNETC_EOP_CNT_FINISH(eop); // TODO-EX: optimize away this extra atomic op under some conditions?
+    return (gex_Event_t) eop;
   }
 }
 
-extern gasnet_handle_t gasnete_put_nb (gasnet_node_t node, void *dest, void *src, size_t nbytes GASNETI_THREAD_FARG) {
-  GASNETI_CHECKPSHM_PUT(ALIGNED,H,node,dest,src,nbytes);
-  {
-    gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-    gasnete_eop_t *eop = _gasnete_eop_new(mythread);
-    GASNETC_DIDX_POST(mythread->domain_idx);
-    unsigned int initiated_lc = 0;
-    volatile unsigned int completed_lc = 0;
-    gasneti_suspend_spinpollers();
-    gasnete_put_inner(node, dest, src, nbytes,
-                      &initiated_lc, &completed_lc,
-                      GASNETE_EOP_CNTRS(eop) GASNETC_DIDX_PASS);
-    gasneti_resume_spinpollers();
-    gasneti_polluntil(initiated_lc == completed_lc);
-    return (gasnet_handle_t) eop;
-  }
-}
+extern
+gex_Event_t gasnete_put_nb(
+                     gex_TM_t tm,
+                     gex_Rank_t rank, void *dest,
+                     void *src,
+                     size_t nbytes, gex_Event_t *lc_opt,
+                     gex_Flags_t flags GASNETI_THREAD_FARG)
+{
+  GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
 
-extern gasnet_handle_t gasnete_put_nb_bulk (gasnet_node_t node, void *dest, void *src, size_t nbytes GASNETI_THREAD_FARG) {
-  GASNETI_CHECKPSHM_PUT(UNALIGNED,H,node,dest,src,nbytes);
-  {
-    gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-    gasnete_eop_t *eop = _gasnete_eop_new(mythread);
-    GASNETC_DIDX_POST(mythread->domain_idx);
-    gasneti_suspend_spinpollers();
-    gasnete_put_bulk_inner(node, dest, src, nbytes, GASNETE_EOP_CNTRS(eop) GASNETC_DIDX_PASS);
-    gasneti_resume_spinpollers();
-    return (gasnet_handle_t) eop;
-  }
-}
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  gasnete_eop_t *eop = gasnete_eop_new_cnt(mythread);
+  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
+  GASNETC_DIDX_POST(mythread->domain_idx);
 
-/* ------------------------------------------------------------------------------------ */
-/*
-  Synchronization for explicit-handle non-blocking operations:
-  ===========================================================
-*/
-
-/*  query an op for completeness 
- *  free it if complete
- *  returns 0 or 1 */
-GASNETI_INLINE(gasnete_op_try_free)
-int gasnete_op_try_free(gasnet_handle_t handle) {
-  gasnete_op_t *op = (gasnete_op_t *)handle;
-
-  gasneti_assert(op->threadidx == _gasneti_mythread_slow()->threadidx);
-  if_pt (OPTYPE(op) == OPTYPE_EXPLICIT) {
-    gasnete_eop_t *eop = (gasnete_eop_t*)op;
-
-    if (gasnete_eop_isdone(eop)) {
-      gasneti_sync_reads();
-      gasnete_eop_free(eop);
-      return 1;
-    }
+  if (lc_opt == GEX_EVENT_DEFER) {
+    int imm = gasnete_put_bulk_inner(jobrank, dest, src, nbytes, flags,
+                                     GASNETE_EOP_CNTRS(eop) GASNETC_DIDX_PASS);
+    if (imm) goto out_immediate;
   } else {
-    gasnete_iop_t *iop = (gasnete_iop_t*)op;
-
-    if (gasnete_iop_isdone(iop)) {
-      gasneti_sync_reads();
-      gasnete_iop_free(iop);
-      return 1;
+  #if GASNET_DEBUG
+    if ((lc_opt != GEX_EVENT_NOW) && !gasneti_leaf_is_pointer(lc_opt)) {
+      gasneti_fatalerror("Invalid lc_opt argument to Put_nb");
     }
-  }
-  return 0;
-}
+  #endif
 
-/*  query an op for completeness 
- *  free it and clear the handle if complete
- *  returns 0 or 1 */
-GASNETI_INLINE(gasnete_op_try_free_clear)
-int gasnete_op_try_free_clear(gasnet_handle_t *handle_p) {
-  if (gasnete_op_try_free(*handle_p)) {
-    *handle_p = GASNET_INVALID_HANDLE;
-    return 1;
-  }
-  return 0;
-}
+    GASNETE_EOP_LC_START(eop);
+    const gasneti_weakatomic_val_t start_alc = eop->initiated_alc;
+    eop->initiated_alc += 1;
 
-extern int  gasnete_try_syncnb(gasnet_handle_t handle) {
-#if 0
-  /* polling now takes place in callers which needed and NOT in those which don't */
-  GASNETI_SAFE(gasneti_AMPoll());
-#endif
+    int imm = gasnete_put_inner(jobrank, dest, src, nbytes, flags,
+                                &eop->initiated_alc, (void *)eop,
+                                GASNETE_EOP_CNTRS(eop)
+                                GASNETC_DIDX_PASS);
+    if (imm) {
+      eop->initiated_alc = start_alc;
+      goto out_immediate;
+    }
 
-  return gasnete_op_try_free(handle) ? GASNET_OK : GASNET_ERR_NOT_READY;
-}
-
-extern int  gasnete_try_syncnb_some (gasnet_handle_t *phandle, size_t numhandles) {
-  int success = 0;
-  int empty = 1;
-#if 0
-  /* polling for syncnb now happens in header file to avoid duplication */
-  GASNETI_SAFE(gasneti_AMPoll());
-#endif
-
-  gasneti_assert(phandle);
-
-  { int i;
-    for (i = 0; i < numhandles; i++) {
-      if (phandle[i] != GASNET_INVALID_HANDLE) {
-        empty = 0;
-        success |= gasnete_op_try_free_clear(&phandle[i]);
-      }
+    if (lc_opt == GEX_EVENT_NOW) {
+      gasneti_polluntil(GASNETE_EOP_LC_DONE(eop));
+    } else {
+      *lc_opt = gasneti_op_event(eop, gasnete_eop_event_alc);
     }
   }
 
-  return (success || empty) ? GASNET_OK : GASNET_ERR_NOT_READY;
-}
+  GASNETC_EOP_CNT_FINISH(eop); // TODO-EX: optimize away this extra atomic op under some conditions?
+  return (gex_Event_t) eop;
 
-extern int  gasnete_try_syncnb_all (gasnet_handle_t *phandle, size_t numhandles) {
-  int success = 1;
-#if 0
-  /* polling for syncnb now happens in header file to avoid duplication */
-  GASNETI_SAFE(gasneti_AMPoll());
-#endif
-
-  gasneti_assert(phandle);
-
-  { int i;
-      for (i = 0; i < numhandles; i++) {
-      if (phandle[i] != GASNET_INVALID_HANDLE) {
-        success &= gasnete_op_try_free_clear(&phandle[i]);
-      }
-    }
-  }
-
-  return success ? GASNET_OK : GASNET_ERR_NOT_READY;
+out_immediate:
+  gasneti_assert(GASNETC_EOP_ALC_DONE(eop));
+  gasnete_consume_eop(eop GASNETI_THREAD_PASS);
+  return GEX_EVENT_NO_OP;
 }
 
 /* ------------------------------------------------------------------------------------ */
 /*
-  Non-blocking memory-to-memory transfers (implicit handle)
+  Non-blocking memory-to-memory transfers (implicit event)
   ==========================================================
 */
 /* ------------------------------------------------------------------------------------ */
 
 /* Conduits not using the gasnete_amref_ versions should implement at least the following:
-     gasnete_get_nbi_bulk
+     gasnete_get_nbi
      gasnete_put_nbi
-     gasnete_put_nbi_bulk
-     gasnete_memset_nbi
 */
 
-extern void gasnete_get_nbi_bulk (void *dest, gasnet_node_t node, void *src, size_t nbytes GASNETI_THREAD_FARG) {
-  GASNETI_CHECKPSHM_GET(UNALIGNED,V,dest,node,src,nbytes);
+extern
+int gasnete_get_nbi( gex_TM_t tm,
+                     void *dest,
+                     gex_Rank_t rank, void *src,
+                     size_t nbytes,
+                     gex_Flags_t flags GASNETI_THREAD_FARG)
+{
+  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
   {
+    int imm;
     gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
     gasnete_iop_t * const iop = mythread->current_iop;
+    gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
     GASNETC_DIDX_POST(mythread->domain_idx);
     gasneti_suspend_spinpollers();
     if_pf (GASNETE_GET_IS_UNALIGNED(nbytes, src, dest)) {
-      gasnete_get_bulk_unaligned(dest, node, src, nbytes, GASNETE_IOP_CNTRS(iop, get) GASNETC_DIDX_PASS);
+      imm = gasnete_get_bulk_unaligned(dest, jobrank, src, nbytes, flags,
+                                       GASNETE_IOP_CNTRS(iop, get) GASNETC_DIDX_PASS);
     } else {
-      gasnete_get_bulk_inner(dest, node, src, nbytes, GASNETE_IOP_CNTRS(iop, get) GASNETC_DIDX_PASS);
+      imm = gasnete_get_bulk_inner(dest, jobrank, src, nbytes, flags,
+                                   GASNETE_IOP_CNTRS(iop, get) GASNETC_DIDX_PASS);
     }
     gasneti_resume_spinpollers();
+    return imm;
   }
 }
 
-extern void gasnete_put_nbi      (gasnet_node_t node, void *dest, void *src, size_t nbytes GASNETI_THREAD_FARG) {
-  GASNETI_CHECKPSHM_PUT(ALIGNED,V,node,dest,src,nbytes);
-  {
-    gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-    gasnete_iop_t * const iop = mythread->current_iop;
-    GASNETC_DIDX_POST(mythread->domain_idx);
-    unsigned int initiated_lc = 0;
-    volatile unsigned int completed_lc = 0;
-    gasneti_suspend_spinpollers();
-    gasnete_put_inner(node, dest, src, nbytes,
-                      &initiated_lc, &completed_lc,
-                      GASNETE_IOP_CNTRS(iop, put) GASNETC_DIDX_PASS);
-    gasneti_resume_spinpollers();
-    gasneti_polluntil(initiated_lc == completed_lc);
-  }
-}
+int gasnete_put_nbi( gex_TM_t tm,
+                     gex_Rank_t rank, void *dest,
+                     void *src,
+                     size_t nbytes, gex_Event_t *lc_opt,
+                     gex_Flags_t flags GASNETI_THREAD_FARG)
+{
+  GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
 
-extern void gasnete_put_nbi_bulk (gasnet_node_t node, void *dest, void *src, size_t nbytes GASNETI_THREAD_FARG) {
-  GASNETI_CHECKPSHM_PUT(UNALIGNED,V,node,dest,src,nbytes);
-  {
-    gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-    gasnete_iop_t * const iop = mythread->current_iop;
-    GASNETC_DIDX_POST(mythread->domain_idx);
-    gasneti_suspend_spinpollers();
-    gasnete_put_bulk_inner(node, dest, src, nbytes, GASNETE_IOP_CNTRS(iop, put) GASNETC_DIDX_PASS);
-    gasneti_resume_spinpollers();
-  }
-}
-
-/* ------------------------------------------------------------------------------------ */
-/*
-  Synchronization for implicit-handle non-blocking operations:
-  ===========================================================
-*/
-
-extern int  gasnete_try_syncnbi_gets(GASNETI_THREAD_FARG_ALONE) {
-  #if 0
-    /* polling for syncnbi now happens in header file to avoid duplication */
-    GASNETI_SAFE(gasneti_AMPoll());
-  #endif
-  {
-    gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-    gasnete_iop_t *iop = mythread->current_iop;
-    gasneti_assert(iop->threadidx == mythread->threadidx);
-    gasneti_assert(OPTYPE(iop) == OPTYPE_IMPLICIT);
-    #if GASNET_DEBUG
-      if (iop->next != NULL)
-        gasneti_fatalerror("VIOLATION: attempted to call gasnete_try_syncnbi_gets() inside an NBI access region");
-    #endif
-
-    if (GASNETE_IOP_CNTDONE(iop,get)) {
-      gasneti_sync_reads();
-      return GASNET_OK;
-    } else return GASNET_ERR_NOT_READY;
-  }
-}
-
-extern int  gasnete_try_syncnbi_puts(GASNETI_THREAD_FARG_ALONE) {
-  #if 0
-    /* polling for syncnbi now happens in header file to avoid duplication */
-    GASNETI_SAFE(gasneti_AMPoll());
-  #endif
-  {
-    gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-    gasnete_iop_t *iop = mythread->current_iop;
-    gasneti_assert(iop->threadidx == mythread->threadidx);
-    gasneti_assert(iop->next == NULL);
-    gasneti_assert(OPTYPE(iop) == OPTYPE_IMPLICIT);
-    #if GASNET_DEBUG
-      if (iop->next != NULL)
-        gasneti_fatalerror("VIOLATION: attempted to call gasnete_try_syncnbi_puts() inside an NBI access region");
-    #endif
-
-
-    if (GASNETE_IOP_CNTDONE(iop,put)) {
-      gasneti_sync_reads();
-      return GASNET_OK;
-    } else return GASNET_ERR_NOT_READY;
-  }
-}
-
-/* ------------------------------------------------------------------------------------ */
-/*
-  Implicit access region synchronization
-  ======================================
-*/
-/*  This implementation allows recursive access regions, although the spec does not require that */
-/*  operations are associated with the most immediately enclosing access region */
-extern void            gasnete_begin_nbi_accessregion(int allowrecursion GASNETI_THREAD_FARG) {
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-  gasnete_iop_t *iop = gasnete_iop_new(mythread); /*  push an iop  */
-  GASNETI_TRACE_PRINTF(S,("BEGIN_NBI_ACCESSREGION"));
-  #if GASNET_DEBUG
-    if (!allowrecursion && mythread->current_iop->next != NULL)
-      gasneti_fatalerror("VIOLATION: tried to initiate a recursive NBI access region");
-  #endif
-  iop->next = mythread->current_iop;
-  mythread->current_iop = iop;
+  gasnete_iop_t * const iop = mythread->current_iop;
+  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
+  GASNETC_DIDX_POST(mythread->domain_idx);
+
+  int imm;
+  if (lc_opt == GEX_EVENT_DEFER) {
+    imm = gasnete_put_bulk_inner(jobrank, dest, src, nbytes, flags,
+                                 GASNETE_IOP_CNTRS(iop, put) GASNETC_DIDX_PASS);
+  } else {
+    gasneti_weakatomic_val_t my_initiated_lc = 0;
+    volatile gasneti_weakatomic_val_t my_completed_lc = 0;
+
+    gasneti_weakatomic_val_t *initiated_lc;
+    void *lc_completion;
+    uint32_t extra_flags = 0;
+
+    if (lc_opt == GEX_EVENT_NOW) {
+      // Use a non-atomic counter and avoid over synchronizing
+      initiated_lc = &my_initiated_lc;
+      lc_completion = (void *) &my_completed_lc;
+      extra_flags = GC_POST_LC_NOW;
+    } else {
+    #if GASNET_DEBUG
+      if (lc_opt != GEX_EVENT_GROUP) {
+        gasneti_fatalerror("Invalid lc_opt argument to Put_nbi");
+      }
+    #endif
+      initiated_lc = &iop->initiated_alc_cnt;
+      lc_completion = (void *) iop;
+    }
+
+    imm = gasnete_put_inner(jobrank, dest, src, nbytes, flags,
+                            initiated_lc, lc_completion,
+                            GASNETE_IOP_CNTRS(iop, put) | extra_flags
+                            GASNETC_DIDX_PASS);
+    gasneti_polluntil(my_initiated_lc == my_completed_lc);
+  }
+
+  return imm;
 }
 
-extern gasnet_handle_t gasnete_end_nbi_accessregion(GASNETI_THREAD_FARG_ALONE) {
-  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-  gasnete_iop_t *iop = mythread->current_iop; /*  pop an iop */
-  GASNETI_TRACE_EVENT_VAL(S,END_NBI_ACCESSREGION,iop->initiated_get_cnt + iop->initiated_put_cnt);
-  #if GASNET_DEBUG
-    if (iop->next == NULL)
-      gasneti_fatalerror("VIOLATION: call to gasnete_end_nbi_accessregion() outside access region");
-  #endif
-  mythread->current_iop = iop->next;
-  iop->next = NULL;
-  return (gasnet_handle_t)iop;
-}
 /* ------------------------------------------------------------------------------------ */
 /*
   Blocking and non-blocking register-to-memory Puts
@@ -906,52 +554,93 @@ extern gasnet_handle_t gasnete_end_nbi_accessregion(GASNETI_THREAD_FARG_ALONE) {
 */
 /* ------------------------------------------------------------------------------------ */
 
-extern void gasnete_put_val(gasnet_node_t node, void *dest, gasnet_register_value_t value, size_t nbytes GASNETI_THREAD_FARG) {
-  GASNETI_CHECKPSHM_PUTVAL(V,node,dest,value,nbytes);
+extern int gasnete_put_val(
+                gex_TM_t tm,
+                gex_Rank_t rank, void *dest,
+                gex_RMA_Value_t value,
+                size_t nbytes, gex_Flags_t flags
+                GASNETI_THREAD_FARG)
+{
+  GASNETI_CHECKPSHM_PUTVAL(tm,rank,dest,value,nbytes);
   {
     GASNETC_DIDX_POST(GASNETI_MYTHREAD->domain_idx);
+    gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
     gasnetc_post_descriptor_t *gpd;
     volatile int done = 0;
     gasneti_suspend_spinpollers();
-    gpd = gasnetc_alloc_post_descriptor(GASNETC_DIDX_PASS_ALONE);
+    gpd = gasnetc_alloc_post_descriptor(0 GASNETC_DIDX_PASS);
     gpd->gpd_completion = (uintptr_t) &done;
-    gpd->flags = GC_POST_COMPLETION_FLAG;
+    gpd->gpd_flags = GC_POST_COMPLETION_FLAG;
     gpd->u.put_val = value;
-    gasnetc_rdma_put_buff(node, dest, GASNETE_STARTOFBITS(&gpd->u.put_val, nbytes), nbytes, gpd);
+    gasnetc_rdma_put_buff(jobrank, dest, GASNETE_STARTOFBITS(&gpd->u.put_val, nbytes), nbytes, gpd);
     gasneti_resume_spinpollers();
     gasneti_polluntil(done);
+    return 0;
   }
 }
 
-extern gasnet_handle_t gasnete_put_nb_val(gasnet_node_t node, void *dest, gasnet_register_value_t value, size_t nbytes GASNETI_THREAD_FARG) {
-  GASNETI_CHECKPSHM_PUTVAL(H,node,dest,value,nbytes);
-  {
-    gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-    GASNETC_DIDX_POST(mythread->domain_idx);
-    gasnete_eop_t * const eop = _gasnete_eop_new(mythread);
+GASNETI_WARN_UNUSED_RESULT // Returns non-zero in IMMEDIATE case only
+GASNETI_INLINE(gasnete_put_val_inner)
+int gasnete_put_val_inner(
+                gex_Rank_t jobrank, void *dest,
+                gex_RMA_Value_t value, size_t nbytes,
+                gasneti_weakatomic_val_t *initiated_p, gasnete_op_t *op,
+                uint32_t gpd_flags, gex_Flags_t flags GASNETC_DIDX_FARG)
+{
     gasnetc_post_descriptor_t *gpd;
+
     gasneti_suspend_spinpollers();
-    gpd = gasnete_cntr_gpd(GASNETE_EOP_CNTRS(eop) GASNETC_DIDX_PASS);
+    gpd = gasnete_cntr_gpd(initiated_p, op, gpd_flags, flags GASNETC_DIDX_PASS);
+    if (!gpd) goto out_immediate;
     gpd->u.put_val = value;
-    gasnetc_rdma_put_buff(node, dest, GASNETE_STARTOFBITS(&gpd->u.put_val, nbytes), nbytes, gpd);
+    gasnetc_rdma_put_buff(jobrank, dest, GASNETE_STARTOFBITS(&gpd->u.put_val, nbytes), nbytes, gpd);
     gasneti_resume_spinpollers();
-    return((gasnet_handle_t) eop);
-  }
+    return 0;
+
+out_immediate:
+    gasneti_resume_spinpollers();
+    return 1;
 }
 
-extern void gasnete_put_nbi_val(gasnet_node_t node, void *dest, gasnet_register_value_t value, size_t nbytes GASNETI_THREAD_FARG) {
-  GASNETI_CHECKPSHM_PUTVAL(V,node,dest,value,nbytes);
-  {
+extern gex_Event_t gasnete_put_nb_val(
+                gex_TM_t tm,
+                gex_Rank_t rank, void *dest,
+                gex_RMA_Value_t value,
+                size_t nbytes, gex_Flags_t flags
+                GASNETI_THREAD_FARG)
+{
+    GASNETI_CHECKPSHM_PUTVAL(tm,rank,dest,value,nbytes);
+
     gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
     GASNETC_DIDX_POST(mythread->domain_idx);
+    gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
+    gasnete_eop_t * const eop = gasnete_eop_new(mythread); // not _cnt
+    int imm = gasnete_put_val_inner(jobrank, dest, value, nbytes,
+                                    GASNETE_EOP_CNTRS(eop), flags GASNETC_DIDX_PASS);
+    if (imm) {
+        SET_EVENT_DONE(eop, 0);
+        gasnete_eop_free(eop GASNETI_THREAD_PASS);
+        return GEX_EVENT_NO_OP;
+    }
+    return((gex_Event_t) eop);
+}
+
+extern int gasnete_put_nbi_val(
+                gex_TM_t tm,
+                gex_Rank_t rank, void *dest,
+                gex_RMA_Value_t value,
+                size_t nbytes, gex_Flags_t flags
+                GASNETI_THREAD_FARG)
+{
+    GASNETI_CHECKPSHM_PUTVAL(tm,rank,dest,value,nbytes);
+
+    gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+    GASNETC_DIDX_POST(mythread->domain_idx);
+    gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
     gasnete_iop_t * const iop = mythread->current_iop;
-    gasnetc_post_descriptor_t *gpd;
-    gasneti_suspend_spinpollers();
-    gpd = gasnete_cntr_gpd(GASNETE_IOP_CNTRS(iop, put) GASNETC_DIDX_PASS);
-    gpd->u.put_val = value;
-    gasnetc_rdma_put_buff(node, dest, GASNETE_STARTOFBITS(&gpd->u.put_val, nbytes), nbytes, gpd);
-    gasneti_resume_spinpollers();
-  }
+    int imm = gasnete_put_val_inner(jobrank, dest, value, nbytes,
+                                    GASNETE_IOP_CNTRS(iop,put), flags GASNETC_DIDX_PASS);
+    return imm;
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -962,30 +651,36 @@ extern void gasnete_put_nbi_val(gasnet_node_t node, void *dest, gasnet_register_
 /* ------------------------------------------------------------------------------------ */
 
 GASNETI_INLINE(gasnete_get_val_help)
-gasnet_register_value_t gasnete_get_val_help(void *src, size_t nbytes) {
+gex_RMA_Value_t gasnete_get_val_help(void *src, size_t nbytes) {
 #if PLATFORM_ARCH_LITTLE_ENDIAN
   /* Note that this is OK only on little-endian and when unaligned loads are "OKAY" */
-  return *(gasnet_register_value_t *)src & (~0UL >> (8*(SIZEOF_VOID_P-nbytes)));
+  return *(gex_RMA_Value_t *)src & (~0UL >> (8*(SIZEOF_VOID_P-nbytes)));
 #else
   /* XXX: could do load+shift but don't care given the lack of big-endian GNI systems */
   GASNETE_VALUE_RETURN(src, nbytes);
 #endif
 }
  
-extern gasnet_register_value_t gasnete_get_val(gasnet_node_t node, void *src, size_t nbytes GASNETI_THREAD_FARG) {
-  GASNETI_CHECKPSHM_GETVAL(node,src,nbytes);
+extern gex_RMA_Value_t gasnete_get_val(
+                gex_TM_t tm,
+                gex_Rank_t rank, void *src,
+                size_t nbytes, gex_Flags_t flags
+                GASNETI_THREAD_FARG)
+{
+  GASNETI_CHECKPSHM_GETVAL(tm,rank,src,nbytes);
   {
-    gasnet_register_value_t result;
+    gex_RMA_Value_t result;
     GASNETC_DIDX_POST(GASNETI_MYTHREAD->domain_idx);
+    gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
     gasnetc_post_descriptor_t *gpd;
     volatile int done = 0;
     uint8_t *buffer;
     gasneti_suspend_spinpollers();
-    gpd = gasnetc_alloc_post_descriptor(GASNETC_DIDX_PASS_ALONE);
+    gpd = gasnetc_alloc_post_descriptor(0 GASNETC_DIDX_PASS);
     gpd->gpd_completion = (uintptr_t) &done;
-    gpd->flags = GC_POST_COMPLETION_FLAG | GC_POST_KEEP_GPD;
+    gpd->gpd_flags = GC_POST_COMPLETION_FLAG | GC_POST_KEEP_GPD;
     buffer = gpd->u.immediate;
-    buffer += gasnetc_rdma_get_buff(node, buffer, src, nbytes, gpd);
+    buffer += gasnetc_rdma_get_buff(jobrank, buffer, src, nbytes, gpd);
     gasneti_resume_spinpollers();
     gasneti_polluntil(done);
     result = gasnete_get_val_help(buffer, nbytes);
@@ -993,234 +688,6 @@ extern gasnet_register_value_t gasnete_get_val(gasnet_node_t node, void *src, si
     return result;
   }
 }
-
-/* Following implementation of valget_handle_t and associated operations
-   is cloned from gasnet_extended_common.c, and then:
-   The 'op' field has been flattened to a 'done' flag.
-   The order fileds had been reordered to minimize padding.
-   The underlying get has also been customized.
-*/
-
-typedef struct _gasnete_valget_op_t {
-  struct _gasnete_valget_op_t* next; /* for free-list only */
-  gasnet_register_value_t val;
-  volatile int done;
-  gasnete_threadidx_t threadidx;  /*  thread that owns me */
-} gasnete_valget_op_t;
-
-GASNETI_INLINE(gasnete_new_valget_handle)
-gasnet_valget_handle_t gasnete_new_valget_handle(gasneti_threaddata_t * const mythread) {
-  gasnet_valget_handle_t retval;
-  if (mythread->valget_free) {
-    retval = mythread->valget_free;
-    mythread->valget_free = retval->next;
-    gasneti_memcheck(retval);
-  } else {
-    retval = (gasnete_valget_op_t*)gasneti_malloc(sizeof(gasnete_valget_op_t));
-    gasneti_leak(retval);
-    retval->threadidx = mythread->threadidx;
-  }
-  retval->val = 0;
-  return retval;
-}
-
-extern gasnet_valget_handle_t gasnete_get_nb_val(gasnet_node_t node, void *src, size_t nbytes GASNETI_THREAD_FARG) {
-  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-  gasnet_valget_handle_t retval = gasnete_new_valget_handle(mythread);
-
-  gasneti_assert(nbytes > 0 && nbytes <= sizeof(gasnet_register_value_t));
-  gasneti_boundscheck(node, src, nbytes);
-
-#if GASNET_PSHM
-  if (gasneti_pshm_in_supernode(node)) {
-    /* Assume that addr2local on local node is cheaper than an extra branch */
-    GASNETE_FAST_ALIGNED_MEMCPY(GASNETE_STARTOFBITS(&(retval->val),nbytes),
-                                gasneti_pshm_addr2local(node, src), nbytes);
-    retval->done = 1;
-  }
-#else
-  if (gasnete_islocal(node)) {
-    GASNETE_FAST_ALIGNED_MEMCPY(GASNETE_STARTOFBITS(&(retval->val),nbytes), src, nbytes);
-    retval->done = 1;
-  }
-#endif
-  else {
-    GASNETC_DIDX_POST(mythread->domain_idx);
-    gasnetc_post_descriptor_t *gpd;
-    gasneti_suspend_spinpollers();
-    gpd = gasnetc_alloc_post_descriptor(GASNETC_DIDX_PASS_ALONE);
-    gpd->gpd_completion = (uintptr_t) &retval->done;
-    retval->done = 0;
-    gpd->flags = GC_POST_COMPLETION_FLAG;
-    gasnetc_rdma_get_unaligned(node, GASNETE_STARTOFBITS(&(retval->val),nbytes), src, nbytes, gpd);
-    gasneti_resume_spinpollers();
-  }
-  return retval;
-}
-
-extern gasnet_register_value_t gasnete_wait_syncnb_valget(gasnet_valget_handle_t handle) {
-  gasnete_assert_valid_threadid(handle->threadidx);
-  { gasneti_threaddata_t * const thread = gasnete_threadtable[handle->threadidx];
-    gasnet_register_value_t val;
-    GASNETC_DIDX_POST(thread->domain_idx);
-    GASNET_POST_THREADINFO(thread); /* for gasneti_poll() in multi-domain case */
-    gasneti_assert(thread == _gasneti_mythread_slow());
-    handle->next = thread->valget_free; /* free before the wait to save time after the wait, */
-    thread->valget_free = handle;       /*  safe because this thread is under our control */
-    gasneti_polluntil(handle->done);
-    val = handle->val;
-    return val;
-  }
-}
-
-static void gasnete_valget_freeall(gasneti_threaddata_t *thread) {
-  gasnete_valget_op_t *vg = thread->valget_free;
-  while (vg) {
-    gasnete_valget_op_t *next = vg->next;
-    gasneti_free(vg);  
-    vg = next;
-  }
-}
-/* ------------------------------------------------------------------------------------ */
-
-#if GASNETC_GNI_FETCHOP
-/*
-  Memory-to-register fetch-and-op (experimental extension)
-  ========================================================
-  Proof-of-concept GNI uint64_t fetch-and-op.
-  Not supported, and subject to change or removal.
-*/
-
-static gasnet_handle_t gasnete_fetchop_u64_nb(
-        uint64_t *dest, gasnet_node_t node, uint64_t *src,
-        gni_fma_cmd_type_t cmd, uint64_t operand GASNETI_THREAD_FARG)
-{
-  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-  GASNETC_DIDX_POST(mythread->domain_idx);
-  gasnete_eop_t * const eop = _gasnete_eop_new(mythread);
-  gasnetc_post_descriptor_t *gpd;
-
-  gasneti_suspend_spinpollers();
-  gpd = gasnete_cntr_gpd(GASNETE_EOP_CNTRS(eop) GASNETC_DIDX_PASS);
-  gpd->gpd_get_dst = (uintptr_t) dest;
-  gpd->flags |= GC_POST_COPY_IMM;
-  gasnetc_fetchop_u64(node, src, cmd, operand, gpd);
-  gasneti_resume_spinpollers();
-
-  return (gasnet_handle_t) eop;
-}
-
-static void gasnete_fetchop_u64_nbi(
-        uint64_t *dest, gasnet_node_t node, uint64_t *src,
-        gni_fma_cmd_type_t cmd, uint64_t operand GASNETI_THREAD_FARG)
-{
-  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-  GASNETC_DIDX_POST(mythread->domain_idx);
-  gasnete_iop_t * const iop = mythread->current_iop;
-  gasnetc_post_descriptor_t *gpd;
-
-  gasneti_suspend_spinpollers();
-  gpd = gasnete_cntr_gpd(GASNETE_IOP_CNTRS(iop, get) GASNETC_DIDX_PASS);
-  gpd->gpd_get_dst = (uintptr_t) dest;
-  gpd->flags |= GC_POST_COPY_IMM;
-  gasnetc_fetchop_u64(node, src, cmd, operand, gpd);
-  gasneti_resume_spinpollers();
-}
-
-static uint64_t gasnete_fetchop_u64_val(
-        gasnet_node_t node, void *src, gni_fma_cmd_type_t cmd,
-        uint64_t operand GASNETI_THREAD_FARG)
-{
-  uint64_t result;
-  GASNETC_DIDX_POST(GASNETI_MYTHREAD->domain_idx);
-  gasnetc_post_descriptor_t *gpd;
-  volatile int done = 0;
-
-  gasneti_suspend_spinpollers();
-  gpd = gasnetc_alloc_post_descriptor(GASNETC_DIDX_PASS_ALONE);
-  gpd->gpd_completion = (uintptr_t) &done;
-  gpd->flags = GC_POST_COMPLETION_FLAG | GC_POST_KEEP_GPD;
-  gasnetc_fetchop_u64(node, src, cmd, operand, gpd);
-  gasneti_resume_spinpollers();
-
-  gasneti_polluntil(done);
-  result = gpd->u.u64;
-  gasnetc_free_post_descriptor(gpd);
-  return result;
-}
-
-static gasnet_valget_handle_t gasnete_fetchop_u64_nb_val(
-        gasnet_node_t node, void *src, gni_fma_cmd_type_t cmd,
-        uint64_t operand GASNETI_THREAD_FARG)
-{
-  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-  GASNETC_DIDX_POST(mythread->domain_idx);
-  gasnetc_post_descriptor_t *gpd;
-
-  gasnet_valget_handle_t retval = gasnete_new_valget_handle(mythread);
-  retval->done = 0;
-
-  gasneti_suspend_spinpollers();
-  gpd = gasnetc_alloc_post_descriptor(GASNETC_DIDX_PASS_ALONE);
-  gpd->gpd_completion = (uintptr_t) &retval->done;
-  gpd->gpd_get_dst = (uintptr_t) &retval->val;
-  gpd->flags = GC_POST_COMPLETION_FLAG | GC_POST_COPY_IMM;
-  gasnetc_fetchop_u64(node, src, cmd, operand, gpd);
-  gasneti_resume_spinpollers();
-
-  return retval;
-}
-
-
-#define GASNETX_FETCHOP_DEFNS(_op,_suff,_type,_cmd)                       \
-    extern void                                                           \
-    _gasnetX_fetch##_op##_##_suff(                                        \
-                _type *dest, gasnet_node_t node, _type *src,              \
-                _type operand GASNETI_THREAD_FARG)                        \
-    {                                                                     \
-        *dest = gasnete_fetchop_##_suff##_val(node, src, _cmd, operand GASNETI_THREAD_PASS); \
-        gasneti_sync_writes();                                            \
-    }                                                                     \
-    extern gasnet_handle_t                                                \
-    _gasnetX_fetch##_op##_##_suff##_nb(                                   \
-                _type *dest, gasnet_node_t node, _type *src,              \
-                _type operand GASNETI_THREAD_FARG)                        \
-    {                                                                     \
-        return gasnete_fetchop_##_suff##_nb(dest, node, src, _cmd, operand GASNETI_THREAD_PASS); \
-    }                                                                     \
-    extern void                                                           \
-    _gasnetX_fetch##_op##_##_suff##_nbi(                                  \
-                _type *dest, gasnet_node_t node, _type *src,              \
-                _type operand GASNETI_THREAD_FARG)                        \
-    {                                                                     \
-        gasnete_fetchop_##_suff##_nbi(dest, node, src, _cmd, operand GASNETI_THREAD_PASS); \
-    }                                                                     \
-    extern _type                                                          \
-    _gasnetX_fetch##_op##_##_suff##_val(                                  \
-                gasnet_node_t node, _type *src,                           \
-                _type operand GASNETI_THREAD_FARG)                        \
-    {                                                                     \
-        return gasnete_fetchop_##_suff##_val(node, src, _cmd, operand GASNETI_THREAD_PASS); \
-    }                                                                     \
-    extern gasnet_valget_handle_t                                         \
-    _gasnetX_fetch##_op##_##_suff##_nb_val(                               \
-                gasnet_node_t node, _type *src,                           \
-                _type operand GASNETI_THREAD_FARG)                        \
-    {                                                                     \
-        return gasnete_fetchop_##_suff##_nb_val(node, src, _cmd, operand GASNETI_THREAD_PASS); \
-    }                                                                     \
-
-/* protect against iso646.h */
-#undef and
-#undef or
-#undef xor
-
-GASNETX_FETCHOP_DEFNS(add,u64,uint64_t,GNI_FMA_ATOMIC_FADD)
-GASNETX_FETCHOP_DEFNS(and,u64,uint64_t,GNI_FMA_ATOMIC_FAND)
-GASNETX_FETCHOP_DEFNS( or,u64,uint64_t,GNI_FMA_ATOMIC_FOR )
-GASNETX_FETCHOP_DEFNS(xor,u64,uint64_t,GNI_FMA_ATOMIC_FXOR)
-
-#endif /* GASNETC_GNI_FETCHOP */
 
 /* ------------------------------------------------------------------------------------ */
 /*
@@ -1289,7 +756,7 @@ static int gasnete_conduit_rdmabarrier(const char *barrier, gasneti_auxseg_reque
 /* GNI-specific RDMA-based Dissemination implementation of barrier
  * This is an adaptation of the "rmd" barrier in exteneded-ref.
  * Key differences:
- *  + no complications due to thread-specific handles
+ *  + no complications due to thread-specific events
  *  + simple 64-bit put since (aligned) 64-bit puts are atomic
  */
 
@@ -1313,7 +780,7 @@ static int gasnete_conduit_rdmabarrier(const char *barrier, gasneti_auxseg_reque
 typedef struct {
   GASNETE_GDBARRIER_LOCK(barrier_lock) /* no semicolon */
   struct {
-    gasnet_node_t node;
+    gex_Rank_t node;
     uint64_t      *addr;
   } *barrier_peers;           /*  precomputed list of peers to communicate with */
 #if GASNETI_PSHM_BARRIER_HIER
@@ -1350,27 +817,27 @@ typedef struct {
 GASNETI_INLINE(gasnete_gdbarrier_send)
 void gasnete_gdbarrier_send(gasnete_coll_gdbarrier_t *barrier_data,
                              int numsteps, unsigned int state,
-                             gasnet_handlerarg_t value, gasnet_handlerarg_t flags) {
+                             gex_AM_Arg_t value, gex_AM_Arg_t flags) {
   unsigned int step = state >> 1;
   const uint64_t payload = GASNETE_GDBARRIER_BUILD(value, flags);
   int i;
 
-  gasneti_assert(sizeof(payload) <= sizeof(gasnet_register_value_t));
+  gasneti_assert(sizeof(payload) <= sizeof(gex_RMA_Value_t));
 
   for (i = 0; i < numsteps; ++i, state += 2, step += 1) {
-    const gasnet_node_t node = barrier_data->barrier_peers[step].node;
+    const gex_Rank_t node = barrier_data->barrier_peers[step].node;
     uint64_t * const dst = GASNETE_GDBARRIER_INBOX_REMOTE(barrier_data, step, state);
 #if GASNET_PSHM
-    if (gasneti_pshm_in_supernode(node)) {
-      *(uint64_t*)gasneti_pshm_addr2local(node, dst) = payload;
+    if (gasneti_pshm_jobrank_in_supernode(node)) {
+      *(uint64_t*)gasneti_pshm_jobrank_addr2local(node, dst) = payload;
     } else
 #endif
     {
       GASNETC_DIDX_POST((_gasneti_mythread_slow())->domain_idx);
-      gasnetc_post_descriptor_t * const gpd = gasnetc_alloc_post_descriptor(GASNETC_DIDX_PASS_ALONE);
+      gasnetc_post_descriptor_t * const gpd = gasnetc_alloc_post_descriptor(0 GASNETC_DIDX_PASS);
       uint64_t * const src = (uint64_t *)GASNETE_STARTOFBITS(gpd->u.immediate, sizeof(uint64_t));
 
-      gpd->flags = 0; /* fire and forget */
+      gpd->gpd_flags = 0; /* fire and forget */
       *src = payload;
       gasnetc_rdma_put_buff(node, dst, src, sizeof(*src), gpd);
     }
@@ -1628,7 +1095,7 @@ static int gasnete_gdbarrier_wait(gasnete_coll_team_t team, int id, int flags) {
   } else
   if_pf(/* try/wait value must match consensus value, if both are present */
         !((flags|barrier_data->barrier_flags) & GASNET_BARRIERFLAG_ANONYMOUS) &&
-	 ((gasnet_handlerarg_t)id != barrier_data->barrier_value)) {
+	 ((gex_AM_Arg_t)id != barrier_data->barrier_value)) {
     retval = GASNET_ERR_BARRIER_MISMATCH;
   }
 
@@ -1727,7 +1194,7 @@ static void gasnete_gdbarrier_init(gasnete_coll_team_t team) {
     gasneti_leak(barrier_data->barrier_peers);
   
     for (step = 0; step < steps; ++step) {
-      gasnet_node_t node = peers->fwd[step];
+      gex_Rank_t node = peers->fwd[step];
       barrier_data->barrier_peers[1+step].node = node;
       barrier_data->barrier_peers[1+step].addr = gasnete_rdmabarrier_auxseg[node].addr;
     }
@@ -1774,10 +1241,19 @@ static void gasnete_gdbarrier_init(gasnete_coll_team_t team) {
 
 /* ------------------------------------------------------------------------------------ */
 /*
+  Remote Atomics:
+  ==============
+*/
+
+/* use reference implementation of remote atomics */
+#include "gasnet_refratomic.h"
+
+/* ------------------------------------------------------------------------------------ */
+/*
   Handlers:
   =========
 */
-static gasnet_handlerentry_t const gasnete_handlers[] = {
+static gex_AM_Entry_t const gasnete_handlers[] = {
   #ifdef GASNETE_REFBARRIER_HANDLERS
     GASNETE_REFBARRIER_HANDLERS(),
   #endif
@@ -1787,31 +1263,21 @@ static gasnet_handlerentry_t const gasnete_handlers[] = {
   #ifdef GASNETE_REFCOLL_HANDLERS
     GASNETE_REFCOLL_HANDLERS()
   #endif
+  #ifdef GASNETE_AMREF_HANDLERS
+    GASNETE_AMREF_HANDLERS()
+  #endif
+  #ifdef GASNETE_AMRATOMIC_HANDLERS
+    GASNETE_AMRATOMIC_HANDLERS()
+  #endif
 
   /* ptr-width independent handlers */
 
   /* ptr-width dependent handlers */
-#if GASNETE_BUILD_AMREF_GET_HANDLERS
-  gasneti_handler_tableentry_with_bits(gasnete_amref_get_reqh),
-  gasneti_handler_tableentry_with_bits(gasnete_amref_get_reph),
-  gasneti_handler_tableentry_with_bits(gasnete_amref_getlong_reqh),
-  gasneti_handler_tableentry_with_bits(gasnete_amref_getlong_reph),
-#endif
-#if GASNETE_BUILD_AMREF_PUT_HANDLERS
-  gasneti_handler_tableentry_with_bits(gasnete_amref_put_reqh),
-  gasneti_handler_tableentry_with_bits(gasnete_amref_putlong_reqh),
-#endif
-#if GASNETE_BUILD_AMREF_MEMSET_HANDLERS
-  gasneti_handler_tableentry_with_bits(gasnete_amref_memset_reqh),
-#endif
-#if GASNETE_BUILD_AMREF_PUT_HANDLERS || GASNETE_BUILD_AMREF_MEMSET_HANDLERS
-  gasneti_handler_tableentry_with_bits(gasnete_amref_markdone_reph),
-#endif
 
-  { 0, NULL }
+  GASNETI_HANDLER_EOT
 };
 
-extern gasnet_handlerentry_t const *gasnete_get_handlertable(void) {
+extern gex_AM_Entry_t const *gasnete_get_handlertable(void) {
   return gasnete_handlers;
 }
 /* ------------------------------------------------------------------------------------ */

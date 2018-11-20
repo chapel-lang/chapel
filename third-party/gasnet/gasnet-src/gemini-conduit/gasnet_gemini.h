@@ -109,17 +109,37 @@ extern gasnetc_gni_lock_t gasnetc_gni_lock;
 extern gasnetc_gni_lock_t gasnetc_am_buffer_lock;
 
 typedef uint64_t gasnetc_notify_t;
+
+/* NOTE: notify_type is "pre shifted" by 24 bits */
+enum gc_notify_type {
+  gc_notify_request = 0x01000000,
+  gc_notify_reply   = 0x02000000,
+  gc_notify_rvous   = 0x03000000
+};
+
+#define gc_build_notify(_type, _initiator, _target)\
+  ((uint64_t)(_type) |  ((uint64_t)(_initiator) << 8) |  ((uint64_t)(_target)))
+
+#define gc_notify_get_type(n) ((n) & 0xff000000)
+#define gc_notify_get_target_slot(n) ((uint8_t)((n) & 255)) /* actual range 0..63 */
+#define gc_notify_get_initiator_slot(n) ((uint16_t)(((n) >> 8) & 65535))
+
 typedef struct gasnetc_post_descriptor gasnetc_post_descriptor_t;
 
 typedef struct {
-  gasnet_node_t source;
+  gex_Rank_t source;
+  const gex_AM_Entry_t *entry;
   int need_reply;
   gasnetc_notify_t notify;  
   gasnetc_post_descriptor_t *deferred_reply;
+#if GASNETI_THREADINFO_OPT
+  gasnet_threadinfo_t threadinfo;
+#endif
 } gasnetc_token_t;
 
 /* Control messages */
 enum {
+    GC_CTRL_CREDIT,
     GC_CTRL_SHUTDOWN 
 };
 
@@ -145,23 +165,23 @@ enum {
 
 /* This type is used by an AMShort request or reply */
 typedef struct {
-  gasnet_handlerarg_t args[gasnet_AMMaxArgs()];
+  gex_AM_Arg_t args[gex_AM_MaxArgs()];
 } gasnetc_am_short_packet_t;
 
 /* This type is used by an AMMedium request or reply */
 typedef struct {
-  gasnet_handlerarg_t args[gasnet_AMMaxArgs()];
+  gex_AM_Arg_t args[gex_AM_MaxArgs()];
 } gasnetc_am_medium_packet_t;
 
 /* This type is used by an AMLong request or reply */
 typedef struct {
   void *data;
-#if GASNETC_MAX_LONG <= 0xFFFFFFFFU
+#if GASNETC_LUB_LONG <= 0xFFFFFFFFU
   uint32_t data_length;
 #else
   size_t data_length;
 #endif
-  gasnet_handlerarg_t args[gasnet_AMMaxArgs()];
+  gex_AM_Arg_t args[gex_AM_MaxArgs()];
 } gasnetc_am_long_packet_t;
 
 /* The various ways to interpret an arriving message
@@ -183,8 +203,8 @@ typedef union gasnetc_packet_u {
 /* maximum message size: */
 #define GASNETC_CACHELINE_SIZE 64
 #define GASNETC_MSG_MAXSIZE \
-        GASNETI_ALIGNUP_NOASSERT((GASNETC_HEADLEN(medium, gasnet_AMMaxArgs()) \
-                          + gasnet_AMMaxMedium()), GASNETC_CACHELINE_SIZE)
+        GASNETI_ALIGNUP_NOASSERT((GASNETC_HEADLEN(medium, GASNETC_MAX_ARGS) \
+                                 + GASNETC_LUB_MEDIUM), GASNETC_CACHELINE_SIZE)
 
 /* max data one can pack into a message with a long header: */
 /* TODO: runtime control of cut-off via an env var */
@@ -197,9 +217,6 @@ typedef union gasnetc_packet_u {
 #define GASNETC_MAX_PACKED_LONG(nargs) \
         (GASNETC_MSG_MAXSIZE - GASNETC_HEADLEN(long, (nargs)))
 #endif
-
-void gasnetc_init_post_descriptor_pool(GASNETC_DIDX_FARG_ALONE);
-void gasnetc_init_bounce_buffer_pool(GASNETC_DIDX_FARG_ALONE);
 
 /* use the auxseg mechanism to allocate registered memory for bounce buffers */
 /* we want this many post descriptors */
@@ -216,8 +233,13 @@ void gasnetc_init_bounce_buffer_pool(GASNETC_DIDX_FARG_ALONE);
 #endif
 #define GASNETC_GNI_BOUNCE_REGISTER_CUTOVER_MAX 32768
 /* a particular get or put <= this size goes via fma */
+#ifdef GASNET_CONDUIT_ARIES
+#define GASNETC_GNI_GET_FMA_RDMA_CUTOVER_DEFAULT 1023
+#define GASNETC_GNI_PUT_FMA_RDMA_CUTOVER_DEFAULT 1023
+#else
 #define GASNETC_GNI_GET_FMA_RDMA_CUTOVER_DEFAULT 4096
 #define GASNETC_GNI_PUT_FMA_RDMA_CUTOVER_DEFAULT 4096
+#endif
 #define GASNETC_GNI_FMA_RDMA_CUTOVER_MAX (4096*4)
 /* space for immediate bounce buffer in the post descriptor */
 #define GASNETC_GNI_IMMEDIATE_BOUNCE_SIZE 128
@@ -236,14 +258,24 @@ enum {
   _gc_post_reserved = 2,  /* Bits 0-2 hold offset for trimmed copy operations */
   /* mutually-exclusive data-movement actions */
   _gc_post_copy,
-  _gc_post_copy_imm,
+  _gc_post_copy_imm,  // memcpy()
+  _gc_post_copy_amo4, // 4-byte assignment
+  _gc_post_copy_amo8, // 8-byte assignment
   /* mutually-exclusive resource recovery actions */
   _gc_post_unbounce,
   _gc_post_unregister,
+  _gc_post_unprepare,
   /* mutually-exclusive signaling actions */
   _gc_post_completion_flag,
   _gc_post_completion_cntr,
+  _gc_post_completion_eop,
+  _gc_post_completion_iput,
+  _gc_post_completion_iget,
+  _gc_post_completion_irmw,
+  _gc_post_completion_amrv,
   _gc_post_completion_send,
+  /* local-completion variation(s) */
+  _gc_post_lc_now,
   /* optionally suppress free of the gpd */
   _gc_post_keep_gpd,
 };
@@ -251,13 +283,41 @@ enum {
 #define GC_POST(name)           ((uint32_t)1 << _gc_post_##name)
 #define GC_POST_COPY            GC_POST(copy)
 #define GC_POST_COPY_IMM        GC_POST(copy_imm)
+#define GC_POST_COPY_AMO4       GC_POST(copy_amo4)
+#define GC_POST_COPY_AMO8       GC_POST(copy_amo8)
 #define GC_POST_SEND            GC_POST(send)
 #define GC_POST_UNBOUNCE        GC_POST(unbounce)
 #define GC_POST_UNREGISTER      GC_POST(unregister)
+#define GC_POST_UNPREPARE       GC_POST(unprepare)
 #define GC_POST_COMPLETION_FLAG GC_POST(completion_flag)
 #define GC_POST_COMPLETION_CNTR GC_POST(completion_cntr)
+#define GC_POST_COMPLETION_EOP  GC_POST(completion_eop)
+#define GC_POST_COMPLETION_IPUT GC_POST(completion_iput)
+#define GC_POST_COMPLETION_IGET GC_POST(completion_iget)
+#define GC_POST_COMPLETION_IRMW GC_POST(completion_irmw)
+#define GC_POST_COMPLETION_AMRV GC_POST(completion_amrv)
 #define GC_POST_COMPLETION_SEND GC_POST(completion_send)
+#define GC_POST_LC_NOW          GC_POST(lc_now)
 #define GC_POST_KEEP_GPD        GC_POST(keep_gpd)
+
+#define GC_POST_COMPLETION_MASK (GC_POST_COMPLETION_FLAG | \
+                                 GC_POST_COMPLETION_CNTR | \
+                                 GC_POST_COMPLETION_EOP  | \
+                                 GC_POST_COMPLETION_IPUT | \
+                                 GC_POST_COMPLETION_IGET | \
+                                 GC_POST_COMPLETION_IRMW | \
+                                 GC_POST_COMPLETION_AMRV | \
+                                 GC_POST_COMPLETION_SEND)
+
+struct peer_struct_t_;
+typedef struct peer_struct_t_ peer_struct_t;
+
+typedef struct am_rvous_t_ {
+  struct am_rvous_t_   *next;
+  peer_struct_t        *peer;
+  gasnetc_notify_t      notify;
+  volatile int          ready;
+} am_rvous_t;
 
 /* WARNING: if sizeof(gasnetc_post_descriptor_t) changes, then
  * you must update the value of GASNETC_SIZEOF_GDP below */
@@ -266,8 +326,10 @@ struct gasnetc_post_descriptor {
     uint8_t immediate[GASNETC_GNI_IMMEDIATE_BOUNCE_SIZE];
     gasneti_weakatomic_t counter;
     gasnetc_notify_t notify;
-    gasnet_register_value_t put_val;
+    gex_RMA_Value_t put_val;
     uint64_t u64;
+    uint64_t u32;
+    am_rvous_t am_rvous;
   #if GASNETC_GNI_UDREG
     udreg_entry_t *udreg_entry;
   #endif
@@ -276,11 +338,17 @@ struct gasnetc_post_descriptor {
   #define gpd_completion pd.post_id
   #define gpd_get_src    pd.first_operand
   #define gpd_get_dst    pd.second_operand
+  #define gpd_amo_result pd.sync_flag_value
   #define gpd_am_header  pd.sync_flag_value
   #define gpd_am_packet  pd.local_addr
+  #define gpd_am_length  pd.length
   #define gpd_am_peer    pd.first_operand
   #define gpd_put_lc     pd.second_operand
-  uint32_t flags;
+  #define gpd_amo_len    pd.length
+  #define gpd_amo_cmd    pd.amo_cmd
+  #define gpd_amo_op1    pd.first_operand
+  #define gpd_amo_op2    pd.second_operand
+  uint32_t gpd_flags;
 #if GASNETC_USE_MULTI_DOMAIN
   int domain_idx;
 #endif
@@ -289,7 +357,8 @@ struct gasnetc_post_descriptor {
 /* This should be ALIGNUP(sizeof(gasnetc_post_descriptor_t), 64) */
 #define GASNETC_SIZEOF_GDP 320
 
-gasnetc_post_descriptor_t *gasnetc_alloc_post_descriptor(GASNETC_DIDX_FARG_ALONE) GASNETI_MALLOC;
+gasnetc_post_descriptor_t *
+gasnetc_alloc_post_descriptor(gex_Flags_t flags GASNETC_DIDX_FARG) GASNETI_MALLOC;
 
 void gasnetc_free_post_descriptor(gasnetc_post_descriptor_t *pd);
 
@@ -306,43 +375,46 @@ void gasnetc_create_parallel_domain(gasnete_threadidx_t tidx);
 int gasnetc_get_domain_idx(gasnete_threadidx_t tidx);
 #endif
 
-void gasnetc_init_segment(void *segment_start, size_t segment_size);
+void gasnetc_init_gni(gasnet_seginfo_t seginfo);
+void gasnetc_init_segment(gasnet_seginfo_t seginfo);
 uintptr_t gasnetc_init_messaging(void);
 void gasnetc_shutdown(void); /* clean up all gni state */
 
 
 void gasnetc_poll_local_queue(GASNETC_DIDX_FARG_ALONE);
-void gasnetc_poll(GASNETC_DIDX_FARG_ALONE);
+void gasnetc_poll(GASNETI_THREAD_FARG_ALONE);
+#if GASNETC_USE_MULTI_DOMAIN
+  void gasnetc_poll_single_domain(GASNETI_THREAD_FARG_ALONE);
+#endif
 
-size_t gasnetc_rdma_put_bulk(gasnet_node_t node,
+size_t gasnetc_rdma_put_bulk(gex_Rank_t node,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd) GASNETI_WARN_UNUSED_RESULT;
 
-size_t gasnetc_rdma_put_lc(gasnet_node_t node,
+size_t gasnetc_rdma_put_lc(gex_Rank_t node,
 		 void *dest_addr, void *source_addr,
-		 size_t nbytes, unsigned int *initiated_lc,
-		 gasnetc_post_descriptor_t *gpd) GASNETI_WARN_UNUSED_RESULT;
+		 size_t nbytes, gasneti_weakatomic_val_t *initiated_lc,
+		 int last_eop_chunk, gasnetc_post_descriptor_t *gpd) GASNETI_WARN_UNUSED_RESULT;
 
-void gasnetc_rdma_put_buff(gasnet_node_t node,
+void gasnetc_rdma_put_buff(gex_Rank_t node,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd);
 
-size_t gasnetc_rdma_get(gasnet_node_t node,
+size_t gasnetc_rdma_get(gex_Rank_t node,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd) GASNETI_WARN_UNUSED_RESULT;
 
-void gasnetc_rdma_get_unaligned(gasnet_node_t node,
+void gasnetc_rdma_get_unaligned(gex_Rank_t node,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd);
 
-int gasnetc_rdma_get_buff(gasnet_node_t node,
+int gasnetc_rdma_get_buff(gex_Rank_t node,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd);
 
-/* Extensions: */
-#if GASNETC_GNI_FETCHOP
-void gasnetc_fetchop_u64(gasnet_node_t node,
-                 void *source_addr, gni_fma_cmd_type_t cmd, uint64_t operand,
+#if GASNETC_BUILD_GNIRATOMIC
+void gasnetc_post_amo(
+                 gex_Rank_t tgt_rank, void *tgt_addr,
                  gasnetc_post_descriptor_t *gpd);
 #endif
 
@@ -387,10 +459,63 @@ int gasnetc_next_power_of_2(int x) {
 }
 
 extern int gasnetc_send_am(gasnetc_post_descriptor_t *gpd);
-gasnetc_post_descriptor_t *gasnetc_alloc_reply_post_descriptor(gasnet_token_t t,
-                                                               size_t length);
-gasnetc_post_descriptor_t *gasnetc_alloc_request_post_descriptor(gasnet_node_t dest, 
-                                                                 size_t length);
+gasnetc_post_descriptor_t *gasnetc_alloc_reply_post_descriptor(gex_Token_t t,
+                                                               size_t length,
+                                                               gex_Flags_t flags);
+gasnetc_post_descriptor_t *gasnetc_alloc_request_post_descriptor(gex_Rank_t dest,
+                                                                 size_t length,
+                                                                 gex_Flags_t flags
+                                                                 GASNETI_THREAD_FARG);
+gasnetc_post_descriptor_t *gasnetc_alloc_request_post_descriptor_np(gex_Rank_t dest,
+                                                                    size_t min_length,
+                                                                    size_t max_length,
+                                                                    gex_Flags_t flags
+                                                                    GASNETI_THREAD_FARG);
+
+/* Some common GPD idioms */
+
+GASNETI_INLINE(gasnete_cntr_gpd)
+gasnetc_post_descriptor_t *
+gasnete_cntr_gpd(gasneti_weakatomic_val_t *initiated_p, gasnete_op_t *op,
+                 uint32_t gpd_flags, gex_Flags_t flags GASNETC_DIDX_FARG)
+{
+  gasnetc_post_descriptor_t *gpd = gasnetc_alloc_post_descriptor(flags GASNETC_DIDX_PASS);
+  if_pt (gpd) {
+    gpd->gpd_flags = gpd_flags;
+    gpd->gpd_completion = (uintptr_t) op;
+    (*initiated_p) += 1;
+  }
+  return gpd;
+}
+
+// Allocate an eop with the initiated_cnt pre-incremented
+GASNETI_INLINE(gasnete_eop_new_cnt)
+gasnete_eop_t *gasnete_eop_new_cnt(gasneti_threaddata_t * const thread) {
+  gasnete_eop_t *eop = gasnete_eop_new(thread);
+  eop->initiated_cnt++;
+  return eop;
+}
+
+// Free a never-used eop
+GASNETI_INLINE(gasnete_consume_eop)
+void gasnete_consume_eop(gasnete_eop_t *eop GASNETI_THREAD_FARG) {
+  // decrement the initiated counter rather than atomically increment the completed counter
+  eop->initiated_cnt -= 1;
+  gasneti_assert(GASNETC_EOP_CNT_DONE(eop));
+  SET_EVENT_DONE(eop, 0);
+  gasnete_eop_free(eop GASNETI_THREAD_PASS);
+}
+
+#define GASNETE_EOP_CNTRS(_eop) \
+        &(_eop)->initiated_cnt, ((gasnete_op_t*)(_eop)), GC_POST_COMPLETION_EOP
+#define GASNETE_IOP_CNTRS_put(_iop) \
+        &(_iop)->initiated_put_cnt, ((gasnete_op_t*)(_iop)), GC_POST_COMPLETION_IPUT
+#define GASNETE_IOP_CNTRS_get(_iop) \
+        &(_iop)->initiated_get_cnt, ((gasnete_op_t*)(_iop)), GC_POST_COMPLETION_IGET
+#define GASNETE_IOP_CNTRS_rmw(_iop) \
+        &(_iop)->initiated_rmw_cnt, ((gasnete_op_t*)(_iop)), GC_POST_COMPLETION_IRMW
+#define GASNETE_IOP_CNTRS(_iop,_putget) \
+        GASNETE_IOP_CNTRS_##_putget(_iop)
 
 #endif /* GASNET_GEMINI_H */
 
