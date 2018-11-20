@@ -100,6 +100,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_RUNTIME_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_LAUNCHER_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_COMPILER_SUBDIR', INTERNAL),
+    ChapelEnv('CHPL_BIN_SUBDIR', INTERNAL),
     ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_JEMALLOC_UNIQ_CFG_PATH',INTERNAL),
@@ -183,6 +184,7 @@ def compute_internal_values():
     ENV_VALS['CHPL_RUNTIME_SUBDIR'] = printchplenv(set(['runtime']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_LAUNCHER_SUBDIR'] = printchplenv(set(['launcher']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_COMPILER_SUBDIR'] = printchplenv(set(['compiler']), print_format='path').rstrip('\n')
+    ENV_VALS['CHPL_BIN_SUBDIR'] = chpl_bin_subdir.get('host')
 
     link_args_3p = []
 

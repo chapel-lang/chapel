@@ -2,6 +2,7 @@ __all__ = [
     'chpl_arch',
     'chpl_atomics',
     'chpl_aux_filesys',
+    'chpl_bin_subdir',
     'chpl_make',
     'chpl_platform',
     'chpl_comm',

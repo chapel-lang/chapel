@@ -38,10 +38,10 @@ fi
 export CHPL_HOME=$chpl_home
 echo "Setting CHPL_HOME to $CHPL_HOME"
 
-BINPATH=`"$CHPL_HOME"/util/config/binpath.py`
+CHPL_BIN_SUBDIR=`"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
 
-export PATH="$CHPL_HOME"/bin/$BINPATH:"$CHPL_HOME"/util:"$MYPATH"
-echo "Updating PATH to include $CHPL_HOME/bin/$BINPATH"
+export PATH="$CHPL_HOME"/bin/$CHPL_BIN_SUBDIR:"$CHPL_HOME"/util:"$MYPATH"
+echo "Updating PATH to include $CHPL_HOME/bin/$CHPL_BIN_SUBDIR"
 echo "                     and $CHPL_HOME/util"
 
 export MANPATH="$CHPL_HOME"/man:"$MYMANPATH"
