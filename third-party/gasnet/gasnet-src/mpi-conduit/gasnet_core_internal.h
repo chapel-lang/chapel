@@ -8,7 +8,6 @@
 #define _GASNET_CORE_INTERNAL_H
 
 #include <gasnet_internal.h>
-#include <gasnet_handler.h>
 
 /*  whether or not to use spin-locking for HSL's */
 #define GASNETC_HSL_SPINLOCK 1
@@ -77,22 +76,21 @@ const char *gasneti_AMErrorName(int errval) {
  } while (0)
 
 /* ------------------------------------------------------------------------------------ */
-#define GASNETC_HANDLER_BASE  1 /* reserve 1-63 for the core API */
-#define _hidx_gasnetc_auxseg_reqh             (GASNETC_HANDLER_BASE+0)
+#define _hidx_gasnetc_exchg_reqh              (GASNETC_HANDLER_BASE+0)
 /* add new core API handlers here and to the bottom of gasnet_core.c */
 
 /* ------------------------------------------------------------------------------------ */
-#if GASNET_PSHM
-#define GASNETC_MAX_NUMHANDLERS 256
-extern gasneti_handler_fn_t gasnetc_handler[GASNETC_MAX_NUMHANDLERS];
-#endif
+/* handler table (temporary global impl) */
+extern gex_AM_Entry_t *gasnetc_handler;
 
 /* ------------------------------------------------------------------------------------ */
-/* AM category (recommended impl if supporting PSHM) */
-typedef enum {
-  gasnetc_Short=0,
-  gasnetc_Medium=1,
-  gasnetc_Long=2
-} gasnetc_category_t;
+/* Configure gasnet_event_internal.h and gasnet_event.c */
+// TODO-EX: prefix needs to move from "extended" to "core"
+
+// (###) Define as needed if iop counters should use something other than weakatomics:
+/* #define gasnete_op_atomic_(_id) gasnetc_atomic_##_id */
+
+// (###) Define if conduit performs local-completion detection:
+/* #define GASNETE_HAVE_LC */
 
 #endif

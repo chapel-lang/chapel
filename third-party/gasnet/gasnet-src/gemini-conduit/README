@@ -30,7 +30,7 @@ Optional configure-time settings:
 ------------------------------
 
 NOTE: In the descriptions which follow, the token [CONDUIT] should be replaced
-by "aries" or "gemini" (without the quotes), as approptiate.
+by "aries" or "gemini" (without the quotes), as appropriate.
 
 --with-[CONDUIT]-max-medium=[value]
    By default gasnet_AMMaxMedium() is 4032: a 4096 byte buffer minus
@@ -140,18 +140,56 @@ GASNET_BARRIER - barrier algorithm selection
                 GNI operations for lower latency.
   Currently GNIDISSEM is the default on both Gemini and Aries.
 
-GASNET_NETWORKDEPTH_SPACE - volume of AM Request queue
-  This determines the maximum volume of AM Requests (in bytes) that can
-  be outstanding between a given pair of peers before flow-control.  This
-  differs from most other conduits in which the depth is given by a
-  count.  Values smaller than 2 maximum size Medium AMs, or larger than
-  64 maximum sized Medium AMs, will be silently adjusted to that range.
+GASNET_GNI_AM_RVOUS_CUTOVER - enable/disable rendezvous based AMs
+  At small scale, Active Messages are implemented using an "Eager" protocol
+  which allocates buffers sufficient for every process to receive up to
+  GASNET_NETWORKDEPTH_SPACE worth of AM traffic from every other process
+  simultaneously.  At large scale the memory consumption is untenable, and
+  an alternative "Rendezvous" algorithm is used.  It requires only constant
+  memory, but adds latency to AM traffic.
+  This parameter sets the cutover between the two implementations.
+  + If the value is 0, the Eager algorithm is always used
+  + If the value is 1, the Rendezvous algorithm is always used
+  + For all other positive values, the Rendezvous algorithm used for runs
+    with a process count greater than or equal to this parameter, and Eager
+    is used otherwise.
+  The default value is 16384.
+
+GASNET_GNI_AM_RVOUS_BUFFERS - number of AM rendezvous buffers
+  Used only for "Rendezvous" AM protocol (see GASNET_GNI_AM_RVOUS_CUTOVER).
+  This determines the maximum number of incoming AM Requests that can be
+  concurrently received and processed by any given endpoint using the
+  Rendezvous protocol
+  The default value is 64, and the minimum is 1.
+
+GASNET_NETWORKDEPTH_SPACE - volume of Eager AM Request queue
+  Used only for "Eager" AM protocol (see GASNET_GNI_AM_RVOUS_CUTOVER).
+  This determines the maximum volume of AM Requests (in bytes) that can be
+  outstanding between a given pair of peers before flow-control in the Eager AM
+  protocol.  This differs from most other conduits in which the depth is given
+  by a count.  Values smaller than 2 maximum size Medium AMs, or larger than 64
+  maximum sized Medium AMs, will be silently adjusted to that range.
   The default value is 12K.
 
-GASNET_NETWORKDEPTH_TOTAL - depth of AM Reply queue
+GASNET_NETWORKDEPTH_TOTAL - depth of AM Request queue
   This determines the maximum number of AM Requests that can be
-  outstanding from one peer to all others before flow-control.
+  outstanding from one endpoint to all others before flow-control.
   The default value is 64, and the minimum is 1.
+
+GASNET_NETWORKDEPTH - depth of per-peer Rendezvous AM Request queue
+  Used only for "Rendezvous" AM protocol (see GASNET_GNI_AM_RVOUS_CUTOVER).
+  This determines the number of AM Requests (in messages) that can be
+  outstanding between a given pair of endpoints before flow-control in
+  the Rendezvous AM protocol.
+  If this value exceeds GASNET_NETWORKDEPTH_TOTAL, it will be reduced to
+  the same value (with a warning).
+  The default value is 64, and the minimum is 1.
+
+GASNET_GNI_AM_MEMORY_REPORT
+  The value is a boolean: "0" to disable or "1" to enable the reporting of
+  the memory allocated for AM buffers (controlled by the GASNET_NETWORKDEPTH*
+  and GASNET_GNI_AM_RVOUS_* families of settings) on stderr.
+  The default is "0" (no report).
 
 GASNET_GNI_NUM_PD - number of post descriptors
   AM and RDMA operations all requires use of a control block called a
@@ -160,14 +198,26 @@ GASNET_GNI_NUM_PD - number of post descriptors
   can be in-flight at any time.
   The default value is 512, and the minimum is 32.
 
-GASNET_GNI_GET_FMA_RDMA_CUTOVER - default 4096 max 16384
-GASNET_GNI_PUT_FMA_RDMA_CUTOVER - default 4096 max 16384
-  These set the cutover from Fast Memory Access (RDMA commanded in user
-  mode) to RDMA (commanded through the kernel).  Transfers up to and
-  including these sizes will be performed using FMA.  Use of FMA will
-  typically result in lower latency, but at the expense of greater
-  involvement by the CPU (and thus less potential, for instance, for
-  overlap of non-blocking communication with computation).
+GASNET_GNI_GET_FMA_RDMA_CUTOVER
+GASNET_GNI_PUT_FMA_RDMA_CUTOVER
+  These set the cutover from use of FMA (Fast Memory Access) to BTE (Block
+  Transfer Engine) NIC functional units for RMA Put and Get operations.
+  Transfers up to and including these sizes will be performed using FMA.  FMA
+  typically yields lower latency to start an operation at the expense of
+  greater involvement by the CPU (and thus less potential, for instance, for
+  overlap of non-blocking communication with computation).  Because the NIC
+  supports greater concurrency via FMA, it may also yield greater aggregate
+  throughput when multiple processes per node perform RMA concurrently.
+  Advantages of BTE include asynchrony of the transfer without CPU
+  involvement, and the ability to reach peak bandwidth with a lower volume
+  (size and count) of RMA transfers.
+  Performance of Puts and Gets in the 256 to 8192 byte range can be very
+  sensitive to these values and to the degree of communication concurrency.
+  You may want to adjust these parameters if you believe RMA operations in this
+  range determine the performance of your application.
+  On Gemini networks both values default to 4096
+  On Aries networks both values default to 1023
+  The maximum supported value is 16384
 
 GASNET_GNI_GET_BOUNCE_REGISTER_CUTOVER  - default 4096, max 32768
 GASNET_GNI_PUT_BOUNCE_REGISTER_CUTOVER  - default 4096, max 32768
@@ -280,14 +330,46 @@ GASNET_AM_DOMAIN_POLL_MASK
 
 MPICH_RANK_REORDER_METHOD
   This environment variable is not processed directly by GASNet itself.
-  Howevever, it controls the numbering of GASNet processes launched with
-  either 'aprun' or 'srun', as descibed in Cray's intro_mpi(3) manpage.
+  However, it controls the numbering of GASNet processes launched with
+  either 'aprun' or 'srun', as described in Cray's intro_mpi(3) manpage.
 
 PMI_GNI_LOC_ADDR   - NIC address on local node
 PMI_GNI_COOKIE     - Access code shared by all nodes in job
 PMI_GNI_PTAG       - Protection tag shared by all nodes in job
 PMI_GNI_DEV_ID     - Device ID (Selects which NIC is in use)
   Provided by Cray runtime system.  Don't mess with these.
+
+Remote Atomics:
+---------------
+
+There is no support for offload of atomics to the Gemini NIC.
+
+The following table indicates the pairs of atomic operation and data type that
+are eligible for offloaded to the Aries NIC.  The offloaded atomics will be
+used when the arguments to gex_AD_Create() express only supported pairs (unless
+suppressed by use of GEX_FLAG_AD_FAVOR_MY_RANK or GEX_FLAG_AD_FAVOR_MY_NBRHD
+flags, or in a single-process run).
+
+          I32   U32   I64   U64   FLT   DBL
+          ---   ---   ---   ---   ---   ---
+    SET:   Y     Y     Y     Y     Y     Y
+    GET:   Y     Y     Y     Y     Y     Y
+   SWAP:   Y     Y     Y     Y     Y     Y
+  CSWAP:   Y     Y     Y     Y     Y     Y
+ (F)ADD:   Y     Y     Y     Y     Y     N
+ (F)SUB:   Y     Y     Y     Y     Y     N
+ (F)INC:   Y     Y     Y     Y     Y     N
+ (F)DEC:   Y     Y     Y     Y     Y     N
+(F)MULT:   N     N     N     N     N     N
+ (F)MIN:   Y     N     Y     N     Y     Y
+ (F)MAX:   Y     N     Y     N     Y     Y
+ (F)AND:   Y     Y     Y     Y    N/A   N/A
+  (F)OR:   Y     Y     Y     Y    N/A   N/A
+ (F)XOR:   Y     Y     Y     Y    N/A   N/A
+
+    Y = offload is supported
+    N = offload is not supported
+    N/A indicates invalid op/type pairs
 
 Known problems:
 ---------------
@@ -621,7 +703,7 @@ that as an error exit and kill all the other ranks.
 The logic to determine the maximum size pinnable segment is borrowed
 from the portals-conduit.
 
-The gasnetc_bootstrap* functions containsthe interface to PMI.  It also includes
+The gasnetc_bootstrap* functions contain the interface to PMI.  It also includes
 the implementation of AllGather for GASNet bootstrapExchange and GNI
 initialization.  It uses PMI_AllGather.  For some reason,
 PMI_AllGather does not return data in rank order, so it is sorted into

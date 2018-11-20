@@ -6,8 +6,8 @@
  * This file is used by gasnet_atomicops.h and configure.
  */
 
-#if !defined(_IN_GASNET_TOOLS_H) && !defined(_IN_GASNET_H) && !defined(GASNETI_IN_CONFIGURE)
-  #error This file is not meant to be included directly- clients should include gasnet.h or gasnet_tools.h
+#if !defined(_IN_GASNET_TOOLS_H) && !defined(_IN_GASNETEX_H) && !defined(GASNETI_IN_CONFIGURE)
+  #error This file is not meant to be included directly- clients should include gasnetex.h or gasnet_tools.h
 #endif
 
 #ifndef _GASNET_ATOMIC_FWD_H

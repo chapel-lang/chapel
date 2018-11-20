@@ -523,18 +523,15 @@ CONDUIT_FILELIST = \
       gasnet_core_fwd.h      \
       gasnet_core_help.h     \
       gasnet_core_internal.h \
-      gasnet_coll_fwd.h      \
       gasnet_extended.c      \
       gasnet_extended_fwd.h  \
-      gasnet_extended_help_extra.h  \
-      gasnet_extended_coll.c
+      gasnet_extended_help_extra.h
 
 
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line
 CONDUIT_SOURCELIST = \
       $(srcdir)/gasnet_core.c \
-      $(srcdir)/gasnet_extended_coll.c \
       $(srcdir)/gasnet_extended.c
 
 
@@ -941,7 +938,7 @@ libgasnet-smp-parsync.a: $(libgasnet_dependencies)
 @USE_SMP_CONDUIT_TRUE@clean-local: do-clean-local
 @USE_SMP_CONDUIT_TRUE@install-data-local: do-install-data-local
 @USE_SMP_CONDUIT_TRUE@uninstall-local: do-uninstall-local
-@USE_SMP_CONDUIT_FALSE@$(top_srcdir)/gasnet.h: do-error
+@USE_SMP_CONDUIT_FALSE@$(top_srcdir)/gasnetex.h: do-error
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

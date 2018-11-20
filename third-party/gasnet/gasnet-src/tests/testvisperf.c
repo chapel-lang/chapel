@@ -4,7 +4,7 @@
  * Terms of use are as specified in license.txt
  */
 
-#include "gasnet.h"
+#include <gasnetex.h>
 #include "gasnet_vis.h"
 
 uintptr_t maxsz = 0;
@@ -13,6 +13,11 @@ size_t areasz = 0;
   #define TEST_SEGSZ_EXPR (maxsz)
 #endif
 #include "test.h"
+
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
 
 int insegment = 1;
 int doputs = 1;
@@ -27,7 +32,7 @@ int numprocs;
 int peerproc = -1;
 int iamsender = 0;
 void *Lbase, *Rbase;
-gasnet_handle_t *evts = NULL;
+gex_Event_t *evts = NULL;
 size_t evtcnt = 0;
 
 size_t min_payload = 0, max_payload = 0;
@@ -40,12 +45,12 @@ typedef enum { TEST_V=0, TEST_I=1, TEST_S=2 } test_vis_t;
 int dovis[] = { 1, 1, 1 };
 const char *visdesc[] = { "VECTOR", "INDEXED", "STRIDED" };
 
-gasnet_memvec_t *make_vlist(void *baseaddr, size_t stride, size_t cnt, size_t chunksz) {
-  gasnet_memvec_t *retval = test_malloc(cnt*sizeof(gasnet_memvec_t));
+gex_Memvec_t *make_vlist(void *baseaddr, size_t stride, size_t cnt, size_t chunksz) {
+  gex_Memvec_t *retval = test_malloc(cnt*sizeof(gex_Memvec_t));
   if (cnt > 1) assert(stride >= chunksz);
   for (size_t i = 0; i < cnt; i++) {
-    retval[i].addr = ((char*)baseaddr)+i*stride;
-    retval[i].len = chunksz;
+    retval[i].gex_addr = ((char*)baseaddr)+i*stride;
+    retval[i].gex_len = chunksz;
   }
   return retval;
 }
@@ -70,7 +75,7 @@ int main(int argc, char **argv) {
   int help = 0;   
 
   /* call startup */
-  GASNET_Safe(gasnet_init(&argc, &argv));
+  GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testvisperf", &argc, &argv, 0));
 
   /* parse arguments */
   arg = 1;
@@ -170,7 +175,7 @@ int main(int argc, char **argv) {
   if (!max_contig) max_contig = MIN(256*1024,max_payload);
   if (!min_payload) min_payload = min_contig;
 
-  GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
   test_init("testvisperf",1, "[options] (iters) (test_sections)\n"
              "  -p/-g     selects puts only or gets only (default is both).\n"
              "  -r/-l     selects remotely contiguous or locally contiguous (default is neither).\n"
@@ -195,8 +200,8 @@ int main(int argc, char **argv) {
   if (help || argc > arg) test_usage();
 
   /* get SPMD info */
-  myproc = gasnet_mynode();
-  numprocs = gasnet_nodes();
+  myproc = gex_TM_QueryRank(myteam);
+  numprocs = gex_TM_QuerySize(myteam);
 
   if (!firstlastmode) {
     /* Only allow 1 or even number for numprocs */
@@ -332,10 +337,11 @@ int main(int argc, char **argv) {
               size_t Rsz = datasz/Rcnt;
               void **Lilist = NULL;
               void **Rilist = NULL;
-              gasnet_memvec_t *Lvlist = NULL;
-              gasnet_memvec_t *Rvlist = NULL;
-              size_t *Lstrides = NULL;
-              size_t *Rstrides = NULL;
+              gex_Memvec_t *Lvlist = NULL;
+              gex_Memvec_t *Rvlist = NULL;
+              ptrdiff_t *Lstrides = NULL;
+              ptrdiff_t *Rstrides = NULL;
+              size_t *_LRcount = NULL;
               size_t *LRcount = NULL;
               size_t stride = contigsz*(((double)densitysteps)/(densitysteps-di));
               assert(stride >= contigsz);
@@ -354,24 +360,26 @@ int main(int argc, char **argv) {
                   case TEST_S: {
                     size_t chunkcnt = datasz/contigsz;
                     int dim;
-                    Lstrides = test_malloc(sizeof(size_t)*stridelevels);
-                    Rstrides = test_malloc(sizeof(size_t)*stridelevels);
-                    LRcount = test_malloc(sizeof(size_t)*(stridelevels+1));
-                    LRcount[0] = contigsz;
+                    Lstrides = test_malloc(sizeof(ptrdiff_t)*stridelevels);
+                    Rstrides = test_malloc(sizeof(ptrdiff_t)*stridelevels);
+                    _LRcount = test_malloc(sizeof(size_t)*(stridelevels+1));
+                    _LRcount[0] = contigsz; // temporary using legacy count format for convenience
                     Lstrides[0] = (localcontig ? contigsz : stride);
                     Rstrides[0] = (remotecontig ? contigsz : stride);
                     for (dim = 1; dim < stridelevels; dim++) {
-                      size_t factor = 1, fi;
-                      for (fi = 1; fi <= chunkcnt/(2*(stridelevels-dim)); fi++) /* choose a reasonable factor */
+                      size_t factor = 1;
+                      for (size_t fi = 1; fi <= chunkcnt/(2*(stridelevels-dim)); fi++) /* choose a reasonable factor */
                         if (chunkcnt/fi*fi == chunkcnt) factor = fi;
-                      LRcount[dim] = factor;
+                      _LRcount[dim] = factor;
                       chunkcnt /= factor;
-                      Lstrides[dim] = LRcount[dim]*Lstrides[dim-1];
-                      Rstrides[dim] = LRcount[dim]*Rstrides[dim-1];
+                      Lstrides[dim] = _LRcount[dim]*Lstrides[dim-1];
+                      Rstrides[dim] = _LRcount[dim]*Rstrides[dim-1];
                     }
-                    LRcount[stridelevels] = chunkcnt;
-                    { size_t tmp = 1;
-                      for (dim = 0; dim <= stridelevels; dim++) tmp *= LRcount[dim];
+                    _LRcount[stridelevels] = chunkcnt;
+                    LRcount = _LRcount+1;
+
+                    { size_t tmp = contigsz;
+                      for (dim = 0; dim < stridelevels; dim++) tmp *= LRcount[dim];
                       assert(tmp == datasz);
                     }
                     break;
@@ -381,60 +389,60 @@ int main(int argc, char **argv) {
               #define DOIT(iters) do {                                                           \
                 if (doNB && iters > evtcnt) {                                                    \
                   test_free(evts);                                                               \
-                  evts = test_malloc(iters * sizeof(gasnet_handle_t));                           \
+                  evts = test_malloc(iters * sizeof(gex_Event_t));                               \
                   evtcnt = iters;                                                                \
                 }                                                                                \
                 switch (viscat) {                                                                \
                   case TEST_V:                                                                   \
                     if (doNB) {                                                                  \
                       if (isget) for (long i = 0; i < iters; i++)                                \
-                        evts[i] = gasnet_getv_nb_bulk(Lcnt,Lvlist,peerproc,Rcnt,Rvlist);         \
+                        evts[i] = gex_VIS_VectorGetNB(myteam,Lcnt,Lvlist,peerproc,Rcnt,Rvlist,0);\
                       else for (long i = 0; i < iters; i++)                                      \
-                        evts[i] = gasnet_putv_nb_bulk(peerproc,Rcnt,Rvlist,Lcnt,Lvlist);         \
+                        evts[i] = gex_VIS_VectorPutNB(myteam,peerproc,Rcnt,Rvlist,Lcnt,Lvlist,0);\
                     } else {                                                                     \
                       if (isget) for (long i = 0; i < iters; i++)                                \
-                        gasnet_getv_nbi_bulk(Lcnt,Lvlist,peerproc,Rcnt,Rvlist);                  \
+                        gex_VIS_VectorGetNBI(myteam,Lcnt,Lvlist,peerproc,Rcnt,Rvlist,0);         \
                       else for (long i = 0; i < iters; i++)                                      \
-                        gasnet_putv_nbi_bulk(peerproc,Rcnt,Rvlist,Lcnt,Lvlist);                  \
+                        gex_VIS_VectorPutNBI(myteam,peerproc,Rcnt,Rvlist,Lcnt,Lvlist,0);         \
                     }                                                                            \
                     break;                                                                       \
                   case TEST_I:                                                                   \
                     if (doNB) {                                                                  \
                       if (isget) for (long i = 0; i < iters; i++)                                \
                         evts[i] =                                                                \
-                         gasnet_geti_nb_bulk(Lcnt,Lilist,Lsz,peerproc,Rcnt,Rilist,Rsz);          \
+                         gex_VIS_IndexedGetNB(myteam,Lcnt,Lilist,Lsz,peerproc,Rcnt,Rilist,Rsz,0);\
                       else for (long i = 0; i < iters; i++)                                      \
                         evts[i] =                                                                \
-                         gasnet_puti_nb_bulk(peerproc,Rcnt,Rilist,Rsz,Lcnt,Lilist,Lsz);          \
+                         gex_VIS_IndexedPutNB(myteam,peerproc,Rcnt,Rilist,Rsz,Lcnt,Lilist,Lsz,0);\
                     } else {                                                                     \
                       if (isget) for (long i = 0; i < iters; i++)                                \
-                        gasnet_geti_nbi_bulk(Lcnt,Lilist,Lsz,peerproc,Rcnt,Rilist,Rsz);          \
+                        gex_VIS_IndexedGetNBI(myteam,Lcnt,Lilist,Lsz,peerproc,Rcnt,Rilist,Rsz,0);\
                       else for (long i = 0; i < iters; i++)                                      \
-                        gasnet_puti_nbi_bulk(peerproc,Rcnt,Rilist,Rsz,Lcnt,Lilist,Lsz);          \
+                        gex_VIS_IndexedPutNBI(myteam,peerproc,Rcnt,Rilist,Rsz,Lcnt,Lilist,Lsz,0);\
                     }                                                                            \
                     break;                                                                       \
                   case TEST_S:                                                                   \
                     if (doNB) {                                                                  \
                       if (isget) for (long i = 0; i < iters; i++)                                \
                         evts[i] =                                                                \
-                         gasnet_gets_nb_bulk(Lbase,Lstrides,peerproc,Rbase,Rstrides,             \
-                                             LRcount,stridelevels);                              \
+                         gex_VIS_StridedGetNB(myteam,Lbase,Lstrides,peerproc,Rbase,Rstrides,     \
+                                                      contigsz,LRcount,stridelevels,0);          \
                       else for (long i = 0; i < iters; i++)                                      \
                         evts[i] =                                                                \
-                         gasnet_puts_nb_bulk(peerproc,Rbase,Rstrides,Lbase,Lstrides,             \
-                                             LRcount,stridelevels);                              \
+                         gex_VIS_StridedPutNB(myteam,peerproc,Rbase,Rstrides,Lbase,Lstrides,     \
+                                                contigsz,LRcount,stridelevels,0);                \
                     } else {                                                                     \
                       if (isget) for (long i = 0; i < iters; i++)                                \
-                        gasnet_gets_nbi_bulk(Lbase,Lstrides,peerproc,Rbase,Rstrides,             \
-                                             LRcount,stridelevels);                              \
+                        gex_VIS_StridedGetNBI(myteam,Lbase,Lstrides,peerproc,Rbase,Rstrides,     \
+                                                      contigsz,LRcount,stridelevels,0);          \
                       else for (long i = 0; i < iters; i++)                                      \
-                        gasnet_puts_nbi_bulk(peerproc,Rbase,Rstrides,Lbase,Lstrides,             \
-                                             LRcount,stridelevels);                              \
+                        gex_VIS_StridedPutNBI(myteam,peerproc,Rbase,Rstrides,Lbase,Lstrides,     \
+                                                contigsz,LRcount,stridelevels,0);                \
                     }                                                                            \
                     break;                                                                       \
                 }                                                                                \
-                if (doNB) gasnet_wait_syncnb_all(evts, iters);                                   \
-                else gasnet_wait_syncnbi_all();                                                  \
+                if (doNB) gex_Event_WaitAll(evts, iters, 0);                                     \
+                else gex_NBI_Wait(GEX_EC_ALL,0);                                                 \
               } while (0)
               if (iamsender) DOIT(1); /* pay some warm-up costs */
               BARRIER();
@@ -459,7 +467,7 @@ int main(int argc, char **argv) {
               if (Rvlist) test_free(Rvlist);
               if (Lstrides) test_free(Lstrides);
               if (Rstrides) test_free(Rstrides);
-              if (LRcount) test_free(LRcount);
+              if (_LRcount) test_free(_LRcount);
             }
             if (iamsender) { printf("%s\n", mystr); fflush(stdout); }
             BARRIER();

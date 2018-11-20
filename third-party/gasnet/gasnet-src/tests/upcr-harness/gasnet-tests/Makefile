@@ -7,7 +7,7 @@ all:
 PERL ?= perl
 CONDUIT_DIR=$(TOP_BUILDDIR)/gasnet/$(NETWORK)-conduit
 
-testcxx%: force
+testcxx% testlegacycxx%: force
 	@if test -n "`$(UPCC) --network=udp --echo-var UPCR_LD 2>/dev/null`"; then \
 	  makename=`echo $@ | $(PERL) -pe 's/_.*-(seq|par|parsync)$$/-$$1/'`; \
 	   cmdname=`echo $@ | $(PERL) -pe 's/(_.*)?-(seq|par|parsync)$$//'`; \

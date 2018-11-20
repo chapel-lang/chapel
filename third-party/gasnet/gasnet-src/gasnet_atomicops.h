@@ -4,8 +4,8 @@
  * Terms of use are as specified in license.txt
  */
 
-#if !defined(_IN_GASNET_TOOLS_H) && !defined(_IN_GASNET_H)
-  #error This file is not meant to be included directly- clients should include gasnet.h or gasnet_tools.h
+#if !defined(_IN_GASNET_TOOLS_H) && !defined(_IN_GASNETEX_H)
+  #error This file is not meant to be included directly- clients should include gasnetex.h or gasnet_tools.h
 #endif
 
 #ifndef _GASNET_ATOMICOPS_H

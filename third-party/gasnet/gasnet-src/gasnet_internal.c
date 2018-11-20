@@ -5,6 +5,8 @@
  */
 
 #include <gasnet_internal.h>
+#include <gasnet_am.h>
+
 #include <gasnet_tools.h>
 
 #include <unistd.h>
@@ -31,12 +33,12 @@ int gasneti_VerboseErrors = 1;
 /* generic atomics support */
 #if defined(GASNETI_BUILD_GENERIC_ATOMIC32) || defined(GASNETI_BUILD_GENERIC_ATOMIC64)
   #ifdef GASNETI_ATOMIC_LOCK_TBL_DEFNS
-    #define _gasneti_atomic_lock_initializer	GASNET_HSL_INITIALIZER
-    #define _gasneti_atomic_lock_init(x)	gasnet_hsl_init(x)
-    #define _gasneti_atomic_lock_lock(x)	gasnet_hsl_lock(x)
-    #define _gasneti_atomic_lock_unlock(x)	gasnet_hsl_unlock(x)
+    #define _gasneti_atomic_lock_initializer	GEX_HSL_INITIALIZER
+    #define _gasneti_atomic_lock_init(x)	gex_HSL_Init(x)
+    #define _gasneti_atomic_lock_lock(x)	gex_HSL_Lock(x)
+    #define _gasneti_atomic_lock_unlock(x)	gex_HSL_Unlock(x)
     #define _gasneti_atomic_lock_malloc		gasneti_malloc
-    GASNETI_ATOMIC_LOCK_TBL_DEFNS(gasneti_hsl_atomic_, gasnet_hsl_)
+    GASNETI_ATOMIC_LOCK_TBL_DEFNS(gasneti_hsl_atomic_, gex_HSL_)
     #undef _gasneti_atomic_lock_initializer
     #undef _gasneti_atomic_lock_init
     #undef _gasneti_atomic_lock_lock
@@ -61,7 +63,10 @@ int gasneti_VerboseErrors = 1;
   GASNETI_THREADKEY_DEFINE(gasneti_throttledebug_key);
 #endif
 
-#define GASNET_VERSION_STR  _STRINGIFY(GASNET_VERSION)
+#define GEX_VERSION_STR  _STRINGIFY(GEX_SPEC_VERSION_MAJOR) "."  _STRINGIFY(GEX_SPEC_VERSION_MINOR)
+GASNETI_IDENT(gasneti_IdentString_EXAPIVersion, "$GASNetEXAPIVersion: " GEX_VERSION_STR " $");
+
+#define GASNET_VERSION_STR  _STRINGIFY(GASNETI_SPEC_VERSION_MAJOR)
 GASNETI_IDENT(gasneti_IdentString_APIVersion, "$GASNetAPIVersion: " GASNET_VERSION_STR " $");
 
 #define GASNETI_THREAD_MODEL_STR _STRINGIFY(GASNETI_THREAD_MODEL)
@@ -121,23 +126,18 @@ int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME)) = 1;
 
-extern int gasneti_internal_idiotcheck(gasnet_handlerentry_t *table, int numentries,
-                                       uintptr_t segsize, uintptr_t minheapoffset) {
-  gasneti_fatalerror("GASNet client code must NOT #include <gasnet_internal.h>\n"
-                     "gasnet_internal.h is not installed, and modifies the behavior "
-                     "of various internal operations, such as segment safety bounds-checking.");
-  return GASNET_ERR_NOT_INIT;
-}
-
 /* global definitions of GASNet-wide internal variables
    not subject to override */
-gasnet_node_t gasneti_mynode = (gasnet_node_t)-1;
-gasnet_node_t gasneti_nodes = 0;
+gex_Rank_t gasneti_mynode = (gex_Rank_t)-1;
+gex_Rank_t gasneti_nodes = 0;
+
+// a necessary evil - see the declaration in gasnet_help.h
+gasneti_TM_t gasneti_thing_that_goes_thunk_in_the_dark = NULL;
 
 /* Default global definitions of GASNet-wide internal variables
    if conduits override one of these, they must
    still provide variable or macro definitions for these tokens */
-#if defined(_GASNET_GETMAXSEGMENTSIZE_DEFAULT) && !GASNET_SEGMENT_EVERYTHING
+#if defined(_GASNET_GETMAXSEGMENTSIZE_DEFAULT)
   uintptr_t gasneti_MaxLocalSegmentSize = 0;
   uintptr_t gasneti_MaxGlobalSegmentSize = 0;
 #endif
@@ -156,30 +156,123 @@ gasnet_node_t gasneti_nodes = 0;
 
 #ifdef _GASNETI_SEGINFO_DEFAULT
   gasnet_seginfo_t *gasneti_seginfo = NULL;
-  gasnet_seginfo_t *gasneti_seginfo_client = NULL;
-  void **gasneti_seginfo_ub = NULL; /* cached result of gasneti_seginfo[i].addr + gasneti_seginfo[i].size */
-  void **gasneti_seginfo_client_ub = NULL;
+  gasnet_seginfo_t *gasneti_seginfo_aux = NULL;
 #endif
 
 /* ------------------------------------------------------------------------------------ */
 /* conduit-independent sanity checks */
 extern void gasneti_check_config_preinit(void) {
-  gasneti_assert_always(sizeof(int8_t) == 1);
-  gasneti_assert_always(sizeof(uint8_t) == 1);
-  gasneti_assert_always(sizeof(gasnete_anytype8_t) == 1);
+  gasneti_static_assert(sizeof(int8_t) == 1);
+  gasneti_static_assert(sizeof(uint8_t) == 1);
+  gasneti_static_assert(sizeof(gasnete_anytype8_t) == 1);
   #ifndef INTTYPES_16BIT_MISSING
-    gasneti_assert_always(sizeof(int16_t) == 2);
-    gasneti_assert_always(sizeof(uint16_t) == 2);
-    gasneti_assert_always(sizeof(gasnete_anytype16_t) == 2);
+    gasneti_static_assert(sizeof(int16_t) == 2);
+    gasneti_static_assert(sizeof(uint16_t) == 2);
+    gasneti_static_assert(sizeof(gasnete_anytype16_t) == 2);
   #endif
-  gasneti_assert_always(sizeof(int32_t) == 4);
-  gasneti_assert_always(sizeof(uint32_t) == 4);
-  gasneti_assert_always(sizeof(gasnete_anytype32_t) == 4);
-  gasneti_assert_always(sizeof(int64_t) == 8);
-  gasneti_assert_always(sizeof(uint64_t) == 8);
-  gasneti_assert_always(sizeof(gasnete_anytype64_t) == 8);
+  gasneti_static_assert(sizeof(int32_t) == 4);
+  gasneti_static_assert(sizeof(uint32_t) == 4);
+  gasneti_static_assert(sizeof(gasnete_anytype32_t) == 4);
+  gasneti_static_assert(sizeof(int64_t) == 8);
+  gasneti_static_assert(sizeof(uint64_t) == 8);
+  gasneti_static_assert(sizeof(gasnete_anytype64_t) == 8);
 
-  gasneti_assert_always(sizeof(uintptr_t) >= sizeof(void *));
+  gasneti_static_assert(sizeof(uintptr_t) >= sizeof(void *));
+
+  #define CHECK_DT(id, type) do { \
+      gasneti_assert_always(gasneti_dt_valid(id)); \
+      gasneti_assert_always(gasneti_dt_size(id) == sizeof(type)); \
+      gasneti_assert_always(!!gasneti_dt_int(id) == !gasneti_dt_fp(id)); \
+    } while (0)
+  #define CHECK_INT_DT(id, type, sign) do { \
+      CHECK_DT(id, type); \
+      gasneti_assert_always(gasneti_dt_int(id)); \
+      gasneti_assert_always(gasneti_dt_##sign(id)); \
+      gasneti_assert_always(!!gasneti_dt_signed(id) == !gasneti_dt_unsigned(id)); \
+    } while (0)
+  #define CHECK_FP_DT(id, type) do { \
+      CHECK_DT(id, type); \
+      gasneti_assert_always(gasneti_dt_fp(id)); \
+    } while (0)
+
+  CHECK_INT_DT(GEX_DT_I32,  int32_t,   signed);
+  CHECK_INT_DT(GEX_DT_U32, uint32_t, unsigned);
+  CHECK_INT_DT(GEX_DT_I64,  int64_t,   signed);
+  CHECK_INT_DT(GEX_DT_U64, uint64_t, unsigned);
+
+  CHECK_FP_DT(GEX_DT_FLT,  float);
+  CHECK_FP_DT(GEX_DT_DBL, double);
+
+  gasneti_assert_always(gasneti_dt_valid_reduce(GEX_DT_USER));
+  gasneti_assert_always(!gasneti_dt_valid_atomic(GEX_DT_USER));
+  gasneti_assert_always(!gasneti_dt_int(GEX_DT_USER));
+  gasneti_assert_always(!gasneti_dt_fp(GEX_DT_USER));
+  gasneti_assert_always(!gasneti_dt_signed(GEX_DT_USER));
+  gasneti_assert_always(!gasneti_dt_unsigned(GEX_DT_USER));
+
+  #undef CHECK_DT
+  #undef CHECK_INT_DT
+  #undef CHECK_FP_DT
+
+  #define _CHECK_OP(id, pred1, pred2, pred3) do { \
+      gasneti_assert_always(gasneti_op_atomic(id)); \
+      gasneti_assert_always(gasneti_op_int(id)); \
+      gasneti_assert_always(!!gasneti_op_0arg(id) + \
+                            !!gasneti_op_1arg(id) + \
+                            !!gasneti_op_2arg(id) == 1); \
+      gasneti_assert_always(gasneti_op_##pred1(id)); \
+      gasneti_assert_always(gasneti_op_##pred2(id)); \
+      gasneti_assert_always(gasneti_op_##pred3(id)); \
+    } while (0)
+  #define CHECK_ARITH_OP(stem, reduce_pred, fp_pred) do { \
+      gasneti_assert_always(!gasneti_op_fetch(GEX_OP_##stem)); \
+      _CHECK_OP(GEX_OP_##stem, reduce_pred, fp_pred, valid); \
+      gasneti_assert_always(gasneti_op_fetch(GEX_OP_F##stem)); \
+      _CHECK_OP(GEX_OP_F##stem, not_reduce, fp_pred, valid); \
+    } while (0)
+  #define CHECK_ACCESSOR(stem, pred) do { \
+      gasneti_assert_always(gasneti_op_valid(GEX_OP_##stem)); \
+      _CHECK_OP(GEX_OP_##stem, fp, not_reduce, pred); \
+    } while (0)
+  #define CHECK_USER(stem) do { \
+      gasneti_assert_always(gasneti_op_valid(GEX_OP_##stem)); \
+      gasneti_assert_always(gasneti_op_valid_reduce(GEX_OP_##stem)); \
+      gasneti_assert_always(!gasneti_op_valid_atomic(GEX_OP_##stem)); \
+      gasneti_assert_always(gasneti_op_int(GEX_OP_##stem)); \
+      gasneti_assert_always(gasneti_op_fp(GEX_OP_##stem)); \
+    } while (0)
+
+  #define gasneti_op_not_reduce !gasneti_op_reduce
+  #define gasneti_op_not_fetch  !gasneti_op_fetch
+  #define gasneti_op_not_fp     !gasneti_op_fp
+
+  CHECK_ARITH_OP(AND,  reduce, not_fp);
+  CHECK_ARITH_OP(OR,   reduce, not_fp);
+  CHECK_ARITH_OP(XOR,  reduce, not_fp);
+  CHECK_ARITH_OP(ADD,  reduce,     fp);
+  CHECK_ARITH_OP(SUB,  not_reduce, fp);
+  CHECK_ARITH_OP(MULT, reduce,     fp);
+  CHECK_ARITH_OP(MIN,  reduce,     fp);
+  CHECK_ARITH_OP(MAX,  reduce,     fp);
+  CHECK_ARITH_OP(INC,  not_reduce, fp);
+  CHECK_ARITH_OP(DEC,  not_reduce, fp);
+
+  CHECK_ACCESSOR(SET,   not_fetch);
+  CHECK_ACCESSOR(CAS,   not_fetch);
+  CHECK_ACCESSOR(GET,   fetch);
+  CHECK_ACCESSOR(SWAP,  fetch);
+  CHECK_ACCESSOR(FCAS,  fetch);
+
+  CHECK_USER(USER);
+  CHECK_USER(USER_NC);
+
+  #undef _CHECK_OP
+  #undef CHECK_ARITH_OP
+  #undef CHECK_ACCESSOR
+  #undef CHECK_USER
+  #undef gasneti_op_not_reduce
+  #undef gasneti_op_not_fetch
+  #undef gasneti_op_not_fp
 
   #if WORDS_BIGENDIAN
     #if PLATFORM_ARCH_LITTLE_ENDIAN
@@ -194,17 +287,17 @@ extern void gasneti_check_config_preinit(void) {
   #endif
 
   /* check GASNET_PAGESIZE is a power of 2 and > 0 */
-  gasneti_assert_always(GASNET_PAGESIZE > 0);
-  gasneti_assert_always(GASNETI_POWEROFTWO(GASNET_PAGESIZE));
+  gasneti_static_assert(GASNET_PAGESIZE > 0);
+  gasneti_static_assert(GASNETI_POWEROFTWO(GASNET_PAGESIZE));
 
-  gasneti_assert_always(SIZEOF_GASNET_REGISTER_VALUE_T == sizeof(gasnet_register_value_t));
-  gasneti_assert_always(SIZEOF_GASNET_REGISTER_VALUE_T >= sizeof(int));
-  gasneti_assert_always(SIZEOF_GASNET_REGISTER_VALUE_T >= sizeof(void *));
+  gasneti_static_assert(SIZEOF_GEX_RMA_VALUE_T == sizeof(gex_RMA_Value_t));
+  gasneti_static_assert(SIZEOF_GEX_RMA_VALUE_T >= sizeof(int));
+  gasneti_static_assert(SIZEOF_GEX_RMA_VALUE_T >= sizeof(void *));
 
   #if    PLATFORM_ARCH_32 && !PLATFORM_ARCH_64
-    gasneti_assert_always(sizeof(void*) == 4);
+    gasneti_static_assert(sizeof(void*) == 4);
   #elif !PLATFORM_ARCH_32 &&  PLATFORM_ARCH_64
-    gasneti_assert_always(sizeof(void*) == 8);
+    gasneti_static_assert(sizeof(void*) == 8);
   #else
     #error must #define exactly one of PLATFORM_ARCH_32 or PLATFORM_ARCH_64
   #endif
@@ -233,13 +326,14 @@ extern void gasneti_check_config_postattach(void) {
   gasneti_check_config_preinit();
 
   /*  verify sanity of the core interface */
-  gasneti_assert_always(gasnet_AMMaxArgs() >= 2*MAX(sizeof(int),sizeof(void*)));      
-  gasneti_assert_always(gasnet_AMMaxMedium() >= 512);
-  gasneti_assert_always(gasnet_AMMaxLongRequest() >= 512);
-  gasneti_assert_always(gasnet_AMMaxLongReply() >= 512);  
+  gasneti_assert_always_uint(gex_AM_MaxArgs() ,>=, 2*MAX(sizeof(int),sizeof(void*)));      
+  gasneti_assert_always_uint(gex_AM_LUBRequestMedium() ,>=, 512);
+  gasneti_assert_always_uint(gex_AM_LUBReplyMedium() ,>=, 512);
+  gasneti_assert_always_uint(gex_AM_LUBRequestLong() ,>=, 512);
+  gasneti_assert_always_uint(gex_AM_LUBReplyLong() ,>=, 512);
 
-  gasneti_assert_always(gasnet_nodes() >= 1);
-  gasneti_assert_always(gasnet_mynode() < gasnet_nodes());
+  gasneti_assert_always_uint(gasneti_nodes ,>=, 1);
+  gasneti_assert_always_uint(gasneti_mynode ,<, gasneti_nodes);
   { static int firstcall = 1;
     if (firstcall) { /* miscellaneous conduit-independent initializations */
       firstcall = 0;
@@ -305,75 +399,272 @@ extern void gasneti_freezeForDebugger(void) {
   }
 }
 /* ------------------------------------------------------------------------------------ */
-extern void gasneti_defaultAMHandler(gasnet_token_t token) {
-  gasnet_node_t srcnode = (gasnet_node_t)-1;
-  gasnet_AMGetMsgSource(token, &srcnode);
-  gasneti_fatalerror("GASNet node %i/%i received an AM message from node %i for a handler index "
-                     "with no associated AM handler function registered", 
-                     (int)gasnet_mynode(), (int)gasnet_nodes(), (int)srcnode);
+
+#ifndef _GEX_CLIENT_T
+#ifndef gasneti_import_client
+gasneti_Client_t gasneti_import_client(gex_Client_t _client) {
+  const gasneti_Client_t _real_client = GASNETI_IMPORT_POINTER(gasneti_Client_t,_client);
+  GASNETI_IMPORT_MAGIC(_real_client, CLIENT);
+  return _real_client;
 }
+#endif
+
+#ifndef gasneti_export_client
+gex_Client_t gasneti_export_client(gasneti_Client_t _real_client) {
+  GASNETI_CHECK_MAGIC(_real_client, GASNETI_CLIENT_MAGIC);
+  return GASNETI_EXPORT_POINTER(gex_Client_t, _real_client);
+}
+#endif
+
+// TODO-EX: either ensure name is unique OR perform "auto-increment" according to flags
+gasneti_Client_t gasneti_alloc_client(
+                       const char *name,
+                       gex_Flags_t flags,
+                       size_t alloc_size)
+{
+  gasneti_Client_t client = gasneti_malloc(alloc_size ? alloc_size : sizeof(*client));
+  gasneti_assert(!alloc_size || alloc_size >= sizeof(*client));
+  GASNETI_INIT_MAGIC(client, GASNETI_CLIENT_MAGIC);
+  client->_tm0 = NULL;
+  client->_name = gasneti_strdup(name);
+  client->_cdata = NULL;
+  client->_flags = flags;
+#ifdef GASNETI_CLIENT_ALLOC_EXTRA
+  GASNETI_CLIENT_ALLOC_EXTRA(client);
+#endif
+  return client;
+}
+
+void gasneti_free_client(gasneti_Client_t client)
+{
+#ifdef GASNETI_CLIENT_FREE_EXTRA
+  GASNETI_CLIENT_FREE_EXTRA(client);
+#endif
+  gasneti_free((/*non-const*/char*)client->_name);
+  GASNETI_INIT_MAGIC(client, GASNETI_CLIENT_BAD_MAGIC);
+  gasneti_free(client);
+}
+#endif // _GEX_CLIENT_T
+
+
+#ifndef _GEX_SEGMENT_T
+#ifndef gasneti_import_segment
+gasneti_Segment_t gasneti_import_segment(gex_Segment_t _segment) {
+  const gasneti_Segment_t _real_segment = GASNETI_IMPORT_POINTER(gasneti_Segment_t,_segment);
+  GASNETI_IMPORT_MAGIC(_real_segment, SEGMENT);
+  return _real_segment;
+}
+#endif
+
+#ifndef gasneti_export_segment
+gex_Segment_t gasneti_export_segment(gasneti_Segment_t _real_segment) {
+  GASNETI_CHECK_MAGIC(_real_segment, GASNETI_SEGMENT_MAGIC);
+  return GASNETI_EXPORT_POINTER(gex_Segment_t, _real_segment);
+}
+#endif
+
+// TODO-EX: probably need to add to a per-client container of some sort
+gasneti_Segment_t gasneti_alloc_segment(
+                       gasneti_Client_t client,
+                       void *addr,
+                       uintptr_t size,
+                       gex_Flags_t flags,
+                       size_t alloc_size)
+{
+  gasneti_Segment_t segment = gasneti_malloc(alloc_size ? alloc_size : sizeof(*segment));
+  gasneti_assert(!alloc_size || alloc_size >= sizeof(*segment));
+  GASNETI_INIT_MAGIC(segment, GASNETI_SEGMENT_MAGIC);
+  segment->_client = client;
+  segment->_cdata = NULL;
+  segment->_flags = flags;
+  segment->_addr = addr;
+  segment->_ub = (void*)((uintptr_t)addr + size);
+  segment->_size = size;
+#ifdef GASNETI_SEGMENT_ALLOC_EXTRA
+  GASNETI_SEGMENT_ALLOC_EXTRA(segment);
+#endif
+  return segment;
+}
+
+void gasneti_free_segment(gasneti_Segment_t segment)
+{
+#ifdef GASNETI_SEGMENT_FREE_EXTRA
+  GASNETI_SEGMENT_FREE_EXTRA(segment);
+#endif
+  GASNETI_INIT_MAGIC(segment, GASNETI_SEGMENT_BAD_MAGIC);
+  gasneti_free(segment);
+}
+#endif // _GEX_SEGMENT_T
+
+
+#ifndef _GEX_EP_T
+#ifndef gasneti_import_ep
+gasneti_EP_t gasneti_import_ep(gex_EP_t _ep) {
+  const gasneti_EP_t _real_ep = GASNETI_IMPORT_POINTER(gasneti_EP_t,_ep);
+  GASNETI_IMPORT_MAGIC(_real_ep, EP);
+  return _real_ep;
+}
+#endif
+
+#ifndef gasneti_export_ep
+gex_EP_t gasneti_export_ep(gasneti_EP_t _real_ep) {
+  GASNETI_CHECK_MAGIC(_real_ep, GASNETI_EP_MAGIC);
+  return GASNETI_EXPORT_POINTER(gex_EP_t, _real_ep);
+}
+#endif
+
+// TODO-EX: probably need to add to a per-client container of some sort
+extern gasneti_EP_t gasneti_alloc_ep(
+                       gasneti_Client_t client,
+                       gex_Flags_t flags,
+                       size_t alloc_size)
+{
+  gasneti_EP_t endpoint = gasneti_malloc(alloc_size ? alloc_size : sizeof(*endpoint));
+  gasneti_assert(!alloc_size || alloc_size >= sizeof(*endpoint));
+  GASNETI_INIT_MAGIC(endpoint, GASNETI_EP_MAGIC);
+  endpoint->_client = client;
+  endpoint->_cdata = NULL;
+  endpoint->_segment = NULL;
+  endpoint->_flags = flags;
+  gasneti_amtbl_init(endpoint->_amtbl);
+#ifdef GASNETI_EP_ALLOC_EXTRA
+  GASNETI_EP_ALLOC_EXTRA(endpoint);
+#endif
+  return endpoint;
+}
+
+void gasneti_free_ep(gasneti_EP_t endpoint)
+{
+#ifdef GASNETI_EP_FREE_EXTRA
+  GASNETI_EP_FREE_EXTRA(endpoint);
+#endif
+  GASNETI_INIT_MAGIC(endpoint, GASNETI_EP_BAD_MAGIC);
+  gasneti_free(endpoint);
+}
+#endif // _GEX_EP_T
+
+
+#ifndef _GEX_TM_T
+#ifndef gasneti_import_tm
+gasneti_TM_t gasneti_import_tm(gex_TM_t _tm) {
+  const gasneti_TM_t _real_tm = GASNETI_IMPORT_POINTER(gasneti_TM_t,_tm);
+  GASNETI_IMPORT_MAGIC(_real_tm, TM);
+  return _real_tm;
+}
+#endif
+
+#ifndef gasneti_export_tm
+gex_TM_t gasneti_export_tm(gasneti_TM_t _real_tm) {
+  GASNETI_CHECK_MAGIC(_real_tm, GASNETI_TM_MAGIC);
+  return GASNETI_EXPORT_POINTER(gex_TM_t, _real_tm);
+}
+#endif
+
+// TODO-EX: probably need to add to a per-client container of some sort
+extern gasneti_TM_t gasneti_alloc_tm(
+                       gasneti_EP_t ep,
+                       gex_Rank_t rank,
+                       gex_Rank_t size,
+                       gex_Flags_t flags,
+                       size_t requested_sz)
+{
+  gasneti_assert(rank < size);
+  gasneti_assert(size > 0);
+
+  gasneti_assert(ep);
+  gasneti_assert(ep->_client);
+  const int is_tm0 = (ep->_client->_tm0 == NULL);
+
+  // TM0 is aligned to GASNETI_TM0_ALIGN, and all others to half that
+  gasneti_TM_t tm;
+  gasneti_assert(!requested_sz || requested_sz >= sizeof(*tm));
+  size_t disalign = (is_tm0 ? 0 : GASNETI_TM0_ALIGN/2);
+  size_t actual_sz = (requested_sz ? requested_sz : sizeof(*tm)) + disalign;
+  tm = (gasneti_TM_t)(disalign + (uintptr_t)gasneti_malloc_aligned(GASNETI_TM0_ALIGN, actual_sz));
+
+  GASNETI_INIT_MAGIC(tm, GASNETI_TM_MAGIC);
+  tm->_ep = ep;
+  tm->_cdata = NULL;
+  tm->_flags = flags;
+  tm->_rank = rank;
+  tm->_size = size;
+  tm->_coll_team = NULL;
+#ifdef GASNETI_TM_ALLOC_EXTRA
+  GASNETI_TM_ALLOC_EXTRA(tm);
+#endif
+  
+  if (is_tm0) {
+    gasneti_legacy_alloc_tm_hook(tm); // init g2ex layer if appropriate
+
+    ep->_client->_tm0 = tm;
+
+    // TODO-EX: Please remove this!
+    gasneti_assert(! gasneti_thing_that_goes_thunk_in_the_dark);
+    gasneti_thing_that_goes_thunk_in_the_dark = tm;
+  }
+
+  return tm;
+}
+
+void gasneti_free_tm(gasneti_TM_t tm)
+{
+#ifdef GASNETI_TM_FREE_EXTRA
+  GASNETI_TM_FREE_EXTRA(tm);
+#endif
+  GASNETI_INIT_MAGIC(tm, GASNETI_TM_BAD_MAGIC);
+  gasneti_free_aligned((void*)((uintptr_t)tm & (GASNETI_TM0_ALIGN-1)));
+}
+#endif // _GEX_TM_T
+
 /* ------------------------------------------------------------------------------------ */
-#if GASNETC_AMREGISTER
-  /* Use conduit-specific impl */
-  extern int gasnetc_amregister(gasnet_handler_t, gasneti_handler_fn_t);
-#else
-  /* Use default/recommended impl */
-  extern gasneti_handler_fn_t gasnetc_handler[];
-  static int gasnetc_amregister(gasnet_handler_t index, gasneti_handler_fn_t fnptr) {
-    /* register a single handler */
-    gasneti_assert(gasnetc_handler[index] == gasneti_defaultAMHandler);
-    gasnetc_handler[index] = fnptr;
-    return GASNET_OK;
+
+#if GASNET_DEBUG
+  // Verify that client did actually write to gasnet-allocated buffer
+  //
+  // gasneti_init_sd_poison(sd) - write a "canary"
+  //   For (sd->_size >= gasneti_sd_init_len) writes a "canary" value (also of length
+  //   gasneti_sd_init_len) to sd->_addr if (and only if) the buffer is gasnet-owned
+  // gasneti_test_sd_poison(addr, len) - test a "canary"
+  //   For (len >= gasneti_sd_init_len) looks for the same "canary" value,
+  //   returning non-zero if it is present.
+  // Note that 'len' at "test" may be less than the one given at "init",
+  // as is permitted for the nbytes values passed to Prepare/Commit.
+
+  static uint64_t gasneti_memalloc_envint(const char *name, const char *deflt);
+  static void gasneti_memalloc_valset(void *p, size_t len, uint64_t val);
+  static const void *gasneti_memalloc_valcmp(const void *p, size_t len, uint64_t val);
+
+  static int gasneti_sd_init_enabled = 1;
+  static uint64_t gasneti_sd_init_val = 0; // Value used to initialize gasnet-allocated SrcDesc buffers
+  static size_t gasneti_sd_init_len = 128; // Max length to init at Prepare, and min to check at Commit
+
+  extern void gasneti_init_sd_poison(gasneti_AM_SrcDesc_t sd) {
+    if (!gasneti_sd_init_enabled) return;
+    if (sd->_addr != sd->_gex_buf) return;
+    static int isinit = 0;
+    if_pf (!isinit) {
+      static gasneti_mutex_t lock = GASNETI_MUTEX_INITIALIZER;
+      gasneti_mutex_lock(&lock);
+        if (!isinit) {
+          gasneti_sd_init_enabled = gasneti_getenv_yesno_withdefault("GASNET_SD_INIT",1);
+          gasneti_sd_init_val = gasneti_memalloc_envint("GASNET_SD_INITVAL","NAN");
+          gasneti_sd_init_len = MAX((int64_t)1,gasneti_getenv_int_withdefault("GASNET_SD_INITLEN",128,0));
+          isinit = 1;
+        }
+      gasneti_mutex_unlock(&lock);
+      if (!gasneti_sd_init_enabled) return;
+    } else gasneti_sync_reads();
+    if (sd->_size < gasneti_sd_init_len) return;
+    gasneti_memalloc_valset(sd->_addr, gasneti_sd_init_len, gasneti_sd_init_val);
+  }
+
+  extern int gasneti_test_sd_poison(void *addr, size_t len) { // return non-zero if still poison
+    return gasneti_sd_init_enabled &&
+           (len >= gasneti_sd_init_len) &&
+           !gasneti_memalloc_valcmp(addr, gasneti_sd_init_len, gasneti_sd_init_val);
   }
 #endif
-extern int gasneti_amregister(gasnet_handlerentry_t *table, int numentries,
-                               int lowlimit, int highlimit,
-                               int dontcare, int *numregistered) {
-  static char checkuniqhandler[256] = { 0 };
-  int i;
-  *numregistered = 0;
-  for (i = 0; i < numentries; i++) {
-    int newindex;
 
-    if ((table[i].index == 0 && !dontcare) ||
-        (table[i].index && dontcare)) continue;
-    else if (table[i].index) newindex = table[i].index;
-    else { /* deterministic assignment of dontcare indexes */
-      for (newindex = lowlimit; newindex <= highlimit; newindex++) {
-        if (!checkuniqhandler[newindex]) break;
-      }
-      if (newindex > highlimit) {
-        char s[255];
-        snprintf(s, sizeof(s), "Too many handlers. (limit=%i)", highlimit - lowlimit + 1);
-        GASNETI_RETURN_ERRR(BAD_ARG, s);
-      }
-    }
-
-    /*  ensure handlers fall into the proper range of pre-assigned values */
-    if (newindex < lowlimit || newindex > highlimit) {
-      char s[255];
-      snprintf(s, sizeof(s), "handler index (%i) out of range [%i..%i]", newindex, lowlimit, highlimit);
-      GASNETI_RETURN_ERRR(BAD_ARG, s);
-    }
-
-    /* discover duplicates */
-    if (checkuniqhandler[newindex] != 0)
-      GASNETI_RETURN_ERRR(BAD_ARG, "handler index not unique");
-    checkuniqhandler[newindex] = 1;
-
-    /* register the handler */
-    int rc = gasnetc_amregister((gasnet_handler_t)newindex, (gasneti_handler_fn_t)table[i].fnptr);
-    if (GASNET_OK != rc) return rc;
-
-    /* The check below for !table[i].index is redundant and present
-     * only to defeat the over-aggressive optimizer in pathcc 2.1
-     */
-    if (dontcare && !table[i].index) table[i].index = newindex;
-
-    (*numregistered)++;
-  }
-  return GASNET_OK;
-}
 /* ------------------------------------------------------------------------------------ */
 
 #ifndef GASNETC_FATALSIGNAL_CALLBACK
@@ -417,7 +708,7 @@ void gasneti_defaultSignalHandler(int sig) {
         FILE *stream = streams[s];
         if (stream) {
           fprintf(stream, "*** Caught a fatal signal: %s(%i) on node %i/%i\n", 
-                        signame, sig, (int)gasnet_mynode(), (int)gasnet_nodes());
+                        signame, sig, (int)gasneti_mynode, (int)gasneti_nodes);
           fflush(stream);
         }
       }
@@ -450,7 +741,7 @@ void gasneti_defaultSignalHandler(int sig) {
 
       oldsigpipe = gasneti_reghandler(SIGPIPE, SIG_IGN);
       fprintf(stderr,"*** Caught a signal: %s(%i) on node %i/%i\n",
-        signame, sig, (int)gasnet_mynode(), (int)gasnet_nodes()); 
+        signame, sig, (int)gasneti_mynode, (int)gasneti_nodes); 
       fflush(stderr);
       (void) gasneti_reghandler(SIGPIPE, oldsigpipe);
 
@@ -513,7 +804,7 @@ static void gasneti_serializeEnvironment(uint8_t **pbuf, int *psz) {
     p += strlen((char*)p) + 1;
     }
   *p = 0;
-  gasneti_assert((p+1) - buf == totalEnvSize);
+  gasneti_assert_int((p+1) - buf ,==, totalEnvSize);
 
   *pbuf = buf;
   *psz = totalEnvSize;
@@ -534,7 +825,7 @@ typedef struct {
    exchangefn is required function for exchanging data 
    broadcastfn is optional (can be NULL) but highly recommended for scalability
  */
-extern void gasneti_setupGlobalEnvironment(gasnet_node_t numnodes, gasnet_node_t mynode,
+extern void gasneti_setupGlobalEnvironment(gex_Rank_t numnodes, gex_Rank_t mynode,
                                            gasneti_bootstrapExchangefn_t exchangefn,
                                            gasneti_bootstrapBroadcastfn_t broadcastfn) {
   uint8_t *myenv; 
@@ -588,7 +879,7 @@ extern void gasneti_setupGlobalEnvironment(gasnet_node_t numnodes, gasnet_node_t
         memcpy(gasneti_globalEnv, tmp+rootid*envsize, envsize);
         gasneti_free(tmp);
       }
-      gasneti_assert(gasneti_checksum(gasneti_globalEnv,envsize) == rootdesc.checksum);
+      gasneti_assert_uint(gasneti_checksum(gasneti_globalEnv,envsize) ,==, rootdesc.checksum);
       gasneti_free(allenvdesc);
       gasneti_free(myenv);
       return;
@@ -630,7 +921,7 @@ static const char *gasneti_decode_envval(const char *val) {
   static int decodeenv = 1;
   if (firsttime) {
     decodeenv = !gasneti_getenv("GASNET_DISABLE_ENVDECODE");
-    if (gasneti_init_done && gasneti_mynode != (gasnet_node_t)-1) {
+    if (gasneti_init_done && gasneti_mynode != (gex_Rank_t)-1) {
       gasneti_envstr_display("GASNET_DISABLE_ENVDECODE",(decodeenv?"NO":"YES"),decodeenv);
       gasneti_sync_writes();
       firsttime = 0;
@@ -676,7 +967,7 @@ const char * (*gasnett_decode_envval_fn)(const char *) = &gasneti_decode_envval;
 extern int _gasneti_verboseenv_fn(void) {
   static int verboseenv = -1;
   if (verboseenv == -1) {
-    if (gasneti_init_done && gasneti_mynode != (gasnet_node_t)-1) {
+    if (gasneti_init_done && gasneti_mynode != (gex_Rank_t)-1) {
       #if GASNET_DEBUG_VERBOSE
         verboseenv = GASNETI_ENV_OUTPUT_NODE();
       #else
@@ -793,7 +1084,7 @@ extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double d
 						 MIN(my_max, my_min + my_factor * gasneti_nodes));
 
   if (result < lower_bound) {
-    gasneti_assert(MIN(dflt_max, dflt_min + dflt_factor * gasneti_nodes) >= lower_bound);
+    gasneti_assert_dbl(MIN(dflt_max, dflt_min + dflt_factor * gasneti_nodes) ,>=, lower_bound);
     if (gasneti_getenv("GASNET_EXITTIMEOUT")) {
       gasneti_fatalerror("If used, environment variable GASNET_EXITTIMEOUT must be set to a value no less than %g", lower_bound);
     } else {
@@ -915,7 +1206,7 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
                         natives);
       }
     }
-    if (reason[0] && !gasneti_getenv_yesno_withdefault("GASNET_QUIET",0) && gasnet_mynode() == 0) {
+    if (reason[0] && !gasneti_getenv_yesno_withdefault("GASNET_QUIET",0) && gasneti_mynode == 0) {
       fprintf(stderr,"WARNING: Using GASNet's %s-conduit, which exists for portability convenience.\n"
                      "%s\n"
                      "WARNING: You should *really* use the high-performance native GASNet conduit\n"
@@ -946,7 +1237,7 @@ static void gasneti_check_architecture(void) { // check for bad build configurat
       "WARNING: This often has a MAJOR impact on performance. Please re-build with module craype-mic-knl!\n"
       : 0;
     #endif
-    if (warning && gasnet_mynode() == 0) {
+    if (warning && gasneti_mynode == 0) {
       fprintf(stderr, warning);
       fflush(stderr);
     }
@@ -958,9 +1249,9 @@ static void gasneti_check_architecture(void) { // check for bad build configurat
 /* Nodemap handling
  */
 
-gasnet_node_t *gasneti_nodemap = NULL;
-gasneti_nodegrp_t gasneti_myhost = {NULL,0,(gasnet_node_t)(-1),0,(gasnet_node_t)(-1)};
-gasneti_nodegrp_t gasneti_mysupernode = {NULL,0,(gasnet_node_t)(-1),0,(gasnet_node_t)(-1)};
+gex_Rank_t *gasneti_nodemap = NULL;
+gasneti_nodegrp_t gasneti_myhost = {NULL,0,(gex_Rank_t)(-1),0,(gex_Rank_t)(-1)};
+gasneti_nodegrp_t gasneti_mysupernode = {NULL,0,(gex_Rank_t)(-1),0,(gex_Rank_t)(-1)};
 gasnet_nodeinfo_t *gasneti_nodeinfo = NULL;
 
 /* This code is "good" for all "sensible" process layouts, where "good"
@@ -976,7 +1267,7 @@ gasnet_nodeinfo_t *gasneti_nodeinfo = NULL;
  * identify some or all of the potential sharing in such a case.
  */
 static void gasneti_nodemap_helper_linear(const char *ids, size_t sz, size_t stride) {
-  gasnet_node_t i, prev, base;
+  gex_Rank_t i, prev, base;
   const char *p, *base_p, *prev_p;
 
   prev   = base   = gasneti_nodemap[0] = 0;
@@ -1013,8 +1304,8 @@ static struct {
   size_t stride;
 } _gasneti_nodemap_sort_aux;
 static int _gasneti_nodemap_sort_fn(const void *a, const void *b) {
-  gasnet_node_t key1 = *(const gasnet_node_t *)a;
-  gasnet_node_t key2 = *(const gasnet_node_t *)b;
+  gex_Rank_t key1 = *(const gex_Rank_t *)a;
+  gex_Rank_t key2 = *(const gex_Rank_t *)b;
   const char *val1 = _gasneti_nodemap_sort_aux.ids + key1 * _gasneti_nodemap_sort_aux.stride;
   const char *val2 = _gasneti_nodemap_sort_aux.ids + key2 * _gasneti_nodemap_sort_aux.stride;
   int retval = memcmp(val1, val2, _gasneti_nodemap_sort_aux.sz);
@@ -1025,15 +1316,15 @@ static int _gasneti_nodemap_sort_fn(const void *a, const void *b) {
   return retval;
 }
 static void gasneti_nodemap_helper_qsort(const char *ids, size_t sz, size_t stride) {
-  gasnet_node_t *work    = gasneti_malloc(gasneti_nodes * sizeof(gasnet_node_t));
+  gex_Rank_t *work    = gasneti_malloc(gasneti_nodes * sizeof(gex_Rank_t));
   const char *prev_id;
-  int i, prev; /* If these are gasnet_node_t then bug 2634 can crash XLC */
+  int i, prev; /* If these are gex_Rank_t then bug 2634 can crash XLC */
 
   _gasneti_nodemap_sort_aux.ids    = ids;
   _gasneti_nodemap_sort_aux.sz     = sz;
   _gasneti_nodemap_sort_aux.stride = stride;
   for (i = 0; i < gasneti_nodes; ++i) work[i] = i;
-  qsort(work, gasneti_nodes, sizeof(gasnet_node_t), &_gasneti_nodemap_sort_fn);
+  qsort(work, gasneti_nodes, sizeof(gex_Rank_t), &_gasneti_nodemap_sort_fn);
 
   prev = work[0];
   gasneti_nodemap[prev] = prev;
@@ -1059,7 +1350,7 @@ static void gasneti_nodemap_helper(const void *ids, size_t sz, size_t stride)) {
   #endif
   gasneti_assert(ids);
   gasneti_assert(sz > 0);
-  gasneti_assert(stride >= sz);
+  gasneti_assert_uint(stride ,>=, sz);
 
   if (gasneti_getenv_yesno_withdefault("GASNET_NODEMAP_EXACT",GASNETC_DEFAULT_NODEMAP_EXACT)) {
     /* "exact" but potentially costly */
@@ -1075,7 +1366,7 @@ static void gasneti_nodemap_helper(const void *ids, size_t sz, size_t stride)) {
  * or when no exchangefn is available to disseminate them.
  */
 void gasneti_nodemap_trivial(void) {
-  gasnet_node_t i;
+  gex_Rank_t i;
   for (i = 0; i < gasneti_nodes; ++i) gasneti_nodemap[i] = i;
 }
 
@@ -1160,7 +1451,7 @@ static void gasneti_nodemap_dflt(gasneti_bootstrapExchangefn_t exchangefn) {
     int i;
 
     gasneti_assert_zeroret(CNK_SPI_SYSCALL_3(RANKS2COORDS, size, allids, &count));
-    gasneti_assert(count == gasneti_nodes);
+    gasneti_assert_uint(count ,==, gasneti_nodes);
 
     /* Zero out the fields we don't want to have significance and then comparison */
     for (i = 0; i < gasneti_nodes; ++i) {
@@ -1217,15 +1508,15 @@ static void gasneti_nodemap_dflt(gasneti_bootstrapExchangefn_t exchangefn) {
  * TODO: keep widths around for conduits to use? (ibv and gemini both use)
  */
 extern void gasneti_nodemapParse(void) {
-  gasnet_node_t i,j,limit;
-  gasnet_node_t initial,final;
+  gex_Rank_t i,j,limit;
+  gex_Rank_t initial,final;
 
   struct { /* TODO: alloca? */
-    gasnet_node_t width;
-    gasnet_node_t h_lead;
-    gasnet_node_t sn_lead;
-    gasnet_node_t host;
-    gasnet_node_t supernode;
+    gex_Rank_t width;
+    gex_Rank_t h_lead;
+    gex_Rank_t sn_lead;
+    gex_Rank_t host;
+    gex_Rank_t supernode;
   } *s = gasneti_calloc(gasneti_nodes, sizeof(*s));
 
   gasneti_assert(gasneti_nodemap);
@@ -1275,9 +1566,9 @@ extern void gasneti_nodemapParse(void) {
    */
   initial = gasneti_nodemap[gasneti_mynode];
   for (i = 0; i < gasneti_nodes; ++i) {
-    const gasnet_node_t n = gasneti_nodemap[i];
-    const gasnet_node_t width = s[n].width++;
-    const gasnet_node_t lrank = width % limit;
+    const gex_Rank_t n = gasneti_nodemap[i];
+    const gex_Rank_t width = s[n].width++;
+    const gex_Rank_t lrank = width % limit;
     if (!width) { /* First node on host */
       s[n].host = gasneti_myhost.grp_count++;
     }
@@ -1301,10 +1592,11 @@ extern void gasneti_nodemapParse(void) {
   gasneti_myhost.grp_rank = gasneti_nodeinfo[gasneti_mynode].host;
 
   /* Second pass: Construct arrays of local nodes */
-  gasneti_assert(gasneti_myhost.node_count >= gasneti_mysupernode.node_count);
-  gasneti_myhost.nodes = gasneti_malloc(gasneti_myhost.node_count*sizeof(gasnet_node_t));
+  gasneti_assert_uint(gasneti_myhost.node_count ,>=, gasneti_mysupernode.node_count);
+  gasneti_myhost.nodes = gasneti_malloc(gasneti_myhost.node_count*sizeof(gex_Rank_t));
+  gasneti_leak(gasneti_myhost.nodes);
   for (i = initial, j = 0; j < gasneti_myhost.node_count; ++i) {
-    gasneti_assert(i < gasneti_nodes);
+    gasneti_assert_uint(i ,<, gasneti_nodes);
     if (s[i].h_lead == initial) {
       if (i == final) gasneti_mysupernode.nodes = gasneti_myhost.nodes + j;
       gasneti_myhost.nodes[j++] = i;
@@ -1357,7 +1649,7 @@ extern void gasneti_nodemapParse(void) {
  */
 extern void gasneti_nodemapInit(gasneti_bootstrapExchangefn_t exchangefn,
                                 const void *ids, size_t sz, size_t stride) {
-  gasneti_nodemap = gasneti_malloc(gasneti_nodes * sizeof(gasnet_node_t));
+  gasneti_nodemap = gasneti_malloc(gasneti_nodes * sizeof(gex_Rank_t));
 
   if (ids) {
     /* Case 1: conduit-provided vector of IDs */
@@ -1374,16 +1666,13 @@ extern void gasneti_nodemapInit(gasneti_bootstrapExchangefn_t exchangefn,
   gasneti_nodemapParse();
 }
 
-/* Presently just frees the space allocated for the nodemaps.
+/* Presently just frees the space allocated for the full nodemap.
  */
 extern void gasneti_nodemapFini(void) {
   gasneti_free(gasneti_nodemap);
-  gasneti_free(gasneti_myhost.nodes);
 #if GASNET_DEBUG
   /* To help catch any use-afer-Fini: */
   gasneti_nodemap = NULL;
-  gasneti_myhost.nodes = NULL;
-  gasneti_mysupernode.nodes = NULL;
 #endif
 }
 
@@ -1407,7 +1696,7 @@ ssize_t gasneti_getline(char **buf_p, size_t *n_p, FILE *fp) {
     size_t  n   = buf ? *n_p : 0;
     ssize_t len = 0;
 
-    gasneti_assert((ssize_t)n >= 0);
+    gasneti_assert_int((ssize_t)n ,>=, 0);
 
     do {
         size_t space = n - len;
@@ -1436,18 +1725,18 @@ ssize_t gasneti_getline(char **buf_p, size_t *n_p, FILE *fp) {
 // Internal conduit interface to spawner
 
 #if HAVE_SSH_SPAWNER
-  extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_ssh(int *argc, char ***argv, gasnet_node_t *nodes, gasnet_node_t *mynode);
+  extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_ssh(int *argc, char ***argv, gex_Rank_t *nodes, gex_Rank_t *mynode);
 #endif
 #if HAVE_MPI_SPAWNER
-  extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_mpi(int *argc, char ***argv, gasnet_node_t *nodes, gasnet_node_t *mynode);
+  extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_mpi(int *argc, char ***argv, gex_Rank_t *nodes, gex_Rank_t *mynode);
 #endif
 #if HAVE_PMI_SPAWNER
-  extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_pmi(int *argc, char ***argv, gasnet_node_t *nodes, gasnet_node_t *mynode);
+  extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_pmi(int *argc, char ***argv, gex_Rank_t *nodes, gex_Rank_t *mynode);
 #endif
 
 extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_p,
                                   const char *force_spawner,
-                                  gasnet_node_t *nodes_p, gasnet_node_t *mynode_p) {
+                                  gex_Rank_t *nodes_p, gex_Rank_t *mynode_p) {
   gasneti_spawnerfn_t const *res = NULL;
   const char *not_set = "(not set)";
   const char *spawner;
@@ -1506,70 +1795,9 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
 }
 
 /* ------------------------------------------------------------------------------------ */
-/* Debug memory management
-   debug memory format:
-  | prev | next | allocdesc (2*sizeof(void*)) | datasz | BEGINPOST | <user data> | ENDPOST |
-                                             ptr returned by malloc ^
+/* Buffer management
  */
-#if GASNET_DEBUGMALLOC
-  /* READ BEFORE MODIFYING gasneti_memalloc_desc_t:
-   *
-   * malloc() is specified as returning memory "suitably aligned for any kind of variable".
-   * We don't know a priori what that alignment is, but we MUST preserve it in
-   * this debugging malloc implementation if we are to meet that same requirement.
-   * The current length of gasneti_memalloc_desc_t is:
-   *     ILP32: 32 bytes (4+4+4+4+8+8)
-   *   [I]LP64: 48 bytes (8+8+8+8+8+8)
-   * This means that any alignment up to 16-bytes will be preserved.  That is ideal
-   * since 16 is the strictest alignment requirement (long double on some platforms)
-   * that we have encountered in practice.
-   *
-   * If you change this structure, you MUST add padding to maintain the length
-   * at a multiple of 16-bytes AND please update the lengths above.
-   *
-   * NOTE: If the malloc() returns less than 16-byte alignment, then
-   * it is not our responsibility to create it where it did not exists.
-   * Any GASNet code needing larger alignment than 4- or 8-bytes should
-   * probably be using gasneti_{malloc,free}_aligned() (or gasnett_*).
-   */
-  typedef struct gasneti_memalloc_desc {  
-    struct gasneti_memalloc_desc * volatile prevdesc;
-    struct gasneti_memalloc_desc * volatile nextdesc;
-    const char *allocdesc_str; /* a file name, or file name:linenum */
-    uintptr_t   allocdesc_num; /* a line number, or zero for none */
-    uint64_t datasz;
-    uint64_t beginpost;
-  } gasneti_memalloc_desc_t;
-  static uint64_t gasneti_memalloc_allocatedbytes = 0;   /* num bytes ever allocated */
-  static uint64_t gasneti_memalloc_freedbytes = 0;       /* num bytes ever freed */
-  static uint64_t gasneti_memalloc_allocatedobjects = 0; /* num objects ever allocated */
-  static uint64_t gasneti_memalloc_freedobjects = 0;     /* num objects ever freed */
-  static uint64_t gasneti_memalloc_ringobjects = 0;      /* num objects in the ring */
-  static uint64_t gasneti_memalloc_ringbytes = 0;        /* num bytes in the ring */
-  static size_t   gasneti_memalloc_maxobjectsize = 0;    /* max object size ever allocated */
-  static uintptr_t gasneti_memalloc_maxobjectloc = 0;    /* max address ever allocated */
-  static uint64_t gasneti_memalloc_maxlivebytes = 0;     /* max num bytes live at any given time */
-  static uint64_t gasneti_memalloc_maxliveobjects = 0;   /* max num bytes live at any given time */
-  static int gasneti_memalloc_extracheck = 0;
-  static int gasneti_memalloc_init = -1;
-  static uint64_t gasneti_memalloc_initval = 0;
-  static int gasneti_memalloc_clobber = -1;
-  static uint64_t gasneti_memalloc_clobberval = 0;
-  static int gasneti_memalloc_leakall = -1;
-  static int gasneti_memalloc_scanfreed = -1;
-  static int gasneti_memalloc_envisinit = 0;
-  static gasneti_mutex_t gasneti_memalloc_lock = GASNETI_MUTEX_INITIALIZER;
-  static gasneti_memalloc_desc_t *gasneti_memalloc_pos = NULL;
-  #define GASNETI_MEM_BEGINPOST   ((uint64_t)0xDEADBABEDEADBABEULL)
-  #define GASNETI_MEM_LEAKMARK    ((uint64_t)0xBABEDEADCAFEBEEFULL)
-  #define GASNETI_MEM_ENDPOST     ((uint64_t)0xCAFEDEEDCAFEDEEDULL)
-  #define GASNETI_MEM_FREEMARK    ((uint64_t)0xBEEFEFADBEEFEFADULL)
-  #define GASNETI_MEM_HEADERSZ    (sizeof(gasneti_memalloc_desc_t))
-  #define GASNETI_MEM_TAILSZ      8     
-  #define GASNETI_MEM_EXTRASZ     (GASNETI_MEM_HEADERSZ+GASNETI_MEM_TAILSZ)     
-  #define GASNETI_MEM_MALLOCALIGN 4
-  #define gasneti_looksaligned(p) (!(((uintptr_t)(p)) & (GASNETI_MEM_MALLOCALIGN-1)))
-
+#if GASNET_DEBUGMALLOC || GASNET_DEBUG
   static uint64_t gasneti_memalloc_envint(const char *name, const char *deflt) {
     /* Signaling NaN: any bit pattern between 0x7ff0000000000001 and 0x7ff7ffffffffffff  
                    or any bit pattern between 0xfff0000000000001 and 0xfff7ffffffffffff
@@ -1635,6 +1863,71 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
     }
     return NULL;
   }
+#endif
+#if GASNET_DEBUGMALLOC
+/* ------------------------------------------------------------------------------------ */
+/* Debug memory management
+   debug memory format:
+  | prev | next | allocdesc (2*sizeof(void*)) | datasz | BEGINPOST | <user data> | ENDPOST |
+                                             ptr returned by malloc ^
+ */
+  /* READ BEFORE MODIFYING gasneti_memalloc_desc_t:
+   *
+   * malloc() is specified as returning memory "suitably aligned for any kind of variable".
+   * We don't know a priori what that alignment is, but we MUST preserve it in
+   * this debugging malloc implementation if we are to meet that same requirement.
+   * The current length of gasneti_memalloc_desc_t is:
+   *     ILP32: 32 bytes (4+4+4+4+8+8)
+   *   [I]LP64: 48 bytes (8+8+8+8+8+8)
+   * This means that any alignment up to 16-bytes will be preserved.  That is ideal
+   * since 16 is the strictest alignment requirement (long double on some platforms)
+   * that we have encountered in practice.
+   *
+   * If you change this structure, you MUST add padding to maintain the length
+   * at a multiple of 16-bytes AND please update the lengths above.
+   *
+   * NOTE: If the malloc() returns less than 16-byte alignment, then
+   * it is not our responsibility to create it where it did not exists.
+   * Any GASNet code needing larger alignment than 4- or 8-bytes should
+   * probably be using gasneti_{malloc,free}_aligned() (or gasnett_*).
+   */
+  typedef struct gasneti_memalloc_desc {  
+    struct gasneti_memalloc_desc * volatile prevdesc;
+    struct gasneti_memalloc_desc * volatile nextdesc;
+    const char *allocdesc_str; /* a file name, or file name:linenum */
+    uintptr_t   allocdesc_num; /* a line number, or zero for none */
+    uint64_t datasz;
+    uint64_t beginpost;
+  } gasneti_memalloc_desc_t;
+  static uint64_t gasneti_memalloc_allocatedbytes = 0;   /* num bytes ever allocated */
+  static uint64_t gasneti_memalloc_freedbytes = 0;       /* num bytes ever freed */
+  static uint64_t gasneti_memalloc_allocatedobjects = 0; /* num objects ever allocated */
+  static uint64_t gasneti_memalloc_freedobjects = 0;     /* num objects ever freed */
+  static uint64_t gasneti_memalloc_ringobjects = 0;      /* num objects in the ring */
+  static uint64_t gasneti_memalloc_ringbytes = 0;        /* num bytes in the ring */
+  static size_t   gasneti_memalloc_maxobjectsize = 0;    /* max object size ever allocated */
+  static uintptr_t gasneti_memalloc_maxobjectloc = 0;    /* max address ever allocated */
+  static uint64_t gasneti_memalloc_maxlivebytes = 0;     /* max num bytes live at any given time */
+  static uint64_t gasneti_memalloc_maxliveobjects = 0;   /* max num bytes live at any given time */
+  static int gasneti_memalloc_extracheck = 0;
+  static int gasneti_memalloc_init = -1;
+  static uint64_t gasneti_memalloc_initval = 0;
+  static int gasneti_memalloc_clobber = -1;
+  static uint64_t gasneti_memalloc_clobberval = 0;
+  static int gasneti_memalloc_leakall = -1;
+  static int gasneti_memalloc_scanfreed = -1;
+  static int gasneti_memalloc_envisinit = 0;
+  static gasneti_mutex_t gasneti_memalloc_lock = GASNETI_MUTEX_INITIALIZER;
+  static gasneti_memalloc_desc_t *gasneti_memalloc_pos = NULL;
+  #define GASNETI_MEM_BEGINPOST   ((uint64_t)0xDEADBABEDEADBABEULL)
+  #define GASNETI_MEM_LEAKMARK    ((uint64_t)0xBABEDEADCAFEBEEFULL)
+  #define GASNETI_MEM_ENDPOST     ((uint64_t)0xCAFEDEEDCAFEDEEDULL)
+  #define GASNETI_MEM_FREEMARK    ((uint64_t)0xBEEFEFADBEEFEFADULL)
+  #define GASNETI_MEM_HEADERSZ    (sizeof(gasneti_memalloc_desc_t))
+  #define GASNETI_MEM_TAILSZ      8     
+  #define GASNETI_MEM_EXTRASZ     (GASNETI_MEM_HEADERSZ+GASNETI_MEM_TAILSZ)     
+  #define GASNETI_MEM_MALLOCALIGN 4
+  #define gasneti_looksaligned(p) (!(((uintptr_t)(p)) & (GASNETI_MEM_MALLOCALIGN-1)))
 
   GASNETI_INLINE(gasneti_memalloc_envinit)
   void gasneti_memalloc_envinit(void) {
@@ -1692,18 +1985,15 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
   extern void _gasneti_memcheck_one(const char *curloc) {
     if (gasneti_memalloc_extracheck) _gasneti_memcheck_all(curloc);
     else {
-      if_pt (gasneti_attach_done) { gasnet_hold_interrupts(); }
       gasneti_mutex_lock(&gasneti_memalloc_lock);
         if (gasneti_memalloc_pos) {
           _gasneti_memcheck(gasneti_memalloc_pos+1, curloc, 2);
           gasneti_memalloc_pos = gasneti_memalloc_pos->nextdesc;
         } else gasneti_assert_always(gasneti_memalloc_ringobjects == 0 && gasneti_memalloc_ringbytes == 0);
       gasneti_mutex_unlock(&gasneti_memalloc_lock);
-      if_pt (gasneti_attach_done) { gasnet_resume_interrupts(); }
     }
   }
   extern void _gasneti_memcheck_all(const char *curloc) {
-    if_pt (gasneti_attach_done) { gasnet_hold_interrupts(); }
     gasneti_mutex_lock(&gasneti_memalloc_lock);
       if (gasneti_memalloc_pos) {
         gasneti_memalloc_desc_t *begin = gasneti_memalloc_pos;
@@ -1722,7 +2012,6 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
         }
       } else gasneti_assert_always(gasneti_memalloc_ringobjects == 0 && gasneti_memalloc_ringbytes == 0);
     gasneti_mutex_unlock(&gasneti_memalloc_lock);
-    if_pt (gasneti_attach_done) { gasnet_resume_interrupts(); }
   }
 
   /* assert the integrity of given memory block and return size of the user object 
@@ -1739,7 +2028,7 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
     uint64_t beginpost = 0;
     uint64_t endpost = 0;
     int doscan = 0;
-    gasneti_assert_always(checktype >= 0 && checktype <= 2);
+    gasneti_assert_always_uint((unsigned int)checktype ,<=, 2);
     if (gasneti_looksaligned(ptr)) {
       gasneti_memalloc_desc_t *desc = ((gasneti_memalloc_desc_t *)ptr) - 1;
       beginpost = (desc->beginpost == GASNETI_MEM_LEAKMARK)
@@ -1776,7 +2065,7 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
         (beginpost != GASNETI_MEM_BEGINPOST || endpost != GASNETI_MEM_ENDPOST)) {
       const char *diagnosis = "a bad pointer or local heap corruption";
       #if !GASNET_SEGMENT_EVERYTHING
-        if (gasneti_attach_done && gasneti_in_fullsegment(gasneti_mynode,ptr,1))
+        if (gasneti_attach_done && gasneti_in_segment(NULL/*tm*/,gasneti_mynode,ptr,1))
           diagnosis = "a bad pointer, referencing the shared segment (outside malloc heap)";
         else 
       #endif
@@ -1839,18 +2128,15 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
     gasneti_memalloc_envinit();
     _gasneti_memcheck_one(curloc);
     GASNETI_STAT_EVENT_VAL(I, GASNET_MALLOC, nbytes);
-    if_pt (gasneti_attach_done) { gasnet_hold_interrupts(); }
     if_pf (nbytes == 0) {
-      if_pt (gasneti_attach_done) { gasnet_resume_interrupts(); }
       return NULL;
     }
     ret = malloc(nbytes+GASNETI_MEM_EXTRASZ);
-    gasneti_assert_always((((uintptr_t)ret) & 0x3) == 0); /* should have at least 4-byte alignment */
+    gasneti_assert_always_uint((((uintptr_t)ret) & 0x3) ,==, 0); /* should have at least 4-byte alignment */
     if_pf (ret == NULL) {
       char curlocstr[GASNETI_MAX_LOCSZ];
       strcpy(curlocstr, "\n   at: %s");
       if (allowfail) {
-        if_pt (gasneti_attach_done) { gasnet_resume_interrupts(); }
         GASNETI_TRACE_PRINTF(I,("Warning: returning NULL for a failed gasneti_malloc(%"PRIuPTR")%s",
                                 (uintptr_t)nbytes, _gasneti_format_curloc(curlocstr,curloc)));
         return NULL;
@@ -1904,7 +2190,6 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
       ret = desc+1;
       if (gasneti_memalloc_init > 0) gasneti_memalloc_valset(ret, nbytes, gasneti_memalloc_initval);
     }
-    if_pt (gasneti_attach_done) { gasnet_resume_interrupts(); }
     _gasneti_memcheck(ret,curloc,0);
     return ret;
   }
@@ -1921,7 +2206,6 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
     gasneti_memalloc_envinit();
     _gasneti_memcheck_one(curloc);
     if_pf (ptr == NULL) return;
-    if_pt (gasneti_attach_done) { gasnet_hold_interrupts(); }
     nbytes = _gasneti_memcheck(ptr, curloc, 1);
     GASNETI_STAT_EVENT_VAL(I, GASNET_FREE, nbytes);
     desc = ((gasneti_memalloc_desc_t *)ptr) - 1;
@@ -1946,7 +2230,6 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
     gasneti_mutex_unlock(&gasneti_memalloc_lock);
 
     if (gasneti_memalloc_leakall <= 0) free(desc);
-    if_pt (gasneti_attach_done) { gasnet_resume_interrupts(); }
   }
 
   extern void *_gasneti_calloc(size_t N, size_t S, const char *curloc) {
@@ -1973,13 +2256,11 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
   extern void _gasneti_leak(void *ptr, const char *curloc) {
     gasneti_memalloc_desc_t *desc;
     if_pf (ptr == NULL) return;
-    if_pt (gasneti_attach_done) { gasnet_hold_interrupts(); }
     _gasneti_memcheck(ptr, curloc, 0);
     desc = ((gasneti_memalloc_desc_t *)ptr) - 1;
     gasneti_mutex_lock(&gasneti_memalloc_lock);
       desc->beginpost = GASNETI_MEM_LEAKMARK;
     gasneti_mutex_unlock(&gasneti_memalloc_lock);
-    if_pt (gasneti_attach_done) { gasnet_resume_interrupts(); }
   }
 
   extern int gasneti_getheapstats(gasneti_heapstats_t *pstat) {
@@ -1997,7 +2278,6 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
   }
 
   extern void gasneti_malloc_dump_liveobjects(FILE *fp) {
-    if_pt (gasneti_attach_done) { gasnet_hold_interrupts(); }
     gasneti_mutex_lock(&gasneti_memalloc_lock);
       if (gasneti_memalloc_pos) {
         gasneti_memalloc_desc_t *pos = gasneti_memalloc_pos;
@@ -2022,7 +2302,6 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
         } 
       } 
     gasneti_mutex_unlock(&gasneti_memalloc_lock);
-    if_pt (gasneti_attach_done) { gasnet_resume_interrupts(); }
   }
 
 #endif

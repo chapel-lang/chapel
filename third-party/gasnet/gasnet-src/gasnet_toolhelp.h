@@ -4,8 +4,8 @@
  * Terms of use are as specified in license.txt
  */
 
-#if !defined(_IN_GASNET_H) && !defined(_IN_GASNET_TOOLS_H)
-  #error This file is not meant to be included directly- clients should include gasnet.h or gasnet_tools.h
+#if !defined(_IN_GASNETEX_H) && !defined(_IN_GASNET_TOOLS_H)
+  #error This file is not meant to be included directly- clients should include gasnetex.h or gasnet_tools.h
 #endif
 
 #ifndef _GASNET_TOOLHELP_H
@@ -76,13 +76,128 @@ extern char *gasneti_build_loc_str(const char *funcname, const char *filename, i
   #define gasneti_assert(expr) gasneti_assert_always(expr)
 #endif
 
+// gasneti_assert(_always)_{(u)int,ptr,dbl}(op1, operator, op2);
+// A statement that is mostly equivalent to gasneti_assert(_always)(op1 operator op2);
+// but assumes op1/op2 have (unsigned)integer/pointer/floating type and outputs operand values on failure.
+// E.g.: gasneti_assert_int(idx, >=, 4);
+// C++ NOTE: gasneti_assert_ptr() operates on raw pointer values, and does not perform 
+//   C++'s normal implicit pointer conversions for comparisons on pointers to polymorphic object types.
+#define gasneti_assert_always_int(op1, operator, op2) do {          \
+    int64_t const _gaa_op1 = (op1);                                 \
+    int64_t const _gaa_op2 = (op2);                                 \
+    if (!GASNETT_PREDICT_TRUE(_gaa_op1 operator _gaa_op2)) {        \
+      int const _gaa_bigval = ((int32_t)_gaa_op1 != _gaa_op1) ||    \
+                              ((int32_t)_gaa_op2 != _gaa_op2);      \
+      int const _gaa_negval = (_gaa_op1 < 0) || (_gaa_op2 < 0);     \
+      int const _gaa_decwid = (_gaa_bigval ? 20 : 11);              \
+      int const _gaa_hexwid = (_gaa_bigval || _gaa_negval ? 16 : 8);\
+      gasneti_fatalerror("Assertion failure at %s: %s %s %s\n"      \
+         "   op1 : %*" PRId64 " (0x%0*" PRIx64 ") == %s\n"          \
+         "   op2 : %*" PRId64 " (0x%0*" PRIx64 ") == %s\n"          \
+       , gasneti_current_loc, #op1, #operator, #op2                 \
+       , _gaa_decwid, _gaa_op1, _gaa_hexwid, _gaa_op1, #op1         \
+       , _gaa_decwid, _gaa_op2, _gaa_hexwid, _gaa_op2, #op2         \
+      );                                                            \
+    }                                                               \
+} while (0)
+#define gasneti_assert_always_uint(op1, operator, op2) do {         \
+    uint64_t const _gaa_op1 = (op1);                                \
+    uint64_t const _gaa_op2 = (op2);                                \
+    if (!GASNETT_PREDICT_TRUE(_gaa_op1 operator _gaa_op2)) {        \
+      int const _gaa_bigval = ((uint32_t)_gaa_op1 != _gaa_op1) ||   \
+                              ((uint32_t)_gaa_op2 != _gaa_op2);     \
+      int const _gaa_decwid = (_gaa_bigval ? 20 : 11);              \
+      int const _gaa_hexwid = (_gaa_bigval ? 16 : 8);               \
+      gasneti_fatalerror("Assertion failure at %s: %s %s %s\n"      \
+         "   op1 : %*" PRIu64 " (0x%0*" PRIx64 ") == %s\n"          \
+         "   op2 : %*" PRIu64 " (0x%0*" PRIx64 ") == %s\n"          \
+       , gasneti_current_loc, #op1, #operator, #op2                 \
+       , _gaa_decwid, _gaa_op1, _gaa_hexwid, _gaa_op1, #op1         \
+       , _gaa_decwid, _gaa_op2, _gaa_hexwid, _gaa_op2, #op2         \
+      );                                                            \
+    }                                                               \
+} while (0)
+#ifdef __cplusplus
+  #define _gasneti_voidp_cvt(p) (reinterpret_cast<const void *>(p))
+#else
+  #define _gasneti_voidp_cvt(p) (p) // rely on default conversion
+#endif
+#define gasneti_assert_always_ptr(op1, operator, op2) do {          \
+    const void * const _gaa_op1 = _gasneti_voidp_cvt(op1);          \
+    const void * const _gaa_op2 = _gasneti_voidp_cvt(op2);          \
+    if (!GASNETT_PREDICT_TRUE(_gaa_op1 operator _gaa_op2)) {        \
+      int const _gaa_hexwid = 2*sizeof(void *);                     \
+      gasneti_fatalerror("Assertion failure at %s: %s %s %s\n"      \
+         "   op1 : 0x%0*" PRIxPTR " == %s\n"                        \
+         "   op2 : 0x%0*" PRIxPTR " == %s\n"                        \
+       , gasneti_current_loc, #op1, #operator, #op2                 \
+       , _gaa_hexwid, (uintptr_t)_gaa_op1, #op1                     \
+       , _gaa_hexwid, (uintptr_t)_gaa_op2, #op2                     \
+      );                                                            \
+    }                                                               \
+} while (0)
+#define gasneti_assert_always_dbl(op1, operator, op2) do {          \
+    double const _gaa_op1 = (op1);                                  \
+    double const _gaa_op2 = (op2);                                  \
+    if (!GASNETT_PREDICT_TRUE(_gaa_op1 operator _gaa_op2)) {        \
+      gasneti_fatalerror("Assertion failure at %s: %s %s %s\n"      \
+         "   op1 : %#13.6g (0x%016" PRIx64 ") == %s\n"              \
+         "   op2 : %#13.6g (0x%016" PRIx64 ") == %s\n"              \
+       , gasneti_current_loc, #op1, #operator, #op2                 \
+       , _gaa_op1, *(uint64_t*)&_gaa_op1, #op1                      \
+       , _gaa_op2, *(uint64_t*)&_gaa_op2, #op2                      \
+      );                                                            \
+    }                                                               \
+} while (0)
+
+#if GASNET_NDEBUG
+  #define gasneti_assert_int(op1, operator, op2)  do{}while(0)
+  #define gasneti_assert_uint(op1, operator, op2) do{}while(0)
+  #define gasneti_assert_ptr(op1, operator, op2)  do{}while(0)
+  #define gasneti_assert_dbl(op1, operator, op2)  do{}while(0)
+#else
+  #define gasneti_assert_int  gasneti_assert_always_int
+  #define gasneti_assert_uint gasneti_assert_always_uint
+  #define gasneti_assert_ptr  gasneti_assert_always_ptr
+  #define gasneti_assert_dbl  gasneti_assert_always_dbl
+#endif
+
+// gasneti_static_assert(cond)
+// statically assert `cond`, which must be a compile-time integer constant expression
+// Invocation is an expression must appear in expression or statement context.
+// The assertion is active for both DEBUG/NDEBUG and upon success compiles away to nothing.
+// Upon failure, causes a compile-time error at the invocation line.
+#if __cplusplus >= 201103L // C++11 gives us mostly what we want
+  // wrapper makes it usable in expression context
+  #define gasneti_static_assert(cond) \
+      ((void)([](){ static_assert(cond, "gasneti_static_assert(" #cond ")"); }))
+#elif __cplusplus // C++98 lacks static assert and forbids type declarations in casts
+  // use a negative array size 
+  #define gasneti_static_assert(cond) \
+    ((void)(void (*)(int _gasneti_static_assert[(cond)?1:-1]))0)
+#else // C
+  // use a bit field width, which enforces both integer constant expression and rejects negatives
+  #define gasneti_static_assert(cond) \
+    ((void)(struct{int _gasneti_static_assert:((cond)?8:-1);}*)0)
+#endif
+
 /* gasneti_unreachable(): annotation to mark the current code location as unreachable, to assist optimization 
  * deliberately compiles away in NDEBUG to hopefully avoid inserting dead instructions
  */
 #if GASNETT_USE_BUILTIN_UNREACHABLE
-  #define gasneti_unreachable() (__builtin_unreachable(),gasneti_assert(!"gasneti_unreachable"))
+  #define gasneti_builtin_unreachable() __builtin_unreachable()
 #else
-  #define gasneti_unreachable() gasneti_assert(!"gasneti_unreachable")
+  #define gasneti_builtin_unreachable() ((void)0)
+#endif
+#define gasneti_unreachable() (gasneti_builtin_unreachable(),gasneti_assert(!"gasneti_unreachable"))
+
+// gasneti_unreachable_error((fmt, args...)) 
+// a version of gasneti_unreachable that in DEBUG mode (only) executes gasneti_fatalerror(fmt, ...args)
+// otherwise expands to gasneti_unreachable() (and args are not evaluated)
+#if GASNET_DEBUG
+  #define gasneti_unreachable_error(args) gasneti_fatalerror args
+#else
+  #define gasneti_unreachable_error(args) gasneti_unreachable()
 #endif
 
 /* gasneti_assume(cond): assert a simple condition is always true, as a directive to help compiler analysis

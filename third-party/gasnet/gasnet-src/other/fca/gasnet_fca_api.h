@@ -2,15 +2,18 @@
  * Copyright (c)  2012, Mellanox Technologies LTD. All rights reserved.
  */
 
+#ifndef _GASNET_FCA_API_H
+#define _GASNET_FCA_API_H
+
 #include <stdio.h>
 #include <fca/fca_api.h>
 #include <fca/fca_version.h>
 #include <fca/config/fca_parse_specfile.h>
 
 #ifndef FCA_API
-#define GASNET_FCA_VERSION 12
+#define GASNETI_FCA_VERSION 12
 #else
-#define GASNET_FCA_VERSION FCA_API
+#define GASNETI_FCA_VERSION FCA_API
 #endif
 
 /*
@@ -18,24 +21,24 @@
  *   * MPI build must define an FCA version macro.
  *    */
 
-#define GASNET_FCA_BARRIER            1
-#define GASNET_FCA_BCAST              1
-#define GASNET_FCA_ALLREDUCE          1
+#define GASNETI_FCA_BARRIER            1
+#define GASNETI_FCA_BCAST              1
+#define GASNETI_FCA_ALLREDUCE          1
 
 
-#if GASNET_FCA_VERSION == 12
+#if GASNETI_FCA_VERSION == 12
 
-#define GASNET_FCA_ALLGATHER          0
+#define GASNETI_FCA_ALLGATHER          0
 #define FCA_API_ABI_MAJOR           1
 #define FCA_API_ABI_MINOR           2
 #define FCA_MAJOR_BIT               24ul
 #define FCA_MINOR_BIT               16ul
 #define EUSEGASNET                     287
 
-#elif GASNET_FCA_VERSION == 20 || GASNET_FCA_VERSION == 21 || GASNET_FCA_VERSION == 22 || GASNET_FCA_VERSION == 25
+#elif GASNETI_FCA_VERSION == 20 || GASNETI_FCA_VERSION == 21 || GASNETI_FCA_VERSION == 22 || GASNETI_FCA_VERSION == 25
 
-#define GASNET_FCA_ALLGATHER          1
-#define GASNET_FCA_PROGRESS           1
+#define GASNETI_FCA_ALLGATHER          1
+#define GASNETI_FCA_PROGRESS           1
 #define EUSEGASNET                     287
 
 static inline int gasnet_fca_comm_init(fca_t *fca_context, int rank, int comm_size,
@@ -57,3 +60,5 @@ static inline int gasnet_fca_comm_init(fca_t *fca_context, int rank, int comm_si
 #error "FCA API version is unsupported"
 
 #endif
+
+#endif 

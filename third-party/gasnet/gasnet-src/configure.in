@@ -9,10 +9,13 @@ dnl -*- m4 -*-
 define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
-define([GASNET_RELEASE_VERSION_MAJOR_D],[1])
-define([GASNET_RELEASE_VERSION_MINOR_D],[32])
+define([GASNET_RELEASE_VERSION_MAJOR_D],[2018])
+define([GASNET_RELEASE_VERSION_MINOR_D],[9])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
-dnl GASNet spec version:
+dnl GASNet-EX spec version:
+define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
+define([GASNETEX_SPEC_VERSION_MINOR_D],[6])
+dnl GASNet-1 spec version:
 define([GASNET_SPEC_VERSION_MAJOR_D],[1])
 define([GASNET_SPEC_VERSION_MINOR_D],[8])
 dnl GASNet tools spec version:
@@ -86,6 +89,8 @@ dnl define version identifiers
 AC_DEFINE_UNQUOTED(GASNET_RELEASE_VERSION_MAJOR,GASNET_RELEASE_VERSION_MAJOR_D)
 AC_DEFINE_UNQUOTED(GASNET_RELEASE_VERSION_MINOR,GASNET_RELEASE_VERSION_MINOR_D)
 AC_DEFINE_UNQUOTED(GASNET_RELEASE_VERSION_PATCH,GASNET_RELEASE_VERSION_PATCH_D)
+AC_DEFINE_UNQUOTED(GASNETI_EX_SPEC_VERSION_MAJOR,GASNETEX_SPEC_VERSION_MAJOR_D)
+AC_DEFINE_UNQUOTED(GASNETI_EX_SPEC_VERSION_MINOR,GASNETEX_SPEC_VERSION_MINOR_D)
 AC_DEFINE_UNQUOTED(GASNETI_SPEC_VERSION_MAJOR,GASNET_SPEC_VERSION_MAJOR_D)
 AC_DEFINE_UNQUOTED(GASNETI_SPEC_VERSION_MINOR,GASNET_SPEC_VERSION_MINOR_D)
 AC_DEFINE_UNQUOTED(GASNETI_TOOLS_SPEC_VERSION_MAJOR,GASNETT_SPEC_VERSION_MAJOR_D)
@@ -293,8 +298,15 @@ AC_DEFUN([GASNET_GET_GNUWARNINGFLAGS],[
                             [DEVWARN_[$1]FLAGS="$DEVWARN_[$1]FLAGS $3$warnflag"])
      fi
     done
+
+    # Disable DEVWARN flags from -Wall that we don't support in our library code
+    GASNET_TRY_WNO_FLAG([$1],[$3-Wno-format-overflow],
+                          [DEVWARN_[$1]FLAGS="$DEVWARN_[$1]FLAGS $3-Wno-format-overflow"])
+    GASNET_TRY_WNO_FLAG([$1],[$3-Wno-format-truncation],
+                          [DEVWARN_[$1]FLAGS="$DEVWARN_[$1]FLAGS $3-Wno-format-truncation"])
   fi
 
+  # compiler-specific global warning disables
   case "$2" in
     Pathscale) # pathcc default enables -Wformat-security which we don't want
         GASNET_TRY_WNO_FLAG([$1],[$3-Wno-format-security],
@@ -2502,18 +2514,32 @@ GASNET_IF_DISABLED(auto-conduit-detect, [Enable/disable automatic detection of s
 		   [enabled_auto_detect=yes;_conduit_auto_reason=auto])
 dnl GASNET_TOOLSONLY_FALSE_END
 
-dnl CONDUIT_BEGIN(lowername, desc)
+dnl GASNet branch control -- allows us to keep a unified configure script
+dnl define([GASNET_BRANCH_1],[1])
+    define([GASNET_BRANCH_EX],[1])
+
+ifdef([GASNET_BRANCH_1],[gasnet_branch=1],[gasnet_branch=EX])
+
+dnl CONDUIT_BEGIN(lowername, ex_allow, desc)
+dnl ex_impl should be a literal [yes|no|warn] to allow this conduit for EX branch, or probe and warn when support looks available
 dnl sets enabled_<lowername> to yes or no for whether conduit should be enabled
 AC_DEFUN([CONDUIT_BEGIN],[
  pushdef([CONDUIT_NAME],[$1])
  pushdef([CONDUIT_UPPERNAME],translit($1,'a-z','A-Z'))
- pushdef([CONDUIT_DESC],[$2])
+ pushdef([CONDUIT_DESC],[$3])
  # bug 1946: prevent confusing cross-conduit error messages
  GASNET_ERR_CLEANUP
+ifdef([GASNET_BRANCH_1],[pushdef([CONDUIT_IMPLEMENTED],yes)],[pushdef([CONDUIT_IMPLEMENTED],$2)])
+ifelse(CONDUIT_IMPLEMENTED,[yes],[
  GASNET_HELP_OUTPUT([
 CONDUIT_NAME[]-conduit options: (CONDUIT_DESC)])
- enabled_[]$1=no
+  _conduit_implemented_[]CONDUIT_NAME=yes
+],[ dnl unimplemented conduit help disabled
+ pushdef([GASNET_SUPPRESSHELP],[set]) 
+  _conduit_implemented_[]CONDUIT_NAME=no
+])
 dnl GASNET_TOOLSONLY_FALSE_BEGIN
+ifelse(CONDUIT_IMPLEMENTED,[no],[ enabled_[]$1=no ],[
  GASNET_IF_ENABLED_WITH_AUTO($1, Enable/disable the CONDUIT_DESC (auto-detected),
   [enabled_[]$1=yes;force_[]$1=yes;  _conduit_reason_[]$1=enabled],
   [enabled_[]$1=no;                  _conduit_reason_[]$1=disabled],
@@ -2523,6 +2549,7 @@ dnl GASNET_TOOLSONLY_FALSE_BEGIN
       enabled_[]$1=$enabled_auto_detect;_conduit_reason_[]$1=$_conduit_auto_reason
     fi
   ])
+])
 dnl GASNET_TOOLSONLY_FALSE_END
 ])
 dnl CONDUIT_DISALLOW_SEGMENT(segment_type)
@@ -2537,10 +2564,6 @@ AC_DEFUN([CONDUIT_DISALLOW_SEGMENT],[
     enabled_[]CONDUIT_NAME=no
   fi
   popdef([upperseg])
-])
-dnl flags this conduit as not yet working in EX
-AC_DEFUN([CONDUIT_EX_UNIMPLEMENTED],[
-  dnl ex_unimplemented_[]CONDUIT_NAME=yes dnl Deliberately disabled in GASNet-1 branch
 ])
 dnl CONDUIT_HOME(DESC, PROG, DIRS, FILE)
 dnl Wrapper around GASNET_PACKAGE_HOME() to pass the implicit conduit name
@@ -2622,36 +2645,45 @@ AC_DEFUN([CONDUIT_PHYSMEM],[
   fi
 ])
 dnl CONDUIT_END(test_conduit_enabled)
+dnl note this may also change enabled_<conduit> for ex_allow=warn
 AC_DEFUN([CONDUIT_END],[
+  _conduit_enabled_[]CONDUIT_NAME=no
   if test "$gasnet_toolsonly_mode" = "no" ; then
     if $1; then
-      _conduit_enabled_[]CONDUIT_NAME=yes
-      _conduit_flagstr="ON    ($_conduit_reason_[]CONDUIT_NAME)"
-      if test "$ex_unimplemented_[]CONDUIT_NAME" = "yes"; then
+      if test "CONDUIT_IMPLEMENTED" != "yes"; then
         pushdef([EX_UNIMPL_MESSAGE],[It appears your system has the required support for CONDUIT_NAME[]-conduit, 
 	  however CONDUIT_NAME[]-conduit is not yet fully implemented in this GASNet-EX distribution, 
 	  If you want to use this conduit, please download the GASNet v1.x distribution from http://gasnet.lbl.gov.
-	  Otherwise, you should run configure with --disable-[]CONDUIT_NAME to disable this conduit.
-	])
-        if test "$force_[]CONDUIT_NAME" = yes ; then # allow --enable-conduit to override for developers
+	  Otherwise, you can disable this message with --disable-[]CONDUIT_NAME ])
+        if test "$force_[]CONDUIT_NAME" = yes ; then 
+	  GASNET_MSG_ERROR([EX_UNIMPL_MESSAGE])
+	else # warn and disable
+          enabled_[]CONDUIT_NAME=no 
 	  GASNET_MSG_WARN([EX_UNIMPL_MESSAGE])
-	else # but defaults to fatal when probed
-	  AC_MSG_ERROR([EX_UNIMPL_MESSAGE])
 	fi
         popdef([EX_UNIMPL_MESSAGE])
+      else
+        _conduit_enabled_[]CONDUIT_NAME=yes
       fi
     else
       if test "$force_[]CONDUIT_NAME" = yes ; then
        GASNET_MSG_ERROR([User requested --enable-CONDUIT_NAME but I don't know how to build CONDUIT_NAME programs for your system])
       fi
-      _conduit_enabled_[]CONDUIT_NAME=no
       if test "$_conduit_reason_[]CONDUIT_NAME" = "auto" ; then
         _conduit_reason_[]CONDUIT_NAME="not found"
       fi
-      _conduit_flagstr="OFF   ($_conduit_reason_[]CONDUIT_NAME)"
+    fi
+    if test "$_conduit_enabled_[]CONDUIT_NAME" = "yes" ; then
+      _conduit_flagstr="ON     ($_conduit_reason_[]CONDUIT_NAME)"
+    else
+      _conduit_flagstr="OFF    ($_conduit_reason_[]CONDUIT_NAME)"
     fi
     _conduit_desc_[]CONDUIT_NAME="  CONDUIT_DESC m4_substr([                                                  ],len(CONDUIT_DESC))$_conduit_flagstr"
   fi 
+  ifelse(CONDUIT_IMPLEMENTED,[yes],[],[
+    popdef([GASNET_SUPPRESSHELP])
+  ])
+  popdef([CONDUIT_IMPLEMENTED])
   popdef([CONDUIT_NAME])
   popdef([CONDUIT_UPPERNAME])
   popdef([CONDUIT_DESC])
@@ -2661,7 +2693,9 @@ AC_DEFUN([CONDUIT_OUTPUT],[
   if test "$_conduit_enabled_[]$1" = "yes" ; then
     CONDUITS="$CONDUITS $1"
   fi
-  echo "$_conduit_desc_[]$1" >> $CONDUIT_LIST
+  if test "$_conduit_implemented_[]$1" = "yes" ; then
+    echo "$_conduit_desc_[]$1" >> $CONDUIT_LIST
+  fi
 ])
 AM_CONDITIONAL(TOOLSONLY_MODE, test "$gasnet_toolsonly_mode" = "yes")
 AM_CONDITIONAL(CONDUIT_MODE, test "$gasnet_toolsonly_mode" = "no")
@@ -2991,7 +3025,7 @@ fi
 
 #---------------------------------------------------------------------------------------------------------------
 # UDP/AMUDP Configuration
-CONDUIT_BEGIN(udp,[Portable UDP/IP conduit (udp)])
+CONDUIT_BEGIN(udp,yes,[Portable UDP/IP conduit (udp)])
 if test $enabled_udp = yes; then
  if test "$have_cxx" = yes; then
   # detect libraries necessary for udp-* backends
@@ -3019,20 +3053,19 @@ if test $enabled_udp = yes; then
 	fi
     fi
   GASNET_POPVAR(LIBS)
+  if test "$have_udp" = yes ; then
+    GASNET_ENV_DEFAULT(GASNET_CSPAWN_CMD, "", [See udp-conduit/README])
+    if test "$GASNET_CSPAWN_CMD" != "" ; then
+      AC_DEFINE_UNQUOTED(GASNET_CSPAWN_CMD, "$GASNET_CSPAWN_CMD")
+    fi
+  fi
  else
   have_udp=no
  fi
 fi
 AC_SUBST(GASNET_UDP_LIBS)
-AM_CONDITIONAL(USE_UDP_CONDUIT, test "$enabled_udp$have_udp" = yesyes)
 CONDUIT_END([test "$enabled_udp$have_udp" = yesyes])
-
-if test "$have_udp" = yes ; then
-GASNET_ENV_DEFAULT(GASNET_CSPAWN_CMD, "", [See udp-conduit/README])
-if test "$GASNET_CSPAWN_CMD" != "" ; then
-  AC_DEFINE_UNQUOTED(GASNET_CSPAWN_CMD, "$GASNET_CSPAWN_CMD")
-fi
-fi
+AM_CONDITIONAL(USE_UDP_CONDUIT, test "$enabled_udp$have_udp" = yesyes)
 
 #---------------------------------------------------------------------------------------------------------------
 # MPI/AMMPI Configuration
@@ -3048,7 +3081,7 @@ GASNET_IF_ENABLED_WITH_AUTO(mpi-compat, Enable/disable MPI compatibility in all 
 dnl GASNET_TOOLSONLY_FALSE_END
 
 # --enable-mpi controls mpi-conduit
-CONDUIT_BEGIN(mpi,[Portable MPI conduit (mpi)])
+CONDUIT_BEGIN(mpi,yes,[Portable MPI conduit (mpi)])
 
 if test "$enabled_mpi" = yes || test "$enabled_mpi_compat" = yes; then
   # user can explicitly configure MPI by setting MPI_CC, MPI_CFLAGS and MPI_LIBS
@@ -3279,11 +3312,13 @@ AC_SUBST(MPI_LIBS) # libs and ldflags that must be used when linking AMMPI-based
 # a client can't portably replace the MPI_CC in GASNET_LD and still have a working MPI-enabled link
 AC_SUBST(MPIRUN_CMD) # prototype command used by gasnetrun to run MPI programs
 AC_SUBST(MPIRUN_CMD_BATCH) # prototype command used by gasnetrun to run MPI programs
-AM_CONDITIONAL(USE_MPI_CONDUIT, test "$enabled_mpi$have_mpi" = yesyes)
 CONDUIT_END([test "$enabled_mpi$have_mpi" = yesyes])
+AM_CONDITIONAL(USE_MPI_CONDUIT, test "$enabled_mpi$have_mpi" = yesyes)
 if test "$enabled_mpi$have_mpi" = yesyes; then
   have_ammpi=yes
 fi
+AM_CONDITIONAL(USE_AMMPI, test "$have_ammpi" = yes)
+
 if test "$force_mpi_compat$have_mpi" = yesno ; then
   GASNET_MSG_ERROR(User requested --enable-mpi-compat but I don't know how to build MPI programs for your system)
 fi
@@ -3304,7 +3339,7 @@ AM_CONDITIONAL(USE_MPI, test "$have_mpi" = yes)
 #-----------------------------------------------------------------------------------------------
 # SMP configuration
 
-CONDUIT_BEGIN(smp,[Portable SMP-loopback conduit (smp)])
+CONDUIT_BEGIN(smp,yes,[Portable SMP-loopback conduit (smp)])
 if test $enabled_smp = yes; then
   if test x"$with_pshm" != xno; then
     dnl TODO: factor socket related probes
@@ -3392,20 +3427,22 @@ if test $enabled_smp = yes; then
   fi
 fi
 AC_SUBST(SMP_LIBS)
-AM_CONDITIONAL(USE_SMP_CONDUIT, test "$enabled_smp" = yes)
 CONDUIT_END([test "$enabled_smp" = yes])
+AM_CONDITIONAL(USE_SMP_CONDUIT, test "$enabled_smp" = yes)
 
 #--------------------------------------------------------------------------------------------------------
 # MXM configuration
 #
 
-CONDUIT_BEGIN(mxm,[Mellanox InfiniBand MXM conduit (mxm)])
+CONDUIT_BEGIN(mxm,no,[Mellanox InfiniBand MXM conduit (mxm)])
 have_mxm=no
-if test "$have_fork" = no; then
+if test "$enabled_mxm" = no; then
+    :
+elif test "$have_fork" = no; then
     GASNET_MSG_WARN([mxm-conduit requires fork() ($fork_reason) for startup - disabling mxm])
 elif test "$have_pthread" = no; then
     GASNET_MSG_WARN([mxm-conduit requires libpthread ($pthread_reason) - disabling mxm])
-elif test "$enabled_mxm" != no; then
+else
     #
     # Either MXM was required explicitly, or we just need to probe for its existence
     #
@@ -3446,19 +3483,20 @@ fi
 AC_SUBST(MXM_CFLAGS)
 AC_SUBST(MXM_LDFLAGS)
 AC_SUBST(MXM_LIBS)
-AM_CONDITIONAL(USE_MXM_CONDUIT, test "$have_mxm" = yes)
-CONDUIT_EX_UNIMPLEMENTED
-CONDUIT_END([test "$have_mxm" = yes])
+CONDUIT_END([test "$enabled_mxm$have_mxm" = yesyes])
+AM_CONDITIONAL(USE_MXM_CONDUIT, test "$enabled_mxm$have_mxm" = yesyes)
 
 #--------------------------------------------------------------------------------------------------------
 # PSM conduit
 #
 
-CONDUIT_BEGIN(psm,[Intel OmniPath PSM2 conduit (psm)])
+CONDUIT_BEGIN(psm,warn,[Intel OmniPath PSM2 conduit (psm)])
 have_psm=no
-if test "$have_pthread" = no; then
+if test "$enabled_psm" = no; then
+    :
+elif test "$have_pthread" = no; then
     GASNET_MSG_WARN([psm-conduit requires libpthread ($pthread_reason) - disabling psm])
-elif test "$enabled_psm" = yes; then
+else
     #
     # Either PSM was required explicitly, or we just need to probe for its existence
     #
@@ -3499,14 +3537,13 @@ fi
 AC_SUBST(PSM_CFLAGS)
 AC_SUBST(PSM_LDFLAGS)
 AC_SUBST(PSM_LIBS)
-AM_CONDITIONAL(USE_PSM_CONDUIT, test "$have_psm" = yes)
-CONDUIT_EX_UNIMPLEMENTED
-CONDUIT_END([test "$have_psm" = yes])
+CONDUIT_END([test "$enabled_psm$have_psm" = yesyes])
+AM_CONDITIONAL(USE_PSM_CONDUIT, test "$enabled_psm$have_psm" = yesyes)
 
 #--------------------------------------------------------------------------------------------------------
 # Portals4 Conduit
 
-CONDUIT_BEGIN(portals4,[Portable Portals4 conduit (portals4)])
+CONDUIT_BEGIN(portals4,no,[Portable Portals4 conduit (portals4)])
 if test "$enabled_portals4" = yes; then
   # Start by assuming we do have Portals4
   have_portals4=yes
@@ -3584,14 +3621,13 @@ fi
 AC_SUBST(PORTALS4_CFLAGS)
 AC_SUBST(PORTALS4_LDFLAGS)
 AC_SUBST(PORTALS4_LIBS)
-AM_CONDITIONAL(USE_PORTALS4_CONDUIT, test "$have_portals4" = yes)
-CONDUIT_EX_UNIMPLEMENTED
-CONDUIT_END([test "$have_portals4" = yes])
+CONDUIT_END([test "$enabled_portals4$have_portals4" = yesyes])
+AM_CONDITIONAL(USE_PORTALS4_CONDUIT, test "$enabled_portals4$have_portals4" = yesyes)
 
 #--------------------------------------------------------------------------------------------------------
 # IBV configuration
 
-CONDUIT_BEGIN(ibv,[InfiniBand IB Verbs conduit (ibv)])
+CONDUIT_BEGIN(ibv,yes,[InfiniBand IB Verbs conduit (ibv)])
 if test "$enabled_ibv$have_mpi_compat$have_fork" = yesnono; then
   enabled_ibv=no
   GASNET_MSG_WARN([ibv-conduit requires either MPI compatibility ($mpi_compat_reason) or fork() ($fork_reason) for startup - disabling ibv])
@@ -3685,7 +3721,7 @@ if test "$enabled_ibv" = yes; then
     CONDUIT_SPAWNER
 
     gasnetc_ibv_max_hcas=2
-    GASNET_IF_DISABLED(ibv-multirail, [Disable IBV over multiple HCAs, see ibv-conduit/README (enabled by default)], enabled_ibv_multirail=no, enabled_ibv_multirail=yes)
+    GASNET_IF_ENABLED(ibv-multirail, [Enable IBV over multiple HCAs, see ibv-conduit/README (disabled by default)], enabled_ibv_multirail=yes, enabled_ibv_multirail=no)
     GASNET_WITH(ibv-max-hcas,
        [maximum number of IBV HCAs to open for multi-rail support (default is 2)],
        [if expr "${withval}" : "[[1-9]][[0-9]]*" >/dev/null; then
@@ -3731,9 +3767,9 @@ fi
 AC_SUBST(IBV_CFLAGS)
 AC_SUBST(IBV_LDFLAGS)
 AC_SUBST(IBV_LIBS)
-AM_CONDITIONAL(USE_IBV_CONDUIT, test "$have_ibv" = yes)
 AM_CONDITIONAL(IBV_SEQ_THREADS, test "$enabled_ibv_rcv_thread$enabled_ibv_conn_thread" != nono)
-CONDUIT_END([test "$have_ibv" = yes])
+CONDUIT_END([test "$enabled_ibv$have_ibv" = yesyes])
+AM_CONDITIONAL(USE_IBV_CONDUIT, test "$enabled_ibv$have_ibv" = yesyes)
 
 #--------------------------------------------------------------------------------------------------------
 # Gemini and Aries Conduits
@@ -3876,26 +3912,26 @@ fi
 popdef([lowername])
 ])
 
-CONDUIT_BEGIN(gemini,[Cray XE/XK Gemini conduit (gemini)])
+CONDUIT_BEGIN(gemini,yes,[Cray XE/XK Gemini conduit (gemini)])
 CONDUIT_DISALLOW_SEGMENT(everything)
 if test "$enabled_gemini" = yes; then
   GASNET_CHECK_GNI(Gemini)
 fi
-AM_CONDITIONAL(USE_GEMINI_CONDUIT, test "$have_gemini" = yes)
-CONDUIT_END([test "$have_gemini" = yes])
+CONDUIT_END([test "$enabled_gemini$have_gemini" = yesyes])
+AM_CONDITIONAL(USE_GEMINI_CONDUIT, test "$enabled_gemini$have_gemini" = yesyes)
 
-CONDUIT_BEGIN(aries,[Cray XC Aries conduit (aries)])
+CONDUIT_BEGIN(aries,yes,[Cray XC Aries conduit (aries)])
 CONDUIT_DISALLOW_SEGMENT(everything)
 if test "$enabled_aries" = yes; then
   GASNET_CHECK_GNI(Aries)
 fi
-AM_CONDITIONAL(USE_ARIES_CONDUIT, test "$have_aries" = yes)
-CONDUIT_END([test "$have_aries" = yes])
+CONDUIT_END([test "$enabled_aries$have_aries" = yesyes])
+AM_CONDITIONAL(USE_ARIES_CONDUIT, test "$enabled_aries$have_aries" = yesyes)
 
 
 #--------------------------------------------------------------------------------------------------------
 # PAMI configuration
-CONDUIT_BEGIN(pami,[IBM BlueGene/Q / Power775 PAMI conduit (pami)])
+CONDUIT_BEGIN(pami,yes,[IBM BlueGene/Q / Power775 PAMI conduit (pami)])
 if test $enabled_pami = yes; then
   have_pami=yes
 
@@ -3991,17 +4027,13 @@ fi #END ENABLE PAMI
 AC_SUBST(PAMI_CFLAGS)
 AC_SUBST(PAMI_LDFLAGS)
 AC_SUBST(PAMI_LIBS)
-AM_CONDITIONAL(USE_PAMI_CONDUIT, test "$enabled_pami$have_pami" = yesyes)
 CONDUIT_END([test "$enabled_pami$have_pami" = yesyes])
-
-#---------------------------------------------------------------------------------------------------------------
-# build and install AMMPI
-AM_CONDITIONAL(USE_AMMPI, test "$have_ammpi" = yes)
+AM_CONDITIONAL(USE_PAMI_CONDUIT, test "$enabled_pami$have_pami" = yesyes)
 
 #--------------------------------------------------------------------------------------------------------
 # Libfabric Conduit
 
-CONDUIT_BEGIN(ofi,[Portable OpenFabrics Interfaces conduit (ofi)])
+CONDUIT_BEGIN(ofi,warn,[Portable OpenFabrics Interfaces conduit (ofi)])
 if test "$enabled_ofi" = yes; then
   have_ofi=yes
 
@@ -4122,9 +4154,8 @@ fi
 AC_SUBST(OFI_CFLAGS)
 AC_SUBST(OFI_LDFLAGS)
 AC_SUBST(OFI_LIBS)
-AM_CONDITIONAL(USE_OFI_CONDUIT, test "$have_ofi" = yes)
-CONDUIT_EX_UNIMPLEMENTED
-CONDUIT_END([test "$have_ofi" = yes])
+CONDUIT_END([test "$enabled_ofi$have_ofi" = yesyes])
+AM_CONDITIONAL(USE_OFI_CONDUIT, test "$enabled_ofi$have_ofi" = yesyes)
 #---------------------------------------------------------------------------------------------------------------
 # CONDUIT CONFIGURATIONS FINISH
 #---------------------------------------------------------------------------------------------------------------
@@ -5102,8 +5133,9 @@ dnl GASNET_TOOLSONLY_FALSE_BEGIN
 # Optional "third-party" libraries
 
 ##                        FCA SUPPORT
-GASNET_IF_ENABLED_WITH_AUTO(fca, [Enable/disable FCA for acceleration of collectives (auto-detected)],
-  [enable_fca=yes], [enable_fca=no], [enable_fca=probe])
+GASNET_IF_ENABLED_WITH_AUTO(fca,
+  [Enable/disable FCA for acceleration of collectives (ifdef([GASNET_BRANCH_1],[auto-detected],[default is no]))],
+  [enable_fca=yes], [enable_fca=no], ifdef([GASNET_BRANCH_1],[enable_fca=probe],[enable_fca=no]))
 
 have_fca=no
 if test "$enable_fca" != "no"; then
@@ -5129,7 +5161,7 @@ if test "$enable_fca" != "no"; then
 fi
 if test "$have_fca" = yes; then
     AC_DEFINE_UNQUOTED(GASNETI_FCA_HOME, "$FCA_HOME")
-    AC_DEFINE(GASNET_FCA_ENABLED)
+    AC_DEFINE(GASNETI_FCA_ENABLED)
 elif test "$enable_fca" = yes; then
     GASNET_MSG_ERROR([User requested --enable-fca but FCA support could not be found. Perhaps you need to pass --with-fca-home=/path/to/fca ?])
 else

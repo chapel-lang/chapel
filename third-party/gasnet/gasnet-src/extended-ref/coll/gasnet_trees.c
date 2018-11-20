@@ -9,6 +9,9 @@
 #error TREES_H MISSING!!
 #endif
 
+// Global data:
+gasnete_coll_tree_type_t gasnetc_tm_reduce_tree_type; 
+
 static gasneti_lifo_head_t gasnete_coll_tree_type_free_list = GASNETI_LIFO_INITIALIZER;
 gasnete_coll_tree_type_t gasnete_coll_get_tree_type(void) {
   gasnete_coll_tree_type_t ret;
@@ -29,17 +32,16 @@ void gasnete_coll_free_tree_type(gasnete_coll_tree_type_t in){
 }
 
 
-static int split_string(char ***split_strs, char *str, char *delim) {
-  char *temp=NULL,*copy;
+static int split_string(char ***split_strs, const char *str, const char *delim) {
+  char *temp;
   int ret=0;
   size_t malloc_len = 8;
   static gasneti_mutex_t lock= GASNETI_MUTEX_INITIALIZER;
 
-  copy = gasneti_malloc(sizeof(char)*(strlen(str)+1));
-  
   /*since the strtok function is desructive we have to
     create a copy of the string first to preserve the orignal*/
-  GASNETE_FAST_UNALIGNED_MEMCPY_CHECK(copy, str, sizeof(char)*(strlen(str)+1));
+  char *copy = gasneti_strdup(str);
+
   gasneti_mutex_lock(&lock);
   *split_strs = (char **) gasneti_malloc(sizeof(char*) * malloc_len);
   temp = strtok(copy, delim);
@@ -64,7 +66,7 @@ static int split_string(char ***split_strs, char *str, char *delim) {
 
 
 
-static gasnete_coll_tree_type_t make_tree_type_str_helper(char *tree_name) {
+static gasnete_coll_tree_type_t make_tree_type_str_helper(const char *tree_name) {
   gasnete_coll_tree_type_t ret = gasnete_coll_get_tree_type();
 
   char **inner_split;
@@ -93,7 +95,7 @@ static gasnete_coll_tree_type_t make_tree_type_str_helper(char *tree_name) {
   gasneti_free(inner_split);
   return ret;
 }
-gasnete_coll_tree_type_t gasnete_coll_make_tree_type_str(char *tree_name_str) {
+gasnete_coll_tree_type_t gasnete_coll_make_tree_type_str(const char *tree_name_str) {
  
   char outter_delim[]=":";
   char inner_delim[]=",";
@@ -174,7 +176,7 @@ gasnete_coll_tree_type_t gasnete_coll_make_tree_type(int tree_class,  int *param
 #endif  
   ret->tree_class = (gasnete_coll_tree_class_t) tree_class;
   ret->params = (int*) gasneti_malloc(sizeof(int)*num_params);
-  GASNETE_FAST_UNALIGNED_MEMCPY_CHECK(ret->params, params, num_params*sizeof(int));
+  GASNETI_MEMCPY_SAFE_IDENTICAL(ret->params, params, num_params*sizeof(int));
   ret->num_params = num_params;
   
   return ret;
@@ -187,11 +189,7 @@ void gasnete_coll_print_tree(gasnete_coll_local_tree_geom_t *geom, int gasnete_c
   for(i=0; i<geom->child_count; i++) {
     fprintf(stdout, "%d> child %d: %d, subtree for that child: %d (offset: %d)\n", gasnete_coll_tree_mynode, i, (int)geom->child_list[i], (int)geom->subtree_sizes[i], (int)geom->child_offset[i]);
   }
-  if(gasnete_coll_tree_mynode == geom->root) {
-    /* for(i=0; i<geom->total_size; i++) { */
-/*       fprintf(stdout, "%d> dfs order %d: %d\n", (int)gasnete_coll_tree_mynode, i, (int)geom->dfs_order[i]); */
-/*     } */
-  } else {
+  if(gasnete_coll_tree_mynode != geom->root) {
     fprintf(stdout, "%d> parent: %d\n", (int)gasnete_coll_tree_mynode, (int)geom->parent);
   }
   fprintf(stdout, "%d> mysubtree size: %d\n", (int)gasnete_coll_tree_mynode, (int)geom->mysubtree_size);
@@ -206,7 +204,7 @@ void gasnete_coll_set_dissemination_order(gasnete_coll_local_tree_geom_t *geom, 
   int j, k;
   int factor;
   int lognp;
-  gasnet_node_t *proc_list;
+  gex_Rank_t *proc_list;
   
   lognp = 0;
   i = gasnete_coll_tree_nodes;
@@ -215,7 +213,7 @@ void gasnete_coll_set_dissemination_order(gasnete_coll_local_tree_geom_t *geom, 
     i = i/2;
   }
   
-  proc_list = (gasnet_node_t*)gasneti_malloc(sizeof(gasnet_node_t)*lognp);
+  proc_list = (gex_Rank_t*)gasneti_malloc(sizeof(gex_Rank_t)*lognp);
   
   k=0;
   factor = 2;
@@ -232,7 +230,7 @@ void gasnete_coll_set_dissemination_order(gasnete_coll_local_tree_geom_t *geom, 
 
 
 struct tree_node_t_ {
-  gasnet_node_t id;
+  gex_Rank_t id;
   struct tree_node_t_ *parent;
   int num_children;
   uint8_t children_reversed;
@@ -251,13 +249,13 @@ typedef struct tree_node_t_* tree_node_t;
 #define MYABS(A) ((A) < 0 ? (-1)*(A) : (A))
 #define MYCEIL(A, B) (((A) % (B)) !=0 ? ((A) / (B))+1 : (A)/(B)) 
 
-#define GET_PARENT_ID(TREE_NODE) ((TREE_NODE)->parent==NULL ? -1 : (TREE_NODE)->parent->id)
+#define GET_PARENT_ID(TREE_NODE) ((TREE_NODE)->parent==NULL ? GEX_RANK_INVALID : (TREE_NODE)->parent->id)
 #define GET_NODE_ID(TREE_NODE) ((TREE_NODE)->id)
 #define GET_NUM_CHILDREN(TREE_NODE) ((TREE_NODE)->num_children)
 #define GET_CHILD_IDX(TREE_NODE, IDX) ((TREE_NODE)->children[IDX])
 
 static tree_node_t *allocate_nodes(tree_node_t **curr_nodes, gasnet_team_handle_t team, int rootrank) {
-  gasnet_node_t i;
+  gex_Rank_t i;
   int new_allocation=0;
 
   if(!(*curr_nodes)) {
@@ -285,12 +283,12 @@ static tree_node_t preappend_children(tree_node_t main_node, tree_node_t *child_
   if(num_nodes > 0) {
     if(main_node->num_children == 0) {
       main_node->children = gasneti_malloc(num_nodes * sizeof(tree_node_t));
-      GASNETE_FAST_UNALIGNED_MEMCPY_CHECK(main_node->children, child_nodes, sizeof(tree_node_t)*num_nodes);
+      GASNETI_MEMCPY_SAFE_IDENTICAL(main_node->children, child_nodes, sizeof(tree_node_t)*num_nodes);
     } else {
       tree_node_t *new_children = gasneti_malloc(sizeof(tree_node_t)*
                                          (main_node->num_children+num_nodes));
-      GASNETE_FAST_UNALIGNED_MEMCPY_CHECK(new_children, child_nodes, num_nodes*sizeof(tree_node_t));
-      GASNETE_FAST_UNALIGNED_MEMCPY_CHECK(new_children+num_nodes, main_node->children, 
+      GASNETI_MEMCPY_SAFE_IDENTICAL(new_children, child_nodes, num_nodes*sizeof(tree_node_t));
+      GASNETI_MEMCPY_SAFE_IDENTICAL(new_children+num_nodes, main_node->children, 
              main_node->num_children*(sizeof(tree_node_t)));
       
       gasneti_free(main_node->children);
@@ -302,7 +300,7 @@ static tree_node_t preappend_children(tree_node_t main_node, tree_node_t *child_
 }
 
 static tree_node_t make_chain_tree(tree_node_t *nodes, int num_nodes) {
-  gasnet_node_t i;
+  gex_Rank_t i;
   for(i=0; i<num_nodes-1; i++) {
     /*put each successive node as the child of the previous*/
     preappend_children(nodes[i], &nodes[i+1], 1);
@@ -312,7 +310,7 @@ static tree_node_t make_chain_tree(tree_node_t *nodes, int num_nodes) {
 
 
 
-static gasnet_node_t multarr(int *arr, int nelem){ 
+static gex_Rank_t multarr(int *arr, int nelem){
   int ret=1; int i;
   for(i=0; i<nelem; i++) {
     ret*=arr[i];
@@ -386,8 +384,8 @@ static tree_node_t make_knomial_tree(tree_node_t *nodes, int num_nodes, int radi
   return nodes[0];
 }
 
-static tree_node_t make_recursive_tree(tree_node_t *nodes, gasnet_node_t num_nodes, int radix) {
-  gasnet_node_t i,j;
+static tree_node_t make_recursive_tree(tree_node_t *nodes, gex_Rank_t num_nodes, int radix) {
+  gex_Rank_t i,j;
   int num_children=0;
 
   if(num_nodes > 1) {
@@ -411,8 +409,8 @@ static tree_node_t make_recursive_tree(tree_node_t *nodes, gasnet_node_t num_nod
   return nodes[0];
 }
 
-static tree_node_t make_nary_tree(tree_node_t *nodes, gasnet_node_t num_nodes, int radix) {
-  gasnet_node_t num_children=0;
+static tree_node_t make_nary_tree(tree_node_t *nodes, gex_Rank_t num_nodes, int radix) {
+  gex_Rank_t num_children=0;
   int i,j;
 
   if(num_nodes > 1) {
@@ -524,7 +522,7 @@ static tree_node_t make_hiearchical_tree(gasnete_coll_tree_type_t tree_type, tre
 }
        
 static tree_node_t setparentshelper(tree_node_t main_node, tree_node_t parent) {
-  gasnet_node_t i;
+  gex_Rank_t i;
   main_node->parent = parent;
   for(i=0; i<GET_NUM_CHILDREN(main_node); i++) {
     /*set myself as the parent for the children*/
@@ -538,7 +536,7 @@ static tree_node_t setparents(tree_node_t main_node){
 }
 
 static int treesize(tree_node_t node) {
-  gasnet_node_t i;
+  gex_Rank_t i;
   int ret = 1;
   if(node == NULL) return 0;
   for(i=0; i<GET_NUM_CHILDREN(node); i++) {
@@ -547,8 +545,18 @@ static int treesize(tree_node_t node) {
   return ret;
 }
 
-static tree_node_t find_node(tree_node_t tree, gasnet_node_t id) {
-  gasnet_node_t i;
+static int maxradix(tree_node_t node) {
+  if (node == NULL) return 0;
+  int ret = GET_NUM_CHILDREN(node);
+  for (gex_Rank_t i=0; i<GET_NUM_CHILDREN(node); i++) {
+    int tmp = maxradix(GET_CHILD_IDX(node, i));
+    ret = MAX(ret, tmp);
+  }
+  return ret;
+}
+
+static tree_node_t find_node(tree_node_t tree, gex_Rank_t id) {
+  gex_Rank_t i;
   if(GET_NODE_ID(tree)==id) return tree;
   for(i=0; i<GET_NUM_CHILDREN(tree); i++) {
     tree_node_t temp = find_node(GET_CHILD_IDX(tree,i), id);
@@ -647,6 +655,7 @@ gasnete_coll_local_tree_geom_t *gasnete_coll_tree_geom_create_local(gasnete_coll
   mynode = find_node(rootnode, team->myrank);
 
   geom->root = rootrank;
+  geom->max_radix = maxradix(rootnode);
   geom->tree_type = in_type;
   geom->total_size = team->total_ranks;
   geom->parent = GET_PARENT_ID(mynode);
@@ -676,36 +685,20 @@ gasnete_coll_local_tree_geom_t *gasnete_coll_tree_geom_create_local(gasnete_coll
     geom->num_siblings = 0;
     geom->sibling_id = 0;
     geom->sibling_offset = 0;
-    /***** THIS NEEDS TO BE TAKEN OUT
-      The DFS ordering that we impose on the trees will mean that this no longer needs to be kept around
-      but it's in here for now for backward compatability sake until we make the neccessary changes to all the other collective algorithms
-      ****/
-    geom->dfs_order = (gasnet_node_t*) gasneti_malloc(sizeof(gasnet_node_t)*team->total_ranks);
-    for(i=0; i<team->total_ranks; i++) {
-      geom->dfs_order[i] = (i+rootrank)%team->total_ranks;
-    }
   }
-  geom->seq_dfs_order = 1;
-  geom->child_list = (gasnet_node_t*) gasneti_malloc(sizeof(gasnet_node_t)*geom->child_count);
-  geom->subtree_sizes = (gasnet_node_t*) gasneti_malloc(sizeof(gasnet_node_t)*geom->child_count);
-  geom->child_offset = (gasnet_node_t*) gasneti_malloc(sizeof(gasnet_node_t)*geom->child_count);
-  geom->grand_children = (gasnet_node_t*)gasneti_malloc(sizeof(gasnet_node_t)*geom->child_count); 
+  geom->child_list = (gex_Rank_t*) gasneti_malloc(sizeof(gex_Rank_t)*geom->child_count);
+  geom->subtree_sizes = (gex_Rank_t*) gasneti_malloc(sizeof(gex_Rank_t)*geom->child_count);
+  geom->child_offset = (gex_Rank_t*) gasneti_malloc(sizeof(gex_Rank_t)*geom->child_count);
   geom->num_non_leaf_children=0;
   geom->num_leaf_children=0;
-  geom->child_contains_wrap = 0;
   for(i=0; i<geom->child_count; i++) {
     geom->child_list[i] = GET_NODE_ID(GET_CHILD_IDX(mynode,i));
     geom->subtree_sizes[i] = treesize(GET_CHILD_IDX(mynode,i));
-    geom->grand_children[i] = GET_NUM_CHILDREN(GET_CHILD_IDX(mynode, i));
     if(geom->subtree_sizes[i] > 1) {
       geom->num_non_leaf_children++;
     } else {
       geom->num_leaf_children++;
     }
-    if(geom->child_list[i]+geom->subtree_sizes[i] > geom->total_size) {
-      geom->child_contains_wrap = 1;
-    }
-    
   }
   gasneti_assert((geom->num_leaf_children+geom->num_non_leaf_children) == geom->child_count);
   
@@ -773,27 +766,27 @@ void gasnete_coll_tree_geom_release(gasnete_coll_tree_geom_t *geom) {
 	gasneti_weakatomic_decrement(&(geom->ref_count), 0);
   /*
   fprintf(stderr, "[%u] gasnete_coll_tree_geom_release: geom->ref_count %u\n",
-          gasnet_mynode(), gasneti_weakatomic_read(&(geom->ref_count), 0));
+          gasneti_mynode, gasneti_weakatomic_read(&(geom->ref_count), 0));
   */
 }
 
 void gasnete_coll_tree_geom_print(gasnete_coll_tree_geom_t *geom)
 {
   uint32_t ref_count, local_ref_count;
-  gasnet_node_t i;
+  gex_Rank_t i;
 
   ref_count = gasneti_weakatomic_read(&(geom->ref_count), 0);
   
   fprintf(stderr, "[%u] tree_geom %p, ref_count %u.\n", 
-          gasnet_mynode(), geom, ref_count);
+          gasneti_mynode, geom, ref_count);
 
-  for (i=0; i<gasnet_nodes(); i++) {
+  for (i=0; i<gasneti_nodes; i++) {
     if (geom->local_views[i] != NULL) {
       local_ref_count = 
         gasneti_weakatomic_read(&(geom->local_views[i]->ref_count), 0);
 
       fprintf(stderr, "[%u] localview[%u] ref_count %u\n", 
-              gasnet_mynode(), i, local_ref_count);
+              gasneti_mynode, i, local_ref_count);
     }
   }
 }                 
@@ -816,9 +809,9 @@ void gasnete_coll_print_all_tree_geom(gasnet_team_handle_t team)
 
 int gasnete_coll_compare_tree_types(gasnete_coll_tree_type_t a, gasnete_coll_tree_type_t b) {
   
-  if(a==NULL && b==NULL) {
-    /*if they are both null then tehy are trivially equal*/
-    return 0;
+  if (a == b) {
+    /*if they are equal (including both null) then they are trivially equal*/
+    return 1;
   } else if(a==NULL || b==NULL){
     /*if one is null and the other is non-null then we have to reutnr a nonzero*/
     return 0;
@@ -868,7 +861,7 @@ static gasnete_coll_tree_geom_t *gasnete_coll_tree_geom_fetch_helper(gasnete_col
  it will do the simple thing and not create new views and just keep reusing old views as needed
  */
     
-gasnete_coll_local_tree_geom_t *gasnete_coll_local_tree_geom_fetch(gasnete_coll_tree_type_t type, gasnet_node_t root,  gasnete_coll_team_t team) {
+gasnete_coll_local_tree_geom_t *gasnete_coll_local_tree_geom_fetch(gasnete_coll_tree_type_t type, gex_Rank_t root,  gasnete_coll_team_t team) {
   gasnete_coll_tree_geom_t *geom_cache_head = team->tree_geom_cache_head;
   gasnete_coll_local_tree_geom_t *ret;
   gasnete_coll_tree_geom_t *curr_geom;
@@ -925,8 +918,8 @@ gasnete_coll_local_tree_geom_t *gasnete_coll_local_tree_geom_fetch(gasnete_coll_
   /*at the time of this writing no conduits support this yet*/
   if(team->myrank != ret->root) {
     int count = GASNETE_COLL_TREE_GEOM_CHILD_COUNT(ret);
-    gasnet_node_t *tmp = gasneti_calloc(1+count, sizeof(gasnet_node_t));
-    memcpy(tmp, GASNETE_COLL_TREE_GEOM_CHILDREN(ret), count*sizeof(gasnet_node_t));
+    gex_Rank_t *tmp = gasneti_calloc(1+count, sizeof(gex_Rank_t));
+    memcpy(tmp, GASNETE_COLL_TREE_GEOM_CHILDREN(ret), count*sizeof(gex_Rank_t));
     tmp[count] = GASNETE_COLL_TREE_GEOM_PARENT(ret);
     gasnetc_amrdma_init(1+count, tmp);
     gasneti_free(tmp);
@@ -943,7 +936,7 @@ gasnete_coll_local_tree_geom_t *gasnete_coll_local_tree_geom_fetch(gasnete_coll_
 
   /*
   fprintf(stderr, "[%u] gasnete_coll_local_tree_geom_fetch: curr_geom->ref_count %u, ret->ref_count %u \n",
-          gasnet_mynode(), gasneti_weakatomic_read(&(curr_geom->ref_count), 0),
+          gasneti_mynode, gasneti_weakatomic_read(&(curr_geom->ref_count), 0),
           gasneti_weakatomic_read(&(ret->ref_count), 0));
   */
 #endif
@@ -1000,7 +993,7 @@ gasnete_coll_dissem_info_t *gasnete_coll_build_dissemination(int r, gasnete_coll
     }
     
     ret->exchange_order[i].n = h-1;
-    ret->exchange_order[i].elem_list = (gasnet_node_t*) gasneti_malloc(sizeof(gasnet_node_t)*(h-1));
+    ret->exchange_order[i].elem_list = (gex_Rank_t*) gasneti_malloc(sizeof(gex_Rank_t)*(h-1));
     for(j=1; j<h; j++) {
       ret->barrier_order[i].elem_list[j-1] = (team->myrank + j*distance) % team->total_ranks;
     }
@@ -1027,7 +1020,7 @@ gasnete_coll_dissem_info_t *gasnete_coll_build_dissemination(int r, gasnete_coll
 
 /* external code to force a tree type (for testing purposes only)*/
 /* tree building code*/
-static int gasnete_coll_build_tree_mypow(gasnet_node_t base, int pow) {
+static int gasnete_coll_build_tree_mypow(gex_Rank_t base, int pow) {
   int ret = 1;
   while(pow!=0) {
     ret *=base;
@@ -1035,7 +1028,7 @@ static int gasnete_coll_build_tree_mypow(gasnet_node_t base, int pow) {
   }
   return ret;
 }
-static int gasnete_coll_build_tree_mylog2(gasnet_node_t num) {
+static int gasnete_coll_build_tree_mylog2(gex_Rank_t num) {
   unsigned int ret=0;
   while (num >= 1) {
     ret++;
@@ -1044,7 +1037,7 @@ static int gasnete_coll_build_tree_mylog2(gasnet_node_t num) {
   return MAX(1,ret);
 }
 
-static int gasnete_coll_build_tree_mylogn(gasnet_node_t num, int base) {
+static int gasnete_coll_build_tree_mylogn(gex_Rank_t num, int base) {
   int ret=1;
   int mult = base;
   while (num > mult) {
@@ -1069,7 +1062,7 @@ gasnete_coll_dissem_info_t *gasnete_coll_build_dissemination(int r, gasnete_coll
   
   
   
-  ret->ptr_vec = (gasnet_node_t*) gasneti_malloc(sizeof(gasnet_node_t)*(w+1));
+  ret->ptr_vec = (gex_Rank_t*) gasneti_malloc(sizeof(gex_Rank_t)*(w+1));
   ret->ptr_vec[0] = 0;
   
   distance = 1;
@@ -1088,8 +1081,8 @@ gasnete_coll_dissem_info_t *gasnete_coll_build_dissemination(int r, gasnete_coll
     distance *= r;
   }
   
-  ret->exchange_out_order = (gasnet_node_t*) gasneti_malloc(sizeof(gasnet_node_t)*(ret->ptr_vec[w]));
-  ret->exchange_in_order = (gasnet_node_t*) gasneti_malloc(sizeof(gasnet_node_t)*(ret->ptr_vec[w]));
+  ret->exchange_out_order = (gex_Rank_t*) gasneti_malloc(sizeof(gex_Rank_t)*(ret->ptr_vec[w]));
+  ret->exchange_in_order = (gex_Rank_t*) gasneti_malloc(sizeof(gex_Rank_t)*(ret->ptr_vec[w]));
   
   distance = 1;
   /* phase 2: communication in log_r(team->total_ranks) steps*/
