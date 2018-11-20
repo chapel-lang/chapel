@@ -1,6 +1,7 @@
 import chpl_arch
 import chpl_atomics
 import chpl_aux_filesys
+import chpl_bin_subdir
 import chpl_make
 import chpl_platform
 import chpl_comm
@@ -13,6 +14,7 @@ import chpl_jemalloc
 import chpl_launcher
 import chpl_llvm
 import chpl_locale_model
+import chpl_machine
 import chpl_mem
 import chpl_regexp
 import chpl_tasks
