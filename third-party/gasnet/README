@@ -18,9 +18,9 @@ The modifications that we have made to the official GASNet release are
 as follows:
 
 * Pulled in an upstream fix for mpi-spawner -N support for Open MPI 3.x
-   - https://bitbucket.org/berkeleylab/gasnet/commits/e9088bc72
+   - https://bitbucket.org/berkeleylab/gasnet-ex/commits/bdd352a5c
 * Pulled in an upstream fix for heterogenous jobs under aries
-   - https://bitbucket.org/berkeleylab/gasnet/commits/8b551f443
+   - https://bitbucket.org/berkeleylab/gasnet-ex/commits/5f5199a2
 
 Upgrading GASNet versions
 =========================
