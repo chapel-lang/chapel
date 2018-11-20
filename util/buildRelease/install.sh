@@ -102,8 +102,9 @@ case "$PREFIX" in
 esac
 
 # Gather the version number for the Chapel binary.
-export CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py host`
-VERS=`$CHPL_HOME/bin/$CHPL_HOST_PLATFORM/chpl --version`
+#export CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py host`
+BINPATH=`"$CHPL_HOME"/util/config/binpath.py`
+VERS=`$CHPL_HOME/bin/$BINPATH/chpl --version`
 # Remove the "chpl version " part
 VERS=${VERS#chpl version }
 # Replace the periods with spaces.
@@ -232,9 +233,9 @@ if [ ! -z "$PREFIX" ]
 then
   # TODO -- handle chpldoc and chpl-ipe
   #   these are symbol links to chpl
-  myinstallfile "bin/$CHPL_HOST_PLATFORM"/chpl "$PREFIX/bin"
+  myinstallfile "bin/$BINPATH"/chpl "$PREFIX/bin"
 else
-  tmp_bin_dir="bin/$CHPL_HOST_PLATFORM"
+  tmp_bin_dir="bin/$BINPATH"
   myinstallfile "$tmp_bin_dir"/chpl "$DEST_DIR/$tmp_bin_dir"
 fi
 
@@ -271,6 +272,7 @@ myinstallfile util/config/compileline "$DEST_CHPL_HOME"/util/config/
 # copy util/config/fixpath.py
 # (needed by setchplenv*)
 myinstallfile util/config/fixpath.py  "$DEST_CHPL_HOME"/util/config/
+myinstallfile util/config/binpath.py  "$DEST_CHPL_HOME"/util/config/
 
 # copy util/config/replace-paths.py
 # (needed by --library --library-makefile compilations)
@@ -336,7 +338,7 @@ then
     myinstallfile tools/mason/mason "$PREFIX/bin"
   else
     myinstallfile tools/mason/mason "$DEST_CHPL_HOME/tools/mason"
-    ln -s "$DEST_CHPL_HOME/tools/mason/mason" "$DEST_DIR/bin/$CHPL_HOST_PLATFORM"/mason
+    ln -s "$DEST_CHPL_HOME/tools/mason/mason" "$DEST_DIR/bin/$BINPATH"/mason
   fi
 fi
 

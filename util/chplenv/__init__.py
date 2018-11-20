@@ -14,6 +14,7 @@ __all__ = [
     'chpl_launcher',
     'chpl_llvm',
     'chpl_locale_model',
+    'chpl_machine',
     'chpl_mem',
     'chpl_regexp',
     'chpl_tasks',
