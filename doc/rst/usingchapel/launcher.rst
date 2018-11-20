@@ -134,32 +134,42 @@ So, for these configurations please see:
 Common Slurm Settings
 *********************
 
-If needed, you can request a specific partition from slurm by putting it
-in the ``CHPL_LAUNCHER_PARTITION`` environment variable. For example, to
-use the 'debug' partition, set:
+* Optionally, you can  specify a node access mode by setting the environment
+  variable ``CHPL_LAUNCHER_NODE_ACCESS``. It will default to ``exclusive``
+  access, but can be overridden to:
 
-.. code-block:: bash
+    * ``shared`` to give shared access to nodes
+    * ``unset`` to use the system default and not specify a node access mode
+    * ``exclusive`` to give exclusive access to nodes (this is the default)
 
-  export CHPL_LAUNCHER_PARTITION=debug
+  For example, to grant shared node access, set:
 
-If needed, you can request a specific node feature from SLURM by putting
-it in the ``CHPL_LAUNCHER_CONSTRAINT`` environment variable. For example,
-to use nodes with the 'cal' feature (as defined in the slurm.conf
-file), set:
+  .. code-block:: bash
 
-.. code-block:: bash
+    export CHPL_LAUNCHER_NODE_ACCESS=shared
 
-  export CHPL_LAUNCHER_CONSTRAINT=cal
+* Optionally, you can specify a slurm partition by setting the environment
+  variable ``CHPL_LAUNCHER_PARTITION``. For example, to use the 'debug'
+  partition, set:
 
-If this environment variable is undefined, SLURM may use any node in
-the computer.
+  .. code-block:: bash
 
-If the environment variable ``CHPL_LAUNCHER_USE_SBATCH`` is defined then
-sbatch is used to launch the job to the queue system, rather than
-running it interactively as usual. In this mode, the output will be
-written by default to a file called <executableName>.<jobID>.out. The
-environment variable ``CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME`` can be used
-to specify a different filename for the output.
+    export CHPL_LAUNCHER_PARTITION=debug
+
+* Optionally, you can specify a slurm constraint by setting the environment
+  variable ``CHPL_LAUNCHER_CONSTRAINT``. For example, to use nodes with the
+  'cal' feature (as defined in the slurm.conf file), set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_CONSTRAINT=cal
+
+* If the environment variable ``CHPL_LAUNCHER_USE_SBATCH`` is defined then
+  sbatch is used to launch the job to the queue system, rather than
+  running it interactively as usual. In this mode, the output will be
+  written by default to a file called <executableName>.<jobID>.out. The
+  environment variable ``CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME`` can be used
+  to specify a different filename for the output.
 
 
 .. _ssh-launchers-with-slurm:
