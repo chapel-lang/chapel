@@ -9,7 +9,7 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_home_utils
-import chpl_platform, chpl_compiler, chpl_machine, chpl_arch, chpl_lib_pic
+import chpl_platform, chpl_compiler, chpl_machine, chpl_arch
 
 from utils import memoize
 
@@ -20,7 +20,6 @@ def get(location):
     machine = chpl_machine.get(location)
     (flag, arch) = chpl_arch.get(location, map_to_compiler=True,
                                  get_lcd=chpl_home_utils.using_chapel_module())
-    pic = chpl_lib_pic.get()
 
     # platform
     result = platform
@@ -32,9 +31,6 @@ def get(location):
     # arch
     if arch != 'none' and arch != 'unknown':
       result += '-' + arch
-    # pic
-    if location == 'target' and pic != 'none':
-      result += '-' + pic
     return result
 
 def _main():
