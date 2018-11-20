@@ -438,7 +438,7 @@ def get(location, map_to_compiler=False, get_lcd=False):
 
     arch_tuple = collections.namedtuple('arch_tuple', ['flag', 'arch'])
 
-    if not location or location == "host":
+    if not location or location == 'host':
         arch = overrides.get('CHPL_HOST_ARCH', '')
     elif location == 'target':
         arch = overrides.get('CHPL_TARGET_ARCH', '')
@@ -446,8 +446,8 @@ def get(location, map_to_compiler=False, get_lcd=False):
         raise InvalidLocationError(location)
 
     # fast path out for when the user has set arch=none
-    if arch == 'none':
-        return arch_tuple('none', arch)
+    if arch == 'none' or location == 'host':
+        return arch_tuple('none', 'none')
 
     comm_val = chpl_comm.get()
     compiler_val = chpl_compiler.get(location)
