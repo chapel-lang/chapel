@@ -221,7 +221,9 @@ class AbstractJob(object):
         if not self.redirect_output:
             submit_command.extend(['-j', 'oe', '-o', output_file])
         else:
-            submit_command.extend(['-j', 'oe', '-R', 'oe', '-o', '{0}.more'.format(output_file)])
+            # even when redirecting output, PBS errors are sent to the e/o
+            # streams, so make sure we can find errors if they occur
+            submit_command.extend(['-j', 'oe', '-o', '{0}.more'.format(output_file)])
         if self.walltime is not None:
             submit_command.append('-l')
             submit_command.append('walltime={0}'.format(self.walltime))
