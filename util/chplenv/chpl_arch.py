@@ -435,28 +435,28 @@ def get_module_lcd_arch(platform_val, arch):
 # get_lcd has no effect on non cray systems and is intended to be used to get
 # the correct runtime and gen directory.
 @memoize
-def get(location, map_to_compiler=False, get_lcd=False):
+def get(flag, map_to_compiler=False, get_lcd=False):
 
     arch_tuple = collections.namedtuple('arch_tuple', ['flag', 'arch'])
 
-    if not location or location == 'host':
+    if not flag or flag == 'host':
         arch = overrides.get('CHPL_HOST_ARCH', '')
-    elif location == 'target':
+    elif flag == 'target':
         arch = overrides.get('CHPL_TARGET_ARCH', '')
     else:
-        raise InvalidLocationError(location)
+        raise InvalidLocationError(flag)
 
     # fast path out for when the user has set arch=none
-    if arch == 'none' or location == 'host':
+    if arch == 'none' or flag == 'host':
         return arch_tuple('none', 'none')
 
     comm_val = chpl_comm.get()
-    compiler_val = chpl_compiler.get(location)
-    platform_val = chpl_platform.get(location)
+    compiler_val = chpl_compiler.get(flag)
+    platform_val = chpl_platform.get(flag)
 
     isprgenv = compiler_is_prgenv(compiler_val)
     if compiler_val == 'clang-included':
-      isprgenv = compiler_is_prgenv(chpl_compiler.get(location,
+      isprgenv = compiler_is_prgenv(chpl_compiler.get(flag,
                                                       llvm_mode="orig"))
 
     if isprgenv:
@@ -498,13 +498,13 @@ def get(location, map_to_compiler=False, get_lcd=False):
                                platform_val == 'darwin' or
                                platform_val.startswith('cygwin')):
         if arch and arch not in  ['none', 'unknown', 'native']:
-            if location == 'host':
+            if flag == 'host':
                 # when a user supplies an architecture, and it seems reasonable
                 # to double check their choice we do so. This will only
                 # generate a warning that the user may not be able to run
                 # whatever they compile.
                 #
-                # This only runs when location is 'host' since we
+                # This only runs when flag is 'host' since we
                 # conservatively assume that a setting for 'target' could be in
                 # a cross-compilation setting
                 try:
@@ -550,8 +550,8 @@ def get(location, map_to_compiler=False, get_lcd=False):
 #  * if arch is native/none/unknown, return result of get_native_machine
 #  * otherwise returns the machine type corresponding to the selected arch
 @memoize
-def get_default_machine(location):
-    (flag, arch) = get(location)
+def get_default_machine(flag):
+    (flag, arch) = get(flag)
 
     # Native/none/unknown just get the native machine by default
     if arch == "native" or arch == "none" or arch == "unknown":
@@ -567,9 +567,9 @@ def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target] "
                                          "[--compflag] [--lcdflag] "
                                          "[--specialize]")
-    parser.add_option('--target', dest='location', action='store_const',
+    parser.add_option('--target', dest='flag', action='store_const',
                       const='target', default='target')
-    parser.add_option('--host', dest='location', action='store_const',
+    parser.add_option('--host', dest='flag', action='store_const',
                       const='host')
     parser.add_option('--comparch', dest='map_to_compiler',
                       action='store_true', default=False)
@@ -579,7 +579,7 @@ def _main():
                       default=False)
     (options, args) = parser.parse_args()
 
-    (flag, arch) = get(options.location, options.map_to_compiler,
+    (flag, arch) = get(options.flag, options.map_to_compiler,
                        options.get_lcd)
 
     if options.compflag:

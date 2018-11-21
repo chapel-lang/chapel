@@ -31,13 +31,13 @@ def get(flag='host'):
 
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target]")
-    parser.add_option('--target', dest='location', action='store_const',
+    parser.add_option('--target', dest='flag', action='store_const',
                       const='target', default='target')
-    parser.add_option('--host', dest='location', action='store_const',
+    parser.add_option('--host', dest='flag', action='store_const',
                       const='host')
     (options, args) = parser.parse_args()
 
-    machine = get(options.location)
+    machine = get(options.flag)
 
     stdout.write("{0}\n".format(machine))
 
