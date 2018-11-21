@@ -19,10 +19,10 @@ def default_uniq_cfg_path():
     arch_val = chpl_arch.get('target', map_to_compiler=True,
                              get_lcd=using_chapel_module()).arch
     return '{0}-{1}-{2}-{3}-{4}'.format(chpl_platform.get('target'),
-					chpl_compiler.get('target'),
                                         chpl_machine.get('target'),
-					arch_val,
-					chpl_lib_pic.get())
+                                        arch_val,
+                                        chpl_compiler.get('target'),
+                                        chpl_lib_pic.get())
 
 #
 # Returns the path to the packages install directory
