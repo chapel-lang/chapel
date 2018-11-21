@@ -1,7 +1,8 @@
 import os
 import re
 
-import chpl_bin_subdir, chpl_lib_pic
+import chpl_arch, chpl_machine, chpl_compiler
+import chpl_lib_pic, chpl_locale_model, chpl_platform
 from chpl_home_utils import get_chpl_home, get_chpl_third_party, using_chapel_module
 from utils import error, memoize, run_command
 
@@ -11,11 +12,13 @@ from utils import error, memoize, run_command
 #
 @memoize
 def default_uniq_cfg_path():
-    pic = chpl_lib_pic.get()
-    result = chpl_bin_subdir.get('target')
-    if pic != 'none':
-      result += '-' + pic
-    return result
+    arch_val = chpl_arch.get('target', map_to_compiler=True,
+                             get_lcd=using_chapel_module()).arch
+    return '{0}-{1}-{2}-{3}-{4}'.format(chpl_platform.get('target'),
+					chpl_compiler.get('target'),
+                                        chpl_machine.get('target'),
+					arch_val,
+					chpl_lib_pic.get())
 
 #
 # Returns the path to the packages install directory
