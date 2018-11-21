@@ -69,8 +69,6 @@ static AggregateType* createOrFindFunTypeFromAnnotation(AList&    argList,
 
 static Expr*          dropUnnecessaryCast(CallExpr* call);
 
-static SymExpr*       symOrParamExpr(Symbol* arg);
-
 static bool           isNormalField(Symbol* field);
 
 static std::string    buildParentName(AList& argList,
@@ -1915,7 +1913,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   return result;
 }
 
-static SymExpr* symOrParamExpr(Symbol* arg) {
+SymExpr* symOrParamExpr(Symbol* arg) {
   Symbol* result = arg;
   if (Symbol* paramVal = paramMap.get(arg))
     result = paramVal;

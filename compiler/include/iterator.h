@@ -21,6 +21,7 @@
 #define _ITERATOR_H_
 #include "symbol.h"
 #include "vec.h"
+#include <map>
 
 class BaseAST;
 class AggregateType;
@@ -28,9 +29,11 @@ class FnSymbol;
 class CallExpr;
 
 enum IteratorTag { 
-  it_iterator, 
+  it_serial,
+  it_standalone,
   it_leader,
-  it_follower 
+  it_follower,
+  it_undecided    // unknown so far
 };
 
 class IteratorInfo {
@@ -56,6 +59,27 @@ public:
   Type*          yieldedType;
   RetTag         iteratorRetTag;
 };
+
+class IteratorGroup {
+public:
+  FnSymbol* serial;
+  FnSymbol* standalone;
+  FnSymbol* leader;
+  FnSymbol* follower;
+  IteratorGroup();
+};
+
+extern std::map<FnSymbol*,IteratorGroup*> iteratorGroups;
+
+IteratorGroup* getIteratorGroup(FnSymbol* it);
+void resolveAlsoParallelIterators(FnSymbol* serial, Expr* call);
+void cleanupIteratorGroup(FnSymbol* it);
+IteratorTag detectIteratorTagFromGroup(FnSymbol* it);
+IteratorTag detectIteratorTagFromGroup(IteratorGroup* igroup, FnSymbol* it);
+
+void showIteratorGroup(IteratorGroup* igroup);
+void showIteratorGroup(BaseAST* ast);
+void showIteratorGroup(int id);
 
 CallExpr* isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts);
 void lowerIterator(FnSymbol* fn);

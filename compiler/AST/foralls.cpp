@@ -622,7 +622,8 @@ static void removeOrigIterCall(SymExpr* origSE)
 }
 
 // Replaces 'origSE' in the tree with the result.
-static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE)
+static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE,
+                                        FnSymbol*& origTargetRef)
 {
   CallExpr* iterCall = NULL;
 
@@ -649,6 +650,10 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE)
       // a forall loop over a (possibly zippered) forall expression, ex.:
       //  test/reductions/deitz/test_maxloc_reduce_wmikanik_bug2.chpl
       targetName = astr(astr_loopexpr_iter, targetName + forallExprNameLen);
+
+      // Alternatively, find the function that origTarget redirects to.
+      origTarget = getTheIteratorFn(origTarget->retType);
+      INT_ASSERT(origTarget->name == targetName);
     }
 
     if (acceptUnmodifiedIterCall(pfs, origIterCall)) {
@@ -657,6 +662,7 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE)
     } else {
       iterCall = origIterCall->copy();
       iterCall->baseExpr = new UnresolvedSymExpr(targetName);
+      origTargetRef = origTarget;
     }
 
   } else {
@@ -953,7 +959,8 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   // If at that time there are other elements in iterExprs(), we remove them.
   INT_ASSERT(origSE == pfs->firstIteratedExpr());
 
-  CallExpr* iterCall = buildForallParIterCall(pfs, origSE);
+  FnSymbol* origTarget = NULL; //for assertions
+  CallExpr* iterCall = buildForallParIterCall(pfs, origSE, origTarget);
 
   // So we know where iterCall is.
   INT_ASSERT(iterCall         == pfs->firstIteratedExpr());
@@ -964,6 +971,12 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   resolveCallAndCallee(iterCall, false);
 
   FnSymbol* origIterFn = iterCall->resolvedFunction();
+
+  if (!tryFailure && origTarget) {
+    IteratorGroup* igroup = getIteratorGroup(origTarget);
+    if (gotSA) INT_ASSERT(origIterFn == igroup->standalone);
+    else       INT_ASSERT(origIterFn == igroup->leader);
+  }
 
   // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
   if (tryFailure == false)

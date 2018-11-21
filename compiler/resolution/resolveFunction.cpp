@@ -884,7 +884,7 @@ static IteratorInfo*  makeIteratorInfo(AggregateType* iClass,
   Type*         defaultInt = dtInt[INT_SIZE_DEFAULT];
   IteratorInfo* ii         = new IteratorInfo();
 
-  ii->tag         = it_iterator;
+  ii->tag         = detectIteratorTagFromGroup(fn);
 
   ii->iterator    = fn;
   ii->iclass      = iClass;

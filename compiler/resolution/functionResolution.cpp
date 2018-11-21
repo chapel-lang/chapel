@@ -6595,6 +6595,7 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
 
       } else {
         resolveFunction(call->resolvedFunction());
+        resolveAlsoParallelIterators(call->resolvedFunction(), call);
       }
 
       resolveExprExpandGenerics(call);
@@ -6642,6 +6643,7 @@ static Expr* resolveExprResolveEachCall(ContextCallExpr* cc) {
     valueFn    = tmpCall->resolvedFunction();
 
     resolveFunction(valueFn);
+    resolveAlsoParallelIterators(valueFn, cc);
 
     n         += 1;
     nIterator += (valueFn->isIterator()    == true) ? 1 : 0;
@@ -6651,6 +6653,7 @@ static Expr* resolveExprResolveEachCall(ContextCallExpr* cc) {
     constRefFn = tmpCall->resolvedFunction();
 
     resolveFunction(constRefFn);
+    resolveAlsoParallelIterators(constRefFn, cc);
 
     n         += 1;
     nIterator += (constRefFn->isIterator() == true) ? 1 : 0;
@@ -6660,6 +6663,7 @@ static Expr* resolveExprResolveEachCall(ContextCallExpr* cc) {
     refFn      = tmpCall->resolvedFunction();
 
     resolveFunction(refFn);
+    resolveAlsoParallelIterators(refFn, cc);
 
     n         += 1;
     nIterator += (refFn->isIterator()      == true) ? 1 : 0;
@@ -8527,6 +8531,8 @@ static void removeUnusedFunctions() {
           }
 
           clearDefaultInitFns(fn);
+
+          cleanupIteratorGroup(fn);
 
           fn->defPoint->remove();
         }

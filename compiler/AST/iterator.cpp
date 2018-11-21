@@ -29,6 +29,7 @@
 #include "oldCollectors.h"
 #include "optimizations.h"
 #include "passes.h"
+#include "preFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stlUtil.h"
@@ -67,6 +68,267 @@ IteratorInfo::IteratorInfo() :
   incr(NULL)
 {}
 
+
+//
+// Iterator Groups
+//
+
+/*
+The following properties hold after a call is resolved to an iterator "IT".
+Implemented by resolveAlsoParallelIterators(). 
+
+ANY ITERATOR
+
+* Iterator <-> IG is a many-to-one relationship.
+  It is accessible using getIteratorGroup(Iterator).
+
+  Given a group IG, getIteratorGroup(IT2)==IG for each iterator IT2
+  that IG points to: IG.serial, IG.standalone (when non-NULL), etc.
+
+  IG.serial is always non-NULL.
+  
+* An iterator IT2 (any flavor) is pointed to from a group IG
+  if and only if  getIteratorGroup(IT2) == IG.
+
+SERIAL / STANDALONE / LEADER
+
+* If IT is a serial iterator, there is an iterator group IG for it
+  such that:
+   - IG.serial points to IT.
+   - IG.standalone points to the corresponding standalone iterator
+     if it is available, NULL otherwise.
+   - IG.leader - ditto.
+   - IG.follower is currently unused.
+
+* If a serial IT has no corresponding standalone or leader,
+  there is still a group IG for IT, such that:
+   - IG.seral == IT
+   - IG.standalone == IG.leader == NULL.
+  This can be used to check availability of standalone/leader.
+
+* If IT is a standalone or leader iterator, there may or may not be
+  a group for it. We are interested in a group only when it maps
+  from a serial iterator to its parallel counterparts. So when
+  a CallExpr invokes a parallel iterator directly, iterator groups
+  are not updated.
+
+SERIAL --> PARALLEL
+
+* Each parallel iterators is attempted to be resolved by resolving
+  a "representative call". It is created as follows:
+   - It seeks a function of the same name as the serial iterator's.
+   - The actual arguments are the serial iterator's formals, plus 'tag'.
+
+* That way there is a 1:1 relationship between the serial iterator
+  its standalone counterpart; ditto leader. Because the choice
+  of the parallel iterator is affected only by the serial iterator.
+  This choice is not affected by the "original call" i.e. one that
+  led to resolving the serial iterator.
+
+* The "representative call" is placed next to the "original call".
+  To strengthen confidence in this 1:1 relationship, it seems like
+  the representative call should go next to the definition
+  of the serial iterator. However, that would cause visibility issues.
+
+LOGISTICS  
+
+* Only the availability of the standalone and leader iterators
+  is detected. Their bodies are not resolved, to avoid encountering
+  (and generating) potential compile-time errors when those iterators
+  are not actually used in the program.
+
+* The absence of a parallel iterator is not an error. An error may
+  be issued later when+if this iterator is required for a parallel
+  computation.
+
+* The follower iterator is not sought at this time.  to seek it we would
+  need to know what the leader iterator yields. For that we may have to
+  resolve the **body** of the leader. Which we are not doing here.
+
+*/
+
+std::map<FnSymbol*,IteratorGroup*> iteratorGroups;
+
+IteratorGroup::IteratorGroup() :
+  serial(NULL), standalone(NULL), leader(NULL), follower(NULL) {}
+
+static bool isGroupable(FnSymbol* it) {
+  return it->hasFlag(FLAG_ITERATOR_FN) ||
+         it->hasFlag(FLAG_FN_RETURNS_ITERATOR);
+}
+
+// Return the IteratorGroup for the iterator 'it'.
+// If none, return NULL.
+IteratorGroup* getIteratorGroup(FnSymbol* it) {
+  if (! isGroupable(it))             return NULL;
+  std::map<FnSymbol*,IteratorGroup*>::iterator itig = iteratorGroups.find(it);
+  if (itig == iteratorGroups.end())  return NULL;
+  else                               return itig->second;
+}
+
+// Implements the rules listed under "Iterator Groups" in iterator.cpp.
+void resolveAlsoParallelIterators(FnSymbol* serial, Expr* call) {
+  if (! serial || ! isGroupable(serial))
+    return;  // not an iterator
+
+  IteratorGroup*& igroupRef = iteratorGroups[serial];
+
+  if (igroupRef != NULL)
+    return;  // already taken care of
+
+  for_formals(formal, serial)
+    if (formal->name == astrTag && formal->type == gLeaderTag->type)
+      // 'serial' is actually a parallel iterator. Since we did not come
+      // from a serial iterator, we will not update iterator groups.
+      return;
+
+  // This is first time we are seeing this serial iterator.
+  // Create an iterator group for it.
+  IteratorGroup* igroup = new IteratorGroup();
+  igroupRef = igroup;
+  igroup->serial = serial;
+
+  // ... and populate it. Use this representative call...
+  UnresolvedSymExpr* name = new UnresolvedSymExpr(serial->name);
+  CallExpr* repCall = new CallExpr(name);
+  call->getStmtExpr()->insertAfter(repCall);
+
+  for_formals(formal, serial)
+    repCall->insertAtTail(
+      new NamedExpr(formal->name, symOrParamExpr(formal)) );
+
+  // ... to look for the standalone then leader iterators.
+  NamedExpr* tag = new NamedExpr("tag", new SymExpr(gStandaloneTag));
+  repCall->insertAtTail(tag);
+
+  if (FnSymbol* SA = tryResolveCall(repCall)) {
+    // If !isGroupable(SA), we will report an error about it
+    // when about to use it in a forall loop.
+    //INT_ASSERT(isGroupable(SA));
+    igroup->standalone = SA;
+    iteratorGroups[SA] = igroup;
+    repCall->baseExpr->replace(name);     // reset repCall
+    repCall->insertAtTail(tag->remove()); // 'tag' may have been reordered
+  }
+
+  tag->actual->replace(new SymExpr(gLeaderTag));
+  if (FnSymbol* L = tryResolveCall(repCall)) {
+    // !isGroupable(L) might happen - see !isGroupable(SA) above.
+    // Test: functions/iterators/diten/iteratorNoYield.chpl
+    //INT_ASSERT(isGroupable(L));
+    igroup->leader = L;
+    iteratorGroups[L] = igroup;
+  }
+
+  // Done.
+  repCall->remove();
+}
+
+void cleanupIteratorGroup(FnSymbol* it) {
+  if (! isGroupable(it)) return;
+  IteratorGroup* igroup = getIteratorGroup(it);
+  if (! igroup) return;
+
+  iteratorGroups.erase(it);
+  bool deleteIG = false;
+
+  if (it == igroup->serial) {
+    // Without the serial iterator, the group is of no interest.
+    deleteIG = true;
+    if (FnSymbol* SA = igroup->standalone) iteratorGroups.erase(SA);
+    if (FnSymbol* L  = igroup->leader)     iteratorGroups.erase(L);
+    if (FnSymbol* F  = igroup->follower)   iteratorGroups.erase(F);
+  }
+  else if (it == igroup->standalone) igroup->standalone = NULL;
+  else if (it == igroup->leader)     igroup->standalone = NULL;
+  else if (it == igroup->follower)   igroup->standalone = NULL;
+
+  if (deleteIG ||
+      // See if anybody is left in the group
+      (igroup->standalone == NULL &&
+       igroup->leader     == NULL &&
+       igroup->follower   == NULL )
+  ) {
+    delete igroup;
+  }
+}
+
+// Look at this iterator's group and see which field
+// it is pointed by. Return the corresponding tag.
+// If there is no group, return it_undecided.
+IteratorTag detectIteratorTagFromGroup(FnSymbol* it) {
+  if (IteratorGroup* igroup = getIteratorGroup(it))
+    return detectIteratorTagFromGroup(igroup, it);
+  else
+    return it_undecided;
+}
+
+IteratorTag detectIteratorTagFromGroup(IteratorGroup* igroup, FnSymbol* it) {
+  if      (it == igroup->serial)     return it_serial;
+  else if (it == igroup->standalone) return it_standalone;
+  else if (it == igroup->leader)     return it_leader;
+  else if (it == igroup->follower)   return it_follower;
+
+  // If we found a group for 'it', 'it' should be in it
+  // and one of the above options should have fired.
+  INT_ASSERT(false);
+  return it_serial;
+}
+
+// showIteratorGroup() - for debugging
+
+static void showIGhelp(IteratorGroup* igroup, FnSymbol* fn, const char* kind)
+{
+  if (fn == NULL) {
+    printf("  %s -\n", kind);
+  } else {
+    printf("  %s  %s[%d]  ", kind, fn->name, fn->id);
+    if (IteratorGroup* fnIG = getIteratorGroup(fn)) {
+      if (fnIG == igroup) printf("+\n");
+      else printf("ig ((IteratorGroup*)%p)\n", fnIG);
+    } else {
+      printf("no ig\n");
+    }
+  }
+}
+
+static void showIGhelp(IteratorGroup* igroup, FnSymbol* fn) {
+  if (fn) printf("%s %s[%d]  ",
+                 fn->isIterator() ? "iter" : "proc",
+                 fn->name, fn->id);
+  printf("igroup %p\n", igroup);
+
+  if (igroup != NULL) {
+    showIGhelp(igroup, igroup->serial,     "serial");
+    showIGhelp(igroup, igroup->standalone, "standalone");
+    showIGhelp(igroup, igroup->leader,     "leader");
+    // later: follower
+  }
+}
+
+void showIteratorGroup(IteratorGroup* igroup) {
+  showIGhelp(igroup, NULL);
+}
+
+void showIteratorGroup(BaseAST* ast) {
+  if (ast == NULL)
+    printf("<showIteratorGroup: ast==NULL>\n");
+  else if (FnSymbol* fn = toFnSymbol(ast))
+    showIGhelp(getIteratorGroup(fn), fn);
+  else
+    printf("<showIteratorGroup: node %d is a %s, not a FnSymbol>\n",
+           ast->id, ast->astTagAsString());
+}
+
+void showIteratorGroup(int id) {
+  BaseAST* aid(int id);
+  showIteratorGroup(aid(id));
+}
+
+
+//
+// Helpers
+//
 
 // Return the PRIM_YIELD CallExpr* or NULL.
 static inline CallExpr* asYieldExpr(BaseAST* e) {
