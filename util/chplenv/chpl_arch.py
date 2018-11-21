@@ -434,6 +434,7 @@ def get_module_lcd_arch(platform_val, arch):
 
 # get_lcd has no effect on non cray systems and is intended to be used to get
 # the correct runtime and gen directory.
+@memoize
 def get(location, map_to_compiler=False, get_lcd=False):
 
     arch_tuple = collections.namedtuple('arch_tuple', ['flag', 'arch'])
@@ -583,9 +584,7 @@ def _main():
 
     if options.compflag:
         stdout.write("{0}=".format(flag))
-        stdout.write("{0}\n".format(arch))
-    else:
-        stdout.write("{0}\n".format(arch))
+    stdout.write("{0}\n".format(arch))
 
 if __name__ == '__main__':
     _main()
