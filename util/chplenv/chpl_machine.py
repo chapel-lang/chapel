@@ -1,17 +1,13 @@
 #!/usr/bin/env python
-import collections
 import optparse
 import os
-import platform
-from string import punctuation
-from sys import stderr, stdout
 import sys
 
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_arch, overrides
-from utils import memoize
+from utils import error, memoize
 
 @memoize
 def get(flag='host'):
@@ -39,7 +35,7 @@ def _main():
 
     machine = get(options.flag)
 
-    stdout.write("{0}\n".format(machine))
+    sys.stdout.write("{0}\n".format(machine))
 
 if __name__ == '__main__':
     _main()
