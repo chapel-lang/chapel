@@ -14,17 +14,17 @@ import chpl_platform, chpl_compiler, chpl_machine, chpl_arch
 from utils import memoize
 
 @memoize
-def get(location):
-    platform = chpl_platform.get(location)
-    compiler = chpl_compiler.get(location)
-    machine = chpl_machine.get(location)
-    (flag, arch) = chpl_arch.get(location, map_to_compiler=True,
+def get(flag):
+    platform = chpl_platform.get(flag)
+    compiler = chpl_compiler.get(flag)
+    machine = chpl_machine.get(flag)
+    (flag, arch) = chpl_arch.get(flag, map_to_compiler=True,
                                  get_lcd=chpl_home_utils.using_chapel_module())
 
     # platform
     result = platform
     # compiler -- included for target
-    if location == 'target':
+    if flag == 'target':
       result += '-' + compiler
     # machine
     result += '-' + machine
@@ -35,13 +35,13 @@ def get(location):
 
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target]")
-    parser.add_option('--target', dest='location', action='store_const',
+    parser.add_option('--target', dest='flag', action='store_const',
                       const='target')
-    parser.add_option('--host', dest='location', action='store_const',
+    parser.add_option('--host', dest='flag', action='store_const',
                       const='host', default='host')
     (options, args) = parser.parse_args()
 
-    bin_subdir = get(options.location)
+    bin_subdir = get(options.flag)
 
     sys.stdout.write("{0}\n".format(bin_subdir))
 
