@@ -4853,6 +4853,7 @@ static void resolveInitVar(CallExpr* call) {
     // These cases require an initCopy to implement special initialization
     // semantics (e.g. reading a sync for variable initialization).
 
+    SET_LINENO(call);
     CallExpr* initCopy = new CallExpr("chpl__initCopy", srcExpr->remove());
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
@@ -7050,6 +7051,56 @@ static void resolveExternVarSymbols()
 }
 
 
+static bool isObviousType(Type* type) {
+  return isPrimitiveType(type) && ! type->isInternalType;
+}
+
+static bool isObviousValue(Symbol* val) {
+  return val->isImmediate() || isEnumSymbol(val) || paramMap.get(val);
+}
+
+//
+// Set the type and/or update paramMap for global variables that have
+// a simple type or init expression, ex. dtBool or gFalse.
+// This allows us to place such globals freely in the internal modules.
+// Restrict this to internal modules to avoid surprises for users.
+//
+static void resolveObviousGlobals() {
+  forv_Vec(ModuleSymbol, mod, allModules)
+   if (mod->modTag == MOD_INTERNAL)
+    for_alist(expr, mod->initFn->body->body)
+     if (CallExpr* call = toCallExpr(expr))
+      if (call->isPrimitive(PRIM_INIT_VAR) ||
+          call->isPrimitive(PRIM_MOVE)     )
+       if (SymExpr* lhsSE = toSymExpr(call->get(1)))
+        if (SymExpr* rhsSE = toSymExpr(call->get(2)))
+         {
+           Symbol* lhs = lhsSE->symbol();
+           Symbol* rhs = rhsSE->symbol();
+
+           if (lhs->hasEitherFlag(FLAG_TEMP, FLAG_EXPR_TEMP))
+             continue; // handle only user variables
+
+           if (lhs->hasFlag(FLAG_PARAM)) {
+             // If there is an obvious rhs value, use it.
+             // Do a full resolve for uniformity, to ensure paramMap, etc.
+             if (isObviousValue(rhs))
+               if (Expr* result = resolveExpr(call))
+                 // We do not want 'call' to be resolved a second time.
+                 INT_ASSERT(isCallExpr(result) &&
+                            toCallExpr(result)->isPrimitive(PRIM_NOOP));
+
+           } else if (lhs->hasFlag(FLAG_TYPE_VARIABLE)) {
+             // If there is an obvious rhs type, use it.
+             if (isObviousType(rhs->type))
+               if (Expr* result = resolveExpr(call))
+                 // As of this writing, 'call' remains in the AST unchanged.
+                 INT_ASSERT(result == call);
+           }
+         }
+}
+
+
 static void
 computeStandardModuleSet() {
   // Lydia NOTE: 09/12/16 - this code does not follow the same code path used
@@ -7115,6 +7166,8 @@ void resolve() {
   unmarkDefaultedGenerics();
 
   resolveExternVarSymbols();
+
+  resolveObviousGlobals();
 
   resolveUses(ModuleSymbol::mainModule());
 
