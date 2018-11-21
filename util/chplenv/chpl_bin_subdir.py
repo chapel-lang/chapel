@@ -9,25 +9,26 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_home_utils
-import chpl_platform, chpl_compiler, chpl_machine, chpl_arch
+import chpl_platform, chpl_machine, chpl_arch
 
 from utils import memoize
 
 @memoize
 def get(flag):
     platform = chpl_platform.get(flag)
-    compiler = chpl_compiler.get(flag)
     machine = chpl_machine.get(flag)
     (flag, arch) = chpl_arch.get(flag, map_to_compiler=True,
                                  get_lcd=chpl_home_utils.using_chapel_module())
 
     # platform
     result = platform
-    # compiler -- included for target
-    if flag == 'target':
-      result += '-' + compiler
+
+    # compiler is never included since it shouldn't be needed
+    # for a bin/ path.
+
     # machine
     result += '-' + machine
+
     # arch
     if arch != 'none' and arch != 'unknown':
       result += '-' + arch
