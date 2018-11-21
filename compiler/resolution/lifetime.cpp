@@ -245,9 +245,10 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type);
 static bool isSubjectToBorrowLifetimeAnalysis(Symbol* sym);
 static bool recordContainsClassFields(AggregateType* at);
 static bool recordContainsOwnedClassFields(AggregateType* at);
-static bool recordContainsBorrowedClassFields(AggregateType* at);
+static bool aggregateContainsBorrowedClassFields(AggregateType* at);
 static bool containsOwnedClass(Type* type);
 //static bool isOrContainsBorrowedClass(Type* type);
+static bool isOrRefersBorrowedClass(Type* type);
 static bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
 static bool isAnalyzedMoveOrAssignment(CallExpr* call);
 static bool symbolHasInfiniteLifetime(Symbol* sym);
@@ -1392,7 +1393,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
     INT_ASSERT(at && isRecord(at));
     LifetimePair lp = unknownLifetimePair();
 
-    if (recordContainsBorrowedClassFields(at) ||
+    if (aggregateContainsBorrowedClassFields(at) ||
         isCallToFunctionReturningNotOwned(initCall)) {
       lp = lifetimes->inferredLifetimeForCall(initCall);
     }
@@ -1747,8 +1748,8 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
             // see also
             //   arrays/ferguson/pushback-no-leak.chpl
-            if(isOrContainsBorrowedClass(formal1->getValType()) &&
-               isOrContainsBorrowedClass(formal2->getValType())) {
+            if (isOrRefersBorrowedClass(formal1->getValType()) &&
+                isOrRefersBorrowedClass(formal2->getValType())) {
             //if (isSubjectToBorrowLifetimeAnalysis(formal1) &&
             //    isSubjectToBorrowLifetimeAnalysis(formal2)) {
               if (order == -1 && // formal1 < formal2
@@ -2169,7 +2170,7 @@ static bool recordContainsOwnedClassFields(AggregateType* at) {
   return false;
 }
 
-static bool recordContainsBorrowedClassFields(AggregateType* at) {
+static bool aggregateContainsBorrowedClassFields(AggregateType* at) {
 
   for_fields(field, at) {
     if (isOrContainsBorrowedClass(field->type) &&
@@ -2204,7 +2205,21 @@ bool isOrContainsBorrowedClass(Type* type) {
   // Next check for records containing borrowed class type
   if (AggregateType* at = toAggregateType(type))
     if (at->isRecord())
-      return recordContainsBorrowedClassFields(at);
+      return aggregateContainsBorrowedClassFields(at);
+
+  return false;
+}
+
+static bool isOrRefersBorrowedClass(Type* type) {
+  if (isOrContainsBorrowedClass(type))
+    return true;
+
+  if (type->symbol->hasFlag(FLAG_ARRAY_OF_BORROWS))
+    return true;
+
+  if (AggregateType* at = toAggregateType(type))
+    if (aggregateContainsBorrowedClassFields(at))
+      return true;
 
   return false;
 }
@@ -2304,7 +2319,7 @@ static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
         return true;
     if (AggregateType* at = toAggregateType(call->get(1)->getValType()))
       if (isRecord(at) && calledFn->hasFlag(FLAG_COMPILER_GENERATED))
-        if (recordContainsBorrowedClassFields(at))
+        if (aggregateContainsBorrowedClassFields(at))
           return true;
   }
 
