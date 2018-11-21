@@ -2,7 +2,7 @@
 
 import optparse
 import os
-from sys import stderr, stdout
+import sys
 import sys
 
 chplenv_dir = os.path.dirname(__file__)
@@ -43,7 +43,7 @@ def _main():
 
     bin_subdir = get(options.location)
 
-    stdout.write("{0}\n".format(bin_subdir))
+    sys.stdout.write("{0}\n".format(bin_subdir))
 
 if __name__ == '__main__':
     _main()
