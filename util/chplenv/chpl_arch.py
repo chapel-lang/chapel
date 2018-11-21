@@ -447,7 +447,7 @@ def get(flag, map_to_compiler=False, get_lcd=False):
         raise InvalidLocationError(flag)
 
     # fast path out for when the user has set arch=none
-    if arch == 'none' or flag == 'host':
+    if arch == 'none' or (flag == 'host' and arch == ''):
         return arch_tuple('none', 'none')
 
     comm_val = chpl_comm.get()
