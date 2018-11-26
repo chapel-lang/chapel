@@ -2310,8 +2310,8 @@ buildFunctionDecl(FnSymbol*   fn,
 
   if (optWhere)
   {
-    if (fn->hasFlag(FLAG_EXTERN))
-      USR_FATAL_CONT(fn, "Extern functions cannot have where clauses.");
+    if (fn->hasFlag(FLAG_EXPORT))
+      USR_FATAL_CONT(fn, "Export functions cannot have where clauses.");
 
     fn->where = new BlockStmt(optWhere);
   }
