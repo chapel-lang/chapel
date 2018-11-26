@@ -107,6 +107,7 @@ static gni_mem_handle_t my_mem_handle;
 
 #if GASNETC_USE_MULTI_DOMAIN
 static unsigned int gasnetc_domain_count;
+static unsigned int gasnetc_domain_count_max;
 static unsigned int gasnetc_poll_am_domain_mask;
 #if (GASNETC_DOMAIN_THREAD_DISTRIBUTION == GASNETC_DOMAIN_THREAD_DISTRIBUTION_BULK)
 static int gasnetc_threads_per_domain;
@@ -180,6 +181,7 @@ gasnetc_gni_lock_t *gasnetc_gni_lock()
 #else /* GASNETC_USE_MULTI_DOMAIN */
 
 #define gasnetc_domain_count 1
+#define gasnetc_domain_count_max 1
 
 static gni_cdm_handle_t cdm_handle;
 static gni_cq_handle_t destination_cq_handle;
@@ -611,7 +613,7 @@ void gasnetc_init_segment(void *segment_start, size_t segment_size)
   DOMAIN_SPECIFIC_VAR(peer_struct_t * const, peer_data);
   gni_cq_handle_t  destination_cq_handle = NULL;
 #endif
-  size_t bb_size = gasnetc_bounce_buffers.size / gasnetc_domain_count;
+  size_t bb_size = gasnetc_bounce_buffers.size / gasnetc_domain_count_max;
   int max_memreg = gasneti_getenv_int_withdefault("GASNET_GNI_MEMREG", GASNETC_GNI_MEMREG_DEFAULT, 0);
 
   if (bb_size < GASNET_PAGESIZE) {
@@ -899,6 +901,13 @@ uintptr_t gasnetc_init_messaging(void)
       gasnetc_poll_am_domain_mask = (gasnetc_poll_am_domain_mask << 1) | 1;
     }
   }
+  unsigned int *all_domain_counts = gasneti_malloc(gasneti_nodes * sizeof(unsigned int));
+  gasneti_spawner->Exchange(&gasnetc_domain_count, sizeof(unsigned int), all_domain_counts);
+  gasnetc_domain_count_max = gasnetc_domain_count;
+  for (i = 0; i < gasneti_nodes; ++i) {
+    gasnetc_domain_count_max = MAX(gasnetc_domain_count_max, all_domain_counts[i]);
+  }
+  gasneti_free(all_domain_counts);
  #if (GASNETC_DOMAIN_THREAD_DISTRIBUTION == GASNETC_DOMAIN_THREAD_DISTRIBUTION_BULK)
   gasnetc_threads_per_domain =  gasneti_getenv_int_withdefault("GASNET_GNI_PTHREADS_PER_DOMAIN",
                GASNETC_PTHREADS_PER_DOMAIN_DEFAULT,0);
@@ -2458,7 +2467,7 @@ void gasnetc_fetchop_u64(
 void gasnetc_init_post_descriptor_pool(GASNETC_DIDX_FARG_ALONE) 
 {
   int i;
-  const int count = gasnetc_pd_buffers.size / GASNETC_SIZEOF_GDP /  gasnetc_domain_count;
+  const int count = gasnetc_pd_buffers.size / GASNETC_SIZEOF_GDP /  gasnetc_domain_count_max;
   uintptr_t addr;
 
   gasneti_assert_always(gasnetc_pd_buffers.addr != NULL);
@@ -2740,7 +2749,7 @@ gasneti_auxseg_request_t gasnetc_bounce_auxseg_alloc(gasnet_seginfo_t *auxseg_in
   gasneti_auxseg_request_t retval;
 
   retval.minsz =
-  retval.optimalsz = gasnetc_domain_count *
+  retval.optimalsz = gasnetc_domain_count_max *
                      gasneti_getenv_int_withdefault("GASNET_GNI_BOUNCE_SIZE",
                                                     GASNETC_GNI_BOUNCE_SIZE_DEFAULT,1);
   if (auxseg_info != NULL) { /* auxseg granted */
@@ -2769,7 +2778,7 @@ gasneti_auxseg_request_t gasnetc_pd_auxseg_alloc(gasnet_seginfo_t *auxseg_info) 
   gasneti_auxseg_request_t retval;
   
   retval.minsz =
-  retval.optimalsz = gasnetc_domain_count * num_pd * GASNETC_SIZEOF_GDP;
+  retval.optimalsz = gasnetc_domain_count_max * num_pd * GASNETC_SIZEOF_GDP;
   gasneti_assert_always(GASNETC_SIZEOF_GDP >= sizeof(gasnetc_post_descriptor_t));
 
   if (auxseg_info != NULL) { /* auxseg granted */
@@ -2792,7 +2801,7 @@ void gasnetc_init_bounce_buffer_pool(GASNETC_DIDX_FARG_ALONE)
   buffer_size = MAX(buffer_size, GASNETC_MSG_MAXSIZE);
   buffer_size = GASNETI_ALIGNUP(buffer_size, GASNETC_CACHELINE_SIZE);
 
-  num_bounce = gasnetc_bounce_buffers.size / buffer_size / gasnetc_domain_count;
+  num_bounce = gasnetc_bounce_buffers.size / buffer_size / gasnetc_domain_count_max;
 
 #if GASNETC_USE_MULTI_DOMAIN
   /* sacrifice one bounce buffer to work as a padding */

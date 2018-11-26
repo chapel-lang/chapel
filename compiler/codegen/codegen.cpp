@@ -1603,6 +1603,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   if (fLibraryCompile) {
     codegen_library_header(functions);
     codegen_library_python(functions);
+    codegen_library_fortran(functions);
   }
 
   FILE* hdrfile = info->cfile;
@@ -2219,7 +2220,7 @@ static void setupDefaultFilenames() {
 }
 
 
-void codegen(void) {
+void codegen() {
   if (no_codegen)
     return;
 
@@ -2348,6 +2349,11 @@ void codegen(void) {
   // This dumps the generated sources into the build directory.
   info->cfile = hdrfile.fptr;
   codegen_header(cnames, types, functions, globals);
+
+  // Prepare the LLVM IR dumper for code generation
+  // This needs to happen after protectNameFromC which happens
+  // currently in codegen_header.
+  preparePrintLlvmIrForCodegen();
 
   info->cfile = defnfile.fptr;
   codegen_defn(cnames, types, functions, globals);

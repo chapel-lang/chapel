@@ -75,10 +75,6 @@ $(CHPL_VENV_TEST_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
 	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r test-requirements.txt && \
-	if [ "$(PYTHON_MAJOR_VERSION)" = "2" ] ; then \
-	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
-	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r test-requirements-python2.txt ; \
-	fi && \
 	python $(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
 	touch $(CHPL_VENV_TEST_REQS)
 

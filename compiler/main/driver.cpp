@@ -97,9 +97,15 @@ static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
 static bool fBaseline = false;
 
+// TODO: Should --library automatically generate all supported
+// interfaces (C, Fortran, Python)? Then there'd be no need to
+// specify each one separately.
+//
 bool fLibraryCompile = false;
+bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryPython = false;
+
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool fVerify = false;
@@ -121,7 +127,9 @@ bool fNoRemoteSerialization = false;
 bool fNoRemoveCopyCalls = false;
 bool fNoOptimizeRangeIteration = false;
 bool fNoOptimizeLoopIterators = false;
-bool fNoVectorize = true;
+bool fNoVectorize = false; // adjusted in postVectorize
+static bool fYesVectorize = false;
+bool fForceVectorize = false;
 bool fNoGlobalConstOpt = false;
 bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
@@ -202,7 +210,7 @@ bool fPrintUnusedInternalFns = false;
 bool fReportAliases = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportInlinedIterators = false;
-bool fReportOrderIndependentLoops = false;
+bool fReportVectorizedLoops = false;
 bool fReportOptimizedOn = false;
 bool fReportPromotion = false;
 bool fReportScalarReplace = false;
@@ -517,9 +525,17 @@ static void setChapelDebug(const ArgumentDescription* desc, const char* arg_unus
   printCppLineno = true;
 }
 
-static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const char* arg_unused)
+static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
+  if (llvmPrintIrStageNum == llvmStageNum::NOPRINT)
+    llvmPrintIrStageNum = llvmStageNum::BASIC;
+
+  addNameToPrintLlvmIr(arg);
+}
+
+static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const
+    char* arg)
 {
-  llvmStageNum_t stageNum = llvmStageNumFromLlvmStageName(llvmPrintIrStage);
+  llvmStageNum_t stageNum = llvmStageNumFromLlvmStageName(arg);
   if(stageNum == llvmStageNum::NOPRINT)
     USR_FATAL("Unknown llvm-print-ir-stage argument");
 
@@ -644,6 +660,14 @@ static void verifySaveLibDir(const ArgumentDescription* desc, const char* unused
               libDir);
   }
   setLibmode(desc, unused);
+}
+
+static void setVectorize(const ArgumentDescription* desc, const char* unused)
+{
+  if (fNoVectorize)
+    fYesVectorize = false;
+  else
+    fYesVectorize = true;
 }
 
 static void turnOffChecks(const ArgumentDescription* desc, const char* unused) {
@@ -798,6 +822,12 @@ static void setLibmode(const ArgumentDescription* desc, const char* unused) {
   fLibraryCompile = true;
 }
 
+static void setFortranAndLibmode(const ArgumentDescription* desc,
+                                 const char* unused) {
+  setLibmode(desc, unused);
+  fLibraryFortran = true;
+}
+
 static void setPythonAndLibmode(const ArgumentDescription* desc,
                                 const char* unused) {
   setLibmode(desc, unused);
@@ -872,7 +902,7 @@ static ArgumentDescription arg_desc[] = {
  {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", NULL},
  {"use-noinit", ' ', NULL, "Enable [disable] ability to skip default initialization through the keyword noinit", "N", &fUseNoinit, NULL, NULL},
  {"infer-local-fields", ' ', NULL, "Enable [disable] analysis to infer local fields in classes and records (experimental)", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", NULL},
- {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", NULL},
+ {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", setVectorize},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following run-time checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
@@ -975,8 +1005,8 @@ static ArgumentDescription arg_desc[] = {
  {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},
  {"log-node", ' ', NULL, "Dump IR using AstDumpToNode", "F", &fLogNode, "CHPL_LOG_NODE", NULL},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
- {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S256", llvmPrintIrName, "CHPL_LLVM_PRINT_IR", NULL},
- {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S256", llvmPrintIrStage, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
+ {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", NULL, "CHPL_LLVM_PRINT_IR", &setPrintIr},
+ {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
@@ -991,7 +1021,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
  {"report-optimized-loop-iterators", ' ', NULL, "Print stats on optimized single loop iterators", "F", &fReportOptimizedLoopIterators, NULL, NULL},
  {"report-inlined-iterators", ' ', NULL, "Print stats on inlined iterators", "F", &fReportInlinedIterators, NULL, NULL},
- {"report-order-independent-loops", ' ', NULL, "Print stats on order independent loops", "F", &fReportOrderIndependentLoops, NULL, NULL},
+ {"report-vectorized-loops", ' ', NULL, "Show which loops have vectorization hints", "F", &fReportVectorizedLoops, NULL, NULL},
  {"report-optimized-on", ' ', NULL, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, NULL, NULL},
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
@@ -1019,6 +1049,8 @@ static ArgumentDescription arg_desc[] = {
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
  {"library-makefile", ' ', NULL, "Generate a makefile to help use the generated library", "F", &fLibraryMakefile, NULL, setLibmode},
+ {"library-fortran", ' ', NULL, "Generate a module compatible with Fortran", "F", &fLibraryFortran, NULL, setLibmode},
+ {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", fortranModulename, NULL, setFortranAndLibmode},
  {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
  {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, NULL, setPythonAndLibmode},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
@@ -1036,6 +1068,7 @@ static ArgumentDescription arg_desc[] = {
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", NULL},
+ {"force-vectorize", ' ', NULL, "Ignore vectorization hazards when vectorizing loops", "N", &fForceVectorize, NULL, NULL},
  {"warn-const-loops", ' ', NULL, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", NULL},
  {"warn-domain-literal", ' ', NULL, "Enable [disable] old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_WARN_DOMAIN_LITERAL", setWarnDomainLiteral},
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
@@ -1292,6 +1325,27 @@ static void postLocal() {
   if (!fUserSetLocal) fLocal = !strcmp(CHPL_COMM, "none");
 }
 
+static void postVectorize() {
+  // Make sure fYesVectorize and fNoVectorize are respected
+  // but if neither is set, compute the default (based on --llvm or not)
+  if (fForceVectorize)
+    fYesVectorize = true;
+
+  if (fNoVectorize) {
+    fYesVectorize = false;
+  } else if (fYesVectorize) {
+    fNoVectorize = false;
+  } else if (llvmCodegen) {
+    // LLVM code generator defaults to enabling vectorization
+    fYesVectorize = true;
+    fNoVectorize = false;
+  } else {
+    // C backend defaults to no vectorization
+    fYesVectorize = false;
+    fNoVectorize = true;
+  }
+}
+
 static void setMaxCIndentLen() {
   bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
@@ -1332,6 +1386,8 @@ static void postprocess_args() {
   setMaxCIndentLen();
 
   postLocal();
+
+  postVectorize();
 
   postTaskTracking();
 

@@ -43,11 +43,11 @@ GenRet WhileDoStmt::codegen()
   GenRet   ret;
 
   codegenStmt(this);
+  fixVectorizable();
 
   if (outfile)
   {
-
-    codegenOrderIndependence();
+    codegenVectorHint();
 
     std::string hdr = "while (" + codegenValue(condExprGet()).c + ") ";
 

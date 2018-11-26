@@ -199,8 +199,7 @@ static inline bool isParIterOrForwarder(FnSymbol* fn) {
 
   if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     // This is a forwarder. Query the iterator itself.
-    return getTheIteratorFnFromIteratorRec(fn->retType)
-             ->hasFlag(FLAG_INLINE_ITERATOR);
+    return getTheIteratorFn(fn->retType)->hasFlag(FLAG_INLINE_ITERATOR);
 
   // Otherwise, no.
   return false;
@@ -1074,17 +1073,14 @@ static void insertGlobalAutoDestroyCalls() {
       for_alist(expr, mod->block->body) {
         if (DefExpr* def = toDefExpr(expr)) {
           if (VarSymbol* var = toVarSymbol(def->sym)) {
-            if (!var->isParameter() && !var->isType()) {
-              if (!var->hasFlag(FLAG_NO_AUTO_DESTROY)) {
-                if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type)) {
-                  SET_LINENO(var);
+            if (isAutoDestroyedVariable(var)) {
+              FnSymbol* autoDestroy = autoDestroyMap.get(var->type);
+              SET_LINENO(var);
 
-                  ensureModuleDeinitFnAnchor(mod, anchor);
+              ensureModuleDeinitFnAnchor(mod, anchor);
 
-                  // destroys go after anchor in reverse order of decls
-                  anchor->insertAfter(new CallExpr(autoDestroy, var));
-                }
-              }
+              // destroys go after anchor in reverse order of decls
+              anchor->insertAfter(new CallExpr(autoDestroy, var));
             }
           }
         }

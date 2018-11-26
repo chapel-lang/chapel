@@ -31,13 +31,9 @@ and to try removing it once everything else is working.
 Using Slurm for Job Launch
 ++++++++++++++++++++++++++
 
-For clusters using Slurm, there are three options:
+For clusters using Slurm, there are a few options:
 
-a. In the future, we expect that ``CHPL_LAUNCHER=slurm-srun`` will be the best
-   option. However, this configuration is not yet sufficiently tested
-   with InfiniBand.
-
-#. The current best option for InfiniBand+Slurm is
+a. The current best option for InfiniBand+Slurm is
    ``CHPL_LAUNCHER=slurm-gasnetrun_ibv``:
 
    .. code-block:: bash
@@ -61,11 +57,8 @@ a. In the future, we expect that ``CHPL_LAUNCHER=slurm-srun`` will be the best
 
    .. code-block:: bash
 
-      # Specify a 15-minute maximum run time
-      export CHPL_LAUNCHER_WALLTIME=00:15:00
       # Specify the Slurm partition to use
-      export SALLOC_PARTITION=debug
-      export SLURM_PARTITION=$SALLOC_PARTITION
+      export CHPL_LAUNCHER_PARTITION=debug
 
       # Run the sample program
       ./hello6-taskpar-dist -nl 2

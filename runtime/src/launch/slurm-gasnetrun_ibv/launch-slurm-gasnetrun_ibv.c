@@ -36,7 +36,6 @@
 
 #define baseSBATCHFilename ".chpl-slurm-sbatch-"
 #define baseExpectFilename ".chpl-expect-"
-#define baseSysFilename ".chpl-sys-"
 
 #define CHPL_WALLTIME_FLAG "--walltime"
 #define CHPL_PARTITION_FLAG "--partition"
@@ -48,7 +47,6 @@ static char* partition = NULL;
 static char* exclude = NULL;
 char slurmFilename[FILENAME_MAX];
 char expectFilename[FILENAME_MAX];
-char sysFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
 #define procsPerNode 1  
@@ -62,6 +60,7 @@ typedef enum {
   unknown
 } sbatchVersion;
 
+static const char* nodeAccessStr = NULL;
 
 // Check what version of slurm is on the system
 static sbatchVersion determineSlurmVersion(void) {
@@ -150,7 +149,8 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     if (constraint) {
       fprintf(slurmFile, "#SBATCH --constraint=%s\n", constraint);
     }
-    fprintf(slurmFile, "#SBATCH --exclusive\n");
+    if (nodeAccessStr != NULL)
+      fprintf(slurmFile, "#SBATCH --%s\n", nodeAccessStr);
 
     break;
   default:
@@ -199,6 +199,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
   char* basenamePtr = strrchr(argv[0], '/');
+  char* nodeAccessEnv = NULL;
   pid_t mypid;
 
   if (basenamePtr == NULL) {
@@ -223,12 +224,27 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
 
+  // request exclusive node access by default, but allow user to override
+  nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
+  if (nodeAccessEnv == NULL || strcmp(nodeAccessEnv, "exclusive") == 0) {
+    nodeAccessStr = "exclusive";
+  } else if (strcmp(nodeAccessEnv, "shared") == 0 ||
+             strcmp(nodeAccessEnv, "share") == 0 ||
+             strcmp(nodeAccessEnv, "oversubscribed") == 0  ||
+             strcmp(nodeAccessEnv, "oversubscribe") == 0) {
+    nodeAccessStr = "share";
+  } else if (strcmp(nodeAccessEnv, "unset") == 0) {
+    nodeAccessStr = NULL;
+  } else {
+    chpl_warning("unsupported 'CHPL_LAUNCHER_NODE_ACCESS' option", 0, 0);
+    nodeAccessStr = "exclusive";
+  }
+
   if (debug) {
     mypid = 0;
   } else {
     mypid = getpid();
   }
-  sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
   sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
   sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
 
@@ -268,12 +284,14 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
 
 //  fprintf(expectFile, "spawn sbatch ");
-  fprintf(expectFile, "spawn -noecho salloc ");
+  fprintf(expectFile, "spawn -noecho salloc --quiet ");
   fprintf(expectFile, "-J %.10s ",basenamePtr); // pass 
   fprintf(expectFile, "-N %d ",numLocales); 
   fprintf(expectFile, "--ntasks-per-node=1 ");
-  fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
-  fprintf(expectFile, "--time=%s ",walltime); 
+  if (nodeAccessStr != NULL)
+    fprintf(expectFile, "--%s ", nodeAccessStr);
+  if (walltime)
+    fprintf(expectFile, "--time=%s ",walltime);
   if(partition)
     fprintf(expectFile, "--partition=%s ",partition);
   if(exclude)
@@ -327,8 +345,6 @@ static void chpl_launch_cleanup(void) {
       system(command);
     } else {
       sprintf(command, "rm %s", slurmFilename);
-      system(command);
-      sprintf(command, "rm %s", sysFilename);
       system(command);
     }
   }

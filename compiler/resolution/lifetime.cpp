@@ -233,6 +233,7 @@ namespace {
       virtual bool enterCallExpr(CallExpr* call);
       void emitBadReturnErrors(CallExpr* call);
       void emitBadAssignErrors(CallExpr* call);
+      void emitBadSetFieldErrors(CallExpr* call);
       void emitErrors();
   };
 
@@ -407,22 +408,11 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_COMPILER_GENERATED))
     return false;
 
-  // this is a workaround for problems with init functions
-  // where temporaries are used to store results that are
-  // move'd into global variables.
-  // It could conceivably also/alternatively check for
-  // a lack of FLAG_INSERT_AUTO_DESTROY on the symbol
-  // (but then the workaround would need to be elsewhere).
-  if (fn->hasFlag(FLAG_MODULE_INIT))
-    return false;
-
-
   ModuleSymbol* inMod = fn->getModule();
   if (inMod->hasFlag(FLAG_UNSAFE))
     return false;
   if (inMod->hasFlag(FLAG_SAFE))
     return true;
-
 
   return fLifetimeChecking;
 }
@@ -892,12 +882,22 @@ static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
   group->elements.push_back(sym);
 
   Symbol* oldFavorite = group->favorite;
-  if (!sym->hasFlag(FLAG_TEMP) ||
-      !oldFavorite ||
-      (!sym->isRef() && oldFavorite->isRef()) ||
-      strlen(sym->name) < strlen(oldFavorite->name)) {
+
+  bool preferSym = false;
+  // Should we prefer sym to oldFavorite?
+  if (oldFavorite == NULL)
+    preferSym = true;
+  else if (isGlobal(sym) != isGlobal(oldFavorite))
+    preferSym = isGlobal(sym);
+  else if (sym->hasFlag(FLAG_TEMP) != oldFavorite->hasFlag(FLAG_TEMP))
+    preferSym = !sym->hasFlag(FLAG_TEMP);
+  else if (sym->isRef() != oldFavorite->isRef())
+    preferSym = !sym->isRef();
+  else
+    preferSym = (strlen(sym->name) < strlen(oldFavorite->name));
+
+  if (preferSym)
     group->favorite = sym;
-  }
 }
 
 static void addPairToDetempMap(Symbol* a, Symbol* b,
@@ -1317,7 +1317,7 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     if (iterable != NULL)
       if (AggregateType* at = toAggregateType(iterable->getValType()))
         if (at->iteratorInfo != NULL)
-          if (FnSymbol* fn = getTheIteratorFnFromIteratorRec(at))
+          if (FnSymbol* fn = getTheIteratorFn(at))
             method = (fn->_this != NULL);
 
     bool usedAsRef = index->isRef();
@@ -1470,6 +1470,15 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
         emitBadAssignErrors(call);
       }
     }
+  } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+
+    Symbol* field = toSymExpr(call->get(2))->symbol();
+
+    if (isSubjectToRefLifetimeAnalysis(field) ||
+        isSubjectToBorrowLifetimeAnalysis(field)) {
+
+      emitBadSetFieldErrors(call);
+    }
   }
 
   return false;
@@ -1613,6 +1622,65 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
   }
 }
 
+void EmitLifetimeErrorsVisitor::emitBadSetFieldErrors(CallExpr* call) {
+
+  Symbol* lhs = toSymExpr(call->get(1))->symbol();
+  Symbol* field = toSymExpr(call->get(2))->symbol();
+  Expr* rhsExpr = call->get(3);
+
+  LifetimePair lhsInferred = lifetimes->inferredLifetimeForSymbol(lhs);
+  LifetimePair lhsIntrinsic = lifetimes->intrinsicLifetimeForSymbol(lhs);
+  bool usedAsRef = lhs->isRef() && rhsExpr->isRef();
+  bool usedAsBorrow = isOrContainsBorrowedClass(field->type);
+
+  LifetimePair rhsLt = lifetimes->inferredLifetimeForExpr(rhsExpr,
+                                                          usedAsRef,
+                                                          usedAsBorrow);
+
+  if (field->isRef() && rhsExpr->isRef()) {
+    // Setting a reference so check ref lifetimes
+    if (lhsIntrinsic.referent.unknown) {
+      // OK, not an error
+    } else if (isLifetimeShorter(rhsLt.referent, lhsIntrinsic.referent)) {
+      emitError(call,
+                "Reference field",
+                "would outlive the value it refers to",
+                field, rhsLt.referent, lifetimes);
+      erroredSymbols.insert(lhs);
+    } else if (lhsInferred.referent.unknown ||
+               lhsInferred.referent.infinite) {
+      // OK, not an error
+    } else if (isLifetimeShorter(rhsLt.referent, lhsInferred.referent)) {
+      emitError(call,
+                "Reference field",
+                "would outlive the value it refers to",
+                field, rhsLt.referent, lifetimes);
+      erroredSymbols.insert(lhs);
+    }
+  }
+
+  if (isOrContainsBorrowedClass(field->type)) {
+    // setting a borrow, so check borrow lifetimes
+    if (lhsIntrinsic.borrowed.unknown) {
+      // OK, not an error
+    } else if (isLifetimeShorter(rhsLt.borrowed, lhsIntrinsic.borrowed)) {
+      emitError(call,
+                "Field",
+                "would outlive the value it is set to",
+                field, rhsLt.borrowed, lifetimes);
+      erroredSymbols.insert(lhs);
+    } else if (lhsInferred.borrowed.unknown ||
+               lhsInferred.borrowed.infinite) {
+      // OK, not an error
+    } else if (isLifetimeShorter(rhsLt.borrowed, lhsInferred.borrowed)) {
+      emitError(call,
+                "Field",
+                "would outlive the value it is set to",
+                field, rhsLt.borrowed, lifetimes);
+      erroredSymbols.insert(lhs);
+    }
+  }
+}
 
 
 void EmitLifetimeErrorsVisitor::emitErrors() {

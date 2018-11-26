@@ -630,7 +630,7 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE)
     // Our iterable expression is an iterator call.
 
     if (ArgSymbol* origArg = toArgSymbol(origSE->symbol())) {
-      FnSymbol* iterator = getTheIteratorFnFromIteratorRec(origArg->type);
+      FnSymbol* iterator = getTheIteratorFn(origArg->type);
       USR_FATAL_CONT(origSE, "a forall loop over a formal argument corresponding to a for/forall/promoted expression or an iterator call is not implemented");
       USR_PRINT(iterator, "the actual argument is here");
       USR_STOP();
@@ -1175,7 +1175,7 @@ static void convertIteratorForLoopexpr(ForallStmt* fs) {
         if (isLoopExprFun(calleeFn)) {
           // In this case, we have a _toLeader call and no side effects.
           // Just use the iterator corresponding to the iterator record.
-          FnSymbol* iterator = getTheIteratorFnFromIteratorRec(calleeFn->retType);
+          FnSymbol* iterator = getTheIteratorFn(calleeFn->retType);
           SET_LINENO(calleeSE);
           calleeSE->replace(new SymExpr(iterator));
           if (calleeFn->firstSymExpr() == NULL)

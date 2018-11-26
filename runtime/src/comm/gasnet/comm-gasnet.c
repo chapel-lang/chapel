@@ -893,9 +893,6 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 void chpl_comm_post_task_init(void) {
-  if (chpl_numNodes == 1)
-    return;
-
   //
   // Start a polling task on each locale.
   //
@@ -947,9 +944,6 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
   int  payloadSize = size + sizeof(priv_bcast_t);
   done_t* done;
   int numOffsets=1;
-
-  if (chpl_numNodes == 1)
-    return;
 
   // This can use the system allocator because it involves internode communication.
   done = (done_t*) chpl_mem_allocManyZero(chpl_numNodes, sizeof(*done),
@@ -1006,9 +1000,6 @@ void chpl_comm_barrier(const char *msg) {
   int id = (int) msg[0];
   int retval;
 
-  if (chpl_numNodes == 1)
-    return;
-
 #ifdef CHPL_COMM_DEBUG
   chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
 #endif
@@ -1030,9 +1021,6 @@ void chpl_comm_barrier(const char *msg) {
 }
 
 void chpl_comm_pre_task_exit(int all) {
-  if (chpl_numNodes == 1)
-    return;
-
   if (all) {
 
     if (chpl_nodeID == 0) {

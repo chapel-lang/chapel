@@ -143,6 +143,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* account = getenv("CHPL_LAUNCHER_ACCOUNT");
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
+  char* nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
+  const char* nodeAccessStr = NULL;
+
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
 
@@ -192,6 +195,21 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
 
+  // request exclusive node access by default, but allow user to override
+  if (nodeAccessEnv == NULL || strcmp(nodeAccessEnv, "exclusive") == 0) {
+    nodeAccessStr = "exclusive";
+  } else if (strcmp(nodeAccessEnv, "shared") == 0 ||
+             strcmp(nodeAccessEnv, "share") == 0 ||
+             strcmp(nodeAccessEnv, "oversubscribed") == 0  ||
+             strcmp(nodeAccessEnv, "oversubscribe") == 0) {
+    nodeAccessStr = "share";
+  } else if (strcmp(nodeAccessEnv, "unset") == 0) {
+    nodeAccessStr = NULL;
+  } else {
+    chpl_warning("unsupported 'CHPL_LAUNCHER_NODE_ACCESS' option", 0, 0);
+    nodeAccessStr = "exclusive";
+  }
+
   if (basenamePtr == NULL) {
     basenamePtr = argv[0];
   } else {
@@ -235,8 +253,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", procsPerNode);
     fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", getCoresPerLocale());
     
-    //request exclusive access to nodes 
-    fprintf(slurmFile, "#SBATCH --exclusive\n");
+    // request specified node access
+    if (nodeAccessStr != NULL)
+      fprintf(slurmFile, "#SBATCH --%s\n", nodeAccessStr);
 
     // Set the walltime if it was specified 
     if (walltime) { 
@@ -346,8 +365,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     len += sprintf(iCom+len, "--ntasks-per-node=%d ", procsPerNode);
     len += sprintf(iCom+len, "--cpus-per-task=%d ", getCoresPerLocale());
     
-    // request exclusive access
-    len += sprintf(iCom+len, "--exclusive ");
+    // request specified node access
+    if (nodeAccessStr != NULL)
+      len += sprintf(iCom+len, "--%s ", nodeAccessStr);
 
     // kill the job if any program instance halts with non-zero exit status
     len += sprintf(iCom+len, "--kill-on-bad-exit ");
@@ -374,7 +394,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     // set any constraints 
     if (constraint) {
-      len += sprintf(iCom+len, " --constraint=%s ", constraint);
+      len += sprintf(iCom+len, "--constraint=%s ", constraint);
     }
     
     // set the account name if one was provided  

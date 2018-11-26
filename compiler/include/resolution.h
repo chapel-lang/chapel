@@ -133,7 +133,6 @@ FnSymbol* findCopyInit(AggregateType* ct);
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
-FnSymbol* getTheIteratorFnFromIteratorRec(Type* irType);
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);

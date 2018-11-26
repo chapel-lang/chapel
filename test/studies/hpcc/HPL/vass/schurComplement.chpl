@@ -57,18 +57,17 @@ const
   bdim2 = new unmanaged BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"),
   rdim2 = new unmanaged ReplicatedDim(tl2);
 
-const dimdist = new unmanaged DimensionalDist2D(tla, bdim1, bdim2, "dim");
+const dimdist = new dmap(new unmanaged DimensionalDist2D(tla, bdim1, bdim2, "dim"));
 
 // the distributed domain for Ab
 const AbD: domain(2, indexType)
-// dmapped BlockCyclic(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla)
-// dmapped DimensionalDist2D(tla, bdim1, bdim2, "dim")
-   dmapped new dmap(dimdist)
+   dmapped dimdist
+   //DimensionalDist2D(tla, bdim1, bdim2, "dim")
   = MatVectSpace;
 
 // temporaries
-var Rest: domain(2, indexType) dmapped new dmap(dimdist);
-var RestByBlkSize: domain(2, indexType, true) dmapped new dmap(dimdist);
+var Rest: domain(2, indexType) dmapped dimdist; //AbD.dist;
+var RestByBlkSize: domain(2, indexType, true) dmapped dimdist; //AbD.dist;
 
 // Ab: the matrix A and vector b
 var Ab: [if do_dgemms then AbD else 1..1] elemType; // small if !do_dgemms

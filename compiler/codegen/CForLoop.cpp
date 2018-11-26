@@ -90,6 +90,8 @@ GenRet CForLoop::codegen()
 
   codegenStmt(this);
 
+  fixVectorizable();
+
   if (outfile)
   {
     BlockStmt*  initBlock = initBlockGet();
@@ -109,7 +111,7 @@ GenRet CForLoop::codegen()
     std::string incr      = codegenCForLoopHeader(incrBlock->copy());
     std::string hdr       = "for (" + init + "; " + test + "; " + incr + ") ";
 
-    codegenOrderIndependence();
+    codegenVectorHint();
 
     info->cStatements.push_back(hdr);
 
@@ -154,6 +156,12 @@ GenRet CForLoop::codegen()
     // all of these cases, we generate a for loop as the same as
     // if(cond) do { body; step; } while(cond).
 
+    // However it is appealing to generate these low-level loops directly
+    // in LLVM IR:
+    //   * could avoid repeated loads
+    //   * could simplify generated IR
+    //   * could avoid problems identifying induction variables
+
     // Create the init basic block
     blockStmtInit = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_c_for_init"));
 
@@ -188,7 +196,7 @@ GenRet CForLoop::codegen()
     info->lvt->addLayer();
 
     llvm::MDNode* loopMetadata = nullptr;
-    if(fNoVectorize == false && isOrderIndependent()) {
+    if(fNoVectorize == false && isVectorizable()) {
       bool addVectorizeEnable = false;
 #ifdef HAVE_LLVM_RV
       addVectorizeEnable = true;

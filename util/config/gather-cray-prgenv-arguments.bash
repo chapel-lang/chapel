@@ -27,7 +27,14 @@ if [[ $FAIL == 1 || -z $2 || -z $3 || -z $4 ]]; then
     exit 1
 fi
 
-# Set up the environment to amke the proper libraries and include
+# Try loading PrgEnv-gnu if no module is loaded
+module list --terse 2>&1 | grep -q PrgEnv
+if [ $? != 0 ]
+then
+  module load PrgEnv-gnu
+fi
+
+# Set up the environment to make the proper libraries and include
 # files available.
 export PE_PKGCONFIG_PRODUCTS="PE_CHAPEL:$PE_PKGCONFIG_PRODUCTS"
 export PE_CHAPEL_MODULE_NAME="chapel"

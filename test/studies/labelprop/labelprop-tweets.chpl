@@ -54,7 +54,7 @@ use Spawn;
 use Time;
 use Graph;
 use Random;
-use UserMapAssoc;
+use HashedDist;
 use BlockDist;
 
 // packing twitter user IDs to numbers
@@ -78,10 +78,10 @@ proc main(args:[] string) {
   }
 
   // TODO - using 2 functions because of lack of
-  // domain assignment in UserMapAssoc
+  // domain assignment in Hashed
   // Pairs is for collecting twitter  user ID to user ID mentions
   if distributed {
-    var Pairs: domain( (int, int) ) dmapped UserMapAssoc(idxType=(int, int));
+    var Pairs: domain( (int, int) ) dmapped Hashed(idxType=(int, int));
     run(todo, Pairs);
   } else {
     var Pairs: domain( (int, int) );
@@ -122,7 +122,7 @@ proc run(ref todo:list(string), ref Pairs) {
   if verbose {
     if distributed {
       // TODO -- this is not portable code
-      // need UserMapAssoc to support localDomain
+      // need HashedDist to support localDomain
       for i in 0..#numLocales {
         writeln("on locale ", i, " there are ",
                 Pairs._value.locDoms[i].myInds.size,

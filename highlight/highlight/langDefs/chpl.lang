@@ -59,6 +59,9 @@ Comments = {
 
 IgnoreCase=false
 
+-- matches binary, octal, decimal, hexadecimal integers and decimal and hexadecimal floating point
+Digits=[[ 0[bB][01\_]+|0[oO][0-7]+|\d+\.[eE][\-\+]?\d+|0[xX][0-9a-fA-F\_]+\.[pP][\-\+]?\d+|0[xX][0-9a-fA-F\_]*\.?[0-9a-fA-F\_]+(?:[pP][\-\+]?\d+)?|\d*\.?[\d\_]+(?:[eE][\-\+]?\d+)? ]]
+
 Operators=[[\(|\)|\[|\]|\{|\}|\,|\;|\.|\:|\/|\*|\%|\+|\-|=|\&|\?|<|>|\!|\~|\||\^|!|#]]
 
 EnableIndentation=true

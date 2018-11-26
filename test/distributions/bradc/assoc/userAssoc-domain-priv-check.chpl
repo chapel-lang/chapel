@@ -1,7 +1,7 @@
-use UserMapAssoc;
+use HashedDist;
 
 record MyMapper {
-  proc indexToLocaleIndex(ind, targetLocs: [] locale) : int {
+  proc this(ind, targetLocs: [] locale) : int {
     const numlocs = targetLocs.domain.size;
     const indAsInt = ind: int;
     return indAsInt % numlocs;
@@ -9,7 +9,7 @@ record MyMapper {
 }
 
 proc doit() {
-  var newDist = new dmap(new unmanaged UserMapAssoc(idxType=real, mapper=new MyMapper()));
+  var newDist = new dmap(new unmanaged Hashed(idxType=real, mapper=new MyMapper()));
 
   var D: domain(real) dmapped newDist;
 

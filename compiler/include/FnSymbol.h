@@ -102,7 +102,7 @@ public:
   void                       codegenHeaderC();
   void                       codegenPrototype();
   void                       codegenDef();
-
+  void                       codegenFortran(int indent);
   void                       codegenPython(PythonFileType pxd);
   GenRet                     codegenPXDType();
   GenRet                     codegenPYXType();

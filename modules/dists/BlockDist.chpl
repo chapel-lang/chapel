@@ -243,6 +243,23 @@ When a ``sparse subdomain`` is created for a ``Block`` distributed domain, the
 ``sparseLayoutType`` will be the layout of these sparse domains. The default is
 currently coordinate, but :class:`LayoutCS.CS` is an interesting alternative.
 
+**Convenience Initializer Functions**
+
+It is common for a ``Block`` distribution to distribute its ``boundingBox``
+across all locales. In this case, a convenience function can be used to
+declare variables of block-distributed domain or array type.  These functions
+take a domain or list of ranges as arguments and return a block-distributed
+domain or array.
+
+  .. code-block:: chapel
+
+    use BlockDist;
+
+    var BlockDom1 = newBlockDom({1..5, 1..5});
+    var BlockArr1 = newBlockArr({1..5, 1..5}, real);
+    var BlockDom2 = newBlockDom(1..5, 1..5);
+    var BlockArr2 = newBlockArr(1..5, 1..5, real);
+
 **Data-Parallel Iteration**
 
 A `forall` loop over a Block-distributed domain or array
@@ -266,7 +283,7 @@ This example demonstrates a Block-distributed sparse domain and array:
 
   .. code-block:: chapel
 
-   use BlockDist;
+    use BlockDist;
 
     const Space = {1..8, 1..8};
 
@@ -1071,12 +1088,18 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
       arrSection = myLocArr;
 
     //
+    // Forcibly narrow the array section. We know it's narrow because we're in
+    // a fast follower, but the compiler can't determine this currently.
+    //
+    const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type;
+
+    //
     // Slicing arrSection.myElems will require reference counts to be updated.
     // If myElems is an array of arrays, the inner array's domain or dist may
     // live on a different locale and require communication for reference
     // counting. Simply put: don't slice inside a local block.
     //
-    ref chunk = arrSection.myElems(myFollowThisDom);
+    ref chunk = narrowArrSection.myElems(myFollowThisDom);
     local {
       for i in chunk do yield i;
     }
@@ -1623,4 +1646,22 @@ where useBulkTransferDist {
   }
 
   return true;
+}
+
+proc newBlockDom(dom: domain) {
+  return dom dmapped Block(dom);
+}
+
+proc newBlockArr(dom: domain, type eltType) {
+  var D = newBlockDom(dom);
+  var A: [D] eltType;
+  return A;
+}
+
+proc newBlockDom(rng: range...) {
+  return newBlockDom({(...rng)});
+}
+
+proc newBlockArr(rng: range..., type eltType) {
+  return newBlockArr({(...rng)}, eltType);
 }
