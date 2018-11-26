@@ -66,7 +66,7 @@ var unionBag : domain(FullSparseDom.rank*FullSparseDom.idxType);
 var intersectionBag : domain(FullSparseDom.rank*FullSparseDom.idxType);
 
 for i in FullSparseDom do {
-  containsAll &= FullSparseDom.member( i );
+  containsAll &= FullSparseDom.contains( i );
   fullBag += i;
 }
 writeln( containsAll );

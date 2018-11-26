@@ -112,20 +112,6 @@ void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
     symExprs.push_back(symExpr);
 }
 
-static void collectMySymExprsHelp(BaseAST*               ast,
-                                  std::vector<SymExpr*>& symExprs) {
-  if (isSymbol(ast)) return; // do not descend into nested symbols
-  AST_CHILDREN_CALL(ast, collectMySymExprsHelp, symExprs);
-  if (SymExpr* se = toSymExpr(ast))
-    symExprs.push_back(se);
-}
-
-// The same for std::vector.
-void collectMySymExprs(Symbol* me, std::vector<SymExpr*>& symExprs) {
-  // skip the isSymbol(ast) check in collectMySymExprsHelp()
-  AST_CHILDREN_CALL(me, collectMySymExprsHelp, symExprs);
-}
-
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols) {
   AST_CHILDREN_CALL(ast, collectSymbols, symbols);
   if (Symbol* symbol = toSymbol(ast))

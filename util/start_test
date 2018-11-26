@@ -15,6 +15,7 @@ import os
 import platform
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -33,7 +34,6 @@ try:
     import argcomplete
 except ImportError:
     argcomplete = None
-import subprocess32 as subprocess
 
 # PROGRAM ENTRY POINT
 def main():
@@ -247,8 +247,7 @@ def test_directory(test, test_type):
                 skip_file_name = os.path.normpath(skip_file_name)
                 if os.path.isfile(skip_file_name):
                     try:
-                        prune_if = subprocess.check_output(
-                                [test_env, skip_file_name]).strip()
+                        prune_if = run_command([test_env, skip_file_name]).strip()
                         # check output and skip if true
                         if prune_if == "1" or prune_if == "True":
                             logger.write("[Skipping directory and children bas"
@@ -264,8 +263,7 @@ def test_directory(test, test_type):
                 skip_test = False
                 if os.path.isfile("SKIPIF"):
                     try:
-                        skip_test = subprocess.check_output(
-                                [test_env, "SKIPIF"]).strip()
+                        skip_test = run_command([test_env, "SKIPIF"]).strip()
                         # check output and skip if true
                         if skip_test == "1" or skip_test == "True":
                             logger.write("[Skipping directory based on SKIPIF "
@@ -423,9 +421,9 @@ def clean(test=False):
         if test: # single test
             logger.write("[Starting {0} {1} {2}]"
                     .format(sub_clean, test, date_str))
-            out = subprocess.check_output([sub_clean, test])
+            out = run_command([sub_clean, test])
         else:
-            out = subprocess.check_output([sub_clean])
+            out = run_command([sub_clean])
         logger.write(out)
     except:
         logger.write("[Error: sub_clean error]")
@@ -497,7 +495,7 @@ def compiler_performance():
     # combine smaller .dat files
     try:
         logger.write("[Combining dat files now]")
-        out = subprocess.check_output([combine_comp_perf, "--tempDatDir", 
+        out = run_command([combine_comp_perf, "--tempDatDir",
             temp_dat_dir,"--elapsedTestTime", str(elapsed), "--outDir",
             comp_perf_dir])
         logger.write(out)
@@ -785,8 +783,7 @@ def set_up_general():
         logger.write("[valgrind: ON]")
         try: 
             # get first line of output
-            binary = subprocess.check_output(
-                    ["which", "valgrind"]).split("\n")[0]
+            binary = run_command(["which", "valgrind"]).split("\n")[0]
         except:
             logger.write("[Error: Could not find valgrind.]")
             finish()
@@ -794,8 +791,7 @@ def set_up_general():
 
         # get first line of output
         try:
-            version = subprocess.check_output(
-                    ["valgrind", "--version"]).split("\n")[0]
+            version = run_command(["valgrind", "--version"]).split("\n")[0]
         except:
             pass
         logger.write("[valgrind binary: {0}]".format(binary))
@@ -965,7 +961,7 @@ def set_up_performance_testing_B():
         sha_out_name = os.path.join(chpl_test_tmp_dir, "sha.exec.out.tmp")
         with open(sha_out_name, "w") as sha_out:
             try:
-                output = subprocess.check_output(["git", "rev-parse", "HEAD"])
+                output = run_command(["git", "rev-parse", "HEAD"])
                 sha_out.write("sha " + output)
             except:
                 pass
@@ -978,7 +974,7 @@ def set_up_performance_testing_B():
                 .format(sha_dat_file_path))
         try:
             cmd = os.path.join(util_dir, "test", "computePerfStats")
-            out = subprocess.check_output([cmd, sha_dat_file_name, dat_dir, 
+            out = run_command([cmd, sha_dat_file_name, dat_dir,
                 sha_pef_keys_name, sha_out_name])
             logger.write(out)
         except:
@@ -1097,7 +1093,7 @@ def auto_generate_tests():
                         "spectests.exec.out.tmp")
                 with open(tmp_file_path, "w") as tmp_file:
                     try:
-                        out = subprocess.check_output(["make", "spectests"])
+                        out = run_command(["make", "spectests"])
                         tmp_file.write(out)
                     except:
                         logger.write("[Error: Failed to generate Spec tests.  "
@@ -1116,7 +1112,7 @@ def auto_generate_tests():
                         try:
                             cmd = os.path.join(util_dir, "test", 
                                     "computePerfStats")
-                            out = subprocess.check_output([cmd, "spectests", 
+                            out = run_command([cmd, "spectests",
                                 dat_dir, os.path.join(home, "test",
                                 "spectests.perfkeys"), tmp_file_path])
                             temp_perf_file.write(out)
@@ -1144,7 +1140,7 @@ def print_chapel_environment():
     logger.write()
     logger.write("### Chapel Environment ###")
     try:
-        out = subprocess.check_output([os.path.join(util_dir, "printchplenv"), "--all", "--no-tidy"])
+        out = run_command([os.path.join(util_dir, "printchplenv"), "--all", "--no-tidy"])
         logger.write(out)
     except:
         pass
@@ -1255,7 +1251,7 @@ def jUnit():
             "convert_start_test_log_to_junit_xml.py")]
 
     try:
-        out = subprocess.check_output(cmd + junit_args)
+        out = run_command(cmd + junit_args)
         return output
     except:
         return ""
@@ -1512,6 +1508,25 @@ class FileHandlerWithException(logging.FileHandler):
         logging.FileHandler.handleError(self, record)
         raise OSError("fatal error, logging.FileHandler")
 
+class CommandError(Exception):
+    def __init__(self, retcode, cmd, output=None):
+        self.retcode = retcode
+        self.cmd = cmd
+        self.output = output
+    def __str__(self):
+        return "Command '{0}' returned non-zero exit status {1}".format(self.cmd, self.retcode)
+
+def run_command(cmd):
+    """
+    check_output like wrapper, but we're still committed to 2.6 so can't rely
+    on check_output
+    """
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    output, _ = process.communicate()
+    retcode = process.poll()
+    if retcode:
+        raise CommandError(retcode, cmd, output)
+    return output
 
 def printout(so):
     while True:

@@ -91,7 +91,7 @@ users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
 reductions/vass/reductions-perf.graph
 studies/rbc/tvandoren/RBC.graph
-exercises/c-ray/c-ray.graph
+exercises/c-ray/old/c-ray.graph
 users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
 performance/compiler/bradc/AllCompTime.graph
@@ -272,11 +272,12 @@ library/packages/Sort/RadixSort/radixsortMSB.graph
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
 reductions/vass/reductions-perf.graph
+parallel/forall/reduce-intents/ri-a2-AoA.graph
 spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 library/standard/BitOps/c-tests/performance/bitops.graph
 studies/rbc/tvandoren/RBC.graph
-exercises/c-ray/c-ray.graph
+exercises/c-ray/old/c-ray.graph
 # suite: Colorado State University
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph

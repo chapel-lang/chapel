@@ -599,7 +599,7 @@ used to recursively hold tables and respective values
       }
       else {
         var next = '.'.join(indx[top+1..]);
-        if !this.A.domain.member(indx[top]) {
+        if !this.A.domain.contains(indx[top]) {
           throw new TomlError("No index found for " + tbl);
         }
         return this.A[indx[top]][next];
@@ -613,7 +613,7 @@ used to recursively hold tables and respective values
         var path = tblpath.split('.');
         var top = path.domain.first;
         if path.size < 2 {
-          if this.A.domain.member(tblpath) == false {
+          if this.A.domain.contains(tblpath) == false {
             return false;
           }
           else {
@@ -622,7 +622,7 @@ used to recursively hold tables and respective values
         }
         else {
           var next = '.'.join(path[top+1..]);
-          if this.A.domain.member(path[top]) {
+          if this.A.domain.contains(path[top]) {
             return this.A[path[top]].pathExists(next);
           }
           else {
@@ -670,7 +670,7 @@ used to recursively hold tables and respective values
         // Prints key values in containing Toml
         printValuesJSON(f, this, indent=indent);
 
-        if flatDom.member('root') {
+        if flatDom.contains('root') {
           printValuesJSON(f, flat['root'], indent=indent);
           flatDom.remove('root');
         }
@@ -707,7 +707,7 @@ used to recursively hold tables and respective values
 
     pragma "no doc"
     proc printTables(flat: [?d] unmanaged Toml, f:channel) {
-      if d.member('root') {
+      if d.contains('root') {
         f.writeln('[root]');
         printValues(f, flat['root']);
         d.remove('root');

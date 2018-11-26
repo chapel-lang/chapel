@@ -144,7 +144,7 @@ proc sprnvc(n, nz, v, iv, randStr) {
       vecelt = randStr.getNext();
       var vecloc = randStr.getNext(); 
       i = (vecloc * nn1):int + 1;
-    } while (i > n || indices.member(i));
+    } while (i > n || indices.contains(i));
     indices += i;
     v(nzv) = vecelt;
     iv(nzv) = i;

@@ -193,7 +193,7 @@ class ParallelWorkQueue {
       // yield all in local chunk
       if unlockedQueue.size > 0 {
         unlockedQueue.compact();
-        forall work in unlockedQueue.listArray._value.these( tasksPerLocale = maxTasks ) {
+        forall work in unlockedQueue.listArray.these( tasksPerLocale = maxTasks ) {
           yield work;
         }
       } else  {
@@ -243,22 +243,6 @@ class DistributedWorkQueue {
 
   proc deinit(){
     delete this.localInstance;
-  }
-
-  pragma "fn returns iterator"
-  inline proc these(param tag ) where (tag == iterKind.standalone)
-    && __primitive("method call resolves", _value, "these", tag=tag){
-    var maxTasks : [0..#Locales.size] int;
-    forall onLocale in Locales {
-      maxTasks[ onLocale.id ] = onLocale.maxTaskPar;
-    }
-    return _value.these(tag=tag, maxTasks);
-  }
-
-  pragma "fn returns iterator"
-  inline proc these(param tag, maxTasksPerLocale : [?d] int ) where (tag == iterKind.standalone)
-    && __primitive("method call resolves", _value, "these", tag=tag){
-    return _value.these(tag=tag, maxTasksPerLocale);
   }
 }
 
@@ -372,7 +356,7 @@ class LocalDistributedWorkQueue {
         // yield all in local chunk
         if unlockedQueue.size > 0 {
           unlockedQueue.compact();
-          forall work in unlockedQueue.listArray._value.these( tasksPerLocale = maxTasks ) {
+          forall work in unlockedQueue.listArray.these( tasksPerLocale = maxTasks ) {
             yield work;
           }
         } else  {
@@ -657,7 +641,7 @@ proc createSparseUpperTriangluarIndexList(
           // random column in range row+1 .. high
           var column = (abs( localRandom.getNext() ) % (high-row)) + row+1;
           // if not already in our index set, add it
-          if !bagOfIndices.member( column ) {
+          if !bagOfIndices.contains( column ) {
             bagOfIndices += column; // add to set
             rowCount[row] -= 1; // decrement count
             sDRandom[i] = (row,column); // add to index array
@@ -714,7 +698,7 @@ where D.rank == 2
 
   for i in D.dim(1){
     for j in D.dim(2){
-      if printIRV || D.member((i,j))
+      if printIRV || D.contains((i,j))
         then writef( formatString, M[i,j] : string );
         else write( blankString );
     }
@@ -752,7 +736,7 @@ where D.rank == 2
     } else {
       if warnDimIterMethod then compilerWarning("toposortSerial.init iterating over columns in init with dim");
       for col in columns {
-        if D.member((row,col)) {
+        if D.contains((row,col)) {
           rowCount[row] += 1;
           rowSum[row] += col;
         }
@@ -816,7 +800,7 @@ where D.rank == 2
     } else {
       if warnDimIterMethod then compilerWarning("toposortSerial.toposort iterating over rows in kernel with dim");
       for row in rows {
-        if D.member((row, swapColumn)) {
+        if D.contains((row, swapColumn)) {
           rowCount[row] -= 1;
           rowSum[row] -= swapColumn;
           if rowCount[row] == 1 {
@@ -871,7 +855,7 @@ where D.rank == 2
     } else {
       if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over columns in init with dim");
       for col in columns {
-        if D.member((row,col)) {
+        if D.contains((row,col)) {
           count += 1;
           sum += col;
         }
@@ -947,7 +931,7 @@ where D.rank == 2
     } else {
       if warnDimIterMethod then compilerWarning("toposortParallel.toposort iterating over rows in kernel with dim");
       for row in rows {
-        if D.member((row, swapColumn)) {
+        if D.contains((row, swapColumn)) {
           var previousRowCount = rowCount[row].fetchSub( 1 );
           rowSum[row].sub( swapColumn );
           // if previousRowCount = 2 (ie rowCount[row] == 1)
@@ -1014,7 +998,7 @@ where D.rank == 2
     } else {
       if warnDimIterMethod then compilerWarning("toposortDistributed.init iterating over columns in init with dim");
       for col in columns {
-        if D.member((row,col)) {
+        if D.contains((row,col)) {
           count += 1;
           sum += col;
         }
@@ -1092,7 +1076,7 @@ where D.rank == 2
     } else {
       if warnDimIterMethod then compilerWarning("toposortDistributed.toposort iterating over rows in kernel with dim");
       for row in rows {
-        if D.member((row, swapColumn)) {
+        if D.contains((row, swapColumn)) {
           var previousRowCount = rowCount[row].fetchSub( 1 );
           rowSum[row].sub( swapColumn );
           // if previousRowCount = 2 (ie rowCount[row] == 1)

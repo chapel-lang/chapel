@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+export CHPL_TEST_NO_USE_O=true
+$CHPL_HOME/util/test/sub_test $1

@@ -1254,7 +1254,7 @@ bool PostinitVisitor::enterBlockStmt(BlockStmt* node) {
       for_alist(next_ast, node->body)
         next_ast->accept(&vis);
       if (vis.found && isLoweredElseCoforall == false) {
-        USR_FATAL_CONT(node, "\"super.postinit()\" is not allowed in a %s satement", name);
+        USR_FATAL_CONT(node, "\"super.postinit()\" is not allowed in a %s statement", name);
       }
       return false;
     }

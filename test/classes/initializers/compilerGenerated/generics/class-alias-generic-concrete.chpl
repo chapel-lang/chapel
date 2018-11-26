@@ -1,6 +1,7 @@
 // copied from test/classes/ferguson/class-alias-generic-concrete.chpl
 class A {
-  var x;
+  type T;
+  var x : T;
 }
 
 type C = A(int);

@@ -705,9 +705,8 @@ iter StencilDom.these(param tag: iterKind) where tag == iterKind.leader {
     for param i in 1..tmpStencil.rank do
       locOffset(i) = tmpStencil.dim(i).first/tmpStencil.dim(i).stride:strType;
     // Forward to defaultRectangular
-    for followThis in tmpStencil._value.these(iterKind.leader, maxTasks,
-                                            myIgnoreRunning, minSize,
-                                            locOffset) do
+    for followThis in tmpStencil.these(iterKind.leader, maxTasks,
+                                       myIgnoreRunning, minSize, locOffset) do
       yield followThis;
   }
 }
@@ -869,8 +868,16 @@ proc StencilDom.setup() {
 
           // if L is a tuple of zeroes then we are in the center, which needs
           // no updating.
-          if !isZeroTuple(L) {
-            const to = chpl__tuplify(L);
+          const to = chpl__tuplify(L);
+
+          // If halo(i) is zero then there cannot be any fluff along that
+          // dimension, meaning that neigh(i) cannot be '1' or '-1'. If neigh(i)
+          // is not zero, then we should skip the computation of send/recv
+          // slices, which will prevent updateFluff from attempting to use
+          // those slices later.
+          var skipNeigh = || reduce for (f,t) in zip(fluff, to) do (f == 0 && t != 0);
+
+          if !isZeroTuple(to) && !skipNeigh {
             var dr : rank*whole.dim(1).type;
             for i in 1..rank {
               const fa = fluff(i) * abstr(i);
@@ -890,9 +897,9 @@ proc StencilDom.setup() {
 
             // destination indices in the fluff region
             recvD = {(...dr)};
-            assert(wholeFluff.member(recvD.first) && wholeFluff.member(recvD.last), "StencilDist: Error computing destination slice.");
+            assert(wholeFluff.contains(recvD.first) && wholeFluff.contains(recvD.last), "StencilDist: Error computing destination slice.");
 
-            if whole.member(recvD.first) && whole.member(recvD.last) {
+            if whole.contains(recvD.first) && whole.contains(recvD.last) {
               // sending to an adjacent locale
               recvS = recvD;
               N = chpl__tuplify(dist.targetLocsIdx(recvS.first));
@@ -910,8 +917,8 @@ proc StencilDom.setup() {
               recvS = recvD.translate(offset);
               N = chpl__tuplify(dist.targetLocsIdx(recvS.first));
 
-              assert(whole.member(recvS.first) && whole.member(recvS.last), "StencilDist: Failure to compute Src slice.");
-              assert(dist.targetLocDom.member(N), "StencilDist: Error computing neighbor index.");
+              assert(whole.contains(recvS.first) && whole.contains(recvS.last), "StencilDist: Failure to compute Src slice.");
+              assert(dist.targetLocDom.contains(N), "StencilDist: Error computing neighbor index.");
             } else {
               // No communication needed in this direction
               assert(recvS.size == 0);
@@ -954,7 +961,7 @@ proc StencilDom.setup() {
         forall (recvS, recvD, sendS, sendD, N, L) in zip(myLocDom.recvSrc, myLocDom.recvDest,
                                                          myLocDom.sendSrc, myLocDom.sendDest,
                                                          myLocDom.Neighs, ND) {
-          if !zeroTuple(L) && recvS.size != 0 {
+          if !isZeroTuple(L) && recvS.size != 0 {
             var other = -1 * L;
 
             proc checker(me, myDom, them, themDom) {
@@ -979,7 +986,7 @@ override proc StencilDom.dsiDestroyDom() {
 }
 
 proc StencilDom.dsiMember(i) {
-  return wholeFluff.member(i);
+  return wholeFluff.contains(i);
 }
 
 proc StencilDom.dsiIndexOrder(i) {
@@ -989,7 +996,7 @@ proc StencilDom.dsiIndexOrder(i) {
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocStencilDom.member(i) return myBlock.member(i);
+proc LocStencilDom.contains(i) return myBlock.contains(i);
 
 proc StencilArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
@@ -1066,11 +1073,11 @@ proc StencilArr.do_dsiAccess(param setter, const in idx: rank*idxType) ref {
     if myLocArr != nil {
       if setter || this.ignoreFluff {
         // A write: return from actual data and not fluff
-        if myLocArr.locDom.member(idx) then return myLocArr.this(idx);
+        if myLocArr.locDom.contains(idx) then return myLocArr.this(idx);
       } else {
         // A read: return from fluff if possible
         // If there is no fluff, then myFluff == myBlock
-        if myLocArr.locDom.myFluff.member(idx) then return myLocArr.this(idx);
+        if myLocArr.locDom.myFluff.contains(idx) then return myLocArr.this(idx);
       }
     }
   }
@@ -1083,7 +1090,7 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if myLocArr {
       if boundsChecking {
-        if !dom.wholeFluff.member(i) {
+        if !dom.wholeFluff.contains(i) {
           halt("array index out of bounds: ", i);
         }
       }
@@ -1335,7 +1342,7 @@ iter StencilArr.dsiBoundaries() {
       const low = dom.dist.targetLocDom.low;
       const high = dom.dist.targetLocDom.high;
 
-      if (!dom.dist.targetLocDom.member(target)) {
+      if (!dom.dist.targetLocDom.contains(target)) {
         var translated : target.type;
         for param r in 1..LSA.rank {
           if target(r) < low(r) {
@@ -1385,7 +1392,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
         //
 
         // If the target locale is outside the grid, it's a boundary chunk
-        if (!dom.dist.targetLocDom.member(target)) {
+        if (!dom.dist.targetLocDom.contains(target)) {
           var translated : target.type;
           for param r in 1..LSA.rank {
             if target(r) < low(r) {

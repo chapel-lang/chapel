@@ -38,6 +38,12 @@ module DefaultRectangular {
   config param earlyShiftData = true;
   config param usePollyArrayIndex = false;
 
+  enum ArrayStorageOrder { RMO, CMO }
+  config param defaultStorageOrder = ArrayStorageOrder.RMO;
+  // would like to move this into DefaultRectangularArr and
+  // DefaultRectangularDom so each instance can choose individually
+  param storageOrder = defaultStorageOrder;
+
   // A function which help to compute the final index
   // to be used for DefaultRectangularArr access. This function
   // helps Polly to effectively communicate the array dimension
@@ -163,7 +169,7 @@ module DefaultRectangular {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
-    iter these_help(param d: int) {
+    iter these_help(param d: int) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == rank {
         for i in ranges(d) do
           yield i;
@@ -177,8 +183,25 @@ module DefaultRectangular {
             yield (i, (...j));
       }
     }
+/*
+    iter these_help(param d: int) where storageOrder == ArrayStorageOrder.CMO {
+      param rd = rank - d + 1;
+      if rd == 1 {
+        for i in ranges(rd) do
+          yield i;
+      } else if rd == 2 {
+        for i in ranges(rd) do
+          for j in these_help(rank) do
+            yield (j, i);
+      } else {
+        for i in ranges(rd) do
+          for j in these_help(d+1) do
+            yield ((...j), i);
+      }
+    }
+*/
 
-    iter these_help(param d: int, block) {
+    iter these_help(param d: int, block) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == block.size {
         for i in block(d) do
           yield i;
@@ -192,6 +215,24 @@ module DefaultRectangular {
             yield (i, (...j));
       }
     }
+
+/*
+    iter these_help(param d: int, block) where storageOrder == ArrayStorageOrder.CMO {
+      param rd = rank - d + 1;
+      if rd == 1 {
+        for i in block(rd) do
+          yield i;
+      } else if rd == 2 {
+        for i in block(rd) do
+          for j in these_help(block.size, block) do
+            yield (j, i);
+      } else {
+        for i in block(rd) do
+          for j in these_help(d+1, block) do
+            yield ((...j), i);
+      }
+    }
+*/
 
     iter these(tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -508,7 +549,7 @@ module DefaultRectangular {
 
     proc dsiMember(ind: rank*idxType) {
       for param i in 1..rank do
-        if !ranges(i).member(ind(i)) then
+        if !ranges(i).contains(ind(i)) then
           return false;
       return true;
     }
@@ -767,10 +808,17 @@ module DefaultRectangular {
             sum += chpl__idxToInt(ind(i)) * blk(i);
           }
         } else {
-          for param i in 1..rank-1 {
-            sum += chpl__idxToInt(ind(i)) * blk(i);
+          if storageOrder == ArrayStorageOrder.RMO {
+            for param i in 1..rank-1 {
+              sum += chpl__idxToInt(ind(i)) * blk(i);
+            }
+            sum += chpl__idxToInt(ind(rank));
+          } else {
+            for param i in 2..rank {
+              sum += chpl__idxToInt(ind(i)) * blk(i);
+            }
+            sum += chpl__idxToInt(ind(1));
           }
-          sum += chpl__idxToInt(ind(rank));
         }
 
         if !earlyShiftData then sum -= factoredOffs;
@@ -955,9 +1003,11 @@ module DefaultRectangular {
     var str: rank*idxSignedType;
     var factoredOffs: chpl__idxTypeToIntIdxType(idxType);
 
+    pragma "alias scope from this"
     pragma "local field"
     var data : _ddata(eltType) = nil;
 
+    pragma "alias scope from this"
     pragma "local field"
     var shiftedData : _ddata(eltType);
 
@@ -990,22 +1040,16 @@ module DefaultRectangular {
     override proc dsiGetBaseDom() return dom;
 
     proc dsiDestroyDataHelper(dd, ddiNumIndices) {
-      pragma "no copy" pragma "no auto destroy" var dr = dd;
-      pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
+      compilerAssert(chpl_isDdata(dd.type));
       for i in 0..ddiNumIndices-1 {
-        pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, i);
-        pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
-        chpl__autoDestroy(ev);
+        chpl__autoDestroy(dd[i]);
       }
     }
 
     override proc dsiDestroyArr() {
-      if dom.dsiNumIndices > 0 {
-        pragma "no copy" pragma "no auto destroy" var dr = data;
-        pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
-        pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, 0);
-        pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
-        param needsDestroy = __primitive("needs auto destroy", ev);
+      if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
+        param needsDestroy = __primitive("needs auto destroy",
+                                         __primitive("deref", data[0]));
         if needsDestroy {
           var numElts:intIdxType = 0;
           // dataAllocRange may be empty or contain a meaningful value
@@ -1118,11 +1162,22 @@ module DefaultRectangular {
         off(dim) = dom.dsiDim(dim).alignedLow;
         str(dim) = dom.dsiDim(dim).stride;
       }
-      blk(rank) = 1:intIdxType;
-      for param dim in 1..(rank-1) by -1 do
-        blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
+      if storageOrder == ArrayStorageOrder.RMO {
+        blk(rank) = 1:intIdxType;
+        for param dim in 1..(rank-1) by -1 do
+          blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
+      } else if storageOrder == ArrayStorageOrder.CMO {
+        blk(1) = 1:intIdxType;
+        for param dim in 2..rank {
+          blk(dim) = blk(dim-1) * dom.dsiDim(dim-1).length;
+        }
+      } else {
+        halt("unknown array storage order");
+      }
       computeFactoredOffs();
-      const size = blk(1) * dom.dsiDim(1).length;
+      const size = if storageOrder == ArrayStorageOrder.RMO
+                   then blk(1) * dom.dsiDim(1).length
+                   else blk(rank) * dom.dsiDim(rank).length;
 
       if usePollyArrayIndex {
         for param dim in 1..rank {
@@ -1177,18 +1232,22 @@ module DefaultRectangular {
             // the dimension offsets from the index subscripts beforehand.
             if !wantShiftedIndex {
              for param i in 1..rank do {
-                useInd(i) = chpl__idxToInt(useInd(i)) - chpl__idxToInt(off(i));
+               useInd(i) = chpl__idxToInt(useInd(i)) - chpl__idxToInt(off(i));
              }
-
            }
            return polly_array_index(useOffset, (...useSizesPerDim), (...useInd));
-          }
-          else {
-            for param i in 1..rank-1 {
-              sum += chpl__idxToInt(ind(i)) * blk(i);
+          } else {
+            if storageOrder == ArrayStorageOrder.RMO {
+              for param i in 1..rank-1 {
+                sum += chpl__idxToInt(ind(i)) * blk(i);
+              }
+              sum += chpl__idxToInt(ind(rank));
+            } else {
+              for param i in 2..rank {
+                sum += chpl__idxToInt(ind(i)) * blk(i);
+              }
+              sum += chpl__idxToInt(ind(1));
             }
-            sum += chpl__idxToInt(ind(rank));
-
             if !wantShiftedIndex then sum -= factoredOffs;
             return sum;
           }
@@ -1396,7 +1455,7 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      if (this.data.locale == here) {
+      if this.data.locale == here {
         return _getDomain(dom);
       } else {
         var a: domain(rank, idxType, stridable);

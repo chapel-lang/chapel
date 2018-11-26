@@ -165,8 +165,8 @@ module SSCA2_kernels
 
 
   use BlockDist;
-  config param useAtomicReal = CHPL_NETWORK_ATOMICS=="ugni";
-  config param useOnClause = CHPL_NETWORK_ATOMICS!="ugni";
+  config param useAtomicReal = CHPL_NETWORK_ATOMICS!="none";
+  config param useOnClause = CHPL_NETWORK_ATOMICS=="none";
   // For task-private temporary variables
   config const defaultNumTPVs = 16;
   config var numTPVs = min(defaultNumTPVs, numLocales);

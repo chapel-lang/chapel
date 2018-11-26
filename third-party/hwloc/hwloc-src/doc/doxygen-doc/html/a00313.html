@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.10</span>
+   &#160;<span id="projectnumber">1.11.11</span>
    </div>
   </td>
  </tr>
@@ -157,7 +157,6 @@ Examples</h1>
 </div>
  <p>Six interesting PCI devices were discovered. However hwloc found some corresponding software devices (<em>eth0</em>, <em>eth1</em>, <em>sda</em>, <em>mlx4_0</em>, <em>ib0</em>, and <em>ib1</em>) for only four of these physical devices. The other ones (<em>PCI 102b:0532</em> and <em>PCI 8086:3a20</em>) are an unused IDE controller (no disk attached) and a graphic card (no corresponding software device reported to the user by the operating system).</p>
 <p>On the contrary, it should be noted that three different software devices were found for the last PCI device (<em>PCI 15b3:634a</em>). Indeed this OpenFabrics HCA PCI device object contains one one OpenFabrics software device (<em>mlx4_0</em>) and two virtual network interface software devices (<em>ib0</em> and <em>ib1</em>).</p>
-<p>PCI link speed is also reported for some bridges and devices because lstopo was privileged when it discovered the topology.</p>
 <p>Here is the corresponding textual output:</p>
 <pre class="fragment">Machine (24GB total)
   NUMANode L#0 (P#0 12GB)

@@ -98,7 +98,6 @@ Building Chapel for a Cray System from Source
       ...run jobs interactively on your system  gasnetrun_ibv
       ...queue jobs using PBSPro (qsub)         pbs-gasnetrun_ibv
       ...queue jobs using SLURM (sbatch)        slurm-gasnetrun_ibv
-      ...queue jobs using LSF (bsub)            lsf-gasnetrun_ibv
       ========================================  =========================
 
       ========================================  =========================
@@ -225,15 +224,6 @@ Using Chapel on a Cray System
 
         Alternatively, you can set the wall clock time limit on your
         Chapel program command line using the ``--walltime`` flag.
-
-   If ``CHPL_LAUNCHER`` is ``slurm-gasnetrun_ibv``:
-
-     You must set the amount of time to request from SLURM.
-     For example, the following requests 15 minutes:
-
-      .. code-block:: sh
-
-        export CHPL_LAUNCHER_WALLTIME=00:15:00
 
    For further information about launchers, please refer to
    :ref:`readme-launcher`.

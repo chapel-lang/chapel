@@ -120,14 +120,14 @@ module SSCA2_driver
             while V_s < 2**approx_scale {
                 linear_index = floor (1 + Rand_Gen.getNext() * N_VERTICES) 
                                : index (vertex_indices);
-                if !random_indices.member (linear_index) {
+                if !random_indices.contains (linear_index) {
                   V_s += 1;
                   random_indices.add (linear_index);
                 }
               };
 
             for (s, linear_index) in zip( G.vertices, 1.. ) do
-              if random_indices.member (linear_index) then
+              if random_indices.contains (linear_index) then
                 BC_starting_vertices.add (s);
 
             writeln (); writeln ();

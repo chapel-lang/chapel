@@ -24,22 +24,25 @@
 #include "chplrt.h"
 #include "chpl-env-gen.h"
 
+// #include "chpl-cache.h"
 #include "chpl-comm.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-comm-diags.h"
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
+#include "chplexit.h"
+#include "chpl-format.h"
+#include "chpl-gen-includes.h"
 #include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chpl-mem-sys.h"
-// #include "chpl-cache.h"
+#include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
-#include "chpl-gen-includes.h"
-#include "chplsys.h"
-#include "chplexit.h"
 #include "error.h"
+
+#include "comm-ofi-internal.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -55,31 +58,17 @@
 #include <time.h>
 
 #include <rdma/fabric.h>
+#include <rdma/fi_cm.h>
 #include <rdma/fi_domain.h>
 #include <rdma/fi_endpoint.h>
-#include <rdma/fi_cm.h>
 #include <rdma/fi_errno.h>
-
-#include "comm-ofi-internal.h"
+#include <rdma/fi_rma.h>
 
 
 ////////////////////////////////////////
 //
 // Global types and data
 //
-
-typedef enum {
-  am_opFree = 0,                        // descriptor is free in table
-  am_opNil,                             // no-op
-  am_opWhatever,                        // whatever
-} am_op_t;
-
-struct am_req_info {
-  am_op_t op;
-  int id;
-  int nodeID;
-  int* finVal;
-};
 
 static struct fi_info* ofi_info;        // fabric interface info
 static struct fid_fabric* ofi_fabric;   // fabric domain
@@ -94,18 +83,11 @@ static int txCQSize;                    // txCQ size
 
 static int numTxCtxs;
 
-static int numAmLZs;                    // #AM landing zones per node
-
 struct perTxCtxInfo_t {
-  int inited;
-  int idx;
-  char name[5];
-  int isAmHandler;
+  chpl_bool txCtxHasCQ;
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
   struct fid_cntr* txCntr;
-  int mrSetIdx;
-  int tbIdx;
   int numAmReqsTxed;
   int numAmReqsRxed;
   int numReadsTxed;
@@ -113,51 +95,32 @@ struct perTxCtxInfo_t {
   int numTxsOut;
 };
 
+static int ptiTabLen;
 static struct perTxCtxInfo_t* ptiTab;
-#if 0
-static __thread struct perTxCtxInfo_t* pti;
-#endif
+static pthread_mutex_t pti_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+#define MAX_MEM_REGIONS 10
+static int numMemRegions = 0;
 
-static struct iovec ofi_iov_reqs;
-static struct fi_msg ofi_msg_reqs;
-static struct am_req_info* comm_amReqLZs;
-
-static struct am_req_info* comm_amReqs;
-
-static int comm_rmaSrcBufSize;
-static int comm_rmaDstBufSize;
-static int comm_amFinFlagsSize;
-
-static int* comm_rmaSrcBuf;
-static int* comm_rmaDstBuf;
-static int* comm_amFinFlags;
-static int comm_amFinSrc;
-
-enum {
-  memSrcIdx = 0,
-  memDstIdx,
-  memAmFinFlagIdx,
-  memAmFinSrcIdx,
-  memNumIdxs
-};
-
-static struct fid_mr* (* comm_mr)[memNumIdxs];
+static struct fid_mr* ofiMrTab[MAX_MEM_REGIONS];
 
 struct memEntry {
-  size_t size;
   void* addr;
+  size_t size;
   void* desc;
   uint64_t key;
 };
 
-typedef struct memEntry (memTab_t)[memNumIdxs];
+typedef struct memEntry (memTab_t)[MAX_MEM_REGIONS];
 
-static memTab_t* comm_mem;
-static memTab_t** comm_memMap;
+static memTab_t memTab;
+static memTab_t* memTabMap;
 
-static int comm_threadPrivateMrSets = 0;
-static int comm_numMrSets;
+static int numAmHandlers = 1;
+
+static void* amLZs;
+static struct iovec ofi_iov_reqs;
+static struct fi_msg ofi_msg_reqs;
 
 
 ////////////////////////////////////////
@@ -165,7 +128,27 @@ static int comm_numMrSets;
 // Forward decls
 //
 
+static inline struct perTxCtxInfo_t* getTxCtxInfo(chpl_bool);
+static inline void releaseTxCtxInfo(struct perTxCtxInfo_t*);
+static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
+                                                void*, size_t);
+static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
+                                                void*, size_t);
+static void waitForTxCQ(struct perTxCtxInfo_t*, int);
+static void* allocBounceBuf(size_t);
+static void freeBounceBuf(void*);
+static inline void local_yield(void);
+
 static void time_init(void);
+
+
+////////////////////////////////////////
+//
+// Alignment
+//
+
+#define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
+#define ALIGN_UP(i, size)  ALIGN_DN((i) + (size) - 1, size)
 
 
 ////////////////////////////////////////
@@ -177,7 +160,7 @@ static void time_init(void);
     do {                                                                \
       int _rc = (expr);                                                 \
       if (_rc != wantVal) {                                             \
-        chpl_internal_error_v("%s: %s", #expr, fi_strerror(- _rc));     \
+        INTERNAL_ERROR_V("%s: %s", #expr, fi_strerror(- _rc));          \
       }                                                                 \
     } while (0)
 
@@ -188,25 +171,60 @@ static void time_init(void);
 
 ////////////////////////////////////////
 //
+// Provider name
+//
+
+static pthread_once_t provNameOnce = PTHREAD_ONCE_INIT;
+static const char* provName;
+
+static void setProviderName(void);
+static const char* getProviderName(void);
+
+
+static
+void setProviderName(void) {
+  //
+  // For now, allow specifying the provider via env var.
+  //
+  CHK_TRUE((provName = chpl_env_rt_get("COMM_OFI_PROVIDER", "sockets"))
+           != NULL);
+}
+
+
+static
+const char* getProviderName(void) {
+  PTHREAD_CHK(pthread_once(&provNameOnce, setProviderName));
+  return provName;
+}
+
+
+////////////////////////////////////////
+//
 // Interface: initialization
 //
+
+pthread_t pthread_that_inited;
 
 static void init_ofi(void);
 static void init_ofiFabricDomain(void);
 static int compute_comm_concurrency(void);
 static void init_ofiEp(void);
 static void init_ofiExchangeAvInfo(void);
-static void init_ofiForAms(void);
-static void init_ofiForRma(void);
 static void init_ofiForMem(void);
+static void init_ofiForRma(void);
+static void init_ofiForAms(void);
 
-static void init_am_handler(void);
+static void init_bar(void);
 
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
+  chpl_comm_ofi_abort_on_error =
+    (chpl_env_rt_get("COMM_OFI_ABORT_ON_ERROR", NULL) != NULL);
   time_init();
-  DBG_INIT();
   chpl_comm_ofi_oob_init();
+  DBG_INIT();
+
+  pthread_that_inited = pthread_self();
 }
 
 
@@ -224,14 +242,10 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 void chpl_comm_post_task_init(void) {
   if (chpl_numNodes == 1)
     return;
-
   init_ofi();
+  init_bar();
 
-  init_am_handler();
-
-  // Initialize the caching layer, if it is active.
   // chpl_cache_init();
-
 }
 
 
@@ -240,21 +254,18 @@ void init_ofi(void) {
   init_ofiFabricDomain();
   init_ofiEp();
   init_ofiExchangeAvInfo();
-  init_ofiForAms();
-  init_ofiForRma();
   init_ofiForMem();
+  init_ofiForRma();
+  init_ofiForAms();
 }
 
 
 static
 void init_ofiFabricDomain(void) {
   //
-  // Build hints describing what we want from the provider.  And for
-  // now, allow specifying the provider via env var.
+  // Build hints describing what we want from the provider.
   //
-  const char* provider;
-  CHK_TRUE((provider = chpl_env_rt_get("COMM_OFI_PROVIDER", "sockets"))
-           != NULL);
+  const char* provider = getProviderName();
 
   struct fi_info* hints;
   CHK_TRUE((hints = fi_allocinfo()) != NULL);
@@ -270,8 +281,8 @@ void init_ofiFabricDomain(void) {
   hints->ep_attr->type = FI_EP_RDM;
 
   hints->domain_attr->threading = FI_THREAD_UNSPEC;
-  hints->domain_attr->control_progress = FI_PROGRESS_MANUAL;
-  hints->domain_attr->data_progress = FI_PROGRESS_MANUAL;
+  hints->domain_attr->control_progress = FI_PROGRESS_MANUAL/*FI_PROGRESS_AUTO*/;
+  hints->domain_attr->data_progress = FI_PROGRESS_MANUAL/*FI_PROGRESS_AUTO*/;
   hints->domain_attr->av_type = FI_AV_TABLE;
   hints->domain_attr->mr_mode = ((strcmp(provider, "gni") == 0)
                                  ? FI_MR_BASIC
@@ -313,8 +324,8 @@ void init_ofiFabricDomain(void) {
         }
       }
 
-      chpl_internal_error_v("No provider matched for prov_name \"%s\"",
-                            (provider == NULL) ? "<any>" : provider);
+      INTERNAL_ERROR_V("No provider matched for prov_name \"%s\"",
+                       (provider == NULL) ? "<any>" : provider);
     }
 
     if (DBG_TEST_MASK(DBG_FAB)) {
@@ -326,11 +337,12 @@ void init_ofiFabricDomain(void) {
           DBG_PRINTF(DBG_FABSALL, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
           DBG_PRINTF(DBG_FABSALL, "----------");
         }
-    } else 
-      DBG_PRINTF(DBG_FAB, "====================\n"
-                 "fi_getinfo() matched fabric:");
-      DBG_PRINTF(DBG_FAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
-      DBG_PRINTF(DBG_FAB, "----------");
+      } else {
+        DBG_PRINTF(DBG_FAB, "====================\n"
+                   "fi_getinfo() matched fabric:");
+        DBG_PRINTF(DBG_FAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
+        DBG_PRINTF(DBG_FAB, "----------");
+      }
     }
   }
 
@@ -345,23 +357,26 @@ void init_ofiFabricDomain(void) {
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
 
   //
-  // Compute numbers of outbound and inbound contexts and then create
-  // our scalable endpoint.  Each worker thread should get its own
-  // transmit context, plus the AM handler needs one to send 'finished'
-  // indicators on.  We only need 1 receive context, for requests sent
-  // to our our AM handler.
+  // Compute number of transmit contexts and create our scalable
+  // transmit endpoint.  Each worker thread needs its own transmit
+  // context, plus each AM handler needs one to send 'finished'
+  // indicators on.  We only need one receive context for now, for
+  // requests sent to our single AM handler.
   //
-  numTxCtxs = compute_comm_concurrency();
+  CHK_TRUE(numAmHandlers == 1); // force rework here if #AM handlers changes
+
+  const int commConcurrency = compute_comm_concurrency();
+  numTxCtxs = commConcurrency + numAmHandlers;
 
   {
     const struct fi_domain_attr* dom_attr = ofi_info->domain_attr;
-    if (numTxCtxs + 1 > dom_attr->max_ep_tx_ctx)
-      numTxCtxs = dom_attr->max_ep_tx_ctx - 1;
+    if (numTxCtxs > dom_attr->max_ep_tx_ctx)
+      numTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
     CHK_TRUE(numTxCtxs > 0);
-    ofi_info->ep_attr->tx_ctx_cnt = numTxCtxs + 1;
+    ofi_info->ep_attr->tx_ctx_cnt = numTxCtxs + numAmHandlers;
 
-    CHK_TRUE(dom_attr->max_ep_rx_ctx >= 1);
-    ofi_info->ep_attr->rx_ctx_cnt = 1;
+    CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
+    ofi_info->ep_attr->rx_ctx_cnt = numAmHandlers;
   }
 
   //
@@ -409,7 +424,8 @@ int compute_comm_concurrency(void) {
 
 static
 void init_ofiEp(void) {
-  CHPL_CALLOC(ptiTab, numTxCtxs + 1);
+  ptiTabLen = numTxCtxs;
+  CHPL_CALLOC(ptiTab, ptiTabLen);
 
   //
   // Transmit.
@@ -437,14 +453,18 @@ void init_ofiEp(void) {
   //
   // Worker TX contexts use CQs; AM handler just needs a counter.
   //
-  for (int i = 0; i < numTxCtxs + 1; i++) {
+  for (int i = 0; i < ptiTabLen; i++) {
     OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &ptiTab[i].txCtx, NULL));
-    if (i < numTxCtxs) {
+    if (i < ptiTabLen - numAmHandlers) {
+      // Regular worker thread tx context.
       OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &ptiTab[i].txCQ, NULL));
       OFI_CHK(fi_ep_bind(ptiTab[i].txCtx, &ptiTab[i].txCQ->fid, FI_TRANSMIT));
+      ptiTab[i].txCtxHasCQ = true;
     } else {
+      // AM handler tx context.
       OFI_CHK(fi_cntr_open(ofi_domain, &txCntrAttr, &ptiTab[i].txCntr, NULL));
       OFI_CHK(fi_ep_bind(ptiTab[i].txCtx, &ptiTab[i].txCntr->fid, FI_WRITE));
+      ptiTab[i].txCtxHasCQ = false;
     }
     OFI_CHK(fi_enable(ptiTab[i].txCtx));
   }
@@ -501,38 +521,91 @@ void init_ofiExchangeAvInfo(void) {
 
 
 static
-void init_ofiForAms(void) {
+void init_ofiForMem(void) {
   //
-  // If the user didn't specify it, compute the number of AM landing
-  // zones per thread.  We should have enough that we needn't re-post
-  // the multi-receive buffer more often than, say, once per second.
-  // We know from the Chapel performance/comm/low-level/many-to-one test
-  // that a single Chapel task (a core) cannot initiate more than about
-  // 150k "fast" AM requests per second.  So a reasonable low limit is
-  // that times the number of nodes in the job.  We also know from that
-  // same test that the Chapel runtime comm=ugni AM handler can only
-  // handle just over 1.5m "fast" AM requests per second.  Ours cannot
-  // achieve that rate yet, but it's a reasonable upper limit.
+  // With scalable memory registration we just register the whole
+  // address space here; with non-scalable we register each region
+  // individually.
   //
-  {
-    const int maxAmsPerSecPerInitiator = 150000;
-    numAmLZs = chpl_numNodes * maxAmsPerSecPerInitiator;
+  uint64_t bufAcc = FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE;
 
-    const int maxAmsPerSecPerHandler = 1500000;
-    if (numAmLZs > maxAmsPerSecPerHandler)
-      numAmLZs = maxAmsPerSecPerHandler;
+  if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) == 0) {
+    // scalable MR -- just one memory region, the whole address space
+    numMemRegions = 1;
+    memTab[0].addr = (void*) 0;
+    memTab[0].size = SIZE_MAX;
+  } else {
+    void* fixedHeapStart;
+    size_t fixedHeapSize;
+    chpl_comm_impl_regMemHeapInfo(&fixedHeapStart, &fixedHeapSize);
+    if (fixedHeapStart != NULL) {
+      numMemRegions = 1;
+      memTab[0].addr = fixedHeapStart;
+      memTab[0].size = fixedHeapSize;
+    }
+  }
+
+  for (int i = 0; i < numMemRegions; i++) {
+    OFI_CHK(fi_mr_reg(ofi_domain,
+                      memTab[i].addr, memTab[i].size,
+                      bufAcc, 0, 0, 0, &ofiMrTab[i], NULL));
+    memTab[i].desc = fi_mr_desc(ofiMrTab[i]);
+    memTab[i].key  = fi_mr_key(ofiMrTab[i]);
+    DBG_PRINTF(DBG_MR,
+               "[%d] fi_mr_reg(%p, %#zx): key %#" PRIx64,
+               i, memTab[i].addr, memTab[i].size,
+               memTab[i].key);
   }
 
   //
-  // Create space for inbound AM request landing zones.
+  // Share the memory regions around the job.
   //
-  CHPL_CALLOC(comm_amReqLZs, numAmLZs);
+  CHPL_CALLOC(memTabMap, chpl_numNodes);
+  chpl_comm_ofi_oob_allgather(&memTab, memTabMap, sizeof(memTabMap[0]));
+}
+
+
+static
+void init_ofiForRma(void) {
+}
+
+
+static void init_amHandling(void);
+
+static
+void init_ofiForAms(void) {
+  //
+  // Compute the amount of space we should allow for AM landing zones.
+  // We should have enough that we needn't re-post the multi-receive
+  // buffer more often than, say, every tenth of a second.  We know from
+  // the Chapel performance/comm/low-level/many-to-one test that the
+  // comm=ugni AM handler can handle just over 150k "fast" AM requests
+  // in 0.1 sec.  Assuming an average AM request size of 256 bytes, a 40
+  // MiB buffer is enough to give us the desired 0.1 sec lifetime before
+  // it needs renewing.
+  //
+  const size_t amLZSize = (size_t) 40 << 20;
+
+
+  //
+  // Set the minimum multi-receive buffer space.  Some providers don't
+  // have fi_setopt() for some ep types, so allow this to fail in that
+  // case.
+  //
+  {
+    const size_t sz = 2048; // TODO
+    const int ret = fi_setopt(&ofi_rxEp->fid, FI_OPT_ENDPOINT,
+                              FI_OPT_MIN_MULTI_RECV, &sz, sizeof(sz));
+    CHK_TRUE(ret == FI_SUCCESS || ret == -FI_ENOSYS);
+  }
 
   //
   // Pre-post multi-receive buffer for inbound AM requests.
   //
-  ofi_iov_reqs.iov_base = comm_amReqLZs;
-  ofi_iov_reqs.iov_len = numAmLZs * sizeof(*comm_amReqLZs);
+  CHPL_CALLOC_SZ(amLZs, 1, amLZSize);
+
+  ofi_iov_reqs.iov_base = amLZs;
+  ofi_iov_reqs.iov_len = amLZSize;
   ofi_msg_reqs.msg_iov = &ofi_iov_reqs;
   ofi_msg_reqs.desc = NULL;
   ofi_msg_reqs.iov_count = 1;
@@ -542,99 +615,13 @@ void init_ofiForAms(void) {
   OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
   DBG_PRINTF(DBG_AM | DBG_AMRECV, "pre-post fi_recvmsg(AMReqs)");
 
-  //
-  // Create initiator-side AM request and 'finished' space.
-  //
-  const int numAmBufs = numTxCtxs;
-  CHPL_CALLOC(comm_amReqs, numAmBufs);
-
-  comm_amFinFlagsSize = numAmBufs * sizeof(comm_amFinFlags[0]);
-  CHPL_CALLOC(comm_amFinFlags, numAmBufs);
-
-  for (int i = 0; i < numTxCtxs + 1; i++) {
-    ptiTab[i].tbIdx = i;
-  }
-}
-
-
-static
-void init_ofiForRma(void) {
-}
-
-
-static
-void init_ofiForMem(void) {
-  //
-  // With scalable memory registration we just register the whole
-  // address space here; with non-scalable we register each region
-  // individually.
-  //
-  comm_numMrSets = comm_threadPrivateMrSets ? (numTxCtxs + 1) : 1;
-
-  uint64_t bufAcc = FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE;
-
-  CHPL_CALLOC(comm_mr, comm_numMrSets);
-  CHPL_CALLOC(comm_mem, comm_numMrSets);
-  CHPL_CALLOC(comm_memMap, comm_numMrSets);
-
-  for (int i = 0; i < comm_numMrSets; i++) {
-    comm_mem[i][memSrcIdx].size = comm_rmaSrcBufSize;
-    comm_mem[i][memSrcIdx].addr = comm_rmaSrcBuf;
-
-    comm_mem[i][memDstIdx].size = comm_rmaDstBufSize;
-    comm_mem[i][memDstIdx].addr = comm_rmaDstBuf;
-
-    comm_mem[i][memAmFinFlagIdx].size = comm_amFinFlagsSize;
-    comm_mem[i][memAmFinFlagIdx].addr = comm_amFinFlags;
-
-    comm_mem[i][memAmFinSrcIdx].size = sizeof(comm_amFinSrc);
-    comm_mem[i][memAmFinSrcIdx].addr = &comm_amFinSrc;
-
-    if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) == 0) {
-      // scalable MR -- register whole address space
-      OFI_CHK(fi_mr_reg(ofi_domain,
-                        0, UINT64_MAX,
-                        bufAcc, 0, 0, 0, &comm_mr[i][memSrcIdx], NULL));
-      comm_mem[i][memSrcIdx].desc = fi_mr_desc(comm_mr[i][memSrcIdx]);
-      comm_mem[i][memSrcIdx].key  = fi_mr_key(comm_mr[i][memSrcIdx]);
-
-      for (int iMem = memDstIdx; iMem < memNumIdxs; iMem++) {
-        comm_mr[i][iMem] = comm_mr[i][memSrcIdx];
-        comm_mem[i][iMem].desc = comm_mem[i][memSrcIdx].desc;
-        comm_mem[i][iMem].key = comm_mem[i][memSrcIdx].key;
-      }
-    } else {
-      // basic MR -- register everything individually
-      for (int iMem = 0; iMem < memNumIdxs; iMem++) {
-        OFI_CHK(fi_mr_reg(ofi_domain,
-                          comm_mem[i][iMem].addr, comm_mem[i][iMem].size,
-                          bufAcc, 0, 0, 0, &comm_mr[i][iMem], NULL));
-        comm_mem[i][iMem].desc = fi_mr_desc(comm_mr[i][iMem]);
-        comm_mem[i][iMem].key  = fi_mr_key(comm_mr[i][iMem]);
-      }
-    }
-
-    for (int iMem = 0; iMem < memNumIdxs; iMem++) {
-      DBG_PRINTF(DBG_MR,
-                 "[%d][%d] fi_mr_reg(%p, %#zx): key %#" PRIx64,
-                 i, iMem, comm_mem[i][iMem].addr, comm_mem[i][iMem].size,
-                 comm_mem[i][iMem].key);
-    }
-
-    //
-    // Share the memory regions around the job.
-    //
-    CHPL_CALLOC(comm_memMap[i], chpl_numNodes);
-    chpl_comm_ofi_oob_allgather(&comm_mem[i], comm_memMap[i],
-                                sizeof(comm_memMap[i][0]));
-  }
+  init_amHandling();
 }
 
 
 #if 0
 static
 void init_ofiPerThread(void) {
-  pti->mrSetIdx = comm_threadPrivateMrSets ? pti->idx : 0;
 }
 #endif
 
@@ -682,14 +669,14 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
 static void exit_all(int);
 static void exit_any(int);
 
-static void fini_am_handler(void);
+static void fini_amHandling(void);
 static void fini_ofi(void);
 
 
 void chpl_comm_pre_task_exit(int all) {
   if (all) {
     chpl_comm_barrier("chpl_comm_pre_task_exit");
-    fini_am_handler();
+    fini_amHandling();
   }
 }
 
@@ -716,36 +703,32 @@ static void exit_any(int status) {
 
 static
 void fini_ofi(void) {
-  for (int i = 0; i < comm_numMrSets; i++) {
-    OFI_CHK(fi_close(&comm_mr[i][memSrcIdx]->fid));
-    if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) != 0) {
-      for (int iMem = memDstIdx; iMem < memNumIdxs; iMem++) {
-        OFI_CHK(fi_close(&comm_mr[i][iMem]->fid));
-      }
-    }
+  if (chpl_numNodes <= 1)
+    return;
 
-    CHPL_FREE(comm_memMap[i]);
+  OFI_CHK(fi_close(&ofiMrTab[0]->fid));
+  if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) != 0) {
+    for (int i = 1; i < numMemRegions; i++) {
+      OFI_CHK(fi_close(&ofiMrTab[i]->fid));
+    }
   }
 
-  CHPL_FREE(comm_memMap);
-  CHPL_FREE(comm_mem);
-  CHPL_FREE(comm_mr);
+  CHPL_FREE(memTabMap);
 
-  CHPL_FREE(comm_amFinFlags);
-  CHPL_FREE(comm_rmaDstBuf);
-  CHPL_FREE(comm_rmaSrcBuf);
+  CHPL_FREE(memTabMap);
+  CHPL_FREE(memTab);
+  CHPL_FREE(ofiMrTab);
 
-  CHPL_FREE(comm_amReqs);
-  CHPL_FREE(comm_amReqLZs);
+  CHPL_FREE(amLZs);
 
   CHPL_FREE(ofi_rxAddrs);
 
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
 
-  for (int i = 0; i < numTxCtxs + 1; i++) {
+  for (int i = 0; i < ptiTabLen; i++) {
     OFI_CHK(fi_close(&ptiTab[i].txCtx->fid));
-    if (i < numTxCtxs)
+    if (i < ptiTabLen - numAmHandlers)
       OFI_CHK(fi_close(&ptiTab[i].txCQ->fid));
     else
       OFI_CHK(fi_close(&ptiTab[i].txCntr->fid));
@@ -762,172 +745,355 @@ void fini_ofi(void) {
 
 ////////////////////////////////////////
 //
-// Interface: Active Message support
+// Interface: Registered memory
 //
 
-#define num_am_handlers 1
+static pthread_once_t fixedHeapOnce = PTHREAD_ONCE_INIT;
+static size_t fixedHeapSize;
+static void*  fixedHeapStart;
 
-static int am_handler_count;
-static atomic_bool am_handlers_please_exit;
-static pthread_cond_t amh_startStop_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t amh_startStop_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_once_t hugepageOnce = PTHREAD_ONCE_INIT;
+static size_t hugepageSize;
 
-struct ofi_am_info {
-  c_nodeid_t node;
-  c_sublocid_t subloc;
-  chpl_bool serial_state; // To prevent creation of new tasks
-  chpl_bool fast;
-  chpl_bool blocking;
-  chpl_fn_int_t fid;
-  void* ack;
-};
+static void init_fixedHeap(void);
+
+static size_t get_hugepageSize(void);
+static void init_hugepageSize(void);
 
 
-static void am_handler(void *);
-
-
-static
-void init_am_handler(void) {
-  atomic_init_bool(&am_handlers_please_exit, false);
-
-  if (num_am_handlers > 0) {
-    // Start AM handler thread(s).  Don't proceed from here until at
-    // least one is running.
-    PTHREAD_CHK(pthread_mutex_lock(&amh_startStop_mutex));
-
-    for (int i = 0; i < num_am_handlers; i++) {
-      if (chpl_task_createCommTask(am_handler, NULL) != 0) {
-        chpl_internal_error("unable to start AM handler thread");
-      }
-    }
-
-    // Some AM handler thread we created will release us.
-    PTHREAD_CHK(pthread_cond_wait(&amh_startStop_cond,
-                                  &amh_startStop_mutex));
-    PTHREAD_CHK(pthread_mutex_unlock(&amh_startStop_mutex));
-  }
+void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
+  PTHREAD_CHK(pthread_once(&fixedHeapOnce, init_fixedHeap));
+  *start_p = fixedHeapStart;
+  *size_p  = fixedHeapSize;
 }
 
 
 static
-void fini_am_handler(void) {
+void init_fixedHeap(void) {
   //
-  // Tear down the AM handler thread(s).  On node 0, don't proceed from
-  // here until the last one has finished (TODO).
+  // We only need a fixed heap if we're multinode and using the
+  // gni provider.
   //
-  PTHREAD_CHK(pthread_mutex_lock(&amh_startStop_mutex));
-  atomic_store_bool(&am_handlers_please_exit, true);
-  PTHREAD_CHK(pthread_cond_wait(&amh_startStop_cond,
-                                &amh_startStop_mutex));
-  PTHREAD_CHK(pthread_mutex_unlock(&amh_startStop_mutex));
+  if (chpl_numNodes <= 1 || strcmp(getProviderName(), "gni") != 0)
+    return;
 
-  atomic_destroy_bool(&am_handlers_please_exit);
-}
+  //
+  // On XE systems you have to use hugepages, and on XC systems you
+  // really ought to.
+  //
+  // TODO: differentiate and do the right thing for XE.
+  //
+  size_t page_size;
+  chpl_bool have_hugepages;
+  size_t size;
+  void* start;
+
+  if ((page_size = get_hugepageSize()) == 0) {
+    chpl_warning_explicit("not using hugepages may reduce performance",
+                          __LINE__, __FILE__);
+    page_size = chpl_getSysPageSize();
+    have_hugepages = false;
+  } else {
+    have_hugepages = true;
+  }
+
+  if ((size = chpl_comm_getenvMaxHeapSize()) == 0) {
+    size = (size_t) 16 << 30;  // TODO: different for XE?
+  }
+
+  size = ALIGN_UP(size, page_size);
 
 
-#if 0
-static void handle_am(struct fi_cq_data_entry*);
+  //
+  // The heap is supposed to be of fixed size and on hugepages.  Set
+  // it up.
+  //
+  size_t nic_mem_map_limit;
+  size_t nic_max_mem;
+  size_t max_heap_size;
+
+  //
+  // Considering the data size we'll register, compute the maximum
+  // heap size that will allow all registrations to fit in the NIC
+  // TLB.  Except on Gemini only, aim for only 95% of what will fit
+  // because there we'll get an error if we go over.
+  //
+#if 0 // TODO: assume Aries; allows deeper testing
+  if (nic_type == GNI_DEVICE_GEMINI) {
+    const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
+    nic_max_mem = nic_max_pages * page_size;
+    nic_mem_map_limit = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
+  } else {
 #endif
-
-static void execute_on_common(c_nodeid_t, c_sublocid_t,
-                              chpl_fn_int_t,
-                              chpl_comm_on_bundle_t*, size_t,
-                              chpl_bool, chpl_bool);
-
-
-int chpl_comm_numPollingTasks(void) { return 1; }
-
-
-void chpl_comm_make_progress(void) { }
-
-
-/*
- * The AM handler runs this.
- */
-static void am_handler(void *argNil) {
-#if 0
-  struct progress_thread_info* pti = args;
-  const int id = pti->id;
-  const int num_rbufs = 2;
-  struct iovec iov[num_rbufs];
-  struct fi_msg msg[num_rbufs];
-  struct ofi_am_info* dst_buf[num_rbufs];
-  const int rbuf_len = 10;
-  const size_t rbuf_size = rbuf_len*sizeof(dst_buf[0][0]);
-  const int num_cqes = rbuf_len;
-  struct fi_cq_data_entry cqes[num_cqes];
-  int num_read;
-
-  int i;
-
-  for (i = 0; i < num_rbufs; i++) {
-    dst_buf[i] = chpl_mem_allocMany(rbuf_len, sizeof(dst_buf[i][0]),
-                                    CHPL_RT_MD_COMM_UTIL, 0, 0);
-    iov[i].iov_base = dst_buf[i];
-    iov[i].iov_len = rbuf_size;
-    msg[i].msg_iov = &iov[i];
-    msg[i].desc = (void **) fi_mr_desc(ofi.mr);
-    msg[i].iov_count = 1;
-    msg[i].addr = FI_ADDR_UNSPEC;
-    msg[i].context = (void *) (uint64_t) i;
-    msg[i].data = 0x0;
-    OFI_CHK(fi_recvmsg(ofi.am_rx_ep[id], &msg[i], FI_MULTI_RECV));
+    const size_t nic_TLB_cache_pages = 512; // not publicly defined
+    nic_max_mem = nic_TLB_cache_pages * page_size;
+    nic_mem_map_limit = nic_max_mem;
+#if 0 // TODO: assume Aries; allows deeper testing
   }
 #endif
 
-  // Count this AM handler thread as running.  The creator thread
-  // wants to be released as soon as at least one AM handler thread
-  // is running, so if we're the first, do that.
-  PTHREAD_CHK(pthread_mutex_lock(&amh_startStop_mutex));
-  if (++am_handler_count == 1)
-    PTHREAD_CHK(pthread_cond_signal(&amh_startStop_cond));
-  PTHREAD_CHK(pthread_mutex_unlock(&amh_startStop_mutex));
+#if 0 // TODO: assume Aries; allows deeper testing
+  {
+    uint64_t  addr;
+    uint64_t  len;
+    size_t    data_size;
 
-  // Wait for events
-  while (!atomic_load_bool(&am_handlers_please_exit)) {
-#if 0
-    num_read = fi_cq_read(ofi.am_rx_cq[id], cqes, num_cqes);
-    if (num_read > 0) {
-      for (i = 0; i < num_read; i++) {
-        handle_am(&cqes[i]);
-        // send ack
-      }
-    } else {
-      if (num_read != -FI_EAGAIN) {
-        chpl_internal_error(fi_strerror(-num_read));
-      }
-    }
+    data_size = 0;
+    while (get_next_rw_memory_range(&addr, &len, NULL, 0))
+      data_size += ALIGN_UP(len, page_size);
+
+    if (data_size >= nic_mem_map_limit)
+      max_heap_size = 0;
+    else
+      max_heap_size = nic_mem_map_limit - data_size;
+  }
 #else
-    sched_yield();
+  max_heap_size = nic_mem_map_limit;
 #endif
+
+  //
+  // As a hedge against silliness, first reduce any request so that it's
+  // no larger than the physical memory.  As a beneficial side effect
+  // when the user request is ridiculously large, this also causes the
+  // reduce-by-5% loop below to run faster and produce a final size
+  // closer to the maximum available.
+  //
+  const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
+  if (size > size_phys)
+    size = size_phys;
+
+#if 0 // TODO: assume Aries; allows deeper testing
+  //
+  // On Gemini-based systems, if necessary reduce the heap size until
+  // we can fit all the registered pages in the NIC TLB.  Otherwise,
+  // we'll get GNI_RC_ERROR_RESOURCE when we try to register memory.
+  // Warn about doing this.
+  //
+  if (nic_type == GNI_DEVICE_GEMINI && size > max_heap_size) {
+    if (chpl_nodeID == 0) {
+      char buf1[20], buf2[20], buf3[20], msg[200];
+      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
+      chpl_snprintf_KMG_f(buf3, sizeof(buf3), max_heap_size);
+      (void) snprintf(msg, sizeof(msg),
+                      "Gemini TLB can cover %s with %s pages; heap "
+                      "reduced to %s to fit",
+                      buf1, buf2, buf3);
+      chpl_warning(msg, 0, 0);
+    }
+
+    if (nic_type == GNI_DEVICE_GEMINI)
+      size = max_heap_size;
+  }
+#endif
+
+  //
+  // Work our way down from the starting size in (roughly) 5% steps
+  // until we can actually get that much from the system.
+  //
+  size_t decrement;
+
+  if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
+    decrement = page_size;
   }
 
-  // Un-count this AM handler thread.  Whoever told us to exit wants to
-  // be released once all the AM handler threads are done, so if we're
-  // the last, do that.
-  PTHREAD_CHK(pthread_mutex_lock(&amh_startStop_mutex));
-  if (--am_handler_count == 0)
-    PTHREAD_CHK(pthread_cond_signal(&amh_startStop_cond));
-  PTHREAD_CHK(pthread_mutex_unlock(&amh_startStop_mutex));
+  size += decrement;
+  do {
+    size -= decrement;
+    DBG_PRINTF(DBG_HUGEPAGES, "try allocating fixed heap, size %#zx", size);
+    if (have_hugepages) {
+      start = chpl_comm_ofi_hp_get_huge_pages(size);
+    } else {
+      CHK_SYS_MEMALIGN(start, page_size, size);
+    }
+  } while (start == NULL && size > decrement);
+
+  if (start == NULL)
+    chpl_error("cannot initialize heap: cannot get memory", 0, 0);
+
+  DBG_PRINTF(DBG_MR, "fixed heap on %spages, start=%p size=%#zx\n",
+             have_hugepages ? "huge" : "regular ", start, size);
+
+  //
+  // On Aries-based systems, warn if the size is larger than what will
+  // fit in the TLB cache.  But since that may reduce performance but
+  // won't affect function, don't reduce the size to fit.
+  //
+  if (/*nic_type == GNI_DEVICE_ARIES &&*/ size > max_heap_size) { // TODO: assume Aries; allows deeper testing
+    if (chpl_nodeID == 0) {
+      char buf1[20], buf2[20], buf3[20], msg[200];
+      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
+      chpl_snprintf_KMG_f(buf3, sizeof(buf3), size);
+      (void) snprintf(msg, sizeof(msg),
+                      "Aries TLB cache can cover %s with %s pages; "
+                      "with %s heap,\n"
+                      "         cache refills may reduce performance",
+                      buf1, buf2, buf3);
+      chpl_warning(msg, 0, 0);
+    }
+  }
+
+  fixedHeapSize  = size;
+  fixedHeapStart = start;
+}
+
+
+size_t chpl_comm_impl_regMemHeapPageSize(void) {
+  size_t sz;
+  if ((sz = get_hugepageSize()) > 0)
+    return sz;
+  return chpl_getSysPageSize();
+}
+
+
+static
+size_t get_hugepageSize(void) {
+  PTHREAD_CHK(pthread_once(&hugepageOnce, init_hugepageSize));
+  return hugepageSize;
+}
+
+
+static
+void init_hugepageSize(void) {
+  if (chpl_numNodes > 1
+      && getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL) {
+    hugepageSize = chpl_comm_ofi_hp_gethugepagesize();
+  }
+
+  DBG_PRINTF(DBG_HUGEPAGES,
+             "setting hugepage info: use hugepages %s, sz %#zx",
+             (hugepageSize > 0) ? "YES" : "NO", hugepageSize);
+}
+
+
+static inline
+struct memEntry* getMemEntry(memTab_t* tab, void* addr, size_t size) {
+  char* myAddr = (char*) addr;
+
+  for (int i = 0; i < numMemRegions; i++) {
+    char* tabAddr = (char*) (*tab)[i].addr;
+    char* tabAddrEnd = tabAddr + (*tab)[i].size;
+    if (myAddr >= tabAddr && myAddr + size <= tabAddrEnd)
+      return &(*tab)[i];
+  }
+
+  return NULL;
+}
+
+
+static inline
+int mrGetDesc(void** pDesc, int iNode, void* addr, size_t size) {
+  if ((ofi_info->domain_attr->mr_mode & (FI_MR_BASIC | FI_MR_LOCAL)) == 0) {
+    DBG_PRINTF(DBG_MRDESC, "mrGet%sDesc(%p, %zd): scalable",
+               (iNode == -1) ? "Local" : "", addr, size);
+    if (pDesc != NULL)
+      *pDesc = NULL;
+    return 0;
+  }
+
+  memTab_t* tab = (iNode == -1) ? &memTab : &memTabMap[iNode];
+  struct memEntry* mr;
+  if ((mr = getMemEntry(tab, addr, size)) == NULL) {
+    DBG_PRINTF(DBG_MRDESC, "mrGet%sDesc(%p, %zd): no entry",
+               (iNode == -1) ? "Local" : "", addr, size);
+    return -1;
+  }
+  DBG_PRINTF(DBG_MRDESC, "mrGet%sDesc(%p, %zd): desc %p",
+             (iNode == -1) ? "Local" : "", addr, size, mr->desc);
+  if (pDesc != NULL)
+    *pDesc = mr->desc;
+  return 0;
+}
+
+
+static inline
+int mrGetLocalDesc(void** pDesc, void* addr, size_t size) {
+  return mrGetDesc(pDesc, -1, addr, size);
+}
+
+
+static inline
+int mrGetKey(uint64_t* pKey, int iNode, void* addr, size_t size) {
+  struct memEntry* mr;
+  if ((mr = getMemEntry(&memTabMap[iNode], addr, size)) == NULL) {
+    DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): no entry",
+               iNode, addr, size);
+    return -1;
+  }
+  DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): key %" PRIx64,
+             iNode, addr, size, mr->key);
+  if (pKey != NULL)
+    *pKey = mr->key;
+  return 0;
+}
+
+
+static inline
+int mrGetLocalKey(uint64_t* pKey, void* addr, size_t size) {
+  if (chpl_numNodes <= 1) {
+    //
+    // It okay that we don't have a local key in this case, but
+    // you'd better not want its value.
+    //
+    CHK_TRUE(pKey == NULL);
+    return 0;
+  }
+  return mrGetKey(pKey, chpl_nodeID, addr, size);
+}
+
+
+////////////////////////////////////////
+//
+// Interface: Active Messages
+//
+
+
+typedef enum {
+  am_opNil = 0,                         // no-op
+  am_opCall,                            // call a function table function
+  am_opGet,                             // do an RMA GET
+  am_opPut,                             // do an RMA PUT
+  am_opAMO,                             // do an AMO
+  am_opFAMO,                            // do a fetching AMO
+} amOp_t;
+
+static void amRequestExecOn(c_nodeid_t, c_sublocid_t, chpl_fn_int_t,
+                            chpl_comm_on_bundle_t*, size_t,
+                            chpl_bool, chpl_bool);
+static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
+static void amRequestAMO(c_nodeid_t, void*, void*, int, int, size_t);
+static void amRequestFAMO(c_nodeid_t, void*, void*, void*, void*,
+                          int, int, size_t);
+static void amRequestCommon(c_nodeid_t, chpl_comm_on_bundle_t*, size_t,
+                            chpl_comm_amDone_t**);
+
+
+int chpl_comm_numPollingTasks(void) {
+  return 1;
+}
+
+
+void chpl_comm_make_progress(void) {
 }
 
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t arg_size) {
-  assert(node != chpl_nodeID); // handled by the locale model
+                          chpl_comm_on_bundle_t *arg, size_t argSize) {
+  CHK_TRUE(node != chpl_nodeID); // handled by the locale model
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, arg_size}};
+       .iu.executeOn={subloc, fid, arg, argSize}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
   chpl_comm_diags_verbose_printf("remote task created on %d", (int) node);
   chpl_comm_diags_incr(execute_on);
 
-  execute_on_common(node, subloc, fid, arg, arg_size, false, true);
+  amRequestExecOn(node, subloc, fid, arg, argSize, false, true);
 }
 
 
@@ -940,13 +1106,13 @@ static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
 
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t arg_size) {
-  assert(node != chpl_nodeID); // handled by the locale model
+                             chpl_comm_on_bundle_t *arg, size_t argSize) {
+  CHK_TRUE(node != chpl_nodeID); // handled by the locale model
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, arg_size}};
+       .iu.executeOn={subloc, fid, arg, argSize}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -954,19 +1120,19 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                                  (int) node);
   chpl_comm_diags_incr(execute_on_nb);
 
-  execute_on_common(node, subloc, fid, arg, arg_size, false, false);
+  amRequestExecOn(node, subloc, fid, arg, argSize, false, false);
 }
 
 
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t *arg, size_t arg_size) {
-  assert(node != chpl_nodeID); // handled by the locale model
+                               chpl_comm_on_bundle_t *arg, size_t argSize) {
+  CHK_TRUE(node != chpl_nodeID); // handled by the locale model
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, arg_size}};
+       .iu.executeOn={subloc, fid, arg, argSize}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -974,56 +1140,512 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                  (int) node);
   chpl_comm_diags_incr(execute_on_fast);
 
-  execute_on_common(node, subloc, fid, arg, arg_size, true, true);
+  amRequestExecOn(node, subloc, fid, arg, argSize, true, true);
 }
 
 
-static void execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
-                              chpl_fn_int_t fid,
-                              chpl_comm_on_bundle_t* arg, size_t arg_size,
-                              chpl_bool fast, chpl_bool blocking)
-{
-  chpl_internal_error("Remote ons not yet implemented");
-
-  // bundle args
-  // send to remote AM port
+static inline
+void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
+                     chpl_fn_int_t fid,
+                     chpl_comm_on_bundle_t* arg, size_t argSize,
+                     chpl_bool fast, chpl_bool blocking) {
+  arg->comm.xo = (struct chpl_comm_bundleData_execOn_t)
+                   { .op = am_opCall,
+                     .fast = false,
+                     .fid = fid,
+                     .argSize = argSize,
+                     .node = chpl_nodeID,
+                     .subloc = subloc,
+                     .pDone = NULL };
+  amRequestCommon(node, arg, argSize, blocking ? &arg->comm.xo.pDone : NULL);
 }
 
 
-#if 0
-static void handle_am(struct fi_cq_data_entry* cqe) {
-
+static inline
+void amRequestRMA(c_nodeid_t node, amOp_t op,
+                  void* addr, void* raddr, size_t size) {
+  chpl_comm_on_bundle_t arg;
+  arg.comm.rma = (struct chpl_comm_bundleData_RMA_t)
+                   { .op = op,
+                     .addr = raddr,
+                     .node = chpl_nodeID,
+                     .raddr = addr,
+                     .size = size,
+                     .pDone = NULL };
+  amRequestCommon(node, &arg,
+                  (offsetof(chpl_comm_on_bundle_t, comm)
+                   + sizeof(arg.comm.rma)),
+                  &arg.comm.rma.pDone);
 }
+
+
+static inline
+void amRequestAMO(c_nodeid_t node, void* object, void* operand,
+                  int ofiOp, int ofiType, size_t size) {
+  chpl_comm_on_bundle_t arg;
+  arg.comm.amo = (struct chpl_comm_bundleData_AMO_t)
+                   { .op = am_opAMO,
+                     .ofiOp = ofiOp,
+                     .ofiType = ofiType,
+                     .size = size,
+                     .node = chpl_nodeID,
+                     .obj = object,
+                     .pDone = NULL };
+  if (operand != NULL) {
+    memcpy(&arg.comm.amo.operand, operand, size);
+  }
+  amRequestCommon(node, &arg,
+                  (offsetof(chpl_comm_on_bundle_t, comm)
+                   + sizeof(arg.comm.amo)),
+                  &arg.comm.amo.pDone);
+}
+
+
+static inline
+void amRequestFAMO(c_nodeid_t node, void* object, void* result,
+                   void* operand1, void* operand2,
+                   int ofiOp, int ofiType, size_t size) {
+  void* myResult = result;
+  if (myResult != NULL) {
+    if (mrGetLocalDesc(NULL, myResult, size) != 0) {
+      if (ofiOp == FI_CSWAP)
+        myResult = allocBounceBuf(sizeof(chpl_bool32));
+      else
+        myResult = allocBounceBuf(size);
+      DBG_PRINTF(DBG_AMO, "AMO result BB: %p", myResult);
+      CHK_TRUE(mrGetLocalDesc(NULL, myResult, size) == 0);
+    }
+  }
+
+  chpl_comm_on_bundle_t arg;
+  arg.comm.famo = (struct chpl_comm_bundleData_FAMO_t)
+                    { .op = am_opFAMO,
+                      .ofiOp = ofiOp,
+                      .ofiType = ofiType,
+                      .size = size,
+                      .node = chpl_nodeID,
+                      .obj = object,
+                      .result = myResult,
+                      .pDone = NULL };
+  if (operand1 != NULL) {
+    memcpy(&arg.comm.famo.operand1, operand1, size);
+  }
+  if (operand2 != NULL) {
+    memcpy(&arg.comm.famo.operand2, operand2, size);
+  }
+  amRequestCommon(node, &arg,
+                  (offsetof(chpl_comm_on_bundle_t, comm)
+                   + sizeof(arg.comm.famo)),
+                  &arg.comm.famo.pDone);
+  if (myResult != result) {
+    if (ofiOp == FI_CSWAP)
+      memcpy(result, myResult, sizeof(chpl_bool32));
+    else
+      memcpy(result, myResult, size);
+    freeBounceBuf(myResult);
+  }
+}
+
+
+static inline
+void amRequestCommon(c_nodeid_t node,
+                     chpl_comm_on_bundle_t* arg, size_t argSize,
+                     chpl_comm_amDone_t** ppDone) {
+  //
+  // If blocking, make sure target can RMA PUT the indicator to us.
+  //
+  chpl_comm_amDone_t myDone;
+  chpl_comm_amDone_t* pDone = NULL;
+  if (ppDone != NULL) {
+    pDone = &myDone;
+    if (mrGetLocalKey(NULL, pDone, sizeof(*pDone)) != 0) {
+      pDone = allocBounceBuf(sizeof(*pDone));
+      CHK_TRUE(mrGetLocalKey(NULL, pDone, sizeof(*pDone)) == 0);
+    }
+    *pDone = 0;
+    atomic_thread_fence(memory_order_release);
+
+    *ppDone = pDone;
+  }
+
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+
+  void* mrDesc = NULL;
+#if 1 // TODO: needed for gni provider?
+  CHK_TRUE(mrGetLocalDesc(&mrDesc, arg, argSize) == 0);
 #endif
+
+  OFI_CHK(fi_send(tcip->txCtx, arg, argSize, mrDesc, ofi_rxAddrs[node], NULL));
+  DBG_PRINTF(DBG_AM | DBG_AMSEND,
+             "tx AM req to %d, op %d, size %zd, pDone %p",
+             node, (int) arg->comm.op.op, argSize, pDone);
+  tcip->numAmReqsTxed++;
+  tcip->numTxsOut++;
+
+  //
+  // Wait for network completion.
+  //
+  waitForTxCQ(tcip, 1);
+
+  releaseTxCtxInfo(tcip);
+
+  if (pDone != NULL) {
+    //
+    // Wait for executeOn completion indicator.
+    //
+    DBG_PRINTF(DBG_AM | DBG_AMSEND,
+               "waiting for done indication in %p", pDone);
+    while (!*(volatile chpl_comm_amDone_t*) pDone)
+      local_yield();
+    DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw done indication in %p", pDone);
+    if (pDone != &myDone)
+      freeBounceBuf(pDone);
+  }
+}
 
 
 ////////////////////////////////////////
 //
-// Interface: RDMA support
+// Internal active message support
 //
 
+static int numAmHandlersActive;
+static atomic_bool amHandlersExit;
+static pthread_cond_t amStartStopCond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t amStartStopMutex = PTHREAD_MUTEX_INITIALIZER;
 
-static __thread int sep_index = -1;
-static inline int get_sep_index(int num_ctxs) {
-  if (sep_index == -1) {
-    sep_index = chpl_task_getId() % num_ctxs;
+
+static void amHandler(void*);
+static void processRxAmReq(struct perTxCtxInfo_t*);
+static void amHandleExecOn(chpl_comm_on_bundle_t*);
+static void amExecOnWrapper(void*);
+static void amGetWrapper(void*);
+static void amPutWrapper(void*);
+static void amHandleAMO(chpl_comm_on_bundle_t*);
+static void amHandleFAMO(chpl_comm_on_bundle_t*);
+static void amSendDone(c_nodeid_t, chpl_comm_amDone_t*);
+
+static inline void doCpuAMO(void*, void*, void*, void*,
+                            enum fi_op, enum fi_datatype, size_t size);
+
+
+static
+void init_amHandling(void) {
+  //
+  // Start AM handler thread(s).  Don't proceed from here until at
+  // least one is running.
+  //
+  atomic_init_bool(&amHandlersExit, false);
+
+  PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
+  for (int i = 0; i < numAmHandlers; i++) {
+    CHK_TRUE(chpl_task_createCommTask(amHandler, NULL) == 0);
   }
-  return sep_index;
+  PTHREAD_CHK(pthread_cond_wait(&amStartStopCond, &amStartStopMutex));
+  PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
 }
 
 
-static inline chpl_comm_nb_handle_t ofi_put(chpl_comm_cb_event_kind_t etype,
-                                            void *addr, c_nodeid_t node,
-                                            void* raddr, size_t size,
-                                            int32_t typeIndex, int32_t commID,
-                                            int ln, int32_t fn);
+static
+void fini_amHandling(void) {
+  if (chpl_numNodes <= 1)
+    return;
 
-static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
-                                            void *addr, c_nodeid_t node,
-                                            void* raddr, size_t size,
-                                            int32_t typeIndex, int32_t commID,
-                                            int ln, int32_t fn);
+  //
+  // Tear down the AM handler thread(s).  On node 0, don't proceed from
+  // here until the last one has finished (TODO).
+  //
+  PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
+  atomic_store_bool(&amHandlersExit, true);
+  PTHREAD_CHK(pthread_cond_wait(&amStartStopCond, &amStartStopMutex));
+  PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
 
+  atomic_destroy_bool(&amHandlersExit);
+}
+
+
+//
+// The AM handler runs this.
+//
+static
+void amHandler(void* argNil) {
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = getTxCtxInfo(false /*isWorker*/)) != NULL);
+
+  DBG_PRINTF(DBG_THREADS, "AM handler running");
+
+  //
+  // Count this AM handler thread as running.  The creator thread
+  // wants to be released as soon as at least one AM handler thread
+  // is running, so if we're the first, do that.
+  //
+  PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
+  if (++numAmHandlersActive == 1)
+    PTHREAD_CHK(pthread_cond_signal(&amStartStopCond));
+  PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
+
+  //
+  // Process AM requests.
+  //
+  while (!atomic_load_bool(&amHandlersExit)) {
+    processRxAmReq(tcip);
+  }
+
+  //
+  // Un-count this AM handler thread.  Whoever told us to exit wants to
+  // be released once all the AM handler threads are done, so if we're
+  // the last, do that.
+  //
+  PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
+  if (--numAmHandlersActive == 0)
+    PTHREAD_CHK(pthread_cond_signal(&amStartStopCond));
+  PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
+
+  DBG_PRINTF(DBG_THREADS, "AM handler done");
+}
+
+
+static
+void processRxAmReq(struct perTxCtxInfo_t* tcip) {
+  //
+  // Process requests received on the AM request endpoint.
+  //
+  const int maxAmsToDo = 10;
+  struct fi_cq_data_entry cqes[maxAmsToDo];
+
+  int ret;
+  CHK_TRUE((ret = fi_cq_read(ofi_rxCQ, cqes, maxAmsToDo)) > 0
+           || ret == -FI_EAGAIN);
+
+  if (ret > 0) {
+    const int numEvents = ret;
+    for (int i = 0; i < numEvents; i++) {
+      if ((cqes[i].flags & FI_RECV) != 0) {
+        //
+        // This event is for an inbound AM request.  Handle it.
+        //
+        chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) cqes[i].buf;
+        DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                   "CQ rx AM req %p, op %d, len %zd",
+                   req, req->comm.op.op, cqes[i].len);
+        tcip->numAmReqsRxed++;
+        switch (req->comm.op.op) {
+        case am_opCall:
+          amHandleExecOn(req);
+          break;
+
+        case am_opGet:
+          //
+          // We use a task here mainly to ensure that the GET this AM
+          // performs completes before we send the 'done' indicator.  If
+          // the AM handler did the GET directly, its contextless RMA
+          // completion counter would make it hard to tell when that GET
+          // had completed.
+          //
+          DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                     "AM req startMovedTask(amGetWrapper())");
+          chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amGetWrapper,
+                                   chpl_comm_on_bundle_task_bundle(req),
+                                   sizeof(*req), c_sublocid_any,
+                                   chpl_nullTaskID);
+          break;
+
+        case am_opPut:
+          //
+          // We use a task here mainly to ensure that the PUT this AM
+          // performs completes before we send the 'done' indicator.  If
+          // the AM handler did the PUT directly, its contextless RMA
+          // completion counter would make it hard to tell when that PUT
+          // had completed.
+          //
+          DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                     "AM req startMovedTask(amPutWrapper())");
+          chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amPutWrapper,
+                                   chpl_comm_on_bundle_task_bundle(req),
+                                   sizeof(*req), c_sublocid_any,
+                                   chpl_nullTaskID);
+          break;
+
+        case am_opAMO:
+          amHandleAMO(req);
+          break;
+
+        case am_opFAMO:
+          amHandleFAMO(req);
+          break;
+
+        default:
+          INTERNAL_ERROR_V("unexpected AM op %d", req->comm.op.op);
+          break;
+        }
+      }
+
+      if ((cqes[i].flags & FI_MULTI_RECV) != 0) {
+        //
+        // Multi-receive buffer filled; post another one.
+        //
+        OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
+        DBG_PRINTF(DBG_AM | DBG_AMRECV, "re-post fi_recvmsg(AMReqs)");
+      }
+
+      CHK_TRUE((cqes[i].flags & ~(FI_MSG | FI_RECV | FI_MULTI_RECV)) == 0);
+    }
+  }
+}
+
+
+static
+void amHandleExecOn(chpl_comm_on_bundle_t* req) {
+  struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "amHandleExecOn() for node %d: ftable[%d]",
+             (int) xo->node, (int) xo->fid);
+  chpl_comm_on_bundle_t* reqCopy;
+  CHPL_CALLOC_SZ(reqCopy, 1, xo->argSize);
+  chpl_memcpy(reqCopy, req, xo->argSize);
+  chpl_task_startMovedTask(xo->fid, (chpl_fn_p) amExecOnWrapper,
+                           chpl_comm_on_bundle_task_bundle(reqCopy),
+                           xo->argSize, xo->subloc, chpl_nullTaskID);
+}
+
+
+static
+void amExecOnWrapper(void* p) {
+  chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
+  struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
+
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "amExecOnWrapper(): chpl_ftable_call(%d, %p)", (int) xo->fid, p);
+  chpl_ftable_call(xo->fid, p);
+  if (xo->pDone != NULL) {
+    amSendDone(xo->node, xo->pDone);
+  }
+}
+
+
+static
+void amGetWrapper(void* p) {
+  chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
+  struct chpl_comm_bundleData_RMA_t* rma = &req->comm.rma;
+
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "amGetWrapper(): %p <-- %d:%p (%zd bytes)",
+             rma->addr, (int) rma->node, rma->raddr, rma->size);
+  CHK_TRUE(mrGetKey(NULL, rma->node, rma->raddr, rma->size) == 0); // sanity
+  (void) ofi_get(rma->addr, rma->node, rma->raddr, rma->size);
+
+  amSendDone(rma->node, rma->pDone);
+}
+
+
+static
+void amPutWrapper(void* p) {
+  chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
+  struct chpl_comm_bundleData_RMA_t* rma = &req->comm.rma;
+
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "amPutWrapper() %d:%p <-- %p (%zd bytes)",
+             (int) rma->node, rma->raddr, rma->addr, rma->size);
+  CHK_TRUE(mrGetKey(NULL, rma->node, rma->raddr, rma->size) == 0); // sanity
+  (void) ofi_put(rma->addr, rma->node, rma->raddr, rma->size);
+
+  amSendDone(rma->node, rma->pDone);
+}
+
+
+static
+void amHandleAMO(chpl_comm_on_bundle_t* req) {
+  struct chpl_comm_bundleData_AMO_t* amo = &req->comm.amo;
+  DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
+             "amHandleAMO() for node %d: obj %p, ofiOp %d, size %d",
+             amo->node, amo->obj, amo->ofiOp, amo->size);
+  doCpuAMO(NULL, amo->obj, &amo->operand, NULL,
+           amo->ofiOp, amo->ofiType, amo->size);
+
+  if (amo->node == chpl_nodeID) {
+    //
+    // AMOs can be same-node; short-circuit the response in that case.
+    //
+    *amo->pDone = 1;
+  } else {
+    amSendDone(amo->node, amo->pDone);
+  }
+}
+
+
+static
+void amHandleFAMO(chpl_comm_on_bundle_t* req) {
+  struct chpl_comm_bundleData_FAMO_t* famo = &req->comm.famo;
+  DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
+             "amHandleFAMO() for node %d: obj %p, ofiOp %d, size %d, res %p",
+             famo->node, famo->obj, famo->ofiOp, famo->size, famo->result);
+  chpl_amo_datum_t result;
+  doCpuAMO(&result, famo->obj, &famo->operand1, &famo->operand2,
+           famo->ofiOp, famo->ofiType, famo->size);
+
+  if (famo->node == chpl_nodeID) {
+    //
+    // AMOs can be same-node; short-circuit the response in that case.
+    //
+    if (famo->ofiOp == FI_CSWAP)
+      memcpy(famo->result, &result, sizeof(result.u32));
+    else
+      memcpy(famo->result, &result, famo->size);
+    atomic_thread_fence(memory_order_release);
+    *famo->pDone = 1;
+  } else {
+    CHK_TRUE(mrGetKey(NULL, famo->node, famo->result, famo->size) == 0);
+    if (famo->ofiOp == FI_CSWAP)
+      (void) ofi_put(&result, famo->node, famo->result, sizeof(result.u32));
+    else
+      (void) ofi_put(&result, famo->node, famo->result, famo->size);
+
+    //
+    // TODO:
+    // HACK!!!  We need to make sure the result arrives before
+    //          telling the originator the AMO is done.  For now
+    //          we wait here for the tx counter to clear, but
+    //          there is surely a better way, perhaps a queue of
+    //          outbound writes or some such.
+    //
+    {
+      struct perTxCtxInfo_t* tcip;
+      CHK_TRUE((tcip = getTxCtxInfo(false /*isWorker*/)) != NULL);
+      do {
+        const int count = fi_cntr_read(tcip->txCntr);
+        if (count > 0) {
+          DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
+          tcip->numTxsOut -= count;
+        }
+      } while (tcip->numTxsOut > 0);
+      releaseTxCtxInfo(tcip);
+    }
+
+    amSendDone(famo->node, famo->pDone);
+  }
+}
+
+
+static
+void amSendDone(c_nodeid_t node, chpl_comm_amDone_t* pDone) {
+  static __thread chpl_comm_amDone_t* myDone = NULL;
+  if (myDone == NULL) {
+    myDone = allocBounceBuf(1);
+    CHK_TRUE(mrGetLocalDesc(NULL, myDone, 1) == 0);
+    *myDone = 1;
+  }
+
+  CHK_TRUE(mrGetKey(NULL, node, pDone, sizeof(*pDone)) == 0);
+  DBG_PRINTF(DBG_AM, "AM set pDone %d:%p", node, pDone);
+  (void) ofi_put(myDone, node, pDone, sizeof(*pDone));
+}
+
+
+////////////////////////////////////////
+//
+// Interface: RMA
+//
 
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node,
                                        void* raddr, size_t size,
@@ -1043,8 +1665,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
 }
 
 
-int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
-{
+int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h) {
   if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
     chpl_comm_diags_verbose_printf("test nb complete (%p)", h);
   }
@@ -1055,8 +1676,7 @@ int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 }
 
 
-void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
-{
+void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
   if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
     if (nhandles == 1)
       chpl_comm_diags_verbose_printf("wait nb complete (%p)", h);
@@ -1068,13 +1688,12 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   size_t i;
   // fi_cq_readfrom?
   for( i = 0; i < nhandles; i++ ) {
-    assert(h[i] == NULL);
+    CHK_TRUE(h[i] == NULL);
   }
 }
 
 
-int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
-{
+int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
 
   if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
     if (nhandles == 1)
@@ -1087,7 +1706,7 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   size_t i;
   // fi_cq_readfrom?
   for( i = 0; i < nhandles; i++ ) {
-    assert(h[i] == NULL);
+    CHK_TRUE(h[i] == NULL);
   }
   return 0;
 }
@@ -1096,12 +1715,13 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                    size_t size, int32_t typeIndex, int32_t commID,
                    int ln, int32_t fn) {
-  chpl_comm_nb_handle_t handle;
-
-  if (node == chpl_nodeID) {
-    memmove(raddr, addr, size);
-    return;
-  }
+  //
+  // addr and raddr are sanity checks; node==chpl_nodeID is supposed
+  // to be handled by our caller.
+  //
+  CHK_TRUE(addr != NULL);
+  CHK_TRUE(raddr != NULL);
+  CHK_TRUE(node != chpl_nodeID);
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
@@ -1115,33 +1735,34 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                                  chpl_lookupFilename(fn), ln, (int) node);
   chpl_comm_diags_incr(put);
 
-  handle = ofi_put(chpl_comm_cb_event_kind_put,
-                   addr, node, raddr, size, typeIndex, commID, ln, fn);
-  if (handle) {
-    // fi_cq_read
-  }
+  (void) ofi_put(addr, node, raddr, size);
 }
 
 
 void chpl_comm_get(void* addr, int32_t node, void* raddr,
                    size_t size, int32_t typeIndex, int32_t commID,
                    int ln, int32_t fn) {
-  chpl_comm_nb_handle_t handle;
+  //
+  // addr and raddr are sanity checks; node==chpl_nodeID is supposed
+  // to be handled by our caller.
+  //
+  CHK_TRUE(addr != NULL);
+  CHK_TRUE(raddr != NULL);
+  CHK_TRUE(node != chpl_nodeID);
 
-  if (node == chpl_nodeID) {
-    memmove(addr, raddr, size);
-    return;
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_get, chpl_nodeID, node,
+         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
   }
 
   chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
                                  chpl_lookupFilename(fn), ln, (int) node);
   chpl_comm_diags_incr(get);
 
-  handle = ofi_get(chpl_comm_cb_event_kind_get,
-                   addr, node, raddr, size, typeIndex, commID, ln, fn);
-  if (handle) {
-    // fi_cq_read
-  }
+  (void) ofi_get(addr, node, raddr, size);
 }
 
 
@@ -1175,44 +1796,758 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 }
 
 
-static inline chpl_comm_nb_handle_t ofi_put(chpl_comm_cb_event_kind_t etype,
-                                            void *addr, c_nodeid_t node,
-                                            void* raddr, size_t size,
-                                            int32_t typeIndex, int32_t commID,
-                                            int ln, int32_t fn) {
+////////////////////////////////////////
+//
+// Internal communication support
+//
 
-  if (chpl_comm_have_callbacks(etype)) {
-    chpl_comm_cb_info_t cb_data = {etype, chpl_nodeID, node,
-                                   .iu.comm={addr, raddr, size,
-                                             typeIndex, commID, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
+static inline
+struct perTxCtxInfo_t* getTxCtxInfo(chpl_bool isWorker) {
+  static __thread struct perTxCtxInfo_t* tcip;
+
+  if (tcip == NULL) {
+    PTHREAD_CHK(pthread_mutex_lock(&pti_mutex));
+
+    if (isWorker) {
+      static int tciiw;
+      if (tciiw >= ptiTabLen - numAmHandlers) {
+        INTERNAL_ERROR_V("out of ptiTab[] entries for workers");
+      }
+      tcip = &ptiTab[tciiw++];
+    } else {
+      static int tciia = -1; // needs execution-time init
+      if (tciia < 0)
+        tciia = numTxCtxs - 1;
+      if (tciia < ptiTabLen - numAmHandlers) {
+        INTERNAL_ERROR_V("out of ptiTab[] entries for AM handlers");
+      }
+      tcip = &ptiTab[tciia--];
+    }
+
+    PTHREAD_CHK(pthread_mutex_unlock(&pti_mutex));
+
+    DBG_PRINTF(DBG_THREADS, "I have ptiTab[%td]", tcip - ptiTab);
   }
 
-  // fi_write
+  return tcip;
+}
 
-  chpl_internal_error("Remote puts not yet implemented");
+
+static inline
+void releaseTxCtxInfo(struct perTxCtxInfo_t* tcip) {
+  //
+  // There is nothing to do here unless and until we support threads
+  // overloaded on ptiTab[] entries.
+  //
+}
+
+
+static /*inline*/
+chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
+                              void* raddr, size_t size) {
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+             "PUT %d:%p <= %p, size %zd",
+             (int) node, raddr, addr, size);
+
+  void* mrDesc = NULL;
+  void* myAddr = (void*) addr;
+  if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
+    myAddr = allocBounceBuf(size);
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE, "PUT via BB: %p", myAddr);
+    CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
+    memcpy(myAddr, addr, size);
+  }
+
+  uint64_t mrKey;
+  if (mrGetKey(&mrKey, node, raddr, size) == 0) {
+    //
+    // The remote address is RMA-accessible; PUT directly to it.
+    //
+    struct perTxCtxInfo_t* tcip;
+    CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64,
+               (int) node, raddr, myAddr, size, mrKey);
+    OFI_CHK(fi_write(tcip->txCtx, myAddr, size,
+                     mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
+    tcip->numTxsOut++;
+
+    if (tcip->txCtxHasCQ) {
+      waitForTxCQ(tcip, 1);
+    } else {
+      const int count = fi_cntr_read(tcip->txCntr);
+      DBG_PRINTF(DBG_ACK, "tx ack counter %d", count);
+      tcip->numTxsOut -= count;
+    }
+
+    releaseTxCtxInfo(tcip);
+  } else {
+    //
+    // The remote address is not RMA-accessible.  We have arranged
+    // that the local one is, so go there and do the opposite RMA.
+    //
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "PUT %d:%p <= %p, size %zd, via AM GET",
+               (int) node, raddr, myAddr, size);
+    amRequestRMA(node, am_opGet, myAddr, raddr, size);
+  }
+
+  if (myAddr != addr) {
+    freeBounceBuf(myAddr);
+  }
 
   return NULL;
 }
 
 
-static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
-                                            void *addr, c_nodeid_t node,
-                                            void* raddr, size_t size,
-                                            int32_t typeIndex, int32_t commID,
-                                            int ln, int32_t fn) {
-  if (chpl_comm_have_callbacks(etype)) {
-    chpl_comm_cb_info_t cb_data = {etype, chpl_nodeID, node,
-                                   .iu.comm={addr, raddr, size,
-                                             typeIndex, commID, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
+static /*inline*/
+chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
+                              void* raddr, size_t size) {
+  DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
+             "GET %p <= %d:%p, size %zd",
+             addr, (int) node, raddr, size);
+
+  void* mrDesc = NULL;
+  void* myAddr = addr;
+  if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
+    myAddr = allocBounceBuf(size);
+    DBG_PRINTF(DBG_RMA | DBG_RMAREAD, "GET via BB: %p", myAddr);
+    CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
   }
 
-  // fi_read
+  uint64_t mrKey;
+  if (mrGetKey(&mrKey, node, raddr, size) == 0) {
+    //
+    // The remote address is RMA-accessible; GET directly from it.
+    //
+    struct perTxCtxInfo_t* tcip;
+    CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+    DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
+               "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64,
+               myAddr, (int) node, raddr, size, mrKey);
+    OFI_CHK(fi_read(tcip->txCtx, myAddr, size,
+                    mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
+    tcip->numTxsOut++;
 
-  chpl_internal_error("Remote gets not yet implemented");
+    CHK_TRUE(tcip->txCtxHasCQ);
+    waitForTxCQ(tcip, 1);
+
+    releaseTxCtxInfo(tcip);
+  } else {
+    //
+    // The remote address is not RMA-accessible.  We have arranged
+    // that the local one is, so go there and do the opposite RMA.
+    //
+    DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
+               "GET %p <= %d:%p, size %zd, via AM PUT",
+               myAddr, (int) node, raddr, size);
+    amRequestRMA(node, am_opPut, myAddr, raddr, size);
+  }
+
+  if (myAddr != addr) {
+    memcpy(addr, myAddr, size);
+    freeBounceBuf(myAddr);
+  }
 
   return NULL;
+}
+
+
+static
+void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut) {
+  if (numOut > 0) {
+    struct fi_cq_entry cqes[numOut];
+    int numRetired = 0;
+
+    do {
+      int ret;
+      CHK_TRUE((ret = fi_cq_read(tcip->txCQ, cqes, numOut)) > 0
+               || ret == -FI_EAGAIN);
+
+      if (ret > 0) {
+        const int numEvents = ret;
+        numRetired += numEvents;
+        for (int i = 0; i < numEvents; i++) {
+          DBG_PRINTF(DBG_ACK, "CQ ack tx");
+        }
+      }
+    } while (numRetired < numOut);
+
+    tcip->numTxsOut -= numRetired;
+  }
+}
+
+
+static
+void* allocBounceBuf(size_t size) {
+  void* p;
+  CHPL_CALLOC_SZ(p, 1, size);
+  return p;
+}
+
+
+static
+void freeBounceBuf(void* p) {
+  CHPL_FREE(p);
+}
+
+
+static inline
+void local_yield(void) {
+  //
+  // Our task cannot make progress.  Yield, to allow some other task to
+  // free up whatever resource we need.
+  //
+  // DANGER: Don't call this function on a worker thread while holding
+  //         a ptiTab[] entry, that is, between tcip=getTxCtxInfo() and
+  //         releaseTxCtxInfo(tcip).  If you do and your task switches
+  //         threads due to the chpl_task_yield(), we can end up with
+  //         two threads using the same ptiTab[] entry simultaneously.
+  //
+  chpl_task_yield();
+}
+
+
+////////////////////////////////////////
+//
+// Interface: network atomics
+//
+
+static void doAMO(c_nodeid_t, void*, void*,
+                  int, int, size_t);
+static void doFAMO(c_nodeid_t, void*, void*, void*, void*,
+                   int, int, size_t);
+
+
+//
+// PUT
+//
+#define DEFN_CHPL_COMM_ATOMIC_PUT(fnType, ofiType, Type)                \
+  void chpl_comm_atomic_put_##fnType                                    \
+         (void* desired, c_nodeid_t node, void* object,                 \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_put_%s(%p, %d, %p, %d, %s)",           \
+               #fnType, desired, (int) node, object,                    \
+               ln, chpl_lookupFilename(fn));                            \
+    doAMO(node, object, desired,                                        \
+          FI_ATOMIC_WRITE, ofiType, sizeof(Type));                      \
+  }
+
+DEFN_CHPL_COMM_ATOMIC_PUT(int32, FI_INT32, int32_t)
+DEFN_CHPL_COMM_ATOMIC_PUT(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_PUT(uint32, FI_UINT32, uint32_t)
+DEFN_CHPL_COMM_ATOMIC_PUT(uint64, FI_UINT64, uint64_t)
+DEFN_CHPL_COMM_ATOMIC_PUT(real32, FI_FLOAT, float)
+DEFN_CHPL_COMM_ATOMIC_PUT(real64, FI_DOUBLE, double)
+
+
+//
+// GET
+//
+#define DEFN_CHPL_COMM_ATOMIC_GET(fnType, ofiType, Type)                \
+  void chpl_comm_atomic_get_##fnType                                    \
+         (void* result, c_nodeid_t node, void* object,                  \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_get_%s(%p, %d, %p, %d, %s)",           \
+               #fnType, result, (int) node, object,                     \
+               ln, chpl_lookupFilename(fn));                            \
+    doFAMO(node, object, result, NULL, NULL,                            \
+           FI_ATOMIC_READ, ofiType, sizeof(Type));                      \
+  }
+
+DEFN_CHPL_COMM_ATOMIC_GET(int32, FI_INT32, int32_t)
+DEFN_CHPL_COMM_ATOMIC_GET(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_GET(uint32, FI_UINT32, uint32_t)
+DEFN_CHPL_COMM_ATOMIC_GET(uint64, FI_UINT64, uint64_t)
+DEFN_CHPL_COMM_ATOMIC_GET(real32, FI_FLOAT, float)
+DEFN_CHPL_COMM_ATOMIC_GET(real64, FI_DOUBLE, double)
+
+
+#define DEFN_CHPL_COMM_ATOMIC_XCHG(fnType, ofiType, Type)               \
+  void chpl_comm_atomic_xchg_##fnType                                   \
+         (void* desired, c_nodeid_t node, void* object, void* result,   \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_xchg_%s(%p, %d, %p, %p, %d, %s)",      \
+               #fnType, desired, (int) node, object, result,            \
+               ln, chpl_lookupFilename(fn));                            \
+    doFAMO(node, object, result, desired, NULL,                         \
+           FI_ATOMIC_WRITE, ofiType, sizeof(Type));                     \
+  }
+
+DEFN_CHPL_COMM_ATOMIC_XCHG(int32, FI_INT32, int32_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(uint32, FI_UINT32, uint32_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(uint64, FI_UINT64, uint64_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(real32, FI_FLOAT, float)
+DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, double)
+
+
+#define DEFN_CHPL_COMM_ATOMIC_CMPXCHG(fnType, ofiType, Type)            \
+  void chpl_comm_atomic_cmpxchg_##fnType                                \
+         (void* expected, void* desired, c_nodeid_t node, void* object, \
+          chpl_bool32* result,                                          \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_cmpxchg_%s(%p, %p, %d, %p, %p, "       \
+               "%d, %s)",                                               \
+               #fnType, expected, desired, (int) node, object, result,  \
+               ln, chpl_lookupFilename(fn));                            \
+    doFAMO(node, object, result, expected, desired,                     \
+           FI_CSWAP, ofiType, sizeof(Type));                            \
+  }
+
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int32, FI_INT32, int32_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(uint32, FI_UINT32, uint32_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(uint64, FI_UINT64, uint64_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real32, FI_FLOAT, float)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
+
+
+#define DEFN_IFACE_AMO_SIMPLE_OP(fnOp, ofiOp, fnType, ofiType, Type)    \
+  void chpl_comm_atomic_##fnOp##_##fnType                               \
+         (void* operand, c_nodeid_t node, void* object,                 \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_%s_%s(%p, %d, %p, %d, %s)",            \
+               #fnOp, #fnType, operand, (int) node, object,             \
+               ln, chpl_lookupFilename(fn));                            \
+    doAMO(node, object, operand, ofiOp, ofiType, sizeof(Type));         \
+  }                                                                     \
+                                                                        \
+  void chpl_comm_atomic_##fnOp##_buff_##fnType                          \
+         (void* operand, c_nodeid_t node, void* object,                 \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_%s_buff_%s(%p, %d, %p, %d, %s)",       \
+               #fnOp, #fnType, operand, (int) node, object,             \
+               ln, chpl_lookupFilename(fn));                            \
+    chpl_comm_atomic_##fnOp##_##fnType(operand, node, object, ln, fn);  \
+  }                                                                     \
+                                                                        \
+  void chpl_comm_atomic_fetch_##fnOp##_##fnType                         \
+         (void* operand, c_nodeid_t node, void* object, void* result,   \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_fetch_%s_%s(%p, %d, %p, %p, %d, %s)",  \
+               #fnOp, #fnType, operand, (int) node, object, result,     \
+               ln, chpl_lookupFilename(fn));                            \
+    doFAMO(node, object, result, operand, NULL,                         \
+           ofiOp, ofiType, sizeof(Type));                               \
+  }
+
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, int32, FI_INT32, int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, uint32, FI_UINT32, uint32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, uint64, FI_UINT64, uint64_t)
+
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, int32, FI_INT32, int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, uint32, FI_UINT32, uint32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, uint64, FI_UINT64, uint64_t)
+
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, int32, FI_INT32, int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, uint32, FI_UINT32, uint32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, uint64, FI_UINT64, uint64_t)
+
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, int32, FI_INT32, int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, uint32, FI_UINT32, uint32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, uint64, FI_UINT64, uint64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real32, FI_FLOAT, float)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
+
+
+#define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type)                       \
+  void chpl_comm_atomic_sub_##fnType                                    \
+         (void* operand, c_nodeid_t node, void* object,                 \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_sub_%s(%p, %d, %p, %d, %s)",           \
+               #fnType, operand, (int) node, object,                    \
+               ln, chpl_lookupFilename(fn));                            \
+    Type myOperand = - *(Type*) operand;                                \
+    doAMO(node, object, &myOperand, FI_SUM, ofiType, sizeof(Type));     \
+  }                                                                     \
+                                                                        \
+  void chpl_comm_atomic_sub_buff_##fnType                               \
+         (void* operand, c_nodeid_t node, void* object,                 \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_sub_buff_%s(%p, %d, %p, "              \
+               "%d, %s)",                                               \
+               #fnType, operand, (int) node, object,                    \
+               ln, chpl_lookupFilename(fn));                            \
+    chpl_comm_atomic_sub_##fnType(operand, node, object, ln, fn);       \
+  }                                                                     \
+                                                                        \
+  void chpl_comm_atomic_fetch_sub_##fnType                              \
+         (void* operand, c_nodeid_t node, void* object, void* result,   \
+          int ln, int32_t fn) {                                         \
+    DBG_PRINTF(DBG_INTERFACE,                                           \
+               "chpl_comm_atomic_fetch_sub_%s(%p, %d, %p, %p, %d, %s)", \
+               #fnType, operand, (int) node, object, result,            \
+               ln, chpl_lookupFilename(fn));                            \
+    Type myOperand = - *(Type*) operand;                                \
+    doFAMO(node, object, result, &myOperand, NULL,                      \
+           FI_SUM, ofiType, sizeof(Type));                              \
+  }
+
+DEFN_IFACE_AMO_SUB(int32, FI_INT32, int32_t)
+DEFN_IFACE_AMO_SUB(int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SUB(uint32, FI_UINT32, uint32_t)
+DEFN_IFACE_AMO_SUB(uint64, FI_UINT64, uint64_t)
+DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float)
+DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double)
+
+
+void chpl_comm_atomic_buff_flush(void) {
+  return;
+}
+
+
+//
+// internal AMO utilities
+//
+
+static
+void doAMO(c_nodeid_t node, void* object, void* operand,
+           int ofiOp, int ofiType, size_t size) {
+  if (chpl_numNodes <= 1) {
+    doCpuAMO(NULL, object, operand, NULL, ofiOp, ofiType, size);
+    return;
+  }
+
+  //
+  // TODO: initiate fi_atomic*() here.  But for now, use AMs.
+  //
+  amRequestAMO(node, object, operand, ofiOp, ofiType, size);
+}
+
+
+static
+void doFAMO(c_nodeid_t node, void* object, void* result,
+            void* operand1, void* operand2,
+            int ofiOp, int ofiType, size_t size) {
+  if (chpl_numNodes <= 1) {
+    doCpuAMO(result, object, operand1, operand2, ofiOp, ofiType, size);
+    return;
+  }
+
+  //
+  // TODO: initiate fi_atomic*() here.  But for now, use AMs.
+  //
+  amRequestFAMO(node, object, result, operand1, operand2,
+                ofiOp, ofiType, size);
+}
+
+
+static inline
+void doCpuAMO(void* result, void* obj, void* operand1, void* operand2,
+              enum fi_op ofiOp, enum fi_datatype ofiType, size_t size) {
+  CHK_TRUE(size == 4 || size == 8);
+
+  chpl_amo_datum_t myOpnd1 = { 0 };
+  if (operand1 != NULL)
+    memcpy(&myOpnd1, operand1, size);
+
+  chpl_amo_datum_t myOpnd2 = { 0 };
+  if (operand2 != NULL)
+    memcpy(&myOpnd2, operand2, size);
+
+  chpl_amo_datum_t* myResult = (chpl_amo_datum_t*) result;
+
+#define CPU_INT_ARITH_AMO(_o, _t, _m)                                   \
+  do {                                                                  \
+    _t my_res = atomic_fetch_##_o##_##_t((atomic_##_t*) obj,            \
+                                         myOpnd1._m);                   \
+    if (result != NULL) {                                               \
+      myResult->_m = my_res;                                            \
+    }                                                                   \
+  } while (0)
+
+  //
+  // Here we implement AMOs which the NIC cannot or should not do.
+  //
+  switch (ofiOp) {
+  case FI_ATOMIC_WRITE:
+    if (result == NULL) {
+      //
+      // write
+      //
+      if (size == 4) {
+        atomic_store_uint_least32_t(obj, myOpnd1.u32);
+      } else {
+        atomic_store_uint_least64_t(obj, myOpnd1.u64);
+      }
+    } else {
+      //
+      // exchange
+      //
+      if (size == 4) {
+        myResult->u32 = atomic_exchange_uint_least32_t(obj, myOpnd1.u32);
+      } else {
+        myResult->u64 = atomic_exchange_uint_least64_t(obj, myOpnd1.u64);
+      }
+    }
+    break;
+
+  case FI_ATOMIC_READ:
+    if (size == 4) {
+      myResult->u32 = atomic_load_uint_least32_t(obj);
+    } else {
+      myResult->u64 = atomic_load_uint_least64_t(obj);
+    }
+    break;
+
+  case FI_CSWAP:
+    if (size == 4) {
+      myResult->b32 =
+        atomic_compare_exchange_strong_uint_least32_t(obj,
+                                                      myOpnd1.u32,
+                                                      myOpnd2.u32);
+    } else {
+      myResult->b32 =
+        atomic_compare_exchange_strong_uint_least64_t(obj,
+                                                      myOpnd1.u64,
+                                                      myOpnd2.u64);
+    }
+    break;
+
+  case FI_BAND:
+    if (ofiType == FI_INT32) {
+      CPU_INT_ARITH_AMO(and, int_least32_t, i32);
+    } else if (ofiType == FI_UINT32) {
+      CPU_INT_ARITH_AMO(and, uint_least32_t, u32);
+    } else if (ofiType == FI_INT64) {
+      CPU_INT_ARITH_AMO(and, int_least64_t, i64);
+    } else if (ofiType == FI_UINT64) {
+      CPU_INT_ARITH_AMO(and, uint_least64_t, u64);
+    } else {
+      INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
+                       ofiOp, ofiType);
+    }
+    break;
+
+  case FI_BOR:
+    if (ofiType == FI_INT32) {
+      CPU_INT_ARITH_AMO(or, int_least32_t, i32);
+    } else if (ofiType == FI_UINT32) {
+      CPU_INT_ARITH_AMO(or, uint_least32_t, u32);
+    } else if (ofiType == FI_INT64) {
+      CPU_INT_ARITH_AMO(or, int_least64_t, i64);
+    } else if (ofiType == FI_UINT64) {
+      CPU_INT_ARITH_AMO(or, uint_least64_t, u64);
+    } else {
+      INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
+                       ofiOp, ofiType);
+    }
+    break;
+
+  case FI_BXOR:
+    if (ofiType == FI_INT32) {
+      CPU_INT_ARITH_AMO(xor, int_least32_t, i32);
+    } else if (ofiType == FI_UINT32) {
+      CPU_INT_ARITH_AMO(xor, uint_least32_t, u32);
+    } else if (ofiType == FI_INT64) {
+      CPU_INT_ARITH_AMO(xor, int_least64_t, i64);
+    } else if (ofiType == FI_UINT64) {
+      CPU_INT_ARITH_AMO(xor, uint_least64_t, u64);
+    } else {
+      INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
+                       ofiOp, ofiType);
+    }
+    break;
+
+  case FI_SUM:
+    if (ofiType == FI_INT32) {
+      CPU_INT_ARITH_AMO(add, int_least32_t, i32);
+    } else if (ofiType == FI_UINT32) {
+      CPU_INT_ARITH_AMO(add, uint_least32_t, u32);
+    } else if (ofiType == FI_INT64) {
+      CPU_INT_ARITH_AMO(add, int_least64_t, i64);
+    } else if (ofiType == FI_UINT64) {
+      CPU_INT_ARITH_AMO(add, uint_least64_t, u64);
+    } else if (ofiType == FI_FLOAT) {
+      chpl_amo_datum_t xpctd;
+      chpl_amo_datum_t dsrd;
+      chpl_bool32 done;
+
+      do {
+        xpctd.u32 = atomic_load_int_least32_t(obj);
+        dsrd.r32 = xpctd.r32 + myOpnd1.r32;
+        done = atomic_compare_exchange_strong_uint_least32_t(obj,
+                                                             xpctd.u32,
+                                                             dsrd.u32);
+      } while (!done);
+
+      if (result != NULL) {
+        myResult->r32 = xpctd.r32;
+      }
+    } else if (ofiType == FI_DOUBLE) {
+      chpl_amo_datum_t xpctd;
+      chpl_amo_datum_t dsrd;
+      chpl_bool32 done;
+
+      do {
+        xpctd.u64 = atomic_load_int_least64_t(obj);
+        dsrd.r64 = xpctd.r64 + myOpnd1.r64;
+        done = atomic_compare_exchange_strong_uint_least64_t(obj,
+                                                             xpctd.u64,
+                                                             dsrd.u64);
+      } while (!done);
+
+      if (result != NULL) {
+        myResult->r64 = xpctd.r64;
+      }
+    } else {
+      INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
+                       ofiOp, ofiType);
+    }
+    break;
+
+#if 0
+    //
+    // This was lifted from comm=ugni.  I'm not going to ever use it
+    // directly.  But I'm leaving it here to remind myself to cover the
+    // case where the object is in registered memory, when I add support
+    // for AMOs done directly in the fabric.
+    //
+
+  case cmpxchg_64:
+    //
+    // If the object is not in memory registered with the NIC, use the
+    // processor.  Otherwise, since the other 64-bit AMOs are done on
+    // the NIC, for coherence do this one on the NIC as well.
+    //
+    {
+      chpl_bool32 my_res;
+      mem_region_t* mr;
+      if ((mr = mreg_for_local_addr(obj)) == NULL) {
+        my_res = atomic_compare_exchange_strong_int_least64_t
+                   ((atomic_int_least64_t*) obj,
+                    *(int_least64_t*) operand1,
+                    *(int_least64_t*) operand2);
+      }
+      else {
+        int_least64_t nic_res;
+        do_nic_amo(operand1, operand2, chpl_nodeID, obj, sizeof(nic_res),
+                   amo_cmd_2_nic_op(cmpxchg_64, 1), &nic_res, mr);
+        my_res = (nic_res == *(int_least64_t*) operand1) ? true : false;
+      }
+      memcpy(result, &my_res, sizeof(my_res));
+    }
+    break;
+
+  case add_r32:
+    //
+    // Emulate 32-bit real add using compare-exchange.
+    //
+    {
+      int_least32_t expected;
+      int_least32_t desired;
+      chpl_bool32 done;
+
+      do {
+        expected = atomic_load_int_least32_t((atomic_int_least32_t*) obj);
+        *(float*) &desired  = *(float*) &expected + *(float*) operand1;
+        done = atomic_compare_exchange_strong_int_least32_t
+                 ((atomic_int_least32_t*) obj, expected, desired);
+      } while (!done);
+
+      if (result != NULL) {
+        memcpy(result, &expected, sizeof(expected));
+      }
+    }
+    break;
+
+  case add_r64:
+    //
+    // Emulate 64-bit real add using compare-exchange.  If the object
+    // is not in memory registered with the NIC, use the processor.
+    // Otherwise, since the other 64-bit AMOs are done on the NIC, for
+    // coherence do this one on the NIC as well.
+    //
+    {
+      int_least64_t expected;
+      int_least64_t desired;
+      mem_region_t* mr;
+
+      if ((mr = mreg_for_local_addr(obj)) == NULL) {
+        chpl_bool32 done;
+
+        do {
+          expected =
+            atomic_load_int_least64_t((atomic_int_least64_t*) obj);
+          *(double*) &desired = *(double*) &expected + *(double*) operand1;
+          done = atomic_compare_exchange_strong_int_least64_t
+                   ((atomic_int_least64_t*) obj, expected, desired);
+        } while (!done);
+      }
+      else {
+        int_least64_t nic_res;
+
+        do {
+          do_remote_get(&expected, chpl_nodeID, obj, sizeof(expected),
+                        may_proxy_false);
+          *(double*) &desired = *(double*) &expected + *(double*) operand1;
+          do_nic_amo(&expected, &desired, chpl_nodeID, obj,
+                     sizeof(nic_res), amo_cmd_2_nic_op(cmpxchg_64, 1),
+                     &nic_res, mr);
+        } while (nic_res != expected);
+      }
+
+      if (result != NULL) {
+        memcpy(result, &expected, sizeof(expected));
+      }
+    }
+    break;
+#endif
+
+  default:
+    INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
+                     ofiOp, ofiType);
+  }
+
+  if (DBG_TEST_MASK(DBG_AMO)) {
+    chpl_amo_datum_t myObj = { 0 };
+    if (ofiType == FI_INT32)
+      memcpy(&myObj.i32, obj, sizeof(myObj.i32));
+    else if (ofiType == FI_UINT32)
+      memcpy(&myObj.u32, obj, sizeof(myObj.u32));
+    else if (ofiType == FI_INT64)
+      memcpy(&myObj.i64, obj, sizeof(myObj.i64));
+    else if (ofiType == FI_UINT64)
+      memcpy(&myObj.u64, obj, sizeof(myObj.u64));
+    else if (ofiType == FI_FLOAT)
+      memcpy(&myObj.r32, obj, sizeof(myObj.i32));
+    else
+      memcpy(&myObj.r64, obj, sizeof(myObj.r64));
+
+    if (result == NULL)
+      DBG_PRINTF(DBG_AMO,
+                 "doCpuAMO(%p, %d, %d, %#lx): now %#lx",
+                 obj, ofiOp, ofiType, myOpnd1.u64, myObj.u64);
+    else {
+      chpl_amo_datum_t myRes2 = { 0 };
+      if (ofiType == FI_INT32 || ofiType == FI_UINT32 || ofiType == FI_FLOAT
+          || ofiOp == FI_CSWAP)
+        myRes2.u32 = myResult->u32;
+      else
+        myRes2.u64 = myResult->u64;
+      DBG_PRINTF(DBG_AMO,
+                 "doCpuAMO(%p, %d, %d, %#lx, %#lx): now %#lx, %p = was %#lx",
+                 obj, ofiOp, ofiType, myOpnd1.u64, myOpnd2.u64,
+                 myObj.u64, result, myRes2.u64);
+    }
+  }
+
+#undef CPU_INT_ARITH_AMO
 }
 
 
@@ -1221,8 +2556,7 @@ static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
 // Interface: utility
 //
 
-int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
-{
+int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t size) {
   // No way to know if the page is mapped on the remote (without a round trip)
   return 0;
 }
@@ -1234,6 +2568,71 @@ int32_t chpl_comm_getMaxThreads(void) {
 }
 
 
+////////////////////////////////////////
+//
+// Interface: barriers
+//
+
+//
+// We do a simple tree-based split-phase barrier, with locale 0 as the
+// root of the tree.  Each of the locales has a barrier_info_t struct,
+// and knows the address of that struct in its child locales (locales
+// num_children*my_idx+1 - num_children*my_idx+num_children) and its
+// parent (locale (my_idx-1)/num_children).  Notify and release flags on
+// all locales start out 0.  The notify step consists of each locale
+// waiting for its children, if it has any, to set the child_notify
+// flags in its own barrier info struct to 1, and then if it is not
+// locale 0, setting the child_notify flag corresponding to itself in
+// its parent's barrier info struct to 1.  Thus notification propagates
+// up from the leaves of the tree to the root.  In the wait phase each
+// locale except locale 0 waits for the parent_release flag in its own
+// barrier info struct to become 1.  Once a locale sees that, it clears
+// all of the flags in its own struct and then sets the parent_release
+// flags in both of its existing children to 1.  Thus releases propagate
+// down from locale 0 to the leaves.  Once waiting is complete at the
+// leaves, all of the flags throughout the job are back to 0 and the
+// process can repeat.
+//
+// Note that we can (and do) do other things while waiting for notify
+// and release flags to be set.  In fact we have to task-yield while
+// doing so, in case the PUTs need to be done via AM for some reason
+// (unregistered memory, e.g.).
+//
+// TODO: vectorize the child PUTs.
+//
+#define BAR_TREE_NUM_CHILDREN 64
+
+typedef struct {
+  volatile int child_notify[BAR_TREE_NUM_CHILDREN];
+  volatile int parent_release;
+}  bar_info_t;
+
+static c_nodeid_t bar_childFirst;
+static c_nodeid_t bar_numChildren;
+static c_nodeid_t bar_parent;
+
+static bar_info_t bar_info;
+static bar_info_t** bar_infoMap;
+
+
+static
+void init_bar(void) {
+  bar_childFirst = BAR_TREE_NUM_CHILDREN * chpl_nodeID + 1;
+  if (bar_childFirst >= chpl_numNodes)
+    bar_numChildren = 0;
+  else {
+    bar_numChildren = BAR_TREE_NUM_CHILDREN;
+    if (bar_childFirst + bar_numChildren >= chpl_numNodes)
+      bar_numChildren = chpl_numNodes - bar_childFirst;
+  }
+  bar_parent = (chpl_nodeID - 1) / BAR_TREE_NUM_CHILDREN;
+
+  CHPL_CALLOC(bar_infoMap, chpl_numNodes);
+  const bar_info_t* p = &bar_info;
+  chpl_comm_ofi_oob_allgather(&p, bar_infoMap, sizeof(p));
+}
+
+
 void chpl_comm_barrier(const char *msg) {
   chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
 
@@ -1241,14 +2640,75 @@ void chpl_comm_barrier(const char *msg) {
     return;
   }
 
-  if (am_handler_count == 0) {
-    // Comm layer setup is not complete yet; use OOB barrier
+  DBG_PRINTF(DBG_BARRIER, "barrier '%s'", (msg == NULL) ? "" : msg);
+
+  if (pthread_equal(pthread_self(), pthread_that_inited)
+      || numAmHandlersActive == 0) {
+    //
+    // Either this is the main (chpl_comm_init()ing) thread or
+    // comm layer setup is not complete yet.  Use OOB barrier.
+    //
     chpl_comm_ofi_oob_barrier();
-  } else {
-    // Use OOB barrier for now, but we can do better in the future
-    chpl_comm_ofi_oob_barrier();
+    DBG_PRINTF(DBG_BARRIER, "barrier '%s' done via out-of-band",
+               (msg == NULL) ? "" : msg);
+    return;
   }
 
+  //
+  // Wait for our child locales to notify us that they have reached the
+  // barrier.
+  //
+  DBG_PRINTF(DBG_BARRIER, "BAR wait for %d children", (int) bar_numChildren);
+  for (uint32_t i = 0; i < bar_numChildren; i++) {
+    while (bar_info.child_notify[i] == 0) {
+      local_yield();
+    }
+  }
+
+  const int one = 1;
+
+  if (chpl_nodeID != 0) {
+    //
+    // Notify our parent locale that we have reached the barrier.
+    //
+    c_nodeid_t parChild = (chpl_nodeID - 1) % BAR_TREE_NUM_CHILDREN;
+
+    DBG_PRINTF(DBG_BARRIER, "BAR notify parent %d", (int) bar_parent);
+    ofi_put(&one, bar_parent,
+            (void*) &bar_infoMap[bar_parent]->child_notify[parChild],
+            sizeof(one));
+
+    //
+    // Wait for our parent locale to release us from the barrier.
+    //
+    DBG_PRINTF(DBG_BARRIER, "BAR wait for parental release");
+    while (bar_info.parent_release == 0) {
+      local_yield();
+    }
+  }
+
+  //
+  // Clear all our barrier flags.
+  //
+  for (int i = 0; i < bar_numChildren; i++)
+    bar_info.child_notify[i] = 0;
+  bar_info.parent_release = 0;
+
+  //
+  // Release our children.
+  //
+  if (bar_numChildren > 0) {
+    for (int i = 0; i < bar_numChildren; i++) {
+      c_nodeid_t child = bar_childFirst + i;
+      DBG_PRINTF(DBG_BARRIER, "BAR release child %d", (int) child);
+      ofi_put(&one, child,
+              (void*) &bar_infoMap[child]->parent_release,
+              sizeof(one));
+    }
+  }
+
+  DBG_PRINTF(DBG_BARRIER, "barrier '%s' done via PUTs",
+             (msg == NULL) ? "" : msg);
 }
 
 
@@ -1353,6 +2813,18 @@ double chpl_comm_ofi_time_get(void) {
 
 void chpl_comm_ofi_dbg_init(void) {
   chpl_comm_ofi_dbg_level = chpl_env_rt_get_int("COMM_OFI_DEBUG", 0);
+
+  const char* ev;
+  if ((ev = chpl_env_rt_get("COMM_OFI_DEBUG_FNAME", NULL)) == NULL) {
+    chpl_comm_ofi_dbg_file = stdout;
+  } else {
+    char fname[strlen(ev) + 6 + 1];
+    int fnameLen;
+    fnameLen = snprintf(fname, sizeof(fname), "%s.%d", ev, (int) chpl_nodeID);
+    CHK_TRUE(fnameLen < sizeof(fname));
+    CHK_TRUE((chpl_comm_ofi_dbg_file = fopen(fname, "w")) != NULL);
+    setbuf(chpl_comm_ofi_dbg_file, NULL);
+  }
 }
 
 

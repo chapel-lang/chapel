@@ -220,6 +220,10 @@ class AbstractJob(object):
         submit_command =  [self.submit_bin, '-V', '-N', self.job_name]
         if not self.redirect_output:
             submit_command.extend(['-j', 'oe', '-o', output_file])
+        else:
+            # even when redirecting output, PBS errors are sent to the e/o
+            # streams, so make sure we can find errors if they occur
+            submit_command.extend(['-j', 'oe', '-o', '{0}.more'.format(output_file)])
         if self.walltime is not None:
             submit_command.append('-l')
             submit_command.append('walltime={0}'.format(self.walltime))
@@ -361,6 +365,13 @@ class AbstractJob(object):
             logging.debug('Reading output file.')
             with open(output_file, 'r') as fp:
                 output = fp.read()
+
+            try:
+                with open('{0}.more'.format(output_file), 'r') as fp:
+                    output += fp.read()
+            except:
+                pass
+
             logging.info('The test finished with output of length {0}.'.format(len(output)))
 
         return output

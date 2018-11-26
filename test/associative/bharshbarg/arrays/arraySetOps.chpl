@@ -27,8 +27,8 @@ for 1..numTrials {
   aa |= b;
 
   for i in 1..n {
-    assert(q.domain.member(i));
-    assert(aa.domain.member(i));
+    assert(q.domain.contains(i));
+    assert(aa.domain.contains(i));
     if i % 2 == 0 {
       assert(q[i] == 2);
       assert(aa[i] == 2);
@@ -49,7 +49,7 @@ for 1..numTrials {
   aa -= b;
 
   for i in r.domain {
-    assert(ad.member(i));
+    assert(ad.contains(i));
     assert(r[i] == a[i]);
     assert(aa[i] == a[i]);
   }
@@ -64,7 +64,7 @@ for 1..numTrials {
   aa ^= b;
 
   for i in s.domain {
-    assert(q.domain.member(i));
+    assert(q.domain.contains(i));
     assert(s[i] == q[i]);
     assert(aa[i] == q[i]);
   }

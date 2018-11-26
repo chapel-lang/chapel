@@ -54,7 +54,7 @@ use Spawn;
 use Time;
 use Graph;
 use Random;
-use UserMapAssoc;
+use HashedDist;
 use BlockDist;
 
 // packing twitter user IDs to numbers
@@ -78,10 +78,10 @@ proc main(args:[] string) {
   }
 
   // TODO - using 2 functions because of lack of
-  // domain assignment in UserMapAssoc
+  // domain assignment in Hashed
   // Pairs is for collecting twitter  user ID to user ID mentions
   if distributed {
-    var Pairs: domain( (int, int) ) dmapped UserMapAssoc(idxType=(int, int));
+    var Pairs: domain( (int, int) ) dmapped Hashed(idxType=(int, int));
     run(todo, Pairs);
   } else {
     var Pairs: domain( (int, int) );
@@ -122,7 +122,7 @@ proc run(ref todo:list(string), ref Pairs) {
   if verbose {
     if distributed {
       // TODO -- this is not portable code
-      // need UserMapAssoc to support localDomain
+      // need HashedDist to support localDomain
       for i in 0..#numLocales {
         writeln("on locale ", i, " there are ",
                 Pairs._value.locDoms[i].myInds.size,
@@ -285,7 +285,7 @@ proc create_and_analyze_graph(Pairs)
   var userIds:domain(int);
 
   forall (id, other_id) in Pairs with (ref userIds) {
-    if Pairs.member( (other_id, id) ) {
+    if Pairs.contains( (other_id, id) ) {
       //writeln("Reciprocal match! ", (id, other_id) );
 
       // add to userIds
@@ -333,7 +333,7 @@ proc create_and_analyze_graph(Pairs)
     writeln("creating triples");
 
   var triples = [(id, other_id) in Pairs]
-                   if id < other_id && Pairs.member( (other_id, id) ) then
+                   if id < other_id && Pairs.contains( (other_id, id) ) then
                      new Triple(idToNode[id], idToNode[other_id]);
 
   if printall {
@@ -481,7 +481,7 @@ proc create_and_analyze_graph(Pairs)
         if printall then
           writeln("with label ", nlabel);
 
-        if ! foundLabels.member(nlabel) {
+        if ! foundLabels.contains(nlabel) {
           foundLabels += nlabel;
         }
         counts[nlabel] += 1;
@@ -507,7 +507,7 @@ proc create_and_analyze_graph(Pairs)
       // Did the existing label correspond to a maximal label?
       // stop when every node has a label a maximum number of neighbors have
       // (e.g. there might be 2 labels each attaining the maximum)
-      if foundLabels.member[mylabel] && counts[mylabel] < maxlabel {
+      if foundLabels.contains[mylabel] && counts[mylabel] < maxlabel {
         go.write(true, memory_order_relaxed);
       }
 

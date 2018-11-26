@@ -32,8 +32,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-static bool isCandidateFn(ResolutionCandidate* res, CallInfo& info);
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -71,7 +69,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
 
   fn = expandIfVarArgs(fn, info);
 
-  if (fn != NULL && isCandidateFn(this, info)) {
+  if (fn != NULL) {
     resolveTypedefedArgTypes();
 
     if (computeAlignment(info) == true) {
@@ -310,10 +308,7 @@ bool ResolutionCandidate::verifyGenericFormal(ArgSymbol* formal) const {
     if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
       retval = false;
 
-    } else if (fn->isMethod()                       == true  &&
-               strcmp(fn->name, "init")             == 0     &&
-               fn->hasFlag(FLAG_COMPILER_GENERATED) == true  &&
-               fn->hasFlag(FLAG_DEFAULT_COPY_INIT)  == false &&
+    } else if (fn->isDefaultInit() &&
                (formal->hasFlag(FLAG_ARG_THIS)                == false ||
                 formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == false)) {
       // This is a compiler generated initializer, so the argument with
@@ -419,7 +414,7 @@ Type* getInstantiationType(Type* actualType, Type* formalType) {
   // with the promotion type.
   if (ret == NULL) {
     if (Type* st = actualType->getValType()->scalarPromotionType) {
-      ret = getBasicInstantiationType(st, formalType);
+      ret = getBasicInstantiationType(st->getValType(), formalType);
     }
   }
 
@@ -535,54 +530,6 @@ static bool looksLikeCopyInit(ResolutionCandidate* rc) {
   }
 
   return retval;
-}
-
-static bool isCandidateInit(ResolutionCandidate* res, CallInfo& info) {
-  bool retval = false;
-
-  AggregateType* ft = toAggregateType(res->fn->_this->getValType());
-  AggregateType* at = toAggregateType(info.call->get(2)->getValType());
-
-  if (ft == at) {
-    retval = true;
-  } else if (ft->getRootInstantiation() == at->getRootInstantiation()) {
-    retval = true;
-  }
-
-  return retval;
-}
-
-static bool isCandidateNew(ResolutionCandidate* res, CallInfo& info) {
-  bool retval = false;
-
-  AggregateType* ft = toAggregateType(res->fn->getFormal(1)->getValType());
-  AggregateType* at = toAggregateType(info.call->get(1)->getValType());
-
-  if (ft == at) {
-    retval = true;
-  } else if (ft->getRootInstantiation() == at->getRootInstantiation()) {
-    retval = true;
-  }
-
-  return retval;
-}
-
-static bool isCandidateFn(ResolutionCandidate* res, CallInfo& info) {
-  // Exclude initializers on other types before we attempt to resolve the
-  // signature.
-  //
-  // TODO: Expand this check for all methods
-  if (info.call->numActuals() >= 2 &&
-      res->fn->isInitializer() &&
-      isCandidateInit(res, info) == false) {
-    return false;
-  } else if (info.call->numActuals() >= 1 &&
-             res->fn->hasFlag(FLAG_NEW_WRAPPER) &&
-             isCandidateNew(res, info) == false) {
-    return false;
-  }
-
-  return true;
 }
 
 /************************************* | **************************************

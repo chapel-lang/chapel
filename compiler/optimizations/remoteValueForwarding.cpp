@@ -66,8 +66,11 @@ static void computeUsesDotLocale();
 ************************************** | *************************************/
 
 void remoteValueForwarding() {
-  if (fNoRemoteValueForwarding == false && requireOutlinedOn()) {
+
+  if (fNoInferConstRefs == false)
     inferConstRefs();
+
+  if (fNoRemoteValueForwarding == false && requireOutlinedOn()) {
     computeUsesDotLocale();
     Map<Symbol*, Vec<SymExpr*>*> defMap;
     Map<Symbol*, Vec<SymExpr*>*> useMap;
@@ -399,6 +402,7 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
     // in that event.
     if (newStyleInIntent) {
       Expr* initExpr = actual->symbol()->getInitialization();
+      INT_ASSERT(initExpr);
 
       CallExpr* initCall = toCallExpr(initExpr);
       INT_ASSERT(initCall);

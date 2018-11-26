@@ -222,14 +222,14 @@ class SparseBlockDom: BaseSparseDomImpl {
       //on blk do
       // But can't currently have yields in on clauses:
       // invalid use of 'yield' within 'on' in serial iterator
-      for x in locDom.mySparseBlock._value.these() do
+      for x in locDom.mySparseBlock.these() do
         yield x;
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
     coforall (locDom,localeIndex) in zip(locDoms,dist.targetLocDom) {
       on locDom {
-        for followThis in locDom.mySparseBlock._value.these(tag) {
+        for followThis in locDom.mySparseBlock.these(tag) {
           yield (followThis, localeIndex);
         }
       }
@@ -307,7 +307,7 @@ class LocSparseBlockDom {
   }
 
   proc dsiMember(ind: rank*idxType) {
-    return mySparseBlock.member(ind);
+    return mySparseBlock.contains(ind);
   }
 
   proc dsiClear() {
@@ -423,7 +423,7 @@ class SparseBlockArr: BaseSparseArr {
 
   proc dsiAccess(i: rank*idxType) ref {
     local {
-      if myLocArr != nil && myLocArr.locDom.parentDom.member(i) {
+      if myLocArr != nil && myLocArr.locDom.parentDom.contains(i) {
         return myLocArr.dsiAccess(i);
       }
     }
@@ -432,7 +432,7 @@ class SparseBlockArr: BaseSparseArr {
   proc dsiAccess(i: rank*idxType)
   where shouldReturnRvalueByValue(eltType) {
     local {
-      if myLocArr != nil && myLocArr.locDom.parentDom.member(i) {
+      if myLocArr != nil && myLocArr.locDom.parentDom.contains(i) {
         return myLocArr.dsiAccess(i);
       }
     }
@@ -441,7 +441,7 @@ class SparseBlockArr: BaseSparseArr {
   proc dsiAccess(i: rank*idxType) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     local {
-      if myLocArr != nil && myLocArr.locDom.parentDom.member(i) {
+      if myLocArr != nil && myLocArr.locDom.parentDom.contains(i) {
         return myLocArr.dsiAccess(i);
       }
     }
@@ -593,7 +593,7 @@ proc SparseBlockDom.dsiIndexOrder(i) {
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocSparseBlockDom.member(i) return mySparseBlock.member(i);
+proc LocSparseBlockDom.contains(i) return mySparseBlock.contains(i);
 
 proc SparseBlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {

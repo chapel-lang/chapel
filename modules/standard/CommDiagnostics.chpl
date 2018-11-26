@@ -66,8 +66,8 @@
   option results in the following output::
 
     0: remote task created on 1
-    1: t.chpl:6: remote get from 0
-    1: t.chpl:6: remote put to 0
+    1: t.chpl:6: remote get from 0, 8 bytes
+    1: t.chpl:6: remote put to 0, 8 bytes
 
   The initial number refers to the locale reporting the communication
   event.  The file name and line number point to the place in the

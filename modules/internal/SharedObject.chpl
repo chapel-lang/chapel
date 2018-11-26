@@ -358,8 +358,8 @@ module SharedObject {
   // This is a workaround
   pragma "no doc"
   pragma "auto destroy fn"
-  proc chpl__autoDestroy(x: _shared) {
-    __primitive("call destructor", x);
+  proc chpl__autoDestroy(ref x: _shared) {
+    __primitive("call destructor", __primitive("deref", x));
   }
 
   // Don't print out 'chpl_p' when printing an Shared, just print class pointer

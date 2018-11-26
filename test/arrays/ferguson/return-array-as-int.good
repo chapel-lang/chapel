@@ -1,2 +1,2 @@
 return-array-as-int.chpl:7: In function 'setRowNames':
-return-array-as-int.chpl:8: error: type mismatch in assignment from [domain(1,int(64),false)] int(64) to int(64)
+return-array-as-int.chpl:8: error: cannot return '[domain(1,int(64),false)] int(64)' when the declared return type is 'int(64)'

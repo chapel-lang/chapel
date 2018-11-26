@@ -146,6 +146,24 @@ They must match the rank and index type of the domains
 "dmapped" using that Cyclic instance.
 
 
+**Convenience Initializer Functions**
+
+It is common for a ``Cyclic`` distribution to distribute its indices
+across all locales. In this case, a convenience function can be used to
+declare variables of cyclic-distributed domain or array type.  These functions
+take a domain or list of ranges as arguments and return a cyclic-distributed
+domain or array.
+
+  .. code-block:: chapel
+
+    use CyclicDist;
+
+    var CyclicDom1 = newCyclicDom({1..5, 1..5});
+    var CyclicArr1 = newCyclicArr({1..5, 1..5}, real);
+    var CyclicDom2 = newCyclicDom(1..5, 1..5);
+    var CyclicArr2 = newCyclicArr(1..5, 1..5, real);
+
+
 **Data-Parallel Iteration**
 
 A `forall` loop over a Cyclic-distributed domain or array
@@ -504,7 +522,7 @@ proc CyclicDom.dsiAlignment return whole.alignment;
 
 proc CyclicDom.dsiStride return whole.stride;
 
-proc CyclicDom.dsiMember(i) return whole.member(i);
+proc CyclicDom.dsiMember(i) return whole.contains(i);
 
 proc CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);
 
@@ -662,7 +680,7 @@ class LocCyclicDom {
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocCyclicDom.member(i) return myBlock.member(i);
+proc LocCyclicDom.contains(i) return myBlock.contains(i);
 
 
 class CyclicArr: BaseRectangularArr {
@@ -777,7 +795,7 @@ inline proc _remoteAccessData.getDataIndex(
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   local {
-    if myLocArr != nil && myLocArr.locDom.member(i) then
+    if myLocArr != nil && myLocArr.locDom.contains(i) then
       return myLocArr.this(i);
   }
   if doRADOpt && !stridable {
@@ -886,7 +904,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   } else {
     proc accessHelper(i) ref {
       if myLocArr then local {
-        if myLocArr.locDom.member(i) then
+        if myLocArr.locDom.contains(i) then
           return myLocArr.this(i);
       }
       return dsiAccess(i);
@@ -1165,4 +1183,22 @@ proc CyclicDom.dsiLocalSubdomain() {
       myLocDom = locDom;
   }
   return myLocDom.myBlock;
+}
+
+proc newCyclicDom(dom: domain) {
+  return dom dmapped Cyclic(startIdx=dom.low);
+}
+
+proc newCyclicArr(dom: domain, type eltType) {
+  var D = newCyclicDom(dom);
+  var A: [D] eltType;
+  return A;
+}
+
+proc newCyclicDom(rng: range...) {
+  return newCyclicDom({(...rng)});
+}
+
+proc newCyclicArr(rng: range..., type eltType) {
+  return newCyclicArr({(...rng)}, eltType);
 }

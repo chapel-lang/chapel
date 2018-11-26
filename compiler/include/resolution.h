@@ -133,7 +133,6 @@ FnSymbol* findCopyInit(AggregateType* ct);
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
-FnSymbol* getTheIteratorFnFromIteratorRec(Type* irType);
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
@@ -253,6 +252,10 @@ void addTupleCoercion(AggregateType* fromT, AggregateType* toT, Symbol* fromSym,
 bool evaluateWhereClause(FnSymbol* fn);
 
 bool isAutoDestroyedVariable(Symbol* sym);
+
+static inline bool isUnresolvedOrGenericReturnType(Type* retType) {
+  return retType == dtUnknown || retType->symbol->hasFlag(FLAG_GENERIC);
+}
 
 SymExpr* findSourceOfYield(CallExpr* yield);
 

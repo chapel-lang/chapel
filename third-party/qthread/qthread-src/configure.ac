@@ -99,11 +99,6 @@ AC_ARG_ENABLE([header-syscall-interception],
               [AS_HELP_STRING([--enable-header-syscall-interception],
                               [Intercept blocking syscalls by mangling them via #defs. Experimental.])])
 
-AC_ARG_ENABLE([rcrtool],
-              [AS_HELP_STRING([--enable-rcrtool],
-                              [Includes support for using qthreads with the
-                               RCRTool performance monitor. Experimental.])])
-
 AC_ARG_ENABLE([oversubscription],
               [AS_HELP_STRING([--enable-oversubscription],
                               [This option configures qthreads in a way that
@@ -155,6 +150,11 @@ AC_ARG_ENABLE([internal-spinlock],
               [AS_HELP_STRING([--disable-internal-spinlock],
                               [avoid using the internal spinlock])])
 
+AC_ARG_ENABLE([performance-monitoring],
+              [AS_HELP_STRING([--enable-performance-monitoring],
+                              [enable performance monitoring infrastructure])])
+
+
 AC_ARG_ENABLE([debug],
               [AS_HELP_STRING([--enable-debug=[[areas]]],
                               [prints out debugging information as programs
@@ -174,7 +174,6 @@ AC_ARG_ENABLE([debug],
                                mpool,
                                multinode,
                                qarray,
-                               rcrtool,
                                shepherd,
                                syncvars,
                                syscalls,
@@ -183,7 +182,7 @@ AC_ARG_ENABLE([debug],
                                threadqueues,
                                xomp])],
               [AS_IF([test "x$enable_debug" = "xyes"],
-                     [enable_debug="affinity,threadqueues,thread,shepherd,core,team,mpool,syscalls,febs,syncvars,io,loops,barrier,qarray,rcrtool,futurelib,xomp,multinode"])
+                     [enable_debug="affinity,threadqueues,thread,shepherd,core,team,mpool,syscalls,febs,syncvars,io,loops,barrier,qarray,futurelib,xomp,multinode"])
                for area in $(echo "$enable_debug" | sed 's/,/ /g') ; do
                  case "$area" in
                      affinity) enable_debug_affinity=yes ;;
@@ -200,7 +199,6 @@ AC_ARG_ENABLE([debug],
                      loop|loops) enable_debug_loops=yes ;;
                      barrier|barriers) enable_debug_barrier=yes ;;
                      qarray|qarrays) enable_debug_qarray=yes ;;
-                     rcrtool) enable_debug_rcrtool=yes ;;
                      futurelib) enable_debug_futurelib=yes ;;
                      xomp) enable_debug_xomp=yes ;;
                      multinode) enable_debug_multinode=yes ;;
@@ -295,7 +293,7 @@ AC_ARG_ENABLE([64bit-alignment],
 AC_ARG_WITH([topology],
             [AS_HELP_STRING([--with-topology=[[topologylib]]],
                             [specify which topology interface to use. Supported
-                             interfaces include hwloc, hwloc_v2, binders, lgrp, libnuma,
+                             interfaces include no, hwloc, hwloc_v2, binders, lgrp, libnuma,
                              libnumaV2, mach, plpa, sys, and, tilera.])],
             [AS_IF([test "x$with_topology" = xyes],
                    [with_topology=none_specified])
@@ -331,27 +329,6 @@ AC_ARG_ENABLE([condwait-queue],
                                communication (important if spinning shepherds
                                interfere with each other). Default enabled on
                                sparc/solaris, but default disabled elsewhere.])])
-
-AC_ARG_ENABLE([rose-extensions],
-              [AS_HELP_STRING([--enable-rose-extensions],
-                              [Enable some experimental extensions to qthreads
-                               that are designed to support integration with
-                               the ROSE compiler. Also enables the ROSE
-                               compiler interface.])],
-              [EXTRA_DISTCHECK_OPTIONS="$EXTRA_DISTCHECK_OPTIONS --enable-interfaces=rose"])
-
-AC_ARG_ENABLE([rose-log-barrier],
-              [],
-              [AC_MSG_WARN([Deprecated option; use --with-barrier=log])
-               with_barrier="log"])
-AC_ARG_ENABLE([log-barrier],
-              [],
-              [AC_MSG_WARN([Deprecated option; use --with-barrier=log])
-               with_barrier="log"])
-
-AC_ARG_ENABLE([omp_affinity],
-              [AS_HELP_STRING([--enable-omp-affinity],
-                              [Enable experimental OpenMP affinity extensions (part of ROSE interface). Under development])])
 
 AC_ARG_ENABLE([third-party-benchmarks],
               [AS_HELP_STRING([--enable-third-party-benchmarks],
@@ -742,6 +719,12 @@ AC_CACHE_SAVE
 # Figure out if we need makecontext
 QTHREAD_PICK_CONTEXT_TYPE(qthread_makecontext_type)
 
+AS_IF([test "x$enable_performance_monitoring" = "xyes"],
+[AC_DEFINE([QTHREAD_PERFORMANCE], [1], [Defined if performance monitoring support desired]),
+[disable_lazy_threadids=yes]
+[enable_picky=yes]
+])
+
 AS_IF([test "x$with_gcd" = "xshift"],
       [AC_DEFINE([QTHREAD_SHIFT_GCD],[1],[use a shift-based gcd algorithm])])
 
@@ -766,13 +749,6 @@ AS_IF([test "x$enable_condwait_queue" = "xyes"],
 AS_IF([test "x$enable_valgrind" = "xyes"],
       [AC_CHECK_HEADERS([valgrind/memcheck.h],
                         [AC_DEFINE([QTHREAD_USE_VALGRIND], [1], [Use Valgrind Macros])])])
-
-AS_IF([test "x$enable_rose_extensions" = xyes],
-      [AC_DEFINE([QTHREAD_USE_ROSE_EXTENSIONS], [1], [Define to enable ROSE extensions])
-       AS_IF([test "x$with_scheduler" = "x"],
-             [with_scheduler="sherwood"])
-       AS_IF([test "x$with_scheduler" != "xsherwood" -a "x$with_scheduler" != "xnottingham" -a "x$with_scheduler" != "xloxley"],
-             [AC_MSG_ERROR([ROSE XOMP implementation *REQUIRES* the sherwood, nottingham, or loxley schedulers.])])])
 
 AS_IF([test "x$enable_hpctoolkit_support" = xyes],
       [AC_DEFINE([QTHREAD_ALLOW_HPCTOOLKIT_STACK_UNWINDING], [1], [Support HPCToolkit stack unwinding])])
@@ -927,8 +903,6 @@ AS_IF([test "x$enable_debug" = x -o "x$enable_debug" = xno],
                       [QTHREAD_DEBUG_BARRIER], [prints out barrier debugging information at runtime])
        QT_COND_DEFINE([$enable_debug_qarray],
                       [QTHREAD_DEBUG_QARRAY], [prints out qarray debugging information at runtime])
-       QT_COND_DEFINE([$enable_debug_rcrtool],
-                      [QTHREAD_DEBUG_RCRTOOL], [prints out rcrtool debugging information at runtime])
        QT_COND_DEFINE([$enable_debug_futurelib],
                       [QTHREAD_DEBUG_FUTURELIB], [prints out futurelib debugging information at runtime])
        QT_COND_DEFINE([$enable_debug_xomp],
@@ -936,14 +910,6 @@ AS_IF([test "x$enable_debug" = x -o "x$enable_debug" = xno],
        QT_COND_DEFINE([$enable_debug_multinode],
                       [QTHREAD_DEBUG_MULTINODE], [prints out multinode debugging information at runtime])
        ])
-
-AS_IF([test "x$enable_rcrtool" = "xyes"],
-      [AC_DEFINE([QTHREAD_RCRTOOL], [1], [enables RCR logging and scheduling])],
-      [enable_rcrtool=no])
-
-AS_IF([test "x$enable_rcrtool_stats" = "xyes"],
-      [AC_DEFINE([QTHREAD_RCRTOOL_STAT], [1], [logs RCR stats])],
-      [enable_rcrtool_stats=no])
 
 AS_IF([test "x$enable_hardware_timer" != "xno"],
       [AC_LINK_IFELSE([AC_LANG_SOURCE([[
@@ -1060,6 +1026,8 @@ AS_IF([test "x$enable_multinode" = "xyes"],
        LIBS="$LIBS $portals4_LIBS $portals4_runtime_LIBS"
       ])
 
+
+
 AS_IF([test "x$enable_lf_febs" == "xyes"],
       [AC_DEFINE([LOCK_FREE_FEBS], [1], [Define to use a lock-free hash table for FEB metadata.])],
       [enable_lf_febs=no])
@@ -1085,14 +1053,13 @@ AM_CONDITIONAL([QTHREAD_TIMER_TYPE_MACH], [test "x$qthread_timer_type" = "xmach"
 AM_CONDITIONAL([QTHREAD_TIMER_TYPE_GETHRTIME], [test "x$qthread_timer_type" = "xgethrtime"])
 AM_CONDITIONAL([QTHREAD_TIMER_TYPE_ALTIX], [test "x$qthread_timer_type" = "xaltix"])
 AM_CONDITIONAL([QTHREAD_TIMER_TYPE_GETTIMEOFDAY], [test "x$qthread_timer_type" = "xgettimeofday"])
-AM_CONDITIONAL([COMPILE_ROSE_EXTENSIONS], [test "x$enable_rose_extensions" = "xyes"])
-AM_CONDITIONAL([COMPILE_RCRTOOL], [test "x$enable_rcrtool" = "xyes"])
 AM_CONDITIONAL([COMPILE_COMPAT_ATOMIC], [test "x$compile_compat_atomic" = "xyes"])
 AM_CONDITIONAL([COMPILE_SPAWNCACHE], [test "x$enable_spawn_cache" = "xyes"])
 AM_CONDITIONAL([COMPILE_EUREKAS], [test "x$enable_eurekas" = "xyes"])
 AM_CONDITIONAL([HAVE_GUARD_PAGES], [test "x$enable_guard_pages" = "xyes"])
 AM_CONDITIONAL([HAVE_PROG_TIMELIMIT], [test "x$timelimit_path" != "x"])
 AM_CONDITIONAL([COMPILE_MULTINODE], [test "$enable_multinode" = "yes"])
+AM_CONDITIONAL([QTHREAD_PERFORMANCE], [test "$enable_performance_monitoring" = "yes"])
 AM_CONDITIONAL([WANT_SINGLE_WORKER_SCHEDULER], [test "x$with_scheduler" = "xnemesis" -o "x$with_scheduler" = "xlifo" -o "x$with_scheduler" = "xmutexfifo" -o "x$with_scheduler" = "xmtsfifo" -o "x$with_scheduler" = "xmdlifo"])
 AM_CONDITIONAL([COMPILE_OMP_BENCHMARKS], [test "x$have_openmp" = "xyes"])
 AM_CONDITIONAL([COMPILE_TBB_BENCHMARKS], [test "x$have_tbb" = "xyes"])
@@ -1118,9 +1085,8 @@ AC_CONFIG_FILES([Makefile
                  test/benchmarks/Makefile
                  test/benchmarks/mantevo/Makefile
                  test/benchmarks/mantevo/hpccg/Makefile
-                 test/benchmarks/mantevo/hpccg_rose/Makefile
-                 test/benchmarks/rose_lulesh/Makefile
-                 test/benchmarks/rose_bots/Makefile])
+                 test/benchmarks/finepoints/Makefile
+                 test/benchmarks/finepoints/partSendPrototype/Makefile])
 AC_OUTPUT
 
 case "$qthread_cv_stack_size" in
@@ -1195,7 +1161,6 @@ echo    "      Barrier Style: $with_barrier"
 echo    "   Dictionary Style: $with_dict"
 echo    "    Lazy Thread IDs: $enable_lazy_threadids"
 echo    "       Pools/caches: $pool_string"
-echo    "            RCRTool: $enable_rcrtool"
 echo    "Increments/CAS/FEBs: $incr_string, $feb_string"
 echo ""
 echo    "Miscellany:"

@@ -36,7 +36,9 @@ The primary benefits of ``bigint`` over ``mpz_t`` are
   3) automatic memory management of GMP data structures
 
 In addition to the expected set of operations, this record provides
-a number of methods that wrap GMP functions in a natural way::
+a number of methods that wrap GMP functions in a natural way:
+
+.. code-block:: chapel
 
  use BigInteger;
 
@@ -49,6 +51,36 @@ a number of methods that wrap GMP functions in a natural way::
  c.fac(100);
  writeln(c);
 
+Casting and declarations can be used to create ``bigint`` records as
+well:
+
+.. code-block:: chapel
+
+ use BigInteger;
+
+ var   a = 234958444: bigint;
+ const b = "4847382292989382987395534934347": bigint;
+ var   c: bigint;
+
+.. warning::
+
+  Creating a ``bigint`` from an integer literal that is larger than
+  ``max(uint(64))`` would cause integer overflow before the
+  ``bigint`` is created, and so results in a compile-time error.
+  Strings should be used instead of integer literals for cases
+  like this:
+
+  .. code-block:: chapel
+
+    // These would result in integer overflow and cause compile-time errors
+    var bad1 = 4847382292989382987395534934347: bigint;
+    var bad2 = new bigint(4847382292989382987395534934347);
+
+    // These give the desired result
+    var good1 = "4847382292989382987395534934347": bigint;
+    var good2 = new bigint("4847382292989382987395534934347");
+
+
 Wrapping an ``mpz_t`` in a ``bigint`` record may introduce a
 measurable overhead in some cases.
 
@@ -59,13 +91,17 @@ than using many values of short duration.
 
 Matching this style using ``bigint`` records and the compound
 assignment operators is likely to provide comparable performance to an
-implementation based on ``mpz_t``.  So, for example::
+implementation based on ``mpz_t``.  So, for example:
+
+.. code-block:: chapel
 
   x  = b
   x *= c;
   x += a;
 
-is likely to achieve better performance than::
+is likely to achieve better performance than:
+
+.. code-block:: chapel
 
   x = a + b * c;
 
@@ -75,11 +111,15 @@ temporaries for the intermediate results of the binary operators.
 
 If peak performance is required, perhaps in a critical loop, then it
 is always possible to invoke the GMP functions directly.  For example
-one might express::
+one might express:
+
+.. code-block:: chapel
 
   a = a + b * c;
 
-as::
+as:
+
+.. code-block:: chapel
 
   mpz_addmul(a.mpz, b.mpz, c.mpz);
 
@@ -88,7 +128,9 @@ As usual the details are application specific and it is best to
 measure when peak performance is required.
 
 The operators on ``bigint`` include variations that accept Chapel
-integers e.g.::
+integers e.g.:
+
+.. code-block:: chapel
 
   var a = new bigint("9738639463465935");
   var b = 9395739153 * a;
@@ -110,7 +152,9 @@ truncated.  GMP primitives are used to first cast to platform-specific C
 types, which are then cast to Chapel types.  As a result, casting to
 64-bit types on 32-bit platforms may result in additional truncation.
 Additionally, casting a negative ``bigint`` to a ``uint`` will result in
-the absolute value truncated to fit within the type.::
+the absolute value truncated to fit within the type.:
+
+.. code-block:: chapel
 
   var a = new bigint(-1);
   writeln(a:uint);        // prints "1"
@@ -381,6 +425,15 @@ module BigInteger {
   //
   // Cast operators
   //
+  pragma "no doc"
+  inline proc _cast(type toType: bigint, src: integral): bigint {
+    return new bigint(src);
+  }
+
+  pragma "no doc"
+  inline proc _cast(type toType: bigint, src: string): bigint {
+    return new bigint(src);
+  }
 
   pragma "no doc"
   inline proc _cast(type t, const ref x: bigint) where isIntType(t) {
@@ -2222,7 +2275,7 @@ module BigInteger {
 /*
 Computes ``n/d`` and stores the result in ``bigint`` instance.
 
-``divexact`` is optimized to handle cases where ``n/d`` results in an integer. 
+``divexact`` is optimized to handle cases where ``n/d`` results in an integer.
 When ``n/d`` does not produce an integer, this method may produce incorrect results.
 
 :arg n: numerator

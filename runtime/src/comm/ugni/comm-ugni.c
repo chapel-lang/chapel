@@ -59,6 +59,7 @@
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
 #include "chplexit.h"
+#include "chpl-format.h"
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-sys.h"
@@ -1449,8 +1450,6 @@ static void      polling_task(void*);
 static void      set_up_for_polling(void);
 static void      ensure_registered_heap_info_set(void);
 static void      make_registered_heap(void);
-static void      printf_KMG_size_t(char*, int, size_t);
-static void      printf_KMG_double(char*, int, double);
 static size_t    get_hugepage_size(void);
 static void      set_hugepage_info(void);
 static void      install_SIGBUS_handler(void);
@@ -3018,9 +3017,9 @@ void make_registered_heap(void)
   if (nic_type == GNI_DEVICE_GEMINI && size > max_heap_size) {
     if (chpl_nodeID == 0) {
       char buf1[20], buf2[20], buf3[20], msg[200];
-      printf_KMG_size_t(buf1, sizeof(buf1), nic_max_mem);
-      printf_KMG_size_t(buf2, sizeof(buf2), page_size);
-      printf_KMG_double(buf3, sizeof(buf3), max_heap_size);
+      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
+      chpl_snprintf_KMG_f(buf3, sizeof(buf3), max_heap_size);
       (void) snprintf(msg, sizeof(msg),
                       "Gemini TLB can cover %s with %s pages; heap "
                       "reduced to %s to fit",
@@ -3065,9 +3064,9 @@ void make_registered_heap(void)
   if (nic_type == GNI_DEVICE_ARIES && size > max_heap_size) {
     if (chpl_nodeID == 0) {
       char buf1[20], buf2[20], buf3[20], msg[200];
-      printf_KMG_size_t(buf1, sizeof(buf1), nic_max_mem);
-      printf_KMG_size_t(buf2, sizeof(buf2), page_size);
-      printf_KMG_double(buf3, sizeof(buf3), size);
+      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
+      chpl_snprintf_KMG_f(buf3, sizeof(buf3), size);
       (void) snprintf(msg, sizeof(msg),
                       "Aries TLB cache can cover %s with %s pages; "
                       "with %s heap,\n"
@@ -3081,36 +3080,6 @@ void make_registered_heap(void)
   registered_heap_start = start;
   registered_heap_info_set = 1;
   atomic_thread_fence(memory_order_release);
-}
-
-
-static
-void printf_KMG_size_t(char* buf, int len, size_t val)
-{
-  const size_t GiB = (size_t) (1UL << 30);
-  const size_t MiB = (size_t) (1UL << 20);
-  const size_t KiB = (size_t) (1UL << 10);
-  if (val >= GiB)
-    (void) snprintf(buf, len, "%zdG", val / GiB);
-  else if (val >= MiB)
-    (void) snprintf(buf, len, "%zdM", val / MiB);
-  else
-    (void) snprintf(buf, len, "%zdK", val / KiB);
-}
-
-
-static
-void printf_KMG_double(char* buf, int len, double val)
-{
-  const double GiB = (double) (1UL << 30);
-  const double MiB = (double) (1UL << 20);
-  const double KiB = (double) (1UL << 10);
-  if (val >= GiB)
-    (void) snprintf(buf, len, "%.1fG", val / GiB);
-  else if (val >= MiB)
-    (void) snprintf(buf, len, "%.1fM", val / MiB);
-  else
-    (void) snprintf(buf, len, "%.1fK", val / KiB);
 }
 
 
@@ -5058,8 +5027,8 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("%s:%d: remote put to %d",
-                                 chpl_lookupFilename(fn), ln, locale);
+  chpl_comm_diags_verbose_printf("%s:%d: remote put to %d, %zu bytes",
+                                 chpl_lookupFilename(fn), ln, locale, size);
   chpl_comm_diags_incr(put);
 
   do_remote_put(addr, locale, raddr, size, NULL, may_proxy_true);
@@ -5341,8 +5310,8 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
-                                 chpl_lookupFilename(fn), ln, locale);
+  chpl_comm_diags_verbose_printf("%s:%d: remote get from %d, %zu bytes",
+                                 chpl_lookupFilename(fn), ln, locale, size);
   chpl_comm_diags_incr(get);
 
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
@@ -5680,8 +5649,8 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("%s:%d: remote non-blocking get from %d",
-                                 chpl_lookupFilename(fn), ln, locale);
+  chpl_comm_diags_verbose_printf("%s:%d: remote non-blocking get from %d, %zu bytes",
+                                 chpl_lookupFilename(fn), ln, locale, size);
   chpl_comm_diags_incr(get_nb);
 
   //
@@ -6901,9 +6870,9 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
                 gni_fma_cmd_type_t cmd, void* result,
                 mem_region_t* remote_mr)
 {
-  mem_region_t*         local_mr;
-  void*                 p_result = result;
-  fork_amo_data_t       tmp_result;
+  mem_region_t*         local_mr = NULL;
+  void*                 reg_result = result;
+  fork_amo_data_t       stack_result;
   gni_post_descriptor_t post_desc;
 
   check_nic_amo(size, object, remote_mr);
@@ -6913,15 +6882,13 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   // Make sure that, if we need a result, it is in memory known to the
   // NIC.
   //
-  if (result == NULL)
-    local_mr = NULL;
-  else {
-    local_mr = mreg_for_local_addr(p_result);
+  if (result != NULL) {
+    local_mr = mreg_for_local_addr(reg_result);
     if (local_mr == NULL) {
-      p_result = &tmp_result;
-      local_mr = mreg_for_local_addr(p_result);
+      reg_result = &stack_result;
+      local_mr = mreg_for_local_addr(reg_result);
       if (local_mr == NULL) {
-        p_result = amo_res_alloc();
+        reg_result = amo_res_alloc();
         local_mr = gnr_mreg;
         if (local_mr == NULL)
           CHPL_INTERNAL_ERROR("do_nic_amo(): "
@@ -6938,32 +6905,31 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   post_desc.dlvr_mode          = GNI_DLVMODE_PERFORMANCE;
   post_desc.rdma_mode          = 0;
   post_desc.src_cq_hndl        = 0;
-  post_desc.local_addr         = (uint64_t) (intptr_t) p_result;
-  if (p_result != NULL)
+  post_desc.local_addr         = (uint64_t) (intptr_t) reg_result;
+  if (reg_result != NULL)
     post_desc.local_mem_hndl   = local_mr->mdh;
   post_desc.remote_addr        = (uint64_t) (intptr_t) object;
   post_desc.remote_mem_hndl    = remote_mr->mdh;
   post_desc.length             = size;
   post_desc.amo_cmd            = cmd;
-  if (size == 4) {
-    post_desc.first_operand    = *(uint32_t*) opnd1;
-    if (opnd2 != NULL)
-      post_desc.second_operand = *(uint32_t*) opnd2;
-  } else {
-    post_desc.first_operand    = *(uint64_t*) opnd1;
-    if (opnd2 != NULL)
-      post_desc.second_operand = *(uint64_t*) opnd2;
-  }
+  post_desc.first_operand      = size == 4 ? *(uint32_t*) opnd1:
+                                             *(uint64_t*) opnd1;
+  if (opnd2 != NULL)
+    post_desc.second_operand   = size == 4 ? *(uint32_t*) opnd2:
+                                             *(uint64_t*) opnd2;
 
   //
   // Initiate the transaction and wait for it to complete.
   //
   post_fma_and_wait(locale, &post_desc, true);
 
-  if (p_result != result) {
-    memcpy(result, p_result, size);
-    if (p_result != &tmp_result)
-      amo_res_free(p_result);
+  //
+  // If the result wasn't registered, copy the trampoline memory to it
+  //
+  if (reg_result != result) {
+    memcpy(result, reg_result, size);
+    if (reg_result != &stack_result)
+      amo_res_free(reg_result);
   }
 }
 
@@ -7733,7 +7699,7 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
   // Wait for the transaction to complete.  Yield initially; the
   // minimum round-trip time on the network isn't small and maybe
   // we can find something else to do in the meantime.  FMA is only
-  // used for small tranasctions which will be relatively fast, so
+  // used for small transactions which will be relatively fast, so
   // after the initial yield, only yield every 64 attempts.
   //
   do {

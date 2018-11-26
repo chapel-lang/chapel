@@ -183,6 +183,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "build.h"
 #include "driver.h"
 #include "expr.h"
 #include "optimizations.h"
@@ -1449,9 +1450,10 @@ static void narrowWideClassesThroughCalls()
   // TODO: Can we use this for local functions?
   //
   forv_Vec(CallExpr, call, gCallExprs) {
+    FnSymbol* fn = call->resolvedFunction();
 
     // Find calls to functions expecting local arguments.
-    if (call->isResolved() && call->resolvedFunction()->hasFlag(FLAG_LOCAL_ARGS)) {
+    if (fn && fn->hasFlag(FLAG_LOCAL_ARGS)) {
       SET_LINENO(call);
       Expr* stmt = call->getStmtExpr();
 
@@ -1482,13 +1484,23 @@ static void narrowWideClassesThroughCalls()
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
             if (!fNoLocalChecks)
-              stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy()));
+              stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy(), buildCStringLiteral("cannot access remote data in local block")));
 
             // If we pass an extern class to an extern/export function,
             // we must treat it like a reference (this is by definition)
             stmt->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           }
           else if (narrowType.isRef() || narrowType.type()->symbol->hasFlag(FLAG_DATA_CLASS)) {
+
+            // Insert a local check because we cannot pass narrow references to
+            // remote data to external routines
+            if (!fNoLocalChecks) {
+              if (fn->hasFlag(FLAG_EXTERN))
+                stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy(), buildCStringLiteral(astr("references to remote data cannot be passed to external routines like '", fn->name, "'"))));
+              else if (fn->hasFlag(FLAG_EXPORT))
+                stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy(), buildCStringLiteral(astr("references to remote data cannot currently be passed to exported routines like '", fn->name, "'"))));
+            }
+
             // Also if the narrow type is a ref or data class type,
             // we must treat it like a (narrow) reference.
             stmt->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
@@ -1631,7 +1643,7 @@ static void insertLocalTemp(Expr* expr) {
   SET_LINENO(se);
   VarSymbol* var = newTemp(astr("local_", se->symbol()->name), getNarrowType(se));
   if (!fNoLocalChecks) {
-    stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, se->copy()));
+    stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, se->copy(), buildCStringLiteral("cannot access remote data in local block")));
   }
   stmt->insertBefore(new DefExpr(var));
   stmt->insertBefore(new CallExpr(PRIM_MOVE, var, se->copy()));
@@ -2115,7 +2127,7 @@ static void fixAST() {
           if (isFullyWide(base)) {
             insertNodeComparison(stmt, new SymExpr(base), rhs->copy());
           } else {
-            stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, rhs->copy()));
+            stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, rhs->copy(), buildCStringLiteral("cannot access remote data in local block")));
           }
         }
       }
@@ -2166,7 +2178,7 @@ static void fixAST() {
               call->insertAfter(new CallExpr(PRIM_MOVE, lhs->copy(), tmp));
 
               if (field->symbol()->hasFlag(FLAG_LOCAL_FIELD) && !fNoLocalChecks) {
-                call->insertAfter(new CallExpr(PRIM_LOCAL_CHECK, tmp));
+                call->insertAfter(new CallExpr(PRIM_LOCAL_CHECK, tmp, buildCStringLiteral("cannot access remote data in local block")));
               }
 
               lhs->replace(new SymExpr(tmp));

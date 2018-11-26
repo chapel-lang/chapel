@@ -1,7 +1,7 @@
-use UserMapAssoc;
+use HashedDist;
 
-class MyMapper {
-  proc indexToLocaleIndex(ind, targetLocs: [] locale) : int {
+record MyMapper {
+  proc this(ind, targetLocs: [] locale) : int {
     const numlocs = targetLocs.domain.size;
     const indAsInt = ind: int;
     return indAsInt % numlocs;
@@ -9,7 +9,7 @@ class MyMapper {
 }
 
 proc doit() {
-  var newDist = new dmap(new unmanaged UserMapAssoc(idxType=real, mapper=new unmanaged MyMapper()));
+  var newDist = new dmap(new unmanaged Hashed(idxType=real, mapper=new MyMapper()));
 
   var D: domain(real) dmapped newDist;
 
@@ -32,8 +32,8 @@ proc doit() {
       // Access the array.
       // This statement succeeds if there is no communication.
       // Check that idxTemp is in the domain
-      assert(D.member(idxTemp));
-      assert(A.domain.member(idxTemp));
+      assert(D.contains(idxTemp));
+      assert(A.domain.contains(idxTemp));
     }
   }
   
@@ -45,8 +45,8 @@ proc doit() {
     local {
       // Access the array.
       // This statement succeeds if there is no communication.
-      assert(D.member(idxTemp));
-      assert(A.domain.member(idxTemp));
+      assert(D.contains(idxTemp));
+      assert(A.domain.contains(idxTemp));
     }
   }
 

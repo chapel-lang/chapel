@@ -27,6 +27,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <rdma/fabric.h>
+#include <rdma/fi_domain.h>
+
 #include "chpltypes.h"
 
 typedef struct {
@@ -34,12 +37,79 @@ typedef struct {
 } chpl_comm_taskPrvData_t;
 
 //
-// Comm layer private area within executeOn argument bundles
-// (bundle.comm)
-typedef struct {
-  chpl_fn_int_t fid;
-  int caller;
-  void* ack;
+// Comm layer private area within executeOn argument bundles.
+//
+// Members are packed, potentially differently, in each AM request type
+// to reduce space requirements.  The 'op' member must come first in all
+// cases.
+//
+// TODO: optimize this
+//
+typedef uint8_t chpl_comm_amDone_t;
+
+struct chpl_comm_bundleData_op_t {
+  uint8_t op;                   // operation; must come first
+};
+
+struct chpl_comm_bundleData_execOn_t {
+  uint8_t op;                   // operation; must come first
+  chpl_bool fast;               // do directly in AM handler; no task
+  chpl_fn_int_t fid;            // function table index to call
+  uint16_t argSize;             // #bytes in whole arg bundle
+  c_nodeid_t node;              // initiator's node
+  c_sublocid_t subloc;          // target sublocale
+  chpl_comm_amDone_t* pDone;    // initiator's 'done' flag; nonblocking if NULL
+};
+
+struct chpl_comm_bundleData_RMA_t {
+  uint8_t op;                   // operation; must come first
+  void* addr;                   // address on AM target node
+  c_nodeid_t node;              // initiator's node
+  void* raddr;                  // initiator's address
+  size_t size;                  // number of bytes
+  chpl_comm_amDone_t* pDone;    // initiator's 'done' flag; nonblocking if NULL
+};
+
+typedef union {
+  int32_t i32;
+  uint32_t u32;
+  chpl_bool32 b32;
+  int64_t i64;
+  uint64_t u64;
+  _real32 r32;
+  _real64 r64;
+} chpl_amo_datum_t;
+
+struct chpl_comm_bundleData_AMO_t {
+  uint8_t op;                   // operation; must come first
+  enum fi_op ofiOp;             // ofi AMO op
+  enum fi_datatype ofiType;     // ofi object type
+  int8_t size;                  // object size (bytes)
+  c_nodeid_t node;              // initiator's node
+  void* obj;                    // object address on target node
+  chpl_amo_datum_t operand;     // operand, if needed
+  chpl_comm_amDone_t* pDone;    // initiator's 'done' flag; nonblocking if NULL
+};
+
+struct chpl_comm_bundleData_FAMO_t {
+  uint8_t op;                   // operation; must come first
+  enum fi_op ofiOp;             // ofi AMO op
+  enum fi_datatype ofiType;     // ofi object type
+  int8_t size;                  // object size (bytes)
+  c_nodeid_t node;              // initiating node
+  void* obj;                    // object address on target node
+  void* result;                 // result address on initiator's node
+  chpl_amo_datum_t operand1;    // first operand, if needed
+  chpl_amo_datum_t operand2;    // second operand, if needed
+  chpl_comm_amDone_t* pDone;    // initiator's 'done' flag; nonblocking if NULL
+};
+
+typedef union {
+  struct chpl_comm_bundleData_op_t op;
+  struct chpl_comm_bundleData_execOn_t xo;
+  struct chpl_comm_bundleData_RMA_t rma;
+  struct chpl_comm_bundleData_AMO_t amo;
+  struct chpl_comm_bundleData_FAMO_t famo;
 } chpl_comm_bundleData_t;
 
 //

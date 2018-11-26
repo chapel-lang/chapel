@@ -131,12 +131,6 @@ extern qlib_t qlib;
 void INTERNAL qthread_exec(qthread_t    *t,
                            qt_context_t *c);
 
-#ifdef QTHREAD_RCRTOOL
-/* allow environment variable to control whether dynamic thread count
- *  adjustment active - akp 5/26/11
- */
-extern int rcrSchedulingOff;
-#endif
 
 #endif // ifndef QTHREAD_INNARDS_H
 /* vim:set expandtab: */

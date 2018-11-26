@@ -51,7 +51,45 @@ module ChapelReduce {
     delete localOp;
   }
 
+  // Return true for simple cases where x.type == (x+x).type.
+  // This should be true for the great majority of cases in practice.
+  // This proc helps us avoid run-time computations upon chpl__sumType().
+  // Which is important for costly cases ex. when 'eltType' is an array.
+  // It also allows us to accept 'eltType' that is the result of
+  // __primitive("static typeof"), i.e. with uninitialized _RuntimeTypeInfo.
+  //
+  proc chpl_sumTypeIsSame(type eltType) param {
+    if isNumeric(eltType) || isString(eltType) {
+      return true;
+
+    } else if isDomain(eltType) {
+      // Since it is a param function, this code will be squashed.
+      // It will not execute at run time.
+      var d: eltType;
+      // + preserves the type for associative domains.
+      // Todo: any other easy-to-compute cases?
+      return isAssociativeDom(d);
+
+    } else if isArray(eltType) {
+      // Follow the lead of chpl_buildStandInRTT. Thankfully, this code
+      // will not execute at run time. Otherwise we could get in trouble,
+      // as "static typeof" produces uninitialized _RuntimeTypeInfo values.
+      type arrInstType = __primitive("static field type", eltType, "_instance");
+      var instanceObj: arrInstType;
+      type instanceEltType = __primitive("static typeof", instanceObj.eltType);
+      return chpl_sumTypeIsSame(instanceEltType);
+
+    } else {
+      // Otherwise, let chpl__sumType() deal with it.
+      return false;
+    }
+  }
+
   proc chpl__sumType(type eltType) type {
+   if chpl_sumTypeIsSame(eltType) {
+    return eltType;
+   } else {
+    // The answer may or may not be 'eltType'.
     var x: eltType;
     if isArray(x) {
       type xET = x.eltType;
@@ -61,8 +99,14 @@ module ChapelReduce {
       else
         return [x.domain] xST;
     } else {
+      use Reflection;
+      if ! canResolve("+", x, x) then
+        // Issue a user-friendly error.
+        compilerError("+ reduce cannot be used on values of the type ",
+                      eltType:string);
       return (x + x).type;
     }
+   }
   }
 
   pragma "ReduceScanOp"

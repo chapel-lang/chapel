@@ -122,6 +122,30 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
   }
 }
 
+static void propagate_charset_environment(FILE *f)
+{
+  // If any of the relevant character set environment variables
+  // are set, replicate the state of all of them.  This needs to
+  // be done separately from both the PBS -V mechanism and the
+  // launcher's -E mechanism because the launcher is written in
+  // Perl, which modifies the character set environment, losing
+  // our settings
+  //
+  // Note that if we are setting these variables, and one or more
+  // of them is empty, we must set it with explicitly empty
+  // contents (e.g. LC_ALL= instead of -u LC_ALL) so that the
+  // Chapel launch mechanism will not overwrite it.
+  char *lang = getenv("LANG");
+  char *lc_all = getenv("LC_ALL");
+  char *lc_collate = getenv("LC_COLLATE");
+  if (lang || lc_all || lc_collate) {
+    fprintf(f, " env");
+    fprintf(f, " LANG=%s", lang ? lang : "");
+    fprintf(f, " LC_ALL=%s", lc_all ? lc_all : "");
+    fprintf(f, " LC_COLLATE=%s", lc_collate ? lc_collate : "");
+  }
+}
+
 static char* chpl_launch_create_command(int argc, char* argv[], 
                                         int32_t numLocales) {
   int i;
@@ -169,8 +193,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "expect -re $prompt\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"%s/%s/gasnetrun_ibv -n %d %s ",
-          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
+  fprintf(expectFile, "send \"%s/%s/gasnetrun_ibv -n %d -N %d",
+          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
+  propagate_charset_environment(expectFile);
+  fprintf(expectFile, " %s ", chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }

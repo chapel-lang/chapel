@@ -2,7 +2,7 @@
 Qthreads README for Chapel
 ==========================
 
-This copy of Qthreads 1.12 is being released with Chapel for
+This copy of Qthreads 1.14 is being released with Chapel for
 convenience and was obtained from:
 
   https://github.com/qthreads/qthreads
@@ -21,21 +21,3 @@ as follows:
   shepherd. This is to work around a task serialization bug that stems
   from us using schedulers that don't support work stealing (nemesis)
   or running with work stealing disabled (distrib w/ QT_STEAL_RATIO=0)
-* In the Chapel memory allocator shim (src/alloc/chapel.c), use the
-  Chapel runtime's public memory interface instead of the internal
-  interface provided by the memory layer implementations.  This gives
-  us automatic "out of memory" messages and halts when an allocation
-  fails, and should also allow us to track Qthreads memory use should
-  we decide we want to do so.
-* Use the Chapel affinity shim (src/affinity/hwloc_via_chapel.c) by
-  default.  This first tries to get the hwloc topology from the Chapel
-  runtime, and only drops back to getting it directly from hwloc if that
-  fails.  Doing so ensures that when the Chapel runtime and Qthreads
-  both use hwloc topologies, they use the same one.  This has both
-  functional and performance benefits.
-* Added missing `no` affinity shim (src/affinity/no.c) that was omitted
-  from the official qthreads release. Only used when CHPL_HWLOC=none
-* Provide a way to determine the size of the runtime data structure for
-  each qthread for the purpose of selecting a better stack size.
-* Fix a bug in the memory pool limiting code to ensure that each pool
-  is large enough for at least 2 items.

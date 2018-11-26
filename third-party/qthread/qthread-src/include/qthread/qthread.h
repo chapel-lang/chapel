@@ -124,23 +124,6 @@ typedef struct _syncvar_s {
 typedef unsigned short qthread_shepherd_id_t;
 typedef unsigned short qthread_worker_id_t;
 
-#ifdef QTHREAD_USE_ROSE_EXTENSIONS
-# include <qthread/barrier.h>
-
-struct qthread_parallel_region_s {
-    struct qthread_parallel_region_s *last;
-    void                             *forLoop;  // current loop really qqloop_step_handle_t * -- void to save include ordering problems
-    void                             *loopList; // really list of qqloop_step_handle_t * -- void to save include ordering problems
-    qt_barrier_t                     *barrier;
-    int                              *currentLoopNum;     // really an array of values (number workers long)
-                                                          //   which Loop current active
-    int                               clsSize;            // size of following array
-    void                            **currentLoopStruct;  // really an array of pointers to loop
-                                                          //    structures for use by omp
-};
-typedef struct qthread_parallel_region_s qthread_parallel_region_t;
-
-#endif // ifdef QTHREAD_USE_ROSE_EXTENSIONS
 
 /* for convenient arguments to qthread_fork */
 typedef aligned_t (*qthread_f)(void *arg);
@@ -214,6 +197,11 @@ void qthread_flushsc(void);
 int qthread_fork(qthread_f   f,
                  const void *arg,
                  aligned_t  *ret);
+
+int qthread_fork_net(qthread_f   f,
+                 const void *arg,
+                 aligned_t  *ret);
+
 int qthread_fork_precond(qthread_f   f,
                          const void *arg,
                          aligned_t  *ret,
@@ -284,7 +272,8 @@ enum _qthread_features {
     SPAWN_PC_SYNCVAR_T,
     SPAWN_AGGREGABLE,
     SPAWN_COUNT,
-    SPAWN_LOCAL_PRIORITY
+    SPAWN_LOCAL_PRIORITY,
+    SPAWN_NETWORK
 };
 
 #define QTHREAD_SPAWN_PARENT        (1 << SPAWN_PARENT)
@@ -297,6 +286,7 @@ enum _qthread_features {
 #define QTHREAD_SPAWN_PC_SYNCVAR_T  (1 << SPAWN_PC_SYNCVAR_T)
 #define QTHREAD_SPAWN_AGGREGABLE    (1 << SPAWN_AGGREGABLE)
 #define QTHREAD_SPAWN_LOCAL_PRIORITY (1 << SPAWN_LOCAL_PRIORITY)
+#define QTHREAD_SPAWN_NETWORK (1 << SPAWN_NETWORK)
 
 int qthread_spawn(qthread_f             f,
                   const void           *arg,
@@ -325,16 +315,6 @@ qthread_shepherd_id_t qthread_shep(void);
 qthread_worker_id_t   qthread_worker(qthread_shepherd_id_t *s);
 qthread_worker_id_t   qthread_worker_unique(qthread_shepherd_id_t *s);
 qthread_worker_id_t   qthread_worker_local(qthread_shepherd_id_t *s);
-#ifdef QTHREAD_USE_ROSE_EXTENSIONS
-unsigned                          qthread_barrier_id(void);
-struct qthread_parallel_region_s *qt_parallel_region(void);
-qt_barrier_t *                    qt_thread_barrier(void);
-qt_barrier_t *                    qt_thread_barrier_resize(size_t size);
-void *                            qt_next_loop(void *loop);
-int                               qt_omp_parallel_region_create(void);
-void                              qt_omp_parallel_region_destroy(void);
-void                              qt_set_unstealable(void);
-#endif  // ifdef QTHREAD_USE_ROSE_EXTENSIONS
 
 void *   qthread_get_tasklocal(unsigned int);
 unsigned qthread_size_tasklocal(void);

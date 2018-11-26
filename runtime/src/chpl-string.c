@@ -56,7 +56,7 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
                                    int ln, int32_t fn) {
   // This part just copies the descriptor.
   if (chpl_nodeID == node) {
-    chpl_memcpy(addr, raddr, size);
+    chpl_memmove(addr, raddr, size);
   } else {
     chpl_gen_comm_get(addr, node, raddr, size, typeIndex, CHPL_COMM_UNKNOWN_ID, ln, fn);
   }
@@ -110,7 +110,7 @@ chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_stri
   chpl_macro_tmp =
       chpl_mem_calloc(1, x->size, CHPL_RT_MD_GET_WIDE_STRING, lineno, filename);
   if (chpl_nodeID == chpl_rt_nodeFromLocaleID(x->locale))
-    chpl_memcpy(chpl_macro_tmp, x->addr, x->size);
+    chpl_memmove(chpl_macro_tmp, x->addr, x->size);
   else
     chpl_gen_comm_get((void *)&(*chpl_macro_tmp),
                       chpl_rt_nodeFromLocaleID(x->locale), (void *)(x->addr),

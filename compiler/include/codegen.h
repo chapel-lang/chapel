@@ -20,6 +20,8 @@
 #ifndef CODEGEN_H
 #define CODEGEN_H
 
+#include "baseAST.h"
+
 #include <list>
 #include <map>
 #include <stack>
@@ -67,6 +69,8 @@ struct LoopData
  */
 struct GenInfo {
   // If we're generating C, this is the FILE* to print to
+  // TODO: Rename cfile to just 'file' since it's also used when
+  //       generating Fortran and Python interfaces.
   FILE* cfile;
   // When generating C, sometimes the code generator needs
   // to introduce a temporary variable. When it does,
@@ -102,6 +106,12 @@ struct GenInfo {
   llvm::LLVMContext llvmContext;
   llvm::MDNode* tbaaRootNode;
   llvm::MDNode* tbaaUnionsNode;
+
+  // Information for no-alias metadata generation
+  llvm::MDNode* noAliasDomain;
+  std::map<Symbol*, llvm::MDNode*> noAliasScopes;
+  std::map<Symbol*, llvm::MDNode*> noAliasScopeLists;
+  std::map<Symbol*, llvm::MDNode*> noAliasLists;
 
   // Information used to generate code with fLLVMWideOpt. Instead of
   // generating wide pointers with puts and gets, we generate

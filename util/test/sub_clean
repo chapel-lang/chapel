@@ -100,6 +100,7 @@ for f in clean:
         cleanCleanfiles(f, 'CLEANFILES', True)
     else:
         cleanChapelTest(f)
+        cleanCleanfiles(os.path.dirname(f), 'CLEANFILES', True)
 
 sys.exit(0);
 

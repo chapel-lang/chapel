@@ -134,7 +134,7 @@ module Graph {
        */
       iter Neighbors( v : index (vertices), param tag: iterKind)
       where tag == iterKind.leader {
-        for block in Row(v).neighborList._value.these(tag) do
+        for block in Row(v).neighborList.these(tag) do
           yield block;
       }
 
@@ -142,7 +142,7 @@ module Graph {
        */
       iter Neighbors( v : index (vertices), param tag: iterKind, followThis)
       where tag == iterKind.follower {
-        for nlElm in Row(v).neighborList._value.these(tag, followThis) do
+        for nlElm in Row(v).neighborList.these(tag, followThis) do
           yield nElm(1);
       }
 
@@ -157,7 +157,7 @@ module Graph {
        */
       iter edge_weight( v : index (vertices), param tag: iterKind)
       where tag == iterKind.leader {
-        for block in Row(v).neighborList._value.these(tag) do
+        for block in Row(v).neighborList.these(tag) do
           yield block;
       }
 
@@ -165,7 +165,7 @@ module Graph {
        */
       iter edge_weight( v : index (vertices), param tag: iterKind, followThis)
       where tag == iterKind.follower {
-        for nlElm in Row(v).neighborList._value.these(tag, followThis) do
+        for nlElm in Row(v).neighborList.these(tag, followThis) do
           yield nlElm(2); // todo -- use VertexData.weight
       }
 

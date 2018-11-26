@@ -30,6 +30,15 @@ the ``chpl`` command line take precedence over any found through object
 library paths (``-L``).  When there is a conflict, the last library
 specified takes precedence.
 
+.. note::
+   When building a dynamic library, building position independent code is
+   recommended.  To do this, set the environment variable ``CHPL_LIB_PIC`` to
+   ``pic`` and ensure this configuration is built by performing a ``make``
+   command from ``$CHPL_HOME``.  Note that position independent code will likely
+   encounter some performance degradation as opposed to normal Chapel code.
+   For this reason, we recommend only using ``CHPL_LIB_PIC`` when position
+   independent code is required.
+
 .. _Location of the Generated Library:
 
 Location of the Generated Library
@@ -84,13 +93,13 @@ library will be named ``libfoo.so`` or ``libfoo.a``.
 
 .. code-block:: bash
 
-   # Builds library as lib/libfoo.so
+   # Builds library as lib/libfoo.a
    chpl --library --static foo.chpl
 
-   # Builds library as lib/libfoo.a
+   # Builds library as lib/libfoo.so
    chpl --library --dynamic foo.chpl
 
-   # Builds library as lib/libfoo.a (note: file named libfoo.chpl)
+   # Builds library as lib/libfoo.so (note: file named libfoo.chpl)
    chpl --library --dynamic libfoo.chpl
 
 The basename used (the ``foo`` portion) can be changed with the ``-o`` or
@@ -101,11 +110,11 @@ into the same library, as the default name is determined by the top-most module.
 
 .. code-block:: bash
 
-   # Builds library as lib/libbar.a
+   # Builds library as lib/libbar.so
    chpl --library --dynamic foo.chpl -o bar
 
    # -o flag required because of multiple modules
-   # Builds library as lib/libfoo.a
+   # Builds library as lib/libfoo.so
    chpl --library --dynamic foo.chpl bar.chpl -o foo
 
 Using Your Library in C
@@ -124,7 +133,7 @@ library name using the flag ``--library-header`` at compilation.
    # Builds header as lib/foo.h
    chpl --library --dynamic foo.chpl
 
-   # Builds header as lib/bar.h, library is still lib/libfoo.a
+   # Builds header as lib/bar.h, library is still lib/libfoo.so
    chpl --library --dynamic --library-header=bar foo.chpl
 
 The header file will contain any exported function, including the exported
@@ -256,6 +265,8 @@ library):
 Note that ``compileline --compile-c++`` is also available for compiling a C++
 program.
 
+.. _readme-libraries.Python:
+
 Using Your Library in Python
 ============================
 
@@ -268,6 +279,16 @@ requires the following:
 - ``python3`` installed in your ``$PATH``
 - ``Cython``
 - ``numpy``
+
+If you are on a system where libraries are built to be position dependent by
+default (e.g.  not OSx), you will need to set the environment variable
+``CHPL_LIB_PIC`` to ``pic`` and perform a ``make`` command from ``$CHPL_HOME``.
+This will cause the Chapel runtime and third-party libraries to be built with
+position independent code, which Python interoperability requires.  Note that
+position independent code will likely encounter some performance degradation as
+opposed to normal Chapel code.  For this reason, we recommend only using
+``CHPL_LIB_PIC=pic`` when position independent code is required (e.g. when
+calling Chapel code from Python).
 
 Compiling Your Chapel Library
 -----------------------------

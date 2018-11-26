@@ -92,11 +92,13 @@ known_dimensions = [
     ( 'unwind',             'CHPL_UNWIND', ),
     ( 'mem',                'CHPL_MEM', ),
     ( 'atomics',            'CHPL_ATOMICS', ),
+    ( 'network_atomics',    'CHPL_NETWORK_ATOMICS', ),
     ( 'gmp',                'CHPL_GMP', ),
     ( 'hwloc',              'CHPL_HWLOC', ),
     ( 'regexp',             'CHPL_REGEXP', ),
     ( 'llvm',               'CHPL_LLVM', ),
     ( 'auxfs',              'CHPL_AUX_FILESYS', ),
+    ( 'lib_pic',            'CHPL_LIB_PIC', ),
 ]
 Dimensions = []
 for (name, var_name) in known_dimensions:
@@ -139,6 +141,20 @@ class Config(object):
             if value:
                 values.append('\t{0}={1}'.format(dim.name, value))
         return '\n'.join(values)
+
+    def pretty_str(self,header=False):
+        """Return pretty string of configs - one line of a formatted table."""
+        values = []
+        for dim in Dimensions:
+            value = getattr(self, dim.name)
+            if value:
+                if header:
+                    # for a header line at the top with the names of the config variables
+                    values.append('%10.10s' % (dim.name))
+                else:
+                    # a normal line with just the config values
+                    values.append('%10.10s' % (value))
+        return ' '.join(values)
 
     def get_env(self, orig_env):
         """Update and return an existing configuration with this configuration's
@@ -184,21 +200,42 @@ def main():
         len(build_configs),
         's' if len(build_configs) > 1 else '')
     logging.info('Building {0}.'.format(config_count_str))
-    logging.debug('Build configs: {0}'.format(build_configs))
+
+    def list_config_names():
+        """Return a complete formatted table showing all the chapel configs in this build."""
+        names = []
+        for i, build_config in enumerate(build_configs):
+            if i == 0:
+                # prepend header row
+                build_config_name = build_config.pretty_str(header=True)
+                if not build_config_name:
+                    build_config_name = 'None'
+                names.append('')
+                names.append('           ' + build_config_name)
+            # normal table row
+            build_config_name = build_config.pretty_str()
+            if not build_config_name:
+                build_config_name = 'None'
+            names.append('%3d / %3d  %s' % (i+1, len(build_configs), build_config_name))
+        return names
+
+    logging.info('\n'.join(list_config_names()))
 
     make_logfile = chpl_misc['make_logfile']
     chpl_home = chpl_misc['chpl_home']
     if make_logfile:
-        print('[BUILD_CONFIGS] Building {0}\n'.format(config_count_str), file=make_logfile)
-        print('[BUILD_CONFIGS] CHPL_HOME={0}\n'.format(chpl_home), file=make_logfile)
+        print('\n[BUILD_CONFIGS] CHPL_HOME={0}'.format(chpl_home), file=make_logfile)
+        print('\n[BUILD_CONFIGS] Building {0}'.format(config_count_str), file=make_logfile)
+        print('\n'.join(list_config_names()), file=make_logfile)
 
     statuses = [0,]
     with elapsed_time('All {0}'.format(config_count_str)):
-        for build_config in build_configs:
+        for i, build_config in enumerate(build_configs):
             result = build_chpl(
-                chpl_misc,
+                '{0} / {1}'.format(i+1, len(build_configs)),
                 build_config,
                 build_env,
+                chpl_misc,
                 parallel=opts.parallel,
                 verbose=opts.verbose,
                 dry_run=opts.dry_run,
@@ -387,17 +424,20 @@ def get_configs(opts):
     return configs
 
 
-def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_run=False):
+def build_chpl(counter, build_config, env, chpl_misc, parallel=False, verbose=False, dry_run=False):
     """Build Chapel with the provided environment.
 
-    :type chpl_misc: dict
-    :arg chpl_misc: miscellaneous chplenv-related paths, settings, and options
+    :type counter: string
+    :arg counter: current config number / total number of configs, for edits
 
     :type build_config: Config
     :arg build_config: build configuration to build
 
     :type env: dict
     :arg env: Dictionary of key/value pairs to set as the environment.
+
+    :type chpl_misc: dict
+    :arg chpl_misc: miscellaneous chplenv-related paths, settings, and options
 
     :type verbose: bool
     :arg verbose: if True, increase output
@@ -421,10 +461,10 @@ def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_
     if not build_config_name:
         build_config_name = 'None'
 
-    logging.info('Building config:\n\t{0}'.format(build_config_name))
+    logging.info('Building config number {0}:\n\t{1}'.format(counter, build_config_name))
     if make_logfile:
-        print('[BUILD_CONFIGS] make_targets:\n\t{0}'.format(make_targets), file=make_logfile)
-        print('[BUILD_CONFIGS] config:\n\t{0}'.format(build_config_name), file=make_logfile)
+        print('\n[BUILD_CONFIGS] config number {0}:\n\t{1}'.format(counter, build_config_name), file=make_logfile)
+        print('\n[BUILD_CONFIGS] make_targets:\n\t{0}'.format(make_targets), file=make_logfile)
 
     build_env['BUILD_CONFIGS_CALLBACK'] = '{0}'.format(build_config_name)
     build_env['BUILD_CONFIGS_VERBOSE'] = '{0}'.format(verbose)
@@ -442,7 +482,7 @@ def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_
         #   Printchplenv is run twice if logfile is used, to see Chapel env on both console and logfile
 
         logging.info('DRY-RUN: printchplenv command:\n\t{0}'.format(dryrun_cmd))
-        with elapsed_time(build_config_name):
+        with elapsed_time('Config number {0}'.format(counter)):
             result, output, error = check_output(dryrun_cmd, chpl_home, build_env)
         if result or error:
             logging.warn('Errors/Warnings from printchplenv, config {0}\n{1}\n{2}\nExit code {3}'.format(
@@ -466,7 +506,7 @@ def build_chpl(chpl_misc, build_config, env, parallel=False, verbose=False, dry_
         logging.info('Chapel make command:\n\t{0}'.format(make_cmd))
         if make_logfile:
             print('[BUILD_CONFIGS] Chapel make command:\n\t{0}\n'.format(make_cmd), file=make_logfile)
-        with elapsed_time(build_config_name):
+        with elapsed_time('Config number {0}'.format(counter)):
             result, output, error = check_output(make_cmd, chpl_home, build_env, file=make_logfile)
         if result:
             logging.error('Non-zero exit code {0}'.format(result))

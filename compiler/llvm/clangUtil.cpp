@@ -1268,15 +1268,25 @@ static void setupModule()
   llvm::TargetOptions targetOptions;
   targetOptions.ThreadModel = llvm::ThreadModel::POSIX;
 
-  if (ffloatOpt) {
-    // see also FastMathFlags FM.setAllowReassoc etc
-    targetOptions.UnsafeFPMath = 1;
-    targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Fast;
-    targetOptions.NoNaNsFPMath = 1;
+  // Set the floating point optimization level
+  // see also code setting FastMathFlags
+  if (ffloatOpt == 1) {
+    // --no-ieee-float
+    // Allow unsafe fast floating point optimization
+    targetOptions.UnsafeFPMath = 1; // e.g. FSIN instruction
     targetOptions.NoInfsFPMath = 1;
-    //targetOptions.NoSignedZerosFPMath = 1;
-    // we could also consider:
-    // NoTrappingFPMath, HonorSignDependentRoundingFPMathOption
+    targetOptions.NoNaNsFPMath = 1;
+    targetOptions.NoTrappingFPMath = 1;
+    targetOptions.NoSignedZerosFPMath = 1;
+    targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+  } else if (ffloatOpt == 0) {
+    // Target default floating point optimization
+    targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Standard;
+  } else if (ffloatOpt == -1) {
+    // --ieee-float
+    // Should this set targetOptions.HonorSignDependentRoundingFPMathOption ?
+    // Allow fused multiply-adds
+    targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Standard;
   }
 
   if (!fFastFlag)
@@ -1475,23 +1485,30 @@ void prepareCodegenLLVM()
 
   info->FPM_postgen->doInitialization();
 
-  if(ffloatOpt == 1)
-  {
-    // see also targetOptions.UnsafeFPMath etc
-    llvm::FastMathFlags FM;
-    FM.setNoNaNs();
-    FM.setNoInfs();
-    FM.setNoSignedZeros();
-    FM.setAllowReciprocal();
+  // Set the floating point optimization level
+  // see also code setting targetOptions.UnsafeFPMath etc
+  llvm::FastMathFlags FM;
+  if (ffloatOpt == 1) {
+    // --no-ieee-float
+    // Enable all the optimization!
 #if HAVE_LLVM_VER < 60
     FM.setUnsafeAlgebra();
 #else
-    FM.setAllowContract(true);
-    FM.setApproxFunc();
-    FM.setAllowReassoc();
+    FM.setFast();
 #endif
-    info->irBuilder->setFastMathFlags(FM);
+  } else if (ffloatOpt == 0) {
+    // default
+    // use a reasonable level of optimization
+#if HAVE_LLVM_VER >= 50
+    FM.setAllowContract(true);
+#endif
+  } else if (ffloatOpt == -1) {
+    // --ieee-float
+#if HAVE_LLVM_VER >= 50
+    FM.setAllowContract(true);
+#endif
   }
+  info->irBuilder->setFastMathFlags(FM);
 
   checkAdjustedDataLayout();
 }
@@ -2450,6 +2467,7 @@ void setupForGlobalToWide(void) {
 
   llvm::verifyFunction(*fn, &errs());
 
+  info->hasPreservingFn = true;
   info->preservingFn = fn;
 }
 static
@@ -2538,6 +2556,24 @@ void makeBinaryLLVM(void) {
     output.os().flush();
   }
 
+  // Handle --llvm-print-ir-stage=basic
+#ifdef HAVE_LLVM
+  if((llvmStageNum::BASIC == llvmPrintIrStageNum ||
+      llvmStageNum::EVERY == llvmPrintIrStageNum)) {
+
+    gdbShouldBreakHere();
+
+    for (auto &F : info->module->functions()) {
+      std::string str = F.getName().str();
+      if (shouldLlvmPrintIrCName(str.c_str()))
+        printLlvmIr(str.c_str(), &F, llvmStageNum::BASIC);
+    }
+
+    completePrintLlvmIrStage(llvmStageNum::BASIC);
+  }
+#endif
+
+
   // Open the output file
   std::error_code error;
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
@@ -2555,7 +2591,7 @@ void makeBinaryLLVM(void) {
                   PassManagerBuilder::EP_EarlyAsPossible;
 
     if (getIrDumpExtensionPoint(llvmPrintIrStageNum, point)) {
-      printf("Adding IR dump extension at %i for %s\n", point, llvmPrintIrCName);
+      printf("Adding IR dump extension at %i\n", point);
       PassManagerBuilder::addGlobalExtension(point, addDumpIrPass);
     }
 
@@ -2677,8 +2713,16 @@ void makeBinaryLLVM(void) {
   // Handle --llvm-print-ir-stage=full
 #ifdef HAVE_LLVM
   if((llvmStageNum::FULL == llvmPrintIrStageNum ||
-      llvmStageNum::EVERY == llvmPrintIrStageNum) && llvmPrintIrCName != NULL)
-      printLlvmIr(getFunctionLLVM(llvmPrintIrCName), llvmStageNum::FULL);
+      llvmStageNum::EVERY == llvmPrintIrStageNum)) {
+
+    for (auto &F : info->module->functions()) {
+      std::string str = F.getName().str();
+      if (shouldLlvmPrintIrCName(str.c_str()))
+        printLlvmIr(str.c_str(), &F, llvmStageNum::FULL);
+    }
+
+    completePrintLlvmIrStage(llvmStageNum::FULL);
+  }
 #endif
 
   // Emit the .o file for linking with clang

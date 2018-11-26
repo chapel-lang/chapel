@@ -17,10 +17,11 @@ class C {
 }
 
 //
-// Class variables can be declared using the ``new`` keyword to call the
-// constructor for the class ``C``.  The default constructor has an argument for
-// each field in the class.  Once a class has been constructed, its methods
-// can be called.
+// The ``new`` keyword creates an instance of a class by calling an
+// initializer. The class ``C`` above does not declare any initializers,
+// and so the compiler-generated one is used. The compiler-generated
+// initializer has an argument for each field in the class. Once a class
+// has been initialized, its methods can be called.
 //
 // Class types include a strategy for freeing them. We'll discuss this
 // more below.

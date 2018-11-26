@@ -127,6 +127,7 @@ DISTS_TO_DOCUMENT = \
 	dists/BlockDist.chpl \
 	dists/CyclicDist.chpl \
 	dists/DimensionalDist2D.chpl \
+	dists/HashedDist.chpl \
 	dists/PrivateDist.chpl \
 	dists/ReplicatedDist.chpl \
 	dists/StencilDist.chpl \

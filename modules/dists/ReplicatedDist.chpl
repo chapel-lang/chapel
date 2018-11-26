@@ -196,7 +196,7 @@ class ReplicatedDom : BaseRectangularDom {
   pragma "no doc"
   proc chpl_myLocDom() {
     if boundsChecking then
-      if (!dist.targetLocDom.member(here.id)) then
+      if (!dist.targetLocDom.contains(here.id)) then
         halt("locale ", here.id, " has no local replicand");
     return localDoms[here.id];
   }
@@ -344,13 +344,13 @@ iter ReplicatedDom.these() {
 
 iter ReplicatedDom.these(param tag: iterKind) where tag == iterKind.leader {
   // redirect to DefaultRectangular's leader
-  for follow in chpl_myLocDom().domLocalRep._value.these(tag) do
+  for follow in chpl_myLocDom().domLocalRep.these(tag) do
     yield follow;
 }
 
 iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   // redirect to DefaultRectangular
-  for i in redirectee()._value.these(tag, followThis) do
+  for i in redirectee().these(tag, followThis) do
     yield i;
 }
 
@@ -393,7 +393,7 @@ proc ReplicatedDom.dsiNumIndices
   return redirectee().numIndices;
 
 proc ReplicatedDom.dsiMember(indexx)
-  return redirectee().member(indexx);
+  return redirectee().contains(indexx);
 
 proc ReplicatedDom.dsiIndexOrder(indexx)
   return redirectee().dsiIndexOrder(indexx);
@@ -433,7 +433,7 @@ class ReplicatedArr : BaseArr {
   pragma "no doc"
   proc chpl_myLocArr() {
     if boundsChecking then
-      if (!dom.dist.targetLocDom.member(here.id)) then
+      if (!dom.dist.targetLocDom.contains(here.id)) then
         halt("locale ", here.id, " has no local replicand");
     return localArrs[here.id];
   }
@@ -579,7 +579,7 @@ iter ReplicatedArr.these(param tag: iterKind) where tag == iterKind.leader {
 
 iter ReplicatedArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   // redirect to DefaultRectangular
-  for a in chpl_myLocArr().arrLocalRep._value.these(tag, followThis) do
+  for a in chpl_myLocArr().arrLocalRep.these(tag, followThis) do
     yield a;
 }
 

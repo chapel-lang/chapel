@@ -864,12 +864,14 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   //
   if (chpl_nodeID == 0) {
     int i;
-    for (i=0; i < chpl_numNodes; i++) {
+    // Skip loc 0, since that would end up memcpy'ing seginfo_table to itself
+    for (i=1; i < chpl_numNodes; i++) {
       GASNET_Safe(gasnet_AMRequestMedium0(i, BCAST_SEGINFO, seginfo_table, 
                                           chpl_numNodes*sizeof(gasnet_seginfo_t)));
     }
+  } else {
+    GASNET_BLOCKUNTIL(bcast_seginfo_done);
   }
-  GASNET_BLOCKUNTIL(bcast_seginfo_done);
   chpl_comm_barrier("making sure everyone's done with the broadcast");
 #endif
 
@@ -1126,8 +1128,8 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_printf("%s:%d: remote put to %d",
-                                   chpl_lookupFilename(fn), ln, node);
+    chpl_comm_diags_verbose_printf("%s:%d: remote put to %d, %zu bytes",
+                                   chpl_lookupFilename(fn), ln, node, size);
     chpl_comm_diags_incr(put);
 
     // Handle remote address not in remote segment.
@@ -1203,8 +1205,8 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
-                                   chpl_lookupFilename(fn), ln, node);
+    chpl_comm_diags_verbose_printf("%s:%d: remote get from %d, %zu bytes",
+                                   chpl_lookupFilename(fn), ln, node, size);
     chpl_comm_diags_incr(get);
 
     // Handle remote address not in remote segment.

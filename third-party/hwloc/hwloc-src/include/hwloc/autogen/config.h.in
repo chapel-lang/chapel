@@ -120,6 +120,7 @@
 # define __hwloc_attribute_pure
 #endif
 
+#ifndef __hwloc_attribute_deprecated /* allow the user to disable these warnings by defining this macro to nothing */
 #ifdef HWLOC_HAVE_ATTRIBUTE_DEPRECATED
 #define __HWLOC_HAVE_ATTRIBUTE_DEPRECATED HWLOC_HAVE_ATTRIBUTE_DEPRECATED 
 #elif defined(__GNUC__)
@@ -131,6 +132,7 @@
 # define __hwloc_attribute_deprecated __attribute__((__deprecated__))
 #else
 # define __hwloc_attribute_deprecated
+#endif
 #endif
 
 #ifdef HWLOC_HAVE_ATTRIBUTE_MAY_ALIAS

@@ -1,0 +1,3 @@
+-M .. -smultilocale=false
+-M .. -smultilocale=true -sblockdist=true
+-M .. -smultilocale=true -sblockdist=false

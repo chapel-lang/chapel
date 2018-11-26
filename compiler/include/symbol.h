@@ -221,6 +221,7 @@ public:
   // is useful for finding such cases.
   // This function finds the statement expression that is responsible
   // for initializing this symbol.
+  // It can return NULL if it's unable to make sense of the AST pattern.
   Expr*              getInitialization()                       const;
 
 protected:
@@ -388,6 +389,7 @@ public:
   GenRet          codegenType();
 
   std::string     getPythonType(PythonFileType pxd);
+  std::string     getPythonDefaultValue();
   std::string     getPythonArgTranslation();
 
   IntentTag       intent;
@@ -743,9 +745,7 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
-#define FUNC_NAME_MAX 256
-extern char llvmPrintIrName[FUNC_NAME_MAX+1];
-extern char llvmPrintIrStage[FUNC_NAME_MAX+1];
+extern FnSymbol* chplUserMain;
 
 namespace llvmStageNum {
 typedef enum {
@@ -772,20 +772,23 @@ typedef enum {
 }
 using llvmStageNum::llvmStageNum_t;
 
-//Names representations in LLVM IR and C generated code are
-//different from their names in AST. 'llvmPrintIrCName'
-//is place to keep name in LLVM IR and C version of
-//'llvmPrintIrName' variable.
-extern const char *llvmPrintIrCName;
 extern llvmStageNum_t llvmPrintIrStageNum;
-
-extern const char *llvmStageName[llvmStageNum::LAST];
 
 const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum);
 llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName);
 
+void addNameToPrintLlvmIr(const char* name);
+void addCNameToPrintLlvmIr(const char* name);
+
+bool shouldLlvmPrintIrName(const char* name);
+bool shouldLlvmPrintIrCName(const char* name);
+bool shouldLlvmPrintIrFn(FnSymbol* fn);
+
 #ifdef HAVE_LLVM
-void printLlvmIr(llvm::Function *func, llvmStageNum_t numStage);
+void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);
 #endif
+
+void preparePrintLlvmIrForCodegen();
+void completePrintLlvmIrStage(llvmStageNum_t numStage);
 
 #endif

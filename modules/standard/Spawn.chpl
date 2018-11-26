@@ -429,6 +429,7 @@ module Spawn {
      :returns: a :record:`subprocess` with kind and locking set according
                to the arguments.
 
+     :throws IllegalArgumentError: Thrown when ``args`` is an empty array.
      */
   proc spawn(args:[] string, env:[] string=Spawn.empty_env, executable="",
              stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
@@ -449,6 +450,9 @@ module Spawn {
     else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
     if isIntegralType(stderr.type) then stderr_fd = stderr;
     else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
+
+    if args.size == 0 then
+      throw new IllegalArgumentError('args cannot be an empty array');
 
     // When memory is registered with the NIC under ugni, a fork will currently
     // segfault. Here we halt before such a call is made to provide an
@@ -644,12 +648,16 @@ module Spawn {
      :returns: a :record:`subprocess` with kind and locking set according
                to the arguments.
 
+     :throws IllegalArgumentError: Thrown when ``command`` is an empty string.
   */
   proc spawnshell(command:string, env:[] string=Spawn.empty_env,
                   stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
                   executable="/bin/sh", shellarg="-c",
                   param kind=iokind.dynamic, param locking=true) throws
   {
+    if command.isEmptyString() then
+      throw new IllegalArgumentError('command cannot be an empty string');
+
     var args = [command];
     if shellarg != "" then args.push_front(shellarg);
     args.push_front(executable);

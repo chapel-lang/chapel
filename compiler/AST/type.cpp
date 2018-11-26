@@ -609,8 +609,6 @@ void initPrimitiveTypes() {
   gCVoidPtr->cname = "NULL";
   gCVoidPtr->addFlag(FLAG_EXTERN);
 
-  dtSymbol = createPrimitiveType( "symbol", "_symbol");
-
   dtFile = createPrimitiveType ("_file", "_cfile");
   dtFile->symbol->addFlag(FLAG_EXTERN);
 
