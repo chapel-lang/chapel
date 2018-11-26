@@ -4,8 +4,8 @@
 record Foo {
   var v;
 
-  proc init(vVal = 3) {
-    v = vVal;
+  proc init(v = 3) {
+    this.v = v;
   }
 }
 

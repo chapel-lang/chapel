@@ -1,4 +1,0 @@
-bug: redefining _defaultOf for string causes compilation errors
-
-It seems likely that the root cause here is the current point-of-instantiation
-behavior.
