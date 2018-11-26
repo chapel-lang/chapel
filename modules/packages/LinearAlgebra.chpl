@@ -1105,7 +1105,7 @@ proc eigvals(A: [] ?t) where isRealType(t) && A.domain.rank == 2 && usingLAPACK 
 
 /* To be removed after 1.19.0 */
 pragma "no doc"
-proc eigvals(A: [] ?t, param right = false) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+proc eigvals(A: [] ?t, param right) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
   if right then
     compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
   return eig(A, right=right);
