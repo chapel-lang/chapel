@@ -799,9 +799,11 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
   INT_ASSERT(fs->numInductionVars() == 1);
 }
 
-static void checkForNonIterator(CallExpr* parCall, FnSymbol* dest) {
-  AggregateType* retType = toAggregateType(dest->retType);
-  if (!retType || !retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+static void checkForNonIterator(IteratorGroup* igroup, bool gotSA,
+                                CallExpr* parCall)
+{
+  if (gotSA ? igroup->noniterSA : igroup->noniterL) {
+    FnSymbol* dest = parCall->resolvedFunction();
     USR_FATAL_CONT(parCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", dest->name);
     USR_PRINT(dest, "The function '%s' is declared here", dest->name);
     USR_STOP();
@@ -818,7 +820,6 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
   bool alreadyResolved = parIter->isResolved();
 
   resolveFunction(parIter);
-  checkForNonIterator(iterCall, parIter);
 
   // Set QualifiedType of the index variable.
   QualifiedType iType = fsIterYieldType(pfs, parIter,
@@ -973,7 +974,9 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   FnSymbol* origIterFn = iterCall->resolvedFunction();
 
   if (!tryFailure && origTarget) {
-    IteratorGroup* igroup = getIteratorGroup(origTarget);
+    IteratorGroup* igroup = origTarget->iteratorGroup;
+    checkForNonIterator(igroup, gotSA, iterCall);
+
     if (gotSA) INT_ASSERT(origIterFn == igroup->standalone);
     else       INT_ASSERT(origIterFn == igroup->leader);
   }

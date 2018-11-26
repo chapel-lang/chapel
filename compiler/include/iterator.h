@@ -28,19 +28,9 @@ class AggregateType;
 class FnSymbol;
 class CallExpr;
 
-enum IteratorTag { 
-  it_serial,
-  it_standalone,
-  it_leader,
-  it_follower,
-  it_undecided    // unknown so far
-};
-
 class IteratorInfo {
 public:
   IteratorInfo();
-
-  IteratorTag    tag;
 
   FnSymbol*      iterator;
   FnSymbol*      getIterator;
@@ -60,22 +50,24 @@ public:
   RetTag         iteratorRetTag;
 };
 
+void cleanupIteratorInfo(FnSymbol* host);
+
 class IteratorGroup {
 public:
   FnSymbol* serial;
   FnSymbol* standalone;
   FnSymbol* leader;
   FnSymbol* follower;
+
+  // Search for a standalone/leader gave a non-iterator/forwarder.
+  bool noniterSA, noniterL;
+
   IteratorGroup();
 };
 
-extern std::map<FnSymbol*,IteratorGroup*> iteratorGroups;
-
-IteratorGroup* getIteratorGroup(FnSymbol* it);
 void resolveAlsoParallelIterators(FnSymbol* serial, Expr* call);
+void verifyIteratorGroup(FnSymbol* it);
 void cleanupIteratorGroup(FnSymbol* it);
-IteratorTag detectIteratorTagFromGroup(FnSymbol* it);
-IteratorTag detectIteratorTagFromGroup(IteratorGroup* igroup, FnSymbol* it);
 
 void showIteratorGroup(IteratorGroup* igroup);
 void showIteratorGroup(BaseAST* ast);

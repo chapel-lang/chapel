@@ -27,6 +27,6 @@ class SymExpr;
 
 Expr* preFold(CallExpr* expr);
 
-SymExpr* symOrParamExpr(Symbol* arg);
+SymExpr* createSymExprPropagatingParam(Symbol* arg);
 
 #endif
