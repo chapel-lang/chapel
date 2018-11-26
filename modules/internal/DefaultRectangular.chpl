@@ -28,6 +28,8 @@ module DefaultRectangular {
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
   use DSIUtil, ChapelArray;
+  use ExternalArray;
+
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;
   config param debugDataPar = false;
@@ -711,14 +713,16 @@ module DefaultRectangular {
 
     proc dsiBuildArray(type eltType) {
       if (forExternalArray) {
-        use ExternalArray;
-
-        var data = chpl_make_external_array(c_sizeof(eltType), this.size);
+        var externData = chpl_make_external_array(c_sizeof(eltType), this.size);
+        var data = externData.elts: _ddata(eltType);
         var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
                                                       rank=rank,
                                                       idxType=idxType,
                                                       stridable=stridable,
-                                                      dom=_to_unmanaged(this));
+                                                      dom=_to_unmanaged(this),
+                                                      data=data,
+                                                      externData=externData,
+                                                      externArr=forExternalArray);
 
         // TODO:make the DefaultRectangularArr
         // Only give the pointer initial contents if we created it ourselves.
@@ -1059,6 +1063,9 @@ module DefaultRectangular {
     pragma "alias scope from this"
     pragma "local field"
     var data : _ddata(eltType) = nil;
+
+    var externData: chpl_external_array;
+    var externArr: bool = false;
 
     pragma "alias scope from this"
     pragma "local field"
