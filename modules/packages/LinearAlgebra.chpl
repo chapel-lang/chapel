@@ -1105,19 +1105,28 @@ proc eigvals(A: [] ?t) where isRealType(t) && A.domain.rank == 2 && usingLAPACK 
 
 /* To be removed after 1.19.0 */
 pragma "no doc"
-proc eigvals(A: [] ?t, param left: bool, param right = false) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
-  if left || right then
+proc eigvals(A: [] ?t, param right = false) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+  if right then
     compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
-  return eig(A, left, right);
+  return eig(A, right=right);
 }
 
 /* To be removed after 1.19.0 */
 pragma "no doc"
-proc eigvals(A: [] ?t, param left: bool = false, param right: bool) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+proc eigvals(A: [] ?t, param left: bool) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+  if left then
+    compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
+  return eig(A, left=left);
+}
+
+/* To be removed after 1.19.0 */
+pragma "no doc"
+proc eigvals(A: [] ?t, param left: bool, param right: bool) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
   if left || right then
     compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
-  return eig(A, left, right);
+  return eig(A, left=left, right=right);
 }
+
 
 
 /* Find the eigenvalues and eigenvectors of matrix ``A``. ``A`` must be square.
