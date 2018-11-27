@@ -14,7 +14,7 @@ module iters {
     }
   }
 
-  // zipered loop in standalone should NOT get vector pragma since one of the
+  // zippered loop in standalone should NOT get vector pragma since one of the
   // iters being zipped can't be inlined
   iter myiter(nn: int, nt: int, param tag: iterKind) where tag == iterKind.standalone {
     coforall i in 0..#nt {
@@ -30,7 +30,7 @@ module iters {
     }
   }
 
-  // zipered loop in follower should NOT get vector pragma since one of the
+  // zippered loop in follower should NOT get vector pragma since one of the
   // iters being zipped can't be inlined
   iter myiter(nn:int, nt: int, followThis, param tag: iterKind) where tag == iterKind.follower {
     for (i, j) in zip(followThis, nonInlinableIter(followThis)) {
