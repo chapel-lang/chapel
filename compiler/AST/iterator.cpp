@@ -219,12 +219,17 @@ void resolveAlsoParallelIterators(FnSymbol* serial, Expr* call) {
   if (! isIteratorOrForwarder(serial)) return;  // not of interest
   if (serial->iteratorGroup != NULL) return;  // already taken care of
 
-  // Similar to isIteratorOfType().
-  for_formals(formal, serial)
-    if (formal->name == astrTag && formal->type == gLeaderTag->type)
-      // 'serial' is actually a parallel iterator. Since we did not come
-      // from a serial iterator, we will not update iterator groups.
-      return;
+  if (serial->hasFlag(FLAG_INLINE_ITERATOR))
+    // 'serial' is actually a parallel iterator. Since we did not come
+    // from a serial iterator, we will not update iterator groups.
+    return;
+
+  if (! serial->isIterator())
+    // The above "is parallel" check does not fire on iterator forwarders.
+    // So check for 'tag' formals instead, like in isIteratorOfType().
+    for_formals(formal, serial)
+      if (formal->name == astrTag && formal->type == gLeaderTag->type)
+        return;
 
   IteratorGroup* igroup = new IteratorGroup();
   igroup->serial = serial;

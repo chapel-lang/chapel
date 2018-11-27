@@ -509,8 +509,7 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
           ensureInMethodList(fn);
         }
 
-        if (forCall && fn->isIterator() &&
-            ! fn->hasFlag(FLAG_INLINE_ITERATOR)) {
+        if (forCall != NULL) {
           resolveAlsoParallelIterators(fn, forCall);
         }
 
