@@ -74,7 +74,6 @@ bool Expr::isStmt() const {
 const char* DefExpr::name() const {
   const char* retval = 0;
 
-  INT_ASSERT(false);
   if (isLcnSymbol(sym)    == true ||
       isTypeSymbol(sym)   == true ||
       isFnSymbol(sym)     == true ||
