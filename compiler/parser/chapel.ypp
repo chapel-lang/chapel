@@ -1566,13 +1566,13 @@ type_level_expr:
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
 | TBORROWED expr
-    { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS, $2); }
+    { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS, checkNoKindKeyword($2)); }
 | TOWNED expr
-    { $$ = new CallExpr( "_owned", $2); }
+    { $$ = new CallExpr( "_owned", checkNoKindKeyword($2)); }
 | TUNMANAGED expr
-    { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS, $2); }
+    { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS, checkNoKindKeyword($2)); }
 | TSHARED expr
-    { $$ = new CallExpr( "_shared", $2); }
+    { $$ = new CallExpr( "_shared", checkNoKindKeyword($2)); }
 ;
 
 for_expr:

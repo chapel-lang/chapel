@@ -2938,3 +2938,17 @@ Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b)
   // Either way, continue compiling with ==
   return new CallExpr("==", a, b);
 }
+
+Expr* checkNoKindKeyword(Expr* e)
+{
+  if (CallExpr* call = toCallExpr(e)) {
+    if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+        call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+        call->isNamed("_owned") ||
+        call->isNamed("_shared") ||
+        call->isNamed("_to_unmanaged") ||
+        call->isNamed("_to_borrowed"))
+      USR_FATAL_CONT(call, "Expression uses multiple class kinds");
+  }
+  return e;
+}
