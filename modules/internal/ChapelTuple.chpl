@@ -106,15 +106,15 @@ module ChapelTuple {
   }
 
   pragma "no doc"
+  pragma "last resort"
   proc *(param p: bool, type t) type {
     compilerError("Tuple types cannot be defined using boolean sizes");
-    return 1*t;
   }
 
   pragma "no doc"
+  pragma "last resort"
   proc *(p: bool, type t) type {
     compilerError("Tuple types cannot be defined using boolean sizes");
-    return 1*t;
   }
 
   pragma "do not allow ref"
