@@ -948,8 +948,6 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 ************************************** | *************************************/
 
 static void      resolveDefaultTypeConstructor(AggregateType* at);
-static void      instantiateDefaultConstructor(FnSymbol* fn);
-static FnSymbol* instantiateBase(FnSymbol* fn);
 
 static void resolveTypeConstructor(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->retType);
@@ -975,13 +973,6 @@ static void resolveTypeConstructor(FnSymbol* fn) {
     }
   }
 
-  if (at->instantiatedFrom == NULL) {
-    instantiateDefaultConstructor(fn);
-
-  } else if (at->hasUserDefinedInit        == false &&
-             at->wantsDefaultInitializer() == false) {
-    instantiateDefaultConstructor(fn);
-  }
 
   if (at->hasDestructor() == false) {
     if (at->symbol->hasFlag(FLAG_REF)       == false &&
@@ -1019,53 +1010,6 @@ static void resolveDefaultTypeConstructor(AggregateType* at) {
   if (at->typeConstructor != NULL) {
     resolveSignatureAndFunction(at->typeConstructor);
   }
-}
-
-static void instantiateDefaultConstructor(FnSymbol* fn) {
-  if (fn->instantiatedFrom            != NULL &&
-      fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
-    AggregateType* retAt       = toAggregateType(fn->retType);
-    FnSymbol*      base        = instantiateBase(fn);
-    AggregateType* baseRetAt   = toAggregateType(base->retType);
-    FnSymbol*      defaultInit = baseRetAt->defaultInitializer;
-    CallExpr*      call        = new CallExpr(defaultInit);
-
-    for_formals(formal, fn) {
-      if (formal->type == dtMethodToken || formal == fn->_this) {
-        call->insertAtTail(new SymExpr(formal));
-
-      } else if (Symbol* param = paramMap.get(formal)) {
-        call->insertAtTail(new NamedExpr(formal->name, new SymExpr(param)));
-
-      } else {
-        SymExpr* field = new SymExpr(fn->retType->getField(formal->name));
-
-        if (base->hasFlag(FLAG_TUPLE) == true) {
-          call->insertAtTail(field);
-        } else {
-          call->insertAtTail(new NamedExpr(formal->name, field));
-        }
-      }
-    }
-
-    fn->insertBeforeEpilogue(call);
-
-    resolveCall(call);
-
-    retAt->defaultInitializer = call->resolvedFunction();
-
-    call->remove();
-  }
-}
-
-static FnSymbol* instantiateBase(FnSymbol* fn) {
-  FnSymbol* retval = fn->instantiatedFrom;
-
-  while (retval->instantiatedFrom != NULL) {
-    retval = retval->instantiatedFrom;
-  }
-
-  return retval;
 }
 
 /************************************* | **************************************
