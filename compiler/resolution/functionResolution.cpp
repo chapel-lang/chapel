@@ -9337,7 +9337,7 @@ static void replaceRuntimeTypeGetField(CallExpr* call) {
 static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      FnSymbol* parent = call->getFunction();
+      FnSymbol* parent = isAlive(call) ? call->getFunction() : NULL;
 
       // Call must be in the tree and lie in a resolved function.
       if (! parent || ! parent->isResolved()) {
