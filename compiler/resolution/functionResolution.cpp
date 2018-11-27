@@ -6595,7 +6595,7 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
         expr = resolveExprResolveEachCall(cc);
 
       } else {
-        resolveFunction(call->resolvedFunction());
+        resolveFunction(call->resolvedFunction(), call);
       }
 
       resolveExprExpandGenerics(call);
@@ -6642,7 +6642,7 @@ static Expr* resolveExprResolveEachCall(ContextCallExpr* cc) {
   if (CallExpr* tmpCall = cc->getValueCall()) {
     valueFn    = tmpCall->resolvedFunction();
 
-    resolveFunction(valueFn);
+    resolveFunction(valueFn, tmpCall);
 
     n         += 1;
     nIterator += (valueFn->isIterator()    == true) ? 1 : 0;
@@ -6651,7 +6651,7 @@ static Expr* resolveExprResolveEachCall(ContextCallExpr* cc) {
   if (CallExpr* tmpCall = cc->getConstRefCall()) {
     constRefFn = tmpCall->resolvedFunction();
 
-    resolveFunction(constRefFn);
+    resolveFunction(constRefFn, tmpCall);
 
     n         += 1;
     nIterator += (constRefFn->isIterator() == true) ? 1 : 0;
@@ -6660,7 +6660,7 @@ static Expr* resolveExprResolveEachCall(ContextCallExpr* cc) {
   if (CallExpr* tmpCall = cc->getRefCall()) {
     refFn      = tmpCall->resolvedFunction();
 
-    resolveFunction(refFn);
+    resolveFunction(refFn, tmpCall);
 
     n         += 1;
     nIterator += (refFn->isIterator()      == true) ? 1 : 0;

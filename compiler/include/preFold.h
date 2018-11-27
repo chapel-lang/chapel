@@ -22,7 +22,11 @@
 
 class CallExpr;
 class Expr;
+class Symbol;
+class SymExpr;
 
 Expr* preFold(CallExpr* expr);
+
+SymExpr* createSymExprPropagatingParam(Symbol* arg);
 
 #endif

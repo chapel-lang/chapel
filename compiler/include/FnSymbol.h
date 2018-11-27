@@ -23,6 +23,8 @@
 #include "library.h"
 #include "symbol.h"
 
+class IteratorGroup;
+
 enum RetTag {
   RET_VALUE,
   RET_REF,
@@ -47,8 +49,10 @@ public:
   IntentTag                  thisTag;
   RetTag                     retTag;
 
-  // Attached original (user) iterators before lowering.
+  // Support for iterator lowering.
   IteratorInfo*              iteratorInfo;
+  // Pointers to other iterator variants - serial, standalone, etc.
+  IteratorGroup*             iteratorGroup;
 
   Symbol*                    _this;
   FnSymbol*                  instantiatedFrom;

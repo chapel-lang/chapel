@@ -458,7 +458,7 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-void resolveFunction(FnSymbol* fn) {
+void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
   if (fn->isResolved() == false) {
     if (fn->id == breakOnResolveID) {
       printf("breaking on resolve fn %s[%d] (%d args)\n",
@@ -507,6 +507,10 @@ void resolveFunction(FnSymbol* fn) {
 
         if (fn->isMethod() == true && fn->_this != NULL) {
           ensureInMethodList(fn);
+        }
+
+        if (forCall != NULL) {
+          resolveAlsoParallelIterators(fn, forCall);
         }
 
       } else {
@@ -883,8 +887,6 @@ static IteratorInfo*  makeIteratorInfo(AggregateType* iClass,
                                        Type*          yieldedType) {
   Type*         defaultInt = dtInt[INT_SIZE_DEFAULT];
   IteratorInfo* ii         = new IteratorInfo();
-
-  ii->tag         = it_iterator;
 
   ii->iterator    = fn;
   ii->iclass      = iClass;
