@@ -31,7 +31,6 @@
 #include "countTokens.h"
 #include "docsDriver.h"
 #include "files.h"
-#include "ipe.h"
 #include "library.h"
 #include "log.h"
 #include "ModuleSymbol.h"
@@ -173,7 +172,6 @@ bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
 bool fIncrementalCompilation = false;
-bool fUseIPE         = false;
 
 int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
@@ -1417,7 +1415,6 @@ int main(int argc, char* argv[]) {
     init_args(&sArgState, argv[0]);
 
     fDocs   = (strcmp(sArgState.program_name, "chpldoc")  == 0) ? true : false;
-    fUseIPE = (strcmp(sArgState.program_name, "chpl-ipe") == 0) ? true : false;
 
     // Initialize the arguments for argument state. If chpldoc, use the docs
     // specific arguments. Otherwise, use the regular arguments.
@@ -1453,8 +1450,7 @@ int main(int argc, char* argv[]) {
     recordCodeGenStrings(argc, argv);
   } // astlocMarker scope
 
-  if (fUseIPE == false)
-    printStuff(argv[0]);
+  printStuff(argv[0]);
 
   if (fRungdb)
     runCompilerInGDB(argc, argv);
@@ -1464,11 +1460,7 @@ int main(int argc, char* argv[]) {
 
   addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
-  if (fUseIPE == false) {
-    runPasses(tracker, fDocs);
-  } else {
-    ipeRun();
-  }
+  runPasses(tracker, fDocs);
 
   tracker.StartPhase("driverCleanup");
 

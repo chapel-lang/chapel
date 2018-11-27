@@ -154,7 +154,7 @@ void logWriteLog(const char* passName, int passNum, char logTag) {
   if (fLog) {
     if ((logAll == true && logTag != LOG_NEVER) ||
         logOnlyName.count(passName) > 0) {
-      bool logNode = (fUseIPE || fLogNode);
+      bool logNode = (fLogNode);
       if (logNode)
         AstDumpToNode::view(passName, passNum);
       else

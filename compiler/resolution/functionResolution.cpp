@@ -7171,11 +7171,9 @@ void resolve() {
 
   resolveUses(ModuleSymbol::mainModule());
 
-  // --ipe does not build printModuleInitModule
   if (printModuleInitModule)
     resolveUses(printModuleInitModule);
 
-  // --ipe does not build chpl_gen_main
   if (chpl_gen_main)
     resolveFunction(chpl_gen_main);
 

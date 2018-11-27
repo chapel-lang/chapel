@@ -71,7 +71,6 @@ bool Expr::isStmt() const {
   return false;
 }
 
-// IPE: Provide the name of the symbol/variable being defined
 const char* DefExpr::name() const {
   const char* retval = 0;
 

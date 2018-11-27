@@ -460,7 +460,6 @@ bool isUserDefinedRecord(Symbol* symbol) {
 /******************************** | *********************************
 *                                                                   *
 * Common base class for ArgSymbol and VarSymbol.                    *
-* Also maintains a small amount of IPE specific state.              *
 *                                                                   *
 ********************************* | ********************************/
 

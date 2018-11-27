@@ -39,7 +39,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
     retval = CForLoop::buildCForLoop(toCallExpr(cond), body);
   }
 
-  else if (fUseIPE == false)
+  else
   {
     VarSymbol*   condVar       = newTemp();
     CallExpr*    condTest      = new CallExpr("_cond_test", cond);
@@ -61,13 +61,6 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
     retval->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
     retval->insertAtTail(loop);
     retval->insertAtTail(new DefExpr(breakLabel));
-  }
-
-  else
-  {
-    CallExpr* condTest = new CallExpr("_cond_test", cond);
-
-    retval = new WhileDoStmt(condTest, body);
   }
 
   return retval;

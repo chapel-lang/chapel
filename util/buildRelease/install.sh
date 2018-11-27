@@ -230,7 +230,7 @@ myinstallfileto () {
 # copy chpl
 if [ ! -z "$PREFIX" ]
 then
-  # TODO -- handle chpldoc and chpl-ipe
+  # TODO -- handle chpldoc
   #   these are symbol links to chpl
   myinstallfile "bin/$CHPL_HOST_PLATFORM"/chpl "$PREFIX/bin"
 else

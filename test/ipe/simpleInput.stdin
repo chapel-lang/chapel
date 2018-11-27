@@ -1,2 +1,0 @@
-var x = 17;
-writeln("x = ", x);

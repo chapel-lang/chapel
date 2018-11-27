@@ -32,7 +32,7 @@ static Vec<const char*>        usedConfigParams;
 bool                           mainHasArgs;
 
 void checkConfigs() {
-  if (fMinimalModules == false && fUseIPE == false) {
+  if (fMinimalModules == false) {
     bool             anyBadConfigParams = false;
     Vec<const char*> configParamSetNames;
 

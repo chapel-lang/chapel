@@ -263,9 +263,8 @@ bool isUserDefinedRecord(Symbol* symbol);
 
 /************************************* | **************************************
 *                                                                             *
-* This class has two roles:                                                   *
-*    1) A common abstract base class for VarSymbol and ArgSymbol.             *
-*    2) Maintain location state as an IPE "optimization".                     *
+* This class's role is to serve as a common abstract base class for           *
+* VarSymbol and ArgSymbol.                                                    *
 *                                                                             *
 ************************************** | *************************************/
 
