@@ -67,9 +67,9 @@ headers and libraries available would result in a compilation error.
   // example2.chpl
   var A = Matrix([2.0, 1.0],
                  [1.0, 2.0]);
-  var (eigenvalues, eigenvectors) = eigvals(A, right=true);
+  var (eigenvalues, eigenvectors) = eig(A, right=true);
 
-The program above uses :proc:`eigvals`, which depends on :mod:`LAPACK`.
+The program above uses :proc:`eig`, which depends on :mod:`LAPACK`.
 Compilation without ``LAPACK`` headers and libraries available would result in
 a compilation error.
 
@@ -1091,7 +1091,44 @@ proc cholesky(A: [] ?t, lower = true)
 }
 
 
-// TODO: add example usage to docs
+/* Find the eigenvalues of matrix ``A``. ``A`` must be square.
+
+    .. note::
+
+      This procedure depends on the :mod:`LAPACK` module, and will generate a
+      compiler error if ``lapackImpl`` is ``none``.
+
+*/
+proc eigvals(A: [] ?t) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+  return eig(A, left=false, right=false);
+}
+
+/* To be removed after 1.19.0 */
+pragma "no doc"
+proc eigvals(A: [] ?t, param right: bool) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+  if right then
+    compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
+  return eig(A, right=right);
+}
+
+/* To be removed after 1.19.0 */
+pragma "no doc"
+proc eigvals(A: [] ?t, param left: bool) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+  if left then
+    compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
+  return eig(A, left=left);
+}
+
+/* To be removed after 1.19.0 */
+pragma "no doc"
+proc eigvals(A: [] ?t, param left: bool, param right: bool) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+  if left || right then
+    compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
+  return eig(A, left=left, right=right);
+}
+
+
+
 /* Find the eigenvalues and eigenvectors of matrix ``A``. ``A`` must be square.
 
    * If ``left`` is ``true`` then the "left" eigenvectors are computed. The
@@ -1115,7 +1152,7 @@ proc cholesky(A: [] ?t, lower = true)
       compiler error if ``lapackImpl`` is ``none``.
 
  */
-proc eigvals(A: [] ?t, param left = false, param right = false)
+proc eig(A: [] ?t, param left = false, param right = false)
   where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
 
   proc convertToCplx(wr: [] t, wi: [] t) {
@@ -1286,7 +1323,7 @@ proc svd(A: [?Adom] ?t) throws
 
 
 pragma "no doc"
-proc eigvals(A: [] ?t, param left = false, param right = false)
+proc eig(A: [] ?t, param left = false, param right = false)
   where isRealType(t) && A.domain.rank == 2 && !usingLAPACK {
   compilerError("eigvals() requires LAPACK");
 }

@@ -11,35 +11,7 @@ fillRandom(A);
 var cplxA: [1..10, 1..10] complex = A;
 
 {
-  var eigenvalues = eigvals(A);
-
-  // Check that:
-  // trace(A) = sum(eigenvalues)
-  {
-    var tr = trace(A);
-    var ev = + reduce eigenvalues;
-    if !isClose(tr, ev) {
-      writeln("trace(A) != sum(eigenvalues) ", tr, " != ", ev.re);
-    }
-  }
-}
-
-{
-  var eigenvalues = eig(A);
-
-  // Check that:
-  // trace(A) = sum(eigenvalues)
-  {
-    var tr = trace(A);
-    var ev = + reduce eigenvalues;
-    if !isClose(tr, ev) {
-      writeln("trace(A) != sum(eigenvalues) ", tr, " != ", ev.re);
-    }
-  }
-}
-
-{
-  var (eigenvalues, right) = eig(A, right=true);
+  var (eigenvalues, right) = eigvals(A, right=true);
 
   // trace(A) = sum(eigenvalues)
   {
@@ -66,7 +38,7 @@ var cplxA: [1..10, 1..10] complex = A;
 }
 
 {
-  var (eigenvalues, left) = eig(A, left=true);
+  var (eigenvalues, left) = eigvals(A, left=true);
 
   // trace(A) = sum(eigenvalues)
   {
@@ -94,7 +66,7 @@ var cplxA: [1..10, 1..10] complex = A;
 }
 
 {
-  var (eigenvalues, left, right) = eig(A, left=true, right=true);
+  var (eigenvalues, left, right) = eigvals(A, left=true, right=true);
   // Check that the above properties hold when computing both eigenvectors
   // at the same time.
 
