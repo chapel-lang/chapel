@@ -59,6 +59,15 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size);
 #include "chpl-comm-native-atomics.h"
 
 //
+// Buffered GETs
+//
+void chpl_comm_buff_get(void *addr, c_nodeid_t node, void* raddr,
+                        size_t size, int32_t typeIndex,
+                        int32_t commID, int ln, int32_t fn);
+
+void chpl_comm_get_buff_flush(void);
+
+//
 // Internal statistics gathering and reporting.
 //
 void chpl_comm_statsStartHere(void);

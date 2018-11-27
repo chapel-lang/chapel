@@ -10,6 +10,7 @@ config const printStats = true,
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 
+config const useBufferedGets = false;
 
 const numTasksPerLocale = here.maxTaskPar;
 const numTasks = numLocales * numTasksPerLocale;
@@ -40,12 +41,14 @@ proc main() {
   var t: Timer;
   t.start();
 
-  // TODO investigate perf of cleaner ways to write this
-  // - forall (t, r) in zip(tmp, rindex) do t = A[r];
-  // - forall i in D2 do tmp[i] = A[rindex[i]];
-  // - tmp[rindex] = A[rindex];
-  forall i in D2 {
-    tmp.localAccess[i] = A[rindex.localAccess[i]];
+  if useBufferedGets {
+    use BufferedGets;
+    forall i in D2 do
+      getBuff(tmp.localAccess[i], A[rindex.localAccess[i]]);
+    flushGetBuff();
+  } else {
+    forall i in D2 do
+      tmp.localAccess[i] = A[rindex.localAccess[i]];
   }
 
   t.stop();
