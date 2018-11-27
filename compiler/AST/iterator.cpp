@@ -181,7 +181,7 @@ static bool isIteratorOrForwarder(FnSymbol* it) {
 // Look for the iterator for 'iterKindTag' and update the iterator group.
 static void checkParallelIterator(FnSymbol* serial, Expr* call,
                                   Symbol* iterKindTag, IteratorGroup* igroup,
-                                  FnSymbol*& igroupPtr, bool& noniterFlag)
+                                  FnSymbol*& outParIter, bool& noniterFlag)
 {
   // Build a "representative call".
   CallExpr* repCall = new CallExpr(new UnresolvedSymExpr(serial->name));
@@ -201,7 +201,7 @@ static void checkParallelIterator(FnSymbol* serial, Expr* call,
   if (FnSymbol* parIter = tryResolveCall(repCall)) {
     // Got it.
     if (isIteratorOrForwarder(parIter)) {
-      igroupPtr = parIter;
+      outParIter = parIter;
       parIter->iteratorGroup = igroup;
 
     } else {
@@ -259,9 +259,9 @@ void verifyIteratorGroup(FnSymbol* it) {
   verifyIGfunction(igroup, igroup->follower);
 }
 
-static inline void cleanupIGfunction(FnSymbol* it, FnSymbol*& igroupPtr) {
-  if (it == igroupPtr) {
-    igroupPtr = NULL;
+static inline void cleanupIGfunction(FnSymbol* it, FnSymbol*& parIterInIG) {
+  if (it == parIterInIG) {
+    parIterInIG = NULL;
     it->iteratorGroup = NULL;
   }
 }

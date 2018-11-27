@@ -49,8 +49,9 @@ public:
   IntentTag                  thisTag;
   RetTag                     retTag;
 
-  // Support for iterator lowering and parallel loops.
+  // Support for iterator lowering.
   IteratorInfo*              iteratorInfo;
+  // Pointers to other iterator variants - serial, standalone, etc.
   IteratorGroup*             iteratorGroup;
 
   Symbol*                    _this;

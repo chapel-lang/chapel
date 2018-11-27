@@ -21,7 +21,6 @@
 #define _ITERATOR_H_
 #include "symbol.h"
 #include "vec.h"
-#include <map>
 
 class BaseAST;
 class AggregateType;
