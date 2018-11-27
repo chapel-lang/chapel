@@ -1054,6 +1054,23 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
       call->insertAtTail(tmp);
     }
+
+    //
+    // if .locale applies to a value x of owned or shared type,
+    // return x.borrow().locale.
+    //
+    if (isManagedPtrType(type)) {
+      VarSymbol* tmp = newTemp("_locale_tmp_");
+
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+
+      retval = new CallExpr("borrow", gMethodToken, call->get(1)->remove());
+
+      call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, retval));
+
+      call->insertAtTail(tmp);
+    }
+
   } else if (call->isPrimitive(PRIM_SIZEOF) == true) {
     // Fix up arg to sizeof(), as we may not have known the type earlier
     SymExpr* sizeSym  = toSymExpr(call->get(1));
