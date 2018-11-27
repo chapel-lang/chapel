@@ -1179,7 +1179,7 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
 
       INT_ASSERT(v != NULL && v->immediate != NULL);
 
-      actualN = v->immediate->int_value();
+      actualN = v->immediate->to_int();
 
     } else {
       // Subsequent arguments are tuple types.
