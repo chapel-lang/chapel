@@ -1178,10 +1178,15 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
       VarSymbol* v  = toVarSymbol(se->symbol());
 
       // If 'se' is not an Immediate, then this is not a legal tuple
-      // type expression.  This can happen, for example, when we try
-      // to instantiate the *(param int, type) tuple builder with a
-      // boolean const, which we seem to do pretty aggressively
-      // (i.e., even if there is a better *() overload available)..
+      // type expression, so return NULL.  This happens, for example,
+      // when we try to instantiate the *(param int, type) tuple
+      // builder with a boolean const, which we seem to do pretty
+      // aggressively (i.e., even if there is a better *() overload
+      // available...).  This can be seen in
+      // types/tuple/homog/boolTupleSize-nonparam.future even if the
+      // 'last resort' pragmas are removed from the *(bool,) overloads
+      // in modules/internal/ChapelTuple.chpl.
+      //
       if (v == NULL || v->immediate == NULL) {
         return NULL;
       }
