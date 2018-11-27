@@ -1,0 +1,1 @@
+export-where.chpl:5: error: Exported functions cannot have where clauses.

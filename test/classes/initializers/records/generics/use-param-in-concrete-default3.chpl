@@ -12,6 +12,6 @@ record Foo {
   }
 }
 
-var foo1: Foo(2);
+var foo1 = new Foo(2);
 
 writeln(foo1);

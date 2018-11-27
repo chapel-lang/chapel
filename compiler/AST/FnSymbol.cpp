@@ -51,6 +51,7 @@ FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
   thisTag            = INTENT_BLANK;
   retTag             = RET_VALUE;
   iteratorInfo       = NULL;
+  iteratorGroup      = NULL;
   _this              = NULL;
   instantiatedFrom   = NULL;
   _instantiationPoint = NULL;
@@ -74,26 +75,14 @@ FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
 }
 
 FnSymbol::~FnSymbol() {
-  if (iteratorInfo && !hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
-    // Also set iterator class and iterator record iteratorInfo = NULL.
-    if (iteratorInfo->iclass) {
-      iteratorInfo->iclass->iteratorInfo = NULL;
-    }
-
-    if (iteratorInfo->irecord) {
-      iteratorInfo->irecord->iteratorInfo = NULL;
-    }
-
-    delete iteratorInfo;
-  }
+  cleanupIteratorInfo(this);
+  cleanupIteratorGroup(this);
 
   BasicBlock::clear(this);
-
   delete basicBlocks;
 
-  if (calledBy) {
+  if (calledBy)
     delete calledBy;
-  }
 }
 
 void FnSymbol::verify() {
@@ -149,6 +138,8 @@ void FnSymbol::verify() {
   verifyInTree(_backupInstantiationPoint, "FnSymbol::backupInstantiationPoint");
   verifyInTree(valueFunction,      "FnSymbol::valueFunction");
   verifyInTree(retSymbol,          "FnSymbol::retSymbol");
+
+  verifyIteratorGroup(this);
 }
 
 FnSymbol* FnSymbol::copyInner(SymbolMap* map) {

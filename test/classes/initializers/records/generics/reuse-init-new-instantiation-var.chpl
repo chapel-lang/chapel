@@ -4,8 +4,8 @@
 record Foo {
   var x;
 
-  proc init(xVal) where !isSubtype(xVal.type, Foo) {
-    x = xVal;
+  proc init(x) where !isSubtype(x.type, Foo) {
+    this.x = x;
   }
 }
 

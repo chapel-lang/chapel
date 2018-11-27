@@ -69,8 +69,6 @@ static AggregateType* createOrFindFunTypeFromAnnotation(AList&    argList,
 
 static Expr*          dropUnnecessaryCast(CallExpr* call);
 
-static SymExpr*       symOrParamExpr(Symbol* arg);
-
 static bool           isNormalField(Symbol* field);
 
 static std::string    buildParentName(AList& argList,
@@ -809,7 +807,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // Note: this can add a use formal outside of its function
       // This is cleaned up in cleanupLeaderFollowerIteratorCalls
       followerCall->insertAtTail(new NamedExpr(formal->name,
-                                               symOrParamExpr(formal)));
+                                   createSymExprPropagatingParam(formal)));
     }
 
     // "tag", "followThis" and optionally "fast" should be placed at the end
@@ -841,7 +839,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
         // Leave out the tag since we add it in again below
       } else {
         leaderCall->insertAtTail(new NamedExpr(formal->name,
-                                               symOrParamExpr(formal)));
+                                   createSymExprPropagatingParam(formal)));
       }
     }
 
@@ -864,7 +862,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
         // Leave out the tag since we add it in again below
       } else {
         standaloneCall->insertAtTail(new NamedExpr(formal->name,
-                                                   symOrParamExpr(formal)));
+                                       createSymExprPropagatingParam(formal)));
       }
     }
 
@@ -1915,7 +1913,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   return result;
 }
 
-static SymExpr* symOrParamExpr(Symbol* arg) {
+SymExpr* createSymExprPropagatingParam(Symbol* arg) {
   Symbol* result = arg;
   if (Symbol* paramVal = paramMap.get(arg))
     result = paramVal;
