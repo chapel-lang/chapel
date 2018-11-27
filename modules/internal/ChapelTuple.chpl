@@ -105,6 +105,18 @@ module ChapelTuple {
     return pAsInt*t;
   }
 
+  pragma "no doc"
+  proc *(param p: bool, type t) type {
+    compilerError("Tuple types cannot be defined using boolean sizes");
+    return 1*t;
+  }
+
+  pragma "no doc"
+  proc *(p: bool, type t) type {
+    compilerError("Tuple types cannot be defined using boolean sizes");
+    return 1*t;
+  }
+
   pragma "do not allow ref"
   pragma "build tuple"
   pragma "build tuple type"
@@ -121,7 +133,7 @@ module ChapelTuple {
   // last resort since if this resolves some other way, OK
   pragma "last resort"
   proc *(p: integral, type t) type {
-    compilerError("tuple size must be static");
+    compilerError("tuple size must be known at compile-time");
   }
 
   // make it a tuple if it is not already
