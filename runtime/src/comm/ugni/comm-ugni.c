@@ -1057,6 +1057,12 @@ typedef union fork_t {
 } fork_t;
 
 typedef struct {
+  fork_t fork;
+  nb_desc_t nb_desc;
+  chpl_bool free;
+} nb_fork_t;
+
+typedef struct {
   chpl_task_bundle_t task;
   fork_xfer_info_t x;
 } fork_xfer_task_t;
@@ -7658,14 +7664,15 @@ void do_fork_post(c_nodeid_t locale,
   gni_post_descriptor_t* post_desc_p;
   int                    rbi;
 
-  post_desc_p = &stack_post_desc;
+  static __thread nb_fork_t nb_fork[CD_ACTIVE_TRANS_MAX]; // nb fork descriptors
+  static __thread int nb_fork_num = -1;       // number of outstanding nb forks
+  static __thread int nb_fork_first_free = 0; // index of the first free desc
 
   if (blocking) {
     //
     // Our completion flag has to be in registered memory so the
     // remote locale can PUT directly back here to it.
     //
-
     if (mreg_for_local_addr(&stack_rf_done) != NULL) {
       p_rf_req->rf_done = &stack_rf_done;
     } else {
@@ -7673,30 +7680,71 @@ void do_fork_post(c_nodeid_t locale,
     }
     *p_rf_req->rf_done = 0;
     atomic_thread_fence(memory_order_release);
-  }
-  else
+
+    post_desc_p = &stack_post_desc;
+  } else {
     p_rf_req->rf_done = NULL;
+
+    // Initialize free flag on first call
+    if (nb_fork_num == -1) {
+      int i;
+      for (i=0; i<CD_ACTIVE_TRANS_MAX; i++) {
+        nb_fork[i].free = true;
+      }
+      nb_fork_num = 0;
+    }
+  }
+
+  //
+  // Acquire a communication domain and a remote request buffer
+  //
+  acquire_comm_dom_and_req_buf(locale, &rbi);
+  if (cdi_p != NULL)
+    *cdi_p = cd_idx;
+  if (rbi_p != NULL)
+    *rbi_p = rbi;
+
+  //
+  // Acquire a non-blocking descriptor. Note this must be done after we acquire
+  // the comm_dom and req_buf since we do not allow yields between when we
+  // acquire the non-blocking descriptor and when we do the post_fma below.
+  //
+  if (!blocking) {
+    // find the index of the first free nb descriptor
+    while (!nb_fork[nb_fork_first_free].free) {
+      nb_fork_first_free = (nb_fork_first_free + 1) % CD_ACTIVE_TRANS_MAX;
+    }
+
+    //
+    // Copy the arg bundle into the nb_desc and later send that space. In case
+    // retransmission is needed we need the src buffer to exist until we
+    // consume the completion event
+    //
+    nb_fork[nb_fork_first_free].free = false;
+    memcpy(&nb_fork[nb_fork_first_free].fork, p_rf_req, f_size);
+    post_desc_p = &nb_fork[nb_fork_first_free].nb_desc.post_desc;
+    atomic_store_bool(&nb_fork[nb_fork_first_free].nb_desc.done, false);
+    post_desc_p->post_id = (uint64_t) (intptr_t) &nb_fork[nb_fork_first_free].nb_desc.done;
+  }
 
   //
   // Fill in the POST descriptor.
   //
-  acquire_comm_dom_and_req_buf(locale, &rbi);
-
   post_desc_p->type            = GNI_POST_FMA_PUT;
   post_desc_p->cq_mode         = GNI_CQMODE_GLOBAL_EVENT
                                  | GNI_CQMODE_REMOTE_EVENT;
   post_desc_p->dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
   post_desc_p->rdma_mode       = 0;
   post_desc_p->src_cq_hndl     = 0;
-  post_desc_p->local_addr      = (uint64_t) (intptr_t) p_rf_req;
+  if (blocking)
+    post_desc_p->local_addr    = (uint64_t) (intptr_t) p_rf_req;
+  else
+    post_desc_p->local_addr    = (uint64_t) (intptr_t) &nb_fork[nb_fork_first_free].fork;
   post_desc_p->remote_addr     = (uint64_t) (intptr_t)
                                  SEND_SIDE_FORK_REQ_BUF_ADDR(locale, cd_idx, rbi);
   post_desc_p->remote_mem_hndl = rf_mdh_map[locale];
   post_desc_p->length          = f_size;
 
-  //
-  // Initiate the transaction and wait for it to complete.
-  //
   GNI_CHECK(GNI_EpSetEventData(cd->remote_eps[locale], 0,
                                GNI_ENCODE_REM_INST_ID(chpl_nodeID, cd_idx,
                                                       rbi)));
@@ -7704,19 +7752,12 @@ void do_fork_post(c_nodeid_t locale,
             locale, cd_idx, rbi, p_rf_req->seq,
             fork_op_name(p_rf_req->op));
 
-  if (cdi_p != NULL)
-    *cdi_p = cd_idx;
-  if (rbi_p != NULL)
-    *rbi_p = rbi;
-
-  // note: Do __NOT__ yield while waiting for the ack on a NB fork. We want to
-  // ensure any subsequent NB tasks are spawned before we yield the processor.
-  // For a case like `coforall loc in Locales do on loc do body()` this ensures
-  // we've forked all remote tasks before we give up this task to potentially
-  // work on the body for this locale.
-  post_fma_and_wait(locale, post_desc_p, blocking);
-
   if (blocking) {
+    //
+    // Initiate the transaction and wait for it to complete
+    //
+    post_fma_and_wait(locale, post_desc_p, blocking);
+
     PERFSTATS_INC(wait_rfork_cnt);
     while (! *(volatile rf_done_t*) p_rf_req->rf_done) {
       PERFSTATS_INC(lyield_in_wait_rfork_cnt);
@@ -7725,6 +7766,49 @@ void do_fork_post(c_nodeid_t locale,
 
     if (p_rf_req->rf_done != &stack_rf_done)
       rf_done_free(p_rf_req->rf_done);
+  } else {
+    //
+    // Initiate the transaction and if we're out of space retire at least one
+    //
+
+    nb_fork[nb_fork_first_free].nb_desc.cdi = post_fma(locale, post_desc_p);
+    nb_fork_first_free++;
+    nb_fork_num++;
+
+    // If we're at our max, retire at least one transaction. Note that we can't
+    // compress transactions so maintain both the number of outstanding
+    // transactions and the index of the first free one.
+    if (nb_fork_num >= CD_ACTIVE_TRANS_MAX-1) {
+      int i;
+      chpl_bool retired_any = false;
+      do {
+        for (i=0; i<CD_ACTIVE_TRANS_MAX; i++) {
+          nb_desc_t* nb_desc;
+          chpl_bool done;
+
+          if (nb_fork[i].free) {
+            if (i < nb_fork_first_free) nb_fork_first_free = i;
+            continue;
+          }
+
+          nb_desc = &nb_fork[i].nb_desc;
+
+          done = atomic_load_explicit_bool(&nb_desc->done, memory_order_acquire);
+          if (!done) {
+            consume_all_outstanding_cq_events(nb_desc->cdi);
+            done = atomic_load_explicit_bool(&nb_desc->done, memory_order_acquire);
+          }
+          if (done) {
+            retired_any = true;
+
+            CQ_CNT_DEC(&comm_doms[nb_desc->cdi]);
+            nb_fork[i].free = true;
+            nb_fork_num--;
+            if (i < nb_fork_first_free) nb_fork_first_free = i;
+          }
+        }
+      } while(!retired_any);
+    }
   }
 }
 
