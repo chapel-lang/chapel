@@ -7653,24 +7653,24 @@ void do_fork_post(c_nodeid_t locale,
                   uint64_t f_size, fork_base_info_t* const p_rf_req,
                   int* cdi_p, int* rbi_p)
 {
-  rf_done_t             rf_done;
-  gni_post_descriptor_t post_desc;
-  int                   rbi;
+  rf_done_t              stack_rf_done;
+  gni_post_descriptor_t  stack_post_desc;
+  gni_post_descriptor_t* post_desc_p;
+  int                    rbi;
+
+  post_desc_p = &stack_post_desc;
 
   if (blocking) {
-    mem_region_t* rf_done_mr;
-
     //
     // Our completion flag has to be in registered memory so the
     // remote locale can PUT directly back here to it.
     //
 
-    p_rf_req->rf_done = &rf_done;
-    rf_done_mr = mreg_for_local_addr(p_rf_req->rf_done);
-    if (rf_done_mr == NULL) {
+    if (mreg_for_local_addr(&stack_rf_done) != NULL) {
+      p_rf_req->rf_done = &stack_rf_done;
+    } else {
       p_rf_req->rf_done = rf_done_alloc();
     }
-
     *p_rf_req->rf_done = 0;
     atomic_thread_fence(memory_order_release);
   }
@@ -7682,17 +7682,17 @@ void do_fork_post(c_nodeid_t locale,
   //
   acquire_comm_dom_and_req_buf(locale, &rbi);
 
-  post_desc.type            = GNI_POST_FMA_PUT;
-  post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT
-                              | GNI_CQMODE_REMOTE_EVENT;
-  post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
-  post_desc.rdma_mode       = 0;
-  post_desc.src_cq_hndl     = 0;
-  post_desc.local_addr      = (uint64_t) (intptr_t) p_rf_req;
-  post_desc.remote_addr     = (uint64_t) (intptr_t)
-                              SEND_SIDE_FORK_REQ_BUF_ADDR(locale, cd_idx, rbi);
-  post_desc.remote_mem_hndl = rf_mdh_map[locale];
-  post_desc.length          = f_size;
+  post_desc_p->type            = GNI_POST_FMA_PUT;
+  post_desc_p->cq_mode         = GNI_CQMODE_GLOBAL_EVENT
+                                 | GNI_CQMODE_REMOTE_EVENT;
+  post_desc_p->dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
+  post_desc_p->rdma_mode       = 0;
+  post_desc_p->src_cq_hndl     = 0;
+  post_desc_p->local_addr      = (uint64_t) (intptr_t) p_rf_req;
+  post_desc_p->remote_addr     = (uint64_t) (intptr_t)
+                                 SEND_SIDE_FORK_REQ_BUF_ADDR(locale, cd_idx, rbi);
+  post_desc_p->remote_mem_hndl = rf_mdh_map[locale];
+  post_desc_p->length          = f_size;
 
   //
   // Initiate the transaction and wait for it to complete.
@@ -7714,7 +7714,7 @@ void do_fork_post(c_nodeid_t locale,
   // For a case like `coforall loc in Locales do on loc do body()` this ensures
   // we've forked all remote tasks before we give up this task to potentially
   // work on the body for this locale.
-  post_fma_and_wait(locale, &post_desc, blocking);
+  post_fma_and_wait(locale, post_desc_p, blocking);
 
   if (blocking) {
     PERFSTATS_INC(wait_rfork_cnt);
@@ -7723,7 +7723,7 @@ void do_fork_post(c_nodeid_t locale,
       local_yield();
     }
 
-    if (p_rf_req->rf_done != &rf_done)
+    if (p_rf_req->rf_done != &stack_rf_done)
       rf_done_free(p_rf_req->rf_done);
   }
 }
