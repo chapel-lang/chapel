@@ -3,4 +3,4 @@
 import os
 import sys
 
-sys.stdout.write("PATH=$CHPL_HOME/bin/%s:$PATH" % os.getenv("CHPL_HOST_PLATFORM"))
+sys.stdout.write("PATH=$CHPL_HOME/bin/`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py`:$PATH\n")
