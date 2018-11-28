@@ -1,19 +1,5 @@
 use ISO_Fortran_binding;
 
-proc toChapelArray(ref A: CFI_cdesc_t, param rank = 1) {
-  assert(A.rank == rank);
-  var D: domain(rank);
-  var dims: rank*range;
-
-  for i in 0..#rank {
-    dims(i+1) = A.dim[i].lower_bound..A.dim[i].extent /* by A.dim[i].sm ? */;
-  }
-
-  D = {(...dims)};
-  var AA: [D] int; // getChplType(A.type);
-  return AA;
-}
-
 export proc chpl_library_init_ftn() {
   extern proc chpl_library_init(argc: c_int, argv: c_ptr(c_ptr(c_char)));
   var filename = c"fake";
@@ -21,6 +7,15 @@ export proc chpl_library_init_ftn() {
   chpl__init_chapelProcs();
 }
 
+/* Allow accessing the array using normal Chapel syntax. This uses the
+   `CFI_address` function from the `ISO_Fortran_binding` module to get
+   the address of element `idx`, then returns a dereference of that address.
+   It assumes that the array contains `real(64)` values, but hopefully we
+   can relax that assumption.
+
+   A[i,j] = ...;
+   var val = A[i,j];
+ */
 proc CFI_cdesc_t.this(idx:int...?rank) ref {
   assert(this.rank == rank);
   var subscripts: [0..#rank] CFI_index_t;
@@ -41,13 +36,6 @@ export proc takesArray(ref A: CFI_cdesc_t) {
   for k in 0..#A.dim[1].extent {
     for i in 0..#A.dim[0].extent {
       A[i,k] = (i*100 + k):real;
-/*
-      var subscripts: [0..1] CFI_index_t;
-      subscripts[0] = i: CFI_index_t;
-      subscripts[1] = k: CFI_index_t;
-      var x: c_ptr(real) = CFI_address(A, c_ptrTo(subscripts)): c_ptr(real);
-      x.deref() = (i*100 + k):real;
-*/
     }
   }
 }
