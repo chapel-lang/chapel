@@ -86,9 +86,6 @@ generateCompopts() {
             "CHPL_REGEXP")
                 compopts="$compopts --$flag=$value"
                 ;;
-            "CHPL_WIDE_POINTERS")
-                compopts="$compopts --$flag=$value"
-                ;;
             "CHPL_AUX_FILESYS")
                 compopts="$compopts --$flag=$value"
                 ;;
