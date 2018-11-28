@@ -146,16 +146,16 @@ export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-/data/sea/chapel/Nightly}
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
 # Ensure that one of the CPU modules is loaded.
-my_arch=$($CHPL_HOME/util/chplenv/chpl_arch.py 2> /dev/null)
+my_arch=$($CHPL_HOME/util/chplenv/chpl_cpu.py 2> /dev/null)
 if [ "${my_arch}" = "none" ] ; then
-    log_info "Loading craype-shanghai module to stifle chpl_arch.py warnings."
+    log_info "Loading craype-shanghai module to stifle chpl_cpu.py warnings."
     module load craype-shanghai
 fi
 
 # no cpu targeting module supports the esxbld CPUs, so force x86-64
 if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
     module unload $(module list -t 2>&1| grep craype-| grep -v craype-network |grep -v craype-target)
-    log_info "Setting CRAY_CPU_TARGET to x86-64 to stifle chpl_arch.py warnings."
+    log_info "Setting CRAY_CPU_TARGET to x86-64 to stifle chpl_cpu.py warnings."
     export CRAY_CPU_TARGET=x86-64
 fi
 

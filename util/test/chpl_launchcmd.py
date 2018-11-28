@@ -47,7 +47,7 @@ import xml.etree.ElementTree
 chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_arch
+import chpl_cpu
 
 
 __all__ = ('main')
@@ -206,7 +206,7 @@ class AbstractJob(object):
         :rtype: bool
         :returns: True when testing KNL
         """
-        return chpl_arch.get('target').arch == 'mic-knl'
+        return chpl_cpu.get('target').arch == 'mic-knl'
 
     def _qsub_command_base(self, output_file):
         """Returns base qsub command, without any resource listing.
