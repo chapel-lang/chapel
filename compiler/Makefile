@@ -104,7 +104,7 @@ CHPL_OBJS = \
 EXECS = $(CHPL) $(CHPLDOC) $(CHPLIPE)
 
 PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE) llvm $(CLANG_SETTINGS_FILE)
-TARGETS = $(CHPL)
+TARGETS = $(CHPL) $(CHPL_OLD)
 
 # Set up variables representing paths that will be installed
 # and how to fix them (for CLANG_SETTINGS).
@@ -163,9 +163,8 @@ $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
 
-$(CHPLDOC): $(CHPL)
-	rm -f $(CHPLDOC)
-	ln -s $(notdir $(CHPL)) $(CHPLDOC)
+$(CHPL_OLD): $(CHPL) $(CHPL_OLD_BIN_DIR)
+	cp "$(CHPL_MAKE_HOME)/util/config/old-chpl.sh" "$(CHPL_OLD_BIN_DIR)/chpl"
 
 chpldoc: $(CHPLDOC)
 
@@ -174,6 +173,10 @@ parser: FORCE
 
 $(CHPL_BIN_DIR):
 	mkdir -p $@
+
+$(CHPL_OLD_BIN_DIR):
+	mkdir -p $@
+
 
 # third-party pkgs could be automatically built with the below.
 #
