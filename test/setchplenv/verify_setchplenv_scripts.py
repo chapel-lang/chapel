@@ -80,11 +80,11 @@ class SetChplEnvTests(unittest.TestCase):
             cwd=self.chpl_home,
             env=os.environ.copy()
         )
-        out, _ = proc.communicate(input=cmd)
+        out, _ = proc.communicate(input=str.encode(cmd))
         if proc.returncode != 0:
             raise ValueError('Non-zero exit code ({0}) from: {1}'.format(
                 proc.returncode, cmd))
-        return out
+        return out.decode()
 
     def test_known_shells(self):
         """Verify all known shells have equivalent setchplenv.* scripts in util/ and
