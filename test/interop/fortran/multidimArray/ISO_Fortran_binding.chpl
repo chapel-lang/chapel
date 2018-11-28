@@ -57,7 +57,6 @@ module ISO_Fortran_binding {
   extern const CFI_INVALID_DESCRIPTOR : int;
   extern const CFI_ERROR_MEM_ALLOCATION : int;
   extern const CFI_ERROR_OUT_OF_BOUNDS : int;
-  extern const CFI_INTEL_INVALID_ARGUMENT : int;
 
   extern const CFI_MAX_RANK : int;
   extern const CFI_VERSION : int;
@@ -132,9 +131,6 @@ module ISO_Fortran_binding {
     var attribute: CFI_attribute_t;
     var rank: CFI_rank_t;
     //var type: CFI_type_t;
-    var intel_flags: c_intptr;
-    var intel_reserved1: c_intptr;
-    var intel_reserved2: c_intptr;
     var dim: c_ptr(CFI_dim_t);
   }
 /*
@@ -146,9 +142,6 @@ module ISO_Fortran_binding {
     var attribute: CFI_attribute_t;
     var rank: CFI_rank_t;
     //var type: CFI_type_t;
-    var intel_flags: c_intptr;
-    var intel_reserved1: c_intptr;
-    var intel_reserved2: c_intptr;
     var dim: [0..#r] CFI_dim_t;
   }
 */
