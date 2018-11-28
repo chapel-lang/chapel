@@ -45,9 +45,6 @@ import optparse
 import os
 from sys import stdout, path
 
-CHPLENV_DIR = os.path.dirname(__file__)
-path.insert(0, os.path.abspath(CHPLENV_DIR))
-
 from chplenv import *
 
 ChapelEnv = namedtuple('ChapelEnv', ['name', 'content', 'shortname'])
