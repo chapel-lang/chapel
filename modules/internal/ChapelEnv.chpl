@@ -44,11 +44,17 @@ module ChapelEnv {
   /* See :ref:`readme-chplenv.CHPL_HOST_PLATFORM` for more information. */
   param CHPL_HOST_PLATFORM:string   = __primitive("get compiler variable", "CHPL_HOST_PLATFORM");
 
+  /* See :ref:`readme-chplenv.CHPL_HOST_MACHINE` for more information. */
+  param CHPL_HOST_MACHINE:string   = __primitive("get compiler variable", "CHPL_HOST_MACHINE");
+
   /* See :ref:`readme-chplenv.CHPL_COMPILER` for more information. */
   param CHPL_HOST_COMPILER:string   = __primitive("get compiler variable", "CHPL_HOST_COMPILER");
 
   /* See :ref:`readme-chplenv.CHPL_COMPILER` for more information. */
   param CHPL_TARGET_COMPILER:string = __primitive("get compiler variable", "CHPL_TARGET_COMPILER");
+
+  /* See :ref:`readme-chplenv.CHPL_TARGET_MACHINE` for more information. */
+  param CHPL_TARGET_MACHINE:string     = __primitive("get compiler variable", "CHPL_TARGET_MACHINE");
 
   /* See :ref:`readme-chplenv.CHPL_TARGET_ARCH` for more information. */
   param CHPL_TARGET_ARCH:string     = __primitive("get compiler variable", "CHPL_TARGET_ARCH");
