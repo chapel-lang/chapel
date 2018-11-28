@@ -22,7 +22,7 @@ import unittest
 chplenv_dir = os.path.join(os.path.dirname(__file__), '../../util/chplenv')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_platform
+import chpl_bin_subdir
 
 
 def _skip_if(condition, reason):
@@ -53,7 +53,7 @@ class SetChplEnvTests(unittest.TestCase):
 
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
     chpl_home = os.environ.get('CHPL_HOME', repo_root)
-    chpl_platform = chpl_platform.get()
+    bin_subdir = chpl_bin_subdir.get()
 
     util_dir = os.path.join(chpl_home, 'util')
     quickstart_dir = os.path.join(util_dir, 'quickstart')
@@ -134,7 +134,7 @@ class SetChplEnvTests(unittest.TestCase):
         path_parts = get_path_var('PATH')
         self.assertTrue(len(path_parts) >= 2)
 
-        expected_path_chpl = os.path.join(self.chpl_home, 'bin', self.chpl_platform)
+        expected_path_chpl = os.path.join(self.chpl_home, 'bin', self.bin_subdir)
         expected_path_util = os.path.join(self.chpl_home, 'util')
 
         actual_path_chpl = path_parts[0]
@@ -152,9 +152,6 @@ class SetChplEnvTests(unittest.TestCase):
 
         actual_chpl_home = get_var('CHPL_HOME')
         self.assertEqual(os.stat(self.chpl_home), os.stat(actual_chpl_home))
-
-        actual_platform = get_var('CHPL_HOST_PLATFORM')
-        self.assertEqual(self.chpl_platform, actual_platform)
 
         if 'quickstart' in setchplenv_script:
             self.assertEqual('none', get_var('CHPL_COMM'))
