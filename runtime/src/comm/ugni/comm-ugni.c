@@ -919,19 +919,26 @@ mpool_idx_base_t rf_done_next_pool_i(void)
 // fork_reqs_map array is indexed by locale; each element [i] holds
 // locale i's fork_reqs base address.
 //
-// There is an obvious tension on FORK_T_MAX_ARG_SIZE here.  The more
-// data we can store in the fixed-sized elements of fork_reqs, the
-// fewer fork requests there will be for which the remote end has to
-// do a remote GET of an argument larger than that.  But there can be
-// many fork_reqs elements.  For a hypothetical application running on
-// 1k locales with 16 communication domains per locale and 2 fork
-// request buffers per comm domain, the current FORK_T_MAX_ARG_SIZE
-// means that each locale has about 2 MiB of space dedicated to fork
-// requests.  That's not much, but one can see that things could get
-// out of hand quickly if FORK_T_MAX_ARG_SIZE were very large.  As of
-// this writing (11/21/11) we don't have a good handle on the
-// distribution of remote fork argument sizes.  Some better
-// information about that would be nice to have.
+// There is an obvious tension on MAX_SMALL_CALL_PAYLOAD here.  The
+// more data we can store in the fixed-sized elements of fork_reqs,
+// the fewer fork requests there will be for which the remote end has
+// to do a remote GET of an argument larger than that.  But there can
+// be many fork_reqs elements.  For an application running on 1,024
+// locales with 64 communication domains per locale and 2 fork request
+// buffers per comm domain, the current MAX_SMALL_CALL_PAYLOAD means
+// that each locale has about 128 MiB of space dedicated to fork
+// requests.  That's not massive, but one can see that things could
+// get out of hand quickly if MAX_SMALL_CALL_PAYLOAD were very
+// large.  A large job (say 8K nodes with 128 comm domains) would
+// require 2 GiB per node, which is pretty large, but not horrible.
+// The largest XC possible is 32K nodes and would require 8 GiB per
+// node.  That's pretty excessive, so if we start running at really
+// high scales, we may need to revisit this decision.  Most people
+// are running much smaller scales so we believe the trade-off is
+// worthwhile.  As of this writing (11/30/18) the typical size for
+// remote forks for our multi-locale performance benchmark kernels
+// is between 512 and 1024 bytes.  Bundles for setup and non-kernel
+// spawns are usually between 128 and 512 bytes.
 //
 typedef enum {
   fork_op_nil,
@@ -962,17 +969,14 @@ typedef struct {
   c_sublocid_t  subloc;  // target sublocale
   unsigned char fast:          1;
   unsigned char blocking:      1;
-  unsigned char payload_size;
+  unsigned short payload_size;
   chpl_fn_int_t fid;
 
   // TODO: is there a way to "compress" this?
   chpl_task_ChapelData_t state;
 } fork_small_call_info_t;
 
-// Note: fork_small_call_info_t.payload_size must be able to store
-// a number at least this large. That means it should be at most
-// 255 as long as payload_size is an unsigned char.
-#define MAX_SMALL_CALL_PAYLOAD 64
+#define MAX_SMALL_CALL_PAYLOAD 1024
 #define FORK_T_MAX_SIZE \
   (sizeof(fork_small_call_info_t) + MAX_SMALL_CALL_PAYLOAD)
 
