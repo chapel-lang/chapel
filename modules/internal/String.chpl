@@ -279,7 +279,7 @@ module String {
   // in when possible.
   pragma "ignore noinit"
   pragma "no default functions" // avoid the default (read|write)This routines
-  record string {
+  record _string {
     pragma "no doc"
     var len: int = 0; // length of string in bytes
     pragma "no doc"

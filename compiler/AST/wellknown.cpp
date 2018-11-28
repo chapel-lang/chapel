@@ -30,7 +30,6 @@ AggregateType* dtBaseDom;
 AggregateType* dtDist;
 AggregateType* dtError;
 AggregateType* dtExternalArray;
-AggregateType* dtLocale;
 AggregateType* dtLocaleID;
 AggregateType* dtMainArgument;
 AggregateType* dtOnBundleRecord;
@@ -105,7 +104,6 @@ static WellKnownType sWellKnownTypes[] = {
   { "BaseDom",               &dtBaseDom,          true  },
   { "BaseDist",              &dtDist,             true  },
   { "chpl_external_array",   &dtExternalArray,    false },
-  { "locale",                &dtLocale,           true  },
   { "chpl_localeID_t",       &dtLocaleID,         false },
   { "chpl_main_argument",    &dtMainArgument,     false },
   { "chpl_comm_on_bundle_t", &dtOnBundleRecord,   false },
@@ -162,13 +160,27 @@ void gatherWellKnownTypes() {
     USR_STOP();
 
   } else {
-    if (dtString->symbol == NULL) {
+    if (dtString->symbol == NULL || dtString->symbol->defPoint == NULL) {
       // This means there was no declaration of the string type.
+      if (dtString->symbol)
+        gTypeSymbols.remove(gTypeSymbols.index(dtString->symbol));
+
       gAggregateTypes.remove(gAggregateTypes.index(dtString));
 
       delete dtString;
 
       dtString = NULL;
+    }
+    if (dtLocale->symbol == NULL || dtLocale->symbol->defPoint == NULL) {
+      // This means there was no declaration of the locale type.
+      if (dtLocale->symbol)
+        gTypeSymbols.remove(gTypeSymbols.index(dtLocale->symbol));
+
+      gAggregateTypes.remove(gAggregateTypes.index(dtLocale));
+
+      delete dtLocale;
+
+      dtLocale = NULL;
     }
   }
 }

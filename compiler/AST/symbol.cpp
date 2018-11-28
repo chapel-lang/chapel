@@ -1585,16 +1585,8 @@ VarSymbol *new_StringSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
-  // Unresolved sym exprs will be handled specially in normalize()
-  Expr* newFirst = NULL;
-  if (dtString->symbol != NULL) {
-    newFirst = new SymExpr(dtString->symbol);
-  } else {
-    newFirst = new UnresolvedSymExpr("string");
-  }
-
   CallExpr *initCall = new CallExpr(PRIM_NEW,
-      newFirst,
+      new SymExpr(dtString->symbol),
       castTemp,
       new_IntSymbol(strLength),   // length
       new_IntSymbol(strLength ? strLength+1 : 0)); // size, empty string needs 0

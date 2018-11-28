@@ -834,10 +834,7 @@ Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrTypeCall,
                                            bool recursiveCall) {
   // Is this a call to chpl__buildArrayRuntimeType?
   UnresolvedSymExpr* ursym = toUnresolvedSymExpr(buildArrTypeCall->baseExpr);
-  if (!ursym) {
-    INT_FATAL("Unexpected CallExpr format in buildForallLoopExprFromArrayType");
-  }
-  if (strcmp(ursym->unresolved, "chpl__buildArrayRuntimeType") == 0) {
+  if (ursym && strcmp(ursym->unresolved, "chpl__buildArrayRuntimeType") == 0) {
     // If so, let's process it...
 
     // [i in 1..10] <type expr using 'i'>;
@@ -930,7 +927,7 @@ static void adjustMinMaxReduceOp(Expr* reduceOp) {
     else if (!strcmp(sym->unresolved, "min"))
       sym->unresolved = astr("MinReduceScanOp");
   }
-}  
+}
 
 // Do whatever is needed for a reduce intent.
 // Return the globalOp symbol.
@@ -2036,6 +2033,28 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* doc
   return stmts;
 }
 
+static
+AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
+  // Hook the string type in the modules
+  // to avoid duplication with dtString created in initPrimitiveTypes().
+  // gatherWellKnownTypes runs too late to help.
+
+  // grab the existing symbol from the placeholder "dtString"
+  ct->addSymbol(dt->symbol);
+  *dt = *ct;
+
+  // These fields get overwritten with `ct` by the assignment.
+  // These fields are set to `this` by the AggregateType constructor
+  // so they should still be `dtString`. Fix them back up.
+  dt->fields.parent   = dt;
+  dt->inherits.parent = dt;
+
+  gAggregateTypes.remove(gAggregateTypes.index(ct));
+
+  delete ct;
+
+  return dt;
+}
 
 DefExpr* buildClassDefExpr(const char*  name,
                            const char*  cname,
@@ -2044,30 +2063,26 @@ DefExpr* buildClassDefExpr(const char*  name,
                            BlockStmt*   decls,
                            Flag         isExtern,
                            const char*  docs) {
-  AggregateType* ct = new AggregateType(tag);
+  AggregateType* ct = NULL;
+  TypeSymbol* ts = NULL;
+
+  ct = new AggregateType(tag);
 
   // Hook the string type in the modules
   // to avoid duplication with dtString created in initPrimitiveTypes().
   // gatherWellKnownTypes runs too late to help.
-  if (strcmp("string", name) == 0) {
-    *dtString = *ct;
-
-    // These fields get overwritten with `ct` by the assignment.
-    // These fields are set to `this` by the AggregateType constructor
-    // so they should still be `dtString`. Fix them back up.
-    dtString->fields.parent   = dtString;
-    dtString->inherits.parent = dtString;
-
-    gAggregateTypes.remove(gAggregateTypes.index(ct));
-
-    delete ct;
-
-    ct = dtString;
+  if (strcmp("_string", name) == 0) {
+    ct = installInternalType(ct, dtString);
+    ts = ct->symbol;
+  } else if (strcmp("_locale", name) == 0) {
+    ct = installInternalType(ct, dtLocale);
+    ts = ct->symbol;
+  } else {
+    ts = new TypeSymbol(name, ct);
   }
 
   INT_ASSERT(ct);
 
-  TypeSymbol* ts  = new TypeSymbol(name, ct);
   DefExpr*    def = new DefExpr(ts);
 
   ct->addDeclarations(decls);
@@ -2223,9 +2238,9 @@ FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr) {
     ret->addFlag(FLAG_EXPORT);
   }
 
-  // Handle non-trivial param names that need to be resolved
-  // the check for dtString->symbol avoids this block under chpldoc
-  if (paramCNameExpr && cname[0] == '\0' && dtString->symbol != NULL) {
+  // Handle non-trivial param names that need to be resolved,
+  // but don't do this under chpldoc
+  if (paramCNameExpr && cname[0] == '\0' && fDocs == false) {
     DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
                                       astr_chpl_cname,
                                       new SymExpr(dtString->symbol),
@@ -2937,4 +2952,16 @@ Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b)
 
   // Either way, continue compiling with ==
   return new CallExpr("==", a, b);
+}
+
+void redefiningReservedTypeError(const char* name)
+{
+  USR_FATAL_CONT(buildErrorStandin(),
+                 "attempt to redefine reserved type '%s'", name);
+}
+
+void redefiningReservedWordError(const char* name)
+{
+  USR_FATAL_CONT(buildErrorStandin(),
+                 "attempt to redefine reserved word '%s'", name);
 }

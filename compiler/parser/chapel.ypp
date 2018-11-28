@@ -291,31 +291,48 @@
 //
 // keywords (alphabetical)
 //
-%token TALIGN TAS TATOMIC TBEGIN TBREAK TBORROWED TBY TCATCH
-%token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
+%token TALIGN TAS TATOMIC
+%token TBEGIN TBREAK TBOOL TBORROWED TBY
+%token TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX TCONFIG TCONST TCONTINUE
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFOR TFORALL TFORWARDING
-%token TIF TIN TINDEX TINLINE TINOUT TITER
-%token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
-%token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
+%token TIF TIMAG TIN TINDEX TINLINE TINOUT TINT TITER
+%token TLABEL TLAMBDA TLET TLOCAL TLOCALE
+%token TMINUSMINUS TMODULE
+%token TNEW TNIL TNOINIT
+%token TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
-%token TRECORD TREDUCE TREF TREQUIRE TRETURN
-%token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSUBDOMAIN
-%token TSYNC TTHEN TTHROW TTHROWS TTRY TTRYBANG TTYPE TUNDERSCORE
-%token TUNION TUNMANAGED TUSE TVAR TWHEN TWHERE TWHILE TWITH TYIELD TZIP
+%token TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
+%token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSTRING TSUBDOMAIN TSYNC
+%token TTHEN TTHIS TTHROW TTHROWS TTRY TTRYBANG TTYPE
+%token TUINT TUNDERSCORE TUNION TUNMANAGED TUSE
+%token TVAR
+%token TWHEN TWHERE TWHILE TWITH
+%token TYIELD
+%token TZIP
 
 //
 // operators and punctuation (alphabetical)
 //
 %token TALIAS TAND TASSIGN TASSIGNBAND TASSIGNBOR TASSIGNBXOR TASSIGNDIVIDE
 %token TASSIGNEXP TASSIGNLAND TASSIGNLOR TASSIGNMINUS TASSIGNMOD
-%token TASSIGNMULTIPLY TASSIGNPLUS TASSIGNSL TASSIGNSR TBAND TBNOT TBOR TBXOR
-%token TCOLON TCOMMA TDIVIDE TDOT TDOTDOT TDOTDOTDOT TEQUAL TEXP TGREATER
-%token TGREATEREQUAL THASH TLESS TLESSEQUAL TMINUS TMOD TNOT TNOTEQUAL TOR
-%token TPLUS TQUESTION TSEMI TSHIFTLEFT TSHIFTRIGHT TSTAR TSWAP
-// recent additions
-%token TASSIGNREDUCE TIO
+%token TASSIGNMULTIPLY TASSIGNPLUS TASSIGNREDUCE TASSIGNSL TASSIGNSR
+%token TBAND TBNOT TBOR TBXOR
+%token TCOLON TCOMMA
+%token TDIVIDE TDOT TDOTDOT TDOTDOTDOT
+%token TEQUAL TEXP TGREATER
+%token TGREATEREQUAL
+%token THASH
+%token TIO
+%token TLESS
+%token TLESSEQUAL
+%token TMINUS TMOD
+%token TNOT TNOTEQUAL
+%token TOR
+%token TPLUS
+%token TQUESTION
+%token TSEMI TSHIFTLEFT TSHIFTRIGHT TSTAR TSWAP
 
 //
 // braces
@@ -363,7 +380,9 @@
 %type <retTag>  opt_ret_tag
 %type <aggrTag> class_tag
 
-%type <pch> ident fn_ident assignop_ident opt_ident
+%type <pch> ident_use ident_def ident_fn_def
+%type <pch> internal_type_ident_def reserved_type_ident_use
+%type <pch> fn_ident assignop_ident opt_label_ident
 %type <pch> opt_string
 
 
@@ -420,7 +439,7 @@
 %type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> literal_expr opt_where_part
-%type <pexpr> stmt_level_expr type_level_expr
+%type <pexpr> stmt_level_expr type_level_expr scalar_type
 %type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
 %type <pexpr> opt_init_type var_arg_expr
@@ -485,11 +504,11 @@ stmt:
 | stmt_level_expr TSEMI                { $$ = buildChapelStmt($1); }
 | TATOMIC stmt                         { $$ = buildAtomicStmt($2); }
 | TBEGIN opt_task_intent_ls stmt       { $$ = buildBeginStmt($2, $3); }
-| TBREAK opt_ident TSEMI               { $$ = buildGotoStmt(GOTO_BREAK, $2); }
+| TBREAK opt_label_ident TSEMI         { $$ = buildGotoStmt(GOTO_BREAK, $2); }
 | TCOBEGIN opt_task_intent_ls block_stmt { $$ = buildCobeginStmt($2, $3);  }
-| TCONTINUE opt_ident TSEMI            { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
+| TCONTINUE opt_label_ident TSEMI      { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
 | TDELETE simple_expr_ls TSEMI         { $$ = buildDeleteStmt($2); }
-| TLABEL ident stmt                    { $$ = buildLabelStmt($2, $3); }
+| TLABEL ident_def stmt                { $$ = buildLabelStmt($2, $3); }
 | TLOCAL expr do_stmt                  { $$ = buildLocalStmt($2, $3); }
 | TLOCAL do_stmt                       { $$ = buildLocalStmt($2); }
 | TON expr do_stmt                     { $$ = buildOnStmt($2, $3); }
@@ -501,12 +520,12 @@ stmt:
 ;
 
 module_decl_stmt:
-  access_control opt_prototype TMODULE ident TLCBR TRCBR
+  access_control opt_prototype TMODULE ident_def TLCBR TRCBR
     { $$ = buildChapelStmt(new DefExpr(buildModule($4, currentModuleType,
     new BlockStmt(), yyfilename, $1, $2, @1.comment))); }
-| access_control opt_prototype TMODULE ident TLCBR stmt_ls TRCBR
+| access_control opt_prototype TMODULE ident_def TLCBR stmt_ls TRCBR
     { $$ = buildChapelStmt(new DefExpr(buildModule($4, currentModuleType, $6, yyfilename, $1, $2, @1.comment))); }
-| access_control opt_prototype TMODULE ident TLCBR error TRCBR
+| access_control opt_prototype TMODULE ident_def TLCBR error TRCBR
     {$$ = buildChapelStmt(new DefExpr(buildModule($4, currentModuleType,
         buildErrorStandin(), yyfilename, $1, $2, @1.comment))); }
 ;
@@ -594,30 +613,8 @@ require_stmt:
 ;
 
 assignment_stmt:
-  lhs_expr TASSIGN         opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "=");   }
-| lhs_expr TASSIGNPLUS     opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "+=");  }
-| lhs_expr TASSIGNMINUS    opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "-=");  }
-| lhs_expr TASSIGNMULTIPLY opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "*=");  }
-| lhs_expr TASSIGNDIVIDE   opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "/=");  }
-| lhs_expr TASSIGNMOD      opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "%=");  }
-| lhs_expr TASSIGNEXP      opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "**="); }
-| lhs_expr TASSIGNBAND     opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "&=");  }
-| lhs_expr TASSIGNBOR      opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "|=");  }
-| lhs_expr TASSIGNBXOR     opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "^=");  }
-| lhs_expr TASSIGNSR       opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, ">>="); }
-| lhs_expr TASSIGNSL       opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "<<="); }
+  lhs_expr assignop_ident opt_try_expr TSEMI
+    { $$ = buildAssignment($1, $3, $2);   }
 | lhs_expr TSWAP           opt_try_expr TSEMI
     { $$ = buildAssignment($1, $3, "<=>"); }
 | lhs_expr TASSIGNREDUCE   opt_try_expr TSEMI
@@ -628,14 +625,88 @@ assignment_stmt:
     { $$ = buildLOrAssignment($1, $3);     }
 ;
 
-opt_ident:
+// Here are some nonterminals for identifiers
+
+opt_label_ident:
          { $$ = NULL; }
-| ident
+| TIDENT { $$ = $1; }
 ;
 
-ident:
-  TIDENT  { $$ = $1; }
+ident_fn_def:
+  TIDENT                   { $$ = $1; }
+| TTHIS                    { $$ = "this"; }
+| internal_type_ident_def  { $$ = $1; redefiningReservedTypeError($1); }
+
+ident_def:
+  TIDENT                   { $$ = $1; }
+| TTHIS                    { $$ = "this"; redefiningReservedWordError("this"); }
+| internal_type_ident_def  { $$ = $1; redefiningReservedTypeError($1); }
 ;
+
+/* Represents a use of an identifier. This is not used as often as you
+   might think for various reasons:
+     * things that allow scalar types more naturally use ident_expr,
+       which returns an Expr* rather than a const char*
+     * very special identifier-like things, like domain, borrowed, etc,
+       need separate parsing rules anyway. These are handled by
+       reserved_type_ident_use.
+ */
+ident_use:
+  TIDENT                   { $$ = $1; }
+| TTHIS                    { $$ = "this"; }
+;
+
+internal_type_ident_def:
+ /* These reserved words should generate an error if an attempt
+    is made to redefine them. The name returned from this nonterminal
+    will be used in the error message.
+
+    Uses of these types are parsed differently.
+    See scalar_type and reserved_type_ident_use.
+  */
+  TBOOL      { $$ = "bool"; }
+| TINT       { $$ = "int"; }
+| TUINT      { $$ = "uint"; }
+| TREAL      { $$ = "real"; }
+| TIMAG      { $$ = "imag"; }
+| TCOMPLEX   { $$ = "complex"; }
+| TSTRING    { $$ = "string"; }
+| TSYNC      { $$ = "sync"; }
+| TSINGLE    { $$ = "single"; }
+| TOWNED     { $$ = "owned"; }
+| TSHARED    { $$ = "shared"; }
+| TBORROWED  { $$ = "borrowed"; }
+| TUNMANAGED { $$ = "unmanaged"; }
+| TDOMAIN    { $$ = "domain"; }
+| TINDEX     { $$ = "index"; }
+| TLOCALE    { $$ = "locale"; }
+;
+
+scalar_type:
+  TBOOL    { $$ = new SymExpr(dtBools[BOOL_SIZE_DEFAULT]->symbol); }
+| TINT     { $$ = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
+| TUINT    { $$ = new SymExpr(dtUInt[INT_SIZE_DEFAULT]->symbol); }
+| TREAL    { $$ = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol); }
+| TIMAG    { $$ = new SymExpr(dtImag[FLOAT_SIZE_DEFAULT]->symbol); }
+| TCOMPLEX { $$ = new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol); }
+| TSTRING  { $$ = new SymExpr(dtString->symbol); }
+| TLOCALE  { $$ = new SymExpr(dtLocale->symbol); }
+;
+
+reserved_type_ident_use:
+  /* These reserved words can also be used as types but in fewer
+     places in the parser. Additionally their type versions have
+     different names. */
+  TSYNC      { $$ = "_syncvar"; }
+| TSINGLE    { $$ = "_singlevar"; }
+| TOWNED     { $$ = "_owned"; }
+| TSHARED    { $$ = "_shared"; }
+| TBORROWED  { $$ = "_borrowed"; }
+| TUNMANAGED { $$ = "_unmanaged"; }
+| TDOMAIN    { $$ = "_domain"; }
+| TINDEX     { $$ = "_index"; }
+;
+
 
 opt_string:
                 { $$ = NULL; }
@@ -692,7 +763,7 @@ loop_stmt:
 | TFOR expr TIN zippered_iterator do_stmt       { $$ = ForLoop::buildForLoop(  $2, $4, $5, false,  true); }
 | TFOR expr do_stmt                             { $$ = ForLoop::buildForLoop(NULL, $2, $3, false, false); }
 | TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(NULL, $2, $3, false,  true); }
-| TFOR TPARAM ident TIN expr do_stmt            { $$ = buildParamForLoopStmt($3, $5, $6); }
+| TFOR TPARAM ident_def TIN expr do_stmt            { $$ = buildParamForLoopStmt($3, $5, $6); }
 | TFORALL expr TIN expr                                 do_stmt    { $$ = ForallStmt::build($2, $4, NULL, $5); }
 | TFORALL expr TIN expr            forall_intent_clause do_stmt    { $$ = ForallStmt::build($2, $4, $5,   $6); }
 | TFORALL expr TIN zippered_iterator                    do_stmt    { $$ = ForallStmt::build($2, $4, NULL, $5, true); }
@@ -782,8 +853,8 @@ catch_stmt:
 ;
 
 catch_expr:
-  ident             { $$ = new DefExpr(new VarSymbol($1), NULL, new UnresolvedSymExpr("Error")); }
-| ident TCOLON expr { $$ = new DefExpr(new VarSymbol($1), NULL, $3);   }
+  ident_def           { $$ = new DefExpr(new VarSymbol($1), NULL, new UnresolvedSymExpr("Error")); }
+| ident_def TCOLON expr { $$ = new DefExpr(new VarSymbol($1), NULL, $3);   }
 ;
 
 throw_stmt:
@@ -813,7 +884,7 @@ when_stmt:
 /** DECLARATION STATEMENTS ***************************************************/
 
 class_decl_stmt:
-  class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
+  class_tag ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($2,
                                              NULL,
@@ -823,7 +894,7 @@ class_decl_stmt:
                                              FLAG_UNKNOWN,
                                              @1.comment));
     }
-| TEXTERN opt_string class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
+| TEXTERN opt_string class_tag ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($4,
                                              $2,
@@ -833,7 +904,7 @@ class_decl_stmt:
                                              FLAG_EXTERN,
                                              @3.comment));
     }
-| class_tag ident opt_inherit TLCBR error TRCBR
+| class_tag ident_def opt_inherit TLCBR error TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($2,
                                              NULL,
@@ -843,7 +914,7 @@ class_decl_stmt:
                                              FLAG_UNKNOWN,
                                              @1.comment));
     }
-| TEXTERN opt_string class_tag ident opt_inherit TLCBR error TRCBR
+| TEXTERN opt_string class_tag ident_def opt_inherit TLCBR error TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($4,
                                              $2,
@@ -888,7 +959,7 @@ class_level_stmt_ls:
 ;
 
 enum_decl_stmt:
-  enum_header ident TLCBR enum_ls TRCBR
+  enum_header ident_def TLCBR enum_ls TRCBR
     {
       EnumType* pdt = $1;
       for_vector(DefExpr, ec, *$4) {
@@ -904,7 +975,7 @@ enum_decl_stmt:
       $1->symbol = pst;
       $$ = buildChapelStmt(new DefExpr(pst));
     }
-| enum_header ident TLCBR error TRCBR
+| enum_header ident_def TLCBR error TRCBR
     {
       $$ = buildErrorStandin();
     }
@@ -939,8 +1010,8 @@ enum_ls:
 ;
 
 enum_item:
-  ident               { $$ = new DefExpr(new EnumSymbol($1)); }
-| ident TASSIGN expr  { $$ = new DefExpr(new EnumSymbol($1), $3); }
+  ident_def               { $$ = new DefExpr(new EnumSymbol($1)); }
+| ident_def TASSIGN expr  { $$ = new DefExpr(new EnumSymbol($1), $3); }
 ;
 
 lambda_decl_expr:
@@ -1067,6 +1138,10 @@ fn_decl_stmt_inner:
       $$ = buildFunctionSymbol($5, $4, $1, $2);
       $$->addFlag(FLAG_ASSIGNOP);
     }
+| opt_this_intent_tag error opt_formal_ls
+    {
+      $$ = buildFunctionSymbol($3, "dummy", INTENT_BLANK, NULL);
+    }
 ;
 
 fn_decl_receiver_expr:
@@ -1075,8 +1150,8 @@ fn_decl_receiver_expr:
 ;
 
 fn_ident:
-  ident
-| TBNOT ident    { $$ = astr("~", $2); }
+  ident_fn_def    { $$ = $1; }
+| TBNOT ident_def { $$ = astr("~", $2); }
 | TBAND          { $$ = "&"; }
 | TBOR           { $$ = "|"; }
 | TBXOR          { $$ = "^"; }
@@ -1134,11 +1209,11 @@ formal_ls:
 ;
 
 formal:
-  opt_intent_tag ident opt_formal_type opt_init_expr
+  opt_intent_tag ident_def opt_formal_type opt_init_expr
     { $$ = buildArgDefExpr($1, $2, $3, $4, NULL); }
-| pragma_ls opt_intent_tag ident opt_formal_type opt_init_expr
+| pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr
     { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, $5, NULL)); }
-| opt_intent_tag ident opt_formal_type var_arg_expr
+| opt_intent_tag ident_def opt_formal_type var_arg_expr
     { $$ = buildArgDefExpr($1, $2, $3, NULL, $4); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
     { $$ = buildTupleArgDefExpr($1, $3, $5, $6); }
@@ -1201,7 +1276,7 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUESTION ident
+  TQUESTION ident_def
     { $$ = new DefExpr(new VarSymbol($2)); }
 | TQUESTION
     { $$ = new DefExpr(new VarSymbol(astr("chpl__query", istr(query_uid++)))); }
@@ -1232,7 +1307,7 @@ type_alias_decl_stmt:
 ;
 
 type_alias_decl_stmt_inner:
-  ident opt_init_type
+  ident_def opt_init_type
     {
       VarSymbol* var = new VarSymbol($1);
 
@@ -1245,7 +1320,7 @@ type_alias_decl_stmt_inner:
 
       $$ = buildChapelStmt(def);
     }
-| ident opt_init_type TCOMMA type_alias_decl_stmt_inner
+| ident_def opt_init_type TCOMMA type_alias_decl_stmt_inner
     {
       VarSymbol* var = new VarSymbol($1);
 
@@ -1328,7 +1403,7 @@ var_decl_stmt_inner_ls:
 ;
 
 var_decl_stmt_inner:
-  ident opt_type opt_init_expr
+  ident_def opt_type opt_init_expr
     { $$ = buildChapelStmt(new DefExpr(new VarSymbol($1), $3, $2)); }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     { $$ = buildTupleVarDeclStmt($2, $4, $5); }
@@ -1337,7 +1412,7 @@ var_decl_stmt_inner:
 tuple_var_decl_component:
   TUNDERSCORE
     { $$ = new DefExpr(new VarSymbol("chpl__tuple_blank")); }
-| ident
+| ident_def
     { $$ = new DefExpr(new VarSymbol($1)); }
 | TLP tuple_var_decl_stmt_inner_ls TRP
     { $$ = $2; }
@@ -1391,13 +1466,7 @@ opt_ret_type:
                           { $$ = NULL; }
 | TCOLON type_level_expr  { $$ = $2; }
 | TCOLON ret_array_type   { $$ = $2; }
-| TCOLON TDOMAIN          { $$ = new UnresolvedSymExpr("_domain"); }
-| TCOLON TSINGLE          { $$ = new UnresolvedSymExpr( "_singlevar"); }
-| TCOLON TSYNC            { $$ = new UnresolvedSymExpr( "_syncvar"); }
-| TCOLON TBORROWED        { $$ = new UnresolvedSymExpr( "_borrowed"); }
-| TCOLON TOWNED           { $$ = new UnresolvedSymExpr( "_owned"); }
-| TCOLON TUNMANAGED       { $$ = new UnresolvedSymExpr( "_unmanaged"); }
-| TCOLON TSHARED          { $$ = new UnresolvedSymExpr( "_shared"); }
+| TCOLON reserved_type_ident_use { $$ = new UnresolvedSymExpr($2); }
 | error                   { $$ = NULL; }
 ;
 
@@ -1406,13 +1475,7 @@ opt_type:
                           { $$ = NULL; }
 | TCOLON type_level_expr  { $$ = $2; }
 | TCOLON array_type       { $$ = $2; }
-| TCOLON TDOMAIN          { $$ = new UnresolvedSymExpr("_domain"); }
-| TCOLON TSINGLE          { $$ = new UnresolvedSymExpr( "_singlevar"); }
-| TCOLON TSYNC            { $$ = new UnresolvedSymExpr( "_syncvar"); }
-| TCOLON TBORROWED        { $$ = new UnresolvedSymExpr( "_borrowed"); }
-| TCOLON TOWNED           { $$ = new UnresolvedSymExpr( "_owned"); }
-| TCOLON TUNMANAGED       { $$ = new UnresolvedSymExpr( "_unmanaged"); }
-| TCOLON TSHARED          { $$ = new UnresolvedSymExpr( "_shared"); }
+| TCOLON reserved_type_ident_use { $$ = new UnresolvedSymExpr($2); }
 | error                   { $$ = NULL; }
 ;
 
@@ -1482,13 +1545,7 @@ opt_formal_type:
                             { $$ = NULL; }
 | TCOLON type_level_expr    { $$ = $2; }
 | TCOLON query_expr         { $$ = $2; }
-| TCOLON TDOMAIN            { $$ = new UnresolvedSymExpr("_domain"); }
-| TCOLON TSINGLE            { $$ = new UnresolvedSymExpr( "_singlevar"); }
-| TCOLON TSYNC              { $$ = new UnresolvedSymExpr( "_syncvar"); }
-| TCOLON TBORROWED          { $$ = new UnresolvedSymExpr( "_borrowed"); }
-| TCOLON TOWNED             { $$ = new UnresolvedSymExpr( "_owned"); }
-| TCOLON TUNMANAGED         { $$ = new UnresolvedSymExpr( "_unmanaged"); }
-| TCOLON TSHARED            { $$ = new UnresolvedSymExpr( "_shared"); }
+| TCOLON reserved_type_ident_use { $$ = new UnresolvedSymExpr($2); }
 | TCOLON formal_array_type  { $$ = $2; }
 ;
 
@@ -1528,14 +1585,15 @@ actual_ls:
 ;
 
 actual_expr:
-  ident TASSIGN query_expr   { $$ = buildNamedActual($1, $3); }
-| ident TASSIGN opt_try_expr { $$ = buildNamedActual($1, $3); }
+  ident_use TASSIGN query_expr   { $$ = buildNamedActual($1, $3); }
+| ident_use TASSIGN opt_try_expr { $$ = buildNamedActual($1, $3); }
 | query_expr                 { $$ = $1; }
 | opt_try_expr               { $$ = $1; }
 ;
 
 ident_expr:
-  ident     { $$ = new UnresolvedSymExpr($1); }
+  ident_use      { $$ = new UnresolvedSymExpr($1); }
+| scalar_type    { $$ = $1; }
 ;
 
 /* Expressions which represent types.  type_level_exprs can appear within formal
@@ -1791,9 +1849,10 @@ call_expr:
 ;
 
 dot_expr:
-  expr TDOT ident    { $$ = buildDotExpr($1, $3); }
-| expr TDOT TTYPE    { $$ = new CallExpr(PRIM_TYPEOF, $1); }
-| expr TDOT TDOMAIN  { $$ = buildDotExpr($1, "_dom"); }
+  expr TDOT ident_use  { $$ = buildDotExpr($1, $3); }
+| expr TDOT TTYPE      { $$ = new CallExpr(PRIM_TYPEOF, $1); }
+| expr TDOT TDOMAIN    { $$ = buildDotExpr($1, "_dom"); }
+| expr TDOT TLOCALE    { $$ = buildDotExpr($1, "locale"); }
 ;
 
 /* ( <expr> ) -- A parenthesized expression.  The parens are stripped.

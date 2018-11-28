@@ -38,6 +38,7 @@
 
 AggregateType* dtObject = NULL;
 AggregateType* dtString = NULL;
+AggregateType* dtLocale = NULL;
 
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
@@ -1888,9 +1889,14 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 }
 
 AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
-  UnresolvedSymExpr* se  = toUnresolvedSymExpr(storesName);
-  Symbol*            sym = lookup(se->unresolved, storesName);
-  TypeSymbol*        ts  = toTypeSymbol(sym);
+  TypeSymbol*        ts  = NULL;
+
+  if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
+    Symbol* sym = lookup(se->unresolved, storesName);
+    ts = toTypeSymbol(sym);
+  } else if (SymExpr* se = toSymExpr(storesName)) {
+    ts = toTypeSymbol(se->symbol());
+  }
 
   if (ts == NULL) {
     USR_FATAL(storesName, "Illegal super class");
