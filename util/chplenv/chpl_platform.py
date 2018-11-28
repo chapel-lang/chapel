@@ -5,9 +5,6 @@ import platform
 import re
 import sys
 
-chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
-
 import overrides, utils
 from utils import error, memoize
 

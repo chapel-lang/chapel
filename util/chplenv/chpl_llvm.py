@@ -3,9 +3,6 @@ import optparse
 import os
 import sys
 
-chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
-
 import chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party
 from utils import memoize
