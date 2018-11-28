@@ -2051,9 +2051,12 @@ for testname in testsrc:
                     sys.stdout.write('[Concatenating extra files: %s]\n'%
                                     (test_filename+'.catfiles'))
                     sys.stdout.flush()
-                    output+=Popen(['cat']+catfiles.split(),
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT).communicate()[0]
+                    cat_output = Popen(['cat']+catfiles.split(),
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT).communicate()[0]
+                    if sys.version_info[0] >= 3 and isinstance(cat_output, bytes):
+                        output = bytes(output, 'utf-8')
+                    output += cat_output
 
                 # Sadly the scripts used below require an actual file
                 open_mode = 'w' if isinstance(output, str) else 'wb'
