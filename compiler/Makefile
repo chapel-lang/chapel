@@ -161,6 +161,10 @@ $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 $(CHPL_OLD): $(CHPL) $(CHPL_OLD_BIN_DIR)
 	cp "$(CHPL_MAKE_HOME)/util/config/old-chpl.sh" "$(CHPL_OLD_BIN_DIR)/chpl"
 
+$(CHPLDOC): $(CHPL)
+	rm -f $(CHPLDOC)
+	ln -s $(notdir $(CHPL)) $(CHPLDOC)
+
 chpldoc: $(CHPLDOC)
 
 parser: FORCE
