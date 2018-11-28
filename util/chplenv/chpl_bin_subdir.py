@@ -14,7 +14,7 @@ import chpl_platform, chpl_machine, chpl_arch
 from utils import memoize
 
 @memoize
-def get(flag):
+def get(flag='host'):
     platform = chpl_platform.get(flag)
     machine = chpl_machine.get(flag)
     (flag, arch) = chpl_arch.get(flag, map_to_compiler=True,
