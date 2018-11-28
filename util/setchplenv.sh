@@ -27,16 +27,12 @@ export CHPL_HOME
 echo "                    ...to $CHPL_HOME"
 echo " "
 
-echo "Setting CHPL_HOST_PLATFORM..."
-CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py`
-export CHPL_HOST_PLATFORM
-echo "                        ...to $CHPL_HOST_PLATFORM"
-echo " "
+CHPL_BIN_SUBDIR=`"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
 
 echo "Updating PATH to include..."
-PATH="$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util:"$MYPATH"
+PATH="$CHPL_HOME"/bin/$CHPL_BIN_SUBDIR:"$CHPL_HOME"/util:"$MYPATH"
 export PATH
-echo "                           ...$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
+echo "                           ...$CHPL_HOME"/bin/$CHPL_BIN_SUBDIR
 echo "                       and ...$CHPL_HOME"/util
 echo " "
 
