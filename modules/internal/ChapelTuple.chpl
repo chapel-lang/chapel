@@ -97,6 +97,26 @@ module ChapelTuple {
     // body inserted during generic instantiation
   }
 
+  pragma "no doc"
+  proc *(param p: uint, type t) type {
+    if p > max(int) then
+      compilerError("Tuples of size >" + max(int) + " are not currently supported");
+    param pAsInt = p: int;
+    return pAsInt*t;
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc *(param p: bool, type t) type {
+    compilerError("Tuple types cannot be defined using boolean sizes");
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc *(p: bool, type t) type {
+    compilerError("Tuple types cannot be defined using boolean sizes");
+  }
+
   pragma "do not allow ref"
   pragma "build tuple"
   pragma "build tuple type"
@@ -112,8 +132,8 @@ module ChapelTuple {
 
   // last resort since if this resolves some other way, OK
   pragma "last resort"
-  proc *(p: int, type t) type {
-    compilerError("tuple size must be static");
+  proc *(p: integral, type t) type {
+    compilerError("tuple size must be known at compile-time");
   }
 
   // make it a tuple if it is not already

@@ -1177,9 +1177,21 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
       SymExpr*   se = toSymExpr(actual);
       VarSymbol* v  = toVarSymbol(se->symbol());
 
-      INT_ASSERT(v != NULL && v->immediate != NULL);
+      // If 'se' is not an Immediate, then this is not a legal tuple
+      // type expression, so return NULL.  This happens, for example,
+      // when we try to instantiate the *(param int, type) tuple
+      // builder with a boolean const, which we seem to do pretty
+      // aggressively (i.e., even if there is a better *() overload
+      // available...).  This can be seen in
+      // types/tuple/homog/boolTupleSize-nonparam.future even if the
+      // 'last resort' pragmas are removed from the *(bool,) overloads
+      // in modules/internal/ChapelTuple.chpl.
+      //
+      if (v == NULL || v->immediate == NULL) {
+        return NULL;
+      }
 
-      actualN = v->immediate->int_value();
+      actualN = v->immediate->to_int();
 
     } else {
       // Subsequent arguments are tuple types.
