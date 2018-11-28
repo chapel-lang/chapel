@@ -603,6 +603,25 @@ void codegen_make_python_module() {
   }
   pythonPath += "/python";
 
+  // On Crays, we need to use the exact same C compiler and linker that Chapel
+  // detects
+  std::string crayCompiler;
+  std::string crayLinker;
+  if (CHPL_TARGET_COMPILER != NULL &&
+      strstr(CHPL_TARGET_COMPILER, "cray-prgenv") != NULL) {
+    if (strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-gnu") != 0) {
+      USR_WARN("PrgEnvs other than gnu may not be ABI compatible with Cython"
+               " source files");
+    }
+    std::string getCrayComp = "$CHPL_HOME/util/config/compileline --compiler";
+    crayCompiler = runCommand(getCrayComp);
+    // Erase the trailing \n from getting the cFlags
+    crayCompiler.erase(crayCompiler.length() - 1);
+    std::string getCLink = "$CHPL_HOME/util/config/compileline --linkershared";
+    crayLinker = runCommand(getCLink);
+    crayLinker.erase(crayLinker.length() - 1);
+  }
+
   std::string getCFlags = "$CHPL_HOME/util/config/compileline --cflags";
   std::string cFlags = runCommand(getCFlags);
   // Erase the trailing \n from getting the cFlags
@@ -634,6 +653,10 @@ void codegen_make_python_module() {
   cythonPortion += ".py build_ext -i";
 
   std::string fullCythonCall = "PYTHONPATH=" + pythonPath;
+  if (crayCompiler != "") {
+    fullCythonCall += " CC=\"" + crayCompiler;
+    fullCythonCall += "\" LDSHARED=\"" + crayLinker + "\"";
+  }
   fullCythonCall += " CFLAGS=\"" + cFlags + requireIncludes + " " + includes;
   fullCythonCall += "\" LDFLAGS=\"-L. " + name + requireLibraries;
   fullCythonCall += " " + libraries;
