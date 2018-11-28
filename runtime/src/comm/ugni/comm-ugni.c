@@ -1922,7 +1922,7 @@ void chpl_comm_post_task_init(void)
 
       if (strcmp(CHPL_MEM, "jemalloc") == 0
           && getenv(chpl_comm_ugni_jemalloc_conf_ev_name()) == NULL) {
-        char buf[100];
+        char buf[200];
         (void) snprintf(buf, sizeof(buf),
                         "dynamic heap on hugepages needs %s set properly",
                         chpl_comm_ugni_jemalloc_conf_ev_name());
@@ -5522,10 +5522,6 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 {
   mem_region_t*         local_mr;
   mem_region_t*         remote_mr;
-  void*                 tgt_addr_xmit;
-  uint64_t              xmit_size;
-  void*                 src_addr_xmit;
-  uint64_t              src_addr_xmit_off;
 
   DBG_P_LP(DBGF_GETPUT, "DoRemBuffGet %p <- %d:%p (%#zx), proxy %c",
            tgt_addr, (int) locale, src_addr, size, may_proxy ? 'y' : 'n');
