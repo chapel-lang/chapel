@@ -87,20 +87,9 @@ struct chpl_comm_bundleData_AMO_t {
   int8_t size;                  // object size (bytes)
   c_nodeid_t node;              // initiator's node
   void* obj;                    // object address on target node
-  chpl_amo_datum_t operand;     // operand, if needed
-  chpl_comm_amDone_t* pDone;    // initiator's 'done' flag; nonblocking if NULL
-};
-
-struct chpl_comm_bundleData_FAMO_t {
-  uint8_t op;                   // operation; must come first
-  enum fi_op ofiOp;             // ofi AMO op
-  enum fi_datatype ofiType;     // ofi object type
-  int8_t size;                  // object size (bytes)
-  c_nodeid_t node;              // initiating node
-  void* obj;                    // object address on target node
-  void* result;                 // result address on initiator's node
   chpl_amo_datum_t operand1;    // first operand, if needed
   chpl_amo_datum_t operand2;    // second operand, if needed
+  void* result;                 // result address on initiator's node
   chpl_comm_amDone_t* pDone;    // initiator's 'done' flag; nonblocking if NULL
 };
 
@@ -109,7 +98,6 @@ typedef union {
   struct chpl_comm_bundleData_execOn_t xo;
   struct chpl_comm_bundleData_RMA_t rma;
   struct chpl_comm_bundleData_AMO_t amo;
-  struct chpl_comm_bundleData_FAMO_t famo;
 } chpl_comm_bundleData_t;
 
 //
