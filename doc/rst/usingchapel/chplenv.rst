@@ -184,7 +184,21 @@ CHPL_*_COMPILER
 CHPL_TARGET_ARCH
 ~~~~~~~~~~~~~~~~
    Optionally, set the ``CHPL_TARGET_ARCH`` environment variable to indicate
-   that the target executable should be specialized to the given architecture
+   the machine type architecture.
+
+        ========  =============================================================
+        Value     Description
+        ========  =============================================================
+        x86_64    64-bit AMD and Intel processors
+        aarch64   64-bit ARM processors
+        ========  =============================================================
+
+.. _readme-chplenv.CHPL_TARGET_CPU:
+
+CHPL_TARGET_CPU
+~~~~~~~~~~~~~~~~
+   Optionally, set the ``CHPL_TARGET_CPU`` environment variable to indicate
+   that the target executable should be specialized to the given CPU
    when using ``--specialize`` (and ``--fast``). Valid options are:
 
         ========  =============================================================
@@ -219,11 +233,11 @@ CHPL_TARGET_ARCH
         https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/x86-Options.html
         https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/AArch64-Options.html
 
-   If you do not want ``CHPL_TARGET_ARCH`` to have any effect, you can set it
+   If you do not want ``CHPL_TARGET_CPU`` to have any effect, you can set it
    to either ``unknown`` or ``none``. Both will disable specialization, but the
    latter will not warn if ``--specialize`` is used.
 
-   Setting ``CHPL_TARGET_ARCH`` to an incorrect value for your processor may
+   Setting ``CHPL_TARGET_CPU`` to an incorrect value for your processor may
    result in an invalid binary that will not run on the intended machine.
    Special care should be taken to select the lowest common denominator when
    running on machines with heterogeneous processor architectures.
@@ -232,20 +246,20 @@ CHPL_TARGET_ARCH
    environment, in order of application these rules are:
 
         * If :ref:`CHPL_TARGET_COMPILER <readme-chplenv.chpl_compiler>` is ``cray-prgenv-*`` you do not need to
-          set anything in ``CHPL_TARGET_ARCH``. One of the ``craype-*`` modules
+          set anything in ``CHPL_TARGET_CPU``. One of the ``craype-*`` modules
           (e.g.  ``craype-sandybridge``) should be loaded to provide equivalent
           functionality. Once the proper module is loaded, ``CRAY_CPU_TARGET``
           will have the architecture being used in it.
 
         * If ``CHPL_TARGET_COMPILER`` is ``cray``, ``pgi``, or ``ibm``,
-          ``CHPL_TARGET_ARCH`` will be set to ``none`` and no specialization
+          ``CHPL_TARGET_CPU`` will be set to ``none`` and no specialization
           will occur.
 
         * If :ref:`readme-chplenv.CHPL_COMM` is set, no attempt to set a useful value will be
-          made, ``CHPL_TARGET_ARCH`` will be ``unknown``.
+          made, ``CHPL_TARGET_CPU`` will be ``unknown``.
 
         * If :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` is ``darwin``, ``linux*``, or
-          ``cygwin*`` ``CHPL_TARGET_ARCH`` will be ``native``, passing the
+          ``cygwin*`` ``CHPL_TARGET_CPU`` will be ``native``, passing the
           responsibility off to the backend C compiler to detect the specifics
           of the hardware.
 

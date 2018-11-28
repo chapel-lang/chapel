@@ -82,10 +82,10 @@ LIB_DYNAMIC_FLAG = -shared
 SHARED_LIB_CFLAGS = -fpic
 
 # Set the target architecture for optimization
-ifneq ($(CHPL_MAKE_TARGET_ARCH), none)
-ifneq ($(CHPL_MAKE_TARGET_ARCH), unknown)
-ifneq ($(CHPL_MAKE_TARGET_ARCH_FLAG), none)
-SPECIALIZE_CFLAGS = -m$(CHPL_MAKE_TARGET_ARCH_FLAG)=$(CHPL_MAKE_TARGET_BACKEND_ARCH)
+ifneq ($(CHPL_MAKE_TARGET_CPU), none)
+ifneq ($(CHPL_MAKE_TARGET_CPU), unknown)
+ifneq ($(CHPL_MAKE_TARGET_CPU_FLAG), none)
+SPECIALIZE_CFLAGS = -m$(CHPL_MAKE_TARGET_CPU_FLAG)=$(CHPL_MAKE_TARGET_BACKEND_CPU)
 endif
 endif
 endif

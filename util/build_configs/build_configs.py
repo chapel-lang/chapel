@@ -82,6 +82,7 @@ known_dimensions = [
     ( 'target_platform',    'CHPL_TARGET_PLATFORM', ),
     ( 'target_compiler',    'CHPL_TARGET_COMPILER', ),
     ( 'arch',               'CHPL_TARGET_ARCH', ),
+    ( 'cpu',                'CHPL_TARGET_CPU', ),
     ( 'locale_model',       'CHPL_LOCALE_MODEL', ),
     ( 'comm',               'CHPL_COMM', ),
     ( 'substrate',          'CHPL_COMM_SUBSTRATE', ),

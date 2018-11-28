@@ -9,16 +9,16 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_home_utils
-import chpl_platform, chpl_machine, chpl_arch
+import chpl_platform, chpl_arch, chpl_cpu
 
 from utils import memoize
 
 @memoize
 def get(flag):
     platform = chpl_platform.get(flag)
-    machine = chpl_machine.get(flag)
-    (flag, arch) = chpl_arch.get(flag, map_to_compiler=True,
-                                 get_lcd=chpl_home_utils.using_chapel_module())
+    machine = chpl_arch.get(flag)
+    (flag, arch) = chpl_cpu.get(flag, map_to_compiler=True,
+                                get_lcd=chpl_home_utils.using_chapel_module())
 
     # platform
     result = platform

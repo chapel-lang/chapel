@@ -523,7 +523,7 @@ static void setupAvailableParallelism(int32_t maxThreads) {
 }
 
 static chpl_bool setupGuardPages(void) {
-    const char *armArch = "arm-thunderx";
+    const char *armArch = "aarch64";
     chpl_bool guardPagesEnabled = true;
     // default value set by compiler (--[no-]stack-checks)
     chpl_bool defaultVal = (CHPL_STACK_CHECKS == 1);

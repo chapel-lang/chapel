@@ -66,16 +66,16 @@ DEFAULT = set(['default'])
 CHPL_ENVS = [
     ChapelEnv('CHPL_HOST_PLATFORM', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_COMPILER', COMPILER | LAUNCHER),
-    ChapelEnv('CHPL_HOST_MACHINE', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_ARCH', COMPILER | LAUNCHER, 'arch'),
+    ChapelEnv('CHPL_HOST_CPU', COMPILER | LAUNCHER, 'cpu'),
     ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_COMPILER', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_TARGET_MACHINE', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_ORIG_TARGET_COMPILER', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT, 'arch'),
-    ChapelEnv('CHPL_RUNTIME_ARCH', INTERNAL),
-    ChapelEnv('CHPL_TARGET_ARCH_FLAG', INTERNAL),
-    ChapelEnv('CHPL_TARGET_BACKEND_ARCH', INTERNAL),
+    ChapelEnv('CHPL_ORIG_TARGET_COMPILER', INTERNAL),
+    ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'cpu'),
+    ChapelEnv('CHPL_RUNTIME_CPU', INTERNAL),
+    ChapelEnv('CHPL_TARGET_CPU_FLAG', INTERNAL),
+    ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
@@ -137,16 +137,16 @@ def compute_all_values():
     ENV_VALS["CHPL_ORIG_TARGET_COMPILER"] = chpl_compiler.get('target', llvm_mode='orig')
     ENV_VALS['CHPL_HOST_PLATFORM'] = chpl_platform.get('host')
     ENV_VALS['CHPL_HOST_COMPILER'] = chpl_compiler.get('host')
-    ENV_VALS['CHPL_HOST_MACHINE'] = chpl_machine.get('host')
-    ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host').arch
+    ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host')
+    ENV_VALS['CHPL_HOST_CPU'] = chpl_cpu.get('host').arch
     ENV_VALS['CHPL_TARGET_PLATFORM'] = chpl_platform.get('target')
     ENV_VALS['CHPL_TARGET_COMPILER'] = chpl_compiler.get('target')
-    ENV_VALS['CHPL_TARGET_MACHINE'] = chpl_machine.get('target')
-    ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target').arch
+    ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')
+    ENV_VALS['CHPL_TARGET_CPU'] = chpl_cpu.get('target').arch
 
     # Use module's LCD architecture in case it was built before
-    # Internal, but this value is used in place of CHPL_TARGET_ARCH for --path
-    ENV_VALS['CHPL_RUNTIME_ARCH'] = chpl_arch.get('target',
+    # Internal, but this value is used in place of CHPL_TARGET_CPU for --path
+    ENV_VALS['CHPL_RUNTIME_CPU'] = chpl_cpu.get('target',
             get_lcd=chpl_home_utils.using_chapel_module()).arch
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
@@ -177,9 +177,9 @@ def compute_internal_values():
 
     # Maps architecture name that Chapel uses to the name that can be included
     # in an argument like -march e.g. for gcc-4.7: 'ivybridge' -> 'core-avx-i'
-    backend_info = chpl_arch.get('target', map_to_compiler=True)
-    ENV_VALS['CHPL_TARGET_ARCH_FLAG'] = backend_info.flag
-    ENV_VALS['CHPL_TARGET_BACKEND_ARCH'] = backend_info.arch
+    backend_info = chpl_cpu.get('target', map_to_compiler=True)
+    ENV_VALS['CHPL_TARGET_CPU_FLAG'] = backend_info.flag
+    ENV_VALS['CHPL_TARGET_BACKEND_CPU'] = backend_info.arch
 
     ENV_VALS['CHPL_HOST_MEM'] = chpl_mem.get('host')
     ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
@@ -328,8 +328,8 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
     # Print environment variables and their values
     for env in envs:
         value = ENV_VALS[env.name]
-        if env.name == 'CHPL_TARGET_ARCH' and print_format == 'path':
-            value = ENV_VALS['CHPL_RUNTIME_ARCH']
+        if env.name == 'CHPL_TARGET_CPU' and print_format == 'path':
+            value = ENV_VALS['CHPL_RUNTIME_CPU']
         ret.append(print_var(env.name, value, shortname=env.shortname))
 
     # Handle special formatting case for --path

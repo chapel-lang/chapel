@@ -1646,17 +1646,17 @@ void runClang(const char* just_parse_filename) {
     args.push_back(clang_opt);
 
   if (specializeCCode &&
-      CHPL_TARGET_ARCH_FLAG != NULL &&
-      CHPL_TARGET_BACKEND_ARCH != NULL &&
-      CHPL_TARGET_ARCH_FLAG[0] != '\0' &&
-      CHPL_TARGET_BACKEND_ARCH[0] != '\0' &&
-      0 != strcmp(CHPL_TARGET_ARCH_FLAG, "none") &&
-      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none") &&
-      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "unknown")) {
+      CHPL_TARGET_CPU_FLAG != NULL &&
+      CHPL_TARGET_BACKEND_CPU != NULL &&
+      CHPL_TARGET_CPU_FLAG[0] != '\0' &&
+      CHPL_TARGET_BACKEND_CPU[0] != '\0' &&
+      0 != strcmp(CHPL_TARGET_CPU_FLAG, "none") &&
+      0 != strcmp(CHPL_TARGET_BACKEND_CPU, "none") &&
+      0 != strcmp(CHPL_TARGET_BACKEND_CPU, "unknown")) {
     std::string march = "-m";
-    march += CHPL_TARGET_ARCH_FLAG;
+    march += CHPL_TARGET_CPU_FLAG;
     march += "=";
-    march += CHPL_TARGET_BACKEND_ARCH;
+    march += CHPL_TARGET_BACKEND_CPU;
     args.push_back(march);
   }
 

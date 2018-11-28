@@ -53,6 +53,9 @@ module ChapelEnv {
   /* See :ref:`readme-chplenv.CHPL_TARGET_ARCH` for more information. */
   param CHPL_TARGET_ARCH:string     = __primitive("get compiler variable", "CHPL_TARGET_ARCH");
 
+  /* See :ref:`readme-chplenv.CHPL_TARGET_CPU` for more information. */
+  param CHPL_TARGET_CPU:string     = __primitive("get compiler variable", "CHPL_TARGET_CPU");
+
   /* See :ref:`readme-chplenv.CHPL_LOCALE_MODEL` for more information. */
   param CHPL_LOCALE_MODEL:string    = __primitive("get compiler variable", "CHPL_LOCALE_MODEL");
 

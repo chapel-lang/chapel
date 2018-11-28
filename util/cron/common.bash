@@ -75,7 +75,7 @@ export CHPL_HOST_PLATFORM=$($CHPL_HOME/util/chplenv/chpl_platform.py --host)
 log_info "CHPL_HOST_PLATFORM is: ${CHPL_HOST_PLATFORM}"
 
 # Disable processor specialization (overridden in some configurations)
-export CHPL_TARGET_ARCH=none
+export CHPL_TARGET_CPU=none
 
 # Setup some logdirs.
 

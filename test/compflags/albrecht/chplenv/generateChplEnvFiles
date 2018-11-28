@@ -47,6 +47,9 @@ generateCompopts() {
             "CHPL_TARGET_ARCH")
                 compopts="$compopts --$flag=$value"
                 ;;
+            "CHPL_TARGET_CPU")
+                compopts="$compopts --$flag=$value"
+                ;;
             "CHPL_LOCALE_MODEL")
                 compopts="$compopts --$flag=$value"
                 ;;
