@@ -60,7 +60,7 @@ def find_pkg_aliases():
 def gather_chplenv():
     """ Run printchplenv and return the output """
     printchplenv = os.path.join(get_chpl_home(), 'util', 'printchplenv')
-    args = ['--simple', '--internal', '--runtime', '--anonymize', '--no-tidy']
+    args = ['--simple', '--internal', '--runtime', '--compiler', '--anonymize', '--no-tidy']
     return utils.run_command([printchplenv] + args)
 
 def compute_required_pkgs():
