@@ -2072,11 +2072,9 @@ DefExpr* buildClassDefExpr(const char*  name,
   // to avoid duplication with dtString created in initPrimitiveTypes().
   // gatherWellKnownTypes runs too late to help.
   if (strcmp("_string", name) == 0) {
-    gdbShouldBreakHere();
     ct = installInternalType(ct, dtString);
     ts = ct->symbol;
   } else if (strcmp("_locale", name) == 0) {
-    gdbShouldBreakHere();
     ct = installInternalType(ct, dtLocale);
     ts = ct->symbol;
   } else {
