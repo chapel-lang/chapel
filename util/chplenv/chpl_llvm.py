@@ -3,6 +3,7 @@ import optparse
 import os
 import sys
 
+import chpl_bin_subdir, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party
 from utils import memoize
 
