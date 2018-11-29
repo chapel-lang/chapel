@@ -31,42 +31,42 @@
 //
 
 //
-// Do a remote atomic store.  The value to be stored is *desired on the
-// local node.  The target location to be stored into is *object on the
-// given node.  This differs from a regular chpl_comm_put() in that it
-// is coherent with other chpl_comm_atomic_*() operations (but may incur
-// network overhead) even if the target is the calling node.
+// Do a remote atomic write.  The value to be written is *desired on the
+// local node.  The target location to be written into is *object on the
+// given node.  This differs from chpl_comm_put() in that it is coherent
+// with other chpl_comm_atomic_*() operations (but may incur network
+// overhead) even if the target is the calling node.
 //
-#define DECL_CHPL_COMM_ATOMIC_PUT(type)                                 \
-  void chpl_comm_atomic_put_ ## type                                    \
+#define DECL_CHPL_COMM_ATOMIC_WRITE(type)                               \
+  void chpl_comm_atomic_write_ ## type                                  \
          (void* desired, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn);
 
-DECL_CHPL_COMM_ATOMIC_PUT(int32)
-DECL_CHPL_COMM_ATOMIC_PUT(int64)
-DECL_CHPL_COMM_ATOMIC_PUT(uint32)
-DECL_CHPL_COMM_ATOMIC_PUT(uint64)
-DECL_CHPL_COMM_ATOMIC_PUT(real32)
-DECL_CHPL_COMM_ATOMIC_PUT(real64)
+DECL_CHPL_COMM_ATOMIC_WRITE(int32)
+DECL_CHPL_COMM_ATOMIC_WRITE(int64)
+DECL_CHPL_COMM_ATOMIC_WRITE(uint32)
+DECL_CHPL_COMM_ATOMIC_WRITE(uint64)
+DECL_CHPL_COMM_ATOMIC_WRITE(real32)
+DECL_CHPL_COMM_ATOMIC_WRITE(real64)
 
 //
-// Do a remote atomic load.  The source location is *object on the
+// Do a remote atomic read.  The source location is *object on the
 // given node.  The value is returned in *result on the local node.
-// This differs from a regular chpl_comm_get() in that it is coherent
-// with other chpl_comm_atomic_*() operations (but may incur network
+// This differs from chpl_comm_get() in that it is coherent with
+// other chpl_comm_atomic_*() operations (but may incur network
 // overhead) even if the source is the calling node.
 //
-#define DECL_CHPL_COMM_ATOMIC_GET(type)                                 \
-  void chpl_comm_atomic_get_ ## type                                    \
+#define DECL_CHPL_COMM_ATOMIC_READ(type)                                \
+  void chpl_comm_atomic_read_ ## type                                   \
          (void* result, c_nodeid_t node, void* object,                  \
           int ln, int32_t fn);
 
-DECL_CHPL_COMM_ATOMIC_GET(int32)
-DECL_CHPL_COMM_ATOMIC_GET(int64)
-DECL_CHPL_COMM_ATOMIC_GET(uint32)
-DECL_CHPL_COMM_ATOMIC_GET(uint64)
-DECL_CHPL_COMM_ATOMIC_GET(real32)
-DECL_CHPL_COMM_ATOMIC_GET(real64)
+DECL_CHPL_COMM_ATOMIC_READ(int32)
+DECL_CHPL_COMM_ATOMIC_READ(int64)
+DECL_CHPL_COMM_ATOMIC_READ(uint32)
+DECL_CHPL_COMM_ATOMIC_READ(uint64)
+DECL_CHPL_COMM_ATOMIC_READ(real32)
+DECL_CHPL_COMM_ATOMIC_READ(real64)
 
 //
 // Do a remote atomic exchange.  The value to be stored is *desired on
