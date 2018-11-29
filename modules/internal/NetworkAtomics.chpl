@@ -42,19 +42,19 @@ module NetworkAtomics {
 
     inline proc const read(order:memory_order = memory_order_seq_cst): bool {
       pragma "insert line file info" extern externFunc("read", int(64))
-        proc atomic_get(ref result:int(64), l:int(32), const obj:c_void_ptr): void;
+        proc atomic_read(ref result:int(64), l:int(32), const obj:c_void_ptr): void;
 
       var ret: int(64);
-      atomic_get(ret, _localeid(), _addr());
+      atomic_read(ret, _localeid(), _addr());
       return ret:bool;
     }
 
     inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
       pragma "insert line file info" extern externFunc("write", int(64))
-        proc atomic_put(ref desired:int(64), l:int(32), obj:c_void_ptr): void;
+        proc atomic_write(ref desired:int(64), l:int(32), obj:c_void_ptr): void;
 
       var v = value:int(64);
-      atomic_put(v, _localeid(), _addr());
+      atomic_write(v, _localeid(), _addr());
     }
 
     inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
@@ -132,19 +132,19 @@ module NetworkAtomics {
 
     inline proc const read(order:memory_order = memory_order_seq_cst): T {
       pragma "insert line file info" extern externFunc("read", T)
-        proc atomic_get(ref result:T, l:int(32), const obj:c_void_ptr): void;
+        proc atomic_read(ref result:T, l:int(32), const obj:c_void_ptr): void;
 
       var ret:T;
-      atomic_get(ret, _localeid(), _addr());
+      atomic_read(ret, _localeid(), _addr());
       return ret;
     }
 
     inline proc write(value:T, order:memory_order = memory_order_seq_cst): void {
       pragma "insert line file info" extern externFunc("write", T)
-        proc atomic_put(ref desired:T, l:int(32), obj:c_void_ptr): void;
+        proc atomic_write(ref desired:T, l:int(32), obj:c_void_ptr): void;
 
       var v = value;
-      atomic_put(v, _localeid(), _addr());
+      atomic_write(v, _localeid(), _addr());
     }
 
     inline proc exchange(value:T, order:memory_order = memory_order_seq_cst): T {
