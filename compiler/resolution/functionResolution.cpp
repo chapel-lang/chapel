@@ -1936,6 +1936,13 @@ static void checkForInfiniteRecord(AggregateType* at) {
 static void markArraysOfBorrows(AggregateType* at);
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
+  at->initializerResolved = true;
+
+  for_fields(field, at) {
+    if (field->type == dtUnknown) {
+      field->type = field->defPoint->exprType->typeInfo();
+    }
+  }
 
   if (isRecord(at)) {
     checkForInfiniteRecord(at);
@@ -3207,12 +3214,6 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
   // Don't forward forwarding expr (infinite loop ensues)
   const char* ignorePrefix = "chpl_forwarding_expr";
   if (0 == memcmp(ignorePrefix, calledName, strlen(ignorePrefix)))
-    return NULL;
-
-  // This is a workaround for resolvePromotionType being called
-  // when some fields have unknown type. A better solution
-  // is preferred.
-  if (0 == strcmp(calledName, "chpl__promotionType"))
     return NULL;
 
   // Detect cycles
