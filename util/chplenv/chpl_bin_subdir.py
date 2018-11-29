@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 
 import optparse
-import os
 import sys
-import sys
-
-chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_home_utils
 import chpl_platform, chpl_machine, chpl_arch
