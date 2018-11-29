@@ -35,7 +35,7 @@ def get():
             res = sum([ os.path.exists(os.path.join(d, filename)) for d in directories ])
 
             if res < 1:
-                stderr.write(err)
+                sys.stderr.write(err)
                 return False
 
             return True
