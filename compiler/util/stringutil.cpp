@@ -49,7 +49,8 @@ canonicalize_string(const char *s) {
 
 const char*
 astr(const char* s1, const char* s2, const char* s3, const char* s4,
-     const char* s5, const char* s6, const char* s7, const char* s8) {
+     const char* s5, const char* s6, const char* s7, const char* s8,
+     const char* s9) {
   int len;
   len = strlen(s1);
   if (s2)
@@ -66,6 +67,8 @@ astr(const char* s1, const char* s2, const char* s3, const char* s4,
     len += strlen(s7);
   if (s8)
     len += strlen(s8);
+  if (s9)
+    len += strlen(s9);
   char* s = (char*)malloc(len+1);
   strcpy(s, s1);
   if (s2)
@@ -82,6 +85,8 @@ astr(const char* s1, const char* s2, const char* s3, const char* s4,
     strcat(s, s7);
   if (s8)
     strcat(s, s8);
+  if (s9)
+    strcat(s, s9);
   const char* t = canonicalize_string(s);
   if (s != t)
     free(s);
