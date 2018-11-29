@@ -2104,49 +2104,49 @@ static inline void doAMO(c_nodeid_t, void*, const void*, const void*, void*,
 
 
 //
-// PUT
+// WRITE
 //
-#define DEFN_CHPL_COMM_ATOMIC_PUT(fnType, ofiType, Type)                \
-  void chpl_comm_atomic_put_##fnType                                    \
+#define DEFN_CHPL_COMM_ATOMIC_WRITE(fnType, ofiType, Type)              \
+  void chpl_comm_atomic_write_##fnType                                  \
          (void* desired, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
-               "chpl_comm_atomic_put_%s(%p, %d, %p, %d, %s)",           \
+               "chpl_comm_atomic_write_%s(%p, %d, %p, %d, %s)",         \
                #fnType, desired, (int) node, object,                    \
                ln, chpl_lookupFilename(fn));                            \
     doAMO(node, object, desired, NULL, NULL,                            \
           FI_ATOMIC_WRITE, ofiType, sizeof(Type));                      \
   }
 
-DEFN_CHPL_COMM_ATOMIC_PUT(int32, FI_INT32, int32_t)
-DEFN_CHPL_COMM_ATOMIC_PUT(int64, FI_INT64, int64_t)
-DEFN_CHPL_COMM_ATOMIC_PUT(uint32, FI_UINT32, uint32_t)
-DEFN_CHPL_COMM_ATOMIC_PUT(uint64, FI_UINT64, uint64_t)
-DEFN_CHPL_COMM_ATOMIC_PUT(real32, FI_FLOAT, float)
-DEFN_CHPL_COMM_ATOMIC_PUT(real64, FI_DOUBLE, double)
+DEFN_CHPL_COMM_ATOMIC_WRITE(int32, FI_INT32, int32_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(uint32, FI_UINT32, uint32_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(uint64, FI_UINT64, uint64_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(real32, FI_FLOAT, float)
+DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, double)
 
 
 //
-// GET
+// READ
 //
-#define DEFN_CHPL_COMM_ATOMIC_GET(fnType, ofiType, Type)                \
-  void chpl_comm_atomic_get_##fnType                                    \
+#define DEFN_CHPL_COMM_ATOMIC_READ(fnType, ofiType, Type)               \
+  void chpl_comm_atomic_read_##fnType                                   \
          (void* result, c_nodeid_t node, void* object,                  \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
-               "chpl_comm_atomic_get_%s(%p, %d, %p, %d, %s)",           \
+               "chpl_comm_atomic_read_%s(%p, %d, %p, %d, %s)",          \
                #fnType, result, (int) node, object,                     \
                ln, chpl_lookupFilename(fn));                            \
     doAMO(node, object, NULL, NULL, result,                             \
           FI_ATOMIC_READ, ofiType, sizeof(Type));                       \
   }
 
-DEFN_CHPL_COMM_ATOMIC_GET(int32, FI_INT32, int32_t)
-DEFN_CHPL_COMM_ATOMIC_GET(int64, FI_INT64, int64_t)
-DEFN_CHPL_COMM_ATOMIC_GET(uint32, FI_UINT32, uint32_t)
-DEFN_CHPL_COMM_ATOMIC_GET(uint64, FI_UINT64, uint64_t)
-DEFN_CHPL_COMM_ATOMIC_GET(real32, FI_FLOAT, float)
-DEFN_CHPL_COMM_ATOMIC_GET(real64, FI_DOUBLE, double)
+DEFN_CHPL_COMM_ATOMIC_READ(int32, FI_INT32, int32_t)
+DEFN_CHPL_COMM_ATOMIC_READ(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_READ(uint32, FI_UINT32, uint32_t)
+DEFN_CHPL_COMM_ATOMIC_READ(uint64, FI_UINT64, uint64_t)
+DEFN_CHPL_COMM_ATOMIC_READ(real32, FI_FLOAT, float)
+DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, double)
 
 
 #define DEFN_CHPL_COMM_ATOMIC_XCHG(fnType, ofiType, Type)               \

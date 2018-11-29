@@ -41,7 +41,7 @@ module NetworkAtomics {
     }
 
     inline proc const read(order:memory_order = memory_order_seq_cst): bool {
-      pragma "insert line file info" extern externFunc("get", int(64))
+      pragma "insert line file info" extern externFunc("read", int(64))
         proc atomic_get(ref result:int(64), l:int(32), const obj:c_void_ptr): void;
 
       var ret: int(64);
@@ -50,7 +50,7 @@ module NetworkAtomics {
     }
 
     inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
-      pragma "insert line file info" extern externFunc("put", int(64))
+      pragma "insert line file info" extern externFunc("write", int(64))
         proc atomic_put(ref desired:int(64), l:int(32), obj:c_void_ptr): void;
 
       var v = value:int(64);
@@ -131,7 +131,7 @@ module NetworkAtomics {
     }
 
     inline proc const read(order:memory_order = memory_order_seq_cst): T {
-      pragma "insert line file info" extern externFunc("get", T)
+      pragma "insert line file info" extern externFunc("read", T)
         proc atomic_get(ref result:T, l:int(32), const obj:c_void_ptr): void;
 
       var ret:T;
@@ -140,7 +140,7 @@ module NetworkAtomics {
     }
 
     inline proc write(value:T, order:memory_order = memory_order_seq_cst): void {
-      pragma "insert line file info" extern externFunc("put", T)
+      pragma "insert line file info" extern externFunc("write", T)
         proc atomic_put(ref desired:T, l:int(32), obj:c_void_ptr): void;
 
       var v = value;
