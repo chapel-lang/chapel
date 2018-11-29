@@ -6,9 +6,8 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_comm, chpl_comm_substrate, chpl_compiler, chpl_platform, overrides
+import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
 from utils import memoize
-
 
 
 @memoize
@@ -17,7 +16,6 @@ def get():
     if not launcher_val:
         comm_val = chpl_comm.get()
         platform_val = chpl_platform.get('target')
-        compiler_val = chpl_compiler.get('target')
 
         if platform_val.startswith('cray-x') or chpl_platform.is_cross_compiling():
             has_aprun = find_executable('aprun')

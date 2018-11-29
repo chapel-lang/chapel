@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.abspath(chplenv_dir))
 import overrides
 from utils import memoize
 
+
 @memoize
 def get():
     lib_pic_val = overrides.get('CHPL_LIB_PIC')

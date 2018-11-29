@@ -2,13 +2,13 @@
 import sys
 import os
 from glob import glob
-from sys import stderr, stdout
 
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import overrides
 from utils import memoize
+
 
 @memoize
 def get():
@@ -25,9 +25,9 @@ def get():
         found_hdfs_lib = os.path.exists(os.path.join(aux_fs_subdir, 'lib',
                                                  'native', 'libhdfs.a'))
         if not found_java:
-            stderr.write("Warning: Can't find your Java installation\n")
+            sys.stderr.write("Warning: Can't find your Java installation\n")
         if not found_hdfs or not found_hdfs_lib:
-            stderr.write("Warning: Can't find your Hadoop installation\n")
+            sys.stderr.write("Warning: Can't find your Hadoop installation\n")
 
     elif aux_fs == 'hdfs3':
         def fetchInfo(env, envtype, filename, err):
@@ -48,7 +48,7 @@ def get():
 
 def _main():
     aux_fs_val = get()
-    stdout.write("{0}\n".format(aux_fs_val))
+    sys.stdout.write("{0}\n".format(aux_fs_val))
 
 
 if __name__ == '__main__':

@@ -48,7 +48,5 @@ def _main():
       sys.stdout.write("{0}\n".format(llvm_val))
 
 
-
-
 if __name__ == '__main__':
     _main()

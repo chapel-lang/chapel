@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.abspath(chplenv_dir))
 import chpl_platform, overrides
 from utils import error, memoize
 
+
 @memoize
 def get():
     platform_val = chpl_platform.get('target')
@@ -27,6 +28,7 @@ def get():
         elif val == 'system':
             return 'system'
     return 'none'
+
 
 def _main():
     unwind_val = get()

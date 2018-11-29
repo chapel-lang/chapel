@@ -9,7 +9,6 @@ import chpl_mem, overrides
 from utils import error, memoize
 
 
-
 @memoize
 def get():
     jemalloc_val = overrides.get('CHPL_JEMALLOC')
