@@ -234,7 +234,7 @@ class argument_map(object):
         if arch == 'unknown':
             return arch
 
-        if compiler in ['gnu', 'mpi-gnu', 'aarch64-gnu']:
+        if compiler in ['gnu', 'mpi-gnu', 'aarch64-gnu', 'cray-prgenv-gnu']:
             if version >= CompVersion('7.0'):
                 return cls.gcc7.get(arch, '')
             elif version >= CompVersion('6.0'):
@@ -250,7 +250,7 @@ class argument_map(object):
             elif version >= CompVersion('4.3'):
                 return cls.gcc43.get(arch, '')
             return 'none'
-        elif compiler == 'intel':
+        elif compiler in ['intel', 'cray-prgenv-intel']:
             return cls.intel.get(arch, '')
         elif compiler in ['clang', 'clang-included', 'allinea']:
             # Clang doesn't know how to do architecture detection for aarch64.
@@ -514,6 +514,7 @@ def verify_arch(arch, flag):
     comm_val = chpl_comm.get()
     compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
+    isprgenv = compiler_is_prgenv(compiler_val)
 
     # Only try to do any architecture verification when:
     # comm == none  -- The inverse means that we are probably cross-compiling.
@@ -522,14 +523,15 @@ def verify_arch(arch, flag):
     # cygwin           Crays will be handled through the craype-* modules
     #
     check_arch = False
-    if flag == 'target':
-      if comm_val == 'none' and not compiler_is_prgenv(compiler_val):
-        if ('linux' in platform_val or
-             platform_val == 'darwin' or
-             platform_val.startswith('cygwin')):
-          check_arch = True
-    if flag == 'host':
-      check_arch = True
+    if not isprgenv:
+      if flag == 'target':
+        if comm_val == 'none':
+          if ('linux' in platform_val or
+               platform_val == 'darwin' or
+               platform_val.startswith('cygwin')):
+            check_arch = True
+      if flag == 'host':
+        check_arch = True
 
     if check_arch and arch and arch not in  ['none', 'unknown', 'native']:
         # Print a friendly warning if it's unlikely the user could run
@@ -580,8 +582,12 @@ def get(flag, map_to_compiler=False, get_lcd=False):
 
     verify_arch(arch, flag)
 
-    if map_to_compiler:
-        compiler_val = chpl_compiler.get(flag)
+    compiler_val = chpl_compiler.get(flag)
+    isprgenv = compiler_is_prgenv(compiler_val)
+    if map_to_compiler and not isprgenv:
+        # Map flag/arch to compiler flag/argument
+        # Don't do this for PrgEnv compiles since the compiler driver
+        # handles specialization.
         version = get_compiler_version(compiler_val)
         (flag, arch) = argument_map.find(arch, compiler_val, version)
     elif arch and arch != 'none' and arch != 'unknown':
