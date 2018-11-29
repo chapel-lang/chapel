@@ -3,9 +3,6 @@ import sys
 import os
 from glob import glob
 
-chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
-
 import overrides
 from utils import memoize
 

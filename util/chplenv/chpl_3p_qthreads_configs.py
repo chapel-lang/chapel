@@ -1,9 +1,3 @@
-import os
-import sys
-
-chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
-
 import chpl_compiler, chpl_hwloc, chpl_llvm, chpl_locale_model, chpl_mem
 import third_party_utils
 from compiler_utils import compiler_is_prgenv

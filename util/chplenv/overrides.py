@@ -6,9 +6,6 @@ Checks environment variables first, then chplconfig file for definitions
 import os
 import sys
 
-chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
-
 from utils import memoize
 
 # List of Chapel Environment Variables
