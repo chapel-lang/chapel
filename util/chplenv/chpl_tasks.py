@@ -10,6 +10,7 @@ from chpl_home_utils import using_chapel_module
 from compiler_utils import CompVersion, get_compiler_version
 from utils import memoize
 
+
 @memoize
 def get():
     tasks_val = overrides.get('CHPL_TASKS')

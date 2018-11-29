@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.abspath(chplenv_dir))
 import overrides, utils
 from utils import error, memoize
 
+
 @memoize
 def get(flag='host'):
     if flag == 'host':
@@ -74,9 +75,11 @@ def get(flag='host'):
 
     return platform_val
 
+
 @memoize
 def is_cross_compiling():
     return get('host') != get('target')
+
 
 def _main():
     parser = optparse.OptionParser(usage='usage: %prog [--host|target])')

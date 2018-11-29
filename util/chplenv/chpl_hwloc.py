@@ -9,7 +9,6 @@ import chpl_tasks, overrides
 from utils import memoize
 
 
-
 @memoize
 def get():
     hwloc_val = overrides.get('CHPL_HWLOC')
