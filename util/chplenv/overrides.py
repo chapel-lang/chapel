@@ -219,9 +219,8 @@ def items():
 
 def _main():
     """ Print overrides that are currently set via environment/chplconfig """
-    for var in allvars():
-        sys.stdout.write(var)
-        sys.stdout.write('\n')
+    for key, val in items():
+        sys.stdout.write('{0}={1}\n'.format(key, val))
 
 
 if __name__ == '__main__':
