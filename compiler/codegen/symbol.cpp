@@ -1014,7 +1014,25 @@ static std::string getPythonTypeName(Type* type, PythonFileType pxd) {
     }
     return res;
   } else {
-    return transformTypeForPointer(type);
+    if (type->symbol->hasFlag(FLAG_REF)) {
+      Type* referenced = type->getValType();
+      std::string base = getPythonTypeName(referenced, pxd);
+      if (pxd == C_PYX) {
+        return "numpy.ndarray[" + base + ", ndim=1]";
+      } else {
+        return base + " *";
+      }
+    } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+      Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
+      std::string base = getPythonTypeName(pointedTo, pxd);
+      if (pxd == C_PYX) {
+        return "numpy.ndarray[" + base + ", ndim=1]";
+      } else {
+        return base + " *";
+      }
+    } else {
+      return type->codegen().c;
+    }
   }
 }
 
@@ -2103,9 +2121,17 @@ GenRet FnSymbol::codegenPYXType() {
           returnStmt += ")\n" + oldRetStmt;
         }
         funcCall += "chpl_";
+      } else if (formal->type->symbol->hasEitherFlag(FLAG_C_PTR_CLASS,
+                                                     FLAG_REF)) {
+        funcCall += "&";
       }
 
       funcCall += formal->cname;
+
+      if (formal->type->symbol->hasEitherFlag(FLAG_C_PTR_CLASS, FLAG_REF) &&
+          formal->type->getValType() != dtExternalArray) {
+        funcCall += "[0]";
+      }
       count++;
     }
 
