@@ -1126,8 +1126,7 @@ std::string ArgSymbol::getPythonArgTranslation() {
     res += "\n\tcdef numpy.ndarray[" + typeStrCDefs;
     res += ", ndim=1, mode = 'c'] chpl_tmp_";
     res += cname;
-    // If sent a numpy array, pass in a pointer to the first element on the
-    // array
+    // If sent a numpy array, pass in a pointer to the array
     res += "\n\tif type(";
     res += cname;
     res += ") == numpy.ndarray:\n\t\tchpl_tmp_";
