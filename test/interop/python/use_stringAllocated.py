@@ -3,7 +3,6 @@ import numpy
 
 stringAllocated.chpl_setup()
 x = numpy.empty(6, dtype=numpy.uint8)
-x = numpy.ascontiguousarray(x)
 newsize = stringAllocated.g(x.size, x)
 if (newsize is not -1):
     x = numpy.delete(x, range(newsize, x.size))
