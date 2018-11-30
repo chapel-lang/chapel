@@ -117,7 +117,7 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    -DLLVM_TARGETS_TO_BUILD="host;X86;AArch64" \
 	    -DLLVM_INSTALL_UTILS=ON \
 	    $(CHPL_LLVM_DYNAMIC_OPTS) \
-            $(CHPL_RV_CMAKE) \
+	    $(CHPL_RV_CMAKE) \
 	    -Wno-dev \
 	    $(LLVM_SRC_DIR) ; \
 	else \
