@@ -429,29 +429,18 @@ static
 void codegenInvariantStart(llvm::Type *valType, llvm::Value *addr)
 {
   GenInfo *info = gGenInfo;
-
-  llvm::Type *int8PtrTy =
-    llvm::Type::getInt8Ty(info->llvmContext)->getPointerTo(0);
-
-  llvm::Type *objectPtr = { int8PtrTy };
-  llvm::Function *invariantStart =
-    llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::invariant_start, objectPtr);
-
   const llvm::DataLayout& dataLayout = info->module->getDataLayout();
 
   uint64_t sizeInBytes;
-  if(valType->isSized())
+  if (valType->isSized())
     sizeInBytes = dataLayout.getTypeSizeInBits(valType)/8;
   else
     return;
 
-  llvm::Value *castedAddr = info->irBuilder->CreateBitCast(addr, int8PtrTy);
-  llvm::Value *args[2] =
-    {
-      llvm::ConstantInt::getSigned(llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes),
-      castedAddr
-    };
-  info->irBuilder->CreateCall(invariantStart, args);
+  llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
+      llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes);
+
+  info->irBuilder->CreateInvariantStart(addr, size);
 }
 
 // Create an LLVM store instruction possibly adding
