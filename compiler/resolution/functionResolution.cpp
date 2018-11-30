@@ -3225,6 +3225,10 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
   if (0 == memcmp(ignorePrefix, calledName, strlen(ignorePrefix)))
     return NULL;
 
+  if (0 == strcmp(calledName, "chpl__promotionType")) {
+    return NULL;
+  }
+
   // Detect cycles
   detectForwardingCycle(call);
 
