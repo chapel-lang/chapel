@@ -635,11 +635,15 @@ opt_label_ident:
 ident_fn_def:
   TIDENT                   { $$ = $1; }
 | TTHIS                    { $$ = "this"; }
+| TFALSE                   { $$ = "false"; redefiningReservedWordError($$); }
+| TTRUE                    { $$ = "true"; redefiningReservedWordError($$); }
 | internal_type_ident_def  { $$ = $1; redefiningReservedTypeError($1); }
 
 ident_def:
   TIDENT                   { $$ = $1; }
-| TTHIS                    { $$ = "this"; redefiningReservedWordError("this"); }
+| TTHIS                    { $$ = "this"; redefiningReservedWordError($$); }
+| TFALSE                   { $$ = "false"; redefiningReservedWordError($$); }
+| TTRUE                    { $$ = "true"; redefiningReservedWordError($$); }
 | internal_type_ident_def  { $$ = $1; redefiningReservedTypeError($1); }
 ;
 
