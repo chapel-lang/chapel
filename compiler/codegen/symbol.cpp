@@ -1018,7 +1018,7 @@ static std::string getPythonTypeName(Type* type, PythonFileType pxd) {
       Type* referenced = type->getValType();
       std::string base = getPythonTypeName(referenced, pxd);
       if (pxd == C_PYX) {
-        return "numpy.ndarray[" + base + ", ndim=1]";
+        return "";
       } else {
         return base + " *";
       }
@@ -1026,7 +1026,7 @@ static std::string getPythonTypeName(Type* type, PythonFileType pxd) {
       Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
       std::string base = getPythonTypeName(pointedTo, pxd);
       if (pxd == C_PYX) {
-        return "numpy.ndarray[" + base + ", ndim=1]";
+        return "";
       } else {
         return base + " *";
       }
@@ -1108,6 +1108,54 @@ std::string ArgSymbol::getPythonArgTranslation() {
 
       return res;
     }
+  } else if (t->symbol->hasEitherFlag(FLAG_C_PTR_CLASS, FLAG_REF)) {
+    std::string res = "\tcdef ";
+    std::string typeStr = "";
+    std::string typeStrCDefs = "";
+    if (t->symbol->hasFlag(FLAG_REF)) {
+      typeStr = getPythonTypeName(t->getValType(), PYTHON_PYX);
+      typeStrCDefs = getPythonTypeName(t->getValType(), C_PYX);
+    } else {
+      typeStr = getPythonTypeName(getDataClassType(t->symbol)->typeInfo(),
+                                  PYTHON_PYX);
+      typeStrCDefs = getPythonTypeName(getDataClassType(t->symbol)->typeInfo(),
+                                       C_PYX);
+    }
+    res += typeStrCDefs + " * chpl_";
+    res += cname;
+    res += "\n\tcdef numpy.ndarray[" + typeStrCDefs;
+    res += ", ndim=1, mode = 'c'] chpl_tmp_";
+    res += cname;
+    // If sent a numpy array, pass in a pointer to the first element on the
+    // array
+    res += "\n\tif type(";
+    res += cname;
+    res += ") == numpy.ndarray:\n\t\tchpl_tmp_";
+    res += cname;
+    res += " = numpy.ascontiguousarray(";
+    res += cname;
+    res += ", dtype = " + typeStr + ")\n\t\tchpl_";
+    res += cname;
+    res += " = <" + typeStrCDefs + "*> chpl_tmp_";
+    res += cname;
+    res += ".data\n";
+    // Otherwise, assume it is an okay type to send in as is
+
+    // Note: could check if the type is ctypes._Pointer before sending it on
+    // unmodified, but that only would pick up pointers created using
+    // ctypes.pointer(), not ctypes.byref.  Things created by ctypes.byref don't
+    // seem to have a type Python can compare against that I could tell (it's
+    // CArgObject, which is supposedly defined in ctypes but didn't seem to be
+    // accessible to use in these comparisons).  Python will give an error if
+    // the type sent doesn't work for this, so just pass the argument on to
+    // allow both ctypes.POINTER and ctypes.byref()
+    res += "\telse:\n";
+    res += "\t\tchpl_";
+    res += cname;
+    res += " = ";
+    res += cname;
+    res += "\n";
+    return res;
   }
   return "";
 }
@@ -2110,7 +2158,7 @@ GenRet FnSymbol::codegenPYXType() {
       std::string curArgTranslate = formal->getPythonArgTranslation();
       if (curArgTranslate != "") {
         argTranslate += curArgTranslate;
-        if (argType == "") {
+        if (argType == "" && formal->type->getValType() == dtExternalArray) {
           // Happens when the argument type is an array
           // We need to send in the wrapper we created by reference
           funcCall += "&";
@@ -2121,17 +2169,8 @@ GenRet FnSymbol::codegenPYXType() {
           returnStmt += ")\n" + oldRetStmt;
         }
         funcCall += "chpl_";
-      } else if (formal->type->symbol->hasEitherFlag(FLAG_C_PTR_CLASS,
-                                                     FLAG_REF)) {
-        funcCall += "&";
       }
-
       funcCall += formal->cname;
-
-      if (formal->type->symbol->hasEitherFlag(FLAG_C_PTR_CLASS, FLAG_REF) &&
-          formal->type->getValType() != dtExternalArray) {
-        funcCall += "[0]";
-      }
       count++;
     }
 
