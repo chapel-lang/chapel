@@ -1938,8 +1938,17 @@ static void markArraysOfBorrows(AggregateType* at);
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
   at->initializerResolved = true;
 
+  // TODO: this is a hack to allow for further resolution of fields with very
+  // simple type-exprs (e.g. "var x : T"). This allows the compiler to resolve
+  // the promotion type for an owned class.
+  //
+  // Long-term, we should organize the AST such that we can immediately resolve
+  // all non-generic fields once the type is fully instantiated.
+  //
+  // An alternative would be to resolve the promotion type once all fields are
+  // initialized (and organizing the AST so that situation can be recognized).
   for_fields(field, at) {
-    if (field->type == dtUnknown) {
+    if (field->type == dtUnknown && field->defPoint->exprType != NULL) {
       field->type = field->defPoint->exprType->typeInfo();
     }
   }
