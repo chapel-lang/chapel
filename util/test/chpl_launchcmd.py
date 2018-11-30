@@ -444,9 +444,9 @@ class AbstractJob(object):
         # that is wrapper around slurm apis.
         if srun_callable:
             return SlurmJob
-        elif qsub_callable and os.environ.has_key('MOABHOMEDIR'):
+        elif qsub_callable and 'MOABHOMEDIR' in os.environ:
             return MoabJob
-        elif qsub_callable and os.environ.has_key('CHPL_PBSPRO_USE_MPP'):
+        elif qsub_callable and 'CHPL_PBSPRO_USE_MPP' in os.environ:
             return MppPbsProJob
         elif qsub_callable:
             return PbsProJob
