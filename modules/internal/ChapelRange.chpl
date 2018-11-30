@@ -1545,11 +1545,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                        _alignment = r.chpl_intToIdx(0),
                        _aligned = false);
 
-    if !r.hasFirst() && count > 0 then
+    if boundsChecking && !r.hasFirst() && count > 0 then
       halt("With a positive count, the range must have a first index.");
-    if !r.hasLast()  && count < 0 then
+    if boundsChecking && !r.hasLast()  && count < 0 then
       halt("With a negative count, the range must have a last index.");
-    if r.boundedType == BoundedRangeType.bounded &&
+    if boundsChecking && r.boundedType == BoundedRangeType.bounded &&
       abs(count:chpl__maxIntTypeSameSign(count.type)):uint(64) > r.length:uint(64) then {
       halt("bounded range is too small to access ", abs(count), " elements");
     }
@@ -1838,7 +1838,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // becomes `low..(low + (count - 1))`. Needs to check for negative counts,
   // and for zero counts iterates over a degenerate `1..0`.
   iter chpl_direct_counted_range_iter_helper(low, count) {
-    if isIntType(count.type) && count < 0 then
+    if boundsChecking && isIntType(count.type) && count < 0 then
       halt("With a negative count, the range must have a last index.");
 
     const (start, end) = if count == 0 then (1:low.type, 0:low.type)
