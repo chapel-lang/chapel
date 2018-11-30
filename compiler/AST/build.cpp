@@ -1989,13 +1989,16 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag>* flags, const char* do
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        if (flags->count(FLAG_EXTERN) && flags->count(FLAG_PARAM))
-          USR_FATAL(var, "external params are not supported");
+        if (flags) {
+          if (flags->count(FLAG_EXTERN) && flags->count(FLAG_PARAM))
+            USR_FATAL(var, "external params are not supported");
 
-        for (std::set<Flag>::iterator it = flags->begin(); it != flags->end(); ++it) {
-          if (*it != FLAG_UNKNOWN) {
-            var->addFlag(*it);
+          for (std::set<Flag>::iterator it = flags->begin(); it != flags->end(); ++it) {
+            if (*it != FLAG_UNKNOWN) {
+              var->addFlag(*it);
+            }
           }
+          delete flags;
         }
 
         if (var->hasFlag(FLAG_CONFIG)) {
@@ -2047,7 +2050,6 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag>* flags, const char* do
   }
 
   // this was allocated in buildVarDeclFlags()
-  delete flags;
   return stmts;
 }
 
