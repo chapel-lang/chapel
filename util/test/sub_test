@@ -166,6 +166,12 @@ atexit.register(elapsed_sub_test_time)
 class ReadTimeoutException(Exception): pass
 
 
+# Python 2/3 compatibility shim. We use subprocess.Popen.communicate() all
+# over sub_test. Instead of updating every call site to do the right thing with
+# regard byte to str conversations for 3 compatibility, we have opted to add
+# this wrapper. Not all things we run will produce utf-8 (i.e. catfiles for
+# thing like mandlebrot will return binary data) so we allow the conversation
+# to utf-8 to silently fail and we handle any issues at those call sites.
 def bytes_to_str(byte_string):
     if sys.version_info[0] >= 3 and not isinstance(byte_string, str):
         try:
