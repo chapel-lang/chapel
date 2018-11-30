@@ -433,6 +433,7 @@ def get_module_lcd_arch(platform_val, arch):
         return 'none'
 
 # Adjust the architecture based upon compiler support
+@memoize
 def adjust_architecture_for_compiler(arch, flag, get_lcd):
     compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
@@ -470,6 +471,7 @@ def adjust_architecture_for_compiler(arch, flag, get_lcd):
 
     return arch
 
+@memoize
 def default_arch(flag):
     comm_val = chpl_comm.get()
     compiler_val = chpl_compiler.get(flag)
@@ -498,6 +500,7 @@ def default_arch(flag):
 # Returns the machine type for the passed arch.
 #  * if arch is native/none/unknown, return result of get_native_machine
 #  * otherwise returns the machine type corresponding to the selected arch
+@memoize
 def machine_for_arch(arch):
     if arch == "native" or arch == "none" or arch == "unknown":
       return get_native_machine()
