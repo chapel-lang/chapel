@@ -2080,10 +2080,9 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
     stmts->blockInfoSet(NULL);
   }
 
-  if (flags) {
-    // this was allocated in buildVarDeclFlags()
+  // this was allocated in buildVarDeclFlags()
+  if (flags)
     delete flags;
-  }
 
   return stmts;
 }
