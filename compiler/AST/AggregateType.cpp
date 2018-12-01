@@ -434,6 +434,12 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
   if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
     var->makeField();
 
+    if (var->hasFlag(FLAG_EXTERN)) {
+      if (!symbol->hasFlag(FLAG_EXTERN)) {
+        USR_FATAL_CONT(var, "only external types can have external fields");
+      }
+    }
+
     if (var->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       mIsGeneric = true;
 

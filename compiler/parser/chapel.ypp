@@ -113,7 +113,6 @@
     EnumType*                 penumtype;
     std::vector<DefExpr*>*    pvecOfDefs;
     FnSymbol*                 pfnsymbol;
-    Flag                      flag;
     ProcIter                  procIter;
     FlagSet*                  flagSet;
     ShadowVarSymbol*          pShadowVar;
@@ -371,7 +370,6 @@
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
 
-%type <flag> opt_config
 %type <b> access_control
 %type <b> opt_prototype
 %type <b> opt_throws_error
@@ -1357,18 +1355,23 @@ var_decl_type:
 ;
 
 var_decl_stmt:
-  opt_config var_decl_type var_decl_stmt_inner_ls TSEMI
+  TCONFIG var_decl_type var_decl_stmt_inner_ls TSEMI
     {
-      $2->insert($1);
-      $$ = buildVarDecls($3, $2, @1.comment);
+      $2->insert(FLAG_CONFIG);
+      $$ = buildVarDecls($3, context->latestComment, $2);
       context->latestComment = NULL;
     }
-;
-
-opt_config:
-            { $$ = FLAG_UNKNOWN; @$.comment = context->latestComment; context->latestComment = NULL; }
-| TCONFIG   { $$ = FLAG_CONFIG;  @$.comment = context->latestComment; context->latestComment = NULL; }
-| TEXTERN   { $$ = FLAG_EXTERN;  @$.comment = context->latestComment; context->latestComment = NULL; }
+| TEXTERN opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
+    {
+      $3->insert(FLAG_EXTERN);
+      $$ = buildVarDecls($4, context->latestComment, $3, $2);
+      context->latestComment = NULL;
+    }
+| var_decl_type var_decl_stmt_inner_ls TSEMI
+    {
+      $$ = buildVarDecls($2, context->latestComment, $1);
+      context->latestComment = NULL;
+    }
 ;
 
 var_decl_stmt_inner_ls:
