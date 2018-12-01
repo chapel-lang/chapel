@@ -1998,7 +1998,6 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag>* flags, const char* do
               var->addFlag(*it);
             }
           }
-          delete flags;
         }
 
         if (var->hasFlag(FLAG_CONFIG)) {
@@ -2050,6 +2049,9 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag>* flags, const char* do
   }
 
   // this was allocated in buildVarDeclFlags()
+  if (flags)
+    delete flags;
+
   return stmts;
 }
 
