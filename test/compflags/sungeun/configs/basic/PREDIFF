@@ -6,13 +6,13 @@ import sys, string
 testname = sys.argv[1]
 execlog = sys.argv[2]
 
-testnum = execlog[string.find(execlog,'.')+1:string.find(execlog,'-')]
+testnum = execlog[execlog.find('.')+1:execlog.find('-')]
 
 f = open(testname+'.good', 'w');
 
-if (string.find(execlog, 'configParam')==0 or
-    string.find(execlog, 'configConst')==0 or
-    string.find(execlog, 'configVar')==0):
+if (execlog.find('configParam')==0 or
+    execlog.find('configConst')==0 or
+    execlog.find('configVar')==0):
     if testnum=='1':
         f.write('4\n');
     elif testnum=='2':
