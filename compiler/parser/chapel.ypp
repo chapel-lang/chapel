@@ -119,6 +119,7 @@
     ShadowVarSymbol*          pShadowVar;
     ShadowVarPrefix           pShadowVarPref;
     std::vector<OnlyRename*>* ponlylist;
+    std::set<Flag>*           pflagset;
   };
 
   #endif
@@ -418,11 +419,14 @@
 %type <pexpr>      catch_stmt
 %type <pexpr>      catch_expr
 
+%type <pflagset> var_decl_type
+
 %type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt
 %type <pblockstmt> enum_decl_stmt
 
 %type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
 %type <pblockstmt> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
+
 
 %type <pblockstmt> function_body_stmt opt_function_body_stmt
 
@@ -1348,45 +1352,19 @@ opt_init_type:
     { $$ = buildForallLoopExprFromArrayType($2); } // Cannot be a type_level_expr as expr inherits from type_level_expr.
 ;
 
+var_decl_type:
+  TPARAM      { $$ = buildVarDeclFlags(FLAG_PARAM); }
+| TCONST      { $$ = buildVarDeclFlags(FLAG_CONST); }
+| TREF        { $$ = buildVarDeclFlags(FLAG_REF_VAR); }
+| TCONST TREF { $$ = buildVarDeclFlags(FLAG_CONST, FLAG_REF_VAR); }
+| TVAR        { $$ = buildVarDeclFlags(); }
+;
+
 var_decl_stmt:
-  opt_config TPARAM var_decl_stmt_inner_ls TSEMI
+  opt_config var_decl_type var_decl_stmt_inner_ls TSEMI
     {
-      std::set<Flag> flags;
-      flags.insert($1);
-      flags.insert(FLAG_PARAM);
-      $$ = buildVarDecls($3, flags, @1.comment);
-      context->latestComment = NULL;
-    }
-| opt_config TCONST var_decl_stmt_inner_ls TSEMI
-    {
-      std::set<Flag> flags;
-      flags.insert($1);
-      flags.insert(FLAG_CONST);
-      $$ = buildVarDecls($3, flags, @1.comment);
-      context->latestComment = NULL;
-    }
-| opt_config TREF var_decl_stmt_inner_ls TSEMI
-    {
-      std::set<Flag> flags;
-      flags.insert($1);
-      flags.insert(FLAG_REF_VAR);
-      $$ = buildVarDecls($3, flags, @1.comment);
-      context->latestComment = NULL;
-    }
-| opt_config TCONST TREF var_decl_stmt_inner_ls TSEMI
-    {
-      std::set<Flag> flags;
-      flags.insert($1);
-      flags.insert(FLAG_CONST);
-      flags.insert(FLAG_REF_VAR);
-      $$ = buildVarDecls($4, flags, @1.comment);
-      context->latestComment = NULL;
-    }
-| opt_config TVAR var_decl_stmt_inner_ls TSEMI
-    {
-      std::set<Flag> flags;
-      flags.insert($1);
-      $$ = buildVarDecls($3, flags, @1.comment);
+      $2->insert($1);
+      $$ = buildVarDecls($3, $2, @1.comment);
       context->latestComment = NULL;
     }
 ;
