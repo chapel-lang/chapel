@@ -1158,17 +1158,14 @@ module ChapelBase {
 
   // dynamic cast handles class casting based upon runtime class type
   // this also might be called a downcast
-  pragma "unsafe"
   inline proc _cast(type t:borrowed, x:borrowed) where isSubtype(t,x.type) && (x.type != t)
     return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
 
   // this version handles unmanaged -> unmanaged
-  pragma "unsafe"
   inline proc _cast(type t:unmanaged, x:_unmanaged) where isSubtype(t,x.type) && (x.type != t)
     return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
 
   // this version handles unmanaged -> borrow
-  pragma "unsafe"
   inline proc _cast(type t:borrowed, x:_unmanaged) where isSubtype(t,_to_borrowed(x.type)) && (_to_borrowed(x.type) != t) {
     // first convert to borrow
     var casttmp = __primitive("to borrowed class", x);

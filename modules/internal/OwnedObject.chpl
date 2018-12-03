@@ -338,7 +338,6 @@ module OwnedObject {
   // for problems with initializers in this case
   pragma "init copy fn"
   pragma "no doc"
-  pragma "unsafe"
   proc chpl__initCopy(pragma "leaves arg nil" pragma "nil from arg"
                       ref src: _owned) {
     var ret = new _owned(src);
@@ -349,7 +348,6 @@ module OwnedObject {
   // for problems with initializers in this case
   pragma "no doc"
   pragma "auto copy fn"
-  pragma "unsafe"
   proc chpl__autoCopy(pragma "leaves arg nil" pragma "nil from arg"
                       ref src: _owned) {
     var ret = new _owned(src);

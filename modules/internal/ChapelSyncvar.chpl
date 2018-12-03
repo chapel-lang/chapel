@@ -425,8 +425,6 @@ module ChapelSyncvar {
       return ret;
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeEF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
@@ -439,8 +437,6 @@ module ChapelSyncvar {
       }
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeFF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
@@ -453,8 +449,6 @@ module ChapelSyncvar {
       }
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeXF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
@@ -560,8 +554,6 @@ module ChapelSyncvar {
       return ret;
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeEF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
@@ -570,8 +562,6 @@ module ChapelSyncvar {
       }
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeFF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
@@ -580,8 +570,6 @@ module ChapelSyncvar {
       }
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeXF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
@@ -836,8 +824,6 @@ module ChapelSyncvar {
       return ret;
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
     proc writeEF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
