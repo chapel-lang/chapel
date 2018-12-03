@@ -12,3 +12,4 @@ resString = "" # note: str type, not bytes
 for character in x:
     resString += str(chr(character))
 stringAllocated.writeStr(resString.encode()); # note: required to send bytes
+stringAllocated.chpl_cleanup()
