@@ -1064,12 +1064,10 @@ std::string ArgSymbol::getPythonDefaultValue() {
 // Generate code to perform that translation when this is the case
 std::string ArgSymbol::getPythonArgTranslation() {
   Type* t = getArgSymbolCodegenType(this);
+  std::string strname = cname;
 
   if (t == dtStringC) {
-    std::string res = "\tcdef const char* chpl_";
-    res += cname;
-    res += " = ";
-    res += cname;
+    std::string res = "\tcdef const char* chpl_" + strname + " = " + strname;
     res += "\n";
     return res;
   } else if (t->symbol->hasFlag(FLAG_REF) &&
@@ -1086,25 +1084,16 @@ std::string ArgSymbol::getPythonArgTranslation() {
       // Create the memory needed to store the contents of what was passed to us
       // E.g. cdef chpl_external_array chpl_foo =
       //          chpl_make_external_array(sizeof(element type), len(foo))
-      std::string res = "\tcdef chpl_external_array chpl_";
-      res += cname;
-      res += " = chpl_make_external_array(sizeof(";
-      res += typeStrCDefs;
-      res += "), len(";
-      res += cname;
-      res += "))\n";
+      std::string res = "\tcdef chpl_external_array chpl_" + strname;
+      res += " = chpl_make_external_array(sizeof(" + typeStrCDefs + "), len(";
+      res += strname + "))\n";
 
       // Copy the contents over.
       // E.g. for i in range(len(foo)):
       //         (<element type*>chpl_foo.elts)[i] = foo[i]
-      res += "\tfor i in range(len(";
-      res += cname;
-      res += ")):\n";
-      res += "\t\t(<" + typeStrCDefs + "*>chpl_";
-      res += cname;
-      res += ".elts)[i] = ";
-      res += cname;
-      res += "[i]\n";
+      res += "\tfor i in range(len(" + strname + ")):\n";
+      res += "\t\t(<" + typeStrCDefs + "*>chpl_" + strname + ".elts)[i] = ";
+      res += strname + "[i]\n";
 
       return res;
     }
@@ -1121,39 +1110,30 @@ std::string ArgSymbol::getPythonArgTranslation() {
       typeStrCDefs = getPythonTypeName(getDataClassType(t->symbol)->typeInfo(),
                                        C_PYX);
     }
-    res += typeStrCDefs + " * chpl_";
-    res += cname;
-    res += "\n\tcdef numpy.ndarray[" + typeStrCDefs;
-    res += ", ndim=1, mode = 'c'] chpl_tmp_";
-    res += cname;
+    res += typeStrCDefs + " * chpl_" + strname + "\n";
+    res += "\tcdef numpy.ndarray[" + typeStrCDefs;
+    res += ", ndim=1, mode = 'c'] chpl_tmp_" + strname + "\n"; // for numpy case
+    res += "\tcdef intptr_t chpl_tmp2_" + strname; // for ctypes.pointer case
     // If sent a numpy array, pass in a pointer to the array
-    res += "\n\tif type(";
-    res += cname;
-    res += ") == numpy.ndarray:\n\t\tchpl_tmp_";
-    res += cname;
-    res += " = numpy.ascontiguousarray(";
-    res += cname;
-    res += ", dtype = " + typeStr + ")\n\t\tchpl_";
-    res += cname;
-    res += " = <" + typeStrCDefs + "*> chpl_tmp_";
-    res += cname;
-    res += ".data\n";
-    // Otherwise, assume it is an okay type to send in as is
-
-    // Note: could check if the type is ctypes._Pointer before sending it on
-    // unmodified, but that only would pick up pointers created using
-    // ctypes.pointer(), not ctypes.byref.  Things created by ctypes.byref don't
-    // seem to have a type Python can compare against that I could tell (it's
-    // CArgObject, which is supposedly defined in ctypes but didn't seem to be
-    // accessible to use in these comparisons).  Python will give an error if
-    // the type sent doesn't work for this, so just pass the argument on to
-    // allow both ctypes.POINTER and ctypes.byref()
+    res += "\n\tif type(" + strname + ") == numpy.ndarray:\n";
+    res += "\t\tchpl_tmp_" + strname + " = numpy.ascontiguousarray(";
+    res += strname + ", dtype = " + typeStr + ")\n";
+    res += "\t\tchpl_" + strname + " = <" + typeStrCDefs + "*> chpl_tmp_";
+    res += strname + ".data\n";
+    // Otherwise, check if type is ctypes._Pointer.  Note that this means we
+    // cannot send in ctypes.byref, but I don't think Cython allows that right
+    // now anyways
+    res += "\telif isinstance(x, ctypes._Pointer):\n";
+    res += "\t\tpython_" + strname + " = ctypes.addressof(" + strname;
+    res += ".contents)\n";
+    res += "\t\tchpl_tmp2_" + strname + " = <intptr_t>python_" + strname;
+    res += "\n\t\tchpl_" + strname + " = <" + typeStrCDefs + "*> chpl_tmp2_";
+    res += strname + "\n";
+    // Otherwise, throw a type error because we've been passed something that
+    // won't work (and we can't assign a Python object into a C one without
+    // knowing what the type is)
     res += "\telse:\n";
-    res += "\t\tchpl_";
-    res += cname;
-    res += " = ";
-    res += cname;
-    res += "\n";
+    res += "\t\traise TypeError(\"" + strname + " is of unsupported type\")\n";
     return res;
   }
   return "";
