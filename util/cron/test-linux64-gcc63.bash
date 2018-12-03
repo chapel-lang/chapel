@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Test default configuration on examples only, on linux64, with compiler gcc-7.2
+# Test default configuration on examples only, on linux64, with compiler gcc-6.3
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
