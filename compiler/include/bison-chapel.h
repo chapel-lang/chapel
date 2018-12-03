@@ -118,10 +118,11 @@ extern int yydebug;
     ShadowVarSymbol*          pShadowVar;
     ShadowVarPrefix           pShadowVarPref;
     std::vector<OnlyRename*>* ponlylist;
+    std::set<Flag>*           pflagset;
   };
 
   #endif
-#line 131 "chapel.ypp" /* yacc.c:1915  */
+#line 132 "chapel.ypp" /* yacc.c:1915  */
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
   #define _BISON_CHAPEL_DEFINES_2_
@@ -138,7 +139,7 @@ extern int yydebug;
   #define YYLTYPE_IS_TRIVIAL  1
 
   #endif
-#line 153 "chapel.ypp" /* yacc.c:1915  */
+#line 154 "chapel.ypp" /* yacc.c:1915  */
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
   #define _BISON_CHAPEL_DEFINES_3_
@@ -166,7 +167,7 @@ extern int yydebug;
 
   #endif
 
-#line 170 "../include/bison-chapel.h" /* yacc.c:1915  */
+#line 171 "../include/bison-chapel.h" /* yacc.c:1915  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -366,7 +367,7 @@ int yypush_parse (yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, YYLT
 yypstate * yypstate_new (void);
 void yypstate_delete (yypstate *ps);
 /* "%code provides" blocks.  */
-#line 184 "chapel.ypp" /* yacc.c:1915  */
+#line 185 "chapel.ypp" /* yacc.c:1915  */
 
   extern int yydebug;
 
@@ -374,6 +375,6 @@ void yypstate_delete (yypstate *ps);
                ParserContext* context,
                const char*    str);
 
-#line 378 "../include/bison-chapel.h" /* yacc.c:1915  */
+#line 379 "../include/bison-chapel.h" /* yacc.c:1915  */
 
 #endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */
