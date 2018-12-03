@@ -1123,7 +1123,7 @@ std::string ArgSymbol::getPythonArgTranslation() {
     // Otherwise, check if type is ctypes._Pointer.  Note that this means we
     // cannot send in ctypes.byref, but I don't think Cython allows that right
     // now anyways
-    res += "\telif isinstance(x, ctypes._Pointer):\n";
+    res += "\telif isinstance(" + strname + ", ctypes._Pointer):\n";
     res += "\t\tpython_" + strname + " = ctypes.addressof(" + strname;
     res += ".contents)\n";
     res += "\t\tchpl_tmp2_" + strname + " = <intptr_t>python_" + strname;
