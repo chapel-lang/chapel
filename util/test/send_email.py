@@ -15,6 +15,10 @@ import smtplib
 import socket
 import sys
 
+try:
+    basestring
+except NameError:
+    basestring = str
 
 def main():
     """Parse command line arguments and send email!"""
