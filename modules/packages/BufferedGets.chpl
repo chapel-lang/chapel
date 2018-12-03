@@ -49,7 +49,7 @@
    to perform and the order of those operations doesn't matter.
 
    .. note::
-     Currently, this is only optimized for ``CHPL_COMMM=ugni``. Other
+     Currently, this is only optimized for ``CHPL_COMM=ugni``. Other
      communication layers fall back to regular gets. Under ugni GETs
      are internally buffered. When the buffers are flushed, the operations are
      performed all at once. Cray Linux Environment (CLE) 5.2.UP04 or newer is

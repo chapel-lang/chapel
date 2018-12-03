@@ -168,9 +168,9 @@ class ReadTimeoutException(Exception): pass
 
 # Python 2/3 compatibility shim. We use subprocess.Popen.communicate() all
 # over sub_test. Instead of updating every call site to do the right thing with
-# regard byte to str conversations for 3 compatibility, we have opted to add
+# regard to byte to str conversions for 3 compatibility, we have opted to add
 # this wrapper. Not all things we run will produce utf-8 (i.e. catfiles for
-# thing like mandlebrot will return binary data) so we allow the conversation
+# thing like mandelbrot will return binary data) so we allow the conversion
 # to utf-8 to silently fail and we handle any issues at those call sites.
 def bytes_to_str(byte_string):
     if sys.version_info[0] >= 3 and not isinstance(byte_string, str):
@@ -252,7 +252,7 @@ def LauncherTimeoutArgs(seconds):
 
 
 #
-# Auxilliary functions
+# Auxiliary functions
 #
 
 # Escape all special characters
@@ -898,7 +898,7 @@ if os.getenv('CHPL_TEST_COMP_PERF')!=None:
     else:
         keyfile=chpl_home+'/test/performance/compiler/compilerPerformance.perfkeys'
 
-    # Check for the directory to store the tempory .dat files that will get 
+    # Check for the directory to store the temporary .dat files that will get
     # combined into one.
     if os.getenv('CHPL_TEST_COMP_PERF_TEMP_DAT_DIR')!=None:
         tempDatFilesDir = os.getenv('CHPL_TEST_COMP_PERF_TEMP_DAT_DIR')

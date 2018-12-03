@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Compare mandlebrot program output.
+# Compare mandelbrot program output.
 
 # Due to numerical instability with different optimization
 # levels, this script tolerates a small number of bit differences
