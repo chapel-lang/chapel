@@ -2603,6 +2603,8 @@ usex
 
 FILEID: e2d7df7c-1d0c-11e6-a3a6-10ddb1d4c3d5
 fock
+gfunction
+ghelp
 
 FILEID: 0846cc78-1d0d-11e6-a3a6-10ddb1d4c3d5
 labse
@@ -3817,11 +3819,13 @@ srcwide
 
 FILEID: 80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5
 astrs
+cdesc
 disubprogram
 dtype
 ndarray
 nfor
 optos
+simport
 toctree
 
 FILEID: fcd32732-b78b-11e6-9740-843835579daa
@@ -4617,10 +4621,14 @@ allocinfo
 amrecv
 amsend
 appnum
+atomicvalid
+bxor
 commprogress
 configmore
 cqes
+cswap
 ctxs
+dsrd
 etoosmall
 fabfail
 fabsall
@@ -4630,11 +4638,13 @@ mrdesc
 mrkey
 ofichkerr
 ofichkret
+opnd
 pmichkret
 pmichksuccess
 procid
 rbuf
 rbufs
+readerr
 readfrom
 rmaread
 rmawrite
@@ -4650,6 +4660,7 @@ threaddetails
 tostr
 tstamp
 txed
+xpctd
 
 FILEID: 0502b256-07ea-11e8-bed3-10ddb1d4c3d5
 ctxs
@@ -4743,6 +4754,8 @@ libhdrfile
 libname
 linkershared
 lname
+sinterface
+smodule
 
 FILEID: e6ecf3ae-9c7b-11e8-b963-10ddb1d4c3d5
 codepoints
@@ -4840,6 +4853,9 @@ tfor
 FILEID: e4e38696-e581-11e8-954d-10ddb1d4c3d5
 tilda
 urxvt
+
+FILEID: a37c5ce4-f6a4-11e8-8d7e-10ddb1d4c3d5
+maxlargc
 
 NATURAL:
 aarch
@@ -5086,6 +5102,7 @@ chapelhome
 chapelprediff
 chapelstandard
 charles
+charset
 chdir
 cheatsheet
 checkboxes
@@ -5383,6 +5400,7 @@ eaddrnotavail
 eafnosupport
 eagain
 ealready
+eavail
 ebade
 ebadf
 ebadfd
@@ -5794,6 +5812,7 @@ iface
 ified
 ifneq
 ignorecase
+igroup
 illinois
 imap
 imaps
@@ -6265,6 +6284,7 @@ multicore
 multihop
 multilocale
 multiloop
+multinode
 multiprecision
 multirealm
 multiset
@@ -6374,6 +6394,7 @@ nonfetch
 nongnu
 nongreedy
 noninfringement
+noniter
 nonlocal
 nonlocking
 nonnegative
