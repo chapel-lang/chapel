@@ -1,5 +1,25 @@
 class C { var x: int; } 
 
+var globOwn = new owned C(1);
+var globly = globOwn.borrow();
+
+// Default lifetime inference assumes that the
+// returned lifetime == arg, but that's not the case
+// here. So, the annotation indicates what's really going on.
+proc returnsGlobalBorrow(arg: borrowed C) lifetime return globly {
+  return globly;
+}
+
+proc ok0() {
+  var b: borrowed C;
+  {
+    var own = new owned C(2);
+    var bb = own.borrow();
+    b = returnsGlobalBorrow(bb);
+  }
+  writeln(b.x);
+}
+ok0();
 
 var globalValue = new borrowed C(1);
 proc getGlobalHashtableElement (key: C) lifetime return globalValue {
