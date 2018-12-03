@@ -503,12 +503,12 @@ def default_arch(flag):
 @memoize
 def machine_for_arch(arch):
     if arch == "native" or arch == "none" or arch == "unknown":
-      return get_native_machine()
+        return get_native_machine()
     # Otherwise, compute the machine based on the architecture selected
     if is_known_arm(arch):
-      return "aarch64"
+        return "aarch64"
     else:
-      return "x86_64"
+        return "x86_64"
 
 
 # Given an arch, raise an error if it's not a reasonable setting
@@ -527,14 +527,14 @@ def verify_arch(arch, flag):
     #
     check_arch = False
     if not isprgenv:
-      if flag == 'target':
-        if comm_val == 'none':
-          if ('linux' in platform_val or
-               platform_val == 'darwin' or
-               platform_val.startswith('cygwin')):
+        if flag == 'target':
+            if comm_val == 'none':
+                if ('linux' in platform_val or
+                     platform_val == 'darwin' or
+                     platform_val.startswith('cygwin')):
+                    check_arch = True
+        if flag == 'host':
             check_arch = True
-      if flag == 'host':
-        check_arch = True
 
     if check_arch and arch and arch not in  ['none', 'unknown', 'native']:
         # Print a friendly warning if it's unlikely the user could run
@@ -547,7 +547,7 @@ def verify_arch(arch, flag):
             vendor_string, feature_string = get_cpuinfo(platform_val)
             detected_arch = feature_sets.find(vendor_string, feature_string)
             if not feature_sets.subset(arch, detected_arch):
-              warn = True
+                warn = True
         except ValueError:
             stderr.write("Warning: Unknown platform, could not find CPU information\n")
 
@@ -581,7 +581,7 @@ def get(flag, map_to_compiler=False, get_lcd=False):
 
     # Now, if is not yet set, we should set the default.
     if not arch:
-      arch = default_arch(flag)
+        arch = default_arch(flag)
 
     verify_arch(arch, flag)
 
@@ -609,7 +609,7 @@ def get(flag, map_to_compiler=False, get_lcd=False):
 #  * otherwise returns the machine type corresponding to the selected arch
 @memoize
 def get_default_machine(flag):
-    (flag, arch) = get(flag)
+    (_, arch) = get(flag)
     return machine_for_arch(arch)
 
 

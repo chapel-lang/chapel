@@ -26,7 +26,7 @@ def get(flag='host'):
 
     # arch
     if arch != 'none' and arch != 'unknown':
-      result += '-' + arch
+        result += '-' + arch
     return result
 
 def _main():
