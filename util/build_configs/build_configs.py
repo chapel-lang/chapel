@@ -20,6 +20,11 @@ import subprocess
 import sys
 import time
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 class Dimension(object):
     """Encapsulate information about a single dimension."""
 

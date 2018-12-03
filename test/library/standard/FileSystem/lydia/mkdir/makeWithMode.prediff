@@ -4,4 +4,4 @@ import os, sys
 
 s = os.stat('useAMode')
 with open(sys.argv[2], 'w') as fp:
-    fp.write("%o\n" % (s.st_mode & 0777))
+    fp.write("%o\n" % (s.st_mode & 0o777))

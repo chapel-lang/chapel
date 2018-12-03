@@ -45,6 +45,8 @@ def check_ex_ctags():
     process = subprocess.Popen(['ctags', '--version'],
                                 stdout=subprocess.PIPE)
     out, err = process.communicate()
+    if sys.version_info[0] >= 3 and not isinstance(out, str):
+        out = str(out, 'utf-8')
 
     return bool(out and ('Exuberant Ctags' in out) and ('+regex' in out))
 

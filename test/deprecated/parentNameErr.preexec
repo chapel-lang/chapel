@@ -5,7 +5,7 @@ import os, stat
 parent_path = os.path.abspath(os.path.join('testFile.txt', os.pardir))
 
 f = open('parentNameErr.good', 'w')
-os.chmod("parentNameErr.good", 0777);
+os.chmod("parentNameErr.good", 0o777);
 
 f.write("parentNameErr.chpl:4: In function 'main':\n")
 f.write("parentNameErr.chpl:8: warning: This version of file.getParentName() is deprecated; please switch to a throwing version\n")

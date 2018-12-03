@@ -1528,6 +1528,10 @@ def run_command(cmd):
     retcode = process.poll()
     if retcode:
         raise CommandError(retcode, cmd, output)
+
+    if sys.version_info[0] >= 3 and not isinstance(output, str):
+        output = str(output, 'utf-8')
+
     return output
 
 def printout(so):
@@ -1535,6 +1539,8 @@ def printout(so):
         line = so.readline()
         if not line:
             break
+        if sys.version_info[0] >= 3 and not isinstance(line, str):
+            line = str(line, 'utf-8')
         logger.write(line) # strip default newline
         logger.flush()
 

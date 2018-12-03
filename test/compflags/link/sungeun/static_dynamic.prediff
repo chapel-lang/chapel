@@ -19,7 +19,7 @@ try:
 except:
     testFailed(logfilename, 'Prediff script: Error executing '+printchplenv);
     raise
-chpl_env = p.communicate()[0]
+chpl_env = p.communicate()[0].decode()
 
 defaultLinkStyle = 'dynamically'
 for l in chpl_env.split('\n'):
@@ -52,15 +52,14 @@ except:
     testFailed(logfilename, 'Prediff script: Error executing file command');
     raise
 
-myoutput = p.communicate()[0]
+myoutput = p.communicate()[0].decode()
 
 if p.returncode == 0:
     if myoutput.find(linkStyle+' linked')==-1:
         testFailed(logfilename, myoutput)
     else:
-        logfile = file(logfilename, 'w')
-        logfile.write('SUCCESS\n')
-        logfile.close()
+        with open(logfilename, 'w') as logfile:
+            logfile.write('SUCCESS\n')
 else:
     testFailed(logfilename, myoutput)
 

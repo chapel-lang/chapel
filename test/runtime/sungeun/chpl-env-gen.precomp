@@ -12,7 +12,7 @@ chpl_home = os.getenv('CHPL_HOME')
 printchplenv = os.path.join(chpl_home, 'util', 'printchplenv')
 printchplenv_cmd = [printchplenv, '--simple', '--runtime', '--no-tidy', '--anonymize']
 
-p = subprocess.Popen(printchplenv_cmd, stdout=subprocess.PIPE).communicate()[0]
+p = subprocess.Popen(printchplenv_cmd, stdout=subprocess.PIPE).communicate()[0].decode()
 chpl_env = dict(map(lambda l: l.split('=', 1), p.splitlines()))
 
 testname = sys.argv[1]
@@ -28,7 +28,7 @@ with open(genfile, 'w') as f:
 # copy chpl-env-gen.h to this directory, rather than just including it. On some
 # test systems the include path is too long for pgi
 runtime_path_cmd = [printchplenv, '--runtime', '--path']
-runtime_path = subprocess.Popen(runtime_path_cmd, stdout=subprocess.PIPE).communicate()[0]
+runtime_path = subprocess.Popen(runtime_path_cmd, stdout=subprocess.PIPE).communicate()[0].decode()
 runtime_path = runtime_path.strip()
 gen_env_f = os.path.join(chpl_home, 'build', 'runtime', runtime_path, 'include', 'chpl-env-gen.h')
 
