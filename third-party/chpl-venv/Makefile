@@ -36,14 +36,13 @@ $(PIP): $(CHPL_VENV_INSTALL_DIR)
 	  { echo "Failed on command: curl -O $(GETPIP)."; \
 	    echo "Try setting CHPL_PIP to $$(which pip) and trying again"; \
 	    exit 1; } && \
-	  export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) && \
-	  python get-pip.py --user --no-warn-conflicts) \
+	  $(GET_PIP_COMMAND) ) \
 	fi
 
 # Install virtualenv program.
 $(CHPL_VENV_VIRTUALENV): check-exes $(PIP)
 	export PYTHONPATH="$$CHPL_PYTHONPATH:$(PIPLIBS):$$PYTHONPATH" && \
-	python -S $(PIP) install -U --force-reinstall --ignore-installed $(LOCAL_PIP_FLAGS) \
+	python $(PIP) install -U --force-reinstall --ignore-installed $(LOCAL_PIP_FLAGS) \
 	 --prefix=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
 
 # Phony convenience target for installing virtualenv.
