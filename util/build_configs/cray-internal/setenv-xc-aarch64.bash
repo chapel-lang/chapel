@@ -265,7 +265,7 @@ else
     fi
 
     # Please keep the gen versions in compiler_versions.bash the same as these!
-    gen_version_gcc=7.3.0
+    gen_version_gcc=8.2.0
     gen_version_cce=8.7.3
 
     target_cpu_module=craype-arm-thunderx2
