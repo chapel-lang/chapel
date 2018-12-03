@@ -1,7 +1,6 @@
 config const n = 10;
-proc main() {
-  var A:[1..10] [1..10] int;
 
+proc kernel(A) {
   // This pattern comes up in LCALS
   ref A1 = A[1];
   ref A2 = A[2];
@@ -10,4 +9,10 @@ proc main() {
     A1[i] = A2[1] + A2[i];
   }
 }
+
+proc main() {
+  var A:[1..10] [1..10] int;
+  kernel(A);
+}
+
 
