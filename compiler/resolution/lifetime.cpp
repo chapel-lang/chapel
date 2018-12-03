@@ -225,7 +225,7 @@ namespace {
       virtual bool enterCallExpr(CallExpr* call);
       virtual bool enterForLoop(ForLoop* forLoop);
       void inferLifetimesForConstraint(CallExpr* forCall);
-      void inferLifetimesForConstraint(CallExpr* forCall, Expr* constraintExpr)
+      void inferLifetimesForConstraint(CallExpr* forCall, Expr* constraintExpr);
   };
   class EmitLifetimeErrorsVisitor : public AstVisitorTraverse {
 
@@ -238,6 +238,16 @@ namespace {
       void emitBadSetFieldErrors(CallExpr* call);
       void emitErrors();
   };
+
+  typedef enum {
+    CONSTRAINT_LESS = -11,
+    CONSTRAINT_LESS_EQ = -10,
+    CONSTRAINT_UNKNOWN = 0,
+    CONSTRAINT_EQUAL = 1,
+    CONSTRAINT_GREATER_EQ = 10,
+    CONSTRAINT_GREATER = 11,
+  } constraint_t;
+
 } /* end anon namespace */
 
 static bool isLocalVariable(FnSymbol* fn, Symbol* sym);
@@ -257,8 +267,8 @@ static bool symbolHasInfiniteLifetime(Symbol* sym);
 static BlockStmt* getDefBlock(Symbol* sym);
 static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b);
 static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b);
-static int orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b);
-static int orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b);
+static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b);
+static constraint_t orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b);
 static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b);
 static void printOrderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b);
 static bool isLifetimeShorter(Lifetime a, Lifetime b);
@@ -428,24 +438,107 @@ static Symbol* getSymbolFromLifetimeClause(Expr* expr, bool &isRet) {
   return NULL;
 }
 
+static constraint_t mergeConstraints(constraint_t a, constraint_t b, bool& invalid) {
+  invalid = false;
+  switch (a) {
+    case CONSTRAINT_LESS:
+      switch (b) {
+        case CONSTRAINT_LESS:
+        case CONSTRAINT_LESS_EQ:
+        case CONSTRAINT_UNKNOWN:
+          return CONSTRAINT_LESS;
+        case CONSTRAINT_EQUAL:
+        case CONSTRAINT_GREATER_EQ:
+        case CONSTRAINT_GREATER:
+          invalid = true;
+          break;
+      }
+      break;
+    case CONSTRAINT_LESS_EQ:
+      switch (b) {
+        case CONSTRAINT_LESS:
+          return CONSTRAINT_LESS;
+        case CONSTRAINT_LESS_EQ:
+        case CONSTRAINT_UNKNOWN:
+          return CONSTRAINT_LESS_EQ;
+        case CONSTRAINT_GREATER_EQ:
+        case CONSTRAINT_EQUAL:
+          return CONSTRAINT_EQUAL;
+        case CONSTRAINT_GREATER:
+          invalid = true;
+          break;
+      }
+      break;
+    case CONSTRAINT_UNKNOWN:
+      return b;
+    case CONSTRAINT_EQUAL:
+      switch (b) {
+        case CONSTRAINT_LESS:
+          invalid = true;
+          break;
+        case CONSTRAINT_LESS_EQ:
+        case CONSTRAINT_UNKNOWN:
+        case CONSTRAINT_EQUAL:
+        case CONSTRAINT_GREATER_EQ:
+          return CONSTRAINT_EQUAL;
+        case CONSTRAINT_GREATER:
+          invalid = true;
+          break;
+      }
+      break;
+    case CONSTRAINT_GREATER_EQ:
+      switch (b) {
+        case CONSTRAINT_LESS:
+          invalid = true;
+          break;
+        case CONSTRAINT_LESS_EQ:
+        case CONSTRAINT_EQUAL:
+          return CONSTRAINT_EQUAL;
+        case CONSTRAINT_GREATER_EQ:
+        case CONSTRAINT_UNKNOWN:
+          return CONSTRAINT_GREATER_EQ;
+        case CONSTRAINT_GREATER:
+          return CONSTRAINT_GREATER;
+      }
+      break;
+    case CONSTRAINT_GREATER:
+      switch (b) {
+        case CONSTRAINT_LESS:
+        case CONSTRAINT_LESS_EQ:
+        case CONSTRAINT_EQUAL:
+          invalid = true;
+          break;
+        case CONSTRAINT_GREATER_EQ:
+        case CONSTRAINT_UNKNOWN:
+        case CONSTRAINT_GREATER:
+          return CONSTRAINT_GREATER;
+      }
+      break;
+      // no default -> error if one is added
+  }
+
+  return CONSTRAINT_UNKNOWN;
+}
+
+
 // -1 => isLifetimeShorter(a,b) == true
-//       lifetime a < lifetime b
+//                    lifetime a < lifetime b
 // 0  => isLifetimeShorter(a,b) == false
 //       order unknown or equal
 // 1  => isLifetimeShorter(a,b) == false
 //       lifetime a > lifetime b
-static int orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b) {
-
+static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
+{
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isNamed("&&")) {
-      int v1, v2, res;
-      res = 0;
+      constraint_t v1, v2, res;
+      bool invalid = false;
+      res = CONSTRAINT_UNKNOWN;
       v1 = orderConstraintFromClause(call->get(1), a, b);
       v2 = orderConstraintFromClause(call->get(2), a, b);
-      if (v1 == 0) res = v2;
-      else if (v2 == 0) res = v1;
-      else if (v1 == v2) res = v1;
-      else USR_FATAL(expr, "Conflicting inequality in lifetime clause");
+      res = mergeConstraints(v1, v2, invalid);
+      if (invalid)
+        USR_FATAL(expr, "Conflicting inequality in lifetime clause");
       return res;
     } else {
       Symbol* lhs = NULL;
@@ -462,23 +555,27 @@ static int orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b) {
       if (lhsRet) {
         // return lifetime = rhs
         // No impact on isLifetimeShorter but could impact inference
-        return 0;
+        return CONSTRAINT_UNKNOWN;
       } else {
         INT_ASSERT(lhs && rhs);
 
         if ((a == lhs && b == rhs) ||
             (b == lhs && a == rhs)) {
 
-          int maybeInvert = 1;
+          bool invert = false;
           if (a == rhs && b == lhs)
-            maybeInvert = -1;
+            invert = true;
 
-          if (call->isNamed("<") || call->isNamed("<=") || call->isNamed("="))
-            return maybeInvert * -1;
-          else if (call->isNamed("=="))
-            return 0;
-          else if (call->isNamed(">") || call->isNamed(">="))
-            return maybeInvert * 1;
+          if (call->isNamed("=="))
+            return CONSTRAINT_EQUAL;
+          else if (call->isNamed("<"))
+            return invert?CONSTRAINT_GREATER:CONSTRAINT_LESS;
+          else if (call->isNamed("<=") || call->isNamed("="))
+            return invert?CONSTRAINT_GREATER_EQ:CONSTRAINT_LESS_EQ;
+          else if (call->isNamed(">"))
+            return invert?CONSTRAINT_LESS:CONSTRAINT_GREATER;
+          else if (call->isNamed(">="))
+            return invert?CONSTRAINT_LESS_EQ:CONSTRAINT_GREATER_EQ;
           else
             INT_FATAL("Unhandled case");
         }
@@ -486,14 +583,17 @@ static int orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b) {
     }
   }
 
-  return 0;
+  return CONSTRAINT_UNKNOWN;
 }
 
 
-static int orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b) {
-  INT_ASSERT(fn->lifetimeConstraints);
-  Expr* last = fn->lifetimeConstraints->body.last();
-  return orderConstraintFromClause(last, a, b);
+static constraint_t orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b) {
+  if (fn->lifetimeConstraints) {
+    Expr* last = fn->lifetimeConstraints->body.last();
+    return orderConstraintFromClause(last, a, b);
+  }
+
+  return CONSTRAINT_UNKNOWN;
 }
 
 static Symbol* returnLifetimeFromClause(Expr* expr) {
@@ -1752,8 +1852,8 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           INT_ASSERT(actual2se);
           Symbol* actual2sym = actual2se->symbol();
 
-          int order = orderConstraintFromClause(fn, formal1, formal2);
-          if (order != 0) {
+          constraint_t order = orderConstraintFromClause(fn, formal1, formal2);
+          if (order != CONSTRAINT_UNKNOWN && order != CONSTRAINT_EQUAL) {
             LifetimePair a1lp =
               lifetimes->combinedLifetimeForSymbol(actual1sym);
             LifetimePair a2lp =
@@ -1802,13 +1902,14 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
                 isOrRefersBorrowedClass(formal2->getValType())) {
             //if (isSubjectToBorrowLifetimeAnalysis(formal1) &&
             //    isSubjectToBorrowLifetimeAnalysis(formal2)) {
-              if (order == -1 && // formal1 < formal2
+              if ((order == CONSTRAINT_LESS || order == CONSTRAINT_LESS_EQ) &&
                   isLifetimeShorter(a2lp.borrowed, a1lp.borrowed)) {
                 error = true;
                 ref = false;
                 relevantLifetime = a2lp.borrowed;
                 relevantSymbol = actual2sym;
-              } else if (order == 1 && // formal1 > formal2
+              } else if ((order == CONSTRAINT_GREATER ||
+                          order == CONSTRAINT_GREATER_EQ) &&
                          isLifetimeShorter(a1lp.borrowed, a2lp.borrowed)) {
                 error = true;
                 ref = false;
@@ -2429,7 +2530,14 @@ static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b) {
     // Not the same function
     return false;
 
+  ArgSymbol* aArg = toArgSymbol(a.fromSymbolScope);
+  ArgSymbol* bArg = toArgSymbol(b.fromSymbolScope);
   FnSymbol* fn = a.fromSymbolScope->defPoint->getFunction();
+  INT_ASSERT(fn != NULL && aArg != NULL && bArg != NULL);
+
+  constraint_t c = orderConstraintFromClause(fn, aArg, bArg);
+  if (c != CONSTRAINT_UNKNOWN)
+    return false;
   // TODO - make this exception more reasonable
   if (fn->name == astrSequals)
     return false;
@@ -2466,7 +2574,8 @@ static bool isLifetimeShorter(Lifetime a, Lifetime b) {
       FnSymbol* bFn = bSym->getFunction();
       if (aFn == bFn && aFn->lifetimeConstraints != NULL) {
         // TODO: transitivity ?
-        return orderConstraintFromClause(aFn, aSym, bSym) < 0;
+        constraint_t c = orderConstraintFromClause(aFn, aSym, bSym);
+        return (c == CONSTRAINT_LESS || c == CONSTRAINT_LESS_EQ);
       }
     }
     BlockStmt* aBlock = getDefBlock(aSym);
