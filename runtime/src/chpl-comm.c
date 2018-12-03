@@ -85,7 +85,16 @@ static size_t maxHeapSize;
 static
 void set_maxHeapSize(void)
 {
-  maxHeapSize = chpl_env_rt_get_size("MAX_HEAP_SIZE", 0);
+  const char* ev = "MAX_HEAP_SIZE";
+
+  int pct;
+  if ((pct = chpl_env_rt_get_int_pct(ev, -1, false /*doWarn*/)) > 0) {
+    const size_t sysMem = chpl_sys_physicalMemoryBytes();
+    maxHeapSize = (pct * sysMem + 50) / 100; // rounded percentage
+    return;
+  }
+
+  maxHeapSize = chpl_env_rt_get_size(ev, 0);
 }
 
 size_t chpl_comm_getenvMaxHeapSize(void)

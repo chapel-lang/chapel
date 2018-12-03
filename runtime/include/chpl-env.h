@@ -36,6 +36,7 @@ const char* chpl_env_rt_get(const char*, const char*);
 //
 chpl_bool chpl_env_str_to_bool(const char*, const char*, chpl_bool);
 int64_t chpl_env_str_to_int(const char*, const char*, int64_t);
+int chpl_env_str_to_int_pct(const char*, const char*, int, chpl_bool);
 size_t chpl_env_str_to_size(const char*, const char*, size_t);
 
 //
@@ -50,6 +51,11 @@ chpl_bool chpl_env_rt_get_bool(const char* ev, chpl_bool dflt) {
 static inline
 int64_t chpl_env_rt_get_int(const char* ev, int64_t dflt) {
   return chpl_env_str_to_int(ev, chpl_env_rt_get(ev, NULL), dflt);
+}
+
+static inline
+int chpl_env_rt_get_int_pct(const char* ev, int dflt, chpl_bool doWarn) {
+  return chpl_env_str_to_int_pct(ev, chpl_env_rt_get(ev, NULL), dflt, doWarn);
 }
 
 static inline

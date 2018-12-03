@@ -93,6 +93,38 @@ int64_t chpl_env_str_to_int(const char* evName, const char* evVal,
 }
 
 
+int chpl_env_str_to_int_pct(const char* evName, const char* evVal,
+                            int dflt, chpl_bool doWarn) {
+  int val;
+  int evIdx;
+
+  if (evVal == NULL)
+    return dflt;
+
+  if (sscanf(evVal, "%d%n", &val, &evIdx) == 1
+      && val > 0
+      && evVal[evIdx] == '%') {
+    return val;
+  }
+
+  if (doWarn) {
+    if (evName == NULL) {
+      chpl_msg(1,
+               "warning: env var improper int percentage \"%s\", assuming "
+               "%d\n",
+               evVal, dflt);
+    } else {
+      chpl_msg(1,
+               "warning: CHPL_RT_%s improper int percentage \"%s\", assuming "
+               "%d\n",
+               evName, evVal, dflt);
+    }
+  }
+
+  return dflt;
+}
+
+
 size_t chpl_env_str_to_size(const char* evName, const char* evVal,
                             size_t dflt) {
   chpl_bool okay;
