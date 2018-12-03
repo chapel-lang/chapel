@@ -262,7 +262,7 @@ else
     fi
 
     # Please keep the gen versions in compiler_versions.bash the same as these!
-    gen_version_gcc=8.2.0
+    gen_version_gcc=6.1.0
     gen_version_intel=16.0.3.210
     gen_version_cce=8.6.3
 
