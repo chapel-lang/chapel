@@ -1,8 +1,8 @@
 require "ccode.h";
 
 extern record S {
-  var okname: int;
-  extern "type" var ctype: int;
+  var okname: c_int;
+  extern "type" var ctype: c_int;
 }
 
 extern proc printS(ref myS: S);
