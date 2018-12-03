@@ -187,7 +187,7 @@ def getIntentInfo(ty):
     if type(curType) == c_ast.PtrDecl:
         ptrType = toChapelType(curType)
 
-    if type(curType) == c_ast.PtrDecl and not (isPointerTo(curType, "char") or isPointerTo(curType, "void")):
+    if type(curType) == c_ast.PtrDecl and not (isPointerTo(curType, "char") or isPointerTo(curType, "void") or toChapelType(curType) == "c_fn_ptr"):
         refIntent = "ref"
         curType = curType.type
     else:
