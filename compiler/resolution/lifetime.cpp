@@ -435,6 +435,7 @@ static int orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b) {
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isNamed("&&")) {
       int v1, v2, res;
+      res = 0;
       v1 = orderConstraintFromClause(call->get(1), a, b);
       v2 = orderConstraintFromClause(call->get(2), a, b);
       if (v1 == 0) res = v2;
