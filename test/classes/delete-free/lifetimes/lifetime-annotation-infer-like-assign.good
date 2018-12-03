@@ -1,0 +1,3 @@
+lifetime-annotation-infer-like-assign.chpl:11: In function 'main':
+lifetime-annotation-infer-like-assign.chpl:18: error: Scoped variable b would outlive the value it is set to
+lifetime-annotation-infer-like-assign.chpl:14: note: consider scope of own

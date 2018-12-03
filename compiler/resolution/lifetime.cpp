@@ -224,6 +224,8 @@ namespace {
       bool changed;
       virtual bool enterCallExpr(CallExpr* call);
       virtual bool enterForLoop(ForLoop* forLoop);
+      void inferLifetimesForConstraint(CallExpr* forCall);
+      void inferLifetimesForConstraint(CallExpr* forCall, Expr* constraintExpr)
   };
   class EmitLifetimeErrorsVisitor : public AstVisitorTraverse {
 
@@ -410,14 +412,16 @@ static void markArgumentsReturnScope(FnSymbol* fn) {
   }
 }
 
-static Symbol* getSymbolFromLifetimeClause(CallExpr* call, bool &isRet) {
-  if (call->isPrimitive(PRIM_LIFETIME_OF)) {
-    SymExpr* se = toSymExpr(call->get(1));
-    INT_ASSERT(se);
-    return se->symbol();
-  } else if (call->isPrimitive(PRIM_RETURN)) {
-    isRet = true;
-    return NULL;
+static Symbol* getSymbolFromLifetimeClause(Expr* expr, bool &isRet) {
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIM_LIFETIME_OF)) {
+      SymExpr* se = toSymExpr(call->get(1));
+      INT_ASSERT(se);
+      return se->symbol();
+    } else if (call->isPrimitive(PRIM_RETURN)) {
+      isRet = true;
+      return NULL;
+    }
   }
 
   INT_FATAL("Unhandled");
@@ -449,8 +453,8 @@ static int orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b) {
       bool lhsRet = false;
       bool rhsRet = false;
 
-      lhs = getSymbolFromLifetimeClause(toCallExpr(call->get(1)), lhsRet);
-      rhs = getSymbolFromLifetimeClause(toCallExpr(call->get(2)), lhsRet);
+      lhs = getSymbolFromLifetimeClause(call->get(1), lhsRet);
+      rhs = getSymbolFromLifetimeClause(call->get(2), lhsRet);
 
       if (rhsRet)
         USR_FATAL(call, "Cannot read lifetime of return in clause");
@@ -469,7 +473,7 @@ static int orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b) {
           if (a == rhs && b == lhs)
             maybeInvert = -1;
 
-          if (call->isNamed("<") || call->isNamed("<="))
+          if (call->isNamed("<") || call->isNamed("<=") || call->isNamed("="))
             return maybeInvert * -1;
           else if (call->isNamed("=="))
             return 0;
@@ -537,8 +541,8 @@ static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
       bool lhsRet = false;
       bool rhsRet = false;
 
-      lhs = getSymbolFromLifetimeClause(toCallExpr(call->get(1)), lhsRet);
-      rhs = getSymbolFromLifetimeClause(toCallExpr(call->get(2)), lhsRet);
+      lhs = getSymbolFromLifetimeClause(call->get(1), lhsRet);
+      rhs = getSymbolFromLifetimeClause(call->get(2), lhsRet);
 
       if ((a == lhs && b == rhs) ||
 	  (b == lhs && a == rhs)) {
@@ -1457,6 +1461,10 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
     }
   }
 
+  // Consider the lifetime constraints and adjust the
+  // inferred lifetimes of the results.
+  inferLifetimesForConstraint(call);
+
   return false;
 }
 
@@ -1570,6 +1578,47 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
 
   return true;
 }
+
+void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall) {
+  if (FnSymbol* fn = forCall->resolvedOrVirtualFunction()) {
+    if (fn->lifetimeConstraints) {
+      Expr* last = fn->lifetimeConstraints->body.last();
+      inferLifetimesForConstraint(forCall, last);
+    }
+  }
+}
+
+void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall, Expr* constraintExpr) {
+  if (CallExpr* constraint = toCallExpr(constraintExpr)) {
+    if (constraint->isNamed("&&")) {
+      inferLifetimesForConstraint(forCall, constraint->get(1));
+      inferLifetimesForConstraint(forCall, constraint->get(2));
+    } else if (constraint->isNamed("=")) {
+      Expr* a = constraint->get(1);
+      Expr* b = constraint->get(2);
+      ArgSymbol* constraintLhs = NULL;
+      ArgSymbol* constraintRhs = NULL;
+      bool ignore = false;
+      constraintLhs = toArgSymbol(getSymbolFromLifetimeClause(a, ignore));
+      constraintRhs = toArgSymbol(getSymbolFromLifetimeClause(b, ignore));
+      Symbol* actualLhs = NULL;
+      Symbol* actualRhs = NULL;
+      if (constraintLhs && constraintRhs) {
+        for_formals_actuals(formal, actualExpr, forCall) {
+          if (SymExpr* actualSe = toSymExpr(actualExpr)) {
+            if (formal == constraintLhs)
+              actualLhs = actualSe->symbol();
+            if (formal == constraintRhs)
+              actualRhs = actualSe->symbol();
+          }
+        }
+      }
+      LifetimePair lp = lifetimes->inferredLifetimeForSymbol(actualRhs);
+      changed = lifetimes->setInferredLifetimeToMin(actualLhs, lp);
+    }
+  }
+}
+
 
 static bool isDevOnly(BaseAST* ast) {
   FnSymbol* fn = ast->getFunction();
