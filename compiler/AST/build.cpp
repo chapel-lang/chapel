@@ -1970,16 +1970,33 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 }
 
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* docs) {
+std::set<Flag>* buildVarDeclFlags(Flag flag1, Flag flag2) {
+  // this will be deleted in buildVarDecls()
+  std::set<Flag>* flags = new std::set<Flag>();
+
+  if (flag1 != FLAG_UNKNOWN) {
+    flags->insert(flag1);
+  }
+  if (flag2 != FLAG_UNKNOWN) {
+    flags->insert(flag2);
+  }
+
+  return flags;
+}
+
+
+BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag>* flags, const char* docs) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        if (flags.count(FLAG_EXTERN) && flags.count(FLAG_PARAM))
-          USR_FATAL(var, "external params are not supported");
+        if (flags) {
+          if (flags->count(FLAG_EXTERN) && flags->count(FLAG_PARAM))
+            USR_FATAL(var, "external params are not supported");
 
-        for (std::set<Flag>::iterator it = flags.begin(); it != flags.end(); ++it) {
-          if (*it != FLAG_UNKNOWN) {
-            var->addFlag(*it);
+          for (std::set<Flag>::iterator it = flags->begin(); it != flags->end(); ++it) {
+            if (*it != FLAG_UNKNOWN) {
+              var->addFlag(*it);
+            }
           }
         }
 
@@ -2030,6 +2047,11 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* doc
                   new CallExpr("compilerError", new_StringSymbol("illegal tuple variable declaration with non-tuple initializer"), new_IntSymbol(0))));
     stmts->blockInfoSet(NULL);
   }
+
+  // this was allocated in buildVarDeclFlags()
+  if (flags)
+    delete flags;
+
   return stmts;
 }
 

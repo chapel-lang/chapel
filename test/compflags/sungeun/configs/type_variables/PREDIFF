@@ -4,12 +4,12 @@
 #
 #
 
-import sys, string
+import sys
 
 testname=sys.argv[1]
 compopts=sys.argv[4]
 
-l = string.rfind(compopts, 'myType')
+l = compopts.rfind('myType')
 
 if l != -1:
     words=compopts[l+7:].split()
@@ -20,7 +20,7 @@ if l != -1:
 else:
     myType=None
 
-l = string.rfind(compopts, 'myIdxType')
+l = compopts.rfind('myIdxType')
 if l != -1:
     myIdxType=compopts[l+10:].split()[0]
 else:
@@ -40,11 +40,11 @@ def getDefaultValue(type):
     else:
         return '0'
 
-def getNumBits(type):
-    l = string.find(type, '(')
+def getNumBits(idx_type):
+    l = idx_type.find('(')
     if l != -1:
-        return type[l+1:].split()[0].split(')')[0]
-    elif type == 'real':
+        return idx_type[l+1:].split()[0].split(')')[0]
+    elif idx_type == 'real':
         return '64'
     else:
         return '64'

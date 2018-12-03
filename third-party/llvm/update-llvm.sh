@@ -1,13 +1,16 @@
 #!/bin/bash
 
 BRANCH=unknown
-ENABLE_RV=0
+ENABLE_RV=1
 
 if [ "$#" -eq 0 ]
 then
-# No branch argument to use, so compute one
-MYVERSION=`cat LLVM_VERSION | sed 's/\.//g'`
-BRANCH=release_$MYVERSION
+  MYVERSION=`cat LLVM_VERSION | sed 's/\.//g'`
+  BRANCH=release_$MYVERSION
+  echo "a branch argument is required; try"
+  echo "  master"
+  echo "  $BRANCH"
+  exit 1
 else
 # Argument supplied, use that branch
 BRANCH="$1"
@@ -42,7 +45,7 @@ git pull --rebase
 cd ../..
 fi
 echo Updating compiler-rt
-cd runtimes/compiler-rt
+cd projects/compiler-rt
 git pull --rebase
 cd ../..
 cd ..
@@ -59,13 +62,16 @@ if [ "$ENABLE_RV" -ne 0 ]
 then
 echo Checking out RV $BRANCH
 git clone $CLONEARGS https://github.com/cdl-saarland/rv llvm/tools/rv
+cd llvm/tools/rv
+git submodule update --init
+cd ../../..
 fi
 echo Checking out compiler-rt $BRANCH
-git clone $CLONEARGS https://git.llvm.org/git/compiler-rt.git llvm/runtimes/compiler-rt
+git clone $CLONEARGS https://git.llvm.org/git/compiler-rt.git llvm/projects/compiler-rt
 
 echo Applying Chapel patches to LLVM
-patch -p0 < llvm-4.0.1-BasicAliasAnalysis-patch.txt
-patch -p0 < llvm-4.0.1-ValueTracking-patch.txt
+patch -p0 < llvm-6.0.0-BasicAliasAnalysis-patch.txt
+patch -p0 < llvm-6.0.0-ValueTracking-patch.txt
 
 
 fi

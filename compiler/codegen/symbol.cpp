@@ -1992,15 +1992,16 @@ void FnSymbol::codegenFortran(int indent) {
       const char* prefix = formal->cname[0] == '_' ? "chpl" : "";
       const bool isRef = formal->intent & INTENT_FLAG_REF;
       const char* valueString = isRef ? "" : ", value";
-      const char* typeName = getFortranTypeName(formal->type, formal).c_str();
-      const char* kindName = getFortranKindName(formal->type, formal).c_str();
+      std::string typeName = getFortranTypeName(formal->type, formal);
+      std::string kindName = getFortranKindName(formal->type, formal);
 
       // declare arrays specially instead of just using the record type
-      if (!strcmp(kindName, "_ref_CFI_cdesc_t")) {
+      if (kindName == "_ref_CFI_cdesc_t") {
         fprintf(outfile, "%*sTYPE(*) :: %s(..)\n", indent, "", formal->cname);
       } else {
-        fprintf(outfile, "%*s%s(kind=%s)%s :: %s%s\n", indent, "", typeName,
-                kindName, valueString, prefix, formal->cname);
+        fprintf(outfile, "%*s%s(kind=%s)%s :: %s%s\n", indent, "",
+                typeName.c_str(), kindName.c_str(),
+                valueString, prefix, formal->cname);
       }
     }
 

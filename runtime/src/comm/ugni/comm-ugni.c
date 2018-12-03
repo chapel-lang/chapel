@@ -4140,7 +4140,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
   // Here we implement AMOs which the NIC cannot do, either because
   // the target object is not in registered memory or because the NIC
   // lacks native support.  For more information, see the comment
-  // before chpl_comm_atomic_put_int32().
+  // before chpl_comm_atomic_store_int32().
   //
   switch (cmd) {
   case put_32:
@@ -6290,23 +6290,23 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
   }
 
 //
-// Atomic Put functions:
+// Atomic Write functions:
 //   _f: interface function name suffix (type)
 //   _c: network AMO command
 //   _t: AMO type
 //
-#define DEFINE_CHPL_COMM_ATOMIC_PUT(_f, _c, _t)                         \
+#define DEFINE_CHPL_COMM_ATOMIC_WRITE(_f, _c, _t)                       \
         DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
                                                                         \
         /*==============================*/                              \
-        void chpl_comm_atomic_put_##_f(void* val,                       \
+        void chpl_comm_atomic_write_##_f(void* val,                     \
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
-                   "IFACE chpl_comm_atomic_put_"#_f"(%p, %d, %p)",      \
+                   "IFACE chpl_comm_atomic_write_"#_f"(%p, %d, %p)",    \
                    val, (int) loc, obj);                                \
                                                                         \
           if (chpl_numNodes == 1) {                                     \
@@ -6341,27 +6341,27 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
           }                                                             \
         }
 
-DEFINE_CHPL_COMM_ATOMIC_PUT(int32, put_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_PUT(int64, put_64, int_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_PUT(uint32, put_32, uint_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_PUT(uint64, put_64, uint_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_PUT(real32, put_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_PUT(real64, put_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_WRITE(int32, put_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_WRITE(int64, put_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_WRITE(uint32, put_32, uint_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_WRITE(uint64, put_64, uint_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_WRITE(real32, put_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
 
-#undef DEFINE_CHPL_COMM_ATOMIC_PUT
+#undef DEFINE_CHPL_COMM_ATOMIC_WRITE
 
 
 //
-// Atomic Get functions:
+// Atomic Read functions:
 //   _f: interface function name suffix (type)
 //   _c: network AMO command
 //   _t: AMO type
 //
-#define DEFINE_CHPL_COMM_ATOMIC_GET(_f, _c, _t)                         \
+#define DEFINE_CHPL_COMM_ATOMIC_READ(_f, _c, _t)                        \
         DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
                                                                         \
         /*==============================*/                              \
-        void chpl_comm_atomic_get_##_f(void* res,                       \
+        void chpl_comm_atomic_read_##_f(void* res,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        int ln, int32_t fn)              \
@@ -6369,7 +6369,7 @@ DEFINE_CHPL_COMM_ATOMIC_PUT(real64, put_64, int_least64_t)
           mem_region_t* remote_mr;                                      \
           mem_region_t* local_mr;                                       \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
-                   "IFACE chpl_comm_atomic_get_"#_f"(%p, %d, %p)",      \
+                   "IFACE chpl_comm_atomic_read_"#_f"(%p, %d, %p)",     \
                    res, (int) loc, obj);                                \
                                                                         \
           if (chpl_numNodes == 1) {                                     \
@@ -6393,14 +6393,14 @@ DEFINE_CHPL_COMM_ATOMIC_PUT(real64, put_64, int_least64_t)
           }                                                             \
         }
 
-DEFINE_CHPL_COMM_ATOMIC_GET(int32, get_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_GET(int64, get_64, int_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_GET(uint32, get_32, uint_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_GET(uint64, get_64, uint_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_GET(real32, get_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_GET(real64, get_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_READ(int32, get_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_READ(int64, get_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_READ(uint32, get_32, uint_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_READ(uint64, get_64, uint_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_READ(real32, get_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
 
-#undef DEFINE_CHPL_COMM_ATOMIC_GET
+#undef DEFINE_CHPL_COMM_ATOMIC_READ
 
 
 //

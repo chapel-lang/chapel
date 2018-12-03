@@ -525,6 +525,8 @@ create-views:
   08/04/18:
     - text: Machine rebooted
       config: chapcs
+  11/10/18:
+    - Improve timing and stability of the create-views performance test (#11609)
 
 dgemm.128:
   09/06/13:
@@ -978,6 +980,8 @@ meteor:
     - Chapel level improvement by using implicit domains
   08/10/16:
     - Updated meteor's lock to yield less frequently (#4300)
+  11/08/18:
+    - Module-scope code gets module scope temps, fix lifetime checking (#11570)
 
 mg: &mg-base
   05/23/17:

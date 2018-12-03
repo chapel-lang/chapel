@@ -212,7 +212,7 @@ static void addPrintModInitOrder(FnSymbol* fn)
   const char* s1 = astr("%*s\\n");
   const char* s2 = astr(fn->getModule()->name);
   int myLen = strlen(s2);
-  char lenStr[5];
+  char lenStr[25];
   sprintf(lenStr, "%d", myLen);
   Expr *es1 = buildCStringLiteral(s1);
   Expr *es2 = buildCStringLiteral(s2);

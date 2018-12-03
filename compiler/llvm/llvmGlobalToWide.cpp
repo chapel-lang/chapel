@@ -493,7 +493,7 @@ namespace {
             // Add a call to global2wide before the terminator in
             // incomingBlock and save the result to store in the
             // new phi node.
-            TerminatorInst* incomingEnd = incomingBlock->getTerminator();
+            auto incomingEnd = incomingBlock->getTerminator();
             newIncoming[j] = callGlobalToWideFn(incomingValue, incomingEnd);
           }
 

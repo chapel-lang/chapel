@@ -138,7 +138,7 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
   Instruction *LastMemopUse = NULL;
 
   for (BasicBlock::iterator BI = FirstLoadOrStore->getIterator();
-       !isa<TerminatorInst>(BI);
+       !BI->isTerminator();
        ++BI)
   {
     Instruction& insnRef = *BI;
@@ -171,7 +171,7 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
   // Move all addressing instructions before StartInst.
   // Move all uses of loaded values before LastLoadOrStore (which will be removed).
   for (BasicBlock::iterator BI = FirstLoadOrStore->getIterator();
-       !isa<TerminatorInst>(BI);)
+       !BI->isTerminator();)
   {
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
@@ -517,7 +517,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   Ranges.addInst(0, StartInst);
 
   BasicBlock::iterator BI = StartInst->getIterator();
-  for (++BI; !isa<TerminatorInst>(BI); ++BI) {
+  for (++BI; BI->isTerminator(); ++BI) {
 
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
