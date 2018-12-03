@@ -297,7 +297,7 @@
 %token TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX TCONFIG TCONST TCONTINUE
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
-%token TFOR TFORALL TFORWARDING
+%token TFALSE TFOR TFORALL TFORWARDING
 %token TIF TIMAG TIN TINDEX TINLINE TINOUT TINT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
@@ -306,7 +306,7 @@
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
 %token TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSTRING TSUBDOMAIN TSYNC
-%token TTHEN TTHIS TTHROW TTHROWS TTRY TTRYBANG TTYPE
+%token TTHEN TTHIS TTHROW TTHROWS TTRUE TTRY TTRYBANG TTYPE
 %token TUINT TUNDERSCORE TUNION TUNMANAGED TUSE
 %token TVAR
 %token TWHEN TWHERE TWHILE TWITH
@@ -442,7 +442,7 @@
 %type <pcallexpr> zippered_iterator
 %type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
-%type <pexpr> literal_expr opt_where_part
+%type <pexpr> bool_literal literal_expr opt_where_part
 %type <pexpr> stmt_level_expr type_level_expr scalar_type
 %type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
@@ -639,11 +639,15 @@ opt_label_ident:
 ident_fn_def:
   TIDENT                   { $$ = $1; }
 | TTHIS                    { $$ = "this"; }
+| TFALSE                   { $$ = "false"; redefiningReservedWordError($$); }
+| TTRUE                    { $$ = "true"; redefiningReservedWordError($$); }
 | internal_type_ident_def  { $$ = $1; redefiningReservedTypeError($1); }
 
 ident_def:
   TIDENT                   { $$ = $1; }
-| TTHIS                    { $$ = "this"; redefiningReservedWordError("this"); }
+| TTHIS                    { $$ = "this"; redefiningReservedWordError($$); }
+| TFALSE                   { $$ = "false"; redefiningReservedWordError($$); }
+| TTRUE                    { $$ = "true"; redefiningReservedWordError($$); }
 | internal_type_ident_def  { $$ = $1; redefiningReservedTypeError($1); }
 ;
 
@@ -1844,8 +1848,14 @@ parenthesized_expr:
 | TLP tuple_expr_ls TCOMMA TRP      { $$ = buildTuple($2); }
 ;
 
+bool_literal:
+  TFALSE { $$ = new SymExpr(gFalse); }
+| TTRUE  { $$ = new SymExpr(gTrue); }
+;
+
 literal_expr:
-  INTLITERAL            { $$ = buildIntLiteral($1, yyfilename, chplLineno);    }
+  bool_literal
+| INTLITERAL            { $$ = buildIntLiteral($1, yyfilename, chplLineno);    }
 | REALLITERAL           { $$ = buildRealLiteral($1);   }
 | IMAGLITERAL           { $$ = buildImagLiteral($1);   }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }

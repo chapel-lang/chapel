@@ -118,7 +118,7 @@ SERIAL / STANDALONE / LEADER
 
 * If a serial IT has no corresponding standalone or leader,
   there is still a group IG for IT, such that:
-   - IG.seral == IT
+   - IG.serial == IT
    - IG.standalone == IG.leader == NULL.
   This can be used to check availability of standalone/leader.
 

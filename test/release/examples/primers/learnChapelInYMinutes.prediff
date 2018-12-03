@@ -14,7 +14,7 @@ fh.close()
 def writeOutput( value ):
   fh = open(outfile, 'w')
   fh.write(value+'\n')
-  if DEBUG_MODE: print value 
+  if DEBUG_MODE: print(value)
   fh.close()
 
 [test_serial_input, test_parallel_input] = input.split( "PARALLELISM START" )
@@ -29,8 +29,8 @@ else:
   writeOutput( "FAILED! " + str( line_of_stderr ) + " not seen" )
   exit( -1-i )
 
-[test_serial, test_parallel] = [ filter( remove_empty, test_serial_input.split("\n")), \
-                                 filter( remove_empty, test_parallel_input.split("\n") )]
+[test_serial, test_parallel] = [ list(filter( remove_empty, test_serial_input.split("\n"))), \
+                                 list(filter( remove_empty, test_parallel_input.split("\n") ))]
 
 # Check Serial section as a whole
 # Should be a 1:1 mapping of each other

@@ -44,7 +44,9 @@ def activate_venv():
             error('Activation file {0} is missing'.format(activation_file))
 
         # actually activate
-        execfile(activation_file, dict(__file__=activation_file))
+        with open(activation_file) as f:
+            code = compile(f.read(), activation_file, 'exec')
+            exec(code, dict(__file__=activation_file))
 
 
 activate_venv()

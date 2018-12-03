@@ -182,8 +182,12 @@ def getIntentInfo(ty):
     refIntent = ""
     retType   = ""
     curType   = ty
+    ptrType = ""
 
-    if type(curType) == c_ast.PtrDecl and not (isPointerTo(curType, "char") or isPointerTo(curType, "void")):
+    if type(curType) == c_ast.PtrDecl:
+        ptrType = toChapelType(curType)
+
+    if type(curType) == c_ast.PtrDecl and not (isPointerTo(curType, "char") or isPointerTo(curType, "void") or toChapelType(curType) == "c_fn_ptr"):
         refIntent = "ref"
         curType = curType.type
     else:
@@ -191,19 +195,22 @@ def getIntentInfo(ty):
 
     retType = toChapelType(curType)
 
-    return (refIntent, retType)
+    return (refIntent, retType, ptrType)
 
 # pl - a c_ast.ParamList
 def computeArgs(pl):
     formals = []
+    ptrFormals = []
+
     if pl is None:
-        return ""
+        return ("", "")
 
     for (i, arg) in enumerate(pl.params):
         if type(arg) == c_ast.EllipsisParam:
             formals.append(VARARGS_STR)
+            ptrFormals.append(VARARGS_STR);
         else:
-            (intent, typeName) = getIntentInfo(arg.type)
+            (intent, typeName, ptrTypeName) = getIntentInfo(arg.type)
             argName = computeArgName(arg)
             if typeName != "":
                 if intent != "":
@@ -211,7 +218,12 @@ def computeArgs(pl):
                 if argName == "":
                     argName = "arg" + str(i)
                 formals.append(intent + argName + " : " + typeName)
-    return ", ".join(formals)
+
+                if ptrTypeName != "":
+                    ptrFormals.append(argName + " : " + ptrTypeName)
+                else:
+                    ptrFormals.append(argName + " : " + typeName)
+    return (", ".join(formals), ", ".join(ptrFormals))
 
 def isPointerTo(ty, text):
     if type(ty) == c_ast.PtrDecl:
@@ -268,7 +280,7 @@ def getFunctionName(ty):
 def genFuncDecl(fn):
     retType = toChapelType(fn.type)
     fnName  = getFunctionName(fn.type)
-    args    = computeArgs(fn.args)
+    (args, ptrArgs) = computeArgs(fn.args)
 
     if fnName in chapelKeywords:
         genComment("Unable to generate function '" + fnName + "' because its name is a Chapel keyword")
@@ -284,6 +296,8 @@ def genFuncDecl(fn):
         retType = "void"
 
     print("extern proc " + fnName + "(" + args + ") : " + retType + ";\n")
+    if ptrArgs != args:
+        print("extern proc " + fnName + "(" + ptrArgs + ") : " + retType + ";\n")
 
     listArgs = args.split(", ")
     if listArgs[-1] == VARARGS_STR:
