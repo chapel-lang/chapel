@@ -234,7 +234,7 @@ class argument_map(object):
         if arch == 'unknown':
             return arch
 
-        if compiler in ['gnu', 'mpi-gnu', 'aarch64-gnu']:
+        if compiler in ['gnu', 'mpi-gnu', 'aarch64-gnu', 'cray-prgenv-gnu']:
             if version >= CompVersion('7.0'):
                 return cls.gcc7.get(arch, '')
             elif version >= CompVersion('6.0'):
@@ -250,7 +250,7 @@ class argument_map(object):
             elif version >= CompVersion('4.3'):
                 return cls.gcc43.get(arch, '')
             return 'none'
-        elif compiler == 'intel':
+        elif compiler in ['intel', 'cray-prgenv-intel']:
             return cls.intel.get(arch, '')
         elif compiler in ['clang', 'clang-included', 'allinea']:
             # Clang doesn't know how to do architecture detection for aarch64.
@@ -432,31 +432,15 @@ def get_module_lcd_arch(platform_val, arch):
     else:
         return 'none'
 
-# get_lcd has no affect on non cray systems and is intended to be used to get
-# the correct runtime and gen directory.
+# Adjust the architecture based upon compiler support
 @memoize
-def get(location, map_to_compiler=False, get_lcd=False):
-
-    arch_tuple = collections.namedtuple('arch_tuple', ['flag', 'arch'])
-
-    if not location or location == "host":
-        arch = overrides.get('CHPL_HOST_ARCH', '')
-    elif location == 'target':
-        arch = overrides.get('CHPL_TARGET_ARCH', '')
-    else:
-        raise InvalidLocationError(location)
-
-    # fast path out for when the user has set arch=none
-    if arch == 'none':
-        return arch_tuple('none', arch)
-
-    comm_val = chpl_comm.get()
-    compiler_val = chpl_compiler.get(location)
-    platform_val = chpl_platform.get(location)
+def adjust_architecture_for_compiler(arch, flag, get_lcd):
+    compiler_val = chpl_compiler.get(flag)
+    platform_val = chpl_platform.get(flag)
 
     isprgenv = compiler_is_prgenv(compiler_val)
     if compiler_val == 'clang-included':
-      isprgenv = compiler_is_prgenv(chpl_compiler.get(location,
+      isprgenv = compiler_is_prgenv(chpl_compiler.get(flag,
                                                       llvm_mode="orig"))
 
     if isprgenv:
@@ -477,62 +461,136 @@ def get(location, map_to_compiler=False, get_lcd=False):
                 stderr.write("Warning: Could not detect the lowest common "
                              "denominator processor type for this platform. "
                              "You may be unable to use the Chapel compiler\n")
-        if is_known_arm(arch):
-            return arch_tuple('cpu', arch)
-        else:
-            return arch_tuple('arch', arch)
+        return arch
     elif 'pgi' in compiler_val:
-        return arch_tuple('none', 'none')
+        return 'none'
     elif 'cray' in compiler_val:
-        return arch_tuple('none', 'none')
+        return 'none'
     elif 'ibm' in compiler_val:
-        return arch_tuple('none', 'none')
+        return 'none'
 
-    # Only try to do any auto-detection or verification when:
+    return arch
+
+@memoize
+def default_arch(flag):
+    comm_val = chpl_comm.get()
+    compiler_val = chpl_compiler.get(flag)
+    platform_val = chpl_platform.get(flag)
+
+    arch = 'unknown'
+
+    if comm_val == 'none' and ('linux' in platform_val or
+                               platform_val == 'darwin' or
+                               platform_val.startswith('cygwin')):
+      # Clang cannot detect the architecture for aarch64.  Otherwise,
+      # let the backend compiler do the actual feature set detection. We
+      # could be more aggressive in setting a precise architecture using
+      # the double checking code above, but it seems like a waste of time
+      # to not use the work the backend compilers have already done
+      if compiler_val in ['clang', 'clang-included']:
+          if get_native_machine() == 'aarch64':
+              arch = 'unknown'
+          else:
+              arch = 'native'
+      else:
+            arch = 'native'
+
+    return arch
+
+# Returns the machine type for the passed arch.
+#  * if arch is native/none/unknown, return result of get_native_machine
+#  * otherwise returns the machine type corresponding to the selected arch
+@memoize
+def machine_for_arch(arch):
+    if arch == "native" or arch == "none" or arch == "unknown":
+        return get_native_machine()
+    # Otherwise, compute the machine based on the architecture selected
+    if is_known_arm(arch):
+        return "aarch64"
+    else:
+        return "x86_64"
+
+
+# Given an arch, raise an error if it's not a reasonable setting
+@memoize
+def verify_arch(arch, flag):
+    comm_val = chpl_comm.get()
+    compiler_val = chpl_compiler.get(flag)
+    platform_val = chpl_platform.get(flag)
+    isprgenv = compiler_is_prgenv(compiler_val)
+
+    # Only try to do any architecture verification when:
     # comm == none  -- The inverse means that we are probably cross-compiling.
     #
     # linux/dawin/  -- The only platforms that we should try and detect on.
     # cygwin           Crays will be handled through the craype-* modules
     #
-    if comm_val == 'none' and ('linux' in platform_val or
-                               platform_val == 'darwin' or
-                               platform_val.startswith('cygwin')):
-        if arch and arch not in  ['none', 'unknown', 'native']:
-            if location == 'host':
-                # when a user supplies an architecture, and it seems reasonable
-                # to double check their choice we do so. This will only
-                # generate a warning that the user may not be able to run
-                # whatever they compile.
-                #
-                # This only runs when location is 'host' since we
-                # conservatively assume that a setting for 'target' could be in
-                # a cross-compilation setting
-                try:
-                    vendor_string, feature_string = get_cpuinfo(platform_val)
-                    detected_arch = feature_sets.find(vendor_string, feature_string)
-                    if not feature_sets.subset(arch, detected_arch):
-                        stderr.write("Warning: The supplied processor type does "
-                                     "not appear to be compatible with the host "
-                                     "processor type. The resultant binary may "
-                                     "not run on the current machine.\n")
-                except ValueError:
-                    stderr.write("Warning: Unknown platform, could not find CPU information\n")
-        else:
-            # Clang cannot detect the architecture for aarch64.  Otherwise,
-            # let the backend compiler do the actual feature set detection. We
-            # could be more aggressive in setting a precise architecture using
-            # the double checking code above, but it seems like a waste of time
-            # to not use the work the backend compilers have already done
-            if compiler_val in ['clang', 'clang-included']:
-                if get_native_machine() == 'aarch64':
-                    arch = 'unknown'
-                else:
-                    arch = 'native'
-            else:
-                arch = 'native'
+    check_arch = False
+    if not isprgenv:
+        if flag == 'target':
+            if comm_val == 'none':
+                if ('linux' in platform_val or
+                     platform_val == 'darwin' or
+                     platform_val.startswith('cygwin')):
+                    check_arch = True
+        if flag == 'host':
+            check_arch = True
 
+    if check_arch and arch and arch not in  ['none', 'unknown', 'native']:
+        # Print a friendly warning if it's unlikely the user could run
+        # their program. This could be printed in cross-compilation settings.
+        machine = machine_for_arch(arch)
+        cur_machine = get_native_machine()
+        warn = (machine != cur_machine)
 
-    if map_to_compiler:
+        try:
+            vendor_string, feature_string = get_cpuinfo(platform_val)
+            detected_arch = feature_sets.find(vendor_string, feature_string)
+            if not feature_sets.subset(arch, detected_arch):
+                warn = True
+        except ValueError:
+            stderr.write("Warning: Unknown platform, could not find CPU information\n")
+
+        if warn:
+                stderr.write("Warning: The supplied processor type does "
+                             "not appear to be compatible with the host "
+                             "processor type. The resultant binary may "
+                             "not run on the current machine.\n")
+
+# get_lcd has no effect on non cray systems and is intended to be used to get
+# the correct runtime and gen directory.
+@memoize
+def get(flag, map_to_compiler=False, get_lcd=False):
+
+    arch_tuple = collections.namedtuple('arch_tuple', ['flag', 'arch'])
+
+    if not flag or flag == 'host':
+        arch = overrides.get('CHPL_HOST_ARCH', '')
+    elif flag == 'target':
+        arch = overrides.get('CHPL_TARGET_ARCH', '')
+    else:
+        raise InvalidLocationError(flag)
+
+    # fast path out for when the user has set arch=none
+    if arch == 'none' or (flag == 'host' and not arch):
+        return arch_tuple('none', 'none')
+
+    # Adjust arch for compiler (not all compilers support all arch
+    # settings; PrgEnv might override arch, etc)
+    arch = adjust_architecture_for_compiler (arch, flag, get_lcd)
+
+    # Now, if is not yet set, we should set the default.
+    if not arch:
+        arch = default_arch(flag)
+
+    verify_arch(arch, flag)
+
+    compiler_val = chpl_compiler.get(flag)
+    isprgenv = compiler_is_prgenv(compiler_val)
+    if map_to_compiler and not isprgenv:
+        # Map flag/arch to compiler flag/argument
+        # Don't do this for PrgEnv compiles since the compiler driver
+        # handles specialization.
         version = get_compiler_version(compiler_val)
         (flag, arch) = argument_map.find(arch, compiler_val, version)
     elif arch and arch != 'none' and arch != 'unknown':
@@ -546,13 +604,22 @@ def get(location, map_to_compiler=False, get_lcd=False):
     return arch_tuple(flag or 'none', arch or 'unknown')
 
 
+# Returns the default machine.
+#  * if arch is native/none/unknown, return result of get_native_machine
+#  * otherwise returns the machine type corresponding to the selected arch
+@memoize
+def get_default_machine(flag):
+    (_, arch) = get(flag)
+    return machine_for_arch(arch)
+
+
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target] "
                                          "[--compflag] [--lcdflag] "
                                          "[--specialize]")
-    parser.add_option('--target', dest='location', action='store_const',
+    parser.add_option('--target', dest='flag', action='store_const',
                       const='target', default='target')
-    parser.add_option('--host', dest='location', action='store_const',
+    parser.add_option('--host', dest='flag', action='store_const',
                       const='host')
     parser.add_option('--comparch', dest='map_to_compiler',
                       action='store_true', default=False)
@@ -562,13 +629,12 @@ def _main():
                       default=False)
     (options, args) = parser.parse_args()
 
-    (flag, arch) = get(options.location, options.map_to_compiler,
+    (flag, arch) = get(options.flag, options.map_to_compiler,
                        options.get_lcd)
 
     if options.compflag:
         stdout.write("{0}=".format(flag))
     stdout.write("{0}\n".format(arch))
-
 
 if __name__ == '__main__':
     _main()

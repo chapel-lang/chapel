@@ -1,8 +1,1 @@
-#!/usr/bin/env python
-
-import os
-import sys
-
-sys.stdout.write("PATH=$CHPL_HOME/bin/%s:$PATH\n" % os.getenv("CHPL_HOST_PLATFORM"))
-sys.stdout.write("MASON_HOME=$PWD/.mason\n")
-sys.stdout.write("MASON_REGISTRY=registry|https://github.com/chapel-lang/mason-registry\n")
+../EXECENV

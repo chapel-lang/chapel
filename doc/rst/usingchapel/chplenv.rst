@@ -3,11 +3,11 @@
 Setting up Your Environment for Chapel
 ======================================
 
-To get started with Chapel, there are four environment settings that are
-strongly recommended for effective use of the release, and a few other optional
-settings that are useful for cross-compiling or overriding the default
-settings.  To check the values of the Chapel environment variables that are set
-or can be inferred, run the script::
+To get started with Chapel, there are three environment settings that are
+strongly recommended for effective use of the release, and a number of
+other optional settings that are useful for cross-compiling or overriding
+the default settings.  To check the values of the Chapel environment
+variables that are set or can be inferred, run the script::
 
   $CHPL_HOME/util/printchplenv
 
@@ -27,7 +27,9 @@ Recommended Settings
 
 CHPL_HOME
 ~~~~~~~~~
-   Set the ``CHPL_HOME`` environment variable to point to the location of the
+   Setting ``CHPL_HOME`` is important if you have not installed Chapel
+   and are instead working from a source directory. In that event,
+   set the ``CHPL_HOME`` environment variable to point to the location of the
    chapel/ directory that was created when you unpacked the release.
    For example:
 
@@ -42,14 +44,41 @@ CHPL_HOME
      the appropriate adjustment.
 
 
+PATH
+~~~~
+   Updating ``PATH`` is important if you have not installed Chapel
+   and are instead working from a source directory. Otherwise it might
+   be necessary to use the full path to ``chpl`` when compiling programs.
+   In that event, you can set path using the following command:
+
+    .. code-block:: sh
+
+        CHPL_BIN_SUBDIR=`"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
+        export PATH="$PATH":"$CHPL_HOME/bin/$CHPL_BIN_SUBDIR"
+
+
+MANPATH
+~~~~~~~
+   Updating ``MANPATH`` is important if you have not installed Chapel
+   and are instead working from a source directory.
+   Set your man path to include the directory ``$CHPL_HOME/man``.
+   For example:
+
+    .. code-block:: sh
+
+        export MANPATH="$MANPATH":"$CHPL_HOME"/man
+
+Optional Settings
+-----------------
+
 .. _readme-chplenv.CHPL_HOST_PLATFORM:
 
 CHPL_HOST_PLATFORM
 ~~~~~~~~~~~~~~~~~~
-   Set the ``CHPL_HOST_PLATFORM`` environment variable to represent the platform on
-   which you're working.  For standard UNIX workstations, this can be done by
-   running the ``$CHPL_HOME/util/chplenv/chpl_platform.py`` script.  For
-   example:
+
+   You can set the ``CHPL_HOST_PLATFORM`` environment variable to
+   represent the platform on which you're working.  For standard UNIX
+   workstations, the default is sufficient, and is equivalent to
 
     .. code-block:: sh
 
@@ -90,28 +119,6 @@ CHPL_HOST_PLATFORM
    Makefile for this platform and/or contact us at:
    :disguise:`chapel_info@cray.com`
 
-PATH
-~~~~
-   Set your ``PATH`` to include the directory
-   ``$CHPL_HOME/bin/$CHPL_HOST_PLATFORM`` which is created when you build the
-   compiler.  For example:
-
-    .. code-block:: sh
-
-        export PATH="$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
-
-
-MANPATH
-~~~~~~~
-   Set your man path to include the directory ``$CHPL_HOME/man``.
-   For example:
-
-    .. code-block:: sh
-
-        export MANPATH="$MANPATH":"$CHPL_HOME"/man
-
-Optional Settings
------------------
 
 .. _readme-chplenv.CHPL_TARGET_PLATFORM:
 
@@ -126,6 +133,37 @@ CHPL_TARGET_PLATFORM
    .. note::
      If ``CHPL_TARGET_PLATFORM`` is not set, the target platform defaults to the
      same value as ``$CHPL_HOST_PLATFORM``.
+
+.. _readme-chplenv.CHPL_HOST_MACHINE:
+
+CHPL_HOST_MACHINE
+~~~~~~~~~~~~~~~~~~~
+   Optionally, set the ``CHPL_HOST_MACHINE`` environment variable to indicate
+   the architecture type of the current machine. Normally, the default
+   value is sufficient.
+
+        ========  =============================================================
+        Value     Description
+        ========  =============================================================
+        x86_64    64-bit AMD and Intel processors
+        aarch64   64-bit ARM processors
+        ========  =============================================================
+
+   If unset, the default will be computed. The command ``uname -m``
+   should produce the same value as the default.
+
+.. _readme-chplenv.CHPL_TARGET_MACHINE:
+
+CHPL_TARGET_MACHINE
+~~~~~~~~~~~~~~~~~~~
+   Optionally, set the ``CHPL_TARGET_MACHINE`` environment variable to indicate
+   the architecture type of the target machine. See the table above for
+   ``CHPL_HOST_MACHINE`` for values this might be set to.
+
+   If unset, ``CHPL_TARGET_MACHINE`` will be inferred.
+   If ``CHPL_TARGET_ARCH`` is ``native``, ``unknown``, or ``none`` then ``CHPL_TARGET_MACHINE`` will be set to ``CHPL_HOST_MACHINE``.
+   Otherwise, ``CHPL_TARGET_MACHINE`` will be set based on the
+   architecture type specified in ``CHPL_TARGET_ARCH``.
 
 .. _readme-chplenv.CHPL_COMPILER:
 
