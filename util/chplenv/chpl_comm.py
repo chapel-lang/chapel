@@ -2,7 +2,6 @@
 import sys
 
 import chpl_platform, overrides
-from chpl_home_utils import using_chapel_module
 from utils import memoize
 
 
