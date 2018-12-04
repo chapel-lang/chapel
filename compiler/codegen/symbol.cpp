@@ -1098,6 +1098,10 @@ std::string ArgSymbol::getPythonArgTranslation() {
       return res;
     }
   } else if (t->symbol->hasEitherFlag(FLAG_C_PTR_CLASS, FLAG_REF)) {
+    // Lydia TODO 12/04/18: Might be good to use a template where we can
+    // replace all instances of a placeholder with the argument name instead of
+    // of writing all of the code out in this chunky, unclear fashion.  Might
+    // be worth considering doing for the else branch above this as well
     std::string res = "\tcdef ";
     std::string typeStr = "";
     std::string typeStrCDefs = "";
@@ -1132,6 +1136,7 @@ std::string ArgSymbol::getPythonArgTranslation() {
     res += "\t\tchpl_tmp2_" + strname + " = <intptr_t>python_" + strname;
     res += "\n\t\tchpl_" + strname + " = <" + typeStrCDefs + "*> chpl_tmp2_";
     res += strname + "\n";
+    // TODO: support ctypes arrays as well
     // Otherwise, throw a type error because we've been passed something that
     // won't work (and we can't assign a Python object into a C one without
     // knowing what the type is)
