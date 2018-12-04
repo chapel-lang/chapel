@@ -2140,6 +2140,9 @@ DefExpr* buildClassDefExpr(const char*  name,
 
   DefExpr*    def = new DefExpr(ts);
 
+  // add FLAG_EXTERN if this is extern before adding declarations to
+  // the class in order to be able to flag the case of declaring an
+  // extern field in a non-extern class
   if (isExtern) {
     if (cname) {
       ts->cname = astr(cname);
@@ -2152,7 +2155,6 @@ DefExpr* buildClassDefExpr(const char*  name,
     if (inherit != NULL)
       USR_FATAL_CONT(inherit,
                      "External types do not currently support inheritance");
-  } else {
   }
 
   ct->addDeclarations(decls);
