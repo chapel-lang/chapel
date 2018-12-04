@@ -64,6 +64,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Target/TargetIntrinsicInfo.h"
 #endif
 
 /******************************** | *********************************
@@ -1898,17 +1899,39 @@ GenRet FnSymbol::codegen() {
   if( info->cfile ) ret.c = cname;
   else {
 #ifdef HAVE_LLVM
-    ret.val = getFunctionLLVM(cname);
-    if( ! ret.val ) {
-      if( hasFlag(FLAG_EXTERN) ) {
-        if( isBuiltinExternCFunction(cname) ) {
-          // it's OK.
+    if (cname[0] == 'l' &&
+        cname[1] == 'l' &&
+        cname[2] == 'v' &&
+        cname[3] == 'm' &&
+        cname[4] == '.') {
+      // Find intrinsic.
+
+      Type* formalType = getFormal(1)->type;
+      GenRet ty = formalType;
+      INT_ASSERT(ty.type);
+      llvm::Type* Types[] = {ty.type};
+
+      const llvm::TargetIntrinsicInfo *TII = info->targetMachine->getIntrinsicInfo();
+      llvm::Intrinsic::ID ID = llvm::Function::lookupIntrinsicID(cname);
+      if (ID == llvm::Intrinsic::not_intrinsic && TII)
+        ID = static_cast<llvm::Intrinsic::ID>(TII->lookupName(cname));
+      ret.val = llvm::Intrinsic::getDeclaration(info->module, ID, Types);
+      if (!ret.val) {
+        USR_FATAL("Could not find LLVM intrinsic %s", cname);
+      }
+    } else {
+      ret.val = getFunctionLLVM(cname);
+      if( ! ret.val ) {
+        if( hasFlag(FLAG_EXTERN) ) {
+          if( isBuiltinExternCFunction(cname) ) {
+            // it's OK.
+          } else {
+            USR_FATAL("Could not find C function for %s; "
+                      " perhaps it is missing or is a macro?", cname);
+          }
         } else {
-          USR_FATAL("Could not find C function for %s; "
-                    " perhaps it is missing or is a macro?", cname);
+          INT_FATAL("Missing LLVM function for %s", cname);
         }
-      } else {
-        INT_FATAL("Missing LLVM function for %s", cname);
       }
     }
 #endif
