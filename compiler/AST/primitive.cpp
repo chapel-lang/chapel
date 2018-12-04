@@ -924,8 +924,6 @@ initPrimitive() {
   // Translates to llvm alias.scope and noalias metadata:
   //    - alias.scope with metadata corresponding to the 1st symbol
   //    - noalias with metadata corresponding to the remaining symbols
-  // Result of call can be used as a final argument in a memory instruction,
-  // e.g. PRIM_ARRAY_GET.
   prim_def(PRIM_NO_ALIAS_SET, "no alias set", returnInfoUnknown, false, false);
   // 1st argument is symbol to set alias set
   // 2nd argument is symbol to base it on
