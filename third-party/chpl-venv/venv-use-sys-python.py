@@ -30,7 +30,7 @@ def rm_python_bins(bindir):
 
     """ This removes any file objects named "python", "python2", etc found in bindir.
 
-    bindir is the abs path to ./third-party/chpl-venv/$(platform)/$(python_version)/chpl-virtualenv/bin
+    bindir is the abs path to ./third-party/chpl-venv/$(bin_subdir)/$(python_version)/chpl-virtualenv/bin
     """
 
     if os.path.isdir(bindir) and not os.path.islink(bindir):
@@ -51,7 +51,7 @@ def rw_shebangs(root):
     The new shebang points to the equivalent Python executable from a "standard" system Python installation
       (ie, "/usr/bin/python*").
 
-    root is the abs path to $(chpl_home)/third-party/chpl-venv/$(platform)/$(python_version)
+    root is the abs path to $(chpl_home)/third-party/chpl-venv/$(bin_subdir)/$(python_version)
     """
 
     if os.path.isdir(root) and not os.path.islink(root):
