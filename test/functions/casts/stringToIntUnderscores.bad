@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from string '0b11_1' to int(64)
+  stringToIntUnderscores.chpl:2: thrown here
+  stringToIntUnderscores.chpl:2: uncaught here

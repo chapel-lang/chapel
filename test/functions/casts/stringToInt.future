@@ -1,0 +1,3 @@
+feature request: string to int casts should support base 2, 8, and 16
+
+Issue #11775
