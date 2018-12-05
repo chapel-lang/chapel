@@ -776,6 +776,7 @@ static size_t rdma_threshold = DEFAULT_RDMA_THRESHOLD;
 // this at once didn't seem to improve performance.
 //
 #define MAX_CHAINED_PUT_LEN 64
+#define MAX_CHAINED_GET_LEN 64
 #define MAX_CHAINED_AMO_LEN 64
 
 
@@ -1495,6 +1496,11 @@ static void      do_remote_put(void*, c_nodeid_t, void*, size_t,
                                mem_region_t*, drpg_may_proxy_t);
 static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
                                  mem_region_t**, drpg_may_proxy_t);
+static void      do_remote_buff_get(void*, c_nodeid_t , void* , size_t,
+                                    drpg_may_proxy_t );
+static void      do_remote_get_V(int, void**, c_nodeid_t*, mem_region_t**,
+                                 void**, size_t*, mem_region_t**,
+                                 drpg_may_proxy_t);
 static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
 static void      do_nic_get(void*, c_nodeid_t, mem_region_t*,
@@ -1505,6 +1511,7 @@ static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
 static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
 static void      buff_amo_init(void);
+static void      buff_get_init(void);
 static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                     gni_fma_cmd_type_t, mem_region_t*);
 static void      amo_add_real32_cpu_cmpxchg(void*, void*, void*);
@@ -1915,7 +1922,7 @@ void chpl_comm_post_task_init(void)
 
       if (strcmp(CHPL_MEM, "jemalloc") == 0
           && getenv(chpl_comm_ugni_jemalloc_conf_ev_name()) == NULL) {
-        char buf[100];
+        char buf[200];
         (void) snprintf(buf, sizeof(buf),
                         "dynamic heap on hugepages needs %s set properly",
                         chpl_comm_ugni_jemalloc_conf_ev_name());
@@ -2017,6 +2024,7 @@ void chpl_comm_post_task_init(void)
   rf_done_init();
   amo_res_init();
   buff_amo_init();
+  buff_get_init();
 
   //
   // Create all the communication domains, including their GNI NIC
@@ -4132,7 +4140,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
   // Here we implement AMOs which the NIC cannot do, either because
   // the target object is not in registered memory or because the NIC
   // lacks native support.  For more information, see the comment
-  // before chpl_comm_atomic_put_int32().
+  // before chpl_comm_atomic_store_int32().
   //
   switch (cmd) {
   case put_32:
@@ -5285,6 +5293,154 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
 }
 
 
+static
+void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
+                     mem_region_t** remote_mr_v, void** src_addr_v,
+                     size_t* size_v, mem_region_t** local_mr_v,
+                     drpg_may_proxy_t may_proxy) {
+
+  DBG_P_LP(DBGF_GETPUT, "DoRemGetV(%d) %p <- %d:%p (%#zx), proxy %c",
+           v_len, tgt_addr_v[0], (int) locale_v[0], src_addr_v[0], size_v[0],
+           may_proxy ? 'y' : 'n');
+
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+  //
+  // This GNI is new enough to support chained transactions.
+  //
+
+  //
+  // If there are more than we can handle at once, block them up.
+  //
+  while (v_len > MAX_CHAINED_GET_LEN) {
+    do_remote_get_V(MAX_CHAINED_GET_LEN, tgt_addr_v, locale_v, remote_mr_v,
+                    src_addr_v, size_v, local_mr_v, may_proxy);
+    v_len -= MAX_CHAINED_GET_LEN;
+    src_addr_v += MAX_CHAINED_GET_LEN;
+    locale_v += MAX_CHAINED_GET_LEN;
+    tgt_addr_v += MAX_CHAINED_GET_LEN;
+    size_v += MAX_CHAINED_GET_LEN;
+    local_mr_v  += MAX_CHAINED_GET_LEN;
+    remote_mr_v += MAX_CHAINED_GET_LEN;
+  }
+
+  if (v_len <= 0)
+    return;
+
+  //
+  // Do all these GETs in one chained transaction.  Except: if we have to
+  // proxy any of these GETs because they refer to unregistered memory on
+  // the remote side then defer to the scalar PUT routine for that.
+  //
+  int vi, ci = -1;
+  mem_region_t* local_mr;
+  mem_region_t* remote_mr;
+  gni_post_descriptor_t pd;
+  gni_ct_get_post_descriptor_t pdc[MAX_CHAINED_GET_LEN - 1];
+
+  for (vi = 0, ci = -1; vi < v_len; vi++) {
+    local_mr = ((local_mr_v == NULL)
+                ? mreg_for_local_addr(tgt_addr_v[vi])
+                : local_mr_v[vi]);
+    remote_mr = ((remote_mr_v == NULL)
+                 ? mreg_for_remote_addr(src_addr_v[vi], locale_v[vi])
+                 : remote_mr_v[vi]);
+    if (local_mr == NULL || remote_mr == NULL) {
+      if (may_proxy) {
+        do_remote_get(tgt_addr_v[vi], locale_v[vi], src_addr_v[vi], size_v[vi],
+                      may_proxy);
+      } else {
+        CHPL_INTERNAL_ERROR("do_remote_get_V(): address is not NIC-registered");
+      }
+      continue;
+    }
+
+    if (ci == -1) {
+      pd.next_descr      = NULL;
+      pd.type            = GNI_POST_FMA_GET;
+      pd.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
+      pd.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
+      pd.rdma_mode       = 0;
+      pd.src_cq_hndl     = 0;
+      pd.local_addr      = (uint64_t) (intptr_t) tgt_addr_v[vi];
+      pd.remote_addr     = (uint64_t) (intptr_t) src_addr_v[vi];
+      pd.local_mem_hndl  = local_mr->mdh;
+      pd.remote_mem_hndl = remote_mr->mdh;
+      pd.length          = size_v[vi];
+
+      PERFSTATS_INC(get_cnt);
+      PERFSTATS_ADD(get_byte_cnt, size_v[vi]);
+    } else {
+      if (ci == 0)
+        pd.next_descr = &pdc[0];
+      else
+        pdc[ci - 1].next_descr = &pdc[ci];
+
+      pdc[ci].next_descr      = NULL;
+      pdc[ci].local_addr      = (uint64_t) (intptr_t) tgt_addr_v[vi];
+      pdc[ci].remote_addr     = (uint64_t) (intptr_t) src_addr_v[vi];
+      pdc[ci].local_mem_hndl  = local_mr->mdh;
+      pdc[ci].remote_mem_hndl = remote_mr->mdh;
+      pdc[ci].length          = size_v[vi];
+
+      PERFSTATS_INC(get_cnt);
+      PERFSTATS_ADD(get_byte_cnt, size_v[vi]);
+    }
+
+    ci++;
+  }
+
+  if (ci != -1)
+    post_fma_ct_and_wait(locale_v, &pd);
+
+#else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+  //
+  // This GNI is too old to support chained transactions.  Just do
+  // normal ones.
+  // TODO -- do NB gets and wait for them to complete?
+  //
+  for (int vi = 0; vi < v_len; vi++) {
+    do_remote_get(tgt_addr_v[vi], locale_v[vi], src_addr_v[vi], size_v[vi],
+                  may_proxy);
+  }
+
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+}
+
+
+void chpl_comm_buff_get(void* addr, c_nodeid_t locale, void* raddr,
+                       size_t size, int32_t typeIndex,
+                       int32_t commID, int ln, int32_t fn)
+{
+  DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_buff_get(%p, %d, %p, %zd)",
+           addr, (int) locale, raddr, size);
+
+  assert(addr != NULL);
+  assert(raddr != NULL);
+  if (size == 0)
+    return;
+
+  if (locale == chpl_nodeID) {
+    memmove(addr, raddr, size);
+    return;
+  }
+
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_get, chpl_nodeID, locale,
+         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_printf("%s:%d: remote buff get from %d",
+                                 chpl_lookupFilename(fn), ln, locale);
+  chpl_comm_diags_incr(get);
+
+  do_remote_buff_get(addr, locale, raddr, size, may_proxy_true);
+}
+
 void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
                    size_t size, int32_t typeIndex,
                    int32_t commID, int ln, int32_t fn)
@@ -5317,6 +5473,158 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
 }
 
+
+// Max number of threads that can do buffered gets
+#define MAX_BUFF_GET_THREADS 1024
+
+static int* get_vi_p[MAX_BUFF_GET_THREADS];
+static atomic_bool* get_lock_p[MAX_BUFF_GET_THREADS];
+
+// pointers to thread local buffered AMO argument buffers
+static void** get_src_addr_vp[MAX_BUFF_GET_THREADS];
+static void** get_tgt_addr_vp[MAX_BUFF_GET_THREADS];
+static c_nodeid_t* get_locale_vp[MAX_BUFF_GET_THREADS];
+static size_t* get_size_vp[MAX_BUFF_GET_THREADS];
+static mem_region_t** get_local_mr_vp[MAX_BUFF_GET_THREADS];
+static mem_region_t** get_remote_mr_vp[MAX_BUFF_GET_THREADS];
+
+// buffered AMO initialization lock and thread counter
+static atomic_bool get_init_lock;
+static atomic_uint_least32_t get_thread_counter;
+
+static
+void buff_get_init(void) {
+  atomic_init_bool(&get_init_lock, false);
+  atomic_init_uint_least32_t(&get_thread_counter, 0);
+}
+
+void chpl_comm_get_buff_flush() {
+  uint32_t sz, i;
+  sz = atomic_load_uint_least32_t(&get_thread_counter);
+  for(i=0; i<sz; i++) {
+    if (*get_vi_p[i] != 0) {
+      while (atomic_exchange_bool(get_lock_p[i], true)) { local_yield(); }
+      if (*get_vi_p[i] != 0) {
+        do_remote_get_V(*get_vi_p[i], get_tgt_addr_vp[i], get_locale_vp[i],
+                        get_remote_mr_vp[i], get_src_addr_vp[i],
+                        get_size_vp[i], get_local_mr_vp[i], may_proxy_true);
+        *get_vi_p[i] = 0;
+      }
+      atomic_store_bool(get_lock_p[i], false);
+    }
+  }
+}
+
+
+static
+void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
+                        size_t size, drpg_may_proxy_t may_proxy)
+{
+  mem_region_t*         local_mr;
+  mem_region_t*         remote_mr;
+
+  DBG_P_LP(DBGF_GETPUT, "DoRemBuffGet %p <- %d:%p (%#zx), proxy %c",
+           tgt_addr, (int) locale, src_addr, size, may_proxy ? 'y' : 'n');
+
+  //
+  // In order to do direct NIC gets the address must be registered and the
+  // addresses and size must be 4-byte aligned. do_remote_get handles cases if
+  // any of those aren't true, so just have it take care of things instead of
+  // trying to reimplement that logic in do_remote_get_V. If any of these
+  // aren't true, our performance is already going to suffer.
+  //
+  remote_mr = mreg_for_remote_addr(src_addr, locale);
+  local_mr = mreg_for_local_addr(tgt_addr);
+  if (local_mr == NULL || remote_mr == NULL ||
+      !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
+      !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) ||
+      !IS_ALIGNED_32(size)) {
+    do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
+    return;
+  }
+
+  // thread local index and lock
+  static __thread int vi = 0;
+  static __thread atomic_bool lock;
+
+  // thread local buffers for all arguments
+  static __thread void* src_addr_v[MAX_CHAINED_GET_LEN];
+  static __thread void* tgt_addr_v[MAX_CHAINED_GET_LEN];
+  static __thread c_nodeid_t locale_v[MAX_CHAINED_GET_LEN];
+  static __thread size_t size_v[MAX_CHAINED_GET_LEN];
+  static __thread mem_region_t* local_mr_v[MAX_CHAINED_GET_LEN];
+  static __thread mem_region_t* remote_mr_v[MAX_CHAINED_GET_LEN];
+
+  // thread local init status (0=first-call, -1=out-of-entries, 1=have-entry)
+  static __thread int init_status = 0;
+
+  if (init_status == 1) {
+    // no-op
+  } else if (init_status == -1) {
+    do_nic_get(tgt_addr, locale, remote_mr, src_addr, size, local_mr);
+    return;
+  } else {
+    uint32_t idx;
+
+    // grab initialization lock
+    while (atomic_exchange_bool(&get_init_lock, true)) { local_yield(); }
+
+    // initialize the lock for this thread and figure out our index into the
+    // buffer of GET operation pointers. If we've exceeded the buffer length,
+    // warn and do blocking operations instead
+    atomic_init_bool(&lock, false);
+    idx = atomic_load_uint_least32_t(&get_thread_counter);
+    if (idx >= MAX_BUFF_GET_THREADS) {
+      chpl_warning("Exceeded MAX_BUFF_GET_THREADS, buffered gets performance degraded", 0, 0);
+      init_status = -1;
+      atomic_store_bool(&get_init_lock, false);
+      do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
+      return;
+    }
+
+    // store pointers to our thread local index, lock, and buffers so
+    // operations can be flushed from outside of this routine
+    get_vi_p[idx]         = &vi;
+    get_lock_p[idx]       = &lock;
+
+    get_src_addr_vp[idx]  = &src_addr_v[0];
+    get_tgt_addr_vp[idx]  = &tgt_addr_v[0];
+    get_locale_vp[idx]    = &locale_v[0];
+    get_size_vp[idx]      = &size_v[0];
+    get_local_mr_vp[idx]  = &local_mr_v[0];
+    get_remote_mr_vp[idx] = &remote_mr_v[0];
+
+    init_status = 1;
+    //// actually update the thread counter (needs to be done after the buffer
+    //// pointers are setup, otherwise we have a race with flushing)
+    (void) atomic_fetch_add_uint_least32_t(&get_thread_counter, 1);
+
+    // release initialization lock
+    atomic_store_bool(&get_init_lock, false);
+  }
+
+  // grab lock for this thread
+  while (atomic_exchange_bool(&lock, true)) { local_yield(); }
+
+  src_addr_v[vi] = src_addr;
+  tgt_addr_v[vi] = tgt_addr;
+  locale_v[vi] = locale;
+  size_v[vi] = size;
+  local_mr_v[vi] = local_mr;
+  remote_mr_v[vi] = remote_mr;
+  vi++;
+
+  // flush if buffers are full
+  if (vi == MAX_CHAINED_GET_LEN) {
+    do_remote_get_V(vi, tgt_addr_v, locale_v, remote_mr_v, src_addr_v, size_v,
+                    local_mr_v, may_proxy_true);
+    vi = 0;
+  }
+
+  // release lock for this thread
+  atomic_store_bool(&lock, false);
+
+}
 
 static
 void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
@@ -5982,23 +6290,23 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
   }
 
 //
-// Atomic Put functions:
+// Atomic Write functions:
 //   _f: interface function name suffix (type)
 //   _c: network AMO command
 //   _t: AMO type
 //
-#define DEFINE_CHPL_COMM_ATOMIC_PUT(_f, _c, _t)                         \
+#define DEFINE_CHPL_COMM_ATOMIC_WRITE(_f, _c, _t)                       \
         DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
                                                                         \
         /*==============================*/                              \
-        void chpl_comm_atomic_put_##_f(void* val,                       \
+        void chpl_comm_atomic_write_##_f(void* val,                     \
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
-                   "IFACE chpl_comm_atomic_put_"#_f"(%p, %d, %p)",      \
+                   "IFACE chpl_comm_atomic_write_"#_f"(%p, %d, %p)",    \
                    val, (int) loc, obj);                                \
                                                                         \
           if (chpl_numNodes == 1) {                                     \
@@ -6033,27 +6341,27 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
           }                                                             \
         }
 
-DEFINE_CHPL_COMM_ATOMIC_PUT(int32, put_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_PUT(int64, put_64, int_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_PUT(uint32, put_32, uint_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_PUT(uint64, put_64, uint_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_PUT(real32, put_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_PUT(real64, put_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_WRITE(int32, put_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_WRITE(int64, put_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_WRITE(uint32, put_32, uint_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_WRITE(uint64, put_64, uint_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_WRITE(real32, put_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
 
-#undef DEFINE_CHPL_COMM_ATOMIC_PUT
+#undef DEFINE_CHPL_COMM_ATOMIC_WRITE
 
 
 //
-// Atomic Get functions:
+// Atomic Read functions:
 //   _f: interface function name suffix (type)
 //   _c: network AMO command
 //   _t: AMO type
 //
-#define DEFINE_CHPL_COMM_ATOMIC_GET(_f, _c, _t)                         \
+#define DEFINE_CHPL_COMM_ATOMIC_READ(_f, _c, _t)                        \
         DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
                                                                         \
         /*==============================*/                              \
-        void chpl_comm_atomic_get_##_f(void* res,                       \
+        void chpl_comm_atomic_read_##_f(void* res,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        int ln, int32_t fn)              \
@@ -6061,7 +6369,7 @@ DEFINE_CHPL_COMM_ATOMIC_PUT(real64, put_64, int_least64_t)
           mem_region_t* remote_mr;                                      \
           mem_region_t* local_mr;                                       \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
-                   "IFACE chpl_comm_atomic_get_"#_f"(%p, %d, %p)",      \
+                   "IFACE chpl_comm_atomic_read_"#_f"(%p, %d, %p)",     \
                    res, (int) loc, obj);                                \
                                                                         \
           if (chpl_numNodes == 1) {                                     \
@@ -6085,14 +6393,14 @@ DEFINE_CHPL_COMM_ATOMIC_PUT(real64, put_64, int_least64_t)
           }                                                             \
         }
 
-DEFINE_CHPL_COMM_ATOMIC_GET(int32, get_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_GET(int64, get_64, int_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_GET(uint32, get_32, uint_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_GET(uint64, get_64, uint_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_GET(real32, get_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_GET(real64, get_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_READ(int32, get_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_READ(int64, get_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_READ(uint32, get_32, uint_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_READ(uint64, get_64, uint_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_READ(real32, get_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
 
-#undef DEFINE_CHPL_COMM_ATOMIC_GET
+#undef DEFINE_CHPL_COMM_ATOMIC_READ
 
 
 //
@@ -6559,7 +6867,6 @@ void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
     CHPL_INTERNAL_ERROR("do_nic_amo(): "
                         "remote address is not NIC-registered");
 }
-
 
 // Max number of threads that can do buffered atomics
 #define MAX_BUFF_AMO_THREADS 1024
@@ -7735,6 +8042,15 @@ int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
          pdc = pdc->next_descr, i++) {
       pdc->ep_hndl = cd->remote_eps[locale_v[i]];
       PERFSTATS_ADD(sent_bytes, pdc->length);
+    }
+  } else if (post_desc->type == GNI_POST_FMA_GET) {
+    gni_ct_get_post_descriptor_t* pdc;
+    int i;
+
+    for (pdc = post_desc->next_descr, i = 1;
+         pdc != NULL;
+         pdc = pdc->next_descr, i++) {
+      pdc->ep_hndl = cd->remote_eps[locale_v[i]];
     }
   } else if (post_desc->type == GNI_POST_AMO) {
     gni_ct_amo_post_descriptor_t* pdc;

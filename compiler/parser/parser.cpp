@@ -140,9 +140,6 @@ void setupModulePaths() {
   if (fMinimalModules == true) {
     modulesRoot = "modules/minimal";
 
-  } else if (fUseIPE == true) {
-    modulesRoot = "modules/ipe";
-
   } else {
     modulesRoot = "modules";
   }
@@ -185,6 +182,8 @@ void setupModulePaths() {
                       modulesRoot,
                       "/standard/gen/",
                       CHPL_TARGET_PLATFORM,
+                      "-",
+                      CHPL_TARGET_MACHINE,
                       "-",
                       CHPL_TARGET_COMPILER));
 
@@ -788,17 +787,6 @@ BlockStmt* parseString(const char* string,
 *                                                                             *
 ************************************** | *************************************/
 
-// Used by IPE
-const char* pathNameForInternalFile(const char* modName) {
-  return searchThePath(modName, true, sIntModPath);
-}
-
-// Used by IPE: Prefer user file to standard file
-const char* pathNameForStandardFile(const char* modName) {
-  bool isStandard = false;
-
-  return stdModNameToPath(modName, &isStandard);
-}
 
 static const char* stdModNameToPath(const char* modName,
                                     bool*       isStandard) {

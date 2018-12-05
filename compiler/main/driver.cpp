@@ -31,7 +31,6 @@
 #include "countTokens.h"
 #include "docsDriver.h"
 #include "files.h"
-#include "ipe.h"
 #include "library.h"
 #include "log.h"
 #include "ModuleSymbol.h"
@@ -63,14 +62,17 @@ char CHPL_RUNTIME_INCL[FILENAME_MAX+1] = "";
 char CHPL_THIRD_PARTY[FILENAME_MAX+1] = "";
 
 const char* CHPL_HOST_PLATFORM = NULL;
+const char* CHPL_HOST_MACHINE = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
+const char* CHPL_HOST_ARCH = NULL;
 const char* CHPL_TARGET_PLATFORM = NULL;
-const char* CHPL_TARGET_COMPILER = NULL;
-const char* CHPL_ORIG_TARGET_COMPILER = NULL;
+const char* CHPL_TARGET_MACHINE = NULL;
 const char* CHPL_TARGET_ARCH = NULL;
 const char* CHPL_RUNTIME_ARCH = NULL;
 const char* CHPL_TARGET_BACKEND_ARCH = NULL;
 const char* CHPL_TARGET_ARCH_FLAG = NULL;
+const char* CHPL_TARGET_COMPILER = NULL;
+const char* CHPL_ORIG_TARGET_COMPILER = NULL;
 const char* CHPL_LOCALE_MODEL = NULL;
 const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
@@ -91,6 +93,7 @@ const char* CHPL_UNWIND = NULL;
 
 const char* CHPL_RUNTIME_SUBDIR = NULL;
 const char* CHPL_LAUNCHER_SUBDIR = NULL;
+const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -173,7 +176,6 @@ bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
 bool fIncrementalCompilation = false;
-bool fUseIPE         = false;
 
 int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
@@ -217,6 +219,11 @@ bool fReportScalarReplace = false;
 bool fReportDeadBlocks = false;
 bool fReportDeadModules = false;
 bool fPermitUnhandledModuleErrors = false;
+#ifdef HAVE_LLVM_RV
+bool fRegionVectorizer = true;
+#else
+bool fRegionVectorizer = false;
+#endif
 bool printCppLineno = false;
 bool userSetCppLineno = false;
 int num_constants_per_variable = 1;
@@ -1061,6 +1068,7 @@ static ArgumentDescription arg_desc[] = {
  {"preserve-inlined-line-numbers", ' ', NULL, "[Don't] Preserve file names/line numbers in inlined code", "N", &preserveInlinedLineNumbers, "CHPL_PRESERVE_INLINED_LINE_NUMBERS", NULL},
  {"print-id-on-error", ' ', NULL, "[Don't] print AST id in error messages", "N", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
  {"print-unused-internal-functions", ' ', NULL, "[Don't] print names and locations of unused internal functions", "N", &fPrintUnusedInternalFns, NULL, NULL},
+ {"region-vectorizer", ' ', NULL, "Enable [disable] region vectorizer", "N", &fRegionVectorizer, NULL, NULL},
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"remove-unreachable-blocks", ' ', NULL, "[Don't] remove unreachable blocks after resolution", "N", &fRemoveUnreachableBlocks, "CHPL_REMOVE_UNREACHABLE_BLOCKS", NULL},
  {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
@@ -1234,14 +1242,17 @@ static void setChapelEnvs() {
   // Update compiler global CHPL_vars with envMap values
 
   CHPL_HOST_PLATFORM   = envMap["CHPL_HOST_PLATFORM"];
+  CHPL_HOST_MACHINE    = envMap["CHPL_HOST_MACHINE"];
   CHPL_HOST_COMPILER   = envMap["CHPL_HOST_COMPILER"];
+  CHPL_HOST_ARCH       = envMap["CHPL_HOST_ARCH"];
   CHPL_TARGET_PLATFORM = envMap["CHPL_TARGET_PLATFORM"];
-  CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
-  CHPL_ORIG_TARGET_COMPILER = envMap["CHPL_ORIG_TARGET_COMPILER"];
+  CHPL_TARGET_MACHINE  = envMap["CHPL_TARGET_MACHINE"];
   CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
   CHPL_RUNTIME_ARCH    = envMap["CHPL_RUNTIME_ARCH"];
   CHPL_TARGET_BACKEND_ARCH = envMap["CHPL_TARGET_BACKEND_ARCH"];
   CHPL_TARGET_ARCH_FLAG = envMap["CHPL_TARGET_ARCH_FLAG"];
+  CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
+  CHPL_ORIG_TARGET_COMPILER = envMap["CHPL_ORIG_TARGET_COMPILER"];
   CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
   CHPL_COMM            = envMap["CHPL_COMM"];
   CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];
@@ -1262,6 +1273,7 @@ static void setChapelEnvs() {
 
   CHPL_RUNTIME_SUBDIR  = envMap["CHPL_RUNTIME_SUBDIR"];
   CHPL_LAUNCHER_SUBDIR = envMap["CHPL_LAUNCHER_SUBDIR"];
+  CHPL_LLVM_UNIQ_CFG_PATH = envMap["CHPL_LLVM_UNIQ_CFG_PATH"];
 
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
@@ -1417,7 +1429,6 @@ int main(int argc, char* argv[]) {
     init_args(&sArgState, argv[0]);
 
     fDocs   = (strcmp(sArgState.program_name, "chpldoc")  == 0) ? true : false;
-    fUseIPE = (strcmp(sArgState.program_name, "chpl-ipe") == 0) ? true : false;
 
     // Initialize the arguments for argument state. If chpldoc, use the docs
     // specific arguments. Otherwise, use the regular arguments.
@@ -1453,8 +1464,7 @@ int main(int argc, char* argv[]) {
     recordCodeGenStrings(argc, argv);
   } // astlocMarker scope
 
-  if (fUseIPE == false)
-    printStuff(argv[0]);
+  printStuff(argv[0]);
 
   if (fRungdb)
     runCompilerInGDB(argc, argv);
@@ -1464,11 +1474,7 @@ int main(int argc, char* argv[]) {
 
   addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
-  if (fUseIPE == false) {
-    runPasses(tracker, fDocs);
-  } else {
-    ipeRun();
-  }
+  runPasses(tracker, fDocs);
 
   tracker.StartPhase("driverCleanup");
 

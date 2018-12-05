@@ -1400,12 +1400,15 @@ void finishCodegenLLVM() {
 static void registerRVPasses(const llvm::PassManagerBuilder &Builder,
                              llvm::legacy::PassManagerBase &PM) {
 
-  rv::addOuterLoopVectorizer(PM);
+  if (developer)
+    printf("Adding RV passes\n");
+
+  rv::addRVPasses(PM);
 }
 #endif
 
 static
-void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
+void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, int optLevel=-1) {
   ClangInfo* clangInfo = gGenInfo->clangInfo;
   INT_ASSERT(clangInfo);
   clang::CodeGenOptions &opts = clangInfo->codegenOptions;
@@ -1447,9 +1450,9 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
   PMBuilder.RerollLoops = opts.RerollLoops;
 
 
-#ifdef HAVE_LLVM_RV
   // Enable Region Vectorizer aka Outer Loop Vectorizer
-  if (!fNoVectorize) {
+#ifdef HAVE_LLVM_RV
+  if (fRegionVectorizer && !fNoVectorize && !forFunctionPasses) {
     // This in copied from 'registerRVPasses'
     PMBuilder.addExtension(PassManagerBuilder::EP_VectorizerStart,
                            registerRVPasses);
@@ -1478,7 +1481,7 @@ void prepareCodegenLLVM()
   llvm::TargetLibraryInfoImpl TLII(TargetTriple);
   fpm->add(new TargetLibraryInfoWrapperPass(TLII));
 
-  configurePMBuilder(PMBuilder);
+  configurePMBuilder(PMBuilder, /*for function passes*/ true);
   PMBuilder.populateFunctionPassManager(*fpm);
 
   info->FPM_postgen = fpm;
@@ -1585,9 +1588,7 @@ void runClang(const char* just_parse_filename) {
   } else if (0 == strcmp(CHPL_LLVM, "llvm")) {
     llvm_install += CHPL_THIRD_PARTY;
     llvm_install += "/llvm/install/";
-    llvm_install += CHPL_HOST_PLATFORM;
-    llvm_install += "-";
-    llvm_install += CHPL_HOST_COMPILER;
+    llvm_install += CHPL_LLVM_UNIQ_CFG_PATH;
     llvm_install += "/bin/";
     clangCC = llvm_install + "clang";
     clangCXX = llvm_install + "clang++";
@@ -1598,9 +1599,7 @@ void runClang(const char* just_parse_filename) {
   // read clang-sysroot-arguments
   std::string sysroot_arguments(CHPL_THIRD_PARTY);
   sysroot_arguments += "/llvm/install/";
-  sysroot_arguments += CHPL_HOST_PLATFORM;
-  sysroot_arguments += "-";
-  sysroot_arguments += CHPL_HOST_COMPILER;
+  sysroot_arguments += CHPL_LLVM_UNIQ_CFG_PATH;
   sysroot_arguments += "/configured-clang-sysroot-arguments";
 
   // read arguments from configured-clang-sysroot-arguments
@@ -2596,7 +2595,7 @@ void makeBinaryLLVM(void) {
     }
 
     if (llvmPrintIrStageNum == llvmStageNum::EVERY) {
-      printf("Adding IR dump extensions for all phases\n");
+      printf("; Adding IR dump extensions for all phases\n");
       for (int i = 0; i < llvmStageNum::LAST; i++) {
         llvmStageNum::llvmStageNum_t stage = (llvmStageNum::llvmStageNum_t) i;
         if (getIrDumpExtensionPoint(stage, point))
@@ -2618,7 +2617,7 @@ void makeBinaryLLVM(void) {
   // Create PassManager and run optimizations
   PassManagerBuilder PMBuilder;
 
-  configurePMBuilder(PMBuilder);
+  configurePMBuilder(PMBuilder, /* for function passes */ false);
 
   // Note, these global extensions currently only apply
   // to the module-level optimization (not the "basic" function
@@ -2679,7 +2678,7 @@ void makeBinaryLLVM(void) {
 
       PassManagerBuilder PMBuilder2;
 
-      configurePMBuilder(PMBuilder2, /* opt level */ 1);
+      configurePMBuilder(PMBuilder2, false, /* opt level */ 1);
       // Should we disable vectorization since we did that?
       // Or run select few cleanup passes?
       // Inlining is definitely important here..
@@ -2855,9 +2854,7 @@ void makeBinaryLLVM(void) {
   std::vector<std::string> sysroot_args;
   std::string sysroot_arguments(CHPL_THIRD_PARTY);
   sysroot_arguments += "/llvm/install/";
-  sysroot_arguments += CHPL_HOST_PLATFORM;
-  sysroot_arguments += "-";
-  sysroot_arguments += CHPL_HOST_COMPILER;
+  sysroot_arguments += CHPL_LLVM_UNIQ_CFG_PATH;
   sysroot_arguments += "/configured-clang-sysroot-arguments";
 
   readArgsFromFile(sysroot_arguments, sysroot_args);

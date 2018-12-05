@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+LLVM=`$CHPL_HOME/util/chplenv/chpl_llvm.py`
+PLAT=`$CHPL_HOME/util/chplenv/chpl_platform.py --target`
+HOST=`$CHPL_HOME/util/chplenv/chpl_platform.py --host`
+COMP=`$CHPL_HOME/util/chplenv/chpl_compiler.py --host`
+COMM=`$CHPL_HOME/util/chplenv/chpl_comm.py`
+
+# We test it only if we're on linux64 with LLVM
+if [ "$LLVM" != "llvm" ]; then
+echo "[Skipping test based on environment settings]";
+exit 0;
+fi
+
+if [ "$PLAT" != "linux64" ]; then
+echo "[Skipping test based on environment settings]";
+exit 0;
+fi
+
+if [ "$COMM" != "none" ]; then
+echo "[Skipping test based on environment settings]";
+exit 0;
+fi
+
+
+rm llvmDebug_test.out.tmp
+python llvmDebug_test.py "$CHPL_HOME" > llvmDebug_test.out.tmp 2>&1
+if ! diff llvmDebug_test.good llvmDebug_test.out.tmp; then
+echo "[Error matching debug info for llvmDebug_test]";
+else
+echo "[Success matching debug info for llvmDebug_test]";
+rm llvmDebug_test.out.tmp
+fi
+rm llvmDebug_test

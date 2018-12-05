@@ -2,7 +2,7 @@
 
 import os, sys
 
-with open(sys.argv[2], 'ab') as fp:
+with open(sys.argv[2], 'a') as fp:
     # The two files should have differing executable permissions
     fooStat = os.stat("foo.txt")
     barStat = os.stat("bar.txt")

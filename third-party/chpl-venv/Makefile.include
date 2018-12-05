@@ -26,7 +26,7 @@ PYTHON_MAJOR_VERSION = $(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_versio
 endif
 
 # chpl-venv installation path depends on Python version
-CHPL_VENV_UNIQUE_SUBDIR=$(CHPL_MAKE_HOST_PLATFORM)/py$(PYTHON_VERSION)
+CHPL_VENV_UNIQUE_SUBDIR=$(CHPL_MAKE_HOST_BIN_SUBDIR)/py$(PYTHON_VERSION)
 CHPL_VENV_INSTALL_SUBDIR=install/$(CHPL_VENV_UNIQUE_SUBDIR)
 CHPL_VENV_INSTALL_DIR=$(CHPL_VENV_DIR)/$(CHPL_VENV_INSTALL_SUBDIR)
 CHPL_VENV_VIRTUALENV=$(CHPL_VENV_INSTALL_SUBDIR)/bin/virtualenv
@@ -50,13 +50,20 @@ PIPLIB64=$(CHPL_VENV_INSTALL_DIR)/lib64/python/site-packages
 
 PIPLIBS=$(PIPLIB_VER):$(PIPLIB):$(PIPLIB64_VER):$(PIPLIB64)
 
+
+GET_PIP_COMMAND=export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) && python get-pip.py --user --no-warn-conflicts
 # If CHPL_PIP env var is set, then don't install custom pip
 ifdef CHPL_PIP
   PIP = $(CHPL_PIP)
 else
-  PIP=$(CHPL_VENV_INSTALL_DIR)/bin/pip
-  # This must be separate from global CHPL_PIP_INSTALL_PARAMS
-  LOCAL_PIP_FLAGS=--no-warn-conflicts --no-warn-script-location
+  ifdef VIRTUAL_ENV
+    PIP=$(VIRTUAL_ENV)/bin/pip
+    GET_PIP_COMMAND=python get-pip.py --no-warn-conflicts
+  else
+    PIP=-S $(CHPL_VENV_INSTALL_DIR)/bin/pip
+    # This must be separate from global CHPL_PIP_INSTALL_PARAMS
+    LOCAL_PIP_FLAGS=--no-warn-conflicts --no-warn-script-location
+  endif
 endif
 
 

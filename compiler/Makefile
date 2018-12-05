@@ -36,7 +36,6 @@ SUBDIRS = \
 	backend \
 	codegen \
 	ifa \
-	ipe \
 	llvm \
 	main \
 	optimizations \
@@ -74,7 +73,6 @@ include AST/Makefile.include
 include backend/Makefile.include
 include codegen/Makefile.include
 include ifa/Makefile.include
-include ipe/Makefile.include
 include llvm/Makefile.include
 include main/Makefile.include
 include optimizations/Makefile.include
@@ -91,7 +89,6 @@ CHPL_OBJS = \
 	$(BACKEND_OBJS) \
 	$(CODEGEN_OBJS) \
 	$(IFA_OBJS) \
-	$(IPE_OBJS) \
 	$(LLVM_OBJS) \
 	$(MAIN_OBJS) \
 	$(OPTIMIZATIONS_OBJS) \
@@ -101,10 +98,10 @@ CHPL_OBJS = \
 	$(SYMTAB_OBJS) \
 	$(UTIL_OBJS) \
 
-EXECS = $(CHPL) $(CHPLDOC) $(CHPLIPE)
+EXECS = $(CHPL) $(CHPLDOC)
 
 PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE) llvm $(CLANG_SETTINGS_FILE)
-TARGETS = $(CHPL)
+TARGETS = $(CHPL) $(CHPL_OLD)
 
 # Set up variables representing paths that will be installed
 # and how to fix them (for CLANG_SETTINGS).
@@ -158,10 +155,11 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 
 $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
-	rm -f $(CHPLIPE)
-	ln -s $(notdir $(CHPL)) $(CHPLIPE)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
+
+$(CHPL_OLD): $(CHPL) $(CHPL_OLD_BIN_DIR)
+	cp "$(CHPL_MAKE_HOME)/util/config/old-chpl.sh" "$(CHPL_OLD_BIN_DIR)/chpl"
 
 $(CHPLDOC): $(CHPL)
 	rm -f $(CHPLDOC)
@@ -174,6 +172,10 @@ parser: FORCE
 
 $(CHPL_BIN_DIR):
 	mkdir -p $@
+
+$(CHPL_OLD_BIN_DIR):
+	mkdir -p $@
+
 
 # third-party pkgs could be automatically built with the below.
 #

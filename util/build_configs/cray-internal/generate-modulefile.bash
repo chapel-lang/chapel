@@ -28,9 +28,9 @@ cat <<\PART_1
 #
 
 if { [info exists env(CPU)] } {
-    set chpl_cpu $env(CPU)
+    set CHPL_HOST_MACHINE $env(CPU)
 } else {
-    set chpl_cpu "UNSET"
+    set CHPL_HOST_MACHINE "UNSET"
 }
 
 if { [ info exists env(CRAYPE_DIR) ]} {
@@ -72,9 +72,9 @@ conflicts xt-mpich2 < 6.0.0
 conflict chapel
 #conflict gcc
 
-if { [string match aarch64 $chpl_cpu] } {
+if { [string match aarch64 $CHPL_HOST_MACHINE] } {
     # ARM-based CPU, 2018-06-08
-} elseif { [string match x86_64 $chpl_cpu] } {
+} elseif { [string match x86_64 $CHPL_HOST_MACHINE] } {
     # Legacy Cray-XC/XE
     module load cray-mpich
 } else {
@@ -189,7 +189,7 @@ proc ModulesHelp { } {
 
 setenv CHPL_HOME        $CHPL_LOC
 setenv CHPL_MODULE_HOME $CHPL_LOC
-prepend-path PATH       ${CHPL_LOC}/bin/$CHPL_HOST_PLATFORM
+prepend-path PATH       ${CHPL_LOC}/bin/${CHPL_HOST_PLATFORM}-${CHPL_HOST_MACHINE}
 prepend-path MANPATH    ${CHPL_LOC}/man
 append-path             PE_PRODUCT_LIST CHAPEL
 PART_3

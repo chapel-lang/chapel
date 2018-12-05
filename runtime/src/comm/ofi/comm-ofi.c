@@ -58,6 +58,7 @@
 #include <time.h>
 
 #include <rdma/fabric.h>
+#include <rdma/fi_atomic.h>
 #include <rdma/fi_cm.h>
 #include <rdma/fi_domain.h>
 #include <rdma/fi_endpoint.h>
@@ -272,6 +273,7 @@ void init_ofiFabricDomain(void) {
 
   hints->caps = FI_MSG | FI_SEND | FI_RECV | FI_MULTI_RECV
                 | FI_RMA | FI_READ | FI_WRITE
+                | FI_ATOMICS
                 | FI_REMOTE_READ | FI_REMOTE_WRITE;
 
   hints->mode = 0; // TODO: may need ~0 here and handle modes for good gni perf
@@ -1055,16 +1057,14 @@ typedef enum {
   am_opGet,                             // do an RMA GET
   am_opPut,                             // do an RMA PUT
   am_opAMO,                             // do an AMO
-  am_opFAMO,                            // do a fetching AMO
 } amOp_t;
 
 static void amRequestExecOn(c_nodeid_t, c_sublocid_t, chpl_fn_int_t,
                             chpl_comm_on_bundle_t*, size_t,
                             chpl_bool, chpl_bool);
 static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
-static void amRequestAMO(c_nodeid_t, void*, void*, int, int, size_t);
-static void amRequestFAMO(c_nodeid_t, void*, void*, void*, void*,
-                          int, int, size_t);
+static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
+                         int, enum fi_datatype, size_t);
 static void amRequestCommon(c_nodeid_t, chpl_comm_on_bundle_t*, size_t,
                             chpl_comm_amDone_t**);
 
@@ -1180,8 +1180,25 @@ void amRequestRMA(c_nodeid_t node, amOp_t op,
 
 
 static inline
-void amRequestAMO(c_nodeid_t node, void* object, void* operand,
-                  int ofiOp, int ofiType, size_t size) {
+void amRequestAMO(c_nodeid_t node, void* object,
+                  const void* operand1, const void* operand2, void* result,
+                  int ofiOp, enum fi_datatype ofiType, size_t size) {
+  DBG_PRINTF(DBG_AMO,
+             "AMO via AM: obj %d:%p, opnd1 <%s>, opnd2 <%s>, res %p, "
+             "op %d, typ %d, sz %zd",
+             (int) node, object,
+             DBG_VAL(operand1, ofiType), DBG_VAL(operand2, ofiType), result,
+             ofiOp, ofiType, size);
+  void* myResult = result;
+  size_t resSize = (ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : size;
+  if (myResult != NULL) {
+    if (mrGetLocalDesc(NULL, myResult, resSize) != 0) {
+      myResult = allocBounceBuf(resSize);
+      DBG_PRINTF(DBG_AMO, "AMO result BB: %p", myResult);
+      CHK_TRUE(mrGetLocalDesc(NULL, myResult, resSize) == 0);
+    }
+  }
+
   chpl_comm_on_bundle_t arg;
   arg.comm.amo = (struct chpl_comm_bundleData_AMO_t)
                    { .op = am_opAMO,
@@ -1190,58 +1207,22 @@ void amRequestAMO(c_nodeid_t node, void* object, void* operand,
                      .size = size,
                      .node = chpl_nodeID,
                      .obj = object,
+                     .operand1 = { 0 },
+                     .operand2 = { 0 },
+                     .result = myResult,
                      .pDone = NULL };
-  if (operand != NULL) {
-    memcpy(&arg.comm.amo.operand, operand, size);
+  if (operand1 != NULL) {
+    memcpy(&arg.comm.amo.operand1, operand1, size);
+  }
+  if (operand2 != NULL) {
+    memcpy(&arg.comm.amo.operand2, operand2, size);
   }
   amRequestCommon(node, &arg,
                   (offsetof(chpl_comm_on_bundle_t, comm)
                    + sizeof(arg.comm.amo)),
                   &arg.comm.amo.pDone);
-}
-
-
-static inline
-void amRequestFAMO(c_nodeid_t node, void* object, void* result,
-                   void* operand1, void* operand2,
-                   int ofiOp, int ofiType, size_t size) {
-  void* myResult = result;
-  if (myResult != NULL) {
-    if (mrGetLocalDesc(NULL, myResult, size) != 0) {
-      if (ofiOp == FI_CSWAP)
-        myResult = allocBounceBuf(sizeof(chpl_bool32));
-      else
-        myResult = allocBounceBuf(size);
-      DBG_PRINTF(DBG_AMO, "AMO result BB: %p", myResult);
-      CHK_TRUE(mrGetLocalDesc(NULL, myResult, size) == 0);
-    }
-  }
-
-  chpl_comm_on_bundle_t arg;
-  arg.comm.famo = (struct chpl_comm_bundleData_FAMO_t)
-                    { .op = am_opFAMO,
-                      .ofiOp = ofiOp,
-                      .ofiType = ofiType,
-                      .size = size,
-                      .node = chpl_nodeID,
-                      .obj = object,
-                      .result = myResult,
-                      .pDone = NULL };
-  if (operand1 != NULL) {
-    memcpy(&arg.comm.famo.operand1, operand1, size);
-  }
-  if (operand2 != NULL) {
-    memcpy(&arg.comm.famo.operand2, operand2, size);
-  }
-  amRequestCommon(node, &arg,
-                  (offsetof(chpl_comm_on_bundle_t, comm)
-                   + sizeof(arg.comm.famo)),
-                  &arg.comm.famo.pDone);
   if (myResult != result) {
-    if (ofiOp == FI_CSWAP)
-      memcpy(result, myResult, sizeof(chpl_bool32));
-    else
-      memcpy(result, myResult, size);
+    memcpy(result, myResult, resSize);
     freeBounceBuf(myResult);
   }
 }
@@ -1323,10 +1304,9 @@ static void amExecOnWrapper(void*);
 static void amGetWrapper(void*);
 static void amPutWrapper(void*);
 static void amHandleAMO(chpl_comm_on_bundle_t*);
-static void amHandleFAMO(chpl_comm_on_bundle_t*);
 static void amSendDone(c_nodeid_t, chpl_comm_amDone_t*);
 
-static inline void doCpuAMO(void*, void*, void*, void*,
+static inline void doCpuAMO(void*, const void*, const void*, void*,
                             enum fi_op, enum fi_datatype, size_t size);
 
 
@@ -1390,6 +1370,12 @@ void amHandler(void* argNil) {
   //
   while (!atomic_load_bool(&amHandlersExit)) {
     processRxAmReq(tcip);
+
+    const int count = fi_cntr_read(tcip->txCntr);
+    if (count > 0) {
+      DBG_PRINTF(DBG_ACK, "tx ack counter %d", count);
+      tcip->numTxsOut -= count;
+    }
   }
 
   //
@@ -1469,10 +1455,6 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
 
         case am_opAMO:
           amHandleAMO(req);
-          break;
-
-        case am_opFAMO:
-          amHandleFAMO(req);
           break;
 
         default:
@@ -1557,72 +1539,80 @@ void amPutWrapper(void* p) {
 static
 void amHandleAMO(chpl_comm_on_bundle_t* req) {
   struct chpl_comm_bundleData_AMO_t* amo = &req->comm.amo;
-  DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
-             "amHandleAMO() for node %d: obj %p, ofiOp %d, size %d",
-             amo->node, amo->obj, amo->ofiOp, amo->size);
-  doCpuAMO(NULL, amo->obj, &amo->operand, NULL,
+  if (amo->ofiOp == FI_CSWAP) {
+    DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
+               "amHandleAMO() for node %d: obj %p, opnd1 %s, opnd2 %s, "
+               "res %p, ofiOp %d, ofiType %d, sz %d",
+               amo->node, amo->obj,
+               DBG_VAL(&amo->operand1, amo->ofiType),
+               DBG_VAL(&amo->operand2, amo->ofiType),
+               amo->result, amo->ofiOp, amo->ofiType, amo->size);
+  } else if (amo->result != NULL) {
+    if (amo->ofiOp == FI_ATOMIC_READ) {
+      DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
+                 "amHandleAMO() for node %d: obj %p, "
+                 "res %p, ofiOp %d, ofiType %d, sz %d",
+                 amo->node, amo->obj,
+                 amo->result, amo->ofiOp, amo->ofiType, amo->size);
+    } else {
+      DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
+                 "amHandleAMO() for node %d: obj %p, opnd %s, "
+                 "res %p, ofiOp %d, ofiType %d, sz %d",
+                 amo->node, amo->obj,
+                 DBG_VAL(&amo->operand1, amo->ofiType),
+                 amo->result, amo->ofiOp, amo->ofiType, amo->size);
+    }
+  } else {
+    DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
+               "amHandleAMO() for node %d: obj %p, opnd %s, "
+               "ofiOp %d, ofiType %d, sz %d",
+               amo->node, amo->obj,
+               DBG_VAL(&amo->operand1, amo->ofiType),
+               amo->ofiOp, amo->ofiType, amo->size);
+  }
+  chpl_amo_datum_t result;
+  size_t resSize = (amo->ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : amo->size;
+  doCpuAMO(amo->obj, &amo->operand1, &amo->operand2, &result,
            amo->ofiOp, amo->ofiType, amo->size);
 
+  //
+  // AMOs can be same-node; short-circuit responses in that case.
+  //
+  if (amo->result != NULL) {
+    if (amo->node == chpl_nodeID) {
+      memcpy(amo->result, &result, resSize);
+      atomic_thread_fence(memory_order_release);
+    } else {
+      CHK_TRUE(mrGetKey(NULL, amo->node, amo->result, resSize) == 0);
+      (void) ofi_put(&result, amo->node, amo->result, resSize);
+
+      //
+      // TODO:
+      // HACK!!!  We need to make sure the result arrives before
+      //          telling the originator the AMO is done.  For now
+      //          we wait here for the tx counter to clear, but
+      //          there is surely a better way, perhaps a queue of
+      //          outbound writes or some such.
+      //
+      {
+        struct perTxCtxInfo_t* tcip;
+        CHK_TRUE((tcip = getTxCtxInfo(false /*isWorker*/)) != NULL);
+        do {
+          const int count = fi_cntr_read(tcip->txCntr);
+          if (count > 0) {
+            DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
+            tcip->numTxsOut -= count;
+          }
+        } while (tcip->numTxsOut > 0);
+        releaseTxCtxInfo(tcip);
+      }
+    }
+  }
+
   if (amo->node == chpl_nodeID) {
-    //
-    // AMOs can be same-node; short-circuit the response in that case.
-    //
     *amo->pDone = 1;
   } else {
     amSendDone(amo->node, amo->pDone);
-  }
-}
-
-
-static
-void amHandleFAMO(chpl_comm_on_bundle_t* req) {
-  struct chpl_comm_bundleData_FAMO_t* famo = &req->comm.famo;
-  DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
-             "amHandleFAMO() for node %d: obj %p, ofiOp %d, size %d, res %p",
-             famo->node, famo->obj, famo->ofiOp, famo->size, famo->result);
-  chpl_amo_datum_t result;
-  doCpuAMO(&result, famo->obj, &famo->operand1, &famo->operand2,
-           famo->ofiOp, famo->ofiType, famo->size);
-
-  if (famo->node == chpl_nodeID) {
-    //
-    // AMOs can be same-node; short-circuit the response in that case.
-    //
-    if (famo->ofiOp == FI_CSWAP)
-      memcpy(famo->result, &result, sizeof(result.u32));
-    else
-      memcpy(famo->result, &result, famo->size);
-    atomic_thread_fence(memory_order_release);
-    *famo->pDone = 1;
-  } else {
-    CHK_TRUE(mrGetKey(NULL, famo->node, famo->result, famo->size) == 0);
-    if (famo->ofiOp == FI_CSWAP)
-      (void) ofi_put(&result, famo->node, famo->result, sizeof(result.u32));
-    else
-      (void) ofi_put(&result, famo->node, famo->result, famo->size);
-
-    //
-    // TODO:
-    // HACK!!!  We need to make sure the result arrives before
-    //          telling the originator the AMO is done.  For now
-    //          we wait here for the tx counter to clear, but
-    //          there is surely a better way, perhaps a queue of
-    //          outbound writes or some such.
-    //
-    {
-      struct perTxCtxInfo_t* tcip;
-      CHK_TRUE((tcip = getTxCtxInfo(false /*isWorker*/)) != NULL);
-      do {
-        const int count = fi_cntr_read(tcip->txCntr);
-        if (count > 0) {
-          DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
-          tcip->numTxsOut -= count;
-        }
-      } while (tcip->numTxsOut > 0);
-      releaseTxCtxInfo(tcip);
-    }
-
-    amSendDone(famo->node, famo->pDone);
   }
 }
 
@@ -1877,7 +1867,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
       waitForTxCQ(tcip, 1);
     } else {
       const int count = fi_cntr_read(tcip->txCntr);
-      DBG_PRINTF(DBG_ACK, "tx ack counter %d", count);
+      DBG_PRINTF(DBG_ACK, "tx ack counter %d after PUT", count);
       tcip->numTxsOut -= count;
     }
 
@@ -1955,6 +1945,90 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
 
 
 static
+chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
+                              c_nodeid_t node, void* object, uint64_t mrKey,
+                              const void* operand1, const void* operand2,
+                              void* result,
+                              enum fi_op ofiOp, enum fi_datatype ofiType,
+                              size_t size) {
+  DBG_PRINTF(DBG_AMO,
+             "tx AMO: obj %d:%p, opnd1 <%s>, opnd2 <%s>, res %p, "
+             "op %d, typ %d, sz %zd",
+             (int) node, object,
+             DBG_VAL(operand1, ofiType), DBG_VAL(operand2, ofiType), result,
+             ofiOp, ofiType, size);
+
+  void* myRes = result;
+  size_t resSize = (ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : size;
+  void* mrDescRes = NULL;
+  if (myRes != NULL && mrGetLocalDesc(&mrDescRes, myRes, resSize) != 0) {
+    myRes = allocBounceBuf(resSize);
+    DBG_PRINTF(DBG_AMO, "AMO result BB: %p", myRes);
+    CHK_TRUE(mrGetLocalDesc(&mrDescRes, myRes, resSize) == 0);
+  }
+
+  void* myOpnd1 = (void*) operand1;
+  void* mrDescOpnd1 = NULL;
+  if (myOpnd1 != NULL && mrGetLocalDesc(&mrDescOpnd1, myOpnd1, size) != 0) {
+    myOpnd1 = allocBounceBuf(size);
+    DBG_PRINTF(DBG_AMO, "AMO operand1 BB: %p", myOpnd1);
+    CHK_TRUE(mrGetLocalDesc(&mrDescOpnd1, myOpnd1, size) == 0);
+    memcpy(myOpnd1, operand1, size);
+  }
+
+  void* myOpnd2 = (void*) operand2;
+  void* mrDescOpnd2 = NULL;
+  if (myOpnd2 != NULL && mrGetLocalDesc(&mrDescOpnd2, myOpnd2, size) != 0) {
+    myOpnd2 = allocBounceBuf(size);
+    DBG_PRINTF(DBG_AMO, "AMO operand2 BB: %p", myOpnd2);
+    CHK_TRUE(mrGetLocalDesc(&mrDescOpnd2, myOpnd2, size) == 0);
+    memcpy(myOpnd2, operand2, size);
+  }
+
+  if (ofiOp == FI_CSWAP) {
+    OFI_CHK(fi_compare_atomic(tcip->txCtx,
+                              myOpnd2, 1, mrDescOpnd2, myOpnd1, mrDescOpnd1,
+                              myRes, mrDescRes,
+                              ofi_rxAddrs[node], (uint64_t) object, mrKey,
+                              ofiType, ofiOp, NULL));
+  } else if (result != NULL) {
+    CHK_TRUE(operand2 == NULL);
+    OFI_CHK(fi_fetch_atomic(tcip->txCtx,
+                            myOpnd1, 1, mrDescOpnd1, myRes, mrDescRes,
+                            ofi_rxAddrs[node], (uint64_t) object, mrKey,
+                            ofiType, ofiOp, NULL));
+  } else {
+    CHK_TRUE(operand2 == NULL);
+    OFI_CHK(fi_atomic(tcip->txCtx,
+                      myOpnd1, 1, mrDescOpnd1,
+                      ofi_rxAddrs[node], (uint64_t) object, mrKey,
+                      ofiType, ofiOp, NULL));
+  }
+
+  tcip->numTxsOut++;
+  CHK_TRUE(tcip->txCtxHasCQ);  // (so far) only expect AMOs from workers
+  waitForTxCQ(tcip, 1);
+
+  releaseTxCtxInfo(tcip);
+
+  if (myRes != result) {
+    memcpy(result, myRes, resSize);
+    freeBounceBuf(myRes);
+  }
+
+  if (myOpnd1 != operand1) {
+    freeBounceBuf(myOpnd1);
+  }
+
+  if (myOpnd2 != operand2) {
+    freeBounceBuf(myOpnd2);
+  }
+
+  return NULL;
+}
+
+
+static
 void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut) {
   if (numOut > 0) {
     struct fi_cq_entry cqes[numOut];
@@ -1963,7 +2037,18 @@ void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut) {
     do {
       int ret;
       CHK_TRUE((ret = fi_cq_read(tcip->txCQ, cqes, numOut)) > 0
-               || ret == -FI_EAGAIN);
+               || ret == -FI_EAGAIN
+               || ret == -FI_EAVAIL);
+
+      if (ret == -FI_EAVAIL) {
+        struct fi_cq_err_entry err = { 0 };
+        char bufProv[100];
+        fi_cq_readerr(tcip->txCQ, &err, 0);
+        (void) fi_cq_strerror(tcip->txCQ, err.prov_errno, err.err_data,
+                              bufProv, sizeof(bufProv));
+        INTERNAL_ERROR_V("fi_cq_read(): err %d, strerror %s",
+                         err.err, bufProv);
+      }
 
       if (ret > 0) {
         const int numEvents = ret;
@@ -2014,56 +2099,54 @@ void local_yield(void) {
 // Interface: network atomics
 //
 
-static void doAMO(c_nodeid_t, void*, void*,
-                  int, int, size_t);
-static void doFAMO(c_nodeid_t, void*, void*, void*, void*,
-                   int, int, size_t);
+static inline void doAMO(c_nodeid_t, void*, const void*, const void*, void*,
+                         int, enum fi_datatype, size_t);
 
 
 //
-// PUT
+// WRITE
 //
-#define DEFN_CHPL_COMM_ATOMIC_PUT(fnType, ofiType, Type)                \
-  void chpl_comm_atomic_put_##fnType                                    \
+#define DEFN_CHPL_COMM_ATOMIC_WRITE(fnType, ofiType, Type)              \
+  void chpl_comm_atomic_write_##fnType                                  \
          (void* desired, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
-               "chpl_comm_atomic_put_%s(%p, %d, %p, %d, %s)",           \
+               "chpl_comm_atomic_write_%s(%p, %d, %p, %d, %s)",         \
                #fnType, desired, (int) node, object,                    \
                ln, chpl_lookupFilename(fn));                            \
-    doAMO(node, object, desired,                                        \
+    doAMO(node, object, desired, NULL, NULL,                            \
           FI_ATOMIC_WRITE, ofiType, sizeof(Type));                      \
   }
 
-DEFN_CHPL_COMM_ATOMIC_PUT(int32, FI_INT32, int32_t)
-DEFN_CHPL_COMM_ATOMIC_PUT(int64, FI_INT64, int64_t)
-DEFN_CHPL_COMM_ATOMIC_PUT(uint32, FI_UINT32, uint32_t)
-DEFN_CHPL_COMM_ATOMIC_PUT(uint64, FI_UINT64, uint64_t)
-DEFN_CHPL_COMM_ATOMIC_PUT(real32, FI_FLOAT, float)
-DEFN_CHPL_COMM_ATOMIC_PUT(real64, FI_DOUBLE, double)
+DEFN_CHPL_COMM_ATOMIC_WRITE(int32, FI_INT32, int32_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(uint32, FI_UINT32, uint32_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(uint64, FI_UINT64, uint64_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(real32, FI_FLOAT, float)
+DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, double)
 
 
 //
-// GET
+// READ
 //
-#define DEFN_CHPL_COMM_ATOMIC_GET(fnType, ofiType, Type)                \
-  void chpl_comm_atomic_get_##fnType                                    \
+#define DEFN_CHPL_COMM_ATOMIC_READ(fnType, ofiType, Type)               \
+  void chpl_comm_atomic_read_##fnType                                   \
          (void* result, c_nodeid_t node, void* object,                  \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
-               "chpl_comm_atomic_get_%s(%p, %d, %p, %d, %s)",           \
+               "chpl_comm_atomic_read_%s(%p, %d, %p, %d, %s)",          \
                #fnType, result, (int) node, object,                     \
                ln, chpl_lookupFilename(fn));                            \
-    doFAMO(node, object, result, NULL, NULL,                            \
-           FI_ATOMIC_READ, ofiType, sizeof(Type));                      \
+    doAMO(node, object, NULL, NULL, result,                             \
+          FI_ATOMIC_READ, ofiType, sizeof(Type));                       \
   }
 
-DEFN_CHPL_COMM_ATOMIC_GET(int32, FI_INT32, int32_t)
-DEFN_CHPL_COMM_ATOMIC_GET(int64, FI_INT64, int64_t)
-DEFN_CHPL_COMM_ATOMIC_GET(uint32, FI_UINT32, uint32_t)
-DEFN_CHPL_COMM_ATOMIC_GET(uint64, FI_UINT64, uint64_t)
-DEFN_CHPL_COMM_ATOMIC_GET(real32, FI_FLOAT, float)
-DEFN_CHPL_COMM_ATOMIC_GET(real64, FI_DOUBLE, double)
+DEFN_CHPL_COMM_ATOMIC_READ(int32, FI_INT32, int32_t)
+DEFN_CHPL_COMM_ATOMIC_READ(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_READ(uint32, FI_UINT32, uint32_t)
+DEFN_CHPL_COMM_ATOMIC_READ(uint64, FI_UINT64, uint64_t)
+DEFN_CHPL_COMM_ATOMIC_READ(real32, FI_FLOAT, float)
+DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, double)
 
 
 #define DEFN_CHPL_COMM_ATOMIC_XCHG(fnType, ofiType, Type)               \
@@ -2074,8 +2157,8 @@ DEFN_CHPL_COMM_ATOMIC_GET(real64, FI_DOUBLE, double)
                "chpl_comm_atomic_xchg_%s(%p, %d, %p, %p, %d, %s)",      \
                #fnType, desired, (int) node, object, result,            \
                ln, chpl_lookupFilename(fn));                            \
-    doFAMO(node, object, result, desired, NULL,                         \
-           FI_ATOMIC_WRITE, ofiType, sizeof(Type));                     \
+    doAMO(node, object, desired, NULL, result,                          \
+          FI_ATOMIC_WRITE, ofiType, sizeof(Type));                      \
   }
 
 DEFN_CHPL_COMM_ATOMIC_XCHG(int32, FI_INT32, int32_t)
@@ -2096,8 +2179,8 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, double)
                "%d, %s)",                                               \
                #fnType, expected, desired, (int) node, object, result,  \
                ln, chpl_lookupFilename(fn));                            \
-    doFAMO(node, object, result, expected, desired,                     \
-           FI_CSWAP, ofiType, sizeof(Type));                            \
+    doAMO(node, object, expected, desired, result,                      \
+          FI_CSWAP, ofiType, sizeof(Type));                             \
   }
 
 DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int32, FI_INT32, int32_t)
@@ -2113,19 +2196,20 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
          (void* operand, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
-               "chpl_comm_atomic_%s_%s(%p, %d, %p, %d, %s)",            \
-               #fnOp, #fnType, operand, (int) node, object,             \
-               ln, chpl_lookupFilename(fn));                            \
-    doAMO(node, object, operand, ofiOp, ofiType, sizeof(Type));         \
+               "chpl_comm_atomic_%s_%s(<%s>, %d, %p, %d, %s)",          \
+               #fnOp, #fnType, DBG_VAL(operand, ofiType), (int) node,   \
+               object, ln, chpl_lookupFilename(fn));                    \
+    doAMO(node, object, operand, NULL, NULL,                            \
+          ofiOp, ofiType, sizeof(Type));                                \
   }                                                                     \
                                                                         \
   void chpl_comm_atomic_##fnOp##_buff_##fnType                          \
          (void* operand, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
-               "chpl_comm_atomic_%s_buff_%s(%p, %d, %p, %d, %s)",       \
-               #fnOp, #fnType, operand, (int) node, object,             \
-               ln, chpl_lookupFilename(fn));                            \
+               "chpl_comm_atomic_%s_buff_%s(<%s>, %d, %p, %d, %s)",     \
+               #fnOp, #fnType, DBG_VAL(operand, ofiType), (int) node,   \
+               object, ln, chpl_lookupFilename(fn));                    \
     chpl_comm_atomic_##fnOp##_##fnType(operand, node, object, ln, fn);  \
   }                                                                     \
                                                                         \
@@ -2133,11 +2217,12 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
          (void* operand, c_nodeid_t node, void* object, void* result,   \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
-               "chpl_comm_atomic_fetch_%s_%s(%p, %d, %p, %p, %d, %s)",  \
-               #fnOp, #fnType, operand, (int) node, object, result,     \
-               ln, chpl_lookupFilename(fn));                            \
-    doFAMO(node, object, result, operand, NULL,                         \
-           ofiOp, ofiType, sizeof(Type));                               \
+               "chpl_comm_atomic_fetch_%s_%s(<%s>, %d, %p, %p, "        \
+               "%d, %s)",                                               \
+               #fnOp, #fnType, DBG_VAL(operand, ofiType), (int) node,   \
+               object, result, ln, chpl_lookupFilename(fn));            \
+    doAMO(node, object, operand, NULL, result,                          \
+          ofiOp, ofiType, sizeof(Type));                                \
   }
 
 DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, int32, FI_INT32, int32_t)
@@ -2168,20 +2253,21 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
          (void* operand, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
-               "chpl_comm_atomic_sub_%s(%p, %d, %p, %d, %s)",           \
-               #fnType, operand, (int) node, object,                    \
+               "chpl_comm_atomic_sub_%s(<%s>, %d, %p, %d, %s)",         \
+               #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                ln, chpl_lookupFilename(fn));                            \
-    Type myOperand = - *(Type*) operand;                                \
-    doAMO(node, object, &myOperand, FI_SUM, ofiType, sizeof(Type));     \
+    Type myOpnd = - *(Type*) operand;                                   \
+    doAMO(node, object, &myOpnd, NULL, NULL,                            \
+          FI_SUM, ofiType, sizeof(Type));                               \
   }                                                                     \
                                                                         \
   void chpl_comm_atomic_sub_buff_##fnType                               \
          (void* operand, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
-               "chpl_comm_atomic_sub_buff_%s(%p, %d, %p, "              \
+               "chpl_comm_atomic_sub_buff_%s(<%s>, %d, %p, "            \
                "%d, %s)",                                               \
-               #fnType, operand, (int) node, object,                    \
+               #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                ln, chpl_lookupFilename(fn));                            \
     chpl_comm_atomic_sub_##fnType(operand, node, object, ln, fn);       \
   }                                                                     \
@@ -2190,12 +2276,13 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
          (void* operand, c_nodeid_t node, void* object, void* result,   \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
-               "chpl_comm_atomic_fetch_sub_%s(%p, %d, %p, %p, %d, %s)", \
-               #fnType, operand, (int) node, object, result,            \
-               ln, chpl_lookupFilename(fn));                            \
-    Type myOperand = - *(Type*) operand;                                \
-    doFAMO(node, object, result, &myOperand, NULL,                      \
-           FI_SUM, ofiType, sizeof(Type));                              \
+               "chpl_comm_atomic_fetch_sub_%s(<%s>, %d, %p, %p, "       \
+               "%d, %s)",                                               \
+               #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
+               result, ln, chpl_lookupFilename(fn));                    \
+    Type myOpnd = - *(Type*) operand;                                   \
+    doAMO(node, object, &myOpnd, NULL, result,                          \
+          FI_SUM, ofiType, sizeof(Type));                               \
   }
 
 DEFN_IFACE_AMO_SUB(int32, FI_INT32, int32_t)
@@ -2215,40 +2302,44 @@ void chpl_comm_atomic_buff_flush(void) {
 // internal AMO utilities
 //
 
-static
-void doAMO(c_nodeid_t node, void* object, void* operand,
-           int ofiOp, int ofiType, size_t size) {
+static inline
+void doAMO(c_nodeid_t node, void* object,
+           const void* operand1, const void* operand2, void* result,
+           int ofiOp, enum fi_datatype ofiType, size_t size) {
   if (chpl_numNodes <= 1) {
-    doCpuAMO(NULL, object, operand, NULL, ofiOp, ofiType, size);
+    doCpuAMO(object, operand1, operand2, result, ofiOp, ofiType, size);
     return;
   }
 
-  //
-  // TODO: initiate fi_atomic*() here.  But for now, use AMs.
-  //
-  amRequestAMO(node, object, operand, ofiOp, ofiType, size);
-}
+  uint64_t mrKey;
+  if (mrGetKey(&mrKey, node, object, size) == 0) {
+    struct perTxCtxInfo_t* tcip = NULL;
+    CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
 
+    size_t count;
+    if (fi_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count) == 0
+        && count > 0) {
+      //
+      // The object address is remotely-accessible and the atomic op
+      // and type are supported in the network.  Do the AMO natively.
+      //
+      ofi_amo(tcip, node, object, mrKey, operand1, operand2, result,
+              ofiOp, ofiType, size);
+      releaseTxCtxInfo(tcip);
+      return;
+    }
 
-static
-void doFAMO(c_nodeid_t node, void* object, void* result,
-            void* operand1, void* operand2,
-            int ofiOp, int ofiType, size_t size) {
-  if (chpl_numNodes <= 1) {
-    doCpuAMO(result, object, operand1, operand2, ofiOp, ofiType, size);
-    return;
+    releaseTxCtxInfo(tcip);
   }
 
-  //
-  // TODO: initiate fi_atomic*() here.  But for now, use AMs.
-  //
-  amRequestFAMO(node, object, result, operand1, operand2,
-                ofiOp, ofiType, size);
+  amRequestAMO(node, object, operand1, operand2, result,
+               ofiOp, ofiType, size);
 }
 
 
 static inline
-void doCpuAMO(void* result, void* obj, void* operand1, void* operand2,
+void doCpuAMO(void* obj,
+              const void* operand1, const void* operand2, void* result,
               enum fi_op ofiOp, enum fi_datatype ofiType, size_t size) {
   CHK_TRUE(size == 4 || size == 8);
 
@@ -2531,8 +2622,10 @@ void doCpuAMO(void* result, void* obj, void* operand1, void* operand2,
 
     if (result == NULL)
       DBG_PRINTF(DBG_AMO,
-                 "doCpuAMO(%p, %d, %d, %#lx): now %#lx",
-                 obj, ofiOp, ofiType, myOpnd1.u64, myObj.u64);
+                 "doCpuAMO(%p, %d, %d, %s): now %s",
+                 obj, ofiOp, ofiType,
+                 DBG_VAL(&myOpnd1, ofiType),
+                 DBG_VAL(&myObj, ofiType));
     else {
       chpl_amo_datum_t myRes2 = { 0 };
       if (ofiType == FI_INT32 || ofiType == FI_UINT32 || ofiType == FI_FLOAT
@@ -2541,9 +2634,12 @@ void doCpuAMO(void* result, void* obj, void* operand1, void* operand2,
       else
         myRes2.u64 = myResult->u64;
       DBG_PRINTF(DBG_AMO,
-                 "doCpuAMO(%p, %d, %d, %#lx, %#lx): now %#lx, %p = was %#lx",
-                 obj, ofiOp, ofiType, myOpnd1.u64, myOpnd2.u64,
-                 myObj.u64, result, myRes2.u64);
+                 "doCpuAMO(%p, %d, %d, %s, %s): now %s, %p = was %s",
+                 obj, ofiOp, ofiType,
+                 DBG_VAL(&myOpnd1, ofiType),
+                 DBG_VAL(&myOpnd2, ofiType),
+                 DBG_VAL(&myObj, ofiType), result,
+                 DBG_VAL(&myRes2, ofiType));
     }
   }
 
@@ -2845,6 +2941,43 @@ char* chpl_comm_ofi_dbg_prefix(void) {
       len += snprintf(&buf[len], sizeof(buf) - len, ": ");
   }
   return buf;
+}
+
+
+char* chpl_comm_ofi_dbg_val(const void* pV, enum fi_datatype ofiType) {
+  static __thread char buf[5][32];
+  static __thread int iBuf = 0;
+  char* s = buf[iBuf];
+
+  if (pV == NULL) {
+    snprintf(s, sizeof(buf[0]), "NIL");
+  } else {
+    switch (ofiType) {
+    case FI_INT32:
+      snprintf(s, sizeof(buf[0]), "%" PRId32, *(const int_least32_t*) pV);
+      break;
+    case FI_UINT32:
+      snprintf(s, sizeof(buf[0]), "%#" PRIx32, *(const uint_least32_t*) pV);
+      break;
+    case FI_INT64:
+      snprintf(s, sizeof(buf[0]), "%" PRId64, *(const int_least64_t*) pV);
+      break;
+    case FI_FLOAT:
+      snprintf(s, sizeof(buf[0]), "%.6g", (double) *(const float*) pV);
+      break;
+    case FI_DOUBLE:
+      snprintf(s, sizeof(buf[0]), "%.16g", *(const double*) pV);
+      break;
+    default:
+      snprintf(s, sizeof(buf[0]), "%#" PRIx64, *(const uint_least64_t*) pV);
+      break;
+    }
+  }
+
+  if (++iBuf >= sizeof(buf) / sizeof(buf[0]))
+    iBuf = 0;
+
+  return s;
 }
 
 #endif

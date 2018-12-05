@@ -127,7 +127,10 @@ CallExpr* buildReduceExpr(Expr* op, Expr* data, bool zippered = false);
 CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* docs);
+std::set<Flag>* buildVarDeclFlags(Flag flag1 = FLAG_UNKNOWN,
+                                  Flag flag2 = FLAG_UNKNOWN);
+BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs = NULL,
+                         std::set<Flag>* flags = NULL, Expr* cnameExpr = NULL);
 
 DefExpr*  buildClassDefExpr(const char*   name,
                             const char*   cname,
@@ -179,5 +182,10 @@ Expr* tryBangExpr(Expr*);
 // Intended to help issue better compile errors
 // Converts a misuse of 'if a=b' into 'if a==b' and warns.
 Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b);
+
+// Emits an error for an attempt to redefine an internal type.
+// The string name will be used in the error message.
+void redefiningReservedTypeError(const char* name);
+void redefiningReservedWordError(const char* name);
 
 #endif

@@ -9,6 +9,7 @@
 
 writeln("CHPL_TARGET_PLATFORM: darwin +");
 writeln("CHPL_TARGET_COMPILER: clang +");
+writeln("CHPL_TARGET_MACHINE: x86_64 +");
 writeln("CHPL_TARGET_ARCH: native +");
 writeln("CHPL_LOCALE_MODEL: flat +");
 writeln("CHPL_COMM: none +");

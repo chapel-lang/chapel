@@ -192,7 +192,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                                         int32_t numLocales) {
   int i;
   int size;
-  char baseCommand[256];
+  char baseCommand[2*FILENAME_MAX];
   char* command;
   FILE* slurmFile, *expectFile;
   char* projectString = getenv(launcherAccountEnvvar);
@@ -339,7 +339,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
 static void chpl_launch_cleanup(void) {
   if (!debug) {
-    char command[1024];
+    char command[2*FILENAME_MAX];
     if (getenv("CHPL_LAUNCHER_USE_SBATCH") == NULL) {
       sprintf(command, "rm %s", expectFilename);
       system(command);

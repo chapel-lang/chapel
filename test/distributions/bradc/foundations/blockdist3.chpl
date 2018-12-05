@@ -1,4 +1,4 @@
-type locale = int;
+type mylocale = int;
 type indexType = int;
 
 param rank: int = 1;
@@ -10,7 +10,7 @@ var rankD: domain(1) = {1..rank};
 var localeD: domain(1) = {1..myNumLocales};
 
 //var locales: [localeD] locale = [i in localeD] i;
-var locales: [localeD] locale;
+var locales: [localeD] mylocale;
 for i in localeD {
   locales(i) = i;
 }

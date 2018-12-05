@@ -75,6 +75,10 @@ else
     log_info "Found executable ${BIN_NAME} in ${CHPL_BIN}."
 fi
 
+if [ -z "${CHPL_HOME}" ] ; then
+  CHPL_HOME=${CHPL_CHECK_HOME}
+fi
+
 # Verify CHPL_HOME is correctly set.
 if [ -z "${CHPL_HOME}" ] ; then
     log_error "CHPL_HOME is not set in environment."

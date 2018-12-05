@@ -88,14 +88,16 @@ extern char CHPL_RUNTIME_INCL[FILENAME_MAX+1];
 extern char CHPL_THIRD_PARTY[FILENAME_MAX+1];
 
 extern const char* CHPL_HOST_PLATFORM;
+extern const char* CHPL_HOST_MACHINE;
 extern const char* CHPL_HOST_COMPILER;
 extern const char* CHPL_TARGET_PLATFORM;
-extern const char* CHPL_TARGET_COMPILER;
-extern const char* CHPL_ORIG_TARGET_COMPILER;
+extern const char* CHPL_TARGET_MACHINE;
 extern const char* CHPL_TARGET_ARCH;
 extern const char* CHPL_RUNTIME_ARCH;
 extern const char* CHPL_TARGET_BACKEND_ARCH;
 extern const char* CHPL_TARGET_ARCH_FLAG;
+extern const char* CHPL_TARGET_COMPILER;
+extern const char* CHPL_ORIG_TARGET_COMPILER;
 extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
@@ -110,12 +112,12 @@ extern const char* CHPL_NETWORK_ATOMICS;
 extern const char* CHPL_GMP;
 extern const char* CHPL_HWLOC;
 extern const char* CHPL_REGEXP;
-extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
 extern const char* CHPL_UNWIND;
 extern const char* CHPL_RUNTIME_SUBDIR;
 extern const char* CHPL_LAUNCHER_SUBDIR;
+extern const char* CHPL_LLVM_UNIQ_CFG_PATH;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
@@ -138,6 +140,7 @@ extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
 extern bool fPrintUnusedFns;
 extern bool fPrintUnusedInternalFns;
+extern bool fRegionVectorizer;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
@@ -224,10 +227,6 @@ extern bool fMinimalModules;
 
 // Set to true if we want to enable incremental compilation.
 extern bool fIncrementalCompilation;
-
-// Set to true if we want to use the experimental
-// Interactive Programming Environment (IPE) mode.
-extern bool fUseIPE;
 
 // LLVM flags (-mllvm)
 extern std::string llvmFlags;

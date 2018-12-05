@@ -29,3 +29,5 @@ extern proc retStruct(a : misc) : allInts;
 
 extern proc structPointer(ref a : misc) : void;
 
+extern proc structPointer(a : c_ptr(misc)) : void;
+

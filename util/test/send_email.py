@@ -15,6 +15,10 @@ import smtplib
 import socket
 import sys
 
+try:
+    basestring
+except NameError:
+    basestring = str
 
 def main():
     """Parse command line arguments and send email!"""
@@ -54,7 +58,7 @@ def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_h
     msg['To'] = ','.join(recipients)
 
     if headers:
-        for key, value in headers.iteritems():
+        for key, value in headers.items():
             msg[key] = value
 
     if not os.environ.get('CHPL_TEST_NOMAIL', ''):

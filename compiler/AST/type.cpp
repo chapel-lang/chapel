@@ -31,7 +31,6 @@
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
-#include "ipe.h"
 #include "iterator.h"
 #include "misc.h"
 #include "passes.h"
@@ -530,6 +529,10 @@ void initPrimitiveTypes() {
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
 
   dtString                             = new AggregateType(AGGREGATE_RECORD);
+  dtString->symbol                     = new TypeSymbol("string", dtString);
+
+  dtLocale                             = new AggregateType(AGGREGATE_RECORD);
+  dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
@@ -543,13 +546,6 @@ void initPrimitiveTypes() {
   gTrue->immediate->v_bool             = true;
   gTrue->immediate->const_kind         = NUM_KIND_BOOL;
   gTrue->immediate->num_index          = BOOL_SIZE_SYS;
-
-  //
-  // Mark the "high water mark" for types that IPE relies on directly
-  //
-  if (fUseIPE == true) {
-    ipeRootInit();
-  }
 
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
@@ -1152,13 +1148,7 @@ bool isArrayClass(Type* type) {
 }
 
 bool isString(Type* type) {
-  bool retval = false;
-
-  if (AggregateType* aggr = toAggregateType(type)) {
-    retval = strcmp(aggr->symbol->name, "string") == 0;
-  }
-
-  return retval;
+  return type == dtString;
 }
 
 //

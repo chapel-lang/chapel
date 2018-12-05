@@ -18,6 +18,10 @@
  */
 
 /*
+   .. warning::
+     This module represents work in progress. The API is unstable and likely to
+     change over time.
+
    This module provides buffered versions of non-fetching atomic operations for
    all ``int``, ``uint``, and ``real`` types.  Buffered versions of
    :proc:`~Atomics.add()`, :proc:`~Atomics.sub()`, :proc:`~Atomics.or()`,

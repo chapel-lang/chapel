@@ -9,7 +9,7 @@
 # Requirements:
 #  - $CHPL_HOME environment variable is set
 #  - paratest.server is run from $CHPL_HOME/test.
-#  - Chapel compiler bin as $CHPL_HOME/bin/"platform"/chpl.
+#  - Chapel compiler bin as $CHPL_HOME/bin/"chpl_bin_path"/chpl.
 #  - Scripts start_test in $CHPL_HOME/util and paratest.client in the same 
 #      directory as paratest.server. It will create a temporary directory 
 #     .synch to synchronize the distribution of work to the client processes.

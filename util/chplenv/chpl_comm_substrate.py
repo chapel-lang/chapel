@@ -1,9 +1,5 @@
 #!/usr/bin/env python
-import os
 import sys
-
-chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_arch, chpl_comm, chpl_platform, overrides
 from utils import memoize

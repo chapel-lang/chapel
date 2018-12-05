@@ -13,4 +13,5 @@ N = 10000
 if ugni or gn_aries:
   N = 1000000
 
-print('--N={0} --printStats # bale-ig'.format(N))
+print('--N={0} --printStats --useBufferedGets=false # bale-ig'.format(N))
+print('--N={0} --printStats --useBufferedGets=true  # bale-ig-buff'.format(N))

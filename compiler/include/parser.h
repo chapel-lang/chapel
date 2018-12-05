@@ -45,10 +45,6 @@ void               addFlagModulePath(const char* newpath);
 void               addModuleToParseList(const char* name,
                                         UseStmt*    newUse);
 
-const char*        pathNameForInternalFile(const char* baseName);
-
-const char*        pathNameForStandardFile(const char* baseName);
-
 BlockStmt*         parseString(const char* string,
                                const char* filename,
                                const char* msg);

@@ -89,7 +89,12 @@ source $CHPL_INTERNAL_REPO/build/compiler_versions.bash
 # Always load the right version of GCC since we use it sometimes
 # to e.g. build the Chapel compiler with COMP_TYPE=TARGET
 if [ "${COMPILER}" != "gnu" ] ; then
-    module load gcc/${CHPL_GCC_TARGET_VERSION}
+    ### TEMPORARY
+    # Restore the following line when we can.
+    # module load gcc/${CHPL_GCC_TARGET_VERSION}
+    # For now, we need to force it to gcc 6.3.0 so its libraries will
+    # link with earlier versions of the Intel compiler.
+    module load gcc/6.3.0
 fi
 
 # quiet libu warning about cpuid detection failure

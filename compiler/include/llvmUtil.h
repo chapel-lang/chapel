@@ -55,9 +55,6 @@ uint64_t getTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64
 #define TOOL_OUTPUT_FILE tool_output_file
 #endif
 
-// uncomment to enable prototype Region Vectorizer integration
-//#define HAVE_LLVM_RV
-
 #endif //HAVE_LLVM
 
 #endif //LLVMUTIL_H

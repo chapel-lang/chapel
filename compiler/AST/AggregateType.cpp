@@ -38,6 +38,7 @@
 
 AggregateType* dtObject = NULL;
 AggregateType* dtString = NULL;
+AggregateType* dtLocale = NULL;
 
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
@@ -432,6 +433,12 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
 
   if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
     var->makeField();
+
+    if (var->hasFlag(FLAG_EXTERN)) {
+      if (!symbol->hasFlag(FLAG_EXTERN)) {
+        USR_FATAL_CONT(var, "only external types can have external fields");
+      }
+    }
 
     if (var->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       mIsGeneric = true;
@@ -1888,9 +1895,14 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 }
 
 AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
-  UnresolvedSymExpr* se  = toUnresolvedSymExpr(storesName);
-  Symbol*            sym = lookup(se->unresolved, storesName);
-  TypeSymbol*        ts  = toTypeSymbol(sym);
+  TypeSymbol*        ts  = NULL;
+
+  if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
+    Symbol* sym = lookup(se->unresolved, storesName);
+    ts = toTypeSymbol(sym);
+  } else if (SymExpr* se = toSymExpr(storesName)) {
+    ts = toTypeSymbol(se->symbol());
+  }
 
   if (ts == NULL) {
     USR_FATAL(storesName, "Illegal super class");

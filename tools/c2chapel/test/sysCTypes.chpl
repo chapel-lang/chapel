@@ -7,9 +7,15 @@ require "sysCTypes.h";
 
 extern proc test_int(a : c_int, ref b : c_int) : c_int;
 
+extern proc test_int(a : c_int, b : c_ptr(c_int)) : c_int;
+
 extern proc test_uint(a : c_uint, b : c_int, ref c : c_uint) : c_uint;
 
+extern proc test_uint(a : c_uint, b : c_int, c : c_ptr(c_uint)) : c_uint;
+
 extern proc test_longs(a : c_long, b : c_ulong, c : c_longlong, d : c_ulonglong, ref e : c_longlong) : c_long;
+
+extern proc test_longs(a : c_long, b : c_ulong, c : c_longlong, d : c_ulonglong, e : c_ptr(c_longlong)) : c_long;
 
 extern proc test_chars(a : c_char, b : c_string, c : c_schar, d : c_uchar) : c_char;
 

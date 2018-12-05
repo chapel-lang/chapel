@@ -263,9 +263,8 @@ bool isUserDefinedRecord(Symbol* symbol);
 
 /************************************* | **************************************
 *                                                                             *
-* This class has two roles:                                                   *
-*    1) A common abstract base class for VarSymbol and ArgSymbol.             *
-*    2) Maintain location state as an IPE "optimization".                     *
+* This class's role is to serve as a common abstract base class for           *
+* VarSymbol and ArgSymbol.                                                    *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -695,6 +694,7 @@ extern const char* astr_chpl_manager;
 extern const char* astr_forallexpr;
 extern const char* astr_forexpr;
 extern const char* astr_loopexpr_iter;
+
 void initAstrConsts();
 
 // Return true if the arg must use a C pointer whether or not

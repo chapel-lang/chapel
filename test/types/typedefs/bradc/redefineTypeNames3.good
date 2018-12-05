@@ -1,9 +1,5 @@
-redefineTypeNames3.chpl:1: In function 'main':
-redefineTypeNames3.chpl:3: error: 'real' used before defined
-redefineTypeNames3.chpl:4: note: defined here
-redefineTypeNames3.chpl:4: error: 'imag' used before defined
-redefineTypeNames3.chpl:5: note: defined here
-redefineTypeNames3.chpl:5: error: 'string' used before defined
-redefineTypeNames3.chpl:6: note: defined here
-redefineTypeNames3.chpl:6: error: 'complex' used before defined
-redefineTypeNames3.chpl:7: note: defined here
+redefineTypeNames3.chpl:3: error: attempt to redefine reserved type 'int'
+redefineTypeNames3.chpl:4: error: attempt to redefine reserved type 'real'
+redefineTypeNames3.chpl:5: error: attempt to redefine reserved type 'imag'
+redefineTypeNames3.chpl:6: error: attempt to redefine reserved type 'string'
+redefineTypeNames3.chpl:7: error: attempt to redefine reserved type 'complex'

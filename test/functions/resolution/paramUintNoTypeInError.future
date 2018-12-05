@@ -1,0 +1,6 @@
+error message: uint param is not indicating its type in error message
+
+In recent work, we improved some error messages such that they would
+print out a literal's type if it was not the default implied by that
+literal.  This test demonstrates a case where a uint is simply having
+its value printed out without a decorating type as well.

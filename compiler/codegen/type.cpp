@@ -29,7 +29,6 @@
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
-#include "ipe.h"
 #include "iterator.h"
 #include "LayeredValueTable.h"
 #include "llvmVer.h"

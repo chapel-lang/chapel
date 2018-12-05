@@ -38,7 +38,7 @@ with open(goodfile, 'w') as gfh:
     # printchplenv --simple
     p = subprocess.Popen([printchplenv, '--simple', '--all', '--internal', '--anonymize', '--no-tidy'],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    chplenv = p.communicate()[0]
+    chplenv = p.communicate()[0].decode()
     chplenv += "CHPL_RUNTIME_INCL="+chpl_home+"/runtime/include\n"
     chplenv += "CHPL_RUNTIME_LIB="+chpl_home+"/lib\n"
     chplenv += "CHPL_THIRD_PARTY="+chpl_home+"/third-party\n"

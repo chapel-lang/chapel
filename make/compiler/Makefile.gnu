@@ -178,8 +178,9 @@ endif
 # The string overflow false positives occur in runtime code unlike gcc 7.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
-WARN_CXXFLAGS += -Wno-class-memaccess
+WARN_CXXFLAGS += -Wno-class-memaccess -Walloc-size-larger-than=18446744073709551615
 RUNTIME_CFLAGS += -Wno-stringop-overflow
+SQUASH_WARN_GEN_CFLAGS += -Wno-array-bounds
 endif
 
 #
