@@ -1985,18 +1985,49 @@ std::set<Flag>* buildVarDeclFlags(Flag flag1, Flag flag2) {
 }
 
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag>* flags, const char* docs) {
+//
+// This helper function will return the string literal that a
+// cnameExpr evaluates to if it is one; otherwise, the expression
+// should be resolved at param resolution time.
+//
+static const char* cnameExprToString(Expr* cnameExpr) {
+  if (SymExpr* se = toSymExpr(cnameExpr))
+    if (VarSymbol* v = toVarSymbol(se->symbol()))
+      if (v->isImmediate())
+        if (v->immediate->const_kind == CONST_KIND_STRING)
+          return v->immediate->v_string;
+  return NULL;
+}
+
+BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
+                         std::set<Flag>* flags, Expr* cnameExpr) {
+  bool firstvar = true;
+  const char* cname = NULL;
+
+  if (cnameExpr != NULL) {
+    cname = cnameExprToString(cnameExpr);
+    if (cname == NULL) {
+      USR_FATAL_CONT(cnameExpr, "at present, external variables can only be renamed using string literals");
+    }
+  }
+
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
+        // Store the user-provided cname, if there was one
+        if (cname)
+          var->cname = cname;
+
+        // Attach any flags provided to the variable
         if (flags) {
           if (flags->count(FLAG_EXTERN) && flags->count(FLAG_PARAM))
             USR_FATAL(var, "external params are not supported");
 
+          if (cnameExpr != NULL && !firstvar)
+            USR_FATAL_CONT(var, "external symbol renaming can only be applied to one symbol at a time");
+
           for (std::set<Flag>::iterator it = flags->begin(); it != flags->end(); ++it) {
-            if (*it != FLAG_UNKNOWN) {
-              var->addFlag(*it);
-            }
+            var->addFlag(*it);
           }
         }
 
@@ -2019,6 +2050,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag>* flags, const char* do
           }
         }
         var->doc = docs;
+        firstvar = false;
         continue;
       }
     }
@@ -2083,8 +2115,9 @@ DefExpr* buildClassDefExpr(const char*  name,
                            AggregateTag tag,
                            Expr*        inherit,
                            BlockStmt*   decls,
-                           Flag         isExtern,
+                           Flag         externFlag,
                            const char*  docs) {
+  bool isExtern = externFlag == FLAG_EXTERN;
   AggregateType* ct = NULL;
   TypeSymbol* ts = NULL;
 
@@ -2107,9 +2140,10 @@ DefExpr* buildClassDefExpr(const char*  name,
 
   DefExpr*    def = new DefExpr(ts);
 
-  ct->addDeclarations(decls);
-
-  if (isExtern == FLAG_EXTERN) {
+  // add FLAG_EXTERN if this is extern before adding declarations to
+  // the class in order to be able to flag the case of declaring an
+  // extern field in a non-extern class
+  if (isExtern) {
     if (cname) {
       ts->cname = astr(cname);
     }
@@ -2122,6 +2156,8 @@ DefExpr* buildClassDefExpr(const char*  name,
       USR_FATAL_CONT(inherit,
                      "External types do not currently support inheritance");
   }
+
+  ct->addDeclarations(decls);
 
   if (inherit != NULL) {
     ct->inherits.insertAtTail(inherit);
@@ -2242,12 +2278,12 @@ FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr) {
 
   const char* cname = "";
   // Look for a string literal we can use
-  if (paramCNameExpr != NULL)
-    if (SymExpr* se = toSymExpr(paramCNameExpr))
-      if (VarSymbol* v = toVarSymbol(se->symbol()))
-        if (v->isImmediate())
-          if (v->immediate->const_kind == CONST_KIND_STRING)
-            cname = v->immediate->v_string;
+  if (paramCNameExpr != NULL) {
+    const char* cnameStr = cnameExprToString(paramCNameExpr);
+    if (cnameStr) {
+      cname = cnameStr;
+    }
+  }
 
   FnSymbol* ret = new FnSymbol(cname);
 
