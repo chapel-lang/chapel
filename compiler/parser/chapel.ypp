@@ -1350,6 +1350,7 @@ lifetime_expr:
 
 lifetime_ident:
   TIDENT  { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr($1)); }
+| TTHIS   { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr("this")); }
 
 type_alias_decl_stmt:
   TTYPE type_alias_decl_stmt_inner TSEMI
