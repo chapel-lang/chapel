@@ -6,18 +6,29 @@
 import os, subprocess, sys
 
 chpl_home = sys.argv[1]
-platform = sys.argv[2]
-compiler = sys.argv[3]
 
-plat_comp = platform + '-' + compiler
-llvm_tool_path = chpl_home + '/third-party/llvm/install/' + plat_comp + '/bin'
+chplenv = subprocess.check_output([chpl_home + "/util/printchplenv",
+                                   "--all", "--internal", "--simple"])
+
+CHPL_HOST_BIN_SUBDIR=None
+CHPL_LLVM_UNIQ_CFG_PATH=None
+
+for line in chplenv.splitlines():
+  kv = line.split('=', 2)
+  key = kv[0]
+  val = kv[1]
+  if key == 'CHPL_HOST_BIN_SUBDIR':
+    CHPL_HOST_BIN_SUBDIR= val
+  if key == 'CHPL_LLVM_UNIQ_CFG_PATH':
+    CHPL_LLVM_UNIQ_CFG_PATH= val
+
+llvm_tool_path = chpl_home + '/third-party/llvm/install/' + CHPL_LLVM_UNIQ_CFG_PATH + '/bin'
 build_options = '--baseline --llvm -g'
 source_path = os.getcwd() #same as target path
 source = source_path + os.sep + 'llvmDebug_test.chpl'
 target = source_path + os.sep + 'llvmDebug_test'
-
 # Build Chapel Test Program
-Command_build = chpl_home + '/bin/' + platform + '/chpl ' + build_options + ' ' + source + ' -o ' + target
+Command_build = chpl_home + '/bin/' + CHPL_HOST_BIN_SUBDIR + '/chpl ' + build_options + ' ' + source + ' -o ' + target
 if os.system(Command_build) == 0:
     print 'Build Succeeded'
 else:
