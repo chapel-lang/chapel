@@ -358,7 +358,7 @@ void init_ofiFabricDomain(void) {
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
 
   //
-  // Create address vectors for each thread.
+  // Create the address vector covering the nodes.
   //
   struct fi_av_attr ofi_avAttr = { 0 };
   ofi_avAttr.type = FI_AV_TABLE;
