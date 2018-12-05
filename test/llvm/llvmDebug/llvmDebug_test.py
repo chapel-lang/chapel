@@ -15,9 +15,9 @@ build_options = '--baseline --llvm -g'
 source_path = os.getcwd() #same as target path
 source = source_path + os.sep + 'llvmDebug_test.chpl'
 target = source_path + os.sep + 'llvmDebug_test'
-
+bin_subdir = subprocess.check_output(chpl_home + "/util/chplenv/chpl_bin_subdir.py");
 # Build Chapel Test Program
-Command_build = chpl_home + '/bin/' + platform + '/chpl ' + build_options + ' ' + source + ' -o ' + target
+Command_build = chpl_home + '/bin/' + bin_subdir + '/chpl ' + build_options + ' ' + source + ' -o ' + target
 if os.system(Command_build) == 0:
     print 'Build Succeeded'
 else:
