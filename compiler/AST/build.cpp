@@ -2014,7 +2014,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag>* flags, const char* do
                 INT_FATAL(stmt, "DefExpr initialized with bad exprType config ast");
             } else {
               // name is ambiguous, must specify module name
-              USR_FATAL(var, "Ambiguous config param or type name (%s)", var->name);
+              USR_FATAL(var, "Ambiguous config name (%s)", var->name);
             }
           }
         }
@@ -2891,7 +2891,7 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
               INT_FATAL(node, "Type alias initialized to invalid exprType");
           } else {
             // name is ambiguous, must specify module name
-            USR_FATAL(var, "Ambiguous config param or type name (%s)", var->name);
+            USR_FATAL(var, "Ambiguous config type name (%s)", var->name);
           }
         }
       }

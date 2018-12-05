@@ -619,8 +619,8 @@ static void runCompilerInLLDB(int argc, char* argv[]) {
 
 static void readConfig(const ArgumentDescription* desc, const char* arg_unused) {
   // Expect arg_unused to be a string of either of these forms:
-  // 1. name=value -- set the config param "name" to "value"
-  // 2. name       -- set the boolean config param "name" to NOT("name")
+  // 1. name=value -- set the config "name" to "value"
+  // 2. name       -- set the boolean config "name" to NOT("name")
   //                  if name is not type bool, set it to 0.
 
   char *name = strdup(arg_unused);
@@ -634,7 +634,7 @@ static void readConfig(const ArgumentDescription* desc, const char* arg_unused) 
       parseCmdLineConfig(name, value);
     } else {
       // arg_unused was name=  <blank>
-      USR_FATAL("Missing config param value");
+      USR_FATAL("Missing config value");
     }
   } else {
     // arg_unused was just name
@@ -963,7 +963,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-callgraph", ' ', NULL, "[Don't] print a representation of the callgraph for the program", "N", &fPrintCallGraph, "CHPL_PRINT_CALLGRAPH", NULL},
  {"print-callstack-on-error", ' ', NULL, "[Don't] print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"print-unused-functions", ' ', NULL, "[Don't] print the name and location of unused functions", "N", &fPrintUnusedFns, NULL, NULL},
- {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
+ {"set", 's', "<name>[=<value>]", "Set config value", "S", NULL, NULL, readConfig},
  {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
 
  {"", ' ', NULL, "Compiler Configuration Options", NULL, NULL, NULL, NULL},
