@@ -2,6 +2,8 @@
 #define _TOKENCOUNT_H_
 
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #ifndef TOKENCOUNT_EXTERN
 #define TOKENCOUNT_EXTERN extern
@@ -26,6 +28,9 @@ TOKENCOUNT_EXTERN char line[4096];
 extern FILE* yyin;
 extern char* yytext;
 extern int yydebug;
+extern int yylex(void);
+extern int yyparse(void);
+extern int yyerror(char*);
 
 TOKENCOUNT_EXTERN int fileTokenHist[HIST_SIZE];
 TOKENCOUNT_EXTERN int totTokenHist[HIST_SIZE];
