@@ -1,4 +1,7 @@
-// https://github.com/Neargye/hello_tf_c_api/blob/master/src/load_graph.cpp
+// https://github.com/Neargye/hello_tf_c_api/blob/ea8800887c/src/load_graph.cpp
+
+// This is a test that reads some data from a file and puts it into a
+// TensorFlow graph. It then deletes the graph and declares success.
 
 use TensorFlow.C_TensorFlow;
 
