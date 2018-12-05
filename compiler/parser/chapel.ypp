@@ -113,6 +113,7 @@
     EnumType*                 penumtype;
     std::vector<DefExpr*>*    pvecOfDefs;
     FnSymbol*                 pfnsymbol;
+    ModuleSymbol*             pmodsymbol;
     Flag                      flag;
     ProcIter                  procIter;
     FlagSet*                  flagSet;
@@ -394,6 +395,7 @@
 %type <pblockstmt> toplevel_stmt
 %type <vpch>       pragma_ls
 
+%type <pmodsymbol> module_decl_start
 %type <pblockstmt> module_decl_stmt
 
 %type <pblockstmt> block_stmt
@@ -523,15 +525,31 @@ stmt:
 | error TSEMI                          { $$ = buildErrorStandin(); }
 ;
 
+module_decl_start:
+  access_control opt_prototype TMODULE ident_def
+    {
+      $$ = buildModule($4, currentModuleType, NULL, yyfilename, $1, $2, @1.comment);
+      @$.comment = currentModuleName; // "push" prev module into comment field
+      currentModuleName = $4;
+    }
+;
+
 module_decl_stmt:
-  access_control opt_prototype TMODULE ident_def TLCBR TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($4, currentModuleType,
-    new BlockStmt(), yyfilename, $1, $2, @1.comment))); }
-| access_control opt_prototype TMODULE ident_def TLCBR stmt_ls TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($4, currentModuleType, $6, yyfilename, $1, $2, @1.comment))); }
-| access_control opt_prototype TMODULE ident_def TLCBR error TRCBR
-    {$$ = buildChapelStmt(new DefExpr(buildModule($4, currentModuleType,
-        buildErrorStandin(), yyfilename, $1, $2, @1.comment))); }
+   module_decl_start TLCBR TRCBR
+    { $1->block = new BlockStmt();
+      $$ = buildChapelStmt(new DefExpr($1));
+      currentModuleName = @1.comment; // "pop" prev module from comment field
+    }
+| module_decl_start TLCBR stmt_ls TRCBR
+    { $1->block = $3;
+      $$ = buildChapelStmt(new DefExpr($1));
+      currentModuleName = @1.comment; // "pop" prev module from comment field
+    }
+| module_decl_start TLCBR error TRCBR
+    { $1->block = buildErrorStandin();
+      $$ = buildChapelStmt(new DefExpr($1));
+      currentModuleName = @1.comment; // "pop" prev module from comment field
+    }
 ;
 
 access_control:

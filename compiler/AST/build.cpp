@@ -1985,6 +1985,48 @@ std::set<Flag>* buildVarDeclFlags(Flag flag1, Flag flag2) {
 }
 
 
+// look up cfgname and mark it as used if we find it
+static Expr* lookupConfigValHelp(const char* cfgname) {
+  Expr* configInit = NULL;
+  configInit = getCmdLineConfig(cfgname);
+  if (configInit) {
+    if (!isUsedCmdLineConfig(cfgname)) {
+      useCmdLineConfig(cfgname);
+    } else {
+      USR_FATAL("Ambiguous config param or type name (%s)", cfgname);
+    }
+  }
+  return configInit;
+}
+
+// first try looking up cfgname;
+// if it fails, try looking up currentModuleName.cfgname
+static Expr* lookupConfigVal(const char* cfgname) {
+  Expr* configInit = NULL;
+  configInit = lookupConfigValHelp(astr(cfgname));
+  if (configInit == NULL) {
+    configInit = lookupConfigValHelp(astr(currentModuleName, ".", cfgname));
+  }
+  return configInit;
+}
+
+// take care of any config param, const, vars, overriding the expression
+// in the source code with what was provided on the command-line
+static void handleConfigVals(VarSymbol* var, DefExpr* defExpr, Expr* stmt) {
+  const char* cfgname = var->name;
+  if (Expr *configInit = lookupConfigVal(cfgname)) {
+    // config var initialized on the command line
+    // drop the original init expression on the floor
+    if (Expr* a = toExpr(configInit))
+      defExpr->init = a;
+    else if (Symbol* a = toSymbol(configInit))
+      defExpr->init = new SymExpr(a);
+    else
+      INT_FATAL(stmt, "DefExpr initialized with bad exprType config ast");
+  }
+}
+
+
 BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag>* flags, const char* docs) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
@@ -2001,23 +2043,9 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag>* flags, const char* do
         }
 
         if (var->hasFlag(FLAG_CONFIG)) {
-          if (Expr *configInit = getCmdLineConfig(var->name)) {
-            // config var initialized on the command line
-            if (!isUsedCmdLineConfig(var->name)) {
-              useCmdLineConfig(var->name);
-              // drop the original init expression on the floor
-              if (Expr* a = toExpr(configInit))
-                defExpr->init = a;
-              else if (Symbol* a = toSymbol(configInit))
-                defExpr->init = new SymExpr(a);
-              else
-                INT_FATAL(stmt, "DefExpr initialized with bad exprType config ast");
-            } else {
-              // name is ambiguous, must specify module name
-              USR_FATAL(var, "Ambiguous config param or type name (%s)", var->name);
-            }
-          }
+          handleConfigVals(var, defExpr, stmt);
         }
+
         var->doc = docs;
         continue;
       }
@@ -2878,21 +2906,15 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
     if (DefExpr* defExpr = toDefExpr(node)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
         var->addFlag(FLAG_CONFIG);
-        if (Expr *configInit = getCmdLineConfig(var->name)) {
+        if (Expr *configInit = lookupConfigVal(var->name)) {
           // config var initialized on the command line
-          if (!isUsedCmdLineConfig(var->name)) {
-            useCmdLineConfig(var->name);
-            // drop the original init expression on the floor
-            if (Expr* a = toExpr(configInit))
-              defExpr->init = a;
-            else if (Symbol* a = toSymbol(configInit))
-              defExpr->init = new SymExpr(a);
-            else
-              INT_FATAL(node, "Type alias initialized to invalid exprType");
-          } else {
-            // name is ambiguous, must specify module name
-            USR_FATAL(var, "Ambiguous config param or type name (%s)", var->name);
-          }
+          // drop the original init expression on the floor
+          if (Expr* a = toExpr(configInit))
+            defExpr->init = a;
+          else if (Symbol* a = toSymbol(configInit))
+            defExpr->init = new SymExpr(a);
+          else
+            INT_FATAL(node, "Type alias initialized to invalid exprType");
         }
       }
     } else if (BlockStmt* innerBlk = toBlockStmt(node)) {
