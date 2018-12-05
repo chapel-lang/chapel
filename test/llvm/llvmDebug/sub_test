@@ -24,7 +24,7 @@ fi
 
 
 rm llvmDebug_test.out.tmp
-python llvmDebug_test.py "$CHPL_HOME" "$HOST" "$COMP" > llvmDebug_test.out.tmp 2>&1
+python llvmDebug_test.py "$CHPL_HOME" > llvmDebug_test.out.tmp 2>&1
 if ! diff llvmDebug_test.good llvmDebug_test.out.tmp; then
 echo "[Error matching debug info for llvmDebug_test]";
 else
