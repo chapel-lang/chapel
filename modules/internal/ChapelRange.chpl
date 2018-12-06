@@ -857,7 +857,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   pragma "no doc"
   /* private */ proc ref range.alignLow()
   {
-    if this.isAmbiguous() then
+    if boundsChecking && this.isAmbiguous() then
       HaltWrappers.boundsCheckHalt("alignLow -- Cannot be applied to a range with ambiguous alignment.");
 
     if stridable then _low = this.alignedLowAsInt;
@@ -868,7 +868,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   pragma "no doc"
   /* private */ proc ref range.alignHigh()
   {
-    if this.isAmbiguous() then
+    if boundsChecking && this.isAmbiguous() then
       HaltWrappers.boundsCheckHalt("alignHigh -- Cannot be applied to a range with ambiguous alignment.");
 
     if stridable then _high = this.alignedHighAsInt;
@@ -895,7 +895,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
    */
   proc range.indexOrder(ind: idxType)
   {
-    if this.isAmbiguous() then
+    if boundsChecking && this.isAmbiguous() then
       HaltWrappers.boundsCheckHalt("indexOrder -- Undefined on a range with ambiguous alignment.");
 
     if ! contains(ind) then return (-1):intIdxType;
@@ -1321,7 +1321,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       offs = 0;
     }
 
-    if !hasFirst() then
+    if boundsChecking && !hasFirst() then
       HaltWrappers.boundsCheckHalt("invoking 'offset' on a range without the first index");
 
     return new range(idxType, boundedType, stridable, low, high, stride,
@@ -1347,7 +1347,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       var st1 = abs(this.stride);
       var st2 = abs(other.stride);
       var (g,x) = chpl__extendedEuclid(st1, st2);
-      if g > 1 then
+      if boundsChecking && g > 1 then
         HaltWrappers.boundsCheckHalt("Cannot slice ranges with ambiguous alignments unless their strides are relatively prime.");
 
       // OK, we can combine these two ranges, but the result is marked as ambiguous.
@@ -1485,7 +1485,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       if (al2 - al1) % g != 0 then
       {
         // empty intersection, return degenerate result
-        if !isBoundedRange(result) then
+        if boundsChecking && !isBoundedRange(result) then
           HaltWrappers.boundsCheckHalt("could not represent range slice - it needs to be empty, but the slice type is not bounded");
         result._low = 1:intIdxType;
         result._high = 0:intIdxType;
@@ -1654,7 +1654,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                     "for integral types");
     }
 
-    if (willOverFlow && shouldHalt) {
+    if willOverFlow && shouldHalt {
       HaltWrappers.boundsCheckHalt("Iteration over a bounded range may be incorrect due to overflow.");
     }
     return willOverFlow;
@@ -2202,7 +2202,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if debugChapelRange then
       chpl_debug_writeln("Range = ", myFollowThis);
 
-    if ! this.hasFirst() {
+    if boundsChecking && ! this.hasFirst() {
       if this.isEmpty() {
         if ! myFollowThis.isEmpty() then
           HaltWrappers.boundsCheckHalt("zippered iteration with a range has non-equal lengths");
@@ -2210,7 +2210,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         HaltWrappers.boundsCheckHalt("iteration over a range with no first index");
       }
     }
-    if ! myFollowThis.hasFirst() {
+    if boundsChecking && ! myFollowThis.hasFirst() {
       if ! (!myFollowThis.isAmbiguous() && myFollowThis.isEmpty()) then
         HaltWrappers.boundsCheckHalt("zippered iteration over a range with no first index");
     }
@@ -2384,7 +2384,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           var a: intIdxType;
           f <~> a;
           _alignment = a;
-        } else {
+        } else if boundsChecking {
           HaltWrappers.boundsCheckHalt("Trying to read an aligned range value into a non-stridable array");
         }
       }
@@ -2430,9 +2430,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // modulus is positive, so this cast is OK unless it is very large
     // and the dividend is signed.
     var m = modulus : dType;
-    if dType != modulus.type {
-      if m : modulus.type != modulus then
-        HaltWrappers.boundsCheckHalt("Modulus too large.");
+    if boundsChecking {
+      if dType != modulus.type {
+        if m : modulus.type != modulus then
+          HaltWrappers.boundsCheckHalt("Modulus too large.");
+      }
     }
 
     var tmp = dividend % m;
@@ -2459,9 +2461,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     modulus = abs(modulus);
     var m = modulus : minType;
-    if minType != modulus.type {
-      if m : modulus.type != modulus then
-        HaltWrappers.boundsCheckHalt("Modulus too large.");
+    if boundsChecking {
+      if minType != modulus.type {
+        if m : modulus.type != modulus then
+          HaltWrappers.boundsCheckHalt("Modulus too large.");
+      }
     }
 
     var minMod = chpl__mod(minuend, m);
