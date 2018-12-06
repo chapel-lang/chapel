@@ -210,7 +210,12 @@ module DefaultRectangular {
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
       if (forExternalArr) {
-        if (rhs.low != 0 && !(rhs.low == 1 && rhs.high == 0)) {
+        if (rhs.rank != 1) {
+          halt("External arrays are only allowed a rank of 1");
+        } else if (rhs.low != 0 && !(rhs.low == 1 && rhs.high == 0)) {
+          // Lydia NOTE 12/6/18: The above conditional will not work with a
+          // rank greater than 1, it is not sufficient to just remove the
+          // rank != 1 check
           halt("Non-empty domains for external arrays must have a lower bound" +
                "of 0");
         }
