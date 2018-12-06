@@ -268,8 +268,8 @@ def ShellEscapeCommand(arg):
 def trim_output(output):
     max_size = 256*1024 # ~1/4 MB
     if len(output) > max_size:
-        new_output = output[:max_size/2]
-        new_output += output[-max_size/2:]
+        new_output = output[:max_size//2]
+        new_output += output[-max_size//2:]
         output = new_output
     return ''.join(s if s in string.printable else "~" for s in output)
 
