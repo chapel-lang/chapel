@@ -933,11 +933,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on a range that is ambiguously aligned");
 
       if ord < 0 then
-        HaltWrappers.boundsCheckHalt("invoking orderToIndex on a negative integer: ", ord);
+        HaltWrappers.boundsCheckHalt("invoking orderToIndex on a negative integer: " + ord);
 
       if isBoundedRange(this) && ord >= this.length then
-        HaltWrappers.boundsCheckHalt("invoking orderToIndex on an integer ", ord,
-             " that is larger than the range's number of indices ", this.length);
+        HaltWrappers.boundsCheckHalt("invoking orderToIndex on an integer " +
+            ord + " that is larger than the range's number of indices " + this.length);
     }
 
     return chpl_intToIdx(chpl__addRangeStrides(this.firstAsInt, this.stride,
@@ -2183,7 +2183,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   pragma "no doc"
   iter range.these(param tag: iterKind, followThis) where tag == iterKind.follower
   {
-    if boundsChecking && this.icsAmbiguous() then
+    if boundsChecking && this.isAmbiguous() then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
 
     if boundedType == BoundedRangeType.boundedNone then
