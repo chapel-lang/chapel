@@ -83,17 +83,21 @@ module ExternalArray {
 
   pragma "no copy return"
   proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
-    var dom = defaultDist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,), true);
+    var dom = defaultDist.dsiNewRectangularDom(rank=1,
+                                               idxType=int,
+                                               stridable=false,
+                                               inds=(0..#value.size,),
+                                               externalArray=true);
     dom._free_when_no_arrs = true;
-    var arr = new unmanaged DefaultRectangularArray(eltType,
-                                                    rank=1,
-                                                    idxType=dom.idxType,
-                                                    stridable=dom.stridable,
-                                                    dom=dom,
-                                                    data=value.elt: _ddata(eltType),
-                                                    externData=value,
-                                                    externArr=true,
-                                                    _owned=false);
+    var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
+                                                  rank=1,
+                                                  idxType=dom.idxType,
+                                                  stridable=dom.stridable,
+                                                  dom=dom,
+                                                  data=value.elts: _ddata(eltType),
+                                                  externData=value,
+                                                  externArr=true,
+                                                  _owned=false);
     dom.add_arr(arr, locking = false);
     return _newArray(arr);
   }
