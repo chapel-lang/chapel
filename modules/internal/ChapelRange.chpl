@@ -779,7 +779,7 @@ proc range.safeCast(type t) where isRangeType(t) {
     tmp._alignment = chpl__idxToInt(this.alignment).safeCast(tmp.intIdxType);
     tmp._aligned = this.aligned;
   } else if this.stride != 1 {
-    safeCastCheckHalt("illegal safeCast from non-unit stride range to unstridable range");
+    HaltWrappers.safeCastCheckHalt("illegal safeCast from non-unit stride range to unstridable range");
   }
 
   tmp._low = this._low.safeCast(tmp.intIdxType);
