@@ -79,7 +79,14 @@ module DefaultRectangular {
   }
 
   class DefaultDist: BaseDist {
-    override proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds, param externalArray: bool = false) {
+    override proc dsiNewRectangularDom(param rank: int, type idxType,
+                                       param stridable: bool, inds) {
+      return dsiNewRectangularDom(rank, idxType, stridable, inds, false);
+    }
+
+    proc dsiNewRectangularDom(param rank: int, type idxType,
+                              param stridable: bool, inds,
+                              param externalArray: bool) {
       if (externalArray) {
         if (rank != 1) {
           halt("external arrays are only allowed a rank of 1 right now");
