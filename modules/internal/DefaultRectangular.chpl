@@ -156,7 +156,7 @@ module DefaultRectangular {
   class DefaultRectangularDom: BaseRectangularDom {
     var dist: unmanaged DefaultDist;
     var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
-    var forExternalArr: bool;
+    var forExternalArr: bool = false;
 
     proc linksDistribution() param return false;
     override proc dsiLinksDistribution()     return false;
@@ -186,21 +186,21 @@ module DefaultRectangular {
     proc dsiGetIndices() return ranges;
 
     proc dsiSetIndices(x) {
-      if (forExternalArray) {
+      if (forExternalArr) {
         halt("Can't change the indices of an external array");
       }
       ranges = x;
     }
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-      if (forExternalArray) {
+      if (forExternalArr) {
         if (rhs.low != 0 && !(rhs.low == 1 && rhs.high == 0)) {
           halt("Non-empty domains for external arrays must have a lower bound" +
                "of 0");
         }
-        forExternalArray = false;
+        forExternalArr = false;
         chpl_assignDomainWithGetSetIndices(this, rhs);
-        forExternalArray = true;
+        forExternalArr = true;
       } else {
         chpl_assignDomainWithGetSetIndices(this, rhs);
       }
@@ -712,8 +712,9 @@ module DefaultRectangular {
     }
 
     proc dsiBuildArray(type eltType) {
-      if (forExternalArray) {
-        var externData = chpl_make_external_array(c_sizeof(eltType), this.size);
+      if (forExternalArr) {
+        var externData = chpl_make_external_array(c_sizeof(eltType),
+                                                  this.dsiNumIndices: uint);
         var data = externData.elts: _ddata(eltType);
         var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
                                                       rank=rank,
@@ -722,11 +723,11 @@ module DefaultRectangular {
                                                       dom=_to_unmanaged(this),
                                                       data=data,
                                                       externData=externData,
-                                                      externArr=forExternalArray);
+                                                      externArr=forExternalArr,
+                                                      _owned=true);
 
-        // TODO:make the DefaultRectangularArr
         // Only give the pointer initial contents if we created it ourselves.
-        init_elts(data.elts:c_ptr(eltType), this.size, eltType);
+        init_elts(data:c_ptr(eltType), this.dsiNumIndices, eltType);
         return arr;
       } else {
         return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
@@ -1066,6 +1067,7 @@ module DefaultRectangular {
 
     var externData: chpl_external_array;
     var externArr: bool = false;
+    var _owned: bool = false;
 
     pragma "alias scope from this"
     pragma "local field"
@@ -1107,23 +1109,29 @@ module DefaultRectangular {
     }
 
     override proc dsiDestroyArr() {
-      if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
-        param needsDestroy = __primitive("needs auto destroy",
-                                         __primitive("deref", data[0]));
-        if needsDestroy {
-          var numElts:intIdxType = 0;
-          // dataAllocRange may be empty or contain a meaningful value
-          if rank == 1 && !stridable then
-            numElts = dataAllocRange.length;
-          if numElts == 0 then
-            numElts = dom.dsiNumIndices;
-
-          dsiDestroyDataHelper(data, numElts);
+      if (externArr) {
+        if (_owned) {
+          chpl_free_external_array(externData);
         }
-      }
+      } else {
+        if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
+          param needsDestroy = __primitive("needs auto destroy",
+                                           __primitive("deref", data[0]));
+          if needsDestroy {
+            var numElts:intIdxType = 0;
+            // dataAllocRange may be empty or contain a meaningful value
+            if rank == 1 && !stridable then
+              numElts = dataAllocRange.length;
+            if numElts == 0 then
+              numElts = dom.dsiNumIndices;
 
-      const size = blk(1) * dom.dsiDim(1).length;
-      _ddata_free(data, size);
+            dsiDestroyDataHelper(data, numElts);
+          }
+        }
+
+        const size = blk(1) * dom.dsiDim(1).length;
+        _ddata_free(data, size);
+      }
     }
 
     inline proc theData ref {

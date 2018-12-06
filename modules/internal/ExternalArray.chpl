@@ -72,52 +72,6 @@ module ExternalArray {
       this._ArrInstance = _ArrInstance;
       this._owned = _owned;
     }
-
-    // Probably want dsiDisplayRepresentation? (see ArrayViewSlice.chpl:153-161)
-
-    inline proc dsiAccess(i: idxType ...rank) ref {
-      return dsiAccess(i);
-    }
-
-    inline proc dsiAccess(i: idxType ...rank)
-      where shouldReturnRvalueByValue(eltType) {
-      return dsiAccess(i);
-    }
-
-    inline proc dsiAccess(i: idxType ...rank) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
-      return dsiAccess(i);
-    }
-
-    inline proc dsiAccess(i) ref {
-      checkBounds(i);
-      return elts(i(1));
-    }
-
-    inline proc dsiAccess(i)
-      where shouldReturnRvalueByValue(eltType) {
-      checkBounds(i);
-      return elts(i(1));
-    }
-
-    inline proc dsiAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType)  {
-      checkBounds(i);
-      return elts(i(1));
-    }
-
-    inline proc checkBounds(i) {
-      if boundsChecking then
-        if !dom.dsiMember(i) {
-          halt("array index out of bounds: " + _stringify_tuple(i));
-        }
-    }
-
-    override proc dsiDestroyArr() {
-      if (_owned) {
-        chpl_free_external_array(_ArrInstance);
-      }
-    }
   }
 
   // Creates an instance of our new array type
@@ -131,10 +85,15 @@ module ExternalArray {
   proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
     var dom = defaultDist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,), true);
     dom._free_when_no_arrs = true;
-    var arr = new unmanaged ExternArr(eltType,
-                                      dom,
-                                      value,
-                                      _owned=false);
+    var arr = new unmanaged DefaultRectangularArray(eltType,
+                                                    rank=1,
+                                                    idxType=dom.idxType,
+                                                    stridable=dom.stridable,
+                                                    dom=dom,
+                                                    data=value.elt: _ddata(eltType),
+                                                    externData=value,
+                                                    externArr=true,
+                                                    _owned=false);
     dom.add_arr(arr, locking = false);
     return _newArray(arr);
   }
