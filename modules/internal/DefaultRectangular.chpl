@@ -727,7 +727,14 @@ module DefaultRectangular {
                                                       _owned=true);
 
         // Only give the pointer initial contents if we created it ourselves.
-        init_elts(data:c_ptr(eltType), this.dsiNumIndices, eltType);
+        // Note: update to use Reflection.canResolve once #11802 has been fixed
+        if (__primitive("call resolves", "_cast", c_ptr(eltType), data)) {
+          init_elts(data:c_ptr(eltType), this.dsiNumIndices, eltType);
+        } else {
+          use HaltWrappers;
+          safeCastCheckHalt("Cannot build an external array that stores "+
+                            "locales");
+        }
         return arr;
       } else {
         return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
