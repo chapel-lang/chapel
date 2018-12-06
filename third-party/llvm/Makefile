@@ -100,7 +100,7 @@ $(LLVM_SRC_FILE):
 # -DPOLLY_ENABLE_GPGPU_CODEGEN=ON
 # to the flags supplied below.
 
-$(LLVM_REBUILD_FILE):
+$(LLVM_REBUILD_FILE): $(LLVM_SRC_FILE)
 	mkdir -p $(LLVM_BUILD_DIR)
 	touch $(LLVM_REBUILD_FILE)
 
