@@ -748,8 +748,8 @@ module DefaultRectangular {
           init_elts(data:c_ptr(eltType), this.dsiNumIndices, eltType);
         } else {
           use HaltWrappers;
-          safeCastCheckHalt("Cannot build an external array that stores "+
-                            "locales");
+          safeCastCheckHalt("Cannot build an external array that stores " +
+                            eltType: string);
         }
         return arr;
       } else {
