@@ -94,10 +94,10 @@ struct perTxCtxInfo_t {
   int numTxsOut;
 };
 
-static int ptiTabLen;
-static struct perTxCtxInfo_t* ptiTab;
-static chpl_bool ptiFixedAssignments;
-static pthread_mutex_t pti_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int tciTabLen;
+static struct perTxCtxInfo_t* tciTab;
+static chpl_bool tciTabFixedAssignments;
+static pthread_mutex_t tciTab_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define MAX_MEM_REGIONS 10
 static int numMemRegions = 0;
@@ -378,8 +378,8 @@ void init_ofiEp(void) {
   //
   init_ofiEpNumCtxs();
 
-  ptiTabLen = ofi_info->ep_attr->tx_ctx_cnt;
-  CHPL_CALLOC(ptiTab, ptiTabLen);
+  tciTabLen = ofi_info->ep_attr->tx_ctx_cnt;
+  CHPL_CALLOC(tciTab, tciTabLen);
 
   //
   // Create transmit contexts.
@@ -408,21 +408,21 @@ void init_ofiEp(void) {
   // Worker TX contexts need completion queues.  Those for AM handlers
   // can just use counters.
   //
-  const int numWorkerTxCtxs = ptiTabLen - numAmHandlers;
+  const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
   for (int i = 0; i < numWorkerTxCtxs; i++) {
-    OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &ptiTab[i].txCtx, NULL));
-    OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &ptiTab[i].txCQ, NULL));
-    OFI_CHK(fi_ep_bind(ptiTab[i].txCtx, &ptiTab[i].txCQ->fid, FI_TRANSMIT));
-    ptiTab[i].txCtxHasCQ = true;
-    OFI_CHK(fi_enable(ptiTab[i].txCtx));
+    OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &tciTab[i].txCtx, NULL));
+    OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &tciTab[i].txCQ, NULL));
+    OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCQ->fid, FI_TRANSMIT));
+    tciTab[i].txCtxHasCQ = true;
+    OFI_CHK(fi_enable(tciTab[i].txCtx));
   }
 
-  for (int i = numWorkerTxCtxs; i < ptiTabLen; i++) {
-    OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &ptiTab[i].txCtx, NULL));
-    OFI_CHK(fi_cntr_open(ofi_domain, &txCntrAttr, &ptiTab[i].txCntr, NULL));
-    OFI_CHK(fi_ep_bind(ptiTab[i].txCtx, &ptiTab[i].txCntr->fid, FI_WRITE));
-    ptiTab[i].txCtxHasCQ = false;
-    OFI_CHK(fi_enable(ptiTab[i].txCtx));
+  for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
+    OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &tciTab[i].txCtx, NULL));
+    OFI_CHK(fi_cntr_open(ofi_domain, &txCntrAttr, &tciTab[i].txCntr, NULL));
+    OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCntr->fid, FI_WRITE));
+    tciTab[i].txCtxHasCQ = false;
+    OFI_CHK(fi_enable(tciTab[i].txCtx));
   }
 
   //
@@ -453,7 +453,7 @@ void init_ofiEpNumCtxs(void) {
   // and other languages someday results in non-tasking layer threads
   // calling Chapel code which then tries to communicate across nodes,
   // then some of this may have to be adjusted, especially e.g. the
-  // ptiFixedAssignments part.
+  // tciTabFixedAssignments part.
   //
 
   //
@@ -490,7 +490,7 @@ void init_ofiEpNumCtxs(void) {
     CHK_TRUE(fixedNumThreads == chpl_task_getMaxPar()); // sanity
     if (numWorkerTxCtxs > fixedNumThreads)
       numWorkerTxCtxs = fixedNumThreads;
-    ptiFixedAssignments = (numWorkerTxCtxs == fixedNumThreads);
+    tciTabFixedAssignments = (numWorkerTxCtxs == fixedNumThreads);
   } else {
     //
     // The tasking layer doesn't have a fixed number of threads, but
@@ -501,7 +501,7 @@ void init_ofiEpNumCtxs(void) {
     if (numWorkerTxCtxs > taskMaxPar)
       numWorkerTxCtxs = taskMaxPar;
 
-    ptiFixedAssignments = false;
+    tciTabFixedAssignments = false;
   }
 
   //
@@ -756,11 +756,11 @@ void fini_ofi(void) {
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
 
-  for (int i = 0; i < ptiTabLen; i++) {
-    OFI_CHK(fi_close(&ptiTab[i].txCtx->fid));
-    OFI_CHK(fi_close(ptiTab[i].txCtxHasCQ
-                     ? &ptiTab[i].txCQ->fid
-                     : &ptiTab[i].txCntr->fid));
+  for (int i = 0; i < tciTabLen; i++) {
+    OFI_CHK(fi_close(&tciTab[i].txCtx->fid));
+    OFI_CHK(fi_close(tciTab[i].txCtxHasCQ
+                     ? &tciTab[i].txCQ->fid
+                     : &tciTab[i].txCntr->fid));
   }
 
   OFI_CHK(fi_close(&ofi_txEp->fid));
@@ -1823,28 +1823,28 @@ struct perTxCtxInfo_t* getTxCtxInfo(chpl_bool isWorker) {
   static __thread struct perTxCtxInfo_t* tcip;
 
   if (tcip == NULL) {
-    const int numWorkerTxCtxs = ptiTabLen - numAmHandlers;
+    const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
 
-    PTHREAD_CHK(pthread_mutex_lock(&pti_mutex));
+    PTHREAD_CHK(pthread_mutex_lock(&tciTab_mutex));
 
     if (isWorker) {
-      // Workers use ptiTab[0 .. numWorkerTxCtxs - 1].
+      // Workers use tciTab[0 .. numWorkerTxCtxs - 1].
       static int iw = 0;
       CHK_TRUE(iw < numWorkerTxCtxs);
-      tcip = &ptiTab[iw++];
+      tcip = &tciTab[iw++];
     } else {
-      // AM handlers use ptiTab[numWorkerTxCtxs .. ptiTabLen - 1].
+      // AM handlers use tciTab[numWorkerTxCtxs .. tciTabLen - 1].
       static int ia = -1; // must init dynamically
       if (ia < 0) {
         ia = numWorkerTxCtxs;
       }
-      CHK_TRUE(ia < ptiTabLen);
-      tcip = &ptiTab[ia++];
+      CHK_TRUE(ia < tciTabLen);
+      tcip = &tciTab[ia++];
     }
 
-    PTHREAD_CHK(pthread_mutex_unlock(&pti_mutex));
+    PTHREAD_CHK(pthread_mutex_unlock(&tciTab_mutex));
 
-    DBG_PRINTF(DBG_THREADS, "I have ptiTab[%td]", tcip - ptiTab);
+    DBG_PRINTF(DBG_THREADS, "I have tciTab[%td]", tcip - tciTab);
   }
 
   return tcip;
@@ -1855,7 +1855,7 @@ static inline
 void releaseTxCtxInfo(struct perTxCtxInfo_t* tcip) {
   //
   // There is nothing to do here unless and until we support threads
-  // overloaded on ptiTab[] entries.
+  // overloaded on tciTab[] entries.
   //
 }
 
@@ -2113,10 +2113,10 @@ void local_yield(void) {
   // free up whatever resource we need.
   //
   // DANGER: Don't call this function on a worker thread while holding
-  //         a ptiTab[] entry, that is, between tcip=getTxCtxInfo() and
+  //         a tciTab[] entry, that is, between tcip=getTxCtxInfo() and
   //         releaseTxCtxInfo(tcip).  If you do and your task switches
   //         threads due to the chpl_task_yield(), we can end up with
-  //         two threads using the same ptiTab[] entry simultaneously.
+  //         two threads using the same tciTab[] entry simultaneously.
   //
   chpl_task_yield();
 }
