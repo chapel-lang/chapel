@@ -744,8 +744,10 @@ module DefaultRectangular {
 
         // Only give the pointer initial contents if we created it ourselves.
         // Note: update to use Reflection.canResolve once #11802 has been fixed
-        if (__primitive("call resolves", "_cast", c_ptr(eltType), data)) {
-          init_elts(data:c_ptr(eltType), this.dsiNumIndices, eltType);
+        if (__primitive("call resolves", "_cast", c_ptr(eltType),
+                        externData.elts)) {
+          init_elts(externData.elts:c_ptr(eltType), this.dsiNumIndices,
+                    eltType);
         } else {
           use HaltWrappers;
           safeCastCheckHalt("Cannot build an external array that stores " +
