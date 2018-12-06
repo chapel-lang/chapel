@@ -1,0 +1,8 @@
+push_back_lifetime.chpl:3: In function 'bad1':
+push_back_lifetime.chpl:9: error: Actual argument bb does not meet called function lifetime constraint
+push_back_lifetime.chpl:7: note: consider scope of own
+$CHPL_HOME/modules/internal/ChapelArray.chpl:2883: note: function push_back includes lifetime constraint this < val
+push_back_lifetime.chpl:14: In function 'bad2':
+push_back_lifetime.chpl:19: error: Actual argument does not meet called function lifetime constraint
+push_back_lifetime.chpl:18: note: consider scope of own
+$CHPL_HOME/modules/internal/ChapelArray.chpl:2883: note: function push_back includes lifetime constraint this < val
