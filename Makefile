@@ -200,3 +200,6 @@ install: comprt
 -include Makefile.devel
 
 FORCE:
+
+# Don't want to try building e.g. GMP and RE2 at the same time
+.NOTPARALLEL:
