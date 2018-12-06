@@ -5,7 +5,6 @@ record Collection {
   var element: elementType;
 }
 
-//pragma "unsafe" // TODO
 proc Collection.addElement(arg: elementType) lifetime this < arg {
   element = arg;
 }
