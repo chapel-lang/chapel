@@ -105,10 +105,19 @@ module DefaultRectangular {
         if (r.low != 0 && !(r.low == 1 && r.high == 0)) {
           halt("non-empty external arrays always have a lower bound of 0");
         }
+        const dom = new unmanaged DefaultRectangularDom(rank, idxType,
+                                                        stridable,
+                                                        _to_unmanaged(this));
+        dom.dsiSetIndices(inds);
+        dom.forExternalArr = true;
+        return dom;
+      } else {
+        const dom = new unmanaged DefaultRectangularDom(rank, idxType,
+                                                        stridable,
+                                                        _to_unmanaged(this));
+        dom.dsiSetIndices(inds);
+        return dom;
       }
-      const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable, _to_unmanaged(this), externalArray);
-      dom.dsiSetIndices(inds);
-      return dom;
     }
 
     override proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
@@ -170,11 +179,11 @@ module DefaultRectangular {
 
     proc isDefaultRectangular() param return true;
 
-    proc init(param rank, type idxType, param stridable, dist,
-              param externalArray) {
+    proc init(param rank, type idxType, param stridable, dist) {
       super.init(rank, idxType, stridable);
       this.dist = dist;
-      forExternalArr = externalArray;
+      // Will get set later
+      forExternalArr = false;
     }
 
     proc intIdxType type {
