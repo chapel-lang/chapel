@@ -130,6 +130,13 @@ int chpl_comm_ofi_abort_on_error;
       }                                                                 \
     } while (0)
 
+#define CHK_FALSE(expr)                                                 \
+    do {                                                                \
+      if (expr) {                                                       \
+        INTERNAL_ERROR_V("%s", #expr);                                  \
+      }                                                                 \
+    } while (0)
+
 #define CHK_EQ_TYPED(expr, wantVal, type, fmtSpec)                      \
     do {                                                                \
       type _exprVal = (expr);                                           \
