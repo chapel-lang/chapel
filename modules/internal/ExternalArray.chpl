@@ -38,42 +38,6 @@ module ExternalArray {
 
   extern proc chpl_free_external_array(x: chpl_external_array);
 
-  class ExternDom: BaseRectangularDom {
-    const size: uint; // We don't need a lower bound, it will always be zero
-
-    const dist;
-
-    proc dsiBuildArray(type eltType) {
-      var data = chpl_make_external_array(c_sizeof(eltType), this.size);
-      var arr = new unmanaged ExternArr(eltType,
-                                        _to_unmanaged(this),
-                                        data,
-                                        true);
-      // Only give the pointer initial contents if we created it ourselves.
-      init_elts(data.elts:c_ptr(eltType), this.size, eltType);
-      return arr;
-    }
-  }
-
-  class ExternArr: BaseArr {
-    type eltType;
-
-    const dom;
-    
-    const _ArrInstance: chpl_external_array;
-    const elts = _ArrInstance.elts: _ddata(eltType);
-
-    const _owned: bool;
-
-    proc init(type eltType, const dom, const _ArrInstance, _owned: bool) {
-      super.init(_decEltRefCounts = false);
-      this.eltType = eltType;
-      this.dom = dom;
-      this._ArrInstance = _ArrInstance;
-      this._owned = _owned;
-    }
-  }
-
   // Creates an instance of our new array type
   pragma "no copy return"
   proc makeArrayFromPtr(value: c_ptr, size: uint) {
