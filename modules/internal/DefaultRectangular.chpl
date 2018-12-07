@@ -212,6 +212,13 @@ module DefaultRectangular {
       if (forExternalArr) {
         if (rhs.rank != 1) {
           halt("External arrays are only allowed a rank of 1");
+
+        } else if (stridable) {
+          halt("external arrays are not allowed to be stridable right now");
+
+        } else if (!isIntegralType(idxType)) {
+          halt("external arrays only allow integral indices");
+
         } else if (rhs.low != 0 && !(rhs.low == 1 && rhs.high == 0)) {
           // Lydia NOTE 12/6/18: The above conditional will not work with a
           // rank greater than 1, it is not sufficient to just remove the
