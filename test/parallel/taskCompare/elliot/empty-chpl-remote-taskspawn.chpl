@@ -2,8 +2,8 @@ use Time;
 
 config const numTrials = 100;
 config const printTimings = false;
-// bogus config const to prevent compiler eliminating tup copy
-config const printTup = false;
+// bogus config const to prevent compiler eliminating argBundle copy
+config const printArgBundle = false;
 
 enum TaskingMode {
   emptyCoforallOn,
@@ -41,20 +41,20 @@ proc coforallOnTaskSpawn() {
 // 512 byte payload task spawn. At least in 2018 this represents the typical
 // size of remote forks for our multi-locale performance suite
 proc coforallOnTaskSpawnMed() {
-  var tup: 64*int;
+  var argBundle: 64*int;
   for 1..numTrials do
-    coforall loc in Locales with (in tup) do on loc { 
-      if printTup then writeln(tup);
+    coforall loc in Locales with (in argBundle) do on loc {
+      if printArgBundle then writeln(argBundle);
       incCounter();
     }
 }
 
 // 4096 byte payload task spawn.
 proc coforallOnTaskSpawnLarge() {
-  var tup: 512*int;
+  var argBundle: 512*int;
   for 1..numTrials do
-    coforall loc in Locales with (in tup) do on loc { 
-      if printTup then writeln(tup);
+    coforall loc in Locales with (in argBundle) do on loc {
+      if printArgBundle then writeln(argBundle);
       incCounter();
     }
 }

@@ -40,7 +40,8 @@ void checkConfigs() {
 
     forv_Vec(const char, name, configParamSetNames) {
       if (!usedConfigParams.in(name)) {
-        USR_FATAL_CONT("Trying to set unrecognized config param '%s' via -s flag", name);
+        USR_FATAL_CONT("Trying to set unrecognized config '%s' via -s flag",
+                       name);
         anyBadConfigParams = true;
       }
     }
