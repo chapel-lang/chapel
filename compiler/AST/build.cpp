@@ -1986,14 +1986,16 @@ std::set<Flag>* buildVarDeclFlags(Flag flag1, Flag flag2) {
 
 
 // look up cfgname and mark it as used if we find it
-static Expr* lookupConfigValHelp(const char* cfgname) {
+static Expr* lookupConfigValHelp(const char* cfgname, VarSymbol* var) {
   Expr* configInit = NULL;
   configInit = getCmdLineConfig(cfgname);
   if (configInit) {
-    if (!isUsedCmdLineConfig(cfgname)) {
-      useCmdLineConfig(cfgname);
+    if (VarSymbol* conflictingVar = isUsedCmdLineConfig(cfgname)) {
+      USR_FATAL_CONT(var, "ambiguous config name (%s)", cfgname);
+      USR_PRINT(conflictingVar, "also defined here");
+      USR_PRINT(conflictingVar, "(disambiguate using -s<modulename>.%s...)", cfgname);
     } else {
-      USR_FATAL("Ambiguous config name (%s)", cfgname);
+      useCmdLineConfig(cfgname, var);
     }
   }
   return configInit;
@@ -2001,11 +2003,12 @@ static Expr* lookupConfigValHelp(const char* cfgname) {
 
 // first try looking up cfgname;
 // if it fails, try looking up currentModuleName.cfgname
-static Expr* lookupConfigVal(const char* cfgname) {
+static Expr* lookupConfigVal(VarSymbol* var) {
+  const char* cfgname = var->name;
   Expr* configInit = NULL;
-  configInit = lookupConfigValHelp(astr(cfgname));
+  configInit = lookupConfigValHelp(astr(cfgname), var);
   if (configInit == NULL) {
-    configInit = lookupConfigValHelp(astr(currentModuleName, ".", cfgname));
+    configInit = lookupConfigValHelp(astr(currentModuleName, ".", cfgname), var);
   }
   return configInit;
 }
@@ -2014,7 +2017,7 @@ static Expr* lookupConfigVal(const char* cfgname) {
 // in the source code with what was provided on the command-line
 static void handleConfigVals(VarSymbol* var, DefExpr* defExpr, Expr* stmt) {
   const char* cfgname = var->name;
-  if (Expr *configInit = lookupConfigVal(cfgname)) {
+  if (Expr *configInit = lookupConfigVal(var)) {
     // config var initialized on the command line
     // drop the original init expression on the floor
     if (Expr* a = toExpr(configInit))
@@ -2942,7 +2945,7 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
     if (DefExpr* defExpr = toDefExpr(node)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
         var->addFlag(FLAG_CONFIG);
-        if (Expr *configInit = lookupConfigVal(var->name)) {
+        if (Expr *configInit = lookupConfigVal(var)) {
           // config var initialized on the command line
           // drop the original init expression on the floor
           if (Expr* a = toExpr(configInit))
