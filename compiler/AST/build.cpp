@@ -2016,7 +2016,6 @@ static Expr* lookupConfigVal(VarSymbol* var) {
 // take care of any config param, const, vars, overriding the expression
 // in the source code with what was provided on the command-line
 static void handleConfigVals(VarSymbol* var, DefExpr* defExpr, Expr* stmt) {
-  const char* cfgname = var->name;
   if (Expr *configInit = lookupConfigVal(var)) {
     // config var initialized on the command line
     // drop the original init expression on the floor
