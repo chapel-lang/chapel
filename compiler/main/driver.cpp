@@ -620,8 +620,7 @@ static void runCompilerInLLDB(int argc, char* argv[]) {
 static void readConfig(const ArgumentDescription* desc, const char* arg_unused) {
   // Expect arg_unused to be a string of either of these forms:
   // 1. name=value -- set the config "name" to "value"
-  // 2. name       -- set the boolean config "name" to 'true'
-  //                  if name is not type bool, set it to 0.
+  // 2. name       -- set the config "name" to 'true'
 
   char *name = strdup(arg_unused);
   char *value;

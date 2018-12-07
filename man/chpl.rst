@@ -548,8 +548,8 @@ OPTIONS
 **-s, --set <config>[=<value>]**
 
     Overrides the default value of a configuration param, type, var,
-    or const in the code.  For boolean configs, the value can be
-    omitted, causing the value to be set to true.
+    or const in the code.  If the value is omitted, it will default
+    to the value `true`.
 
 **--[no-]task-tracking**
 

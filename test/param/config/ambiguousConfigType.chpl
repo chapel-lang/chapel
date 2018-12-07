@@ -4,4 +4,4 @@ module M {
 }
 config const CV = 3;
 config type PV = real;
-writeln(M.CV, M.PV:string, CV, PV:string); // 1234
+writeln(M.CV, M.PV:string, CV, PV:string);
