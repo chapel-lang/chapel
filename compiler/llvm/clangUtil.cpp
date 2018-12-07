@@ -2906,8 +2906,11 @@ void makeBinaryLLVM(void) {
   // libraries are written in C++. Here we use clang++ or possibly a
   // linker override specified by the Makefiles (e.g. setting it to mpicxx)
   std::string command = useLinkCXX + " " + options + " " +
-                        moduleFilename + " " + maino +
-                        " -o " + tmpbinname;
+                        moduleFilename + " " + maino;
+  if (fLinkStyle == LS_STATIC)
+    command += " -static";
+  command += " -o ";
+  command += tmpbinname;
   for( size_t i = 0; i < dotOFiles.size(); i++ ) {
     command += " ";
     command += dotOFiles[i];
