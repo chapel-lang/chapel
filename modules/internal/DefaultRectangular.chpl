@@ -816,6 +816,20 @@ module DefaultRectangular {
     }
   }
 
+  /* TODO: finish this function!
+  private proc isGoodEltTypeForExternArr(type t): param {
+    if (isPrimitive(t) && t != string) {
+      return true;
+    } else if (t == c_string) {
+      return true;
+    } else if () {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  */
+
   // helper routines for converting tuples of integers into tuple indices
   
   inline proc chpl__intToIdx(type idxType, i: integral, j ...) {
