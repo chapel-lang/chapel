@@ -1,1 +1,1 @@
-ambiguousConfigType.chpl:6: error: Ambiguous config type name (PV)
+error: Ambiguous config name (PV)
