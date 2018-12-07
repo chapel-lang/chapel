@@ -83,6 +83,8 @@ static fi_addr_t* ofi_rxAddrs;          // remote receive addrs
 static int txCQSize;                    // txCQ size
 
 struct perTxCtxInfo_t {
+  atomic_bool allocated;
+  chpl_bool bound;
   chpl_bool txCtxHasCQ;
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
@@ -97,7 +99,6 @@ struct perTxCtxInfo_t {
 static int tciTabLen;
 static struct perTxCtxInfo_t* tciTab;
 static chpl_bool tciTabFixedAssignments;
-static pthread_mutex_t tciTab_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define MAX_MEM_REGIONS 10
 static int numMemRegions = 0;
@@ -128,8 +129,8 @@ static struct fi_msg ofi_msg_reqs;
 // Forward decls
 //
 
-static inline struct perTxCtxInfo_t* getTxCtxInfo(chpl_bool);
-static inline void releaseTxCtxInfo(struct perTxCtxInfo_t*);
+static inline struct perTxCtxInfo_t* tciAlloc(chpl_bool);
+static inline void tciFree(struct perTxCtxInfo_t*);
 static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                                 void*, size_t);
 static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
@@ -410,6 +411,8 @@ void init_ofiEp(void) {
   //
   const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
   for (int i = 0; i < numWorkerTxCtxs; i++) {
+    atomic_init_bool(&tciTab[i].allocated, false);
+    tciTab[i].bound = false;
     OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &tciTab[i].txCtx, NULL));
     OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &tciTab[i].txCQ, NULL));
     OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCQ->fid, FI_TRANSMIT));
@@ -418,6 +421,8 @@ void init_ofiEp(void) {
   }
 
   for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
+    atomic_init_bool(&tciTab[i].allocated, false);
+    tciTab[i].bound = false;
     OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &tciTab[i].txCtx, NULL));
     OFI_CHK(fi_cntr_open(ofi_domain, &txCntrAttr, &tciTab[i].txCntr, NULL));
     OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCntr->fid, FI_WRITE));
@@ -515,6 +520,11 @@ void init_ofiEpNumCtxs(void) {
   //
   CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
   ofi_info->ep_attr->rx_ctx_cnt = numAmHandlers;
+
+  DBG_PRINTF(DBG_CONFIG, "per node, %zd tx ctxs%s, %zd rx ctxs",
+             ofi_info->ep_attr->tx_ctx_cnt,
+             tciTabFixedAssignments ? " (fixed to workers)" : "",
+             ofi_info->ep_attr->rx_ctx_cnt);
 }
 
 
@@ -1277,7 +1287,7 @@ void amRequestCommon(c_nodeid_t node,
   }
 
   struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+  CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
 
   void* mrDesc = NULL;
 #if 1 // TODO: needed for gni provider?
@@ -1296,7 +1306,7 @@ void amRequestCommon(c_nodeid_t node,
   //
   waitForTxCQ(tcip, 1);
 
-  releaseTxCtxInfo(tcip);
+  tciFree(tcip);
 
   if (pDone != NULL) {
     //
@@ -1378,7 +1388,7 @@ void fini_amHandling(void) {
 static
 void amHandler(void* argNil) {
   struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = getTxCtxInfo(false /*isWorker*/)) != NULL);
+  CHK_TRUE((tcip = tciAlloc(true /*bindToAmHandler*/)) != NULL);
 
   DBG_PRINTF(DBG_THREADS, "AM handler running");
 
@@ -1623,7 +1633,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
       //
       {
         struct perTxCtxInfo_t* tcip;
-        CHK_TRUE((tcip = getTxCtxInfo(false /*isWorker*/)) != NULL);
+        CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
         do {
           const int count = fi_cntr_read(tcip->txCntr);
           if (count > 0) {
@@ -1631,7 +1641,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
             tcip->numTxsOut -= count;
           }
         } while (tcip->numTxsOut > 0);
-        releaseTxCtxInfo(tcip);
+        tciFree(tcip);
       }
     }
   }
@@ -1818,45 +1828,101 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 // Internal communication support
 //
 
+static struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool);
+
 static inline
-struct perTxCtxInfo_t* getTxCtxInfo(chpl_bool isWorker) {
+struct perTxCtxInfo_t* tciAlloc(chpl_bool bindToAmHandler) {
   static __thread struct perTxCtxInfo_t* tcip;
-
-  if (tcip == NULL) {
-    const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
-
-    PTHREAD_CHK(pthread_mutex_lock(&tciTab_mutex));
-
-    if (isWorker) {
-      // Workers use tciTab[0 .. numWorkerTxCtxs - 1].
-      static int iw = 0;
-      CHK_TRUE(iw < numWorkerTxCtxs);
-      tcip = &tciTab[iw++];
-    } else {
-      // AM handlers use tciTab[numWorkerTxCtxs .. tciTabLen - 1].
-      static int ia = -1; // must init dynamically
-      if (ia < 0) {
-        ia = numWorkerTxCtxs;
-      }
-      CHK_TRUE(ia < tciTabLen);
-      tcip = &tciTab[ia++];
+  if (tcip != NULL) {
+    //
+    // If the last tx context we used is bound to our thread or can be
+    // re-allocated, use that.
+    //
+    if (tcip->bound) {
+      DBG_PRINTF(DBG_THREADS, "I re-have bound tciTab[%td]",
+                 tcip - tciTab);
+      return tcip;
     }
 
-    PTHREAD_CHK(pthread_mutex_unlock(&tciTab_mutex));
-
-    DBG_PRINTF(DBG_THREADS, "I have tciTab[%td]", tcip - tciTab);
+    if (!atomic_exchange_bool(&tcip->allocated, true)) {
+      DBG_PRINTF(DBG_THREADS, "I re-have tciTab[%td]", tcip - tciTab);
+      return tcip;
+    }
   }
 
+  //
+  // Find a tx context that isn't busy and use that one.
+  //
+  tcip = findFreeTciTabEntry(bindToAmHandler);
+  DBG_PRINTF(DBG_THREADS, "I have%s tciTab[%td]",
+             bindToAmHandler ? " bound" : "", tcip - tciTab);
+  return tcip;
+}
+
+
+static
+struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
+  //
+  // Find a tx context that isn't busy.  Note that tx contexts for
+  // AM handlers and other threads come out of different blocks of
+  // the table.
+  //
+  const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
+  struct perTxCtxInfo_t* tcip;
+
+  if (bindToAmHandler) {
+    //
+    // AM handlers use tciTab[numWorkerTxCtxs .. tciTabLen - 1].  For
+    // now we only support a single AM handler, so this is simple.  If
+    // we ever have more, the CHK_TRUE force us to revisit this code.
+    //
+    tcip = &tciTab[numWorkerTxCtxs];
+    CHK_FALSE(atomic_exchange_bool(&tcip->allocated, true));
+    tcip->bound = true;
+    DBG_PRINTF(DBG_THREADS, "I have bound tciTab[%td]", tcip - tciTab);
+    return tcip;
+  }
+
+  //
+  // Workers use tciTab[0 .. numWorkerTxCtxs - 1].  Search forever for
+  // an entry we can use.  Give up (and kill the program) only if we
+  // discover they're all bound, because we won't be able to get one
+  // in that case.
+  //
+  static __thread int last_iw = 0;
+  tcip = NULL;
+
+  do {
+    int iw = last_iw;
+    chpl_bool allBound = true;
+
+    do {
+      if (++iw >= numWorkerTxCtxs)
+        iw = 0;
+      allBound = allBound && tciTab[iw].bound;
+      if (!atomic_exchange_bool(&tciTab[iw].allocated, true)) {
+        tcip = &tciTab[iw];
+      }
+    } while (tcip == NULL && iw != last_iw);
+
+    if (tcip == NULL) {
+      CHK_FALSE(allBound);
+      local_yield();
+    }
+  } while (tcip == NULL);
+
+  DBG_PRINTF(DBG_THREADS, "I have tciTab[%td]", tcip - tciTab);
   return tcip;
 }
 
 
 static inline
-void releaseTxCtxInfo(struct perTxCtxInfo_t* tcip) {
+void tciFree(struct perTxCtxInfo_t* tcip) {
   //
-  // There is nothing to do here unless and until we support threads
-  // overloaded on tciTab[] entries.
+  // Bound contexts stay bound.  We only release non-bound ones.
   //
+  if (!tcip->bound)
+    atomic_store_bool(&tcip->allocated, false);
 }
 
 
@@ -1882,7 +1948,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     // The remote address is RMA-accessible; PUT directly to it.
     //
     struct perTxCtxInfo_t* tcip;
-    CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+    CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
 
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
                "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64,
@@ -1899,7 +1965,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
       tcip->numTxsOut -= count;
     }
 
-    releaseTxCtxInfo(tcip);
+    tciFree(tcip);
   } else {
     //
     // The remote address is not RMA-accessible.  We have arranged
@@ -1940,7 +2006,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
     // The remote address is RMA-accessible; GET directly from it.
     //
     struct perTxCtxInfo_t* tcip;
-    CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+    CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
                "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64,
                myAddr, (int) node, raddr, size, mrKey);
@@ -1951,7 +2017,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
     CHK_TRUE(tcip->txCtxHasCQ);
     waitForTxCQ(tcip, 1);
 
-    releaseTxCtxInfo(tcip);
+    tciFree(tcip);
   } else {
     //
     // The remote address is not RMA-accessible.  We have arranged
@@ -2037,7 +2103,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   CHK_TRUE(tcip->txCtxHasCQ);  // (so far) only expect AMOs from workers
   waitForTxCQ(tcip, 1);
 
-  releaseTxCtxInfo(tcip);
+  tciFree(tcip);
 
   if (myRes != result) {
     memcpy(result, myRes, resSize);
@@ -2113,10 +2179,10 @@ void local_yield(void) {
   // free up whatever resource we need.
   //
   // DANGER: Don't call this function on a worker thread while holding
-  //         a tciTab[] entry, that is, between tcip=getTxCtxInfo() and
-  //         releaseTxCtxInfo(tcip).  If you do and your task switches
-  //         threads due to the chpl_task_yield(), we can end up with
-  //         two threads using the same tciTab[] entry simultaneously.
+  //         a tciTab[] entry, that is, between tcip=tciAlloc() and
+  //         tciFree().  If you do and your task switches threads due
+  //         to the chpl_task_yield(), we can end up with two threads
+  //         using the same tciTab[] entry simultaneously.
   //
   chpl_task_yield();
 }
@@ -2342,7 +2408,7 @@ void doAMO(c_nodeid_t node, void* object,
   uint64_t mrKey;
   if (mrGetKey(&mrKey, node, object, size) == 0) {
     struct perTxCtxInfo_t* tcip = NULL;
-    CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+    CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
 
     size_t count;
     if (fi_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count) == 0
@@ -2353,11 +2419,11 @@ void doAMO(c_nodeid_t node, void* object,
       //
       ofi_amo(tcip, node, object, mrKey, operand1, operand2, result,
               ofiOp, ofiType, size);
-      releaseTxCtxInfo(tcip);
+      tciFree(tcip);
       return;
     }
 
-    releaseTxCtxInfo(tcip);
+    tciFree(tcip);
   }
 
   amRequestAMO(node, object, operand1, operand2, result,
