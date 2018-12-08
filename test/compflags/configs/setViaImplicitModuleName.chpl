@@ -4,5 +4,3 @@ config var   v = 3;
 config type  t = int;
 
 writeln((p,c,v,t:string));
-
-

@@ -6,5 +6,3 @@ module M {
 
   writeln((p,c,v,t:string));
 }
-
-
