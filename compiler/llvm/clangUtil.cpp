@@ -2907,6 +2907,9 @@ void makeBinaryLLVM(void) {
   // linker override specified by the Makefiles (e.g. setting it to mpicxx)
   std::string command = useLinkCXX + " " + options + " " +
                         moduleFilename + " " + maino;
+  // For dynamic linking, leave it alone.  For static, append -static .
+  // See $CHPL_HOME/make/compiler/Makefile.clang (and keep this in sync
+  // with it).
   if (fLinkStyle == LS_STATIC)
     command += " -static";
   command += " -o ";
