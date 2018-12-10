@@ -2342,7 +2342,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real32, FI_FLOAT, float)
 DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
 
 
-#define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type)                       \
+#define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type, negate)               \
   void chpl_comm_atomic_sub_##fnType                                    \
          (void* operand, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn) {                                         \
@@ -2350,7 +2350,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
                "chpl_comm_atomic_sub_%s(<%s>, %d, %p, %d, %s)",         \
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                ln, chpl_lookupFilename(fn));                            \
-    Type myOpnd = - *(Type*) operand;                                   \
+    Type myOpnd = negate(*(Type*) operand);                             \
     doAMO(node, object, &myOpnd, NULL, NULL,                            \
           FI_SUM, ofiType, sizeof(Type));                               \
   }                                                                     \
@@ -2374,17 +2374,21 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
                "%d, %s)",                                               \
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                result, ln, chpl_lookupFilename(fn));                    \
-    Type myOpnd = - *(Type*) operand;                                   \
+    Type myOpnd = negate(*(Type*) operand);                             \
     doAMO(node, object, &myOpnd, NULL, result,                          \
           FI_SUM, ofiType, sizeof(Type));                               \
   }
 
-DEFN_IFACE_AMO_SUB(int32, FI_INT32, int32_t)
-DEFN_IFACE_AMO_SUB(int64, FI_INT64, int64_t)
-DEFN_IFACE_AMO_SUB(uint32, FI_UINT32, uint32_t)
-DEFN_IFACE_AMO_SUB(uint64, FI_UINT64, uint64_t)
-DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float)
-DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double)
+#define NEGATE_I32(x) ((x) == INT32_MIN ? (x) : -(x))
+#define NEGATE_I64(x) ((x) == INT64_MIN ? (x) : -(x))
+#define NEGATE_U_OR_R(x) (-(x))
+
+DEFN_IFACE_AMO_SUB(int32, FI_INT32, int32_t, NEGATE_I32)
+DEFN_IFACE_AMO_SUB(int64, FI_INT64, int64_t, NEGATE_I64)
+DEFN_IFACE_AMO_SUB(uint32, FI_UINT32, uint32_t, NEGATE_U_OR_R)
+DEFN_IFACE_AMO_SUB(uint64, FI_UINT64, uint64_t, NEGATE_U_OR_R)
+DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float, NEGATE_U_OR_R)
+DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double, NEGATE_U_OR_R)
 
 
 void chpl_comm_atomic_buff_flush(void) {
