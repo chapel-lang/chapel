@@ -2776,6 +2776,16 @@ void makeBinaryLLVM(void) {
   if (compilingWithPrgEnv()) {
     std::string gather_prgenv(CHPL_HOME);
     gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash link '";
+
+    if (fLinkStyle == LS_DEFAULT &&
+	gather_prgenv.find("-Wl,-Bdynamic") == std::string::npos) {
+      // Cray PrgEnv defaults to static linking.  If we are asking for
+      // the default link type, and we don't find an explicit dynamic
+      // flag in the gathered PrgEnv arguments, then force static linking
+      // because LLVM's default (dynamic) is different from the PrgEnv
+      // default (static).
+      fLinkStyle = LS_STATIC;
+    }
     gather_prgenv += CHPL_COMM;
     gather_prgenv += "' '";
     gather_prgenv += CHPL_COMM_SUBSTRATE;
