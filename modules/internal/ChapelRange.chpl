@@ -2267,7 +2267,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     {
       // WARNING: this case has not been tested
       if boundsChecking && this.hasLast() then
-        HaltWrappers.boundsCheckHalt("zippered iteration where a bounded range follows an unbounded iterator");
+        HaltWrappers.zipLengthHalt("zippered iteration where a bounded range follows an unbounded iterator");
 
       const first  = this.orderToIndex(myFollowThis.first);
       const stride = this.stride * myFollowThis.stride;
@@ -2384,8 +2384,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           var a: intIdxType;
           f <~> a;
           _alignment = a;
-        } else if boundsChecking {
-          HaltWrappers.boundsCheckHalt("Trying to read an aligned range value into a non-stridable array");
+        } else {
+          // If the range is not strideable, it can't store an alignment.
+          // TODO: once Channels can store Chapel errors,
+          // create a more descriptive error for this case
+          f.setError(EFORMAT);
         }
       }
     }
@@ -2430,11 +2433,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // modulus is positive, so this cast is OK unless it is very large
     // and the dividend is signed.
     var m = modulus : dType;
-    if boundsChecking {
-      if dType != modulus.type {
-        if m : modulus.type != modulus then
-          HaltWrappers.boundsCheckHalt("Modulus too large.");
-      }
+    if dType != modulus.type {
+      if m : modulus.type != modulus then
+        HaltWrappers.safeCastCheckHalt("Modulus too large.");
     }
 
     var tmp = dividend % m;
@@ -2461,11 +2462,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     modulus = abs(modulus);
     var m = modulus : minType;
-    if boundsChecking {
-      if minType != modulus.type {
-        if m : modulus.type != modulus then
-          HaltWrappers.boundsCheckHalt("Modulus too large.");
-      }
+    if minType != modulus.type {
+      if m : modulus.type != modulus then
+        HaltWrappers.safeCastCheckHalt("Modulus too large.");
     }
 
     var minMod = chpl__mod(minuend, m);
