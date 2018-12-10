@@ -2778,7 +2778,7 @@ void makeBinaryLLVM(void) {
     gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash link '";
 
     if (fLinkStyle == LS_DEFAULT &&
-	gather_prgenv.find("-Wl,-Bdynamic") == std::string::npos) {
+        gather_prgenv.find("-Wl,-Bdynamic") == std::string::npos) {
       // Cray PrgEnv defaults to static linking.  If we are asking for
       // the default link type, and we don't find an explicit dynamic
       // flag in the gathered PrgEnv arguments, then force static linking
