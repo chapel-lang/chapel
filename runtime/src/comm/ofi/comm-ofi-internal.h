@@ -31,6 +31,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <rdma/fabric.h>
+#include <rdma/fi_domain.h>
+
 
 //
 // Debugging
@@ -72,11 +75,14 @@ FILE* chpl_comm_ofi_dbg_file;
 
 void chpl_comm_ofi_dbg_init(void);
 char* chpl_comm_ofi_dbg_prefix(void);
+char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 
 #define DBG_INIT() chpl_comm_ofi_dbg_init()
 
-#define DBG_DO_PRINTF(fmt, ...) \
-  fprintf(chpl_comm_ofi_dbg_file, fmt "\n", ## __VA_ARGS__);
+#define DBG_DO_PRINTF(fmt, ...)                                         \
+  do {                                                                  \
+    fprintf(chpl_comm_ofi_dbg_file, fmt "\n", ## __VA_ARGS__);          \
+  } while (0)
 
 #define DBG_TEST_MASK(mask) ((chpl_comm_ofi_dbg_level & (mask)) != 0)
 
@@ -88,12 +94,14 @@ char* chpl_comm_ofi_dbg_prefix(void);
     }                                                                   \
   } while (0)
 
+#define DBG_VAL(pV, typ) chpl_comm_ofi_dbg_val(pV, typ)
+
 #else // DEBUG
 
 #define DBG_INIT()
-#define DBG_DO_PRINTF(fmt, ...)
+#define DBG_DO_PRINTF(fmt, ...) do { } while (0)
 #define DBG_TEST_MASK(mask) 0
-#define DBG_PRINTF(mask, fmt, ...)
+#define DBG_PRINTF(mask, fmt, ...) do { } while (0)
 
 #endif // DEBUG
 
@@ -119,6 +127,13 @@ int chpl_comm_ofi_abort_on_error;
     do {                                                                \
       if (!(expr)) {                                                    \
         INTERNAL_ERROR_V("!(%s)", #expr);                               \
+      }                                                                 \
+    } while (0)
+
+#define CHK_FALSE(expr)                                                 \
+    do {                                                                \
+      if (expr) {                                                       \
+        INTERNAL_ERROR_V("%s", #expr);                                  \
       }                                                                 \
     } while (0)
 

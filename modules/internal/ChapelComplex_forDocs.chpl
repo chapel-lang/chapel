@@ -53,7 +53,7 @@ module ChapelComplex_forDocs {
     field *im*.
   */
 
-  record complex {
+  record _complex {
     var re : real;
     var im : real;
   }

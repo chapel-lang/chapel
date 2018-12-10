@@ -274,6 +274,7 @@ private:
 extern AggregateType* dtObject;
 
 extern AggregateType* dtString;
+extern AggregateType* dtLocale;
 
 DefExpr* defineObjectClass();
 

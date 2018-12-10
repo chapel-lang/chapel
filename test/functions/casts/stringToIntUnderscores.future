@@ -1,0 +1,3 @@
+feature request: support underscores when casting string to int
+
+Issue #11756

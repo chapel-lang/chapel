@@ -529,6 +529,10 @@ void initPrimitiveTypes() {
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
 
   dtString                             = new AggregateType(AGGREGATE_RECORD);
+  dtString->symbol                     = new TypeSymbol("string", dtString);
+
+  dtLocale                             = new AggregateType(AGGREGATE_RECORD);
+  dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
@@ -1144,13 +1148,7 @@ bool isArrayClass(Type* type) {
 }
 
 bool isString(Type* type) {
-  bool retval = false;
-
-  if (AggregateType* aggr = toAggregateType(type)) {
-    retval = strcmp(aggr->symbol->name, "string") == 0;
-  }
-
-  return retval;
+  return type == dtString;
 }
 
 //

@@ -1,13 +1,13 @@
 enum mybool {
-  false=0,
-  true=1
+  myfalse=0,
+  mytrue=1
 }
 
 proc foo(b: uint) {
   writeln("In uint foo");
 }
 
-config param testenum = true;
+config param testenum = mytrue;
 
 var b: bool;
 var mb: mybool;

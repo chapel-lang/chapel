@@ -26,8 +26,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 
-static Map<const char*, Expr*> configMap;
-static Vec<const char*>        usedConfigParams;
+static Map<const char*, Expr*> configMap; // map from configs to vals
+static Map<const char*, VarSymbol*> usedConfigParams; // map from configs to uses
 
 bool                           mainHasArgs;
 
@@ -39,8 +39,9 @@ void checkConfigs() {
     configMap.get_keys(configParamSetNames);
 
     forv_Vec(const char, name, configParamSetNames) {
-      if (!usedConfigParams.in(name)) {
-        USR_FATAL_CONT("Trying to set unrecognized config param '%s' via -s flag", name);
+      if (usedConfigParams.get(name) == NULL) {
+        USR_FATAL_CONT("Trying to set unrecognized config '%s' via -s flag",
+                       name);
         anyBadConfigParams = true;
       }
     }
@@ -105,12 +106,12 @@ Expr* getCmdLineConfig(const char* name) {
   return configMap.get(astr(name));
 }
 
-void useCmdLineConfig(const char* name) {
-  usedConfigParams.add(name);
+void useCmdLineConfig(const char* name, VarSymbol* byWhom) {
+  usedConfigParams.put(astr(name), byWhom);
 }
 
-bool isUsedCmdLineConfig(const char* name) {
-  return usedConfigParams.in(name);
+VarSymbol* isUsedCmdLineConfig(const char* name) {
+  return usedConfigParams.get(name);
 }
 
 

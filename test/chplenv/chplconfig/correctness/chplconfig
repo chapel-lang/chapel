@@ -1,8 +1,10 @@
 # Comment test (followed by blank line test)
 
 CHPL_HOST_PLATFORM=darwin       # inline comment test
+CHPL_HOST_MACHINE=x86_64
 CHPL_HOST_COMPILER=clang
 CHPL_TARGET_PLATFORM=darwin
+CHPL_TARGET_MACHINE=x86_64
 CHPL_TARGET_COMPILER=clang
 CHPL_TARGET_ARCH=native
 CHPL_LOCALE_MODEL=flat

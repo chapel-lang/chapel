@@ -1,7 +1,7 @@
 use Spawn;
 
 {
-  var comp = spawnshell("$CHPL_HOME/bin/`$CHPL_HOME/util/chplenv/chpl_platform.py --host`/chpl cat-stdout-stderr.chpl -o stdout-stderr");
+  var comp = spawnshell("$CHPL_HOME/bin/`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py --host`/chpl cat-stdout-stderr.chpl -o stdout-stderr");
   comp.wait();
   assert(comp.exit_status == 0);
 }

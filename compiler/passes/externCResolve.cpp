@@ -123,9 +123,8 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
           Expr*             field_type = convertToChplType(module, field->getType().getTypePtr(), results);
           DefExpr*          varDefn    = new DefExpr(new VarSymbol(field_name), NULL, field_type);
           BlockStmt*        stmt       = buildChapelStmt(varDefn);
-          std::set<Flag>    flags;
 
-          fields->insertAtTail(buildVarDecls(stmt, flags, NULL));
+          fields->insertAtTail(buildVarDecls(stmt));
         }
 
         DefExpr* strct = buildClassDefExpr(tmp_name,

@@ -1014,7 +1014,25 @@ static std::string getPythonTypeName(Type* type, PythonFileType pxd) {
     }
     return res;
   } else {
-    return transformTypeForPointer(type);
+    if (type->symbol->hasFlag(FLAG_REF)) {
+      Type* referenced = type->getValType();
+      std::string base = getPythonTypeName(referenced, pxd);
+      if (pxd == C_PYX) {
+        return "";
+      } else {
+        return base + " *";
+      }
+    } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+      Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
+      std::string base = getPythonTypeName(pointedTo, pxd);
+      if (pxd == C_PYX) {
+        return "";
+      } else {
+        return base + " *";
+      }
+    } else {
+      return type->codegen().c;
+    }
   }
 }
 
@@ -1046,12 +1064,10 @@ std::string ArgSymbol::getPythonDefaultValue() {
 // Generate code to perform that translation when this is the case
 std::string ArgSymbol::getPythonArgTranslation() {
   Type* t = getArgSymbolCodegenType(this);
+  std::string strname = cname;
 
   if (t == dtStringC) {
-    std::string res = "\tcdef const char* chpl_";
-    res += cname;
-    res += " = ";
-    res += cname;
+    std::string res = "\tcdef const char* chpl_" + strname + " = " + strname;
     res += "\n";
     return res;
   } else if (t->symbol->hasFlag(FLAG_REF) &&
@@ -1068,28 +1084,65 @@ std::string ArgSymbol::getPythonArgTranslation() {
       // Create the memory needed to store the contents of what was passed to us
       // E.g. cdef chpl_external_array chpl_foo =
       //          chpl_make_external_array(sizeof(element type), len(foo))
-      std::string res = "\tcdef chpl_external_array chpl_";
-      res += cname;
-      res += " = chpl_make_external_array(sizeof(";
-      res += typeStrCDefs;
-      res += "), len(";
-      res += cname;
-      res += "))\n";
+      std::string res = "\tcdef chpl_external_array chpl_" + strname;
+      res += " = chpl_make_external_array(sizeof(" + typeStrCDefs + "), len(";
+      res += strname + "))\n";
 
       // Copy the contents over.
       // E.g. for i in range(len(foo)):
       //         (<element type*>chpl_foo.elts)[i] = foo[i]
-      res += "\tfor i in range(len(";
-      res += cname;
-      res += ")):\n";
-      res += "\t\t(<" + typeStrCDefs + "*>chpl_";
-      res += cname;
-      res += ".elts)[i] = ";
-      res += cname;
-      res += "[i]\n";
+      res += "\tfor i in range(len(" + strname + ")):\n";
+      res += "\t\t(<" + typeStrCDefs + "*>chpl_" + strname + ".elts)[i] = ";
+      res += strname + "[i]\n";
 
       return res;
     }
+  } else if (t->symbol->hasEitherFlag(FLAG_C_PTR_CLASS, FLAG_REF)) {
+    // Lydia TODO 12/04/18: Might be good to use a template where we can
+    // replace all instances of a placeholder with the argument name instead of
+    // of writing all of the code out in this chunky, unclear fashion.  Might
+    // be worth considering doing for the else branch above this as well
+    std::string res = "\tcdef ";
+    std::string typeStr = "";
+    std::string typeStrCDefs = "";
+    if (t->symbol->hasFlag(FLAG_REF)) {
+      typeStr = getPythonTypeName(t->getValType(), PYTHON_PYX);
+      typeStrCDefs = getPythonTypeName(t->getValType(), C_PYX);
+    } else {
+      typeStr = getPythonTypeName(getDataClassType(t->symbol)->typeInfo(),
+                                  PYTHON_PYX);
+      typeStrCDefs = getPythonTypeName(getDataClassType(t->symbol)->typeInfo(),
+                                       C_PYX);
+    }
+    res += typeStrCDefs + " * chpl_" + strname + "\n";
+    res += "\tcdef numpy.ndarray[" + typeStrCDefs;
+    res += ", ndim=1, mode = 'c'] chpl_tmp_" + strname + "\n"; // for numpy case
+    res += "\tcdef intptr_t chpl_tmp2_" + strname; // for ctypes.pointer case
+    // If sent a numpy array, pass in a pointer to the array
+    res += "\n\tif type(" + strname + ") == numpy.ndarray:\n";
+    res += "\t\tchpl_tmp_" + strname + " = numpy.ascontiguousarray(";
+    res += strname + ", dtype = " + typeStr + ")\n";
+    res += "\t\tchpl_" + strname + " = <" + typeStrCDefs + "*> chpl_tmp_";
+    res += strname + ".data\n";
+    // Otherwise, check if type is ctypes._Pointer.  Note that this means we
+    // cannot send in ctypes.byref, but I don't think Cython allows that right
+    // now anyways
+    // Note: this is a lot more work than we would like it to be, but we think
+    // it is the best possible at the moment.  Unless Cython decides to support
+    // ctypes directly, then these conversions will not be necessary
+    res += "\telif isinstance(" + strname + ", ctypes._Pointer):\n";
+    res += "\t\tpython_" + strname + " = ctypes.addressof(" + strname;
+    res += ".contents)\n";
+    res += "\t\tchpl_tmp2_" + strname + " = <intptr_t>python_" + strname;
+    res += "\n\t\tchpl_" + strname + " = <" + typeStrCDefs + "*> chpl_tmp2_";
+    res += strname + "\n";
+    // TODO: support ctypes arrays as well
+    // Otherwise, throw a type error because we've been passed something that
+    // won't work (and we can't assign a Python object into a C one without
+    // knowing what the type is)
+    res += "\telse:\n";
+    res += "\t\traise TypeError(\"" + strname + " is of unsupported type\")\n";
+    return res;
   }
   return "";
 }
@@ -1918,11 +1971,16 @@ void FnSymbol::codegenFortran(int indent) {
     }
 
     // print "import <c_type_name>" for each required type
-    if (!uniqueKindNames.empty()) {
+    // Don't import anything for '_ref_CFI_cdesc_t' which is the Fortran
+    // array type for array interoperability.
+    if (!uniqueKindNames.empty() &&
+        (uniqueKindNames.size() > 1 ||
+         uniqueKindNames.count("_ref_CFI_cdesc_t") == 0)) {
       fprintf(outfile, "%*simport ", indent, "");
       first = true;
       for (std::set<std::string>::iterator kindName = uniqueKindNames.begin();
            kindName != uniqueKindNames.end(); ++kindName) {
+        if (!strcmp(kindName->c_str(), "_ref_CFI_cdesc_t")) continue;
         if (!first) {
           fprintf(outfile, ", ");
         }
@@ -1939,7 +1997,17 @@ void FnSymbol::codegenFortran(int indent) {
       const char* prefix = formal->cname[0] == '_' ? "chpl" : "";
       const bool isRef = formal->intent & INTENT_FLAG_REF;
       const char* valueString = isRef ? "" : ", value";
-      fprintf(outfile, "%*s%s(kind=%s)%s :: %s%s\n", indent, "", getFortranTypeName(formal->type, formal).c_str(), getFortranKindName(formal->type, formal).c_str(), valueString, prefix, formal->cname);
+      std::string typeName = getFortranTypeName(formal->type, formal);
+      std::string kindName = getFortranKindName(formal->type, formal);
+
+      // declare arrays specially instead of just using the record type
+      if (kindName == "_ref_CFI_cdesc_t") {
+        fprintf(outfile, "%*sTYPE(*) :: %s(..)\n", indent, "", formal->cname);
+      } else {
+        fprintf(outfile, "%*s%s(kind=%s)%s :: %s%s\n", indent, "",
+                typeName.c_str(), kindName.c_str(),
+                valueString, prefix, formal->cname);
+      }
     }
 
     // print type declaration for the return type
@@ -2078,7 +2146,7 @@ GenRet FnSymbol::codegenPYXType() {
       std::string curArgTranslate = formal->getPythonArgTranslation();
       if (curArgTranslate != "") {
         argTranslate += curArgTranslate;
-        if (argType == "") {
+        if (argType == "" && formal->type->getValType() == dtExternalArray) {
           // Happens when the argument type is an array
           // We need to send in the wrapper we created by reference
           funcCall += "&";
@@ -2090,7 +2158,6 @@ GenRet FnSymbol::codegenPYXType() {
         }
         funcCall += "chpl_";
       }
-
       funcCall += formal->cname;
       count++;
     }

@@ -474,7 +474,10 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
 
     // Necessary for using numpy types
     fprintf(pyx.fptr, "import numpy\n");
-    fprintf(pyx.fptr, "cimport numpy\n\n");
+    fprintf(pyx.fptr, "cimport numpy\n");
+    // Necessary for supporting pointers
+    fprintf(pyx.fptr, "import ctypes\n");
+    fprintf(pyx.fptr, "from libc.stdint cimport intptr_t\n\n");
 
     makePYXSetupFunctions(moduleInits);
 

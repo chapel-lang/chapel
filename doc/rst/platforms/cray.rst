@@ -454,12 +454,22 @@ heap is created.  If either of the latter are less than what a program
 needs, it will terminate prematurely with an "Out of memory" message.
 
 To specify a fixed heap, set the ``CHPL_RT_MAX_HEAP_SIZE`` environment
-variable to indicate its size.  Set this to just a number to specify the
-size of the heap in bytes, or to a number with a ``k`` or ``K``, ``m``
-or ``M``, or ``g`` or ``G`` suffix with no intervening spaces to specify
-the heap size in KiB (2**10 bytes), MiB (2**20 bytes), or GiB (2**30
-bytes), respectively.  Any of the following would set the heap size to 1
-GiB, for example:
+variable to indicate its size.  For the value of this variable you can
+use any of the following formats, where *num* is a positive integer
+number:
+
+    ======= ==========================================
+    Format  Resulting Heap Size
+    ======= ==========================================
+    num     num bytes
+    num[kK] num * 2**10 bytes
+    num[mM] num * 2**20 bytes
+    num[gG] num * 2**30 bytes
+    num%    percentage of compute node physical memory
+    ======= ==========================================
+
+Any of the following would specify an approximately 1 GiB heap on a
+128-GiB compute node, for example:
 
   .. code-block:: sh
 
@@ -467,11 +477,13 @@ GiB, for example:
     export CHPL_RT_MAX_HEAP_SIZE=1048576k
     export CHPL_RT_MAX_HEAP_SIZE=1024m
     export CHPL_RT_MAX_HEAP_SIZE=1g
+    export CHPL_RT_MAX_HEAP_SIZE=1% # 1.28 GiB, really
 
-Note that the value you set in ``CHPL_RT_MAX_HEAP_SIZE`` may get rounded up
-internally to match the page alignment.  How much, if any, this will add
-depends on the hugepage size in any ``craype-hugepage`` module you have
-loaded at the time you execute the program.
+Note that the resulting heap size may get rounded up to match the page
+alignment.  How much this will add, if any, depends on the hugepage size
+in any ``craype-hugepage`` module you have loaded at the time you
+execute the program.  It may also be reduced, if some resource
+limitation prevents making the heap as large as requested.
 
 
 Communication Layer Concurrency

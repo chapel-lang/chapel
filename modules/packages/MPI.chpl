@@ -602,7 +602,7 @@ module MPI {
   extern proc MPI_Get_processor_name (ref name: c_char, ref resultlen: c_int): c_int;
   extern proc MPI_Errhandler_set (comm: MPI_Comm, errhandler: MPI_Errhandler): c_int;
   extern proc MPI_Errhandler_get (comm: MPI_Comm, ref errhandler: MPI_Errhandler): c_int;
-  extern proc MPI_Error_string (errorcode: c_int, ref string: c_char, ref resultlen: c_int): c_int;
+  extern proc MPI_Error_string (errorcode: c_int, ref str: c_char, ref resultlen: c_int): c_int;
   extern proc MPI_Error_class (errorcode: c_int, ref errorclass: c_int): c_int;
   extern proc MPI_Wtime (): c_double;
   extern proc MPI_Wtick (): c_double;

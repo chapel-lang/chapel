@@ -1,0 +1,2 @@
+variadic-mix-type-var.chpl:4: error: unresolved call 'foo(type int(64), "blah")'
+variadic-mix-type-var.chpl:1: note: candidates are: foo(args ...)

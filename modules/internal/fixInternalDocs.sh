@@ -212,6 +212,7 @@ file="./ChapelComplex_forDocs.rst"
 removePrefixFunctions $file
 fixTitle "Complex" $file
 removeUsage $file
+replace "_complex" "complex" $file
 
 # End ChapelComplex_forDocs ##
 

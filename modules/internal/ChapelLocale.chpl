@@ -95,7 +95,7 @@ module ChapelLocale {
     and implements part of it, but requires the rest to be provided
     by the corresponding concrete classes.
    */
-  class locale {
+  class _locale {
     //- Constructor
     pragma "no doc"
     proc init() { }

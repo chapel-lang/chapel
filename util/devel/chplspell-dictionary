@@ -2584,6 +2584,7 @@ linenum
 modvec
 nasts
 nclean
+tfor
 yyfilename
 yystartlineno
 
@@ -2591,6 +2592,7 @@ FILEID: ce578c98-1d0a-11e6-a3a6-10ddb1d4c3d5
 bbin
 bbout
 nbbq
+nbbs
 
 FILEID: f4c93d2c-1d0a-11e6-a3a6-10ddb1d4c3d5
 fifn
@@ -2601,6 +2603,8 @@ usex
 
 FILEID: e2d7df7c-1d0c-11e6-a3a6-10ddb1d4c3d5
 fock
+gfunction
+ghelp
 
 FILEID: 0846cc78-1d0d-11e6-a3a6-10ddb1d4c3d5
 labse
@@ -2765,6 +2769,7 @@ ytemp
 
 FILEID: 803ee256-1d85-11e6-a3a6-10ddb1d4c3d5
 dbaadab
+ftemp
 newresult
 rauto
 
@@ -3813,21 +3818,18 @@ negbv
 srcwide
 
 FILEID: 80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5
+astrs
+cdesc
 disubprogram
 dtype
 ndarray
 nfor
 optos
+simport
 toctree
 
 FILEID: fcd32732-b78b-11e6-9740-843835579daa
 entrantly
-
-FILEID: d72609f8-b850-11e6-9740-843835579daa
-rref
-
-FILEID: eb249ff0-b850-11e6-9740-843835579daa
-pqsort
 
 FILEID: 2409dd7e-b858-11e6-9740-843835579daa
 dfft
@@ -4619,22 +4621,30 @@ allocinfo
 amrecv
 amsend
 appnum
+atomicvalid
+bxor
 commprogress
 configmore
 cqes
+cswap
 ctxs
+dsrd
 etoosmall
 fabfail
 fabsall
 freeinfo
 lcpus
+mrdesc
+mrkey
 ofichkerr
 ofichkret
+opnd
 pmichkret
 pmichksuccess
 procid
 rbuf
 rbufs
+readerr
 readfrom
 rmaread
 rmawrite
@@ -4643,11 +4653,14 @@ spages
 statsnodes
 statsprogress
 statsthreads
+tciia
+tciiw
 tcip
 threaddetails
 tostr
 tstamp
 txed
+xpctd
 
 FILEID: 0502b256-07ea-11e8-bed3-10ddb1d4c3d5
 ctxs
@@ -4741,6 +4754,8 @@ libhdrfile
 libname
 linkershared
 lname
+sinterface
+smodule
 
 FILEID: e6ecf3ae-9c7b-11e8-b963-10ddb1d4c3d5
 codepoints
@@ -4805,7 +4820,9 @@ itype
 slayout
 
 FILEID: 3bdbc4ea-d1aa-11e8-954d-10ddb1d4c3d5
+anychanged
 bbin
+bbout
 inbb
 nbbs
 
@@ -4823,6 +4840,22 @@ rtds
 
 FILEID: 91c58b86-d1c1-11e8-954d-10ddb1d4c3d5
 appnum
+
+FILEID: 82c1d8e6-e581-11e8-954d-10ddb1d4c3d5
+tfor
+
+FILEID: 8e2d4094-e581-11e8-954d-10ddb1d4c3d5
+tostring
+
+FILEID: 9627af8c-e581-11e8-954d-10ddb1d4c3d5
+tfor
+
+FILEID: e4e38696-e581-11e8-954d-10ddb1d4c3d5
+tilda
+urxvt
+
+FILEID: a37c5ce4-f6a4-11e8-8d7e-10ddb1d4c3d5
+maxlargc
 
 NATURAL:
 aarch
@@ -5069,6 +5102,7 @@ chapelhome
 chapelprediff
 chapelstandard
 charles
+charset
 chdir
 cheatsheet
 checkboxes
@@ -5152,6 +5186,7 @@ configs
 conjg
 constness
 consts
+contextless
 cookiefile
 cookielist
 coopting
@@ -5365,6 +5400,7 @@ eaddrnotavail
 eafnosupport
 eagain
 ealready
+eavail
 ebade
 ebadf
 ebadfd
@@ -5543,6 +5579,7 @@ ferguson
 fflush
 fftw
 fibonacci
+fieldname
 fieldno
 fieldnum
 fieldwise
@@ -5775,6 +5812,7 @@ iface
 ified
 ifneq
 ignorecase
+igroup
 illinois
 imap
 imaps
@@ -6246,6 +6284,7 @@ multicore
 multihop
 multilocale
 multiloop
+multinode
 multiprecision
 multirealm
 multiset
@@ -6355,10 +6394,12 @@ nonfetch
 nongnu
 nongreedy
 noninfringement
+noniter
 nonlocal
 nonlocking
 nonnegative
 nonnegligible
+nonpersistent
 nonprimitive
 nonprinting
 nonsequential
@@ -6414,6 +6455,7 @@ nvidia
 nview
 objs
 october
+offsetof
 ofile
 ogham
 ohio
@@ -7253,6 +7295,7 @@ vdebug
 vecs
 vectorizable
 vectorizer
+vectorizers
 vectorizes
 vectorizing
 venv

@@ -31,7 +31,8 @@ const char* astr(const char* s1,
                  const char* s5 = 0,
                  const char* s6 = 0,
                  const char* s7 = 0,
-                 const char* s8 = 0);
+                 const char* s8 = 0,
+                 const char* s9 = 0);
 
 const char* astr(const char* s1);
 const char* astr(const std::string& s);

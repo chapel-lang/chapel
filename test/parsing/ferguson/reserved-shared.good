@@ -1,0 +1,7 @@
+reserved-shared.chpl:1: error: attempt to redefine reserved type 'shared'
+reserved-shared.chpl:3: error: attempt to redefine reserved type 'shared'
+reserved-shared.chpl:6: error: attempt to redefine reserved type 'shared'
+reserved-shared.chpl:7: error: attempt to redefine reserved type 'shared'
+reserved-shared.chpl:10: error: attempt to redefine reserved type 'shared'
+reserved-shared.chpl:12: error: attempt to redefine reserved type 'shared'
+reserved-shared.chpl:17: error: attempt to redefine reserved type 'shared'
