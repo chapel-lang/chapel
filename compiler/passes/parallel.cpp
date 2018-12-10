@@ -1138,6 +1138,8 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 //
 //  fLocal == true
 // or
+//  CHPL_COMM == "ofi"
+// or
 //  CHPL_COMM == "ugni"
 // or
 //  CHPL_COMM == "gasnet" && CHPL_GASNET_SEGMENT == "everything";
@@ -1158,7 +1160,8 @@ static bool
 needHeapVars() {
   if (fLocal) return false;
 
-  if (!strcmp(CHPL_COMM, "ugni") ||
+  if (!strcmp(CHPL_COMM, "ofi") ||
+      !strcmp(CHPL_COMM, "ugni") ||
       (!strcmp(CHPL_COMM, "gasnet") &&
        !strcmp(CHPL_GASNET_SEGMENT, "everything")))
     return false;
