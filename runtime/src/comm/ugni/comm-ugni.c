@@ -6774,15 +6774,16 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
 // Atomic subtract:
 //   _f: interface function name suffix (type)
 //   _t: AMO type
+//   _negate: negation function
 //
-#define DEFINE_CHPL_COMM_ATOMIC_SUB(_f, _t)                             \
+#define DEFINE_CHPL_COMM_ATOMIC_SUB(_f, _t, _negate)                    \
         /*==============================*/                              \
         void chpl_comm_atomic_sub_##_f(void* opnd,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        int ln, int32_t fn)              \
         {                                                               \
-          _t nopnd = - *(_t*) opnd;                                     \
+          _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
                    "IFACE chpl_comm_atomic_sub_"#_f                     \
@@ -6798,7 +6799,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                                             void* obj,                  \
                                             int ln, int32_t fn)         \
         {                                                               \
-          _t nopnd = - *(_t*) opnd;                                     \
+          _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
                    "IFACE chpl_comm_atomic_sub_buff_"#_f                \
@@ -6815,7 +6816,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                                              void* res,                 \
                                              int ln, int32_t fn)        \
         {                                                               \
-          _t nopnd = - *(_t*) opnd;                                     \
+          _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
                    "IFACE chpl_comm_atomic_fetch_sub_"#_f               \
@@ -6826,12 +6827,16 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                                           ln, fn);                      \
         }
 
-DEFINE_CHPL_COMM_ATOMIC_SUB(int32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_SUB(int64, int_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_SUB(uint32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_SUB(uint64, int_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_SUB(real32, float)
-DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double)
+#define NEGATE_I32(x) ((x) == INT_LEAST32_MIN ? (x) : -(x))
+#define NEGATE_I64(x) ((x) == INT_LEAST64_MIN ? (x) : -(x))
+#define NEGATE_U_OR_R(x) (-(x))
+
+DEFINE_CHPL_COMM_ATOMIC_SUB(int32, int_least32_t, NEGATE_I32)
+DEFINE_CHPL_COMM_ATOMIC_SUB(int64, int_least64_t, NEGATE_I64)
+DEFINE_CHPL_COMM_ATOMIC_SUB(uint32, int_least32_t, NEGATE_U_OR_R)
+DEFINE_CHPL_COMM_ATOMIC_SUB(uint64, int_least64_t, NEGATE_U_OR_R)
+DEFINE_CHPL_COMM_ATOMIC_SUB(real32, float, NEGATE_U_OR_R)
+DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double, NEGATE_U_OR_R)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_SUB
 
