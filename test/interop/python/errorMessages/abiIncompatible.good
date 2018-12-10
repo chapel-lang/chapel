@@ -1,0 +1,1 @@
+warning: PrgEnvs other than gnu may not be ABI compatible with Cython source files
