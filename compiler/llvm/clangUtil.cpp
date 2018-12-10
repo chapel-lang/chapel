@@ -1588,9 +1588,7 @@ void runClang(const char* just_parse_filename) {
   } else if (0 == strcmp(CHPL_LLVM, "llvm")) {
     llvm_install += CHPL_THIRD_PARTY;
     llvm_install += "/llvm/install/";
-    llvm_install += CHPL_HOST_PLATFORM;
-    llvm_install += "-";
-    llvm_install += CHPL_HOST_COMPILER;
+    llvm_install += CHPL_LLVM_UNIQ_CFG_PATH;
     llvm_install += "/bin/";
     clangCC = llvm_install + "clang";
     clangCXX = llvm_install + "clang++";
@@ -1601,9 +1599,7 @@ void runClang(const char* just_parse_filename) {
   // read clang-sysroot-arguments
   std::string sysroot_arguments(CHPL_THIRD_PARTY);
   sysroot_arguments += "/llvm/install/";
-  sysroot_arguments += CHPL_HOST_PLATFORM;
-  sysroot_arguments += "-";
-  sysroot_arguments += CHPL_HOST_COMPILER;
+  sysroot_arguments += CHPL_LLVM_UNIQ_CFG_PATH;
   sysroot_arguments += "/configured-clang-sysroot-arguments";
 
   // read arguments from configured-clang-sysroot-arguments
@@ -2858,9 +2854,7 @@ void makeBinaryLLVM(void) {
   std::vector<std::string> sysroot_args;
   std::string sysroot_arguments(CHPL_THIRD_PARTY);
   sysroot_arguments += "/llvm/install/";
-  sysroot_arguments += CHPL_HOST_PLATFORM;
-  sysroot_arguments += "-";
-  sysroot_arguments += CHPL_HOST_COMPILER;
+  sysroot_arguments += CHPL_LLVM_UNIQ_CFG_PATH;
   sysroot_arguments += "/configured-clang-sysroot-arguments";
 
   readArgsFromFile(sysroot_arguments, sysroot_args);

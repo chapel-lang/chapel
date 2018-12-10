@@ -128,7 +128,9 @@ $allcppfiles = "`find -name '*.cpp'` `find -name '*.c'` `find -name '*.h'`";
 $findflags = "-name '*.cpp' -print -or -name '*.c' -print -or -name '*.h' -print";
 
 $compdir = "$chplhomedir/compiler";
-$bindir = "$chplhomedir/bin/$ENV{'CHPL_HOST_PLATFORM'}";
+$binsubdir = `$here/../chplenv/chpl_bin_subdir.py --host`;
+chomp $binsubdir;
+$bindir = "$chplhomedir/bin/$binsubdir";
 
 # remove generated files
 mysystem("cd $compdir && rm -f */*.g.d_parser.cpp vparser/cast_code.cpp analysis/prim_data.h analysis/prim_data.cpp");
@@ -160,7 +162,7 @@ mysystem("$tokctr `find $chplhomedir/runtime $findflags` > $chplhomedir/runtime/
 
 mysystem("cd $chplhomedir && make -j$num_procs comprt", "making compiler", 1, 1);
 $ENV{'CHPL_HOME'} = $chplhomedir;
-mysystem("$bindir/chpl --count-tokens $chplhomedir/modules/standard/*.chpl $chplhomedir/modules/internal/*.chpl $chplhomedir/modules/dists/*.chpl $chplhomedir/modules/layouts/*.chpl >& $compdir/chpcode.ntoks", "counting module tokens", 1, 1);
+mysystem("$bindir/chpl --count-tokens $chplhomedir/modules/standard/*.chpl $chplhomedir/modules/internal/*.chpl $chplhomedir/modules/dists/*.chpl $chplhomedir/modules/layouts/*.chpl > $compdir/chpcode.ntoks 2>&1", "counting module tokens", 1, 1);
 
 $asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
 $adttoks = `cat $compdir/adt.ntoks`; chomp($adttoks);

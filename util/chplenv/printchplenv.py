@@ -63,8 +63,11 @@ DEFAULT = set(['default'])
 CHPL_ENVS = [
     ChapelEnv('CHPL_HOST_PLATFORM', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_COMPILER', COMPILER | LAUNCHER),
+    ChapelEnv('CHPL_HOST_MACHINE', COMPILER | LAUNCHER),
+    ChapelEnv('CHPL_HOST_ARCH', INTERNAL),
     ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_COMPILER', RUNTIME | DEFAULT),
+    ChapelEnv('CHPL_TARGET_MACHINE', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_ORIG_TARGET_COMPILER', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT, 'arch'),
     ChapelEnv('CHPL_RUNTIME_ARCH', INTERNAL),
@@ -94,6 +97,9 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_RUNTIME_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_LAUNCHER_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_COMPILER_SUBDIR', INTERNAL),
+    ChapelEnv('CHPL_HOST_BIN_SUBDIR', INTERNAL),
+    ChapelEnv('CHPL_TARGET_BIN_SUBDIR', INTERNAL),
+    ChapelEnv('  CHPL_LLVM_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_JEMALLOC_UNIQ_CFG_PATH',INTERNAL),
@@ -128,8 +134,11 @@ def compute_all_values():
     ENV_VALS["CHPL_ORIG_TARGET_COMPILER"] = chpl_compiler.get('target', llvm_mode='orig')
     ENV_VALS['CHPL_HOST_PLATFORM'] = chpl_platform.get('host')
     ENV_VALS['CHPL_HOST_COMPILER'] = chpl_compiler.get('host')
+    ENV_VALS['CHPL_HOST_MACHINE'] = chpl_machine.get('host')
+    ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host').arch
     ENV_VALS['CHPL_TARGET_PLATFORM'] = chpl_platform.get('target')
     ENV_VALS['CHPL_TARGET_COMPILER'] = chpl_compiler.get('target')
+    ENV_VALS['CHPL_TARGET_MACHINE'] = chpl_machine.get('target')
     ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target').arch
 
     # Use module's LCD architecture in case it was built before
@@ -174,6 +183,9 @@ def compute_internal_values():
     ENV_VALS['CHPL_RUNTIME_SUBDIR'] = printchplenv(set(['runtime']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_LAUNCHER_SUBDIR'] = printchplenv(set(['launcher']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_COMPILER_SUBDIR'] = printchplenv(set(['compiler']), print_format='path').rstrip('\n')
+    ENV_VALS['CHPL_HOST_BIN_SUBDIR'] = chpl_bin_subdir.get('host')
+    ENV_VALS['CHPL_TARGET_BIN_SUBDIR'] = chpl_bin_subdir.get('target')
+    ENV_VALS['  CHPL_LLVM_UNIQ_CFG_PATH'] = chpl_llvm.get_uniq_cfg_path()
 
     link_args_3p = []
 

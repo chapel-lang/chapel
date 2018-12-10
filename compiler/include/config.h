@@ -21,12 +21,13 @@
 #define _CONFIG_H_
 
 class Expr;
+class VarSymbol;
 
 void  checkConfigs(void);
 void  parseCmdLineConfig(const char *, const char *);
 Expr* getCmdLineConfig(const char *);
-void  useCmdLineConfig(const char *);
-bool  isUsedCmdLineConfig(const char *);
+void  useCmdLineConfig(const char *, VarSymbol*);
+VarSymbol* isUsedCmdLineConfig(const char *);
 
 extern bool mainHasArgs;
 

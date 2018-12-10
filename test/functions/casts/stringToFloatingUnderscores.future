@@ -1,0 +1,3 @@
+feature request: string to floating point casts should support underscores
+
+Issue #11776

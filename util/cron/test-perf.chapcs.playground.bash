@@ -25,13 +25,13 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of gcc 8.2
+# Test performance of cstdlib atomics
 #GITHUB_USER=
 #GITHUB_BRANCH=
-SHORT_NAME=gcc82
-START_DATE=11/29/18
+SHORT_NAME=cstdlib-atomics
+START_DATE=11/08/18
 
-source /data/cf/chapel/setup_gcc82.bash
+export CHPL_ATOMICS=cstdlib
 
 
 #git branch -D $GITHUB_USER-$GITHUB_BRANCH

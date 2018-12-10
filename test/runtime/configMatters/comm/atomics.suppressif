@@ -1,17 +1,22 @@
-#! /usr/bin/env bash
+#! /usr/bin/env python
 #
-# CCE versions greater than 8.6.4 have issues with processor-local atomics,
-# so suppress this case for now.
+# CCE 8.6.4 introduced a bug with __sync_fetch_and_sub that was only fixed in
+# 8.7.4, so suppress this case for those versions
 #
-eval `$CHPL_HOME/util/printchplenv --make`
 
-if [ "$CHPL_MAKE_TARGET_COMPILER" = cray-prgenv-cray -a "$CHPL_MAKE_COMM" = none ]; then
+import os, sys
 
-  cce_version=`module list -t 2>&1 | grep "^cce/" | sed -e "s,^cce/,,"`
+def_home = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')
+chpl_home = os.path.abspath(os.getenv('CHPL_HOME', def_home))
+chplenv_dir = os.path.join(chpl_home, 'util', 'chplenv')
+sys.path.insert(0, chplenv_dir)
 
-  if [ -n "$cce_version" -a "$cce_version" \> "8.6.4" ]; then
-    echo 1
-    exit 0
-  fi
-fi
-echo 0
+from compiler_utils import CompVersion, get_compiler_version
+import chpl_atomics, chpl_compiler
+
+net_atomics = chpl_atomics.get('network')
+compiler = chpl_compiler.get('target')
+cce = compiler == 'cray-prgenv-cray'
+buggy_cce = cce and CompVersion('8.6.4') <= get_compiler_version(compiler) < CompVersion('8.7.4')
+
+print(net_atomics == 'none' and buggy_cce)

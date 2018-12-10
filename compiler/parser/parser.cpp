@@ -40,6 +40,7 @@ const char*          yyfilename                    = NULL;
 int                  yystartlineno                 = 0;
 
 ModTag               currentModuleType             = MOD_INTERNAL;
+const char*          currentModuleName             = NULL;
 
 int                  chplLineno                    = 0;
 bool                 chplParseString               = false;
@@ -182,6 +183,8 @@ void setupModulePaths() {
                       modulesRoot,
                       "/standard/gen/",
                       CHPL_TARGET_PLATFORM,
+                      "-",
+                      CHPL_TARGET_MACHINE,
                       "-",
                       CHPL_TARGET_COMPILER));
 
@@ -510,6 +513,11 @@ static ModuleSymbol* parseFile(const char* path,
 
     currentFileNamedOnCommandLine = namedOnCommandLine;
 
+    // If this file only contains explicit module declarations, this
+    // 'currentModuleName' is not accurate, but also should not be
+    // used (because when the 'module' declarations are found, they
+    // will override it).
+    currentModuleName             = filenameToModulename(path);
     currentModuleType             = modTag;
 
     yyblock                       = NULL;

@@ -43,6 +43,7 @@ $today = `date +%w-%a`; chomp($today);
 #
 # directory locations
 #
+$here = dirname(__FILE__);
 $tmpdir = "/tmp/chapel-getoldperf.$user.$pid.deleteme";
 $chapeldir = "$tmpdir/chapel";
 $logdir = "~bradc/chapel/test/Logs/Nightly";
@@ -50,7 +51,8 @@ $statdir = "$logdir/Stats";
 $tokctdir = "~bradc/chapel/util/tokencount";
 $tokctr = "$tokctdir/tokencount.cron";
 $compdir = "$tmpdir/chapel/compiler";
-$bindir = "$tmpdir/chapel/bin/$ENV{'CHPL_HOST_PLATFORM'}";
+$binsubdir = `$here/../chplenv/chpl_bin_subdir.py --host`;
+$bindir = "$tmpdir/chapel/bin/$binsubdir";
 $currhome = "$ENV{'CHPL_HOME'}";
 $perfdir = "$ENV{'CHPL_TEST_PERF_DIR'}";
 if ($perfdir eq "") {
@@ -63,7 +65,6 @@ $somethingfailed = 0;
 
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
-$here = dirname(__FILE__);
 $num_procs = `$here/../buildRelease/chpl-make-cpu_count`;
 chomp($num_procs);
 

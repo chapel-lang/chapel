@@ -132,7 +132,7 @@ Miscellaneous Options:
                                       leading to each error or warning
       --[no-]print-unused-functions   [Don't] print the name and location of
                                       unused functions
-  -s, --set <name>[=<value>]          Set config param value
+  -s, --set <name>[=<value>]          Set config value
       --[no-]task-tracking            Enable [disable] runtime task tracking
 
 Compiler Configuration Options:

@@ -621,8 +621,9 @@ def check_environment_with_args():
         sys.exit(-1)
 
     # save host and target platforms, and configure environment appropriately
-    global host_platform, tgt_platform
+    global host_platform, host_bin_subdir, tgt_platform
     host_platform = chpl_platform.get("host")
+    host_bin_subdir = chpl_bin_subdir.get("host")
     tgt_platform = chpl_platform.get("target")
     if not tgt_platform == "sunos":
         os.environ["LC_COLLATE"] = "C"
@@ -832,7 +833,7 @@ def set_up_general():
     global compiler
     if not args.compiler:
         compiler = os.path.expandvars("$CHPL_HOME/bin/{0}/chpl"
-                .format(host_platform))
+                .format(host_bin_subdir))
     else:
         compiler = args.compiler
 

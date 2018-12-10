@@ -62,14 +62,17 @@ char CHPL_RUNTIME_INCL[FILENAME_MAX+1] = "";
 char CHPL_THIRD_PARTY[FILENAME_MAX+1] = "";
 
 const char* CHPL_HOST_PLATFORM = NULL;
+const char* CHPL_HOST_MACHINE = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
+const char* CHPL_HOST_ARCH = NULL;
 const char* CHPL_TARGET_PLATFORM = NULL;
-const char* CHPL_TARGET_COMPILER = NULL;
-const char* CHPL_ORIG_TARGET_COMPILER = NULL;
+const char* CHPL_TARGET_MACHINE = NULL;
 const char* CHPL_TARGET_ARCH = NULL;
 const char* CHPL_RUNTIME_ARCH = NULL;
 const char* CHPL_TARGET_BACKEND_ARCH = NULL;
 const char* CHPL_TARGET_ARCH_FLAG = NULL;
+const char* CHPL_TARGET_COMPILER = NULL;
+const char* CHPL_ORIG_TARGET_COMPILER = NULL;
 const char* CHPL_LOCALE_MODEL = NULL;
 const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
@@ -90,6 +93,7 @@ const char* CHPL_UNWIND = NULL;
 
 const char* CHPL_RUNTIME_SUBDIR = NULL;
 const char* CHPL_LAUNCHER_SUBDIR = NULL;
+const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -615,9 +619,8 @@ static void runCompilerInLLDB(int argc, char* argv[]) {
 
 static void readConfig(const ArgumentDescription* desc, const char* arg_unused) {
   // Expect arg_unused to be a string of either of these forms:
-  // 1. name=value -- set the config param "name" to "value"
-  // 2. name       -- set the boolean config param "name" to NOT("name")
-  //                  if name is not type bool, set it to 0.
+  // 1. name=value -- set the config "name" to "value"
+  // 2. name       -- set the config "name" to 'true'
 
   char *name = strdup(arg_unused);
   char *value;
@@ -630,7 +633,7 @@ static void readConfig(const ArgumentDescription* desc, const char* arg_unused) 
       parseCmdLineConfig(name, value);
     } else {
       // arg_unused was name=  <blank>
-      USR_FATAL("Missing config param value");
+      USR_FATAL("Missing config value");
     }
   } else {
     // arg_unused was just name
@@ -959,7 +962,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-callgraph", ' ', NULL, "[Don't] print a representation of the callgraph for the program", "N", &fPrintCallGraph, "CHPL_PRINT_CALLGRAPH", NULL},
  {"print-callstack-on-error", ' ', NULL, "[Don't] print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"print-unused-functions", ' ', NULL, "[Don't] print the name and location of unused functions", "N", &fPrintUnusedFns, NULL, NULL},
- {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
+ {"set", 's', "<name>[=<value>]", "Set config value", "S", NULL, NULL, readConfig},
  {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
 
  {"", ' ', NULL, "Compiler Configuration Options", NULL, NULL, NULL, NULL},
@@ -1238,14 +1241,17 @@ static void setChapelEnvs() {
   // Update compiler global CHPL_vars with envMap values
 
   CHPL_HOST_PLATFORM   = envMap["CHPL_HOST_PLATFORM"];
+  CHPL_HOST_MACHINE    = envMap["CHPL_HOST_MACHINE"];
   CHPL_HOST_COMPILER   = envMap["CHPL_HOST_COMPILER"];
+  CHPL_HOST_ARCH       = envMap["CHPL_HOST_ARCH"];
   CHPL_TARGET_PLATFORM = envMap["CHPL_TARGET_PLATFORM"];
-  CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
-  CHPL_ORIG_TARGET_COMPILER = envMap["CHPL_ORIG_TARGET_COMPILER"];
+  CHPL_TARGET_MACHINE  = envMap["CHPL_TARGET_MACHINE"];
   CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
   CHPL_RUNTIME_ARCH    = envMap["CHPL_RUNTIME_ARCH"];
   CHPL_TARGET_BACKEND_ARCH = envMap["CHPL_TARGET_BACKEND_ARCH"];
   CHPL_TARGET_ARCH_FLAG = envMap["CHPL_TARGET_ARCH_FLAG"];
+  CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
+  CHPL_ORIG_TARGET_COMPILER = envMap["CHPL_ORIG_TARGET_COMPILER"];
   CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
   CHPL_COMM            = envMap["CHPL_COMM"];
   CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];
@@ -1266,6 +1272,7 @@ static void setChapelEnvs() {
 
   CHPL_RUNTIME_SUBDIR  = envMap["CHPL_RUNTIME_SUBDIR"];
   CHPL_LAUNCHER_SUBDIR = envMap["CHPL_LAUNCHER_SUBDIR"];
+  CHPL_LLVM_UNIQ_CFG_PATH = envMap["CHPL_LLVM_UNIQ_CFG_PATH"];
 
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
