@@ -1289,17 +1289,26 @@ void amRequestCommon(c_nodeid_t node,
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
 
+  chpl_comm_on_bundle_t* myArg = arg;
   void* mrDesc = NULL;
-#if 1 // TODO: needed for gni provider?
-  CHK_TRUE(mrGetLocalDesc(&mrDesc, arg, argSize) == 0);
-#endif
+  if (mrGetLocalDesc(&mrDesc, myArg, argSize) != 0) {
+    myArg = allocBounceBuf(argSize);
+    DBG_PRINTF(DBG_AMO, "AMO arg BB: %p", myArg);
+    CHK_TRUE(mrGetLocalDesc(NULL, myArg, argSize) == 0);
+    memcpy(myArg, arg, argSize);
+  }
 
-  OFI_CHK(fi_send(tcip->txCtx, arg, argSize, mrDesc, ofi_rxAddrs[node], NULL));
+  OFI_CHK(fi_send(tcip->txCtx, myArg, argSize, mrDesc, ofi_rxAddrs[node],
+                  NULL));
   DBG_PRINTF(DBG_AM | DBG_AMSEND,
              "tx AM req to %d, op %d, size %zd, pDone %p",
-             node, (int) arg->comm.op.op, argSize, pDone);
+             node, (int) myArg->comm.op.op, argSize, pDone);
   tcip->numAmReqsTxed++;
   tcip->numTxsOut++;
+
+  if (myArg != arg) {
+    freeBounceBuf(myArg);
+  }
 
   //
   // Wait for network completion.
