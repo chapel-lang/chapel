@@ -1862,6 +1862,8 @@ struct perTxCtxInfo_t* tciAlloc(chpl_bool bindToAmHandler) {
   // Find a tx context that isn't busy and use that one.
   //
   tcip = findFreeTciTabEntry(bindToAmHandler);
+  if (bindToAmHandler || tciTabFixedAssignments)
+    tcip->bound = true;
   DBG_PRINTF(DBG_THREADS, "I have%s tciTab[%td]",
              bindToAmHandler ? " bound" : "", tcip - tciTab);
   return tcip;
@@ -1887,7 +1889,6 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
     tcip = &tciTab[numWorkerTxCtxs];
     CHK_FALSE(atomic_exchange_bool(&tcip->allocated, true));
     tcip->bound = true;
-    DBG_PRINTF(DBG_THREADS, "I have bound tciTab[%td]", tcip - tciTab);
     return tcip;
   }
 
@@ -1919,7 +1920,6 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
     }
   } while (tcip == NULL);
 
-  DBG_PRINTF(DBG_THREADS, "I have tciTab[%td]", tcip - tciTab);
   return tcip;
 }
 
