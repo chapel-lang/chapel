@@ -260,7 +260,7 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
         intent = INTENT_BLANK;
       }
 
-      formal->type = computeTupleWithIntent(intent, tupleType);
+      formal->type = computeTupleWithIntentForArg(intent, tupleType, formal);
     }
   }
 }
