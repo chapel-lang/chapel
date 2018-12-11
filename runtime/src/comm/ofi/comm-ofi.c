@@ -756,8 +756,6 @@ void fini_ofi(void) {
   CHPL_FREE(memTabMap);
 
   CHPL_FREE(memTabMap);
-  CHPL_FREE(memTab);
-  CHPL_FREE(ofiMrTab);
 
   CHPL_FREE(amLZs);
 
