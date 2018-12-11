@@ -307,11 +307,12 @@ void init_ofiFabricDomain(void) {
   ret = fi_getinfo(FI_VERSION(1,5), NULL, NULL, 0, hints, &ofi_info);
   if (chpl_nodeID == 0) {
     if (ret == -FI_ENODATA) {
-      if (DBG_TEST_MASK(DBG_FABFAIL)) {
-        DBG_PRINTF(DBG_FABFAIL, "==================== hints:");
-        DBG_PRINTF(DBG_FABFAIL, "%s", fi_tostr(hints, FI_TYPE_INFO));
-        DBG_PRINTF(DBG_FABFAIL, "==================== fi_getinfo() fabrics:");
-        DBG_PRINTF(DBG_FABFAIL,
+      if (DBG_TEST_MASK(DBG_CFGFAB | DBG_CFGFABSALL)) {
+        DBG_PRINTF(DBG_CFGFAB, "==================== hints:");
+        DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(hints, FI_TYPE_INFO));
+        DBG_PRINTF(DBG_CFGFABSALL,
+                   "==================== fi_getinfo() fabrics:");
+        DBG_PRINTF(DBG_CFGFABSALL,
                    "None matched hints; available with prov_name \"%s\" are:",
                    (provider == NULL) ? "<any>" : provider);
         struct fi_info* info = NULL;
@@ -320,8 +321,8 @@ void init_ofiFabricDomain(void) {
           const char* pn = info->fabric_attr->prov_name;
           if (provider == NULL
               || strncmp(pn, provider, strlen(provider)) == 0) {
-            DBG_PRINTF(DBG_FABFAIL, "%s", fi_tostr(info, FI_TYPE_INFO));
-            DBG_PRINTF(DBG_FABFAIL, "----------");
+            DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(info, FI_TYPE_INFO));
+            DBG_PRINTF(DBG_CFGFABSALL, "----------");
           }
         }
       }
@@ -330,20 +331,20 @@ void init_ofiFabricDomain(void) {
                        (provider == NULL) ? "<any>" : provider);
     }
 
-    if (DBG_TEST_MASK(DBG_FAB)) {
-      if (DBG_TEST_MASK(DBG_FABSALL)) {
-        DBG_PRINTF(DBG_FABSALL, "====================\n"
+    if (DBG_TEST_MASK(DBG_CFGFAB | DBG_CFGFABSALL)) {
+      if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
+        DBG_PRINTF(DBG_CFGFABSALL, "====================\n"
                    "fi_getinfo() matched fabric(s):");
         struct fi_info* info;
         for (info = ofi_info; info != NULL; info = info->next) {
-          DBG_PRINTF(DBG_FABSALL, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
-          DBG_PRINTF(DBG_FABSALL, "----------");
+          DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
+          DBG_PRINTF(DBG_CFGFABSALL, "----------");
         }
       } else {
-        DBG_PRINTF(DBG_FAB, "====================\n"
+        DBG_PRINTF(DBG_CFGFAB, "====================\n"
                    "fi_getinfo() matched fabric:");
-        DBG_PRINTF(DBG_FAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
-        DBG_PRINTF(DBG_FAB, "----------");
+        DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
+        DBG_PRINTF(DBG_CFGFAB, "----------");
       }
     }
   }
@@ -521,7 +522,7 @@ void init_ofiEpNumCtxs(void) {
   CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
   ofi_info->ep_attr->rx_ctx_cnt = numAmHandlers;
 
-  DBG_PRINTF(DBG_CONFIG, "per node, %zd tx ctxs%s, %zd rx ctxs",
+  DBG_PRINTF(DBG_CFG, "per node, %zd tx ctxs%s, %zd rx ctxs",
              ofi_info->ep_attr->tx_ctx_cnt,
              tciTabFixedAssignments ? " (fixed to workers)" : "",
              ofi_info->ep_attr->rx_ctx_cnt);
@@ -3037,8 +3038,11 @@ char* chpl_comm_ofi_dbg_prefix(void) {
     buf[len = 0] = '\0';
     if (chpl_nodeID >= 0)
       len += snprintf(&buf[len], sizeof(buf) - len, "%d", chpl_nodeID);
-    len += snprintf(&buf[len], sizeof(buf) - len, ":%ld",
-                    (long int) chpl_task_getId());
+    if (chpl_task_getId() == chpl_nullTaskID)
+      len += snprintf(&buf[len], sizeof(buf) - len, ":_");
+    else
+      len += snprintf(&buf[len], sizeof(buf) - len, ":%ld",
+                      (long int) chpl_task_getId());
     if (DBG_TEST_MASK(DBG_TSTAMP))
       len += snprintf(&buf[len], sizeof(buf) - len, "%s%.9f",
                       ((len == 0) ? "" : ": "), chpl_comm_ofi_time_get());
