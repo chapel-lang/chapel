@@ -1785,6 +1785,15 @@ void FnSymbol::codegenDef() {
     if (this->hasFlag(FLAG_LLVM_READNONE))
       func->addFnAttr(llvm::Attribute::ReadNone);
 
+    if (specializeCCode) {
+      // Add target-cpu and target-features metadata
+      // We could also get this from clang::CompilerInvocation getTargetOpts
+      llvm::StringRef TargetCPU = info->targetMachine->getTargetCPU();
+      llvm::StringRef TargetFeatures = info->targetMachine->getTargetFeatureString();
+      func->addFnAttr("target-cpu", TargetCPU);
+      func->addFnAttr("target-features", TargetFeatures);
+    }
+
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
 
