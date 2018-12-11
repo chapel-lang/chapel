@@ -620,28 +620,6 @@ module ChapelIteratorSupport {
     return iterables.size == 1 && isRefIter(_getIterator(iterables(1)));
   }
 
-  /* Apply `fn` to each element yielded by this iterator and yield the value
-     returned by `fn`.  `fn` must take a single argument and return a value.
-   */
-  iter _iteratorRecord.map(fn) {
-    for x in this do yield fn(x);
-  }
-
-  /* Apply `fn` to each element yielded by this iterator and yield the values
-     it returns `true` for.  `fn` must take a single argument and return a
-     boolean value.
-   */
-  iter _iteratorRecord.filter(fn) {
-    for x in this do if fn(x) then yield x;
-  }
-
-  /* Apply `fn` to each element yielded by this iterator and ignore the return
-     value from `fn` if any.
-   */
-  proc _iteratorRecord.consume(fn) {
-    for x in this do fn(x);
-  }
-
   /*
      Vectorize only "wrapper" iterator:
 

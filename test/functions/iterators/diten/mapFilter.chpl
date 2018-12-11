@@ -1,3 +1,5 @@
+use FunctionalOperations;
+
 proc imaginate(x: int) {
   return x*1.0i;
 }
