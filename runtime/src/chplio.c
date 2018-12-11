@@ -29,13 +29,13 @@
 // These should be moved to chpl-string.c and eventually go away.
 chpl_string chpl_refToString(void* ref) {
   char buff[32];
-  sprintf(buff, "%p", ref);
+  (void) snprintf(buff, sizeof(buff), "%p", ref);
   return string_copy(buff, 0, 0);
 }
 
 
 chpl_string chpl_wideRefToString(c_nodeid_t node, void* addr) {
   char buff[32];
-  sprintf(buff, "%" FORMAT_c_nodeid_t ":%p", node, addr);
+  (void) snprintf(buff, sizeof(buff), "%" PRI_c_nodeid_t ":%p", node, addr);
   return string_copy(buff, 0, 0);
 }
