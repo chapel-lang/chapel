@@ -301,6 +301,7 @@ module ChapelIteratorSupport {
 
   pragma "suppress lvalue error"
   pragma "fn returns iterator"
+  pragma "no borrow convert" // e.g. iteration over tuple of owned
   inline proc _getIterator(x) {
     return _getIterator(x.these());
   }

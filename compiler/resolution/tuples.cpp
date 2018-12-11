@@ -989,7 +989,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
                                                 AggregateType* at,
                                                 const char*    copyWith,
                                                 BlockStmt*     testBlock,
-                                                bool instantiatedFromAny) {
+                                                bool borrowConvert) {
   INT_ASSERT(at->symbol->hasFlag(FLAG_TUPLE));
 
   // Construct tuple that would be used for a particular argument intent.
@@ -1022,7 +1022,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
         INT_ASSERT(useAt);
 
         useType = do_computeTupleWithIntent(valueOnly, intent, useAt,
-                                            copyWith, testBlock, instantiatedFromAny);
+                                            copyWith, testBlock, borrowConvert);
 
         if (valueOnly == false) {
           if (intent == INTENT_BLANK || intent == INTENT_CONST) {
@@ -1037,7 +1037,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
       } else if (shouldChangeTupleType(useType) == true) {
         // Argument instantiated from any that is a tuple of owned
         // -> tuple of borrow
-        if (isManagedPtrType(useType) && instantiatedFromAny) {
+        if (isManagedPtrType(useType) && borrowConvert) {
           if (intent == INTENT_CONST || intent == INTENT_BLANK)
             useType = getManagedPtrBorrowType(useType);
         }
@@ -1086,8 +1086,12 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
 AggregateType* computeTupleWithIntentForArg(IntentTag intent, AggregateType* t, ArgSymbol* arg)
 {
   INT_ASSERT(arg);
-  return do_computeTupleWithIntent(false, intent, t, NULL, NULL,
-      arg->hasFlag(FLAG_INSTANTIATED_FROM_ANY));
+  bool borrowConvert = false;
+  if (arg->hasFlag(FLAG_INSTANTIATED_FROM_ANY) &&
+      !arg->getFunction()->hasFlag(FLAG_NO_BORROW_CONVERT))
+    borrowConvert = true;
+
+  return do_computeTupleWithIntent(false, intent, t, NULL, NULL, borrowConvert);
 }
 
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t)
