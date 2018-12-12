@@ -119,7 +119,8 @@ module StringCasts {
     }
 
     // remove underscores everywhere but the first position
-    localX = localX[1] + localX[2..].replace("_", "");
+    if localX.length >= 2 then
+      localX = localX[1] + localX[2..].replace("_", "");
 
     if localX.isEmptyString() then
       throw new unmanaged IllegalArgumentError("bad cast from empty string to " + t:string);
