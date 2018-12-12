@@ -33,12 +33,12 @@ module DynamicIters {
 */
 pragma "no doc"
 record vlock {
-  var l: atomic bool;
+  var l: chpl__processorAtomicType(bool);
   proc lock() {
-    on this do while l.testAndSet() != false do chpl_task_yield();
+    on this do while l.testAndSet(memory_order_acquire) do chpl_task_yield();
   }
   proc unlock() {
-    l.write(false);
+    l.clear(memory_order_release);
   }
 }
 

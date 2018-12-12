@@ -69,11 +69,11 @@ module DefaultAssociative {
     var table: [tableDom] chpl_TableEntry(idxType);
   
     inline proc lockTable() {
-      while tableLock.testAndSet() do chpl_task_yield();
+      while tableLock.testAndSet(memory_order_acquire) do chpl_task_yield();
     }
   
     inline proc unlockTable() {
-      tableLock.clear();
+      tableLock.clear(memory_order_release);
     }
   
     // TODO: An ugly [0..-1] domain appears several times in the code --
