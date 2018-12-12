@@ -66,7 +66,8 @@
 #include <unistd.h>
 #include <math.h>
 
-
+#define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
+#define ALIGN_UP(i, size)  ALIGN_DN((i) + (size) - 1, size)
 
 #ifdef CHAPEL_PROFILE
 # define PROFILE_INCR(counter,count) do { (void)qthread_incr(&counter,count); } while (0)
@@ -555,7 +556,7 @@ static void setupCallStacks(void) {
     size_t envStackSize;
     char newenv_stack[QT_ENV_S];
 
-    chpl_bool guardPagesEnabled;
+    int guardPagesEnabled;
     size_t pagesize;
     size_t reservedPages;
     size_t qt_rtds_size;
@@ -563,7 +564,7 @@ static void setupCallStacks(void) {
     size_t maxPoolAllocSize;
     char newenv_alloc[QT_ENV_S];
 
-    guardPagesEnabled = setupGuardPages();
+    guardPagesEnabled = (int)setupGuardPages();
 
     // Setup the base call stack size (Precedence high-to-low):
     // 1) Chapel environment (CHPL_RT_CALL_STACK_SIZE)
@@ -584,11 +585,26 @@ static void setupCallStacks(void) {
     // runtime structure.
     pagesize = chpl_getSysPageSize();
     qt_rtds_size = qthread_readstate(RUNTIME_DATA_SIZE);
-    qt_rtds_size += pagesize - (qt_rtds_size % pagesize); // pagesize align up
+    qt_rtds_size = ALIGN_UP(qt_rtds_size, pagesize);
     reservedPages = qt_rtds_size / pagesize;
-    if (guardPagesEnabled) {
-        reservedPages += 2;
+    reservedPages += 2 * guardPagesEnabled;
+
+    if (reservedPages * pagesize >= stackSize) {
+        char msg[1024];
+        size_t guardSize = 2 * guardPagesEnabled * pagesize;
+        size_t rtdsSize = (reservedPages * pagesize) - guardSize;
+
+        stackSize = (reservedPages + 1) * pagesize;
+
+        sprintf(msg, "Stack size was too small, increasing to %zu bytes (which"
+                     " may still not be enough).\n  Note: guard pages use %zu"
+                     " bytes and qthread task data structures use %zu bytes.",
+                     stackSize, guardSize, rtdsSize);
+        chpl_warning(msg, 0, 0);
+    } else {
+        stackSize = ALIGN_UP(stackSize, pagesize);
     }
+
     actualStackSize = stackSize - (reservedPages * pagesize);
 
     snprintf(newenv_stack, sizeof(newenv_stack), "%zu", actualStackSize);
