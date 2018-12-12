@@ -106,35 +106,29 @@ module StringCasts {
     var isErr: bool;
     const localX = x.localize();
 
-    if isIntType(t) {
-      if localX.isEmptyString() then
-        throw new unmanaged IllegalArgumentError("bad cast from empty string to int(" + numBits(t) + ")");
+    if localX.isEmptyString() then
+      throw new unmanaged IllegalArgumentError("bad cast from empty string to " + t:string);
 
+    if isIntType(t) {
       select numBits(t) {
         when 8  do retVal = c_string_to_int8_t(localX.c_str(), isErr);
         when 16 do retVal = c_string_to_int16_t(localX.c_str(), isErr);
         when 32 do retVal = c_string_to_int32_t(localX.c_str(), isErr);
         when 64 do retVal = c_string_to_int64_t(localX.c_str(), isErr);
-        otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
+        otherwise compilerError("Unsupported bit width ", numBits(t), " in cast from string to " + t:string);
       }
-
-      if isErr then
-        throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to int(" + numBits(t) + ")");
     } else {
-      if localX.isEmptyString() then
-        throw new unmanaged IllegalArgumentError("bad cast from empty string to uint(" + numBits(t) + ")");
-
       select numBits(t) {
         when 8  do retVal = c_string_to_uint8_t(localX.c_str(), isErr);
         when 16 do retVal = c_string_to_uint16_t(localX.c_str(), isErr);
         when 32 do retVal = c_string_to_uint32_t(localX.c_str(), isErr);
         when 64 do retVal = c_string_to_uint64_t(localX.c_str(), isErr);
-        otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
+        otherwise compilerError("Unsupported bit width ", numBits(t), " in cast from string to " + t:string);
       }
-
-      if isErr then
-        throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to uint(" + numBits(t) + ")");
     }
+
+    if isErr then
+      throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
 
     return retVal;
   }
