@@ -694,8 +694,8 @@ mpool_idx_base_t mpool_idx_finc(mpool_idx_t* pvar) {
 typedef uint32_t cq_cnt_t;
 typedef atomic_uint_least32_t cq_cnt_atomic_t;
 
-#define CQ_CNT_STORE(cd, val) \
-        atomic_store_uint_least32_t(&(cd)->cq_cnt_curr, val)
+#define CQ_CNT_INIT(cd, val) \
+        atomic_init_uint_least32_t(&(cd)->cq_cnt_curr, val)
 #define CQ_CNT_LOAD(cd)       \
         atomic_load_uint_least32_t(&(cd)->cq_cnt_curr)
 #define CQ_CNT_INC(cd)        \
@@ -2226,7 +2226,7 @@ void gni_setup_per_comm_dom(int cdi)
   //       comm domain may be different than that for initiators.)
   //
   cd->cq_cnt_max  = CD_ACTIVE_TRANS_MAX;
-  CQ_CNT_STORE(cd, 0);
+  CQ_CNT_INIT(cd, 0);
   GNI_CHECK(GNI_CqCreate(cd->nih, cd->cq_cnt_max, 0, GNI_CQ_NOBLOCK, NULL,
                          NULL, &cd->cqh));
 
