@@ -1,0 +1,1 @@
+tuple-from-array-error.chpl:2: error: illegal tuple variable declaration with non-tuple initializer
