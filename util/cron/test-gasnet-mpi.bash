@@ -9,6 +9,9 @@ source $CWD/common.bash
 export CHPL_COMM=gasnet
 export CHPL_COMM_SUBSTRATE=mpi
 export GASNET_QUIET=Y
+OPEN_MPI_DIR="/usr/lib64/mpi/gcc/openmpi"
+export PATH="$OPEN_MPI_DIR/bin:$PATH"
+export LD_LIBRARY_PATH="$OPEN_MPI_DIR/lib:$LD_LIBRARY_PATH"
 
 export CHPL_TEST_NUM_LOCALES_AVAILABLE=$SLURM_NNODES
 
