@@ -5011,6 +5011,7 @@ void consume_all_outstanding_cq_events(int cdi)
         //
         atomic_store_bool((atomic_bool*) (intptr_t) post_desc->post_id, true);
       }
+      CQ_CNT_DEC(cd);
     }
 
     assert(gni_rc == GNI_RC_NOT_DONE);
@@ -6130,13 +6131,6 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
       consume_all_outstanding_cq_events(nbdp->cdi);
     }
 
-    //
-    // cq_cnt_curr tells whether we have capacity to initiate another
-    // transaction on this CD.  We could decrement it earlier, when we
-    // handle the CQ event, but then we'd have a race until we freed
-    // the NB descriptor here.  So, we delay the decrement until now.
-    //
-    CQ_CNT_DEC(&comm_doms[nbdp->cdi]);
     nb_desc_free(nbdi);
   }
 }
@@ -6176,14 +6170,6 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
     if (atomic_load_explicit_bool(&nbdp->done, memory_order_acquire)) {
       h[i] = NULL;
       rv = 1;
-
-      //
-      // cq_cnt_curr tells whether we have capacity to initiate another
-      // transaction on this CD.  We could decrement it earlier, when we
-      // handle the CQ event, but then we'd have a race until we freed
-      // the NB descriptor here.  So, we delay the decrement until now.
-      //
-      CQ_CNT_DEC(&comm_doms[nbdp->cdi]);
       nb_desc_free(nbdi);
     }
   }
@@ -6948,7 +6934,6 @@ void do_remote_amo_nb(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
       local_yield();
       consume_all_outstanding_cq_events(cdi_v[vi]);
     }
-    CQ_CNT_DEC(&comm_doms[cdi_v[vi]]);
   }
 }
 
@@ -7805,8 +7790,6 @@ void do_fork_post(c_nodeid_t locale,
           }
           if (done) {
             retired_any = true;
-
-            CQ_CNT_DEC(&comm_doms[nb_desc->cdi]);
             nb_fork[i].free = true;
             nb_fork_num--;
             if (i < nb_fork_first_free) nb_fork_first_free = i;
@@ -8109,8 +8092,6 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
     consume_all_outstanding_cq_events(cdi);
     iters++;
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
-
-  CQ_CNT_DEC(&comm_doms[cdi]);
 }
 
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
@@ -8184,8 +8165,6 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
     local_yield();
     consume_all_outstanding_cq_events(cdi);
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
-
-  CQ_CNT_DEC(&comm_doms[cdi]);
 }
 
 #endif
@@ -8235,8 +8214,6 @@ void post_rdma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
     }
     consume_all_outstanding_cq_events(cdi);
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
-
-  CQ_CNT_DEC(&comm_doms[cdi]);
 }
 
 
