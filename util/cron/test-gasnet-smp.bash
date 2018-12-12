@@ -11,4 +11,4 @@ export CHPL_COMM_SUBSTRATE=smp
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet-smp"
 
-$CWD/nightly -cron -hellos
+$CWD/nightly -cron -hellos ${nightly_args}

@@ -13,6 +13,8 @@ export GASNET_PHYSMEM_NOPROBE=1
 
 export CHPL_TEST_NUM_LOCALES_AVAILABLE=$SLURM_NNODES
 
+nightly_args="${nightly_args} -no-buildcheck"
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet-ibv"
 
-$CWD/nightly -cron -hellos
+$CWD/nightly -cron -hellos ${nightly_args}
