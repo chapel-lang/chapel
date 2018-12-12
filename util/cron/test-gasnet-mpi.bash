@@ -12,6 +12,8 @@ export GASNET_QUIET=Y
 
 export CHPL_TEST_NUM_LOCALES_AVAILABLE=$SLURM_NNODES
 
+nightly_args="${nightly_args} -no-buildcheck"
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet-mpi"
 
-$CWD/nightly -cron -hellos
+$CWD/nightly -cron -hellos ${nightly_args}
