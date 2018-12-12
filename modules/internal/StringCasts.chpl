@@ -104,7 +104,22 @@ module StringCasts {
 
     var retVal: t;
     var isErr: bool;
-    const localX = x.localize();
+    // localize the string and remove leading and trailing whitespace
+    var localX = x.localize().strip();
+
+    {
+      // make sure the string only has one word
+      var numElements: int;
+      for localX.split() {
+        numElements += 1;
+        if numElements > 1 then break;
+      }
+      if numElements > 1 then
+        throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
+    }
+
+    // remove underscores everywhere but the first position
+    localX = localX[1] + localX[2..].replace("_", "");
 
     if localX.isEmptyString() then
       throw new unmanaged IllegalArgumentError("bad cast from empty string to " + t:string);
