@@ -979,11 +979,11 @@ module DefaultRectangular {
     // These functions must always be called locally, because the lock
     // is a (local) processor one.
     inline proc lockRAD(rlocIdx) {
-      while RADLocks(rlocIdx).testAndSet() do chpl_task_yield();
+      while RADLocks(rlocIdx).testAndSet(memory_order_acquire) do chpl_task_yield();
     }
 
     inline proc unlockRAD(rlocIdx) {
-      RADLocks(rlocIdx).clear();
+      RADLocks(rlocIdx).clear(memory_order_release);
     }
   }
 
