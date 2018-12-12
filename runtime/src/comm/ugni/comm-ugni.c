@@ -694,8 +694,8 @@ mpool_idx_base_t mpool_idx_finc(mpool_idx_t* pvar) {
 typedef uint32_t cq_cnt_t;
 typedef atomic_uint_least32_t cq_cnt_atomic_t;
 
-#define CQ_CNT_STORE(cd, val) \
-        atomic_store_uint_least32_t(&(cd)->cq_cnt_curr, val)
+#define CQ_CNT_INIT(cd, val) \
+        atomic_init_uint_least32_t(&(cd)->cq_cnt_curr, val)
 #define CQ_CNT_LOAD(cd)       \
         atomic_load_uint_least32_t(&(cd)->cq_cnt_curr)
 #define CQ_CNT_INC(cd)        \
@@ -2226,7 +2226,7 @@ void gni_setup_per_comm_dom(int cdi)
   //       comm domain may be different than that for initiators.)
   //
   cd->cq_cnt_max  = CD_ACTIVE_TRANS_MAX;
-  CQ_CNT_STORE(cd, 0);
+  CQ_CNT_INIT(cd, 0);
   GNI_CHECK(GNI_CqCreate(cd->nih, cd->cq_cnt_max, 0, GNI_CQ_NOBLOCK, NULL,
                          NULL, &cd->cqh));
 
@@ -5011,6 +5011,7 @@ void consume_all_outstanding_cq_events(int cdi)
         //
         atomic_store_bool((atomic_bool*) (intptr_t) post_desc->post_id, true);
       }
+      CQ_CNT_DEC(cd);
     }
 
     assert(gni_rc == GNI_RC_NOT_DONE);
@@ -6130,13 +6131,6 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
       consume_all_outstanding_cq_events(nbdp->cdi);
     }
 
-    //
-    // cq_cnt_curr tells whether we have capacity to initiate another
-    // transaction on this CD.  We could decrement it earlier, when we
-    // handle the CQ event, but then we'd have a race until we freed
-    // the NB descriptor here.  So, we delay the decrement until now.
-    //
-    CQ_CNT_DEC(&comm_doms[nbdp->cdi]);
     nb_desc_free(nbdi);
   }
 }
@@ -6176,14 +6170,6 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
     if (atomic_load_explicit_bool(&nbdp->done, memory_order_acquire)) {
       h[i] = NULL;
       rv = 1;
-
-      //
-      // cq_cnt_curr tells whether we have capacity to initiate another
-      // transaction on this CD.  We could decrement it earlier, when we
-      // handle the CQ event, but then we'd have a race until we freed
-      // the NB descriptor here.  So, we delay the decrement until now.
-      //
-      CQ_CNT_DEC(&comm_doms[nbdp->cdi]);
       nb_desc_free(nbdi);
     }
   }
@@ -6948,7 +6934,6 @@ void do_remote_amo_nb(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
       local_yield();
       consume_all_outstanding_cq_events(cdi_v[vi]);
     }
-    CQ_CNT_DEC(&comm_doms[cdi_v[vi]]);
   }
 }
 
@@ -7805,8 +7790,6 @@ void do_fork_post(c_nodeid_t locale,
           }
           if (done) {
             retired_any = true;
-
-            CQ_CNT_DEC(&comm_doms[nb_desc->cdi]);
             nb_fork[i].free = true;
             nb_fork_num--;
             if (i < nb_fork_first_free) nb_fork_first_free = i;
@@ -8109,8 +8092,6 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
     consume_all_outstanding_cq_events(cdi);
     iters++;
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
-
-  CQ_CNT_DEC(&comm_doms[cdi]);
 }
 
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
@@ -8184,8 +8165,6 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
     local_yield();
     consume_all_outstanding_cq_events(cdi);
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
-
-  CQ_CNT_DEC(&comm_doms[cdi]);
 }
 
 #endif
@@ -8235,8 +8214,6 @@ void post_rdma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
     }
     consume_all_outstanding_cq_events(cdi);
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
-
-  CQ_CNT_DEC(&comm_doms[cdi]);
 }
 
 
