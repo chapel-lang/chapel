@@ -1159,6 +1159,7 @@ bool doCanDispatch(Type*     actualType,
     if (retval == false) {
       if (fn                              != NULL        &&
           fn->name                        != astrSequals &&
+          strcmp(fn->name, "these")       != 0           &&
           actualType->scalarPromotionType != NULL        &&
           doCanDispatch(actualType->scalarPromotionType,
                         NULL,
