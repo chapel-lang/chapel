@@ -105,9 +105,11 @@ module StringCasts {
     var retVal: t;
     var isErr: bool;
     // localize the string and remove leading and trailing whitespace
-    var localX = x.localize().strip();
+    var localX = x.localize();
+    const hasUnderscores = localX.find("_") != 0;
 
-    {
+    if hasUnderscores {
+      localX = localX.strip();
       // make sure the string only has one word
       var numElements: int;
       for localX.split() {
@@ -116,11 +118,11 @@ module StringCasts {
       }
       if numElements > 1 then
         throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
-    }
 
-    // remove underscores everywhere but the first position
-    if localX.length >= 2 then
-      localX = localX[1] + localX[2..].replace("_", "");
+      // remove underscores everywhere but the first position
+      if localX.length >= 2 then
+        localX = localX[1] + localX[2..].replace("_", "");
+    }
 
     if localX.isEmptyString() then
       throw new unmanaged IllegalArgumentError("bad cast from empty string to " + t:string);
