@@ -229,7 +229,9 @@ module ChapelTuple {
   // iterator support for tuples
   //
   pragma "no doc"
-  iter _tuple.these() {
+  pragma "reference to const when const this"
+  iter _tuple.these() ref
+  {
 
     if !isHomogeneousTuple(this) then
       compilerError("Cannot iterate over non-homogeneous tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
@@ -243,7 +245,8 @@ module ChapelTuple {
   }
 
   pragma "no doc"
-  iter _tuple.these(param tag:iterKind)
+  pragma "reference to const when const this"
+  iter _tuple.these(param tag:iterKind) ref
       where tag == iterKind.leader
   {
 
@@ -269,7 +272,8 @@ module ChapelTuple {
   }
 
   pragma "no doc"
-  iter _tuple.these(param tag:iterKind, followThis: _tuple)
+  pragma "reference to const when const this"
+  iter _tuple.these(param tag:iterKind, followThis: _tuple) ref
       where tag == iterKind.follower
   {
     if followThis.size != 1 then
