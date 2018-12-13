@@ -1,1 +1,2 @@
+nonVectorizeOnlyInvalidIterable.chpl:4: error: non-lvalue actual is passed to a 'const ref' formal of _getIterator()
 nonVectorizeOnlyInvalidIterable.chpl:4: error: cannot iterate over values of type int(64)
