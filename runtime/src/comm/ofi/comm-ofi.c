@@ -546,6 +546,15 @@ void init_ofiExchangeAvInfo(void) {
   CHPL_CALLOC_SZ(my_addr, my_addr_len, 1);
   OFI_CHK(fi_getname(&ofi_rxEp->fid, my_addr, &my_addr_len));
   CHPL_CALLOC_SZ(addrs, chpl_numNodes, my_addr_len);
+  if (DBG_TEST_MASK(DBG_CFGAV)) {
+    char nameBuf[128];
+    size_t nameLen;
+    nameLen = sizeof(nameBuf);
+    (void) fi_av_straddr(ofi_av, my_addr, nameBuf, &nameLen);
+    DBG_PRINTF(DBG_CFGAV, "my_addr: %.*s%s",
+               (int) nameLen, nameBuf,
+               (nameLen <= sizeof(nameBuf)) ? "" : "[...]");
+  }
   chpl_comm_ofi_oob_allgather(my_addr, addrs, my_addr_len);
 
   //
@@ -558,6 +567,26 @@ void init_ofiExchangeAvInfo(void) {
 
   CHPL_FREE(my_addr);
   CHPL_FREE(addrs);
+
+  if (chpl_nodeID == 0 && DBG_TEST_MASK(DBG_CFGAV)) {
+    DBG_PRINTF(DBG_CFGAV, "====================");
+    DBG_PRINTF(DBG_CFGAV, "Address vector");
+    char addrBuf[my_addr_len + 1];
+    size_t addrLen;
+    char nameBuf[128];
+    size_t nameLen;
+    for (int i = 0; i < chpl_numNodes; i++) {
+      addrLen = sizeof(addrBuf);
+      OFI_CHK(fi_av_lookup(ofi_av, i, addrBuf, &addrLen));
+      CHK_TRUE(addrLen <= sizeof(addrBuf));
+      nameLen = sizeof(nameBuf);
+      (void) fi_av_straddr(ofi_av, addrBuf, nameBuf, &nameLen);
+      DBG_PRINTF(DBG_CFGAV, "addrVec[%d]: %.*s%s",
+                 i, (int) nameLen, nameBuf,
+                 (nameLen <= sizeof(nameBuf)) ? "" : "[...]");
+    }
+    DBG_PRINTF(DBG_CFGAV, "====================");
+  }
 }
 
 
